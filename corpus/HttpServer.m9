@@ -1,0 +1,339 @@
+DEFINITION MODULE HttpServer ;
+
+(* Minimal HTTP/1.0 server: bind, accept, answer, one connection at
+   a time.  M9 has no procedure types (par 10), so routes are not
+   callbacks: a route is data -- method, path, status, content type,
+   body, summary -- and dispatch is a table walk.  The same table
+   that answers requests describes the API; OpenApi reads it back
+   through the accessors below, so the server cannot disagree with
+   its own documentation.                                            *)
+
+EXCEPTION
+  BindError (RO msg: STR) ;
+
+TYPE
+  Router ;                               (* opaque; lives in a POOL *)
+
+PROCEDURE NewRouter (VAR pool: POOL) : PTR Router IN pool ;
+  (* an empty route table.  Routes are added in order and matched in
+     order, so the first AddRoute whose method and path agree wins;
+     there is no most-specific rule to reason about, and a shadowed
+     route is visible by reading down the calls that built it.      *)
+
+PROCEDURE AddRoute (VAR pool: POOL ; VAR r: PTR Router ;
+                    RO method: STR ;
+                    RO path: STR ;
+                    status: I64 ;
+                    RO ctype: STR ;
+                    RO body: STR ;
+                    RO summary: STR) ;
+  (* the router keeps the slices, not copies: the caller's strings
+     must outlive the router -- the contract Json.Parse already has
+     with its source.  P3 will have to name this retention.          *)
+
+PROCEDURE RouteCount (r: PTR Router) : I64 ;
+  (* how many routes were added.  This and the six accessors below
+     are the READ-BACK half of the module's claim: the table that
+     answers requests is the same table OpenApi.Document walks to
+     describe them, so the server cannot disagree with its own
+     documentation.  OpenApi imports this module and nothing else of
+     ours -- it is an ordinary client with no privileged access, and
+     that is what makes the claim checkable rather than a promise.  *)
+
+PROCEDURE RouteMethod (r: PTR Router ; i: I64) : RO STR
+  RAISES IndexError ;
+
+PROCEDURE RoutePath (r: PTR Router ; i: I64) : RO STR
+  RAISES IndexError ;
+
+PROCEDURE RouteStatus (r: PTR Router ; i: I64) : I64
+  RAISES IndexError ;
+
+PROCEDURE RouteType (r: PTR Router ; i: I64) : RO STR
+  RAISES IndexError ;
+
+PROCEDURE RouteSummary (r: PTR Router ; i: I64) : RO STR
+  RAISES IndexError ;
+  (* the five fields of route i, one accessor each because M9 will
+     not hand out a pointer into an opaque type.
+
+       i -- 0 .. RouteCount - 1.  Anything else RAISES IndexError
+            carrying the index AND the count, so the message says
+            what was asked for and what was there; a walk is
+            therefore a FOR over RouteCount and cannot go wrong by
+            an off-by-one that answers a neighbouring route.
+
+     The STR results are RO VIEWS of what AddRoute was given, so
+     they live exactly as long as the caller's own strings do -- see
+     the retention note on AddRoute above.  RouteSummary is the one
+     that is also documentation: it is OpenAPI's response
+     description, so there is no second place for the wording to
+     drift to.                                                      *)
+
+PROCEDURE Serve (r: PTR Router ; port: I64 ; maxRequests: I64)
+  RAISES BindError, ValueRange ;
+  (* accept and answer maxRequests connections, then return: a
+     server a test can start and outlive.  ValueRange is the octet
+     boundary speaking, as in Http.Get.                              *)
+
+END HttpServer.
+
+
+UNSAFE DEFINITION MODULE FOR "C" csrv ;
+
+PROCEDURE Listen = "tcp_listen" (port: C.Int ; backlog: C.Int) : C.Int
+  [SERIAL] ;
+  (* socket+bind+listen in the shim, the server-side twin of
+     tcp_connect; SERIAL until its thread safety is audited, not
+     asserted -- REENTRANT is a claim, not a default                 *)
+
+PROCEDURE Accept = "tcp_accept" (fd: C.Int) : C.Int
+  [SERIAL] ;
+
+END csrv.
+
+
+UNSAFE IMPLEMENTATION MODULE HttpServer ;
+
+(* UNSAFE for one reason: ADR at the foreign boundary, as in Http.   *)
+
+FROM csrv IMPORT Listen, Accept ;
+FROM csock IMPORT Read, Write, Close ;
+IMPORT DynStr ;
+
+CONST
+  ReqMax = 65536 ;
+  Backlog = 16 ;
+
+TYPE
+  Route = RECORD
+    RO method, path, ctype, body, summary : STR ;
+    status : I64 ;
+    next : OPT PTR Route ;
+  END ;
+
+  Router = RECORD
+    first, last : OPT PTR Route ;
+    count : I64 ;
+  END ;
+
+PROCEDURE NewRouter (VAR pool: POOL) : PTR Router IN pool =
+VAR r : PTR Router IN pool ;
+BEGIN
+  r := NEW (pool, Router) ;
+  r.first := NONE ;
+  r.last := NONE ;
+  r.count := 0 ;
+  RETURN r
+END NewRouter ;
+
+PROCEDURE AddRoute (VAR pool: POOL ; VAR r: PTR Router ;
+                    RO method: STR ;
+                    RO path: STR ;
+                    status: I64 ;
+                    RO ctype: STR ;
+                    RO body: STR ;
+                    RO summary: STR) =
+VAR nr : PTR Route IN pool ;
+BEGIN
+  nr := NEW (pool, Route) ;
+  nr.method := method ;
+  nr.path := path ;
+  nr.status := status ;
+  nr.ctype := ctype ;
+  nr.body := body ;
+  nr.summary := summary ;
+  nr.next := NONE ;
+  IF r.last IS SOME t THEN t.next := SOME (nr)
+  ELSE r.first := SOME (nr) END ;
+  r.last := SOME (nr) ;
+  r.count := r.count + 1
+END AddRoute ;
+
+PROCEDURE RouteAt (r: PTR Router ; i: I64) : PTR Route
+  RAISES IndexError =
+VAR
+  c : OPT PTR Route ;
+  j : I64 ;
+BEGIN
+  IF i < 0 OR i >= r.count THEN RAISE IndexError (i, r.count) END ;
+  c := r.first ;
+  j := i ;
+  WHILE c IS SOME rt DO
+    IF j = 0 THEN RETURN rt END ;
+    j := j - 1 ;
+    c := rt.next
+  END ;
+  RAISE IndexError (i, r.count)   (* count and chain disagree: only
+                                     reachable through a broken list *)
+END RouteAt ;
+
+PROCEDURE RouteCount (r: PTR Router) : I64 =
+BEGIN
+  RETURN r.count
+END RouteCount ;
+
+PROCEDURE RouteMethod (r: PTR Router ; i: I64) : RO STR
+  RAISES IndexError =
+VAR p : PTR Route ;
+BEGIN
+  p := RouteAt (r, i) ;
+  RETURN p.method
+END RouteMethod ;
+
+PROCEDURE RoutePath (r: PTR Router ; i: I64) : RO STR
+  RAISES IndexError =
+VAR p : PTR Route ;
+BEGIN
+  p := RouteAt (r, i) ;
+  RETURN p.path
+END RoutePath ;
+
+PROCEDURE RouteStatus (r: PTR Router ; i: I64) : I64
+  RAISES IndexError =
+VAR p : PTR Route ;
+BEGIN
+  p := RouteAt (r, i) ;
+  RETURN p.status
+END RouteStatus ;
+
+PROCEDURE RouteType (r: PTR Router ; i: I64) : RO STR
+  RAISES IndexError =
+VAR p : PTR Route ;
+BEGIN
+  p := RouteAt (r, i) ;
+  RETURN p.ctype
+END RouteType ;
+
+PROCEDURE RouteSummary (r: PTR Router ; i: I64) : RO STR
+  RAISES IndexError =
+VAR p : PTR Route ;
+BEGIN
+  p := RouteAt (r, i) ;
+  RETURN p.summary
+END RouteSummary ;
+
+PROCEDURE Reason (status: I64) : RO STR =
+BEGIN
+  CASE status OF
+  | 200 : RETURN 'OK'
+  | 201 : RETURN 'Created'
+  | 400 : RETURN 'Bad Request'
+  | 404 : RETURN 'Not Found'
+  ELSE RETURN 'Status'
+  END
+END Reason ;
+
+PROCEDURE CrLf (VAR pool: POOL ; VAR d: PTR DynStr.DString) =
+BEGIN
+  DynStr.AppendChar (pool, d, 0DC) ;
+  DynStr.AppendChar (pool, d, 0AC)
+END CrLf ;
+
+PROCEDURE Respond (fd: I64 ; status: I64 ;
+                   RO ctype: STR ;
+                   RO body: STR)
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;                       (* dies with this frame *)
+  d : PTR DynStr.DString IN scratch ;
+  wire : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  DynStr.Append (scratch, d, 'HTTP/1.0 ') ;
+  DynStr.AppendI64 (scratch, d, status) ;
+  DynStr.AppendChar (scratch, d, ' ') ;
+  DynStr.Append (scratch, d, Reason (status)) ;
+  CrLf (scratch, d) ;
+  DynStr.Append (scratch, d, 'Content-Type: ') ;
+  DynStr.Append (scratch, d, ctype) ;
+  CrLf (scratch, d) ;
+  DynStr.Append (scratch, d, 'Content-Length: ') ;
+  DynStr.AppendI64 (scratch, d, LEN (body)) ;
+  (* Latin-1 wire: one CHAR, one octet -- DynStr.Bytes checks the
+     claim below, so the length cannot lie                           *)
+  CrLf (scratch, d) ;
+  CrLf (scratch, d) ;
+  DynStr.Append (scratch, d, body) ;
+  wire := DynStr.Bytes (scratch, DynStr.View (d), FALSE) ;
+  n := I64 (Write (C.Int (fd), ADR (wire), C.SizeT (LEN (wire))))
+  (* a client that hung up mid-answer is its own news: nothing to do
+     with the corpse of a connection but close it (Answer's FINALLY).
+     A server does not RAISE at a peer's failure.                    *)
+END Respond ;
+
+PROCEDURE Answer (r: PTR Router ; fd: I64)
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  buf : SLICE OF BYTE ;
+  req : STR ;
+  method, path : STR ;
+  cur : OPT PTR Route ;
+  n, i, sp1, sp2 : I64 ;
+BEGIN
+  buf := NEW (scratch, BYTE, ReqMax) ;
+  BEGIN
+    n := I64 (Read (C.Int (fd), ADR (buf), C.SizeT (ReqMax))) ;
+    (* one read: an HTTP/1.0 request line fits in the first segment;
+       one that straddles it earns 400, honestly                     *)
+    IF n <= 0 THEN RETURN END ;
+    req := DynStr.Chars (scratch, SLICE (buf, 0, n)) ;
+
+    (* request line is "METHOD SP PATH SP VERSION CRLF ..." *)
+    sp1 := 0 ;
+    i := 0 ;
+    WHILE i < n AND sp1 = 0 DO
+      IF req[i] = ' ' THEN sp1 := i END ;
+      i := i + 1
+    END ;
+    sp2 := 0 ;
+    WHILE i < n AND sp2 = 0 DO
+      IF req[i] = ' ' OR req[i] = 0DC THEN sp2 := i END ;
+      i := i + 1
+    END ;
+    IF sp1 = 0 OR sp2 = 0 THEN
+      Respond (fd, 400, 'text/plain', 'malformed request line') ;
+      RETURN
+    END ;
+    method := SLICE (req, 0, sp1) ;
+    path := SLICE (req, sp1 + 1, sp2 - sp1 - 1) ;
+
+    cur := r.first ;
+    WHILE cur IS SOME rt DO
+      IF DynStr.Eq (rt.method, method) AND DynStr.Eq (rt.path, path) THEN
+        Respond (fd, rt.status, rt.ctype, rt.body) ;
+        RETURN
+      END ;
+      cur := rt.next
+    END ;
+    Respond (fd, 404, 'text/plain', 'no route')
+  FINALLY
+    n := I64 (Close (C.Int (fd)))
+    (* closed on success, on RAISE, on early RETURN: par 5.  The M2
+       tradition juggled close by hand on every path.                *)
+  END
+END Answer ;
+
+PROCEDURE Serve (r: PTR Router ; port: I64 ; maxRequests: I64)
+  RAISES BindError, ValueRange =
+VAR
+  lfd, cfd, served, n : I64 ;
+BEGIN
+  lfd := I64 (Listen (C.Int (port), C.Int (Backlog))) ;
+  IF lfd < 0 THEN RAISE BindError ('listen failed') END ;
+  BEGIN
+    served := 0 ;
+    WHILE served < maxRequests DO
+      cfd := I64 (Accept (C.Int (lfd))) ;
+      IF cfd < 0 THEN RAISE BindError ('accept failed') END ;
+      Answer (r, cfd) ;
+      served := served + 1
+    END
+  FINALLY
+    n := I64 (Close (C.Int (lfd)))
+  END
+END Serve ;
+
+END HttpServer.

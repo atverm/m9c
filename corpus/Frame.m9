@@ -1,0 +1,2137 @@
+DEFINITION MODULE Frame ;
+
+(* Dataframes for scientific computing: typed columns that carry
+   their own metadata and missing value, a timeseries frame that
+   carries its resolution and time convention, and the two
+   operations every pipeline otherwise reinvents -- resample-average
+   and make-contiguous.  docs/dataframe-plan.md is the design; the
+   oracle is polars, in runtime/test/frame_driver.c.
+
+   THE MISSING VALUE LIVES INSIDE THE TYPED ARM, so it can never
+   have the wrong width for its column -- the ICOS roundtrip demo
+   got the missing-value rule wrong twice precisely because it lived
+   outside the data.  For float columns a NaN is ALWAYS missing, on
+   top of whatever `miss` says; for Strs the empty string is.
+
+   THERE IS NO TYPE INFERENCE anywhere here, by the same rule as
+   Csv.m9: the caller states what a column is, and a frame built
+   from a CSV inherits the kinds the caller declared there.
+
+   Time is I64 SECONDS SINCE THE UNIX EPOCH, UTC, and nothing else:
+   the roundtrip demo found a "CF time axis" that was silently local
+   time, an hour of error nobody could see.  A zone is the caller's
+   problem exactly once, at construction. *)
+
+IMPORT Csv ;
+IMPORT Io ;
+IMPORT NetCDF ;
+
+EXCEPTION
+  Unknown (RO name: STR) ;
+  (* no column of that name *)
+  WrongType (RO name: STR) ;
+  (* the accessor's type is not the column's, or a reducer was asked
+     of a column that cannot answer it (a mean of flags) *)
+  Duplicate (RO name: STR) ;
+  SizeError (got, want: I64) ;
+  (* a column whose length is not the frame's row count; a reducer
+     slice whose length is not the column count *)
+  Disorder (row: I64) ;
+  (* the time axis is not strictly increasing at this row, or a
+     stamp is off the resolution grid *)
+  BadArg (RO what: STR) ;
+
+TYPE
+  Data = CASE RECORD
+  | F64s : v64: SLICE OF F64 ; m64: F64
+  | F32s : v32: SLICE OF F32 ; m32: F32
+  | I64s : vi64: SLICE OF I64 ; mi64: I64
+  | I32s : vi32: SLICE OF I32 ; mi32: I32
+  | I16s : vi16: SLICE OF I16 ; mi16: I16
+  | Bytes : vb: SLICE OF BYTE ; mb: BYTE
+  | Bools : vbo: SLICE OF BOOL
+  | Strs : si: I64
+  END ;
+  (* Bools carries NO missing value: a boolean has no spare state,
+     and a null that silently became FALSE would be the exact lie
+     this module exists to refuse.  A gap row or a foreign null in a
+     boolean column REFUSES with the column named. *)
+  (* Strs carries an INDEX into the frame's own string table rather
+     than the slice itself: a transparent variant arm holding a
+     module-emitted slice typedef (SLICE OF STR) is emitted before
+     its typedef by both generators today -- the emission-order gap
+     is in the owed ledger, and ColStrs hides the indirection. *)
+
+  Col = RECORD
+    name : STR ;             (* short; the key.  Required, unique. *)
+    long : STR ;             (* optional long name; '' = absent *)
+    cf   : STR ;             (* optional CF standard_name *)
+    unit : STR ;             (* optional; becomes CF units on export *)
+    data : Data ;
+  END ;
+
+  Fr ;                       (* a plain frame *)
+  Ts ;                       (* a timeseries frame: Fr + time axis *)
+
+  (* whether a stamp labels the START, the END or the MIDDLE of its
+     averaging period.  Start is the default everywhere. *)
+  Conv = CASE RECORD
+  | AtStart
+  | AtEnd
+  | AtMid
+  END ;
+
+  (* the per-column reducer for Average.  Mean answers F64 (polars'
+     own rule) and is refused on non-float columns; Sum keeps the
+     column's type and integer sums are overflow-checked; Lo/Hi are
+     min/max; First/Last are positional within the window, exactly
+     polars' first()/last(). *)
+  How = CASE RECORD
+  | Mean
+  | Sum
+  | Lo
+  | Hi
+  | First
+  | Last
+  END ;
+
+(* ---- construction ---- *)
+
+PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Fr IN pool
+  RAISES SizeError ;
+  (* rows < 0 refuses; 0 is a legal empty frame *)
+
+PROCEDURE AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF F64 ; miss: F64)
+  RAISES SizeError, Duplicate ;
+PROCEDURE AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF F32 ; miss: F32)
+  RAISES SizeError, Duplicate ;
+PROCEDURE AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF I64 ; miss: I64)
+  RAISES SizeError, Duplicate ;
+PROCEDURE AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF I32 ; miss: I32)
+  RAISES SizeError, Duplicate ;
+PROCEDURE AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF I16 ; miss: I16)
+  RAISES SizeError, Duplicate ;
+PROCEDURE AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                    v: SLICE OF BYTE ; miss: BYTE)
+  RAISES SizeError, Duplicate ;
+PROCEDURE AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                    v: SLICE OF BOOL)
+  RAISES SizeError, Duplicate ;
+PROCEDURE AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                   v: SLICE OF STR)
+  RAISES SizeError, Duplicate ;
+  (* the slice is TAKEN, not copied: the frame views the caller's
+     storage, the AddRoute/Json.Parse retention contract.  Length
+     must equal the frame's rows. *)
+
+PROCEDURE SetMeta (VAR pool: POOL ; VAR f: PTR Fr ;
+                   RO name, long, cf, unit: STR)
+  RAISES Unknown ;
+  (* '' leaves a field as it was, so one call can set just the unit.
+     The strings are COPIED into the pool: metadata outlives every
+     caller's buffer, and the first driver proved it by writing
+     'units = NOTE' into a file. *)
+
+(* ---- interrogation ---- *)
+
+PROCEDURE Rows (f: PTR Fr) : I64 ;
+PROCEDURE Cols (f: PTR Fr) : I64 ;
+PROCEDURE NameAt (f: PTR Fr ; c: I64) : STR RAISES IndexError ;
+PROCEDURE Find (f: PTR Fr ; RO name: STR) : I64 ;
+  (* the column index, or -1 -- the question, not the diagnosis *)
+PROCEDURE GetCol (f: PTR Fr ; RO name: STR) : Col RAISES Unknown ;
+  (* the whole column record; CASE over .data handles every type,
+     and the checker holds the CASE total *)
+
+PROCEDURE ColF64 (f: PTR Fr ; RO name: STR) : SLICE OF F64
+  RAISES Unknown, WrongType ;
+PROCEDURE ColF32 (f: PTR Fr ; RO name: STR) : SLICE OF F32
+  RAISES Unknown, WrongType ;
+PROCEDURE ColI64 (f: PTR Fr ; RO name: STR) : SLICE OF I64
+  RAISES Unknown, WrongType ;
+PROCEDURE ColStrs (f: PTR Fr ; RO name: STR) : SLICE OF STR
+  RAISES Unknown, WrongType ;
+PROCEDURE ColBools (f: PTR Fr ; RO name: STR) : SLICE OF BOOL
+  RAISES Unknown, WrongType ;
+  (* the everyday accessors; the other types go through GetCol *)
+
+(* ---- CSV ---- *)
+
+PROCEDURE FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool
+  RAISES SizeError, Duplicate, IndexError, ValueRange ;
+  (* every non-Skip column of a PARSED Csv.Table, with the kinds the
+     caller declared there: Real -> F32s (miss NaN), Int -> I64s
+     (miss MIN I64, stated below), Stamp -> I64s epoch seconds,
+     Text -> Strs (materialised).  The integer missing value is
+     -9223372036854775808: an integer column has no NaN, a sentinel
+     must exist, and the far end of the line is the one value real
+     data never means. *)
+
+PROCEDURE WriteCsv (VAR pool: POOL ; f: PTR Fr ; RO path: STR)
+  RAISES Io.IOError, ValueRange, Overflow, IndexError ;
+  (* header = short names; a missing value writes an EMPTY field;
+     floats write 17 significant digits (round-trip exact -- the
+     driver proves parse (print (x)) = x bit for bit); a text field
+     containing the delimiter, a quote or a newline is quoted with
+     "" doubling. *)
+
+(* ---- the cross-module face of the variants ----
+
+   A caller in another module cannot CASE over Frame.Data or
+   Frame.Conv today (the generators cannot type a cross-module
+   variant selector -- the gap first logged in Csv.m9), so the
+   questions are answered as integers and typed accessors instead;
+   Parquet.m9 is the consumer that forced them. *)
+
+CONST
+  KindF64 = 0 ;
+  KindF32 = 1 ;
+  KindI64 = 2 ;
+  KindI32 = 3 ;
+  KindI16 = 4 ;
+  KindByte = 5 ;
+  KindStr = 6 ;
+  KindBool = 7 ;
+
+PROCEDURE KindOf (f: PTR Fr ; RO name: STR) : I64 RAISES Unknown ;
+PROCEDURE ColI32 (f: PTR Fr ; RO name: STR) : SLICE OF I32
+  RAISES Unknown, WrongType ;
+PROCEDURE ColI16 (f: PTR Fr ; RO name: STR) : SLICE OF I16
+  RAISES Unknown, WrongType ;
+PROCEDURE ColBytes (f: PTR Fr ; RO name: STR) : SLICE OF BYTE
+  RAISES Unknown, WrongType ;
+PROCEDURE MissF64 (f: PTR Fr ; RO name: STR) : F64
+  RAISES Unknown, WrongType ;
+PROCEDURE MissF32 (f: PTR Fr ; RO name: STR) : F32
+  RAISES Unknown, WrongType ;
+PROCEDURE MissI64 (f: PTR Fr ; RO name: STR) : I64
+  RAISES Unknown, WrongType ;
+PROCEDURE MissI32 (f: PTR Fr ; RO name: STR) : I32
+  RAISES Unknown, WrongType ;
+PROCEDURE MissI16 (f: PTR Fr ; RO name: STR) : I16
+  RAISES Unknown, WrongType ;
+PROCEDURE MissByte (f: PTR Fr ; RO name: STR) : BYTE
+  RAISES Unknown, WrongType ;
+PROCEDURE ConvName (conv: Conv) : STR ;
+  (* 'start' | 'end' | 'mid' *)
+
+(* ---- NetCDF ---- *)
+
+PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
+                   RO path, dim: STR)
+  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError ;
+  (* a netCDF-4 file with one dimension named `dim`, one variable
+     per column in its OWN storage type, the column's missing value
+     as a TYPED _FillValue, and units / long_name / standard_name
+     attributes exactly when the column carries them -- nothing is
+     invented at export time.  Strs columns become an n x width char
+     matrix over a per-column length dimension, the PutChars
+     convention. *)
+
+PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR)
+  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError ;
+  (* WriteNc over the dimension 'time', plus the time coordinate:
+     I64 seconds, units 'seconds since 1970-01-01 00:00:00 +00:00'
+     (the zone STATED -- the roundtrip demo found a CF axis that was
+     silently local time), standard_name time, and time_bnds giving
+     each stamp's [period start, period end] under the frame's own
+     convention.  The resolution, convention and description ride as
+     global attributes so TsFromNc can answer the same frame back.
+     cell_methods is deliberately NOT written: the frame does not
+     know whether a column is a mean over its period or a point
+     sample, and writing 'mean' unasked would be a lie in metadata. *)
+
+PROCEDURE FromNc (VAR pool: POOL ; RO path, dim: STR) : PTR Fr
+  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange,
+         Overflow, IndexError ;
+  (* every variable whose FIRST dimension is `dim`: 1-D numerics
+     into their matching arms, 2-D char matrices into Strs.  A
+     variable on the dimension with a type this frame cannot hold is
+     REFUSED with its name -- a column that silently vanished is the
+     failure this module exists to prevent.  _FillValue becomes the
+     column's missing value; units / long_name / standard_name are
+     read when present. *)
+
+PROCEDURE TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts
+  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, Disorder,
+         ValueRange, Overflow, IndexError ;
+  (* FromNc over 'time', with the time variable itself parsed from
+     its CF units -- seconds, minutes, hours or days since a date,
+     any other unit refused with the string.  A nonzero zone offset
+     in the units is refused too; no zone means UTC, which is CF's
+     rule and the best that can be done with a file that does not
+     say.  The convention and resolution come from the global
+     attributes WriteTsNc writes; a foreign file without them gets
+     convention start and the axis's own smallest gap, both stated
+     choices rather than inference. *)
+
+(* ---- the timeseries frame ---- *)
+
+PROCEDURE NewTs (VAR pool: POOL ; f: PTR Fr ; time: SLICE OF I64 ;
+                 res: I64 ; conv: Conv ; RO descr: STR)
+  : PTR Ts IN pool
+  RAISES SizeError, Disorder, BadArg ;
+  (* time is epoch seconds UTC, one per row, STRICTLY increasing and
+     on the res grid (relative to its own first stamp); res > 0.
+     Gaps are legal -- MakeContiguous is how they close. *)
+
+PROCEDURE TsFrame (ts: PTR Ts) : PTR Fr ;
+PROCEDURE TsTime (ts: PTR Ts) : SLICE OF I64 ;
+PROCEDURE TsRes (ts: PTR Ts) : I64 ;
+PROCEDURE TsConv (ts: PTR Ts) : Conv ;
+PROCEDURE TsDescr (ts: PTR Ts) : STR ;
+
+(* the six reducers, as functions, because a caller in another
+   module cannot spell Frame.How.Mean today (the cross-module
+   payload-less constructor gap, logged in Csv.m9 too) *)
+PROCEDURE HowMean () : How ;
+PROCEDURE HowSum () : How ;
+PROCEDURE HowLo () : How ;
+PROCEDURE HowHi () : How ;
+PROCEDURE HowFirst () : How ;
+PROCEDURE HowLast () : How ;
+PROCEDURE ConvStart () : Conv ;
+PROCEDURE ConvEnd () : Conv ;
+PROCEDURE ConvMid () : Conv ;
+
+PROCEDURE Average (VAR pool: POOL ; ts: PTR Ts ; toRes: I64 ;
+                   how: SLICE OF How ; minCount: I64)
+  : PTR Ts IN pool
+  RAISES SizeError, WrongType, BadArg, ValueRange, Overflow,
+         IndexError ;
+  (* resample to a coarser resolution.  toRes must be a positive
+     multiple of the frame's resolution (refused otherwise, named);
+     how has one entry per column.  Windows are aligned to the epoch
+     (floor (t / toRes) * toRes over PERIOD-START times, whatever
+     the convention labels), and only windows containing rows are
+     emitted -- polars' own group_by_dynamic behaviour; run
+     MakeContiguous after if a full grid is wanted.  Missing values
+     are excluded from Mean/Sum/Lo/Hi; a window with fewer than
+     minCount live values answers the column's missing value.
+     Output labels follow the frame's own convention at toRes. *)
+
+PROCEDURE MakeContiguous (VAR pool: POOL ; ts: PTR Ts) : PTR Ts IN pool
+  RAISES SizeError, Duplicate, Disorder, BadArg, WrongType,
+         ValueRange, Overflow, IndexError ;
+  (* every absent period between the first and last stamp becomes a
+     row of missing values (Strs: '').  The time axis comes out
+     exactly first..last by res.  A frame with a Bools column
+     REFUSES (WrongType, the column named): no missing value exists
+     for a boolean. *)
+
+END Frame.
+
+
+IMPLEMENTATION MODULE Frame ;
+
+IMPORT Math ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Time ;
+
+TYPE
+  Fr = RECORD
+    cols  : SLICE OF Col ;
+    ncols : I64 ;
+    rows  : I64 ;
+    strs  : SLICE OF StrTab ;    (* one entry per Strs column *)
+    nstr  : I64 ;
+  END ;
+
+  StrTab = RECORD
+    v : SLICE OF STR ;
+  END ;
+
+  Ts = RECORD
+    f     : PTR Fr ;
+    time  : SLICE OF I64 ;
+    res   : I64 ;
+    conv  : Conv ;
+    descr : STR ;
+  END ;
+
+PROCEDURE MissI () : I64 =
+  (* MIN I64, the stated integer sentinel.  A PROCEDURE because the
+     value has no literal spelling (2^63 overflows the literal) and
+     a CONST over an expression is a generator gap today; free after
+     -flto either way. *)
+BEGIN
+  RETURN -9223372036854775807 - 1
+END MissI ;
+
+(* ---- construction ---- *)
+
+PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Fr IN pool
+  RAISES SizeError =
+VAR f : PTR Fr IN pool ;
+BEGIN
+  IF rows < 0 THEN RAISE SizeError (rows, 0) END ;
+  f := NEW (pool, Fr) ;
+  f.cols := NEW (pool, Col, 4) ;
+  f.ncols := 0 ;
+  f.rows := rows ;
+  f.strs := NEW (pool, StrTab, 4) ;
+  f.nstr := 0 ;
+  RETURN f
+END New ;
+
+PROCEDURE Grow (VAR pool: POOL ; VAR f: PTR Fr) =
+VAR
+  bigger : SLICE OF Col ;
+  i : I64 ;
+BEGIN
+  IF f.ncols < LEN (f.cols) THEN RETURN END ;
+  bigger := NEW (pool, Col, 2 * LEN (f.cols)) ;
+  FOR i := 0 TO f.ncols - 1 DO
+    bigger[i] := f.cols[i]
+  END ;
+  f.cols := bigger
+END Grow ;
+
+PROCEDURE Admit (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                 n: I64)
+  RAISES SizeError, Duplicate =
+BEGIN
+  IF n # f.rows THEN RAISE SizeError (n, f.rows) END ;
+  IF Find (f, name) >= 0 THEN RAISE Duplicate (name) END ;
+  Grow (pool, f)
+END Admit ;
+
+PROCEDURE Blank (VAR pool: POOL ; RO name: STR) : Col =
+VAR c : Col ;
+BEGIN
+  c.name := Copy (pool, name) ;
+  c.long := '' ;
+  c.cf := '' ;
+  c.unit := '' ;
+  RETURN c
+END Blank ;
+
+PROCEDURE Copy (VAR pool: POOL ; RO s: STR) : STR =
+VAR
+  d : SLICE OF CHAR ;
+  i : I64 ;
+BEGIN
+  d := NEW (pool, CHAR, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    d[i] := s[i]
+  END ;
+  RETURN d
+END Copy ;
+
+PROCEDURE AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF F64 ; miss: F64)
+  RAISES SizeError, Duplicate =
+VAR c : Col ;
+BEGIN
+  Admit (pool, f, name, LEN (v)) ;
+  c := Blank (pool, name) ;
+  c.data := Data.F64s (v, miss) ;
+  f.cols[f.ncols] := c ;
+  f.ncols := f.ncols + 1
+END AddF64 ;
+
+PROCEDURE AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF F32 ; miss: F32)
+  RAISES SizeError, Duplicate =
+VAR c : Col ;
+BEGIN
+  Admit (pool, f, name, LEN (v)) ;
+  c := Blank (pool, name) ;
+  c.data := Data.F32s (v, miss) ;
+  f.cols[f.ncols] := c ;
+  f.ncols := f.ncols + 1
+END AddF32 ;
+
+PROCEDURE AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF I64 ; miss: I64)
+  RAISES SizeError, Duplicate =
+VAR c : Col ;
+BEGIN
+  Admit (pool, f, name, LEN (v)) ;
+  c := Blank (pool, name) ;
+  c.data := Data.I64s (v, miss) ;
+  f.cols[f.ncols] := c ;
+  f.ncols := f.ncols + 1
+END AddI64 ;
+
+PROCEDURE AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF I32 ; miss: I32)
+  RAISES SizeError, Duplicate =
+VAR c : Col ;
+BEGIN
+  Admit (pool, f, name, LEN (v)) ;
+  c := Blank (pool, name) ;
+  c.data := Data.I32s (v, miss) ;
+  f.cols[f.ncols] := c ;
+  f.ncols := f.ncols + 1
+END AddI32 ;
+
+PROCEDURE AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                  v: SLICE OF I16 ; miss: I16)
+  RAISES SizeError, Duplicate =
+VAR c : Col ;
+BEGIN
+  Admit (pool, f, name, LEN (v)) ;
+  c := Blank (pool, name) ;
+  c.data := Data.I16s (v, miss) ;
+  f.cols[f.ncols] := c ;
+  f.ncols := f.ncols + 1
+END AddI16 ;
+
+PROCEDURE AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                    v: SLICE OF BYTE ; miss: BYTE)
+  RAISES SizeError, Duplicate =
+VAR c : Col ;
+BEGIN
+  Admit (pool, f, name, LEN (v)) ;
+  c := Blank (pool, name) ;
+  c.data := Data.Bytes (v, miss) ;
+  f.cols[f.ncols] := c ;
+  f.ncols := f.ncols + 1
+END AddBytes ;
+
+PROCEDURE AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                    v: SLICE OF BOOL)
+  RAISES SizeError, Duplicate =
+VAR c : Col ;
+BEGIN
+  Admit (pool, f, name, LEN (v)) ;
+  c := Blank (pool, name) ;
+  c.data := Data.Bools (v) ;
+  f.cols[f.ncols] := c ;
+  f.ncols := f.ncols + 1
+END AddBools ;
+
+PROCEDURE AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+                   v: SLICE OF STR)
+  RAISES SizeError, Duplicate =
+VAR
+  c : Col ;
+  bigger : SLICE OF StrTab ;
+  i : I64 ;
+BEGIN
+  Admit (pool, f, name, LEN (v)) ;
+  IF f.nstr >= LEN (f.strs) THEN
+    bigger := NEW (pool, StrTab, 2 * LEN (f.strs)) ;
+    FOR i := 0 TO f.nstr - 1 DO
+      bigger[i] := f.strs[i]
+    END ;
+    f.strs := bigger
+  END ;
+  f.strs[f.nstr].v := v ;
+  c := Blank (pool, name) ;
+  c.data := Data.Strs (f.nstr) ;
+  f.nstr := f.nstr + 1 ;
+  f.cols[f.ncols] := c ;
+  f.ncols := f.ncols + 1
+END AddStrs ;
+
+PROCEDURE SetMeta (VAR pool: POOL ; VAR f: PTR Fr ;
+                   RO name, long, cf, unit: STR)
+  RAISES Unknown =
+VAR i : I64 ;
+BEGIN
+  i := Find (f, name) ;
+  IF i < 0 THEN RAISE Unknown (name) END ;
+  IF LEN (long) > 0 THEN f.cols[i].long := Copy (pool, long) END ;
+  IF LEN (cf) > 0 THEN f.cols[i].cf := Copy (pool, cf) END ;
+  IF LEN (unit) > 0 THEN f.cols[i].unit := Copy (pool, unit) END
+END SetMeta ;
+
+(* ---- interrogation ---- *)
+
+PROCEDURE Rows (f: PTR Fr) : I64 =
+BEGIN
+  RETURN f.rows
+END Rows ;
+
+PROCEDURE Cols (f: PTR Fr) : I64 =
+BEGIN
+  RETURN f.ncols
+END Cols ;
+
+PROCEDURE NameAt (f: PTR Fr ; c: I64) : STR RAISES IndexError =
+BEGIN
+  IF c < 0 OR c >= f.ncols THEN RAISE IndexError END ;
+  RETURN f.cols[c].name
+END NameAt ;
+
+PROCEDURE Eq (RO a, b: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF a[i] # b[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Eq ;
+
+PROCEDURE Find (f: PTR Fr ; RO name: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO f.ncols - 1 DO
+    IF Eq (f.cols[i].name, name) THEN RETURN i END
+  END ;
+  RETURN -1
+END Find ;
+
+PROCEDURE GetCol (f: PTR Fr ; RO name: STR) : Col RAISES Unknown =
+VAR i : I64 ;
+BEGIN
+  i := Find (f, name) ;
+  IF i < 0 THEN RAISE Unknown (name) END ;
+  RETURN f.cols[i]
+END GetCol ;
+
+PROCEDURE ColF64 (f: PTR Fr ; RO name: STR) : SLICE OF F64
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | F64s (v, m) : RETURN v
+  | Bools : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END ColF64 ;
+
+PROCEDURE ColF32 (f: PTR Fr ; RO name: STR) : SLICE OF F32
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | F32s (v, m) : RETURN v
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END ColF32 ;
+
+PROCEDURE ColI64 (f: PTR Fr ; RO name: STR) : SLICE OF I64
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | I64s (v, m) : RETURN v
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END ColI64 ;
+
+PROCEDURE ColStrs (f: PTR Fr ; RO name: STR) : SLICE OF STR
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | Strs (si) : RETURN f.strs[si].v
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  END
+END ColStrs ;
+
+(* ---- CSV ---- *)
+
+PROCEDURE FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool
+  RAISES SizeError, Duplicate, IndexError, ValueRange =
+VAR
+  f : PTR Fr IN pool ;
+  c, r, k : I64 ;
+  stamps : SLICE OF Time.Instant ;
+  epoch : SLICE OF I64 ;
+  texts : SLICE OF STR ;
+BEGIN
+  f := New (pool, Csv.Rows (t)) ;
+  FOR c := 0 TO Csv.Cols (t) - 1 DO
+    k := Csv.KindCodeAt (t, c) ;
+    IF k = Csv.KindReal THEN
+      AddF32 (pool, f, Csv.Name (pool, t, c), Csv.ColF32 (t, c),
+              0.0 / 0.0)
+    ELSIF k = Csv.KindInt THEN
+      AddI64 (pool, f, Csv.Name (pool, t, c), Csv.ColI64 (t, c),
+              MissI ())
+    ELSIF k = Csv.KindStamp THEN
+      stamps := Csv.ColStamp (t, c) ;
+      epoch := NEW (pool, I64, LEN (stamps)) ;
+      FOR r := 0 TO LEN (stamps) - 1 DO
+        epoch[r] := I64 (Math.Floor (stamps[r].t + 0.5))
+      END ;
+      AddI64 (pool, f, Csv.Name (pool, t, c), epoch, MissI ())
+    ELSIF k = Csv.KindText THEN
+      texts := NEW (pool, STR, Csv.Rows (t)) ;
+      FOR r := 0 TO Csv.Rows (t) - 1 DO
+        texts[r] := Csv.TextAt (pool, t, c, r)
+      END ;
+      AddStrs (pool, f, Csv.Name (pool, t, c), texts)
+    END
+  END ;
+  RETURN f
+END FromCsv ;
+
+PROCEDURE IsNaN64 (v: F64) : BOOL =
+BEGIN
+  RETURN NOT (v = v)
+END IsNaN64 ;
+
+PROCEDURE IsNaN32 (v: F32) : BOOL =
+BEGIN
+  RETURN NOT (v = v)
+END IsNaN32 ;
+
+PROCEDURE PutF64 (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                  v, miss: F64)
+  RAISES ValueRange, Overflow =
+BEGIN
+  IF IsNaN64 (v) OR v = miss THEN RETURN END ;   (* empty field *)
+  DynStr.Append (pool, d, Fmt.Sci (pool, v, 16))
+END PutF64 ;
+
+PROCEDURE PutF32 (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                  v, miss: F32)
+  RAISES ValueRange, Overflow =
+BEGIN
+  IF IsNaN32 (v) OR v = miss THEN RETURN END ;
+  (* 9 significant digits round-trips every F32 *)
+  DynStr.Append (pool, d, Fmt.Sci (pool, F64 (v), 8))
+END PutF32 ;
+
+PROCEDURE PutStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                  RO s: STR) =
+VAR
+  i : I64 ;
+  needs : BOOL ;
+BEGIN
+  needs := FALSE ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = ',' OR s[i] = '"' OR s[i] = 00AC THEN needs := TRUE END
+  END ;
+  IF NOT needs THEN
+    DynStr.Append (pool, d, s) ;
+    RETURN
+  END ;
+  DynStr.AppendChar (pool, d, '"') ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = '"' THEN DynStr.AppendChar (pool, d, '"') END ;
+    DynStr.AppendChar (pool, d, s[i])
+  END ;
+  DynStr.AppendChar (pool, d, '"')
+END PutStr ;
+
+PROCEDURE WriteCsv (VAR pool: POOL ; f: PTR Fr ; RO path: STR)
+  RAISES Io.IOError, ValueRange, Overflow, IndexError =
+VAR
+  d : PTR DynStr.DString ;
+  c, r : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  FOR c := 0 TO f.ncols - 1 DO
+    IF c > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
+    PutStr (pool, d, f.cols[c].name)
+  END ;
+  DynStr.AppendChar (pool, d, 00AC) ;
+  FOR r := 0 TO f.rows - 1 DO
+    FOR c := 0 TO f.ncols - 1 DO
+      IF c > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
+      CASE f.cols[c].data OF
+      | F64s (v, m) : PutF64 (pool, d, v[r], m)
+      | F32s (v, m) : PutF32 (pool, d, v[r], m)
+      | I64s (v, m) :
+          IF v[r] # m THEN DynStr.AppendI64 (pool, d, v[r]) END
+      | I32s (v, m) :
+          IF v[r] # m THEN DynStr.AppendI64 (pool, d, I64 (v[r])) END
+      | I16s (v, m) :
+          IF v[r] # m THEN DynStr.AppendI64 (pool, d, I64 (v[r])) END
+      | Bytes (v, m) :
+          IF v[r] # m THEN DynStr.AppendI64 (pool, d, I64 (v[r])) END
+      | Bools (v) :
+          IF v[r] THEN
+            DynStr.Append (pool, d, 'true')
+          ELSE
+            DynStr.Append (pool, d, 'false')
+          END
+      | Strs (si) : PutStr (pool, d, f.strs[si].v[r])
+      END
+    END ;
+    DynStr.AppendChar (pool, d, 00AC)
+  END ;
+  Io.WriteFile (path, DynStr.View (d))
+END WriteCsv ;
+
+(* ---- the timeseries frame ---- *)
+
+PROCEDURE NewTs (VAR pool: POOL ; f: PTR Fr ; time: SLICE OF I64 ;
+                 res: I64 ; conv: Conv ; RO descr: STR)
+  : PTR Ts IN pool
+  RAISES SizeError, Disorder, BadArg =
+VAR
+  ts : PTR Ts IN pool ;
+  i : I64 ;
+BEGIN
+  IF res <= 0 THEN RAISE BadArg ('resolution must be positive') END ;
+  IF LEN (time) # f.rows THEN
+    RAISE SizeError (LEN (time), f.rows)
+  END ;
+  FOR i := 1 TO LEN (time) - 1 DO
+    IF time[i] <= time[i - 1] THEN RAISE Disorder (i) END ;
+    IF (time[i] - time[0]) MOD res # 0 THEN RAISE Disorder (i) END
+  END ;
+  ts := NEW (pool, Ts) ;
+  ts.f := f ;
+  ts.time := time ;
+  ts.res := res ;
+  ts.conv := conv ;
+  ts.descr := Copy (pool, descr) ;
+  RETURN ts
+END NewTs ;
+
+PROCEDURE TsFrame (ts: PTR Ts) : PTR Fr =
+BEGIN
+  RETURN ts.f
+END TsFrame ;
+
+PROCEDURE TsTime (ts: PTR Ts) : SLICE OF I64 =
+BEGIN
+  RETURN ts.time
+END TsTime ;
+
+PROCEDURE TsRes (ts: PTR Ts) : I64 =
+BEGIN
+  RETURN ts.res
+END TsRes ;
+
+PROCEDURE TsConv (ts: PTR Ts) : Conv =
+BEGIN
+  RETURN ts.conv
+END TsConv ;
+
+PROCEDURE TsDescr (ts: PTR Ts) : STR =
+BEGIN
+  RETURN ts.descr
+END TsDescr ;
+
+PROCEDURE HowMean () : How = BEGIN RETURN How.Mean END HowMean ;
+PROCEDURE HowSum () : How = BEGIN RETURN How.Sum END HowSum ;
+PROCEDURE HowLo () : How = BEGIN RETURN How.Lo END HowLo ;
+PROCEDURE HowHi () : How = BEGIN RETURN How.Hi END HowHi ;
+PROCEDURE HowFirst () : How = BEGIN RETURN How.First END HowFirst ;
+PROCEDURE HowLast () : How = BEGIN RETURN How.Last END HowLast ;
+PROCEDURE ConvStart () : Conv = BEGIN RETURN Conv.AtStart END ConvStart ;
+PROCEDURE ConvEnd () : Conv = BEGIN RETURN Conv.AtEnd END ConvEnd ;
+PROCEDURE ConvMid () : Conv = BEGIN RETURN Conv.AtMid END ConvMid ;
+
+PROCEDURE FloorDiv (a, b: I64) : I64 =
+  (* floor division for a possibly negative numerator: DIV truncates
+     toward zero, and a pre-1970 stamp must land in the window BELOW
+     it, not the one above *)
+BEGIN
+  IF a >= 0 THEN RETURN a DIV b END ;
+  RETURN -((b - 1 - a) DIV b)
+END FloorDiv ;
+
+PROCEDURE StartOf (ts: PTR Ts ; t: I64) : I64 =
+  (* the PERIOD START a label means under the frame's convention *)
+BEGIN
+  CASE ts.conv OF
+  | AtStart : RETURN t
+  | AtEnd : RETURN t - ts.res
+  | AtMid : RETURN t - ts.res DIV 2
+  END
+END StartOf ;
+
+PROCEDURE LabelOf (conv: Conv ; start, res: I64) : I64 =
+BEGIN
+  CASE conv OF
+  | AtStart : RETURN start
+  | AtEnd : RETURN start + res
+  | AtMid : RETURN start + res DIV 2
+  END
+END LabelOf ;
+
+PROCEDURE Average (VAR pool: POOL ; ts: PTR Ts ; toRes: I64 ;
+                   how: SLICE OF How ; minCount: I64)
+  : PTR Ts IN pool
+  RAISES SizeError, WrongType, BadArg, ValueRange, Overflow,
+         IndexError =
+VAR
+  out : PTR Fr IN pool ;
+  result : PTR Ts IN pool ;
+  win : SLICE OF I64 ;         (* per row: output row index *)
+  otime : SLICE OF I64 ;
+  n, nwin, r, c, w, prev, ws : I64 ;
+BEGIN
+  IF toRes <= 0 OR toRes MOD ts.res # 0 THEN
+    RAISE BadArg ('toRes must be a positive multiple of the resolution')
+  END ;
+  IF LEN (how) # ts.f.ncols THEN
+    RAISE SizeError (LEN (how), ts.f.ncols)
+  END ;
+  n := ts.f.rows ;
+  (* pass 1: window of every row, count distinct (times ascend) *)
+  win := NEW (pool, I64, n) ;
+  nwin := 0 ;
+  prev := 0 ;
+  FOR r := 0 TO n - 1 DO
+    w := FloorDiv (StartOf (ts, ts.time[r]), toRes) ;
+    IF r = 0 OR w # prev THEN
+      nwin := nwin + 1
+    END ;
+    prev := w ;
+    win[r] := nwin - 1
+  END ;
+  otime := NEW (pool, I64, nwin) ;
+  prev := 0 ;
+  FOR r := 0 TO n - 1 DO
+    w := FloorDiv (StartOf (ts, ts.time[r]), toRes) ;
+    otime[win[r]] := LabelOf (ts.conv, w * toRes, toRes) ;
+    prev := w
+  END ;
+  out := New (pool, nwin) ;
+  FOR c := 0 TO ts.f.ncols - 1 DO
+    Reduce (pool, ts.f, out, ts.f.cols[c], how[c], win, nwin,
+            minCount)
+  END ;
+  result := NEW (pool, Ts) ;
+  result.f := out ;
+  result.time := otime ;
+  result.res := toRes ;
+  result.conv := ts.conv ;
+  result.descr := ts.descr ;
+  RETURN result
+END Average ;
+
+(* one column reduced into the output frame.  The float paths
+   accumulate in F64; integer sums accumulate in I64 with the checked
+   ops, so an overflowing Sum RAISES instead of wrapping. *)
+PROCEDURE Reduce (VAR pool: POOL ; src: PTR Fr ; VAR out: PTR Fr ;
+                  RO c: Col ;
+                  h: How ; win: SLICE OF I64 ; nwin, minCount: I64)
+  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+BEGIN
+  CASE c.data OF
+  | F64s (v, m) : ReduceF64 (pool, out, c, v, m, h, win, nwin, minCount)
+  | F32s (v, m) : ReduceF32 (pool, out, c, v, m, h, win, nwin, minCount)
+  | I64s (v, m) : ReduceI64 (pool, out, c, v, m, h, win, nwin, minCount)
+  | I32s (v, m) : ReduceI32 (pool, out, c, v, m, h, win, nwin, minCount)
+  | I16s (v, m) : ReduceI16 (pool, out, c, v, m, h, win, nwin, minCount)
+  | Bytes (v, m) : ReduceBytes (pool, out, c, v, m, h, win, nwin, minCount)
+  | Bools (v) : ReduceBools (pool, out, c, v, h, win, nwin)
+  | Strs (si) : ReduceStrs (pool, out, c, src.strs[si].v, h, win, nwin)
+  END
+END Reduce ;
+
+PROCEDURE Carry (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col)
+  RAISES Unknown =
+  (* the metadata rides along *)
+BEGIN
+  SetMeta (pool, out, c.name, c.long, c.cf, c.unit)
+END Carry ;
+
+PROCEDURE ReduceF64 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
+                     v: SLICE OF F64 ; miss: F64 ; h: How ;
+                     win: SLICE OF I64 ; nwin, minCount: I64)
+  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+VAR
+  acc, o64 : SLICE OF F64 ;
+  cnt : SLICE OF I64 ;
+  first : SLICE OF BOOL ;
+  r, w : I64 ;
+  live : BOOL ;
+BEGIN
+  acc := NEW (pool, F64, nwin) ;
+  cnt := NEW (pool, I64, nwin) ;
+  first := NEW (pool, BOOL, nwin) ;
+  FOR r := 0 TO LEN (v) - 1 DO
+    w := win[r] ;
+    live := NOT (IsNaN64 (v[r]) OR v[r] = miss) ;
+    CASE h OF
+    | Mean :
+        IF live THEN
+          acc[w] := acc[w] + v[r] ;
+          cnt[w] := cnt[w] + 1
+        END
+    | Sum :
+        IF live THEN
+          acc[w] := acc[w] + v[r] ;
+          cnt[w] := cnt[w] + 1
+        END
+    | Lo :
+        IF live AND (cnt[w] = 0 OR v[r] < acc[w]) THEN
+          acc[w] := v[r] ;
+          cnt[w] := cnt[w] + 1
+        ELSIF live THEN
+          cnt[w] := cnt[w] + 1
+        END
+    | Hi :
+        IF live AND (cnt[w] = 0 OR v[r] > acc[w]) THEN
+          acc[w] := v[r] ;
+          cnt[w] := cnt[w] + 1
+        ELSIF live THEN
+          cnt[w] := cnt[w] + 1
+        END
+    | First :
+        IF NOT first[w] THEN
+          acc[w] := v[r] ;
+          first[w] := TRUE ;
+          cnt[w] := minCount            (* positional: always answers *)
+        END
+    | Last :
+        acc[w] := v[r] ;
+        cnt[w] := minCount
+    END
+  END ;
+  o64 := NEW (pool, F64, nwin) ;
+  FOR w := 0 TO nwin - 1 DO
+    IF cnt[w] < minCount THEN
+      o64[w] := miss
+    ELSE
+      CASE h OF
+      | Mean : o64[w] := acc[w] / F64 (cnt[w])
+      | Sum : o64[w] := acc[w]
+      | Lo : o64[w] := acc[w]
+      | Hi : o64[w] := acc[w]
+      | First : o64[w] := acc[w]
+      | Last : o64[w] := acc[w]
+      END
+    END
+  END ;
+  AddF64 (pool, out, c.name, o64, miss) ;
+  Carry (pool, out, c)
+EXCEPT
+| Unknown : RAISE IndexError    (* Carry of a just-added column *)
+| Duplicate : RAISE IndexError  (* cannot recur: out is fresh *)
+END ReduceF64 ;
+
+PROCEDURE ReduceF32 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
+                     v: SLICE OF F32 ; miss: F32 ; h: How ;
+                     win: SLICE OF I64 ; nwin, minCount: I64)
+  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+VAR
+  wide : SLICE OF F64 ;
+  r : I64 ;
+  wmiss : F64 ;
+BEGIN
+  (* widen once and reduce as F64 -- Mean answers F64 (polars' own
+     rule), and one widening beats seven copies of the loop *)
+  wide := NEW (pool, F64, LEN (v)) ;
+  FOR r := 0 TO LEN (v) - 1 DO
+    wide[r] := F64 (v[r])
+  END ;
+  wmiss := F64 (miss) ;
+  ReduceF64 (pool, out, c, wide, wmiss, h, win, nwin, minCount)
+END ReduceF32 ;
+
+PROCEDURE ReduceI64 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
+                     v: SLICE OF I64 ; miss: I64 ; h: How ;
+                     win: SLICE OF I64 ; nwin, minCount: I64)
+  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+VAR
+  acc, oi : SLICE OF I64 ;
+  cnt : SLICE OF I64 ;
+  first : SLICE OF BOOL ;
+  r, w : I64 ;
+  live : BOOL ;
+BEGIN
+  CASE h OF
+  | Mean : RAISE WrongType (c.name)   (* a mean of integers is F64
+                                         business: widen first *)
+  | Sum :
+  | Lo :
+  | Hi :
+  | First :
+  | Last :
+  END ;
+  acc := NEW (pool, I64, nwin) ;
+  cnt := NEW (pool, I64, nwin) ;
+  first := NEW (pool, BOOL, nwin) ;
+  FOR r := 0 TO LEN (v) - 1 DO
+    w := win[r] ;
+    live := v[r] # miss ;
+    CASE h OF
+    | Mean :
+    | Sum :
+        IF live THEN
+          acc[w] := acc[w] + v[r] ;    (* checked: overflow RAISES *)
+          cnt[w] := cnt[w] + 1
+        END
+    | Lo :
+        IF live AND (cnt[w] = 0 OR v[r] < acc[w]) THEN
+          acc[w] := v[r] ; cnt[w] := cnt[w] + 1
+        ELSIF live THEN cnt[w] := cnt[w] + 1 END
+    | Hi :
+        IF live AND (cnt[w] = 0 OR v[r] > acc[w]) THEN
+          acc[w] := v[r] ; cnt[w] := cnt[w] + 1
+        ELSIF live THEN cnt[w] := cnt[w] + 1 END
+    | First :
+        IF NOT first[w] THEN
+          acc[w] := v[r] ; first[w] := TRUE ; cnt[w] := minCount
+        END
+    | Last :
+        acc[w] := v[r] ; cnt[w] := minCount
+    END
+  END ;
+  oi := NEW (pool, I64, nwin) ;
+  FOR w := 0 TO nwin - 1 DO
+    IF cnt[w] < minCount THEN oi[w] := miss ELSE oi[w] := acc[w] END
+  END ;
+  AddI64 (pool, out, c.name, oi, miss) ;
+  Carry (pool, out, c)
+EXCEPT
+| Unknown : RAISE IndexError
+| Duplicate : RAISE IndexError
+END ReduceI64 ;
+
+PROCEDURE ReduceI32 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
+                     v: SLICE OF I32 ; miss: I32 ; h: How ;
+                     win: SLICE OF I64 ; nwin, minCount: I64)
+  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+VAR
+  wide : SLICE OF I64 ;
+  narrow : SLICE OF I32 ;
+  r : I64 ;
+  tmp : PTR Fr IN pool ;
+  got : SLICE OF I64 ;
+BEGIN
+  wide := NEW (pool, I64, LEN (v)) ;
+  FOR r := 0 TO LEN (v) - 1 DO
+    wide[r] := I64 (v[r])
+  END ;
+  tmp := New (pool, nwin) ;
+  ReduceI64 (pool, tmp, c, wide, I64 (miss), h, win, nwin, minCount) ;
+  got := ColI64 (tmp, c.name) ;
+  narrow := NEW (pool, I32, nwin) ;
+  FOR r := 0 TO nwin - 1 DO
+    narrow[r] := I32 (got[r])          (* checked: Sum overflow of
+                                          the narrow type RAISES *)
+  END ;
+  AddI32 (pool, out, c.name, narrow, miss) ;
+  Carry (pool, out, c)
+EXCEPT
+| Unknown : RAISE IndexError
+| Duplicate : RAISE IndexError
+END ReduceI32 ;
+
+PROCEDURE ReduceI16 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
+                     v: SLICE OF I16 ; miss: I16 ; h: How ;
+                     win: SLICE OF I64 ; nwin, minCount: I64)
+  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+VAR
+  wide : SLICE OF I64 ;
+  narrow : SLICE OF I16 ;
+  r : I64 ;
+  tmp : PTR Fr IN pool ;
+  got : SLICE OF I64 ;
+BEGIN
+  wide := NEW (pool, I64, LEN (v)) ;
+  FOR r := 0 TO LEN (v) - 1 DO
+    wide[r] := I64 (v[r])
+  END ;
+  tmp := New (pool, nwin) ;
+  ReduceI64 (pool, tmp, c, wide, I64 (miss), h, win, nwin, minCount) ;
+  got := ColI64 (tmp, c.name) ;
+  narrow := NEW (pool, I16, nwin) ;
+  FOR r := 0 TO nwin - 1 DO
+    narrow[r] := I16 (got[r])
+  END ;
+  AddI16 (pool, out, c.name, narrow, miss) ;
+  Carry (pool, out, c)
+EXCEPT
+| Unknown : RAISE IndexError
+| Duplicate : RAISE IndexError
+END ReduceI16 ;
+
+PROCEDURE ReduceBytes (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
+                       v: SLICE OF BYTE ; miss: BYTE ; h: How ;
+                       win: SLICE OF I64 ; nwin, minCount: I64)
+  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+VAR
+  wide : SLICE OF I64 ;
+  narrow : SLICE OF BYTE ;
+  r : I64 ;
+  tmp : PTR Fr IN pool ;
+  got : SLICE OF I64 ;
+BEGIN
+  CASE h OF
+  | Mean : RAISE WrongType (c.name)
+  | Sum : RAISE WrongType (c.name)    (* a sum of flags is nonsense *)
+  | Lo :
+  | Hi :
+  | First :
+  | Last :
+  END ;
+  wide := NEW (pool, I64, LEN (v)) ;
+  FOR r := 0 TO LEN (v) - 1 DO
+    wide[r] := I64 (v[r])
+  END ;
+  tmp := New (pool, nwin) ;
+  ReduceI64 (pool, tmp, c, wide, I64 (miss), h, win, nwin, minCount) ;
+  got := ColI64 (tmp, c.name) ;
+  narrow := NEW (pool, BYTE, nwin) ;
+  FOR r := 0 TO nwin - 1 DO
+    narrow[r] := BYTE (got[r])
+  END ;
+  AddBytes (pool, out, c.name, narrow, miss) ;
+  Carry (pool, out, c)
+EXCEPT
+| Unknown : RAISE IndexError
+| Duplicate : RAISE IndexError
+END ReduceBytes ;
+
+PROCEDURE ReduceBools (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
+                       v: SLICE OF BOOL ; h: How ;
+                       win: SLICE OF I64 ; nwin: I64)
+  RAISES WrongType, SizeError, IndexError =
+  (* Lo is ALL (a FALSE anywhere wins), Hi is ANY, First/Last are
+     positional -- polars' own min/max/first/last over booleans.
+     Mean and Sum are refused: a boolean has no arithmetic. *)
+VAR
+  o : SLICE OF BOOL ;
+  first : SLICE OF BOOL ;
+  r, w : I64 ;
+BEGIN
+  CASE h OF
+  | Mean : RAISE WrongType (c.name)
+  | Sum : RAISE WrongType (c.name)
+  | Lo :
+  | Hi :
+  | First :
+  | Last :
+  END ;
+  o := NEW (pool, BOOL, nwin) ;
+  first := NEW (pool, BOOL, nwin) ;
+  FOR w := 0 TO nwin - 1 DO
+    CASE h OF
+    | Mean :
+    | Sum :
+    | Lo : o[w] := TRUE
+    | Hi : o[w] := FALSE
+    | First :
+    | Last :
+    END
+  END ;
+  FOR r := 0 TO LEN (v) - 1 DO
+    w := win[r] ;
+    CASE h OF
+    | Mean :
+    | Sum :
+    | Lo : IF NOT v[r] THEN o[w] := FALSE END
+    | Hi : IF v[r] THEN o[w] := TRUE END
+    | First :
+        IF NOT first[w] THEN
+          o[w] := v[r] ;
+          first[w] := TRUE
+        END
+    | Last : o[w] := v[r]
+    END
+  END ;
+  AddBools (pool, out, c.name, o) ;
+  Carry (pool, out, c)
+EXCEPT
+| Unknown : RAISE IndexError
+| Duplicate : RAISE IndexError
+END ReduceBools ;
+
+PROCEDURE ReduceStrs (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
+                      v: SLICE OF STR ; h: How ;
+                      win: SLICE OF I64 ; nwin: I64)
+  RAISES WrongType, SizeError, IndexError =
+VAR
+  o : SLICE OF STR ;
+  first : SLICE OF BOOL ;
+  r, w : I64 ;
+BEGIN
+  CASE h OF
+  | Mean : RAISE WrongType (c.name)
+  | Sum : RAISE WrongType (c.name)
+  | Lo : RAISE WrongType (c.name)
+  | Hi : RAISE WrongType (c.name)
+  | First :
+  | Last :
+  END ;
+  o := NEW (pool, STR, nwin) ;
+  first := NEW (pool, BOOL, nwin) ;
+  FOR w := 0 TO nwin - 1 DO
+    o[w] := ''
+  END ;
+  FOR r := 0 TO LEN (v) - 1 DO
+    w := win[r] ;
+    CASE h OF
+    | Mean :
+    | Sum :
+    | Lo :
+    | Hi :
+    | First :
+        IF NOT first[w] THEN
+          o[w] := v[r] ;
+          first[w] := TRUE
+        END
+    | Last : o[w] := v[r]
+    END
+  END ;
+  AddStrs (pool, out, c.name, o) ;
+  Carry (pool, out, c)
+EXCEPT
+| Unknown : RAISE IndexError
+| Duplicate : RAISE IndexError
+END ReduceStrs ;
+
+(* ---- make contiguous ---- *)
+
+PROCEDURE MakeContiguous (VAR pool: POOL ; ts: PTR Ts) : PTR Ts IN pool
+  RAISES SizeError, Duplicate, Disorder, BadArg, WrongType,
+         ValueRange, Overflow, IndexError =
+VAR
+  out : PTR Fr IN pool ;
+  result : PTR Ts IN pool ;
+  otime : SLICE OF I64 ;
+  at : SLICE OF I64 ;          (* per output row: source row or -1 *)
+  n, total, r, i, c : I64 ;
+BEGIN
+  n := ts.f.rows ;
+  IF n = 0 THEN RAISE BadArg ('an empty frame has no first period') END ;
+  total := (ts.time[n - 1] - ts.time[0]) DIV ts.res + 1 ;
+  otime := NEW (pool, I64, total) ;
+  at := NEW (pool, I64, total) ;
+  FOR i := 0 TO total - 1 DO
+    otime[i] := ts.time[0] + i * ts.res ;
+    at[i] := -1
+  END ;
+  FOR r := 0 TO n - 1 DO
+    at[(ts.time[r] - ts.time[0]) DIV ts.res] := r
+  END ;
+  out := New (pool, total) ;
+  FOR c := 0 TO ts.f.ncols - 1 DO
+    Fill (pool, ts.f, out, ts.f.cols[c], at, total)
+  END ;
+  result := NEW (pool, Ts) ;
+  result.f := out ;
+  result.time := otime ;
+  result.res := ts.res ;
+  result.conv := ts.conv ;
+  result.descr := ts.descr ;
+  RETURN result
+END MakeContiguous ;
+
+PROCEDURE Fill (VAR pool: POOL ; src: PTR Fr ; VAR out: PTR Fr ;
+                RO c: Col ;
+                at: SLICE OF I64 ; total: I64)
+  RAISES SizeError, Duplicate, WrongType, ValueRange, Overflow,
+         IndexError =
+VAR
+  i : I64 ;
+  o64 : SLICE OF F64 ;
+  o32 : SLICE OF F32 ;
+  oi64 : SLICE OF I64 ;
+  oi32 : SLICE OF I32 ;
+  oi16 : SLICE OF I16 ;
+  ob : SLICE OF BYTE ;
+  os : SLICE OF STR ;
+BEGIN
+  CASE c.data OF
+  | F64s (v, m) :
+      o64 := NEW (pool, F64, total) ;
+      FOR i := 0 TO total - 1 DO
+        IF at[i] < 0 THEN o64[i] := m ELSE o64[i] := v[at[i]] END
+      END ;
+      AddF64 (pool, out, c.name, o64, m)
+  | F32s (v, m) :
+      o32 := NEW (pool, F32, total) ;
+      FOR i := 0 TO total - 1 DO
+        IF at[i] < 0 THEN o32[i] := m ELSE o32[i] := v[at[i]] END
+      END ;
+      AddF32 (pool, out, c.name, o32, m)
+  | I64s (v, m) :
+      oi64 := NEW (pool, I64, total) ;
+      FOR i := 0 TO total - 1 DO
+        IF at[i] < 0 THEN oi64[i] := m ELSE oi64[i] := v[at[i]] END
+      END ;
+      AddI64 (pool, out, c.name, oi64, m)
+  | I32s (v, m) :
+      oi32 := NEW (pool, I32, total) ;
+      FOR i := 0 TO total - 1 DO
+        IF at[i] < 0 THEN oi32[i] := m ELSE oi32[i] := v[at[i]] END
+      END ;
+      AddI32 (pool, out, c.name, oi32, m)
+  | I16s (v, m) :
+      oi16 := NEW (pool, I16, total) ;
+      FOR i := 0 TO total - 1 DO
+        IF at[i] < 0 THEN oi16[i] := m ELSE oi16[i] := v[at[i]] END
+      END ;
+      AddI16 (pool, out, c.name, oi16, m)
+  | Bytes (v, m) :
+      ob := NEW (pool, BYTE, total) ;
+      FOR i := 0 TO total - 1 DO
+        IF at[i] < 0 THEN ob[i] := m ELSE ob[i] := v[at[i]] END
+      END ;
+      AddBytes (pool, out, c.name, ob, m)
+  | Bools (v) :
+      (* no missing value exists for a boolean, so a gap row cannot
+         be expressed: refused with the column named rather than
+         inventing FALSE *)
+      RAISE WrongType (c.name)
+  | Strs (si) :
+      os := NEW (pool, STR, total) ;
+      FOR i := 0 TO total - 1 DO
+        IF at[i] < 0 THEN
+          os[i] := ''
+        ELSE
+          os[i] := src.strs[si].v[at[i]]
+        END
+      END ;
+      AddStrs (pool, out, c.name, os)
+  END ;
+  SetMeta (pool, out, c.name, c.long, c.cf, c.unit)
+EXCEPT
+| Unknown : RAISE IndexError
+END Fill ;
+
+
+(* ---- NetCDF ---- *)
+
+PROCEDURE NcMeta (f: PTR NetCDF.File ; vid: I64 ; RO c: Col)
+  RAISES NetCDF.Error, ValueRange =
+BEGIN
+  IF LEN (c.unit) > 0 THEN
+    NetCDF.PutAttStr (f, vid, 'units', c.unit)
+  END ;
+  IF LEN (c.long) > 0 THEN
+    NetCDF.PutAttStr (f, vid, 'long_name', c.long)
+  END ;
+  IF LEN (c.cf) > 0 THEN
+    NetCDF.PutAttStr (f, vid, 'standard_name', c.cf)
+  END
+END NcMeta ;
+
+PROCEDURE DefCols (VAR pool: POOL ; src: PTR Fr ; nc: PTR NetCDF.File ;
+                   did: I64 ; vids: SLICE OF I64)
+  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
+  (* define mode: one variable per column, typed fill, metadata *)
+VAR
+  c, i, w, vid, wdid : I64 ;
+  dims, dims2 : SLICE OF I64 ;
+BEGIN
+  dims := NEW (pool, I64, 1) ;
+  dims[0] := did ;
+  FOR c := 0 TO src.ncols - 1 DO
+    CASE src.cols[c].data OF
+    | F64s (v, m) :
+        vid := NetCDF.DefVar (nc, src.cols[c].name,
+                              NetCDF.TypeDouble, dims) ;
+        NetCDF.FillF64 (nc, vid, m)
+    | F32s (v, m) :
+        vid := NetCDF.DefVar (nc, src.cols[c].name,
+                              NetCDF.TypeFloat, dims) ;
+        NetCDF.FillF32 (nc, vid, m)
+    | I64s (v, m) :
+        vid := NetCDF.DefVar (nc, src.cols[c].name,
+                              NetCDF.TypeInt64, dims) ;
+        NetCDF.FillI64 (nc, vid, m)
+    | I32s (v, m) :
+        vid := NetCDF.DefVar (nc, src.cols[c].name,
+                              NetCDF.TypeInt, dims) ;
+        NetCDF.FillI32 (nc, vid, m)
+    | I16s (v, m) :
+        vid := NetCDF.DefVar (nc, src.cols[c].name,
+                              NetCDF.TypeShort, dims) ;
+        NetCDF.FillI16 (nc, vid, m)
+    | Bytes (v, m) :
+        vid := NetCDF.DefVar (nc, src.cols[c].name,
+                              NetCDF.TypeUByte, dims) ;
+        NetCDF.FillByte (nc, vid, m)
+    | Bools (v) :
+        vid := NetCDF.DefVar (nc, src.cols[c].name,
+                              NetCDF.TypeUByte, dims) ;
+        (* the marker TsFromNc restores the type from; 0/1 on the
+           wire, and no _FillValue because no missing exists *)
+        NetCDF.PutAttStr (nc, vid, 'frame_kind', 'bool')
+    | Strs (si) :
+        w := 1 ;
+        FOR i := 0 TO LEN (src.strs[si].v) - 1 DO
+          IF LEN (src.strs[si].v[i]) > w THEN
+            w := LEN (src.strs[si].v[i])
+          END
+        END ;
+        wdid := NetCDF.DefDim (nc, src.cols[c].name + '_len', w) ;
+        dims2 := NEW (pool, I64, 2) ;
+        dims2[0] := did ;
+        dims2[1] := wdid ;
+        vid := NetCDF.DefVar (nc, src.cols[c].name,
+                              NetCDF.TypeChar, dims2)
+    END ;
+    NcMeta (nc, vid, src.cols[c]) ;
+    vids[c] := vid
+  END
+END DefCols ;
+
+PROCEDURE PutCols (VAR pool: POOL ; src: PTR Fr ; nc: PTR NetCDF.File ;
+                   vids: SLICE OF I64)
+  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
+VAR
+  c, i, w : I64 ;
+  st, ct, st2, ct2 : SLICE OF I64 ;
+  vb2 : SLICE OF BYTE ;
+BEGIN
+  st := NEW (pool, I64, 1) ;
+  ct := NEW (pool, I64, 1) ;
+  st[0] := 0 ;
+  ct[0] := src.rows ;
+  st2 := NEW (pool, I64, 2) ;
+  ct2 := NEW (pool, I64, 2) ;
+  FOR c := 0 TO src.ncols - 1 DO
+    CASE src.cols[c].data OF
+    | F64s (v, m) : NetCDF.PutF64 (nc, vids[c], st, ct, v)
+    | F32s (v, m) : NetCDF.PutF32 (nc, vids[c], st, ct, v)
+    | I64s (v, m) : NetCDF.PutI64 (nc, vids[c], st, ct, v)
+    | I32s (v, m) : NetCDF.PutI32 (nc, vids[c], st, ct, v)
+    | I16s (v, m) : NetCDF.PutI16 (nc, vids[c], st, ct, v)
+    | Bytes (v, m) : NetCDF.PutBytes (nc, vids[c], st, ct, v)
+    | Bools (v) :
+        vb2 := NEW (pool, BYTE, LEN (v)) ;
+        FOR i := 0 TO LEN (v) - 1 DO
+          IF v[i] THEN vb2[i] := 1 ELSE vb2[i] := 0 END
+        END ;
+        NetCDF.PutBytes (nc, vids[c], st, ct, vb2)
+    | Strs (si) :
+        (* one hyperslab per row; PutChars NUL-pads to the count *)
+        w := 1 ;
+        FOR i := 0 TO LEN (src.strs[si].v) - 1 DO
+          IF LEN (src.strs[si].v[i]) > w THEN
+            w := LEN (src.strs[si].v[i])
+          END
+        END ;
+        FOR i := 0 TO src.rows - 1 DO
+          st2[0] := i ; st2[1] := 0 ;
+          ct2[0] := 1 ; ct2[1] := w ;
+          NetCDF.PutChars (nc, vids[c], st2, ct2, src.strs[si].v[i])
+        END
+    END
+  END
+END PutCols ;
+
+PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
+                   RO path, dim: STR)
+  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
+VAR
+  nc : PTR NetCDF.File IN pool ;
+  did : I64 ;
+  vids : SLICE OF I64 ;
+BEGIN
+  nc := NetCDF.Create4 (pool, path, TRUE) ;
+  did := NetCDF.DefDim (nc, dim, f.rows) ;
+  vids := NEW (pool, I64, f.ncols) ;
+  DefCols (pool, f, nc, did, vids) ;
+  NetCDF.EndDef (nc) ;
+  PutCols (pool, f, nc, vids) ;
+  NetCDF.Close (nc)
+END WriteNc ;
+
+PROCEDURE ConvName (conv: Conv) : STR =
+BEGIN
+  CASE conv OF
+  | AtStart : RETURN 'start'
+  | AtEnd : RETURN 'end'
+  | AtMid : RETURN 'mid'
+  END
+END ConvName ;
+
+PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR)
+  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
+VAR
+  nc : PTR NetCDF.File IN pool ;
+  did, bdid, tvid, bvid, r : I64 ;
+  vids : SLICE OF I64 ;
+  dims, dims2, st, ct : SLICE OF I64 ;
+  bnds, tf : SLICE OF F64 ;
+BEGIN
+  nc := NetCDF.Create4 (pool, path, TRUE) ;
+  did := NetCDF.DefDim (nc, 'time', ts.f.rows) ;
+  bdid := NetCDF.DefDim (nc, 'bnds', 2) ;
+  dims := NEW (pool, I64, 1) ;
+  dims[0] := did ;
+  (* DOUBLE seconds, not int64: CF's checkers class an int64
+     boundary variable as non-numeric, and a double is exact for
+     integer seconds until year 285 million *)
+  tvid := NetCDF.DefVar (nc, 'time', NetCDF.TypeDouble, dims) ;
+  NetCDF.PutAttStr (nc, tvid, 'units',
+                    'seconds since 1970-01-01 00:00:00 +00:00') ;
+  NetCDF.PutAttStr (nc, tvid, 'standard_name', 'time') ;
+  NetCDF.PutAttStr (nc, tvid, 'bounds', 'time_bnds') ;
+  dims2 := NEW (pool, I64, 2) ;
+  dims2[0] := did ;
+  dims2[1] := bdid ;
+  bvid := NetCDF.DefVar (nc, 'time_bnds', NetCDF.TypeDouble, dims2) ;
+  vids := NEW (pool, I64, ts.f.ncols) ;
+  DefCols (pool, ts.f, nc, did, vids) ;
+  NetCDF.PutAttStr (nc, NetCDF.Global, 'Conventions', 'CF-1.8') ;
+  NetCDF.PutAttStr (nc, NetCDF.Global, 'frame_time_convention',
+                    ConvName (ts.conv)) ;
+  NetCDF.PutAttF64 (nc, NetCDF.Global, 'frame_resolution_seconds',
+                    F64 (ts.res)) ;
+  IF LEN (ts.descr) > 0 THEN
+    NetCDF.PutAttStr (nc, NetCDF.Global, 'description', ts.descr)
+  END ;
+  NetCDF.EndDef (nc) ;
+  st := NEW (pool, I64, 1) ;
+  ct := NEW (pool, I64, 1) ;
+  st[0] := 0 ;
+  ct[0] := ts.f.rows ;
+  tf := NEW (pool, F64, ts.f.rows) ;
+  FOR r := 0 TO ts.f.rows - 1 DO
+    tf[r] := F64 (ts.time[r])
+  END ;
+  NetCDF.PutF64 (nc, tvid, st, ct, tf) ;
+  bnds := NEW (pool, F64, 2 * ts.f.rows) ;
+  FOR r := 0 TO ts.f.rows - 1 DO
+    bnds[2 * r] := F64 (StartOf (ts, ts.time[r])) ;
+    bnds[2 * r + 1] := F64 (StartOf (ts, ts.time[r]) + ts.res)
+  END ;
+  st := NEW (pool, I64, 2) ;
+  ct := NEW (pool, I64, 2) ;
+  st[0] := 0 ; st[1] := 0 ;
+  ct[0] := ts.f.rows ; ct[1] := 2 ;
+  NetCDF.PutF64 (nc, bvid, st, ct, bnds) ;
+  PutCols (pool, ts.f, nc, vids) ;
+  NetCDF.Close (nc)
+END WriteTsNc ;
+
+PROCEDURE ReadCol (VAR pool: POOL ; VAR f: PTR Fr ;
+                   nc: PTR NetCDF.File ; vid, n: I64 ; RO name: STR)
+  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange,
+         Overflow, IndexError =
+VAR
+  t, w, i : I64 ;
+  st, ct : SLICE OF I64 ;
+  shape : SLICE OF I64 ;
+  v64 : SLICE OF F64 ;
+  v32 : SLICE OF F32 ;
+  vi64 : SLICE OF I64 ;
+  vi32 : SLICE OF I32 ;
+  vi16 : SLICE OF I16 ;
+  vb : SLICE OF BYTE ;
+  vbo : SLICE OF BOOL ;
+  vs : SLICE OF STR ;
+  fill : F64 ;
+  hasFill : BOOL ;
+BEGIN
+  t := NetCDF.VarType (nc, vid) ;
+  hasFill := NetCDF.HasAtt (nc, vid, '_FillValue') ;
+  fill := 0.0 ;
+  IF hasFill THEN
+    fill := NetCDF.GetAttF64 (nc, vid, '_FillValue')
+  END ;
+  st := NEW (pool, I64, 1) ;
+  ct := NEW (pool, I64, 1) ;
+  st[0] := 0 ;
+  ct[0] := n ;
+  IF t = NetCDF.TypeDouble THEN
+    v64 := NEW (pool, F64, n) ;
+    NetCDF.GetF64 (nc, vid, st, ct, v64) ;
+    IF hasFill THEN
+      AddF64 (pool, f, name, v64, fill)
+    ELSE
+      AddF64 (pool, f, name, v64, 0.0 / 0.0)
+    END
+  ELSIF t = NetCDF.TypeFloat THEN
+    v32 := NEW (pool, F32, n) ;
+    NetCDF.GetF32 (nc, vid, st, ct, v32) ;
+    IF hasFill THEN
+      AddF32 (pool, f, name, v32, F32 (fill))
+    ELSE
+      AddF32 (pool, f, name, v32, F32 (0.0 / 0.0))
+    END
+  ELSIF t = NetCDF.TypeInt64 THEN
+    vi64 := NEW (pool, I64, n) ;
+    NetCDF.GetI64 (nc, vid, st, ct, vi64) ;
+    IF hasFill THEN
+      AddI64 (pool, f, name, vi64, I64 (fill))
+    ELSE
+      AddI64 (pool, f, name, vi64, MissI ())
+    END
+  ELSIF t = NetCDF.TypeInt THEN
+    vi32 := NEW (pool, I32, n) ;
+    NetCDF.GetI32 (nc, vid, st, ct, vi32) ;
+    IF hasFill THEN
+      AddI32 (pool, f, name, vi32, I32 (fill))
+    ELSE
+      AddI32 (pool, f, name, vi32, -2147483647 - 1)
+    END
+  ELSIF t = NetCDF.TypeShort THEN
+    vi16 := NEW (pool, I16, n) ;
+    NetCDF.GetI16 (nc, vid, st, ct, vi16) ;
+    IF hasFill THEN
+      AddI16 (pool, f, name, vi16, I16 (fill))
+    ELSE
+      AddI16 (pool, f, name, vi16, -32768)
+    END
+  ELSIF t = NetCDF.TypeUByte OR t = NetCDF.TypeByte THEN
+    vb := NEW (pool, BYTE, n) ;
+    NetCDF.GetBytes (nc, vid, st, ct, vb) ;
+    IF NetCDF.HasAtt (nc, vid, 'frame_kind') THEN
+      (* the bool marker: 0/1 on the wire, anything else refused *)
+      vbo := NEW (pool, BOOL, n) ;
+      FOR i := 0 TO n - 1 DO
+        IF I64 (vb[i]) = 1 THEN
+          vbo[i] := TRUE
+        ELSIF I64 (vb[i]) = 0 THEN
+          vbo[i] := FALSE
+        ELSE
+          RAISE BadArg (name)
+        END
+      END ;
+      AddBools (pool, f, name, vbo)
+    ELSIF hasFill THEN
+      AddBytes (pool, f, name, vb, BYTE (I64 (fill)))
+    ELSE
+      AddBytes (pool, f, name, vb, 255)
+    END
+  ELSIF t = NetCDF.TypeChar THEN
+    shape := NetCDF.VarShape (pool, nc, vid) ;
+    w := shape[1] ;
+    vs := NetCDF.GetChars (pool, nc, vid, n, w) ;
+    AddStrs (pool, f, name, vs)
+  ELSE
+    (* a column that silently vanished is the failure this module
+       exists to prevent *)
+    RAISE BadArg (name)
+  END ;
+  IF NetCDF.HasAtt (nc, vid, 'units') THEN
+    SetMeta2 (pool, f, name, '', '', NetCDF.GetAttStr (pool, nc, vid,
+                                                 'units'))
+  END ;
+  IF NetCDF.HasAtt (nc, vid, 'long_name') THEN
+    SetMeta2 (pool, f, name, NetCDF.GetAttStr (pool, nc, vid, 'long_name'),
+              '', '')
+  END ;
+  IF NetCDF.HasAtt (nc, vid, 'standard_name') THEN
+    SetMeta2 (pool, f, name, '',
+              NetCDF.GetAttStr (pool, nc, vid, 'standard_name'), '')
+  END
+END ReadCol ;
+
+PROCEDURE SetMeta2 (VAR pool: POOL ; VAR f: PTR Fr ;
+                    RO name, long, cf, unit: STR)
+  RAISES IndexError =
+  (* SetMeta on a column that provably exists (just added) *)
+BEGIN
+  SetMeta (pool, f, name, long, cf, unit)
+EXCEPT
+| Unknown : RAISE IndexError
+END SetMeta2 ;
+
+PROCEDURE FromNc (VAR pool: POOL ; RO path, dim: STR) : PTR Fr
+  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange,
+         Overflow, IndexError =
+VAR
+  nc : PTR NetCDF.File IN pool ;
+  f : PTR Fr IN pool ;
+  did, n, nv, vid, rank : I64 ;
+  vdims : SLICE OF I64 ;
+BEGIN
+  nc := NetCDF.Open (pool, path) ;
+  did := NetCDF.DimId (nc, dim) ;
+  n := NetCDF.DimLen (nc, did) ;
+  f := New (pool, n) ;
+  nv := NetCDF.VarCount (nc) ;
+  FOR vid := 0 TO nv - 1 DO
+    rank := NetCDF.VarRank (nc, vid) ;
+    vdims := NetCDF.VarDims (pool, nc, vid) ;
+    IF rank >= 1 AND vdims[0] = did
+       AND (rank = 1 OR (rank = 2
+                         AND NetCDF.VarType (nc, vid)
+                             = NetCDF.TypeChar)) THEN
+      ReadCol (pool, f, nc, vid, n, NetCDF.VarName (pool, nc, vid))
+    END
+  END ;
+  NetCDF.Close (nc) ;
+  RETURN f
+END FromNc ;
+
+PROCEDURE ParseSince (VAR pool: POOL ; RO units: STR ;
+                      VAR mult, base: I64)
+  RAISES BadArg, ValueRange =
+  (* 'seconds|minutes|hours|days since YYYY-MM-DD[ hh:mm:ss][zone]',
+     zone empty, 'Z', 'UTC' or '+00:00'; anything else refused WITH
+     THE STRING, because a wrong time axis is an hour of silent
+     error nobody can see *)
+VAR
+  i, k, y, mo, d, hh, mm, ss : I64 ;
+  c : Time.Civil ;
+  inst : Time.Instant ;
+BEGIN
+  i := 0 ;
+  IF Starts (units, 'seconds since ') THEN
+    mult := 1 ; i := 14
+  ELSIF Starts (units, 'minutes since ') THEN
+    mult := 60 ; i := 14
+  ELSIF Starts (units, 'hours since ') THEN
+    mult := 3600 ; i := 12
+  ELSIF Starts (units, 'days since ') THEN
+    mult := 86400 ; i := 11
+  ELSE
+    RAISE BadArg (units)
+  END ;
+  y := Num (units, i, 4) ;
+  mo := Num (units, i + 5, 2) ;
+  d := Num (units, i + 8, 2) ;
+  hh := 0 ; mm := 0 ; ss := 0 ;
+  k := i + 10 ;
+  IF LEN (units) >= k + 9 AND (units[k] = ' ' OR units[k] = 'T') THEN
+    hh := Num (units, k + 1, 2) ;
+    mm := Num (units, k + 4, 2) ;
+    ss := Num (units, k + 7, 2) ;
+    k := k + 9
+  END ;
+  (* the zone: absent is UTC by CF's rule; an explicit zero is
+     welcome; anything else is refused *)
+  WHILE k < LEN (units) AND units[k] = ' ' DO k := k + 1 END ;
+  IF k < LEN (units) THEN
+    IF NOT (Eq (SLICE (units, k, LEN (units) - k), 'Z')
+            OR Eq (SLICE (units, k, LEN (units) - k), 'UTC')
+            OR Eq (SLICE (units, k, LEN (units) - k), '+00:00')
+            OR Eq (SLICE (units, k, LEN (units) - k), '+0000')
+            OR Eq (SLICE (units, k, LEN (units) - k), '00:00')) THEN
+      RAISE BadArg (units)
+    END
+  END ;
+  c.year := y ;
+  c.month := mo ;
+  c.day := d ;
+  c.hour := hh ;
+  c.minute := mm ;
+  c.second := F64 (ss) ;
+  inst := Time.FromCivil (c) ;
+  base := I64 (Math.Floor (inst.t + 0.5))
+END ParseSince ;
+
+PROCEDURE Starts (RO s, p: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (s) < LEN (p) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (p) - 1 DO
+    IF s[i] # p[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Starts ;
+
+PROCEDURE Num (RO s: STR ; at, n: I64) : I64
+  RAISES BadArg, ValueRange =
+VAR
+  i, v : I64 ;
+BEGIN
+  IF at + n > LEN (s) THEN RAISE BadArg (s) END ;
+  v := 0 ;
+  FOR i := at TO at + n - 1 DO
+    IF s[i] < '0' OR s[i] > '9' THEN RAISE BadArg (s) END ;
+    v := v * 10 + (ORD (s[i]) - 48)
+  END ;
+  RETURN v
+END Num ;
+
+PROCEDURE TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts
+  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, Disorder,
+         ValueRange, Overflow, IndexError =
+VAR
+  nc : PTR NetCDF.File IN pool ;
+  f : PTR Fr IN pool ;
+  did, n, nv, vid, tvid, rank, mult, base, r, g, res : I64 ;
+  vdims : SLICE OF I64 ;
+  raw, tsec : SLICE OF I64 ;
+  rawd : SLICE OF F64 ;
+  st, ct : SLICE OF I64 ;
+  nm : STR ;
+  conv : Conv ;
+  cn : STR ;
+BEGIN
+  nc := NetCDF.Open (pool, path) ;
+  did := NetCDF.DimId (nc, 'time') ;
+  n := NetCDF.DimLen (nc, did) ;
+  tvid := NetCDF.VarId (nc, 'time') ;
+  (* the axis, through its own units *)
+  ParseSince (pool, NetCDF.GetAttStr (pool, nc, tvid, 'units'),
+              mult, base) ;
+  st := NEW (pool, I64, 1) ;
+  ct := NEW (pool, I64, 1) ;
+  st[0] := 0 ;
+  ct[0] := n ;
+  tsec := NEW (pool, I64, n) ;
+  IF NetCDF.VarType (nc, tvid) = NetCDF.TypeInt64
+     OR NetCDF.VarType (nc, tvid) = NetCDF.TypeInt THEN
+    raw := NEW (pool, I64, n) ;
+    NetCDF.GetI64 (nc, tvid, st, ct, raw) ;
+    FOR r := 0 TO n - 1 DO
+      tsec[r] := base + raw[r] * mult
+    END
+  ELSE
+    (* float axes exist in the wild; a fractional second after the
+       multiplier is a ValueRange refusal, not a rounding *)
+    rawd := NEW (pool, F64, n) ;
+    NetCDF.GetF64 (nc, tvid, st, ct, rawd) ;
+    FOR r := 0 TO n - 1 DO
+      IF Math.Floor (rawd[r] * F64 (mult)) # rawd[r] * F64 (mult) THEN
+        RAISE ValueRange
+      END ;
+      tsec[r] := base + I64 (rawd[r] * F64 (mult))
+    END
+  END ;
+  (* the data columns: everything on time except the axis machinery *)
+  f := New (pool, n) ;
+  nv := NetCDF.VarCount (nc) ;
+  FOR vid := 0 TO nv - 1 DO
+    rank := NetCDF.VarRank (nc, vid) ;
+    vdims := NetCDF.VarDims (pool, nc, vid) ;
+    nm := NetCDF.VarName (pool, nc, vid) ;
+    IF vid # tvid AND NOT Eq (nm, 'time_bnds')
+       AND rank >= 1 AND vdims[0] = did
+       AND (rank = 1 OR (rank = 2
+                         AND NetCDF.VarType (nc, vid)
+                             = NetCDF.TypeChar)) THEN
+      ReadCol (pool, f, nc, vid, n, nm)
+    END
+  END ;
+  (* convention and resolution: the frame's own attributes when
+     present, stated defaults when not *)
+  conv := Conv.AtStart ;
+  IF NetCDF.HasAtt (nc, NetCDF.Global, 'frame_time_convention') THEN
+    cn := NetCDF.GetAttStr (pool, nc, NetCDF.Global,
+                            'frame_time_convention') ;
+    IF Eq (cn, 'end') THEN
+      conv := Conv.AtEnd
+    ELSIF Eq (cn, 'mid') THEN
+      conv := Conv.AtMid
+    END
+  END ;
+  IF NetCDF.HasAtt (nc, NetCDF.Global, 'frame_resolution_seconds') THEN
+    res := I64 (NetCDF.GetAttF64 (nc, NetCDF.Global,
+                                  'frame_resolution_seconds'))
+  ELSE
+    (* a foreign file: the smallest gap on the axis, a stated choice *)
+    res := 0 ;
+    FOR r := 1 TO n - 1 DO
+      g := tsec[r] - tsec[r - 1] ;
+      IF g > 0 AND (res = 0 OR g < res) THEN res := g END
+    END ;
+    IF res = 0 THEN res := 1 END
+  END ;
+  cn := '' ;
+  IF NetCDF.HasAtt (nc, NetCDF.Global, 'description') THEN
+    cn := NetCDF.GetAttStr (pool, nc, NetCDF.Global, 'description')
+  END ;
+  NetCDF.Close (nc) ;
+  RETURN NewTs (pool, f, tsec, res, conv, cn)
+END TsFromNc ;
+
+(* ---- the cross-module face ---- *)
+
+PROCEDURE ColBools (f: PTR Fr ; RO name: STR) : SLICE OF BOOL
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | Bools (v) : RETURN v
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END ColBools ;
+
+PROCEDURE KindOf (f: PTR Fr ; RO name: STR) : I64 RAISES Unknown =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | F64s : RETURN KindF64
+  | F32s : RETURN KindF32
+  | I64s : RETURN KindI64
+  | I32s : RETURN KindI32
+  | I16s : RETURN KindI16
+  | Bytes : RETURN KindByte
+  | Strs : RETURN KindStr
+  | Bools : RETURN KindBool
+  END
+END KindOf ;
+
+PROCEDURE ColI32 (f: PTR Fr ; RO name: STR) : SLICE OF I32
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | I32s (v, m) : RETURN v
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END ColI32 ;
+
+PROCEDURE ColI16 (f: PTR Fr ; RO name: STR) : SLICE OF I16
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | I16s (v, m) : RETURN v
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END ColI16 ;
+
+PROCEDURE ColBytes (f: PTR Fr ; RO name: STR) : SLICE OF BYTE
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | Bytes (v, m) : RETURN v
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END ColBytes ;
+
+PROCEDURE MissF64 (f: PTR Fr ; RO name: STR) : F64
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | F64s (v, m) : RETURN m
+  | Bools : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END MissF64 ;
+
+PROCEDURE MissF32 (f: PTR Fr ; RO name: STR) : F32
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | F32s (v, m) : RETURN m
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END MissF32 ;
+
+PROCEDURE MissI64 (f: PTR Fr ; RO name: STR) : I64
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | I64s (v, m) : RETURN m
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END MissI64 ;
+
+PROCEDURE MissI32 (f: PTR Fr ; RO name: STR) : I32
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | I32s (v, m) : RETURN m
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END MissI32 ;
+
+PROCEDURE MissI16 (f: PTR Fr ; RO name: STR) : I16
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | I16s (v, m) : RETURN m
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | Bytes : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END MissI16 ;
+
+PROCEDURE MissByte (f: PTR Fr ; RO name: STR) : BYTE
+  RAISES Unknown, WrongType =
+VAR c : Col ;
+BEGIN
+  c := GetCol (f, name) ;
+  CASE c.data OF
+  | Bytes (v, m) : RETURN m
+  | Bools : RAISE WrongType (name)
+  | F64s : RAISE WrongType (name)
+  | F32s : RAISE WrongType (name)
+  | I64s : RAISE WrongType (name)
+  | I32s : RAISE WrongType (name)
+  | I16s : RAISE WrongType (name)
+  | Strs : RAISE WrongType (name)
+  END
+END MissByte ;
+
+END Frame.

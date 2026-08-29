@@ -1,0 +1,1302 @@
+DEFINITION MODULE Parse ;
+
+(* Recursive descent over report par 10, in M9 -- restated from
+   host/fpc/M9Parse.pas for P5 stage 1.  Errors are counted, not yet
+   worded: the differential runs on files that parse clean, and the
+   message table arrives when the self-hosted driver needs to talk
+   to people (stage 2 work, noted).  A tree always comes back.       *)
+
+IMPORT Ast ;
+IMPORT Lex ;
+
+TYPE
+  Parser = RECORD
+    lx : Lex.Lexer ;
+    cur, peekTok : Lex.Token ;
+    peeked : BOOL ;
+    nerr : I64 ;
+  END ;
+
+PROCEDURE Init (VAR p: Parser ; RO src: STR) ;
+  (* points a parser at source text and reads the first token.
+
+       src -- BORROWED for as long as p is used, and for as long as
+              the tree p builds is used: identifier and literal text
+              in the AST are SLICES of this, not copies.  The
+              caller's buffer must outlive both, which is the same
+              contract Json.Parse has with its document.          *)
+
+PROCEDURE File (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node ;
+  (* parses a whole file and answers its NFile node, whose kids are
+     the definition and implementation units in source order.
+
+     ERRORS ARE VALUES and the tree is always answered: the parser
+     resyncs on ';' and END rather than stopping, so one mistake
+     does not hide the rest of the file.  Check `p.nerr` before
+     trusting the tree -- the record is transparent for exactly
+     that, and a caller that skips the check gets a tree with holes
+     in it and no warning.  The count is all there is today; the
+     messages are the stage-2 work the module header names, and
+     their absence costs a bisect every time a program is written
+     outside the corpus.
+
+       pool -- owns every node.  The tree cannot outlive it.      *)
+
+END Parse.
+
+
+IMPLEMENTATION MODULE Parse ;
+
+IMPORT Ast ;
+IMPORT Lex ;
+IMPORT DynStr ;
+
+CONST
+  (* token kind codes, matching Lex *)
+  TkEOF = 0 ; TkError = 1 ; TkIdent = 2 ; TkInt = 3 ; TkReal = 4 ;
+  TkChar = 5 ; TkStr = 6 ;
+  TkAND = 7 ; TkARRAY = 8 ; TkBEGIN = 9 ; TkBY = 10 ; TkCASE = 11 ;
+  TkCONST = 12 ; TkDEFINITION = 13 ; TkDISPOSE = 14 ; TkDIV = 15 ;
+  TkDO = 16 ; TkELSE = 17 ; TkELSIF = 18 ; TkEND = 19 ;
+  TkEXCEPT = 20 ; TkEXCEPTION = 21 ; TkEXIT = 22 ; TkFALSE = 23 ;
+  TkFINALLY = 24 ; TkFOR = 25 ; TkFROM = 26 ; TkIF = 27 ;
+  TkIMPLEMENTATION = 28 ; TkIMPORT = 29 ; TkIN = 30 ; TkIS = 31 ;
+  TkLOOP = 32 ; TkMOD = 33 ; TkMODULE = 34 ; TkMONITOR = 35 ;
+  TkNEW = 36 ; TkNONE = 37 ; TkNOT = 38 ; TkOF = 39 ; TkOPT = 40 ;
+  TkOR = 41 ; TkOWN = 42 ; TkPOOL = 43 ; TkPROCEDURE = 44 ;
+  TkPTR = 45 ; TkRAISE = 46 ; TkRAISES = 47 ; TkRECORD = 48 ;
+  TkRETURN = 49 ; TkSHARED = 50 ; TkSIGNAL = 51 ; TkSLICE = 52 ;
+  TkSOME = 53 ; TkSTATEFUL = 54 ; TkTHEN = 55 ; TkTHREAD = 56 ;
+  TkTO = 57 ; TkTRANSFER = 58 ; TkTRUE = 59 ; TkTYPE = 60 ;
+  TkUNSAFE = 61 ; TkVAR = 62 ; TkWAIT = 63 ; TkWHILE = 64 ;
+  TkRO = 65 ; TkGRID = 66 ;  (* appended: codes are identifiers *)
+  (* operators start at 200: see the note in Lex.  Keywords may be
+     appended at 65.. without moving any of these.                *)
+  TkAssign = 200 ; TkEq = 201 ; TkNeq = 202 ; TkLt = 203 ; TkLe = 204 ;
+  TkGt = 205 ; TkGe = 206 ; TkPlus = 207 ; TkMinus = 208 ; TkStar = 209 ;
+  TkSlash = 210 ; TkPlusW = 211 ; TkMinusW = 212 ; TkStarW = 213 ;
+  TkLParen = 214 ; TkRParen = 215 ; TkLBrack = 216 ; TkRBrack = 217 ;
+  TkComma = 218 ; TkSemi = 219 ; TkColon = 220 ; TkDot = 221 ;
+  TkDotDot = 222 ; TkBar = 223 ; TkCaret = 224 ;
+
+  (* stop-set ids: M9 has no set type, so each distinct stop set is
+     a named predicate case *)
+  SEnd = 0 ;            (* END *)
+  SBlock = 1 ;          (* EXCEPT FINALLY END *)
+  SIf = 2 ;             (* ELSIF ELSE END *)
+  SHandler = 3 ;        (* | FINALLY END *)
+  SArm = 4 ;            (* | ELSE END *)
+  SRParen = 5 ;         (* ) *)
+  SVariantF = 6 ;       (* | END *)
+
+PROCEDURE InStops (sid, k: I64) : BOOL =
+BEGIN
+  IF k = TkEND THEN
+    RETURN sid # SRParen
+  END ;
+  CASE sid OF
+  | SEnd : RETURN FALSE
+  | SBlock : RETURN k = TkEXCEPT OR k = TkFINALLY
+  | SIf : RETURN k = TkELSIF OR k = TkELSE
+  | SHandler : RETURN k = TkBar OR k = TkFINALLY
+  | SArm : RETURN k = TkBar OR k = TkELSE
+  | SRParen : RETURN k = TkRParen
+  | SVariantF : RETURN k = TkBar
+  ELSE RETURN FALSE
+  END
+END InStops ;
+
+PROCEDURE IsDeclStart (k: I64) : BOOL =
+BEGIN
+  RETURN k = TkCONST OR k = TkTYPE OR k = TkVAR OR
+         k = TkEXCEPTION OR k = TkPROCEDURE
+END IsDeclStart ;
+
+PROCEDURE IsRelOp (k: I64) : BOOL =
+BEGIN
+  RETURN k >= TkEq AND k <= TkGe
+END IsRelOp ;
+
+PROCEDURE IsAddOp (k: I64) : BOOL =
+BEGIN
+  RETURN k = TkPlus OR k = TkMinus OR k = TkPlusW OR k = TkMinusW
+END IsAddOp ;
+
+PROCEDURE IsMulOp (k: I64) : BOOL =
+BEGIN
+  RETURN k = TkStar OR k = TkSlash OR k = TkStarW OR
+         k = TkDIV OR k = TkMOD
+END IsMulOp ;
+
+PROCEDURE OpText (k: I64) : STR =
+BEGIN
+  CASE k OF
+  | TkEq : RETURN '='
+  | TkNeq : RETURN '#'
+  | TkLt : RETURN '<'
+  | TkLe : RETURN '<='
+  | TkGt : RETURN '>'
+  | TkGe : RETURN '>='
+  | TkPlus : RETURN '+'
+  | TkMinus : RETURN '-'
+  | TkStar : RETURN '*'
+  | TkSlash : RETURN '/'
+  | TkPlusW : RETURN '+%'
+  | TkMinusW : RETURN '-%'
+  | TkStarW : RETURN '*%'
+  | TkDIV : RETURN 'DIV'
+  | TkMOD : RETURN 'MOD'
+  | TkOR : RETURN 'OR'
+  | TkAND : RETURN 'AND'
+  ELSE RETURN '?'
+  END
+END OpText ;
+
+PROCEDURE Rerr (VAR p: Parser) =
+BEGIN
+  p.nerr := p.nerr + 1
+END Rerr ;
+
+PROCEDURE Bump (VAR p: Parser) =
+BEGIN
+  LOOP
+    IF p.peeked THEN
+      p.cur := p.peekTok ;
+      p.peeked := FALSE
+    ELSE
+      Lex.Next (p.lx, p.cur)
+    END ;
+    IF p.cur.kind # TkError THEN EXIT END ;
+    Rerr (p)
+  END
+END Bump ;
+
+PROCEDURE NxtKind (VAR p: Parser) : I64 =
+BEGIN
+  IF NOT p.peeked THEN
+    LOOP
+      Lex.Next (p.lx, p.peekTok) ;
+      IF p.peekTok.kind # TkError THEN EXIT END ;
+      Rerr (p)
+    END ;
+    p.peeked := TRUE
+  END ;
+  RETURN p.peekTok.kind
+END NxtKind ;
+
+(* the FPC oracle's Expect returned a Boolean that every call site
+   discarded; the M9 checker refuses discarded results, so the port
+   is honest: a proper procedure *)
+PROCEDURE Expect (VAR p: Parser ; k: I64) =
+BEGIN
+  IF p.cur.kind = k THEN
+    Bump (p)
+  ELSE
+    Rerr (p)
+  END
+END Expect ;
+
+PROCEDURE TakeIdent (VAR p: Parser) : STR =
+VAR s : STR ;
+BEGIN
+  IF p.cur.kind = TkIdent THEN
+    s := p.cur.text ;
+    Bump (p) ;
+    RETURN s
+  END ;
+  Rerr (p) ;
+  RETURN ''
+END TakeIdent ;
+
+PROCEDURE Nn (VAR pool: POOL ; VAR p: Parser ; kind: I64)
+  : PTR Ast.Node =
+BEGIN
+  RETURN Ast.NewNode (pool, kind, p.cur.line, p.cur.col)
+END Nn ;
+
+PROCEDURE Init (VAR p: Parser ; RO src: STR) =
+BEGIN
+  Lex.Init (p.lx, src) ;
+  p.peeked := FALSE ;
+  p.nerr := 0 ;
+  Bump (p)
+END Init ;
+
+(* forward heads for the mutual recursion *)
+PROCEDURE PExpr (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node ;
+PROCEDURE PType (VAR pool: POOL ; VAR p: Parser)
+  : PTR Ast.Node ;
+PROCEDURE PStmtSeq (VAR pool: POOL ; VAR p: Parser ; sid: I64)
+  : PTR Ast.Node ;
+PROCEDURE PDeclaration (VAR pool: POOL ; VAR p: Parser)
+  : PTR Ast.Node ;
+PROCEDURE PBlock (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node ;
+PROCEDURE PDesignator (VAR pool: POOL ; VAR p: Parser)
+  : PTR Ast.Node ;
+
+PROCEDURE PQualident (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NQualident) ;
+  n.a := TakeIdent (p) ;
+  IF p.cur.kind = TkDot THEN
+    Bump (p) ;
+    n.b := TakeIdent (p)
+  END ;
+  RETURN n
+END PQualident ;
+
+PROCEDURE PIdentList (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, id : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NIdentList) ;
+  id := Nn (pool, p, Ast.NIdent) ;
+  id.a := TakeIdent (p) ;
+  Ast.Add (pool, n, SOME (id)) ;
+  WHILE p.cur.kind = TkComma DO
+    Bump (p) ;
+    id := Nn (pool, p, Ast.NIdent) ;
+    id.a := TakeIdent (p) ;
+    Ast.Add (pool, n, SOME (id))
+  END ;
+  RETURN n
+END PIdentList ;
+
+PROCEDURE PArgList (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NArgList) ;
+  Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+  WHILE p.cur.kind = TkComma DO
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p)))
+  END ;
+  RETURN n
+END PArgList ;
+
+PROCEDURE DesigToQual (VAR pool: POOL ; VAR p: Parser ;
+                       d: PTR Ast.Node) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NQualident) ;
+  n.a := d.a ;
+  IF d.nkids = 0 THEN RETURN n END ;
+  IF d.nkids = 1 THEN
+    IF d.kids[0] IS SOME sel THEN
+      IF sel.kind = Ast.NSelField THEN
+        n.b := sel.a ;
+        RETURN n
+      END
+    END
+  END ;
+  Rerr (p) ;
+  RETURN n
+END DesigToQual ;
+
+PROCEDURE PNew (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, d1, d2 : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NNewExpr) ;
+  Expect (p, TkNEW) ;
+  Expect (p, TkLParen) ;
+  d1 := PDesignator (pool, p) ;
+  IF p.cur.kind = TkComma THEN
+    Bump (p) ;
+    d2 := PDesignator (pool, p) ;
+    Ast.Add (pool, n, SOME (d1)) ;
+    Ast.Add (pool, n, SOME (DesigToQual (pool, p, d2))) ;
+    IF p.cur.kind = TkComma THEN
+      Bump (p) ;
+      Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+      (* further extents make it a GRID: the arity states the rank,
+         so the rank cannot disagree with what the caller gave *)
+      WHILE p.cur.kind = TkComma DO
+        Bump (p) ;
+        Ast.Add (pool, n, SOME (PExpr (pool, p)))
+      END
+    ELSE
+      Ast.Add (pool, n, NONE)
+    END
+  ELSE
+    Ast.Add (pool, n, NONE) ;
+    Ast.Add (pool, n, SOME (DesigToQual (pool, p, d1))) ;
+    Ast.Add (pool, n, NONE)
+  END ;
+  Expect (p, TkRParen) ;
+  RETURN n
+END PNew ;
+
+PROCEDURE PFactor (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, d : PTR Ast.Node ;
+BEGIN
+  IF p.cur.kind = TkInt THEN
+    n := Nn (pool, p, Ast.NInt) ; n.a := p.cur.text ; Bump (p)
+  ELSIF p.cur.kind = TkReal THEN
+    n := Nn (pool, p, Ast.NReal) ; n.a := p.cur.text ; Bump (p)
+  ELSIF p.cur.kind = TkChar THEN
+    n := Nn (pool, p, Ast.NChar) ; n.a := p.cur.text ; Bump (p)
+  ELSIF p.cur.kind = TkStr THEN
+    n := Nn (pool, p, Ast.NString) ; n.a := p.cur.text ; Bump (p)
+  ELSIF p.cur.kind = TkTRUE THEN
+    n := Nn (pool, p, Ast.NTrue) ; Bump (p)
+  ELSIF p.cur.kind = TkFALSE THEN
+    n := Nn (pool, p, Ast.NFalse) ; Bump (p)
+  ELSIF p.cur.kind = TkNONE THEN
+    n := Nn (pool, p, Ast.NNoneLit) ; Bump (p)
+  ELSIF p.cur.kind = TkSOME THEN
+    n := Nn (pool, p, Ast.NSomeExpr) ;
+    Bump (p) ;
+    Expect (p, TkLParen) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkRParen)
+  ELSIF p.cur.kind = TkSHARED THEN
+    n := Nn (pool, p, Ast.NSharedExpr) ;
+    Bump (p) ;
+    Expect (p, TkLParen) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkRParen)
+  ELSIF p.cur.kind = TkNEW THEN
+    n := PNew (pool, p)
+  ELSIF p.cur.kind = TkSLICE THEN
+    n := Nn (pool, p, Ast.NSliceOf3) ;
+    Bump (p) ;
+    Expect (p, TkLParen) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkComma) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkComma) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkRParen)
+  ELSIF p.cur.kind = TkNOT THEN
+    n := Nn (pool, p, Ast.NUn) ;
+    n.a := 'NOT' ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PFactor (pool, p)))
+  ELSIF p.cur.kind = TkLParen THEN
+    n := Nn (pool, p, Ast.NParen) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkRParen)
+  ELSIF p.cur.kind = TkIdent THEN
+    d := PDesignator (pool, p) ;
+    IF p.cur.kind = TkLParen THEN
+      n := Nn (pool, p, Ast.NCallExpr) ;
+      Ast.Add (pool, n, SOME (d)) ;
+      Bump (p) ;
+      IF p.cur.kind = TkRParen THEN
+        Ast.Add (pool, n, SOME (Nn (pool, p, Ast.NArgList)))
+      ELSE
+        Ast.Add (pool, n, SOME (PArgList (pool, p)))
+      END ;
+      Expect (p, TkRParen)
+    ELSE
+      n := d
+    END
+  ELSE
+    Rerr (p) ;
+    n := Nn (pool, p, Ast.NInt) ;
+    n.a := '0' ;
+    Bump (p)
+  END ;
+  RETURN n
+END PFactor ;
+
+PROCEDURE PTerm (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, r : PTR Ast.Node ;
+BEGIN
+  r := PFactor (pool, p) ;
+  WHILE IsMulOp (p.cur.kind) DO
+    n := Nn (pool, p, Ast.NBin) ;
+    n.a := OpText (p.cur.kind) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (r)) ;
+    Ast.Add (pool, n, SOME (PFactor (pool, p))) ;
+    r := n
+  END ;
+  RETURN r
+END PTerm ;
+
+PROCEDURE PSimple (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, r, sgn : PTR Ast.Node ;
+  neg : BOOL ;
+BEGIN
+  neg := FALSE ;
+  IF p.cur.kind = TkPlus OR p.cur.kind = TkMinus THEN
+    sgn := Nn (pool, p, Ast.NUn) ;
+    sgn.a := OpText (p.cur.kind) ;
+    Bump (p) ;
+    neg := TRUE
+  END ;
+  r := PTerm (pool, p) ;
+  IF neg THEN
+    Ast.Add (pool, sgn, SOME (r)) ;
+    r := sgn
+  END ;
+  WHILE IsAddOp (p.cur.kind) DO
+    n := Nn (pool, p, Ast.NBin) ;
+    n.a := OpText (p.cur.kind) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (r)) ;
+    Ast.Add (pool, n, SOME (PTerm (pool, p))) ;
+    r := n
+  END ;
+  RETURN r
+END PSimple ;
+
+PROCEDURE PRel (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, r : PTR Ast.Node ;
+BEGIN
+  r := PSimple (pool, p) ;
+  IF IsRelOp (p.cur.kind) THEN
+    n := Nn (pool, p, Ast.NBin) ;
+    n.a := OpText (p.cur.kind) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (r)) ;
+    Ast.Add (pool, n, SOME (PSimple (pool, p))) ;
+    r := n
+  END ;
+  RETURN r
+END PRel ;
+
+PROCEDURE PConj (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, r : PTR Ast.Node ;
+BEGIN
+  r := PRel (pool, p) ;
+  WHILE p.cur.kind = TkAND DO
+    n := Nn (pool, p, Ast.NBin) ;
+    n.a := 'AND' ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (r)) ;
+    Ast.Add (pool, n, SOME (PRel (pool, p))) ;
+    r := n
+  END ;
+  RETURN r
+END PConj ;
+
+PROCEDURE PDisj (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, r : PTR Ast.Node ;
+BEGIN
+  r := PConj (pool, p) ;
+  WHILE p.cur.kind = TkOR DO
+    n := Nn (pool, p, Ast.NBin) ;
+    n.a := 'OR' ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (r)) ;
+    Ast.Add (pool, n, SOME (PConj (pool, p))) ;
+    r := n
+  END ;
+  RETURN r
+END PDisj ;
+
+PROCEDURE PExpr (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, e, t : PTR Ast.Node ;
+BEGIN
+  e := PDisj (pool, p) ;
+  IF p.cur.kind = TkIS THEN
+    n := Nn (pool, p, Ast.NIs) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (e)) ;
+    IF p.cur.kind = TkSOME THEN
+      t := Nn (pool, p, Ast.NIsSome) ;
+      Bump (p) ;
+      t.a := TakeIdent (p) ;
+      Ast.Add (pool, n, SOME (t))
+    ELSE
+      Ast.Add (pool, n, SOME (PQualident (pool, p)))
+    END ;
+    RETURN n
+  END ;
+  RETURN e
+END PExpr ;
+
+PROCEDURE PDesignator (VAR pool: POOL ; VAR p: Parser)
+  : PTR Ast.Node =
+VAR n, sel : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NDesignator) ;
+  n.a := TakeIdent (p) ;
+  WHILE p.cur.kind = TkDot OR p.cur.kind = TkLBrack DO
+    IF p.cur.kind = TkDot THEN
+      Bump (p) ;
+      sel := Nn (pool, p, Ast.NSelField) ;
+      sel.a := TakeIdent (p) ;
+      Ast.Add (pool, n, SOME (sel))
+    ELSE
+      (* one subscript per axis: a[i] on a slice, a[i, j, k] on a
+         GRID, and the arity is checked against the rank *)
+      Bump (p) ;
+      sel := Nn (pool, p, Ast.NSelIndex) ;
+      Ast.Add (pool, sel, SOME (PExpr (pool, p))) ;
+      WHILE p.cur.kind = TkComma DO
+        Bump (p) ;
+        Ast.Add (pool, sel, SOME (PExpr (pool, p)))
+      END ;
+      Expect (p, TkRBrack) ;
+      Ast.Add (pool, n, SOME (sel))
+    END
+  END ;
+  RETURN n
+END PDesignator ;
+
+PROCEDURE PAttribOpt (VAR pool: POOL ; VAR p: Parser) : Ast.Kid =
+VAR n : PTR Ast.Node ;
+BEGIN
+  IF p.cur.kind = TkLBrack THEN
+    n := Nn (pool, p, Ast.NAttrib) ;
+    Bump (p) ;
+    n.a := TakeIdent (p) ;
+    Expect (p, TkRBrack) ;
+    RETURN SOME (n)
+  END ;
+  RETURN NONE
+END PAttribOpt ;
+
+PROCEDURE PFieldSeq (VAR pool: POOL ; VAR p: Parser ; sid: I64)
+  : PTR Ast.Node =
+VAR n, g : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NFieldSeq) ;
+  IF InStops (sid, p.cur.kind) OR p.cur.kind = TkEOF THEN RETURN n END ;
+  LOOP
+    g := Nn (pool, p, Ast.NFieldGroup) ;
+    IF p.cur.kind = TkRO THEN
+      g.f3 := TRUE ;
+      Bump (p)
+    END ;
+    Ast.Add (pool, g, SOME (PIdentList (pool, p))) ;
+    Expect (p, TkColon) ;
+    Ast.Add (pool, g, SOME (PType (pool, p))) ;
+    Ast.Add (pool, n, SOME (g)) ;
+    IF p.cur.kind = TkSemi THEN
+      Bump (p) ;
+      IF InStops (sid, p.cur.kind) OR p.cur.kind = TkEOF THEN
+        n.f1 := TRUE ;
+        EXIT
+      END
+    ELSE
+      EXIT
+    END
+  END ;
+  IF NOT (InStops (sid, p.cur.kind) OR p.cur.kind = TkEOF) THEN
+    Rerr (p)
+  END ;
+  RETURN n
+END PFieldSeq ;
+
+PROCEDURE PVariant (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NVariant) ;
+  Expect (p, TkBar) ;
+  n.a := TakeIdent (p) ;
+  IF p.cur.kind = TkColon THEN
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PFieldSeq (pool, p, SVariantF)))
+  ELSE
+    Ast.Add (pool, n, NONE)
+  END ;
+  RETURN n
+END PVariant ;
+
+PROCEDURE PType (VAR pool: POOL ; VAR p: Parser)
+  : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  IF p.cur.kind = TkIdent THEN
+    RETURN PQualident (pool, p)
+  ELSIF p.cur.kind = TkPOOL THEN
+    n := Nn (pool, p, Ast.NQualident) ;
+    n.a := 'POOL' ;
+    Bump (p) ;
+    RETURN n
+  ELSIF p.cur.kind = TkARRAY THEN
+    n := Nn (pool, p, Ast.NArrayType) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkOF) ;
+    Ast.Add (pool, n, SOME (PType (pool, p))) ;
+    RETURN n
+  ELSIF p.cur.kind = TkGRID THEN
+    (* GRID r OF T: the rank is in the type so that subscript arity
+       is a compile-time question, the extents are in the value *)
+    n := Nn (pool, p, Ast.NGridType) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkOF) ;
+    Ast.Add (pool, n, SOME (PType (pool, p))) ;
+    RETURN n
+  ELSIF p.cur.kind = TkSLICE THEN
+    n := Nn (pool, p, Ast.NSliceType) ;
+    Bump (p) ;
+    Expect (p, TkOF) ;
+    Ast.Add (pool, n, SOME (PType (pool, p))) ;
+    Ast.Add (pool, n, NONE) ;   (* RO is a mode now; kid kept for shape *)
+    RETURN n
+  ELSIF p.cur.kind = TkRECORD THEN
+    n := Nn (pool, p, Ast.NRecordType) ;
+    Bump (p) ;
+    IF p.cur.kind = TkLParen THEN
+      Bump (p) ;
+      Ast.Add (pool, n, SOME (PQualident (pool, p))) ;
+      Expect (p, TkRParen)
+    ELSE
+      Ast.Add (pool, n, NONE)
+    END ;
+    Ast.Add (pool, n, SOME (PFieldSeq (pool, p, SEnd))) ;
+    Expect (p, TkEND) ;
+    RETURN n
+  ELSIF p.cur.kind = TkCASE THEN
+    n := Nn (pool, p, Ast.NCaseRecordType) ;
+    Bump (p) ;
+    Expect (p, TkRECORD) ;
+    IF p.cur.kind # TkBar THEN Rerr (p) END ;
+    WHILE p.cur.kind = TkBar DO
+      Ast.Add (pool, n, SOME (PVariant (pool, p)))
+    END ;
+    Expect (p, TkEND) ;
+    RETURN n
+  ELSIF p.cur.kind = TkMONITOR THEN
+    n := Nn (pool, p, Ast.NMonitorType) ;
+    Bump (p) ;
+    Expect (p, TkRECORD) ;
+    Ast.Add (pool, n, SOME (PFieldSeq (pool, p, SEnd))) ;
+    Expect (p, TkEND) ;
+    RETURN n
+  ELSIF p.cur.kind = TkPTR THEN
+    n := Nn (pool, p, Ast.NPtrType) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PType (pool, p))) ;
+    IF p.cur.kind = TkIN THEN
+      Bump (p) ;
+      Ast.Add (pool, n, SOME (PDesignator (pool, p)))
+    ELSE
+      Ast.Add (pool, n, NONE)
+    END ;
+    RETURN n
+  ELSIF p.cur.kind = TkOPT THEN
+    n := Nn (pool, p, Ast.NOptType) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PType (pool, p))) ;
+    RETURN n
+  ELSIF p.cur.kind = TkSHARED THEN
+    n := Nn (pool, p, Ast.NSharedType) ;
+    Bump (p) ;
+    Expect (p, TkPTR) ;
+    Ast.Add (pool, n, SOME (PType (pool, p))) ;
+    RETURN n
+  END ;
+  Rerr (p) ;
+  n := Nn (pool, p, Ast.NQualident) ;
+  n.a := '?' ;
+  Bump (p) ;
+  RETURN n
+END PType ;
+
+PROCEDURE PCaseLabel (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  IF p.cur.kind = TkIdent THEN
+    IF NxtKind (p) = TkLParen THEN
+      n := Nn (pool, p, Ast.NLabelPattern) ;
+      n.a := TakeIdent (p) ;
+      Expect (p, TkLParen) ;
+      Ast.Add (pool, n, SOME (PIdentList (pool, p))) ;
+      Expect (p, TkRParen) ;
+      RETURN n
+    END
+  END ;
+  n := Nn (pool, p, Ast.NLabelRange) ;
+  Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+  IF p.cur.kind = TkDotDot THEN
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p)))
+  ELSE
+    Ast.Add (pool, n, NONE)
+  END ;
+  RETURN n
+END PCaseLabel ;
+
+PROCEDURE PCaseArm (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, lbls : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NCaseArm) ;
+  Expect (p, TkBar) ;
+  lbls := Nn (pool, p, Ast.NLabelList) ;
+  Ast.Add (pool, lbls, SOME (PCaseLabel (pool, p))) ;
+  WHILE p.cur.kind = TkComma DO
+    Bump (p) ;
+    Ast.Add (pool, lbls, SOME (PCaseLabel (pool, p)))
+  END ;
+  Ast.Add (pool, n, SOME (lbls)) ;
+  Expect (p, TkColon) ;
+  Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SArm))) ;
+  RETURN n
+END PCaseArm ;
+
+PROCEDURE IsStmtEndK (k: I64) : BOOL =
+BEGIN
+  RETURN k = TkSemi OR k = TkEND OR k = TkELSE OR k = TkELSIF OR
+         k = TkEXCEPT OR k = TkFINALLY OR k = TkBar OR k = TkEOF
+END IsStmtEndK ;
+
+PROCEDURE PStatement (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, d, e : PTR Ast.Node ;
+BEGIN
+  IF p.cur.kind = TkIdent THEN
+    d := PDesignator (pool, p) ;
+    IF p.cur.kind = TkAssign THEN
+      n := Nn (pool, p, Ast.NAssign) ;
+      Bump (p) ;
+      Ast.Add (pool, n, SOME (d)) ;
+      Ast.Add (pool, n, SOME (PExpr (pool, p)))
+    ELSE
+      n := Nn (pool, p, Ast.NCallStmt) ;
+      Ast.Add (pool, n, SOME (d)) ;
+      IF p.cur.kind = TkLParen THEN
+        n.f1 := TRUE ;
+        Bump (p) ;
+        IF p.cur.kind = TkRParen THEN
+          Ast.Add (pool, n, SOME (Nn (pool, p, Ast.NArgList)))
+        ELSE
+          Ast.Add (pool, n, SOME (PArgList (pool, p)))
+        END ;
+        Expect (p, TkRParen)
+      ELSE
+        Ast.Add (pool, n, NONE)
+      END
+    END ;
+    RETURN n
+  ELSIF p.cur.kind = TkIF THEN
+    n := Nn (pool, p, Ast.NIf) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkTHEN) ;
+    Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SIf))) ;
+    WHILE p.cur.kind = TkELSIF DO
+      e := Nn (pool, p, Ast.NElsif) ;
+      Bump (p) ;
+      Ast.Add (pool, e, SOME (PExpr (pool, p))) ;
+      Expect (p, TkTHEN) ;
+      Ast.Add (pool, e, SOME (PStmtSeq (pool, p, SIf))) ;
+      Ast.Add (pool, n, SOME (e))
+    END ;
+    IF p.cur.kind = TkELSE THEN
+      e := Nn (pool, p, Ast.NElse) ;
+      Bump (p) ;
+      Ast.Add (pool, e, SOME (PStmtSeq (pool, p, SEnd))) ;
+      Ast.Add (pool, n, SOME (e))
+    END ;
+    Expect (p, TkEND) ;
+    RETURN n
+  ELSIF p.cur.kind = TkWHILE THEN
+    n := Nn (pool, p, Ast.NWhile) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkDO) ;
+    Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SEnd))) ;
+    Expect (p, TkEND) ;
+    RETURN n
+  ELSIF p.cur.kind = TkFOR THEN
+    n := Nn (pool, p, Ast.NFor) ;
+    Bump (p) ;
+    n.a := TakeIdent (p) ;
+    Expect (p, TkAssign) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkTO) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    IF p.cur.kind = TkBY THEN
+      Bump (p) ;
+      Ast.Add (pool, n, SOME (PExpr (pool, p)))
+    ELSE
+      Ast.Add (pool, n, NONE)
+    END ;
+    Expect (p, TkDO) ;
+    Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SEnd))) ;
+    Expect (p, TkEND) ;
+    RETURN n
+  ELSIF p.cur.kind = TkLOOP THEN
+    n := Nn (pool, p, Ast.NLoop) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SEnd))) ;
+    Expect (p, TkEND) ;
+    RETURN n
+  ELSIF p.cur.kind = TkEXIT THEN
+    n := Nn (pool, p, Ast.NExit) ;
+    Bump (p) ;
+    RETURN n
+  ELSIF p.cur.kind = TkCASE THEN
+    n := Nn (pool, p, Ast.NCase) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkOF) ;
+    IF p.cur.kind # TkBar THEN Rerr (p) END ;
+    WHILE p.cur.kind = TkBar DO
+      Ast.Add (pool, n, SOME (PCaseArm (pool, p)))
+    END ;
+    IF p.cur.kind = TkELSE THEN
+      e := Nn (pool, p, Ast.NElse) ;
+      Bump (p) ;
+      Ast.Add (pool, e, SOME (PStmtSeq (pool, p, SEnd))) ;
+      Ast.Add (pool, n, SOME (e))
+    END ;
+    Expect (p, TkEND) ;
+    RETURN n
+  ELSIF p.cur.kind = TkRETURN THEN
+    n := Nn (pool, p, Ast.NReturn) ;
+    Bump (p) ;
+    IF IsStmtEndK (p.cur.kind) THEN
+      Ast.Add (pool, n, NONE)
+    ELSE
+      Ast.Add (pool, n, SOME (PExpr (pool, p)))
+    END ;
+    RETURN n
+  ELSIF p.cur.kind = TkRAISE THEN
+    n := Nn (pool, p, Ast.NRaiseStmt) ;
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PQualident (pool, p))) ;
+    IF p.cur.kind = TkLParen THEN
+      Bump (p) ;
+      Ast.Add (pool, n, SOME (PArgList (pool, p))) ;
+      Expect (p, TkRParen)
+    ELSE
+      Ast.Add (pool, n, NONE)
+    END ;
+    RETURN n
+  ELSIF p.cur.kind = TkDISPOSE THEN
+    n := Nn (pool, p, Ast.NDispose) ;
+    Bump (p) ;
+    Expect (p, TkLParen) ;
+    Ast.Add (pool, n, SOME (PDesignator (pool, p))) ;
+    Expect (p, TkRParen) ;
+    RETURN n
+  ELSIF p.cur.kind = TkBEGIN THEN
+    RETURN PBlock (pool, p)
+  ELSIF p.cur.kind = TkTHREAD OR p.cur.kind = TkTRANSFER THEN
+    IF p.cur.kind = TkTHREAD THEN n := Nn (pool, p, Ast.NThread)
+    ELSE n := Nn (pool, p, Ast.NTransfer) END ;
+    Bump (p) ;
+    Expect (p, TkLParen) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkComma) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkRParen) ;
+    RETURN n
+  ELSIF p.cur.kind = TkWAIT OR p.cur.kind = TkSIGNAL THEN
+    IF p.cur.kind = TkWAIT THEN n := Nn (pool, p, Ast.NWait)
+    ELSE n := Nn (pool, p, Ast.NSignal) END ;
+    Bump (p) ;
+    Expect (p, TkLParen) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    Expect (p, TkRParen) ;
+    RETURN n
+  END ;
+  Rerr (p) ;
+  n := Nn (pool, p, Ast.NStmtSeq) ;
+  Bump (p) ;
+  RETURN n
+END PStatement ;
+
+PROCEDURE PStmtSeq (VAR pool: POOL ; VAR p: Parser ; sid: I64)
+  : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NStmtSeq) ;
+  WHILE NOT (InStops (sid, p.cur.kind) OR p.cur.kind = TkEOF) DO
+    Ast.Add (pool, n, SOME (PStatement (pool, p))) ;
+    IF p.cur.kind = TkSemi THEN
+      Bump (p) ;
+      IF InStops (sid, p.cur.kind) OR p.cur.kind = TkEOF THEN
+        n.f1 := TRUE ;
+        RETURN n
+      END
+    ELSE
+      IF NOT (InStops (sid, p.cur.kind) OR p.cur.kind = TkEOF) THEN
+        Rerr (p) ;
+        WHILE NOT (InStops (sid, p.cur.kind) OR p.cur.kind = TkSemi
+                   OR p.cur.kind = TkEOF) DO
+          Bump (p)
+        END ;
+        IF p.cur.kind = TkSemi THEN Bump (p) ELSE RETURN n END
+      ELSE
+        RETURN n
+      END
+    END
+  END ;
+  RETURN n
+END PStmtSeq ;
+
+PROCEDURE PHandler (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, args, h : PTR Ast.Node ;
+  had : BOOL ;
+BEGIN
+  n := Nn (pool, p, Ast.NHandler) ;
+  Expect (p, TkBar) ;
+  Ast.Add (pool, n, SOME (PQualident (pool, p))) ;
+  had := FALSE ;
+  IF p.cur.kind = TkLParen THEN
+    had := TRUE ;
+    Bump (p) ;
+    args := Nn (pool, p, Ast.NArgList) ;
+    LOOP
+      IF p.cur.kind = TkIdent THEN
+        h := Nn (pool, p, Ast.NIdent) ; h.a := p.cur.text ; Bump (p)
+      ELSIF p.cur.kind = TkInt THEN
+        h := Nn (pool, p, Ast.NInt) ; h.a := p.cur.text ; Bump (p)
+      ELSIF p.cur.kind = TkReal THEN
+        h := Nn (pool, p, Ast.NReal) ; h.a := p.cur.text ; Bump (p)
+      ELSIF p.cur.kind = TkChar THEN
+        h := Nn (pool, p, Ast.NChar) ; h.a := p.cur.text ; Bump (p)
+      ELSIF p.cur.kind = TkStr THEN
+        h := Nn (pool, p, Ast.NString) ; h.a := p.cur.text ; Bump (p)
+      ELSE
+        Rerr (p) ;
+        h := Nn (pool, p, Ast.NIdent) ;
+        h.a := '?' ;
+        Bump (p)
+      END ;
+      Ast.Add (pool, args, SOME (h)) ;
+      IF p.cur.kind = TkComma THEN Bump (p) ELSE EXIT END
+    END ;
+    Expect (p, TkRParen) ;
+    Ast.Add (pool, n, SOME (args))
+  END ;
+  IF NOT had THEN Ast.Add (pool, n, NONE) END ;
+  Expect (p, TkColon) ;
+  Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SHandler))) ;
+  RETURN n
+END PHandler ;
+
+PROCEDURE PBlock (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, fin : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NBlock) ;
+  Expect (p, TkBEGIN) ;
+  Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SBlock))) ;
+  IF p.cur.kind = TkEXCEPT THEN
+    Bump (p) ;
+    IF p.cur.kind # TkBar THEN Rerr (p) END ;
+    WHILE p.cur.kind = TkBar DO
+      Ast.Add (pool, n, SOME (PHandler (pool, p)))
+    END
+  END ;
+  IF p.cur.kind = TkFINALLY THEN
+    Bump (p) ;
+    fin := Nn (pool, p, Ast.NFinally) ;
+    Ast.Add (pool, fin, SOME (PStmtSeq (pool, p, SEnd))) ;
+    Ast.Add (pool, n, SOME (fin))
+  END ;
+  Expect (p, TkEND) ;
+  RETURN n
+END PBlock ;
+
+PROCEDURE PParamList (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n, pr : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NParamList) ;
+  IF p.cur.kind = TkRParen THEN RETURN n END ;
+  LOOP
+    pr := Nn (pool, p, Ast.NParam) ;
+    IF p.cur.kind = TkVAR THEN
+      pr.f1 := TRUE ;
+      Bump (p)
+    ELSIF p.cur.kind = TkOWN THEN
+      pr.f2 := TRUE ;
+      Bump (p)
+    ELSIF p.cur.kind = TkRO THEN
+      pr.f3 := TRUE ;
+      Bump (p)
+    END ;
+    Ast.Add (pool, pr, SOME (PIdentList (pool, p))) ;
+    Expect (p, TkColon) ;
+    Ast.Add (pool, pr, SOME (PType (pool, p))) ;
+    Ast.Add (pool, n, SOME (pr)) ;
+    IF p.cur.kind = TkSemi THEN Bump (p) ELSE EXIT END ;
+    IF p.cur.kind = TkRParen OR p.cur.kind = TkEOF THEN EXIT END
+  END ;
+  RETURN n
+END PParamList ;
+
+PROCEDURE PRaises (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NRaises) ;
+  Expect (p, TkRAISES) ;
+  Ast.Add (pool, n, SOME (PQualident (pool, p))) ;
+  WHILE p.cur.kind = TkComma DO
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PQualident (pool, p)))
+  END ;
+  RETURN n
+END PRaises ;
+
+PROCEDURE PProcBody (VAR pool: POOL ; VAR p: Parser ;
+                     RO name: STR) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NProcBody) ;
+  WHILE IsDeclStart (p.cur.kind) DO
+    Ast.Add (pool, n, SOME (PDeclaration (pool, p)))
+  END ;
+  Ast.Add (pool, n, SOME (PBlock (pool, p))) ;
+  IF p.cur.kind = TkIdent THEN
+    IF NOT DynStr.Eq (p.cur.text, name) THEN Rerr (p) END ;
+    Bump (p)
+  ELSE
+    Rerr (p)
+  END ;
+  RETURN n
+END PProcBody ;
+
+PROCEDURE PProcDecl (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NProcDecl) ;
+  Expect (p, TkPROCEDURE) ;
+  n.a := TakeIdent (p) ;
+  IF p.cur.kind = TkEq THEN
+    Bump (p) ;
+    IF p.cur.kind = TkStr THEN
+      n.b := p.cur.text ;
+      Bump (p)
+    ELSE
+      Rerr (p)
+    END
+  END ;
+  Expect (p, TkLParen) ;
+  Ast.Add (pool, n, SOME (PParamList (pool, p))) ;
+  Expect (p, TkRParen) ;
+  IF p.cur.kind = TkColon THEN
+    Bump (p) ;
+    (* RO precedes what it qualifies, in return position too *)
+    IF p.cur.kind = TkRO THEN
+      n.f3 := TRUE ;
+      Bump (p)
+    END ;
+    Ast.Add (pool, n, SOME (PType (pool, p)))
+  ELSE
+    Ast.Add (pool, n, NONE)
+  END ;
+  IF p.cur.kind = TkRAISES THEN
+    Ast.Add (pool, n, SOME (PRaises (pool, p)))
+  ELSE
+    Ast.Add (pool, n, NONE)
+  END ;
+  Ast.Add (pool, n, PAttribOpt (pool, p)) ;
+  IF p.cur.kind = TkEq THEN
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PProcBody (pool, p, n.a)))
+  ELSE
+    Ast.Add (pool, n, NONE)
+  END ;
+  Expect (p, TkSemi) ;
+  RETURN n
+END PProcDecl ;
+
+PROCEDURE PDeclaration (VAR pool: POOL ; VAR p: Parser)
+  : PTR Ast.Node =
+VAR n, d : PTR Ast.Node ;
+BEGIN
+  IF p.cur.kind = TkCONST THEN
+    n := Nn (pool, p, Ast.NConstSection) ;
+    Bump (p) ;
+    WHILE p.cur.kind = TkIdent DO
+      d := Nn (pool, p, Ast.NConstDecl) ;
+      d.a := TakeIdent (p) ;
+      Expect (p, TkEq) ;
+      Ast.Add (pool, d, SOME (PExpr (pool, p))) ;
+      Expect (p, TkSemi) ;
+      Ast.Add (pool, n, SOME (d))
+    END ;
+    RETURN n
+  ELSIF p.cur.kind = TkTYPE THEN
+    n := Nn (pool, p, Ast.NTypeSection) ;
+    Bump (p) ;
+    WHILE p.cur.kind = TkIdent DO
+      d := Nn (pool, p, Ast.NTypeDecl) ;
+      d.a := TakeIdent (p) ;
+      IF p.cur.kind = TkEq THEN
+        Bump (p) ;
+        Ast.Add (pool, d, SOME (PType (pool, p)))
+      ELSE
+        Ast.Add (pool, d, NONE)
+      END ;
+      Expect (p, TkSemi) ;
+      Ast.Add (pool, n, SOME (d))
+    END ;
+    RETURN n
+  ELSIF p.cur.kind = TkVAR THEN
+    n := Nn (pool, p, Ast.NVarSection) ;
+    Bump (p) ;
+    WHILE p.cur.kind = TkIdent OR p.cur.kind = TkRO DO
+      d := Nn (pool, p, Ast.NVarDecl) ;
+      IF p.cur.kind = TkRO THEN
+        d.f3 := TRUE ;
+        Bump (p)
+      END ;
+      Ast.Add (pool, d, SOME (PIdentList (pool, p))) ;
+      Expect (p, TkColon) ;
+      Ast.Add (pool, d, SOME (PType (pool, p))) ;
+      Expect (p, TkSemi) ;
+      Ast.Add (pool, n, SOME (d))
+    END ;
+    RETURN n
+  ELSIF p.cur.kind = TkEXCEPTION THEN
+    n := Nn (pool, p, Ast.NExcSection) ;
+    Bump (p) ;
+    WHILE p.cur.kind = TkIdent DO
+      d := Nn (pool, p, Ast.NExcDecl) ;
+      d.a := TakeIdent (p) ;
+      IF p.cur.kind = TkLParen THEN
+        Bump (p) ;
+        Ast.Add (pool, d, SOME (PFieldSeq (pool, p, SRParen))) ;
+        Expect (p, TkRParen)
+      ELSE
+        Ast.Add (pool, d, NONE)
+      END ;
+      Expect (p, TkSemi) ;
+      Ast.Add (pool, n, SOME (d))
+    END ;
+    RETURN n
+  ELSIF p.cur.kind = TkPROCEDURE THEN
+    RETURN PProcDecl (pool, p)
+  END ;
+  Rerr (p) ;
+  n := Nn (pool, p, Ast.NConstSection) ;
+  Bump (p) ;
+  RETURN n
+END PDeclaration ;
+
+PROCEDURE PImports (VAR pool: POOL ; VAR p: Parser ;
+                    VAR parent: PTR Ast.Node) =
+VAR n : PTR Ast.Node ;
+BEGIN
+  WHILE p.cur.kind = TkFROM OR p.cur.kind = TkIMPORT DO
+    IF p.cur.kind = TkFROM THEN
+      n := Nn (pool, p, Ast.NFromImport) ;
+      Bump (p) ;
+      n.a := TakeIdent (p) ;
+      Expect (p, TkIMPORT)
+    ELSE
+      n := Nn (pool, p, Ast.NImportList) ;
+      Bump (p)
+    END ;
+    Ast.Add (pool, n, SOME (PIdentList (pool, p))) ;
+    Expect (p, TkSemi) ;
+    Ast.Add (pool, parent, SOME (n))
+  END
+END PImports ;
+
+PROCEDURE PDecls (VAR pool: POOL ; VAR p: Parser ;
+                  VAR parent: PTR Ast.Node) =
+BEGIN
+  WHILE IsDeclStart (p.cur.kind) DO
+    Ast.Add (pool, parent, SOME (PDeclaration (pool, p)))
+  END
+END PDecls ;
+
+PROCEDURE PUnit (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR
+  n, body : PTR Ast.Node ;
+  uns, stf : BOOL ;
+BEGIN
+  uns := FALSE ;
+  stf := FALSE ;
+  IF p.cur.kind = TkUNSAFE THEN uns := TRUE ; Bump (p) END ;
+  IF p.cur.kind = TkSTATEFUL THEN stf := TRUE ; Bump (p) END ;
+
+  IF p.cur.kind = TkDEFINITION THEN
+    n := Nn (pool, p, Ast.NDefinition) ;
+    n.f1 := uns ;
+    n.f2 := stf ;
+    Bump (p) ;
+    Expect (p, TkMODULE) ;
+    IF p.cur.kind = TkFOR THEN
+      Bump (p) ;
+      IF p.cur.kind = TkStr THEN
+        n.b := p.cur.text ;
+        Bump (p)
+      ELSE
+        Rerr (p)
+      END
+    END ;
+    n.a := TakeIdent (p) ;
+    Expect (p, TkSemi) ;
+    PImports (pool, p, n) ;
+    PDecls (pool, p, n) ;
+    Expect (p, TkEND) ;
+    IF NOT DynStr.Eq (TakeIdent (p), n.a) THEN Rerr (p) END ;
+    Expect (p, TkDot) ;
+    RETURN n
+  END ;
+
+  IF p.cur.kind = TkIMPLEMENTATION THEN
+    n := Nn (pool, p, Ast.NImplementation) ;
+    n.f1 := uns ;
+    IF stf THEN Rerr (p) END ;
+    Bump (p) ;
+    Expect (p, TkMODULE) ;
+    n.a := TakeIdent (p) ;
+    Expect (p, TkSemi) ;
+    PImports (pool, p, n) ;
+    PDecls (pool, p, n) ;
+    IF p.cur.kind = TkBEGIN THEN
+      (* a BLOCK: the root frame must be able to say what it does
+         about failure.  PBlock consumes BEGIN .. END. *)
+      body := Nn (pool, p, Ast.NModBody) ;
+      Ast.Add (pool, body, SOME (PBlock (pool, p))) ;
+      Ast.Add (pool, n, SOME (body))
+    ELSE
+      Expect (p, TkEND)
+    END ;
+    IF NOT DynStr.Eq (TakeIdent (p), n.a) THEN Rerr (p) END ;
+    Expect (p, TkDot) ;
+    RETURN n
+  END ;
+
+  IF p.cur.kind = TkMODULE THEN
+    n := Nn (pool, p, Ast.NProgram) ;
+    IF uns THEN Rerr (p) END ;
+    IF stf THEN Rerr (p) END ;
+    Bump (p) ;
+    n.a := TakeIdent (p) ;
+    Expect (p, TkSemi) ;
+    PImports (pool, p, n) ;
+    PDecls (pool, p, n) ;
+    IF p.cur.kind = TkBEGIN THEN
+      (* a BLOCK: the root frame must be able to say what it does
+         about failure.  PBlock consumes BEGIN .. END. *)
+      body := Nn (pool, p, Ast.NModBody) ;
+      Ast.Add (pool, body, SOME (PBlock (pool, p))) ;
+      Ast.Add (pool, n, SOME (body))
+    ELSE
+      Expect (p, TkEND)
+    END ;
+    IF NOT DynStr.Eq (TakeIdent (p), n.a) THEN Rerr (p) END ;
+    Expect (p, TkDot) ;
+    RETURN n
+  END ;
+
+  Rerr (p) ;
+  n := Nn (pool, p, Ast.NProgram) ;
+  n.a := '?' ;
+  Bump (p) ;
+  RETURN n
+END PUnit ;
+
+PROCEDURE File (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR
+  n : PTR Ast.Node ;
+  before : I64 ;
+BEGIN
+  n := Nn (pool, p, Ast.NFile) ;
+  WHILE p.cur.kind # TkEOF DO
+    before := p.nerr ;
+    Ast.Add (pool, n, SOME (PUnit (pool, p))) ;
+    IF p.cur.kind # TkEOF THEN
+      IF p.nerr > before + 50 THEN RETURN n END
+    END
+  END ;
+  RETURN n
+END File ;
+
+END Parse.

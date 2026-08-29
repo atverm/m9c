@@ -1,0 +1,452 @@
+DEFINITION MODULE Fmt ;
+
+(* Numbers to text, and back.
+
+   This exists because M9 could not format a float in M9: Plot bound
+   libc's sprintf ("%.4g") through a FOR-C shim, and Io had no way to
+   print an F64 at all.  Borrowing printf is worse than it looks --
+   it is LOCALE DEPENDENT, so the same program writes 3.14 or 3,14
+   depending on the environment, and a JSON document that parses on
+   one machine is malformed on another.  For a language whose whole
+   claim is that boundaries do not lie quietly, owning this is not
+   indulgence.
+
+   Two float paths, with different promises, both stated:
+
+     Bits  is EXACT.  It is the IEEE-754 bit pattern in hex, so
+           ParseBits (Bits (x)) = x for every finite double, and for
+           NaN and the infinities too.  Ugly for humans, correct for
+           machines and for test goldens.
+
+     Fixed is HUMAN, and its accuracy is MEASURED, not claimed.  It
+           scales by a power of ten and rounds half to even, the rule
+           printf uses.  Against printf over a hundred thousand
+           in-range values it disagrees on 0.71%, always by one in
+           the last digit.  The cause is not the tie rule -- that was
+           tried and moved the rate by 0.01 -- but the scaling:
+           v * 10^d rounds before any decision is taken.  Removing
+           that needs exact decimal conversion of the Dragon4 kind,
+           which nobody has written here yet.  The driver prints the
+           rate on every run and fails above 1%, so the number cannot
+           quietly rot.
+
+   Use Bits when a value must survive the round trip; use Fixed when
+   a person is going to read it.  Saying which is which is the point. *)
+
+CONST
+  MaxDecimals = 17 ;
+
+PROCEDURE I64Str (VAR pool: POOL ; v: I64) : STR ;
+  (* decimal text of v, sign and all, in pool.  Total for every I64
+     including MIN: it builds through DynStr.AppendI64, whose own
+     note explains why negating MIN would have trapped and why this
+     does not.                                                      *)
+
+PROCEDURE I64Pad (VAR pool: POOL ; v: I64 ; width: I64 ; zero: BOOL)
+  : STR ;
+  (* right-aligned in width; zero selects '0' over ' ' as the fill.
+     A value too wide is never truncated -- silently losing digits is
+     the class of bug this language refuses -- it just overflows the
+     field, as printf does.                                          *)
+
+PROCEDURE Fixed (VAR pool: POOL ; v: F64 ; decimals: I64) : STR
+  RAISES ValueRange ;
+  (* decimals in 0..MaxDecimals; a magnitude that will not survive
+     scaling raises rather than printing a plausible wrong number.
+     NaN prints 'nan', the infinities 'inf' and '-inf'.              *)
+
+PROCEDURE FixedPad (VAR pool: POOL ; v: F64 ; width, decimals: I64)
+  : STR RAISES ValueRange ;
+  (* Pascal's `v:width:decimals`, which is where the shape comes
+     from: Fixed, then right-aligned in width with BLANKS.  Pascal
+     pads a real field with blanks and never with zeros, so there is
+     no zero flag here as there is on I64Pad; a leading-zero float is
+     a different thing and nobody has asked for one.
+
+     Too wide is never truncated -- it overflows the field, exactly
+     as I64Pad does and for the same reason: silently losing digits
+     is the class of bug this language refuses.                     *)
+
+PROCEDURE Sci (VAR pool: POOL ; v: F64 ; decimals: I64) : STR
+  RAISES ValueRange ;
+  (* scientific notation, one digit before the point and `decimals`
+     after it, then 'e' and the decimal exponent: 3.14e-5.
+
+     THE EXPONENT IS WRITTEN THE SHORT WAY, which is neither C's nor
+     Pascal's.  printf %.2e gives 3.14e-05 and Pascal gives
+     3.14000000000000E-005; both pad the exponent to a fixed width so
+     that columns line up, and this pads with the WIDTH parameter
+     instead, which is what SciPad is for.  So: 'e', a '-' only when
+     the exponent is negative, and no leading zeros -- 3.14e-5 and
+     3.14e5.
+
+     Zero prints as 0.00e0, and NEGATIVE zero prints without the
+     sign, as Fixed already does: neither consults the sign bit.
+     printf disagrees on that one value and the driver excludes it
+     rather than pretending they agree.
+
+     The accuracy is Fixed's, and measured the same way: the mantissa
+     is normalised by multiplying or dividing by ONE power of ten
+     chosen by binary decomposition -- about eighteen roundings at
+     the worst instead of the three hundred a divide-by-ten loop
+     would take -- and then rounded half to even like Fixed.  The
+     driver compares it against printf over a spread of magnitudes
+     and prints the disagreement rate.                              *)
+
+PROCEDURE SciPad (VAR pool: POOL ; v: F64 ; width, decimals: I64)
+  : STR RAISES ValueRange ;
+  (* Sci, right-aligned in width with blanks -- the `:x:y` of the
+     scientific form.  A short exponent makes the field ragged on the
+     right, which is what the width is for.                         *)
+
+PROCEDURE Bits (VAR pool: POOL ; v: F64) : STR ;
+PROCEDURE ParseBits (RO s: STR) : F64 RAISES ValueRange ;
+  (* the exact pair: 16 hex digits, low byte first, round-trip total *)
+
+PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange ;
+  (* decimal, with optional sign, fraction and exponent.  Rejects
+     anything else, because a command line or a data file that says
+     it holds a number and does not is the boundary this catches.    *)
+
+END Fmt.
+
+
+IMPLEMENTATION MODULE Fmt ;
+
+IMPORT DynStr ;
+
+CONST
+  HexDigits = '0123456789ABCDEF' ;
+  MaxF64    = 1.7976931348623157E308 ;
+
+PROCEDURE I64Str (VAR pool: POOL ; v: I64) : STR =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendI64 (pool, d, v) ;
+  RETURN DynStr.View (d)
+END I64Str ;
+
+PROCEDURE I64Pad (VAR pool: POOL ; v: I64 ; width: I64 ; zero: BOOL)
+  : STR =
+VAR
+  body : STR ;
+  d : PTR DynStr.DString IN pool ;
+  i, n : I64 ;
+  neg : BOOL ;
+BEGIN
+  body := I64Str (pool, v) ;
+  n := LEN (body) ;
+  IF n >= width THEN RETURN body END ;
+  d := DynStr.New (pool) ;
+  neg := FALSE ;
+  IF n > 0 THEN neg := body[0] = '-' END ;
+  IF zero AND neg THEN
+    (* the sign leads the zeros, not the other way round *)
+    DynStr.AppendChar (pool, d, '-') ;
+    FOR i := 1 TO width - n DO DynStr.AppendChar (pool, d, '0') END ;
+    DynStr.Append (pool, d, SLICE (body, 1, n - 1))
+  ELSE
+    FOR i := 1 TO width - n DO
+      IF zero THEN DynStr.AppendChar (pool, d, '0')
+      ELSE DynStr.AppendChar (pool, d, ' ') END
+    END ;
+    DynStr.Append (pool, d, body)
+  END ;
+  RETURN DynStr.View (d)
+END I64Pad ;
+
+PROCEDURE Pow10 (n: I64) : F64 =
+VAR
+  i : I64 ;
+  p : F64 ;
+BEGIN
+  p := 1.0 ;
+  FOR i := 1 TO n DO p := p * 10.0 END ;
+  RETURN p
+END Pow10 ;
+
+PROCEDURE Pow10I (n: I64) : I64 =
+VAR
+  i, p : I64 ;
+BEGIN
+  p := 1 ;
+  FOR i := 1 TO n DO p := p * 10 END ;
+  RETURN p
+END Pow10I ;
+
+PROCEDURE Fixed (VAR pool: POOL ; v: F64 ; decimals: I64) : STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  scaled, av : F64 ;
+  whole, frac, scale, i : I64 ;
+  neg : BOOL ;
+BEGIN
+  IF v # v THEN RETURN 'nan' END ;
+  IF v > MaxF64 THEN RETURN 'inf' END ;
+  IF v < -MaxF64 THEN RETURN '-inf' END ;
+  IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
+
+  neg := v < 0.0 ;
+  av := v ;
+  IF neg THEN av := -av END ;
+
+  scale := Pow10I (decimals) ;
+  (* Round half to EVEN on the scaled value, which is what printf
+     does on the true one.  Half away from zero disagreed with printf
+     on 0.72% of a hundred thousand values; the driver measures the
+     rate rather than trusting either rule, and prints it. *)
+  scaled := av * Pow10 (decimals) ;
+  frac := I64 (scaled) ;
+  IF scaled - F64 (frac) > 0.5 THEN
+    scaled := scaled + 1.0
+  ELSIF scaled - F64 (frac) = 0.5 THEN
+    IF frac MOD 2 # 0 THEN scaled := scaled + 1.0 END
+  END ;
+  (* the conversion is checked: a magnitude that will not fit raises
+     ValueRange here rather than wrapping into a plausible lie *)
+  whole := I64 (scaled) DIV scale ;
+  frac := I64 (scaled) MOD scale ;
+
+  d := DynStr.New (pool) ;
+  IF neg THEN DynStr.AppendChar (pool, d, '-') END ;
+  DynStr.AppendI64 (pool, d, whole) ;
+  IF decimals > 0 THEN
+    DynStr.AppendChar (pool, d, '.') ;
+    DynStr.Append (pool, d, I64Pad (pool, frac, decimals, TRUE))
+  END ;
+  RETURN DynStr.View (d)
+END Fixed ;
+
+(* Blank-padding, right-aligned.  I64Pad keeps its own copy because
+   it has the zero fill and the sign-before-the-zeros rule to obey;
+   this is the plain one that FixedPad and SciPad share. *)
+PROCEDURE PadLeft (VAR pool: POOL ; RO body: STR ; width: I64) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  IF LEN (body) >= width THEN RETURN body END ;
+  d := DynStr.New (pool) ;
+  FOR i := 1 TO width - LEN (body) DO DynStr.AppendChar (pool, d, ' ') END ;
+  DynStr.Append (pool, d, body) ;
+  RETURN DynStr.View (d)
+END PadLeft ;
+
+PROCEDURE FixedPad (VAR pool: POOL ; v: F64 ; width, decimals: I64)
+  : STR RAISES ValueRange =
+BEGIN
+  RETURN PadLeft (pool, Fixed (pool, v, decimals), width)
+END FixedPad ;
+
+(* Bring a into [1, 10) and answer the decimal exponent that was
+   taken out of it.
+
+   ONE POWER OF TEN PER STEP, chosen by binary decomposition: 256,
+   128, 64 ... 1.  The obvious loop -- divide by ten until it fits --
+   rounds once per iteration, which for 1e-320 is three hundred and
+   twenty roundings and an answer that has drifted.  This does at
+   most eighteen, and each one is a division by an exactly-known
+   power rather than a repeated compounding.
+
+   256 is the largest step because Pow10 (512) is already +Inf, and
+   1e256 covers the whole F64 range in two applications.  Neither
+   loop can overflow: the divide phase only ever makes a smaller,
+   and the multiply phase runs with a already below 10.               *)
+PROCEDURE Norm (VAR a: F64) : I64 =
+VAR
+  e, step : I64 ;
+  p : F64 ;
+BEGIN
+  e := 0 ;
+  step := 256 ;
+  WHILE step >= 1 DO
+    p := Pow10 (step) ;
+    WHILE a >= p DO a := a / p ; e := e + step END ;
+    step := step DIV 2
+  END ;
+  (* the step = 1 pass above leaves a < 10; this one leaves a >= 1,
+     and `a * p < 10.0` is the test that says the multiply is safe *)
+  step := 256 ;
+  WHILE step >= 1 DO
+    p := Pow10 (step) ;
+    WHILE a * p < 10.0 DO a := a * p ; e := e - step END ;
+    step := step DIV 2
+  END ;
+  RETURN e
+END Norm ;
+
+PROCEDURE Sci (VAR pool: POOL ; v: F64 ; decimals: I64) : STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  av, scaled : F64 ;
+  expo, scale, whole, frac : I64 ;
+  neg : BOOL ;
+BEGIN
+  IF v # v THEN RETURN 'nan' END ;
+  IF v > MaxF64 THEN RETURN 'inf' END ;
+  IF v < -MaxF64 THEN RETURN '-inf' END ;
+  IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
+
+  neg := v < 0.0 ;
+  av := v ;
+  IF neg THEN av := -av END ;
+
+  scale := Pow10I (decimals) ;
+  IF av = 0.0 THEN
+    (* zero has no exponent to find, and Norm would not terminate
+       looking for one *)
+    expo := 0 ;
+    whole := 0 ;
+    frac := 0
+  ELSE
+    expo := Norm (av) ;
+    (* av is now in [1, 10); the rounding is Fixed's, half to even *)
+    scaled := av * Pow10 (decimals) ;
+    frac := I64 (scaled) ;
+    IF scaled - F64 (frac) > 0.5 THEN
+      scaled := scaled + 1.0
+    ELSIF scaled - F64 (frac) = 0.5 THEN
+      IF frac MOD 2 # 0 THEN scaled := scaled + 1.0 END
+    END ;
+    whole := I64 (scaled) DIV scale ;
+    frac := I64 (scaled) MOD scale ;
+    (* 9.99 at two decimals rounds to 10.00, which is not normalised:
+       carry it into the exponent rather than printing a mantissa
+       with two digits in front of the point *)
+    IF whole >= 10 THEN
+      whole := 1 ;
+      frac := 0 ;
+      expo := expo + 1
+    END
+  END ;
+
+  d := DynStr.New (pool) ;
+  IF neg THEN DynStr.AppendChar (pool, d, '-') END ;
+  DynStr.AppendI64 (pool, d, whole) ;
+  IF decimals > 0 THEN
+    DynStr.AppendChar (pool, d, '.') ;
+    DynStr.Append (pool, d, I64Pad (pool, frac, decimals, TRUE))
+  END ;
+  DynStr.AppendChar (pool, d, 'e') ;
+  (* AppendI64 writes '-' for a negative and nothing for a positive,
+     which is exactly the short form this wants *)
+  DynStr.AppendI64 (pool, d, expo) ;
+  RETURN DynStr.View (d)
+END Sci ;
+
+PROCEDURE SciPad (VAR pool: POOL ; v: F64 ; width, decimals: I64)
+  : STR RAISES ValueRange =
+BEGIN
+  RETURN PadLeft (pool, Sci (pool, v, decimals), width)
+END SciPad ;
+
+PROCEDURE Bits (VAR pool: POOL ; v: F64) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  b : SLICE OF BYTE ;
+  scratch : POOL ;
+  i, x : I64 ;
+BEGIN
+  b := NEW (scratch, BYTE, 8) ;
+  F64.ToBytesLE (v, b) ;
+  d := DynStr.New (pool) ;
+  FOR i := 0 TO 7 DO
+    x := I64 (b[i]) ;
+    DynStr.AppendChar (pool, d, HexDigits[x DIV 16]) ;
+    DynStr.AppendChar (pool, d, HexDigits[x MOD 16])
+  END ;
+  RETURN DynStr.View (d)
+END Bits ;
+
+PROCEDURE HexVal (c: CHAR) : I64 RAISES ValueRange =
+BEGIN
+  IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - 48 END ;
+  IF c >= 'A' AND c <= 'F' THEN RETURN ORD (c) - 55 END ;
+  IF c >= 'a' AND c <= 'f' THEN RETURN ORD (c) - 87 END ;
+  RAISE ValueRange
+END HexVal ;
+
+PROCEDURE ParseBits (RO s: STR) : F64 RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  IF LEN (s) # 16 THEN RAISE ValueRange END ;
+  b := NEW (scratch, BYTE, 8) ;
+  FOR i := 0 TO 7 DO
+    b[i] := BYTE (HexVal (s[2 * i]) * 16 + HexVal (s[2 * i + 1]))
+  END ;
+  RETURN F64.FromBytesLE (b)
+END ParseBits ;
+
+PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange =
+VAR
+  i, n, digits, expo, esign, eval : I64 ;
+  mant, scale : F64 ;
+  neg, seenDot : BOOL ;
+BEGIN
+  n := LEN (s) ;
+  IF n = 0 THEN RAISE ValueRange END ;
+  i := 0 ;
+  neg := FALSE ;
+  IF s[i] = '-' THEN neg := TRUE ; i := i + 1
+  ELSIF s[i] = '+' THEN i := i + 1 END ;
+
+  mant := 0.0 ;
+  expo := 0 ;
+  digits := 0 ;
+  seenDot := FALSE ;
+  WHILE i < n DO
+    IF s[i] = '.' THEN
+      IF seenDot THEN RAISE ValueRange END ;
+      seenDot := TRUE ;
+      i := i + 1
+    ELSIF s[i] >= '0' AND s[i] <= '9' THEN
+      mant := mant * 10.0 + F64 (ORD (s[i]) - 48) ;
+      IF seenDot THEN expo := expo - 1 END ;
+      digits := digits + 1 ;
+      i := i + 1
+    ELSE
+      EXIT
+    END
+  END ;
+  IF digits = 0 THEN RAISE ValueRange END ;
+
+  IF i < n THEN
+    IF s[i] = 'e' OR s[i] = 'E' THEN
+      i := i + 1 ;
+      esign := 1 ;
+      IF i < n THEN
+        IF s[i] = '-' THEN esign := -1 ; i := i + 1
+        ELSIF s[i] = '+' THEN i := i + 1 END
+      END ;
+      eval := 0 ;
+      IF i >= n THEN RAISE ValueRange END ;
+      WHILE i < n DO
+        IF s[i] < '0' OR s[i] > '9' THEN RAISE ValueRange END ;
+        eval := eval * 10 + (ORD (s[i]) - 48) ;
+        i := i + 1
+      END ;
+      expo := expo + esign * eval
+    END
+  END ;
+  IF i # n THEN RAISE ValueRange END ;
+
+  (* scaling in F64: correctly rounded for the decimal exponents a
+     data file actually carries, and the driver checks it against
+     strtod rather than assuming                                     *)
+  scale := Pow10 (expo) ;
+  IF expo < 0 THEN
+    mant := mant / Pow10 (-expo)
+  ELSE
+    mant := mant * scale
+  END ;
+  IF neg THEN RETURN -mant END ;
+  RETURN mant
+END ParseF64 ;
+
+END Fmt.

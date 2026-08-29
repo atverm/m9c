@@ -1,0 +1,223 @@
+DEFINITION MODULE Http ;
+
+(* Minimal HTTP/1.0 GET over TCP.  The M2 version returned -1 for
+   every kind of transport failure and parked the payload behind an
+   ADDRESS; here each failure RAISES with its name, and the payload
+   lands in a slice the caller sized.                                *)
+
+EXCEPTION
+  TransportError (RO msg: STR) ;
+
+PROCEDURE Get (RO host: STR ; port: I64 ;
+               RO path: STR ;
+               body: SLICE OF BYTE ;
+               VAR bodyLen: I64) : I64
+  RAISES TransportError, ValueRange ;
+  (* returns the HTTP status; body receives at most LEN (body) bytes.
+     ValueRange is the CHAR/octet boundary speaking: a non-Latin-1
+     host or path raises instead of producing mojibake on the wire.
+     No IDN, and the signature says so.                              *)
+
+PROCEDURE GetTls (RO host: STR ; port: I64 ;
+                  RO path: STR ;
+                  body: SLICE OF BYTE ;
+                  VAR bodyLen: I64) : I64
+  RAISES TransportError, ValueRange ;
+  (* the same request over TLS.  A separate NAME rather than a BOOL
+     argument: `Get (host, 443, path, TRUE, body, n)` says nothing at
+     the call site, and this is not a flag anyone should be able to
+     pass by accident.
+
+     The certificate IS verified -- chain and hostname, in the
+     handshake, by tlsshim.c.  A client that skips that is worse than
+     a plain socket because it looks encrypted, so there is no option
+     here to turn it off.  Failure to verify arrives as
+     TransportError like any other failure to connect: a caller
+     cannot proceed either way, and the two are not usefully
+     distinguished at this layer.                                   *)
+
+END Http.
+
+
+UNSAFE DEFINITION MODULE FOR "C" csock ;
+
+PROCEDURE Connect = "tcp_connect" (host: C.ConstPtr ; port: C.Int)
+  : C.Int  [SERIAL] ;
+  (* the shim resolves and connects; SERIAL until its thread safety
+     is audited, not asserted -- REENTRANT is a claim, not a default *)
+
+PROCEDURE Read = "read" (fd: C.Int ; buf: C.MutPtr ; n: C.SizeT)
+  : C.SSizeT  [REENTRANT] ;
+
+PROCEDURE Write = "write" (fd: C.Int ; buf: C.ConstPtr ; n: C.SizeT)
+  : C.SSizeT  [REENTRANT] ;
+
+PROCEDURE Close = "close" (fd: C.Int) : C.Int  [REENTRANT] ;
+
+(* TLS, from tlsshim.c.  The handle is an int for the same reason the
+   socket is: a small non-negative number, -1 for failure, and no
+   SSL * crossing the boundary.
+
+   [SERIAL] here is LOAD-BEARING, not conservative like Connect's.
+   OpenSSL 3 is thread-safe per SSL object, but the shim's slot table
+   is not, and the checker's THREAD-may-not-reach-[SERIAL] rule is
+   what keeps a future threaded fetcher out of it.                  *)
+
+PROCEDURE TlsConnect = "tls_connect" (host: C.ConstPtr ; port: C.Int)
+  : C.Int  [SERIAL] ;
+
+PROCEDURE TlsRead = "tls_read" (h: C.Int ; buf: C.MutPtr ; n: C.SizeT)
+  : C.SSizeT  [SERIAL] ;
+
+PROCEDURE TlsWrite = "tls_write" (h: C.Int ; buf: C.ConstPtr ;
+                                  n: C.SizeT)
+  : C.SSizeT  [SERIAL] ;
+
+PROCEDURE TlsClose = "tls_close" (h: C.Int) : C.Int  [SERIAL] ;
+
+END csock.
+
+
+UNSAFE IMPLEMENTATION MODULE Http ;
+
+(* UNSAFE for one reason: ADR at the foreign boundary.  Everything
+   else is checked code; the audit surface is this file, grep ADR.   *)
+
+FROM csock IMPORT Connect, Read, Write, Close ;
+FROM csock IMPORT TlsConnect, TlsRead, TlsWrite, TlsClose ;
+IMPORT DynStr ;
+
+CONST
+  RecvMax = 4194304 ;
+  (* was 1048576; the bench store's ~2MB compressed chunks are the
+     real store that demanded the widening -- random doubles do not
+     compress, and a silent 1MB truncation surfaced as blosc IOError
+     three layers up.  A Content-Length-honest reader is P5 work.    *)
+
+PROCEDURE CrLf (VAR pool: POOL ; VAR d: PTR DynStr.DString) =
+BEGIN
+  DynStr.AppendChar (pool, d, 0DC) ;
+  DynStr.AppendChar (pool, d, 0AC)
+END CrLf ;
+
+(* One request.  `secure` chooses the transport at four points and
+   changes nothing else: the request bytes, the response parsing and
+   the FINALLY that closes the handle are the same code either way,
+   which is the point of keeping the TLS handle an int.            *)
+PROCEDURE Fetch (secure: BOOL ; RO host: STR ; port: I64 ;
+                 RO path: STR ;
+                 body: SLICE OF BYTE ;
+                 VAR bodyLen: I64) : I64
+  RAISES TransportError, ValueRange =
+VAR
+  scratch : POOL ;                       (* dies with this frame *)
+  req : PTR DynStr.DString IN scratch ;
+  hz, wire, recv : SLICE OF BYTE ;
+  fd, n, total, hEnd, i, status : I64 ;
+BEGIN
+  bodyLen := 0 ;
+  hz := DynStr.Bytes (scratch, host, TRUE) ;
+  IF secure THEN
+    fd := I64 (TlsConnect (ADR (hz), C.Int (port)))
+  ELSE
+    fd := I64 (Connect (ADR (hz), C.Int (port)))
+  END ;
+  IF fd < 0 THEN RAISE TransportError ('connect failed') END ;
+
+  BEGIN
+    req := DynStr.New (scratch) ;
+    DynStr.Append (scratch, req, 'GET ') ;
+    DynStr.Append (scratch, req, path) ;
+    DynStr.Append (scratch, req, ' HTTP/1.0') ;
+    CrLf (scratch, req) ;
+    DynStr.Append (scratch, req, 'Host: ') ;
+    DynStr.Append (scratch, req, host) ;
+    CrLf (scratch, req) ;
+    CrLf (scratch, req) ;
+    (* DynStr grows as needed: the M2 version concatenated into
+       ARRAY [0..511] OF CHAR, so the request had a silent 512-byte
+       ceiling the type system never mentioned.                      *)
+    wire := DynStr.Bytes (scratch, DynStr.View (req), FALSE) ;
+
+    IF secure THEN
+      n := I64 (TlsWrite (C.Int (fd), ADR (wire), C.SizeT (LEN (wire))))
+    ELSE
+      n := I64 (Write (C.Int (fd), ADR (wire), C.SizeT (LEN (wire))))
+    END ;
+    IF n < 0 THEN RAISE TransportError ('send failed') END ;
+
+    recv := NEW (scratch, BYTE, RecvMax) ;
+    (* the M2 recvBuf was a module global: every Get raced every
+       other Get, silently.  Pool-local, the race cannot be written. *)
+    total := 0 ;
+    LOOP
+      IF secure THEN
+        n := I64 (TlsRead (C.Int (fd),
+                           ADR (SLICE (recv, total, RecvMax - total)),
+                           C.SizeT (RecvMax - total)))
+      ELSE
+        n := I64 (Read (C.Int (fd),
+                        ADR (SLICE (recv, total, RecvMax - total)),
+                        C.SizeT (RecvMax - total)))
+      END ;
+      IF n <= 0 THEN EXIT END ;
+      total := total + n ;
+      IF total >= RecvMax THEN EXIT END
+    END
+  FINALLY
+    (* closed on success, on RAISE, on either failure above: the M2
+       version juggled close by hand on every early-return path.     *)
+    IF secure THEN
+      n := I64 (TlsClose (C.Int (fd)))
+    ELSE
+      n := I64 (Close (C.Int (fd)))
+    END
+  END ;
+
+  IF total < 12 THEN RAISE TransportError ('short response') END ;
+
+  (* status from "HTTP/1.x NNN" *)
+  status := (I64 (recv[9])  - 48) * 100 +
+            (I64 (recv[10]) - 48) * 10 +
+            (I64 (recv[11]) - 48) ;
+
+  (* find CRLFCRLF *)
+  hEnd := 0 ;
+  i := 3 ;
+  WHILE i < total AND hEnd = 0 DO
+    IF I64 (recv[i-3]) = 13 AND I64 (recv[i-2]) = 10 AND
+       I64 (recv[i-1]) = 13 AND I64 (recv[i])   = 10 THEN
+      hEnd := i + 1
+    END ;
+    i := i + 1
+  END ;
+  IF hEnd = 0 THEN RAISE TransportError ('no header terminator') END ;
+
+  i := 0 ;
+  WHILE hEnd + i < total AND i < LEN (body) DO
+    body[i] := recv[hEnd + i] ;
+    i := i + 1
+  END ;
+  bodyLen := i ;
+  RETURN status
+END Fetch ;
+
+PROCEDURE Get (RO host: STR ; port: I64 ;
+               RO path: STR ;
+               body: SLICE OF BYTE ;
+               VAR bodyLen: I64) : I64
+  RAISES TransportError, ValueRange =
+BEGIN
+  RETURN Fetch (FALSE, host, port, path, body, bodyLen)
+END Get ;
+
+PROCEDURE GetTls (RO host: STR ; port: I64 ;
+                  RO path: STR ;
+                  body: SLICE OF BYTE ;
+                  VAR bodyLen: I64) : I64
+  RAISES TransportError, ValueRange =
+BEGIN
+  RETURN Fetch (TRUE, host, port, path, body, bodyLen)
+END GetTls ;
+
+END Http.

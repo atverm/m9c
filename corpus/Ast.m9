@@ -1,0 +1,104 @@
+DEFINITION MODULE Ast ;
+
+(* M9 abstract syntax, in M9 -- restated from host/fpc/M9AST.pas for
+   the P5 self-hosted parser.  One homogeneous node: kind codes
+   mirror the FPC TNodeKind order (0 File .. 80 ArgList); fixed child
+   slots may be NONE and print as absence; a and b carry ident and
+   literal text verbatim.  Nodes and their kid vectors live in the
+   caller's pool: free the pool, free the tree -- the Json story.    *)
+
+CONST
+  (* kind codes, mirroring the FPC TNodeKind order *)
+  NFile = 0 ;    NDefinition = 1 ;   NImplementation = 2 ;
+  NProgram = 3 ; NModBody = 4 ;      NFromImport = 5 ;
+  NImportList = 6 ; NConstSection = 7 ; NTypeSection = 8 ;
+  NVarSection = 9 ; NExcSection = 10 ; NConstDecl = 11 ;
+  NTypeDecl = 12 ; NVarDecl = 13 ; NExcDecl = 14 ; NProcDecl = 15 ;
+  NParamList = 16 ; NParam = 17 ; NRaises = 18 ; NAttrib = 19 ;
+  NProcBody = 20 ; NBlock = 21 ; NHandler = 22 ; NFinally = 23 ;
+  NIdentList = 24 ; NIdent = 25 ; NQualident = 26 ; NArrayType = 27 ;
+  NSliceType = 28 ; NRecordType = 29 ; NCaseRecordType = 30 ;
+  NVariant = 31 ; NMonitorType = 32 ; NFieldSeq = 33 ;
+  NFieldGroup = 34 ; NPtrType = 35 ; NOptType = 36 ;
+  NSharedType = 37 ; NStmtSeq = 38 ; NAssign = 39 ; NCallStmt = 40 ;
+  NIf = 41 ; NElsif = 42 ; NWhile = 43 ; NElse = 44 ; NFor = 45 ;
+  NLoop = 46 ; NExit = 47 ; NCase = 48 ; NCaseArm = 49 ;
+  NLabelList = 50 ; NLabelRange = 51 ; NLabelPattern = 52 ;
+  NReturn = 53 ; NRaiseStmt = 54 ; NDispose = 55 ; NThread = 56 ;
+  NTransfer = 57 ; NWait = 58 ; NSignal = 59 ; NBin = 60 ; NUn = 61 ;
+  NIs = 62 ; NIsSome = 63 ; NParen = 64 ; NInt = 65 ; NReal = 66 ;
+  NChar = 67 ; NString = 68 ; NTrue = 69 ; NFalse = 70 ;
+  NNoneLit = 71 ; NSomeExpr = 72 ; NSharedExpr = 73 ; NNewExpr = 74 ;
+  NSliceOf3 = 75 ; NCallExpr = 76 ; NDesignator = 77 ; NSelField = 78 ;
+  NSelIndex = 79 ; NArgList = 80 ;
+  (* Appended, not inserted.  The FPC enum grew nkGridType next to
+     nkArrayType, but a code that MOVES is a code no one can rely on
+     -- the rule Lex already states for keywords -- and nothing
+     compares these numbers across the two implementations:
+     parsediff compares printed text and gendiff compares emitted C. *)
+  NGridType = 81 ;
+
+TYPE
+  Kid = OPT PTR Node ;               (* named so NEW can say it;
+                                        Node resolves lazily below *)
+
+  Node = RECORD
+    kind, line, col : I64 ;
+    a, b : STR ;
+    f1, f2, f3 : BOOL ;         (* f3: the RO mode on a binding *)
+    kids : SLICE OF Kid ;
+    nkids : I64 ;
+  END ;
+
+PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
+  : PTR Node IN pool ;
+  (* a node with no children and empty a/b, ready for Add.
+
+       kind      -- one of the N* constants above.  They are
+                    EXPORTED CONSTS with fixed values, not an
+                    enumeration, because both generators and both
+                    checkers agree on them by number: a code that
+                    moves is a code nobody can rely on, which is why
+                    NGridType was appended at 81 rather than
+                    inserted where it belonged alphabetically.
+       line, col -- where the construct STARTS.  There is no end
+                    position on a node, which is worth knowing
+                    before writing anything that wants to know how
+                    far a declaration reached.                     *)
+
+PROCEDURE Add (VAR pool: POOL ; VAR n: PTR Node ; kid: Kid) ;
+  (* NONE is a legal child: absence with a position *)
+
+END Ast.
+
+
+IMPLEMENTATION MODULE Ast ;
+
+PROCEDURE NewNode (VAR pool: POOL ; kind, line, col: I64)
+  : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.kind := kind ;
+  n.line := line ;
+  n.col := col ;
+  n.kids := NEW (pool, Kid, 4) ;
+  n.nkids := 0 ;
+  RETURN n
+END NewNode ;
+
+PROCEDURE Add (VAR pool: POOL ; VAR n: PTR Node ; kid: Kid) =
+VAR
+  nb : SLICE OF Kid ;
+  i : I64 ;
+BEGIN
+  IF n.nkids = LEN (n.kids) THEN
+    nb := NEW (pool, Kid, 2 * LEN (n.kids)) ;
+    FOR i := 0 TO n.nkids - 1 DO nb[i] := n.kids[i] END ;
+    n.kids := nb
+  END ;
+  n.kids[n.nkids] := kid ;
+  n.nkids := n.nkids + 1
+END Add ;
+
+END Ast.

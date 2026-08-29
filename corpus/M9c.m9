@@ -1,0 +1,1715 @@
+MODULE M9c ;
+
+(* The compiler, as a program.
+
+     m9c FILE.m9 [DEP.m9 ...]
+
+   reads FILE.m9, reads each dependency's definitions, and writes
+   NAME.h and NAME.c beside the working directory.  Lex, Parse, Ast,
+   Print and Gen are all M9; this module is the last piece that made
+   them a tool rather than a library, and it is itself compiled by
+   the toolchain it completes.
+
+   One module per invocation, deliberately: Gen is STATEFUL and holds
+   exactly one module's registries, so a batch mode would need either
+   a reset path nobody has tested or a second instance the language
+   has no syntax for.  A process is the reset.
+
+   It CHECKS before it generates.  A compiler that translates what it
+   knows to be wrong is a translator, and m9c was one until Sem.m9
+   existed to connect: a program with a semantic error now produces
+   diagnostics on stderr and no output files, and exits nonzero.
+
+   Dependencies are loaded for two different consumers, and they want
+   two different closures.  The checker wants the TRANSITIVE one: a
+   cross-module name that has not been loaded is indistinguishable
+   from one that does not exist, however far away it lives.  The
+   generator wants only the DIRECT imports, because what it does with
+   a registered unit is emit an #include, and a header that includes
+   its dependencies' dependencies describes somebody else's
+   interface.  Conflating the two put Lex, Print and Text into M9c.h
+   the first time imports were resolved automatically.              *)
+
+IMPORT Io ;
+IMPORT Ast ;
+IMPORT Parse ;
+IMPORT Gen ;
+IMPORT Sem ;
+IMPORT Doc ;
+IMPORT Lex ;
+IMPORT DynStr ;
+
+VAR
+  pool : POOL ;
+  failed : BOOL ;
+
+  (* what the command line asked for *)
+  doCompile : BOOL ;      (* -c : hand the C to a C compiler   *)
+  exe       : STR ;       (* -o : link, and call the result this *)
+  doLink    : BOOL ;
+  keepC     : BOOL ;      (* --keep-c : leave the C behind      *)
+  verbose   : BOOL ;      (* -v : show the command handed to cc  *)
+  doVersion : BOOL ;      (* --version, or a bare -v with no file *)
+  noUnsafe  : BOOL ;      (* --no-unsafe : refuse UNSAFE and
+                             FOR "C" units outside the trusted
+                             library directories *)
+  nunsafe   : I64 ;       (* how many such units were refused *)
+  ccFrom    : I64 ;       (* first argument after --, or 0      *)
+  (* --ar and --so: the closure as a LIBRARY rather than a program.
+     Same closure, same objects, a different last step -- ar for the
+     archive, cc -shared for the object.
+
+     WHEN --pic IS ACTUALLY NEEDED, measured rather than assumed.  It
+     was put here believing every member of a shared object has to be
+     built -fPIC, and that is only half true: m9c compiles with -flto,
+     so a `-c` object is LTO IR and the code generation happens at
+     LINK time -- where -shared asks for position-independent code and
+     gets it.  A closure built with plain `m9c -c` therefore goes into
+     a .so and works.  Put anything after -- and LTO goes with the
+     rest of the defaults; then the object really is machine code, and
+     ld refuses it with
+       relocation R_X86_64_PC32 against `m9_exc_IndexError'
+       can not be used when making a shared object; recompile with -fPIC
+     Both halves are checked in m9c.sh, because the working case is
+     the one an assumption would have got wrong. *)
+  lib       : STR ;       (* --ar / --so : the library to build  *)
+  doAr      : BOOL ;
+  doSo      : BOOL ;
+  doPic     : BOOL ;      (* --pic : compile position-independent *)
+  doDoc     : BOOL ;      (* --doc : write NAME.md and nothing else *)
+  doJson    : BOOL ;      (* --json : with --doc, NAME.json as well *)
+  debug     : BOOL ;      (* -g : debug info, and keep the C it names *)
+  doMake    : BOOL ;      (* --make : rebuild stale dependencies first *)
+
+  (* where to look for an imported module's source *)
+  dirs   : SLICE OF STR ;
+  trusts : SLICE OF BOOL ;  (* dirs[i] came from $M9LIBRARY or the
+                               installed StdLib: its units may be
+                               UNSAFE / FOR "C" under --no-unsafe *)
+  ndirs  : I64 ;
+  (* module names already loaded, so a diamond is loaded once and a
+     cycle terminates rather than recurring *)
+  loaded  : SLICE OF STR ;
+  nloaded : I64 ;
+  (* roots of the deps that WERE named, so the gaps they leave can be
+     filled once the named ones are all in, in the order given *)
+  depRoots : SLICE OF Ast.Kid ;
+  ndeps    : I64 ;
+  nmissing : I64 ;
+  (* the module being compiled: its own object is not a dependency *)
+  modName  : STR ;
+
+CONST
+  (* Where a package puts the standard modules, searched last.  A
+     constant rather than a build-time substitution because M9 has no
+     -D and inventing one for a single string would be a language
+     feature bought with a packaging problem.  A distribution that
+     disagrees can set $M9LIBRARY, which is searched first anyway. *)
+  StdLib = '/usr/lib/m9' ;
+
+  (* Kept by hand in step with debian/changelog: the compiler is the
+     one artifact that cannot read its own package version, and a
+     generated file would drag the build system into the bootstrap. *)
+  Version = '0.3.0' ;
+  (* and where its runtime lives, which --help quotes so that the
+     example a user copies out of it actually compiles *)
+  StdInclude = '/usr/include/m9' ;
+  (* the installed runtime archive, linked when there are no runtime
+     sources beside the header that was included *)
+  StdArchive = '/usr/lib/libm9rt.a' ;
+
+(* the module name a path denotes: last segment, minus the suffix.
+   Neither separator is assumed absent -- this compiler is built on
+   Windows and run under WSL in the same afternoon.                 *)
+PROCEDURE BaseName (RO path: STR) : STR =
+VAR
+  i, start, stop : I64 ;
+BEGIN
+  start := 0 ;
+  stop := LEN (path) ;
+  FOR i := 0 TO LEN (path) - 1 DO
+    IF path[i] = '/' THEN start := i + 1 END ;
+    IF path[i] = 05CC THEN start := i + 1 END      (* backslash *)
+  END ;
+  IF stop - start > 3 THEN
+    IF DynStr.Eq (SLICE (path, stop - 3, 3), '.m9') THEN
+      stop := stop - 3
+    END
+  END ;
+  RETURN SLICE (path, start, stop - start)
+END BaseName ;
+
+(* Every m9c diagnostic goes to STDERR, which is what --help has been
+   promising and what half of these were not doing: the missing-module
+   message landed on stdout beside the generated text, so a harness
+   capturing errors saw nothing and a harness capturing output saw
+   both.  One composer, so there is one place for it to be true. *)
+PROCEDURE Diag (RO a: STR ; RO b: STR ; RO c: STR) =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, a) ;
+  DynStr.Append (pool, d, b) ;
+  DynStr.Append (pool, d, c) ;
+  Io.ErrLine (DynStr.View (d))
+END Diag ;
+
+PROCEDURE DiagN (RO a: STR ; n: I64 ; RO b: STR ; RO c: STR) =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, a) ;
+  DynStr.AppendI64 (pool, d, n) ;
+  DynStr.Append (pool, d, b) ;
+  DynStr.Append (pool, d, c) ;
+  Io.ErrLine (DynStr.View (d))
+END DiagN ;
+
+PROCEDURE Suffix (RO name: STR ; RO ext: STR) : STR =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, name) ;
+  DynStr.Append (pool, d, ext) ;
+  RETURN DynStr.View (d)
+END Suffix ;
+
+(* ---- finding a module's source ----
+
+   IMPORT names a MODULE, not a file, and until now the caller had to
+   translate: every dependency spelled out as a path, transitively,
+   in an order that worked.  A search path lets m9c do that
+   translation, which is the whole of what a build system was doing
+   here.
+
+   Three sources, in order: -I DIR (repeatable, leftmost first),
+   $M9LIBRARY (colon-separated, as PATH is), and the directory the
+   main file came from.  That last one is why `m9c corpus/M9c.m9`
+   needs no -I at all: a module's neighbours are almost always its
+   imports.
+
+   FROM u IMPORT ... is deliberately NOT resolved.  Its u is a
+   foreign unit -- csock, cblosc -- declared inside some module and
+   backed by C, so there is no u.m9 to find and guessing there would
+   invent files.                                                    *)
+
+PROCEDURE DirAdd (RO d: STR ; trusted: BOOL) =
+VAR
+  nb : SLICE OF STR ;
+  tb : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  IF LEN (d) = 0 THEN RETURN END ;
+  IF ndirs = LEN (dirs) THEN
+    nb := NEW (pool, STR, 2 * LEN (dirs) + 8) ;
+    tb := NEW (pool, BOOL, 2 * LEN (dirs) + 8) ;
+    FOR i := 0 TO ndirs - 1 DO nb[i] := dirs[i] ; tb[i] := trusts[i] END ;
+    dirs := nb ;
+    trusts := tb
+  END ;
+  dirs[ndirs] := d ;
+  trusts[ndirs] := trusted ;
+  ndirs := ndirs + 1
+END DirAdd ;
+
+(* colon-separated, the way PATH is, because that is the convention
+   the shell already taught everyone *)
+PROCEDURE DirAddPath (RO s: STR ; trusted: BOOL) =
+VAR i, start : I64 ;
+BEGIN
+  start := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = ':' THEN
+      DirAdd (SLICE (s, start, i - start), trusted) ;
+      start := i + 1
+    END
+  END ;
+  DirAdd (SLICE (s, start, LEN (s) - start), trusted)
+END DirAddPath ;
+
+(* the directory a path came from, empty when it names no directory *)
+PROCEDURE DirOf (RO path: STR) : STR =
+VAR i, cut : I64 ;
+BEGIN
+  cut := 0 ;
+  FOR i := 0 TO LEN (path) - 1 DO
+    IF path[i] = '/' THEN cut := i + 1 END ;
+    IF path[i] = 05CC THEN cut := i + 1 END        (* backslash *)
+  END ;
+  IF cut = 0 THEN RETURN '' END ;
+  RETURN SLICE (path, 0, cut - 1)
+END DirOf ;
+
+PROCEDURE Join (RO d: STR ; RO f: STR) : STR =
+VAR s : PTR DynStr.DString IN pool ;
+BEGIN
+  IF LEN (d) = 0 THEN RETURN f END ;
+  s := DynStr.New (pool) ;
+  DynStr.Append (pool, s, d) ;
+  DynStr.AppendChar (pool, s, '/') ;
+  DynStr.Append (pool, s, f) ;
+  RETURN DynStr.View (s)
+END Join ;
+
+(* a candidate that does not read is not an error, it is the next
+   candidate -- so the handler answers "no" rather than propagating,
+   and only the exhausted search is diagnosed *)
+PROCEDURE TryRead (RO path: STR ; VAR ok: BOOL) : STR =
+BEGIN
+  ok := TRUE ;
+  RETURN Io.ReadFile (pool, path)
+EXCEPT
+| Io.IOError (p) :
+    ok := FALSE ;
+    RETURN ''
+| ValueRange :
+    (* it exists and is not text: that IS worth saying, because a
+       silent skip here would look identical to a missing file *)
+    Diag ('m9c: not text: ', path, '') ;
+    ok := FALSE ;
+    RETURN ''
+END TryRead ;
+
+(* the first NAME.m9 on the search path, with its source already
+   read -- searching and reading are the same act, so doing them
+   twice would be two answers about one file *)
+PROCEDURE FindModule (RO name: STR ; VAR path: STR ; VAR ok: BOOL ;
+                      VAR trusted: BOOL) : STR =
+VAR
+  i : I64 ;
+  cand, src : STR ;
+BEGIN
+  trusted := FALSE ;
+  FOR i := 0 TO ndirs - 1 DO
+    cand := Join (dirs[i], Suffix (name, '.m9')) ;
+    src := TryRead (cand, ok) ;
+    IF ok THEN
+      path := cand ;
+      trusted := trusts[i] ;
+      RETURN src
+    END
+  END ;
+  ok := FALSE ;
+  path := '' ;
+  RETURN ''
+END FindModule ;
+
+PROCEDURE IsLoaded (RO name: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nloaded - 1 DO
+    IF DynStr.Eq (loaded[i], name) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END IsLoaded ;
+
+PROCEDURE MarkLoaded (RO name: STR) =
+VAR
+  nb : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF nloaded = LEN (loaded) THEN
+    nb := NEW (pool, STR, 2 * LEN (loaded) + 8) ;
+    FOR i := 0 TO nloaded - 1 DO nb[i] := loaded[i] END ;
+    loaded := nb
+  END ;
+  loaded[nloaded] := name ;
+  nloaded := nloaded + 1
+END MarkLoaded ;
+
+(* ---- driving the C compiler ----
+
+   m9c emits C11 and, with -c or -o, hands it to a C compiler.  It is
+   not a build system: everything after -- goes to that compiler
+   verbatim, because m9c cannot know where this project keeps its
+   runtime or its dependency objects, and guessing is how a tool
+   starts being fought rather than used.
+
+   Without -c the C stays, as it always did.  With -c or -o the C is
+   a BY-PRODUCT and goes away once the object exists, unless --keep-c
+   says otherwise.  The header does NOT go away under -c: it is the
+   module's interface, and the next module's generated C includes it.
+   Under -o nothing downstream remains, so both go.                 *)
+
+(* the shell composes the command, so a name that cannot be quoted is
+   refused rather than guessed at -- the same answer the checker gives
+   an input it cannot account for *)
+PROCEDURE Quotable (RO s: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = 027C THEN RETURN FALSE END           (* single quote *)
+  END ;
+  RETURN TRUE
+END Quotable ;
+
+PROCEDURE AppendQuoted (VAR d: PTR DynStr.DString ; RO s: STR) =
+BEGIN
+  DynStr.AppendChar (pool, d, 027C) ;
+  DynStr.Append (pool, d, s) ;
+  DynStr.AppendChar (pool, d, 027C)
+END AppendQuoted ;
+
+(* $CC when set, cc otherwise.  The shell knows how the C compiler is
+   spelled on this machine; m9c does not have to. *)
+PROCEDURE CcName () : STR RAISES ValueRange =
+VAR v : STR ;
+BEGIN
+  v := Io.Env (pool, 'CC') ;
+  IF LEN (v) = 0 THEN RETURN 'cc' END ;
+  RETURN v
+END CcName ;
+
+(* ---- the flags nobody should have to type ----
+
+   m9c is not a build system, and the way that was stated -- every
+   include path and every object after -- -- meant the shortest real
+   command was four flags long and three of them were the same every
+   time.  Being unwilling to guess is not the same as being unwilling
+   to LOOK.
+
+   So when nothing follows --, m9c supplies what it can establish by
+   looking: where its runtime actually is, and which objects the
+   import closure it just resolved implies.  When something DOES
+   follow --, none of this happens: the caller has taken the line
+   over, and a default silently added underneath a flag someone chose
+   is worse than no default at all.                                 *)
+
+(* the runtime's headers: $M9RUNTIME, else installed, else a source
+   tree.  Probed rather than assumed, because this compiler runs from
+   /usr/bin and from a build directory on the same afternoon. *)
+PROCEDURE RtDir () : STR RAISES ValueRange =
+VAR v : STR ;
+BEGIN
+  v := Io.Env (pool, 'M9RUNTIME') ;
+  IF LEN (v) > 0 THEN
+    (* set is not the same as right.  A variable naming a directory
+       with no m9rt.h in it is answered by the compiler that read the
+       variable, not by cc failing over an include three steps later
+       -- and then the search continues, because a wrong answer that
+       has been said out loud is not a reason to stop looking. *)
+    IF Io.Exists (Cat (v, '/m9rt.h')) THEN RETURN v END ;
+    Diag ('m9c: $M9RUNTIME names ', v, ', which has no m9rt.h in it')
+  END ;
+  IF Io.Exists (Cat (StdInclude, '/m9rt.h')) THEN RETURN StdInclude END ;
+  IF Io.Exists ('runtime/m9rt.h') THEN RETURN 'runtime' END ;
+  IF Io.Exists ('../runtime/m9rt.h') THEN RETURN '../runtime' END ;
+  RETURN ''
+END RtDir ;
+
+(* two strings, joined -- the one composition this module needs often
+   enough to name *)
+PROCEDURE Cat (RO a: STR ; RO b: STR) : STR =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, a) ;
+  DynStr.Append (pool, d, b) ;
+  RETURN DynStr.View (d)
+END Cat ;
+
+(* The runtime itself, to link.  What is linked must be the runtime
+   whose HEADER was included, or the program is built from two
+   versions of one library: the installed archive underneath this
+   repository's m9rt.h is how a newly added m9_exists became an
+   undefined reference at link time instead of a missing declaration
+   at compile time.  So the sources beside the header win, and the
+   installed archive answers only when there are none.
+   Both translation units go in, because that is what the archive
+   contains and a program should not behave differently depending on
+   which of the two m9c happened to find. *)
+PROCEDURE AppendRuntime (VAR d: PTR DynStr.DString ; RO rt: STR) : BOOL
+  RAISES ValueRange =
+BEGIN
+  IF Io.Exists (Cat (rt, '/m9rt.c')) THEN
+    DynStr.Append (pool, d, ' ') ;
+    DynStr.Append (pool, d, Cat (rt, '/m9rt.c')) ;
+    IF Io.Exists (Cat (rt, '/tcpshim.c')) THEN
+      DynStr.Append (pool, d, ' ') ;
+      DynStr.Append (pool, d, Cat (rt, '/tcpshim.c'))
+    END ;
+    RETURN TRUE
+  END ;
+  IF Io.Exists (StdArchive) THEN
+    DynStr.Append (pool, d, ' -lm9rt') ;
+    RETURN TRUE
+  END ;
+  Diag ('m9c: m9rt.h is in ', rt, ', but there is no runtime to') ;
+  Diag ('  link beside it and no ', StdArchive, '.') ;
+  Io.ErrLine ('  name one yourself after --') ;
+  RETURN FALSE
+END AppendRuntime ;
+
+(* IS THIS OBJECT OLDER THAN WHAT IT WAS MADE FROM?
+
+   The comparison is deliberately shallow -- the object against its
+   own source -- because m9c rebuilds the whole closure in dependency
+   order, so a module whose DEPENDENCY is rebuilt is reached on the
+   same pass and its own source is not what changed.  What that does
+   not catch is a source untouched while its dependency's INTERFACE
+   moved; the pass below handles that by rebuilding in order and
+   letting each rebuilt header push the next comparison over. *)
+PROCEDURE Older (RO obj: STR ; RO src: STR) : BOOL
+  RAISES ValueRange =
+VAR to, ts : I64 ;
+BEGIN
+  to := Io.ModTime (obj) ;
+  IF to < 0 THEN RETURN TRUE END ;        (* no object at all *)
+  ts := Io.ModTime (src) ;
+  IF ts < 0 THEN RETURN FALSE END ;       (* no source to be older than *)
+  RETURN to < ts
+END Older ;
+
+(* Rebuild one dependency by RE-INVOKING THIS COMPILER.
+
+   Not by recursing in-process: m9c holds exactly one module's
+   registries and a process is the reset, which is the rule stated at
+   the top of this file and the reason `one module per run` is in the
+   help.  A subprocess is that rule honoured rather than worked
+   around.
+
+   The flags that must travel are the ones that change what the
+   object IS -- the search path, -g, --pic -- and not the ones that
+   describe this invocation: -o, --ar, --so and --doc are about the
+   final artifact and a dependency has none. *)
+PROCEDURE MakeDep (RO name: STR ; RO path: STR) : BOOL
+  RAISES ValueRange, IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, rc : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  AppendQuoted (d, Io.Arg (pool, 0)) ;
+  DynStr.Append (pool, d, ' -c') ;
+  IF debug THEN DynStr.Append (pool, d, ' -g') END ;
+  IF doPic THEN DynStr.Append (pool, d, ' --pic') END ;
+  FOR i := 0 TO ndirs - 1 DO
+    DynStr.Append (pool, d, ' -I') ;
+    AppendQuoted (d, dirs[i])
+  END ;
+  DynStr.AppendChar (pool, d, ' ') ;
+  AppendQuoted (d, path) ;
+  IF ccFrom > 0 THEN
+    DynStr.Append (pool, d, ' --') ;
+    FOR i := ccFrom TO Io.ArgCount () - 1 DO
+      DynStr.AppendChar (pool, d, ' ') ;
+      DynStr.Append (pool, d, Io.Arg (pool, i))
+    END
+  END ;
+  IF verbose THEN Diag ('m9c: make ', name, '') END ;
+  rc := Io.Run (DynStr.View (d)) ;
+  IF rc # 0 THEN
+    Diag ('m9c: could not build dependency ', name, '') ;
+    RETURN FALSE
+  END ;
+  RETURN TRUE
+END MakeDep ;
+
+(* THE CLOSURE, REBUILT IN DEPENDENCY ORDER.
+
+   loaded[] is filled as imports are walked, so a module appears
+   before the modules it imports; building it in REVERSE therefore
+   builds leaves first, which is the order a dependent needs.
+
+   This exists because the hand-maintained order in every build
+   script this project has kept getting it wrong, and the failures
+   are indistinguishable from real bugs: an Advance compiled against
+   the previous kind pass's Random.h is a float against a double, and
+   the only reason that was not a wrong ANSWER is that -flto happened
+   to catch it at link time. *)
+PROCEDURE MakeAll () : BOOL
+  RAISES ValueRange, IndexError =
+VAR
+  trustDummy : BOOL ;
+  i : I64 ;
+  nm, path, src, o : STR ;
+  found, ok, dirty : BOOL ;
+BEGIN
+  ok := TRUE ;
+  (* ONCE ANYTHING HAS BEEN REBUILT, EVERYTHING AFTER IT IS TOO.
+
+     Staleness is not transitive on its own: change Base.m9 and the
+     module in the MIDDLE of Base -> Mid -> Top is still newer than
+     its own source, so a rule that only compares a module against
+     its own source leaves Mid holding code compiled against the old
+     Base.  Measured, with Base flipped from F64 to F32: Base.o and
+     Top.o were rebuilt and Mid.o was not.
+
+     This loop runs in dependency order -- deepest first, which is
+     why the reverse iteration is here -- so anything that could
+     depend on a rebuilt module comes after it, and rebuilding the
+     rest of the closure is enough.  CONSERVATIVE, deliberately: a
+     module later in the closure that does NOT depend on the changed
+     one is rebuilt anyway.  Being exact would need a per-module
+     import list rather than the flat closure, and the cost of being
+     wrong here is a stale object, while the cost of being
+     over-eager is a second of cc. *)
+  dirty := FALSE ;
+  FOR i := nloaded - 1 TO 0 BY -1 DO
+    nm := loaded[i] ;
+    IF NOT DynStr.Eq (nm, modName) THEN
+      (* FindModule ANSWERS THE SOURCE and sets the path through a
+         VAR parameter.  Assigning its result to `path` type-checks
+         perfectly and stats the file's contents, which is never a
+         file, so nothing ever looked stale.  The result is named and
+         discarded here because M9 refuses a dropped function
+         result -- which is what made the mistake visible at all. *)
+      src := FindModule (nm, path, found, trustDummy) ;
+      IF found THEN
+        o := Cat (nm, '.o') ;
+        IF LEN (src) >= 0 AND (dirty OR Older (o, path)) THEN
+          dirty := TRUE ;
+          IF NOT MakeDep (nm, path) THEN ok := FALSE END
+        END
+      END
+    END
+  END ;
+  RETURN ok
+END MakeAll ;
+
+(* Every module the closure reached except this one, as an object.
+   These are not guessed: they are exactly the modules m9c resolved,
+   parsed and checked a moment ago, so the list cannot disagree with
+   what the program imports.
+   A missing one is NAMED, with the command that makes it, because
+   'undefined reference to DynStr_Append' is the C linker explaining
+   our omission in its own vocabulary. *)
+PROCEDURE AppendObjects (VAR d: PTR DynStr.DString) : BOOL
+  RAISES ValueRange =
+VAR
+  i, nmiss : I64 ;
+  o : STR ;
+BEGIN
+  nmiss := 0 ;
+  FOR i := 0 TO nloaded - 1 DO
+    IF NOT DynStr.Eq (loaded[i], modName) THEN
+      o := Cat (loaded[i], '.o') ;
+      IF Io.Exists (o) THEN
+        DynStr.Append (pool, d, ' ') ;
+        DynStr.Append (pool, d, o)
+      ELSE
+        Diag ('m9c: ', o, ' is missing; build it first with') ;
+        Diag ('         m9c -c ', loaded[i], '') ;
+        nmiss := nmiss + 1
+      END
+    END
+  END ;
+  RETURN nmiss = 0
+END AppendObjects ;
+
+PROCEDURE Compile (RO name: STR) : BOOL
+  RAISES ValueRange, IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  cfile, out, rt : STR ;
+  i, rc : I64 ;
+BEGIN
+  cfile := Suffix (name, '.c') ;
+  (* a library run compiles like -c: the object is a member, and the
+     library itself is built by the step after this one *)
+  IF doLink THEN out := exe ELSE out := Suffix (name, '.o') END ;
+  IF NOT Quotable (cfile) OR NOT Quotable (out) THEN
+    Io.ErrLine ('m9c: refusing to shell out with a quote in a name') ;
+    RETURN FALSE
+  END ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, CcName ()) ;
+  IF NOT doLink THEN DynStr.Append (pool, d, ' -c') END ;
+
+  rt := RtDir () ;
+  IF ccFrom > 0 THEN
+    (* the caller has taken the command line over; nothing is added
+       underneath a flag someone chose *)
+    FOR i := ccFrom TO Io.ArgCount () - 1 DO
+      DynStr.AppendChar (pool, d, ' ') ;
+      DynStr.Append (pool, d, Io.Arg (pool, i))
+    END
+  ELSE
+    IF LEN (rt) = 0 THEN
+      Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
+      Io.ErrLine ('  looked for m9rt.h in $M9RUNTIME, ' ) ;
+      Diag ('  ', StdInclude, ', runtime/ and ../runtime/.') ;
+      Io.ErrLine ('  give the paths yourself after --') ;
+      RETURN FALSE
+    END ;
+    (* -O2, because a compiler that ships -O0 by default is not what
+       anybody wants and nobody was told they had to ask.  Found by
+       porting a FLEXPART kernel: the M9 build came out THIRTEEN
+       TIMES slower than the Fortran, and the whole of that was the
+       missing flag -- the same C at -O2 is 3.4x faster, and every
+       number in docs/bench.md was measured with cc invoked by hand.
+       A program built by m9c should not be slower than the same
+       program built by the same compiler by somebody who knew. *)
+    DynStr.Append (pool, d, ' -O2') ;
+    (* -flto, for the same reason and with a bigger number.  An M9
+       program is MANY translation units by construction -- one per
+       module, plus the runtime -- and every checked call that costs
+       anything crosses one of those boundaries: Math.Pow's domain
+       test, m9_raise, the module procedures themselves.  Without
+       LTO none of them can be inlined and the checks are paid in
+       full, at a call.
+
+       Measured on the FLEXPART kernel: 0.0134s -> 0.0088s, which is
+       FASTER than the gfortran original's 0.0097s, and still bit
+       identical to it (14/14 checks).  It costs 2% of build time
+       (m9c itself: 5.51s -> 5.63s) and gives back 7% of the binary
+       (469,448 -> 436,808 bytes).
+
+       This is also what makes the checks affordable in general, and
+       it is why the descriptor-hoisting work this replaced was
+       dropped: hoisting the GRID descriptor into locals by hand,
+       ON TOP of LTO, was worth 3% (0.0088 -> 0.0085).  LTO already
+       does it.  See port/flexpart/README.md. *)
+    DynStr.Append (pool, d, ' -flto') ;
+    (* AND THE INLINER'S BUDGET, because the checks spend it.  gcc
+       auto-inlines only functions under max-inline-insns-auto,
+       default 15, and a checked M9 body rarely fits: every access
+       carries its bounds test and every checked op its overflow
+       test, so the small helpers a hot loop calls -- measured on
+       FLEXPART's vertical transform, where Lerp and HeightStep are
+       called per grid point -- stay CALLS, and each call
+       re-marshals its GRID descriptors.  At 200 the transform runs
+       2.4x faster (1.033 s -> 0.424 s a field, checksum identical),
+       which is MORE than removing the checks outright buys (0.563):
+       the checks were never the cost; the inlining they suppressed
+       was.  Binary +27%, build time the same to the second.  clang
+       ignores the flag with a warning, so $CC=clang still builds. *)
+    DynStr.Append (pool, d, ' --param max-inline-insns-auto=200') ;
+    (* -fPIC only when asked, and --so asks.  Not the default,
+       because on x86-64 it costs an indirection on every global and
+       the overwhelming majority of these objects go into a program
+       or an archive, where it buys nothing. *)
+    IF doPic THEN DynStr.Append (pool, d, ' -fPIC') END ;
+    (* -g ADDS, and changes nothing else.  Not -O0: silently dropping
+       the optimisation under a flag that says "debug information" is
+       flag-dependent semantics, which is the thing this language
+       refuses by name.  The line tables are optimised-code line
+       tables, and a caller who wants -O0 takes the line over. *)
+    IF debug THEN DynStr.Append (pool, d, ' -g') END ;
+    (* -iquote, never -I: on a case-insensitive filesystem a generated
+       Time.h on the angled path answers #include <time.h>, and the
+       failure that produces is a missing struct definition rather
+       than a missing file *)
+    DynStr.Append (pool, d, ' -iquote ') ;
+    DynStr.Append (pool, d, rt) ;
+    DynStr.Append (pool, d, ' -iquote .')
+  END ;
+
+  DynStr.AppendChar (pool, d, ' ') ;
+  AppendQuoted (d, cfile) ;
+
+  (* the link line, when m9c is supplying it: the closure's objects,
+     the runtime, and libm -- which Fmt and Time need and which is
+     never wrong to name *)
+  IF doLink AND ccFrom = 0 THEN
+    IF NOT AppendObjects (d) THEN RETURN FALSE END ;
+    IF NOT AppendRuntime (d, rt) THEN RETURN FALSE END ;
+    DynStr.Append (pool, d, ' -lm')
+  END ;
+
+  DynStr.Append (pool, d, ' -o ') ;
+  AppendQuoted (d, out) ;
+  IF verbose THEN Diag ('m9c: ', DynStr.View (d), '') END ;
+  rc := Io.Run (DynStr.View (d)) ;
+  IF rc # 0 THEN
+    Io.ErrLine ('m9c: the C compiler reported errors') ;
+    RETURN FALSE
+  END ;
+  RETURN TRUE
+END Compile ;
+
+(* The closure, as a library instead of a program.
+
+   THE SAME OBJECTS AND THE SAME RULE.  --ar and --so name exactly
+   what -o would have linked -- the modules m9c resolved, parsed and
+   checked a moment ago -- so a library cannot hold a different set
+   of modules from the program built from the same command line.  A
+   missing object is NAMED with the command that makes it, here as
+   there.
+
+   WHAT GOES IN, AND WHAT DOES NOT.  An archive holds M9 modules and
+   nothing else: the runtime is its own deliverable and already has
+   its own archive, and burying a copy of it inside every library is
+   how two versions of m9rt end up in one link.  A SHARED object is
+   different -- it has to resolve its own symbols at load time -- so
+   the runtime and -lm go into that one, exactly as they go into an
+   executable.
+
+   THE HEADERS ARE THE OTHER HALF and are always kept.  A library
+   without them is a file nobody can call: `m9c --ar libm9.a M9c.m9`
+   leaves M9c.h beside it, and the -c runs that built the closure
+   left theirs.  That pair -- the archive and the headers -- is what
+   "distribute the compiler without sources" means. *)
+PROCEDURE Archive (RO name: STR) : BOOL
+  RAISES ValueRange, IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  rt : STR ;
+  i, rc : I64 ;
+BEGIN
+  IF NOT Quotable (lib) THEN
+    Io.ErrLine ('m9c: refusing to shell out with a quote in a name') ;
+    RETURN FALSE
+  END ;
+  d := DynStr.New (pool) ;
+  IF doAr THEN
+    (* r replace, c create without saying so, s write the index --
+       the three every archive wants and the ones ar has meant since
+       before any of this *)
+    DynStr.Append (pool, d, 'ar rcs ') ;
+    AppendQuoted (d, lib)
+  ELSE
+    DynStr.Append (pool, d, CcName ()) ;
+    DynStr.Append (pool, d, ' -shared') ;
+    IF ccFrom > 0 THEN
+      (* the caller took the line over at the compile step and keeps
+         it here: adding underneath a chosen flag is worse than
+         adding nothing *)
+      FOR i := ccFrom TO Io.ArgCount () - 1 DO
+        DynStr.AppendChar (pool, d, ' ') ;
+        DynStr.Append (pool, d, Io.Arg (pool, i))
+      END
+    ELSE
+      (* -fPIC AGAIN, and this is the one that is easy to miss: the
+         runtime arrives as SOURCES, so this command compiles m9rt.c
+         and tcpshim.c on the way through, and gcc does NOT imply
+         -fPIC from -shared.  Without it the members are all position
+         independent and the link still fails, on
+           relocation R_X86_64_PC32 against `stderr@@GLIBC_2.2.5'
+         out of a temporary object nobody named.  Measured, not
+         guessed: that is exactly what the first --so run said. *)
+      DynStr.Append (pool, d, ' -O2 -flto -fPIC -iquote ') ;
+      DynStr.Append (pool, d, RtDir ()) ;
+      DynStr.Append (pool, d, ' -iquote .')
+    END ;
+    DynStr.Append (pool, d, ' -o ') ;
+    AppendQuoted (d, lib)
+  END ;
+  DynStr.AppendChar (pool, d, ' ') ;
+  AppendQuoted (d, Suffix (name, '.o')) ;
+  IF NOT AppendObjects (d) THEN RETURN FALSE END ;
+  IF doSo AND ccFrom = 0 THEN
+    rt := RtDir () ;
+    IF LEN (rt) = 0 THEN
+      Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
+      RETURN FALSE
+    END ;
+    IF NOT AppendRuntime (d, rt) THEN RETURN FALSE END ;
+    DynStr.Append (pool, d, ' -lm')
+  END ;
+  IF verbose THEN Diag ('m9c: ', DynStr.View (d), '') END ;
+  rc := Io.Run (DynStr.View (d)) ;
+  IF rc # 0 THEN
+    IF doAr THEN
+      Io.ErrLine ('m9c: ar reported errors')
+    ELSE
+      Io.ErrLine ('m9c: the C compiler reported errors building the') ;
+      Io.ErrLine ('  shared object.  If it said') ;
+      Io.ErrLine ('    relocation R_X86_64_PC32 ... recompile with -fPIC') ;
+      Io.ErrLine ('  then a member was compiled without position') ;
+      Io.ErrLine ('  independence, which happens when the closure was') ;
+      Io.ErrLine ('  built with its own flags after -- (m9c own defaults') ;
+      Io.ErrLine ('  include -flto, and an LTO object is made position') ;
+      Io.ErrLine ('  independent when the shared object is linked).') ;
+      Io.ErrLine ('  Rebuild those modules asking for it:') ;
+      Io.ErrLine ('    m9c -c --pic MODULE')
+    END ;
+    RETURN FALSE
+  END ;
+  RETURN TRUE
+END Archive ;
+
+(* a by-product that will not delete is worth a word, not a raise:
+   the object it came from was still built *)
+PROCEDURE Drop (RO path: STR) RAISES ValueRange =
+BEGIN
+  IF NOT Io.Remove (path) THEN
+    Io.ErrLine ('m9c: could not remove the generated C') ;
+    Io.ErrLine (path)
+  END
+END Drop ;
+
+(* Written out rather than generated from a table: there are six
+   lines of it, and a help text that drifts from the behaviour is
+   worse than none.  Exit codes are part of the interface, so they
+   are documented here and not only in the source.               *)
+(* What the language IS, before what the flags do.  Someone typing
+   --help cold has no reason to know either, and a compiler that opens
+   with its option table assumes a reader it has not earned.  Four
+   sentences: the family, the promise, the price, the shape.  Every
+   claim here is one the repository can show -- the 3% is measured,
+   not adjectival. *)
+PROCEDURE About () =
+BEGIN
+  Io.WriteLine ('m9c -- the M9 compiler.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('M9 is a Wirth-family language (Modula-2, Oberon) for') ;
+  Io.WriteLine ('code that is written quickly and audited slowly: data') ;
+  Io.WriteLine ('science, finance, research infrastructure.  It reads') ;
+  Io.WriteLine ('like a bank statement and refuses to compile the') ;
+  Io.WriteLine ('mistakes those programs actually make.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('It is designed for code an AI agent writes and a') ;
+  Io.WriteLine ('person is answerable for.  A generator is fluent and') ;
+  Io.WriteLine ('confident and has no memory of what went wrong last') ;
+  Io.WriteLine ('time, so the checks below are the ones that catch what') ;
+  Io.WriteLine ('fluency misses: a width that silently truncated, a') ;
+  Io.WriteLine ('case arm nobody wrote, a failure never declared, a') ;
+  Io.WriteLine ('pointer read without asking.  Each is refused at') ;
+  Io.WriteLine ('compile time, so the reviewer reads the intent instead') ;
+  Io.WriteLine ('of hunting for the omission -- and what the compiler') ;
+  Io.WriteLine ('accepts, it has proved, rather than found plausible.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  Exact-width types only (I64, F64, U8 ...), and no') ;
+  Io.WriteLine ('  implicit conversion between any two of them.') ;
+  Io.WriteLine ('  Bounds and overflow checks are SEMANTICS, not flags:') ;
+  Io.WriteLine ('  there is no switch to turn them off, and they cost') ;
+  Io.WriteLine ('  about 3% -- measured, on this compiler, twice.') ;
+  Io.WriteLine ('  No NIL.  OPT plus IS SOME, so a pointer that might') ;
+  Io.WriteLine ('  be absent cannot be read without asking.') ;
+  Io.WriteLine ('  Every exception a procedure can raise is in its') ;
+  Io.WriteLine ('  signature, and the checker proves the list complete.') ;
+  Io.WriteLine ('  CASE over a variant record must cover every arm.') ;
+  Io.WriteLine ('  Memory is POOLs and owned pointers, with borrows') ;
+  Io.WriteLine ('  checked at the parameter -- no collector, no free()') ;
+  Io.WriteLine ('  you can get wrong.') ;
+  Io.WriteLine ('  Foreign C is declared, typed, and marked [SERIAL] or') ;
+  Io.WriteLine ('  [REENTRANT]; calling a serial one from a thread is a') ;
+  Io.WriteLine ('  compile error.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Every one of those rules exists because a real program') ;
+  Io.WriteLine ('failed without it, and the language report says which.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('m9c emits C11 and hands it to a C compiler, so an M9') ;
+  Io.WriteLine ('program links against anything C links against.') ;
+  Io.WriteLine ('')
+END About ;
+
+PROCEDURE Help () =
+BEGIN
+  About () ;
+  Io.WriteLine ('usage: m9c [options] FILE.m9 [DEP.m9 ...] [-- CCFLAGS]') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Checks FILE.m9 and writes NAME.h and NAME.c into the') ;
+  Io.WriteLine ('working directory, where NAME is the file base name.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Imports are resolved against the search path, so the') ;
+  Io.WriteLine ('dependencies usually need not be named at all.  A') ;
+  Io.WriteLine ('DEP.m9 given anyway wins over the path: a path someone') ;
+  Io.WriteLine ('typed is a statement about which file they meant.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('The path is -I directories (leftmost first), then') ;
+  Io.WriteLine ('$M9LIBRARY (colon-separated, as $PATH is), then the') ;
+  Io.WriteLine ("directory FILE.m9 itself came from -- a module's") ;
+  Io.WriteLine ('neighbours are almost always its imports -- and last') ;
+  Io.WriteLine ('the installed library, if there is one:') ;
+  Io.WriteLine ('') ;
+  Io.Write ('  ') ;
+  Io.WriteLine (StdLib) ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('FROM u IMPORT ... is not resolved: u is a foreign unit') ;
+  Io.WriteLine ('backed by C, so there is no u.m9 and looking for one') ;
+  Io.WriteLine ('would invent it.  Those still come from --.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('One module per run.  The compiler holds exactly one') ;
+  Io.WriteLine ("module's registries, and a process is the reset.") ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Nothing is written if the checker rejects the program.') ;
+  Io.WriteLine ('Diagnostics go to stderr, output files to disk, and') ;
+  Io.WriteLine ('the exit status is 0 on success and 1 on any error.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  -I DIR, -IDIR    look for imported modules here') ;
+  Io.WriteLine ('  -c               compile NAME.c to NAME.o with the') ;
+  Io.WriteLine ('                   C compiler ($CC, or cc)') ;
+  Io.WriteLine ('  -o EXE           compile and link, naming the result') ;
+  Io.WriteLine ('  --ar LIB.a       compile, then archive the closure') ;
+  Io.WriteLine ('  --so LIB.so      compile, then link the closure into') ;
+  Io.WriteLine ('                   a shared object (implies --pic)') ;
+  Io.WriteLine ('  --make           rebuild the stale part of the') ;
+  Io.WriteLine ('                   import closure, deepest first:') ;
+  Io.WriteLine ('                   older than its source, or') ;
+  Io.WriteLine ('                   downstream of something rebuilt') ;
+  Io.WriteLine ('  -g               debug information; keeps the C') ;
+  Io.WriteLine ('                   it names, and changes nothing') ;
+  Io.WriteLine ('                   else -- still -O2, still -flto') ;
+  Io.WriteLine ('  --doc            write NAME.md, the DEFINITION') ;
+  Io.WriteLine ('                   module as documentation, and') ;
+  Io.WriteLine ('                   nothing else') ;
+  Io.WriteLine ('  --json           with --doc, also NAME.json: the') ;
+  Io.WriteLine ('                   same declarations as data, for') ;
+  Io.WriteLine ('                   tools that look a name up') ;
+  Io.WriteLine ('  --pic            compile position-independent; only') ;
+  Io.WriteLine ('                   needed for a --so member built with') ;
+  Io.WriteLine ('                   its own flags after --') ;
+  Io.WriteLine ('  -k, --keep-c     keep the generated C afterwards') ;
+  Io.WriteLine ('  --no-unsafe      refuse UNSAFE and FOR "C" units') ;
+  Io.WriteLine ('                   everywhere but $M9LIBRARY and the') ;
+  Io.WriteLine ('                   installed library -- the language') ;
+  Io.WriteLine ('                   wall for running untrusted code') ;
+  Io.WriteLine ('  -v, --verbose    show the command handed to the') ;
+  Io.WriteLine ('                   C compiler; a bare -v with no') ;
+  Io.WriteLine ('                   file prints the version instead') ;
+  Io.WriteLine ('  --version        print the version and exit') ;
+  Io.WriteLine ('  --               pass everything after this to the') ;
+  Io.WriteLine ('                   C compiler, verbatim -- and turn') ;
+  Io.WriteLine ('                   OFF every default below') ;
+  Io.WriteLine ('  -?, -h, --help, --usage') ;
+  Io.WriteLine ('                   this text') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Without -c or -o the C is the output and stays.  With') ;
+  Io.WriteLine ('either, it is a by-product and is removed once the') ;
+  Io.WriteLine ('object exists, unless --keep-c.  -c keeps NAME.h even') ;
+  Io.WriteLine ("so: it is the module's interface, and the next") ;
+  Io.WriteLine ('module includes it.  -o removes both, since nothing') ;
+  Io.WriteLine ('downstream is left to include anything.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('With nothing after --, m9c supplies the flags it') ;
+  Io.WriteLine ('can establish by LOOKING rather than guessing:') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('    -O2, because a compiler that ships an') ;
+  Io.WriteLine ('    unoptimised build by default is not what') ;
+  Io.WriteLine ('    anybody wants and nobody was told to ask') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('    -flto, because an M9 program is many') ;
+  Io.WriteLine ('    translation units by construction and every') ;
+  Io.WriteLine ('    checked call crosses one: without it the') ;
+  Io.WriteLine ('    checks are paid at a call.  Worth 34% on a') ;
+  Io.WriteLine ('    real kernel, 2% of build time, -7% of binary') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('    the includes, as -iquote RT and -iquote .,') ;
+  Io.WriteLine ('    where RT is $M9RUNTIME when it is set, else the') ;
+  Io.WriteLine ('    installed headers, else runtime/ or ../runtime/') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('    and, when linking, one object per module in the') ;
+  Io.WriteLine ('    import closure it has just resolved, plus the') ;
+  Io.WriteLine ('    runtime -- its sources when they are beside the') ;
+  Io.WriteLine ('    header that was included, else the installed') ;
+  Io.WriteLine ('    archive -- and -lm') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('--doc checks the module and then writes NAME.md') ;
+  Io.WriteLine ('instead of C: the module comment, then every') ;
+  Io.WriteLine ('exported name with its signature and its own') ;
+  Io.WriteLine ('comment.  It still CHECKS -- documentation for a') ;
+  Io.WriteLine ('program the checker rejects describes a program') ;
+  Io.WriteLine ('that does not exist -- and it fails if a') ;
+  Io.WriteLine ('documented parameter is not in its signature,') ;
+  Io.WriteLine ('which is drift rather than a gap.  How MUCH is') ;
+  Io.WriteLine ('documented is reported under -v and never gated.') ;
+  Io.WriteLine ('--json (which implies --doc) also writes NAME.json:') ;
+  Io.WriteLine ('every exported name with its kind, line, parameters') ;
+  Io.WriteLine ('and their modes, result, RAISES and comment, as') ;
+  Io.WriteLine ('data -- so "does M.P exist and what does it take"') ;
+  Io.WriteLine ('is a lookup and not a guess.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('--ar and --so take that same closure and make a') ;
+  Io.WriteLine ('LIBRARY of it instead of a program.  The archive') ;
+  Io.WriteLine ('holds M9 modules only -- the runtime is its own') ;
+  Io.WriteLine ('deliverable and has its own archive, and a copy of it') ;
+  Io.WriteLine ('inside every library is two m9rt in one link.  A') ;
+  Io.WriteLine ('shared object resolves its own symbols, so that one') ;
+  Io.WriteLine ('does get the runtime and -lm.  Both keep the headers:') ;
+  Io.WriteLine ('a library without them is a file nobody can call.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('A missing object is named, with the command that') ;
+  Io.WriteLine ('makes it, because the C linker would report our') ;
+  Io.WriteLine ('omission in its own vocabulary.  Put anything after') ;
+  Io.WriteLine ('-- and none of this happens: a default added') ;
+  Io.WriteLine ('underneath a flag someone chose is worse than no') ;
+  Io.WriteLine ('default at all.') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Examples, from the top of a source tree:') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  m9c corpus/Json.m9') ;
+  Io.WriteLine ('  cc -c -iquote runtime -iquote . Json.c') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  m9c -c corpus/DynStr.m9') ;
+  Io.WriteLine ('  m9c -c corpus/Io.m9') ;
+  Io.WriteLine ('  m9c -o hello corpus/Hello.m9') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('Installed, a module NAME is enough: the library is') ;
+  Io.Write ('  ') ;
+  Io.WriteLine (StdLib) ;
+  Io.WriteLine ('and the runtime headers are in') ;
+  Io.Write ('  ') ;
+  Io.WriteLine (StdInclude) ;
+  Io.WriteLine ('so neither is typed:') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  m9c -c DynStr') ;
+  Io.WriteLine ('  m9c -c Io') ;
+  Io.WriteLine ('  m9c -o hello hello.m9') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('The compiler as a library, headers beside it, and') ;
+  Io.WriteLine ('then a program built against it with no M9 source in') ;
+  Io.WriteLine ('sight:') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  for m in DynStr Text Io Lex Ast Parse Print Sem Gen') ;
+  Io.WriteLine ('  do m9c -c corpus/$m.m9 ; done') ;
+  Io.WriteLine ('  m9c --ar libm9.a corpus/M9c.m9') ;
+  Io.WriteLine ('  cc prog.c libm9.a -lm9rt -lm') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('And when a default is wrong, take the line over:') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('  m9c -c corpus/Json.m9 -- -O2 -iquote runtime') ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('See m9c(1) for the whole story.') ;
+  Io.WriteLine ('M9 -- checks are semantics, not flags.')
+END Help ;
+
+(* One pass over the command line, before anything is read.  Options
+   set flags, -- ends them, and everything else is a source file; a
+   file is recognised by not being an option rather than by its
+   suffix, so a path that starts with a dash is a diagnosable mistake
+   and not a silently ignored argument.                             *)
+(* -Idir joined.  Guarded here rather than at each call site: a
+   predicate that raises on the empty string is one every caller has
+   to remember, and the reminder is a bug waiting. *)
+PROCEDURE IsDashI (RO a: STR) : BOOL =
+BEGIN
+  IF LEN (a) < 3 THEN RETURN FALSE END ;
+  RETURN a[0] = '-' AND a[1] = 'I'
+END IsDashI ;
+
+PROCEDURE ScanArgs () RAISES ValueRange, IndexError =
+VAR
+  i : I64 ;
+  a : STR ;
+BEGIN
+  i := 1 ;
+  WHILE i < Io.ArgCount () DO
+    a := Io.Arg (pool, i) ;
+    IF DynStr.Eq (a, '--') THEN
+      ccFrom := i + 1 ;
+      RETURN
+    ELSIF DynStr.Eq (a, '-c') THEN
+      doCompile := TRUE
+    ELSIF DynStr.Eq (a, '-k') OR DynStr.Eq (a, '--keep-c') THEN
+      keepC := TRUE
+    ELSIF DynStr.Eq (a, '--no-unsafe') THEN
+      noUnsafe := TRUE
+    ELSIF DynStr.Eq (a, '-v') OR DynStr.Eq (a, '--verbose') THEN
+      verbose := TRUE
+    ELSIF DynStr.Eq (a, '--version') THEN
+      doVersion := TRUE
+    ELSIF DynStr.Eq (a, '-o') THEN
+      IF i + 1 >= Io.ArgCount () THEN
+        Io.ErrLine ('m9c: -o wants a name') ;
+        failed := TRUE ;
+        RETURN
+      END ;
+      exe := Io.Arg (pool, i + 1) ;
+      doLink := TRUE ;
+      doCompile := TRUE ;
+      i := i + 1
+    ELSIF DynStr.Eq (a, '--pic') THEN
+      doPic := TRUE
+    ELSIF DynStr.Eq (a, '--doc') THEN
+      doDoc := TRUE
+    ELSIF DynStr.Eq (a, '--json') THEN
+      (* implies --doc: the JSON is the same gather rendered twice,
+         and a run that wrote the data without the page would be a
+         run whose two documents could not be compared *)
+      doJson := TRUE ;
+      doDoc := TRUE
+    ELSIF DynStr.Eq (a, '--make') THEN
+      doMake := TRUE
+    ELSIF DynStr.Eq (a, '-g') THEN
+      (* -g IMPLIES --keep-c, and it has to.  The debug information
+         names NAME.c, so dropping NAME.c leaves a debugger pointing
+         at a file that is not there -- which is what -g meant before
+         this flag existed, when the only way to ask was to take the
+         whole cc line over with --. *)
+      debug := TRUE ;
+      keepC := TRUE
+    ELSIF DynStr.Eq (a, '--ar') OR DynStr.Eq (a, '--so') THEN
+      IF i + 1 >= Io.ArgCount () THEN
+        Diag ('m9c: ', a, ' wants a library name') ;
+        failed := TRUE ;
+        RETURN
+      END ;
+      IF LEN (lib) > 0 THEN
+        Io.ErrLine ('m9c: one library per run, and two were named') ;
+        failed := TRUE ;
+        RETURN
+      END ;
+      lib := Io.Arg (pool, i + 1) ;
+      doCompile := TRUE ;
+      IF DynStr.Eq (a, '--ar') THEN
+        doAr := TRUE
+      ELSE
+        doSo := TRUE ;
+        (* free on the LTO path and necessary off it, so it is not
+           worth making the caller remember which one they are on *)
+        doPic := TRUE
+      END ;
+      i := i + 1
+    ELSIF DynStr.Eq (a, '-I') THEN
+      IF i + 1 >= Io.ArgCount () THEN
+        Io.ErrLine ('m9c: -I wants a directory') ;
+        failed := TRUE ;
+        RETURN
+      END ;
+      DirAdd (Io.Arg (pool, i + 1), FALSE) ;
+      i := i + 1
+    ELSIF LEN (a) > 2 AND IsDashI (a) THEN
+      (* -Idir joined, as cc spells it: the habit is older than this
+         compiler and arguing with it costs more than honouring it *)
+      DirAdd (SLICE (a, 2, LEN (a) - 2), FALSE)
+    END ;
+    i := i + 1
+  END
+END ScanArgs ;
+
+(* the i'th source file on the command line, or empty when there is
+   no i'th one.  Options are skipped here rather than compacted into
+   a list, because the language has no growable STR array in this
+   module and an index walk needs neither.                          *)
+PROCEDURE SourceAt (n: I64) : STR RAISES ValueRange, IndexError =
+VAR
+  i, seen : I64 ;
+  a : STR ;
+BEGIN
+  seen := 0 ;
+  i := 1 ;
+  WHILE i < Io.ArgCount () DO
+    a := Io.Arg (pool, i) ;
+    IF DynStr.Eq (a, '--') THEN RETURN '' END ;
+    IF DynStr.Eq (a, '-o') OR DynStr.Eq (a, '-I') OR
+       DynStr.Eq (a, '--ar') OR DynStr.Eq (a, '--so') THEN
+      i := i + 1
+    ELSIF DynStr.Eq (a, '-c') OR DynStr.Eq (a, '-k') OR
+          DynStr.Eq (a, '--keep-c') OR DynStr.Eq (a, '-v') OR
+          DynStr.Eq (a, '--verbose') OR DynStr.Eq (a, '--pic') OR
+          DynStr.Eq (a, '--doc') OR DynStr.Eq (a, '-g') OR
+          DynStr.Eq (a, '--json') OR
+          DynStr.Eq (a, '--make') OR
+          DynStr.Eq (a, '--no-unsafe') OR
+          IsDashI (a) THEN
+      i := i
+    ELSE
+      IF seen = n THEN RETURN a END ;
+      seen := seen + 1
+    END ;
+    i := i + 1
+  END ;
+  RETURN ''
+END SourceAt ;
+
+PROCEDURE IsHelp (RO a: STR) : BOOL =
+BEGIN
+  RETURN DynStr.Eq (a, '--help') OR DynStr.Eq (a, '-h') OR
+         DynStr.Eq (a, '-?') OR DynStr.Eq (a, '--usage')
+END IsHelp ;
+
+PROCEDURE Complain (RO what: STR ; RO path: STR) =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, what) ;
+  DynStr.Append (pool, d, ': ') ;
+  Diag ('m9c: ', DynStr.View (d), path) ;
+  failed := TRUE
+END Complain ;
+
+(* parse text that has already been read; NONE when it did not parse,
+   having said why.  Split from ParseFile because the search path
+   reads a candidate to find out whether it exists, and reading it
+   twice would be two answers about one file. *)
+(* the document, and the coverage line that goes with it.
+
+   MEASURED AND REPORTED, NEVER GATED: a threshold on documentation
+   makes `(* obvious *)` a rational move, so this prints the way
+   fmt_driver prints its disagreement rate and no more.  The one
+   thing that IS an error is drift -- a `name --` line naming
+   something that is not a parameter -- because that is the doc and
+   the signature disagreeing rather than a gap, and it is said in the
+   document as well as counted. *)
+PROCEDURE DocText (root: PTR Ast.Node ; RO name: STR) : STR
+  RAISES IndexError =
+VAR
+  st : Doc.Stats ;
+  txt : STR ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  txt := Doc.Text (pool, root, name, st) ;
+  IF verbose THEN
+    (* ONE LINE, and shaped so a gate can add it up: docdiff sums
+       these across the library rather than recomputing what the
+       tool already measured. *)
+    d := DynStr.New (pool) ;
+    DynStr.Append (pool, d, 'doc ') ;
+    DynStr.Append (pool, d, name) ;
+    DynStr.Append (pool, d, ' procs ') ;
+    DynStr.AppendI64 (pool, d, st.procsDoc) ;
+    DynStr.AppendChar (pool, d, '/') ;
+    DynStr.AppendI64 (pool, d, st.procs) ;
+    DynStr.Append (pool, d, ' others ') ;
+    DynStr.AppendI64 (pool, d, st.othersDoc) ;
+    DynStr.AppendChar (pool, d, '/') ;
+    DynStr.AppendI64 (pool, d, st.others) ;
+    DynStr.Append (pool, d, ' paramlines ') ;
+    DynStr.AppendI64 (pool, d, st.paramsDoc) ;
+    DynStr.Append (pool, d, ' drift ') ;
+    DynStr.AppendI64 (pool, d, st.unknownParam) ;
+    Io.ErrLine (DynStr.View (d))
+  END ;
+  IF st.unknownParam > 0 THEN
+    DiagN ('m9c: ', st.unknownParam,
+           ' documented parameters are not in their signature, in ',
+           name) ;
+    failed := TRUE
+  END ;
+  RETURN txt
+END DocText ;
+
+(* the same declarations as data.  A fresh Stats, so that the counts
+   -v reports come from the page once and not twice. *)
+PROCEDURE JsonText (root: PTR Ast.Node ; RO name: STR) : STR
+  RAISES IndexError =
+VAR st : Doc.Stats ;
+BEGIN
+  st.mods := 0 ; st.modsDoc := 0 ; st.procs := 0 ; st.procsDoc := 0 ;
+  st.others := 0 ; st.othersDoc := 0 ; st.params := 0 ; st.paramsDoc := 0 ;
+  st.banners := 0 ; st.unattached := 0 ; st.unknownParam := 0 ;
+  RETURN Doc.Json (pool, root, name, st)
+END JsonText ;
+
+PROCEDURE ParseText (RO src: STR ; RO path: STR) : Ast.Kid
+  RAISES ValueRange =
+VAR
+  p : Parse.Parser ;
+  root : PTR Ast.Node IN pool ;
+BEGIN
+  Parse.Init (p, src) ;
+  root := Parse.File (pool, p) ;
+  (* disarm, never clear: Collect (FALSE) keeps what it gathered, so
+     the main file's comments survive while every dependency parsed
+     after this goes past uncollected.  Armed by the caller, because
+     only the caller knows which file is the main one. *)
+  Lex.Collect (FALSE) ;
+  IF p.nerr > 0 THEN
+    (* errors are values: Parse counts them and the driver reports
+       the count.  The message table is stage-2 work, still owed. *)
+    DiagN ('m9c: ', p.nerr, ' parse errors in ', path) ;
+    failed := TRUE ;
+    RETURN NONE
+  END ;
+  RETURN SOME (root)
+END ParseText ;
+
+PROCEDURE ParseFile (RO path: STR) : Ast.Kid
+  RAISES Io.IOError, ValueRange =
+BEGIN
+  RETURN ParseText (Io.ReadFile (pool, path), path)
+END ParseFile ;
+
+(* The two consumers want different closures, and conflating them is
+   what put Lex, Print and Text into M9c.h the first time this ran.
+
+   The CHECKER wants the transitive closure: a cross-module name that
+   has not been loaded is indistinguishable from one that does not
+   exist, and that is true however far away the name lives.
+
+   The GENERATOR wants only what this module imports DIRECTLY, because
+   what it does with a registered unit is emit an #include for it, and
+   a header that includes its dependencies' dependencies is describing
+   somebody else's interface.                                        *)
+PROCEDURE Absorb (root: PTR Ast.Node ; forGen: BOOL) =
+VAR i : I64 ;
+BEGIN
+  Sem.LoadFile (root) ;
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME u THEN
+      IF forGen THEN
+        Gen.LoadExtern (u)
+      ELSE
+        (* THE THIRD CLOSURE.  An indirect dependency contributes no
+           #include -- this module names nothing in it -- but its
+           declarations must be REGISTERED, because a DIRECT
+           dependency's signature may be written in its types:
+           Qvsat.Ew answers a Kind.FlexFloat, and VertTransform has
+           no business importing Kind in order to call it.
+
+           Without this the generator answered an unknown type, and
+           an unknown type under an arithmetic operator used to
+           become integer arithmetic over doubles.  Three modules had
+           grown an IMPORT for a type they never name before this
+           was worth fixing rather than working around. *)
+        Gen.LoadExternDeep (u)
+      END
+    END
+  END
+END Absorb ;
+
+(* remember a root so its own imports can be walked later *)
+PROCEDURE Keep (root: PTR Ast.Node) =
+VAR
+  nb : SLICE OF Ast.Kid ;
+  i : I64 ;
+BEGIN
+  IF ndeps = LEN (depRoots) THEN
+    nb := NEW (pool, Ast.Kid, 2 * LEN (depRoots) + 8) ;
+    FOR i := 0 TO ndeps - 1 DO nb[i] := depRoots[i] END ;
+    depRoots := nb
+  END ;
+  depRoots[ndeps] := SOME (root) ;
+  ndeps := ndeps + 1
+END Keep ;
+
+(* --no-unsafe: the language wall of the sandbox story
+   (docs/tutorial-plan.md).  A unit from a TRUSTED directory --
+   $M9LIBRARY or the installed StdLib -- may be UNSAFE or FOR "C":
+   that is the shipped library's own audited foreign boundary.  A
+   unit from anywhere else (the main file, a named dependency, -I
+   directories, the main file's neighbours) may not, and is refused
+   BY NAME before anything is generated -- so an OS sandbox around
+   this compiler is the second wall, never the only one.            *)
+PROCEDURE ScanUnsafe (root: PTR Ast.Node ; RO path: STR ;
+                      trusted: BOOL) RAISES ValueRange =
+VAR i : I64 ;
+BEGIN
+  IF NOT noUnsafe THEN RETURN END ;
+  IF trusted THEN RETURN END ;
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME u THEN
+      IF LEN (u.b) > 0 THEN
+        Diag ('m9c: --no-unsafe: foreign unit ', u.a,
+              Cat (' in ', path)) ;
+        nunsafe := nunsafe + 1 ;
+        failed := TRUE
+      ELSIF u.f1 THEN
+        Diag ('m9c: --no-unsafe: UNSAFE unit ', u.a,
+              Cat (' in ', path)) ;
+        nunsafe := nunsafe + 1 ;
+        failed := TRUE
+      END
+    END
+  END
+END ScanUnsafe ;
+
+(* the source of a module named by an IMPORT, or a diagnosis *)
+PROCEDURE Fetch (RO name: STR ; VAR path: STR ; VAR ok: BOOL ;
+                 VAR trusted: BOOL) : STR =
+BEGIN
+  RETURN FindModule (name, path, ok, trusted)
+END Fetch ;
+
+PROCEDURE Missing (RO name: STR) =
+BEGIN
+  Diag ('m9c: cannot find module ', name,
+        ' on the search path (-I, $M9LIBRARY)') ;
+  nmissing := nmissing + 1 ;
+  failed := TRUE
+END Missing ;
+
+(* directly imported: registered for the generator too.  No recursion
+   here, deliberately -- every direct import must be registered before
+   any indirect one is even looked at, or a module reached first
+   through a dependency would be marked loaded and then skipped when
+   the main module asks for it by name, and its #include would go
+   missing.  Two passes cost one walk and remove that whole class. *)
+PROCEDURE LoadDirect (RO name: STR) RAISES ValueRange =
+VAR
+  path, src : STR ;
+  ok, trusted : BOOL ;
+BEGIN
+  IF IsLoaded (name) THEN RETURN END ;
+  MarkLoaded (name) ;
+  src := Fetch (name, path, ok, trusted) ;
+  IF NOT ok THEN Missing (name) ; RETURN END ;
+  IF ParseText (src, path) IS SOME root THEN
+    ScanUnsafe (root, path, trusted) ;
+    Absorb (root, TRUE) ;
+    Keep (root)
+  END
+END LoadDirect ;
+
+PROCEDURE LoadIndirect (RO name: STR) RAISES ValueRange ;
+
+(* every module an import walk reaches.  The name is marked BEFORE the
+   recursion, which is what makes a cycle terminate instead of
+   recurring: M9 has no rule against mutual imports and the compiler
+   should not acquire one by crashing. *)
+PROCEDURE WalkImports (root: PTR Ast.Node ; direct: BOOL)
+  RAISES ValueRange =
+VAR i, j, k : I64 ;
+BEGIN
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME u THEN
+      FOR j := 0 TO u.nkids - 1 DO
+        IF u.kids[j] IS SOME imp THEN
+          (* NImportList only: a FROM names a foreign unit declared
+             inside some module, so there is no file to find and
+             looking for one would invent it *)
+          IF imp.kind = Ast.NImportList THEN
+            IF imp.kids[0] IS SOME ids THEN
+              FOR k := 0 TO ids.nkids - 1 DO
+                IF ids.kids[k] IS SOME id THEN
+                  IF direct THEN
+                    LoadDirect (id.a)
+                  ELSE
+                    LoadIndirect (id.a)
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END
+END WalkImports ;
+
+(* reached only through another module: the checker needs it, the
+   generated header does not name it.  Post-order, so its own
+   dependencies are registered before it is. *)
+PROCEDURE LoadIndirect (RO name: STR) RAISES ValueRange =
+VAR
+  path, src : STR ;
+  ok, trusted : BOOL ;
+BEGIN
+  IF IsLoaded (name) THEN RETURN END ;
+  MarkLoaded (name) ;
+  src := Fetch (name, path, ok, trusted) ;
+  IF NOT ok THEN Missing (name) ; RETURN END ;
+  IF ParseText (src, path) IS SOME root THEN
+    ScanUnsafe (root, path, trusted) ;
+    WalkImports (root, FALSE) ;
+    Absorb (root, FALSE)
+  END
+END LoadIndirect ;
+
+(* A dependency named on the command line: still supported, and it
+   wins over the search path, because a path someone typed is a
+   statement about which file they meant -- and about the ORDER,
+   which is why this does not recurse.  Post-order resolution would
+   register a named module's own imports ahead of it and reshuffle
+   the generated includes; a fully-named command line must still
+   produce the same bytes it always did.  Its root is kept so that
+   the gaps it leaves can be filled afterwards. *)
+PROCEDURE LoadDep (RO path: STR) RAISES Io.IOError, ValueRange =
+BEGIN
+  IF IsLoaded (BaseName (path)) THEN RETURN END ;
+  MarkLoaded (BaseName (path)) ;
+  IF ParseFile (path) IS SOME root THEN
+    ScanUnsafe (root, path, FALSE) ;
+    Absorb (root, TRUE) ;
+    Keep (root)
+  END
+END LoadDep ;
+
+(* What the command line did not name.  Two passes, and the order is
+   the point: everything the main module imports directly is
+   registered first, so the generated header includes exactly those;
+   only then is the rest of the closure pulled in for the checker.
+
+   A command line that named every direct import therefore gets
+   nothing added to the generated C at all, which is what keeps the
+   bytes identical to the ones the FPC oracle produced.             *)
+PROCEDURE FillGaps (mainRoot: PTR Ast.Node) RAISES ValueRange =
+VAR i, upto : I64 ;
+BEGIN
+  WalkImports (mainRoot, TRUE) ;
+  upto := ndeps ;
+  FOR i := 0 TO upto - 1 DO
+    IF depRoots[i] IS SOME r THEN WalkImports (r, FALSE) END
+  END ;
+  WalkImports (mainRoot, FALSE)
+END FillGaps ;
+
+(* the diagnostics, then a refusal.  A compiler that translates what
+   it knows to be wrong is a translator; this is the line between the
+   two, and until now m9c was on the wrong side of it. *)
+PROCEDURE Report () : BOOL RAISES IndexError =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO Sem.ErrCount () - 1 DO
+    Io.ErrLine (Sem.ErrAt (i))
+  END ;
+  RETURN Sem.ErrCount () > 0
+END Report ;
+
+VAR
+  i : I64 ;
+  main, name, mainSrc : STR ;
+  found, mainTrust : BOOL ;
+
+BEGIN
+  IF Io.ArgCount () < 2 THEN
+    (* no arguments is a mistake and exits 1; asking for help is not
+       and exits 0.  Conflating the two is why scripts check output
+       instead of status. *)
+    Io.WriteLine ('usage: m9c FILE.m9 [DEP.m9 ...]') ;
+    Io.WriteLine ("try 'm9c --help'") ;
+    failed := TRUE
+  ELSIF IsHelp (Io.Arg (pool, 1)) THEN
+    Help ()
+  ELSE
+    ScanArgs () ;
+    (* --doc writes documentation and nothing else.  Combining it
+       with a flag that produces an object or a program is not a
+       thing to guess at -- one of the two was meant -- so it is
+       refused rather than silently favoured. *)
+    IF doDoc AND (doCompile OR doLink OR LEN (lib) > 0) THEN
+      Io.ErrLine ('m9c: --doc writes documentation, not objects;') ;
+      Io.ErrLine ('  it cannot be combined with -c, -o, --ar or --so') ;
+      failed := TRUE ;
+      Io.Halt (1)
+    END ;
+    main := SourceAt (0) ;
+    (* -v is verbose, and has been since the first supplied-flags
+       test depended on its output -- but a bare `m9c -v` has nothing
+       to be verbose ABOUT, so it answers the version, which is what
+       everyone typing it wants.  --version says so unconditionally. *)
+    IF doVersion OR (verbose AND LEN (main) = 0) THEN
+      Io.WriteLine ('m9c ' + Version) ;
+      Io.Halt (0)
+    END ;
+    IF LEN (main) = 0 THEN
+      Io.ErrLine ('m9c: no source file') ;
+      failed := TRUE ;
+      Io.Halt (1)
+    END ;
+    name := BaseName (main) ;
+    modName := name ;
+
+    (* -I first (leftmost wins), then $M9LIBRARY, then the main
+       file's own directory: a module's neighbours are almost always
+       its imports, which is why `m9c corpus/M9c.m9` needs no -I *)
+    DirAddPath (Io.Env (pool, 'M9LIBRARY'), TRUE) ;
+    DirAdd (DirOf (main), FALSE) ;
+    (* Last, and only as a fallback: where a package installs the
+       standard modules.  An installed compiler that cannot find its
+       own library without the user exporting a variable is a
+       compiler nobody installs twice.  In a source tree the
+       directory does not exist and this costs one failed open. *)
+    DirAdd (StdLib, TRUE) ;
+
+    (* the main file goes through the path too, if it does not read
+       as given.  So `m9c Json.m9` and even `m9c Json` work with a
+       library set, and the argument can be a module rather than a
+       path -- which is what a module compiler ought to accept. *)
+    mainSrc := TryRead (main, found) ;
+    IF NOT found THEN
+      mainSrc := FindModule (name, main, found, mainTrust) ;
+      IF NOT found THEN
+        Complain ('cannot find', SourceAt (0)) ;
+        Io.Halt (1)
+      END
+    END ;
+
+    (* the main module is loaded by name too, so that a cyclic or
+       self-naming import stops here rather than recurring *)
+    MarkLoaded (name) ;
+
+    i := 1 ;
+    WHILE LEN (SourceAt (i)) > 0 DO
+      LoadDep (SourceAt (i)) ;
+      i := i + 1
+    END ;
+
+    (* armed for the MAIN file's parse and no other.  ParseText
+       disarms as it returns, so the dependencies FillGaps pulls in
+       below do not add their comments to this module's. *)
+    IF doDoc THEN Lex.Collect (TRUE) END ;
+    IF ParseText (mainSrc, main) IS SOME root THEN
+      ScanUnsafe (root, main, FALSE) ;
+      (* whatever the command line did not name, the search path
+         finds: IMPORT names a module and m9c can now translate that
+         to a file, which was the last job a build system was doing
+         here *)
+      FillGaps (root) ;
+      (* every module that could not be found is reported, and then
+         this stops: without a module's source everything after it is
+         guesswork, and the fourteen generator errors that followed
+         the first time were all one problem said fourteen times. *)
+      IF nmissing > 0 THEN Io.Halt (1) END ;
+      (* --no-unsafe refusals stop here too, all of them named
+         first, and nothing generated after *)
+      IF nunsafe > 0 THEN Io.Halt (1) END ;
+      (* THE CLOSURE IS REBUILT BEFORE ANYTHING IS CHECKED AGAINST
+         IT.  m9c has always known which modules it needs -- it
+         resolved, read and parsed them a moment ago -- and has
+         always been willing to NAME the command that builds a
+         missing one.  Running it is the same knowledge acted on.
+         Ordering these by hand in a build script has been wrong
+         repeatedly, and a stale object is indistinguishable from a
+         real difference until something like -flto happens to
+         notice. *)
+      IF doMake THEN
+        IF NOT MakeAll () THEN
+          failed := TRUE ;
+          Io.Halt (1)
+        END
+      END ;
+      Sem.LoadFile (root) ;
+      Sem.CheckFile (root) ;
+      IF Report () THEN
+        DiagN ('m9c: ', Sem.ErrCount (), ' errors in ', main) ;
+        failed := TRUE ;
+        Io.Halt (1)
+      END ;
+      FOR i := 0 TO root.nkids - 1 DO
+        IF root.kids[i] IS SOME u THEN Gen.LoadUnit (u) END
+      END ;
+      (* --doc STILL CHECKS, and stops here.  Documentation for a
+         program the checker rejects is a lie about a program that
+         does not exist, and everything above this line is what makes
+         it true.  What it does NOT do is generate: no C, no object,
+         no cc, and the header is not this module's business. *)
+      IF doDoc THEN
+        Io.WriteFile (Suffix (name, '.md'), DocText (root, name)) ;
+        IF doJson THEN
+          Io.WriteFile (Suffix (name, '.json'), JsonText (root, name))
+        END ;
+        RETURN
+      END ;
+      Gen.Emit (name) ;
+      IF Gen.Errs () > 0 THEN
+        (* each error with its line, the way g1 always did on the
+           host side -- a count alone cost a bisect every time, and
+           then cost one inside the tutorial *)
+        i := 0 ;
+        WHILE i < Gen.Errs () AND i < 8 DO
+          DiagN (Cat (main, ':'), Gen.ErrLineAt (i), ': gen: ',
+                 Gen.ErrMsgAt (i)) ;
+          i := i + 1
+        END ;
+        DiagN ('m9c: ', Gen.Errs (), ' generator errors in ', main) ;
+        failed := TRUE
+      ELSE
+        Io.WriteFile (Suffix (name, '.h'), Gen.HText ()) ;
+        Io.WriteFile (Suffix (name, '.c'), Gen.CText ()) ;
+        IF doCompile THEN
+          IF Compile (name) THEN
+            (* the C was a by-product and the object exists, so it
+               goes -- but the HEADER only goes when linking, because
+               under -c it is still this module's interface and the
+               next module's generated C includes it.  A LIBRARY
+               keeps it for the same reason a -c run does, and more
+               so: the header is how anybody calls the library. *)
+            IF NOT keepC THEN
+              Drop (Suffix (name, '.c')) ;
+              IF doLink THEN Drop (Suffix (name, '.h')) END
+            END ;
+            IF LEN (lib) > 0 THEN
+              IF NOT Archive (name) THEN failed := TRUE END
+            END
+          ELSE
+            failed := TRUE
+          END
+        END
+      END
+    END
+  END ;
+  IF failed THEN Io.Halt (1) END
+EXCEPT
+| Io.IOError (path) :
+    Complain ('cannot read or write', path) ;
+    Io.Halt (1)
+| ValueRange :
+    Complain ('source is not text', main) ;
+    Io.Halt (1)
+| IndexError :
+    Complain ('missing argument', main) ;
+    Io.Halt (1)
+END M9c.

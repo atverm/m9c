@@ -1,0 +1,205 @@
+DEFINITION MODULE Syslog ;
+
+(* The Unix system log.
+
+   Three things this module exists to make impossible, each of them a
+   way the C interface goes wrong in practice:
+
+     syslog () is VARIADIC and its second argument is a FORMAT
+     string.  A program that logs a filename, a URL or a parse error
+     containing '%s' reads whatever the varargs register holds, and
+     '%n' writes.  Send takes a message, not a format, and the shim
+     passes it as an argument to "%.*s".  There is no spelling of
+     this interface that interprets what a caller logs.
+
+     openlog () RETAINS the ident pointer -- the C library does not
+     copy it, and its manual page says so.  An M9 caller handing it
+     a slice of a pool that later dies would leave the logger
+     reading freed memory on every call after that: par 4.1
+     retention, inside libc, where the checker cannot follow.  The
+     shim copies, so Open borrows the ident only for the length of
+     the call and the contract is the ordinary one.
+
+     A priority is a facility and a level combined, and combining
+     them is a shift the caller should not be doing by hand.  Pri
+     does it, and Open takes a default facility so that the common
+     case never mentions one.
+
+   It NEVER RAISES, for the same reason Logger does not: a logger that
+   propagates failure turns a diagnostic into a second fault,
+   usually while handling the first.  A message that cannot be
+   encoded is truncated, not refused.
+
+   Not covered, deliberately: setlogmask, which glibc documents as
+   MT-Unsafe, and which duplicates the level check Logger already does
+   before formatting anything.                                     *)
+
+CONST
+  (* levels, RFC 5424 order -- lower is more severe, which is the
+     opposite of Logger's order, and one reason to convert rather than
+     to pass Logger's numbers through *)
+  Emerg = 0 ; Alert = 1 ; Crit = 2 ; Err = 3 ;
+  Warning = 4 ; Notice = 5 ; Info = 6 ; Debug = 7 ;
+
+  (* facilities, as <syslog.h> encodes them: already shifted left by
+     three, because that is how the constants are defined and
+     re-deriving them here would be a second opinion about a number
+     the system already fixed *)
+  Kern = 0 ; User = 8 ; Mail = 16 ; Daemon = 24 ; Auth = 32 ;
+  Syslog = 40 ; Lpr = 48 ; News = 56 ; Uucp = 64 ; Cron = 72 ;
+  AuthPriv = 80 ; Ftp = 88 ;
+  Local0 = 128 ; Local1 = 136 ; Local2 = 144 ; Local3 = 152 ;
+  Local4 = 160 ; Local5 = 168 ; Local6 = 176 ; Local7 = 184 ;
+
+  (* options for Open, OR them together *)
+  Pid = 1 ;        (* include the process id                    *)
+  Cons = 2 ;       (* write to the console if the log is gone   *)
+  NoDelay = 8 ;    (* open the socket now, not on first message *)
+  Perror = 32 ;    (* also write to stderr -- how the driver for
+                      this module observes what was sent, since a
+                      test cannot read the system journal        *)
+
+PROCEDURE Open (RO ident: STR ; options: I64 ; facility: I64) ;
+  (* ident is BORROWED for the length of this call only.  The C
+     library would retain it; the shim copies to a static buffer so
+     that this signature can mean what it appears to mean. *)
+
+PROCEDURE Close () ;
+  (* releases the connection opened by Open.  Safe to call without
+     an Open and safe to call twice -- closelog is defined that way,
+     and a logger that raised on being closed twice would be a
+     logger callers wrapped in a handler.
+
+     There is one connection PER PROCESS and this closes it -- not
+     because the module is STATEFUL (it is not; it declares no
+     module variables) but because syslog(3) itself is a process
+     singleton.  The state is the C library's, which is also why
+     every binding here is [SERIAL].                                *)
+
+PROCEDURE Pri (facility: I64 ; level: I64) : I64 ;
+  (* a facility and a level combined.  Passing a bare level is legal
+     and means the facility Open was given. *)
+
+PROCEDURE Send (priority: I64 ; RO text: STR) ;
+  (* the message is an ARGUMENT, never a format *)
+
+PROCEDURE FromLoggerLevel (level: I64) : I64 ;
+  (* Logger's Debug..Error to a syslog level.  Two scales exist and
+     they run in opposite directions, so the conversion is written
+     once, here, next to both sets of constants. *)
+
+END Syslog.
+
+
+UNSAFE DEFINITION MODULE FOR "C" csyslog ;
+
+(* Open and Close mutate process-global logger state -- the ident,
+   the facility, the socket -- so they are [SERIAL] for the reason
+   the museum's blosc piece is: a setup call with a global effect,
+   racing.  Send is [REENTRANT] because POSIX requires syslog () to
+   be thread-safe and glibc documents it MT-Safe; a program that
+   logs from threads is the normal case, and refusing it would make
+   this module useless exactly where it is most wanted.            *)
+
+PROCEDURE OpenLog = "m9_openlog" (ident: C.ConstPtr ; n: C.Int ;
+                                  option: C.Int ; facility: C.Int)
+  [SERIAL] ;
+PROCEDURE SysLog = "m9_syslog" (priority: C.Int ; msg: C.ConstPtr ;
+                                n: C.Int)  [REENTRANT] ;
+PROCEDURE CloseLog = "m9_closelog" ()  [SERIAL] ;
+
+END csyslog.
+
+
+UNSAFE IMPLEMENTATION MODULE Syslog ;
+
+(* UNSAFE for one reason: ADR at the foreign boundary.  Everything
+   else is checked code; the audit surface is this file, grep ADR.  *)
+
+IMPORT DynStr ;
+FROM csyslog IMPORT OpenLog, SysLog, CloseLog ;
+
+CONST
+  (* longer than any sensible log line, and short enough that a
+     runaway one is truncated rather than allocated *)
+  MaxMsg = 8192 ;
+
+(* No module state, deliberately: the C library already remembers
+   the ident and the facility Open gave it, and a second copy here
+   would be a second opinion about them -- and would make this
+   module STATEFUL, which the checker asked for and which would have
+   been true of a shadow nobody read. *)
+
+PROCEDURE Open (RO ident: STR ; options: I64 ; facility: I64) =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+BEGIN
+  (* FALSE: no terminator wanted, the length is passed explicitly.
+     The shim copies before openlog () sees it. *)
+  b := DynStr.Bytes (scratch, ident, FALSE) ;
+  OpenLog (ADR (b), C.Int (LEN (b)), C.Int (options), C.Int (facility))
+EXCEPT
+| ValueRange :
+    (* an ident that is not encodable is not worth failing a program
+       over: the log still opens, under the process name libc
+       already knows *)
+    OpenLog (ADR (b), C.Int (0), C.Int (options), C.Int (facility))
+END Open ;
+
+PROCEDURE Close () =
+BEGIN
+  CloseLog ()
+END Close ;
+
+PROCEDURE Pri (facility: I64 ; level: I64) : I64 =
+BEGIN
+  RETURN facility + level
+END Pri ;
+
+PROCEDURE Send (priority: I64 ; RO text: STR) =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  b := DynStr.Bytes (scratch, text, FALSE) ;
+  n := LEN (b) ;
+  IF n > MaxMsg THEN n := MaxMsg END ;
+  SysLog (C.Int (priority), ADR (b), C.Int (n))
+EXCEPT
+| ValueRange :
+    (* text outside Latin-1 cannot go down this wire as bytes; a
+       marker arrives instead, because a log line that says the
+       message was unencodable beats no line at all *)
+    SendAscii (priority, '(message not encodable)')
+END Send ;
+
+(* the fallback path, which cannot itself fail: its argument is a
+   literal, so the conversion that raised above cannot raise here *)
+PROCEDURE SendAscii (priority: I64 ; RO text: STR) =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+BEGIN
+  b := DynStr.Bytes (scratch, text, FALSE) ;
+  SysLog (C.Int (priority), ADR (b), C.Int (LEN (b)))
+EXCEPT
+| ValueRange :
+END SendAscii ;
+
+PROCEDURE FromLoggerLevel (level: I64) : I64 =
+BEGIN
+  (* Logger counts up to Error, syslog counts down to Emerg; Silent has
+     no syslog spelling, so it maps to Debug and is never reached
+     because Logger checks Enabled before it builds anything *)
+  CASE level OF
+  | 0 : RETURN Debug
+  | 1 : RETURN Info
+  | 2 : RETURN Warning
+  | 3 : RETURN Err
+  ELSE RETURN Info
+  END
+END FromLoggerLevel ;
+
+END Syslog.

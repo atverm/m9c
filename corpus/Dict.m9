@@ -1,0 +1,258 @@
+DEFINITION MODULE Dict ;
+
+(* STR -> Value, insertion-ordered.
+
+   The domain this exists for -- JSON objects, YAML mappings, database
+   rows, configuration -- is heterogeneous by nature: a name maps to a
+   string or a number or a truth value.  M9 has no generics, so the
+   answer is not one dictionary per value type but one VARIANT value,
+   the shape Json.Node already uses.  Because CASE over a CASE RECORD
+   must be total, asking for a string where an integer lives is an
+   obligation the checker states at compile time rather than a
+   surprise at run time; that is the totality rule doing real work
+   instead of the caller remembering which flavour of table they hold.
+
+   Value.Idx is the escape hatch for payloads the variant cannot
+   hold -- a Json subtree, a column vector -- and names honestly what
+   it is: an index into storage the caller already owns.
+
+   Iteration is INSERTION-ORDERED, not hash-ordered.  That is a
+   deliberate cost: every differential test in this repository
+   compares bytes, and OpenApi derives a byte-identical document from
+   a table -- a container whose walk order depended on capacity could
+   not take part in that.  Python 3.7 made the same trade for the
+   same reason: a compact entry array plus an index table.
+
+   Keys are BORROWED, never copied.  Every intended caller holds a
+   document that outlives the dictionary -- the contract Json.Parse
+   already states about its source -- so copying would be waste with
+   a lifetime story attached.  The retention is deliberate, declared
+   here, and appears in the P3 ledger, which is where the decision to
+   keep or annotate it will be made from evidence.
+
+   There is no Remove.  Nothing in the corpus deletes a key, and an
+   open-addressed table with tombstones is a different data structure
+   with a different probe rule; it is not written until something
+   needs it.                                                          *)
+
+TYPE
+  Dict ;                                (* opaque; lives in a POOL *)
+
+  Value = CASE RECORD
+  | Null
+  | Bool : b: BOOL
+  | Int  : i: I64
+  | Real : x: F64
+  | Str  : RO s: STR
+  | Idx  : n: I64            (* an index into the caller's storage *)
+  END ;
+
+EXCEPTION NotFound (RO key: STR) ;
+
+PROCEDURE New (VAR pool: POOL) : PTR Dict IN pool ;
+  (* an empty table.  Keys and values live in pool and the table
+     dies with it, so there is no Dispose -- the same lifetime story
+     DynStr tells.  Insertion order is remembered, which is what
+     makes KeyAt/ValAt below a stable walk rather than a hash
+     order that changes when the table grows.                      *)
+
+PROCEDURE Put (VAR pool: POOL ; VAR d: PTR Dict ; RO key: STR ;
+               val: Value) ;
+  (* inserts, or replaces the value of an existing key.  Replacing
+     keeps the key's original position in the iteration order.       *)
+
+PROCEDURE Find (d: PTR Dict ; RO key: STR ; VAR val: Value) : BOOL ;
+  (* the total form: answers whether it was there, never raises *)
+
+PROCEDURE Get (d: PTR Dict ; RO key: STR) : Value RAISES NotFound ;
+  (* the assertive form, for callers who know.  Absence is an
+     exception, not a sentinel: every Value the table can hold is a
+     value some caller meant to store, so there is none to spare.    *)
+
+PROCEDURE Has (d: PTR Dict ; RO key: STR) : BOOL ;
+  (* is the key present?  Find above answers the same question AND
+     hands back the value; this one is for the caller that only
+     wants to know, and saves it declaring a Value it will not
+     read.                                                          *)
+
+PROCEDURE Count (d: PTR Dict) : I64 ;
+  (* how many keys are in the table; the bound for KeyAt and ValAt
+     below.  Put over an existing key does not change it, because
+     replacing keeps the key's original position.                  *)
+
+PROCEDURE KeyAt (d: PTR Dict ; i: I64) : STR RAISES IndexError ;
+PROCEDURE ValAt (d: PTR Dict ; i: I64) : Value RAISES IndexError ;
+  (* 0 .. Count-1, in insertion order *)
+
+PROCEDURE Hash (RO key: STR) : I64 ;
+  (* exported so a test can pin the function, not just its effects *)
+
+END Dict.
+
+
+IMPLEMENTATION MODULE Dict ;
+
+CONST
+  HashPrime = 1000003 ;    (* the polynomial hash lives mod this *)
+  HashMul   = 33 ;
+  InitEnts  = 8 ;
+  InitSlots = 16 ;         (* load factor is held at or below 1/2 *)
+  Empty     = -1 ;
+
+TYPE
+  Ent = RECORD
+    key : STR ;
+    val : Value ;
+  END ;
+
+  Dict = RECORD
+    ents : SLICE OF Ent ;   (* insertion order, 0 .. n-1 *)
+    n    : I64 ;
+    idx  : SLICE OF I64 ;   (* open addressing: Empty or an ents index *)
+  END ;
+
+(* A polynomial hash reduced mod a prime at every step.  Held below
+   the prime, the intermediate is at most 1000002 * 33 + 1114111,
+   about 3.4e7 -- so the checked multiply and add here cannot raise
+   Overflow, and the result cannot go negative, which is what makes
+   the bucket index safe without any bit operation.  M9 has wrapping
+   operators (+% *%) that the usual djb2 would need; this hash does
+   not need them, and staying inside checked arithmetic is worth more
+   than the shift.                                                   *)
+PROCEDURE Hash (RO key: STR) : I64 =
+VAR
+  h, i : I64 ;
+BEGIN
+  h := 0 ;
+  FOR i := 0 TO LEN (key) - 1 DO
+    h := (h * HashMul + ORD (key[i])) MOD HashPrime
+  END ;
+  RETURN h
+END Hash ;
+
+PROCEDURE Eq (RO a: STR ; RO b: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF a[i] # b[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Eq ;
+
+PROCEDURE New (VAR pool: POOL) : PTR Dict IN pool =
+VAR
+  d : PTR Dict IN pool ;
+  i : I64 ;
+BEGIN
+  d := NEW (pool, Dict) ;
+  d.ents := NEW (pool, Ent, InitEnts) ;
+  d.n := 0 ;
+  d.idx := NEW (pool, I64, InitSlots) ;
+  FOR i := 0 TO LEN (d.idx) - 1 DO d.idx[i] := Empty END ;
+  RETURN d
+END New ;
+
+(* the slot holding key, or the first free slot on its probe path.
+   Linear probing: the table is never full (load factor <= 1/2), so
+   the walk always terminates.                                       *)
+PROCEDURE Slot (d: PTR Dict ; RO key: STR) : I64 =
+VAR
+  cap, s, e : I64 ;
+BEGIN
+  cap := LEN (d.idx) ;
+  s := Hash (key) MOD cap ;
+  LOOP
+    e := d.idx[s] ;
+    IF e = Empty THEN RETURN s END ;
+    IF Eq (d.ents[e].key, key) THEN RETURN s END ;
+    s := s + 1 ;
+    IF s = cap THEN s := 0 END
+  END
+END Slot ;
+
+PROCEDURE Regrow (VAR pool: POOL ; VAR d: PTR Dict) =
+VAR
+  i, s, cap : I64 ;
+BEGIN
+  cap := 2 * LEN (d.idx) ;
+  d.idx := NEW (pool, I64, cap) ;
+  FOR i := 0 TO cap - 1 DO d.idx[i] := Empty END ;
+  (* rebuilt from the entry array, so insertion order survives a
+     rehash by construction -- there is no order to rebuild *)
+  FOR i := 0 TO d.n - 1 DO
+    s := Hash (d.ents[i].key) MOD cap ;
+    WHILE d.idx[s] # Empty DO
+      s := s + 1 ;
+      IF s = cap THEN s := 0 END
+    END ;
+    d.idx[s] := i
+  END
+END Regrow ;
+
+PROCEDURE Put (VAR pool: POOL ; VAR d: PTR Dict ; RO key: STR ;
+               val: Value) =
+VAR
+  s, e, i : I64 ;
+  ne : SLICE OF Ent ;
+BEGIN
+  s := Slot (d, key) ;
+  e := d.idx[s] ;
+  IF e # Empty THEN
+    d.ents[e].val := val ;             (* keeps its original position *)
+    RETURN
+  END ;
+  IF d.n = LEN (d.ents) THEN
+    ne := NEW (pool, Ent, 2 * LEN (d.ents)) ;
+    FOR i := 0 TO d.n - 1 DO ne[i] := d.ents[i] END ;
+    d.ents := ne
+  END ;
+  d.ents[d.n].key := key ;             (* borrowed, par 4.1: the
+                                          caller's document outlives
+                                          this table (ledgered)      *)
+  d.ents[d.n].val := val ;
+  d.idx[s] := d.n ;
+  d.n := d.n + 1 ;
+  IF 2 * d.n >= LEN (d.idx) THEN Regrow (pool, d) END
+END Put ;
+
+PROCEDURE Find (d: PTR Dict ; RO key: STR ; VAR val: Value) : BOOL =
+VAR e : I64 ;
+BEGIN
+  e := d.idx[Slot (d, key)] ;
+  IF e = Empty THEN RETURN FALSE END ;
+  val := d.ents[e].val ;
+  RETURN TRUE
+END Find ;
+
+PROCEDURE Has (d: PTR Dict ; RO key: STR) : BOOL =
+BEGIN
+  RETURN d.idx[Slot (d, key)] # Empty
+END Has ;
+
+PROCEDURE Get (d: PTR Dict ; RO key: STR) : Value RAISES NotFound =
+VAR e : I64 ;
+BEGIN
+  e := d.idx[Slot (d, key)] ;
+  IF e = Empty THEN RAISE NotFound (key) END ;
+  RETURN d.ents[e].val
+END Get ;
+
+PROCEDURE Count (d: PTR Dict) : I64 =
+BEGIN
+  RETURN d.n
+END Count ;
+
+PROCEDURE KeyAt (d: PTR Dict ; i: I64) : STR RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= d.n THEN RAISE IndexError (i, d.n) END ;
+  RETURN d.ents[i].key
+END KeyAt ;
+
+PROCEDURE ValAt (d: PTR Dict ; i: I64) : Value RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= d.n THEN RAISE IndexError (i, d.n) END ;
+  RETURN d.ents[i].val
+END ValAt ;
+
+END Dict.

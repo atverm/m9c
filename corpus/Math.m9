@@ -1,0 +1,616 @@
+DEFINITION MODULE Math ;
+
+(* The elementary functions, on F64.
+
+   M9 had none of these.  A language whose stated audience is data
+   science and research infrastructure could not compute a logarithm,
+   which was not noticed until a Fortran kernel was transcribed and
+   the second line of it needed one.
+
+   Everything here is libm, declared rather than assumed: each
+   procedure below names the C symbol it binds, and each is
+   [REENTRANT] because POSIX says so of these functions -- they read
+   no global state and the rounding mode is per-thread.  errno is a
+   different matter and is dealt with by not depending on it: where a
+   C function's answer for a bad argument is a NaN and an errno
+   nobody reads, M9 raises instead.
+
+   WHAT IS AND IS NOT CHECKED.  These are the only procedures in the
+   corpus whose failure is a property of the ARGUMENT rather than of
+   the machine, so the rule has to be stated once:
+
+     - A domain error RAISES ValueRange.  Log (0.0), Log (-1.0),
+       Sqrt (-1.0), Asin (2.0) are refused, because a NaN returned
+       into a checked language is a lie that travels: it compares
+       false against everything, survives every arithmetic operation,
+       and surfaces three procedures later as a ValueRange from a
+       conversion that had nothing to do with it.  That is the
+       Trunc(NaN) museum piece with the crash moved somewhere else.
+     - An overflow to infinity RAISES Overflow.  Exp (1000.0) is not
+       an answer.
+     - A NaN ARGUMENT raises ValueRange, everywhere, for the same
+       reason: it arrived from somewhere that should have raised.
+     - Underflow to zero does NOT raise.  It is the correct answer to
+       within the type's precision, and a program that cares about
+       the difference between 1e-320 and 0.0 has a numerical problem
+       this module cannot help with.
+
+   The cost of checking is one comparison on a value already in a
+   register, against a call that takes tens of cycles.  Measured
+   before it is defended, in docs/bench.md if it ever matters.
+
+   NOT HERE, deliberately: F32 versions (convert, or ask for them
+   when a caller exists); the hyperbolics, erf and the Bessels (no
+   caller yet -- erf_mod.f90 in FLEXPART is a candidate, and it
+   carries its own implementation, which is evidence about what
+   people trust); complex arithmetic (no complex type).            *)
+
+CONST
+  (* to the last bit representable in F64 *)
+  Pi = 3.14159265358979311600 ;
+  E  = 2.71828182845904509080 ;
+
+PROCEDURE Abs (x: F64) : F64 RAISES ValueRange ;
+  (* |x|.  Raises on NaN, like everything here; it is the cheapest
+     place in a program to notice one.                              *)
+
+PROCEDURE Sqrt (x: F64) : F64 RAISES ValueRange ;
+  (* domain: x >= 0 *)
+
+PROCEDURE Log (x: F64) : F64 RAISES ValueRange ;
+  (* natural logarithm; domain: x > 0.  Log (0.0) is -infinity in C
+     and a raise here: a caller dividing by it gets a wrong number
+     rather than a diagnosis.                                       *)
+
+PROCEDURE Log10 (x: F64) : F64 RAISES ValueRange ;
+PROCEDURE Log2 (x: F64) : F64 RAISES ValueRange ;
+  (* logarithms in the two other bases that come up, with Log's
+     domain rule: x must be positive.  Zero and negative RAISE
+     rather than answering -inf and NaN, for the reason stated on
+     Log above -- a caller dividing by the answer gets a wrong
+     number instead of a diagnosis.                                *)
+
+PROCEDURE Exp (x: F64) : F64 RAISES ValueRange, Overflow ;
+  (* e**x.  Overflow above about 709.79; underflow to zero below
+     about -745 is an answer, not an error.                         *)
+
+PROCEDURE Pow (x, y: F64) : F64 RAISES ValueRange, Overflow ;
+  (* x**y.  Domain: x >= 0, or y integral.  The C rules here are a
+     table of fifteen special cases; this refuses the ones that
+     produce a NaN and passes the rest through.                     *)
+
+PROCEDURE Sin (x: F64) : F64 RAISES ValueRange ;
+PROCEDURE Cos (x: F64) : F64 RAISES ValueRange ;
+PROCEDURE Tan (x: F64) : F64 RAISES ValueRange ;
+  (* domain: finite x.  No range reduction beyond libm's, so a very
+     large argument answers with the precision libm has, which is
+     less than the caller probably imagines.                        *)
+
+PROCEDURE Asin (x: F64) : F64 RAISES ValueRange ;
+PROCEDURE Acos (x: F64) : F64 RAISES ValueRange ;
+  (* domain: -1 <= x <= 1 *)
+
+PROCEDURE Atan (x: F64) : F64 RAISES ValueRange ;
+PROCEDURE Atan2 (y, x: F64) : F64 RAISES ValueRange ;
+  (* the quadrant-correct angle; Atan2 (0.0, 0.0) is 0.0, as in C *)
+
+PROCEDURE Floor (x: F64) : F64 RAISES ValueRange ;
+PROCEDURE Ceil (x: F64) : F64 RAISES ValueRange ;
+  (* still F64: the conversion to an integer is I64 (x), which is
+     checked and raises ValueRange of its own.  Two steps, both
+     visible, rather than one step that can surprise.               *)
+
+PROCEDURE Fmod (x, y: F64) : F64 RAISES ValueRange ;
+  (* the remainder of x/y with the sign of x, which is what Fortran
+     MOD and C fmod both compute -- not the floor-based modulus.  A
+     zero divisor is a domain error and raises rather than answering
+     NaN.  Added for a FLEXPART map projection that reduces a
+     longitude to (-180, 180]. *)
+
+PROCEDURE Hypot (x, y: F64) : F64 RAISES ValueRange, Overflow ;
+  (* sqrt (x*x + y*y) without the intermediate overflow *)
+
+PROCEDURE Erf (x: F64) : F64 RAISES ValueRange ;
+PROCEDURE Erfc (x: F64) : F64 RAISES ValueRange ;
+  (* the error function and its complement.  Deferred for years as
+     "no caller"; the caller arrived with Stats -- the normal CDF is
+     (1 + Erf (x / sqrt 2)) / 2, and every p-value rests on it.
+     Total on the finite line; only a NaN argument raises. *)
+
+PROCEDURE IsNaN (x: F64) : BOOL ;
+PROCEDURE IsFinite (x: F64) : BOOL ;
+  (* The two predicates that do NOT raise, because asking whether a
+     value is a NaN is the one question a NaN may legitimately be
+     asked.  Everything else here refuses it.                       *)
+
+
+(* ---- the same, at single precision ----
+
+   A caller does not write these names.  `Math.Sqrt (x)` with an F32
+   argument resolves to Math.SqrtF32: when the first argument of a
+   call to `Name` types as F32 and `NameF32` exists in the same
+   module, the checkers and the generators rewrite the call.  The
+   suffix is how a module DECLARES a function width-generic; it is
+   not how anyone calls one.
+
+   Declared rather than hidden, because the rewrite makes a real
+   cross-module call, and because a reader asking what Math.Sqrt
+   does to a single-precision argument should find the answer in the
+   definition rather than in the compiler. *)
+
+PROCEDURE AbsF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE SqrtF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE LogF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE Log10F32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE Log2F32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE ExpF32 (x: F32) : F32 RAISES ValueRange, Overflow ;
+PROCEDURE PowF32 (x, y: F32) : F32 RAISES ValueRange, Overflow ;
+PROCEDURE SinF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE CosF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE TanF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE AsinF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE AcosF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE AtanF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE Atan2F32 (y, x: F32) : F32 RAISES ValueRange ;
+PROCEDURE FloorF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE CeilF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE FmodF32 (x, y: F32) : F32 RAISES ValueRange ;
+PROCEDURE HypotF32 (x, y: F32) : F32 RAISES ValueRange, Overflow ;
+PROCEDURE ErfF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE ErfcF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE IsNaNF32 (x: F32) : BOOL ;
+PROCEDURE IsFiniteF32 (x: F32) : BOOL ;
+
+END Math.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cmath ;
+
+(* libm, verbatim.  REENTRANT: these functions keep no state between
+   calls and the rounding mode is per-thread, which is a property of
+   the C standard and of POSIX rather than an assumption made here.
+   errno is not read -- see the domain rules in Math above. *)
+
+PROCEDURE CFmod  = "fmod"  (x: C.Double ; y: C.Double) : C.Double
+  [REENTRANT] ;
+PROCEDURE CSqrt  = "sqrt"  (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CLog   = "log"   (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CLog10 = "log10" (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CLog2  = "log2"  (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CExp   = "exp"   (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CPow   = "pow"   (x: C.Double ; y: C.Double) : C.Double
+  [REENTRANT] ;
+PROCEDURE CSin   = "sin"   (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CCos   = "cos"   (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CTan   = "tan"   (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CAsin  = "asin"  (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CAcos  = "acos"  (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CAtan  = "atan"  (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CAtan2 = "atan2" (y: C.Double ; x: C.Double) : C.Double
+  [REENTRANT] ;
+PROCEDURE CFloor = "floor" (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CCeil  = "ceil"  (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CFabs  = "fabs"  (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CErf   = "erf"   (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CErfc  = "erfc"  (x: C.Double) : C.Double  [REENTRANT] ;
+PROCEDURE CHypot = "hypot" (x: C.Double ; y: C.Double) : C.Double
+  [REENTRANT] ;
+
+END cmath.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cmathf ;
+
+(* libm's single-precision half, verbatim, with the same REENTRANT
+   reasoning as cmath above.  Separate because sqrtf is not sqrt
+   narrowed: for a port held bit-identical to a single-precision
+   Fortran original, the difference is the whole point. *)
+
+PROCEDURE CFmodF32  = "fmodf"  (x: C.Float ; y: C.Float) : C.Float
+  [REENTRANT] ;
+PROCEDURE CSqrtF32  = "sqrtf"  (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CLogF32   = "logf"   (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CLog10F32 = "log10f" (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CLog2F32  = "log2f"  (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CExpF32   = "expf"   (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CPowF32   = "powf"   (x: C.Float ; y: C.Float) : C.Float
+  [REENTRANT] ;
+PROCEDURE CSinF32   = "sinf"   (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CCosF32   = "cosf"   (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CTanF32   = "tanf"   (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CAsinF32  = "asinf"  (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CAcosF32  = "acosf"  (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CAtanF32  = "atanf"  (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CAtan2F32 = "atan2f" (y: C.Float ; x: C.Float) : C.Float
+  [REENTRANT] ;
+PROCEDURE CFloorF32 = "floorf" (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CCeilF32  = "ceilf"  (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CErfF32   = "erff"   (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CErfcF32  = "erfcf"  (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CFabsF32  = "fabsf"  (x: C.Float) : C.Float  [REENTRANT] ;
+PROCEDURE CHypotF32 = "hypotf" (x: C.Float ; y: C.Float) : C.Float
+  [REENTRANT] ;
+
+END cmathf.
+
+
+IMPLEMENTATION MODULE Math ;
+
+FROM cmath IMPORT CSqrt, CLog, CLog10, CLog2, CExp, CPow, CSin, CCos,
+                  CTan, CAsin, CAcos, CAtan, CAtan2, CFloor, CCeil,
+                  CFabs, CHypot, CFmod, CErf, CErfc ;
+
+FROM cmathf IMPORT CSqrtF32, CLogF32, CLog10F32, CLog2F32, CExpF32,
+                   CPowF32, CSinF32, CCosF32, CTanF32, CAsinF32,
+                   CAcosF32, CAtanF32, CAtan2F32, CFloorF32,
+                   CCeilF32, CFabsF32, CHypotF32, CFmodF32,
+                   CErfF32, CErfcF32 ;
+
+(* The three tests every answer goes through, written once.
+
+   A NaN is detected by x # x, which is true of nothing else and is
+   how IEEE 754 says to ask.  An infinity is detected by comparison
+   against the largest finite F64, because M9 has no INF literal and
+   inventing one to check for it would be adding a value to the
+   language in order to reject it.                                  *)
+
+CONST
+  Huge = 1.7976931348623157E308 ;      (* the largest finite F64 *)
+
+PROCEDURE IsNaN (x: F64) : BOOL =
+BEGIN
+  RETURN x # x
+END IsNaN ;
+
+PROCEDURE IsFinite (x: F64) : BOOL =
+BEGIN
+  IF x # x THEN RETURN FALSE END ;
+  RETURN x <= Huge AND x >= -Huge
+END IsFinite ;
+
+(* every argument passes through this *)
+PROCEDURE Arg (x: F64) RAISES ValueRange =
+BEGIN
+  IF x # x THEN RAISE ValueRange END
+END Arg ;
+
+(* every answer passes through one of these two *)
+PROCEDURE Ans (v: F64) : F64 RAISES ValueRange =
+BEGIN
+  IF v # v THEN RAISE ValueRange END ;        (* a domain error *)
+  RETURN v
+END Ans ;
+
+PROCEDURE AnsFinite (v: F64) : F64 RAISES ValueRange, Overflow =
+BEGIN
+  IF v # v THEN RAISE ValueRange END ;
+  IF v > Huge OR v < -Huge THEN RAISE Overflow END ;
+  RETURN v
+END AnsFinite ;
+
+PROCEDURE Abs (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN F64 (CFabs (C.Double (x)))
+END Abs ;
+
+PROCEDURE Sqrt (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CSqrt (C.Double (x))))
+END Sqrt ;
+
+PROCEDURE Log (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  (* log (0) is -infinity, not a NaN, so Ans would pass it *)
+  IF x <= 0.0 THEN RAISE ValueRange END ;
+  RETURN Ans (F64 (CLog (C.Double (x))))
+END Log ;
+
+PROCEDURE Log10 (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  IF x <= 0.0 THEN RAISE ValueRange END ;
+  RETURN Ans (F64 (CLog10 (C.Double (x))))
+END Log10 ;
+
+PROCEDURE Log2 (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  IF x <= 0.0 THEN RAISE ValueRange END ;
+  RETURN Ans (F64 (CLog2 (C.Double (x))))
+END Log2 ;
+
+PROCEDURE Exp (x: F64) : F64 RAISES ValueRange, Overflow =
+BEGIN
+  Arg (x) ;
+  RETURN AnsFinite (F64 (CExp (C.Double (x))))
+END Exp ;
+
+PROCEDURE Pow (x, y: F64) : F64 RAISES ValueRange, Overflow =
+BEGIN
+  Arg (x) ;
+  Arg (y) ;
+  RETURN AnsFinite (F64 (CPow (C.Double (x), C.Double (y))))
+END Pow ;
+
+PROCEDURE Sin (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CSin (C.Double (x))))
+END Sin ;
+
+PROCEDURE Cos (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CCos (C.Double (x))))
+END Cos ;
+
+PROCEDURE Tan (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CTan (C.Double (x))))
+END Tan ;
+
+PROCEDURE Asin (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CAsin (C.Double (x))))
+END Asin ;
+
+PROCEDURE Acos (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CAcos (C.Double (x))))
+END Acos ;
+
+PROCEDURE Atan (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CAtan (C.Double (x))))
+END Atan ;
+
+PROCEDURE Atan2 (y, x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (y) ;
+  Arg (x) ;
+  RETURN Ans (F64 (CAtan2 (C.Double (y), C.Double (x))))
+END Atan2 ;
+
+PROCEDURE Floor (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CFloor (C.Double (x))))
+END Floor ;
+
+PROCEDURE Ceil (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN Ans (F64 (CCeil (C.Double (x))))
+END Ceil ;
+
+PROCEDURE Hypot (x, y: F64) : F64 RAISES ValueRange, Overflow =
+BEGIN
+  Arg (x) ;
+  Arg (y) ;
+  RETURN AnsFinite (F64 (CHypot (C.Double (x), C.Double (y))))
+END Hypot ;
+
+PROCEDURE Erf (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN F64 (CErf (C.Double (x)))
+END Erf ;
+
+PROCEDURE Erfc (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  RETURN F64 (CErfc (C.Double (x)))
+END Erfc ;
+
+PROCEDURE Fmod (x, y: F64) : F64 RAISES ValueRange =
+BEGIN
+  Arg (x) ;
+  Arg (y) ;
+  RETURN Ans (F64 (CFmod (C.Double (x), C.Double (y))))
+END Fmod ;
+
+
+(* ---- the single-precision half ----
+
+   Generated from the F64 procedures above by the script that added
+   them (scratchpad/mathf32.py) and then read: mechanical, so the
+   domain checks cannot drift apart, and present in the source, so
+   they can be.  Every argument goes through ArgF32, every answer
+   through AnsF32 or AnsFiniteF32, and HugeF32 is the largest finite
+   F32 rather than the largest finite F64.
+
+   CALLERS DO NOT NAME THESE.  `Math.Sqrt (x)` with an F32 argument
+   resolves to Math.SqrtF32: if the first argument of a call to
+   `Name` types as F32 and `NameF32` exists in the same module, the
+   checkers and the generators rewrite the call.  The suffix is how a
+   module DECLARES that a function is width-generic; it is not how
+   anyone writes one down.
+
+   WHY NOT JUST NARROW THE DOUBLE ANSWER, measured over 200,000
+   arguments -- how often (float) of the double result differs from
+   the single-precision function:
+
+       sqrtf   0 of 200000    0.00%
+       expf    90             0.04%
+       logf    353            0.18%
+       sinf    2657           1.33%
+       cosf    2538           1.27%
+       atanf   8642           4.32%
+
+   sqrtf is zero because IEEE 754 makes square root correctly
+   rounded and the double rounding is benign; it is the one case
+   where the cheap answer would have been right, and taking it as
+   representative would have been the mistake.  atanf disagrees with
+   the narrowed double once in every twenty-three calls, and the map
+   projections in the FLEXPART port are built out of atan, sin and
+   cos.  Bit-identity against a single-precision original is not
+   reachable through the double library. *)
+
+CONST
+  HugeF32 = 3.4028234663852886E38 ;    (* the largest finite F32 *)
+
+PROCEDURE IsNaNF32 (x: F32) : BOOL =
+BEGIN
+  RETURN x # x
+END IsNaNF32 ;
+
+PROCEDURE IsFiniteF32 (x: F32) : BOOL =
+BEGIN
+  IF x # x THEN RETURN FALSE END ;
+  RETURN x <= HugeF32 AND x >= -HugeF32
+END IsFiniteF32 ;
+
+PROCEDURE ArgF32 (x: F32) RAISES ValueRange =
+BEGIN
+  IF x # x THEN RAISE ValueRange END
+END ArgF32 ;
+
+PROCEDURE AnsF32 (v: F32) : F32 RAISES ValueRange =
+BEGIN
+  IF v # v THEN RAISE ValueRange END ;        (* a domain error *)
+  RETURN v
+END AnsF32 ;
+
+PROCEDURE AnsFiniteF32 (v: F32) : F32 RAISES ValueRange, Overflow =
+BEGIN
+  IF v # v THEN RAISE ValueRange END ;
+  IF v > HugeF32 OR v < -HugeF32 THEN RAISE Overflow END ;
+  RETURN v
+END AnsFiniteF32 ;
+
+PROCEDURE AbsF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN F32 (CFabsF32 (C.Float (x)))
+END AbsF32 ;
+
+PROCEDURE SqrtF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CSqrtF32 (C.Float (x))))
+END SqrtF32 ;
+
+PROCEDURE LogF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  (* log (0) is -infinity, not a NaN, so AnsF32 would pass it *)
+  IF x <= 0.0 THEN RAISE ValueRange END ;
+  RETURN AnsF32 (F32 (CLogF32 (C.Float (x))))
+END LogF32 ;
+
+PROCEDURE Log10F32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  IF x <= 0.0 THEN RAISE ValueRange END ;
+  RETURN AnsF32 (F32 (CLog10F32 (C.Float (x))))
+END Log10F32 ;
+
+PROCEDURE Log2F32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  IF x <= 0.0 THEN RAISE ValueRange END ;
+  RETURN AnsF32 (F32 (CLog2F32 (C.Float (x))))
+END Log2F32 ;
+
+PROCEDURE ExpF32 (x: F32) : F32 RAISES ValueRange, Overflow =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsFiniteF32 (F32 (CExpF32 (C.Float (x))))
+END ExpF32 ;
+
+PROCEDURE PowF32 (x, y: F32) : F32 RAISES ValueRange, Overflow =
+BEGIN
+  ArgF32 (x) ;
+  ArgF32 (y) ;
+  RETURN AnsFiniteF32 (F32 (CPowF32 (C.Float (x), C.Float (y))))
+END PowF32 ;
+
+PROCEDURE SinF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CSinF32 (C.Float (x))))
+END SinF32 ;
+
+PROCEDURE CosF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CCosF32 (C.Float (x))))
+END CosF32 ;
+
+PROCEDURE TanF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CTanF32 (C.Float (x))))
+END TanF32 ;
+
+PROCEDURE AsinF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CAsinF32 (C.Float (x))))
+END AsinF32 ;
+
+PROCEDURE AcosF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CAcosF32 (C.Float (x))))
+END AcosF32 ;
+
+PROCEDURE AtanF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CAtanF32 (C.Float (x))))
+END AtanF32 ;
+
+PROCEDURE Atan2F32 (y, x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (y) ;
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CAtan2F32 (C.Float (y), C.Float (x))))
+END Atan2F32 ;
+
+PROCEDURE FloorF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CFloorF32 (C.Float (x))))
+END FloorF32 ;
+
+PROCEDURE CeilF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN AnsF32 (F32 (CCeilF32 (C.Float (x))))
+END CeilF32 ;
+
+PROCEDURE HypotF32 (x, y: F32) : F32 RAISES ValueRange, Overflow =
+BEGIN
+  ArgF32 (x) ;
+  ArgF32 (y) ;
+  RETURN AnsFiniteF32 (F32 (CHypotF32 (C.Float (x), C.Float (y))))
+END HypotF32 ;
+
+PROCEDURE ErfF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN F32 (CErfF32 (C.Float (x)))
+END ErfF32 ;
+
+PROCEDURE ErfcF32 (x: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  RETURN F32 (CErfcF32 (C.Float (x)))
+END ErfcF32 ;
+
+PROCEDURE FmodF32 (x, y: F32) : F32 RAISES ValueRange =
+BEGIN
+  ArgF32 (x) ;
+  ArgF32 (y) ;
+  RETURN AnsF32 (F32 (CFmodF32 (C.Float (x), C.Float (y))))
+END FmodF32 ;
+
+END Math.

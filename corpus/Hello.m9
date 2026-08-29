@@ -1,0 +1,53 @@
+MODULE Hello ;
+
+(* The first M9 artifact that is a PROGRAM rather than a library.
+   Until now every generated module was called from a C driver, so
+   the language could describe computation but not deliver it; a
+   program module's body becomes main () and the err slot is rooted
+   there.  This one exists to prove three things and nothing else:
+   the body runs, module state survives into it, and an exception
+   that reaches the root is reported and exits nonzero rather than
+   being swallowed -- which is the museum's HALT piece restated as a
+   property of the entry point.                                     *)
+
+IMPORT Io ;
+IMPORT DynStr ;
+
+VAR
+  greeted : I64 ;
+
+PROCEDURE Greet (VAR pool: POOL ; RO who: STR) =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, 'hello, ') ;
+  DynStr.Append (pool, d, who) ;
+  Io.WriteLine (DynStr.View (d)) ;
+  greeted := greeted + 1
+END Greet ;
+
+VAR
+  pool : POOL ;
+  i    : I64 ;
+
+BEGIN
+  IF Io.ArgCount () <= 1 THEN
+    Greet (pool, 'world')
+  ELSE
+    FOR i := 1 TO Io.ArgCount () - 1 DO
+      Greet (pool, Io.Arg (pool, i))
+    END
+  END ;
+  Io.WriteI64 (greeted) ;
+  Io.WriteLine ('')
+EXCEPT
+| ValueRange :
+    (* the root frame is the one with no caller to declare RAISES to,
+       so it is where a program says what it does about failure --
+       not where it is excused from saying *)
+    Io.WriteLine ('hello: an argument was not text')
+| IndexError :
+    (* the predeclared four carry payloads the runtime fills, but no
+       DECLARED fields to bind: noted, not worked around *)
+    Io.WriteLine ('hello: argument index out of range')
+END Hello.

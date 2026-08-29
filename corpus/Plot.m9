@@ -1,0 +1,509 @@
+STATEFUL DEFINITION MODULE Plot ;
+
+(* matplotlib-styled SVG plots, restated from the M2 stack's Plot.mod.
+   STATEFUL is the definition telling the truth: the line figure is a
+   module-level builder (ClearFigure / AddLine / Render), exactly the
+   hidden state the M2 version kept without saying so.  Number
+   formatting goes through the SAME fmt_g C shim the oracle used, so
+   the emitted digits are identical by construction, not by hope.
+   Render answers the SVG as a slice; writing files is the caller's
+   business (M9 has no file module yet, and the OpenApi precedent
+   says a document is a value).                                      *)
+
+IMPORT Mat ;
+
+TYPE
+  Cmap = CASE RECORD
+  | Viridis | Coolwarm
+  END ;
+
+PROCEDURE ClearFigure () ;
+  (* discards every series added so far and starts an empty figure.
+
+     This module is STATEFUL -- the figure being built IS module
+     state, and the definition says so -- so a second plot in the
+     same program must start with this call or it inherits the
+     first one's lines.  One figure at a time is the price of the
+     state, and the alternative is a figure handle nobody asked
+     for.                                                          *)
+
+PROCEDURE AddLine (RO xs: SLICE OF F64 ;
+                   RO ys: SLICE OF F64 ;
+                   colorIdx: I64 ;
+                   RO label: STR) ;
+  (* up to 4 series, up to 1024 points; colorIdx 0..3 = matplotlib
+     C0..C3; NaN values lift the pen, as mpl does.  The label slice
+     is retained until Render -- ledger material, like AddRoute.     *)
+
+PROCEDURE SetDots (RO xs: SLICE OF F64 ; RO ys: SLICE OF F64) ;
+  (* one scatter layer, drawn UNDER the lines: every point a small
+     black circle, NaN points skipped, no per-series cap -- the
+     layer is for raw observations behind their summary lines.  The
+     slices are RETAINED until Render, not copied (the AddLine and
+     AddRoute precedent), so the caller's arrays must outlive it.
+     ClearFigure drops the layer with everything else.              *)
+
+PROCEDURE Render (VAR pool: POOL ;
+                  RO title: STR ;
+                  RO xlabel: STR ;
+                  RO ylabel: STR) : STR
+  RAISES ValueRange ;
+
+PROCEDURE RenderHeat (VAR pool: POOL ;
+                      RO title: STR ;
+                      m: PTR Mat.Matrix ;
+                      cmap: Cmap ;
+                      symmetric: BOOL) : STR
+  RAISES ValueRange ;
+  (* symmetric centres the scale on zero, for anomaly fields;
+     NaN cells render white                                          *)
+
+END Plot.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cfmt ;
+
+PROCEDURE FmtG = "fmt_g" (dst: C.MutPtr ; v: C.Double) : C.Int
+  [REENTRANT] ;
+  (* sprintf "%.4g" -- the oracle's exact formatter, shared          *)
+
+END cfmt.
+
+
+UNSAFE IMPLEMENTATION MODULE Plot ;
+
+(* UNSAFE for one reason: ADR at the fmt_g boundary.                 *)
+
+FROM cfmt IMPORT FmtG ;
+IMPORT Mat ;
+IMPORT DynStr ;
+
+CONST
+  MaxSer  = 4 ;
+  MaxPts  = 1024 ;
+  FigW    = 720.0 ;
+  FigH    = 440.0 ;
+  MLeft   = 70.0 ;
+  MRight  = 25.0 ;
+  MTop    = 45.0 ;
+  MBottom = 55.0 ;
+  HexDigits = '0123456789abcdef' ;
+
+VAR
+  serX, serY : ARRAY 4096 OF F64 ;       (* MaxSer x MaxPts, flat *)
+  serN, serCol : ARRAY 4 OF I64 ;
+  serLbl : ARRAY 4 OF STR ;
+  nSer : I64 ;
+
+PROCEDURE IsNaN (v: F64) : BOOL =
+BEGIN
+  RETURN NOT (v = v)
+END IsNaN ;
+
+PROCEDURE EmitR (VAR pool: POOL ; VAR d: PTR DynStr.DString ; v: F64)
+  RAISES ValueRange =
+VAR
+  buf : ARRAY 32 OF BYTE ;
+  n, i : I64 ;
+BEGIN
+  n := I64 (FmtG (ADR (buf), C.Double (v))) ;
+  FOR i := 0 TO n - 1 DO
+    DynStr.AppendChar (pool, d, CHR (ORD (buf[i])))
+  END
+END EmitR ;
+
+PROCEDURE EmitColor (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                     idx: I64) =
+BEGIN
+  CASE idx OF
+  | 0 : DynStr.Append (pool, d, '#1f77b4')
+  | 1 : DynStr.Append (pool, d, '#ff7f0e')
+  | 2 : DynStr.Append (pool, d, '#2ca02c')
+  | 3 : DynStr.Append (pool, d, '#d62728')
+  ELSE DynStr.Append (pool, d, '#333333')
+  END
+END EmitColor ;
+
+PROCEDURE CmapPt (cmap: Cmap ; i: I64 ; VAR r, g, b: I64) =
+BEGIN
+  CASE cmap OF
+  | Viridis :
+      CASE i OF
+      | 0 : r := 68 ; g := 1 ; b := 84
+      | 1 : r := 59 ; g := 82 ; b := 139
+      | 2 : r := 33 ; g := 145 ; b := 140
+      | 3 : r := 94 ; g := 201 ; b := 98
+      ELSE r := 253 ; g := 231 ; b := 37
+      END
+  | Coolwarm :
+      CASE i OF
+      | 0 : r := 59 ; g := 76 ; b := 192
+      | 1 : r := 124 ; g := 159 ; b := 249
+      | 2 : r := 221 ; g := 221 ; b := 221
+      | 3 : r := 245 ; g := 156 ; b := 125
+      ELSE r := 180 ; g := 4 ; b := 38
+      END
+  END
+END CmapPt ;
+
+PROCEDURE EmitHexByte (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                       v: I64) =
+BEGIN
+  DynStr.AppendChar (pool, d, HexDigits[v DIV 16]) ;
+  DynStr.AppendChar (pool, d, HexDigits[v MOD 16])
+END EmitHexByte ;
+
+PROCEDURE EmitCmap (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                    cmap: Cmap ; t: F64)
+  RAISES ValueRange =
+VAR
+  seg, r0, g0, b0, r1, g1, b1 : I64 ;
+  f : F64 ;
+BEGIN
+  IF t < 0.0 THEN t := 0.0 END ;
+  IF t > 1.0 THEN t := 1.0 END ;
+  f := t * 4.0 ;
+  seg := I64 (f) ;
+  IF seg > 3 THEN seg := 3 END ;
+  f := f - F64 (seg) ;
+  CmapPt (cmap, seg, r0, g0, b0) ;
+  CmapPt (cmap, seg + 1, r1, g1, b1) ;
+  DynStr.AppendChar (pool, d, '#') ;
+  EmitHexByte (pool, d, I64 (F64 (r0) + f * (F64 (r1) - F64 (r0)))) ;
+  EmitHexByte (pool, d, I64 (F64 (g0) + f * (F64 (g1) - F64 (g0)))) ;
+  EmitHexByte (pool, d, I64 (F64 (b0) + f * (F64 (b1) - F64 (b0))))
+END EmitCmap ;
+
+(* Heckbert's nice tick spacing, transcribed *)
+PROCEDURE NiceStep (span: F64) : F64 =
+VAR mag, s : F64 ;
+BEGIN
+  s := span / 5.0 ;
+  mag := 1.0 ;
+  WHILE mag < s DO mag := mag * 10.0 END ;
+  WHILE mag / 10.0 >= s DO mag := mag / 10.0 END ;
+  IF s <= mag / 5.0 THEN RETURN mag / 5.0
+  ELSIF s <= mag / 2.0 THEN RETURN mag / 2.0
+  ELSE RETURN mag END
+END NiceStep ;
+
+PROCEDURE FloorMul (v, step: F64) : F64
+  RAISES ValueRange =
+VAR
+  k : I64 ;
+  av : F64 ;
+BEGIN
+  av := v ;
+  IF av < 0.0 THEN av := -av END ;
+  k := I64 (av / step) ;
+  IF v >= 0.0 THEN RETURN step * F64 (k)
+  ELSE RETURN -(step * F64 (k + 1)) END
+END FloorMul ;
+
+PROCEDURE PXof (x, xmin, xmax: F64) : F64 =
+BEGIN
+  RETURN MLeft + (x - xmin) / (xmax - xmin) * (FigW - MLeft - MRight)
+END PXof ;
+
+PROCEDURE PYof (y, ymin, ymax: F64) : F64 =
+BEGIN
+  RETURN FigH - MBottom - (y - ymin) / (ymax - ymin) * (FigH - MTop - MBottom)
+END PYof ;
+
+PROCEDURE ClearFigure () =
+BEGIN
+  nSer := 0 ;
+  dotN := 0
+END ClearFigure ;
+
+VAR
+  dotX, dotY : SLICE OF F64 ;   (* retained caller slices, see def *)
+  dotN : I64 ;
+
+PROCEDURE SetDots (RO xs: SLICE OF F64 ; RO ys: SLICE OF F64) =
+BEGIN
+  dotX := xs ;
+  dotY := ys ;
+  dotN := LEN (xs) ;
+  IF LEN (ys) < dotN THEN dotN := LEN (ys) END
+END SetDots ;
+
+PROCEDURE AddLine (RO xs: SLICE OF F64 ;
+                   RO ys: SLICE OF F64 ;
+                   colorIdx: I64 ;
+                   RO label: STR) =
+VAR n, i : I64 ;
+BEGIN
+  IF nSer >= MaxSer THEN RETURN END ;
+  n := LEN (xs) ;
+  IF n > MaxPts THEN n := MaxPts END ;
+  FOR i := 0 TO n - 1 DO
+    serX[nSer * MaxPts + i] := xs[i] ;
+    serY[nSer * MaxPts + i] := ys[i]
+  END ;
+  serN[nSer] := n ;
+  serCol[nSer] := colorIdx ;
+  serLbl[nSer] := label ;
+  nSer := nSer + 1
+END AddLine ;
+
+PROCEDURE Render (VAR pool: POOL ;
+                  RO title: STR ;
+                  RO xlabel: STR ;
+                  RO ylabel: STR) : STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  s, i : I64 ;
+  xmin, xmax, ymin, ymax, pad, step, t, px, py, ly, v, w : F64 ;
+  seen, pen : BOOL ;
+BEGIN
+  IF nSer = 0 THEN RETURN '' END ;
+  seen := FALSE ;
+  xmin := 0.0 ; xmax := 1.0 ; ymin := 0.0 ; ymax := 1.0 ;
+  FOR s := 0 TO nSer - 1 DO
+    FOR i := 0 TO serN[s] - 1 DO
+      v := serX[s * MaxPts + i] ;
+      w := serY[s * MaxPts + i] ;
+      IF NOT (IsNaN (v) OR IsNaN (w)) THEN
+        IF NOT seen THEN
+          xmin := v ; xmax := v ;
+          ymin := w ; ymax := w ;
+          seen := TRUE
+        ELSE
+          IF v < xmin THEN xmin := v END ;
+          IF v > xmax THEN xmax := v END ;
+          IF w < ymin THEN ymin := w END ;
+          IF w > ymax THEN ymax := w END
+        END
+      END
+    END
+  END ;
+  FOR i := 0 TO dotN - 1 DO
+    v := dotX[i] ;
+    w := dotY[i] ;
+    IF NOT (IsNaN (v) OR IsNaN (w)) THEN
+      IF NOT seen THEN
+        xmin := v ; xmax := v ;
+        ymin := w ; ymax := w ;
+        seen := TRUE
+      ELSE
+        IF v < xmin THEN xmin := v END ;
+        IF v > xmax THEN xmax := v END ;
+        IF w < ymin THEN ymin := w END ;
+        IF w > ymax THEN ymax := w END
+      END
+    END
+  END ;
+  pad := (ymax - ymin) * 0.08 ;
+  IF pad = 0.0 THEN pad := 1.0 END ;
+  ymin := ymin - pad ;
+  ymax := ymax + pad ;
+
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" ') ;
+  DynStr.Append (pool, d, 'font-family="DejaVu Sans, Helvetica, sans-serif">') ;
+  DynStr.Append (pool, d, '<rect width="720" height="440" fill="white"/>') ;
+
+  step := NiceStep (ymax - ymin) ;
+  t := FloorMul (ymin, step) ;
+  WHILE t < ymin DO t := t + step END ;
+  WHILE t <= ymax DO
+    DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, MLeft) ;
+    DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, PYof (t, ymin, ymax)) ;
+    DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, FigW - MRight) ;
+    DynStr.Append (pool, d, '" y2="') ; EmitR (pool, d, PYof (t, ymin, ymax)) ;
+    DynStr.Append (pool, d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
+    DynStr.Append (pool, d, '<text x="') ; EmitR (pool, d, MLeft - 8.0) ;
+    DynStr.Append (pool, d, '" y="') ;
+    EmitR (pool, d, PYof (t, ymin, ymax) + 4.0) ;
+    DynStr.Append (pool, d, '" font-size="11" fill="#444" text-anchor="end">') ;
+    EmitR (pool, d, t) ;
+    DynStr.Append (pool, d, '</text>') ;
+    t := t + step
+  END ;
+  step := NiceStep (xmax - xmin) ;
+  t := FloorMul (xmin, step) ;
+  WHILE t < xmin DO t := t + step END ;
+  WHILE t <= xmax DO
+    DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
+    DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, MTop) ;
+    DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
+    DynStr.Append (pool, d, '" y2="') ;
+    EmitR (pool, d, FigH - MBottom) ;
+    DynStr.Append (pool, d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
+    DynStr.Append (pool, d, '<text x="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
+    DynStr.Append (pool, d, '" y="') ;
+    EmitR (pool, d, FigH - MBottom + 18.0) ;
+    DynStr.Append (pool, d, '" font-size="11" fill="#444" text-anchor="middle">') ;
+    EmitR (pool, d, t) ;
+    DynStr.Append (pool, d, '</text>') ;
+    t := t + step
+  END ;
+
+  DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, MLeft) ;
+  DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, MTop) ;
+  DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, MLeft) ;
+  DynStr.Append (pool, d, '" y2="') ; EmitR (pool, d, FigH - MBottom) ;
+  DynStr.Append (pool, d, '" stroke="black" stroke-width="1.2"/>') ;
+  DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, MLeft) ;
+  DynStr.Append (pool, d, '" y1="') ;
+  EmitR (pool, d, FigH - MBottom) ;
+  DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, FigW - MRight) ;
+  DynStr.Append (pool, d, '" y2="') ;
+  EmitR (pool, d, FigH - MBottom) ;
+  DynStr.Append (pool, d, '" stroke="black" stroke-width="1.2"/>') ;
+
+  (* the scatter layer, under the lines *)
+  FOR i := 0 TO dotN - 1 DO
+    v := dotX[i] ;
+    w := dotY[i] ;
+    IF NOT (IsNaN (v) OR IsNaN (w)) THEN
+      DynStr.Append (pool, d, '<circle cx="') ;
+      EmitR (pool, d, PXof (v, xmin, xmax)) ;
+      DynStr.Append (pool, d, '" cy="') ;
+      EmitR (pool, d, PYof (w, ymin, ymax)) ;
+      DynStr.Append (pool, d, '" r="0.7" fill="black"/>')
+    END
+  END ;
+
+  FOR s := 0 TO nSer - 1 DO
+    DynStr.Append (pool, d, '<path d="') ;
+    pen := FALSE ;
+    FOR i := 0 TO serN[s] - 1 DO
+      v := serX[s * MaxPts + i] ;
+      w := serY[s * MaxPts + i] ;
+      IF IsNaN (v) OR IsNaN (w) THEN
+        pen := FALSE
+      ELSE
+        px := PXof (v, xmin, xmax) ;
+        py := PYof (w, ymin, ymax) ;
+        IF pen THEN DynStr.Append (pool, d, 'L ')
+        ELSE DynStr.Append (pool, d, 'M ') END ;
+        EmitR (pool, d, px) ; DynStr.AppendChar (pool, d, ' ') ;
+        EmitR (pool, d, py) ; DynStr.AppendChar (pool, d, ' ') ;
+        pen := TRUE
+      END
+    END ;
+    DynStr.Append (pool, d, '" fill="none" stroke="') ;
+    EmitColor (pool, d, serCol[s]) ;
+    DynStr.Append (pool, d, '" stroke-width="1.8"/>')
+  END ;
+
+  ly := MTop + 14.0 ;
+  FOR s := 0 TO nSer - 1 DO
+    DynStr.Append (pool, d, '<line x1="') ;
+    EmitR (pool, d, FigW - MRight - 150.0) ;
+    DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, ly - 4.0) ;
+    DynStr.Append (pool, d, '" x2="') ;
+    EmitR (pool, d, FigW - MRight - 126.0) ;
+    DynStr.Append (pool, d, '" y2="') ; EmitR (pool, d, ly - 4.0) ;
+    DynStr.Append (pool, d, '" stroke="') ;
+    EmitColor (pool, d, serCol[s]) ;
+    DynStr.Append (pool, d, '" stroke-width="2"/>') ;
+    DynStr.Append (pool, d, '<text x="') ;
+    EmitR (pool, d, FigW - MRight - 120.0) ;
+    DynStr.Append (pool, d, '" y="') ; EmitR (pool, d, ly) ;
+    DynStr.Append (pool, d, '" font-size="11" fill="#222">') ;
+    DynStr.Append (pool, d, serLbl[s]) ;
+    DynStr.Append (pool, d, '</text>') ;
+    ly := ly + 16.0
+  END ;
+
+  DynStr.Append (pool, d, '<text x="360" y="24" font-size="14" fill="#111" text-anchor="middle">') ;
+  DynStr.Append (pool, d, title) ;
+  DynStr.Append (pool, d, '</text>') ;
+  DynStr.Append (pool, d, '<text x="360" y="') ;
+  EmitR (pool, d, FigH - 14.0) ;
+  DynStr.Append (pool, d, '" font-size="12" fill="#222" text-anchor="middle">') ;
+  DynStr.Append (pool, d, xlabel) ;
+  DynStr.Append (pool, d, '</text>') ;
+  DynStr.Append (pool, d, '<text x="18" y="230" font-size="12" fill="#222" text-anchor="middle" ') ;
+  DynStr.Append (pool, d, 'transform="rotate(-90 18 230)">') ;
+  DynStr.Append (pool, d, ylabel) ;
+  DynStr.Append (pool, d, '</text>') ;
+  DynStr.Append (pool, d, '</svg>') ;
+  RETURN DynStr.View (d)
+END Render ;
+
+PROCEDURE RenderHeat (VAR pool: POOL ;
+                      RO title: STR ;
+                      m: PTR Mat.Matrix ;
+                      cmap: Cmap ;
+                      symmetric: BOOL) : STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  r, c, nr, nc, i : I64 ;
+  mn, mx, cw, ch, t, v : F64 ;
+BEGIN
+  nr := Mat.Rows (m) ;
+  nc := Mat.Cols (m) ;
+  Mat.MinMax (m, mn, mx) ;
+  IF symmetric THEN
+    IF -mn > mx THEN mx := -mn ELSE mn := -mx END
+  END ;
+  IF mx = mn THEN mx := mn + 1.0 END ;
+  cw := (FigW - MLeft - MRight - 60.0) / F64 (nc) ;
+  ch := (FigH - MTop - MBottom) / F64 (nr) ;
+
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" ') ;
+  DynStr.Append (pool, d, 'font-family="DejaVu Sans, Helvetica, sans-serif">') ;
+  DynStr.Append (pool, d, '<rect width="720" height="440" fill="white"/>') ;
+
+  FOR r := 0 TO nr - 1 DO
+    FOR c := 0 TO nc - 1 DO
+      v := Mat.Get (m, r, c) ;
+      DynStr.Append (pool, d, '<rect x="') ;
+      EmitR (pool, d, MLeft + F64 (c) * cw) ;
+      DynStr.Append (pool, d, '" y="') ;
+      EmitR (pool, d, MTop + F64 (r) * ch) ;
+      DynStr.Append (pool, d, '" width="') ;
+      EmitR (pool, d, cw + 0.5) ;
+      DynStr.Append (pool, d, '" height="') ;
+      EmitR (pool, d, ch + 0.5) ;
+      DynStr.Append (pool, d, '" fill="') ;
+      IF NOT (v = v) THEN
+        DynStr.Append (pool, d, '#ffffff')
+      ELSE
+        EmitCmap (pool, d, cmap, (v - mn) / (mx - mn))
+      END ;
+      DynStr.Append (pool, d, '"/>')
+    END
+  END ;
+
+  FOR i := 0 TO 99 DO
+    t := F64 (i) / 99.0 ;
+    DynStr.Append (pool, d, '<rect x="') ;
+    EmitR (pool, d, FigW - MRight - 38.0) ;
+    DynStr.Append (pool, d, '" y="') ;
+    EmitR (pool, d, MTop + t * (FigH - MTop - MBottom - 3.4)) ;
+    DynStr.Append (pool, d, '" width="16" height="') ;
+    EmitR (pool, d, (FigH - MTop - MBottom) / 100.0 + 0.5) ;
+    DynStr.Append (pool, d, '" fill="') ;
+    EmitCmap (pool, d, cmap, 1.0 - t) ;
+    DynStr.Append (pool, d, '"/>')
+  END ;
+  DynStr.Append (pool, d, '<text x="') ;
+  EmitR (pool, d, FigW - MRight - 30.0) ;
+  DynStr.Append (pool, d, '" y="') ; EmitR (pool, d, MTop - 6.0) ;
+  DynStr.Append (pool, d, '" font-size="10" fill="#333" text-anchor="middle">') ;
+  EmitR (pool, d, mx) ;
+  DynStr.Append (pool, d, '</text>') ;
+  DynStr.Append (pool, d, '<text x="') ;
+  EmitR (pool, d, FigW - MRight - 30.0) ;
+  DynStr.Append (pool, d, '" y="') ;
+  EmitR (pool, d, FigH - MBottom + 14.0) ;
+  DynStr.Append (pool, d, '" font-size="10" fill="#333" text-anchor="middle">') ;
+  EmitR (pool, d, mn) ;
+  DynStr.Append (pool, d, '</text>') ;
+
+  DynStr.Append (pool, d, '<text x="360" y="24" font-size="14" fill="#111" text-anchor="middle">') ;
+  DynStr.Append (pool, d, title) ;
+  DynStr.Append (pool, d, '</text>') ;
+  DynStr.Append (pool, d, '</svg>') ;
+  RETURN DynStr.View (d)
+END RenderHeat ;
+
+END Plot.

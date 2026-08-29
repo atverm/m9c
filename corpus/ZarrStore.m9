@@ -1,0 +1,787 @@
+DEFINITION MODULE ZarrStore ;
+
+(* The day's zarr reader, restated as an M9 contract.  Each comment
+   names the 2026-08-20 bug the construct makes uncompilable.
+   HTTP-backed zarr v2 store, as the M2 stack's zarrhttp was: C-order,
+   little-endian numeric dtypes, blosc or raw chunks, missing chunk
+   means fill_value.  Local-file stores arrive with an OS module.    *)
+
+TYPE
+  Store ;                                  (* opaque *)
+  Array ;
+
+  Dtype = CASE RECORD                      (* tagged union, CASE total *)
+  | Float   : width: I64                   (* F32/F64 only: width says so *)
+  | Int     : width: I64 ; signed: BOOL
+  END ;
+
+EXCEPTION
+  IOError (RO msg: STR) ;
+  FormatError (RO msg: STR) ;
+  HttpStatus (code: I64) ;
+
+PROCEDURE Open (RO url: STR) : SHARED PTR Store
+  RAISES IOError, FormatError ;
+  (* SHARED because every Array retains its Store -- retention is
+     part of the contract, and plain borrows refuse it (par 4.2).
+     FormatError is in the signature: the caller that ignored a bad
+     url today cannot exist -- unhandled RAISES does not compile.    *)
+
+PROCEDURE OpenArray (s: SHARED PTR Store ; RO path: STR)
+  : PTR Array
+  RAISES IOError, FormatError ;
+  (* fill_value validation happens HERE, at open: an integer dtype
+     with fill NaN raises FormatError now, not Trunc(NaN) later.
+     [the FPC crash-at-read bug, moved to the contract boundary]     *)
+
+PROCEDURE GetF64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : F64
+  RAISES IOError ;
+  (* IndexError needs no declaration: it is a checked runtime error,
+     always on, catchable.  There is no flag that turns it off.
+     [the -fsoft-check-all "unreachable" bug: unrepresentable]       *)
+
+PROCEDURE GetI64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : I64
+  RAISES IOError, ValueRange ;
+  (* ValueRange covers BOTH: float element non-finite or beyond I64
+     [Trunc(NaN) crash], and U64 element above I64 range [the silent
+     negative-wrap that numpy commits without a warning].            *)
+
+PROCEDURE ReadChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)
+  : RO SLICE OF BYTE
+  RAISES IOError ;
+  (* READONLY slice into the cache: the caller can read at native
+     speed but cannot retain it past the next call or mutate it --
+     the FPC cache-aliasing hazard is a compile error, and the
+     zero-copy path stays zero-copy.                                 *)
+
+PROCEDURE Rank (a: PTR Array) : I64 ;
+PROCEDURE Extent (a: PTR Array ; axis: I64) : I64 RAISES IndexError ;
+PROCEDURE HasFill (a: PTR Array) : BOOL ;
+PROCEDURE Fill (a: PTR Array) : F64 ;
+  (* what THIS array calls a missing value, as a number -- the float
+     fill for a float dtype, the integer one widened for an integer
+     dtype.  A caller comparing two copies of a dataset has to ask
+     per array and not per file: in ICOS's FLUXNET store the floats
+     fill with 9.969e36 and the quality flags are |u1 filling with
+     255, and a reader that assumes either one reports 173,899
+     disagreements that are not there.  Measured, twice: the same
+     mistake first showed up against the NetCDF copy.               *)
+  (* the shape, which the caller could not ask for until now: every
+     existing caller hardcoded the geometry it expected, which is
+     fine for a store you wrote and useless for one you did not.
+     Found by trying to walk a public store whose 2202 arrays are not
+     all on the same time axis.                                     *)
+
+PROCEDURE CloseArray (OWN a: PTR Array) ;
+PROCEDURE Close (OWN s: SHARED PTR Store) ;
+  (* OWN: closing consumes the handle; a use after Close is a
+     compile error, not a crash.                                     *)
+
+END ZarrStore.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cblosc ;
+
+PROCEDURE DecompressCtx = "blosc_decompress_ctx"
+  (src: C.ConstPtr ; dest: C.MutPtr ; destsize: C.SizeT ;
+   nthreads: C.Int) : C.Int  [REENTRANT] ;
+
+PROCEDURE Decompress = "blosc_decompress"
+  (src: C.ConstPtr ; dest: C.MutPtr ; destsize: C.SizeT)
+  : C.Int  [SERIAL] ;
+  (* SERIAL: calling this from parbench's Worker threads is a type
+     error; the compiler forces _ctx or a MONITOR wrapper.
+     [the blosc global-state trap, moved into the signature]         *)
+
+END cblosc.
+
+
+UNSAFE IMPLEMENTATION MODULE ZarrStore ;
+
+(* UNSAFE for one reason: ADR at the blosc boundary.  Grep ADR.      *)
+
+FROM cblosc IMPORT DecompressCtx ;
+IMPORT Json ;
+IMPORT Http ;
+IMPORT DynStr ;
+
+CONST
+  MaxRank = 8 ;
+  MetaMax = 65536 ;
+
+TYPE
+  Comp = CASE RECORD
+  | Blosc | Raw
+  END ;
+
+  Meta = RECORD
+    rank   : I64 ;
+    shape  : ARRAY MaxRank OF I64 ;
+    chunks : ARRAY MaxRank OF I64 ;
+    dt     : Dtype ;
+    comp   : Comp ;
+    sep    : CHAR ;
+    fillF  : F64 ;
+    fillI  : I64 ;
+    fillB  : ARRAY 8 OF BYTE ;    (* fillI on the wire, see OpenArray *)
+    hasFill : BOOL ;              (* present and not null *)
+  END ;
+
+  Store = RECORD
+    pool : POOL ;                 (* owns the host/root copies *)
+    host : STR ;
+    port : I64 ;
+    root : STR ;
+    secure : BOOL ;               (* https, decided once at open *)
+  END ;
+
+  ChunkBuf = RECORD
+    coords : ARRAY MaxRank OF I64 ;
+    buf    : SLICE OF BYTE ;
+  END ;
+
+  Array = RECORD
+    st    : SHARED PTR Store ;    (* retention, declared (par 4.2) *)
+    path  : STR ;       (* copy in cache pool *)
+    meta  : Meta ;
+    cache : POOL ;                (* chunk buffers live here;
+                                     freed as a unit on CloseArray *)
+    last  : OPT PTR ChunkBuf IN cache ;
+  END ;
+
+(* ---- small pure helpers ---- *)
+
+PROCEDURE CopyChars (VAR pool: POOL ; RO s: STR)
+  : STR =
+VAR
+  b : STR ;
+  i : I64 ;
+BEGIN
+  b := NEW (pool, CHAR, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO b[i] := s[i] END ;
+  RETURN b
+END CopyChars ;
+
+PROCEDURE StartsWith (RO s: STR ;
+                      RO p: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (s) < LEN (p) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (p) - 1 DO
+    IF s[i] # p[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END StartsWith ;
+
+(* ---- store-level fetch ---- *)
+
+PROCEDURE Fetch (st: SHARED PTR Store ; VAR pool: POOL ;
+                 RO rel: STR ; maxLen: I64)
+  : SLICE OF BYTE
+  RAISES IOError, HttpStatus =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  buf : SLICE OF BYTE ;
+  n, status : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, st.root) ;
+  DynStr.AppendChar (pool, d, '/') ;
+  DynStr.Append (pool, d, rel) ;
+  buf := NEW (pool, BYTE, maxLen) ;
+  n := 0 ;
+  IF st.secure THEN
+    status := Http.GetTls (st.host, st.port, DynStr.View (d), buf, n)
+  ELSE
+    status := Http.Get (st.host, st.port, DynStr.View (d), buf, n)
+  END ;
+  IF status # 200 THEN RAISE HttpStatus (status) END ;
+  RETURN SLICE (buf, 0, n)
+EXCEPT
+| TransportError (msg) : RAISE IOError (msg)
+| ValueRange : RAISE IOError ('store path is not ascii')
+END Fetch ;
+
+(* ---- open ---- *)
+
+PROCEDURE Open (RO url: STR) : SHARED PTR Store
+  RAISES IOError, FormatError =
+VAR
+  s : PTR Store ;
+  j, start : I64 ;
+BEGIN
+  s := NEW (Store) ;
+  IF StartsWith (url, 'https://') THEN
+    s.secure := TRUE ;
+    start := 8
+  ELSIF StartsWith (url, 'http://') THEN
+    s.secure := FALSE ;
+    start := 7
+  ELSE
+    RAISE FormatError ('only http:// and https:// stores; files arrive with an OS module')
+  END ;
+  j := start ;
+  WHILE j < LEN (url) AND url[j] # ':' AND url[j] # '/' DO
+    j := j + 1
+  END ;
+  s.host := CopyChars (s.pool, SLICE (url, start, j - start)) ;
+  IF LEN (s.host) = 0 THEN RAISE FormatError ('url has no host') END ;
+  IF s.secure THEN s.port := 443 ELSE s.port := 80 END ;
+  IF j < LEN (url) THEN
+    IF url[j] = ':' THEN
+      j := j + 1 ;
+      s.port := 0 ;
+      WHILE j < LEN (url) AND url[j] >= '0' AND url[j] <= '9' DO
+        s.port := s.port * 10 + ORD (url[j]) - 48 ;
+        j := j + 1
+      END
+    END
+  END ;
+  s.root := CopyChars (s.pool, SLICE (url, j, LEN (url) - j)) ;
+  RETURN SHARED (s)
+END Open ;
+
+PROCEDURE ItemBytes (dt: Dtype) : I64 =
+BEGIN
+  CASE dt OF
+  | Float (w) : RETURN w
+  | Int (w, signed) : RETURN w
+  END
+END ItemBytes ;
+
+PROCEDURE ChunkBytes (VAR a: PTR Array) : I64 =
+VAR
+  n, d : I64 ;
+BEGIN
+  n := ItemBytes (a.meta.dt) ;
+  FOR d := 0 TO a.meta.rank - 1 DO n := n * a.meta.chunks[d] END ;
+  RETURN n
+END ChunkBytes ;
+
+PROCEDURE ReadDims (sh: PTR Json.Node ; VAR out: ARRAY MaxRank OF I64)
+  : I64
+  RAISES FormatError, TypeMismatch, ValueRange =
+VAR
+  n, i : I64 ;
+BEGIN
+  n := Json.Count (sh) ;
+  IF n < 1 OR n > MaxRank THEN
+    RAISE FormatError ('rank out of range')
+  END ;
+  FOR i := 0 TO n - 1 DO
+    out[i] := Json.AsI64 (Json.Item (sh, i))
+  END ;
+  RETURN n
+END ReadDims ;
+
+(* An integer fill_value on the wire, little-endian, computed ONCE at
+   open.  Answers FALSE if the value does not fit the dtype it was
+   declared for -- a |u1 array with fill 300 is a broken store, and
+   saying so at open is the same contract as the NaN-into-an-integer
+   check beside it.
+
+   Doing it here rather than in FillChunk is what keeps FillChunk
+   raise-free: it copies bytes, so nothing downstream of it grows a
+   ValueRange in its signature.
+
+   No bit operations, because M9 has none yet (a Bits module is
+   pre-registered).  `v MOD 256` normalised to 0..255 and then
+   `(v - b) DIV 256` is exact whichever way MOD rounds negatives,
+   including at MIN.                                               *)
+PROCEDURE IntFillBytes (v: I64 ; w: I64 ; signed: BOOL ;
+                        dest: SLICE OF BYTE) : BOOL
+  RAISES ValueRange, IndexError =
+VAR i, b, lim : I64 ;
+BEGIN
+  IF w < 8 THEN
+    lim := 1 ;
+    FOR i := 1 TO 8 * w - 1 DO lim := lim * 2 END ;      (* 2^(8w-1) *)
+    IF signed THEN
+      IF v < -lim OR v >= lim THEN RETURN FALSE END
+    ELSE
+      IF v < 0 OR v >= lim * 2 THEN RETURN FALSE END
+    END
+  END ;
+  (* eight bytes needs no test: an I64 fill fits an eight-byte dtype,
+     and an unsigned fill above MAX I64 never got here -- Json.AsI64
+     raised ValueRange on it *)
+  FOR i := 0 TO w - 1 DO
+    b := v MOD 256 ;
+    IF b < 0 THEN b := b + 256 END ;
+    dest[i] := BYTE (b) ;
+    v := (v - b) DIV 256
+  END ;
+  RETURN TRUE
+END IntFillBytes ;
+
+(* the sextet value of a base64 character, -1 for anything else *)
+PROCEDURE Sextet (ch: CHAR) : I64 =
+BEGIN
+  IF ch >= 'A' AND ch <= 'Z' THEN RETURN ORD (ch) - ORD ('A') END ;
+  IF ch >= 'a' AND ch <= 'z' THEN RETURN ORD (ch) - ORD ('a') + 26 END ;
+  IF ch >= '0' AND ch <= '9' THEN RETURN ORD (ch) - ORD ('0') + 52 END ;
+  IF ch = '+' THEN RETURN 62 END ;
+  IF ch = '/' THEN RETURN 63 END ;
+  RETURN -1
+END Sextet ;
+
+(* a string fill_value encoding exactly one byte, base64: 'XX=='.
+   Answers FALSE for anything else -- a numeric fill, a longer
+   string -- so the caller falls through to the numeric path. *)
+PROCEDURE S1Fill (fv: PTR Json.Node ; VAR b: I64) : BOOL =
+VAR
+  t : STR ;
+  hi, lo : I64 ;
+BEGIN
+  t := Json.AsStr (fv) ;
+  IF LEN (t) # 4 THEN RETURN FALSE END ;
+  IF t[2] # '=' OR t[3] # '=' THEN RETURN FALSE END ;
+  hi := Sextet (t[0]) ;
+  lo := Sextet (t[1]) ;
+  IF hi < 0 OR lo < 0 THEN RETURN FALSE END ;
+  b := hi * 4 + lo DIV 16 ;
+  RETURN TRUE
+EXCEPT
+| TypeMismatch (msg) :
+    RETURN FALSE
+END S1Fill ;
+
+PROCEDURE OpenArray (s: SHARED PTR Store ; RO path: STR)
+  : PTR Array
+  RAISES IOError, FormatError =
+VAR
+  scratch : POOL ;                 (* .zarray text, json tree: dies here *)
+  a : PTR Array ;
+  d : PTR DynStr.DString IN scratch ;
+  raw : SLICE OF BYTE ;
+  root : PTR Json.Node IN scratch ;
+  crank, sfb : I64 ;
+BEGIN
+  a := NEW (Array) ;
+  a.st := s ;
+  a.path := CopyChars (a.cache, path) ;
+  a.last := NONE ;
+
+  d := DynStr.New (scratch) ;
+  DynStr.Append (scratch, d, path) ;
+  DynStr.Append (scratch, d, '/.zarray') ;
+  raw := Fetch (s, scratch, DynStr.View (d), MetaMax) ;
+  root := Json.Parse (scratch, DynStr.Chars (scratch, raw)) ;
+
+  IF Json.Field (root, 'zarr_format') IS SOME zf THEN
+    IF Json.AsI64 (zf) # 2 THEN
+      RAISE FormatError ('only zarr v2 (v3 has zarr.json metadata)')
+    END
+  END ;
+
+  IF Json.Field (root, 'shape') IS SOME sh THEN
+    a.meta.rank := ReadDims (sh, a.meta.shape)
+  ELSE
+    RAISE FormatError ('shape missing')
+  END ;
+  IF Json.Field (root, 'chunks') IS SOME ch THEN
+    crank := ReadDims (ch, a.meta.chunks) ;
+    IF crank # a.meta.rank THEN
+      RAISE FormatError ('shape/chunks rank mismatch')
+    END
+  ELSE
+    RAISE FormatError ('chunks missing')
+  END ;
+
+  IF Json.Field (root, 'dtype') IS SOME dt THEN
+    IF    Json.StrIs (dt, '<f8') THEN a.meta.dt := Dtype.Float (8)
+    ELSIF Json.StrIs (dt, '<f4') THEN a.meta.dt := Dtype.Float (4)
+    ELSIF Json.StrIs (dt, '<i8') THEN a.meta.dt := Dtype.Int (8, TRUE)
+    ELSIF Json.StrIs (dt, '<i4') THEN a.meta.dt := Dtype.Int (4, TRUE)
+    ELSIF Json.StrIs (dt, '<i2') THEN a.meta.dt := Dtype.Int (2, TRUE)
+    ELSIF Json.StrIs (dt, '|i1') THEN a.meta.dt := Dtype.Int (1, TRUE)
+    ELSIF Json.StrIs (dt, '<u8') THEN a.meta.dt := Dtype.Int (8, FALSE)
+    ELSIF Json.StrIs (dt, '<u4') THEN a.meta.dt := Dtype.Int (4, FALSE)
+    ELSIF Json.StrIs (dt, '<u2') THEN a.meta.dt := Dtype.Int (2, FALSE)
+    ELSIF Json.StrIs (dt, '|u1') THEN a.meta.dt := Dtype.Int (1, FALSE)
+    ELSIF Json.StrIs (dt, '|S1') THEN
+      (* a ONE-BYTE string element read as its byte: GetI64 answers
+         the character code, which is what a categorical flag is.
+         Demanded by ICOS ObsPack, whose qc_flag is |S1 ('U'/'O' =
+         usable, the ATC convention).  Wider S-dtypes stay refused:
+         a string column is not a number and pretending otherwise is
+         how mojibake gets averaged. *)
+      a.meta.dt := Dtype.Int (1, FALSE)
+    ELSE RAISE FormatError ('dtype not supported (numeric LE only)')
+    END
+  ELSE
+    RAISE FormatError ('dtype missing')
+  END ;
+
+  IF Json.Field (root, 'order') IS SOME o THEN
+    IF NOT Json.StrIs (o, 'C') THEN
+      RAISE FormatError ('F-order arrays not supported')
+    END
+  END ;
+  IF Json.Field (root, 'filters') IS SOME f THEN
+    IF NOT Json.IsNull (f) THEN
+      RAISE FormatError ('filter pipelines not supported')
+    END
+  END ;
+
+  a.meta.fillF := 0.0 / 0.0 ;
+  a.meta.fillI := 0 ;
+  a.meta.hasFill := FALSE ;
+  IF Json.Field (root, 'fill_value') IS SOME fv THEN
+    IF Json.IsNull (fv) THEN
+      (* NaN for floats, zero for ints: the zarr default.  Null is
+         "this array declares no fill", which is not the same as "its
+         fill is zero", and HasFill is how a caller tells them
+         apart -- the store's time coordinate is exactly this case. *)
+    ELSIF Json.StrIs (fv, 'NaN') THEN
+      a.meta.hasFill := TRUE ;
+      a.meta.fillF := 0.0 / 0.0
+    ELSIF Json.StrIs (fv, 'Infinity') THEN
+      a.meta.hasFill := TRUE ;
+      a.meta.fillF := 1.0 / 0.0
+    ELSIF Json.StrIs (fv, '-Infinity') THEN
+      a.meta.hasFill := TRUE ;
+      a.meta.fillF := -1.0 / 0.0
+    ELSIF S1Fill (fv, sfb) THEN
+      (* an |S1 fill arrives BASE64-ENCODED per zarr v2 spec ('LQ=='
+         is '-'): one byte, two sextets, decoded without the Bits
+         module the language does not have yet *)
+      a.meta.hasFill := TRUE ;
+      a.meta.fillI := sfb ;
+      a.meta.fillF := F64 (sfb)
+    ELSE
+      a.meta.hasFill := TRUE ;
+      a.meta.fillF := Json.AsF64 (fv) ;
+      CASE a.meta.dt OF
+      | Int (w, signed) :
+          a.meta.fillI := Json.AsI64 (fv) ;
+          (* AsI64 on NaN raises ValueRange -> FormatError below: the
+             Trunc(NaN) crash, caught at open, exactly as promised.
+
+             A non-zero integer fill used to be refused here, as a
+             stated narrowing to be widened when a real store demanded
+             it.  ICOS's public FLUXNET store is that store: its
+             quality flags are |u1 with fill_value 255, and a reader
+             that refuses them cannot read half the archive.  What
+             the narrowing was really protecting was FillChunk, which
+             wrote nothing because pool storage is defined-zero; that
+             is now a real write of the fill's bytes.                *)
+          IF a.meta.fillI # 0 THEN
+            IF NOT IntFillBytes (a.meta.fillI, w, signed,
+                                 SLICE (a.meta.fillB, 0, 8)) THEN
+              RAISE FormatError ('fill_value does not fit the dtype')
+            END
+          END
+      | Float (w) :
+      END
+    END
+  END ;
+
+  a.meta.comp := Comp.Raw ;
+  IF Json.Field (root, 'compressor') IS SOME c THEN
+    IF NOT Json.IsNull (c) THEN
+      IF Json.Field (c, 'id') IS SOME cid THEN
+        IF Json.StrIs (cid, 'blosc') THEN a.meta.comp := Comp.Blosc
+        ELSE RAISE FormatError ('compressor not supported (blosc, none)')
+        END
+      ELSE
+        RAISE FormatError ('compressor object has no id')
+      END
+    END
+  END ;
+
+  a.meta.sep := '.' ;
+  IF Json.Field (root, 'dimension_separator') IS SOME ds THEN
+    IF Json.StrIs (ds, '/') THEN a.meta.sep := '/' END
+  END ;
+
+  RETURN a
+EXCEPT
+| HttpStatus (404) :
+    RAISE FormatError ('array not found (no .zarray)')
+| HttpStatus (code) :
+    RAISE IOError ('metadata fetch failed')
+| ParseError (msg, line, col) :
+    RAISE FormatError ('bad .zarray json')
+| TypeMismatch (msg) :
+    RAISE FormatError ('bad .zarray field')
+| ValueRange :
+    RAISE FormatError ('bad .zarray value')
+END OpenArray ;
+
+(* ---- chunks ---- *)
+
+PROCEDURE SameCoords (VAR a: PTR Array ; p: PTR ChunkBuf ;
+                      RO coords: SLICE OF I64) : BOOL =
+VAR d : I64 ;
+BEGIN
+  FOR d := 0 TO a.meta.rank - 1 DO
+    IF p.coords[d] # coords[d] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END SameCoords ;
+
+PROCEDURE Decompress (VAR a: PTR Array ; RO raw: SLICE OF BYTE ;
+                      dest: SLICE OF BYTE)
+  RAISES IOError =
+VAR i : I64 ;
+BEGIN
+  CASE a.meta.comp OF
+  | Blosc :
+      IF DecompressCtx (ADR (raw), ADR (dest),
+                        C.SizeT (LEN (dest)), C.Int (1))
+         # C.Int (LEN (dest)) THEN
+        RAISE IOError ('blosc decompress failed or short')
+      END
+  | Raw :
+      IF LEN (raw) # LEN (dest) THEN
+        RAISE IOError ('raw chunk size mismatch')
+      END ;
+      FOR i := 0 TO LEN (raw) - 1 DO dest[i] := raw[i] END
+  END
+END Decompress ;
+
+PROCEDURE FillChunk (VAR a: PTR Array) : PTR ChunkBuf IN a.cache =
+VAR
+  p : PTR ChunkBuf IN a.cache ;
+  n, i, k, w : I64 ;
+BEGIN
+  p := NEW (a.cache, ChunkBuf) ;
+  p.buf := NEW (a.cache, BYTE, ChunkBytes (a)) ;
+  CASE a.meta.dt OF
+  | Float (w2) :
+      w := w2 ;
+      n := LEN (p.buf) DIV w ;
+      FOR i := 0 TO n - 1 DO
+        IF w = 8 THEN
+          F64.ToBytesLE (a.meta.fillF, SLICE (p.buf, i * 8, 8))
+        ELSE
+          F32.ToBytesLE (F32 (a.meta.fillF), SLICE (p.buf, i * 4, 4))
+        END
+      END
+  | Int (w2, signed) :
+      w := w2 ;
+      (* zero needs no writing -- pool storage is defined-zero
+         (par 4.3) -- and zero is the common case, so it is worth the
+         test rather than the loop *)
+      IF a.meta.fillI # 0 THEN
+        n := LEN (p.buf) DIV w ;
+        FOR i := 0 TO n - 1 DO
+          FOR k := 0 TO w - 1 DO
+            p.buf[i * w + k] := a.meta.fillB[k]
+          END
+        END
+      END
+  END ;
+  RETURN p
+END FillChunk ;
+
+PROCEDURE GetChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)
+  : PTR ChunkBuf IN a.cache
+  RAISES IOError =
+VAR
+  scratch : POOL ;                 (* key text + compressed bytes *)
+  d : PTR DynStr.DString IN scratch ;
+  raw : SLICE OF BYTE ;
+  p : PTR ChunkBuf IN a.cache ;
+  i : I64 ;
+BEGIN
+  IF a.last IS SOME q THEN
+    IF SameCoords (a, q, coords) THEN RETURN q END
+  END ;
+  (* OPT must be guarded: no nil dereference exists to write.        *)
+
+  d := DynStr.New (scratch) ;
+  DynStr.Append (scratch, d, a.path) ;
+  DynStr.AppendChar (scratch, d, '/') ;
+  FOR i := 0 TO a.meta.rank - 1 DO
+    IF i > 0 THEN DynStr.AppendChar (scratch, d, a.meta.sep) END ;
+    DynStr.AppendI64 (scratch, d, coords[i])
+  END ;
+  raw := Fetch (a.st, scratch, DynStr.View (d), ChunkBytes (a) + 1024) ;
+
+  p := NEW (a.cache, ChunkBuf) ;
+  FOR i := 0 TO a.meta.rank - 1 DO p.coords[i] := coords[i] END ;
+  p.buf := NEW (a.cache, BYTE, ChunkBytes (a)) ;
+  Decompress (a, raw, p.buf) ;
+  a.last := SOME (p) ;
+  RETURN p
+  (* single-chunk cache: sequential scans hit `last`; every miss
+     allocates in the cache pool and the old buffer is abandoned
+     there until CloseArray.  Arena cost, measured before fancier
+     caching is earned.                                              *)
+EXCEPT
+| HttpStatus (404) :
+    RETURN FillChunk (a)             (* missing chunk is legitimate:
+                                        it means "entirely fill_value";
+                                        fill pre-validated at open    *)
+| HttpStatus (code) :
+    RAISE IOError ('chunk fetch failed')
+END GetChunk ;
+
+PROCEDURE ReadChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)
+  : RO SLICE OF BYTE
+  RAISES IOError =
+VAR p : PTR ChunkBuf IN a.cache ;
+BEGIN
+  p := GetChunk (a, coords) ;
+  RETURN SLICE (p.buf, 0, LEN (p.buf))
+END ReadChunk ;
+
+(* ---- elements ---- *)
+
+PROCEDURE Locate (VAR a: PTR Array ; RO idx: SLICE OF I64 ;
+                  VAR ofs: I64)
+  : PTR ChunkBuf IN a.cache
+  RAISES IOError =
+VAR
+  cc, inc : ARRAY MaxRank OF I64 ;
+  d, stride : I64 ;
+  p : PTR ChunkBuf IN a.cache ;
+BEGIN
+  IF LEN (idx) # a.meta.rank THEN
+    RAISE IndexError (LEN (idx), a.meta.rank)
+  END ;
+  FOR d := 0 TO a.meta.rank - 1 DO
+    IF idx[d] < 0 OR idx[d] >= a.meta.shape[d] THEN
+      RAISE IndexError (idx[d], a.meta.shape[d])
+    END ;
+    cc[d] := idx[d] DIV a.meta.chunks[d] ;
+    inc[d] := idx[d] MOD a.meta.chunks[d]
+  END ;
+  p := GetChunk (a, cc) ;
+  (* a whole ARRAY is accepted where a SLICE is expected (par 2.2) *)
+  ofs := 0 ;
+  stride := 1 ;
+  FOR d := a.meta.rank - 1 TO 0 BY -1 DO
+    ofs := ofs + inc[d] * stride ;
+    stride := stride * a.meta.chunks[d]
+  END ;
+  ofs := ofs * ItemBytes (a.meta.dt) ;
+  RETURN p
+END Locate ;
+
+PROCEDURE PowByte (w: I64) : F64 =
+BEGIN
+  IF w = 1 THEN RETURN 256.0
+  ELSIF w = 2 THEN RETURN 65536.0
+  ELSIF w = 4 THEN RETURN 4294967296.0
+  ELSE RETURN 18446744073709551616.0
+  END
+END PowByte ;
+
+PROCEDURE ElemF64 (RO buf: SLICE OF BYTE ; ofs: I64 ;
+                   dt: Dtype) : F64 =
+VAR
+  v : F64 ;
+  k : I64 ;
+BEGIN
+  CASE dt OF
+  | Float (w) :
+      IF w = 8 THEN
+        RETURN F64.FromBytesLE (SLICE (buf, ofs, 8))
+        (* explicit width + explicit endianness at the wire boundary:
+           the LONGREAL/long-double 16-byte-stride bug cannot be
+           written -- there is no native type whose size is a
+           platform opinion.                                          *)
+      ELSE
+        RETURN F64 (F32.FromBytesLE (SLICE (buf, ofs, 4)))
+        (* widening is spelled out: no implicit conversions          *)
+      END
+  | Int (w, signed) :
+      v := 0.0 ;
+      FOR k := w - 1 TO 0 BY -1 DO
+        v := v * 256.0 + F64 (ORD (buf[ofs + k]))
+      END ;
+      IF signed AND (v >= PowByte (w) / 2.0) THEN
+        v := v - PowByte (w)
+      END ;
+      RETURN v
+  END
+  (* CASE over a CASE RECORD must be total: adding a Dtype variant
+     breaks this compile until handled.  No else-garbage, ever.
+     [the uninitialized-Result garbage paths from the first FPC
+     GetInt: unrepresentable]                                         *)
+END ElemF64 ;
+
+PROCEDURE ReadInt (RO buf: SLICE OF BYTE ; ofs, w: I64 ;
+                   signed: BOOL) : I64
+  RAISES ValueRange =
+VAR
+  v, k : I64 ;
+BEGIN
+  IF (NOT signed) AND (w = 8) AND (ORD (buf[ofs + 7]) >= 128) THEN
+    RAISE ValueRange
+    (* u64 beyond I64: numpy wrapped it negative, silently.  Named.  *)
+  END ;
+  v := ORD (buf[ofs + w - 1]) ;
+  IF signed AND (v >= 128) THEN v := v - 256 END ;
+  FOR k := w - 2 TO 0 BY -1 DO
+    v := v * 256 + ORD (buf[ofs + k])
+  END ;
+  RETURN v
+END ReadInt ;
+
+PROCEDURE GetF64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : F64
+  RAISES IOError =
+VAR
+  ofs : I64 ;
+  p : PTR ChunkBuf IN a.cache ;
+BEGIN
+  p := Locate (a, idx, ofs) ;
+  RETURN ElemF64 (p.buf, ofs, a.meta.dt)
+END GetF64 ;
+
+PROCEDURE GetI64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : I64
+  RAISES IOError, ValueRange =
+VAR
+  ofs : I64 ;
+  p : PTR ChunkBuf IN a.cache ;
+BEGIN
+  p := Locate (a, idx, ofs) ;
+  CASE a.meta.dt OF
+  | Int (w, signed) :
+      RETURN ReadInt (p.buf, ofs, w, signed)
+  | Float (w) :
+      RETURN I64 (ElemF64 (p.buf, ofs, a.meta.dt))
+      (* checked conversion: RAISES ValueRange on NaN, Inf, or
+         overflow -- par 2.1; the declared, catchable Trunc(NaN)     *)
+  END
+END GetI64 ;
+
+PROCEDURE Rank (a: PTR Array) : I64 =
+BEGIN
+  RETURN a.meta.rank
+END Rank ;
+
+PROCEDURE Extent (a: PTR Array ; axis: I64) : I64 RAISES IndexError =
+BEGIN
+  IF axis < 0 OR axis >= a.meta.rank THEN RAISE IndexError END ;
+  RETURN a.meta.shape[axis]
+END Extent ;
+
+PROCEDURE HasFill (a: PTR Array) : BOOL =
+BEGIN
+  RETURN a.meta.hasFill
+END HasFill ;
+
+PROCEDURE Fill (a: PTR Array) : F64 =
+BEGIN
+  CASE a.meta.dt OF
+  | Float (w) : RETURN a.meta.fillF
+  | Int (w, signed) : RETURN F64 (a.meta.fillI)
+  END
+END Fill ;
+
+PROCEDURE CloseArray (OWN a: PTR Array) =
+BEGIN
+  DISPOSE (a)                      (* cache pool goes with it *)
+END CloseArray ;
+
+PROCEDURE Close (OWN s: SHARED PTR Store) =
+BEGIN
+  DISPOSE (s)                      (* releases this handle; the store
+                                      dies with its last one *)
+END Close ;
+
+END ZarrStore.

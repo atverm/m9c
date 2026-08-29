@@ -1,0 +1,57 @@
+MODULE Concat ;
+
+(* `+` on strings, and the pool the answer lands in.
+
+   Concatenation ALLOCATES, and in M9 an allocation names its pool --
+   which is why this operator did not exist for a long time: `a + b`
+   has nowhere to put the result.  docs/pools.md refused a default
+   pool as "a leak by construction".
+
+   The revisit that produced HEAP was evidence, not taste.  Five
+   programs in this repository -- Gen.m9, Sem.m9, M9c.m9, Logger.m9
+   and the ICOS demo -- had each declared a module-scope POOL and
+   never freed it, because a compiler and a converter are programs
+   whose storage dies with the process.  The default pool was already
+   here, hand-rolled, five times.  HEAP is that pool with a name, so
+   that `PTR T IN HEAP` still says which pool and a program that must
+   not grow can grep for the one word that makes it.
+
+   What the name buys, and what it costs, are the same fact: HEAP is
+   never freed.  For a tool that is right.  For a server loop it is
+   wrong, and the fix is the one this corpus already uses -- a scoped
+   `VAR scratch : POOL`, or DynStr, which is for ACCUMULATION where
+   `+` is for composition.  `s := s + x` in a loop copies the whole
+   string every time; the loop below is three iterations and says so.
+
+   This module is small on purpose: it is the executable half of the
+   report's paragraph, run by runtime/test/build.sh.               *)
+
+IMPORT Io ;
+IMPORT DynStr ;
+
+PROCEDURE Greeting (RO who: STR) : STR =
+BEGIN
+  (* the answer outlives this frame, which is exactly the case a
+     frame-scoped pool could not serve *)
+  RETURN 'hello, ' + who + '!'
+END Greeting ;
+
+VAR
+  s : STR ;
+  d : PTR DynStr.DString ;
+  n : I64 ;
+
+BEGIN
+  Io.WriteLine (Greeting ('world')) ;
+  s := '' ;
+  FOR n := 1 TO 3 DO
+    s := s + 'ab'
+  END ;
+  Io.WriteLine (s) ;
+  Io.WriteI64 (LEN (s)) ;
+  Io.WriteLine ('') ;
+  (* HEAP is a pool like any other, so it can be passed by name *)
+  d := DynStr.New (HEAP) ;
+  DynStr.Append (HEAP, d, 'via heap') ;
+  Io.WriteLine (DynStr.View (d))
+END Concat.

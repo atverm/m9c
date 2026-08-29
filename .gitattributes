@@ -1,0 +1,12 @@
+# The bootstrap C is compared BYTE for byte -- gendiff.sh against the
+# FPC oracle, bootstrap.sh against itself -- so it must arrive exactly
+# as it was emitted, whatever a clone's core.autocrlf says.  -text
+# stores and checks out the bytes verbatim; it still diffs as text.
+runtime/gen/*.c -text
+runtime/gen/*.h -text
+demo/icos-roundtrip/Fluxnet_Variables.csv -text
+# debian/ is Debian's layer, not upstream's: the release tarball (git
+# archive) is the orig, and Debian wants the packaging BESIDE it --
+# lintian: no-debian-changes when the orig carries an identical debian/.
+# tools/release/vroem.sh prepare cuts debian/ into its own archive.
+debian export-ignore

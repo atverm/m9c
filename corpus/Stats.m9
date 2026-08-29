@@ -1,0 +1,614 @@
+DEFINITION MODULE Stats ;
+
+(* Statistics for scientific computing: moments, percentiles, linear
+   regression, t-tests with real p-values, a normal fit, and random
+   draws from the common distributions.
+
+   Written because the target of this language is scientific
+   computing and every one of these is otherwise reinvented per
+   program -- usually wrongly at the edges (ddof, the percentile
+   interpolation rule, the t-tail).  The contract with the outside
+   world: every number here is differentially tested against numpy
+   and scipy in runtime/test/stats_driver.c, and the two rules a
+   caller must know are numpy's -- sample variance divides by n-1
+   (VarP by n), Percentile interpolates linearly between order
+   statistics, exactly numpy.percentile's default.
+
+   A NaN anywhere in a sample RAISES ValueRange rather than answering
+   NaN: a statistic of a sample containing not-a-number is not a
+   statistic, and a NaN that travels is the museum's founding bug.
+
+   The random Stream is a RECORD the caller owns, like the FLEXPART
+   port's Random.Stream: no module state, so two streams cannot
+   alias and a run is reproducible from its seed by construction.
+   The generator is a 64-bit multiplicative-congruential (Knuth's
+   MMIX constants) answering the top 53 bits -- chosen because M9
+   has no bit operators yet (Bits is pre-registered), and an LCG is
+   the strongest generator expressible in wrapping arithmetic alone.
+   The driver holds the first draws bit-for-bit to an independent
+   reimplementation and the moments of a million draws to their
+   distribution values.  When Bits arrives, a stronger generator can
+   replace this one behind the same record. *)
+
+EXCEPTION
+  TooFew (got, need: I64) ;
+  (* the statistic needs at least `need` values; the sample has
+     `got`.  Mean of nothing is not zero, it is a refusal. *)
+  BadArg (RO what: STR) ;
+  (* a percentile outside [0,100], a nonpositive sigma or lambda,
+     an empty range: named, not NaN'd *)
+
+PROCEDURE Mean (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange ;
+PROCEDURE Var (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange ;
+  (* sample variance, ddof = 1: needs two values *)
+PROCEDURE VarP (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange ;
+  (* population variance, ddof = 0 *)
+PROCEDURE Std (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange ;
+PROCEDURE StdP (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange ;
+
+PROCEDURE Median (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange ;
+PROCEDURE Percentile (RO xs: SLICE OF F64 ; p: F64) : F64
+  RAISES TooFew, BadArg, ValueRange ;
+  (* numpy.percentile's linear rule: at rank (n-1) * p/100,
+     interpolated between the two order statistics around it *)
+
+TYPE
+  Fit = RECORD
+    mu, sigma : F64 ;
+  END ;
+
+PROCEDURE NormFit (RO xs: SLICE OF F64) : Fit
+  RAISES TooFew, ValueRange ;
+  (* maximum-likelihood normal fit: mu is the mean, sigma the
+     POPULATION std -- scipy.stats.norm.fit's answer exactly *)
+
+TYPE
+  Reg = RECORD
+    slope, intercept, r, p, stderr : F64 ;
+  END ;
+
+PROCEDURE LinReg (RO xs, ys: SLICE OF F64) : Reg
+  RAISES TooFew, ValueRange, Overflow ;
+  (* least squares of y on x: scipy.stats.linregress's five numbers,
+     p two-sided against slope = 0 via the t distribution with n-2
+     degrees of freedom *)
+
+TYPE
+  Test = RECORD
+    t, p, dof : F64 ;
+  END ;
+
+PROCEDURE TTest1 (RO xs: SLICE OF F64 ; mu: F64) : Test
+  RAISES TooFew, ValueRange, Overflow ;
+  (* one-sample t-test against the given mean; p is two-sided *)
+PROCEDURE TTest2 (RO xs, ys: SLICE OF F64) : Test
+  RAISES TooFew, ValueRange, Overflow ;
+  (* Welch's two-sample t-test -- unequal variances assumed, the
+     Welch-Satterthwaite degrees of freedom in `dof`.  scipy's
+     ttest_ind (equal_var = False). *)
+
+PROCEDURE NormalCdf (x: F64) : F64 RAISES ValueRange ;
+  (* the standard normal CDF, through Math.Erfc *)
+PROCEDURE TTail (t: F64 ; dof: F64) : F64
+  RAISES ValueRange, Overflow, BadArg ;
+  (* upper tail P(T > t) of Student's t -- the p-value building
+     block, exposed because sooner or later a caller wants the
+     one-sided answer the tests do not give *)
+
+TYPE
+  Stream = RECORD
+    x : I64 ;            (* the 64-bit generator state, AS A BIT
+                            PATTERN: the wrapping ops are defined
+                            mod 2^64 whatever the sign, and keeping
+                            the state signed keeps every step inside
+                            checked I64 arithmetic -- U64 division
+                            is not generatable today (owed ledger) *)
+    have : BOOL ;        (* a cached second normal draw *)
+    spare : F64 ;
+  END ;
+
+PROCEDURE Seed (s: I64) : Stream ;
+  (* any seed is legal; equal seeds give equal streams *)
+PROCEDURE Uniform (VAR st: Stream) : F64 ;
+  (* [0, 1), 53 random bits *)
+PROCEDURE UniformI (VAR st: Stream ; lo, hi: I64) : I64
+  RAISES BadArg ;
+  (* an integer in [lo, hi], inclusive, unbiased by rejection *)
+PROCEDURE Normal (VAR st: Stream) : F64 RAISES ValueRange ;
+  (* standard normal, polar method *)
+PROCEDURE Exponential (VAR st: Stream ; lambda: F64) : F64
+  RAISES ValueRange, BadArg ;
+PROCEDURE LogNormal (VAR st: Stream ; mu, sigma: F64) : F64
+  RAISES ValueRange, Overflow, BadArg ;
+
+END Stats.
+
+
+IMPLEMENTATION MODULE Stats ;
+
+IMPORT Math ;
+
+(* ---- guards ---- *)
+
+PROCEDURE Need (RO xs: SLICE OF F64 ; n: I64) RAISES TooFew, ValueRange =
+VAR i : I64 ;
+BEGIN
+  IF LEN (xs) < n THEN RAISE TooFew (LEN (xs), n) END ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF NOT (xs[i] = xs[i]) THEN RAISE ValueRange END
+  END
+END Need ;
+
+(* ---- moments ---- *)
+
+PROCEDURE Mean (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange =
+VAR
+  acc : F64 ;
+  i : I64 ;
+BEGIN
+  Need (xs, 1) ;
+  acc := 0.0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    acc := acc + xs[i]
+  END ;
+  RETURN acc / F64 (LEN (xs))
+END Mean ;
+
+PROCEDURE SumSq (RO xs: SLICE OF F64 ; m: F64) : F64 =
+  (* sum of squared deviations from m, the two-pass formula: the
+     textbook one-pass E[x^2] - E[x]^2 loses digits exactly where a
+     tight sample meets a large mean, which is a tower time series *)
+VAR
+  acc, d : F64 ;
+  i : I64 ;
+BEGIN
+  acc := 0.0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    d := xs[i] - m ;
+    acc := acc + d * d
+  END ;
+  RETURN acc
+END SumSq ;
+
+PROCEDURE Var (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange =
+BEGIN
+  Need (xs, 2) ;
+  RETURN SumSq (xs, Mean (xs)) / F64 (LEN (xs) - 1)
+END Var ;
+
+PROCEDURE VarP (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange =
+BEGIN
+  Need (xs, 1) ;
+  RETURN SumSq (xs, Mean (xs)) / F64 (LEN (xs))
+END VarP ;
+
+PROCEDURE Std (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange =
+BEGIN
+  RETURN Math.Sqrt (Var (xs))
+END Std ;
+
+PROCEDURE StdP (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange =
+BEGIN
+  RETURN Math.Sqrt (VarP (xs))
+END StdP ;
+
+(* ---- order statistics ---- *)
+
+PROCEDURE Sort (VAR a: SLICE OF F64) =
+  (* heapsort: in place, O(n log n) always, no recursion -- a
+     library sort must not have a quadratic corner *)
+VAR
+  n, i, j, c : I64 ;
+  t : F64 ;
+BEGIN
+  n := LEN (a) ;
+  i := n DIV 2 - 1 ;
+  WHILE i >= 0 DO
+    j := i ;
+    WHILE 2 * j + 1 < n DO
+      c := 2 * j + 1 ;
+      IF c + 1 < n AND a[c + 1] > a[c] THEN c := c + 1 END ;
+      IF a[j] >= a[c] THEN
+        j := n                          (* done: leave the loop *)
+      ELSE
+        t := a[j] ; a[j] := a[c] ; a[c] := t ;
+        j := c
+      END
+    END ;
+    i := i - 1
+  END ;
+  i := n - 1 ;
+  WHILE i > 0 DO
+    t := a[0] ; a[0] := a[i] ; a[i] := t ;
+    j := 0 ;
+    WHILE 2 * j + 1 < i DO
+      c := 2 * j + 1 ;
+      IF c + 1 < i AND a[c + 1] > a[c] THEN c := c + 1 END ;
+      IF a[j] >= a[c] THEN
+        j := i
+      ELSE
+        t := a[j] ; a[j] := a[c] ; a[c] := t ;
+        j := c
+      END
+    END ;
+    i := i - 1
+  END
+END Sort ;
+
+PROCEDURE Sorted (VAR scratch: POOL ; RO xs: SLICE OF F64)
+  : SLICE OF F64 =
+VAR
+  a : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  a := NEW (scratch, F64, LEN (xs)) ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    a[i] := xs[i]
+  END ;
+  Sort (a) ;
+  RETURN a
+END Sorted ;
+
+PROCEDURE Percentile (RO xs: SLICE OF F64 ; p: F64) : F64
+  RAISES TooFew, BadArg, ValueRange =
+VAR
+  scratch : POOL ;
+  a : SLICE OF F64 ;
+  lo : I64 ;
+  h, frac : F64 ;
+BEGIN
+  Need (xs, 1) ;
+  IF NOT (p >= 0.0 AND p <= 100.0) THEN
+    RAISE BadArg ('percentile outside [0, 100]')
+  END ;
+  a := Sorted (scratch, xs) ;
+  h := F64 (LEN (xs) - 1) * p / 100.0 ;
+  lo := I64 (Math.Floor (h)) ;
+  frac := h - Math.Floor (h) ;
+  IF lo >= LEN (xs) - 1 THEN
+    RETURN a[LEN (xs) - 1]
+  END ;
+  RETURN a[lo] + frac * (a[lo + 1] - a[lo])
+END Percentile ;
+
+PROCEDURE Median (RO xs: SLICE OF F64) : F64
+  RAISES TooFew, ValueRange =
+VAR
+  scratch : POOL ;
+  a : SLICE OF F64 ;
+  n : I64 ;
+BEGIN
+  Need (xs, 1) ;
+  a := Sorted (scratch, xs) ;
+  n := LEN (xs) ;
+  IF n MOD 2 = 1 THEN
+    RETURN a[n DIV 2]
+  END ;
+  RETURN (a[n DIV 2 - 1] + a[n DIV 2]) / 2.0
+END Median ;
+
+(* ---- the normal fit ---- *)
+
+PROCEDURE NormFit (RO xs: SLICE OF F64) : Fit
+  RAISES TooFew, ValueRange =
+VAR f : Fit ;
+BEGIN
+  Need (xs, 2) ;
+  f.mu := Mean (xs) ;
+  f.sigma := StdP (xs) ;
+  RETURN f
+END NormFit ;
+
+(* ---- special functions for the p-values ----
+
+   Log-gamma by the Lanczos approximation (g = 7, nine terms), the
+   regularised incomplete beta by the Lentz continued fraction.
+   Both are written from the formulas and held to scipy digit for
+   digit in the driver -- fifteen significant digits over the tested
+   range, which is the double-precision ceiling. *)
+
+PROCEDURE LnGamma (x: F64) : F64 RAISES ValueRange =
+VAR
+  a, t, s : F64 ;
+BEGIN
+  IF NOT (x > 0.0) THEN RAISE ValueRange END ;
+  a := x - 1.0 ;
+  s := 0.99999999999980993 ;
+  s := s + 676.5203681218851 / (a + 1.0) ;
+  s := s - 1259.1392167224028 / (a + 2.0) ;
+  s := s + 771.32342877765313 / (a + 3.0) ;
+  s := s - 176.61502916214059 / (a + 4.0) ;
+  s := s + 12.507343278686905 / (a + 5.0) ;
+  s := s - 0.13857109526572012 / (a + 6.0) ;
+  s := s + 9.9843695780195716E-6 / (a + 7.0) ;
+  s := s + 1.5056327351493116E-7 / (a + 8.0) ;
+  t := a + 7.5 ;
+  RETURN 0.91893853320467274 (* ln sqrt 2pi *)
+         + (a + 0.5) * Math.Log (t) - t + Math.Log (s)
+END LnGamma ;
+
+PROCEDURE BetaCf (a, b, x: F64) : F64 RAISES ValueRange =
+  (* the continued fraction for the incomplete beta, modified Lentz;
+     converges in a few dozen iterations for the x the caller
+     guarantees (x < (a+1)/(a+b+2)) *)
+VAR
+  qab, qap, qam, c, d, h, m2, aa, del : F64 ;
+  m : I64 ;
+BEGIN
+  qab := a + b ;
+  qap := a + 1.0 ;
+  qam := a - 1.0 ;
+  c := 1.0 ;
+  d := 1.0 - qab * x / qap ;
+  IF Math.Abs (d) < 1.0E-300 THEN d := 1.0E-300 END ;
+  d := 1.0 / d ;
+  h := d ;
+  FOR m := 1 TO 200 DO
+    m2 := 2.0 * F64 (m) ;
+    aa := F64 (m) * (b - F64 (m)) * x
+          / ((qam + m2) * (a + m2)) ;
+    d := 1.0 + aa * d ;
+    IF Math.Abs (d) < 1.0E-300 THEN d := 1.0E-300 END ;
+    c := 1.0 + aa / c ;
+    IF Math.Abs (c) < 1.0E-300 THEN c := 1.0E-300 END ;
+    d := 1.0 / d ;
+    h := h * d * c ;
+    aa := -(a + F64 (m)) * (qab + F64 (m)) * x
+          / ((a + m2) * (qap + m2)) ;
+    d := 1.0 + aa * d ;
+    IF Math.Abs (d) < 1.0E-300 THEN d := 1.0E-300 END ;
+    c := 1.0 + aa / c ;
+    IF Math.Abs (c) < 1.0E-300 THEN c := 1.0E-300 END ;
+    d := 1.0 / d ;
+    del := d * c ;
+    h := h * del ;
+    IF Math.Abs (del - 1.0) < 1.0E-15 THEN
+      RETURN h
+    END
+  END ;
+  RETURN h
+END BetaCf ;
+
+PROCEDURE BetaI (a, b, x: F64) : F64 RAISES ValueRange, Overflow =
+  (* the regularised incomplete beta I_x (a, b) *)
+VAR bt : F64 ;
+BEGIN
+  IF x <= 0.0 THEN RETURN 0.0 END ;
+  IF x >= 1.0 THEN RETURN 1.0 END ;
+  bt := Math.Exp (LnGamma (a + b) - LnGamma (a) - LnGamma (b)
+                  + a * Math.Log (x) + b * Math.Log (1.0 - x)) ;
+  IF x < (a + 1.0) / (a + b + 2.0) THEN
+    RETURN bt * BetaCf (a, b, x) / a
+  END ;
+  RETURN 1.0 - bt * BetaCf (b, a, 1.0 - x) / b
+END BetaI ;
+
+PROCEDURE NormalCdf (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  RETURN 0.5 * Math.Erfc (-x / 1.4142135623730951)
+END NormalCdf ;
+
+PROCEDURE TTail (t: F64 ; dof: F64) : F64
+  RAISES ValueRange, Overflow, BadArg =
+VAR p : F64 ;
+BEGIN
+  IF NOT (dof > 0.0) THEN
+    RAISE BadArg ('degrees of freedom must be positive')
+  END ;
+  p := 0.5 * BetaI (dof / 2.0, 0.5, dof / (dof + t * t)) ;
+  IF t < 0.0 THEN
+    RETURN 1.0 - p
+  END ;
+  RETURN p
+END TTail ;
+
+PROCEDURE TwoSided (t: F64 ; dof: F64) : F64
+  RAISES ValueRange, Overflow =
+BEGIN
+  (* dof > 0 by construction at every caller, so BadArg is
+     unreachable and not declared: the private twin of TTail *)
+  RETURN BetaI (dof / 2.0, 0.5, dof / (dof + t * t))
+END TwoSided ;
+
+(* ---- regression and tests ---- *)
+
+PROCEDURE LinReg (RO xs, ys: SLICE OF F64) : Reg
+  RAISES TooFew, ValueRange, Overflow =
+VAR
+  g : Reg ;
+  mx, my, sxx, syy, sxy, dx, dy, df : F64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (xs) # LEN (ys) THEN RAISE TooFew (LEN (ys), LEN (xs)) END ;
+  Need (xs, 3) ;
+  Need (ys, 3) ;
+  mx := Mean (xs) ;
+  my := Mean (ys) ;
+  sxx := 0.0 ; syy := 0.0 ; sxy := 0.0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    dx := xs[i] - mx ;
+    dy := ys[i] - my ;
+    sxx := sxx + dx * dx ;
+    syy := syy + dy * dy ;
+    sxy := sxy + dx * dy
+  END ;
+  IF sxx = 0.0 THEN RAISE ValueRange END ;   (* a vertical line *)
+  g.slope := sxy / sxx ;
+  g.intercept := my - g.slope * mx ;
+  IF syy = 0.0 THEN
+    (* a horizontal sample: r is 0 by scipy's own convention *)
+    g.r := 0.0
+  ELSE
+    g.r := sxy / Math.Sqrt (sxx * syy)
+  END ;
+  df := F64 (LEN (xs) - 2) ;
+  g.stderr := Math.Sqrt ((syy - g.slope * sxy) / df / sxx) ;
+  IF g.stderr = 0.0 THEN
+    (* an exact fit: infinite t; p is zero unless the slope is too *)
+    IF g.slope = 0.0 THEN g.p := 1.0 ELSE g.p := 0.0 END
+  ELSE
+    g.p := TwoSided (g.slope / g.stderr, df)
+  END ;
+  RETURN g
+END LinReg ;
+
+PROCEDURE TTest1 (RO xs: SLICE OF F64 ; mu: F64) : Test
+  RAISES TooFew, ValueRange, Overflow =
+VAR
+  w : Test ;
+  se : F64 ;
+BEGIN
+  Need (xs, 2) ;
+  w.dof := F64 (LEN (xs) - 1) ;
+  se := Std (xs) / Math.Sqrt (F64 (LEN (xs))) ;
+  IF se = 0.0 THEN RAISE ValueRange END ;    (* a constant sample *)
+  w.t := (Mean (xs) - mu) / se ;
+  w.p := TwoSided (w.t, w.dof) ;
+  RETURN w
+END TTest1 ;
+
+PROCEDURE TTest2 (RO xs, ys: SLICE OF F64) : Test
+  RAISES TooFew, ValueRange, Overflow =
+VAR
+  w : Test ;
+  vx, vy, ax, ay, s : F64 ;
+BEGIN
+  Need (xs, 2) ;
+  Need (ys, 2) ;
+  vx := Var (xs) ;
+  vy := Var (ys) ;
+  ax := vx / F64 (LEN (xs)) ;
+  ay := vy / F64 (LEN (ys)) ;
+  s := ax + ay ;
+  IF s = 0.0 THEN RAISE ValueRange END ;     (* two constant samples *)
+  w.t := (Mean (xs) - Mean (ys)) / Math.Sqrt (s) ;
+  w.dof := s * s / (ax * ax / F64 (LEN (xs) - 1)
+                    + ay * ay / F64 (LEN (ys) - 1)) ;
+  w.p := TwoSided (w.t, w.dof) ;
+  RETURN w
+END TTest2 ;
+
+(* ---- random draws ---- *)
+
+CONST
+  MulA = 6364136223846793005 ;     (* Knuth, MMIX *)
+  AddC = 1442695040888963407 ;
+  TwoP53 = 9007199254740992.0 ;
+  TwoP53i = 9007199254740992 ;
+  TwoP62 = 4611686018427387904 ;
+  TwoP52 = 4503599627370496 ;
+
+PROCEDURE Step (VAR st: Stream) =
+BEGIN
+  st.x := st.x *% MulA +% AddC
+END Step ;
+
+PROCEDURE Top53 (x: I64) : I64 =
+  (* the top 53 bits of x read as a 64-bit unsigned pattern.  With
+     u = x mod 2^64: for x >= 0, u = x, and truncation is floor; for
+     x < 0, u = x + 2^64 and (y + 2^63) div 2048 = y div 2048 + 2^52
+     with y = x + 2^63 in [0, 2^63) -- built in two 2^62 halves so
+     no checked add can overflow.  Exact, and held bit for bit to an
+     independent reimplementation by the driver. *)
+BEGIN
+  IF x >= 0 THEN
+    RETURN x DIV 2048
+  END ;
+  RETURN (x + TwoP62 + TwoP62) DIV 2048 + TwoP52
+END Top53 ;
+
+PROCEDURE Seed (s: I64) : Stream =
+VAR st : Stream ;
+BEGIN
+  st.x := s ;                    (* any I64 IS a 64-bit pattern *)
+  st.have := FALSE ;
+  st.spare := 0.0 ;
+  (* warm past the seed's own bits *)
+  Step (st) ;
+  Step (st) ;
+  RETURN st
+END Seed ;
+
+PROCEDURE Uniform (VAR st: Stream) : F64 =
+BEGIN
+  Step (st) ;
+  (* F64 of a 53-bit integer is exact *)
+  RETURN F64 (Top53 (st.x)) / TwoP53
+END Uniform ;
+
+PROCEDURE UniformI (VAR st: Stream ; lo, hi: I64) : I64
+  RAISES BadArg =
+VAR
+  m, limit, k : I64 ;
+BEGIN
+  IF hi < lo THEN RAISE BadArg ('empty range') END ;
+  IF lo < -TwoP62 OR hi > TwoP62 - 1 THEN
+    (* keeps hi - lo + 1 from overflowing; nobody rolls a die with
+       2^62 faces *)
+    RAISE BadArg ('range wider than the generator draws')
+  END ;
+  m := hi - lo + 1 ;
+  IF m > TwoP53i THEN
+    RAISE BadArg ('range wider than the generator draws')
+  END ;
+  limit := (TwoP53i DIV m) * m ;
+  Step (st) ;
+  k := Top53 (st.x) ;
+  WHILE k >= limit DO
+    Step (st) ;
+    k := Top53 (st.x)
+  END ;
+  RETURN lo + k MOD m
+END UniformI ;
+
+PROCEDURE Normal (VAR st: Stream) : F64 RAISES ValueRange =
+VAR
+  u, v, s, f : F64 ;
+BEGIN
+  IF st.have THEN
+    st.have := FALSE ;
+    RETURN st.spare
+  END ;
+  s := 2.0 ;
+  u := 0.0 ;
+  v := 0.0 ;
+  WHILE s >= 1.0 OR s = 0.0 DO
+    u := 2.0 * Uniform (st) - 1.0 ;
+    v := 2.0 * Uniform (st) - 1.0 ;
+    s := u * u + v * v
+  END ;
+  f := Math.Sqrt (-2.0 * Math.Log (s) / s) ;
+  st.spare := v * f ;
+  st.have := TRUE ;
+  RETURN u * f
+END Normal ;
+
+PROCEDURE Exponential (VAR st: Stream ; lambda: F64) : F64
+  RAISES ValueRange, BadArg =
+VAR u : F64 ;
+BEGIN
+  IF NOT (lambda > 0.0) THEN RAISE BadArg ('lambda must be positive') END ;
+  u := Uniform (st) ;
+  (* 1 - u is in (0, 1]: Log never sees zero *)
+  RETURN -Math.Log (1.0 - u) / lambda
+END Exponential ;
+
+PROCEDURE LogNormal (VAR st: Stream ; mu, sigma: F64) : F64
+  RAISES ValueRange, Overflow, BadArg =
+BEGIN
+  IF NOT (sigma > 0.0) THEN RAISE BadArg ('sigma must be positive') END ;
+  RETURN Math.Exp (mu + sigma * Normal (st))
+END LogNormal ;
+
+END Stats.

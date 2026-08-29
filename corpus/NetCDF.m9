@@ -1,0 +1,1389 @@
+DEFINITION MODULE NetCDF ;
+
+(* NetCDF, the classic and netCDF-4 data model, read and write.
+
+   Written for the FLEXPART port (port/flexpart/), whose input and
+   output both go through this library: 41 nf90_get_var, 113
+   nf90_put_var and 228 nf90_put_att in the model's own source.  The
+   surface below is what those calls need and nothing else -- groups,
+   compound types, compression settings and the parallel API are not
+   here, and will arrive when a caller asks rather than in case one
+   does.
+
+   WHAT THE BINDING FIXES ABOUT THE C API.
+
+   Every C entry point answers an int status that a caller may
+   ignore, and the model ignores it 679 times behind a `nf90_err`
+   helper that halts.  Here a bad status is an Error with the failing
+   operation and the library's own message in it, and a halt is not
+   one of the outcomes -- a reader that halts cannot be tested (the
+   museum HALT piece).
+
+   Dimensions and shapes cross as I64.  The C API says size_t, which
+   is unsigned, so a negative extent is not a size but a very large
+   one; the conversion here raises rather than passing it on.
+
+   THREADS.  Every procedure in the foreign unit is [SERIAL].  The
+   netCDF-4 path goes through HDF5, which serialises on a global lock
+   and is only thread-safe when built for it, and the classic path
+   keeps per-file state in library globals.  Declaring REENTRANT
+   because it "usually works" is exactly the blosc museum piece, so
+   this says SERIAL and the checker refuses to call it from a THREAD
+   root.  A caller that wants concurrency needs one process per file
+   or a MONITOR.                                                     *)
+
+TYPE
+  File ;                            (* opaque; an ncid and its name *)
+
+EXCEPTION
+  Error (RO op: STR ; RO detail: STR ; status: I64) ;
+    (* op is what was attempted, detail is the library's own message
+       (nc_strerror), status is the number.  All three, because a
+       reader who has only one of them goes looking for the other
+       two.                                                          *)
+  SizeError (got, want: I64) ;
+
+CONST
+  (* nc_type, from netcdf.h.  Named here rather than passed as bare
+     integers: a variable declared with the wrong type code is a bug
+     that reads back as garbage, and the museum has that shape
+     already (the 16-byte stride over 8-byte doubles).              *)
+  TypeByte = 1 ; TypeChar = 2 ; TypeShort = 3 ; TypeInt = 4 ;
+  TypeFloat = 5 ; TypeDouble = 6 ;
+  TypeUByte = 7 ; TypeInt64 = 10 ;
+  Unlimited = 0 ;                   (* the extent NC_UNLIMITED means *)
+
+PROCEDURE Open (VAR pool: POOL ; RO path: STR) : PTR File IN pool
+  RAISES Error, ValueRange ;
+  (* read-only.  The pool owns the handle; Close releases the file
+     but the record dies with the pool, which is why Close takes a
+     VAR and not an OWN: there is nothing here to move.              *)
+
+PROCEDURE OpenRW (VAR pool: POOL ; RO path: STR) : PTR File IN pool
+  RAISES Error, ValueRange ;
+  (* read-write on an EXISTING file: what a restarted run does to
+     the output it left half-written -- inquire the variables back
+     and continue appending records.  Everything Put* works; Def*
+     would need redef mode and is not supported through this.      *)
+
+PROCEDURE Create (VAR pool: POOL ; RO path: STR ; clobber: BOOL)
+  : PTR File IN pool RAISES Error, ValueRange ;
+  (* the CLASSIC format.  Its unlimited dimension must be a
+     variable's OUTERMOST one, which is a real constraint on how a
+     file may be laid out -- see Create4.                          *)
+
+PROCEDURE Create4 (VAR pool: POOL ; RO path: STR ; clobber: BOOL)
+  : PTR File IN pool RAISES Error, ValueRange ;
+  (* netCDF-4 (HDF5 underneath).
+
+     Two things it allows that the classic format does not, both of
+     which a gridded time series wants: the unlimited dimension may
+     sit ANYWHERE in a variable's shape, so the axis order can follow
+     how the data is read rather than how the format insists; and
+     more than one unlimited dimension.  Classic netCDF answers
+     `NC_UNLIMITED in the wrong index` otherwise, which is how this
+     was found.                                                    *)
+  (* a new file, opened in DEFINE mode: dimensions, variables and
+     attributes are declared first and EndDef switches to writing.
+
+       clobber -- TRUE overwrites an existing file, FALSE makes an
+                  existing file an Error.  Asked for explicitly
+                  because silently destroying a dataset someone
+                  computed overnight is not a default anyone should
+                  inherit from a library.                           *)
+
+PROCEDURE Close (VAR f: PTR File) RAISES Error ;
+  (* flushes and releases the underlying handle.  It RAISES, and the
+     raise matters: netCDF buffers, so a write error can surface
+     HERE and nowhere earlier, and a Close whose result is discarded
+     is how a truncated file gets reported as a successful run.
+
+       f -- VAR, and left unusable afterwards.  The record itself
+            dies with the pool, so this is a release and not a move;
+            there is nothing here to OWN.                           *)
+
+(* ---- reading ---- *)
+
+PROCEDURE VarId (f: PTR File ; RO name: STR) : I64
+  RAISES Error, ValueRange ;
+PROCEDURE DimId (f: PTR File ; RO name: STR) : I64
+  RAISES Error, ValueRange ;
+PROCEDURE DimLen (f: PTR File ; dimid: I64) : I64
+  RAISES Error, ValueRange ;
+PROCEDURE DimCount (f: PTR File) : I64
+  RAISES Error, ValueRange ;
+  (* how many dimensions the file declares *)
+
+PROCEDURE DimName (VAR pool: POOL ; f: PTR File ; dimid: I64) : STR
+  RAISES Error, ValueRange, IndexError, Overflow ;
+  (* the name of one dimension; reademissions-style readers discover
+     the longitude/latitude/time axes by NAME rather than assuming an
+     order *)
+
+PROCEDURE DimLenOf (f: PTR File ; RO name: STR) : I64
+  RAISES Error, ValueRange ;
+  (* the extent of a dimension by name, which is what a reader that
+     does not already know the file wants to ask                     *)
+
+PROCEDURE VarRank (f: PTR File ; varid: I64) : I64
+  RAISES Error, ValueRange ;
+PROCEDURE VarShape (VAR pool: POOL ; f: PTR File ; varid: I64)
+  : SLICE OF I64 RAISES Error, ValueRange ;
+  (* the extents, outermost axis first -- C order, which is also
+     M9's: the last axis is contiguous in both.  A NetCDF file and a
+     GRID agree about layout without anybody transposing anything,
+     which is the one place row-major pays for itself twice.        *)
+
+PROCEDURE GetF64 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF F64)
+  RAISES Error, SizeError, ValueRange ;
+  (* one hyperslab into a flat slice.  LEN (out) must be the product
+     of count, and is checked: the C call would otherwise write past
+     the end of a buffer the caller sized wrongly, which is the whole
+     class of bug this language exists to remove.                    *)
+
+PROCEDURE GetF32 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF F32)
+  RAISES Error, SizeError, ValueRange ;
+PROCEDURE GetI64 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF I64)
+  RAISES Error, SizeError, ValueRange ;
+  (* the same hyperslab read at the other two widths, with the same
+     LEN (out) = product-of-count check.  netCDF CONVERTS on the way
+     out, so the file's own type need not be the one asked for --
+     which is convenient and is also how a float file quietly loses
+     precision into an F32 buffer.  The width is the caller's
+     decision and is written down at the call site, which is the
+     most this layer can do about it.                              *)
+
+PROCEDURE ReadGrid2 (VAR pool: POOL ; f: PTR File ; RO name: STR)
+  : GRID 2 OF F64 RAISES Error, SizeError, ValueRange ;
+PROCEDURE ReadGrid3 (VAR pool: POOL ; f: PTR File ; RO name: STR)
+  : GRID 3 OF F64 RAISES Error, SizeError, ValueRange ;
+  (* a whole variable, shape and all, as a GRID.  These exist because
+     a GRID can today only come from NEW or VIEW: there is no way to
+     say "this slice, seen as 3 axes", so a reader that wants indexed
+     access must allocate and copy.  The copy is one pass and is
+     noted in the port ledger as the cost of a missing
+     `GRID (s, n0, n1, n2)` view form.                              *)
+
+PROCEDURE GetAttF64 (f: PTR File ; varid: I64 ; RO name: STR) : F64
+  RAISES Error, ValueRange ;
+PROCEDURE GetAttStr (VAR pool: POOL ; f: PTR File ; varid: I64 ;
+                     RO name: STR) : STR
+  RAISES Error, ValueRange ;
+PROCEDURE HasVar (f: PTR File ; RO name: STR) : BOOL RAISES ValueRange ;
+  (* asks whether a variable exists without making its absence an
+     error: a reader choosing between conventions needs the question,
+     not the diagnosis                                               *)
+
+PROCEDURE HasAtt (f: PTR File ; varid: I64 ; RO name: STR) : BOOL
+  RAISES ValueRange ;
+PROCEDURE VarCount (f: PTR File) : I64 RAISES Error ;
+PROCEDURE VarName (VAR pool: POOL ; f: PTR File ; varid: I64) : STR
+  RAISES Error, ValueRange ;
+PROCEDURE VarType (f: PTR File ; varid: I64) : I64 RAISES Error ;
+PROCEDURE VarDims (VAR pool: POOL ; f: PTR File ; varid: I64)
+  : SLICE OF I64 RAISES Error, ValueRange ;
+  (* enumeration: how many variables, their names, their nc_type
+     (against the Type* constants) and their dimension IDS in
+     order.  Added for Frame.m9, which walks a file it did not
+     write. *)
+
+PROCEDURE GetI32 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF I32)
+  RAISES Error, SizeError, ValueRange ;
+PROCEDURE GetI16 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF I16)
+  RAISES Error, SizeError, ValueRange ;
+PROCEDURE GetBytes (f: PTR File ; varid: I64 ;
+                    RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                    out: SLICE OF BYTE)
+  RAISES Error, SizeError, ValueRange ;
+
+(* ---- writing ---- *)
+
+(* THE WRITER IS A SEQUENCE, and netCDF enforces it: everything
+   declared in define mode, then EndDef, then data.  A Put before
+   EndDef is an Error from the library, not a check of ours, and it
+   is worth knowing that the order is the API rather than a
+   convention this module invented. *)
+
+PROCEDURE DefDim (f: PTR File ; RO name: STR ; extent: I64) : I64
+  RAISES Error, ValueRange ;
+  (* declares a dimension and answers its id, which is what DefVar
+     takes.
+
+       extent -- the length.  Zero declares the UNLIMITED dimension,
+                 which grows as records are written; every other
+                 axis is fixed at this value.  A negative extent is
+                 an Error rather than an enormous size_t.           *)
+
+PROCEDURE DefVar (f: PTR File ; RO name: STR ; nctype: I64 ;
+                  RO dims: SLICE OF I64) : I64
+  RAISES Error, ValueRange ;
+  (* declares a variable and answers its id.
+
+       nctype -- one of the NcF64/NcF32/NcI64 constants below, the
+                 type as STORED.  Get and Put convert, so this is
+                 what the file costs on disk, not what callers must
+                 use.
+       dims   -- dimension ids from DefDim, OUTERMOST FIRST, C
+                 order.  An empty slice declares a scalar.  This is
+                 the same order VarShape answers in and the same
+                 order a GRID indexes in, so nothing transposes.    *)
+
+PROCEDURE PutAttStr (f: PTR File ; varid: I64 ; RO name: STR ;
+                     RO value: STR) RAISES Error, ValueRange ;
+PROCEDURE PutAttF64 (f: PTR File ; varid: I64 ; RO name: STR ;
+                     value: F64) RAISES Error, ValueRange ;
+  (* one attribute, text or number.
+
+       varid -- a variable's id, or Global (below) for an attribute
+                on the file itself.  Global is -1 and is spelled out
+                rather than passed as a bare -1, because a magic
+                number in an argument list is a comment nobody
+                checks.
+
+     ValueRange is the CHAR/octet boundary: netCDF text attributes
+     are bytes, so a scalar past 255 raises here rather than
+     reaching the file as mojibake.                                *)
+
+PROCEDURE EndDef (f: PTR File) RAISES Error ;
+  (* leaves define mode and commits the header.  Nothing may be
+     declared afterwards and nothing may be written before.        *)
+
+PROCEDURE PutF64 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO data: SLICE OF F64)
+  RAISES Error, SizeError, ValueRange ;
+PROCEDURE FillF32 (f: PTR File ; varid: I64 ; fill: F32)
+  RAISES Error, ValueRange ;
+  (* the value an UNWRITTEN cell reads back as.  netCDF's default is
+     9.97e36, which makes skipping a write a silent lie; set to the
+     quantity's own zero, an unwritten hyperslab IS zero and a writer
+     may honestly skip regions nothing touched.  Must be called in
+     define mode, like Deflate. *)
+
+PROCEDURE Deflate (f: PTR File ; varid: I64 ; level: I64)
+  RAISES Error, ValueRange ;
+  (* compress a variable, netCDF-4 only, between EndDef and the first
+     write -- in practice immediately after DefVar.
+
+     WHY IT IS NOT OPTIONAL FOR A GRIDDED FIELD.  Measured on a
+     FLEXPART-M9 footprint: 24 releases x 23 times x 6 levels x 90 x
+     140 floats is 167 MB written plainly and 0.9 MB deflated,
+     because a footprint is mostly zeros.  A file nobody can store is
+     not an output format.  `shuffle` is on: it groups the bytes of
+     equal significance together, which is what makes a float field
+     compress at all.                                              *)
+
+PROCEDURE Chunking (f: PTR File ; varid: I64 ; RO sizes: SLICE OF I64)
+  RAISES Error, ValueRange ;
+  (* the chunk shape, netCDF-4 only.  Compression works on a chunk at
+     a time, and so does reading: a chunk that spans the axes a
+     reader slices along is read whole for one value.  A map for one
+     release at one time wants (1,1,1,1,nz,ny,nx), not a chunk that
+     cuts across time.                                             *)
+
+PROCEDURE PutChars (f: PTR File ; varid: I64 ;
+                    RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                    RO text: STR)
+  RAISES Error, SizeError, ValueRange ;
+  (* one hyperslab of TEXT out, for a char variable.
+
+     CF's labelled axes (6.1) are char arrays -- a `species_name(
+     species, strlen)` beside a species dimension is what lets a
+     reader slice across species instead of parsing variable names --
+     and there was no way to write one until this.  Short text is
+     PADDED WITH NUL to the count, because a char variable's trailing
+     bytes are whatever was there otherwise, and netCDF does not do it
+     for you.                                                       *)
+
+PROCEDURE PutI64 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO v: SLICE OF I64)
+  RAISES Error, SizeError, ValueRange ;
+PROCEDURE PutI32 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO v: SLICE OF I32)
+  RAISES Error, SizeError, ValueRange ;
+PROCEDURE PutI16 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO v: SLICE OF I16)
+  RAISES Error, SizeError, ValueRange ;
+PROCEDURE PutBytes (f: PTR File ; varid: I64 ;
+                    RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                    RO v: SLICE OF BYTE)
+  RAISES Error, SizeError, ValueRange ;
+
+(* typed fill values, one per storage type: _FillValue must carry
+   the VARIABLE's own type or cfchecks calls the file broken, and
+   nc_def_var_fill types it for us *)
+PROCEDURE FillF64 (f: PTR File ; varid: I64 ; fill: F64)
+  RAISES Error, ValueRange ;
+PROCEDURE FillI64 (f: PTR File ; varid: I64 ; fill: I64)
+  RAISES Error, ValueRange ;
+PROCEDURE FillI32 (f: PTR File ; varid: I64 ; fill: I32)
+  RAISES Error, ValueRange ;
+PROCEDURE FillI16 (f: PTR File ; varid: I64 ; fill: I16)
+  RAISES Error, ValueRange ;
+PROCEDURE FillByte (f: PTR File ; varid: I64 ; fill: BYTE)
+  RAISES Error, ValueRange ;
+
+PROCEDURE GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ;
+                    n, width: I64) : SLICE OF STR
+  RAISES Error, SizeError, ValueRange ;
+  (* the reverse of PutChars: an n x width char matrix, each row
+     answered as a STR with trailing NULs and blanks removed *)
+
+PROCEDURE PutF32 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO data: SLICE OF F32)
+  RAISES Error, SizeError, ValueRange ;
+  (* one hyperslab out, the mirror of GetF64/GetF32.
+
+       start -- the corner, one index per axis, outermost first.
+       count -- the extent along each axis from that corner.
+       data  -- LEN (data) must be the PRODUCT of count, and is
+                checked: SizeError rather than letting the C call
+                read past the end of a buffer the caller sized
+                wrongly.  Same rule as the readers, stated on both
+                sides because getting it wrong writes garbage into a
+                file instead of merely reading it.                 *)
+
+CONST
+  Global = -1 ;                     (* NC_GLOBAL, for file attributes *)
+
+END NetCDF.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cnc ;
+
+(* libnetcdf, verbatim.  Every one is [SERIAL]: netCDF-4 goes through
+   HDF5's global lock and the classic path keeps per-file state in
+   library globals.  The library's own documentation says it is not
+   thread-safe unless built to be, and "usually works" is how the
+   blosc museum piece was written. *)
+
+PROCEDURE NcOpen = "nc_open" (path: C.ConstPtr ; mode: C.Int ;
+                              ncidp: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcCreate = "nc_create" (path: C.ConstPtr ; mode: C.Int ;
+                                  ncidp: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcClose = "nc_close" (ncid: C.Int) : C.Int  [SERIAL] ;
+PROCEDURE NcStrError = "nc_strerror" (status: C.Int) : C.ConstPtr
+  [SERIAL] ;
+
+PROCEDURE NcInqVarId = "nc_inq_varid" (ncid: C.Int ; name: C.ConstPtr ;
+                                       varidp: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcInqDimId = "nc_inq_dimid" (ncid: C.Int ; name: C.ConstPtr ;
+                                       dimidp: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcInqDimLen = "nc_inq_dimlen" (ncid: C.Int ; dimid: C.Int ;
+                                         lenp: C.MutPtr) : C.Int  [SERIAL] ;
+
+PROCEDURE NcInqNDims = "nc_inq_ndims" (ncid: C.Int ;
+  ndims: C.MutPtr) : C.Int [SERIAL] ;
+PROCEDURE NcInqDimName = "nc_inq_dimname" (ncid: C.Int ; dimid: C.Int ;
+  name: C.MutPtr) : C.Int [SERIAL] ;
+PROCEDURE NcInqVarNDims = "nc_inq_varndims" (ncid: C.Int ; varid: C.Int ;
+                                             ndimsp: C.MutPtr) : C.Int
+  [SERIAL] ;
+PROCEDURE NcInqVarDimIds = "nc_inq_vardimid" (ncid: C.Int ; varid: C.Int ;
+                                              dimids: C.MutPtr) : C.Int
+  [SERIAL] ;
+
+PROCEDURE NcGetVaraDouble = "nc_get_vara_double"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ; count: C.ConstPtr ;
+   ip: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcGetVaraFloat = "nc_get_vara_float"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ; count: C.ConstPtr ;
+   ip: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcGetVaraLong = "nc_get_vara_longlong"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ; count: C.ConstPtr ;
+   ip: C.MutPtr) : C.Int  [SERIAL] ;
+
+PROCEDURE NcGetAttDouble = "nc_get_att_double"
+  (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; value: C.MutPtr)
+  : C.Int  [SERIAL] ;
+PROCEDURE NcInqAttLen = "nc_inq_attlen"
+  (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; lenp: C.MutPtr)
+  : C.Int  [SERIAL] ;
+PROCEDURE NcGetAttText = "nc_get_att_text"
+  (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; value: C.MutPtr)
+  : C.Int  [SERIAL] ;
+
+PROCEDURE NcDefDim = "nc_def_dim" (ncid: C.Int ; name: C.ConstPtr ;
+                                   len: C.SizeT ; idp: C.MutPtr) : C.Int
+  [SERIAL] ;
+PROCEDURE NcDefVar = "nc_def_var" (ncid: C.Int ; name: C.ConstPtr ;
+                                   xtype: C.Int ; ndims: C.Int ;
+                                   dimids: C.ConstPtr ; varidp: C.MutPtr)
+  : C.Int  [SERIAL] ;
+PROCEDURE NcPutAttText = "nc_put_att_text"
+  (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; len: C.SizeT ;
+   op: C.ConstPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcPutAttDouble = "nc_put_att_double"
+  (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; xtype: C.Int ;
+   len: C.SizeT ; op: C.ConstPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcEndDef = "nc_enddef" (ncid: C.Int) : C.Int  [SERIAL] ;
+PROCEDURE NcPutVaraDouble = "nc_put_vara_double"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ; count: C.ConstPtr ;
+   op: C.ConstPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcPutVaraFloat = "nc_put_vara_float"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ; count: C.ConstPtr ;
+   op: C.ConstPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcDeflate = "nc_def_var_deflate"
+  (ncid: C.Int ; varid: C.Int ; shuffle: C.Int ; deflate: C.Int ;
+   level: C.Int) : C.Int  [SERIAL] ;
+PROCEDURE NcInqNVars = "nc_inq_nvars" (ncid: C.Int ;
+  nvars: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcInqVarName = "nc_inq_varname" (ncid: C.Int ;
+  varid: C.Int ; name: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcInqVarType = "nc_inq_vartype" (ncid: C.Int ;
+  varid: C.Int ; tp: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcInqAtt = "nc_inq_att" (ncid: C.Int ; varid: C.Int ;
+  name: C.ConstPtr ; tp: C.MutPtr ; len: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcGetVaraInt = "nc_get_vara_int"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ;
+   count: C.ConstPtr ; v: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcGetVaraShort = "nc_get_vara_short"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ;
+   count: C.ConstPtr ; v: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcGetVaraUByte = "nc_get_vara_ubyte"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ;
+   count: C.ConstPtr ; v: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcGetVaraText = "nc_get_vara_text"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ;
+   count: C.ConstPtr ; v: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcPutVaraLong = "nc_put_vara_longlong"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ;
+   count: C.ConstPtr ; v: C.ConstPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcPutVaraInt = "nc_put_vara_int"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ;
+   count: C.ConstPtr ; v: C.ConstPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcPutVaraShort = "nc_put_vara_short"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ;
+   count: C.ConstPtr ; v: C.ConstPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcPutVaraUByte = "nc_put_vara_ubyte"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ;
+   count: C.ConstPtr ; v: C.ConstPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcDefVarFill = "nc_def_var_fill"
+  (ncid: C.Int ; varid: C.Int ; noFill: C.Int ; fill: C.ConstPtr)
+  : C.Int  [SERIAL] ;
+PROCEDURE NcChunking = "nc_def_var_chunking"
+  (ncid: C.Int ; varid: C.Int ; storage: C.Int ; sizes: C.ConstPtr)
+  : C.Int  [SERIAL] ;
+PROCEDURE NcPutVaraText = "nc_put_vara_text"
+  (ncid: C.Int ; varid: C.Int ; start: C.ConstPtr ; count: C.ConstPtr ;
+   op: C.ConstPtr) : C.Int  [SERIAL] ;
+
+(* nc_strerror answers a static C string, so reading it back needs
+   the two libc primitives for "how long" and "copy that many".
+   Bound here rather than shimmed: they are exactly what the C API
+   obliges a caller to do, and a shim would hide that. *)
+PROCEDURE CLen = "m9_cstrlen" (s: C.ConstPtr) : C.SSizeT  [REENTRANT] ;
+  (* the runtime's shim, not strlen itself: C.ConstPtr is
+     `const void *` and string.h has already declared strlen with
+     `const char *`, so the foreign declaration would collide *)
+PROCEDURE CCopy = "memcpy" (d: C.MutPtr ; s: C.ConstPtr ; n: C.SizeT)
+  : C.MutPtr  [REENTRANT] ;
+
+END cnc.
+
+
+UNSAFE IMPLEMENTATION MODULE NetCDF ;
+
+(* UNSAFE for one reason: ADR at the C boundary.  Everything else is
+   checked code; the audit surface is this file, grep ADR.          *)
+
+IMPORT DynStr ;
+FROM cnc IMPORT CLen, CCopy,
+                NcOpen, NcCreate, NcClose, NcStrError, NcInqVarId,
+                NcInqDimId, NcInqDimLen, NcInqNDims, NcInqDimName,
+                NcInqVarNDims, NcInqVarDimIds,
+                NcGetVaraDouble, NcGetVaraFloat, NcGetVaraLong,
+                NcGetAttDouble, NcInqAttLen, NcGetAttText,
+                NcDefDim, NcDefVar, NcPutAttText, NcPutAttDouble,
+                NcEndDef, NcPutVaraDouble, NcPutVaraFloat, NcPutVaraText,
+                NcDeflate, NcChunking, NcDefVarFill,
+                NcInqNVars, NcInqVarName, NcInqVarType, NcInqAtt,
+                NcGetVaraInt, NcGetVaraShort, NcGetVaraUByte,
+                NcGetVaraText,
+                NcPutVaraLong, NcPutVaraInt, NcPutVaraShort,
+                NcPutVaraUByte ;
+
+CONST
+  ModeNoWrite = 0 ;                 (* NC_NOWRITE *)
+  ModeWrite   = 1 ;                 (* NC_WRITE   *)
+  ModeClobber = 0 ;                 (* NC_CLOBBER *)
+  ModeNoClobber = 4 ;               (* NC_NOCLOBBER *)
+  ModeNetcdf4 = 4096 ;              (* NC_NETCDF4 *)
+  ModeNetcdf4 = 4096 ;              (* NC_NETCDF4 *)
+  MaxName = 1024 ;
+  MaxRank = 8 ;                     (* the ranks FLEXPART declares *)
+  MaxAtt = 8192 ;
+
+TYPE
+  File = RECORD
+    ncid : I64 ;
+    path : STR ;
+    open : BOOL ;
+  END ;
+
+(* the library's own words for a status, so a diagnostic says what
+   netCDF would have said rather than a number the reader has to
+   look up *)
+PROCEDURE Message (VAR pool: POOL ; status: I64) : STR
+  RAISES ValueRange =
+VAR
+  p : C.ConstPtr ;
+  q : C.MutPtr ;
+  n : I64 ;
+  b : SLICE OF BYTE ;
+BEGIN
+  p := NcStrError (C.Int (status)) ;
+  n := I64 (CLen (p)) ;
+  IF n > MaxAtt THEN n := MaxAtt END ;
+  b := NEW (pool, BYTE, n + 1) ;
+  q := CCopy (ADR (b), p, C.SizeT (n)) ;
+  RETURN DynStr.Chars (pool, SLICE (b, 0, n))
+END Message ;
+
+PROCEDURE Fail (RO op: STR ; status: I64) RAISES Error =
+VAR
+  scratch : POOL ;
+  detail : STR ;
+BEGIN
+  (* the library's own words, and if even that fails, the number
+     alone rather than a second failure on the way to reporting the
+     first *)
+  detail := '' ;
+  BEGIN
+    detail := Message (scratch, status)
+  EXCEPT
+  | ValueRange :
+      detail := ''
+  END ;
+  RAISE Error (op, detail, status)
+END Fail ;
+
+PROCEDURE Check (RO op: STR ; status: I64) RAISES Error =
+BEGIN
+  IF status # 0 THEN Fail (op, status) END
+END Check ;
+
+(* a NUL-terminated copy of an M9 string, for the C boundary *)
+PROCEDURE CStr (VAR pool: POOL ; RO s: STR) : SLICE OF BYTE
+  RAISES ValueRange =
+BEGIN
+  RETURN DynStr.Bytes (pool, s, TRUE)
+END CStr ;
+
+PROCEDURE Open (VAR pool: POOL ; RO path: STR) : PTR File IN pool
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  pb : SLICE OF BYTE ;
+  id : ARRAY 1 OF I32 ;
+  f : PTR File IN pool ;
+BEGIN
+  pb := CStr (scratch, path) ;
+  Check ('nc_open', I64 (NcOpen (ADR (pb), C.Int (ModeNoWrite),
+                                ADR (id)))) ;
+  f := NEW (pool, File) ;
+  f.ncid := I64 (id[0]) ;
+  f.path := path ;
+  f.open := TRUE ;
+  RETURN f
+END Open ;
+
+PROCEDURE OpenRW (VAR pool: POOL ; RO path: STR) : PTR File IN pool
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  pb : SLICE OF BYTE ;
+  id : ARRAY 1 OF I32 ;
+  f : PTR File IN pool ;
+BEGIN
+  pb := CStr (scratch, path) ;
+  Check ('nc_open', I64 (NcOpen (ADR (pb), C.Int (ModeWrite),
+                                ADR (id)))) ;
+  f := NEW (pool, File) ;
+  f.ncid := I64 (id[0]) ;
+  f.path := path ;
+  f.open := TRUE ;
+  RETURN f
+END OpenRW ;
+
+PROCEDURE Create (VAR pool: POOL ; RO path: STR ; clobber: BOOL)
+  : PTR File IN pool RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  pb : SLICE OF BYTE ;
+  id : ARRAY 1 OF I32 ;
+  mode : I64 ;
+  f : PTR File IN pool ;
+BEGIN
+  pb := CStr (scratch, path) ;
+  IF clobber THEN mode := ModeClobber ELSE mode := ModeNoClobber END ;
+  Check ('nc_create', I64 (NcCreate (ADR (pb), C.Int (mode),
+                                     ADR (id)))) ;
+  f := NEW (pool, File) ;
+  f.ncid := I64 (id[0]) ;
+  f.path := path ;
+  f.open := TRUE ;
+  RETURN f
+END Create ;
+
+PROCEDURE Create4 (VAR pool: POOL ; RO path: STR ; clobber: BOOL)
+  : PTR File IN pool RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  pb : SLICE OF BYTE ;
+  id : ARRAY 1 OF I32 ;
+  mode : I64 ;
+  f : PTR File IN pool ;
+BEGIN
+  pb := CStr (scratch, path) ;
+  IF clobber THEN mode := ModeClobber ELSE mode := ModeNoClobber END ;
+  mode := mode + ModeNetcdf4 ;
+  Check ('nc_create', I64 (NcCreate (ADR (pb), C.Int (mode),
+                                     ADR (id)))) ;
+  f := NEW (pool, File) ;
+  f.ncid := I64 (id[0]) ;
+  f.path := path ;
+  f.open := TRUE ;
+  RETURN f
+END Create4 ;
+
+
+PROCEDURE Close (VAR f: PTR File) RAISES Error =
+BEGIN
+  IF NOT f.open THEN RETURN END ;        (* closing twice is not a *)
+  f.open := FALSE ;                      (* second failure          *)
+  Check ('nc_close', I64 (NcClose (C.Int (f.ncid))))
+END Close ;
+
+PROCEDURE VarId (f: PTR File ; RO name: STR) : I64
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb : SLICE OF BYTE ;
+  id : ARRAY 1 OF I32 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  Check ('nc_inq_varid', I64 (NcInqVarId (C.Int (f.ncid), ADR (nb),
+                                          ADR (id)))) ;
+  RETURN I64 (id[0])
+END VarId ;
+
+PROCEDURE HasVar (f: PTR File ; RO name: STR) : BOOL RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  nb : SLICE OF BYTE ;
+  id : ARRAY 1 OF I32 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  RETURN I64 (NcInqVarId (C.Int (f.ncid), ADR (nb), ADR (id))) = 0
+END HasVar ;
+
+PROCEDURE DimId (f: PTR File ; RO name: STR) : I64
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb : SLICE OF BYTE ;
+  id : ARRAY 1 OF I32 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  Check ('nc_inq_dimid', I64 (NcInqDimId (C.Int (f.ncid), ADR (nb),
+                                          ADR (id)))) ;
+  RETURN I64 (id[0])
+END DimId ;
+
+PROCEDURE DimLen (f: PTR File ; dimid: I64) : I64
+  RAISES Error, ValueRange =
+VAR n : ARRAY 1 OF U64 ;
+BEGIN
+  Check ('nc_inq_dimlen', I64 (NcInqDimLen (C.Int (f.ncid),
+                                            C.Int (dimid), ADR (n)))) ;
+  RETURN I64 (n[0])
+END DimLen ;
+
+PROCEDURE DimCount (f: PTR File) : I64
+  RAISES Error, ValueRange =
+VAR n : ARRAY 1 OF I32 ;
+BEGIN
+  Check ('nc_inq_ndims', I64 (NcInqNDims (C.Int (f.ncid), ADR (n)))) ;
+  RETURN I64 (n[0])
+END DimCount ;
+
+PROCEDURE DimName (VAR pool: POOL ; f: PTR File ; dimid: I64) : STR
+  RAISES Error, ValueRange, IndexError, Overflow =
+VAR
+  b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  (* NC_MAX_NAME is 256; MaxName leaves room to spare, and the copy
+     stops at the NUL netCDF writes *)
+  b := NEW (pool, BYTE, MaxName) ;
+  Check ('nc_inq_dimname', I64 (NcInqDimName (C.Int (f.ncid),
+                                              C.Int (dimid),
+                                              ADR (b)))) ;
+  n := 0 ;
+  WHILE (n < MaxName) AND (b[n] # BYTE (0)) DO
+    n := n + 1
+  END ;
+  RETURN DynStr.Chars (pool, SLICE (b, 0, n))
+END DimName ;
+
+PROCEDURE DimLenOf (f: PTR File ; RO name: STR) : I64
+  RAISES Error, ValueRange =
+BEGIN
+  RETURN DimLen (f, DimId (f, name))
+END DimLenOf ;
+
+PROCEDURE VarCount (f: PTR File) : I64
+  RAISES Error =
+VAR n : ARRAY 1 OF I32 ;
+BEGIN
+  Check ('nc_inq_nvars', I64 (NcInqNVars (C.Int (f.ncid), ADR (n)))) ;
+  RETURN I64 (n[0])
+END VarCount ;
+
+PROCEDURE VarName (VAR pool: POOL ; f: PTR File ; varid: I64) : STR
+  RAISES Error, ValueRange =
+VAR
+  b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  b := NEW (pool, BYTE, MaxName) ;
+  Check ('nc_inq_varname', I64 (NcInqVarName (C.Int (f.ncid),
+                                              C.Int (varid),
+                                              ADR (b)))) ;
+  n := 0 ;
+  WHILE (n < MaxName) AND (b[n] # BYTE (0)) DO
+    n := n + 1
+  END ;
+  RETURN DynStr.Chars (pool, SLICE (b, 0, n))
+END VarName ;
+
+PROCEDURE VarType (f: PTR File ; varid: I64) : I64
+  RAISES Error =
+VAR t : ARRAY 1 OF I32 ;
+BEGIN
+  Check ('nc_inq_vartype', I64 (NcInqVarType (C.Int (f.ncid),
+                                              C.Int (varid),
+                                              ADR (t)))) ;
+  RETURN I64 (t[0])
+END VarType ;
+
+PROCEDURE HasAtt (f: PTR File ; varid: I64 ; RO name: STR) : BOOL
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  nb : SLICE OF BYTE ;
+  t : ARRAY 1 OF I32 ;
+  ln : ARRAY 1 OF U64 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  RETURN I64 (NcInqAtt (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                        ADR (t), ADR (ln))) = 0
+END HasAtt ;
+
+PROCEDURE VarRank (f: PTR File ; varid: I64) : I64
+  RAISES Error, ValueRange =
+VAR n : ARRAY 1 OF I32 ;
+BEGIN
+  Check ('nc_inq_varndims', I64 (NcInqVarNDims (C.Int (f.ncid),
+                                                C.Int (varid), ADR (n)))) ;
+  RETURN I64 (n[0])
+END VarRank ;
+
+PROCEDURE VarShape (VAR pool: POOL ; f: PTR File ; varid: I64)
+  : SLICE OF I64 RAISES Error, ValueRange =
+VAR
+  dims : ARRAY MaxRank OF I32 ;
+  out : SLICE OF I64 ;
+  rank, i : I64 ;
+BEGIN
+  rank := VarRank (f, varid) ;
+  IF rank > MaxRank THEN Fail ('nc_inq_vardimid: rank', rank) END ;
+  Check ('nc_inq_vardimid', I64 (NcInqVarDimIds (C.Int (f.ncid),
+                                                 C.Int (varid),
+                                                 ADR (dims)))) ;
+  out := NEW (pool, I64, rank) ;
+  FOR i := 0 TO rank - 1 DO
+    out[i] := DimLen (f, I64 (dims[i]))
+  END ;
+  RETURN out
+END VarShape ;
+
+PROCEDURE VarDims (VAR pool: POOL ; f: PTR File ; varid: I64)
+  : SLICE OF I64 RAISES Error, ValueRange =
+VAR
+  dims : ARRAY MaxRank OF I32 ;
+  out : SLICE OF I64 ;
+  rank, i : I64 ;
+BEGIN
+  rank := VarRank (f, varid) ;
+  IF rank > MaxRank THEN Fail ('nc_inq_vardimid: rank', rank) END ;
+  Check ('nc_inq_vardimid', I64 (NcInqVarDimIds (C.Int (f.ncid),
+                                                 C.Int (varid),
+                                                 ADR (dims)))) ;
+  out := NEW (pool, I64, rank) ;
+  FOR i := 0 TO rank - 1 DO
+    out[i] := I64 (dims[i])
+  END ;
+  RETURN out
+END VarDims ;
+
+(* start and count as the C API wants them: size_t, unsigned, and
+   therefore refusing a negative rather than reading it as enormous *)
+PROCEDURE Extents (VAR pool: POOL ; RO v: SLICE OF I64)
+  : SLICE OF U64 RAISES ValueRange =
+VAR
+  out : SLICE OF U64 ;
+  i : I64 ;
+BEGIN
+  out := NEW (pool, U64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    IF v[i] < 0 THEN RAISE ValueRange END ;
+    out[i] := U64 (v[i])
+  END ;
+  RETURN out
+END Extents ;
+
+PROCEDURE Product (RO v: SLICE OF I64) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 1 ;
+  FOR i := 0 TO LEN (v) - 1 DO n := n * v[i] END ;
+  RETURN n
+END Product ;
+
+PROCEDURE Want (have: I64 ; RO count: SLICE OF I64) RAISES SizeError =
+VAR n : I64 ;
+BEGIN
+  n := Product (count) ;
+  IF have # n THEN RAISE SizeError (have, n) END
+END Want ;
+
+PROCEDURE GetF64 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF F64)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (out), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_get_vara_double',
+    I64 (NcGetVaraDouble (C.Int (f.ncid), C.Int (varid), ADR (s),
+                          ADR (c), ADR (out))))
+END GetF64 ;
+
+PROCEDURE GetF32 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF F32)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (out), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_get_vara_float',
+    I64 (NcGetVaraFloat (C.Int (f.ncid), C.Int (varid), ADR (s),
+                         ADR (c), ADR (out))))
+END GetF32 ;
+
+PROCEDURE GetI64 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF I64)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (out), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_get_vara_longlong',
+    I64 (NcGetVaraLong (C.Int (f.ncid), C.Int (varid), ADR (s),
+                        ADR (c), ADR (out))))
+END GetI64 ;
+
+PROCEDURE GetI32 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF I32)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (out), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_get_vara_int',
+    I64 (NcGetVaraInt (C.Int (f.ncid), C.Int (varid), ADR (s),
+                       ADR (c), ADR (out))))
+END GetI32 ;
+
+PROCEDURE GetI16 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  out: SLICE OF I16)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (out), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_get_vara_short',
+    I64 (NcGetVaraShort (C.Int (f.ncid), C.Int (varid), ADR (s),
+                         ADR (c), ADR (out))))
+END GetI16 ;
+
+PROCEDURE GetBytes (f: PTR File ; varid: I64 ;
+                    RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                    out: SLICE OF BYTE)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (out), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_get_vara_ubyte',
+    I64 (NcGetVaraUByte (C.Int (f.ncid), C.Int (varid), ADR (s),
+                         ADR (c), ADR (out))))
+END GetBytes ;
+
+PROCEDURE PutI64 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO v: SLICE OF I64)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (v), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_put_vara_longlong',
+    I64 (NcPutVaraLong (C.Int (f.ncid), C.Int (varid), ADR (s),
+                        ADR (c), ADR (v))))
+END PutI64 ;
+
+PROCEDURE PutI32 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO v: SLICE OF I32)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (v), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_put_vara_int',
+    I64 (NcPutVaraInt (C.Int (f.ncid), C.Int (varid), ADR (s),
+                       ADR (c), ADR (v))))
+END PutI32 ;
+
+PROCEDURE PutI16 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO v: SLICE OF I16)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (v), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_put_vara_short',
+    I64 (NcPutVaraShort (C.Int (f.ncid), C.Int (varid), ADR (s),
+                         ADR (c), ADR (v))))
+END PutI16 ;
+
+PROCEDURE PutBytes (f: PTR File ; varid: I64 ;
+                    RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                    RO v: SLICE OF BYTE)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (v), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_put_vara_ubyte',
+    I64 (NcPutVaraUByte (C.Int (f.ncid), C.Int (varid), ADR (s),
+                         ADR (c), ADR (v))))
+END PutBytes ;
+
+PROCEDURE FillF64 (f: PTR File ; varid: I64 ; fill: F64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  v : SLICE OF F64 ;
+BEGIN
+  v := NEW (scratch, F64, 1) ;
+  v[0] := fill ;
+  Check ('nc_def_var_fill',
+    I64 (NcDefVarFill (C.Int (f.ncid), C.Int (varid), C.Int (0),
+                       ADR (v))))
+END FillF64 ;
+
+PROCEDURE FillI64 (f: PTR File ; varid: I64 ; fill: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  v : SLICE OF I64 ;
+BEGIN
+  v := NEW (scratch, I64, 1) ;
+  v[0] := fill ;
+  Check ('nc_def_var_fill',
+    I64 (NcDefVarFill (C.Int (f.ncid), C.Int (varid), C.Int (0),
+                       ADR (v))))
+END FillI64 ;
+
+PROCEDURE FillI32 (f: PTR File ; varid: I64 ; fill: I32)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  v : SLICE OF I32 ;
+BEGIN
+  v := NEW (scratch, I32, 1) ;
+  v[0] := fill ;
+  Check ('nc_def_var_fill',
+    I64 (NcDefVarFill (C.Int (f.ncid), C.Int (varid), C.Int (0),
+                       ADR (v))))
+END FillI32 ;
+
+PROCEDURE FillI16 (f: PTR File ; varid: I64 ; fill: I16)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  v : SLICE OF I16 ;
+BEGIN
+  v := NEW (scratch, I16, 1) ;
+  v[0] := fill ;
+  Check ('nc_def_var_fill',
+    I64 (NcDefVarFill (C.Int (f.ncid), C.Int (varid), C.Int (0),
+                       ADR (v))))
+END FillI16 ;
+
+PROCEDURE FillByte (f: PTR File ; varid: I64 ; fill: BYTE)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  v : SLICE OF BYTE ;
+BEGIN
+  v := NEW (scratch, BYTE, 1) ;
+  v[0] := fill ;
+  Check ('nc_def_var_fill',
+    I64 (NcDefVarFill (C.Int (f.ncid), C.Int (varid), C.Int (0),
+                       ADR (v))))
+END FillByte ;
+
+PROCEDURE GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ;
+                    n, width: I64) : SLICE OF STR
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  raw : SLICE OF BYTE ;
+  s, c : SLICE OF U64 ;
+  st, ct : SLICE OF I64 ;
+  out : SLICE OF STR ;
+  i, k : I64 ;
+BEGIN
+  raw := NEW (scratch, BYTE, n * width) ;
+  st := NEW (scratch, I64, 2) ;
+  ct := NEW (scratch, I64, 2) ;
+  st[0] := 0 ; st[1] := 0 ;
+  ct[0] := n ; ct[1] := width ;
+  s := Extents (scratch, st) ;
+  c := Extents (scratch, ct) ;
+  Check ('nc_get_vara_text',
+    I64 (NcGetVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
+                        ADR (c), ADR (raw)))) ;
+  out := NEW (pool, STR, n) ;
+  FOR i := 0 TO n - 1 DO
+    k := width ;
+    WHILE k > 0 AND (I64 (raw[i * width + k - 1]) = 0
+                     OR I64 (raw[i * width + k - 1]) = 32) DO
+      k := k - 1
+    END ;
+    out[i] := DynStr.Chars (pool, SLICE (raw, i * width, k))
+  END ;
+  RETURN out
+END GetChars ;
+
+PROCEDURE Zeros (VAR pool: POOL ; n: I64) : SLICE OF I64 =
+VAR out : SLICE OF I64 ;
+BEGIN
+  out := NEW (pool, I64, n) ;          (* pools carve zeroed (par 4.3) *)
+  RETURN out
+END Zeros ;
+
+PROCEDURE ReadGrid2 (VAR pool: POOL ; f: PTR File ; RO name: STR)
+  : GRID 2 OF F64 RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  shape : SLICE OF I64 ;
+  flat : SLICE OF F64 ;
+  g : GRID 2 OF F64 ;
+  varid, i, j : I64 ;
+BEGIN
+  varid := VarId (f, name) ;
+  shape := VarShape (scratch, f, varid) ;
+  IF LEN (shape) # 2 THEN RAISE SizeError (LEN (shape), 2) END ;
+  flat := NEW (scratch, F64, Product (shape)) ;
+  GetF64 (f, varid, Zeros (scratch, 2), shape, flat) ;
+  g := NEW (pool, F64, shape[0], shape[1]) ;
+  (* the copy the missing GRID-over-a-slice view costs: NetCDF hands
+     back C order and a GRID is C order, so these bytes are already
+     in the right places and are moved anyway *)
+  FOR i := 0 TO shape[0] - 1 DO
+    FOR j := 0 TO shape[1] - 1 DO
+      g[i, j] := flat[i * shape[1] + j]
+    END
+  END ;
+  RETURN g
+END ReadGrid2 ;
+
+PROCEDURE ReadGrid3 (VAR pool: POOL ; f: PTR File ; RO name: STR)
+  : GRID 3 OF F64 RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  shape : SLICE OF I64 ;
+  flat : SLICE OF F64 ;
+  g : GRID 3 OF F64 ;
+  varid, i, j, k : I64 ;
+BEGIN
+  varid := VarId (f, name) ;
+  shape := VarShape (scratch, f, varid) ;
+  IF LEN (shape) # 3 THEN RAISE SizeError (LEN (shape), 3) END ;
+  flat := NEW (scratch, F64, Product (shape)) ;
+  GetF64 (f, varid, Zeros (scratch, 3), shape, flat) ;
+  g := NEW (pool, F64, shape[0], shape[1], shape[2]) ;
+  FOR i := 0 TO shape[0] - 1 DO
+    FOR j := 0 TO shape[1] - 1 DO
+      FOR k := 0 TO shape[2] - 1 DO
+        g[i, j, k] := flat[(i * shape[1] + j) * shape[2] + k]
+      END
+    END
+  END ;
+  RETURN g
+END ReadGrid3 ;
+
+PROCEDURE GetAttF64 (f: PTR File ; varid: I64 ; RO name: STR) : F64
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb : SLICE OF BYTE ;
+  v : ARRAY 1 OF F64 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  Check ('nc_get_att_double',
+    I64 (NcGetAttDouble (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                         ADR (v)))) ;
+  RETURN v[0]
+END GetAttF64 ;
+
+PROCEDURE GetAttStr (VAR pool: POOL ; f: PTR File ; varid: I64 ;
+                     RO name: STR) : STR
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb, buf : SLICE OF BYTE ;
+  n : ARRAY 1 OF U64 ;
+  len : I64 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  Check ('nc_inq_attlen',
+    I64 (NcInqAttLen (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                      ADR (n)))) ;
+  len := I64 (n[0]) ;
+  IF len > MaxAtt THEN RAISE ValueRange END ;
+  buf := NEW (scratch, BYTE, len + 1) ;
+  Check ('nc_get_att_text',
+    I64 (NcGetAttText (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                       ADR (buf)))) ;
+  (* the C API does not terminate a text attribute, which is why the
+     length came first *)
+  RETURN DynStr.Chars (pool, SLICE (buf, 0, len))
+END GetAttStr ;
+
+PROCEDURE DefDim (f: PTR File ; RO name: STR ; extent: I64) : I64
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb : SLICE OF BYTE ;
+  id : ARRAY 1 OF I32 ;
+BEGIN
+  IF extent < 0 THEN RAISE ValueRange END ;
+  nb := CStr (scratch, name) ;
+  Check ('nc_def_dim', I64 (NcDefDim (C.Int (f.ncid), ADR (nb),
+                                      C.SizeT (extent), ADR (id)))) ;
+  RETURN I64 (id[0])
+END DefDim ;
+
+PROCEDURE DefVar (f: PTR File ; RO name: STR ; nctype: I64 ;
+                  RO dims: SLICE OF I64) : I64
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb : SLICE OF BYTE ;
+  ids : SLICE OF I32 ;
+  id : ARRAY 1 OF I32 ;
+  i : I64 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  ids := NEW (scratch, I32, LEN (dims) + 1) ;
+  FOR i := 0 TO LEN (dims) - 1 DO ids[i] := I32 (dims[i]) END ;
+  Check ('nc_def_var',
+    I64 (NcDefVar (C.Int (f.ncid), ADR (nb), C.Int (nctype),
+                   C.Int (LEN (dims)), ADR (ids), ADR (id)))) ;
+  RETURN I64 (id[0])
+END DefVar ;
+
+PROCEDURE PutAttStr (f: PTR File ; varid: I64 ; RO name: STR ;
+                     RO value: STR) RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb, vb : SLICE OF BYTE ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  vb := DynStr.Bytes (scratch, value, FALSE) ;
+  Check ('nc_put_att_text',
+    I64 (NcPutAttText (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                       C.SizeT (LEN (vb)), ADR (vb))))
+END PutAttStr ;
+
+PROCEDURE PutAttF64 (f: PTR File ; varid: I64 ; RO name: STR ;
+                     value: F64) RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb : SLICE OF BYTE ;
+  v : ARRAY 1 OF F64 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  v[0] := value ;
+  Check ('nc_put_att_double',
+    I64 (NcPutAttDouble (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                         C.Int (TypeDouble), C.SizeT (1), ADR (v))))
+END PutAttF64 ;
+
+PROCEDURE EndDef (f: PTR File) RAISES Error =
+BEGIN
+  Check ('nc_enddef', I64 (NcEndDef (C.Int (f.ncid))))
+END EndDef ;
+
+PROCEDURE PutF64 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO data: SLICE OF F64)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (data), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_put_vara_double',
+    I64 (NcPutVaraDouble (C.Int (f.ncid), C.Int (varid), ADR (s),
+                          ADR (c), ADR (data))))
+END PutF64 ;
+
+PROCEDURE PutF32 (f: PTR File ; varid: I64 ;
+                  RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                  RO data: SLICE OF F32)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+BEGIN
+  Want (LEN (data), count) ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_put_vara_float',
+    I64 (NcPutVaraFloat (C.Int (f.ncid), C.Int (varid), ADR (s),
+                         ADR (c), ADR (data))))
+END PutF32 ;
+
+PROCEDURE FillF32 (f: PTR File ; varid: I64 ; fill: F32)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  v : SLICE OF F32 ;
+BEGIN
+  (* through a one-element slice so ADR has a slice to take -- the
+     same shape every other pointer crossing in this unit uses *)
+  v := NEW (scratch, F32, 1) ;
+  v[0] := fill ;
+  Check ('nc_def_var_fill',
+    I64 (NcDefVarFill (C.Int (f.ncid), C.Int (varid), C.Int (0),
+                       ADR (v))))
+END FillF32 ;
+
+PROCEDURE Deflate (f: PTR File ; varid: I64 ; level: I64)
+  RAISES Error, ValueRange =
+BEGIN
+  (* shuffle on, deflate on: the shuffle is what makes a float field
+     compress, by grouping bytes of equal significance *)
+  Check ('nc_def_var_deflate',
+    I64 (NcDeflate (C.Int (f.ncid), C.Int (varid), C.Int (1),
+                    C.Int (1), C.Int (level))))
+END Deflate ;
+
+PROCEDURE Chunking (f: PTR File ; varid: I64 ; RO sizes: SLICE OF I64)
+  RAISES Error, ValueRange =
+VAR scratch : POOL ; c : SLICE OF U64 ;
+BEGIN
+  c := Extents (scratch, sizes) ;
+  (* storage 0 is NC_CHUNKED *)
+  Check ('nc_def_var_chunking',
+    I64 (NcChunking (C.Int (f.ncid), C.Int (varid), C.Int (0), ADR (c))))
+END Chunking ;
+
+PROCEDURE PutChars (f: PTR File ; varid: I64 ;
+                    RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
+                    RO text: STR)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+  b : SLICE OF BYTE ;
+  n, i : I64 ;
+BEGIN
+  n := 1 ;
+  FOR i := 0 TO LEN (count) - 1 DO n := n * count[i] END ;
+  IF LEN (text) > n THEN RAISE SizeError (LEN (text), n) END ;
+  (* padded with NUL to the full count: netCDF writes exactly what it
+     is given and a char variable's remaining bytes are otherwise
+     whatever the file had *)
+  b := NEW (scratch, BYTE, n) ;
+  FOR i := 0 TO LEN (text) - 1 DO
+    b[i] := BYTE (ORD (text[i]))
+  END ;
+  s := Extents (scratch, start) ;
+  c := Extents (scratch, count) ;
+  Check ('nc_put_vara_text',
+    I64 (NcPutVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
+                        ADR (c), ADR (b))))
+END PutChars ;
+
+END NetCDF.

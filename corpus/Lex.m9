@@ -1,0 +1,648 @@
+STATEFUL DEFINITION MODULE Lex ;
+
+(* The M9 lexer, in M9 -- the first thousandth of the self-hosted
+   compiler (P5 stage 1), restated from host/fpc/M9Lex.pas, which
+   now serves as its differential oracle: both must emit identical
+   token streams over every corpus and museum file.
+   Kinds are I64 codes, stable and documented: 0 EOF, 1 Error,
+   2 Ident, 3 IntLit, 4 RealLit, 5 CharLit, 6 StrLit, then keywords
+   from 7 and operators from 200.  Codes are identifiers, not
+   positions in a sorted list: a new keyword APPENDS at the next
+   free code rather than renumbering its alphabetical neighbours.
+   Errors are tokens carrying their message; lexing continues.
+   STATEFUL for one small truth: the unexpected-character message
+   is composed in a module buffer.                                   *)
+
+TYPE
+  Token = RECORD
+    kind, line, col : I64 ;
+    text : STR ;      (* verbatim source; for Error, message *)
+  END ;
+
+  Lexer = RECORD
+    src : STR ;
+    pos, line, col : I64 ;
+  END ;
+
+  (* A comment, for the callers that want the documentation rather
+     than the program.  text is VERBATIM and includes the opening
+     `(*` and closing `*)`, because a reader that wants them stripped
+     can strip them and one that wants the nesting cannot put them
+     back. *)
+  Comment = RECORD
+    line, col, endLine : I64 ;
+    text : STR ;
+  END ;
+
+PROCEDURE Init (VAR lx: Lexer ; RO src: STR) ;
+  (* the lexer keeps the source slice; keep it alive while lexing --
+     the Json.Parse contract again                                   *)
+
+PROCEDURE Next (VAR lx: Lexer ; VAR t: Token) ;
+  (* the next token, skipping blanks and nested comments on the way.
+
+     ERRORS ARE TOKENS: a bad character or an unterminated comment
+     comes back as an Error token carrying the message and its
+     line:col, and lexing CONTINUES.  There is no error state to
+     check and no exception to handle, so a caller can report every
+     mistake in a file in one pass -- which is what lextest does.
+
+       t -- VAR rather than a result because a Token is a record and
+            this is called once per token; the caller reuses one.
+
+     Comments leave no trace here at all: they cost zero tokens, so
+     the count lextest.golden records is a count of code.          *)
+
+PROCEDURE KindName (k: I64) : STR ;
+  (* the FPC oracle's names, for dumps and diagnostics *)
+
+(* ---- comments, BESIDE the token stream ----
+
+   Comments are not tokens and never will be: making one a token
+   would move every count in lextest.golden and put a code in the
+   kind table that the parser must then be taught to ignore.  So
+   `Skip` throws them away, which is right for a compiler and leaves
+   nothing for a documentation tool to read.
+
+   These three procedures are the side channel.  Armed, the lexer
+   ALSO appends each comment it skips to a module-level list; the
+   token stream, the counts and the printer are untouched, and a
+   caller that never arms it pays one BOOL test per comment.
+
+   Storage is HEAP, the predeclared pool: the list outlives the
+   Lexer that filled it -- a caller reads it after parsing, not
+   during -- and Init takes no pool to borrow.  It is therefore
+   never freed, which is what HEAP means, and is the same bargain
+   every other one-module-per-process registry here makes.
+
+   THE TEXT IS A VIEW, not a copy: a Comment's text is a slice of
+   the source Init was given, so the source must stay alive for as
+   long as the comments are read.  That is the contract Init already
+   states, extended past the last token. *)
+
+PROCEDURE Collect (on: BOOL) ;
+  (* arm or disarm.  Arming also CLEARS what was collected, so one
+     process can lex several files and keep them apart; disarming
+     keeps it, so a caller can arm, parse one file, disarm, and then
+     read the comments of that file only while its dependencies go
+     past uncollected.  That is exactly what m9c --doc needs.       *)
+
+PROCEDURE ComCount () : I64 ;
+PROCEDURE ComAt (i: I64) : Comment RAISES IndexError ;
+  (* what was collected, in source order.
+
+       i -- 0 .. ComCount - 1.  An UNTERMINATED comment is not in
+            here at all: it never closed, so it has no end line and
+            no text, and the Error token Next answers is the whole
+            of what is known about it.                              *)
+
+END Lex.
+
+
+UNSAFE IMPLEMENTATION MODULE Lex ;
+
+(* UNSAFE is inherited style only: nothing foreign here yet; ADR is
+   unused.  Drop UNSAFE the day the checker minds.                   *)
+
+IMPORT DynStr ;
+
+CONST
+  KEOF     = 0 ;
+  KError   = 1 ;
+  KIdent   = 2 ;
+  KInt     = 3 ;
+  KReal    = 4 ;
+  KChar    = 5 ;
+  KStr     = 6 ;
+  (* Kind codes are stable IDENTIFIERS, not positions in a sorted
+     list.  The first 58 keywords happen to run alphabetically
+     because they arrived together; every later one APPENDS at the
+     next free code and the table stops being alphabetical.  That is
+     deliberate: deriving a code from spelling means an unrelated
+     keyword renumbers its neighbours, which churns both lexers, the
+     parser's token table and every recorded stream -- a code that
+     moves is a code no one can rely on.  Lookup is a linear scan,
+     so alphabetical order buys nothing but the reading.
+     Keywords own 7..199 and grow upward; operators start at 200.   *)
+  KwFirst  = 7 ;
+  KwLast   = 66 ;         (* grows as keywords are appended *)
+  OpFirst  = 200 ;
+
+  KAssign = 200 ; KEq = 201 ; KNeq = 202 ; KLt = 203 ; KLe = 204 ;
+  KGt = 205 ; KGe = 206 ; KPlus = 207 ; KMinus = 208 ; KStar = 209 ;
+  KSlash = 210 ; KPlusW = 211 ; KMinusW = 212 ; KStarW = 213 ;
+  KLParen = 214 ; KRParen = 215 ; KLBrack = 216 ; KRBrack = 217 ;
+  KComma = 218 ; KSemi = 219 ; KColon = 220 ; KDot = 221 ;
+  KDotDot = 222 ; KBar = 223 ; KCaret = 224 ;
+
+  HexMsg   = '0123456789abcdef' ;
+
+VAR
+  errBuf : ARRAY 32 OF CHAR ;   (* 'unexpected character 0xNN' *)
+  comOn  : BOOL ;               (* Collect armed? *)
+  coms   : SLICE OF Comment ;   (* grown in HEAP, doubling *)
+  ncom   : I64 ;
+
+PROCEDURE Collect (on: BOOL) =
+BEGIN
+  comOn := on ;
+  IF on THEN ncom := 0 END
+END Collect ;
+
+PROCEDURE ComCount () : I64 =
+BEGIN
+  RETURN ncom
+END ComCount ;
+
+PROCEDURE ComAt (i: I64) : Comment RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= ncom THEN RAISE IndexError (i, ncom) END ;
+  RETURN coms[i]
+END ComAt ;
+
+(* one comment onto the list, doubling the vector when it is full.
+   The abandoned vector stays in HEAP, which is the same trade
+   DynStr.Grow makes and for the same reason. *)
+PROCEDURE Note (line, col, endLine: I64 ; RO text: STR) =
+VAR
+  nc : SLICE OF Comment ;
+  i  : I64 ;
+BEGIN
+  IF ncom = LEN (coms) THEN
+    IF LEN (coms) = 0 THEN
+      nc := NEW (HEAP, Comment, 64)
+    ELSE
+      nc := NEW (HEAP, Comment, 2 * LEN (coms))
+    END ;
+    FOR i := 0 TO ncom - 1 DO nc[i] := coms[i] END ;
+    coms := nc
+  END ;
+  coms[ncom].line := line ;
+  coms[ncom].col := col ;
+  coms[ncom].endLine := endLine ;
+  coms[ncom].text := text ;
+  ncom := ncom + 1
+END Note ;
+
+PROCEDURE KwName (i: I64) : STR =
+BEGIN
+  CASE i OF
+  | 7  : RETURN 'AND'
+  | 8  : RETURN 'ARRAY'
+  | 9  : RETURN 'BEGIN'
+  | 10 : RETURN 'BY'
+  | 11 : RETURN 'CASE'
+  | 12 : RETURN 'CONST'
+  | 13 : RETURN 'DEFINITION'
+  | 14 : RETURN 'DISPOSE'
+  | 15 : RETURN 'DIV'
+  | 16 : RETURN 'DO'
+  | 17 : RETURN 'ELSE'
+  | 18 : RETURN 'ELSIF'
+  | 19 : RETURN 'END'
+  | 20 : RETURN 'EXCEPT'
+  | 21 : RETURN 'EXCEPTION'
+  | 22 : RETURN 'EXIT'
+  | 23 : RETURN 'FALSE'
+  | 24 : RETURN 'FINALLY'
+  | 25 : RETURN 'FOR'
+  | 26 : RETURN 'FROM'
+  | 27 : RETURN 'IF'
+  | 28 : RETURN 'IMPLEMENTATION'
+  | 29 : RETURN 'IMPORT'
+  | 30 : RETURN 'IN'
+  | 31 : RETURN 'IS'
+  | 32 : RETURN 'LOOP'
+  | 33 : RETURN 'MOD'
+  | 34 : RETURN 'MODULE'
+  | 35 : RETURN 'MONITOR'
+  | 36 : RETURN 'NEW'
+  | 37 : RETURN 'NONE'
+  | 38 : RETURN 'NOT'
+  | 39 : RETURN 'OF'
+  | 40 : RETURN 'OPT'
+  | 41 : RETURN 'OR'
+  | 42 : RETURN 'OWN'
+  | 43 : RETURN 'POOL'
+  | 44 : RETURN 'PROCEDURE'
+  | 45 : RETURN 'PTR'
+  | 46 : RETURN 'RAISE'
+  | 47 : RETURN 'RAISES'
+  | 48 : RETURN 'RECORD'
+  | 49 : RETURN 'RETURN'
+  | 50 : RETURN 'SHARED'
+  | 51 : RETURN 'SIGNAL'
+  | 52 : RETURN 'SLICE'
+  | 53 : RETURN 'SOME'
+  | 54 : RETURN 'STATEFUL'
+  | 55 : RETURN 'THEN'
+  | 56 : RETURN 'THREAD'
+  | 57 : RETURN 'TO'
+  | 58 : RETURN 'TRANSFER'
+  | 59 : RETURN 'TRUE'
+  | 60 : RETURN 'TYPE'
+  | 61 : RETURN 'UNSAFE'
+  | 62 : RETURN 'VAR'
+  | 63 : RETURN 'WAIT'
+  | 64 : RETURN 'WHILE'
+  (* appended after the alphabetical 58: codes are identifiers *)
+  | 65 : RETURN 'RO'
+  | 66 : RETURN 'GRID'
+  ELSE RETURN '?'
+  END
+END KwName ;
+
+PROCEDURE KindName (k: I64) : STR =
+BEGIN
+  IF k >= KwFirst THEN
+    IF k <= KwLast THEN RETURN KwName (k) END
+  END ;
+  CASE k OF
+  | 0  : RETURN 'EOF'
+  | 1  : RETURN 'Error'
+  | 2  : RETURN 'Ident'
+  | 3  : RETURN 'IntLit'
+  | 4  : RETURN 'RealLit'
+  | 5  : RETURN 'CharLit'
+  | 6  : RETURN 'StrLit'
+  | KAssign : RETURN 'Assign'
+  | KEq : RETURN 'Eq'
+  | KNeq : RETURN 'Neq'
+  | KLt : RETURN 'Lt'
+  | KLe : RETURN 'Le'
+  | KGt : RETURN 'Gt'
+  | KGe : RETURN 'Ge'
+  | KPlus : RETURN 'Plus'
+  | KMinus : RETURN 'Minus'
+  | KStar : RETURN 'Star'
+  | KSlash : RETURN 'Slash'
+  | KPlusW : RETURN 'PlusWrap'
+  | KMinusW : RETURN 'MinusWrap'
+  | KStarW : RETURN 'StarWrap'
+  | KLParen : RETURN 'LParen'
+  | KRParen : RETURN 'RParen'
+  | KLBrack : RETURN 'LBrack'
+  | KRBrack : RETURN 'RBrack'
+  | KComma : RETURN 'Comma'
+  | KSemi : RETURN 'Semi'
+  | KColon : RETURN 'Colon'
+  | KDot : RETURN 'Dot'
+  | KDotDot : RETURN 'DotDot'
+  | KBar : RETURN 'Bar'
+  | KCaret : RETURN 'Caret'
+  ELSE RETURN '?'
+  END
+END KindName ;
+
+PROCEDURE Lookup (RO s: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := KwFirst TO KwLast DO
+    IF DynStr.Eq (s, KwName (i)) THEN RETURN i END
+  END ;
+  RETURN KIdent
+END Lookup ;
+
+PROCEDURE Init (VAR lx: Lexer ; RO src: STR) =
+BEGIN
+  lx.src := src ;
+  lx.pos := 0 ;
+  lx.line := 1 ;
+  lx.col := 1
+END Init ;
+
+PROCEDURE Peek (VAR lx: Lexer ; ahead: I64) : CHAR =
+BEGIN
+  IF lx.pos + ahead < LEN (lx.src) THEN
+    RETURN lx.src[lx.pos + ahead]
+  END ;
+  RETURN 0C
+END Peek ;
+
+PROCEDURE Advance (VAR lx: Lexer) =
+BEGIN
+  IF Peek (lx, 0) = 0AC THEN
+    lx.line := lx.line + 1 ;
+    lx.col := 1
+  ELSE
+    lx.col := lx.col + 1
+  END ;
+  lx.pos := lx.pos + 1
+END Advance ;
+
+PROCEDURE IsLetter (c: CHAR) : BOOL =
+BEGIN
+  RETURN (c >= 'A' AND c <= 'Z') OR (c >= 'a' AND c <= 'z')
+END IsLetter ;
+
+PROCEDURE IsDigit (c: CHAR) : BOOL =
+BEGIN
+  RETURN c >= '0' AND c <= '9'
+END IsDigit ;
+
+PROCEDURE IsHexAny (c: CHAR) : BOOL =
+BEGIN
+  RETURN IsDigit (c) OR (c >= 'A' AND c <= 'F') OR
+         (c >= 'a' AND c <= 'f')
+END IsHexAny ;
+
+PROCEDURE IsHexUp (c: CHAR) : BOOL =
+BEGIN
+  RETURN IsDigit (c) OR (c >= 'A' AND c <= 'F')
+END IsHexUp ;
+
+(* skip blanks and nested comments; bad=TRUE means an unterminated
+   comment opened at eline:ecol *)
+PROCEDURE Skip (VAR lx: Lexer ; VAR bad: BOOL ; VAR eline, ecol: I64) =
+VAR
+  depth, cstart : I64 ;
+  c : CHAR ;
+BEGIN
+  bad := FALSE ;
+  LOOP
+    c := Peek (lx, 0) ;
+    WHILE c = ' ' OR c = 09C OR c = 0DC OR c = 0AC DO
+      Advance (lx) ;
+      c := Peek (lx, 0)
+    END ;
+    IF Peek (lx, 0) = '(' AND Peek (lx, 1) = '*' THEN
+      eline := lx.line ;
+      ecol := lx.col ;
+      cstart := lx.pos ;
+      depth := 0 ;
+      LOOP
+        IF Peek (lx, 0) = '(' AND Peek (lx, 1) = '*' THEN
+          depth := depth + 1 ;
+          Advance (lx) ;
+          Advance (lx)
+        ELSIF Peek (lx, 0) = '*' AND Peek (lx, 1) = ')' THEN
+          depth := depth - 1 ;
+          Advance (lx) ;
+          Advance (lx) ;
+          IF depth = 0 THEN
+            (* lx.line is still the line the closing delimiter
+               sits on: advancing past it cannot have crossed a
+               newline.  And note that this sentence may not name
+               that delimiter literally -- comments NEST, so the two
+               characters would close this one early.  That is a
+               real constraint on writing M9 prose, and it cost 1900
+               parse errors to rediscover. *)
+            IF comOn THEN
+              Note (eline, ecol, lx.line,
+                    SLICE (lx.src, cstart, lx.pos - cstart))
+            END ;
+            EXIT
+          END
+        ELSIF Peek (lx, 0) = 0C THEN
+          bad := TRUE ;
+          RETURN
+        ELSE
+          Advance (lx)
+        END
+      END
+    ELSE
+      RETURN
+    END
+  END
+END Skip ;
+
+PROCEDURE Mk (VAR t: Token ; kind: I64 ; RO text: STR ;
+              line, col: I64) =
+BEGIN
+  t.kind := kind ;
+  t.text := text ;
+  t.line := line ;
+  t.col := col
+END Mk ;
+
+PROCEDURE Punct (VAR lx: Lexer ; VAR t: Token ; c: CHAR ;
+                 ln, cl: I64) : BOOL =
+BEGIN
+  (* two-char lookahead forms first: longest match *)
+  IF c = ':' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '=' THEN Advance (lx) ; Mk (t, KAssign, ':=', ln, cl)
+    ELSE Mk (t, KColon, ':', ln, cl) END ;
+    RETURN TRUE
+  ELSIF c = '.' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '.' THEN Advance (lx) ; Mk (t, KDotDot, '..', ln, cl)
+    ELSE Mk (t, KDot, '.', ln, cl) END ;
+    RETURN TRUE
+  ELSIF c = '<' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '=' THEN Advance (lx) ; Mk (t, KLe, '<=', ln, cl)
+    ELSE Mk (t, KLt, '<', ln, cl) END ;
+    RETURN TRUE
+  ELSIF c = '>' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '=' THEN Advance (lx) ; Mk (t, KGe, '>=', ln, cl)
+    ELSE Mk (t, KGt, '>', ln, cl) END ;
+    RETURN TRUE
+  ELSIF c = '+' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '%' THEN Advance (lx) ; Mk (t, KPlusW, '+%', ln, cl)
+    ELSE Mk (t, KPlus, '+', ln, cl) END ;
+    RETURN TRUE
+  ELSIF c = '-' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '%' THEN Advance (lx) ; Mk (t, KMinusW, '-%', ln, cl)
+    ELSE Mk (t, KMinus, '-', ln, cl) END ;
+    RETURN TRUE
+  ELSIF c = '*' THEN
+    Advance (lx) ;
+    IF Peek (lx, 0) = '%' THEN Advance (lx) ; Mk (t, KStarW, '*%', ln, cl)
+    ELSE Mk (t, KStar, '*', ln, cl) END ;
+    RETURN TRUE
+  ELSIF c = '=' THEN Advance (lx) ; Mk (t, KEq, '=', ln, cl) ; RETURN TRUE
+  ELSIF c = '#' THEN Advance (lx) ; Mk (t, KNeq, '#', ln, cl) ; RETURN TRUE
+  ELSIF c = '/' THEN Advance (lx) ; Mk (t, KSlash, '/', ln, cl) ; RETURN TRUE
+  ELSIF c = '(' THEN Advance (lx) ; Mk (t, KLParen, '(', ln, cl) ; RETURN TRUE
+  ELSIF c = ')' THEN Advance (lx) ; Mk (t, KRParen, ')', ln, cl) ; RETURN TRUE
+  ELSIF c = '[' THEN Advance (lx) ; Mk (t, KLBrack, '[', ln, cl) ; RETURN TRUE
+  ELSIF c = ']' THEN Advance (lx) ; Mk (t, KRBrack, ']', ln, cl) ; RETURN TRUE
+  ELSIF c = ',' THEN Advance (lx) ; Mk (t, KComma, ',', ln, cl) ; RETURN TRUE
+  ELSIF c = ';' THEN Advance (lx) ; Mk (t, KSemi, ';', ln, cl) ; RETURN TRUE
+  ELSIF c = '|' THEN Advance (lx) ; Mk (t, KBar, '|', ln, cl) ; RETURN TRUE
+  ELSIF c = '^' THEN Advance (lx) ; Mk (t, KCaret, '^', ln, cl) ; RETURN TRUE
+  END ;
+  RETURN FALSE
+END Punct ;
+
+PROCEDURE Number (VAR lx: Lexer ; VAR t: Token ; ln, cl, start: I64) =
+VAR
+  hasHexLetter, isReal : BOOL ;
+  run : STR ;
+  i, cv, d : I64 ;
+  c : CHAR ;
+BEGIN
+  IF Peek (lx, 0) = '0' AND Peek (lx, 1) = 'x' THEN
+    Advance (lx) ;
+    Advance (lx) ;
+    IF NOT IsHexAny (Peek (lx, 0)) THEN
+      Mk (t, KError, 'hex literal needs digits after 0x', ln, cl) ;
+      RETURN
+    END ;
+    WHILE IsHexAny (Peek (lx, 0)) DO Advance (lx) END ;
+    IF IsLetter (Peek (lx, 0)) THEN
+      Mk (t, KError,
+          'letter may not immediately follow a numeric literal', ln, cl) ;
+      RETURN
+    END ;
+    Mk (t, KInt, SLICE (lx.src, start, lx.pos - start), ln, cl) ;
+    RETURN
+  END ;
+
+  (* digits and uppercase hex letters; classify by shape *)
+  hasHexLetter := FALSE ;
+  c := Peek (lx, 0) ;
+  WHILE IsHexUp (c) DO
+    IF NOT IsDigit (c) THEN hasHexLetter := TRUE END ;
+    Advance (lx) ;
+    c := Peek (lx, 0)
+  END ;
+  run := SLICE (lx.src, start, lx.pos - start) ;
+
+  IF hasHexLetter THEN
+    IF run[LEN (run) - 1] # 'C' THEN
+      Mk (t, KError,
+          'malformed numeric literal; forms are 10, 0x1F, 1.5, 1.5e-3, 0AC',
+          ln, cl) ;
+      RETURN
+    END ;
+    IF IsLetter (Peek (lx, 0)) THEN
+      Mk (t, KError,
+          'letter may not immediately follow a numeric literal', ln, cl) ;
+      RETURN
+    END ;
+    cv := 0 ;
+    FOR i := 0 TO LEN (run) - 2 DO
+      c := run[i] ;
+      IF IsDigit (c) THEN d := ORD (c) - 48 ELSE d := ORD (c) - 55 END ;
+      cv := cv * 16 + d ;
+      IF cv > 1114111 THEN
+        Mk (t, KError,
+            'char literal beyond Unicode scalar range (max 10FFFFC)',
+            ln, cl) ;
+        RETURN
+      END
+    END ;
+    IF cv >= 55296 THEN
+      IF cv <= 57343 THEN
+        Mk (t, KError,
+            'char literal is a surrogate code point, not a scalar',
+            ln, cl) ;
+        RETURN
+      END
+    END ;
+    Mk (t, KChar, run, ln, cl) ;
+    RETURN
+  END ;
+
+  isReal := FALSE ;
+  (* the 1..5 case: dot followed by dot is DOTDOT, not a real *)
+  IF Peek (lx, 0) = '.' AND Peek (lx, 1) # '.' THEN
+    isReal := TRUE ;
+    Advance (lx) ;
+    IF NOT IsDigit (Peek (lx, 0)) THEN
+      Mk (t, KError, 'digit required after decimal point', ln, cl) ;
+      RETURN
+    END ;
+    WHILE IsDigit (Peek (lx, 0)) DO Advance (lx) END ;
+    IF Peek (lx, 0) = 'e' OR Peek (lx, 0) = 'E' THEN
+      Advance (lx) ;
+      IF Peek (lx, 0) = '+' OR Peek (lx, 0) = '-' THEN Advance (lx) END ;
+      IF NOT IsDigit (Peek (lx, 0)) THEN
+        Mk (t, KError, 'digit required in exponent', ln, cl) ;
+        RETURN
+      END ;
+      WHILE IsDigit (Peek (lx, 0)) DO Advance (lx) END
+    END
+  END ;
+  IF IsLetter (Peek (lx, 0)) THEN
+    Mk (t, KError,
+        'letter may not immediately follow a numeric literal (char literal ends in C: 0AC; exponent needs a decimal point: 1.0e5)',
+        ln, cl) ;
+    RETURN
+  END ;
+  IF isReal THEN
+    Mk (t, KReal, SLICE (lx.src, start, lx.pos - start), ln, cl)
+  ELSE
+    Mk (t, KInt, SLICE (lx.src, start, lx.pos - start), ln, cl)
+  END
+END Number ;
+
+PROCEDURE Next (VAR lx: Lexer ; VAR t: Token) =
+VAR
+  bad : BOOL ;
+  ln, cl, start, n : I64 ;
+  c, q : CHAR ;
+  head : STR ;
+BEGIN
+  Skip (lx, bad, ln, cl) ;
+  IF bad THEN
+    Mk (t, KError, 'unterminated comment (opened here)', ln, cl) ;
+    RETURN
+  END ;
+
+  ln := lx.line ;
+  cl := lx.col ;
+  start := lx.pos ;
+  c := Peek (lx, 0) ;
+
+  IF c = 0C THEN
+    Mk (t, KEOF, '', ln, cl) ;
+    RETURN
+  END ;
+
+  IF IsLetter (c) THEN
+    WHILE IsLetter (Peek (lx, 0)) OR IsDigit (Peek (lx, 0)) DO
+      Advance (lx)
+    END ;
+    Mk (t, KIdent, SLICE (lx.src, start, lx.pos - start), ln, cl) ;
+    t.kind := Lookup (t.text) ;
+    IF Peek (lx, 0) = '_' THEN
+      Mk (t, KError, 'underscore is not part of an identifier in M9',
+          lx.line, lx.col)
+    END ;
+    RETURN
+  END ;
+
+  IF IsDigit (c) THEN
+    Number (lx, t, ln, cl, start) ;
+    RETURN
+  END ;
+
+  IF c = "'" OR c = '"' THEN
+    q := c ;
+    Advance (lx) ;
+    start := lx.pos ;
+    WHILE Peek (lx, 0) # q AND Peek (lx, 0) # 0C AND
+          Peek (lx, 0) # 0AC DO
+      Advance (lx)
+    END ;
+    IF Peek (lx, 0) # q THEN
+      Mk (t, KError, 'unterminated string', ln, cl) ;
+      RETURN
+    END ;
+    Mk (t, KStr, SLICE (lx.src, start, lx.pos - start), ln, cl) ;
+    Advance (lx) ;
+    RETURN
+  END ;
+
+  IF Punct (lx, t, c, ln, cl) THEN RETURN END ;
+
+  (* 'unexpected character 0xNN' (25 chars), composed in the module
+     buffer -- the one dynamic message, and the reason for STATEFUL *)
+  Advance (lx) ;
+  n := ORD (lx.src[start]) ;
+  head := 'unexpected character 0x' ;
+  FOR start := 0 TO LEN (head) - 1 DO
+    errBuf[start] := head[start]
+  END ;
+  errBuf[23] := HexMsg[(n DIV 16) MOD 16] ;
+  errBuf[24] := HexMsg[n MOD 16] ;
+  Mk (t, KError, SLICE (errBuf, 0, 25), ln, cl)
+END Next ;
+
+END Lex.

@@ -1,0 +1,475 @@
+DEFINITION MODULE Mat ;
+
+(* Dense 2-D matrices of F64 with NaN-aware, loop-free operations.
+   The FOR loops have not gone anywhere: they moved in here, were
+   written once, and are auto-vectorised by the compiler.  This is
+   also all numpy ever promised.                                     *)
+
+TYPE
+  Matrix ;                               (* opaque; lives in a POOL *)
+
+  ReduceOp = CASE RECORD
+  | Mean | Min | Max | Sum | Count
+  END ;
+  (* the M2 enumeration: an empty-variant CASE RECORD is M9's
+     enumeration, and CASE over it must be total.  The first layout
+     of this declaration put the variants in a margin comment's
+     interior -- the lexer shrugged, the parser refused; P1 caught a
+     corpus bug on its first run.                                    *)
+
+EXCEPTION
+  SizeError (got, want: I64) ;
+
+PROCEDURE New (VAR pool: POOL ; rows, cols: I64) : PTR Matrix IN pool
+  RAISES SizeError ;
+  (* nonpositive dimensions are SizeError at the door, not a zero-
+     element surprise later.  Storage is defined-zero (par 4.3): the
+     M2 version handed out uninitialized REALs.                      *)
+
+PROCEDURE Rows (m: PTR Matrix) : I64 ;
+PROCEDURE Cols (m: PTR Matrix) : I64 ;
+  (* the two extents.  They are asked of the MATRIX and not carried
+     beside it by the caller, which is the whole reason this type
+     became a GRID 2 OF F64: when the shape lived in the caller's
+     head, Get (m, 0, 3) on a 2x3 matrix answered element (1,0) and
+     raised nothing, because index 3 is inside a 6-element flat
+     slice.  Now every axis is checked against its own extent.    *)
+
+PROCEDURE Get (m: PTR Matrix ; r, c: I64) : F64 ;
+PROCEDURE Set (VAR m: PTR Matrix ; r, c: I64 ; v: F64) ;
+  (* r/c bounds are checked runtime errors like all indexing:
+     always on, undeclarable, catchable.                             *)
+
+PROCEDURE ColReduce (m: PTR Matrix ; op: ReduceOp ; out: SLICE OF F64)
+  RAISES SizeError ;
+  (* out[c] receives the NaN-aware statistic of column c.  The M2
+     version silently skipped columns beyond HIGH (out); here
+     LEN (out) # Cols (m) is SizeError, said out loud.               *)
+
+PROCEDURE SubRowVector (VAR pool: POOL ; m: PTR Matrix ;
+                        RO v: SLICE OF F64)
+  : PTR Matrix IN pool
+  RAISES SizeError ;
+  (* result[r,c] := m[r,c] - v[c], broadcast over rows *)
+
+PROCEDURE MinMax (m: PTR Matrix ; VAR mn, mx: F64) ;
+  (* NaN-aware global range.  All-NaN input answers NaN twice --
+     the M2 version answered 0.0, which is a lie with digits.        *)
+
+(* ---- linear algebra, added for Bayesian inversions ----
+
+   The cited need: the ICOS inversion x = xb + B H^T K^-1 (y - H xb)
+   with K = H B H^T + R, which composes from multiply, transpose and
+   an SPD solve.  Everything answers a NEW matrix from the pool; the
+   inputs are never written.  Shape mismatches are SizeError with the
+   offending pair.  A general (non-SPD) LU solve is deliberately
+   absent until something needs it: K and B are covariance matrices,
+   and covariances are SPD or the problem is already wrong. *)
+
+EXCEPTION
+  NotSPD (row: I64) ;
+  (* Cholesky met a nonpositive pivot at this row: the matrix is not
+     symmetric positive definite.  For a covariance matrix that is a
+     data or modelling error worth a name, not a NaN worth nothing. *)
+
+PROCEDURE MulM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES SizeError ;
+  (* a (r x k) times b (k x c); Cols (a) # Rows (b) is SizeError *)
+
+PROCEDURE MulV (VAR pool: POOL ; a: PTR Matrix ; RO x: SLICE OF F64)
+  : PTR Matrix IN pool
+  RAISES SizeError ;
+  (* a times a column vector, answered as an n x 1 matrix so it can
+     feed straight back into MulM/CholSolve *)
+
+PROCEDURE Transpose (VAR pool: POOL ; m: PTR Matrix)
+  : PTR Matrix IN pool RAISES SizeError ;
+
+PROCEDURE AddM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES SizeError ;
+PROCEDURE SubM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES SizeError ;
+PROCEDURE Scale (VAR m: PTR Matrix ; s: F64) ;
+  (* in place, the one mutator: scaling allocates nothing *)
+
+PROCEDURE Identity (VAR pool: POOL ; n: I64) : PTR Matrix IN pool
+  RAISES SizeError ;
+PROCEDURE CopyM (VAR pool: POOL ; m: PTR Matrix) : PTR Matrix IN pool
+  RAISES SizeError ;
+
+PROCEDURE Cholesky (VAR pool: POOL ; a: PTR Matrix)
+  : PTR Matrix IN pool
+  RAISES SizeError, NotSPD, ValueRange ;
+  (* the lower-triangular L with L L^T = a.  Only the lower triangle
+     of a is read, which is the usual contract and means a matrix
+     that is SPD in its lower half is never betrayed by garbage in
+     its upper. *)
+
+PROCEDURE CholSolve (VAR pool: POOL ; l, b: PTR Matrix)
+  : PTR Matrix IN pool
+  RAISES SizeError ;
+  (* solve A X = B given L = Cholesky (A); B may carry many columns,
+     which is how the Kalman-style gain is built in one call *)
+
+PROCEDURE SpdInverse (VAR pool: POOL ; a: PTR Matrix)
+  : PTR Matrix IN pool
+  RAISES SizeError, NotSPD, ValueRange ;
+  (* CholSolve against the identity: the posterior covariance step *)
+
+END Mat.
+
+
+IMPLEMENTATION MODULE Mat ;
+
+IMPORT Math ;
+
+TYPE
+  Matrix = RECORD
+    d : GRID 2 OF F64 ;
+  END ;
+  (* The rows and cols fields are gone: a GRID carries its own extent
+     per axis, and LEN (d, 0) cannot disagree with the storage the way
+     a remembered `rows` could.
+
+     This module used to say `d[r * cols + c]` over a flat slice, and
+     that arithmetic is exactly the hole GRID closes: Get (m, 0, 3) on
+     a three-column matrix returned element (1,0) and raised NOTHING,
+     because index 3 is inside a six-element slice.  Measured, in
+     docs/nd-arrays.md, before the feature was designed.  The check is
+     now per axis and the driver asserts the raise.                  *)
+
+PROCEDURE IsNaN (v: F64) : BOOL =
+BEGIN
+  RETURN NOT (v = v)
+END IsNaN ;
+
+PROCEDURE New (VAR pool: POOL ; rows, cols: I64) : PTR Matrix IN pool
+  RAISES SizeError =
+VAR m : PTR Matrix IN pool ;
+BEGIN
+  IF rows <= 0 OR cols <= 0 THEN RAISE SizeError (rows, cols) END ;
+  m := NEW (pool, Matrix) ;
+  m.d := NEW (pool, F64, rows, cols) ;
+  RETURN m
+END New ;
+
+PROCEDURE Rows (m: PTR Matrix) : I64 =
+BEGIN
+  RETURN LEN (m.d, 0)
+END Rows ;
+
+PROCEDURE Cols (m: PTR Matrix) : I64 =
+BEGIN
+  RETURN LEN (m.d, 1)
+END Cols ;
+
+PROCEDURE Get (m: PTR Matrix ; r, c: I64) : F64 =
+BEGIN
+  RETURN m.d[r, c]
+END Get ;
+
+PROCEDURE Set (VAR m: PTR Matrix ; r, c: I64 ; v: F64) =
+BEGIN
+  m.d[r, c] := v
+END Set ;
+
+PROCEDURE ColReduce (m: PTR Matrix ; op: ReduceOp ; out: SLICE OF F64)
+  RAISES SizeError =
+VAR
+  r, c, n : I64 ;
+  acc, v  : F64 ;
+BEGIN
+  IF LEN (out) # LEN (m.d, 1) THEN
+    RAISE SizeError (LEN (out), LEN (m.d, 1))
+  END ;
+  FOR c := 0 TO LEN (m.d, 1) - 1 DO
+    n := 0 ;
+    acc := 0.0 ;
+    FOR r := 0 TO LEN (m.d, 0) - 1 DO
+      v := m.d[r, c] ;
+      IF NOT IsNaN (v) THEN
+        IF n = 0 THEN
+          acc := v
+        ELSE
+          CASE op OF
+          | Mean  : acc := acc + v
+          | Sum   : acc := acc + v
+          | Min   : IF v < acc THEN acc := v END
+          | Max   : IF v > acc THEN acc := v END
+          | Count :                      (* n does the counting *)
+          END
+        END ;
+        n := n + 1
+      END
+    END ;
+    IF n = 0 THEN
+      out[c] := 0.0 / 0.0                (* honest NaN for empty column *)
+    ELSE
+      CASE op OF
+      | Mean  : out[c] := acc / F64 (n)
+      | Sum   : out[c] := acc
+      | Min   : out[c] := acc
+      | Max   : out[c] := acc
+      | Count : out[c] := F64 (n)
+      END
+      (* both CASEs are total: the M2 version lumped arms into ELSE,
+         and adding an op there compiled clean and computed garbage.
+         Adding a ReduceOp variant here breaks this compile until
+         every arm answers.  [the partial-case museum piece]         *)
+    END
+  END
+END ColReduce ;
+
+PROCEDURE SubRowVector (VAR pool: POOL ; m: PTR Matrix ;
+                        RO v: SLICE OF F64)
+  : PTR Matrix IN pool
+  RAISES SizeError =
+VAR
+  res  : PTR Matrix IN pool ;
+  r, c : I64 ;
+BEGIN
+  IF LEN (v) # LEN (m.d, 1) THEN
+    RAISE SizeError (LEN (v), LEN (m.d, 1))
+  END ;
+  res := New (pool, LEN (m.d, 0), LEN (m.d, 1)) ;
+  FOR r := 0 TO LEN (m.d, 0) - 1 DO
+    FOR c := 0 TO LEN (m.d, 1) - 1 DO
+      res.d[r, c] := m.d[r, c] - v[c]
+    END
+  END ;
+  RETURN res
+END SubRowVector ;
+
+PROCEDURE MinMax (m: PTR Matrix ; VAR mn, mx: F64) =
+VAR
+  r, c : I64 ;
+  v    : F64 ;
+  seen : BOOL ;
+BEGIN
+  mn := 0.0 / 0.0 ;
+  mx := 0.0 / 0.0 ;
+  seen := FALSE ;
+  FOR r := 0 TO LEN (m.d, 0) - 1 DO
+  FOR c := 0 TO LEN (m.d, 1) - 1 DO
+    v := m.d[r, c] ;
+    IF NOT IsNaN (v) THEN
+      IF NOT seen THEN
+        mn := v ; mx := v ; seen := TRUE
+      ELSE
+        IF v < mn THEN mn := v END ;
+        IF v > mx THEN mx := v END
+      END
+    END
+  END
+  END
+END MinMax ;
+
+
+(* ---- linear algebra ---- *)
+
+PROCEDURE MulM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES SizeError =
+VAR
+  m : PTR Matrix IN pool ;
+  r, c, k : I64 ;
+  acc : F64 ;
+BEGIN
+  IF Cols (a) # Rows (b) THEN RAISE SizeError (Cols (a), Rows (b)) END ;
+  m := New (pool, Rows (a), Cols (b)) ;
+  FOR r := 0 TO Rows (a) - 1 DO
+    FOR c := 0 TO Cols (b) - 1 DO
+      acc := 0.0 ;
+      FOR k := 0 TO Cols (a) - 1 DO
+        acc := acc + a.d[r, k] * b.d[k, c]
+      END ;
+      m.d[r, c] := acc
+    END
+  END ;
+  RETURN m
+END MulM ;
+
+PROCEDURE MulV (VAR pool: POOL ; a: PTR Matrix ; RO x: SLICE OF F64)
+  : PTR Matrix IN pool
+  RAISES SizeError =
+VAR
+  m : PTR Matrix IN pool ;
+  r, k : I64 ;
+  acc : F64 ;
+BEGIN
+  IF Cols (a) # LEN (x) THEN RAISE SizeError (Cols (a), LEN (x)) END ;
+  m := New (pool, Rows (a), 1) ;
+  FOR r := 0 TO Rows (a) - 1 DO
+    acc := 0.0 ;
+    FOR k := 0 TO Cols (a) - 1 DO
+      acc := acc + a.d[r, k] * x[k]
+    END ;
+    m.d[r, 0] := acc
+  END ;
+  RETURN m
+END MulV ;
+
+PROCEDURE Transpose (VAR pool: POOL ; m: PTR Matrix)
+  : PTR Matrix IN pool RAISES SizeError =
+VAR
+  t : PTR Matrix IN pool ;
+  r, c : I64 ;
+BEGIN
+  t := New (pool, Cols (m), Rows (m)) ;
+  FOR r := 0 TO Rows (m) - 1 DO
+    FOR c := 0 TO Cols (m) - 1 DO
+      t.d[c, r] := m.d[r, c]
+    END
+  END ;
+  RETURN t
+END Transpose ;
+
+PROCEDURE Same (a, b: PTR Matrix) RAISES SizeError =
+BEGIN
+  IF Rows (a) # Rows (b) THEN RAISE SizeError (Rows (a), Rows (b)) END ;
+  IF Cols (a) # Cols (b) THEN RAISE SizeError (Cols (a), Cols (b)) END
+END Same ;
+
+PROCEDURE AddM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES SizeError =
+VAR
+  m : PTR Matrix IN pool ;
+  r, c : I64 ;
+BEGIN
+  Same (a, b) ;
+  m := New (pool, Rows (a), Cols (a)) ;
+  FOR r := 0 TO Rows (a) - 1 DO
+    FOR c := 0 TO Cols (a) - 1 DO
+      m.d[r, c] := a.d[r, c] + b.d[r, c]
+    END
+  END ;
+  RETURN m
+END AddM ;
+
+PROCEDURE SubM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES SizeError =
+VAR
+  m : PTR Matrix IN pool ;
+  r, c : I64 ;
+BEGIN
+  Same (a, b) ;
+  m := New (pool, Rows (a), Cols (a)) ;
+  FOR r := 0 TO Rows (a) - 1 DO
+    FOR c := 0 TO Cols (a) - 1 DO
+      m.d[r, c] := a.d[r, c] - b.d[r, c]
+    END
+  END ;
+  RETURN m
+END SubM ;
+
+PROCEDURE Scale (VAR m: PTR Matrix ; s: F64) =
+VAR r, c : I64 ;
+BEGIN
+  FOR r := 0 TO Rows (m) - 1 DO
+    FOR c := 0 TO Cols (m) - 1 DO
+      m.d[r, c] := m.d[r, c] * s
+    END
+  END
+END Scale ;
+
+PROCEDURE Identity (VAR pool: POOL ; n: I64) : PTR Matrix IN pool
+  RAISES SizeError =
+VAR
+  m : PTR Matrix IN pool ;
+  i : I64 ;
+BEGIN
+  m := New (pool, n, n) ;
+  FOR i := 0 TO n - 1 DO
+    m.d[i, i] := 1.0
+  END ;
+  RETURN m
+END Identity ;
+
+PROCEDURE CopyM (VAR pool: POOL ; m: PTR Matrix) : PTR Matrix IN pool
+  RAISES SizeError =
+VAR
+  t : PTR Matrix IN pool ;
+  r, c : I64 ;
+BEGIN
+  t := New (pool, Rows (m), Cols (m)) ;
+  FOR r := 0 TO Rows (m) - 1 DO
+    FOR c := 0 TO Cols (m) - 1 DO
+      t.d[r, c] := m.d[r, c]
+    END
+  END ;
+  RETURN t
+END CopyM ;
+
+PROCEDURE Cholesky (VAR pool: POOL ; a: PTR Matrix)
+  : PTR Matrix IN pool
+  RAISES SizeError, NotSPD, ValueRange =
+VAR
+  l : PTR Matrix IN pool ;
+  n, i, j, k : I64 ;
+  acc : F64 ;
+BEGIN
+  IF Rows (a) # Cols (a) THEN RAISE SizeError (Rows (a), Cols (a)) END ;
+  n := Rows (a) ;
+  l := New (pool, n, n) ;
+  FOR i := 0 TO n - 1 DO
+    FOR j := 0 TO i DO
+      acc := a.d[i, j] ;
+      FOR k := 0 TO j - 1 DO
+        acc := acc - l.d[i, k] * l.d[j, k]
+      END ;
+      IF i = j THEN
+        (* a nonpositive pivot is the definition of not-SPD; a NaN
+           reaching here also fails the comparison the other way and
+           then raises in Sqrt -- either way it cannot travel *)
+        IF acc <= 0.0 THEN RAISE NotSPD (i) END ;
+        l.d[i, j] := Math.Sqrt (acc)
+      ELSE
+        l.d[i, j] := acc / l.d[j, j]
+      END
+    END
+  END ;
+  RETURN l
+END Cholesky ;
+
+PROCEDURE CholSolve (VAR pool: POOL ; l, b: PTR Matrix)
+  : PTR Matrix IN pool
+  RAISES SizeError =
+VAR
+  x : PTR Matrix IN pool ;
+  n, i, k, c : I64 ;
+  acc : F64 ;
+BEGIN
+  IF Rows (l) # Cols (l) THEN RAISE SizeError (Rows (l), Cols (l)) END ;
+  IF Rows (b) # Rows (l) THEN RAISE SizeError (Rows (b), Rows (l)) END ;
+  n := Rows (l) ;
+  x := CopyM (pool, b) ;
+  FOR c := 0 TO Cols (b) - 1 DO
+    (* forward: L y = b *)
+    FOR i := 0 TO n - 1 DO
+      acc := x.d[i, c] ;
+      FOR k := 0 TO i - 1 DO
+        acc := acc - l.d[i, k] * x.d[k, c]
+      END ;
+      x.d[i, c] := acc / l.d[i, i]
+    END ;
+    (* back: L^T x = y *)
+    FOR i := n - 1 TO 0 BY -1 DO
+      acc := x.d[i, c] ;
+      FOR k := i + 1 TO n - 1 DO
+        acc := acc - l.d[k, i] * x.d[k, c]
+      END ;
+      x.d[i, c] := acc / l.d[i, i]
+    END
+  END ;
+  RETURN x
+END CholSolve ;
+
+PROCEDURE SpdInverse (VAR pool: POOL ; a: PTR Matrix)
+  : PTR Matrix IN pool
+  RAISES SizeError, NotSPD, ValueRange =
+VAR l : PTR Matrix IN pool ;
+BEGIN
+  l := Cholesky (pool, a) ;
+  RETURN CholSolve (pool, l, Identity (pool, Rows (a)))
+END SpdInverse ;
+
+END Mat.

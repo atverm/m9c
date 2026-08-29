@@ -1,0 +1,49 @@
+MODULE ThrTest ;
+
+(* THREAD and MONITOR, end to end.  A worker counts into a monitor
+   and signals it; the main thread waits.  The total is checked, so a
+   wait that returned early would be visible rather than plausible. *)
+
+IMPORT Io ;
+
+CONST N = 3000000 ;
+
+TYPE
+  Gate = MONITOR RECORD
+    done : BOOL ;
+    n : I64 ;
+  END ;
+
+PROCEDURE Work (VAR g: Gate) =
+VAR i : I64 ;
+BEGIN
+  (* bound to the monitor: this body holds the lock throughout *)
+  i := 0 ;
+  WHILE i < N DO
+    g.n := g.n + i MOD 7 ;
+    i := i + 1
+  END ;
+  g.done := TRUE ;
+  SIGNAL (g)
+END Work ;
+
+PROCEDURE Await (VAR g: Gate) =
+BEGIN
+  (* the predicate is re-tested after every wake, which is why
+     SIGNAL may broadcast *)
+  WHILE NOT g.done DO
+    WAIT (g)
+  END
+END Await ;
+
+VAR g : Gate ;
+
+BEGIN
+  g.done := FALSE ;
+  g.n := 0 ;
+  THREAD (Work, g) ;
+  Await (g) ;
+  Io.Write ('n = ') ;
+  Io.WriteI64 (g.n) ;
+  Io.WriteLine ('')
+END ThrTest.

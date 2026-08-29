@@ -1,0 +1,239 @@
+STATEFUL DEFINITION MODULE Logger ;
+
+(* Levelled, timestamped, structured logging to stderr.
+
+   Three decisions worth stating, because each is a place logging
+   libraries usually go wrong:
+
+     It goes to STDERR, always.  A log line in the program's output
+     stream corrupts whatever was being written there, and this
+     repository has a museum piece about diagnostics disappearing
+     into a buffer.  Every line is flushed as it is written.
+
+     It NEVER RAISES.  A logger that propagates failure turns a
+     diagnostic into a second fault, usually while handling the
+     first.  Timestamp formatting can fail in principle -- an
+     Instant can hold NaN -- so it is handled here and degrades to
+     a marker rather than escaping.
+
+     Fields are KEY=VALUE on one line, logfmt style, because a log
+     that a person can read and a machine can parse is worth more
+     than one that needs a library to do either.  M9 has no varargs,
+     so the shape is a builder: Start, then fields, then Done.
+
+   Output looks like
+
+     2026-08-22T14:03:09.250Z INFO opened store=bench.zarr chunks=64
+
+   The level is compared before anything is built, so a suppressed
+   Debug line costs a comparison and no formatting.                 *)
+
+CONST
+  Debug = 0 ; Info = 1 ; Warn = 2 ; Error = 3 ; Silent = 4 ;
+
+PROCEDURE SetLevel (level: I64) ;
+PROCEDURE Level () : I64 ;
+PROCEDURE Enabled (level: I64) : BOOL ;
+  (* the threshold, read and written.  A message at a level below
+     the threshold is dropped.
+
+       level -- one of the level constants above, and the ORDER is
+                the point: they increase with severity, so a
+                threshold admits itself and everything worse.
+
+     Enabled is what a caller asks BEFORE composing an expensive
+     message, so that formatting work a dropped line would waste is
+     not done at all.  It is the reason SetLevel/Level are exported
+     rather than being one hidden variable.                        *)
+
+PROCEDURE Msg (level: I64 ; RO text: STR) ;
+  (* the whole line in one call, for the common case *)
+
+PROCEDURE Start (level: I64 ; RO text: STR) ;
+PROCEDURE Str (RO key: STR ; RO val: STR) ;
+PROCEDURE Int (RO key: STR ; v: I64) ;
+PROCEDURE Real (RO key: STR ; v: F64 ; decimals: I64) ;
+PROCEDURE Bool (RO key: STR ; v: BOOL) ;
+PROCEDURE Done () ;
+  (* between Start and Done the line is held in module state, which
+     is why this module is STATEFUL and says so.  Fields written
+     without a Start are dropped rather than crowning some earlier
+     line: a lost field is a smaller bug than a corrupted record.  *)
+
+(* ---- where the lines go ----
+
+   A program that already calls Msg and Start/Done should not have to
+   be rewritten to reach the system log, so the sink is a switch and
+   not a second interface.  One call at startup, and every existing
+   call site follows.                                              *)
+
+PROCEDURE ToSyslog (RO ident: STR ; options: I64 ; facility: I64) ;
+  (* subsequent lines go to the system log under this ident, at a
+     priority derived from the level.  The timestamp and level word
+     are DROPPED from the text, because syslog records both itself
+     and a line carrying two of each is a line nobody can grep.
+     options are Syslog's, ORed: Syslog.Pid is the usual one, and
+     Syslog.Perror keeps the lines on stderr as well, which is what
+     a person wants while developing and a daemon does not. *)
+
+PROCEDURE ToStderr () ;
+  (* back to stderr, timestamp and level restored.  The default. *)
+
+END Logger.
+
+
+IMPLEMENTATION MODULE Logger ;
+
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Syslog ;
+IMPORT Time ;
+
+VAR
+  curLevel : I64 ;
+  building : BOOL ;
+  pool : POOL ;
+  line : PTR DynStr.DString IN pool ;
+  (* the sink, and what Done needs to feed it *)
+  toSyslog : BOOL ;
+  curFacility : I64 ;
+  curLevelOfLine : I64 ;
+  bodyAt : I64 ;   (* where the text starts, past stamp and level *)
+
+PROCEDURE SetLevel (level: I64) =
+BEGIN
+  curLevel := level
+END SetLevel ;
+
+PROCEDURE Level () : I64 =
+BEGIN
+  RETURN curLevel
+END Level ;
+
+PROCEDURE Enabled (level: I64) : BOOL =
+BEGIN
+  RETURN level >= curLevel
+END Enabled ;
+
+PROCEDURE LevelName (level: I64) : STR =
+BEGIN
+  CASE level OF
+  | Debug : RETURN 'DEBUG'
+  | Info  : RETURN 'INFO'
+  | Warn  : RETURN 'WARN'
+  | Error : RETURN 'ERROR'
+  ELSE RETURN '?'
+  END
+END LevelName ;
+
+(* the timestamp, or a marker if the clock produced something that
+   has no civil form.  Logging does not get to fail. *)
+PROCEDURE Stamp () : STR =
+BEGIN
+  RETURN Time.Iso (pool, Time.Now (), 3)
+EXCEPT
+| ValueRange :
+    RETURN '(no timestamp)'
+END Stamp ;
+
+PROCEDURE Start (level: I64 ; RO text: STR) =
+BEGIN
+  IF NOT Enabled (level) THEN RETURN END ;
+  line := DynStr.New (pool) ;
+  DynStr.Append (pool, line, Stamp ()) ;
+  DynStr.AppendChar (pool, line, ' ') ;
+  DynStr.Append (pool, line, LevelName (level)) ;
+  DynStr.AppendChar (pool, line, ' ') ;
+  (* remembered rather than recomputed: Done has to know where the
+     text begins to hand syslog a line without a second timestamp
+     and a second level word in it, and the only moment that offset
+     is known for certain is now *)
+  bodyAt := DynStr.Len (line) ;
+  curLevelOfLine := level ;
+  DynStr.Append (pool, line, text) ;
+  building := TRUE
+END Start ;
+
+PROCEDURE Key (RO key: STR) =
+BEGIN
+  DynStr.AppendChar (pool, line, ' ') ;
+  DynStr.Append (pool, line, key) ;
+  DynStr.AppendChar (pool, line, '=')
+END Key ;
+
+PROCEDURE Str (RO key: STR ; RO val: STR) =
+BEGIN
+  IF NOT building THEN RETURN END ;
+  Key (key) ;
+  DynStr.Append (pool, line, val)
+END Str ;
+
+PROCEDURE Int (RO key: STR ; v: I64) =
+BEGIN
+  IF NOT building THEN RETURN END ;
+  Key (key) ;
+  DynStr.AppendI64 (pool, line, v)
+END Int ;
+
+PROCEDURE Real (RO key: STR ; v: F64 ; decimals: I64) =
+BEGIN
+  IF NOT building THEN RETURN END ;
+  Key (key) ;
+  DynStr.Append (pool, line, Fmt.Fixed (pool, v, decimals))
+EXCEPT
+| ValueRange :
+    (* a magnitude Fixed will not scale still gets a field, because
+       a line with '?' in it beats a line that never arrived *)
+    DynStr.Append (pool, line, '?')
+END Real ;
+
+PROCEDURE Bool (RO key: STR ; v: BOOL) =
+BEGIN
+  IF NOT building THEN RETURN END ;
+  Key (key) ;
+  IF v THEN DynStr.Append (pool, line, 'true')
+  ELSE DynStr.Append (pool, line, 'false') END
+END Bool ;
+
+PROCEDURE Done () =
+VAR v : STR ;
+BEGIN
+  IF NOT building THEN RETURN END ;
+  v := DynStr.View (line) ;
+  IF toSyslog THEN
+    (* the body only: syslog stamps the time and records the
+       priority itself, so sending our own would put two of each on
+       every line and make the whole log ungreppable *)
+    Syslog.Send (Syslog.Pri (curFacility,
+                             Syslog.FromLoggerLevel (curLevelOfLine)),
+                 SLICE (v, bodyAt, LEN (v) - bodyAt))
+  ELSE
+    Io.ErrLine (v)
+  END ;
+  building := FALSE
+END Done ;
+
+PROCEDURE Msg (level: I64 ; RO text: STR) =
+BEGIN
+  Start (level, text) ;
+  Done ()
+END Msg ;
+
+PROCEDURE ToSyslog (RO ident: STR ; options: I64 ; facility: I64) =
+BEGIN
+  (* NoDelay is added unconditionally so that a program which cannot
+     reach the log finds out at startup, where a person is watching,
+     rather than at the first error, where nobody is *)
+  Syslog.Open (ident, options + Syslog.NoDelay, facility) ;
+  curFacility := facility ;
+  toSyslog := TRUE
+END ToSyslog ;
+
+PROCEDURE ToStderr () =
+BEGIN
+  IF toSyslog THEN Syslog.Close () END ;
+  toSyslog := FALSE
+END ToStderr ;
+
+END Logger.

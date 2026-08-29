@@ -1,0 +1,108 @@
+MODULE SerialTest ;
+
+(* [SERIAL] MEANS SERIALISED: many threads, one unsafe library, no
+   lost updates.
+
+   The C behind `Bump` reads a counter, spins, and writes it back --
+   the shape of every global-state race the attribute exists for
+   (blosc across threads, ecCodes on its default context).  Without a
+   gate, threads lose updates and the total comes out short.  The
+   generator emits the gate because the declaration says [SERIAL], so
+   the attribute is a guarantee rather than a rule to remember.
+
+   THE WORK IS DELIBERATELY OUTSIDE THE MONITOR, and that is the
+   lesson this test taught while being written.  A bound procedure --
+   one whose first parameter is the monitor -- holds the lock for its
+   WHOLE body.  Putting the bump loop in one made all eight threads
+   queue on the monitor instead of racing, and the test passed
+   without the gate because nothing ever ran concurrently.  So the
+   worker takes a plain record, does its work unlocked, and calls a
+   short bound procedure to record that it is done. *)
+
+IMPORT Io ;
+
+FROM cserial IMPORT Bump, Get ;
+
+CONST
+  NThreads = 8 ;
+  NBumps = 300 ;
+
+TYPE
+  Done = MONITOR RECORD
+    n : I64 ;
+  END ;
+
+  Job = RECORD
+    d : Done ;
+  END ;
+
+PROCEDURE Finish (VAR d: Done) =
+BEGIN
+  (* bound, and SHORT: the lock is held only for the update *)
+  d.n := d.n + 1 ;
+  SIGNAL (d)
+END Finish ;
+
+PROCEDURE Worker (VAR j: Job) =
+VAR i : I64 ;
+BEGIN
+  (* NOT bound: the bumps run unlocked, which is the whole point *)
+  i := 0 ;
+  WHILE i < NBumps DO
+    Bump () ;
+    i := i + 1
+  END ;
+  Finish (j.d)
+END Worker ;
+
+PROCEDURE AwaitAll (VAR d: Done) =
+BEGIN
+  WHILE d.n < NThreads DO
+    WAIT (d)
+  END
+END AwaitAll ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  i, got, want : I64 ;
+
+BEGIN
+  j := NEW (pool, Job) ;
+  j.d.n := 0 ;
+  i := 0 ;
+  WHILE i < NThreads DO
+    THREAD (Worker, j) ;
+    i := i + 1
+  END ;
+  AwaitAll (j.d) ;
+  got := -1 ;
+  BEGIN
+    got := I64 (Get ())
+  EXCEPT
+  | ValueRange :
+      got := -1
+  END ;
+  want := NThreads * NBumps ;
+  Io.Write ('bumps = ') ;
+  Io.WriteI64 (got) ;
+  Io.Write (' of ') ;
+  Io.WriteI64 (want) ;
+  IF got = want THEN
+    Io.WriteLine ('  OK')
+  ELSE
+    Io.WriteLine ('  LOST UPDATES')
+  END
+END SerialTest.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cserial ;
+
+(* a deliberately unsafe library: read, spin, write back.  [SERIAL]
+   is what makes calling it from eight threads defined rather than
+   lucky. *)
+
+PROCEDURE Bump = "m9_serial_bump" ()  [SERIAL] ;
+PROCEDURE Get  = "m9_serial_get"  () : C.SSizeT  [SERIAL] ;
+
+END cserial.

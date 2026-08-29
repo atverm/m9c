@@ -1,0 +1,946 @@
+DEFINITION MODULE Doc ;
+
+(* The DEFINITION module, as documentation.
+
+   M9 already puts the whole contract of a module in one place, and
+   the corpus already writes prose under every declaration there.
+   Nothing read those comments until now: the lexer threw them away
+   before a token was made, so there was nothing in the tree to
+   print.  Lex.Collect is the side channel that keeps them; this is
+   the client that gives them meaning.
+
+   AN ORDINARY CLIENT, on purpose -- the OpenApi precedent.  OpenApi
+   describes HttpServer's routes through the public accessors and has
+   no privileged access, which is what makes "the server cannot
+   disagree with its documentation" a checkable claim rather than a
+   promise.  The same applies here: this module reads Ast and Lex
+   through their published surfaces, renders signatures through
+   Print (the same procedure Sem uses to decide whether two
+   declarations are the same declaration), and adds no opinion of its
+   own about what M9 syntax looks like.
+
+   THE CONVENTION IS THE INDENT, and it was measured rather than
+   invented.  In a DEFINITION module:
+
+     - an INDENTED comment belongs to the declaration above it;
+     - a comment at COLUMN 1 is a section banner and belongs to
+       nothing;
+     - the first comment of the unit, before any declaration, is the
+       module's own.
+
+   Over the corpus that rule attaches every comment correctly.  The
+   seven it declines to attach are all at column 1 and all really are
+   banners -- Print's `*Text` group heading, NetCDF's `---- reading
+   ----`, Math's single-precision divider.  A rule that ignored the
+   indent would have mis-attributed every one of them.
+
+   A doc block is PROSE.  It may end with a blank line followed by a
+   run of `name -- what it is` lines, one per parameter; the block is
+   optional, no parameter need appear, and every name in one must be
+   a parameter of that procedure -- which is checked, and is the one
+   thing a caller can get wrong that this module reports as an error
+   rather than as a gap.  The blank line is required because three
+   comments in the corpus contain a mid-paragraph phrase of that
+   shape and are not parameter blocks. *)
+
+IMPORT Ast ;
+
+TYPE
+  (* Measured, never a gate.  A threshold on documentation makes
+     `(* obvious *)` a rational move, so this is reported like the
+     Fmt-against-printf rate: a number every run, and the tool that
+     prints it does not fail on it.
+
+     unknownParam is the exception and is meant to be: a `name --`
+     line naming something that is not a parameter is DRIFT, not
+     omission -- the doc and the signature have disagreed -- and that
+     is the asymmetry mandiff already enforces between --help and the
+     manual page. *)
+  Stats = RECORD
+    mods, modsDoc : I64 ;          (* definition units, and documented *)
+    procs, procsDoc : I64 ;        (* exported procedures, likewise *)
+    others, othersDoc : I64 ;      (* types, consts, exceptions *)
+    params, paramsDoc : I64 ;      (* named parameters, and explained *)
+    banners : I64 ;                (* column-1 comments, owned by nobody *)
+    unattached : I64 ;             (* indented, but nothing above it *)
+    unknownParam : I64 ;           (* a `name --` naming no parameter *)
+  END ;
+
+PROCEDURE Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ;
+                VAR st: Stats) : STR
+  RAISES IndexError ;
+  (* The same declarations as DATA.  One object: "module", "doc"
+     (the module's own comment, or null), and "declarations" -- for
+     every exported name its "kind" (procedure, type, const, var,
+     exception), "name", "line" and "doc"; for a procedure also the
+     rendered "signature", the "params" as a list of {names, mode,
+     type} with mode one of "", "VAR", "OWN", "RO", the "result"
+     (null for a proper procedure), the "raises" list, and the
+     "attrib" (null, or the bracketed word).  Every string is the
+     one Text prints, so a tool that reads this and a person who
+     reads the page are reading the same document; the gather is
+     shared and the renderers differ.
+
+     It exists so that "does M.P exist, and what does it take" is a
+     tool call and not a grep: the one class of error a fluent
+     generator makes most is a real name it did not look up, or a
+     guessed one, and a table copied into a prompt drifts in a day
+     (docs/skills-plan.md par 1, par 4). *)
+
+PROCEDURE Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ;
+                VAR st: Stats) : STR
+  RAISES IndexError ;
+  (* the Markdown reference for one file, and its measurements.
+
+       root     -- the NFile node Parse.File answered, for a source
+                   that was lexed with Lex.Collect ARMED.  Without
+                   that there are no comments to attach and every
+                   declaration reports as undocumented; the emptiness
+                   would be silent, which is why the caller arms it
+                   and this cannot.
+       modName  -- what to call the module in the heading.
+       st       -- ACCUMULATED into, not reset, so a caller
+                   documenting a whole library sums as it goes.
+
+     Only DEFINITION units are read.  An IMPLEMENTATION comment is a
+     note to whoever maintains the code, not part of the contract,
+     and publishing it would be publishing the wrong thing. *)
+
+END Doc.
+
+
+IMPLEMENTATION MODULE Doc ;
+
+IMPORT DynStr ;
+IMPORT Text ;
+IMPORT Print ;
+IMPORT Lex ;
+
+CONST
+  MaxAnchor = 4096 ;
+
+TYPE
+  (* a declaration a comment can attach to *)
+  Anchor = RECORD
+    line : I64 ;
+    kind : I64 ;
+    name : STR ;
+    sig : STR ;                    (* rendered; empty for non-procs *)
+    params : STR ;                 (* names, space-separated *)
+    doc : STR ;
+    hasDoc : BOOL ;                (* a comment of its own *)
+    shared : BOOL ;                (* covered by an adjacent group *)
+    (* the same signature as DATA, rendered once at Collect so the
+       JSON never re-walks the tree: the params array text, the
+       result type ('' for a proper procedure), the raises array
+       text, the attribute word ('' for none) *)
+    paramsJson : STR ;
+    resultText : STR ;
+    raisesJson : STR ;
+    attribText : STR ;
+  END ;
+
+(* NO MODULE STATE, deliberately.  The anchor table was a module
+   array in the first draft, and the FPC checker refused it --
+   `module-level state requires STATEFUL on the definition` -- while
+   the self-hosted one said nothing, which is how the hole in
+   Sem.m9's CheckConformance was found.  Both reject it now, and the
+   right answer was never STATEFUL: this module is a pure function
+   from a tree to text, and the table belongs in the caller's pool
+   like everything else it builds. *)
+
+(* ---- rendering, through Print rather than beside it ---- *)
+
+PROCEDURE Qual (VAR pool: POOL ; k: Ast.Kid) : STR =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  IF k IS SOME q THEN
+    DynStr.Append (pool, d, q.a) ;
+    IF LEN (q.b) > 0 THEN
+      DynStr.AppendChar (pool, d, '.') ;
+      DynStr.Append (pool, d, q.b)
+    END
+  END ;
+  RETURN DynStr.View (d)
+END Qual ;
+
+(* name (params) : ret RAISES ... [ATTR] -- the same shape Sem.SigOf
+   builds for def/impl conformance, and for the same reason: the
+   printer is what decides what a declaration says. *)
+PROCEDURE SigText (VAR pool: POOL ; p: PTR Ast.Node) : STR
+  RAISES IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, p.a) ;
+  DynStr.Append (pool, d, ' (') ;
+  IF p.nkids > 0 THEN
+    DynStr.Append (pool, d, Print.ParamsText (pool, p.kids[0]))
+  END ;
+  DynStr.AppendChar (pool, d, ')') ;
+  IF p.nkids > 1 THEN
+    IF p.kids[1] IS SOME rt THEN
+      DynStr.Append (pool, d, ' : ') ;
+      DynStr.Append (pool, d, Print.TypeText (pool, p.kids[1]))
+    END
+  END ;
+  IF p.nkids > 2 THEN
+    IF p.kids[2] IS SOME rs THEN
+      DynStr.Append (pool, d, ' RAISES ') ;
+      FOR i := 0 TO rs.nkids - 1 DO
+        IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
+        DynStr.Append (pool, d, Qual (pool, rs.kids[i]))
+      END
+    END
+  END ;
+  IF p.nkids > 3 THEN
+    IF p.kids[3] IS SOME at THEN
+      DynStr.Append (pool, d, ' [') ;
+      DynStr.Append (pool, d, at.a) ;
+      DynStr.AppendChar (pool, d, ']')
+    END
+  END ;
+  RETURN DynStr.View (d)
+END SigText ;
+
+(* every parameter NAME, space-separated and space-delimited, so a
+   membership test is a substring search for ' name ' *)
+PROCEDURE ParamNames (VAR pool: POOL ; p: PTR Ast.Node) : STR
+  RAISES IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, j : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (pool, d, ' ') ;
+  IF p.nkids > 0 THEN
+    IF p.kids[0] IS SOME pl THEN
+      FOR i := 0 TO pl.nkids - 1 DO
+        IF pl.kids[i] IS SOME pm THEN
+          IF pm.nkids > 0 THEN
+            IF pm.kids[0] IS SOME il THEN
+              FOR j := 0 TO il.nkids - 1 DO
+                IF il.kids[j] IS SOME id THEN
+                  DynStr.Append (pool, d, id.a) ;
+                  DynStr.AppendChar (pool, d, ' ')
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN DynStr.View (d)
+END ParamNames ;
+
+(* ---- the signature as data ---- *)
+
+(* a table, not CHR: CHR raises ValueRange, and that exception would
+   climb through every renderer into Collect, which the page's own
+   path never raises -- the checker said so, which is the point of
+   the checker.  Indexing raises only IndexError, already carried. *)
+PROCEDURE HexDigit (v: I64) : CHAR RAISES IndexError =
+VAR hex : STR ;
+BEGIN
+  hex := '0123456789abcdef' ;
+  RETURN hex[v]
+END HexDigit ;
+
+(* a JSON string literal: the quotes, the two characters that must
+   be escaped, and the three controls a comment can carry.  Anything
+   else below 0x20 cannot come out of the lexer's comment channel,
+   but is escaped rather than assumed away. *)
+PROCEDURE JsonStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO s: STR)
+  RAISES IndexError =
+VAR
+  i, c : I64 ;
+  ch : CHAR ;
+BEGIN
+  DynStr.AppendChar (pool, d, '"') ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    ch := s[i] ;
+    IF ch = '"' THEN
+      DynStr.Append (pool, d, '\"')
+    ELSIF ch = '\' THEN
+      DynStr.Append (pool, d, '\\')
+    ELSIF ch = 0AC THEN
+      DynStr.Append (pool, d, '\n')
+    ELSIF ch = 0DC THEN
+      DynStr.Append (pool, d, '\r')
+    ELSIF ch = 09C THEN
+      DynStr.Append (pool, d, '\t')
+    ELSIF ORD (ch) < 32 THEN
+      c := ORD (ch) ;
+      DynStr.Append (pool, d, '\u00') ;
+      DynStr.AppendChar (pool, d, HexDigit (c DIV 16)) ;
+      DynStr.AppendChar (pool, d, HexDigit (c MOD 16))
+    ELSE
+      DynStr.AppendChar (pool, d, ch)
+    END
+  END ;
+  DynStr.AppendChar (pool, d, '"')
+END JsonStr ;
+
+(* the parameter list as `[{"names":[..],"mode":"VAR","type":".."}]`,
+   reading the same nodes Print.EParams prints: f1 is VAR, f2 OWN,
+   f3 RO, kids[0] the names, kids[1] the type *)
+PROCEDURE ParamsJson (VAR pool: POOL ; p: PTR Ast.Node) : STR
+  RAISES IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, j : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (pool, d, '[') ;
+  IF p.nkids > 0 THEN
+    IF p.kids[0] IS SOME pl THEN
+      FOR i := 0 TO pl.nkids - 1 DO
+        IF pl.kids[i] IS SOME pm THEN
+          IF i > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
+          DynStr.Append (pool, d, '{"names":[') ;
+          IF pm.nkids > 0 THEN
+            IF pm.kids[0] IS SOME il THEN
+              FOR j := 0 TO il.nkids - 1 DO
+                IF il.kids[j] IS SOME id THEN
+                  IF j > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
+                  JsonStr (pool, d, id.a)
+                END
+              END
+            END
+          END ;
+          DynStr.Append (pool, d, '],"mode":') ;
+          IF pm.f1 THEN
+            DynStr.Append (pool, d, '"VAR"')
+          ELSIF pm.f2 THEN
+            DynStr.Append (pool, d, '"OWN"')
+          ELSIF pm.f3 THEN
+            DynStr.Append (pool, d, '"RO"')
+          ELSE
+            DynStr.Append (pool, d, '""')
+          END ;
+          DynStr.Append (pool, d, ',"type":') ;
+          IF pm.nkids > 1 THEN
+            JsonStr (pool, d, Print.TypeText (pool, pm.kids[1]))
+          ELSE
+            DynStr.Append (pool, d, '""')
+          END ;
+          DynStr.AppendChar (pool, d, '}')
+        END
+      END
+    END
+  END ;
+  DynStr.AppendChar (pool, d, ']') ;
+  RETURN DynStr.View (d)
+END ParamsJson ;
+
+PROCEDURE ResultText (VAR pool: POOL ; p: PTR Ast.Node) : STR
+  RAISES IndexError =
+BEGIN
+  IF p.nkids > 1 THEN
+    IF p.kids[1] IS SOME rt THEN
+      RETURN Print.TypeText (pool, p.kids[1])
+    END
+  END ;
+  RETURN ''
+END ResultText ;
+
+PROCEDURE RaisesJson (VAR pool: POOL ; p: PTR Ast.Node) : STR
+  RAISES IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (pool, d, '[') ;
+  IF p.nkids > 2 THEN
+    IF p.kids[2] IS SOME rs THEN
+      FOR i := 0 TO rs.nkids - 1 DO
+        IF i > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
+        JsonStr (pool, d, Qual (pool, rs.kids[i]))
+      END
+    END
+  END ;
+  DynStr.AppendChar (pool, d, ']') ;
+  RETURN DynStr.View (d)
+END RaisesJson ;
+
+PROCEDURE AttribText (p: PTR Ast.Node) : STR RAISES IndexError =
+BEGIN
+  IF p.nkids > 3 THEN
+    IF p.kids[3] IS SOME at THEN RETURN at.a END
+  END ;
+  RETURN ''
+END AttribText ;
+
+(* ---- anchors ---- *)
+
+PROCEDURE IsDecl (k: I64) : BOOL =
+BEGIN
+  RETURN k = Ast.NProcDecl OR k = Ast.NTypeDecl OR
+         k = Ast.NConstDecl OR k = Ast.NVarDecl OR k = Ast.NExcDecl
+END IsDecl ;
+
+PROCEDURE Collect (VAR pool: POOL ; n: PTR Ast.Node ;
+                   VAR anch: SLICE OF Anchor ; VAR nanch: I64)
+  RAISES IndexError =
+VAR i : I64 ;
+BEGIN
+  IF IsDecl (n.kind) AND nanch < LEN (anch) THEN
+    anch[nanch].line := n.line ;
+    anch[nanch].kind := n.kind ;
+    anch[nanch].name := n.a ;
+    anch[nanch].sig := '' ;
+    anch[nanch].params := ' ' ;
+    anch[nanch].doc := '' ;
+    anch[nanch].hasDoc := FALSE ;
+    anch[nanch].shared := FALSE ;
+    anch[nanch].paramsJson := '[]' ;
+    anch[nanch].resultText := '' ;
+    anch[nanch].raisesJson := '[]' ;
+    anch[nanch].attribText := '' ;
+    IF n.kind = Ast.NProcDecl THEN
+      anch[nanch].sig := SigText (pool, n) ;
+      anch[nanch].params := ParamNames (pool, n) ;
+      anch[nanch].paramsJson := ParamsJson (pool, n) ;
+      anch[nanch].resultText := ResultText (pool, n) ;
+      anch[nanch].raisesJson := RaisesJson (pool, n) ;
+      anch[nanch].attribText := AttribText (n)
+    END ;
+    nanch := nanch + 1
+  END ;
+  (* a VarDecl's names live in an identlist, and a procedure's body
+     is not here at all in a DEFINITION unit, so a plain recursive
+     walk finds exactly the declarations and nothing else *)
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME k THEN Collect (pool, k, anch, nanch) END
+  END
+END Collect ;
+
+(* the anchor a comment at `line` belongs to, or -1 *)
+PROCEDURE Owner (RO anch: SLICE OF Anchor ; nanch, line: I64) : I64 =
+VAR i, best : I64 ;
+BEGIN
+  best := -1 ;
+  FOR i := 0 TO nanch - 1 DO
+    IF anch[i].line <= line THEN best := i END
+  END ;
+  RETURN best
+END Owner ;
+
+(* ---- the comment body ---- *)
+
+(* strip the delimiters and the common indent, so the prose can be
+   re-flowed into Markdown without carrying M9's column 3 with it *)
+PROCEDURE Body (VAR pool: POOL ; RO t: STR) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, n, ind, run, col : I64 ;
+  atLineStart, counting : BOOL ;
+BEGIN
+  n := LEN (t) ;
+  i := 0 ;
+  IF n >= 2 THEN i := 2 END ;                  (* past the opener *)
+  IF n >= 4 THEN n := n - 2 END ;              (* before the closer *)
+
+  (* the common indent of the CONTINUATION lines.  The first line
+     begins right after the opener and has none, so it says nothing
+     about the block; a blank line says nothing either.  What is left
+     is the margin the source used, and removing it leaves the
+     RELATIVE indentation -- which is what makes a parameter block
+     still look like one. *)
+  ind := -1 ;
+  run := 0 ;
+  counting := FALSE ;
+  FOR i := i TO n - 1 DO
+    IF t[i] = 0AC THEN
+      counting := TRUE ;
+      run := 0
+    ELSIF counting THEN
+      IF t[i] = ' ' THEN
+        run := run + 1
+      ELSE
+        IF ind < 0 OR run < ind THEN ind := run END ;
+        counting := FALSE
+      END
+    END
+  END ;
+  IF ind < 0 THEN ind := 0 END ;
+
+  d := DynStr.New (pool) ;
+  i := 0 ;
+  IF LEN (t) >= 2 THEN i := 2 END ;
+  atLineStart := FALSE ;
+  col := 0 ;
+  WHILE i < n DO
+    IF t[i] = 0AC THEN
+      DynStr.AppendChar (pool, d, t[i]) ;
+      atLineStart := TRUE ;
+      col := 0
+    ELSIF atLineStart AND t[i] = ' ' AND col < ind THEN
+      col := col + 1                           (* drop the margin *)
+    ELSE
+      atLineStart := FALSE ;
+      DynStr.AppendChar (pool, d, t[i])
+    END ;
+    i := i + 1
+  END ;
+  RETURN Text.Trim (DynStr.View (d))
+END Body ;
+
+(* Is everything before the ' -- ' an identifier, or a comma-list of
+   them?  This is what separates a parameter line from a sentence,
+   and it is not optional: M9 prose uses ' -- ' as an em-dash
+   constantly, so without it
+
+       Too wide is never truncated -- it overflows the field
+
+   reads as a parameter called `Too wide is never truncated`.  Six
+   comments across the corpus did exactly that, and one of them --
+   Plot's `... IS module\n state, and ...` -- even produced an
+   identifier-shaped `state`, which is why the test runs on the
+   block's FIRST line and rejects the whole block rather than
+   skipping lines one at a time. *)
+PROCEDURE IsIdentList (RO s: STR) : BOOL =
+VAR
+  i, n : I64 ;
+  fresh : BOOL ;
+BEGIN
+  n := LEN (s) ;
+  IF n = 0 THEN RETURN FALSE END ;
+  fresh := TRUE ;
+  FOR i := 0 TO n - 1 DO
+    IF fresh THEN
+      IF NOT ((s[i] >= 'A' AND s[i] <= 'Z') OR
+              (s[i] >= 'a' AND s[i] <= 'z')) THEN RETURN FALSE END ;
+      fresh := FALSE
+    ELSIF s[i] = ',' THEN
+      fresh := TRUE
+    ELSIF s[i] = ' ' THEN
+      (* only as the separator after a comma: `a, b` is a list and
+         `two words` is a sentence *)
+      IF i + 1 < n THEN
+        IF s[i - 1] # ',' THEN RETURN FALSE END
+      END
+    ELSIF NOT ((s[i] >= 'A' AND s[i] <= 'Z') OR
+               (s[i] >= 'a' AND s[i] <= 'z') OR
+               (s[i] >= '0' AND s[i] <= '9')) THEN
+      RETURN FALSE
+    END
+  END ;
+  RETURN NOT fresh
+END IsIdentList ;
+
+(* the parameter block, if there is one: a blank line, then a run of
+   lines whose first word is followed by ' -- '.  The blank line is
+   required, because three comments in the corpus contain that shape
+   MID-PARAGRAPH and are prose, not parameter lists. *)
+PROCEDURE IsParamLine (RO ln: STR) : BOOL =
+VAR
+  t : STR ;
+  dash : I64 ;
+BEGIN
+  t := Text.Trim (ln) ;
+  dash := Text.Find (t, ' -- ') ;
+  IF dash <= 0 THEN RETURN FALSE END ;
+  RETURN IsIdentList (Text.Trim (SLICE (t, 0, dash)))
+END IsParamLine ;
+
+PROCEDURE ParamStart (RO b: STR) : I64 =
+VAR
+  i, lineStart, blank : I64 ;
+BEGIN
+  blank := -1 ;
+  i := 0 ;
+  lineStart := 0 ;
+  WHILE i < LEN (b) DO
+    IF b[i] = 0AC THEN
+      (* an empty or blank line resets the candidate *)
+      IF LEN (Text.Trim (SLICE (b, lineStart, i - lineStart))) = 0 THEN
+        blank := i + 1
+      ELSIF blank >= 0 THEN
+        (* first non-blank line after a blank: is it `name -- ...`? *)
+        IF IsParamLine (SLICE (b, lineStart, i - lineStart)) THEN
+          RETURN blank
+        END ;
+        blank := -1
+      END ;
+      lineStart := i + 1
+    END ;
+    i := i + 1
+  END ;
+  IF blank >= 0 AND lineStart < LEN (b) THEN
+    IF IsParamLine (SLICE (b, lineStart, LEN (b) - lineStart)) THEN
+      RETURN blank
+    END
+  END ;
+  RETURN -1
+END ParamStart ;
+
+(* every `name` at the head of a `name -- ...` line in the block.
+
+   names is the union over the GROUP, not just the owning
+   declaration: a comment placed after a run of declarations
+   documents all of them, so Io's
+
+       PROCEDURE WriteLine (RO s: STR) ;
+       PROCEDURE Write (RO s: STR) ;
+       PROCEDURE WriteI64 (v: I64) ;
+         (* ... s -- ... *)
+
+   legitimately names `s`, which is a parameter of the first two and
+   not of the third.  Checking against the owner alone reported eight
+   false drifts across the corpus, all of this shape. *)
+PROCEDURE CheckParams (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                       RO b: STR ; start: I64 ; RO names: STR ;
+                       VAR st: Stats) =
+VAR
+  i, lineStart, dash : I64 ;
+  ln, nm : STR ;
+BEGIN
+  i := start ;
+  lineStart := start ;
+  WHILE i <= LEN (b) DO
+    IF i = LEN (b) OR b[i] = 0AC THEN
+      ln := Text.Trim (SLICE (b, lineStart, i - lineStart)) ;
+      dash := Text.Find (ln, ' -- ') ;
+      IF dash > 0 AND IsParamLine (ln) THEN
+        nm := Text.Trim (SLICE (ln, 0, dash)) ;
+        (* `a, b -- both of them` names two; only the first is
+           checked, which is the honest limit and is stated *)
+        IF Text.FindChar (nm, ',') >= 0 THEN
+          nm := Text.Trim (SLICE (nm, 0, Text.FindChar (nm, ','))) 
+        END ;
+        IF LEN (nm) > 0 THEN
+          st.paramsDoc := st.paramsDoc + 1 ;
+          IF NOT Text.Contains (names, Cat3 (' ', nm, ' ')) THEN
+            st.unknownParam := st.unknownParam + 1 ;
+            (* SAID IN THE DOCUMENT, not merely counted.  The
+               document is what a reader sees, and a name that no
+               longer exists in the signature is exactly the drift
+               they would otherwise believe. *)
+            DynStr.Append (pool, d, '**drift: `') ;
+            DynStr.Append (pool, d, nm) ;
+            DynStr.Append (pool, d, '` is documented but is not a ') ;
+            DynStr.Append (pool, d, 'parameter here**') ;
+            DynStr.AppendChar (pool, d, 0AC)
+          END
+        END
+      END ;
+      lineStart := i + 1
+    END ;
+    i := i + 1
+  END
+END CheckParams ;
+
+PROCEDURE Cat3 (RO a: STR ; RO b: STR ; RO c: STR) : STR =
+VAR d : PTR DynStr.DString IN HEAP ;
+BEGIN
+  d := DynStr.New (HEAP) ;
+  DynStr.Append (HEAP, d, a) ;
+  DynStr.Append (HEAP, d, b) ;
+  DynStr.Append (HEAP, d, c) ;
+  RETURN DynStr.View (d)
+END Cat3 ;
+
+PROCEDURE CountWords (RO s: STR) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] # ' ' THEN
+      IF i = 0 THEN n := n + 1
+      ELSIF s[i - 1] = ' ' THEN n := n + 1 END
+    END
+  END ;
+  RETURN n
+END CountWords ;
+
+PROCEDURE KindWord (k: I64) : STR =
+BEGIN
+  IF k = Ast.NProcDecl THEN RETURN 'PROCEDURE' END ;
+  IF k = Ast.NTypeDecl THEN RETURN 'TYPE' END ;
+  IF k = Ast.NConstDecl THEN RETURN 'CONST' END ;
+  IF k = Ast.NVarDecl THEN RETURN 'VAR' END ;
+  RETURN 'EXCEPTION'
+END KindWord ;
+
+(* the parameters of every declaration this comment documents: the
+   owner, plus the run of `shared` declarations immediately above it *)
+PROCEDURE GroupParams (VAR pool: POOL ; RO anch: SLICE OF Anchor ;
+                       nanch, owner: I64) : STR
+  RAISES IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, anch[owner].params) ;
+  i := owner - 1 ;
+  WHILE i >= 0 DO
+    IF anch[i].shared THEN
+      DynStr.Append (pool, d, anch[i].params) ;
+      i := i - 1
+    ELSE
+      i := -1
+    END
+  END ;
+  RETURN DynStr.View (d)
+END GroupParams ;
+
+(* ---- the gather, shared by both renderers ---- *)
+
+(* the line the next unit starts on, or "forever": a unit owns the
+   comments from its own line down to there *)
+PROCEDURE UpTo (root: PTR Ast.Node ; u: I64) : I64 RAISES IndexError =
+VAR i, upTo : I64 ;
+BEGIN
+  upTo := 0 ;
+  FOR i := u + 1 TO root.nkids - 1 DO
+    IF upTo = 0 THEN
+      IF root.kids[i] IS SOME nx THEN upTo := nx.line END
+    END
+  END ;
+  IF upTo = 0 THEN upTo := 1000000000 END ;
+  RETURN upTo
+END UpTo ;
+
+(* every declaration of one DEFINITION unit with its comment
+   attached, the module's own comment, and the group-sharing marks.
+   Text and Json both start here, so they cannot disagree about
+   which comment belongs to what -- the only thing that differs
+   between them is the rendering. *)
+PROCEDURE Gather (VAR pool: POOL ; unit: PTR Ast.Node ; upTo: I64 ;
+                  VAR anch: SLICE OF Anchor ; VAR nanch: I64 ;
+                  VAR modDoc: STR ; VAR haveMod: BOOL ; VAR st: Stats)
+  RAISES IndexError =
+VAR
+  i, o : I64 ;
+  c : Lex.Comment ;
+BEGIN
+  nanch := 0 ;
+  Collect (pool, unit, anch, nanch) ;
+
+  modDoc := '' ;
+  haveMod := FALSE ;
+  FOR i := 0 TO Lex.ComCount () - 1 DO
+    c := Lex.ComAt (i) ;
+    IF c.line >= unit.line AND c.line < upTo THEN
+      o := Owner (anch, nanch, c.line) ;
+      IF o < 0 THEN
+        IF NOT haveMod THEN
+          modDoc := Body (pool, c.text) ;
+          haveMod := TRUE
+        ELSE
+          st.unattached := st.unattached + 1
+        END
+      ELSIF c.col = 1 THEN
+        st.banners := st.banners + 1
+      ELSIF anch[o].hasDoc THEN
+        st.unattached := st.unattached + 1
+      ELSE
+        anch[o].doc := Body (pool, c.text) ;
+        anch[o].hasDoc := TRUE
+      END
+    END
+  END ;
+
+  (* a group comment after the last member of an adjacent run
+     documents the whole run -- Text.FindChar/LastChar, Math's
+     trigonometric block.  Adjacent means the declarations sit
+     within two lines of each other, which is what a group looks
+     like and what a separated declaration does not. *)
+  FOR i := nanch - 2 TO 0 BY -1 DO
+    IF NOT anch[i].hasDoc AND NOT anch[i].shared THEN
+      IF anch[i + 1].hasDoc OR anch[i + 1].shared THEN
+        IF anch[i + 1].line - anch[i].line <= 2 THEN
+          anch[i].shared := TRUE
+        END
+      END
+    END
+  END
+END Gather ;
+
+PROCEDURE KindJson (k: I64) : STR =
+BEGIN
+  IF k = Ast.NProcDecl THEN RETURN 'procedure' END ;
+  IF k = Ast.NTypeDecl THEN RETURN 'type' END ;
+  IF k = Ast.NConstDecl THEN RETURN 'const' END ;
+  IF k = Ast.NVarDecl THEN RETURN 'var' END ;
+  RETURN 'exception'
+END KindJson ;
+
+PROCEDURE Json (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ;
+                VAR st: Stats) : STR
+  RAISES IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, u, nanch : I64 ;
+  anch : SLICE OF Anchor ;
+  modDoc : STR ;
+  haveMod, first : BOOL ;
+BEGIN
+  anch := NEW (pool, Anchor, MaxAnchor) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"module":') ;
+  JsonStr (pool, d, modName) ;
+  DynStr.Append (pool, d, ',"doc":') ;
+
+  (* the first DEFINITION unit is the module; a file holds one *)
+  first := TRUE ;
+  FOR u := 0 TO root.nkids - 1 DO
+    IF root.kids[u] IS SOME unit THEN
+      IF unit.kind = Ast.NDefinition AND first THEN
+        first := FALSE ;
+        Gather (pool, unit, UpTo (root, u), anch, nanch,
+                modDoc, haveMod, st) ;
+        st.mods := st.mods + 1 ;
+        IF haveMod THEN
+          st.modsDoc := st.modsDoc + 1 ;
+          JsonStr (pool, d, modDoc)
+        ELSE
+          DynStr.Append (pool, d, 'null')
+        END ;
+        DynStr.Append (pool, d, ',"declarations":[') ;
+        FOR i := 0 TO nanch - 1 DO
+          IF i > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
+          IF anch[i].kind = Ast.NProcDecl THEN
+            st.procs := st.procs + 1 ;
+            IF anch[i].hasDoc THEN st.procsDoc := st.procsDoc + 1 END
+          ELSE
+            st.others := st.others + 1 ;
+            IF anch[i].hasDoc THEN st.othersDoc := st.othersDoc + 1 END
+          END ;
+          DynStr.Append (pool, d, '{"kind":') ;
+          JsonStr (pool, d, KindJson (anch[i].kind)) ;
+          DynStr.Append (pool, d, ',"name":') ;
+          JsonStr (pool, d, anch[i].name) ;
+          DynStr.Append (pool, d, ',"line":') ;
+          DynStr.AppendI64 (pool, d, anch[i].line) ;
+          IF anch[i].kind = Ast.NProcDecl THEN
+            DynStr.Append (pool, d, ',"signature":') ;
+            JsonStr (pool, d, anch[i].sig) ;
+            DynStr.Append (pool, d, ',"params":') ;
+            DynStr.Append (pool, d, anch[i].paramsJson) ;
+            DynStr.Append (pool, d, ',"result":') ;
+            IF LEN (anch[i].resultText) > 0 THEN
+              JsonStr (pool, d, anch[i].resultText)
+            ELSE
+              DynStr.Append (pool, d, 'null')
+            END ;
+            DynStr.Append (pool, d, ',"raises":') ;
+            DynStr.Append (pool, d, anch[i].raisesJson) ;
+            DynStr.Append (pool, d, ',"attrib":') ;
+            IF LEN (anch[i].attribText) > 0 THEN
+              JsonStr (pool, d, anch[i].attribText)
+            ELSE
+              DynStr.Append (pool, d, 'null')
+            END
+          END ;
+          DynStr.Append (pool, d, ',"doc":') ;
+          IF anch[i].hasDoc THEN
+            JsonStr (pool, d, anch[i].doc)
+          ELSE
+            DynStr.Append (pool, d, 'null')
+          END ;
+          DynStr.Append (pool, d, ',"shared":') ;
+          IF anch[i].shared THEN
+            DynStr.Append (pool, d, 'true')
+          ELSE
+            DynStr.Append (pool, d, 'false')
+          END ;
+          DynStr.AppendChar (pool, d, '}')
+        END ;
+        DynStr.AppendChar (pool, d, ']')
+      END
+    END
+  END ;
+  IF first THEN
+    (* no definition unit at all: still a document, and an honest one *)
+    DynStr.Append (pool, d, 'null,"declarations":[]')
+  END ;
+  DynStr.AppendChar (pool, d, '}') ;
+  DynStr.AppendChar (pool, d, 0AC) ;
+  RETURN DynStr.View (d)
+END Json ;
+
+PROCEDURE Text (VAR pool: POOL ; root: PTR Ast.Node ; RO modName: STR ;
+                VAR st: Stats) : STR
+  RAISES IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, u, ps, nanch : I64 ;
+  anch : SLICE OF Anchor ;
+  modDoc : STR ;
+  haveMod : BOOL ;
+  b : STR ;
+BEGIN
+  anch := NEW (pool, Anchor, MaxAnchor) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '# ') ;
+  DynStr.Append (pool, d, modName) ;
+  DynStr.AppendChar (pool, d, 0AC) ;
+
+  FOR u := 0 TO root.nkids - 1 DO
+    IF root.kids[u] IS SOME unit THEN
+      IF unit.kind = Ast.NDefinition THEN
+        Gather (pool, unit, UpTo (root, u), anch, nanch,
+                modDoc, haveMod, st) ;
+
+        st.mods := st.mods + 1 ;
+        IF haveMod THEN st.modsDoc := st.modsDoc + 1 END ;
+        IF LEN (modDoc) > 0 THEN
+          DynStr.AppendChar (pool, d, 0AC) ;
+          DynStr.Append (pool, d, modDoc) ;
+          DynStr.AppendChar (pool, d, 0AC)
+        END ;
+
+        FOR i := 0 TO nanch - 1 DO
+          IF anch[i].kind = Ast.NProcDecl THEN
+            st.procs := st.procs + 1 ;
+            IF anch[i].hasDoc THEN st.procsDoc := st.procsDoc + 1 END ;
+            st.params := st.params + CountWords (anch[i].params)
+          ELSE
+            st.others := st.others + 1 ;
+            IF anch[i].hasDoc THEN st.othersDoc := st.othersDoc + 1 END
+          END ;
+
+          DynStr.AppendChar (pool, d, 0AC) ;
+          DynStr.Append (pool, d, '### ') ;
+          IF anch[i].kind = Ast.NProcDecl THEN
+            DynStr.Append (pool, d, anch[i].sig)
+          ELSE
+            DynStr.Append (pool, d, KindWord (anch[i].kind)) ;
+            DynStr.AppendChar (pool, d, ' ') ;
+            DynStr.Append (pool, d, anch[i].name)
+          END ;
+          DynStr.AppendChar (pool, d, 0AC) ;
+          DynStr.AppendChar (pool, d, 0AC) ;
+
+          IF anch[i].hasDoc THEN
+            b := anch[i].doc ;
+            ps := ParamStart (b) ;
+            IF ps >= 0 AND anch[i].kind = Ast.NProcDecl THEN
+              CheckParams (pool, d, b, ps,
+                           GroupParams (pool, anch, nanch, i), st)
+            END ;
+            DynStr.Append (pool, d, b) ;
+            DynStr.AppendChar (pool, d, 0AC)
+          ELSIF anch[i].shared THEN
+            DynStr.Append (pool, d, '_(documented with the group below)_') ;
+            DynStr.AppendChar (pool, d, 0AC)
+          ELSE
+            DynStr.Append (pool, d, '_(undocumented)_') ;
+            DynStr.AppendChar (pool, d, 0AC)
+          END
+        END
+      END
+    END
+  END ;
+  RETURN DynStr.View (d)
+END Text ;
+
+END Doc.

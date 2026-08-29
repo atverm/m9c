@@ -1,0 +1,269 @@
+DEFINITION MODULE Text ;
+
+(* Slice-of-CHAR utilities: search, trim, split, join, case.
+
+   Written because the reinventions had started again.  DynStr.Eq
+   exists at all because Json, ZarrStore and Http had each grown a
+   private slice-equality; since then Gen grew StartsW and FindCh,
+   M9c grew BaseName, and Http grew its own header scan.  That is the
+   ledger's "inventory before manufacturing" firing for the second
+   time, so this module is the inventory.
+
+   Everything that can return a VIEW returns a view.  Trim, Slice and
+   the pieces from Split are sub-slices of the caller's own storage:
+   no copy, no allocation, no pool argument, and the RO annotation
+   says the result must not be written through.  Only the procedures
+   that must build something new -- Join, Lower, Upper -- take a pool,
+   and their names say they are making rather than looking.
+
+   Case folding is ASCII ONLY and says so in its name's absence: there
+   is no Unicode case table here, because a wrong one is worse than
+   none and the corpus has no caller that needs Turkish dotless i. *)
+
+PROCEDURE Eq (RO a: STR ; RO b: STR) : BOOL ;
+  (* character-by-character equality, length first.  The same
+     function as DynStr.Eq and deliberately so: this module is the
+     inventory, and a caller who has Text imported should not have to
+     import DynStr as well to compare two slices.                   *)
+
+PROCEDURE Find (RO hay: STR ; RO needle: STR) : I64 ;
+  (* first index, or -1.  An empty needle is found at 0, which is the
+     convention every other language settled on and the one that
+     makes Find/Slice compose without a special case.               *)
+
+PROCEDURE FindChar (RO s: STR ; c: CHAR) : I64 ;
+PROCEDURE LastChar (RO s: STR ; c: CHAR) : I64 ;
+  (* first and last index of c, or -1 when it does not occur.  -1
+     rather than LEN (s) because -1 cannot be mistaken for a position
+     and will not silently index anything: the M2 habit of answering
+     a past-the-end index is how a not-found becomes a read.
+
+       c -- one scalar, not a set of them.  A search for any of
+            several characters is a loop the caller writes, because
+            M9 has no set type (report par 9.4) and inventing one
+            here would hide that.                                   *)
+
+PROCEDURE Contains (RO hay: STR ; RO needle: STR) : BOOL ;
+PROCEDURE StartsWith (RO s: STR ; RO prefix: STR) : BOOL ;
+PROCEDURE EndsWith (RO s: STR ; RO suffix: STR) : BOOL ;
+  (* the three yes/no forms.  An EMPTY needle, prefix or suffix is
+     always present, which follows from Find's empty-needle rule
+     above and is the answer that makes a loop over a possibly-empty
+     separator terminate.  Contains is Find (...) >= 0 and says so
+     rather than making every caller write it; Gen and M9c had both
+     grown a private StartsW before this module existed.            *)
+
+PROCEDURE Trim (RO s: STR) : STR ;
+PROCEDURE TrimLeft (RO s: STR) : STR ;
+PROCEDURE TrimRight (RO s: STR) : STR ;
+  (* blanks, tabs, CR and LF.  A VIEW of s, not a copy.            *)
+
+PROCEDURE CountChar (RO s: STR ; c: CHAR) : I64 ;
+  (* how many times c occurs.  Split allocates CountChar + 1 pieces,
+     which is what this is for: sizing the vector before filling it,
+     in one pass each, with no growable array in between.           *)
+
+PROCEDURE Split (VAR pool: POOL ; RO s: STR ; sep: CHAR)
+  : SLICE OF STR ;
+  (* n separators give n+1 pieces, empties included: 'a,,b' splits
+     into three, and ',' into two empty ones.  Dropping empties is a
+     different function, and callers that want it can say so; a split
+     that silently loses fields is how CSV readers corrupt data.
+     The PIECES are views into s -- only the vector is allocated.   *)
+
+PROCEDURE Join (VAR pool: POOL ; parts: SLICE OF STR ; RO sep: STR)
+  : STR ;
+  (* the inverse of Split, and exact: Join (Split (s, c), c) is s
+     again, because Split keeps its empties.
+
+       parts -- BORROWED and copied out of; the result is new
+                storage in pool and shares nothing with them, so the
+                pieces may be views of a buffer the caller is about
+                to reuse.
+       sep   -- placed BETWEEN pieces, so an empty parts gives an
+                empty result and a one-element parts gives that
+                element with no separator at all.                   *)
+
+PROCEDURE Lower (VAR pool: POOL ; RO s: STR) : STR ;
+PROCEDURE Upper (VAR pool: POOL ; RO s: STR) : STR ;
+  (* ASCII A..Z only; every other scalar passes through untouched *)
+
+END Text.
+
+
+IMPLEMENTATION MODULE Text ;
+
+IMPORT DynStr ;
+
+CONST
+  (* a table, not CHR (ORD (c) +- 32): CHR is a checked conversion
+     and would put a RAISES ValueRange on two total functions.
+     Indexing is checked too, but IndexError is predeclared and needs
+     no declaration, and 0..25 cannot reach it. *)
+  LowerAlpha = 'abcdefghijklmnopqrstuvwxyz' ;
+  UpperAlpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' ;
+
+PROCEDURE Eq (RO a: STR ; RO b: STR) : BOOL =
+BEGIN
+  RETURN DynStr.Eq (a, b)
+END Eq ;
+
+PROCEDURE StartsWith (RO s: STR ; RO prefix: STR) : BOOL =
+BEGIN
+  IF LEN (prefix) > LEN (s) THEN RETURN FALSE END ;
+  RETURN DynStr.Eq (SLICE (s, 0, LEN (prefix)), prefix)
+END StartsWith ;
+
+PROCEDURE EndsWith (RO s: STR ; RO suffix: STR) : BOOL =
+BEGIN
+  IF LEN (suffix) > LEN (s) THEN RETURN FALSE END ;
+  RETURN DynStr.Eq (SLICE (s, LEN (s) - LEN (suffix), LEN (suffix)),
+                    suffix)
+END EndsWith ;
+
+PROCEDURE Find (RO hay: STR ; RO needle: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  IF LEN (needle) = 0 THEN RETURN 0 END ;
+  IF LEN (needle) > LEN (hay) THEN RETURN -1 END ;
+  FOR i := 0 TO LEN (hay) - LEN (needle) DO
+    IF DynStr.Eq (SLICE (hay, i, LEN (needle)), needle) THEN
+      RETURN i
+    END
+  END ;
+  RETURN -1
+END Find ;
+
+PROCEDURE Contains (RO hay: STR ; RO needle: STR) : BOOL =
+BEGIN
+  RETURN Find (hay, needle) >= 0
+END Contains ;
+
+PROCEDURE FindChar (RO s: STR ; c: CHAR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = c THEN RETURN i END
+  END ;
+  RETURN -1
+END FindChar ;
+
+PROCEDURE LastChar (RO s: STR ; c: CHAR) : I64 =
+VAR i, found : I64 ;
+BEGIN
+  found := -1 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = c THEN found := i END
+  END ;
+  RETURN found
+END LastChar ;
+
+PROCEDURE CountChar (RO s: STR ; c: CHAR) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = c THEN n := n + 1 END
+  END ;
+  RETURN n
+END CountChar ;
+
+PROCEDURE Blank (c: CHAR) : BOOL =
+BEGIN
+  RETURN c = ' ' OR c = 09C OR c = 0DC OR c = 0AC
+END Blank ;
+
+PROCEDURE TrimLeft (RO s: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i < LEN (s) DO
+    IF NOT Blank (s[i]) THEN EXIT END ;
+    i := i + 1
+  END ;
+  RETURN SLICE (s, i, LEN (s) - i)
+END TrimLeft ;
+
+PROCEDURE TrimRight (RO s: STR) : STR =
+VAR n : I64 ;
+BEGIN
+  n := LEN (s) ;
+  WHILE n > 0 DO
+    IF NOT Blank (s[n - 1]) THEN EXIT END ;
+    n := n - 1
+  END ;
+  RETURN SLICE (s, 0, n)
+END TrimRight ;
+
+PROCEDURE Trim (RO s: STR) : STR =
+BEGIN
+  RETURN TrimLeft (TrimRight (s))
+END Trim ;
+
+PROCEDURE Split (VAR pool: POOL ; RO s: STR ; sep: CHAR)
+  : SLICE OF STR =
+VAR
+  parts : SLICE OF STR ;
+  i, start, n : I64 ;
+BEGIN
+  n := CountChar (s, sep) + 1 ;
+  parts := NEW (pool, STR, n) ;
+  n := 0 ;
+  start := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = sep THEN
+      (* a view into s: only the vector above was allocated *)
+      parts[n] := SLICE (s, start, i - start) ;
+      n := n + 1 ;
+      start := i + 1
+    END
+  END ;
+  parts[n] := SLICE (s, start, LEN (s) - start) ;
+  RETURN parts
+END Split ;
+
+PROCEDURE Join (VAR pool: POOL ; parts: SLICE OF STR ; RO sep: STR)
+  : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  FOR i := 0 TO LEN (parts) - 1 DO
+    IF i > 0 THEN DynStr.Append (pool, d, sep) END ;
+    DynStr.Append (pool, d, parts[i])
+  END ;
+  RETURN DynStr.View (d)
+END Join ;
+
+PROCEDURE Lower (VAR pool: POOL ; RO s: STR) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+  c : CHAR ;
+BEGIN
+  d := DynStr.New (pool) ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := s[i] ;
+    IF c >= 'A' AND c <= 'Z' THEN c := LowerAlpha[ORD (c) - 65] END ;
+    DynStr.AppendChar (pool, d, c)
+  END ;
+  RETURN DynStr.View (d)
+END Lower ;
+
+PROCEDURE Upper (VAR pool: POOL ; RO s: STR) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+  c : CHAR ;
+BEGIN
+  d := DynStr.New (pool) ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := s[i] ;
+    IF c >= 'a' AND c <= 'z' THEN c := UpperAlpha[ORD (c) - 97] END ;
+    DynStr.AppendChar (pool, d, c)
+  END ;
+  RETURN DynStr.View (d)
+END Upper ;
+
+END Text.
