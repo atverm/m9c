@@ -1,4 +1,4 @@
-# M9
+# M9 - Modula-9
 
 A Wirth-family language for code that must be *believed*: readable as a
 bank statement, checked like Rust, small enough to hold in one head —
