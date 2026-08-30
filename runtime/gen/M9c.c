@@ -383,22 +383,23 @@ static const uint32_t m9s315[49] = { 32u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 
 static const uint32_t m9s316[4] = { 109u, 57u, 99u, 32u };
 static const uint32_t m9s317[19] = { 109u, 57u, 99u, 58u, 32u, 110u, 111u, 32u, 115u, 111u, 117u, 114u, 99u, 101u, 32u, 102u, 105u, 108u, 101u };
 static const uint32_t m9s318[9] = { 77u, 57u, 76u, 73u, 66u, 82u, 65u, 82u, 89u };
-static const uint32_t m9s319[11] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 102u, 105u, 110u, 100u };
-static const uint32_t m9s320[5] = { 109u, 57u, 99u, 58u, 32u };
-static const uint32_t m9s321[11] = { 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s322[3] = { 46u, 109u, 100u };
-static const uint32_t m9s323[5] = { 46u, 106u, 115u, 111u, 110u };
-static const uint32_t m9s324[1] = { 58u };
-static const uint32_t m9s325[7] = { 58u, 32u, 103u, 101u, 110u, 58u, 32u };
-static const uint32_t m9s326[5] = { 109u, 57u, 99u, 58u, 32u };
-static const uint32_t m9s327[21] = { 32u, 103u, 101u, 110u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s328[2] = { 46u, 104u };
-static const uint32_t m9s329[2] = { 46u, 99u };
+static const uint32_t m9s319[1] = { 46u };
+static const uint32_t m9s320[11] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 102u, 105u, 110u, 100u };
+static const uint32_t m9s321[5] = { 109u, 57u, 99u, 58u, 32u };
+static const uint32_t m9s322[11] = { 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s323[3] = { 46u, 109u, 100u };
+static const uint32_t m9s324[5] = { 46u, 106u, 115u, 111u, 110u };
+static const uint32_t m9s325[1] = { 58u };
+static const uint32_t m9s326[7] = { 58u, 32u, 103u, 101u, 110u, 58u, 32u };
+static const uint32_t m9s327[5] = { 109u, 57u, 99u, 58u, 32u };
+static const uint32_t m9s328[21] = { 32u, 103u, 101u, 110u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s329[2] = { 46u, 104u };
 static const uint32_t m9s330[2] = { 46u, 99u };
-static const uint32_t m9s331[2] = { 46u, 104u };
-static const uint32_t m9s332[20] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 114u, 101u, 97u, 100u, 32u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 101u };
-static const uint32_t m9s333[18] = { 115u, 111u, 117u, 114u, 99u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s334[16] = { 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s331[2] = { 46u, 99u };
+static const uint32_t m9s332[2] = { 46u, 104u };
+static const uint32_t m9s333[20] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 114u, 101u, 97u, 100u, 32u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 101u };
+static const uint32_t m9s334[18] = { 115u, 111u, 117u, 114u, 99u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s335[16] = { 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u };
 
 static m9_sl_CHAR M9c_BaseName (m9_sl_CHAR path, m9_err *err);
 static void M9c_Diag (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err);
@@ -2532,8 +2533,15 @@ int main (int argc, char **argv)
     modName = name;
     M9c_DirAddPath (Io_Env (&(pool), ((m9_sl_CHAR){ (uint32_t *) m9s318, 9 }), err), true, err);
     if (err->exc) goto L_hdl_m9t1;
-    M9c_DirAdd (M9c_DirOf (main_, err), false, err);
+    bool m9t5 = ((M9c_DirOf (main_, err)).len == INT64_C(0));
     if (err->exc) goto L_hdl_m9t1;
+    if (m9t5) {
+      M9c_DirAdd (((m9_sl_CHAR){ (uint32_t *) m9s319, 1 }), false, err);
+      if (err->exc) goto L_hdl_m9t1;
+    } else {
+      M9c_DirAdd (M9c_DirOf (main_, err), false, err);
+      if (err->exc) goto L_hdl_m9t1;
+    }
     M9c_DirAdd (M9c_StdLib, true, err);
     if (err->exc) goto L_hdl_m9t1;
     mainSrc = M9c_TryRead (main_, &(found), err);
@@ -2542,7 +2550,7 @@ int main (int argc, char **argv)
       mainSrc = M9c_FindModule (name, &(main_), &(found), &(mainTrust), err);
       if (err->exc) goto L_hdl_m9t1;
       if ((!found)) {
-        M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s319, 11 }), M9c_SourceAt (INT64_C(0), err), err);
+        M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s320, 11 }), M9c_SourceAt (INT64_C(0), err), err);
         if (err->exc) goto L_hdl_m9t1;
         Io_Halt (INT64_C(1), err);
         if (err->exc) goto L_hdl_m9t1;
@@ -2552,9 +2560,9 @@ int main (int argc, char **argv)
     if (err->exc) goto L_hdl_m9t1;
     i = INT64_C(1);
     for (;;) {
-      bool m9t5 = ((M9c_SourceAt (i, err)).len > INT64_C(0));
+      bool m9t6 = ((M9c_SourceAt (i, err)).len > INT64_C(0));
       if (err->exc) goto L_hdl_m9t1;
-      if (!(m9t5)) break;
+      if (!(m9t6)) break;
       M9c_LoadDep (M9c_SourceAt (i, err), err);
       if (err->exc) goto L_hdl_m9t1;
       i = m9_add_i64 (i, INT64_C(1), err);
@@ -2580,9 +2588,9 @@ int main (int argc, char **argv)
         if (err->exc) goto L_hdl_m9t1;
       }
       if (doMake) {
-        bool m9t6 = (!M9c_MakeAll (err));
+        bool m9t7 = (!M9c_MakeAll (err));
         if (err->exc) goto L_hdl_m9t1;
-        if (m9t6) {
+        if (m9t7) {
           failed = true;
           Io_Halt (INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
@@ -2592,20 +2600,20 @@ int main (int argc, char **argv)
       if (err->exc) goto L_hdl_m9t1;
       Sem_CheckFile (root, err);
       if (err->exc) goto L_hdl_m9t1;
-      bool m9t7 = M9c_Report (err);
+      bool m9t8 = M9c_Report (err);
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t7) {
-        M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s320, 5 }), Sem_ErrCount (err), ((m9_sl_CHAR){ (uint32_t *) m9s321, 11 }), main_, err);
+      if (m9t8) {
+        M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s321, 5 }), Sem_ErrCount (err), ((m9_sl_CHAR){ (uint32_t *) m9s322, 11 }), main_, err);
         if (err->exc) goto L_hdl_m9t1;
         failed = true;
         Io_Halt (INT64_C(1), err);
         if (err->exc) goto L_hdl_m9t1;
       }
-      { int64_t m9t8to;
+      { int64_t m9t9to;
       i = INT64_C(0);
-      m9t8to = m9_sub_i64 (root->nkids, INT64_C(1), err);
+      m9t9to = m9_sub_i64 (root->nkids, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
-      for (; i <= m9t8to; i += 1) {
+      for (; i <= m9t9to; i += 1) {
         { Ast_Node * u = (*(Ast_Node * *) m9_at (root->kids.p, i, root->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_hdl_m9t1;
         if (u != NULL) {
@@ -2614,53 +2622,53 @@ int main (int argc, char **argv)
         } }
       } }
       if (doDoc) {
-        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s322, 3 }), err), M9c_DocText (root, name, err), err);
+        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s323, 3 }), err), M9c_DocText (root, name, err), err);
         if (err->exc) goto L_hdl_m9t1;
         if (doJson) {
-          Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s323, 5 }), err), M9c_JsonText (root, name, err), err);
+          Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s324, 5 }), err), M9c_JsonText (root, name, err), err);
           if (err->exc) goto L_hdl_m9t1;
         }
         goto L_ret;
       }
       Gen_Emit (name, err);
       if (err->exc) goto L_hdl_m9t1;
-      bool m9t9 = (Gen_Errs (err) > INT64_C(0));
+      bool m9t10 = (Gen_Errs (err) > INT64_C(0));
       if (err->exc) goto L_hdl_m9t1;
-      if (m9t9) {
+      if (m9t10) {
         i = INT64_C(0);
         for (;;) {
-          bool m9t10 = ((i < Gen_Errs (err)) && (i < INT64_C(8)));
+          bool m9t11 = ((i < Gen_Errs (err)) && (i < INT64_C(8)));
           if (err->exc) goto L_hdl_m9t1;
-          if (!(m9t10)) break;
-          M9c_DiagN (M9c_Cat (main_, ((m9_sl_CHAR){ (uint32_t *) m9s324, 1 }), err), Gen_ErrLineAt (i, err), ((m9_sl_CHAR){ (uint32_t *) m9s325, 7 }), Gen_ErrMsgAt (i, err), err);
+          if (!(m9t11)) break;
+          M9c_DiagN (M9c_Cat (main_, ((m9_sl_CHAR){ (uint32_t *) m9s325, 1 }), err), Gen_ErrLineAt (i, err), ((m9_sl_CHAR){ (uint32_t *) m9s326, 7 }), Gen_ErrMsgAt (i, err), err);
           if (err->exc) goto L_hdl_m9t1;
           i = m9_add_i64 (i, INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
         }
-        M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s326, 5 }), Gen_Errs (err), ((m9_sl_CHAR){ (uint32_t *) m9s327, 21 }), main_, err);
+        M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s327, 5 }), Gen_Errs (err), ((m9_sl_CHAR){ (uint32_t *) m9s328, 21 }), main_, err);
         if (err->exc) goto L_hdl_m9t1;
         failed = true;
       } else {
-        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s328, 2 }), err), Gen_HText (err), err);
+        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s329, 2 }), err), Gen_HText (err), err);
         if (err->exc) goto L_hdl_m9t1;
-        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s329, 2 }), err), Gen_CText (err), err);
+        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s330, 2 }), err), Gen_CText (err), err);
         if (err->exc) goto L_hdl_m9t1;
         if (doCompile) {
-          bool m9t11 = M9c_Compile (name, err);
+          bool m9t12 = M9c_Compile (name, err);
           if (err->exc) goto L_hdl_m9t1;
-          if (m9t11) {
+          if (m9t12) {
             if ((!keepC)) {
-              M9c_Drop (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s330, 2 }), err), err);
+              M9c_Drop (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s331, 2 }), err), err);
               if (err->exc) goto L_hdl_m9t1;
               if (doLink) {
-                M9c_Drop (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s331, 2 }), err), err);
+                M9c_Drop (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s332, 2 }), err), err);
                 if (err->exc) goto L_hdl_m9t1;
               }
             }
             if (((lib).len > INT64_C(0))) {
-              bool m9t12 = (!M9c_Archive (name, err));
+              bool m9t13 = (!M9c_Archive (name, err));
               if (err->exc) goto L_hdl_m9t1;
-              if (m9t12) {
+              if (m9t13) {
                 failed = true;
               }
             }
@@ -2680,7 +2688,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR path = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) path;
     err->exc = NULL;
-    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s332, 20 }), path, err);
+    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s333, 20 }), path, err);
     if (err->exc) goto L_ret;
     Io_Halt (INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -2688,7 +2696,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s333, 18 }), main_, err);
+    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s334, 18 }), main_, err);
     if (err->exc) goto L_ret;
     Io_Halt (INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -2696,7 +2704,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s334, 16 }), main_, err);
+    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s335, 16 }), main_, err);
     if (err->exc) goto L_ret;
     Io_Halt (INT64_C(1), err);
     if (err->exc) goto L_ret;

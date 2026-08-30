@@ -1644,7 +1644,16 @@ BEGIN
        file's own directory: a module's neighbours are almost always
        its imports, which is why `m9c corpus/M9c.m9` needs no -I *)
     DirAddPath (Io.Env (pool, 'M9LIBRARY'), TRUE) ;
-    DirAdd (DirOf (main), FALSE) ;
+    (* AND A BARE FILENAME NAMES THIS DIRECTORY.  DirOf answers empty
+       for `Top.m9` -- it names no directory -- and DirAdd drops an
+       empty string, so `m9c --make -o top Top.m9`, run in the very
+       directory the imports sit in, could not find them while
+       `m9c ... ./Top.m9` and `-I.` both could.  The rule says "the
+       directory FILE.m9 came from", and for a bare name that is the
+       current one; saying so here rather than in DirOf keeps
+       DirOf's own answer (empty means no directory) true. *)
+    IF LEN (DirOf (main)) = 0 THEN DirAdd ('.', FALSE)
+    ELSE DirAdd (DirOf (main), FALSE) END ;
     (* Last, and only as a fallback: where a package installs the
        standard modules.  An installed compiler that cannot find its
        own library without the user exporting a variable is a

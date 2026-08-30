@@ -684,7 +684,12 @@ BEGIN
 END Diamond.
 M9
 rm -f Base.o Base.h Mid.o Mid.h diamond
-M9LIBRARY="$SRC" "$M9C" --make -I. -o diamond ./Diamond.m9 >dm.txt 2>&1 ||
+# AND THE MAIN FILE IS NAMED BARE, no -I and no ./ -- the search
+# path's last entry is "the directory FILE.m9 came from", which for a
+# bare name is this one; DirOf answered empty and DirAdd dropped it,
+# so a program compiled in the very directory its imports sit in
+# could not find them (found 2026-08-30 writing the diamond above).
+M9LIBRARY="$SRC" "$M9C" --make -o diamond Diamond.m9 >dm.txt 2>&1 ||
   { echo "FAIL: --make could not build a diamond on the first run:"; \
     head -5 dm.txt; exit 1; }
 [ "$(./diamond)" = "diamond ok" ] ||
