@@ -1,0 +1,676 @@
+.\" Manual page for m9c, the M9 compiler.
+.\" Checked against m9c --help by runtime/test/mandiff.sh: every option
+.\" the program lists must appear here, and every option documented
+.\" here must be one the program lists.  A manual page that drifts
+.\" from the program is worse than none.
+.TH M9C 1 "2026-08-22" "M9" "M9 Compiler Manual"
+.
+.SH NAME
+m9c \- compile an M9 module to C11, and optionally to an object, a program or a library
+.
+.SH SYNOPSIS
+.B m9c
+.RI [ options ]
+.IR FILE .m9
+.RI [ DEP .m9 ...]
+.RB [ \-\-
+.IR ccflags ]
+.br
+.B m9c
+.BR \-\-help
+.
+.SH DESCRIPTION
+.B M9
+is a Wirth-family language \(em the Modula-2 and Oberon line \(em for
+code that is written quickly and audited slowly: data science,
+finance, research infrastructure. It aims to read like a bank
+statement and to refuse to compile the mistakes those programs
+actually make.
+.PP
+It is designed for code an AI agent writes and a person is answerable
+for. A generator is fluent and confident and has no memory of what
+went wrong last time, so the rules below are chosen to catch what
+fluency misses: a width that silently truncated, a case arm nobody
+wrote, a failure never declared, a pointer read without asking. Each
+is refused at compile time, so a reviewer reads the intent rather than
+hunting for the omission \(em and what the compiler accepts, it has
+proved rather than found plausible.
+.PP
+.IP \(bu 3
+Exact-width types only
+.RI ( I64 ", " F64 ", " U8
+and so on), with no implicit conversion between any two of them.
+.IP \(bu 3
+Bounds and overflow checks are semantics, not flags. There is no
+switch that removes them, and the measured cost is about three per
+cent.
+.IP \(bu 3
+No
+.BR NIL .
+A pointer that may be absent has type
+.B OPT
+and cannot be read without
+.BR "IS SOME" .
+.IP \(bu 3
+Every exception a procedure can raise appears in its signature, and
+the checker proves the list complete.
+.IP \(bu 3
+.B CASE
+over a variant record must cover every arm.
+.IP \(bu 3
+Memory is pools and owned pointers, with borrows checked at the
+parameter: no collector, and no
+.BR free (3)
+to get wrong.
+.IP \(bu 3
+Foreign C is declared, typed, and marked
+.B [SERIAL]
+or
+.BR [REENTRANT] ;
+calling a serial one from a thread is a compile error.
+.PP
+Every one of those rules exists because a real program failed without
+it, and the language report \(em which is the normative specification
+\(em says which.
+.PP
+.B m9c
+emits C11 and hands it to a C compiler, so an M9 program links against
+anything C links against.
+.PP
+.B m9c
+reads an M9 module, checks it, and writes
+.IB NAME .h
+and
+.IB NAME .c
+into the working directory, where
+.I NAME
+is the base name of the source file.
+.PP
+It checks before it generates. A program with a semantic error
+produces diagnostics on standard error, no output files at all, and a
+nonzero exit status. A compiler that translates what it knows to be
+wrong is a translator.
+.PP
+One module per invocation, deliberately: the generator holds exactly
+one module's registries, and a process is the reset.
+.PP
+With
+.B \-c
+or
+.BR \-o ,
+the generated C is handed to a C compiler and becomes a by-product
+rather than the output; see
+.BR "THE GENERATED C" .
+.
+.SH OPTIONS
+.TP
+.BI \-I " DIR" "\fR, \fP" \-I DIR
+Look for imported modules in
+.IR DIR .
+May be given more than once; the leftmost is searched first. Both the
+separated and the joined spelling are accepted, as
+.BR cc (1)
+accepts them.
+.TP
+.B \-c
+Compile
+.IB NAME .c
+to
+.IB NAME .o
+with the C compiler.
+.TP
+.BI \-o " EXE"
+Compile and link, naming the resulting program
+.IR EXE .
+.TP
+.BI \-\-ar " LIB" .a
+Compile, then collect this module and every module in its import
+closure into the static library
+.IR LIB .a
+with
+.BR ar (1).
+The archive holds M9 modules only: the runtime is its own deliverable
+and has its own archive, and a copy of it inside every library is two
+.B m9rt
+in one link.
+.TP
+.BI \-\-so " LIB" .so
+Compile, then link the same set into the shared object
+.IR LIB .so.
+A shared object resolves its own symbols at load time, so this one does
+get the runtime and the maths library, which an archive does not.
+Implies
+.BR \-\-pic .
+.TP
+.B \-\-make
+Before compiling, rebuild the stale part of the import closure, in
+dependency order \(em deepest first.
+.IP
+A module is stale when its object is older than its source, and
+ALSO when anything it could depend on has just been rebuilt.
+The second half is not optional: in
+.IR Base " \-> " Mid " \-> " Top ,
+changing
+.I Base
+leaves
+.IR Mid 's
+object newer than
+.IR Mid 's
+own source, so a rule that compared each module only against itself
+would leave
+.I Mid
+holding code compiled against the old
+.IR Base .
+Since the closure is walked deepest first, everything that could
+depend on a rebuilt module comes after it, and rebuilding the
+remainder is enough. This is deliberately conservative: a later
+module that does not in fact depend on the changed one is rebuilt
+anyway, which costs a compile and cannot be wrong.
+.IP
+.B m9c
+has always known which modules it needs \(em it resolves, reads and
+parses them before checking anything \(em and has always been willing
+to NAME the command that builds a missing one. This runs it.
+.IP
+Each dependency is built by re-invoking
+.B m9c
+as a subprocess rather than by recursing, because the compiler holds
+exactly one module's registries and a process is the reset. The flags
+that change what an object IS travel with it \(em the search path,
+.BR \-g ,
+.B \-\-pic
+and anything after
+.B \-\-
+\(em while those describing the final artifact do not.
+.IP
+The staleness test is one second's resolution, which is the
+resolution the filesystem records. A build that rewrites a source and
+recompiles it inside the same second is a build whose inputs nobody
+could have read either.
+.TP
+.B \-g
+Add
+.B \-g
+to the compiler line, so the object and the program carry debug
+information. Implies
+.BR \-\-keep\-c ,
+and must: the debug information names
+.IB NAME .c
+, so removing it would leave a debugger pointing at a file that is not
+there.
+.IP
+It ADDS and changes nothing else \(em in particular it does not lower
+the optimisation level; see
+.B "SUPPLIED FLAGS"
+for why, and for what the debug information therefore describes.
+.IP
+Without this flag m9c emits none at all. Objects are not stripped, so
+a backtrace still names
+.BR DynStr_Append ;
+what is missing is line numbers and locals.
+.TP
+.B \-\-doc
+Check the module, then write
+.IB NAME .md
+\(em the DEFINITION module as documentation \(em and nothing else. No
+C, no object, no linking; it cannot be combined with
+.BR \-c ,
+.BR \-o ,
+.B \-\-ar
+or
+.BR \-\-so ,
+and says so rather than guessing which was meant.
+.IP
+It still CHECKS. Documentation for a program the checker rejects
+describes a program that does not exist.
+.IP
+The document is the module's own comment, then every exported name
+with its rendered signature and the comment that follows it. An
+undocumented name is LISTED AND MARKED rather than omitted: a
+reference that silently drops half an interface is worse than one
+that shows the hole.
+.IP
+A comment may end with a blank line and then a run of
+.I "name \-\- what it is"
+lines. Every name in one must be a parameter of that procedure; one
+that is not is DRIFT rather than a gap \(em the documentation and the
+signature have disagreed \(em so it is written into the document and
+fails the run. How much is documented is reported under
+.B \-v
+and is never gated: a threshold on documentation makes an empty
+comment a rational move.
+.TP
+.B \-\-json
+With
+.BR \-\-doc ,
+which it implies, also write
+.IB NAME .json
+\(em the same declarations as data. One object: the module, its
+comment, and every exported name with its kind, its line and its
+comment; for a procedure also the rendered signature, the parameters
+as a list of names, mode and type, the result, the RAISES list and
+the attribute. Every string is the one the page prints, because the
+two are one gather rendered twice. For tools that look a name up
+rather than read a page: the one class of mistake a fluent generator
+makes most is a real name it did not look up, and a table copied
+into a prompt drifts in a day.
+.TP
+.B \-\-pic
+Compile position-independent. Not the default: on x86-64 it costs an
+indirection on every global, and the overwhelming majority of these
+objects go into a program or an archive, where it buys nothing. It is
+usually not needed for
+.B \-\-so
+either; see
+.B "SUPPLIED FLAGS"
+for why, and for the one case where it is.
+.TP
+.BR \-k ", " \-\-keep\-c
+Keep the generated C after
+.B \-c
+or
+.BR \-o .
+.TP
+.B \-\-no\-unsafe
+Refuse a program whose closure declares an
+.B UNSAFE
+unit or a foreign
+.RB ( "FOR \(dqC\(dq" )
+unit anywhere outside the trusted library directories \(em
+.B $M9LIBRARY
+and the installed library \(em naming each refused unit and its
+file, before anything is generated.  The shipped library's own
+foreign units pass; the point is that untrusted code gets the
+checked language and nothing underneath it, so an operating-system
+sandbox around the compiled program is a second wall rather than
+the only one.
+Without this the C is removed once the object exists. The
+.I header
+is kept by everything except
+.BR \-o :
+under
+.B \-c
+it is the module's interface and the next module's generated C
+includes it, and for
+.B \-\-ar
+and
+.B \-\-so
+it is how anybody calls the library at all.
+.TP
+.BR \-v ", " \-\-verbose
+Print the command handed to the C compiler, on standard error, before
+running it. This is the only way to see which flags
+.B m9c
+supplied for itself; see
+.BR "SUPPLIED FLAGS" .
+A bare
+.B \-v
+with no input file prints the version instead.
+.TP
+.B \-\-version
+Print the version and exit.
+.TP
+.B \-\-
+Pass everything after this point to the C compiler, verbatim \(em and
+turn off every flag
+.B m9c
+would have supplied for itself.
+.TP
+.BR \-? ", " \-h ", " \-\-help ", " \-\-usage
+Print a usage summary and exit successfully. Note that invoking
+.B m9c
+with no arguments also prints a usage summary but exits with status 1:
+asking for help succeeded, getting the usage because you gave no
+arguments did not.
+.
+.SH FINDING MODULES
+.B IMPORT
+names a module, not a file.
+.B m9c
+performs that translation itself, so dependencies usually need not be
+named on the command line at all.
+.PP
+The search path is, in order:
+.IP \(bu 3
+every
+.B \-I
+directory, leftmost first;
+.IP \(bu 3
+the directories in
+.BR $M9LIBRARY ,
+separated by colons, as
+.B $PATH
+is;
+.IP \(bu 3
+the directory
+.IR FILE .m9
+itself came from.
+.PP
+That last entry is why
+.B m9c corpus/M9c.m9
+needs no
+.B \-I
+at all: a module's neighbours are almost always its imports. The main
+argument is resolved through the path too, so with a library set
+.B m9c \-c DynStr
+works and the argument may be a module name rather than a path.
+.PP
+A dependency named explicitly on the command line still works and
+still wins, because a path someone typed is a statement about which
+file they meant \(em and about the order, which is why naming
+dependencies does not pull in theirs. Resolution fills only the gaps.
+.PP
+.B FROM
+.I u
+.B IMPORT
+is deliberately not resolved:
+.I u
+is a foreign unit backed by C, there is no
+.IR u .m9,
+and looking for one would invent files. Those are supplied to the C
+compiler after
+.BR \-\- .
+.PP
+A module that cannot be found is fatal before generation. Every
+missing module is named first, then
+.B m9c
+stops: without a module's source, everything downstream is guesswork.
+.
+.SH THE GENERATED C
+Without
+.B \-c
+or
+.BR \-o ,
+the C is the output and stays. With either, it is a by-product and is
+removed once the object exists, unless
+.B \-\-keep\-c
+says otherwise.
+.PP
+.B \-c
+keeps
+.IB NAME .h
+even so: it is the module's interface, and the next module's generated
+C includes it.
+.B \-o
+removes both, since nothing downstream is left to include anything.
+.PP
+The C compiler is
+.B $CC
+if that is set, and
+.B cc
+otherwise. A file name containing a single quote is refused rather
+than composed into a shell command.
+.
+.SH SUPPLIED FLAGS
+.B m9c
+is not a build system, and for a while that was stated by requiring
+every include path and every object after
+.BR \-\- ,
+which made the shortest real command four flags long and three of them
+the same every time. Being unwilling to guess is not the same as being
+unwilling to look.
+.PP
+So when nothing follows
+.BR \-\- ,
+.B m9c
+supplies what it can establish by looking:
+.IP \(bu 3
+.BI \-iquote " RT"
+and
+.BR "\-iquote ." ,
+where
+.I RT
+is
+.B $M9RUNTIME
+when that is set and has
+.I m9rt.h
+in it, else the installed headers in
+.IR /usr/include/m9 ,
+else
+.I runtime/
+or
+.I ../runtime/
+relative to the working directory;
+.IP \(bu 3
+.BR \-O2 ,
+.B \-flto
+and an inliner budget
+.RB ( "\-\-param max\-inline\-insns\-auto=200" )
+sized for checked code. The compiler's default budget refuses to
+inline a body that carries its own bounds and overflow tests, so the
+small helpers a hot loop calls stay calls; measured on a real
+numerical kernel, raising the budget was worth a factor 2.4 with
+results identical to the bit \(em more than removing the checks
+outright would have bought. clang accepts and ignores the parameter;
+.IP \(bu 3
+and, when linking, one object per module in the import closure it has
+just resolved \(em these are not guessed, they are the modules it read
+and checked a moment ago \(em together with the runtime and
+.BR \-lm .
+.PP
+The runtime that is linked is the one whose header was included: the
+sources beside that header when they are there, and the installed
+.I /usr/lib/libm9rt.a
+only when they are not. An installed archive underneath a source
+tree's header is how a newly added runtime function becomes an
+undefined reference at link time rather than a missing declaration at
+compile time.
+.PP
+A missing object is named, with the command that makes it, because the
+alternative is the C linker reporting our omission in its own
+vocabulary. Nothing is compiled in that case.
+.PP
+Anything after
+.B \-\-
+turns all of this off: the caller has taken the command line over, and
+a default added silently underneath a flag someone chose is worse than
+no default at all. Use
+.B \-v
+to see what was supplied.
+.PP
+.B "What \-g describes."
+.B \-g
+adds debug information and changes nothing else. It deliberately does
+not lower the optimisation level: silently altering how a program is
+compiled under a flag that asks for debug information is
+flag-dependent semantics, which is exactly what this language refuses
+by name. The defaults above are kept, so what a debugger reads are
+optimised-code line tables \(em accurate about which statement, and
+free to have moved or merged one. For an unoptimised build, take the
+line over with
+.BR \-\- .
+.PP
+Because the defaults include link-time optimisation, an object
+compiled with it holds intermediate code rather than machine code, and
+the debug information is produced when the program is LINKED \(em not
+in the object file, where looking for it finds nothing. This is the
+same mechanism described under position independence above.
+.PP
+The information describes the GENERATED C, because that is what the C
+compiler was given:
+.I DW_AT_name
+is
+.IB NAME .c
+and not
+.IB NAME .m9 .
+That is why
+.B \-g
+implies
+.BR \-\-keep\-c .
+Mapping the C back to M9 source would need line directives from the
+generator, which would move every byte it emits; it is not done here.
+.PP
+It keeps THIS module's C, and only this module's. A dependency's C
+was removed by the run that compiled it, so stepping into one needs
+that module to have been built with
+.B \-g
+as well \(em otherwise a debugger stops in the right function and
+reports
+.I "No such file or directory"
+for the line. One module per invocation is the rule everywhere else
+in this program, and it applies here too.
+.PP
+.B "Position independence, and why \-\-pic is usually unnecessary."
+Building a shared object with
+.B \-\-so
+would seem to require every member to be compiled
+.BR \-fPIC .
+Measured, that is only half true. Because
+.B m9c
+compiles with
+.BR \-flto ,
+an object produced by
+.B \-c
+holds intermediate code rather than machine code, and the code
+generation happens at
+.I link
+time \(em where
+.B \-shared
+asks for position independence and gets it. A closure built with a
+plain
+.B "m9c \-c"
+therefore goes into a shared object and works.
+.PP
+Put anything after
+.B \-\-
+and LTO departs with the rest of the defaults. The object is then
+really machine code, and
+.BR ld (1)
+refuses it:
+.IP
+.I "relocation R_X86_64_PC32 against `m9_exc_IndexError'"
+.br
+.I "can not be used when making a shared object; recompile with \-fPIC"
+.PP
+That is the case
+.B \-\-pic
+exists for, and
+.B m9c
+names it when the link fails. One further trap, also measured: the
+runtime arrives as
+.IR sources ,
+so the shared link compiles
+.I m9rt.c
+on the way through, and
+.BR gcc (1)
+does not imply
+.B \-fPIC
+from
+.BR \-shared .
+.B m9c
+supplies it there itself.
+.
+.SH ENVIRONMENT
+.TP
+.B M9LIBRARY
+Colon-separated list of directories to search for imported modules,
+after any
+.B \-I
+directories.
+.TP
+.B M9RUNTIME
+The directory holding
+.IR m9rt.h ,
+searched before the installed headers when
+.B m9c
+supplies the include paths itself. If it names a directory with no
+.I m9rt.h
+in it,
+.B m9c
+says so and keeps looking: a variable that is set is not thereby
+right.
+.TP
+.B CC
+The C compiler to invoke for
+.B \-c
+and
+.BR \-o .
+Defaults to
+.BR cc .
+.
+.SH EXIT STATUS
+.TP
+.B 0
+The module was checked, generated, and compiled if asked.
+.TP
+.B 1
+Something failed: a file could not be read, an import could not be
+found, the parser or the checker rejected the program, the generator
+refused a construct, or the C compiler reported errors. All
+diagnostics go to standard error.
+.
+.SH EXAMPLES
+Generate C for a module, then compile it by hand:
+.PP
+.RS
+.EX
+m9c corpus/Json.m9
+cc \-c \-iquote runtime \-iquote . Json.c
+.EE
+.RE
+.PP
+The same, in one step, from the top of a source tree \(em the include
+paths are found rather than typed:
+.PP
+.RS
+.EX
+m9c \-c corpus/Json.m9
+.EE
+.RE
+.PP
+A whole program, with no make and no build script. Nothing here names
+a path, an object, or the runtime:
+.PP
+.RS
+.EX
+export M9LIBRARY=corpus
+m9c \-c DynStr
+m9c \-c Io
+m9c \-o hello Hello
+.EE
+.RE
+.PP
+Installed, not even
+.B $M9LIBRARY
+is needed, since
+.I /usr/lib/m9
+is on the search path already:
+.PP
+.RS
+.EX
+m9c \-c DynStr
+m9c \-c Io
+m9c \-o hello hello.m9
+.EE
+.RE
+.PP
+And when one of those defaults is wrong, take the command line over.
+Everything after
+.B \-\-
+is the whole of it:
+.PP
+.RS
+.EX
+m9c \-c corpus/Json.m9 \-\- \-O2 \-iquote runtime \-iquote .
+.EE
+.RE
+.
+.SH NOTES
+Checks are semantics in M9, not flags. Bounds and overflow checking
+are part of what a program means and cannot be switched off; the
+measured cost is a few per cent \(em provided the inliner budget
+.B m9c
+supplies (see
+.BR "SUPPLIED FLAGS" ):
+under the compiler's default budget the checks' real price was the
+inlining they suppressed, not the tests themselves.
+.
+.SH SEE ALSO
+.BR cc (1),
+.BR syslog (3)
+.PP
+The language report is the normative specification and ships as
+.IR /usr/share/doc/m9/M9\-report.md .
+.
+.SH AUTHOR
+The M9 project.

@@ -89,10 +89,16 @@ done
 
 install -m 644 LICENSE           "$DESTDIR/usr/share/doc/m9/LICENSE"
 install -m 644 man/m9c.1         "$DESTDIR/usr/share/man/man1/m9c.1"
-install -m 644 docs/M9-report.md "$DESTDIR/usr/share/doc/m9/M9-report.md"
-install -m 644 docs/pools.md     "$DESTDIR/usr/share/doc/m9/pools.md"
-[ -f docs/bench.md ] && install -m 644 docs/bench.md \
-    "$DESTDIR/usr/share/doc/m9/bench.md"
+# The report, pools.md and the VS Code extension are in the private
+# development tree and the release tarball, NOT in the public
+# atverm/m9c (corpus, host/fpc, runtime, the man page and the module
+# reference only -- Alex, 2026-08-30).  An install from that tree says
+# what it is not installing instead of failing on the first of them.
+for d in docs/M9-report.md docs/pools.md docs/bench.md; do
+  if [ -f "$d" ]; then install -m 644 "$d" "$DESTDIR/usr/share/doc/m9/$(basename "$d")"
+  else echo "note: no $d in this tree; not installed"; fi
+done
+if [ -d tools/vscode-m9 ]; then
 # The VS Code extension: syntax highlighting plus docstring hovers
 # and completion (fed by m9c --doc).  Extensions are per-user, so
 # the package ships the files and the user links them in once:
@@ -112,5 +118,8 @@ printf '%s\n' \
   "VS Code.  Hovers and completion use /usr/bin/m9c; point" \
   "m9.includePaths at your build directory for cross-module docs." \
   > "$DESTDIR/usr/share/m9/vscode-m9/README.deb"
+else
+  echo "note: no tools/vscode-m9 in this tree; the extension is not installed"
+fi
 
 echo "installed"
