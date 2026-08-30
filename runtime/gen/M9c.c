@@ -52,6 +52,11 @@ static m9_sl_m9_sl_CHAR loaded;
 static int64_t nloaded;
 static m9_sl_m9_sl_CHAR order;
 static int64_t norder;
+static m9_sl_m9_sl_CHAR edgeFrom;
+static m9_sl_m9_sl_CHAR edgeTo;
+static int64_t nedge;
+static m9_sl_m9_sl_CHAR visiting;
+static int64_t nvisit;
 static m9_sl_Ast_Nodep depRoots;
 static m9_sl_m9_sl_CHAR depNames;
 static int64_t ndeps;
@@ -416,7 +421,13 @@ static m9_sl_CHAR M9c_TryRead (m9_sl_CHAR path, bool *ok, m9_err *err);
 static m9_sl_CHAR M9c_FindModule (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_err *err);
 static bool M9c_IsLoaded (m9_sl_CHAR name, m9_err *err);
 static void M9c_MarkLoaded (m9_sl_CHAR name, m9_err *err);
+static void M9c_AddEdge (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err);
 static void M9c_Ordered (m9_sl_CHAR name, m9_err *err);
+static bool M9c_IsVisiting (m9_sl_CHAR name, m9_err *err);
+static void M9c_PushVisit (m9_sl_CHAR name, m9_err *err);
+static bool M9c_IsOrdered (m9_sl_CHAR name, m9_err *err);
+static void M9c_OrderDfs (m9_sl_CHAR name, m9_err *err);
+static void M9c_BuildOrder (m9_err *err);
 static bool M9c_Quotable (m9_sl_CHAR s, m9_err *err);
 static void M9c_AppendQuoted (DynStr_DString * *d, m9_sl_CHAR s, m9_err *err);
 static m9_sl_CHAR M9c_CcName (m9_err *err);
@@ -448,7 +459,7 @@ static m9_sl_CHAR M9c_Fetch (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *
 static void M9c_Missing (m9_sl_CHAR name, m9_err *err);
 static void M9c_LoadDirect (m9_sl_CHAR name, m9_err *err);
 static void M9c_LoadIndirect (m9_sl_CHAR name, m9_err *err);
-static void M9c_WalkImports (Ast_Node * root, bool direct, m9_err *err);
+static void M9c_WalkImports (Ast_Node * root, bool direct, m9_sl_CHAR owner, m9_err *err);
 static void M9c_LoadDep (m9_sl_CHAR path, m9_err *err);
 static void M9c_FillGaps (Ast_Node * mainRoot, m9_err *err);
 static bool M9c_Report (m9_err *err);
@@ -803,6 +814,39 @@ L_ret: ;
   return;
 }
 
+static void M9c_AddEdge (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err)
+{
+  m9_sl_m9_sl_CHAR nf = {0}; (void) nf;
+  m9_sl_m9_sl_CHAR nt = {0}; (void) nt;
+  int64_t i = 0; (void) i;
+  if ((nedge == (edgeFrom).len)) {
+    nf = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (edgeFrom).len, err), INT64_C(16), err), err);
+    if (err->exc) goto L_ret;
+    nt = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (edgeFrom).len, err), INT64_C(16), err), err);
+    if (err->exc) goto L_ret;
+    { int64_t m9t1to;
+    i = INT64_C(0);
+    m9t1to = m9_sub_i64 (nedge, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t1to; i += 1) {
+      (*(m9_sl_CHAR *) m9_at (nf.p, i, nf.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (edgeFrom.p, i, edgeFrom.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+      (*(m9_sl_CHAR *) m9_at (nt.p, i, nt.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (edgeTo.p, i, edgeTo.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    } }
+    edgeFrom = nf;
+    edgeTo = nt;
+  }
+  (*(m9_sl_CHAR *) m9_at (edgeFrom.p, nedge, edgeFrom.len, sizeof (m9_sl_CHAR), err)) = a;
+  if (err->exc) goto L_ret;
+  (*(m9_sl_CHAR *) m9_at (edgeTo.p, nedge, edgeTo.len, sizeof (m9_sl_CHAR), err)) = b;
+  if (err->exc) goto L_ret;
+  nedge = m9_add_i64 (nedge, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  return;
+}
+
 static void M9c_Ordered (m9_sl_CHAR name, m9_err *err)
 {
   m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
@@ -835,6 +879,125 @@ static void M9c_Ordered (m9_sl_CHAR name, m9_err *err)
   if (err->exc) goto L_ret;
   norder = m9_add_i64 (norder, INT64_C(1), err);
   if (err->exc) goto L_ret;
+L_ret: ;
+  return;
+}
+
+static bool M9c_IsVisiting (m9_sl_CHAR name, m9_err *err)
+{
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (nvisit, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = DynStr_Eq ((*(m9_sl_CHAR *) m9_at (visiting.p, i, visiting.len, sizeof (m9_sl_CHAR), err)), name, err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      m9ret = true;
+      goto L_ret;
+    }
+  } }
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  return m9ret;
+}
+
+static void M9c_PushVisit (m9_sl_CHAR name, m9_err *err)
+{
+  m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
+  int64_t i = 0; (void) i;
+  if ((nvisit == (visiting).len)) {
+    nb = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (visiting).len, err), INT64_C(8), err), err);
+    if (err->exc) goto L_ret;
+    { int64_t m9t1to;
+    i = INT64_C(0);
+    m9t1to = m9_sub_i64 (nvisit, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t1to; i += 1) {
+      (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (visiting.p, i, visiting.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    } }
+    visiting = nb;
+  }
+  (*(m9_sl_CHAR *) m9_at (visiting.p, nvisit, visiting.len, sizeof (m9_sl_CHAR), err)) = name;
+  if (err->exc) goto L_ret;
+  nvisit = m9_add_i64 (nvisit, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  return;
+}
+
+static bool M9c_IsOrdered (m9_sl_CHAR name, m9_err *err)
+{
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (norder, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = DynStr_Eq ((*(m9_sl_CHAR *) m9_at (order.p, i, order.len, sizeof (m9_sl_CHAR), err)), name, err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      m9ret = true;
+      goto L_ret;
+    }
+  } }
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  return m9ret;
+}
+
+static void M9c_OrderDfs (m9_sl_CHAR name, m9_err *err)
+{
+  int64_t i = 0; (void) i;
+  bool m9t1 = M9c_IsOrdered (name, err);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    goto L_ret;
+  }
+  bool m9t2 = M9c_IsVisiting (name, err);
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    goto L_ret;
+  }
+  M9c_PushVisit (name, err);
+  if (err->exc) goto L_ret;
+  { int64_t m9t3to;
+  i = INT64_C(0);
+  m9t3to = m9_sub_i64 (nedge, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t3to; i += 1) {
+    bool m9t4 = DynStr_Eq ((*(m9_sl_CHAR *) m9_at (edgeFrom.p, i, edgeFrom.len, sizeof (m9_sl_CHAR), err)), name, err);
+    if (err->exc) goto L_ret;
+    if (m9t4) {
+      M9c_OrderDfs ((*(m9_sl_CHAR *) m9_at (edgeTo.p, i, edgeTo.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+    }
+  } }
+  M9c_Ordered (name, err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  return;
+}
+
+static void M9c_BuildOrder (m9_err *err)
+{
+  int64_t i = 0; (void) i;
+  nvisit = INT64_C(0);
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (nloaded, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    nvisit = INT64_C(0);
+    M9c_OrderDfs ((*(m9_sl_CHAR *) m9_at (loaded.p, i, loaded.len, sizeof (m9_sl_CHAR), err)), err);
+    if (err->exc) goto L_ret;
+  } }
 L_ret: ;
   return;
 }
@@ -2377,18 +2540,16 @@ static void M9c_LoadIndirect (m9_sl_CHAR name, m9_err *err)
   if (root != NULL) {
     M9c_ScanUnsafe (root, path, trusted, err);
     if (err->exc) goto L_ret;
-    M9c_WalkImports (root, false, err);
+    M9c_WalkImports (root, false, name, err);
     if (err->exc) goto L_ret;
     M9c_Absorb (root, false, err);
-    if (err->exc) goto L_ret;
-    M9c_Ordered (name, err);
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
   return;
 }
 
-static void M9c_WalkImports (Ast_Node * root, bool direct, m9_err *err)
+static void M9c_WalkImports (Ast_Node * root, bool direct, m9_sl_CHAR owner, m9_err *err)
 {
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
@@ -2421,6 +2582,10 @@ static void M9c_WalkImports (Ast_Node * root, bool direct, m9_err *err)
                 { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, k, ids->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
                 if (id != NULL) {
+                  if (((owner).len > INT64_C(0))) {
+                    M9c_AddEdge (owner, id->a, err);
+                    if (err->exc) goto L_ret;
+                  }
                   if (direct) {
                     M9c_LoadDirect (id->a, err);
                     if (err->exc) goto L_ret;
@@ -2467,7 +2632,7 @@ static void M9c_FillGaps (Ast_Node * mainRoot, m9_err *err)
 {
   int64_t i = 0; (void) i;
   int64_t upto = 0; (void) upto;
-  M9c_WalkImports (mainRoot, true, err);
+  M9c_WalkImports (mainRoot, true, modName, err);
   if (err->exc) goto L_ret;
   upto = ndeps;
   { int64_t m9t1to;
@@ -2478,22 +2643,14 @@ static void M9c_FillGaps (Ast_Node * mainRoot, m9_err *err)
     { Ast_Node * r = (*(Ast_Node * *) m9_at (depRoots.p, i, depRoots.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (r != NULL) {
-      M9c_WalkImports (r, false, err);
-      if (err->exc) goto L_ret;
-      M9c_Ordered ((*(m9_sl_CHAR *) m9_at (depNames.p, i, depNames.len, sizeof (m9_sl_CHAR), err)), err);
+      M9c_WalkImports (r, false, (*(m9_sl_CHAR *) m9_at (depNames.p, i, depNames.len, sizeof (m9_sl_CHAR), err)), err);
       if (err->exc) goto L_ret;
     } }
   } }
-  M9c_WalkImports (mainRoot, false, err);
+  M9c_WalkImports (mainRoot, false, modName, err);
   if (err->exc) goto L_ret;
-  { int64_t m9t2to;
-  i = m9_sub_i64 (nloaded, INT64_C(1), err);
-  m9t2to = INT64_C(0);
+  M9c_BuildOrder (err);
   if (err->exc) goto L_ret;
-  for (; i >= m9t2to; i += -1) {
-    M9c_Ordered ((*(m9_sl_CHAR *) m9_at (loaded.p, i, loaded.len, sizeof (m9_sl_CHAR), err)), err);
-    if (err->exc) goto L_ret;
-  } }
 L_ret: ;
   return;
 }

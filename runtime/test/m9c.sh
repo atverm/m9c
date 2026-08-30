@@ -714,6 +714,32 @@ BEGIN
   IF x = 4.0 THEN Io.WriteLine ('diamond ok') ELSE Io.WriteLine ('diamond WRONG') END
 END Diamond.
 M9
+# AND THE SHARED MODULE IS IMPORTED SECOND, which is the case the
+# first version of this gate could not see: Top importing Base then
+# Mid passed even while the ordering was wrong, because Base happened
+# to be marked loaded first.  With Mid FIRST, Base is a direct import
+# that is also Mid's dependency -- LoadDirect marks it before any
+# subtree is walked -- and the arrival-order fix put Mid ahead of it.
+# The order is computed from the import GRAPH now, so both spellings
+# build.  Found by an I/O probe importing Http, Io, Time, Fmt where
+# Time imports Fmt (2026-08-30).
+cat > Diamond2.m9 <<'M9'
+MODULE Diamond2 ;
+IMPORT Mid ;
+IMPORT Base ;
+IMPORT Io ;
+VAR x : Base.Real ;
+BEGIN
+  x := Mid.Twice (Base.Two ()) ;
+  IF x = 4.0 THEN Io.WriteLine ('diamond ok') ELSE Io.WriteLine ('diamond WRONG') END
+END Diamond2.
+M9
+rm -f Base.o Base.h Mid.o Mid.h diamond diamond2
+M9LIBRARY="$SRC" "$M9C" --make -o diamond2 Diamond2.m9 >dm2.txt 2>&1 ||
+  { echo "FAIL: --make could not build a diamond whose shared module is imported second:";     head -5 dm2.txt; exit 1; }
+[ "$(./diamond2)" = "diamond ok" ] ||
+  { echo "FAIL: the second diamond built but answered wrong"; ./diamond2; exit 1; }
+
 rm -f Base.o Base.h Mid.o Mid.h diamond
 # AND THE MAIN FILE IS NAMED BARE, no -I and no ./ -- the search
 # path's last entry is "the directory FILE.m9 came from", which for a

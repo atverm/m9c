@@ -105,6 +105,14 @@ VAR
      and MakeAll walks it forward. *)
   order  : SLICE OF STR ;
   norder : I64 ;
+  (* the import graph, recorded as it is walked: edgeFrom[i] imports
+     edgeTo[i].  The ORDER is computed from this afterwards, by a
+     post-order walk, because the order things are LOADED in cannot
+     answer it -- see BuildOrder. *)
+  edgeFrom, edgeTo : SLICE OF STR ;
+  nedge : I64 ;
+  visiting : SLICE OF STR ;
+  nvisit : I64 ;
   (* roots of the deps that WERE named, so the gaps they leave can be
      filled once the named ones are all in, in the order given *)
   depRoots : SLICE OF Ast.Kid ;
@@ -357,6 +365,23 @@ END MarkLoaded ;
    be a mistake in the caller rather than something to absorb
    quietly; it is refused by not appending it twice, and the FIRST
    position is the one that is right. *)
+PROCEDURE AddEdge (RO a: STR ; RO b: STR) =
+VAR
+  nf, nt : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF nedge = LEN (edgeFrom) THEN
+    nf := NEW (pool, STR, 2 * LEN (edgeFrom) + 16) ;
+    nt := NEW (pool, STR, 2 * LEN (edgeFrom) + 16) ;
+    FOR i := 0 TO nedge - 1 DO nf[i] := edgeFrom[i] ; nt[i] := edgeTo[i] END ;
+    edgeFrom := nf ;
+    edgeTo := nt
+  END ;
+  edgeFrom[nedge] := a ;
+  edgeTo[nedge] := b ;
+  nedge := nedge + 1
+END AddEdge ;
+
 PROCEDURE Ordered (RO name: STR) =
 VAR
   nb : SLICE OF STR ;
@@ -373,6 +398,68 @@ BEGIN
   order[norder] := name ;
   norder := norder + 1
 END Ordered ;
+
+PROCEDURE IsVisiting (RO name: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nvisit - 1 DO
+    IF DynStr.Eq (visiting[i], name) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END IsVisiting ;
+
+PROCEDURE PushVisit (RO name: STR) =
+VAR nb : SLICE OF STR ; i : I64 ;
+BEGIN
+  IF nvisit = LEN (visiting) THEN
+    nb := NEW (pool, STR, 2 * LEN (visiting) + 8) ;
+    FOR i := 0 TO nvisit - 1 DO nb[i] := visiting[i] END ;
+    visiting := nb
+  END ;
+  visiting[nvisit] := name ;
+  nvisit := nvisit + 1
+END PushVisit ;
+
+PROCEDURE IsOrdered (RO name: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO norder - 1 DO
+    IF DynStr.Eq (order[i], name) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END IsOrdered ;
+
+(* POST-ORDER over the recorded import graph: a module is appended
+   once everything it imports has been.  This is computed from the
+   GRAPH rather than from the order modules were loaded in, because
+   loading is pre-order and a shared module can be reached first as
+   somebody's direct import and only later as their dependency --
+   `IMPORT Mid ; IMPORT Base ;` with Mid importing Base put Base
+   after Mid and the build failed on the first run.  A cycle stops at
+   the visiting mark: M9 does not forbid mutual imports, and a
+   compiler should not acquire the rule by recursing for ever. *)
+PROCEDURE OrderDfs (RO name: STR) =
+VAR i : I64 ;
+BEGIN
+  IF IsOrdered (name) THEN RETURN END ;
+  IF IsVisiting (name) THEN RETURN END ;
+  PushVisit (name) ;
+  FOR i := 0 TO nedge - 1 DO
+    IF DynStr.Eq (edgeFrom[i], name) THEN OrderDfs (edgeTo[i]) END
+  END ;
+  Ordered (name)
+END OrderDfs ;
+
+(* every loaded module, deepest first *)
+PROCEDURE BuildOrder () =
+VAR i : I64 ;
+BEGIN
+  nvisit := 0 ;
+  FOR i := 0 TO nloaded - 1 DO
+    nvisit := 0 ;
+    OrderDfs (loaded[i])
+  END
+END BuildOrder ;
 
 (* ---- driving the C compiler ----
 
@@ -1504,7 +1591,7 @@ PROCEDURE LoadIndirect (RO name: STR) RAISES ValueRange ;
    recursion, which is what makes a cycle terminate instead of
    recurring: M9 has no rule against mutual imports and the compiler
    should not acquire one by crashing. *)
-PROCEDURE WalkImports (root: PTR Ast.Node ; direct: BOOL)
+PROCEDURE WalkImports (root: PTR Ast.Node ; direct: BOOL ; RO owner: STR)
   RAISES ValueRange =
 VAR i, j, k : I64 ;
 BEGIN
@@ -1519,6 +1606,11 @@ BEGIN
             IF imp.kids[0] IS SOME ids THEN
               FOR k := 0 TO ids.nkids - 1 DO
                 IF ids.kids[k] IS SOME id THEN
+                  (* the EDGE is recorded whatever happens next: a
+                     module already loaded is still imported, and the
+                     order is computed from the graph, not from who
+                     got here first *)
+                  IF LEN (owner) > 0 THEN AddEdge (owner, id.a) END ;
                   IF direct THEN
                     LoadDirect (id.a)
                   ELSE
@@ -1548,11 +1640,8 @@ BEGIN
   IF NOT ok THEN Missing (name) ; RETURN END ;
   IF ParseText (src, path) IS SOME root THEN
     ScanUnsafe (root, path, trusted) ;
-    WalkImports (root, FALSE) ;
-    Absorb (root, FALSE) ;
-    (* POST-order: everything this module imports is in order[] now,
-       because WalkImports has returned *)
-    Ordered (name)
+    WalkImports (root, FALSE, name) ;
+    Absorb (root, FALSE)
   END
 END LoadIndirect ;
 
@@ -1586,27 +1675,17 @@ END LoadDep ;
 PROCEDURE FillGaps (mainRoot: PTR Ast.Node) RAISES ValueRange =
 VAR i, upto : I64 ;
 BEGIN
-  WalkImports (mainRoot, TRUE) ;
+  WalkImports (mainRoot, TRUE, modName) ;
   upto := ndeps ;
   FOR i := 0 TO upto - 1 DO
-    IF depRoots[i] IS SOME r THEN
-      WalkImports (r, FALSE) ;
-      (* this kept module's own subtree is in order[] now, so it may
-         follow: the direct imports and the named deps get their
-         build position here rather than at load time *)
-      Ordered (depNames[i])
-    END
+    IF depRoots[i] IS SOME r THEN WalkImports (r, FALSE, depNames[i]) END
   END ;
-  WalkImports (mainRoot, FALSE) ;
-  (* THE SAFETY NET, and it should stay empty.  A module that was
-     marked loaded but never ordered -- one whose source was not
-     found, or whose parse failed -- would otherwise be invisible to
-     MakeAll.  Appending it last keeps the old behaviour for exactly
-     those, and nothing that reached Ordered is touched, because
-     Ordered refuses a duplicate. *)
-  FOR i := nloaded - 1 TO 0 BY -1 DO
-    Ordered (loaded[i])
-  END
+  WalkImports (mainRoot, FALSE, modName) ;
+  (* the closure is complete, so the graph is: compute the build
+     order from it.  Anything marked loaded whose source was not
+     found or whose parse failed has no edges and simply orders
+     itself; MakeAll skips what FindModule cannot find. *)
+  BuildOrder ()
 END FillGaps ;
 
 (* the diagnostics, then a refusal.  A compiler that translates what
