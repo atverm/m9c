@@ -4,9 +4,21 @@ A Wirth-family language for code that must be *believed*: readable as a
 bank statement, checked like Rust, small enough to hold in one head —
 designed for the era in which machines write code and people audit it.
 
-Every feature in the [report](docs/M9-report.md) cites a real observed
+**Learning it**: the tutorial — nine chapters from installation to a
+real ICOS CO2 series read through zarr, every example gated against
+the compiler — is at [tutorial.modula9.net](https://tutorial.modula9.net)
+and, as text and runnable examples, in the
+[M9Tutorial](https://github.com/atverm/M9Tutorial) repository.  This
+repository, [m9c](https://github.com/atverm/m9c), is the compiler,
+runtime and standard library themselves -- `./build.sh` needs gcc and
+nothing else -- and its [release page](https://github.com/atverm/m9c/releases)
+carries the install packages for six distributions.
+
+Every feature in the report (`docs/M9-report.md`, installed with the
+package as `/usr/share/doc/m9/M9-report.md`) cites a real observed
 failure it makes uncompilable. The failures are dated 2026-08-20; the
-[museum](museum/) preserves them as programs that must never compile.
+development tree's museum preserves them as programs that must never
+compile.
 
 M9 emits C11 and hands it to a C compiler, so an M9 program links
 against anything C links against — and gets gcc's and clang's
@@ -58,6 +70,14 @@ compares the two so neither can drift.
 
 ## Layout
 
+Of the development tree.  The public
+[m9c](https://github.com/atverm/m9c) repository is its toolchain
+subset -- `corpus/`, `runtime/`, `host/fpc/`, `man/m9c.1`,
+`docs/modules/`, the VS Code extension, `build.sh` -- mirrored from
+`main` after every gate has passed; the rest of what is listed here
+lives in the development tree and, where it is documentation, in the
+installed package.
+
     docs/       the language report (the specification) and the benchmarks
     corpus/     M9 source: the standard library and the compiler itself
     museum/     programs that must fail to compile, one observed bug each
@@ -71,7 +91,7 @@ compares the two so neither can drift.
 ## What it costs
 
 Measured, on one machine, twice; the method and the losses are in
-[docs/bench.md](docs/bench.md).
+`docs/bench.md` (in the development tree, and installed with the package as `/usr/share/doc/m9/bench.md`).
 
 | | M9 | C | Rust | Object Pascal | Scala | Python |
 |---|---:|---:|---:|---:|---:|---:|
