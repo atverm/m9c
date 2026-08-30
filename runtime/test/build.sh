@@ -84,7 +84,7 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     csv_driver.c -lm -o csv_test
 ./csv_test
 
-# The two format libraries the FLEXPART port needs.  Optional, and
+# The two format libraries the port needs.  Optional, and
 # SKIPPED OUT LOUD when absent: a test that silently disappears on a
 # machine without a dependency is a test nobody notices losing.
 if [ -f /usr/include/netcdf.h ]; then

@@ -18,7 +18,7 @@ A NaN anywhere in a sample RAISES ValueRange rather than answering
 NaN: a statistic of a sample containing not-a-number is not a
 statistic, and a NaN that travels is the museum's founding bug.
 
-The random Stream is a RECORD the caller owns, like the FLEXPART
+The random Stream is a RECORD the caller owns, like the Fortran
 port's Random.Stream: no module state, so two streams cannot
 alias and a run is reproducible from its seed by construction.
 The generator is a 64-bit multiplicative-congruential (Knuth's

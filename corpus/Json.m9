@@ -96,8 +96,22 @@ PROCEDURE AsStr (n: PTR Node) : STR
 
      Until this existed a document's strings could only be COMPARED,
      through StrIs, so a configuration could ask "is the mode 'fast'"
-     and could not read a path out of the file.  Found by FLEXPART's
+     and could not read a path out of the file.  Found by the ported model's
      pathnames moving into the options document.                    *)
+
+PROCEDURE Text (VAR pool: POOL ; n: PTR Node) : STR
+  RAISES TypeMismatch, ValueRange ;
+  (* the DECODED text of a JSON string: escapes resolved the way
+     json.loads resolves them -- quote, backslash, slash, the five
+     control shorthands, unicode escapes with surrogate pairs
+     combined.  A string holding no backslash answers the same VIEW
+     AsStr does, nothing copied, so the escape-free common case
+     stays free; a malformed escape raises TypeMismatch naming it,
+     and a LONE surrogate is refused the same way where Python would
+     carry the unpaired code unit -- stated, since no real document
+     wants one.  Demanded by the zarr proxy's ledger: AsStr's raw
+     view is right for comparing and wrong for READING a value
+     somebody escaped.                                              *)
 
 PROCEDURE StrIs (n: PTR Node ; RO s: STR) : BOOL ;
   (* is n a string equal to s?  Total, and deliberately so: it
@@ -150,13 +164,12 @@ PROCEDURE Compact (VAR pool: POOL ; n: PTR Node) : STR
      strings escaped exactly as ensure_ascii=False
      escapes them (quote, backslash, the five control shorthands,
      \u00xx for other controls, everything else raw for a UTF-8
-     wire).  Demanded by the zarr proxy, whose reference answers
-     json.loads-then-JSONResponse and must be matched byte for byte.
-
-     Narrowing, stated: a NON-INTEGER number RAISES TypeMismatch
-     naming it -- json.dumps emits shortest-round-trip floats and
-     Fmt does not; matching them is the /query phase's own work,
-     and a loud refusal beats two spellings of one number.          *)
+     wire).  Tree strings are DECODED first (Text's rules) and
+     re-escaped, which is exactly loads-then-dumps: a document
+     spelling a quote as \" emits \" again, not the doubled
+     re-escape a raw pass would make of it.  Demanded by the zarr
+     proxy, whose reference answers json.loads-then-JSONResponse
+     and must be matched byte for byte.                              *)
   (* is n the literal null?  A JSON null is a VALUE, not an absence
      -- a member present and null is different from a member that is
      not there, and Field raises for the second -- so this asks
@@ -631,6 +644,114 @@ BEGIN
   EmitJStr (pool, d, t)
 END AppendJString ;
 
+PROCEDURE HasBackslash (RO t: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (t) - 1 DO
+    IF ORD (t[i]) = 92 THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END HasBackslash ;
+
+PROCEDURE HexVal (ch: CHAR) : I64 =
+  (* -1 when ch is not a hex digit *)
+BEGIN
+  IF ch >= '0' AND ch <= '9' THEN RETURN ORD (ch) - ORD ('0') END ;
+  IF ch >= 'a' AND ch <= 'f' THEN
+    RETURN ORD (ch) - ORD ('a') + 10
+  END ;
+  IF ch >= 'A' AND ch <= 'F' THEN
+    RETURN ORD (ch) - ORD ('A') + 10
+  END ;
+  RETURN -1
+END HexVal ;
+
+PROCEDURE Hex4 (RO t: STR ; at: I64) : I64
+  RAISES TypeMismatch =
+  (* four hex digits of a unicode escape, starting at 'at' *)
+VAR v, k, h : I64 ;
+BEGIN
+  IF at + 3 >= LEN (t) THEN
+    RAISE TypeMismatch ('truncated unicode escape')
+  END ;
+  v := 0 ;
+  FOR k := 0 TO 3 DO
+    h := HexVal (t[at + k]) ;
+    IF h < 0 THEN
+      RAISE TypeMismatch ('bad hex in unicode escape')
+    END ;
+    v := v * 16 + h
+  END ;
+  RETURN v
+END Hex4 ;
+
+PROCEDURE DecodeStr (VAR pool: POOL ; RO t: STR) : STR
+  RAISES TypeMismatch, ValueRange =
+  (* the raw source text of a parsed string, decoded json.loads'
+     way.  Escape-free input answers the input view unchanged.      *)
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, v, lo : I64 ;
+  ch : CHAR ;
+BEGIN
+  IF NOT HasBackslash (t) THEN RETURN t END ;
+  d := DynStr.New (pool) ;
+  i := 0 ;
+  WHILE i < LEN (t) DO
+    ch := t[i] ;
+    IF ORD (ch) = 92 THEN
+      IF i + 1 >= LEN (t) THEN
+        RAISE TypeMismatch ('escape at end of string')
+      END ;
+      ch := t[i + 1] ;
+      i := i + 2 ;
+      IF ch = '"' OR ch = '/' OR ORD (ch) = 92 THEN
+        DynStr.AppendChar (pool, d, ch)
+      ELSIF ch = 'b' THEN DynStr.AppendChar (pool, d, 08C)
+      ELSIF ch = 't' THEN DynStr.AppendChar (pool, d, 09C)
+      ELSIF ch = 'n' THEN DynStr.AppendChar (pool, d, 0AC)
+      ELSIF ch = 'f' THEN DynStr.AppendChar (pool, d, 0CC)
+      ELSIF ch = 'r' THEN DynStr.AppendChar (pool, d, 0DC)
+      ELSIF ch = 'u' THEN
+        v := Hex4 (t, i) ;
+        i := i + 4 ;
+        IF v >= 55296 AND v <= 56319 THEN
+          (* high surrogate: only legal with a low one right after *)
+          IF i + 5 < LEN (t) AND ORD (t[i]) = 92 AND
+             t[i + 1] = 'u' THEN
+            lo := Hex4 (t, i + 2) ;
+            IF lo < 56320 OR lo > 57343 THEN
+              RAISE TypeMismatch ('lone surrogate in unicode escape')
+            END ;
+            v := 65536 + (v - 55296) * 1024 + (lo - 56320) ;
+            i := i + 6
+          ELSE
+            RAISE TypeMismatch ('lone surrogate in unicode escape')
+          END
+        ELSIF v >= 56320 AND v <= 57343 THEN
+          RAISE TypeMismatch ('lone surrogate in unicode escape')
+        END ;
+        DynStr.AppendChar (pool, d, CHR (v))
+      ELSE
+        RAISE TypeMismatch ('unknown escape in string')
+      END
+    ELSE
+      DynStr.AppendChar (pool, d, ch) ;
+      i := i + 1
+    END
+  END ;
+  RETURN DynStr.View (d)
+END DecodeStr ;
+
+PROCEDURE Text (VAR pool: POOL ; n: PTR Node) : STR
+  RAISES TypeMismatch, ValueRange =
+BEGIN
+  CASE n.v OF
+  | Str (t) : RETURN DecodeStr (pool, t)
+  ELSE RAISE TypeMismatch ('expected a string')
+  END
+END Text ;
+
 PROCEDURE EmitJStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
                     RO t: STR)
   RAISES ValueRange =
@@ -698,7 +819,7 @@ BEGIN
       WHILE c IS SOME p DO
         IF sep THEN DynStr.AppendChar (pool, d, ',') END ;
         sep := TRUE ;
-        EmitJStr (pool, d, p.name) ;
+        EmitJStr (pool, d, DecodeStr (pool, p.name)) ;
         DynStr.AppendChar (pool, d, ':') ;
         EmitVal (pool, d, p) ;
         c := p.next
@@ -716,7 +837,7 @@ BEGIN
       END ;
       DynStr.AppendChar (pool, d, ']')
   | Str (t) :
-      EmitJStr (pool, d, t)
+      EmitJStr (pool, d, DecodeStr (pool, t))
   | Num (r, i, isInt) :
       IF isInt THEN
         DynStr.AppendI64 (pool, d, i)
@@ -781,8 +902,10 @@ PROCEDURE EmitSorted (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
 VAR
   c : OPT PTR Node ;
   ms : SLICE OF NodeP ;
+  nms : SLICE OF STR ;
   cnt, i, j : I64 ;
   t : NodeP ;
+  ns : STR ;
   sep : BOOL ;
 BEGIN
   CASE n.v OF
@@ -794,19 +917,26 @@ BEGIN
         c := p.next
       END ;
       ms := NEW (pool, NodeP, cnt) ;
+      nms := NEW (pool, STR, cnt) ;
       cnt := 0 ;
       c := first ;
       WHILE c IS SOME p DO
         ms[cnt] := p ;
+        (* sort_keys orders by the DECODED name, so decode before
+           the sort as well as for the emission *)
+        nms[cnt] := DecodeStr (pool, p.name) ;
         cnt := cnt + 1 ;
         c := p.next
       END ;
       FOR i := 1 TO cnt - 1 DO
         j := i ;
-        WHILE j > 0 AND NameLess (ms[j].name, ms[j - 1].name) DO
+        WHILE j > 0 AND NameLess (nms[j], nms[j - 1]) DO
           t := ms[j] ;
           ms[j] := ms[j - 1] ;
           ms[j - 1] := t ;
+          ns := nms[j] ;
+          nms[j] := nms[j - 1] ;
+          nms[j - 1] := ns ;
           j := j - 1
         END
       END ;
@@ -815,7 +945,7 @@ BEGIN
       FOR i := 0 TO cnt - 1 DO
         IF sep THEN DynStr.AppendChar (pool, d, ',') END ;
         sep := TRUE ;
-        EmitJStr (pool, d, ms[i].name) ;
+        EmitJStr (pool, d, nms[i]) ;
         DynStr.AppendChar (pool, d, ':') ;
         EmitSorted (pool, d, ms[i])
       END ;
@@ -836,9 +966,9 @@ BEGIN
   END
 END EmitSorted ;
 
-(* json.dumps sorts by the raw string's code units; over decoded
-   scalars a plain lexicographic compare answers the same order for
-   the ASCII keys this serves *)
+(* json.dumps sorts by the decoded string's code points; the
+   compare runs over decoded names (EmitSorted decodes before the
+   sort), scalar by scalar *)
 PROCEDURE NameLess (RO a: STR ; RO b: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
@@ -897,7 +1027,7 @@ BEGIN
         IF sep THEN DynStr.AppendChar (pool, d, ',') END ;
         sep := TRUE ;
         Indent (pool, d, depth + 1) ;
-        EmitJStr (pool, d, p.name) ;
+        EmitJStr (pool, d, DecodeStr (pool, p.name)) ;
         DynStr.Append (pool, d, ': ') ;
         EmitPretty (pool, d, p, depth + 1) ;
         c := p.next

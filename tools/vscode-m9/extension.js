@@ -17,10 +17,10 @@
  *                  <workspace>/runtime/test/m9c, then
  *                  <workspace>/out/m9c, then "m9c" on PATH
  *   includePaths   -I directories (a build dir holding Kind.m9 makes
- *                  port/flexpart modules documentable, e.g.
+ *                  a port's modules documentable, e.g.
  *                  ~/m9build or /tmp/m9build)
  *   libraryPaths   $M9LIBRARY; default <workspace>/corpus and
- *                  <workspace>/port/flexpart
+ *                  any directory m9.includePaths names
  */
 "use strict";
 const vscode = require ("vscode");
@@ -113,7 +113,6 @@ function libraryPaths () {
   const dirs = [...c.libraryPaths];
   for (const r of wsRoots ()) {
     dirs.push (path.join (r, "corpus"));
-    dirs.push (path.join (r, "port", "flexpart"));
   }
   return dirs.filter (d => { try { return fs.existsSync (d); }
                              catch (e) { return false; } });

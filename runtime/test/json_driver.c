@@ -21,7 +21,7 @@ static void ck (bool ok, const char *what)
   if (!ok) { fails++; printf ("FAIL: %s\n", what); }
 }
 
-static uint32_t doc[256], nm[32];
+static uint32_t doc[256], doc2[64], doc3[64], nm[32];
 
 int main (void)
 {
@@ -110,6 +110,70 @@ int main (void)
       Json_AsI64 (Json_Item (Json_Field (Json_Item (w, 0, &err),
         sl ("k", nm), &err), 0, &err), &err) == 42,
       "nested [ { k : [42] } ]");
+
+  /* Text and the decoding serializers.  Document (JSON spelling):
+       {"q":"a\"b\\c\/d","u":"\u00e9\ud83d\ude00\n","t":"plain"}
+     Text(q) = a"b\c/d (7 chars), Text(u) = U+00E9 U+1F600 LF
+     (a surrogate PAIR combines), Text(t) answers the parse VIEW
+     (zero copy -- its pointer lands inside the source buffer).
+     Compact decodes then re-escapes exactly as loads-then-dumps:
+     the quote and backslash re-escape, the slash and the non-ASCII
+     scalars come out raw, LF becomes \n again. */
+  {
+    m9_sl_CHAR esrc = sl ("{\"q\":\"a\\\"b\\\\c\\/d\","
+                          "\"u\":\"\\u00e9\\ud83d\\ude00\\n\","
+                          "\"t\":\"plain\"}", doc);
+    Json_Node *er = Json_Parse (&pool, esrc, &err);
+    ck (err.exc == NULL && er != NULL, "escape doc parses");
+
+    m9_sl_CHAR q = Json_Text (&pool,
+      Json_Field (er, sl ("q", nm), &err), &err);
+    static const uint32_t qx[] =
+      { 'a', '"', 'b', '\\', 'c', '/', 'd' };
+    ck (err.exc == NULL && q.len == 7 &&
+        memcmp (q.p, qx, sizeof qx) == 0, "Text decodes q");
+
+    m9_sl_CHAR u = Json_Text (&pool,
+      Json_Field (er, sl ("u", nm), &err), &err);
+    ck (err.exc == NULL && u.len == 3 && u.p[0] == 0xE9 &&
+        u.p[1] == 0x1F600 && u.p[2] == 10,
+        "Text combines the surrogate pair");
+
+    m9_sl_CHAR pl = Json_Text (&pool,
+      Json_Field (er, sl ("t", nm), &err), &err);
+    ck (err.exc == NULL && pl.len == 5 &&
+        pl.p >= doc && pl.p < doc + 256,
+        "escape-free Text is the parse view");
+
+    m9_sl_CHAR cj = Json_Compact (&pool, er, &err);
+    static const uint32_t cx[] =
+      { '{', '"', 'q', '"', ':', '"', 'a', '\\', '"', 'b', '\\',
+        '\\', 'c', '/', 'd', '"', ',', '"', 'u', '"', ':', '"',
+        0xE9, 0x1F600, '\\', 'n', '"', ',', '"', 't', '"', ':',
+        '"', 'p', 'l', 'a', 'i', 'n', '"', '}' };
+    ck (err.exc == NULL && cj.len == 40 &&
+        memcmp (cj.p, cx, sizeof cx) == 0,
+        "Compact = loads-then-dumps over escapes");
+
+    /* sort_keys orders by the DECODED name: "b\u0041" is bA, which
+       sorts after a */
+    Json_Node *sr = Json_Parse (&pool,
+      sl ("{\"b\\u0041\":1,\"a\":2}", doc2), &err);
+    m9_sl_CHAR cs = Json_CompactSorted (&pool, sr, &err);
+    static const uint32_t sx[] =
+      { '{', '"', 'a', '"', ':', '2', ',', '"', 'b', 'A', '"', ':',
+        '1', '}' };
+    ck (err.exc == NULL && cs.len == 14 &&
+        memcmp (cs.p, sx, sizeof sx) == 0,
+        "CompactSorted sorts decoded names");
+
+    /* a lone surrogate refuses where Python carries it */
+    Json_Node *ls = Json_Parse (&pool,
+      sl ("{\"s\":\"\\ud800x\"}", doc3), &err);
+    Json_Text (&pool, Json_Field (ls, sl ("s", nm), &err), &err);
+    ck (err.exc == &Json_TypeMismatch, "lone surrogate refused");
+    err.exc = NULL;
+  }
 
   m9_pool_free (&pool);
   if (fails) { printf ("FAIL (%d of %d)\n", fails, checks); return 1; }

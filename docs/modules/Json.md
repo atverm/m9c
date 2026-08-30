@@ -92,8 +92,22 @@ contract Parse already states.
 
 Until this existed a document's strings could only be COMPARED,
 through StrIs, so a configuration could ask "is the mode 'fast'"
-and could not read a path out of the file.  Found by FLEXPART's
+and could not read a path out of the file.  Found by the ported model's
 pathnames moving into the options document.
+
+### Text (VAR pool: POOL ; n: PTR Node) : STR RAISES TypeMismatch, ValueRange
+
+the DECODED text of a JSON string: escapes resolved the way
+json.loads resolves them -- quote, backslash, slash, the five
+control shorthands, unicode escapes with surrogate pairs
+combined.  A string holding no backslash answers the same VIEW
+AsStr does, nothing copied, so the escape-free common case
+stays free; a malformed escape raises TypeMismatch naming it,
+and a LONE surrogate is refused the same way where Python would
+carry the unpaired code unit -- stated, since no real document
+wants one.  Demanded by the zarr proxy's ledger: AsStr's raw
+view is right for comparing and wrong for READING a value
+somebody escaped.
 
 ### StrIs (n: PTR Node ; RO s: STR) : BOOL
 
@@ -148,13 +162,12 @@ values), non-finite values as dumps' NaN/Infinity tokens,
 strings escaped exactly as ensure_ascii=False
 escapes them (quote, backslash, the five control shorthands,
 \u00xx for other controls, everything else raw for a UTF-8
-wire).  Demanded by the zarr proxy, whose reference answers
-json.loads-then-JSONResponse and must be matched byte for byte.
-
-Narrowing, stated: a NON-INTEGER number RAISES TypeMismatch
-naming it -- json.dumps emits shortest-round-trip floats and
-Fmt does not; matching them is the /query phase's own work,
-and a loud refusal beats two spellings of one number.
+wire).  Tree strings are DECODED first (Text's rules) and
+re-escaped, which is exactly loads-then-dumps: a document
+spelling a quote as \" emits \" again, not the doubled
+re-escape a raw pass would make of it.  Demanded by the zarr
+proxy, whose reference answers json.loads-then-JSONResponse
+and must be matched byte for byte.
 
 m9rt's shortest-round-trip float printer: CPython's repr(float),
 probed with %.*e and judged by strtod.  REENTRANT -- all state on

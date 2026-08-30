@@ -88,6 +88,19 @@ PROCEDURE Chars (VAR pool: POOL ; RO b: SLICE OF BYTE)
      without byte-level typing (P2 pass 3), and an honest signature
      beats a silent assumption.                                      *)
 
+PROCEDURE FromUtf8 (VAR pool: POOL ; RO b: SLICE OF BYTE) : STR
+  RAISES ValueRange ;
+  (* UTF-8 octets decoded to scalars -- the inverse of Utf8, and
+     STRICT: an invalid sequence (bad lead or continuation byte,
+     overlong form, surrogate, past U+10FFFF, truncated tail)
+     RAISES ValueRange rather than guessing, because a file that is
+     not UTF-8 read as if it were is the double-encoding bug this
+     was built to end.  Demanded by the zarr proxy against the REAL
+     stores: their .zattrs citations carry accented names, and
+     reading those files through the Latin-1 ReadFile then encoding
+     with Utf8 emitted every one twice-encoded -- a corruption the
+     ASCII-only gate stores could never show.                       *)
+
 END DynStr.
 
 
@@ -268,5 +281,71 @@ BEGIN
   END ;
   RETURN c
 END Chars ;
+
+PROCEDURE FromUtf8 (VAR pool: POOL ; RO b: SLICE OF BYTE) : STR
+  RAISES ValueRange =
+VAR
+  s : STR ;
+  i, n, v, k, need, lo, hi : I64 ;
+BEGIN
+  (* two passes, like Utf8: count scalars exactly, then fill *)
+  n := 0 ;
+  i := 0 ;
+  WHILE i < LEN (b) DO
+    v := I64 (b[i]) ;
+    IF v < 128 THEN
+      i := i + 1
+    ELSIF v >= 194 AND v <= 223 THEN
+      i := i + 2
+    ELSIF v >= 224 AND v <= 239 THEN
+      i := i + 3
+    ELSIF v >= 240 AND v <= 244 THEN
+      i := i + 4
+    ELSE
+      RAISE ValueRange
+    END ;
+    n := n + 1
+  END ;
+  IF i > LEN (b) THEN RAISE ValueRange END ;
+  s := NEW (pool, CHAR, n) ;
+  n := 0 ;
+  i := 0 ;
+  WHILE i < LEN (b) DO
+    v := I64 (b[i]) ;
+    IF v < 128 THEN
+      need := 0
+    ELSIF v <= 223 THEN
+      v := v - 192 ;
+      need := 1
+    ELSIF v <= 239 THEN
+      v := v - 224 ;
+      need := 2
+    ELSE
+      v := v - 240 ;
+      need := 3
+    END ;
+    (* the tight first-continuation bounds that refuse overlongs,
+       surrogates and anything past U+10FFFF fall out of the final
+       scalar checks below, so the loop takes plain continuations *)
+    FOR k := 1 TO need DO
+      hi := I64 (b[i + k]) ;
+      IF hi < 128 OR hi > 191 THEN RAISE ValueRange END ;
+      v := v * 64 + (hi - 128)
+    END ;
+    i := i + 1 + need ;
+    (* overlong: a scalar must need every byte it was sent as *)
+    IF need = 1 THEN lo := 128
+    ELSIF need = 2 THEN lo := 2048
+    ELSIF need = 3 THEN lo := 65536
+    ELSE lo := 0
+    END ;
+    IF v < lo THEN RAISE ValueRange END ;
+    IF v >= 55296 AND v <= 57343 THEN RAISE ValueRange END ;
+    IF v > 1114111 THEN RAISE ValueRange END ;
+    s[n] := CHR (v) ;
+    n := n + 1
+  END ;
+  RETURN s
+END FromUtf8 ;
 
 END DynStr.

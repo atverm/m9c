@@ -36,6 +36,10 @@ typedef struct { uint8_t v[32]; } m9_arr_32_uint8_t;
 #define M9SL_m9_sl_Json_Nodep
 typedef struct { Json_Node * *p; int64_t len; } m9_sl_Json_Nodep;
 #endif
+#ifndef M9SL_m9_sl_m9_sl_CHAR
+#define M9SL_m9_sl_m9_sl_CHAR
+typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
 
 Json_Node * Json_Parse (m9_pool *pool, m9_sl_CHAR src, m9_err *err);
 Json_Node * Json_Field (Json_Node * obj, m9_sl_CHAR name, m9_err *err);
@@ -48,6 +52,7 @@ int64_t Json_AsI64 (Json_Node * n, m9_err *err);
 double Json_AsF64 (Json_Node * n, m9_err *err);
 bool Json_AsBool (Json_Node * n, m9_err *err);
 m9_sl_CHAR Json_AsStr (Json_Node * n, m9_err *err);
+m9_sl_CHAR Json_Text (m9_pool *pool, Json_Node * n, m9_err *err);
 bool Json_StrIs (Json_Node * n, m9_sl_CHAR s, m9_err *err);
 bool Json_IsNull (Json_Node * n, m9_err *err);
 m9_sl_CHAR Json_CompactSorted (m9_pool *pool, Json_Node * n, m9_err *err);

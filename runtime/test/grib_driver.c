@@ -184,7 +184,7 @@ int main (void)
 
   /* ---- REAL DATA, when there is any ----
 
-     $M9GRIB names a FLEXPART input file: ERA5, 497 messages of
+     $M9GRIB names a model input file: ERA5, 497 messages of
      360x181 on hybrid levels, 97 MB.  The sample above proves the
      binding decodes A message; this proves it decodes the ones the
      model actually gets, every one of them, and agrees with the C

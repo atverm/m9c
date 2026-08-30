@@ -139,8 +139,8 @@ static inline void *m9_gat (void *p, size_t sz, const int64_t *n,
    strides arrive by value instead of through the descriptor, and the
    loop over the rank is gone.
 
-   That shape is worth 2.60x -> 1.29x, measured on the FLEXPART
-   kernel in port/flexpart/gat_cost.c, which builds the same loop six
+   That shape is worth 2.60x -> 1.29x, measured on the port's
+   kernel in its gat_cost.c, which builds the same loop six
    ways and checks that all six compute identical doubles.  The
    decomposition matters more than the number: with the descriptor in
    registers the same code runs at 1.04x, and with the checks proven

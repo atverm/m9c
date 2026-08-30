@@ -294,6 +294,123 @@ L_ret: ;
   return m9ret;
 }
 
+m9_sl_CHAR DynStr_FromUtf8 (m9_pool *pool, m9_sl_BYTE b, m9_err *err)
+{
+  m9_sl_CHAR m9ret = {0};
+  m9_sl_CHAR s = {0}; (void) s;
+  int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
+  int64_t v = 0; (void) v;
+  int64_t k = 0; (void) k;
+  int64_t need = 0; (void) need;
+  int64_t lo = 0; (void) lo;
+  int64_t hi = 0; (void) hi;
+  n = INT64_C(0);
+  i = INT64_C(0);
+  for (;;) {
+    if (!((i < (b).len))) break;
+    v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
+    if (err->exc) goto L_ret;
+    if ((v < INT64_C(128))) {
+      i = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+    } else {
+      if (((v >= INT64_C(194)) && (v <= INT64_C(223)))) {
+        i = m9_add_i64 (i, INT64_C(2), err);
+        if (err->exc) goto L_ret;
+    } else {
+      if (((v >= INT64_C(224)) && (v <= INT64_C(239)))) {
+        i = m9_add_i64 (i, INT64_C(3), err);
+        if (err->exc) goto L_ret;
+    } else {
+      if (((v >= INT64_C(240)) && (v <= INT64_C(244)))) {
+        i = m9_add_i64 (i, INT64_C(4), err);
+        if (err->exc) goto L_ret;
+    } else {
+      m9_raise (err, &m9_exc_ValueRange);
+      goto L_ret;
+    } } } }
+    n = m9_add_i64 (n, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
+  if ((i > (b).len)) {
+    m9_raise (err, &m9_exc_ValueRange);
+    goto L_ret;
+  }
+  s = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), n, err);
+  if (err->exc) goto L_ret;
+  n = INT64_C(0);
+  i = INT64_C(0);
+  for (;;) {
+    if (!((i < (b).len))) break;
+    v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
+    if (err->exc) goto L_ret;
+    if ((v < INT64_C(128))) {
+      need = INT64_C(0);
+    } else {
+      if ((v <= INT64_C(223))) {
+        v = m9_sub_i64 (v, INT64_C(192), err);
+        if (err->exc) goto L_ret;
+        need = INT64_C(1);
+    } else {
+      if ((v <= INT64_C(239))) {
+        v = m9_sub_i64 (v, INT64_C(224), err);
+        if (err->exc) goto L_ret;
+        need = INT64_C(2);
+    } else {
+      v = m9_sub_i64 (v, INT64_C(240), err);
+      if (err->exc) goto L_ret;
+      need = INT64_C(3);
+    } } }
+    { int64_t m9t1to;
+    k = INT64_C(1);
+    m9t1to = need;
+    for (; k <= m9t1to; k += 1) {
+      hi = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, k, err), b.len, sizeof (uint8_t), err)));
+      if (err->exc) goto L_ret;
+      if (((hi < INT64_C(128)) || (hi > INT64_C(191)))) {
+        m9_raise (err, &m9_exc_ValueRange);
+        goto L_ret;
+      }
+      v = m9_add_i64 (m9_mul_i64 (v, INT64_C(64), err), (m9_sub_i64 (hi, INT64_C(128), err)), err);
+      if (err->exc) goto L_ret;
+    } }
+    i = m9_add_i64 (m9_add_i64 (i, INT64_C(1), err), need, err);
+    if (err->exc) goto L_ret;
+    if ((need == INT64_C(1))) {
+      lo = INT64_C(128);
+    } else {
+      if ((need == INT64_C(2))) {
+        lo = INT64_C(2048);
+    } else {
+      if ((need == INT64_C(3))) {
+        lo = INT64_C(65536);
+    } else {
+      lo = INT64_C(0);
+    } } }
+    if ((v < lo)) {
+      m9_raise (err, &m9_exc_ValueRange);
+      goto L_ret;
+    }
+    if (((v >= INT64_C(55296)) && (v <= INT64_C(57343)))) {
+      m9_raise (err, &m9_exc_ValueRange);
+      goto L_ret;
+    }
+    if ((v > INT64_C(1114111))) {
+      m9_raise (err, &m9_exc_ValueRange);
+      goto L_ret;
+    }
+    (*(uint32_t *) m9_at (s.p, n, s.len, sizeof (uint32_t), err)) = m9_chr (v, err);
+    if (err->exc) goto L_ret;
+    n = m9_add_i64 (n, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
+  m9ret = s;
+  goto L_ret;
+L_ret: ;
+  return m9ret;
+}
+
 static void DynStr_Grow (m9_pool *pool, DynStr_DString * *d, m9_err *err)
 {
   m9_sl_CHAR nb = {0}; (void) nb;

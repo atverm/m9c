@@ -2,7 +2,7 @@ DEFINITION MODULE Grib ;
 
 (* ecCodes: GRIB 1 and GRIB 2 messages, read.
 
-   Written for the FLEXPART port, whose wind fields arrive this way.
+   Written for the dispersion-model port, whose wind fields arrive this way.
    The model's own usage is the specification for this surface --
    grib_open_file, grib_new_from_file, grib_get_int, grib_get_real,
    grib_get_size, grib_get_string, grib_multi_support_on and
@@ -12,7 +12,7 @@ DEFINITION MODULE Grib ;
    WHAT THE BINDING FIXES ABOUT THE C API.
 
    ecCodes reports through an int and expects every caller to test
-   it; FLEXPART tests it 111 times through a macro that stops the
+   it; the ported model tests it 111 times through a macro that stops the
    program.  Here a bad code is an Error carrying the operation, the
    key it was reading, the library's own message and the number.  A
    reader that halts cannot be tested, and a reader of somebody
@@ -29,7 +29,7 @@ DEFINITION MODULE Grib ;
    build compiles its mutexes out -- the blosc museum piece.  The
    argument was never tested, and when it was it did not hold.
 
-   What was measured (2026-08-25, port/flexpart/gribcold_probe.c).
+   What was measured (2026-08-25, the port's gribcold_probe.c).
    Debian's libeccodes really does have ZERO pthread_mutex
    relocations, and in the 2.48 source the mutex is an empty class
    when GRIB_PTHREADS=0.  So the decode runs unprotected, and the
@@ -143,7 +143,7 @@ PROCEDURE Values (m: PTR Message ; out: SLICE OF F64)
 PROCEDURE Floats (m: PTR Message ; RO key: STR ; out: SLICE OF F32)
   RAISES Error, SizeError, ValueRange ;
   (* the same, into single precision, because that is what some
-     readers do and it is not the same answer.  FLEXPART's buffer is
+     readers do and it is not the same answer.  the model's buffer is
      `real(kind=4) :: zsec4` and it reads through
      grib_get_real4_array, so every value the model sees has been
      rounded to float32 first.
@@ -158,7 +158,7 @@ PROCEDURE Doubles (m: PTR Message ; RO key: STR ; out: SLICE OF F64)
   (* any double array, by key, with the same length check.  `values`
      is the common one and has its own name above; this is for the
      others -- `pv`, the vertical coordinate coefficients, which
-     FLEXPART's gridcheck reads to build akm and bkm.               *)
+     the model's grid check reads to build akm and bkm.               *)
 
 PROCEDURE ReadGrid2 (VAR pool: POOL ; m: PTR Message)
   : GRID 2 OF F64 RAISES Error, SizeError, ValueRange ;

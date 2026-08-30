@@ -6,6 +6,7 @@
    conservative, not load-bearing.                                   */
 #define _POSIX_C_SOURCE 200112L   /* getaddrinfo under -std=c11 */
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netdb.h>
 #include <string.h>
 #include <stdio.h>
@@ -13,6 +14,7 @@
 #include <time.h>
 
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 
 int tcp_listen (int port, int backlog)
 {
@@ -77,6 +79,26 @@ int64_t tcp_peer (int fd, char *buf, int64_t cap)
   if ((int64_t) strlen (host) + 1 > cap) return -1;
   strcpy (buf, host);
   return (int64_t) strlen (host);
+}
+
+/* Nagle off: a response is written as headers then body, and with
+ * the connection now kept alive the second write otherwise waits
+ * ~40 ms behind the client's delayed ACK of the first -- measured
+ * as 30 req/s where the HTTP/1.0 close() used to flush it.         */
+int tcp_nodelay (int fd)
+{
+  int one = 1;
+  return setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof one);
+}
+
+/* a receive timeout so an idle keep-alive connection releases its
+ * worker: read(2) then fails with EAGAIN after ms of silence.      */
+int tcp_rcvtimeo (int fd, int64_t ms)
+{
+  struct timeval tv;
+  tv.tv_sec = (time_t) (ms / 1000);
+  tv.tv_usec = (long) ((ms % 1000) * 1000);
+  return setsockopt (fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof tv);
 }
 
 /* millisecond sleep for the session reaper's tick */

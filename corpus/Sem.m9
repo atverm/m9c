@@ -3006,7 +3006,7 @@ BEGIN
      case.  The name is chased to the builtin it abbreviates and
      every conversion rule then applies unchanged.
 
-     Forced by the FLEXPART port: -fdefault-real-8 is commented out
+     Forced by the port: -fdefault-real-8 is commented out
      in the original's makefile, so single precision is what ships
      and double is what the flag is for.  One source held
      bit-identical to both builds needs the default real kind to have

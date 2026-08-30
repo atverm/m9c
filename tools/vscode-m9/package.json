@@ -46,7 +46,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "-I directories for m9c --doc.  Add a build directory holding Kind.m9 (e.g. ~/m9build) to document port/flexpart modules, whose Kind is selected at build time"
+          "description": "-I directories for m9c --doc.  Add a build directory holding Kind.m9 (e.g. ~/m9build) to document a port's modules, whose Kind is selected at build time"
         },
         "m9.libraryPaths": {
           "type": "array",
@@ -54,7 +54,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "$M9LIBRARY for m9c --doc; <workspace>/corpus and <workspace>/port/flexpart are always appended"
+          "description": "$M9LIBRARY for m9c --doc; <workspace>/corpus is always appended"
         }
       }
     }

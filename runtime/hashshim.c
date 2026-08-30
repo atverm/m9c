@@ -57,7 +57,29 @@ static void block (uint32_t h[8], const uint8_t *p)
   h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
 }
 
-/* hex must have room for 64 bytes; no terminator is written. */
+/* hex must have room for 64 bytes; no terminator is written.
+ *
+ * With -DM9_SHA_OPENSSL (and -lcrypto) the digest comes from
+ * OpenSSL's EVP instead, which carries the SHA-NI code path:
+ * measured on zoefii, 2119 MB/s against this portable loop's 301,
+ * and the difference was most of the M9 proxy's per-chunk latency
+ * gap against the Python reference (0.31 of 0.29-0.46 ms).  The
+ * portable path stays the default so nothing grows a dependency;
+ * the proxy's gate proves both paths against hashlib digests.      */
+#ifdef M9_SHA_OPENSSL
+#include <openssl/evp.h>
+void m9_sha256_hex (const void *src, int64_t n, char *hex)
+{
+  static const char digits[] = "0123456789abcdef";
+  unsigned char md[32];
+  unsigned int mdlen = 0;
+  EVP_Digest (src, (size_t) n, md, &mdlen, EVP_sha256 (), NULL);
+  for (int i = 0; i < 32; i++) {
+    hex[2*i]   = digits[md[i] >> 4];
+    hex[2*i+1] = digits[md[i] & 15];
+  }
+}
+#else
 void m9_sha256_hex (const void *src, int64_t n, char *hex)
 {
   static const char digits[] = "0123456789abcdef";
@@ -95,6 +117,7 @@ void m9_sha256_hex (const void *src, int64_t n, char *hex)
     hex[8*i+7] = digits[h[i] & 15];
   }
 }
+#endif
 
 #include <sys/random.h>
 

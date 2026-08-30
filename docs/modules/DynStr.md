@@ -92,3 +92,16 @@ octets to scalars, the inverse of Bytes.  An octet is always a
 scalar, so this cannot raise; the checker cannot know that
 without byte-level typing (P2 pass 3), and an honest signature
 beats a silent assumption.
+
+### FromUtf8 (VAR pool: POOL ; RO b: SLICE OF BYTE) : STR RAISES ValueRange
+
+UTF-8 octets decoded to scalars -- the inverse of Utf8, and
+STRICT: an invalid sequence (bad lead or continuation byte,
+overlong form, surrogate, past U+10FFFF, truncated tail)
+RAISES ValueRange rather than guessing, because a file that is
+not UTF-8 read as if it were is the double-encoding bug this
+was built to end.  Demanded by the zarr proxy against the REAL
+stores: their .zattrs citations carry accented names, and
+reading those files through the Latin-1 ReadFile then encoding
+with Utf8 emitted every one twice-encoded -- a corruption the
+ASCII-only gate stores could never show.

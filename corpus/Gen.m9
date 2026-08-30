@@ -1571,9 +1571,9 @@ BEGIN
             IF rk >= 1 AND rk <= 4 THEN
               (* ranks 1..4 go to the written-out form: extents and
                  strides by value, no index array, no loop over the
-                 rank.  2.60x -> 1.29x on the FLEXPART kernel, with
+                 rank.  2.60x -> 1.29x on the port's kernel, with
                  the same checks -- see runtime/m9rt.h and
-                 port/flexpart/gat_cost.c. *)
+                 the port's gat_cost.c. *)
               dns := DynStr.New (gpool) ;
               DynStr.Append (gpool, dns, '(*(') ;
               DynStr.Append (gpool, dns, ec) ;
@@ -1978,7 +1978,7 @@ BEGIN
      arguments and RETURN -- aliases chase to structure -- so `Real
      (x)` meaning anything other than `F32 (x)` would be the odd
      case.  Chased here, once, so every conversion below applies
-     unchanged.  Forced by the FLEXPART port, which needs one source
+     unchanged.  Forced by a Fortran port, which needs one source
      buildable at both of the original's real kinds. *)
   IF nargs = 1 AND NOT IsBuiltin (name) THEN
     dot := FindCh (name, '.') ;
@@ -3420,7 +3420,7 @@ BEGIN
                 (* the structural test wins over the name: a GRID of
                    I64 is called m9_gd3_int64_t, which contains _t and
                    is not a scalar -- it emitted `= 0` and gcc refused
-                   it.  Found by the second FLEXPART kernel; a SLICE
+                   it.  Found by the port's second kernel; a SLICE
                    OF I64 had the same defect and no corpus module had
                    happened to declare one as a local. *)
                 IF rk IS SOME rk0 THEN
@@ -3726,7 +3726,7 @@ BEGIN
       ELSIF e.kind = Ast.NReal THEN
         Line (KHdrConsts, 0, S7 ('#define ', modName, '_',
           consts.es[ci].k, ' (', e.a, ')'))
-      (* a BOOLEAN constant.  FLEXPART's par_mod has four of them and
+      (* a BOOLEAN constant.  the ported model's parameter module has four of them and
          Fortran calls them parameters, which is what they are: a
          switch a program cannot flip at run time *)
       ELSIF e.kind = Ast.NTrue THEN

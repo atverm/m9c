@@ -2,7 +2,7 @@
 
 NetCDF, the classic and netCDF-4 data model, read and write.
 
-Written for the FLEXPART port (port/flexpart/), whose input and
+Written for the dispersion-model port, whose input and
 output both go through this library: 41 nf90_get_var, 113
 nf90_put_var and 228 nf90_put_att in the model's own source.  The
 surface below is what those calls need and nothing else -- groups,
@@ -313,7 +313,7 @@ compress a variable, netCDF-4 only, between EndDef and the first
 write -- in practice immediately after DefVar.
 
 WHY IT IS NOT OPTIONAL FOR A GRIDDED FIELD.  Measured on a
-FLEXPART-M9 footprint: 24 releases x 23 times x 6 levels x 90 x
+footprint run of the port: 24 releases x 23 times x 6 levels x 90 x
 140 floats is 167 MB written plainly and 0.9 MB deflated,
 because a footprint is mostly zeros.  A file nobody can store is
 not an output format.  `shuffle` is on: it groups the bytes of

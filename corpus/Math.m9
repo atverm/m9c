@@ -41,7 +41,7 @@ DEFINITION MODULE Math ;
 
    NOT HERE, deliberately: F32 versions (convert, or ask for them
    when a caller exists); the hyperbolics, erf and the Bessels (no
-   caller yet -- erf_mod.f90 in FLEXPART is a candidate, and it
+   caller yet -- the port's Fortran erf module is a candidate, and it
    carries its own implementation, which is evidence about what
    people trust); complex arithmetic (no complex type).            *)
 
@@ -104,7 +104,7 @@ PROCEDURE Fmod (x, y: F64) : F64 RAISES ValueRange ;
   (* the remainder of x/y with the sign of x, which is what Fortran
      MOD and C fmod both compute -- not the floor-based modulus.  A
      zero divisor is a domain error and raises rather than answering
-     NaN.  Added for a FLEXPART map projection that reduces a
+     NaN.  Added for a map projection in the port that reduces a
      longitude to (-180, 180]. *)
 
 PROCEDURE Hypot (x, y: F64) : F64 RAISES ValueRange, Overflow ;
@@ -449,7 +449,7 @@ END Fmod ;
    where the cheap answer would have been right, and taking it as
    representative would have been the mistake.  atanf disagrees with
    the narrowed double once in every twenty-three calls, and the map
-   projections in the FLEXPART port are built out of atan, sin and
+   projections in the port are built out of atan, sin and
    cos.  Bit-identity against a single-precision original is not
    reachable through the double library. *)
 

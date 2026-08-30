@@ -25,5 +25,6 @@ void DynStr_AppendI64 (m9_pool *pool, DynStr_DString * *d, int64_t v, m9_err *er
 m9_sl_BYTE DynStr_Bytes (m9_pool *pool, m9_sl_CHAR s, bool zeroTerm, m9_err *err);
 m9_sl_BYTE DynStr_Utf8 (m9_pool *pool, m9_sl_CHAR s, m9_err *err);
 m9_sl_CHAR DynStr_Chars (m9_pool *pool, m9_sl_BYTE b, m9_err *err);
+m9_sl_CHAR DynStr_FromUtf8 (m9_pool *pool, m9_sl_BYTE b, m9_err *err);
 
 #endif

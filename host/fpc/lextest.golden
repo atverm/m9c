@@ -3,7 +3,7 @@
 ../../corpus/Csv.m9                      tokens=4009 errors=0
 ../../corpus/Dict.m9                     tokens=1227 errors=0
 ../../corpus/Doc.m9                      tokens=5248 errors=0
-../../corpus/DynStr.m9                   tokens=1323 errors=0
+../../corpus/DynStr.m9                   tokens=1708 errors=0
 ../../corpus/Fmt.m9                      tokens=2183 errors=0
 ../../corpus/Frame.m9                    tokens=15204 errors=0
 ../../corpus/Gen.m9                      tokens=26989 errors=0
@@ -12,7 +12,7 @@
 ../../corpus/Http.m9                     tokens=1172 errors=0
 ../../corpus/HttpServer.m9               tokens=1665 errors=0
 ../../corpus/Io.m9                       tokens=2793 errors=0
-../../corpus/Json.m9                     tokens=5138 errors=0
+../../corpus/Json.m9                     tokens=5910 errors=0
 ../../corpus/Lex.m9                      tokens=3501 errors=0
 ../../corpus/Logger.m9                   tokens=869 errors=0
 ../../corpus/M9c.m9                      tokens=7859 errors=0

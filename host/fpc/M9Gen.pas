@@ -937,9 +937,9 @@ begin
             begin
               { ranks 1..4 go to the written-out form: extents and
                 strides by value, no index array, no loop over the
-                rank.  2.60x -> 1.29x on the FLEXPART kernel, with the
+                rank.  2.60x -> 1.29x on the port's kernel, with the
                 same checks -- see runtime/m9rt.h and
-                port/flexpart/gat_cost.c. }
+                the port's gat_cost.c. }
               nsx := '';
               for k := 0 to rk - 1 do
                 nsx := nsx + base + '.n[' + IntToStr (k) + '], ';
@@ -1005,7 +1005,7 @@ begin
     arguments and RETURN -- aliases chase to structure -- so `Real
     (x)` meaning anything other than `F32 (x)` would be the odd case.
     Chased here, once, so every conversion below applies unchanged.
-    Forced by the FLEXPART port, which needs one source buildable at
+    Forced by a Fortran port, which needs one source buildable at
     both of the original's real kinds (-fdefault-real-8 is commented
     out in its makefile, so single is what ships and double is what
     the flag is for), and that needs the default kind to have a name
@@ -2599,7 +2599,7 @@ begin
           { the structural test comes FIRST: a GRID of I64 is called
             m9_gd3_int64_t, which contains _t and is not a scalar --
             it emitted `= 0` and gcc refused it.  Found by the second
-            FLEXPART kernel; a SLICE OF I64 had the same defect and
+            kernel of the port; a SLICE OF I64 had the same defect and
             no corpus module had happened to declare one as a local }
           if Pos ('*', cty) > 0 then init := ' = NULL'
           else if (r <> nil) and
@@ -2834,7 +2834,7 @@ begin
     else if e.kind = nkReal then
       hdrConsts.Add ('#define ' + modName + '_' + consts[ci] + ' (' +
         e.a + ')')
-    { a BOOLEAN constant.  FLEXPART's par_mod has four of them and
+    { a BOOLEAN constant.  the ported model's parameter module has four of them and
       Fortran calls them parameters, which is what they are: a switch
       a program cannot flip at run time }
     else if e.kind = nkTrue then

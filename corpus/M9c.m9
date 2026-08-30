@@ -634,7 +634,7 @@ BEGIN
     END ;
     (* -O2, because a compiler that ships -O0 by default is not what
        anybody wants and nobody was told they had to ask.  Found by
-       porting a FLEXPART kernel: the M9 build came out THIRTEEN
+       porting a Fortran kernel: the M9 build came out THIRTEEN
        TIMES slower than the Fortran, and the whole of that was the
        missing flag -- the same C at -O2 is 3.4x faster, and every
        number in docs/bench.md was measured with cc invoked by hand.
@@ -649,7 +649,7 @@ BEGIN
        LTO none of them can be inlined and the checks are paid in
        full, at a call.
 
-       Measured on the FLEXPART kernel: 0.0134s -> 0.0088s, which is
+       Measured on the port's kernel: 0.0134s -> 0.0088s, which is
        FASTER than the gfortran original's 0.0097s, and still bit
        identical to it (14/14 checks).  It costs 2% of build time
        (m9c itself: 5.51s -> 5.63s) and gives back 7% of the binary
@@ -659,14 +659,14 @@ BEGIN
        it is why the descriptor-hoisting work this replaced was
        dropped: hoisting the GRID descriptor into locals by hand,
        ON TOP of LTO, was worth 3% (0.0088 -> 0.0085).  LTO already
-       does it.  See port/flexpart/README.md. *)
+       does it.  See the port's README. *)
     DynStr.Append (pool, d, ' -flto') ;
     (* AND THE INLINER'S BUDGET, because the checks spend it.  gcc
        auto-inlines only functions under max-inline-insns-auto,
        default 15, and a checked M9 body rarely fits: every access
        carries its bounds test and every checked op its overflow
        test, so the small helpers a hot loop calls -- measured on
-       FLEXPART's vertical transform, where Lerp and HeightStep are
+       the port's vertical transform, where Lerp and HeightStep are
        called per grid point -- stay CALLS, and each call
        re-marshals its GRID descriptors.  At 200 the transform runs
        2.4x faster (1.033 s -> 0.424 s a field, checksum identical),
