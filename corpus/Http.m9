@@ -58,22 +58,30 @@ PROCEDURE Close = "close" (fd: C.Int) : C.Int  [REENTRANT] ;
    socket is: a small non-negative number, -1 for failure, and no
    SSL * crossing the boundary.
 
-   [SERIAL] here is LOAD-BEARING, not conservative like Connect's.
-   OpenSSL 3 is thread-safe per SSL object, but the shim's slot table
-   is not, and the checker's THREAD-may-not-reach-[SERIAL] rule is
-   what keeps a future threaded fetcher out of it.                  *)
+   [REENTRANT] SINCE 2026-08-30, and the tag names the shim's design
+   rather than a hope.  It said [SERIAL] before, LOAD-BEARING and not
+   conservative: OpenSSL 3 is thread-safe per SSL object, but the
+   shim's slot table was not, so eight concurrent HTTPS fetches would
+   have raced it.  runtime/tlsshim.c now claims and releases slots
+   under a mutex -- held for the bookkeeping only, never across a
+   handshake, a read or a write -- and shares ONE SSL_CTX built under
+   pthread_once instead of re-reading the system CA bundle per
+   connection.  Two threads using ONE handle is still a caller's bug,
+   as it is for a plain fd.  Gated by runtime/test/threads.sh, which
+   fetches concurrently over a real TLS server and compares every
+   byte.                                                            *)
 
 PROCEDURE TlsConnect = "tls_connect" (host: C.ConstPtr ; port: C.Int)
-  : C.Int  [SERIAL] ;
+  : C.Int  [REENTRANT] ;
 
 PROCEDURE TlsRead = "tls_read" (h: C.Int ; buf: C.MutPtr ; n: C.SizeT)
-  : C.SSizeT  [SERIAL] ;
+  : C.SSizeT  [REENTRANT] ;
 
 PROCEDURE TlsWrite = "tls_write" (h: C.Int ; buf: C.ConstPtr ;
                                   n: C.SizeT)
-  : C.SSizeT  [SERIAL] ;
+  : C.SSizeT  [REENTRANT] ;
 
-PROCEDURE TlsClose = "tls_close" (h: C.Int) : C.Int  [SERIAL] ;
+PROCEDURE TlsClose = "tls_close" (h: C.Int) : C.Int  [REENTRANT] ;
 
 END csock.
 

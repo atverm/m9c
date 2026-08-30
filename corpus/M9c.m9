@@ -135,7 +135,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.3.0' ;
+  Version = '0.3.1' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;

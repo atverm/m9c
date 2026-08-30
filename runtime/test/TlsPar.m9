@@ -1,0 +1,139 @@
+MODULE TlsPar ;
+
+(* Eight concurrent HTTPS fetches, to prove the TLS shim is what its
+   [REENTRANT] tag now says.  Run by runtime/test/threads.sh against a
+   local TLS server with a certificate the run generates and trusts
+   through $SSL_CERT_FILE -- a real handshake per connection, real
+   verification, and the hostname `localhost` so the certificate's
+   name is checked rather than waved through.
+
+   What is proved: every fetch answers 200 with the SAME bytes as the
+   sequential pass, and the process does not crash or corrupt a slot.
+   The shim's table used to be claimed without a lock, so two threads
+   could take the same slot and one would tear down the other's SSL
+   object.  The old code fails this; the argument is in threads.sh. *)
+
+IMPORT Http ;
+IMPORT Io ;
+
+CONST
+  NFetch = 8 ;
+  Port = 18943 ;
+  Host = 'localhost' ;
+
+TYPE
+  Done = MONITOR RECORD
+    n : I64 ;
+  END ;
+
+  Job = RECORD
+    d : Done ;
+    status : SLICE OF I64 ;
+    size : SLICE OF I64 ;
+    next : I64 ;
+  END ;
+
+PROCEDURE One (VAR status: SLICE OF I64 ; VAR size: SLICE OF I64 ;
+               k: I64) =
+VAR
+  body : SLICE OF BYTE ;
+  pool : POOL ;
+  n, st : I64 ;
+BEGIN
+  body := NEW (pool, BYTE, 65536) ;
+  n := 0 ;
+  BEGIN
+    st := Http.GetTls (Host, Port, '/page', body, n)
+  EXCEPT
+  | Http.TransportError : st := -1
+  | ValueRange : st := -2
+  END ;
+  status[k] := st ;
+  size[k] := n
+END One ;
+
+PROCEDURE Claim (VAR j: Job) : I64 =
+VAR k : I64 ;
+BEGIN
+  k := j.next ;
+  j.next := j.next + 1 ;
+  RETURN k
+END Claim ;
+
+PROCEDURE Finish (VAR d: Done) =
+BEGIN
+  d.n := d.n + 1 ;
+  SIGNAL (d)
+END Finish ;
+
+PROCEDURE Worker (VAR j: Job) =
+VAR k : I64 ;
+BEGIN
+  k := Claim (j) ;
+  IF k < NFetch THEN One (j.status, j.size, k) END ;
+  Finish (j.d)
+END Worker ;
+
+PROCEDURE AwaitAll (VAR d: Done ; want: I64) =
+BEGIN
+  WHILE d.n < want DO
+    WAIT (d)
+  END
+END AwaitAll ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  seqStatus, seqSize : SLICE OF I64 ;
+  i, bad : I64 ;
+
+BEGIN
+  seqStatus := NEW (pool, I64, NFetch) ;
+  seqSize := NEW (pool, I64, NFetch) ;
+  i := 0 ;
+  WHILE i < NFetch DO
+    One (seqStatus, seqSize, i) ;
+    i := i + 1
+  END ;
+
+  j := NEW (pool, Job) ;
+  j.status := NEW (pool, I64, NFetch) ;
+  j.size := NEW (pool, I64, NFetch) ;
+  j.next := 0 ;
+  j.d.n := 0 ;
+  i := 0 ;
+  WHILE i < NFetch DO
+    THREAD (Worker, j) ;
+    i := i + 1
+  END ;
+  AwaitAll (j.d, NFetch) ;
+
+  bad := 0 ;
+  i := 0 ;
+  WHILE i < NFetch DO
+    IF seqStatus[i] # 200 THEN bad := bad + 1 END ;
+    IF j.status[i] # seqStatus[i] THEN bad := bad + 1 END ;
+    IF j.size[i] # seqSize[i] THEN bad := bad + 1 END ;
+    IF j.size[i] <= 0 THEN bad := bad + 1 END ;
+    i := i + 1
+  END ;
+  IF bad = 0 THEN
+    Io.Write ('tlspar: ') ;
+    Io.WriteI64 (NFetch) ;
+    Io.WriteLine (' concurrent HTTPS fetches, all 200, all identical to the sequential pass')
+  ELSE
+    Io.Write ('tlspar: FAILED, ') ;
+    Io.WriteI64 (bad) ;
+    Io.WriteLine (' checks differ') ;
+    i := 0 ;
+    WHILE i < NFetch DO
+      Io.Write ('  ') ; Io.WriteI64 (i) ;
+      Io.Write (' seq ') ; Io.WriteI64 (seqStatus[i]) ;
+      Io.Write ('/') ; Io.WriteI64 (seqSize[i]) ;
+      Io.Write ('  par ') ; Io.WriteI64 (j.status[i]) ;
+      Io.Write ('/') ; Io.WriteI64 (j.size[i]) ;
+      Io.WriteLine ('') ;
+      i := i + 1
+    END
+  END
+END TlsPar.

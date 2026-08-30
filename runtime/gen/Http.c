@@ -75,7 +75,7 @@ static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHA
   hz = DynStr_Bytes (&(scratch), host, true, err);
   if (err->exc) goto L_ret;
   if (secure) {
-    fd = (int64_t)(({ m9_mon_enter (&m9_gate_csock); __typeof__(tls_connect (((void *)(hz).p), ((int)(port)))) m9gv = tls_connect (((void *)(hz).p), ((int)(port))); m9_mon_leave (&m9_gate_csock); m9gv; }));
+    fd = (int64_t)(tls_connect (((void *)(hz).p), ((int)(port))));
   } else {
     fd = (int64_t)(({ m9_mon_enter (&m9_gate_csock); __typeof__(tcp_connect (((void *)(hz).p), ((int)(port)))) m9gv = tcp_connect (((void *)(hz).p), ((int)(port))); m9_mon_leave (&m9_gate_csock); m9gv; }));
   }
@@ -106,7 +106,7 @@ static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHA
   wire = DynStr_Bytes (&(scratch), DynStr_View (req, err), false, err);
   if (err->exc) goto L_fin_m9t3;
   if (secure) {
-    n = (int64_t)(({ m9_mon_enter (&m9_gate_csock); __typeof__(tls_write (((int)(fd)), ((void *)(wire).p), ((size_t)((wire).len)))) m9gv = tls_write (((int)(fd)), ((void *)(wire).p), ((size_t)((wire).len))); m9_mon_leave (&m9_gate_csock); m9gv; }));
+    n = (int64_t)(tls_write (((int)(fd)), ((void *)(wire).p), ((size_t)((wire).len))));
   } else {
     n = (int64_t)(write (((int)(fd)), ((void *)(wire).p), ((size_t)((wire).len))));
   }
@@ -120,7 +120,7 @@ static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHA
   total = INT64_C(0);
   for (;;) {
     if (secure) {
-      n = (int64_t)(({ m9_mon_enter (&m9_gate_csock); __typeof__(tls_read (((int)(fd)), ((void *)(({ __typeof__(recv) m9t6 = recv; int64_t m9t6a = total, m9t6n = m9_sub_i64 (Http_RecvMax, total, err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; })).p), ((size_t)(m9_sub_i64 (Http_RecvMax, total, err))))) m9gv = tls_read (((int)(fd)), ((void *)(({ __typeof__(recv) m9t6 = recv; int64_t m9t6a = total, m9t6n = m9_sub_i64 (Http_RecvMax, total, err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; })).p), ((size_t)(m9_sub_i64 (Http_RecvMax, total, err)))); m9_mon_leave (&m9_gate_csock); m9gv; }));
+      n = (int64_t)(tls_read (((int)(fd)), ((void *)(({ __typeof__(recv) m9t6 = recv; int64_t m9t6a = total, m9t6n = m9_sub_i64 (Http_RecvMax, total, err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; })).p), ((size_t)(m9_sub_i64 (Http_RecvMax, total, err)))));
       if (err->exc) goto L_fin_m9t3;
     } else {
       n = (int64_t)(read (((int)(fd)), ((void *)(({ __typeof__(recv) m9t8 = recv; int64_t m9t8a = total, m9t8n = m9_sub_i64 (Http_RecvMax, total, err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; })).p), ((size_t)(m9_sub_i64 (Http_RecvMax, total, err)))));
@@ -137,7 +137,7 @@ static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHA
   }
 L_fin_m9t3: ;
   if (secure) {
-    n = (int64_t)(({ m9_mon_enter (&m9_gate_csock); __typeof__(tls_close (((int)(fd)))) m9gv = tls_close (((int)(fd))); m9_mon_leave (&m9_gate_csock); m9gv; }));
+    n = (int64_t)(tls_close (((int)(fd))));
   } else {
     n = (int64_t)(close (((int)(fd))));
   }

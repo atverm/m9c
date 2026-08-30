@@ -48,18 +48,18 @@ _(undocumented)_
 
 _(undocumented)_
 
-### TlsConnect (host: C.ConstPtr ; port: C.Int) : C.Int [SERIAL]
+### TlsConnect (host: C.ConstPtr ; port: C.Int) : C.Int [REENTRANT]
 
 _(undocumented)_
 
-### TlsRead (h: C.Int ; buf: C.MutPtr ; n: C.SizeT) : C.SSizeT [SERIAL]
+### TlsRead (h: C.Int ; buf: C.MutPtr ; n: C.SizeT) : C.SSizeT [REENTRANT]
 
 _(undocumented)_
 
-### TlsWrite (h: C.Int ; buf: C.ConstPtr ; n: C.SizeT) : C.SSizeT [SERIAL]
+### TlsWrite (h: C.Int ; buf: C.ConstPtr ; n: C.SizeT) : C.SSizeT [REENTRANT]
 
 _(undocumented)_
 
-### TlsClose (h: C.Int) : C.Int [SERIAL]
+### TlsClose (h: C.Int) : C.Int [REENTRANT]
 
 _(undocumented)_
