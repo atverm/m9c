@@ -182,6 +182,22 @@ BEGIN
   Io.ErrLine (DynStr.View (d))
 END DiagN ;
 
+(* FILE:LINE:COL: what: message -- the parser's errors carry a column
+   where the generator's carry only a line, because a parser knows
+   which token it was looking at *)
+PROCEDURE Diag2 (RO a: STR ; ln: I64 ; cl: I64 ; RO b: STR ; RO c: STR) =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, a) ;
+  DynStr.AppendI64 (pool, d, ln) ;
+  DynStr.AppendChar (pool, d, ':') ;
+  DynStr.AppendI64 (pool, d, cl) ;
+  DynStr.Append (pool, d, b) ;
+  DynStr.Append (pool, d, c) ;
+  Io.ErrLine (DynStr.View (d))
+END Diag2 ;
+
 PROCEDURE Suffix (RO name: STR ; RO ext: STR) : STR =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
@@ -1321,6 +1337,7 @@ PROCEDURE ParseText (RO src: STR ; RO path: STR) : Ast.Kid
 VAR
   p : Parse.Parser ;
   root : PTR Ast.Node IN pool ;
+  i : I64 ;
 BEGIN
   Parse.Init (p, src) ;
   root := Parse.File (pool, p) ;
@@ -1330,8 +1347,16 @@ BEGIN
      only the caller knows which file is the main one. *)
   Lex.Collect (FALSE) ;
   IF p.nerr > 0 THEN
-    (* errors are values: Parse counts them and the driver reports
-       the count.  The message table is stage-2 work, still owed. *)
+    (* each error with its line and column, the way the generator's
+       have been printed since 2026-08-29.  A count alone was the
+       parser's half of the same defect and cost the same bisects:
+       one `<>` in a file gave `981 parse errors` and no line. *)
+    i := 0 ;
+    WHILE i < p.nkept AND i < 8 DO
+      Diag2 (Cat (path, ':'), p.errLine[i], p.errCol[i],
+             ': parse: ', p.errMsg[i]) ;
+      i := i + 1
+    END ;
     DiagN ('m9c: ', p.nerr, ' parse errors in ', path) ;
     failed := TRUE ;
     RETURN NONE

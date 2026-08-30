@@ -368,42 +368,45 @@ static const uint32_t m9s300[12] = { 32u, 112u, 97u, 114u, 97u, 109u, 108u, 105u
 static const uint32_t m9s301[7] = { 32u, 100u, 114u, 105u, 102u, 116u, 32u };
 static const uint32_t m9s302[5] = { 109u, 57u, 99u, 58u, 32u };
 static const uint32_t m9s303[54] = { 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u, 101u, 100u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 115u, 32u, 97u, 114u, 101u, 32u, 110u, 111u, 116u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 105u, 114u, 32u, 115u, 105u, 103u, 110u, 97u, 116u, 117u, 114u, 101u, 44u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s304[5] = { 109u, 57u, 99u, 58u, 32u };
-static const uint32_t m9s305[17] = { 32u, 112u, 97u, 114u, 115u, 101u, 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s306[31] = { 109u, 57u, 99u, 58u, 32u, 45u, 45u, 110u, 111u, 45u, 117u, 110u, 115u, 97u, 102u, 101u, 58u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 117u, 110u, 105u, 116u, 32u };
-static const uint32_t m9s307[4] = { 32u, 105u, 110u, 32u };
-static const uint32_t m9s308[30] = { 109u, 57u, 99u, 58u, 32u, 45u, 45u, 110u, 111u, 45u, 117u, 110u, 115u, 97u, 102u, 101u, 58u, 32u, 85u, 78u, 83u, 65u, 70u, 69u, 32u, 117u, 110u, 105u, 116u, 32u };
+static const uint32_t m9s304[1] = { 58u };
+static const uint32_t m9s305[9] = { 58u, 32u, 112u, 97u, 114u, 115u, 101u, 58u, 32u };
+static const uint32_t m9s306[5] = { 109u, 57u, 99u, 58u, 32u };
+static const uint32_t m9s307[17] = { 32u, 112u, 97u, 114u, 115u, 101u, 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s308[31] = { 109u, 57u, 99u, 58u, 32u, 45u, 45u, 110u, 111u, 45u, 117u, 110u, 115u, 97u, 102u, 101u, 58u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 117u, 110u, 105u, 116u, 32u };
 static const uint32_t m9s309[4] = { 32u, 105u, 110u, 32u };
-static const uint32_t m9s310[24] = { 109u, 57u, 99u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 102u, 105u, 110u, 100u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u };
-static const uint32_t m9s311[36] = { 32u, 111u, 110u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 97u, 114u, 99u, 104u, 32u, 112u, 97u, 116u, 104u, 32u, 40u, 45u, 73u, 44u, 32u, 36u, 77u, 57u, 76u, 73u, 66u, 82u, 65u, 82u, 89u, 41u };
-static const uint32_t m9s312[31] = { 117u, 115u, 97u, 103u, 101u, 58u, 32u, 109u, 57u, 99u, 32u, 70u, 73u, 76u, 69u, 46u, 109u, 57u, 32u, 91u, 68u, 69u, 80u, 46u, 109u, 57u, 32u, 46u, 46u, 46u, 93u };
-static const uint32_t m9s313[16] = { 116u, 114u, 121u, 32u, 39u, 109u, 57u, 99u, 32u, 45u, 45u, 104u, 101u, 108u, 112u, 39u };
-static const uint32_t m9s314[45] = { 109u, 57u, 99u, 58u, 32u, 45u, 45u, 100u, 111u, 99u, 32u, 119u, 114u, 105u, 116u, 101u, 115u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u, 44u, 32u, 110u, 111u, 116u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 115u, 59u };
-static const uint32_t m9s315[49] = { 32u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 99u, 111u, 109u, 98u, 105u, 110u, 101u, 100u, 32u, 119u, 105u, 116u, 104u, 32u, 45u, 99u, 44u, 32u, 45u, 111u, 44u, 32u, 45u, 45u, 97u, 114u, 32u, 111u, 114u, 32u, 45u, 45u, 115u, 111u };
-static const uint32_t m9s316[4] = { 109u, 57u, 99u, 32u };
-static const uint32_t m9s317[19] = { 109u, 57u, 99u, 58u, 32u, 110u, 111u, 32u, 115u, 111u, 117u, 114u, 99u, 101u, 32u, 102u, 105u, 108u, 101u };
-static const uint32_t m9s318[9] = { 77u, 57u, 76u, 73u, 66u, 82u, 65u, 82u, 89u };
-static const uint32_t m9s319[1] = { 46u };
-static const uint32_t m9s320[11] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 102u, 105u, 110u, 100u };
-static const uint32_t m9s321[5] = { 109u, 57u, 99u, 58u, 32u };
-static const uint32_t m9s322[11] = { 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s323[3] = { 46u, 109u, 100u };
-static const uint32_t m9s324[5] = { 46u, 106u, 115u, 111u, 110u };
-static const uint32_t m9s325[1] = { 58u };
-static const uint32_t m9s326[7] = { 58u, 32u, 103u, 101u, 110u, 58u, 32u };
-static const uint32_t m9s327[5] = { 109u, 57u, 99u, 58u, 32u };
-static const uint32_t m9s328[21] = { 32u, 103u, 101u, 110u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s329[2] = { 46u, 104u };
-static const uint32_t m9s330[2] = { 46u, 99u };
-static const uint32_t m9s331[2] = { 46u, 99u };
-static const uint32_t m9s332[2] = { 46u, 104u };
-static const uint32_t m9s333[20] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 114u, 101u, 97u, 100u, 32u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 101u };
-static const uint32_t m9s334[18] = { 115u, 111u, 117u, 114u, 99u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s335[16] = { 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s310[30] = { 109u, 57u, 99u, 58u, 32u, 45u, 45u, 110u, 111u, 45u, 117u, 110u, 115u, 97u, 102u, 101u, 58u, 32u, 85u, 78u, 83u, 65u, 70u, 69u, 32u, 117u, 110u, 105u, 116u, 32u };
+static const uint32_t m9s311[4] = { 32u, 105u, 110u, 32u };
+static const uint32_t m9s312[24] = { 109u, 57u, 99u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 102u, 105u, 110u, 100u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u };
+static const uint32_t m9s313[36] = { 32u, 111u, 110u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 97u, 114u, 99u, 104u, 32u, 112u, 97u, 116u, 104u, 32u, 40u, 45u, 73u, 44u, 32u, 36u, 77u, 57u, 76u, 73u, 66u, 82u, 65u, 82u, 89u, 41u };
+static const uint32_t m9s314[31] = { 117u, 115u, 97u, 103u, 101u, 58u, 32u, 109u, 57u, 99u, 32u, 70u, 73u, 76u, 69u, 46u, 109u, 57u, 32u, 91u, 68u, 69u, 80u, 46u, 109u, 57u, 32u, 46u, 46u, 46u, 93u };
+static const uint32_t m9s315[16] = { 116u, 114u, 121u, 32u, 39u, 109u, 57u, 99u, 32u, 45u, 45u, 104u, 101u, 108u, 112u, 39u };
+static const uint32_t m9s316[45] = { 109u, 57u, 99u, 58u, 32u, 45u, 45u, 100u, 111u, 99u, 32u, 119u, 114u, 105u, 116u, 101u, 115u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u, 44u, 32u, 110u, 111u, 116u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 115u, 59u };
+static const uint32_t m9s317[49] = { 32u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 99u, 111u, 109u, 98u, 105u, 110u, 101u, 100u, 32u, 119u, 105u, 116u, 104u, 32u, 45u, 99u, 44u, 32u, 45u, 111u, 44u, 32u, 45u, 45u, 97u, 114u, 32u, 111u, 114u, 32u, 45u, 45u, 115u, 111u };
+static const uint32_t m9s318[4] = { 109u, 57u, 99u, 32u };
+static const uint32_t m9s319[19] = { 109u, 57u, 99u, 58u, 32u, 110u, 111u, 32u, 115u, 111u, 117u, 114u, 99u, 101u, 32u, 102u, 105u, 108u, 101u };
+static const uint32_t m9s320[9] = { 77u, 57u, 76u, 73u, 66u, 82u, 65u, 82u, 89u };
+static const uint32_t m9s321[1] = { 46u };
+static const uint32_t m9s322[11] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 102u, 105u, 110u, 100u };
+static const uint32_t m9s323[5] = { 109u, 57u, 99u, 58u, 32u };
+static const uint32_t m9s324[11] = { 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s325[3] = { 46u, 109u, 100u };
+static const uint32_t m9s326[5] = { 46u, 106u, 115u, 111u, 110u };
+static const uint32_t m9s327[1] = { 58u };
+static const uint32_t m9s328[7] = { 58u, 32u, 103u, 101u, 110u, 58u, 32u };
+static const uint32_t m9s329[5] = { 109u, 57u, 99u, 58u, 32u };
+static const uint32_t m9s330[21] = { 32u, 103u, 101u, 110u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s331[2] = { 46u, 104u };
+static const uint32_t m9s332[2] = { 46u, 99u };
+static const uint32_t m9s333[2] = { 46u, 99u };
+static const uint32_t m9s334[2] = { 46u, 104u };
+static const uint32_t m9s335[20] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 114u, 101u, 97u, 100u, 32u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 101u };
+static const uint32_t m9s336[18] = { 115u, 111u, 117u, 114u, 99u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s337[16] = { 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u };
 
 static m9_sl_CHAR M9c_BaseName (m9_sl_CHAR path, m9_err *err);
 static void M9c_Diag (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err);
 static void M9c_DiagN (m9_sl_CHAR a, int64_t n, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err);
+static void M9c_Diag2 (m9_sl_CHAR a, int64_t ln, int64_t cl, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err);
 static m9_sl_CHAR M9c_Suffix (m9_sl_CHAR name, m9_sl_CHAR ext, m9_err *err);
 static void M9c_DirAdd (m9_sl_CHAR d, bool trusted, m9_err *err);
 static void M9c_DirAddPath (m9_sl_CHAR s, bool trusted, m9_err *err);
@@ -519,6 +522,29 @@ static void M9c_DiagN (m9_sl_CHAR a, int64_t n, m9_sl_CHAR b, m9_sl_CHAR c, m9_e
   DynStr_Append (&(pool), &(d), a, err);
   if (err->exc) goto L_ret;
   DynStr_AppendI64 (&(pool), &(d), n, err);
+  if (err->exc) goto L_ret;
+  DynStr_Append (&(pool), &(d), b, err);
+  if (err->exc) goto L_ret;
+  DynStr_Append (&(pool), &(d), c, err);
+  if (err->exc) goto L_ret;
+  Io_ErrLine (DynStr_View (d, err), err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  return;
+}
+
+static void M9c_Diag2 (m9_sl_CHAR a, int64_t ln, int64_t cl, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err)
+{
+  DynStr_DString * d = NULL; (void) d;
+  d = DynStr_New (&(pool), err);
+  if (err->exc) goto L_ret;
+  DynStr_Append (&(pool), &(d), a, err);
+  if (err->exc) goto L_ret;
+  DynStr_AppendI64 (&(pool), &(d), ln, err);
+  if (err->exc) goto L_ret;
+  DynStr_AppendChar (&(pool), &(d), 58u, err);
+  if (err->exc) goto L_ret;
+  DynStr_AppendI64 (&(pool), &(d), cl, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(pool), &(d), b, err);
   if (err->exc) goto L_ret;
@@ -2137,6 +2163,7 @@ static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_err *err)
   Ast_Node * m9ret = NULL;
   Parse_Parser p = {0}; (void) p;
   Ast_Node * root = NULL; (void) root;
+  int64_t i = 0; (void) i;
   Parse_Init (&(p), src, err);
   if (err->exc) goto L_ret;
   root = Parse_File (&(pool), &(p), err);
@@ -2144,7 +2171,15 @@ static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_err *err)
   Lex_Collect (false, err);
   if (err->exc) goto L_ret;
   if ((p.nerr > INT64_C(0))) {
-    M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s304, 5 }), p.nerr, ((m9_sl_CHAR){ (uint32_t *) m9s305, 17 }), path, err);
+    i = INT64_C(0);
+    for (;;) {
+      if (!(((i < p.nkept) && (i < INT64_C(8))))) break;
+      M9c_Diag2 (M9c_Cat (path, ((m9_sl_CHAR){ (uint32_t *) m9s304, 1 }), err), (*(int64_t *) m9_at (p.errLine.v, i, INT64_C(64), sizeof (int64_t), err)), (*(int64_t *) m9_at (p.errCol.v, i, INT64_C(64), sizeof (int64_t), err)), ((m9_sl_CHAR){ (uint32_t *) m9s305, 9 }), (*(m9_sl_CHAR *) m9_at (p.errMsg.v, i, INT64_C(64), sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      i = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+    }
+    M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s306, 5 }), p.nerr, ((m9_sl_CHAR){ (uint32_t *) m9s307, 17 }), path, err);
     if (err->exc) goto L_ret;
     failed = true;
     m9ret = NULL;
@@ -2243,14 +2278,14 @@ static void M9c_ScanUnsafe (Ast_Node * root, m9_sl_CHAR path, bool trusted, m9_e
     if (err->exc) goto L_ret;
     if (u != NULL) {
       if (((u->b).len > INT64_C(0))) {
-        M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s306, 31 }), u->a, M9c_Cat (((m9_sl_CHAR){ (uint32_t *) m9s307, 4 }), path, err), err);
+        M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s308, 31 }), u->a, M9c_Cat (((m9_sl_CHAR){ (uint32_t *) m9s309, 4 }), path, err), err);
         if (err->exc) goto L_ret;
         nunsafe = m9_add_i64 (nunsafe, INT64_C(1), err);
         if (err->exc) goto L_ret;
         failed = true;
       } else {
         if (u->f1) {
-          M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s308, 30 }), u->a, M9c_Cat (((m9_sl_CHAR){ (uint32_t *) m9s309, 4 }), path, err), err);
+          M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s310, 30 }), u->a, M9c_Cat (((m9_sl_CHAR){ (uint32_t *) m9s311, 4 }), path, err), err);
           if (err->exc) goto L_ret;
           nunsafe = m9_add_i64 (nunsafe, INT64_C(1), err);
           if (err->exc) goto L_ret;
@@ -2274,7 +2309,7 @@ L_ret: ;
 
 static void M9c_Missing (m9_sl_CHAR name, m9_err *err)
 {
-  M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s310, 24 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s311, 36 }), err);
+  M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s312, 24 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s313, 36 }), err);
   if (err->exc) goto L_ret;
   nmissing = m9_add_i64 (nmissing, INT64_C(1), err);
   if (err->exc) goto L_ret;
@@ -2490,9 +2525,9 @@ int main (int argc, char **argv)
   bool m9t3 = (Io_ArgCount (err) < INT64_C(2));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s312, 31 }), err);
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s314, 31 }), err);
     if (err->exc) goto L_hdl_m9t1;
-    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s313, 16 }), err);
+    Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s315, 16 }), err);
     if (err->exc) goto L_hdl_m9t1;
     failed = true;
   } else {
@@ -2505,9 +2540,9 @@ int main (int argc, char **argv)
     M9c_ScanArgs (err);
     if (err->exc) goto L_hdl_m9t1;
     if ((doDoc && (((doCompile || doLink) || ((lib).len > INT64_C(0)))))) {
-      Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s314, 45 }), err);
+      Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s316, 45 }), err);
       if (err->exc) goto L_hdl_m9t1;
-      Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s315, 49 }), err);
+      Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s317, 49 }), err);
       if (err->exc) goto L_hdl_m9t1;
       failed = true;
       Io_Halt (INT64_C(1), err);
@@ -2516,13 +2551,13 @@ int main (int argc, char **argv)
     main_ = M9c_SourceAt (INT64_C(0), err);
     if (err->exc) goto L_hdl_m9t1;
     if ((doVersion || ((verbose && ((main_).len == INT64_C(0)))))) {
-      Io_WriteLine (m9_cat (&m9_heap, ((m9_sl_CHAR){ (uint32_t *) m9s316, 4 }), M9c_Version, err), err);
+      Io_WriteLine (m9_cat (&m9_heap, ((m9_sl_CHAR){ (uint32_t *) m9s318, 4 }), M9c_Version, err), err);
       if (err->exc) goto L_hdl_m9t1;
       Io_Halt (INT64_C(0), err);
       if (err->exc) goto L_hdl_m9t1;
     }
     if (((main_).len == INT64_C(0))) {
-      Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s317, 19 }), err);
+      Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s319, 19 }), err);
       if (err->exc) goto L_hdl_m9t1;
       failed = true;
       Io_Halt (INT64_C(1), err);
@@ -2531,12 +2566,12 @@ int main (int argc, char **argv)
     name = M9c_BaseName (main_, err);
     if (err->exc) goto L_hdl_m9t1;
     modName = name;
-    M9c_DirAddPath (Io_Env (&(pool), ((m9_sl_CHAR){ (uint32_t *) m9s318, 9 }), err), true, err);
+    M9c_DirAddPath (Io_Env (&(pool), ((m9_sl_CHAR){ (uint32_t *) m9s320, 9 }), err), true, err);
     if (err->exc) goto L_hdl_m9t1;
     bool m9t5 = ((M9c_DirOf (main_, err)).len == INT64_C(0));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t5) {
-      M9c_DirAdd (((m9_sl_CHAR){ (uint32_t *) m9s319, 1 }), false, err);
+      M9c_DirAdd (((m9_sl_CHAR){ (uint32_t *) m9s321, 1 }), false, err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
       M9c_DirAdd (M9c_DirOf (main_, err), false, err);
@@ -2550,7 +2585,7 @@ int main (int argc, char **argv)
       mainSrc = M9c_FindModule (name, &(main_), &(found), &(mainTrust), err);
       if (err->exc) goto L_hdl_m9t1;
       if ((!found)) {
-        M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s320, 11 }), M9c_SourceAt (INT64_C(0), err), err);
+        M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s322, 11 }), M9c_SourceAt (INT64_C(0), err), err);
         if (err->exc) goto L_hdl_m9t1;
         Io_Halt (INT64_C(1), err);
         if (err->exc) goto L_hdl_m9t1;
@@ -2603,7 +2638,7 @@ int main (int argc, char **argv)
       bool m9t8 = M9c_Report (err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t8) {
-        M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s321, 5 }), Sem_ErrCount (err), ((m9_sl_CHAR){ (uint32_t *) m9s322, 11 }), main_, err);
+        M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s323, 5 }), Sem_ErrCount (err), ((m9_sl_CHAR){ (uint32_t *) m9s324, 11 }), main_, err);
         if (err->exc) goto L_hdl_m9t1;
         failed = true;
         Io_Halt (INT64_C(1), err);
@@ -2622,10 +2657,10 @@ int main (int argc, char **argv)
         } }
       } }
       if (doDoc) {
-        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s323, 3 }), err), M9c_DocText (root, name, err), err);
+        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s325, 3 }), err), M9c_DocText (root, name, err), err);
         if (err->exc) goto L_hdl_m9t1;
         if (doJson) {
-          Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s324, 5 }), err), M9c_JsonText (root, name, err), err);
+          Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s326, 5 }), err), M9c_JsonText (root, name, err), err);
           if (err->exc) goto L_hdl_m9t1;
         }
         goto L_ret;
@@ -2640,28 +2675,28 @@ int main (int argc, char **argv)
           bool m9t11 = ((i < Gen_Errs (err)) && (i < INT64_C(8)));
           if (err->exc) goto L_hdl_m9t1;
           if (!(m9t11)) break;
-          M9c_DiagN (M9c_Cat (main_, ((m9_sl_CHAR){ (uint32_t *) m9s325, 1 }), err), Gen_ErrLineAt (i, err), ((m9_sl_CHAR){ (uint32_t *) m9s326, 7 }), Gen_ErrMsgAt (i, err), err);
+          M9c_DiagN (M9c_Cat (main_, ((m9_sl_CHAR){ (uint32_t *) m9s327, 1 }), err), Gen_ErrLineAt (i, err), ((m9_sl_CHAR){ (uint32_t *) m9s328, 7 }), Gen_ErrMsgAt (i, err), err);
           if (err->exc) goto L_hdl_m9t1;
           i = m9_add_i64 (i, INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
         }
-        M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s327, 5 }), Gen_Errs (err), ((m9_sl_CHAR){ (uint32_t *) m9s328, 21 }), main_, err);
+        M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s329, 5 }), Gen_Errs (err), ((m9_sl_CHAR){ (uint32_t *) m9s330, 21 }), main_, err);
         if (err->exc) goto L_hdl_m9t1;
         failed = true;
       } else {
-        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s329, 2 }), err), Gen_HText (err), err);
+        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s331, 2 }), err), Gen_HText (err), err);
         if (err->exc) goto L_hdl_m9t1;
-        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s330, 2 }), err), Gen_CText (err), err);
+        Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s332, 2 }), err), Gen_CText (err), err);
         if (err->exc) goto L_hdl_m9t1;
         if (doCompile) {
           bool m9t12 = M9c_Compile (name, err);
           if (err->exc) goto L_hdl_m9t1;
           if (m9t12) {
             if ((!keepC)) {
-              M9c_Drop (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s331, 2 }), err), err);
+              M9c_Drop (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s333, 2 }), err), err);
               if (err->exc) goto L_hdl_m9t1;
               if (doLink) {
-                M9c_Drop (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s332, 2 }), err), err);
+                M9c_Drop (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s334, 2 }), err), err);
                 if (err->exc) goto L_hdl_m9t1;
               }
             }
@@ -2688,7 +2723,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR path = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) path;
     err->exc = NULL;
-    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s333, 20 }), path, err);
+    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s335, 20 }), path, err);
     if (err->exc) goto L_ret;
     Io_Halt (INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -2696,7 +2731,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s334, 18 }), main_, err);
+    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s336, 18 }), main_, err);
     if (err->exc) goto L_ret;
     Io_Halt (INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -2704,7 +2739,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s335, 16 }), main_, err);
+    M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s337, 16 }), main_, err);
     if (err->exc) goto L_ret;
     Io_Halt (INT64_C(1), err);
     if (err->exc) goto L_ret;

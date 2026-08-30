@@ -8,6 +8,7 @@
 
 typedef struct Parse_Parser Parse_Parser;
 
+#define Parse_MaxErr INT64_C(64)
 #define Parse_TkEOF INT64_C(0)
 #define Parse_TkError INT64_C(1)
 #define Parse_TkIdent INT64_C(2)
@@ -108,6 +109,15 @@ typedef struct Parse_Parser Parse_Parser;
 #define Parse_SRParen INT64_C(5)
 #define Parse_SVariantF INT64_C(6)
 
+#ifndef M9SL_m9_arr_64_int64_t
+#define M9SL_m9_arr_64_int64_t
+typedef struct { int64_t v[64]; } m9_arr_64_int64_t;
+#endif
+#ifndef M9SL_m9_arr_64_m9_sl_CHAR
+#define M9SL_m9_arr_64_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[64]; } m9_arr_64_m9_sl_CHAR;
+#endif
+
 typedef struct Parse_Parser Parse_Parser;
 struct Parse_Parser {
   Lex_Lexer lx;
@@ -115,6 +125,10 @@ struct Parse_Parser {
   Lex_Token peekTok;
   bool peeked;
   int64_t nerr;
+  int64_t nkept;
+  m9_arr_64_int64_t errLine;
+  m9_arr_64_int64_t errCol;
+  m9_arr_64_m9_sl_CHAR errMsg;
 };
 
 void Parse_Init (Parse_Parser *p, m9_sl_CHAR src, m9_err *err);

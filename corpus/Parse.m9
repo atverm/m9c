@@ -1,20 +1,54 @@
 DEFINITION MODULE Parse ;
 
 (* Recursive descent over report par 10, in M9 -- restated from
-   host/fpc/M9Parse.pas for P5 stage 1.  Errors are counted, not yet
-   worded: the differential runs on files that parse clean, and the
-   message table arrives when the self-hosted driver needs to talk
-   to people (stage 2 work, noted).  A tree always comes back.       *)
+   host/fpc/M9Parse.pas for P5 stage 1.  ERRORS ARE VALUES: every one
+   lands in the parser as line, col and a message, in the oracle's own
+   wording, and a tree always comes back.
+
+   The messages were the stage-2 work this header used to promise and
+   defer -- "the count is all there is today" -- and the deferral
+   cost a bisect every time a program was written outside the corpus,
+   most recently inside the tutorial, where a reader following the
+   chapter's own advice got `1 parse errors` and no line.  Written
+   2026-08-30.                                                       *)
 
 IMPORT Ast ;
 IMPORT Lex ;
 
+CONST
+  (* the first MaxErr are KEPT, all of them are COUNTED.  A fixed
+     array rather than a pool: Init takes no pool (the Parser is a
+     record the caller owns, and Doc/M9c/parsetest all rely on that),
+     and a module-level list would make this module STATEFUL for the
+     sake of a diagnostic.  Nothing reads past the eighth. *)
+  MaxErr = 64 ;
+  (* AND THE BOUNDS BELOW ARE THE LITERAL 64, not this name: the
+     generator refuses an array bound it cannot see as a literal, and
+     a bound written in THIS module's namespace is not visible in an
+     importer's, where the record is emitted too ("array bound must
+     be a literal or literal CONST", seven times, from M9c).  Same
+     family as Sem's canonCtx lesson -- a name in a borrowed
+     declaration must resolve in the module that WROTE it. *)
+
 TYPE
+  (* THREE PARALLEL ARRAYS, NOT AN ARRAY OF RECORDS, and the reason
+     is a generator bug rather than a design: `errs : ARRAY 64 OF
+     Perr` emits the array typedef BEFORE the struct it contains --
+     `typedef struct { Parse_Perr v[64]; } ...` above `struct
+     Parse_Perr { ... }` -- and gcc refuses "array type has
+     incomplete element type".  Same family as the private-record
+     leak already in the ledger, and logged with this reproduction.
+     When the generator emits array typedefs after the structs they
+     name, these three become one array of Perr. *)
   Parser = RECORD
     lx : Lex.Lexer ;
     cur, peekTok : Lex.Token ;
     peeked : BOOL ;
-    nerr : I64 ;
+    nerr : I64 ;               (* every error *)
+    nkept : I64 ;              (* those kept: MIN (nerr, MaxErr) *)
+    errLine : ARRAY 64 OF I64 ;
+    errCol : ARRAY 64 OF I64 ;
+    errMsg : ARRAY 64 OF STR ;
   END ;
 
 PROCEDURE Init (VAR p: Parser ; RO src: STR) ;
@@ -35,10 +69,9 @@ PROCEDURE File (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node ;
      does not hide the rest of the file.  Check `p.nerr` before
      trusting the tree -- the record is transparent for exactly
      that, and a caller that skips the check gets a tree with holes
-     in it and no warning.  The count is all there is today; the
-     messages are the stage-2 work the module header names, and
-     their absence costs a bisect every time a program is written
-     outside the corpus.
+     in it and no warning.  p.errLine/errCol/errMsg[0 .. p.nkept - 1]
+     carry the first MaxErr of them; p.nerr counts all.  A caller
+     prints them as `FILE:LINE:COL: parse: MSG`.
 
        pool -- owns every node.  The tree cannot outlive it.      *)
 
@@ -152,9 +185,49 @@ BEGIN
   END
 END OpText ;
 
-PROCEDURE Rerr (VAR p: Parser) =
+(* THE SPELLING of a token kind, which is what a message says was
+   expected: 'MODULE', ';', ':='.  Lex.KindName answers the kind's
+   NAME ('Semi'), which is what a message says was FOUND -- the two
+   are different questions and the oracle asks both.  Keywords spell
+   themselves, so KwName is the whole answer for them. *)
+PROCEDURE Spell (k: I64) : STR =
 BEGIN
+  CASE k OF
+  | TkAssign : RETURN ':='
+  | TkEq : RETURN '='
+  | TkLParen : RETURN '('
+  | TkRParen : RETURN ')'
+  | TkLBrack : RETURN '['
+  | TkRBrack : RETURN ']'
+  | TkComma : RETURN ','
+  | TkSemi : RETURN ';'
+  | TkColon : RETURN ':'
+  | TkDot : RETURN '.'
+  | TkDotDot : RETURN '..'
+  | TkBar : RETURN '|'
+  | TkIdent : RETURN 'identifier'
+    (* a KEYWORD spells itself, and Lex.KindName already answers the
+       keyword table for those, so the fallback is the whole rest of
+       the answer *)
+  ELSE RETURN Lex.KindName (k)
+  END
+END Spell ;
+
+PROCEDURE ErrAt (VAR p: Parser ; ln: I64 ; cl: I64 ; RO msg: STR) =
+BEGIN
+  IF p.nerr < MaxErr THEN
+    p.errLine[p.nerr] := ln ;
+    p.errCol[p.nerr] := cl ;
+    p.errMsg[p.nerr] := msg ;
+    p.nkept := p.nerr + 1
+  END ;
   p.nerr := p.nerr + 1
+END ErrAt ;
+
+(* at the current token, which is where all but the lexical ones are *)
+PROCEDURE Rerr (VAR p: Parser ; RO msg: STR) =
+BEGIN
+  ErrAt (p, p.cur.line, p.cur.col, msg)
 END Rerr ;
 
 PROCEDURE Bump (VAR p: Parser) =
@@ -167,7 +240,7 @@ BEGIN
       Lex.Next (p.lx, p.cur)
     END ;
     IF p.cur.kind # TkError THEN EXIT END ;
-    Rerr (p)
+    ErrAt (p, p.cur.line, p.cur.col, 'lex: ' + p.cur.text)
   END
 END Bump ;
 
@@ -177,7 +250,7 @@ BEGIN
     LOOP
       Lex.Next (p.lx, p.peekTok) ;
       IF p.peekTok.kind # TkError THEN EXIT END ;
-      Rerr (p)
+      ErrAt (p, p.peekTok.line, p.peekTok.col, 'lex: ' + p.peekTok.text)
     END ;
     p.peeked := TRUE
   END ;
@@ -192,11 +265,20 @@ BEGIN
   IF p.cur.kind = k THEN
     Bump (p)
   ELSE
-    Rerr (p)
+    (* the oracle passes the spelling at all 83 call sites; here it
+       is DERIVED from the kind, which is the same string and cannot
+       drift from the token it names *)
+    Rerr (p, Spell (k) + ' expected, found ' + Lex.KindName (p.cur.kind)
+             + " '" + p.cur.text + "'")
   END
 END Expect ;
 
-PROCEDURE TakeIdent (VAR p: Parser) : STR =
+(* `what` names the identifier the grammar wanted -- 'module name',
+   'field name' -- because "identifier expected" in a file with
+   twenty identifiers on the line says nothing.  The oracle's own
+   phrases, kept word for word so the two parsers can be held to the
+   same diagnostics. *)
+PROCEDURE TakeIdent (VAR p: Parser ; RO what: STR) : STR =
 VAR s : STR ;
 BEGIN
   IF p.cur.kind = TkIdent THEN
@@ -204,7 +286,8 @@ BEGIN
     Bump (p) ;
     RETURN s
   END ;
-  Rerr (p) ;
+  Rerr (p, what + ' (identifier) expected, found '
+           + Lex.KindName (p.cur.kind)) ;
   RETURN ''
 END TakeIdent ;
 
@@ -238,10 +321,10 @@ PROCEDURE PQualident (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NQualident) ;
-  n.a := TakeIdent (p) ;
+  n.a := TakeIdent (p, 'name') ;
   IF p.cur.kind = TkDot THEN
     Bump (p) ;
-    n.b := TakeIdent (p)
+    n.b := TakeIdent (p, 'name after .')
   END ;
   RETURN n
 END PQualident ;
@@ -251,12 +334,12 @@ VAR n, id : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NIdentList) ;
   id := Nn (pool, p, Ast.NIdent) ;
-  id.a := TakeIdent (p) ;
+  id.a := TakeIdent (p, 'name') ;
   Ast.Add (pool, n, SOME (id)) ;
   WHILE p.cur.kind = TkComma DO
     Bump (p) ;
     id := Nn (pool, p, Ast.NIdent) ;
-    id.a := TakeIdent (p) ;
+    id.a := TakeIdent (p, 'name') ;
     Ast.Add (pool, n, SOME (id))
   END ;
   RETURN n
@@ -289,7 +372,7 @@ BEGIN
       END
     END
   END ;
-  Rerr (p) ;
+  Rerr (p, 'a qualified name is Module.Name, no further selectors') ;
   RETURN n
 END DesigToQual ;
 
@@ -393,7 +476,7 @@ BEGIN
       n := d
     END
   ELSE
-    Rerr (p) ;
+    Rerr (p, 'expression expected, found ' + Lex.KindName (p.cur.kind)) ;
     n := Nn (pool, p, Ast.NInt) ;
     n.a := '0' ;
     Bump (p)
@@ -499,7 +582,7 @@ BEGIN
     IF p.cur.kind = TkSOME THEN
       t := Nn (pool, p, Ast.NIsSome) ;
       Bump (p) ;
-      t.a := TakeIdent (p) ;
+      t.a := TakeIdent (p, 'binding name') ;
       Ast.Add (pool, n, SOME (t))
     ELSE
       Ast.Add (pool, n, SOME (PQualident (pool, p)))
@@ -514,12 +597,12 @@ PROCEDURE PDesignator (VAR pool: POOL ; VAR p: Parser)
 VAR n, sel : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NDesignator) ;
-  n.a := TakeIdent (p) ;
+  n.a := TakeIdent (p, 'name') ;
   WHILE p.cur.kind = TkDot OR p.cur.kind = TkLBrack DO
     IF p.cur.kind = TkDot THEN
       Bump (p) ;
       sel := Nn (pool, p, Ast.NSelField) ;
-      sel.a := TakeIdent (p) ;
+      sel.a := TakeIdent (p, 'field name') ;
       Ast.Add (pool, n, SOME (sel))
     ELSE
       (* one subscript per axis: a[i] on a slice, a[i, j, k] on a
@@ -544,7 +627,7 @@ BEGIN
   IF p.cur.kind = TkLBrack THEN
     n := Nn (pool, p, Ast.NAttrib) ;
     Bump (p) ;
-    n.a := TakeIdent (p) ;
+    n.a := TakeIdent (p, 'attribute name') ;
     Expect (p, TkRBrack) ;
     RETURN SOME (n)
   END ;
@@ -578,7 +661,7 @@ BEGIN
     END
   END ;
   IF NOT (InStops (sid, p.cur.kind) OR p.cur.kind = TkEOF) THEN
-    Rerr (p)
+    Rerr (p, 'field list does not end where it should')
   END ;
   RETURN n
 END PFieldSeq ;
@@ -588,7 +671,7 @@ VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NVariant) ;
   Expect (p, TkBar) ;
-  n.a := TakeIdent (p) ;
+  n.a := TakeIdent (p, 'variant name') ;
   IF p.cur.kind = TkColon THEN
     Bump (p) ;
     Ast.Add (pool, n, SOME (PFieldSeq (pool, p, SVariantF)))
@@ -649,7 +732,7 @@ BEGIN
     n := Nn (pool, p, Ast.NCaseRecordType) ;
     Bump (p) ;
     Expect (p, TkRECORD) ;
-    IF p.cur.kind # TkBar THEN Rerr (p) END ;
+    IF p.cur.kind # TkBar THEN Rerr (p, 'variant | expected') END ;
     WHILE p.cur.kind = TkBar DO
       Ast.Add (pool, n, SOME (PVariant (pool, p)))
     END ;
@@ -685,7 +768,7 @@ BEGIN
     Ast.Add (pool, n, SOME (PType (pool, p))) ;
     RETURN n
   END ;
-  Rerr (p) ;
+  Rerr (p, 'type expected, found ' + Lex.KindName (p.cur.kind)) ;
   n := Nn (pool, p, Ast.NQualident) ;
   n.a := '?' ;
   Bump (p) ;
@@ -698,7 +781,7 @@ BEGIN
   IF p.cur.kind = TkIdent THEN
     IF NxtKind (p) = TkLParen THEN
       n := Nn (pool, p, Ast.NLabelPattern) ;
-      n.a := TakeIdent (p) ;
+      n.a := TakeIdent (p, 'variant name') ;
       Expect (p, TkLParen) ;
       Ast.Add (pool, n, SOME (PIdentList (pool, p))) ;
       Expect (p, TkRParen) ;
@@ -799,7 +882,7 @@ BEGIN
   ELSIF p.cur.kind = TkFOR THEN
     n := Nn (pool, p, Ast.NFor) ;
     Bump (p) ;
-    n.a := TakeIdent (p) ;
+    n.a := TakeIdent (p, 'loop variable') ;
     Expect (p, TkAssign) ;
     Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
     Expect (p, TkTO) ;
@@ -829,7 +912,7 @@ BEGIN
     Bump (p) ;
     Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
     Expect (p, TkOF) ;
-    IF p.cur.kind # TkBar THEN Rerr (p) END ;
+    IF p.cur.kind # TkBar THEN Rerr (p, 'case arm | expected') END ;
     WHILE p.cur.kind = TkBar DO
       Ast.Add (pool, n, SOME (PCaseArm (pool, p)))
     END ;
@@ -890,7 +973,7 @@ BEGIN
     Expect (p, TkRParen) ;
     RETURN n
   END ;
-  Rerr (p) ;
+  Rerr (p, 'statement expected, found ' + Lex.KindName (p.cur.kind)) ;
   n := Nn (pool, p, Ast.NStmtSeq) ;
   Bump (p) ;
   RETURN n
@@ -911,7 +994,7 @@ BEGIN
       END
     ELSE
       IF NOT (InStops (sid, p.cur.kind) OR p.cur.kind = TkEOF) THEN
-        Rerr (p) ;
+        Rerr (p, '; or end of statement list expected, found ' + Lex.KindName (p.cur.kind)) ;
         WHILE NOT (InStops (sid, p.cur.kind) OR p.cur.kind = TkSemi
                    OR p.cur.kind = TkEOF) DO
           Bump (p)
@@ -949,7 +1032,7 @@ BEGIN
       ELSIF p.cur.kind = TkStr THEN
         h := Nn (pool, p, Ast.NString) ; h.a := p.cur.text ; Bump (p)
       ELSE
-        Rerr (p) ;
+        Rerr (p, 'case label expected, found ' + Lex.KindName (p.cur.kind)) ;
         h := Nn (pool, p, Ast.NIdent) ;
         h.a := '?' ;
         Bump (p)
@@ -974,7 +1057,7 @@ BEGIN
   Ast.Add (pool, n, SOME (PStmtSeq (pool, p, SBlock))) ;
   IF p.cur.kind = TkEXCEPT THEN
     Bump (p) ;
-    IF p.cur.kind # TkBar THEN Rerr (p) END ;
+    IF p.cur.kind # TkBar THEN Rerr (p, 'handler | expected after EXCEPT') END ;
     WHILE p.cur.kind = TkBar DO
       Ast.Add (pool, n, SOME (PHandler (pool, p)))
     END
@@ -1039,10 +1122,10 @@ BEGIN
   END ;
   Ast.Add (pool, n, SOME (PBlock (pool, p))) ;
   IF p.cur.kind = TkIdent THEN
-    IF NOT DynStr.Eq (p.cur.text, name) THEN Rerr (p) END ;
+    IF NOT DynStr.Eq (p.cur.text, name) THEN Rerr (p, 'END ' + p.cur.text + ' does not match PROCEDURE ' + name) END ;
     Bump (p)
   ELSE
-    Rerr (p)
+    Rerr (p, 'procedure name expected after END')
   END ;
   RETURN n
 END PProcBody ;
@@ -1052,14 +1135,14 @@ VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NProcDecl) ;
   Expect (p, TkPROCEDURE) ;
-  n.a := TakeIdent (p) ;
+  n.a := TakeIdent (p, 'procedure name') ;
   IF p.cur.kind = TkEq THEN
     Bump (p) ;
     IF p.cur.kind = TkStr THEN
       n.b := p.cur.text ;
       Bump (p)
     ELSE
-      Rerr (p)
+      Rerr (p, 'handler argument expected')
     END
   END ;
   Expect (p, TkLParen) ;
@@ -1101,7 +1184,7 @@ BEGIN
     Bump (p) ;
     WHILE p.cur.kind = TkIdent DO
       d := Nn (pool, p, Ast.NConstDecl) ;
-      d.a := TakeIdent (p) ;
+      d.a := TakeIdent (p, 'constant name') ;
       Expect (p, TkEq) ;
       Ast.Add (pool, d, SOME (PExpr (pool, p))) ;
       Expect (p, TkSemi) ;
@@ -1113,7 +1196,7 @@ BEGIN
     Bump (p) ;
     WHILE p.cur.kind = TkIdent DO
       d := Nn (pool, p, Ast.NTypeDecl) ;
-      d.a := TakeIdent (p) ;
+      d.a := TakeIdent (p, 'type name') ;
       IF p.cur.kind = TkEq THEN
         Bump (p) ;
         Ast.Add (pool, d, SOME (PType (pool, p)))
@@ -1145,7 +1228,7 @@ BEGIN
     Bump (p) ;
     WHILE p.cur.kind = TkIdent DO
       d := Nn (pool, p, Ast.NExcDecl) ;
-      d.a := TakeIdent (p) ;
+      d.a := TakeIdent (p, 'exception name') ;
       IF p.cur.kind = TkLParen THEN
         Bump (p) ;
         Ast.Add (pool, d, SOME (PFieldSeq (pool, p, SRParen))) ;
@@ -1160,7 +1243,7 @@ BEGIN
   ELSIF p.cur.kind = TkPROCEDURE THEN
     RETURN PProcDecl (pool, p)
   END ;
-  Rerr (p) ;
+  Rerr (p, 'declaration expected') ;
   n := Nn (pool, p, Ast.NConstSection) ;
   Bump (p) ;
   RETURN n
@@ -1174,7 +1257,7 @@ BEGIN
     IF p.cur.kind = TkFROM THEN
       n := Nn (pool, p, Ast.NFromImport) ;
       Bump (p) ;
-      n.a := TakeIdent (p) ;
+      n.a := TakeIdent (p, 'module name') ;
       Expect (p, TkIMPORT)
     ELSE
       n := Nn (pool, p, Ast.NImportList) ;
@@ -1216,15 +1299,15 @@ BEGIN
         n.b := p.cur.text ;
         Bump (p)
       ELSE
-        Rerr (p)
+        Rerr (p, 'foreign language string expected after FOR')
       END
     END ;
-    n.a := TakeIdent (p) ;
+    n.a := TakeIdent (p, 'module name') ;
     Expect (p, TkSemi) ;
     PImports (pool, p, n) ;
     PDecls (pool, p, n) ;
     Expect (p, TkEND) ;
-    IF NOT DynStr.Eq (TakeIdent (p), n.a) THEN Rerr (p) END ;
+    IF NOT DynStr.Eq (TakeIdent (p, 'module name after END'), n.a) THEN Rerr (p, 'END name does not match MODULE ' + n.a) END ;
     Expect (p, TkDot) ;
     RETURN n
   END ;
@@ -1232,10 +1315,10 @@ BEGIN
   IF p.cur.kind = TkIMPLEMENTATION THEN
     n := Nn (pool, p, Ast.NImplementation) ;
     n.f1 := uns ;
-    IF stf THEN Rerr (p) END ;
+    IF stf THEN Rerr (p, 'STATEFUL belongs on the definition') END ;
     Bump (p) ;
     Expect (p, TkMODULE) ;
-    n.a := TakeIdent (p) ;
+    n.a := TakeIdent (p, 'module name') ;
     Expect (p, TkSemi) ;
     PImports (pool, p, n) ;
     PDecls (pool, p, n) ;
@@ -1248,17 +1331,17 @@ BEGIN
     ELSE
       Expect (p, TkEND)
     END ;
-    IF NOT DynStr.Eq (TakeIdent (p), n.a) THEN Rerr (p) END ;
+    IF NOT DynStr.Eq (TakeIdent (p, 'module name after END'), n.a) THEN Rerr (p, 'END name does not match MODULE ' + n.a) END ;
     Expect (p, TkDot) ;
     RETURN n
   END ;
 
   IF p.cur.kind = TkMODULE THEN
     n := Nn (pool, p, Ast.NProgram) ;
-    IF uns THEN Rerr (p) END ;
-    IF stf THEN Rerr (p) END ;
+    IF uns THEN Rerr (p, 'UNSAFE program modules are not a thing') END ;
+    IF stf THEN Rerr (p, 'STATEFUL belongs on definitions') END ;
     Bump (p) ;
-    n.a := TakeIdent (p) ;
+    n.a := TakeIdent (p, 'module name') ;
     Expect (p, TkSemi) ;
     PImports (pool, p, n) ;
     PDecls (pool, p, n) ;
@@ -1271,12 +1354,12 @@ BEGIN
     ELSE
       Expect (p, TkEND)
     END ;
-    IF NOT DynStr.Eq (TakeIdent (p), n.a) THEN Rerr (p) END ;
+    IF NOT DynStr.Eq (TakeIdent (p, 'module name after END'), n.a) THEN Rerr (p, 'END name does not match MODULE ' + n.a) END ;
     Expect (p, TkDot) ;
     RETURN n
   END ;
 
-  Rerr (p) ;
+  Rerr (p, 'DEFINITION, IMPLEMENTATION, or MODULE expected, found ' + Lex.KindName (p.cur.kind)) ;
   n := Nn (pool, p, Ast.NProgram) ;
   n.a := '?' ;
   Bump (p) ;
