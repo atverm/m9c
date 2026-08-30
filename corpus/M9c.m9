@@ -91,9 +91,26 @@ VAR
      cycle terminates rather than recurring *)
   loaded  : SLICE OF STR ;
   nloaded : I64 ;
+  (* THE BUILD ORDER, WHICH IS NOT THE LOAD ORDER.  loaded[] is
+     filled PRE-order -- a name is marked before its own imports are
+     walked, which is what makes a cycle terminate -- and reversing
+     pre-order is a topological sort for a TREE and not for a DAG:
+     with A importing B and C, and C importing B, pre-order is
+     A, B, C and the reverse builds C before the B it needs.  Kind is
+     imported by nearly everything, so it was marked first and came
+     LAST, and `m9c --make -c Sampler.m9` from an empty directory
+     failed with nine `Kind.h: No such file` and then SUCCEEDED when
+     run again (measured 2026-08-25).  order[] is appended POST-order
+     instead -- a module is added once everything it imports is in --
+     and MakeAll walks it forward. *)
+  order  : SLICE OF STR ;
+  norder : I64 ;
   (* roots of the deps that WERE named, so the gaps they leave can be
      filled once the named ones are all in, in the order given *)
   depRoots : SLICE OF Ast.Kid ;
+  depNames : SLICE OF STR ;   (* parallel: whose root that is, so
+                                 FillGaps can order it once its own
+                                 subtree has been walked *)
   ndeps    : I64 ;
   nmissing : I64 ;
   (* the module being compiled: its own object is not a dependency *)
@@ -317,6 +334,30 @@ BEGIN
   nloaded := nloaded + 1
 END MarkLoaded ;
 
+(* a module whose own imports are all in order[] already: the build
+   may reach it now.  Called once per module, at the point where that
+   became true -- after the recursion in LoadIndirect, and after a
+   kept root's subtree is walked in FillGaps -- so a duplicate would
+   be a mistake in the caller rather than something to absorb
+   quietly; it is refused by not appending it twice, and the FIRST
+   position is the one that is right. *)
+PROCEDURE Ordered (RO name: STR) =
+VAR
+  nb : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  FOR i := 0 TO norder - 1 DO
+    IF DynStr.Eq (order[i], name) THEN RETURN END
+  END ;
+  IF norder = LEN (order) THEN
+    nb := NEW (pool, STR, 2 * LEN (order) + 8) ;
+    FOR i := 0 TO norder - 1 DO nb[i] := order[i] END ;
+    order := nb
+  END ;
+  order[norder] := name ;
+  norder := norder + 1
+END Ordered ;
+
 (* ---- driving the C compiler ----
 
    m9c emits C11 and, with -c or -o, hands it to a C compiler.  It is
@@ -507,9 +548,11 @@ END MakeDep ;
 
 (* THE CLOSURE, REBUILT IN DEPENDENCY ORDER.
 
-   loaded[] is filled as imports are walked, so a module appears
-   before the modules it imports; building it in REVERSE therefore
-   builds leaves first, which is the order a dependent needs.
+   order[] is POST-order -- a module is appended once everything it
+   imports is already in it -- so walking it FORWARD builds leaves
+   first, which is the order a dependent needs.  (It used to walk
+   loaded[] in reverse, which is pre-order reversed: right for a tree
+   and wrong for a diamond.  See order[]'s own comment.)
 
    This exists because the hand-maintained order in every build
    script this project has kept getting it wrong, and the failures
@@ -536,8 +579,8 @@ BEGIN
      Top.o were rebuilt and Mid.o was not.
 
      This loop runs in dependency order -- deepest first, which is
-     why the reverse iteration is here -- so anything that could
-     depend on a rebuilt module comes after it, and rebuilding the
+     what order[] is -- so anything that could depend on a rebuilt
+     module comes after it, and rebuilding the
      rest of the closure is enough.  CONSERVATIVE, deliberately: a
      module later in the closure that does NOT depend on the changed
      one is rebuilt anyway.  Being exact would need a per-module
@@ -545,8 +588,8 @@ BEGIN
      wrong here is a stale object, while the cost of being
      over-eager is a second of cc. *)
   dirty := FALSE ;
-  FOR i := nloaded - 1 TO 0 BY -1 DO
-    nm := loaded[i] ;
+  FOR i := 0 TO norder - 1 DO
+    nm := order[i] ;
     IF NOT DynStr.Eq (nm, modName) THEN
       (* FindModule ANSWERS THE SOURCE and sets the path through a
          VAR parameter.  Assigning its result to `path` type-checks
@@ -1341,17 +1384,21 @@ BEGIN
 END Absorb ;
 
 (* remember a root so its own imports can be walked later *)
-PROCEDURE Keep (root: PTR Ast.Node) =
+PROCEDURE Keep (root: PTR Ast.Node ; RO name: STR) =
 VAR
   nb : SLICE OF Ast.Kid ;
+  nn : SLICE OF STR ;
   i : I64 ;
 BEGIN
   IF ndeps = LEN (depRoots) THEN
     nb := NEW (pool, Ast.Kid, 2 * LEN (depRoots) + 8) ;
-    FOR i := 0 TO ndeps - 1 DO nb[i] := depRoots[i] END ;
-    depRoots := nb
+    nn := NEW (pool, STR, 2 * LEN (depRoots) + 8) ;
+    FOR i := 0 TO ndeps - 1 DO nb[i] := depRoots[i] ; nn[i] := depNames[i] END ;
+    depRoots := nb ;
+    depNames := nn
   END ;
   depRoots[ndeps] := SOME (root) ;
+  depNames[ndeps] := name ;
   ndeps := ndeps + 1
 END Keep ;
 
@@ -1419,7 +1466,10 @@ BEGIN
   IF ParseText (src, path) IS SOME root THEN
     ScanUnsafe (root, path, trusted) ;
     Absorb (root, TRUE) ;
-    Keep (root)
+    Keep (root, name)
+    (* NOT Ordered here: this deliberately does not recurse, so the
+       module's own imports are not in order[] yet.  FillGaps adds it
+       once it has walked this root's subtree. *)
   END
 END LoadDirect ;
 
@@ -1474,7 +1524,10 @@ BEGIN
   IF ParseText (src, path) IS SOME root THEN
     ScanUnsafe (root, path, trusted) ;
     WalkImports (root, FALSE) ;
-    Absorb (root, FALSE)
+    Absorb (root, FALSE) ;
+    (* POST-order: everything this module imports is in order[] now,
+       because WalkImports has returned *)
+    Ordered (name)
   END
 END LoadIndirect ;
 
@@ -1493,7 +1546,7 @@ BEGIN
   IF ParseFile (path) IS SOME root THEN
     ScanUnsafe (root, path, FALSE) ;
     Absorb (root, TRUE) ;
-    Keep (root)
+    Keep (root, BaseName (path))
   END
 END LoadDep ;
 
@@ -1511,9 +1564,24 @@ BEGIN
   WalkImports (mainRoot, TRUE) ;
   upto := ndeps ;
   FOR i := 0 TO upto - 1 DO
-    IF depRoots[i] IS SOME r THEN WalkImports (r, FALSE) END
+    IF depRoots[i] IS SOME r THEN
+      WalkImports (r, FALSE) ;
+      (* this kept module's own subtree is in order[] now, so it may
+         follow: the direct imports and the named deps get their
+         build position here rather than at load time *)
+      Ordered (depNames[i])
+    END
   END ;
-  WalkImports (mainRoot, FALSE)
+  WalkImports (mainRoot, FALSE) ;
+  (* THE SAFETY NET, and it should stay empty.  A module that was
+     marked loaded but never ordered -- one whose source was not
+     found, or whose parse failed -- would otherwise be invisible to
+     MakeAll.  Appending it last keeps the old behaviour for exactly
+     those, and nothing that reached Ordered is touched, because
+     Ordered refuses a duplicate. *)
+  FOR i := nloaded - 1 TO 0 BY -1 DO
+    Ordered (loaded[i])
+  END
 END FillGaps ;
 
 (* the diagnostics, then a refusal.  A compiler that translates what

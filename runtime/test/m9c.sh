@@ -634,3 +634,60 @@ grep -q 'cannot be combined' jc.txt ||
   { echo "FAIL: the --json/-c refusal lost its message"; cat jc.txt; exit 1; }
 
 echo "m9c: --json is the page as data, and the page is unchanged"
+
+# --make BUILDS IN DEPENDENCY ORDER, and a DIAMOND is what proves it.
+# loaded[] is filled pre-order (a name is marked before its imports
+# are walked, so a cycle terminates), and reversing pre-order is a
+# topological sort for a TREE and not for a DAG: Top importing Mid and
+# Base, with Mid importing Base, gave Mid before the Base.h it
+# includes, and the build converged by REPETITION -- exit 1 with nine
+# `Kind.h: No such file` on the first run in the port, exit 0 on the
+# second (2026-08-25).  order[] is post-order now and MakeAll walks it
+# forward.  Shown able to fail: the pre-fix compiler dies here with
+# `Mid.h:5: #include "Base.h": No such file`.
+cat > Base.m9 <<'M9'
+DEFINITION MODULE Base ;
+TYPE Real = F64 ;
+PROCEDURE Two () : Real ;
+END Base.
+
+IMPLEMENTATION MODULE Base ;
+PROCEDURE Two () : Real =
+BEGIN
+  RETURN 2.0
+END Two ;
+END Base.
+M9
+cat > Mid.m9 <<'M9'
+DEFINITION MODULE Mid ;
+IMPORT Base ;
+PROCEDURE Twice (x: Base.Real) : Base.Real ;
+END Mid.
+
+IMPLEMENTATION MODULE Mid ;
+IMPORT Base ;
+PROCEDURE Twice (x: Base.Real) : Base.Real =
+BEGIN
+  RETURN x * Base.Two ()
+END Twice ;
+END Mid.
+M9
+cat > Diamond.m9 <<'M9'
+MODULE Diamond ;
+IMPORT Base ;
+IMPORT Mid ;
+IMPORT Io ;
+VAR x : Base.Real ;
+BEGIN
+  x := Mid.Twice (Base.Two ()) ;
+  IF x = 4.0 THEN Io.WriteLine ('diamond ok') ELSE Io.WriteLine ('diamond WRONG') END
+END Diamond.
+M9
+rm -f Base.o Base.h Mid.o Mid.h diamond
+M9LIBRARY="$SRC" "$M9C" --make -I. -o diamond ./Diamond.m9 >dm.txt 2>&1 ||
+  { echo "FAIL: --make could not build a diamond on the first run:"; \
+    head -5 dm.txt; exit 1; }
+[ "$(./diamond)" = "diamond ok" ] ||
+  { echo "FAIL: the diamond built but answered wrong"; ./diamond; exit 1; }
+
+echo "m9c: --make builds a diamond in dependency order, first run"

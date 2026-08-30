@@ -50,7 +50,10 @@ static m9_sl_BOOL trusts;
 static int64_t ndirs;
 static m9_sl_m9_sl_CHAR loaded;
 static int64_t nloaded;
+static m9_sl_m9_sl_CHAR order;
+static int64_t norder;
 static m9_sl_Ast_Nodep depRoots;
+static m9_sl_m9_sl_CHAR depNames;
 static int64_t ndeps;
 static int64_t nmissing;
 static m9_sl_CHAR modName;
@@ -409,6 +412,7 @@ static m9_sl_CHAR M9c_TryRead (m9_sl_CHAR path, bool *ok, m9_err *err);
 static m9_sl_CHAR M9c_FindModule (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_err *err);
 static bool M9c_IsLoaded (m9_sl_CHAR name, m9_err *err);
 static void M9c_MarkLoaded (m9_sl_CHAR name, m9_err *err);
+static void M9c_Ordered (m9_sl_CHAR name, m9_err *err);
 static bool M9c_Quotable (m9_sl_CHAR s, m9_err *err);
 static void M9c_AppendQuoted (DynStr_DString * *d, m9_sl_CHAR s, m9_err *err);
 static m9_sl_CHAR M9c_CcName (m9_err *err);
@@ -434,7 +438,7 @@ static m9_sl_CHAR M9c_JsonText (Ast_Node * root, m9_sl_CHAR name, m9_err *err);
 static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_err *err);
 static Ast_Node * M9c_ParseFile (m9_sl_CHAR path, m9_err *err);
 static void M9c_Absorb (Ast_Node * root, bool forGen, m9_err *err);
-static void M9c_Keep (Ast_Node * root, m9_err *err);
+static void M9c_Keep (Ast_Node * root, m9_sl_CHAR name, m9_err *err);
 static void M9c_ScanUnsafe (Ast_Node * root, m9_sl_CHAR path, bool trusted, m9_err *err);
 static m9_sl_CHAR M9c_Fetch (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_err *err);
 static void M9c_Missing (m9_sl_CHAR name, m9_err *err);
@@ -772,6 +776,42 @@ L_ret: ;
   return;
 }
 
+static void M9c_Ordered (m9_sl_CHAR name, m9_err *err)
+{
+  m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
+  int64_t i = 0; (void) i;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (norder, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = DynStr_Eq ((*(m9_sl_CHAR *) m9_at (order.p, i, order.len, sizeof (m9_sl_CHAR), err)), name, err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      goto L_ret;
+    }
+  } }
+  if ((norder == (order).len)) {
+    nb = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (order).len, err), INT64_C(8), err), err);
+    if (err->exc) goto L_ret;
+    { int64_t m9t3to;
+    i = INT64_C(0);
+    m9t3to = m9_sub_i64 (norder, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t3to; i += 1) {
+      (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (order.p, i, order.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    } }
+    order = nb;
+  }
+  (*(m9_sl_CHAR *) m9_at (order.p, norder, order.len, sizeof (m9_sl_CHAR), err)) = name;
+  if (err->exc) goto L_ret;
+  norder = m9_add_i64 (norder, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  return;
+}
+
 static bool M9c_Quotable (m9_sl_CHAR s, m9_err *err)
 {
   bool m9ret = false;
@@ -1024,11 +1064,11 @@ static bool M9c_MakeAll (m9_err *err)
   ok = true;
   dirty = false;
   { int64_t m9t1to;
-  i = m9_sub_i64 (nloaded, INT64_C(1), err);
-  m9t1to = INT64_C(0);
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (norder, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i >= m9t1to; i += -1) {
-    nm = (*(m9_sl_CHAR *) m9_at (loaded.p, i, loaded.len, sizeof (m9_sl_CHAR), err));
+  for (; i <= m9t1to; i += 1) {
+    nm = (*(m9_sl_CHAR *) m9_at (order.p, i, order.len, sizeof (m9_sl_CHAR), err));
     if (err->exc) goto L_ret;
     bool m9t2 = (!DynStr_Eq (nm, modName, err));
     if (err->exc) goto L_ret;
@@ -2151,12 +2191,15 @@ L_ret: ;
   return;
 }
 
-static void M9c_Keep (Ast_Node * root, m9_err *err)
+static void M9c_Keep (Ast_Node * root, m9_sl_CHAR name, m9_err *err)
 {
   m9_sl_Ast_Nodep nb = {0}; (void) nb;
+  m9_sl_m9_sl_CHAR nn = {0}; (void) nn;
   int64_t i = 0; (void) i;
   if ((ndeps == (depRoots).len)) {
     nb = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (depRoots).len, err), INT64_C(8), err), err);
+    if (err->exc) goto L_ret;
+    nn = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (depRoots).len, err), INT64_C(8), err), err);
     if (err->exc) goto L_ret;
     { int64_t m9t1to;
     i = INT64_C(0);
@@ -2165,10 +2208,15 @@ static void M9c_Keep (Ast_Node * root, m9_err *err)
     for (; i <= m9t1to; i += 1) {
       (*(Ast_Node * *) m9_at (nb.p, i, nb.len, sizeof (Ast_Node *), err)) = (*(Ast_Node * *) m9_at (depRoots.p, i, depRoots.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
+      (*(m9_sl_CHAR *) m9_at (nn.p, i, nn.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (depNames.p, i, depNames.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
     } }
     depRoots = nb;
+    depNames = nn;
   }
   (*(Ast_Node * *) m9_at (depRoots.p, ndeps, depRoots.len, sizeof (Ast_Node *), err)) = root;
+  if (err->exc) goto L_ret;
+  (*(m9_sl_CHAR *) m9_at (depNames.p, ndeps, depNames.len, sizeof (m9_sl_CHAR), err)) = name;
   if (err->exc) goto L_ret;
   ndeps = m9_add_i64 (ndeps, INT64_C(1), err);
   if (err->exc) goto L_ret;
@@ -2261,7 +2309,7 @@ static void M9c_LoadDirect (m9_sl_CHAR name, m9_err *err)
     if (err->exc) goto L_ret;
     M9c_Absorb (root, true, err);
     if (err->exc) goto L_ret;
-    M9c_Keep (root, err);
+    M9c_Keep (root, name, err);
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
@@ -2296,6 +2344,8 @@ static void M9c_LoadIndirect (m9_sl_CHAR name, m9_err *err)
     M9c_WalkImports (root, false, err);
     if (err->exc) goto L_ret;
     M9c_Absorb (root, false, err);
+    if (err->exc) goto L_ret;
+    M9c_Ordered (name, err);
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
@@ -2370,7 +2420,7 @@ static void M9c_LoadDep (m9_sl_CHAR path, m9_err *err)
     if (err->exc) goto L_ret;
     M9c_Absorb (root, true, err);
     if (err->exc) goto L_ret;
-    M9c_Keep (root, err);
+    M9c_Keep (root, M9c_BaseName (path, err), err);
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
@@ -2394,10 +2444,20 @@ static void M9c_FillGaps (Ast_Node * mainRoot, m9_err *err)
     if (r != NULL) {
       M9c_WalkImports (r, false, err);
       if (err->exc) goto L_ret;
+      M9c_Ordered ((*(m9_sl_CHAR *) m9_at (depNames.p, i, depNames.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
     } }
   } }
   M9c_WalkImports (mainRoot, false, err);
   if (err->exc) goto L_ret;
+  { int64_t m9t2to;
+  i = m9_sub_i64 (nloaded, INT64_C(1), err);
+  m9t2to = INT64_C(0);
+  if (err->exc) goto L_ret;
+  for (; i >= m9t2to; i += -1) {
+    M9c_Ordered ((*(m9_sl_CHAR *) m9_at (loaded.p, i, loaded.len, sizeof (m9_sl_CHAR), err)), err);
+    if (err->exc) goto L_ret;
+  } }
 L_ret: ;
   return;
 }
