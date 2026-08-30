@@ -1,0 +1,37 @@
+{ "scopeName": "source.m9", "name": "M9",
+  "fileTypes": ["m9"],
+  "patterns": [
+    { "include": "#comment" },
+    { "name": "string.quoted.m9", "match": "'[^']*'|\"[^\"]*\"" },
+    { "name": "storage.modifier.attribute.m9",
+      "match": "\\[\\s*(READONLY|SERIAL|REENTRANT)\\s*\\]" },
+    { "match": "\\b(PROCEDURE)\\s+([A-Za-z][A-Za-z0-9]*)",
+      "captures": {
+        "1": { "name": "keyword.declaration.m9" },
+        "2": { "name": "entity.name.function.m9" } } },
+    { "match": "\\b(MODULE)\\s+([A-Za-z][A-Za-z0-9]*)",
+      "captures": {
+        "1": { "name": "keyword.declaration.m9" },
+        "2": { "name": "entity.name.namespace.m9" } } },
+    { "name": "keyword.control.m9",
+      "match": "\\b(BEGIN|END|IF|THEN|ELSIF|ELSE|CASE|OF|WHILE|DO|LOOP|EXIT|FOR|TO|BY|RETURN|RAISE|EXCEPT|FINALLY|WAIT|SIGNAL|TRANSFER)\\b" },
+    { "name": "keyword.declaration.m9",
+      "match": "\\b(MODULE|DEFINITION|IMPLEMENTATION|IMPORT|FROM|PROCEDURE|TYPE|CONST|VAR|OWN|RO|RECORD|MONITOR|ARRAY|SLICE|GRID|PTR|OPT|SHARED|POOL|RAISES|EXCEPTION|STATEFUL|UNSAFE|NEW|DISPOSE|THREAD|SOME)\\b" },
+    { "name": "keyword.operator.word.m9",
+      "match": "\\b(AND|OR|NOT|DIV|MOD|IN|IS)\\b" },
+    { "name": "constant.language.m9",
+      "match": "\\b(TRUE|FALSE|NONE|ALL|HEAP)\\b" },
+    { "name": "storage.type.m9",
+      "match": "\\b(I8|I16|I32|I64|U8|U16|U32|U64|F32|F64|BYTE|BOOL|CHAR|STR)\\b" },
+    { "name": "support.type.foreign.m9",
+      "match": "\\bC\\.[A-Za-z][A-Za-z0-9]*\\b" },
+    { "name": "constant.numeric.hex.m9", "match": "\\b0x[0-9A-Fa-f]+\\b" },
+    { "name": "constant.numeric.real.m9",
+      "match": "\\b[0-9]+\\.[0-9]+([eE][+-]?[0-9]+)?\\b" },
+    { "name": "constant.numeric.integer.m9", "match": "\\b[0-9]+\\b" },
+    { "name": "keyword.operator.m9",
+      "match": ":=|\\.\\.|\\+%|-%|\\*%|<=|>=|[#=<>+*/^-]|\\|" } ],
+  "repository": {
+    "comment": {
+      "name": "comment.block.m9", "begin": "\\(\\*", "end": "\\*\\)",
+      "patterns": [ { "include": "#comment" } ] } } }

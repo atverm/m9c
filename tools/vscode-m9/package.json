@@ -1,0 +1,66 @@
+{
+  "name": "m9-lang",
+  "displayName": "M9 Language",
+  "description": "Syntax highlighting, hover documentation and completion for the M9 language (grammar kept in sync with host/fpc/M9Lex.pas; docstrings come from `m9c --doc`, never from a second scanner)",
+  "version": "0.2.0",
+  "publisher": "atverm",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "m9",
+        "aliases": [
+          "M9",
+          "m9"
+        ],
+        "extensions": [
+          ".m9"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "m9",
+        "scopeName": "source.m9",
+        "path": "./syntaxes/m9.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "M9",
+      "properties": {
+        "m9.compilerPath": {
+          "type": "string",
+          "default": "",
+          "description": "m9c binary for --doc; empty resolves <workspace>/runtime/test/m9c, then <workspace>/out/m9c, then m9c on PATH"
+        },
+        "m9.includePaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "-I directories for m9c --doc.  Add a build directory holding Kind.m9 (e.g. ~/m9build) to document port/flexpart modules, whose Kind is selected at build time"
+        },
+        "m9.libraryPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "$M9LIBRARY for m9c --doc; <workspace>/corpus and <workspace>/port/flexpart are always appended"
+        }
+      }
+    }
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:m9"
+  ]
+}
