@@ -39,6 +39,17 @@ PROCEDURE WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR)
      file-level key_value_metadata, so TsRead answers the same
      frame back *)
 
+PROCEDURE WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
+                  RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
+                  RO nsCols: SLICE OF STR)
+  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError ;
+  (* Write plus two things a data service needs: file-level
+     key_value_metadata pairs (the zarr proxy rides its JSON-LD
+     data passport under 'data_passport', as pyarrow's writer
+     does), and INT64 columns named in nsCols annotated as
+     TIMESTAMP(NANOS, adjusted-to-UTC) -- pyarrow then reads a real
+     timestamp[ns] column, not a bare integer.                      *)
+
 PROCEDURE Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr
   RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError ;
 
@@ -98,6 +109,7 @@ TYPE
 
 PROCEDURE NewBuf (VAR pool: POOL ; cap: I64) : Buf =
 VAR u : Buf ;
+  none : SLICE OF STR ;
 BEGIN
   u.b := NEW (pool, BYTE, cap) ;
   u.n := 0 ;
@@ -197,15 +209,21 @@ END PI64F ;
 
 PROCEDURE PStrRaw (VAR pool: POOL ; VAR u: Buf ; RO s: STR)
   RAISES ValueRange, Bad =
-VAR i : I64 ;
+  (* thrift binary carries BYTES: the text goes out as UTF-8, and
+     the length prefix is the BYTE length, not the scalar count --
+     the ASCII-only refusal fell when the zarr proxy's passports
+     (accented citation names) and station ids met this writer      *)
+VAR
+  bb : SLICE OF BYTE ;
+  i : I64 ;
 BEGIN
-  PVar (pool, u, LEN (s)) ;
-  Room (pool, u, LEN (s)) ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF ORD (s[i]) > 127 THEN RAISE Bad ('non-ascii text') END ;
-    u.b[u.n + i] := BYTE (ORD (s[i]))
+  bb := DynStr.Utf8 (pool, s) ;
+  PVar (pool, u, LEN (bb)) ;
+  Room (pool, u, LEN (bb)) ;
+  FOR i := 0 TO LEN (bb) - 1 DO
+    u.b[u.n + i] := bb[i]
   END ;
-  u.n := u.n + LEN (s)
+  u.n := u.n + LEN (bb)
 END PStrRaw ;
 
 PROCEDURE PStrF (VAR pool: POOL ; VAR u: Buf ; VAR last: I64 ;
@@ -334,8 +352,7 @@ BEGIN
   ELSE
     vs := Frame.ColStrs (f, name) ;
     FOR r := 0 TO LEN (vs) - 1 DO
-      PLE (pool, u, LEN (vs[r]), 4) ;
-      PStrAscii (pool, u, vs[r], name)
+      PStrVal (pool, u, vs[r])
     END
   END
 EXCEPT
@@ -343,18 +360,22 @@ EXCEPT
 | Frame.WrongType : RAISE Bad ('internal: column type changed')
 END PutValues ;
 
-PROCEDURE PStrAscii (VAR pool: POOL ; VAR u: Buf ; RO s: STR ;
-                     RO col: STR)
-  RAISES ValueRange, Bad =
-VAR i : I64 ;
+PROCEDURE PStrVal (VAR pool: POOL ; VAR u: Buf ; RO s: STR)
+  RAISES ValueRange =
+  (* a PLAIN BYTE_ARRAY value: 4-byte BYTE length, then UTF-8 --
+     the length must count the encoded bytes, not the scalars      *)
+VAR
+  bb : SLICE OF BYTE ;
+  i : I64 ;
 BEGIN
-  Room (pool, u, LEN (s)) ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF ORD (s[i]) > 127 THEN RAISE Bad (col) END ;
-    u.b[u.n + i] := BYTE (ORD (s[i]))
+  bb := DynStr.Utf8 (pool, s) ;
+  PLE (pool, u, LEN (bb), 4) ;
+  Room (pool, u, LEN (bb)) ;
+  FOR i := 0 TO LEN (bb) - 1 DO
+    u.b[u.n + i] := bb[i]
   END ;
-  u.n := u.n + LEN (s)
-END PStrAscii ;
+  u.n := u.n + LEN (bb)
+END PStrVal ;
 
 PROCEDURE PageFor (VAR pool: POOL ; f: PTR Frame.Fr ;
                    RO name: STR ; k: I64) : Buf
@@ -384,9 +405,9 @@ BEGIN
 END PageFor ;
 
 PROCEDURE SchemaElem (VAR pool: POOL ; VAR u: Buf ; RO name: STR ;
-                      k: I64)
+                      k: I64 ; ns: BOOL)
   RAISES ValueRange, Overflow, Bad =
-VAR last : I64 ;
+VAR last, l2, l3, l4 : I64 ;
 BEGIN
   last := 0 ;
   PI32F (pool, u, last, 1, ColPhys (k)) ;       (* type *)
@@ -395,8 +416,37 @@ BEGIN
   IF ColConv (k) >= 0 THEN
     PI32F (pool, u, last, 6, ColConv (k))
   END ;
+  IF ns THEN
+    (* logicalType = TIMESTAMP { isAdjustedToUTC: true,
+       unit: TimeUnit.NANOS } -- SchemaElement field 10, nested
+       unions as one-field structs, an empty NANOS struct inside.
+       Nanoseconds have NO converted_type, which is why field 6
+       stays untouched above. *)
+    PField (pool, u, last, 10, CtStruct) ;
+    l2 := 0 ;
+    PField (pool, u, l2, 8, CtStruct) ;         (* TIMESTAMP *)
+    l3 := 0 ;
+    PField (pool, u, l3, 1, CtTrue) ;           (* utc-adjusted *)
+    PField (pool, u, l3, 2, CtStruct) ;         (* unit *)
+    l4 := 0 ;
+    PField (pool, u, l4, 3, CtStruct) ;         (* NANOS *)
+    P8 (pool, u, CtStop) ;                      (* empty NanoSeconds *)
+    P8 (pool, u, CtStop) ;                      (* end TimeUnit *)
+    P8 (pool, u, CtStop) ;                      (* end TimestampType *)
+    P8 (pool, u, CtStop)                        (* end LogicalType *)
+  END ;
   P8 (pool, u, CtStop)
 END SchemaElem ;
+
+PROCEDURE InList (RO name: STR ; RO xs: SLICE OF STR) : BOOL
+  RAISES ValueRange, IndexError =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF DynStr.Eq (xs[i], name) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END InList ;
 
 PROCEDURE MetaKV (VAR pool: POOL ; VAR u: Buf ; RO k, v: STR)
   RAISES ValueRange, Bad =
@@ -418,7 +468,9 @@ BEGIN
 END I64Text ;
 
 PROCEDURE WriteAny (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
-                    withTs: BOOL ; ts: PTR Frame.Ts)
+                    withTs: BOOL ; ts: PTR Frame.Ts ;
+                    RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
+                    RO nsCols: SLICE OF STR)
   RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
 VAR
   out, meta, page : Buf ;
@@ -454,7 +506,8 @@ BEGIN
   PI32F (pool, meta, lastRg, 5, nc) ;
   P8 (pool, meta, CtStop) ;
   FOR c := 0 TO nc - 1 DO
-    SchemaElem (pool, meta, names[c], kinds[c])
+    SchemaElem (pool, meta, names[c], kinds[c],
+                InList (names[c], nsCols))
   END ;
   PI64F (pool, meta, last, 3, Frame.Rows (f)) ; (* num_rows *)
   PListF (pool, meta, last, 4, CtStruct, 1) ;   (* row_groups *)
@@ -482,16 +535,21 @@ BEGIN
   PI64F (pool, meta, lastRg, 2, out.n - 4) ;    (* total_byte_size *)
   PI64F (pool, meta, lastRg, 3, Frame.Rows (f)) ;
   P8 (pool, meta, CtStop) ;                     (* end RowGroup *)
-  kvn := 0 ;
-  IF withTs THEN kvn := 3 END ;
+  kvn := LEN (kvK) ;
+  IF withTs THEN kvn := kvn + 3 END ;
   IF kvn > 0 THEN
     PListF (pool, meta, last, 5, CtStruct, kvn) ;
-    conv := Frame.TsConv (ts) ;
-    MetaKV (pool, meta, 'frame_resolution_seconds',
-            I64Text (pool, Frame.TsRes (ts))) ;
-    MetaKV (pool, meta, 'frame_time_convention',
-            Frame.ConvName (conv)) ;
-    MetaKV (pool, meta, 'description', Frame.TsDescr (ts))
+    IF withTs THEN
+      conv := Frame.TsConv (ts) ;
+      MetaKV (pool, meta, 'frame_resolution_seconds',
+              I64Text (pool, Frame.TsRes (ts))) ;
+      MetaKV (pool, meta, 'frame_time_convention',
+              Frame.ConvName (conv)) ;
+      MetaKV (pool, meta, 'description', Frame.TsDescr (ts))
+    END ;
+    FOR i := 0 TO LEN (kvK) - 1 DO
+      MetaKV (pool, meta, kvK[i], kvV[i])
+    END
   END ;
   P8 (pool, meta, CtStop) ;                     (* end FileMetaData *)
 
@@ -511,9 +569,19 @@ END MagicBytes ;
 
 PROCEDURE Write (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR)
   RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
+VAR none : SLICE OF STR ;
 BEGIN
-  WriteAny (pool, f, path, FALSE, NIL9 (pool))
+  none := NEW (pool, STR, 0) ;
+  WriteAny (pool, f, path, FALSE, NIL9 (pool), none, none, none)
 END Write ;
+
+PROCEDURE WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
+                  RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
+                  RO nsCols: SLICE OF STR)
+  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
+BEGIN
+  WriteAny (pool, f, path, FALSE, NIL9 (pool), kvK, kvV, nsCols)
+END WriteX ;
 
 PROCEDURE NIL9 (VAR pool: POOL) : PTR Frame.Ts =
   (* a placeholder Ts nothing reads: WriteAny only touches ts when
@@ -536,6 +604,7 @@ PROCEDURE WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR)
   RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
 VAR
   f2 : PTR Frame.Fr IN pool ;
+  none : SLICE OF STR ;
   c : I64 ;
 BEGIN
   (* time first, then the data columns, in one flat frame *)
@@ -546,7 +615,8 @@ BEGIN
     AddCopy (pool, f2, Frame.TsFrame (ts),
              Frame.NameAt (Frame.TsFrame (ts), c))
   END ;
-  WriteAny (pool, f2, path, TRUE, ts)
+  none := NEW (pool, STR, 0) ;
+  WriteAny (pool, f2, path, TRUE, ts, none, none, none)
 EXCEPT
 | Frame.SizeError : RAISE Bad ('internal: ts frame sizes disagree')
 | Frame.Duplicate : RAISE Bad ('a column is already named time')
@@ -708,13 +778,7 @@ VAR
 BEGIN
   n := RVar (r) ;
   IF r.at + n > LEN (r.b) THEN RAISE Bad ('truncated string') END ;
-  s := NEW (pool, CHAR, n) ;
-  FOR i := 0 TO n - 1 DO
-    IF I64 (r.b[r.at + i]) > 127 THEN
-      RAISE Bad ('non-ascii text')
-    END ;
-    s[i] := CHR (I64 (r.b[r.at + i]))
-  END ;
+  s := DynStr.FromUtf8 (pool, SLICE (r.b, r.at, n)) ;
   r.at := r.at + n ;
   RETURN s
 END RStr ;
@@ -1155,15 +1219,8 @@ BEGIN
       IF present[i] THEN
         n := RdLE (r, 4) ;
         IF r.at + n > LEN (r.b) THEN RAISE Bad ('truncated page') END ;
-        s := NEW (pool, CHAR, n) ;
-        FOR x := 0 TO n - 1 DO
-          IF I64 (r.b[r.at + x]) > 127 THEN
-            RAISE Bad (ci.name)
-          END ;
-          s[x] := CHR (I64 (r.b[r.at + x]))
-        END ;
+        vs[i] := DynStr.FromUtf8 (pool, SLICE (r.b, r.at, n)) ;
         r.at := r.at + n ;
-        vs[i] := s
       ELSE
         vs[i] := ''
       END

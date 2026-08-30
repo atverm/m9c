@@ -37,6 +37,15 @@ and the resolution, convention and description ride in the
 file-level key_value_metadata, so TsRead answers the same
 frame back
 
+### WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ; RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ; RO nsCols: SLICE OF STR) RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError
+
+Write plus two things a data service needs: file-level
+key_value_metadata pairs (the zarr proxy rides its JSON-LD
+data passport under 'data_passport', as pyarrow's writer
+does), and INT64 columns named in nsCols annotated as
+TIMESTAMP(NANOS, adjusted-to-UTC) -- pyarrow then reads a real
+timestamp[ns] column, not a bare integer.
+
 ### Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError
 
 _(undocumented)_

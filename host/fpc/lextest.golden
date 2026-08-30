@@ -20,7 +20,7 @@
 ../../corpus/Math.m9                     tokens=3420 errors=0
 ../../corpus/NetCDF.m9                   tokens=9435 errors=0
 ../../corpus/OpenApi.m9                  tokens=755 errors=0
-../../corpus/Parquet.m9                  tokens=9668 errors=0
+../../corpus/Parquet.m9                  tokens=9993 errors=0
 ../../corpus/Parse.m9                    tokens=10055 errors=0
 ../../corpus/Plot.m9                     tokens=3868 errors=0
 ../../corpus/Print.m9                    tokens=7182 errors=0

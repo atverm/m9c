@@ -157,60 +157,58 @@ static const uint32_t m9s7[21] = { 102u, 114u, 97u, 109u, 101u, 95u, 116u, 105u,
 static const uint32_t m9s8[3] = { 101u, 110u, 100u };
 static const uint32_t m9s9[3] = { 109u, 105u, 100u };
 static const uint32_t m9s10[11] = { 100u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s11[14] = { 110u, 111u, 110u, 45u, 97u, 115u, 99u, 105u, 105u, 32u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s12[25] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 118u, 97u, 110u, 105u, 115u, 104u, 101u, 100u };
-static const uint32_t m9s13[29] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 116u, 121u, 112u, 101u, 32u, 99u, 104u, 97u, 110u, 103u, 101u, 100u };
-static const uint32_t m9s14[6] = { 115u, 99u, 104u, 101u, 109u, 97u };
-static const uint32_t m9s15[24] = { 102u, 114u, 97u, 109u, 101u, 95u, 114u, 101u, 115u, 111u, 108u, 117u, 116u, 105u, 111u, 110u, 95u, 115u, 101u, 99u, 111u, 110u, 100u, 115u };
-static const uint32_t m9s16[21] = { 102u, 114u, 97u, 109u, 101u, 95u, 116u, 105u, 109u, 101u, 95u, 99u, 111u, 110u, 118u, 101u, 110u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s17[11] = { 100u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s18[25] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 118u, 97u, 110u, 105u, 115u, 104u, 101u, 100u };
-static const uint32_t m9s19[29] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 116u, 121u, 112u, 101u, 32u, 99u, 104u, 97u, 110u, 103u, 101u, 100u };
-static const uint32_t m9s20[25] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 118u, 97u, 110u, 105u, 115u, 104u, 101u, 100u };
+static const uint32_t m9s11[25] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 118u, 97u, 110u, 105u, 115u, 104u, 101u, 100u };
+static const uint32_t m9s12[29] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 116u, 121u, 112u, 101u, 32u, 99u, 104u, 97u, 110u, 103u, 101u, 100u };
+static const uint32_t m9s13[6] = { 115u, 99u, 104u, 101u, 109u, 97u };
+static const uint32_t m9s14[24] = { 102u, 114u, 97u, 109u, 101u, 95u, 114u, 101u, 115u, 111u, 108u, 117u, 116u, 105u, 111u, 110u, 95u, 115u, 101u, 99u, 111u, 110u, 100u, 115u };
+static const uint32_t m9s15[21] = { 102u, 114u, 97u, 109u, 101u, 95u, 116u, 105u, 109u, 101u, 95u, 99u, 111u, 110u, 118u, 101u, 110u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s16[11] = { 100u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s17[25] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 118u, 97u, 110u, 105u, 115u, 104u, 101u, 100u };
+static const uint32_t m9s18[29] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 116u, 121u, 112u, 101u, 32u, 99u, 104u, 97u, 110u, 103u, 101u, 100u };
+static const uint32_t m9s19[25] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 118u, 97u, 110u, 105u, 115u, 104u, 101u, 100u };
+static const uint32_t m9s20[18] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u };
 static const uint32_t m9s21[18] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u };
-static const uint32_t m9s22[18] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u };
-static const uint32_t m9s23[23] = { 116u, 104u, 114u, 105u, 102u, 116u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u };
-static const uint32_t m9s24[16] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s25[14] = { 110u, 111u, 110u, 45u, 97u, 115u, 99u, 105u, 105u, 32u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s26[12] = { 115u, 99u, 104u, 101u, 109u, 97u, 32u, 115u, 104u, 97u, 112u, 101u };
-static const uint32_t m9s27[13] = { 110u, 101u, 115u, 116u, 101u, 100u, 32u, 115u, 99u, 104u, 101u, 109u, 97u };
-static const uint32_t m9s28[18] = { 110u, 111u, 116u, 32u, 97u, 32u, 112u, 97u, 114u, 113u, 117u, 101u, 116u, 32u, 102u, 105u, 108u, 101u };
-static const uint32_t m9s29[18] = { 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u, 80u, 65u, 82u, 49u, 32u, 109u, 97u, 103u, 105u, 99u };
-static const uint32_t m9s30[23] = { 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 114u, 111u, 119u, 32u, 103u, 114u, 111u, 117u, 112u };
-static const uint32_t m9s31[21] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 99u, 111u, 117u, 110u, 116u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
-static const uint32_t m9s32[16] = { 99u, 111u, 100u, 101u, 99u, 32u, 49u, 32u, 40u, 115u, 110u, 97u, 112u, 112u, 121u, 41u };
-static const uint32_t m9s33[14] = { 99u, 111u, 100u, 101u, 99u, 32u, 50u, 32u, 40u, 103u, 122u, 105u, 112u, 41u };
-static const uint32_t m9s34[16] = { 99u, 111u, 100u, 101u, 99u, 32u, 52u, 32u, 40u, 98u, 114u, 111u, 116u, 108u, 105u, 41u };
-static const uint32_t m9s35[13] = { 99u, 111u, 100u, 101u, 99u, 32u, 53u, 32u, 40u, 108u, 122u, 52u, 41u };
-static const uint32_t m9s36[14] = { 99u, 111u, 100u, 101u, 99u, 32u, 54u, 32u, 40u, 122u, 115u, 116u, 100u, 41u };
-static const uint32_t m9s37[16] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 99u, 111u, 100u, 101u, 99u };
-static const uint32_t m9s38[14] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 112u, 97u, 103u, 101u };
-static const uint32_t m9s39[14] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 112u, 97u, 103u, 101u };
-static const uint32_t m9s40[27] = { 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 32u, 56u, 32u, 40u, 82u, 76u, 69u, 95u, 68u, 73u, 67u, 84u, 73u, 79u, 78u, 65u, 82u, 89u, 41u };
-static const uint32_t m9s41[12] = { 100u, 97u, 116u, 97u, 32u, 112u, 97u, 103u, 101u, 32u, 118u, 50u };
-static const uint32_t m9s42[27] = { 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 58u, 32u, 97u, 32u, 100u, 105u, 99u, 116u, 105u, 111u, 110u, 97u, 114u, 121u, 32u, 112u, 97u, 103u, 101u };
-static const uint32_t m9s43[21] = { 112u, 97u, 103u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u };
-static const uint32_t m9s44[27] = { 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 32u, 56u, 32u, 40u, 82u, 76u, 69u, 95u, 68u, 73u, 67u, 84u, 73u, 79u, 78u, 65u, 82u, 89u, 41u };
-static const uint32_t m9s45[20] = { 97u, 32u, 110u, 111u, 110u, 45u, 80u, 76u, 65u, 73u, 78u, 32u, 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u };
-static const uint32_t m9s46[18] = { 97u, 32u, 115u, 101u, 99u, 111u, 110u, 100u, 32u, 100u, 97u, 116u, 97u, 32u, 112u, 97u, 103u, 101u };
+static const uint32_t m9s22[23] = { 116u, 104u, 114u, 105u, 102u, 116u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u };
+static const uint32_t m9s23[16] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s24[12] = { 115u, 99u, 104u, 101u, 109u, 97u, 32u, 115u, 104u, 97u, 112u, 101u };
+static const uint32_t m9s25[13] = { 110u, 101u, 115u, 116u, 101u, 100u, 32u, 115u, 99u, 104u, 101u, 109u, 97u };
+static const uint32_t m9s26[18] = { 110u, 111u, 116u, 32u, 97u, 32u, 112u, 97u, 114u, 113u, 117u, 101u, 116u, 32u, 102u, 105u, 108u, 101u };
+static const uint32_t m9s27[18] = { 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u, 80u, 65u, 82u, 49u, 32u, 109u, 97u, 103u, 105u, 99u };
+static const uint32_t m9s28[23] = { 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 114u, 111u, 119u, 32u, 103u, 114u, 111u, 117u, 112u };
+static const uint32_t m9s29[21] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 99u, 111u, 117u, 110u, 116u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
+static const uint32_t m9s30[16] = { 99u, 111u, 100u, 101u, 99u, 32u, 49u, 32u, 40u, 115u, 110u, 97u, 112u, 112u, 121u, 41u };
+static const uint32_t m9s31[14] = { 99u, 111u, 100u, 101u, 99u, 32u, 50u, 32u, 40u, 103u, 122u, 105u, 112u, 41u };
+static const uint32_t m9s32[16] = { 99u, 111u, 100u, 101u, 99u, 32u, 52u, 32u, 40u, 98u, 114u, 111u, 116u, 108u, 105u, 41u };
+static const uint32_t m9s33[13] = { 99u, 111u, 100u, 101u, 99u, 32u, 53u, 32u, 40u, 108u, 122u, 52u, 41u };
+static const uint32_t m9s34[14] = { 99u, 111u, 100u, 101u, 99u, 32u, 54u, 32u, 40u, 122u, 115u, 116u, 100u, 41u };
+static const uint32_t m9s35[16] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 99u, 111u, 100u, 101u, 99u };
+static const uint32_t m9s36[14] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 112u, 97u, 103u, 101u };
+static const uint32_t m9s37[14] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 112u, 97u, 103u, 101u };
+static const uint32_t m9s38[27] = { 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 32u, 56u, 32u, 40u, 82u, 76u, 69u, 95u, 68u, 73u, 67u, 84u, 73u, 79u, 78u, 65u, 82u, 89u, 41u };
+static const uint32_t m9s39[12] = { 100u, 97u, 116u, 97u, 32u, 112u, 97u, 103u, 101u, 32u, 118u, 50u };
+static const uint32_t m9s40[27] = { 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 58u, 32u, 97u, 32u, 100u, 105u, 99u, 116u, 105u, 111u, 110u, 97u, 114u, 121u, 32u, 112u, 97u, 103u, 101u };
+static const uint32_t m9s41[21] = { 112u, 97u, 103u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u };
+static const uint32_t m9s42[27] = { 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u, 32u, 56u, 32u, 40u, 82u, 76u, 69u, 95u, 68u, 73u, 67u, 84u, 73u, 79u, 78u, 65u, 82u, 89u, 41u };
+static const uint32_t m9s43[20] = { 97u, 32u, 110u, 111u, 110u, 45u, 80u, 76u, 65u, 73u, 78u, 32u, 101u, 110u, 99u, 111u, 100u, 105u, 110u, 103u };
+static const uint32_t m9s44[18] = { 97u, 32u, 115u, 101u, 99u, 111u, 110u, 100u, 32u, 100u, 97u, 116u, 97u, 32u, 112u, 97u, 103u, 101u };
+static const uint32_t m9s45[14] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 112u, 97u, 103u, 101u };
+static const uint32_t m9s46[14] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 112u, 97u, 103u, 101u };
 static const uint32_t m9s47[14] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 112u, 97u, 103u, 101u };
-static const uint32_t m9s48[14] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 112u, 97u, 103u, 101u };
-static const uint32_t m9s49[14] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 112u, 97u, 103u, 101u };
-static const uint32_t m9s50[25] = { 112u, 104u, 121u, 115u, 105u, 99u, 97u, 108u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u };
+static const uint32_t m9s48[25] = { 112u, 104u, 121u, 115u, 105u, 99u, 97u, 108u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u };
+static const uint32_t m9s49[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
+static const uint32_t m9s50[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
 static const uint32_t m9s51[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
 static const uint32_t m9s52[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
 static const uint32_t m9s53[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
 static const uint32_t m9s54[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
 static const uint32_t m9s55[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
 static const uint32_t m9s56[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
-static const uint32_t m9s57[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
-static const uint32_t m9s58[22] = { 99u, 111u, 108u, 117u, 109u, 110u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
-static const uint32_t m9s59[18] = { 110u, 101u, 103u, 97u, 116u, 105u, 118u, 101u, 32u, 114u, 111u, 119u, 32u, 99u, 111u, 117u, 110u, 116u };
-static const uint32_t m9s60[20] = { 116u, 105u, 109u, 101u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
-static const uint32_t m9s61[18] = { 116u, 105u, 109u, 101u, 32u, 97u, 120u, 105u, 115u, 32u, 100u, 105u, 115u, 111u, 114u, 100u, 101u, 114u };
-static const uint32_t m9s62[14] = { 98u, 97u, 100u, 32u, 114u, 101u, 115u, 111u, 108u, 117u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s63[17] = { 116u, 105u, 109u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 105u, 110u, 116u, 54u, 52u };
-static const uint32_t m9s64[12] = { 101u, 109u, 112u, 116u, 121u, 32u, 110u, 117u, 109u, 98u, 101u, 114u };
+static const uint32_t m9s57[18] = { 110u, 101u, 103u, 97u, 116u, 105u, 118u, 101u, 32u, 114u, 111u, 119u, 32u, 99u, 111u, 117u, 110u, 116u };
+static const uint32_t m9s58[20] = { 116u, 105u, 109u, 101u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 105u, 115u, 109u, 97u, 116u, 99u, 104u };
+static const uint32_t m9s59[18] = { 116u, 105u, 109u, 101u, 32u, 97u, 120u, 105u, 115u, 32u, 100u, 105u, 115u, 111u, 114u, 100u, 101u, 114u };
+static const uint32_t m9s60[14] = { 98u, 97u, 100u, 32u, 114u, 101u, 115u, 111u, 108u, 117u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s61[17] = { 116u, 105u, 109u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 105u, 110u, 116u, 54u, 52u };
+static const uint32_t m9s62[12] = { 101u, 109u, 112u, 116u, 121u, 32u, 110u, 117u, 109u, 98u, 101u, 114u };
 
 static Parquet_Buf Parquet_NewBuf (m9_pool *pool, int64_t cap, m9_err *err);
 static void Parquet_Room (m9_pool *pool, Parquet_Buf *u, int64_t k, m9_err *err);
@@ -228,12 +226,13 @@ static void Parquet_PListF (m9_pool *pool, Parquet_Buf *u, int64_t *last, int64_
 static int64_t Parquet_ColPhys (int64_t k, m9_err *err);
 static int64_t Parquet_ColConv (int64_t k, m9_err *err);
 static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, Frame_Fr * f, m9_sl_CHAR name, int64_t k, m9_err *err);
-static void Parquet_PStrAscii (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR s, m9_sl_CHAR col, m9_err *err);
+static void Parquet_PStrVal (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR s, m9_err *err);
 static Parquet_Buf Parquet_PageFor (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name, int64_t k, m9_err *err);
-static void Parquet_SchemaElem (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR name, int64_t k, m9_err *err);
+static void Parquet_SchemaElem (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR name, int64_t k, bool ns, m9_err *err);
+static bool Parquet_InList (m9_sl_CHAR name, m9_sl_m9_sl_CHAR xs, m9_err *err);
 static void Parquet_MetaKV (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR k, m9_sl_CHAR v, m9_err *err);
 static m9_sl_CHAR Parquet_I64Text (m9_pool *pool, int64_t v, m9_err *err);
-static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool withTs, Frame_Ts * ts, m9_err *err);
+static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool withTs, Frame_Ts * ts, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_err *err);
 static m9_sl_BYTE Parquet_MagicBytes (m9_pool *pool, m9_err *err);
 static Frame_Ts * Parquet_NIL9 (m9_pool *pool, m9_err *err);
 static void Parquet_AddCopy (m9_pool *pool, Frame_Fr * *dst, Frame_Fr * src, m9_sl_CHAR name, m9_err *err);
@@ -274,7 +273,10 @@ static int64_t Parquet_TextI64 (m9_sl_CHAR s, m9_err *err);
 
 void Parquet_Write (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_err *err)
 {
-  Parquet_WriteAny (pool, f, path, false, Parquet_NIL9 (pool, err), err);
+  m9_sl_m9_sl_CHAR none = {0}; (void) none;
+  none = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(0), err);
+  if (err->exc) goto L_ret;
+  Parquet_WriteAny (pool, f, path, false, Parquet_NIL9 (pool, err), none, none, none, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   return;
@@ -283,6 +285,7 @@ L_ret: ;
 void Parquet_WriteTs (m9_pool *pool, Frame_Ts * ts, m9_sl_CHAR path, m9_err *err)
 {
   Frame_Fr * f2 = NULL; (void) f2;
+  m9_sl_m9_sl_CHAR none = {0}; (void) none;
   int64_t c = 0; (void) c;
   f2 = Frame_New (pool, Frame_Rows (Frame_TsFrame (ts, err), err), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -296,7 +299,9 @@ void Parquet_WriteTs (m9_pool *pool, Frame_Ts * ts, m9_sl_CHAR path, m9_err *err
     Parquet_AddCopy (pool, &(f2), Frame_TsFrame (ts, err), Frame_NameAt (Frame_TsFrame (ts, err), c, err), err);
     if (err->exc) goto L_hdl_m9t1;
   } }
-  Parquet_WriteAny (pool, f2, path, true, ts, err);
+  none = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(0), err);
+  if (err->exc) goto L_hdl_m9t1;
+  Parquet_WriteAny (pool, f2, path, true, ts, none, none, none, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -316,6 +321,14 @@ L_hdl_m9t1: ;
   }
   goto L_ret;
 L_dn_m9t2: ;
+L_ret: ;
+  return;
+}
+
+void Parquet_WriteX (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_err *err)
+{
+  Parquet_WriteAny (pool, f, path, false, Parquet_NIL9 (pool, err), kvK, kvV, nsCols, err);
+  if (err->exc) goto L_ret;
 L_ret: ;
   return;
 }
@@ -459,6 +472,7 @@ static Parquet_Buf Parquet_NewBuf (m9_pool *pool, int64_t cap, m9_err *err)
 {
   Parquet_Buf m9ret = {0};
   Parquet_Buf u = {0}; (void) u;
+  m9_sl_m9_sl_CHAR none = {0}; (void) none;
   u.b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), cap, err);
   if (err->exc) goto L_ret;
   u.n = INT64_C(0);
@@ -614,27 +628,23 @@ L_ret: ;
 
 static void Parquet_PStrRaw (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR s, m9_err *err)
 {
+  m9_sl_BYTE bb = {0}; (void) bb;
   int64_t i = 0; (void) i;
-  Parquet_PVar (pool, u, (s).len, err);
+  bb = DynStr_Utf8 (pool, s, err);
   if (err->exc) goto L_ret;
-  Parquet_Room (pool, u, (s).len, err);
+  Parquet_PVar (pool, u, (bb).len, err);
+  if (err->exc) goto L_ret;
+  Parquet_Room (pool, u, (bb).len, err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 ((bb).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    bool m9t2 = ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))) > INT64_C(127));
-    if (err->exc) goto L_ret;
-    if (m9t2) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s11, 14 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s11, 14 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-      m9_raise (err, &Parquet_Bad);
-      goto L_ret;
-    }
-    (*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err)) = m9_byte ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), err);
+    (*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (bb.p, i, bb.len, sizeof (uint8_t), err));
     if (err->exc) goto L_ret;
   } }
-  (*u).n = m9_add_i64 ((*u).n, (s).len, err);
+  (*u).n = m9_add_i64 ((*u).n, (bb).len, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   return;
@@ -873,9 +883,7 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, Frame_Fr * f, m9_s
     m9t13to = m9_sub_i64 ((vs).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     for (; r <= m9t13to; r += 1) {
-      Parquet_PLE (pool, u, ((*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err))).len, INT64_C(4), err);
-      if (err->exc) goto L_hdl_m9t1;
-      Parquet_PStrAscii (pool, u, (*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err)), name, err);
+      Parquet_PStrVal (pool, u, (*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err)), err);
       if (err->exc) goto L_hdl_m9t1;
     } }
   } } } } } } }
@@ -883,14 +891,14 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, Frame_Fr * f, m9_s
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s12, 25 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s12, 25 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s11, 25 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s11, 25 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_WrongType) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 29 })) m9t15 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 29 }); err->s[0].p = m9t15.p; err->s[0].len = m9t15.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s12, 29 })) m9t15 = ((m9_sl_CHAR){ (uint32_t *) m9s12, 29 }); err->s[0].p = m9t15.p; err->s[0].len = m9t15.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -901,27 +909,25 @@ L_ret: ;
   return;
 }
 
-static void Parquet_PStrAscii (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR s, m9_sl_CHAR col, m9_err *err)
+static void Parquet_PStrVal (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR s, m9_err *err)
 {
+  m9_sl_BYTE bb = {0}; (void) bb;
   int64_t i = 0; (void) i;
-  Parquet_Room (pool, u, (s).len, err);
+  bb = DynStr_Utf8 (pool, s, err);
+  if (err->exc) goto L_ret;
+  Parquet_PLE (pool, u, (bb).len, INT64_C(4), err);
+  if (err->exc) goto L_ret;
+  Parquet_Room (pool, u, (bb).len, err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
+  m9t1to = m9_sub_i64 ((bb).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    bool m9t2 = ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))) > INT64_C(127));
-    if (err->exc) goto L_ret;
-    if (m9t2) {
-      { __typeof__(col) m9t3 = col; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-      m9_raise (err, &Parquet_Bad);
-      goto L_ret;
-    }
-    (*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err)) = m9_byte ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), err);
+    (*(uint8_t *) m9_at ((*u).b.p, m9_add_i64 ((*u).n, i, err), (*u).b.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (bb.p, i, bb.len, sizeof (uint8_t), err));
     if (err->exc) goto L_ret;
   } }
-  (*u).n = m9_add_i64 ((*u).n, (s).len, err);
+  (*u).n = m9_add_i64 ((*u).n, (bb).len, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   return;
@@ -970,9 +976,12 @@ L_ret: ;
   return m9ret;
 }
 
-static void Parquet_SchemaElem (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR name, int64_t k, m9_err *err)
+static void Parquet_SchemaElem (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR name, int64_t k, bool ns, m9_err *err)
 {
   int64_t last = 0; (void) last;
+  int64_t l2 = 0; (void) l2;
+  int64_t l3 = 0; (void) l3;
+  int64_t l4 = 0; (void) l4;
   last = INT64_C(0);
   Parquet_PI32F (pool, u, &(last), INT64_C(1), Parquet_ColPhys (k, err), err);
   if (err->exc) goto L_ret;
@@ -986,10 +995,55 @@ static void Parquet_SchemaElem (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR name, 
     Parquet_PI32F (pool, u, &(last), INT64_C(6), Parquet_ColConv (k, err), err);
     if (err->exc) goto L_ret;
   }
+  if (ns) {
+    Parquet_PField (pool, u, &(last), INT64_C(10), Parquet_CtStruct, err);
+    if (err->exc) goto L_ret;
+    l2 = INT64_C(0);
+    Parquet_PField (pool, u, &(l2), INT64_C(8), Parquet_CtStruct, err);
+    if (err->exc) goto L_ret;
+    l3 = INT64_C(0);
+    Parquet_PField (pool, u, &(l3), INT64_C(1), Parquet_CtTrue, err);
+    if (err->exc) goto L_ret;
+    Parquet_PField (pool, u, &(l3), INT64_C(2), Parquet_CtStruct, err);
+    if (err->exc) goto L_ret;
+    l4 = INT64_C(0);
+    Parquet_PField (pool, u, &(l4), INT64_C(3), Parquet_CtStruct, err);
+    if (err->exc) goto L_ret;
+    Parquet_P8 (pool, u, Parquet_CtStop, err);
+    if (err->exc) goto L_ret;
+    Parquet_P8 (pool, u, Parquet_CtStop, err);
+    if (err->exc) goto L_ret;
+    Parquet_P8 (pool, u, Parquet_CtStop, err);
+    if (err->exc) goto L_ret;
+    Parquet_P8 (pool, u, Parquet_CtStop, err);
+    if (err->exc) goto L_ret;
+  }
   Parquet_P8 (pool, u, Parquet_CtStop, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   return;
+}
+
+static bool Parquet_InList (m9_sl_CHAR name, m9_sl_m9_sl_CHAR xs, m9_err *err)
+{
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = DynStr_Eq ((*(m9_sl_CHAR *) m9_at (xs.p, i, xs.len, sizeof (m9_sl_CHAR), err)), name, err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      m9ret = true;
+      goto L_ret;
+    }
+  } }
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  return m9ret;
 }
 
 static void Parquet_MetaKV (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR k, m9_sl_CHAR v, m9_err *err)
@@ -1021,7 +1075,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool withTs, Frame_Ts * ts, m9_err *err)
+static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool withTs, Frame_Ts * ts, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_err *err)
 {
   Parquet_Buf out = {0}; (void) out;
   Parquet_Buf meta = {0}; (void) meta;
@@ -1079,7 +1133,7 @@ static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool
   Parquet_PListF (pool, &(meta), &(last), INT64_C(2), Parquet_CtStruct, m9_add_i64 (nc, INT64_C(1), err), err);
   if (err->exc) goto L_ret;
   lastRg = INT64_C(0);
-  Parquet_PStrF (pool, &(meta), &(lastRg), INT64_C(4), ((m9_sl_CHAR){ (uint32_t *) m9s14, 6 }), err);
+  Parquet_PStrF (pool, &(meta), &(lastRg), INT64_C(4), ((m9_sl_CHAR){ (uint32_t *) m9s13, 6 }), err);
   if (err->exc) goto L_ret;
   Parquet_PI32F (pool, &(meta), &(lastRg), INT64_C(5), nc, err);
   if (err->exc) goto L_ret;
@@ -1090,7 +1144,7 @@ static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool
   m9t3to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; c <= m9t3to; c += 1) {
-    Parquet_SchemaElem (pool, &(meta), (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)), (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err)), err);
+    Parquet_SchemaElem (pool, &(meta), (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)), (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err)), Parquet_InList ((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)), nsCols, err), err);
     if (err->exc) goto L_ret;
   } }
   Parquet_PI64F (pool, &(meta), &(last), INT64_C(3), Frame_Rows (f, err), err);
@@ -1144,31 +1198,42 @@ static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool
   if (err->exc) goto L_ret;
   Parquet_P8 (pool, &(meta), Parquet_CtStop, err);
   if (err->exc) goto L_ret;
-  kvn = INT64_C(0);
+  kvn = (kvK).len;
   if (withTs) {
-    kvn = INT64_C(3);
+    kvn = m9_add_i64 (kvn, INT64_C(3), err);
+    if (err->exc) goto L_ret;
   }
   if ((kvn > INT64_C(0))) {
     Parquet_PListF (pool, &(meta), &(last), INT64_C(5), Parquet_CtStruct, kvn, err);
     if (err->exc) goto L_ret;
-    conv = Frame_TsConv (ts, err);
+    if (withTs) {
+      conv = Frame_TsConv (ts, err);
+      if (err->exc) goto L_ret;
+      Parquet_MetaKV (pool, &(meta), ((m9_sl_CHAR){ (uint32_t *) m9s14, 24 }), Parquet_I64Text (pool, Frame_TsRes (ts, err), err), err);
+      if (err->exc) goto L_ret;
+      Parquet_MetaKV (pool, &(meta), ((m9_sl_CHAR){ (uint32_t *) m9s15, 21 }), Frame_ConvName (conv, err), err);
+      if (err->exc) goto L_ret;
+      Parquet_MetaKV (pool, &(meta), ((m9_sl_CHAR){ (uint32_t *) m9s16, 11 }), Frame_TsDescr (ts, err), err);
+      if (err->exc) goto L_ret;
+    }
+    { int64_t m9t5to;
+    i = INT64_C(0);
+    m9t5to = m9_sub_i64 ((kvK).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    Parquet_MetaKV (pool, &(meta), ((m9_sl_CHAR){ (uint32_t *) m9s15, 24 }), Parquet_I64Text (pool, Frame_TsRes (ts, err), err), err);
-    if (err->exc) goto L_ret;
-    Parquet_MetaKV (pool, &(meta), ((m9_sl_CHAR){ (uint32_t *) m9s16, 21 }), Frame_ConvName (conv, err), err);
-    if (err->exc) goto L_ret;
-    Parquet_MetaKV (pool, &(meta), ((m9_sl_CHAR){ (uint32_t *) m9s17, 11 }), Frame_TsDescr (ts, err), err);
-    if (err->exc) goto L_ret;
+    for (; i <= m9t5to; i += 1) {
+      Parquet_MetaKV (pool, &(meta), (*(m9_sl_CHAR *) m9_at (kvK.p, i, kvK.len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at (kvV.p, i, kvV.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+    } }
   }
   Parquet_P8 (pool, &(meta), Parquet_CtStop, err);
   if (err->exc) goto L_ret;
-  Parquet_PBytes (pool, &(out), ({ __typeof__(meta.b) m9t5 = meta.b; int64_t m9t5a = INT64_C(0), m9t5n = meta.n; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), err);
+  Parquet_PBytes (pool, &(out), ({ __typeof__(meta.b) m9t6 = meta.b; int64_t m9t6a = INT64_C(0), m9t6n = meta.n; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err);
   if (err->exc) goto L_ret;
   Parquet_PLE (pool, &(out), meta.n, INT64_C(4), err);
   if (err->exc) goto L_ret;
   Parquet_PBytes (pool, &(out), Parquet_MagicBytes (pool, err), err);
   if (err->exc) goto L_ret;
-  Io_WriteFileBytes (path, ({ __typeof__(out.b) m9t6 = out.b; int64_t m9t6a = INT64_C(0), m9t6n = out.n; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err);
+  Io_WriteFileBytes (path, ({ __typeof__(out.b) m9t7 = out.b; int64_t m9t7a = INT64_C(0), m9t7n = out.n; (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   return;
@@ -1272,14 +1337,14 @@ static void Parquet_AddCopy (m9_pool *pool, Frame_Fr * *dst, Frame_Fr * src, m9_
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s18, 25 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s18, 25 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s17, 25 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s17, 25 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_WrongType) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s19, 29 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s19, 29 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s18, 29 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s18, 29 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1300,7 +1365,7 @@ static int64_t Parquet_KindQ (Frame_Fr * f, m9_sl_CHAR name, m9_err *err)
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s20, 25 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s20, 25 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s19, 25 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s19, 25 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1315,7 +1380,7 @@ static int64_t Parquet_R8 (Parquet_Rd *r, m9_err *err)
 {
   int64_t m9ret = 0;
   if (((*r).at >= ((*r).b).len)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s21, 18 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s21, 18 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s20, 18 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s20, 18 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
@@ -1379,7 +1444,7 @@ static void Parquet_RSkipBytes (Parquet_Rd *r, int64_t k, m9_err *err)
   bool m9t1 = (m9_add_i64 ((*r).at, k, err) > ((*r).b).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s22, 18 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s22, 18 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s21, 18 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s21, 18 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
@@ -1439,7 +1504,7 @@ static void Parquet_RSkip (Parquet_Rd *r, int64_t ct, m9_err *err)
       Parquet_RSkipStruct (r, err);
       if (err->exc) goto L_ret;
   } else {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s23, 23 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s23, 23 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s22, 23 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s22, 23 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   } } } } } } }
@@ -1514,27 +1579,12 @@ static m9_sl_CHAR Parquet_RStr (m9_pool *pool, Parquet_Rd *r, m9_err *err)
   bool m9t1 = (m9_add_i64 ((*r).at, n, err) > ((*r).b).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s24, 16 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s24, 16 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s23, 16 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s23, 16 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
-  s = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), n, err);
+  s = DynStr_FromUtf8 (pool, ({ __typeof__((*r).b) m9t3 = (*r).b; int64_t m9t3a = (*r).at, m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
   if (err->exc) goto L_ret;
-  { int64_t m9t3to;
-  i = INT64_C(0);
-  m9t3to = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  for (; i <= m9t3to; i += 1) {
-    bool m9t4 = ((int64_t)((*(uint8_t *) m9_at ((*r).b.p, m9_add_i64 ((*r).at, i, err), (*r).b.len, sizeof (uint8_t), err))) > INT64_C(127));
-    if (err->exc) goto L_ret;
-    if (m9t4) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s25, 14 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s25, 14 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
-      m9_raise (err, &Parquet_Bad);
-      goto L_ret;
-    }
-    (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) = m9_chr ((int64_t)((*(uint8_t *) m9_at ((*r).b.p, m9_add_i64 ((*r).at, i, err), (*r).b.len, sizeof (uint8_t), err))), err);
-    if (err->exc) goto L_ret;
-  } }
   (*r).at = m9_add_i64 ((*r).at, n, err);
   if (err->exc) goto L_ret;
   m9ret = s;
@@ -1565,7 +1615,7 @@ static void Parquet_ReadSchema (m9_pool *pool, Parquet_Rd *r, Parquet_Meta *m, m
   bool m9t1 = (m9_mod_i64 (hdr, INT64_C(16), err) != Parquet_CtStruct);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s26, 12 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s26, 12 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s24, 12 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s24, 12 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
@@ -1620,7 +1670,7 @@ static void Parquet_ReadSchema (m9_pool *pool, Parquet_Rd *r, Parquet_Meta *m, m
       first = false;
     } else {
       if ((children > INT64_C(0))) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s27, 13 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s27, 13 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s25, 13 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s25, 13 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
         m9_raise (err, &Parquet_Bad);
         goto L_ret;
       }
@@ -1648,14 +1698,14 @@ static Parquet_Meta Parquet_ReadMeta (m9_pool *pool, m9_sl_BYTE whole, m9_err *e
   int64_t g = 0; (void) g;
   int64_t i = 0; (void) i;
   if (((whole).len < INT64_C(12))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s28, 18 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s28, 18 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s26, 18 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s26, 18 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
   bool m9t2 = (!((((((int64_t)((*(uint8_t *) m9_at (whole.p, INT64_C(0), whole.len, sizeof (uint8_t), err))) == INT64_C(80)) && ((int64_t)((*(uint8_t *) m9_at (whole.p, INT64_C(1), whole.len, sizeof (uint8_t), err))) == INT64_C(65))) && ((int64_t)((*(uint8_t *) m9_at (whole.p, INT64_C(2), whole.len, sizeof (uint8_t), err))) == INT64_C(82))) && ((int64_t)((*(uint8_t *) m9_at (whole.p, INT64_C(3), whole.len, sizeof (uint8_t), err))) == INT64_C(49)))));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s29, 18 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s29, 18 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s27, 18 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s27, 18 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
@@ -1693,7 +1743,7 @@ static Parquet_Meta Parquet_ReadMeta (m9_pool *pool, m9_sl_BYTE whole, m9_err *e
           if (err->exc) goto L_ret;
         }
         if ((n != INT64_C(1))) {
-          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s30, 23 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s30, 23 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s28, 23 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s28, 23 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
           m9_raise (err, &Parquet_Bad);
           goto L_ret;
         }
@@ -1787,7 +1837,7 @@ static void Parquet_ReadRowGroup (m9_pool *pool, Parquet_Rd *r, Parquet_Meta *m,
         if (err->exc) goto L_ret;
       }
       if ((n != (*m).ncols)) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s31, 21 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s31, 21 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s29, 21 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s29, 21 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
         m9_raise (err, &Parquet_Bad);
         goto L_ret;
       }
@@ -1862,26 +1912,26 @@ static m9_sl_CHAR Parquet_CodecName (int64_t c, m9_err *err)
 {
   m9_sl_CHAR m9ret = {0};
   if ((c == INT64_C(1))) {
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s32, 16 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s30, 16 });
     goto L_ret;
   }
   if ((c == INT64_C(2))) {
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s33, 14 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s31, 14 });
     goto L_ret;
   }
   if ((c == INT64_C(4))) {
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s34, 16 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s32, 16 });
     goto L_ret;
   }
   if ((c == INT64_C(5))) {
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s35, 13 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s33, 13 });
     goto L_ret;
   }
   if ((c == INT64_C(6))) {
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s36, 14 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s34, 14 });
     goto L_ret;
   }
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s37, 16 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s35, 16 });
   goto L_ret;
 L_ret: ;
   return m9ret;
@@ -1975,7 +2025,7 @@ static int64_t Parquet_R8bp (Parquet_Rd *r, m9_err *err)
 {
   int64_t m9ret = 0;
   if (((*r).at >= ((*r).b).len)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s38, 14 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s38, 14 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s36, 14 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s36, 14 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
@@ -1997,7 +2047,7 @@ static int64_t Parquet_RdLE (Parquet_Rd *r, int64_t k, m9_err *err)
   bool m9t1 = (m9_add_i64 ((*r).at, k, err) > ((*r).b).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s39, 14 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s39, 14 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s37, 14 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s37, 14 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
@@ -2055,7 +2105,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
     goto L_ret;
   }
   if (ci.hasDict) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s40, 27 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s40, 27 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s38, 27 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s38, 27 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
@@ -2085,7 +2135,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
         if (err->exc) goto L_ret;
     } else {
       if (((id == INT64_C(7)) && (ct == Parquet_CtStruct))) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s41, 12 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s41, 12 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s39, 12 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s39, 12 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
         m9_raise (err, &Parquet_Bad);
         goto L_ret;
     } else {
@@ -2094,27 +2144,27 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
     } } } }
   }
   if ((ptype == INT64_C(2))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s42, 27 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s42, 27 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s40, 27 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s40, 27 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
   if ((ptype != INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s43, 21 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s43, 21 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s41, 21 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s41, 21 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
   if ((enc != Parquet_EncPlain)) {
     if (((enc == INT64_C(2)) || (enc == INT64_C(8)))) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s44, 27 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s44, 27 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s42, 27 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s42, 27 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
       m9_raise (err, &Parquet_Bad);
       goto L_ret;
     }
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s45, 20 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s45, 20 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s43, 20 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s43, 20 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
   if ((nvals != rows)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s46, 18 })) m9t9 = ((m9_sl_CHAR){ (uint32_t *) m9s46, 18 }); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s44, 18 })) m9t9 = ((m9_sl_CHAR){ (uint32_t *) m9s44, 18 }); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }
@@ -2147,7 +2197,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
         bool m9t13 = (m9_add_i64 (r.at, INT64_C(8), err) > (r.b).len);
         if (err->exc) goto L_ret;
         if (m9t13) {
-          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s47, 14 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s47, 14 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; }
+          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s45, 14 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s45, 14 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; }
           m9_raise (err, &Parquet_Bad);
           goto L_ret;
         }
@@ -2177,7 +2227,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
           bool m9t18 = (m9_add_i64 (r.at, INT64_C(4), err) > (r.b).len);
           if (err->exc) goto L_ret;
           if (m9t18) {
-            { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s48, 14 })) m9t19 = ((m9_sl_CHAR){ (uint32_t *) m9s48, 14 }); err->s[0].p = m9t19.p; err->s[0].len = m9t19.len; }
+            { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s46, 14 })) m9t19 = ((m9_sl_CHAR){ (uint32_t *) m9s46, 14 }); err->s[0].p = m9t19.p; err->s[0].len = m9t19.len; }
             m9_raise (err, &Parquet_Bad);
             goto L_ret;
           }
@@ -2347,30 +2397,13 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
           bool m9t34 = (m9_add_i64 (r.at, n, err) > (r.b).len);
           if (err->exc) goto L_ret;
           if (m9t34) {
-            { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s49, 14 })) m9t35 = ((m9_sl_CHAR){ (uint32_t *) m9s49, 14 }); err->s[0].p = m9t35.p; err->s[0].len = m9t35.len; }
+            { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s47, 14 })) m9t35 = ((m9_sl_CHAR){ (uint32_t *) m9s47, 14 }); err->s[0].p = m9t35.p; err->s[0].len = m9t35.len; }
             m9_raise (err, &Parquet_Bad);
             goto L_ret;
           }
-          s = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), n, err);
+          (*(m9_sl_CHAR *) m9_at (vs.p, i, vs.len, sizeof (m9_sl_CHAR), err)) = DynStr_FromUtf8 (pool, ({ __typeof__(r.b) m9t36 = r.b; int64_t m9t36a = r.at, m9t36n = n; (__typeof__(m9t36)){ m9t36.p + m9_chk_slice (m9t36a, m9t36n, m9t36.len, err), m9t36n }; }), err);
           if (err->exc) goto L_ret;
-          { int64_t m9t36to;
-          x = INT64_C(0);
-          m9t36to = m9_sub_i64 (n, INT64_C(1), err);
-          if (err->exc) goto L_ret;
-          for (; x <= m9t36to; x += 1) {
-            bool m9t37 = ((int64_t)((*(uint8_t *) m9_at (r.b.p, m9_add_i64 (r.at, x, err), r.b.len, sizeof (uint8_t), err))) > INT64_C(127));
-            if (err->exc) goto L_ret;
-            if (m9t37) {
-              { __typeof__(ci.name) m9t38 = ci.name; err->s[0].p = m9t38.p; err->s[0].len = m9t38.len; }
-              m9_raise (err, &Parquet_Bad);
-              goto L_ret;
-            }
-            (*(uint32_t *) m9_at (s.p, x, s.len, sizeof (uint32_t), err)) = m9_chr ((int64_t)((*(uint8_t *) m9_at (r.b.p, m9_add_i64 (r.at, x, err), r.b.len, sizeof (uint8_t), err))), err);
-            if (err->exc) goto L_ret;
-          } }
           r.at = m9_add_i64 (r.at, n, err);
-          if (err->exc) goto L_ret;
-          (*(m9_sl_CHAR *) m9_at (vs.p, i, vs.len, sizeof (m9_sl_CHAR), err)) = s;
           if (err->exc) goto L_ret;
         } else {
           (*(m9_sl_CHAR *) m9_at (vs.p, i, vs.len, sizeof (m9_sl_CHAR), err)) = (m9_sl_CHAR){ NULL, 0 };
@@ -2380,7 +2413,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
       Parquet_AddStrsQ (pool, f, ci.name, vs, err);
       if (err->exc) goto L_ret;
   } else {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s50, 25 })) m9t39 = ((m9_sl_CHAR){ (uint32_t *) m9s50, 25 }); err->s[0].p = m9t39.p; err->s[0].len = m9t39.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s48, 25 })) m9t37 = ((m9_sl_CHAR){ (uint32_t *) m9s48, 25 }); err->s[0].p = m9t37.p; err->s[0].len = m9t37.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   } } } } } }
@@ -2422,7 +2455,7 @@ static void Parquet_AddF64Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s51, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s51, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s49, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s49, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2448,7 +2481,7 @@ static void Parquet_AddF32Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s52, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s52, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s50, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s50, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2474,7 +2507,7 @@ static void Parquet_AddI64Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s53, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s53, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s51, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s51, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2500,7 +2533,7 @@ static void Parquet_AddI32Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s54, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s54, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s52, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s52, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2526,7 +2559,7 @@ static void Parquet_AddI16Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s55, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s55, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s53, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s53, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2552,7 +2585,7 @@ static void Parquet_AddBytesQ (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s56, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s56, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s54, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s54, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2578,7 +2611,7 @@ static void Parquet_AddBoolsQ (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s57, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s57, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s55, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s55, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2604,7 +2637,7 @@ static void Parquet_AddStrsQ (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s58, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s58, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s56, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s56, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2632,7 +2665,7 @@ static Frame_Fr * Parquet_NewQ (m9_pool *pool, int64_t rows, m9_err *err)
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s59, 18 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s59, 18 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s57, 18 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s57, 18 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2653,21 +2686,21 @@ static Frame_Ts * Parquet_NewTsQ (m9_pool *pool, Frame_Fr * f, m9_sl_I64 t, int6
 L_hdl_m9t1: ;
   if (err->exc == &Frame_SizeError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s60, 20 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s60, 20 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s58, 20 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s58, 20 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Disorder) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s61, 18 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s61, 18 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s59, 18 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s59, 18 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_BadArg) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s62, 14 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s62, 14 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s60, 14 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s60, 14 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2695,7 +2728,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &Frame_WrongType) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s63, 17 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s63, 17 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s61, 17 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s61, 17 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2739,7 +2772,7 @@ static int64_t Parquet_TextI64 (m9_sl_CHAR s, m9_err *err)
   int64_t v = 0; (void) v;
   v = INT64_C(0);
   if (((s).len == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s64, 12 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s64, 12 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s62, 12 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s62, 12 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Parquet_Bad);
     goto L_ret;
   }

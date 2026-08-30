@@ -61,6 +61,7 @@ typedef struct { Parquet_Buf *p; int64_t len; } m9_sl_Parquet_Buf;
 
 void Parquet_Write (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_err *err);
 void Parquet_WriteTs (m9_pool *pool, Frame_Ts * ts, m9_sl_CHAR path, m9_err *err);
+void Parquet_WriteX (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_err *err);
 Frame_Fr * Parquet_Read (m9_pool *pool, m9_sl_CHAR path, m9_err *err);
 Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_err *err);
 
