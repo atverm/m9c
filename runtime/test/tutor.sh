@@ -47,7 +47,7 @@ sh "$REPO/tools/tutor/setup.sh" "$REPO" "$W" "$M9C" >/dev/null
 "$B/tutorm9" $PORT 64 "$W/site" "$W" \
     "$REPO/docs/tutorial/examples/data" > "$B/tutor.log" 2>&1 &
 SRV=$!
-trap 'kill $SRV 2>/dev/null' EXIT
+trap 'rc=$?; kill $SRV 2>/dev/null || :; exit $rc' EXIT
 sleep 1
 
 n=0

@@ -10,6 +10,6 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 python3 -m http.server 18930 --bind 127.0.0.1 --directory /tmp/m9stores \
     >/dev/null 2>&1 &
 SRV=$!
-trap 'kill $SRV 2>/dev/null' EXIT
+trap 'rc=$?; kill $SRV 2>/dev/null || :; exit $rc' EXIT
 sleep 1
 ./bench_test

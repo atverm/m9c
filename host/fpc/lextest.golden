@@ -22,7 +22,7 @@
 ../../corpus/OpenApi.m9                  tokens=755 errors=0
 ../../corpus/Parquet.m9                  tokens=9993 errors=0
 ../../corpus/Parse.m9                    tokens=10540 errors=0
-../../corpus/Plot.m9                     tokens=3868 errors=0
+../../corpus/Plot.m9                     tokens=7580 errors=0
 ../../corpus/Print.m9                    tokens=7182 errors=0
 ../../corpus/Sem.m9                      tokens=21584 errors=0
 ../../corpus/Stats.m9                    tokens=3441 errors=0

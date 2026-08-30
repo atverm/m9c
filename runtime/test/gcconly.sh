@@ -24,7 +24,7 @@ set -e
 
 repo=$(cd "$(dirname "$0")/../.." && pwd)
 work=${TMPDIR:-/tmp}/m9-gcconly.$$
-trap 'rm -rf "$work"' EXIT
+trap 'rc=$?; rm -rf "$work" || :; exit $rc' EXIT
 mkdir -p "$work/src" "$work/bin"
 
 cd "$repo"

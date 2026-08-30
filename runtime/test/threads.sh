@@ -127,7 +127,7 @@ d.serve_forever()
 PY
     python3 "$TLSD/serve.py" 18943 "$TLSD/cert.pem" "$TLSD/key.pem" &
     TLSPID=$!
-    trap 'kill $TLSPID 2>/dev/null' EXIT
+    trap 'rc=$?; kill $TLSPID 2>/dev/null || :; exit $rc' EXIT
     # wait for a real handshake, not for a number of seconds
     for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
       if echo | openssl s_client -connect localhost:18943 \

@@ -124,7 +124,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 python3 -m http.server 18930 --bind 127.0.0.1 --directory /tmp/m9stores \
     >/dev/null 2>&1 &
 ZSRV=$!
-trap 'kill $ZSRV 2>/dev/null' EXIT
+trap 'rc=$?; kill $ZSRV 2>/dev/null || :; exit $rc' EXIT
 sleep 1
 ./zarr_test
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
@@ -140,6 +140,20 @@ cmp /tmp/m9plots/co2_field.svg ../../reference/m2-stack/co2_field.svg \
     && echo 'co2_field.svg    byte-identical to the oracle'
 cmp /tmp/m9plots/co2_anomaly.svg ../../reference/m2-stack/co2_anomaly.svg \
     && echo 'co2_anomaly.svg  byte-identical to the oracle'
+
+# THE BAR CHARTS, which have no Modula-2 oracle -- bars are new, so
+# there is nothing to be byte-identical TO.  The checks are
+# structural and arithmetic instead: how many rectangles, that a
+# stacked pair's edges meet (to the tolerance the DOCUMENT has, since
+# every coordinate is printed %.4g), that an outline bar has a stroke
+# and no fill, that a whisker appears for each usable error and no
+# others, that a chosen colour replaces the palette, and that a log
+# axis ticks the decades and labels them by value.  Shown able to
+# fail: dropping the stack base turns the touching-edges check red.
+gcc -std=c11 -O2 -iquote .. -iquote ../gen ../m9rt.c ../fmtshim.c \
+    ../gen/DynStr.c ../gen/Io.c ../gen/Math.c ../gen/Mat.c ../gen/Plot.c \
+    bar_driver.c -lm -o bar_test
+./bar_test || { echo "FAIL: the bar battery"; exit 1; }
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Json.c \
     ../gen/Http.c ../gen/ZarrStore.c bench_driver.c \
@@ -150,7 +164,7 @@ trap - EXIT
 printf 'hello from the shim\nM9' > hello.txt
 python3 -m http.server 18923 --bind 127.0.0.1 --directory . >/dev/null 2>&1 &
 SRV=$!
-trap 'kill $SRV 2>/dev/null' EXIT
+trap 'rc=$?; kill $SRV 2>/dev/null || :; exit $rc' EXIT
 sleep 1
 ./http_test
 kill $SRV 2>/dev/null

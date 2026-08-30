@@ -43,6 +43,87 @@ PROCEDURE SetDots (RO xs: SLICE OF F64 ; RO ys: SLICE OF F64) ;
      AddRoute precedent), so the caller's arrays must outlive it.
      ClearFigure drops the layer with everything else.              *)
 
+CONST
+  (* bar style codes.  Plain I64 constants rather than a CASE RECORD
+     because a payload-less variant constructor cannot be written from
+     another module today (the generator gap Csv and Frame already
+     route around); a named constant reads the same at a call site and
+     works everywhere. *)
+  BarVertical   = 0 ;   (* bars rise from the x axis        *)
+  BarHorizontal = 1 ;   (* bars run right from the y axis   *)
+  BarGrouped    = 0 ;   (* series side by side in each slot *)
+  BarStacked    = 1 ;   (* series piled on one another      *)
+  BarAtValue    = 0 ;   (* a bar is CENTRED on its position *)
+  BarDiscrete   = 1 ;   (* positions ignored: slots 0, 1, 2 *)
+
+PROCEDURE AddBars (RO at: SLICE OF F64 ;
+                   RO v: SLICE OF F64 ;
+                   colorIdx: I64 ;
+                   RO label: STR) ;
+  (* one bar series: up to 4 of them, up to 1024 bars each, drawn
+     UNDER any lines and dots.
+
+       at -- where each bar sits on the CATEGORY axis (x for vertical
+             bars, y for horizontal ones).  With BarDiscrete the
+             values are ignored and the bars take slots 0, 1, 2 ...
+       v  -- the bar's length on the VALUE axis.  Negative is legal
+             and draws the other way from the baseline; NaN skips
+             the bar, as it lifts the pen in AddLine.
+
+     Bars and lines can share a figure: the ranges cover both, and a
+     bar series always includes its baseline so a bar is never drawn
+     hanging in the air.  colorIdx is the C0..C3 palette, unless
+     SetBarColor names something else.                              *)
+
+PROCEDURE SetBarStyle (dir: I64 ; mode: I64 ; place: I64 ;
+                       filled: BOOL ; width: F64) ;
+  (* how every bar series is drawn.  The defaults are what a caller
+     who never calls this gets: vertical, grouped, at its value,
+     filled, width 0.8.
+
+       dir   -- BarVertical or BarHorizontal
+       mode  -- BarGrouped or BarStacked.  Stacking sums the series
+                in the order they were added; a stack of one is a
+                plain bar, so grouped and stacked agree for one
+                series and that is the check the gate makes.
+       place -- BarAtValue centres each bar on its own position and
+                sizes the slot from the CLOSEST pair of positions,
+                so an irregular axis does not overlap; BarDiscrete
+                puts them at 0, 1, 2 ... which is what a category
+                chart wants and what the reader means by "bar 3".
+       width -- the fraction of a slot the bars occupy, 0 < width
+                <= 1.  Grouped series divide that between them.   *)
+
+PROCEDURE SetBarErrors (series: I64 ; RO err: SLICE OF F64) ;
+  (* symmetric error bars for one series: a whisker of +/- err[i]
+     on the VALUE axis with a cap at each end, drawn over the bars.
+     A NaN or negative entry draws nothing for that bar, which is
+     how "no uncertainty for this one" is said.  The slice is
+     RETAINED until Render, like AddLine's label and SetDots's
+     points.                                                       *)
+
+PROCEDURE SetBarColor (series: I64 ; RO hex: STR) ;
+  (* override the palette for one series with an SVG colour --
+     '#cc3311', 'darkgreen'.  It is written into the document
+     verbatim, so it is the caller's business that it is a colour;
+     an empty string restores the palette entry.                   *)
+
+PROCEDURE SetLogX (on: BOOL) ;
+PROCEDURE SetLogY (on: BOOL) ;
+  (* a base-10 logarithmic axis, for lines, dots and bars alike.
+     Ticks land on the decades rather than on NiceStep's round
+     numbers, and are labelled as the values themselves (100, not
+     10^2), which is what a reader of a small chart wants.
+
+     A value that cannot be shown on a log axis -- zero or negative
+     -- is SKIPPED, the same treatment NaN gets, rather than clamped
+     to something that would draw a line to a place the data does
+     not go.  A bar on a log value axis starts at the axis floor
+     instead of at zero, because zero is not on the axis.
+
+     ClearFigure turns both off again: a second figure in the same
+     program starts linear, like it starts empty.                  *)
+
 PROCEDURE Render (VAR pool: POOL ;
                   RO title: STR ;
                   RO xlabel: STR ;
@@ -88,12 +169,32 @@ CONST
   MTop    = 45.0 ;
   MBottom = 55.0 ;
   HexDigits = '0123456789abcdef' ;
+  Cap = 3.0 ;            (* half the error whisker's cap, in pixels.
+                            Module level because the generator
+                            refuses a CONST declared inside a
+                            procedure -- which the checker accepts,
+                            the same softness the reversed NEW had *)
 
 VAR
   serX, serY : ARRAY 4096 OF F64 ;       (* MaxSer x MaxPts, flat *)
   serN, serCol : ARRAY 4 OF I64 ;
   serLbl : ARRAY 4 OF STR ;
   nSer : I64 ;
+
+  (* BARS.  Same shape as the line series -- flat MaxSer x MaxPts --
+     so the two layers are read the same way.  Everything here is
+     zero or FALSE until a caller asks for it, which is what keeps a
+     figure without bars emitting exactly the bytes it always did. *)
+  barAt, barV : ARRAY 4096 OF F64 ;
+  barN, barCol : ARRAY 4 OF I64 ;
+  barLbl, barHex : ARRAY 4 OF STR ;
+  barErr : ARRAY 4 OF SLICE OF F64 ;     (* retained, see the def *)
+  barHasErr : ARRAY 4 OF BOOL ;
+  nBar : I64 ;
+  barDir, barMode, barPlace : I64 ;
+  barFilled : BOOL ;
+  barWidth : F64 ;
+  logX, logY : BOOL ;
 
 PROCEDURE IsNaN (v: F64) : BOOL =
 BEGIN
@@ -211,10 +312,269 @@ BEGIN
 END PYof ;
 
 PROCEDURE ClearFigure () =
+VAR i : I64 ;
 BEGIN
   nSer := 0 ;
-  dotN := 0
+  dotN := 0 ;
+  nBar := 0 ;
+  FOR i := 0 TO MaxSer - 1 DO
+    barHasErr[i] := FALSE ;
+    barHex[i] := ''
+  END ;
+  (* the style defaults ARE the documented ones, set here rather than
+     at declaration so a second figure starts where the first did *)
+  barDir := BarVertical ;
+  barMode := BarGrouped ;
+  barPlace := BarAtValue ;
+  barFilled := TRUE ;
+  barWidth := 0.8 ;
+  logX := FALSE ;
+  logY := FALSE
 END ClearFigure ;
+
+(* base-10 log, by the identity log10 x = ln x / ln 10, because Math
+   is not imported here and this is the only place a log is wanted.
+   Only ever called on a positive value: Loggable is the guard. *)
+PROCEDURE Log10 (v: F64) : F64 =
+VAR y, t, num, den : F64 ; k : I64 ;
+BEGIN
+  (* ln by the atanh series on (v-1)/(v+1), after scaling v into
+     [1, 10) by counting powers of ten -- twenty terms is far more
+     than an SVG coordinate can show *)
+  k := 0 ;
+  y := v ;
+  WHILE y >= 10.0 DO y := y / 10.0 ; k := k + 1 END ;
+  WHILE y < 1.0 DO y := y * 10.0 ; k := k - 1 END ;
+  t := (y - 1.0) / (y + 1.0) ;
+  num := t ;
+  den := 1.0 ;
+  y := 0.0 ;
+  WHILE den < 40.0 DO
+    y := y + num / den ;
+    num := num * t * t ;
+    den := den + 2.0
+  END ;
+  RETURN F64 (k) + 2.0 * y / 2.302585092994046
+END Log10 ;
+
+(* a value this axis can show: everything, unless the axis is
+   logarithmic and the value is not positive *)
+PROCEDURE Loggable (v: F64 ; lg: BOOL) : BOOL =
+BEGIN
+  IF IsNaN (v) THEN RETURN FALSE END ;
+  IF lg THEN RETURN v > 0.0 END ;
+  RETURN TRUE
+END Loggable ;
+
+(* the axis coordinate of a value: itself, or its logarithm.  With
+   the axis linear this is the identity, which is what lets every
+   existing figure emit the bytes it always did. *)
+PROCEDURE Axis (v: F64 ; lg: BOOL) : F64 =
+BEGIN
+  IF lg THEN RETURN Log10 (v) END ;
+  RETURN v
+END Axis ;
+
+PROCEDURE SetLogX (on: BOOL) =
+BEGIN
+  logX := on
+END SetLogX ;
+
+PROCEDURE SetLogY (on: BOOL) =
+BEGIN
+  logY := on
+END SetLogY ;
+
+PROCEDURE SetBarStyle (dir: I64 ; mode: I64 ; place: I64 ;
+                       filled: BOOL ; width: F64) =
+BEGIN
+  barDir := dir ;
+  barMode := mode ;
+  barPlace := place ;
+  barFilled := filled ;
+  (* a width outside (0, 1] is a caller's slip, and silently drawing
+     bars that overlap or vanish would hide it; the documented range
+     is kept instead *)
+  IF width > 0.0 THEN
+    IF width <= 1.0 THEN barWidth := width END
+  END
+END SetBarStyle ;
+
+PROCEDURE SetBarErrors (series: I64 ; RO err: SLICE OF F64) =
+BEGIN
+  IF series < 0 OR series >= MaxSer THEN RETURN END ;
+  barErr[series] := err ;
+  barHasErr[series] := TRUE
+END SetBarErrors ;
+
+PROCEDURE SetBarColor (series: I64 ; RO hex: STR) =
+BEGIN
+  IF series < 0 OR series >= MaxSer THEN RETURN END ;
+  barHex[series] := hex
+END SetBarColor ;
+
+PROCEDURE AddBars (RO at: SLICE OF F64 ;
+                   RO v: SLICE OF F64 ;
+                   colorIdx: I64 ;
+                   RO label: STR) =
+VAR n, i : I64 ;
+BEGIN
+  IF nBar >= MaxSer THEN RETURN END ;
+  n := LEN (at) ;
+  IF LEN (v) < n THEN n := LEN (v) END ;
+  IF n > MaxPts THEN n := MaxPts END ;
+  FOR i := 0 TO n - 1 DO
+    barAt[nBar * MaxPts + i] := at[i] ;
+    barV[nBar * MaxPts + i] := v[i]
+  END ;
+  barN[nBar] := n ;
+  barCol[nBar] := colorIdx ;
+  barLbl[nBar] := label ;
+  nBar := nBar + 1
+END AddBars ;
+
+(* a bar series' colour: the caller's own if SetBarColor named one,
+   and otherwise the C0..C3 palette the lines use *)
+PROCEDURE EmitBarColor (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                        s: I64) =
+BEGIN
+  IF LEN (barHex[s]) > 0 THEN
+    DynStr.Append (pool, d, barHex[s])
+  ELSE
+    EmitColor (pool, d, barCol[s])
+  END
+END EmitBarColor ;
+
+(* an error whisker: the line, then a cap across each end.  `horiz`
+   says which way the caps turn, which is the only difference
+   between the two directions. *)
+PROCEDURE EmitWhisker (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                       x0, y0, x1, y1: F64 ; horiz: BOOL)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (pool, d, '<path d="M ') ;
+  EmitR (pool, d, x0) ; DynStr.AppendChar (pool, d, ' ') ;
+  EmitR (pool, d, y0) ; DynStr.Append (pool, d, ' L ') ;
+  EmitR (pool, d, x1) ; DynStr.AppendChar (pool, d, ' ') ;
+  EmitR (pool, d, y1) ;
+  IF horiz THEN
+    DynStr.Append (pool, d, ' M ') ;
+    EmitR (pool, d, x0) ; DynStr.AppendChar (pool, d, ' ') ;
+    EmitR (pool, d, y0 - Cap) ; DynStr.Append (pool, d, ' L ') ;
+    EmitR (pool, d, x0) ; DynStr.AppendChar (pool, d, ' ') ;
+    EmitR (pool, d, y0 + Cap) ;
+    DynStr.Append (pool, d, ' M ') ;
+    EmitR (pool, d, x1) ; DynStr.AppendChar (pool, d, ' ') ;
+    EmitR (pool, d, y1 - Cap) ; DynStr.Append (pool, d, ' L ') ;
+    EmitR (pool, d, x1) ; DynStr.AppendChar (pool, d, ' ') ;
+    EmitR (pool, d, y1 + Cap)
+  ELSE
+    DynStr.Append (pool, d, ' M ') ;
+    EmitR (pool, d, x0 - Cap) ; DynStr.AppendChar (pool, d, ' ') ;
+    EmitR (pool, d, y0) ; DynStr.Append (pool, d, ' L ') ;
+    EmitR (pool, d, x0 + Cap) ; DynStr.AppendChar (pool, d, ' ') ;
+    EmitR (pool, d, y0) ;
+    DynStr.Append (pool, d, ' M ') ;
+    EmitR (pool, d, x1 - Cap) ; DynStr.AppendChar (pool, d, ' ') ;
+    EmitR (pool, d, y1) ; DynStr.Append (pool, d, ' L ') ;
+    EmitR (pool, d, x1 + Cap) ; DynStr.AppendChar (pool, d, ' ') ;
+    EmitR (pool, d, y1)
+  END ;
+  DynStr.Append (pool, d, '" fill="none" stroke="#222" stroke-width="1.2"/>')
+END EmitWhisker ;
+
+(* the decade at or below an axis coordinate, which is already a
+   logarithm: the first tick a log axis wants *)
+PROCEDURE DecadeFloor (v: F64) : F64 RAISES ValueRange =
+VAR k : F64 ;
+BEGIN
+  k := F64 (I64 (v)) ;
+  IF k > v THEN k := k - 1.0 END ;
+  RETURN k
+END DecadeFloor ;
+
+(* back from an axis coordinate to the value it stands for, so a log
+   axis can be LABELLED 100 rather than 2 *)
+PROCEDURE Pow10 (k: F64) : F64 RAISES ValueRange =
+VAR r : F64 ; n : I64 ;
+BEGIN
+  r := 1.0 ;
+  n := I64 (k) ;
+  WHILE n > 0 DO r := r * 10.0 ; n := n - 1 END ;
+  WHILE n < 0 DO r := r / 10.0 ; n := n + 1 END ;
+  RETURN r
+END Pow10 ;
+
+(* grow the two ranges to hold a bar's category span and value span.
+   VAR on all five because it is the range being extended, and the
+   caller passes them in whichever order the bar direction means:
+   that swap is the whole of what BarHorizontal costs. *)
+PROCEDURE ExtendRange (VAR cmin: F64 ; VAR cmax: F64 ;
+                       VAR vmin: F64 ; VAR vmax: F64 ;
+                       VAR seen: BOOL ;
+                       c0, c1, v0, v1: F64) =
+BEGIN
+  IF NOT seen THEN
+    cmin := c0 ; cmax := c1 ;
+    vmin := v0 ; vmax := v1 ;
+    seen := TRUE ;
+    RETURN
+  END ;
+  IF c0 < cmin THEN cmin := c0 END ;
+  IF c1 > cmax THEN cmax := c1 END ;
+  IF v0 < vmin THEN vmin := v0 END ;
+  IF v1 > vmax THEN vmax := v1 END
+END ExtendRange ;
+
+(* where bar i of this series sits on the category axis, before the
+   grouping offset: its own position, or its index *)
+PROCEDURE BarPos (s: I64 ; i: I64) : F64 =
+BEGIN
+  IF barPlace = BarDiscrete THEN RETURN F64 (i) END ;
+  RETURN barAt[s * MaxPts + i]
+END BarPos ;
+
+(* the width of one slot on the category axis: 1 for discrete bars,
+   and otherwise the CLOSEST pair of positions anywhere in the
+   figure, so the widest bar that cannot overlap is the one drawn *)
+PROCEDURE SlotWidth () : F64 =
+VAR s, i : I64 ; gap, w, a, b : F64 ; seen : BOOL ;
+BEGIN
+  IF barPlace = BarDiscrete THEN RETURN 1.0 END ;
+  seen := FALSE ;
+  gap := 1.0 ;
+  FOR s := 0 TO nBar - 1 DO
+    FOR i := 1 TO barN[s] - 1 DO
+      a := barAt[s * MaxPts + i - 1] ;
+      b := barAt[s * MaxPts + i] ;
+      IF NOT (IsNaN (a) OR IsNaN (b)) THEN
+        w := b - a ;
+        IF w < 0.0 THEN w := 0.0 - w END ;
+        IF w > 0.0 THEN
+          IF NOT seen THEN gap := w ; seen := TRUE
+          ELSIF w < gap THEN gap := w END
+        END
+      END
+    END
+  END ;
+  RETURN gap
+END SlotWidth ;
+
+(* the value a stacked bar starts from: the sum of the series below
+   it at the same index, or the baseline for the first *)
+PROCEDURE StackBase (s: I64 ; i: I64) : F64 =
+VAR k : I64 ; acc, v : F64 ;
+BEGIN
+  acc := 0.0 ;
+  IF barMode # BarStacked THEN RETURN acc END ;
+  FOR k := 0 TO s - 1 DO
+    IF i < barN[k] THEN
+      v := barV[k * MaxPts + i] ;
+      IF NOT IsNaN (v) THEN acc := acc + v END
+    END
+  END ;
+  RETURN acc
+END StackBase ;
 
 VAR
   dotX, dotY : SLICE OF F64 ;   (* retained caller slices, see def *)
@@ -256,16 +616,19 @@ VAR
   d : PTR DynStr.DString IN pool ;
   s, i : I64 ;
   xmin, xmax, ymin, ymax, pad, step, t, px, py, ly, v, w : F64 ;
+  slot, half, grp, off, base, top, e, c0, c1, v0, v1 : F64 ;
   seen, pen : BOOL ;
 BEGIN
-  IF nSer = 0 THEN RETURN '' END ;
+  IF nSer = 0 AND nBar = 0 THEN RETURN '' END ;
   seen := FALSE ;
   xmin := 0.0 ; xmax := 1.0 ; ymin := 0.0 ; ymax := 1.0 ;
   FOR s := 0 TO nSer - 1 DO
     FOR i := 0 TO serN[s] - 1 DO
       v := serX[s * MaxPts + i] ;
       w := serY[s * MaxPts + i] ;
-      IF NOT (IsNaN (v) OR IsNaN (w)) THEN
+      IF Loggable (v, logX) AND Loggable (w, logY) THEN
+        v := Axis (v, logX) ;
+        w := Axis (w, logY) ;
         IF NOT seen THEN
           xmin := v ; xmax := v ;
           ymin := w ; ymax := w ;
@@ -282,7 +645,9 @@ BEGIN
   FOR i := 0 TO dotN - 1 DO
     v := dotX[i] ;
     w := dotY[i] ;
-    IF NOT (IsNaN (v) OR IsNaN (w)) THEN
+    IF Loggable (v, logX) AND Loggable (w, logY) THEN
+      v := Axis (v, logX) ;
+      w := Axis (w, logY) ;
       IF NOT seen THEN
         xmin := v ; xmax := v ;
         ymin := w ; ymax := w ;
@@ -295,6 +660,53 @@ BEGIN
       END
     END
   END ;
+  (* THE BARS' CONTRIBUTION, and only when there are bars, so a
+     line-only figure computes exactly the range it always did.  A
+     bar series brings three things a line does not: the slot it
+     occupies on the category axis (half a slot either side of the
+     outermost bar), its BASELINE -- a bar hanging in the air with
+     its foot off the chart is a lie about its own length -- and,
+     where they are asked for, the ends of its error whiskers. *)
+  IF nBar > 0 THEN
+    slot := SlotWidth () ;
+    half := slot * 0.5 ;
+    FOR s := 0 TO nBar - 1 DO
+      FOR i := 0 TO barN[s] - 1 DO
+        v := BarPos (s, i) ;
+        w := barV[s * MaxPts + i] ;
+        IF NOT IsNaN (w) THEN
+          base := StackBase (s, i) ;
+          top := base + w ;
+          IF barHasErr[s] THEN
+            IF i < LEN (barErr[s]) THEN
+              e := barErr[s][i] ;
+              IF NOT IsNaN (e) THEN
+                IF e > 0.0 THEN top := top + e END
+              END
+            END
+          END ;
+          (* the category extent and the value extent, then mapped
+             onto x and y by the direction *)
+          IF barDir = BarHorizontal THEN
+            c0 := Axis (v - half, logY) ; c1 := Axis (v + half, logY) ;
+            IF logX AND base <= 0.0 THEN base := top / 100.0 END ;
+            v0 := Axis (base, logX) ; v1 := Axis (top, logX)
+          ELSE
+            c0 := Axis (v - half, logX) ; c1 := Axis (v + half, logX) ;
+            IF logY AND base <= 0.0 THEN base := top / 100.0 END ;
+            v0 := Axis (base, logY) ; v1 := Axis (top, logY)
+          END ;
+          IF v1 < v0 THEN v0 := top ; v1 := base END ;
+          IF barDir = BarHorizontal THEN
+            ExtendRange (ymin, ymax, xmin, xmax, seen, c0, c1, v0, v1)
+          ELSE
+            ExtendRange (xmin, xmax, ymin, ymax, seen, c0, c1, v0, v1)
+          END
+        END
+      END
+    END
+  END ;
+
   pad := (ymax - ymin) * 0.08 ;
   IF pad = 0.0 THEN pad := 1.0 END ;
   ymin := ymin - pad ;
@@ -305,6 +717,29 @@ BEGIN
   DynStr.Append (pool, d, 'font-family="DejaVu Sans, Helvetica, sans-serif">') ;
   DynStr.Append (pool, d, '<rect width="720" height="440" fill="white"/>') ;
 
+  (* A LOG AXIS IS TICKED ON THE DECADES, not on NiceStep's round
+     numbers: on a logarithmic axis the round numbers are the powers,
+     and a grid line every 0.2 of a decade says nothing a reader
+     wants.  The linear branch below is untouched, which is why every
+     figure that never asks for a log axis still emits the bytes the
+     Modula-2 original emitted. *)
+  IF logY THEN
+    t := DecadeFloor (ymin) ;
+    WHILE t <= ymax DO
+      DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, MLeft) ;
+      DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, PYof (t, ymin, ymax)) ;
+      DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, FigW - MRight) ;
+      DynStr.Append (pool, d, '" y2="') ; EmitR (pool, d, PYof (t, ymin, ymax)) ;
+      DynStr.Append (pool, d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
+      DynStr.Append (pool, d, '<text x="') ; EmitR (pool, d, MLeft - 8.0) ;
+      DynStr.Append (pool, d, '" y="') ;
+      EmitR (pool, d, PYof (t, ymin, ymax) + 4.0) ;
+      DynStr.Append (pool, d, '" font-size="11" fill="#444" text-anchor="end">') ;
+      EmitR (pool, d, Pow10 (t)) ;
+      DynStr.Append (pool, d, '</text>') ;
+      t := t + 1.0
+    END
+  ELSE
   step := NiceStep (ymax - ymin) ;
   t := FloorMul (ymin, step) ;
   WHILE t < ymin DO t := t + step END ;
@@ -321,7 +756,26 @@ BEGIN
     EmitR (pool, d, t) ;
     DynStr.Append (pool, d, '</text>') ;
     t := t + step
+  END
   END ;
+  IF logX THEN
+    t := DecadeFloor (xmin) ;
+    WHILE t <= xmax DO
+      DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
+      DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, MTop) ;
+      DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
+      DynStr.Append (pool, d, '" y2="') ;
+      EmitR (pool, d, FigH - MBottom) ;
+      DynStr.Append (pool, d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
+      DynStr.Append (pool, d, '<text x="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
+      DynStr.Append (pool, d, '" y="') ;
+      EmitR (pool, d, FigH - MBottom + 18.0) ;
+      DynStr.Append (pool, d, '" font-size="11" fill="#444" text-anchor="middle">') ;
+      EmitR (pool, d, Pow10 (t)) ;
+      DynStr.Append (pool, d, '</text>') ;
+      t := t + 1.0
+    END
+  ELSE
   step := NiceStep (xmax - xmin) ;
   t := FloorMul (xmin, step) ;
   WHILE t < xmin DO t := t + step END ;
@@ -339,6 +793,7 @@ BEGIN
     EmitR (pool, d, t) ;
     DynStr.Append (pool, d, '</text>') ;
     t := t + step
+  END
   END ;
 
   DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, MLeft) ;
@@ -354,15 +809,121 @@ BEGIN
   EmitR (pool, d, FigH - MBottom) ;
   DynStr.Append (pool, d, '" stroke="black" stroke-width="1.2"/>') ;
 
+  (* THE BARS, under the dots and the lines.  Each is a rectangle
+     from its baseline to its value on the VALUE axis, and one slot
+     wide on the CATEGORY axis -- with the two axes swapped when the
+     bars are horizontal, which is the only thing that direction
+     changes.  A grouped series takes its own share of the slot; a
+     stacked one starts where the series below it ended. *)
+  IF nBar > 0 THEN
+    slot := SlotWidth () * barWidth ;
+    IF barMode = BarStacked THEN grp := slot
+    ELSE grp := slot / F64 (nBar) END ;
+    FOR s := 0 TO nBar - 1 DO
+      IF barMode = BarStacked THEN off := 0.0
+      ELSE off := 0.0 - slot * 0.5 + grp * (F64 (s) + 0.5) END ;
+      FOR i := 0 TO barN[s] - 1 DO
+        w := barV[s * MaxPts + i] ;
+        IF NOT IsNaN (w) THEN
+          v := BarPos (s, i) + off ;
+          base := StackBase (s, i) ;
+          top := base + w ;
+          (* on a log value axis zero is nowhere, so the foot of the
+             bar is the axis floor -- said in the definition, because
+             a reader comparing bar HEIGHTS on a log axis is already
+             comparing ratios and should know where they start *)
+          IF barDir = BarHorizontal THEN
+            IF logX AND base <= 0.0 THEN base := Pow10 (xmin) END
+          ELSE
+            IF logY AND base <= 0.0 THEN base := Pow10 (ymin) END
+          END ;
+          IF barDir = BarHorizontal THEN
+            c0 := PYof (Axis (v + grp * 0.5, logY), ymin, ymax) ;
+            c1 := PYof (Axis (v - grp * 0.5, logY), ymin, ymax) ;
+            v0 := PXof (Axis (base, logX), xmin, xmax) ;
+            v1 := PXof (Axis (top, logX), xmin, xmax)
+          ELSE
+            c0 := PXof (Axis (v - grp * 0.5, logX), xmin, xmax) ;
+            c1 := PXof (Axis (v + grp * 0.5, logX), xmin, xmax) ;
+            v0 := PYof (Axis (top, logY), ymin, ymax) ;
+            v1 := PYof (Axis (base, logY), ymin, ymax)
+          END ;
+          IF c1 < c0 THEN t := c0 ; c0 := c1 ; c1 := t END ;
+          IF v1 < v0 THEN t := v0 ; v0 := v1 ; v1 := t END ;
+          DynStr.Append (pool, d, '<rect x="') ;
+          IF barDir = BarHorizontal THEN EmitR (pool, d, v0)
+          ELSE EmitR (pool, d, c0) END ;
+          DynStr.Append (pool, d, '" y="') ;
+          IF barDir = BarHorizontal THEN EmitR (pool, d, c0)
+          ELSE EmitR (pool, d, v0) END ;
+          DynStr.Append (pool, d, '" width="') ;
+          IF barDir = BarHorizontal THEN EmitR (pool, d, v1 - v0)
+          ELSE EmitR (pool, d, c1 - c0) END ;
+          DynStr.Append (pool, d, '" height="') ;
+          IF barDir = BarHorizontal THEN EmitR (pool, d, c1 - c0)
+          ELSE EmitR (pool, d, v1 - v0) END ;
+          (* FILLED OR NOT is one attribute pair, and an unfilled bar
+             still needs its outline in the series colour or it is
+             invisible *)
+          IF barFilled THEN
+            DynStr.Append (pool, d, '" fill="') ;
+            EmitBarColor (pool, d, s) ;
+            DynStr.Append (pool, d, '" stroke="none"/>')
+          ELSE
+            DynStr.Append (pool, d, '" fill="none" stroke="') ;
+            EmitBarColor (pool, d, s) ;
+            DynStr.Append (pool, d, '" stroke-width="1.6"/>')
+          END
+        END
+      END
+    END ;
+
+    (* THE ERROR BARS, over the rectangles they belong to: a whisker
+       from value-e to value+e with a cap at each end.  Drawn in a
+       second pass so a later series' bar cannot cover an earlier
+       series' whisker. *)
+    FOR s := 0 TO nBar - 1 DO
+      IF barHasErr[s] THEN
+        IF barMode = BarStacked THEN off := 0.0
+        ELSE off := 0.0 - slot * 0.5 + grp * (F64 (s) + 0.5) END ;
+        FOR i := 0 TO barN[s] - 1 DO
+          w := barV[s * MaxPts + i] ;
+          IF NOT IsNaN (w) THEN
+            IF i < LEN (barErr[s]) THEN
+              e := barErr[s][i] ;
+              IF NOT IsNaN (e) THEN
+                IF e > 0.0 THEN
+                  v := BarPos (s, i) + off ;
+                  top := StackBase (s, i) + w ;
+                  IF barDir = BarHorizontal THEN
+                    c0 := PYof (Axis (v, logY), ymin, ymax) ;
+                    v0 := PXof (Axis (top - e, logX), xmin, xmax) ;
+                    v1 := PXof (Axis (top + e, logX), xmin, xmax) ;
+                    EmitWhisker (pool, d, v0, c0, v1, c0, TRUE)
+                  ELSE
+                    c0 := PXof (Axis (v, logX), xmin, xmax) ;
+                    v0 := PYof (Axis (top - e, logY), ymin, ymax) ;
+                    v1 := PYof (Axis (top + e, logY), ymin, ymax) ;
+                    EmitWhisker (pool, d, c0, v0, c0, v1, FALSE)
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+
   (* the scatter layer, under the lines *)
   FOR i := 0 TO dotN - 1 DO
     v := dotX[i] ;
     w := dotY[i] ;
-    IF NOT (IsNaN (v) OR IsNaN (w)) THEN
+    IF Loggable (v, logX) AND Loggable (w, logY) THEN
       DynStr.Append (pool, d, '<circle cx="') ;
-      EmitR (pool, d, PXof (v, xmin, xmax)) ;
+      EmitR (pool, d, PXof (Axis (v, logX), xmin, xmax)) ;
       DynStr.Append (pool, d, '" cy="') ;
-      EmitR (pool, d, PYof (w, ymin, ymax)) ;
+      EmitR (pool, d, PYof (Axis (w, logY), ymin, ymax)) ;
       DynStr.Append (pool, d, '" r="0.7" fill="black"/>')
     END
   END ;
@@ -373,11 +934,11 @@ BEGIN
     FOR i := 0 TO serN[s] - 1 DO
       v := serX[s * MaxPts + i] ;
       w := serY[s * MaxPts + i] ;
-      IF IsNaN (v) OR IsNaN (w) THEN
+      IF NOT (Loggable (v, logX) AND Loggable (w, logY)) THEN
         pen := FALSE
       ELSE
-        px := PXof (v, xmin, xmax) ;
-        py := PYof (w, ymin, ymax) ;
+        px := PXof (Axis (v, logX), xmin, xmax) ;
+        py := PYof (Axis (w, logY), ymin, ymax) ;
         IF pen THEN DynStr.Append (pool, d, 'L ')
         ELSE DynStr.Append (pool, d, 'M ') END ;
         EmitR (pool, d, px) ; DynStr.AppendChar (pool, d, ' ') ;
@@ -406,6 +967,32 @@ BEGIN
     DynStr.Append (pool, d, '" y="') ; EmitR (pool, d, ly) ;
     DynStr.Append (pool, d, '" font-size="11" fill="#222">') ;
     DynStr.Append (pool, d, serLbl[s]) ;
+    DynStr.Append (pool, d, '</text>') ;
+    ly := ly + 16.0
+  END ;
+
+  (* and a swatch per bar series, in the same column under the line
+     entries: a small rectangle rather than a stroke, because that is
+     what the reader is looking for on the chart *)
+  FOR s := 0 TO nBar - 1 DO
+    DynStr.Append (pool, d, '<rect x="') ;
+    EmitR (pool, d, FigW - MRight - 150.0) ;
+    DynStr.Append (pool, d, '" y="') ; EmitR (pool, d, ly - 11.0) ;
+    DynStr.Append (pool, d, '" width="24" height="9"') ;
+    IF barFilled THEN
+      DynStr.Append (pool, d, ' fill="') ;
+      EmitBarColor (pool, d, s) ;
+      DynStr.Append (pool, d, '" stroke="none"/>')
+    ELSE
+      DynStr.Append (pool, d, ' fill="none" stroke="') ;
+      EmitBarColor (pool, d, s) ;
+      DynStr.Append (pool, d, '" stroke-width="1.6"/>')
+    END ;
+    DynStr.Append (pool, d, '<text x="') ;
+    EmitR (pool, d, FigW - MRight - 120.0) ;
+    DynStr.Append (pool, d, '" y="') ; EmitR (pool, d, ly) ;
+    DynStr.Append (pool, d, '" font-size="11" fill="#222">') ;
+    DynStr.Append (pool, d, barLbl[s]) ;
     DynStr.Append (pool, d, '</text>') ;
     ly := ly + 16.0
   END ;

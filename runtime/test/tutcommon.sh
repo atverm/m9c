@@ -57,7 +57,12 @@ tut_serve () {                  # the zarr chapters' local stores
   python3 -m http.server 18931 --bind 127.0.0.1 \
       --directory /tmp/m9stores >/dev/null 2>&1 &
   TUT_SRV=$!
-  trap 'kill $TUT_SRV 2>/dev/null' EXIT
+  # A CLEANUP TRAP MUST NOT DECIDE THE VERDICT.  The status of the
+  # trap's last command becomes the script's, so a `kill` of a server
+  # that has already exited turned a fully green tutdiff -- every
+  # check printed and passed -- into exit 1.  Carry the real status
+  # across the cleanup instead.
+  trap 'rc=$?; kill $TUT_SRV 2>/dev/null || :; exit $rc' EXIT
   sleep 1
 }
 
