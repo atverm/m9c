@@ -1514,7 +1514,32 @@ BEGIN
         IF Text.StartsWith (t, 'PTR ') THEN RETURN Cat ('SHARED ', t) END ;
         RETURN ''
     | Ast.NNewExpr :
+        (* THE SHAPE: pool FIRST, then the type.  `NEW (Point, pool)`
+           used to type-check in silence -- the pool position holds a
+           name that is not a value, so it types as unknown, and
+           unknown never diagnoses -- and only the GENERATOR objected,
+           with `unknown name: Point`.  A tutorial reader followed
+           chapter 4's own example into exactly this (2026-08-29).
+           A checker softer than the generator is a checker that
+           misses; the second argument BEING a pool is conclusive. *)
         IF e.kids[0] IS SOME pd THEN t := ExprType (e.kids[0], ctx) END ;
+        (* the type position holding the name of a POOL VARIABLE is
+           conclusive: a pool is not a type and nothing can be
+           allocated OF one.  A pool's own type is not recorded as a
+           value type -- ExprType of a pool name is unknown, which is
+           why a test on that says nothing -- so the scope's declared
+           TYPE NODE is what answers. *)
+        IF e.kids[1] IS SOME tn THEN
+          IF tn.kind = Ast.NQualident THEN
+            IF ScopeType (tn.a) IS SOME ptn THEN
+              IF ptn.kind = Ast.NQualident THEN
+                IF DynStr.Eq (ptn.a, 'POOL') THEN
+                  ErrN (e, ctx, 'NEW takes the pool first, then the type')
+                END
+              END
+            END
+          END
+        END ;
         t := CanonT (e.kids[1], 0) ;
         IF e.kids[2] IS SOME cnt THEN
           FOR j := 2 TO e.nkids - 1 DO

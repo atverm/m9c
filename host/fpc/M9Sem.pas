@@ -1679,7 +1679,7 @@ var
   var
     j : Integer;
     t, u : string;
-    res, inr : TNode;
+    res, inr, pt : TNode;
   begin
     Result := '';
     if e = nil then Exit;
@@ -1717,7 +1717,29 @@ var
         end;
       nkNewExpr :
         begin
-          if e.kids[0] <> nil then ExprType (e.kids[0]);
+          { THE SHAPE: pool FIRST, then the type.  `NEW (Point, pool)`
+            used to type-check in silence -- the pool position holds a
+            name that is not a value, so it types as unknown, and
+            unknown never diagnoses -- and only the GENERATOR objected,
+            with `unknown name: Point`.  A tutorial reader followed
+            chapter 4's own example into exactly this (2026-08-29).
+            A checker softer than the generator is a checker that
+            misses; the second argument BEING a pool is conclusive. }
+          if e.kids[0] <> nil then u := ExprType (e.kids[0])
+          else u := '';
+          { the type position holding the name of a POOL VARIABLE is
+            conclusive: a pool is not a type and nothing can be
+            allocated OF one.  A pool's own type is not recorded as a
+            value type -- ExprType of a pool name is unknown, which is
+            why the softer tests said nothing -- so the scope's
+            declared TYPE NODE is what answers. }
+          pt := ScopeType (e.kids[1].a);
+          if (e.kids[1].kind = nkQualident) and (pt <> nil) and
+             (pt.kind = nkQualident) and (pt.a = 'POOL') then
+            ErrN (e, ctx, 'NEW takes the pool first, then the type');
+          if (u <> '') and (u <> 'POOL') then
+            ErrN (e, ctx, 'NEW''s first argument is the pool, not '
+                          + TyName (u));
           t := CanonT (e.kids[1], 0);
           if e.kids[2] <> nil then
           begin

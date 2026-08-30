@@ -572,10 +572,41 @@ echo "m9c: a qualified handler catches exactly the module it names"
 
 # generator errors carry LINES AND MESSAGES now: the count alone cost
 # a bisect every time a module was written outside the corpus, and
-# then cost one inside the tutorial (a reversed NEW).  The probe is
-# that exact mistake.
+# then cost one inside the tutorial (a reversed NEW).
+#
+# THE PROBE USED TO BE THAT REVERSED NEW and cannot be any more: the
+# CHECKER refuses it since 2026-08-30 ("NEW takes the pool first"),
+# so the generator never sees it -- a gate broken by its own defect
+# being fixed one layer earlier, which is the right way round.  The
+# trigger here is EXIT inside a CASE arm: the checker passes it and
+# the generator refuses it, because a C switch would swallow the
+# break.  The reversed NEW is checked below, where it belongs now.
 GMSG=/tmp/m9c-genmsg
 rm -rf "$GMSG"; mkdir -p "$GMSG"; cd "$GMSG"
+cat > Exc.m9 <<'M9'
+MODULE Exc ;
+IMPORT Io ;
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  LOOP
+    CASE i OF
+    | 0 : EXIT
+    ELSE i := 1
+    END
+  END ;
+  Io.WriteLine ('no')
+END Exc.
+M9
+if M9LIBRARY="$SRC" "$M9C" --make -c ./Exc.m9 2>gm.txt; then
+  echo "FAIL: EXIT inside a CASE arm should be refused"; exit 1
+fi
+grep -q 'Exc.m9:8: gen: EXIT inside a CASE arm' gm.txt ||
+  { echo "FAIL: the generator error lost its line or message:"; \
+    head -3 gm.txt; exit 1; }
+
+# and the reversed NEW, which the CHECKER now catches -- with its own
+# line and column, before a single byte of C is generated
 cat > Rev.m9 <<'M9'
 MODULE Rev ;
 IMPORT Io ;
@@ -592,12 +623,12 @@ BEGIN
   Io.WriteLine ('no')
 END Rev.
 M9
-if M9LIBRARY="$SRC" "$M9C" --make -c ./Rev.m9 2>gm.txt; then
+if M9LIBRARY="$SRC" "$M9C" --make -c ./Rev.m9 2>rv.txt; then
   echo "FAIL: a reversed NEW should be refused"; exit 1
 fi
-grep -q 'Rev.m9:11: gen: unknown name: P' gm.txt ||
-  { echo "FAIL: the generator error lost its line or message:"; \
-    head -3 gm.txt; exit 1; }
+grep -q '11:8 Rev body: NEW takes the pool first, then the type' rv.txt ||
+  { echo "FAIL: the checker did not name the reversed NEW:"; \
+    head -3 rv.txt; exit 1; }
 
 echo "m9c: generator errors name their line and their reason"
 
