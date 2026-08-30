@@ -5,6 +5,17 @@
 runtime/gen/*.c -text
 runtime/gen/*.h -text
 demo/icos-roundtrip/Fluxnet_Variables.csv -text
+# GITHUB'S LANGUAGE BAR (Linguist).  .m9 is not a language Linguist
+# knows -- that takes a pull request there, ~200 repositories using
+# the extension and a permissively licensed grammar -- so until then
+# M9 sources are mapped onto the nearest grammar it has, Modula-2 (the
+# same Wirth lineage: highlighting is nearly right, and the files are
+# counted and searchable instead of invisible).  And the bootstrap C
+# is GENERATED: it must not read as "the language of this repository"
+# and it collapses in diffs.  Measured before this: m9c counted C 2.0
+# MB, Pascal 0.3 MB and zero bytes of M9.
+*.m9 linguist-language=Modula-2 linguist-detectable=true
+runtime/gen/** linguist-generated=true
 # debian/ is Debian's layer, not upstream's: the release tarball (git
 # archive) is the orig, and Debian wants the packaging BESIDE it --
 # lintian: no-debian-changes when the orig carries an identical debian/.
