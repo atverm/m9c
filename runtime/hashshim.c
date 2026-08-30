@@ -61,7 +61,7 @@ static void block (uint32_t h[8], const uint8_t *p)
  *
  * With -DM9_SHA_OPENSSL (and -lcrypto) the digest comes from
  * OpenSSL's EVP instead, which carries the SHA-NI code path:
- * measured on zoefii, 2119 MB/s against this portable loop's 301,
+ * measured on a local host, 2119 MB/s against this portable loop's 301,
  * and the difference was most of the M9 proxy's per-chunk latency
  * gap against the Python reference (0.31 of 0.29-0.46 ms).  The
  * portable path stays the default so nothing grows a dependency;
