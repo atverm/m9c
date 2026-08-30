@@ -33,6 +33,12 @@ rm -rf "$W"; mkdir -p "$W"
 # libraries).  Everything else runs everywhere gcc runs.
 ZARR_OK=1
 ldconfig -p 2>/dev/null | grep -q 'libblosc\.so\.1' || ZARR_OK=0
+# chapter 11 fetches over plain HTTP, but Http.m9 declares the TLS
+# shims too, so the LINK needs libssl whatever the program does.
+# Asked by linking, not by guessing at a package name.
+TLS_OK=1
+printf 'int main(void){return 0;}' > /tmp/m9tls.c
+gcc /tmp/m9tls.c -lssl -lcrypto -o /tmp/m9tls 2>/dev/null || TLS_OK=0
 
 
 ran=0
@@ -46,6 +52,10 @@ for f in "$EXA"/C*.m9; do
   # because nobody looked at the private CI that day.
   if { [ "$m" = C8Zarr ] || [ "$m" = C10Icos ]; } && [ "$ZARR_OK" != 1 ]; then
     echo "SKIP: $m (libblosc, and for C10Icos libssl, are absent)"
+    continue
+  fi
+  if [ "$m" = C11Fetch ] && [ "$TLS_OK" != 1 ]; then
+    echo "SKIP: C11Fetch (libssl is absent; Http links the TLS shims)"
     continue
   fi
   tut_build "$m" || { echo "FAIL: $m does not compile"; exit 1; }

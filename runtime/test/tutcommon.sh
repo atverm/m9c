@@ -23,6 +23,12 @@ tut_build () {                  # tut_build MODULE -> $W/MODULE
         DynStr.o Io.o Fmt.o "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/tlsshim.c" \
         -iquote "$RT" -l:libblosc.so.1 -lssl -lcrypto -lm -o "$m" \
         2>/dev/null ) || return 1 ;;
+  C11Fetch)
+    # plain HTTP on loopback, but Http.m9 carries the TLS shims too,
+    # so the link line does -- chapter 11 says why TLS cannot be
+    # concurrent yet
+    ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
+    ( cd "$W" && gcc -O2 -flto "$m.o" Http.o DynStr.o Io.o         "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/tlsshim.c"         -iquote "$RT" -lssl -lcrypto -lm -o "$m"         2>/dev/null ) || return 1 ;;
   C10Icos)
     ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
     ( cd "$W" && gcc -O2 -flto "$m.o" ZarrStore.o Json.o Http.o \
@@ -56,5 +62,5 @@ tut_serve () {                  # the zarr chapters' local stores
 }
 
 tut_pre () {                    # per-example setup before running
-  case $1 in C8Zarr|C10Icos) tut_serve ;; esac
+  case $1 in C8Zarr|C10Icos|C11Fetch) tut_serve ;; esac
 }
