@@ -1922,6 +1922,7 @@ var
   procedure WalkStmt (st: TNode);
   var
     j, k : Integer;
+    lblTxt : string;                 { a scalar CASE label, printed }
     labelsVariant, hasElse, beyond, haveSelVi : Boolean;
     vi, selVi : TVariantInfo;
     haveVi : Boolean;
@@ -2058,6 +2059,7 @@ var
           labelsVariant := False;
           hasElse := False;
           haveVi := False;
+          lblTxt := '';
           { judge totality against the SELECTOR's variant type when it
             is known; VariantOwner's by-name search cannot tell
             Json.Value.Str from Dict.Value.Str }
@@ -2096,6 +2098,22 @@ var
                     ErrN (lbl.kids[0], ctx, Format (
                       'CASE label is %s but the selector is %s',
                       [TyName (t), TyName (selTy)]));
+                  { a repeated label is decided at compile time, and
+                    until now only the C compiler decided it -- which
+                    reports against generated code the author never
+                    wrote.  Single literal labels only: a range needs
+                    interval overlap and a CONST designator needs the
+                    value, and guessing at either would be worse than
+                    the gap. }
+                  if lbl.kids[1] = nil then
+                  begin
+                    lblTxt := ExprText (lbl.kids[0]);
+                    if (lblTxt <> '') and (covered.IndexOf (lblTxt) >= 0) then
+                      ErrN (lbl.kids[0], ctx,
+                        'CASE label ' + lblTxt + ' appears twice')
+                    else if lblTxt <> '' then
+                      covered.Add (lblTxt);
+                  end;
                   if lbl.kids[1] <> nil then
                   begin
                     t := ExprType (lbl.kids[1]);

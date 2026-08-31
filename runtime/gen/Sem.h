@@ -58,6 +58,10 @@ typedef struct { Sem_Binding *p; int64_t len; } m9_sl_Sem_Binding;
 #define M9SL_m9_sl_Sem_Edge
 typedef struct { Sem_Edge *p; int64_t len; } m9_sl_Sem_Edge;
 #endif
+#ifndef M9SL_m9_arr_256_m9_sl_CHAR
+#define M9SL_m9_arr_256_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[256]; } m9_arr_256_m9_sl_CHAR;
+#endif
 
 void Sem_LoadFile (Ast_Node * root, m9_err *err);
 void Sem_CheckFile (Ast_Node * root, m9_err *err);

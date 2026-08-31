@@ -777,7 +777,37 @@ features:
    | Enumerations, and array constants indexed by them | `Var = [U10, V10, ...]`, `ARRAY [Var] OF I64 = [...]`, an entry required per enumerator | a **second** hand-rolled code-to-name table. Count today: one — a 29-arm dispatch whose first transcription got one code wrong, which is the failure the feature would make uncompilable |
    | `SET` and `IN` | a word-set over a small enumeration | a **second** hand-rolled membership table. Count today: one. The place that wanted it had 89 members and so would not have fitted a machine word — evidence *against* the word-set type, recorded rather than ignored |
    | `Bits.And/Or/Xor/Shl/Shr` | a module the generator inlines to C operators, unsigned only, shift counts checked | the first program that needs bit manipulation. A hash map is the likely one |
-   | A typed `CONST` | `CONST Pi : F32 = 3.14159...` | two modules is not enough repetition; today they spell such constants as zero-argument procedures, which `-flto` makes free |
+   | An **aggregate constructor** | `[a, b, c]`, and a record value `Row (200, 'OK')`, usable as a CONST | something needs to **enumerate** a mapping the program also uses -- the routes-as-data precedent, where `OpenApi` derives the document from the router rather than being maintained beside it |
+   | A typed `CONST` | `CONST Pi : F32 = 3.14159...` | a program must reproduce a foreign constant bit for bit and cannot |
+
+   *Measured 2026-08-31, and it corrected two things this table used to
+   say.* First, these are **separable**, and a constant lookup table
+   needs the aggregate constructor and **not** the typed CONST: the
+   element type is inferable from `[Row (200, 'OK'), ...]`, so nothing
+   has to be annotated. Of the four forms, `CONST X : I64 = 5` and
+   `[1, 2, 3]` are parse errors -- there is no array constructor in the
+   grammar at all -- while `CONST R = Row (200, 'OK')` already parses
+   and passes the checker, and only the generator refuses it (*const
+   form unsupported yet*). So the record half is nearly there and the
+   array half is a production.
+
+   Second, the typed-CONST trigger used to be a repetition count, and
+   that count is now **zero** in this repository -- the two modules
+   that motivated it moved to another one. The count was the wrong
+   trigger anyway: the argument for a typed CONST is bit-exactness,
+   not ergonomics. The one-ulp example this report used to cite does
+   not reproduce -- `180/pi` narrowed from F64, and the F32 nearest
+   the exact value, are the same bits (`42652ee1`) -- so the trigger
+   is restated as the property that would actually be violated.
+
+   **What a constant table would buy over a `CASE` that answers a
+   string** -- which works today and compiles to a jump table -- is
+   exactly enumerability: the arms of a CASE cannot be walked, while a
+   table can be printed, checked for duplicates, and used to derive a
+   document. That is the argument routes-as-data won on, and it is why
+   the trigger is written that way rather than as "the ELSIF chain was
+   ugly": that chain should have been a CASE, and a CASE needs no new
+   language at all.
 
    The cost of each is written down with it, so adoption is a
    measurement and not an argument.

@@ -2926,9 +2926,12 @@ END CheckForBounds ;
    judged by CheckCaseTotal instead. *)
 PROCEDURE CheckCaseLabels (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
-  selTy, t : STR ;
-  j, k : I64 ;
+  selTy, t, lblTxt : STR ;
+  j, k, m, nseen : I64 ;
+  seen : ARRAY 256 OF STR ;
+  dup : BOOL ;
 BEGIN
+  nseen := 0 ;
   selTy := ExprType (st.kids[0], ctx) ;
   FOR j := 1 TO st.nkids - 1 DO
     IF st.kids[j] IS SOME arm THEN
@@ -2948,6 +2951,28 @@ BEGIN
                     IF NOT (Compat (selTy, t) OR Compat (t, selTy)) THEN
                       ErrN (hi, ctx, S4 ('CASE label is ', TyName (t),
                         ' but the selector is ', TyName (selTy)))
+                    END
+                  ELSE
+                    (* a repeated label is decided at compile time, and
+                       until now only the C compiler decided it -- which
+                       reports against generated code the author never
+                       wrote.  Single literal labels only: a range needs
+                       interval overlap and a CONST designator needs the
+                       value, and guessing at either would be worse than
+                       the gap. *)
+                    lblTxt := Print.ExprText (pool, lbl.kids[0]) ;
+                    IF NOT Text.Eq (lblTxt, '') THEN
+                      dup := FALSE ;
+                      FOR m := 0 TO nseen - 1 DO
+                        IF Text.Eq (seen[m], lblTxt) THEN dup := TRUE END
+                      END ;
+                      IF dup THEN
+                        ErrN (lbl, ctx, S3 ('CASE label ', lblTxt,
+                          ' appears twice'))
+                      ELSIF nseen < 256 THEN
+                        seen[nseen] := lblTxt ;
+                        nseen := nseen + 1
+                      END
                     END
                   END
                 END
