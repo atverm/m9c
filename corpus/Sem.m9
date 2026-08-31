@@ -145,6 +145,10 @@ VAR
   nown : I64 ;
   curRetTy : STR ;              (* the enclosing procedure's result *)
   curUnsafe : BOOL ;
+  curPure : BOOL ;                 (* inside a [PURE] body, par 3.2 *)
+  boundMon : STR ;                 (* the bound monitor parameter, or
+                                      empty when this procedure is not
+                                      bound to one (par 6) *)
   inited : BOOL ;
 
 (* ---- output ---- *)
@@ -790,6 +794,57 @@ END AddVarsOf ;
 
 (* ---- field lookup ---- *)
 
+(* the fields of a MONITOR hang off kids[0], where a record's hang
+   off kids[1] -- same walk, one index apart *)
+PROCEDURE MonFieldType (mon: PTR Ast.Node ; RO f: STR) : Ast.Kid =
+VAR i, j : I64 ;
+BEGIN
+  IF mon.kids[0] IS SOME fs THEN
+    FOR i := 0 TO fs.nkids - 1 DO
+      IF fs.kids[i] IS SOME g THEN
+        IF g.kids[0] IS SOME ids THEN
+          FOR j := 0 TO ids.nkids - 1 DO
+            IF ids.kids[j] IS SOME id THEN
+              IF Text.Eq (id.a, f) THEN RETURN g.kids[1] END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN NONE
+END MonFieldType ;
+
+(* par 6: the name of the first parameter when its type is a MONITOR
+   RECORD, else empty.  M9 has no method syntax, so that parameter IS
+   the binding. *)
+PROCEDURE BoundMonitorOf (d: PTR Ast.Node) : STR =
+VAR rt : Ast.Kid ;
+BEGIN
+  IF d.kids[0] IS SOME pl THEN
+    IF pl.nkids > 0 THEN
+      IF pl.kids[0] IS SOME grp THEN
+        IF grp.kids[0] IS SOME ids THEN
+          IF ids.nkids > 0 THEN
+            rt := ResolveType (grp.kids[1]) ;
+            WHILE rt IS SOME rr DO
+              IF rr.kind = Ast.NPtrType OR rr.kind = Ast.NSharedType THEN
+                rt := ResolveType (rr.kids[0])
+              ELSE
+                IF rr.kind = Ast.NMonitorType THEN
+                  IF ids.kids[0] IS SOME id0 THEN RETURN id0.a END
+                END ;
+                RETURN ''
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN ''
+END BoundMonitorOf ;
+
 PROCEDURE FieldTypeOf (rec: PTR Ast.Node ; RO f: STR) : Ast.Kid =
 VAR i, j : I64 ;
 BEGIN
@@ -862,6 +917,21 @@ VAR
   beyond, deref, known : BOOL ;
 BEGIN
   beyond := FALSE ;
+  (* par 3.2: a PURE procedure has no observable effect, so the two
+     ways a body can be observed from outside its own frame are
+     refused -- writing through a caller's binding, and writing the
+     module's state.  A local or a value parameter is invisible to
+     everyone and stays legal. *)
+  IF curPure THEN
+    IF Text.Eq (ScopeMode (d.a), ModeVar) OR
+       Text.Eq (ScopeMode (d.a), ModeOwn) THEN
+      ErrN (d, ctx, Cat (Cat ('cannot write through the VAR parameter ',
+        d.a), ' in a PURE procedure (par 3.2)'))
+    ELSIF Text.Eq (ScopeMode (d.a), ModeModule) THEN
+      ErrN (d, ctx, Cat (Cat ('cannot write the module variable ',
+        d.a), ' in a PURE procedure (par 3.2)'))
+    END
+  END ;
   IF Text.Eq (ScopeMode (d.a), ModeRo) THEN
     ErrN (d, ctx, Cat (Cat ('cannot write through the RO parameter ',
       d.a), ' (par 4.1)'))
@@ -1029,6 +1099,20 @@ BEGIN
                   ' in the record type of ', d.a))
               END
             END
+          ELSIF r.kind = Ast.NMonitorType THEN
+            (* par 6: a monitor's fields are reachable only through
+               the procedure bound to it, and the binding is the
+               FIRST parameter because M9 has no method syntax.  So
+               the monitor must be named by that parameter, bare:
+               `w.next` inside `Claim (VAR w: Work)` is the binding,
+               while `j.w.next` reaches past it, and a second monitor
+               parameter is a different lock. *)
+            IF Text.Eq (boundMon, '') OR NOT Text.Eq (d.a, boundMon) OR
+               j # 0 THEN
+              ErrN (d, ctx, S3 ('monitor field ', sel.a,
+                ' is reached from outside a procedure bound to the monitor (par 6)'))
+            END ;
+            declN := MonFieldType (r, sel.a)
           ELSE
             RETURN NONE
           END
@@ -1523,6 +1607,25 @@ BEGIN
            A checker softer than the generator is a checker that
            misses; the second argument BEING a pool is conclusive. *)
         IF e.kids[0] IS SOME pd THEN t := ExprType (e.kids[0], ctx) END ;
+        (* par 3.2: allocating from a pool the CALLER owns consumes the
+           caller's storage and answers a slice into the caller's
+           arena -- an effect, and the one a PURE body could still
+           have, since NEW is a builtin (rule 3 does not see it) and
+           not an assignment target (rules 1 and 2 do not either).  A
+           pool declared LOCAL is invisible outside the frame and
+           stays legal, so the test is the pool's binding MODE. *)
+        IF curPure THEN
+          IF e.kids[0] IS SOME pn THEN
+            IF pn.kind = Ast.NDesignator THEN
+              IF Text.Eq (ScopeMode (pn.a), ModeVar) OR
+                 Text.Eq (ScopeMode (pn.a), ModeOwn) OR
+                 Text.Eq (ScopeMode (pn.a), ModeModule) THEN
+                ErrN (e, ctx, Cat (Cat ('cannot allocate from the pool ',
+                  pn.a), ' in a PURE procedure (par 3.2)'))
+              END
+            END
+          END
+        END ;
         (* the type position holding the name of a POOL VARIABLE is
            conclusive: a pool is not a type and nothing can be
            allocated OF one.  A pool's own type is not recorded as a
@@ -2938,8 +3041,15 @@ BEGIN
     OwnClear () ;
     OwnSeed () ;
     RaisedClear () ;
+    (* par 3.2: kid 3 is the attribute, if any *)
+    curPure := FALSE ;
+    IF d.kids[3] IS SOME at THEN
+      IF Text.Eq (at.a, 'PURE') THEN curPure := TRUE END
+    END ;
+    boundMon := BoundMonitorOf (d) ;
     WalkStmt (body.kids[body.nkids - 1], ctx) ;
     ReportUnhandled (body, ctx, RaisesOf (pool, d)) ;
+    ReportImpureCalls (body, ctx) ;
     GraphSet (ctx)
   END
 END CheckProcBody ;
@@ -3188,6 +3298,35 @@ BEGIN
   END
 END ReportUnhandled ;
 
+(* par 3.2 rule 3: a PURE procedure may call only PURE procedures.
+
+   This is what makes "no I/O" true without the checker knowing what
+   I/O is -- a foreign procedure carries [SERIAL] or [REENTRANT] and
+   is therefore never PURE, and neither is Io.WriteLine, so neither
+   can be reached from a PURE body.  Purity is transitive by
+   construction rather than by a second analysis.
+
+   A callee that does not resolve to a declared procedure is a
+   builtin -- LEN, ORD, a checked conversion, a variant constructor
+   -- and those are pure, so they are skipped. *)
+PROCEDURE ReportImpureCalls (body: PTR Ast.Node ; RO ctx: STR) =
+VAR
+  i : I64 ;
+  found : BOOL ;
+  pr : ProcInfo ;
+BEGIN
+  IF NOT curPure THEN RETURN END ;
+  FOR i := 0 TO ncalls - 1 DO
+    pr := LookupProc (calls[i], found) ;
+    IF found THEN
+      IF NOT Text.Eq (pr.attrib, 'PURE') THEN
+        ErrN (body, ctx, Cat (Cat ('PURE procedure calls ', calls[i]),
+          ', which is not PURE (par 3.2)'))
+      END
+    END
+  END
+END ReportImpureCalls ;
+
 (* ---- the call graph, and THREAD reachability ----
 
    A [SERIAL] foreign procedure keeps global state, so calling one
@@ -3375,6 +3514,13 @@ BEGIN
               AddVarsOf (u, ModeModule) ;
               curRetTy := '<void>' ;
               RaisedClear () ;
+              (* never PURE, and the flag must be CLEARED rather than
+                 inherited from whichever procedure was checked last
+                 -- it leaked into this frame on the first run of the
+                 host side and reported the body writing its own
+                 module variables *)
+              curPure := FALSE ;
+              boundMon := '' ;      (* a module body binds no monitor *)
               WalkStmt (d.kids[0], Cat (u.a, ' body')) ;
               (* the module body has no caller to declare RAISES to,
                  and so no clause: whatever it can raise, it must

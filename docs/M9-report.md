@@ -32,7 +32,8 @@ to reduce, so the list is meant to shrink.
 | **Compiler** | `m9c`, self-hosted. Lexer, parser and code generator are written in M9; the three-stage bootstrap is byte-identical at the fixpoint (§9.5) |
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
 | **Checked today** | exact widths and explicit conversion, exhaustive `RAISES`, total `CASE`, `OPT` before use, parameter-mode borrows, moves and pools, `STATEFUL`, definition/implementation conformance |
-| **Specified but not yet checked** | five, each named where it is stated: a `STATEFUL` module reached by two threads and monitor fields touched from outside (§6); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); `F32 (F64)` narrowing (§2.1) |
+| **Specified but not yet checked** | four, each named where it is stated: a `STATEFUL` module reached by two threads (§6); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); `F32 (F64)` narrowing (§2.1) |
+| **Specified but not yet generated** | `OPT T` for a non-pointer `T` (§11 maps it; the generator refuses it); `TRANSFER` (§6) |
 | **Specified, unbuilt** | `TRANSFER` (§6); four pre-registered candidates with their adoption triggers (§9.6) |
 | **Release** | 0.3.1, six distributions, built from this tree |
 
@@ -388,9 +389,50 @@ Rules:
    stdout swallowed its own diagnosis three times in one day; in M9,
    raising and program exit both run pending FINALLY blocks, which
    flush.)*
-2. **PURE** may be declared and is verified: no writes through VAR
-   or pointers, no RAISES beyond the checked runtime three, no I/O.
-   Auditors and optimizers get the same guarantee.
+2. **PURE** may be declared, and **is checked** — by both checkers,
+   held to identical diagnostics. A `[PURE]` procedure has no effect
+   observable outside its own frame, which is four refusals:
+
+   - it may not write through a `VAR` or `OWN` parameter — that is
+     the caller's binding, and being observable through it is what
+     `VAR` is *for*;
+   - it may not write a module variable;
+   - it may not allocate from a pool it did not declare itself —
+     `NEW (pool, ...)` on a caller's pool consumes the caller's
+     storage and answers a slice into the caller's arena. A local
+     `VAR scratch: POOL` is invisible outside the frame and stays
+     legal;
+   - **it may call only `PURE` procedures.**
+
+   The last rule is what carries the weight. It makes "no I/O" true
+   *without the checker knowing what I/O is*: a foreign procedure
+   declares `[SERIAL]` or `[REENTRANT]` and so is never `[PURE]`, and
+   neither is `Io.WriteLine`, so neither can be reached from a pure
+   body. Purity is transitive by construction rather than by a second
+   analysis, and the audit surface it rests on is the one §7 already
+   enumerates.
+
+   Writing a local, or a value parameter, is invisible to everyone
+   and stays legal — purity here is about *effects*, not about
+   assignment.
+
+   **The RAISES clause needs no separate rule**, though earlier
+   revisions of this report stated one. Raising is an outcome, not an
+   effect, and it is deterministic in the arguments; the only way a
+   procedure could raise something *about the world* is through I/O or
+   a foreign call, and the fourth rule has already forbidden both.
+   The rule was dropped rather than implemented, and the reason is
+   recorded here because the alternative — forbidding `ValueRange` —
+   would have excluded every checked conversion and made the
+   annotation unusable for numeric code.
+
+   *(Implemented 2026-08-31, after this report was caught claiming
+   for months that it was verified when nothing looked at it. Three
+   probes, `pure-writes-var`, `pure-calls-impure` and
+   `pure-allocates`, hold both checkers to the same refusals; five
+   procedures in `demo/functional` carry the annotation and are
+   accepted, and the two in the same file that are genuinely impure
+   are refused by name.)*
 3. **Module state is declared.** If an implementation holds mutable
    module-level state, its definition must say `STATEFUL`. This half
    is enforced: an implementation with module-level variables whose
@@ -400,7 +442,8 @@ Rules:
 
    What is **not** enforced is the second half — that a `STATEFUL`
    non-monitor module is reached by only one thread. §6 states the
-   rule and §6 also states, now, that no check implements it. *(Observed
+   rule and §6 also states, now, that no check implements it. It is
+   the last rule in this report with no check behind it. *(Observed
    failure: `blosc_decompress` versus `blosc_decompress_ctx` — global
    hidden state, thread-safety documented only in prose.)*
 
@@ -522,10 +565,24 @@ Threads are in the language; data races are not.
   fifty-year loop: all access to the record's fields is implicitly
   serialized; `WAIT`/`SIGNAL` condition variables live inside it.
   Field access from outside the monitor's own bound procedures is
-  refused — *specified, and not yet checked*: like the STATEFUL rule
-  below, this one is on the checker's own list of remaining softness.
-  The serialisation it protects is real and emitted; what is missing
-  is the diagnostic for reaching past it.
+  refused, **and checked** — by both checkers, held to identical
+  diagnostics. The rule is exact because the binding is: a monitor's
+  field may be reached only when the monitor is named by the bare
+  first parameter of the enclosing procedure. `w.next` inside
+  `Claim (VAR w: Work)` is the binding; `j.w.next` from anywhere
+  reaches past it, and so does a second monitor parameter of the same
+  type inside a bound procedure — holding one lock says nothing about
+  another.
+
+  *(Implemented 2026-08-31. It found four programs reaching into a
+  monitor from a module body, and improved all four. Three were
+  writing zero over zero: pool storage is defined-zero (§4.3) and a
+  module variable is emitted as a zeroed static, so the
+  initialisations were redundant as well as unlocked, and deleting
+  them is the whole fix. The fourth was a genuine read after a join,
+  which became a four-line bound accessor — safe before, provably
+  safe now, and the monitor's read side is now part of its
+  interface.)*
 
   **A BOUND PROCEDURE IS ONE WHOSE FIRST PARAMETER IS THE MONITOR
   TYPE**, and it must be `VAR` or `OWN` — by value would copy the

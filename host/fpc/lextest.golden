@@ -24,7 +24,7 @@
 ../../corpus/Parse.m9                    tokens=10540 errors=0
 ../../corpus/Plot.m9                     tokens=7580 errors=0
 ../../corpus/Print.m9                    tokens=7182 errors=0
-../../corpus/Sem.m9                      tokens=21584 errors=0
+../../corpus/Sem.m9                      tokens=22276 errors=0
 ../../corpus/Stats.m9                    tokens=3441 errors=0
 ../../corpus/Syslog.m9                   tokens=646 errors=0
 ../../corpus/Text.m9                     tokens=1340 errors=0

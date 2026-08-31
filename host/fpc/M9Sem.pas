@@ -54,6 +54,7 @@ type
     foreignLang : string;
     stateful, hasDef, hasImpl : Boolean;
     procs : array of TProcInfo;
+    { set for the duration of one PURE procedure's body (par 3.2) }
     vts : array of TVariantInfo;
     tdNames : array of string;         { type decls with bodies }
     tdNodes : array of TNode;
@@ -70,6 +71,10 @@ type
     mods : array of TModuleInfo;
     curMod : string;
     curUnsafe : Boolean;
+    curPure : Boolean;                 { inside a [PURE] body (par 3.2) }
+    boundMon : string;                 { the bound monitor parameter,
+                                         '' if this procedure is not
+                                         bound to one (par 6) }
     fromMap : TStringList;
     varParams, varWritten : TStringList;   { RO measurement }
     canonCtx : string;                 { module whose bare type names
@@ -1058,7 +1063,19 @@ var
             declN := f;
           end
           else if res.kind = nkMonitorType then
-            declN := FieldSeqType (res.kids[0], sel.a)
+          begin
+            { par 6: a monitor's fields are reachable only through the
+              procedure bound to it, and the binding is the FIRST
+              parameter because M9 has no method syntax.  So the
+              monitor must be named by that parameter, bare: `w.next`
+              inside `Claim (VAR w: Work)` is the binding, while
+              `j.w.next` reaches past it and a second monitor
+              parameter is a different lock. }
+            if (boundMon = '') or (d.a <> boundMon) or (j <> 0) then
+              ErrN (d, ctx, 'monitor field ' + sel.a + ' is reached ' +
+                'from outside a procedure bound to the monitor (par 6)');
+            declN := FieldSeqType (res.kids[0], sel.a);
+          end
           else
             declN := nil;
         nkSelIndex :
@@ -1176,6 +1193,20 @@ var
     if ScopeMode (d.a) = 'r' then
       ErrN (d, ctx, 'cannot write through the RO parameter ' + d.a +
         ' (par 4.1)');
+    { par 3.2: a PURE procedure has no observable effect, so the two
+      ways a body can be observed from outside its own frame are
+      refused -- writing through a caller's binding, and writing the
+      module's state.  Writing a local or a value parameter is
+      invisible to everyone and stays legal. }
+    if curPure then
+    begin
+      if (ScopeMode (d.a) = 'v') or (ScopeMode (d.a) = 'o') then
+        ErrN (d, ctx, 'cannot write through the VAR parameter ' + d.a +
+          ' in a PURE procedure (par 3.2)')
+      else if ScopeMode (d.a) = 'm' then
+        ErrN (d, ctx, 'cannot write the module variable ' + d.a +
+          ' in a PURE procedure (par 3.2)');
+    end;
     if Length (d.kids) = 0 then Exit;
     mode := ScopeMode (d.a);
     declN := ScopeType (d.a);
@@ -1733,6 +1764,20 @@ var
             value type -- ExprType of a pool name is unknown, which is
             why the softer tests said nothing -- so the scope's
             declared TYPE NODE is what answers. }
+          { par 3.2: allocating from a pool the CALLER owns consumes
+            the caller's storage and answers a slice into the caller's
+            arena -- an effect, and the one a PURE body could still
+            have, since NEW is a builtin (rule 3 does not see it) and
+            not an assignment target (rules 1 and 2 do not either).
+            A pool declared LOCAL is invisible outside the frame and
+            stays legal. }
+          if curPure and (e.kids[0] <> nil) and
+             (e.kids[0].kind = nkDesignator) and
+             ((ScopeMode (e.kids[0].a) = 'v') or
+              (ScopeMode (e.kids[0].a) = 'o') or
+              (ScopeMode (e.kids[0].a) = 'm')) then
+            ErrN (e, ctx, 'cannot allocate from the pool ' + e.kids[0].a +
+              ' in a PURE procedure (par 3.2)');
           pt := ScopeType (e.kids[1].a);
           if (e.kids[1].kind = nkQualident) and (pt <> nil) and
              (pt.kind = nkQualident) and (pt.a = 'POOL') then
@@ -2210,6 +2255,7 @@ var
 
 var
   nm, origin, callerKey : string;
+  prc : TProcInfo;
 begin
   raised := TStringList.Create; raised.CaseSensitive := True;
   handled := TStringList.Create; handled.CaseSensitive := True;
@@ -2228,6 +2274,22 @@ begin
     if InList (nm, declared) then Continue;
     ErrN (body, ctx, 'unhandled RAISES ' + nm + ' from ' + origin);
   end;
+  { par 3.2 rule 3: a PURE procedure may call only PURE procedures.
+    This is what makes "no I/O" true without the checker knowing what
+    I/O is -- a foreign procedure carries [SERIAL] or [REENTRANT] and
+    is therefore never PURE, and neither is Io.WriteLine, so neither
+    can be reached from a PURE body.  Purity is transitive by
+    construction rather than by a second analysis.
+
+    A callee that does not resolve to a declared procedure is a
+    builtin -- LEN, ORD, a checked conversion, a variant constructor
+    -- and those are pure, so they are skipped. }
+  if curPure then
+    for i := 0 to calls.Count - 1 do
+      if LookupProcInfo (calls[i], prc) then
+        if prc.attrib <> 'PURE' then
+          ErrN (body, ctx, 'PURE procedure calls ' + calls[i] +
+            ', which is not PURE (par 3.2)');
   callerKey := ctx;
   callGraph.Values[callerKey] := string.Join (',', calls.ToStringArray);
   raised.Free;
@@ -2299,6 +2361,24 @@ var
               holder.kids[a].kids[b].kids[0].kids[c].a + '=' + mode,
               TObject (holder.kids[a].kids[b].kids[1]));
           end;
+  end;
+
+  { par 6: the name of the first parameter when its type is a
+    MONITOR RECORD, else ''.  That parameter is the binding. }
+  function BoundMonitorOf (procNode: TNode): string;
+  var
+    grp, rt : TNode;
+  begin
+    Result := '';
+    if procNode = nil then Exit;
+    if Length (procNode.kids[0].kids) = 0 then Exit;
+    grp := procNode.kids[0].kids[0];
+    if Length (grp.kids[0].kids) = 0 then Exit;
+    rt := ResolveType (grp.kids[1]);
+    while (rt <> nil) and (rt.kind in [nkPtrType, nkSharedType]) do
+      rt := ResolveType (rt.kids[0]);
+    if (rt <> nil) and (rt.kind = nkMonitorType) then
+      Result := grp.kids[0].kids[0].a;
   end;
 
   procedure AddParamsOf (procNode: TNode);
@@ -2376,6 +2456,9 @@ begin
       AddVarsOf (p, 'l');
       AddVarsOf (u, 'm');
       declared := RaisesOf (d);
+      { par 3.2: kid 3 is the attribute, if any }
+      curPure := (d.kids[3] <> nil) and (d.kids[3].a = 'PURE');
+      boundMon := BoundMonitorOf (d);
       if d.kids[1] <> nil then
         rt := CanonT (d.kids[1], 0)
       else
@@ -2407,6 +2490,12 @@ begin
         ValueRange is the whole point, and excusing the root frame
         accepted it. }
       SetLength (declared, 0);
+      { the module body is never PURE, and curPure must be cleared
+        rather than inherited from whichever procedure was checked
+        last -- it leaked into this frame on the first run and
+        reported the body writing its own module variables }
+      curPure := False;
+      boundMon := '';            { a module body binds no monitor }
       CheckBody (sec.kids[0], ctx, declared, scope, '<void>');
       scope.Free;
     end;

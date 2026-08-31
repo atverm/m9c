@@ -36,14 +36,23 @@ BEGIN
   END
 END Await ;
 
+(* the monitor's read side, bound: reading a field from the module
+   body would reach past the lock, and after a join it is only SAFE,
+   not PROVABLY safe.  One bound procedure is the whole fix. *)
+PROCEDURE Count (VAR g: Gate) : I64 =
+BEGIN
+  RETURN g.n
+END Count ;
+
 VAR g : Gate ;
 
 BEGIN
-  g.done := FALSE ;
-  g.n := 0 ;
+  (* no `g.n := 0` here: par 6 refuses reaching into a monitor from
+     outside a bound procedure, and a module VAR is emitted as a
+     zeroed static, so the assignment wrote zero over zero. *)
   THREAD (Work, g) ;
   Await (g) ;
   Io.Write ('n = ') ;
-  Io.WriteI64 (g.n) ;
+  Io.WriteI64 (Count (g)) ;
   Io.WriteLine ('')
 END ThrTest.

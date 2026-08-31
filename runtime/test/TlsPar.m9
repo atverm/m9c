@@ -107,8 +107,8 @@ BEGIN
   j := NEW (pool, Job) ;
   j.status := NEW (pool, I64, NFetch) ;
   j.size := NEW (pool, I64, NFetch) ;
-  j.w.next := 0 ;
-  j.w.n := 0 ;
+  (* no zeroing here: par 6 refuses reaching into a monitor from
+     outside a bound procedure, and pool storage is defined-zero *)
   i := 0 ;
   WHILE i < NFetch DO
     THREAD (Worker, j) ;
