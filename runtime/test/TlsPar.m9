@@ -22,15 +22,22 @@ CONST
   Host = 'localhost' ;
 
 TYPE
-  Done = MONITOR RECORD
+  (* Everything the workers share AND change is in here.  `next` was
+     a field of Job until 2026-08-31, so Claim read it, added one and
+     wrote it back with no lock -- two workers took the same page and
+     one slot was never filled, which this gate then reported as a
+     difference from the sequential pass.  A race in the TEST, read
+     as a race in the shim under test.  Same bug, same day, as the
+     tutorial's C11Fetch. *)
+  Work = MONITOR RECORD
     n : I64 ;
+    next : I64 ;
   END ;
 
   Job = RECORD
-    d : Done ;
+    w : Work ;
     status : SLICE OF I64 ;
     size : SLICE OF I64 ;
-    next : I64 ;
   END ;
 
 PROCEDURE One (VAR status: SLICE OF I64 ; VAR size: SLICE OF I64 ;
@@ -52,32 +59,33 @@ BEGIN
   size[k] := n
 END One ;
 
-PROCEDURE Claim (VAR j: Job) : I64 =
+PROCEDURE Claim (VAR w: Work) : I64 =
 VAR k : I64 ;
 BEGIN
-  k := j.next ;
-  j.next := j.next + 1 ;
+  (* bound to the monitor: the read and the write are one claim *)
+  k := w.next ;
+  w.next := w.next + 1 ;
   RETURN k
 END Claim ;
 
-PROCEDURE Finish (VAR d: Done) =
+PROCEDURE Finish (VAR w: Work) =
 BEGIN
-  d.n := d.n + 1 ;
-  SIGNAL (d)
+  w.n := w.n + 1 ;
+  SIGNAL (w)
 END Finish ;
 
 PROCEDURE Worker (VAR j: Job) =
 VAR k : I64 ;
 BEGIN
-  k := Claim (j) ;
+  k := Claim (j.w) ;
   IF k < NFetch THEN One (j.status, j.size, k) END ;
-  Finish (j.d)
+  Finish (j.w)
 END Worker ;
 
-PROCEDURE AwaitAll (VAR d: Done ; want: I64) =
+PROCEDURE AwaitAll (VAR w: Work ; want: I64) =
 BEGIN
-  WHILE d.n < want DO
-    WAIT (d)
+  WHILE w.n < want DO
+    WAIT (w)
   END
 END AwaitAll ;
 
@@ -99,14 +107,14 @@ BEGIN
   j := NEW (pool, Job) ;
   j.status := NEW (pool, I64, NFetch) ;
   j.size := NEW (pool, I64, NFetch) ;
-  j.next := 0 ;
-  j.d.n := 0 ;
+  j.w.next := 0 ;
+  j.w.n := 0 ;
   i := 0 ;
   WHILE i < NFetch DO
     THREAD (Worker, j) ;
     i := i + 1
   END ;
-  AwaitAll (j.d, NFetch) ;
+  AwaitAll (j.w, NFetch) ;
 
   bad := 0 ;
   i := 0 ;

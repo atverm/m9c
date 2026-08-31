@@ -78,7 +78,8 @@ subset -- `corpus/`, `runtime/`, `host/fpc/`, `man/m9c.1`,
 lives in the development tree and, where it is documentation, in the
 installed package.
 
-    docs/       the language report (the specification) and the benchmarks
+    docs/       the language report (the specification) and the
+                generated module reference
     corpus/     M9 source: the standard library and the compiler itself
     museum/     programs that must fail to compile, one observed bug each
     bench/      the same programs in M9, C, Rust, Object Pascal, Scala, Python
@@ -134,3 +135,10 @@ types, failure modes, effects, thread-safety — live in DEFINITION
 modules, exhaustively. What cannot be checked simply is forbidden
 rather than checked cleverly. The report is the specification, and
 the compiler edits the report.
+
+**Read it: [`docs/M9-report.md`](docs/M9-report.md).** It is one
+document, it is normative, and it is where every rule in this
+repository is stated — with, for each, the observed failure that
+made it a rule. It also lists what the language specifies and the
+compiler does not yet check, which is the part a specification is
+usually least willing to write down.
