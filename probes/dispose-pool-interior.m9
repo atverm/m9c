@@ -1,0 +1,6 @@
+(* EXPECT: the pool owns p; free the pool *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F () = VAR pool : POOL ; p : PTR R IN pool ;
+BEGIN p := NEW (pool, R) ; DISPOSE (p) END F ;
+END m.

@@ -1,0 +1,11 @@
+(* EXPECT: cannot concatenate a string with CHAR *)
+(* a character is a scalar: `s + c` would have to decide silently
+   whether c is a character or a number.  DynStr.AppendChar, or a
+   one-character literal, which IS a string. *)
+MODULE m ;
+VAR s, t : SLICE OF CHAR ; c : CHAR ;
+PROCEDURE F () =
+BEGIN
+  t := s + c
+END F ;
+END m.

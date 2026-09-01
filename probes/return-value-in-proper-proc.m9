@@ -1,0 +1,4 @@
+(* EXPECT: RETURN with a value in a proper procedure *)
+MODULE m ;
+PROCEDURE F () = BEGIN RETURN 1 END F ;
+END m.

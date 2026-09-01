@@ -1,0 +1,5 @@
+DEFINITION MODULE VariantBar ;
+TYPE V = CASE RECORD
+  Nothing
+  END ;
+END VariantBar.

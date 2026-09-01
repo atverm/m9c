@@ -1,0 +1,4 @@
+(* EXPECT: cannot assign ALL to I64 *)
+MODULE m ;
+VAR i : I64 ;
+BEGIN i := ALL END m.

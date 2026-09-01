@@ -1,0 +1,8 @@
+(* EXPECT: module-level state requires STATEFUL on the definition *)
+DEFINITION MODULE m ;
+PROCEDURE Bump () : I64 ;
+END m.
+IMPLEMENTATION MODULE m ;
+VAR n : I64 ;
+PROCEDURE Bump () : I64 = BEGIN n := n + 1 ; RETURN n END Bump ;
+END m.

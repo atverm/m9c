@@ -1,0 +1,6 @@
+(* EXPECT: ADR exists only inside UNSAFE modules *)
+MODULE m ;
+VAR b : SLICE OF BYTE ; x : I64 ;
+PROCEDURE F () = BEGIN G (ADR (b)) END F ;
+PROCEDURE G (p: I64) = BEGIN x := p END G ;
+END m.

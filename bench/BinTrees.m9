@@ -1,0 +1,122 @@
+MODULE BinTrees ;
+
+(* binary-trees, the Benchmarks Game entry that is really an
+   allocation benchmark.  It is the flagship comparison for M9 for
+   one reason: the fast Rust entries do not use Box, they reach for
+   typed-arena or bumpalo -- a library arena, bolted on, because the
+   language's own allocator is the wrong shape for this job.  In M9
+   the arena IS the allocator (par 4.3).
+
+   Note where the pools live.  Each short-lived generation is built
+   inside Generation, whose POOL is a local: the whole generation is
+   released by the frame ending, so freeing is a pointer reset and
+   not a traversal.  That is not a trick played for the benchmark --
+   it is the only way M9 spells this, and the reason the code has no
+   destructor, no reference count and no lifetime annotation.
+
+   Answers are printed, so a compiler that elided the work would be
+   caught by the output comparison rather than flattering the clock. *)
+
+IMPORT Io ;
+
+TYPE
+  Node = RECORD
+    left, right : OPT PTR Node ;
+  END ;
+
+CONST
+  MinDepth = 4 ;
+
+PROCEDURE Make (VAR pool: POOL ; depth: I64) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  IF depth > 0 THEN
+    n.left := SOME (Make (pool, depth - 1)) ;
+    n.right := SOME (Make (pool, depth - 1))
+  ELSE
+    n.left := NONE ;
+    n.right := NONE
+  END ;
+  RETURN n
+END Make ;
+
+PROCEDURE Check (n: PTR Node) : I64 =
+VAR c : I64 ;
+BEGIN
+  c := 1 ;
+  IF n.left IS SOME l THEN c := c + Check (l) END ;
+  IF n.right IS SOME r THEN c := c + Check (r) END ;
+  RETURN c
+END Check ;
+
+(* one generation, one pool, released by the frame ending *)
+PROCEDURE Generation (depth, iters: I64) : I64 =
+VAR
+  genPool : POOL ;
+  i, sum : I64 ;
+BEGIN
+  sum := 0 ;
+  FOR i := 1 TO iters DO
+    sum := sum + Check (Make (genPool, depth))
+  END ;
+  RETURN sum
+END Generation ;
+
+PROCEDURE Stretch (depth: I64) : I64 =
+VAR p : POOL ;
+BEGIN
+  RETURN Check (Make (p, depth))
+END Stretch ;
+
+PROCEDURE Report (iters, depth, sum: I64) =
+BEGIN
+  Io.WriteI64 (iters) ;
+  Io.Write (' trees of depth ') ;
+  Io.WriteI64 (depth) ;
+  Io.Write ('  check: ') ;
+  Io.WriteI64 (sum) ;
+  Io.WriteLine ('')
+END Report ;
+
+VAR
+  maxDepth, depth, iters, i : I64 ;
+  longPool, argPool : POOL ;
+  longLived : PTR Node IN longPool ;
+
+BEGIN
+  maxDepth := 18 ;
+  IF Io.ArgCount () > 1 THEN
+    maxDepth := Io.ParseI64 (Io.Arg (argPool, 1))
+  END ;
+  IF maxDepth < MinDepth + 2 THEN maxDepth := MinDepth + 2 END ;
+
+  Io.Write ('stretch tree of depth ') ;
+  Io.WriteI64 (maxDepth + 1) ;
+  Io.Write ('  check: ') ;
+  Io.WriteI64 (Stretch (maxDepth + 1)) ;
+  Io.WriteLine ('') ;
+
+  longLived := Make (longPool, maxDepth) ;
+
+  depth := MinDepth ;
+  WHILE depth <= maxDepth DO
+    iters := 1 ;
+    FOR i := 1 TO maxDepth - depth + MinDepth DO iters := iters * 2 END ;
+    Report (iters, depth, Generation (depth, iters)) ;
+    depth := depth + 2
+  END ;
+
+  Io.Write ('long lived tree of depth ') ;
+  Io.WriteI64 (maxDepth) ;
+  Io.Write ('  check: ') ;
+  Io.WriteI64 (Check (longLived)) ;
+  Io.WriteLine ('')
+EXCEPT
+| ValueRange :
+    Io.WriteLine ('bintrees: bad depth argument') ;
+    Io.Halt (1)
+| IndexError :
+    Io.WriteLine ('bintrees: bad depth argument') ;
+    Io.Halt (1)
+END BinTrees.

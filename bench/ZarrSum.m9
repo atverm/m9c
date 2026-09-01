@@ -1,0 +1,80 @@
+MODULE ZarrSum ;
+
+(* nansum over the 4000x4000 f8 bench store, through ReadChunk --
+   the bulk zero-copy path, which is what the zarrs crate's
+   retrieve_chunk_elements does, so the comparison is of languages
+   and not of API granularity.
+
+   This program could not be written a commit ago.  ReadChunk took
+   VAR a: Array, and Array is opaque, so an M9 caller holding
+   PTR Array could never form the lvalue -- the API was callable
+   from C and not from M9, and every existing caller being a C
+   driver is why nobody noticed.  It now takes VAR a: PTR Array,
+   the mutable-handle idiom DynStr always used.
+
+   The geometry is written out because Array still exposes no shape
+   accessor.  That gap is real and logged; it is not papered over
+   here with a private field.                                       *)
+
+IMPORT Io ;
+IMPORT ZarrStore ;
+IMPORT Fmt ;
+
+CONST
+  Side     = 8 ;         (* 4000 / 500 chunks per dimension *)
+  PerChunk = 250000 ;    (* 500 * 500 elements *)
+
+VAR
+  st : SHARED PTR ZarrStore.Store ;
+  a  : PTR ZarrStore.Array ;
+  coords : ARRAY 2 OF I64 ;
+  RO b : SLICE OF BYTE ;
+  sum, v : F64 ;
+  n, ci, cj, k : I64 ;
+  argPool : POOL ;
+  url : STR ;
+
+BEGIN
+  url := 'http://127.0.0.1:18923/' ;
+  IF Io.ArgCount () > 1 THEN url := Io.Arg (argPool, 1) END ;
+
+  st := ZarrStore.Open (url) ;
+  a := ZarrStore.OpenArray (st, 'bench.zarr') ;
+
+  sum := 0.0 ;
+  n := 0 ;
+  FOR ci := 0 TO Side - 1 DO
+    FOR cj := 0 TO Side - 1 DO
+      coords[0] := ci ;
+      coords[1] := cj ;
+      b := ZarrStore.ReadChunk (a, SLICE (coords, 0, 2)) ;
+      FOR k := 0 TO PerChunk - 1 DO
+        v := F64.FromBytesLE (SLICE (b, k * 8, 8)) ;
+        (* v = v is false exactly for NaN, the store's fill *)
+        IF v = v THEN
+          sum := sum + v ;
+          n := n + 1
+        END
+      END
+    END
+  END ;
+
+  Io.Write ('n = ') ;
+  Io.WriteI64 (n) ;
+  Io.WriteLine ('') ;
+  Io.Write ('nansum = ') ;
+  Io.WriteLine (Fmt.Fixed (argPool, sum, 4))
+EXCEPT
+| ZarrStore.IOError (msg) :
+    Io.WriteLine ('zarrsum: io error') ;
+    Io.Halt (1)
+| ZarrStore.FormatError (msg) :
+    Io.WriteLine ('zarrsum: format error') ;
+    Io.Halt (1)
+| ValueRange :
+    Io.WriteLine ('zarrsum: value range') ;
+    Io.Halt (1)
+| IndexError :
+    Io.WriteLine ('zarrsum: index error') ;
+    Io.Halt (1)
+END ZarrSum.

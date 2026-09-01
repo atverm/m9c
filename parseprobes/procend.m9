@@ -1,0 +1,9 @@
+MODULE ProcEnd ;
+IMPORT Io ;
+PROCEDURE P () =
+BEGIN
+  Io.WriteLine ('no')
+END Q ;
+BEGIN
+  P ()
+END ProcEnd.

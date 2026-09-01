@@ -1,0 +1,7 @@
+(* EXPECT: signature differs from definition *)
+DEFINITION MODULE m ;
+PROCEDURE F (a: I64) : I64 ;
+END m.
+IMPLEMENTATION MODULE m ;
+PROCEDURE F (a: F64) : I64 = BEGIN RETURN 0 END F ;
+END m.

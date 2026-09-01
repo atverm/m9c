@@ -1,0 +1,4 @@
+(* EXPECT: axis 2 of a GRID 2 OF F64 does not exist *)
+MODULE m ;
+VAR g : GRID 2 OF F64 ; i : I64 ;
+BEGIN i := LEN (g, 2) END m.

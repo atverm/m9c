@@ -1,0 +1,109 @@
+MODULE Mandel ;
+
+(* mandelbrot, the Computer Language Benchmarks Game shape: an N by N
+   bitmap of the set, 50 iterations, escape at |z|^2 > 4, packed eight
+   pixels to a byte and written as a binary PBM.
+
+   It is here because the other two benchmarks price the things M9
+   argues about -- allocation (binary-trees) and always-on integer
+   checks (fannkuch-redux) -- and neither prices FLOATING POINT, which
+   is what the programs this language is for actually spend their time
+   on.  The expectation, stated before measuring: parity, because the
+   inner loop is six multiplies and three adds on F64 with no
+   subscripting to check and no allocation to do, and every
+   implementation hands the same arithmetic to the same back end.  A
+   benchmark whose result is predicted is still worth running: if the
+   prediction fails, the reason will be interesting, and if it holds,
+   it holds against Rust, C, Object Pascal and numpy at once.
+
+   The output is a FILE rather than stdout because Io.Write emits
+   CHARs as UTF-8 -- correct for console output and wrong for a
+   bitmap.  Io.WriteFile narrows CHAR to octet and raises ValueRange
+   past 255, which is the same boundary DynStr.Bytes states, so the
+   bytes that reach the file are the bytes computed here.  Every other
+   implementation writes the same file the same way, and the runner
+   diffs them before reading a clock.                                *)
+
+IMPORT Io ;
+IMPORT DynStr ;
+
+CONST
+  MaxIter = 50 ;
+  Limit = 4.0 ;
+
+PROCEDURE Render (VAR pool: POOL ; n: I64) : STR RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  x, y, k, bits, bit, iter : I64 ;
+  cr, ci, zr, zi, t, inv : F64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  (* the PBM header, composed rather than spelled: an M9 string
+     literal carries no escapes, so a newline is a CHAR (par 2) *)
+  DynStr.Append (pool, d, 'P4') ;
+  DynStr.AppendChar (pool, d, 0AC) ;
+  DynStr.AppendI64 (pool, d, n) ;
+  DynStr.AppendChar (pool, d, 020C) ;
+  DynStr.AppendI64 (pool, d, n) ;
+  DynStr.AppendChar (pool, d, 0AC) ;
+
+  inv := 2.0 / F64 (n) ;
+  FOR y := 0 TO n - 1 DO
+    ci := F64 (y) * inv - 1.0 ;
+    x := 0 ;
+    WHILE x < n DO
+      (* eight pixels, most significant bit leftmost *)
+      bits := 0 ;
+      FOR k := 0 TO 7 DO
+        cr := F64 (x + k) * inv - 1.5 ;
+        zr := 0.0 ;
+        zi := 0.0 ;
+        iter := 0 ;
+        bit := 1 ;
+        LOOP
+          IF iter = MaxIter THEN EXIT END ;
+          t := zr * zr - zi * zi + cr ;
+          zi := 2.0 * zr * zi + ci ;
+          zr := t ;
+          IF zr * zr + zi * zi > Limit THEN
+            bit := 0 ;
+            EXIT
+          END ;
+          iter := iter + 1
+        END ;
+        bits := bits * 2 + bit
+      END ;
+      DynStr.AppendChar (pool, d, CHR (bits)) ;
+      x := x + 8
+    END
+  END ;
+  RETURN DynStr.View (d)
+END Render ;
+
+VAR
+  pool : POOL ;
+  n : I64 ;
+  out : STR ;
+
+BEGIN
+  IF Io.ArgCount () < 3 THEN
+    Io.ErrLine ('usage: mandel N OUTFILE') ;
+    Io.Halt (1)
+  END ;
+  n := Io.ParseI64 (Io.Arg (pool, 1)) ;
+  IF n < 8 THEN n := 8 END ;
+  n := n - n MOD 8 ;          (* the bitmap is packed eight to a byte *)
+  out := Render (pool, n) ;
+  Io.WriteFile (Io.Arg (pool, 2), out)
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('mandel: bad argument') ;
+    Io.Halt (1)
+| IndexError :
+    Io.ErrLine ('mandel: bad argument') ;
+    Io.Halt (1)
+| Io.IOError (path) :
+    Io.ErrLine ('mandel: cannot write') ;
+    Io.ErrLine (path) ;
+    Io.Halt (1)
+END Mandel.

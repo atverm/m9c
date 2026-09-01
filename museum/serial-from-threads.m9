@@ -1,0 +1,8 @@
+(* EXPECT-ERROR: SERIAL procedure called from THREAD context *)
+(* The blosc trap: global-state C function raced across workers. *)
+MODULE m ;
+FROM cblosc IMPORT Decompress ;      (* declared [SERIAL] *)
+PROCEDURE Worker (arg: I64) =
+VAR s : C.ConstPtr ; d : C.MutPtr ; n : C.SizeT ;
+BEGIN Decompress (s, d, n) END Worker ;
+BEGIN THREAD (Worker, 0) END m.

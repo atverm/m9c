@@ -1,0 +1,3 @@
+DEFINITION MODULE TypeExpected ;
+TYPE T = 42 ;
+END TypeExpected.

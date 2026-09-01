@@ -1,0 +1,5 @@
+(* EXPECT: CASE label is a CHAR/string literal but the selector is I64 *)
+MODULE m ;
+VAR x : I64 ;
+PROCEDURE F () = BEGIN CASE x OF | "a" : x := 0 ELSE x := 1 END END F ;
+END m.

@@ -1,0 +1,6 @@
+(* EXPECT: cannot pass SLICE OF CHAR where I64 is expected *)
+MODULE m ;
+VAR x : I64 ;
+PROCEDURE G (a: I64) = BEGIN x := a END G ;
+PROCEDURE F () = BEGIN G ("hi") END F ;
+END m.

@@ -1,0 +1,26 @@
+(* EXPECT: CASE label 200 appears twice *)
+MODULE CaseLabelTwice ;
+
+(* A repeated label is settled at compile time, and until 2026-08-31
+   only the C compiler settled it -- reporting `duplicate case value`
+   against generated code the author never wrote.
+
+   Single literal labels only: a range needs interval overlap and a
+   CONST designator needs the value, and guessing at either would be
+   worse than the gap. *)
+
+PROCEDURE Reason (status: I64) : I64 =
+BEGIN
+  CASE status OF
+  | 200 : RETURN 1
+  | 404 : RETURN 2
+  | 200 : RETURN 3
+  ELSE    RETURN 0
+  END
+END Reason ;
+
+VAR n : I64 ;
+
+BEGIN
+  n := Reason (200)
+END CaseLabelTwice.

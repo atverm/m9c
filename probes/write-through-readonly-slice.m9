@@ -1,0 +1,4 @@
+(* EXPECT: cannot write through the RO parameter s *)
+MODULE m ;
+PROCEDURE F (RO s: SLICE OF I64) = BEGIN s[0] := 1 END F ;
+END m.

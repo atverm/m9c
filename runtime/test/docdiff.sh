@@ -16,7 +16,7 @@
 #
 # It builds its own m9c rather than accepting one it finds.  mandiff
 # takes $M9C, then ./m9c, then ../../out/m9c, and any of those can be
-# left over from an earlier run; CLAUDE.md's "THE GATES WERE TESTING
+# left over from an earlier run; the project's "THE GATES WERE TESTING
 # STALE CODE" is the reason not to repeat that here.
 set -e
 cd "$(dirname "$0")"

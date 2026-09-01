@@ -1,0 +1,10 @@
+(* EXPECT: NEW takes the pool first, then the type *)
+MODULE m ;
+TYPE Point = RECORD x : F64 ; END ;
+VAR
+  pool : POOL ;
+  p : PTR Point IN pool ;
+BEGIN
+  p := NEW (Point, pool) ;
+  p.x := 1.0
+END m.

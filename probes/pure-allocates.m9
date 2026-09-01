@@ -1,0 +1,24 @@
+(* EXPECT: cannot allocate from the pool pool in a PURE procedure (par 3.2) *)
+MODULE PureAllocates ;
+
+(* The last effect a PURE body could still have.  NEW is a builtin, so
+   the callee rule does not see it, and it is not an assignment
+   target, so the write rules do not either -- yet allocating from a
+   pool the CALLER owns consumes the caller's storage and answers a
+   slice that lives in the caller's arena.
+
+   A pool declared LOCAL is invisible outside the frame and stays
+   legal: the test is the pool's binding mode, not its presence. *)
+
+PROCEDURE Alloc (VAR pool: POOL ; n: I64) : SLICE OF I64 [PURE] =
+BEGIN
+  RETURN NEW (pool, I64, n)
+END Alloc ;
+
+VAR
+  p : POOL ;
+  s : SLICE OF I64 ;
+
+BEGIN
+  s := Alloc (p, 4)
+END PureAllocates.

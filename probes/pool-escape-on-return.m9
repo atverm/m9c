@@ -1,0 +1,7 @@
+(* EXPECT: pool-interior pointer escapes its pool *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F () : PTR R = 
+VAR pool : POOL ; r : PTR R IN pool ;
+BEGIN r := NEW (pool, R) ; RETURN r END F ;
+END m.

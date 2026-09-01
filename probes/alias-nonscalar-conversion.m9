@@ -1,0 +1,13 @@
+(* EXPECT: unknown procedure: Pair *)
+MODULE m ;
+TYPE Pair = RECORD a, b : I64 END ;
+VAR x : I64 ;
+PROCEDURE F () =
+VAR p : Pair ;
+BEGIN
+  (* an alias for a SCALAR converts under its own name; an alias for
+     anything else chases to something that is not a builtin and is
+     the unknown procedure it looks like *)
+  p := Pair (x)
+END F ;
+END m.

@@ -1,0 +1,7 @@
+(* EXPECT: use of s after it was consumed by SHARED *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR g : SHARED PTR R ; x : I64 ;
+PROCEDURE F () = VAR s : PTR R ;
+BEGIN s := NEW (R) ; g := SHARED (s) ; x := s.v END F ;
+END m.

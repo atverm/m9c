@@ -1,0 +1,14 @@
+DEFINITION MODULE FOR "C" thrshim ;
+
+FROM SYSTEM IMPORT ADDRESS ;
+
+EXPORT UNQUALIFIED run_parallel, now_ms, slurp ;
+
+TYPE
+  WorkerProc = PROCEDURE (ADDRESS) ;
+
+PROCEDURE run_parallel (fn: WorkerProc; n: INTEGER) : INTEGER ;
+PROCEDURE now_ms () : REAL ;
+PROCEDURE slurp (path: ADDRESS; buf: ADDRESS; max: INTEGER) : INTEGER ;
+
+END thrshim.

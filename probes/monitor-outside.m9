@@ -1,0 +1,29 @@
+(* EXPECT: monitor field n is reached from outside a procedure bound to the monitor (par 6) *)
+MODULE MonitorOutside ;
+
+(* par 6: all access to a monitor's fields is serialised, and the way
+   that is made true is that only a BOUND procedure may reach them.
+   A bound procedure is one whose FIRST parameter is the monitor --
+   M9 has no method syntax, so the parameter IS the binding.
+
+   Bump is bound and legal.  The module body is not bound, so reading
+   the same field there reaches past the lock. *)
+
+TYPE
+  Gate = MONITOR RECORD
+    n : I64 ;
+  END ;
+
+PROCEDURE Bump (VAR g: Gate) =
+BEGIN
+  g.n := g.n + 1        (* bound: this is the binding, and it is fine *)
+END Bump ;
+
+VAR
+  gate : Gate ;
+  k : I64 ;
+
+BEGIN
+  Bump (gate) ;
+  k := gate.n           (* not bound: refused *)
+END MonitorOutside.

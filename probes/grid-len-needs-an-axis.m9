@@ -1,0 +1,4 @@
+(* EXPECT: LEN of a GRID needs an axis *)
+MODULE m ;
+VAR g : GRID 2 OF F64 ; i : I64 ;
+BEGIN i := LEN (g) END m.

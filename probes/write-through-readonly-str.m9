@@ -1,0 +1,4 @@
+(* EXPECT: cannot write through the RO parameter s *)
+MODULE m ;
+PROCEDURE F (RO s: STR) = BEGIN s[0] := 'x' END F ;
+END m.

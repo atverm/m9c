@@ -1,0 +1,10 @@
+DEFINITION MODULE FOR "C" printshim ;
+
+FROM SYSTEM IMPORT ADDRESS ;
+
+EXPORT UNQUALIFIED printd, printn ;
+
+PROCEDURE printd (label: ADDRESS; v: REAL) ;
+PROCEDURE printn (label: ADDRESS; n: INTEGER) ;
+
+END printshim.

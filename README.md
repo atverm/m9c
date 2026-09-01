@@ -4,9 +4,19 @@ A Wirth-family language for code that must be *believed*: readable as a
 bank statement, checked like Rust, small enough to hold in one head —
 designed for the era in which machines write code and people audit it.
 
-**Learning it**: the tutorial — nine chapters from installation to a
-real ICOS CO2 series read through zarr, every example gated against
-the compiler — is at [tutorial.modula9.net](https://tutorial.modula9.net)
+**Who wrote it.** Almost all of this code — compiler, standard library,
+ports and tutorial — was written by an AI agent under direction and
+review: the language's own premise, applied to itself.  The development
+history records the agent as co-author on nearly every commit; this
+repository is a mirror of it and carries one commit per release, so
+those trailers are not visible here.  What makes that answerable rather
+than alarming is the rest of this page — a measurement for every claim,
+a cited failure for every feature, and a gate for anything that can
+drift.
+
+**Learning it**: the tutorial — twelve chapters from installation to a
+real ICOS CO2 series read through zarr and a chapter on threads, every
+example gated against the compiler — is at [tutorial.modula9.net](https://tutorial.modula9.net)
 and, as text and runnable examples, in the
 [M9Tutorial](https://github.com/atverm/M9Tutorial) repository.  This
 repository, [m9c](https://github.com/atverm/m9c), is the compiler,
@@ -16,9 +26,8 @@ carries the install packages for six distributions.
 
 Every feature in the report (`docs/M9-report.md`, installed with the
 package as `/usr/share/doc/m9/M9-report.md`) cites a real observed
-failure it makes uncompilable. The failures are dated 2026-08-20; the
-development tree's museum preserves them as programs that must never
-compile.
+failure it makes uncompilable. The failures are dated 2026-08-20, and
+`museum/` preserves them as programs that must never compile.
 
 M9 emits C11 and hands it to a C compiler, so an M9 program links
 against anything C links against — and gets gcc's and clang's
@@ -70,29 +79,31 @@ compares the two so neither can drift.
 
 ## Layout
 
-Of the development tree.  The public
-[m9c](https://github.com/atverm/m9c) repository is its toolchain
-subset -- `corpus/`, `runtime/`, `host/fpc/`, `man/m9c.1`,
-`docs/modules/`, the VS Code extension, `build.sh` -- mirrored from
-`main` after every gate has passed; the rest of what is listed here
-lives in the development tree and, where it is documentation, in the
-installed package.
+This repository is mirrored from the development tree's `main` after
+every gate has passed, and carries the toolchain with everything its
+gates compare against, so the differential claims below can be re-run
+rather than taken.  What is not here: the tutorial, which is a
+repository of its own
+([M9Tutorial](https://github.com/atverm/M9Tutorial)), the Debian and
+rpm packaging, the CI configuration, and the application ports.
 
-    docs/       the language report (the specification) and the
-                generated module reference
+    docs/       the language report (the specification), the benchmarks,
+                the diagnostics reference, the generated module reference
     corpus/     M9 source: the standard library and the compiler itself
     museum/     programs that must fail to compile, one observed bug each
+    probes/, parseprobes/   one negative program per checker and parser
+                refusal; both implementations are held to the same words
     bench/      the same programs in M9, C, Rust, Object Pascal, Scala, Python
     runtime/    m9rt.{c,h}, the C runtime; gen/ the checked-in bootstrap C
     runtime/test/  every gate: differentials, drivers, the bootstrap
     host/fpc/   the original Free Pascal host — now the differential oracle
     reference/  the FPC and Modula-2 programs whose bugs became the museum
-    man/, debian/, tools/   packaging and editor support
+    man/, tools/   the manual page, the editor extension, the store generator
 
 ## What it costs
 
 Measured, on one machine, twice; the method and the losses are in
-`docs/bench.md` (in the development tree, and installed with the package as `/usr/share/doc/m9/bench.md`).
+[`docs/bench.md`](docs/bench.md), and the programs are in `bench/`.
 
 | | M9 | C | Rust | Object Pascal | Scala | Python |
 |---|---:|---:|---:|---:|---:|---:|

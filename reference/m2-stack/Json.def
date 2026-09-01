@@ -1,0 +1,25 @@
+DEFINITION MODULE Json ;
+
+(* A small recursive-descent JSON parser.
+   Handles objects, arrays, strings (simple escapes), numbers,
+   true/false/null.  Enough for real-world metadata files. *)
+
+FROM SYSTEM IMPORT ADDRESS ;
+
+TYPE
+  Node ;   (* opaque *)
+  Kind = (JObject, JArray, JString, JNumber, JBool, JNull, JErrorK) ;
+
+PROCEDURE Parse (buf: ADDRESS; len: CARDINAL) : Node ;
+(* returns NIL on hard failure, or a node of kind JErrorK on syntax error *)
+
+PROCEDURE KindOf (n: Node) : Kind ;
+PROCEDURE Field (obj: Node; name: ARRAY OF CHAR) : Node ;  (* NIL if absent *)
+PROCEDURE Item  (arr: Node; i: CARDINAL) : Node ;          (* NIL if oob *)
+PROCEDURE Count (arr: Node) : CARDINAL ;
+PROCEDURE AsInt (n: Node) : INTEGER ;
+PROCEDURE AsReal (n: Node) : REAL ;
+PROCEDURE StrIs (n: Node; s: ARRAY OF CHAR) : BOOLEAN ;
+PROCEDURE IsNull (n: Node) : BOOLEAN ;
+
+END Json.

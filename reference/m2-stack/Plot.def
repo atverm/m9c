@@ -1,0 +1,25 @@
+DEFINITION MODULE Plot ;
+
+(* matplotlib-inspired SVG plots.  Line charts with the classic palette,
+   grid, ticks and legend; heatmaps with viridis / coolwarm colormaps.
+   Output is a standalone .svg file; no dependencies beyond FIO.        *)
+
+FROM Mat IMPORT Matrix ;
+
+TYPE
+  Cmap = (CViridis, CCoolwarm) ;
+
+(* line figure: add up to 4 series, then render *)
+PROCEDURE ClearFigure ;
+PROCEDURE AddLine (VAR xs, ys: ARRAY OF REAL; n: CARDINAL;
+                   colorIdx: CARDINAL; label: ARRAY OF CHAR) ;
+(* colorIdx 0..3 = matplotlib C0..C3; NaN values create gaps, as mpl does *)
+
+PROCEDURE Render (fname, title, xlabel, ylabel: ARRAY OF CHAR) ;
+
+(* heatmap figure: one matrix, NaN cells rendered white *)
+PROCEDURE RenderHeat (fname, title: ARRAY OF CHAR; m: Matrix;
+                      cmap: Cmap; symmetric: BOOLEAN) ;
+(* symmetric=TRUE centres the scale on zero (for anomaly fields) *)
+
+END Plot.

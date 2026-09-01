@@ -1,0 +1,4 @@
+(* EXPECT: needs 3 axis arguments, not 2 *)
+MODULE m ;
+VAR g : GRID 3 OF F64 ; h : GRID 2 OF F64 ; i : I64 ;
+BEGIN h := VIEW (g, ALL, ALL) END m.

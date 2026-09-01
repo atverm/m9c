@@ -1,0 +1,5 @@
+(* EXPECT: a borrow is not yours to free *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F (p: PTR R) = BEGIN DISPOSE (p) END F ;
+END m.

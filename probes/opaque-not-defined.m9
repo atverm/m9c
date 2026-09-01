@@ -1,0 +1,6 @@
+(* EXPECT: opaque type not defined in the implementation *)
+DEFINITION MODULE d ;
+TYPE T ;
+END d.
+IMPLEMENTATION MODULE d ;
+END d.

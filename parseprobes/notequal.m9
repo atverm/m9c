@@ -1,0 +1,7 @@
+MODULE NotEqual ;
+IMPORT Io ;
+VAR i : I64 ;
+BEGIN
+  i := 1 ;
+  IF i <> 2 THEN Io.WriteLine ('no') END
+END NotEqual.

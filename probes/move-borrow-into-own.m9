@@ -1,0 +1,6 @@
+(* EXPECT: cannot move borrowed q into an OWN parameter *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE G (OWN p: PTR R) = BEGIN DISPOSE (p) END G ;
+PROCEDURE F (q: PTR R) = BEGIN G (q) END F ;
+END m.

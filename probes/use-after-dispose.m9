@@ -1,0 +1,7 @@
+(* EXPECT: use of s after it was DISPOSEd *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR x : I64 ;
+PROCEDURE F () = VAR s : PTR R ;
+BEGIN s := NEW (R) ; DISPOSE (s) ; x := s.v END F ;
+END m.

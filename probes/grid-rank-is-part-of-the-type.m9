@@ -1,0 +1,4 @@
+(* EXPECT: cannot assign GRID 3 OF F64 to GRID 2 OF F64 *)
+MODULE m ;
+VAR a : GRID 2 OF F64 ; b : GRID 3 OF F64 ;
+BEGIN a := b END m.

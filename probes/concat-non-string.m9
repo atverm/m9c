@@ -1,0 +1,8 @@
+(* EXPECT: cannot concatenate a string with an integer literal *)
+MODULE m ;
+VAR s, t : SLICE OF CHAR ;
+PROCEDURE F () =
+BEGIN
+  t := s + 1
+END F ;
+END m.

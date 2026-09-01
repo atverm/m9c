@@ -1,0 +1,101 @@
+MODULE Fannkuch ;
+
+(* fannkuch-redux: permute, flip, checksum.  Chosen because it is
+   almost nothing but array indexing and integer arithmetic, which
+   makes it the benchmark that prices M9's two always-on checks --
+   bounds on every subscript, overflow on every add.
+
+   It is on trial against a specific fact rather than a vibe: Rust
+   compiles release builds with overflow-checks OFF, so its shipped
+   binaries wrap silently on integer overflow, and the same source
+   built with -C overflow-checks=on is a different program with a
+   different speed.  The gap between those two Rust columns is the
+   price of the museum's founding bug, and it is a price Rust's
+   default declines to pay while M9 has no switch that could.
+
+   The algorithm is the standard one, untuned, and identical in all
+   four implementations; the runner diffs the answers before timing. *)
+
+IMPORT Io ;
+
+CONST
+  MaxN = 16 ;
+
+PROCEDURE Run (n: I64 ; VAR checksum: I64) : I64 =
+VAR
+  perm, perm1, count : ARRAY MaxN OF I64 ;
+  i, j, r, k, t, p0, flips, maxFlips, permCount : I64 ;
+BEGIN
+  FOR i := 0 TO n - 1 DO perm1[i] := i END ;
+  r := n ;
+  maxFlips := 0 ;
+  permCount := 0 ;
+  checksum := 0 ;
+  LOOP
+    WHILE r # 1 DO
+      count[r - 1] := r ;
+      r := r - 1
+    END ;
+    FOR i := 0 TO n - 1 DO perm[i] := perm1[i] END ;
+    flips := 0 ;
+    k := perm[0] ;
+    WHILE k # 0 DO
+      i := 0 ;
+      j := k ;
+      WHILE i < j DO
+        t := perm[i] ;
+        perm[i] := perm[j] ;
+        perm[j] := t ;
+        i := i + 1 ;
+        j := j - 1
+      END ;
+      flips := flips + 1 ;
+      k := perm[0]
+    END ;
+    IF flips > maxFlips THEN maxFlips := flips END ;
+    IF permCount MOD 2 = 0 THEN
+      checksum := checksum + flips
+    ELSE
+      checksum := checksum - flips
+    END ;
+    permCount := permCount + 1 ;
+    LOOP
+      IF r = n THEN RETURN maxFlips END ;
+      p0 := perm1[0] ;
+      FOR i := 0 TO r - 1 DO perm1[i] := perm1[i + 1] END ;
+      perm1[r] := p0 ;
+      count[r] := count[r] - 1 ;
+      IF count[r] > 0 THEN EXIT END ;
+      r := r + 1
+    END
+  END
+END Run ;
+
+VAR
+  n, checksum, maxFlips : I64 ;
+  argPool : POOL ;
+
+BEGIN
+  n := 10 ;
+  IF Io.ArgCount () > 1 THEN
+    n := Io.ParseI64 (Io.Arg (argPool, 1))
+  END ;
+  IF n < 1 THEN n := 1 END ;
+  IF n > MaxN THEN n := MaxN END ;
+  checksum := 0 ;
+  maxFlips := Run (n, checksum) ;
+  Io.WriteI64 (checksum) ;
+  Io.WriteLine ('') ;
+  Io.Write ('Pfannkuchen(') ;
+  Io.WriteI64 (n) ;
+  Io.Write (') = ') ;
+  Io.WriteI64 (maxFlips) ;
+  Io.WriteLine ('')
+EXCEPT
+| ValueRange :
+    Io.WriteLine ('fannkuch: bad n') ;
+    Io.Halt (1)
+| IndexError :
+    Io.WriteLine ('fannkuch: bad n') ;
+    Io.Halt (1)
+END Fannkuch.

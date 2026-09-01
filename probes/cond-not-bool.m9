@@ -1,0 +1,5 @@
+(* EXPECT: condition must be BOOL, not I64 *)
+MODULE m ;
+VAR x : I64 ;
+PROCEDURE F () = BEGIN IF x THEN x := 0 END END F ;
+END m.

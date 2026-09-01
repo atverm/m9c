@@ -1,0 +1,4 @@
+(* EXPECT: a VIEW that keeps no axis is an index *)
+MODULE m ;
+VAR g : GRID 2 OF F64 ; x : F64 ; i : I64 ;
+BEGIN x := VIEW (g, i, i) END m.

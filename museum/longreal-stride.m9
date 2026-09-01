@@ -1,0 +1,5 @@
+(* EXPECT-ERROR: native type in foreign signature; use C.* types *)
+(* The x87 bug: LONGREAL read 16-byte strides over 8-byte wire doubles. *)
+UNSAFE DEFINITION MODULE FOR "C" bad ;
+PROCEDURE F = "f" (x: F64) : F64 ;   (* native type in foreign signature *)
+END bad.

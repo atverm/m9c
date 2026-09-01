@@ -1,0 +1,5 @@
+(* EXPECT: cannot assign I32 to I64 *)
+MODULE m ;
+VAR a : I32 ; b : I64 ;
+PROCEDURE F () = BEGIN b := a END F ;
+END m.

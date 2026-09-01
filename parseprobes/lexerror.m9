@@ -1,0 +1,7 @@
+MODULE LexError ;
+IMPORT Io ;
+VAR c : CHAR ;
+BEGIN
+  c := 0D800C ;
+  Io.WriteLine ('no')
+END LexError.

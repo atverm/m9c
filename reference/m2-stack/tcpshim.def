@@ -1,0 +1,9 @@
+DEFINITION MODULE FOR "C" tcpshim ;
+
+FROM SYSTEM IMPORT ADDRESS ;
+
+EXPORT UNQUALIFIED tcp_connect ;
+
+PROCEDURE tcp_connect (host: ADDRESS; port: INTEGER) : INTEGER ;
+
+END tcpshim.

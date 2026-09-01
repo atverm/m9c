@@ -1,0 +1,7 @@
+MODULE MissingSemi ;
+IMPORT Io ;
+VAR i : I64 ;
+BEGIN
+  i := 1
+  Io.WriteLine ('no')
+END MissingSemi.

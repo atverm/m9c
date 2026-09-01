@@ -1,0 +1,7 @@
+MODULE HandlerBar ;
+IMPORT Io ;
+BEGIN
+  Io.WriteLine ('x')
+EXCEPT
+  Io.WriteLine ('no')
+END HandlerBar.

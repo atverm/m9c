@@ -1,0 +1,13 @@
+DEFINITION MODULE FOR "C" cblosc ;
+
+FROM SYSTEM IMPORT ADDRESS, CSIZE_T ;
+
+EXPORT UNQUALIFIED blosc_decompress, blosc_decompress_ctx ;
+
+PROCEDURE blosc_decompress (src, dest: ADDRESS; destsize: CSIZE_T) : INTEGER ;
+
+(* context version: safe for concurrent calls from multiple threads *)
+PROCEDURE blosc_decompress_ctx (src, dest: ADDRESS; destsize: CSIZE_T;
+                                numinternalthreads: INTEGER) : INTEGER ;
+
+END cblosc.

@@ -1,0 +1,6 @@
+(* EXPECT: cannot lend the value parameter p as VAR *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE G (VAR p: PTR R) = BEGIN p.v := 0 END G ;
+PROCEDURE F (p: PTR R) = BEGIN G (p) END F ;
+END m.

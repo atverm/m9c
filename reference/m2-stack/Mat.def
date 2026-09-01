@@ -1,0 +1,27 @@
+DEFINITION MODULE Mat ;
+
+(* Dense 2-D matrices of REAL with NaN-aware, loop-free operations.
+   The FOR loops have not gone anywhere: they moved in here, were
+   written once, and are auto-vectorised by the compiler.  This is
+   also all numpy ever promised.                                    *)
+
+TYPE
+  Matrix ;   (* opaque *)
+  ReduceOp = (RMean, RMin, RMax, RSum, RCount) ;
+
+PROCEDURE New (rows, cols: CARDINAL) : Matrix ;
+PROCEDURE Rows (m: Matrix) : CARDINAL ;
+PROCEDURE Cols (m: Matrix) : CARDINAL ;
+PROCEDURE Get (m: Matrix; r, c: CARDINAL) : REAL ;
+PROCEDURE Set (m: Matrix; r, c: CARDINAL; v: REAL) ;
+
+(* NaN-aware column reduction: out[c] receives the statistic of column c *)
+PROCEDURE ColReduce (m: Matrix; op: ReduceOp; VAR out: ARRAY OF REAL) ;
+
+(* elementwise result[r,c] := m[r,c] - v[c]  (broadcast over rows) *)
+PROCEDURE SubRowVector (m: Matrix; VAR v: ARRAY OF REAL) : Matrix ;
+
+(* NaN-aware global range *)
+PROCEDURE MinMax (m: Matrix; VAR mn, mx: REAL) ;
+
+END Mat.

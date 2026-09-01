@@ -1,0 +1,6 @@
+(* EXPECT-ERROR: OPT value used without IS SOME guard *)
+(* The faith-based downcast: HttpSourceDesc read as a directory path. *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR p : OPT PTR R ; x : I64 ;
+BEGIN x := p.v END m.

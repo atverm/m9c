@@ -1,0 +1,5 @@
+(* EXPECT: IS SOME needs an OPT operand *)
+MODULE m ;
+VAR x : I64 ; y : I64 ;
+PROCEDURE F () = BEGIN IF x IS SOME p THEN y := 0 END END F ;
+END m.

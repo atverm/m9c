@@ -1,0 +1,5 @@
+(* EXPECT: must be a variable (VAR/OWN parameter) *)
+MODULE m ;
+PROCEDURE G (VAR a: I64) = BEGIN a := 0 END G ;
+PROCEDURE F () = BEGIN G (1 + 2) END F ;
+END m.

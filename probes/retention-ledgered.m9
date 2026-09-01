@@ -1,0 +1,6 @@
+(* LEDGER: retention: borrowed x stored into r *)
+MODULE m ;
+TYPE R = RECORD s : SLICE OF CHAR END ;
+PROCEDURE F (VAR r: PTR R ; x: SLICE OF CHAR) = 
+BEGIN r.s := x END F ;
+END m.

@@ -1,0 +1,4 @@
+(* EXPECT: VIEW needs a GRID *)
+MODULE m ;
+VAR s : SLICE OF F64 ; g : GRID 1 OF F64 ;
+BEGIN g := VIEW (s, ALL) END m.

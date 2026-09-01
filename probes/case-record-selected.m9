@@ -1,0 +1,6 @@
+(* EXPECT: CASE RECORD is reached by CASE, not by selection *)
+MODULE m ;
+TYPE T = CASE RECORD | A : x: I64 | B END ;
+TYPE R = RECORD t : T END ;
+VAR r : R ; y : I64 ;
+BEGIN y := r.t.x END m.

@@ -1,0 +1,5 @@
+(* EXPECT: cannot assign an integer literal to F64 *)
+MODULE m ;
+VAR f : F64 ;
+PROCEDURE F () = BEGIN f := 1 END F ;
+END m.

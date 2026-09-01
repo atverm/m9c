@@ -1,0 +1,4 @@
+(* EXPECT: cannot RETURN SLICE OF CHAR from a function of type I64 *)
+MODULE m ;
+PROCEDURE F () : I64 = BEGIN RETURN "hi" END F ;
+END m.

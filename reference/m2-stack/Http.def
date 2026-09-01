@@ -1,0 +1,13 @@
+DEFINITION MODULE Http ;
+
+(* Minimal HTTP/1.0 GET over TCP.  Returns the status code,
+   or -1 on transport error.  Body bytes land in body^. *)
+
+FROM SYSTEM IMPORT ADDRESS ;
+
+PROCEDURE Get (host: ARRAY OF CHAR; port: CARDINAL;
+               path: ARRAY OF CHAR;
+               body: ADDRESS; maxLen: CARDINAL;
+               VAR bodyLen: CARDINAL) : INTEGER ;
+
+END Http.

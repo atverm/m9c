@@ -1,0 +1,5 @@
+(* EXPECT: cannot write through a value parameter *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F (p: PTR R) = BEGIN p.v := 0 END F ;
+END m.

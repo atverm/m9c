@@ -1,0 +1,3 @@
+STATEFUL IMPLEMENTATION MODULE StatefulImpl ;
+VAR i : I64 ;
+END StatefulImpl.

@@ -1,0 +1,5 @@
+(* EXPECT-ERROR: unhandled RAISES ValueRange from I64 conversion *)
+(* Trunc(NaN): FPC crashed, numpy fabricated INT64_MIN silently. *)
+MODULE m ;
+VAR x : F64 ; i : I64 ;
+BEGIN i := I64 (x) END m.            (* caller neither handles nor redeclares *)

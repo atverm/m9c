@@ -1,0 +1,5 @@
+(* EXPECT: OPT value used without IS SOME guard *)
+MODULE m ;
+TYPE R = RECORD nxt : OPT PTR R ; v : I64 END ;
+VAR p : PTR R ; x : I64 ;
+BEGIN x := p.nxt.v END m.

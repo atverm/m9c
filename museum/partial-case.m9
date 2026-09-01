@@ -1,0 +1,6 @@
+(* EXPECT-ERROR: CASE over CASE RECORD is not total *)
+(* The uninitialized-Result garbage: a dtype nobody handled. *)
+MODULE m ;
+TYPE T = CASE RECORD | A : x: I64 | B : y: F64 END ;
+PROCEDURE F (t: T) : I64 = BEGIN CASE t OF | A (x) : RETURN x END END F ;
+END m.

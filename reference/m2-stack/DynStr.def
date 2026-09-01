@@ -1,0 +1,19 @@
+DEFINITION MODULE DynStr ;
+
+(* Growable heap strings, leaning on libc for the memory management.
+   Written to lift Json's fixed-length string ceiling.
+   (gm2 also ships a stdlib DynamicStrings; this one is deliberately
+   minimal and libc-backed.)                                          *)
+
+TYPE
+  DString ;   (* opaque *)
+
+PROCEDURE New () : DString ;
+PROCEDURE AppendChar (d: DString; c: CHAR) ;
+PROCEDURE Append (d: DString; s: ARRAY OF CHAR) ;
+PROCEDURE Len (d: DString) : CARDINAL ;
+PROCEDURE CharAt (d: DString; i: CARDINAL) : CHAR ;
+PROCEDURE EqualArr (d: DString; s: ARRAY OF CHAR) : BOOLEAN ;
+PROCEDURE Dispose (VAR d: DString) ;
+
+END DynStr.

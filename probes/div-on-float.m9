@@ -1,0 +1,5 @@
+(* EXPECT: DIV is integer division *)
+MODULE m ;
+VAR a, b : F64 ;
+PROCEDURE F () = BEGIN a := b DIV b END F ;
+END m.

@@ -1,0 +1,4 @@
+(* EXPECT: unknown procedure: Nonexistent *)
+MODULE m ;
+PROCEDURE F () = BEGIN Nonexistent (1) END F ;
+END m.

@@ -1,0 +1,6 @@
+(* EXPECT: no field w *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR r : R ; x : I64 ;
+PROCEDURE F () = BEGIN x := r.w END F ;
+END m.

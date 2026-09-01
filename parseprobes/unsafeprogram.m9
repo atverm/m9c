@@ -1,0 +1,5 @@
+UNSAFE MODULE UnsafeProgram ;
+IMPORT Io ;
+BEGIN
+  Io.WriteLine ('no')
+END UnsafeProgram.

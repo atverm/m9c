@@ -1,0 +1,13 @@
+(* EXPECT: is not total (missing R) *)
+DEFINITION MODULE a ;
+TYPE V = CASE RECORD | P | Q END ;
+END a.
+DEFINITION MODULE b ;
+TYPE V = CASE RECORD | P | Q | R END ;
+END b.
+MODULE m ;
+IMPORT b ;
+VAR v : b.V ; x : I64 ;
+PROCEDURE F () = BEGIN
+  CASE v OF | P : x := 1 | Q : x := 2 END END F ;
+END m.

@@ -1,0 +1,6 @@
+(* EXPECT: cannot write through the RO field s *)
+MODULE m ;
+TYPE R = RECORD RO s : STR ; n : I64 END ;
+VAR r : R ;
+PROCEDURE F () = BEGIN r.s[0] := 'x' END F ;
+END m.

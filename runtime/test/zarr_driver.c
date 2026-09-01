@@ -1,6 +1,6 @@
 /* zarr_driver.c -- THE P4 DIFFERENTIAL EXIT.
    M9-compiled ZarrStore reads the genstore co2 store over HTTP and
-   must reproduce the goldens from CLAUDE.md to the last digit.
+   must reproduce the recorded goldens below to the last digit.
    Aggregates are summed sequentially in row-major order, the same
    order the FPC oracle used.                                        */
 #include <stdio.h>

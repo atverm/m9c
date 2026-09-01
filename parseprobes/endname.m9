@@ -1,0 +1,5 @@
+MODULE EndName ;
+IMPORT Io ;
+BEGIN
+  Io.WriteLine ('no')
+END Other.

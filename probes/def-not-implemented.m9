@@ -1,0 +1,6 @@
+(* EXPECT: declared in the definition but not implemented *)
+DEFINITION MODULE d ;
+PROCEDURE F () : I64 ;
+END d.
+IMPLEMENTATION MODULE d ;
+END d.

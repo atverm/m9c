@@ -1,0 +1,5 @@
+(* EXPECT: float division; integers use DIV *)
+MODULE m ;
+VAR a, b : I64 ;
+PROCEDURE F () = BEGIN a := b / b END F ;
+END m.

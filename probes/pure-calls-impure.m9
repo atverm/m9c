@@ -1,0 +1,31 @@
+(* EXPECT: PURE procedure calls Note, which is not PURE (par 3.2) *)
+MODULE PureCallsImpure ;
+
+(* par 3.2 rule 3: a PURE procedure may call only PURE procedures.
+   That is what makes "no I/O" true without the checker knowing what
+   I/O is -- Io.WriteLine is not PURE, and a foreign procedure carries
+   [SERIAL] or [REENTRANT] and never [PURE], so neither is reachable
+   from a PURE body.  Purity is transitive by construction.
+
+   Spelled with a local impure procedure rather than an import,
+   because a probe is checked on its own. *)
+
+VAR seen : I64 ;
+
+PROCEDURE Note (x: I64) =
+BEGIN
+  seen := seen + x
+END Note ;
+
+PROCEDURE Twice (x: I64) : I64 [PURE] =
+BEGIN
+  Note (x) ;
+  RETURN x * 2
+END Twice ;
+
+VAR n : I64 ;
+
+BEGIN
+  seen := 0 ;
+  n := Twice (21)
+END PureCallsImpure.

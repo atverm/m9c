@@ -1,0 +1,5 @@
+(* EXPECT: cannot write through the RO parameter r *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F (RO r: R) = BEGIN r.v := 1 END F ;
+END m.

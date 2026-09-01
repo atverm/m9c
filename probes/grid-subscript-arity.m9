@@ -1,0 +1,4 @@
+(* EXPECT: a GRID 3 needs 3 subscripts, not 2 *)
+MODULE m ;
+VAR g : GRID 3 OF F64 ; x : F64 ; i : I64 ;
+BEGIN x := g[i, i] END m.
