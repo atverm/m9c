@@ -107,8 +107,8 @@ every gate has passed, and carries the toolchain with everything its
 gates compare against, so the differential claims below can be re-run
 rather than taken.  What is not here: the tutorial, which is a
 repository of its own
-([M9Tutorial](https://github.com/atverm/M9Tutorial)), the Debian and
-rpm packaging, the CI configuration, and the application ports.
+([M9Tutorial](https://github.com/atverm/M9Tutorial)), the CI configuration, 
+and the application ports.
 
     docs/       the language report (the specification), the benchmarks,
                 the diagnostics reference, the generated module reference
@@ -121,6 +121,7 @@ rpm packaging, the CI configuration, and the application ports.
     runtime/test/  every gate: differentials, drivers, the bootstrap
     host/fpc/   the original Free Pascal host — now the differential oracle
     reference/  the FPC and Modula-2 programs whose bugs became the museum
+    releases/  The Debian and rpm packages  
     man/, tools/   the manual page, the editor extension, the store generator
 
 ## What it costs
