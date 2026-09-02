@@ -13,6 +13,8 @@ extern int64_t m9_listdir (const void *, void *, int64_t);
 extern int m9_remove (const void *);
 extern int m9_getenv (const void *, void *, int);
 extern void m9_put_chars_err (const void *, size_t);
+extern int64_t m9_read_stdin (void *, int64_t);
+extern void m9_flush (void);
 extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_file (const void *, void *, int64_t);

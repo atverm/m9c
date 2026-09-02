@@ -230,6 +230,19 @@ a backtrace still names
 .BR DynStr_Append ;
 what is missing is line numbers and locals.
 .TP
+.B \-\-check
+Check the module and its imports, print the diagnostics, and write
+nothing at all \(em no C, no header, no documentation. The exit code
+says whether the program exists. This is the flag an editor or a
+language server wants: diagnostics without artifacts appearing beside
+the file being edited. It cannot be combined with
+.BR \-c ,
+.BR \-o ,
+.BR \-\-ar ,
+.B \-\-so
+or
+.BR \-\-doc .
+.TP
 .B \-\-doc
 Check the module, then write
 .IB NAME .md

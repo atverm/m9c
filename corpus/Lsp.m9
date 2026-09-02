@@ -1,0 +1,545 @@
+MODULE Lsp ;
+
+(* m9lsp -- the Language Server Protocol over standard input and
+   output, in M9.
+
+   THE RULE THIS PROGRAM EXISTS TO KEEP: no second scanner.  The
+   corpus refuted editor-side relexing the day a phantom comment ate
+   fifty-four lines of Gen.m9 (eighteen string literals carrying
+   comment brackets), so every diagnostic this server publishes is
+   the COMPILER's own answer: it invokes `m9c --check` -- the flag
+   built for this program: check, print, write NOTHING -- and
+   republishes the diagnostics with their line and column.  The
+   server never lexes M9; it parses m9c's output lines.
+
+   Version 1, and the narrowings are stated rather than hidden:
+   - checks run on didOpen and didSave, against the file ON DISK: an
+     unsaved buffer is not checked, because m9c reads files and a
+     temp-file mirror would break module-name-matches-file;
+   - diagnostics only -- the VS Code extension already has hover and
+     completion from `m9c --doc`, and other editors get those when
+     the server grows its second stage;
+   - body octets are read one CHAR per byte; the JSON this server
+     composes is pure ASCII, and Content-Length counts UTF-8 bytes.
+
+   The compiler invoked is $M9LSP_M9C, else `m9c` from PATH; the
+   search path is m9c's own -- $M9LIBRARY, the installed StdLib, and
+   the checked file's directory.                                     *)
+
+IMPORT Io ;
+IMPORT DynStr ;
+IMPORT Text ;
+IMPORT Json ;
+
+CONST
+  Version = '0.4.0' ;
+  RdCap = 65536 ;
+
+VAR
+  inBuf : SLICE OF BYTE ;    (* the stdin window: [inPos, inLen) *)
+  inPos, inLen : I64 ;
+  atEof : BOOL ;
+  m9c : STR ;                (* the compiler this server repeats *)
+  errFile : STR ;
+
+(* ---- framed input ------------------------------------------------ *)
+
+(* more bytes into the window, compacting first; FALSE at end of
+   input.  The buffer doubles when a message outgrows it, so one
+   allocation serves a whole session of ordinary traffic. *)
+PROCEDURE Fill () : BOOL =
+VAR
+  nb, got : SLICE OF BYTE ;
+  i, room : I64 ;
+BEGIN
+  IF atEof THEN RETURN FALSE END ;
+  IF inPos > 0 THEN
+    FOR i := 0 TO inLen - inPos - 1 DO inBuf[i] := inBuf[inPos + i] END ;
+    inLen := inLen - inPos ;
+    inPos := 0
+  END ;
+  room := LEN (inBuf) - inLen ;
+  IF room = 0 THEN
+    nb := NEW (HEAP, BYTE, 2 * LEN (inBuf)) ;
+    FOR i := 0 TO inLen - 1 DO nb[i] := inBuf[i] END ;
+    inBuf := nb ;
+    room := LEN (inBuf) - inLen
+  END ;
+  got := Io.ReadStdin (HEAP, room) ;
+  IF LEN (got) = 0 THEN
+    atEof := TRUE ;
+    RETURN FALSE
+  END ;
+  FOR i := 0 TO LEN (got) - 1 DO inBuf[inLen + i] := got[i] END ;
+  inLen := inLen + LEN (got) ;
+  RETURN TRUE
+END Fill ;
+
+(* one header line as text, CR and LF stripped; FALSE at end of
+   input.  Header octets are ASCII by protocol. *)
+PROCEDURE ReadLine (VAR pool: POOL ; VAR line: STR) : BOOL
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString ;
+  i : I64 ;
+  found : BOOL ;
+BEGIN
+  found := FALSE ;
+  WHILE NOT found DO
+    i := inPos ;
+    WHILE i < inLen AND inBuf[i] # 0x0A DO i := i + 1 END ;
+    IF i < inLen THEN found := TRUE
+    ELSE
+      IF NOT Fill () THEN RETURN FALSE END
+    END
+  END ;
+  d := DynStr.New (pool) ;
+  i := inPos ;
+  WHILE inBuf[i] # 0x0A DO
+    IF inBuf[i] # 0x0D THEN
+      DynStr.AppendChar (pool, d, CHR (I64 (inBuf[i])))
+    END ;
+    i := i + 1
+  END ;
+  inPos := i + 1 ;
+  line := DynStr.View (d) ;
+  RETURN TRUE
+END ReadLine ;
+
+(* exactly n body octets as text, one CHAR per octet *)
+PROCEDURE ReadBody (VAR pool: POOL ; n: I64 ; VAR body: STR) : BOOL
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString ;
+  i : I64 ;
+BEGIN
+  WHILE inLen - inPos < n DO
+    IF NOT Fill () THEN RETURN FALSE END
+  END ;
+  d := DynStr.New (pool) ;
+  FOR i := 0 TO n - 1 DO
+    DynStr.AppendChar (pool, d, CHR (I64 (inBuf[inPos + i])))
+  END ;
+  inPos := inPos + n ;
+  body := DynStr.View (d) ;
+  RETURN TRUE
+END ReadBody ;
+
+(* ---- framed output ----------------------------------------------- *)
+
+PROCEDURE ByteLen (RO s: STR) : I64 =
+VAR i, n, c : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := ORD (s[i]) ;
+    IF c < 0x80 THEN n := n + 1
+    ELSIF c < 0x800 THEN n := n + 2
+    ELSIF c < 0x10000 THEN n := n + 3
+    ELSE n := n + 4 END
+  END ;
+  RETURN n
+END ByteLen ;
+
+PROCEDURE Send (RO body: STR) =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  DynStr.Append (scratch, d, 'Content-Length: ') ;
+  DynStr.AppendI64 (scratch, d, ByteLen (body)) ;
+  DynStr.AppendChar (scratch, d, 0DC) ;
+  DynStr.AppendChar (scratch, d, 0AC) ;
+  DynStr.AppendChar (scratch, d, 0DC) ;
+  DynStr.AppendChar (scratch, d, 0AC) ;
+  Io.Write (DynStr.View (d)) ;
+  Io.Write (body) ;
+  Io.Flush ()
+END Send ;
+
+(* a JSON string literal: the escapes RFC 8259 requires and no
+   others.  Json.m9 keeps its emitter private, and twenty lines here
+   beat widening a library interface for one caller. *)
+PROCEDURE JStr (VAR pool: POOL ; RO s: STR) : STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString ;
+  i, c : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (pool, d, 022C) ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := ORD (s[i]) ;
+    IF c = 0x22 OR c = 0x5C THEN
+      DynStr.AppendChar (pool, d, 05CC) ;
+      DynStr.AppendChar (pool, d, s[i])
+    ELSIF c < 0x20 THEN
+      DynStr.Append (pool, d, '\u00') ;
+      DynStr.AppendChar (pool, d, HexDigit (c DIV 16)) ;
+      DynStr.AppendChar (pool, d, HexDigit (c MOD 16))
+    ELSE
+      DynStr.AppendChar (pool, d, s[i])
+    END
+  END ;
+  DynStr.AppendChar (pool, d, 022C) ;
+  RETURN DynStr.View (d)
+END JStr ;
+
+PROCEDURE HexDigit (v: I64) : CHAR RAISES ValueRange =
+BEGIN
+  IF v < 10 THEN RETURN CHR (ORD ('0') + v) END ;
+  RETURN CHR (ORD ('a') + v - 10)
+END HexDigit ;
+
+PROCEDURE ItoA (VAR pool: POOL ; v: I64) : STR =
+VAR d : PTR DynStr.DString ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendI64 (pool, d, v) ;
+  RETURN DynStr.View (d)
+END ItoA ;
+
+PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR =
+VAR d : PTR DynStr.DString ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, a) ;
+  DynStr.Append (pool, d, b) ;
+  RETURN DynStr.View (d)
+END Cat ;
+
+(* ---- diagnostics: m9c --check, republished ----------------------- *)
+
+(* file:///a/b%2Dc -> /a/b-c.  Only the path is wanted here; the
+   URI itself is echoed back verbatim, so this never round-trips. *)
+PROCEDURE UriPath (VAR pool: POOL ; RO uri: STR) : STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString ;
+  i, hi, lo : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  i := 0 ;
+  IF Text.StartsWith (uri, 'file://') THEN i := 7 END ;
+  WHILE i < LEN (uri) DO
+    IF uri[i] = '%' AND i + 2 < LEN (uri) THEN
+      hi := HexVal (uri[i + 1]) ;
+      lo := HexVal (uri[i + 2]) ;
+      IF hi >= 0 AND lo >= 0 THEN
+        DynStr.AppendChar (pool, d, CHR (hi * 16 + lo)) ;
+        i := i + 3
+      ELSE
+        DynStr.AppendChar (pool, d, uri[i]) ;
+        i := i + 1
+      END
+    ELSE
+      DynStr.AppendChar (pool, d, uri[i]) ;
+      i := i + 1
+    END
+  END ;
+  RETURN DynStr.View (d)
+END UriPath ;
+
+PROCEDURE HexVal (c: CHAR) : I64 =
+BEGIN
+  IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - ORD ('0') END ;
+  IF c >= 'a' AND c <= 'f' THEN RETURN ORD (c) - ORD ('a') + 10 END ;
+  IF c >= 'A' AND c <= 'F' THEN RETURN ORD (c) - ORD ('A') + 10 END ;
+  RETURN -1
+END HexVal ;
+
+(* the leading I64 of s from position i; i walks past it *)
+PROCEDURE TakeI64 (RO s: STR ; VAR i: I64 ; VAR v: I64) : BOOL =
+VAR any : BOOL ;
+BEGIN
+  v := 0 ;
+  any := FALSE ;
+  WHILE i < LEN (s) AND s[i] >= '0' AND s[i] <= '9' DO
+    v := v * 10 + (ORD (s[i]) - ORD ('0')) ;
+    i := i + 1 ;
+    any := TRUE
+  END ;
+  RETURN any
+END TakeI64 ;
+
+PROCEDURE DiagJson (VAR pool: POOL ; ln, cl: I64 ; RO msg: STR) : STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString ;
+  l0, c0 : I64 ;
+BEGIN
+  l0 := ln - 1 ;
+  c0 := cl - 1 ;
+  IF l0 < 0 THEN l0 := 0 END ;
+  IF c0 < 0 THEN c0 := 0 END ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"range":{"start":{"line":') ;
+  DynStr.AppendI64 (pool, d, l0) ;
+  DynStr.Append (pool, d, ',"character":') ;
+  DynStr.AppendI64 (pool, d, c0) ;
+  DynStr.Append (pool, d, '},"end":{"line":') ;
+  DynStr.AppendI64 (pool, d, l0) ;
+  DynStr.Append (pool, d, ',"character":') ;
+  DynStr.AppendI64 (pool, d, c0) ;
+  DynStr.Append (pool, d, '}},"severity":1,"source":"m9c","message":') ;
+  DynStr.Append (pool, d, JStr (pool, msg)) ;
+  DynStr.AppendChar (pool, d, 07DC) ;
+  RETURN DynStr.View (d)
+END DiagJson ;
+
+(* FILE:LINE:COL: parse: MSG -- the numbers sit between the two
+   colons just before ': parse: ' *)
+PROCEDURE ParseShape (VAR pool: POOL ; RO line: STR ; VAR out: STR)
+  : BOOL RAISES ValueRange =
+VAR
+  j, k, i, ln, cl : I64 ;
+BEGIN
+  j := Text.Find (line, ': parse: ') ;
+  IF j < 0 THEN RETURN FALSE END ;
+  k := j ;
+  WHILE k > 0 AND line[k - 1] >= '0' AND line[k - 1] <= '9' DO
+    k := k - 1
+  END ;
+  IF k = j OR k = 0 OR line[k - 1] # ':' THEN RETURN FALSE END ;
+  i := k ;
+  IF NOT TakeI64 (line, i, cl) THEN RETURN FALSE END ;
+  k := k - 1 ;
+  i := k ;
+  WHILE i > 0 AND line[i - 1] >= '0' AND line[i - 1] <= '9' DO
+    i := i - 1
+  END ;
+  IF i = k OR i = 0 OR line[i - 1] # ':' THEN RETURN FALSE END ;
+  IF NOT TakeI64 (line, i, ln) THEN RETURN FALSE END ;
+  out := DiagJson (pool, ln, cl,
+    Cat (pool, 'parse: ', SLICE (line, j + 9, LEN (line) - j - 9))) ;
+  RETURN TRUE
+END ParseShape ;
+
+(* one stderr line into one LSP diagnostic, when it carries a
+   position.  Two shapes, m9c's own:
+     LINE:COL CTX: MSG              (the checker's)
+     FILE:LINE:COL: parse: MSG      (the parser's)
+   Anything else -- summaries, gen refusals without positions -- is
+   skipped rather than guessed at. *)
+PROCEDURE DiagOf (VAR pool: POOL ; RO line: STR ; VAR out: STR) : BOOL
+  RAISES ValueRange =
+VAR
+  i, ln, cl : I64 ;
+BEGIN
+  i := 0 ;
+  IF NOT TakeI64 (line, i, ln) THEN
+    RETURN ParseShape (pool, line, out)
+  END ;
+  IF i >= LEN (line) OR line[i] # ':' THEN
+    RETURN ParseShape (pool, line, out)
+  END ;
+  i := i + 1 ;
+  IF NOT TakeI64 (line, i, cl) THEN RETURN FALSE END ;
+  IF i >= LEN (line) OR line[i] # ' ' THEN RETURN FALSE END ;
+  out := DiagJson (pool, ln, cl, SLICE (line, i + 1, LEN (line) - i - 1)) ;
+  RETURN TRUE
+END DiagOf ;
+
+(* the check's stderr, or empty when there was none *)
+PROCEDURE ErrText (VAR pool: POOL) : STR =
+BEGIN
+  RETURN Io.ReadFile (pool, errFile)
+EXCEPT
+| Io.IOError (p) :
+    RETURN ''
+| ValueRange :
+    RETURN ''
+END ErrText ;
+
+(* check the file the uri names and publish what m9c said.  A path
+   carrying a quote is refused with one diagnostic rather than
+   handed to a shell -- m9c's own rule at its own link step. *)
+PROCEDURE Check (VAR pool: POOL ; RO uri: STR) RAISES ValueRange =
+VAR
+  d, body : PTR DynStr.DString ;
+  path, errs, line, one : STR ;
+  i, j, n : I64 ;
+  bad : BOOL ;
+BEGIN
+  path := UriPath (pool, uri) ;
+  bad := FALSE ;
+  FOR i := 0 TO LEN (path) - 1 DO
+    IF path[i] = 027C OR path[i] = 022C THEN bad := TRUE END
+  END ;
+  body := DynStr.New (pool) ;
+  DynStr.Append (pool, body,
+    '{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics",') ;
+  DynStr.Append (pool, body, '"params":{"uri":') ;
+  DynStr.Append (pool, body, JStr (pool, uri)) ;
+  DynStr.Append (pool, body, ',"diagnostics":[') ;
+  n := 0 ;
+  IF bad THEN
+    one := DiagJson (pool, 1, 1,
+      'm9lsp: a path containing a quote is not checked') ;
+    DynStr.Append (pool, body, one) ;
+    n := 1
+  ELSE
+    d := DynStr.New (pool) ;
+    DynStr.Append (pool, d, m9c) ;
+    DynStr.Append (pool, d, ' --check ') ;
+    DynStr.AppendChar (pool, d, 027C) ;
+    DynStr.Append (pool, d, path) ;
+    DynStr.AppendChar (pool, d, 027C) ;
+    DynStr.Append (pool, d, ' 2>') ;
+    DynStr.AppendChar (pool, d, 027C) ;
+    DynStr.Append (pool, d, errFile) ;
+    DynStr.AppendChar (pool, d, 027C) ;
+    i := Io.Run (DynStr.View (d)) ;
+    errs := ErrText (pool) ;
+    i := 0 ;
+    WHILE i < LEN (errs) DO
+      j := i ;
+      WHILE j < LEN (errs) AND errs[j] # 0AC DO j := j + 1 END ;
+      line := SLICE (errs, i, j - i) ;
+      IF DiagOf (pool, line, one) THEN
+        IF n > 0 THEN DynStr.AppendChar (pool, body, 02CC) END ;
+        DynStr.Append (pool, body, one) ;
+        n := n + 1
+      END ;
+      i := j + 1
+    END
+  END ;
+  DynStr.Append (pool, body, ']}}') ;
+  Send (DynStr.View (body))
+END Check ;
+
+(* ---- the loop ---------------------------------------------------- *)
+
+PROCEDURE Respond (VAR pool: POOL ; RO idText: STR ; RO result: STR) =
+VAR d : PTR DynStr.DString ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"jsonrpc":"2.0","id":') ;
+  DynStr.Append (pool, d, idText) ;
+  DynStr.Append (pool, d, ',"result":') ;
+  DynStr.Append (pool, d, result) ;
+  DynStr.AppendChar (pool, d, 07DC) ;
+  Send (DynStr.View (d))
+END Respond ;
+
+(* the request id, re-rendered: a number, or a string, per JSON-RPC *)
+PROCEDURE RenderIdS (VAR pool: POOL ; idn: PTR Json.Node) : STR
+  RAISES ValueRange =
+BEGIN
+  RETURN JStr (pool, Json.AsStr (idn))
+EXCEPT
+| Json.TypeMismatch (m) :
+    RETURN ''
+END RenderIdS ;
+
+PROCEDURE RenderId (VAR pool: POOL ; idn: PTR Json.Node) : STR
+  RAISES ValueRange =
+BEGIN
+  RETURN ItoA (pool, Json.AsI64 (idn))
+EXCEPT
+| Json.TypeMismatch (m) :
+    RETURN RenderIdS (pool, idn)
+END RenderId ;
+
+PROCEDURE DocUri (VAR pool: POOL ; msg: PTR Json.Node) : STR =
+BEGIN
+  IF Json.Field (msg, 'params') IS SOME p THEN
+    IF Json.Field (p, 'textDocument') IS SOME td THEN
+      IF Json.Field (td, 'uri') IS SOME u THEN
+        RETURN Json.AsStr (u)
+      END
+    END
+  END ;
+  RETURN ''
+EXCEPT
+| Json.TypeMismatch (m) :
+    RETURN ''
+END DocUri ;
+
+PROCEDURE MethodOf (VAR pool: POOL ; msg: PTR Json.Node) : STR =
+BEGIN
+  IF Json.Field (msg, 'method') IS SOME mn THEN
+    RETURN Json.AsStr (mn)
+  END ;
+  RETURN ''
+EXCEPT
+| Json.TypeMismatch (m) :
+    RETURN ''
+END MethodOf ;
+
+PROCEDURE Handle (VAR pool: POOL ; RO body: STR) RAISES ValueRange =
+VAR
+  msg : PTR Json.Node ;
+  method, ids, uri : STR ;
+BEGIN
+  msg := Json.Parse (pool, body) ;
+  method := MethodOf (pool, msg) ;
+  ids := '' ;
+  IF Json.Field (msg, 'id') IS SOME idn THEN
+    ids := RenderId (pool, idn)
+  END ;
+  IF Text.Eq (method, 'initialize') THEN
+    Respond (pool, ids, Cat (pool,
+      '{"capabilities":{"textDocumentSync":{"openClose":true,"change":0,"save":true}},"serverInfo":{"name":"m9lsp","version":"',
+      Cat (pool, Version, '"}}')))
+  ELSIF Text.Eq (method, 'shutdown') THEN
+    Respond (pool, ids, 'null')
+  ELSIF Text.Eq (method, 'exit') THEN
+    Io.Flush () ;
+    Io.Halt (0)
+  ELSIF Text.Eq (method, 'textDocument/didOpen') OR
+        Text.Eq (method, 'textDocument/didSave') THEN
+    uri := DocUri (pool, msg) ;
+    IF LEN (uri) > 0 THEN Check (pool, uri) END
+  ELSE
+    (* a REQUEST we do not know must be answered or the client
+       hangs; a notification must not be *)
+    IF LEN (ids) > 0 THEN
+      Send (Cat (pool, Cat (pool,
+        '{"jsonrpc":"2.0","id":', ids),
+        ',"error":{"code":-32601,"message":"method not found"}}'))
+    END
+  END
+EXCEPT
+| Json.ParseError (m, l, c) :
+    (* a malformed frame is the client's bug; surviving it is ours *)
+    Io.ErrLine (Cat (pool, 'm9lsp: unparsable message: ', m))
+END Handle ;
+
+PROCEDURE Serve () RAISES ValueRange =
+VAR
+  reqPool : POOL ;
+  line, body : STR ;
+  clen : I64 ;
+BEGIN
+  WHILE TRUE DO
+    clen := -1 ;
+    IF NOT ReadLine (reqPool, line) THEN RETURN END ;
+    WHILE LEN (line) > 0 DO
+      IF Text.StartsWith (line, 'Content-Length: ') THEN
+        clen := Io.ParseI64 (SLICE (line, 16, LEN (line) - 16))
+      END ;
+      IF NOT ReadLine (reqPool, line) THEN RETURN END
+    END ;
+    IF clen >= 0 THEN
+      IF NOT ReadBody (reqPool, clen, body) THEN RETURN END ;
+      Handle (reqPool, body)
+    END
+  END
+END Serve ;
+
+BEGIN
+  inBuf := NEW (HEAP, BYTE, RdCap) ;
+  inPos := 0 ;
+  inLen := 0 ;
+  atEof := FALSE ;
+  m9c := Io.Env (HEAP, 'M9LSP_M9C') ;
+  IF LEN (m9c) = 0 THEN m9c := 'm9c' END ;
+  errFile := '/tmp/m9lsp.err' ;
+  Serve ()
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('m9lsp: internal ValueRange; stopping') ;
+    Io.Halt (1)
+END Lsp.

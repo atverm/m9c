@@ -533,6 +533,8 @@ int  m9_exit (m9_state *err);                    /* 0, or report and 1 */
 void m9_put_chars (const void *buf, size_t n);   /* CHARs as UTF-8 */
 void m9_put_chars_err (const void *buf, size_t n);  /* ditto, stderr */
 int64_t m9_read_file (const void *path, void *buf, int64_t cap);
+int64_t m9_read_stdin (void *buf, int64_t cap);  /* one read(2), 0=EOF */
+void m9_flush (void);            /* a server's reply must not wait */
 int  m9_write_file (const void *path, const void *buf, size_t n);
 void m9_halt (int code);                       /* flushes, then exits */
 int  m9_run (const void *cmd);                 /* system (), rc      */

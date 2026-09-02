@@ -646,6 +646,7 @@ M9LIBRARY="$SRC" "$M9C" --json "$SRC/DynStr.m9" ||
 [ -f DynStr.md ] || { echo "FAIL: --json did not also write the page"; exit 1; }
 cmp DynStr.md "$SRC/../docs/modules/DynStr.md" ||
   { echo "FAIL: --json changed what --doc writes"; exit 1; }
+
 for want in '"module":"DynStr"' '"kind":"procedure","name":"AppendChar"' \
             '{"names":["pool"],"mode":"VAR","type":"POOL"}' \
             '"mode":"RO"' '"result":"PTR DString IN pool"' \
@@ -665,6 +666,33 @@ grep -q 'cannot be combined' jc.txt ||
   { echo "FAIL: the --json/-c refusal lost its message"; cat jc.txt; exit 1; }
 
 echo "m9c: --json is the page as data, and the page is unchanged"
+# --check: the diagnostics with EMPTY HANDS.  An editor invokes this
+# per save, so a .h/.c/.md appearing beside the file would arm the
+# generated-header-shadows trap on every keystroke.  Probed both
+# ways: a clean module writes NOTHING and exits 0; a broken one
+# exits 1 with the diagnostic on stderr; combining with -c refused.
+CK=/tmp/m9c-check
+rm -rf "$CK"; mkdir -p "$CK"; cd "$CK"
+M9LIBRARY="$SRC" "$M9C" --check "$SRC/DynStr.m9" ||
+  { echo "FAIL: --check refused a clean DynStr.m9"; exit 1; }
+[ -z "$(ls -A "$CK")" ] ||
+  { echo "FAIL: --check wrote files:"; ls -A "$CK"; exit 1; }
+cat > Broke.m9 <<'BRK'
+MODULE Broke ;
+VAR i : I64 ;
+BEGIN
+  i := 'text'
+END Broke.
+BRK
+if M9LIBRARY="$SRC" "$M9C" --check Broke.m9 2>ck.err; then
+  echo "FAIL: --check accepted an ill-typed program"; exit 1
+fi
+grep -q "cannot assign" ck.err ||
+  { echo "FAIL: --check exit 1 without the diagnostic:"; cat ck.err; exit 1; }
+if "$M9C" --check -c "$SRC/DynStr.m9" 2>/dev/null; then
+  echo "FAIL: --check -c should be refused"; exit 1
+fi
+echo "m9c: --check answers diagnostics and writes nothing"
 
 # --make BUILDS IN DEPENDENCY ORDER, and a DIAMOND is what proves it.
 # loaded[] is filled pre-order (a name is marked before its imports

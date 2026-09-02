@@ -214,6 +214,27 @@ int m9_exit (m9_state *err)
    same bug in a new place.  m9_read_file with cap = 0 answers the
    size and touches nothing, so the caller allocates exactly once. */
 
+/* One read(2) from standard input: up to cap bytes, 0 at EOF, -1 on
+   error.  The whole-file rule above is for FILES; a stream has no
+   whole, and the language server frames its own messages over this.
+   Restarted on EINTR so a stopped-and-continued editor session does
+   not read a phantom EOF. */
+int64_t m9_read_stdin (void *buf, int64_t cap)
+{
+  ssize_t n;
+  if (cap <= 0) return 0;
+  do n = read (0, buf, (size_t) cap); while (n < 0 && errno == EINTR);
+  return (int64_t) n;
+}
+
+/* A server writes a frame and then BLOCKS reading the next request;
+   without a flush the reply sits in stdio's buffer and the client
+   waits forever on the silence. */
+void m9_flush (void)
+{
+  fflush (stdout);
+}
+
 /* CHARs out as UTF-8.  Total by construction: every Unicode scalar
    has an encoding, which is why Io.Write declares no RAISES while
    DynStr.Bytes -- narrowing to octets for the wire -- must.  */

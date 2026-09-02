@@ -133,6 +133,20 @@ PROCEDURE ReadFileBytes (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE
 PROCEDURE WriteFile (RO path: STR ; RO content: STR)
   RAISES ValueRange, IOError ;
 
+PROCEDURE ReadStdin (VAR pool: POOL ; cap: I64) : SLICE OF BYTE ;
+  (* one read(2) from standard input: up to cap bytes, and an EMPTY
+     slice at end of input.  The whole-file rule above is for files;
+     a stream has no whole, and a language server frames its own
+     messages over this.
+
+       cap -- at most this many bytes; zero or negative answers the
+              empty slice without reading.                          *)
+
+PROCEDURE Flush () ;
+  (* push buffered output to standard output NOW.  A server writes a
+     reply and then blocks reading the next request; without this the
+     reply sits in the buffer and the client waits on the silence. *)
+
 PROCEDURE FileSize (RO path: STR) : I64
   RAISES ValueRange, IOError ;
   (* how many bytes the file holds, without reading them: the size
@@ -201,6 +215,9 @@ PROCEDURE GetEnv = "m9_getenv" (name: C.ConstPtr ; buf: C.MutPtr ;
                                cap: C.Int) : C.Int  [SERIAL] ;
 PROCEDURE PutErr = "m9_put_chars_err" (buf: C.ConstPtr ; n: C.SizeT)
   [REENTRANT] ;
+PROCEDURE ReadIn = "m9_read_stdin" (buf: C.MutPtr ; cap: C.SSizeT)
+  : C.SSizeT  [SERIAL] ;
+PROCEDURE FlushOut = "m9_flush" ()  [SERIAL] ;
 PROCEDURE ArgLen = "m9_arg_len" (i: C.Int) : C.Int  [REENTRANT] ;
 PROCEDURE ArgCopy = "m9_arg_copy" (i: C.Int ; buf: C.MutPtr ;
                                    cap: C.Int) : C.Int  [REENTRANT] ;
@@ -231,7 +248,7 @@ UNSAFE IMPLEMENTATION MODULE Io ;
 IMPORT DynStr ;
 FROM cio IMPORT PutChars, ArgC, ArgLen, ArgCopy, ReadWhole, WriteWhole,
                 Exit, PutErr, RunCmd, GetEnv, Stat, Unlink, Access,
-                LsDir, CMkDir, CRename ;
+                LsDir, CMkDir, CRename, ReadIn, FlushOut ;
 
 CONST
   MaxArg = 4096 ;
@@ -445,6 +462,23 @@ BEGIN
   IF n < 0 THEN RAISE IOError (path) END ;
   RETURN SLICE (b, 0, n)
 END ReadFileBytes ;
+
+PROCEDURE ReadStdin (VAR pool: POOL ; cap: I64) : SLICE OF BYTE =
+VAR
+  b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  IF cap <= 0 THEN RETURN NEW (pool, BYTE, 0) END ;
+  b := NEW (pool, BYTE, cap) ;
+  n := I64 (ReadIn (ADR (b), C.SSizeT (cap))) ;
+  IF n <= 0 THEN RETURN SLICE (b, 0, 0) END ;
+  RETURN SLICE (b, 0, n)
+END ReadStdin ;
+
+PROCEDURE Flush () =
+BEGIN
+  FlushOut ()
+END Flush ;
 
 PROCEDURE WriteFile (RO path: STR ; RO content: STR)
   RAISES ValueRange, IOError =

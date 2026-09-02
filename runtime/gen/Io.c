@@ -14,6 +14,8 @@ extern int64_t m9_listdir (const void *, void *, int64_t);
 extern int m9_remove (const void *);
 extern int m9_getenv (const void *, void *, int);
 extern void m9_put_chars_err (const void *, size_t);
+extern int64_t m9_read_stdin (void *, int64_t);
+extern void m9_flush (void);
 extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
 extern int64_t m9_read_file (const void *, void *, int64_t);
@@ -515,6 +517,53 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
+  return;
+}
+
+m9_sl_BYTE Io_ReadStdin (m9_pool *pool, int64_t cap, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_BYTE m9ret = {0};
+  m9_sl_BYTE b = {0}; (void) b;
+  int64_t n = 0; (void) n;
+  if ((cap <= INT64_C(0))) {
+    err->res = m9res;
+    m9ret = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), cap, err);
+  if (err->exc) goto L_ret;
+  n = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_read_stdin (((void *)(b).p), ((int64_t)(cap)))) m9gv = m9_read_stdin (((void *)(b).p), ((int64_t)(cap))); m9_mon_leave (&m9_gate_cio); m9gv; }));
+  if ((n <= INT64_C(0))) {
+    err->res = m9res;
+    m9ret = ({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = INT64_C(0); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = ({ __typeof__(b) m9t2 = b; int64_t m9t2a = INT64_C(0), m9t2n = n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+void Io_Flush (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  ({ m9_mon_enter (&m9_gate_cio); m9_flush (); m9_mon_leave (&m9_gate_cio); });
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 

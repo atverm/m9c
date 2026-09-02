@@ -76,6 +76,12 @@ VAR
   doAr      : BOOL ;
   doSo      : BOOL ;
   doPic     : BOOL ;      (* --pic : compile position-independent *)
+  doCheck   : BOOL ;      (* --check : check, write NOTHING.  The
+                             language server's flag: an editor wants
+                             the diagnostics without .h/.c appearing
+                             beside the file it is editing -- the
+                             generated-header-shadows trap, armed by
+                             every keystroke *)
   doDoc     : BOOL ;      (* --doc : write NAME.md and nothing else *)
   doJson    : BOOL ;      (* --json : with --doc, NAME.json as well *)
   debug     : BOOL ;      (* -g : debug info, and keep the C it names *)
@@ -1078,6 +1084,7 @@ BEGIN
   Io.WriteLine ('  -g               debug information; keeps the C') ;
   Io.WriteLine ('                   it names, and changes nothing') ;
   Io.WriteLine ('                   else -- still -O2, still -flto') ;
+  Io.WriteLine ('  --check          check only; write nothing at all') ;
   Io.WriteLine ('  --doc            write NAME.md, the DEFINITION') ;
   Io.WriteLine ('                   module as documentation, and') ;
   Io.WriteLine ('                   nothing else') ;
@@ -1248,6 +1255,8 @@ BEGIN
       i := i + 1
     ELSIF DynStr.Eq (a, '--pic') THEN
       doPic := TRUE
+    ELSIF DynStr.Eq (a, '--check') THEN
+      doCheck := TRUE
     ELSIF DynStr.Eq (a, '--doc') THEN
       doDoc := TRUE
     ELSIF DynStr.Eq (a, '--json') THEN
@@ -1326,7 +1335,7 @@ BEGIN
           DynStr.Eq (a, '--keep-c') OR DynStr.Eq (a, '-v') OR
           DynStr.Eq (a, '--verbose') OR DynStr.Eq (a, '--pic') OR
           DynStr.Eq (a, '--doc') OR DynStr.Eq (a, '-g') OR
-          DynStr.Eq (a, '--json') OR
+          DynStr.Eq (a, '--json') OR DynStr.Eq (a, '--check') OR
           DynStr.Eq (a, '--make') OR
           DynStr.Eq (a, '--no-unsafe') OR
           IsDashI (a) THEN
@@ -1727,6 +1736,12 @@ BEGIN
       failed := TRUE ;
       Io.Halt (1)
     END ;
+    IF doCheck AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc) THEN
+      Io.ErrLine ('m9c: --check writes nothing at all;') ;
+      Io.ErrLine ('  it cannot be combined with -c, -o, --ar, --so or --doc') ;
+      failed := TRUE ;
+      Io.Halt (1)
+    END ;
     main := SourceAt (0) ;
     (* -v is verbose, and has been since the first supplied-flags
        test depended on its output -- but a bare `m9c -v` has nothing
@@ -1832,6 +1847,10 @@ BEGIN
       FOR i := 0 TO root.nkids - 1 DO
         IF root.kids[i] IS SOME u THEN Gen.LoadUnit (u) END
       END ;
+      (* --check is the stop with empty hands: the diagnostics have
+         been printed, the exit code says whether the program exists,
+         and nothing appears on disk.  What an editor asks. *)
+      IF doCheck THEN RETURN END ;
       (* --doc STILL CHECKS, and stops here.  Documentation for a
          program the checker rejects is a lie about a program that
          does not exist, and everything above this line is what makes

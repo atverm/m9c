@@ -151,6 +151,22 @@ cannot run off the buffer.
 
 _(undocumented)_
 
+### ReadStdin (VAR pool: POOL ; cap: I64) : SLICE OF BYTE
+
+one read(2) from standard input: up to cap bytes, and an EMPTY
+slice at end of input.  The whole-file rule above is for files;
+a stream has no whole, and a language server frames its own
+messages over this.
+
+  cap -- at most this many bytes; zero or negative answers the
+         empty slice without reading.
+
+### Flush ()
+
+push buffered output to standard output NOW.  A server writes a
+reply and then blocks reading the next request; without this the
+reply sits in the buffer and the client waits on the silence.
+
 ### FileSize (RO path: STR) : I64 RAISES ValueRange, IOError
 
 how many bytes the file holds, without reading them: the size
@@ -235,6 +251,14 @@ _(undocumented)_
 _(undocumented)_
 
 ### PutErr (buf: C.ConstPtr ; n: C.SizeT) [REENTRANT]
+
+_(undocumented)_
+
+### ReadIn (buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT [SERIAL]
+
+_(undocumented)_
+
+### FlushOut () [SERIAL]
 
 _(undocumented)_
 
