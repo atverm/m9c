@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>m9edit</title>
+<style>
+  :root { --bg:#fdfdfc; --ink:#1a1a2e; --dim:#8a8a97; --kw:#0b5ea8;
+          --str:#1a7f37; --num:#953800; --com:#6e7781; --err:#cf222e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg);
+         color:var(--ink); display:flex; flex-direction:column; height:100vh; }
+  header { display:flex; gap:.6em; align-items:center; padding:.45em .8em;
+           border-bottom:1px solid #ddd; }
+  header b { margin-right:.6em; }
+  button { font: inherit; padding:.25em 1em; cursor:pointer; }
+  #status { color:var(--dim); font-size:.9em; margin-left:auto; }
+  main { flex:1; display:flex; min-height:0; }
+  #edwrap { flex:3; display:flex; min-width:0; border-right:1px solid #ddd; }
+  #gutter { padding:8px 6px; text-align:right; color:var(--dim);
+            background:#f4f4f2; user-select:none; overflow:hidden;
+            font:13px/1.45 ui-monospace, Consolas, monospace; }
+  #stack { position:relative; flex:1; overflow:hidden; }
+  #hl, #src {
+    position:absolute; inset:0; margin:0; padding:8px; border:0;
+    font:13px/1.45 ui-monospace, Consolas, monospace;
+    white-space:pre; overflow:auto; tab-size:2; }
+  #hl { pointer-events:none; }
+  #src { background:transparent; color:transparent; caret-color:var(--ink);
+         resize:none; outline:none; }
+  #side { flex:2; display:flex; flex-direction:column; min-width:0; }
+  #diags { max-height:9em; overflow:auto; border-bottom:1px solid #ddd;
+           font:12px/1.5 ui-monospace, monospace; }
+  #diags div { padding:.1em .8em; color:var(--err); cursor:pointer; }
+  #diags div:hover { background:#fee; }
+  #out { flex:1; overflow:auto; padding: .5em .8em;
+         font:13px/1.45 ui-monospace, monospace; white-space:pre-wrap; }
+  #figs img { max-width:100%; border:1px solid #ddd; margin:.5em 0;
+              background:#fff; }
+  .kw{color:var(--kw);font-weight:600} .str{color:var(--str)}
+  .num{color:var(--num)} .com{color:var(--com);font-style:italic}
+  .err{color:var(--err);text-decoration:underline wavy}
+  .dline{background:#fff0f0}
+</style>
+</head>
+<body>
+<header>
+  <b>m9edit</b>
+  <button id="run">Run</button>
+  <button id="check">Check</button>
+  <span id="status"></span>
+</header>
+<main>
+  <div id="edwrap">
+    <pre id="gutter">1</pre>
+    <div id="stack">
+      <pre id="hl"><code id="hlc"></code></pre>
+      <textarea id="src" spellcheck="false" autocomplete="off"></textarea>
+    </div>
+  </div>
+  <div id="side">
+    <div id="diags"></div>
+    <div id="out">Press Run.  The output of your program appears here;
+files it writes appear below it, SVG figures inline.</div>
+    <div id="figs"></div>
+  </div>
+</main>
+<script>
+/* The page never lexes M9.  Colour comes from POST /lex -- the
+   compiler's own lexer over this buffer -- and diagnostics from
+   POST /check, which is m9c --check verbatim.  Kind codes are Lex's
+   stable contract: 1 error, 2 ident, 3 int, 4 real, 5 char, 6 str,
+   7..199 keywords, 200+ operators. */
+'use strict';
+var srcEl = document.getElementById('src');
+var hlc = document.getElementById('hlc');
+var hl = document.getElementById('hl');
+var gut = document.getElementById('gutter');
+var out = document.getElementById('out');
+var figs = document.getElementById('figs');
+var diags = document.getElementById('diags');
+var status_ = document.getElementById('status');
+
+srcEl.value = "MODULE Hello ;\n\nIMPORT Io ;\n\nBEGIN\n  Io.WriteLine ('hello, world')\nEND Hello.\n";
+
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function classOf(k) {
+  if (k === 1) return 'err';
+  if (k === 5 || k === 6) return 'str';
+  if (k === 3 || k === 4) return 'num';
+  if (k >= 7 && k < 200) return 'kw';
+  return '';
+}
+/* spans per line: from tokens [kind,line,col,len] and comments
+   {line,col,text}; comment text includes its delimiters and its own
+   newlines, so continuation columns come from the text itself */
+function render(tokens, comments) {
+  var lines = srcEl.value.split('\n');
+  var spans = [];            /* [line, colFrom, colTo, cls] 1-based */
+  for (var t of tokens) {
+    var cls = classOf(t[0]);
+    /* a string token's text is its CONTENT; the source span carries
+       the two quotes as well (measured against /lex, not assumed) */
+    var len = t[3] + (t[0] === 6 ? 2 : 0);
+    if (cls) spans.push([t[1], t[2], t[2] + len, cls]);
+  }
+  for (var c of comments) {
+    var parts = c.text.split('\n');
+    for (var i = 0; i < parts.length; i++) {
+      var col = (i === 0) ? c.col : 1;
+      spans.push([c.line + i, col, col + parts[i].length, 'com']);
+    }
+  }
+  var byLine = new Map();
+  for (var s of spans) {
+    if (!byLine.has(s[0])) byLine.set(s[0], []);
+    byLine.get(s[0]).push(s);
+  }
+  var html = [];
+  for (var ln = 1; ln <= lines.length; ln++) {
+    var text = lines[ln - 1];
+    var row = (byLine.get(ln) || []).sort(function(a,b){return a[1]-b[1];});
+    var pos = 1, h = '';
+    for (var sp of row) {
+      var from = Math.max(sp[1], pos), to = Math.min(sp[2], text.length + 1);
+      if (from > pos) h += esc(text.slice(pos - 1, from - 1));
+      if (to > from)
+        h += '<span class="' + sp[3] + '">' +
+             esc(text.slice(from - 1, to - 1)) + '</span>';
+      pos = Math.max(pos, to);
+    }
+    if (pos <= text.length) h += esc(text.slice(pos - 1));
+    html.push(h.length ? h : ' ');
+  }
+  hlc.innerHTML = html.join('\n');
+  gut.textContent = Array.from({length: lines.length},
+                               function(_, i){return i + 1;}).join('\n');
+}
+var lexTimer = null;
+function relex() {
+  clearTimeout(lexTimer);
+  lexTimer = setTimeout(function() {
+    fetch('/lex', {method:'POST', body: srcEl.value})
+      .then(function(r){return r.json();})
+      .then(function(j){ render(j.tokens, j.comments); })
+      .catch(function(){});
+  }, 200);
+}
+srcEl.addEventListener('input', relex);
+srcEl.addEventListener('scroll', function() {
+  hl.scrollTop = srcEl.scrollTop; hl.scrollLeft = srcEl.scrollLeft;
+  gut.scrollTop = srcEl.scrollTop;
+});
+srcEl.addEventListener('keydown', function(e) {
+  if (e.key === 'Tab') {          /* two spaces, the corpus style */
+    e.preventDefault();
+    var s = srcEl.selectionStart;
+    srcEl.setRangeText('  ', s, srcEl.selectionEnd, 'end');
+    relex();
+  }
+});
+
+function showDiags(list) {
+  diags.innerHTML = '';
+  for (var d of list) {
+    var el = document.createElement('div');
+    el.textContent = d.line + ':' + d.col + '  ' + d.msg;
+    el.onclick = (function(line, col) { return function() {
+      var upto = srcEl.value.split('\n').slice(0, line - 1)
+                 .reduce(function(a, l){return a + l.length + 1;}, 0);
+      srcEl.focus();
+      srcEl.setSelectionRange(upto + col - 1, upto + col - 1);
+    };})(d.line, d.col);
+    diags.appendChild(el);
+  }
+}
+document.getElementById('check').onclick = function() {
+  status_.textContent = 'checking...';
+  fetch('/check', {method:'POST', body: srcEl.value})
+    .then(function(r){return r.json();})
+    .then(function(j){
+      showDiags(j.diags);
+      status_.textContent = j.ok ? 'checker: clean' :
+        'checker: ' + j.diags.length + ' finding(s)';
+    })
+    .catch(function(){ status_.textContent = 'server unreachable'; });
+};
+document.getElementById('run').onclick = function() {
+  status_.textContent = 'compiling and running...';
+  out.textContent = '';
+  figs.innerHTML = '';
+  fetch('/run', {method:'POST', body: srcEl.value})
+    .then(function(r){return r.text();})
+    .then(function(t){
+      var shown = [], stamp = Date.now();
+      for (var line of t.split('\n')) {
+        var m = line.match(/^file: (\/out\/[A-Za-z0-9.\-]+)$/);
+        if (m) {
+          if (/\.(svg|png)$/.test(m[1])) {
+            var img = document.createElement('img');
+            img.src = m[1] + '?t=' + stamp;
+            figs.appendChild(img);
+          } else {
+            var a = document.createElement('a');
+            a.href = m[1]; a.textContent = m[1]; a.target = '_blank';
+            figs.appendChild(a);
+            figs.appendChild(document.createElement('br'));
+          }
+        } else {
+          shown.push(line);
+        }
+      }
+      out.textContent = shown.join('\n');
+      status_.textContent = 'done';
+      document.getElementById('check').onclick();
+    })
+    .catch(function(){ status_.textContent = 'server unreachable'; });
+};
+relex();
+</script>
+</body>
+</html>

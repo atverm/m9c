@@ -1,0 +1,662 @@
+STATEFUL DEFINITION MODULE Edit ;
+
+(* m9edit -- the beginner's editor as a local web app, the tutor's
+   little sibling (docs/editor-plan.md).
+
+   The rules it inherits are the toolchain's: the page never lexes
+   M9 -- highlighting is the compiler's own Lex, run in this process
+   over the buffer and answered as token spans -- and diagnostics
+   are m9c's own, via the same `m9c --check` contract m9lsp keeps.
+   There is deliberately NO SANDBOX: the tutor guards our machine
+   against strangers' code; m9edit runs your code on your machine,
+   the same trust as invoking m9c yourself.  A timeout and an output
+   cap guard against accidents, not adversaries, and the listener
+   binds the loopback only.                                          *)
+
+IMPORT Io ;
+
+EXCEPTION
+  BindError (RO why: STR) ;
+
+PROCEDURE Serve (port: I64 ; maxRequests: I64 ;
+                 RO pageDir: STR ; RO workDir: STR)
+  RAISES BindError, ValueRange, Io.IOError ;
+  (* GET /           the editor page (pageDir/page.html)
+     POST /lex       buffer -> token and comment spans, JSON
+     POST /check     buffer -> m9c --check diagnostics, JSON
+     POST /run       buffer -> compile, run, reply text + files
+     GET /out/NAME   what the program wrote (cwd is out/)          *)
+
+END Edit.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cedt ;
+
+(* The same tcpshim.c procedures csrv/csock/ctut bind -- declared
+   here as well because a FROM u IMPORT reaches only a unit in the
+   CHECKER'S closure, and `m9c --make` compiles each dependency
+   alone.  A duplicate extern declaration is legal C; the per-unit
+   [SERIAL] monitor duplication is harmless in a single-threaded
+   server (and in the owed ledger regardless).                       *)
+
+PROCEDURE Listen = "tcp_listen" (port: C.Int ; backlog: C.Int) : C.Int
+  [SERIAL] ;
+PROCEDURE Accept = "tcp_accept" (fd: C.Int) : C.Int
+  [SERIAL] ;
+PROCEDURE Read = "read" (fd: C.Int ; buf: C.MutPtr ; n: C.SizeT)
+  : C.SSizeT  [REENTRANT] ;
+PROCEDURE Write = "write" (fd: C.Int ; buf: C.ConstPtr ; n: C.SizeT)
+  : C.SSizeT  [REENTRANT] ;
+PROCEDURE Close = "close" (fd: C.Int) : C.Int  [REENTRANT] ;
+
+END cedt.
+
+
+UNSAFE IMPLEMENTATION MODULE Edit ;
+
+(* UNSAFE for one reason: ADR at the foreign boundary, as in the
+   tutor whose serve-loop shape this module borrows.                 *)
+
+FROM cedt IMPORT Listen, Accept, Read, Write, Close ;
+IMPORT DynStr ;
+IMPORT Text ;
+IMPORT Io ;
+IMPORT Lex ;
+
+CONST
+  ReqMax  = 1048576 ;      (* headers + a whole buffer *)
+  OutMax  = 262144 ;       (* what a run may say back *)
+  Backlog = 16 ;
+
+(* ---- request parsing, the tutor's ---- *)
+
+PROCEDURE HeaderEnd (RO req: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i + 3 < LEN (req) DO
+    IF req[i] = 0DC AND req[i + 1] = 0AC AND
+       req[i + 2] = 0DC AND req[i + 3] = 0AC THEN
+      RETURN i + 4
+    END ;
+    i := i + 1
+  END ;
+  RETURN 0 - 1
+END HeaderEnd ;
+
+PROCEDURE ContentLength (RO req: STR) : I64 =
+VAR
+  i, v : I64 ;
+  key : STR ;
+BEGIN
+  key := 'Content-Length: ' ;
+  i := Text.Find (req, key) ;
+  IF i < 0 THEN RETURN 0 END ;
+  i := i + LEN (key) ;
+  v := 0 ;
+  WHILE i < LEN (req) AND req[i] >= '0' AND req[i] <= '9' DO
+    v := v * 10 + (ORD (req[i]) - ORD ('0')) ;
+    i := i + 1
+  END ;
+  RETURN v
+END ContentLength ;
+
+PROCEDURE CrLf (VAR pool: POOL ; VAR d: PTR DynStr.DString) =
+BEGIN
+  DynStr.AppendChar (pool, d, 0DC) ;
+  DynStr.AppendChar (pool, d, 0AC)
+END CrLf ;
+
+PROCEDURE StatusLine (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                      status: I64) =
+BEGIN
+  DynStr.Append (pool, d, 'HTTP/1.0 ') ;
+  DynStr.AppendI64 (pool, d, status) ;
+  IF status = 200 THEN DynStr.Append (pool, d, ' OK')
+  ELSIF status = 404 THEN DynStr.Append (pool, d, ' Not Found')
+  ELSE DynStr.Append (pool, d, ' Error') END ;
+  CrLf (pool, d)
+END StatusLine ;
+
+(* Latin-1 text out: headers and pages are ASCII; program OUTPUT can
+   carry any bytes and goes through RespondBytes instead *)
+PROCEDURE Respond (fd: I64 ; status: I64 ; RO ctype: STR ;
+                   RO body: STR ; headOnly: BOOL) =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString ;
+  b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  StatusLine (scratch, d, status) ;
+  DynStr.Append (scratch, d, 'Content-Type: ') ;
+  DynStr.Append (scratch, d, ctype) ;
+  CrLf (scratch, d) ;
+  DynStr.Append (scratch, d, 'Content-Length: ') ;
+  DynStr.AppendI64 (scratch, d, LEN (body)) ;
+  CrLf (scratch, d) ;
+  CrLf (scratch, d) ;
+  IF NOT headOnly THEN DynStr.Append (scratch, d, body) END ;
+  b := DynStr.Bytes (scratch, DynStr.View (d), FALSE) ;
+  n := I64 (Write (C.Int (fd), ADR (b), C.SizeT (LEN (b))))
+EXCEPT
+| ValueRange :
+    n := 0
+END Respond ;
+
+PROCEDURE RespondBytes (fd: I64 ; RO ctype: STR ;
+                        RO body: SLICE OF BYTE ; headOnly: BOOL) =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString ;
+  h : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  StatusLine (scratch, d, 200) ;
+  DynStr.Append (scratch, d, 'Content-Type: ') ;
+  DynStr.Append (scratch, d, ctype) ;
+  CrLf (scratch, d) ;
+  DynStr.Append (scratch, d, 'Content-Length: ') ;
+  DynStr.AppendI64 (scratch, d, LEN (body)) ;
+  CrLf (scratch, d) ;
+  CrLf (scratch, d) ;
+  h := DynStr.Bytes (scratch, DynStr.View (d), FALSE) ;
+  n := I64 (Write (C.Int (fd), ADR (h), C.SizeT (LEN (h)))) ;
+  IF NOT headOnly AND LEN (body) > 0 THEN
+    n := I64 (Write (C.Int (fd), ADR (body), C.SizeT (LEN (body))))
+  END
+EXCEPT
+| ValueRange :
+    n := 0
+END RespondBytes ;
+
+(* identifier characters plus . and -, no leading dot, so a name can
+   neither climb out of out/ nor smuggle an option in *)
+PROCEDURE SafeName (RO name: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (name) = 0 OR LEN (name) > 128 THEN RETURN FALSE END ;
+  IF name[0] = '.' OR name[0] = '-' THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (name) - 1 DO
+    IF NOT ((name[i] >= 'a' AND name[i] <= 'z') OR
+            (name[i] >= 'A' AND name[i] <= 'Z') OR
+            (name[i] >= '0' AND name[i] <= '9') OR
+            name[i] = '.' OR name[i] = '-') THEN
+      RETURN FALSE
+    END
+  END ;
+  RETURN TRUE
+END SafeName ;
+
+PROCEDURE CTypeOf (RO name: STR) : STR =
+BEGIN
+  IF Text.EndsWith (name, '.svg') THEN RETURN 'image/svg+xml' END ;
+  IF Text.EndsWith (name, '.html') THEN
+    RETURN 'text/html; charset=utf-8'
+  END ;
+  IF Text.EndsWith (name, '.png') THEN RETURN 'image/png' END ;
+  IF Text.EndsWith (name, '.csv') OR Text.EndsWith (name, '.txt') OR
+     Text.EndsWith (name, '.md') OR Text.EndsWith (name, '.m9') THEN
+    RETURN 'text/plain; charset=utf-8'
+  END ;
+  RETURN 'application/octet-stream'
+END CTypeOf ;
+
+(* ---- JSON out ---- *)
+
+(* the escapes RFC 8259 requires and no others -- the third copy of
+   this ten-liner (Json keeps its emitter private, m9lsp carries
+   one); a shared home is owed when a fourth caller appears *)
+PROCEDURE JStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                RO s: STR) RAISES ValueRange =
+VAR i, c : I64 ;
+BEGIN
+  DynStr.AppendChar (pool, d, 022C) ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := ORD (s[i]) ;
+    IF c = 0x22 OR c = 0x5C THEN
+      DynStr.AppendChar (pool, d, 05CC) ;
+      DynStr.AppendChar (pool, d, s[i])
+    ELSIF c < 0x20 THEN
+      DynStr.Append (pool, d, '\u00') ;
+      DynStr.AppendChar (pool, d, HexDigit (c DIV 16)) ;
+      DynStr.AppendChar (pool, d, HexDigit (c MOD 16))
+    ELSE
+      DynStr.AppendChar (pool, d, s[i])
+    END
+  END ;
+  DynStr.AppendChar (pool, d, 022C)
+END JStr ;
+
+PROCEDURE HexDigit (v: I64) : CHAR RAISES ValueRange =
+BEGIN
+  IF v < 10 THEN RETURN CHR (ORD ('0') + v) END ;
+  RETURN CHR (ORD ('a') + v - 10)
+END HexDigit ;
+
+(* ---- /lex: the compiler's own tokens ---- *)
+
+PROCEDURE LexJson (VAR pool: POOL ; RO KEPT src: STR) : STR
+  RAISES ValueRange, IndexError =
+VAR
+  lx : Lex.Lexer ;
+  t : Lex.Token ;
+  cm : Lex.Comment ;
+  d : PTR DynStr.DString ;
+  first : BOOL ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"tokens":[') ;
+  Lex.Collect (TRUE) ;
+  Lex.Init (lx, src) ;
+  first := TRUE ;
+  LOOP
+    Lex.Next (lx, t) ;
+    (* kinds are stable I64 codes by Lex's own contract: 0 is EOF *)
+    IF t.kind = 0 THEN EXIT END ;
+    IF NOT first THEN DynStr.AppendChar (pool, d, 02CC) END ;
+    first := FALSE ;
+    DynStr.AppendChar (pool, d, 05BC) ;
+    DynStr.AppendI64 (pool, d, t.kind) ;
+    DynStr.AppendChar (pool, d, 02CC) ;
+    DynStr.AppendI64 (pool, d, t.line) ;
+    DynStr.AppendChar (pool, d, 02CC) ;
+    DynStr.AppendI64 (pool, d, t.col) ;
+    DynStr.AppendChar (pool, d, 02CC) ;
+    DynStr.AppendI64 (pool, d, LEN (t.text)) ;
+    DynStr.AppendChar (pool, d, 05DC)
+  END ;
+  Lex.Collect (FALSE) ;
+  DynStr.Append (pool, d, '],"comments":[') ;
+  FOR i := 0 TO Lex.ComCount () - 1 DO
+    cm := Lex.ComAt (i) ;
+    IF i > 0 THEN DynStr.AppendChar (pool, d, 02CC) END ;
+    DynStr.Append (pool, d, '{"line":') ;
+    DynStr.AppendI64 (pool, d, cm.line) ;
+    DynStr.Append (pool, d, ',"col":') ;
+    DynStr.AppendI64 (pool, d, cm.col) ;
+    DynStr.Append (pool, d, ',"text":') ;
+    JStr (pool, d, cm.text) ;
+    DynStr.AppendChar (pool, d, 07DC)
+  END ;
+  DynStr.Append (pool, d, ']}') ;
+  RETURN DynStr.View (d)
+END LexJson ;
+
+(* ---- the module name, from the first line ---- *)
+
+PROCEDURE ModName (RO KEPT src: STR ; VAR ok: BOOL) : STR =
+VAR i, s0 : I64 ;
+BEGIN
+  ok := FALSE ;
+  i := 0 ;
+  WHILE i < LEN (src) AND (src[i] = ' ' OR src[i] = 0AC OR
+                           src[i] = 0DC) DO
+    i := i + 1
+  END ;
+  IF NOT Text.StartsWith (SLICE (src, i, LEN (src) - i), 'MODULE ') THEN
+    RETURN ''
+  END ;
+  i := i + 7 ;
+  s0 := i ;
+  WHILE i < LEN (src) AND
+        ((src[i] >= 'a' AND src[i] <= 'z') OR
+         (src[i] >= 'A' AND src[i] <= 'Z') OR
+         (src[i] >= '0' AND src[i] <= '9')) DO
+    i := i + 1
+  END ;
+  IF i = s0 THEN RETURN '' END ;
+  ok := TRUE ;
+  RETURN SLICE (src, s0, i - s0)
+END ModName ;
+
+(* the compiler this server repeats: $M9EDIT_M9C, else m9c on PATH *)
+PROCEDURE M9cCmd (VAR pool: POOL) : STR RAISES ValueRange =
+VAR c : STR ;
+BEGIN
+  c := Io.Env (pool, 'M9EDIT_M9C') ;
+  IF LEN (c) = 0 THEN RETURN 'm9c' END ;
+  RETURN c
+END M9cCmd ;
+
+(* ---- /check: m9c --check, republished as JSON ---- *)
+
+PROCEDURE TakeI64 (RO s: STR ; VAR i: I64 ; VAR v: I64) : BOOL =
+VAR any : BOOL ;
+BEGIN
+  v := 0 ;
+  any := FALSE ;
+  WHILE i < LEN (s) AND s[i] >= '0' AND s[i] <= '9' DO
+    v := v * 10 + (ORD (s[i]) - ORD ('0')) ;
+    i := i + 1 ;
+    any := TRUE
+  END ;
+  RETURN any
+END TakeI64 ;
+
+(* one stderr line to one diagnostic: LINE:COL MSG, or
+   FILE:LINE:COL: parse: MSG -- m9lsp's two shapes, compactly *)
+PROCEDURE DiagLine (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                    RO line: STR ; VAR first: BOOL) : BOOL
+  RAISES ValueRange, IndexError =
+VAR
+  i, j, k, ln, cl : I64 ;
+  msg : STR ;
+BEGIN
+  i := 0 ;
+  IF TakeI64 (line, i, ln) AND i < LEN (line) AND line[i] = ':' THEN
+    i := i + 1 ;
+    IF TakeI64 (line, i, cl) AND i < LEN (line) AND line[i] = ' ' THEN
+      msg := SLICE (line, i + 1, LEN (line) - i - 1)
+    ELSE
+      RETURN FALSE
+    END
+  ELSE
+    j := Text.Find (line, ': parse: ') ;
+    IF j < 0 THEN RETURN FALSE END ;
+    k := j ;
+    WHILE k > 0 AND line[k - 1] >= '0' AND line[k - 1] <= '9' DO
+      k := k - 1
+    END ;
+    IF k = j OR k = 0 OR line[k - 1] # ':' THEN RETURN FALSE END ;
+    i := k ;
+    IF NOT TakeI64 (line, i, cl) THEN RETURN FALSE END ;
+    k := k - 1 ;
+    i := k ;
+    WHILE i > 0 AND line[i - 1] >= '0' AND line[i - 1] <= '9' DO
+      i := i - 1
+    END ;
+    IF i = k OR i = 0 OR line[i - 1] # ':' THEN RETURN FALSE END ;
+    IF NOT TakeI64 (line, i, ln) THEN RETURN FALSE END ;
+    msg := SLICE (line, j + 2, LEN (line) - j - 2)
+  END ;
+  IF NOT first THEN DynStr.AppendChar (pool, d, 02CC) END ;
+  first := FALSE ;
+  DynStr.Append (pool, d, '{"line":') ;
+  DynStr.AppendI64 (pool, d, ln) ;
+  DynStr.Append (pool, d, ',"col":') ;
+  DynStr.AppendI64 (pool, d, cl) ;
+  DynStr.Append (pool, d, ',"msg":') ;
+  JStr (pool, d, msg) ;
+  DynStr.AppendChar (pool, d, 07DC) ;
+  RETURN TRUE
+END DiagLine ;
+
+PROCEDURE CheckJson (VAR pool: POOL ; RO KEPT src: STR ;
+                     RO workDir: STR) : STR
+  RAISES ValueRange, IndexError, Io.IOError =
+VAR
+  scratch : POOL ;
+  cmd : PTR DynStr.DString IN scratch ;
+  d : PTR DynStr.DString ;
+  name, errs, line : STR ;
+  ok, first : BOOL ;
+  rc, i, j : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  name := ModName (src, ok) ;
+  IF NOT ok THEN
+    RETURN '{"ok":false,"diags":[{"line":1,"col":1,"msg":"the first line must be:  MODULE Name ;"}]}'
+  END ;
+  Io.WriteFile (workDir + '/' + name + '.m9', src) ;
+  cmd := DynStr.New (scratch) ;
+  DynStr.Append (scratch, cmd, 'cd ') ;
+  DynStr.Append (scratch, cmd, workDir) ;
+  DynStr.Append (scratch, cmd, ' && ') ;
+  DynStr.Append (scratch, cmd, M9cCmd (scratch)) ;
+  DynStr.Append (scratch, cmd, ' --check ') ;
+  DynStr.Append (scratch, cmd, name) ;
+  DynStr.Append (scratch, cmd, '.m9 > ck.txt 2>&1') ;
+  rc := Io.Run (DynStr.View (cmd)) ;
+  IF rc = 0 THEN RETURN '{"ok":true,"diags":[]}' END ;
+  DynStr.Append (pool, d, '{"ok":false,"diags":[') ;
+  errs := Io.ReadFile (pool, workDir + '/ck.txt') ;
+  first := TRUE ;
+  i := 0 ;
+  WHILE i < LEN (errs) DO
+    j := i ;
+    WHILE j < LEN (errs) AND errs[j] # 0AC DO j := j + 1 END ;
+    line := SLICE (errs, i, j - i) ;
+    ok := DiagLine (pool, d, line, first) ;
+    i := j + 1
+  END ;
+  DynStr.Append (pool, d, ']}') ;
+  RETURN DynStr.View (d)
+END CheckJson ;
+
+(* ---- /run: compile, execute, answer ---- *)
+
+PROCEDURE ExitCode (rc: I64) : I64 =
+BEGIN
+  IF rc >= 256 THEN RETURN rc DIV 256 END ;
+  RETURN rc
+END ExitCode ;
+
+PROCEDURE RunProg (VAR pool: POOL ; RO KEPT src: STR ;
+                   RO workDir: STR) : STR
+  RAISES ValueRange, IndexError, Io.IOError =
+VAR
+  scratch : POOL ;
+  cmd : PTR DynStr.DString IN scratch ;
+  d : PTR DynStr.DString ;
+  name, txt, files, f : STR ;
+  ok : BOOL ;
+  rc, i, j : I64 ;
+  listing : SLICE OF STR ;
+BEGIN
+  d := DynStr.New (pool) ;
+  name := ModName (src, ok) ;
+  IF NOT ok THEN
+    RETURN 'exit 2' + Nl () +
+           'the first line must be:  MODULE Name ;' + Nl ()
+  END ;
+  (* one main per workdir: the supplied-flags link takes only the
+     closure's objects, so stale .o files are harmless -- stale .m9
+     MAINS are not, and go *)
+  cmd := DynStr.New (scratch) ;
+  DynStr.Append (scratch, cmd, 'cd ') ;
+  DynStr.Append (scratch, cmd, workDir) ;
+  DynStr.Append (scratch, cmd,
+    ' && rm -f prog run.txt cc.txt *.m9 && rm -rf out && mkdir out') ;
+  rc := Io.Run (DynStr.View (cmd)) ;
+  Io.WriteFile (workDir + '/' + name + '.m9', src) ;
+
+  cmd := DynStr.New (scratch) ;
+  DynStr.Append (scratch, cmd, 'cd ') ;
+  DynStr.Append (scratch, cmd, workDir) ;
+  DynStr.Append (scratch, cmd, ' && timeout 60 ') ;
+  DynStr.Append (scratch, cmd, M9cCmd (scratch)) ;
+  DynStr.Append (scratch, cmd, ' --make -o prog ') ;
+  DynStr.Append (scratch, cmd, name) ;
+  DynStr.Append (scratch, cmd, '.m9 > cc.txt 2>&1') ;
+  rc := Io.Run (DynStr.View (cmd)) ;
+  IF rc # 0 THEN
+    DynStr.Append (pool, d, 'compile failed' + Nl ()) ;
+    AppendCapped (pool, d, workDir + '/cc.txt') ;
+    RETURN DynStr.View (d)
+  END ;
+
+  (* run FROM out/, so whatever the program writes lands where
+     /out/NAME can serve it *)
+  cmd := DynStr.New (scratch) ;
+  DynStr.Append (scratch, cmd, 'cd ') ;
+  DynStr.Append (scratch, cmd, workDir) ;
+  DynStr.Append (scratch, cmd,
+    '/out && timeout 15 ../prog > ../run.txt 2>&1') ;
+  rc := Io.Run (DynStr.View (cmd)) ;
+
+  DynStr.Append (pool, d, 'exit ') ;
+  DynStr.AppendI64 (pool, d, ExitCode (rc)) ;
+  DynStr.Append (pool, d, Nl ()) ;
+  AppendCapped (pool, d, workDir + '/run.txt') ;
+  files := '' ;
+  listing := Io.ListDir (scratch, workDir + '/out') ;
+  FOR i := 0 TO LEN (listing) - 1 DO
+    f := listing[i] ;
+    IF SafeName (f) THEN
+      DynStr.Append (pool, d, 'file: /out/') ;
+      DynStr.Append (pool, d, f) ;
+      DynStr.Append (pool, d, Nl ())
+    END
+  END ;
+  RETURN DynStr.View (d)
+END RunProg ;
+
+VAR
+  NlArr : ARRAY 1 OF CHAR ;
+
+PROCEDURE Nl () : STR =
+BEGIN
+  RETURN SLICE (NlArr, 0, 1)
+END Nl ;
+
+PROCEDURE AppendCapped (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                        RO path: STR) RAISES ValueRange =
+VAR t : STR ;
+BEGIN
+  t := Io.ReadFile (pool, path) ;
+  IF LEN (t) > OutMax THEN
+    DynStr.Append (pool, d, SLICE (t, 0, OutMax)) ;
+    DynStr.Append (pool, d, Nl ()) ;
+    DynStr.Append (pool, d, '... output capped ...') ;
+    DynStr.Append (pool, d, Nl ())
+  ELSE
+    DynStr.Append (pool, d, t)
+  END
+EXCEPT
+| Io.IOError (p) :
+    DynStr.Append (pool, d, '(no output)') ;
+    DynStr.Append (pool, d, Nl ())
+END AppendCapped ;
+
+PROCEDURE ServeOut (fd: I64 ; RO workDir: STR ; RO name: STR ;
+                    headOnly: BOOL) RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+BEGIN
+  IF NOT SafeName (name) THEN
+    Respond (fd, 404, 'text/plain', 'no such file', headOnly) ;
+    RETURN
+  END ;
+  b := Io.ReadFileBytes (scratch, workDir + '/out/' + name) ;
+  RespondBytes (fd, CTypeOf (name), b, headOnly)
+EXCEPT
+| Io.IOError (p) :
+    Respond (fd, 404, 'text/plain', 'no such file', headOnly)
+END ServeOut ;
+
+(* ---- dispatch and loop, the tutor's shape ---- *)
+
+PROCEDURE Answer (fd: I64 ; RO pageDir: STR ; RO workDir: STR)
+  RAISES ValueRange, Io.IOError =
+VAR
+  scratch : POOL ;
+  buf : SLICE OF BYTE ;
+  req, method, path, page, body : STR ;
+  n, got, want, hend, i, sp1, sp2 : I64 ;
+  isHead : BOOL ;
+BEGIN
+  buf := NEW (scratch, BYTE, ReqMax) ;
+  BEGIN
+    got := 0 ;
+    want := 0 - 1 ;
+    LOOP
+      n := I64 (Read (C.Int (fd), ADR (SLICE (buf, got, ReqMax - got)),
+                      C.SizeT (ReqMax - got))) ;
+      IF n <= 0 THEN EXIT END ;
+      got := got + n ;
+      req := DynStr.Chars (scratch, SLICE (buf, 0, got)) ;
+      hend := HeaderEnd (req) ;
+      IF hend >= 0 THEN
+        want := hend + ContentLength (req) ;
+        IF got >= want THEN EXIT END
+      END ;
+      IF got >= ReqMax THEN EXIT END
+    END ;
+    IF got <= 0 THEN RETURN END ;
+    req := DynStr.Chars (scratch, SLICE (buf, 0, got)) ;
+    hend := HeaderEnd (req) ;
+    IF hend < 0 THEN
+      Respond (fd, 400, 'text/plain', 'no header end', FALSE) ;
+      RETURN
+    END ;
+    sp1 := 0 ;
+    i := 0 ;
+    WHILE i < LEN (req) AND sp1 = 0 DO
+      IF req[i] = ' ' THEN sp1 := i END ;
+      i := i + 1
+    END ;
+    sp2 := 0 ;
+    WHILE i < LEN (req) AND sp2 = 0 DO
+      IF req[i] = ' ' OR req[i] = 0DC THEN sp2 := i END ;
+      i := i + 1
+    END ;
+    IF sp1 = 0 OR sp2 = 0 THEN
+      Respond (fd, 400, 'text/plain', 'malformed request line', FALSE) ;
+      RETURN
+    END ;
+    method := SLICE (req, 0, sp1) ;
+    path := SLICE (req, sp1 + 1, sp2 - sp1 - 1) ;
+    isHead := DynStr.Eq (method, 'HEAD') ;
+    IF isHead THEN method := 'GET' END ;
+    body := SLICE (req, hend, LEN (req) - hend) ;
+
+    IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/lex') THEN
+      Respond (fd, 200, 'application/json',
+               LexJson (scratch, body), FALSE) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/check') THEN
+      Respond (fd, 200, 'application/json',
+               CheckJson (scratch, body, workDir), FALSE) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/run') THEN
+      Respond (fd, 200, 'text/plain; charset=utf-8',
+               RunProg (scratch, body, workDir), FALSE) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'GET') AND LEN (path) > 5 AND
+       DynStr.Eq (SLICE (path, 0, 5), '/out/') THEN
+      ServeOut (fd, workDir, SLICE (path, 5, LEN (path) - 5), isHead) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'GET') AND
+       (DynStr.Eq (path, '/') OR DynStr.Eq (path, '/index.html')) THEN
+      page := Io.ReadFile (scratch, pageDir + '/page.html') ;
+      Respond (fd, 200, 'text/html; charset=utf-8', page, isHead) ;
+      RETURN
+    END ;
+    Respond (fd, 404, 'text/plain', 'no such page', isHead)
+  FINALLY
+    n := I64 (Close (C.Int (fd)))
+  END
+END Answer ;
+
+PROCEDURE Serve (port: I64 ; maxRequests: I64 ;
+                 RO pageDir: STR ; RO workDir: STR)
+  RAISES BindError, ValueRange, Io.IOError =
+VAR
+  lfd, cfd, served, n : I64 ;
+BEGIN
+  NlArr[0] := 0AC ;
+  lfd := I64 (Listen (C.Int (port), C.Int (Backlog))) ;
+  IF lfd < 0 THEN RAISE BindError ('listen failed') END ;
+  BEGIN
+    served := 0 ;
+    WHILE served < maxRequests DO
+      cfd := I64 (Accept (C.Int (lfd))) ;
+      IF cfd < 0 THEN RAISE BindError ('accept failed') END ;
+      Answer (cfd, pageDir, workDir) ;
+      served := served + 1
+    END
+  FINALLY
+    n := I64 (Close (C.Int (lfd)))
+  END
+END Serve ;
+
+END Edit.

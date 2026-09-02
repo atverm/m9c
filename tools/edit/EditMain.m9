@@ -1,0 +1,39 @@
+MODULE EditMain ;
+
+(* m9edit PORT MAXREQ PAGEDIR WORKDIR -- the beginner's editor.
+   Defaults: 8000, effectively unbounded, and the directories beside
+   the current one; see docs/editor-plan.md and tools/edit/Edit.m9. *)
+
+IMPORT Io ;
+IMPORT Edit ;
+
+VAR
+  port, maxr : I64 ;
+  pageDir, workDir : STR ;
+
+BEGIN
+  port := 8000 ;
+  maxr := 1000000000 ;
+  pageDir := '.' ;
+  workDir := 'work' ;
+  IF Io.ArgCount () > 1 THEN port := Io.ParseI64 (Io.Arg (HEAP, 1)) END ;
+  IF Io.ArgCount () > 2 THEN maxr := Io.ParseI64 (Io.Arg (HEAP, 2)) END ;
+  IF Io.ArgCount () > 3 THEN pageDir := Io.Arg (HEAP, 3) END ;
+  IF Io.ArgCount () > 4 THEN workDir := Io.Arg (HEAP, 4) END ;
+  Io.MkDir (workDir) ;
+  Io.Write ('m9edit: http://127.0.0.1:') ;
+  Io.WriteI64 (port) ;
+  Io.WriteLine ('') ;
+  Io.Flush () ;
+  Edit.Serve (port, maxr, pageDir, workDir)
+EXCEPT
+| Edit.BindError (why) :
+    Io.ErrLine ('m9edit: cannot listen; is the port in use?') ;
+    Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('m9edit: bad argument') ;
+    Io.Halt (1)
+| Io.IOError (p) :
+    Io.ErrLine ('m9edit: io error') ;
+    Io.Halt (1)
+END EditMain.
