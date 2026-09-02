@@ -77,6 +77,21 @@ and the runtime are found without any of those variables:
 `m9c --help` is the short version and `man m9c` the long one; a test
 compares the two so neither can drift.
 
+## Editors
+
+`tools/vscode-m9/` is the VS Code extension: grammar, hover
+documentation and dot-completion, fed by `m9c --doc` rather than a
+private re-scan.  For LSP editors (Neovim, Helix, eglot), `m9lsp` is
+a language server written in M9 (`corpus/Lsp.m9`): it publishes
+diagnostics by running `m9c --check` and republishing the compiler's
+own messages, so the squiggle and the build cannot disagree.  Build
+it with `m9c --make -o m9lsp Lsp` (0.4.1 ships the module in the
+installed library; in a checkout, `corpus/Lsp.m9`); it speaks
+stdio, finds
+`m9c` on PATH (`$M9LSP_M9C` overrides), and is gated by
+`runtime/test/lsp.sh` — a real framed session against the tree's own
+compiler.  Chapter 0 of the tutorial carries editor configuration.
+
 ## Layout
 
 This repository is mirrored from the development tree's `main` after
