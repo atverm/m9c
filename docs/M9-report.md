@@ -35,7 +35,7 @@ to reduce, so the list is meant to shrink.
 | **Specified but not yet checked** | four, each named where it is stated: a `STATEFUL` module reached by two threads (§6); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); `F32 (F64)` narrowing (§2.1) |
 | **Specified but not yet generated** | `OPT T` for a non-pointer `T` (§11 maps it; the generator refuses it); `TRANSFER` (§6) |
 | **Specified, unbuilt** | `TRANSFER` (§6); four pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.4.0, six distributions, built from this tree |
+| **Release** | 0.4.1, six distributions, built from this tree |
 
 ### Contents
 
