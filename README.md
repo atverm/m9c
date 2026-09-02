@@ -90,7 +90,15 @@ installed library; in a checkout, `corpus/Lsp.m9`); it speaks
 stdio, finds
 `m9c` on PATH (`$M9LSP_M9C` overrides), and is gated by
 `runtime/test/lsp.sh` — a real framed session against the tree's own
-compiler.  Chapter 0 of the tutorial carries editor configuration.
+compiler.  And `m9fmt` is
+the formatter the printer always implied: `Print.Tree`'s canonical
+layout with the comments kept -- collected by the `--doc` side
+channel, re-anchored token by token, columns preserved.  Build it
+with `m9c --make -o m9fmt M9fmt`; `-w` rewrites, `--check` gates.
+Idempotence and comment survival are gated over the whole corpus
+(`runtime/test/fmt.sh`); the corpus itself stays hand-laid-out, a
+decision the gate measures rather than makes.  Chapter 0 of the
+tutorial carries editor configuration.
 
 ## Layout
 

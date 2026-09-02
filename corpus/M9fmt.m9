@@ -1,0 +1,375 @@
+MODULE M9fmt ;
+
+(* m9fmt -- the canonical layout, with the comments kept.
+
+   The engine has existed since P1: Print.Tree answers one spelling
+   per construct, deterministic, and re-lexing its output reproduces
+   the source token stream exactly -- parsetest's own property.  What
+   Print cannot do, and says so in capitals, is keep comments: they
+   die in the lexer before a token exists.
+
+   So this program never touches Print.  It parses with Lex.Collect
+   armed (the --doc side channel), prints the canonical text, lexes
+   BOTH texts, and uses the token-for-token correspondence as a map
+   from source lines to output lines.  Each collected comment is
+   re-inserted at its anchor -- the first token after it in the
+   source -- with its original columns preserved verbatim, which is
+   also what keeps the --doc ownership convention (indented = owned
+   by the declaration above, column 1 = a banner) exactly as written.
+
+   Stated narrowings, version 1:
+   - a comment on the same line as preceding code stays on that
+     line's output twin, two spaces after it; hand alignment of
+     trailing comment columns is not reproduced;
+   - a comment inside an expression lands at the end of the line it
+     interrupted, not in the middle of it;
+   - runs of blank lines collapse to one.
+
+   A file that does not parse is refused with the parser's own
+   diagnostics -- a formatter must never rewrite a program it does
+   not understand.  If the printed text ever disagrees with the
+   source token stream, m9fmt refuses rather than guesses: that
+   property is what the whole design stands on.                     *)
+
+IMPORT Io ;
+IMPORT DynStr ;
+IMPORT Text ;
+IMPORT Lex ;
+IMPORT Ast ;
+IMPORT Parse ;
+IMPORT Print ;
+
+VAR
+  pool : POOL ;
+
+(* ---- token streams ----------------------------------------------- *)
+
+TYPE
+  Toks = RECORD
+    kind, line, col : SLICE OF I64 ;
+    n : I64 ;
+  END ;
+
+PROCEDURE TokPush (VAR t: Toks ; kind, line, col: I64) =
+VAR
+  nb : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF t.n = LEN (t.kind) THEN
+    nb := NEW (pool, I64, 2 * LEN (t.kind)) ;
+    FOR i := 0 TO t.n - 1 DO nb[i] := t.kind[i] END ;
+    t.kind := nb ;
+    nb := NEW (pool, I64, 2 * LEN (t.line)) ;
+    FOR i := 0 TO t.n - 1 DO nb[i] := t.line[i] END ;
+    t.line := nb ;
+    nb := NEW (pool, I64, 2 * LEN (t.col)) ;
+    FOR i := 0 TO t.n - 1 DO nb[i] := t.col[i] END ;
+    t.col := nb
+  END ;
+  t.kind[t.n] := kind ;
+  t.line[t.n] := line ;
+  t.col[t.n] := col ;
+  t.n := t.n + 1
+END TokPush ;
+
+PROCEDURE LexAll (RO KEPT src: STR ; VAR t: Toks) =
+VAR
+  lx : Lex.Lexer ;
+  tok : Lex.Token ;
+BEGIN
+  t.kind := NEW (pool, I64, 256) ;
+  t.line := NEW (pool, I64, 256) ;
+  t.col := NEW (pool, I64, 256) ;
+  t.n := 0 ;
+  Lex.Init (lx, src) ;
+  LOOP
+    Lex.Next (lx, tok) ;
+    IF tok.kind = 0 THEN EXIT END ;
+    TokPush (t, tok.kind, tok.line, tok.col)
+  END
+END LexAll ;
+
+(* ---- lines ------------------------------------------------------- *)
+
+PROCEDURE SplitLines (RO KEPT s: STR ; VAR n: I64) : SLICE OF STR =
+VAR
+  out : SLICE OF STR ;
+  nb : SLICE OF STR ;
+  i, j, k : I64 ;
+BEGIN
+  out := NEW (pool, STR, 256) ;
+  n := 0 ;
+  i := 0 ;
+  WHILE i <= LEN (s) DO
+    j := i ;
+    WHILE j < LEN (s) AND s[j] # 0AC DO j := j + 1 END ;
+    IF n = LEN (out) THEN
+      nb := NEW (pool, STR, 2 * LEN (out)) ;
+      FOR k := 0 TO n - 1 DO nb[k] := out[k] END ;
+      out := nb
+    END ;
+    out[n] := SLICE (s, i, j - i) ;
+    n := n + 1 ;
+    i := j + 1
+  END ;
+  (* a trailing newline makes the last split element empty; drop it
+     so lines are exactly the text's lines *)
+  IF n > 0 AND LEN (out[n - 1]) = 0 THEN n := n - 1 END ;
+  RETURN out
+END SplitLines ;
+
+PROCEDURE Spaces (VAR d: PTR DynStr.DString ; k: I64) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO k - 1 DO DynStr.AppendChar (pool, d, ' ') END
+END Spaces ;
+
+(* the comment's own lines: the first at its recorded column, the
+   continuations verbatim -- the slice runs through the newlines, so
+   their original leading spaces are already inside it *)
+PROCEDURE EmitComment (VAR d: PTR DynStr.DString ; col: I64 ;
+                       RO KEPT text: STR) =
+VAR
+  cl : SLICE OF STR ;
+  ncl, i : I64 ;
+BEGIN
+  cl := SplitLines (text, ncl) ;
+  FOR i := 0 TO ncl - 1 DO
+    IF i = 0 THEN Spaces (d, col - 1)
+    END ;
+    DynStr.Append (pool, d, cl[i]) ;
+    DynStr.AppendChar (pool, d, 0AC)
+  END
+END EmitComment ;
+
+(* ---- the format -------------------------------------------------- *)
+
+PROCEDURE Usage () =
+BEGIN
+  Io.ErrLine ('usage: m9fmt [-w | --check] FILE.m9') ;
+  Io.ErrLine ('  the canonical layout, comments kept.  Writes to') ;
+  Io.ErrLine ('  standard output; -w rewrites FILE in place;') ;
+  Io.ErrLine ('  --check answers 1 when FILE is not already formatted')
+END Usage ;
+
+(* FILE:LINE:COL: parse: MSG -- the shape m9c prints, so an editor
+   that already reads one reads the other *)
+PROCEDURE ErrPos (RO path: STR ; ln, cl: I64 ; RO msg: STR) =
+VAR d : PTR DynStr.DString ;
+BEGIN
+  d := DynStr.New (HEAP) ;
+  DynStr.Append (HEAP, d, path) ;
+  DynStr.AppendChar (HEAP, d, ':') ;
+  DynStr.AppendI64 (HEAP, d, ln) ;
+  DynStr.AppendChar (HEAP, d, ':') ;
+  DynStr.AppendI64 (HEAP, d, cl) ;
+  DynStr.Append (HEAP, d, ': parse: ') ;
+  DynStr.Append (HEAP, d, msg) ;
+  Io.ErrLine (DynStr.View (d))
+END ErrPos ;
+
+PROCEDURE Format (RO KEPT src: STR ; RO path: STR) : STR
+  RAISES ValueRange, IndexError =
+VAR
+  p : Parse.Parser ;
+  root : PTR Ast.Node IN pool ;
+  canon : STR ;
+  ts, tc : Toks ;
+  lines : SLICE OF STR ;
+  nlines, i, j, k, a : I64 ;
+  anchor : SLICE OF I64 ;       (* per comment: output line, 1-based *)
+  trail : SLICE OF BOOL ;       (* attach to the END of that line *)
+  cblank : SLICE OF BOOL ;      (* blank line above this comment *)
+  tblank : SLICE OF BOOL ;      (* blank line above this output line *)
+  emitted, lastBlank : BOOL ;
+  d : PTR DynStr.DString ;
+  cm, pm : Lex.Comment ;
+BEGIN
+  Lex.Collect (TRUE) ;
+  Parse.Init (p, src) ;
+  root := Parse.File (pool, p) ;
+  Lex.Collect (FALSE) ;
+  IF p.nerr > 0 THEN
+    i := 0 ;
+    WHILE i < p.nkept AND i < 8 DO
+      ErrPos (path, p.errLine[i], p.errCol[i], p.errMsg[i]) ;
+      i := i + 1
+    END ;
+    Io.ErrLine ('m9fmt: will not format what does not parse: ' + path) ;
+    Io.Halt (1)
+  END ;
+  canon := Print.Tree (pool, root) ;
+  LexAll (src, ts) ;
+  LexAll (canon, tc) ;
+  IF ts.n # tc.n THEN
+    Io.ErrLine ('m9fmt: printed text disagrees with the source token stream; refusing') ;
+    Io.Halt (1)
+  END ;
+  FOR i := 0 TO ts.n - 1 DO
+    IF ts.kind[i] # tc.kind[i] THEN
+      Io.ErrLine ('m9fmt: printed text disagrees with the source token stream; refusing') ;
+      Io.Halt (1)
+    END
+  END ;
+  lines := SplitLines (canon, nlines) ;
+  (* blank lines survive by the same map: a blank source line
+     between two consecutive items -- token or comment -- asks for
+     ONE blank output line at the matching position.  srcAfter[i] is
+     the last source line item i-1 occupies; a gap wider than one
+     line means the source held at least one blank. *)
+  (* anchor each comment: the first source token after its start.
+     A preceding token on the SAME source line makes it a trailing
+     comment of that token's output line; otherwise it goes on its
+     own lines before the anchor token's output line. *)
+  anchor := NEW (pool, I64, Lex.ComCount () + 1) ;
+  trail := NEW (pool, BOOL, Lex.ComCount () + 1) ;
+  cblank := NEW (pool, BOOL, Lex.ComCount () + 1) ;
+  FOR i := 0 TO Lex.ComCount () - 1 DO
+    cm := Lex.ComAt (i) ;
+    j := 0 ;
+    WHILE j < ts.n AND
+          (ts.line[j] < cm.line OR
+           (ts.line[j] = cm.line AND ts.col[j] < cm.col)) DO
+      j := j + 1
+    END ;
+    IF j > 0 AND ts.line[j - 1] = cm.line THEN
+      anchor[i] := tc.line[j - 1] ;
+      trail[i] := TRUE
+    ELSIF j < ts.n THEN
+      anchor[i] := tc.line[j] ;
+      trail[i] := FALSE
+    ELSE
+      anchor[i] := nlines + 1 ;
+      trail[i] := FALSE
+    END ;
+    (* a blank line above an own-line comment: the previous item is
+       whichever of token j-1 or comment i-1 ends later *)
+    a := 0 ;
+    IF j > 0 THEN a := ts.line[j - 1] END ;
+    IF i > 0 THEN
+      (* F (x).field does not parse -- the grammar's recorded gap --
+         so the call result gets a name *)
+      pm := Lex.ComAt (i - 1) ;
+      IF pm.endLine > a THEN a := pm.endLine END
+    END ;
+    cblank[i] := NOT trail[i] AND a > 0 AND cm.line > a + 1
+  END ;
+  (* a blank line above a token that OPENS its output line: the
+     previous item is token j-1 or any comment between the two *)
+  tblank := NEW (pool, BOOL, nlines + 2) ;
+  FOR j := 1 TO ts.n - 1 DO
+    IF tc.line[j] > tc.line[j - 1] THEN
+      a := ts.line[j - 1] ;
+      FOR i := 0 TO Lex.ComCount () - 1 DO
+        cm := Lex.ComAt (i) ;
+        IF cm.endLine > a AND
+           (cm.line < ts.line[j] OR
+            (cm.line = ts.line[j] AND cm.col < ts.col[j])) THEN
+          a := cm.endLine
+        END
+      END ;
+      IF ts.line[j] > a + 1 THEN tblank[tc.line[j]] := TRUE END
+    END
+  END ;
+  d := DynStr.New (pool) ;
+  (* the printer emits its own blank lines between sections, so an
+     inserted one is guarded by what was ACTUALLY last emitted --
+     without this, printer blank plus mapped blank doubled, and the
+     second run fed on the first's doubling *)
+  lastBlank := TRUE ;
+  FOR k := 1 TO nlines DO
+    emitted := FALSE ;
+    FOR i := 0 TO Lex.ComCount () - 1 DO
+      IF anchor[i] = k AND NOT trail[i] THEN
+        cm := Lex.ComAt (i) ;
+        IF cblank[i] AND NOT lastBlank THEN
+          DynStr.AppendChar (pool, d, 0AC)
+        END ;
+        EmitComment (d, cm.col, cm.text) ;
+        lastBlank := FALSE ;
+        emitted := TRUE
+      END
+    END ;
+    IF tblank[k] AND NOT emitted AND NOT lastBlank THEN
+      DynStr.AppendChar (pool, d, 0AC)
+    END ;
+    lastBlank := LEN (lines[k - 1]) = 0 ;
+    DynStr.Append (pool, d, lines[k - 1]) ;
+    FOR i := 0 TO Lex.ComCount () - 1 DO
+      IF anchor[i] = k AND trail[i] THEN
+        cm := Lex.ComAt (i) ;
+        DynStr.Append (pool, d, '  ') ;
+        (* multi-line trailing: first line here, the rest verbatim *)
+        a := Text.FindChar (cm.text, 0AC) ;
+        IF a < 0 THEN
+          DynStr.Append (pool, d, cm.text)
+        ELSE
+          DynStr.Append (pool, d, SLICE (cm.text, 0, a)) ;
+          DynStr.AppendChar (pool, d, 0AC) ;
+          DynStr.Append (pool, d,
+            SLICE (cm.text, a + 1, LEN (cm.text) - a - 1))
+        END
+      END
+    END ;
+    DynStr.AppendChar (pool, d, 0AC)
+  END ;
+  FOR i := 0 TO Lex.ComCount () - 1 DO
+    IF anchor[i] = nlines + 1 THEN
+      cm := Lex.ComAt (i) ;
+      EmitComment (d, cm.col, cm.text)
+    END
+  END ;
+  RETURN DynStr.View (d)
+END Format ;
+
+VAR
+  path, src, out, bp : STR ;
+  write, check : BOOL ;
+  a : STR ;
+  i : I64 ;
+
+BEGIN
+  write := FALSE ;
+  check := FALSE ;
+  path := '' ;
+  FOR i := 1 TO Io.ArgCount () - 1 DO
+    a := Io.Arg (HEAP, i) ;
+    IF DynStr.Eq (a, '-w') THEN write := TRUE
+    ELSIF DynStr.Eq (a, '--check') THEN check := TRUE
+    ELSIF DynStr.Eq (a, '-h') OR DynStr.Eq (a, '--help') THEN
+      Usage () ;
+      Io.Halt (0)
+    ELSIF LEN (path) = 0 THEN path := a
+    ELSE
+      Usage () ;
+      Io.Halt (2)
+    END
+  END ;
+  IF LEN (path) = 0 OR (write AND check) THEN
+    Usage () ;
+    Io.Halt (2)
+  END ;
+  src := Io.ReadFile (HEAP, path) ;
+  out := Format (src, path) ;
+  IF check THEN
+    IF DynStr.Eq (out, src) THEN Io.Halt (0) END ;
+    Io.ErrLine ('m9fmt: would reformat ' + path) ;
+    Io.Halt (1)
+  ELSIF write THEN
+    IF NOT DynStr.Eq (out, src) THEN Io.WriteFile (path, out) END
+  ELSE
+    Io.Write (out)
+  END
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('m9fmt: internal ValueRange; nothing written') ;
+    Io.Halt (1)
+| Io.IOError (p) :
+    (* the binder is copied into a declared local because a handler
+       binder has no type in the checker's expression typing yet, and
+       '+' is the one place a known type is REQUIRED -- the owed-work
+       ledger's RoBind entry, met here *)
+    bp := p ;
+    Io.ErrLine ('m9fmt: cannot read or write ' + bp) ;
+    Io.Halt (1)
+END M9fmt.
