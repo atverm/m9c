@@ -31,7 +31,7 @@ static m9_sl_CHAR read_unit (const char *name)
   return (m9_sl_CHAR){ chars, len };
 }
 
-static Ast_Node *parse_unit (const char *name, m9_err *err)
+static Ast_Node *parse_unit (const char *name, m9_state *err)
 {
   Parse_Parser p;
   Ast_Node *root;
@@ -54,7 +54,7 @@ static void put_slice (m9_sl_CHAR s)
 
 int main (int argc, char **argv)
 {
-  m9_err err = {0};
+  m9_state err = {0};
   Ast_Node *root, *droot;
   int k;
   int64_t i;

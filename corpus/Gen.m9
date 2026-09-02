@@ -13,12 +13,12 @@ STATEFUL DEFINITION MODULE Gen ;
 
 IMPORT Ast ;
 
-PROCEDURE LoadUnit (u: PTR Ast.Node) ;
-PROCEDURE LoadExtern (u: PTR Ast.Node) ;
+PROCEDURE LoadUnit (KEPT u: PTR Ast.Node) ;
+PROCEDURE LoadExtern (KEPT u: PTR Ast.Node) ;
   (* a DIRECT import: register its declarations and include its
      header, because this module names things in it *)
 
-PROCEDURE LoadExternDeep (u: PTR Ast.Node) ;
+PROCEDURE LoadExternDeep (KEPT u: PTR Ast.Node) ;
   (* a dependency of a dependency: register its declarations so a
      callee's signature can be RESOLVED -- Qvsat.Ew answers a
      Kind.FlexFloat and its caller has no business importing Kind --
@@ -29,6 +29,15 @@ PROCEDURE LoadExternDeep (u: PTR Ast.Node) ;
      was a hole: a direct dependency's signature may name a type from
      a module this one does not import.  It resolved to nothing and,
      until the guard went in, became integer arithmetic. *)
+PROCEDURE SetDebugSource (RO KEPT file: STR) ;
+  (* Emit `#line` directives naming FILE, so a debugger and a
+     backtrace report the M9 source rather than the generated C.
+     Call it before Emit; the empty string turns it off, which is
+     the default and is what every gate compares.  m9c calls this
+     under -g and only under -g: the C emitted without it is
+     byte-for-byte what it always was, which is what keeps gendiff
+     and the bootstrap fixpoint meaningful.                        *)
+
 PROCEDURE Emit (RO forModule: STR) ;
 PROCEDURE HText () : STR ;
 PROCEDURE CText () : STR ;
@@ -92,6 +101,9 @@ TYPE
 VAR
   gpool : POOL ;
   modName : STR ;
+  dbgSrc : STR ;           (* SetDebugSource; empty = no #line *)
+  constsBase : I64 ;       (* consts below this are the module's; at
+                              or above it, the procedure's own *)
   inited : BOOL ;
   nerrV, tmpN, inSwitch, finDepth : I64 ;
   dry : I64 ;              (* >0 inside TagOfExpr's recomputation:
@@ -234,6 +246,38 @@ BEGIN
   RETURN DynStr.View (d)
 END ItoA ;
 
+(* register a pool to be freed at L_ret.  Two callers: a local
+   `VAR p: POOL`, and the implicit frame arena every procedure gets. *)
+PROCEDURE PoolReg (RO KEPT nm: STR) =
+VAR nb : SLICE OF STR ;
+    k  : I64 ;
+BEGIN
+  IF nlp = LEN (lpools) THEN
+    nb := NEW (gpool, STR, 2 * LEN (lpools)) ;
+    FOR k := 0 TO nlp - 1 DO nb[k] := lpools[k] END ;
+    lpools := nb
+  END ;
+  lpools[nlp] := nm ;
+  nlp := nlp + 1
+END PoolReg ;
+
+PROCEDURE SetDebugSource (RO KEPT file: STR) =
+BEGIN
+  dbgSrc := file
+END SetDebugSource ;
+
+(* One directive per statement, at column 0 and into the procedure
+   buffer, so the C compiler attributes the code that follows to the
+   M9 line it came from.  Nothing is emitted when dbgSrc is empty
+   (the default) or during TagOfExpr's dry recomputation, which must
+   not emit anything at all.                                        *)
+PROCEDURE DbgLine (n: PTR Ast.Node) =
+BEGIN
+  IF dry > 0 THEN RETURN END ;
+  IF LEN (dbgSrc) = 0 THEN RETURN END ;
+  Line (KPbuf, 0, S5 ('#line ', ItoA (n.line), ' "', dbgSrc, '"'))
+END DbgLine ;
+
 PROCEDURE StartsW (RO s: STR ;
                    RO p: STR) : BOOL =
 VAR i : I64 ;
@@ -271,8 +315,8 @@ BEGIN
   m.n := 0
 END MInit ;
 
-PROCEDURE MAdd (VAR m: Map ; RO k: STR ;
-                v: Ast.Kid ; RO t: STR) =
+PROCEDURE MAdd (VAR m: Map ; RO KEPT k: STR ;
+                KEPT v: Ast.Kid ; RO KEPT t: STR) =
 VAR
   nb : SLICE OF MEnt ;
   i : I64 ;
@@ -305,7 +349,7 @@ VAR
   errMsgs  : ARRAY 8 OF STR ;   (* literals or gpool-composed: both
                                    outlive the report *)
 
-PROCEDURE Err2 (line: I64 ; RO msg: STR) =
+PROCEDURE Err2 (line: I64 ; RO KEPT msg: STR) =
 BEGIN
   IF nerrV < MaxErrs THEN
     errLines[nerrV] := line ;
@@ -1017,7 +1061,7 @@ END StrCodes ;
 
 (* ---- registry loading ---- *)
 
-PROCEDURE LoadUnit (u: PTR Ast.Node) =
+PROCEDURE LoadUnit (KEPT u: PTR Ast.Node) =
 VAR
   i, j, k, pi : I64 ;
   nb : SLICE OF GP ;
@@ -1134,7 +1178,7 @@ BEGIN
   END
 END LoadUnit ;
 
-PROCEDURE RegisterExtern (u: PTR Ast.Node ; addInclude: BOOL) =
+PROCEDURE RegisterExtern (KEPT u: PTR Ast.Node ; addInclude: BOOL) =
 VAR i, j : I64 ;
 BEGIN
   Setup () ;
@@ -1185,12 +1229,12 @@ BEGIN
   END
 END RegisterExtern ;
 
-PROCEDURE LoadExtern (u: PTR Ast.Node) =
+PROCEDURE LoadExtern (KEPT u: PTR Ast.Node) =
 BEGIN
   RegisterExtern (u, TRUE)
 END LoadExtern ;
 
-PROCEDURE LoadExternDeep (u: PTR Ast.Node) =
+PROCEDURE LoadExternDeep (KEPT u: PTR Ast.Node) =
 BEGIN
   RegisterExtern (u, FALSE)
 END LoadExternDeep ;
@@ -1463,7 +1507,14 @@ BEGIN
   IF NOT known THEN
     ci := MFind (consts, d.a) ;
     IF ci >= 0 THEN
-      res := S3 (modName, '_', d.a) ;
+      (* a MODULE const is a C declaration named Mod_Name; a
+         PROCEDURE-LOCAL one has none, so its value is inlined at the
+         use.  For a literal that is all a CONST ever was. *)
+      IF ci >= constsBase THEN
+        res := EX (consts.es[ci].v, '')
+      ELSE
+        res := S3 (modName, '_', d.a)
+      END ;
       tag := TagOfExpr (consts.es[ci].v) ;
       (* const slice indexing *)
       FOR j := 0 TO d.nkids - 1 DO
@@ -1857,7 +1908,9 @@ BEGIN
           l := EX (e.kids[0], 'SLICE') ;
           r := EX (e.kids[1], 'SLICE') ;
           stRaise := TRUE ;
-          RETURN S5 ('m9_cat (&m9_heap, ', l, ', ', r, ', err)')
+          (* the slot, not HEAP: this frame normally, the caller's
+             arena while a RETURN expression is being emitted *)
+          RETURN S5 ('m9_cat (err->res, ', l, ', ', r, ', err)')
         END ;
         w := '' ;
         IF DynStr.Eq (lt, 'CHAR') OR DynStr.Eq (lt, 'STR1') THEN
@@ -2613,6 +2666,7 @@ VAR
   vtN, vd : Ast.Kid ;
 BEGIN
   IF k IS SOME st THEN
+    DbgLine (st) ;
     CASE st.kind OF
     | Ast.NAssign :
         stRaise := FALSE ;
@@ -2899,7 +2953,7 @@ BEGIN
                   Line (KThr, 0, S4 ('static void *m9_thr_', modName,
                     '_', S2 (bname, ' (void *p)'))) ;
                   Line (KThr, 0, '{') ;
-                  Line (KThr, 0, '  m9_err e = { 0 };') ;
+                  Line (KThr, 0, '  m9_state e = { 0 };') ;
                   Line (KThr, 0, S6 ('  ', modName, '_', bname, ' ((',
                     S3 (w, ') p, &e);', ''))) ;
                   Line (KThr, 0,
@@ -2927,6 +2981,11 @@ BEGIN
     | Ast.NReturn :
         IF st.kids[0] IS SOME rv THEN
           stRaise := FALSE ;
+          (* the answer outlives this frame, so it is built in the
+             caller's arena.  Intermediates within the expression land
+             there too -- generous, and the price of not tracking tail
+             position through EX. *)
+          Line (KPbuf, ind, 'err->res = m9res;') ;
           r := EX (st.kids[0], curRetTag) ;
           Line (KPbuf, ind, S3 ('m9ret = ', r, ';')) ;
           IF stRaise THEN
@@ -3265,7 +3324,7 @@ BEGIN
       cnd := EX (pay.kids[j], '') ;
       IF DynStr.Eq (tg, 'F64') OR DynStr.Eq (tg, 'F32') THEN
         (* THE SLOTS ARE FINITE AND OVERFLOWING THEM IS SILENT.
-           m9_err carries i[4], d[2], s[2]; before this check a
+           m9_state carries i[4], d[2], s[2]; before this check a
            seventh integer or a third real simply wrote past the end
            of the struct, and the generated C compiled.  Found by
            declaring an exception with six F64 fields and reading the
@@ -3320,6 +3379,7 @@ PROCEDURE GenProc (gi: I64) =
 VAR
   pl, grp, body, ids : Ast.Kid ;
   g, j, i, k : I64 ;
+  ci2, cj2 : I64 ;             (* the procedure's own CONSTs *)
   sig, retC, mode, cty, init, nm : STR ;
   monPar : STR ;   (* the monitor this proc is bound to *)
   nb : SLICE OF STR ;
@@ -3386,7 +3446,7 @@ BEGIN
         END
       END
     END ;
-    sig := S2 (sig, 'm9_err *err)') ;
+    sig := S2 (sig, 'm9_state *err)') ;
 
     IF gps[gi].exported THEN
       Line (KHdrProtos, 0, S2 (sig, ';'))
@@ -3402,6 +3462,45 @@ BEGIN
     Line (KPbuf, 0, '') ;
     Line (KPbuf, 0, sig) ;
     Line (KPbuf, 0, '{') ;
+    (* THE FRAME ARENA.  Empty costs nothing -- m9_pool is one NULL
+       pointer and the first block is created lazily -- so a procedure
+       that never concatenates pays for a zeroed word.  Registered like
+       any local POOL, which frees it on EVERY exit: par 11 routes
+       return, raise and FINALLY through L_ret alike.
+
+       And the result slot: err->res is the CALLER's arena when we are
+       entered, so it is captured before our own calls overwrite it,
+       and then claimed for them -- a callee's answer lands in OUR
+       frame.  Each procedure restores it at L_ret, which is why a
+       caller sets it once rather than around every call.  NULL means a
+       caller that does not play (a hand-written C driver) and HEAP is
+       the fallback, which is what `+` did before this. *)
+    Line (KPbuf, 1, 'm9_pool m9frame = {0};') ;
+    PoolReg ('m9frame') ;
+    Line (KPbuf, 1,
+      'm9_pool *m9res = err->res ? err->res : &m9_heap;') ;
+    Line (KPbuf, 1, '(void) m9res;') ;
+    Line (KPbuf, 1, 'err->res = &m9frame;') ;
+    (* PROCEDURE-LOCAL CONSTs.  The grammar always allowed them and
+       neither end implemented them: this said `unknown name` and the
+       checker said nothing at all.  They register in the same map the
+       module's own use, and the map is truncated when the procedure
+       ends -- a shadow is refused by the checker, so appending is
+       safe even though MFind answers the FIRST hit. *)
+    constsBase := consts.n ;
+    IF gps[gi].body IS SOME cbd THEN
+      FOR ci2 := 0 TO cbd.nkids - 1 DO
+        IF cbd.kids[ci2] IS SOME csec THEN
+          IF csec.kind = Ast.NConstSection THEN
+            FOR cj2 := 0 TO csec.nkids - 1 DO
+              IF csec.kids[cj2] IS SOME cdl THEN
+                MAdd (consts, cdl.a, cdl.kids[0], '')
+              END
+            END
+          END
+        END
+      END
+    END ;
     IF NOT DynStr.Eq (retC, 'void') THEN
       Line (KPbuf, 1, S4 (retC, ' m9ret', ZeroInit (retC), ';'))
     END ;
@@ -3475,7 +3574,10 @@ BEGIN
 
     Line (KPbuf, 0, 'L_ret: ;') ;
     (* every exit passes through L_ret, so a RAISE drops the lock for
-       the same reason a RETURN does *)
+       the same reason a RETURN does -- and the result slot goes back
+       to the caller's arena for the same reason again, before this
+       frame is freed underneath it *)
+    Line (KPbuf, 1, 'err->res = m9res;') ;
     IF LEN (monPar) > 0 THEN
       Line (KPbuf, 1, S3 ('m9_mon_leave (&(*', monPar, ').m9mon);'))
     END ;
@@ -3487,7 +3589,8 @@ BEGIN
     ELSE
       Line (KPbuf, 1, 'return m9ret;')
     END ;
-    Line (KPbuf, 0, '}')
+    Line (KPbuf, 0, '}') ;
+    consts.n := constsBase
   END
 END GenProc ;
 
@@ -3514,8 +3617,11 @@ BEGIN
   Line (KPbuf, 0, '') ;
   Line (KPbuf, 0, 'int main (int argc, char **argv)') ;
   Line (KPbuf, 0, '{') ;
-  Line (KPbuf, 1, 'm9_err errv = {0};') ;
-  Line (KPbuf, 1, 'm9_err *err = &errv;') ;
+  Line (KPbuf, 1, 'm9_state errv = {0};') ;
+  Line (KPbuf, 1, 'm9_state *err = &errv;') ;
+  Line (KPbuf, 1, 'm9_pool m9frame = {0};') ;
+  PoolReg ('m9frame') ;
+  Line (KPbuf, 1, 'err->res = &m9frame;') ;
   Line (KPbuf, 1, 'm9_args (argc, argv);') ;
   EmitStmt (mainBody, 1) ;
   Line (KPbuf, 0, 'L_ret: ;') ;

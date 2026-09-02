@@ -39,7 +39,7 @@ static m9_sl_CHAR S (const char *p)
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err e = {0};
+  m9_state e = {0};
   FILE *f = fopen ("frame.golden", "r");
   char line[128], w[24];
   double v;
@@ -184,7 +184,7 @@ int main (void)
 
   /* the refusals */
   {
-    m9_err e2 = {0};
+    m9_state e2 = {0};
     static double nine[16] = {0};
     m9_sl_F64 full = { nine, Frame_Rows (fr, &e2) };
     Frame_AddF64 (&pool, &fr, S ("TA"), full, nan (""), &e2);
@@ -236,7 +236,7 @@ int main (void)
     ok ("Hi over booleans is ANY",
         e.exc == NULL && hd.p[1] && !hd.p[0]);
     /* a gap row cannot be a boolean: MakeContiguous refuses */
-    m9_err e4 = {0};
+    m9_state e4 = {0};
     Frame_MakeContiguous (&pool, ts, &e4);
     ok ("MakeContiguous refuses a bool column by name",
         e4.exc == &Frame_WrongType);
@@ -352,7 +352,7 @@ int main (void)
       long long mv[3] = {0, 1, 2};
       nc_put_var_longlong (n2, v2, mv);
       nc_close (n2);
-      m9_err e3 = {0};
+      m9_state e3 = {0};
       Frame_TsFromNc (&pool, S ("/tmp/frame_bad.nc"), &e3);
       ok ("months-since is refused by name",
           e3.exc == &Frame_BadArg);

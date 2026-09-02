@@ -68,24 +68,24 @@ struct Csv_Options {
   double utcOffset;
 };
 
-Csv_Options Csv_Defaults (m9_err *err);
-Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_err *err);
-int64_t Csv_Rows (Csv_Table * t, m9_err *err);
-int64_t Csv_Cols (Csv_Table * t, m9_err *err);
-m9_sl_CHAR Csv_Name (m9_pool *pool, Csv_Table * t, int64_t c, m9_err *err);
-int64_t Csv_Find (Csv_Table * t, m9_sl_CHAR name, m9_err *err);
-void Csv_SetKind (Csv_Table * *t, int64_t c, Csv_Kind k, m9_err *err);
-void Csv_SetReal (Csv_Table * *t, int64_t c, m9_err *err);
-void Csv_SetInt (Csv_Table * *t, int64_t c, m9_err *err);
-void Csv_SetText (Csv_Table * *t, int64_t c, m9_err *err);
-void Csv_SetSkip (Csv_Table * *t, int64_t c, m9_err *err);
-void Csv_SetStamp (Csv_Table * *t, int64_t c, int64_t format, m9_err *err);
-int64_t Csv_KindCodeAt (Csv_Table * t, int64_t c, m9_err *err);
-int64_t Csv_FormatAt (Csv_Table * t, int64_t c, m9_err *err);
-void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_err *err);
-m9_sl_F32 Csv_ColF32 (Csv_Table * t, int64_t c, m9_err *err);
-m9_sl_I64 Csv_ColI64 (Csv_Table * t, int64_t c, m9_err *err);
-m9_sl_Time_Instant Csv_ColStamp (Csv_Table * t, int64_t c, m9_err *err);
-m9_sl_CHAR Csv_TextAt (m9_pool *pool, Csv_Table * t, int64_t c, int64_t row, m9_err *err);
+Csv_Options Csv_Defaults (m9_state *err);
+Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_state *err);
+int64_t Csv_Rows (Csv_Table * t, m9_state *err);
+int64_t Csv_Cols (Csv_Table * t, m9_state *err);
+m9_sl_CHAR Csv_Name (m9_pool *pool, Csv_Table * t, int64_t c, m9_state *err);
+int64_t Csv_Find (Csv_Table * t, m9_sl_CHAR name, m9_state *err);
+void Csv_SetKind (Csv_Table * *t, int64_t c, Csv_Kind k, m9_state *err);
+void Csv_SetReal (Csv_Table * *t, int64_t c, m9_state *err);
+void Csv_SetInt (Csv_Table * *t, int64_t c, m9_state *err);
+void Csv_SetText (Csv_Table * *t, int64_t c, m9_state *err);
+void Csv_SetSkip (Csv_Table * *t, int64_t c, m9_state *err);
+void Csv_SetStamp (Csv_Table * *t, int64_t c, int64_t format, m9_state *err);
+int64_t Csv_KindCodeAt (Csv_Table * t, int64_t c, m9_state *err);
+int64_t Csv_FormatAt (Csv_Table * t, int64_t c, m9_state *err);
+void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err);
+m9_sl_F32 Csv_ColF32 (Csv_Table * t, int64_t c, m9_state *err);
+m9_sl_I64 Csv_ColI64 (Csv_Table * t, int64_t c, m9_state *err);
+m9_sl_Time_Instant Csv_ColStamp (Csv_Table * t, int64_t c, m9_state *err);
+m9_sl_CHAR Csv_TextAt (m9_pool *pool, Csv_Table * t, int64_t c, int64_t row, m9_state *err);
 
 #endif

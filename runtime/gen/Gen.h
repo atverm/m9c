@@ -58,14 +58,15 @@ typedef struct { int64_t v[8]; } m9_arr_8_int64_t;
 typedef struct { m9_sl_CHAR v[8]; } m9_arr_8_m9_sl_CHAR;
 #endif
 
-void Gen_LoadUnit (Ast_Node * u, m9_err *err);
-void Gen_LoadExtern (Ast_Node * u, m9_err *err);
-void Gen_LoadExternDeep (Ast_Node * u, m9_err *err);
-void Gen_Emit (m9_sl_CHAR forModule, m9_err *err);
-m9_sl_CHAR Gen_HText (m9_err *err);
-m9_sl_CHAR Gen_CText (m9_err *err);
-int64_t Gen_Errs (m9_err *err);
-int64_t Gen_ErrLineAt (int64_t i, m9_err *err);
-m9_sl_CHAR Gen_ErrMsgAt (int64_t i, m9_err *err);
+void Gen_LoadUnit (Ast_Node * u, m9_state *err);
+void Gen_LoadExtern (Ast_Node * u, m9_state *err);
+void Gen_LoadExternDeep (Ast_Node * u, m9_state *err);
+void Gen_SetDebugSource (m9_sl_CHAR file, m9_state *err);
+void Gen_Emit (m9_sl_CHAR forModule, m9_state *err);
+m9_sl_CHAR Gen_HText (m9_state *err);
+m9_sl_CHAR Gen_CText (m9_state *err);
+int64_t Gen_Errs (m9_state *err);
+int64_t Gen_ErrLineAt (int64_t i, m9_state *err);
+m9_sl_CHAR Gen_ErrMsgAt (int64_t i, m9_state *err);
 
 #endif

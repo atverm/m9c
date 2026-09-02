@@ -102,72 +102,77 @@ static const uint32_t m9s95[3] = { 32u, 59u, 32u };
 static const uint32_t m9s96[4] = { 86u, 65u, 82u, 32u };
 static const uint32_t m9s97[4] = { 79u, 87u, 78u, 32u };
 static const uint32_t m9s98[3] = { 82u, 79u, 32u };
-static const uint32_t m9s99[2] = { 58u, 32u };
-static const uint32_t m9s100[5] = { 67u, 79u, 78u, 83u, 84u };
-static const uint32_t m9s101[3] = { 32u, 61u, 32u };
-static const uint32_t m9s102[2] = { 32u, 59u };
-static const uint32_t m9s103[4] = { 84u, 89u, 80u, 69u };
-static const uint32_t m9s104[3] = { 32u, 61u, 32u };
-static const uint32_t m9s105[2] = { 32u, 59u };
-static const uint32_t m9s106[3] = { 86u, 65u, 82u };
-static const uint32_t m9s107[3] = { 82u, 79u, 32u };
-static const uint32_t m9s108[3] = { 32u, 58u, 32u };
-static const uint32_t m9s109[2] = { 32u, 59u };
-static const uint32_t m9s110[9] = { 69u, 88u, 67u, 69u, 80u, 84u, 73u, 79u, 78u };
-static const uint32_t m9s111[2] = { 32u, 40u };
-static const uint32_t m9s112[2] = { 32u, 59u };
-static const uint32_t m9s113[10] = { 80u, 82u, 79u, 67u, 69u, 68u, 85u, 82u, 69u, 32u };
-static const uint32_t m9s114[3] = { 32u, 61u, 32u };
-static const uint32_t m9s115[2] = { 32u, 40u };
-static const uint32_t m9s116[3] = { 32u, 58u, 32u };
-static const uint32_t m9s117[3] = { 82u, 79u, 32u };
-static const uint32_t m9s118[7] = { 82u, 65u, 73u, 83u, 69u, 83u, 32u };
-static const uint32_t m9s119[2] = { 44u, 32u };
-static const uint32_t m9s120[2] = { 32u, 91u };
-static const uint32_t m9s121[2] = { 32u, 61u };
-static const uint32_t m9s122[2] = { 32u, 59u };
+static const uint32_t m9s99[5] = { 75u, 69u, 80u, 84u, 32u };
+static const uint32_t m9s100[2] = { 58u, 32u };
+static const uint32_t m9s101[5] = { 67u, 79u, 78u, 83u, 84u };
+static const uint32_t m9s102[3] = { 32u, 61u, 32u };
+static const uint32_t m9s103[2] = { 32u, 59u };
+static const uint32_t m9s104[4] = { 84u, 89u, 80u, 69u };
+static const uint32_t m9s105[3] = { 32u, 61u, 32u };
+static const uint32_t m9s106[2] = { 32u, 59u };
+static const uint32_t m9s107[3] = { 86u, 65u, 82u };
+static const uint32_t m9s108[3] = { 82u, 79u, 32u };
+static const uint32_t m9s109[3] = { 32u, 58u, 32u };
+static const uint32_t m9s110[2] = { 32u, 59u };
+static const uint32_t m9s111[9] = { 69u, 88u, 67u, 69u, 80u, 84u, 73u, 79u, 78u };
+static const uint32_t m9s112[2] = { 32u, 40u };
+static const uint32_t m9s113[2] = { 32u, 59u };
+static const uint32_t m9s114[10] = { 80u, 82u, 79u, 67u, 69u, 68u, 85u, 82u, 69u, 32u };
+static const uint32_t m9s115[3] = { 32u, 61u, 32u };
+static const uint32_t m9s116[2] = { 32u, 40u };
+static const uint32_t m9s117[3] = { 32u, 58u, 32u };
+static const uint32_t m9s118[3] = { 82u, 79u, 32u };
+static const uint32_t m9s119[7] = { 82u, 65u, 73u, 83u, 69u, 83u, 32u };
+static const uint32_t m9s120[2] = { 44u, 32u };
+static const uint32_t m9s121[2] = { 32u, 91u };
+static const uint32_t m9s122[2] = { 32u, 61u };
 static const uint32_t m9s123[2] = { 32u, 59u };
-static const uint32_t m9s124[7] = { 85u, 78u, 83u, 65u, 70u, 69u, 32u };
-static const uint32_t m9s125[9] = { 83u, 84u, 65u, 84u, 69u, 70u, 85u, 76u, 32u };
-static const uint32_t m9s126[18] = { 68u, 69u, 70u, 73u, 78u, 73u, 84u, 73u, 79u, 78u, 32u, 77u, 79u, 68u, 85u, 76u, 69u, 32u };
-static const uint32_t m9s127[4] = { 70u, 79u, 82u, 32u };
-static const uint32_t m9s128[2] = { 32u, 59u };
-static const uint32_t m9s129[7] = { 85u, 78u, 83u, 65u, 70u, 69u, 32u };
-static const uint32_t m9s130[22] = { 73u, 77u, 80u, 76u, 69u, 77u, 69u, 78u, 84u, 65u, 84u, 73u, 79u, 78u, 32u, 77u, 79u, 68u, 85u, 76u, 69u, 32u };
-static const uint32_t m9s131[2] = { 32u, 59u };
-static const uint32_t m9s132[7] = { 77u, 79u, 68u, 85u, 76u, 69u, 32u };
-static const uint32_t m9s133[2] = { 32u, 59u };
-static const uint32_t m9s134[5] = { 70u, 82u, 79u, 77u, 32u };
-static const uint32_t m9s135[8] = { 32u, 73u, 77u, 80u, 79u, 82u, 84u, 32u };
-static const uint32_t m9s136[2] = { 32u, 59u };
-static const uint32_t m9s137[7] = { 73u, 77u, 80u, 79u, 82u, 84u, 32u };
-static const uint32_t m9s138[2] = { 32u, 59u };
-static const uint32_t m9s139[4] = { 69u, 78u, 68u, 32u };
-static const uint32_t m9s140[1] = { 46u };
+static const uint32_t m9s124[2] = { 32u, 59u };
+static const uint32_t m9s125[7] = { 85u, 78u, 83u, 65u, 70u, 69u, 32u };
+static const uint32_t m9s126[9] = { 83u, 84u, 65u, 84u, 69u, 70u, 85u, 76u, 32u };
+static const uint32_t m9s127[18] = { 68u, 69u, 70u, 73u, 78u, 73u, 84u, 73u, 79u, 78u, 32u, 77u, 79u, 68u, 85u, 76u, 69u, 32u };
+static const uint32_t m9s128[4] = { 70u, 79u, 82u, 32u };
+static const uint32_t m9s129[2] = { 32u, 59u };
+static const uint32_t m9s130[7] = { 85u, 78u, 83u, 65u, 70u, 69u, 32u };
+static const uint32_t m9s131[22] = { 73u, 77u, 80u, 76u, 69u, 77u, 69u, 78u, 84u, 65u, 84u, 73u, 79u, 78u, 32u, 77u, 79u, 68u, 85u, 76u, 69u, 32u };
+static const uint32_t m9s132[2] = { 32u, 59u };
+static const uint32_t m9s133[7] = { 77u, 79u, 68u, 85u, 76u, 69u, 32u };
+static const uint32_t m9s134[2] = { 32u, 59u };
+static const uint32_t m9s135[5] = { 70u, 82u, 79u, 77u, 32u };
+static const uint32_t m9s136[8] = { 32u, 73u, 77u, 80u, 79u, 82u, 84u, 32u };
+static const uint32_t m9s137[2] = { 32u, 59u };
+static const uint32_t m9s138[7] = { 73u, 77u, 80u, 79u, 82u, 84u, 32u };
+static const uint32_t m9s139[2] = { 32u, 59u };
+static const uint32_t m9s140[4] = { 69u, 78u, 68u, 32u };
+static const uint32_t m9s141[1] = { 46u };
 
-static void Print_Sp (m9_pool *pool, DynStr_DString * *d, int64_t ind, m9_err *err);
-static void Print_Quoted (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_err *err);
-static void Print_Qual (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_err *err);
-static void Print_Idents (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_err *err);
-static void Print_E (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err *err);
-static void Print_Args (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err *err);
-static void Print_Desig (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_err *err);
-static void Print_EType (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_err *err);
-static void Print_Group (m9_pool *pool, DynStr_DString * *d, Ast_Node * g, m9_err *err);
-static void Print_FieldsInline (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err *err);
-static void Print_FieldsLines (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_err *err);
-static void Print_ELabel (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_err *err);
-static void Print_EBlock (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, bool withEnd, m9_err *err);
-static void Print_ESeq (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_err *err);
-static void Print_EStmt (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_err *err);
-static void Print_EParams (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err *err);
-static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_err *err);
-static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_err *err);
-static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_err *err);
+static void Print_Sp (m9_pool *pool, DynStr_DString * *d, int64_t ind, m9_state *err);
+static void Print_Quoted (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err);
+static void Print_Qual (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_state *err);
+static void Print_Idents (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_state *err);
+static void Print_E (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_state *err);
+static void Print_Args (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_state *err);
+static void Print_Desig (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_state *err);
+static void Print_EType (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_state *err);
+static void Print_Group (m9_pool *pool, DynStr_DString * *d, Ast_Node * g, m9_state *err);
+static void Print_FieldsInline (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_state *err);
+static void Print_FieldsLines (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_state *err);
+static void Print_ELabel (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_state *err);
+static void Print_EBlock (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, bool withEnd, m9_state *err);
+static void Print_ESeq (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_state *err);
+static void Print_EStmt (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_state *err);
+static void Print_EParams (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_state *err);
+static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_state *err);
+static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_state *err);
+static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_state *err);
 
 
-m9_sl_CHAR Print_Tree (m9_pool *pool, Ast_Node * root, m9_err *err)
+m9_sl_CHAR Print_Tree (m9_pool *pool, Ast_Node * root, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -191,60 +196,88 @@ m9_sl_CHAR Print_Tree (m9_pool *pool, Ast_Node * root, m9_err *err)
       if (err->exc) goto L_ret;
     } }
   } }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Print_TypeText (m9_pool *pool, Ast_Node * k, m9_err *err)
+m9_sl_CHAR Print_TypeText (m9_pool *pool, Ast_Node * k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
   Print_EType (pool, &(d), k, INT64_C(0), err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Print_ParamsText (m9_pool *pool, Ast_Node * k, m9_err *err)
+m9_sl_CHAR Print_ParamsText (m9_pool *pool, Ast_Node * k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
   Print_EParams (pool, &(d), k, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Print_ExprText (m9_pool *pool, Ast_Node * k, m9_err *err)
+m9_sl_CHAR Print_ExprText (m9_pool *pool, Ast_Node * k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
   Print_E (pool, &(d), k, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Print_Sp (m9_pool *pool, DynStr_DString * *d, int64_t ind, m9_err *err)
+static void Print_Sp (m9_pool *pool, DynStr_DString * *d, int64_t ind, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   { int64_t m9t1to;
   i = INT64_C(1);
@@ -255,11 +288,17 @@ static void Print_Sp (m9_pool *pool, DynStr_DString * *d, int64_t ind, m9_err *e
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_Quoted (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_err *err)
+static void Print_Quoted (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   bool hasApo = false; (void) hasApo;
   uint32_t q = 0; (void) q;
@@ -287,11 +326,17 @@ static void Print_Quoted (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_e
   DynStr_AppendChar (pool, d, q, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_Qual (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_err *err)
+static void Print_Qual (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_Append (pool, d, n->a, err);
   if (err->exc) goto L_ret;
   if (((n->b).len > INT64_C(0))) {
@@ -301,11 +346,17 @@ static void Print_Qual (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_err
     if (err->exc) goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_Idents (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_err *err)
+static void Print_Idents (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -324,11 +375,17 @@ static void Print_Idents (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_e
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_E (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err *err)
+static void Print_E (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t j = 0; (void) j;
   { Ast_Node * n = k;
   if (n != NULL) {
@@ -524,11 +581,17 @@ static void Print_E (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err *e
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_Args (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err *err)
+static void Print_Args (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   { Ast_Node * n = k;
   if (n != NULL) {
@@ -546,11 +609,17 @@ static void Print_Args (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_Desig (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_err *err)
+static void Print_Desig (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   DynStr_Append (pool, d, n->a, err);
@@ -590,11 +659,17 @@ static void Print_Desig (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_er
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_EType (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_err *err)
+static void Print_EType (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   { Ast_Node * n = k;
   if (n != NULL) {
@@ -743,11 +818,17 @@ static void Print_EType (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_Group (m9_pool *pool, DynStr_DString * *d, Ast_Node * g, m9_err *err)
+static void Print_Group (m9_pool *pool, DynStr_DString * *d, Ast_Node * g, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   if (g->f3) {
     DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s39, 3 }), err);
     if (err->exc) goto L_ret;
@@ -763,11 +844,17 @@ static void Print_Group (m9_pool *pool, DynStr_DString * *d, Ast_Node * g, m9_er
   Print_EType (pool, d, (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_FieldsInline (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err *err)
+static void Print_FieldsInline (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   { Ast_Node * fs = k;
   if (fs != NULL) {
@@ -793,11 +880,17 @@ static void Print_FieldsInline (m9_pool *pool, DynStr_DString * *d, Ast_Node * k
     }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_FieldsLines (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_err *err)
+static void Print_FieldsLines (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   { Ast_Node * fs = k;
   if (fs != NULL) {
@@ -837,11 +930,17 @@ static void Print_FieldsLines (m9_pool *pool, DynStr_DString * *d, Ast_Node * k,
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_ELabel (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_err *err)
+static void Print_ELabel (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   if ((n->kind == Ast_NLabelPattern)) {
     DynStr_Append (pool, d, n->a, err);
     if (err->exc) goto L_ret;
@@ -868,11 +967,17 @@ static void Print_ELabel (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, m9_e
     } }
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_EBlock (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, bool withEnd, m9_err *err)
+static void Print_EBlock (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, bool withEnd, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   bool more = false; (void) more;
@@ -980,11 +1085,17 @@ static void Print_EBlock (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int6
     if (err->exc) goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_ESeq (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_err *err)
+static void Print_ESeq (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_t ind, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   { Ast_Node * n = k;
   if (n != NULL) {
@@ -1010,11 +1121,17 @@ static void Print_ESeq (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, int64_
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_EStmt (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_err *err)
+static void Print_EStmt (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   { __typeof__(n->kind) m9t1 = n->kind;
@@ -1374,11 +1491,17 @@ static void Print_EStmt (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
   } break;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_EParams (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_err *err)
+static void Print_EParams (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   { Ast_Node * pl = k;
   if (pl != NULL) {
@@ -1406,13 +1529,17 @@ static void Print_EParams (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_
           DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s98, 3 }), err);
           if (err->exc) goto L_ret;
         }
+        if (p->f4) {
+          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s99, 5 }), err);
+          if (err->exc) goto L_ret;
+        }
         { Ast_Node * ids = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(0), p->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (ids != NULL) {
           Print_Idents (pool, d, ids, err);
           if (err->exc) goto L_ret;
         } }
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s99, 2 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s100, 2 }), err);
         if (err->exc) goto L_ret;
         Print_EType (pool, d, (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
         if (err->exc) goto L_ret;
@@ -1420,11 +1547,17 @@ static void Print_EParams (m9_pool *pool, DynStr_DString * *d, Ast_Node * k, m9_
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_err *err)
+static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   { __typeof__(n->kind) m9t1 = n->kind;
   switch (m9t1) {
@@ -1432,7 +1565,7 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
   {
     Print_Sp (pool, d, ind, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s100, 5 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s101, 5 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (pool, d, 10u, err);
     if (err->exc) goto L_ret;
@@ -1448,11 +1581,11 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
         if (err->exc) goto L_ret;
         DynStr_Append (pool, d, c->a, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s101, 3 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s102, 3 }), err);
         if (err->exc) goto L_ret;
         Print_E (pool, d, (*(Ast_Node * *) m9_at (c->kids.p, INT64_C(0), c->kids.len, sizeof (Ast_Node *), err)), err);
         if (err->exc) goto L_ret;
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s102, 2 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s103, 2 }), err);
         if (err->exc) goto L_ret;
         DynStr_AppendChar (pool, d, 10u, err);
         if (err->exc) goto L_ret;
@@ -1463,7 +1596,7 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
   {
     Print_Sp (pool, d, ind, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s103, 4 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s104, 4 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (pool, d, 10u, err);
     if (err->exc) goto L_ret;
@@ -1482,12 +1615,12 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
         { Ast_Node * ty = (*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (ty != NULL) {
-          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s104, 3 }), err);
+          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s105, 3 }), err);
           if (err->exc) goto L_ret;
           Print_EType (pool, d, (*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (ind, INT64_C(1), err), err);
           if (err->exc) goto L_ret;
         } }
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s105, 2 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s106, 2 }), err);
         if (err->exc) goto L_ret;
         DynStr_AppendChar (pool, d, 10u, err);
         if (err->exc) goto L_ret;
@@ -1498,7 +1631,7 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
   {
     Print_Sp (pool, d, ind, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s106, 3 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s107, 3 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (pool, d, 10u, err);
     if (err->exc) goto L_ret;
@@ -1513,7 +1646,7 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
         Print_Sp (pool, d, m9_add_i64 (ind, INT64_C(1), err), err);
         if (err->exc) goto L_ret;
         if (vd->f3) {
-          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s107, 3 }), err);
+          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s108, 3 }), err);
           if (err->exc) goto L_ret;
         }
         { Ast_Node * ids = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(0), vd->kids.len, sizeof (Ast_Node *), err));
@@ -1522,11 +1655,11 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
           Print_Idents (pool, d, ids, err);
           if (err->exc) goto L_ret;
         } }
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s108, 3 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s109, 3 }), err);
         if (err->exc) goto L_ret;
         Print_EType (pool, d, (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (ind, INT64_C(1), err), err);
         if (err->exc) goto L_ret;
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s109, 2 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s110, 2 }), err);
         if (err->exc) goto L_ret;
         DynStr_AppendChar (pool, d, 10u, err);
         if (err->exc) goto L_ret;
@@ -1537,7 +1670,7 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
   {
     Print_Sp (pool, d, ind, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s110, 9 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s111, 9 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (pool, d, 10u, err);
     if (err->exc) goto L_ret;
@@ -1556,14 +1689,14 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
         { Ast_Node * xf = (*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (xf != NULL) {
-          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s111, 2 }), err);
+          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s112, 2 }), err);
           if (err->exc) goto L_ret;
           Print_FieldsInline (pool, d, (*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err)), err);
           if (err->exc) goto L_ret;
           DynStr_AppendChar (pool, d, 41u, err);
           if (err->exc) goto L_ret;
         } }
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s112, 2 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s113, 2 }), err);
         if (err->exc) goto L_ret;
         DynStr_AppendChar (pool, d, 10u, err);
         if (err->exc) goto L_ret;
@@ -1579,25 +1712,31 @@ static void Print_EDecl (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
   } break;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_err *err)
+static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64_t ind, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   Print_Sp (pool, d, ind, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s113, 10 }), err);
+  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s114, 10 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (pool, d, n->a, err);
   if (err->exc) goto L_ret;
   if (((n->b).len > INT64_C(0))) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s114, 3 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s115, 3 }), err);
     if (err->exc) goto L_ret;
     Print_Quoted (pool, d, n->b, err);
     if (err->exc) goto L_ret;
   }
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s115, 2 }), err);
+  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s116, 2 }), err);
   if (err->exc) goto L_ret;
   Print_EParams (pool, d, (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err);
   if (err->exc) goto L_ret;
@@ -1606,10 +1745,10 @@ static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
   { Ast_Node * rt = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (rt != NULL) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s117, 3 }), err);
     if (err->exc) goto L_ret;
     if (n->f3) {
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s117, 3 }), err);
+      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s118, 3 }), err);
       if (err->exc) goto L_ret;
     }
     Print_EType (pool, d, (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err)), ind, err);
@@ -1622,7 +1761,7 @@ static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
     if (err->exc) goto L_ret;
     Print_Sp (pool, d, m9_add_i64 (ind, INT64_C(1), err), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s118, 7 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s119, 7 }), err);
     if (err->exc) goto L_ret;
     { int64_t m9t1to;
     i = INT64_C(0);
@@ -1630,7 +1769,7 @@ static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
       if ((i > INT64_C(0))) {
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s119, 2 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s120, 2 }), err);
         if (err->exc) goto L_ret;
       }
       { Ast_Node * q = (*(Ast_Node * *) m9_at (rs->kids.p, i, rs->kids.len, sizeof (Ast_Node *), err));
@@ -1644,7 +1783,7 @@ static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
   { Ast_Node * at = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(3), n->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (at != NULL) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s120, 2 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s121, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (pool, d, at->a, err);
     if (err->exc) goto L_ret;
@@ -1654,7 +1793,7 @@ static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
   { Ast_Node * body = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(4), n->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (body != NULL) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s121, 2 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s122, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (pool, d, 10u, err);
     if (err->exc) goto L_ret;
@@ -1680,36 +1819,42 @@ static void Print_EProc (m9_pool *pool, DynStr_DString * *d, Ast_Node * n, int64
     if (err->exc) goto L_ret;
     DynStr_Append (pool, d, n->a, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s122, 2 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s123, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (pool, d, 10u, err);
     if (err->exc) goto L_ret;
   } else {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s123, 2 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s124, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (pool, d, 10u, err);
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_err *err)
+static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   if ((u->kind == Ast_NDefinition)) {
     if (u->f1) {
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s124, 7 }), err);
+      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s125, 7 }), err);
       if (err->exc) goto L_ret;
     }
     if (u->f2) {
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s125, 9 }), err);
+      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s126, 9 }), err);
       if (err->exc) goto L_ret;
     }
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s126, 18 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s127, 18 }), err);
     if (err->exc) goto L_ret;
     if (((u->b).len > INT64_C(0))) {
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s127, 4 }), err);
+      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s128, 4 }), err);
       if (err->exc) goto L_ret;
       Print_Quoted (pool, d, u->b, err);
       if (err->exc) goto L_ret;
@@ -1718,26 +1863,26 @@ static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_er
     }
     DynStr_Append (pool, d, u->a, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s129, 2 }), err);
     if (err->exc) goto L_ret;
   } else {
     if ((u->kind == Ast_NImplementation)) {
       if (u->f1) {
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s129, 7 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s130, 7 }), err);
         if (err->exc) goto L_ret;
       }
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s130, 22 }), err);
+      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s131, 22 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (pool, d, u->a, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s131, 2 }), err);
+      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s132, 2 }), err);
       if (err->exc) goto L_ret;
   } else {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s132, 7 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s133, 7 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (pool, d, u->a, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s133, 2 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s134, 2 }), err);
     if (err->exc) goto L_ret;
   } }
   DynStr_AppendChar (pool, d, 10u, err);
@@ -1753,11 +1898,11 @@ static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_er
     if (err->exc) goto L_ret;
     if (kd != NULL) {
       if ((kd->kind == Ast_NFromImport)) {
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s134, 5 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s135, 5 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (pool, d, kd->a, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s135, 8 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s136, 8 }), err);
         if (err->exc) goto L_ret;
         { Ast_Node * ids = (*(Ast_Node * *) m9_at (kd->kids.p, INT64_C(0), kd->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
@@ -1765,7 +1910,7 @@ static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_er
           Print_Idents (pool, d, ids, err);
           if (err->exc) goto L_ret;
         } }
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s136, 2 }), err);
+        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s137, 2 }), err);
         if (err->exc) goto L_ret;
         DynStr_AppendChar (pool, d, 10u, err);
         if (err->exc) goto L_ret;
@@ -1773,7 +1918,7 @@ static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_er
         if (err->exc) goto L_ret;
       } else {
         if ((kd->kind == Ast_NImportList)) {
-          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s137, 7 }), err);
+          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s138, 7 }), err);
           if (err->exc) goto L_ret;
           { Ast_Node * ids = (*(Ast_Node * *) m9_at (kd->kids.p, INT64_C(0), kd->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
@@ -1781,7 +1926,7 @@ static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_er
             Print_Idents (pool, d, ids, err);
             if (err->exc) goto L_ret;
           } }
-          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s138, 2 }), err);
+          DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s139, 2 }), err);
           if (err->exc) goto L_ret;
           DynStr_AppendChar (pool, d, 10u, err);
           if (err->exc) goto L_ret;
@@ -1803,14 +1948,16 @@ static void Print_EUnit (m9_pool *pool, DynStr_DString * *d, Ast_Node * u, m9_er
       } } }
     } }
   } }
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s139, 4 }), err);
+  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s140, 4 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (pool, d, u->a, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s140, 1 }), err);
+  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s141, 1 }), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, d, 10u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }

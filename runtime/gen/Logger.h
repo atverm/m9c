@@ -15,17 +15,17 @@
 #define Logger_Error INT64_C(3)
 #define Logger_Silent INT64_C(4)
 
-void Logger_SetLevel (int64_t level, m9_err *err);
-int64_t Logger_Level (m9_err *err);
-bool Logger_Enabled (int64_t level, m9_err *err);
-void Logger_Msg (int64_t level, m9_sl_CHAR text, m9_err *err);
-void Logger_Start (int64_t level, m9_sl_CHAR text, m9_err *err);
-void Logger_Str (m9_sl_CHAR key, m9_sl_CHAR val, m9_err *err);
-void Logger_Int (m9_sl_CHAR key, int64_t v, m9_err *err);
-void Logger_Real (m9_sl_CHAR key, double v, int64_t decimals, m9_err *err);
-void Logger_Bool (m9_sl_CHAR key, bool v, m9_err *err);
-void Logger_Done (m9_err *err);
-void Logger_ToSyslog (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_err *err);
-void Logger_ToStderr (m9_err *err);
+void Logger_SetLevel (int64_t level, m9_state *err);
+int64_t Logger_Level (m9_state *err);
+bool Logger_Enabled (int64_t level, m9_state *err);
+void Logger_Msg (int64_t level, m9_sl_CHAR text, m9_state *err);
+void Logger_Start (int64_t level, m9_sl_CHAR text, m9_state *err);
+void Logger_Str (m9_sl_CHAR key, m9_sl_CHAR val, m9_state *err);
+void Logger_Int (m9_sl_CHAR key, int64_t v, m9_state *err);
+void Logger_Real (m9_sl_CHAR key, double v, int64_t decimals, m9_state *err);
+void Logger_Bool (m9_sl_CHAR key, bool v, m9_state *err);
+void Logger_Done (m9_state *err);
+void Logger_ToSyslog (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_state *err);
+void Logger_ToStderr (m9_state *err);
 
 #endif

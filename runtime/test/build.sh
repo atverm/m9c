@@ -190,3 +190,14 @@ ababab
 6
 via heap" ] || { echo "FAIL: string concatenation"; exit 1; }
 echo "PASS (1 check) -- + on strings, into HEAP"
+
+# catbench is a BENCHMARK, not a driver: nothing ran it, so nothing
+# compiled it, and it sat broken from the m9_err -> m9_state rename
+# until someone tried to use it.  A checked-in C file that no gate
+# compiles rots silently -- the same family as a gate that cannot run.
+# Compiled here and NOT run: the answer is a measurement, not a check,
+# and it takes seconds.
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
+    -iquote .. -iquote ../gen ../m9rt.c catbench.c -lm -o /dev/null \
+  || { echo "FAIL: catbench.c does not compile"; exit 1; }
+echo "PASS (1 check) -- catbench.c still compiles"

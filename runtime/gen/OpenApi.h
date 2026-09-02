@@ -6,6 +6,6 @@
 #include "DynStr.h"
 
 
-m9_sl_CHAR OpenApi_Document (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Router * r, m9_err *err);
+m9_sl_CHAR OpenApi_Document (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Router * r, m9_state *err);
 
 #endif

@@ -52,7 +52,7 @@ static const char *EXPECT =
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
   uint32_t tb[64];
   uint8_t body[8192];
   int64_t blen = 0, status;
@@ -87,7 +87,7 @@ int main (void)
 
   kid = fork ();
   if (kid == 0) {
-    m9_err serr = {0};
+    m9_state serr = {0};
     HttpServer_Serve (r, 18925, 4, &serr);
     _exit (serr.exc == NULL ? 0 : 1);
   }

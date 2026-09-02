@@ -112,7 +112,7 @@ _(undocumented)_
 
 _(undocumented)_
 
-### AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; v: SLICE OF STR) RAISES SizeError, Duplicate
+### AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; KEPT v: SLICE OF STR) RAISES SizeError, Duplicate
 
 the slice is TAKEN, not copied: the frame views the caller's
 storage, the AddRoute/Json.Parse retention contract.  Length
@@ -260,7 +260,7 @@ _(documented with the group below)_
 
 'start' | 'end' | 'mid'
 
-### WriteNc (VAR pool: POOL ; f: PTR Fr ; RO path, dim: STR) RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError
+### WriteNc (VAR pool: POOL ; f: PTR Fr ; RO KEPT path: STR ; RO dim: STR) RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError
 
 a netCDF-4 file with one dimension named `dim`, one variable
 per column in its OWN storage type, the column's missing value
@@ -270,7 +270,7 @@ invented at export time.  Strs columns become an n x width char
 matrix over a per-column length dimension, the PutChars
 convention.
 
-### WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR) RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError
+### WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR) RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError
 
 WriteNc over the dimension 'time', plus the time coordinate:
 I64 seconds, units 'seconds since 1970-01-01 00:00:00 +00:00'
@@ -283,7 +283,7 @@ cell_methods is deliberately NOT written: the frame does not
 know whether a column is a mean over its period or a point
 sample, and writing 'mean' unasked would be a lie in metadata.
 
-### FromNc (VAR pool: POOL ; RO path, dim: STR) : PTR Fr RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange, Overflow, IndexError
+### FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange, Overflow, IndexError
 
 every variable whose FIRST dimension is `dim`: 1-D numerics
 into their matching arms, 2-D char matrices into Strs.  A
@@ -293,7 +293,7 @@ failure this module exists to prevent.  _FillValue becomes the
 column's missing value; units / long_name / standard_name are
 read when present.
 
-### TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts RAISES NetCDF.Error, BadArg, SizeError, Duplicate, Disorder, ValueRange, Overflow, IndexError
+### TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts RAISES NetCDF.Error, BadArg, SizeError, Duplicate, Disorder, ValueRange, Overflow, IndexError
 
 FromNc over 'time', with the time variable itself parsed from
 its CF units -- seconds, minutes, hours or days since a date,
@@ -305,7 +305,7 @@ attributes WriteTsNc writes; a foreign file without them gets
 convention start and the axis's own smallest gap, both stated
 choices rather than inference.
 
-### NewTs (VAR pool: POOL ; f: PTR Fr ; time: SLICE OF I64 ; res: I64 ; conv: Conv ; RO descr: STR) : PTR Ts IN pool RAISES SizeError, Disorder, BadArg
+### NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ; res: I64 ; conv: Conv ; RO descr: STR) : PTR Ts IN pool RAISES SizeError, Disorder, BadArg
 
 time is epoch seconds UTC, one per row, STRICTLY increasing and
 on the res grid (relative to its own first stamp); res > 0.
@@ -367,7 +367,7 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### Average (VAR pool: POOL ; ts: PTR Ts ; toRes: I64 ; how: SLICE OF How ; minCount: I64) : PTR Ts IN pool RAISES SizeError, WrongType, BadArg, ValueRange, Overflow, IndexError
+### Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ; how: SLICE OF How ; minCount: I64) : PTR Ts IN pool RAISES SizeError, WrongType, BadArg, ValueRange, Overflow, IndexError
 
 resample to a coarser resolution.  toRes must be a positive
 multiple of the frame's resolution (refused otherwise, named);
@@ -380,7 +380,7 @@ are excluded from Mean/Sum/Lo/Hi; a window with fewer than
 minCount live values answers the column's missing value.
 Output labels follow the frame's own convention at toRes.
 
-### MakeContiguous (VAR pool: POOL ; ts: PTR Ts) : PTR Ts IN pool RAISES SizeError, Duplicate, Disorder, BadArg, WrongType, ValueRange, Overflow, IndexError
+### MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool RAISES SizeError, Duplicate, Disorder, BadArg, WrongType, ValueRange, Overflow, IndexError
 
 every absent period between the first and last stamp becomes a
 row of missing values (Strs: '').  The time axis comes out

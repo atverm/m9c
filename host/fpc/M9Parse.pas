@@ -451,6 +451,10 @@ begin
     if cur.kind = tkVAR then begin p.f1 := True; Bump; end
     else if cur.kind = tkOWN then begin p.f2 := True; Bump; end
     else if cur.kind = tkRO then begin p.f3 := True; Bump; end;
+    { KEPT composes rather than replacing: a parameter this procedure
+      keeps past the call is usually also a read-only borrow, so it
+      follows the mode instead of being one (docs/retention.md) }
+    if cur.kind = tkKEPT then begin p.f4 := True; Bump; end;
     p.Add (PIdentList);
     Expect (tkColon, ':');
     p.Add (PType ());

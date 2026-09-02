@@ -27,13 +27,17 @@ static const uint32_t m9s17[18] = { 34u, 58u, 123u, 34u, 100u, 101u, 115u, 99u, 
 static const uint32_t m9s18[14] = { 34u, 44u, 34u, 99u, 111u, 110u, 116u, 101u, 110u, 116u, 34u, 58u, 123u, 34u };
 static const uint32_t m9s19[8] = { 34u, 58u, 123u, 125u, 125u, 125u, 125u, 125u };
 
-static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_err *err);
-static void OpenApi_AppendMethod (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR m, m9_err *err);
-static void OpenApi_Operation (m9_pool *pool, DynStr_DString * *d, HttpServer_Router * r, int64_t j, m9_err *err);
+static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_state *err);
+static void OpenApi_AppendMethod (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR m, m9_state *err);
+static void OpenApi_Operation (m9_pool *pool, DynStr_DString * *d, HttpServer_Router * r, int64_t j, m9_state *err);
 
 
-m9_sl_CHAR OpenApi_Document (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Router * r, m9_err *err)
+m9_sl_CHAR OpenApi_Document (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Router * r, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -99,15 +103,22 @@ m9_sl_CHAR OpenApi_Document (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR version
   } }
   DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s4, 2 }), err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_err *err)
+static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   int64_t j = 0; (void) j;
   { int64_t m9t1to;
@@ -118,18 +129,26 @@ static bool OpenApi_PathSeen (HttpServer_Router * r, int64_t i, m9_err *err)
     bool m9t2 = DynStr_Eq (HttpServer_RoutePath (r, j, err), HttpServer_RoutePath (r, i, err), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
+      err->res = m9res;
       m9ret = true;
       goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void OpenApi_AppendMethod (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR m, m9_err *err)
+static void OpenApi_AppendMethod (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR m, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9t1 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s5, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -164,11 +183,17 @@ static void OpenApi_AppendMethod (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR
     if (err->exc) goto L_ret;
   } } } } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void OpenApi_Operation (m9_pool *pool, DynStr_DString * *d, HttpServer_Router * r, int64_t j, m9_err *err)
+static void OpenApi_Operation (m9_pool *pool, DynStr_DString * *d, HttpServer_Router * r, int64_t j, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_AppendChar (pool, d, 34u, err);
   if (err->exc) goto L_ret;
   OpenApi_AppendMethod (pool, d, HttpServer_RouteMethod (r, j, err), err);
@@ -192,5 +217,7 @@ static void OpenApi_Operation (m9_pool *pool, DynStr_DString * *d, HttpServer_Ro
   DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s19, 8 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }

@@ -45,7 +45,7 @@ static int is (m9_sl_CHAR a, const char *s)
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
 
   /* ---- search ---- */
   ok ("Eq", Text_Eq (S ("abc"), S ("abc"), &err));

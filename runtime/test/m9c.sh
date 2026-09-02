@@ -387,7 +387,7 @@ static m9_sl_CHAR S (const char *s)
   return (m9_sl_CHAR){ sb, (int64_t) n }; }
 int main (void)
 {
-  m9_pool p = {0}; m9_err e = {0};
+  m9_pool p = {0}; m9_state e = {0};
   Json_Node *root = Json_Parse (&p, S ("{\"a\":[1,2,{\"b\":true}]}"), &e);
   Json_Node *a = Json_Field (root, S ("a"), &e);
   Json_Node *b = Json_Field (Json_Item (a, 2, &e), S ("b"), &e);

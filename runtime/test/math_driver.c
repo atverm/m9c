@@ -41,7 +41,7 @@ static int same (double a, double b)
 
 #define VALUE1(name, cfn, x)                                            \
   do {                                                                  \
-    m9_err e = { 0 };                                                   \
+    m9_state e = { 0 };                                                   \
     double got = Math_##name (x, &e);                                   \
     ok (#name " does not raise on a good argument", e.exc == NULL);     \
     ok (#name " is libm", !e.exc && same (got, cfn (x)));               \
@@ -49,21 +49,21 @@ static int same (double a, double b)
 
 #define RAISES1(name, x, want)                                          \
   do {                                                                  \
-    m9_err e = { 0 };                                                   \
+    m9_state e = { 0 };                                                   \
     (void) Math_##name (x, &e);                                         \
     ok (#name " (" #x ") raises " #want, e.exc == &m9_exc_##want);      \
   } while (0)
 
 #define RAISES2(name, x, y, want)                                       \
   do {                                                                  \
-    m9_err e = { 0 };                                                   \
+    m9_state e = { 0 };                                                   \
     (void) Math_##name (x, y, &e);                                      \
     ok (#name " (" #x "," #y ") raises " #want, e.exc == &m9_exc_##want); \
   } while (0)
 
 int main (void)
 {
-  m9_err e = { 0 };
+  m9_state e = { 0 };
   double x;
   int i;
 
@@ -180,7 +180,7 @@ int main (void)
 
   /* erf/erfc: libm's own bits, both widths */
   {
-    m9_err e2 = {0};
+    m9_state e2 = {0};
     ok ("Erf is libm's erf, bitwise", Math_Erf (0.5, &e2) == erf (0.5));
     ok ("Erfc is libm's erfc", Math_Erfc (2.25, &e2) == erfc (2.25));
     ok ("ErfF32 is erff", Math_ErfF32 (0.5f, &e2) == erff (0.5f));

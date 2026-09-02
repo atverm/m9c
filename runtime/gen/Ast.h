@@ -103,11 +103,12 @@ struct Ast_Node {
   bool f1;
   bool f2;
   bool f3;
+  bool f4;
   m9_sl_Ast_Nodep kids;
   int64_t nkids;
 };
 
-Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, m9_err *err);
-void Ast_Add (m9_pool *pool, Ast_Node * *n, Ast_Node * kid, m9_err *err);
+Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, m9_state *err);
+void Ast_Add (m9_pool *pool, Ast_Node * *n, Ast_Node * kid, m9_state *err);
 
 #endif

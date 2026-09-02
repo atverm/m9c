@@ -346,7 +346,11 @@ Node resolves lazily below
 
 ### TYPE Node
 
-f3: the RO mode on a binding
+f3: the RO mode on a binding;
+f4: KEPT, which composes with any
+of the modes rather than replacing
+one -- a kept parameter is usually
+also RO
 
 ### NewNode (VAR pool: POOL ; kind, line, col: I64) : PTR Node IN pool
 
@@ -364,6 +368,6 @@ line, col -- where the construct STARTS.  There is no end
              before writing anything that wants to know how
              far a declaration reached.
 
-### Add (VAR pool: POOL ; VAR n: PTR Node ; kid: Kid)
+### Add (VAR pool: POOL ; VAR n: PTR Node ; KEPT kid: Kid)
 
 NONE is a legal child: absence with a position

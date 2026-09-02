@@ -42,39 +42,57 @@ extern float erfcf (float);
 extern float fabsf (float);
 extern float hypotf (float, float);
 
-static void Math_Arg (double x, m9_err *err);
-static double Math_Ans (double v, m9_err *err);
-static double Math_AnsFinite (double v, m9_err *err);
-static void Math_ArgF32 (float x, m9_err *err);
-static float Math_AnsF32 (float v, m9_err *err);
-static float Math_AnsFiniteF32 (float v, m9_err *err);
+static void Math_Arg (double x, m9_state *err);
+static double Math_Ans (double v, m9_state *err);
+static double Math_AnsFinite (double v, m9_state *err);
+static void Math_ArgF32 (float x, m9_state *err);
+static float Math_AnsF32 (float v, m9_state *err);
+static float Math_AnsFiniteF32 (float v, m9_state *err);
 
 
-double Math_Abs (double x, m9_err *err)
+double Math_Abs (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (double)(fabs (((double)(x))));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Sqrt (double x, m9_err *err)
+double Math_Sqrt (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(sqrt (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Log (double x, m9_err *err)
+double Math_Log (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
@@ -82,15 +100,22 @@ double Math_Log (double x, m9_err *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = Math_Ans ((double)(log (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Log10 (double x, m9_err *err)
+double Math_Log10 (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
@@ -98,15 +123,22 @@ double Math_Log10 (double x, m9_err *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = Math_Ans ((double)(log10 (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Log2 (double x, m9_err *err)
+double Math_Log2 (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
@@ -114,246 +146,387 @@ double Math_Log2 (double x, m9_err *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = Math_Ans ((double)(log2 (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Exp (double x, m9_err *err)
+double Math_Exp (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsFinite ((double)(exp (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Pow (double x, double y, m9_err *err)
+double Math_Pow (double x, double y, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
   Math_Arg (y, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsFinite ((double)(pow (((double)(x)), ((double)(y)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Sin (double x, m9_err *err)
+double Math_Sin (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(sin (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Cos (double x, m9_err *err)
+double Math_Cos (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(cos (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Tan (double x, m9_err *err)
+double Math_Tan (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(tan (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Asin (double x, m9_err *err)
+double Math_Asin (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(asin (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Acos (double x, m9_err *err)
+double Math_Acos (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(acos (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Atan (double x, m9_err *err)
+double Math_Atan (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(atan (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Atan2 (double y, double x, m9_err *err)
+double Math_Atan2 (double y, double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (y, err);
   if (err->exc) goto L_ret;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(atan2 (((double)(y)), ((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Floor (double x, m9_err *err)
+double Math_Floor (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(floor (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Ceil (double x, m9_err *err)
+double Math_Ceil (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(ceil (((double)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Fmod (double x, double y, m9_err *err)
+double Math_Fmod (double x, double y, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
   Math_Arg (y, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_Ans ((double)(fmod (((double)(x)), ((double)(y)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Hypot (double x, double y, m9_err *err)
+double Math_Hypot (double x, double y, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
   Math_Arg (y, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsFinite ((double)(hypot (((double)(x)), ((double)(y)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Erf (double x, m9_err *err)
+double Math_Erf (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (double)(erf (((double)(x))));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Math_Erfc (double x, m9_err *err)
+double Math_Erfc (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Math_Arg (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (double)(erfc (((double)(x))));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-bool Math_IsNaN (double x, m9_err *err)
+bool Math_IsNaN (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
+  err->res = m9res;
   m9ret = (x != x);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-bool Math_IsFinite (double x, m9_err *err)
+bool Math_IsFinite (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   if ((x != x)) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = ((x <= Math_Huge) && (x >= (- Math_Huge)));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_AbsF32 (float x, m9_err *err)
+float Math_AbsF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (float)(fabsf (((float)(x))));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_SqrtF32 (float x, m9_err *err)
+float Math_SqrtF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(sqrtf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_LogF32 (float x, m9_err *err)
+float Math_LogF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
@@ -361,15 +534,22 @@ float Math_LogF32 (float x, m9_err *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(logf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_Log10F32 (float x, m9_err *err)
+float Math_Log10F32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
@@ -377,15 +557,22 @@ float Math_Log10F32 (float x, m9_err *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(log10f (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_Log2F32 (float x, m9_err *err)
+float Math_Log2F32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
@@ -393,246 +580,386 @@ float Math_Log2F32 (float x, m9_err *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(log2f (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_ExpF32 (float x, m9_err *err)
+float Math_ExpF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsFiniteF32 ((float)(expf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_PowF32 (float x, float y, m9_err *err)
+float Math_PowF32 (float x, float y, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
   Math_ArgF32 (y, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsFiniteF32 ((float)(powf (((float)(x)), ((float)(y)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_SinF32 (float x, m9_err *err)
+float Math_SinF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(sinf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_CosF32 (float x, m9_err *err)
+float Math_CosF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(cosf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_TanF32 (float x, m9_err *err)
+float Math_TanF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(tanf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_AsinF32 (float x, m9_err *err)
+float Math_AsinF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(asinf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_AcosF32 (float x, m9_err *err)
+float Math_AcosF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(acosf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_AtanF32 (float x, m9_err *err)
+float Math_AtanF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(atanf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_Atan2F32 (float y, float x, m9_err *err)
+float Math_Atan2F32 (float y, float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (y, err);
   if (err->exc) goto L_ret;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(atan2f (((float)(y)), ((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_FloorF32 (float x, m9_err *err)
+float Math_FloorF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(floorf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_CeilF32 (float x, m9_err *err)
+float Math_CeilF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(ceilf (((float)(x)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_FmodF32 (float x, float y, m9_err *err)
+float Math_FmodF32 (float x, float y, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
   Math_ArgF32 (y, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsF32 ((float)(fmodf (((float)(x)), ((float)(y)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_HypotF32 (float x, float y, m9_err *err)
+float Math_HypotF32 (float x, float y, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
   Math_ArgF32 (y, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Math_AnsFiniteF32 ((float)(hypotf (((float)(x)), ((float)(y)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_ErfF32 (float x, m9_err *err)
+float Math_ErfF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (float)(erff (((float)(x))));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-float Math_ErfcF32 (float x, m9_err *err)
+float Math_ErfcF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (float)(erfcf (((float)(x))));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-bool Math_IsNaNF32 (float x, m9_err *err)
+bool Math_IsNaNF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
+  err->res = m9res;
   m9ret = (x != x);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-bool Math_IsFiniteF32 (float x, m9_err *err)
+bool Math_IsFiniteF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   if ((x != x)) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = ((x <= ((float) Math_HugeF32)) && (x >= (- ((float) Math_HugeF32))));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Math_Arg (double x, m9_err *err)
+static void Math_Arg (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   if ((x != x)) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static double Math_Ans (double v, m9_err *err)
+static double Math_Ans (double v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   if ((v != v)) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static double Math_AnsFinite (double v, m9_err *err)
+static double Math_AnsFinite (double v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   if ((v != v)) {
     m9_raise (err, &m9_exc_ValueRange);
@@ -642,37 +969,57 @@ static double Math_AnsFinite (double v, m9_err *err)
     m9_raise (err, &m9_exc_Overflow);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Math_ArgF32 (float x, m9_err *err)
+static void Math_ArgF32 (float x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   if ((x != x)) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static float Math_AnsF32 (float v, m9_err *err)
+static float Math_AnsF32 (float v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   if ((v != v)) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static float Math_AnsFiniteF32 (float v, m9_err *err)
+static float Math_AnsFiniteF32 (float v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   float m9ret = 0;
   if ((v != v)) {
     m9_raise (err, &m9_exc_ValueRange);
@@ -682,8 +1029,11 @@ static float Math_AnsFiniteF32 (float v, m9_err *err)
     m9_raise (err, &m9_exc_Overflow);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }

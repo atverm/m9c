@@ -34,7 +34,7 @@ type
     tkFALSE, tkFINALLY, tkFOR, tkFROM, tkGRID, tkIF, tkIMPLEMENTATION, tkIMPORT,
     tkIN, tkIS, tkLOOP, tkMOD, tkMODULE, tkMONITOR, tkNEW, tkNONE,
     tkNOT, tkOF, tkOPT, tkOR, tkOWN, tkPOOL, tkPROCEDURE, tkPTR,
-    tkRAISE, tkRAISES, tkRECORD, tkRETURN, tkRO, tkSHARED, tkSIGNAL,
+    tkKEPT, tkRAISE, tkRAISES, tkRECORD, tkRETURN, tkRO, tkSHARED, tkSIGNAL,
     tkSLICE,
     tkSOME, tkSTATEFUL, tkTHEN, tkTHREAD, tkTO, tkTRANSFER, tkTRUE,
     tkTYPE, tkUNSAFE, tkVAR, tkWAIT, tkWHILE,
@@ -108,7 +108,7 @@ type
 
 const
   { alphabetical: binary-searchable }
-  Keywords : array [0..59] of TKw = (
+  Keywords : array [0..60] of TKw = (
     (s:'AND';k:tkAND), (s:'ARRAY';k:tkARRAY), (s:'BEGIN';k:tkBEGIN),
     (s:'BY';k:tkBY), (s:'CASE';k:tkCASE), (s:'CONST';k:tkCONST),
     (s:'DEFINITION';k:tkDEFINITION), (s:'DISPOSE';k:tkDISPOSE),
@@ -120,7 +120,7 @@ const
     (s:'GRID';k:tkGRID),
     (s:'IF';k:tkIF), (s:'IMPLEMENTATION';k:tkIMPLEMENTATION),
     (s:'IMPORT';k:tkIMPORT), (s:'IN';k:tkIN), (s:'IS';k:tkIS),
-    (s:'LOOP';k:tkLOOP), (s:'MOD';k:tkMOD), (s:'MODULE';k:tkMODULE),
+    (s:'KEPT';k:tkKEPT), (s:'LOOP';k:tkLOOP), (s:'MOD';k:tkMOD), (s:'MODULE';k:tkMODULE),
     (s:'MONITOR';k:tkMONITOR), (s:'NEW';k:tkNEW), (s:'NONE';k:tkNONE),
     (s:'NOT';k:tkNOT), (s:'OF';k:tkOF), (s:'OPT';k:tkOPT),
     (s:'OR';k:tkOR), (s:'OWN';k:tkOWN), (s:'POOL';k:tkPOOL),

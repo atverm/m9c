@@ -9,30 +9,41 @@ static const uint32_t m9s3[3] = { 110u, 97u, 110u };
 static const uint32_t m9s4[3] = { 105u, 110u, 102u };
 static const uint32_t m9s5[4] = { 45u, 105u, 110u, 102u };
 
-static double Fmt_Pow10 (int64_t n, m9_err *err);
-static int64_t Fmt_Pow10I (int64_t n, m9_err *err);
-static m9_sl_CHAR Fmt_PadLeft (m9_pool *pool, m9_sl_CHAR body, int64_t width, m9_err *err);
-static int64_t Fmt_Norm (double *a, m9_err *err);
-static int64_t Fmt_HexVal (uint32_t c, m9_err *err);
+static double Fmt_Pow10 (int64_t n, m9_state *err);
+static int64_t Fmt_Pow10I (int64_t n, m9_state *err);
+static m9_sl_CHAR Fmt_PadLeft (m9_pool *pool, m9_sl_CHAR body, int64_t width, m9_state *err);
+static int64_t Fmt_Norm (double *a, m9_state *err);
+static int64_t Fmt_HexVal (uint32_t c, m9_state *err);
 
 
-m9_sl_CHAR Fmt_I64Str (m9_pool *pool, int64_t v, m9_err *err)
+m9_sl_CHAR Fmt_I64Str (m9_pool *pool, int64_t v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
   DynStr_AppendI64 (pool, &(d), v, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Fmt_I64Pad (m9_pool *pool, int64_t v, int64_t width, bool zero, m9_err *err)
+m9_sl_CHAR Fmt_I64Pad (m9_pool *pool, int64_t v, int64_t width, bool zero, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR body = {0}; (void) body;
   DynStr_DString * d = NULL; (void) d;
@@ -43,6 +54,7 @@ m9_sl_CHAR Fmt_I64Pad (m9_pool *pool, int64_t v, int64_t width, bool zero, m9_er
   if (err->exc) goto L_ret;
   n = (body).len;
   if ((n >= width)) {
+    err->res = m9res;
     m9ret = body;
     goto L_ret;
   }
@@ -83,15 +95,22 @@ m9_sl_CHAR Fmt_I64Pad (m9_pool *pool, int64_t v, int64_t width, bool zero, m9_er
     DynStr_Append (pool, &(d), body, err);
     if (err->exc) goto L_ret;
   }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Fmt_Fixed (m9_pool *pool, double v, int64_t decimals, m9_err *err)
+m9_sl_CHAR Fmt_Fixed (m9_pool *pool, double v, int64_t decimals, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   double scaled = 0; (void) scaled;
@@ -102,14 +121,17 @@ m9_sl_CHAR Fmt_Fixed (m9_pool *pool, double v, int64_t decimals, m9_err *err)
   int64_t i = 0; (void) i;
   bool neg = false; (void) neg;
   if ((v != v)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s0, 3 });
     goto L_ret;
   }
   if ((v > Fmt_MaxF64)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1, 3 });
     goto L_ret;
   }
   if ((v < (- Fmt_MaxF64))) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s2, 4 });
     goto L_ret;
   }
@@ -156,25 +178,39 @@ m9_sl_CHAR Fmt_Fixed (m9_pool *pool, double v, int64_t decimals, m9_err *err)
     DynStr_Append (pool, &(d), Fmt_I64Pad (pool, frac, decimals, true, err), err);
     if (err->exc) goto L_ret;
   }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Fmt_FixedPad (m9_pool *pool, double v, int64_t width, int64_t decimals, m9_err *err)
+m9_sl_CHAR Fmt_FixedPad (m9_pool *pool, double v, int64_t width, int64_t decimals, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  err->res = m9res;
   m9ret = Fmt_PadLeft (pool, Fmt_Fixed (pool, v, decimals, err), width, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Fmt_Sci (m9_pool *pool, double v, int64_t decimals, m9_err *err)
+m9_sl_CHAR Fmt_Sci (m9_pool *pool, double v, int64_t decimals, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   double av = 0; (void) av;
@@ -185,14 +221,17 @@ m9_sl_CHAR Fmt_Sci (m9_pool *pool, double v, int64_t decimals, m9_err *err)
   int64_t frac = 0; (void) frac;
   bool neg = false; (void) neg;
   if ((v != v)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s3, 3 });
     goto L_ret;
   }
   if ((v > Fmt_MaxF64)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s4, 3 });
     goto L_ret;
   }
   if ((v < (- Fmt_MaxF64))) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s5, 4 });
     goto L_ret;
   }
@@ -257,25 +296,39 @@ m9_sl_CHAR Fmt_Sci (m9_pool *pool, double v, int64_t decimals, m9_err *err)
   if (err->exc) goto L_ret;
   DynStr_AppendI64 (pool, &(d), expo, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Fmt_SciPad (m9_pool *pool, double v, int64_t width, int64_t decimals, m9_err *err)
+m9_sl_CHAR Fmt_SciPad (m9_pool *pool, double v, int64_t width, int64_t decimals, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  err->res = m9res;
   m9ret = Fmt_PadLeft (pool, Fmt_Sci (pool, v, decimals, err), width, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Fmt_Bits (m9_pool *pool, double v, m9_err *err)
+m9_sl_CHAR Fmt_Bits (m9_pool *pool, double v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   m9_sl_BYTE b = {0}; (void) b;
@@ -299,16 +352,23 @@ m9_sl_CHAR Fmt_Bits (m9_pool *pool, double v, m9_err *err)
     DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Fmt_HexDigits.p, m9_mod_i64 (x, INT64_C(16), err), Fmt_HexDigits.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-double Fmt_ParseBits (m9_sl_CHAR s, m9_err *err)
+double Fmt_ParseBits (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
@@ -326,16 +386,23 @@ double Fmt_ParseBits (m9_sl_CHAR s, m9_err *err)
     (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (m9_mul_i64 (Fmt_HexVal ((*(uint32_t *) m9_at (s.p, m9_mul_i64 (INT64_C(2), i, err), s.len, sizeof (uint32_t), err)), err), INT64_C(16), err), Fmt_HexVal ((*(uint32_t *) m9_at (s.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), i, err), INT64_C(1), err), s.len, sizeof (uint32_t), err)), err), err), err);
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = m9_f64_from_le (b, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-double Fmt_ParseF64 (m9_sl_CHAR s, m9_err *err)
+double Fmt_ParseF64 (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
@@ -463,17 +530,25 @@ double Fmt_ParseF64 (m9_sl_CHAR s, m9_err *err)
     mant = (mant * scale);
   }
   if (neg) {
+    err->res = m9res;
     m9ret = (- mant);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = mant;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static double Fmt_Pow10 (int64_t n, m9_err *err)
+static double Fmt_Pow10 (int64_t n, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   int64_t i = 0; (void) i;
   double p = 0; (void) p;
@@ -484,14 +559,21 @@ static double Fmt_Pow10 (int64_t n, m9_err *err)
   for (; i <= m9t1to; i += 1) {
     p = (p * 10.0);
   } }
+  err->res = m9res;
   m9ret = p;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Fmt_Pow10I (int64_t n, m9_err *err)
+static int64_t Fmt_Pow10I (int64_t n, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t p = 0; (void) p;
@@ -503,18 +585,26 @@ static int64_t Fmt_Pow10I (int64_t n, m9_err *err)
     p = m9_mul_i64 (p, INT64_C(10), err);
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = p;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Fmt_PadLeft (m9_pool *pool, m9_sl_CHAR body, int64_t width, m9_err *err)
+static m9_sl_CHAR Fmt_PadLeft (m9_pool *pool, m9_sl_CHAR body, int64_t width, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
   if (((body).len >= width)) {
+    err->res = m9res;
     m9ret = body;
     goto L_ret;
   }
@@ -530,15 +620,22 @@ static m9_sl_CHAR Fmt_PadLeft (m9_pool *pool, m9_sl_CHAR body, int64_t width, m9
   } }
   DynStr_Append (pool, &(d), body, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Fmt_Norm (double *a, m9_err *err)
+static int64_t Fmt_Norm (double *a, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t e = 0; (void) e;
   int64_t step = 0; (void) step;
@@ -572,26 +669,36 @@ static int64_t Fmt_Norm (double *a, m9_err *err)
     step = m9_div_i64 (step, INT64_C(2), err);
     if (err->exc) goto L_ret;
   }
+  err->res = m9res;
   m9ret = e;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Fmt_HexVal (uint32_t c, m9_err *err)
+static int64_t Fmt_HexVal (uint32_t c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   if (((c >= 48u) && (c <= 57u))) {
+    err->res = m9res;
     m9ret = m9_sub_i64 ((int64_t)(c), INT64_C(48), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if (((c >= 65u) && (c <= 70u))) {
+    err->res = m9res;
     m9ret = m9_sub_i64 ((int64_t)(c), INT64_C(55), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if (((c >= 97u) && (c <= 102u))) {
+    err->res = m9res;
     m9ret = m9_sub_i64 ((int64_t)(c), INT64_C(87), err);
     if (err->exc) goto L_ret;
     goto L_ret;
@@ -599,5 +706,7 @@ static int64_t Fmt_HexVal (uint32_t c, m9_err *err)
   m9_raise (err, &m9_exc_ValueRange);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }

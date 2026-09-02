@@ -15,20 +15,20 @@ static const uint32_t Text_UpperAlpha_d[26] = { 65u, 66u, 67u, 68u, 69u, 70u, 71
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
 #endif
 
-bool Text_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err);
-int64_t Text_Find (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_err *err);
-int64_t Text_FindChar (m9_sl_CHAR s, uint32_t c, m9_err *err);
-int64_t Text_LastChar (m9_sl_CHAR s, uint32_t c, m9_err *err);
-bool Text_Contains (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_err *err);
-bool Text_StartsWith (m9_sl_CHAR s, m9_sl_CHAR prefix, m9_err *err);
-bool Text_EndsWith (m9_sl_CHAR s, m9_sl_CHAR suffix, m9_err *err);
-m9_sl_CHAR Text_Trim (m9_sl_CHAR s, m9_err *err);
-m9_sl_CHAR Text_TrimLeft (m9_sl_CHAR s, m9_err *err);
-m9_sl_CHAR Text_TrimRight (m9_sl_CHAR s, m9_err *err);
-int64_t Text_CountChar (m9_sl_CHAR s, uint32_t c, m9_err *err);
-m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_err *err);
-m9_sl_CHAR Text_Join (m9_pool *pool, m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_err *err);
-m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_err *err);
-m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_err *err);
+bool Text_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
+int64_t Text_Find (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_state *err);
+int64_t Text_FindChar (m9_sl_CHAR s, uint32_t c, m9_state *err);
+int64_t Text_LastChar (m9_sl_CHAR s, uint32_t c, m9_state *err);
+bool Text_Contains (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_state *err);
+bool Text_StartsWith (m9_sl_CHAR s, m9_sl_CHAR prefix, m9_state *err);
+bool Text_EndsWith (m9_sl_CHAR s, m9_sl_CHAR suffix, m9_state *err);
+m9_sl_CHAR Text_Trim (m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Text_TrimLeft (m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Text_TrimRight (m9_sl_CHAR s, m9_state *err);
+int64_t Text_CountChar (m9_sl_CHAR s, uint32_t c, m9_state *err);
+m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state *err);
+m9_sl_CHAR Text_Join (m9_pool *pool, m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_state *err);
+m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
 
 #endif

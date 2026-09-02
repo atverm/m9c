@@ -44,22 +44,22 @@ struct Grib_Index {
   m9_sl_I64 len;
 };
 
-Grib_File * Grib_Open (m9_pool *pool, m9_sl_CHAR path, m9_err *err);
-void Grib_Close (Grib_File * *f, m9_err *err);
-int64_t Grib_Count (Grib_File * f, m9_err *err);
-Grib_Message * Grib_Next (m9_pool *pool, Grib_File * f, bool *ok, m9_err *err);
-Grib_Index Grib_BuildIndex (m9_pool *pool, m9_sl_BYTE data, m9_err *err);
-Grib_Message * Grib_FromBytes (m9_pool *pool, m9_sl_BYTE data, int64_t off, int64_t len, m9_err *err);
-void Grib_Release (Grib_Message * *m, m9_err *err);
-bool Grib_Has (Grib_Message * m, m9_sl_CHAR key, m9_err *err);
-int64_t Grib_GetI64 (Grib_Message * m, m9_sl_CHAR key, m9_err *err);
-double Grib_GetF64 (Grib_Message * m, m9_sl_CHAR key, m9_err *err);
-m9_sl_CHAR Grib_GetStr (m9_pool *pool, Grib_Message * m, m9_sl_CHAR key, m9_err *err);
-int64_t Grib_Size (Grib_Message * m, m9_sl_CHAR key, m9_err *err);
-void Grib_Values (Grib_Message * m, m9_sl_F64 out, m9_err *err);
-void Grib_Floats (Grib_Message * m, m9_sl_CHAR key, m9_sl_F32 out, m9_err *err);
-void Grib_Doubles (Grib_Message * m, m9_sl_CHAR key, m9_sl_F64 out, m9_err *err);
-m9_gd2_double Grib_ReadGrid2 (m9_pool *pool, Grib_Message * m, m9_err *err);
-void Grib_MultiSupport (bool on, m9_err *err);
+Grib_File * Grib_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
+void Grib_Close (Grib_File * *f, m9_state *err);
+int64_t Grib_Count (Grib_File * f, m9_state *err);
+Grib_Message * Grib_Next (m9_pool *pool, Grib_File * f, bool *ok, m9_state *err);
+Grib_Index Grib_BuildIndex (m9_pool *pool, m9_sl_BYTE data, m9_state *err);
+Grib_Message * Grib_FromBytes (m9_pool *pool, m9_sl_BYTE data, int64_t off, int64_t len, m9_state *err);
+void Grib_Release (Grib_Message * *m, m9_state *err);
+bool Grib_Has (Grib_Message * m, m9_sl_CHAR key, m9_state *err);
+int64_t Grib_GetI64 (Grib_Message * m, m9_sl_CHAR key, m9_state *err);
+double Grib_GetF64 (Grib_Message * m, m9_sl_CHAR key, m9_state *err);
+m9_sl_CHAR Grib_GetStr (m9_pool *pool, Grib_Message * m, m9_sl_CHAR key, m9_state *err);
+int64_t Grib_Size (Grib_Message * m, m9_sl_CHAR key, m9_state *err);
+void Grib_Values (Grib_Message * m, m9_sl_F64 out, m9_state *err);
+void Grib_Floats (Grib_Message * m, m9_sl_CHAR key, m9_sl_F32 out, m9_state *err);
+void Grib_Doubles (Grib_Message * m, m9_sl_CHAR key, m9_sl_F64 out, m9_state *err);
+m9_gd2_double Grib_ReadGrid2 (m9_pool *pool, Grib_Message * m, m9_state *err);
+void Grib_MultiSupport (bool on, m9_state *err);
 
 #endif

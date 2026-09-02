@@ -29,7 +29,7 @@ back.
 
 _(undocumented)_
 
-### Init (VAR lx: Lexer ; RO src: STR)
+### Init (VAR lx: Lexer ; RO KEPT src: STR)
 
 the lexer keeps the source slice; keep it alive while lexing --
 the Json.Parse contract again

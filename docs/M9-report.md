@@ -72,9 +72,17 @@ to reduce, so the list is meant to shrink.
 4. **Programs are read more often than written, and in the current
    era, written by machines and audited by people.** Every construct
    optimizes for the auditor. Verbosity is acceptable; ambiguity is not.
-5. **Memory cost is visible.** No hidden allocation, no mandatory
-   garbage collector, no runtime larger than the program deserves.
-   A hello-world binary is measured in kilobytes.
+5. **Memory cost is visible.** No mandatory garbage collector, no
+   runtime larger than the program deserves; a hello-world binary is
+   measured in kilobytes.  One allocation is implicit and it is named
+   here rather than hidden: every procedure has a frame arena that
+   `+` allocates from (par 2.3), created lazily so a procedure that
+   never concatenates pays for a zeroed word, and freed on every exit.
+   *This principle read "no hidden allocation" until 2026-09-01.  The
+   frame arena is a real departure, taken because the alternative was
+   worse: `+` allocated into a pool that is never freed, which is a
+   leak in every program that does not exit promptly, and the corpus
+   answered by not using the operator at all.*
 6. **One language.** No dialects, no modes, no profile flags.
    *(Observed failure: PIM vs ISO split — `FORWARD`, `CAST`, and
    exceptions each exist in one dialect and not the other.)*
@@ -186,7 +194,7 @@ repeat it 62 times. That is the same evidence rule the rest of this
 report runs on, applied to ergonomics instead of safety, and it is
 stated plainly rather than dressed up as a correctness argument.
 
-### 2.3 `+` concatenates strings, into `HEAP`
+### 2.3 `+` concatenates strings, into the procedure's frame
 
 ```
 s := 'hello, ' + who + '!'
@@ -197,26 +205,70 @@ strings — a one-character *literal* is one, a `CHAR` variable is not,
 because `s + c` would have to decide silently whether `c` is a
 character or a number. That case is `DynStr.AppendChar`.
 
-Concatenation allocates, and in M9 an allocation names its pool, so
-this operator needs an answer to "who frees it?". The answer is
-**`HEAP`**: a predeclared identifier of type `POOL` — the `STR` and
-`ALL` precedent again, no keyword and no production — which is never
-freed. It can also be written by hand and passed anywhere a `VAR
-pool: POOL` parameter is expected.
+**The answer is the procedure's own frame.** Concatenation allocates,
+and in M9 an allocation names its pool, so this operator needs an
+answer to "who frees it?".  Every procedure has an arena, created
+lazily and freed on every exit, and a `+` lands in it.  A result that
+outlives the frame -- the expression a `RETURN` answers with -- is
+built in the *caller's* frame instead, which is what makes a function
+returning a string writable at all.
 
-That is a leak, deliberately, with a name on it. `docs/pools.md`
-refused a default pool for exactly this reason and has been revised
-with the evidence that changed the decision: five programs in this
-repository had each already declared a module-scope pool and never
-freed it, because a compiler and a converter are programs whose
-storage dies with the process. Naming it answers the technical
-objection too — `PTR T IN HEAP` still says which pool, so the
-escape check of §4.3 keeps working — and it leaves one word for a
-program that must not grow to grep for.
+Nothing declares that arena and nothing can name it.  Only `+`
+allocates from it and where the answer goes is the compiler's
+decision, so it cannot be handed to `NEW` or `DynStr.New`; a named
+scratch is still `VAR scratch : POOL`.
 
-`+` is for composition. `DynStr` is for accumulation: `s := s + x`
-in a loop copies the whole string every iteration and keeps every
-intermediate, which is why there is no compound-assignment form.
+**`HEAP` remains**: a predeclared identifier of type `POOL` -- the
+`STR` and `ALL` precedent, no keyword and no production -- never
+freed, written by hand, and passed anywhere a `VAR pool: POOL`
+parameter is expected.  It is also where a `+` lands when there is no
+frame to land in, which is what happens when a C caller enters an M9
+procedure without one.  `docs/pools.md` refused a default pool as a
+leak by construction and was right; a frame is a default pool that is
+bounded and freed, which is the difference.
+
+*This replaces `+`-into-`HEAP`, which stood from 2026-08-23 to
+2026-09-01.  The evidence was that nobody used it: `Gen.m9` carried
+321 hand-rolled concatenation helpers against one `+`, and the zarr
+proxy banned the operator on its request path outright, because a pool
+that is never freed is wrong for a server loop.  Measured across the
+change, one program went from 13,924 KB of peak resident memory to
+1,828 KB.  `docs/frame-pools.md` has the measurements and what is
+still owed.*
+
+`+` is for composition and `DynStr` for accumulation, and the reason
+is no longer performance.  **`s := s + x` in a loop is linear.**  The
+arena extends its top allocation in place rather than copying the
+prefix: the bytes after it are fresh arena nobody can be holding, and
+every existing holder of the old string keeps its own `{p, len}` and
+sees exactly what it saw.  Blocks carry bounded slack so there is room
+to extend into.  Measured over 2,000 appends, disabling only the fast
+path: 68,648 KB and 0.04 s become 1,444 KB and 0.00 s; 200,000 appends
+run in 1.6 MB.
+
+*That sentence said the opposite until 2026-09-01, and was true when
+written -- the copy really did happen every iteration.  Rust's
+`String` and C++'s `+=` are linear because the left operand carries
+capacity; M9's `STR` is a non-owning slice with none, and the arena
+supplies what the type does not.*
+
+The fast path is not a guarantee.  It holds while the string is the
+arena's most recent allocation, so one unrelated allocation between
+iterations returns the loop to copying, with nothing to say so --
+CPython's situation exactly, and the reason `DynStr` remains the
+accumulation API rather than a legacy one.  There is still no
+compound-assignment form.
+
+**What is not checked, and is meant to be read as a warning.**  A `+`
+result retained beyond the frame that built it is a dangling slice,
+and the compiler does not refuse it.  The one instance in this
+repository was `Parse.ErrAt`, storing a caller's message into a
+longer-lived record; it corrupted parser diagnostics on the day frame
+pools landed, and it had been sitting in par 4.1's retention ledger
+for months before that.  Refusing the class needs a `+` result to
+carry its pool in its type, the way `PTR T IN pool` does.  Until then
+the rule is a reviewer's: a string that must outlive its frame is
+copied -- with `DynStr`, or into a pool that has a name.
 
 ### 2.4 Read-only borrow is a parameter mode
 
@@ -458,16 +510,54 @@ borrows.**
 ### 4.1 Parameter modes are the borrow checker
 
 - A value parameter of pointer/slice type is a **shared, read-only
-  borrow**: the callee may read, may not write, may not retain.
+  borrow**: the callee may read, may not write, may not retain —
+  unless declared `KEPT`.
 - A `VAR` parameter is an **exclusive, mutable borrow**: the callee
   may write; the caller's alias is suspended for the call; the callee
-  may not retain.
-- Retention — storing a reference beyond the call — is only possible
-  for **owned** values (§4.2), and moves ownership.
+  may not retain — unless declared `KEPT`.
+- A parameter marked `KEPT` (after its mode: `RO KEPT msg: STR`) is
+  **declared retained**: the callee stores it somewhere that outlives
+  the call — module state, the caller's storage through another
+  parameter, or the answer. The checker computes, per procedure,
+  where every store's destination escapes to, and refuses an
+  undeclared retention by naming what it reaches: `undeclared
+  retention: borrowed msg reaches module state -- declare KEPT msg`.
+  The declaration sits in the definition module, where a caller reads
+  it: `AddRoute` keeping its caller's route slices used to be a prose
+  comment beside the signature, and is now five `KEPT` marks inside
+  it.
+- Retention by **ownership transfer** stays §4.2's: an owned value
+  moves.
 
-These three sentences are the discipline. There are no lifetime
+`KEPT` composes upward the way `RAISES` does, and the checker
+insists at each step of the chain: a concatenation passed to a
+`KEPT` parameter is refused outright (`+` builds in the frame's
+arena, §2.3, and dies at RETURN — the exact dangling-diagnostic bug
+par 2.3 records); a borrow passed to one is itself a retention the
+caller must declare, so `Parse.Init` says `KEPT src` because
+`Lex.Init` does, and `Parquet` says it because `Frame` does. The
+declaration is also what makes the escape analysis precise across
+calls: whether a callee keeps its argument is read from the callee's
+signature, not assumed.
+
+The analysis behind the check also tracks provenance: a borrow
+copied into a local, bound by `IS SOME` or a `CASE` pattern, or
+viewed through `SLICE`, *carries* into the copy, and storing the
+carrier is storing the borrow — refused with the chain named:
+`undeclared retention: borrowed msg (carried by t) reaches module
+state`. A `KEPT` parameter the analysis never sees retained is
+reported the other way, as the `kept-unseen` ledger class: an
+overstated contract is a signal, and a false `KEPT` also errors
+every caller through the composition, so signatures are pressed
+honest from both sides.
+
+These sentences are the discipline. There are no lifetime
 annotations, no named regions in signatures, no borrow syntax. The
-price of that smallness is stated honestly in §9.
+price of that smallness is stated honestly in §9. Still owed, and
+stated: a borrow laundered through a call *result* (`t := F (msg)`
+where `F` answers a view of its argument) is not yet seen — result
+provenance would need a declaration of its own, and none has earned
+its place yet.
 
 ### 4.2 Ownership
 
@@ -817,10 +907,10 @@ features:
 ## 10. Grammar (complete, in Wirth's own EBNF)
 
 Seventy productions; the ceiling is one hundred, and past it a
-feature dies.  Sixty keywords: the fifty-eight the language was
-designed with, plus RO and GRID, each appended to the table rather
-than inserted into it, because a token code that moves is a code no
-one can rely on. Terminals are quoted; ident, number (IntLit, RealLit,
+feature dies.  Sixty-one keywords: the fifty-eight the language was
+designed with, plus RO, GRID and KEPT, each appended to the table
+rather than inserted into it, because a token code that moves is a
+code no one can rely on. Terminals are quoted; ident, number (IntLit, RealLit,
 CharLit), and string are lexis (§2). Comments are lexis too, and
 appear in no production: the lexer records them beside the token
 stream and the parser never sees one.
@@ -849,7 +939,7 @@ ProcDecl    = ProcHead ";" | ProcHead "=" ProcBody ";" .
 ProcHead    = "PROCEDURE" ident [ "=" string ] "(" [ Params ] ")"
               [ ":" Type ] [ "RAISES" QualidentList ] [ Attrib ] .
 Params      = Param { ";" Param } .
-Param       = [ "VAR" | "OWN" ] IdentList ":" Type .
+Param       = [ "VAR" | "OWN" | "RO" ] [ "KEPT" ] IdentList ":" Type .
 Attrib      = "[" ident "]" .
 ProcBody    = { Declaration } Block ident .
 
@@ -1001,8 +1091,11 @@ so `SHARED (x)` is `rc := 1` in place, handle copies are `rc++`, and
 carry no header — the pool owns them and frees as a unit.
 
 **Errors: slot, not longjmp.** Every M9 procedure gets a final
-parameter `m9_err *err`; uniformity beats micro-optimization until
-measured. RAISE fills the slot — a pointer to the exception's static
+parameter `m9_state *err`; uniformity beats micro-optimization until
+measured.  It was `m9_err` until 2026-09-01: the struct now also
+carries `res`, the caller's arena that a result outliving its own
+frame is allocated from (`docs/frame-pools.md`), so two things travel
+out of band and the name says state rather than error. RAISE fills the slot — a pointer to the exception's static
 descriptor (identity is address, cross-module via extern) and its
 payload — and control leaves through the FINALLY chain. After every
 call that can raise: `if (err->exc) goto ...` — the branch is the

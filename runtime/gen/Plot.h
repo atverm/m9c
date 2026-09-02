@@ -53,16 +53,16 @@ typedef struct { bool v[4]; } m9_arr_4_bool;
 typedef struct { uint8_t v[32]; } m9_arr_32_uint8_t;
 #endif
 
-void Plot_ClearFigure (m9_err *err);
-void Plot_AddLine (m9_sl_F64 xs, m9_sl_F64 ys, int64_t colorIdx, m9_sl_CHAR label, m9_err *err);
-void Plot_SetDots (m9_sl_F64 xs, m9_sl_F64 ys, m9_err *err);
-void Plot_AddBars (m9_sl_F64 at, m9_sl_F64 v, int64_t colorIdx, m9_sl_CHAR label, m9_err *err);
-void Plot_SetBarStyle (int64_t dir, int64_t mode, int64_t place, bool filled, double width, m9_err *err);
-void Plot_SetBarErrors (int64_t series, m9_sl_F64 err_, m9_err *err);
-void Plot_SetBarColor (int64_t series, m9_sl_CHAR hex, m9_err *err);
-void Plot_SetLogX (bool on, m9_err *err);
-void Plot_SetLogY (bool on, m9_err *err);
-m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_sl_CHAR ylabel, m9_err *err);
-m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plot_Cmap cmap, bool symmetric, m9_err *err);
+void Plot_ClearFigure (m9_state *err);
+void Plot_AddLine (m9_sl_F64 xs, m9_sl_F64 ys, int64_t colorIdx, m9_sl_CHAR label, m9_state *err);
+void Plot_SetDots (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err);
+void Plot_AddBars (m9_sl_F64 at, m9_sl_F64 v, int64_t colorIdx, m9_sl_CHAR label, m9_state *err);
+void Plot_SetBarStyle (int64_t dir, int64_t mode, int64_t place, bool filled, double width, m9_state *err);
+void Plot_SetBarErrors (int64_t series, m9_sl_F64 err_, m9_state *err);
+void Plot_SetBarColor (int64_t series, m9_sl_CHAR hex, m9_state *err);
+void Plot_SetLogX (bool on, m9_state *err);
+void Plot_SetLogY (bool on, m9_state *err);
+m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_sl_CHAR ylabel, m9_state *err);
+m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plot_Cmap cmap, bool symmetric, m9_state *err);
 
 #endif

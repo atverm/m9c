@@ -10,14 +10,14 @@ static const uint32_t Fmt_HexDigits_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u,
 #define Fmt_HexDigits ((m9_sl_CHAR){ (uint32_t *) Fmt_HexDigits_d, 16 })
 #define Fmt_MaxF64 (1.7976931348623157E308)
 
-m9_sl_CHAR Fmt_I64Str (m9_pool *pool, int64_t v, m9_err *err);
-m9_sl_CHAR Fmt_I64Pad (m9_pool *pool, int64_t v, int64_t width, bool zero, m9_err *err);
-m9_sl_CHAR Fmt_Fixed (m9_pool *pool, double v, int64_t decimals, m9_err *err);
-m9_sl_CHAR Fmt_FixedPad (m9_pool *pool, double v, int64_t width, int64_t decimals, m9_err *err);
-m9_sl_CHAR Fmt_Sci (m9_pool *pool, double v, int64_t decimals, m9_err *err);
-m9_sl_CHAR Fmt_SciPad (m9_pool *pool, double v, int64_t width, int64_t decimals, m9_err *err);
-m9_sl_CHAR Fmt_Bits (m9_pool *pool, double v, m9_err *err);
-double Fmt_ParseBits (m9_sl_CHAR s, m9_err *err);
-double Fmt_ParseF64 (m9_sl_CHAR s, m9_err *err);
+m9_sl_CHAR Fmt_I64Str (m9_pool *pool, int64_t v, m9_state *err);
+m9_sl_CHAR Fmt_I64Pad (m9_pool *pool, int64_t v, int64_t width, bool zero, m9_state *err);
+m9_sl_CHAR Fmt_Fixed (m9_pool *pool, double v, int64_t decimals, m9_state *err);
+m9_sl_CHAR Fmt_FixedPad (m9_pool *pool, double v, int64_t width, int64_t decimals, m9_state *err);
+m9_sl_CHAR Fmt_Sci (m9_pool *pool, double v, int64_t decimals, m9_state *err);
+m9_sl_CHAR Fmt_SciPad (m9_pool *pool, double v, int64_t width, int64_t decimals, m9_state *err);
+m9_sl_CHAR Fmt_Bits (m9_pool *pool, double v, m9_state *err);
+double Fmt_ParseBits (m9_sl_CHAR s, m9_state *err);
+double Fmt_ParseF64 (m9_sl_CHAR s, m9_state *err);
 
 #endif

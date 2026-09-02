@@ -1,0 +1,9 @@
+(* EXPECT: undeclared retention: borrowed msg reaches module state -- declare KEPT msg (par 4.1) *)
+MODULE m ;
+VAR last : STR ;
+PROCEDURE Note (RO msg: STR) =
+BEGIN
+  last := msg
+END Note ;
+BEGIN
+END m.

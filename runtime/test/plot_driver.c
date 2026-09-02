@@ -36,7 +36,7 @@ static int save (const char *path, m9_sl_CHAR svg)
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
   uint32_t ub[128], u2[64], u3[64];
   int64_t r, c;
   double colMean[50], colMin[50], colMax[50], xs[50];

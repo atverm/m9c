@@ -1320,7 +1320,7 @@ EXCEPT
 END AddBoolsQ ;
 
 PROCEDURE AddStrsQ (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
-                    RO name: STR ; v: SLICE OF STR)
+                    RO name: STR ; KEPT v: SLICE OF STR)
   RAISES Bad =
 BEGIN
   Frame.AddStrs (pool, f, name, v)
@@ -1408,8 +1408,8 @@ BEGIN
   RETURN NewTsQ (pool, f, tsec, res, conv, descr)
 END TsRead ;
 
-PROCEDURE NewTsQ (VAR pool: POOL ; f: PTR Frame.Fr ;
-                  t: SLICE OF I64 ; res: I64 ; conv: Frame.Conv ;
+PROCEDURE NewTsQ (VAR pool: POOL ; KEPT f: PTR Frame.Fr ;
+                  KEPT t: SLICE OF I64 ; res: I64 ; conv: Frame.Conv ;
                   RO descr: STR) : PTR Frame.Ts
   RAISES Bad =
 BEGIN

@@ -41,25 +41,25 @@ typedef struct { Json_Node * *p; int64_t len; } m9_sl_Json_Nodep;
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
 #endif
 
-Json_Node * Json_Parse (m9_pool *pool, m9_sl_CHAR src, m9_err *err);
-Json_Node * Json_Field (Json_Node * obj, m9_sl_CHAR name, m9_err *err);
-Json_Node * Json_Item (Json_Node * arr, int64_t i, m9_err *err);
-int64_t Json_Count (Json_Node * arr, m9_err *err);
-int64_t Json_MemberCount (Json_Node * obj, m9_err *err);
-m9_sl_CHAR Json_NameAt (Json_Node * obj, int64_t i, m9_err *err);
-Json_Node * Json_MemberAt (Json_Node * obj, int64_t i, m9_err *err);
-int64_t Json_AsI64 (Json_Node * n, m9_err *err);
-double Json_AsF64 (Json_Node * n, m9_err *err);
-bool Json_AsBool (Json_Node * n, m9_err *err);
-m9_sl_CHAR Json_AsStr (Json_Node * n, m9_err *err);
-m9_sl_CHAR Json_Text (m9_pool *pool, Json_Node * n, m9_err *err);
-bool Json_StrIs (Json_Node * n, m9_sl_CHAR s, m9_err *err);
-bool Json_IsNull (Json_Node * n, m9_err *err);
-m9_sl_CHAR Json_CompactSorted (m9_pool *pool, Json_Node * n, m9_err *err);
-m9_sl_CHAR Json_Pretty (m9_pool *pool, Json_Node * n, m9_err *err);
-m9_sl_CHAR Json_ReprText (m9_pool *pool, double r, m9_err *err);
-m9_sl_CHAR Json_NumText (m9_pool *pool, Json_Node * n, m9_err *err);
-void Json_AppendJString (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR t, m9_err *err);
-m9_sl_CHAR Json_Compact (m9_pool *pool, Json_Node * n, m9_err *err);
+Json_Node * Json_Parse (m9_pool *pool, m9_sl_CHAR src, m9_state *err);
+Json_Node * Json_Field (Json_Node * obj, m9_sl_CHAR name, m9_state *err);
+Json_Node * Json_Item (Json_Node * arr, int64_t i, m9_state *err);
+int64_t Json_Count (Json_Node * arr, m9_state *err);
+int64_t Json_MemberCount (Json_Node * obj, m9_state *err);
+m9_sl_CHAR Json_NameAt (Json_Node * obj, int64_t i, m9_state *err);
+Json_Node * Json_MemberAt (Json_Node * obj, int64_t i, m9_state *err);
+int64_t Json_AsI64 (Json_Node * n, m9_state *err);
+double Json_AsF64 (Json_Node * n, m9_state *err);
+bool Json_AsBool (Json_Node * n, m9_state *err);
+m9_sl_CHAR Json_AsStr (Json_Node * n, m9_state *err);
+m9_sl_CHAR Json_Text (m9_pool *pool, Json_Node * n, m9_state *err);
+bool Json_StrIs (Json_Node * n, m9_sl_CHAR s, m9_state *err);
+bool Json_IsNull (Json_Node * n, m9_state *err);
+m9_sl_CHAR Json_CompactSorted (m9_pool *pool, Json_Node * n, m9_state *err);
+m9_sl_CHAR Json_Pretty (m9_pool *pool, Json_Node * n, m9_state *err);
+m9_sl_CHAR Json_ReprText (m9_pool *pool, double r, m9_state *err);
+m9_sl_CHAR Json_NumText (m9_pool *pool, Json_Node * n, m9_state *err);
+void Json_AppendJString (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR t, m9_state *err);
+m9_sl_CHAR Json_Compact (m9_pool *pool, Json_Node * n, m9_state *err);
 
 #endif

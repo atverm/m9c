@@ -59,7 +59,7 @@ static double secs (struct timespec a, struct timespec b)
 
 int main (void)
 {
-  m9_err e = { 0 };
+  m9_state e = { 0 };
   m9_pool pool = { 0 };
   const char *path = getenv ("M9CSV");
   Csv_Table *t;

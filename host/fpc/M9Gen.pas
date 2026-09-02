@@ -4,7 +4,7 @@ unit M9Gen;
   checked arithmetic and conversions, FOR/WHILE/IF/RETURN, calls.
   Anything outside the subset lands in Errors, loudly; a silent
   wrong translation is the one unforgivable output.
-  ABI: every procedure takes a trailing m9_err *err; checks emit as
+  ABI: every procedure takes a trailing m9_state *err; checks emit as
   m9rt helper calls that poison their result and set the slot; after
   any statement that can raise, `if (err->exc) goto L_ret;`.        }
 {$mode objfpc}{$H+}
@@ -23,6 +23,7 @@ type
   TGen = class
   private
     modName : string;
+    dbgSrc  : string;            { SetDebugSource; '' = no #line }
     defU, implU : TNode;
     tyNames : array of string;  { module types (def+impl) }
     tyNodes : array of TNode;
@@ -112,6 +113,9 @@ type
     procedure RegisterExtern (u: TNode; addInclude: Boolean);
     procedure LoadExtern (u: TNode);
     procedure LoadExternDeep (u: TNode);
+    procedure SetDebugSource (const f: string);
+    procedure DbgLine (st: TNode);
+    procedure PoolReg (const nm: string);
     procedure Emit (const forModule: string);
   end;
 
@@ -1572,7 +1576,7 @@ begin
           l := EX (e.kids[0], 'SLICE');
           r := EX (e.kids[1], 'SLICE');
           stRaise := True;
-          Exit ('m9_cat (&m9_heap, ' + l + ', ' + r + ', err)');
+          Exit ('m9_cat (err->res, ' + l + ', ' + r + ', err)');
         end;
         w := '';
         if (lt = 'CHAR') or (lt = 'STR1') then w := 'CHAR';
@@ -1878,6 +1882,30 @@ begin
     EmitStmt (s.kids[j], ind);
 end;
 
+procedure TGen.SetDebugSource (const f: string);
+begin
+  dbgSrc := f;
+end;
+
+{ One directive per statement, at column 0 and into the procedure
+  buffer, so the C compiler attributes what follows to the M9 line it
+  came from.  Nothing when dbgSrc is empty (the default, and what
+  every gate compares) or during TagOfExpr's dry recomputation. }
+{ register a pool to be freed at L_ret.  Two callers: a local
+  `VAR p: POOL`, and the implicit frame arena every procedure gets. }
+procedure TGen.PoolReg (const nm: string);
+begin
+  SetLength (localPools, Length (localPools) + 1);
+  localPools[High (localPools)] := nm;
+end;
+
+procedure TGen.DbgLine (st: TNode);
+begin
+  if dry > 0 then Exit;
+  if dbgSrc = '' then Exit;
+  Line (pbuf, 0, '#line ' + IntToStr (st.line) + ' "' + dbgSrc + '"');
+end;
+
 procedure TGen.EmitStmt (st: TNode; ind: Integer);
 var
   l, l2, r, tg, w, cnd, stp, bname, fldn : string;
@@ -1885,6 +1913,7 @@ var
   vtN, vd, lbl : TNode;
   opened, hadElse : Boolean;
 begin
+  DbgLine (st);
   case st.kind of
     nkAssign :
       begin
@@ -2332,7 +2361,7 @@ begin
               thrBuf.Add ('static void *m9_thr_' + modName + '_' + bname +
                 ' (void *p)');
               thrBuf.Add ('{');
-              thrBuf.Add ('  m9_err e = { 0 };');
+              thrBuf.Add ('  m9_state e = { 0 };');
               thrBuf.Add ('  ' + modName + '_' + bname + ' ((' +
                 w + ') p, &e);');
               thrBuf.Add ('  if (e.exc) m9_thread_died (e.exc->name);');
@@ -2417,7 +2446,7 @@ begin
             if (tg = 'F64') or (tg = 'F32') then
             begin
               { THE SLOTS ARE FINITE AND OVERFLOWING THEM IS SILENT.
-                m9_err carries i[4], d[2], s[2]; before this check a
+                m9_state carries i[4], d[2], s[2]; before this check a
                 seventh integer or a third real simply wrote past the
                 end of the struct, and the generated C compiled.
                 Found by declaring an exception with six F64 fields
@@ -2425,7 +2454,7 @@ begin
               if j2 >= 2 then
               begin
                 Err (st, 'RAISE payload: more than 2 real fields ' +
-                  '(m9_err has d[2])');
+                  '(m9_state has d[2])');
                 Exit;
               end;
               Line (pbuf, ind, 'err->d[' + IntToStr (j2) + '] = ' + cnd + ';');
@@ -2436,7 +2465,7 @@ begin
               if k2 >= 3 then
               begin
                 Err (st, 'RAISE payload: more than 3 slice fields ' +
-                  '(m9_err has s[3])');
+                  '(m9_state has s[3])');
                 Exit;
               end;
               w := NewTmp;
@@ -2450,7 +2479,7 @@ begin
               if i2 >= 4 then
               begin
                 Err (st, 'RAISE payload: more than 4 integer fields ' +
-                  '(m9_err has i[4])');
+                  '(m9_state has i[4])');
                 Exit;
               end;
               Line (pbuf, ind, 'err->i[' + IntToStr (i2) + '] = ' + cnd + ';');
@@ -2466,6 +2495,10 @@ begin
         if st.kids[0] <> nil then
         begin
           stRaise := False;
+          { the answer outlives this frame, so it is built in the
+            caller's arena.  Intermediates land there too -- generous,
+            and the price of not tracking tail position through EX. }
+          Line (pbuf, ind, 'err->res = m9res;');
           r := EX (st.kids[0], curRetTag);
           Line (pbuf, ind, 'm9ret = ' + r + ';');
           if stRaise then Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
@@ -2485,6 +2518,7 @@ procedure TGen.GenProc (const gp: TGProc);
 var
   d, pl, grp, body, vt, r : TNode;
   g, j, i : Integer;
+  ci2, cj2, svConsts : Integer;   { the procedure's own CONSTs }
   sig, retC, mode, cty, init : string;
   names : string;
   monPar : string;               { the monitor this proc is bound to }
@@ -2554,7 +2588,7 @@ begin
           sig := sig + cty + ' *' + CN (grp.kids[0].kids[j].a) + ', ';
       end;
     end;
-  sig := sig + 'm9_err *err)';
+  sig := sig + 'm9_state *err)';
 
   if not gp.exported then
   begin
@@ -2569,6 +2603,36 @@ begin
   pbuf.Add ('');
   pbuf.Add (sig);
   pbuf.Add ('{');
+  { THE FRAME ARENA.  Empty costs nothing -- m9_pool is one NULL
+    pointer and the first block is created lazily -- so a procedure
+    that never concatenates pays for a zeroed word.  Registered like
+    any local POOL, which frees it on EVERY exit: par 11 routes
+    return, raise and FINALLY through L_ret alike.
+
+    And the result slot: err->res is the CALLER's arena when we are
+    entered, so it is captured before our own calls overwrite it, then
+    claimed for them -- a callee's answer lands in OUR frame.  Each
+    procedure restores it at L_ret, which is why a caller sets it once
+    rather than around every call.  NULL means a caller that does not
+    play (a hand-written C driver) and HEAP is the fallback, which is
+    what `+` did before this. }
+  Line (pbuf, 1, 'm9_pool m9frame = {0};');
+  PoolReg ('m9frame');
+  Line (pbuf, 1, 'm9_pool *m9res = err->res ? err->res : &m9_heap;');
+  Line (pbuf, 1, '(void) m9res;');
+  Line (pbuf, 1, 'err->res = &m9frame;');
+  { PROCEDURE-LOCAL CONSTs, in the same map the module's own use.  The
+    map answers the first hit, so a local that shadowed a module CONST
+    would lose silently -- the checker refuses that, which is what
+    makes appending safe here.  Truncated when the procedure ends. }
+  svConsts := consts.Count;
+  if gp.body <> nil then
+    for ci2 := 0 to High (gp.body.kids) do
+      if (gp.body.kids[ci2] <> nil) and
+         (gp.body.kids[ci2].kind = nkConstSection) then
+        for cj2 := 0 to High (gp.body.kids[ci2].kids) do
+          consts.AddObject (gp.body.kids[ci2].kids[cj2].a,
+                            TObject (gp.body.kids[ci2].kids[cj2].kids[0]));
   if retC <> 'void' then
   begin
     if Pos ('*', retC) > 0 then init := ' = NULL'
@@ -2633,6 +2697,7 @@ begin
   EmitStmt (body.kids[High (body.kids)], 1);
 
   Line (pbuf, 0, 'L_ret: ;');
+  Line (pbuf, 1, 'err->res = m9res;');
   { every exit passes through L_ret, so a RAISE drops the lock for
     the same reason a RETURN does }
   if monPar <> '' then
@@ -2644,6 +2709,7 @@ begin
   else
     Line (pbuf, 1, 'return;');
   pbuf.Add ('}');
+  while consts.Count > svConsts do consts.Delete (consts.Count - 1);
 end;
 
 { a program module's body becomes main ().  The err slot is declared
@@ -2671,8 +2737,11 @@ begin
   pbuf.Add ('');
   pbuf.Add ('int main (int argc, char **argv)');
   pbuf.Add ('{');
-  Line (pbuf, 1, 'm9_err errv = {0};');
-  Line (pbuf, 1, 'm9_err *err = &errv;');
+  Line (pbuf, 1, 'm9_state errv = {0};');
+  Line (pbuf, 1, 'm9_state *err = &errv;');
+  Line (pbuf, 1, 'm9_pool m9frame = {0};');
+  PoolReg ('m9frame');
+  Line (pbuf, 1, 'err->res = &m9frame;');
   Line (pbuf, 1, 'm9_args (argc, argv);');
   { the body is a BLOCK, so EXCEPT at the root goes through the same
     handler machinery every other frame uses }

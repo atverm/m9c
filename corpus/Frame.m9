@@ -123,7 +123,7 @@ PROCEDURE AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
                     v: SLICE OF BOOL)
   RAISES SizeError, Duplicate ;
 PROCEDURE AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                   v: SLICE OF STR)
+                   KEPT v: SLICE OF STR)
   RAISES SizeError, Duplicate ;
   (* the slice is TAKEN, not copied: the frame views the caller's
      storage, the AddRoute/Json.Parse retention contract.  Length
@@ -223,7 +223,7 @@ PROCEDURE ConvName (conv: Conv) : STR ;
 (* ---- NetCDF ---- *)
 
 PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
-                   RO path, dim: STR)
+                   RO KEPT path: STR ; RO dim: STR)
   RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError ;
   (* a netCDF-4 file with one dimension named `dim`, one variable
      per column in its OWN storage type, the column's missing value
@@ -233,7 +233,7 @@ PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
      matrix over a per-column length dimension, the PutChars
      convention. *)
 
-PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR)
+PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR)
   RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError ;
   (* WriteNc over the dimension 'time', plus the time coordinate:
      I64 seconds, units 'seconds since 1970-01-01 00:00:00 +00:00'
@@ -246,7 +246,7 @@ PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR)
      know whether a column is a mean over its period or a point
      sample, and writing 'mean' unasked would be a lie in metadata. *)
 
-PROCEDURE FromNc (VAR pool: POOL ; RO path, dim: STR) : PTR Fr
+PROCEDURE FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr
   RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange,
          Overflow, IndexError ;
   (* every variable whose FIRST dimension is `dim`: 1-D numerics
@@ -257,7 +257,7 @@ PROCEDURE FromNc (VAR pool: POOL ; RO path, dim: STR) : PTR Fr
      column's missing value; units / long_name / standard_name are
      read when present. *)
 
-PROCEDURE TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts
+PROCEDURE TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts
   RAISES NetCDF.Error, BadArg, SizeError, Duplicate, Disorder,
          ValueRange, Overflow, IndexError ;
   (* FromNc over 'time', with the time variable itself parsed from
@@ -272,7 +272,7 @@ PROCEDURE TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts
 
 (* ---- the timeseries frame ---- *)
 
-PROCEDURE NewTs (VAR pool: POOL ; f: PTR Fr ; time: SLICE OF I64 ;
+PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ;
                  res: I64 ; conv: Conv ; RO descr: STR)
   : PTR Ts IN pool
   RAISES SizeError, Disorder, BadArg ;
@@ -299,7 +299,7 @@ PROCEDURE ConvStart () : Conv ;
 PROCEDURE ConvEnd () : Conv ;
 PROCEDURE ConvMid () : Conv ;
 
-PROCEDURE Average (VAR pool: POOL ; ts: PTR Ts ; toRes: I64 ;
+PROCEDURE Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ;
                    how: SLICE OF How ; minCount: I64)
   : PTR Ts IN pool
   RAISES SizeError, WrongType, BadArg, ValueRange, Overflow,
@@ -315,7 +315,7 @@ PROCEDURE Average (VAR pool: POOL ; ts: PTR Ts ; toRes: I64 ;
      minCount live values answers the column's missing value.
      Output labels follow the frame's own convention at toRes. *)
 
-PROCEDURE MakeContiguous (VAR pool: POOL ; ts: PTR Ts) : PTR Ts IN pool
+PROCEDURE MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool
   RAISES SizeError, Duplicate, Disorder, BadArg, WrongType,
          ValueRange, Overflow, IndexError ;
   (* every absent period between the first and last stamp becomes a
@@ -509,7 +509,7 @@ BEGIN
 END AddBools ;
 
 PROCEDURE AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                   v: SLICE OF STR)
+                   KEPT v: SLICE OF STR)
   RAISES SizeError, Duplicate =
 VAR
   c : Col ;
@@ -786,7 +786,7 @@ END WriteCsv ;
 
 (* ---- the timeseries frame ---- *)
 
-PROCEDURE NewTs (VAR pool: POOL ; f: PTR Fr ; time: SLICE OF I64 ;
+PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ;
                  res: I64 ; conv: Conv ; RO descr: STR)
   : PTR Ts IN pool
   RAISES SizeError, Disorder, BadArg =
@@ -874,7 +874,7 @@ BEGIN
   END
 END LabelOf ;
 
-PROCEDURE Average (VAR pool: POOL ; ts: PTR Ts ; toRes: I64 ;
+PROCEDURE Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ;
                    how: SLICE OF How ; minCount: I64)
   : PTR Ts IN pool
   RAISES SizeError, WrongType, BadArg, ValueRange, Overflow,
@@ -1303,7 +1303,7 @@ END ReduceStrs ;
 
 (* ---- make contiguous ---- *)
 
-PROCEDURE MakeContiguous (VAR pool: POOL ; ts: PTR Ts) : PTR Ts IN pool
+PROCEDURE MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool
   RAISES SizeError, Duplicate, Disorder, BadArg, WrongType,
          ValueRange, Overflow, IndexError =
 VAR
@@ -1535,7 +1535,7 @@ BEGIN
 END PutCols ;
 
 PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
-                   RO path, dim: STR)
+                   RO KEPT path: STR ; RO dim: STR)
   RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
 VAR
   nc : PTR NetCDF.File IN pool ;
@@ -1560,7 +1560,7 @@ BEGIN
   END
 END ConvName ;
 
-PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO path: STR)
+PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR)
   RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
 VAR
   nc : PTR NetCDF.File IN pool ;
@@ -1744,7 +1744,7 @@ EXCEPT
 | Unknown : RAISE IndexError
 END SetMeta2 ;
 
-PROCEDURE FromNc (VAR pool: POOL ; RO path, dim: STR) : PTR Fr
+PROCEDURE FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr
   RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange,
          Overflow, IndexError =
 VAR
@@ -1853,7 +1853,7 @@ BEGIN
   RETURN v
 END Num ;
 
-PROCEDURE TsFromNc (VAR pool: POOL ; RO path: STR) : PTR Ts
+PROCEDURE TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts
   RAISES NetCDF.Error, BadArg, SizeError, Duplicate, Disorder,
          ValueRange, Overflow, IndexError =
 VAR

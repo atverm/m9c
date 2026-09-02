@@ -9,7 +9,7 @@ extern const m9_exc Http_TransportError;
 
 #define Http_RecvMax INT64_C(4194304)
 
-int64_t Http_Get (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_err *err);
-int64_t Http_GetTls (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_err *err);
+int64_t Http_Get (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
+int64_t Http_GetTls (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
 
 #endif

@@ -23,42 +23,66 @@ static const uint32_t m9s6[20] = { 110u, 111u, 32u, 104u, 101u, 97u, 100u, 101u,
 
 static m9_mon m9_gate_csock;
 
-static void Http_CrLf (m9_pool *pool, DynStr_DString * *d, m9_err *err);
-static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_err *err);
+static void Http_CrLf (m9_pool *pool, DynStr_DString * *d, m9_state *err);
+static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
 
 
-int64_t Http_Get (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_err *err)
+int64_t Http_Get (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
+  err->res = m9res;
   m9ret = Http_Fetch (false, host, port, path, body, bodyLen, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Http_GetTls (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_err *err)
+int64_t Http_GetTls (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
+  err->res = m9res;
   m9ret = Http_Fetch (true, host, port, path, body, bodyLen, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Http_CrLf (m9_pool *pool, DynStr_DString * *d, m9_err *err)
+static void Http_CrLf (m9_pool *pool, DynStr_DString * *d, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_AppendChar (pool, d, 13u, err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, d, 10u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_err *err)
+static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * req = NULL; (void) req;
@@ -179,9 +203,12 @@ L_fin_m9t3: ;
     if (err->exc) goto L_ret;
   }
   (*bodyLen) = i;
+  err->res = m9res;
   m9ret = status;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }

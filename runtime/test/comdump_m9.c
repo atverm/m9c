@@ -17,7 +17,7 @@ int main (int argc, char **argv)
   int64_t k, n;
   Lex_Lexer lx = {0};
   Lex_Token t = {0};
-  m9_err err = {0};
+  m9_state err = {0};
 
   if (argc < 2) { fprintf (stderr, "usage: comdump_m9 FILE\n"); return 2; }
   f = fopen (argv[1], "rb");

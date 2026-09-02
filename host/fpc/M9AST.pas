@@ -92,7 +92,9 @@ type
   public
     kind      : TNodeKind;
     a, b      : string;
-    f1, f2, f3: Boolean;   { f3: the RO mode on a binding }
+    f1, f2, f3, f4: Boolean;  { f3: the RO mode on a binding;
+                                f4: KEPT, which composes with any mode
+                                rather than replacing one }
     line, col : Integer;
     kids      : array of TNode;
     constructor Create (k: TNodeKind);

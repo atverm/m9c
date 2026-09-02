@@ -39,10 +39,10 @@
 #define Syslog_Perror INT64_C(32)
 #define Syslog_MaxMsg INT64_C(8192)
 
-void Syslog_Open (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_err *err);
-void Syslog_Close (m9_err *err);
-int64_t Syslog_Pri (int64_t facility, int64_t level, m9_err *err);
-void Syslog_Send (int64_t priority, m9_sl_CHAR text, m9_err *err);
-int64_t Syslog_FromLoggerLevel (int64_t level, m9_err *err);
+void Syslog_Open (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_state *err);
+void Syslog_Close (m9_state *err);
+int64_t Syslog_Pri (int64_t facility, int64_t level, m9_state *err);
+void Syslog_Send (int64_t priority, m9_sl_CHAR text, m9_state *err);
+int64_t Syslog_FromLoggerLevel (int64_t level, m9_state *err);
 
 #endif

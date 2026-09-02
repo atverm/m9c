@@ -26,7 +26,7 @@ static uint32_t doc[256], doc2[64], doc3[64], nm[32];
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
 
   m9_sl_CHAR src = sl ("{\"a\":1,\"b\":[1.5,true,null,\"xy\"],"
                        "\"c\":{\"d\":-7},\"e\":2.5e2}", doc);

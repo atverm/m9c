@@ -67,7 +67,7 @@ static double m9vals[NVALUES], cvals[NVALUES];
 
 int main (void)
 {
-  m9_err e = { 0 };
+  m9_state e = { 0 };
   m9_pool pool = { 0 };
   char buf[256];
   Grib_File *f;

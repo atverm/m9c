@@ -10,7 +10,7 @@
 # rather than remembered -- and reached zero, so it gates now.
 #
 # -Wno-unused-function is deliberate and temporary: the registry
-# exposes helpers (IsOpaqueIn, LedgerN) that the passes still to be
+# exposes helpers (IsOpaqueIn) that the passes still to be
 # written will call.  It comes out when the transcription is done.
 set -e
 cd "$(dirname "$0")"

@@ -40,7 +40,12 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot assign an integer literal to F64` | an integer literal fits any integer type but not a float | write 0.0, 1.0E-6; a <real> literal adapts to F32 or F64 | `int-literal-to-float` |
 | `float division; integers use DIV` | / is float division | DIV for integers | `int-slash-division` |
 | `IS SOME needs an OPT operand` | IS SOME is the guard for OPT; the operand is not OPT (a cross-module PTR T IN pool may type as unknown and NOT be diagnosed -- check the declaration) | declare the type OPT PTR T, or drop the guard if it cannot be absent | `is-some-on-non-opt` |
+| `argument 1 of Note: borrowed msg is kept by the callee -- declare KEPT msg (par 4.1)` | a borrowed parameter is passed to a parameter the callee declares KEPT, so the caller is retaining it too | declare the caller's own parameter KEPT as well -- the declaration composes upward, exactly as RAISES does (par 4.1, docs/retention.md) | `kept-borrow-arg` |
+| `argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1)` | a + result lives in the frame's arena and dies at RETURN, but the callee declares it will keep the argument | build the string in a pool that outlives the retention (DynStr into a caller-supplied pool, or HEAP) and pass that (par 2.3, par 4.1) | `kept-concat-arg` |
+| `undeclared retention: borrowed msg reaches module state -- declare KEPT msg (par 4.1)` | a borrowed parameter is stored somewhere that outlives the call -- module state, the caller's storage, or the answer -- and the signature does not say so | declare the parameter KEPT so every caller can see the retention, or copy the bytes instead of keeping the borrow (par 4.1, docs/retention.md) | `kept-undeclared` |
+| `undeclared retention: borrowed msg (carried by t) reaches module state -- declare KEPT msg (par 4.1)` | a borrowed parameter was copied into a local (or bound by IS SOME or a CASE pattern) and the copy was stored somewhere that outlives the call -- the local carried the borrow | the retention is real even though indirect: declare the parameter KEPT, or copy the bytes instead of the reference (par 4.1, docs/retention.md) | `kept-via-local` |
 | `cannot lend the value parameter p as VAR` | a value PTR parameter is a shared borrow; passing it on as VAR would launder it into a mutable one | take the parameter as VAR yourself if you need to pass it as VAR (par 4.1) | `lend-value-ptr-as-var` |
+| `a local CONST may not shadow a module CONST: Tag` | a procedure declares a CONST with the same name as one the module already declares | rename one of them.  Which would win depends on lookup order, and the map answers the first hit, so the shadow is refused rather than resolved (docs/frame-pools.md) | `local-const-shadow` |
 | `module-level state requires STATEFUL on the definition` | a module-level VAR is state, and a module with state must say so | add [STATEFUL] to the DEFINITION MODULE, or move the state into a record the caller owns (par 6) | `module-state-without-stateful` |
 | `monitor field n is reached from outside a procedure bound to the monitor (par 6)` | a monitor serialises access by letting only its BOUND procedures reach its fields, and the binding is the FIRST parameter (par 6) | add a short bound procedure -- PROCEDURE Count (VAR g: Gate) : I64 -- and call that instead | `monitor-outside` |
 | `cannot move borrowed q into an OWN parameter` | an OWN parameter takes ownership, and a borrow has none to give | pass something you own -- a local, an OWN parameter -- or take the argument as VAR instead | `move-borrow-into-own` |
@@ -395,6 +400,76 @@ PROCEDURE F () = BEGIN IF x IS SOME p THEN y := 0 END END F ;
 END m.
 ```
 
+### kept-borrow-arg
+
+`argument 1 of Note: borrowed msg is kept by the callee -- declare KEPT msg (par 4.1)`
+
+```
+MODULE m ;
+VAR last : STR ;
+PROCEDURE Note (RO KEPT msg: STR) =
+BEGIN
+  last := msg
+END Note ;
+PROCEDURE Relay (RO msg: STR) =
+BEGIN
+  Note (msg)
+END Relay ;
+BEGIN
+END m.
+```
+
+### kept-concat-arg
+
+`argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1)`
+
+```
+MODULE m ;
+VAR last : STR ;
+PROCEDURE Note (RO KEPT msg: STR) =
+BEGIN
+  last := msg
+END Note ;
+PROCEDURE Go () =
+BEGIN
+  Note ('ab' + 'cd')
+END Go ;
+BEGIN
+END m.
+```
+
+### kept-undeclared
+
+`undeclared retention: borrowed msg reaches module state -- declare KEPT msg (par 4.1)`
+
+```
+MODULE m ;
+VAR last : STR ;
+PROCEDURE Note (RO msg: STR) =
+BEGIN
+  last := msg
+END Note ;
+BEGIN
+END m.
+```
+
+### kept-via-local
+
+`undeclared retention: borrowed msg (carried by t) reaches module state -- declare KEPT msg (par 4.1)`
+
+```
+MODULE m ;
+VAR last : STR ;
+PROCEDURE Note (RO msg: STR) =
+VAR t : STR ;
+BEGIN
+  t := msg ;
+  last := t
+END Note ;
+BEGIN
+END m.
+```
+
 ### lend-value-ptr-as-var
 
 `cannot lend the value parameter p as VAR`
@@ -404,6 +479,26 @@ MODULE m ;
 TYPE R = RECORD v : I64 END ;
 PROCEDURE G (VAR p: PTR R) = BEGIN p.v := 0 END G ;
 PROCEDURE F (p: PTR R) = BEGIN G (p) END F ;
+END m.
+```
+
+### local-const-shadow
+
+`a local CONST may not shadow a module CONST: Tag`
+
+```
+MODULE m ;
+
+CONST Tag = 'module' ;
+
+PROCEDURE P () =
+CONST Tag = 'local' ;
+BEGIN
+  Tag
+END P ;
+
+BEGIN
+  P ()
 END m.
 ```
 

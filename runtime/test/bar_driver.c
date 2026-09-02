@@ -69,7 +69,7 @@ static m9_sl_F64 f64s (double *v, int64_t n) { return (m9_sl_F64){ v, n }; }
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
   uint32_t t1[120], t2[120], t3[120], t4[120];
   char *svg; size_t n;
 

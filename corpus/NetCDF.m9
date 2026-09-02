@@ -53,26 +53,26 @@ CONST
   TypeUByte = 7 ; TypeInt64 = 10 ;
   Unlimited = 0 ;                   (* the extent NC_UNLIMITED means *)
 
-PROCEDURE Open (VAR pool: POOL ; RO path: STR) : PTR File IN pool
+PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool
   RAISES Error, ValueRange ;
   (* read-only.  The pool owns the handle; Close releases the file
      but the record dies with the pool, which is why Close takes a
      VAR and not an OWN: there is nothing here to move.              *)
 
-PROCEDURE OpenRW (VAR pool: POOL ; RO path: STR) : PTR File IN pool
+PROCEDURE OpenRW (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool
   RAISES Error, ValueRange ;
   (* read-write on an EXISTING file: what a restarted run does to
      the output it left half-written -- inquire the variables back
      and continue appending records.  Everything Put* works; Def*
      would need redef mode and is not supported through this.      *)
 
-PROCEDURE Create (VAR pool: POOL ; RO path: STR ; clobber: BOOL)
+PROCEDURE Create (VAR pool: POOL ; RO KEPT path: STR ; clobber: BOOL)
   : PTR File IN pool RAISES Error, ValueRange ;
   (* the CLASSIC format.  Its unlimited dimension must be a
      variable's OUTERMOST one, which is a real constraint on how a
      file may be laid out -- see Create4.                          *)
 
-PROCEDURE Create4 (VAR pool: POOL ; RO path: STR ; clobber: BOOL)
+PROCEDURE Create4 (VAR pool: POOL ; RO KEPT path: STR ; clobber: BOOL)
   : PTR File IN pool RAISES Error, ValueRange ;
   (* netCDF-4 (HDF5 underneath).
 
@@ -584,7 +584,7 @@ BEGIN
   RETURN DynStr.Bytes (pool, s, TRUE)
 END CStr ;
 
-PROCEDURE Open (VAR pool: POOL ; RO path: STR) : PTR File IN pool
+PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool
   RAISES Error, ValueRange =
 VAR
   scratch : POOL ;
@@ -602,7 +602,7 @@ BEGIN
   RETURN f
 END Open ;
 
-PROCEDURE OpenRW (VAR pool: POOL ; RO path: STR) : PTR File IN pool
+PROCEDURE OpenRW (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool
   RAISES Error, ValueRange =
 VAR
   scratch : POOL ;
@@ -620,7 +620,7 @@ BEGIN
   RETURN f
 END OpenRW ;
 
-PROCEDURE Create (VAR pool: POOL ; RO path: STR ; clobber: BOOL)
+PROCEDURE Create (VAR pool: POOL ; RO KEPT path: STR ; clobber: BOOL)
   : PTR File IN pool RAISES Error, ValueRange =
 VAR
   scratch : POOL ;
@@ -640,7 +640,7 @@ BEGIN
   RETURN f
 END Create ;
 
-PROCEDURE Create4 (VAR pool: POOL ; RO path: STR ; clobber: BOOL)
+PROCEDURE Create4 (VAR pool: POOL ; RO KEPT path: STR ; clobber: BOOL)
   : PTR File IN pool RAISES Error, ValueRange =
 VAR
   scratch : POOL ;

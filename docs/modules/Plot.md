@@ -25,13 +25,13 @@ first one's lines.  One figure at a time is the price of the
 state, and the alternative is a figure handle nobody asked
 for.
 
-### AddLine (RO xs: SLICE OF F64 ; RO ys: SLICE OF F64 ; colorIdx: I64 ; RO label: STR)
+### AddLine (RO xs: SLICE OF F64 ; RO ys: SLICE OF F64 ; colorIdx: I64 ; RO KEPT label: STR)
 
 up to 4 series, up to 1024 points; colorIdx 0..3 = matplotlib
 C0..C3; NaN values lift the pen, as mpl does.  The label slice
 is retained until Render -- ledger material, like AddRoute.
 
-### SetDots (RO xs: SLICE OF F64 ; RO ys: SLICE OF F64)
+### SetDots (RO KEPT xs: SLICE OF F64 ; RO KEPT ys: SLICE OF F64)
 
 one scatter layer, drawn UNDER the lines: every point a small
 black circle, NaN points skipped, no per-series cap -- the
@@ -64,7 +64,7 @@ a bar is CENTRED on its position
 
 positions ignored: slots 0, 1, 2
 
-### AddBars (RO at: SLICE OF F64 ; RO v: SLICE OF F64 ; colorIdx: I64 ; RO label: STR)
+### AddBars (RO at: SLICE OF F64 ; RO v: SLICE OF F64 ; colorIdx: I64 ; RO KEPT label: STR)
 
 one bar series: up to 4 of them, up to 1024 bars each, drawn
 UNDER any lines and dots.
@@ -100,7 +100,7 @@ filled, width 0.8.
   width -- the fraction of a slot the bars occupy, 0 < width
            <= 1.  Grouped series divide that between them.
 
-### SetBarErrors (series: I64 ; RO err: SLICE OF F64)
+### SetBarErrors (series: I64 ; RO KEPT err: SLICE OF F64)
 
 symmetric error bars for one series: a whisker of +/- err[i]
 on the VALUE axis with a cap at each end, drawn over the bars.
@@ -109,7 +109,7 @@ how "no uncertainty for this one" is said.  The slice is
 RETAINED until Render, like AddLine's label and SetDots's
 points.
 
-### SetBarColor (series: I64 ; RO hex: STR)
+### SetBarColor (series: I64 ; RO KEPT hex: STR)
 
 override the palette for one series with an SVG colour --
 '#cc3311', 'darkgreen'.  It is written into the document

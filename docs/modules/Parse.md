@@ -26,7 +26,7 @@ declaration must resolve in the module that WROTE it.
 
 every error
 
-### Init (VAR p: Parser ; RO src: STR)
+### Init (VAR p: Parser ; RO KEPT src: STR)
 
 points a parser at source text and reads the first token.
 

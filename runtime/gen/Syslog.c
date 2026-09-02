@@ -10,11 +10,15 @@ static const uint32_t m9s0[23] = { 40u, 109u, 101u, 115u, 115u, 97u, 103u, 101u,
 
 static m9_mon m9_gate_csyslog;
 
-static void Syslog_SendAscii (int64_t priority, m9_sl_CHAR text, m9_err *err);
+static void Syslog_SendAscii (int64_t priority, m9_sl_CHAR text, m9_state *err);
 
 
-void Syslog_Open (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_err *err)
+void Syslog_Open (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
   b = DynStr_Bytes (&(scratch), ident, false, err);
@@ -30,29 +34,48 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-void Syslog_Close (m9_err *err)
+void Syslog_Close (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   ({ m9_mon_enter (&m9_gate_csyslog); m9_closelog (); m9_mon_leave (&m9_gate_csyslog); });
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-int64_t Syslog_Pri (int64_t facility, int64_t level, m9_err *err)
+int64_t Syslog_Pri (int64_t facility, int64_t level, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
+  err->res = m9res;
   m9ret = m9_add_i64 (facility, level, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Syslog_Send (int64_t priority, m9_sl_CHAR text, m9_err *err)
+void Syslog_Send (int64_t priority, m9_sl_CHAR text, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
@@ -74,46 +97,63 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-int64_t Syslog_FromLoggerLevel (int64_t level, m9_err *err)
+int64_t Syslog_FromLoggerLevel (int64_t level, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   { __typeof__(level) m9t1 = level;
   switch (m9t1) {
   case INT64_C(0):
   {
+    err->res = m9res;
     m9ret = Syslog_Debug;
     goto L_ret;
   } break;
   case INT64_C(1):
   {
+    err->res = m9res;
     m9ret = Syslog_Info;
     goto L_ret;
   } break;
   case INT64_C(2):
   {
+    err->res = m9res;
     m9ret = Syslog_Warning;
     goto L_ret;
   } break;
   case INT64_C(3):
   {
+    err->res = m9res;
     m9ret = Syslog_Err;
     goto L_ret;
   } break;
   default: {
+    err->res = m9res;
     m9ret = Syslog_Info;
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Syslog_SendAscii (int64_t priority, m9_sl_CHAR text, m9_err *err)
+static void Syslog_SendAscii (int64_t priority, m9_sl_CHAR text, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
   b = DynStr_Bytes (&(scratch), text, false, err);
@@ -128,6 +168,8 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }

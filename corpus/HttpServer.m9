@@ -21,12 +21,12 @@ PROCEDURE NewRouter (VAR pool: POOL) : PTR Router IN pool ;
      route is visible by reading down the calls that built it.      *)
 
 PROCEDURE AddRoute (VAR pool: POOL ; VAR r: PTR Router ;
-                    RO method: STR ;
-                    RO path: STR ;
+                    RO KEPT method: STR ;
+                    RO KEPT path: STR ;
                     status: I64 ;
-                    RO ctype: STR ;
-                    RO body: STR ;
-                    RO summary: STR) ;
+                    RO KEPT ctype: STR ;
+                    RO KEPT body: STR ;
+                    RO KEPT summary: STR) ;
   (* the router keeps the slices, not copies: the caller's strings
      must outlive the router -- the contract Json.Parse already has
      with its source.  P3 will have to name this retention.          *)
@@ -128,12 +128,12 @@ BEGIN
 END NewRouter ;
 
 PROCEDURE AddRoute (VAR pool: POOL ; VAR r: PTR Router ;
-                    RO method: STR ;
-                    RO path: STR ;
+                    RO KEPT method: STR ;
+                    RO KEPT path: STR ;
                     status: I64 ;
-                    RO ctype: STR ;
-                    RO body: STR ;
-                    RO summary: STR) =
+                    RO KEPT ctype: STR ;
+                    RO KEPT body: STR ;
+                    RO KEPT summary: STR) =
 VAR nr : PTR Route IN pool ;
 BEGIN
   nr := NEW (pool, Route) ;

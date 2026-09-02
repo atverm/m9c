@@ -40,7 +40,7 @@ static m9_sl_I64 at (int64_t r, int64_t c)
 
 int main (void)
 {
-  m9_err err = {0};
+  m9_state err = {0};
   uint32_t ub[64];
   int64_t r, c, n;
   double v, sum, mean;

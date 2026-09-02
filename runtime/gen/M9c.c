@@ -408,65 +408,69 @@ static const uint32_t m9s335[20] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 114u
 static const uint32_t m9s336[18] = { 115u, 111u, 117u, 114u, 99u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 101u, 120u, 116u };
 static const uint32_t m9s337[16] = { 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u };
 
-static m9_sl_CHAR M9c_BaseName (m9_sl_CHAR path, m9_err *err);
-static void M9c_Diag (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err);
-static void M9c_DiagN (m9_sl_CHAR a, int64_t n, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err);
-static void M9c_Diag2 (m9_sl_CHAR a, int64_t ln, int64_t cl, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err);
-static m9_sl_CHAR M9c_Suffix (m9_sl_CHAR name, m9_sl_CHAR ext, m9_err *err);
-static void M9c_DirAdd (m9_sl_CHAR d, bool trusted, m9_err *err);
-static void M9c_DirAddPath (m9_sl_CHAR s, bool trusted, m9_err *err);
-static m9_sl_CHAR M9c_DirOf (m9_sl_CHAR path, m9_err *err);
-static m9_sl_CHAR M9c_Join (m9_sl_CHAR d, m9_sl_CHAR f, m9_err *err);
-static m9_sl_CHAR M9c_TryRead (m9_sl_CHAR path, bool *ok, m9_err *err);
-static m9_sl_CHAR M9c_FindModule (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_err *err);
-static bool M9c_IsLoaded (m9_sl_CHAR name, m9_err *err);
-static void M9c_MarkLoaded (m9_sl_CHAR name, m9_err *err);
-static void M9c_AddEdge (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err);
-static void M9c_Ordered (m9_sl_CHAR name, m9_err *err);
-static bool M9c_IsVisiting (m9_sl_CHAR name, m9_err *err);
-static void M9c_PushVisit (m9_sl_CHAR name, m9_err *err);
-static bool M9c_IsOrdered (m9_sl_CHAR name, m9_err *err);
-static void M9c_OrderDfs (m9_sl_CHAR name, m9_err *err);
-static void M9c_BuildOrder (m9_err *err);
-static bool M9c_Quotable (m9_sl_CHAR s, m9_err *err);
-static void M9c_AppendQuoted (DynStr_DString * *d, m9_sl_CHAR s, m9_err *err);
-static m9_sl_CHAR M9c_CcName (m9_err *err);
-static m9_sl_CHAR M9c_RtDir (m9_err *err);
-static m9_sl_CHAR M9c_Cat (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err);
-static bool M9c_AppendRuntime (DynStr_DString * *d, m9_sl_CHAR rt, m9_err *err);
-static bool M9c_Older (m9_sl_CHAR obj, m9_sl_CHAR src, m9_err *err);
-static bool M9c_MakeDep (m9_sl_CHAR name, m9_sl_CHAR path, m9_err *err);
-static bool M9c_MakeAll (m9_err *err);
-static bool M9c_AppendObjects (DynStr_DString * *d, m9_err *err);
-static bool M9c_Compile (m9_sl_CHAR name, m9_err *err);
-static bool M9c_Archive (m9_sl_CHAR name, m9_err *err);
-static void M9c_Drop (m9_sl_CHAR path, m9_err *err);
-static void M9c_About (m9_err *err);
-static void M9c_Help (m9_err *err);
-static bool M9c_IsDashI (m9_sl_CHAR a, m9_err *err);
-static void M9c_ScanArgs (m9_err *err);
-static m9_sl_CHAR M9c_SourceAt (int64_t n, m9_err *err);
-static bool M9c_IsHelp (m9_sl_CHAR a, m9_err *err);
-static void M9c_Complain (m9_sl_CHAR what, m9_sl_CHAR path, m9_err *err);
-static m9_sl_CHAR M9c_DocText (Ast_Node * root, m9_sl_CHAR name, m9_err *err);
-static m9_sl_CHAR M9c_JsonText (Ast_Node * root, m9_sl_CHAR name, m9_err *err);
-static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_err *err);
-static Ast_Node * M9c_ParseFile (m9_sl_CHAR path, m9_err *err);
-static void M9c_Absorb (Ast_Node * root, bool forGen, m9_err *err);
-static void M9c_Keep (Ast_Node * root, m9_sl_CHAR name, m9_err *err);
-static void M9c_ScanUnsafe (Ast_Node * root, m9_sl_CHAR path, bool trusted, m9_err *err);
-static m9_sl_CHAR M9c_Fetch (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_err *err);
-static void M9c_Missing (m9_sl_CHAR name, m9_err *err);
-static void M9c_LoadDirect (m9_sl_CHAR name, m9_err *err);
-static void M9c_LoadIndirect (m9_sl_CHAR name, m9_err *err);
-static void M9c_WalkImports (Ast_Node * root, bool direct, m9_sl_CHAR owner, m9_err *err);
-static void M9c_LoadDep (m9_sl_CHAR path, m9_err *err);
-static void M9c_FillGaps (Ast_Node * mainRoot, m9_err *err);
-static bool M9c_Report (m9_err *err);
+static m9_sl_CHAR M9c_BaseName (m9_sl_CHAR path, m9_state *err);
+static void M9c_Diag (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err);
+static void M9c_DiagN (m9_sl_CHAR a, int64_t n, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err);
+static void M9c_Diag2 (m9_sl_CHAR a, int64_t ln, int64_t cl, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err);
+static m9_sl_CHAR M9c_Suffix (m9_sl_CHAR name, m9_sl_CHAR ext, m9_state *err);
+static void M9c_DirAdd (m9_sl_CHAR d, bool trusted, m9_state *err);
+static void M9c_DirAddPath (m9_sl_CHAR s, bool trusted, m9_state *err);
+static m9_sl_CHAR M9c_DirOf (m9_sl_CHAR path, m9_state *err);
+static m9_sl_CHAR M9c_Join (m9_sl_CHAR d, m9_sl_CHAR f, m9_state *err);
+static m9_sl_CHAR M9c_TryRead (m9_sl_CHAR path, bool *ok, m9_state *err);
+static m9_sl_CHAR M9c_FindModule (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_state *err);
+static bool M9c_IsLoaded (m9_sl_CHAR name, m9_state *err);
+static void M9c_MarkLoaded (m9_sl_CHAR name, m9_state *err);
+static void M9c_AddEdge (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
+static void M9c_Ordered (m9_sl_CHAR name, m9_state *err);
+static bool M9c_IsVisiting (m9_sl_CHAR name, m9_state *err);
+static void M9c_PushVisit (m9_sl_CHAR name, m9_state *err);
+static bool M9c_IsOrdered (m9_sl_CHAR name, m9_state *err);
+static void M9c_OrderDfs (m9_sl_CHAR name, m9_state *err);
+static void M9c_BuildOrder (m9_state *err);
+static bool M9c_Quotable (m9_sl_CHAR s, m9_state *err);
+static void M9c_AppendQuoted (DynStr_DString * *d, m9_sl_CHAR s, m9_state *err);
+static m9_sl_CHAR M9c_CcName (m9_state *err);
+static m9_sl_CHAR M9c_RtDir (m9_state *err);
+static m9_sl_CHAR M9c_Cat (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
+static bool M9c_AppendRuntime (DynStr_DString * *d, m9_sl_CHAR rt, m9_state *err);
+static bool M9c_Older (m9_sl_CHAR obj, m9_sl_CHAR src, m9_state *err);
+static bool M9c_MakeDep (m9_sl_CHAR name, m9_sl_CHAR path, m9_state *err);
+static bool M9c_MakeAll (m9_state *err);
+static bool M9c_AppendObjects (DynStr_DString * *d, m9_state *err);
+static bool M9c_Compile (m9_sl_CHAR name, m9_state *err);
+static bool M9c_Archive (m9_sl_CHAR name, m9_state *err);
+static void M9c_Drop (m9_sl_CHAR path, m9_state *err);
+static void M9c_About (m9_state *err);
+static void M9c_Help (m9_state *err);
+static bool M9c_IsDashI (m9_sl_CHAR a, m9_state *err);
+static void M9c_ScanArgs (m9_state *err);
+static m9_sl_CHAR M9c_SourceAt (int64_t n, m9_state *err);
+static bool M9c_IsHelp (m9_sl_CHAR a, m9_state *err);
+static void M9c_Complain (m9_sl_CHAR what, m9_sl_CHAR path, m9_state *err);
+static m9_sl_CHAR M9c_DocText (Ast_Node * root, m9_sl_CHAR name, m9_state *err);
+static m9_sl_CHAR M9c_JsonText (Ast_Node * root, m9_sl_CHAR name, m9_state *err);
+static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_state *err);
+static Ast_Node * M9c_ParseFile (m9_sl_CHAR path, m9_state *err);
+static void M9c_Absorb (Ast_Node * root, bool forGen, m9_state *err);
+static void M9c_Keep (Ast_Node * root, m9_sl_CHAR name, m9_state *err);
+static void M9c_ScanUnsafe (Ast_Node * root, m9_sl_CHAR path, bool trusted, m9_state *err);
+static m9_sl_CHAR M9c_Fetch (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_state *err);
+static void M9c_Missing (m9_sl_CHAR name, m9_state *err);
+static void M9c_LoadDirect (m9_sl_CHAR name, m9_state *err);
+static void M9c_LoadIndirect (m9_sl_CHAR name, m9_state *err);
+static void M9c_WalkImports (Ast_Node * root, bool direct, m9_sl_CHAR owner, m9_state *err);
+static void M9c_LoadDep (m9_sl_CHAR path, m9_state *err);
+static void M9c_FillGaps (Ast_Node * mainRoot, m9_state *err);
+static bool M9c_Report (m9_state *err);
 
 
-static m9_sl_CHAR M9c_BaseName (m9_sl_CHAR path, m9_err *err)
+static m9_sl_CHAR M9c_BaseName (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t i = 0; (void) i;
   int64_t start = 0; (void) start;
@@ -501,15 +505,22 @@ static m9_sl_CHAR M9c_BaseName (m9_sl_CHAR path, m9_err *err)
       if (err->exc) goto L_ret;
     }
   }
+  err->res = m9res;
   m9ret = ({ __typeof__(path) m9t7 = path; int64_t m9t7a = start, m9t7n = m9_sub_i64 (stop, start, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_Diag (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err)
+static void M9c_Diag (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
@@ -522,11 +533,17 @@ static void M9c_Diag (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err)
   Io_ErrLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_DiagN (m9_sl_CHAR a, int64_t n, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err)
+static void M9c_DiagN (m9_sl_CHAR a, int64_t n, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
@@ -541,11 +558,17 @@ static void M9c_DiagN (m9_sl_CHAR a, int64_t n, m9_sl_CHAR b, m9_sl_CHAR c, m9_e
   Io_ErrLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_Diag2 (m9_sl_CHAR a, int64_t ln, int64_t cl, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err)
+static void M9c_Diag2 (m9_sl_CHAR a, int64_t ln, int64_t cl, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
@@ -564,11 +587,17 @@ static void M9c_Diag2 (m9_sl_CHAR a, int64_t ln, int64_t cl, m9_sl_CHAR b, m9_sl
   Io_ErrLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR M9c_Suffix (m9_sl_CHAR name, m9_sl_CHAR ext, m9_err *err)
+static m9_sl_CHAR M9c_Suffix (m9_sl_CHAR name, m9_sl_CHAR ext, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
@@ -577,15 +606,22 @@ static m9_sl_CHAR M9c_Suffix (m9_sl_CHAR name, m9_sl_CHAR ext, m9_err *err)
   if (err->exc) goto L_ret;
   DynStr_Append (&(pool), &(d), ext, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_DirAdd (m9_sl_CHAR d, bool trusted, m9_err *err)
+static void M9c_DirAdd (m9_sl_CHAR d, bool trusted, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
   m9_sl_BOOL tb = {0}; (void) tb;
   int64_t i = 0; (void) i;
@@ -617,11 +653,17 @@ static void M9c_DirAdd (m9_sl_CHAR d, bool trusted, m9_err *err)
   ndirs = m9_add_i64 (ndirs, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_DirAddPath (m9_sl_CHAR s, bool trusted, m9_err *err)
+static void M9c_DirAddPath (m9_sl_CHAR s, bool trusted, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t start = 0; (void) start;
   start = INT64_C(0);
@@ -642,11 +684,17 @@ static void M9c_DirAddPath (m9_sl_CHAR s, bool trusted, m9_err *err)
   M9c_DirAdd (({ __typeof__(s) m9t4 = s; int64_t m9t4a = start, m9t4n = m9_sub_i64 ((s).len, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), trusted, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR M9c_DirOf (m9_sl_CHAR path, m9_err *err)
+static m9_sl_CHAR M9c_DirOf (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t i = 0; (void) i;
   int64_t cut = 0; (void) cut;
@@ -670,21 +718,30 @@ static m9_sl_CHAR M9c_DirOf (m9_sl_CHAR path, m9_err *err)
     }
   } }
   if ((cut == INT64_C(0))) {
+    err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = ({ __typeof__(path) m9t4 = path; int64_t m9t4a = INT64_C(0), m9t4n = m9_sub_i64 (cut, INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR M9c_Join (m9_sl_CHAR d, m9_sl_CHAR f, m9_err *err)
+static m9_sl_CHAR M9c_Join (m9_sl_CHAR d, m9_sl_CHAR f, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * s = NULL; (void) s;
   if (((d).len == INT64_C(0))) {
+    err->res = m9res;
     m9ret = f;
     goto L_ret;
   }
@@ -696,17 +753,25 @@ static m9_sl_CHAR M9c_Join (m9_sl_CHAR d, m9_sl_CHAR f, m9_err *err)
   if (err->exc) goto L_ret;
   DynStr_Append (&(pool), &(s), f, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (s, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR M9c_TryRead (m9_sl_CHAR path, bool *ok, m9_err *err)
+static m9_sl_CHAR M9c_TryRead (m9_sl_CHAR path, bool *ok, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   (*ok) = true;
+  err->res = m9res;
   m9ret = Io_ReadFile (&(pool), path, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_ret;
@@ -716,6 +781,7 @@ L_hdl_m9t1: ;
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
     (*ok) = false;
+    err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
     goto L_dn_m9t2;
@@ -725,6 +791,7 @@ L_hdl_m9t1: ;
     M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s1, 15 }), path, (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
     (*ok) = false;
+    err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
     goto L_dn_m9t2;
@@ -732,11 +799,17 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR M9c_FindModule (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_err *err)
+static m9_sl_CHAR M9c_FindModule (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t i = 0; (void) i;
   m9_sl_CHAR cand = {0}; (void) cand;
@@ -755,20 +828,28 @@ static m9_sl_CHAR M9c_FindModule (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, b
       (*path) = cand;
       (*trusted) = (*(bool *) m9_at (trusts.p, i, trusts.len, sizeof (bool), err));
       if (err->exc) goto L_ret;
+      err->res = m9res;
       m9ret = src;
       goto L_ret;
     }
   } }
   (*ok) = false;
   (*path) = (m9_sl_CHAR){ NULL, 0 };
+  err->res = m9res;
   m9ret = (m9_sl_CHAR){ NULL, 0 };
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool M9c_IsLoaded (m9_sl_CHAR name, m9_err *err)
+static bool M9c_IsLoaded (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   { int64_t m9t1to;
@@ -779,18 +860,26 @@ static bool M9c_IsLoaded (m9_sl_CHAR name, m9_err *err)
     bool m9t2 = DynStr_Eq ((*(m9_sl_CHAR *) m9_at (loaded.p, i, loaded.len, sizeof (m9_sl_CHAR), err)), name, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
+      err->res = m9res;
       m9ret = true;
       goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_MarkLoaded (m9_sl_CHAR name, m9_err *err)
+static void M9c_MarkLoaded (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if ((nloaded == (loaded).len)) {
@@ -811,11 +900,17 @@ static void M9c_MarkLoaded (m9_sl_CHAR name, m9_err *err)
   nloaded = m9_add_i64 (nloaded, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_AddEdge (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err)
+static void M9c_AddEdge (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_m9_sl_CHAR nf = {0}; (void) nf;
   m9_sl_m9_sl_CHAR nt = {0}; (void) nt;
   int64_t i = 0; (void) i;
@@ -844,11 +939,17 @@ static void M9c_AddEdge (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err)
   nedge = m9_add_i64 (nedge, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_Ordered (m9_sl_CHAR name, m9_err *err)
+static void M9c_Ordered (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   { int64_t m9t1to;
@@ -880,11 +981,17 @@ static void M9c_Ordered (m9_sl_CHAR name, m9_err *err)
   norder = m9_add_i64 (norder, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static bool M9c_IsVisiting (m9_sl_CHAR name, m9_err *err)
+static bool M9c_IsVisiting (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   { int64_t m9t1to;
@@ -895,18 +1002,26 @@ static bool M9c_IsVisiting (m9_sl_CHAR name, m9_err *err)
     bool m9t2 = DynStr_Eq ((*(m9_sl_CHAR *) m9_at (visiting.p, i, visiting.len, sizeof (m9_sl_CHAR), err)), name, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
+      err->res = m9res;
       m9ret = true;
       goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_PushVisit (m9_sl_CHAR name, m9_err *err)
+static void M9c_PushVisit (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if ((nvisit == (visiting).len)) {
@@ -927,11 +1042,17 @@ static void M9c_PushVisit (m9_sl_CHAR name, m9_err *err)
   nvisit = m9_add_i64 (nvisit, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static bool M9c_IsOrdered (m9_sl_CHAR name, m9_err *err)
+static bool M9c_IsOrdered (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   { int64_t m9t1to;
@@ -942,18 +1063,26 @@ static bool M9c_IsOrdered (m9_sl_CHAR name, m9_err *err)
     bool m9t2 = DynStr_Eq ((*(m9_sl_CHAR *) m9_at (order.p, i, order.len, sizeof (m9_sl_CHAR), err)), name, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
+      err->res = m9res;
       m9ret = true;
       goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_OrderDfs (m9_sl_CHAR name, m9_err *err)
+static void M9c_OrderDfs (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   bool m9t1 = M9c_IsOrdered (name, err);
   if (err->exc) goto L_ret;
@@ -982,11 +1111,17 @@ static void M9c_OrderDfs (m9_sl_CHAR name, m9_err *err)
   M9c_Ordered (name, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_BuildOrder (m9_err *err)
+static void M9c_BuildOrder (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   nvisit = INT64_C(0);
   { int64_t m9t1to;
@@ -999,11 +1134,17 @@ static void M9c_BuildOrder (m9_err *err)
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static bool M9c_Quotable (m9_sl_CHAR s, m9_err *err)
+static bool M9c_Quotable (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   { int64_t m9t1to;
@@ -1014,18 +1155,26 @@ static bool M9c_Quotable (m9_sl_CHAR s, m9_err *err)
     bool m9t2 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 39u);
     if (err->exc) goto L_ret;
     if (m9t2) {
+      err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_AppendQuoted (DynStr_DString * *d, m9_sl_CHAR s, m9_err *err)
+static void M9c_AppendQuoted (DynStr_DString * *d, m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_AppendChar (&(pool), d, 39u, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(pool), d, s, err);
@@ -1033,27 +1182,41 @@ static void M9c_AppendQuoted (DynStr_DString * *d, m9_sl_CHAR s, m9_err *err)
   DynStr_AppendChar (&(pool), d, 39u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR M9c_CcName (m9_err *err)
+static m9_sl_CHAR M9c_CcName (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR v = {0}; (void) v;
   v = Io_Env (&(pool), ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err);
   if (err->exc) goto L_ret;
   if (((v).len == INT64_C(0))) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s4, 2 });
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR M9c_RtDir (m9_err *err)
+static m9_sl_CHAR M9c_RtDir (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR v = {0}; (void) v;
   v = Io_Env (&(pool), ((m9_sl_CHAR){ (uint32_t *) m9s5, 9 }), err);
@@ -1062,6 +1225,7 @@ static m9_sl_CHAR M9c_RtDir (m9_err *err)
     bool m9t1 = Io_Exists (M9c_Cat (v, ((m9_sl_CHAR){ (uint32_t *) m9s6, 7 }), err), err);
     if (err->exc) goto L_ret;
     if (m9t1) {
+      err->res = m9res;
       m9ret = v;
       goto L_ret;
     }
@@ -1071,29 +1235,39 @@ static m9_sl_CHAR M9c_RtDir (m9_err *err)
   bool m9t2 = Io_Exists (M9c_Cat (M9c_StdInclude, ((m9_sl_CHAR){ (uint32_t *) m9s9, 7 }), err), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
+    err->res = m9res;
     m9ret = M9c_StdInclude;
     goto L_ret;
   }
   bool m9t3 = Io_Exists (((m9_sl_CHAR){ (uint32_t *) m9s10, 14 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s11, 7 });
     goto L_ret;
   }
   bool m9t4 = Io_Exists (((m9_sl_CHAR){ (uint32_t *) m9s12, 17 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s13, 10 });
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = (m9_sl_CHAR){ NULL, 0 };
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR M9c_Cat (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err)
+static m9_sl_CHAR M9c_Cat (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
@@ -1102,15 +1276,22 @@ static m9_sl_CHAR M9c_Cat (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err)
   if (err->exc) goto L_ret;
   DynStr_Append (&(pool), &(d), b, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool M9c_AppendRuntime (DynStr_DString * *d, m9_sl_CHAR rt, m9_err *err)
+static bool M9c_AppendRuntime (DynStr_DString * *d, m9_sl_CHAR rt, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   bool m9t1 = Io_Exists (M9c_Cat (rt, ((m9_sl_CHAR){ (uint32_t *) m9s14, 7 }), err), err);
   if (err->exc) goto L_ret;
@@ -1127,6 +1308,7 @@ static bool M9c_AppendRuntime (DynStr_DString * *d, m9_sl_CHAR rt, m9_err *err)
       DynStr_Append (&(pool), d, M9c_Cat (rt, ((m9_sl_CHAR){ (uint32_t *) m9s19, 10 }), err), err);
       if (err->exc) goto L_ret;
     }
+    err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
@@ -1135,6 +1317,7 @@ static bool M9c_AppendRuntime (DynStr_DString * *d, m9_sl_CHAR rt, m9_err *err)
   if (m9t3) {
     DynStr_Append (&(pool), d, ((m9_sl_CHAR){ (uint32_t *) m9s20, 7 }), err);
     if (err->exc) goto L_ret;
+    err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
@@ -1144,37 +1327,53 @@ static bool M9c_AppendRuntime (DynStr_DString * *d, m9_sl_CHAR rt, m9_err *err)
   if (err->exc) goto L_ret;
   Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s25, 28 }), err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = false;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool M9c_Older (m9_sl_CHAR obj, m9_sl_CHAR src, m9_err *err)
+static bool M9c_Older (m9_sl_CHAR obj, m9_sl_CHAR src, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   int64_t to = 0; (void) to;
   int64_t ts = 0; (void) ts;
   to = Io_ModTime (obj, err);
   if (err->exc) goto L_ret;
   if ((to < INT64_C(0))) {
+    err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
   ts = Io_ModTime (src, err);
   if (err->exc) goto L_ret;
   if ((ts < INT64_C(0))) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = (to < ts);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool M9c_MakeDep (m9_sl_CHAR name, m9_sl_CHAR path, m9_err *err)
+static bool M9c_MakeDep (m9_sl_CHAR name, m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -1230,17 +1429,25 @@ static bool M9c_MakeDep (m9_sl_CHAR name, m9_sl_CHAR path, m9_err *err)
   if ((rc != INT64_C(0))) {
     M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s32, 32 }), name, (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool M9c_MakeAll (m9_err *err)
+static bool M9c_MakeAll (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   bool trustDummy = false; (void) trustDummy;
   int64_t i = 0; (void) i;
@@ -1281,14 +1488,21 @@ static bool M9c_MakeAll (m9_err *err)
       }
     }
   } }
+  err->res = m9res;
   m9ret = ok;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool M9c_AppendObjects (DynStr_DString * *d, m9_err *err)
+static bool M9c_AppendObjects (DynStr_DString * *d, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   int64_t nmiss = 0; (void) nmiss;
@@ -1321,14 +1535,21 @@ static bool M9c_AppendObjects (DynStr_DString * *d, m9_err *err)
       }
     }
   } }
+  err->res = m9res;
   m9ret = (nmiss == INT64_C(0));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool M9c_Compile (m9_sl_CHAR name, m9_err *err)
+static bool M9c_Compile (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   DynStr_DString * d = NULL; (void) d;
   m9_sl_CHAR cfile = {0}; (void) cfile;
@@ -1349,6 +1570,7 @@ static bool M9c_Compile (m9_sl_CHAR name, m9_err *err)
   if (m9t1) {
     Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s41, 49 }), err);
     if (err->exc) goto L_ret;
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
@@ -1383,6 +1605,7 @@ static bool M9c_Compile (m9_sl_CHAR name, m9_err *err)
       if (err->exc) goto L_ret;
       Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s47, 34 }), err);
       if (err->exc) goto L_ret;
+      err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
@@ -1415,12 +1638,14 @@ static bool M9c_Compile (m9_sl_CHAR name, m9_err *err)
     bool m9t3 = (!M9c_AppendObjects (&(d), err));
     if (err->exc) goto L_ret;
     if (m9t3) {
+      err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
     bool m9t4 = (!M9c_AppendRuntime (&(d), rt, err));
     if (err->exc) goto L_ret;
     if (m9t4) {
+      err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
@@ -1440,17 +1665,25 @@ static bool M9c_Compile (m9_sl_CHAR name, m9_err *err)
   if ((rc != INT64_C(0))) {
     Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s58, 35 }), err);
     if (err->exc) goto L_ret;
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool M9c_Archive (m9_sl_CHAR name, m9_err *err)
+static bool M9c_Archive (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   DynStr_DString * d = NULL; (void) d;
   m9_sl_CHAR rt = {0}; (void) rt;
@@ -1461,6 +1694,7 @@ static bool M9c_Archive (m9_sl_CHAR name, m9_err *err)
   if (m9t1) {
     Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s59, 49 }), err);
     if (err->exc) goto L_ret;
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
@@ -1507,6 +1741,7 @@ static bool M9c_Archive (m9_sl_CHAR name, m9_err *err)
   bool m9t3 = (!M9c_AppendObjects (&(d), err));
   if (err->exc) goto L_ret;
   if (m9t3) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
@@ -1516,12 +1751,14 @@ static bool M9c_Archive (m9_sl_CHAR name, m9_err *err)
     if (((rt).len == INT64_C(0))) {
       Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s66, 40 }), err);
       if (err->exc) goto L_ret;
+      err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
     bool m9t4 = (!M9c_AppendRuntime (&(d), rt, err));
     if (err->exc) goto L_ret;
     if (m9t4) {
+      err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
@@ -1560,17 +1797,25 @@ static bool M9c_Archive (m9_sl_CHAR name, m9_err *err)
       Io_ErrLine (((m9_sl_CHAR){ (uint32_t *) m9s79, 23 }), err);
       if (err->exc) goto L_ret;
     }
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = true;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_Drop (m9_sl_CHAR path, m9_err *err)
+static void M9c_Drop (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9t1 = (!Io_Remove (path, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -1580,11 +1825,17 @@ static void M9c_Drop (m9_sl_CHAR path, m9_err *err)
     if (err->exc) goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_About (m9_err *err)
+static void M9c_About (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s81, 23 }), err);
   if (err->exc) goto L_ret;
   Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
@@ -1670,11 +1921,17 @@ static void M9c_About (m9_err *err)
   Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_Help (m9_err *err)
+static void M9c_Help (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   M9c_About (err);
   if (err->exc) goto L_ret;
   Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s117, 54 }), err);
@@ -2008,25 +2265,39 @@ static void M9c_Help (m9_err *err)
   Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s251, 38 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static bool M9c_IsDashI (m9_sl_CHAR a, m9_err *err)
+static bool M9c_IsDashI (m9_sl_CHAR a, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   if (((a).len < INT64_C(3))) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = (((*(uint32_t *) m9_at (a.p, INT64_C(0), a.len, sizeof (uint32_t), err)) == 45u) && ((*(uint32_t *) m9_at (a.p, INT64_C(1), a.len, sizeof (uint32_t), err)) == 73u));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_ScanArgs (m9_err *err)
+static void M9c_ScanArgs (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   m9_sl_CHAR a = {0}; (void) a;
   i = INT64_C(1);
@@ -2170,11 +2441,17 @@ static void M9c_ScanArgs (m9_err *err)
     if (err->exc) goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR M9c_SourceAt (int64_t n, m9_err *err)
+static m9_sl_CHAR M9c_SourceAt (int64_t n, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t i = 0; (void) i;
   int64_t seen = 0; (void) seen;
@@ -2190,6 +2467,7 @@ static m9_sl_CHAR M9c_SourceAt (int64_t n, m9_err *err)
     bool m9t2 = DynStr_Eq (a, ((m9_sl_CHAR){ (uint32_t *) m9s275, 2 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
+      err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
       goto L_ret;
     }
@@ -2205,6 +2483,7 @@ static m9_sl_CHAR M9c_SourceAt (int64_t n, m9_err *err)
         i = i;
     } else {
       if ((seen == n)) {
+        err->res = m9res;
         m9ret = a;
         goto L_ret;
       }
@@ -2214,24 +2493,38 @@ static m9_sl_CHAR M9c_SourceAt (int64_t n, m9_err *err)
     i = m9_add_i64 (i, INT64_C(1), err);
     if (err->exc) goto L_ret;
   }
+  err->res = m9res;
   m9ret = (m9_sl_CHAR){ NULL, 0 };
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool M9c_IsHelp (m9_sl_CHAR a, m9_err *err)
+static bool M9c_IsHelp (m9_sl_CHAR a, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
+  err->res = m9res;
   m9ret = (((DynStr_Eq (a, ((m9_sl_CHAR){ (uint32_t *) m9s291, 6 }), err) || DynStr_Eq (a, ((m9_sl_CHAR){ (uint32_t *) m9s292, 2 }), err)) || DynStr_Eq (a, ((m9_sl_CHAR){ (uint32_t *) m9s293, 2 }), err)) || DynStr_Eq (a, ((m9_sl_CHAR){ (uint32_t *) m9s294, 7 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_Complain (m9_sl_CHAR what, m9_sl_CHAR path, m9_err *err)
+static void M9c_Complain (m9_sl_CHAR what, m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
@@ -2243,11 +2536,17 @@ static void M9c_Complain (m9_sl_CHAR what, m9_sl_CHAR path, m9_err *err)
   if (err->exc) goto L_ret;
   failed = true;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR M9c_DocText (Ast_Node * root, m9_sl_CHAR name, m9_err *err)
+static m9_sl_CHAR M9c_DocText (Ast_Node * root, m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   Doc_Stats st = {0}; (void) st;
   m9_sl_CHAR txt = {0}; (void) txt;
@@ -2293,14 +2592,21 @@ static m9_sl_CHAR M9c_DocText (Ast_Node * root, m9_sl_CHAR name, m9_err *err)
     if (err->exc) goto L_ret;
     failed = true;
   }
+  err->res = m9res;
   m9ret = txt;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR M9c_JsonText (Ast_Node * root, m9_sl_CHAR name, m9_err *err)
+static m9_sl_CHAR M9c_JsonText (Ast_Node * root, m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   Doc_Stats st = {0}; (void) st;
   st.mods = INT64_C(0);
@@ -2314,15 +2620,22 @@ static m9_sl_CHAR M9c_JsonText (Ast_Node * root, m9_sl_CHAR name, m9_err *err)
   st.banners = INT64_C(0);
   st.unattached = INT64_C(0);
   st.unknownParam = INT64_C(0);
+  err->res = m9res;
   m9ret = Doc_Json (&(pool), root, name, &(st), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_err *err)
+static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Ast_Node * m9ret = NULL;
   Parse_Parser p = {0}; (void) p;
   Ast_Node * root = NULL; (void) root;
@@ -2345,27 +2658,42 @@ static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_err *err)
     M9c_DiagN (((m9_sl_CHAR){ (uint32_t *) m9s306, 5 }), p.nerr, ((m9_sl_CHAR){ (uint32_t *) m9s307, 17 }), path, err);
     if (err->exc) goto L_ret;
     failed = true;
+    err->res = m9res;
     m9ret = NULL;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = root;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static Ast_Node * M9c_ParseFile (m9_sl_CHAR path, m9_err *err)
+static Ast_Node * M9c_ParseFile (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Ast_Node * m9ret = NULL;
+  err->res = m9res;
   m9ret = M9c_ParseText (Io_ReadFile (&(pool), path, err), path, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_Absorb (Ast_Node * root, bool forGen, m9_err *err)
+static void M9c_Absorb (Ast_Node * root, bool forGen, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   Sem_LoadFile (root, err);
   if (err->exc) goto L_ret;
@@ -2387,11 +2715,17 @@ static void M9c_Absorb (Ast_Node * root, bool forGen, m9_err *err)
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_Keep (Ast_Node * root, m9_sl_CHAR name, m9_err *err)
+static void M9c_Keep (Ast_Node * root, m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_Ast_Nodep nb = {0}; (void) nb;
   m9_sl_m9_sl_CHAR nn = {0}; (void) nn;
   int64_t i = 0; (void) i;
@@ -2420,11 +2754,17 @@ static void M9c_Keep (Ast_Node * root, m9_sl_CHAR name, m9_err *err)
   ndeps = m9_add_i64 (ndeps, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_ScanUnsafe (Ast_Node * root, m9_sl_CHAR path, bool trusted, m9_err *err)
+static void M9c_ScanUnsafe (Ast_Node * root, m9_sl_CHAR path, bool trusted, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   if ((!noUnsafe)) {
     goto L_ret;
@@ -2457,32 +2797,51 @@ static void M9c_ScanUnsafe (Ast_Node * root, m9_sl_CHAR path, bool trusted, m9_e
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR M9c_Fetch (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_err *err)
+static m9_sl_CHAR M9c_Fetch (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *trusted, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  err->res = m9res;
   m9ret = M9c_FindModule (name, path, ok, trusted, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void M9c_Missing (m9_sl_CHAR name, m9_err *err)
+static void M9c_Missing (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s312, 24 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s313, 36 }), err);
   if (err->exc) goto L_ret;
   nmissing = m9_add_i64 (nmissing, INT64_C(1), err);
   if (err->exc) goto L_ret;
   failed = true;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_LoadDirect (m9_sl_CHAR name, m9_err *err)
+static void M9c_LoadDirect (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR path = {0}; (void) path;
   m9_sl_CHAR src = {0}; (void) src;
   bool ok = false; (void) ok;
@@ -2512,11 +2871,17 @@ static void M9c_LoadDirect (m9_sl_CHAR name, m9_err *err)
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_LoadIndirect (m9_sl_CHAR name, m9_err *err)
+static void M9c_LoadIndirect (m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR path = {0}; (void) path;
   m9_sl_CHAR src = {0}; (void) src;
   bool ok = false; (void) ok;
@@ -2546,11 +2911,17 @@ static void M9c_LoadIndirect (m9_sl_CHAR name, m9_err *err)
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_WalkImports (Ast_Node * root, bool direct, m9_sl_CHAR owner, m9_err *err)
+static void M9c_WalkImports (Ast_Node * root, bool direct, m9_sl_CHAR owner, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
   int64_t k = 0; (void) k;
@@ -2602,11 +2973,17 @@ static void M9c_WalkImports (Ast_Node * root, bool direct, m9_sl_CHAR owner, m9_
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_LoadDep (m9_sl_CHAR path, m9_err *err)
+static void M9c_LoadDep (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9t1 = M9c_IsLoaded (M9c_BaseName (path, err), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -2625,11 +3002,17 @@ static void M9c_LoadDep (m9_sl_CHAR path, m9_err *err)
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void M9c_FillGaps (Ast_Node * mainRoot, m9_err *err)
+static void M9c_FillGaps (Ast_Node * mainRoot, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t upto = 0; (void) upto;
   M9c_WalkImports (mainRoot, true, modName, err);
@@ -2652,11 +3035,17 @@ static void M9c_FillGaps (Ast_Node * mainRoot, m9_err *err)
   M9c_BuildOrder (err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static bool M9c_Report (m9_err *err)
+static bool M9c_Report (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   { int64_t m9t1to;
@@ -2667,17 +3056,22 @@ static bool M9c_Report (m9_err *err)
     Io_ErrLine (Sem_ErrAt (i, err), err);
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = (Sem_ErrCount (err) > INT64_C(0));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
 int main (int argc, char **argv)
 {
-  m9_err errv = {0};
-  m9_err *err = &errv;
+  m9_state errv = {0};
+  m9_state *err = &errv;
+  m9_pool m9frame = {0};
+  err->res = &m9frame;
   m9_args (argc, argv);
   bool m9t3 = (Io_ArgCount (err) < INT64_C(2));
   if (err->exc) goto L_hdl_m9t1;
@@ -2708,7 +3102,7 @@ int main (int argc, char **argv)
     main_ = M9c_SourceAt (INT64_C(0), err);
     if (err->exc) goto L_hdl_m9t1;
     if ((doVersion || ((verbose && ((main_).len == INT64_C(0)))))) {
-      Io_WriteLine (m9_cat (&m9_heap, ((m9_sl_CHAR){ (uint32_t *) m9s318, 4 }), M9c_Version, err), err);
+      Io_WriteLine (m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s318, 4 }), M9c_Version, err), err);
       if (err->exc) goto L_hdl_m9t1;
       Io_Halt (INT64_C(0), err);
       if (err->exc) goto L_hdl_m9t1;
@@ -2822,6 +3216,10 @@ int main (int argc, char **argv)
         }
         goto L_ret;
       }
+      if (debug) {
+        Gen_SetDebugSource (main_, err);
+        if (err->exc) goto L_hdl_m9t1;
+      }
       Gen_Emit (name, err);
       if (err->exc) goto L_hdl_m9t1;
       bool m9t10 = (Gen_Errs (err) > INT64_C(0));
@@ -2905,5 +3303,6 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  m9_pool_free (&m9frame);
   return m9_exit (err);
 }

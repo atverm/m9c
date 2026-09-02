@@ -22,24 +22,24 @@ extern const m9_exc Mat_NotSPD;
 M9_GRID_T (m9_gd2_double, double, 2)
 #endif
 
-Mat_Matrix * Mat_New (m9_pool *pool, int64_t rows, int64_t cols, m9_err *err);
-int64_t Mat_Rows (Mat_Matrix * m, m9_err *err);
-int64_t Mat_Cols (Mat_Matrix * m, m9_err *err);
-double Mat_Get (Mat_Matrix * m, int64_t r, int64_t c, m9_err *err);
-void Mat_Set (Mat_Matrix * *m, int64_t r, int64_t c, double v, m9_err *err);
-void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_err *err);
-Mat_Matrix * Mat_SubRowVector (m9_pool *pool, Mat_Matrix * m, m9_sl_F64 v, m9_err *err);
-void Mat_MinMax (Mat_Matrix * m, double *mn, double *mx, m9_err *err);
-Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_err *err);
-Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_err *err);
-Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_err *err);
-Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_err *err);
-Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_err *err);
-void Mat_Scale (Mat_Matrix * *m, double s, m9_err *err);
-Mat_Matrix * Mat_Identity (m9_pool *pool, int64_t n, m9_err *err);
-Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_err *err);
-Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_err *err);
-Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_err *err);
-Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_err *err);
+Mat_Matrix * Mat_New (m9_pool *pool, int64_t rows, int64_t cols, m9_state *err);
+int64_t Mat_Rows (Mat_Matrix * m, m9_state *err);
+int64_t Mat_Cols (Mat_Matrix * m, m9_state *err);
+double Mat_Get (Mat_Matrix * m, int64_t r, int64_t c, m9_state *err);
+void Mat_Set (Mat_Matrix * *m, int64_t r, int64_t c, double v, m9_state *err);
+void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_state *err);
+Mat_Matrix * Mat_SubRowVector (m9_pool *pool, Mat_Matrix * m, m9_sl_F64 v, m9_state *err);
+void Mat_MinMax (Mat_Matrix * m, double *mn, double *mx, m9_state *err);
+Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *err);
+Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_state *err);
+Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_state *err);
+Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *err);
+Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *err);
+void Mat_Scale (Mat_Matrix * *m, double s, m9_state *err);
+Mat_Matrix * Mat_Identity (m9_pool *pool, int64_t n, m9_state *err);
+Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_state *err);
+Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_state *err);
+Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_state *err);
+Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err);
 
 #endif

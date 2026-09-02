@@ -22,7 +22,7 @@ static void ck (bool ok, const char *what)
 
 int main (void)
 {
-  m9_err err = {0};
+  m9_state err = {0};
   uint32_t hb[64], pb[64];
   uint8_t body[4096];
   int64_t blen = 0, status;

@@ -84,7 +84,7 @@ var
   names : TStringArray;
   asts : array of TNode;
   ctxs : TStringList;
-  i, j, bodies : Integer;
+  i, j, bodies, nRet, nSelf, nFrame, nUnseen : Integer;
   p : TParser;
   pct : Double;
 begin
@@ -122,7 +122,23 @@ begin
       WriteLn ('  ', sem.Errors[i]);
   end;
 
-  WriteLn ('contortion ledger (', sem.Ledger.Count, ' entries):');
+  { the ledger is DIRECTIONAL now: 'retention:' entries reach storage
+    that outlives the frame (and name what it reaches); 'self-store:'
+    entries reach the caller only through the borrow itself (a tree
+    growing through its own node); 'frame-store:' entries die with
+    the frame.  Only retentions are contortions, so only they feed
+    the kill-gate -- the other classes are printed because a
+    measurement that discards data silently is the thing this
+    harness exists to refuse. }
+  nRet := 0; nSelf := 0; nFrame := 0; nUnseen := 0;
+  for i := 0 to sem.Ledger.Count - 1 do
+    if Pos (': retention: ', sem.Ledger[i]) > 0 then Inc (nRet)
+    else if Pos (': self-store: ', sem.Ledger[i]) > 0 then Inc (nSelf)
+    else if Pos (': kept-unseen: ', sem.Ledger[i]) > 0 then Inc (nUnseen)
+    else Inc (nFrame);
+  WriteLn ('contortion ledger (', nRet, ' retentions, ', nSelf,
+    ' self-stores, ', nFrame, ' frame-stores, ', nUnseen,
+    ' kept-unseen):');
   for i := 0 to sem.Ledger.Count - 1 do
     WriteLn ('  ', sem.Ledger[i]);
 
@@ -130,7 +146,8 @@ begin
   ctxs.Duplicates := dupIgnore;
   ctxs.Sorted := True;
   for i := 0 to sem.Ledger.Count - 1 do
-    ctxs.Add (CtxOf (sem.Ledger[i]));
+    if Pos (': retention: ', sem.Ledger[i]) > 0 then
+      ctxs.Add (CtxOf (sem.Ledger[i]));
 
   WriteLn;
   WriteLn (Format ('procedures with bodies : %d', [bodies]));

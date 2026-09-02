@@ -30,23 +30,32 @@ static const uint32_t m9s2[5] = { 119u, 111u, 114u, 108u, 100u };
 static const uint32_t m9s3[2] = { 97u, 98u };
 static const uint32_t m9s4[8] = { 118u, 105u, 97u, 32u, 104u, 101u, 97u, 112u };
 
-static m9_sl_CHAR Concat_Greeting (m9_sl_CHAR who, m9_err *err);
+static m9_sl_CHAR Concat_Greeting (m9_sl_CHAR who, m9_state *err);
 
 
-static m9_sl_CHAR Concat_Greeting (m9_sl_CHAR who, m9_err *err)
+static m9_sl_CHAR Concat_Greeting (m9_sl_CHAR who, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  m9ret = m9_cat (&m9_heap, m9_cat (&m9_heap, ((m9_sl_CHAR){ (uint32_t *) m9s0, 7 }), who, err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 1 }), err);
+  err->res = m9res;
+  m9ret = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 7 }), who, err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 1 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
 int main (int argc, char **argv)
 {
-  m9_err errv = {0};
-  m9_err *err = &errv;
+  m9_state errv = {0};
+  m9_state *err = &errv;
+  m9_pool m9frame = {0};
+  err->res = &m9frame;
   m9_args (argc, argv);
   Io_WriteLine (Concat_Greeting (((m9_sl_CHAR){ (uint32_t *) m9s2, 5 }), err), err);
   if (err->exc) goto L_ret;
@@ -55,7 +64,7 @@ int main (int argc, char **argv)
   n = INT64_C(1);
   m9t1to = INT64_C(3);
   for (; n <= m9t1to; n += 1) {
-    s = m9_cat (&m9_heap, s, ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err);
+    s = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err);
     if (err->exc) goto L_ret;
   } }
   Io_WriteLine (s, err);
@@ -71,5 +80,6 @@ int main (int argc, char **argv)
   Io_WriteLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  m9_pool_free (&m9frame);
   return m9_exit (err);
 }

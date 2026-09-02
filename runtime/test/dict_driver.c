@@ -62,7 +62,7 @@ static int is_int (Dict_Value v, int64_t n)
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
   Dict_Dict *d;
   Dict_Value v;
   int64_t i;

@@ -110,6 +110,21 @@ EXPLAIN = {
     "move-borrow-into-own": (
         "an OWN parameter takes ownership, and a borrow has none to give",
         "pass something you own -- a local, an OWN parameter -- or take the argument as VAR instead"),
+    "kept-borrow-arg": (
+        "a borrowed parameter is passed to a parameter the callee declares KEPT, so the caller is retaining it too",
+        "declare the caller's own parameter KEPT as well -- the declaration composes upward, exactly as RAISES does (par 4.1, docs/retention.md)"),
+    "kept-concat-arg": (
+        "a + result lives in the frame's arena and dies at RETURN, but the callee declares it will keep the argument",
+        "build the string in a pool that outlives the retention (DynStr into a caller-supplied pool, or HEAP) and pass that (par 2.3, par 4.1)"),
+    "kept-via-local": (
+        "a borrowed parameter was copied into a local (or bound by IS SOME or a CASE pattern) and the copy was stored somewhere that outlives the call -- the local carried the borrow",
+        "the retention is real even though indirect: declare the parameter KEPT, or copy the bytes instead of the reference (par 4.1, docs/retention.md)"),
+    "kept-undeclared": (
+        "a borrowed parameter is stored somewhere that outlives the call -- module state, the caller's storage, or the answer -- and the signature does not say so",
+        "declare the parameter KEPT so every caller can see the retention, or copy the bytes instead of keeping the borrow (par 4.1, docs/retention.md)"),
+    "local-const-shadow": (
+        "a procedure declares a CONST with the same name as one the module already declares",
+        "rename one of them.  Which would win depends on lookup order, and the map answers the first hit, so the shadow is refused rather than resolved (docs/frame-pools.md)"),
     "new-reversed": (
         "NEW's arguments are the wrong way round: the pool comes first, then the type",
         "NEW (pool, T) for a pointer, NEW (pool, T, n) for a slice, NEW (pool, T, n1, n2) for a grid (par 4.3)"),

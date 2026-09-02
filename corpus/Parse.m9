@@ -51,7 +51,7 @@ TYPE
     errMsg : ARRAY 64 OF STR ;
   END ;
 
-PROCEDURE Init (VAR p: Parser ; RO src: STR) ;
+PROCEDURE Init (VAR p: Parser ; RO KEPT src: STR) ;
   (* points a parser at source text and reads the first token.
 
        src -- BORROWED for as long as p is used, and for as long as
@@ -102,7 +102,8 @@ CONST
   TkSOME = 53 ; TkSTATEFUL = 54 ; TkTHEN = 55 ; TkTHREAD = 56 ;
   TkTO = 57 ; TkTRANSFER = 58 ; TkTRUE = 59 ; TkTYPE = 60 ;
   TkUNSAFE = 61 ; TkVAR = 62 ; TkWAIT = 63 ; TkWHILE = 64 ;
-  TkRO = 65 ; TkGRID = 66 ;  (* appended: codes are identifiers *)
+  TkRO = 65 ; TkGRID = 66 ; TkKEPT = 67 ;
+  (* appended: codes are identifiers *)
   (* operators start at 200: see the note in Lex.  Keywords may be
      appended at 65.. without moving any of these.                *)
   TkAssign = 200 ; TkEq = 201 ; TkNeq = 202 ; TkLt = 203 ; TkLe = 204 ;
@@ -213,12 +214,31 @@ BEGIN
   END
 END Spell ;
 
+(* A RETAINED MESSAGE MUST BE COPIED, and this is the one place that
+   decides it.  Every caller composes its text with `+`, and the
+   answer lives wherever the caller's concatenation put it -- which
+   was HEAP, and is the caller's FRAME once frame pools land
+   (docs/frame-pools.md).  A Parser outlives the procedure that
+   reported into it, so keeping the caller's slice is a borrow held
+   past its frame: par 4.1 retention, and ownledger has named this
+   exact line for months (`Parse.ErrAt: retention: borrowed msg
+   stored into p`).  HEAP is the right home -- a compiler's
+   diagnostics die with the process, which is what HEAP is for --
+   and at most MaxErr of them are ever kept. *)
+PROCEDURE Keep (RO s: STR) : STR =
+VAR d : PTR DynStr.DString IN HEAP ;
+BEGIN
+  d := DynStr.New (HEAP) ;
+  DynStr.Append (HEAP, d, s) ;
+  RETURN DynStr.View (d)
+END Keep ;
+
 PROCEDURE ErrAt (VAR p: Parser ; ln: I64 ; cl: I64 ; RO msg: STR) =
 BEGIN
   IF p.nerr < MaxErr THEN
     p.errLine[p.nerr] := ln ;
     p.errCol[p.nerr] := cl ;
-    p.errMsg[p.nerr] := msg ;
+    p.errMsg[p.nerr] := Keep (msg) ;
     p.nkept := p.nerr + 1
   END ;
   p.nerr := p.nerr + 1
@@ -297,7 +317,7 @@ BEGIN
   RETURN Ast.NewNode (pool, kind, p.cur.line, p.cur.col)
 END Nn ;
 
-PROCEDURE Init (VAR p: Parser ; RO src: STR) =
+PROCEDURE Init (VAR p: Parser ; RO KEPT src: STR) =
 BEGIN
   Lex.Init (p.lx, src) ;
   p.peeked := FALSE ;
@@ -358,7 +378,7 @@ BEGIN
 END PArgList ;
 
 PROCEDURE DesigToQual (VAR pool: POOL ; VAR p: Parser ;
-                       d: PTR Ast.Node) : PTR Ast.Node =
+                       KEPT d: PTR Ast.Node) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NQualident) ;
@@ -409,7 +429,7 @@ BEGIN
   RETURN n
 END PNew ;
 
-PROCEDURE PFactor (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PFactor (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, d : PTR Ast.Node ;
 BEGIN
   IF p.cur.kind = TkInt THEN
@@ -1089,6 +1109,13 @@ BEGIN
       pr.f3 := TRUE ;
       Bump (p)
     END ;
+    (* KEPT composes rather than replacing: a parameter this procedure
+       keeps past the call is usually also a read-only borrow, so it
+       follows the mode instead of being one (docs/retention.md) *)
+    IF p.cur.kind = TkKEPT THEN
+      pr.f4 := TRUE ;
+      Bump (p)
+    END ;
     Ast.Add (pool, pr, SOME (PIdentList (pool, p))) ;
     Expect (p, TkColon) ;
     Ast.Add (pool, pr, SOME (PType (pool, p))) ;
@@ -1130,7 +1157,7 @@ BEGIN
   RETURN n
 END PProcBody ;
 
-PROCEDURE PProcDecl (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PProcDecl (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NProcDecl) ;
@@ -1277,7 +1304,7 @@ BEGIN
   END
 END PDecls ;
 
-PROCEDURE PUnit (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PUnit (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR
   n, body : PTR Ast.Node ;
   uns, stf : BOOL ;

@@ -46,48 +46,78 @@ static const uint32_t m9s6[5] = { 69u, 82u, 82u, 79u, 82u };
 static const uint32_t m9s7[1] = { 63u };
 static const uint32_t m9s8[14] = { 40u, 110u, 111u, 32u, 116u, 105u, 109u, 101u, 115u, 116u, 97u, 109u, 112u, 41u };
 
-static m9_sl_CHAR Logger_LevelName (int64_t level, m9_err *err);
-static m9_sl_CHAR Logger_Stamp (m9_err *err);
-static void Logger_Key (m9_sl_CHAR key, m9_err *err);
+static m9_sl_CHAR Logger_LevelName (int64_t level, m9_state *err);
+static m9_sl_CHAR Logger_Stamp (m9_state *err);
+static void Logger_Key (m9_sl_CHAR key, m9_state *err);
 
 
-void Logger_SetLevel (int64_t level, m9_err *err)
+void Logger_SetLevel (int64_t level, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   curLevel = level;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-int64_t Logger_Level (m9_err *err)
+int64_t Logger_Level (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
+  err->res = m9res;
   m9ret = curLevel;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-bool Logger_Enabled (int64_t level, m9_err *err)
+bool Logger_Enabled (int64_t level, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
+  err->res = m9res;
   m9ret = (level >= curLevel);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Logger_Msg (int64_t level, m9_sl_CHAR text, m9_err *err)
+void Logger_Msg (int64_t level, m9_sl_CHAR text, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Logger_Start (level, text, err);
   if (err->exc) goto L_ret;
   Logger_Done (err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Logger_Start (int64_t level, m9_sl_CHAR text, m9_err *err)
+void Logger_Start (int64_t level, m9_sl_CHAR text, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9t1 = (!Logger_Enabled (level, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -110,11 +140,17 @@ void Logger_Start (int64_t level, m9_sl_CHAR text, m9_err *err)
   if (err->exc) goto L_ret;
   building = true;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Logger_Str (m9_sl_CHAR key, m9_sl_CHAR val, m9_err *err)
+void Logger_Str (m9_sl_CHAR key, m9_sl_CHAR val, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   if ((!building)) {
     goto L_ret;
   }
@@ -123,11 +159,17 @@ void Logger_Str (m9_sl_CHAR key, m9_sl_CHAR val, m9_err *err)
   DynStr_Append (&(pool), &(line), val, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Logger_Int (m9_sl_CHAR key, int64_t v, m9_err *err)
+void Logger_Int (m9_sl_CHAR key, int64_t v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   if ((!building)) {
     goto L_ret;
   }
@@ -136,11 +178,17 @@ void Logger_Int (m9_sl_CHAR key, int64_t v, m9_err *err)
   DynStr_AppendI64 (&(pool), &(line), v, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Logger_Real (m9_sl_CHAR key, double v, int64_t decimals, m9_err *err)
+void Logger_Real (m9_sl_CHAR key, double v, int64_t decimals, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   if ((!building)) {
     goto L_ret;
   }
@@ -159,11 +207,17 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Logger_Bool (m9_sl_CHAR key, bool v, m9_err *err)
+void Logger_Bool (m9_sl_CHAR key, bool v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   if ((!building)) {
     goto L_ret;
   }
@@ -177,11 +231,17 @@ void Logger_Bool (m9_sl_CHAR key, bool v, m9_err *err)
     if (err->exc) goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Logger_Done (m9_err *err)
+void Logger_Done (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR v = {0}; (void) v;
   if ((!building)) {
     goto L_ret;
@@ -197,67 +257,97 @@ void Logger_Done (m9_err *err)
   }
   building = false;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Logger_ToSyslog (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_err *err)
+void Logger_ToSyslog (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Syslog_Open (ident, m9_add_i64 (options, Syslog_NoDelay, err), facility, err);
   if (err->exc) goto L_ret;
   curFacility = facility;
   toSyslog = true;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Logger_ToStderr (m9_err *err)
+void Logger_ToStderr (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   if (toSyslog) {
     Syslog_Close (err);
     if (err->exc) goto L_ret;
   }
   toSyslog = false;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR Logger_LevelName (int64_t level, m9_err *err)
+static m9_sl_CHAR Logger_LevelName (int64_t level, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   { __typeof__(level) m9t1 = level;
   switch (m9t1) {
   case INT64_C(0):
   {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s3, 5 });
     goto L_ret;
   } break;
   case INT64_C(1):
   {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s4, 4 });
     goto L_ret;
   } break;
   case INT64_C(2):
   {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s5, 4 });
     goto L_ret;
   } break;
   case INT64_C(3):
   {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s6, 5 });
     goto L_ret;
   } break;
   default: {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 });
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Logger_Stamp (m9_err *err)
+static m9_sl_CHAR Logger_Stamp (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  err->res = m9res;
   m9ret = Time_Iso (&(pool), Time_Now (err), INT64_C(3), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_ret;
@@ -265,6 +355,7 @@ static m9_sl_CHAR Logger_Stamp (m9_err *err)
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s8, 14 });
     goto L_ret;
     goto L_dn_m9t2;
@@ -272,11 +363,17 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Logger_Key (m9_sl_CHAR key, m9_err *err)
+static void Logger_Key (m9_sl_CHAR key, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_AppendChar (&(pool), &(line), 32u, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(pool), &(line), key, err);
@@ -284,5 +381,7 @@ static void Logger_Key (m9_sl_CHAR key, m9_err *err)
   DynStr_AppendChar (&(pool), &(line), 61u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }

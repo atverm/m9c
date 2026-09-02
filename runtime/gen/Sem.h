@@ -63,11 +63,11 @@ typedef struct { Sem_Edge *p; int64_t len; } m9_sl_Sem_Edge;
 typedef struct { m9_sl_CHAR v[256]; } m9_arr_256_m9_sl_CHAR;
 #endif
 
-void Sem_LoadFile (Ast_Node * root, m9_err *err);
-void Sem_CheckFile (Ast_Node * root, m9_err *err);
-int64_t Sem_ErrCount (m9_err *err);
-m9_sl_CHAR Sem_ErrAt (int64_t i, m9_err *err);
-int64_t Sem_LedgerCount (m9_err *err);
-m9_sl_CHAR Sem_LedgerAt (int64_t i, m9_err *err);
+void Sem_LoadFile (Ast_Node * root, m9_state *err);
+void Sem_CheckFile (Ast_Node * root, m9_state *err);
+int64_t Sem_ErrCount (m9_state *err);
+m9_sl_CHAR Sem_ErrAt (int64_t i, m9_state *err);
+int64_t Sem_LedgerCount (m9_state *err);
+m9_sl_CHAR Sem_LedgerAt (int64_t i, m9_state *err);
 
 #endif

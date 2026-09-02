@@ -16,7 +16,7 @@ typedef struct Lex_Comment Lex_Comment;
 #define Lex_KChar INT64_C(5)
 #define Lex_KStr INT64_C(6)
 #define Lex_KwFirst INT64_C(7)
-#define Lex_KwLast INT64_C(66)
+#define Lex_KwLast INT64_C(67)
 #define Lex_OpFirst INT64_C(200)
 #define Lex_KAssign INT64_C(200)
 #define Lex_KEq INT64_C(201)
@@ -79,11 +79,11 @@ struct Lex_Comment {
   m9_sl_CHAR text;
 };
 
-void Lex_Init (Lex_Lexer *lx, m9_sl_CHAR src, m9_err *err);
-void Lex_Next (Lex_Lexer *lx, Lex_Token *t, m9_err *err);
-m9_sl_CHAR Lex_KindName (int64_t k, m9_err *err);
-void Lex_Collect (bool on, m9_err *err);
-int64_t Lex_ComCount (m9_err *err);
-Lex_Comment Lex_ComAt (int64_t i, m9_err *err);
+void Lex_Init (Lex_Lexer *lx, m9_sl_CHAR src, m9_state *err);
+void Lex_Next (Lex_Lexer *lx, Lex_Token *t, m9_state *err);
+m9_sl_CHAR Lex_KindName (int64_t k, m9_state *err);
+void Lex_Collect (bool on, m9_state *err);
+int64_t Lex_ComCount (m9_state *err);
+Lex_Comment Lex_ComAt (int64_t i, m9_state *err);
 
 #endif

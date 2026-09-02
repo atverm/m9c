@@ -78,7 +78,7 @@ static void short_exp (char *t)
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
   char buf[64], ref[64];
   int64_t i;
 

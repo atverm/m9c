@@ -48,24 +48,24 @@ struct Stats_Stream {
   double spare;
 };
 
-double Stats_Mean (m9_sl_F64 xs, m9_err *err);
-double Stats_Var (m9_sl_F64 xs, m9_err *err);
-double Stats_VarP (m9_sl_F64 xs, m9_err *err);
-double Stats_Std (m9_sl_F64 xs, m9_err *err);
-double Stats_StdP (m9_sl_F64 xs, m9_err *err);
-double Stats_Median (m9_sl_F64 xs, m9_err *err);
-double Stats_Percentile (m9_sl_F64 xs, double p, m9_err *err);
-Stats_Fit Stats_NormFit (m9_sl_F64 xs, m9_err *err);
-Stats_Reg Stats_LinReg (m9_sl_F64 xs, m9_sl_F64 ys, m9_err *err);
-Stats_Test Stats_TTest1 (m9_sl_F64 xs, double mu, m9_err *err);
-Stats_Test Stats_TTest2 (m9_sl_F64 xs, m9_sl_F64 ys, m9_err *err);
-double Stats_NormalCdf (double x, m9_err *err);
-double Stats_TTail (double t, double dof, m9_err *err);
-Stats_Stream Stats_Seed (int64_t s, m9_err *err);
-double Stats_Uniform (Stats_Stream *st, m9_err *err);
-int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_err *err);
-double Stats_Normal (Stats_Stream *st, m9_err *err);
-double Stats_Exponential (Stats_Stream *st, double lambda, m9_err *err);
-double Stats_LogNormal (Stats_Stream *st, double mu, double sigma, m9_err *err);
+double Stats_Mean (m9_sl_F64 xs, m9_state *err);
+double Stats_Var (m9_sl_F64 xs, m9_state *err);
+double Stats_VarP (m9_sl_F64 xs, m9_state *err);
+double Stats_Std (m9_sl_F64 xs, m9_state *err);
+double Stats_StdP (m9_sl_F64 xs, m9_state *err);
+double Stats_Median (m9_sl_F64 xs, m9_state *err);
+double Stats_Percentile (m9_sl_F64 xs, double p, m9_state *err);
+Stats_Fit Stats_NormFit (m9_sl_F64 xs, m9_state *err);
+Stats_Reg Stats_LinReg (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err);
+Stats_Test Stats_TTest1 (m9_sl_F64 xs, double mu, m9_state *err);
+Stats_Test Stats_TTest2 (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err);
+double Stats_NormalCdf (double x, m9_state *err);
+double Stats_TTail (double t, double dof, m9_state *err);
+Stats_Stream Stats_Seed (int64_t s, m9_state *err);
+double Stats_Uniform (Stats_Stream *st, m9_state *err);
+int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_state *err);
+double Stats_Normal (Stats_Stream *st, m9_state *err);
+double Stats_Exponential (Stats_Stream *st, double lambda, m9_state *err);
+double Stats_LogNormal (Stats_Stream *st, double mu, double sigma, m9_state *err);
 
 #endif

@@ -37,14 +37,14 @@ extern const m9_exc Dict_NotFound;
 typedef struct { Dict_Ent *p; int64_t len; } m9_sl_Dict_Ent;
 #endif
 
-Dict_Dict * Dict_New (m9_pool *pool, m9_err *err);
-void Dict_Put (m9_pool *pool, Dict_Dict * *d, m9_sl_CHAR key, Dict_Value val, m9_err *err);
-bool Dict_Find (Dict_Dict * d, m9_sl_CHAR key, Dict_Value *val, m9_err *err);
-Dict_Value Dict_Get (Dict_Dict * d, m9_sl_CHAR key, m9_err *err);
-bool Dict_Has (Dict_Dict * d, m9_sl_CHAR key, m9_err *err);
-int64_t Dict_Count (Dict_Dict * d, m9_err *err);
-m9_sl_CHAR Dict_KeyAt (Dict_Dict * d, int64_t i, m9_err *err);
-Dict_Value Dict_ValAt (Dict_Dict * d, int64_t i, m9_err *err);
-int64_t Dict_Hash (m9_sl_CHAR key, m9_err *err);
+Dict_Dict * Dict_New (m9_pool *pool, m9_state *err);
+void Dict_Put (m9_pool *pool, Dict_Dict * *d, m9_sl_CHAR key, Dict_Value val, m9_state *err);
+bool Dict_Find (Dict_Dict * d, m9_sl_CHAR key, Dict_Value *val, m9_state *err);
+Dict_Value Dict_Get (Dict_Dict * d, m9_sl_CHAR key, m9_state *err);
+bool Dict_Has (Dict_Dict * d, m9_sl_CHAR key, m9_state *err);
+int64_t Dict_Count (Dict_Dict * d, m9_state *err);
+m9_sl_CHAR Dict_KeyAt (Dict_Dict * d, int64_t i, m9_state *err);
+Dict_Value Dict_ValAt (Dict_Dict * d, int64_t i, m9_state *err);
+int64_t Dict_Hash (m9_sl_CHAR key, m9_state *err);
 
 #endif

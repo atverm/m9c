@@ -399,6 +399,7 @@ begin
     if p.f1 then s := 'VAR ';
     if p.f2 then s := 'OWN ';
     if p.f3 then s := 'RO ';
+    if p.f4 then s := s + 'KEPT ';
     Result := Result + s + IdentsStr (p.kids[0]) + ': ' +
       TypeStr (p.kids[1], 0);
   end;

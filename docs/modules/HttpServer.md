@@ -23,7 +23,7 @@ order, so the first AddRoute whose method and path agree wins;
 there is no most-specific rule to reason about, and a shadowed
 route is visible by reading down the calls that built it.
 
-### AddRoute (VAR pool: POOL ; VAR r: PTR Router ; RO method: STR ; RO path: STR ; status: I64 ; RO ctype: STR ; RO body: STR ; RO summary: STR)
+### AddRoute (VAR pool: POOL ; VAR r: PTR Router ; RO KEPT method: STR ; RO KEPT path: STR ; status: I64 ; RO KEPT ctype: STR ; RO KEPT body: STR ; RO KEPT summary: STR)
 
 the router keeps the slices, not copies: the caller's strings
 must outlive the router -- the contract Json.Parse already has

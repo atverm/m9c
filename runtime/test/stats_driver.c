@@ -58,7 +58,7 @@ static m9_sl_F64 S (double *p, int64_t n)
 
 int main (void)
 {
-  m9_err e = {0};
+  m9_state e = {0};
   FILE *f = fopen ("stats.golden", "r");
   char line[256];
   if (!f) { printf ("SKIP: no stats.golden\n"); return 0; }
@@ -161,7 +161,7 @@ int main (void)
 
   /* the refusals */
   {
-    m9_err e2 = {0};
+    m9_state e2 = {0};
     Stats_Mean (S (X, 0), &e2);
     ok ("mean of nothing refuses", e2.exc == &Stats_TooFew);
     e2.exc = NULL;

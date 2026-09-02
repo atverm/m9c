@@ -234,7 +234,7 @@ END Suffix ;
    backed by C, so there is no u.m9 to find and guessing there would
    invent files.                                                    *)
 
-PROCEDURE DirAdd (RO d: STR ; trusted: BOOL) =
+PROCEDURE DirAdd (RO KEPT d: STR ; trusted: BOOL) =
 VAR
   nb : SLICE OF STR ;
   tb : SLICE OF BOOL ;
@@ -344,7 +344,7 @@ BEGIN
   RETURN FALSE
 END IsLoaded ;
 
-PROCEDURE MarkLoaded (RO name: STR) =
+PROCEDURE MarkLoaded (RO KEPT name: STR) =
 VAR
   nb : SLICE OF STR ;
   i : I64 ;
@@ -365,7 +365,7 @@ END MarkLoaded ;
    be a mistake in the caller rather than something to absorb
    quietly; it is refused by not appending it twice, and the FIRST
    position is the one that is right. *)
-PROCEDURE AddEdge (RO a: STR ; RO b: STR) =
+PROCEDURE AddEdge (RO KEPT a: STR ; RO KEPT b: STR) =
 VAR
   nf, nt : SLICE OF STR ;
   i : I64 ;
@@ -382,7 +382,7 @@ BEGIN
   nedge := nedge + 1
 END AddEdge ;
 
-PROCEDURE Ordered (RO name: STR) =
+PROCEDURE Ordered (RO KEPT name: STR) =
 VAR
   nb : SLICE OF STR ;
   i : I64 ;
@@ -408,7 +408,7 @@ BEGIN
   RETURN FALSE
 END IsVisiting ;
 
-PROCEDURE PushVisit (RO name: STR) =
+PROCEDURE PushVisit (RO KEPT name: STR) =
 VAR nb : SLICE OF STR ; i : I64 ;
 BEGIN
   IF nvisit = LEN (visiting) THEN
@@ -438,7 +438,7 @@ END IsOrdered ;
    after Mid and the build failed on the first run.  A cycle stops at
    the visiting mark: M9 does not forbid mutual imports, and a
    compiler should not acquire the rule by recursing for ever. *)
-PROCEDURE OrderDfs (RO name: STR) =
+PROCEDURE OrderDfs (RO KEPT name: STR) =
 VAR i : I64 ;
 BEGIN
   IF IsOrdered (name) THEN RETURN END ;
@@ -1419,7 +1419,7 @@ BEGIN
   RETURN Doc.Json (pool, root, name, st)
 END JsonText ;
 
-PROCEDURE ParseText (RO src: STR ; RO path: STR) : Ast.Kid
+PROCEDURE ParseText (RO KEPT src: STR ; RO path: STR) : Ast.Kid
   RAISES ValueRange =
 VAR
   p : Parse.Parser ;
@@ -1496,7 +1496,7 @@ BEGIN
 END Absorb ;
 
 (* remember a root so its own imports can be walked later *)
-PROCEDURE Keep (root: PTR Ast.Node ; RO name: STR) =
+PROCEDURE Keep (KEPT root: PTR Ast.Node ; RO KEPT name: STR) =
 VAR
   nb : SLICE OF Ast.Kid ;
   nn : SLICE OF STR ;
@@ -1566,7 +1566,7 @@ END Missing ;
    through a dependency would be marked loaded and then skipped when
    the main module asks for it by name, and its #include would go
    missing.  Two passes cost one walk and remove that whole class. *)
-PROCEDURE LoadDirect (RO name: STR) RAISES ValueRange =
+PROCEDURE LoadDirect (RO KEPT name: STR) RAISES ValueRange =
 VAR
   path, src : STR ;
   ok, trusted : BOOL ;
@@ -1585,13 +1585,13 @@ BEGIN
   END
 END LoadDirect ;
 
-PROCEDURE LoadIndirect (RO name: STR) RAISES ValueRange ;
+PROCEDURE LoadIndirect (RO KEPT name: STR) RAISES ValueRange ;
 
 (* every module an import walk reaches.  The name is marked BEFORE the
    recursion, which is what makes a cycle terminate instead of
    recurring: M9 has no rule against mutual imports and the compiler
    should not acquire one by crashing. *)
-PROCEDURE WalkImports (root: PTR Ast.Node ; direct: BOOL ; RO owner: STR)
+PROCEDURE WalkImports (root: PTR Ast.Node ; direct: BOOL ; RO KEPT owner: STR)
   RAISES ValueRange =
 VAR i, j, k : I64 ;
 BEGIN
@@ -1629,7 +1629,7 @@ END WalkImports ;
 (* reached only through another module: the checker needs it, the
    generated header does not name it.  Post-order, so its own
    dependencies are registered before it is. *)
-PROCEDURE LoadIndirect (RO name: STR) RAISES ValueRange =
+PROCEDURE LoadIndirect (RO KEPT name: STR) RAISES ValueRange =
 VAR
   path, src : STR ;
   ok, trusted : BOOL ;
@@ -1844,6 +1844,10 @@ BEGIN
         END ;
         RETURN
       END ;
+      (* -g debugs the M9, not the C it became.  The directives are
+         emitted only under -g, so without it the generated C is the
+         byte-for-byte article gendiff and the bootstrap compare. *)
+      IF debug THEN Gen.SetDebugSource (main) END ;
       Gen.Emit (name) ;
       IF Gen.Errs () > 0 THEN
         (* each error with its line, the way g1 always did on the

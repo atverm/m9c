@@ -56,7 +56,7 @@ PROCEDURE New (VAR pool: POOL) : PTR Dict IN pool ;
      makes KeyAt/ValAt below a stable walk rather than a hash
      order that changes when the table grows.                      *)
 
-PROCEDURE Put (VAR pool: POOL ; VAR d: PTR Dict ; RO key: STR ;
+PROCEDURE Put (VAR pool: POOL ; VAR d: PTR Dict ; RO KEPT key: STR ;
                val: Value) ;
   (* inserts, or replaces the value of an existing key.  Replacing
      keeps the key's original position in the iteration order.       *)
@@ -190,7 +190,7 @@ BEGIN
   END
 END Regrow ;
 
-PROCEDURE Put (VAR pool: POOL ; VAR d: PTR Dict ; RO key: STR ;
+PROCEDURE Put (VAR pool: POOL ; VAR d: PTR Dict ; RO KEPT key: STR ;
                val: Value) =
 VAR
   s, e, i : I64 ;

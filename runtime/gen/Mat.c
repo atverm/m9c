@@ -50,12 +50,16 @@ struct Mat_Matrix {
   m9_gd2_double d;
 };
 
-static bool Mat_IsNaN (double v, m9_err *err);
-static void Mat_Same (Mat_Matrix * a, Mat_Matrix * b, m9_err *err);
+static bool Mat_IsNaN (double v, m9_state *err);
+static void Mat_Same (Mat_Matrix * a, Mat_Matrix * b, m9_state *err);
 
 
-Mat_Matrix * Mat_New (m9_pool *pool, int64_t rows, int64_t cols, m9_err *err)
+Mat_Matrix * Mat_New (m9_pool *pool, int64_t rows, int64_t cols, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   if (((rows <= INT64_C(0)) || (cols <= INT64_C(0)))) {
@@ -68,50 +72,84 @@ Mat_Matrix * Mat_New (m9_pool *pool, int64_t rows, int64_t cols, m9_err *err)
   if (err->exc) goto L_ret;
   m->d = ({ m9_gd2_double m9t1; m9t1.n[0] = rows; m9t1.n[1] = cols; m9t1.s[1] = 1; m9t1.s[0] = m9t1.s[1] * m9t1.n[1]; m9t1.p = (double *) m9_pool_alloc (&((*pool)), sizeof (double), m9_gcount (m9t1.n, 2, err), err); m9t1; });
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Mat_Rows (Mat_Matrix * m, m9_err *err)
+int64_t Mat_Rows (Mat_Matrix * m, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
+  err->res = m9res;
   m9ret = (m->d).n[INT64_C(0)];
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Mat_Cols (Mat_Matrix * m, m9_err *err)
+int64_t Mat_Cols (Mat_Matrix * m, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
+  err->res = m9res;
   m9ret = (m->d).n[INT64_C(1)];
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Mat_Get (Mat_Matrix * m, int64_t r, int64_t c, m9_err *err)
+double Mat_Get (Mat_Matrix * m, int64_t r, int64_t c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
+  err->res = m9res;
   m9ret = (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, c, err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Mat_Set (Mat_Matrix * *m, int64_t r, int64_t c, double v, m9_err *err)
+void Mat_Set (Mat_Matrix * *m, int64_t r, int64_t c, double v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   (*(double *) m9_gat2 ((*m)->d.p, sizeof (double), (*m)->d.n[0], (*m)->d.n[1], (*m)->d.s[0], (*m)->d.s[1], r, c, err)) = v;
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_err *err)
+void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t r = 0; (void) r;
   int64_t c = 0; (void) c;
   int64_t n = 0; (void) n;
@@ -211,11 +249,17 @@ void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_err *err)
     }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-Mat_Matrix * Mat_SubRowVector (m9_pool *pool, Mat_Matrix * m, m9_sl_F64 v, m9_err *err)
+Mat_Matrix * Mat_SubRowVector (m9_pool *pool, Mat_Matrix * m, m9_sl_F64 v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * res = NULL; (void) res;
   int64_t r = 0; (void) r;
@@ -242,14 +286,21 @@ Mat_Matrix * Mat_SubRowVector (m9_pool *pool, Mat_Matrix * m, m9_sl_F64 v, m9_er
       if (err->exc) goto L_ret;
     } }
   } }
+  err->res = m9res;
   m9ret = res;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Mat_MinMax (Mat_Matrix * m, double *mn, double *mx, m9_err *err)
+void Mat_MinMax (Mat_Matrix * m, double *mn, double *mx, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t r = 0; (void) r;
   int64_t c = 0; (void) c;
   double v = 0; (void) v;
@@ -288,11 +339,17 @@ void Mat_MinMax (Mat_Matrix * m, double *mn, double *mx, m9_err *err)
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_err *err)
+Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t r = 0; (void) r;
@@ -332,14 +389,21 @@ Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_err *er
       if (err->exc) goto L_ret;
     } }
   } }
+  err->res = m9res;
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_err *err)
+Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t r = 0; (void) r;
@@ -372,14 +436,21 @@ Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_err *err)
     (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, INT64_C(0), err)) = acc;
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_err *err)
+Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * t = NULL; (void) t;
   int64_t r = 0; (void) r;
@@ -400,14 +471,21 @@ Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_err *err)
       if (err->exc) goto L_ret;
     } }
   } }
+  err->res = m9res;
   m9ret = t;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_err *err)
+Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t r = 0; (void) r;
@@ -430,14 +508,21 @@ Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_err *er
       if (err->exc) goto L_ret;
     } }
   } }
+  err->res = m9res;
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_err *err)
+Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t r = 0; (void) r;
@@ -460,14 +545,21 @@ Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_err *er
       if (err->exc) goto L_ret;
     } }
   } }
+  err->res = m9res;
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Mat_Scale (Mat_Matrix * *m, double s, m9_err *err)
+void Mat_Scale (Mat_Matrix * *m, double s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t r = 0; (void) r;
   int64_t c = 0; (void) c;
   { int64_t m9t1to;
@@ -485,11 +577,17 @@ void Mat_Scale (Mat_Matrix * *m, double s, m9_err *err)
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-Mat_Matrix * Mat_Identity (m9_pool *pool, int64_t n, m9_err *err)
+Mat_Matrix * Mat_Identity (m9_pool *pool, int64_t n, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t i = 0; (void) i;
@@ -503,14 +601,21 @@ Mat_Matrix * Mat_Identity (m9_pool *pool, int64_t n, m9_err *err)
     (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], i, i, err)) = 1.0;
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = m;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_err *err)
+Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * t = NULL; (void) t;
   int64_t r = 0; (void) r;
@@ -531,14 +636,21 @@ Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_err *err)
       if (err->exc) goto L_ret;
     } }
   } }
+  err->res = m9res;
   m9ret = t;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_err *err)
+Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * l = NULL; (void) l;
   int64_t n = 0; (void) n;
@@ -591,14 +703,21 @@ Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_err *err)
       }
     } }
   } }
+  err->res = m9res;
   m9ret = l;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_err *err)
+Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * x = NULL; (void) x;
   int64_t n = 0; (void) n;
@@ -668,36 +787,57 @@ Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_er
       if (err->exc) goto L_ret;
     } }
   } }
+  err->res = m9res;
   m9ret = x;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_err *err)
+Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * l = NULL; (void) l;
   l = Mat_Cholesky (pool, a, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Mat_CholSolve (pool, l, Mat_Identity (pool, Mat_Rows (a, err), err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool Mat_IsNaN (double v, m9_err *err)
+static bool Mat_IsNaN (double v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
+  err->res = m9res;
   m9ret = (!((v == v)));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Mat_Same (Mat_Matrix * a, Mat_Matrix * b, m9_err *err)
+static void Mat_Same (Mat_Matrix * a, Mat_Matrix * b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9t1 = (Mat_Rows (a, err) != Mat_Rows (b, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -715,5 +855,7 @@ static void Mat_Same (Mat_Matrix * a, Mat_Matrix * b, m9_err *err)
     goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }

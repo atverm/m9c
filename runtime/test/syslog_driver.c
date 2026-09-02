@@ -64,7 +64,7 @@ static m9_sl_CHAR lit (const char *s)
 
 static void body_plain (void)
 {
-  m9_err e = {0};
+  m9_state e = {0};
   Syslog_Open (lit ("m9test"), Syslog_Perror | Syslog_Pid, Syslog_User, &e);
   Syslog_Send (Syslog_Pri (Syslog_User, Syslog_Err, &e),
                lit ("store unreachable"), &e);
@@ -76,7 +76,7 @@ static void body_plain (void)
    write to them. */
 static void body_format (void)
 {
-  m9_err e = {0};
+  m9_state e = {0};
   Syslog_Open (lit ("m9test"), Syslog_Perror, Syslog_User, &e);
   Syslog_Send (Syslog_Pri (Syslog_User, Syslog_Warning, &e),
                lit ("bad path: %s %n %d %100000f"), &e);
@@ -85,7 +85,7 @@ static void body_format (void)
 
 static void body_log_sink (void)
 {
-  m9_err e = {0};
+  m9_state e = {0};
   Logger_SetLevel (Logger_Info, &e);
   Logger_ToSyslog (lit ("m9app"), Syslog_Perror | Syslog_Pid, Syslog_Local3, &e);
   Logger_Start (Logger_Warn, lit ("chunk missing"), &e);
@@ -97,7 +97,7 @@ static void body_log_sink (void)
 
 static void body_back_to_stderr (void)
 {
-  m9_err e = {0};
+  m9_state e = {0};
   Logger_SetLevel (Logger_Info, &e);
   Logger_ToStderr (&e);
   Logger_Msg (Logger_Error, lit ("plain again"), &e);
@@ -108,7 +108,7 @@ static void body_back_to_stderr (void)
    so a retained pointer would show as garbage in every later record. */
 static void body_ident_retention (void)
 {
-  m9_err e = {0};
+  m9_state e = {0};
   static uint32_t id[8] = { 101, 112, 104, 101, 109, 114, 108, 0 };
   m9_sl_CHAR s = (m9_sl_CHAR){ id, 7 };
   Syslog_Open (s, Syslog_Perror, Syslog_User, &e);

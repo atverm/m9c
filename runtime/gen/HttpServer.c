@@ -50,15 +50,19 @@ static const uint32_t m9s13[8] = { 110u, 111u, 32u, 114u, 111u, 117u, 116u, 101u
 
 static m9_mon m9_gate_csrv;
 
-static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, m9_err *err);
-static m9_sl_CHAR HttpServer_Reason (int64_t status, m9_err *err);
-static void HttpServer_CrLf (m9_pool *pool, DynStr_DString * *d, m9_err *err);
-static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_err *err);
-static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_err *err);
+static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, m9_state *err);
+static m9_sl_CHAR HttpServer_Reason (int64_t status, m9_state *err);
+static void HttpServer_CrLf (m9_pool *pool, DynStr_DString * *d, m9_state *err);
+static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_state *err);
+static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err);
 
 
-HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_err *err)
+HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   HttpServer_Router * m9ret = NULL;
   HttpServer_Router * r = NULL; (void) r;
   r = (HttpServer_Router *) m9_pool_alloc (&((*pool)), sizeof (HttpServer_Router), 1, err);
@@ -66,14 +70,21 @@ HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_err *err)
   r->first = NULL;
   r->last = NULL;
   r->count = INT64_C(0);
+  err->res = m9res;
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void HttpServer_AddRoute (m9_pool *pool, HttpServer_Router * *r, m9_sl_CHAR method, m9_sl_CHAR path, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_sl_CHAR summary, m9_err *err)
+void HttpServer_AddRoute (m9_pool *pool, HttpServer_Router * *r, m9_sl_CHAR method, m9_sl_CHAR path, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_sl_CHAR summary, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   HttpServer_Route * nr = NULL; (void) nr;
   nr = (HttpServer_Route *) m9_pool_alloc (&((*pool)), sizeof (HttpServer_Route), 1, err);
   if (err->exc) goto L_ret;
@@ -94,80 +105,128 @@ void HttpServer_AddRoute (m9_pool *pool, HttpServer_Router * *r, m9_sl_CHAR meth
   (*r)->count = m9_add_i64 ((*r)->count, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-int64_t HttpServer_RouteCount (HttpServer_Router * r, m9_err *err)
+int64_t HttpServer_RouteCount (HttpServer_Router * r, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
+  err->res = m9res;
   m9ret = r->count;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR HttpServer_RouteMethod (HttpServer_Router * r, int64_t i, m9_err *err)
+m9_sl_CHAR HttpServer_RouteMethod (HttpServer_Router * r, int64_t i, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
   p = HttpServer_RouteAt (r, i, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = p->method;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR HttpServer_RoutePath (HttpServer_Router * r, int64_t i, m9_err *err)
+m9_sl_CHAR HttpServer_RoutePath (HttpServer_Router * r, int64_t i, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
   p = HttpServer_RouteAt (r, i, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = p->path;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t HttpServer_RouteStatus (HttpServer_Router * r, int64_t i, m9_err *err)
+int64_t HttpServer_RouteStatus (HttpServer_Router * r, int64_t i, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   HttpServer_Route * p = NULL; (void) p;
   p = HttpServer_RouteAt (r, i, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = p->status;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR HttpServer_RouteType (HttpServer_Router * r, int64_t i, m9_err *err)
+m9_sl_CHAR HttpServer_RouteType (HttpServer_Router * r, int64_t i, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
   p = HttpServer_RouteAt (r, i, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = p->ctype;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR HttpServer_RouteSummary (HttpServer_Router * r, int64_t i, m9_err *err)
+m9_sl_CHAR HttpServer_RouteSummary (HttpServer_Router * r, int64_t i, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
   p = HttpServer_RouteAt (r, i, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = p->summary;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void HttpServer_Serve (HttpServer_Router * r, int64_t port, int64_t maxRequests, m9_err *err)
+void HttpServer_Serve (HttpServer_Router * r, int64_t port, int64_t maxRequests, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t lfd = 0; (void) lfd;
   int64_t cfd = 0; (void) cfd;
   int64_t served = 0; (void) served;
@@ -198,11 +257,17 @@ L_fin_m9t3: ;
   if (m9t2) goto L_ret;
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, m9_err *err)
+static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   HttpServer_Route * m9ret = NULL;
   HttpServer_Route * c = NULL; (void) c;
   int64_t j = 0; (void) j;
@@ -218,6 +283,7 @@ static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, 
     HttpServer_Route * rt = c;
     if (!(rt != NULL)) break;
     if ((j == INT64_C(0))) {
+      err->res = m9res;
       m9ret = rt;
       goto L_ret;
     }
@@ -230,55 +296,78 @@ static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, 
   m9_raise (err, &m9_exc_IndexError);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR HttpServer_Reason (int64_t status, m9_err *err)
+static m9_sl_CHAR HttpServer_Reason (int64_t status, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   { __typeof__(status) m9t1 = status;
   switch (m9t1) {
   case INT64_C(200):
   {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s2, 2 });
     goto L_ret;
   } break;
   case INT64_C(201):
   {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s3, 7 });
     goto L_ret;
   } break;
   case INT64_C(400):
   {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s4, 11 });
     goto L_ret;
   } break;
   case INT64_C(404):
   {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s5, 9 });
     goto L_ret;
   } break;
   default: {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s6, 6 });
     goto L_ret;
   } break;
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void HttpServer_CrLf (m9_pool *pool, DynStr_DString * *d, m9_err *err)
+static void HttpServer_CrLf (m9_pool *pool, DynStr_DString * *d, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_AppendChar (pool, d, 13u, err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, d, 10u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_err *err)
+static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   m9_sl_BYTE wire = {0}; (void) wire;
@@ -315,12 +404,18 @@ static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9
   if (err->exc) goto L_ret;
   n = (int64_t)(write (((int)(fd)), ((void *)(wire).p), ((size_t)((wire).len))));
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_err *err)
+static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE buf = {0}; (void) buf;
   m9_sl_CHAR req = {0}; (void) req;
@@ -395,6 +490,8 @@ L_fin_m9t2: ;
   if (m9t1) goto L_ret;
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }

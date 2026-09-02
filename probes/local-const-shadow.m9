@@ -1,0 +1,14 @@
+(* EXPECT: a local CONST may not shadow a module CONST: Tag *)
+MODULE m ;
+
+CONST Tag = 'module' ;
+
+PROCEDURE P () =
+CONST Tag = 'local' ;
+BEGIN
+  Tag
+END P ;
+
+BEGIN
+  P ()
+END m.

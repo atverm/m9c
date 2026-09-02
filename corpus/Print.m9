@@ -607,6 +607,7 @@ BEGIN
         IF p.f1 THEN DynStr.Append (pool, d, 'VAR ') END ;
         IF p.f2 THEN DynStr.Append (pool, d, 'OWN ') END ;
         IF p.f3 THEN DynStr.Append (pool, d, 'RO ') END ;
+        IF p.f4 THEN DynStr.Append (pool, d, 'KEPT ') END ;
         IF p.kids[0] IS SOME ids THEN Idents (pool, d, ids) END ;
         DynStr.Append (pool, d, ': ') ;
         EType (pool, d, p.kids[1], 0)

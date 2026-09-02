@@ -77,6 +77,13 @@ type
                                          bound to one (par 6) }
     fromMap : TStringList;
     varParams, varWritten : TStringList;   { RO measurement }
+    keptParams : TStringList;    { params declared KEPT (par 4.1),
+                                    as name=line:col of the declaring
+                                    identifier }
+    keptUsed : TStringList;      { KEPT params the analysis saw
+                                    retained -- the complement is the
+                                    overstatement ledger class }
+    localConsts : TStringList;             { a procedure's own CONSTs }
     canonCtx : string;                 { module whose bare type names
                                          are being canonicalized;
                                          '' = the current module }
@@ -111,7 +118,6 @@ type
                         depth: Integer): string;
     function CanonT (t: TNode; depth: Integer): string;
     function IsReadonlyT (declN, res: TNode): Boolean;
-    procedure LedgerN (n: TNode; const ctx, msg: string);
     procedure CheckThreadChains;
   public
     Errors : TStringList;
@@ -296,7 +302,10 @@ begin
   callGraph := TStringList.Create; callGraph.CaseSensitive := True;
   RoCand := TStringList.Create; RoCand.CaseSensitive := True;
   varParams := TStringList.Create; varParams.CaseSensitive := True;
+  keptParams := TStringList.Create; keptParams.CaseSensitive := True;
+  keptUsed := TStringList.Create; keptUsed.CaseSensitive := True;
   varWritten := TStringList.Create; varWritten.CaseSensitive := True;
+  localConsts := TStringList.Create; localConsts.CaseSensitive := True;
   tyI64 := TNode.Create (nkQualident);
   tyI64.a := 'I64';
   tyCHAR := TNode.Create (nkQualident);
@@ -331,14 +340,6 @@ begin
   ln := 0; cl := 0;
   if n <> nil then begin ln := n.line; cl := n.col; end;
   Errors.Add (Format ('%d:%d %s: %s', [ln, cl, ctx, msg]));
-end;
-
-procedure TSem.LedgerN (n: TNode; const ctx, msg: string);
-var ln, cl : Integer;
-begin
-  ln := 0; cl := 0;
-  if n <> nil then begin ln := n.line; cl := n.col; end;
-  Ledger.Add (Format ('%d:%d %s: %s', [ln, cl, ctx, msg]));
 end;
 
 function TSem.SigOf (p: TNode): string;
@@ -874,6 +875,26 @@ procedure TSem.CheckBody (body: TNode; const ctx: string;
 var
   raised, handled, calls, ownState : TStringList;
   i : Integer;
+  { ---- par 4.1, DIRECTIONAL: the ledger names stores; these decide
+    which stores anyone outside the frame can still see.  Per local
+    (or binder, or value param -- all frame storage) a list of escape
+    TARGETS: a reference parameter's name, '<module>', '<return>' or
+    '<call>'.  Aliasing (local := local, views, binders) is a
+    symmetric edge and targets close over the edges, so the
+    approximation can keep an entry in the ledger that a finer
+    analysis would drop, never drop one it should keep.  Ledger
+    entries are PENDED during the walk and classified at the end,
+    once every escape of the destination has been seen. }
+  escSet, escEdges : TStringList;
+  { par 4.1 value provenance: which BORROWS a local or binder
+    carries -- a copied reference, a binder's view, a sub-slice.
+    'local=borrow' pairs, plus directed copy edges closed at flush
+    (carries of the edge's source flow to its destination).  No kill
+    on reassignment: the approximation errs into the ledger. }
+  carryPair, carryEdge : TStringList;
+  pendLn, pendCl : array of Integer;
+  pendSrc, pendDst : array of string;
+  pendN : Integer;
 
   function ScopeType (const nm: string): TNode;
   var ix : Integer;
@@ -898,6 +919,168 @@ var
     ix := scope.IndexOfName (nm);
     if ix < 0 then Exit ('');
     Result := scope.ValueFromIndex[ix];
+  end;
+
+  { name NM's storage is reachable from outside the frame via TGT.
+    Append-if-absent, so target order is first-encounter order --
+    the M9 checker must reproduce it, and semdiff holds both to it }
+  procedure EscTarget (const nm, tgt: string);
+  begin
+    if escSet.IndexOf (nm + '=' + tgt) < 0 then
+      escSet.Add (nm + '=' + tgt);
+  end;
+
+  procedure EscAlias (const a, b: string);
+  begin
+    if a = b then Exit;
+    if escEdges.IndexOf (a + '=' + b) < 0 then
+      escEdges.Add (a + '=' + b);
+  end;
+
+  { the frame-storage root a reference expression views: through
+    SOME and parens, and through SLICE/VIEW/SHARED,
+    whose answers alias their first argument's storage }
+  function EscRootOf (e: TNode): string;
+  var nm : string;
+  begin
+    Result := '';
+    if e = nil then Exit;
+    if e.kind = nkDesignator then Exit (e.a);
+    if (e.kind = nkSomeExpr) or (e.kind = nkParen) then
+      Exit (EscRootOf (e.kids[0]));
+    if (e.kind = nkCallExpr) and (e.kids[0] <> nil) and
+       (e.kids[0].kind = nkDesignator) and
+       (Length (e.kids[0].kids) = 0) then
+    begin
+      nm := e.kids[0].a;
+      if ((nm = 'SLICE') or (nm = 'VIEW') or (nm = 'SHARED')) and
+         (e.kids[1] <> nil) and (Length (e.kids[1].kids) > 0) then
+        Exit (EscRootOf (e.kids[1].kids[0]));
+    end;
+  end;
+
+  function IsFrameMode (const m: string): Boolean;
+  begin
+    Result := (m = 'l') or (m = 'b') or (m = 'p');
+  end;
+
+  { a ref value rooted at frame storage SRC was stored into the
+    designator rooted DST (dstSel: through a selector) }
+  procedure EscStore (const dst: string; dstSel: Boolean; const src: string);
+  var m : string;
+  begin
+    m := ScopeMode (dst);
+    if m = 'm' then EscTarget (src, '<module>')
+    else if (m = 'v') or (m = 'o') or (m = 'r') then EscTarget (src, dst)
+    else if (m = 'p') and dstSel then EscTarget (src, dst)
+    else if IsFrameMode (m) then EscAlias (dst, src);
+  end;
+
+  procedure CarryAdd (const nm, borrow: string);
+  begin
+    if carryPair.IndexOf (nm + '=' + borrow) < 0 then
+      carryPair.Add (nm + '=' + borrow);
+  end;
+
+  procedure CarryEdgeAdd (const dst, src: string);
+  begin
+    if dst = src then Exit;
+    if carryEdge.IndexOf (dst + '=' + src) < 0 then
+      carryEdge.Add (dst + '=' + src);
+  end;
+
+  { a reference value rooted at SRC now also lives under the bare
+    local or binder DST: a borrow is carried, a carrier's cargo is
+    inherited }
+  procedure CarryFrom (const dst, src: string);
+  var m : string;
+  begin
+    m := ScopeMode (src);
+    if (m = 'p') or (m = 'v') or (m = 'r') then CarryAdd (dst, src)
+    else if (m = 'l') or (m = 'b') then CarryEdgeAdd (dst, src);
+  end;
+
+  function RenderTgt (const t: string): string;
+  begin
+    if t = '<module>' then Exit ('module state');
+    if t = '<return>' then Exit ('the RETURN value');
+    if t = '<call>' then Exit ('a callee');
+    if t = '<unknown>' then Exit ('an unknown name');
+    Result := 'the caller through ' + t;
+  end;
+
+  { classify ONE resolved store -- SRC is the borrow, CARRIER the
+    local or binder it travelled through ('' when direct) -- and
+    write the ledger line, the undeclared-retention error, and the
+    KEPT justification }
+  procedure EmitPend (ln, cl: Integer; const src, carrier, dst: string);
+  var
+    tl : TStringList;
+    j2 : Integer;
+    selfHit : Boolean;
+    msg2, msgE, dmode, srcT : string;
+  begin
+    srcT := src;
+    if carrier <> '' then
+      srcT := src + ' (carried by ' + carrier + ')';
+    tl := TStringList.Create; tl.CaseSensitive := True;
+    dmode := ScopeMode (dst);
+    if dmode = 'm' then tl.Add ('<module>')
+    else if (dmode = 'v') or (dmode = 'o') or (dmode = 'r') or
+            (dmode = 'p') then tl.Add (dst)
+    else if (dmode = 'l') or (dmode = 'b') then
+    begin
+      for j2 := 0 to escSet.Count - 1 do
+        if escSet.Names[j2] = dst then
+          tl.Add (escSet.ValueFromIndex[j2]);
+    end
+    else tl.Add ('<unknown>');
+    { the source among the targets is the destination escaping only
+      into the borrow itself -- a tree growing through its own node
+      is not a kept borrow }
+    selfHit := tl.IndexOf (src) >= 0;
+    if selfHit then tl.Delete (tl.IndexOf (src));
+    if tl.Count = 0 then
+    begin
+      if selfHit then
+        msg2 := 'self-store: borrowed ' + srcT + ' stored into ' +
+          dst + ', which reaches the caller only through ' +
+          src + ' itself (par 4.1)'
+      else
+        msg2 := 'frame-store: borrowed ' + srcT + ' stored into ' +
+          dst + ', which never escapes the frame (par 4.1)';
+    end
+    else
+    begin
+      msg2 := '';
+      for j2 := 0 to tl.Count - 1 do
+      begin
+        if msg2 <> '' then msg2 := msg2 + ', ';
+        msg2 := msg2 + RenderTgt (tl[j2]);
+      end;
+      msg2 := 'retention: borrowed ' + srcT + ' stored into ' +
+        dst + ' -- reaches ' + msg2 + ' (par 4.1/4.2)';
+      keptUsed.Add (src);
+      { the CHECK behind the measurement: a retention must be in the
+        signature, the way a raise must be in RAISES.  '<call>' alone
+        does not fire it -- whether a callee keeps its argument is
+        that callee's declaration to make, and the caller check reads
+        it there (par 4.1). }
+      msgE := '';
+      for j2 := 0 to tl.Count - 1 do
+        if tl[j2] <> '<call>' then
+        begin
+          if msgE <> '' then msgE := msgE + ', ';
+          msgE := msgE + RenderTgt (tl[j2]);
+        end;
+      if (msgE <> '') and (keptParams.IndexOfName (src) < 0) then
+        Errors.Add (Format (
+          '%d:%d %s: undeclared retention: borrowed %s reaches %s' +
+          ' -- declare KEPT %s (par 4.1)',
+          [ln, cl, ctx, srcT, msgE, src]));
+    end;
+    Ledger.Add (Format ('%d:%d %s: %s', [ln, cl, ctx, msg2]));
+    tl.Free;
   end;
 
   { ---- P3 pass 2: owned-pointer state (par 4.2) ----
@@ -1282,15 +1465,6 @@ var
 
   { the base name a stored reference is borrowed from, if the source
     is a plain designator (possibly under SOME/parens) }
-  function RefRootOf (e: TNode): string;
-  begin
-    Result := '';
-    if e = nil then Exit;
-    if e.kind = nkDesignator then Exit (e.a);
-    if (e.kind = nkSomeExpr) or (e.kind = nkParen) then
-      Exit (RefRootOf (e.kids[0]));
-  end;
-
   function IsRefTy (const s0: string): Boolean;
   var s : string;
   begin
@@ -1327,7 +1501,7 @@ var
     aTy : array of string;
     aNode : array of TNode;
     pr : TProcInfo;
-    pl, grp, vfields, ares : TNode;
+    pl, grp, vfields, ares, dcl : TNode;
     isVar : Boolean;
     flat : array of TNode;
 
@@ -1571,6 +1745,42 @@ var
                   else if OwnedCandKind (aNode[k].a) > 0 then
                     OwnMark (aNode[k].a,
                       'moved into an OWN parameter of ' + name, site);
+                end;
+              end;
+              { par 4.1, the caller side of KEPT.  A parameter's KEPT
+                is read HERE, which is what narrows the old blanket
+                every-callee-may-keep '<call>' fact to the parameters
+                that declare it.  Two refusals, the RAISES-style
+                upward composition: what is handed to a KEPT
+                parameter must survive the call, so a concatenation
+                (frame storage, par 2.3) is refused outright, and a
+                borrow is a retention the CALLER must declare in
+                turn. }
+              if grp.f4 then
+              begin
+                dcl := StripParens (aNode[k]);
+                if (dcl <> nil) and (dcl.kind = nkBin) and
+                   (dcl.a = '+') and (aTy[k] = 'SLICE OF CHAR') then
+                  ErrN (site, ctx, Format (
+                    'argument %d of %s: a KEPT parameter cannot take' +
+                    ' a concatenation -- it dies with this frame' +
+                    ' (par 4.1)', [k + 1, name]));
+                aliasTo := EscRootOf (aNode[k]);
+                if (aliasTo <> '') and IsRefTy (aTy[k]) then
+                begin
+                  amode := ScopeMode (aliasTo);
+                  { handing a borrow onward to a KEPT parameter is
+                    what justifies the caller's own KEPT }
+                  if (amode = 'p') or (amode = 'v') or (amode = 'r') then
+                    keptUsed.Add (aliasTo);
+                  if ((amode = 'p') or (amode = 'v') or (amode = 'r'))
+                     and (keptParams.IndexOfName (aliasTo) < 0) then
+                    ErrN (site, ctx, Format (
+                      'argument %d of %s: borrowed %s is kept by the' +
+                      ' callee -- declare KEPT %s (par 4.1)',
+                      [k + 1, name, aliasTo, aliasTo]));
+                  if IsFrameMode (amode) then
+                    EscTarget (aliasTo, '<call>');
                 end;
               end;
             end;
@@ -1847,6 +2057,13 @@ var
                   ErrN (e, ctx, 'IS SOME needs an OPT operand');
                 BindName (e.kids[1].a, nil);
               end;
+              { par 4.1 direction: the binder is a VIEW of the
+                operand -- storing into the binder stores into the
+                operand's storage, so the binder inherits the
+                operand's reach (dst = operand, src = binder) --
+                and, provenance, the binder CARRIES the operand }
+              EscStore (e.kids[0].a, True, e.kids[1].a);
+              CarryFrom (e.kids[1].a, e.kids[0].a);
             end;
           end
           else
@@ -1890,7 +2107,7 @@ var
 
   procedure WalkSeq (s: TNode); forward;
 
-  procedure BindPattern (lbl: TNode);
+  procedure BindPattern (lbl: TNode; const selRoot: string);
   var
     vi : TVariantInfo;
     v, g, j, n : Integer;
@@ -1913,10 +2130,20 @@ var
               end;
         end;
     for n := 0 to High (lbl.kids[0].kids) do
+    begin
       if n <= High (flat) then
         BindName (lbl.kids[0].kids[n].a, flat[n])
       else
         BindName (lbl.kids[0].kids[n].a, nil);
+      { par 4.1 direction: a pattern binder views the selector's
+        payload, so it inherits the selector's reach -- and,
+        provenance, carries the selector }
+      if selRoot <> '' then
+      begin
+        EscStore (selRoot, True, lbl.kids[0].kids[n].a);
+        CarryFrom (lbl.kids[0].kids[n].a, selRoot);
+      end;
+    end;
   end;
 
   procedure WalkStmt (st: TNode);
@@ -1950,20 +2177,48 @@ var
           if Length (st.kids[0].kids) > 0 then
             NoteUse (st.kids[0]);
           beyond := CheckWrite (st.kids[0]);
-          vname := RefRootOf (st.kids[1]);
+          { EscRootOf, not RefRootOf: a sub-slice view of a borrow
+            stored beyond the frame retains the borrow just as the
+            whole of it would }
+          vname := EscRootOf (st.kids[1]);
           { SHARED handles are excluded: copying one IS the sanctioned
             retention -- refcounted, created explicitly (par 4.2) }
           if (vname <> '') and IsRefTy (u) and
              not StartsWithS (u, 'SHARED PTR ') and
              not StartsWithS (u, 'OPT SHARED PTR ') and
              ((ScopeMode (vname) = 'p') or (ScopeMode (vname) = 'v') or
-              (ScopeMode (vname) = 'r')) and   { RO is a borrow, and
+              (ScopeMode (vname) = 'r') or   { RO is a borrow, and
                              the most borrow-like mode there is }
+              { a local or binder may CARRY a borrow: recorded now,
+                resolved at flush once the carries are closed, and
+                dropped there if it carries none }
+              (ScopeMode (vname) = 'l') or (ScopeMode (vname) = 'b')) and
              (beyond or (ScopeMode (st.kids[0].a) = 'm') or
               ((ScopeMode (st.kids[0].a) = 'v') and
                (Length (st.kids[0].kids) > 0))) then
-            LedgerN (st, ctx, 'retention: borrowed ' + vname +
-              ' stored into ' + st.kids[0].a + ' (par 4.1/4.2)');
+          begin
+            { PENDED, not emitted: the class -- retention, self-store,
+              frame-store -- needs every escape of the destination,
+              so the walk finishes first }
+            SetLength (pendLn, pendN + 1); SetLength (pendCl, pendN + 1);
+            SetLength (pendSrc, pendN + 1); SetLength (pendDst, pendN + 1);
+            pendLn[pendN] := st.line; pendCl[pendN] := st.col;
+            pendSrc[pendN] := vname; pendDst[pendN] := st.kids[0].a;
+            Inc (pendN);
+          end;
+          { par 4.1 provenance: a bare local or binder now holds this
+            reference -- a borrow is carried, a carrier's cargo is
+            inherited }
+          if (vname <> '') and IsRefTy (u) and
+             (Length (st.kids[0].kids) = 0) and
+             ((ScopeMode (st.kids[0].a) = 'l') or
+              (ScopeMode (st.kids[0].a) = 'b')) then
+            CarryFrom (st.kids[0].a, vname);
+          { par 4.1 direction: a ref value rooted in frame storage,
+            stored anywhere, is an escape fact for the fixpoint }
+          if (vname <> '') and IsRefTy (u) and
+             IsFrameMode (ScopeMode (vname)) then
+            EscStore (st.kids[0].a, Length (st.kids[0].kids) > 0, vname);
           { moves: a bare owned pointer on the right moves out; a
             bare name on the left is (re)initialized }
           dcl := StripParens (st.kids[1]);
@@ -2077,7 +2332,7 @@ var
                 if lbl.kind = nkLabelPattern then
                 begin
                   vname := lbl.a;
-                  BindPattern (lbl);
+                  BindPattern (lbl, EscRootOf (st.kids[0]));
                 end
                 else if (lbl.kids[0].kind = nkDesignator) and
                         (Length (lbl.kids[0].kids) = 0) and
@@ -2183,6 +2438,10 @@ var
                   st.kids[0].a + ' lives in ' + dcl.kids[1].a +
                   ', which dies with this frame (par 4.3)');
             end;
+            { par 4.1 direction: what is RETURNed reaches the caller }
+            vname := EscRootOf (st.kids[0]);
+            if (vname <> '') and IsFrameMode (ScopeMode (vname)) then
+              EscTarget (vname, '<return>');
           end;
         end;
       nkRaiseStmt :
@@ -2274,15 +2533,98 @@ var
 var
   nm, origin, callerKey : string;
   prc : TProcInfo;
+  changed, selfHit : Boolean;
+  a2, b2, msg2, msgE, dmode : string;
+  j2 : Integer;
+  tl : TStringList;
 begin
   raised := TStringList.Create; raised.CaseSensitive := True;
   handled := TStringList.Create; handled.CaseSensitive := True;
   calls := TStringList.Create; calls.CaseSensitive := True;
   ownState := TStringList.Create; ownState.CaseSensitive := True;
+  escSet := TStringList.Create; escSet.CaseSensitive := True;
+  escEdges := TStringList.Create; escEdges.CaseSensitive := True;
+  carryPair := TStringList.Create; carryPair.CaseSensitive := True;
+  carryEdge := TStringList.Create; carryEdge.CaseSensitive := True;
+  pendN := 0;
+  SetLength (pendLn, 0); SetLength (pendCl, 0);
+  SetLength (pendSrc, 0); SetLength (pendDst, 0);
   if body.kind = nkStmtSeq then
     WalkSeq (body)
   else
     WalkStmt (body);
+  { par 4.1, the DIRECTION: close the escape targets over the alias
+    edges (symmetric, so the approximation errs INTO the ledger),
+    then classify every pended store by where its destination
+    reaches.  A for-loop's bound is fixed at entry, so entries added
+    during a round are processed in the next one -- the repeat
+    terminates because escSet only grows and is bounded by
+    names x targets. }
+  repeat
+    changed := False;
+    for i := 0 to escEdges.Count - 1 do
+    begin
+      a2 := escEdges.Names[i];
+      b2 := escEdges.ValueFromIndex[i];
+      for j2 := 0 to escSet.Count - 1 do
+      begin
+        if escSet.Names[j2] = a2 then
+          if escSet.IndexOf (b2 + '=' + escSet.ValueFromIndex[j2]) < 0 then
+          begin
+            escSet.Add (b2 + '=' + escSet.ValueFromIndex[j2]);
+            changed := True;
+          end;
+        if escSet.Names[j2] = b2 then
+          if escSet.IndexOf (a2 + '=' + escSet.ValueFromIndex[j2]) < 0 then
+          begin
+            escSet.Add (a2 + '=' + escSet.ValueFromIndex[j2]);
+            changed := True;
+          end;
+      end;
+    end;
+  until not changed;
+  { close the carries over the copy edges, exactly as the escape
+    targets closed over the alias edges }
+  repeat
+    changed := False;
+    for i := 0 to carryEdge.Count - 1 do
+    begin
+      a2 := carryEdge.Names[i];
+      b2 := carryEdge.ValueFromIndex[i];
+      for j2 := 0 to carryPair.Count - 1 do
+        if carryPair.Names[j2] = b2 then
+          if carryPair.IndexOf (a2 + '=' + carryPair.ValueFromIndex[j2]) < 0 then
+          begin
+            carryPair.Add (a2 + '=' + carryPair.ValueFromIndex[j2]);
+            changed := True;
+          end;
+    end;
+  until not changed;
+  for i := 0 to pendN - 1 do
+  begin
+    dmode := ScopeMode (pendSrc[i]);
+    if (dmode = 'p') or (dmode = 'v') or (dmode = 'r') then
+      EmitPend (pendLn[i], pendCl[i], pendSrc[i], '', pendDst[i])
+    else if (dmode = 'l') or (dmode = 'b') then
+    begin
+      { a carrier resolves to one entry per borrow it carries -- and
+        to NONE when it carries none, which is most locals }
+      for j2 := 0 to carryPair.Count - 1 do
+        if carryPair.Names[j2] = pendSrc[i] then
+          EmitPend (pendLn[i], pendCl[i], carryPair.ValueFromIndex[j2],
+                    pendSrc[i], pendDst[i]);
+    end;
+  end;
+  { the lie detector: a KEPT parameter the analysis never saw
+    retained.  A ledger class, not an error -- a borrow laundered
+    through a call result is not yet seen, so an overstatement is a
+    signal to read, not proof of a lie. }
+  for i := 0 to keptParams.Count - 1 do
+    if keptUsed.IndexOf (keptParams.Names[i]) < 0 then
+      Ledger.Add (Format (
+        '%s %s: kept-unseen: KEPT %s is not seen retained by this' +
+        ' analysis (par 4.1)',
+        [keptParams.ValueFromIndex[i], ctx, keptParams.Names[i]]));
   for i := 0 to raised.Count - 1 do
   begin
     nm := raised.Names[i];
@@ -2314,6 +2656,10 @@ begin
   handled.Free;
   calls.Free;
   ownState.Free;
+  escSet.Free;
+  escEdges.Free;
+  carryPair.Free;
+  carryEdge.Free;
 end;
 
 procedure TSem.CheckThreadChains;
@@ -2357,7 +2703,7 @@ end;
 
 procedure TSem.CheckFile (root: TNode);
 var
-  ui, i, j : Integer;
+  ui, i, j, k2 : Integer;
   u, d, p, sec : TNode;
   scope : TStringList;
   declared : TStringArray;
@@ -2425,6 +2771,10 @@ var
            (grp.kids[1].kind = nkQualident) and
            (grp.kids[1].a = 'POOL')) then
           varParams.Add (grp.kids[0].kids[b].a);
+        if grp.f4 then
+          keptParams.Values[grp.kids[0].kids[b].a] :=
+            IntToStr (grp.kids[0].kids[b].line) + ':' +
+            IntToStr (grp.kids[0].kids[b].col);
       end;
     end;
   end;
@@ -2467,12 +2817,34 @@ begin
       ctx := u.a + '.' + d.a;
       scope := TStringList.Create; scope.CaseSensitive := True;
       varParams.Clear;
+      keptParams.Clear;
+      keptUsed.Clear;
       varWritten.Clear;
       { params and locals first: IndexOfName answers the first hit,
         so they shadow module-level vars of the same name }
       AddParamsOf (d);
       AddVarsOf (p, 'l');
       AddVarsOf (u, 'm');
+      { PROCEDURE-LOCAL CONSTs.  The grammar always allowed them and
+        neither end implemented them: the generator said `unknown
+        name` and this said NOTHING, because an unregistered name
+        types as unknown and par 3's softness contract never
+        diagnoses one.  A shadow of a module CONST is REFUSED rather
+        than resolved: the map answers the first hit, so which one
+        won would depend on insertion order. }
+      localConsts.Clear;
+      for j := 0 to High (p.kids) do
+        if (p.kids[j] <> nil) and (p.kids[j].kind = nkConstSection) then
+          for k2 := 0 to High (p.kids[j].kids) do
+          begin
+            if constMap.IndexOfName (p.kids[j].kids[k2].a) >= 0 then
+              ErrN (p.kids[j].kids[k2], ctx,
+                'a local CONST may not shadow a module CONST: ' +
+                p.kids[j].kids[k2].a);
+            constMap.Values[p.kids[j].kids[k2].a] :=
+              LitType (p.kids[j].kids[k2].kids[0]);
+            localConsts.Add (p.kids[j].kids[k2].a);
+          end;
       declared := RaisesOf (d);
       { par 3.2: kid 3 is the attribute, if any }
       curPure := (d.kids[3] <> nil) and (d.kids[3].a = 'PURE');
@@ -2491,6 +2863,10 @@ begin
           RoCand.Add (ctx + ': VAR ' + varParams[j] +
             ' is never written through');
       RoProcs := RoProcs + 1;
+      { the locals go out of scope with the procedure }
+      for j := 0 to localConsts.Count - 1 do
+        if constMap.IndexOfName (localConsts[j]) >= 0 then
+          constMap.Delete (constMap.IndexOfName (localConsts[j]));
       scope.Free;
     end;
 
@@ -2500,6 +2876,10 @@ begin
       if (sec = nil) or (sec.kind <> nkModBody) then Continue;
       ctx := u.a + ' body';
       scope := TStringList.Create; scope.CaseSensitive := True;
+      { a module body declares no parameters, so the KEPT lists must
+        not carry the last procedure's into this frame's flush }
+      keptParams.Clear;
+      keptUsed.Clear;
       AddVarsOf (u, 'm');
       { the program body is the one frame with no caller to declare
         RAISES to, and that makes it the frame where a program must

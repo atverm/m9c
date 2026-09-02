@@ -11,16 +11,16 @@ Errors are counted; the message table is stage-2 driver work.
 One generator instance per process: state is module-level and the
 pool is never reset, exactly one module per run.
 
-### LoadUnit (u: PTR Ast.Node)
+### LoadUnit (KEPT u: PTR Ast.Node)
 
 _(documented with the group below)_
 
-### LoadExtern (u: PTR Ast.Node)
+### LoadExtern (KEPT u: PTR Ast.Node)
 
 a DIRECT import: register its declarations and include its
 header, because this module names things in it
 
-### LoadExternDeep (u: PTR Ast.Node)
+### LoadExternDeep (KEPT u: PTR Ast.Node)
 
 a dependency of a dependency: register its declarations so a
 callee's signature can be RESOLVED -- Qvsat.Ew answers a
@@ -32,6 +32,16 @@ generator's INCLUDE list wants the direct one, and between them
 was a hole: a direct dependency's signature may name a type from
 a module this one does not import.  It resolved to nothing and,
 until the guard went in, became integer arithmetic.
+
+### SetDebugSource (RO KEPT file: STR)
+
+Emit `#line` directives naming FILE, so a debugger and a
+backtrace report the M9 source rather than the generated C.
+Call it before Emit; the empty string turns it off, which is
+the default and is what every gate compares.  m9c calls this
+under -g and only under -g: the C emitted without it is
+byte-for-byte what it always was, which is what keeps gendiff
+and the bootstrap fixpoint meaningful.
 
 ### Emit (RO forModule: STR)
 

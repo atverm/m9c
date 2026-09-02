@@ -23,7 +23,7 @@ PROCEDURE LoadFile (root: PTR Ast.Node) ;
      that is not yet loaded is indistinguishable from one that does
      not exist                                                       *)
 
-PROCEDURE CheckFile (root: PTR Ast.Node) ;
+PROCEDURE CheckFile (KEPT root: PTR Ast.Node) ;
   (* checks one parsed file, after LoadFile has registered it and
      every module it imports.  It does not raise and it does not
      halt: ERRORS ARE VALUES here, collected and read back through
@@ -141,6 +141,7 @@ VAR
   strNode : Ast.Kid ;         (* the SLICE OF CHAR that STR names *)
   consts : SLICE OF Binding ;   (* module CONST name -> literal type *)
   nconsts : I64 ;
+  svConsts : I64 ;         (* nconsts before a procedure's own CONSTs *)
   own : SLICE OF Binding ;      (* owned name -> alive, or what took it *)
   nown : I64 ;
   curRetTy : STR ;              (* the enclosing procedure's result *)
@@ -150,6 +151,44 @@ VAR
                                       empty when this procedure is not
                                       bound to one (par 6) *)
   inited : BOOL ;
+  (* par 4.1, DIRECTIONAL: the ledger names stores; these decide
+     which stores anyone outside the frame can still see.  Escape
+     TARGETS per frame name ('<module>', '<return>', '<call>' or a
+     reference parameter's name) in first-encounter order, symmetric
+     alias edges the targets close over, and ledger stores PENDED
+     until the walk ends and every escape of the destination has
+     been seen.  All reset per procedure (CheckProcBody).           *)
+  escName : SLICE OF STR ;
+  escTgt : SLICE OF STR ;
+  nesc : I64 ;
+  edgeA : SLICE OF STR ;
+  edgeB : SLICE OF STR ;
+  nedge : I64 ;
+  pendSrc : SLICE OF STR ;
+  pendDst : SLICE OF STR ;
+  pendLine : SLICE OF I64 ;
+  pendCol : SLICE OF I64 ;
+  npend : I64 ;
+  keptP : SLICE OF STR ;        (* params declared KEPT (par 4.1),
+                                   with the declaring identifier's
+                                   position beside each *)
+  keptLn : SLICE OF I64 ;
+  keptCl : SLICE OF I64 ;
+  nkept : I64 ;
+  keptU : SLICE OF STR ;        (* KEPT params the analysis saw
+                                   retained -- the complement is the
+                                   kept-unseen ledger class *)
+  nkeptU : I64 ;
+  (* par 4.1 value provenance: which BORROWS a local or binder
+     carries -- a copied reference, a binder's view, a sub-slice --
+     plus directed copy edges closed at flush.  No kill on
+     reassignment: the approximation errs into the ledger. *)
+  carryN : SLICE OF STR ;
+  carryB : SLICE OF STR ;
+  ncarry : I64 ;
+  carryEA : SLICE OF STR ;
+  carryEB : SLICE OF STR ;
+  ncedge : I64 ;
 
 (* ---- output ---- *)
 
@@ -173,10 +212,26 @@ BEGIN
   calls := NEW (pool, STR, 16) ;
   roots := NEW (pool, STR, 8) ;
   raised := NEW (pool, Binding, 8) ;
-  handled := NEW (pool, STR, 8)
+  handled := NEW (pool, STR, 8) ;
+  escName := NEW (pool, STR, 16) ;
+  escTgt := NEW (pool, STR, 16) ;
+  edgeA := NEW (pool, STR, 8) ;
+  edgeB := NEW (pool, STR, 8) ;
+  pendSrc := NEW (pool, STR, 8) ;
+  pendDst := NEW (pool, STR, 8) ;
+  pendLine := NEW (pool, I64, 8) ;
+  pendCol := NEW (pool, I64, 8) ;
+  keptP := NEW (pool, STR, 8) ;
+  keptLn := NEW (pool, I64, 8) ;
+  keptCl := NEW (pool, I64, 8) ;
+  keptU := NEW (pool, STR, 8) ;
+  carryN := NEW (pool, STR, 8) ;
+  carryB := NEW (pool, STR, 8) ;
+  carryEA := NEW (pool, STR, 8) ;
+  carryEB := NEW (pool, STR, 8)
 END Setup ;
 
-PROCEDURE PushErr (VAR list: SLICE OF STR ; VAR n: I64 ; RO s: STR) =
+PROCEDURE PushErr (VAR list: SLICE OF STR ; VAR n: I64 ; RO KEPT s: STR) =
 VAR
   nb : SLICE OF STR ;
   i : I64 ;
@@ -212,11 +267,6 @@ BEGIN
   Diag (errs, nerrs, n.line, n.col, ctx, msg)
 END ErrN ;
 
-PROCEDURE LedgerN (n: PTR Ast.Node ; RO ctx: STR ; RO msg: STR) =
-BEGIN
-  Diag (ledger, nledger, n.line, n.col, ctx, msg)
-END LedgerN ;
-
 PROCEDURE ErrCount () : I64 =
 BEGIN
   RETURN nerrs
@@ -250,7 +300,7 @@ BEGIN
   RETURN -1
 END FindMod ;
 
-PROCEDURE NewMod (RO n: STR) : I64 =
+PROCEDURE NewMod (RO KEPT n: STR) : I64 =
 VAR
   nb : SLICE OF ModuleInfo ;
   i : I64 ;
@@ -301,7 +351,7 @@ BEGIN
   RETURN FALSE
 END IsOpaqueIn ;
 
-PROCEDURE RaisesOf (VAR pl: POOL ; p: PTR Ast.Node) : SLICE OF STR =
+PROCEDURE RaisesOf (VAR pl: POOL ; KEPT p: PTR Ast.Node) : SLICE OF STR =
 VAR
   r : SLICE OF STR ;
   i : I64 ;
@@ -321,7 +371,7 @@ END RaisesOf ;
 (* the signature as TEXT: two declarations are the same declaration
    exactly when the printer renders them the same way, which is why
    def/impl conformance is a string comparison and not a tree walk *)
-PROCEDURE SigOf (p: PTR Ast.Node) : STR =
+PROCEDURE SigOf (KEPT p: PTR Ast.Node) : STR =
 VAR
   d : PTR DynStr.DString IN pool ;
   r : SLICE OF STR ;
@@ -365,7 +415,7 @@ BEGIN
   mods[m].nprocs := mods[m].nprocs + 1
 END AddProc ;
 
-PROCEDURE AddType (m: I64 ; RO n: STR ; body: Ast.Kid) =
+PROCEDURE AddType (m: I64 ; RO KEPT n: STR ; KEPT body: Ast.Kid) =
 VAR
   ns : SLICE OF STR ;
   nk : SLICE OF AKid ;
@@ -386,7 +436,7 @@ BEGIN
   mods[m].ntds := mods[m].ntds + 1
 END AddType ;
 
-PROCEDURE AddConst (m: I64 ; RO n: STR ; RO ty: STR) =
+PROCEDURE AddConst (m: I64 ; RO KEPT n: STR ; RO KEPT ty: STR) =
 VAR
   ns, ts : SLICE OF STR ;
   i : I64 ;
@@ -424,7 +474,7 @@ BEGIN
   RETURN ''
 END ModConstType ;
 
-PROCEDURE AddOpaque (m: I64 ; RO n: STR) =
+PROCEDURE AddOpaque (m: I64 ; RO KEPT n: STR) =
 VAR
   ns : SLICE OF STR ;
   i : I64 ;
@@ -438,7 +488,7 @@ BEGIN
   mods[m].nopaque := mods[m].nopaque + 1
 END AddOpaque ;
 
-PROCEDURE AddVariants (m: I64 ; RO tn: STR ; cr: PTR Ast.Node) =
+PROCEDURE AddVariants (m: I64 ; RO KEPT tn: STR ; KEPT cr: PTR Ast.Node) =
 VAR
   nb : SLICE OF VariantInfo ;
   i, k : I64 ;
@@ -461,7 +511,7 @@ BEGIN
   mods[m].nvts := k + 1
 END AddVariants ;
 
-PROCEDURE CollectUnit (u: PTR Ast.Node) =
+PROCEDURE CollectUnit (KEPT u: PTR Ast.Node) =
 VAR
   m, i, j, pi : I64 ;
   p : ProcInfo ;
@@ -705,7 +755,7 @@ BEGIN
   nscope := 0
 END ScopeClear ;
 
-PROCEDURE ScopeAdd (RO nm: STR ; t: Ast.Kid ; RO mode: STR) =
+PROCEDURE ScopeAdd (RO KEPT nm: STR ; KEPT t: Ast.Kid ; RO KEPT mode: STR) =
 VAR
   nb : SLICE OF Binding ;
   i : I64 ;
@@ -761,7 +811,8 @@ BEGIN
         IF grp.kids[0] IS SOME ids THEN
           FOR b := 0 TO ids.nkids - 1 DO
             IF ids.kids[b] IS SOME id THEN
-              ScopeAdd (id.a, grp.kids[1], mode)
+              ScopeAdd (id.a, grp.kids[1], mode) ;
+              IF grp.f4 THEN KeptPush (id.a, id.line, id.col) END
             END
           END
         END
@@ -770,7 +821,7 @@ BEGIN
   END
 END AddParamsOf ;
 
-PROCEDURE AddVarsOf (holder: PTR Ast.Node ; RO mode: STR) =
+PROCEDURE AddVarsOf (holder: PTR Ast.Node ; RO KEPT mode: STR) =
 VAR a, b, c : I64 ;
 BEGIN
   FOR a := 0 TO holder.nkids - 1 DO
@@ -791,6 +842,44 @@ BEGIN
     END
   END
 END AddVarsOf ;
+
+(* PROCEDURE-LOCAL CONSTs.  The grammar has always allowed them --
+   ProcBody is `{ Declaration } Block` and CONST is a Declaration --
+   but neither end implemented them: the generator said `unknown
+   name` and the checker said NOTHING, because an unregistered name
+   types as unknown and par 3's softness contract never diagnoses
+   one.  Silence was the worse half: `i := Tag` for an I64 i and a
+   string Tag rode straight through, while the same two lines at
+   module level are refused.
+
+   Answers the count, and refuses a shadow rather than resolving it:
+   a local CONST that hides a module CONST would depend on lookup
+   ORDER, and the map is searched forwards, so the module one would
+   win silently.  What cannot be checked simply is forbidden. *)
+PROCEDURE AddConstsOf (holder: PTR Ast.Node ; RO ctx: STR) =
+VAR
+  a, b : I64 ;
+  seen : BOOL ;
+  ty   : STR ;
+BEGIN
+  FOR a := 0 TO holder.nkids - 1 DO
+    IF holder.kids[a] IS SOME sect THEN
+      IF sect.kind = Ast.NConstSection THEN
+        FOR b := 0 TO sect.nkids - 1 DO
+          IF sect.kids[b] IS SOME cd THEN
+            ty := ConstType (cd.a, seen) ;
+            IF seen THEN
+              ErrN (cd, ctx,
+                Cat ('a local CONST may not shadow a module CONST: ',
+                     cd.a))
+            END ;
+            ConstAdd (cd.a, LitType (cd.kids[0]))
+          END
+        END
+      END
+    END
+  END
+END AddConstsOf ;
 
 (* ---- field lookup ---- *)
 
@@ -1007,17 +1096,6 @@ END CheckWrite ;
 
 (* the base name a stored reference is borrowed from, when the source
    is a plain designator, possibly under SOME or parentheses *)
-PROCEDURE RefRootOf (k: Ast.Kid) : STR =
-BEGIN
-  IF k IS SOME e THEN
-    IF e.kind = Ast.NDesignator THEN RETURN e.a END ;
-    IF e.kind = Ast.NSomeExpr OR e.kind = Ast.NParen THEN
-      RETURN RefRootOf (e.kids[0])
-    END
-  END ;
-  RETURN ''
-END RefRootOf ;
-
 PROCEDURE IsRefTy (RO s0: STR) : BOOL =
 VAR s : STR ;
 BEGIN
@@ -1030,6 +1108,485 @@ BEGIN
          Text.StartsWith (s, 'SLICE OF ')
 END IsRefTy ;
 
+(* ---- par 4.1, the DIRECTION ----
+
+   The machinery behind the directional ledger.  Aliasing is
+   symmetric on purpose: the approximation can keep an entry in the
+   ledger that a finer analysis would drop, never drop one it should
+   keep.                                                             *)
+
+PROCEDURE EscHas (RO nm: STR ; RO tgt: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nesc - 1 DO
+    IF Text.Eq (escName[i], nm) THEN
+      IF Text.Eq (escTgt[i], tgt) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END EscHas ;
+
+(* name NM's storage is reachable from outside the frame via TGT *)
+PROCEDURE EscTarget (RO KEPT nm: STR ; RO KEPT tgt: STR) =
+VAR
+  ns : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF EscHas (nm, tgt) THEN RETURN END ;
+  IF nesc = LEN (escName) THEN
+    ns := NEW (pool, STR, 2 * LEN (escName)) ;
+    FOR i := 0 TO nesc - 1 DO ns[i] := escName[i] END ;
+    escName := ns ;
+    ns := NEW (pool, STR, 2 * LEN (escTgt)) ;
+    FOR i := 0 TO nesc - 1 DO ns[i] := escTgt[i] END ;
+    escTgt := ns
+  END ;
+  escName[nesc] := nm ;
+  escTgt[nesc] := tgt ;
+  nesc := nesc + 1
+END EscTarget ;
+
+PROCEDURE EscAlias (RO KEPT a: STR ; RO KEPT b: STR) =
+VAR
+  ns : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF Text.Eq (a, b) THEN RETURN END ;
+  FOR i := 0 TO nedge - 1 DO
+    IF Text.Eq (edgeA[i], a) THEN
+      IF Text.Eq (edgeB[i], b) THEN RETURN END
+    END
+  END ;
+  IF nedge = LEN (edgeA) THEN
+    ns := NEW (pool, STR, 2 * LEN (edgeA)) ;
+    FOR i := 0 TO nedge - 1 DO ns[i] := edgeA[i] END ;
+    edgeA := ns ;
+    ns := NEW (pool, STR, 2 * LEN (edgeB)) ;
+    FOR i := 0 TO nedge - 1 DO ns[i] := edgeB[i] END ;
+    edgeB := ns
+  END ;
+  edgeA[nedge] := a ;
+  edgeB[nedge] := b ;
+  nedge := nedge + 1
+END EscAlias ;
+
+(* the frame-storage root a reference expression views: through SOME
+   and parens, and through SLICE/VIEW/SHARED, whose
+   answers alias their first argument's storage *)
+PROCEDURE EscRootOf (k: Ast.Kid) : STR =
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NDesignator THEN RETURN e.a END ;
+    IF e.kind = Ast.NSomeExpr OR e.kind = Ast.NParen THEN
+      RETURN EscRootOf (e.kids[0])
+    END ;
+    IF e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME cal THEN
+        IF cal.kind = Ast.NDesignator AND cal.nkids = 0 THEN
+          IF Text.Eq (cal.a, 'SLICE') OR Text.Eq (cal.a, 'VIEW') OR
+             Text.Eq (cal.a, 'SHARED') THEN
+            IF e.kids[1] IS SOME al THEN
+              IF al.nkids > 0 THEN RETURN EscRootOf (al.kids[0]) END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN ''
+END EscRootOf ;
+
+PROCEDURE IsFrameMode (RO m: STR) : BOOL =
+BEGIN
+  RETURN Text.Eq (m, ModeLocal) OR Text.Eq (m, ModeBinder) OR
+         Text.Eq (m, ModeVal)
+END IsFrameMode ;
+
+(* a ref value rooted at frame storage SRC was stored into the
+   designator rooted DST (dstSel: through a selector) *)
+PROCEDURE EscStore (RO KEPT dst: STR ; dstSel: BOOL ; RO KEPT src: STR) =
+VAR m : STR ;
+BEGIN
+  m := ScopeMode (dst) ;
+  IF Text.Eq (m, ModeModule) THEN EscTarget (src, '<module>')
+  ELSIF Text.Eq (m, ModeVar) OR Text.Eq (m, ModeOwn) OR
+        Text.Eq (m, ModeRo) THEN EscTarget (src, dst)
+  ELSIF Text.Eq (m, ModeVal) AND dstSel THEN EscTarget (src, dst)
+  ELSIF IsFrameMode (m) THEN EscAlias (dst, src)
+  END
+END EscStore ;
+
+PROCEDURE PendPush (line, col: I64 ; RO KEPT src: STR ; RO KEPT dst: STR) =
+VAR
+  ns : SLICE OF STR ;
+  nl : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF npend = LEN (pendSrc) THEN
+    ns := NEW (pool, STR, 2 * LEN (pendSrc)) ;
+    FOR i := 0 TO npend - 1 DO ns[i] := pendSrc[i] END ;
+    pendSrc := ns ;
+    ns := NEW (pool, STR, 2 * LEN (pendDst)) ;
+    FOR i := 0 TO npend - 1 DO ns[i] := pendDst[i] END ;
+    pendDst := ns ;
+    nl := NEW (pool, I64, 2 * LEN (pendLine)) ;
+    FOR i := 0 TO npend - 1 DO nl[i] := pendLine[i] END ;
+    pendLine := nl ;
+    nl := NEW (pool, I64, 2 * LEN (pendCol)) ;
+    FOR i := 0 TO npend - 1 DO nl[i] := pendCol[i] END ;
+    pendCol := nl
+  END ;
+  pendSrc[npend] := src ;
+  pendDst[npend] := dst ;
+  pendLine[npend] := line ;
+  pendCol[npend] := col ;
+  npend := npend + 1
+END PendPush ;
+
+PROCEDURE CarryHas (RO nm: STR ; RO borrow: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO ncarry - 1 DO
+    IF Text.Eq (carryN[i], nm) THEN
+      IF Text.Eq (carryB[i], borrow) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END CarryHas ;
+
+PROCEDURE CarryAdd (RO KEPT nm: STR ; RO KEPT borrow: STR) =
+VAR
+  ns : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  FOR i := 0 TO ncarry - 1 DO
+    IF Text.Eq (carryN[i], nm) THEN
+      IF Text.Eq (carryB[i], borrow) THEN RETURN END
+    END
+  END ;
+  IF ncarry = LEN (carryN) THEN
+    ns := NEW (pool, STR, 2 * LEN (carryN)) ;
+    FOR i := 0 TO ncarry - 1 DO ns[i] := carryN[i] END ;
+    carryN := ns ;
+    ns := NEW (pool, STR, 2 * LEN (carryB)) ;
+    FOR i := 0 TO ncarry - 1 DO ns[i] := carryB[i] END ;
+    carryB := ns
+  END ;
+  carryN[ncarry] := nm ;
+  carryB[ncarry] := borrow ;
+  ncarry := ncarry + 1
+END CarryAdd ;
+
+PROCEDURE CarryEdgeAdd (RO KEPT dst: STR ; RO KEPT src: STR) =
+VAR
+  ns : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF Text.Eq (dst, src) THEN RETURN END ;
+  FOR i := 0 TO ncedge - 1 DO
+    IF Text.Eq (carryEA[i], dst) THEN
+      IF Text.Eq (carryEB[i], src) THEN RETURN END
+    END
+  END ;
+  IF ncedge = LEN (carryEA) THEN
+    ns := NEW (pool, STR, 2 * LEN (carryEA)) ;
+    FOR i := 0 TO ncedge - 1 DO ns[i] := carryEA[i] END ;
+    carryEA := ns ;
+    ns := NEW (pool, STR, 2 * LEN (carryEB)) ;
+    FOR i := 0 TO ncedge - 1 DO ns[i] := carryEB[i] END ;
+    carryEB := ns
+  END ;
+  carryEA[ncedge] := dst ;
+  carryEB[ncedge] := src ;
+  ncedge := ncedge + 1
+END CarryEdgeAdd ;
+
+(* a reference value rooted at SRC now also lives under the bare
+   local or binder DST: a borrow is carried, a carrier's cargo is
+   inherited *)
+PROCEDURE CarryFrom (RO KEPT dst: STR ; RO KEPT src: STR) =
+VAR m : STR ;
+BEGIN
+  m := ScopeMode (src) ;
+  IF Text.Eq (m, ModeVal) OR Text.Eq (m, ModeVar) OR
+     Text.Eq (m, ModeRo) THEN
+    CarryAdd (dst, src)
+  ELSIF Text.Eq (m, ModeLocal) OR Text.Eq (m, ModeBinder) THEN
+    CarryEdgeAdd (dst, src)
+  END
+END CarryFrom ;
+
+PROCEDURE AppendTgt (VAR d: PTR DynStr.DString ; RO t: STR) =
+BEGIN
+  IF Text.Eq (t, '<module>') THEN
+    DynStr.Append (pool, d, 'module state')
+  ELSIF Text.Eq (t, '<return>') THEN
+    DynStr.Append (pool, d, 'the RETURN value')
+  ELSIF Text.Eq (t, '<call>') THEN
+    DynStr.Append (pool, d, 'a callee')
+  ELSIF Text.Eq (t, '<unknown>') THEN
+    DynStr.Append (pool, d, 'an unknown name')
+  ELSE
+    DynStr.Append (pool, d, 'the caller through ') ;
+    DynStr.Append (pool, d, t)
+  END
+END AppendTgt ;
+
+(* the expression under any parens -- the oracle's StripParens *)
+PROCEDURE Bare (k: Ast.Kid) : Ast.Kid =
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NParen THEN RETURN Bare (e.kids[0]) END
+  END ;
+  RETURN k
+END Bare ;
+
+PROCEDURE KeptPush (RO KEPT nm: STR ; line, col: I64) =
+VAR
+  ns : SLICE OF STR ;
+  nl : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF nkept = LEN (keptP) THEN
+    ns := NEW (pool, STR, 2 * LEN (keptP)) ;
+    FOR i := 0 TO nkept - 1 DO ns[i] := keptP[i] END ;
+    keptP := ns ;
+    nl := NEW (pool, I64, 2 * LEN (keptLn)) ;
+    FOR i := 0 TO nkept - 1 DO nl[i] := keptLn[i] END ;
+    keptLn := nl ;
+    nl := NEW (pool, I64, 2 * LEN (keptCl)) ;
+    FOR i := 0 TO nkept - 1 DO nl[i] := keptCl[i] END ;
+    keptCl := nl
+  END ;
+  keptP[nkept] := nm ;
+  keptLn[nkept] := line ;
+  keptCl[nkept] := col ;
+  nkept := nkept + 1
+END KeptPush ;
+
+(* a KEPT parameter earned its mark: seen retained, or handed on to
+   another KEPT parameter *)
+PROCEDURE KeptUse (RO KEPT nm: STR) =
+BEGIN
+  PushErr (keptU, nkeptU, nm)
+END KeptUse ;
+
+PROCEDURE KeptUsedHas (RO nm: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nkeptU - 1 DO
+    IF Text.Eq (keptU[i], nm) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END KeptUsedHas ;
+
+PROCEDURE KeptHas (RO nm: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nkept - 1 DO
+    IF Text.Eq (keptP[i], nm) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END KeptHas ;
+
+(* close the escape targets over the alias edges, then classify
+   every pended store by where its destination reaches: 'retention:'
+   outlives the frame and names what it reaches, 'self-store:'
+   reaches the caller only through the borrow itself, 'frame-store:'
+   dies with the frame.  The inner bound is captured per edge, as
+   the oracle's for-loop fixes it, so pairs added during a round are
+   seen in the next one; the loop terminates because the pair set
+   only grows and is bounded by names times targets.                *)
+(* classify ONE resolved store -- SRC is the borrow, CARRIER the
+   local or binder it travelled through ('' when direct) -- and
+   write the ledger line, the undeclared-retention error, and the
+   KEPT justification *)
+PROCEDURE EmitPend (line, col: I64 ; RO KEPT src: STR ;
+                    RO carrier: STR ; RO KEPT dst: STR ; RO ctx: STR) =
+VAR
+  selfHit, first : BOOL ;
+  j, n2, ntl : I64 ;
+  dmode : STR ;
+  tl : SLICE OF STR ;
+  d, de, dm, ds : PTR DynStr.DString IN pool ;
+BEGIN
+  ds := DynStr.New (pool) ;
+  DynStr.Append (pool, ds, src) ;
+  IF LEN (carrier) > 0 THEN
+    DynStr.Append (pool, ds, ' (carried by ') ;
+    DynStr.Append (pool, ds, carrier) ;
+    DynStr.Append (pool, ds, ')')
+  END ;
+  tl := NEW (pool, STR, 8) ;
+  ntl := 0 ;
+  dmode := ScopeMode (dst) ;
+  IF Text.Eq (dmode, ModeModule) THEN
+    PushErr (tl, ntl, '<module>')
+  ELSIF Text.Eq (dmode, ModeVar) OR Text.Eq (dmode, ModeOwn) OR
+        Text.Eq (dmode, ModeRo) OR Text.Eq (dmode, ModeVal) THEN
+    PushErr (tl, ntl, dst)
+  ELSIF Text.Eq (dmode, ModeLocal) OR Text.Eq (dmode, ModeBinder) THEN
+    FOR j := 0 TO nesc - 1 DO
+      IF Text.Eq (escName[j], dst) THEN
+        PushErr (tl, ntl, escTgt[j])
+      END
+    END
+  ELSE
+    PushErr (tl, ntl, '<unknown>')
+  END ;
+  (* the source among the targets is the destination escaping only
+     into the borrow itself -- a tree growing through its own node
+     is not a kept borrow *)
+  selfHit := FALSE ;
+  n2 := 0 ;
+  FOR j := 0 TO ntl - 1 DO
+    IF NOT selfHit AND Text.Eq (tl[j], src) THEN
+      selfHit := TRUE
+    ELSE
+      tl[n2] := tl[j] ;
+      n2 := n2 + 1
+    END
+  END ;
+  ntl := n2 ;
+  d := DynStr.New (pool) ;
+  IF ntl = 0 THEN
+    IF selfHit THEN
+      DynStr.Append (pool, d, 'self-store: borrowed ') ;
+      DynStr.Append (pool, d, DynStr.View (ds)) ;
+      DynStr.Append (pool, d, ' stored into ') ;
+      DynStr.Append (pool, d, dst) ;
+      DynStr.Append (pool, d, ', which reaches the caller only through ') ;
+      DynStr.Append (pool, d, src) ;
+      DynStr.Append (pool, d, ' itself (par 4.1)')
+    ELSE
+      DynStr.Append (pool, d, 'frame-store: borrowed ') ;
+      DynStr.Append (pool, d, DynStr.View (ds)) ;
+      DynStr.Append (pool, d, ' stored into ') ;
+      DynStr.Append (pool, d, dst) ;
+      DynStr.Append (pool, d, ', which never escapes the frame (par 4.1)')
+    END
+  ELSE
+    DynStr.Append (pool, d, 'retention: borrowed ') ;
+    DynStr.Append (pool, d, DynStr.View (ds)) ;
+    DynStr.Append (pool, d, ' stored into ') ;
+    DynStr.Append (pool, d, dst) ;
+    DynStr.Append (pool, d, ' -- reaches ') ;
+    FOR j := 0 TO ntl - 1 DO
+      IF j > 0 THEN DynStr.Append (pool, d, ', ') END ;
+      AppendTgt (d, tl[j])
+    END ;
+    DynStr.Append (pool, d, ' (par 4.1/4.2)') ;
+    KeptUse (src) ;
+    (* the CHECK behind the measurement: a retention must be in the
+       signature, the way a raise must be in RAISES.  '<call>'
+       alone does not fire it -- whether a callee keeps its
+       argument is that callee's declaration to make, and the
+       caller check reads it there (par 4.1). *)
+    de := DynStr.New (pool) ;
+    first := TRUE ;
+    FOR j := 0 TO ntl - 1 DO
+      IF NOT Text.Eq (tl[j], '<call>') THEN
+        IF NOT first THEN DynStr.Append (pool, de, ', ') END ;
+        AppendTgt (de, tl[j]) ;
+        first := FALSE
+      END
+    END ;
+    IF NOT first AND NOT KeptHas (src) THEN
+      dm := DynStr.New (pool) ;
+      DynStr.Append (pool, dm, 'undeclared retention: borrowed ') ;
+      DynStr.Append (pool, dm, DynStr.View (ds)) ;
+      DynStr.Append (pool, dm, ' reaches ') ;
+      DynStr.Append (pool, dm, DynStr.View (de)) ;
+      DynStr.Append (pool, dm, ' -- declare KEPT ') ;
+      DynStr.Append (pool, dm, src) ;
+      DynStr.Append (pool, dm, ' (par 4.1)') ;
+      Diag (errs, nerrs, line, col, ctx, DynStr.View (dm))
+    END
+  END ;
+  Diag (ledger, nledger, line, col, ctx, DynStr.View (d))
+END EmitPend ;
+
+PROCEDURE FlushPend (RO ctx: STR) =
+VAR
+  changed : BOOL ;
+  i, j, n2 : I64 ;
+  a2, b2, dmode : STR ;
+BEGIN
+  changed := TRUE ;
+  WHILE changed DO
+    changed := FALSE ;
+    FOR i := 0 TO nedge - 1 DO
+      a2 := edgeA[i] ;
+      b2 := edgeB[i] ;
+      n2 := nesc ;
+      FOR j := 0 TO n2 - 1 DO
+        IF Text.Eq (escName[j], a2) THEN
+          IF NOT EscHas (b2, escTgt[j]) THEN
+            EscTarget (b2, escTgt[j]) ;
+            changed := TRUE
+          END
+        END ;
+        IF Text.Eq (escName[j], b2) THEN
+          IF NOT EscHas (a2, escTgt[j]) THEN
+            EscTarget (a2, escTgt[j]) ;
+            changed := TRUE
+          END
+        END
+      END
+    END
+  END ;
+  (* close the carries over the copy edges, exactly as the escape
+     targets closed over the alias edges *)
+  changed := TRUE ;
+  WHILE changed DO
+    changed := FALSE ;
+    FOR i := 0 TO ncedge - 1 DO
+      a2 := carryEA[i] ;
+      b2 := carryEB[i] ;
+      n2 := ncarry ;
+      FOR j := 0 TO n2 - 1 DO
+        IF Text.Eq (carryN[j], b2) THEN
+          IF NOT CarryHas (a2, carryB[j]) THEN
+            CarryAdd (a2, carryB[j]) ;
+            changed := TRUE
+          END
+        END
+      END
+    END
+  END ;
+  FOR i := 0 TO npend - 1 DO
+    dmode := ScopeMode (pendSrc[i]) ;
+    IF Text.Eq (dmode, ModeVal) OR Text.Eq (dmode, ModeVar) OR
+       Text.Eq (dmode, ModeRo) THEN
+      EmitPend (pendLine[i], pendCol[i], pendSrc[i], '', pendDst[i], ctx)
+    ELSIF Text.Eq (dmode, ModeLocal) OR Text.Eq (dmode, ModeBinder) THEN
+      (* a carrier resolves to one entry per borrow it carries -- and
+         to NONE when it carries none, which is most locals *)
+      FOR j := 0 TO ncarry - 1 DO
+        IF Text.Eq (carryN[j], pendSrc[i]) THEN
+          EmitPend (pendLine[i], pendCol[i], carryB[j],
+                    pendSrc[i], pendDst[i], ctx)
+        END
+      END
+    END
+  END ;
+  (* the lie detector: a KEPT parameter the analysis never saw
+     retained.  A ledger class, not an error -- a borrow laundered
+     through a call result is not yet seen, so an overstatement is
+     a signal to read, not proof of a lie. *)
+  FOR i := 0 TO nkept - 1 DO
+    IF NOT KeptUsedHas (keptP[i]) THEN
+      Diag (ledger, nledger, keptLn[i], keptCl[i], ctx,
+        S3 ('kept-unseen: KEPT ', keptP[i],
+            ' is not seen retained by this analysis (par 4.1)'))
+    END
+  END ;
+  nesc := 0 ;
+  nedge := 0 ;
+  npend := 0 ;
+  ncarry := 0 ;
+  ncedge := 0
+END FlushPend ;
 (* the declared type a designator lands on, following selectors and
    dereferencing pointers on the way.  NONE when it cannot be known,
    because an unknown type must never diagnose.                     *)
@@ -1366,7 +1923,7 @@ BEGIN
   nconsts := 0
 END ConstClear ;
 
-PROCEDURE ConstAdd (RO nm: STR ; RO ty: STR) =
+PROCEDURE ConstAdd (RO KEPT nm: STR ; RO KEPT ty: STR) =
 VAR
   nb : SLICE OF Binding ;
   i : I64 ;
@@ -1396,7 +1953,7 @@ BEGIN
 END ConstType ;
 
 PROCEDURE ExprType (k: Ast.Kid ; RO ctx: STR) : STR ;
-PROCEDURE CallType (dn: Ast.Kid ; argl: Ast.Kid ; site: PTR Ast.Node ;
+PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR ;
 
 (* a designator as an expression: scope names, module CONSTs, the
@@ -1705,7 +2262,14 @@ BEGIN
                     ErrN (e, ctx, 'IS SOME needs an OPT operand')
                   END ;
                   BindName (b.a, NONE)
-                END
+                END ;
+                (* par 4.1 direction: the binder is a VIEW of the
+                   operand -- storing into the binder stores into the
+                   operand's storage, so the binder inherits the
+                   operand's reach (dst = operand, src = binder) --
+                   and, provenance, the binder CARRIES the operand *)
+                EscStore (o.a, TRUE, b.a) ;
+                CarryFrom (b.a, o.a)
               END
             END
           ELSE
@@ -1745,9 +2309,18 @@ BEGIN
   RETURN ''
 END ExprType ;
 
-PROCEDURE BindName (RO nm: STR ; t: Ast.Kid) =
+(* the oracle OVERWRITES an existing binding in place -- a name
+   rebound arm by arm (CASE over Frame's column variants rebinds v
+   per arm) must answer the LATEST type, and appending would leave
+   the first arm's shadowing every later one, since lookup answers
+   the first hit.  An existing entry keeps its mode, as the oracle's
+   does. *)
+PROCEDURE BindName (RO KEPT nm: STR ; KEPT t: Ast.Kid) =
+VAR i : I64 ;
 BEGIN
-  ScopeAdd (nm, t, ModeBinder)
+  i := ScopeFind (nm) ;
+  IF i < 0 THEN ScopeAdd (nm, t, ModeBinder)
+  ELSE scope[i].ty := t END
 END BindName ;
 
 (* which module owns variant V of CASE RECORD type T, and the field
@@ -1829,7 +2402,7 @@ BEGIN
 END BaseIsPtr ;
 
 (* the flattened field types of a variant: one entry per binder *)
-PROCEDURE FlatFields (fields: Ast.Kid ; VAR n: I64) : SLICE OF AKid =
+PROCEDURE FlatFields (KEPT fields: Ast.Kid ; VAR n: I64) : SLICE OF AKid =
 VAR
   out : SLICE OF AKid ;
   g, j : I64 ;
@@ -1872,7 +2445,7 @@ BEGIN
   RETURN Text.Eq (t, 'U8') OR Text.Eq (t, 'U16') OR Text.Eq (t, 'U32')
 END IsTotalWideningTo64 ;
 
-PROCEDURE CallType (dn: Ast.Kid ; argl: Ast.Kid ; site: PTR Ast.Node ;
+PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR =
 VAR
   name, pTy, amode, om, t : STR ;
@@ -2041,7 +2614,7 @@ BEGIN
               FOR j := 0 TO ids.nkids - 1 DO
                 IF k < nargs THEN
                   CheckArg (site, ctx, name, k, pTy, aTy[k], aNode[k],
-                            isVar, grp.f2)
+                            isVar, grp.f2, grp.f4)
                 END ;
                 k := k + 1
               END
@@ -2089,8 +2662,8 @@ END CallType ;
    rules that are pure checks rather than flow *)
 PROCEDURE CheckArg (site: PTR Ast.Node ; RO ctx: STR ; RO name: STR ;
                     k: I64 ; RO pTy: STR ; RO aTy: STR ; an: Ast.Kid ;
-                    isVar: BOOL ; isOwn: BOOL) =
-VAR amode : STR ;
+                    isVar: BOOL ; isOwn: BOOL ; isKept: BOOL) =
+VAR amode, aroot : STR ;
 BEGIN
   IF Text.Eq (aTy, '<void>') THEN
     ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
@@ -2149,6 +2722,43 @@ BEGIN
         END
       END
     END
+  END ;
+  (* par 4.1, the caller side of KEPT.  A parameter's KEPT is read
+     HERE, which is what narrows the old blanket every-callee-may-keep
+     '<call>' fact to the parameters that declare it.  Two refusals,
+     the RAISES-style upward composition: what is handed to a KEPT
+     parameter must survive the call, so a concatenation (frame
+     storage, par 2.3) is refused outright, and a borrow is a
+     retention the CALLER must declare in turn. *)
+  IF isKept THEN
+    IF Bare (an) IS SOME a0 THEN
+      IF a0.kind = Ast.NBin AND Text.Eq (a0.a, '+') AND
+         Text.Eq (aTy, 'SLICE OF CHAR') THEN
+        ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
+          Cat (name, ': a KEPT parameter cannot take a concatenation' +
+                     ' -- it dies with this frame (par 4.1)')))
+      END
+    END ;
+    aroot := EscRootOf (an) ;
+    IF LEN (aroot) > 0 AND IsRefTy (aTy) THEN
+      amode := ScopeMode (aroot) ;
+      (* handing a borrow onward to a KEPT parameter is what
+         justifies the caller's own KEPT *)
+      IF Text.Eq (amode, ModeVal) OR Text.Eq (amode, ModeVar) OR
+         Text.Eq (amode, ModeRo) THEN
+        KeptUse (aroot)
+      END ;
+      IF (Text.Eq (amode, ModeVal) OR Text.Eq (amode, ModeVar) OR
+          Text.Eq (amode, ModeRo)) AND NOT KeptHas (aroot) THEN
+        ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
+          S5 (': borrowed ', aroot,
+              ' is kept by the callee -- declare KEPT ', aroot,
+              ' (par 4.1)')))
+      END ;
+      IF IsFrameMode (amode) THEN
+        EscTarget (aroot, '<call>')
+      END
+    END
   END
 END CheckArg ;
 
@@ -2179,7 +2789,7 @@ BEGIN
   RETURN -1
 END OwnFind ;
 
-PROCEDURE OwnSet (RO nm: STR ; RO state: STR) =
+PROCEDURE OwnSet (RO KEPT nm: STR ; RO KEPT state: STR) =
 VAR
   nb : SLICE OF Binding ;
   i : I64 ;
@@ -2219,12 +2829,12 @@ BEGIN
   RETURN 0
 END OwnedCandKind ;
 
-PROCEDURE OwnMark (RO nm: STR ; RO what: STR ; site: PTR Ast.Node) =
+PROCEDURE OwnMark (RO KEPT nm: STR ; RO what: STR ; site: PTR Ast.Node) =
 BEGIN
   OwnSet (nm, S3 (what, ' at line ', ItoA (site.line)))
 END OwnMark ;
 
-PROCEDURE OwnAlive (RO nm: STR) =
+PROCEDURE OwnAlive (RO KEPT nm: STR) =
 BEGIN
   IF OwnFind (nm) >= 0 THEN OwnSet (nm, 'alive') END
 END OwnAlive ;
@@ -2252,14 +2862,14 @@ BEGIN
   RETURN c
 END OwnSnap ;
 
-PROCEDURE OwnRestore (snap: SLICE OF Binding ; n: I64) =
+PROCEDURE OwnRestore (KEPT snap: SLICE OF Binding ; n: I64) =
 VAR i : I64 ;
 BEGIN
   nown := 0 ;
   FOR i := 0 TO n - 1 DO OwnSet (snap[i].name, snap[i].mode) END
 END OwnRestore ;
 
-PROCEDURE OwnMergeMoves (snap: SLICE OF Binding ; n: I64) =
+PROCEDURE OwnMergeMoves (KEPT snap: SLICE OF Binding ; n: I64) =
 VAR
   i, ix : I64 ;
 BEGIN
@@ -2489,7 +3099,7 @@ BEGIN
   nfrom := 0
 END FromClear ;
 
-PROCEDURE FromAdd (RO nm: STR ; RO owner: STR) =
+PROCEDURE FromAdd (RO KEPT nm: STR ; RO KEPT owner: STR) =
 VAR
   nb : SLICE OF Binding ;
   i : I64 ;
@@ -2689,7 +3299,7 @@ END CheckCaseTotal ;
 (* a function called as a statement throws its answer away, and in a
    language where failure travels in the result that is how a caller
    loses the thing it was supposed to check *)
-PROCEDURE CheckCallStmt (st: PTR Ast.Node ; RO ctx: STR) =
+PROCEDURE CheckCallStmt (KEPT st: PTR Ast.Node ; RO ctx: STR) =
 VAR t : STR ;
 BEGIN
   IF st.kids[0] IS SOME dn THEN
@@ -2703,6 +3313,56 @@ BEGIN
     END
   END
 END CheckCallStmt ;
+
+(* a CASE pattern's binders, bound with the variant's field types --
+   the oracle's BindPattern, by global variant-name search -- and,
+   par 4.1 direction, each views the selector's payload, so it
+   inherits the selector's reach *)
+PROCEDURE BindPat (lbl: PTR Ast.Node ; RO KEPT selRoot: STR) =
+VAR
+  flat : SLICE OF AKid ;
+  nflat, m, j, v, n : I64 ;
+  done : BOOL ;
+BEGIN
+  nflat := 0 ;
+  flat := NEW (pool, AKid, 1) ;
+  done := FALSE ;
+  FOR m := 0 TO nmods - 1 DO
+    FOR j := 0 TO mods[m].nvts - 1 DO
+      FOR v := 0 TO LEN (mods[m].vts[j].variants) - 1 DO
+        IF NOT done AND Text.Eq (mods[m].vts[j].variants[v], lbl.a) THEN
+          flat := FlatFields (mods[m].vts[j].fields[v], nflat) ;
+          done := TRUE
+        END
+      END
+    END
+  END ;
+  IF lbl.kids[0] IS SOME ids THEN
+    FOR n := 0 TO ids.nkids - 1 DO
+      IF ids.kids[n] IS SOME id THEN
+        IF n < nflat THEN BindName (id.a, flat[n])
+        ELSE BindName (id.a, NONE) END ;
+        IF LEN (selRoot) > 0 THEN
+          (* and, provenance, the pattern binder carries the selector *)
+          EscStore (selRoot, TRUE, id.a) ;
+          CarryFrom (id.a, selRoot)
+        END
+      END
+    END
+  END
+END BindPat ;
+
+PROCEDURE BindPats (arm: PTR Ast.Node ; RO KEPT selRoot: STR) =
+VAR k : I64 ;
+BEGIN
+  IF arm.kids[0] IS SOME ll THEN
+    FOR k := 0 TO ll.nkids - 1 DO
+      IF ll.kids[k] IS SOME lbl THEN
+        IF lbl.kind = Ast.NLabelPattern THEN BindPat (lbl, selRoot) END
+      END
+    END
+  END
+END BindPats ;
 
 (* ---- pass 2: the body walk, and the par 4.1 retention ledger ----
 
@@ -2758,20 +3418,44 @@ BEGIN
       END
     END ;
     IF lhs.nkids = 0 THEN OwnAlive (lhs.a) END ;
-    vname := RefRootOf (st.kids[1]) ;
+    (* EscRootOf, not RefRootOf: a sub-slice view of a borrow
+       stored beyond the frame retains the borrow just as the whole
+       of it would *)
+    vname := EscRootOf (st.kids[1]) ;
     isShared := Text.StartsWith (u, 'SHARED PTR ') OR
                 Text.StartsWith (u, 'OPT SHARED PTR ') ;
     lhsMode := ScopeMode (lhs.a) ;
     IF LEN (vname) > 0 AND IsRefTy (u) AND NOT isShared THEN
       IF Text.Eq (ScopeMode (vname), ModeVal) OR
          Text.Eq (ScopeMode (vname), ModeVar) OR
-         Text.Eq (ScopeMode (vname), ModeRo) THEN
+         Text.Eq (ScopeMode (vname), ModeRo) OR
+         (* a local or binder may CARRY a borrow: recorded now,
+            resolved at flush once the carries are closed, and
+            dropped there if it carries none *)
+         Text.Eq (ScopeMode (vname), ModeLocal) OR
+         Text.Eq (ScopeMode (vname), ModeBinder) THEN
         IF beyond OR Text.Eq (lhsMode, ModeModule) OR
            (Text.Eq (lhsMode, ModeVar) AND lhs.nkids > 0) THEN
-          LedgerN (st, ctx, Cat (Cat (Cat (
-            'retention: borrowed ', vname), ' stored into '),
-            Cat (lhs.a, ' (par 4.1/4.2)')))
+          (* PENDED, not emitted: the class -- retention, self-store,
+             frame-store -- needs every escape of the destination,
+             so the walk finishes first (FlushPend) *)
+          PendPush (st.line, st.col, vname, lhs.a)
         END
+      END
+    END ;
+    (* par 4.1 provenance: a bare local or binder now holds this
+       reference -- a borrow is carried, a carrier's cargo is
+       inherited *)
+    IF LEN (vname) > 0 AND IsRefTy (u) AND lhs.nkids = 0 THEN
+      IF Text.Eq (lhsMode, ModeLocal) OR Text.Eq (lhsMode, ModeBinder) THEN
+        CarryFrom (lhs.a, vname)
+      END
+    END ;
+    (* par 4.1 direction: a ref value rooted in frame storage,
+       stored anywhere, is an escape fact for the fixpoint *)
+    IF LEN (vname) > 0 AND IsRefTy (u) THEN
+      IF IsFrameMode (ScopeMode (vname)) THEN
+        EscStore (lhs.a, lhs.nkids > 0, vname)
       END
     END
   END
@@ -2867,7 +3551,9 @@ BEGIN
         CheckCaseTotal (st, ctx) ;
         FOR j := 1 TO st.nkids - 1 DO
           IF st.kids[j] IS SOME arm THEN
-            IF arm.kind = Ast.NCaseArm THEN WalkSeq (arm.kids[1], ctx)
+            IF arm.kind = Ast.NCaseArm THEN
+              BindPats (arm, EscRootOf (st.kids[0])) ;
+              WalkSeq (arm.kids[1], ctx)
             ELSE WalkSeq (arm.kids[0], ctx) END
           END
         END
@@ -2901,7 +3587,7 @@ BEGIN
   END
 END CheckCond ;
 
-PROCEDURE CheckForBounds (st: PTR Ast.Node ; RO ctx: STR) =
+PROCEDURE CheckForBounds (KEPT st: PTR Ast.Node ; RO ctx: STR) =
 VAR t : STR ;
 BEGIN
   t := ExprType (st.kids[0], ctx) ;
@@ -3042,6 +3728,11 @@ BEGIN
           END
         END
       END
+    END ;
+    (* par 4.1 direction: what is RETURNed reaches the caller *)
+    t := EscRootOf (st.kids[0]) ;
+    IF LEN (t) > 0 THEN
+      IF IsFrameMode (ScopeMode (t)) THEN EscTarget (t, '<return>') END
     END
   ELSE
     IF NOT Text.Eq (curRetTy, '<void>') THEN
@@ -3050,22 +3741,36 @@ BEGIN
   END
 END CheckReturn ;
 
-PROCEDURE CheckProcBody (u: PTR Ast.Node ; d: PTR Ast.Node ;
-                         RO ctx: STR) =
+PROCEDURE CheckProcBody (u: PTR Ast.Node ; KEPT d: PTR Ast.Node ;
+                         RO KEPT ctx: STR) =
 BEGIN
   IF d.kids[4] IS SOME body THEN
     ScopeClear () ;
     CallsClear () ;
+    (* KEPT declarations are read as the params are added, so the
+       list resets BEFORE AddParamsOf, not beside the walk state *)
+    nkept := 0 ;
+    nkeptU := 0 ;
+    ncarry := 0 ;
+    ncedge := 0 ;
     (* params and locals first: the lookup answers the first hit, so
        they shadow module state of the same name *)
     AddParamsOf (d) ;
     AddVarsOf (body, ModeLocal) ;
     AddVarsOf (u, ModeModule) ;
+    svConsts := nconsts ;
+    AddConstsOf (body, ctx) ;
     curRetTy := '<void>' ;
     IF d.kids[1] IS SOME rt THEN curRetTy := CanonT (d.kids[1], 0) END ;
     OwnClear () ;
     OwnSeed () ;
     RaisedClear () ;
+    (* par 4.1 direction: escape facts and pended stores are per
+       procedure, and a module body's stray facts must not leak into
+       the next file's first procedure *)
+    nesc := 0 ;
+    nedge := 0 ;
+    npend := 0 ;
     (* par 3.2: kid 3 is the attribute, if any *)
     curPure := FALSE ;
     IF d.kids[3] IS SOME at THEN
@@ -3073,9 +3778,13 @@ BEGIN
     END ;
     boundMon := BoundMonitorOf (d) ;
     WalkStmt (body.kids[body.nkids - 1], ctx) ;
+    FlushPend (ctx) ;
     ReportUnhandled (body, ctx, RaisesOf (pool, d)) ;
     ReportImpureCalls (body, ctx) ;
-    GraphSet (ctx)
+    GraphSet (ctx) ;
+    (* the locals go out of scope with the procedure: truncate rather
+       than clear, so the module CONSTs registered before them stay *)
+    nconsts := svConsts
   END
 END CheckProcBody ;
 
@@ -3106,7 +3815,7 @@ BEGIN
   nhandled := 0
 END RaisedClear ;
 
-PROCEDURE RaisedAdd (RO nm: STR ; RO origin: STR) =
+PROCEDURE RaisedAdd (RO KEPT nm: STR ; RO KEPT origin: STR) =
 VAR
   nb : SLICE OF Binding ;
   i : I64 ;
@@ -3125,7 +3834,7 @@ BEGIN
   nraised := nraised + 1
 END RaisedAdd ;
 
-PROCEDURE HandledAdd (RO nm: STR) =
+PROCEDURE HandledAdd (RO KEPT nm: STR) =
 VAR
   nb : SLICE OF STR ;
   i : I64 ;
@@ -3376,7 +4085,7 @@ BEGIN
   ncalls := 0
 END CallsClear ;
 
-PROCEDURE CallsAdd (RO nm: STR) =
+PROCEDURE CallsAdd (RO KEPT nm: STR) =
 VAR
   nb : SLICE OF STR ;
   i : I64 ;
@@ -3393,7 +4102,7 @@ BEGIN
   ncalls := ncalls + 1
 END CallsAdd ;
 
-PROCEDURE GraphSet (RO caller: STR) =
+PROCEDURE GraphSet (RO KEPT caller: STR) =
 VAR
   nb : SLICE OF Edge ;
   cs : SLICE OF STR ;
@@ -3420,7 +4129,7 @@ BEGIN
   RETURN -1
 END GraphFind ;
 
-PROCEDURE RootAdd (RO nm: STR) =
+PROCEDURE RootAdd (RO KEPT nm: STR) =
 VAR
   nb : SLICE OF STR ;
   i : I64 ;
@@ -3486,7 +4195,7 @@ BEGIN
   END
 END CheckThreadChains ;
 
-PROCEDURE CheckFile (root: PTR Ast.Node) =
+PROCEDURE CheckFile (KEPT root: PTR Ast.Node) =
 VAR i, j, k : I64 ;
 BEGIN
   Setup () ;

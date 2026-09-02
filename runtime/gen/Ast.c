@@ -2,8 +2,12 @@
 #include "Ast.h"
 
 
-Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, m9_err *err)
+Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Ast_Node * m9ret = NULL;
   Ast_Node * n = NULL; (void) n;
   n = (Ast_Node *) m9_pool_alloc (&((*pool)), sizeof (Ast_Node), 1, err);
@@ -14,14 +18,21 @@ Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, 
   n->kids = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &((*pool)), INT64_C(4), err);
   if (err->exc) goto L_ret;
   n->nkids = INT64_C(0);
+  err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Ast_Add (m9_pool *pool, Ast_Node * *n, Ast_Node * kid, m9_err *err)
+void Ast_Add (m9_pool *pool, Ast_Node * *n, Ast_Node * kid, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_Ast_Nodep nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if (((*n)->nkids == ((*n)->kids).len)) {
@@ -42,5 +53,7 @@ void Ast_Add (m9_pool *pool, Ast_Node * *n, Ast_Node * kid, m9_err *err)
   (*n)->nkids = m9_add_i64 ((*n)->nkids, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }

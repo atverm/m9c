@@ -46,7 +46,7 @@ static double now_s (void)
 }
 
 /* chunk-band scan: friendly to the single-chunk cache */
-static void scan (ZarrStore_Array *a, m9_err *err,
+static void scan (ZarrStore_Array *a, m9_state *err,
                   double *sum, int64_t *n)
 {
   int64_t cr, cc, r, c, gr, gc;
@@ -64,7 +64,7 @@ static void scan (ZarrStore_Array *a, m9_err *err,
 
 int main (void)
 {
-  m9_err err = {0};
+  m9_state err = {0};
   uint32_t ub[64];
   double sum, t0, t1, t2;
   int64_t n;

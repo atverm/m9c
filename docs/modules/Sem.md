@@ -22,7 +22,7 @@ cross-module names resolve against this registry, and a name
 that is not yet loaded is indistinguishable from one that does
 not exist
 
-### CheckFile (root: PTR Ast.Node)
+### CheckFile (KEPT root: PTR Ast.Node)
 
 checks one parsed file, after LoadFile has registered it and
 every module it imports.  It does not raise and it does not

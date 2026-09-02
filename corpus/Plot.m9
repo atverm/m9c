@@ -30,12 +30,12 @@ PROCEDURE ClearFigure () ;
 PROCEDURE AddLine (RO xs: SLICE OF F64 ;
                    RO ys: SLICE OF F64 ;
                    colorIdx: I64 ;
-                   RO label: STR) ;
+                   RO KEPT label: STR) ;
   (* up to 4 series, up to 1024 points; colorIdx 0..3 = matplotlib
      C0..C3; NaN values lift the pen, as mpl does.  The label slice
      is retained until Render -- ledger material, like AddRoute.     *)
 
-PROCEDURE SetDots (RO xs: SLICE OF F64 ; RO ys: SLICE OF F64) ;
+PROCEDURE SetDots (RO KEPT xs: SLICE OF F64 ; RO KEPT ys: SLICE OF F64) ;
   (* one scatter layer, drawn UNDER the lines: every point a small
      black circle, NaN points skipped, no per-series cap -- the
      layer is for raw observations behind their summary lines.  The
@@ -59,7 +59,7 @@ CONST
 PROCEDURE AddBars (RO at: SLICE OF F64 ;
                    RO v: SLICE OF F64 ;
                    colorIdx: I64 ;
-                   RO label: STR) ;
+                   RO KEPT label: STR) ;
   (* one bar series: up to 4 of them, up to 1024 bars each, drawn
      UNDER any lines and dots.
 
@@ -94,7 +94,7 @@ PROCEDURE SetBarStyle (dir: I64 ; mode: I64 ; place: I64 ;
        width -- the fraction of a slot the bars occupy, 0 < width
                 <= 1.  Grouped series divide that between them.   *)
 
-PROCEDURE SetBarErrors (series: I64 ; RO err: SLICE OF F64) ;
+PROCEDURE SetBarErrors (series: I64 ; RO KEPT err: SLICE OF F64) ;
   (* symmetric error bars for one series: a whisker of +/- err[i]
      on the VALUE axis with a cap at each end, drawn over the bars.
      A NaN or negative entry draws nothing for that bar, which is
@@ -102,7 +102,7 @@ PROCEDURE SetBarErrors (series: I64 ; RO err: SLICE OF F64) ;
      RETAINED until Render, like AddLine's label and SetDots's
      points.                                                       *)
 
-PROCEDURE SetBarColor (series: I64 ; RO hex: STR) ;
+PROCEDURE SetBarColor (series: I64 ; RO KEPT hex: STR) ;
   (* override the palette for one series with an SVG colour --
      '#cc3311', 'darkgreen'.  It is written into the document
      verbatim, so it is the caller's business that it is a colour;
@@ -400,14 +400,14 @@ BEGIN
   END
 END SetBarStyle ;
 
-PROCEDURE SetBarErrors (series: I64 ; RO err: SLICE OF F64) =
+PROCEDURE SetBarErrors (series: I64 ; RO KEPT err: SLICE OF F64) =
 BEGIN
   IF series < 0 OR series >= MaxSer THEN RETURN END ;
   barErr[series] := err ;
   barHasErr[series] := TRUE
 END SetBarErrors ;
 
-PROCEDURE SetBarColor (series: I64 ; RO hex: STR) =
+PROCEDURE SetBarColor (series: I64 ; RO KEPT hex: STR) =
 BEGIN
   IF series < 0 OR series >= MaxSer THEN RETURN END ;
   barHex[series] := hex
@@ -416,7 +416,7 @@ END SetBarColor ;
 PROCEDURE AddBars (RO at: SLICE OF F64 ;
                    RO v: SLICE OF F64 ;
                    colorIdx: I64 ;
-                   RO label: STR) =
+                   RO KEPT label: STR) =
 VAR n, i : I64 ;
 BEGIN
   IF nBar >= MaxSer THEN RETURN END ;
@@ -580,7 +580,7 @@ VAR
   dotX, dotY : SLICE OF F64 ;   (* retained caller slices, see def *)
   dotN : I64 ;
 
-PROCEDURE SetDots (RO xs: SLICE OF F64 ; RO ys: SLICE OF F64) =
+PROCEDURE SetDots (RO KEPT xs: SLICE OF F64 ; RO KEPT ys: SLICE OF F64) =
 BEGIN
   dotX := xs ;
   dotY := ys ;
@@ -591,7 +591,7 @@ END SetDots ;
 PROCEDURE AddLine (RO xs: SLICE OF F64 ;
                    RO ys: SLICE OF F64 ;
                    colorIdx: I64 ;
-                   RO label: STR) =
+                   RO KEPT label: STR) =
 VAR n, i : I64 ;
 BEGIN
   IF nSer >= MaxSer THEN RETURN END ;

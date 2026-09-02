@@ -14,14 +14,14 @@ extern const m9_exc HttpServer_BindError;
 #define HttpServer_ReqMax INT64_C(65536)
 #define HttpServer_Backlog INT64_C(16)
 
-HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_err *err);
-void HttpServer_AddRoute (m9_pool *pool, HttpServer_Router * *r, m9_sl_CHAR method, m9_sl_CHAR path, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_sl_CHAR summary, m9_err *err);
-int64_t HttpServer_RouteCount (HttpServer_Router * r, m9_err *err);
-m9_sl_CHAR HttpServer_RouteMethod (HttpServer_Router * r, int64_t i, m9_err *err);
-m9_sl_CHAR HttpServer_RoutePath (HttpServer_Router * r, int64_t i, m9_err *err);
-int64_t HttpServer_RouteStatus (HttpServer_Router * r, int64_t i, m9_err *err);
-m9_sl_CHAR HttpServer_RouteType (HttpServer_Router * r, int64_t i, m9_err *err);
-m9_sl_CHAR HttpServer_RouteSummary (HttpServer_Router * r, int64_t i, m9_err *err);
-void HttpServer_Serve (HttpServer_Router * r, int64_t port, int64_t maxRequests, m9_err *err);
+HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_state *err);
+void HttpServer_AddRoute (m9_pool *pool, HttpServer_Router * *r, m9_sl_CHAR method, m9_sl_CHAR path, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_sl_CHAR summary, m9_state *err);
+int64_t HttpServer_RouteCount (HttpServer_Router * r, m9_state *err);
+m9_sl_CHAR HttpServer_RouteMethod (HttpServer_Router * r, int64_t i, m9_state *err);
+m9_sl_CHAR HttpServer_RoutePath (HttpServer_Router * r, int64_t i, m9_state *err);
+int64_t HttpServer_RouteStatus (HttpServer_Router * r, int64_t i, m9_state *err);
+m9_sl_CHAR HttpServer_RouteType (HttpServer_Router * r, int64_t i, m9_state *err);
+m9_sl_CHAR HttpServer_RouteSummary (HttpServer_Router * r, int64_t i, m9_state *err);
+void HttpServer_Serve (HttpServer_Router * r, int64_t port, int64_t maxRequests, m9_state *err);
 
 #endif

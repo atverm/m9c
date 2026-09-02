@@ -55,7 +55,7 @@ DynStr tells.  Insertion order is remembered, which is what
 makes KeyAt/ValAt below a stable walk rather than a hash
 order that changes when the table grows.
 
-### Put (VAR pool: POOL ; VAR d: PTR Dict ; RO key: STR ; val: Value)
+### Put (VAR pool: POOL ; VAR d: PTR Dict ; RO KEPT key: STR ; val: Value)
 
 inserts, or replaces the value of an existing key.  Replacing
 keeps the key's original position in the iteration order.

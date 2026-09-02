@@ -1,0 +1,13 @@
+(* EXPECT: argument 1 of Note: borrowed msg is kept by the callee -- declare KEPT msg (par 4.1) *)
+MODULE m ;
+VAR last : STR ;
+PROCEDURE Note (RO KEPT msg: STR) =
+BEGIN
+  last := msg
+END Note ;
+PROCEDURE Relay (RO msg: STR) =
+BEGIN
+  Note (msg)
+END Relay ;
+BEGIN
+END m.

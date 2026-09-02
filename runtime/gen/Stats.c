@@ -54,20 +54,24 @@ static const uint32_t m9s4[36] = { 114u, 97u, 110u, 103u, 101u, 32u, 119u, 105u,
 static const uint32_t m9s5[23] = { 108u, 97u, 109u, 98u, 100u, 97u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
 static const uint32_t m9s6[22] = { 115u, 105u, 103u, 109u, 97u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
 
-static void Stats_Need (m9_sl_F64 xs, int64_t n, m9_err *err);
-static double Stats_SumSq (m9_sl_F64 xs, double m, m9_err *err);
-static void Stats_Sort (m9_sl_F64 *a, m9_err *err);
-static m9_sl_F64 Stats_Sorted (m9_pool *scratch, m9_sl_F64 xs, m9_err *err);
-static double Stats_LnGamma (double x, m9_err *err);
-static double Stats_BetaCf (double a, double b, double x, m9_err *err);
-static double Stats_BetaI (double a, double b, double x, m9_err *err);
-static double Stats_TwoSided (double t, double dof, m9_err *err);
-static void Stats_Step (Stats_Stream *st, m9_err *err);
-static int64_t Stats_Top53 (int64_t x, m9_err *err);
+static void Stats_Need (m9_sl_F64 xs, int64_t n, m9_state *err);
+static double Stats_SumSq (m9_sl_F64 xs, double m, m9_state *err);
+static void Stats_Sort (m9_sl_F64 *a, m9_state *err);
+static m9_sl_F64 Stats_Sorted (m9_pool *scratch, m9_sl_F64 xs, m9_state *err);
+static double Stats_LnGamma (double x, m9_state *err);
+static double Stats_BetaCf (double a, double b, double x, m9_state *err);
+static double Stats_BetaI (double a, double b, double x, m9_state *err);
+static double Stats_TwoSided (double t, double dof, m9_state *err);
+static void Stats_Step (Stats_Stream *st, m9_state *err);
+static int64_t Stats_Top53 (int64_t x, m9_state *err);
 
 
-double Stats_Mean (m9_sl_F64 xs, m9_err *err)
+double Stats_Mean (m9_sl_F64 xs, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   double acc = 0; (void) acc;
   int64_t i = 0; (void) i;
@@ -82,58 +86,93 @@ double Stats_Mean (m9_sl_F64 xs, m9_err *err)
     acc = (acc + (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = (acc / (double)((xs).len));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_Var (m9_sl_F64 xs, m9_err *err)
+double Stats_Var (m9_sl_F64 xs, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Stats_Need (xs, INT64_C(2), err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (Stats_SumSq (xs, Stats_Mean (xs, err), err) / (double)(m9_sub_i64 ((xs).len, INT64_C(1), err)));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_VarP (m9_sl_F64 xs, m9_err *err)
+double Stats_VarP (m9_sl_F64 xs, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Stats_Need (xs, INT64_C(1), err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (Stats_SumSq (xs, Stats_Mean (xs, err), err) / (double)((xs).len));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_Std (m9_sl_F64 xs, m9_err *err)
+double Stats_Std (m9_sl_F64 xs, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
+  err->res = m9res;
   m9ret = Math_Sqrt (Stats_Var (xs, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_StdP (m9_sl_F64 xs, m9_err *err)
+double Stats_StdP (m9_sl_F64 xs, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
+  err->res = m9res;
   m9ret = Math_Sqrt (Stats_VarP (xs, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_Median (m9_sl_F64 xs, m9_err *err)
+double Stats_Median (m9_sl_F64 xs, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_F64 a = {0}; (void) a;
@@ -146,20 +185,28 @@ double Stats_Median (m9_sl_F64 xs, m9_err *err)
   bool m9t1 = (m9_mod_i64 (n, INT64_C(2), err) == INT64_C(1));
   if (err->exc) goto L_ret;
   if (m9t1) {
+    err->res = m9res;
     m9ret = (*(double *) m9_at (a.p, m9_div_i64 (n, INT64_C(2), err), a.len, sizeof (double), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = ((((*(double *) m9_at (a.p, m9_sub_i64 (m9_div_i64 (n, INT64_C(2), err), INT64_C(1), err), a.len, sizeof (double), err)) + (*(double *) m9_at (a.p, m9_div_i64 (n, INT64_C(2), err), a.len, sizeof (double), err)))) / 2.0);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-double Stats_Percentile (m9_sl_F64 xs, double p, m9_err *err)
+double Stats_Percentile (m9_sl_F64 xs, double p, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_F64 a = {0}; (void) a;
@@ -184,20 +231,28 @@ double Stats_Percentile (m9_sl_F64 xs, double p, m9_err *err)
   bool m9t2 = (lo >= m9_sub_i64 ((xs).len, INT64_C(1), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
+    err->res = m9res;
     m9ret = (*(double *) m9_at (a.p, m9_sub_i64 ((xs).len, INT64_C(1), err), a.len, sizeof (double), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = ((*(double *) m9_at (a.p, lo, a.len, sizeof (double), err)) + (frac * (((*(double *) m9_at (a.p, m9_add_i64 (lo, INT64_C(1), err), a.len, sizeof (double), err)) - (*(double *) m9_at (a.p, lo, a.len, sizeof (double), err))))));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-Stats_Fit Stats_NormFit (m9_sl_F64 xs, m9_err *err)
+Stats_Fit Stats_NormFit (m9_sl_F64 xs, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Stats_Fit m9ret = {0};
   Stats_Fit f = {0}; (void) f;
   Stats_Need (xs, INT64_C(2), err);
@@ -206,14 +261,21 @@ Stats_Fit Stats_NormFit (m9_sl_F64 xs, m9_err *err)
   if (err->exc) goto L_ret;
   f.sigma = Stats_StdP (xs, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = f;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Stats_Reg Stats_LinReg (m9_sl_F64 xs, m9_sl_F64 ys, m9_err *err)
+Stats_Reg Stats_LinReg (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Stats_Reg m9ret = {0};
   Stats_Reg g = {0}; (void) g;
   double mx = 0; (void) mx;
@@ -281,14 +343,21 @@ Stats_Reg Stats_LinReg (m9_sl_F64 xs, m9_sl_F64 ys, m9_err *err)
     g.p = Stats_TwoSided ((g.slope / g.stderr), df, err);
     if (err->exc) goto L_ret;
   }
+  err->res = m9res;
   m9ret = g;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Stats_Test Stats_TTest1 (m9_sl_F64 xs, double mu, m9_err *err)
+Stats_Test Stats_TTest1 (m9_sl_F64 xs, double mu, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Stats_Test m9ret = {0};
   Stats_Test w = {0}; (void) w;
   double se = 0; (void) se;
@@ -306,14 +375,21 @@ Stats_Test Stats_TTest1 (m9_sl_F64 xs, double mu, m9_err *err)
   if (err->exc) goto L_ret;
   w.p = Stats_TwoSided (w.t, w.dof, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = w;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Stats_Test Stats_TTest2 (m9_sl_F64 xs, m9_sl_F64 ys, m9_err *err)
+Stats_Test Stats_TTest2 (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Stats_Test m9ret = {0};
   Stats_Test w = {0}; (void) w;
   double vx = 0; (void) vx;
@@ -342,24 +418,38 @@ Stats_Test Stats_TTest2 (m9_sl_F64 xs, m9_sl_F64 ys, m9_err *err)
   if (err->exc) goto L_ret;
   w.p = Stats_TwoSided (w.t, w.dof, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = w;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_NormalCdf (double x, m9_err *err)
+double Stats_NormalCdf (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
+  err->res = m9res;
   m9ret = (0.5 * Math_Erfc ((- (x / 1.4142135623730951)), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_TTail (double t, double dof, m9_err *err)
+double Stats_TTail (double t, double dof, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   double p = 0; (void) p;
   if ((!((dof > 0.0)))) {
@@ -370,17 +460,25 @@ double Stats_TTail (double t, double dof, m9_err *err)
   p = (0.5 * Stats_BetaI ((dof / 2.0), 0.5, (dof / ((dof + (t * t)))), err));
   if (err->exc) goto L_ret;
   if ((t < 0.0)) {
+    err->res = m9res;
     m9ret = (1.0 - p);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = p;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Stats_Stream Stats_Seed (int64_t s, m9_err *err)
+Stats_Stream Stats_Seed (int64_t s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Stats_Stream m9ret = {0};
   Stats_Stream st = {0}; (void) st;
   st.x = s;
@@ -390,26 +488,40 @@ Stats_Stream Stats_Seed (int64_t s, m9_err *err)
   if (err->exc) goto L_ret;
   Stats_Step (&(st), err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = st;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_Uniform (Stats_Stream *st, m9_err *err)
+double Stats_Uniform (Stats_Stream *st, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   Stats_Step (st, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = ((double)(Stats_Top53 ((*st).x, err)) / Stats_TwoP53);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_err *err)
+int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t m = 0; (void) m;
   int64_t limit = 0; (void) limit;
@@ -446,15 +558,22 @@ int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_err *err)
     k = Stats_Top53 ((*st).x, err);
     if (err->exc) goto L_ret;
   }
+  err->res = m9res;
   m9ret = m9_add_i64 (lo, m9_mod_i64 (k, m, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_Normal (Stats_Stream *st, m9_err *err)
+double Stats_Normal (Stats_Stream *st, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   double u = 0; (void) u;
   double v = 0; (void) v;
@@ -462,6 +581,7 @@ double Stats_Normal (Stats_Stream *st, m9_err *err)
   double f = 0; (void) f;
   if ((*st).have) {
     (*st).have = false;
+    err->res = m9res;
     m9ret = (*st).spare;
     goto L_ret;
   }
@@ -480,14 +600,21 @@ double Stats_Normal (Stats_Stream *st, m9_err *err)
   if (err->exc) goto L_ret;
   (*st).spare = (v * f);
   (*st).have = true;
+  err->res = m9res;
   m9ret = (u * f);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_Exponential (Stats_Stream *st, double lambda, m9_err *err)
+double Stats_Exponential (Stats_Stream *st, double lambda, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   double u = 0; (void) u;
   if ((!((lambda > 0.0)))) {
@@ -497,30 +624,44 @@ double Stats_Exponential (Stats_Stream *st, double lambda, m9_err *err)
   }
   u = Stats_Uniform (st, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (- (Math_Log ((1.0 - u), err) / lambda));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-double Stats_LogNormal (Stats_Stream *st, double mu, double sigma, m9_err *err)
+double Stats_LogNormal (Stats_Stream *st, double mu, double sigma, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   if ((!((sigma > 0.0)))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 22 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 22 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Stats_BadArg);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = Math_Exp ((mu + (sigma * Stats_Normal (st, err))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Stats_Need (m9_sl_F64 xs, int64_t n, m9_err *err)
+static void Stats_Need (m9_sl_F64 xs, int64_t n, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   if (((xs).len < n)) {
     err->i[0] = (xs).len;
@@ -541,11 +682,17 @@ static void Stats_Need (m9_sl_F64 xs, int64_t n, m9_err *err)
     }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static double Stats_SumSq (m9_sl_F64 xs, double m, m9_err *err)
+static double Stats_SumSq (m9_sl_F64 xs, double m, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   double acc = 0; (void) acc;
   double d = 0; (void) d;
@@ -560,14 +707,21 @@ static double Stats_SumSq (m9_sl_F64 xs, double m, m9_err *err)
     if (err->exc) goto L_ret;
     acc = (acc + (d * d));
   } }
+  err->res = m9res;
   m9ret = acc;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Stats_Sort (m9_sl_F64 *a, m9_err *err)
+static void Stats_Sort (m9_sl_F64 *a, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t n = 0; (void) n;
   int64_t i = 0; (void) i;
   int64_t j = 0; (void) j;
@@ -649,11 +803,17 @@ static void Stats_Sort (m9_sl_F64 *a, m9_err *err)
     if (err->exc) goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_F64 Stats_Sorted (m9_pool *scratch, m9_sl_F64 xs, m9_err *err)
+static m9_sl_F64 Stats_Sorted (m9_pool *scratch, m9_sl_F64 xs, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_F64 m9ret = {0};
   m9_sl_F64 a = {0}; (void) a;
   int64_t i = 0; (void) i;
@@ -669,14 +829,21 @@ static m9_sl_F64 Stats_Sorted (m9_pool *scratch, m9_sl_F64 xs, m9_err *err)
   } }
   Stats_Sort (&(a), err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = a;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static double Stats_LnGamma (double x, m9_err *err)
+static double Stats_LnGamma (double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   double a = 0; (void) a;
   double t = 0; (void) t;
@@ -696,15 +863,22 @@ static double Stats_LnGamma (double x, m9_err *err)
   s = (s + (9.9843695780195716E-6 / ((a + 7.0))));
   s = (s + (1.5056327351493116E-7 / ((a + 8.0))));
   t = (a + 7.5);
+  err->res = m9res;
   m9ret = (((0.91893853320467274 + (((a + 0.5)) * Math_Log (t, err))) - t) + Math_Log (s, err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static double Stats_BetaCf (double a, double b, double x, m9_err *err)
+static double Stats_BetaCf (double a, double b, double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   double qab = 0; (void) qab;
   double qap = 0; (void) qap;
@@ -767,70 +941,105 @@ static double Stats_BetaCf (double a, double b, double x, m9_err *err)
     bool m9t7 = (Math_Abs ((del - 1.0), err) < 1.0E-15);
     if (err->exc) goto L_ret;
     if (m9t7) {
+      err->res = m9res;
       m9ret = h;
       goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = h;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static double Stats_BetaI (double a, double b, double x, m9_err *err)
+static double Stats_BetaI (double a, double b, double x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   double bt = 0; (void) bt;
   if ((x <= 0.0)) {
+    err->res = m9res;
     m9ret = 0.0;
     goto L_ret;
   }
   if ((x >= 1.0)) {
+    err->res = m9res;
     m9ret = 1.0;
     goto L_ret;
   }
   bt = Math_Exp (((((Stats_LnGamma ((a + b), err) - Stats_LnGamma (a, err)) - Stats_LnGamma (b, err)) + (a * Math_Log (x, err))) + (b * Math_Log ((1.0 - x), err))), err);
   if (err->exc) goto L_ret;
   if ((x < (((a + 1.0)) / (((a + b) + 2.0))))) {
+    err->res = m9res;
     m9ret = ((bt * Stats_BetaCf (a, b, x, err)) / a);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = (1.0 - ((bt * Stats_BetaCf (b, a, (1.0 - x), err)) / b));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static double Stats_TwoSided (double t, double dof, m9_err *err)
+static double Stats_TwoSided (double t, double dof, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
+  err->res = m9res;
   m9ret = Stats_BetaI ((dof / 2.0), 0.5, (dof / ((dof + (t * t)))), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Stats_Step (Stats_Stream *st, m9_err *err)
+static void Stats_Step (Stats_Stream *st, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   (*st).x = m9_addw_i64 (m9_mulw_i64 ((*st).x, Stats_MulA), Stats_AddC);
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static int64_t Stats_Top53 (int64_t x, m9_err *err)
+static int64_t Stats_Top53 (int64_t x, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   if ((x >= INT64_C(0))) {
+    err->res = m9res;
     m9ret = m9_div_i64 (x, INT64_C(2048), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_add_i64 (x, Stats_TwoP62, err), Stats_TwoP62, err)), INT64_C(2048), err), Stats_TwoP52, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }

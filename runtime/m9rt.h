@@ -22,7 +22,18 @@ typedef struct m9_exc {
   const char *name;                /* identity is the ADDRESS */
 } m9_exc;
 
-typedef struct m9_err {
+/* THE PER-CALL CHANNEL, and it stopped being only about errors.
+   It was m9_state until 2026-09-01, when the frame-pool work
+   (docs/frame-pools.md) added `res`: a procedure's answer has to land
+   somewhere that outlives its own frame, and the caller's arena is
+   what it lands in.  Two things now travel out of band -- a pending
+   failure and where the result goes -- so the name says state rather
+   than error.  A rename, not a redesign: `exc` and the payload slots
+   are untouched, and every procedure still takes exactly one of
+   these as its trailing parameter. */
+struct m9_pool;
+
+typedef struct m9_state {
   const m9_exc *exc;               /* NULL = no raise pending */
   int64_t  i[4];                   /* payload: integer slots   */
   double   d[2];                   /*          float slots     */
@@ -32,19 +43,26 @@ typedef struct m9_err {
      which is what makes a bad GRIB message reportable at all.  Until
      2026-08-25 this array was s[2] and the generator emitted
      `err->s[2]` for the third one, writing sixteen bytes past the
-     end of every m9_err on the error path; the generated C compiled
+     end of every m9_state on the error path; the generated C compiled
      and the tests, which check an exception's NAME, never looked.
      Both generators now refuse a payload that does not fit, so the
      next exception to outgrow these slots is a loud error rather
      than a silent overwrite. */
-} m9_err;
+  struct m9_pool *res;             /* the CALLER's frame arena: where
+                                      a result that outlives this
+                                      frame is allocated.  NULL means
+                                      a caller that does not play --
+                                      a hand-written C driver, say --
+                                      and the fallback is HEAP, which
+                                      is what `+` did before this. */
+} m9_state;
 
 extern const m9_exc m9_exc_Overflow;
 extern const m9_exc m9_exc_IndexError;
 extern const m9_exc m9_exc_OutOfMemory;
 extern const m9_exc m9_exc_ValueRange;
 
-static inline void m9_raise (m9_err *err, const m9_exc *e)
+static inline void m9_raise (m9_state *err, const m9_exc *e)
 {
   err->exc = e;
 }
@@ -85,7 +103,7 @@ M9_SLICE_T (m9_sl_CHAR, uint32_t)   /* CHAR is a Unicode scalar */
 extern unsigned char m9_poison[65536];
 
 static inline void *m9_at (void *p, int64_t i, int64_t len,
-                           size_t sz, m9_err *err)
+                           size_t sz, m9_state *err)
 {
   if ((uint64_t) i >= (uint64_t) len) {
     err->i[0] = i; err->i[1] = len;
@@ -119,7 +137,7 @@ static inline void *m9_at (void *p, int64_t i, int64_t len,
    m9_at does, so a bad subscript neither traps nor touches data. */
 static inline void *m9_gat (void *p, size_t sz, const int64_t *n,
                             const int64_t *s, const int64_t *idx,
-                            int rank, m9_err *err)
+                            int rank, m9_state *err)
 {
   int64_t off = 0;
   int k;
@@ -160,7 +178,7 @@ static inline void *m9_gat (void *p, size_t sz, const int64_t *n,
   }
 
 static inline void *m9_gat1 (void *p, size_t sz, int64_t n0, int64_t s0,
-                             int64_t i0, m9_err *err)
+                             int64_t i0, m9_state *err)
 {
   M9_GAT_BODY (0, i0, n0)
   return (unsigned char *) p + (uint64_t) (i0 * s0) * sz;
@@ -168,7 +186,7 @@ static inline void *m9_gat1 (void *p, size_t sz, int64_t n0, int64_t s0,
 
 static inline void *m9_gat2 (void *p, size_t sz, int64_t n0, int64_t n1,
                              int64_t s0, int64_t s1,
-                             int64_t i0, int64_t i1, m9_err *err)
+                             int64_t i0, int64_t i1, m9_state *err)
 {
   M9_GAT_BODY (0, i0, n0)
   M9_GAT_BODY (1, i1, n1)
@@ -179,7 +197,7 @@ static inline void *m9_gat3 (void *p, size_t sz,
                              int64_t n0, int64_t n1, int64_t n2,
                              int64_t s0, int64_t s1, int64_t s2,
                              int64_t i0, int64_t i1, int64_t i2,
-                             m9_err *err)
+                             m9_state *err)
 {
   M9_GAT_BODY (0, i0, n0)
   M9_GAT_BODY (1, i1, n1)
@@ -192,7 +210,7 @@ static inline void *m9_gat4 (void *p, size_t sz,
                              int64_t n0, int64_t n1, int64_t n2, int64_t n3,
                              int64_t s0, int64_t s1, int64_t s2, int64_t s3,
                              int64_t i0, int64_t i1, int64_t i2, int64_t i3,
-                             m9_err *err)
+                             m9_state *err)
 {
   M9_GAT_BODY (0, i0, n0)
   M9_GAT_BODY (1, i1, n1)
@@ -206,7 +224,7 @@ static inline void *m9_gat4 (void *p, size_t sz,
    a view taken at an out-of-range index is an error where it is
    TAKEN, not later where it is read */
 static inline int64_t m9_gdrop (int64_t i, int64_t n, int64_t s,
-                                m9_err *err)
+                                m9_state *err)
 {
   if ((uint64_t) i >= (uint64_t) n) {
     err->i[0] = i; err->i[1] = n;
@@ -219,7 +237,7 @@ static inline int64_t m9_gdrop (int64_t i, int64_t n, int64_t s,
 /* extents multiplied for the allocation, checked: a shape that
    overflows is a shape, not a silently tiny buffer */
 static inline int64_t m9_gcount (const int64_t *n, int rank,
-                                 m9_err *err)
+                                 m9_state *err)
 {
   int64_t total = 1;
   int k;
@@ -240,7 +258,7 @@ static inline int64_t m9_gcount (const int64_t *n, int rank,
 
 /* checked sub-slice: SLICE (s, start, len) -- par 2.2 */
 static inline int64_t m9_chk_slice (int64_t start, int64_t len,
-                                    int64_t total, m9_err *err)
+                                    int64_t total, m9_state *err)
 {
   if (start < 0 || len < 0 || start > total - len) {
     err->i[0] = start; err->i[1] = len;
@@ -252,41 +270,41 @@ static inline int64_t m9_chk_slice (int64_t start, int64_t len,
 
 /* ---- checked integer arithmetic (Overflow, par 2.1) ---- */
 
-static inline int64_t m9_add_i64 (int64_t a, int64_t b, m9_err *err)
+static inline int64_t m9_add_i64 (int64_t a, int64_t b, m9_state *err)
 {
   int64_t r;
   if (__builtin_add_overflow (a, b, &r)) { m9_raise (err, &m9_exc_Overflow); return 0; }
   return r;
 }
 
-static inline int64_t m9_sub_i64 (int64_t a, int64_t b, m9_err *err)
+static inline int64_t m9_sub_i64 (int64_t a, int64_t b, m9_state *err)
 {
   int64_t r;
   if (__builtin_sub_overflow (a, b, &r)) { m9_raise (err, &m9_exc_Overflow); return 0; }
   return r;
 }
 
-static inline int64_t m9_mul_i64 (int64_t a, int64_t b, m9_err *err)
+static inline int64_t m9_mul_i64 (int64_t a, int64_t b, m9_state *err)
 {
   int64_t r;
   if (__builtin_mul_overflow (a, b, &r)) { m9_raise (err, &m9_exc_Overflow); return 0; }
   return r;
 }
 
-static inline int64_t m9_neg_i64 (int64_t a, m9_err *err)
+static inline int64_t m9_neg_i64 (int64_t a, m9_state *err)
 {
   if (a == INT64_MIN) { m9_raise (err, &m9_exc_Overflow); return 0; }
   return -a;
 }
 
-static inline int64_t m9_div_i64 (int64_t a, int64_t b, m9_err *err)
+static inline int64_t m9_div_i64 (int64_t a, int64_t b, m9_state *err)
 {
   if (b == 0 || (a == INT64_MIN && b == -1)) { m9_raise (err, &m9_exc_Overflow); return 0; }
   return a / b;   /* truncating; report is silent on negative
                      rounding -- flagged open until corpus forces it */
 }
 
-static inline int64_t m9_mod_i64 (int64_t a, int64_t b, m9_err *err)
+static inline int64_t m9_mod_i64 (int64_t a, int64_t b, m9_state *err)
 {
   if (b == 0 || (a == INT64_MIN && b == -1)) { m9_raise (err, &m9_exc_Overflow); return 0; }
   return a % b;
@@ -302,13 +320,13 @@ static inline int64_t m9_mulw_i64 (int64_t a, int64_t b)
 
 /* ---- checked conversions (ValueRange, par 2.1) ---- */
 
-static inline uint8_t m9_byte (int64_t v, m9_err *err)
+static inline uint8_t m9_byte (int64_t v, m9_state *err)
 {
   if (v < 0 || v > 255) { err->i[0] = v; m9_raise (err, &m9_exc_ValueRange); return 0; }
   return (uint8_t) v;
 }
 
-static inline uint32_t m9_chr (int64_t v, m9_err *err)
+static inline uint32_t m9_chr (int64_t v, m9_state *err)
 {
   if (v < 0 || v > 0x10FFFF || (v >= 0xD800 && v <= 0xDFFF)) {
     err->i[0] = v; m9_raise (err, &m9_exc_ValueRange); return 0;
@@ -316,7 +334,7 @@ static inline uint32_t m9_chr (int64_t v, m9_err *err)
   return (uint32_t) v;
 }
 
-static inline int64_t m9_i64_f64 (double v, m9_err *err)
+static inline int64_t m9_i64_f64 (double v, m9_state *err)
 {
   /* Trunc(NaN) is ValueRange, never INT64_MIN: the museum's ghost */
   if (!isfinite (v) || v >= 9223372036854775808.0 || v < -9223372036854775808.0) {
@@ -326,7 +344,7 @@ static inline int64_t m9_i64_f64 (double v, m9_err *err)
 }
 
 #define M9_CHK_INT(NAME, T, LO, HI) \
-  static inline T NAME (int64_t v, m9_err *err) { \
+  static inline T NAME (int64_t v, m9_state *err) { \
     if (v < (LO) || v > (HI)) { err->i[0] = v; m9_raise (err, &m9_exc_ValueRange); return 0; } \
     return (T) v; }
 
@@ -340,7 +358,7 @@ M9_CHK_INT (m9_u32, uint32_t, 0, UINT32_MAX)
 /* U64 needs its own: every non-negative int64_t is a uint64_t, so
    only the sign can fail and M9_CHK_INT's upper bound would be a
    comparison the compiler warns about as always false. */
-static inline uint64_t m9_u64 (int64_t v, m9_err *err)
+static inline uint64_t m9_u64 (int64_t v, m9_state *err)
 {
   if (v < 0) { err->i[0] = v; m9_raise (err, &m9_exc_ValueRange); return 0; }
   return (uint64_t) v;
@@ -390,12 +408,12 @@ static inline void m9_mon_signal (m9_mon *m)
    that carries the moved argument and its own error slot; this only
    starts it detached, because par 6 has no join -- a thread is
    waited for through a monitor, not by a handle. */
-int m9_thread_start (void *(*fn) (void *), void *arg, m9_err *err);
+int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err);
 void m9_thread_died (const char *name);
 
 /* ---- wire boundary: explicit width, explicit endianness ---- */
 
-static inline double m9_f64_from_le (m9_sl_BYTE b, m9_err *err)
+static inline double m9_f64_from_le (m9_sl_BYTE b, m9_state *err)
 {
   uint64_t u = 0;
   int i;
@@ -406,7 +424,7 @@ static inline double m9_f64_from_le (m9_sl_BYTE b, m9_err *err)
   return d;
 }
 
-static inline float m9_f32_from_le (m9_sl_BYTE b, m9_err *err)
+static inline float m9_f32_from_le (m9_sl_BYTE b, m9_state *err)
 {
   uint32_t u = 0;
   int i;
@@ -417,7 +435,7 @@ static inline float m9_f32_from_le (m9_sl_BYTE b, m9_err *err)
   return f;
 }
 
-static inline void m9_f64_to_le (double d, m9_sl_BYTE b, m9_err *err)
+static inline void m9_f64_to_le (double d, m9_sl_BYTE b, m9_state *err)
 {
   uint64_t u;
   int i;
@@ -426,7 +444,7 @@ static inline void m9_f64_to_le (double d, m9_sl_BYTE b, m9_err *err)
   for (i = 0; i < 8; i++) { b.p[i] = (uint8_t) u; u >>= 8; }
 }
 
-static inline void m9_f32_to_le (float f, m9_sl_BYTE b, m9_err *err)
+static inline void m9_f32_to_le (float f, m9_sl_BYTE b, m9_state *err)
 {
   uint32_t u;
   int i;
@@ -447,7 +465,7 @@ typedef struct m9_pool {
   m9_pool_block *head;
 } m9_pool;
 
-void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_err *err);
+void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err);
 void  m9_pool_free  (m9_pool *pool);
 
 /* HEAP: the one pool that outlives everything, and is never freed.
@@ -471,7 +489,7 @@ extern m9_pool m9_heap;
    the DynStr idiom re-doubles, which is right for accumulation and
    wasteful for composition.                                       */
 m9_sl_CHAR m9_cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b,
-                   m9_err *err);
+                   m9_state *err);
 
 /* typed pool slice: n evaluated once (GNU statement expression --
    same toolchain family as the overflow builtins)                  */
@@ -496,7 +514,7 @@ static inline bool m9_rc_last (void *p)
   return p != NULL && (((struct m9_hdr *) p) - 1)->rc <= 1;
 }
 
-void *m9_new     (size_t size, m9_err *err);   /* rc = 0: owned      */
+void *m9_new     (size_t size, m9_state *err);   /* rc = 0: owned      */
 void  m9_dispose (void *p);                    /* owned or last handle */
 void *m9_share   (void *p);                    /* owned -> handle, rc=1 */
 void *m9_share_copy (void *p);                 /* handle copy, rc++  */
@@ -506,7 +524,7 @@ void m9_args (int argc, char **argv);          /* record for Args   */
 int  m9_argc (void);
 int  m9_arg_len (int i);                       /* -1 if out of range */
 int  m9_arg_copy (int i, void *buf, int cap);
-int  m9_exit (m9_err *err);                    /* 0, or report and 1 */
+int  m9_exit (m9_state *err);                    /* 0, or report and 1 */
 
 /* the cio shim: stdout, whole files.  These signatures are not a
    choice -- they are what the generator derives from Io's FOR "C"

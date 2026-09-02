@@ -75,7 +75,7 @@ EOF
 cat > "$work/main.c" <<'EOF'
 #include "m9rt.h"
 #include "Hello.h"
-int main (void) { m9_err e = {0}; Hello_Greet (&e); return 0; }
+int main (void) { m9_state e = {0}; Hello_Greet (&e); return 0; }
 EOF
 cd "$work"
 PATH="$work/bin:/usr/bin:/bin" M9RUNTIME="$work/src/runtime" \

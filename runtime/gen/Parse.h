@@ -76,6 +76,7 @@ typedef struct Parse_Parser Parse_Parser;
 #define Parse_TkWHILE INT64_C(64)
 #define Parse_TkRO INT64_C(65)
 #define Parse_TkGRID INT64_C(66)
+#define Parse_TkKEPT INT64_C(67)
 #define Parse_TkAssign INT64_C(200)
 #define Parse_TkEq INT64_C(201)
 #define Parse_TkNeq INT64_C(202)
@@ -131,7 +132,7 @@ struct Parse_Parser {
   m9_arr_64_m9_sl_CHAR errMsg;
 };
 
-void Parse_Init (Parse_Parser *p, m9_sl_CHAR src, m9_err *err);
-Ast_Node * Parse_File (m9_pool *pool, Parse_Parser *p, m9_err *err);
+void Parse_Init (Parse_Parser *p, m9_sl_CHAR src, m9_state *err);
+Ast_Node * Parse_File (m9_pool *pool, Parse_Parser *p, m9_state *err);
 
 #endif

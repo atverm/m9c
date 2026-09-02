@@ -38,16 +38,16 @@ struct Time_Span {
   double seconds;
 };
 
-double Time_Elapsed (Time_Instant a, Time_Instant b, m9_err *err);
-Time_Instant Time_AddSeconds (Time_Instant t, double s, m9_err *err);
-Time_Civil Time_ToCivil (Time_Instant t, m9_err *err);
-Time_Instant Time_FromCivil (Time_Civil c, m9_err *err);
-Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_err *err);
-Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_err *err);
-m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_err *err);
-Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_err *err);
-Time_Instant Time_Now (m9_err *err);
-bool Time_IsLeap (int64_t year, m9_err *err);
-int64_t Time_DaysInMonth (int64_t year, int64_t month, m9_err *err);
+double Time_Elapsed (Time_Instant a, Time_Instant b, m9_state *err);
+Time_Instant Time_AddSeconds (Time_Instant t, double s, m9_state *err);
+Time_Civil Time_ToCivil (Time_Instant t, m9_state *err);
+Time_Instant Time_FromCivil (Time_Civil c, m9_state *err);
+Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_state *err);
+Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_state *err);
+m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_state *err);
+Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err);
+Time_Instant Time_Now (m9_state *err);
+bool Time_IsLeap (int64_t year, m9_state *err);
+int64_t Time_DaysInMonth (int64_t year, int64_t month, m9_state *err);
 
 #endif

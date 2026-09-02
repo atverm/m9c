@@ -24,8 +24,12 @@ extern int m9_write_file (const void *, const void *, size_t);
 static m9_mon m9_gate_cio;
 
 
-void Io_WriteLine (m9_sl_CHAR s, m9_err *err)
+void Io_WriteLine (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(scratch), err);
@@ -37,19 +41,31 @@ void Io_WriteLine (m9_sl_CHAR s, m9_err *err)
   Io_Write (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-void Io_Write (m9_sl_CHAR s, m9_err *err)
+void Io_Write (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_put_chars (((void *)(s).p), ((size_t)((s).len)));
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-void Io_WriteI64 (int64_t v, m9_err *err)
+void Io_WriteI64 (int64_t v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(scratch), err);
@@ -59,12 +75,18 @@ void Io_WriteI64 (int64_t v, m9_err *err)
   Io_Write (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-void Io_ErrLine (m9_sl_CHAR s, m9_err *err)
+void Io_ErrLine (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   m9_sl_CHAR v = {0}; (void) v;
@@ -78,28 +100,47 @@ void Io_ErrLine (m9_sl_CHAR s, m9_err *err)
   if (err->exc) goto L_ret;
   m9_put_chars_err (((void *)(v).p), ((size_t)((v).len)));
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-int64_t Io_ArgCount (m9_err *err)
+int64_t Io_ArgCount (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
+  err->res = m9res;
   m9ret = (int64_t)(m9_argc ());
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Io_Halt (int64_t code, m9_err *err)
+void Io_Halt (int64_t code, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   ({ m9_mon_enter (&m9_gate_cio); m9_halt (((int)(code))); m9_mon_leave (&m9_gate_cio); });
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-int64_t Io_ParseI64 (m9_sl_CHAR s, m9_err *err)
+int64_t Io_ParseI64 (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
@@ -135,32 +176,47 @@ int64_t Io_ParseI64 (m9_sl_CHAR s, m9_err *err)
     if (err->exc) goto L_ret;
   } }
   if (neg) {
+    err->res = m9res;
     m9ret = m9_neg_i64 (v, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Io_Run (m9_sl_CHAR cmd, m9_err *err)
+int64_t Io_Run (m9_sl_CHAR cmd, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
   b = DynStr_Bytes (&(scratch), cmd, true, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_run (((void *)(b).p))) m9gv = m9_run (((void *)(b).p)); m9_mon_leave (&m9_gate_cio); m9gv; }));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_CHAR Io_Env (m9_pool *pool, m9_sl_CHAR name, m9_err *err)
+m9_sl_CHAR Io_Env (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE nb = {0}; (void) nb;
@@ -172,59 +228,88 @@ m9_sl_CHAR Io_Env (m9_pool *pool, m9_sl_CHAR name, m9_err *err)
   if (err->exc) goto L_ret;
   n = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_getenv (((void *)(nb).p), ((void *)(buf).p), ((int)(Io_MaxEnv)))) m9gv = m9_getenv (((void *)(nb).p), ((void *)(buf).p), ((int)(Io_MaxEnv))); m9_mon_leave (&m9_gate_cio); m9gv; }));
   if ((n < INT64_C(0))) {
+    err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = DynStr_Chars (pool, ({ __typeof__(buf) m9t1 = buf; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-bool Io_Exists (m9_sl_CHAR path, m9_err *err)
+bool Io_Exists (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
   b = DynStr_Bytes (&(scratch), path, true, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = ((int64_t)(m9_exists (((void *)(b).p))) != INT64_C(0));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-int64_t Io_ModTime (m9_sl_CHAR path, m9_err *err)
+int64_t Io_ModTime (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
+  err->res = m9res;
   m9ret = (int64_t)(m9_mtime (((void *)(DynStr_Bytes (&(scratch), path, true, err)).p)));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-bool Io_Remove (m9_sl_CHAR path, m9_err *err)
+bool Io_Remove (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
   b = DynStr_Bytes (&(scratch), path, true, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = ((int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_remove (((void *)(b).p))) m9gv = m9_remove (((void *)(b).p)); m9_mon_leave (&m9_gate_cio); m9gv; })) == INT64_C(0));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_m9_sl_CHAR Io_ListDir (m9_pool *pool, m9_sl_CHAR path, m9_err *err)
+m9_sl_m9_sl_CHAR Io_ListDir (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_m9_sl_CHAR m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE buf = {0}; (void) buf;
@@ -245,6 +330,7 @@ m9_sl_m9_sl_CHAR Io_ListDir (m9_pool *pool, m9_sl_CHAR path, m9_err *err)
   if ((need == INT64_C(0))) {
     names = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(0), err);
     if (err->exc) goto L_ret;
+    err->res = m9res;
     m9ret = names;
     goto L_ret;
   }
@@ -290,15 +376,22 @@ m9_sl_m9_sl_CHAR Io_ListDir (m9_pool *pool, m9_sl_CHAR path, m9_err *err)
       if (err->exc) goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = names;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_CHAR Io_Arg (m9_pool *pool, int64_t i, m9_err *err)
+m9_sl_CHAR Io_Arg (m9_pool *pool, int64_t i, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t n = 0; (void) n;
   m9_sl_BYTE b = {0}; (void) b;
@@ -312,15 +405,22 @@ m9_sl_CHAR Io_Arg (m9_pool *pool, int64_t i, m9_err *err)
   b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), n, err);
   if (err->exc) goto L_ret;
   n = (int64_t)(m9_arg_copy (((int)(i)), ((void *)(b).p), ((int)(n))));
+  err->res = m9res;
   m9ret = DynStr_Chars (pool, ({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_err *err)
+m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
@@ -342,16 +442,23 @@ m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_err *err)
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = DynStr_Chars (pool, ({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_BYTE Io_ReadFileBytes (m9_pool *pool, m9_sl_CHAR path, m9_err *err)
+m9_sl_BYTE Io_ReadFileBytes (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_BYTE m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
@@ -373,16 +480,23 @@ m9_sl_BYTE Io_ReadFileBytes (m9_pool *pool, m9_sl_CHAR path, m9_err *err)
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = ({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-void Io_WriteFile (m9_sl_CHAR path, m9_sl_CHAR content, m9_err *err)
+void Io_WriteFile (m9_sl_CHAR path, m9_sl_CHAR content, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
   m9_sl_BYTE cb = {0}; (void) cb;
@@ -398,12 +512,18 @@ void Io_WriteFile (m9_sl_CHAR path, m9_sl_CHAR content, m9_err *err)
     goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-int64_t Io_FileSize (m9_sl_CHAR path, m9_err *err)
+int64_t Io_FileSize (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
@@ -417,15 +537,22 @@ int64_t Io_FileSize (m9_sl_CHAR path, m9_err *err)
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_BYTE Io_ReadFileHead (m9_pool *pool, m9_sl_CHAR path, int64_t cap, m9_err *err)
+m9_sl_BYTE Io_ReadFileHead (m9_pool *pool, m9_sl_CHAR path, int64_t cap, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_BYTE m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
@@ -441,16 +568,23 @@ m9_sl_BYTE Io_ReadFileHead (m9_pool *pool, m9_sl_CHAR path, int64_t cap, m9_err 
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = ({ __typeof__(b) m9t2 = b; int64_t m9t2a = INT64_C(0), m9t2n = n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-void Io_MkDir (m9_sl_CHAR path, m9_err *err)
+void Io_MkDir (m9_sl_CHAR path, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
   int rc = {0}; (void) rc;
@@ -463,12 +597,18 @@ void Io_MkDir (m9_sl_CHAR path, m9_err *err)
     goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-void Io_Rename (m9_sl_CHAR from, m9_sl_CHAR to, m9_err *err)
+void Io_Rename (m9_sl_CHAR from, m9_sl_CHAR to, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE fb = {0}; (void) fb;
   m9_sl_BYTE tb = {0}; (void) tb;
@@ -484,12 +624,18 @@ void Io_Rename (m9_sl_CHAR from, m9_sl_CHAR to, m9_err *err)
     goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-void Io_WriteFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_err *err)
+void Io_WriteFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
   int rc = {0}; (void) rc;
@@ -502,6 +648,8 @@ void Io_WriteFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_err *err)
     goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }

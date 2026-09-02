@@ -25,7 +25,7 @@ static Mat_ReduceOp op (int32_t tag)
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
   double out[2];
   m9_sl_F64 outs = { out, 2 };
 

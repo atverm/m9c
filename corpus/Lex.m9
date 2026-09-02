@@ -34,7 +34,7 @@ TYPE
     text : STR ;
   END ;
 
-PROCEDURE Init (VAR lx: Lexer ; RO src: STR) ;
+PROCEDURE Init (VAR lx: Lexer ; RO KEPT src: STR) ;
   (* the lexer keeps the source slice; keep it alive while lexing --
      the Json.Parse contract again                                   *)
 
@@ -125,7 +125,7 @@ CONST
      so alphabetical order buys nothing but the reading.
      Keywords own 7..199 and grow upward; operators start at 200.   *)
   KwFirst  = 7 ;
-  KwLast   = 66 ;         (* grows as keywords are appended *)
+  KwLast   = 67 ;         (* grows as keywords are appended *)
   OpFirst  = 200 ;
 
   KAssign = 200 ; KEq = 201 ; KNeq = 202 ; KLt = 203 ; KLe = 204 ;
@@ -163,7 +163,7 @@ END ComAt ;
 (* one comment onto the list, doubling the vector when it is full.
    The abandoned vector stays in HEAP, which is the same trade
    DynStr.Grow makes and for the same reason. *)
-PROCEDURE Note (line, col, endLine: I64 ; RO text: STR) =
+PROCEDURE Note (line, col, endLine: I64 ; RO KEPT text: STR) =
 VAR
   nc : SLICE OF Comment ;
   i  : I64 ;
@@ -248,6 +248,7 @@ BEGIN
   (* appended after the alphabetical 58: codes are identifiers *)
   | 65 : RETURN 'RO'
   | 66 : RETURN 'GRID'
+  | 67 : RETURN 'KEPT'
   ELSE RETURN '?'
   END
 END KwName ;
@@ -303,7 +304,7 @@ BEGIN
   RETURN KIdent
 END Lookup ;
 
-PROCEDURE Init (VAR lx: Lexer ; RO src: STR) =
+PROCEDURE Init (VAR lx: Lexer ; RO KEPT src: STR) =
 BEGIN
   lx.src := src ;
   lx.pos := 0 ;
@@ -406,7 +407,7 @@ BEGIN
   END
 END Skip ;
 
-PROCEDURE Mk (VAR t: Token ; kind: I64 ; RO text: STR ;
+PROCEDURE Mk (VAR t: Token ; kind: I64 ; RO KEPT text: STR ;
               line, col: I64) =
 BEGIN
   t.kind := kind ;

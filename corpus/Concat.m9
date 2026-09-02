@@ -16,11 +16,19 @@ MODULE Concat ;
    that `PTR T IN HEAP` still says which pool and a program that must
    not grow can grep for the one word that makes it.
 
-   What the name buys, and what it costs, are the same fact: HEAP is
-   never freed.  For a tool that is right.  For a server loop it is
-   wrong, and the fix is the one this corpus already uses -- a scoped
-   `VAR scratch : POOL`, or DynStr, which is for ACCUMULATION where
-   `+` is for composition.  `s := s + x` in a loop copies the whole
+   AND THAT WAS SUPERSEDED ON 2026-09-01: `+` now lands in the
+   PROCEDURE'S FRAME, an arena created lazily and freed on every exit,
+   with the RETURN expression built in the caller's frame so a
+   function may answer with a string.  HEAP is still a pool with a
+   name, still never freed, and still where a `+` goes when a C caller
+   entered without a frame -- but it is no longer where composition
+   lands by default.  What forced it: HEAP being never freed is right
+   for a tool and wrong for a server loop, and the corpus voted with
+   its feet -- Gen.m9 carried 321 hand-rolled concatenation helpers
+   against ONE `+`, and the zarr proxy banned the operator outright on
+   its request path.  docs/frame-pools.md has the measurements.
+
+   DynStr is still for ACCUMULATION where `+` is for composition.  `s := s + x` in a loop copies the whole
    string every time; the loop below is three iterations and says so.
 
    This module is small on purpose: it is the executable half of the

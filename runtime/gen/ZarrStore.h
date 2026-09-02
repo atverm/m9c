@@ -39,16 +39,16 @@ typedef struct { int64_t v[8]; } m9_arr_8_int64_t;
 typedef struct { uint8_t v[8]; } m9_arr_8_uint8_t;
 #endif
 
-ZarrStore_Store * ZarrStore_Open (m9_sl_CHAR url, m9_err *err);
-ZarrStore_Array * ZarrStore_OpenArray (ZarrStore_Store * s, m9_sl_CHAR path, m9_err *err);
-double ZarrStore_GetF64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_err *err);
-int64_t ZarrStore_GetI64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_err *err);
-m9_sl_BYTE ZarrStore_ReadChunk (ZarrStore_Array * *a, m9_sl_I64 coords, m9_err *err);
-int64_t ZarrStore_Rank (ZarrStore_Array * a, m9_err *err);
-int64_t ZarrStore_Extent (ZarrStore_Array * a, int64_t axis, m9_err *err);
-bool ZarrStore_HasFill (ZarrStore_Array * a, m9_err *err);
-double ZarrStore_Fill (ZarrStore_Array * a, m9_err *err);
-void ZarrStore_CloseArray (ZarrStore_Array * *a, m9_err *err);
-void ZarrStore_Close (ZarrStore_Store * *s, m9_err *err);
+ZarrStore_Store * ZarrStore_Open (m9_sl_CHAR url, m9_state *err);
+ZarrStore_Array * ZarrStore_OpenArray (ZarrStore_Store * s, m9_sl_CHAR path, m9_state *err);
+double ZarrStore_GetF64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_state *err);
+int64_t ZarrStore_GetI64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_state *err);
+m9_sl_BYTE ZarrStore_ReadChunk (ZarrStore_Array * *a, m9_sl_I64 coords, m9_state *err);
+int64_t ZarrStore_Rank (ZarrStore_Array * a, m9_state *err);
+int64_t ZarrStore_Extent (ZarrStore_Array * a, int64_t axis, m9_state *err);
+bool ZarrStore_HasFill (ZarrStore_Array * a, m9_state *err);
+double ZarrStore_Fill (ZarrStore_Array * a, m9_state *err);
+void ZarrStore_CloseArray (ZarrStore_Array * *a, m9_state *err);
+void ZarrStore_Close (ZarrStore_Store * *s, m9_state *err);
 
 #endif

@@ -192,17 +192,38 @@ could have read either.
 Add
 .B \-g
 to the compiler line, so the object and the program carry debug
-information. Implies
-.BR \-\-keep\-c ,
-and must: the debug information names
+information, and emit
+.B #line
+directives naming
+.IB NAME .m9
+so that the debug information describes THE M9, not the C it became.
+A breakpoint is set on an M9 line, a backtrace names M9 files, and
+listing a frame shows M9 source.
+.IP
+Implies
+.BR \-\-keep\-c .
+The debugger no longer needs
 .IB NAME .c
-, so removing it would leave a debugger pointing at a file that is not
-there.
+\(em the directives point past it \(em but it is what was actually
+compiled, and a debug build is the one time it is worth having beside
+the program.
+.IP
+The directives are emitted under
+.B \-g
+and only under it. Without the flag the generated C is byte for byte
+what it has always been, which is what keeps the generator differential
+and the bootstrap fixpoint meaningful.
 .IP
 It ADDS and changes nothing else \(em in particular it does not lower
 the optimisation level; see
 .B "SUPPLIED FLAGS"
-for why, and for what the debug information therefore describes.
+for why, and for what the debug information therefore describes. Be
+ready for the consequence: a small procedure is commonly inlined out of
+existence, and a debugger will then report it as not defined and its
+locals as optimised out. To step through one, take the compiler line
+over after
+.B \-\-
+and ask for an unoptimised build yourself.
 .IP
 Without this flag m9c emits none at all. Objects are not stripped, so
 a backtrace still names

@@ -86,26 +86,26 @@ _(documented with the group below)_
 
 the extent NC_UNLIMITED means
 
-### Open (VAR pool: POOL ; RO path: STR) : PTR File IN pool RAISES Error, ValueRange
+### Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool RAISES Error, ValueRange
 
 read-only.  The pool owns the handle; Close releases the file
 but the record dies with the pool, which is why Close takes a
 VAR and not an OWN: there is nothing here to move.
 
-### OpenRW (VAR pool: POOL ; RO path: STR) : PTR File IN pool RAISES Error, ValueRange
+### OpenRW (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool RAISES Error, ValueRange
 
 read-write on an EXISTING file: what a restarted run does to
 the output it left half-written -- inquire the variables back
 and continue appending records.  Everything Put* works; Def*
 would need redef mode and is not supported through this.
 
-### Create (VAR pool: POOL ; RO path: STR ; clobber: BOOL) : PTR File IN pool RAISES Error, ValueRange
+### Create (VAR pool: POOL ; RO KEPT path: STR ; clobber: BOOL) : PTR File IN pool RAISES Error, ValueRange
 
 the CLASSIC format.  Its unlimited dimension must be a
 variable's OUTERMOST one, which is a real constraint on how a
 file may be laid out -- see Create4.
 
-### Create4 (VAR pool: POOL ; RO path: STR ; clobber: BOOL) : PTR File IN pool RAISES Error, ValueRange
+### Create4 (VAR pool: POOL ; RO KEPT path: STR ; clobber: BOOL) : PTR File IN pool RAISES Error, ValueRange
 
 netCDF-4 (HDF5 underneath).
 

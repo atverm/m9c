@@ -2,28 +2,41 @@
 #include "Text.h"
 #include "DynStr.h"
 
-static bool Text_Blank (uint32_t c, m9_err *err);
+static bool Text_Blank (uint32_t c, m9_state *err);
 
 
-bool Text_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err)
+bool Text_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
+  err->res = m9res;
   m9ret = DynStr_Eq (a, b, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Text_Find (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_err *err)
+int64_t Text_Find (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   if (((needle).len == INT64_C(0))) {
+    err->res = m9res;
     m9ret = INT64_C(0);
     goto L_ret;
   }
   if (((needle).len > (hay).len)) {
+    err->res = m9res;
     m9ret = m9_neg_i64 (INT64_C(1), err);
     if (err->exc) goto L_ret;
     goto L_ret;
@@ -36,19 +49,27 @@ int64_t Text_Find (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_err *err)
     bool m9t3 = DynStr_Eq (({ __typeof__(hay) m9t2 = hay; int64_t m9t2a = i, m9t2n = (needle).len; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), needle, err);
     if (err->exc) goto L_ret;
     if (m9t3) {
+      err->res = m9res;
       m9ret = i;
       goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Text_FindChar (m9_sl_CHAR s, uint32_t c, m9_err *err)
+int64_t Text_FindChar (m9_sl_CHAR s, uint32_t c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   { int64_t m9t1to;
@@ -59,19 +80,27 @@ int64_t Text_FindChar (m9_sl_CHAR s, uint32_t c, m9_err *err)
     bool m9t2 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == c);
     if (err->exc) goto L_ret;
     if (m9t2) {
+      err->res = m9res;
       m9ret = i;
       goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Text_LastChar (m9_sl_CHAR s, uint32_t c, m9_err *err)
+int64_t Text_LastChar (m9_sl_CHAR s, uint32_t c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t found = 0; (void) found;
@@ -88,62 +117,99 @@ int64_t Text_LastChar (m9_sl_CHAR s, uint32_t c, m9_err *err)
       found = i;
     }
   } }
+  err->res = m9res;
   m9ret = found;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-bool Text_Contains (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_err *err)
+bool Text_Contains (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
+  err->res = m9res;
   m9ret = (Text_Find (hay, needle, err) >= INT64_C(0));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-bool Text_StartsWith (m9_sl_CHAR s, m9_sl_CHAR prefix, m9_err *err)
+bool Text_StartsWith (m9_sl_CHAR s, m9_sl_CHAR prefix, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   if (((prefix).len > (s).len)) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = DynStr_Eq (({ __typeof__(s) m9t1 = s; int64_t m9t1a = INT64_C(0), m9t1n = (prefix).len; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), prefix, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-bool Text_EndsWith (m9_sl_CHAR s, m9_sl_CHAR suffix, m9_err *err)
+bool Text_EndsWith (m9_sl_CHAR s, m9_sl_CHAR suffix, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   if (((suffix).len > (s).len)) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = DynStr_Eq (({ __typeof__(s) m9t1 = s; int64_t m9t1a = m9_sub_i64 ((s).len, (suffix).len, err), m9t1n = (suffix).len; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), suffix, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Text_Trim (m9_sl_CHAR s, m9_err *err)
+m9_sl_CHAR Text_Trim (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  err->res = m9res;
   m9ret = Text_TrimLeft (Text_TrimRight (s, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Text_TrimLeft (m9_sl_CHAR s, m9_err *err)
+m9_sl_CHAR Text_TrimLeft (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t i = 0; (void) i;
   i = INT64_C(0);
@@ -157,15 +223,22 @@ m9_sl_CHAR Text_TrimLeft (m9_sl_CHAR s, m9_err *err)
     i = m9_add_i64 (i, INT64_C(1), err);
     if (err->exc) goto L_ret;
   }
+  err->res = m9res;
   m9ret = ({ __typeof__(s) m9t2 = s; int64_t m9t2a = i, m9t2n = m9_sub_i64 ((s).len, i, err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Text_TrimRight (m9_sl_CHAR s, m9_err *err)
+m9_sl_CHAR Text_TrimRight (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t n = 0; (void) n;
   n = (s).len;
@@ -179,15 +252,22 @@ m9_sl_CHAR Text_TrimRight (m9_sl_CHAR s, m9_err *err)
     n = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
   }
+  err->res = m9res;
   m9ret = ({ __typeof__(s) m9t2 = s; int64_t m9t2a = INT64_C(0), m9t2n = n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Text_CountChar (m9_sl_CHAR s, uint32_t c, m9_err *err)
+int64_t Text_CountChar (m9_sl_CHAR s, uint32_t c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
@@ -204,14 +284,21 @@ int64_t Text_CountChar (m9_sl_CHAR s, uint32_t c, m9_err *err)
       if (err->exc) goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_err *err)
+m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_m9_sl_CHAR m9ret = {0};
   m9_sl_m9_sl_CHAR parts = {0}; (void) parts;
   int64_t i = 0; (void) i;
@@ -241,14 +328,21 @@ m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_err *
   } }
   (*(m9_sl_CHAR *) m9_at (parts.p, n, parts.len, sizeof (m9_sl_CHAR), err)) = ({ __typeof__(s) m9t4 = s; int64_t m9t4a = start, m9t4n = m9_sub_i64 ((s).len, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = parts;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Text_Join (m9_pool *pool, m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_err *err)
+m9_sl_CHAR Text_Join (m9_pool *pool, m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -266,15 +360,22 @@ m9_sl_CHAR Text_Join (m9_pool *pool, m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_
     DynStr_Append (pool, &(d), (*(m9_sl_CHAR *) m9_at (parts.p, i, parts.len, sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_err *err)
+m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -295,15 +396,22 @@ m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_err *err)
     DynStr_AppendChar (pool, &(d), c, err);
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_err *err)
+m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -324,18 +432,28 @@ m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_err *err)
     DynStr_AppendChar (pool, &(d), c, err);
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool Text_Blank (uint32_t c, m9_err *err)
+static bool Text_Blank (uint32_t c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
+  err->res = m9res;
   m9ret = ((((c == 32u) || (c == 9u)) || (c == 13u)) || (c == 10u));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }

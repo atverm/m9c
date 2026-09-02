@@ -40,7 +40,7 @@ static m9_sl_CHAR S (const char *p)
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err e = {0};
+  m9_state e = {0};
   FILE *f = fopen ("parquet.golden", "r");
   char line[128];
   if (!f) { printf ("SKIP: no parquet.golden\n"); return 0; }
@@ -95,7 +95,7 @@ int main (void)
 
   /* ---- the refusals, BY NAME ---- */
   {
-    m9_err e2 = {0};
+    m9_state e2 = {0};
     Parquet_Read (&pool, S ("sample_dict.parquet"), &e2);
     ok ("a dictionary file refuses", e2.exc == &Parquet_Bad);
     e2.exc = NULL;

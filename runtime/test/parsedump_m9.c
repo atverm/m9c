@@ -12,7 +12,7 @@ int main (int argc, char **argv)
   char *bytes;
   uint32_t *chars;
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
   Parse_Parser p;
   Ast_Node *root;
   m9_sl_CHAR out;

@@ -5,36 +5,54 @@
 
 extern double m9_now (void);
 
-static int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_err *err);
-static void Time_CivilFromDays (int64_t z, int64_t *y, int64_t *m, int64_t *d, m9_err *err);
-static double Time_FloorDiv (double x, double by, m9_err *err);
-static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_err *err);
-static int64_t Time_FloorDivI (int64_t a, int64_t b, m9_err *err);
-static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_err *err);
+static int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_state *err);
+static void Time_CivilFromDays (int64_t z, int64_t *y, int64_t *m, int64_t *d, m9_state *err);
+static double Time_FloorDiv (double x, double by, m9_state *err);
+static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_state *err);
+static int64_t Time_FloorDivI (int64_t a, int64_t b, m9_state *err);
+static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_state *err);
 
 
-double Time_Elapsed (Time_Instant a, Time_Instant b, m9_err *err)
+double Time_Elapsed (Time_Instant a, Time_Instant b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
+  err->res = m9res;
   m9ret = (b.t - a.t);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Time_Instant Time_AddSeconds (Time_Instant t, double s, m9_err *err)
+Time_Instant Time_AddSeconds (Time_Instant t, double s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Time_Instant m9ret = {0};
   Time_Instant r = {0}; (void) r;
   r.t = (t.t + s);
+  err->res = m9res;
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Time_Civil Time_ToCivil (Time_Instant t, m9_err *err)
+Time_Civil Time_ToCivil (Time_Instant t, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Time_Civil m9ret = {0};
   Time_Civil c = {0}; (void) c;
   double days = 0; (void) days;
@@ -53,14 +71,21 @@ Time_Civil Time_ToCivil (Time_Instant t, m9_err *err)
   if (err->exc) goto L_ret;
   c.second = (sod - (double)(m9_add_i64 (m9_mul_i64 (c.hour, INT64_C(3600), err), m9_mul_i64 (c.minute, INT64_C(60), err), err)));
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = c;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Time_Instant Time_FromCivil (Time_Civil c, m9_err *err)
+Time_Instant Time_FromCivil (Time_Civil c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Time_Instant m9ret = {0};
   Time_Instant r = {0}; (void) r;
   int64_t days = 0; (void) days;
@@ -90,14 +115,21 @@ Time_Instant Time_FromCivil (Time_Civil c, m9_err *err)
   if (err->exc) goto L_ret;
   r.t = ((((double)(days) * Time_SecPerDay) + (double)(m9_add_i64 (m9_mul_i64 (c.hour, INT64_C(3600), err), m9_mul_i64 (c.minute, INT64_C(60), err), err))) + c.second);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_err *err)
+Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Time_Span m9ret = {0};
   Time_Span s = {0}; (void) s;
   Time_Civil ca = {0}; (void) ca;
@@ -160,28 +192,42 @@ Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_err *err)
     if (err->exc) goto L_ret;
     s.seconds = (- s.seconds);
   }
+  err->res = m9res;
   m9ret = s;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_err *err)
+Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Time_Instant m9ret = {0};
   Time_Instant r = {0}; (void) r;
   r = Time_AddMonthsOnly (t, m9_add_i64 (m9_mul_i64 (s.years, INT64_C(12), err), s.months, err), err);
   if (err->exc) goto L_ret;
   r.t = (((r.t + ((double)(s.days) * Time_SecPerDay)) + (double)(m9_add_i64 (m9_mul_i64 (s.hours, INT64_C(3600), err), m9_mul_i64 (s.minutes, INT64_C(60), err), err))) + s.seconds);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_err *err)
+m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   Time_Civil c = {0}; (void) c;
   DynStr_DString * d = NULL; (void) d;
@@ -222,15 +268,22 @@ m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_err *er
   }
   DynStr_AppendChar (pool, &(d), 90u, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_err *err)
+Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Time_Instant m9ret = {0};
   Time_Civil c = {0}; (void) c;
   int64_t i = 0; (void) i;
@@ -282,48 +335,71 @@ Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_err *err)
   if (err->exc) goto L_ret;
   c.second = Fmt_ParseF64 (({ __typeof__(s) m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = Time_FromCivil (c, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Time_Instant Time_Now (m9_err *err)
+Time_Instant Time_Now (m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Time_Instant m9ret = {0};
   Time_Instant r = {0}; (void) r;
   r.t = (double)(m9_now ());
+  err->res = m9res;
   m9ret = r;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-bool Time_IsLeap (int64_t year, m9_err *err)
+bool Time_IsLeap (int64_t year, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   bool m9t1 = (m9_mod_i64 (year, INT64_C(4), err) != INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
   bool m9t2 = (m9_mod_i64 (year, INT64_C(100), err) != INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t2) {
+    err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = (m9_mod_i64 (year, INT64_C(400), err) == INT64_C(0));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Time_DaysInMonth (int64_t year, int64_t month, m9_err *err)
+int64_t Time_DaysInMonth (int64_t year, int64_t month, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   if (((month < INT64_C(1)) || (month > INT64_C(12)))) {
     m9_raise (err, &m9_exc_ValueRange);
@@ -333,24 +409,34 @@ int64_t Time_DaysInMonth (int64_t year, int64_t month, m9_err *err)
     bool m9t1 = Time_IsLeap (year, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
+      err->res = m9res;
       m9ret = INT64_C(29);
       goto L_ret;
     }
+    err->res = m9res;
     m9ret = INT64_C(28);
     goto L_ret;
   }
   if (((((month == INT64_C(4)) || (month == INT64_C(6))) || (month == INT64_C(9))) || (month == INT64_C(11)))) {
+    err->res = m9res;
     m9ret = INT64_C(30);
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = INT64_C(31);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_err *err)
+static int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t era = 0; (void) era;
   int64_t yoe = 0; (void) yoe;
@@ -380,15 +466,22 @@ static int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_err *err)
   }
   doe = m9_add_i64 (m9_sub_i64 (m9_add_i64 (m9_mul_i64 (yoe, INT64_C(365), err), m9_div_i64 (yoe, INT64_C(4), err), err), m9_div_i64 (yoe, INT64_C(100), err), err), doy, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (era, INT64_C(146097), err), doe, err), INT64_C(719468), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Time_CivilFromDays (int64_t z, int64_t *y, int64_t *m, int64_t *d, m9_err *err)
+static void Time_CivilFromDays (int64_t z, int64_t *y, int64_t *m, int64_t *d, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t era = 0; (void) era;
   int64_t doe = 0; (void) doe;
   int64_t yoe = 0; (void) yoe;
@@ -428,11 +521,17 @@ static void Time_CivilFromDays (int64_t z, int64_t *y, int64_t *m, int64_t *d, m
     if (err->exc) goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static double Time_FloorDiv (double x, double by, m9_err *err)
+static double Time_FloorDiv (double x, double by, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   double m9ret = 0;
   double q = 0; (void) q;
   q = (x / by);
@@ -440,20 +539,28 @@ static double Time_FloorDiv (double x, double by, m9_err *err)
     bool m9t1 = (q != (double)(m9_i64_f64 ((double)(q), err)));
     if (err->exc) goto L_ret;
     if (m9t1) {
+      err->res = m9res;
       m9ret = ((double)(m9_i64_f64 ((double)(q), err)) - 1.0);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
   }
+  err->res = m9res;
   m9ret = (double)(m9_i64_f64 ((double)(q), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_err *err)
+static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   Time_Instant m9ret = {0};
   Time_Civil c = {0}; (void) c;
   int64_t total = 0; (void) total;
@@ -471,15 +578,22 @@ static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_err *
   if ((c.day > dim)) {
     c.day = dim;
   }
+  err->res = m9res;
   m9ret = Time_FromCivil (c, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Time_FloorDivI (int64_t a, int64_t b, m9_err *err)
+static int64_t Time_FloorDivI (int64_t a, int64_t b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t q = 0; (void) q;
   q = m9_div_i64 (a, b, err);
@@ -488,19 +602,27 @@ static int64_t Time_FloorDivI (int64_t a, int64_t b, m9_err *err)
   if (err->exc) goto L_ret;
   if (m9t1) {
     if ((((a < INT64_C(0))) != ((b < INT64_C(0))))) {
+      err->res = m9res;
       m9ret = m9_sub_i64 (q, INT64_C(1), err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
   }
+  err->res = m9res;
   m9ret = q;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_err *err)
+static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
@@ -519,8 +641,11 @@ static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_err *err)
     v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
     if (err->exc) goto L_ret;
   } }
+  err->res = m9res;
   m9ret = v;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }

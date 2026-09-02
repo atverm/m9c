@@ -384,7 +384,7 @@ BEGIN
          k = Ast.NConstDecl OR k = Ast.NVarDecl OR k = Ast.NExcDecl
 END IsDecl ;
 
-PROCEDURE Collect (VAR pool: POOL ; n: PTR Ast.Node ;
+PROCEDURE Collect (VAR pool: POOL ; KEPT n: PTR Ast.Node ;
                    VAR anch: SLICE OF Anchor ; VAR nanch: I64)
   RAISES IndexError =
 VAR i : I64 ;
@@ -713,7 +713,7 @@ END UpTo ;
    Text and Json both start here, so they cannot disagree about
    which comment belongs to what -- the only thing that differs
    between them is the rendering. *)
-PROCEDURE Gather (VAR pool: POOL ; unit: PTR Ast.Node ; upTo: I64 ;
+PROCEDURE Gather (VAR pool: POOL ; KEPT unit: PTR Ast.Node ; upTo: I64 ;
                   VAR anch: SLICE OF Anchor ; VAR nanch: I64 ;
                   VAR modDoc: STR ; VAR haveMod: BOOL ; VAR st: Stats)
   RAISES IndexError =

@@ -33,7 +33,7 @@ struct Doc_Stats {
   int64_t unknownParam;
 };
 
-m9_sl_CHAR Doc_Json (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_err *err);
-m9_sl_CHAR Doc_Text (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_err *err);
+m9_sl_CHAR Doc_Json (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_state *err);
+m9_sl_CHAR Doc_Text (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_state *err);
 
 #endif

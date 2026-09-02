@@ -29,11 +29,15 @@ static const uint32_t m9s1[5] = { 119u, 111u, 114u, 108u, 100u };
 static const uint32_t m9s2[31] = { 104u, 101u, 108u, 108u, 111u, 58u, 32u, 97u, 110u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 119u, 97u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 101u, 120u, 116u };
 static const uint32_t m9s3[34] = { 104u, 101u, 108u, 108u, 111u, 58u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 111u, 117u, 116u, 32u, 111u, 102u, 32u, 114u, 97u, 110u, 103u, 101u };
 
-static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_err *err);
+static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_state *err);
 
 
-static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_err *err)
+static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
@@ -46,13 +50,17 @@ static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_err *err)
   greeted = m9_add_i64 (greeted, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
 int main (int argc, char **argv)
 {
-  m9_err errv = {0};
-  m9_err *err = &errv;
+  m9_state errv = {0};
+  m9_state *err = &errv;
+  m9_pool m9frame = {0};
+  err->res = &m9frame;
   m9_args (argc, argv);
   bool m9t3 = (Io_ArgCount (err) <= INT64_C(1));
   if (err->exc) goto L_hdl_m9t1;
@@ -90,5 +98,6 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
+  m9_pool_free (&m9frame);
   return m9_exit (err);
 }

@@ -14,17 +14,17 @@ static const uint32_t DynStr_DigitChars_d[10] = { 48u, 49u, 50u, 51u, 52u, 53u, 
 typedef struct { uint32_t v[20]; } m9_arr_20_uint32_t;
 #endif
 
-DynStr_DString * DynStr_New (m9_pool *pool, m9_err *err);
-void DynStr_AppendChar (m9_pool *pool, DynStr_DString * *d, uint32_t ch, m9_err *err);
-void DynStr_Append (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_err *err);
-int64_t DynStr_Len (DynStr_DString * d, m9_err *err);
-m9_sl_CHAR DynStr_View (DynStr_DString * d, m9_err *err);
-bool DynStr_Equal (DynStr_DString * d, m9_sl_CHAR s, m9_err *err);
-bool DynStr_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_err *err);
-void DynStr_AppendI64 (m9_pool *pool, DynStr_DString * *d, int64_t v, m9_err *err);
-m9_sl_BYTE DynStr_Bytes (m9_pool *pool, m9_sl_CHAR s, bool zeroTerm, m9_err *err);
-m9_sl_BYTE DynStr_Utf8 (m9_pool *pool, m9_sl_CHAR s, m9_err *err);
-m9_sl_CHAR DynStr_Chars (m9_pool *pool, m9_sl_BYTE b, m9_err *err);
-m9_sl_CHAR DynStr_FromUtf8 (m9_pool *pool, m9_sl_BYTE b, m9_err *err);
+DynStr_DString * DynStr_New (m9_pool *pool, m9_state *err);
+void DynStr_AppendChar (m9_pool *pool, DynStr_DString * *d, uint32_t ch, m9_state *err);
+void DynStr_Append (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err);
+int64_t DynStr_Len (DynStr_DString * d, m9_state *err);
+m9_sl_CHAR DynStr_View (DynStr_DString * d, m9_state *err);
+bool DynStr_Equal (DynStr_DString * d, m9_sl_CHAR s, m9_state *err);
+bool DynStr_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
+void DynStr_AppendI64 (m9_pool *pool, DynStr_DString * *d, int64_t v, m9_state *err);
+m9_sl_BYTE DynStr_Bytes (m9_pool *pool, m9_sl_CHAR s, bool zeroTerm, m9_state *err);
+m9_sl_BYTE DynStr_Utf8 (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR DynStr_Chars (m9_pool *pool, m9_sl_BYTE b, m9_state *err);
+m9_sl_CHAR DynStr_FromUtf8 (m9_pool *pool, m9_sl_BYTE b, m9_state *err);
 
 #endif

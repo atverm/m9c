@@ -1,0 +1,13 @@
+(* EXPECT: argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1) *)
+MODULE m ;
+VAR last : STR ;
+PROCEDURE Note (RO KEPT msg: STR) =
+BEGIN
+  last := msg
+END Note ;
+PROCEDURE Go () =
+BEGIN
+  Note ('ab' + 'cd')
+END Go ;
+BEGIN
+END m.

@@ -22,7 +22,7 @@ static void ck (bool ok, const char *what)
 int main (void)
 {
   m9_pool pool = {0};
-  m9_err err = {0};
+  m9_state err = {0};
   uint32_t b1[64], b2[64];
 
   DynStr_DString *d = DynStr_New (&pool, &err);

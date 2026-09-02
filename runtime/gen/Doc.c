@@ -87,34 +87,38 @@ static const uint32_t m9s61[5] = { 99u, 111u, 110u, 115u, 116u };
 static const uint32_t m9s62[3] = { 118u, 97u, 114u };
 static const uint32_t m9s63[9] = { 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u };
 
-static m9_sl_CHAR Doc_Qual (m9_pool *pool, Ast_Node * k, m9_err *err);
-static m9_sl_CHAR Doc_SigText (m9_pool *pool, Ast_Node * p, m9_err *err);
-static m9_sl_CHAR Doc_ParamNames (m9_pool *pool, Ast_Node * p, m9_err *err);
-static uint32_t Doc_HexDigit (int64_t v, m9_err *err);
-static void Doc_JsonStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_err *err);
-static m9_sl_CHAR Doc_ParamsJson (m9_pool *pool, Ast_Node * p, m9_err *err);
-static m9_sl_CHAR Doc_ResultText (m9_pool *pool, Ast_Node * p, m9_err *err);
-static m9_sl_CHAR Doc_RaisesJson (m9_pool *pool, Ast_Node * p, m9_err *err);
-static m9_sl_CHAR Doc_AttribText (Ast_Node * p, m9_err *err);
-static bool Doc_IsDecl (int64_t k, m9_err *err);
-static void Doc_Collect (m9_pool *pool, Ast_Node * n, m9_sl_Doc_Anchor *anch, int64_t *nanch, m9_err *err);
-static int64_t Doc_Owner (m9_sl_Doc_Anchor anch, int64_t nanch, int64_t line, m9_err *err);
-static m9_sl_CHAR Doc_Body (m9_pool *pool, m9_sl_CHAR t, m9_err *err);
-static bool Doc_IsIdentList (m9_sl_CHAR s, m9_err *err);
-static bool Doc_IsParamLine (m9_sl_CHAR ln, m9_err *err);
-static int64_t Doc_ParamStart (m9_sl_CHAR b, m9_err *err);
-static void Doc_CheckParams (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR b, int64_t start, m9_sl_CHAR names, Doc_Stats *st, m9_err *err);
-static m9_sl_CHAR Doc_Cat3 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err);
-static int64_t Doc_CountWords (m9_sl_CHAR s, m9_err *err);
-static m9_sl_CHAR Doc_KindWord (int64_t k, m9_err *err);
-static m9_sl_CHAR Doc_GroupParams (m9_pool *pool, m9_sl_Doc_Anchor anch, int64_t nanch, int64_t owner, m9_err *err);
-static int64_t Doc_UpTo (Ast_Node * root, int64_t u, m9_err *err);
-static void Doc_Gather (m9_pool *pool, Ast_Node * unit, int64_t upTo, m9_sl_Doc_Anchor *anch, int64_t *nanch, m9_sl_CHAR *modDoc, bool *haveMod, Doc_Stats *st, m9_err *err);
-static m9_sl_CHAR Doc_KindJson (int64_t k, m9_err *err);
+static m9_sl_CHAR Doc_Qual (m9_pool *pool, Ast_Node * k, m9_state *err);
+static m9_sl_CHAR Doc_SigText (m9_pool *pool, Ast_Node * p, m9_state *err);
+static m9_sl_CHAR Doc_ParamNames (m9_pool *pool, Ast_Node * p, m9_state *err);
+static uint32_t Doc_HexDigit (int64_t v, m9_state *err);
+static void Doc_JsonStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err);
+static m9_sl_CHAR Doc_ParamsJson (m9_pool *pool, Ast_Node * p, m9_state *err);
+static m9_sl_CHAR Doc_ResultText (m9_pool *pool, Ast_Node * p, m9_state *err);
+static m9_sl_CHAR Doc_RaisesJson (m9_pool *pool, Ast_Node * p, m9_state *err);
+static m9_sl_CHAR Doc_AttribText (Ast_Node * p, m9_state *err);
+static bool Doc_IsDecl (int64_t k, m9_state *err);
+static void Doc_Collect (m9_pool *pool, Ast_Node * n, m9_sl_Doc_Anchor *anch, int64_t *nanch, m9_state *err);
+static int64_t Doc_Owner (m9_sl_Doc_Anchor anch, int64_t nanch, int64_t line, m9_state *err);
+static m9_sl_CHAR Doc_Body (m9_pool *pool, m9_sl_CHAR t, m9_state *err);
+static bool Doc_IsIdentList (m9_sl_CHAR s, m9_state *err);
+static bool Doc_IsParamLine (m9_sl_CHAR ln, m9_state *err);
+static int64_t Doc_ParamStart (m9_sl_CHAR b, m9_state *err);
+static void Doc_CheckParams (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR b, int64_t start, m9_sl_CHAR names, Doc_Stats *st, m9_state *err);
+static m9_sl_CHAR Doc_Cat3 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err);
+static int64_t Doc_CountWords (m9_sl_CHAR s, m9_state *err);
+static m9_sl_CHAR Doc_KindWord (int64_t k, m9_state *err);
+static m9_sl_CHAR Doc_GroupParams (m9_pool *pool, m9_sl_Doc_Anchor anch, int64_t nanch, int64_t owner, m9_state *err);
+static int64_t Doc_UpTo (Ast_Node * root, int64_t u, m9_state *err);
+static void Doc_Gather (m9_pool *pool, Ast_Node * unit, int64_t upTo, m9_sl_Doc_Anchor *anch, int64_t *nanch, m9_sl_CHAR *modDoc, bool *haveMod, Doc_Stats *st, m9_state *err);
+static m9_sl_CHAR Doc_KindJson (int64_t k, m9_state *err);
 
 
-m9_sl_CHAR Doc_Json (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_err *err)
+m9_sl_CHAR Doc_Json (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -278,15 +282,22 @@ m9_sl_CHAR Doc_Json (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Sta
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, &(d), 10u, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Doc_Text (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_err *err)
+m9_sl_CHAR Doc_Text (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Stats *st, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -416,15 +427,22 @@ m9_sl_CHAR Doc_Text (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Sta
       }
     } }
   } }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Doc_Qual (m9_pool *pool, Ast_Node * k, m9_err *err)
+static m9_sl_CHAR Doc_Qual (m9_pool *pool, Ast_Node * k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (pool, err);
@@ -440,15 +458,22 @@ static m9_sl_CHAR Doc_Qual (m9_pool *pool, Ast_Node * k, m9_err *err)
       if (err->exc) goto L_ret;
     }
   } }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Doc_SigText (m9_pool *pool, Ast_Node * p, m9_err *err)
+static m9_sl_CHAR Doc_SigText (m9_pool *pool, Ast_Node * p, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -506,15 +531,22 @@ static m9_sl_CHAR Doc_SigText (m9_pool *pool, Ast_Node * p, m9_err *err)
       if (err->exc) goto L_ret;
     } }
   }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Doc_ParamNames (m9_pool *pool, Ast_Node * p, m9_err *err)
+static m9_sl_CHAR Doc_ParamNames (m9_pool *pool, Ast_Node * p, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -559,27 +591,41 @@ static m9_sl_CHAR Doc_ParamNames (m9_pool *pool, Ast_Node * p, m9_err *err)
       } }
     } }
   }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static uint32_t Doc_HexDigit (int64_t v, m9_err *err)
+static uint32_t Doc_HexDigit (int64_t v, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   uint32_t m9ret = 0;
   m9_sl_CHAR hex = {0}; (void) hex;
   hex = ((m9_sl_CHAR){ (uint32_t *) m9s29, 16 });
+  err->res = m9res;
   m9ret = (*(uint32_t *) m9_at (hex.p, v, hex.len, sizeof (uint32_t), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Doc_JsonStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_err *err)
+static void Doc_JsonStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t c = 0; (void) c;
   uint32_t ch = 0; (void) ch;
@@ -628,11 +674,17 @@ static void Doc_JsonStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_er
   DynStr_AppendChar (pool, d, 34u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR Doc_ParamsJson (m9_pool *pool, Ast_Node * p, m9_err *err)
+static m9_sl_CHAR Doc_ParamsJson (m9_pool *pool, Ast_Node * p, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -715,33 +767,48 @@ static m9_sl_CHAR Doc_ParamsJson (m9_pool *pool, Ast_Node * p, m9_err *err)
   }
   DynStr_AppendChar (pool, &(d), 93u, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Doc_ResultText (m9_pool *pool, Ast_Node * p, m9_err *err)
+static m9_sl_CHAR Doc_ResultText (m9_pool *pool, Ast_Node * p, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   if ((p->nkids > INT64_C(1))) {
     { Ast_Node * rt = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rt != NULL) {
+      err->res = m9res;
       m9ret = Print_TypeText (pool, (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
       goto L_ret;
     } }
   }
+  err->res = m9res;
   m9ret = (m9_sl_CHAR){ NULL, 0 };
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Doc_RaisesJson (m9_pool *pool, Ast_Node * p, m9_err *err)
+static m9_sl_CHAR Doc_RaisesJson (m9_pool *pool, Ast_Node * p, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -769,41 +836,63 @@ static m9_sl_CHAR Doc_RaisesJson (m9_pool *pool, Ast_Node * p, m9_err *err)
   }
   DynStr_AppendChar (pool, &(d), 93u, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Doc_AttribText (Ast_Node * p, m9_err *err)
+static m9_sl_CHAR Doc_AttribText (Ast_Node * p, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   if ((p->nkids > INT64_C(3))) {
     { Ast_Node * at = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(3), p->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (at != NULL) {
+      err->res = m9res;
       m9ret = at->a;
       goto L_ret;
     } }
   }
+  err->res = m9res;
   m9ret = (m9_sl_CHAR){ NULL, 0 };
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool Doc_IsDecl (int64_t k, m9_err *err)
+static bool Doc_IsDecl (int64_t k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
+  err->res = m9res;
   m9ret = (((((k == Ast_NProcDecl) || (k == Ast_NTypeDecl)) || (k == Ast_NConstDecl)) || (k == Ast_NVarDecl)) || (k == Ast_NExcDecl));
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Doc_Collect (m9_pool *pool, Ast_Node * n, m9_sl_Doc_Anchor *anch, int64_t *nanch, m9_err *err)
+static void Doc_Collect (m9_pool *pool, Ast_Node * n, m9_sl_Doc_Anchor *anch, int64_t *nanch, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   bool m9t1 = (Doc_IsDecl (n->kind, err) && ((*nanch) < ((*anch)).len));
   if (err->exc) goto L_ret;
@@ -862,11 +951,17 @@ static void Doc_Collect (m9_pool *pool, Ast_Node * n, m9_sl_Doc_Anchor *anch, in
     } }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static int64_t Doc_Owner (m9_sl_Doc_Anchor anch, int64_t nanch, int64_t line, m9_err *err)
+static int64_t Doc_Owner (m9_sl_Doc_Anchor anch, int64_t nanch, int64_t line, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t best = 0; (void) best;
@@ -883,14 +978,21 @@ static int64_t Doc_Owner (m9_sl_Doc_Anchor anch, int64_t nanch, int64_t line, m9
       best = i;
     }
   } }
+  err->res = m9res;
   m9ret = best;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Doc_Body (m9_pool *pool, m9_sl_CHAR t, m9_err *err)
+static m9_sl_CHAR Doc_Body (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -972,21 +1074,29 @@ static m9_sl_CHAR Doc_Body (m9_pool *pool, m9_sl_CHAR t, m9_err *err)
     i = m9_add_i64 (i, INT64_C(1), err);
     if (err->exc) goto L_ret;
   }
+  err->res = m9res;
   m9ret = Text_Trim (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool Doc_IsIdentList (m9_sl_CHAR s, m9_err *err)
+static bool Doc_IsIdentList (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   bool fresh = false; (void) fresh;
   n = (s).len;
   if ((n == INT64_C(0))) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
@@ -1000,6 +1110,7 @@ static bool Doc_IsIdentList (m9_sl_CHAR s, m9_err *err)
       bool m9t2 = (!((((((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 65u) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 90u))) || ((((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 97u) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 122u))))));
       if (err->exc) goto L_ret;
       if (m9t2) {
+        err->res = m9res;
         m9ret = false;
         goto L_ret;
       }
@@ -1019,6 +1130,7 @@ static bool Doc_IsIdentList (m9_sl_CHAR s, m9_err *err)
           bool m9t6 = ((*(uint32_t *) m9_at (s.p, m9_sub_i64 (i, INT64_C(1), err), s.len, sizeof (uint32_t), err)) != 44u);
           if (err->exc) goto L_ret;
           if (m9t6) {
+            err->res = m9res;
             m9ret = false;
             goto L_ret;
           }
@@ -1027,18 +1139,26 @@ static bool Doc_IsIdentList (m9_sl_CHAR s, m9_err *err)
       bool m9t7 = (!(((((((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 65u) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 90u))) || ((((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 97u) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 122u)))) || ((((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 48u) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 57u))))));
       if (err->exc) goto L_ret;
       if (m9t7) {
+        err->res = m9res;
         m9ret = false;
         goto L_ret;
     } } } }
   } }
+  err->res = m9res;
   m9ret = (!fresh);
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static bool Doc_IsParamLine (m9_sl_CHAR ln, m9_err *err)
+static bool Doc_IsParamLine (m9_sl_CHAR ln, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   bool m9ret = false;
   m9_sl_CHAR t = {0}; (void) t;
   int64_t dash = 0; (void) dash;
@@ -1047,18 +1167,26 @@ static bool Doc_IsParamLine (m9_sl_CHAR ln, m9_err *err)
   dash = Text_Find (t, ((m9_sl_CHAR){ (uint32_t *) m9s47, 4 }), err);
   if (err->exc) goto L_ret;
   if ((dash <= INT64_C(0))) {
+    err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = Doc_IsIdentList (Text_Trim (({ __typeof__(t) m9t2 = t; int64_t m9t2a = INT64_C(0), m9t2n = dash; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Doc_ParamStart (m9_sl_CHAR b, m9_err *err)
+static int64_t Doc_ParamStart (m9_sl_CHAR b, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t lineStart = 0; (void) lineStart;
@@ -1082,6 +1210,7 @@ static int64_t Doc_ParamStart (m9_sl_CHAR b, m9_err *err)
           bool m9t8 = Doc_IsParamLine (({ __typeof__(b) m9t7 = b; int64_t m9t7a = lineStart, m9t7n = m9_sub_i64 (i, lineStart, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), err);
           if (err->exc) goto L_ret;
           if (m9t8) {
+            err->res = m9res;
             m9ret = blank;
             goto L_ret;
           }
@@ -1098,19 +1227,27 @@ static int64_t Doc_ParamStart (m9_sl_CHAR b, m9_err *err)
     bool m9t10 = Doc_IsParamLine (({ __typeof__(b) m9t9 = b; int64_t m9t9a = lineStart, m9t9n = m9_sub_i64 ((b).len, lineStart, err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; }), err);
     if (err->exc) goto L_ret;
     if (m9t10) {
+      err->res = m9res;
       m9ret = blank;
       goto L_ret;
     }
   }
+  err->res = m9res;
   m9ret = m9_neg_i64 (INT64_C(1), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Doc_CheckParams (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR b, int64_t start, m9_sl_CHAR names, Doc_Stats *st, m9_err *err)
+static void Doc_CheckParams (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR b, int64_t start, m9_sl_CHAR names, Doc_Stats *st, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t lineStart = 0; (void) lineStart;
   int64_t dash = 0; (void) dash;
@@ -1166,11 +1303,17 @@ static void Doc_CheckParams (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR b, i
     if (err->exc) goto L_ret;
   }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR Doc_Cat3 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *err)
+static m9_sl_CHAR Doc_Cat3 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(m9_heap), err);
@@ -1181,15 +1324,22 @@ static m9_sl_CHAR Doc_Cat3 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_err *er
   if (err->exc) goto L_ret;
   DynStr_Append (&(m9_heap), &(d), c, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Doc_CountWords (m9_sl_CHAR s, m9_err *err)
+static int64_t Doc_CountWords (m9_sl_CHAR s, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
@@ -1214,39 +1364,57 @@ static int64_t Doc_CountWords (m9_sl_CHAR s, m9_err *err)
       } }
     }
   } }
+  err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Doc_KindWord (int64_t k, m9_err *err)
+static m9_sl_CHAR Doc_KindWord (int64_t k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   if ((k == Ast_NProcDecl)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s54, 9 });
     goto L_ret;
   }
   if ((k == Ast_NTypeDecl)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s55, 4 });
     goto L_ret;
   }
   if ((k == Ast_NConstDecl)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s56, 5 });
     goto L_ret;
   }
   if ((k == Ast_NVarDecl)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s57, 3 });
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s58, 9 });
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Doc_GroupParams (m9_pool *pool, m9_sl_Doc_Anchor anch, int64_t nanch, int64_t owner, m9_err *err)
+static m9_sl_CHAR Doc_GroupParams (m9_pool *pool, m9_sl_Doc_Anchor anch, int64_t nanch, int64_t owner, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
@@ -1270,15 +1438,22 @@ static m9_sl_CHAR Doc_GroupParams (m9_pool *pool, m9_sl_Doc_Anchor anch, int64_t
       if (err->exc) goto L_ret;
     }
   }
+  err->res = m9res;
   m9ret = DynStr_View (d, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Doc_UpTo (Ast_Node * root, int64_t u, m9_err *err)
+static int64_t Doc_UpTo (Ast_Node * root, int64_t u, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t upTo = 0; (void) upTo;
@@ -1299,14 +1474,21 @@ static int64_t Doc_UpTo (Ast_Node * root, int64_t u, m9_err *err)
   if ((upTo == INT64_C(0))) {
     upTo = INT64_C(1000000000);
   }
+  err->res = m9res;
   m9ret = upTo;
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Doc_Gather (m9_pool *pool, Ast_Node * unit, int64_t upTo, m9_sl_Doc_Anchor *anch, int64_t *nanch, m9_sl_CHAR *modDoc, bool *haveMod, Doc_Stats *st, m9_err *err)
+static void Doc_Gather (m9_pool *pool, Ast_Node * unit, int64_t upTo, m9_sl_Doc_Anchor *anch, int64_t *nanch, m9_sl_CHAR *modDoc, bool *haveMod, Doc_Stats *st, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t o = 0; (void) o;
   Lex_Comment c = {0}; (void) c;
@@ -1373,30 +1555,43 @@ static void Doc_Gather (m9_pool *pool, Ast_Node * unit, int64_t upTo, m9_sl_Doc_
     }
   } }
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_CHAR Doc_KindJson (int64_t k, m9_err *err)
+static m9_sl_CHAR Doc_KindJson (int64_t k, m9_state *err)
 {
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   if ((k == Ast_NProcDecl)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s59, 9 });
     goto L_ret;
   }
   if ((k == Ast_NTypeDecl)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s60, 4 });
     goto L_ret;
   }
   if ((k == Ast_NConstDecl)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s61, 5 });
     goto L_ret;
   }
   if ((k == Ast_NVarDecl)) {
+    err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s62, 3 });
     goto L_ret;
   }
+  err->res = m9res;
   m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s63, 9 });
   goto L_ret;
 L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }

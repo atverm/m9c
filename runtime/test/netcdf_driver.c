@@ -53,7 +53,7 @@ static char *C (m9_sl_CHAR s, char *out, size_t cap)
 
 int main (void)
 {
-  m9_err e = { 0 };
+  m9_state e = { 0 };
   m9_pool pool = { 0 };
   double data[NLAT * NLON], back[NLAT * NLON];
   int i, j;
