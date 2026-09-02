@@ -88,12 +88,18 @@ m9_pool m9_heap = { NULL };
 static int m9_cat_extend (m9_pool *pool, m9_sl_CHAR a, int64_t n)
 {
   m9_pool_block *blk = pool->head;
-  unsigned char *base, *ap;
+  uintptr_t base, ap;
   size_t off, want;
 
   if (blk == NULL || a.p == NULL || a.len == 0) return 0;
-  base = (unsigned char *) (blk + 1);
-  ap   = (unsigned char *) a.p;
+  /* `a` may point anywhere -- a string literal, another pool -- and a
+     relational comparison between pointers into different objects is
+     UB, which licenses gcc to reason FROM the comparison instead of
+     about it (seen as -Wstringop-overflow on a literal left operand).
+     As integers the same guard is defined for any pair, and when it
+     passes the address provably lies inside this block's storage. */
+  base = (uintptr_t) (blk + 1);
+  ap   = (uintptr_t) a.p;
   if (ap < base || ap >= base + blk->cap) return 0;
   off  = (size_t) (ap - base);
   if (off + M9_ALIGN ((size_t) a.len * sizeof (uint32_t)) != blk->used)
