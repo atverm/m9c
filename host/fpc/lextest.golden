@@ -16,7 +16,7 @@
 ../../corpus/Lex.m9                      tokens=3510 errors=0
 ../../corpus/Logger.m9                   tokens=869 errors=0
 ../../corpus/Lsp.m9                      tokens=3393 errors=0
-../../corpus/M9c.m9                      tokens=8849 errors=0
+../../corpus/M9c.m9                      tokens=8890 errors=0
 ../../corpus/M9fmt.m9                    tokens=2338 errors=0
 ../../corpus/Mat.m9                      tokens=2775 errors=0
 ../../corpus/Math.m9                     tokens=3420 errors=0

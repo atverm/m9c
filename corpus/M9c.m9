@@ -578,6 +578,14 @@ BEGIN
       DynStr.Append (pool, d, ' ') ;
       DynStr.Append (pool, d, Cat (rt, '/tcpshim.c'))
     END ;
+    (* fmt_g, Plot's %.4g twin: pure libc, so it always travels --
+       without it the FLAGLESS link could never build a program that
+       plots, and every gate had quietly hand-linked the shim (found
+       by m9edit's first figure, 2026-09-02) *)
+    IF Io.Exists (Cat (rt, '/fmtshim.c')) THEN
+      DynStr.Append (pool, d, ' ') ;
+      DynStr.Append (pool, d, Cat (rt, '/fmtshim.c'))
+    END ;
     RETURN TRUE
   END ;
   IF Io.Exists (StdArchive) THEN

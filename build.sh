@@ -56,7 +56,8 @@ echo "building libm9rt.a ..."
 $CC $CPPFLAGS $CFLAGS $WARN -iquote runtime -c runtime/m9rt.c -o "$OUT/m9rt.o"
 # shellcheck disable=SC2086
 $CC $CPPFLAGS $CFLAGS $WARN -iquote runtime -c runtime/tcpshim.c -o "$OUT/tcpshim.o"
-ar rcs "$OUT/libm9rt.a" "$OUT/m9rt.o" "$OUT/tcpshim.o"
+$CC $CPPFLAGS $CFLAGS $WARN -iquote runtime -c runtime/fmtshim.c -o "$OUT/fmtshim.o"
+ar rcs "$OUT/libm9rt.a" "$OUT/m9rt.o" "$OUT/tcpshim.o" "$OUT/fmtshim.o"
 
 echo "built $OUT/m9c ($(wc -c < "$OUT/m9c") bytes) and $OUT/libm9rt.a"
 
