@@ -694,6 +694,17 @@ if "$M9C" --check -c "$SRC/DynStr.m9" 2>/dev/null; then
 fi
 echo "m9c: --check answers diagnostics and writes nothing"
 
+# THE VERSION CANNOT DRIFT FROM THE CHANGELOG.  Two releases in a row
+# shipped a first build whose receipt said the previous version,
+# because M9c.m9's Version constant is bumped by hand.  The receipt
+# caught it both times; this catches it before a VM ever boots.
+CLV=$(cd "$SRC/.." && sh tools/release/version.sh)
+BV=$("$M9C" --version | sed 's/^m9c //')
+[ "$BV" = "$CLV" ] || {
+  echo "FAIL: m9c --version says $BV but debian/changelog says $CLV";
+  echo "  bump Version in corpus/M9c.m9"; exit 1; }
+echo "m9c: --version agrees with the changelog ($BV)"
+
 # --make BUILDS IN DEPENDENCY ORDER, and a DIAMOND is what proves it.
 # loaded[] is filled pre-order (a name is marked before its imports
 # are walked, so a cycle terminates), and reversing pre-order is a
