@@ -48,7 +48,11 @@ deps_of () {
 }
 
 n=0; np=0; npd=0; no=0; nod=0; npl=0; drift=0
-for m in $(sed -n '/^LIBRARY=/,/Plot ZarrStore"/p' ../../build.sh |
+# The list is build.sh's LIBRARY, and the range closes on the line that
+# ends the string -- NOT on a module name: closed on `Plot ZarrStore"`,
+# it silently ran to the end of the file when 0.5.0 appended Lsp and
+# M9fmt, and `mkdir` became a module (2026-09-03, both branches red).
+for m in $(sed -n '/^LIBRARY=/,/"$/p' ../../build.sh |
            sed 's/LIBRARY="//; s/"$//; s/\\$//' | tr -s ' \n' ' '); do
   d=""
   for x in $(deps_of "$m"); do d="$d $SRC/$x.m9"; done

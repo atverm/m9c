@@ -19,7 +19,11 @@ mkdir -p "$GOLD"
 export M9RUNTIME=$(cd .. && pwd)
 export M9LIBRARY=$SRC
 n=0
-for m in $(sed -n '/^LIBRARY=/,/Plot ZarrStore"/p' ../../build.sh |
+# The list is build.sh's LIBRARY, and the range closes on the line that
+# ends the string -- NOT on a module name: closed on `Plot ZarrStore"`,
+# it silently ran to the end of the file when 0.5.0 appended Lsp and
+# M9fmt, and `mkdir` became a module (2026-09-03, both branches red).
+for m in $(sed -n '/^LIBRARY=/,/"$/p' ../../build.sh |
            sed 's/LIBRARY="//; s/"$//; s/\\$//' | tr -s ' \n' ' '); do
   d=""
   [ "$m" = HttpServer ] && d="$SRC/Http.m9 $SRC/DynStr.m9"
