@@ -127,6 +127,9 @@ VAR
   nmv : I64 ;
   lpools : SLICE OF STR ;
   nlp : I64 ;
+  outStr : SLICE OF STR ;  (* the VAR/OWN STR parameters, whose
+                              targets are re-homed at L_ret *)
+  nout : I64 ;
   isProgram : BOOL ;       (* MODULE m -- emit a main () *)
   mainBody : Ast.Kid ;     (* its block *)
   strNode : Ast.Kid ;      (* the STR that STR names *)
@@ -261,6 +264,20 @@ BEGIN
   nlp := nlp + 1
 END PoolReg ;
 
+(* register a VAR/OWN STR parameter for the exit re-homing *)
+PROCEDURE OutReg (RO KEPT nm: STR) =
+VAR nb : SLICE OF STR ;
+    k  : I64 ;
+BEGIN
+  IF nout = LEN (outStr) THEN
+    nb := NEW (gpool, STR, 2 * LEN (outStr)) ;
+    FOR k := 0 TO nout - 1 DO nb[k] := outStr[k] END ;
+    outStr := nb
+  END ;
+  outStr[nout] := nm ;
+  nout := nout + 1
+END OutReg ;
+
 PROCEDURE SetDebugSource (RO KEPT file: STR) =
 BEGIN
   dbgSrc := file
@@ -275,7 +292,12 @@ PROCEDURE DbgLine (n: PTR Ast.Node) =
 BEGIN
   IF dry > 0 THEN RETURN END ;
   IF LEN (dbgSrc) = 0 THEN RETURN END ;
-  Line (KPbuf, 0, S5 ('#line ', ItoA (n.line), ' "', dbgSrc, '"'))
+  Line (KPbuf, 0, S5 ('#line ', ItoA (n.line), ' "', dbgSrc, '"')) ;
+  (* and record the raise site for an unhandled exception's
+     message: one store per statement, under -g only, so hot
+     production code (no -g) is untouched and its default C the
+     same *)
+  Line (KPbuf, 1, S3 ('err->line = ', ItoA (n.line), ';'))
 END DbgLine ;
 
 PROCEDURE StartsW (RO s: STR ;
@@ -398,6 +420,7 @@ BEGIN
   mvN := NEW (gpool, STR, 8) ;
   mvT := NEW (gpool, AKid, 8) ;
   lpools := NEW (gpool, STR, 8) ;
+  outStr := NEW (gpool, STR, 8) ;
   bHdr := DynStr.New (gpool) ;
   bSrc := DynStr.New (gpool) ;
   bTdefs := DynStr.New (gpool) ;
@@ -2185,6 +2208,31 @@ BEGIN
       Err2 (eln, 'MAX of this type unsupported yet') ;
       RETURN '0'
     END ;
+    (* SizeOf (x): x's type size, a compile-time C sizeof.  A bare
+       builtin or user type name asks the type; else the value's
+       type (sizeof does not evaluate).  A slice's SizeOf is its
+       descriptor; ByteSize is the data.  In-memory only. *)
+    IF DynStr.Eq (name, 'SizeOf') THEN
+      tag := 'I64' ;
+      IF al.kids[0] IS SOME s0 THEN
+        IF s0.kind = Ast.NDesignator AND s0.nkids = 0 THEN
+          IF LEN (BuiltinC (s0.a)) > 0 THEN
+            RETURN S3 ('((int64_t) sizeof (', BuiltinC (s0.a), '))')
+          END ;
+          IF FindTypeN (s0.a) IS SOME ft THEN
+            RETURN S5 ('((int64_t) sizeof (', modName, '_', s0.a, '))')
+          END
+        END
+      END ;
+      RETURN S3 ('((int64_t) sizeof (', EX (al.kids[0], ''), '))')
+    END ;
+    (* ByteSize (s): LEN times element size; the element size is
+       read off the slice's pointer type, unevaluated *)
+    IF DynStr.Eq (name, 'ByteSize') THEN
+      tag := 'I64' ;
+      at := EX (al.kids[0], '') ;
+      RETURN S5 ('((int64_t) (', at, ').len * (int64_t) sizeof (*(', at, ').p))')
+    END ;
     IF DynStr.Eq (name, 'ADR') THEN
       tag := '?' ;
       at := TagOfExpr (al.kids[0]) ;
@@ -3388,6 +3436,7 @@ VAR
 BEGIN
   scope.n := 0 ;
   nlp := 0 ;
+  nout := 0 ;
   tmpN := 0 ;
   exitLbl := 'L_ret' ;
   raiseLbl := 'L_ret' ;
@@ -3438,7 +3487,10 @@ BEGIN
                 IF DynStr.Eq (mode, 'p') THEN
                   sig := S5 (sig, cty, ' ', CN (pid.a), ', ')
                 ELSE
-                  sig := S5 (sig, cty, ' *', CN (pid.a), ', ')
+                  sig := S5 (sig, cty, ' *', CN (pid.a), ', ') ;
+                  IF DynStr.Eq (cty, 'm9_sl_CHAR') THEN
+                    OutReg (CN (pid.a))
+                  END
                 END
               END
             END
@@ -3481,6 +3533,9 @@ BEGIN
       'm9_pool *m9res = err->res ? err->res : &m9_heap;') ;
     Line (KPbuf, 1, '(void) m9res;') ;
     Line (KPbuf, 1, 'err->res = &m9frame;') ;
+    IF LEN (dbgSrc) > 0 THEN
+      Line (KPbuf, 1, S3 ('err->file = "', dbgSrc, '";'))
+    END ;
     (* PROCEDURE-LOCAL CONSTs.  The grammar always allowed them and
        neither end implemented them: this said `unknown name` and the
        checker said nothing at all.  They register in the same map the
@@ -3578,6 +3633,20 @@ BEGIN
        to the caller's arena for the same reason again, before this
        frame is freed underneath it *)
     Line (KPbuf, 1, 'err->res = m9res;') ;
+    (* par 2.3: a string leaving this frame -- the result, or a
+       VAR/OWN STR parameter's target -- is copied into the caller's
+       arena IF it lives in the frame that is about to be freed.
+       Asked of the address, at the exit: a `+`, a callee's re-homed
+       answer, a view of either, are all caught; a literal, a borrow,
+       or a string in a pool the caller named is not moved.  This is
+       what lets a string procedure take no pool. *)
+    IF DynStr.Eq (retC, 'm9_sl_CHAR') THEN
+      Line (KPbuf, 1, 'm9ret = m9_rehome (&m9frame, m9res, m9ret, err);')
+    END ;
+    FOR i := 0 TO nout - 1 DO
+      Line (KPbuf, 1, S5 ('*', outStr[i], ' = m9_rehome (&m9frame, m9res, *',
+                          outStr[i], ', err);'))
+    END ;
     IF LEN (monPar) > 0 THEN
       Line (KPbuf, 1, S3 ('m9_mon_leave (&(*', monPar, ').m9mon);'))
     END ;
@@ -3604,6 +3673,7 @@ VAR i : I64 ;
 BEGIN
   scope.n := 0 ;
   nlp := 0 ;
+  nout := 0 ;
   tmpN := 0 ;
   exitLbl := 'L_ret' ;
   raiseLbl := 'L_ret' ;
@@ -3622,6 +3692,9 @@ BEGIN
   Line (KPbuf, 1, 'm9_pool m9frame = {0};') ;
   PoolReg ('m9frame') ;
   Line (KPbuf, 1, 'err->res = &m9frame;') ;
+  IF LEN (dbgSrc) > 0 THEN
+    Line (KPbuf, 1, S3 ('err->file = "', dbgSrc, '";'))
+  END ;
   Line (KPbuf, 1, 'm9_args (argc, argv);') ;
   EmitStmt (mainBody, 1) ;
   Line (KPbuf, 0, 'L_ret: ;') ;

@@ -522,6 +522,7 @@ static m9_sl_CHAR M9c_BaseName (m9_sl_CHAR path, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -623,6 +624,7 @@ static m9_sl_CHAR M9c_Suffix (m9_sl_CHAR name, m9_sl_CHAR ext, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -739,6 +741,7 @@ static m9_sl_CHAR M9c_DirOf (m9_sl_CHAR path, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -770,6 +773,7 @@ static m9_sl_CHAR M9c_Join (m9_sl_CHAR d, m9_sl_CHAR f, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -811,6 +815,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -851,6 +856,8 @@ static m9_sl_CHAR M9c_FindModule (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, b
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  *path = m9_rehome (&m9frame, m9res, *path, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1218,6 +1225,7 @@ static m9_sl_CHAR M9c_CcName (m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1269,6 +1277,7 @@ static m9_sl_CHAR M9c_RtDir (m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1293,6 +1302,7 @@ static m9_sl_CHAR M9c_Cat (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2524,6 +2534,7 @@ static m9_sl_CHAR M9c_SourceAt (int64_t n, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2623,6 +2634,7 @@ static m9_sl_CHAR M9c_DocText (Ast_Node * root, m9_sl_CHAR name, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2652,6 +2664,7 @@ static m9_sl_CHAR M9c_JsonText (Ast_Node * root, m9_sl_CHAR name, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2841,6 +2854,8 @@ static m9_sl_CHAR M9c_Fetch (m9_sl_CHAR name, m9_sl_CHAR *path, bool *ok, bool *
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  *path = m9_rehome (&m9frame, m9res, *path, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

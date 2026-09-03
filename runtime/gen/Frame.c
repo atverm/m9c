@@ -542,6 +542,7 @@ m9_sl_CHAR Frame_NameAt (Frame_Fr * f, int64_t c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1862,6 +1863,7 @@ m9_sl_CHAR Frame_ConvName (Frame_Conv conv, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2361,6 +2363,7 @@ m9_sl_CHAR Frame_TsDescr (Frame_Ts * ts, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2790,6 +2793,7 @@ static m9_sl_CHAR Frame_Copy (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2872,7 +2876,7 @@ static void Frame_PutF64 (m9_pool *pool, DynStr_DString * *d, double v, double m
   if (m9t1) {
     goto L_ret;
   }
-  DynStr_Append (pool, d, Fmt_Sci (pool, v, INT64_C(16), err), err);
+  DynStr_Append (pool, d, Fmt_Sci (v, INT64_C(16), err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -2891,7 +2895,7 @@ static void Frame_PutF32 (m9_pool *pool, DynStr_DString * *d, float v, float mis
   if (m9t1) {
     goto L_ret;
   }
-  DynStr_Append (pool, d, Fmt_Sci (pool, (double)(v), INT64_C(8), err), err);
+  DynStr_Append (pool, d, Fmt_Sci ((double)(v), INT64_C(8), err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;

@@ -1154,6 +1154,34 @@ begin
     Err (site, 'MAX of ' + argl.kids[0].a + ' unsupported yet');
     Exit ('0');
   end;
+  { SizeOf (x): the byte size of x's TYPE, a compile-time constant
+    folding to C sizeof.  A bare builtin or user type name asks the
+    named type; anything else asks the value's type (sizeof does not
+    evaluate its operand).  A slice's own SizeOf is its descriptor;
+    the DATA a slice points at is ByteSize.  In-memory only -- a wire
+    uses the exact-width types and ToBytesLE. }
+  if name = 'SizeOf' then
+  begin
+    tag := 'I64';
+    if (argl.kids[0].kind = nkDesignator) and
+       (Length (argl.kids[0].kids) = 0) then
+    begin
+      if BuiltinC (argl.kids[0].a) <> '' then
+        Exit ('((int64_t) sizeof (' + BuiltinC (argl.kids[0].a) + '))');
+      if FindType (argl.kids[0].a) <> nil then
+        Exit ('((int64_t) sizeof (' + modName + '_' + argl.kids[0].a + '))');
+    end;
+    Exit ('((int64_t) sizeof (' + EX (argl.kids[0], '') + '))');
+  end;
+  { ByteSize (s): the bytes s's elements occupy -- LEN * elem size.
+    sizeof (*(s).p) reads the element size off the slice's own pointer
+    type without evaluating s. }
+  if name = 'ByteSize' then
+  begin
+    tag := 'I64';
+    at := EX (argl.kids[0], '');
+    Exit ('((int64_t) (' + at + ').len * (int64_t) sizeof (*(' + at + ').p))');
+  end;
   if name = 'ADR' then
   begin
     tag := '?';
@@ -1904,6 +1932,10 @@ begin
   if dry > 0 then Exit;
   if dbgSrc = '' then Exit;
   Line (pbuf, 0, '#line ' + IntToStr (st.line) + ' "' + dbgSrc + '"');
+  { and record it for an unhandled exception's message: one store
+    per statement, under -g only, so hot production code (no -g) is
+    untouched and its default generated C is unchanged }
+  Line (pbuf, 1, 'err->line = ' + IntToStr (st.line) + ';');
 end;
 
 procedure TGen.EmitStmt (st: TNode; ind: Integer);
@@ -2523,10 +2555,13 @@ var
   names : string;
   monPar : string;               { the monitor this proc is bound to }
   monN : TNode;
+  outStr : array of string;      { the VAR/OWN STR parameters, whose
+                                   targets are re-homed at L_ret }
 begin
   d := gp.node;
   scope.Clear;
   SetLength (localPools, 0);
+  SetLength (outStr, 0);
   tmpN := 0;
   exitLbl := 'L_ret';
   raiseLbl := 'L_ret';
@@ -2585,7 +2620,14 @@ begin
         if mode = 'p' then
           sig := sig + cty + ' ' + CN (grp.kids[0].kids[j].a) + ', '
         else
+        begin
           sig := sig + cty + ' *' + CN (grp.kids[0].kids[j].a) + ', ';
+          if cty = 'm9_sl_CHAR' then
+          begin
+            SetLength (outStr, Length (outStr) + 1);
+            outStr[High (outStr)] := CN (grp.kids[0].kids[j].a);
+          end;
+        end;
       end;
     end;
   sig := sig + 'm9_state *err)';
@@ -2621,6 +2663,8 @@ begin
   Line (pbuf, 1, 'm9_pool *m9res = err->res ? err->res : &m9_heap;');
   Line (pbuf, 1, '(void) m9res;');
   Line (pbuf, 1, 'err->res = &m9frame;');
+  if dbgSrc <> '' then
+    Line (pbuf, 1, 'err->file = "' + dbgSrc + '";');
   { PROCEDURE-LOCAL CONSTs, in the same map the module's own use.  The
     map answers the first hit, so a local that shadowed a module CONST
     would lose silently -- the checker refuses that, which is what
@@ -2698,6 +2742,18 @@ begin
 
   Line (pbuf, 0, 'L_ret: ;');
   Line (pbuf, 1, 'err->res = m9res;');
+  { par 2.3: a string leaving this frame -- the result, or a VAR/OWN
+    STR parameter's target -- is copied into the caller's arena IF it
+    lives in the frame that is about to be freed.  Asked of the
+    address, at the exit: a `+`, a callee's re-homed answer, a view
+    of either, are all caught; a literal, a borrow, or a string in a
+    pool the caller named is not moved.  This is what lets a string
+    procedure take no pool. }
+  if retC = 'm9_sl_CHAR' then
+    Line (pbuf, 1, 'm9ret = m9_rehome (&m9frame, m9res, m9ret, err);');
+  for i := 0 to High (outStr) do
+    Line (pbuf, 1, '*' + outStr[i] + ' = m9_rehome (&m9frame, m9res, *' +
+      outStr[i] + ', err);');
   { every exit passes through L_ret, so a RAISE drops the lock for
     the same reason a RETURN does }
   if monPar <> '' then
@@ -2742,6 +2798,8 @@ begin
   Line (pbuf, 1, 'm9_pool m9frame = {0};');
   PoolReg ('m9frame');
   Line (pbuf, 1, 'err->res = &m9frame;');
+  if dbgSrc <> '' then
+    Line (pbuf, 1, 'err->file = "' + dbgSrc + '";');
   Line (pbuf, 1, 'm9_args (argc, argv);');
   { the body is a BLOCK, so EXCEPT at the root goes through the same
     handler machinery every other frame uses }

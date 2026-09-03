@@ -36,27 +36,30 @@ DEFINITION MODULE Fmt ;
 CONST
   MaxDecimals = 17 ;
 
-PROCEDURE I64Str (VAR pool: POOL ; v: I64) : STR ;
-  (* decimal text of v, sign and all, in pool.  Total for every I64
-     including MIN: it builds through DynStr.AppendI64, whose own
-     note explains why negating MIN would have trapped and why this
-     does not.                                                      *)
+PROCEDURE I64Str (v: I64) : STR ;
+  (* decimal text of v, sign and all.  Total for every I64 including
+     MIN: the digits are taken in NEGATIVE space, where every I64
+     fits, because -MIN does not.
 
-PROCEDURE I64Pad (VAR pool: POOL ; v: I64 ; width: I64 ; zero: BOOL)
-  : STR ;
+     NO POOL, here or anywhere below: a formatter answers a string
+     the caller reads once, and par 2.3 places that string in the
+     caller's arena.  These took a pool until 2026-09-03, and every
+     caller in the corpus passed one only to throw the result at
+     Append or WriteLine.                                            *)
+
+PROCEDURE I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR ;
   (* right-aligned in width; zero selects '0' over ' ' as the fill.
      A value too wide is never truncated -- silently losing digits is
      the class of bug this language refuses -- it just overflows the
      field, as printf does.                                          *)
 
-PROCEDURE Fixed (VAR pool: POOL ; v: F64 ; decimals: I64) : STR
-  RAISES ValueRange ;
+PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
   (* decimals in 0..MaxDecimals; a magnitude that will not survive
      scaling raises rather than printing a plausible wrong number.
      NaN prints 'nan', the infinities 'inf' and '-inf'.              *)
 
-PROCEDURE FixedPad (VAR pool: POOL ; v: F64 ; width, decimals: I64)
-  : STR RAISES ValueRange ;
+PROCEDURE FixedPad (v: F64 ; width, decimals: I64) : STR
+  RAISES ValueRange ;
   (* Pascal's `v:width:decimals`, which is where the shape comes
      from: Fixed, then right-aligned in width with BLANKS.  Pascal
      pads a real field with blanks and never with zeros, so there is
@@ -67,8 +70,7 @@ PROCEDURE FixedPad (VAR pool: POOL ; v: F64 ; width, decimals: I64)
      as I64Pad does and for the same reason: silently losing digits
      is the class of bug this language refuses.                     *)
 
-PROCEDURE Sci (VAR pool: POOL ; v: F64 ; decimals: I64) : STR
-  RAISES ValueRange ;
+PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
   (* scientific notation, one digit before the point and `decimals`
      after it, then 'e' and the decimal exponent: 3.14e-5.
 
@@ -93,13 +95,13 @@ PROCEDURE Sci (VAR pool: POOL ; v: F64 ; decimals: I64) : STR
      driver compares it against printf over a spread of magnitudes
      and prints the disagreement rate.                              *)
 
-PROCEDURE SciPad (VAR pool: POOL ; v: F64 ; width, decimals: I64)
-  : STR RAISES ValueRange ;
+PROCEDURE SciPad (v: F64 ; width, decimals: I64) : STR
+  RAISES ValueRange ;
   (* Sci, right-aligned in width with blanks -- the `:x:y` of the
      scientific form.  A short exponent makes the field ragged on the
      right, which is what the width is for.                         *)
 
-PROCEDURE Bits (VAR pool: POOL ; v: F64) : STR ;
+PROCEDURE Bits (v: F64) : STR ;
 PROCEDURE ParseBits (RO s: STR) : F64 RAISES ValueRange ;
   (* the exact pair: 16 hex digits, low byte first, round-trip total *)
 
@@ -113,47 +115,60 @@ END Fmt.
 
 IMPLEMENTATION MODULE Fmt ;
 
-IMPORT DynStr ;
-
 CONST
   HexDigits = '0123456789ABCDEF' ;
   MaxF64    = 1.7976931348623157E308 ;
 
-PROCEDURE I64Str (VAR pool: POOL ; v: I64) : STR =
-VAR d : PTR DynStr.DString IN pool ;
+(* Digits are PREPENDED, least significant first, and that is a copy
+   per digit rather than the in-place extension an append gets --
+   twenty of them at most, so the arena holds under 200 characters
+   for the worst I64, and nothing here is on anyone's hot path.
+   The digit itself is a one-character SLICE of the digit table,
+   because `+` takes strings and a CHAR is not one.                  *)
+PROCEDURE I64Str (v: I64) : STR =
+VAR
+  s : STR ;
+  q : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.AppendI64 (pool, d, v) ;
-  RETURN DynStr.View (d)
+  IF v = 0 THEN RETURN '0' END ;
+  s := '' ;
+  (* negative space: q is v or -v, whichever is <= 0, and MOD / DIV
+     truncate toward zero, so one digit is negated at a time and
+     none of it can overflow *)
+  q := v ;
+  IF q > 0 THEN q := -q END ;
+  WHILE q # 0 DO
+    s := SLICE (HexDigits, -(q MOD 10), 1) + s ;
+    q := q DIV 10
+  END ;
+  IF v < 0 THEN s := '-' + s END ;
+  RETURN s
 END I64Str ;
 
-PROCEDURE I64Pad (VAR pool: POOL ; v: I64 ; width: I64 ; zero: BOOL)
-  : STR =
+PROCEDURE I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR =
 VAR
-  body : STR ;
-  d : PTR DynStr.DString IN pool ;
+  body, s : STR ;
   i, n : I64 ;
   neg : BOOL ;
 BEGIN
-  body := I64Str (pool, v) ;
+  body := I64Str (v) ;
   n := LEN (body) ;
   IF n >= width THEN RETURN body END ;
-  d := DynStr.New (pool) ;
   neg := FALSE ;
   IF n > 0 THEN neg := body[0] = '-' END ;
   IF zero AND neg THEN
     (* the sign leads the zeros, not the other way round *)
-    DynStr.AppendChar (pool, d, '-') ;
-    FOR i := 1 TO width - n DO DynStr.AppendChar (pool, d, '0') END ;
-    DynStr.Append (pool, d, SLICE (body, 1, n - 1))
+    s := '-' ;
+    FOR i := 1 TO width - n DO s := s + '0' END ;
+    s := s + SLICE (body, 1, n - 1)
   ELSE
+    s := '' ;
     FOR i := 1 TO width - n DO
-      IF zero THEN DynStr.AppendChar (pool, d, '0')
-      ELSE DynStr.AppendChar (pool, d, ' ') END
+      IF zero THEN s := s + '0' ELSE s := s + ' ' END
     END ;
-    DynStr.Append (pool, d, body)
+    s := s + body
   END ;
-  RETURN DynStr.View (d)
+  RETURN s
 END I64Pad ;
 
 PROCEDURE Pow10 (n: I64) : F64 =
@@ -175,10 +190,9 @@ BEGIN
   RETURN p
 END Pow10I ;
 
-PROCEDURE Fixed (VAR pool: POOL ; v: F64 ; decimals: I64) : STR
-  RAISES ValueRange =
+PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  s : STR ;
   scaled, av : F64 ;
   whole, frac, scale, i : I64 ;
   neg : BOOL ;
@@ -209,35 +223,33 @@ BEGIN
   whole := I64 (scaled) DIV scale ;
   frac := I64 (scaled) MOD scale ;
 
-  d := DynStr.New (pool) ;
-  IF neg THEN DynStr.AppendChar (pool, d, '-') END ;
-  DynStr.AppendI64 (pool, d, whole) ;
+  s := '' ;
+  IF neg THEN s := '-' END ;
+  s := s + I64Str (whole) ;
   IF decimals > 0 THEN
-    DynStr.AppendChar (pool, d, '.') ;
-    DynStr.Append (pool, d, I64Pad (pool, frac, decimals, TRUE))
+    s := s + '.' + I64Pad (frac, decimals, TRUE)
   END ;
-  RETURN DynStr.View (d)
+  RETURN s
 END Fixed ;
 
 (* Blank-padding, right-aligned.  I64Pad keeps its own copy because
    it has the zero fill and the sign-before-the-zeros rule to obey;
    this is the plain one that FixedPad and SciPad share. *)
-PROCEDURE PadLeft (VAR pool: POOL ; RO body: STR ; width: I64) : STR =
+PROCEDURE PadLeft (RO body: STR ; width: I64) : STR =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  s : STR ;
   i : I64 ;
 BEGIN
   IF LEN (body) >= width THEN RETURN body END ;
-  d := DynStr.New (pool) ;
-  FOR i := 1 TO width - LEN (body) DO DynStr.AppendChar (pool, d, ' ') END ;
-  DynStr.Append (pool, d, body) ;
-  RETURN DynStr.View (d)
+  s := '' ;
+  FOR i := 1 TO width - LEN (body) DO s := s + ' ' END ;
+  RETURN s + body
 END PadLeft ;
 
-PROCEDURE FixedPad (VAR pool: POOL ; v: F64 ; width, decimals: I64)
-  : STR RAISES ValueRange =
+PROCEDURE FixedPad (v: F64 ; width, decimals: I64) : STR
+  RAISES ValueRange =
 BEGIN
-  RETURN PadLeft (pool, Fixed (pool, v, decimals), width)
+  RETURN PadLeft (Fixed (v, decimals), width)
 END FixedPad ;
 
 (* Bring a into [1, 10) and answer the decimal exponent that was
@@ -277,10 +289,9 @@ BEGIN
   RETURN e
 END Norm ;
 
-PROCEDURE Sci (VAR pool: POOL ; v: F64 ; decimals: I64) : STR
-  RAISES ValueRange =
+PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  s : STR ;
   av, scaled : F64 ;
   expo, scale, whole, frac : I64 ;
   neg : BOOL ;
@@ -323,42 +334,38 @@ BEGIN
     END
   END ;
 
-  d := DynStr.New (pool) ;
-  IF neg THEN DynStr.AppendChar (pool, d, '-') END ;
-  DynStr.AppendI64 (pool, d, whole) ;
+  s := '' ;
+  IF neg THEN s := '-' END ;
+  s := s + I64Str (whole) ;
   IF decimals > 0 THEN
-    DynStr.AppendChar (pool, d, '.') ;
-    DynStr.Append (pool, d, I64Pad (pool, frac, decimals, TRUE))
+    s := s + '.' + I64Pad (frac, decimals, TRUE)
   END ;
-  DynStr.AppendChar (pool, d, 'e') ;
-  (* AppendI64 writes '-' for a negative and nothing for a positive,
+  (* I64Str writes '-' for a negative and nothing for a positive,
      which is exactly the short form this wants *)
-  DynStr.AppendI64 (pool, d, expo) ;
-  RETURN DynStr.View (d)
+  RETURN s + 'e' + I64Str (expo)
 END Sci ;
 
-PROCEDURE SciPad (VAR pool: POOL ; v: F64 ; width, decimals: I64)
-  : STR RAISES ValueRange =
+PROCEDURE SciPad (v: F64 ; width, decimals: I64) : STR
+  RAISES ValueRange =
 BEGIN
-  RETURN PadLeft (pool, Sci (pool, v, decimals), width)
+  RETURN PadLeft (Sci (v, decimals), width)
 END SciPad ;
 
-PROCEDURE Bits (VAR pool: POOL ; v: F64) : STR =
+PROCEDURE Bits (v: F64) : STR =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  s : STR ;
   b : SLICE OF BYTE ;
   scratch : POOL ;
   i, x : I64 ;
 BEGIN
   b := NEW (scratch, BYTE, 8) ;
   F64.ToBytesLE (v, b) ;
-  d := DynStr.New (pool) ;
+  s := '' ;
   FOR i := 0 TO 7 DO
     x := I64 (b[i]) ;
-    DynStr.AppendChar (pool, d, HexDigits[x DIV 16]) ;
-    DynStr.AppendChar (pool, d, HexDigits[x MOD 16])
+    s := s + SLICE (HexDigits, x DIV 16, 1) + SLICE (HexDigits, x MOD 16, 1)
   END ;
-  RETURN DynStr.View (d)
+  RETURN s
 END Bits ;
 
 PROCEDURE HexVal (c: CHAR) : I64 RAISES ValueRange =

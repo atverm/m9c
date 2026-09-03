@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.4.0, 2026-09-02
+## Report — revision 0.5.0, 2026-09-03
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -35,7 +35,7 @@ to reduce, so the list is meant to shrink.
 | **Specified but not yet checked** | four, each named where it is stated: a `STATEFUL` module reached by two threads (§6); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); `F32 (F64)` narrowing (§2.1) |
 | **Specified but not yet generated** | `OPT T` for a non-pointer `T` (§11 maps it; the generator refuses it); `TRANSFER` (§6) |
 | **Specified, unbuilt** | `TRANSFER` (§6); four pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.4.1, six distributions, built from this tree |
+| **Release** | 0.5.0, six distributions, built from this tree |
 
 ### Contents
 
@@ -194,6 +194,32 @@ repeat it 62 times. That is the same evidence rule the rest of this
 report runs on, applied to ergonomics instead of safety, and it is
 stated plainly rather than dressed up as a correctness argument.
 
+### 2.2.x Sizes: `SizeOf` and `ByteSize`
+
+Two predeclared identifiers answer size questions without a `System`
+unit and without hand-written magic numbers.
+
+- `SizeOf (x)` is the byte size of `x`'s type, a compile-time
+  constant that folds to C's `sizeof`. The argument is a type name
+  (`SizeOf (F64)` is 8) or a value (`SizeOf (sh)` for a variant
+  record is its tagged-union size, padding and all -- the case you
+  cannot compute reliably by hand). A slice's own `SizeOf` is its
+  descriptor (16 bytes: pointer and length), not the data it points
+  at.
+- `ByteSize (s)` is the bytes a slice's elements occupy,
+  `LEN (s) * SizeOf (element)` -- the data, computed for you so no
+  `8` is written down and no code couples to the element type. It is
+  a checker error to hand it anything but a slice.
+
+Both are builtin-table entries like `LEN` and `MAX`, so the keyword
+table and the grammar are untouched. Two guardrails follow from the
+museum's founding bug: they are for **in-memory** questions --
+allocation, footprint, a compression ratio measured on data already
+in memory -- because they ask *this* machine's layout; a **wire**
+format still uses the exact-width types and `ToBytesLE`/`FromBytesLE`,
+which fix the width regardless of the host. Asking `SizeOf` at the
+wire is the `LONGREAL`-stride bug in a new hat.
+
 ### 2.3 `+` concatenates strings, into the procedure's frame
 
 ```
@@ -259,16 +285,54 @@ CPython's situation exactly, and the reason `DynStr` remains the
 accumulation API rather than a legacy one.  There is still no
 compound-assignment form.
 
-**What is not checked, and is meant to be read as a warning.**  A `+`
-result retained beyond the frame that built it is a dangling slice,
-and the compiler does not refuse it.  The one instance in this
-repository was `Parse.ErrAt`, storing a caller's message into a
-longer-lived record; it corrupted parser diagnostics on the day frame
-pools landed, and it had been sitting in par 4.1's retention ledger
-for months before that.  Refusing the class needs a `+` result to
-carry its pool in its type, the way `PTR T IN pool` does.  Until then
-the rule is a reviewer's: a string that must outlive its frame is
-copied -- with `DynStr`, or into a pool that has a name.
+**Returning a `+` result just works; the compiler places its memory.**
+A concatenation lives in the frame arena and dies when the frame
+returns, so a string that leaves has to be moved to where the caller
+can read it.  The generator does that at the frame's exit, for the
+result and for every `VAR`/`OWN` parameter of type `STR`: if the
+string's address lies in the dying arena, its bytes are copied into
+the caller's (`m9_rehome`); if not, it is left alone.  The test is of
+the *address*, so it is exact by construction rather than by
+analysis: a value built in a passed pool (the `DynStr` idiom), a
+literal, a borrow of the caller's data all sit outside the frame and
+keep the lifetime they had, and a frame string reaches the caller
+whether it was a `+` in the `RETURN`, a local a loop built up, the
+result of a call that landed here, or a `SLICE` view of one.  A
+number formatter is the case: `PROCEDURE Dec (v: I64) : STR` builds
+the digits in a `WHILE` and returns them; `PROCEDURE Fill (VAR out:
+STR ; ...)` sets `out := a + b`; and a chain `Top -> Mid -> Fill`
+through one `VAR out` climbs an arena per level, because each frame
+re-homes at its own exit.  No pool parameter, and nothing to spell.
+
+*The first version of this was structural -- the generator tracked
+which locals had been assigned a concatenation and copied only a
+`RETURN` of one -- and had a hole the runtime test does not: a
+callee's result lands in this frame's arena, and `x := F (a, b) ;
+RETURN x` returned dangling bytes, shown by a test whose expected
+`[efgh]` came back `[ijkl]`.  A frame that never allocated pays one
+load at exit for the check.*
+
+**A `+` result stored somewhere longer-lived than the frame is still
+refused** where the exit cannot see it: assignment to a module
+variable, or a store into a *component* reached through a `VAR`/`OWN`
+parameter (a record field, an element, a value pointer's target) --
+the re-home looks at the parameter itself, not inside what it points
+to -- draws `a concatenation dies with this frame; ...`.  A store
+through an `RO` parameter is refused as a write through a read-only
+borrow.  The module init body is exempt on the module-variable case,
+since there the frame and the module variables share a lifetime --
+the canonical `s := s + 'ab'` in a program body.  The instance that
+forced the class into the checker was `Parse.ErrAt`, storing a
+caller's message into a longer-lived record; it corrupted parser
+diagnostics on the day frame pools landed, and had sat in par 4.1's
+retention ledger for months.  Stated gaps, all false negatives never
+false positives: a frame string carried out inside a returned
+`RECORD`, a concatenation stored into a *field or element* of a
+local, and taint a conditional sets on only some of its arms.  A `+`
+result carrying its pool in its type, the way `PTR T IN pool` does,
+would let the compiler place these too; until then a string that must
+outlive its frame is declared in the context that needs it, or copied
+into a pool that has a name.
 
 ### 2.4 Read-only borrow is a parameter mode
 

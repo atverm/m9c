@@ -48,6 +48,8 @@ typedef struct m9_state {
      Both generators now refuse a payload that does not fit, so the
      next exception to outgrow these slots is a loud error rather
      than a silent overwrite. */
+  int32_t     line;                /* raise site, under -g (0 = none) */
+  const char *file;                /* raise site's source, under -g */
   struct m9_pool *res;             /* the CALLER's frame arena: where
                                       a result that outlives this
                                       frame is allocated.  NULL means
@@ -490,6 +492,27 @@ extern m9_pool m9_heap;
    wasteful for composition.                                       */
 m9_sl_CHAR m9_cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b,
                    m9_state *err);
+
+/* copy a string into a pool */
+m9_sl_CHAR m9_strdup (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
+
+/* does p point into one of this pool's blocks?  Integer comparison,
+   for the reason m9_cat gives: p may point at anything.            */
+int m9_pool_owns (const m9_pool *pool, const void *p);
+
+/* A string that lives in `frame` is copied into `res`; any other is
+   answered as it is.  The generator emits this at every procedure's
+   exit, for the result and for each VAR/OWN STR parameter, so a
+   string built in a frame -- a `+`, a returned `+` from a callee, a
+   view of either -- leaves the frame before the frame dies, and a
+   string that already lives elsewhere (a pool the caller named, a
+   literal, a borrow of an argument) is not moved (par 2.3).  Where
+   the string lives is asked of the address at the exit, not of the
+   expression that produced it: an analysis would have to follow the
+   value through every call, and this is exact by construction.  A
+   frame that never allocated has no blocks and the test is one load. */
+m9_sl_CHAR m9_rehome (const m9_pool *frame, m9_pool *res, m9_sl_CHAR s,
+                      m9_state *err);
 
 /* typed pool slice: n evaluated once (GNU statement expression --
    same toolchain family as the overflow builtins)                  */

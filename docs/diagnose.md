@@ -20,11 +20,14 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot assign ALL to I64` | ALL is the axis-keeping marker for VIEW and has no value outside one | use ALL only as a VIEW argument; a whole-axis loop is FOR i := 0 TO LEN (g, k) - 1 | `all-outside-a-view` |
 | `G expects 1 argument(s), got 2` | the call passes a different number of arguments from the declaration | read the signature in docs/modules/<M>.md; every parameter is positional and required | `arity-mismatch` |
 | `BYTE is a raw octet: no arithmetic` | BYTE is a raw octet, not a number: no +, -, comparison as magnitude | convert with U8 (b) or I64 (b) first, and back with BYTE (x), each of which RAISES ValueRange | `byte-arithmetic` |
+| `ByteSize needs a slice, not I64` | ByteSize answers the bytes a slice's elements occupy, so its argument must be a slice | for a scalar or record use SizeOf (x); for the data behind a slice, ByteSize (s) = LEN (s) * SizeOf (element) | `bytesize-not-slice` |
 | `CASE label is a CHAR/string literal but the selector is I64` | the CASE label's type is not the selector's type | labels must be literals or CONSTs of the selector's type; a CHAR selector takes 'x' or 41C | `case-label-mismatch` |
 | `CASE label 200 appears twice` | the same scalar label appears in two arms; the second is dead and one of the two is a typo -- decided at compile time | remove the duplicate, or widen it to a range if that was meant | `case-label-twice` |
 | `CASE RECORD is reached by CASE, not by selection` | the variant payload of a CASE RECORD is reached only through a CASE arm that binds it | write CASE v OF | Kind.Str (s) : ... END; never v.field on the variant part | `case-record-selected` |
 | `cannot compare I64 with SLICE OF CHAR` | the two sides of a comparison have different types and nothing converts implicitly | convert one side explicitly; for strings use DynStr.Eq / Text.Eq, not = (par 2.1) | `compare-mismatch` |
 | `cannot concatenate a string with CHAR` | + concatenates STRINGS; a CHAR variable is not a string (a 1-char literal is) | append the CHAR with DynStr.AppendChar, or make it a one-character string first | `concat-char` |
+| `cannot be stored in module variable saved` | a string concatenation (+) is built in the procedure's frame arena and dies when the frame returns; storing it in a module variable, which outlives the frame, leaves the variable pointing at freed storage (par 2.3) | copy it into a durable pool -- DynStr.Append (HEAP, ...), or a pool the caller owns; the module init body is exempt, because there frame and module variable share a lifetime | `concat-escapes-modvar` |
+| `cannot be stored through r` | a string concatenation is frame-scoped; a bare VAR/OWN STR parameter is re-homed into the caller's arena at exit, but a COMPONENT reached through a reference parameter (a record field, an element, a value pointer's target) is not, so the caller would hold freed storage (par 2.3) | assign the whole VAR STR parameter, or build the field's string in a pool the caller can see (pass a POOL, or DynStr.Append into the caller's) | `concat-escapes-param` |
 | `cannot concatenate a string with an integer literal` | + on strings takes strings on both sides; an integer literal is not one | format first: Fmt.I64Str (n) or DynStr.AppendI64 | `concat-non-string` |
 | `condition must be BOOL, not I64` | IF/WHILE/ELSIF take a BOOL; an integer is not implicitly a truth value | write the comparison out: IF n # 0 THEN | `cond-not-bool` |
 | `use of s after it was consumed by SHARED` | SHARED (s) consumed s on one arm, so after the join s may be gone (moved in ANY arm = moved after) | share on every path, or share before the branch; see par 4.2 | `conditional-move` |
@@ -32,6 +35,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `a borrow is not yours to free` | the value came in as a value/VAR/RO parameter -- a borrow -- and a borrow is not yours to free | only OWN parameters and locals holding owned PTRs may be DISPOSEd; move ownership with OWN | `dispose-a-borrow` |
 | `the pool owns p; free the pool` | PTR T IN pool is carved from a pool and the pool frees it as a whole | never DISPOSE a pool-interior pointer; free the pool (par 4.3, docs/pools.md) | `dispose-pool-interior` |
 | `DIV is integer division` | DIV and MOD are integer operators | use / for floats; Math.Fmod for a float remainder | `div-on-float` |
+| `is an M9 module -- use IMPORT lib` | FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way) | use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later | `from-m9-module` |
 | `axis 2 of a GRID 2 OF F64 does not exist` | LEN (g, k) names an axis the grid's rank does not have (axes are 0-based) | a GRID 2 has axes 0 and 1 | `grid-len-axis-exists` |
 | `LEN of a GRID needs an axis` | a GRID has one extent per axis, so LEN needs to be told which | LEN (g, 0); LEN (s) without an axis is for slices | `grid-len-needs-an-axis` |
 | `cannot assign GRID 3 OF F64 to GRID 2 OF F64` | GRID 3 OF F64 and GRID 2 OF F64 are different types; rank is in the type, shape in the value | declare the matching rank, or take a VIEW that drops an axis | `grid-rank-is-part-of-the-type` |
@@ -63,7 +67,9 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `RETURN with a value in a proper procedure` | a proper procedure (no ': T') cannot RETURN a value | declare a result type, or RETURN without a value | `return-value-in-proper-proc` |
 | `signature differs from definition` | the IMPLEMENTATION's procedure heading is not the DEFINITION's, printed canonically (modes, types, RAISES all count) | copy the definition's heading exactly; the IMPLEMENTATION adds only '=' | `signature-differs-from-definition` |
 | `is not total (missing R)` | CASE over a CASE RECORD must name every variant of the selector's own type | add the missing arm; there is no ELSE for variants (par 8) | `totality-uses-selector-type` |
+| `unknown name: alex` | a bare name used as a value is declared nowhere -- not a local, parameter, IS SOME binder, CONST, type, or module | declare it, import the module it comes from, or fix the typo; the checker now names it rather than leaving it to the generator (par: the checker refuses what the generator cannot see) | `undefined-name` |
 | `unknown procedure: Nonexistent` | no procedure of that name is visible -- MOST OFTEN a real name whose module is not IMPORTed in THIS module (an IMPLEMENTATION has its own IMPORT list), otherwise a guessed name | add IMPORT M to the implementation; then confirm the name in docs/modules/M.md or with m9c --doc | `unknown-callee` |
+| `unknown exception: NoSuchExc` | a RAISE, a RAISES clause or a handler cites an exception name found nowhere -- not declared locally, not predeclared (Overflow/IndexError/OutOfMemory/ValueRange), and not declared in any loaded module | declare the EXCEPTION, or qualify it into the module that owns it (Json.ParseError); an imported exception is reached as Module.Name, never bare -- the checker now refuses what the generator could not emit | `unknown-exception` |
 | `use of s after it was DISPOSEd` | the name was DISPOSEd on an earlier line and is dead | do not read it; re-assign to bring it back to life (par 4.2) | `use-after-dispose` |
 | `use of s after it was moved` | assigning a bare owned pointer to another name MOVES it; the source is dead | use the destination; if both must live, that is a SHARED handle | `use-after-move-assign` |
 | `use of s after it was consumed by SHARED` | SHARED (s) consumed s; the handle is what lives on | use the SHARED result; s is gone | `use-after-shared` |
@@ -144,6 +150,19 @@ END m.
 MODULE m ;
 VAR a, b : BYTE ; c : I64 ;
 PROCEDURE F () = BEGIN c := I64 (a + b) END F ;
+END m.
+```
+
+### bytesize-not-slice
+
+`ByteSize needs a slice, not I64`
+
+```
+MODULE m ;
+VAR i, n : I64 ;
+BEGIN
+  i := 5 ;
+  n := ByteSize (i)
 END m.
 ```
 
@@ -230,6 +249,36 @@ END F ;
 END m.
 ```
 
+### concat-escapes-modvar
+
+`cannot be stored in module variable saved`
+
+```
+MODULE m ;
+VAR saved : STR ;
+PROCEDURE Keep (RO a: STR ; RO b: STR) =
+BEGIN
+  saved := a + b
+END Keep ;
+BEGIN
+END m.
+```
+
+### concat-escapes-param
+
+`cannot be stored through r`
+
+```
+MODULE m ;
+TYPE Rec = RECORD name : STR END ;
+PROCEDURE Store (VAR r: Rec ; RO a: STR ; RO b: STR) =
+BEGIN
+  r.name := a + b
+END Store ;
+BEGIN
+END m.
+```
+
 ### concat-non-string
 
 `cannot concatenate a string with an integer literal`
@@ -313,6 +362,22 @@ END m.
 MODULE m ;
 VAR a, b : F64 ;
 PROCEDURE F () = BEGIN a := b DIV b END F ;
+END m.
+```
+
+### from-m9-module
+
+`is an M9 module -- use IMPORT lib`
+
+```
+DEFINITION MODULE lib ;
+EXCEPTION Boom ;
+END lib.
+IMPLEMENTATION MODULE lib ;
+END lib.
+MODULE m ;
+FROM lib IMPORT Boom ;
+BEGIN
 END m.
 ```
 
@@ -794,6 +859,18 @@ PROCEDURE F () = BEGIN
 END m.
 ```
 
+### undefined-name
+
+`unknown name: alex`
+
+```
+MODULE m ;
+VAR i : I64 ;
+BEGIN
+  i := alex
+END m.
+```
+
 ### unknown-callee
 
 `unknown procedure: Nonexistent`
@@ -801,6 +878,21 @@ END m.
 ```
 MODULE m ;
 PROCEDURE F () = BEGIN Nonexistent (1) END F ;
+END m.
+```
+
+### unknown-exception
+
+`unknown exception: NoSuchExc`
+
+```
+MODULE m ;
+PROCEDURE P () RAISES NoSuchExc =
+BEGIN
+  RAISE NoSuchExc
+END P ;
+BEGIN
+  P ()
 END m.
 ```
 

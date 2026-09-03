@@ -710,7 +710,7 @@ PROCEDURE PutF64 (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
   RAISES ValueRange, Overflow =
 BEGIN
   IF IsNaN64 (v) OR v = miss THEN RETURN END ;   (* empty field *)
-  DynStr.Append (pool, d, Fmt.Sci (pool, v, 16))
+  DynStr.Append (pool, d, Fmt.Sci (v, 16))
 END PutF64 ;
 
 PROCEDURE PutF32 (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
@@ -719,7 +719,7 @@ PROCEDURE PutF32 (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
 BEGIN
   IF IsNaN32 (v) OR v = miss THEN RETURN END ;
   (* 9 significant digits round-trips every F32 *)
-  DynStr.Append (pool, d, Fmt.Sci (pool, F64 (v), 8))
+  DynStr.Append (pool, d, Fmt.Sci (F64 (v), 8))
 END PutF32 ;
 
 PROCEDURE PutStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ;

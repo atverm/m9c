@@ -189,7 +189,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 ababab
 6
 via heap" ] || { echo "FAIL: string concatenation"; exit 1; }
-echo "PASS (1 check) -- + on strings, into HEAP"
+echo "PASS (1 check) -- + on strings, across a frame, and HEAP by name"
 
 # catbench is a BENCHMARK, not a driver: nothing ran it, so nothing
 # compiled it, and it sat broken from the m9_err -> m9_state rename

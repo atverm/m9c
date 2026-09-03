@@ -141,6 +141,7 @@ m9_sl_CHAR HttpServer_RouteMethod (HttpServer_Router * r, int64_t i, m9_state *e
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -160,6 +161,7 @@ m9_sl_CHAR HttpServer_RoutePath (HttpServer_Router * r, int64_t i, m9_state *err
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -198,6 +200,7 @@ m9_sl_CHAR HttpServer_RouteType (HttpServer_Router * r, int64_t i, m9_state *err
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -217,6 +220,7 @@ m9_sl_CHAR HttpServer_RouteSummary (HttpServer_Router * r, int64_t i, m9_state *
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -342,6 +346,7 @@ static m9_sl_CHAR HttpServer_Reason (int64_t status, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

@@ -196,7 +196,7 @@ void Logger_Real (m9_sl_CHAR key, double v, int64_t decimals, m9_state *err)
   }
   Logger_Key (key, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(pool), &(line), Fmt_Fixed (&(pool), v, decimals, err), err);
+  DynStr_Append (&(pool), &(line), Fmt_Fixed (v, decimals, err), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -338,6 +338,7 @@ static m9_sl_CHAR Logger_LevelName (int64_t level, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -366,6 +367,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

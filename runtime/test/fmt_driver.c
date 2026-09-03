@@ -82,21 +82,27 @@ int main (void)
   char buf[64], ref[64];
   int64_t i;
 
+  /* Fmt takes no pool since 2026-09-03: a formatter's answer lands in
+     the CALLER's frame arena (report par 2.3), and a C caller names
+     that arena in err.res -- NULL would mean HEAP, which the 100,000
+     value sweeps below would grow without bound. */
+  err.res = &pool;
+
   /* ---- integers ---- */
-  to_c (Fmt_I64Str (&pool, 0, &err), buf, sizeof buf);
+  to_c (Fmt_I64Str (0, &err), buf, sizeof buf);
   ok ("I64Str 0", strcmp (buf, "0") == 0);
-  to_c (Fmt_I64Str (&pool, -42, &err), buf, sizeof buf);
+  to_c (Fmt_I64Str (-42, &err), buf, sizeof buf);
   ok ("I64Str -42", strcmp (buf, "-42") == 0);
-  to_c (Fmt_I64Str (&pool, INT64_MAX, &err), buf, sizeof buf);
+  to_c (Fmt_I64Str (INT64_MAX, &err), buf, sizeof buf);
   ok ("I64Str max", strcmp (buf, "9223372036854775807") == 0);
 
-  to_c (Fmt_I64Pad (&pool, 7, 4, false, &err), buf, sizeof buf);
+  to_c (Fmt_I64Pad (7, 4, false, &err), buf, sizeof buf);
   ok ("pad spaces", strcmp (buf, "   7") == 0);
-  to_c (Fmt_I64Pad (&pool, 7, 4, true, &err), buf, sizeof buf);
+  to_c (Fmt_I64Pad (7, 4, true, &err), buf, sizeof buf);
   ok ("pad zeros", strcmp (buf, "0007") == 0);
-  to_c (Fmt_I64Pad (&pool, -7, 4, true, &err), buf, sizeof buf);
+  to_c (Fmt_I64Pad (-7, 4, true, &err), buf, sizeof buf);
   ok ("pad zeros negative", strcmp (buf, "-007") == 0);
-  to_c (Fmt_I64Pad (&pool, 12345, 3, true, &err), buf, sizeof buf);
+  to_c (Fmt_I64Pad (12345, 3, true, &err), buf, sizeof buf);
   ok ("pad never truncates", strcmp (buf, "12345") == 0);
   ok ("integers raised nothing", err.exc == NULL);
 
@@ -111,7 +117,7 @@ int main (void)
     int all = 1;
     for (k = 0; k < sizeof awkward / sizeof awkward[0]; k++)
       {
-        m9_sl_CHAR t = Fmt_Bits (&pool, awkward[k], &err);
+        m9_sl_CHAR t = Fmt_Bits (awkward[k], &err);
         double back = Fmt_ParseBits (t, &err);
         if (err.exc || !same_bits (back, awkward[k])) { all = 0; break; }
       }
@@ -121,15 +127,15 @@ int main (void)
     {
       double inf = HUGE_VAL, nan = NAN;
       ok ("Bits round-trips +inf",
-          same_bits (Fmt_ParseBits (Fmt_Bits (&pool, inf, &err), &err), inf));
+          same_bits (Fmt_ParseBits (Fmt_Bits (inf, &err), &err), inf));
       ok ("Bits round-trips -inf",
-          same_bits (Fmt_ParseBits (Fmt_Bits (&pool, -inf, &err), &err), -inf));
+          same_bits (Fmt_ParseBits (Fmt_Bits (-inf, &err), &err), -inf));
       ok ("Bits round-trips NaN (bit pattern)",
-          isnan (Fmt_ParseBits (Fmt_Bits (&pool, nan, &err), &err)));
+          isnan (Fmt_ParseBits (Fmt_Bits (nan, &err), &err)));
     }
     ok ("negative zero is not zero",
         strcmp ("0000000000000000",
-                (to_c (Fmt_Bits (&pool, -0.0, &err), buf, sizeof buf), buf)) != 0);
+                (to_c (Fmt_Bits (-0.0, &err), buf, sizeof buf), buf)) != 0);
     ok ("Bits raised nothing", err.exc == NULL);
   }
 
@@ -144,36 +150,36 @@ int main (void)
         st ^= st << 13; st ^= st >> 7; st ^= st << 17;
         memcpy (&x, &st, sizeof x);
         if (isnan (x)) continue;
-        if (!same_bits (Fmt_ParseBits (Fmt_Bits (&pool, x, &err), &err), x))
+        if (!same_bits (Fmt_ParseBits (Fmt_Bits (x, &err), &err), x))
           { bad++; break; }
       }
     ok ("Bits round-trips 200k arbitrary bit patterns", bad == 0);
   }
 
   /* ---- Fixed: measured against printf ---- */
-  to_c (Fmt_Fixed (&pool, 0.0, 2, &err), buf, sizeof buf);
+  to_c (Fmt_Fixed (0.0, 2, &err), buf, sizeof buf);
   ok ("Fixed 0.00", strcmp (buf, "0.00") == 0);
-  to_c (Fmt_Fixed (&pool, 3.14159, 2, &err), buf, sizeof buf);
+  to_c (Fmt_Fixed (3.14159, 2, &err), buf, sizeof buf);
   ok ("Fixed 3.14", strcmp (buf, "3.14") == 0);
   /* half to EVEN, which is what printf does: -2.5 -> -2, not -3 */
-  to_c (Fmt_Fixed (&pool, -2.5, 0, &err), buf, sizeof buf);
+  to_c (Fmt_Fixed (-2.5, 0, &err), buf, sizeof buf);
   ok ("Fixed -2 (half to even, as printf)", strcmp (buf, "-2") == 0);
-  to_c (Fmt_Fixed (&pool, 2.5, 0, &err), buf, sizeof buf);
+  to_c (Fmt_Fixed (2.5, 0, &err), buf, sizeof buf);
   ok ("Fixed 2 (half to even)", strcmp (buf, "2") == 0);
-  to_c (Fmt_Fixed (&pool, 3.5, 0, &err), buf, sizeof buf);
+  to_c (Fmt_Fixed (3.5, 0, &err), buf, sizeof buf);
   ok ("Fixed 4 (half to even)", strcmp (buf, "4") == 0);
-  to_c (Fmt_Fixed (&pool, 394.9816047538945, 6, &err), buf, sizeof buf);
+  to_c (Fmt_Fixed (394.9816047538945, 6, &err), buf, sizeof buf);
   ok ("Fixed zarr corner", strcmp (buf, "394.981605") == 0);
-  ok ("Fixed nan", (to_c (Fmt_Fixed (&pool, NAN, 3, &err), buf, sizeof buf),
+  ok ("Fixed nan", (to_c (Fmt_Fixed (NAN, 3, &err), buf, sizeof buf),
                     strcmp (buf, "nan") == 0));
-  ok ("Fixed inf", (to_c (Fmt_Fixed (&pool, HUGE_VAL, 3, &err), buf, sizeof buf),
+  ok ("Fixed inf", (to_c (Fmt_Fixed (HUGE_VAL, 3, &err), buf, sizeof buf),
                     strcmp (buf, "inf") == 0));
   ok ("Fixed so far raised nothing", err.exc == NULL);
 
-  Fmt_Fixed (&pool, 1.0, 99, &err);
+  Fmt_Fixed (1.0, 99, &err);
   ok ("Fixed refuses 99 decimals", err.exc == &m9_exc_ValueRange);
   err.exc = NULL;
-  Fmt_Fixed (&pool, 1e300, 2, &err);
+  Fmt_Fixed (1e300, 2, &err);
   ok ("Fixed refuses what will not scale", err.exc == &m9_exc_ValueRange);
   err.exc = NULL;
 
@@ -190,7 +196,7 @@ int main (void)
         /* magnitudes up to ~1e6 with 6 decimals: scaled < 2^53 */
         x = ((double) (int64_t) (st % 2000000000u) - 1000000000.0) / 1000.0;
         d = (int) (st % 7);
-        to_c (Fmt_Fixed (&pool, x, d, &err), buf, sizeof buf);
+        to_c (Fmt_Fixed (x, d, &err), buf, sizeof buf);
         if (err.exc) { err.exc = NULL; continue; }
         snprintf (ref, sizeof ref, "%.*f", d, x);
         total++;
@@ -208,51 +214,51 @@ int main (void)
   }
 
   /* ---- the :x:y forms ---- */
-  to_c (Fmt_FixedPad (&pool, 3.14159, 10, 3, &err), buf, sizeof buf);
+  to_c (Fmt_FixedPad (3.14159, 10, 3, &err), buf, sizeof buf);
   ok ("FixedPad 10:3 pads with blanks", strcmp (buf, "     3.142") == 0);
-  to_c (Fmt_FixedPad (&pool, -3.14159, 10, 3, &err), buf, sizeof buf);
+  to_c (Fmt_FixedPad (-3.14159, 10, 3, &err), buf, sizeof buf);
   ok ("FixedPad counts the sign in the width",
       strcmp (buf, "    -3.142") == 0);
-  to_c (Fmt_FixedPad (&pool, 123456789.0, 4, 2, &err), buf, sizeof buf);
+  to_c (Fmt_FixedPad (123456789.0, 4, 2, &err), buf, sizeof buf);
   ok ("FixedPad overflows rather than truncating",
       strcmp (buf, "123456789.00") == 0);
-  to_c (Fmt_FixedPad (&pool, 1.0, 0, 0, &err), buf, sizeof buf);
+  to_c (Fmt_FixedPad (1.0, 0, 0, &err), buf, sizeof buf);
   ok ("FixedPad width 0 is just Fixed", strcmp (buf, "1") == 0);
   ok ("FixedPad raised nothing", err.exc == NULL);
 
   /* the shape Alex asked for, spelled out */
-  to_c (Fmt_Sci (&pool, 3.14e-5, 2, &err), buf, sizeof buf);
+  to_c (Fmt_Sci (3.14e-5, 2, &err), buf, sizeof buf);
   ok ("Sci 3.14e-5", strcmp (buf, "3.14e-5") == 0);
-  to_c (Fmt_Sci (&pool, 314000.0, 2, &err), buf, sizeof buf);
+  to_c (Fmt_Sci (314000.0, 2, &err), buf, sizeof buf);
   ok ("Sci positive exponent carries no plus", strcmp (buf, "3.14e5") == 0);
-  to_c (Fmt_Sci (&pool, 0.0, 2, &err), buf, sizeof buf);
+  to_c (Fmt_Sci (0.0, 2, &err), buf, sizeof buf);
   ok ("Sci zero", strcmp (buf, "0.00e0") == 0);
-  to_c (Fmt_Sci (&pool, 1.0, 0, &err), buf, sizeof buf);
+  to_c (Fmt_Sci (1.0, 0, &err), buf, sizeof buf);
   ok ("Sci no decimals drops the point", strcmp (buf, "1e0") == 0);
-  to_c (Fmt_Sci (&pool, -0.001234, 3, &err), buf, sizeof buf);
+  to_c (Fmt_Sci (-0.001234, 3, &err), buf, sizeof buf);
   ok ("Sci negative value", strcmp (buf, "-1.234e-3") == 0);
   /* 9.999 at two decimals rounds to 10.00, which is not normalised:
      the carry has to move into the exponent */
-  to_c (Fmt_Sci (&pool, 9.999, 2, &err), buf, sizeof buf);
+  to_c (Fmt_Sci (9.999, 2, &err), buf, sizeof buf);
   ok ("Sci carries 9.999 into the exponent", strcmp (buf, "1.00e1") == 0);
-  to_c (Fmt_Sci (&pool, 9.999e307, 2, &err), buf, sizeof buf);
+  to_c (Fmt_Sci (9.999e307, 2, &err), buf, sizeof buf);
   ok ("Sci carries at the top of the range", strcmp (buf, "1.00e308") == 0);
   /* the two ends of the F64 range, where a divide-by-ten loop would
      have accumulated three hundred roundings */
-  to_c (Fmt_Sci (&pool, 1.7976931348623157e308, 6, &err), buf, sizeof buf);
+  to_c (Fmt_Sci (1.7976931348623157e308, 6, &err), buf, sizeof buf);
   ok ("Sci at DBL_MAX", strcmp (buf, "1.797693e308") == 0);
-  to_c (Fmt_Sci (&pool, 5e-324, 6, &err), buf, sizeof buf);
+  to_c (Fmt_Sci (5e-324, 6, &err), buf, sizeof buf);
   ok ("Sci at the smallest subnormal", strcmp (buf, "4.940656e-324") == 0);
-  ok ("Sci nan", (to_c (Fmt_Sci (&pool, NAN, 3, &err), buf, sizeof buf),
+  ok ("Sci nan", (to_c (Fmt_Sci (NAN, 3, &err), buf, sizeof buf),
                   strcmp (buf, "nan") == 0));
-  ok ("Sci inf", (to_c (Fmt_Sci (&pool, -HUGE_VAL, 3, &err), buf, sizeof buf),
+  ok ("Sci inf", (to_c (Fmt_Sci (-HUGE_VAL, 3, &err), buf, sizeof buf),
                   strcmp (buf, "-inf") == 0));
   ok ("Sci so far raised nothing", err.exc == NULL);
-  Fmt_Sci (&pool, 1.0, 99, &err);
+  Fmt_Sci (1.0, 99, &err);
   ok ("Sci refuses 99 decimals", err.exc == &m9_exc_ValueRange);
   err.exc = NULL;
 
-  to_c (Fmt_SciPad (&pool, 3.14e-5, 16, 3, &err), buf, sizeof buf);
+  to_c (Fmt_SciPad (3.14e-5, 16, 3, &err), buf, sizeof buf);
   ok ("SciPad 16:3", strcmp (buf, "        3.140e-5") == 0);
   ok ("SciPad raised nothing", err.exc == NULL);
 
@@ -267,7 +273,7 @@ int main (void)
         st ^= st << 13; st ^= st >> 7; st ^= st << 17;
         x = ((double) (int64_t) (st % 2000000001u) - 1000000000.0)
             * pow (10.0, (double) ((int) (st % 41) - 20));
-        to_c (Fmt_Sci (&pool, x, 16, &err), buf, sizeof buf);
+        to_c (Fmt_Sci (x, 16, &err), buf, sizeof buf);
         if (err.exc) { err.exc = NULL; continue; }
         back = Fmt_ParseF64 (S (buf), &err);
         if (err.exc) { err.exc = NULL; bad++; continue; }
@@ -292,7 +298,7 @@ int main (void)
             * pow (10.0, (double) ((int) (st % 121) - 60));
         d = (int) (st % 10);
         if (x == 0.0) continue;      /* printf signs a negative zero */
-        to_c (Fmt_Sci (&pool, x, d, &err), buf, sizeof buf);
+        to_c (Fmt_Sci (x, d, &err), buf, sizeof buf);
         if (err.exc) { err.exc = NULL; continue; }
         snprintf (ref, sizeof ref, "%.*e", d, x);
         short_exp (ref);

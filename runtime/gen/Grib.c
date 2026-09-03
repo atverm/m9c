@@ -444,6 +444,7 @@ m9_sl_CHAR Grib_GetStr (m9_pool *pool, Grib_Message * m, m9_sl_CHAR key, m9_stat
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -654,6 +655,7 @@ static m9_sl_CHAR Grib_Message2 (m9_pool *pool, int64_t code, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

@@ -11,7 +11,9 @@ STATEFUL DEFINITION MODULE Edit ;
    against strangers' code; m9edit runs your code on your machine,
    the same trust as invoking m9c yourself.  A timeout and an output
    cap guard against accidents, not adversaries, and the listener
-   binds the loopback only.                                          *)
+   binds the loopback only.  With bubblewrap installed, a run sees
+   out/ as /tmp -- the tutor's convention, so tutorial examples
+   paste in verbatim; that bind is convention, not confinement.      *)
 
 IMPORT Io ;
 
@@ -62,6 +64,9 @@ IMPORT DynStr ;
 IMPORT Text ;
 IMPORT Io ;
 IMPORT Lex ;
+
+VAR
+  bwrapOk : BOOL ;    (* /tmp-over-out bind available (bubblewrap) *)
 
 CONST
   ReqMax  = 1048576 ;      (* headers + a whole buffer *)
@@ -160,6 +165,9 @@ BEGIN
   CrLf (scratch, d) ;
   DynStr.Append (scratch, d, 'Content-Length: ') ;
   DynStr.AppendI64 (scratch, d, LEN (body)) ;
+  CrLf (scratch, d) ;
+  (* a fresh run must show its fresh figure *)
+  DynStr.Append (scratch, d, 'Cache-Control: no-store') ;
   CrLf (scratch, d) ;
   CrLf (scratch, d) ;
   h := DynStr.Bytes (scratch, DynStr.View (d), FALSE) ;
@@ -322,6 +330,100 @@ BEGIN
   RETURN c
 END M9cCmd ;
 
+PROCEDURE FmtCmd (VAR pool: POOL) : STR RAISES ValueRange =
+VAR c : STR ;
+BEGIN
+  c := Io.Env (pool, 'M9EDIT_M9FMT') ;
+  IF LEN (c) = 0 THEN RETURN 'm9fmt' END ;
+  RETURN c
+END FmtCmd ;
+
+(* the canonical layout, comments kept: write the buffer, run m9fmt,
+   read it back.  m9fmt refuses what does not parse, so an
+   unparsable buffer comes back unchanged (its stderr is the check's
+   job) -- the button never eats a program it cannot format. *)
+PROCEDURE FmtProg (VAR pool: POOL ; RO KEPT src: STR ;
+                   RO workDir: STR) : STR
+  RAISES ValueRange, IndexError, Io.IOError =
+VAR
+  scratch : POOL ;
+  cmd : PTR DynStr.DString IN scratch ;
+  name : STR ;
+  ok : BOOL ;
+  rc : I64 ;
+BEGIN
+  name := ModName (src, ok) ;
+  IF NOT ok THEN RETURN src END ;
+  Io.WriteFile (workDir + '/' + name + '.m9', src) ;
+  cmd := DynStr.New (scratch) ;
+  DynStr.Append (scratch, cmd, 'cd ') ;
+  DynStr.Append (scratch, cmd, workDir) ;
+  DynStr.Append (scratch, cmd, ' && ') ;
+  DynStr.Append (scratch, cmd, FmtCmd (scratch)) ;
+  DynStr.Append (scratch, cmd, ' ') ;
+  DynStr.Append (scratch, cmd, name) ;
+  DynStr.Append (scratch, cmd, '.m9 > fmt.txt 2>fmt.err') ;
+  rc := Io.Run (DynStr.View (cmd)) ;
+  IF rc # 0 THEN RETURN src END ;
+  RETURN Io.ReadFile (pool, workDir + '/fmt.txt')
+EXCEPT
+| Io.IOError (p) : RETURN src
+END FmtProg ;
+
+(* the example programs, listed by name (SafeName-gated), and one
+   read back.  The directory is examples/ beside the page. *)
+PROCEDURE ExamplesJson (VAR pool: POOL ; RO pageDir: STR) : STR
+  RAISES ValueRange, IndexError =
+VAR
+  d : PTR DynStr.DString ;
+  listing, entries : SLICE OF STR ;
+  i, n : I64 ;
+  f : STR ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (pool, d, 05BC) ;
+  n := 0 ;
+  entries := Io.ListDir (pool, pageDir + '/examples') ;
+  listing := SortStrs (entries) ;
+  FOR i := 0 TO LEN (listing) - 1 DO
+    f := listing[i] ;
+    IF SafeName (f) AND Text.EndsWith (f, '.m9') THEN
+      IF n > 0 THEN DynStr.AppendChar (pool, d, 02CC) END ;
+      JStr (pool, d, f) ;
+      n := n + 1
+    END
+  END ;
+  DynStr.AppendChar (pool, d, 05DC) ;
+  RETURN DynStr.View (d)
+EXCEPT
+| Io.IOError (p) : RETURN '[]'
+END ExamplesJson ;
+
+PROCEDURE StrLess (RO a: STR ; RO b: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i < LEN (a) AND i < LEN (b) DO
+    IF ORD (a[i]) < ORD (b[i]) THEN RETURN TRUE END ;
+    IF ORD (a[i]) > ORD (b[i]) THEN RETURN FALSE END ;
+    i := i + 1
+  END ;
+  RETURN LEN (a) < LEN (b)
+END StrLess ;
+
+PROCEDURE SortStrs (VAR s: SLICE OF STR) : SLICE OF STR =
+VAR i, j : I64 ; t : STR ;
+BEGIN
+  FOR i := 1 TO LEN (s) - 1 DO
+    j := i ;
+    WHILE j > 0 AND StrLess (s[j], s[j - 1]) DO
+      t := s[j] ; s[j] := s[j - 1] ; s[j - 1] := t ;
+      j := j - 1
+    END
+  END ;
+  RETURN s
+END SortStrs ;
+
 (* ---- /check: m9c --check, republished as JSON ---- *)
 
 PROCEDURE TakeI64 (RO s: STR ; VAR i: I64 ; VAR v: I64) : BOOL =
@@ -469,7 +571,9 @@ BEGIN
   DynStr.Append (scratch, cmd, workDir) ;
   DynStr.Append (scratch, cmd, ' && timeout 60 ') ;
   DynStr.Append (scratch, cmd, M9cCmd (scratch)) ;
-  DynStr.Append (scratch, cmd, ' --make -o prog ') ;
+  (* -g so an unhandled exception's message carries FILE:LINE --
+     a learning aid; the editor is not a hot loop *)
+  DynStr.Append (scratch, cmd, ' --make -g -o prog ') ;
   DynStr.Append (scratch, cmd, name) ;
   DynStr.Append (scratch, cmd, '.m9 > cc.txt 2>&1') ;
   rc := Io.Run (DynStr.View (cmd)) ;
@@ -484,8 +588,22 @@ BEGIN
   cmd := DynStr.New (scratch) ;
   DynStr.Append (scratch, cmd, 'cd ') ;
   DynStr.Append (scratch, cmd, workDir) ;
-  DynStr.Append (scratch, cmd,
-    '/out && timeout 15 ../prog > ../run.txt 2>&1') ;
+  IF bwrapOk THEN
+    (* the binary is BOUND to a fixed path first: a workdir that
+       itself lives under /tmp would otherwise be shadowed by its
+       own bind -- the tutor's recorded trap, met again *)
+    DynStr.Append (scratch, cmd,
+      '/out && timeout 15 bwrap --die-with-parent --dev-bind / /') ;
+    DynStr.Append (scratch, cmd,
+      ' --bind "$(pwd)" /tmp --chdir /tmp') ;
+    DynStr.Append (scratch, cmd,
+      ' --ro-bind "$(dirname "$(pwd)")/prog" /tmp/.m9edit-prog') ;
+    DynStr.Append (scratch, cmd,
+      ' /tmp/.m9edit-prog > ../run.txt 2>&1')
+  ELSE
+    DynStr.Append (scratch, cmd,
+      '/out && timeout 15 ../prog > ../run.txt 2>&1')
+  END ;
   rc := Io.Run (DynStr.View (cmd)) ;
 
   DynStr.Append (pool, d, 'exit ') ;
@@ -494,13 +612,23 @@ BEGIN
   AppendCapped (pool, d, workDir + '/run.txt') ;
   files := '' ;
   listing := Io.ListDir (scratch, workDir + '/out') ;
+  j := 0 ;
   FOR i := 0 TO LEN (listing) - 1 DO
     f := listing[i] ;
     IF SafeName (f) THEN
       DynStr.Append (pool, d, 'file: /out/') ;
       DynStr.Append (pool, d, f) ;
-      DynStr.Append (pool, d, Nl ())
+      DynStr.Append (pool, d, Nl ()) ;
+      j := j + 1
     END
+  END ;
+  IF j = 0 AND NOT bwrapOk THEN
+    DynStr.Append (pool, d,
+      '(files written with relative names appear here;') ;
+    DynStr.Append (pool, d, Nl ()) ;
+    DynStr.Append (pool, d,
+      ' /tmp/NAME needs bubblewrap installed)') ;
+    DynStr.Append (pool, d, Nl ())
   END ;
   RETURN DynStr.View (d)
 END RunProg ;
@@ -532,6 +660,21 @@ EXCEPT
     DynStr.Append (pool, d, Nl ())
 END AppendCapped ;
 
+PROCEDURE ServeExample (fd: I64 ; RO pageDir: STR ; RO name: STR)
+  RAISES ValueRange =
+VAR src : STR ;
+BEGIN
+  IF NOT SafeName (name) THEN
+    Respond (fd, 404, 'text/plain', 'no such example', FALSE) ;
+    RETURN
+  END ;
+  src := Io.ReadFile (HEAP, pageDir + '/examples/' + name) ;
+  Respond (fd, 200, 'text/plain; charset=utf-8', src, FALSE)
+EXCEPT
+| Io.IOError (p) :
+    Respond (fd, 404, 'text/plain', 'no such example', FALSE)
+END ServeExample ;
+
 PROCEDURE ServeOut (fd: I64 ; RO workDir: STR ; RO name: STR ;
                     headOnly: BOOL) RAISES ValueRange =
 VAR
@@ -549,6 +692,50 @@ EXCEPT
     Respond (fd, 404, 'text/plain', 'no such file', headOnly)
 END ServeOut ;
 
+(* the module reference as data: m9c --json NAME, cached under the
+   workdir, exactly the gather that feeds the VS Code extension's
+   hovers -- the page never invents documentation either *)
+PROCEDURE DocJson (fd: I64 ; RO workDir: STR ; RO name: STR)
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  cmd : PTR DynStr.DString ;
+  i : I64 ;
+  ok : BOOL ;
+  body : STR ;
+BEGIN
+  ok := LEN (name) > 0 AND LEN (name) < 64 ;
+  FOR i := 0 TO LEN (name) - 1 DO
+    IF NOT ((name[i] >= 'a' AND name[i] <= 'z') OR
+            (name[i] >= 'A' AND name[i] <= 'Z') OR
+            (name[i] >= '0' AND name[i] <= '9')) THEN
+      ok := FALSE
+    END
+  END ;
+  IF NOT ok THEN
+    Respond (fd, 404, 'text/plain', 'no such module', FALSE) ;
+    RETURN
+  END ;
+  cmd := DynStr.New (scratch) ;
+  DynStr.Append (scratch, cmd, 'mkdir -p ') ;
+  DynStr.Append (scratch, cmd, workDir) ;
+  DynStr.Append (scratch, cmd, '/docs && cd ') ;
+  DynStr.Append (scratch, cmd, workDir) ;
+  DynStr.Append (scratch, cmd, '/docs && test -f ') ;
+  DynStr.Append (scratch, cmd, name) ;
+  DynStr.Append (scratch, cmd, '.json || ') ;
+  DynStr.Append (scratch, cmd, M9cCmd (scratch)) ;
+  DynStr.Append (scratch, cmd, ' --json ') ;
+  DynStr.Append (scratch, cmd, name) ;
+  DynStr.Append (scratch, cmd, ' > dc.txt 2>&1') ;
+  i := Io.Run (DynStr.View (cmd)) ;
+  body := Io.ReadFile (scratch, workDir + '/docs/' + name + '.json') ;
+  Respond (fd, 200, 'application/json', body, FALSE)
+EXCEPT
+| Io.IOError (p) :
+    Respond (fd, 404, 'text/plain', 'no such module', FALSE)
+END DocJson ;
+
 (* ---- dispatch and loop, the tutor's shape ---- *)
 
 PROCEDURE Answer (fd: I64 ; RO pageDir: STR ; RO workDir: STR)
@@ -562,6 +749,7 @@ VAR
 BEGIN
   buf := NEW (scratch, BYTE, ReqMax) ;
   BEGIN
+   BEGIN
     got := 0 ;
     want := 0 - 1 ;
     LOOP
@@ -601,6 +789,14 @@ BEGIN
     END ;
     method := SLICE (req, 0, sp1) ;
     path := SLICE (req, sp1 + 1, sp2 - sp1 - 1) ;
+    (* a URL query (?...) is the client's business, not part of the
+       file name; strip it before the path reaches SafeName, or a
+       request like /out/fig.svg?v=2 would 404 as a bad name *)
+    i := 0 ;
+    WHILE i < LEN (path) DO
+      IF path[i] = '?' THEN path := SLICE (path, 0, i) END ;
+      i := i + 1
+    END ;
     isHead := DynStr.Eq (method, 'HEAD') ;
     IF isHead THEN method := 'GET' END ;
     body := SLICE (req, hend, LEN (req) - hend) ;
@@ -620,6 +816,31 @@ BEGIN
                RunProg (scratch, body, workDir), FALSE) ;
       RETURN
     END ;
+    IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/fmt') THEN
+      Respond (fd, 200, 'text/plain; charset=utf-8',
+               FmtProg (scratch, body, workDir), FALSE) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'GET') AND DynStr.Eq (path, '/examples') THEN
+      Respond (fd, 200, 'application/json',
+               ExamplesJson (scratch, pageDir), FALSE) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'GET') AND LEN (path) > 9 AND
+       DynStr.Eq (SLICE (path, 0, 9), '/example/') THEN
+      ServeExample (fd, pageDir, SLICE (path, 9, LEN (path) - 9)) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'GET') AND DynStr.Eq (path, '/kw') THEN
+      page := Io.ReadFile (scratch, pageDir + '/keywords.json') ;
+      Respond (fd, 200, 'application/json', page, FALSE) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'GET') AND LEN (path) > 5 AND
+       DynStr.Eq (SLICE (path, 0, 5), '/doc/') THEN
+      DocJson (fd, workDir, SLICE (path, 5, LEN (path) - 5)) ;
+      RETURN
+    END ;
     IF DynStr.Eq (method, 'GET') AND LEN (path) > 5 AND
        DynStr.Eq (SLICE (path, 0, 5), '/out/') THEN
       ServeOut (fd, workDir, SLICE (path, 5, LEN (path) - 5), isHead) ;
@@ -632,6 +853,18 @@ BEGIN
       RETURN
     END ;
     Respond (fd, 404, 'text/plain', 'no such page', isHead)
+   EXCEPT
+   | ValueRange :
+       Respond (fd, 500, 'text/plain', 'internal error', FALSE)
+   | Io.IOError (p) :
+       (* a missing file or a failed read is ONE request's problem,
+          never the server's: answer 500 and keep serving.  A stray
+          IOError otherwise unwinds out of Serve and kills the editor
+          (found by /kw with keywords.json absent).  Nested, not
+          EXCEPT+FINALLY on one block -- the generator refuses that,
+          loudly, which is how this shape was chosen. *)
+       Respond (fd, 500, 'text/plain', 'internal error', FALSE)
+   END
   FINALLY
     n := I64 (Close (C.Int (fd)))
   END
@@ -644,6 +877,12 @@ VAR
   lfd, cfd, served, n : I64 ;
 BEGIN
   NlArr[0] := 0AC ;
+  (* the tutor's convention, honoured when bubblewrap is present:
+     the run sees out/ AS /tmp, so a tutorial example that writes
+     /tmp/damped.svg pastes in verbatim and its figure appears.  A
+     bind for convention, not a sandbox -- the plan's trust model
+     stands. *)
+  bwrapOk := Io.Run ('command -v bwrap >/dev/null 2>&1') = 0 ;
   lfd := I64 (Listen (C.Int (port), C.Int (Backlog))) ;
   IF lfd < 0 THEN RAISE BindError ('listen failed') END ;
   BEGIN

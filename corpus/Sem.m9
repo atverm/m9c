@@ -113,6 +113,8 @@ TYPE
                                      CONST is an untyped literal and
                                      stays one across a module edge *)
     ncns : I64 ;
+    exNames : SLICE OF STR ;      (* EXCEPTION declarations *)
+    nexc : I64 ;
   END ;
 
 VAR
@@ -147,6 +149,10 @@ VAR
   curRetTy : STR ;              (* the enclosing procedure's result *)
   curUnsafe : BOOL ;
   curPure : BOOL ;                 (* inside a [PURE] body, par 3.2 *)
+  curInBody : BOOL ;               (* the module init body, whose frame
+                                      and module vars co-live, so a
+                                      concat stored in a module var
+                                      there does not outlive it *)
   boundMon : STR ;                 (* the bound monitor parameter, or
                                       empty when this procedure is not
                                       bound to one (par 6) *)
@@ -189,6 +195,15 @@ VAR
   carryEA : SLICE OF STR ;
   carryEB : SLICE OF STR ;
   ncedge : I64 ;
+  (* par 2.3: locals/binders that currently hold a FRAME-SCOPED
+     string -- a concatenation, which lives in this frame's arena
+     and dies with it.  Escaping one (to a module var, through a
+     reference parameter, or via RETURN of the holding name) is the
+     use-after-free the frame model would otherwise permit silently.
+     Tainted on assignment of a concatenation, cleared when the name
+     is given a durable value again.  Reset per frame. *)
+  fvalName : SLICE OF STR ;
+  nfval : I64 ;
 
 (* ---- output ---- *)
 
@@ -215,6 +230,7 @@ BEGIN
   handled := NEW (pool, STR, 8) ;
   escName := NEW (pool, STR, 16) ;
   escTgt := NEW (pool, STR, 16) ;
+  fvalName := NEW (pool, STR, 16) ;
   edgeA := NEW (pool, STR, 8) ;
   edgeB := NEW (pool, STR, 8) ;
   pendSrc := NEW (pool, STR, 8) ;
@@ -368,6 +384,44 @@ BEGIN
   RETURN NEW (pl, STR, 0)
 END RaisesOf ;
 
+(* an exception cited by RAISE, a RAISES clause or a handler must be
+   one the reader (and the generator) can find, resolving exactly as
+   Gen.ExcRef does: a qualified name in the module it names, a bare
+   name locally, predeclared, or declared in some loaded module (both
+   direct and transitive deps register their exceptions).  A name
+   found nowhere is accepted by neither -- catch it HERE. *)
+PROCEDURE ExcKnown (RO qual: STR ; RO nm: STR) : BOOL =
+VAR m, i : I64 ;
+BEGIN
+  IF LEN (qual) > 0 AND NOT Text.Eq (qual, curMod) THEN
+    m := FindMod (qual) ;
+    (* an unknown module is the softness contract's business; only a
+       KNOWN, non-foreign module lacking the exception is an error *)
+    IF m < 0 THEN RETURN TRUE END ;
+    IF LEN (mods[m].foreignLang) > 0 THEN RETURN TRUE END ;
+    RETURN HasExcIn (m, nm)
+  END ;
+  (* bare, or qualified with the current module *)
+  IF Text.Eq (nm, 'Overflow') OR Text.Eq (nm, 'IndexError')
+     OR Text.Eq (nm, 'OutOfMemory') OR Text.Eq (nm, 'ValueRange') THEN
+    RETURN TRUE
+  END ;
+  FOR i := 0 TO nmods - 1 DO
+    IF HasExcIn (i, nm) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END ExcKnown ;
+
+PROCEDURE CheckExcName (KEPT n: PTR Ast.Node ; RO ctx: STR) =
+VAR qual, nm : STR ;
+BEGIN
+  qual := '' ; nm := n.a ;
+  IF LEN (n.b) > 0 THEN qual := n.a ; nm := n.b END ;
+  IF NOT ExcKnown (qual, nm) THEN
+    ErrN (n, ctx, 'unknown exception: ' + nm)
+  END
+END CheckExcName ;
+
 (* the signature as TEXT: two declarations are the same declaration
    exactly when the printer renders them the same way, which is why
    def/impl conformance is a string comparison and not a tree walk *)
@@ -458,6 +512,31 @@ BEGIN
   mods[m].ncns := mods[m].ncns + 1
 END AddConst ;
 
+PROCEDURE AddExc (m: I64 ; RO KEPT n: STR) =
+VAR
+  ns : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF mods[m].nexc = LEN (mods[m].exNames) THEN
+    ns := NEW (pool, STR, 2 * LEN (mods[m].exNames) + 16) ;
+    FOR i := 0 TO mods[m].nexc - 1 DO
+      ns[i] := mods[m].exNames[i]
+    END ;
+    mods[m].exNames := ns
+  END ;
+  mods[m].exNames[mods[m].nexc] := n ;
+  mods[m].nexc := mods[m].nexc + 1
+END AddExc ;
+
+PROCEDURE HasExcIn (m: I64 ; RO n: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO mods[m].nexc - 1 DO
+    IF Text.Eq (mods[m].exNames[i], n) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END HasExcIn ;
+
 PROCEDURE ModConstType (RO modName: STR ; RO n: STR ;
                         VAR found: BOOL) : STR =
 VAR m, i : I64 ;
@@ -546,6 +625,12 @@ BEGIN
           IF d.kids[4] IS SOME bd2 THEN
             mods[m].procs[pi].hasBody := TRUE
           END
+        END
+      ELSIF d.kind = Ast.NExcSection THEN
+        (* the declared exceptions: RAISE/RAISES/handler may only
+           cite a name the reader can find *)
+        FOR j := 0 TO d.nkids - 1 DO
+          IF d.kids[j] IS SOME xd THEN AddExc (m, xd.a) END
         END
       ELSIF d.kind = Ast.NConstSection THEN
         (* a CONST is an untyped literal; what is kept is its
@@ -1146,6 +1231,42 @@ BEGIN
   nesc := nesc + 1
 END EscTarget ;
 
+PROCEDURE FvalHas (RO nm: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nfval - 1 DO
+    IF Text.Eq (fvalName[i], nm) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END FvalHas ;
+
+PROCEDURE FvalAdd (RO KEPT nm: STR) =
+VAR
+  ns : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF FvalHas (nm) THEN RETURN END ;
+  IF nfval = LEN (fvalName) THEN
+    ns := NEW (pool, STR, 2 * LEN (fvalName)) ;
+    FOR i := 0 TO nfval - 1 DO ns[i] := fvalName[i] END ;
+    fvalName := ns
+  END ;
+  fvalName[nfval] := nm ;
+  nfval := nfval + 1
+END FvalAdd ;
+
+PROCEDURE FvalDel (RO nm: STR) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nfval - 1 DO
+    IF Text.Eq (fvalName[i], nm) THEN
+      fvalName[i] := fvalName[nfval - 1] ;
+      nfval := nfval - 1 ;
+      RETURN
+    END
+  END
+END FvalDel ;
+
 PROCEDURE EscAlias (RO KEPT a: STR ; RO KEPT b: STR) =
 VAR
   ns : SLICE OF STR ;
@@ -1201,6 +1322,34 @@ BEGIN
   RETURN Text.Eq (m, ModeLocal) OR Text.Eq (m, ModeBinder) OR
          Text.Eq (m, ModeVal)
 END IsFrameMode ;
+
+(* the expression under parens and SOME *)
+PROCEDURE FrameCore (k: Ast.Kid) : Ast.Kid =
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NParen OR e.kind = Ast.NSomeExpr THEN
+      RETURN FrameCore (e.kids[0])
+    END
+  END ;
+  RETURN k
+END FrameCore ;
+
+(* does this right-hand side yield a FRAME-SCOPED string (par 2.3)?
+   A concatenation is one -- it is built in the frame arena -- and so
+   is a bare name that already holds one (fval).  `u` is the RHS's
+   type, so a numeric `+` (not SLICE OF CHAR) is not mistaken for a
+   concatenation. *)
+PROCEDURE FrameRHS (k: Ast.Kid ; RO u: STR) : BOOL =
+BEGIN
+  IF FrameCore (k) IS SOME e THEN
+    IF e.kind = Ast.NBin AND Text.Eq (e.a, '+') AND
+       Text.Eq (u, 'SLICE OF CHAR') THEN RETURN TRUE END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      RETURN FvalHas (e.a)
+    END
+  END ;
+  RETURN FALSE
+END FrameRHS ;
 
 (* a ref value rooted at frame storage SRC was stored into the
    designator rooted DST (dstSel: through a selector) *)
@@ -2109,6 +2258,34 @@ BEGIN
   RETURN ''
 END BinType ;
 
+(* is a BARE name one the checker knows -- in scope (any mode,
+   including a nil-typed IS SOME binder), a local/impl CONST, a
+   def-module CONST across the pair, a predeclared identifier, a
+   builtin or user type name, or a module?  If none of these it is
+   undefined, not merely unknown-typed: softness excuses a type the
+   checker cannot COMPUTE, not a name that does not EXIST. *)
+PROCEDURE BareNameKnown (RO nm: STR) : BOOL =
+VAR
+  mi, j : I64 ;
+  found : BOOL ;
+  cty : STR ;
+BEGIN
+  IF LEN (ScopeMode (nm)) > 0 THEN RETURN TRUE END ;
+  found := FALSE ;
+  cty := ConstType (nm, found) ;
+  IF found THEN RETURN TRUE END ;
+  IF Text.Eq (nm, 'ALL') OR Text.Eq (nm, 'HEAP') THEN RETURN TRUE END ;
+  IF IsBuiltinTy (nm) THEN RETURN TRUE END ;
+  IF FindMod (nm) >= 0 THEN RETURN TRUE END ;
+  FOR mi := 0 TO nmods - 1 DO
+    IF FindTypeIn (mi, nm) IS SOME tt THEN RETURN TRUE END ;
+    FOR j := 0 TO mods[mi].ncns - 1 DO
+      IF Text.Eq (mods[mi].cnNames[j], nm) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END BareNameKnown ;
+
 PROCEDURE ExprType (k: Ast.Kid ; RO ctx: STR) : STR =
 VAR
   t, u : STR ;
@@ -2297,6 +2474,14 @@ BEGIN
     | Ast.NBin : RETURN BinType (e, ctx)
     | Ast.NDesignator :
         NoteUse (e, ctx) ;
+        (* a bare value name known to NO part of the checker's name
+           universe is undefined -- the symmetric twin of the
+           unknown-procedure check.  Only here (a body-walk value
+           context, scope populated), never in DesigStrType, which
+           the signature checks also reach without a scope. *)
+        IF e.nkids = 0 AND NOT BareNameKnown (e.a) THEN
+          ErrN (e, ctx, Cat ('unknown name: ', e.a))
+        END ;
         RETURN DesigStrType (e, FALSE, ctx)
     | Ast.NCallExpr : RETURN CallType (e.kids[0], e.kids[1], e, ctx)
     ELSE
@@ -2583,6 +2768,22 @@ BEGIN
       END
     END ;
     RETURN ''
+  END ;
+  (* SizeOf (x): the byte size of x's type (I64); a type name or a
+     value.  A slice's SizeOf is its descriptor, the data is
+     ByteSize.  In-memory only -- a wire uses the exact-width types
+     and ToBytesLE. *)
+  IF Text.Eq (name, 'SizeOf') THEN
+    Arity (site, ctx, name, 1, nargs) ;
+    RETURN 'I64'
+  END ;
+  IF Text.Eq (name, 'ByteSize') THEN
+    Arity (site, ctx, name, 1, nargs) ;
+    IF nargs >= 1 AND LEN (aTy[0]) > 0 AND
+       NOT Text.StartsWith (aTy[0], 'SLICE OF ') THEN
+      ErrN (site, ctx, Cat ('ByteSize needs a slice, not ', TyName (aTy[0])))
+    END ;
+    RETURN 'I64'
   END ;
   IF Text.Eq (name, 'F64.FromBytesLE') OR
      Text.Eq (name, 'F32.FromBytesLE') THEN
@@ -3392,19 +3593,51 @@ END WalkSeq ;
 PROCEDURE CheckAssign (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
   beyond, isShared : BOOL ;
-  vname, t, u, lhsMode : STR ;
+  vname, t, u, lhsMode, dmode : STR ;
 BEGIN
   IF st.kids[0] IS SOME lhs THEN
     (* the types first, in the oracle's order: the left side, the
        right side, then whether one may become the other *)
     t := DesigStrType (lhs, FALSE, ctx) ;
     u := ExprType (st.kids[1], ctx) ;
-    IF Text.Eq (u, '<void>') THEN
-      ErrN (st, ctx, 'the right-hand side returns no value')
-    ELSE
-      IF NOT Compat (t, u) THEN
-        ErrN (st, ctx, S5 ('cannot assign ', TyName (u), ' to ',
-          TyName (t), ' (no implicit conversions, par 2.1)'))
+    (* par 2.3: a FRAME-SCOPED string (a concatenation, or a name
+       already holding one) may not be stored where it will be read
+       after this frame is freed -- a module variable, or a
+       COMPONENT reached through a reference parameter (or a value
+       pointer's target).  A bare VAR/OWN STR parameter is not
+       refused: the generator re-homes its target into the caller's
+       arena at exit, as it does the result.  A bare frame-mode
+       destination merely inherits the taint and is cleared when
+       given a durable value. *)
+    IF st.kids[1] IS SOME frhs THEN
+      IF FrameRHS (st.kids[1], u) THEN
+        dmode := ScopeMode (lhs.a) ;
+        IF Text.Eq (dmode, ModeModule) AND NOT curInBody THEN
+          ErrN (frhs, ctx, S3 ('a concatenation dies with this frame; it cannot be stored in module variable ',
+            lhs.a, ' (par 2.3)'))
+        ELSIF Text.Eq (dmode, ModeRo) OR
+              ((Text.Eq (dmode, ModeVar) OR Text.Eq (dmode, ModeOwn) OR
+                Text.Eq (dmode, ModeVal)) AND lhs.nkids > 0) THEN
+          ErrN (frhs, ctx, S3 ('a concatenation dies with this frame; it cannot be stored through ',
+            lhs.a, ', which outlives it (par 2.3)'))
+        ELSIF lhs.nkids = 0 AND IsFrameMode (dmode) THEN
+          FvalAdd (lhs.a)
+        END
+      ELSIF lhs.nkids = 0 THEN
+        FvalDel (lhs.a)
+      END
+    END ;
+    (* anchored at the RIGHT-HAND SIDE, not the statement: a value
+       on its own line used to be reported one line too high, at
+       the := (found by the first m9edit user) *)
+    IF st.kids[1] IS SOME rhn THEN
+      IF Text.Eq (u, '<void>') THEN
+        ErrN (rhn, ctx, 'the right-hand side returns no value')
+      ELSE
+        IF NOT Compat (t, u) THEN
+          ErrN (rhn, ctx, S5 ('cannot assign ', TyName (u), ' to ',
+            TyName (t), ' (no implicit conversions, par 2.1)'))
+        END
       END
     END ;
     beyond := CheckWrite (lhs, ctx) ;
@@ -3463,7 +3696,7 @@ END CheckAssign ;
 
 PROCEDURE WalkStmt (k: Ast.Kid ; RO ctx: STR) =
 VAR
-  j, npre, nacc, narm2 : I64 ;
+  j, hk, npre, nacc, narm2 : I64 ;
   pre, acc, arm2 : SLICE OF Binding ;
 BEGIN
   IF k IS SOME st THEN
@@ -3479,6 +3712,7 @@ BEGIN
         WalkArgs (st.kids[1], ctx)
     | Ast.NRaiseStmt :
         IF st.kids[0] IS SOME xn THEN
+          CheckExcName (xn, ctx) ;
           IF LEN (xn.b) > 0 THEN RaisedAdd (xn.b, 'RAISE')
           ELSE RaisedAdd (xn.a, 'RAISE') END
         END ;
@@ -3532,6 +3766,7 @@ BEGIN
           IF st.kids[j] IS SOME h THEN
             IF h.kind = Ast.NHandler THEN
               IF h.kids[0] IS SOME hq THEN
+                CheckExcName (hq, ctx) ;
                 IF LEN (hq.b) > 0 THEN HandledAdd (hq.b)
                 ELSE HandledAdd (hq.a) END
               END
@@ -3541,7 +3776,18 @@ BEGIN
         WalkSeq (st.kids[0], ctx) ;
         FOR j := 1 TO st.nkids - 1 DO
           IF st.kids[j] IS SOME part THEN
-            IF part.kind = Ast.NHandler THEN WalkSeq (part.kids[2], ctx)
+            IF part.kind = Ast.NHandler THEN
+              (* handler payload binders are names too -- bind them
+                 (nil type) as the FPC checker does, or a use of one
+                 would look like an undefined name *)
+              IF part.kids[1] IS SOME hbs THEN
+                FOR hk := 0 TO hbs.nkids - 1 DO
+                  IF hbs.kids[hk] IS SOME hb THEN
+                    IF hb.kind = Ast.NIdent THEN BindName (hb.a, NONE) END
+                  END
+                END
+              END ;
+              WalkSeq (part.kids[2], ctx)
             ELSIF part.kind = Ast.NFinally THEN WalkSeq (part.kids[0], ctx)
             END
           END
@@ -3704,10 +3950,10 @@ BEGIN
       ErrN (st, ctx, 'RETURN with a value in a proper procedure')
     ELSE
       IF Text.Eq (t, '<void>') THEN
-        ErrN (st, ctx, 'RETURN of a call that returns no value')
+        ErrN (v, ctx, 'RETURN of a call that returns no value')
       ELSE
         IF NOT Compat (curRetTy, t) THEN
-          ErrN (st, ctx, S4 ('cannot RETURN ', TyName (t),
+          ErrN (v, ctx, S4 ('cannot RETURN ', TyName (t),
             ' from a function of type ', TyName (curRetTy)))
         END
       END
@@ -3734,6 +3980,9 @@ BEGIN
     IF LEN (t) > 0 THEN
       IF IsFrameMode (ScopeMode (t)) THEN EscTarget (t, '<return>') END
     END
+    (* par 2.3: a string RETURN needs no refusal -- the generator
+       re-homes it into the caller's arena, copying a frame-local
+       designator's bytes across (m9_strdup). *)
   ELSE
     IF NOT Text.Eq (curRetTy, '<void>') THEN
       ErrN (st, ctx, 'RETURN without a value in a function')
@@ -3743,8 +3992,15 @@ END CheckReturn ;
 
 PROCEDURE CheckProcBody (u: PTR Ast.Node ; KEPT d: PTR Ast.Node ;
                          RO KEPT ctx: STR) =
+VAR rk : I64 ;
 BEGIN
   IF d.kids[4] IS SOME body THEN
+    (* a RAISES clause may only cite an exception the reader can find *)
+    IF d.kids[2] IS SOME rsc THEN
+      FOR rk := 0 TO rsc.nkids - 1 DO
+        IF rsc.kids[rk] IS SOME rxn THEN CheckExcName (rxn, ctx) END
+      END
+    END ;
     ScopeClear () ;
     CallsClear () ;
     (* KEPT declarations are read as the params are added, so the
@@ -3771,6 +4027,8 @@ BEGIN
     nesc := 0 ;
     nedge := 0 ;
     npend := 0 ;
+    nfval := 0 ;
+    curInBody := FALSE ;
     (* par 3.2: kid 3 is the attribute, if any *)
     curPure := FALSE ;
     IF d.kids[3] IS SOME at THEN
@@ -4196,7 +4454,7 @@ BEGIN
 END CheckThreadChains ;
 
 PROCEDURE CheckFile (KEPT root: PTR Ast.Node) =
-VAR i, j, k : I64 ;
+VAR i, j, k, fm : I64 ;
 BEGIN
   Setup () ;
   GraphClear () ;
@@ -4211,6 +4469,19 @@ BEGIN
       FOR j := 0 TO u.nkids - 1 DO
         IF u.kids[j] IS SOME imp THEN
           IF imp.kind = Ast.NFromImport THEN
+            (* FROM is for foreign FOR-C units only (there is no
+               u.m9 to resolve).  A FROM of a loaded M9 module is a
+               Modula-2 habit the generator cannot honour -- catch
+               it HERE, at the mistake, not as a gen error later *)
+            fm := FindMod (imp.a) ;
+            IF fm >= 0 THEN
+              IF LEN (mods[fm].foreignLang) = 0 THEN
+                ErrN (imp, u.a,
+                  'FROM imports from a foreign FOR-C unit; ' + imp.a +
+                  ' is an M9 module -- use IMPORT ' + imp.a +
+                  ' and write ' + imp.a + '.Name')
+              END
+            END ;
             IF imp.kids[0] IS SOME ids THEN
               FOR k := 0 TO ids.nkids - 1 DO
                 IF ids.kids[k] IS SOME id THEN FromAdd (id.a, imp.a) END
@@ -4254,6 +4525,8 @@ BEGIN
                  host side and reported the body writing its own
                  module variables *)
               curPure := FALSE ;
+              nfval := 0 ;
+              curInBody := TRUE ;
               boundMon := '' ;      (* a module body binds no monitor *)
               WalkStmt (d.kids[0], Cat (u.a, ' body')) ;
               (* the module body has no caller to declare RAISES to,

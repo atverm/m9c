@@ -1,0 +1,35 @@
+MODULE Shapes ;
+
+(* A CASE RECORD is a tagged union, and CASE over it must cover
+   every arm -- there is no forgotten case and no NIL. *)
+IMPORT Io, Math, Fmt ;
+
+TYPE
+  Shape = CASE RECORD
+  | Circle : r: F64
+  | Square : s: F64
+  END ;
+
+PROCEDURE Area (sh: Shape) : F64 =
+BEGIN
+  CASE sh OF
+  | Circle (r) :
+      RETURN Math.Pi * r * r
+  | Square (s) :
+      RETURN s * s
+  END
+END Area ;
+
+VAR
+  sh : Shape ;
+
+BEGIN
+  sh := Shape.Circle (2.0) ;
+  Io.Write ('circle area ~ ') ;
+  Io.Write (Fmt.FixedPad (Area (sh), 0, 2)) ;
+  Io.WriteLine ('')
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('range') ;
+    Io.Halt (1)
+END Shapes.

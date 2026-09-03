@@ -1,0 +1,9 @@
+(* EXPECT: cannot be stored through r *)
+MODULE m ;
+TYPE Rec = RECORD name : STR END ;
+PROCEDURE Store (VAR r: Rec ; RO a: STR ; RO b: STR) =
+BEGIN
+  r.name := a + b
+END Store ;
+BEGIN
+END m.

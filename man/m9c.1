@@ -200,6 +200,16 @@ so that the debug information describes THE M9, not the C it became.
 A breakpoint is set on an M9 line, a backtrace names M9 files, and
 listing a frame shows M9 source.
 .IP
+Also, an unhandled exception's message carries the raising
+statement's position \(em
+.I FILE:LINE:
+.B unhandled
+.IR NAME \(em
+instead of the bare name, because
+.B \-g
+records the site per statement.  One store per statement, so it stays
+out of builds that did not ask for it.
+.IP
 Implies
 .BR \-\-keep\-c .
 The debugger no longer needs

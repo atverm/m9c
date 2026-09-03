@@ -504,6 +504,7 @@ m9_sl_CHAR Lex_KindName (int64_t k, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -988,6 +989,7 @@ static m9_sl_CHAR Lex_KwName (int64_t i, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

@@ -200,6 +200,7 @@ m9_sl_CHAR Text_Trim (m9_sl_CHAR s, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -229,6 +230,7 @@ m9_sl_CHAR Text_TrimLeft (m9_sl_CHAR s, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -258,6 +260,7 @@ m9_sl_CHAR Text_TrimRight (m9_sl_CHAR s, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -366,6 +369,7 @@ m9_sl_CHAR Text_Join (m9_pool *pool, m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -402,6 +406,7 @@ m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -438,6 +443,7 @@ m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

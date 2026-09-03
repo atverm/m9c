@@ -349,21 +349,21 @@ VAR
 BEGIN
   c := ToCivil (t) ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, Fmt.I64Pad (pool, c.year, 4, TRUE)) ;
+  DynStr.Append (pool, d, Fmt.I64Pad (c.year, 4, TRUE)) ;
   DynStr.AppendChar (pool, d, '-') ;
-  DynStr.Append (pool, d, Fmt.I64Pad (pool, c.month, 2, TRUE)) ;
+  DynStr.Append (pool, d, Fmt.I64Pad (c.month, 2, TRUE)) ;
   DynStr.AppendChar (pool, d, '-') ;
-  DynStr.Append (pool, d, Fmt.I64Pad (pool, c.day, 2, TRUE)) ;
+  DynStr.Append (pool, d, Fmt.I64Pad (c.day, 2, TRUE)) ;
   DynStr.AppendChar (pool, d, 'T') ;
-  DynStr.Append (pool, d, Fmt.I64Pad (pool, c.hour, 2, TRUE)) ;
+  DynStr.Append (pool, d, Fmt.I64Pad (c.hour, 2, TRUE)) ;
   DynStr.AppendChar (pool, d, ':') ;
-  DynStr.Append (pool, d, Fmt.I64Pad (pool, c.minute, 2, TRUE)) ;
+  DynStr.Append (pool, d, Fmt.I64Pad (c.minute, 2, TRUE)) ;
   DynStr.AppendChar (pool, d, ':') ;
   IF decimals = 0 THEN
-    DynStr.Append (pool, d, Fmt.I64Pad (pool, I64 (c.second), 2, TRUE))
+    DynStr.Append (pool, d, Fmt.I64Pad (I64 (c.second), 2, TRUE))
   ELSE
     IF c.second < 10.0 THEN DynStr.AppendChar (pool, d, '0') END ;
-    DynStr.Append (pool, d, Fmt.Fixed (pool, c.second, decimals))
+    DynStr.Append (pool, d, Fmt.Fixed (c.second, decimals))
   END ;
   DynStr.AppendChar (pool, d, 'Z') ;
   RETURN DynStr.View (d)

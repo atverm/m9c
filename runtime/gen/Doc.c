@@ -288,6 +288,7 @@ m9_sl_CHAR Doc_Json (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Sta
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -433,6 +434,7 @@ m9_sl_CHAR Doc_Text (m9_pool *pool, Ast_Node * root, m9_sl_CHAR modName, Doc_Sta
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -464,6 +466,7 @@ static m9_sl_CHAR Doc_Qual (m9_pool *pool, Ast_Node * k, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -537,6 +540,7 @@ static m9_sl_CHAR Doc_SigText (m9_pool *pool, Ast_Node * p, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -597,6 +601,7 @@ static m9_sl_CHAR Doc_ParamNames (m9_pool *pool, Ast_Node * p, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -773,6 +778,7 @@ static m9_sl_CHAR Doc_ParamsJson (m9_pool *pool, Ast_Node * p, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -799,6 +805,7 @@ static m9_sl_CHAR Doc_ResultText (m9_pool *pool, Ast_Node * p, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -842,6 +849,7 @@ static m9_sl_CHAR Doc_RaisesJson (m9_pool *pool, Ast_Node * p, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -867,6 +875,7 @@ static m9_sl_CHAR Doc_AttribText (Ast_Node * p, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1080,6 +1089,7 @@ static m9_sl_CHAR Doc_Body (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1330,6 +1340,7 @@ static m9_sl_CHAR Doc_Cat3 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1405,6 +1416,7 @@ static m9_sl_CHAR Doc_KindWord (int64_t k, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1444,6 +1456,7 @@ static m9_sl_CHAR Doc_GroupParams (m9_pool *pool, m9_sl_Doc_Anchor anch, int64_t
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1556,6 +1569,7 @@ static void Doc_Gather (m9_pool *pool, Ast_Node * unit, int64_t upTo, m9_sl_Doc_
   } }
 L_ret: ;
   err->res = m9res;
+  *modDoc = m9_rehome (&m9frame, m9res, *modDoc, err);
   m9_pool_free (&m9frame);
   return;
 }
@@ -1592,6 +1606,7 @@ static m9_sl_CHAR Doc_KindJson (int64_t k, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

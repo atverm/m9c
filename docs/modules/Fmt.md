@@ -37,27 +37,32 @@ a person is going to read it.  Saying which is which is the point.
 
 _(documented with the group below)_
 
-### I64Str (VAR pool: POOL ; v: I64) : STR
+### I64Str (v: I64) : STR
 
-decimal text of v, sign and all, in pool.  Total for every I64
-including MIN: it builds through DynStr.AppendI64, whose own
-note explains why negating MIN would have trapped and why this
-does not.
+decimal text of v, sign and all.  Total for every I64 including
+MIN: the digits are taken in NEGATIVE space, where every I64
+fits, because -MIN does not.
 
-### I64Pad (VAR pool: POOL ; v: I64 ; width: I64 ; zero: BOOL) : STR
+NO POOL, here or anywhere below: a formatter answers a string
+the caller reads once, and par 2.3 places that string in the
+caller's arena.  These took a pool until 2026-09-03, and every
+caller in the corpus passed one only to throw the result at
+Append or WriteLine.
+
+### I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR
 
 right-aligned in width; zero selects '0' over ' ' as the fill.
 A value too wide is never truncated -- silently losing digits is
 the class of bug this language refuses -- it just overflows the
 field, as printf does.
 
-### Fixed (VAR pool: POOL ; v: F64 ; decimals: I64) : STR RAISES ValueRange
+### Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange
 
 decimals in 0..MaxDecimals; a magnitude that will not survive
 scaling raises rather than printing a plausible wrong number.
 NaN prints 'nan', the infinities 'inf' and '-inf'.
 
-### FixedPad (VAR pool: POOL ; v: F64 ; width, decimals: I64) : STR RAISES ValueRange
+### FixedPad (v: F64 ; width, decimals: I64) : STR RAISES ValueRange
 
 Pascal's `v:width:decimals`, which is where the shape comes
 from: Fixed, then right-aligned in width with BLANKS.  Pascal
@@ -69,7 +74,7 @@ Too wide is never truncated -- it overflows the field, exactly
 as I64Pad does and for the same reason: silently losing digits
 is the class of bug this language refuses.
 
-### Sci (VAR pool: POOL ; v: F64 ; decimals: I64) : STR RAISES ValueRange
+### Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange
 
 scientific notation, one digit before the point and `decimals`
 after it, then 'e' and the decimal exponent: 3.14e-5.
@@ -95,13 +100,13 @@ would take -- and then rounded half to even like Fixed.  The
 driver compares it against printf over a spread of magnitudes
 and prints the disagreement rate.
 
-### SciPad (VAR pool: POOL ; v: F64 ; width, decimals: I64) : STR RAISES ValueRange
+### SciPad (v: F64 ; width, decimals: I64) : STR RAISES ValueRange
 
 Sci, right-aligned in width with blanks -- the `:x:y` of the
 scientific form.  A short exponent makes the field ragged on the
 right, which is what the width is for.
 
-### Bits (VAR pool: POOL ; v: F64) : STR
+### Bits (v: F64) : STR
 
 _(documented with the group below)_
 

@@ -1395,13 +1395,23 @@ END PUnit ;
 
 PROCEDURE File (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
 VAR
-  n : PTR Ast.Node ;
+  n, u : PTR Ast.Node ;
   before : I64 ;
 BEGIN
   n := Nn (pool, p, Ast.NFile) ;
   WHILE p.cur.kind # TkEOF DO
     before := p.nerr ;
-    Ast.Add (pool, n, SOME (PUnit (pool, p))) ;
+    u := PUnit (pool, p) ;
+    Ast.Add (pool, n, SOME (u)) ;
+    (* a file has at most one PROGRAM module.  A second bare MODULE
+       is another main, and without this it silently WON: `MODULE
+       Hello. MODULE Welcome.` compiled and ran Welcome, discarding
+       Hello.  A program may still be FOLLOWED by a DEFINITION or a
+       FOR-C unit it uses (serialtest is a program then cserial). *)
+    IF u.kind = Ast.NProgram AND p.cur.kind = TkMODULE THEN
+      Rerr (p, 'a second program module: a file may have only one') ;
+      RETURN n
+    END ;
     IF p.cur.kind # TkEOF THEN
       IF p.nerr > before + 50 THEN RETURN n END
     END

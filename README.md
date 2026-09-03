@@ -85,8 +85,8 @@ private re-scan.  For LSP editors (Neovim, Helix, eglot), `m9lsp` is
 a language server written in M9 (`corpus/Lsp.m9`): it publishes
 diagnostics by running `m9c --check` and republishing the compiler's
 own messages, so the squiggle and the build cannot disagree.  Build
-it with `m9c --make -o m9lsp Lsp` (0.4.1 ships the module in the
-installed library; in a checkout, `corpus/Lsp.m9`); it speaks
+it with `m9c --make -o m9lsp Lsp` (0.5.0 ships the module in the
+installed library -- 0.4.1 said so and did not; in a checkout, `corpus/Lsp.m9`); it speaks
 stdio, finds
 `m9c` on PATH (`$M9LSP_M9C` overrides), and is gated by
 `runtime/test/lsp.sh` — a real framed session against the tree's own
@@ -107,8 +107,11 @@ every gate has passed, and carries the toolchain with everything its
 gates compare against, so the differential claims below can be re-run
 rather than taken.  What is not here: the tutorial, which is a
 repository of its own
-([M9Tutorial](https://github.com/atverm/M9Tutorial)), the CI configuration, 
-and the application ports.
+([M9Tutorial](https://github.com/atverm/M9Tutorial)), the CI
+configuration, and the application ports.  The Debian, rpm and Arch
+PACKAGES are not in the tree either -- they are on the
+[release page](https://github.com/atverm/m9c/releases), one per
+distribution, each built from the source tarball attached beside it.
 
     docs/       the language report (the specification), the benchmarks,
                 the diagnostics reference, the generated module reference
@@ -121,7 +124,6 @@ and the application ports.
     runtime/test/  every gate: differentials, drivers, the bootstrap
     host/fpc/   the original Free Pascal host — now the differential oracle
     reference/  the FPC and Modula-2 programs whose bugs became the museum
-    releases/  The Debian and rpm packages  
     man/, tools/   the manual page, the editor extension, the store generator
 
 ## What it costs

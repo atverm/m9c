@@ -125,6 +125,24 @@ EXPLAIN = {
     "local-const-shadow": (
         "a procedure declares a CONST with the same name as one the module already declares",
         "rename one of them.  Which would win depends on lookup order, and the map answers the first hit, so the shadow is refused rather than resolved (docs/frame-pools.md)"),
+    "undefined-name": (
+        "a bare name used as a value is declared nowhere -- not a local, parameter, IS SOME binder, CONST, type, or module",
+        "declare it, import the module it comes from, or fix the typo; the checker now names it rather than leaving it to the generator (par: the checker refuses what the generator cannot see)"),
+    "unknown-exception": (
+        "a RAISE, a RAISES clause or a handler cites an exception name found nowhere -- not declared locally, not predeclared (Overflow/IndexError/OutOfMemory/ValueRange), and not declared in any loaded module",
+        "declare the EXCEPTION, or qualify it into the module that owns it (Json.ParseError); an imported exception is reached as Module.Name, never bare -- the checker now refuses what the generator could not emit"),
+    "from-m9-module": (
+        "FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way)",
+        "use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later"),
+    "concat-escapes-modvar": (
+        "a string concatenation (+) is built in the procedure's frame arena and dies when the frame returns; storing it in a module variable, which outlives the frame, leaves the variable pointing at freed storage (par 2.3)",
+        "copy it into a durable pool -- DynStr.Append (HEAP, ...), or a pool the caller owns; the module init body is exempt, because there frame and module variable share a lifetime"),
+    "concat-escapes-param": (
+        "a string concatenation is frame-scoped; a bare VAR/OWN STR parameter is re-homed into the caller's arena at exit, but a COMPONENT reached through a reference parameter (a record field, an element, a value pointer's target) is not, so the caller would hold freed storage (par 2.3)",
+        "assign the whole VAR STR parameter, or build the field's string in a pool the caller can see (pass a POOL, or DynStr.Append into the caller's)"),
+    "bytesize-not-slice": (
+        "ByteSize answers the bytes a slice's elements occupy, so its argument must be a slice",
+        "for a scalar or record use SizeOf (x); for the data behind a slice, ByteSize (s) = LEN (s) * SizeOf (element)"),
     "new-reversed": (
         "NEW's arguments are the wrong way round: the pool comes first, then the type",
         "NEW (pool, T) for a pointer, NEW (pool, T, n) for a slice, NEW (pool, T, n1, n2) for a grid (par 4.3)"),

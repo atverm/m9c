@@ -292,6 +292,7 @@ m9_sl_CHAR Json_NameAt (Json_Node * obj, int64_t i, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -432,6 +433,7 @@ m9_sl_CHAR Json_AsStr (Json_Node * n, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -460,6 +462,7 @@ m9_sl_CHAR Json_Text (m9_pool *pool, Json_Node * n, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -537,6 +540,7 @@ m9_sl_CHAR Json_CompactSorted (m9_pool *pool, Json_Node * n, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -559,6 +563,7 @@ m9_sl_CHAR Json_Pretty (m9_pool *pool, Json_Node * n, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -581,6 +586,7 @@ m9_sl_CHAR Json_ReprText (m9_pool *pool, double r, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -621,6 +627,7 @@ m9_sl_CHAR Json_NumText (m9_pool *pool, Json_Node * n, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -657,6 +664,7 @@ m9_sl_CHAR Json_Compact (m9_pool *pool, Json_Node * n, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1035,6 +1043,7 @@ static m9_sl_CHAR Json_ParseString (Json_Cursor *c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1507,6 +1516,7 @@ static m9_sl_CHAR Json_DecodeStr (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

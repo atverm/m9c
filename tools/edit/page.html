@@ -15,10 +15,12 @@
   button { font: inherit; padding:.25em 1em; cursor:pointer; }
   #status { color:var(--dim); font-size:.9em; margin-left:auto; }
   main { flex:1; display:flex; min-height:0; }
-  #edwrap { flex:3; display:flex; min-width:0; border-right:1px solid #ddd; }
-  #gutter { padding:8px 6px; text-align:right; color:var(--dim);
+  #edcol { flex:3; display:flex; flex-direction:column; min-width:0;
+           border-right:1px solid #ddd; }
+  #edwrap { flex:1; display:flex; min-height:0; }
+  #gutter { margin:0; padding:8px 6px; text-align:right; color:var(--dim);
             background:#f4f4f2; user-select:none; overflow:hidden;
-            font:13px/1.45 ui-monospace, Consolas, monospace; }
+            white-space:pre; font:13px/1.45 ui-monospace, Consolas, monospace; }
   #stack { position:relative; flex:1; overflow:hidden; }
   #hl, #src {
     position:absolute; inset:0; margin:0; padding:8px; border:0;
@@ -28,7 +30,7 @@
   #src { background:transparent; color:transparent; caret-color:var(--ink);
          resize:none; outline:none; }
   #side { flex:2; display:flex; flex-direction:column; min-width:0; }
-  #diags { max-height:9em; overflow:auto; border-bottom:1px solid #ddd;
+  #diags { max-height:9em; overflow:auto; border-top:1px solid #ddd;
            font:12px/1.5 ui-monospace, monospace; }
   #diags div { padding:.1em .8em; color:var(--err); cursor:pointer; }
   #diags div:hover { background:#fee; }
@@ -39,7 +41,13 @@
   .kw{color:var(--kw);font-weight:600} .str{color:var(--str)}
   .num{color:var(--num)} .com{color:var(--com);font-style:italic}
   .err{color:var(--err);text-decoration:underline wavy}
-  .dline{background:#fff0f0}
+  #tip { position:fixed; max-width:44em; background:#fffdf5;
+         border:1px solid #c9c2a6; box-shadow:0 2px 8px #0002;
+         padding:.5em .7em; font:12px/1.5 ui-monospace, monospace;
+         white-space:pre-wrap; display:none; z-index:9; }
+  #tip .sig { color:var(--kw); font-weight:600; }
+  .dline{background:#dcebfa;display:inline-block;width:100%}
+  .dcell{background:#f7b3b3;border-radius:2px}
 </style>
 </head>
 <body>
@@ -47,23 +55,28 @@
   <b>m9edit</b>
   <button id="run">Run</button>
   <button id="check">Check</button>
+  <button id="fmt">Format</button>
+  <select id="examples"><option value="">examples…</option></select>
   <span id="status"></span>
 </header>
 <main>
-  <div id="edwrap">
-    <pre id="gutter">1</pre>
-    <div id="stack">
-      <pre id="hl"><code id="hlc"></code></pre>
-      <textarea id="src" spellcheck="false" autocomplete="off"></textarea>
+  <div id="edcol">
+    <div id="edwrap">
+      <pre id="gutter">1</pre>
+      <div id="stack">
+        <pre id="hl"><code id="hlc"></code></pre>
+        <textarea id="src" spellcheck="false" autocomplete="off"></textarea>
+      </div>
     </div>
+    <div id="diags"></div>
   </div>
   <div id="side">
-    <div id="diags"></div>
     <div id="out">Press Run.  The output of your program appears here;
 files it writes appear below it, SVG figures inline.</div>
     <div id="figs"></div>
   </div>
 </main>
+<div id="tip"></div>
 <script>
 /* The page never lexes M9.  Colour comes from POST /lex -- the
    compiler's own lexer over this buffer -- and diagnostics from
@@ -95,7 +108,9 @@ function classOf(k) {
 /* spans per line: from tokens [kind,line,col,len] and comments
    {line,col,text}; comment text includes its delimiters and its own
    newlines, so continuation columns come from the text itself */
+var lastTok = [], lastCom = [], firstDiag = null;
 function render(tokens, comments) {
+  lastTok = tokens; lastCom = comments;
   var lines = srcEl.value.split('\n');
   var spans = [];            /* [line, colFrom, colTo, cls] 1-based */
   for (var t of tokens) {
@@ -121,21 +136,53 @@ function render(tokens, comments) {
   for (var ln = 1; ln <= lines.length; ln++) {
     var text = lines[ln - 1];
     var row = (byLine.get(ln) || []).sort(function(a,b){return a[1]-b[1];});
-    var pos = 1, h = '';
-    for (var sp of row) {
-      var from = Math.max(sp[1], pos), to = Math.min(sp[2], text.length + 1);
-      if (from > pos) h += esc(text.slice(pos - 1, from - 1));
-      if (to > from)
-        h += '<span class="' + sp[3] + '">' +
-             esc(text.slice(from - 1, to - 1)) + '</span>';
-      pos = Math.max(pos, to);
+    var h;
+    if (firstDiag && firstDiag.line === ln) {
+      /* the first finding's line: per-character classes, so the red
+         cell can sit INSIDE whatever token colour is under it */
+      var cls = new Array(text.length + 1).fill('');
+      for (var sp of row)
+        for (var c2 = Math.max(sp[1], 1);
+             c2 < Math.min(sp[2], text.length + 1); c2++)
+          cls[c2] = sp[3];
+      var dc = Math.min(Math.max(firstDiag.col, 1), text.length + 1);
+      cls[dc] = (cls[dc] ? cls[dc] + ' ' : '') + 'dcell';
+      if (dc > text.length) text += ' ';   /* a cell to mark at EOL */
+      h = '';
+      var runCls = null, run = '';
+      for (var i2 = 1; i2 <= text.length + 1; i2++) {
+        var k2 = (i2 <= text.length) ? (cls[i2] || '') : null;
+        if (k2 !== runCls) {
+          if (run)
+            h += runCls ? '<span class="' + runCls + '">' + esc(run) + '</span>'
+                        : esc(run);
+          runCls = k2; run = '';
+        }
+        if (i2 <= text.length) run += text[i2 - 1];
+      }
+      h = '<span class="dline">' + (h.length ? h : ' ') + '</span>';
+    } else {
+      var pos = 1; h = '';
+      for (var sp of row) {
+        var from = Math.max(sp[1], pos), to = Math.min(sp[2], text.length + 1);
+        if (from > pos) h += esc(text.slice(pos - 1, from - 1));
+        if (to > from)
+          h += '<span class="' + sp[3] + '">' +
+               esc(text.slice(from - 1, to - 1)) + '</span>';
+        pos = Math.max(pos, to);
+      }
+      if (pos <= text.length) h += esc(text.slice(pos - 1));
+      if (!h.length) h = ' ';
     }
-    if (pos <= text.length) h += esc(text.slice(pos - 1));
-    html.push(h.length ? h : ' ');
+    html.push(h);
   }
   hlc.innerHTML = html.join('\n');
   gut.textContent = Array.from({length: lines.length},
                                function(_, i){return i + 1;}).join('\n');
+}
+function syncScroll() {
+  hl.scrollTop = srcEl.scrollTop; hl.scrollLeft = srcEl.scrollLeft;
+  gut.scrollTop = srcEl.scrollTop;
 }
 var lexTimer = null;
 function relex() {
@@ -143,15 +190,26 @@ function relex() {
   lexTimer = setTimeout(function() {
     fetch('/lex', {method:'POST', body: srcEl.value})
       .then(function(r){return r.json();})
-      .then(function(j){ render(j.tokens, j.comments); })
+      .then(function(j){ render(j.tokens, j.comments); syncScroll(); })
       .catch(function(){});
   }, 200);
 }
-srcEl.addEventListener('input', relex);
-srcEl.addEventListener('scroll', function() {
-  hl.scrollTop = srcEl.scrollTop; hl.scrollLeft = srcEl.scrollLeft;
-  gut.scrollTop = srcEl.scrollTop;
+var checkTimer = null;
+srcEl.addEventListener('input', function() {
+  /* the backdrop must match the buffer's HEIGHT at once, or a paste
+     leaves the caret drawn against yesterday's line count until the
+     next scroll -- colours can wait for the lexer, geometry cannot */
+  hlc.textContent = srcEl.value;
+  var n = srcEl.value.split('\n').length;
+  gut.textContent = Array.from({length:n},
+                               function(_,i){return i+1;}).join('\n');
+  syncScroll();
+  relex();
+  /* the checker runs one second after the typing stops */
+  clearTimeout(checkTimer);
+  checkTimer = setTimeout(doCheck, 1000);
 });
+srcEl.addEventListener('scroll', syncScroll);
 srcEl.addEventListener('keydown', function(e) {
   if (e.key === 'Tab') {          /* two spaces, the corpus style */
     e.preventDefault();
@@ -162,6 +220,9 @@ srcEl.addEventListener('keydown', function(e) {
 });
 
 function showDiags(list) {
+  firstDiag = list.length ? {line: list[0].line, col: list[0].col} : null;
+  render(lastTok, lastCom);
+  syncScroll();
   diags.innerHTML = '';
   for (var d of list) {
     var el = document.createElement('div');
@@ -175,7 +236,10 @@ function showDiags(list) {
     diags.appendChild(el);
   }
 }
-document.getElementById('check').onclick = function() {
+var checking = false;
+function doCheck() {
+  if (checking) return;
+  checking = true;
   status_.textContent = 'checking...';
   fetch('/check', {method:'POST', body: srcEl.value})
     .then(function(r){return r.json();})
@@ -184,8 +248,10 @@ document.getElementById('check').onclick = function() {
       status_.textContent = j.ok ? 'checker: clean' :
         'checker: ' + j.diags.length + ' finding(s)';
     })
-    .catch(function(){ status_.textContent = 'server unreachable'; });
-};
+    .catch(function(){ status_.textContent = 'server unreachable'; })
+    .finally(function(){ checking = false; });
+}
+document.getElementById('check').onclick = doCheck;
 document.getElementById('run').onclick = function() {
   status_.textContent = 'compiling and running...';
   out.textContent = '';
@@ -199,7 +265,7 @@ document.getElementById('run').onclick = function() {
         if (m) {
           if (/\.(svg|png)$/.test(m[1])) {
             var img = document.createElement('img');
-            img.src = m[1] + '?t=' + stamp;
+            img.src = m[1];   /* /out sends Cache-Control: no-store, so each run's figure is fresh */
             figs.appendChild(img);
           } else {
             var a = document.createElement('a');
@@ -213,11 +279,186 @@ document.getElementById('run').onclick = function() {
       }
       out.textContent = shown.join('\n');
       status_.textContent = 'done';
-      document.getElementById('check').onclick();
+      doCheck();
     })
     .catch(function(){ status_.textContent = 'server unreachable'; });
 };
+/* one place to replace the whole buffer -- an example load or a
+   format -- keeping geometry, colour and the checker in step */
+function setBuffer(text) {
+  srcEl.value = text;
+  hlc.textContent = text;
+  var n = text.split('\n').length;
+  gut.textContent = Array.from({length:n},
+                               function(_,i){return i+1;}).join('\n');
+  syncScroll();
+  relex();
+  clearTimeout(checkTimer);
+  checkTimer = setTimeout(doCheck, 400);
+}
+
+/* the Format button: the canonical layout, comments kept.  An
+   unparsable buffer comes back unchanged (the checker says why). */
+document.getElementById('fmt').onclick = function() {
+  status_.textContent = 'formatting…';
+  fetch('/fmt', {method:'POST', body: srcEl.value})
+    .then(function(r){return r.text();})
+    .then(function(t){ if (t && t !== srcEl.value) setBuffer(t);
+                       status_.textContent = 'formatted'; })
+    .catch(function(){ status_.textContent = 'server unreachable'; });
+};
+
+/* the examples dropdown, seeded from /examples */
+var exSel = document.getElementById('examples');
+fetch('/examples').then(function(r){return r.json();})
+  .then(function(list){
+    for (var name of list) {
+      var o = document.createElement('option');
+      o.value = name;
+      o.textContent = name.replace(/^[0-9]+-/, '').replace(/\.m9$/, '');
+      exSel.appendChild(o);
+    }
+  }).catch(function(){});
+exSel.onchange = function() {
+  var name = exSel.value;
+  if (!name) return;
+  fetch('/example/' + name).then(function(r){return r.text();})
+    .then(function(t){ setBuffer(t); status_.textContent = 'loaded ' + name; })
+    .catch(function(){ status_.textContent = 'could not load ' + name; });
+  exSel.value = '';
+};
+
 relex();
+
+/* HOVER DOCSTRINGS: the same m9c --json gather that feeds the VS
+   Code extension, fetched per module and cached.  Only qualified
+   names (Module.Proc) resolve -- documentation exists per
+   definition module, and the page invents none. */
+var tip = document.getElementById('tip');
+var docCache = {};
+var kwDocs = {};
+fetch('/kw').then(function(r){return r.json();})
+            .then(function(j){ kwDocs = j; }).catch(function(){});
+function tokenAt(line, col) {
+  for (var i = 0; i < lastTok.length; i++) {
+    var t = lastTok[i];
+    var len = t[3] + (t[0] === 6 ? 2 : 0);
+    if (t[1] === line && col >= t[2] && col < t[2] + len)
+      return {i: i, t: t};
+  }
+  return null;
+}
+function qualAt(line, col) {
+  var hit = tokenAt(line, col);
+  if (!hit || hit.t[0] !== 2) return null;
+  var toks = lastTok, i = hit.i;
+  /* Ident . Ident -- hovering either half answers the pair */
+  if (i + 2 < toks.length && toks[i+1][0] === 221 && toks[i+2][0] === 2)
+    return {mod: textOf(toks[i]), name: textOf(toks[i+2])};
+  if (i >= 2 && toks[i-1][0] === 221 && toks[i-2][0] === 2)
+    return {mod: textOf(toks[i-2]), name: textOf(toks[i])};
+  return null;
+}
+function textOf(t) {
+  var line = srcEl.value.split('\n')[t[1] - 1] || '';
+  return line.substr(t[2] - 1, t[3]);
+}
+function metrics() {
+  var probe = document.createElement('span');
+  probe.textContent = 'M';
+  probe.style.font = getComputedStyle(hl).font;
+  probe.style.position = 'absolute'; probe.style.visibility = 'hidden';
+  document.body.appendChild(probe);
+  var r = probe.getBoundingClientRect();
+  document.body.removeChild(probe);
+  return {w: r.width, h: r.height * 1.45 / 1};
+}
+var mtr = null;
+function showTip(ev, html) {
+  tip.innerHTML = html;
+  tip.style.left = Math.min(ev.clientX + 12,
+                            window.innerWidth - tip.offsetWidth - 16) + 'px';
+  tip.style.top = (ev.clientY + 14) + 'px';
+  tip.style.display = 'block';
+}
+function renderDoc(q, entry) {
+  /* the signature already carries the name; prefix only the module */
+  var sig = entry.signature || (q.name);
+  var h = '<div class="sig">' + esc(q.mod + '.' + sig) + '</div>';
+  var extra = '';
+  if (entry.result) extra += ' : ' + entry.result;
+  if (entry.raises && entry.raises.length)
+    extra += '  RAISES ' + entry.raises.join(', ');
+  if (extra) h += '<div class="sig">' + esc(extra.trim()) + '</div>';
+  h += entry.doc ? esc(entry.doc) : '<i>(no docstring)</i>';
+  return h;
+}
+var hoverTimer = null;
+srcEl.addEventListener('mousemove', function(ev) {
+  clearTimeout(hoverTimer);
+  tip.style.display = 'none';
+  hoverTimer = setTimeout(function() {
+    if (!mtr) { var lh = parseFloat(getComputedStyle(srcEl).lineHeight);
+                mtr = metrics(); mtr.h = lh; }
+    var rect = srcEl.getBoundingClientRect();
+    var col = Math.floor((ev.clientX - rect.left + srcEl.scrollLeft - 8) / mtr.w) + 1;
+    var line = Math.floor((ev.clientY - rect.top + srcEl.scrollTop - 8) / mtr.h) + 1;
+    var hit = tokenAt(line, col);
+    if (hit && hit.t[0] >= 7 && hit.t[0] < 200) {
+      var w = textOf(hit.t);
+      if (kwDocs[w])
+        showTip(ev, '<div class="sig">' + esc(w) + '</div>' + esc(kwDocs[w]));
+      return;
+    }
+    var q = qualAt(line, col);
+    if (!q) {
+      /* a bare capitalised name: try it as a MODULE -- the hover for
+         IMPORT lines.  The gather's top-level doc is the module's
+         own docstring; the first paragraph is the short form. */
+      if (hit && hit.t[0] === 2) {
+        var mn = textOf(hit.t);
+        if (!/^[A-Z]/.test(mn)) return;
+        function showMod(doc) {
+          if (!doc.doc) return;
+          var para = doc.doc.split('\n\n')[0];
+          showTip(ev, '<div class="sig">' + esc(mn) + ' (module)</div>' +
+                      esc(para));
+        }
+        if (docCache[mn] === 'missing') return;
+        if (docCache[mn]) { showMod(docCache[mn]); return; }
+        fetch('/doc/' + mn).then(function(r) {
+          if (!r.ok) { docCache[mn] = 'missing'; return null; }
+          return r.json();
+        }).then(function(j) {
+          if (!j) return;
+          docCache[mn] = j;
+          showMod(j);
+        }).catch(function(){});
+      }
+      return;
+    }
+    function show(doc) {
+      var entry = null;
+      for (var e of (doc.declarations || []))
+        if (e.name === q.name) entry = e;
+      if (!entry) return;
+      showTip(ev, renderDoc(q, entry));
+    }
+    if (docCache[q.mod] === 'missing') return;
+    if (docCache[q.mod]) { show(docCache[q.mod]); return; }
+    fetch('/doc/' + q.mod).then(function(r) {
+      if (!r.ok) { docCache[q.mod] = 'missing'; return null; }
+      return r.json();
+    }).then(function(j) {
+      if (!j) return;
+      docCache[q.mod] = j;
+      show(j);
+    }).catch(function(){});
+  }, 350);
+});
+srcEl.addEventListener('mouseleave', function() {
+  clearTimeout(hoverTimer); tip.style.display = 'none';
+});
 </script>
 </body>
 </html>

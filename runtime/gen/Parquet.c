@@ -1254,6 +1254,7 @@ static m9_sl_CHAR Parquet_I64Text (m9_pool *pool, int64_t v, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1860,6 +1861,7 @@ static m9_sl_CHAR Parquet_RStr (m9_pool *pool, Parquet_Rd *r, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2247,6 +2249,7 @@ static m9_sl_CHAR Parquet_CodecName (int64_t c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

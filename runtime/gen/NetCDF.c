@@ -388,6 +388,7 @@ m9_sl_CHAR NetCDF_DimName (m9_pool *pool, NetCDF_File * f, int64_t dimid, m9_sta
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -711,6 +712,7 @@ m9_sl_CHAR NetCDF_GetAttStr (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_s
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -808,6 +810,7 @@ m9_sl_CHAR NetCDF_VarName (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_sta
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1508,6 +1511,7 @@ static m9_sl_CHAR NetCDF_Message (m9_pool *pool, int64_t status, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

@@ -31,6 +31,24 @@ void m9_trap_tag (void)
 #define M9_ALIGN(n) (((n) + 15u) & ~ (size_t) 15u)
 #define M9_POOL_BLOCK_MIN 65536
 #define M9_POOL_SLACK_MAX (4u * 1024u * 1024u)   /* see m9_pool_alloc */
+#define M9_POOL_CACHE_MAX 4                        /* see m9_pool_free */
+
+/* Minimum-size blocks are RECYCLED, per thread.  A frame arena (par
+   2.3) is created by its first `+` and freed at the exit, so a
+   formatter called 200,000 times mallocs and frees a 64 KB block
+   200,000 times -- and glibc, seeing that block at the top of the
+   heap, trims it back to the kernel and asks for it again, and the
+   kernel zeroes the pages each time.  Measured on fmt_driver: 1.54 s
+   and 163,754 minor page faults against 0.28 s for the pool-taking
+   Fmt it replaced; with glibc told not to trim, 0.30 s.  So the
+   runtime keeps a few freed blocks instead of asking twice: a
+   thread-local list, no lock, at most M9_POOL_CACHE_MAX blocks (256
+   KB) per thread, which a thread's exit leaks -- bounded, and known.
+   Only exact-minimum blocks are kept, so a 100 MB carve still goes
+   straight back.  Carves are zeroed on the way OUT of the block, not
+   on the way in, so a recycled block needs no memset. */
+static _Thread_local m9_pool_block *m9_block_cache = NULL;
+static _Thread_local int m9_block_cached = 0;
 
 void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
 {
@@ -45,7 +63,16 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
   need = elem * (size_t) n;
   need = M9_ALIGN (need);                    /* 16-byte alignment */
   b = pool->head;
-  if (b == NULL || b->cap - b->used < need) {
+  if ((b == NULL || b->cap - b->used < need) && need <= M9_POOL_BLOCK_MIN
+      && m9_block_cache != NULL) {
+    b = m9_block_cache;
+    m9_block_cache = b->next;
+    m9_block_cached--;
+    b->next = pool->head;
+    b->used = 0;
+    pool->head = b;
+  }
+  else if (b == NULL || b->cap - b->used < need) {
     /* SLACK, BOUNDED.  An exact fit above the block minimum is what
        makes `s := s + x` quadratic: m9_cat can extend the arena's top
        allocation in place, but only if the block has room, and an
@@ -73,7 +100,16 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
 void m9_pool_free (m9_pool *pool)
 {
   m9_pool_block *b = pool->head, *n;
-  while (b != NULL) { n = b->next; free (b); b = n; }
+  while (b != NULL) {
+    n = b->next;
+    if (b->cap == M9_POOL_BLOCK_MIN && m9_block_cached < M9_POOL_CACHE_MAX) {
+      b->next = m9_block_cache;
+      m9_block_cache = b;
+      m9_block_cached++;
+    }
+    else free (b);
+    b = n;
+  }
   pool->head = NULL;
 }
 
@@ -129,6 +165,37 @@ m9_sl_CHAR m9_cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b,
   if (b.len > 0)
     memcpy (out.p + a.len, b.p, (size_t) b.len * sizeof (uint32_t));
   return out;
+}
+
+m9_sl_CHAR m9_strdup (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
+{
+  m9_sl_CHAR out;
+  out.p = (uint32_t *) m9_pool_alloc (pool, sizeof (uint32_t), s.len, err);
+  out.len = s.len;
+  if (err->exc != NULL) { out.len = 0; return out; }
+  if (s.len > 0) memcpy (out.p, s.p, (size_t) s.len * sizeof (uint32_t));
+  return out;
+}
+
+int m9_pool_owns (const m9_pool *pool, const void *p)
+{
+  const m9_pool_block *blk;
+  uintptr_t base, ap = (uintptr_t) p;
+  for (blk = pool->head; blk != NULL; blk = blk->next) {
+    base = (uintptr_t) (blk + 1);
+    if (ap >= base && ap < base + blk->cap) return 1;
+  }
+  return 0;
+}
+
+m9_sl_CHAR m9_rehome (const m9_pool *frame, m9_pool *res, m9_sl_CHAR s,
+                      m9_state *err)
+{
+  if (frame->head == NULL || s.p == NULL || !m9_pool_owns (frame, s.p))
+    return s;
+  /* on a raise path the copy may itself fail: the string comes back
+     empty rather than dangling, and the OutOfMemory stands */
+  return m9_strdup (res, s, err);
 }
 
 void *m9_new (size_t size, m9_state *err)
@@ -202,7 +269,13 @@ int m9_exit (m9_state *err)
 {
   fflush (stdout);
   if (!err->exc) return 0;
-  fprintf (stderr, "m9: unhandled %s\n", err->exc->name);
+  /* under -g the generator records the raising statement's
+     position; without it line is 0 and the plain message stands */
+  if (err->file && err->line > 0)
+    fprintf (stderr, "%s:%d: unhandled %s\n",
+             err->file, err->line, err->exc->name);
+  else
+    fprintf (stderr, "m9: unhandled %s\n", err->exc->name);
   fflush (stderr);
   return 1;
 }

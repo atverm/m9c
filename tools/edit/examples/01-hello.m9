@@ -1,0 +1,7 @@
+MODULE Hello ;
+
+IMPORT Io ;
+
+BEGIN
+  Io.WriteLine ('hello, world')
+END Hello.

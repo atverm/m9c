@@ -1,0 +1,9 @@
+(* EXPECT: unknown exception: NoSuchExc *)
+MODULE m ;
+PROCEDURE P () RAISES NoSuchExc =
+BEGIN
+  RAISE NoSuchExc
+END P ;
+BEGIN
+  P ()
+END m.

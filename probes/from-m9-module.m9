@@ -1,0 +1,10 @@
+(* EXPECT: is an M9 module -- use IMPORT lib *)
+DEFINITION MODULE lib ;
+EXCEPTION Boom ;
+END lib.
+IMPLEMENTATION MODULE lib ;
+END lib.
+MODULE m ;
+FROM lib IMPORT Boom ;
+BEGIN
+END m.

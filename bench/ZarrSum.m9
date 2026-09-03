@@ -63,7 +63,7 @@ BEGIN
   Io.WriteI64 (n) ;
   Io.WriteLine ('') ;
   Io.Write ('nansum = ') ;
-  Io.WriteLine (Fmt.Fixed (argPool, sum, 4))
+  Io.WriteLine (Fmt.Fixed (sum, 4))
 EXCEPT
 | ZarrStore.IOError (msg) :
     Io.WriteLine ('zarrsum: io error') ;

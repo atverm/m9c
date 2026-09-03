@@ -180,7 +180,7 @@ PROCEDURE Real (RO key: STR ; v: F64 ; decimals: I64) =
 BEGIN
   IF NOT building THEN RETURN END ;
   Key (key) ;
-  DynStr.Append (pool, line, Fmt.Fixed (pool, v, decimals))
+  DynStr.Append (pool, line, Fmt.Fixed (v, decimals))
 EXCEPT
 | ValueRange :
     (* a magnitude Fixed will not scale still gets a field, because

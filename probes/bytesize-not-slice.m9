@@ -1,0 +1,7 @@
+(* EXPECT: ByteSize needs a slice, not I64 *)
+MODULE m ;
+VAR i, n : I64 ;
+BEGIN
+  i := 5 ;
+  n := ByteSize (i)
+END m.

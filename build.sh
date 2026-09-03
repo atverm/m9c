@@ -36,11 +36,15 @@ COMPILER="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen Doc M9c"
 
 # everything else a program may import: the standard library, shipped
 # as source (M9 has no binary module format -- the .m9 IS the
-# interface, and a second one could disagree with it)
+# interface, and a second one could disagree with it).  Lsp and M9fmt
+# are PROGRAMS, shipped the same way so that `m9c --make -o m9lsp Lsp`
+# works against the installed library -- 0.4.1's changelog said it
+# did, and /usr/lib/m9 of that release held no Lsp.m9: the claim had
+# no gate.  debian/tests/compile-a-program builds both now.
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
          Json Dict Mat Math Time Logger Syslog Http HttpServer OpenApi Doc \
          NetCDF Grib Csv Stats Frame Parquet \
-         Plot ZarrStore"
+         Plot ZarrStore Lsp M9fmt"
 
 mkdir -p "$OUT"
 

@@ -50,7 +50,12 @@ BEGIN
 END Fine.
 FIN
 
-M9LSP_M9C=$W/m9c M9LIBRARY="$SRC" python3 - "$W" <<'PY'
+# the version the server announces is gated against debian/changelog
+# exactly as m9c --version is in m9c.sh: 0.4.1 shipped an m9lsp that
+# said 0.4.0, because Lsp.m9's Version is a second hand-bumped
+# constant and nothing compared it to anything.
+CLV=$(cd "$SRC/.." && sh tools/release/version.sh)
+M9LSP_M9C=$W/m9c M9LIBRARY="$SRC" M9_CLV="$CLV" python3 - "$W" <<'PY'
 import json, subprocess, sys, os
 
 w = sys.argv[1]
@@ -81,7 +86,8 @@ send({'jsonrpc':'2.0','id':1,'method':'initialize','params':{}})
 r = recv()
 check(r.get('id') == 1, 'initialize echoes its id')
 check(r['result']['serverInfo']['name'] == 'm9lsp', 'server names itself')
-check(r['result']['serverInfo']['version'] == '0.4.0', 'server version')
+check(r['result']['serverInfo']['version'] == os.environ['M9_CLV'],
+      'server version agrees with debian/changelog (' + os.environ['M9_CLV'] + ')')
 
 send({'jsonrpc':'2.0','method':'initialized','params':{}})
 

@@ -791,4 +791,29 @@ M9LIBRARY="$SRC" "$M9C" --make -o diamond Diamond.m9 >dm.txt 2>&1 ||
 [ "$(./diamond)" = "diamond ok" ] ||
   { echo "FAIL: the diamond built but answered wrong"; ./diamond; exit 1; }
 
+# SizeOf and ByteSize: the type size (compile-time C sizeof) and a
+# slice's data bytes (LEN * element size).  A runnable check because
+# the values are the contract -- 8, 4, 800, 250, and a slice's own
+# SizeOf is its 16-byte descriptor, the data is ByteSize.
+cat > Sz.m9 <<'SZ'
+MODULE Sz ;
+IMPORT Io ;
+TYPE Shape = CASE RECORD | Circle : r: F64 | Square : s: F64 END ;
+VAR xs : SLICE OF F64 ; bs : SLICE OF BYTE ; sh : Shape ; pool : POOL ;
+BEGIN
+  xs := NEW (pool, F64, 100) ;
+  bs := NEW (pool, BYTE, 250) ;
+  Io.WriteI64 (SizeOf (F64)) ; Io.WriteLine ('') ;
+  Io.WriteI64 (SizeOf (I32)) ; Io.WriteLine ('') ;
+  Io.WriteI64 (ByteSize (xs)) ; Io.WriteLine ('') ;
+  Io.WriteI64 (ByteSize (bs)) ; Io.WriteLine ('') ;
+  Io.WriteI64 (SizeOf (xs)) ; Io.WriteLine ('')
+END Sz.
+SZ
+M9LIBRARY="$SRC" "$M9C" --make -o sz Sz.m9 >sz.txt 2>&1 ||
+  { echo "FAIL: SizeOf/ByteSize program did not build:"; head -5 sz.txt; exit 1; }
+[ "$(./sz | tr '\n' ' ')" = "8 4 800 250 16 " ] ||
+  { echo "FAIL: SizeOf/ByteSize gave the wrong bytes:"; ./sz | tr '\n' ' '; echo; exit 1; }
+echo "m9c: SizeOf and ByteSize answer the right bytes"
+
 echo "m9c: --make builds a diamond in dependency order, first run"

@@ -1,0 +1,21 @@
+MODULE Checked ;
+
+(* Arithmetic is checked: + - * overflow, DIV/MOD guard zero.  To
+   wrap on purpose you must SAY so, with +% -% *%.  Here MAX(I64) +% 1
+   wraps to MIN(I64) -- deliberate, and spelled. *)
+IMPORT Io ;
+
+VAR
+  big, wrapped : I64 ;
+
+BEGIN
+  big := MAX (I64) ;
+  Io.Write ('MAX (I64) = ') ;
+  Io.WriteI64 (big) ;
+  Io.WriteLine ('') ;
+  wrapped := big +% 1 ;
+  Io.Write ('MAX +% 1  = ') ;
+  Io.WriteI64 (wrapped) ;
+  Io.WriteLine ('') ;
+  Io.WriteLine ('(plain + would have raised Overflow)')
+END Checked.

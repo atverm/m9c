@@ -235,35 +235,35 @@ m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_state *
   if (err->exc) goto L_ret;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (pool, c.year, INT64_C(4), true, err), err);
+  DynStr_Append (pool, &(d), Fmt_I64Pad (c.year, INT64_C(4), true, err), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, &(d), 45u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (pool, c.month, INT64_C(2), true, err), err);
+  DynStr_Append (pool, &(d), Fmt_I64Pad (c.month, INT64_C(2), true, err), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, &(d), 45u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (pool, c.day, INT64_C(2), true, err), err);
+  DynStr_Append (pool, &(d), Fmt_I64Pad (c.day, INT64_C(2), true, err), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, &(d), 84u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (pool, c.hour, INT64_C(2), true, err), err);
+  DynStr_Append (pool, &(d), Fmt_I64Pad (c.hour, INT64_C(2), true, err), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, &(d), 58u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (pool, c.minute, INT64_C(2), true, err), err);
+  DynStr_Append (pool, &(d), Fmt_I64Pad (c.minute, INT64_C(2), true, err), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, &(d), 58u, err);
   if (err->exc) goto L_ret;
   if ((decimals == INT64_C(0))) {
-    DynStr_Append (pool, &(d), Fmt_I64Pad (pool, m9_i64_f64 ((double)(c.second), err), INT64_C(2), true, err), err);
+    DynStr_Append (pool, &(d), Fmt_I64Pad (m9_i64_f64 ((double)(c.second), err), INT64_C(2), true, err), err);
     if (err->exc) goto L_ret;
   } else {
     if ((c.second < 10.0)) {
       DynStr_AppendChar (pool, &(d), 48u, err);
       if (err->exc) goto L_ret;
     }
-    DynStr_Append (pool, &(d), Fmt_Fixed (pool, c.second, decimals, err), err);
+    DynStr_Append (pool, &(d), Fmt_Fixed (c.second, decimals, err), err);
     if (err->exc) goto L_ret;
   }
   DynStr_AppendChar (pool, &(d), 90u, err);
@@ -274,6 +274,7 @@ m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_state *
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

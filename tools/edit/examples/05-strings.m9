@@ -1,0 +1,14 @@
+MODULE Greet ;
+
+(* + concatenates strings.  DynStr accumulates when you build up a
+   lot; + composes a few. *)
+IMPORT Io ;
+
+VAR
+  who, line : STR ;
+
+BEGIN
+  who := 'Modula-9' ;
+  line := 'hello, ' + who + '!' ;
+  Io.WriteLine (line)
+END Greet.

@@ -181,12 +181,24 @@ end;
 function TParser.ParseFile: TNode;
 var
   before : Integer;
+  u : TNode;
 begin
   Result := NewNode (nkFile);
   while cur.kind <> tkEOF do
   begin
     before := Errors.Count;
-    Result.Add (PUnit);
+    u := PUnit;
+    Result.Add (u);
+    { a file has at most one PROGRAM module.  A second bare MODULE
+      is another main, and without this it silently WON: `MODULE
+      Hello. MODULE Welcome.` compiled and ran Welcome, discarding
+      Hello.  A program may still be FOLLOWED by a DEFINITION or a
+      FOR-C unit it uses (serialtest is a program then cserial). }
+    if (u.kind = nkProgram) and (cur.kind = tkMODULE) then
+    begin
+      Err ('a second program module: a file may have only one');
+      Break;
+    end;
     { guaranteed progress: PUnit always consumes or errs; if it
       neither consumed nor moved, drop one token }
     if (cur.kind <> tkEOF) and (Errors.Count > before + 50) then

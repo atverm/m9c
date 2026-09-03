@@ -240,6 +240,7 @@ m9_sl_CHAR Io_Env (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -413,6 +414,7 @@ m9_sl_CHAR Io_Arg (m9_pool *pool, int64_t i, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -450,6 +452,7 @@ m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;

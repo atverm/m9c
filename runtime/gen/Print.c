@@ -202,6 +202,7 @@ m9_sl_CHAR Print_Tree (m9_pool *pool, Ast_Node * root, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -224,6 +225,7 @@ m9_sl_CHAR Print_TypeText (m9_pool *pool, Ast_Node * k, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -246,6 +248,7 @@ m9_sl_CHAR Print_ParamsText (m9_pool *pool, Ast_Node * k, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -268,6 +271,7 @@ m9_sl_CHAR Print_ExprText (m9_pool *pool, Ast_Node * k, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

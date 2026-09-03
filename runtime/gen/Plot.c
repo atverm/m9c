@@ -1222,6 +1222,7 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1378,6 +1379,7 @@ m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plo
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

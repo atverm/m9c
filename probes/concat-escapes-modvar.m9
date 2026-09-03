@@ -1,0 +1,9 @@
+(* EXPECT: cannot be stored in module variable saved *)
+MODULE m ;
+VAR saved : STR ;
+PROCEDURE Keep (RO a: STR ; RO b: STR) =
+BEGIN
+  saved := a + b
+END Keep ;
+BEGIN
+END m.

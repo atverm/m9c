@@ -270,6 +270,7 @@ m9_sl_CHAR Csv_Name (m9_pool *pool, Csv_Table * t, int64_t c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -731,6 +732,7 @@ m9_sl_CHAR Csv_TextAt (m9_pool *pool, Csv_Table * t, int64_t c, int64_t row, m9_
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }

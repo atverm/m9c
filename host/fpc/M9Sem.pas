@@ -61,6 +61,8 @@ type
     opaque : array of string;          { opaque decls in the def }
     cnNames : array of string;         { exported CONSTs ... }
     cnTypes : array of string;         { ... and their LitType }
+    exNames : array of string;         { EXCEPTION declarations }
+    function HasExc (const n: string): Boolean;
     function FindProc (const n: string): Integer;
     procedure AddProc (const p: TProcInfo);
     function FindType (const n: string): TNode;
@@ -72,6 +74,10 @@ type
     curMod : string;
     curUnsafe : Boolean;
     curPure : Boolean;                 { inside a [PURE] body (par 3.2) }
+    curInBody : Boolean;               { the module init body, whose
+                                         frame and module vars co-live,
+                                         so a concat stored in a module
+                                         var there does not outlive it }
     boundMon : string;                 { the bound monitor parameter,
                                          '' if this procedure is not
                                          bound to one (par 6) }
@@ -97,6 +103,8 @@ type
     procedure ErrN (n: TNode; const ctx, msg: string);
     function SigOf (p: TNode): string;
     function RaisesOf (p: TNode): TStringArray;
+    function ExcKnown (const qual, nm: string): Boolean;
+    procedure CheckExcName (n: TNode; const ctx: string);
     procedure CollectUnit (u: TNode);
     procedure CheckForeignDef (u: TNode);
     procedure CheckConformance (u: TNode);
@@ -269,6 +277,14 @@ end;
 
 { ---- TModuleInfo ---- }
 
+function TModuleInfo.HasExc (const n: string): Boolean;
+var i : Integer;
+begin
+  for i := 0 to High (exNames) do
+    if exNames[i] = n then Exit (True);
+  Result := False;
+end;
+
 function TModuleInfo.FindProc (const n: string): Integer;
 var i : Integer;
 begin
@@ -366,6 +382,45 @@ begin
       Result[i] := p.kids[2].kids[i].a;
 end;
 
+{ an exception cited by RAISE, a RAISES clause or a handler must be
+  one the reader (and the generator) can find, resolving exactly as
+  the generator's ExcRef does: a qualified name in the module it
+  names, a bare name locally, predeclared, or declared in some loaded
+  module (both direct and transitive deps register their exceptions).
+  A name found nowhere is accepted by neither -- catch it HERE. }
+function TSem.ExcKnown (const qual, nm: string): Boolean;
+var
+  m : TModuleInfo;
+  i : Integer;
+begin
+  Result := True;
+  if (qual <> '') and (qual <> curMod) then
+  begin
+    m := FindMod (qual);
+    { an unknown module is the softness contract's business, not
+      ours: only a KNOWN module that lacks the exception is an error }
+    if (m <> nil) and (m.foreignLang = '') and not m.HasExc (nm) then
+      Result := False;
+    Exit;
+  end;
+  { bare, or qualified with the current module }
+  if (nm = 'Overflow') or (nm = 'IndexError') or
+     (nm = 'OutOfMemory') or (nm = 'ValueRange') then Exit;
+  for i := 0 to High (mods) do
+    if mods[i].HasExc (nm) then Exit;
+  Result := False;
+end;
+
+procedure TSem.CheckExcName (n: TNode; const ctx: string);
+var qual, nm : string;
+begin
+  if n = nil then Exit;            { a bare re-raise names nothing }
+  qual := ''; nm := n.a;
+  if n.b <> '' then begin qual := n.a; nm := n.b; end;
+  if not ExcKnown (qual, nm) then
+    ErrN (n, ctx, 'unknown exception: ' + nm);
+end;
+
 { ---- registry ---- }
 
 procedure TSem.CollectUnit (u: TNode);
@@ -414,6 +469,15 @@ begin
           end
           else if d.kids[4] <> nil then
             m.procs[pi].hasBody := True;
+        end;
+      nkExcSection :
+        { the declared exceptions: RAISE/RAISES/handler may only cite
+          a name the reader can find -- one declared here, one
+          predeclared, or one qualified into the module that owns it }
+        for j := 0 to High (d.kids) do
+        begin
+          SetLength (m.exNames, Length (m.exNames) + 1);
+          m.exNames[High (m.exNames)] := d.kids[j].a;
         end;
       nkConstSection :
         { a CONST is an untyped literal, so what is remembered is its
@@ -895,6 +959,14 @@ var
   pendLn, pendCl : array of Integer;
   pendSrc, pendDst : array of string;
   pendN : Integer;
+  { par 2.3: locals/binders that currently hold a FRAME-SCOPED string
+    -- a concatenation, which lives in this frame's arena and dies
+    with it.  Escaping one (to a module var, through a reference
+    parameter, or via RETURN of the holding name) is the use-after-
+    free the frame model would otherwise permit silently.  Tainted on
+    assignment of a concatenation, cleared when the name is given a
+    durable value again (so a reused local never false-positives). }
+  fval : TStringList;
 
   function ScopeType (const nm: string): TNode;
   var ix : Integer;
@@ -962,6 +1034,23 @@ var
   function IsFrameMode (const m: string): Boolean;
   begin
     Result := (m = 'l') or (m = 'b') or (m = 'p');
+  end;
+
+  { does this right-hand side yield a FRAME-SCOPED string (par 2.3)?
+    A concatenation is one -- it is built in the frame arena -- and so
+    is a bare name that already holds one (fval).  Through parens and
+    SOME.  `u` is the RHS's type, so a numeric `+` (not SLICE OF CHAR)
+    is not mistaken for a concatenation. }
+  function FrameRHS (e: TNode; const u: string): Boolean;
+  begin
+    Result := False;
+    while (e <> nil) and ((e.kind = nkParen) or (e.kind = nkSomeExpr)) do
+      e := e.kids[0];
+    if e = nil then Exit;
+    if (e.kind = nkBin) and (e.a = '+') and (u = 'SLICE OF CHAR') then
+      Exit (True);
+    if (e.kind = nkDesignator) and (Length (e.kids) = 0) then
+      Result := fval.IndexOf (e.a) >= 0;
   end;
 
   { a ref value rooted at frame storage SRC was stored into the
@@ -1295,6 +1384,29 @@ var
 
   { a designator as an expression: module CONSTs and payload-less
     variant constructors (Type.Variant) included }
+  { is a BARE name one the checker knows -- in scope (any mode,
+    including a nil-typed IS SOME binder), a local/impl CONST, a
+    def-module CONST referenced across the pair, a predeclared
+    identifier, a builtin or user type name, or a module?  If none
+    of these, it is undefined, not merely unknown-typed. }
+  function BareNameKnown (const nm: string): Boolean;
+  var mi2, j2 : Integer;
+  begin
+    Result := True;
+    if ScopeMode (nm) <> '' then Exit;
+    if constMap.IndexOfName (nm) >= 0 then Exit;
+    if (nm = 'ALL') or (nm = 'HEAP') then Exit;
+    if InList (nm, BuiltinTypes) then Exit;
+    if FindMod (nm) <> nil then Exit;          { a module name }
+    for mi2 := 0 to High (mods) do
+    begin
+      if mods[mi2].FindType (nm) <> nil then Exit;   { a user type }
+      for j2 := 0 to High (mods[mi2].cnNames) do      { a module CONST }
+        if mods[mi2].cnNames[j2] = nm then Exit;
+    end;
+    Result := False;
+  end;
+
   function DesigStrType (d: TNode; guard: Boolean): string;
   var
     ci, j : Integer;
@@ -1662,6 +1774,23 @@ var
          InList (aNode[0].a, BuiltinTypes) then
         Exit (aNode[0].a);
       Exit ('');
+    end;
+    { SizeOf (x): the byte size of x's type (I64).  Accepts a type
+      name or a value; a slice's SizeOf is its descriptor, the data
+      is ByteSize.  In-memory only -- a wire uses the exact-width
+      types and ToBytesLE. }
+    if name = 'SizeOf' then
+    begin
+      Arity (1);
+      Exit ('I64');
+    end;
+    if name = 'ByteSize' then
+    begin
+      Arity (1);
+      if (nargs >= 1) and (aTy[0] <> '') and
+         not StartsWithS (aTy[0], 'SLICE OF ') then
+        ErrN (site, ctx, 'ByteSize needs a slice, not ' + TyName (aTy[0]));
+      Exit ('I64');
     end;
     if (name = 'F64.FromBytesLE') or (name = 'F32.FromBytesLE') then
     begin
@@ -2096,6 +2225,13 @@ var
       nkDesignator :
         begin
           NoteUse (e);
+          { a bare value name known to NO part of the checker's name
+            universe is undefined -- the symmetric twin of the
+            unknown-procedure check.  Only in ExprType (a body-walk
+            value context, scope populated), never in DesigStrType,
+            which the signature checks also call without a scope. }
+          if (Length (e.kids) = 0) and not BareNameKnown (e.a) then
+            ErrN (e, ctx, 'unknown name: ' + e.a);
           Result := DesigStrType (e, False);
         end;
       nkCallExpr : Result := CallType (e.kids[0], e.kids[1], e);
@@ -2156,7 +2292,7 @@ var
     covered : TStringList;
     lbl, dcl : TNode;
     vname : string;
-    t, u, selTy : string;
+    t, u, selTy, dmode : string;
     pre, hpre : string;
     snaps : array of string;
   begin
@@ -2165,10 +2301,43 @@ var
         begin
           t := DesigStrType (st.kids[0], False);
           u := ExprType (st.kids[1]);
+          { par 2.3: a FRAME-SCOPED string (a concatenation, or a name
+            already holding one) may not be stored where it will be
+            read after this frame is freed -- a module variable, or a
+            COMPONENT reached through a reference parameter (or a
+            value pointer's target).  A bare VAR/OWN STR parameter is
+            not refused: the generator re-homes its target into the
+            caller's arena at exit, as it does the result.  A bare
+            frame-mode destination merely inherits the taint and is
+            cleared when given a durable value. }
+          if FrameRHS (st.kids[1], u) then
+          begin
+            dmode := ScopeMode (st.kids[0].a);
+            if (dmode = 'm') and not curInBody then
+              ErrN (st.kids[1], ctx, 'a concatenation dies with this' +
+                ' frame; it cannot be stored in module variable ' +
+                st.kids[0].a + ' (par 2.3)')
+            else if (dmode = 'r') or
+                    (((dmode = 'v') or (dmode = 'o') or (dmode = 'p')) and
+                     (Length (st.kids[0].kids) > 0)) then
+              ErrN (st.kids[1], ctx, 'a concatenation dies with this' +
+                ' frame; it cannot be stored through ' + st.kids[0].a +
+                ', which outlives it (par 2.3)')
+            else if (Length (st.kids[0].kids) = 0) and
+                    IsFrameMode (dmode) and
+                    (fval.IndexOf (st.kids[0].a) < 0) then
+              fval.Add (st.kids[0].a);
+          end
+          else if (Length (st.kids[0].kids) = 0) and
+                  (fval.IndexOf (st.kids[0].a) >= 0) then
+            fval.Delete (fval.IndexOf (st.kids[0].a));
+          { anchored at the RIGHT-HAND SIDE, not the statement: a
+            value on its own line used to be reported one line too
+            high, at the := (found by the first m9edit user) }
           if u = '<void>' then
-            ErrN (st, ctx, 'the right-hand side returns no value')
+            ErrN (st.kids[1], ctx, 'the right-hand side returns no value')
           else if not Compat (t, u) then
-            ErrN (st, ctx, Format (
+            ErrN (st.kids[1], ctx, Format (
               'cannot assign %s to %s (no implicit conversions, par 2.1)',
               [TyName (u), TyName (t)]));
           { P3: borrow-write legality, then the retention ledger --
@@ -2419,9 +2588,9 @@ var
             if retTy = '<void>' then
               ErrN (st, ctx, 'RETURN with a value in a proper procedure')
             else if t = '<void>' then
-              ErrN (st, ctx, 'RETURN of a call that returns no value')
+              ErrN (st.kids[0], ctx, 'RETURN of a call that returns no value')
             else if not Compat (retTy, t) then
-              ErrN (st, ctx, Format (
+              ErrN (st.kids[0], ctx, Format (
                 'cannot RETURN %s from a function of type %s',
                 [TyName (t), TyName (retTy)]));
             { P3: a pool-interior pointer may not escape a pool that
@@ -2442,10 +2611,14 @@ var
             vname := EscRootOf (st.kids[0]);
             if (vname <> '') and IsFrameMode (ScopeMode (vname)) then
               EscTarget (vname, '<return>');
+            { par 2.3: a string RETURN needs no refusal -- the
+              generator re-homes it into the caller's arena, copying a
+              frame-local designator's bytes across (m9_strdup). }
           end;
         end;
       nkRaiseStmt :
         begin
+          CheckExcName (st.kids[0], ctx);
           if raised.Values[st.kids[0].a] = '' then
             raised.Values[st.kids[0].a] := 'RAISE';
           if st.kids[1] <> nil then
@@ -2495,6 +2668,7 @@ var
           for j := 1 to High (st.kids) do
             if st.kids[j].kind = nkHandler then
             begin
+              CheckExcName (st.kids[j].kids[0], ctx);
               if st.kids[j].kids[0].b <> '' then
                 handled.Add (st.kids[j].kids[0].b)
               else
@@ -2546,6 +2720,7 @@ begin
   escEdges := TStringList.Create; escEdges.CaseSensitive := True;
   carryPair := TStringList.Create; carryPair.CaseSensitive := True;
   carryEdge := TStringList.Create; carryEdge.CaseSensitive := True;
+  fval := TStringList.Create; fval.CaseSensitive := True;
   pendN := 0;
   SetLength (pendLn, 0); SetLength (pendCl, 0);
   SetLength (pendSrc, 0); SetLength (pendDst, 0);
@@ -2660,6 +2835,7 @@ begin
   escEdges.Free;
   carryPair.Free;
   carryEdge.Free;
+  fval.Free;
 end;
 
 procedure TSem.CheckThreadChains;
@@ -2705,6 +2881,7 @@ procedure TSem.CheckFile (root: TNode);
 var
   ui, i, j, k2 : Integer;
   u, d, p, sec : TNode;
+  fmi : TModuleInfo;
   scope : TStringList;
   declared : TStringArray;
   ctx, rt : string;
@@ -2791,8 +2968,20 @@ begin
     for i := 0 to High (u.kids) do
       if u.kids[i] <> nil then
         if u.kids[i].kind = nkFromImport then
+        begin
+          { FROM is for foreign FOR-C units only (there is no
+            u.m9 to resolve).  A FROM of a loaded M9 module is a
+            Modula-2 habit the generator cannot honour -- catch
+            it HERE, at the mistake, not as a gen error later. }
+          fmi := FindMod (u.kids[i].a);
+          if (fmi <> nil) and (fmi.foreignLang = '') then
+            ErrN (u.kids[i], u.a,
+              'FROM imports from a foreign FOR-C unit; ' +
+              u.kids[i].a + ' is an M9 module -- use IMPORT ' +
+              u.kids[i].a + ' and write ' + u.kids[i].a + '.Name');
           for j := 0 to High (u.kids[i].kids[0].kids) do
             fromMap.Values[u.kids[i].kids[0].kids[j].a] := u.kids[i].a;
+        end;
     constMap.Clear;
     for i := 0 to High (u.kids) do
       if (u.kids[i] <> nil) and (u.kids[i].kind = nkConstSection) then
@@ -2846,8 +3035,13 @@ begin
             localConsts.Add (p.kids[j].kids[k2].a);
           end;
       declared := RaisesOf (d);
+      { a RAISES clause may only cite an exception the reader can find }
+      if d.kids[2] <> nil then
+        for k2 := 0 to High (d.kids[2].kids) do
+          CheckExcName (d.kids[2].kids[k2], ctx);
       { par 3.2: kid 3 is the attribute, if any }
       curPure := (d.kids[3] <> nil) and (d.kids[3].a = 'PURE');
+      curInBody := False;
       boundMon := BoundMonitorOf (d);
       if d.kids[1] <> nil then
         rt := CanonT (d.kids[1], 0)
@@ -2893,6 +3087,7 @@ begin
         last -- it leaked into this frame on the first run and
         reported the body writing its own module variables }
       curPure := False;
+      curInBody := True;
       boundMon := '';            { a module body binds no monitor }
       CheckBody (sec.kids[0], ctx, declared, scope, '<void>');
       scope.Free;
