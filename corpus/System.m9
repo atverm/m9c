@@ -46,13 +46,20 @@ PROCEDURE PoolAt (i: I64) : PoolInfo RAISES NoPool ;
 PROCEDURE PoolBytes () : I64 ;
   (* capacity held by every live pool together *)
 
-PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR)
+PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
+                RO input: STR ; RO env: SLICE OF STR)
   : Result RAISES ValueRange, Io.IOError ;
   (* run prog with args -- directly, no shell, so an argument is an
-     argument and not a command -- wait for it, and collect both
-     streams whole.  IOError when it could not be started at all
-     (not found, not executable); a program that starts and fails
-     answers with its status. *)
+     argument and not a command -- feed it `input` on stdin (the
+     empty string is an immediate end-of-file, never this program's
+     own stdin), wait for it, and collect both streams whole.  `env`
+     is NAME=VALUE overrides MERGED over the inherited environment:
+     [ 'LC_ALL=C' ] pins one variable and keeps the rest, so PATH
+     still finds the program.  Pass no input and no env with '' and an
+     empty slice.  IOError when it could not be started at all (not
+     found, not executable); a program that starts and fails answers
+     with its status.  stdin and both streams are pumped together, so
+     a large input and a large output do not deadlock. *)
 
 PROCEDURE Program (VAR pool: POOL) : STR RAISES ValueRange, IndexError ;
   (* argv[0]: how this program was invoked *)
@@ -88,10 +95,14 @@ PROCEDURE PoolI = "m9_pool_info" (i: C.SSizeT ; buf: C.MutPtr) : C.Int
   [REENTRANT] ;
   (* three int64 into buf: used, capacity, blocks; 0 when i is out of
      range.  Both take the registry's own lock. *)
-PROCEDURE ExecStart = "m9_exec" (argv: C.ConstPtr ; n: C.Int) : C.Int
+PROCEDURE ExecStart = "m9_exec" (argv: C.ConstPtr ; n: C.Int ;
+                                 input: C.ConstPtr ; inlen: C.SSizeT ;
+                                 env: C.ConstPtr ; envn: C.Int) : C.Int
   [REENTRANT] ;
   (* n NUL-terminated UTF-8 strings back to back, the program first;
-     answers a handle, or -1 when it could not start.  The slot table
+     inlen bytes of stdin (0 = an immediate EOF); envn NUL-terminated
+     NAME=VALUE strings, each merged over the inherited environment.
+     Answers a handle, or -1 when it could not start.  The slot table
      is under its own lock, so two threads may run programs at once. *)
 PROCEDURE ExecStatus = "m9_exec_status" (h: C.Int) : C.Int  [REENTRANT] ;
 PROCEDURE ExecLen = "m9_exec_len" (h: C.Int ; which: C.Int) : C.SSizeT
@@ -194,15 +205,16 @@ BEGIN
   RETURN DynStr.FromUtf8 (pool, SLICE (b, 0, n))
 END Stream ;
 
-PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR)
+PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
+                RO input: STR ; RO env: SLICE OF STR)
   : Result RAISES ValueRange, Io.IOError =
 VAR
   scratch : POOL ;
-  block, b : SLICE OF BYTE ;
-  total, i, k, h : I64 ;
+  block, eblock, inb, b : SLICE OF BYTE ;
+  total, etotal, i, k, h : I64 ;
   r : Result ;
 BEGIN
-  (* the block: every string as UTF-8, each followed by its NUL *)
+  (* the argument block: every string as UTF-8, each followed by its NUL *)
   b := DynStr.Utf8 (scratch, prog) ;
   total := LEN (b) + 1 ;
   FOR i := 0 TO LEN (args) - 1 DO
@@ -214,7 +226,20 @@ BEGIN
   Put (scratch, block, k, prog) ;
   FOR i := 0 TO LEN (args) - 1 DO Put (scratch, block, k, args[i]) END ;
 
-  h := I64 (ExecStart (ADR (block), C.Int (LEN (args) + 1))) ;
+  (* stdin as UTF-8 bytes, and the env overrides as a block of their own *)
+  inb := DynStr.Utf8 (scratch, input) ;
+  etotal := 0 ;
+  FOR i := 0 TO LEN (env) - 1 DO
+    b := DynStr.Utf8 (scratch, env[i]) ;
+    etotal := etotal + LEN (b) + 1
+  END ;
+  eblock := NEW (scratch, BYTE, etotal) ;
+  k := 0 ;
+  FOR i := 0 TO LEN (env) - 1 DO Put (scratch, eblock, k, env[i]) END ;
+
+  h := I64 (ExecStart (ADR (block), C.Int (LEN (args) + 1),
+                       ADR (inb), C.SSizeT (LEN (inb)),
+                       ADR (eblock), C.Int (LEN (env)))) ;
   IF h < 0 THEN RAISE Io.IOError (prog) END ;
   r.status := I64 (ExecStatus (C.Int (h))) ;
   r.out := Stream (pool, h, Out) ;

@@ -4,10 +4,12 @@
 #include "m9rt.h"
 
 typedef struct Dict_Dict Dict_Dict;
+typedef struct Dict_Value Dict_Value;
 typedef struct Dict_Ent Dict_Ent;
 typedef struct Dict_Dict Dict_Dict;
 
-typedef struct {
+typedef struct Dict_Value Dict_Value;
+struct Dict_Value {
   int32_t tag;
   union {
     struct { bool b; } Bool;
@@ -16,7 +18,7 @@ typedef struct {
     struct { m9_sl_CHAR s; } Str;
     struct { int64_t n; } Idx;
   } u;
-} Dict_Value;
+};
 #define Dict_Value_Null 0
 #define Dict_Value_Bool 1
 #define Dict_Value_Int 2

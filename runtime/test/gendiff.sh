@@ -52,4 +52,11 @@ run Doc Ast DynStr Text Print Lex
 run M9c Io Ast Parse Gen Sem DynStr Doc Lex
 run Gen Ast DynStr
 run Diag DynStr Io Lex
+# LibmGate is a gendiff-only fixture (not in gentest.pas / runtime/gen):
+# 96 locals named after the libm functions CN escapes.  The byte-compare
+# above catches a ONE-SIDED edit to the two IsLibM lists; the grep proves
+# the escaping is PRESENT, not that both generators dropped it together.
+run LibmGate
+grep -q 'float cos_' /tmp/gen_fpc.txt \
+  || { echo "LibmGate: libm names NOT escaped -- IsLibM gone from BOTH generators?"; exit 1; }
 echo "gendiff: $n modules, generated C byte-identical to the oracle"

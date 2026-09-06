@@ -8,18 +8,21 @@
 
 typedef struct ZarrStore_Store ZarrStore_Store;
 typedef struct ZarrStore_Array ZarrStore_Array;
+typedef struct ZarrStore_Dtype ZarrStore_Dtype;
+typedef struct ZarrStore_Comp ZarrStore_Comp;
 typedef struct ZarrStore_Meta ZarrStore_Meta;
 typedef struct ZarrStore_Store ZarrStore_Store;
 typedef struct ZarrStore_ChunkBuf ZarrStore_ChunkBuf;
 typedef struct ZarrStore_Array ZarrStore_Array;
 
-typedef struct {
+typedef struct ZarrStore_Dtype ZarrStore_Dtype;
+struct ZarrStore_Dtype {
   int32_t tag;
   union {
     struct { int64_t width; } Float;
     struct { int64_t width; bool signed_; } Int;
   } u;
-} ZarrStore_Dtype;
+};
 #define ZarrStore_Dtype_Float 0
 #define ZarrStore_Dtype_Int 1
 

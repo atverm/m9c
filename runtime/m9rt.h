@@ -577,7 +577,14 @@ int     m9_cores (void);
 void    m9_meminfo (void *buf);                /* 4 x int64: resident, peak, total, available */
 int64_t m9_pool_count (void);
 int     m9_pool_info (int64_t i, void *buf);   /* 3 x int64: used, cap, blocks; 0 = no such pool */
-int     m9_exec (const void *argblock, int nargs);   /* handle, or -1 */
+int     m9_exec (const void *argblock, int nargs,
+                 const void *input, int64_t inlen,
+                 const void *envblock, int envn);   /* handle, or -1 */
+  /* input: inlen raw bytes fed to the child's stdin, then EOF (0 = an
+     immediate EOF, never the parent's own stdin).  envblock: envn
+     NUL-terminated NAME=VALUE strings back to back, each MERGED over
+     the inherited environment -- a name already present is replaced,
+     PATH and the rest are kept (0 = inherit unchanged). */
 int     m9_exec_status (int h);
 int64_t m9_exec_len (int h, int which);        /* which: 1 stdout, 2 stderr */
 int64_t m9_exec_copy (int h, int which, void *buf, int64_t cap);

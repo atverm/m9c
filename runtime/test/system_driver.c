@@ -3,8 +3,10 @@
    Run as   ./system_test --verbose --out=x.nc a -- -b
    (build.sh does), so the three argument views have a known line to
    be checked against.  Exec runs /bin/echo and sh, reads both streams
-   back, and is refused a program that does not exist.  The pool
-   registry is watched through a pool this driver carves and frees. */
+   back, feeds a child its stdin (including a 1 MB body that would
+   deadlock a naive pump), overrides an environment variable, and is
+   refused a program that does not exist.  The pool registry is
+   watched through a pool this driver carves and frees. */
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,6 +63,8 @@ int main (int argc, char **argv)
   m9_sl_CHAR argv2[2];
   int64_t before, after, i;
   int found;
+  m9_sl_CHAR noin = { NULL, 0 }, envv[1];
+  m9_sl_m9_sl_CHAR noenv = { NULL, 0 }, args0 = { NULL, 0 }, envs;
 
   /* ---- the machine ---- */
   ok ("at least one core", System_Cores (&e) >= 1 && !e.exc);
@@ -92,32 +96,73 @@ int main (int argc, char **argv)
   /* ---- Exec ---- */
   argv2[0] = S ("hello"); argv2[1] = S ("world");
   args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
-  r = System_Exec (&pool, S ("/bin/echo"), args, &e);
+  r = System_Exec (&pool, S ("/bin/echo"), args, noin, noenv, &e);
   ok ("echo ran", !e.exc && r.status == 0);
   ok ("echo's stdout came back whole", eq (r.out, "hello world\n"));
   ok ("echo wrote nothing to stderr", r.err_.len == 0);
 
   argv2[0] = S ("-c"); argv2[1] = S ("echo oops 1>&2; exit 3");
-  r = System_Exec (&pool, S ("sh"), args, &e);
+  r = System_Exec (&pool, S ("sh"), args, noin, noenv, &e);
   ok ("sh ran and its status is 3", !e.exc && r.status == 3);
   ok ("sh's stderr came back", eq (r.err_, "oops\n"));
   ok ("sh's stdout is empty", r.out.len == 0);
 
   argv2[0] = S ("-c"); argv2[1] = S ("kill -9 $$");
-  r = System_Exec (&pool, S ("sh"), args, &e);
+  r = System_Exec (&pool, S ("sh"), args, noin, noenv, &e);
   ok ("a program killed by a signal answers minus the signal",
       !e.exc && r.status == -9);
 
   argv2[0] = S ("-c");
   argv2[1] = S ("i=0; while [ $i -lt 20000 ]; do echo line$i; echo err$i 1>&2; i=$((i+1)); done");
-  r = System_Exec (&pool, S ("sh"), args, &e);
+  r = System_Exec (&pool, S ("sh"), args, noin, noenv, &e);
   /* 20,000 lines of "lineN" and "errN": the digits of 0..19999 sum to
      88,890, so the streams are 188,890 and 168,890 bytes exactly */
   ok ("both streams drained together, 20,000 lines each, no deadlock",
       !e.exc && r.status == 0 && r.out.len == 188890 && r.err_.len == 168890);
 
+  /* ---- Exec: stdin fed in, and a merged environment ---- */
+  r = System_Exec (&pool, S ("/bin/cat"), args0, S ("piped input\n"),
+                   noenv, &e);
+  ok ("stdin is fed to the child and echoed back by cat",
+      !e.exc && r.status == 0 && eq (r.out, "piped input\n"));
+
+  r = System_Exec (&pool, S ("sort"), args0, S ("3\n1\n2\n"), noenv, &e);
+  ok ("a real filter sorts the stdin we handed it",
+      !e.exc && r.status == 0 && eq (r.out, "1\n2\n3\n"));
+
+  r = System_Exec (&pool, S ("/bin/cat"), args0, S (""), noenv, &e);
+  ok ("empty input is an immediate EOF, not this process's own stdin",
+      !e.exc && r.status == 0 && r.out.len == 0);
+
+  {
+    int64_t bign = 262144;               /* 256 KB, well past a 64 KB pipe */
+    uint32_t *bb = malloc ((size_t) bign * sizeof *bb);
+    m9_sl_CHAR big = { bb, bign };
+    for (i = 0; i < bign; i++) bb[i] = 'x';
+    r = System_Exec (&pool, S ("/bin/cat"), args0, big, noenv, &e);
+    ok ("a large stdin (256 KB) echoed through cat does not deadlock the pipes",
+        !e.exc && r.status == 0 && r.out.len == big.len);
+    free (bb);
+  }
+
+  argv2[0] = S ("-c"); argv2[1] = S ("echo \"$LC_ALL\"");
+  args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
+  envv[0] = S ("LC_ALL=xyz");
+  envs = (m9_sl_m9_sl_CHAR){ envv, 1 };
+  r = System_Exec (&pool, S ("sh"), args, S (""), envs, &e);
+  ok ("an env override reaches the child, and PATH survived to find sh",
+      !e.exc && r.status == 0 && eq (r.out, "xyz\n"));
+
+  argv2[1] = S ("echo \"$HOME\"");
+  args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
+  envv[0] = S ("HOME=/tmp/zzz");
+  envs = (m9_sl_m9_sl_CHAR){ envv, 1 };
+  r = System_Exec (&pool, S ("sh"), args, S (""), envs, &e);
+  ok ("an override replaces the inherited variable, it does not duplicate it",
+      !e.exc && r.status == 0 && eq (r.out, "/tmp/zzz\n"));
+
   args.len = 0;
-  r = System_Exec (&pool, S ("/no/such/program"), args, &e);
+  r = System_Exec (&pool, S ("/no/such/program"), args, noin, noenv, &e);
   ok ("a program that cannot start raises Io.IOError", e.exc == &Io_IOError);
   e.exc = NULL;
 
@@ -139,6 +184,6 @@ int main (int argc, char **argv)
 
   m9_pool_free (&pool);
   if (failed) { printf ("system_driver: %d of %d FAILED\n", failed, checks); return 1; }
-  printf ("PASS (%d checks) -- System: cores, memory, pools, Exec, arguments\n", checks);
+  printf ("PASS (%d checks) -- System: cores, memory, pools, Exec (stdin, env), arguments\n", checks);
   return 0;
 }

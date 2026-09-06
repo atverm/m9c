@@ -5,10 +5,12 @@
 #include "DynStr.h"
 
 typedef struct Json_Node Json_Node;
+typedef struct Json_Value Json_Value;
 typedef struct Json_Node Json_Node;
 typedef struct Json_Cursor Json_Cursor;
 
-typedef struct {
+typedef struct Json_Value Json_Value;
+struct Json_Value {
   int32_t tag;
   union {
     struct { Json_Node * first; } Object;
@@ -17,7 +19,7 @@ typedef struct {
     struct { double r; int64_t i; bool isInt; } Num;
     struct { bool b; } Bool;
   } u;
-} Json_Value;
+};
 #define Json_Value_Object 0
 #define Json_Value_Arr 1
 #define Json_Value_Str 2

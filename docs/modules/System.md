@@ -50,13 +50,19 @@ it is: blocks still held.
 
 capacity held by every live pool together
 
-### Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR) : Result RAISES ValueRange, Io.IOError
+### Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ; RO input: STR ; RO env: SLICE OF STR) : Result RAISES ValueRange, Io.IOError
 
 run prog with args -- directly, no shell, so an argument is an
-argument and not a command -- wait for it, and collect both
-streams whole.  IOError when it could not be started at all
-(not found, not executable); a program that starts and fails
-answers with its status.
+argument and not a command -- feed it `input` on stdin (the
+empty string is an immediate end-of-file, never this program's
+own stdin), wait for it, and collect both streams whole.  `env`
+is NAME=VALUE overrides MERGED over the inherited environment:
+[ 'LC_ALL=C' ] pins one variable and keeps the rest, so PATH
+still finds the program.  Pass no input and no env with '' and an
+empty slice.  IOError when it could not be started at all (not
+found, not executable); a program that starts and fails answers
+with its status.  stdin and both streams are pumped together, so
+a large input and a large output do not deadlock.
 
 ### Program (VAR pool: POOL) : STR RAISES ValueRange, IndexError
 
@@ -96,10 +102,12 @@ _(documented with the group below)_
 three int64 into buf: used, capacity, blocks; 0 when i is out of
 range.  Both take the registry's own lock.
 
-### ExecStart (argv: C.ConstPtr ; n: C.Int) : C.Int [REENTRANT]
+### ExecStart (argv: C.ConstPtr ; n: C.Int ; input: C.ConstPtr ; inlen: C.SSizeT ; env: C.ConstPtr ; envn: C.Int) : C.Int [REENTRANT]
 
 n NUL-terminated UTF-8 strings back to back, the program first;
-answers a handle, or -1 when it could not start.  The slot table
+inlen bytes of stdin (0 = an immediate EOF); envn NUL-terminated
+NAME=VALUE strings, each merged over the inherited environment.
+Answers a handle, or -1 when it could not start.  The slot table
 is under its own lock, so two threads may run programs at once.
 
 ### ExecStatus (h: C.Int) : C.Int [REENTRANT]

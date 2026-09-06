@@ -7,15 +7,17 @@
 #include "Time.h"
 
 typedef struct Csv_Table Csv_Table;
+typedef struct Csv_Kind Csv_Kind;
 typedef struct Csv_Options Csv_Options;
 typedef struct Csv_Table Csv_Table;
 
-typedef struct {
+typedef struct Csv_Kind Csv_Kind;
+struct Csv_Kind {
   int32_t tag;
   union {
     struct { int64_t format; } Stamp;
   } u;
-} Csv_Kind;
+};
 #define Csv_Kind_Skip 0
 #define Csv_Kind_Real 1
 #define Csv_Kind_Int 2

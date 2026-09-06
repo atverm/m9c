@@ -4,7 +4,8 @@
 #include "Json.h"
 #include "Http.h"
 
-typedef struct { int32_t tag; } ZarrStore_Comp;
+typedef struct ZarrStore_Comp ZarrStore_Comp;
+struct ZarrStore_Comp { int32_t tag; };
 #define ZarrStore_Comp_Blosc 0
 #define ZarrStore_Comp_Raw 1
 

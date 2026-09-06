@@ -491,6 +491,49 @@ BEGIN
          DynStr.Eq (n, 'CHAR')
 END IsBuiltin ;
 
+(* libm functions a FOR-C unit may bind (C99 math.h, double + float):
+   a LOCAL named like one shadows the extern -- `float cosf;` beside
+   `extern float cosf (float);` makes a call to cosf resolve to the
+   variable.  Escaped like the C keywords in CN.  No corpus identifier
+   matches one; float-heavy modules with their own math bindings are
+   the beneficiaries. *)
+PROCEDURE IsLibM (RO n: STR) : BOOL =
+BEGIN
+  RETURN
+    DynStr.Eq (n, 'acos') OR DynStr.Eq (n, 'acosf') OR DynStr.Eq (n, 'acosh') OR
+    DynStr.Eq (n, 'acoshf') OR DynStr.Eq (n, 'asin') OR DynStr.Eq (n, 'asinf') OR
+    DynStr.Eq (n, 'asinh') OR DynStr.Eq (n, 'asinhf') OR DynStr.Eq (n, 'atan') OR
+    DynStr.Eq (n, 'atanf') OR DynStr.Eq (n, 'atan2') OR DynStr.Eq (n, 'atan2f') OR
+    DynStr.Eq (n, 'atanh') OR DynStr.Eq (n, 'atanhf') OR DynStr.Eq (n, 'cbrt') OR
+    DynStr.Eq (n, 'cbrtf') OR DynStr.Eq (n, 'ceil') OR DynStr.Eq (n, 'ceilf') OR
+    DynStr.Eq (n, 'copysign') OR DynStr.Eq (n, 'copysignf') OR DynStr.Eq (n, 'cos') OR
+    DynStr.Eq (n, 'cosf') OR DynStr.Eq (n, 'cosh') OR DynStr.Eq (n, 'coshf') OR
+    DynStr.Eq (n, 'erf') OR DynStr.Eq (n, 'erff') OR DynStr.Eq (n, 'erfc') OR
+    DynStr.Eq (n, 'erfcf') OR DynStr.Eq (n, 'exp') OR DynStr.Eq (n, 'expf') OR
+    DynStr.Eq (n, 'exp2') OR DynStr.Eq (n, 'exp2f') OR DynStr.Eq (n, 'expm1') OR
+    DynStr.Eq (n, 'expm1f') OR DynStr.Eq (n, 'fabs') OR DynStr.Eq (n, 'fabsf') OR
+    DynStr.Eq (n, 'fdim') OR DynStr.Eq (n, 'fdimf') OR DynStr.Eq (n, 'floor') OR
+    DynStr.Eq (n, 'floorf') OR DynStr.Eq (n, 'fma') OR DynStr.Eq (n, 'fmaf') OR
+    DynStr.Eq (n, 'fmax') OR DynStr.Eq (n, 'fmaxf') OR DynStr.Eq (n, 'fmin') OR
+    DynStr.Eq (n, 'fminf') OR DynStr.Eq (n, 'fmod') OR DynStr.Eq (n, 'fmodf') OR
+    DynStr.Eq (n, 'frexp') OR DynStr.Eq (n, 'frexpf') OR DynStr.Eq (n, 'hypot') OR
+    DynStr.Eq (n, 'hypotf') OR DynStr.Eq (n, 'ldexp') OR DynStr.Eq (n, 'ldexpf') OR
+    DynStr.Eq (n, 'lgamma') OR DynStr.Eq (n, 'lgammaf') OR DynStr.Eq (n, 'log') OR
+    DynStr.Eq (n, 'logf') OR DynStr.Eq (n, 'log10') OR DynStr.Eq (n, 'log10f') OR
+    DynStr.Eq (n, 'log1p') OR DynStr.Eq (n, 'log1pf') OR DynStr.Eq (n, 'log2') OR
+    DynStr.Eq (n, 'log2f') OR DynStr.Eq (n, 'modf') OR DynStr.Eq (n, 'modff') OR
+    DynStr.Eq (n, 'nan') OR DynStr.Eq (n, 'nanf') OR DynStr.Eq (n, 'nearbyint') OR
+    DynStr.Eq (n, 'nearbyintf') OR DynStr.Eq (n, 'nextafter') OR DynStr.Eq (n, 'nextafterf') OR
+    DynStr.Eq (n, 'pow') OR DynStr.Eq (n, 'powf') OR DynStr.Eq (n, 'remainder') OR
+    DynStr.Eq (n, 'remainderf') OR DynStr.Eq (n, 'rint') OR DynStr.Eq (n, 'rintf') OR
+    DynStr.Eq (n, 'round') OR DynStr.Eq (n, 'roundf') OR DynStr.Eq (n, 'scalbn') OR
+    DynStr.Eq (n, 'scalbnf') OR DynStr.Eq (n, 'sin') OR DynStr.Eq (n, 'sinf') OR
+    DynStr.Eq (n, 'sinh') OR DynStr.Eq (n, 'sinhf') OR DynStr.Eq (n, 'sqrt') OR
+    DynStr.Eq (n, 'sqrtf') OR DynStr.Eq (n, 'tan') OR DynStr.Eq (n, 'tanf') OR
+    DynStr.Eq (n, 'tanh') OR DynStr.Eq (n, 'tanhf') OR DynStr.Eq (n, 'tgamma') OR
+    DynStr.Eq (n, 'tgammaf') OR DynStr.Eq (n, 'trunc') OR DynStr.Eq (n, 'truncf')
+END IsLibM ;
+
 PROCEDURE CN (RO n: STR) : STR =
 BEGIN
   IF DynStr.Eq (n, 'signed') OR DynStr.Eq (n, 'unsigned') OR
@@ -518,6 +561,7 @@ BEGIN
        again by M9's own compiler *)
     RETURN S2 (n, '_')
   END ;
+  IF IsLibM (n) THEN RETURN S2 (n, '_') END ;
   RETURN n
 END CN ;
 
@@ -3783,7 +3827,8 @@ BEGIN
     anyPay := tys[i].opq ;
     IF tys[i].node IS SOME tn THEN
       IF tn.kind = Ast.NRecordType OR
-         tn.kind = Ast.NMonitorType THEN anyPay := TRUE END
+         tn.kind = Ast.NMonitorType OR
+         tn.kind = Ast.NCaseRecordType THEN anyPay := TRUE END
     END ;
     IF anyPay THEN
       Line (KHdr, 0, S6 ('typedef struct ', modName, '_', tys[i].name,
@@ -3805,8 +3850,15 @@ BEGIN
             IF v.kids[0] IS SOME vf THEN anyPay := TRUE END
           END
         END ;
+        (* a NAMED struct, like records: an anonymous typedef cannot
+           be forward-declared, so a SLICE OF this variant put an
+           undeclared name in the header (SliceVar.m9) *)
+        IF NOT IsOpaque (tys[i].name) THEN
+          Line (buf, 0, S6 ('typedef struct ', modName, '_', tys[i].name,
+            ' ', S4 (modName, '_', tys[i].name, ';')))
+        END ;
         IF anyPay THEN
-          Line (buf, 0, 'typedef struct {') ;
+          Line (buf, 0, S5 ('struct ', modName, '_', tys[i].name, ' {')) ;
           Line (buf, 0, '  int32_t tag;') ;
           Line (buf, 0, '  union {') ;
           FOR ci := 0 TO d.nkids - 1 DO
@@ -3830,10 +3882,10 @@ BEGIN
             END
           END ;
           Line (buf, 0, '  } u;') ;
-          Line (buf, 0, S4 ('} ', modName, '_', S2 (tys[i].name, ';')))
+          Line (buf, 0, '};')
         ELSE
-          Line (buf, 0, S4 ('typedef struct { int32_t tag; } ', modName,
-            '_', S2 (tys[i].name, ';')))
+          Line (buf, 0, S4 ('struct ', modName, '_',
+            S2 (tys[i].name, ' { int32_t tag; };')))
         END ;
         FOR ci := 0 TO d.nkids - 1 DO
           IF d.kids[ci] IS SOME v THEN

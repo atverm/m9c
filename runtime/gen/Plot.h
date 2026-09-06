@@ -5,8 +5,10 @@
 #include "DynStr.h"
 #include "Mat.h"
 
+typedef struct Plot_Cmap Plot_Cmap;
 
-typedef struct { int32_t tag; } Plot_Cmap;
+typedef struct Plot_Cmap Plot_Cmap;
+struct Plot_Cmap { int32_t tag; };
 #define Plot_Cmap_Viridis 0
 #define Plot_Cmap_Coolwarm 1
 

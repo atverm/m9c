@@ -26,6 +26,7 @@ const m9_exc m9_exc_ValueRange  = { "ValueRange" };
 #include <sys/wait.h>
 #include <spawn.h>
 #include <poll.h>
+#include <signal.h>
 
 /* the block registry, defined with System at the end of this file */
 static void m9_reg_add (m9_pool_block *b, m9_pool *owner);
@@ -770,7 +771,22 @@ void m9_meminfo (void *buf)
     if (fscanf (f, "%lld %lld", &size, &res) == 2) o[0] = (int64_t) res * page;
     fclose (f);
   }
-  if (getrusage (RUSAGE_SELF, &ru) == 0) o[1] = (int64_t) ru.ru_maxrss * 1024;
+  /* peak = VmHWM from /proc/self/status, NOT getrusage's ru_maxrss:
+     the kernel updates hiwater_rss lazily and getrusage reports it
+     raw, so ru_maxrss can read BELOW the current statm resident (it
+     did here, by 17 pages, failing "peak >= resident").  VmHWM is
+     max(hiwater_rss, current_rss) computed on read, so it is the
+     honest high water this field promises.  ru_maxrss is the fallback
+     when /proc is not mounted. */
+  f = fopen ("/proc/self/status", "r");
+  if (f != NULL) {
+    while (fgets (line, sizeof line, f) != NULL) {
+      long long kb;
+      if (sscanf (line, "VmHWM: %lld kB", &kb) == 1) { o[1] = (int64_t) kb * 1024; break; }
+    }
+    fclose (f);
+  }
+  if (o[1] == 0 && getrusage (RUSAGE_SELF, &ru) == 0) o[1] = (int64_t) ru.ru_maxrss * 1024;
   f = fopen ("/proc/meminfo", "r");
   if (f != NULL) {
     while (fgets (line, sizeof line, f) != NULL) {
@@ -899,55 +915,120 @@ static int m9_drain (int fd, unsigned char **buf, int64_t *n, int64_t *cap)
   return 1;
 }
 
-int m9_exec (const void *argblock, int nargs)
+/* Writing to a pipe whose reader has gone raises SIGPIPE, which by
+   default kills us; ignored, the write returns EPIPE and the loop
+   below treats it as "stdin done".  Once, process-wide. */
+static void m9_ignore_sigpipe (void) { signal (SIGPIPE, SIG_IGN); }
+static pthread_once_t m9_sigpipe_once = PTHREAD_ONCE_INIT;
+
+/* environ with the NAME=VALUE overrides in envblock applied: a name
+   already present is replaced, not duplicated, so PATH (which
+   posix_spawnp needs to find the program) survives an override of
+   something else.  Returns a fresh array to be freed; its strings are
+   borrowed from environ and envblock and must not be. */
+static char **m9_merge_env (const char *envblock, int envn)
+{
+  int envc = 0, m = 0, i, j;
+  char **out;
+  const char *q;
+  while (environ[envc]) envc++;
+  out = calloc ((size_t) envc + (size_t) envn + 1, sizeof (char *));
+  if (out == NULL) return NULL;
+  for (i = 0; i < envc; i++) {
+    const char *eq = strchr (environ[i], '=');
+    size_t nl = eq ? (size_t) (eq - environ[i]) : strlen (environ[i]);
+    int overridden = 0;
+    q = envblock;
+    for (j = 0; j < envn; j++) {
+      const char *oeq = strchr (q, '=');
+      size_t ol = oeq ? (size_t) (oeq - q) : strlen (q);
+      if (ol == nl && memcmp (q, environ[i], nl) == 0) overridden = 1;
+      q += strlen (q) + 1;
+    }
+    if (!overridden) out[m++] = environ[i];
+  }
+  q = envblock;
+  for (j = 0; j < envn; j++) { out[m++] = (char *) q; q += strlen (q) + 1; }
+  out[m] = NULL;
+  return out;
+}
+
+int m9_exec (const void *argblock, int nargs,
+             const void *input, int64_t inlen,
+             const void *envblock, int envn)
 {
   const char *p = (const char *) argblock;
-  char **argv;
-  int outp[2], errp[2], k, slot = -1, st = 0;
+  const char *in = (const char *) input;
+  char **argv, **envp;
+  int inp[2], outp[2], errp[2], k, slot = -1, st = 0;
   pid_t pid;
   posix_spawn_file_actions_t fa;
   m9_exec_slot *sl;
   int64_t cap[2] = { 0, 0 };
+
+  pthread_once (&m9_sigpipe_once, m9_ignore_sigpipe);
 
   argv = calloc ((size_t) nargs + 1, sizeof (char *));
   if (argv == NULL) return -1;
   for (k = 0; k < nargs; k++) { argv[k] = (char *) p; p += strlen (p) + 1; }
   argv[nargs] = NULL;
 
+  envp = environ;
+  if (envn > 0) {
+    envp = m9_merge_env ((const char *) envblock, envn);
+    if (envp == NULL) { free (argv); return -1; }
+  }
+
   pthread_mutex_lock (&m9_exec_lock);
   for (k = 0; k < M9_EXEC_SLOTS; k++)
     if (!m9_execs[k].used) { m9_execs[k].used = 1; slot = k; break; }
   pthread_mutex_unlock (&m9_exec_lock);
-  if (slot < 0) { free (argv); return -1; }
+  if (slot < 0) goto fail;
   sl = &m9_execs[slot];
   sl->s[0] = sl->s[1] = NULL;
   sl->n[0] = sl->n[1] = 0;
   sl->status = -1;
 
-  if (pipe (outp) != 0 || pipe (errp) != 0) goto fail;
+  if (pipe (inp) != 0) goto fail_slot;
+  if (pipe (outp) != 0) { close (inp[0]); close (inp[1]); goto fail_slot; }
+  if (pipe (errp) != 0) { close (inp[0]); close (inp[1]);
+                          close (outp[0]); close (outp[1]); goto fail_slot; }
   posix_spawn_file_actions_init (&fa);
+  posix_spawn_file_actions_adddup2 (&fa, inp[0], 0);
   posix_spawn_file_actions_adddup2 (&fa, outp[1], 1);
   posix_spawn_file_actions_adddup2 (&fa, errp[1], 2);
+  posix_spawn_file_actions_addclose (&fa, inp[1]);
   posix_spawn_file_actions_addclose (&fa, outp[0]);
   posix_spawn_file_actions_addclose (&fa, errp[0]);
-  k = posix_spawnp (&pid, argv[0], &fa, NULL, argv, environ);
+  k = posix_spawnp (&pid, argv[0], &fa, NULL, argv, envp);
   posix_spawn_file_actions_destroy (&fa);
-  close (outp[1]); close (errp[1]);
-  if (k != 0) { close (outp[0]); close (errp[0]); goto fail; }
+  close (inp[0]); close (outp[1]); close (errp[1]);
+  if (k != 0) { close (inp[1]); close (outp[0]); close (errp[0]);
+                goto fail_slot; }
 
   {
-    struct pollfd pf[2];
-    int open0 = 1, open1 = 1;
-    pf[0].fd = outp[0]; pf[0].events = POLLIN;
-    pf[1].fd = errp[0]; pf[1].events = POLLIN;
-    while (open0 || open1) {
-      pf[0].fd = open0 ? outp[0] : -1;
-      pf[1].fd = open1 ? errp[0] : -1;
-      if (poll (pf, 2, -1) < 0) { if (errno == EINTR) continue; break; }
-      if (open0 && (pf[0].revents & (POLLIN | POLLHUP | POLLERR)))
-        if (!m9_drain (outp[0], &sl->s[0], &sl->n[0], &cap[0])) open0 = 0;
-      if (open1 && (pf[1].revents & (POLLIN | POLLHUP | POLLERR)))
-        if (!m9_drain (errp[0], &sl->s[1], &sl->n[1], &cap[1])) open1 = 0;
+    struct pollfd pf[3];
+    int open_out = 1, open_err = 1, open_in = inlen > 0;
+    int64_t sent = 0;
+    if (!open_in) close (inp[1]);           /* immediate EOF to the child */
+    while (open_out || open_err || open_in) {
+      int np = 0, io = -1, ie = -1, ii = -1;
+      if (open_out) { pf[np].fd = outp[0]; pf[np].events = POLLIN;  io = np++; }
+      if (open_err) { pf[np].fd = errp[0]; pf[np].events = POLLIN;  ie = np++; }
+      if (open_in)  { pf[np].fd = inp[1];  pf[np].events = POLLOUT; ii = np++; }
+      if (poll (pf, (nfds_t) np, -1) < 0) { if (errno == EINTR) continue; break; }
+      if (io >= 0 && (pf[io].revents & (POLLIN | POLLHUP | POLLERR)))
+        if (!m9_drain (outp[0], &sl->s[0], &sl->n[0], &cap[0])) open_out = 0;
+      if (ie >= 0 && (pf[ie].revents & (POLLIN | POLLHUP | POLLERR)))
+        if (!m9_drain (errp[0], &sl->s[1], &sl->n[1], &cap[1])) open_err = 0;
+      if (ii >= 0 && (pf[ii].revents & (POLLOUT | POLLERR | POLLHUP))) {
+        int64_t want = inlen - sent;
+        ssize_t wr;
+        if (want > 65536) want = 65536;
+        wr = write (inp[1], in + sent, (size_t) want);
+        if (wr > 0) sent += wr;
+        if (wr < 0 || sent >= inlen) { close (inp[1]); open_in = 0; }
+      }
     }
   }
   close (outp[0]); close (errp[0]);
@@ -955,13 +1036,16 @@ int m9_exec (const void *argblock, int nargs)
   if (WIFEXITED (st)) sl->status = WEXITSTATUS (st);
   else if (WIFSIGNALED (st)) sl->status = -WTERMSIG (st);
   free (argv);
+  if (envp != environ) free (envp);
   return slot;
 
-fail:
-  free (argv);
+fail_slot:
   pthread_mutex_lock (&m9_exec_lock);
   sl->used = 0;
   pthread_mutex_unlock (&m9_exec_lock);
+fail:
+  free (argv);
+  if (envp != environ) free (envp);
   return -1;
 }
 

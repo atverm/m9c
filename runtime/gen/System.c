@@ -28,7 +28,7 @@ extern int m9_cores (void);
 extern void m9_meminfo (void *);
 extern int64_t m9_pool_count (void);
 extern int m9_pool_info (int64_t, void *);
-extern int m9_exec (const void *, int);
+extern int m9_exec (const void *, int, const void *, int64_t, const void *, int);
 extern int m9_exec_status (int);
 extern int64_t m9_exec_len (int, int);
 extern int64_t m9_exec_copy (int, int, void *, int64_t);
@@ -163,7 +163,7 @@ L_ret: ;
   return m9ret;
 }
 
-System_Result System_Exec (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args, m9_state *err)
+System_Result System_Exec (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args, m9_sl_CHAR input, m9_sl_m9_sl_CHAR env, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -172,8 +172,11 @@ System_Result System_Exec (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args
   System_Result m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE block = {0}; (void) block;
+  m9_sl_BYTE eblock = {0}; (void) eblock;
+  m9_sl_BYTE inb = {0}; (void) inb;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t total = 0; (void) total;
+  int64_t etotal = 0; (void) etotal;
   int64_t i = 0; (void) i;
   int64_t k = 0; (void) k;
   int64_t h = 0; (void) h;
@@ -205,10 +208,34 @@ System_Result System_Exec (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args
     System_Put (&(scratch), &(block), &(k), (*(m9_sl_CHAR *) m9_at (args.p, i, args.len, sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
   } }
-  h = (int64_t)(m9_exec (((void *)(block).p), ((int)(m9_add_i64 ((args).len, INT64_C(1), err)))));
+  inb = DynStr_Utf8 (&(scratch), input, err);
+  if (err->exc) goto L_ret;
+  etotal = INT64_C(0);
+  { int64_t m9t3to;
+  i = INT64_C(0);
+  m9t3to = m9_sub_i64 ((env).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t3to; i += 1) {
+    b = DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (env.p, i, env.len, sizeof (m9_sl_CHAR), err)), err);
+    if (err->exc) goto L_ret;
+    etotal = m9_add_i64 (m9_add_i64 (etotal, (b).len, err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  } }
+  eblock = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), etotal, err);
+  if (err->exc) goto L_ret;
+  k = INT64_C(0);
+  { int64_t m9t4to;
+  i = INT64_C(0);
+  m9t4to = m9_sub_i64 ((env).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t4to; i += 1) {
+    System_Put (&(scratch), &(eblock), &(k), (*(m9_sl_CHAR *) m9_at (env.p, i, env.len, sizeof (m9_sl_CHAR), err)), err);
+    if (err->exc) goto L_ret;
+  } }
+  h = (int64_t)(m9_exec (((void *)(block).p), ((int)(m9_add_i64 ((args).len, INT64_C(1), err))), ((void *)(inb).p), ((int64_t)((inb).len)), ((void *)(eblock).p), ((int)((env).len))));
   if (err->exc) goto L_ret;
   if ((h < INT64_C(0))) {
-    { __typeof__(prog) m9t3 = prog; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(prog) m9t5 = prog; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }

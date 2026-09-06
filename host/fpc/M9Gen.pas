@@ -135,6 +135,41 @@ end;
 
 { an M9 identifier that is a C keyword (or our err slot) gets a
   trailing underscore -- par 11's naming rule, completed }
+{ libm functions a FOR-C unit may bind (C99 math.h, double + float):
+  a LOCAL named like one shadows the extern -- `float cosf;` beside
+  `extern float cosf (float);` makes a call to cosf resolve to the
+  variable, "called object is not a function".  Escaped like the C
+  keywords below.  No corpus identifier matches one; the beneficiaries
+  are float-heavy modules with their own math bindings. }
+function IsLibM (const n: string): boolean;
+begin
+  Result :=
+    (n = 'acos') or (n = 'acosf') or (n = 'acosh') or (n = 'acoshf') or
+    (n = 'asin') or (n = 'asinf') or (n = 'asinh') or (n = 'asinhf') or
+    (n = 'atan') or (n = 'atanf') or (n = 'atan2') or (n = 'atan2f') or
+    (n = 'atanh') or (n = 'atanhf') or (n = 'cbrt') or (n = 'cbrtf') or
+    (n = 'ceil') or (n = 'ceilf') or (n = 'copysign') or (n = 'copysignf') or
+    (n = 'cos') or (n = 'cosf') or (n = 'cosh') or (n = 'coshf') or
+    (n = 'erf') or (n = 'erff') or (n = 'erfc') or (n = 'erfcf') or
+    (n = 'exp') or (n = 'expf') or (n = 'exp2') or (n = 'exp2f') or
+    (n = 'expm1') or (n = 'expm1f') or (n = 'fabs') or (n = 'fabsf') or
+    (n = 'fdim') or (n = 'fdimf') or (n = 'floor') or (n = 'floorf') or
+    (n = 'fma') or (n = 'fmaf') or (n = 'fmax') or (n = 'fmaxf') or
+    (n = 'fmin') or (n = 'fminf') or (n = 'fmod') or (n = 'fmodf') or
+    (n = 'frexp') or (n = 'frexpf') or (n = 'hypot') or (n = 'hypotf') or
+    (n = 'ldexp') or (n = 'ldexpf') or (n = 'lgamma') or (n = 'lgammaf') or
+    (n = 'log') or (n = 'logf') or (n = 'log10') or (n = 'log10f') or
+    (n = 'log1p') or (n = 'log1pf') or (n = 'log2') or (n = 'log2f') or
+    (n = 'modf') or (n = 'modff') or (n = 'nan') or (n = 'nanf') or
+    (n = 'nearbyint') or (n = 'nearbyintf') or (n = 'nextafter') or (n = 'nextafterf') or
+    (n = 'pow') or (n = 'powf') or (n = 'remainder') or (n = 'remainderf') or
+    (n = 'rint') or (n = 'rintf') or (n = 'round') or (n = 'roundf') or
+    (n = 'scalbn') or (n = 'scalbnf') or (n = 'sin') or (n = 'sinf') or
+    (n = 'sinh') or (n = 'sinhf') or (n = 'sqrt') or (n = 'sqrtf') or
+    (n = 'tan') or (n = 'tanf') or (n = 'tanh') or (n = 'tanhf') or
+    (n = 'tgamma') or (n = 'tgammaf') or (n = 'trunc') or (n = 'truncf');
+end;
+
 function CN (const n: string): string;
 begin
   if (n = 'signed') or (n = 'unsigned') or (n = 'int') or (n = 'char')
@@ -153,6 +188,7 @@ begin
                               gm2 collision in the ledger, met again
                               by M9's own compiler }
     Exit (n + '_');
+  if IsLibM (n) then Exit (n + '_');
   Result := n;
 end;
 
@@ -2871,7 +2907,7 @@ begin
   for i := 0 to High (tyNames) do
     if tyOpaque[i] or
        ((tyNodes[i] <> nil) and
-        (tyNodes[i].kind in [nkRecordType, nkMonitorType])) then
+        (tyNodes[i].kind in [nkRecordType, nkMonitorType, nkCaseRecordType])) then
       hdr.Add ('typedef struct ' + modName + '_' + tyNames[i] + ' ' +
         modName + '_' + tyNames[i] + ';');
   hdr.Add ('');
@@ -2887,12 +2923,18 @@ begin
       cs := '';
       for ci := 0 to High (d.kids) do
         if d.kids[ci].kids[0] <> nil then cs := 'y';
+      { a NAMED struct, like records: an anonymous typedef cannot be
+        forward-declared, so a SLICE OF this variant put an undeclared
+        name in the header (demo/functional/SliceVar.m9) }
+      if not IsOpaque (tyNames[i]) then
+        tgt.Add ('typedef struct ' + modName + '_' + tyNames[i] + ' ' +
+          modName + '_' + tyNames[i] + ';');
       if cs = '' then
-        tgt.Add ('typedef struct { int32_t tag; } ' + modName + '_' +
-          tyNames[i] + ';')
+        tgt.Add ('struct ' + modName + '_' + tyNames[i] +
+          ' { int32_t tag; };')
       else
       begin
-        tgt.Add ('typedef struct {');
+        tgt.Add ('struct ' + modName + '_' + tyNames[i] + ' {');
         tgt.Add ('  int32_t tag;');
         tgt.Add ('  union {');
         for ci := 0 to High (d.kids) do
@@ -2909,7 +2951,7 @@ begin
             tgt.Add (s + '} ' + d.kids[ci].a + ';');
           end;
         tgt.Add ('  } u;');
-        tgt.Add ('} ' + modName + '_' + tyNames[i] + ';');
+        tgt.Add ('};');
       end;
       for ci := 0 to High (d.kids) do
         tgt.Add ('#define ' + modName + '_' + tyNames[i] + '_' +

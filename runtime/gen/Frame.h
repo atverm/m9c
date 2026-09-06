@@ -10,14 +10,18 @@
 #include "Time.h"
 #include "NetCDF.h"
 
+typedef struct Frame_Data Frame_Data;
 typedef struct Frame_Col Frame_Col;
 typedef struct Frame_Fr Frame_Fr;
 typedef struct Frame_Ts Frame_Ts;
+typedef struct Frame_Conv Frame_Conv;
+typedef struct Frame_How Frame_How;
 typedef struct Frame_Fr Frame_Fr;
 typedef struct Frame_StrTab Frame_StrTab;
 typedef struct Frame_Ts Frame_Ts;
 
-typedef struct {
+typedef struct Frame_Data Frame_Data;
+struct Frame_Data {
   int32_t tag;
   union {
     struct { m9_sl_F64 v64; double m64; } F64s;
@@ -29,7 +33,7 @@ typedef struct {
     struct { m9_sl_BOOL vbo; } Bools;
     struct { int64_t si; } Strs;
   } u;
-} Frame_Data;
+};
 #define Frame_Data_F64s 0
 #define Frame_Data_F32s 1
 #define Frame_Data_I64s 2
@@ -39,12 +43,14 @@ typedef struct {
 #define Frame_Data_Bools 6
 #define Frame_Data_Strs 7
 
-typedef struct { int32_t tag; } Frame_Conv;
+typedef struct Frame_Conv Frame_Conv;
+struct Frame_Conv { int32_t tag; };
 #define Frame_Conv_AtStart 0
 #define Frame_Conv_AtEnd 1
 #define Frame_Conv_AtMid 2
 
-typedef struct { int32_t tag; } Frame_How;
+typedef struct Frame_How Frame_How;
+struct Frame_How { int32_t tag; };
 #define Frame_How_Mean 0
 #define Frame_How_Sum 1
 #define Frame_How_Lo 2

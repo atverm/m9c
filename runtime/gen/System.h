@@ -55,7 +55,7 @@ System_Memory System_Mem (m9_state *err);
 int64_t System_PoolCount (m9_state *err);
 System_PoolInfo System_PoolAt (int64_t i, m9_state *err);
 int64_t System_PoolBytes (m9_state *err);
-System_Result System_Exec (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args, m9_state *err);
+System_Result System_Exec (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args, m9_sl_CHAR input, m9_sl_m9_sl_CHAR env, m9_state *err);
 m9_sl_CHAR System_Program (m9_pool *pool, m9_state *err);
 m9_sl_m9_sl_CHAR System_Args (m9_pool *pool, m9_state *err);
 bool System_Flag (m9_sl_CHAR name, m9_state *err);

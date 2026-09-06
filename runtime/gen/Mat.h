@@ -5,9 +5,11 @@
 #include "Math.h"
 
 typedef struct Mat_Matrix Mat_Matrix;
+typedef struct Mat_ReduceOp Mat_ReduceOp;
 typedef struct Mat_Matrix Mat_Matrix;
 
-typedef struct { int32_t tag; } Mat_ReduceOp;
+typedef struct Mat_ReduceOp Mat_ReduceOp;
+struct Mat_ReduceOp { int32_t tag; };
 #define Mat_ReduceOp_Mean 0
 #define Mat_ReduceOp_Min 1
 #define Mat_ReduceOp_Max 2
