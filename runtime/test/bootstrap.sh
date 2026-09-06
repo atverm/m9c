@@ -13,11 +13,12 @@
 set -e
 cd "$(dirname "$0")"
 
-MODS="DynStr Mat Stats Frame Parquet Json Http HttpServer OpenApi ZarrStore Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Csv NetCDF Grib Syslog Logger Hello Gen Sem Doc M9c"
+MODS="DynStr Mat Stats System Frame Parquet Json Http HttpServer OpenApi ZarrStore Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Csv NetCDF Grib Syslog Logger Hello Gen Sem Doc M9c Diag"
 deps_of () {
   case $1 in
     Json|Http|Lex) echo DynStr ;;
     Mat|Stats)     echo Math ;;
+    System)        echo Io DynStr Text ;;
     HttpServer)    echo DynStr Http ;;
     OpenApi)       echo HttpServer DynStr ;;
     ZarrStore)     echo DynStr Json Http ;;
@@ -37,6 +38,7 @@ deps_of () {
     Sem)           echo Ast DynStr Fmt Print Text ;;
     Doc)           echo Ast DynStr Text Print Lex ;;
     Parse)         echo Ast Lex DynStr ;;
+    Diag)          echo DynStr Io Lex ;;
     *)             echo ;;
   esac
 }

@@ -21,6 +21,15 @@ const m9_exc m9_exc_ValueRange  = { "ValueRange" };
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/sysinfo.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
+#include <spawn.h>
+#include <poll.h>
+
+/* the block registry, defined with System at the end of this file */
+static void m9_reg_add (m9_pool_block *b, m9_pool *owner);
+static void m9_reg_remove (m9_pool_block *b);
 
 void m9_trap_tag (void)
 {
@@ -71,6 +80,7 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
     b->next = pool->head;
     b->used = 0;
     pool->head = b;
+    m9_reg_add (b, pool);
   }
   else if (b == NULL || b->cap - b->used < need) {
     /* SLACK, BOUNDED.  An exact fit above the block minimum is what
@@ -90,6 +100,7 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
     b->used = 0;
     b->cap = cap;
     pool->head = b;
+    m9_reg_add (b, pool);
   }
   at = (unsigned char *) (b + 1) + b->used;
   b->used += need;
@@ -102,6 +113,7 @@ void m9_pool_free (m9_pool *pool)
   m9_pool_block *b = pool->head, *n;
   while (b != NULL) {
     n = b->next;
+    m9_reg_remove (b);
     if (b->cap == M9_POOL_BLOCK_MIN && m9_block_cached < M9_POOL_CACHE_MAX) {
       b->next = m9_block_cache;
       m9_block_cache = b;
@@ -165,6 +177,24 @@ m9_sl_CHAR m9_cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b,
   if (b.len > 0)
     memcpy (out.p + a.len, b.p, (size_t) b.len * sizeof (uint32_t));
   return out;
+}
+
+m9_sl_CHAR m9_cat_ch (m9_pool *pool, m9_sl_CHAR a, uint32_t c,
+                      m9_state *err)
+{
+  m9_sl_CHAR one;
+  one.p = &c;
+  one.len = 1;
+  return m9_cat (pool, a, one, err);
+}
+
+m9_sl_CHAR m9_ch_cat (m9_pool *pool, uint32_t c, m9_sl_CHAR b,
+                      m9_state *err)
+{
+  m9_sl_CHAR one;
+  one.p = &c;
+  one.len = 1;
+  return m9_cat (pool, one, b, err);
 }
 
 m9_sl_CHAR m9_strdup (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
@@ -712,4 +742,259 @@ int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err)
   if (rc != 0) { m9_raise (err, &m9_exc_OutOfMemory); return rc; }
   pthread_detach (t);
   return 0;
+}
+
+/* ---- System: the process seen from inside (corpus/System.m9) ---- */
+
+int m9_cores (void)
+{
+  long n = sysconf (_SC_NPROCESSORS_ONLN);
+  return n < 1 ? 1 : (int) n;
+}
+
+/* resident, peak, total, available -- bytes.  /proc first, because
+   MemAvailable is the number that answers "could I allocate", and
+   getrusage's high-water mark is the honest peak; sysinfo when
+   /proc is not there (a sandbox may hide it). */
+void m9_meminfo (void *buf)
+{
+  int64_t *o = (int64_t *) buf;
+  long page = sysconf (_SC_PAGESIZE);
+  struct rusage ru;
+  FILE *f;
+  char line[256];
+  o[0] = o[1] = o[2] = o[3] = 0;
+  f = fopen ("/proc/self/statm", "r");
+  if (f != NULL) {
+    long long size = 0, res = 0;
+    if (fscanf (f, "%lld %lld", &size, &res) == 2) o[0] = (int64_t) res * page;
+    fclose (f);
+  }
+  if (getrusage (RUSAGE_SELF, &ru) == 0) o[1] = (int64_t) ru.ru_maxrss * 1024;
+  f = fopen ("/proc/meminfo", "r");
+  if (f != NULL) {
+    while (fgets (line, sizeof line, f) != NULL) {
+      long long kb;
+      if (sscanf (line, "MemTotal: %lld kB", &kb) == 1) o[2] = (int64_t) kb * 1024;
+      else if (sscanf (line, "MemAvailable: %lld kB", &kb) == 1) o[3] = (int64_t) kb * 1024;
+    }
+    fclose (f);
+  }
+  if (o[2] == 0) {
+    struct sysinfo si;
+    if (sysinfo (&si) == 0) {
+      o[2] = (int64_t) si.totalram * si.mem_unit;
+      o[3] = (int64_t) si.freeram * si.mem_unit;
+    }
+  }
+}
+
+/* THE BLOCK REGISTRY.  Every block a pool carves is on one global
+   list while it lives, tagged with the pool that carved it, and the
+   listing groups blocks by that tag WITHOUT dereferencing the pool:
+   a pool struct may sit inside storage that was freed with its owner
+   while its blocks were not (a POOL field in a record carved from
+   another pool), and those blocks are exactly the leak worth seeing.
+   Registration costs one lock per BLOCK, not per allocation. */
+static pthread_mutex_t m9_reg_lock = PTHREAD_MUTEX_INITIALIZER;
+static m9_pool_block *m9_reg_head = NULL;
+
+static void m9_reg_add (m9_pool_block *b, m9_pool *owner)
+{
+  pthread_mutex_lock (&m9_reg_lock);
+  b->owner = owner;
+  b->rprev = NULL;
+  b->rnext = m9_reg_head;
+  if (m9_reg_head != NULL) m9_reg_head->rprev = b;
+  m9_reg_head = b;
+  pthread_mutex_unlock (&m9_reg_lock);
+}
+
+static void m9_reg_remove (m9_pool_block *b)
+{
+  pthread_mutex_lock (&m9_reg_lock);
+  if (b->rprev != NULL) b->rprev->rnext = b->rnext;
+  else m9_reg_head = b->rnext;
+  if (b->rnext != NULL) b->rnext->rprev = b->rprev;
+  b->rprev = b->rnext = NULL;
+  b->owner = NULL;
+  pthread_mutex_unlock (&m9_reg_lock);
+}
+
+/* pool i, oldest first, as (used, cap, blocks); 0 when there is no
+   pool i.  The list is newest-first, so it is walked to the end and
+   the owners counted from there. */
+static int m9_reg_group (int64_t want, int64_t *out, int64_t *count)
+{
+  m9_pool_block *b, *c;
+  int64_t idx = 0;
+  int found = 0;
+  pthread_mutex_lock (&m9_reg_lock);
+  /* the oldest block of a pool is the last one on the list carrying
+     its tag; a pool is "seen" at that block, walking from the tail */
+  for (b = m9_reg_head; b != NULL && b->rnext != NULL; b = b->rnext) ;
+  for (; b != NULL; b = b->rprev) {
+    int first = 1;
+    for (c = b->rnext; c != NULL; c = c->rnext)
+      if (c->owner == b->owner) { first = 0; break; }
+    if (!first) continue;
+    if (idx == want && out != NULL) {
+      int64_t used = 0, cap = 0, n = 0;
+      for (c = b; c != NULL; c = c->rprev)
+        if (c->owner == b->owner) { used += (int64_t) c->used; cap += (int64_t) c->cap; n++; }
+      out[0] = used; out[1] = cap; out[2] = n;
+      found = 1;
+    }
+    idx++;
+  }
+  pthread_mutex_unlock (&m9_reg_lock);
+  if (count != NULL) *count = idx;
+  return found;
+}
+
+int64_t m9_pool_count (void)
+{
+  int64_t n = 0;
+  m9_reg_group (-1, NULL, &n);
+  return n;
+}
+
+int m9_pool_info (int64_t i, void *buf)
+{
+  return m9_reg_group (i, (int64_t *) buf, NULL);
+}
+
+/* EXEC.  posix_spawn, not fork: nothing of this process runs in the
+   child, so a thread holding a lock elsewhere cannot deadlock it (the
+   reason Io.Run is [SERIAL]; this need not be).  Both pipes are read
+   together under poll, because a child that fills one while the
+   parent waits on the other never finishes. */
+typedef struct {
+  int used;
+  int status;
+  unsigned char *s[2];
+  int64_t n[2];
+} m9_exec_slot;
+
+#define M9_EXEC_SLOTS 64
+static m9_exec_slot m9_execs[M9_EXEC_SLOTS];
+static pthread_mutex_t m9_exec_lock = PTHREAD_MUTEX_INITIALIZER;
+extern char **environ;
+
+static int m9_drain (int fd, unsigned char **buf, int64_t *n, int64_t *cap)
+{
+  unsigned char tmp[8192];
+  ssize_t got = read (fd, tmp, sizeof tmp);
+  if (got <= 0) return 0;                       /* EOF, or an error: done */
+  if (*n + got > *cap) {
+    int64_t nc = *cap == 0 ? 16384 : *cap * 2;
+    unsigned char *nb;
+    while (nc < *n + got) nc *= 2;
+    nb = realloc (*buf, (size_t) nc);
+    if (nb == NULL) return 0;
+    *buf = nb; *cap = nc;
+  }
+  memcpy (*buf + *n, tmp, (size_t) got);
+  *n += got;
+  return 1;
+}
+
+int m9_exec (const void *argblock, int nargs)
+{
+  const char *p = (const char *) argblock;
+  char **argv;
+  int outp[2], errp[2], k, slot = -1, st = 0;
+  pid_t pid;
+  posix_spawn_file_actions_t fa;
+  m9_exec_slot *sl;
+  int64_t cap[2] = { 0, 0 };
+
+  argv = calloc ((size_t) nargs + 1, sizeof (char *));
+  if (argv == NULL) return -1;
+  for (k = 0; k < nargs; k++) { argv[k] = (char *) p; p += strlen (p) + 1; }
+  argv[nargs] = NULL;
+
+  pthread_mutex_lock (&m9_exec_lock);
+  for (k = 0; k < M9_EXEC_SLOTS; k++)
+    if (!m9_execs[k].used) { m9_execs[k].used = 1; slot = k; break; }
+  pthread_mutex_unlock (&m9_exec_lock);
+  if (slot < 0) { free (argv); return -1; }
+  sl = &m9_execs[slot];
+  sl->s[0] = sl->s[1] = NULL;
+  sl->n[0] = sl->n[1] = 0;
+  sl->status = -1;
+
+  if (pipe (outp) != 0 || pipe (errp) != 0) goto fail;
+  posix_spawn_file_actions_init (&fa);
+  posix_spawn_file_actions_adddup2 (&fa, outp[1], 1);
+  posix_spawn_file_actions_adddup2 (&fa, errp[1], 2);
+  posix_spawn_file_actions_addclose (&fa, outp[0]);
+  posix_spawn_file_actions_addclose (&fa, errp[0]);
+  k = posix_spawnp (&pid, argv[0], &fa, NULL, argv, environ);
+  posix_spawn_file_actions_destroy (&fa);
+  close (outp[1]); close (errp[1]);
+  if (k != 0) { close (outp[0]); close (errp[0]); goto fail; }
+
+  {
+    struct pollfd pf[2];
+    int open0 = 1, open1 = 1;
+    pf[0].fd = outp[0]; pf[0].events = POLLIN;
+    pf[1].fd = errp[0]; pf[1].events = POLLIN;
+    while (open0 || open1) {
+      pf[0].fd = open0 ? outp[0] : -1;
+      pf[1].fd = open1 ? errp[0] : -1;
+      if (poll (pf, 2, -1) < 0) { if (errno == EINTR) continue; break; }
+      if (open0 && (pf[0].revents & (POLLIN | POLLHUP | POLLERR)))
+        if (!m9_drain (outp[0], &sl->s[0], &sl->n[0], &cap[0])) open0 = 0;
+      if (open1 && (pf[1].revents & (POLLIN | POLLHUP | POLLERR)))
+        if (!m9_drain (errp[0], &sl->s[1], &sl->n[1], &cap[1])) open1 = 0;
+    }
+  }
+  close (outp[0]); close (errp[0]);
+  while (waitpid (pid, &st, 0) < 0 && errno == EINTR) ;
+  if (WIFEXITED (st)) sl->status = WEXITSTATUS (st);
+  else if (WIFSIGNALED (st)) sl->status = -WTERMSIG (st);
+  free (argv);
+  return slot;
+
+fail:
+  free (argv);
+  pthread_mutex_lock (&m9_exec_lock);
+  sl->used = 0;
+  pthread_mutex_unlock (&m9_exec_lock);
+  return -1;
+}
+
+int m9_exec_status (int h)
+{
+  if (h < 0 || h >= M9_EXEC_SLOTS || !m9_execs[h].used) return -1;
+  return m9_execs[h].status;
+}
+
+int64_t m9_exec_len (int h, int which)
+{
+  if (h < 0 || h >= M9_EXEC_SLOTS || !m9_execs[h].used) return 0;
+  return m9_execs[h].n[which == 2 ? 1 : 0];
+}
+
+int64_t m9_exec_copy (int h, int which, void *buf, int64_t cap)
+{
+  int64_t n;
+  int w = which == 2 ? 1 : 0;
+  if (h < 0 || h >= M9_EXEC_SLOTS || !m9_execs[h].used) return 0;
+  n = m9_execs[h].n[w] < cap ? m9_execs[h].n[w] : cap;
+  if (n > 0) memcpy (buf, m9_execs[h].s[w], (size_t) n);
+  return n;
+}
+
+void m9_exec_release (int h)
+{
+  if (h < 0 || h >= M9_EXEC_SLOTS) return;
+  pthread_mutex_lock (&m9_exec_lock);
+  if (m9_execs[h].used) {
+    free (m9_execs[h].s[0]); free (m9_execs[h].s[1]);
+    m9_execs[h].s[0] = m9_execs[h].s[1] = NULL;
+    m9_execs[h].used = 0;
+  }
+  pthread_mutex_unlock (&m9_exec_lock);
 }

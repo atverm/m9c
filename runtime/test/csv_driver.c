@@ -108,6 +108,11 @@ int main (void)
   Csv_SetKind (&t, ts_start,
                (Csv_Kind){ Csv_Kind_Stamp, { { Csv_StampYmdHm } } }, &e);
   Csv_SetStamp (&t, ts_end, Csv_StampYmdHm, &e);
+  /* every other column is a measurement, and that has to be SAID:
+     Open leaves a column Skip until a setter names its kind, so the
+     242 of them are declared here, one by one */
+  for (int64_t c = 0; c < Csv_Cols (t, &e); c++)
+    if (c != ts_start && c != ts_end) Csv_SetReal (&t, c, &e);
   ok ("the column kinds are accepted", !e.exc);
 
   clock_gettime (CLOCK_MONOTONIC, &t0);

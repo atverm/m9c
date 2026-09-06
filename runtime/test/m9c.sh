@@ -463,7 +463,7 @@ M9LIBRARY="$SRC" "$M9C" --make -c -k ./Cell.m9 >/dev/null 2>&1 ||
 if M9LIBRARY="$SRC" "$M9C" --no-unsafe --make -c ./Cell.m9 2>nu.txt; then
   echo "FAIL: --no-unsafe accepted a foreign unit outside the library"; exit 1
 fi
-grep -q 'foreign unit clibc' nu.txt ||
+grep -q 'Sneak.m9:[0-9][0-9]*:[0-9][0-9]*: no-unsafe: foreign unit clibc' nu.txt ||
   { echo "FAIL: the --no-unsafe refusal did not name the unit"; exit 1; }
 
 cat > Cell2.m9 <<'M9'
@@ -494,7 +494,7 @@ M9LIBRARY="$SRC" "$M9C" --make -c -k ./Cell2.m9 >/dev/null 2>&1 ||
 if M9LIBRARY="$SRC" "$M9C" --no-unsafe --make -c ./Cell2.m9 2>nu2.txt; then
   echo "FAIL: --no-unsafe accepted an UNSAFE unit outside the library"; exit 1
 fi
-grep -q 'UNSAFE unit Peek' nu2.txt ||
+grep -q 'Peek.m9:[0-9][0-9]*:[0-9][0-9]*: no-unsafe: UNSAFE unit Peek' nu2.txt ||
   { echo "FAIL: the --no-unsafe refusal did not name the UNSAFE unit"; exit 1; }
 
 # and the trusted half: the shipped library's own foreign units (Io

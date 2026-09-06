@@ -43,8 +43,8 @@ COMPILER="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen Doc M9c"
 # no gate.  debian/tests/compile-a-program builds both now.
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
          Json Dict Mat Math Time Logger Syslog Http HttpServer OpenApi Doc \
-         NetCDF Grib Csv Stats Frame Parquet \
-         Plot ZarrStore Lsp M9fmt"
+         NetCDF Grib Csv Stats System Frame Parquet \
+         Plot ZarrStore Diag Lsp M9fmt"
 
 mkdir -p "$OUT"
 

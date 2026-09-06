@@ -717,7 +717,7 @@ end;
 
 function TGen.TagOfExpr (e: TNode): string;
 var
-  t : string;
+  t, u : string;
   ci : Integer;
 begin
   Result := '?';
@@ -749,6 +749,14 @@ begin
         if t = 'I64' then t := TagOfExpr (e.kids[1]);
         { and a real literal adapts the same way }
         if IsAdaptive (e.kids[0]) then t := TagOfExpr (e.kids[1]);
+        { a string concatenation is a STRING whatever its left
+          operand's own tag: a one-character literal, or a CHAR
+          prepended to a string (par 2.3, revised 2026-09-06) }
+        if (e.a = '+') and ((t = 'STR1') or (t = 'CHAR')) then
+        begin
+          u := TagOfExpr (e.kids[1]);
+          if (t = 'STR1') or (u = 'SLICE') or (u = 'STR1') then t := 'SLICE';
+        end;
         Result := t;
       end;
     nkUn :
@@ -1456,7 +1464,7 @@ end;
 
 function TGen.EX (e: TNode; const want: string): string;
 var
-  l, r, lt, w, tg : string;
+  l, r, lt, rt, w, tg : string;
   cop : string;
   j, k : Integer;
   inr : TNode;
@@ -1598,9 +1606,29 @@ begin
           type, so a SLICE tag here is a string.  Both sides are
           wanted AS SLICES -- a one-character literal is a string in
           this position, not a CHAR. }
+        rt := '';
+        if e.a = '+' then rt := TagOfExpr (e.kids[1]);
         if (e.a = '+') and ((lt = 'SLICE') or (lt = 'STR1') or
-                            (TagOfExpr (e.kids[1]) = 'SLICE')) then
+                            (rt = 'SLICE') or (rt = 'STR1')) then
         begin
+          { a CHAR on one side is one code point appended or
+            prepended: m9_cat over a one-element view of it (par 2.3,
+            revised 2026-09-06).  A one-character LITERAL is STR1,
+            not CHAR, and stays on the slice path. }
+          if lt = 'CHAR' then
+          begin
+            l := EX (e.kids[0], 'CHAR');
+            r := EX (e.kids[1], 'SLICE');
+            stRaise := True;
+            Exit ('m9_ch_cat (err->res, ' + l + ', ' + r + ', err)');
+          end;
+          if rt = 'CHAR' then
+          begin
+            l := EX (e.kids[0], 'SLICE');
+            r := EX (e.kids[1], 'CHAR');
+            stRaise := True;
+            Exit ('m9_cat_ch (err->res, ' + l + ', ' + r + ', err)');
+          end;
           l := EX (e.kids[0], 'SLICE');
           r := EX (e.kids[1], 'SLICE');
           stRaise := True;

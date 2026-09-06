@@ -59,12 +59,20 @@ LIB=$SRC/corpus
 # for the same reason and says so
 ZARR_OK=1
 ldconfig -p 2>/dev/null | grep -q 'libblosc\.so\.1' || ZARR_OK=0
+# and the one that links libnetcdf explicitly (C7Series survives
+# without it only because LTO drops the unreachable NetCDF code)
+NETCDF_OK=1
+printf 'int main(void){return 0;}' > "$W/nc.c"
+gcc "$W/nc.c" -lnetcdf -o "$W/nc" 2>/dev/null || NETCDF_OK=0
 
 ran=0; skipped=0
 for f in "$EXA"/C*.m9; do
   m=$(basename "$f" .m9)
   if { [ "$m" = C8Zarr ] || [ "$m" = C10Icos ]; } && [ "$ZARR_OK" != 1 ]; then
     skipped=$((skipped+1)); continue
+  fi
+  if [ "$m" = C14Flux ] && [ "$NETCDF_OK" != 1 ]; then
+    echo "SKIP: C14Flux (libnetcdf is absent)"; skipped=$((skipped+1)); continue
   fi
   tut_build "$m" ||
     { echo "FAIL: $m does not build with $VER, which chapter 0 tells a reader to install"; exit 1; }

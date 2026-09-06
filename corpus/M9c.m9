@@ -141,7 +141,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.5.0' ;
+  Version = '0.6.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -1538,7 +1538,13 @@ END Keep ;
    unit from anywhere else (the main file, a named dependency, -I
    directories, the main file's neighbours) may not, and is refused
    BY NAME before anything is generated -- so an OS sandbox around
-   this compiler is the second wall, never the only one.            *)
+   this compiler is the second wall, never the only one.
+   The refusal is POSITIONED, FILE:LINE:COL: no-unsafe: MSG, the
+   parser's shape: it used to say `m9c: --no-unsafe: foreign unit U
+   in PATH`, and the two programs that republish --check's lines
+   (m9lsp, m9edit) accept only positioned lines, so a cell with a
+   foreign unit came back rejected with ZERO findings.  Diag.Parse
+   reads this line now, and a pointer at the unit beats a name.     *)
 PROCEDURE ScanUnsafe (root: PTR Ast.Node ; RO path: STR ;
                       trusted: BOOL) RAISES ValueRange =
 VAR i : I64 ;
@@ -1548,13 +1554,13 @@ BEGIN
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN
       IF LEN (u.b) > 0 THEN
-        Diag ('m9c: --no-unsafe: foreign unit ', u.a,
-              Cat (' in ', path)) ;
+        Diag2 (Cat (path, ':'), u.line, u.col,
+               ': no-unsafe: foreign unit ', u.a) ;
         nunsafe := nunsafe + 1 ;
         failed := TRUE
       ELSIF u.f1 THEN
-        Diag ('m9c: --no-unsafe: UNSAFE unit ', u.a,
-              Cat (' in ', path)) ;
+        Diag2 (Cat (path, ':'), u.line, u.col,
+               ': no-unsafe: UNSAFE unit ', u.a) ;
         nunsafe := nunsafe + 1 ;
         failed := TRUE
       END

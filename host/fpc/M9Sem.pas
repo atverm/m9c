@@ -985,6 +985,39 @@ var
     scope.Objects[ix] := TObject (t);
   end;
 
+  { a type node from module MODNAME made self-contained: its bare
+    type names qualified, so canonicalising it later -- from whichever
+    module the binder is used in -- resolves them where they were
+    declared (the canonCtx lesson, applied to binders).  Pool and
+    attribute components are dropped, neither being part of type
+    identity.  The synthetic nodes are never freed: a handful per
+    check, in a one-shot process, like tyCHAR and strNode. }
+  function QualifiedIn (t: TNode; const modName: string): TNode;
+  var n : TNode;
+  begin
+    Result := t;
+    if t = nil then Exit;
+    case t.kind of
+      nkQualident :
+        if (t.b = '') and not InList (t.a, BuiltinTypes) and
+           (t.a <> 'STR') then
+        begin
+          n := TNode.Create (nkQualident);
+          n.a := modName;
+          n.b := t.a;
+          Result := n;
+        end;
+      nkPtrType, nkOptType, nkSharedType, nkSliceType :
+        begin
+          n := TNode.Create (t.kind);
+          if Length (t.kids) > 0 then
+            n.Add (QualifiedIn (t.kids[0], modName));
+          n.Add (nil);
+          Result := n;
+        end;
+    end;
+  end;
+
   function ScopeMode (const nm: string): string;
   var ix : Integer;
   begin
@@ -1992,16 +2025,17 @@ var
       Exit ('BOOL');
     end;
     { string concatenation, before the arithmetic rules: `+` on two
-      strings answers a string, allocated in HEAP (par 4.3).  Not on
-      a bare CHAR -- a character is a scalar, and `s + c` would have
-      to decide silently whether c is a character or a number; write
-      DynStr.AppendChar, or a one-character literal, which IS a
-      string. }
+      strings answers a string, allocated in HEAP (par 4.3).  A CHAR
+      on either side is one code point appended or prepended -- a
+      CHAR converts to nothing implicitly, so there is nothing for
+      `s + c` to decide silently (the rule used to refuse it, on a
+      Pascal/C worry M9 does not have; revised 2026-09-06).  Anything
+      else -- a number, a record -- must be formatted first. }
     if (op = '+') and (StrSide (lt) or StrSide (rt)) then
     begin
-      if not StrSide (lt) then
+      if not (StrSide (lt) or (lt = 'CHAR')) then
         ErrN (e, ctx, 'cannot concatenate ' + TyName (lt) + ' with a string')
-      else if not StrSide (rt) then
+      else if not (StrSide (rt) or (rt = 'CHAR')) then
         ErrN (e, ctx, 'cannot concatenate a string with ' + TyName (rt));
       Exit ('SLICE OF CHAR');
     end;
@@ -2050,6 +2084,7 @@ var
     j : Integer;
     t, u : string;
     res, inr, pt : TNode;
+    pr : TProcInfo;
   begin
     Result := '';
     if e = nil then Exit;
@@ -2197,9 +2232,31 @@ var
           end
           else
           begin
-            ExprType (e.kids[0]);
+            t := ExprType (e.kids[0]);
             if e.kids[1].kind = nkIsSome then
-              BindName (e.kids[1].a, nil);
+            begin
+              res := nil;
+              { a CALL's result: the binder takes the callee's declared
+                payload type, made self-contained in the callee's
+                module, so an argument made of the binder is checked
+                like any other.  Before 2026-09-06 it was bound
+                untyped, passed by softness, and gcc objected. }
+              if (e.kids[0].kind = nkCallExpr) and
+                 LookupProcInfo (DesigName (e.kids[0].kids[0]), pr) and
+                 (pr.node.kids[1] <> nil) then
+              begin
+                canonCtx := pr.modName;
+                res := ResolveType (pr.node.kids[1]);
+                canonCtx := '';
+                if (res <> nil) and (res.kind = nkOptType) then
+                  res := QualifiedIn (res.kids[0], pr.modName)
+                else
+                  res := nil;
+              end;
+              if (t <> '') and not StartsWithS (t, 'OPT ') then
+                ErrN (e, ctx, 'IS SOME needs an OPT operand');
+              BindName (e.kids[1].a, res);
+            end;
           end;
           Result := 'BOOL';
         end;
@@ -2619,7 +2676,16 @@ var
       nkRaiseStmt :
         begin
           CheckExcName (st.kids[0], ctx);
-          if raised.Values[st.kids[0].a] = '' then
+          { a qualified name raises its BARE name -- `RAISE Io.IOError`
+            raises IOError, not "Io".  Found by System.Exec, the first
+            corpus procedure to raise another module's exception; the
+            M9 checker had it right and semdiff said so. }
+          if st.kids[0].b <> '' then
+          begin
+            if raised.Values[st.kids[0].b] = '' then
+              raised.Values[st.kids[0].b] := 'RAISE';
+          end
+          else if raised.Values[st.kids[0].a] = '' then
             raised.Values[st.kids[0].a] := 'RAISE';
           if st.kids[1] <> nil then
             for j := 0 to High (st.kids[1].kids) do

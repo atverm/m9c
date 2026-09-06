@@ -146,7 +146,7 @@ Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_state 
   m9t4to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t4to; i += 1) {
-    (*(int64_t *) m9_at (t->kinds.p, i, t->kinds.len, sizeof (int64_t), err)) = Csv_KReal;
+    (*(int64_t *) m9_at (t->kinds.p, i, t->kinds.len, sizeof (int64_t), err)) = Csv_KSkip;
     if (err->exc) goto L_ret;
   } }
   if (opt.header) {

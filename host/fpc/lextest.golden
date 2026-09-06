@@ -1,12 +1,13 @@
 ../../corpus/Ast.m9                      tokens=630 errors=0
 ../../corpus/Concat.m9                   tokens=134 errors=0
 ../../corpus/Csv.m9                      tokens=4009 errors=0
+../../corpus/Diag.m9                     tokens=2692 errors=0
 ../../corpus/Dict.m9                     tokens=1229 errors=0
 ../../corpus/Doc.m9                      tokens=5250 errors=0
 ../../corpus/DynStr.m9                   tokens=1708 errors=0
 ../../corpus/Fmt.m9                      tokens=1945 errors=0
 ../../corpus/Frame.m9                    tokens=15230 errors=0
-../../corpus/Gen.m9                      tokens=27820 errors=0
+../../corpus/Gen.m9                      tokens=28033 errors=0
 ../../corpus/Grib.m9                     tokens=3499 errors=0
 ../../corpus/Hello.m9                    tokens=181 errors=0
 ../../corpus/Http.m9                     tokens=1172 errors=0
@@ -15,8 +16,8 @@
 ../../corpus/Json.m9                     tokens=5910 errors=0
 ../../corpus/Lex.m9                      tokens=3510 errors=0
 ../../corpus/Logger.m9                   tokens=867 errors=0
-../../corpus/Lsp.m9                      tokens=3393 errors=0
-../../corpus/M9c.m9                      tokens=8890 errors=0
+../../corpus/Lsp.m9                      tokens=2497 errors=0
+../../corpus/M9c.m9                      tokens=8906 errors=0
 ../../corpus/M9fmt.m9                    tokens=2338 errors=0
 ../../corpus/Mat.m9                      tokens=2775 errors=0
 ../../corpus/Math.m9                     tokens=3420 errors=0
@@ -26,9 +27,10 @@
 ../../corpus/Parse.m9                    tokens=10660 errors=0
 ../../corpus/Plot.m9                     tokens=7592 errors=0
 ../../corpus/Print.m9                    tokens=7199 errors=0
-../../corpus/Sem.m9                      tokens=28469 errors=0
+../../corpus/Sem.m9                      tokens=28880 errors=0
 ../../corpus/Stats.m9                    tokens=3441 errors=0
 ../../corpus/Syslog.m9                   tokens=646 errors=0
+../../corpus/System.m9                   tokens=1874 errors=0
 ../../corpus/Text.m9                     tokens=1340 errors=0
 ../../corpus/Time.m9                     tokens=2350 errors=0
 ../../corpus/ZarrStore.m9                tokens=4491 errors=0

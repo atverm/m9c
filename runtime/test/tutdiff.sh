@@ -39,6 +39,12 @@ ldconfig -p 2>/dev/null | grep -q 'libblosc\.so\.1' || ZARR_OK=0
 TLS_OK=1
 printf 'int main(void){return 0;}' > /tmp/m9tls.c
 gcc /tmp/m9tls.c -lssl -lcrypto -o /tmp/m9tls 2>/dev/null || TLS_OK=0
+# chapter 14 WRITES a NetCDF file, so its link needs libnetcdf -- the
+# only example that reaches a NetCDF procedure (C7Series links Frame
+# without it because -flto drops the ones nothing calls).  CI has no
+# libnetcdf; asked the same way, by linking.
+NETCDF_OK=1
+gcc /tmp/m9tls.c -lnetcdf -o /tmp/m9nc 2>/dev/null || NETCDF_OK=0
 
 
 ran=0
@@ -56,6 +62,10 @@ for f in "$EXA"/C*.m9; do
   fi
   if [ "$m" = C11Fetch ] && [ "$TLS_OK" != 1 ]; then
     echo "SKIP: C11Fetch (libssl is absent; Http links the TLS shims)"
+    continue
+  fi
+  if [ "$m" = C14Flux ] && [ "$NETCDF_OK" != 1 ]; then
+    echo "SKIP: C14Flux (libnetcdf is absent; the chapter writes a file)"
     continue
   fi
   tut_build "$m" || { echo "FAIL: $m does not compile"; exit 1; }

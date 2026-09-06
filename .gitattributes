@@ -5,6 +5,9 @@
 runtime/gen/*.c -text
 runtime/gen/*.h -text
 demo/icos-roundtrip/Fluxnet_Variables.csv -text
+# and the tutorial's FLUXNET excerpt: chapter 16 hashes its BYTES and
+# records the sum, and the file is CRLF as ICOS ships it
+docs/tutorial/examples/data/*.csv -text
 # GITHUB'S LANGUAGE BAR (Linguist).  .m9 is not a language Linguist
 # knows -- that takes a pull request there, ~200 repositories using
 # the extension and a permissively licensed grammar -- so until then

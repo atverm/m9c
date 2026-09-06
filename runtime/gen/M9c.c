@@ -386,10 +386,10 @@ static const uint32_t m9s310[1] = { 58u };
 static const uint32_t m9s311[9] = { 58u, 32u, 112u, 97u, 114u, 115u, 101u, 58u, 32u };
 static const uint32_t m9s312[5] = { 109u, 57u, 99u, 58u, 32u };
 static const uint32_t m9s313[17] = { 32u, 112u, 97u, 114u, 115u, 101u, 32u, 101u, 114u, 114u, 111u, 114u, 115u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s314[31] = { 109u, 57u, 99u, 58u, 32u, 45u, 45u, 110u, 111u, 45u, 117u, 110u, 115u, 97u, 102u, 101u, 58u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 117u, 110u, 105u, 116u, 32u };
-static const uint32_t m9s315[4] = { 32u, 105u, 110u, 32u };
-static const uint32_t m9s316[30] = { 109u, 57u, 99u, 58u, 32u, 45u, 45u, 110u, 111u, 45u, 117u, 110u, 115u, 97u, 102u, 101u, 58u, 32u, 85u, 78u, 83u, 65u, 70u, 69u, 32u, 117u, 110u, 105u, 116u, 32u };
-static const uint32_t m9s317[4] = { 32u, 105u, 110u, 32u };
+static const uint32_t m9s314[1] = { 58u };
+static const uint32_t m9s315[26] = { 58u, 32u, 110u, 111u, 45u, 117u, 110u, 115u, 97u, 102u, 101u, 58u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 117u, 110u, 105u, 116u, 32u };
+static const uint32_t m9s316[1] = { 58u };
+static const uint32_t m9s317[25] = { 58u, 32u, 110u, 111u, 45u, 117u, 110u, 115u, 97u, 102u, 101u, 58u, 32u, 85u, 78u, 83u, 65u, 70u, 69u, 32u, 117u, 110u, 105u, 116u, 32u };
 static const uint32_t m9s318[24] = { 109u, 57u, 99u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 102u, 105u, 110u, 100u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u };
 static const uint32_t m9s319[36] = { 32u, 111u, 110u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 97u, 114u, 99u, 104u, 32u, 112u, 97u, 116u, 104u, 32u, 40u, 45u, 73u, 44u, 32u, 36u, 77u, 57u, 76u, 73u, 66u, 82u, 65u, 82u, 89u, 41u };
 static const uint32_t m9s320[31] = { 117u, 115u, 97u, 103u, 101u, 58u, 32u, 109u, 57u, 99u, 32u, 70u, 73u, 76u, 69u, 46u, 109u, 57u, 32u, 91u, 68u, 69u, 80u, 46u, 109u, 57u, 32u, 46u, 46u, 46u, 93u };
@@ -2820,14 +2820,14 @@ static void M9c_ScanUnsafe (Ast_Node * root, m9_sl_CHAR path, bool trusted, m9_s
     if (err->exc) goto L_ret;
     if (u != NULL) {
       if (((u->b).len > INT64_C(0))) {
-        M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s314, 31 }), u->a, M9c_Cat (((m9_sl_CHAR){ (uint32_t *) m9s315, 4 }), path, err), err);
+        M9c_Diag2 (M9c_Cat (path, ((m9_sl_CHAR){ (uint32_t *) m9s314, 1 }), err), u->line, u->col, ((m9_sl_CHAR){ (uint32_t *) m9s315, 26 }), u->a, err);
         if (err->exc) goto L_ret;
         nunsafe = m9_add_i64 (nunsafe, INT64_C(1), err);
         if (err->exc) goto L_ret;
         failed = true;
       } else {
         if (u->f1) {
-          M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s316, 30 }), u->a, M9c_Cat (((m9_sl_CHAR){ (uint32_t *) m9s317, 4 }), path, err), err);
+          M9c_Diag2 (M9c_Cat (path, ((m9_sl_CHAR){ (uint32_t *) m9s316, 1 }), err), u->line, u->col, ((m9_sl_CHAR){ (uint32_t *) m9s317, 25 }), u->a, err);
           if (err->exc) goto L_ret;
           nunsafe = m9_add_i64 (nunsafe, INT64_C(1), err);
           if (err->exc) goto L_ret;

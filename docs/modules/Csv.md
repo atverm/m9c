@@ -94,7 +94,9 @@ where a reader can see all of them at once.
 ### Open (VAR pool: POOL ; RO path: STR ; RO opt: Options) : PTR Table IN pool RAISES ParseError, ValueRange, Io.IOError
 
 reads the file and the header and counts the rows; parses no
-values, because the caller declares the column kinds first
+values, because the caller declares the column kinds first.
+Every column is Skip until a setter names it: a column nobody
+declared is scanned past, never parsed and never carried.
 
 ### Rows (t: PTR Table) : I64
 

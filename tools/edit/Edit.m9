@@ -27,7 +27,8 @@ PROCEDURE Serve (port: I64 ; maxRequests: I64 ;
      POST /lex       buffer -> token and comment spans, JSON
      POST /check     buffer -> m9c --check diagnostics, JSON
      POST /run       buffer -> compile, run, reply text + files
-     GET /out/NAME   what the program wrote (cwd is out/)          *)
+     GET /out/NAME   what the program wrote (cwd is out/)
+     GET /cell.js    the per-cell page script (pageDir/cell.js)   *)
 
 END Edit.
 
@@ -63,7 +64,7 @@ FROM cedt IMPORT Listen, Accept, Read, Write, Close ;
 IMPORT DynStr ;
 IMPORT Text ;
 IMPORT Io ;
-IMPORT Lex ;
+IMPORT Diag ;
 
 VAR
   bwrapOk : BOOL ;    (* /tmp-over-out bind available (bubblewrap) *)
@@ -212,87 +213,9 @@ BEGIN
   RETURN 'application/octet-stream'
 END CTypeOf ;
 
-(* ---- JSON out ---- *)
-
-(* the escapes RFC 8259 requires and no others -- the third copy of
-   this ten-liner (Json keeps its emitter private, m9lsp carries
-   one); a shared home is owed when a fourth caller appears *)
-PROCEDURE JStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
-                RO s: STR) RAISES ValueRange =
-VAR i, c : I64 ;
-BEGIN
-  DynStr.AppendChar (pool, d, 022C) ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    c := ORD (s[i]) ;
-    IF c = 0x22 OR c = 0x5C THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, s[i])
-    ELSIF c < 0x20 THEN
-      DynStr.Append (pool, d, '\u00') ;
-      DynStr.AppendChar (pool, d, HexDigit (c DIV 16)) ;
-      DynStr.AppendChar (pool, d, HexDigit (c MOD 16))
-    ELSE
-      DynStr.AppendChar (pool, d, s[i])
-    END
-  END ;
-  DynStr.AppendChar (pool, d, 022C)
-END JStr ;
-
-PROCEDURE HexDigit (v: I64) : CHAR RAISES ValueRange =
-BEGIN
-  IF v < 10 THEN RETURN CHR (ORD ('0') + v) END ;
-  RETURN CHR (ORD ('a') + v - 10)
-END HexDigit ;
-
-(* ---- /lex: the compiler's own tokens ---- *)
-
-PROCEDURE LexJson (VAR pool: POOL ; RO KEPT src: STR) : STR
-  RAISES ValueRange, IndexError =
-VAR
-  lx : Lex.Lexer ;
-  t : Lex.Token ;
-  cm : Lex.Comment ;
-  d : PTR DynStr.DString ;
-  first : BOOL ;
-  i : I64 ;
-BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"tokens":[') ;
-  Lex.Collect (TRUE) ;
-  Lex.Init (lx, src) ;
-  first := TRUE ;
-  LOOP
-    Lex.Next (lx, t) ;
-    (* kinds are stable I64 codes by Lex's own contract: 0 is EOF *)
-    IF t.kind = 0 THEN EXIT END ;
-    IF NOT first THEN DynStr.AppendChar (pool, d, 02CC) END ;
-    first := FALSE ;
-    DynStr.AppendChar (pool, d, 05BC) ;
-    DynStr.AppendI64 (pool, d, t.kind) ;
-    DynStr.AppendChar (pool, d, 02CC) ;
-    DynStr.AppendI64 (pool, d, t.line) ;
-    DynStr.AppendChar (pool, d, 02CC) ;
-    DynStr.AppendI64 (pool, d, t.col) ;
-    DynStr.AppendChar (pool, d, 02CC) ;
-    DynStr.AppendI64 (pool, d, LEN (t.text)) ;
-    DynStr.AppendChar (pool, d, 05DC)
-  END ;
-  Lex.Collect (FALSE) ;
-  DynStr.Append (pool, d, '],"comments":[') ;
-  FOR i := 0 TO Lex.ComCount () - 1 DO
-    cm := Lex.ComAt (i) ;
-    IF i > 0 THEN DynStr.AppendChar (pool, d, 02CC) END ;
-    DynStr.Append (pool, d, '{"line":') ;
-    DynStr.AppendI64 (pool, d, cm.line) ;
-    DynStr.Append (pool, d, ',"col":') ;
-    DynStr.AppendI64 (pool, d, cm.col) ;
-    DynStr.Append (pool, d, ',"text":') ;
-    JStr (pool, d, cm.text) ;
-    DynStr.AppendChar (pool, d, 07DC)
-  END ;
-  DynStr.Append (pool, d, ']}') ;
-  RETURN DynStr.View (d)
-END LexJson ;
+(* JSON out, /lex and the reading of m9c's diagnostics live in
+   corpus/Diag.m9 -- the fourth caller (the tutor's cells) arrived,
+   and the "shared home is owed" note that stood here is paid. *)
 
 (* ---- the module name, from the first line ---- *)
 
@@ -389,7 +312,7 @@ BEGIN
     f := listing[i] ;
     IF SafeName (f) AND Text.EndsWith (f, '.m9') THEN
       IF n > 0 THEN DynStr.AppendChar (pool, d, 02CC) END ;
-      JStr (pool, d, f) ;
+      Diag.JStr (pool, d, f) ;
       n := n + 1
     END
   END ;
@@ -426,107 +349,26 @@ END SortStrs ;
 
 (* ---- /check: m9c --check, republished as JSON ---- *)
 
-PROCEDURE TakeI64 (RO s: STR ; VAR i: I64 ; VAR v: I64) : BOOL =
-VAR any : BOOL ;
-BEGIN
-  v := 0 ;
-  any := FALSE ;
-  WHILE i < LEN (s) AND s[i] >= '0' AND s[i] <= '9' DO
-    v := v * 10 + (ORD (s[i]) - ORD ('0')) ;
-    i := i + 1 ;
-    any := TRUE
-  END ;
-  RETURN any
-END TakeI64 ;
-
-(* one stderr line to one diagnostic: LINE:COL MSG, or
-   FILE:LINE:COL: parse: MSG -- m9lsp's two shapes, compactly *)
-PROCEDURE DiagLine (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
-                    RO line: STR ; VAR first: BOOL) : BOOL
-  RAISES ValueRange, IndexError =
-VAR
-  i, j, k, ln, cl : I64 ;
-  msg : STR ;
-BEGIN
-  i := 0 ;
-  IF TakeI64 (line, i, ln) AND i < LEN (line) AND line[i] = ':' THEN
-    i := i + 1 ;
-    IF TakeI64 (line, i, cl) AND i < LEN (line) AND line[i] = ' ' THEN
-      msg := SLICE (line, i + 1, LEN (line) - i - 1)
-    ELSE
-      RETURN FALSE
-    END
-  ELSE
-    j := Text.Find (line, ': parse: ') ;
-    IF j < 0 THEN RETURN FALSE END ;
-    k := j ;
-    WHILE k > 0 AND line[k - 1] >= '0' AND line[k - 1] <= '9' DO
-      k := k - 1
-    END ;
-    IF k = j OR k = 0 OR line[k - 1] # ':' THEN RETURN FALSE END ;
-    i := k ;
-    IF NOT TakeI64 (line, i, cl) THEN RETURN FALSE END ;
-    k := k - 1 ;
-    i := k ;
-    WHILE i > 0 AND line[i - 1] >= '0' AND line[i - 1] <= '9' DO
-      i := i - 1
-    END ;
-    IF i = k OR i = 0 OR line[i - 1] # ':' THEN RETURN FALSE END ;
-    IF NOT TakeI64 (line, i, ln) THEN RETURN FALSE END ;
-    msg := SLICE (line, j + 2, LEN (line) - j - 2)
-  END ;
-  IF NOT first THEN DynStr.AppendChar (pool, d, 02CC) END ;
-  first := FALSE ;
-  DynStr.Append (pool, d, '{"line":') ;
-  DynStr.AppendI64 (pool, d, ln) ;
-  DynStr.Append (pool, d, ',"col":') ;
-  DynStr.AppendI64 (pool, d, cl) ;
-  DynStr.Append (pool, d, ',"msg":') ;
-  JStr (pool, d, msg) ;
-  DynStr.AppendChar (pool, d, 07DC) ;
-  RETURN TRUE
-END DiagLine ;
-
 PROCEDURE CheckJson (VAR pool: POOL ; RO KEPT src: STR ;
                      RO workDir: STR) : STR
   RAISES ValueRange, IndexError, Io.IOError =
 VAR
   scratch : POOL ;
-  cmd : PTR DynStr.DString IN scratch ;
-  d : PTR DynStr.DString ;
-  name, errs, line : STR ;
-  ok, first : BOOL ;
-  rc, i, j : I64 ;
+  name : STR ;
+  ok : BOOL ;
 BEGIN
-  d := DynStr.New (pool) ;
   name := ModName (src, ok) ;
   IF NOT ok THEN
-    RETURN '{"ok":false,"diags":[{"line":1,"col":1,"msg":"the first line must be:  MODULE Name ;"}]}'
+    RETURN Diag.Json (pool, Diag.One (pool, 1, 1,
+                        'the first line must be:  MODULE Name ;'))
   END ;
   Io.WriteFile (workDir + '/' + name + '.m9', src) ;
-  cmd := DynStr.New (scratch) ;
-  DynStr.Append (scratch, cmd, 'cd ') ;
-  DynStr.Append (scratch, cmd, workDir) ;
-  DynStr.Append (scratch, cmd, ' && ') ;
-  DynStr.Append (scratch, cmd, M9cCmd (scratch)) ;
-  DynStr.Append (scratch, cmd, ' --check ') ;
-  DynStr.Append (scratch, cmd, name) ;
-  DynStr.Append (scratch, cmd, '.m9 > ck.txt 2>&1') ;
-  rc := Io.Run (DynStr.View (cmd)) ;
-  IF rc = 0 THEN RETURN '{"ok":true,"diags":[]}' END ;
-  DynStr.Append (pool, d, '{"ok":false,"diags":[') ;
-  errs := Io.ReadFile (pool, workDir + '/ck.txt') ;
-  first := TRUE ;
-  i := 0 ;
-  WHILE i < LEN (errs) DO
-    j := i ;
-    WHILE j < LEN (errs) AND errs[j] # 0AC DO j := j + 1 END ;
-    line := SLICE (errs, i, j - i) ;
-    ok := DiagLine (pool, d, line, first) ;
-    i := j + 1
-  END ;
-  DynStr.Append (pool, d, ']}') ;
-  RETURN DynStr.View (d)
+  (* Diag.Check runs `(cd workDir && m9c --check NAME.m9)` and
+     collects the output in workDir/ck.txt, named as seen from HERE
+     because the redirection sits outside the subshell *)
+  RETURN Diag.Json (pool,
+           Diag.Check (pool, M9cCmd (scratch), '', workDir,
+                       name + '.m9', workDir + '/ck.txt'))
 END CheckJson ;
 
 (* ---- /run: compile, execute, answer ---- *)
@@ -696,44 +538,19 @@ END ServeOut ;
    workdir, exactly the gather that feeds the VS Code extension's
    hovers -- the page never invents documentation either *)
 PROCEDURE DocJson (fd: I64 ; RO workDir: STR ; RO name: STR)
-  RAISES ValueRange =
+  RAISES ValueRange, IndexError =
 VAR
   scratch : POOL ;
-  cmd : PTR DynStr.DString ;
-  i : I64 ;
-  ok : BOOL ;
   body : STR ;
 BEGIN
-  ok := LEN (name) > 0 AND LEN (name) < 64 ;
-  FOR i := 0 TO LEN (name) - 1 DO
-    IF NOT ((name[i] >= 'a' AND name[i] <= 'z') OR
-            (name[i] >= 'A' AND name[i] <= 'Z') OR
-            (name[i] >= '0' AND name[i] <= '9')) THEN
-      ok := FALSE
-    END
-  END ;
-  IF NOT ok THEN
+  body := Diag.DocJson (scratch, M9cCmd (scratch), '', workDir, name) ;
+  IF LEN (body) = 0 THEN
+    (* Diag's shared name gate refused it, or the compiler knows no
+       such module -- either way there is no document to invent *)
     Respond (fd, 404, 'text/plain', 'no such module', FALSE) ;
     RETURN
   END ;
-  cmd := DynStr.New (scratch) ;
-  DynStr.Append (scratch, cmd, 'mkdir -p ') ;
-  DynStr.Append (scratch, cmd, workDir) ;
-  DynStr.Append (scratch, cmd, '/docs && cd ') ;
-  DynStr.Append (scratch, cmd, workDir) ;
-  DynStr.Append (scratch, cmd, '/docs && test -f ') ;
-  DynStr.Append (scratch, cmd, name) ;
-  DynStr.Append (scratch, cmd, '.json || ') ;
-  DynStr.Append (scratch, cmd, M9cCmd (scratch)) ;
-  DynStr.Append (scratch, cmd, ' --json ') ;
-  DynStr.Append (scratch, cmd, name) ;
-  DynStr.Append (scratch, cmd, ' > dc.txt 2>&1') ;
-  i := Io.Run (DynStr.View (cmd)) ;
-  body := Io.ReadFile (scratch, workDir + '/docs/' + name + '.json') ;
   Respond (fd, 200, 'application/json', body, FALSE)
-EXCEPT
-| Io.IOError (p) :
-    Respond (fd, 404, 'text/plain', 'no such module', FALSE)
 END DocJson ;
 
 (* ---- dispatch and loop, the tutor's shape ---- *)
@@ -803,7 +620,7 @@ BEGIN
 
     IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/lex') THEN
       Respond (fd, 200, 'application/json',
-               LexJson (scratch, body), FALSE) ;
+               Diag.LexJson (scratch, body), FALSE) ;
       RETURN
     END ;
     IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/check') THEN
@@ -834,6 +651,23 @@ BEGIN
     IF DynStr.Eq (method, 'GET') AND DynStr.Eq (path, '/kw') THEN
       page := Io.ReadFile (scratch, pageDir + '/keywords.json') ;
       Respond (fd, 200, 'application/json', page, FALSE) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'GET') AND DynStr.Eq (path, '/cell.js') THEN
+      (* the per-cell script (highlighting, diagnostics, the
+         debounces) -- one file, served to this page and to the
+         tutor's, so the two cannot drift *)
+      page := Io.ReadFile (scratch, pageDir + '/cell.js') ;
+      Respond (fd, 200, 'application/javascript; charset=utf-8',
+               page, isHead) ;
+      RETURN
+    END ;
+    IF DynStr.Eq (method, 'GET') AND DynStr.Eq (path, '/hover.js') THEN
+      (* the hover script -- same rule as cell.js: one file, both
+         pages *)
+      page := Io.ReadFile (scratch, pageDir + '/hover.js') ;
+      Respond (fd, 200, 'application/javascript; charset=utf-8',
+               page, isHead) ;
       RETURN
     END ;
     IF DynStr.Eq (method, 'GET') AND LEN (path) > 5 AND

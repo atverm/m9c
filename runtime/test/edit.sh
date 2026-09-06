@@ -43,7 +43,7 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
 ( cd "$W" && M9RUNTIME="$RT" M9LIBRARY="$SRC" \
     ./m9c --make -o m9fmt "$SRC/M9fmt.m9" >fmt.log 2>&1 ) || \
   { echo "edit: FAIL building m9fmt:"; tail -5 "$W/fmt.log"; exit 1; }
-cp "$ED/page.html" "$ED/keywords.json" "$W/"
+cp "$ED/page.html" "$ED/cell.js" "$ED/hover.js" "$ED/keywords.json" "$W/"
 cp -r "$ED/examples" "$W/"
 
 # the page's own script must BE a script: the tutor once shipped a
@@ -51,7 +51,9 @@ cp -r "$ED/examples" "$W/"
 if command -v node >/dev/null 2>&1; then
   sed -n '/<script>/,/<\/script>/p' "$ED/page.html" | sed '1d;$d' > "$W/page.js"
   node --check "$W/page.js" || { echo "edit: the page script does not parse"; exit 1; }
-  echo "         the page script parses"
+  node --check "$ED/cell.js" || { echo "edit: cell.js does not parse"; exit 1; }
+  node --check "$ED/hover.js" || { echo "edit: hover.js does not parse"; exit 1; }
+  echo "         the page script, cell.js and hover.js parse"
 else
   echo "         (no node; page-script check skipped)"
 fi
@@ -70,6 +72,19 @@ sleep 1
 
 [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:$PORT/)" = 200 ] || \
   { echo "edit: the page does not serve"; exit 1; }
+# the page loads its cell script from /cell.js: the bytes, verbatim
+curl -s http://127.0.0.1:$PORT/cell.js > "$W/cell.got"
+cmp -s "$W/cell.got" "$ED/cell.js" || \
+  { echo "edit: /cell.js is not cell.js"; exit 1; }
+grep -q '<script src="/cell.js">' "$ED/page.html" || \
+  { echo "edit: the page does not load /cell.js"; exit 1; }
+# and its hover script from /hover.js, the same rule
+curl -s http://127.0.0.1:$PORT/hover.js > "$W/hover.got"
+cmp -s "$W/hover.got" "$ED/hover.js" || \
+  { echo "edit: /hover.js is not hover.js"; exit 1; }
+grep -q '<script src="/hover.js">' "$ED/page.html" || \
+  { echo "edit: the page does not load /hover.js"; exit 1; }
+echo "         /cell.js and /hover.js serve the scripts the page loads"
 
 # /lex: the compiler's kinds for a known line, string span property
 J=$(printf "MODULE T ;\nVAR s : STR ;\nBEGIN\n  s := 'ab'\nEND T.\n" | \

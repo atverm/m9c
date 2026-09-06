@@ -41,7 +41,7 @@ sh "$REPO/tools/tutor/setup.sh" "$REPO" "$W" "$M9C" >/dev/null
   M9RUNTIME="$RT" M9LIBRARY="$REPO/corpus" \
     "$M9C" --make -c "$REPO/tools/tutor/TutorMain.m9" \
     -I "$REPO/tools/tutor" >/dev/null && \
-  gcc -O2 -flto TutorMain.o Tutor.o Io.o DynStr.o \
+  gcc -O2 -flto TutorMain.o Tutor.o Diag.o Lex.o Io.o DynStr.o \
       "$RT/m9rt.c" "$RT/tcpshim.c" -iquote "$RT" -lm -o tutorm9 )
 
 "$B/tutorm9" $PORT 64 "$W/site" "$W" \
@@ -61,6 +61,16 @@ ck
 [ "$(curl -s -o /dev/null -w '%{http_code}' -I "http://127.0.0.1:$PORT/")" = 200 ] \
   || { echo "FAIL: HEAD of the index is not 200"; exit 1; }
 ck
+# nothing the tutor answers is cacheable: with no cache header the
+# browser caches heuristically, and a stale chapter page cost two
+# confusions in one day (m9edit had sent no-store from the start --
+# the first firing of the plan's one-server divergence trigger)
+curl -sI "http://127.0.0.1:$PORT/ch/1" | grep -qi '^Cache-Control: no-store' \
+  || { echo "FAIL: chapter pages are cacheable"; exit 1; }
+curl -sI "http://127.0.0.1:$PORT/examples/expect/damped.svg" | grep -qi '^Cache-Control: no-store' \
+  || { echo "FAIL: served figures are cacheable"; exit 1; }
+ck
+
 # the chapters' embedded figures are served and equal the goldens
 curl -s "http://127.0.0.1:$PORT/examples/expect/damped.svg" -o "$B/fig.svg"
 cmp -s "$B/fig.svg" "$EXA/expect/damped.svg" \
@@ -78,6 +88,31 @@ grep -q 'Next: simple math and statistics' "$B/ch5.html" \
 ck
 curl -s "http://127.0.0.1:$PORT/ch/1" | grep -q 'MODULE C1Hello' \
   || { echo "FAIL: chapter 1 lost its cell"; exit 1; }
+ck
+
+# the cells paint (tutor-cells plan, phase 3): every cell carries
+# m9edit's stack -- the backdrop pre the colours land in, a diags
+# list and a status span -- the backdrop's initial text EQUALS the
+# textarea's (the textarea is transparent: a drifted backdrop shows
+# the wrong bytes with no other symptom), and cell.js is inlined
+# (node --check passing on a page WITHOUT M9Cell would prove the
+# wrong script)
+curl -s "http://127.0.0.1:$PORT/ch/2" | python3 -c '
+import sys, re
+h = sys.stdin.read ()
+cells = h.count ("<div class=\"cell\">")
+hl = h.count ("<pre class=\"hl\"><code>")
+dg = h.count ("<div class=\"diags\">")
+st = h.count ("<span class=\"status\">")
+assert cells and cells == hl == dg == st, \
+    "cells %d hl %d diags %d status %d" % (cells, hl, dg, st)
+pairs = re.findall (r"<pre class=\"hl\"><code>(.*?)</code></pre>"
+                    r"<textarea[^>]*>(.*?)</textarea>", h, re.S)
+assert len (pairs) == cells and all (a == b for a, b in pairs), \
+    "backdrop text differs from textarea text"
+assert "var M9Cell" in h and "M9Cell.attach" in h, "cell.js not inlined"
+assert "var M9Hover" in h and "M9Hover.attach" in h, "hover.js not inlined"
+' || { echo "FAIL: the cells lost their painting stack"; exit 1; }
 ck
 
 # the PAGE'S OWN copy of a cell must compile through /run: the Run
@@ -128,6 +163,12 @@ for f in "$EXA"/C*.m9; do
     printf 'exit 0\n' > "$B/$m.want"
     cat "$EXA/expect/$m.out" >> "$B/$m.want"
     printf 'files: /out/htm.svg\n' >> "$B/$m.want"
+  elif [ "$m" = C14Flux ]; then
+    # writes its NetCDF to /tmp, which is the run's /out: the reader
+    # gets the file as a link, and the gate expects the line
+    printf 'exit 0\n' > "$B/$m.want"
+    cat "$EXA/expect/$m.out" >> "$B/$m.want"
+    printf 'files: /out/sehtm.nc\n' >> "$B/$m.want"
   else
     printf 'exit 0\n' > "$B/$m.want"
     cat "$EXA/expect/$m.out" >> "$B/$m.want"
@@ -252,9 +293,104 @@ PROCEDURE Pid = "getpid" () : C.Int [REENTRANT] ;
 END cevil.
 M9
 curl -s -X POST --data-binary @"$B/sneaky.m9" "http://127.0.0.1:$PORT/run" \
-  | grep -q -- '--no-unsafe: foreign unit cevil' \
+  | grep -q 'no-unsafe: foreign unit cevil' \
   || { echo "FAIL: the language wall did not fire"; exit 1; }
 ck
 
+# ---- the editor's two services, answered for the cells ----------
+# /lex: the same bytes m9edit answers for the same text.  Both call
+# Diag.LexJson, so this holds the two servers to ONE painter: a cell
+# in the tutorial and a buffer in the editor cannot colour the same
+# source two ways.  m9edit is built here from the same m9c and asked
+# exactly one request (its maxRequests), so it exits on its own.
+ED="$REPO/tools/edit"
+EPORT=18942
+( cd "$B" && M9RUNTIME="$RT" M9LIBRARY="$REPO/corpus" \
+    "$M9C" --make -o m9edit "$ED/EditMain.m9" "$ED/Edit.m9" >edit-build.log 2>&1 ) \
+  || { echo "FAIL: building m9edit for the /lex comparison:"; tail -5 "$B/edit-build.log"; exit 1; }
+mkdir -p "$B/edit/work"
+cp "$ED/page.html" "$ED/cell.js" "$ED/hover.js" "$ED/keywords.json" "$B/edit/"
+( cd "$B/edit" && exec env M9EDIT_M9C="$M9C" M9RUNTIME="$RT" M9LIBRARY="$REPO/corpus" \
+    "$B/m9edit" $EPORT 1 . work > "$B/edit.log" 2>&1 ) &
+ESRV=$!
+trap 'rc=$?; kill $SRV 2>/dev/null || :; kill $ESRV 2>/dev/null || :; exit $rc' EXIT
+sleep 1
+curl -s -X POST --data-binary @"$EXA/C1Hello.m9" "http://127.0.0.1:$PORT/lex" > "$B/lex.tutor"
+curl -s -X POST --data-binary @"$EXA/C1Hello.m9" "http://127.0.0.1:$EPORT/lex" > "$B/lex.edit"
+grep -q '^{"tokens":\[\[' "$B/lex.tutor" \
+  || { echo "FAIL: /lex did not answer a token stream:"; head -c 200 "$B/lex.tutor"; exit 1; }
+cmp -s "$B/lex.tutor" "$B/lex.edit" \
+  || { echo "FAIL: /lex of C1Hello differs between tutor and m9edit"; exit 1; }
+ck
+
+# /check: the checker's findings WITH positions.  X2Assign's refusal
+# is the chapter's own EXPECT-ERROR line, tutdiff's substring rule;
+# 19:8 is the right-hand side the checker names.
+curl -s -X POST --data-binary @"$EXA/X2Assign.m9" "http://127.0.0.1:$PORT/check" > "$B/check.x2"
+grep -q '^{"ok":false,"diags":\[{"line":19,"col":8,"msg":"[^"]*cannot assign F64 to I64' "$B/check.x2" \
+  || { echo "FAIL: /check of X2Assign:"; head -c 300 "$B/check.x2"; exit 1; }
+ck
+# the language wall through /check, WITH a position (the refusal
+# used to be a bare count, which no page could paint)
+curl -s -X POST --data-binary @"$B/sneaky.m9" "http://127.0.0.1:$PORT/check" > "$B/check.sneaky"
+grep -q '"line":8,"col":8,"msg":"no-unsafe: foreign unit cevil"' "$B/check.sneaky" \
+  || { echo "FAIL: /check of the sneaky cell:"; head -c 300 "$B/check.sneaky"; exit 1; }
+ck
+# a DEFINITION pair checks as one file, and the checker's one
+# multi-line message arrives WHOLE: the two signatures under
+# "signature differs" are indented continuation lines, folded into
+# the finding (Diag), newline-escaped (Json) -- the first version
+# dropped them and painted a colon with nothing after it
+curl -s -X POST --data-binary @"$EXA/X3Sig.m9" "http://127.0.0.1:$PORT/check" > "$B/check.x3"
+grep -q '"line":16,"col":1,"msg":"X3Sig.ToKelvin: signature differs from definition:\\u000a    definition     (celsius: F64) : F64\\u000a    implementation (celsius: F32) : F64"' "$B/check.x3" \
+  || { echo "FAIL: /check of X3Sig lost the signatures:"; head -c 400 "$B/check.x3"; exit 1; }
+ck
+# a clean cell is exactly ok
+[ "$(curl -s -X POST --data-binary @"$EXA/C1Hello.m9" "http://127.0.0.1:$PORT/check")" = '{"ok":true,"diags":[]}' ] \
+  || { echo "FAIL: /check of C1Hello is not ok"; exit 1; }
+ck
+
+# the hovers' food (phase 4): /kw is the gated keyword reference,
+# /doc/NAME the m9c --json gather through Diag's shared runner and
+# name gate -- the library the hover documents is the hermetic one
+# the cells compile against
+curl -s "http://127.0.0.1:$PORT/kw" > "$B/kw.json"
+grep -q '"KEPT":' "$B/kw.json" && grep -q '"GRID":' "$B/kw.json" \
+  || { echo "FAIL: /kw is not the keyword reference"; exit 1; }
+ck
+curl -s "http://127.0.0.1:$PORT/doc/DynStr" > "$B/doc.dynstr"
+grep -q '"module":"DynStr"' "$B/doc.dynstr" \
+  || { echo "FAIL: /doc/DynStr is not the gather:"; head -c 120 "$B/doc.dynstr"; exit 1; }
+grep -q '"name":"Append"' "$B/doc.dynstr" \
+  || { echo "FAIL: /doc/DynStr lacks Append"; exit 1; }
+# cached: the second fetch answers the same bytes from docs/
+curl -s "http://127.0.0.1:$PORT/doc/DynStr" | cmp -s - "$B/doc.dynstr" \
+  || { echo "FAIL: /doc/DynStr is not stable across fetches"; exit 1; }
+[ -f "$W/docs/DynStr.json" ] \
+  || { echo "FAIL: /doc did not cache under docs/"; exit 1; }
+ck
+[ "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/doc/NoSuchModule99")" = 404 ] \
+  || { echo "FAIL: /doc of a missing module did not 404"; exit 1; }
+[ "$(curl -s --path-as-is -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/doc/..")" = 404 ] \
+  || { echo "FAIL: /doc traversal escaped"; exit 1; }
+ck
+# and /check wrote ONE file, in check/, never beside the cells:
+# a checked module at the top level would be importable by the next
+# cell.  X2Assign was checked and never run, so its absence up there
+# is the proof (Sneaky's presence is /run's: the last cell run stays
+# until the next run sweeps it)
+[ "$(ls "$W/check")" = "$(printf 'cell.m9\nck.txt')" ] \
+  || { echo "FAIL: check/ holds more than the one cell:"; ls "$W/check"; exit 1; }
+[ ! -e "$W/X2Assign.m9" ] \
+  || { echo "FAIL: /check left a module beside the cells"; exit 1; }
+ck
+# after the checks, a run still links: the check file is out of
+# --make's sight and left no object anywhere
+curl -s -X POST --data-binary @"$EXA/C1Hello.m9" "http://127.0.0.1:$PORT/run" > "$B/rerun.got"
+cmp -s "$B/rerun.got" "$B/C1Hello.want" \
+  || { echo "FAIL: /run after /check differs:"; diff "$B/C1Hello.want" "$B/rerun.got" | head -6; exit 1; }
+ck
+
 echo "tutor: PASS ($n checks) -- every cell replayed to its recorded"
-echo "       bytes through the M9 service, three walls fired by name"
+echo "       bytes through the M9 service, three walls fired by name,"
+echo "       /lex byte-equal to m9edit's, /check positioned"

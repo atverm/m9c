@@ -30,6 +30,7 @@ IMPORT Io ;
 IMPORT DynStr ;
 IMPORT Text ;
 IMPORT Json ;
+IMPORT Diag ;
 
 CONST
   Version = '0.5.0' ;
@@ -158,40 +159,6 @@ BEGIN
   Io.Flush ()
 END Send ;
 
-(* a JSON string literal: the escapes RFC 8259 requires and no
-   others.  Json.m9 keeps its emitter private, and twenty lines here
-   beat widening a library interface for one caller. *)
-PROCEDURE JStr (VAR pool: POOL ; RO s: STR) : STR
-  RAISES ValueRange =
-VAR
-  d : PTR DynStr.DString ;
-  i, c : I64 ;
-BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.AppendChar (pool, d, 022C) ;
-  FOR i := 0 TO LEN (s) - 1 DO
-    c := ORD (s[i]) ;
-    IF c = 0x22 OR c = 0x5C THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, s[i])
-    ELSIF c < 0x20 THEN
-      DynStr.Append (pool, d, '\u00') ;
-      DynStr.AppendChar (pool, d, HexDigit (c DIV 16)) ;
-      DynStr.AppendChar (pool, d, HexDigit (c MOD 16))
-    ELSE
-      DynStr.AppendChar (pool, d, s[i])
-    END
-  END ;
-  DynStr.AppendChar (pool, d, 022C) ;
-  RETURN DynStr.View (d)
-END JStr ;
-
-PROCEDURE HexDigit (v: I64) : CHAR RAISES ValueRange =
-BEGIN
-  IF v < 10 THEN RETURN CHR (ORD ('0') + v) END ;
-  RETURN CHR (ORD ('a') + v - 10)
-END HexDigit ;
-
 PROCEDURE ItoA (VAR pool: POOL ; v: I64) : STR =
 VAR d : PTR DynStr.DString ;
 BEGIN
@@ -249,20 +216,6 @@ BEGIN
   RETURN -1
 END HexVal ;
 
-(* the leading I64 of s from position i; i walks past it *)
-PROCEDURE TakeI64 (RO s: STR ; VAR i: I64 ; VAR v: I64) : BOOL =
-VAR any : BOOL ;
-BEGIN
-  v := 0 ;
-  any := FALSE ;
-  WHILE i < LEN (s) AND s[i] >= '0' AND s[i] <= '9' DO
-    v := v * 10 + (ORD (s[i]) - ORD ('0')) ;
-    i := i + 1 ;
-    any := TRUE
-  END ;
-  RETURN any
-END TakeI64 ;
-
 PROCEDURE DiagJson (VAR pool: POOL ; ln, cl: I64 ; RO msg: STR) : STR
   RAISES ValueRange =
 VAR
@@ -283,83 +236,24 @@ BEGIN
   DynStr.Append (pool, d, ',"character":') ;
   DynStr.AppendI64 (pool, d, c0) ;
   DynStr.Append (pool, d, '}},"severity":1,"source":"m9c","message":') ;
-  DynStr.Append (pool, d, JStr (pool, msg)) ;
+  Diag.JStr (pool, d, msg) ;
   DynStr.AppendChar (pool, d, 07DC) ;
   RETURN DynStr.View (d)
 END DiagJson ;
 
-(* FILE:LINE:COL: parse: MSG -- the numbers sit between the two
-   colons just before ': parse: ' *)
-PROCEDURE ParseShape (VAR pool: POOL ; RO line: STR ; VAR out: STR)
-  : BOOL RAISES ValueRange =
-VAR
-  j, k, i, ln, cl : I64 ;
-BEGIN
-  j := Text.Find (line, ': parse: ') ;
-  IF j < 0 THEN RETURN FALSE END ;
-  k := j ;
-  WHILE k > 0 AND line[k - 1] >= '0' AND line[k - 1] <= '9' DO
-    k := k - 1
-  END ;
-  IF k = j OR k = 0 OR line[k - 1] # ':' THEN RETURN FALSE END ;
-  i := k ;
-  IF NOT TakeI64 (line, i, cl) THEN RETURN FALSE END ;
-  k := k - 1 ;
-  i := k ;
-  WHILE i > 0 AND line[i - 1] >= '0' AND line[i - 1] <= '9' DO
-    i := i - 1
-  END ;
-  IF i = k OR i = 0 OR line[i - 1] # ':' THEN RETURN FALSE END ;
-  IF NOT TakeI64 (line, i, ln) THEN RETURN FALSE END ;
-  out := DiagJson (pool, ln, cl,
-    Cat (pool, 'parse: ', SLICE (line, j + 9, LEN (line) - j - 9))) ;
-  RETURN TRUE
-END ParseShape ;
-
-(* one stderr line into one LSP diagnostic, when it carries a
-   position.  Two shapes, m9c's own:
-     LINE:COL CTX: MSG              (the checker's)
-     FILE:LINE:COL: parse: MSG      (the parser's)
-   Anything else -- summaries, gen refusals without positions -- is
-   skipped rather than guessed at. *)
-PROCEDURE DiagOf (VAR pool: POOL ; RO line: STR ; VAR out: STR) : BOOL
-  RAISES ValueRange =
-VAR
-  i, ln, cl : I64 ;
-BEGIN
-  i := 0 ;
-  IF NOT TakeI64 (line, i, ln) THEN
-    RETURN ParseShape (pool, line, out)
-  END ;
-  IF i >= LEN (line) OR line[i] # ':' THEN
-    RETURN ParseShape (pool, line, out)
-  END ;
-  i := i + 1 ;
-  IF NOT TakeI64 (line, i, cl) THEN RETURN FALSE END ;
-  IF i >= LEN (line) OR line[i] # ' ' THEN RETURN FALSE END ;
-  out := DiagJson (pool, ln, cl, SLICE (line, i + 1, LEN (line) - i - 1)) ;
-  RETURN TRUE
-END DiagOf ;
-
-(* the check's stderr, or empty when there was none *)
-PROCEDURE ErrText (VAR pool: POOL) : STR =
-BEGIN
-  RETURN Io.ReadFile (pool, errFile)
-EXCEPT
-| Io.IOError (p) :
-    RETURN ''
-| ValueRange :
-    RETURN ''
-END ErrText ;
-
 (* check the file the uri names and publish what m9c said.  A path
    carrying a quote is refused with one diagnostic rather than
-   handed to a shell -- m9c's own rule at its own link step. *)
-PROCEDURE Check (VAR pool: POOL ; RO uri: STR) RAISES ValueRange =
+   handed to a shell -- m9c's own rule at its own link step.  The
+   reading of m9c's lines is Diag.Check's (shared with m9edit and
+   the tutor); what is m9lsp's is the LSP envelope and the 0-based
+   positions. *)
+PROCEDURE Check (VAR pool: POOL ; RO uri: STR)
+  RAISES ValueRange, IndexError =
 VAR
-  d, body : PTR DynStr.DString ;
-  path, errs, line, one : STR ;
-  i, j, n : I64 ;
+  body : PTR DynStr.DString ;
+  path, one : STR ;
+  fs : SLICE OF Diag.Finding ;
+  i, n : I64 ;
   bad : BOOL ;
 BEGIN
   path := UriPath (pool, uri) ;
@@ -371,7 +265,7 @@ BEGIN
   DynStr.Append (pool, body,
     '{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics",') ;
   DynStr.Append (pool, body, '"params":{"uri":') ;
-  DynStr.Append (pool, body, JStr (pool, uri)) ;
+  Diag.JStr (pool, body, uri) ;
   DynStr.Append (pool, body, ',"diagnostics":[') ;
   n := 0 ;
   IF bad THEN
@@ -380,29 +274,12 @@ BEGIN
     DynStr.Append (pool, body, one) ;
     n := 1
   ELSE
-    d := DynStr.New (pool) ;
-    DynStr.Append (pool, d, m9c) ;
-    DynStr.Append (pool, d, ' --check ') ;
-    DynStr.AppendChar (pool, d, 027C) ;
-    DynStr.Append (pool, d, path) ;
-    DynStr.AppendChar (pool, d, 027C) ;
-    DynStr.Append (pool, d, ' 2>') ;
-    DynStr.AppendChar (pool, d, 027C) ;
-    DynStr.Append (pool, d, errFile) ;
-    DynStr.AppendChar (pool, d, 027C) ;
-    i := Io.Run (DynStr.View (d)) ;
-    errs := ErrText (pool) ;
-    i := 0 ;
-    WHILE i < LEN (errs) DO
-      j := i ;
-      WHILE j < LEN (errs) AND errs[j] # 0AC DO j := j + 1 END ;
-      line := SLICE (errs, i, j - i) ;
-      IF DiagOf (pool, line, one) THEN
-        IF n > 0 THEN DynStr.AppendChar (pool, body, 02CC) END ;
-        DynStr.Append (pool, body, one) ;
-        n := n + 1
-      END ;
-      i := j + 1
+    fs := Diag.Check (pool, m9c, '', '', path, errFile) ;
+    FOR i := 0 TO LEN (fs) - 1 DO
+      one := DiagJson (pool, fs[i].line, fs[i].col, fs[i].msg) ;
+      IF n > 0 THEN DynStr.AppendChar (pool, body, 02CC) END ;
+      DynStr.Append (pool, body, one) ;
+      n := n + 1
     END
   END ;
   DynStr.Append (pool, body, ']}}') ;
@@ -426,8 +303,11 @@ END Respond ;
 (* the request id, re-rendered: a number, or a string, per JSON-RPC *)
 PROCEDURE RenderIdS (VAR pool: POOL ; idn: PTR Json.Node) : STR
   RAISES ValueRange =
+VAR d : PTR DynStr.DString ;
 BEGIN
-  RETURN JStr (pool, Json.AsStr (idn))
+  d := DynStr.New (pool) ;
+  Diag.JStr (pool, d, Json.AsStr (idn)) ;
+  RETURN DynStr.View (d)
 EXCEPT
 | Json.TypeMismatch (m) :
     RETURN ''

@@ -73,6 +73,7 @@ begin
   GenModule ('DynStr', []);
   GenModule ('Mat', ['Math']);
   GenModule ('Stats', ['Math']);
+  GenModule ('System', ['Io', 'DynStr', 'Text']);
   GenModule ('Json', ['DynStr']);
   GenModule ('Http', ['DynStr']);
   GenModule ('HttpServer', ['DynStr', 'Http']);
@@ -102,4 +103,5 @@ begin
   GenModule ('Doc', ['Ast', 'DynStr', 'Text', 'Print', 'Lex']);
   GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynStr', 'Doc', 'Lex']);
   GenModule ('Gen', ['Ast', 'DynStr']);
+  GenModule ('Diag', ['DynStr', 'Io', 'Lex']);
 end.

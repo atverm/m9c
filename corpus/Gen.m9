@@ -1450,7 +1450,7 @@ END OptInner ;
 
 PROCEDURE TagOfExpr (k: Ast.Kid) : STR =
 VAR
-  t2, res, dc : STR ;
+  t2, u2, res, dc : STR ;
   ci : I64 ;
 BEGIN
   IF k IS SOME e THEN
@@ -1487,6 +1487,17 @@ BEGIN
         IF DynStr.Eq (t2, 'I64') THEN t2 := TagOfExpr (e.kids[1]) END ;
         (* and a real literal adapts the same way *)
         IF IsAdaptive (e.kids[0]) THEN t2 := TagOfExpr (e.kids[1]) END ;
+        (* a string concatenation is a STRING whatever its left
+           operand's own tag: a one-character literal, or a CHAR
+           prepended to a string (par 2.3, revised 2026-09-06) *)
+        IF DynStr.Eq (e.a, '+') AND
+           (DynStr.Eq (t2, 'STR1') OR DynStr.Eq (t2, 'CHAR')) THEN
+          u2 := TagOfExpr (e.kids[1]) ;
+          IF DynStr.Eq (t2, 'STR1') OR DynStr.Eq (u2, 'SLICE') OR
+             DynStr.Eq (u2, 'STR1') THEN
+            t2 := 'SLICE'
+          END
+        END ;
         res := t2
     | Ast.NUn :
         IF DynStr.Eq (e.a, 'NOT') THEN res := 'BOOL'
@@ -1719,7 +1730,7 @@ END DES ;
 
 PROCEDURE EX (k: Ast.Kid ; RO want: STR) : STR =
 VAR
-  l, r, lt, w, tg, cop, a1, a2, cnt, res : STR ;
+  l, r, lt, rt, w, tg, cop, a1, a2, cnt, res : STR ;
   d2 : PTR DynStr.DString IN gpool ;
   jj, rk : I64 ;
   isCat : BOOL ;
@@ -1921,13 +1932,31 @@ BEGIN
            wanted AS SLICES -- a one-character literal is a string in
            this position, not a CHAR. *)
         isCat := FALSE ;
+        rt := '' ;
         IF DynStr.Eq (e.a, '+') THEN
+          rt := TagOfExpr (e.kids[1]) ;
           IF DynStr.Eq (lt, 'SLICE') OR DynStr.Eq (lt, 'STR1') OR
-             DynStr.Eq (TagOfExpr (e.kids[1]), 'SLICE') THEN
+             DynStr.Eq (rt, 'SLICE') OR DynStr.Eq (rt, 'STR1') THEN
             isCat := TRUE
           END
         END ;
         IF isCat THEN
+          (* a CHAR on one side is one code point appended or
+             prepended: m9_cat over a one-element view of it (par 2.3,
+             revised 2026-09-06).  A one-character LITERAL is STR1,
+             not CHAR, and stays on the slice path. *)
+          IF DynStr.Eq (lt, 'CHAR') THEN
+            l := EX (e.kids[0], 'CHAR') ;
+            r := EX (e.kids[1], 'SLICE') ;
+            stRaise := TRUE ;
+            RETURN S5 ('m9_ch_cat (err->res, ', l, ', ', r, ', err)')
+          END ;
+          IF DynStr.Eq (rt, 'CHAR') THEN
+            l := EX (e.kids[0], 'SLICE') ;
+            r := EX (e.kids[1], 'CHAR') ;
+            stRaise := TRUE ;
+            RETURN S5 ('m9_cat_ch (err->res, ', l, ', ', r, ', err)')
+          END ;
           l := EX (e.kids[0], 'SLICE') ;
           r := EX (e.kids[1], 'SLICE') ;
           stRaise := TRUE ;

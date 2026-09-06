@@ -1,0 +1,19 @@
+(* EXPECT: argument 1 of Show: cannot pass PTR m.Point where m.Point is expected *)
+(* the binder of IS SOME over a CALL result carries the callee's
+   declared payload type, so passing it where a record is expected is
+   refused by the checker -- it used to pass untyped and fail in gcc *)
+MODULE m ;
+TYPE Point = RECORD x : F64 END ;
+PROCEDURE Show (RO p: Point) =
+BEGIN
+END Show ;
+PROCEDURE Find (VAR pool: POOL) : OPT PTR Point =
+VAR q : PTR Point IN pool ;
+BEGIN
+  q := NEW (pool, Point) ;
+  RETURN SOME (q)
+END Find ;
+VAR pool : POOL ;
+BEGIN
+  IF Find (pool) IS SOME p THEN Show (p) END
+END m.

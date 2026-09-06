@@ -42,6 +42,15 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     mat_driver.c -lm -o mat_test
 ./mat_test
 
+# System: the process seen from inside.  The driver is run with a
+# known argument line so the three argument views can be checked
+# against it, and it runs /bin/echo and sh through Exec and reads
+# both streams back.
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/System.c ../gen/Io.c \
+    ../gen/DynStr.c ../gen/Text.c system_driver.c -lm -lpthread -o system_test
+./system_test --verbose --out=x.nc a -- -b
+
 # Statistics against numpy/scipy: the goldens are CHECKED IN
 # (tools/statsgold.py regenerates them by hand), so the gate needs
 # no python and cannot regenerate what it compares against.

@@ -53,12 +53,12 @@ EXPLAIN = {
     "compare-mismatch": (
         "the two sides of a comparison have different types and nothing converts implicitly",
         "convert one side explicitly; for strings use DynStr.Eq / Text.Eq, not = (par 2.1)"),
-    "concat-char": (
-        "+ concatenates STRINGS; a CHAR variable is not a string (a 1-char literal is)",
-        "append the CHAR with DynStr.AppendChar, or make it a one-character string first"),
     "concat-non-string": (
-        "+ on strings takes strings on both sides; an integer literal is not one",
+        "+ on strings takes strings on both sides (a CHAR joins as one code point); an integer literal is not one",
         "format first: Fmt.I64Str (n) or DynStr.AppendI64"),
+    "is-some-call-binder": (
+        "the binder of IS SOME over a CALL result carries the callee's declared payload type (PTR Point here), and the parameter wants something else",
+        "pass what the parameter asks for: read p.x for a record parameter, or declare the parameter as the pointer"),
     "cond-not-bool": (
         "IF/WHILE/ELSIF take a BOOL; an integer is not implicitly a truth value",
         "write the comparison out: IF n # 0 THEN"),

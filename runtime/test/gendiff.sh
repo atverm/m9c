@@ -21,6 +21,7 @@ run () {
 run DynStr
 run Mat Math
 run Stats Math
+run System Io DynStr Text
 run Json DynStr
 run Http DynStr
 run HttpServer DynStr Http
@@ -50,4 +51,5 @@ run Sem Ast DynStr Fmt Print Text
 run Doc Ast DynStr Text Print Lex
 run M9c Io Ast Parse Gen Sem DynStr Doc Lex
 run Gen Ast DynStr
+run Diag DynStr Io Lex
 echo "gendiff: $n modules, generated C byte-identical to the oracle"

@@ -226,10 +226,13 @@ wire is the `LONGREAL`-stride bug in a new hat.
 s := 'hello, ' + who + '!'
 ```
 
-`+` between two strings answers a string. Both operands must be
-strings — a one-character *literal* is one, a `CHAR` variable is not,
-because `s + c` would have to decide silently whether `c` is a
-character or a number. That case is `DynStr.AppendChar`.
+`+` between two strings answers a string, and a `CHAR` on either
+side is one code point appended (`s + c`) or prepended (`c + s`).
+A `CHAR` converts to nothing implicitly, so there is nothing for
+`s + c` to decide silently — the rule refused it until 2026-09-06
+on the Pascal/C worry that `c` might mean its number, a worry M9
+does not have.  Anything else must be formatted first: `'rows ' +
+Fmt.I64Str (n)`, never `'rows ' + n`.
 
 **The answer is the procedure's own frame.** Concatenation allocates,
 and in M9 an allocation names its pool, so this operator needs an

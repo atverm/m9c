@@ -93,7 +93,9 @@ PROCEDURE Open (VAR pool: POOL ; RO path: STR ; RO opt: Options)
   : PTR Table IN pool
   RAISES ParseError, ValueRange, Io.IOError ;
   (* reads the file and the header and counts the rows; parses no
-     values, because the caller declares the column kinds first     *)
+     values, because the caller declares the column kinds first.
+     Every column is Skip until a setter names it: a column nobody
+     declared is scanned past, never parsed and never carried.     *)
 
 PROCEDURE Rows (t: PTR Table) : I64 ;
 PROCEDURE Cols (t: PTR Table) : I64 ;
@@ -346,7 +348,10 @@ BEGIN
   t.nameLen := NEW (pool, I64, n) ;
   t.kinds := NEW (pool, I64, n) ;
   t.formats := NEW (pool, I64, n) ;
-  FOR i := 0 TO n - 1 DO t.kinds[i] := KReal END ;
+  (* every column is Skip until a setter names its kind -- what the
+     definition promises.  It was Real here until 2026-09-06, and a
+     caller that declared two of 244 columns got all 244 parsed. *)
+  FOR i := 0 TO n - 1 DO t.kinds[i] := KSkip END ;
 
   IF opt.header THEN
     n := 0 ;

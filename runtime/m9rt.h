@@ -460,6 +460,10 @@ static inline void m9_f32_to_le (float f, m9_sl_BYTE b, m9_state *err)
 typedef struct m9_pool_block {
   struct m9_pool_block *next;
   size_t used, cap;
+  /* the block registry (System.PoolAt): every live block is on one
+     global list, tagged with the pool that carved it */
+  struct m9_pool_block *rprev, *rnext;
+  struct m9_pool *owner;
   /* data follows */
 } m9_pool_block;
 
@@ -494,6 +498,12 @@ m9_sl_CHAR m9_cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b,
                    m9_state *err);
 
 /* copy a string into a pool */
+/* `s + c` and `c + s` for a CHAR c: one code point appended or
+   prepended, through m9_cat with a one-element view of c.          */
+m9_sl_CHAR m9_cat_ch (m9_pool *pool, m9_sl_CHAR a, uint32_t c,
+                      m9_state *err);
+m9_sl_CHAR m9_ch_cat (m9_pool *pool, uint32_t c, m9_sl_CHAR b,
+                      m9_state *err);
 m9_sl_CHAR m9_strdup (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
 
 /* does p point into one of this pool's blocks?  Integer comparison,
@@ -561,6 +571,17 @@ void m9_flush (void);            /* a server's reply must not wait */
 int  m9_write_file (const void *path, const void *buf, size_t n);
 void m9_halt (int code);                       /* flushes, then exits */
 int  m9_run (const void *cmd);                 /* system (), rc      */
+
+/* System (corpus/System.m9): the process seen from inside */
+int     m9_cores (void);
+void    m9_meminfo (void *buf);                /* 4 x int64: resident, peak, total, available */
+int64_t m9_pool_count (void);
+int     m9_pool_info (int64_t i, void *buf);   /* 3 x int64: used, cap, blocks; 0 = no such pool */
+int     m9_exec (const void *argblock, int nargs);   /* handle, or -1 */
+int     m9_exec_status (int h);
+int64_t m9_exec_len (int h, int which);        /* which: 1 stdout, 2 stderr */
+int64_t m9_exec_copy (int h, int which, void *buf, int64_t cap);
+void    m9_exec_release (int h);
 int  m9_getenv (const void *name, void *buf, int cap);
 int  m9_remove (const void *path);
 int  m9_exists (const void *path);          /* readable? */

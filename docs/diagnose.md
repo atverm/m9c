@@ -25,10 +25,9 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `CASE label 200 appears twice` | the same scalar label appears in two arms; the second is dead and one of the two is a typo -- decided at compile time | remove the duplicate, or widen it to a range if that was meant | `case-label-twice` |
 | `CASE RECORD is reached by CASE, not by selection` | the variant payload of a CASE RECORD is reached only through a CASE arm that binds it | write CASE v OF | Kind.Str (s) : ... END; never v.field on the variant part | `case-record-selected` |
 | `cannot compare I64 with SLICE OF CHAR` | the two sides of a comparison have different types and nothing converts implicitly | convert one side explicitly; for strings use DynStr.Eq / Text.Eq, not = (par 2.1) | `compare-mismatch` |
-| `cannot concatenate a string with CHAR` | + concatenates STRINGS; a CHAR variable is not a string (a 1-char literal is) | append the CHAR with DynStr.AppendChar, or make it a one-character string first | `concat-char` |
 | `cannot be stored in module variable saved` | a string concatenation (+) is built in the procedure's frame arena and dies when the frame returns; storing it in a module variable, which outlives the frame, leaves the variable pointing at freed storage (par 2.3) | copy it into a durable pool -- DynStr.Append (HEAP, ...), or a pool the caller owns; the module init body is exempt, because there frame and module variable share a lifetime | `concat-escapes-modvar` |
 | `cannot be stored through r` | a string concatenation is frame-scoped; a bare VAR/OWN STR parameter is re-homed into the caller's arena at exit, but a COMPONENT reached through a reference parameter (a record field, an element, a value pointer's target) is not, so the caller would hold freed storage (par 2.3) | assign the whole VAR STR parameter, or build the field's string in a pool the caller can see (pass a POOL, or DynStr.Append into the caller's) | `concat-escapes-param` |
-| `cannot concatenate a string with an integer literal` | + on strings takes strings on both sides; an integer literal is not one | format first: Fmt.I64Str (n) or DynStr.AppendI64 | `concat-non-string` |
+| `cannot concatenate a string with an integer literal` | + on strings takes strings on both sides (a CHAR joins as one code point); an integer literal is not one | format first: Fmt.I64Str (n) or DynStr.AppendI64 | `concat-non-string` |
 | `condition must be BOOL, not I64` | IF/WHILE/ELSIF take a BOOL; an integer is not implicitly a truth value | write the comparison out: IF n # 0 THEN | `cond-not-bool` |
 | `use of s after it was consumed by SHARED` | SHARED (s) consumed s on one arm, so after the join s may be gone (moved in ANY arm = moved after) | share on every path, or share before the branch; see par 4.2 | `conditional-move` |
 | `declared in the definition but not implemented` | the DEFINITION declares a procedure the IMPLEMENTATION never defines | implement it, or remove it from the definition; the signature is the contract (par 3) | `def-not-implemented` |
@@ -43,6 +42,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot assign I32 to I64` | there is no implicit conversion between any two numeric types, widening included | I64 (x) explicitly; the conversion RAISES ValueRange, which your RAISES set must carry (par 2.1) | `implicit-widening` |
 | `cannot assign an integer literal to F64` | an integer literal fits any integer type but not a float | write 0.0, 1.0E-6; a <real> literal adapts to F32 or F64 | `int-literal-to-float` |
 | `float division; integers use DIV` | / is float division | DIV for integers | `int-slash-division` |
+| `argument 1 of Show: cannot pass PTR m.Point where m.Point is expected` | the binder of IS SOME over a CALL result carries the callee's declared payload type (PTR Point here), and the parameter wants something else | pass what the parameter asks for: read p.x for a record parameter, or declare the parameter as the pointer | `is-some-call-binder` |
 | `IS SOME needs an OPT operand` | IS SOME is the guard for OPT; the operand is not OPT (a cross-module PTR T IN pool may type as unknown and NOT be diagnosed -- check the declaration) | declare the type OPT PTR T, or drop the guard if it cannot be absent | `is-some-on-non-opt` |
 | `argument 1 of Note: borrowed msg is kept by the callee -- declare KEPT msg (par 4.1)` | a borrowed parameter is passed to a parameter the callee declares KEPT, so the caller is retaining it too | declare the caller's own parameter KEPT as well -- the declaration composes upward, exactly as RAISES does (par 4.1, docs/retention.md) | `kept-borrow-arg` |
 | `argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1)` | a + result lives in the frame's arena and dies at RETURN, but the callee declares it will keep the argument | build the string in a pool that outlives the retention (DynStr into a caller-supplied pool, or HEAP) and pass that (par 2.3, par 4.1) | `kept-concat-arg` |
@@ -229,23 +229,6 @@ BEGIN y := r.t.x END m.
 MODULE m ;
 VAR x : I64 ; b : BOOL ;
 PROCEDURE F () = BEGIN b := x = "hi" END F ;
-END m.
-```
-
-### concat-char
-
-`cannot concatenate a string with CHAR`
-
-```
-(* a character is a scalar: `s + c` would have to decide silently
-   whether c is a character or a number.  DynStr.AppendChar, or a
-   one-character literal, which IS a string. *)
-MODULE m ;
-VAR s, t : SLICE OF CHAR ; c : CHAR ;
-PROCEDURE F () =
-BEGIN
-  t := s + c
-END F ;
 END m.
 ```
 
@@ -451,6 +434,31 @@ END m.
 MODULE m ;
 VAR a, b : I64 ;
 PROCEDURE F () = BEGIN a := b / b END F ;
+END m.
+```
+
+### is-some-call-binder
+
+`argument 1 of Show: cannot pass PTR m.Point where m.Point is expected`
+
+```
+(* the binder of IS SOME over a CALL result carries the callee's
+   declared payload type, so passing it where a record is expected is
+   refused by the checker -- it used to pass untyped and fail in gcc *)
+MODULE m ;
+TYPE Point = RECORD x : F64 END ;
+PROCEDURE Show (RO p: Point) =
+BEGIN
+END Show ;
+PROCEDURE Find (VAR pool: POOL) : OPT PTR Point =
+VAR q : PTR Point IN pool ;
+BEGIN
+  q := NEW (pool, Point) ;
+  RETURN SOME (q)
+END Find ;
+VAR pool : POOL ;
+BEGIN
+  IF Find (pool) IS SOME p THEN Show (p) END
 END m.
 ```
 

@@ -1,0 +1,322 @@
+DEFINITION MODULE System ;
+
+(* The process, seen from inside: what it was called with, how big it
+   is and what the machine offers, the pools it is holding, and other
+   programs run with their output collected.
+
+   Nothing here is inferred.  A flag is a flag because the caller
+   asked for it by name; a pool is listed because the runtime carved
+   a block for it; a program is run with the arguments given, through
+   no shell, and both of its streams come back as strings.          *)
+
+IMPORT Io ;
+
+TYPE
+  Memory = RECORD
+    resident, peak : I64 ;    (* this process, bytes: now, and high water *)
+    total, available : I64 ;  (* the machine's RAM, bytes: all of it, and
+                                 what a new allocation could still get *)
+  END ;
+
+  PoolInfo = RECORD
+    used, capacity, blocks : I64 ;   (* bytes carved, bytes held, blocks *)
+  END ;
+
+  Result = RECORD
+    status : I64 ;            (* the exit status; minus the signal number
+                                 when the program was killed by one *)
+    out, err : STR ;          (* everything it wrote, each stream whole *)
+  END ;
+
+EXCEPTION NoPool (i, n: I64) ;
+
+PROCEDURE Cores () : I64 ;
+  (* processors this process may run on right now *)
+
+PROCEDURE Mem () : Memory ;
+
+PROCEDURE PoolCount () : I64 ;
+  (* pools holding at least one block.  A pool with nothing carved
+     from it costs nothing and is not a pool the runtime knows. *)
+PROCEDURE PoolAt (i: I64) : PoolInfo RAISES NoPool ;
+  (* pool i of PoolCount, oldest first.  The runtime groups its live
+     blocks by the pool that carved them, so a pool that leaked --
+     freed with its owner rather than by name -- is listed for what
+     it is: blocks still held. *)
+PROCEDURE PoolBytes () : I64 ;
+  (* capacity held by every live pool together *)
+
+PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR)
+  : Result RAISES ValueRange, Io.IOError ;
+  (* run prog with args -- directly, no shell, so an argument is an
+     argument and not a command -- wait for it, and collect both
+     streams whole.  IOError when it could not be started at all
+     (not found, not executable); a program that starts and fails
+     answers with its status. *)
+
+PROCEDURE Program (VAR pool: POOL) : STR RAISES ValueRange, IndexError ;
+  (* argv[0]: how this program was invoked *)
+PROCEDURE Args (VAR pool: POOL) : SLICE OF STR RAISES ValueRange, IndexError ;
+  (* the arguments after the program name, all of them, in order *)
+
+(* Three views of the arguments, one convention: an option is a word
+   beginning with '-', a value is attached with '=' (`--out=result.nc`,
+   never `--out result.nc`, because then no rule could say whether
+   the next word is a value or a file), and a bare `--` ends the
+   options so that everything after it is positional whatever it
+   looks like.  The convention is small enough to state in full,
+   which is the point. *)
+PROCEDURE Flag (RO name: STR) : BOOL RAISES ValueRange, IndexError ;
+  (* is the word `name` (say `--verbose`) among the options *)
+PROCEDURE Value (VAR pool: POOL ; RO name: STR ; RO dflt: STR) : STR
+  RAISES ValueRange, IndexError ;
+  (* the text after `name=` in the first option that carries it, else
+     dflt: Value (pool, '--out', 'a.nc') *)
+PROCEDURE Positional (VAR pool: POOL) : SLICE OF STR
+  RAISES ValueRange, IndexError ;
+  (* every argument that is not an option, in order *)
+
+END System.
+
+UNSAFE DEFINITION MODULE FOR "C" csys ;
+
+PROCEDURE NCpu = "m9_cores" () : C.Int  [REENTRANT] ;
+PROCEDURE MemInfo = "m9_meminfo" (buf: C.MutPtr)  [REENTRANT] ;
+  (* four int64 into buf: resident, peak, total, available *)
+PROCEDURE PoolN = "m9_pool_count" () : C.SSizeT  [REENTRANT] ;
+PROCEDURE PoolI = "m9_pool_info" (i: C.SSizeT ; buf: C.MutPtr) : C.Int
+  [REENTRANT] ;
+  (* three int64 into buf: used, capacity, blocks; 0 when i is out of
+     range.  Both take the registry's own lock. *)
+PROCEDURE ExecStart = "m9_exec" (argv: C.ConstPtr ; n: C.Int) : C.Int
+  [REENTRANT] ;
+  (* n NUL-terminated UTF-8 strings back to back, the program first;
+     answers a handle, or -1 when it could not start.  The slot table
+     is under its own lock, so two threads may run programs at once. *)
+PROCEDURE ExecStatus = "m9_exec_status" (h: C.Int) : C.Int  [REENTRANT] ;
+PROCEDURE ExecLen = "m9_exec_len" (h: C.Int ; which: C.Int) : C.SSizeT
+  [REENTRANT] ;
+PROCEDURE ExecCopy = "m9_exec_copy" (h: C.Int ; which: C.Int ;
+                                     buf: C.MutPtr ; cap: C.SSizeT)
+  : C.SSizeT  [REENTRANT] ;
+PROCEDURE ExecRelease = "m9_exec_release" (h: C.Int)  [REENTRANT] ;
+
+END csys.
+
+UNSAFE IMPLEMENTATION MODULE System ;
+
+IMPORT Io ;
+IMPORT DynStr ;
+IMPORT Text ;
+FROM csys IMPORT NCpu, MemInfo, PoolN, PoolI, ExecStart, ExecStatus,
+                 ExecLen, ExecCopy, ExecRelease ;
+
+CONST
+  Out = 1 ;
+  Err = 2 ;
+
+PROCEDURE Cores () : I64 =
+BEGIN
+  RETURN I64 (NCpu ())
+END Cores ;
+
+PROCEDURE Mem () : Memory =
+VAR
+  m : ARRAY 4 OF I64 ;
+  r : Memory ;
+BEGIN
+  MemInfo (ADR (m)) ;
+  r.resident := m[0] ;
+  r.peak := m[1] ;
+  r.total := m[2] ;
+  r.available := m[3] ;
+  RETURN r
+END Mem ;
+
+PROCEDURE PoolCount () : I64 =
+BEGIN
+  RETURN I64 (PoolN ())
+END PoolCount ;
+
+PROCEDURE PoolAt (i: I64) : PoolInfo RAISES NoPool =
+VAR
+  m : ARRAY 3 OF I64 ;
+  r : PoolInfo ;
+BEGIN
+  IF I64 (PoolI (C.SSizeT (i), ADR (m))) = 0 THEN
+    RAISE NoPool (i, PoolCount ())
+  END ;
+  r.used := m[0] ;
+  r.capacity := m[1] ;
+  r.blocks := m[2] ;
+  RETURN r
+END PoolAt ;
+
+PROCEDURE PoolBytes () : I64 =
+VAR
+  m : ARRAY 3 OF I64 ;
+  i, total : I64 ;
+BEGIN
+  total := 0 ;
+  i := 0 ;
+  WHILE I64 (PoolI (C.SSizeT (i), ADR (m))) # 0 DO
+    total := total + m[1] ;
+    i := i + 1
+  END ;
+  RETURN total
+END PoolBytes ;
+
+(* one string as UTF-8 into the argument block, then its terminator
+   -- which is already there, since pool storage is zero *)
+PROCEDURE Put (VAR scratch: POOL ; VAR block: SLICE OF BYTE ; VAR k: I64 ;
+               RO s: STR) RAISES ValueRange =
+VAR
+  b : SLICE OF BYTE ;
+  j : I64 ;
+BEGIN
+  b := DynStr.Utf8 (scratch, s) ;
+  FOR j := 0 TO LEN (b) - 1 DO
+    block[k] := b[j] ;
+    k := k + 1
+  END ;
+  k := k + 1
+END Put ;
+
+PROCEDURE Stream (VAR pool: POOL ; h, which: I64) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  n := I64 (ExecLen (C.Int (h), C.Int (which))) ;
+  b := NEW (scratch, BYTE, n + 1) ;
+  n := I64 (ExecCopy (C.Int (h), C.Int (which), ADR (b), C.SSizeT (n))) ;
+  RETURN DynStr.FromUtf8 (pool, SLICE (b, 0, n))
+END Stream ;
+
+PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR)
+  : Result RAISES ValueRange, Io.IOError =
+VAR
+  scratch : POOL ;
+  block, b : SLICE OF BYTE ;
+  total, i, k, h : I64 ;
+  r : Result ;
+BEGIN
+  (* the block: every string as UTF-8, each followed by its NUL *)
+  b := DynStr.Utf8 (scratch, prog) ;
+  total := LEN (b) + 1 ;
+  FOR i := 0 TO LEN (args) - 1 DO
+    b := DynStr.Utf8 (scratch, args[i]) ;
+    total := total + LEN (b) + 1
+  END ;
+  block := NEW (scratch, BYTE, total) ;
+  k := 0 ;
+  Put (scratch, block, k, prog) ;
+  FOR i := 0 TO LEN (args) - 1 DO Put (scratch, block, k, args[i]) END ;
+
+  h := I64 (ExecStart (ADR (block), C.Int (LEN (args) + 1))) ;
+  IF h < 0 THEN RAISE Io.IOError (prog) END ;
+  r.status := I64 (ExecStatus (C.Int (h))) ;
+  r.out := Stream (pool, h, Out) ;
+  r.err := Stream (pool, h, Err) ;
+  ExecRelease (C.Int (h)) ;
+  RETURN r
+END Exec ;
+
+PROCEDURE Program (VAR pool: POOL) : STR RAISES ValueRange, IndexError =
+BEGIN
+  RETURN Io.Arg (pool, 0)
+END Program ;
+
+PROCEDURE Args (VAR pool: POOL) : SLICE OF STR RAISES ValueRange, IndexError =
+VAR
+  a : SLICE OF STR ;
+  i, n : I64 ;
+BEGIN
+  n := Io.ArgCount () ;
+  IF n < 1 THEN n := 1 END ;
+  a := NEW (pool, STR, n - 1) ;
+  FOR i := 1 TO n - 1 DO a[i - 1] := Io.Arg (pool, i) END ;
+  RETURN a
+END Args ;
+
+(* an option: begins with '-' and comes before the bare `--` *)
+PROCEDURE IsOption (RO a: STR) : BOOL =
+BEGIN
+  RETURN LEN (a) > 1 AND a[0] = '-'
+END IsOption ;
+
+PROCEDURE Flag (RO name: STR) : BOOL RAISES ValueRange, IndexError =
+VAR
+  scratch : POOL ;
+  a : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  a := Args (scratch) ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF Text.Eq (a[i], '--') THEN RETURN FALSE END ;
+    IF Text.Eq (a[i], name) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END Flag ;
+
+(* a copy of s that lives in pool, for an answer that must outlive
+   the frame it was found in *)
+PROCEDURE Dup (VAR pool: POOL ; RO s: STR) : STR =
+VAR
+  r : STR ;
+  j : I64 ;
+BEGIN
+  r := NEW (pool, CHAR, LEN (s)) ;
+  FOR j := 0 TO LEN (s) - 1 DO r[j] := s[j] END ;
+  RETURN r
+END Dup ;
+
+PROCEDURE Value (VAR pool: POOL ; RO name: STR ; RO dflt: STR) : STR
+  RAISES ValueRange, IndexError =
+VAR
+  scratch : POOL ;
+  a : SLICE OF STR ;
+  prefix : STR ;
+  i : I64 ;
+BEGIN
+  prefix := name + '=' ;
+  a := Args (scratch) ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF Text.Eq (a[i], '--') THEN RETURN Dup (pool, dflt) END ;
+    IF Text.StartsWith (a[i], prefix) THEN
+      RETURN Dup (pool, SLICE (a[i], LEN (prefix), LEN (a[i]) - LEN (prefix)))
+    END
+  END ;
+  RETURN Dup (pool, dflt)
+END Value ;
+
+PROCEDURE Positional (VAR pool: POOL) : SLICE OF STR
+  RAISES ValueRange, IndexError =
+VAR
+  a, p : SLICE OF STR ;
+  i, n : I64 ;
+  rest : BOOL ;
+BEGIN
+  a := Args (pool) ;
+  n := 0 ;
+  rest := FALSE ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF rest THEN n := n + 1
+    ELSIF Text.Eq (a[i], '--') THEN rest := TRUE
+    ELSIF NOT IsOption (a[i]) THEN n := n + 1
+    END
+  END ;
+  p := NEW (pool, STR, n) ;
+  n := 0 ;
+  rest := FALSE ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF rest THEN p[n] := a[i] ; n := n + 1
+    ELSIF Text.Eq (a[i], '--') THEN rest := TRUE
+    ELSIF NOT IsOption (a[i]) THEN p[n] := a[i] ; n := n + 1
+    END
+  END ;
+  RETURN p
+END Positional ;
+
+END System.

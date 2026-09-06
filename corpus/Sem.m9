@@ -2199,17 +2199,18 @@ BEGIN
     RETURN 'BOOL'
   END ;
   (* string concatenation, before the arithmetic rules: `+` on two
-     strings answers a string, allocated in HEAP (par 4.3).  Not on
-     a bare CHAR -- a character is a scalar, and `s + c` would have
-     to decide silently whether c is a character or a number; write
-     DynStr.AppendChar, or a one-character literal, which IS a
-     string. *)
+     strings answers a string, allocated in HEAP (par 4.3).  A CHAR
+     on either side is one code point appended or prepended -- a
+     CHAR converts to nothing implicitly, so there is nothing for
+     `s + c` to decide silently (the rule used to refuse it, on a
+     Pascal/C worry M9 does not have; revised 2026-09-06).  Anything
+     else -- a number, a record -- must be formatted first. *)
   IF Text.Eq (op, '+') AND (StrSide (lt) OR StrSide (rt)) THEN
-    IF NOT StrSide (lt) THEN
+    IF NOT (StrSide (lt) OR Text.Eq (lt, 'CHAR')) THEN
       ErrN (e, ctx, S3 ('cannot concatenate ', TyName (lt),
         ' with a string'))
     ELSE
-      IF NOT StrSide (rt) THEN
+      IF NOT (StrSide (rt) OR Text.Eq (rt, 'CHAR')) THEN
         ErrN (e, ctx, S3 ('cannot concatenate a string with ',
           TyName (rt), ''))
       END
@@ -2291,6 +2292,8 @@ VAR
   t, u : STR ;
   j : I64 ;
   res : Ast.Kid ;
+  pr : ProcInfo ;
+  found : BOOL ;
 BEGIN
   IF k IS SOME e THEN
     CASE e.kind OF
@@ -2452,7 +2455,42 @@ BEGIN
           ELSE
             t := ExprType (e.kids[0], ctx) ;
             IF e.kids[1] IS SOME b2 THEN
-              IF b2.kind = Ast.NIsSome THEN BindName (b2.a, NONE) END
+              IF b2.kind = Ast.NIsSome THEN
+                res := NONE ;
+                (* a CALL's result: the binder takes the callee's
+                   declared payload type, made self-contained in the
+                   callee's module, so an argument made of the binder
+                   is checked like any other.  Before 2026-09-06 it
+                   was bound untyped, passed by softness, and gcc
+                   objected. *)
+                IF o.kind = Ast.NCallExpr THEN
+                  IF o.kids[0] IS SOME cd THEN
+                    pr := LookupProc (DesigName (cd), found) ;
+                    IF found THEN
+                      IF pr.node IS SOME pn THEN
+                        IF pn.nkids > 1 THEN
+                          IF pn.kids[1] IS SOME rt0 THEN
+                            canonCtx := pr.modName ;
+                            res := ResolveType (SOME (rt0)) ;
+                            canonCtx := '' ;
+                            IF res IS SOME rr THEN
+                              IF rr.kind = Ast.NOptType THEN
+                                res := QualifiedIn (rr.kids[0], pr.modName)
+                              ELSE
+                                res := NONE
+                              END
+                            END
+                          END
+                        END
+                      END
+                    END
+                  END
+                END ;
+                IF LEN (t) > 0 AND NOT Text.StartsWith (t, 'OPT ') THEN
+                  ErrN (e, ctx, 'IS SOME needs an OPT operand')
+                END ;
+                BindName (b2.a, res)
+              END
             END
           END
         END ;
@@ -2507,6 +2545,36 @@ BEGIN
   IF i < 0 THEN ScopeAdd (nm, t, ModeBinder)
   ELSE scope[i].ty := t END
 END BindName ;
+
+(* a type node from module MODNAME made self-contained: its bare type
+   names qualified, so canonicalising it later -- from whichever module
+   the binder is used in -- resolves them where they were declared
+   (the canonCtx lesson, applied to binders).  Pool and attribute
+   components are dropped, neither being part of type identity. *)
+PROCEDURE QualifiedIn (KEPT t: Ast.Kid ; RO KEPT modName: STR) : Ast.Kid =
+VAR n : PTR Ast.Node IN pool ;
+BEGIN
+  IF t IS SOME tn THEN
+    IF tn.kind = Ast.NQualident THEN
+      IF LEN (tn.b) = 0 AND NOT IsBuiltinTy (tn.a) AND
+         NOT Text.Eq (tn.a, 'STR') THEN
+        n := Ast.NewNode (pool, Ast.NQualident, tn.line, tn.col) ;
+        n.a := modName ;
+        n.b := tn.a ;
+        RETURN SOME (n)
+      END
+    ELSIF tn.kind = Ast.NPtrType OR tn.kind = Ast.NOptType OR
+          tn.kind = Ast.NSharedType OR tn.kind = Ast.NSliceType THEN
+      n := Ast.NewNode (pool, tn.kind, tn.line, tn.col) ;
+      IF tn.nkids > 0 THEN
+        Ast.Add (pool, n, QualifiedIn (tn.kids[0], modName))
+      END ;
+      Ast.Add (pool, n, NONE) ;
+      RETURN SOME (n)
+    END
+  END ;
+  RETURN t
+END QualifiedIn ;
 
 (* which module owns variant V of CASE RECORD type T, and the field
    sequence that variant carries *)
