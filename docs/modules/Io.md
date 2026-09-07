@@ -37,6 +37,13 @@ program's output stream: the museum's HALT piece is three of
 them lost, and a log line interleaved into a data file is the
 same accident with a longer fuse.
 
+### Err (RO s: STR)
+
+to STDERR without a newline, flushed -- Write's twin.  For
+text that already carries its line ends: what a child process
+wrote to its own stderr and System.Exec handed back whole,
+which m9c forwards as it was, not one line at a time.
+
 ### ArgCount () : I64
 
 how many command-line arguments there are, the program's own

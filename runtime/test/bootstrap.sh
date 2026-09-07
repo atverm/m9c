@@ -34,7 +34,7 @@ deps_of () {
     Syslog)        echo DynStr ;;
     Logger)        echo DynStr Fmt Io Syslog Time ;;
     Hello)         echo Io DynStr ;;
-    M9c)           echo Io Ast Parse Gen Sem DynStr Doc Lex ;;
+    M9c)           echo Io Ast Parse Gen Sem DynStr Doc Lex System ;;
     Sem)           echo Ast DynStr Fmt Print Text ;;
     Doc)           echo Ast DynStr Text Print Lex ;;
     Parse)         echo Ast Lex DynStr ;;

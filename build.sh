@@ -32,7 +32,7 @@ DESTDIR=$1
 WARN="-std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter"
 
 # the modules m9c itself is made of, in dependency order
-COMPILER="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen Doc M9c"
+COMPILER="DynStr Io Lex Ast Parse Print Text System Fmt Sem Gen Doc M9c"
 
 # everything else a program may import: the standard library, shipped
 # as source (M9 has no binary module format -- the .m9 IS the

@@ -22,7 +22,8 @@ and, as text and runnable examples, in the
 repository, [m9c](https://github.com/atverm/m9c), is the compiler,
 runtime and standard library themselves -- `./build.sh` needs gcc and
 nothing else -- and its [release page](https://github.com/atverm/m9c/releases)
-carries the install packages for six distributions.
+carries the install packages for six Linux distributions and, since
+0.8.0, an **experimental** Windows zip.
 
 Every feature in the report (`docs/M9-report.md`, installed with the
 package as `/usr/share/doc/m9/M9-report.md`) cites a real observed
@@ -76,6 +77,29 @@ and the runtime are found without any of those variables:
 
 `m9c --help` is the short version and `man m9c` the long one; a test
 compares the two so neither can drift.
+
+## Windows — experimental
+
+`m9-VERSION-windows-x86_64.zip` on the release page is a folder that
+carries its own gcc (an MSYS2 UCRT64 subset), the bootstrap C, the
+library and tools as M9 source, and one `install.bat` that **compiles
+the compiler on your machine** — the same "only gcc is required"
+claim as on Linux, with the gcc in the box.  Unpack it anywhere and
+run `install.bat` from a terminal; it explains what it will do, asks
+before touching your PATH or your VS Code extensions, and ends by
+offering the tutorial served locally from the same folder.
+
+**Experimental, and here is what that means.** The runtime, the
+compiler and the shims carry `_WIN32` paths beside the POSIX ones and
+the generated C never names a platform, so the Windows build is the
+same compiler rather than a fork.  But it is verified under wine and
+on one Windows machine, not on the range Linux is tested across, and
+two of the tutorial's twenty-nine examples do not work there:
+**chapter 14** (netCDF, which resolves paths through its own Windows
+converter) and **chapter 17** (it runs `sort` and `uniq`, which
+Windows does not have).  Everything else — including the zarr
+chapters over TLS and the threaded ones — runs.  Report what breaks;
+that is what the label is for.
 
 ## Editors
 

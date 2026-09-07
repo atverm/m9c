@@ -101,7 +101,7 @@ begin
   GenModule ('Concat', ['Io', 'DynStr']);
   GenModule ('Sem', ['Ast', 'DynStr', 'Fmt', 'Print', 'Text']);
   GenModule ('Doc', ['Ast', 'DynStr', 'Text', 'Print', 'Lex']);
-  GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynStr', 'Doc', 'Lex']);
+  GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynStr', 'Doc', 'Lex', 'System']);
   GenModule ('Gen', ['Ast', 'DynStr']);
   GenModule ('Diag', ['DynStr', 'Io', 'Lex']);
 end.

@@ -25,7 +25,7 @@ OUT=/tmp/m9c-out
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Lex.c \
-    ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c \
+    ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
     ../gen/Fmt.c ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/M9c.c -o m9c
 
 M9C=$(pwd)/m9c
@@ -333,11 +333,11 @@ rm -rf "$LIB"; mkdir -p "$LIB"; cd "$LIB"
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
 
-for m in DynStr Text Io Lex Ast Parse Print Sem Gen Doc; do "$M9C" -c $m; done
+for m in DynStr Text Io System Lex Ast Parse Print Sem Gen Doc; do "$M9C" -c $m; done
 "$M9C" -v --ar libm9.a M9c 2>ar.txt
 [ -f libm9.a ] || { echo "FAIL: --ar produced no archive"; exit 1; }
 # the members are the closure m9c just resolved, and its own object
-for o in M9c.o DynStr.o Io.o Lex.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o; do
+for o in M9c.o DynStr.o Io.o System.o Lex.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o; do
   ar t libm9.a | grep -qx "$o" ||
     { echo "FAIL: $o is not in the archive"; exit 1; }
 done
@@ -815,5 +815,108 @@ M9LIBRARY="$SRC" "$M9C" --make -o sz Sz.m9 >sz.txt 2>&1 ||
 [ "$(./sz | tr '\n' ' ')" = "8 4 800 250 16 " ] ||
   { echo "FAIL: SizeOf/ByteSize gave the wrong bytes:"; ./sz | tr '\n' ' '; echo; exit 1; }
 echo "m9c: SizeOf and ByteSize answer the right bytes"
+
+# NO SHELL BETWEEN m9c AND cc.  Through 0.7.0 the command was one
+# string handed to Io.Run (system(3)), so every name in it was quoted
+# for /bin/sh -- and only the FILE names were: a quote in an -I
+# directory went in bare and sh died with "Unterminated quoted
+# string" before cc ever ran.  Now the words go to System.Exec as a
+# list, so a directory with a quote and a space in its name builds
+# like any other, its own -I included (the main file's directory is
+# always on the search path).  Shown able to fail: the compiler built
+# from the previous runtime/gen answers "sh: 1: Syntax error:
+# Unterminated quoted string" and "could not build dependency DynStr"
+# on this very line.
+rm -rf "o'brien dir" && mkdir "o'brien dir" && cp "$SRC/Hello.m9" "o'brien dir/"
+( cd "o'brien dir" &&
+  M9LIBRARY="$SRC" "$M9C" --make -o hello "$PWD/Hello.m9" >q.txt 2>&1 ||
+    { echo "FAIL: a quote in the directory name broke the build:"; head -5 q.txt; exit 1; }
+  [ "$(./hello | head -1)" = "hello, world" ] ||
+    { echo "FAIL: built under a quoted name but answered wrong"; ./hello; exit 1; } ) || exit 1
+# and what cc says comes back on stderr as cc wrote it, then m9c's
+# own verdict -- a bad flag after -- is the cheapest way to make cc
+# talk; a compiler that cannot be started is named, not shelled at
+rm -f DynStr.o DynStr.h
+"$M9C" -c "$SRC/DynStr.m9" -- -fno-such-flag >cc1.txt 2>cc2.txt && {
+  echo "FAIL: cc's failure was not m9c's"; exit 1; }
+grep -q 'fno-such-flag' cc2.txt ||
+  { echo "FAIL: cc's own diagnostic did not reach stderr:"; cat cc1.txt cc2.txt; exit 1; }
+grep -q 'the C compiler reported errors' cc2.txt ||
+  { echo "FAIL: m9c did not report cc's failure"; cat cc2.txt; exit 1; }
+[ ! -s cc1.txt ] || { echo "FAIL: cc's stderr leaked to stdout:"; cat cc1.txt; exit 1; }
+CC=no-such-cc-anywhere "$M9C" -c "$SRC/DynStr.m9" 2>cc3.txt && {
+  echo "FAIL: a missing C compiler was not a failure"; exit 1; }
+grep -q 'cannot run no-such-cc-anywhere' cc3.txt ||
+  { echo "FAIL: the missing compiler was not named:"; cat cc3.txt; exit 1; }
+echo "m9c: cc is started with a word list, no shell -- a quote in a"
+echo "     directory name builds, and cc's own words come back"
+
+# THE DEFAULTS ARE RELATIVE TO THE EXECUTABLE.  Through 0.7.0 the
+# flagless command looked for its library in /usr/lib/m9 and its
+# headers in /usr/include/m9 -- the install locations, spelled as
+# constants -- so a compiler living anywhere else (a build.sh DESTDIR
+# tree, the Windows zip, out/m9c in this very tree) found the
+# PACKAGE'S runtime under its own freshly generated C unless
+# $M9RUNTIME and $M9LIBRARY said otherwise.  Now m9c asks
+# System.Executable where it is and looks beside itself first:
+# <prefix>/lib/m9, <prefix>/runtime or <prefix>/include/m9, and
+# <prefix>/lib/libm9rt.a, where prefix is two directories up from the
+# binary.  Two layouts, both from an EMPTY directory with no variable
+# set, both required to say what they linked in -v and to run.
+# Shown able to fail: the compiler built from the previous
+# runtime/gen answers "-iquote /usr/include/m9 ... -lm9rt" for both
+# (measured with the 0.7.0 package installed; with /usr/lib/m9
+# hidden under a tmpfs it is "cannot find module Io on the search
+# path" -- the relocated tree's own lib/m9 was never looked at).
+#
+# (a) a relocated install, the shape build.sh DESTDIR makes: bin/,
+#     lib/m9/, include/m9/m9rt.h and lib/libm9rt.a under one prefix
+rm -rf inst w2 && mkdir -p inst/usr/bin inst/usr/lib/m9 inst/usr/include/m9 w2
+cp "$M9C" inst/usr/bin/m9c
+cp "$SRC/DynStr.m9" "$SRC/Io.m9" inst/usr/lib/m9/
+cp "$RT/m9rt.h" inst/usr/include/m9/
+for f in m9rt tcpshim fmtshim; do
+  gcc -std=c11 -O2 -iquote "$RT" -c "$RT/$f.c" -o "inst/$f.o"
+done
+ar rcs inst/usr/lib/libm9rt.a inst/m9rt.o inst/tcpshim.o inst/fmtshim.o
+cp "$SRC/Hello.m9" w2/
+( cd w2 &&
+  env -u M9LIBRARY -u M9RUNTIME ../inst/usr/bin/m9c --make -v -o hello Hello.m9 >r.txt 2>&1 ||
+    { echo "FAIL: the relocated install could not build Hello:"; head -8 r.txt; exit 1; }
+  P=$(cd ../inst/usr && pwd)
+  grep -q -- "-I$P/lib/m9" r.txt ||
+    { echo "FAIL: the relocated install did not search its own lib/m9:"; grep -- '-I' r.txt; exit 1; }
+  grep -q -- "-iquote $P/include/m9 " r.txt ||
+    { echo "FAIL: the relocated install did not include its own m9rt.h:"; grep -- '-iquote' r.txt; exit 1; }
+  grep -q -- "-L$P/lib -lm9rt " r.txt ||
+    { echo "FAIL: the relocated install did not link its own libm9rt.a:"; grep -- '-lm' r.txt; exit 1; }
+  [ "$(./hello | head -1)" = "hello, world" ] ||
+    { echo "FAIL: built from the relocated install but answered wrong"; ./hello; exit 1; } ) || exit 1
+# (b) the zip layout: bin/, lib/m9/ and the runtime as SOURCES in
+#     runtime/ -- sources beside the header win over any archive
+rm -rf zip w3 && mkdir -p zip/bin zip/lib/m9 zip/runtime w3
+cp "$M9C" zip/bin/m9c
+cp "$SRC/DynStr.m9" "$SRC/Io.m9" zip/lib/m9/
+cp "$RT/m9rt.h" "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/fmtshim.c" zip/runtime/
+cp "$SRC/Hello.m9" w3/
+( cd w3 &&
+  env -u M9LIBRARY -u M9RUNTIME ../zip/bin/m9c --make -v -o hello Hello.m9 >r.txt 2>&1 ||
+    { echo "FAIL: the zip layout could not build Hello:"; head -8 r.txt; exit 1; }
+  P=$(cd ../zip && pwd)
+  grep -q -- "-I$P/lib/m9" r.txt ||
+    { echo "FAIL: the zip layout did not search its own lib/m9:"; grep -- '-I' r.txt; exit 1; }
+  grep -q -- "-iquote $P/runtime .* $P/runtime/m9rt.c " r.txt ||
+    { echo "FAIL: the zip layout did not compile the runtime beside its header:"; grep -- '-iquote' r.txt; exit 1; }
+  grep -q -- '-lm9rt' r.txt &&
+    { echo "FAIL: the zip layout linked an installed archive under its own header:"; grep -- '-lm9rt' r.txt; exit 1; }
+  [ "$(./hello | head -1)" = "hello, world" ] ||
+    { echo "FAIL: built from the zip layout but answered wrong"; ./hello; exit 1; } ) || exit 1
+# and --help names the places it will use, not the package's
+( cd w3 && env -u M9LIBRARY -u M9RUNTIME ../zip/bin/m9c --help >h.txt 2>&1 || exit 1
+  P=$(cd ../zip && pwd)
+  grep -q "^ *$P/lib/m9\$" h.txt || { echo "FAIL: --help does not name the zip's library:"; cat h.txt; exit 1; }
+  grep -q "^ *$P/runtime\$" h.txt || { echo "FAIL: --help does not name the zip's runtime:"; cat h.txt; exit 1; } ) || exit 1
+echo "m9c: a relocated install and the zip layout find their own"
+echo "     library, headers and runtime with no variable set"
 
 echo "m9c: --make builds a diamond in dependency order, first run"

@@ -11,10 +11,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/time.h>
 #include "System.h"
 #include "Io.h"
 
 static int checks = 0, failed = 0;
+
+/* the driver's own clock: a bounded run has to be timed from outside,
+   or "it stopped" cannot be told from "it finished" */
+static double now (void)
+{
+  struct timeval tv;
+  gettimeofday (&tv, NULL);
+  return (double) tv.tv_sec + (double) tv.tv_usec * 1e-6;
+}
 
 static void ok (const char *what, int cond)
 {
@@ -65,6 +76,27 @@ int main (int argc, char **argv)
   int found;
   m9_sl_CHAR noin = { NULL, 0 }, envv[1];
   m9_sl_m9_sl_CHAR noenv = { NULL, 0 }, args0 = { NULL, 0 }, envs;
+
+  /* ---- the platform, as a value ---- */
+#ifdef _WIN32
+  ok ("Os is windows", eq (System_Os (&e), "windows"));
+#elif defined (__linux__)
+  ok ("Os is linux", eq (System_Os (&e), "linux"));
+#else
+  ok ("Os is a known word", eq (System_Os (&e), "macos") || eq (System_Os (&e), "posix"));
+#endif
+  {
+    /* the resolved path ends in this program's name and, unlike
+       argv[0], is absolute whatever the caller typed -- build.sh runs
+       ./system_test, so Program is relative and Executable is not */
+    m9_sl_CHAR exe = System_Executable (&pool, &e);
+    ok ("Executable names this binary", !e.exc && ends (exe, "system_test"));
+#ifdef _WIN32
+    ok ("Executable is absolute", exe.len > 2 && exe.p[1] == ':');
+#else
+    ok ("Executable is absolute", exe.len > 0 && exe.p[0] == '/');
+#endif
+  }
 
   /* ---- the machine ---- */
   ok ("at least one core", System_Cores (&e) >= 1 && !e.exc);
@@ -142,6 +174,18 @@ int main (int argc, char **argv)
     r = System_Exec (&pool, S ("/bin/cat"), args0, big, noenv, &e);
     ok ("a large stdin (256 KB) echoed through cat does not deadlock the pipes",
         !e.exc && r.status == 0 && r.out.len == big.len);
+    /* cat moves 128 KB at a time, so the check above PASSED against a
+       pump that deadlocked with any child copying in small pieces: a
+       blocking 64 KB write into a pipe with less room sleeps until it
+       all fits, drains nothing meanwhile, and the child blocks on its
+       full stdout.  dd at 4 KB is that child (found 2026-09-06 by the
+       Windows twin of this driver, whose stdio child copies 4 KB). */
+    argv2[0] = S ("bs=4096"); argv2[1] = S ("status=none");
+    args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
+    r = System_Exec (&pool, S ("dd"), args, big, noenv, &e);
+    found = !e.exc && r.status == 0 && r.out.len == big.len;
+    for (i = 0; found && i < bign; i++) if (r.out.p[i] != bb[i]) found = 0;
+    ok ("and through dd in 4 KB pieces, every byte back in order", found);
     free (bb);
   }
 
@@ -165,6 +209,48 @@ int main (int argc, char **argv)
   r = System_Exec (&pool, S ("/no/such/program"), args, noin, noenv, &e);
   ok ("a program that cannot start raises Io.IOError", e.exc == &Io_IOError);
   e.exc = NULL;
+
+  /* ---- ExecWithin: the bound, and what it takes with it ---- */
+  argv2[0] = S ("-c"); argv2[1] = S ("echo quick");
+  args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
+  r = System_ExecWithin (&pool, S ("sh"), args, noin, noenv, 5.0, &e);
+  ok ("a run that finishes inside its limit is not stopped",
+      !e.exc && r.status == 0 && eq (r.out, "quick\n") && !r.stopped);
+
+  argv2[1] = S ("echo before; sleep 30");
+  {
+    double t0 = now ();
+    r = System_ExecWithin (&pool, S ("sh"), args, noin, noenv, 0.5, &e);
+    ok ("a run past its limit is stopped, at the limit and not at its end",
+        !e.exc && r.stopped && now () - t0 < 5.0);
+    ok ("and what it wrote before the limit came back", eq (r.out, "before\n"));
+    ok ("and the status is the kill", r.status == -9);
+  }
+
+  /* THE CASE THE BOUND EXISTS FOR: the child EXITS, and something it
+     started holds its stdout.  The wait is for the streams to end,
+     so without a limit this one never returns -- and the limit has
+     to take the grandchild with it or the next run meets it again. */
+  {
+    char path[128], line[256];
+    double t0;
+    snprintf (path, sizeof path, "/tmp/m9exec_grandchild_%ld", (long) getpid ());
+    remove (path);
+    snprintf (line, sizeof line,
+              "sh -c 'sleep 2; echo alive > %s' & exit 0", path);
+    argv2[1] = S (line);
+    args = (m9_sl_m9_sl_CHAR){ argv2, 2 };
+    t0 = now ();
+    r = System_ExecWithin (&pool, S ("sh"), args, noin, noenv, 0.4, &e);
+    ok ("a child that exits leaving a grandchild on its stdout still returns",
+        !e.exc && r.stopped && now () - t0 < 5.0);
+    argv2[0] = S ("3");
+    args = (m9_sl_m9_sl_CHAR){ argv2, 1 };
+    (void) System_Exec (&pool, S ("sleep"), args, noin, noenv, &e);
+    ok ("the group went with it: the grandchild never wrote its file",
+        !e.exc && access (path, F_OK) != 0);
+    remove (path);
+  }
 
   /* ---- the arguments: --verbose --out=x.nc a -- -b ---- */
   ok ("Program ends with system_test", ends (System_Program (&pool, &e), "system_test"));

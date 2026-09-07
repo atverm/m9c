@@ -38,10 +38,22 @@ IMPORT Sem ;
 IMPORT Doc ;
 IMPORT Lex ;
 IMPORT DynStr ;
+IMPORT System ;
 
 VAR
   pool : POOL ;
   failed : BOOL ;
+  (* THE COMMAND BEING COMPOSED, AS A LIST OF WORDS -- never as one
+     string.  Until 2026-09-06 m9c composed a shell line for Io.Run
+     (system ()), quoting every path, and had to REFUSE a name with a
+     quote in it because no quoting rule covers every shell.  Now the
+     words go to System.Exec as they are: no shell, nothing quoted,
+     nothing to refuse -- and the same code runs on Windows, where
+     the shell is a different program with different rules.  What -v
+     prints is these words joined by spaces, which is a display and
+     not what runs. *)
+  words  : SLICE OF STR ;
+  nwords : I64 ;
 
   (* what the command line asked for *)
   doCompile : BOOL ;      (* -c : hand the C to a C compiler   *)
@@ -90,9 +102,17 @@ VAR
   (* where to look for an imported module's source *)
   dirs   : SLICE OF STR ;
   trusts : SLICE OF BOOL ;  (* dirs[i] came from $M9LIBRARY or the
-                               installed StdLib: its units may be
+                               installed library: its units may be
                                UNSAFE / FOR "C" under --no-unsafe *)
   ndirs  : I64 ;
+  (* WHERE THIS COMPILER IS: the directory above the executable's --
+     /usr for /usr/bin/m9c, the unpacked zip for bin\m9c.exe, the
+     source tree for out/m9c -- which is what the installed places
+     are RELATIVE to (see Locate).  Empty when the platform cannot
+     say, and then the constants below are all there is. *)
+  prefix  : STR ;
+  windows : BOOL ;   (* System.Os: ';' separates $M9LIBRARY, and the
+                        C compiler is gcc, bundled or on PATH *)
   (* module names already loaded, so a diamond is loaded once and a
      cycle terminates rather than recurring *)
   loaded  : SLICE OF STR ;
@@ -131,7 +151,8 @@ VAR
   modName  : STR ;
 
 CONST
-  (* Where a package puts the standard modules, searched last.  A
+  (* Where a package puts the standard modules, the last resort when
+     this compiler cannot say where it is itself (Locate).  A
      constant rather than a build-time substitution because M9 has no
      -D and inventing one for a single string would be a language
      feature bought with a packaging problem.  A distribution that
@@ -141,7 +162,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.7.0' ;
+  Version = '0.8.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -259,14 +280,19 @@ BEGIN
   ndirs := ndirs + 1
 END DirAdd ;
 
-(* colon-separated, the way PATH is, because that is the convention
-   the shell already taught everyone *)
+(* separated the way PATH is on the platform, because that is the
+   convention the shell already taught everyone: ':' here, and ';'
+   on Windows, where a path of its own carries a ':' two characters
+   in (C:\m9\lib\m9) *)
 PROCEDURE DirAddPath (RO s: STR ; trusted: BOOL) =
-VAR i, start : I64 ;
+VAR
+  i, start : I64 ;
+  sep : CHAR ;
 BEGIN
+  IF windows THEN sep := ';' ELSE sep := ':' END ;
   start := 0 ;
   FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = ':' THEN
+    IF s[i] = sep THEN
       DirAdd (SLICE (s, start, i - start), trusted) ;
       start := i + 1
     END
@@ -286,6 +312,170 @@ BEGIN
   IF cut = 0 THEN RETURN '' END ;
   RETURN SLICE (path, 0, cut - 1)
 END DirOf ;
+
+(* ---- where this compiler is ----
+
+   The installed places are RELATIVE TO THE EXECUTABLE when the
+   platform can say where that is: <prefix>/lib/m9, <prefix>/include/m9
+   and <prefix>/lib/libm9rt.a, with prefix the directory ABOVE the
+   executable's.  For /usr/bin/m9c that is /usr, which is exactly the
+   package's layout, so nothing moves for an installed compiler.
+   What it buys is a tree that can be MOVED: `./build.sh /opt/m9`
+   gives /opt/m9/usr/bin/m9c, which finds its own library at
+   /opt/m9/usr/lib/m9 with no variable set; and the Windows zip
+   (docs/windows-plan.md) is bin\m9c.exe beside lib\m9, runtime\ and
+   ucrt64\, and a zip cannot ask anyone to set a variable.  The zip's
+   runtime\ is also a source tree's, so out/m9c finds THIS tree's
+   m9rt.h ahead of an installed one -- the stale-runtime trap
+   AddRuntime describes, closed from the other side.
+   The constants stay as the last resort, and for a location the
+   platform cannot answer (System.Executable is '') they are all
+   there is.  Paths are joined with '/' throughout: a Windows path
+   with mixed separators (C:\m9/lib/m9) is accepted by the system
+   and by gcc alike, and one spelling beats two. *)
+PROCEDURE Locate () RAISES ValueRange =
+BEGIN
+  windows := DynStr.Eq (System.Os (), 'windows') ;
+  prefix := DirOf (DirOf (System.Executable (pool)))
+END Locate ;
+
+(* this compiler's own library directory, or the package's *)
+PROCEDURE LibDir () : STR =
+BEGIN
+  IF LEN (prefix) = 0 THEN RETURN StdLib END ;
+  RETURN Cat (prefix, '/lib/m9')
+END LibDir ;
+
+(* its own installed headers, or the package's *)
+PROCEDURE IncDir () : STR =
+BEGIN
+  IF LEN (prefix) = 0 THEN RETURN StdInclude END ;
+  RETURN Cat (prefix, '/include/m9')
+END IncDir ;
+
+(* its own runtime archive, or the package's *)
+PROCEDURE RtArchive () : STR =
+BEGIN
+  IF LEN (prefix) = 0 THEN RETURN StdArchive END ;
+  RETURN Cat (prefix, '/lib/libm9rt.a')
+END RtArchive ;
+
+(* THE LIBRARY THE SEARCH PATH ENDS WITH: this compiler's own when it
+   has one, the package's otherwise -- one or the other, never both,
+   so a relocated tree does not quietly pick modules out of
+   /usr/lib/m9 when its own library lacks one.  For /usr/bin/m9c the
+   two are the same string; for out/m9c, whose tree has no lib/m9,
+   it is the package's, as it always was. *)
+PROCEDURE LibPlace () : STR RAISES ValueRange =
+BEGIN
+  IF Io.Exists (LibDir ()) THEN RETURN LibDir () END ;
+  RETURN StdLib
+END LibPlace ;
+
+(* where THIS m9c would take its headers from, for --help; the
+   package's place when it would find none *)
+PROCEDURE IncPlace () : STR RAISES ValueRange =
+VAR r : STR ;
+BEGIN
+  r := RtDir () ;
+  IF LEN (r) = 0 THEN RETURN StdInclude END ;
+  RETURN r
+END IncPlace ;
+
+(* the bundled tool when the zip carries it, the PATH one otherwise.
+   Windows only: a Linux package depends on gcc and does not ship one *)
+PROCEDURE Bundled (RO tool: STR ; RO fallback: STR) : STR
+  RAISES ValueRange =
+VAR p : STR ;
+BEGIN
+  IF windows AND LEN (prefix) > 0 THEN
+    p := Cat (prefix, Cat ('/ucrt64/bin/', tool)) ;
+    IF Io.Exists (p) THEN RETURN p END
+  END ;
+  RETURN fallback
+END Bundled ;
+
+(* the bundled gcc's own bin when the zip carries one; empty
+   otherwise (Linux, or a tree without a ucrt64\ beside lib\).
+   THE DIRECTORY IS NAMED ucrt64 BECAUSE gcc SAYS SO.  MSYS2's gcc is
+   configured with /ucrt64/include as its system header directory
+   and relocates that, from wherever gcc.exe finds itself, to
+   bin\..\..\ucrt64\include -- the LAST component is kept.  Under
+   any other name (measured with `gcc.exe -xc -E -v -`: "ignoring
+   nonexistent directory /ucrt64/include") string.h is not found and
+   nothing compiles.  The library paths are relative and do not care;
+   the headers do. *)
+PROCEDURE GccBin () : STR RAISES ValueRange =
+VAR p : STR ;
+BEGIN
+  IF windows AND LEN (prefix) > 0 THEN
+    p := Cat (prefix, '/ucrt64/bin') ;
+    IF Io.Exists (p) THEN RETURN p END
+  END ;
+  RETURN ''
+END GccBin ;
+
+(* whether path names something inside dir: dir is a prefix of it
+   and a separator follows.  Nothing is normalised -- both sides were
+   composed here from the same prefix, so a spelling of the user's
+   own ($CC with backslashes) is simply not under it, which is the
+   answer wanted: that gcc runs with the PATH it was given. *)
+PROCEDURE Under (RO path: STR ; RO dir: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (path) <= LEN (dir) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (dir) - 1 DO
+    IF path[i] # dir[i] THEN RETURN FALSE END
+  END ;
+  RETURN path[LEN (dir)] = '/' OR path[LEN (dir)] = 05CC
+END Under ;
+
+(* '/' to the platform's separator, for a value handed to the SYSTEM
+   rather than to gcc: prefix arrives with backslashes from
+   GetModuleFileName and gains '/ucrt64/bin' here, and a PATH entry is
+   the one place the mixed spelling would be seen by a user. *)
+PROCEDURE Native (RO s: STR) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  IF NOT windows THEN RETURN s END ;
+  d := DynStr.New (pool) ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = '/' THEN DynStr.AppendChar (pool, d, 05CC)
+    ELSE DynStr.AppendChar (pool, d, s[i]) END
+  END ;
+  RETURN DynStr.View (d)
+END Native ;
+
+(* THE BUNDLED gcc NEEDS ITS OWN bin ON PATH, and m9c puts it there
+   for the child rather than asking the user to.  MSYS2's cc1.exe,
+   lto1.exe and ld.exe import DLLs (libgmp, libmpfr, libisl, libzstd,
+   libwinpthread ...) that live in ucrt64\bin beside gcc.exe, while
+   they themselves live in lib\gcc\...\16.2.0 -- and the loader
+   searches the directory of the program being STARTED, the system
+   ones and then PATH, never the bin of the gcc.exe that started it.
+   So with ucrt64\bin absent from PATH, gcc.exe runs, cc1 cannot load, and gcc
+   exits 1 with nothing said (measured under wine).  The entry goes
+   FIRST, so the bundled binutils beat another gcc's on the machine;
+   and it is added only for a program under that directory, so a $CC
+   of the user's own runs with the PATH it was given.  Exec merges
+   the override over the inherited environment (case-insensitively
+   on Windows, where it is Path as often as PATH). *)
+PROCEDURE ChildEnv (RO prog: STR) : SLICE OF STR RAISES ValueRange =
+VAR
+  bin : STR ;
+  env : SLICE OF STR ;
+BEGIN
+  bin := GccBin () ;
+  IF LEN (bin) > 0 AND Under (prog, bin) THEN
+    env := NEW (pool, STR, 1) ;
+    env[0] := Cat ('PATH=', Cat (Native (bin),
+                                 Cat (';', Io.Env (pool, 'PATH')))) ;
+    RETURN env
+  END ;
+  RETURN NEW (pool, STR, 0)
+END ChildEnv ;
 
 PROCEDURE Join (RO d: STR ; RO f: STR) : STR =
 VAR s : PTR DynStr.DString IN pool ;
@@ -481,34 +671,104 @@ END BuildOrder ;
    module's interface, and the next module's generated C includes it.
    Under -o nothing downstream remains, so both go.                 *)
 
-(* the shell composes the command, so a name that cannot be quoted is
-   refused rather than guessed at -- the same answer the checker gives
-   an input it cannot account for *)
-PROCEDURE Quotable (RO s: STR) : BOOL =
-VAR i : I64 ;
+(* ---- the command, NOT THROUGH A SHELL ----
+
+   A command is the program's name and a list of words, and that list
+   is exactly what the operating system starts a process with -- the
+   shell is the thing in between that takes ONE string apart into
+   those words, by rules that differ between /bin/sh, cmd.exe and
+   PowerShell, and that made a file called it's.m9 unbuildable.
+   System.Exec skips the middle: the words go as they are.  Nothing
+   is quoted because nothing is parsed.
+
+   The words are collected in a module-level slice rather than passed
+   around, because every command here is composed in one procedure
+   from top to bottom and read once by Run.                        *)
+PROCEDURE NewCommand () =
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = 027C THEN RETURN FALSE END           (* single quote *)
+  IF LEN (words) = 0 THEN words := NEW (pool, STR, 32) END ;
+  nwords := 0
+END NewCommand ;
+
+PROCEDURE Word (RO KEPT s: STR) =
+VAR
+  nb : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF nwords = LEN (words) THEN
+    nb := NEW (pool, STR, 2 * LEN (words) + 8) ;
+    FOR i := 0 TO nwords - 1 DO nb[i] := words[i] END ;
+    words := nb
   END ;
-  RETURN TRUE
-END Quotable ;
+  words[nwords] := s ;
+  nwords := nwords + 1
+END Word ;
 
-PROCEDURE AppendQuoted (VAR d: PTR DynStr.DString ; RO s: STR) =
+(* the command as -v shows it: the words joined by single spaces.  A
+   display only -- it is not what runs, so a word holding a space
+   prints ambiguously and runs correctly. *)
+PROCEDURE Line (RO prog: STR) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
 BEGIN
-  DynStr.AppendChar (pool, d, 027C) ;
-  DynStr.Append (pool, d, s) ;
-  DynStr.AppendChar (pool, d, 027C)
-END AppendQuoted ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, prog) ;
+  FOR i := 0 TO nwords - 1 DO
+    DynStr.AppendChar (pool, d, ' ') ;
+    DynStr.Append (pool, d, words[i])
+  END ;
+  RETURN DynStr.View (d)
+END Line ;
 
-(* $CC when set, cc otherwise.  The shell knows how the C compiler is
-   spelled on this machine; m9c does not have to. *)
+(* run prog with the words, forward what it wrote to the streams it
+   wrote it to, answer its status.  cc's diagnostics arrive whole
+   rather than interleaved with ours, which is the one visible
+   difference from the shell days and a small price for it.
+   A program that cannot start is -1 with its name said: the module
+   handler's wording for Io.IOError is about files, not programs.
+   The environment is the caller's, plus PATH for the bundled gcc
+   (ChildEnv); -v prints the command and not the environment, since
+   the command line is what the relocation gate anchors on. *)
+PROCEDURE Run (RO prog: STR) : I64 RAISES ValueRange =
+VAR
+  r : System.Result ;
+BEGIN
+  IF verbose THEN Diag ('m9c: ', Line (prog), '') END ;
+  r := System.Exec (pool, prog, SLICE (words, 0, nwords), '',
+                    ChildEnv (prog)) ;
+  IF LEN (r.out) > 0 THEN Io.Write (r.out) END ;
+  IF LEN (r.err) > 0 THEN Io.Err (r.err) END ;
+  RETURN r.status
+EXCEPT
+| Io.IOError (p) :
+    Diag ('m9c: cannot run ', p, '') ;
+    RETURN -1
+END Run ;
+
+(* $CC when set; else, on Windows, the gcc the zip bundles at
+   <prefix>/ucrt64/bin/gcc.exe or a gcc on PATH (there is no `cc` on
+   Windows); else cc.  It is the compiler's NAME -- a word, found on
+   PATH or given as a path -- and not a command line: with no shell
+   to split it, CC='gcc -m32' would be looked up as one program
+   called "gcc -m32".  Flags go after --, where they always went. *)
 PROCEDURE CcName () : STR RAISES ValueRange =
 VAR v : STR ;
 BEGIN
   v := Io.Env (pool, 'CC') ;
-  IF LEN (v) = 0 THEN RETURN 'cc' END ;
-  RETURN v
+  IF LEN (v) > 0 THEN RETURN v END ;
+  IF windows THEN RETURN Bundled ('gcc.exe', 'gcc') END ;
+  RETURN 'cc'
 END CcName ;
+
+(* the archiver beside that gcc, or ar on PATH; no $AR, because the
+   archiver that matches the compiler is the one to use and nobody
+   has asked for another *)
+PROCEDURE ArName () : STR RAISES ValueRange =
+BEGIN
+  IF windows THEN RETURN Bundled ('ar.exe', 'ar') END ;
+  RETURN 'ar'
+END ArName ;
 
 (* ---- the flags nobody should have to type ----
 
@@ -525,9 +785,12 @@ END CcName ;
    over, and a default silently added underneath a flag someone chose
    is worse than no default at all.                                 *)
 
-(* the runtime's headers: $M9RUNTIME, else installed, else a source
-   tree.  Probed rather than assumed, because this compiler runs from
-   /usr/bin and from a build directory on the same afternoon. *)
+(* the runtime's headers: $M9RUNTIME; else beside this compiler --
+   <prefix>/runtime, which is the zip's layout and a source tree's,
+   then <prefix>/include/m9, the package's -- else the package's
+   place by its constant, else a source tree from the working
+   directory.  Probed rather than assumed, because this compiler runs
+   from /usr/bin and from a build directory on the same afternoon. *)
 PROCEDURE RtDir () : STR RAISES ValueRange =
 VAR v : STR ;
 BEGIN
@@ -540,6 +803,12 @@ BEGIN
        has been said out loud is not a reason to stop looking. *)
     IF Io.Exists (Cat (v, '/m9rt.h')) THEN RETURN v END ;
     Diag ('m9c: $M9RUNTIME names ', v, ', which has no m9rt.h in it')
+  END ;
+  IF LEN (prefix) > 0 THEN
+    v := Cat (prefix, '/runtime') ;
+    IF Io.Exists (Cat (v, '/m9rt.h')) THEN RETURN v END ;
+    v := IncDir () ;
+    IF Io.Exists (Cat (v, '/m9rt.h')) THEN RETURN v END
   END ;
   IF Io.Exists (Cat (StdInclude, '/m9rt.h')) THEN RETURN StdInclude END ;
   IF Io.Exists ('runtime/m9rt.h') THEN RETURN 'runtime' END ;
@@ -568,35 +837,57 @@ END Cat ;
    Both translation units go in, because that is what the archive
    contains and a program should not behave differently depending on
    which of the two m9c happened to find. *)
-PROCEDURE AppendRuntime (VAR d: PTR DynStr.DString ; RO rt: STR) : BOOL
-  RAISES ValueRange =
+PROCEDURE AddRuntime (RO rt: STR) : BOOL RAISES ValueRange =
+VAR a : STR ;
 BEGIN
   IF Io.Exists (Cat (rt, '/m9rt.c')) THEN
-    DynStr.Append (pool, d, ' ') ;
-    DynStr.Append (pool, d, Cat (rt, '/m9rt.c')) ;
+    Word (Cat (rt, '/m9rt.c')) ;
     IF Io.Exists (Cat (rt, '/tcpshim.c')) THEN
-      DynStr.Append (pool, d, ' ') ;
-      DynStr.Append (pool, d, Cat (rt, '/tcpshim.c'))
+      Word (Cat (rt, '/tcpshim.c'))
     END ;
     (* fmt_g, Plot's %.4g twin: pure libc, so it always travels --
        without it the FLAGLESS link could never build a program that
        plots, and every gate had quietly hand-linked the shim (found
        by m9edit's first figure, 2026-09-02) *)
     IF Io.Exists (Cat (rt, '/fmtshim.c')) THEN
-      DynStr.Append (pool, d, ' ') ;
-      DynStr.Append (pool, d, Cat (rt, '/fmtshim.c'))
+      Word (Cat (rt, '/fmtshim.c'))
     END ;
     RETURN TRUE
   END ;
+  (* the archive: this compiler's own when it has one (a relocated
+     install, DESTDIR somewhere other than /), which needs its
+     directory named because the linker does not search it; the
+     package's otherwise, which the linker finds by itself *)
+  a := RtArchive () ;
+  IF Io.Exists (a) THEN
+    IF NOT DynStr.Eq (a, StdArchive) THEN
+      Word (Cat ('-L', Cat (prefix, '/lib')))
+    END ;
+    Word ('-lm9rt') ;
+    RETURN TRUE
+  END ;
   IF Io.Exists (StdArchive) THEN
-    DynStr.Append (pool, d, ' -lm9rt') ;
+    Word ('-lm9rt') ;
     RETURN TRUE
   END ;
   Diag ('m9c: m9rt.h is in ', rt, ', but there is no runtime to') ;
-  Diag ('  link beside it and no ', StdArchive, '.') ;
+  Diag ('  link beside it and no ', a, '.') ;
   Io.ErrLine ('  name one yourself after --') ;
   RETURN FALSE
-END AppendRuntime ;
+END AddRuntime ;
+
+(* The system libraries the runtime needs, after it on the line: libm,
+   which Fmt and Time need and which is never wrong to name; and on
+   Windows Winsock, because tcpshim.c is a member of the runtime on
+   every platform and there its socket calls live in ws2_32 rather
+   than in the C library.  A program that opens no socket pays
+   nothing for the name: the linker takes from an import library only
+   what is referenced. *)
+PROCEDURE SystemLibs () =
+BEGIN
+  Word ('-lm') ;
+  IF windows THEN Word ('-lws2_32') END
+END SystemLibs ;
 
 (* IS THIS OBJECT OLDER THAN WHAT IT WAS MADE FROM?
 
@@ -629,33 +920,33 @@ END Older ;
    The flags that must travel are the ones that change what the
    object IS -- the search path, -g, --pic -- and not the ones that
    describe this invocation: -o, --ar, --so and --doc are about the
-   final artifact and a dependency has none. *)
-PROCEDURE MakeDep (RO name: STR ; RO path: STR) : BOOL
+   final artifact and a dependency has none.
+
+   THIS compiler is the one re-invoked: the executable's resolved
+   path, not argv[0], which is whatever the caller typed and, for a
+   bare `m9c`, a name to be looked up on a PATH the child may not
+   share.  Where the platform cannot answer, argv[0] is the fallback
+   it always was. *)
+PROCEDURE MakeDep (RO name: STR ; RO KEPT path: STR) : BOOL
   RAISES ValueRange, IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  self : STR ;
   i, rc : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
-  AppendQuoted (d, Io.Arg (pool, 0)) ;
-  DynStr.Append (pool, d, ' -c') ;
-  IF debug THEN DynStr.Append (pool, d, ' -g') END ;
-  IF doPic THEN DynStr.Append (pool, d, ' --pic') END ;
-  FOR i := 0 TO ndirs - 1 DO
-    DynStr.Append (pool, d, ' -I') ;
-    AppendQuoted (d, dirs[i])
-  END ;
-  DynStr.AppendChar (pool, d, ' ') ;
-  AppendQuoted (d, path) ;
+  self := System.Executable (pool) ;
+  IF LEN (self) = 0 THEN self := Io.Arg (pool, 0) END ;
+  NewCommand () ;
+  Word ('-c') ;
+  IF debug THEN Word ('-g') END ;
+  IF doPic THEN Word ('--pic') END ;
+  FOR i := 0 TO ndirs - 1 DO Word (Cat ('-I', dirs[i])) END ;
+  Word (path) ;
   IF ccFrom > 0 THEN
-    DynStr.Append (pool, d, ' --') ;
-    FOR i := ccFrom TO Io.ArgCount () - 1 DO
-      DynStr.AppendChar (pool, d, ' ') ;
-      DynStr.Append (pool, d, Io.Arg (pool, i))
-    END
+    Word ('--') ;
+    FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.Arg (pool, i)) END
   END ;
   IF verbose THEN Diag ('m9c: make ', name, '') END ;
-  rc := Io.Run (DynStr.View (d)) ;
+  rc := Run (self) ;
   IF rc # 0 THEN
     Diag ('m9c: could not build dependency ', name, '') ;
     RETURN FALSE
@@ -734,8 +1025,7 @@ END MakeAll ;
    A missing one is NAMED, with the command that makes it, because
    'undefined reference to DynStr_Append' is the C linker explaining
    our omission in its own vocabulary. *)
-PROCEDURE AppendObjects (VAR d: PTR DynStr.DString) : BOOL
-  RAISES ValueRange =
+PROCEDURE AddObjects () : BOOL RAISES ValueRange =
 VAR
   i, nmiss : I64 ;
   o : STR ;
@@ -745,8 +1035,7 @@ BEGIN
     IF NOT DynStr.Eq (loaded[i], modName) THEN
       o := Cat (loaded[i], '.o') ;
       IF Io.Exists (o) THEN
-        DynStr.Append (pool, d, ' ') ;
-        DynStr.Append (pool, d, o)
+        Word (o)
       ELSE
         Diag ('m9c: ', o, ' is missing; build it first with') ;
         Diag ('         m9c -c ', loaded[i], '') ;
@@ -755,12 +1044,11 @@ BEGIN
     END
   END ;
   RETURN nmiss = 0
-END AppendObjects ;
+END AddObjects ;
 
 PROCEDURE Compile (RO name: STR) : BOOL
   RAISES ValueRange, IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
   cfile, out, rt : STR ;
   i, rc : I64 ;
 BEGIN
@@ -768,26 +1056,22 @@ BEGIN
   (* a library run compiles like -c: the object is a member, and the
      library itself is built by the step after this one *)
   IF doLink THEN out := exe ELSE out := Suffix (name, '.o') END ;
-  IF NOT Quotable (cfile) OR NOT Quotable (out) THEN
-    Io.ErrLine ('m9c: refusing to shell out with a quote in a name') ;
-    RETURN FALSE
-  END ;
-  d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, CcName ()) ;
-  IF NOT doLink THEN DynStr.Append (pool, d, ' -c') END ;
+  NewCommand () ;
+  IF NOT doLink THEN Word ('-c') END ;
 
   rt := RtDir () ;
   IF ccFrom > 0 THEN
     (* the caller has taken the command line over; nothing is added
        underneath a flag someone chose *)
-    FOR i := ccFrom TO Io.ArgCount () - 1 DO
-      DynStr.AppendChar (pool, d, ' ') ;
-      DynStr.Append (pool, d, Io.Arg (pool, i))
-    END
+    FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.Arg (pool, i)) END
   ELSE
     IF LEN (rt) = 0 THEN
       Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
       Io.ErrLine ('  looked for m9rt.h in $M9RUNTIME, ' ) ;
+      IF LEN (prefix) > 0 THEN
+        Diag ('  ', Cat (prefix, '/runtime'), ',') ;
+        Diag ('  ', IncDir (), ',')
+      END ;
       Diag ('  ', StdInclude, ', runtime/ and ../runtime/.') ;
       Io.ErrLine ('  give the paths yourself after --') ;
       RETURN FALSE
@@ -800,7 +1084,7 @@ BEGIN
        number in docs/bench.md was measured with cc invoked by hand.
        A program built by m9c should not be slower than the same
        program built by the same compiler by somebody who knew. *)
-    DynStr.Append (pool, d, ' -O2') ;
+    Word ('-O2') ;
     (* -flto, for the same reason and with a bigger number.  An M9
        program is MANY translation units by construction -- one per
        module, plus the runtime -- and every checked call that costs
@@ -820,7 +1104,42 @@ BEGIN
        dropped: hoisting the GRID descriptor into locals by hand,
        ON TOP of LTO, was worth 3% (0.0088 -> 0.0085).  LTO already
        does it.  See the port's README. *)
-    DynStr.Append (pool, d, ' -flto') ;
+    Word ('-flto') ;
+    (* ON WINDOWS, ONE LTO PARTITION.  gcc runs its LTRANS stage in
+       parallel through a Makefile it writes and a `make` it looks
+       for on PATH; the bundled ucrt64\ carries no make (MSYS2 ships
+       it as a separate package), so every link of two or more
+       partitions falls back to serial and says so --
+         lto-wrapper.exe: warning: using serial compilation of 2 LTRANS jobs
+       -- on hello world, every time.  -flto=auto and -flto=4 warn
+       just the same THERE, measured under wine: with no make, the
+       job count cannot help.  One partition has nothing to
+       parallelise and so nothing to warn about, and it was serial
+       anyway.  Measured on two real links under wine, and it goes
+       BOTH WAYS, which is why neither number is claimed as the rule:
+       m9c's own link 21.1 s -> 19.8 s and 945,222 -> 922,650 bytes
+       (one partition inlines across the whole program), m9setup's
+       4.4 s -> 4.4 s and 151,466 -> 152,935.  Under a percent or two
+       either side of nothing; what it buys is the warning's absence.
+
+       AND THE FIRST VERSION OF THIS COMMENT SAID "not on Linux,
+       where a jobserver or the CPU count is found and the note never
+       appears".  THAT WAS WRONG, and a two-partition Linux link
+       found it the same day: plain -flto IS -flto=1, so gcc 15 warns
+       there too, with /usr/bin/make right where it looks.  Measured
+       on one program, gcc 15, 24 cores:
+         -flto                 1737 ms  117,784 B  warns
+         -flto=1               1732 ms  117,784 B  warns
+         -flto=auto            1357 ms  117,784 B  quiet
+         -flto -partition=one  1771 ms  119,720 B  quiet
+       So Linux wants -flto=auto -- quieter, 22% off the link, same
+       bytes -- and Windows cannot use it, having no make to run the
+       jobs.  The Linux half is NOT changed here: it is every build's
+       flags, it belongs in its own commit with its own measurement,
+       and it is in the owed ledger.  The tutor gate's log has been
+       carrying that warning unnoticed for as long as it has existed,
+       which is the other half of the finding. *)
+    IF windows THEN Word ('-flto-partition=one') END ;
     (* AND THE INLINER'S BUDGET, because the checks spend it.  gcc
        auto-inlines only functions under max-inline-insns-auto,
        default 15, and a checked M9 body rarely fits: every access
@@ -833,44 +1152,45 @@ BEGIN
        which is MORE than removing the checks outright buys (0.563):
        the checks were never the cost; the inlining they suppressed
        was.  Binary +27%, build time the same to the second.  clang
-       ignores the flag with a warning, so $CC=clang still builds. *)
-    DynStr.Append (pool, d, ' --param max-inline-insns-auto=200') ;
+       ignores the flag with a warning, so $CC=clang still builds.
+       Two words, as cc receives them: the shell used to split them
+       and there is no shell now. *)
+    Word ('--param') ;
+    Word ('max-inline-insns-auto=200') ;
     (* -fPIC only when asked, and --so asks.  Not the default,
        because on x86-64 it costs an indirection on every global and
        the overwhelming majority of these objects go into a program
        or an archive, where it buys nothing. *)
-    IF doPic THEN DynStr.Append (pool, d, ' -fPIC') END ;
+    IF doPic THEN Word ('-fPIC') END ;
     (* -g ADDS, and changes nothing else.  Not -O0: silently dropping
        the optimisation under a flag that says "debug information" is
        flag-dependent semantics, which is the thing this language
        refuses by name.  The line tables are optimised-code line
        tables, and a caller who wants -O0 takes the line over. *)
-    IF debug THEN DynStr.Append (pool, d, ' -g') END ;
+    IF debug THEN Word ('-g') END ;
     (* -iquote, never -I: on a case-insensitive filesystem a generated
        Time.h on the angled path answers #include <time.h>, and the
        failure that produces is a missing struct definition rather
        than a missing file *)
-    DynStr.Append (pool, d, ' -iquote ') ;
-    DynStr.Append (pool, d, rt) ;
-    DynStr.Append (pool, d, ' -iquote .')
+    Word ('-iquote') ;
+    Word (rt) ;
+    Word ('-iquote') ;
+    Word ('.')
   END ;
 
-  DynStr.AppendChar (pool, d, ' ') ;
-  AppendQuoted (d, cfile) ;
+  Word (cfile) ;
 
   (* the link line, when m9c is supplying it: the closure's objects,
-     the runtime, and libm -- which Fmt and Time need and which is
-     never wrong to name *)
+     the runtime, and the system libraries the runtime needs *)
   IF doLink AND ccFrom = 0 THEN
-    IF NOT AppendObjects (d) THEN RETURN FALSE END ;
-    IF NOT AppendRuntime (d, rt) THEN RETURN FALSE END ;
-    DynStr.Append (pool, d, ' -lm')
+    IF NOT AddObjects () THEN RETURN FALSE END ;
+    IF NOT AddRuntime (rt) THEN RETURN FALSE END ;
+    SystemLibs ()
   END ;
 
-  DynStr.Append (pool, d, ' -o ') ;
-  AppendQuoted (d, out) ;
-  IF verbose THEN Diag ('m9c: ', DynStr.View (d), '') END ;
-  rc := Io.Run (DynStr.View (d)) ;
+  Word ('-o') ;
+  Word (out) ;
+  rc := Run (CcName ()) ;
   IF rc # 0 THEN
     Io.ErrLine ('m9c: the C compiler reported errors') ;
     RETURN FALSE
@@ -903,32 +1223,25 @@ END Compile ;
 PROCEDURE Archive (RO name: STR) : BOOL
   RAISES ValueRange, IndexError =
 VAR
-  d : PTR DynStr.DString IN pool ;
-  rt : STR ;
+  prog, rt : STR ;
   i, rc : I64 ;
 BEGIN
-  IF NOT Quotable (lib) THEN
-    Io.ErrLine ('m9c: refusing to shell out with a quote in a name') ;
-    RETURN FALSE
-  END ;
-  d := DynStr.New (pool) ;
+  NewCommand () ;
   IF doAr THEN
     (* r replace, c create without saying so, s write the index --
        the three every archive wants and the ones ar has meant since
        before any of this *)
-    DynStr.Append (pool, d, 'ar rcs ') ;
-    AppendQuoted (d, lib)
+    prog := ArName () ;
+    Word ('rcs') ;
+    Word (lib)
   ELSE
-    DynStr.Append (pool, d, CcName ()) ;
-    DynStr.Append (pool, d, ' -shared') ;
+    prog := CcName () ;
+    Word ('-shared') ;
     IF ccFrom > 0 THEN
       (* the caller took the line over at the compile step and keeps
          it here: adding underneath a chosen flag is worse than
          adding nothing *)
-      FOR i := ccFrom TO Io.ArgCount () - 1 DO
-        DynStr.AppendChar (pool, d, ' ') ;
-        DynStr.Append (pool, d, Io.Arg (pool, i))
-      END
+      FOR i := ccFrom TO Io.ArgCount () - 1 DO Word (Io.Arg (pool, i)) END
     ELSE
       (* -fPIC AGAIN, and this is the one that is easy to miss: the
          runtime arrives as SOURCES, so this command compiles m9rt.c
@@ -938,27 +1251,30 @@ BEGIN
            relocation R_X86_64_PC32 against `stderr@@GLIBC_2.2.5'
          out of a temporary object nobody named.  Measured, not
          guessed: that is exactly what the first --so run said. *)
-      DynStr.Append (pool, d, ' -O2 -flto -fPIC -iquote ') ;
-      DynStr.Append (pool, d, RtDir ()) ;
-      DynStr.Append (pool, d, ' -iquote .')
+      Word ('-O2') ;
+      Word ('-flto') ;
+      IF windows THEN Word ('-flto-partition=one') END ;
+      Word ('-fPIC') ;
+      Word ('-iquote') ;
+      Word (RtDir ()) ;
+      Word ('-iquote') ;
+      Word ('.')
     END ;
-    DynStr.Append (pool, d, ' -o ') ;
-    AppendQuoted (d, lib)
+    Word ('-o') ;
+    Word (lib)
   END ;
-  DynStr.AppendChar (pool, d, ' ') ;
-  AppendQuoted (d, Suffix (name, '.o')) ;
-  IF NOT AppendObjects (d) THEN RETURN FALSE END ;
+  Word (Suffix (name, '.o')) ;
+  IF NOT AddObjects () THEN RETURN FALSE END ;
   IF doSo AND ccFrom = 0 THEN
     rt := RtDir () ;
     IF LEN (rt) = 0 THEN
       Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
       RETURN FALSE
     END ;
-    IF NOT AppendRuntime (d, rt) THEN RETURN FALSE END ;
-    DynStr.Append (pool, d, ' -lm')
+    IF NOT AddRuntime (rt) THEN RETURN FALSE END ;
+    SystemLibs ()
   END ;
-  IF verbose THEN Diag ('m9c: ', DynStr.View (d), '') END ;
-  rc := Io.Run (DynStr.View (d)) ;
+  rc := Run (prog) ;
   IF rc # 0 THEN
     IF doAr THEN
       Io.ErrLine ('m9c: ar reported errors')
@@ -1045,7 +1361,7 @@ BEGIN
   Io.WriteLine ('')
 END About ;
 
-PROCEDURE Help () =
+PROCEDURE Help () RAISES ValueRange =
 BEGIN
   About () ;
   Io.WriteLine ('usage: m9c [options] FILE.m9 [DEP.m9 ...] [-- CCFLAGS]') ;
@@ -1059,13 +1375,15 @@ BEGIN
   Io.WriteLine ('typed is a statement about which file they meant.') ;
   Io.WriteLine ('') ;
   Io.WriteLine ('The path is -I directories (leftmost first), then') ;
-  Io.WriteLine ('$M9LIBRARY (colon-separated, as $PATH is), then the') ;
+  Io.WriteLine ('$M9LIBRARY (separated as $PATH is), then the') ;
   Io.WriteLine ("directory FILE.m9 itself came from -- a module's") ;
   Io.WriteLine ('neighbours are almost always its imports -- and last') ;
-  Io.WriteLine ('the installed library, if there is one:') ;
+  Io.WriteLine ('the installed library, if there is one.  This m9c') ;
+  Io.WriteLine ('looks for its own library beside itself first, and') ;
+  Io.WriteLine ("for the package's when it has none:") ;
   Io.WriteLine ('') ;
   Io.Write ('  ') ;
-  Io.WriteLine (StdLib) ;
+  Io.WriteLine (LibPlace ()) ;
   Io.WriteLine ('') ;
   Io.WriteLine ('FROM u IMPORT ... is not resolved: u is a foreign unit') ;
   Io.WriteLine ('backed by C, so there is no u.m9 and looking for one') ;
@@ -1139,7 +1457,9 @@ BEGIN
   Io.WriteLine ('') ;
   Io.WriteLine ('    the includes, as -iquote RT and -iquote .,') ;
   Io.WriteLine ('    where RT is $M9RUNTIME when it is set, else the') ;
-  Io.WriteLine ('    installed headers, else runtime/ or ../runtime/') ;
+  Io.WriteLine ("    runtime beside this compiler (its own tree's or") ;
+  Io.WriteLine ("    install's), else the package's headers, else") ;
+  Io.WriteLine ('    runtime/ or ../runtime/ from here') ;
   Io.WriteLine ('') ;
   Io.WriteLine ('    and, when linking, one object per module in the') ;
   Io.WriteLine ('    import closure it has just resolved, plus the') ;
@@ -1189,10 +1509,10 @@ BEGIN
   Io.WriteLine ('') ;
   Io.WriteLine ('Installed, a module NAME is enough: the library is') ;
   Io.Write ('  ') ;
-  Io.WriteLine (StdLib) ;
+  Io.WriteLine (LibPlace ()) ;
   Io.WriteLine ('and the runtime headers are in') ;
   Io.Write ('  ') ;
-  Io.WriteLine (StdInclude) ;
+  Io.WriteLine (IncPlace ()) ;
   Io.WriteLine ('so neither is typed:') ;
   Io.WriteLine ('') ;
   Io.WriteLine ('  m9c -c DynStr') ;
@@ -1533,7 +1853,8 @@ END Keep ;
 
 (* --no-unsafe: the language wall of the sandbox story
    (docs/tutorial-plan.md).  A unit from a TRUSTED directory --
-   $M9LIBRARY or the installed StdLib -- may be UNSAFE or FOR "C":
+   $M9LIBRARY or the installed library (LibPlace) -- may be UNSAFE or
+   FOR "C":
    that is the shipped library's own audited foreign boundary.  A
    unit from anywhere else (the main file, a named dependency, -I
    directories, the main file's neighbours) may not, and is refused
@@ -1729,6 +2050,9 @@ VAR
   found, mainTrust : BOOL ;
 
 BEGIN
+  (* first, because --help and every default below ask where this
+     compiler is *)
+  Locate () ;
   IF Io.ArgCount () < 2 THEN
     (* no arguments is a mistake and exits 1; asking for help is not
        and exits 0.  Conflating the two is why scripts check output
@@ -1787,12 +2111,14 @@ BEGIN
        DirOf's own answer (empty means no directory) true. *)
     IF LEN (DirOf (main)) = 0 THEN DirAdd ('.', FALSE)
     ELSE DirAdd (DirOf (main), FALSE) END ;
-    (* Last, and only as a fallback: where a package installs the
-       standard modules.  An installed compiler that cannot find its
-       own library without the user exporting a variable is a
-       compiler nobody installs twice.  In a source tree the
-       directory does not exist and this costs one failed open. *)
-    DirAdd (StdLib, TRUE) ;
+    (* Last, and only as a fallback: where the standard modules are
+       installed -- beside this compiler when it has a library of its
+       own, the package's place otherwise (LibPlace).  An installed
+       compiler that cannot find its own library without the user
+       exporting a variable is a compiler nobody installs twice.  In
+       a source tree the directory does not exist and this costs one
+       failed open. *)
+    DirAdd (LibPlace (), TRUE) ;
 
     (* the main file goes through the path too, if it does not read
        as given.  So `m9c Json.m9` and even `m9c Json` work with a

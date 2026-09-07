@@ -49,7 +49,7 @@ run Hello Io DynStr
 run Concat Io DynStr
 run Sem Ast DynStr Fmt Print Text
 run Doc Ast DynStr Text Print Lex
-run M9c Io Ast Parse Gen Sem DynStr Doc Lex
+run M9c Io Ast Parse Gen Sem DynStr Doc Lex System
 run Gen Ast DynStr
 run Diag DynStr Io Lex
 # LibmGate is a gendiff-only fixture (not in gentest.pas / runtime/gen):

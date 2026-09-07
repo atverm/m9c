@@ -119,13 +119,26 @@ void m9_sha256_hex (const void *src, int64_t n, char *hex)
 }
 #endif
 
-#include <sys/random.h>
-
 /* sixteen bytes of kernel entropy for uuid4 -- /dev/urandom reads
  * ZERO bytes through a size-probing file reader (device files have
- * size 0), which is how the passport's first mint found this. */
+ * size 0), which is how the passport's first mint found this.
+ * On Windows the same sixteen bytes come from the system's preferred
+ * generator through CNG (link -lbcrypt: not among the libraries the
+ * mingw driver adds on its own). */
+#ifdef _WIN32
+#include <windows.h>
+#include <bcrypt.h>
+int m9_rand16 (void *buf)
+{
+  return BCRYPT_SUCCESS (BCryptGenRandom (NULL, buf, 16,
+                                          BCRYPT_USE_SYSTEM_PREFERRED_RNG))
+         ? 0 : -1;
+}
+#else
+#include <sys/random.h>
 int m9_rand16 (void *buf)
 {
   return getrandom (buf, 16, 0) == 16 ? 0 : -1;
 }
+#endif
 

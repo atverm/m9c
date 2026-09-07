@@ -6,9 +6,9 @@
 const m9_exc HttpServer_BindError = { "BindError" };
 
 extern int tcp_connect (const void *, int);
-extern int64_t read (int, void *, size_t);
-extern int64_t write (int, const void *, size_t);
-extern int close (int);
+extern int64_t tcp_read (int, void *, size_t);
+extern int64_t tcp_write (int, const void *, size_t);
+extern int tcp_close (int);
 extern int tls_connect (const void *, int);
 extern int64_t tls_read (int, void *, size_t);
 extern int64_t tls_write (int, const void *, size_t);
@@ -257,7 +257,7 @@ void HttpServer_Serve (HttpServer_Router * r, int64_t port, int64_t maxRequests,
     if (err->exc) goto L_fin_m9t3;
   }
 L_fin_m9t3: ;
-  n = (int64_t)(close (((int)(lfd))));
+  n = (int64_t)(tcp_close (((int)(lfd))));
   if (m9t2) goto L_ret;
   if (err->exc) goto L_ret;
 L_ret: ;
@@ -407,7 +407,7 @@ static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9
   if (err->exc) goto L_ret;
   wire = DynStr_Bytes (&(scratch), DynStr_View (d, err), false, err);
   if (err->exc) goto L_ret;
-  n = (int64_t)(write (((int)(fd)), ((void *)(wire).p), ((size_t)((wire).len))));
+  n = (int64_t)(tcp_write (((int)(fd)), ((void *)(wire).p), ((size_t)((wire).len))));
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -434,7 +434,7 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
   buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), HttpServer_ReqMax, err);
   if (err->exc) goto L_ret;
   bool m9t1 = false; (void) m9t1;
-  n = (int64_t)(read (((int)(fd)), ((void *)(buf).p), ((size_t)(HttpServer_ReqMax))));
+  n = (int64_t)(tcp_read (((int)(fd)), ((void *)(buf).p), ((size_t)(HttpServer_ReqMax))));
   if ((n <= INT64_C(0))) {
     m9t1 = true;
     goto L_fin_m9t2;
@@ -491,7 +491,7 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
   HttpServer_Respond (fd, INT64_C(404), ((m9_sl_CHAR){ (uint32_t *) m9s12, 10 }), ((m9_sl_CHAR){ (uint32_t *) m9s13, 8 }), err);
   if (err->exc) goto L_fin_m9t2;
 L_fin_m9t2: ;
-  n = (int64_t)(close (((int)(fd))));
+  n = (int64_t)(tcp_close (((int)(fd))));
   if (m9t1) goto L_ret;
   if (err->exc) goto L_ret;
 L_ret: ;

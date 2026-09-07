@@ -36,17 +36,53 @@
    default verify paths are loaded, SSL_VERIFY_PEER is on, and
    SSL_set1_host makes the hostname part of the handshake rather than
    something a caller is trusted to check afterwards.  SNI is set from
-   the same name, because most hosts worth reaching are virtual.    */
+   the same name, because most hosts worth reaching are virtual.
+
+   WINDOWS (2026-09-06): the same file, three substitutions and one
+   addition.  SRWLOCK and INIT_ONCE stand in for the pthread pair
+   (both are {0} by contract, tcpshim's idiom); the socket is closed
+   through tcp_close, because a Winsock SOCKET is a kernel handle and
+   not a C-runtime descriptor, so libc's close does not apply to it
+   (the step-4 finding, and the POSIX side calls tcp_close too so
+   there is one code path); the results are int64_t, which is what
+   the generated C declares for C.SSizeT on both platforms.  The
+   addition is where the TRUST comes from: OpenSSL's default verify
+   paths are its BUILD's OPENSSLDIR, and for the MSYS2 packages that
+   is the package prefix's etc/ssl (`openssl.exe version -d` on the
+   mingw64 build answers "/mingw64/etc/ssl", the ucrt64 twin
+   "/ucrt64/etc/ssl") -- a directory that exists on no user's machine
+   -- so on Windows the roots are imported from the system's own ROOT
+   store through crypt32.  Measured under wine: with the default paths
+   alone a public host fails verification (20, unable to get local
+   issuer certificate); with the import it is trusted and the three
+   badssl.com negatives (wrong host, expired, self-signed) are still
+   refused, line for line as on Linux.  The default paths are still
+   loaded, because they are also how $SSL_CERT_FILE is honoured, and
+   that is how threads.sh trusts its self-signed server on every
+   platform.
+   Link: -lssl -lcrypto -lcrypt32 -lws2_32 there, -lssl -lcrypto here. */
+#ifndef _WIN32
 #define _POSIX_C_SOURCE 200112L
+#endif
+#ifdef _WIN32
+/* wincrypt.h BEFORE the OpenSSL headers: it defines X509_NAME and a
+   few more as integer macros, and openssl/types.h undefines them --
+   which only works in this order */
+#include <windows.h>
+#include <wincrypt.h>
+#endif
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 #include <openssl/x509v3.h>
-#include <pthread.h>
+#include <stdint.h>
 #include <string.h>
-#include <unistd.h>
+#ifndef _WIN32
+#include <pthread.h>
 #include <sys/types.h>
+#endif
 
 int tcp_connect (const char *host, int port);   /* tcpshim.c */
+int tcp_close (int fd);                         /* tcpshim.c */
 
 /* eight was the old limit and it was exactly the number of workers a
    reader is likely to start; a handle table is bytes, so this is the
@@ -59,9 +95,42 @@ static struct {
   int used;
 } slots[TLS_MAX];
 
+static SSL_CTX *shared_ctx;
+
+#ifdef _WIN32
+static SRWLOCK slot_lock = SRWLOCK_INIT;
+static INIT_ONCE ctx_once = INIT_ONCE_STATIC_INIT;
+#define LOCK()   AcquireSRWLockExclusive (&slot_lock)
+#define UNLOCK() ReleaseSRWLockExclusive (&slot_lock)
+#else
 static pthread_mutex_t slot_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_once_t ctx_once = PTHREAD_ONCE_INIT;
-static SSL_CTX *shared_ctx;
+#define LOCK()   pthread_mutex_lock (&slot_lock)
+#define UNLOCK() pthread_mutex_unlock (&slot_lock)
+#endif
+
+#ifdef _WIN32
+/* every certificate in the machine's ROOT store, DER as crypt32 holds
+   it, into the context's own store.  A certificate the parser refuses
+   is skipped, and whatever that left on OpenSSL's per-thread error
+   queue is cleared at the end: SSL_get_error reads that queue, and a
+   stale entry would turn a later clean shutdown into an error. */
+static void add_windows_roots (SSL_CTX *c)
+{
+  HCERTSTORE st = CertOpenSystemStoreA (0, "ROOT");
+  X509_STORE *xs = SSL_CTX_get_cert_store (c);
+  PCCERT_CONTEXT cc = NULL;
+  if (st == NULL) return;
+  while ((cc = CertEnumCertificatesInStore (st, cc)) != NULL)
+  {
+    const unsigned char *p = cc->pbCertEncoded;
+    X509 *x = d2i_X509 (NULL, &p, (long) cc->cbCertEncoded);
+    if (x != NULL) { X509_STORE_add_cert (xs, x); X509_free (x); }
+  }
+  CertCloseStore (st, 0);
+  ERR_clear_error ();
+}
+#endif
 
 static void make_ctx (void)
 {
@@ -73,30 +142,51 @@ static void make_ctx (void)
     SSL_CTX_free (c);
     return;
   }
+#ifdef _WIN32
+  add_windows_roots (c);
+#endif
   SSL_CTX_set_verify (c, SSL_VERIFY_PEER, NULL);
   shared_ctx = c;
 }
+
+#ifdef _WIN32
+static BOOL CALLBACK make_ctx_once (PINIT_ONCE o, PVOID p, PVOID *c)
+{
+  (void) o; (void) p; (void) c;
+  make_ctx ();
+  return TRUE;
+}
+static void ctx_init (void)
+{
+  InitOnceExecuteOnce (&ctx_once, make_ctx_once, NULL, NULL);
+}
+#else
+static void ctx_init (void)
+{
+  pthread_once (&ctx_once, make_ctx);
+}
+#endif
 
 /* a free slot, marked used before the lock is dropped so no other
    thread can take it while this one handshakes */
 static int claim (void)
 {
   int h;
-  pthread_mutex_lock (&slot_lock);
+  LOCK ();
   for (h = 0; h < TLS_MAX; h++)
     if (!slots[h].used) { slots[h].used = 1; slots[h].ssl = NULL;
                           slots[h].fd = -1; break; }
-  pthread_mutex_unlock (&slot_lock);
+  UNLOCK ();
   return h == TLS_MAX ? -1 : h;
 }
 
 static void release (int h)
 {
-  pthread_mutex_lock (&slot_lock);
+  LOCK ();
   slots[h].ssl = NULL;
   slots[h].fd = -1;
   slots[h].used = 0;
-  pthread_mutex_unlock (&slot_lock);
+  UNLOCK ();
 }
 
 int tls_connect (const char *host, int port)
@@ -104,7 +194,7 @@ int tls_connect (const char *host, int port)
   int h, fd;
   SSL *ssl;
 
-  pthread_once (&ctx_once, make_ctx);
+  ctx_init ();
   if (shared_ctx == NULL) return -1;
 
   h = claim ();
@@ -116,7 +206,7 @@ int tls_connect (const char *host, int port)
   if (fd < 0) { release (h); return -1; }
 
   ssl = SSL_new (shared_ctx);
-  if (ssl == NULL) { close (fd); release (h); return -1; }
+  if (ssl == NULL) { tcp_close (fd); release (h); return -1; }
 
   SSL_set_fd (ssl, fd);
   SSL_set_tlsext_host_name (ssl, host);
@@ -124,7 +214,7 @@ int tls_connect (const char *host, int port)
   if (SSL_connect (ssl) != 1)
   {
     SSL_free (ssl);
-    close (fd);
+    tcp_close (fd);
     release (h);
     return -1;
   }
@@ -134,7 +224,7 @@ int tls_connect (const char *host, int port)
   return h;
 }
 
-ssize_t tls_read (int h, void *buf, size_t n)
+int64_t tls_read (int h, void *buf, size_t n)
 {
   int got;
   if (h < 0 || h >= TLS_MAX || !slots[h].used || slots[h].ssl == NULL)
@@ -147,7 +237,7 @@ ssize_t tls_read (int h, void *buf, size_t n)
   return got == 0 ? 0 : -1;
 }
 
-ssize_t tls_write (int h, const void *buf, size_t n)
+int64_t tls_write (int h, const void *buf, size_t n)
 {
   int put;
   if (h < 0 || h >= TLS_MAX || !slots[h].used || slots[h].ssl == NULL)
@@ -167,6 +257,6 @@ int tls_close (int h)
      while this one tears down; the SSL object is this caller's */
   release (h);
   if (ssl != NULL) { SSL_shutdown (ssl); SSL_free (ssl); }
-  if (fd >= 0) close (fd);
+  if (fd >= 0) tcp_close (fd);
   return 0;
 }

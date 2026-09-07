@@ -26,9 +26,28 @@ TYPE
     status : I64 ;            (* the exit status; minus the signal number
                                  when the program was killed by one *)
     out, err : STR ;          (* everything it wrote, each stream whole *)
+    stopped : BOOL ;          (* it ran past the limit and was stopped:
+                                 what it had written by then is above,
+                                 and status is the kill.  Never TRUE
+                                 from Exec, which sets no limit. *)
   END ;
 
 EXCEPTION NoPool (i, n: I64) ;
+
+PROCEDURE Os () : STR ;
+  (* the platform this program is running on, as a VALUE: 'linux',
+     'windows', 'macos', or 'posix' for another Unix.  M9 has no
+     conditional compilation by design, so a program that must branch
+     on the platform -- a path separator, where a library lives --
+     asks at run time and both branches stay in the text where a
+     reviewer can read them. *)
+PROCEDURE Executable (VAR pool: POOL) : STR RAISES ValueRange ;
+  (* the running executable's resolved path, as the kernel knows it,
+     or empty when the system will not say.  NOT Program, which is
+     how the program was CALLED and may be a bare name found on PATH:
+     this is where the binary IS, which is what a tool that ships
+     beside its own library needs to find it.  On Io's path wire,
+     bytes as CHARs, so the answer can be handed to Io as it is. *)
 
 PROCEDURE Cores () : I64 ;
   (* processors this process may run on right now *)
@@ -59,7 +78,29 @@ PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
      empty slice.  IOError when it could not be started at all (not
      found, not executable); a program that starts and fails answers
      with its status.  stdin and both streams are pumped together, so
-     a large input and a large output do not deadlock. *)
+     a large input and a large output do not deadlock.  It waits as
+     long as the program takes: ExecWithin is the one that does not. *)
+
+PROCEDURE ExecWithin (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
+                      RO input: STR ; RO env: SLICE OF STR ; seconds: F64)
+  : Result RAISES ValueRange, Io.IOError ;
+  (* Exec, with a deadline over the whole run -- starting it, both
+     streams, and its exit.  When the time is up the program AND
+     EVERYTHING IT STARTED are killed (its own process group on
+     POSIX, a job object on Windows), `stopped` answers TRUE, and
+     what the program had written by then is still in `out` and
+     `err`: a bounded run reports, it does not vanish.
+
+     The children matter as much as the child.  A program that has
+     exited while something it started still holds its stdout is the
+     case that waits forever without this, because what is waited on
+     is the STREAMS ending and not the exit.
+
+     `seconds` not greater than zero is no limit at all, which is
+     exactly Exec.  A bounded run is put in a group of its own so
+     that it can be killed whole, and a group of its own no longer
+     receives the terminal's Ctrl-C: that is the price of the bound,
+     and it is why an unbounded run is not given one. *)
 
 PROCEDURE Program (VAR pool: POOL) : STR RAISES ValueRange, IndexError ;
   (* argv[0]: how this program was invoked *)
@@ -88,6 +129,12 @@ END System.
 UNSAFE DEFINITION MODULE FOR "C" csys ;
 
 PROCEDURE NCpu = "m9_cores" () : C.Int  [REENTRANT] ;
+PROCEDURE OsCode = "m9_os" () : C.Int  [REENTRANT] ;
+  (* 1 linux, 2 windows, 3 macos, 0 another POSIX; Os spells them *)
+PROCEDURE ExePath = "m9_exe_path" (buf: C.MutPtr ; cap: C.Int) : C.Int
+  [REENTRANT] ;
+  (* the executable's path as bytes into buf, its length; -1 when the
+     system will not say *)
 PROCEDURE MemInfo = "m9_meminfo" (buf: C.MutPtr)  [REENTRANT] ;
   (* four int64 into buf: resident, peak, total, available *)
 PROCEDURE PoolN = "m9_pool_count" () : C.SSizeT  [REENTRANT] ;
@@ -97,14 +144,20 @@ PROCEDURE PoolI = "m9_pool_info" (i: C.SSizeT ; buf: C.MutPtr) : C.Int
      range.  Both take the registry's own lock. *)
 PROCEDURE ExecStart = "m9_exec" (argv: C.ConstPtr ; n: C.Int ;
                                  input: C.ConstPtr ; inlen: C.SSizeT ;
-                                 env: C.ConstPtr ; envn: C.Int) : C.Int
+                                 env: C.ConstPtr ; envn: C.Int ;
+                                 limitMs: C.SSizeT) : C.Int
   [REENTRANT] ;
   (* n NUL-terminated UTF-8 strings back to back, the program first;
      inlen bytes of stdin (0 = an immediate EOF); envn NUL-terminated
-     NAME=VALUE strings, each merged over the inherited environment.
-     Answers a handle, or -1 when it could not start.  The slot table
-     is under its own lock, so two threads may run programs at once. *)
+     NAME=VALUE strings, each merged over the inherited environment;
+     limitMs milliseconds for the whole run, after which the child
+     and its children are killed (0 or less: no limit, and then
+     nothing is done differently).  Answers a handle, or -1 when it
+     could not start.  The slot table is under its own lock, so two
+     threads may run programs at once. *)
 PROCEDURE ExecStatus = "m9_exec_status" (h: C.Int) : C.Int  [REENTRANT] ;
+PROCEDURE ExecStopped = "m9_exec_stopped" (h: C.Int) : C.Int  [REENTRANT] ;
+  (* 1 when the limit ran out and the run was killed *)
 PROCEDURE ExecLen = "m9_exec_len" (h: C.Int ; which: C.Int) : C.SSizeT
   [REENTRANT] ;
 PROCEDURE ExecCopy = "m9_exec_copy" (h: C.Int ; which: C.Int ;
@@ -119,12 +172,37 @@ UNSAFE IMPLEMENTATION MODULE System ;
 IMPORT Io ;
 IMPORT DynStr ;
 IMPORT Text ;
-FROM csys IMPORT NCpu, MemInfo, PoolN, PoolI, ExecStart, ExecStatus,
-                 ExecLen, ExecCopy, ExecRelease ;
+FROM csys IMPORT NCpu, OsCode, ExePath, MemInfo, PoolN, PoolI, ExecStart,
+                 ExecStatus, ExecStopped, ExecLen, ExecCopy, ExecRelease ;
 
 CONST
   Out = 1 ;
   Err = 2 ;
+  MaxPath = 4096 ;   (* Io's MaxEnv; a longer path is no answer *)
+
+(* the runtime answers a number so that the words appear here, once
+   each, in the one place a reader looks for them *)
+PROCEDURE Os () : STR =
+BEGIN
+  CASE I64 (OsCode ()) OF
+  | 1 : RETURN 'linux'
+  | 2 : RETURN 'windows'
+  | 3 : RETURN 'macos'
+  ELSE  RETURN 'posix'
+  END
+END Os ;
+
+PROCEDURE Executable (VAR pool: POOL) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  buf : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  buf := NEW (scratch, BYTE, MaxPath) ;
+  n := I64 (ExePath (ADR (buf), C.Int (MaxPath))) ;
+  IF n < 0 THEN RETURN '' END ;
+  RETURN DynStr.Chars (pool, SLICE (buf, 0, n))
+END Executable ;
 
 PROCEDURE Cores () : I64 =
 BEGIN
@@ -205,15 +283,23 @@ BEGIN
   RETURN DynStr.FromUtf8 (pool, SLICE (b, 0, n))
 END Stream ;
 
-PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
-                RO input: STR ; RO env: SLICE OF STR)
+PROCEDURE ExecWithin (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
+                      RO input: STR ; RO env: SLICE OF STR ; seconds: F64)
   : Result RAISES ValueRange, Io.IOError =
 VAR
   scratch : POOL ;
   block, eblock, inb, b : SLICE OF BYTE ;
-  total, etotal, i, k, h : I64 ;
+  total, etotal, i, k, h, ms : I64 ;
   r : Result ;
 BEGIN
+  (* the limit in milliseconds, and a limit that was asked for is
+     never rounded away to none: half a millisecond is a very short
+     deadline, not an unbounded run *)
+  ms := 0 ;
+  IF seconds > 0.0 THEN
+    ms := I64 (seconds * 1000.0) ;
+    IF ms < 1 THEN ms := 1 END
+  END ;
   (* the argument block: every string as UTF-8, each followed by its NUL *)
   b := DynStr.Utf8 (scratch, prog) ;
   total := LEN (b) + 1 ;
@@ -239,13 +325,21 @@ BEGIN
 
   h := I64 (ExecStart (ADR (block), C.Int (LEN (args) + 1),
                        ADR (inb), C.SSizeT (LEN (inb)),
-                       ADR (eblock), C.Int (LEN (env)))) ;
+                       ADR (eblock), C.Int (LEN (env)), C.SSizeT (ms))) ;
   IF h < 0 THEN RAISE Io.IOError (prog) END ;
   r.status := I64 (ExecStatus (C.Int (h))) ;
+  r.stopped := I64 (ExecStopped (C.Int (h))) # 0 ;
   r.out := Stream (pool, h, Out) ;
   r.err := Stream (pool, h, Err) ;
   ExecRelease (C.Int (h)) ;
   RETURN r
+END ExecWithin ;
+
+PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
+                RO input: STR ; RO env: SLICE OF STR)
+  : Result RAISES ValueRange, Io.IOError =
+BEGIN
+  RETURN ExecWithin (pool, prog, args, input, env, 0.0)
 END Exec ;
 
 PROCEDURE Program (VAR pool: POOL) : STR RAISES ValueRange, IndexError =

@@ -46,13 +46,17 @@ PROCEDURE Connect = "tcp_connect" (host: C.ConstPtr ; port: C.Int)
   (* the shim resolves and connects; SERIAL until its thread safety
      is audited, not asserted -- REENTRANT is a claim, not a default *)
 
-PROCEDURE Read = "read" (fd: C.Int ; buf: C.MutPtr ; n: C.SizeT)
+(* The three I/O calls are the shim's, not libc's: a socket is a
+   descriptor on POSIX and read/write/close serve, but on Windows it
+   is a handle the C runtime does not know, so the shim spells them
+   recv/send/closesocket there and the generated C names neither.  *)
+PROCEDURE Read = "tcp_read" (fd: C.Int ; buf: C.MutPtr ; n: C.SizeT)
   : C.SSizeT  [REENTRANT] ;
 
-PROCEDURE Write = "write" (fd: C.Int ; buf: C.ConstPtr ; n: C.SizeT)
+PROCEDURE Write = "tcp_write" (fd: C.Int ; buf: C.ConstPtr ; n: C.SizeT)
   : C.SSizeT  [REENTRANT] ;
 
-PROCEDURE Close = "close" (fd: C.Int) : C.Int  [REENTRANT] ;
+PROCEDURE Close = "tcp_close" (fd: C.Int) : C.Int  [REENTRANT] ;
 
 (* TLS, from tlsshim.c.  The handle is an int for the same reason the
    socket is: a small non-negative number, -1 for failure, and no

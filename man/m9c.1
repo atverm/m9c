@@ -382,15 +382,26 @@ directory, leftmost first;
 .IP \(bu 3
 the directories in
 .BR $M9LIBRARY ,
-separated by colons, as
+separated as
 .B $PATH
-is;
+is (colons; semicolons on Windows);
 .IP \(bu 3
 the directory
 .IR FILE .m9
-itself came from.
+itself came from;
+.IP \(bu 3
+the library beside this compiler,
+.IR PREFIX /lib/m9
+where
+.I PREFIX
+is two directories up from the
+.B m9c
+executable \(em or, when there is none there, the installed
+.IR /usr/lib/m9 .
+One or the other, never both: a relocated tree does not pick modules
+out of the package's library.
 .PP
-That last entry is why
+The third entry is why
 .B m9c corpus/M9c.m9
 needs no
 .B \-I
@@ -398,6 +409,28 @@ at all: a module's neighbours are almost always its imports. The main
 argument is resolved through the path too, so with a library set
 .B m9c \-c DynStr
 works and the argument may be a module name rather than a path.
+.PP
+The last entry is what makes a compiler that lives anywhere work with
+no variable set: an install under
+.I /usr
+finds
+.IR /usr/lib/m9 ,
+a tree
+.B build.sh
+made under some other
+.I DESTDIR
+finds its own, and the Windows zip, whose
+.I bin/
+and
+.I lib/m9/
+sit under one directory, finds that one.
+.B m9c
+asks the operating system where its executable is
+.RB ( System.Executable ),
+not
+.IR argv[0] ,
+which is whatever the caller typed; where the system cannot say, the
+installed locations are all there is.
 .PP
 A dependency named explicitly on the command line still works and
 still wins, because a path someone typed is a statement about which
@@ -442,8 +475,12 @@ The C compiler is
 .B $CC
 if that is set, and
 .B cc
-otherwise. A file name containing a single quote is refused rather
-than composed into a shell command.
+otherwise. It is started directly, with its arguments as a list: no
+shell is involved, so nothing is quoted and a file or directory name
+may contain a quote, a space or any other character a shell would
+read. (Through 0.7.0 the command was composed as one shell line, and a
+quote in a name was refused, or, in an include directory, not even
+noticed.)
 .
 .SH SUPPLIED FLAGS
 .B m9c
@@ -468,7 +505,15 @@ is
 .B $M9RUNTIME
 when that is set and has
 .I m9rt.h
-in it, else the installed headers in
+in it, else the runtime beside this compiler \(em
+.IR PREFIX /runtime
+(a source tree, or the zip) or
+.IR PREFIX /include/m9
+(an install), with
+.I PREFIX
+as under
+.B "FINDING MODULES"
+\(em else the installed headers in
 .IR /usr/include/m9 ,
 else
 .I runtime/
@@ -485,20 +530,59 @@ inline a body that carries its own bounds and overflow tests, so the
 small helpers a hot loop calls stay calls; measured on a real
 numerical kernel, raising the budget was worth a factor 2.4 with
 results identical to the bit \(em more than removing the checks
-outright would have bought. clang accepts and ignores the parameter;
+outright would have bought. clang accepts and ignores the parameter.
+On Windows
+.B \-flto\-partition=one
+joins them, to keep a link quiet. gcc splits an LTO link into
+partitions and compiles them through a
+.B make
+it expects on PATH; the bundled Windows toolchain ships none, so any
+link of two or more partitions falls back to serial compilation and
+says so \(em on hello world, every time. One partition has nothing to
+parallelise and so nothing to report, and the link was serial anyway;
+measured on two real links it costs nothing either way (the compiler's
+own came out a second faster and 2% smaller, a small program the same
+speed and 1% larger).
+.B "This is not a Windows-only wart."
+On Linux, where
+.B make
+is present, plain
+.B \-flto
+is
+.BR \-flto=1 ,
+which prints the same warning whenever the partitioner makes two \(em
+measured, gcc 15. The quiet and faster spelling there is
+.BR \-flto=auto ;
+m9c does not yet supply it, and that is owed work rather than a
+decision;
 .IP \(bu 3
 and, when linking, one object per module in the import closure it has
 just resolved \(em these are not guessed, they are the modules it read
 and checked a moment ago \(em together with the runtime and
-.BR \-lm .
+.BR \-lm ,
+and on Windows
+.B \-lws2_32
+as well, because the runtime's TCP shim is a member on every platform
+and its socket calls live in Winsock there rather than in the C
+library (an import library costs a program that opens no socket
+nothing).
 .PP
 The runtime that is linked is the one whose header was included: the
-sources beside that header when they are there, and the installed
-.I /usr/lib/libm9rt.a
-only when they are not. An installed archive underneath a source
-tree's header is how a newly added runtime function becomes an
-undefined reference at link time rather than a missing declaration at
-compile time.
+sources beside that header when they are there, and an archive only
+when they are not \(em
+.IR PREFIX /lib/libm9rt.a
+beside this compiler (linked as
+.B \-L
+.I PREFIX/lib
+.BR \-lm9rt ),
+else the installed
+.IR /usr/lib/libm9rt.a .
+An installed archive underneath a source tree's header is how a newly
+added runtime function becomes an undefined reference at link time
+rather than a missing declaration at compile time; through 0.7.0 a
+compiler built in a source tree and run with no variable set did
+exactly that, because the defaults were the install locations spelled
+as constants rather than places relative to the executable.
 .PP
 A missing object is named, with the command that makes it, because the
 alternative is the C linker reporting our omission in its own
@@ -607,15 +691,17 @@ supplies it there itself.
 .SH ENVIRONMENT
 .TP
 .B M9LIBRARY
-Colon-separated list of directories to search for imported modules,
-after any
+List of directories to search for imported modules, after any
 .B \-I
-directories.
+directories, separated as
+.B $PATH
+is on the platform: colons, or semicolons on Windows.
 .TP
 .B M9RUNTIME
 The directory holding
 .IR m9rt.h ,
-searched before the installed headers when
+searched before the runtime beside the compiler and the installed
+headers when
 .B m9c
 supplies the include paths itself. If it names a directory with no
 .I m9rt.h
@@ -630,7 +716,22 @@ The C compiler to invoke for
 and
 .BR \-o .
 Defaults to
-.BR cc .
+.BR cc ;
+on Windows, to the
+.B gcc
+bundled beside the compiler
+.RI ( PREFIX /ucrt64/bin/gcc.exe)
+when there is one, and the archiver for
+.B \-\-ar
+is found the same way.
+This is the compiler's
+.IR name ,
+a word looked up on the PATH or a path to the executable, not a
+command line: there is no shell to split it, so
+.B CC='gcc \-m32'
+would be looked up as one program and not found. Flags for the
+compiler go after
+.BR \-\- .
 .
 .SH EXIT STATUS
 .TP

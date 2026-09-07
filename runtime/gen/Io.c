@@ -108,6 +108,19 @@ L_ret: ;
   return;
 }
 
+void Io_Err (m9_sl_CHAR s, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_put_chars_err (((void *)(s).p), ((size_t)((s).len)));
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
 int64_t Io_ArgCount (m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -233,6 +246,14 @@ m9_sl_CHAR Io_Env (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
+  }
+  if ((n > Io_MaxEnv)) {
+    buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), n, err);
+    if (err->exc) goto L_ret;
+    n = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_getenv (((void *)(nb).p), ((void *)(buf).p), ((int)(n)))) m9gv = m9_getenv (((void *)(nb).p), ((void *)(buf).p), ((int)(n))); m9_mon_leave (&m9_gate_cio); m9gv; }));
+    if ((n > (buf).len)) {
+      n = (buf).len;
+    }
   }
   err->res = m9res;
   m9ret = DynStr_Chars (pool, ({ __typeof__(buf) m9t1 = buf; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);

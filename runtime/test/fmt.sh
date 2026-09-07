@@ -22,7 +22,7 @@ rm -rf "$W"; mkdir -p "$W"
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Fmt.c \
-    ../gen/Text.c ../gen/Lex.c ../gen/Ast.c ../gen/Print.c \
+    ../gen/Text.c ../gen/System.c ../gen/Lex.c ../gen/Ast.c ../gen/Print.c \
     ../gen/Parse.c ../gen/Sem.c ../gen/Doc.c ../gen/Gen.c \
     ../gen/Io.c ../gen/Time.c ../gen/M9c.c -lm -o "$W/m9c"
 ( cd "$W" && M9RUNTIME="$RT" M9LIBRARY="$SRC" ./m9c --make -o m9fmt "$SRC/M9fmt.m9" >build.log 2>&1 ) || \

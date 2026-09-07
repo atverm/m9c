@@ -14,6 +14,7 @@ extern const m9_exc System_NoPool;
 
 #define System_Out INT64_C(1)
 #define System_Err INT64_C(2)
+#define System_MaxPath INT64_C(4096)
 
 #ifndef M9SL_m9_arr_4_int64_t
 #define M9SL_m9_arr_4_int64_t
@@ -48,14 +49,18 @@ struct System_Result {
   int64_t status;
   m9_sl_CHAR out;
   m9_sl_CHAR err_;
+  bool stopped;
 };
 
+m9_sl_CHAR System_Os (m9_state *err);
+m9_sl_CHAR System_Executable (m9_pool *pool, m9_state *err);
 int64_t System_Cores (m9_state *err);
 System_Memory System_Mem (m9_state *err);
 int64_t System_PoolCount (m9_state *err);
 System_PoolInfo System_PoolAt (int64_t i, m9_state *err);
 int64_t System_PoolBytes (m9_state *err);
 System_Result System_Exec (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args, m9_sl_CHAR input, m9_sl_m9_sl_CHAR env, m9_state *err);
+System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args, m9_sl_CHAR input, m9_sl_m9_sl_CHAR env, double seconds, m9_state *err);
 m9_sl_CHAR System_Program (m9_pool *pool, m9_state *err);
 m9_sl_m9_sl_CHAR System_Args (m9_pool *pool, m9_state *err);
 bool System_Flag (m9_sl_CHAR name, m9_state *err);

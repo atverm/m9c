@@ -9,7 +9,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <string.h>
+#ifndef _WIN32
 #include <pthread.h>
+#endif
 #include <stdlib.h>
 #include <math.h>
 
@@ -382,8 +384,31 @@ static inline uint64_t m9_u64 (int64_t v, m9_state *err)
    locking one returns 0.  Checked on this machine before relying on
    it.  POSIX does not guarantee it, so a port to a libc where the
    initialisers are not all-zero needs an explicit init and this
-   comment is where to start looking. */
+   comment is where to start looking.
 
+   WINDOWS IS THAT PORT, AND IT DOES NOT USE winpthreads.  There
+   PTHREAD_MUTEX_INITIALIZER is (intptr_t) -1, so a zeroed monitor is
+   an invalid mutex and lock returns EINVAL to a caller that does not
+   look.  The native primitives have the property glibc merely
+   happens to have: SRWLOCK_INIT and CONDITION_VARIABLE_INIT are
+   {0} BY CONTRACT (each is one pointer), so a zeroed record is an
+   initialised monitor.  They also need no DLL beside the program,
+   where winpthreads is libwinpthread-1.dll.  The struct below is
+   layout-identical to SRWLOCK + CONDITION_VARIABLE and the four
+   operations live in m9rt.c, so <windows.h> and its macros
+   (IN, OUT, min, max ...) never reach generated code. */
+
+#ifdef _WIN32
+typedef struct {
+  void *mu;                     /* SRWLOCK, exclusive mode      */
+  void *cv;                     /* CONDITION_VARIABLE            */
+} m9_mon;
+
+void m9_mon_enter (m9_mon *m);
+void m9_mon_leave (m9_mon *m);
+void m9_mon_wait (m9_mon *m);
+void m9_mon_signal (m9_mon *m);
+#else
 typedef struct {
   pthread_mutex_t mu;
   pthread_cond_t  cv;
@@ -405,6 +430,7 @@ static inline void m9_mon_wait (m9_mon *m)
    costs a re-test and nothing else. */
 static inline void m9_mon_signal (m9_mon *m)
 { pthread_cond_broadcast (&m->cv); }
+#endif
 
 /* THREAD (proc, arg).  The generator emits a trampoline per site
    that carries the moved argument and its own error slot; this only
@@ -574,18 +600,36 @@ int  m9_run (const void *cmd);                 /* system (), rc      */
 
 /* System (corpus/System.m9): the process seen from inside */
 int     m9_cores (void);
+/* The platform, as a VALUE: M9 has no conditional compilation, so a
+   program that must branch on it asks at run time.  1 Linux, 2
+   Windows, 3 macOS, 0 some other POSIX -- the M9 side spells the
+   names, so a number appears here and a word there, once each. */
+int     m9_os (void);
+/* the running executable's resolved path (readlink /proc/self/exe,
+   GetModuleFileName) as bytes into buf, its length; -1 when the
+   system will not say.  NOT argv[0], which is how the program was
+   CALLED and may be a bare name found on PATH. */
+int     m9_exe_path (void *buf, int cap);
 void    m9_meminfo (void *buf);                /* 4 x int64: resident, peak, total, available */
 int64_t m9_pool_count (void);
 int     m9_pool_info (int64_t i, void *buf);   /* 3 x int64: used, cap, blocks; 0 = no such pool */
 int     m9_exec (const void *argblock, int nargs,
                  const void *input, int64_t inlen,
-                 const void *envblock, int envn);   /* handle, or -1 */
+                 const void *envblock, int envn,
+                 int64_t limit_ms);                 /* handle, or -1 */
   /* input: inlen raw bytes fed to the child's stdin, then EOF (0 = an
      immediate EOF, never the parent's own stdin).  envblock: envn
      NUL-terminated NAME=VALUE strings back to back, each MERGED over
      the inherited environment -- a name already present is replaced,
-     PATH and the rest are kept (0 = inherit unchanged). */
+     PATH and the rest are kept (0 = inherit unchanged).
+     limit_ms: milliseconds the whole run may take -- starting, both
+     streams, and the exit -- after which the child AND ITS CHILDREN
+     are killed (its own process group on POSIX, a job object on
+     Windows) and m9_exec_stopped answers 1.  0 or less is no limit,
+     and then nothing is done differently: no group, no job, and a
+     Ctrl-C in a terminal still reaches the child. */
 int     m9_exec_status (int h);
+int     m9_exec_stopped (int h);               /* 1 = the limit ran out */
 int64_t m9_exec_len (int h, int which);        /* which: 1 stdout, 2 stderr */
 int64_t m9_exec_copy (int h, int which, void *buf, int64_t cap);
 void    m9_exec_release (int h);

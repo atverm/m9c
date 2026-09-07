@@ -19,6 +19,7 @@ void Io_WriteLine (m9_sl_CHAR s, m9_state *err);
 void Io_Write (m9_sl_CHAR s, m9_state *err);
 void Io_WriteI64 (int64_t v, m9_state *err);
 void Io_ErrLine (m9_sl_CHAR s, m9_state *err);
+void Io_Err (m9_sl_CHAR s, m9_state *err);
 int64_t Io_ArgCount (m9_state *err);
 void Io_Halt (int64_t code, m9_state *err);
 int64_t Io_ParseI64 (m9_sl_CHAR s, m9_state *err);

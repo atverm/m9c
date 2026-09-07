@@ -46,11 +46,11 @@ PROCEDURE Listen = "tcp_listen" (port: C.Int ; backlog: C.Int) : C.Int
   [SERIAL] ;
 PROCEDURE Accept = "tcp_accept" (fd: C.Int) : C.Int
   [SERIAL] ;
-PROCEDURE Read = "read" (fd: C.Int ; buf: C.MutPtr ; n: C.SizeT)
+PROCEDURE Read = "tcp_read" (fd: C.Int ; buf: C.MutPtr ; n: C.SizeT)
   : C.SSizeT  [REENTRANT] ;
-PROCEDURE Write = "write" (fd: C.Int ; buf: C.ConstPtr ; n: C.SizeT)
+PROCEDURE Write = "tcp_write" (fd: C.Int ; buf: C.ConstPtr ; n: C.SizeT)
   : C.SSizeT  [REENTRANT] ;
-PROCEDURE Close = "close" (fd: C.Int) : C.Int  [REENTRANT] ;
+PROCEDURE Close = "tcp_close" (fd: C.Int) : C.Int  [REENTRANT] ;
 
 END cedt.
 

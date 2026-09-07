@@ -29,6 +29,12 @@ PROCEDURE ErrLine (RO s: STR) ;
      them lost, and a log line interleaved into a data file is the
      same accident with a longer fuse.                            *)
 
+PROCEDURE Err (RO s: STR) ;
+  (* to STDERR without a newline, flushed -- Write's twin.  For
+     text that already carries its line ends: what a child process
+     wrote to its own stderr and System.Exec handed back whole,
+     which m9c forwards as it was, not one line at a time.        *)
+
 PROCEDURE ArgCount () : I64 ;
   (* how many command-line arguments there are, the program's own
      name INCLUDED as argument 0 -- C's convention, kept because
@@ -305,6 +311,11 @@ BEGIN
   PutErr (ADR (v), C.SizeT (LEN (v)))
 END ErrLine ;
 
+PROCEDURE Err (RO s: STR) =
+BEGIN
+  PutErr (ADR (s), C.SizeT (LEN (s)))
+END Err ;
+
 PROCEDURE Run (RO cmd: STR) : I64 RAISES ValueRange =
 VAR
   scratch : POOL ;
@@ -324,6 +335,17 @@ BEGIN
   buf := NEW (scratch, BYTE, MaxEnv) ;
   n := I64 (GetEnv (ADR (nb), ADR (buf), C.Int (MaxEnv))) ;
   IF n < 0 THEN RETURN '' END ;
+  (* GetEnv answers the value's TRUE length and copies what fitted,
+     so a value longer than MaxEnv is asked for again with room.  It
+     used to be cut at MaxEnv without a word -- a Windows PATH handed
+     on to a child compiler is exactly the value that is both long
+     and must keep its tail.  The clamp covers a value that grew
+     between the two calls. *)
+  IF n > MaxEnv THEN
+    buf := NEW (scratch, BYTE, n) ;
+    n := I64 (GetEnv (ADR (nb), ADR (buf), C.Int (n))) ;
+    IF n > LEN (buf) THEN n := LEN (buf) END
+  END ;
   RETURN DynStr.Chars (pool, SLICE (buf, 0, n))
 END Env ;
 
