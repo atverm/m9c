@@ -65,6 +65,12 @@ COMPILER=$(sed -n 's/^COMPILER="\(.*\)"/\1/p' "$R/build.sh")
 LIBRARY=$(sed -n '/^LIBRARY="/,/"/p' "$R/build.sh" | tr -d '"\\' | sed 's/^LIBRARY=//')
 for m in $COMPILER; do cp "$R/runtime/gen/$m.c" "$R/runtime/gen/$m.h" "$Z/bootstrap/"; done
 for m in $LIBRARY; do cp "$R/corpus/$m.m9" "$Z/lib/m9/"; done
+# the tutorial's own library modules -- not an example: a module the
+# examples IMPORT (chapter 3's Temps).  Derived, not named.
+for f in "$R"/docs/tutorial/examples/*.m9; do
+  b=$(basename "$f")
+  case $b in C[0-9]*|X[0-9]*) ;; *) cp "$f" "$Z/lib/m9/" ;; esac
+done
 cp "$R/runtime/m9rt.h" "$R"/runtime/*.c "$Z/runtime/"
 cp -r "$R/tools/vscode-m9/." "$Z/tools/vscode-m9/" ; rm -f "$Z/tools/vscode-m9/test.js"
 cp "$R/tools/release/win/Setup.m9" "$R/tools/release/win/WinTutor.m9" \
@@ -179,6 +185,24 @@ if [ "$rc" = 0 ] && [ -s "$Z/bin/m9tutor.exe" ]; then
          --data-binary "@$R/docs/tutorial/examples/$1.m9" \
          "http://127.0.0.1:$P/run" > "$W/r-$1.txt"
   }
+  # imports a module that is not an example -- the tutorial's own
+  # Temps.  The zip shipped the corpus library and not this, so the
+  # chapter answered `m9c: cannot find module Temps' (Alex,
+  # 2026-09-07).  It is also the check that the REFUSAL is tidy: a
+  # cell's reply carries the compiler's diagnostic and not its
+  # `N errors in cell.m9' summary.
+  cell C3Use
+  [ "$(head -1 "$W/r-C3Use.txt" | tr -d '\r')" = "exit 0" ] \
+    && ok "C3Use finds the tutorial's own Temps module" \
+    || { bad "C3Use"; head -3 "$W/r-C3Use.txt"; }
+  printf 'MODULE B ; VAR i : I64 ; x : F64 ; BEGIN i := x END B.' > "$W/bad.m9"
+  curl -s --max-time 300 -X POST --data-binary "@$W/bad.m9" \
+       "http://127.0.0.1:$P/run" > "$W/r-bad.txt"
+  grep -q 'cannot assign' "$W/r-bad.txt" \
+    && ! grep -q 'errors in cell.m9' "$W/r-bad.txt" \
+    && ok "a refusal is the diagnostic, without m9c's own summary" \
+    || { bad "the refusal carries the summary"; head -4 "$W/r-bad.txt"; }
+
   # reads a file by a RELATIVE path and its own Io.Arg default: the
   # empty-argument bug made this answer `cannot read ' with no name
   cell C15Stats
@@ -348,6 +372,23 @@ if grep -q 'Modula-9' "$W/tutindex.html" 2>/dev/null; then
 else
   bad "nothing answers on $TP after m9setup started the tutorial"
   tail -20 "$W/third.log" | sed 's/^/        /'
+  # AND KEEP THE EVIDENCE.  This check has failed intermittently --
+  # about two runs in five, always with `m9: unhandled IndexError'
+  # after m9setup says it is building the tutorial server, and never
+  # in a hand replay of the same sequence (five rounds, with m9setup
+  # built -g, all clean).  The work directory goes at the end of the
+  # run, so every occurrence so far has left nothing but those twenty
+  # lines.  A gate that cannot show what it saw cannot be debugged
+  # from its own output.
+  keep=/tmp/winzip-failed-$$
+  mkdir -p "$keep"
+  cp "$W"/*.log "$W"/r-*.txt "$keep/" 2>/dev/null
+  { echo "--- alive when the check failed ---"
+    for pid in $(ls /proc 2>/dev/null | grep -E '^[0-9]+$'); do
+      { tr '\0' ' ' < /proc/$pid/cmdline; echo; } 2>/dev/null |
+        grep -E '\.exe|wine' | sed "s/^/$pid /"
+    done; } > "$keep/alive.txt" 2>/dev/null
+  echo "        (logs kept in $keep)"
 fi
 # whatever it started is detached: find it by /proc, never by pattern-kill
 # a pid can vanish between the listing and the read, and the shell --
