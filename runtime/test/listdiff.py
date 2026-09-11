@@ -29,12 +29,18 @@ What is checked, each rule stated with the reason it is the rule:
      never sees is a module runtime/gen does not hold and the bootstrap
      cannot build.
 
-  3. A module's DIRECT imports are a subset of its gentest deps.  The
-     deps are what LoadExtern registers, so an import missing from
-     them is an unknown callee -- the 2026-09-11 failure exactly.  Not
-     equality: some lists carry the transitive closure, HttpServer
-     names Http for the foreign unit declared there, and changing any
-     of them moves the emitted #includes.
+  3. A module's DIRECT imports are a subset of its gentest deps, and
+     every dep is inside the module's import CLOSURE.  The deps are
+     what LoadExtern registers and what the generator #includes: an
+     import missing from them is an unknown callee (the 2026-09-11
+     failure), and a dep the module can never reach is a dead include
+     (Sem carried Fmt, Fmt carried DynStr, neither used -- removed the
+     same day).  Not equality with either the direct set or the
+     closure: some lists carry the closure and some the direct
+     imports, and changing one moves the emitted #includes.  A dep
+     outside the closure is excused BY NAME in EXTRA_DEPS with the
+     reason: HttpServer names Http because `FROM csock IMPORT` needs
+     the foreign unit declared in Http.m9.
 
   4. build.sh's LIBRARY is every corpus module except those named in
      NOT_INSTALLED with a reason each.  That list is what docgen and
@@ -46,6 +52,12 @@ What is checked, each rule stated with the reason it is the rule:
 
   6. build.sh's COMPILER is closed under direct imports, for the same
      reason at link time.
+
+  7. m9c.sh's `check M deps...` lines carry gentest.pas's deps for M.
+     They compile M with NAMED deps and compare the bytes with the
+     oracle's, and named deps win, so a stale line there emits an
+     #include the oracle does not and the gate diverges for a reason
+     that is not the compiler's.
 
 Exit status 1 with every disagreement named; 0 when all agree.
 """
@@ -61,6 +73,10 @@ NOT_GENERATED = {
     'LibmGate': 'gendiff-only fixture (96 libm-named locals)',
     'Lsp':      'program module built by m9c --make from the library',
     'M9fmt':    'program module built by m9c --make from the library',
+}
+# a gentest dep outside the module's import closure, and why it is there
+EXTRA_DEPS = {
+    'HttpServer': {'Http': 'FROM csock IMPORT: the foreign unit is declared in Http.m9'},
 }
 # a corpus module build.sh deliberately does not install
 NOT_INSTALLED = {
@@ -156,11 +172,29 @@ def main():
         if m not in corpus:
             fail(f'listdiff.py: {m} is excused from gentest.pas but is not in corpus/')
 
-    # 3. deps cover the direct imports
+    # 3. deps cover the direct imports, and reach no further than the closure
+    def closure(m, seen=None):
+        seen = set() if seen is None else seen
+        for d in direct_imports(m) if m in corpus else ():
+            if d not in seen:
+                seen.add(d)
+                closure(d, seen)
+        return seen
     for m, deps in gt.items():
         missing = direct_imports(m) - set(deps)
         if missing:
             fail(f'gentest.pas: {m} imports {sorted(missing)} but its deps are {deps}')
+        dead = set(deps) - closure(m) - set(EXTRA_DEPS.get(m, {}))
+        if dead:
+            fail(f'gentest.pas: {m} names {sorted(dead)} in its deps but never imports '
+                 f'{"it" if len(dead) == 1 else "them"}, directly or through another module '
+                 f'(remove, or excuse in EXTRA_DEPS with a reason)')
+    for m, extra in EXTRA_DEPS.items():
+        for d in extra:
+            if m not in gt or d not in gt[m]:
+                fail(f'listdiff.py: EXTRA_DEPS excuses {m} -> {d}, which gentest.pas does not list')
+            elif d in closure(m):
+                fail(f'listdiff.py: EXTRA_DEPS excuses {m} -> {d}, but {m} does import it')
 
     # 4. LIBRARY is the corpus minus the excused
     lib = shell_list('build.sh', 'LIBRARY')
@@ -187,6 +221,16 @@ def main():
     for m in comp:
         for d in sorted(direct_imports(m) - set(comp)):
             fail(f'build.sh COMPILER: {m} imports {d}, which is not in COMPILER')
+
+    # 7. m9c.sh's named-dep checks are gentest's entries
+    for line in rd('runtime/test/m9c.sh').splitlines():
+        mm = re.match(r'check\s+(\w+)((?:\s+\w+)*)\s*$', line)
+        if mm:
+            m, deps = mm.group(1), mm.group(2).split()
+            if m not in gt:
+                fail(f'm9c.sh: check {m} names a module gentest.pas does not generate')
+            elif deps != gt[m]:
+                fail(f'm9c.sh: check {m} {deps} != gentest.pas {gt[m]}')
 
     if bad:
         for b in bad:

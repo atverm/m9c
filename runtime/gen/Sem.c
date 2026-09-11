@@ -2,7 +2,6 @@
 #include "Sem.h"
 #include "Ast.h"
 #include "DynStr.h"
-#include "Fmt.h"
 #include "Print.h"
 #include "Text.h"
 

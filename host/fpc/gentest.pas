@@ -88,7 +88,7 @@ begin
   GenModule ('Print', ['Ast', 'DynStr']);
   GenModule ('Parse', ['Ast', 'Lex', 'DynStr']);
   GenModule ('Dict', []);
-  GenModule ('Fmt', ['DynStr']);
+  GenModule ('Fmt', []);
   GenModule ('Io', ['DynStr']);
   GenModule ('Time', ['DynStr', 'Fmt']);
   GenModule ('Text', ['DynStr']);
@@ -104,7 +104,7 @@ begin
   GenModule ('Logger', ['DynStr', 'Fmt', 'Io', 'Syslog', 'Time']);
   GenModule ('Hello', ['Io', 'DynStr']);
   GenModule ('Concat', ['Io', 'DynStr']);
-  GenModule ('Sem', ['Ast', 'DynStr', 'Fmt', 'Print', 'Text']);
+  GenModule ('Sem', ['Ast', 'DynStr', 'Print', 'Text']);
   GenModule ('Doc', ['Ast', 'DynStr', 'Text', 'Print', 'Lex']);
   GenModule ('M9c', ['Io', 'Ast', 'Parse', 'Gen', 'Sem', 'DynStr', 'Doc', 'Lex', 'System']);
   GenModule ('Gen', ['Ast', 'DynStr']);

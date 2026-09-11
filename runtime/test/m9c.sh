@@ -48,9 +48,9 @@ check Json DynStr
 check Lex DynStr
 check Parse Ast Lex DynStr
 check Gen Ast DynStr
-check Sem Ast DynStr Fmt Print Text
+check Sem Ast DynStr Print Text
 check Io DynStr
-check M9c Io Ast Parse Gen Sem DynStr Doc Lex
+check M9c Io Ast Parse Gen Sem DynStr Doc Lex System
 
 # usage and exit status are part of the tool, so they are checked too.
 # Asking for help SUCCEEDS; getting the usage because you gave no

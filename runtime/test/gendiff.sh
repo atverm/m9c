@@ -36,7 +36,7 @@ run Ast
 run Print Ast DynStr
 run Parse Ast Lex DynStr
 run Dict
-run Fmt DynStr
+run Fmt
 run Io DynStr
 run Time DynStr Fmt
 run Text DynStr
@@ -52,7 +52,7 @@ run Syslog DynStr
 run Logger DynStr Fmt Io Syslog Time
 run Hello Io DynStr
 run Concat Io DynStr
-run Sem Ast DynStr Fmt Print Text
+run Sem Ast DynStr Print Text
 run Doc Ast DynStr Text Print Lex
 run M9c Io Ast Parse Gen Sem DynStr Doc Lex System
 run Gen Ast DynStr

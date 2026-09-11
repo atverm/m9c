@@ -28,7 +28,7 @@ deps_of () {
     ZarrStore)     echo DynStr Json Http ;;
     Plot)          echo DynStr Mat ;;
     Print|Gen)     echo Ast DynStr ;;
-    Io|Fmt)        echo DynStr ;;
+    Io)            echo DynStr ;;
     Time)          echo DynStr Fmt ;;
     Text)          echo DynStr ;;
     Csv)           echo DynStr Io Time ;;
@@ -39,7 +39,7 @@ deps_of () {
     Logger)        echo DynStr Fmt Io Syslog Time ;;
     Hello|Concat)  echo Io DynStr ;;
     M9c)           echo Io Ast Parse Gen Sem DynStr Doc Lex System ;;
-    Sem)           echo Ast DynStr Fmt Print Text ;;
+    Sem)           echo Ast DynStr Print Text ;;
     Doc)           echo Ast DynStr Text Print Lex ;;
     Parse)         echo Ast Lex DynStr ;;
     Diag)          echo DynStr Io Lex ;;

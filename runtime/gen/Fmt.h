@@ -2,7 +2,6 @@
 #ifndef M9G_Fmt_H
 #define M9G_Fmt_H
 #include "m9rt.h"
-#include "DynStr.h"
 
 
 #define Fmt_MaxDecimals INT64_C(17)
