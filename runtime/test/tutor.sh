@@ -8,6 +8,17 @@
 set -e
 cd "$(dirname "$0")"
 
+# before any skip, a check every machine can make: the deployed
+# container must run under an init.  tutorm9 as PID 1 collects one
+# zombie bwrap PER CELL RUN (bwrap's outer process never waits for the
+# inner helper it clones -- measured 2026-09-11, README-deploy.md) and
+# ignores docker stop's SIGTERM.  This gate runs under systemd, which
+# reaps, so it cannot see the leak itself; what it can see is the
+# line that prevents it.
+awk '/^  tutor:/{t=1} /^  [a-z]/&&!/^  tutor:/{t=0} t&&/^    init: true/{f=1} END{exit !f}' \
+    ../../tools/tutor/deploy/docker-compose.yml || \
+  { echo "FAIL: tools/tutor/deploy/docker-compose.yml: the tutor service has no 'init: true'"; exit 1; }
+
 # the skips come BEFORE gen.sh: a machine that cannot run the gate
 # should say so without first regenerating the toolchain
 command -v bwrap >/dev/null 2>&1 || \
