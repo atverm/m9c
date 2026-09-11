@@ -17,7 +17,7 @@ P=../../probes
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Lex.c \
-    ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/Fmt.c \
+    ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c \
     ../gen/Sem.c semdump_m9.c -o semdump_m9
 ( cd ../../host/fpc && fpc -O2 semdump.pas >/dev/null )
 

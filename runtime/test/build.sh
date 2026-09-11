@@ -103,6 +103,18 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -lz -lm -o delim_test
 ./delim_test
 
+# Io: a file read while another process is WRITING it.  ReadFile asks
+# the size first and the bytes second, and a size of 0 passed back as
+# the cap was the size query again -- so a file created empty and
+# filled a moment later answered its new length for a buffer of none,
+# an IndexError that killed m9setup two runs in six while it polled
+# for the tutorial's port file (2026-09-11).  The driver holds that
+# window open on purpose and requires that it was actually entered.
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
+    io_driver.c -lpthread -lm -o io_test
+./io_test
+
 # Zip: a member read as a STREAM, which is what Delim's source
 # actually is -- SOCAT ships its 9 GB table inside one.  The fixtures
 # come from python's zipfile, so the oracle is a real zip writer; the

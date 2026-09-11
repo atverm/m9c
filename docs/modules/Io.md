@@ -144,6 +144,13 @@ For anything large, or anything that is not text, use
 ReadFileBytes below and read its note first: a CHAR is four
 bytes wide, so this quadruples a file in memory.
 
+A file another process is WRITING at that moment is read as
+whatever it held when its size was taken -- possibly nothing --
+and never as an exception.  The size is asked first and the
+bytes second, and between the two a writer can fill the file;
+a reader polling for a file the way m9setup polls for the
+tutorial's port file met exactly that (2026-09-11).
+
 ### ReadFileBytes (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE RAISES ValueRange, IOError
 
 the same read, as OCTETS.  A CHAR is a Unicode scalar and so

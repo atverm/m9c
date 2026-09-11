@@ -372,14 +372,18 @@ if grep -q 'Modula-9' "$W/tutindex.html" 2>/dev/null; then
 else
   bad "nothing answers on $TP after m9setup started the tutorial"
   tail -20 "$W/third.log" | sed 's/^/        /'
-  # AND KEEP THE EVIDENCE.  This check has failed intermittently --
-  # about two runs in five, always with `m9: unhandled IndexError'
-  # after m9setup says it is building the tutorial server, and never
-  # in a hand replay of the same sequence (five rounds, with m9setup
-  # built -g, all clean).  The work directory goes at the end of the
-  # run, so every occurrence so far has left nothing but those twenty
-  # lines.  A gate that cannot show what it saw cannot be debugged
-  # from its own output.
+  # AND KEEP THE EVIDENCE.  This check failed intermittently -- about
+  # two runs in five, always with `m9: unhandled IndexError' after
+  # m9setup said it was building the tutorial server, never in a hand
+  # replay -- and the evidence-keeping below was written before the
+  # cause was known.  FOUND 2026-09-11, by reading rather than by
+  # replay: m9setup polled for tutor.port in a hot loop, Io.WriteFile
+  # creates a file EMPTY and fills it at close, and Io.ReadFile passed
+  # a size of 0 back to the shim as the cap -- which is the size query
+  # again, so it was told the new length for a buffer of none.  Fixed
+  # in Io.ReadFile (runtime/test/io_driver.c pins it, 39 raises in
+  # 4000 reads before), and the port file is renamed into place.  The
+  # keeping stays: the next intermittent failure deserves its logs.
   keep=/tmp/winzip-failed-$$
   mkdir -p "$keep"
   cp "$W"/*.log "$W"/r-*.txt "$keep/" 2>/dev/null

@@ -125,7 +125,14 @@ PROCEDURE ReadFile (VAR pool: POOL ; RO path: STR) : STR
 
      For anything large, or anything that is not text, use
      ReadFileBytes below and read its note first: a CHAR is four
-     bytes wide, so this quadruples a file in memory.             *)
+     bytes wide, so this quadruples a file in memory.
+
+     A file another process is WRITING at that moment is read as
+     whatever it held when its size was taken -- possibly nothing --
+     and never as an exception.  The size is asked first and the
+     bytes second, and between the two a writer can fill the file;
+     a reader polling for a file the way m9setup polls for the
+     tutorial's port file met exactly that (2026-09-11).          *)
 
 PROCEDURE ReadFileBytes (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE
   RAISES ValueRange, IOError ;
@@ -499,6 +506,12 @@ BEGIN
   pb := DynStr.Bytes (scratch, path, TRUE) ;
   n := I64 (ReadWhole (ADR (pb), ADR (b), C.SSizeT (0))) ;
   IF n < 0 THEN RAISE IOError (path) END ;
+  (* a cap of 0 is the SIZE QUERY, so an empty file must answer here:
+     passing 0 back would ask the size again, and a file being filled
+     by another process answers its new length for a buffer of none
+     -- an IndexError on the slice below, intermittent, found in
+     m9setup polling the tutorial's port file (2026-09-11) *)
+  IF n = 0 THEN RETURN '' END ;
   b := NEW (pool, BYTE, n) ;
   n := I64 (ReadWhole (ADR (pb), ADR (b), C.SSizeT (n))) ;
   IF n < 0 THEN RAISE IOError (path) END ;
@@ -518,6 +531,8 @@ BEGIN
   (* one byte more than the file, and pools carve zeroed (par 4.3):
      that byte is the terminator a C parser needs at the end *)
   b := NEW (pool, BYTE, n + 1) ;
+  (* the same size-of-zero trap as ReadFile: 0 as a cap is the query *)
+  IF n = 0 THEN RETURN SLICE (b, 0, 0) END ;
   n := I64 (ReadWhole (ADR (pb), ADR (b), C.SSizeT (n))) ;
   IF n < 0 THEN RAISE IOError (path) END ;
   RETURN SLICE (b, 0, n)
@@ -575,6 +590,7 @@ VAR
   n : I64 ;
 BEGIN
   pb := DynStr.Bytes (scratch, path, TRUE) ;
+  IF cap <= 0 THEN RETURN NEW (pool, BYTE, 0) END ;   (* 0 is the size query *)
   b := NEW (pool, BYTE, cap) ;
   n := I64 (ReadWhole (ADR (pb), ADR (b), C.SSizeT (cap))) ;
   IF n < 0 THEN RAISE IOError (path) END ;

@@ -422,7 +422,13 @@ int m9_exit (m9_state *err)
    reads a source file entire, and a partial-read API is what forced
    Http.RecvMax's truncation fix; offering one here would invite the
    same bug in a new place.  m9_read_file with cap = 0 answers the
-   size and touches nothing, so the caller allocates exactly once. */
+   size and touches nothing, so the caller allocates exactly once.
+   AND THAT MAKES A SIZE OF ZERO A TRAP: a caller that passes the
+   size it was told straight back as the cap has asked the size
+   AGAIN when that size was 0, and a file another process is filling
+   at that moment answers its new length for a buffer of none.
+   Io.ReadFile returns empty before the second call for exactly this
+   (found in m9setup polling the tutorial's port file, 2026-09-11). */
 
 /* One read(2) from standard input: up to cap bytes, 0 at EOF, -1 on
    error.  The whole-file rule above is for FILES; a stream has no
@@ -481,8 +487,12 @@ int64_t m9_read_file (const void *path, void *buf, int64_t cap)
   if (cap <= 0) { fclose (f); return n; }
   if (n > cap) n = cap;
   rewind (f);
-  if (n > 0 && fread (buf, 1, (size_t) n, f) != (size_t) n)
-    { fclose (f); return -1; }
+  /* what was READ, not what was measured: a writer that truncates
+     the file between the ftell above and this fread leaves fewer
+     bytes than n, and that is the file's content at that moment --
+     data, not an error.  Only ferror is an error. */
+  if (n > 0) n = (int64_t) fread (buf, 1, (size_t) n, f);
+  if (ferror (f)) { fclose (f); return -1; }
   fclose (f);
   return n;
 }

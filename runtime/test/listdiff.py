@@ -59,6 +59,13 @@ What is checked, each rule stated with the reason it is the rule:
      #include the oracle does not and the gate diverges for a reason
      that is not the compiler's.
 
+  8. Every gate that links an m9c of its own (`... -o m9c` or
+     `-o "$W/m9c"` in runtime/test/*.sh) links exactly build.sh's
+     COMPILER modules.  Twelve scripts carry that line by hand; ten
+     still linked Fmt.c and three Time.c after nothing in the compiler
+     imported either (2026-09-11) -- dead under LTO, but a module
+     MISSING from one of them is a link error only that gate sees.
+
 Exit status 1 with every disagreement named; 0 when all agree.
 """
 import glob
@@ -231,6 +238,19 @@ def main():
                 fail(f'm9c.sh: check {m} names a module gentest.pas does not generate')
             elif deps != gt[m]:
                 fail(f'm9c.sh: check {m} {deps} != gentest.pas {gt[m]}')
+
+    # 8. every hand-linked m9c is the COMPILER set
+    for path in sorted(glob.glob(os.path.join(ROOT, 'runtime', 'test', '*.sh'))):
+        text = rd(os.path.relpath(path, ROOT)).replace('\\\n', ' ')
+        for line in text.splitlines():
+            if re.search(r'-o\s+"?(\$\w+/)?m9c"?(\s|$)', line) and 'gen/' in line:
+                linked = set(re.findall(r'gen/(\w+)\.c', line))
+                if linked != set(comp):
+                    name = os.path.basename(path)
+                    extra, missing = sorted(linked - set(comp)), sorted(set(comp) - linked)
+                    fail(f'{name}: the m9c it links differs from build.sh COMPILER'
+                         f'{" -- extra " + str(extra) if extra else ""}'
+                         f'{" -- missing " + str(missing) if missing else ""}')
 
     if bad:
         for b in bad:

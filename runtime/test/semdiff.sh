@@ -18,7 +18,7 @@ cd "$(dirname "$0")"
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Fmt.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c \
     ../gen/Text.c ../gen/Lex.c ../gen/Ast.c ../gen/Print.c \
     ../gen/Parse.c ../gen/Sem.c semdump_m9.c -lm -o semdump_m9
 ( cd ../../host/fpc && fpc -O2 semdump.pas >/dev/null )
