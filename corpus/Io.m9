@@ -170,6 +170,26 @@ PROCEDURE ReadFileHead (VAR pool: POOL ; RO path: STR ; cap: I64)
      for headers: a 256-byte probe of a half-gigabyte field cache
      decides skip-or-recompute without touching the payload. *)
 
+PROCEDURE ReadFileAt (VAR pool: POOL ; RO path: STR ;
+                     off: I64 ; cap: I64) : SLICE OF BYTE
+  RAISES ValueRange, IOError ;
+  (* `cap` bytes from `off`, or fewer at the end of the file, or an
+     EMPTY slice at or past it.  The positioned read the whole-file
+     ones cannot express, and what a streaming reader is built on: a
+     9 GB delimited table is walked in blocks, and reading it whole is
+     not an option at any block size.
+
+     It is STATELESS: it opens and closes per call rather than
+     handing back a file handle, because a handle is a lifetime and
+     M9 would
+     need a type for it, a close that cannot be forgotten, and an
+     answer for the pool that holds it going away.  One open per
+     quarter-gigabyte block is not measurable; a handle type is a
+     permanent piece of API.  A caller reading in small pieces pays
+     for that choice, and should not.
+
+     Seekable files only: a plain file is, a pipe is not. *)
+
 PROCEDURE MkDir (RO path: STR)
   RAISES ValueRange, IOError ;
   (* create the directory, one level, existing is fine -- what an
@@ -183,12 +203,21 @@ PROCEDURE Rename (RO from: STR ; RO to: STR)
 
 PROCEDURE WriteFileBytes (RO path: STR ; RO content: SLICE OF BYTE)
   RAISES ValueRange, IOError ;
+
   (* the file's bytes become exactly `content` -- the twin of
      ReadFileBytes, which existed while writing stayed text-only.
      WriteFile narrows CHAR to octet through DynStr.Bytes, one CHAR
      per byte, which is right for text and absurd for a large binary:
      writing a 345 MB field cache through it would build 1.4 GB of
      CHARs first.  That cache is what forced this. *)
+
+PROCEDURE AppendFileBytes (RO path: STR ; RO content: SLICE OF BYTE)
+  RAISES ValueRange, IOError ;
+  (* the same octets APPENDED, the file created if it is absent.  For
+     a caller who has a STREAM and a consumer that wants a PATH: a
+     NOAA ObsPack member is 244 MB of HDF5 inside a zip and libnetcdf
+     opens a path, so the choice was between one 244 MB buffer and
+     one 4 MB one. *)
 
 EXCEPTION IOError (RO path: STR) ;
 
@@ -228,6 +257,11 @@ PROCEDURE ArgLen = "m9_arg_len" (i: C.Int) : C.Int  [REENTRANT] ;
 PROCEDURE ArgCopy = "m9_arg_copy" (i: C.Int ; buf: C.MutPtr ;
                                    cap: C.Int) : C.Int  [REENTRANT] ;
 
+PROCEDURE ReadAt = "m9_read_at" (path: C.ConstPtr ; buf: C.MutPtr ;
+                                 cap: C.SSizeT ; off: C.SSizeT)
+  : C.SSizeT
+  [REENTRANT] ;
+
 PROCEDURE ReadWhole = "m9_read_file" (path: C.ConstPtr ;
                                       buf: C.MutPtr ; cap: C.SSizeT)
   : C.SSizeT  [SERIAL] ;
@@ -242,6 +276,9 @@ PROCEDURE CRename = "m9_rename" (from: C.ConstPtr ; to: C.ConstPtr)
 PROCEDURE WriteWhole = "m9_write_file" (path: C.ConstPtr ;
                                         buf: C.ConstPtr ; n: C.SizeT)
   : C.Int  [SERIAL] ;
+PROCEDURE AppendWhole = "m9_append_file" (path: C.ConstPtr ;
+                                          buf: C.ConstPtr ; n: C.SizeT)
+  : C.Int  [SERIAL] ;
 
 END cio.
 
@@ -254,7 +291,8 @@ UNSAFE IMPLEMENTATION MODULE Io ;
 IMPORT DynStr ;
 FROM cio IMPORT PutChars, ArgC, ArgLen, ArgCopy, ReadWhole, WriteWhole,
                 Exit, PutErr, RunCmd, GetEnv, Stat, Unlink, Access,
-                LsDir, CMkDir, CRename, ReadIn, FlushOut ;
+                LsDir, CMkDir, CRename, ReadIn, ReadAt, FlushOut,
+                AppendWhole ;
 
 CONST
   MaxArg = 4096 ;
@@ -543,6 +581,22 @@ BEGIN
   RETURN SLICE (b, 0, n)
 END ReadFileHead ;
 
+PROCEDURE ReadFileAt (VAR pool: POOL ; RO path: STR ;
+                     off: I64 ; cap: I64) : SLICE OF BYTE
+  RAISES ValueRange, IOError =
+VAR
+  scratch : POOL ;
+  pb, b : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  IF cap <= 0 THEN RETURN NEW (pool, BYTE, 0) END ;
+  pb := DynStr.Bytes (scratch, path, TRUE) ;
+  b := NEW (pool, BYTE, cap) ;
+  n := I64 (ReadAt (ADR (pb), ADR (b), C.SSizeT (cap), C.SSizeT (off))) ;
+  IF n < 0 THEN RAISE IOError (path) END ;
+  RETURN SLICE (b, 0, n)
+END ReadFileAt ;
+
 PROCEDURE MkDir (RO path: STR)
   RAISES ValueRange, IOError =
 VAR
@@ -579,5 +633,17 @@ BEGIN
   rc := WriteWhole (ADR (pb), ADR (content), C.SizeT (LEN (content))) ;
   IF I64 (rc) # 0 THEN RAISE IOError (path) END
 END WriteFileBytes ;
+
+PROCEDURE AppendFileBytes (RO path: STR ; RO content: SLICE OF BYTE)
+  RAISES ValueRange, IOError =
+VAR
+  scratch : POOL ;
+  pb : SLICE OF BYTE ;
+  rc : C.Int ;
+BEGIN
+  pb := DynStr.Bytes (scratch, path, TRUE) ;
+  rc := AppendWhole (ADR (pb), ADR (content), C.SizeT (LEN (content))) ;
+  IF I64 (rc) # 0 THEN RAISE IOError (path) END
+END AppendFileBytes ;
 
 END Io.

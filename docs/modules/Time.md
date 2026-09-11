@@ -98,10 +98,31 @@ this module does not do local time.
 
 ### Now () : Instant
 
-the wall clock, UTC.  The one procedure here that is not a pure
-function of its arguments, so a test that calls it cannot have
-a golden: every driver in this repository builds its Instants
-from FromCivil and keeps Now for programs.
+_(documented with the group below)_
+
+### Sleep (ms: I64)
+
+wait, and do nothing else -- no timer, no signal, no
+cancellation.  It exists for BACKOFF: a retry loop that cannot
+pause is a retry loop that hammers whatever refused it.
+
+### DaysFromCivil (y, m, d: I64) : I64
+
+days since 1970-01-01 for a proleptic Gregorian date, Howard
+Hinnant's algorithm, exact for any year this type can hold.
+
+EXPORTED because Instant is F64 SECONDS and a nanosecond stamp
+does not fit one: 1.5e9 seconds with nanosecond resolution wants
+eighteen significant digits and a double has sixteen.  A caller
+building `datetime64[ns]` -- which is what a zarr time axis is --
+must do the arithmetic in I64, and this is the only part of it
+that is a calendar rather than a multiplication.
+
+It does NOT validate: FromCivil is where a month of 13 or a
+second of 60 is refused, and a caller reaching for this one is
+usually reaching past that refusal on purpose (SOCAT ships
+`ss == 60`, so the reference builds at midnight and adds the
+hours, minutes and seconds as a duration).
 
 ### IsLeap (year: I64) : BOOL
 
@@ -119,6 +140,10 @@ is the same choice ToCivil makes.
            of the next year is not what it meant.
 
 ### Realtime () : C.Double [REENTRANT]
+
+_(documented with the group below)_
+
+### SleepMs (ms: C.SSizeT) [REENTRANT]
 
 clock_gettime (CLOCK_REALTIME) as seconds; REENTRANT because
 the call is, which is a fact about POSIX and not an assumption

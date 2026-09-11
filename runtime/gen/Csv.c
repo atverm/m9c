@@ -21,11 +21,15 @@ extern int64_t m9_read_stdin (void *, int64_t);
 extern void m9_flush (void);
 extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
+extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
+extern int m9_append_file (const void *, const void *, size_t);
 extern double m9_now (void);
+extern void m9_sleep_ms (int64_t);
+extern double m9_strtod (const void *);
 extern double m9_strtof (const void *);
 
 struct Csv_Table {
@@ -40,6 +44,7 @@ struct Csv_Table {
   m9_sl_I64 kinds;
   m9_sl_I64 formats;
   m9_sl_m9_sl_F32 fcols;
+  m9_sl_m9_sl_F64 dcols;
   m9_sl_m9_sl_I64 icols;
   m9_sl_m9_sl_Time_Instant scols;
   m9_sl_m9_sl_I64 tofs;
@@ -49,6 +54,9 @@ struct Csv_Table {
 
 static const uint32_t m9s0[13] = { 110u, 111u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 108u, 105u, 110u, 101u };
 static const uint32_t m9s1[22] = { 119u, 114u, 111u, 110u, 103u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 32u, 111u, 102u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
+static const uint32_t m9s2[3] = { 110u, 97u, 110u };
+static const uint32_t m9s3[3] = { 105u, 110u, 102u };
+static const uint32_t m9s4[8] = { 105u, 110u, 102u, 105u, 110u, 105u, 116u, 121u };
 
 static int64_t Csv_KindCode (Csv_Kind k, int64_t *format, m9_state *err);
 static bool Csv_IsDigit (uint8_t b, m9_state *err);
@@ -57,6 +65,9 @@ static int64_t Csv_SkipLines (m9_sl_BYTE b, int64_t skip, m9_state *err);
 static void Csv_Unquote (m9_sl_BYTE b, int64_t *ofs, int64_t *len, m9_state *err);
 static float Csv_Pow10F32 (int64_t k, m9_state *err);
 static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
+static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
+static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_CHAR w, m9_state *err);
+static double Csv_FieldF64 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
 static int64_t Csv_FieldI64 (m9_sl_BYTE b, int64_t ofs, int64_t n, int64_t row, int64_t col, m9_state *err);
 static Time_Instant Csv_CompactStamp (int64_t v, bool withSeconds, m9_state *err);
 static Time_Instant Csv_FieldStamp (m9_pool *pool, m9_sl_BYTE b, int64_t ofs, int64_t n, int64_t format, double utcOffset, int64_t row, int64_t col, m9_state *err);
@@ -208,6 +219,8 @@ Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_state 
   if (err->exc) goto L_ret;
   t->fcols = M9_POOL_SL (m9_sl_m9_sl_F32, m9_sl_F32, &((*pool)), t->ncols, err);
   if (err->exc) goto L_ret;
+  t->dcols = M9_POOL_SL (m9_sl_m9_sl_F64, m9_sl_F64, &((*pool)), t->ncols, err);
+  if (err->exc) goto L_ret;
   t->icols = M9_POOL_SL (m9_sl_m9_sl_I64, m9_sl_I64, &((*pool)), t->ncols, err);
   if (err->exc) goto L_ret;
   t->scols = M9_POOL_SL (m9_sl_m9_sl_Time_Instant, m9_sl_Time_Instant, &((*pool)), t->ncols, err);
@@ -353,6 +366,20 @@ L_ret: ;
   return;
 }
 
+void Csv_SetReal64 (Csv_Table * *t, int64_t c, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  (*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) = Csv_KReal64;
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
 void Csv_SetInt (Csv_Table * *t, int64_t c, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -459,6 +486,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
   int64_t nb = 0; (void) nb;
   int64_t ofs = 0; (void) ofs;
   float f = 0; (void) f;
+  double d = 0; (void) d;
   bool inQuote = false; (void) inQuote;
   bool atEnd = false; (void) atEnd;
   { int64_t m9t1to;
@@ -466,32 +494,38 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
   m9t1to = m9_sub_i64 ((*t)->ncols, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; c <= m9t1to; c += 1) {
-    bool m9t2 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KReal);
+    bool m9t2 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KReal64);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      (*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)) = M9_POOL_SL (m9_sl_F32, float, &((*pool)), (*t)->nrows, err);
+      (*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)) = M9_POOL_SL (m9_sl_F64, double, &((*pool)), (*t)->nrows, err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t3 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KInt);
+      bool m9t3 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KReal);
       if (err->exc) goto L_ret;
       if (m9t3) {
+        (*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)) = M9_POOL_SL (m9_sl_F32, float, &((*pool)), (*t)->nrows, err);
+        if (err->exc) goto L_ret;
+    } else {
+      bool m9t4 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KInt);
+      if (err->exc) goto L_ret;
+      if (m9t4) {
         (*(m9_sl_I64 *) m9_at ((*t)->icols.p, c, (*t)->icols.len, sizeof (m9_sl_I64), err)) = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), (*t)->nrows, err);
         if (err->exc) goto L_ret;
     } else {
-      bool m9t4 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KStamp);
+      bool m9t5 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KStamp);
       if (err->exc) goto L_ret;
-      if (m9t4) {
+      if (m9t5) {
         (*(m9_sl_Time_Instant *) m9_at ((*t)->scols.p, c, (*t)->scols.len, sizeof (m9_sl_Time_Instant), err)) = M9_POOL_SL (m9_sl_Time_Instant, Time_Instant, &((*pool)), (*t)->nrows, err);
         if (err->exc) goto L_ret;
     } else {
-      bool m9t5 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KText);
+      bool m9t6 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KText);
       if (err->exc) goto L_ret;
-      if (m9t5) {
+      if (m9t6) {
         (*(m9_sl_I64 *) m9_at ((*t)->tofs.p, c, (*t)->tofs.len, sizeof (m9_sl_I64), err)) = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), (*t)->nrows, err);
         if (err->exc) goto L_ret;
         (*(m9_sl_I64 *) m9_at ((*t)->tlen.p, c, (*t)->tlen.len, sizeof (m9_sl_I64), err)) = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), (*t)->nrows, err);
         if (err->exc) goto L_ret;
-    } } } }
+    } } } } }
   } }
   nb = ((*t)->buf).len;
   i = (*t)->hdrEnd;
@@ -502,9 +536,9 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
   for (;;) {
     if (!((i <= nb))) break;
     if (((*t)->opt.quoted && (i < nb))) {
-      bool m9t6 = ((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, i, (*t)->buf.len, sizeof (uint8_t), err))) == INT64_C(34));
+      bool m9t7 = ((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, i, (*t)->buf.len, sizeof (uint8_t), err))) == INT64_C(34));
       if (err->exc) goto L_ret;
-      if (m9t6) {
+      if (m9t7) {
         inQuote = (!inQuote);
       }
     }
@@ -513,9 +547,9 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
       if ((i == nb)) {
         atEnd = true;
       } else {
-        bool m9t7 = (((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, i, (*t)->buf.len, sizeof (uint8_t), err))) == (*t)->delim) || ((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, i, (*t)->buf.len, sizeof (uint8_t), err))) == INT64_C(10)));
+        bool m9t8 = (((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, i, (*t)->buf.len, sizeof (uint8_t), err))) == (*t)->delim) || ((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, i, (*t)->buf.len, sizeof (uint8_t), err))) == INT64_C(10)));
         if (err->exc) goto L_ret;
-        if (m9t7) {
+        if (m9t8) {
           atEnd = true;
       } }
     }
@@ -523,9 +557,9 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
       len = m9_sub_i64 (i, start, err);
       if (err->exc) goto L_ret;
       if ((len > INT64_C(0))) {
-        bool m9t8 = ((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, m9_sub_i64 (m9_add_i64 (start, len, err), INT64_C(1), err), (*t)->buf.len, sizeof (uint8_t), err))) == INT64_C(13));
+        bool m9t9 = ((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, m9_sub_i64 (m9_add_i64 (start, len, err), INT64_C(1), err), (*t)->buf.len, sizeof (uint8_t), err))) == INT64_C(13));
         if (err->exc) goto L_ret;
-        if (m9t8) {
+        if (m9t9) {
           len = m9_sub_i64 (len, INT64_C(1), err);
           if (err->exc) goto L_ret;
         }
@@ -536,48 +570,70 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
         if (err->exc) goto L_ret;
       }
       if ((c < (*t)->ncols)) {
-        bool m9t9 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KReal);
+        bool m9t10 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KReal64);
         if (err->exc) goto L_ret;
-        if (m9t9) {
-          if ((len == INT64_C(0))) {
-            (*(float *) m9_at ((*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).p, row, (*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).len, sizeof (float), err)) = (0.0f / 0.0f);
+        if (m9t10) {
+          bool m9t11 = ((len == INT64_C(0)) || (!Csv_IsNumber ((*t)->buf, ofs, len, err)));
+          if (err->exc) goto L_ret;
+          if (m9t11) {
+            (*(double *) m9_at ((*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).p, row, (*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).len, sizeof (double), err)) = (0.0 / 0.0);
             if (err->exc) goto L_ret;
           } else {
-            f = Csv_FieldF32 ((*t)->buf, ofs, len, err);
+            d = Csv_FieldF64 ((*t)->buf, ofs, len, err);
             if (err->exc) goto L_ret;
             if ((*t)->opt.hasMissing) {
-              if ((f == (*t)->opt.missing)) {
-                f = (0.0f / 0.0f);
+              if ((d == (double)((*t)->opt.missing))) {
+                d = (0.0 / 0.0);
               }
             }
-            (*(float *) m9_at ((*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).p, row, (*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).len, sizeof (float), err)) = f;
+            (*(double *) m9_at ((*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).p, row, (*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).len, sizeof (double), err)) = d;
             if (err->exc) goto L_ret;
           }
         } else {
-          bool m9t10 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KInt);
+          bool m9t12 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KReal);
           if (err->exc) goto L_ret;
-          if (m9t10) {
+          if (m9t12) {
+            bool m9t13 = ((len == INT64_C(0)) || (!Csv_IsNumber ((*t)->buf, ofs, len, err)));
+            if (err->exc) goto L_ret;
+            if (m9t13) {
+              (*(float *) m9_at ((*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).p, row, (*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).len, sizeof (float), err)) = (0.0f / 0.0f);
+              if (err->exc) goto L_ret;
+            } else {
+              f = Csv_FieldF32 ((*t)->buf, ofs, len, err);
+              if (err->exc) goto L_ret;
+              if ((*t)->opt.hasMissing) {
+                if ((f == (*t)->opt.missing)) {
+                  f = (0.0f / 0.0f);
+                }
+              }
+              (*(float *) m9_at ((*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).p, row, (*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).len, sizeof (float), err)) = f;
+              if (err->exc) goto L_ret;
+            }
+        } else {
+          bool m9t14 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KInt);
+          if (err->exc) goto L_ret;
+          if (m9t14) {
             if ((len > INT64_C(0))) {
               (*(int64_t *) m9_at ((*(m9_sl_I64 *) m9_at ((*t)->icols.p, c, (*t)->icols.len, sizeof (m9_sl_I64), err)).p, row, (*(m9_sl_I64 *) m9_at ((*t)->icols.p, c, (*t)->icols.len, sizeof (m9_sl_I64), err)).len, sizeof (int64_t), err)) = Csv_FieldI64 ((*t)->buf, ofs, len, row, c, err);
               if (err->exc) goto L_ret;
             }
         } else {
-          bool m9t11 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KStamp);
+          bool m9t15 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KStamp);
           if (err->exc) goto L_ret;
-          if (m9t11) {
+          if (m9t15) {
             if ((len > INT64_C(0))) {
               (*(Time_Instant *) m9_at ((*(m9_sl_Time_Instant *) m9_at ((*t)->scols.p, c, (*t)->scols.len, sizeof (m9_sl_Time_Instant), err)).p, row, (*(m9_sl_Time_Instant *) m9_at ((*t)->scols.p, c, (*t)->scols.len, sizeof (m9_sl_Time_Instant), err)).len, sizeof (Time_Instant), err)) = Csv_FieldStamp (pool, (*t)->buf, ofs, len, (*(int64_t *) m9_at ((*t)->formats.p, c, (*t)->formats.len, sizeof (int64_t), err)), (*t)->opt.utcOffset, row, c, err);
               if (err->exc) goto L_ret;
             }
         } else {
-          bool m9t12 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KText);
+          bool m9t16 = ((*(int64_t *) m9_at ((*t)->kinds.p, c, (*t)->kinds.len, sizeof (int64_t), err)) == Csv_KText);
           if (err->exc) goto L_ret;
-          if (m9t12) {
+          if (m9t16) {
             (*(int64_t *) m9_at ((*(m9_sl_I64 *) m9_at ((*t)->tofs.p, c, (*t)->tofs.len, sizeof (m9_sl_I64), err)).p, row, (*(m9_sl_I64 *) m9_at ((*t)->tofs.p, c, (*t)->tofs.len, sizeof (m9_sl_I64), err)).len, sizeof (int64_t), err)) = ofs;
             if (err->exc) goto L_ret;
             (*(int64_t *) m9_at ((*(m9_sl_I64 *) m9_at ((*t)->tlen.p, c, (*t)->tlen.len, sizeof (m9_sl_I64), err)).p, row, (*(m9_sl_I64 *) m9_at ((*t)->tlen.p, c, (*t)->tlen.len, sizeof (m9_sl_I64), err)).len, sizeof (int64_t), err)) = len;
             if (err->exc) goto L_ret;
-        } } } }
+        } } } } }
       }
       c = m9_add_i64 (c, INT64_C(1), err);
       if (err->exc) goto L_ret;
@@ -586,11 +642,11 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
       if ((i == nb)) {
         break;
       }
-      bool m9t13 = ((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, i, (*t)->buf.len, sizeof (uint8_t), err))) == INT64_C(10));
+      bool m9t17 = ((int64_t)((*(uint8_t *) m9_at ((*t)->buf.p, i, (*t)->buf.len, sizeof (uint8_t), err))) == INT64_C(10));
       if (err->exc) goto L_ret;
-      if (m9t13) {
+      if (m9t17) {
         if ((c != (*t)->ncols)) {
-          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 22 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 22 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; }
+          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 22 })) m9t18 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 22 }); err->s[0].p = m9t18.p; err->s[0].len = m9t18.len; }
           err->i[0] = m9_add_i64 (row, INT64_C(2), err);
           err->i[1] = c;
           m9_raise (err, &Csv_ParseError);
@@ -623,6 +679,23 @@ m9_sl_F32 Csv_ColF32 (Csv_Table * t, int64_t c, m9_state *err)
   m9_sl_F32 m9ret = {0};
   err->res = m9res;
   m9ret = (*(m9_sl_F32 *) m9_at (t->fcols.p, c, t->fcols.len, sizeof (m9_sl_F32), err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_F64 Csv_ColF64 (Csv_Table * t, int64_t c, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_F64 m9ret = {0};
+  err->res = m9res;
+  m9ret = (*(m9_sl_F64 *) m9_at (t->dcols.p, c, t->dcols.len, sizeof (m9_sl_F64), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -757,6 +830,12 @@ static int64_t Csv_KindCode (Csv_Kind k, int64_t *format, m9_state *err)
   {
     err->res = m9res;
     m9ret = Csv_KReal;
+    goto L_ret;
+  } break;
+  case Csv_Kind_Real64:
+  {
+    err->res = m9res;
+    m9ret = Csv_KReal64;
     goto L_ret;
   } break;
   case Csv_Kind_Int:
@@ -1047,6 +1126,204 @@ static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = (float)(m9_strtof (((void *)(v).p)));
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  int64_t e = 0; (void) e;
+  int64_t digits = 0; (void) digits;
+  int64_t c = 0; (void) c;
+  i = ofs;
+  e = m9_add_i64 (ofs, n, err);
+  if (err->exc) goto L_ret;
+  for (;;) {
+    bool m9t1 = ((i < e) && ((((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(32)) || ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(9)))));
+    if (err->exc) goto L_ret;
+    if (!(m9t1)) break;
+    i = m9_add_i64 (i, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
+  for (;;) {
+    bool m9t2 = ((e > i) && ((((int64_t)((*(uint8_t *) m9_at (b.p, m9_sub_i64 (e, INT64_C(1), err), b.len, sizeof (uint8_t), err))) == INT64_C(32)) || ((int64_t)((*(uint8_t *) m9_at (b.p, m9_sub_i64 (e, INT64_C(1), err), b.len, sizeof (uint8_t), err))) == INT64_C(9)))));
+    if (err->exc) goto L_ret;
+    if (!(m9t2)) break;
+    e = m9_sub_i64 (e, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
+  if ((i >= e)) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  bool m9t3 = (((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(43)) || ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(45)));
+  if (err->exc) goto L_ret;
+  if (m9t3) {
+    i = m9_add_i64 (i, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
+  if ((i >= e)) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  bool m9t4 = ((Csv_Word (b, i, e, ((m9_sl_CHAR){ (uint32_t *) m9s2, 3 }), err) || Csv_Word (b, i, e, ((m9_sl_CHAR){ (uint32_t *) m9s3, 3 }), err)) || Csv_Word (b, i, e, ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err));
+  if (err->exc) goto L_ret;
+  if (m9t4) {
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  }
+  digits = INT64_C(0);
+  for (;;) {
+    bool m9t5 = ((i < e) && Csv_IsDigit ((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)), err));
+    if (err->exc) goto L_ret;
+    if (!(m9t5)) break;
+    i = m9_add_i64 (i, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    digits = m9_add_i64 (digits, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
+  bool m9t6 = ((i < e) && ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(46)));
+  if (err->exc) goto L_ret;
+  if (m9t6) {
+    i = m9_add_i64 (i, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (;;) {
+      bool m9t7 = ((i < e) && Csv_IsDigit ((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)), err));
+      if (err->exc) goto L_ret;
+      if (!(m9t7)) break;
+      i = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      digits = m9_add_i64 (digits, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+    }
+  }
+  if ((digits == INT64_C(0))) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  if ((i < e)) {
+    c = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
+    if (err->exc) goto L_ret;
+    if (((c != INT64_C(101)) && (c != INT64_C(69)))) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+    i = m9_add_i64 (i, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    if ((i < e)) {
+      bool m9t8 = (((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(43)) || ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(45)));
+      if (err->exc) goto L_ret;
+      if (m9t8) {
+        i = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+      }
+    }
+    digits = INT64_C(0);
+    for (;;) {
+      bool m9t9 = ((i < e) && Csv_IsDigit ((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)), err));
+      if (err->exc) goto L_ret;
+      if (!(m9t9)) break;
+      i = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      digits = m9_add_i64 (digits, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+    }
+    if ((digits == INT64_C(0))) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+  }
+  err->res = m9res;
+  m9ret = (i == e);
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Csv_Word (m9_sl_BYTE b, int64_t i, int64_t e, m9_sl_CHAR w, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t k = 0; (void) k;
+  int64_t c = 0; (void) c;
+  bool m9t3 = (m9_sub_i64 (e, i, err) != (w).len);
+  if (err->exc) goto L_hdl_m9t1;
+  if (m9t3) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  { int64_t m9t4to;
+  k = INT64_C(0);
+  m9t4to = m9_sub_i64 ((w).len, INT64_C(1), err);
+  if (err->exc) goto L_hdl_m9t1;
+  for (; k <= m9t4to; k += 1) {
+    c = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, k, err), b.len, sizeof (uint8_t), err)));
+    if (err->exc) goto L_hdl_m9t1;
+    if (((c >= INT64_C(65)) && (c <= INT64_C(90)))) {
+      c = m9_add_i64 (c, INT64_C(32), err);
+      if (err->exc) goto L_hdl_m9t1;
+    }
+    bool m9t5 = (c != (int64_t)((*(uint32_t *) m9_at (w.p, k, w.len, sizeof (uint32_t), err))));
+    if (err->exc) goto L_hdl_m9t1;
+    if (m9t5) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = true;
+  goto L_ret;
+  goto L_dn_m9t2;
+L_hdl_m9t1: ;
+  if (err->exc == &m9_exc_ValueRange) {
+    err->exc = NULL;
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  goto L_ret;
+L_dn_m9t2: ;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static double Csv_FieldF64 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  m9_sl_BYTE v = {0}; (void) v;
+  v = ({ __typeof__(b) m9t1 = b; int64_t m9t1a = ofs, m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = (double)(m9_strtod (((void *)(v).p)));
   goto L_ret;
 L_ret: ;
   err->res = m9res;

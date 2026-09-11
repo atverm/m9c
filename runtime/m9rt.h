@@ -595,6 +595,9 @@ int64_t m9_read_file (const void *path, void *buf, int64_t cap);
 int64_t m9_read_stdin (void *buf, int64_t cap);  /* one read(2), 0=EOF */
 void m9_flush (void);            /* a server's reply must not wait */
 int  m9_write_file (const void *path, const void *buf, size_t n);
+int  m9_append_file (const void *path, const void *buf, size_t n);
+int64_t m9_cstr_copy (const void *p, void *buf, int64_t cap);
+void m9_sleep_ms (int64_t ms);
 void m9_halt (int code);                       /* flushes, then exits */
 int  m9_run (const void *cmd);                 /* system (), rc      */
 

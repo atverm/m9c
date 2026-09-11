@@ -23,10 +23,13 @@ run Mat Math
 run Stats Math
 run System Io DynStr Text
 run Json DynStr
-run Http DynStr
+run Http DynStr Io
 run HttpServer DynStr Http
 run OpenApi HttpServer DynStr
+run ApiSpec DynStr
+run Arrow DynStr
 run ZarrStore DynStr Json Http
+run Zarr DynStr Json Io Math
 run Plot DynStr Mat
 run Lex DynStr
 run Ast
@@ -39,6 +42,8 @@ run Time DynStr Fmt
 run Text DynStr
 run Math
 run Csv DynStr Io Time
+run Delim DynStr Io
+run Zip DynStr Io
 run Frame Csv Io Math DynStr Fmt Time NetCDF
 run Parquet Frame Io DynStr Csv Math Fmt Time NetCDF
 run NetCDF DynStr

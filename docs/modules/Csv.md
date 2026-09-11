@@ -43,6 +43,14 @@ what zone it was written in.  That is the point, not an
 inconvenience: it is the difference between an hour of silent error
 and a line of configuration.
 
+A FIELD THAT IS NOT A NUMBER IS MISSING, NOT ZERO.  A column the
+caller declared Real or Real64 is parsed only when the field looks
+like a number; anything else reads NaN, exactly as an empty field
+does.  strtod answers 0 for text, and a sentence stored as a
+measured 0.0 is the worst of the three possible answers -- found
+in the ICOS ocean store, where 551 comment cells did precisely
+that.  See IsNumber for what counts.
+
 WHAT IT IS NOT.  Not a general CSV library: no newlines inside
 quoted fields (with "" undoubled by TextAt), no ragged rows, no type
 inference, no streaming.  Each of those is a real feature for
@@ -123,6 +131,15 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
+### SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError
+
+MEASUREMENTS ARE F32 by default and the module header says why.
+This is the exception that header names -- "a caller needing F64
+measurements should say so and this grows a kind" -- and the
+caller that needed it is the ICOS ocean store, whose every
+measurement array is `<f8>`: narrowing here and widening again
+to write would be two roundings where the file has one number.
+
 ### SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError
 
 _(documented with the group below)_
@@ -164,6 +181,10 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
+### CONST KindReal64
+
+_(documented with the group below)_
+
 ### KindCodeAt (t: PTR Table ; c: I64) : I64 RAISES IndexError
 
 _(documented with the group below)_
@@ -182,6 +203,10 @@ one pass over the whole file
 
 _(documented with the group below)_
 
+### ColF64 (t: PTR Table ; c: I64) : SLICE OF F64 RAISES IndexError
+
+_(documented with the group below)_
+
 ### ColI64 (t: PTR Table ; c: I64) : SLICE OF I64 RAISES IndexError
 
 _(documented with the group below)_
@@ -195,6 +220,10 @@ _(documented with the group below)_
 a text field, built on demand out of the file still in memory: a
 table of a hundred thousand rows does not want a hundred
 thousand strings nobody asked for
+
+### StrToF64 (s: C.ConstPtr) : C.Double [REENTRANT]
+
+_(documented with the group below)_
 
 ### StrToF32 (s: C.ConstPtr) : C.Double [REENTRANT]
 

@@ -60,8 +60,20 @@ bool Json_IsNull (Json_Node * n, m9_state *err);
 m9_sl_CHAR Json_CompactSorted (m9_pool *pool, Json_Node * n, m9_state *err);
 m9_sl_CHAR Json_Pretty (m9_pool *pool, Json_Node * n, m9_state *err);
 m9_sl_CHAR Json_ReprText (m9_pool *pool, double r, m9_state *err);
+void Json_AppendF64 (m9_pool *pool, DynStr_DString * *d, double r, m9_state *err);
 m9_sl_CHAR Json_NumText (m9_pool *pool, Json_Node * n, m9_state *err);
+Json_Node * Json_NewObj (m9_pool *pool, m9_state *err);
+Json_Node * Json_NewArr (m9_pool *pool, m9_state *err);
+Json_Node * Json_NewStr (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
+Json_Node * Json_NewI64 (m9_pool *pool, int64_t v, m9_state *err);
+Json_Node * Json_NewF64 (m9_pool *pool, double r, m9_state *err);
+Json_Node * Json_NewBool (m9_pool *pool, bool b, m9_state *err);
+Json_Node * Json_NewNull (m9_pool *pool, m9_state *err);
+void Json_Set (Json_Node * *obj, m9_sl_CHAR name, Json_Node * *v, m9_state *err);
+void Json_Add (Json_Node * *arr, Json_Node * *v, m9_state *err);
 void Json_AppendJString (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR t, m9_state *err);
+Json_Node * Json_Clone (m9_pool *pool, Json_Node * n, m9_state *err);
+m9_sl_CHAR Json_Spaced (m9_pool *pool, Json_Node * n, m9_state *err);
 m9_sl_CHAR Json_Compact (m9_pool *pool, Json_Node * n, m9_state *err);
 
 #endif

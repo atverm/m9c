@@ -50,6 +50,17 @@ PROCEDURE WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
      TIMESTAMP(NANOS, adjusted-to-UTC) -- pyarrow then reads a real
      timestamp[ns] column, not a bare integer.                      *)
 
+PROCEDURE BytesX (VAR pool: POOL ; f: PTR Frame.Fr ;
+                  RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
+                  RO nsCols: SLICE OF STR) : SLICE OF BYTE
+  RAISES Bad, ValueRange, Overflow, IndexError ;
+  (* WriteX's document, IN MEMORY, for a caller that is answering a
+     request rather than filling a directory.  The whole file was
+     already assembled in a buffer before WriteX touched the disk;
+     this hands that buffer over instead, so a server does not need a
+     per-request temp file it must then read back and remove.  No
+     Io.IOError, because nothing is opened.                          *)
+
 PROCEDURE Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr
   RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError ;
 
@@ -472,6 +483,16 @@ PROCEDURE WriteAny (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
                     RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                     RO nsCols: SLICE OF STR)
   RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
+BEGIN
+  Io.WriteFileBytes (path,
+    AnyBytes (pool, f, withTs, ts, kvK, kvV, nsCols))
+END WriteAny ;
+
+PROCEDURE AnyBytes (VAR pool: POOL ; f: PTR Frame.Fr ;
+                    withTs: BOOL ; ts: PTR Frame.Ts ;
+                    RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
+                    RO nsCols: SLICE OF STR) : SLICE OF BYTE
+  RAISES Bad, ValueRange, Overflow, IndexError =
 VAR
   out, meta, page : Buf ;
   pages : SLICE OF Buf ;
@@ -556,8 +577,8 @@ BEGIN
   PBytes (pool, out, SLICE (meta.b, 0, meta.n)) ;
   PLE (pool, out, meta.n, 4) ;
   PBytes (pool, out, MagicBytes (pool)) ;
-  Io.WriteFileBytes (path, SLICE (out.b, 0, out.n))
-END WriteAny ;
+  RETURN SLICE (out.b, 0, out.n)
+END AnyBytes ;
 
 PROCEDURE MagicBytes (VAR pool: POOL) : SLICE OF BYTE =
 VAR m : SLICE OF BYTE ;
@@ -1328,6 +1349,14 @@ EXCEPT
 | Frame.SizeError : RAISE Bad ('column length mismatch')
 | Frame.Duplicate : RAISE Bad (name)
 END AddStrsQ ;
+
+PROCEDURE BytesX (VAR pool: POOL ; f: PTR Frame.Fr ;
+                  RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
+                  RO nsCols: SLICE OF STR) : SLICE OF BYTE
+  RAISES Bad, ValueRange, Overflow, IndexError =
+BEGIN
+  RETURN AnyBytes (pool, f, FALSE, NIL9 (pool), kvK, kvV, nsCols)
+END BytesX ;
 
 PROCEDURE Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr
   RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =

@@ -13,6 +13,9 @@
    zeroed record, an unfound program is still -1. */
 #ifndef _WIN32
 #define _POSIX_C_SOURCE 200112L
+/* 64-bit off_t even on a 32-bit host: m9_read_at walks files
+   past 2 GB, which is the whole reason it exists. */
+#define _FILE_OFFSET_BITS 64
 #else
 #define _WIN32_WINNT 0x0A00       /* Windows 10: the precise clock, processor groups */
 #define WIN32_LEAN_AND_MEAN
@@ -347,6 +350,37 @@ void m9_args (int argc, char **argv)
   _setmode (_fileno (stdin), _O_BINARY);
   _setmode (_fileno (stdout), _O_BINARY);
   _setmode (_fileno (stderr), _O_BINARY);
+#else
+  /* SIGPIPE IS IGNORED FROM HERE, WHICH IS WHAT THE REST OF THE
+     RUNTIME ALREADY CLAIMED.  Writing to a pipe or socket whose peer
+     has gone raises SIGPIPE, and its default action is to KILL THE
+     PROCESS -- silently, with no error for anyone to check, which is
+     the one failure mode this language exists to refuse.  Ignored,
+     the write returns -1 with EPIPE and becomes a value a caller can
+     test, exactly like every other I/O error.
+
+     It was installed only inside m9_exec, under pthread_once, so a
+     program that never spawned a child ran with the default and
+     could be killed by a peer hanging up.  tcpshim's own comment on
+     tcp_write said a departed peer "answers EPIPE rather than a
+     signal only because m9rt ignores SIGPIPE at start" -- a contract
+     nothing met until now.  FOUND IN THE ZARR PROXY (2026-09-07): a
+     client that closed GRACEFULLY part way through a large body let
+     one write succeed, the peer answered RST, and the next write
+     took SIGPIPE and killed the whole server -- every other worker's
+     connection with it.  An RST-first abort does NOT show it, because
+     a write loop stops at the first failure; it takes the polite
+     close to reach a second write.  Measured with a 32 MB body.
+
+     Here rather than in the shims because it is process-wide state,
+     it must be set before any thread starts, and every generated
+     main calls m9_args first -- which is what makes this the place a
+     program starts.  Windows has no SIGPIPE: a dead peer there is
+     already an error return, so the #ifdef is the whole platform
+     difference.  m9_exec keeps its own pthread_once for the embedded
+     case, where an M9 library is called from a main this runtime did
+     not generate.                                                   */
+  signal (SIGPIPE, SIG_IGN);
 #endif
 }
 
@@ -453,6 +487,40 @@ int64_t m9_read_file (const void *path, void *buf, int64_t cap)
   return n;
 }
 
+/* A POSITIONED read: `cap` bytes from `off`, answering how many were
+ * read (0 at or past the end) or -1.  The one thing m9_read_file
+ * above cannot do, and what a streaming reader is built on -- a
+ * 9 GB delimited file is walked in blocks, and reading it whole is
+ * not an option at any block size.
+ *
+ * STATELESS ON PURPOSE: it opens and closes each call rather than
+ * handing M9 a file handle, because a handle is a lifetime and M9
+ * would need a type for it, a close that cannot be forgotten, and an
+ * answer for what happens when the pool holding it goes.  One open
+ * per block over a quarter-gigabyte block is not measurable; a
+ * handle type is a permanent piece of API.  The cost is real only if
+ * a caller reads in small pieces, which the block reader does not.
+ *
+ * Seekable files only, which a plain file is and a pipe is not.
+ */
+int64_t m9_read_at (const void *path, void *buf, int64_t cap, int64_t off)
+{
+  FILE *f;
+  size_t got;
+  if (cap <= 0 || off < 0) return -1;
+  f = fopen ((const char *) path, "rb");
+  if (!f) return -1;
+#if defined(_WIN32)
+  if (_fseeki64 (f, (__int64) off, SEEK_SET) != 0) { fclose (f); return -1; }
+#else
+  if (fseeko (f, (off_t) off, SEEK_SET) != 0) { fclose (f); return -1; }
+#endif
+  got = fread (buf, 1, (size_t) cap, f);
+  if (got == 0 && ferror (f)) { fclose (f); return -1; }
+  fclose (f);
+  return (int64_t) got;
+}
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -482,9 +550,30 @@ int64_t m9_repr_double (double v, void *out)
     strcpy (buf, "0.0");
     return 3;
   }
-  for (p = 0; p <= 16; p++) {
+  /* SHORTEST ROUND-TRIPPING PRECISION, BY BISECTION.  This scanned p
+     upward from 0, which is the obvious spelling and the slow one: a
+     double that came from a float32 -- every coordinate the zarr proxy
+     emits -- needs 16 or 17 significant digits, so the scan paid ~17
+     snprintf+strtod pairs for each one.  Profiling a million-row ndjson
+     response put 70% of the whole request in __printf_fp and strtod.
+
+     Validity is MONOTONIC in p: if %.pe parses back to v then so does
+     %.{p+1}e, because the extra digit cannot make the value less exact.
+     A monotone predicate is bisectable, and bisection returns exactly
+     the same least p -- checked over 4,000,000 values (f32-derived,
+     arbitrary bit patterns, integral, short decimals) at zero
+     mismatches, for 1.9x fewer probes overall and ~3x on the f32 case.
+     If no p round-trips -- which cannot happen, 17 digits always do --
+     both spellings leave sci holding the p=16 rendering. */
+  {
+    int lo = 0, hi = 16;
+    while (lo < hi) {
+      p = (lo + hi) / 2;
+      snprintf (sci, sizeof sci, "%.*e", p, v);
+      if (strtod (sci, NULL) == v) hi = p; else lo = p + 1;
+    }
+    p = lo;
     snprintf (sci, sizeof sci, "%.*e", p, v);
-    if (strtod (sci, NULL) == v) break;
   }
   /* pull sign, digits and exponent out of d.dddde+XX */
   neg = sci[0] == '-';
@@ -628,6 +717,35 @@ int m9_write_file (const void *path, const void *buf, size_t n)
   return fclose (f) == 0 ? 0 : -1;
 }
 
+/* Copy the NUL-terminated C string AT `p` into `buf`, answering its
+   length, or -1 when it does not fit.  M9 cannot dereference a raw
+   pointer, so a C library that answers a `char *` -- netCDF's
+   NC_STRING attributes among them -- is otherwise unreachable; this
+   is the one primitive that closes that gap, rather than every
+   binding growing a shim of its own.                              */
+int64_t m9_cstr_copy (const void *p, void *buf, int64_t cap)
+{
+  size_t n;
+  if (!p) return -1;
+  n = strlen ((const char *) p);
+  if ((int64_t) n > cap) return -1;
+  memcpy (buf, p, n);
+  return (int64_t) n;
+}
+
+/* The same, appending.  It exists so that a caller who has a STREAM
+   can put it on the disk without holding all of it: a NOAA ObsPack
+   member is 244 MB of HDF5 inside a zip, libnetcdf opens a PATH and
+   not a stream, and the choice was between one 244 MB buffer and one
+   4 MB one.  "wb" first, then "ab", is the whole idiom.           */
+int m9_append_file (const void *path, const void *buf, size_t n)
+{
+  FILE *f = fopen ((const char *) path, "ab");
+  if (!f) return -1;
+  if (n && fwrite (buf, 1, n, f) != n) { fclose (f); return -1; }
+  return fclose (f) == 0 ? 0 : -1;
+}
+
 /* Halt flushes FIRST.  museum/... the HALT piece exists because an
    unflushed stdout swallowed three diagnostics in a row: a halt that
    loses the message explaining it is the bug, not the exit.        */
@@ -635,6 +753,27 @@ void m9_halt (int code)
 {
   fflush (NULL);
   exit (code);
+}
+
+/* Wait, and do nothing else.  A retry loop that cannot pause is a
+   retry loop that hammers whatever refused it -- and the ICOS Carbon
+   Portal's own client documents seconds-to-tens-of-seconds outages
+   that only backoff survives.  Nothing here is a timer: no signal, no
+   callback, no cancellation.                                      */
+void m9_sleep_ms (int64_t ms)
+{
+  if (ms <= 0) return;
+#ifdef _WIN32
+  Sleep ((DWORD) ms);
+#else
+  {
+    struct timespec ts;
+    ts.tv_sec = (time_t) (ms / 1000);
+    ts.tv_nsec = (long) ((ms % 1000) * 1000000L);
+    while (nanosleep (&ts, &ts) == -1 && errno == EINTR)
+      ;                          /* a signal is not the end of the wait */
+  }
+#endif
 }
 
 /* the ctime shim: one clock, UTC, seconds.  CLOCK_REALTIME because

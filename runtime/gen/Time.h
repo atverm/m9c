@@ -47,6 +47,8 @@ Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_state *err);
 m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_state *err);
 Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err);
 Time_Instant Time_Now (m9_state *err);
+void Time_Sleep (int64_t ms, m9_state *err);
+int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_state *err);
 bool Time_IsLeap (int64_t year, m9_state *err);
 int64_t Time_DaysInMonth (int64_t year, int64_t month, m9_state *err);
 

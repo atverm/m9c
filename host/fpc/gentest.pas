@@ -75,10 +75,13 @@ begin
   GenModule ('Stats', ['Math']);
   GenModule ('System', ['Io', 'DynStr', 'Text']);
   GenModule ('Json', ['DynStr']);
-  GenModule ('Http', ['DynStr']);
+  GenModule ('Http', ['DynStr', 'Io']);
   GenModule ('HttpServer', ['DynStr', 'Http']);
   GenModule ('OpenApi', ['HttpServer', 'DynStr']);
+  GenModule ('ApiSpec', ['DynStr']);
+  GenModule ('Arrow', ['DynStr']);
   GenModule ('ZarrStore', ['DynStr', 'Json', 'Http']);
+  GenModule ('Zarr', ['DynStr', 'Json', 'Io', 'Math']);
   GenModule ('Plot', ['DynStr', 'Mat']);
   GenModule ('Lex', ['DynStr']);
   GenModule ('Ast', []);
@@ -91,6 +94,8 @@ begin
   GenModule ('Text', ['DynStr']);
   GenModule ('Math', []);
   GenModule ('Csv', ['DynStr', 'Io', 'Time']);
+  GenModule ('Delim', ['DynStr', 'Io']);
+  GenModule ('Zip', ['DynStr', 'Io']);
   GenModule ('Frame', ['Csv', 'Io', 'Math', 'DynStr', 'Fmt', 'Time', 'NetCDF']);
   GenModule ('Parquet', ['Frame', 'Io', 'DynStr', 'Csv', 'Math', 'Fmt', 'Time', 'NetCDF']);
   GenModule ('NetCDF', ['DynStr']);

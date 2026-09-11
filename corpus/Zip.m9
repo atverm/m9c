@@ -1,0 +1,427 @@
+DEFINITION MODULE Zip ;
+
+(* Reading a member of a ZIP archive as a STREAM.
+
+   It exists for one file: SOCAT ships its synthesis product as a
+   9 GB tab-separated table inside a zip, and the ICOS store builder
+   walks it once.  Nothing may hold the archive and nothing may hold
+   the member -- which is the same constraint `Delim` is built for,
+   one layer down.
+
+   WHAT IS SUPPORTED, and everything else is refused BY NAME:
+     * stored (method 0) and deflated (method 8) members;
+     * ZIP64, which is not optional here -- a member whose
+       UNCOMPRESSED size passes 4 GB carries 0xFFFFFFFF in the
+       classic fields and its real size in an extra field, and
+       SOCAT's is 9 GB;
+     * a single-disk archive.
+   Encryption, multi-disk archives and every other method are refused.
+
+   FORWARD ONLY.  A deflate stream has no index, so there is no seek:
+   `Read` continues from where the last one stopped, and that is the
+   whole contract.  It is also all a row cursor needs.
+
+   `Close` MATTERS.  The z_stream struct lives in this module's pool,
+   but zlib allocates its own window behind it, and that window is
+   freed by Close and by nothing else -- not by the pool going away.
+   A builder that opens one member per run can be forgiven; a loop
+   that opens thousands cannot.                                    *)
+
+IMPORT Io ;
+
+TYPE
+  Archive ;                      (* opaque; lives in a POOL *)
+  Member ;
+
+EXCEPTION Error (RO msg: STR) ;
+
+CONST
+  Stored = 0 ;
+  Deflated = 8 ;
+  DefaultBlock = 262144 ;        (* the compressed-side read size *)
+
+PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR)
+  : PTR Archive IN pool
+  RAISES Error, Io.IOError, ValueRange ;
+  (* reads the central directory, nothing else. *)
+
+PROCEDURE Count (a: PTR Archive) : I64 ;
+
+PROCEDURE NameAt (VAR pool: POOL ; a: PTR Archive ; i: I64) : STR
+  RAISES IndexError ;
+  (* the member's name as stored.  ZIP names are bytes; this decodes
+     UTF-8 when the entry's flag bit 11 says so and Latin-1 when it
+     does not, which is what the format actually means and what
+     python's zipfile does. *)
+
+PROCEDURE SizeAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError ;
+  (* the UNCOMPRESSED size. *)
+
+PROCEDURE MethodAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError ;
+
+PROCEDURE Find (VAR pool: POOL ; a: PTR Archive ; RO name: STR) : I64
+  RAISES ValueRange, IndexError ;
+  (* the index of that member, or -1. *)
+
+PROCEDURE OpenMember (VAR pool: POOL ; KEPT a: PTR Archive ; i: I64 ;
+                      block: I64) : PTR Member IN pool
+  RAISES Error, Io.IOError, ValueRange, IndexError ;
+  (* `block` is the COMPRESSED-side read size; 0 for DefaultBlock. *)
+
+PROCEDURE Read (VAR m: PTR Member ; VAR dst: SLICE OF BYTE) : I64
+  RAISES Error, Io.IOError, ValueRange ;
+  (* fills `dst` as far as it can, answering how many bytes; 0 means
+     the member is finished.  A short answer is NOT the end -- inflate
+     stops at its own boundaries -- so a caller wanting a full buffer
+     loops until 0. *)
+
+PROCEDURE Close (VAR m: PTR Member) ;
+
+END Zip.
+
+
+UNSAFE DEFINITION MODULE FOR "C" czip ;
+
+PROCEDURE InflSize = "m9_inflate_size" () : C.SSizeT  [REENTRANT] ;
+PROCEDURE InflInit = "m9_inflate_init" (zs: C.MutPtr) : C.Int  [REENTRANT] ;
+PROCEDURE InflStep = "m9_inflate_step"
+  (zs: C.MutPtr ; src: C.ConstPtr ; nsrc: C.SSizeT ;
+   dst: C.MutPtr ; ndst: C.SSizeT ; out: C.MutPtr) : C.Int
+  [REENTRANT] ;
+PROCEDURE InflEnd = "m9_inflate_end" (zs: C.MutPtr)  [REENTRANT] ;
+
+END czip.
+
+
+UNSAFE IMPLEMENTATION MODULE Zip ;
+
+IMPORT DynStr ;
+FROM czip IMPORT InflSize, InflInit, InflStep, InflEnd ;
+
+CONST
+  MaxComment = 65557 ;           (* 0xFFFF + the 22-byte record *)
+  SigEocd = 101010256 ;          (* 0x06054b50 *)
+  SigEocd64 = 101075792 ;        (* 0x06064b50 *)
+  SigLoc64 = 117853008 ;         (* 0x07064b50 *)
+  SigCen = 33639248 ;            (* 0x02014b50 *)
+  SigLoc = 67324752 ;            (* 0x04034b50 *)
+
+TYPE
+  Entry = RECORD
+    name : STR ;
+    method : I64 ;
+    csize : I64 ;
+    usize : I64 ;
+    hdrOff : I64 ;               (* the LOCAL header, not the data *)
+  END ;
+
+  Archive = RECORD
+    RO path : STR ;
+    n : I64 ;
+    e : SLICE OF Entry ;
+  END ;
+
+  Member = RECORD
+    RO path : STR ;
+    stored : BOOL ;
+    dataOff : I64 ;              (* file offset of the first data byte *)
+    cLeft : I64 ;                (* compressed bytes not yet read *)
+    inb : SLICE OF BYTE ;
+    inLen : I64 ;
+    inPos : I64 ;
+    zs : SLICE OF BYTE ;
+    io2 : SLICE OF I64 ;         (* [used, made]: the shim's two answers.
+                                    A SLICE and not two scalars because
+                                    ADR of a scalar is a generator gap. *)
+    open : BOOL ;
+    done : BOOL ;
+  END ;
+
+(* little-endian unsigned integer of `n` bytes.
+
+   ACCUMULATED FROM THE TOP DOWN, and the bottom-up spelling is a real
+   bug this cost a run to find: `m := m * 256` once per byte reaches
+   256^8 on an 8-byte field, which is 1.8e19 and does not fit I64, so
+   the multiply TRAPPED Overflow on the first ZIP64 field of the real
+   SOCAT archive -- after the loop had already produced the right
+   answer.  M9 traps where C would have wrapped silently.
+
+   A genuine 8-byte value above MAX(I64) still cannot be represented,
+   and is refused by name rather than trapped: no real archive has
+   one, and an unhandled trap is a worse answer than a message. *)
+PROCEDURE U (RO b: SLICE OF BYTE ; at: I64 ; n: I64) : I64
+  RAISES Error, IndexError =
+VAR
+  v, k : I64 ;
+BEGIN
+  IF n = 8 AND I64 (b[at + 7]) >= 128 THEN
+    RAISE Error ('a zip field larger than 2^63 is not representable')
+  END ;
+  v := 0 ;
+  FOR k := n - 1 TO 0 BY -1 DO
+    v := v * 256 + I64 (b[at + k])
+  END ;
+  RETURN v
+END U ;
+
+PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR)
+  : PTR Archive IN pool
+  RAISES Error, Io.IOError, ValueRange =
+VAR
+  scratch : POOL ;
+  a : PTR Archive IN pool ;
+  tail, cd, ex : SLICE OF BYTE ;
+  size, want, at, eocd, cdOff, cdSize, nent : I64 ;
+  i, p, nameLen, exLen, cmLen, flags, id, exSz, q, need : I64 ;
+BEGIN
+  size := Io.FileSize (path) ;
+  IF size < 22 THEN RAISE Error ('not a zip (too short): ' + path) END ;
+  want := MaxComment ;
+  IF want > size THEN want := size END ;
+  tail := Io.ReadFileAt (scratch, path, size - want, want) ;
+
+  (* the End Of Central Directory, found by scanning BACK: the record
+     is last but a comment of any length may follow the fields *)
+  eocd := -1 ;
+  at := LEN (tail) - 22 ;
+  WHILE at >= 0 AND eocd < 0 DO
+    IF U (tail, at, 4) = SigEocd THEN eocd := at END ;
+    at := at - 1
+  END ;
+  IF eocd < 0 THEN
+    RAISE Error ('no end-of-central-directory record in ' + path)
+  END ;
+  IF U (tail, eocd + 4, 2) # 0 OR U (tail, eocd + 6, 2) # 0 THEN
+    RAISE Error ('a multi-disk archive is not supported: ' + path)
+  END ;
+  nent := U (tail, eocd + 10, 2) ;
+  cdSize := U (tail, eocd + 12, 4) ;
+  cdOff := U (tail, eocd + 16, 4) ;
+
+  (* ZIP64, which SOCAT needs: a 9 GB member cannot state its size in
+     32 bits, so the classic fields read 0xFFFFFFFF and the truth is
+     in a second record the locator points at *)
+  IF eocd >= 20 THEN
+    IF U (tail, eocd - 20, 4) = SigLoc64 THEN
+      at := U (tail, eocd - 20 + 8, 8) ;
+      ex := Io.ReadFileAt (scratch, path, at, 56) ;
+      IF LEN (ex) >= 56 AND U (ex, 0, 4) = SigEocd64 THEN
+        nent := U (ex, 32, 8) ;
+        cdSize := U (ex, 40, 8) ;
+        cdOff := U (ex, 48, 8)
+      END
+    END
+  END ;
+
+  cd := Io.ReadFileAt (scratch, path, cdOff, cdSize) ;
+  IF LEN (cd) # cdSize THEN
+    RAISE Error ('the central directory is truncated in ' + path)
+  END ;
+
+  a := NEW (pool, Archive) ;
+  a.path := path ;
+  a.e := NEW (pool, Entry, nent) ;
+  a.n := 0 ;
+  p := 0 ;
+  FOR i := 0 TO nent - 1 DO
+    IF p + 46 > LEN (cd) THEN
+      RAISE Error ('the central directory ends early in ' + path)
+    END ;
+    IF U (cd, p, 4) # SigCen THEN
+      RAISE Error ('a central-directory entry is malformed in ' + path)
+    END ;
+    flags := U (cd, p + 8, 2) ;
+    (* bit 0 is encryption; the format has no way to read past it *)
+    IF flags MOD 2 = 1 THEN
+      RAISE Error ('an encrypted member is not supported in ' + path)
+    END ;
+    a.e[i].method := U (cd, p + 10, 2) ;
+    a.e[i].csize := U (cd, p + 20, 4) ;
+    a.e[i].usize := U (cd, p + 24, 4) ;
+    nameLen := U (cd, p + 28, 2) ;
+    exLen := U (cd, p + 30, 2) ;
+    cmLen := U (cd, p + 32, 2) ;
+    a.e[i].hdrOff := U (cd, p + 42, 4) ;
+    (* bit 11 says the name is UTF-8; without it the format says
+       Latin-1, and that is what zipfile assumes too *)
+    IF (flags DIV 2048) MOD 2 = 1 THEN
+      a.e[i].name := DynStr.FromUtf8 (pool, SLICE (cd, p + 46, nameLen))
+    ELSE
+      a.e[i].name := DynStr.Chars (pool, SLICE (cd, p + 46, nameLen))
+    END ;
+    (* the ZIP64 extra field carries ONLY the members that overflowed,
+       in this order and no other *)
+    q := p + 46 + nameLen ;
+    need := q + exLen ;
+    WHILE q + 4 <= need DO
+      id := U (cd, q, 2) ;
+      exSz := U (cd, q + 2, 2) ;
+      IF id = 1 THEN
+        at := q + 4 ;
+        IF a.e[i].usize = 4294967295 AND at + 8 <= q + 4 + exSz THEN
+          a.e[i].usize := U (cd, at, 8) ; at := at + 8
+        END ;
+        IF a.e[i].csize = 4294967295 AND at + 8 <= q + 4 + exSz THEN
+          a.e[i].csize := U (cd, at, 8) ; at := at + 8
+        END ;
+        IF a.e[i].hdrOff = 4294967295 AND at + 8 <= q + 4 + exSz THEN
+          a.e[i].hdrOff := U (cd, at, 8)
+        END
+      END ;
+      q := q + 4 + exSz
+    END ;
+    p := p + 46 + nameLen + exLen + cmLen ;
+    a.n := a.n + 1
+  END ;
+  RETURN a
+EXCEPT
+| IndexError : RAISE Error ('the zip structure runs past the file: ' + path)
+END Open ;
+
+PROCEDURE Count (a: PTR Archive) : I64 =
+BEGIN
+  RETURN a.n
+END Count ;
+
+PROCEDURE NameAt (VAR pool: POOL ; a: PTR Archive ; i: I64) : STR
+  RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= a.n THEN RAISE IndexError END ;
+  RETURN a.e[i].name
+END NameAt ;
+
+PROCEDURE SizeAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= a.n THEN RAISE IndexError END ;
+  RETURN a.e[i].usize
+END SizeAt ;
+
+PROCEDURE MethodAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= a.n THEN RAISE IndexError END ;
+  RETURN a.e[i].method
+END MethodAt ;
+
+PROCEDURE Find (VAR pool: POOL ; a: PTR Archive ; RO name: STR) : I64
+  RAISES ValueRange, IndexError =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO a.n - 1 DO
+    IF DynStr.Eq (a.e[i].name, name) THEN RETURN i END
+  END ;
+  RETURN -1
+END Find ;
+
+PROCEDURE OpenMember (VAR pool: POOL ; KEPT a: PTR Archive ; i: I64 ;
+                      block: I64) : PTR Member IN pool
+  RAISES Error, Io.IOError, ValueRange, IndexError =
+VAR
+  scratch : POOL ;
+  m : PTR Member IN pool ;
+  lh : SLICE OF BYTE ;
+BEGIN
+  IF i < 0 OR i >= a.n THEN RAISE IndexError END ;
+  IF a.e[i].method # Stored AND a.e[i].method # Deflated THEN
+    RAISE Error ('compression method not supported: ' + a.e[i].name)
+  END ;
+  IF block <= 0 THEN block := DefaultBlock END ;
+
+  (* the DATA offset comes from the LOCAL header, whose name and extra
+     lengths differ from the central directory's -- a classic way to
+     read a member off by a few bytes *)
+  lh := Io.ReadFileAt (scratch, a.path, a.e[i].hdrOff, 30) ;
+  IF LEN (lh) < 30 OR U (lh, 0, 4) # SigLoc THEN
+    RAISE Error ('the local header is missing for ' + a.e[i].name)
+  END ;
+  m := NEW (pool, Member) ;
+  m.path := a.path ;
+  m.stored := a.e[i].method = Stored ;
+  m.dataOff := a.e[i].hdrOff + 30 + U (lh, 26, 2) + U (lh, 28, 2) ;
+  m.cLeft := a.e[i].csize ;
+  m.inb := NEW (pool, BYTE, block) ;
+  m.inLen := 0 ;
+  m.inPos := 0 ;
+  m.done := FALSE ;
+  m.open := FALSE ;
+  IF NOT m.stored THEN
+    m.zs := NEW (pool, BYTE, I64 (InflSize ())) ;
+    m.io2 := NEW (pool, I64, 2) ;
+    IF I64 (InflInit (ADR (m.zs))) # 0 THEN
+      RAISE Error ('zlib refused to start: ' + a.e[i].name)
+    END ;
+    m.open := TRUE
+  END ;
+  RETURN m
+END OpenMember ;
+
+PROCEDURE Fill (VAR m: PTR Member)
+  RAISES Io.IOError, ValueRange =
+VAR
+  scratch : POOL ;
+  got : SLICE OF BYTE ;
+  want, k : I64 ;
+BEGIN
+  IF m.inPos < m.inLen OR m.cLeft = 0 THEN RETURN END ;
+  want := LEN (m.inb) ;
+  IF want > m.cLeft THEN want := m.cLeft END ;
+  got := Io.ReadFileAt (scratch, m.path, m.dataOff, want) ;
+  FOR k := 0 TO LEN (got) - 1 DO m.inb[k] := got[k] END ;
+  m.inLen := LEN (got) ;
+  m.inPos := 0 ;
+  m.dataOff := m.dataOff + LEN (got) ;
+  m.cLeft := m.cLeft - LEN (got)
+END Fill ;
+
+PROCEDURE Read (VAR m: PTR Member ; VAR dst: SLICE OF BYTE) : I64
+  RAISES Error, Io.IOError, ValueRange =
+VAR
+  scratch : POOL ;
+  got : SLICE OF BYTE ;
+  want, k, rc : I64 ;
+BEGIN
+  IF m.done OR LEN (dst) = 0 THEN RETURN 0 END ;
+
+  IF m.stored THEN
+    want := LEN (dst) ;
+    IF want > m.cLeft THEN want := m.cLeft END ;
+    IF want = 0 THEN m.done := TRUE ; RETURN 0 END ;
+    got := Io.ReadFileAt (scratch, m.path, m.dataOff, want) ;
+    FOR k := 0 TO LEN (got) - 1 DO dst[k] := got[k] END ;
+    m.dataOff := m.dataOff + LEN (got) ;
+    m.cLeft := m.cLeft - LEN (got) ;
+    IF LEN (got) = 0 THEN m.done := TRUE END ;
+    RETURN LEN (got)
+  END ;
+
+  LOOP
+    Fill (m) ;
+    m.io2[0] := 0 ;
+    m.io2[1] := 0 ;
+    rc := I64 (InflStep (ADR (m.zs),
+                         ADR (SLICE (m.inb, m.inPos, m.inLen - m.inPos)),
+                         C.SSizeT (m.inLen - m.inPos),
+                         ADR (dst), C.SSizeT (LEN (dst)),
+                         ADR (m.io2))) ;
+    IF rc < 0 THEN RAISE Error ('the deflate stream is corrupt') END ;
+    m.inPos := m.inPos + m.io2[0] ;
+    IF rc = 1 THEN m.done := TRUE END ;
+    IF m.io2[1] > 0 THEN RETURN m.io2[1] END ;
+    IF m.done THEN RETURN 0 END ;
+    (* no output and no end: only legitimate if there is more input
+       to give it.  Otherwise the member is truncated. *)
+    IF m.io2[0] = 0 AND m.inPos >= m.inLen AND m.cLeft = 0 THEN
+      RAISE Error ('the member ends mid-stream')
+    END
+  END
+END Read ;
+
+PROCEDURE Close (VAR m: PTR Member) =
+BEGIN
+  IF m.open THEN
+    InflEnd (ADR (m.zs)) ;
+    m.open := FALSE
+  END ;
+  m.done := TRUE
+END Close ;
+
+END Zip .

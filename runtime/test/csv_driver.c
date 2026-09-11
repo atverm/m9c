@@ -68,11 +68,128 @@ int main (void)
   char buf[256];
   int64_t ts_start, ts_end, c;
 
+  /* THE WIDE COLUMN IS CHECKED ON A FIXTURE THIS FILE WRITES, so it
+     is checked at all: the battery below needs a 244-column FLUXNET
+     file that is not in any repository and skips out loud without it,
+     and a kind added under that skip would be a kind nobody ever ran.
+     The values are ones a float32 CANNOT hold apart -- pi to 15
+     digits, and two neighbours 1e-15 apart -- so a Real column and a
+     Real64 column give visibly different answers. */
+  {
+    static const char *FX = "/tmp/m9csv-f64.csv";
+    FILE *g = fopen (FX, "wb");
+    Csv_Table *w;
+    Csv_Options o;
+    m9_sl_F64 d;
+    m9_sl_F32 f;
+    if (!g) { printf ("FAIL: cannot write %s\n", FX); return 1; }
+    fputs ("a,b\n"
+           "3.141592653589793,1.000000000000001\n"
+           "2.718281828459045,1.000000000000002\n"
+           "NaN,-0.5\n", g);
+    fclose (g);
+    o = Csv_Defaults (&e);
+    w = Csv_Open (&pool, S (FX), o, &e);
+    ok ("f64 fixture opens", !e.exc && Csv_Rows (w, &e) == 3);
+    Csv_SetReal64 (&w, 0, &e);
+    Csv_SetReal64 (&w, 1, &e);
+    Csv_Parse (&pool, &w, &e);
+    ok ("f64 fixture parses", !e.exc);
+    d = Csv_ColF64 (w, 0, &e);
+    ok ("pi survives to the last digit",
+        d.len == 3 && ((double *) d.p)[0] == 3.141592653589793);
+    ok ("and e does too", ((double *) d.p)[1] == 2.718281828459045);
+    ok ("an empty-of-value NaN is NaN",
+        ((double *) d.p)[2] != ((double *) d.p)[2]);
+    d = Csv_ColF64 (w, 1, &e);
+    ok ("two neighbours 1e-15 apart stay apart",
+        ((double *) d.p)[0] != ((double *) d.p)[1]);
+    /* and the SAME file through the float32 kind cannot tell them
+       apart, which is what makes the new kind worth having */
+    w = Csv_Open (&pool, S (FX), o, &e);
+    Csv_SetReal (&w, 1, &e);
+    Csv_Parse (&pool, &w, &e);
+    f = Csv_ColF32 (w, 1, &e);
+    ok ("float32 collapses them, as the header says it would",
+        ((float *) f.p)[0] == ((float *) f.p)[1]);
+    remove (FX);
+  }
+
+  /* A FIELD THAT IS NOT A NUMBER IS MISSING, NOT ZERO.
+
+     strtod answers 0 for text, so a numeric column carrying a word
+     used to read back as a measured zero -- indistinguishable from a
+     real one.  The ICOS ocean store found it: pandas' duplicate-name
+     mangling let a comment column past the drop rule, and 551
+     sentences became 0.0.  Shown able to fail by removing IsNumber's
+     call site: every row below reads 0 instead of NaN.
+
+     The last two rows are the OTHER half -- the spellings that ARE
+     numbers and must still parse, including the ones strtod would
+     take and this deliberately refuses (0x10 is not a number here,
+     and pandas agrees). */
+  {
+    static const char *FX = "/tmp/m9csv-text.csv";
+    FILE *g = fopen (FX, "wb");
+    Csv_Table *w;
+    Csv_Options o;
+    m9_sl_F64 d;
+    m9_sl_F32 f;
+    double *v;
+    if (!g) { printf ("FAIL: cannot write %s\n", FX); return 1; }
+    fputs ("a\n"
+           "WaterFlow out of range\n"
+           "12\n"
+           "0x10\n"
+           "1.5e-3\n"
+           "  -2.25  \n"
+           "NaN\n"
+           "-inf\n"
+           "1.\n"
+           ".5\n"
+           "1e\n"
+           "12abc\n", g);
+    fclose (g);
+    o = Csv_Defaults (&e);
+    w = Csv_Open (&pool, S (FX), o, &e);
+    Csv_SetReal64 (&w, 0, &e);
+    Csv_Parse (&pool, &w, &e);
+    ok ("text fixture parses", !e.exc && Csv_Rows (w, &e) == 11);
+    d = Csv_ColF64 (w, 0, &e);
+    v = (double *) d.p;
+    ok ("a sentence is NaN, not 0", v[0] != v[0]);
+    ok ("a plain integer still parses", v[1] == 12.0);
+    ok ("0x10 is NOT 16 -- pandas says NaN and so does this",
+        v[2] != v[2]);
+    ok ("an exponent parses", v[3] == 1.5e-3);
+    ok ("surrounding spaces are not text", v[4] == -2.25);
+    ok ("NaN spelled out is NaN", v[5] != v[5]);
+    ok ("-inf parses", v[6] < -1e308);
+    ok ("a trailing point parses", v[7] == 1.0);
+    ok ("a leading point parses", v[8] == 0.5);
+    ok ("an exponent with no digits is NaN", v[9] != v[9]);
+    ok ("digits followed by letters are NaN", v[10] != v[10]);
+    /* the same rule on the float32 kind, which shares the test */
+    w = Csv_Open (&pool, S (FX), o, &e);
+    Csv_SetReal (&w, 0, &e);
+    Csv_Parse (&pool, &w, &e);
+    f = Csv_ColF32 (w, 0, &e);
+    ok ("and the float32 kind refuses the same field",
+        ((float *) f.p)[0] != ((float *) f.p)[0]
+        && ((float *) f.p)[1] == 12.0f);
+    remove (FX);
+  }
+
   if (path == NULL) path = DEFAULT_PATH;
   if (access (path, R_OK) != 0)
   {
-    printf ("SKIP: csv_driver (no %s; set $M9CSV)\n", path);
-    return 0;
+    printf ("SKIP: csv_driver (the FLUXNET battery: no %s; set $M9CSV)\n",
+            path);
+    printf (failed ? "FAIL (%d of %d f64 checks)\n"
+                   : "PASS (%d checks) -- the f64 kind and the "
+                   "not-a-number rule, on their own fixtures\n",
+            failed ? failed : checks, checks);
+    return failed ? 1 : 0;
   }
 
   /* every file-specific decision, in one place and none of them

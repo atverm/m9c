@@ -20,9 +20,10 @@ struct Csv_Kind {
 };
 #define Csv_Kind_Skip 0
 #define Csv_Kind_Real 1
-#define Csv_Kind_Int 2
-#define Csv_Kind_Stamp 3
-#define Csv_Kind_Text 4
+#define Csv_Kind_Real64 2
+#define Csv_Kind_Int 3
+#define Csv_Kind_Stamp 4
+#define Csv_Kind_Text 5
 
 extern const m9_exc Csv_ParseError;
 extern const m9_exc Csv_RangeError;
@@ -36,15 +37,21 @@ extern const m9_exc Csv_RangeError;
 #define Csv_KindInt INT64_C(2)
 #define Csv_KindStamp INT64_C(3)
 #define Csv_KindText INT64_C(4)
+#define Csv_KindReal64 INT64_C(5)
 #define Csv_KSkip INT64_C(0)
 #define Csv_KReal INT64_C(1)
 #define Csv_KInt INT64_C(2)
 #define Csv_KStamp INT64_C(3)
 #define Csv_KText INT64_C(4)
+#define Csv_KReal64 INT64_C(5)
 
 #ifndef M9SL_m9_sl_m9_sl_F32
 #define M9SL_m9_sl_m9_sl_F32
 typedef struct { m9_sl_F32 *p; int64_t len; } m9_sl_m9_sl_F32;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_F64
+#define M9SL_m9_sl_m9_sl_F64
+typedef struct { m9_sl_F64 *p; int64_t len; } m9_sl_m9_sl_F64;
 #endif
 #ifndef M9SL_m9_sl_m9_sl_I64
 #define M9SL_m9_sl_m9_sl_I64
@@ -78,6 +85,7 @@ m9_sl_CHAR Csv_Name (m9_pool *pool, Csv_Table * t, int64_t c, m9_state *err);
 int64_t Csv_Find (Csv_Table * t, m9_sl_CHAR name, m9_state *err);
 void Csv_SetKind (Csv_Table * *t, int64_t c, Csv_Kind k, m9_state *err);
 void Csv_SetReal (Csv_Table * *t, int64_t c, m9_state *err);
+void Csv_SetReal64 (Csv_Table * *t, int64_t c, m9_state *err);
 void Csv_SetInt (Csv_Table * *t, int64_t c, m9_state *err);
 void Csv_SetText (Csv_Table * *t, int64_t c, m9_state *err);
 void Csv_SetSkip (Csv_Table * *t, int64_t c, m9_state *err);
@@ -86,6 +94,7 @@ int64_t Csv_KindCodeAt (Csv_Table * t, int64_t c, m9_state *err);
 int64_t Csv_FormatAt (Csv_Table * t, int64_t c, m9_state *err);
 void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err);
 m9_sl_F32 Csv_ColF32 (Csv_Table * t, int64_t c, m9_state *err);
+m9_sl_F64 Csv_ColF64 (Csv_Table * t, int64_t c, m9_state *err);
 m9_sl_I64 Csv_ColI64 (Csv_Table * t, int64_t c, m9_state *err);
 m9_sl_Time_Instant Csv_ColStamp (Csv_Table * t, int64_t c, m9_state *err);
 m9_sl_CHAR Csv_TextAt (m9_pool *pool, Csv_Table * t, int64_t c, int64_t row, m9_state *err);

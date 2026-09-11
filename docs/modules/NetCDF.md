@@ -82,6 +82,10 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
+### CONST TypeString
+
+NC_STRING, netCDF-4's own
+
 ### CONST Unlimited
 
 the extent NC_UNLIMITED means
@@ -202,11 +206,27 @@ noted in the port ledger as the cost of a missing
 
 ### GetAttF64 (f: PTR File ; varid: I64 ; RO name: STR) : F64 RAISES Error, ValueRange
 
-_(undocumented)_
+_(documented with the group below)_
 
 ### GetAttStr (VAR pool: POOL ; f: PTR File ; varid: I64 ; RO name: STR) : STR RAISES Error, ValueRange
 
-_(undocumented)_
+an NC_CHAR attribute's OCTETS, one scalar each -- the Latin-1
+wire.  Right for ASCII, wrong for anything else, and it cannot
+read an NC_STRING attribute at all: use GetAttText.
+
+### GetAttText (VAR pool: POOL ; f: PTR File ; varid: I64 ; RO name: STR) : STR RAISES Error, ValueRange
+
+the same attribute as TEXT: NC_CHAR or NC_STRING, decoded from
+UTF-8, which is what CF says a netCDF text attribute carries and
+what every reader on the other side of these files assumes.
+
+BOTH HALVES ARE NEEDED IN PRACTICE and neither substitutes for
+the other: a NOAA ObsPack global block spells site_code as
+NC_CHAR and dataset_provider_citation_1 as NC_STRING, in the same
+file, and nc_get_att_text on the second answers
+"Attempt to convert between text & numbers".  An NC_STRING of
+more than one element is refused BY NAME rather than joined on a
+separator this module would have to invent.
 
 ### HasVar (f: PTR File ; RO name: STR) : BOOL RAISES ValueRange
 
@@ -216,7 +236,24 @@ not the diagnosis
 
 ### HasAtt (f: PTR File ; varid: I64 ; RO name: STR) : BOOL RAISES ValueRange
 
-_(documented with the group below)_
+_(undocumented)_
+
+### AttType (f: PTR File ; varid: I64 ; RO name: STR) : I64 RAISES Error, ValueRange
+
+_(undocumented)_
+
+### AttCount (f: PTR File ; varid: I64) : I64 RAISES Error, ValueRange
+
+_(undocumented)_
+
+### AttName (VAR pool: POOL ; f: PTR File ; varid: I64 ; i: I64) : STR RAISES Error, ValueRange
+
+enumeration: how many attributes a variable (or Global) carries
+and what they are called, in FILE ORDER.  Added for a builder
+that TRANSCRIBES a variable rather than inventing one -- the CF
+attributes a zarr array should carry are the ones the netCDF
+variable already has, and a hand-kept list of names is a list
+that goes stale against the next release of the product.
 
 ### VarCount (f: PTR File) : I64 RAISES Error
 
@@ -381,6 +418,14 @@ _(undocumented)_
 the reverse of PutChars: an n x width char matrix, each row
 answered as a STR with trailing NULs and blanks removed
 
+### GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ; out: SLICE OF BYTE) RAISES Error, SizeError, ValueRange
+
+the same matrix in BLOCKS and as OCTETS: `n` rows from `row`,
+into a buffer the caller sized at n * width.  GetChars answers
+STRs and therefore holds the whole variable twice, which a
+400,000-row identifier column cannot afford; this is the form
+for a caller that walks the rows and keeps nothing.
+
 ### PutF32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO data: SLICE OF F32) RAISES Error, SizeError, ValueRange
 
 one hyperslab out, the mirror of GetF64/GetF32.
@@ -465,6 +510,26 @@ _(undocumented)_
 _(undocumented)_
 
 ### NcInqAttLen (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; lenp: C.MutPtr) : C.Int [SERIAL]
+
+_(undocumented)_
+
+### NcInqVarNAtts (ncid: C.Int ; varid: C.Int ; nattsp: C.MutPtr) : C.Int [SERIAL]
+
+_(undocumented)_
+
+### NcInqAttName (ncid: C.Int ; varid: C.Int ; attnum: C.Int ; name: C.MutPtr) : C.Int [SERIAL]
+
+_(undocumented)_
+
+### NcGetAttString (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; ip: C.MutPtr) : C.Int [SERIAL]
+
+_(undocumented)_
+
+### NcFreeString (len: C.SizeT ; data: C.MutPtr) : C.Int [SERIAL]
+
+_(undocumented)_
+
+### CStrCopy (p: C.ConstPtr ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT [REENTRANT]
 
 _(undocumented)_
 

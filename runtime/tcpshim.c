@@ -215,15 +215,8 @@ int tcp_rcvtimeo (int fd, int64_t ms)
 #endif
 }
 
-/* millisecond sleep for the session reaper's tick */
-void m9_sleep_ms (int64_t ms)
-{
-#ifdef _WIN32
-  Sleep ((DWORD) ms);
-#else
-  struct timespec ts;
-  ts.tv_sec = ms / 1000;
-  ts.tv_nsec = (ms % 1000) * 1000000L;
-  nanosleep (&ts, NULL);
-#endif
-}
+/* m9_sleep_ms LIVED HERE, for the session reaper's tick, and moved to
+   m9rt.c on 2026-09-10 when Time.Sleep wanted it: a corpus module
+   cannot depend on the SOCKET shim being in the link, and the
+   time_driver's own line does not name it.  The move also picked up
+   the EINTR retry the reaper never needed and a backoff does.     */

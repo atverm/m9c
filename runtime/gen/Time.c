@@ -4,8 +4,8 @@
 #include "Fmt.h"
 
 extern double m9_now (void);
+extern void m9_sleep_ms (int64_t);
 
-static int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_state *err);
 static void Time_CivilFromDays (int64_t z, int64_t *y, int64_t *m, int64_t *d, m9_state *err);
 static double Time_FloorDiv (double x, double by, m9_state *err);
 static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_state *err);
@@ -364,6 +364,64 @@ L_ret: ;
   return m9ret;
 }
 
+void Time_Sleep (int64_t ms, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sleep_ms (((int64_t)(ms)));
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t era = 0; (void) era;
+  int64_t yoe = 0; (void) yoe;
+  int64_t doy = 0; (void) doy;
+  int64_t doe = 0; (void) doe;
+  int64_t yy = 0; (void) yy;
+  yy = y;
+  if ((m <= INT64_C(2))) {
+    yy = m9_sub_i64 (yy, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
+  if ((yy >= INT64_C(0))) {
+    era = m9_div_i64 (yy, INT64_C(400), err);
+    if (err->exc) goto L_ret;
+  } else {
+    era = m9_div_i64 ((m9_sub_i64 (yy, INT64_C(399), err)), INT64_C(400), err);
+    if (err->exc) goto L_ret;
+  }
+  yoe = m9_sub_i64 (yy, m9_mul_i64 (era, INT64_C(400), err), err);
+  if (err->exc) goto L_ret;
+  if ((m > INT64_C(2))) {
+    doy = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_sub_i64 (m, INT64_C(3), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  } else {
+    doy = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_add_i64 (m, INT64_C(9), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
+  doe = m9_add_i64 (m9_sub_i64 (m9_add_i64 (m9_mul_i64 (yoe, INT64_C(365), err), m9_div_i64 (yoe, INT64_C(4), err), err), m9_div_i64 (yoe, INT64_C(100), err), err), doy, err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (era, INT64_C(146097), err), doe, err), INT64_C(719468), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 bool Time_IsLeap (int64_t year, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -425,51 +483,6 @@ int64_t Time_DaysInMonth (int64_t year, int64_t month, m9_state *err)
   }
   err->res = m9res;
   m9ret = INT64_C(31);
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
-static int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  int64_t m9ret = 0;
-  int64_t era = 0; (void) era;
-  int64_t yoe = 0; (void) yoe;
-  int64_t doy = 0; (void) doy;
-  int64_t doe = 0; (void) doe;
-  int64_t yy = 0; (void) yy;
-  yy = y;
-  if ((m <= INT64_C(2))) {
-    yy = m9_sub_i64 (yy, INT64_C(1), err);
-    if (err->exc) goto L_ret;
-  }
-  if ((yy >= INT64_C(0))) {
-    era = m9_div_i64 (yy, INT64_C(400), err);
-    if (err->exc) goto L_ret;
-  } else {
-    era = m9_div_i64 ((m9_sub_i64 (yy, INT64_C(399), err)), INT64_C(400), err);
-    if (err->exc) goto L_ret;
-  }
-  yoe = m9_sub_i64 (yy, m9_mul_i64 (era, INT64_C(400), err), err);
-  if (err->exc) goto L_ret;
-  if ((m > INT64_C(2))) {
-    doy = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_sub_i64 (m, INT64_C(3), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
-  } else {
-    doy = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_add_i64 (m, INT64_C(9), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
-  }
-  doe = m9_add_i64 (m9_sub_i64 (m9_add_i64 (m9_mul_i64 (yoe, INT64_C(365), err), m9_div_i64 (yoe, INT64_C(4), err), err), m9_div_i64 (yoe, INT64_C(100), err), err), doy, err);
-  if (err->exc) goto L_ret;
-  err->res = m9res;
-  m9ret = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (era, INT64_C(146097), err), doe, err), INT64_C(719468), err);
-  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;

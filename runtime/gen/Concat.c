@@ -17,10 +17,12 @@ extern int64_t m9_read_stdin (void *, int64_t);
 extern void m9_flush (void);
 extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
+extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
+extern int m9_append_file (const void *, const void *, size_t);
 
 static m9_sl_CHAR s;
 static DynStr_DString * d;

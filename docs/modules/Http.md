@@ -31,6 +31,25 @@ TransportError like any other failure to connect: a caller
 cannot proceed either way, and the two are not usefully
 distinguished at this layer.
 
+### CONST MaxHop
+
+redirects followed before refusing
+
+### GetToFile (VAR pool: POOL ; RO url: STR ; RO accept: STR ; RO cookie: STR ; RO dest: STR ; VAR bytes: I64) : I64 RAISES TransportError, Io.IOError, ValueRange
+
+GET `url`, following redirects, writing the body to `dest` in
+blocks -- the peak is one block and not one download.  Answers
+the FINAL status; `bytes` is what was written, which is 0 unless
+the status is 200.  `accept` and `cookie` are sent when they are
+not empty.
+
+### GetText (VAR pool: POOL ; RO url: STR ; RO accept: STR ; RO cookie: STR ; cap: I64 ; VAR status: I64) : STR RAISES TransportError, ValueRange
+
+the same, for a document small enough to hold: the body decoded
+from UTF-8, refused BY NAME past `cap` octets rather than
+truncated -- a truncated JSON document is a parse error three
+layers away from its cause.
+
 ### Connect (host: C.ConstPtr ; port: C.Int) : C.Int [SERIAL]
 
 the shim resolves and connects; SERIAL until its thread safety

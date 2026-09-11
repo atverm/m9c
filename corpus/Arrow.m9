@@ -1,0 +1,784 @@
+DEFINITION MODULE Arrow ;
+
+(* An Apache Arrow IPC STREAM, written.
+
+   One schema message, one record batch, one end-of-stream marker --
+   the shape `pyarrow.ipc.open_stream` reads and the shape a service
+   answers `format=arrow` with.  Deliberately a SUBSET, and the parts
+   outside it are refused BY NAME rather than half-written, because a
+   columnar file that decodes into the wrong cells is a numbers-shaped
+   lie: Parquet.m9's rule, and the reason pyarrow is the oracle in
+   runtime/test/arrow_driver.c.
+
+   IN THE SUBSET: flat schemas; int8/16/32/64, float32/64, UTF-8
+   strings, and timestamps in nanoseconds; one record batch; schema
+   custom_metadata.  UNCOMPRESSED -- Arrow's per-buffer compression
+   would need a zstd or lz4 binding, and a reader accepts an
+   uncompressed stream from a writer that compresses, so the cost is
+   bytes on the wire and nothing else.
+
+   OUT OF THE SUBSET, and refused: nulls.  Every column here is
+   written with an EMPTY validity buffer and a null_count of zero,
+   which is what a numpy array with no mask becomes, and it is what
+   these callers have.  A column that needs nulls must say so, and
+   this module would have to grow a bitmap rather than guess.  The
+   missing-value convention in the data -- NaN, a sentinel -- is the
+   caller's, unchanged, exactly as Parquet.m9 leaves it.
+
+   THE FORMAT, so a reader of this file need not have the spec open.
+   A stream is a sequence of encapsulated messages:
+
+     <0xFFFFFFFF> <int32 metadata length> <flatbuffer> <pad to 8> [body]
+
+   and ends with a length of zero.  The metadata length COUNTS its own
+   padding, so every body starts 8-aligned.  Inside the body each
+   buffer is padded to 8 as well, and the record batch names every
+   buffer by (offset, length) so a reader never has to guess.  The
+   flatbuffer field numbers are the interesting part and they are
+   written down at each table below; they were read off a stream
+   pyarrow produced rather than remembered.                          *)
+
+IMPORT DynStr ;
+
+TYPE
+  Table ;                                (* opaque; lives in a POOL *)
+
+CONST
+  (* the column types this subset writes.  Names, not widths, because
+     a wire format fixes the width and the host must not have a say --
+     par 2.1's rule, and SizeOf is deliberately not used here. *)
+  TyI8   = 0 ;
+  TyI16  = 1 ;
+  TyI32  = 2 ;
+  TyI64  = 3 ;
+  TyF32  = 4 ;
+  TyF64  = 5 ;
+  TyStr  = 6 ;
+  TyTsNs = 7 ;                           (* timestamp, nanoseconds,
+                                            NO timezone: naive, as a
+                                            numpy datetime64 lands *)
+
+EXCEPTION
+  Bad (RO what: STR) ;
+  (* what this writer will not do, named: a column length that
+     disagrees with the table's, a type outside the subset, a value
+     that will not fit the width it was asked for, or metadata past
+     the builder's room.  Never a silent narrowing.                  *)
+
+PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Table IN pool ;
+  (* an empty table of `rows` rows.  Columns are added in order and
+     that is the order the schema and the batch carry.               *)
+
+PROCEDURE Meta (VAR pool: POOL ; VAR t: PTR Table ;
+                RO KEPT key: STR ; RO KEPT value: STR) ;
+  (* a schema custom_metadata entry -- where a data passport rides.
+     KEPT: the table holds VIEWS of the caller's strings, as
+     HttpServer.AddRoute holds its own, so they must outlive it.     *)
+
+PROCEDURE AddInt (VAR pool: POOL ; VAR t: PTR Table ;
+                  RO KEPT name: STR ; ty: I64 ; RO KEPT v: SLICE OF I64)
+  RAISES Bad ;
+  (* an integer or timestamp column, values carried as I64 and
+     narrowed to the declared width.  A value that will not fit
+     RAISES rather than wrapping: the width is the wire's, and a
+     silent truncation here is a wrong number in someone's dataframe. *)
+
+PROCEDURE AddF32 (VAR pool: POOL ; VAR t: PTR Table ;
+                  RO KEPT name: STR ; RO KEPT v: SLICE OF F32)
+  RAISES Bad ;
+
+PROCEDURE AddF64 (VAR pool: POOL ; VAR t: PTR Table ;
+                  RO KEPT name: STR ; RO KEPT v: SLICE OF F64)
+  RAISES Bad ;
+
+PROCEDURE AddStr (VAR pool: POOL ; VAR t: PTR Table ;
+                  RO KEPT name: STR ; RO KEPT v: SLICE OF STR)
+  RAISES Bad, ValueRange ;
+  (* UTF-8 on the wire, encoded here from the caller's CHARs. *)
+
+PROCEDURE Stream (VAR pool: POOL ; t: PTR Table) : SLICE OF BYTE
+  RAISES Bad, ValueRange ;
+  (* the whole stream, in pool. *)
+
+PROCEDURE NBytes (t: PTR Table) : I64 ;
+  (* what pyarrow's `table.nbytes` answers for this table, which is
+     NOT the stream length: it is Arrow's in-memory buffer
+     accounting, and a caller reporting a size in a passport must use
+     this rather than measuring the wire.  A string column counts
+     4n + data, NOT 4(n+1) -- the offsets buffer is one longer on the
+     wire than nbytes admits -- and a column with no nulls carries no
+     validity bytes at all.  Both were measured against pyarrow, and
+     the first cost an 8-byte passport error on two string columns
+     the last time this was written.                                 *)
+
+END Arrow.
+
+
+IMPLEMENTATION MODULE Arrow ;
+
+IMPORT DynStr ;
+
+CONST
+  (* flatbuffer builder room for the two metadata messages.  The body
+     never passes through it. *)
+  FbFixed = 8192 ;
+  FbPerCol = 512 ;
+
+TYPE
+  Col = RECORD
+    RO name : STR ;
+    ty : I64 ;
+    RO iv : SLICE OF I64 ;
+    RO f4 : SLICE OF F32 ;
+    RO f8 : SLICE OF F64 ;
+    (* a string column is encoded ONCE, at Add: the offsets and the
+       concatenated UTF-8, which is what the wire wants anyway.  The
+       alternative -- encoding per row at Stream -- would walk every
+       string twice and leave a pool full of throwaway copies. *)
+    sdata : SLICE OF BYTE ;
+    soff : SLICE OF I64 ;
+    dlen : I64 ;
+    next : OPT PTR Col ;
+  END ;
+
+  Kv = RECORD
+    RO k, v : STR ;
+    next : OPT PTR Kv ;
+  END ;
+
+  Table = RECORD
+    rows, ncol, nmeta : I64 ;
+    firstC, lastC : OPT PTR Col ;
+    firstM, lastM : OPT PTR Kv ;
+  END ;
+
+  (* THE FLATBUFFER BUILDER, WHICH FILLS ITS BUFFER FROM THE END.
+     That is not a flourish: an offset in this format points forward
+     from where it is written, so an object must be complete before
+     anything can refer to it, and building backwards is what makes
+     that possible in one pass.  Every offset below is measured from
+     the END of the buffer, the only frame in which they stay put
+     while the front keeps moving. *)
+  Fb = RECORD
+    b : SLICE OF BYTE ;
+    head : I64 ;
+    minAlign : I64 ;
+    vt : ARRAY 16 OF I64 ;
+    nvt : I64 ;
+    objStart : I64 ;
+  END ;
+
+PROCEDURE Pow256 (k: I64) : I64 =
+VAR i, p : I64 ;
+BEGIN
+  p := 1 ;
+  FOR i := 1 TO k DO p := p * 256 END ;
+  RETURN p
+END Pow256 ;
+
+PROCEDURE PutLE (VAR u: SLICE OF BYTE ; at, v, k: I64)
+  RAISES ValueRange, IndexError =
+  (* k little-endian bytes of v's TWO'S COMPLEMENT pattern.  The
+     shift stays inside checked I64: m is the non-negative low byte
+     and (v - m) is an exact multiple of 256, so DIV truncating or
+     flooring makes no difference. *)
+VAR i, x, m : I64 ;
+BEGIN
+  x := v ;
+  FOR i := 0 TO k - 1 DO
+    m := x MOD 256 ;
+    IF m < 0 THEN m := m + 256 END ;
+    u[at + i] := BYTE (m) ;
+    x := (x - m) DIV 256
+  END
+END PutLE ;
+
+PROCEDURE Pad8 (n: I64) : I64 =
+VAR r : I64 ;
+BEGIN
+  r := n MOD 8 ;
+  IF r = 0 THEN RETURN n END ;
+  RETURN n + 8 - r
+END Pad8 ;
+
+PROCEDURE Width (ty: I64) : I64 =
+BEGIN
+  IF ty = TyI8 THEN RETURN 1 END ;
+  IF ty = TyI16 THEN RETURN 2 END ;
+  IF ty = TyI32 OR ty = TyF32 THEN RETURN 4 END ;
+  RETURN 8
+END Width ;
+
+(* ---- the builder ---- *)
+
+PROCEDURE Used (RO f: Fb) : I64 =
+BEGIN
+  RETURN LEN (f.b) - f.head
+END Used ;
+
+PROCEDURE Room (VAR f: Fb ; n: I64) RAISES Bad =
+BEGIN
+  IF f.head - n < 0 THEN
+    RAISE Bad ('arrow: metadata outgrew the builder room')
+  END
+END Room ;
+
+PROCEDURE Pad (VAR f: Fb ; n: I64) RAISES Bad, ValueRange =
+VAR i : I64 ;
+BEGIN
+  Room (f, n) ;
+  FOR i := 1 TO n DO
+    f.head := f.head - 1 ;
+    f.b[f.head] := BYTE (0)
+  END
+END Pad ;
+
+PROCEDURE Prep (VAR f: Fb ; size, add: I64) RAISES Bad, ValueRange =
+VAR r : I64 ;
+BEGIN
+  IF size > f.minAlign THEN f.minAlign := size END ;
+  r := (Used (f) + add) MOD size ;
+  IF r # 0 THEN Pad (f, size - r) END
+END Prep ;
+
+PROCEDURE Raw (VAR f: Fb ; v: I64 ; k: I64) RAISES Bad, ValueRange =
+VAR i, x, m : I64 ;
+BEGIN
+  Room (f, k) ;
+  x := v ;
+  f.head := f.head - k ;
+  FOR i := 0 TO k - 1 DO
+    m := x MOD 256 ;
+    IF m < 0 THEN m := m + 256 END ;
+    f.b[f.head + i] := BYTE (m) ;
+    x := (x - m) DIV 256
+  END
+END Raw ;
+
+PROCEDURE Put8 (VAR f: Fb ; v: I64) RAISES Bad, ValueRange =
+BEGIN
+  Prep (f, 1, 0) ; Raw (f, v, 1)
+END Put8 ;
+
+PROCEDURE Put16 (VAR f: Fb ; v: I64) RAISES Bad, ValueRange =
+BEGIN
+  Prep (f, 2, 0) ; Raw (f, v, 2)
+END Put16 ;
+
+PROCEDURE Put32 (VAR f: Fb ; v: I64) RAISES Bad, ValueRange =
+BEGIN
+  Prep (f, 4, 0) ; Raw (f, v, 4)
+END Put32 ;
+
+PROCEDURE Put64 (VAR f: Fb ; v: I64) RAISES Bad, ValueRange =
+BEGIN
+  Prep (f, 8, 0) ; Raw (f, v, 8)
+END Put64 ;
+
+PROCEDURE Ref (VAR f: Fb ; off: I64) RAISES Bad, ValueRange =
+  (* an offset to an object already written: forward from here *)
+BEGIN
+  Prep (f, 4, 0) ;
+  Raw (f, Used (f) - off + 4, 4)
+END Ref ;
+
+PROCEDURE Str (VAR pool: POOL ; VAR f: Fb ; RO s: STR) : I64
+  RAISES Bad, ValueRange =
+  (* length, bytes, NUL -- written backwards, terminator first *)
+VAR i, n : I64 ; u : SLICE OF BYTE ;
+BEGIN
+  u := DynStr.Utf8 (pool, s) ;
+  n := LEN (u) ;
+  Prep (f, 4, n + 1) ;
+  Pad (f, 1) ;
+  Room (f, n) ;
+  f.head := f.head - n ;
+  FOR i := 0 TO n - 1 DO
+    f.b[f.head + i] := u[i]
+  END ;
+  Put32 (f, n) ;
+  RETURN Used (f)
+END Str ;
+
+PROCEDURE Start (VAR f: Fb ; nfields: I64) RAISES IndexError =
+VAR i : I64 ;
+BEGIN
+  f.nvt := nfields ;
+  FOR i := 0 TO nfields - 1 DO f.vt[i] := 0 END ;
+  f.objStart := Used (f)
+END Start ;
+
+PROCEDURE Slot (VAR f: Fb ; i: I64) RAISES IndexError =
+  (* CALLED AFTER THE VALUE, never before.  Building backwards, the
+     field's offset is where the buffer stands once the value is
+     down; recording it first points the vtable at the PREVIOUS
+     field and every scalar comes out misaligned -- which is what
+     "Invalid flatbuffers message" meant the first time. *)
+BEGIN
+  f.vt[i] := Used (f)
+END Slot ;
+
+PROCEDURE End (VAR f: Fb) : I64 RAISES Bad, ValueRange, IndexError =
+  (* close the table: a placeholder, the vtable behind it, then the
+     placeholder patched to point at it.  The reader computes
+     table_position - soffset = vtable, which is why the patched
+     value is vloc - tloc and not the other way round. *)
+VAR i, tloc, vloc, d : I64 ;
+BEGIN
+  Put32 (f, 0) ;
+  tloc := Used (f) ;
+  FOR i := f.nvt - 1 TO 0 BY -1 DO
+    IF f.vt[i] = 0 THEN Put16 (f, 0)
+    ELSE Put16 (f, tloc - f.vt[i]) END
+  END ;
+  Put16 (f, tloc - f.objStart) ;
+  Put16 (f, (f.nvt + 2) * 2) ;
+  vloc := Used (f) ;
+  d := vloc - tloc ;
+  FOR i := 0 TO 3 DO
+    f.b[LEN (f.b) - tloc + i] := BYTE ((d DIV Pow256 (i)) MOD 256)
+  END ;
+  RETURN tloc
+END End ;
+
+PROCEDURE Finish (VAR f: Fb ; root: I64) RAISES Bad, ValueRange =
+BEGIN
+  Prep (f, f.minAlign, 4) ;
+  Ref (f, root)
+END Finish ;
+
+(* ---- the Arrow tables.  Field numbers were read off a stream
+   pyarrow produced, not remembered. ---- *)
+
+PROCEDURE TypeTag (ty: I64) : I64 =
+  (* Type union tags from Schema.fbs: Int 2, FloatingPoint 3,
+     Utf8 5, Timestamp 10 *)
+BEGIN
+  IF ty = TyF32 OR ty = TyF64 THEN RETURN 3 END ;
+  IF ty = TyStr THEN RETURN 5 END ;
+  IF ty = TyTsNs THEN RETURN 10 END ;
+  RETURN 2
+END TypeTag ;
+
+PROCEDURE TypeTable (VAR f: Fb ; ty: I64) : I64
+  RAISES Bad, ValueRange, IndexError =
+BEGIN
+  IF ty = TyStr THEN
+    Start (f, 0) ;                       (* Utf8: an empty table *)
+    RETURN End (f)
+  END ;
+  IF ty = TyF32 OR ty = TyF64 THEN
+    Start (f, 1) ;                       (* FloatingPoint: 0 precision *)
+    IF ty = TyF32 THEN Put16 (f, 1) ELSE Put16 (f, 2) END ;
+    Slot (f, 0) ;
+    RETURN End (f)
+  END ;
+  IF ty = TyTsNs THEN
+    Start (f, 2) ;                       (* Timestamp: 0 unit, 1 zone *)
+    Put16 (f, 3) ;                         (* NANOSECOND, and NO
+                                            timezone, so the stamp is
+                                            naive exactly as a numpy
+                                            datetime64[ns] lands *)
+    Slot (f, 0) ;
+    RETURN End (f)
+  END ;
+  Start (f, 2) ;                         (* Int: 0 bitWidth, 1 signed *)
+  Put8 (f, 1) ; Slot (f, 1) ;
+  Put32 (f, Width (ty) * 8) ; Slot (f, 0) ;
+  RETURN End (f)
+END TypeTable ;
+
+PROCEDURE FieldTable (VAR pool: POOL ; VAR f: Fb ; RO name: STR ;
+                      ty: I64) : I64
+  RAISES Bad, ValueRange, IndexError =
+  (* Field: 0 name, 1 nullable, 2 type_type, 3 type, 4 dictionary,
+     5 children, 6 custom_metadata *)
+VAR nm, tt, kids : I64 ;
+BEGIN
+  nm := Str (pool, f, name) ;
+  tt := TypeTable (f, ty) ;
+  Prep (f, 4, 0) ;
+  Put32 (f, 0) ;                           (* an empty children vector,
+                                            which pyarrow emits too *)
+  kids := Used (f) ;
+  Start (f, 6) ;
+  Ref (f, kids) ; Slot (f, 5) ;
+  Ref (f, tt) ; Slot (f, 3) ;
+  Put8 (f, TypeTag (ty)) ; Slot (f, 2) ;
+  Put8 (f, 1) ; Slot (f, 1) ;              (* nullable, as pyarrow marks
+                                            every field even when the
+                                            batch carries no nulls *)
+  Ref (f, nm) ; Slot (f, 0) ;
+  RETURN End (f)
+END FieldTable ;
+
+PROCEDURE KvTable (VAR pool: POOL ; VAR f: Fb ; RO k: STR ; RO v: STR)
+  : I64 RAISES Bad, ValueRange, IndexError =
+VAR ko, vo : I64 ;
+BEGIN
+  ko := Str (pool, f, k) ;
+  vo := Str (pool, f, v) ;
+  Start (f, 2) ;
+  Ref (f, vo) ; Slot (f, 1) ;
+  Ref (f, ko) ; Slot (f, 0) ;
+  RETURN End (f)
+END KvTable ;
+
+PROCEDURE Vector (VAR f: Fb ; RO offs: SLICE OF I64 ; n: I64) : I64
+  RAISES Bad, ValueRange, IndexError =
+  (* a vector of offsets, last element first *)
+VAR i : I64 ;
+BEGIN
+  Prep (f, 4, 4 * n) ;
+  FOR i := n - 1 TO 0 BY -1 DO
+    Ref (f, offs[i])
+  END ;
+  Put32 (f, n) ;
+  RETURN Used (f)
+END Vector ;
+
+PROCEDURE SchemaMsg (VAR pool: POOL ; VAR f: Fb ; t: PTR Table) : I64
+  RAISES Bad, ValueRange, IndexError =
+  (* Schema: 0 endianness (Little is the default, so omitted),
+     1 fields, 2 custom_metadata.  Message: 0 version, 1 header_type,
+     2 header, 3 bodyLength (zero here, so omitted). *)
+VAR
+  offs : SLICE OF I64 ;
+  c : OPT PTR Col ; m : OPT PTR Kv ;
+  i, fv, mv, sc : I64 ;
+BEGIN
+  offs := NEW (pool, I64, t.ncol + t.nmeta + 1) ;
+  i := 0 ; c := t.firstC ;
+  WHILE c IS SOME cc DO
+    offs[i] := FieldTable (pool, f, cc.name, cc.ty) ;
+    i := i + 1 ; c := cc.next
+  END ;
+  fv := Vector (f, offs, t.ncol) ;
+  mv := 0 ;
+  IF t.nmeta > 0 THEN
+    i := 0 ; m := t.firstM ;
+    WHILE m IS SOME mm DO
+      offs[i] := KvTable (pool, f, mm.k, mm.v) ;
+      i := i + 1 ; m := mm.next
+    END ;
+    mv := Vector (f, offs, t.nmeta)
+  END ;
+  Start (f, 3) ;
+  IF t.nmeta > 0 THEN Ref (f, mv) END ; Slot (f, 2) ;
+  Ref (f, fv) ; Slot (f, 1) ;
+  sc := End (f) ;
+  Start (f, 4) ;
+  Ref (f, sc) ; Slot (f, 2) ;
+  Put8 (f, 1) ; Slot (f, 1) ;              (* header_type = Schema *)
+  Put16 (f, 4) ; Slot (f, 0) ;             (* MetadataVersion V5 *)
+  RETURN End (f)
+END SchemaMsg ;
+
+PROCEDURE BatchMsg (VAR f: Fb ; t: PTR Table ;
+                    RO bufOff: SLICE OF I64 ; RO bufLen: SLICE OF I64 ;
+                    nbuf, bodyLen: I64) : I64
+  RAISES Bad, ValueRange, IndexError =
+  (* RecordBatch: 0 length, 1 nodes, 2 buffers.  FieldNode and Buffer
+     are STRUCTS -- inline, no vtable, sixteen bytes each -- so their
+     fields go down in reverse to come out in order. *)
+VAR i, nodes, bufs, rb : I64 ;
+BEGIN
+  Prep (f, 4, 16 * t.ncol) ;
+  Prep (f, 8, 16 * t.ncol) ;
+  FOR i := t.ncol - 1 TO 0 BY -1 DO
+    Put64 (f, 0) ;                        (* null_count *)
+    Put64 (f, t.rows)                     (* length *)
+  END ;
+  Put32 (f, t.ncol) ;
+  nodes := Used (f) ;
+  Prep (f, 4, 16 * nbuf) ;
+  Prep (f, 8, 16 * nbuf) ;
+  FOR i := nbuf - 1 TO 0 BY -1 DO
+    Put64 (f, bufLen[i]) ;
+    Put64 (f, bufOff[i])
+  END ;
+  Put32 (f, nbuf) ;
+  bufs := Used (f) ;
+  Start (f, 3) ;
+  Ref (f, bufs) ; Slot (f, 2) ;
+  Ref (f, nodes) ; Slot (f, 1) ;
+  Put64 (f, t.rows) ; Slot (f, 0) ;
+  rb := End (f) ;
+  Start (f, 4) ;
+  Put64 (f, bodyLen) ; Slot (f, 3) ;
+  Ref (f, rb) ; Slot (f, 2) ;
+  Put8 (f, 3) ; Slot (f, 1) ;              (* header_type = RecordBatch *)
+  Put16 (f, 4) ; Slot (f, 0) ;
+  RETURN End (f)
+END BatchMsg ;
+
+(* ---- the public surface ---- *)
+
+PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Table IN pool =
+VAR t : PTR Table IN pool ;
+BEGIN
+  t := NEW (pool, Table) ;
+  t.rows := rows ;
+  t.ncol := 0 ;
+  t.nmeta := 0 ;
+  t.firstC := NONE ; t.lastC := NONE ;
+  t.firstM := NONE ; t.lastM := NONE ;
+  RETURN t
+END New ;
+
+PROCEDURE Meta (VAR pool: POOL ; VAR t: PTR Table ;
+                RO KEPT key: STR ; RO KEPT value: STR) =
+VAR m : PTR Kv IN pool ;
+BEGIN
+  m := NEW (pool, Kv) ;
+  m.k := key ; m.v := value ; m.next := NONE ;
+  IF t.lastM IS SOME p THEN p.next := SOME (m)
+  ELSE t.firstM := SOME (m) END ;
+  t.lastM := SOME (m) ;
+  t.nmeta := t.nmeta + 1
+END Meta ;
+
+PROCEDURE Add (VAR pool: POOL ; VAR t: PTR Table ;
+               RO KEPT name: STR ; ty: I64 ; n: I64) : PTR Col IN pool
+  RAISES Bad =
+VAR c : PTR Col IN pool ;
+BEGIN
+  IF n # t.rows THEN
+    RAISE Bad ('arrow: column length disagrees with the table')
+  END ;
+  c := NEW (pool, Col) ;
+  c.name := name ; c.ty := ty ; c.dlen := 0 ; c.next := NONE ;
+  IF t.lastC IS SOME p THEN p.next := SOME (c)
+  ELSE t.firstC := SOME (c) END ;
+  t.lastC := SOME (c) ;
+  t.ncol := t.ncol + 1 ;
+  RETURN c
+END Add ;
+
+PROCEDURE AddInt (VAR pool: POOL ; VAR t: PTR Table ;
+                  RO KEPT name: STR ; ty: I64 ; RO KEPT v: SLICE OF I64)
+  RAISES Bad =
+VAR c : PTR Col ; i, w, lim : I64 ;
+BEGIN
+  IF ty = TyF32 OR ty = TyF64 OR ty = TyStr THEN
+    RAISE Bad ('arrow: AddInt given a non-integer type')
+  END ;
+  w := Width (ty) ;
+  IF w < 8 THEN
+    (* the width belongs to the WIRE; a value that will not fit is
+       refused rather than wrapped, because a silent truncation here
+       is a wrong number in someone's dataframe *)
+    lim := Pow256 (w) DIV 2 ;
+    FOR i := 0 TO LEN (v) - 1 DO
+      IF v[i] >= lim OR v[i] < -lim THEN
+        RAISE Bad ('arrow: value does not fit the declared width')
+      END
+    END
+  END ;
+  c := Add (pool, t, name, ty, LEN (v)) ;
+  c.iv := v
+END AddInt ;
+
+PROCEDURE AddF32 (VAR pool: POOL ; VAR t: PTR Table ;
+                  RO KEPT name: STR ; RO KEPT v: SLICE OF F32)
+  RAISES Bad =
+VAR c : PTR Col ;
+BEGIN
+  c := Add (pool, t, name, TyF32, LEN (v)) ;
+  c.f4 := v
+END AddF32 ;
+
+PROCEDURE AddF64 (VAR pool: POOL ; VAR t: PTR Table ;
+                  RO KEPT name: STR ; RO KEPT v: SLICE OF F64)
+  RAISES Bad =
+VAR c : PTR Col ;
+BEGIN
+  c := Add (pool, t, name, TyF64, LEN (v)) ;
+  c.f8 := v
+END AddF64 ;
+
+PROCEDURE AddStr (VAR pool: POOL ; VAR t: PTR Table ;
+                  RO KEPT name: STR ; RO KEPT v: SLICE OF STR)
+  RAISES Bad, ValueRange =
+VAR
+  c : PTR Col ;
+  parts : SLICE OF BYTE ;
+  i, j, m, n : I64 ;
+BEGIN
+  c := Add (pool, t, name, TyStr, LEN (v)) ;
+  c.soff := NEW (pool, I64, LEN (v) + 1) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    c.soff[i] := n ;
+    n := n + LEN (DynStr.Utf8 (pool, v[i]))
+  END ;
+  c.soff[LEN (v)] := n ;
+  c.dlen := n ;
+  c.sdata := NEW (pool, BYTE, n) ;
+  j := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    parts := DynStr.Utf8 (pool, v[i]) ;
+    FOR m := 0 TO LEN (parts) - 1 DO
+      c.sdata[j] := parts[m] ; j := j + 1
+    END
+  END
+END AddStr ;
+
+PROCEDURE NBytes (t: PTR Table) : I64 =
+VAR c : OPT PTR Col ; n : I64 ;
+BEGIN
+  n := 0 ;
+  c := t.firstC ;
+  WHILE c IS SOME cc DO
+    IF cc.ty = TyStr THEN
+      (* 4n, NOT 4(n+1): pyarrow's own accounting, measured.  The
+         offsets buffer is one entry longer on the wire than nbytes
+         admits, and that difference is an 8-byte passport error on
+         two string columns if it is assumed instead. *)
+      n := n + 4 * t.rows + cc.dlen
+    ELSE
+      n := n + Width (cc.ty) * t.rows
+    END ;
+    c := cc.next
+  END ;
+  RETURN n
+END NBytes ;
+
+PROCEDURE MetaBytes (t: PTR Table) : I64 =
+VAR m : OPT PTR Kv ; n : I64 ;
+BEGIN
+  n := 0 ; m := t.firstM ;
+  WHILE m IS SOME mm DO
+    n := n + 4 * LEN (mm.k) + 4 * LEN (mm.v) + 64 ;
+    m := mm.next
+  END ;
+  RETURN n
+END MetaBytes ;
+
+PROCEDURE NameBytes (t: PTR Table) : I64 =
+VAR c : OPT PTR Col ; n : I64 ;
+BEGIN
+  n := 0 ; c := t.firstC ;
+  WHILE c IS SOME cc DO
+    n := n + 4 * LEN (cc.name) + 32 ;
+    c := cc.next
+  END ;
+  RETURN n
+END NameBytes ;
+
+PROCEDURE PutMark (VAR u: SLICE OF BYTE ; at, len: I64)
+  RAISES ValueRange, IndexError =
+BEGIN
+  PutLE (u, at, 4294967295, 4) ;
+  PutLE (u, at + 4, len, 4)
+END PutMark ;
+
+PROCEDURE Stream (VAR pool: POOL ; t: PTR Table) : SLICE OF BYTE
+  RAISES Bad, ValueRange =
+VAR
+  f : Fb ;
+  bufOff, bufLen : SLICE OF I64 ;
+  sb, u : SLICE OF BYTE ;
+  c : OPT PTR Col ;
+  i, k, nbuf, at, bodyLen, sRoot, bRoot : I64 ;
+  sLen, bLen, sPad, bPad, pos, w : I64 ;
+BEGIN
+  (* ---- the body is laid out FIRST: the batch must name every
+     buffer by (offset, length), so the layout has to exist before
+     the metadata that describes it ---- *)
+  nbuf := 0 ;
+  c := t.firstC ;
+  WHILE c IS SOME cc DO
+    IF cc.ty = TyStr THEN nbuf := nbuf + 3 ELSE nbuf := nbuf + 2 END ;
+    c := cc.next
+  END ;
+  bufOff := NEW (pool, I64, nbuf + 1) ;
+  bufLen := NEW (pool, I64, nbuf + 1) ;
+  at := 0 ; k := 0 ;
+  c := t.firstC ;
+  WHILE c IS SOME cc DO
+    (* the validity buffer: present, EMPTY, null_count zero *)
+    bufOff[k] := at ; bufLen[k] := 0 ; k := k + 1 ;
+    IF cc.ty = TyStr THEN
+      bufOff[k] := at ; bufLen[k] := 4 * (t.rows + 1) ; k := k + 1 ;
+      at := at + Pad8 (4 * (t.rows + 1)) ;
+      bufOff[k] := at ; bufLen[k] := cc.dlen ; k := k + 1 ;
+      at := at + Pad8 (cc.dlen)
+    ELSE
+      bufOff[k] := at ; bufLen[k] := Width (cc.ty) * t.rows ; k := k + 1 ;
+      at := at + Pad8 (Width (cc.ty) * t.rows)
+    END ;
+    c := cc.next
+  END ;
+  bodyLen := at ;
+
+  (* ---- the schema message ---- *)
+  f.b := NEW (pool, BYTE, FbFixed + FbPerCol * (t.ncol + 1) +
+                          MetaBytes (t) + NameBytes (t)) ;
+  f.head := LEN (f.b) ; f.minAlign := 1 ; f.nvt := 0 ; f.objStart := 0 ;
+  sRoot := SchemaMsg (pool, f, t) ;
+  Finish (f, sRoot) ;
+  sLen := Used (f) ;
+  sPad := Pad8 (sLen) ;
+  sb := NEW (pool, BYTE, sLen) ;
+  FOR i := 0 TO sLen - 1 DO sb[i] := f.b[f.head + i] END ;
+
+  (* ---- the record batch, in the same builder rewound ---- *)
+  f.head := LEN (f.b) ; f.minAlign := 1 ; f.nvt := 0 ; f.objStart := 0 ;
+  bRoot := BatchMsg (f, t, bufOff, bufLen, nbuf, bodyLen) ;
+  Finish (f, bRoot) ;
+  bLen := Used (f) ;
+  bPad := Pad8 (bLen) ;
+
+  (* ---- the stream.  A message's declared metadata length COUNTS
+     its padding, which is what leaves every body 8-aligned ---- *)
+  u := NEW (pool, BYTE, 8 + sPad + 8 + bPad + bodyLen + 8) ;
+  PutMark (u, 0, sPad) ;
+  FOR i := 0 TO sLen - 1 DO u[8 + i] := sb[i] END ;
+  pos := 8 + sPad ;
+  PutMark (u, pos, bPad) ;
+  FOR i := 0 TO bLen - 1 DO u[pos + 8 + i] := f.b[f.head + i] END ;
+  pos := pos + 8 + bPad ;
+
+  (* ---- the body ---- *)
+  k := 0 ;
+  c := t.firstC ;
+  WHILE c IS SOME cc DO
+    k := k + 1 ;                         (* past the empty validity *)
+    IF cc.ty = TyStr THEN
+      at := pos + bufOff[k] ;
+      FOR i := 0 TO t.rows DO
+        PutLE (u, at + 4 * i, cc.soff[i], 4)
+      END ;
+      k := k + 1 ;
+      at := pos + bufOff[k] ;
+      FOR i := 0 TO cc.dlen - 1 DO
+        u[at + i] := cc.sdata[i]
+      END ;
+      k := k + 1
+    ELSE
+      at := pos + bufOff[k] ;
+      w := Width (cc.ty) ;
+      IF cc.ty = TyF32 THEN
+        FOR i := 0 TO t.rows - 1 DO
+          F32.ToBytesLE (cc.f4[i], SLICE (u, at + 4 * i, 4))
+        END
+      ELSIF cc.ty = TyF64 THEN
+        FOR i := 0 TO t.rows - 1 DO
+          F64.ToBytesLE (cc.f8[i], SLICE (u, at + 8 * i, 8))
+        END
+      ELSE
+        FOR i := 0 TO t.rows - 1 DO
+          PutLE (u, at + w * i, cc.iv[i], w)
+        END
+      END ;
+      k := k + 1
+    END ;
+    c := cc.next
+  END ;
+
+  PutMark (u, pos + bodyLen, 0) ;        (* end of stream *)
+  RETURN u
+END Stream ;
+
+END Arrow.

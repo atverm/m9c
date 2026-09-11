@@ -51,6 +51,7 @@ CONST
   TypeByte = 1 ; TypeChar = 2 ; TypeShort = 3 ; TypeInt = 4 ;
   TypeFloat = 5 ; TypeDouble = 6 ;
   TypeUByte = 7 ; TypeInt64 = 10 ;
+  TypeString = 12 ;                 (* NC_STRING, netCDF-4's own *)
   Unlimited = 0 ;                   (* the extent NC_UNLIMITED means *)
 
 PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool
@@ -175,6 +176,24 @@ PROCEDURE GetAttF64 (f: PTR File ; varid: I64 ; RO name: STR) : F64
 PROCEDURE GetAttStr (VAR pool: POOL ; f: PTR File ; varid: I64 ;
                      RO name: STR) : STR
   RAISES Error, ValueRange ;
+  (* an NC_CHAR attribute's OCTETS, one scalar each -- the Latin-1
+     wire.  Right for ASCII, wrong for anything else, and it cannot
+     read an NC_STRING attribute at all: use GetAttText. *)
+
+PROCEDURE GetAttText (VAR pool: POOL ; f: PTR File ; varid: I64 ;
+                      RO name: STR) : STR
+  RAISES Error, ValueRange ;
+  (* the same attribute as TEXT: NC_CHAR or NC_STRING, decoded from
+     UTF-8, which is what CF says a netCDF text attribute carries and
+     what every reader on the other side of these files assumes.
+
+     BOTH HALVES ARE NEEDED IN PRACTICE and neither substitutes for
+     the other: a NOAA ObsPack global block spells site_code as
+     NC_CHAR and dataset_provider_citation_1 as NC_STRING, in the same
+     file, and nc_get_att_text on the second answers
+     "Attempt to convert between text & numbers".  An NC_STRING of
+     more than one element is refused BY NAME rather than joined on a
+     separator this module would have to invent. *)
 PROCEDURE HasVar (f: PTR File ; RO name: STR) : BOOL RAISES ValueRange ;
   (* asks whether a variable exists without making its absence an
      error: a reader choosing between conventions needs the question,
@@ -182,6 +201,29 @@ PROCEDURE HasVar (f: PTR File ; RO name: STR) : BOOL RAISES ValueRange ;
 
 PROCEDURE HasAtt (f: PTR File ; varid: I64 ; RO name: STR) : BOOL
   RAISES ValueRange ;
+
+PROCEDURE AttType (f: PTR File ; varid: I64 ; RO name: STR) : I64
+  RAISES Error, ValueRange ;
+
+PROCEDURE AttCount (f: PTR File ; varid: I64) : I64
+  RAISES Error, ValueRange ;
+
+PROCEDURE AttName (VAR pool: POOL ; f: PTR File ; varid: I64 ; i: I64)
+  : STR
+  RAISES Error, ValueRange ;
+  (* enumeration: how many attributes a variable (or Global) carries
+     and what they are called, in FILE ORDER.  Added for a builder
+     that TRANSCRIBES a variable rather than inventing one -- the CF
+     attributes a zarr array should carry are the ones the netCDF
+     variable already has, and a hand-kept list of names is a list
+     that goes stale against the next release of the product. *)
+  (* one of the Type* constants, so a caller can tell TEXT from a
+     number before it asks.  It has to: nc_get_att_text on a numeric
+     attribute is an ERROR, not a conversion, and a real file mixes
+     the two freely -- a NOAA ObsPack global block has site_latitude
+     as a double and provider_total_listed as an int64 in among a
+     hundred strings.  GetAttF64 reads any of the numeric types,
+     because the C API converts to double on the way out. *)
 PROCEDURE VarCount (f: PTR File) : I64 RAISES Error ;
 PROCEDURE VarName (VAR pool: POOL ; f: PTR File ; varid: I64) : STR
   RAISES Error, ValueRange ;
@@ -342,6 +384,15 @@ PROCEDURE GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ;
   (* the reverse of PutChars: an n x width char matrix, each row
      answered as a STR with trailing NULs and blanks removed *)
 
+PROCEDURE GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ;
+                   out: SLICE OF BYTE)
+  RAISES Error, SizeError, ValueRange ;
+  (* the same matrix in BLOCKS and as OCTETS: `n` rows from `row`,
+     into a buffer the caller sized at n * width.  GetChars answers
+     STRs and therefore holds the whole variable twice, which a
+     400,000-row identifier column cannot afford; this is the form
+     for a caller that walks the rows and keeps nothing. *)
+
 PROCEDURE PutF32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO data: SLICE OF F32)
@@ -413,6 +464,21 @@ PROCEDURE NcGetAttDouble = "nc_get_att_double"
 PROCEDURE NcInqAttLen = "nc_inq_attlen"
   (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; lenp: C.MutPtr)
   : C.Int  [SERIAL] ;
+PROCEDURE NcInqVarNAtts = "nc_inq_varnatts"
+  (ncid: C.Int ; varid: C.Int ; nattsp: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE NcInqAttName = "nc_inq_attname"
+  (ncid: C.Int ; varid: C.Int ; attnum: C.Int ; name: C.MutPtr)
+  : C.Int  [SERIAL] ;
+
+PROCEDURE NcGetAttString = "nc_get_att_string"
+  (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; ip: C.MutPtr)
+  : C.Int  [SERIAL] ;
+PROCEDURE NcFreeString = "nc_free_string"
+  (len: C.SizeT ; data: C.MutPtr) : C.Int  [SERIAL] ;
+PROCEDURE CStrCopy = "m9_cstr_copy"
+  (p: C.ConstPtr ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT
+  [REENTRANT] ;
+
 PROCEDURE NcGetAttText = "nc_get_att_text"
   (ncid: C.Int ; varid: C.Int ; name: C.ConstPtr ; value: C.MutPtr)
   : C.Int  [SERIAL] ;
@@ -513,7 +579,9 @@ FROM cnc IMPORT CLen, CCopy,
                 NcDeflate, NcChunking, NcDefVarFill,
                 NcInqNVars, NcInqVarName, NcInqVarType, NcInqAtt,
                 NcGetVaraInt, NcGetVaraShort, NcGetVaraUByte,
-                NcGetVaraText,
+                NcGetVaraText, NcGetAttString, NcFreeString,
+                NcInqVarNAtts, NcInqAttName,
+                CStrCopy,
                 NcPutVaraLong, NcPutVaraInt, NcPutVaraShort,
                 NcPutVaraUByte ;
 
@@ -794,6 +862,21 @@ BEGIN
   RETURN I64 (NcInqAtt (C.Int (f.ncid), C.Int (varid), ADR (nb),
                         ADR (t), ADR (ln))) = 0
 END HasAtt ;
+
+PROCEDURE AttType (f: PTR File ; varid: I64 ; RO name: STR) : I64
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb : SLICE OF BYTE ;
+  t : ARRAY 1 OF I32 ;
+  ln : ARRAY 1 OF U64 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  Check ('nc_inq_att',
+    I64 (NcInqAtt (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                   ADR (t), ADR (ln)))) ;
+  RETURN I64 (t[0])
+END AttType ;
 
 PROCEDURE VarRank (f: PTR File ; varid: I64) : I64
   RAISES Error, ValueRange =
@@ -1131,6 +1214,26 @@ BEGIN
   RETURN out
 END GetChars ;
 
+PROCEDURE GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ;
+                   out: SLICE OF BYTE)
+  RAISES Error, SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  s, c : SLICE OF U64 ;
+  st, ct : SLICE OF I64 ;
+BEGIN
+  IF LEN (out) # n * width THEN RAISE SizeError (LEN (out), n * width) END ;
+  st := NEW (scratch, I64, 2) ;
+  ct := NEW (scratch, I64, 2) ;
+  st[0] := row ; st[1] := 0 ;
+  ct[0] := n ; ct[1] := width ;
+  s := Extents (scratch, st) ;
+  c := Extents (scratch, ct) ;
+  Check ('nc_get_vara_text',
+    I64 (NcGetVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
+                        ADR (c), ADR (out))))
+END GetText ;
+
 PROCEDURE Zeros (VAR pool: POOL ; n: I64) : SLICE OF I64 =
 VAR out : SLICE OF I64 ;
 BEGIN
@@ -1223,9 +1326,76 @@ BEGIN
     I64 (NcGetAttText (C.Int (f.ncid), C.Int (varid), ADR (nb),
                        ADR (buf)))) ;
   (* the C API does not terminate a text attribute, which is why the
-     length came first *)
+     length came first -- and yet SOME WRITERS STORE THE TERMINATOR,
+     so an "empty" attribute comes back as one NUL byte.  netCDF4-
+     python strips it and this must too, or an empty
+     `dataset_calibration_scale` reads as a one-character string and
+     a builder that drops empties keeps it. *)
+  WHILE len > 0 AND I64 (buf[len - 1]) = 0 DO len := len - 1 END ;
   RETURN DynStr.Chars (pool, SLICE (buf, 0, len))
 END GetAttStr ;
+
+PROCEDURE AttCount (f: PTR File ; varid: I64) : I64
+  RAISES Error, ValueRange =
+VAR n : ARRAY 1 OF I32 ;
+BEGIN
+  Check ('nc_inq_varnatts',
+    I64 (NcInqVarNAtts (C.Int (f.ncid), C.Int (varid), ADR (n)))) ;
+  RETURN I64 (n[0])
+END AttCount ;
+
+PROCEDURE AttName (VAR pool: POOL ; f: PTR File ; varid: I64 ; i: I64)
+  : STR
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  buf : SLICE OF BYTE ;
+  n : I64 ;
+BEGIN
+  buf := NEW (scratch, BYTE, MaxName) ;
+  Check ('nc_inq_attname',
+    I64 (NcInqAttName (C.Int (f.ncid), C.Int (varid), C.Int (i),
+                       ADR (buf)))) ;
+  n := 0 ;
+  WHILE n < MaxName AND I64 (buf[n]) # 0 DO n := n + 1 END ;
+  RETURN DynStr.Chars (pool, SLICE (buf, 0, n))
+END AttName ;
+
+PROCEDURE GetAttText (VAR pool: POOL ; f: PTR File ; varid: I64 ;
+                      RO name: STR) : STR
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nb, buf : SLICE OF BYTE ;
+  ptrs : SLICE OF C.ConstPtr ;
+  n : ARRAY 1 OF U64 ;
+  t : ARRAY 1 OF I32 ;
+  len, got : I64 ;
+BEGIN
+  nb := CStr (scratch, name) ;
+  Check ('nc_inq_att',
+    I64 (NcInqAtt (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                   ADR (t), ADR (n)))) ;
+  len := I64 (n[0]) ;
+  IF I64 (t[0]) # TypeString THEN
+    RETURN DynStr.FromUtf8 (pool,
+             DynStr.Bytes (scratch,
+               GetAttStr (scratch, f, varid, name), FALSE))
+  END ;
+  IF len # 1 THEN
+    RAISE Error ('an NC_STRING attribute of more than one element')
+  END ;
+  ptrs := NEW (scratch, C.ConstPtr, len) ;
+  Check ('nc_get_att_string',
+    I64 (NcGetAttString (C.Int (f.ncid), C.Int (varid), ADR (nb),
+                         ADR (ptrs)))) ;
+  buf := NEW (scratch, BYTE, MaxAtt) ;
+  got := I64 (CStrCopy (ptrs[0], ADR (buf), C.SSizeT (MaxAtt))) ;
+  Check ('nc_free_string',
+    I64 (NcFreeString (C.SizeT (len), ADR (ptrs)))) ;
+  IF got < 0 THEN RAISE ValueRange END ;
+  RETURN DynStr.FromUtf8 (pool, SLICE (buf, 0, got))
+END GetAttText ;
 
 PROCEDURE DefDim (f: PTR File ; RO name: STR ; extent: I64) : I64
   RAISES Error, ValueRange =

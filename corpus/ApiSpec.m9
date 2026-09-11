@@ -1,0 +1,373 @@
+DEFINITION MODULE ApiSpec ;
+
+(* An OpenAPI 3.1 document a service BUILDS, for services whose
+   routes are handlers rather than data.
+
+   OpenApi.Document is the other half of this, and the better one
+   where it applies: it reads an HttpServer.Router, so the table that
+   answers requests is the table described and the two cannot
+   disagree.  But a Router route carries its response BODY -- that
+   module serves a static site -- so a service that computes its
+   answers has no such table to read back.  Pushing one in would mean
+   a documentation-only Router with its body unused and Serve never
+   called: the type abused, and the guarantee lost anyway.
+
+   THIS MODULE IS A SEPARATE ONE, NOT AN ADDITION TO OpenApi, FOR A
+   MEASURED REASON.  OpenApi imports HttpServer, HttpServer takes
+   Read/Write/Close from the csock unit declared inside Http, and
+   Http binds the TLS shim -- so a service that imported OpenApi
+   merely to DESCRIBE itself would link an HTTPS client and a second
+   HTTP server, OpenSSL included.  A description should not cost a
+   TLS stack.  ApiSpec imports DynStr and nothing else.
+
+   What the caller loses by building the document explicitly is the
+   by-construction guarantee, and the answer to that is a CHECK:
+   assert in a gate that every path rendered is a path the service
+   answers, and every path it answers is rendered.  A gate is worth
+   more than a promise in a comment, and unlike the promise it fails
+   when someone adds a route.                                        *)
+
+TYPE
+  Spec ;                                 (* opaque; lives in a POOL *)
+
+CONST
+  (* the types a query string can carry.  Anything richer belongs in
+     a body, and a body belongs in a schema -- which this module does
+     not do, and says so rather than half-doing it. *)
+  TyStr  = 0 ;
+  TyNum  = 1 ;
+  TyInt  = 2 ;
+  TyBool = 3 ;
+
+PROCEDURE NewSpec (VAR pool: POOL ; RO KEPT title: STR ;
+                   RO KEPT version: STR) : PTR Spec IN pool ;
+  (* an empty document.  The strings are KEPT, as HttpServer.AddRoute
+     keeps its own: the spec holds VIEWS, not copies, so the caller's
+     strings must outlive it.                                        *)
+
+PROCEDURE AddOp (VAR pool: POOL ; VAR s: PTR Spec ;
+                 RO KEPT method: STR ; RO KEPT path: STR ;
+                 RO KEPT summary: STR ; RO KEPT description: STR ;
+                 status: I64 ; RO KEPT ctype: STR) ;
+  (* one operation.  Operations render in the order added, and those
+     sharing a path gather into one path object, so the reading order
+     of the calls is the reading order of the document.  An empty
+     description is omitted rather than emitted empty.               *)
+
+PROCEDURE AddParam (VAR pool: POOL ; VAR s: PTR Spec ;
+                    RO KEPT name: STR ; inPath: BOOL ; required: BOOL ;
+                    ty: I64 ; nullable: BOOL ;
+                    RO KEPT description: STR)
+  RAISES IndexError ;
+  (* a parameter of the operation most recently added -- the shape
+     the calls read in: one AddOp, then its AddParams.  With no
+     operation yet there is nothing to attach to, and that is a
+     caller error rather than an empty document, so it RAISES
+     IndexError (0, 0) instead of losing the parameter in silence.
+     A path parameter is required by the specification whatever
+     `required` says, and renders so.                                *)
+
+PROCEDURE Render (VAR pool: POOL ; s: PTR Spec) : RO STR
+  RAISES ValueRange ;
+  (* the document text, in pool.  Every string is JSON-escaped the
+     way Json does it -- quote, backslash, the five control
+     shorthands, backslash-u00xx for the rest -- and every other code
+     point rides through unescaped, so the result is UTF-8 the moment
+     the caller puts it on the wire.  That is json.dumps with
+     ensure_ascii=False, which is what a document carrying prose
+     needs.                                                          *)
+
+END ApiSpec.
+
+
+IMPLEMENTATION MODULE ApiSpec ;
+
+IMPORT DynStr ;
+
+TYPE
+  Param = RECORD
+    RO name, description : STR ;
+    inPath, required, nullable : BOOL ;
+    ty : I64 ;
+    next : OPT PTR Param ;
+  END ;
+
+  Op = RECORD
+    RO method, path, summary, description, ctype : STR ;
+    status : I64 ;
+    firstP, lastP : OPT PTR Param ;
+    next : OPT PTR Op ;
+  END ;
+
+  Spec = RECORD
+    RO title, version : STR ;
+    first, last : OPT PTR Op ;
+    count : I64 ;
+  END ;
+
+PROCEDURE NewSpec (VAR pool: POOL ; RO KEPT title: STR ;
+                   RO KEPT version: STR) : PTR Spec IN pool =
+VAR s : PTR Spec IN pool ;
+BEGIN
+  s := NEW (pool, Spec) ;
+  s.title := title ;
+  s.version := version ;
+  s.first := NONE ;
+  s.last := NONE ;
+  s.count := 0 ;
+  RETURN s
+END NewSpec ;
+
+PROCEDURE AddOp (VAR pool: POOL ; VAR s: PTR Spec ;
+                 RO KEPT method: STR ; RO KEPT path: STR ;
+                 RO KEPT summary: STR ; RO KEPT description: STR ;
+                 status: I64 ; RO KEPT ctype: STR) =
+VAR o : PTR Op IN pool ;
+BEGIN
+  o := NEW (pool, Op) ;
+  o.method := method ;
+  o.path := path ;
+  o.summary := summary ;
+  o.description := description ;
+  o.status := status ;
+  o.ctype := ctype ;
+  o.firstP := NONE ;
+  o.lastP := NONE ;
+  o.next := NONE ;
+  IF s.last IS SOME t THEN t.next := SOME (o)
+  ELSE s.first := SOME (o) END ;
+  s.last := SOME (o) ;
+  s.count := s.count + 1
+END AddOp ;
+
+PROCEDURE AddParam (VAR pool: POOL ; VAR s: PTR Spec ;
+                    RO KEPT name: STR ; inPath: BOOL ; required: BOOL ;
+                    ty: I64 ; nullable: BOOL ;
+                    RO KEPT description: STR)
+  RAISES IndexError =
+VAR q : PTR Param IN pool ;
+BEGIN
+  IF s.last IS SOME o THEN
+    q := NEW (pool, Param) ;
+    q.name := name ;
+    q.description := description ;
+    q.inPath := inPath ;
+    q.required := required ;
+    q.nullable := nullable ;
+    q.ty := ty ;
+    q.next := NONE ;
+    IF o.lastP IS SOME t THEN t.next := SOME (q)
+    ELSE o.firstP := SOME (q) END ;
+    o.lastP := SOME (q)
+  ELSE
+    RAISE IndexError (0, 0)
+  END
+END AddParam ;
+
+PROCEDURE HexD (v: I64) : CHAR
+  RAISES ValueRange =
+BEGIN
+  IF v < 10 THEN RETURN CHR (48 + v) END ;
+  RETURN CHR (87 + v)                    (* 'a' .. 'f' *)
+END HexD ;
+
+PROCEDURE Str (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO s: STR)
+  RAISES ValueRange =
+  (* a quoted, escaped JSON string: Json.EmitJStr's rules, restated
+     so this module keeps its single import *)
+VAR i, v : I64 ; ch : CHAR ;
+BEGIN
+  DynStr.AppendChar (pool, d, '"') ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    ch := s[i] ;
+    v := ORD (ch) ;
+    IF ch = '"' THEN
+      DynStr.AppendChar (pool, d, 05CC) ;
+      DynStr.AppendChar (pool, d, '"')
+    ELSIF v = 92 THEN
+      DynStr.AppendChar (pool, d, 05CC) ;
+      DynStr.AppendChar (pool, d, 05CC)
+    ELSIF v = 8 THEN
+      DynStr.AppendChar (pool, d, 05CC) ;
+      DynStr.AppendChar (pool, d, 'b')
+    ELSIF v = 9 THEN
+      DynStr.AppendChar (pool, d, 05CC) ;
+      DynStr.AppendChar (pool, d, 't')
+    ELSIF v = 10 THEN
+      DynStr.AppendChar (pool, d, 05CC) ;
+      DynStr.AppendChar (pool, d, 'n')
+    ELSIF v = 12 THEN
+      DynStr.AppendChar (pool, d, 05CC) ;
+      DynStr.AppendChar (pool, d, 'f')
+    ELSIF v = 13 THEN
+      DynStr.AppendChar (pool, d, 05CC) ;
+      DynStr.AppendChar (pool, d, 'r')
+    ELSIF v < 32 THEN
+      DynStr.Append (pool, d, '\u00') ;
+      DynStr.AppendChar (pool, d, HexD (v DIV 16)) ;
+      DynStr.AppendChar (pool, d, HexD (v MOD 16))
+    ELSE
+      DynStr.AppendChar (pool, d, ch)
+    END
+  END ;
+  DynStr.AppendChar (pool, d, '"')
+END Str ;
+
+PROCEDURE TypeName (ty: I64) : STR =
+BEGIN
+  IF ty = TyNum THEN RETURN 'number'
+  ELSIF ty = TyInt THEN RETURN 'integer'
+  ELSIF ty = TyBool THEN RETURN 'boolean'
+  END ;
+  (* TyStr, and any unknown code: a query value literally IS a
+     string, so an unrecognised type documents the truth instead of
+     inventing one *)
+  RETURN 'string'
+END TypeName ;
+
+PROCEDURE Method (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO m: STR) =
+BEGIN
+  (* OpenAPI wants lowercase verb keys; the known verbs map and an
+     unknown one passes through, so the document's reader rejects it
+     and the mistake stays visible -- OpenApi.AppendMethod's rule *)
+  IF DynStr.Eq (m, 'GET') THEN DynStr.Append (pool, d, 'get')
+  ELSIF DynStr.Eq (m, 'POST') THEN DynStr.Append (pool, d, 'post')
+  ELSIF DynStr.Eq (m, 'PUT') THEN DynStr.Append (pool, d, 'put')
+  ELSIF DynStr.Eq (m, 'DELETE') THEN DynStr.Append (pool, d, 'delete')
+  ELSIF DynStr.Eq (m, 'HEAD') THEN DynStr.Append (pool, d, 'head')
+  ELSE DynStr.Append (pool, d, m)
+  END
+END Method ;
+
+PROCEDURE EmitParam (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                     q: PTR Param)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (pool, d, '{"name":') ;
+  Str (pool, d, q.name) ;
+  IF q.inPath THEN
+    DynStr.Append (pool, d, ',"in":"path","required":true')
+  ELSE
+    DynStr.Append (pool, d, ',"in":"query","required":') ;
+    IF q.required THEN DynStr.Append (pool, d, 'true')
+    ELSE DynStr.Append (pool, d, 'false') END
+  END ;
+  DynStr.Append (pool, d, ',"schema":{') ;
+  IF q.nullable THEN
+    DynStr.Append (pool, d, '"anyOf":[{"type":') ;
+    Str (pool, d, TypeName (q.ty)) ;
+    DynStr.Append (pool, d, '},{"type":"null"}]')
+  ELSE
+    DynStr.Append (pool, d, '"type":') ;
+    Str (pool, d, TypeName (q.ty))
+  END ;
+  DynStr.AppendChar (pool, d, '}') ;
+  IF LEN (q.description) > 0 THEN
+    DynStr.Append (pool, d, ',"description":') ;
+    Str (pool, d, q.description)
+  END ;
+  DynStr.AppendChar (pool, d, '}')
+END EmitParam ;
+
+PROCEDURE EmitOp (VAR pool: POOL ; VAR d: PTR DynStr.DString ; o: PTR Op)
+  RAISES ValueRange =
+VAR c : OPT PTR Param ; firstQ : BOOL ;
+BEGIN
+  DynStr.AppendChar (pool, d, '"') ;
+  Method (pool, d, o.method) ;
+  DynStr.Append (pool, d, '":{"summary":') ;
+  Str (pool, d, o.summary) ;
+  IF LEN (o.description) > 0 THEN
+    DynStr.Append (pool, d, ',"description":') ;
+    Str (pool, d, o.description)
+  END ;
+  IF o.firstP IS SOME p0 THEN
+    DynStr.Append (pool, d, ',"parameters":[') ;
+    firstQ := TRUE ;
+    c := SOME (p0) ;
+    WHILE c IS SOME q DO
+      IF NOT firstQ THEN DynStr.AppendChar (pool, d, ',') END ;
+      firstQ := FALSE ;
+      EmitParam (pool, d, q) ;
+      c := q.next
+    END ;
+    DynStr.AppendChar (pool, d, ']')
+  END ;
+  DynStr.Append (pool, d, ',"responses":{"') ;
+  DynStr.AppendI64 (pool, d, o.status) ;
+  DynStr.Append (pool, d, '":{"description":') ;
+  Str (pool, d, o.summary) ;
+  DynStr.Append (pool, d, ',"content":{') ;
+  Str (pool, d, o.ctype) ;
+  DynStr.Append (pool, d, ':{"schema":{}}}}}}')
+END EmitOp ;
+
+PROCEDURE OpAt (s: PTR Spec ; i: I64) : OPT PTR Op =
+VAR c : OPT PTR Op ; j : I64 ;
+BEGIN
+  c := s.first ;
+  j := i ;
+  WHILE c IS SOME o DO
+    IF j = 0 THEN RETURN SOME (o) END ;
+    j := j - 1 ;
+    c := o.next
+  END ;
+  RETURN NONE
+END OpAt ;
+
+PROCEDURE PathSeen (s: PTR Spec ; i: I64) : BOOL =
+VAR j : I64 ;
+BEGIN
+  IF OpAt (s, i) IS SOME oi THEN
+    FOR j := 0 TO i - 1 DO
+      IF OpAt (s, j) IS SOME oj THEN
+        IF DynStr.Eq (oj.path, oi.path) THEN RETURN TRUE END
+      END
+    END
+  END ;
+  RETURN FALSE
+END PathSeen ;
+
+PROCEDURE Render (VAR pool: POOL ; s: PTR Spec) : RO STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, j : I64 ;
+  firstPath, firstOp : BOOL ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"openapi":"3.1.0","info":{"title":') ;
+  Str (pool, d, s.title) ;
+  DynStr.Append (pool, d, ',"version":') ;
+  Str (pool, d, s.version) ;
+  DynStr.Append (pool, d, '},"paths":{') ;
+  firstPath := TRUE ;
+  FOR i := 0 TO s.count - 1 DO
+    IF NOT PathSeen (s, i) THEN
+      IF OpAt (s, i) IS SOME oi THEN
+        IF NOT firstPath THEN DynStr.AppendChar (pool, d, ',') END ;
+        firstPath := FALSE ;
+        Str (pool, d, oi.path) ;
+        DynStr.Append (pool, d, ':{') ;
+        firstOp := TRUE ;
+        (* one path object, every method on it: an O(n^2) walk over a
+           table of tens.  Measure before believing it matters --
+           OpenApi.Document's own note, and it still holds here *)
+        FOR j := i TO s.count - 1 DO
+          IF OpAt (s, j) IS SOME oj THEN
+            IF DynStr.Eq (oj.path, oi.path) THEN
+              IF NOT firstOp THEN DynStr.AppendChar (pool, d, ',') END ;
+              firstOp := FALSE ;
+              EmitOp (pool, d, oj)
+            END
+          END
+        END ;
+        DynStr.AppendChar (pool, d, '}')
+      END
+    END
+  END ;
+  DynStr.Append (pool, d, '}}') ;
+  RETURN DynStr.View (d)
+END Render ;
+
+END ApiSpec.

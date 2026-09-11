@@ -1,0 +1,1855 @@
+DEFINITION MODULE Zarr ;
+
+(* WRITING a zarr v2 store: groups, attributes, chunked arrays and the
+   consolidated index.
+
+   The corpus could already READ one -- ZarrStore over HTTP, and the
+   zarr proxy's own Zread over local files -- and nothing anywhere could
+   write one.  That was the single prerequisite standing between the
+   ICOS store builders (about 10,000 lines of Python) and one M9
+   program, so the subset here is chosen to be exactly what Zread
+   ACCEPTS, no wider: a store this module writes is a store that module
+   opens, and the two are gated against each other.
+
+   The subset, and everything outside it is refused BY NAME:
+     * zarr v2 only.  v3 keeps its metadata in zarr.json and no
+       deployed ICOS client opens it.
+     * C order, rank 0..5, little-endian, and the '.' chunk-key
+       separator -- which every ICOS store already uses, whether it
+       spells the default out or leaves it out.
+     * dtypes  <f4 <f8  <i8 <i4 <i2  |i1  |u1  <u2  |b1  <M8[ns],
+       and the THREE string forms  |S<n>,  <U<n>  and
+       |O + vlen-utf8.  Single-byte
+       types take '|' because they have no byte order; the rest '<'.
+     * blosc with the shuffle filter -- lz4 or zstd -- or no
+       compressor at all.
+
+   FILL VALUES ARE NOT A PARAMETER on the plain writers, and that is
+   deliberate.  A float array gets NaN and an integer array gets null,
+   because a zarr fill_value of 0 on an integer column makes xarray
+   mask real zeros, and a fill_value of 0.0 on a coordinate once put
+   1.3 million phantom positions on Null Island in a live ICOS store.
+   The rule is in the code so it cannot be forgotten at a call site.
+
+   THE `Fill` TWINS ARE THE ONE EXCEPTION, and it is a different JOB
+   rather than a weaker rule.  The writers above INVENT an array, and
+   for an invented array a fill nobody chose is the right answer.  A
+   builder TRANSCRIBING a CF variable is not inventing: the netCDF
+   file already declares `_FillValue`, xarray carries it into the
+   zarr `fill_value`, and a reader masks on it -- so an ICOS ObsPack
+   `nvalue`'s -9 and `icos_datalevel`'s 127 MUST be written, or the
+   store says those observations are real.  The twins take the fill
+   the SOURCE declares, and they are spelled differently so a call
+   site inventing an array cannot reach one by accident.            *)
+
+EXCEPTION Error (RO msg: STR) ;
+
+CONST
+  NoCompress = 0 ;               (* the chunk is stored raw *)
+
+(* THE COMPRESSOR IS ONE SMALL OPAQUE CODE, not a codec name beside a
+   level, because M9 has no enumerations and a bare 1..9 could not say
+   WHICH codec it meant.  Build it with Lz4 or Zstd; anything else --
+   including a bare level left over from when this took `clevel` -- is
+   refused BY NAME rather than quietly storing the chunk raw.
+
+   Both codecs are wanted by live ICOS stores and neither is a default:
+   the SOCAT tables are lz4 at 5, the NOAA ObsPack station groups are
+   zstd at 3, and a store rebuilt with the other one has a different
+   .zarray -- so the codec is part of the answer, not a tuning knob. *)
+
+PROCEDURE Lz4 (clevel: I64) : I64 RAISES Error, ValueRange ;
+  (* clevel 1..9 *)
+
+PROCEDURE Zstd (clevel: I64) : I64 RAISES Error, ValueRange ;
+  (* clevel 1..9 *)
+
+PROCEDURE CreateGroup (VAR pool: POOL ; RO dir: STR)
+  RAISES Error, ValueRange ;
+  (* dir and every parent, then its .zgroup.  Exist-ok: a builder
+     re-running over a half-written store must not fail here. *)
+
+PROCEDURE WriteAttrs (VAR pool: POOL ; RO dir: STR ; RO json: STR)
+  RAISES Error, ValueRange ;
+  (* dir/.zattrs, the document written VERBATIM.  The caller owns the
+     JSON -- this module does not compose it, because the attributes a
+     store needs are the domain's business and not the format's. *)
+
+PROCEDURE WriteF32 (VAR pool: POOL ; RO adir: STR ;
+                    RO data: SLICE OF F32 ; RO shape: SLICE OF I64 ;
+                    RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ;
+                    comp: I64)
+  RAISES Error, ValueRange ;
+  (* adir/.zarray plus every chunk file.  `data` is C-order and must be
+     the product of `shape`; `dims` names the axes for
+     _ARRAY_DIMENSIONS and may be empty.  comp 0 stores raw. *)
+
+PROCEDURE WriteF64 (VAR pool: POOL ; RO adir: STR ;
+                    RO data: SLICE OF F64 ; RO shape: SLICE OF I64 ;
+                    RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ;
+                    comp: I64)
+  RAISES Error, ValueRange ;
+
+PROCEDURE WriteInt (VAR pool: POOL ; RO adir: STR ;
+                    RO data: SLICE OF I64 ; width: I64 ; signed: BOOL ;
+                    RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                    RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* width 1, 2, 4 or 8 bytes.  `signed` FALSE is offered at widths 1
+     and 2 -- |u1 and <u2, the only unsigned dtypes the ICOS stores
+     carry: the flag columns and NOAA ObsPack's obspack_id_src, which
+     indexes a short list of source-dataset prefixes. *)
+
+PROCEDURE WriteTimeNs (VAR pool: POOL ; RO adir: STR ;
+                       RO data: SLICE OF I64 ; RO shape: SLICE OF I64 ;
+                       RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ;
+                       comp: I64)
+  RAISES Error, ValueRange ;
+  (* <M8[ns]: epoch NANOSECONDS, the only datetime64 unit Zread reads. *)
+
+PROCEDURE WriteBool (VAR pool: POOL ; RO adir: STR ;
+                     RO data: SLICE OF BOOL ; RO shape: SLICE OF I64 ;
+                     RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ;
+                     comp: I64)
+  RAISES Error, ValueRange ;
+  (* |b1: one octet per value, 0 or 1, fill_value null.  numpy's own
+     bool_ dtype, and the ICOS ocean store's `fixed` column -- a
+     per-cruise flag saying whether the platform is a buoy or a ship
+     -- is written by numpy exactly this way.  It is a dtype of its
+     own rather than |u1 because numpy reads |u1 back as an integer
+     and a caller comparing `fixed == True` would then get an array
+     of numbers. *)
+
+PROCEDURE GuessChunks (VAR pool: POOL ; RO shape: SLICE OF I64 ;
+                       typesize: I64) : SLICE OF I64
+  RAISES Error, ValueRange ;
+  (* ZARR'S OWN `guess_chunks`, transcribed: halve along successive
+     axes until a chunk is near a target that itself scales with the
+     array's size.  It is here rather than in a builder because it is
+     the FORMAT's rule and not a domain one -- xarray passes an
+     encoding for a data variable and none for a coordinate, so any
+     array written without one gets this, and two builders in this
+     family already need it.
+
+     Worth transcribing rather than approximating: 500 of the NOAA
+     ObsPack store's 971 time axes are neither the whole array nor
+     the 50,000 its data columns take. *)
+
+PROCEDURE WriteIntFill (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF I64 ; width: I64 ;
+                        signed: BOOL ; hasFill: BOOL ; fill: I64 ;
+                        RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* WriteInt, with the fill the SOURCE declares: `hasFill` FALSE
+     writes `null` exactly as WriteInt does, and TRUE writes the
+     value -- which must fit the width, and is refused by name when
+     it does not.  An ABSENT chunk then reads back as that fill,
+     which is the whole point of writing it. *)
+
+PROCEDURE WriteF32Fill (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF F32 ; hasFill: BOOL ;
+                        fill: F64 ;
+                        RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* WriteF32, with a declared fill.  `hasFill` FALSE is NaN, which is
+     what WriteF32 writes, so the two agree where they overlap. *)
+
+PROCEDURE WriteF64Fill (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF F64 ; hasFill: BOOL ;
+                        fill: F64 ;
+                        RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* the same for `<f8`. *)
+
+PROCEDURE WriteStrFixedFill (VAR pool: POOL ; RO adir: STR ;
+                             RO data: SLICE OF STR ; width: I64 ;
+                             hasFill: BOOL ; RO fill: STR ;
+                             RO shape: SLICE OF I64 ;
+                             RO chunks: SLICE OF I64 ;
+                             RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* WriteStrFixed, with a declared fill.  zarr spells a `|S` fill as
+     the BASE64 of its padded octets -- which is what zarr-python
+     writes and a reader decodes -- and this writes that spelling;
+     `hasFill` FALSE writes `null`. *)
+
+PROCEDURE WriteStrFixed (VAR pool: POOL ; RO adir: STR ;
+                         RO data: SLICE OF STR ; width: I64 ;
+                         RO shape: SLICE OF I64 ;
+                         RO chunks: SLICE OF I64 ;
+                         RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* |S<width>: every element UTF-8 encoded into exactly `width`
+     octets and NUL-padded on the right, chunked like any other
+     fixed-width array.  A string whose encoding does not FIT is
+     refused BY NAME rather than truncated -- a shortened expocode is
+     a different cruise, not a shorter one, and numpy's own
+     assignment would have cut it silently.
+
+     PREFER THIS FORM, and the reason is measured on a live store:
+     one station's string QC series read back in 0.17 s as |S where
+     the vlen form took 3.3 s.  A fixed width is a stride; a vlen
+     table is a decode of the whole chunk to reach any of it.
+
+     BUT |S CARRIES OCTETS, NOT TEXT, and the two readers disagree
+     about what that means -- measured, not deduced.  The six
+     scalars B a r U+00E1 t h go in as the SEVEN octets
+     42 61 72 C3 A1 74 68.  numpy hands those octets back and a
+     caller who decodes UTF-8 recovers the six scalars; Zread turns
+     each octet into one scalar and answers SEVEN, the C3 arriving
+     as a character of its own.  That is the dtype's own property --
+     numpy will not build |S from a non-ASCII str at all -- so use
+     this form for what the live stores use it for (expocodes, flag
+     letters, ids) and reach for WriteStrVlen for anything that can
+     carry an accent. *)
+
+PROCEDURE WriteOctets (VAR pool: POOL ; RO adir: STR ;
+                       RO raw: SLICE OF BYTE ; width: I64 ;
+                       hasFill: BOOL ; RO fill: STR ;
+                       RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                       RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* |S<width> straight from the OCTETS, already padded: LEN (raw)
+     must be the product of `shape` times `width`.
+
+     It exists because a TRANSCRIBED string column already has its
+     bytes.  WriteStrFixed takes a STR per element and re-encodes
+     each, which for one ICOS ObsPack station's 85,344 obspack_ids at
+     200 octets is 68 MB of CHARs to produce 17 MB of array -- and
+     the CHARs were made by decoding the very octets being rebuilt. *)
+
+PROCEDURE WriteStrUcs4 (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF STR ; width: I64 ;
+                        RO shape: SLICE OF I64 ;
+                        RO chunks: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* `<U<width>`: numpy's OWN fixed-width string -- `width` UCS-4 code
+     points little-endian, NUL-padded, `fill_value` null.
+
+     THE THIRD STRING FORM, AND IT IS NOT A DUPLICATE OF THE OTHER
+     TWO.  `|S` carries OCTETS and numpy will not build one from a
+     non-ASCII `str` at all; `|O` carries UTF-8 behind a filter and
+     cannot be chunked.  `<U` is what xarray writes for a small
+     LABELLED COORDINATE -- the ICOS ecosystem store's
+     `nee_variant`, `ustar_threshold`, `partition_method`,
+     `corr_pct` and the 0-d `temporal_resolution` are all `<U` -- and
+     it is the only one of the three that is both chunkable and able
+     to hold a scalar past U+00FF.
+
+     Four bytes per code point whatever the text, so it is for SHORT
+     labels and the module says so: a `<U200` identity column would
+     be four times the `|S200` the same data fits in.  A value longer
+     than `width` is REFUSED, not truncated, for the reason
+     WriteStrFixed gives. *)
+
+PROCEDURE WriteStrVlen (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF STR ;
+                        RO shape: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* |O carrying the vlen-utf8 filter: a u32-LE item count, then per
+     item a u32-LE octet length and the UTF-8 octets.
+
+     THERE IS NO `chunks` PARAMETER because there is only one legal
+     grid: the whole shape in one chunk.  A vlen chunk declares its
+     own item count, and the readers this writes for check that count
+     against the SHAPE -- so a second chunk makes the store
+     unreadable rather than merely differently laid out.  That is no
+     narrowing in practice: this form carries identity lists (cruise
+     expocodes, station names, citations) and the live ICOS stores
+     hold them in a single chunk already. *)
+
+(* ---- APPENDING a 1-D array, one value at a time --------------------
+
+   The Write* procedures above take the whole array, which is right
+   for a coordinate or a panel and impossible for an observation
+   table: SOCAT's is 44 million rows across two dozen columns, and
+   holding it would be ~4 GB in a pool that never resets.
+
+   A Sink writes CHUNK BY CHUNK as the chunk fills, so the memory is
+   one chunk per column and nothing else -- and `Seal` pads the last,
+   partial chunk with the fill value, because zarr chunk files are
+   always full and a reader that trusted the file length would read a
+   short buffer.
+
+   ONE DIMENSION ONLY, which is what an obs table is; a panel knows
+   its shape up front and should use WriteF32.  The shape is not known
+   until Seal, so .zarray is written THEN, and a sink abandoned
+   without Seal leaves chunk files and no metadata -- which reads as
+   an absent array rather than as a wrong one, the safer of the two. *)
+
+TYPE
+  Sink ;                         (* opaque; lives in a POOL *)
+
+PROCEDURE SinkF32 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
+                   RO KEPT dims: SLICE OF STR ; comp: I64)
+  : PTR Sink IN pool
+  RAISES Error, ValueRange ;
+
+PROCEDURE SinkF64 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
+                   RO KEPT dims: SLICE OF STR ; comp: I64)
+  : PTR Sink IN pool
+  RAISES Error, ValueRange ;
+
+PROCEDURE SinkInt (VAR pool: POOL ; RO KEPT adir: STR ; width: I64 ;
+                   signed: BOOL ; chunk: I64 ;
+                   RO KEPT dims: SLICE OF STR ; comp: I64)
+  : PTR Sink IN pool
+  RAISES Error, ValueRange ;
+
+PROCEDURE SinkTimeNs (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
+                      RO KEPT dims: SLICE OF STR ; comp: I64)
+  : PTR Sink IN pool
+  RAISES Error, ValueRange ;
+
+PROCEDURE PutF32 (VAR s: PTR Sink ; v: F32)
+  RAISES Error, ValueRange ;
+PROCEDURE PutF64 (VAR s: PTR Sink ; v: F64)
+  RAISES Error, ValueRange ;
+PROCEDURE PutI64 (VAR s: PTR Sink ; v: I64)
+  RAISES Error, ValueRange ;
+  (* the value goes in at the sink's own width, and a value that does
+     not fit is a CHECKED CONVERSION rather than a wrap -- an int8 QC
+     column handed 300 raises instead of storing 44. *)
+
+PROCEDURE Rows (s: PTR Sink) : I64 ;
+
+PROCEDURE Seal (VAR s: PTR Sink)
+  RAISES Error, ValueRange ;
+  (* flush the partial chunk, then write .zarray and .zattrs.  A sink
+     is finished exactly once. *)
+
+PROCEDURE Consolidate (VAR pool: POOL ; RO store: STR)
+  RAISES Error, ValueRange ;
+  (* store/.zmetadata over the WHOLE tree: every .zgroup, .zattrs and
+     .zarray beneath it.  This is what `consolidated=True` opens, and
+     for a store of many small arrays it is the difference between one
+     request and tens of thousands.
+
+     IT REFUSES A SLIM STORE BY NAME, and that refusal is the point of
+     having two procedures rather than a flag: running this over a
+     shallow-root store is the foot-gun that re-bloated one ICOS root
+     from ~7 MB to ~1.2 GB and took the viewers down.  The marker in
+     the root .zattrs is what makes the refusal possible, which is why
+     ConsolidateSlim writes it. *)
+
+PROCEDURE ConsolidateSlim (VAR pool: POOL ; RO store: STR)
+  RAISES Error, ValueRange ;
+  (* the SHALLOW root: the store's own .zgroup and .zattrs, each
+     top-level entity's .zgroup and .zattrs, and the FULL subtree under
+     _combined -- and nothing else.
+
+     THIS IS NOT AN OPTIMISATION.  A full consolidate over a store with
+     hundreds of entities re-bloated one ICOS root from ~7 MB to
+     ~1.2 GB and took the viewers down; the largest store on disk (82 GB
+     over 783 sites) is servable only because its root indexes 488
+     entries instead of hundreds of thousands.  THE MARKER IS WRITTEN
+     HERE, not left to the caller: this procedure puts
+     `"metadata_layout":"shallow-root"` into the root .zattrs before
+     indexing it, so a store is marked by the ACT of being
+     consolidated this way and cannot be left unmarked by a builder
+     that forgot.  Consolidate above keys its refusal off it.
+
+     `_`-prefixed top-level groups other than `_combined` are NOT
+     indexed at all, and a child without a .zgroup is skipped -- both
+     are the reference policy (icos_ingest.finalize), and both are
+     load-bearing rather than tidy: the whole point is that the root
+     stays small. *)
+
+END Zarr.
+
+
+UNSAFE DEFINITION MODULE FOR "C" czw ;
+
+(* blosc's CONTEXT form only, as everywhere else in this tree: the
+   plain blosc_compress carries global state and would have to be
+   [SERIAL], which a THREAD root may not call. *)
+PROCEDURE CompressCtx = "blosc_compress_ctx"
+  (comp: C.Int ; doshuffle: C.Int ; typesize: C.SizeT ;
+   nbytes: C.SizeT ; src: C.ConstPtr ; dest: C.MutPtr ;
+   destsize: C.SizeT ; compressor: C.ConstPtr ;
+   blocksize: C.SizeT ; nthreads: C.Int) : C.Int  [REENTRANT] ;
+
+END czw.
+
+
+UNSAFE IMPLEMENTATION MODULE Zarr ;
+
+IMPORT DynStr ;
+IMPORT Io ;
+IMPORT Json ;
+IMPORT Math ;
+FROM czw IMPORT CompressCtx ;
+
+CONST
+  Overhead = 16 ;                (* BLOSC_MAX_OVERHEAD *)
+  (* RANK 0 TO 5.  Zero because a store carries SCALAR arrays -- the
+     ICOS ecosystem store's `temporal_resolution` is a 0-d `<U5`
+     holding `PT30M`, written with `"shape": []` and one chunk file
+     named `0`.  Five because that store's deepest variable is
+     `GPP(station, time, partition_method, ustar_threshold,
+     nee_variant)`, which is the ONEFlux processing cube seen across
+     stations.  The chunk walk is an ODOMETER over the axes, so the
+     bound is the arrays' size and not the loop's shape. *)
+  MaxRank = 5 ;
+  (* zarr's own guess_chunks bounds.  MODULE level, not procedure
+     level: the bootstrap generator emits a procedure-local CONST as a
+     module name it never declares, which is the same refusal a local
+     string CONST gets. *)
+  ChunkBase = 262144 ;
+  ChunkMin = 131072 ;
+  ChunkMax = 67108864 ;
+
+(* 0/0 is the quiet NaN in IEEE, and '/' on floats does not raise on
+   it; spelled as a procedure so the intent is greppable, as the
+   proxy's Zread spells the same thing *)
+PROCEDURE NaN64 () : F64 =
+VAR z : F64 ;
+BEGIN
+  z := 0.0 ;
+  RETURN z / z
+END NaN64 ;
+
+(* EVERY DOCUMENT THIS MODULE WRITES IS UTF-8, and that is not a
+   preference.  `Io.WriteFile` encodes through DynStr.Bytes, the
+   LATIN-1 wire, which RAISES past U+00FF -- so a store attribute
+   carrying an em-dash, which every ICOS agent guide does, could not
+   be written at all.  Found by building a real store: `m9_byte
+   (v=8212)`, 0x2014, out of Zarr.WriteAttrs.
+
+   The reading side matters the same way: a `.zattrs` read Latin-1 and
+   re-emitted is the DOUBLE-ENCODING bug this project already paid for
+   once, in the proxy, over the same accented citations. *)
+PROCEDURE WriteText (VAR pool: POOL ; RO path: STR ; RO text: STR)
+  RAISES Io.IOError, ValueRange =
+BEGIN
+  Io.WriteFileBytes (path, DynStr.Utf8 (pool, text))
+END WriteText ;
+
+PROCEDURE ReadText (VAR pool: POOL ; RO path: STR) : STR
+  RAISES Io.IOError, ValueRange =
+BEGIN
+  RETURN DynStr.FromUtf8 (pool, Io.ReadFileBytes (pool, path))
+END ReadText ;
+
+PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR
+  RAISES ValueRange =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, a) ;
+  DynStr.Append (pool, d, b) ;
+  RETURN DynStr.View (d)
+END Cat ;
+
+(* mkdir -p.  Io.MkDir is ONE level and exist-ok, so the parents are
+   this module's job; a store is nested three deep at most but a
+   caller's root may be anywhere. *)
+PROCEDURE MkDirP (VAR pool: POOL ; RO path: STR)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  FOR i := 0 TO LEN (path) - 1 DO
+    IF path[i] = '/' AND DynStr.Len (d) > 0 THEN
+      Io.MkDir (DynStr.View (d))
+    END ;
+    DynStr.AppendChar (scratch, d, path[i])
+  END ;
+  IF DynStr.Len (d) > 0 THEN Io.MkDir (DynStr.View (d)) END
+EXCEPT
+| Io.IOError (p) : RAISE Error (Cat (pool, 'cannot create ', path))
+END MkDirP ;
+
+PROCEDURE CreateGroup (VAR pool: POOL ; RO dir: STR)
+  RAISES Error, ValueRange =
+BEGIN
+  MkDirP (pool, dir) ;
+  WriteText (pool, Cat (pool, dir, '/.zgroup'), '{"zarr_format": 2}')
+EXCEPT
+| Io.IOError (p) : RAISE Error (Cat (pool, 'cannot write .zgroup in ', dir))
+END CreateGroup ;
+
+PROCEDURE WriteAttrs (VAR pool: POOL ; RO dir: STR ; RO json: STR)
+  RAISES Error, ValueRange =
+BEGIN
+  WriteText (pool, Cat (pool, dir, '/.zattrs'), json)
+EXCEPT
+| Io.IOError (p) : RAISE Error (Cat (pool, 'cannot write .zattrs in ', dir))
+END WriteAttrs ;
+
+(* ---- the compressor code -------------------------------------------
+
+   Lz4 (n) and Zstd (n) build it; CodecName and Level take it apart.
+   The bands are 100 and 200 apart so that a bare level -- 5, say,
+   left over from the days when these procedures took `clevel` -- is
+   NOT a valid code and cannot silently mean "raw".                  *)
+
+CONST
+  Lz4Base = 100 ;
+  ZstdBase = 200 ;
+
+PROCEDURE Lz4 (clevel: I64) : I64
+  RAISES Error, ValueRange =
+BEGIN
+  IF clevel < 1 OR clevel > 9 THEN
+    RAISE Error ('blosc clevel outside 1..9')
+  END ;
+  RETURN Lz4Base + clevel
+END Lz4 ;
+
+PROCEDURE Zstd (clevel: I64) : I64
+  RAISES Error, ValueRange =
+BEGIN
+  IF clevel < 1 OR clevel > 9 THEN
+    RAISE Error ('blosc clevel outside 1..9')
+  END ;
+  RETURN ZstdBase + clevel
+END Zstd ;
+
+PROCEDURE CodecName (comp: I64) : STR
+  RAISES Error, ValueRange =
+BEGIN
+  IF comp > ZstdBase AND comp <= ZstdBase + 9 THEN RETURN 'zstd' END ;
+  IF comp > Lz4Base AND comp <= Lz4Base + 9 THEN RETURN 'lz4' END ;
+  RAISE Error ('not a Zarr compressor code -- use Zarr.Lz4 or Zarr.Zstd')
+END CodecName ;
+
+PROCEDURE Level (comp: I64) : I64
+  RAISES Error, ValueRange =
+BEGIN
+  IF comp > ZstdBase AND comp <= ZstdBase + 9 THEN
+    RETURN comp - ZstdBase
+  END ;
+  IF comp > Lz4Base AND comp <= Lz4Base + 9 THEN
+    RETURN comp - Lz4Base
+  END ;
+  RAISE Error ('not a Zarr compressor code -- use Zarr.Lz4 or Zarr.Zstd')
+END Level ;
+
+(* the compressor member of .zarray, or null *)
+PROCEDURE CompressorJson (VAR pool: POOL ; comp: I64) : STR
+  RAISES Error, ValueRange =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  IF comp <= 0 THEN RETURN Cat (pool, 'null', '') END ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"id": "blosc", "cname": "') ;
+  DynStr.Append (pool, d, CodecName (comp)) ;
+  DynStr.Append (pool, d, '", "clevel": ') ;
+  DynStr.AppendI64 (pool, d, Level (comp)) ;
+  DynStr.Append (pool, d, ', "shuffle": 1, "blocksize": 0}') ;
+  RETURN DynStr.View (d)
+END CompressorJson ;
+
+PROCEDURE Meta (VAR pool: POOL ; RO dtype: STR ; RO fill: STR ;
+                RO filters: STR ;
+                RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                comp: I64) : STR
+  RAISES Error, ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  (* ZARR-PYTHON 3's KEY ORDER AND KEY SET, one line with json.dumps'
+     default separators -- shape, chunks, dtype, fill_value, order,
+     filters, dimension_separator, compressor, zarr_format.  It is not
+     alphabetical and it is not arbitrary: it is what zarr 3 writes,
+     and matching it is what makes a consolidated index written here
+     byte-identical to one zarr-python 3 writes over the same store.
+     zarr 2 sorts these keys instead, so the two cannot both be
+     matched; 3 is the one ICOS is moving to. *)
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"shape": [') ;
+  FOR i := 0 TO LEN (shape) - 1 DO
+    IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
+    DynStr.AppendI64 (pool, d, shape[i])
+  END ;
+  DynStr.Append (pool, d, '], "chunks": [') ;
+  FOR i := 0 TO LEN (chunks) - 1 DO
+    IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
+    DynStr.AppendI64 (pool, d, chunks[i])
+  END ;
+  DynStr.Append (pool, d, '], "dtype": "') ;
+  DynStr.Append (pool, d, dtype) ;
+  DynStr.Append (pool, d, '", "fill_value": ') ;
+  DynStr.Append (pool, d, fill) ;
+  DynStr.Append (pool, d, ', "order": "C", "filters": ') ;
+  DynStr.Append (pool, d, filters) ;
+  DynStr.Append (pool, d, ', "dimension_separator": ".", "compressor": ') ;
+  DynStr.Append (pool, d, CompressorJson (pool, comp)) ;
+  DynStr.Append (pool, d, ', "zarr_format": 2}') ;
+  RETURN DynStr.View (d)
+END Meta ;
+
+PROCEDURE DimsJson (VAR pool: POOL ; RO dims: SLICE OF STR) : STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"_ARRAY_DIMENSIONS": [') ;
+  FOR i := 0 TO LEN (dims) - 1 DO
+    IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
+    DynStr.AppendChar (pool, d, '"') ;
+    DynStr.Append (pool, d, dims[i]) ;
+    DynStr.AppendChar (pool, d, '"')
+  END ;
+  DynStr.Append (pool, d, ']}') ;
+  RETURN DynStr.View (d)
+END DimsJson ;
+
+(* one chunk to disk, compressed when asked.  blosc answers <= 0 when
+   it DECLINES -- it refuses when the frame would not be smaller -- and
+   that is not an error: the chunk is then stored raw, which is what
+   zarr's own writers do. *)
+PROCEDURE PutChunk (VAR pool: POOL ; RO path: STR ;
+                    RO raw: SLICE OF BYTE ; typesize: I64 ;
+                    comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  dst, name : SLICE OF BYTE ;
+  n, got : I64 ;
+BEGIN
+  n := LEN (raw) ;
+  IF comp <= 0 OR n = 0 THEN
+    Io.WriteFileBytes (path, raw) ;
+    RETURN
+  END ;
+  dst := NEW (scratch, BYTE, n + Overhead) ;
+  name := DynStr.Bytes (scratch, CodecName (comp), TRUE) ;
+  got := I64 (CompressCtx (C.Int (Level (comp)), C.Int (1),
+                           C.SizeT (typesize), C.SizeT (n),
+                           ADR (raw), ADR (dst),
+                           C.SizeT (n + Overhead), ADR (name),
+                           C.SizeT (0), C.Int (1))) ;
+  IF got <= 0 THEN
+    Io.WriteFileBytes (path, raw)
+  ELSE
+    Io.WriteFileBytes (path, SLICE (dst, 0, got))
+  END
+EXCEPT
+| Io.IOError (p) : RAISE Error (Cat (pool, 'cannot write chunk ', path))
+END PutChunk ;
+
+(* the chunk grid, C order.  Every chunk file holds a FULL chunk even at
+   an edge -- zarr pads with the fill value rather than truncating, and
+   a reader that trusted the file length would read a short buffer. *)
+(* EVERY grid complaint belongs HERE, before a byte reaches the disk.
+   The driver found the reason: the rank check used to live inside
+   WriteChunks, which Emit calls AFTER writing .zarray and .zattrs, so
+   a refused array left a metadata-only directory behind -- and an
+   array with metadata and no chunks does not fail when it is read.
+   It reads as ALL FILL, which is the silent kind of wrong. *)
+PROCEDURE CheckGrid (VAR pool: POOL ; RO adir: STR ;
+                     RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64)
+  RAISES Error, ValueRange =
+VAR i : I64 ;
+BEGIN
+  IF LEN (shape) > MaxRank THEN
+    RAISE Error (Cat (pool, 'rank outside 0..5 for ', adir))
+  END ;
+  IF LEN (chunks) # LEN (shape) THEN
+    RAISE Error (Cat (pool, 'chunks rank differs from shape for ', adir))
+  END ;
+  FOR i := 0 TO LEN (shape) - 1 DO
+    IF chunks[i] <= 0 THEN
+      RAISE Error (Cat (pool, 'chunk size must be positive for ', adir))
+    END ;
+    IF shape[i] < 0 THEN
+      RAISE Error (Cat (pool, 'a negative extent for ', adir))
+    END
+  END
+END CheckGrid ;
+
+PROCEDURE WriteChunks (VAR pool: POOL ; RO adir: STR ;
+                       RO raw: SLICE OF BYTE ; esize: I64 ;
+                       RO shape: SLICE OF I64 ;
+                       RO chunks: SLICE OF I64 ;
+                       RO fillB: SLICE OF BYTE ; comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  buf : SLICE OF BYTE ;
+  nm : PTR DynStr.DString IN scratch ;
+  sh, ch, nch, ci, ii : ARRAY MaxRank OF I64 ;
+  r, i, k, cn, src, dst, g, b : I64 ;
+  inside, chunksLeft, cellsLeft : BOOL ;
+BEGIN
+  CheckGrid (pool, adir, shape, chunks) ;
+  r := LEN (shape) ;
+  IF r = 0 THEN
+    (* A 0-D ARRAY IS ONE CHUNK OF ONE ELEMENT, keyed `0` -- which is
+       what zarr-python writes and what a reader looks for.  It has no
+       grid to walk and no edge to pad. *)
+    PutChunk (pool, Cat (pool, adir, '/0'), raw, esize, comp) ;
+    RETURN
+  END ;
+  cn := 1 ;
+  FOR i := 0 TO MaxRank - 1 DO
+    IF i < r THEN
+      sh[i] := shape[i] ;
+      ch[i] := chunks[i] ;
+      nch[i] := (sh[i] + ch[i] - 1) DIV ch[i] ;
+      IF nch[i] = 0 THEN nch[i] := 1 END ;
+      cn := cn * ch[i]
+    ELSE
+      sh[i] := 1 ; ch[i] := 1 ; nch[i] := 1
+    END ;
+    ci[i] := 0 ;
+    ii[i] := 0
+  END ;
+  buf := NEW (scratch, BYTE, cn * esize) ;
+  chunksLeft := TRUE ;
+  WHILE chunksLeft DO
+    (* the fill pattern first: an edge chunk keeps it wherever the
+       array does not reach *)
+    FOR k := 0 TO cn - 1 DO
+      FOR b := 0 TO esize - 1 DO
+        buf[k * esize + b] := fillB[b]
+      END
+    END ;
+    FOR i := 0 TO r - 1 DO ii[i] := 0 END ;
+    cellsLeft := TRUE ;
+    WHILE cellsLeft DO
+      inside := TRUE ;
+      src := 0 ;
+      dst := 0 ;
+      FOR i := 0 TO r - 1 DO
+        g := ci[i] * ch[i] + ii[i] ;
+        IF g >= sh[i] THEN inside := FALSE END ;
+        src := src * sh[i] + g ;
+        dst := dst * ch[i] + ii[i]
+      END ;
+      IF inside THEN
+        FOR b := 0 TO esize - 1 DO
+          buf[dst * esize + b] := raw[src * esize + b]
+        END
+      END ;
+      (* the cell odometer, last axis fastest: C order *)
+      k := r - 1 ;
+      cellsLeft := FALSE ;
+      WHILE k >= 0 AND NOT cellsLeft DO
+        ii[k] := ii[k] + 1 ;
+        IF ii[k] < ch[k] THEN
+          cellsLeft := TRUE
+        ELSE
+          ii[k] := 0 ;
+          k := k - 1
+        END
+      END
+    END ;
+    nm := DynStr.New (scratch) ;
+    DynStr.Append (scratch, nm, adir) ;
+    DynStr.AppendChar (scratch, nm, '/') ;
+    FOR i := 0 TO r - 1 DO
+      IF i > 0 THEN DynStr.AppendChar (scratch, nm, '.') END ;
+      DynStr.AppendI64 (scratch, nm, ci[i])
+    END ;
+    PutChunk (pool, DynStr.View (nm), buf, esize, comp) ;
+    (* and the chunk odometer, the same way *)
+    k := r - 1 ;
+    chunksLeft := FALSE ;
+    WHILE k >= 0 AND NOT chunksLeft DO
+      ci[k] := ci[k] + 1 ;
+      IF ci[k] < nch[k] THEN
+        chunksLeft := TRUE
+      ELSE
+        ci[k] := 0 ;
+        k := k - 1
+      END
+    END
+  END
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'index error writing ', adir))
+END WriteChunks ;
+
+(* zarr's own guess_chunks.  CHUNK_BASE 256 KiB, CHUNK_MIN 128 KiB,
+   CHUNK_MAX 64 MiB; the target scales with the array's size, and the
+   loop halves ONE AXIS AT A TIME, round-robin, ceiling each time. *)
+PROCEDURE GuessChunks (VAR pool: POOL ; RO shape: SLICE OF I64 ;
+                       typesize: I64) : SLICE OF I64
+  RAISES Error, ValueRange =
+VAR
+  out : SLICE OF I64 ;
+  i, n, idx, bytes, prod : I64 ;
+  target, mb : F64 ;
+BEGIN
+  n := LEN (shape) ;
+  out := NEW (pool, I64, n) ;
+  prod := 1 ;
+  FOR i := 0 TO n - 1 DO
+    out[i] := shape[i] ;
+    prod := prod * shape[i]
+  END ;
+  IF n = 0 OR prod = 0 THEN RETURN out END ;
+  mb := F64 (prod * typesize) / 1048576.0 ;
+  target := F64 (ChunkBase) * Math.Pow (2.0, Math.Log10 (mb)) ;
+  IF target > F64 (ChunkMax) THEN target := F64 (ChunkMax)
+  ELSIF target < F64 (ChunkMin) THEN target := F64 (ChunkMin) END ;
+  idx := 0 ;
+  LOOP
+    prod := 1 ;
+    FOR i := 0 TO n - 1 DO prod := prod * out[i] END ;
+    bytes := prod * typesize ;
+    IF (F64 (bytes) < target
+        OR Math.Abs (F64 (bytes) - target) / target < 0.5)
+       AND bytes < ChunkMax THEN
+      EXIT
+    END ;
+    IF prod = 1 THEN EXIT END ;
+    out[idx MOD n] := (out[idx MOD n] + 1) DIV 2 ;
+    idx := idx + 1
+  END ;
+  RETURN out
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'guess_chunks index', ''))
+| Overflow : RAISE Error (Cat (pool, 'guess_chunks overflow', ''))
+END GuessChunks ;
+
+(* the common tail: .zarray, .zattrs and the chunks *)
+PROCEDURE Emit (VAR pool: POOL ; RO adir: STR ; RO dtype: STR ;
+                RO fill: STR ; RO fillB: SLICE OF BYTE ; esize: I64 ;
+                RO raw: SLICE OF BYTE ; RO shape: SLICE OF I64 ;
+                RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ;
+                comp: I64)
+  RAISES Error, ValueRange =
+VAR n, i : I64 ;
+BEGIN
+  (* everything that can be refused is refused BEFORE MkDirP *)
+  CheckGrid (pool, adir, shape, chunks) ;
+  n := 1 ;
+  FOR i := 0 TO LEN (shape) - 1 DO n := n * shape[i] END ;
+  IF LEN (raw) # n * esize THEN
+    RAISE Error (Cat (pool, 'data length does not match shape for ', adir))
+  END ;
+  MkDirP (pool, adir) ;
+  WriteText (pool, Cat (pool, adir, '/.zarray'),
+             Meta (pool, dtype, fill, 'null', shape, chunks, comp)) ;
+  (* `.zattrs` IS ALWAYS WRITTEN, EVEN EMPTY.  xarray refuses a whole
+     GROUP when one array in it has no `_ARRAY_DIMENSIONS` -- a
+     KeyError naming the array, not a warning -- so an array with
+     ZERO dimensions still has to say so.  The ICOS ecosystem store's
+     0-d `temporal_resolution` is exactly that case, and it was a
+     failing driver check before this line lost its guard. *)
+  WriteText (pool, Cat (pool, adir, '/.zattrs'), DimsJson (pool, dims)) ;
+  WriteChunks (pool, adir, raw, esize, shape, chunks, fillB, comp)
+EXCEPT
+| Io.IOError (p) : RAISE Error (Cat (pool, 'cannot write array ', adir))
+END Emit ;
+
+PROCEDURE WriteF32Fill (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF F32 ; hasFill: BOOL ;
+                        fill: F64 ;
+                        RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  raw, fb : SLICE OF BYTE ;
+  fv : F32 ;
+  txt : STR ;
+  i : I64 ;
+BEGIN
+  raw := NEW (scratch, BYTE, LEN (data) * 4) ;
+  FOR i := 0 TO LEN (data) - 1 DO
+    F32.ToBytesLE (data[i], SLICE (raw, i * 4, 4))
+  END ;
+  fv := F32 (NaN64 ()) ;
+  txt := Cat (pool, '"NaN"', '') ;
+  (* `fill # fill` is the NaN test without importing Math: a declared
+     NaN fill IS the default, so the two spellings agree *)
+  IF hasFill AND fill = fill THEN
+    fv := F32 (fill) ;
+    txt := Json.ReprText (pool, F64 (fv))
+  END ;
+  fb := NEW (scratch, BYTE, 4) ;
+  F32.ToBytesLE (fv, fb) ;
+  Emit (pool, adir, '<f4', txt, fb, 4, raw, shape, chunks, dims, comp)
+END WriteF32Fill ;
+
+PROCEDURE WriteF32 (VAR pool: POOL ; RO adir: STR ;
+                    RO data: SLICE OF F32 ; RO shape: SLICE OF I64 ;
+                    RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ;
+                    comp: I64)
+  RAISES Error, ValueRange =
+BEGIN
+  WriteF32Fill (pool, adir, data, FALSE, 0.0, shape, chunks, dims, comp)
+END WriteF32 ;
+
+PROCEDURE WriteF64Fill (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF F64 ; hasFill: BOOL ;
+                        fill: F64 ;
+                        RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  raw, fb : SLICE OF BYTE ;
+  fv : F64 ;
+  txt : STR ;
+  i : I64 ;
+BEGIN
+  raw := NEW (scratch, BYTE, LEN (data) * 8) ;
+  FOR i := 0 TO LEN (data) - 1 DO
+    F64.ToBytesLE (data[i], SLICE (raw, i * 8, 8))
+  END ;
+  fv := NaN64 () ;
+  txt := Cat (pool, '"NaN"', '') ;
+  IF hasFill AND fill = fill THEN
+    fv := fill ;
+    txt := Json.ReprText (pool, fv)
+  END ;
+  fb := NEW (scratch, BYTE, 8) ;
+  F64.ToBytesLE (fv, fb) ;
+  Emit (pool, adir, '<f8', txt, fb, 8, raw, shape, chunks, dims, comp)
+END WriteF64Fill ;
+
+PROCEDURE WriteF64 (VAR pool: POOL ; RO adir: STR ;
+                    RO data: SLICE OF F64 ; RO shape: SLICE OF I64 ;
+                    RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ;
+                    comp: I64)
+  RAISES Error, ValueRange =
+BEGIN
+  WriteF64Fill (pool, adir, data, FALSE, 0.0, shape, chunks, dims, comp)
+END WriteF64 ;
+
+(* little-endian integer bytes, by MOD/DIV because M9 has NO BITWISE
+   OPERATORS -- no shifts, no AND -- and this is the two's-complement
+   spelling that survives negatives.
+
+   The first draft was `BYTE (x MOD 256)` and a plain `x DIV 256`, and
+   the checker caught it on the first QC column: a flag of -1 (the ICOS
+   'no source flag' sentinel) made BYTE refuse a negative, which is the
+   conversion check doing exactly its job.  Take the byte, lift it into
+   0..255, then subtract it BEFORE dividing so the borrow propagates --
+   that turns -1 into FF FF FF FF FF FF FF FF, which is what a reader
+   expects. *)
+PROCEDURE PutIntLE (VAR raw: SLICE OF BYTE ; at: I64 ; width: I64 ;
+                    v: I64)
+  RAISES ValueRange, IndexError =
+VAR i, x, b : I64 ;
+BEGIN
+  x := v ;
+  FOR i := 0 TO width - 1 DO
+    b := x MOD 256 ;
+    IF b < 0 THEN b := b + 256 END ;
+    raw[at + i] := BYTE (b) ;
+    x := (x - b) DIV 256
+  END
+END PutIntLE ;
+
+(* THE RANGE CHECK, and it is not decoration.  PutIntLE below takes
+   `v MOD 256` per byte, so 300 into an int8 column silently becomes
+   44 -- a WOCE flag that reads as good.  numpy wraps here too and
+   polars turns the value null; neither is a thing a store builder
+   should do quietly, so this refuses BY NAME and the caller decides.
+   Spelled with literals because M9 has no shifts to build them. *)
+PROCEDURE FitsInt (VAR pool: POOL ; v: I64 ; width: I64 ; signed: BOOL ;
+                   RO adir: STR)
+  RAISES Error, ValueRange =
+VAR lo, hi : I64 ;
+BEGIN
+  IF NOT signed THEN
+    IF width = 1 THEN lo := 0 ; hi := 255
+    ELSE lo := 0 ; hi := 65535 END         (* |u1 and <u2 *)
+  ELSIF width = 1 THEN lo := 0 - 128 ; hi := 127
+  ELSIF width = 2 THEN lo := 0 - 32768 ; hi := 32767
+  ELSIF width = 4 THEN lo := 0 - 2147483648 ; hi := 2147483647
+  ELSE RETURN                              (* I64 always fits itself *)
+  END ;
+  IF v < lo OR v > hi THEN
+    RAISE Error (Cat (pool, 'a value does not fit the integer width in ',
+                      adir))
+  END
+END FitsInt ;
+
+PROCEDURE IntDtype (VAR pool: POOL ; width: I64 ; signed: BOOL) : STR
+  RAISES Error, ValueRange =
+BEGIN
+  IF NOT signed THEN
+    IF width = 1 THEN RETURN Cat (pool, '|u1', '') END ;
+    IF width = 2 THEN RETURN Cat (pool, '<u2', '') END ;
+    RAISE Error (Cat (pool, 'only |u1 and <u2 are offered unsigned', ''))
+  END ;
+  IF width = 1 THEN RETURN Cat (pool, '|i1', '') END ;
+  IF width = 2 THEN RETURN Cat (pool, '<i2', '') END ;
+  IF width = 4 THEN RETURN Cat (pool, '<i4', '') END ;
+  IF width = 8 THEN RETURN Cat (pool, '<i8', '') END ;
+  RAISE Error (Cat (pool, 'integer width must be 1, 2, 4 or 8', ''))
+END IntDtype ;
+
+PROCEDURE WriteIntFill (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF I64 ; width: I64 ;
+                        signed: BOOL ; hasFill: BOOL ; fill: I64 ;
+                        RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  raw, fb : SLICE OF BYTE ;
+  dt, txt : STR ;
+  d : PTR DynStr.DString IN scratch ;
+  i : I64 ;
+BEGIN
+  dt := IntDtype (pool, width, signed) ;
+  raw := NEW (scratch, BYTE, LEN (data) * width) ;
+  FOR i := 0 TO LEN (data) - 1 DO
+    FitsInt (pool, data[i], width, signed, adir) ;
+    PutIntLE (raw, i * width, width, data[i])
+  END ;
+  fb := NEW (scratch, BYTE, width) ;
+  FOR i := 0 TO width - 1 DO fb[i] := BYTE (0) END ;
+  IF hasFill THEN
+    (* the same range check the DATA gets: a fill that does not fit
+       its own width would be written truncated and read back as a
+       value nobody named *)
+    FitsInt (pool, fill, width, signed, adir) ;
+    PutIntLE (fb, 0, width, fill) ;
+    d := DynStr.New (scratch) ;
+    DynStr.AppendI64 (scratch, d, fill) ;
+    txt := Cat (pool, DynStr.View (d), '')
+  ELSE
+    (* fill_value NULL, never 0: a zarr fill of 0 on an integer column
+       makes xarray mask real zeros as missing *)
+    txt := Cat (pool, 'null', '')
+  END ;
+  Emit (pool, adir, dt, txt, fb, width, raw, shape, chunks,
+        dims, comp)
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'index error writing ', adir))
+END WriteIntFill ;
+
+PROCEDURE WriteInt (VAR pool: POOL ; RO adir: STR ;
+                    RO data: SLICE OF I64 ; width: I64 ; signed: BOOL ;
+                    RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                    RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+BEGIN
+  WriteIntFill (pool, adir, data, width, signed, FALSE, 0, shape,
+                chunks, dims, comp)
+END WriteInt ;
+
+PROCEDURE WriteTimeNs (VAR pool: POOL ; RO adir: STR ;
+                       RO data: SLICE OF I64 ; RO shape: SLICE OF I64 ;
+                       RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ;
+                       comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  raw, fb : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  raw := NEW (scratch, BYTE, LEN (data) * 8) ;
+  FOR i := 0 TO LEN (data) - 1 DO
+    PutIntLE (raw, i * 8, 8, data[i])
+  END ;
+  fb := NEW (scratch, BYTE, 8) ;
+  FOR i := 0 TO 7 DO fb[i] := BYTE (0) END ;
+  Emit (pool, adir, '<M8[ns]', 'null', fb, 8, raw, shape, chunks,
+        dims, comp)
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'index error writing ', adir))
+END WriteTimeNs ;
+
+PROCEDURE WriteBool (VAR pool: POOL ; RO adir: STR ;
+                     RO data: SLICE OF BOOL ; RO shape: SLICE OF I64 ;
+                     RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ;
+                     comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  raw, fb : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  raw := NEW (scratch, BYTE, LEN (data)) ;
+  FOR i := 0 TO LEN (data) - 1 DO
+    IF data[i] THEN raw[i] := BYTE (1) ELSE raw[i] := BYTE (0) END
+  END ;
+  fb := NEW (scratch, BYTE, 1) ;
+  fb[0] := BYTE (0) ;
+  Emit (pool, adir, '|b1', 'null', fb, 1, raw, shape, chunks,
+        dims, comp)
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'index error writing ', adir))
+END WriteBool ;
+
+(* --- strings ------------------------------------------------------ *)
+
+(* zarr spells a |S fill as the BASE64 of its padded octets, which is
+   what zarr-python writes and what a reader decodes.  Plain RFC 4648
+   with padding; M9 has no shifts, so the six-bit groups come out by
+   DIV and MOD. *)
+PROCEDURE Base64 (VAR pool: POOL ; RO b: SLICE OF BYTE) : STR
+  RAISES ValueRange, IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  Alphabet : STR ;
+  i, n, v, rest : I64 ;
+BEGIN
+  (* a local rather than a CONST: a procedure-local string CONST is
+     emitted as a module-level name the generator never declares *)
+  Alphabet :=
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/' ;
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (pool, d, '"') ;
+  n := LEN (b) ;
+  i := 0 ;
+  WHILE i + 3 <= n DO
+    v := I64 (b[i]) * 65536 + I64 (b[i + 1]) * 256 + I64 (b[i + 2]) ;
+    DynStr.AppendChar (pool, d, Alphabet[v DIV 262144]) ;
+    DynStr.AppendChar (pool, d, Alphabet[(v DIV 4096) MOD 64]) ;
+    DynStr.AppendChar (pool, d, Alphabet[(v DIV 64) MOD 64]) ;
+    DynStr.AppendChar (pool, d, Alphabet[v MOD 64]) ;
+    i := i + 3
+  END ;
+  rest := n - i ;
+  IF rest = 1 THEN
+    v := I64 (b[i]) * 65536 ;
+    DynStr.AppendChar (pool, d, Alphabet[v DIV 262144]) ;
+    DynStr.AppendChar (pool, d, Alphabet[(v DIV 4096) MOD 64]) ;
+    DynStr.Append (pool, d, '==')
+  ELSIF rest = 2 THEN
+    v := I64 (b[i]) * 65536 + I64 (b[i + 1]) * 256 ;
+    DynStr.AppendChar (pool, d, Alphabet[v DIV 262144]) ;
+    DynStr.AppendChar (pool, d, Alphabet[(v DIV 4096) MOD 64]) ;
+    DynStr.AppendChar (pool, d, Alphabet[(v DIV 64) MOD 64]) ;
+    DynStr.AppendChar (pool, d, '=')
+  END ;
+  DynStr.AppendChar (pool, d, '"') ;
+  RETURN DynStr.View (d)
+END Base64 ;
+
+PROCEDURE WriteOctets (VAR pool: POOL ; RO adir: STR ;
+                       RO raw: SLICE OF BYTE ; width: I64 ;
+                       hasFill: BOOL ; RO fill: STR ;
+                       RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                       RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  fb, u : SLICE OF BYTE ;
+  d : PTR DynStr.DString IN scratch ;
+  txt : STR ;
+  i : I64 ;
+BEGIN
+  IF width < 1 THEN
+    RAISE Error (Cat (pool, 'a |S width must be positive for ', adir))
+  END ;
+  d := DynStr.New (scratch) ;
+  DynStr.Append (scratch, d, '|S') ;
+  DynStr.AppendI64 (scratch, d, width) ;
+  fb := NEW (scratch, BYTE, width) ;
+  FOR i := 0 TO width - 1 DO fb[i] := BYTE (0) END ;
+  IF hasFill THEN
+    u := DynStr.Utf8 (scratch, fill) ;
+    IF LEN (u) > width THEN
+      RAISE Error (Cat (pool,
+        'the fill is longer than its |S width in ', adir))
+    END ;
+    FOR i := 0 TO LEN (u) - 1 DO fb[i] := u[i] END ;
+    txt := Base64 (pool, fb)
+  ELSE
+    txt := Cat (pool, 'null', '')
+  END ;
+  Emit (pool, adir, DynStr.View (d), txt, fb, width, raw, shape,
+        chunks, dims, comp)
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'index error writing ', adir))
+END WriteOctets ;
+
+PROCEDURE WriteStrFixedFill (VAR pool: POOL ; RO adir: STR ;
+                             RO data: SLICE OF STR ; width: I64 ;
+                             hasFill: BOOL ; RO fill: STR ;
+                             RO shape: SLICE OF I64 ;
+                             RO chunks: SLICE OF I64 ;
+                             RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  txt : STR ;
+  raw, fb, u : SLICE OF BYTE ;
+  d : PTR DynStr.DString IN scratch ;
+  i, k : I64 ;
+BEGIN
+  IF width < 1 THEN
+    RAISE Error (Cat (pool, 'a |S width must be positive for ', adir))
+  END ;
+  d := DynStr.New (scratch) ;
+  DynStr.Append (scratch, d, '|S') ;
+  DynStr.AppendI64 (scratch, d, width) ;
+  raw := NEW (scratch, BYTE, LEN (data) * width) ;
+  FOR i := 0 TO LEN (data) - 1 DO
+    u := DynStr.Utf8 (scratch, data[i]) ;
+    IF LEN (u) > width THEN
+      RAISE Error (Cat (pool,
+        'a string is longer than its |S width in ', adir))
+    END ;
+    FOR k := 0 TO LEN (u) - 1 DO
+      raw[i * width + k] := u[k]
+    END ;
+    (* NUL to the right, which is numpy's own padding and what Zread
+       trims back off; spelled out rather than leaning on the pool's
+       defined-zero, because the buffer is reused nowhere but the
+       guarantee is easy to lose *)
+    FOR k := LEN (u) TO width - 1 DO
+      raw[i * width + k] := BYTE (0)
+    END
+  END ;
+  fb := NEW (scratch, BYTE, width) ;
+  FOR i := 0 TO width - 1 DO fb[i] := BYTE (0) END ;
+  IF hasFill THEN
+    u := DynStr.Utf8 (scratch, fill) ;
+    IF LEN (u) > width THEN
+      RAISE Error (Cat (pool,
+        'the fill is longer than its |S width in ', adir))
+    END ;
+    FOR k := 0 TO LEN (u) - 1 DO fb[k] := u[k] END ;
+    txt := Base64 (pool, fb)
+  ELSE
+    (* fill_value null, as the live |S stores carry it *)
+    txt := Cat (pool, 'null', '')
+  END ;
+  Emit (pool, adir, DynStr.View (d), txt, fb, width, raw, shape,
+        chunks, dims, comp)
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'index error writing ', adir))
+END WriteStrFixedFill ;
+
+PROCEDURE WriteStrFixed (VAR pool: POOL ; RO adir: STR ;
+                         RO data: SLICE OF STR ; width: I64 ;
+                         RO shape: SLICE OF I64 ;
+                         RO chunks: SLICE OF I64 ;
+                         RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+BEGIN
+  WriteStrFixedFill (pool, adir, data, width, FALSE, '', shape,
+                     chunks, dims, comp)
+END WriteStrFixed ;
+
+(* the single chunk of a rank-r array: 0, 0.0, 0.0.0 *)
+PROCEDURE WriteStrUcs4 (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF STR ; width: I64 ;
+                        RO shape: SLICE OF I64 ;
+                        RO chunks: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  raw, fb : SLICE OF BYTE ;
+  s : STR ;
+  n, i, j, at, v, b : I64 ;
+BEGIN
+  IF width < 1 THEN
+    RAISE Error (Cat (pool, 'a <U width must be positive for ', adir))
+  END ;
+  n := 1 ;
+  FOR i := 0 TO LEN (shape) - 1 DO n := n * shape[i] END ;
+  IF LEN (data) # n THEN
+    RAISE Error (Cat (pool, 'data length does not match shape for ',
+                      adir))
+  END ;
+  raw := NEW (scratch, BYTE, n * width * 4) ;
+  FOR i := 0 TO n - 1 DO
+    s := data[i] ;
+    IF LEN (s) > width THEN
+      RAISE Error (Cat (pool,
+        'a value is longer than the <U width in ', adir))
+    END ;
+    at := i * width * 4 ;
+    FOR j := 0 TO LEN (s) - 1 DO
+      (* one code point per cell, four octets, little-endian -- and
+         the pool is defined-zero, so the padding is already there *)
+      v := ORD (s[j]) ;
+      FOR b := 0 TO 3 DO
+        raw[at + j * 4 + b] := BYTE (v MOD 256) ;
+        v := v DIV 256
+      END
+    END
+  END ;
+  fb := NEW (scratch, BYTE, width * 4) ;
+  FOR i := 0 TO width * 4 - 1 DO fb[i] := BYTE (0) END ;
+  Emit (pool, adir, UDtype (pool, width), 'null', fb, width * 4, raw,
+        shape, chunks, dims, comp)
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'index error writing ', adir))
+END WriteStrUcs4 ;
+
+PROCEDURE UDtype (VAR pool: POOL ; width: I64) : STR
+  RAISES ValueRange =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '<U') ;
+  DynStr.AppendI64 (pool, d, width) ;
+  RETURN DynStr.View (d)
+END UDtype ;
+
+PROCEDURE ZeroChunk (VAR pool: POOL ; RO adir: STR ; r: I64) : STR
+  RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, adir) ;
+  DynStr.Append (pool, d, '/0') ;
+  FOR i := 1 TO r - 1 DO DynStr.Append (pool, d, '.0') END ;
+  RETURN DynStr.View (d)
+END ZeroChunk ;
+
+PROCEDURE WriteStrVlen (VAR pool: POOL ; RO adir: STR ;
+                        RO data: SLICE OF STR ;
+                        RO shape: SLICE OF I64 ;
+                        RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  buf, u : SLICE OF BYTE ;
+  r, n, i, k, at, total : I64 ;
+BEGIN
+  r := LEN (shape) ;
+  IF r < 1 OR r > MaxRank THEN
+    RAISE Error (Cat (pool, 'rank outside 1..5 for ', adir))
+  END ;
+  n := 1 ;
+  FOR i := 0 TO r - 1 DO
+    IF shape[i] < 1 THEN
+      RAISE Error (Cat (pool, 'an empty vlen array has no chunk in ',
+                        adir))
+    END ;
+    n := n * shape[i]
+  END ;
+  IF LEN (data) # n THEN
+    RAISE Error (Cat (pool, 'data length does not match shape for ',
+                      adir))
+  END ;
+  (* TWO PASSES, and the encoding therefore runs twice: the sizes are
+     needed before the buffer exists, and keeping the first pass's
+     slices would want an array of slices this module does not
+     otherwise need.  The form carries identity lists -- thousands of
+     short strings, never the measurements -- so the second encode is
+     not worth a data structure. *)
+  total := 4 ;
+  FOR i := 0 TO n - 1 DO
+    total := total + 4 + LEN (DynStr.Utf8 (scratch, data[i]))
+  END ;
+  buf := NEW (scratch, BYTE, total) ;
+  PutIntLE (buf, 0, 4, n) ;
+  at := 4 ;
+  FOR i := 0 TO n - 1 DO
+    u := DynStr.Utf8 (scratch, data[i]) ;
+    PutIntLE (buf, at, 4, LEN (u)) ;
+    at := at + 4 ;
+    FOR k := 0 TO LEN (u) - 1 DO buf[at + k] := u[k] END ;
+    at := at + LEN (u)
+  END ;
+  MkDirP (pool, adir) ;
+  (* chunks = shape: the one legal grid, stated in the definition *)
+  WriteText (pool, Cat (pool, adir, '/.zarray'),
+             Meta (pool, '|O', 'null', '[{"id": "vlen-utf8"}]',
+                   shape, shape, comp)) ;
+  IF LEN (dims) > 0 THEN
+    WriteText (pool, Cat (pool, adir, '/.zattrs'), DimsJson (pool, dims))
+  END ;
+  (* typesize 1: after the filter the chunk is octets, not elements,
+     which is what zarr's own writers tell blosc for an object array *)
+  PutChunk (pool, ZeroChunk (pool, adir, r), buf, 1, comp)
+EXCEPT
+| Io.IOError (p) :
+    RAISE Error (Cat (pool, 'cannot write array ', adir))
+| IndexError :
+    RAISE Error (Cat (pool, 'index error writing ', adir))
+END WriteStrVlen ;
+
+(* --- the appending sink ------------------------------------------ *)
+
+TYPE
+  Sink = RECORD
+    RO adir : STR ;
+    RO dims : SLICE OF STR ;
+    dtype : STR ;
+    fill : STR ;                 (* the .zarray spelling *)
+    fillB : SLICE OF BYTE ;
+    esize : I64 ;
+    isFloat : BOOL ;
+    isTime : BOOL ;              (* <M8[ns]: an I64 epoch, never ranged *)
+    signed : BOOL ;
+    width : I64 ;                (* for the integer kinds *)
+    chunk : I64 ;
+    comp : I64 ;
+    buf : SLICE OF BYTE ;
+    n : I64 ;                    (* values in buf *)
+    total : I64 ;
+    ci : I64 ;                   (* next chunk index *)
+    sealed : BOOL ;
+  END ;
+
+PROCEDURE NewSink (VAR pool: POOL ; RO KEPT adir: STR ;
+                   RO KEPT dtype: STR ; RO KEPT fill: STR ;
+                   esize: I64 ; chunk: I64 ;
+                   RO KEPT dims: SLICE OF STR ; comp: I64)
+  : PTR Sink IN pool
+  RAISES Error, ValueRange =
+VAR
+  s : PTR Sink IN pool ;
+  i : I64 ;
+BEGIN
+  IF chunk <= 0 THEN
+    RAISE Error (Cat (pool, 'chunk size must be positive for ', adir))
+  END ;
+  s := NEW (pool, Sink) ;
+  s.adir := adir ;
+  s.dims := dims ;
+  s.dtype := dtype ;
+  s.fill := fill ;
+  s.esize := esize ;
+  s.chunk := chunk ;
+  s.comp := comp ;
+  s.buf := NEW (pool, BYTE, chunk * esize) ;
+  s.fillB := NEW (pool, BYTE, esize) ;
+  FOR i := 0 TO esize - 1 DO s.fillB[i] := BYTE (0) END ;
+  s.n := 0 ;
+  s.total := 0 ;
+  s.ci := 0 ;
+  s.sealed := FALSE ;
+  s.isFloat := FALSE ;
+  s.isTime := FALSE ;
+  s.signed := TRUE ;
+  s.width := esize ;
+  MkDirP (pool, adir) ;
+  RETURN s
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'index error opening ', adir))
+END NewSink ;
+
+PROCEDURE SinkF32 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
+                   RO KEPT dims: SLICE OF STR ; comp: I64)
+  : PTR Sink IN pool
+  RAISES Error, ValueRange =
+VAR s : PTR Sink IN pool ;
+BEGIN
+  s := NewSink (pool, adir, '<f4', '"NaN"', 4, chunk, dims, comp) ;
+  s.isFloat := TRUE ;
+  F32.ToBytesLE (F32 (NaN64 ()), s.fillB) ;
+  RETURN s
+END SinkF32 ;
+
+PROCEDURE SinkF64 (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
+                   RO KEPT dims: SLICE OF STR ; comp: I64)
+  : PTR Sink IN pool
+  RAISES Error, ValueRange =
+VAR s : PTR Sink IN pool ;
+BEGIN
+  s := NewSink (pool, adir, '<f8', '"NaN"', 8, chunk, dims, comp) ;
+  s.isFloat := TRUE ;
+  F64.ToBytesLE (NaN64 (), s.fillB) ;
+  RETURN s
+END SinkF64 ;
+
+PROCEDURE SinkInt (VAR pool: POOL ; RO KEPT adir: STR ; width: I64 ;
+                   signed: BOOL ; chunk: I64 ;
+                   RO KEPT dims: SLICE OF STR ; comp: I64)
+  : PTR Sink IN pool
+  RAISES Error, ValueRange =
+VAR s : PTR Sink IN pool ;
+BEGIN
+  s := NewSink (pool, adir, IntDtype (pool, width, signed), 'null',
+                width, chunk, dims, comp) ;
+  s.signed := signed ;
+  RETURN s
+END SinkInt ;
+
+PROCEDURE SinkTimeNs (VAR pool: POOL ; RO KEPT adir: STR ; chunk: I64 ;
+                      RO KEPT dims: SLICE OF STR ; comp: I64)
+  : PTR Sink IN pool
+  RAISES Error, ValueRange =
+VAR s : PTR Sink IN pool ;
+BEGIN
+  s := NewSink (pool, adir, '<M8[ns]', 'null', 8, chunk, dims, comp) ;
+  s.isTime := TRUE ;
+  RETURN s
+END SinkTimeNs ;
+
+PROCEDURE Flush (VAR s: PTR Sink ; pad: BOOL)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nm : PTR DynStr.DString IN scratch ;
+  k, b : I64 ;
+BEGIN
+  IF s.n = 0 THEN RETURN END ;
+  IF pad THEN
+    (* a chunk file is always FULL; the tail carries the fill *)
+    FOR k := s.n TO s.chunk - 1 DO
+      FOR b := 0 TO s.esize - 1 DO
+        s.buf[k * s.esize + b] := s.fillB[b]
+      END
+    END
+  END ;
+  nm := DynStr.New (scratch) ;
+  DynStr.Append (scratch, nm, s.adir) ;
+  DynStr.AppendChar (scratch, nm, '/') ;
+  DynStr.AppendI64 (scratch, nm, s.ci) ;
+  PutChunk (scratch, DynStr.View (nm), s.buf, s.esize, s.comp) ;
+  s.ci := s.ci + 1 ;
+  s.n := 0
+EXCEPT
+| IndexError :
+    RAISE Error (Cat (scratch, 'index error flushing ', s.adir))
+END Flush ;
+
+PROCEDURE Room (VAR s: PTR Sink)
+  RAISES Error, ValueRange =
+VAR scratch : POOL ;
+BEGIN
+  IF s.sealed THEN
+    RAISE Error (Cat (scratch, 'more values after Seal on ', s.adir))
+  END ;
+  IF s.n = s.chunk THEN Flush (s, FALSE) END
+END Room ;
+
+PROCEDURE PutF32 (VAR s: PTR Sink ; v: F32)
+  RAISES Error, ValueRange =
+VAR scratch : POOL ;
+BEGIN
+  Room (s) ;
+  F32.ToBytesLE (v, SLICE (s.buf, s.n * 4, 4)) ;
+  s.n := s.n + 1 ;
+  s.total := s.total + 1
+EXCEPT
+| IndexError :
+    RAISE Error (Cat (scratch, 'index error appending to ', s.adir))
+END PutF32 ;
+
+PROCEDURE PutF64 (VAR s: PTR Sink ; v: F64)
+  RAISES Error, ValueRange =
+VAR scratch : POOL ;
+BEGIN
+  Room (s) ;
+  F64.ToBytesLE (v, SLICE (s.buf, s.n * 8, 8)) ;
+  s.n := s.n + 1 ;
+  s.total := s.total + 1
+EXCEPT
+| IndexError :
+    RAISE Error (Cat (scratch, 'index error appending to ', s.adir))
+END PutF64 ;
+
+PROCEDURE PutI64 (VAR s: PTR Sink ; v: I64)
+  RAISES Error, ValueRange =
+VAR scratch : POOL ;
+BEGIN
+  Room (s) ;
+  IF NOT s.isTime THEN
+    FitsInt (scratch, v, s.esize, s.signed, s.adir)
+  END ;
+  PutIntLE (s.buf, s.n * s.esize, s.esize, v) ;
+  s.n := s.n + 1 ;
+  s.total := s.total + 1
+EXCEPT
+| IndexError :
+    RAISE Error (Cat (scratch, 'index error appending to ', s.adir))
+END PutI64 ;
+
+PROCEDURE Rows (s: PTR Sink) : I64 =
+BEGIN
+  RETURN s.total
+END Rows ;
+
+PROCEDURE Seal (VAR s: PTR Sink)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  shape, chunks : SLICE OF I64 ;
+BEGIN
+  IF s.sealed THEN RETURN END ;
+  Flush (s, TRUE) ;
+  shape := NEW (scratch, I64, 1) ; shape[0] := s.total ;
+  chunks := NEW (scratch, I64, 1) ; chunks[0] := s.chunk ;
+  WriteText (scratch, Cat (scratch, s.adir, '/.zarray'),
+             Meta (scratch, s.dtype, s.fill, 'null', shape, chunks,
+                   s.comp)) ;
+  IF LEN (s.dims) > 0 THEN
+    WriteText (scratch, Cat (scratch, s.adir, '/.zattrs'),
+               DimsJson (scratch, s.dims))
+  END ;
+  s.sealed := TRUE
+EXCEPT
+| Io.IOError (p) : RAISE Error (Cat (scratch, 'cannot seal ', s.adir))
+| IndexError : RAISE Error (Cat (scratch, 'index error sealing ', s.adir))
+END Seal ;
+
+(* --- consolidation ---------------------------------------------- *)
+
+PROCEDURE SortNames (VAR a: SLICE OF STR)
+  RAISES ValueRange, IndexError =
+  (* readdir order is not sorted and .zmetadata should be stable across
+     rebuilds; insertion sort, because the corpus exports none and the
+     lists here are directory-sized *)
+VAR
+  i, j : I64 ;
+  t : STR ;
+BEGIN
+  FOR i := 1 TO LEN (a) - 1 DO
+    j := i ;
+    WHILE j > 0 AND DynStr.Eq (a[j], a[j - 1]) = FALSE AND
+          Less (a[j], a[j - 1]) DO
+      t := a[j] ; a[j] := a[j - 1] ; a[j - 1] := t ; j := j - 1
+    END
+  END
+END SortNames ;
+
+PROCEDURE Less (RO a: STR ; RO b: STR) : BOOL
+  RAISES IndexError =
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i < LEN (a) AND i < LEN (b) DO
+    IF a[i] # b[i] THEN RETURN ORD (a[i]) < ORD (b[i]) END ;
+    i := i + 1
+  END ;
+  RETURN LEN (a) < LEN (b)
+END Less ;
+
+PROCEDURE IsDir (VAR pool: POOL ; RO path: STR) : BOOL
+  RAISES ValueRange =
+BEGIN
+  RETURN Io.Exists (Cat (pool, path, '/.zgroup'))
+      OR Io.Exists (Cat (pool, path, '/.zarray'))
+END IsDir ;
+
+(* one metadata file into the document, if it is there *)
+PROCEDURE AddMeta (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                   VAR n: I64 ; RO dir: STR ; RO rel: STR ;
+                   RO leaf: STR)
+  RAISES ValueRange =
+VAR body : STR ;
+BEGIN
+  IF NOT Io.Exists (Cat (pool, dir, Cat (pool, '/', leaf))) THEN RETURN END ;
+  body := ReadText (pool, Cat (pool, dir, Cat (pool, '/', leaf))) ;
+  IF n > 0 THEN DynStr.Append (pool, d, ', ') END ;
+  DynStr.AppendChar (pool, d, '"') ;
+  IF LEN (rel) > 0 THEN
+    DynStr.Append (pool, d, rel) ;
+    DynStr.AppendChar (pool, d, '/')
+  END ;
+  DynStr.Append (pool, d, leaf) ;
+  DynStr.Append (pool, d, '": ') ;
+  (* RE-SERIALISED, not pasted.  The file on disk may be indented by
+     four (zarr 2), by two (zarr 3) or written by this module, and a
+     consolidated index that pasted them would inherit whichever.
+     json.dumps' default separators are the one spelling zarr 3 and
+     icos_ingest.finalize agree on -- see Json.Spaced's note. *)
+  DynStr.Append (pool, d, Json.Spaced (pool, Json.Parse (pool, body))) ;
+  n := n + 1
+EXCEPT
+| Io.IOError (p) : RETURN
+| Json.ParseError (m, l, c) : RETURN
+| Json.TypeMismatch (m) : RETURN
+END AddMeta ;
+
+(* depth-first, arrays as .zattrs then .zarray and groups as .zgroup
+   then .zattrs -- the order zarr-python's own walk produces *)
+PROCEDURE Walk (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                VAR n: I64 ; RO root: STR ; RO dir: STR ;
+                RO rel: STR ; deep: BOOL)
+  RAISES ValueRange, IndexError =
+VAR
+  scratch : POOL ;
+  kids : SLICE OF STR ;
+  sub, subRel : STR ;
+  i : I64 ;
+BEGIN
+  IF Io.Exists (Cat (pool, dir, '/.zarray')) THEN
+    AddMeta (pool, d, n, dir, rel, '.zattrs') ;
+    AddMeta (pool, d, n, dir, rel, '.zarray') ;
+    RETURN
+  END ;
+  AddMeta (pool, d, n, dir, rel, '.zgroup') ;
+  AddMeta (pool, d, n, dir, rel, '.zattrs') ;
+  IF NOT deep THEN RETURN END ;
+  kids := Io.ListDir (scratch, dir) ;
+  SortNames (kids) ;
+  FOR i := 0 TO LEN (kids) - 1 DO
+    IF kids[i][0] # '.' THEN
+      sub := Cat (scratch, dir, Cat (scratch, '/', kids[i])) ;
+      IF IsDir (scratch, sub) THEN
+        IF LEN (rel) > 0 THEN
+          subRel := Cat (scratch, rel, Cat (scratch, '/', kids[i]))
+        ELSE
+          subRel := kids[i]
+        END ;
+        Walk (pool, d, n, root, sub, subRel, TRUE)
+      END
+    END
+  END
+EXCEPT
+| Io.IOError (p) : RETURN
+END Walk ;
+
+PROCEDURE Finish (VAR pool: POOL ; RO store: STR ;
+                  VAR d: PTR DynStr.DString)
+  RAISES Error, ValueRange =
+BEGIN
+  DynStr.Append (pool, d, '}, "zarr_consolidated_format": 1}') ;
+  WriteText (pool, Cat (pool, store, '/.zmetadata'), DynStr.View (d))
+EXCEPT
+| Io.IOError (p) :
+    RAISE Error (Cat (pool, 'cannot write .zmetadata in ', store))
+END Finish ;
+
+CONST
+  SlimAttr = 'metadata_layout' ;
+  SlimValue = 'shallow-root' ;
+
+(* the root attributes as a tree, or an empty object when there are
+   none yet *)
+PROCEDURE RootAttrs (VAR pool: POOL ; RO store: STR) : PTR Json.Node IN pool
+  RAISES ValueRange =
+VAR path : STR ;
+BEGIN
+  path := Cat (pool, store, '/.zattrs') ;
+  IF Io.Exists (path) THEN
+    RETURN Json.Parse (pool, ReadText (pool, path))
+  END ;
+  RETURN Json.NewObj (pool)
+EXCEPT
+| Io.IOError (p) : RETURN Json.NewObj (pool)
+| Json.ParseError (m, l, c) : RETURN Json.NewObj (pool)
+END RootAttrs ;
+
+PROCEDURE IsSlim (VAR pool: POOL ; RO store: STR) : BOOL
+  RAISES ValueRange =
+VAR f : OPT PTR Json.Node ;
+BEGIN
+  f := Json.Field (RootAttrs (pool, store), SlimAttr) ;
+  IF f IS SOME n THEN RETURN Json.StrIs (n, SlimValue) END ;
+  RETURN FALSE
+END IsSlim ;
+
+PROCEDURE MarkSlim (VAR pool: POOL ; RO store: STR)
+  RAISES Error, ValueRange =
+VAR
+  a, v : PTR Json.Node IN pool ;
+BEGIN
+  a := RootAttrs (pool, store) ;
+  v := Json.NewStr (pool, SlimValue) ;
+  Json.Set (a, SlimAttr, v) ;
+  WriteText (pool, Cat (pool, store, '/.zattrs'), Json.Spaced (pool, a))
+EXCEPT
+| Io.IOError (p) :
+    RAISE Error (Cat (pool, 'cannot mark slim: ', store))
+| Json.TypeMismatch (m) :
+    RAISE Error (Cat (pool, 'root .zattrs is not an object in ', store))
+END MarkSlim ;
+
+PROCEDURE Consolidate (VAR pool: POOL ; RO store: STR)
+  RAISES Error, ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  n : I64 ;
+BEGIN
+  IF IsSlim (pool, store) THEN
+    RAISE Error (Cat (pool,
+      'refusing a FULL consolidate of a shallow-root store: ', store))
+  END ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"metadata": {') ;
+  n := 0 ;
+  Walk (pool, d, n, store, store, '', TRUE) ;
+  Finish (pool, store, d)
+EXCEPT
+| IndexError : RAISE Error (Cat (pool, 'index error consolidating ', store))
+END Consolidate ;
+
+(* the _combined subtree in SORTED PATH order, which is what the
+   reference's `sorted(rglob('*'))` produces: a directory's own dot
+   files first (.zarray < .zattrs < .zgroup), then its subdirectories
+   by name.  NOT the same order as the full walk above, which mirrors
+   zarr-python's own consolidate -- two policies, two orders, both
+   transcribed rather than harmonised. *)
+PROCEDURE WalkSorted (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                      VAR n: I64 ; RO dir: STR ; RO rel: STR)
+  RAISES ValueRange, IndexError =
+VAR
+  scratch : POOL ;
+  kids : SLICE OF STR ;
+  sub, subRel : STR ;
+  i : I64 ;
+BEGIN
+  AddMeta (pool, d, n, dir, rel, '.zarray') ;
+  AddMeta (pool, d, n, dir, rel, '.zattrs') ;
+  AddMeta (pool, d, n, dir, rel, '.zgroup') ;
+  kids := Io.ListDir (scratch, dir) ;
+  SortNames (kids) ;
+  FOR i := 0 TO LEN (kids) - 1 DO
+    IF kids[i][0] # '.' THEN
+      sub := Cat (scratch, dir, Cat (scratch, '/', kids[i])) ;
+      IF IsDir (scratch, sub) THEN
+        subRel := Cat (scratch, rel, Cat (scratch, '/', kids[i])) ;
+        WalkSorted (pool, d, n, sub, subRel)
+      END
+    END
+  END
+EXCEPT
+| Io.IOError (p) : RETURN
+END WalkSorted ;
+
+PROCEDURE ConsolidateSlim (VAR pool: POOL ; RO store: STR)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN pool ;
+  kids : SLICE OF STR ;
+  sub : STR ;
+  n, i : I64 ;
+BEGIN
+  (* the marker goes in FIRST, so the .zattrs indexed below is the
+     one carrying it -- exactly as the reference does *)
+  MarkSlim (pool, store) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, '{"metadata": {') ;
+  n := 0 ;
+  AddMeta (pool, d, n, store, '', '.zgroup') ;
+  AddMeta (pool, d, n, store, '', '.zattrs') ;
+  kids := Io.ListDir (scratch, store) ;
+  SortNames (kids) ;
+  FOR i := 0 TO LEN (kids) - 1 DO
+    (* an ENTITY contributes its two markers and nothing else.  A
+       `_`-prefixed group is skipped entirely here -- _combined is
+       handled below, and anything else `_` is deliberately absent
+       from a slim root. *)
+    IF kids[i][0] # '.' AND kids[i][0] # '_' THEN
+      sub := Cat (scratch, store, Cat (scratch, '/', kids[i])) ;
+      IF IsDir (scratch, sub) THEN
+        IF Io.Exists (Cat (scratch, sub, '/.zgroup')) THEN
+          AddMeta (pool, d, n, sub, kids[i], '.zgroup') ;
+          AddMeta (pool, d, n, sub, kids[i], '.zattrs')
+        END
+      END
+    END
+  END ;
+  (* _combined is the one subtree carried WHOLE, because the dense
+     cross-entity panels are what a client actually opens *)
+  sub := Cat (scratch, store, '/_combined') ;
+  IF IsDir (scratch, sub) THEN
+    WalkSorted (pool, d, n, sub, '_combined')
+  END ;
+  Finish (pool, store, d)
+EXCEPT
+| Io.IOError (p) :
+    RAISE Error (Cat (pool, 'cannot read ', store))
+| IndexError :
+    RAISE Error (Cat (pool, 'index error consolidating ', store))
+END ConsolidateSlim ;
+
+END Zarr.

@@ -18,6 +18,7 @@ extern const m9_exc NetCDF_SizeError;
 #define NetCDF_TypeDouble INT64_C(6)
 #define NetCDF_TypeUByte INT64_C(7)
 #define NetCDF_TypeInt64 INT64_C(10)
+#define NetCDF_TypeString INT64_C(12)
 #define NetCDF_Unlimited INT64_C(0)
 #define NetCDF_Global INT64_C(-1)
 #define NetCDF_ModeNoWrite INT64_C(0)
@@ -54,6 +55,10 @@ M9_GRID_T (m9_gd3_double, double, 3)
 #define M9SL_m9_arr_1_double
 typedef struct { double v[1]; } m9_arr_1_double;
 #endif
+#ifndef M9SL_m9_sl_constvoidp
+#define M9SL_m9_sl_constvoidp
+typedef struct { const void * *p; int64_t len; } m9_sl_constvoidp;
+#endif
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
@@ -79,8 +84,12 @@ m9_gd2_double NetCDF_ReadGrid2 (m9_pool *pool, NetCDF_File * f, m9_sl_CHAR name,
 m9_gd3_double NetCDF_ReadGrid3 (m9_pool *pool, NetCDF_File * f, m9_sl_CHAR name, m9_state *err);
 double NetCDF_GetAttF64 (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err);
 m9_sl_CHAR NetCDF_GetAttStr (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err);
+m9_sl_CHAR NetCDF_GetAttText (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err);
 bool NetCDF_HasVar (NetCDF_File * f, m9_sl_CHAR name, m9_state *err);
 bool NetCDF_HasAtt (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err);
+int64_t NetCDF_AttType (NetCDF_File * f, int64_t varid, m9_sl_CHAR name, m9_state *err);
+int64_t NetCDF_AttCount (NetCDF_File * f, int64_t varid, m9_state *err);
+m9_sl_CHAR NetCDF_AttName (m9_pool *pool, NetCDF_File * f, int64_t varid, int64_t i, m9_state *err);
 int64_t NetCDF_VarCount (NetCDF_File * f, m9_state *err);
 m9_sl_CHAR NetCDF_VarName (m9_pool *pool, NetCDF_File * f, int64_t varid, m9_state *err);
 int64_t NetCDF_VarType (NetCDF_File * f, int64_t varid, m9_state *err);
@@ -108,6 +117,7 @@ void NetCDF_FillI32 (NetCDF_File * f, int64_t varid, int32_t fill, m9_state *err
 void NetCDF_FillI16 (NetCDF_File * f, int64_t varid, int16_t fill, m9_state *err);
 void NetCDF_FillByte (NetCDF_File * f, int64_t varid, uint8_t fill, m9_state *err);
 m9_sl_m9_sl_CHAR NetCDF_GetChars (m9_pool *pool, NetCDF_File * f, int64_t varid, int64_t n, int64_t width, m9_state *err);
+void NetCDF_GetText (NetCDF_File * f, int64_t varid, int64_t row, int64_t n, int64_t width, m9_sl_BYTE out, m9_state *err);
 void NetCDF_PutF32 (NetCDF_File * f, int64_t varid, m9_sl_I64 start, m9_sl_I64 count, m9_sl_F32 data, m9_state *err);
 
 #endif

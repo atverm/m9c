@@ -25,10 +25,13 @@ extern int64_t m9_read_stdin (void *, int64_t);
 extern void m9_flush (void);
 extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
+extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
+extern int m9_append_file (const void *, const void *, size_t);
+extern double m9_strtod (const void *);
 extern double m9_strtof (const void *);
 extern double fmod (double, double);
 extern double sqrt (double);
@@ -71,6 +74,7 @@ extern float erfcf (float);
 extern float fabsf (float);
 extern float hypotf (float, float);
 extern double m9_now (void);
+extern void m9_sleep_ms (int64_t);
 extern int nc_open (const void *, int, void *);
 extern int nc_create (const void *, int, void *);
 extern int nc_close (int);
@@ -87,6 +91,11 @@ extern int nc_get_vara_float (int, int, const void *, const void *, void *);
 extern int nc_get_vara_longlong (int, int, const void *, const void *, void *);
 extern int nc_get_att_double (int, int, const void *, void *);
 extern int nc_inq_attlen (int, int, const void *, void *);
+extern int nc_inq_varnatts (int, int, void *);
+extern int nc_inq_attname (int, int, int, void *);
+extern int nc_get_att_string (int, int, const void *, void *);
+extern int nc_free_string (size_t, void *);
+extern int64_t m9_cstr_copy (const void *, void *, int64_t);
 extern int nc_get_att_text (int, int, const void *, void *);
 extern int nc_def_dim (int, const void *, size_t, void *);
 extern int nc_def_var (int, const void *, int, int, const void *, void *);
@@ -235,6 +244,7 @@ static bool Parquet_InList (m9_sl_CHAR name, m9_sl_m9_sl_CHAR xs, m9_state *err)
 static void Parquet_MetaKV (m9_pool *pool, Parquet_Buf *u, m9_sl_CHAR k, m9_sl_CHAR v, m9_state *err);
 static m9_sl_CHAR Parquet_I64Text (m9_pool *pool, int64_t v, m9_state *err);
 static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool withTs, Frame_Ts * ts, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_state *err);
+static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Frame_Ts * ts, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_state *err);
 static m9_sl_BYTE Parquet_MagicBytes (m9_pool *pool, m9_state *err);
 static Frame_Ts * Parquet_NIL9 (m9_pool *pool, m9_state *err);
 static void Parquet_AddCopy (m9_pool *pool, Frame_Fr * *dst, Frame_Fr * src, m9_sl_CHAR name, m9_state *err);
@@ -351,6 +361,23 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
+}
+
+m9_sl_BYTE Parquet_BytesX (m9_pool *pool, Frame_Fr * f, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_BYTE m9ret = {0};
+  err->res = m9res;
+  m9ret = Parquet_AnyBytes (pool, f, false, Parquet_NIL9 (pool, err), kvK, kvV, nsCols, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
 }
 
 Frame_Fr * Parquet_Read (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
@@ -1265,6 +1292,21 @@ static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  Io_WriteFileBytes (path, Parquet_AnyBytes (pool, f, withTs, ts, kvK, kvV, nsCols, err), err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Frame_Ts * ts, m9_sl_m9_sl_CHAR kvK, m9_sl_m9_sl_CHAR kvV, m9_sl_m9_sl_CHAR nsCols, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_BYTE m9ret = {0};
   Parquet_Buf out = {0}; (void) out;
   Parquet_Buf meta = {0}; (void) meta;
   Parquet_Buf page = {0}; (void) page;
@@ -1421,12 +1463,14 @@ static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool
   if (err->exc) goto L_ret;
   Parquet_PBytes (pool, &(out), Parquet_MagicBytes (pool, err), err);
   if (err->exc) goto L_ret;
-  Io_WriteFileBytes (path, ({ __typeof__(out.b) m9t7 = out.b; int64_t m9t7a = INT64_C(0), m9t7n = out.n; (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), err);
+  err->res = m9res;
+  m9ret = ({ __typeof__(out.b) m9t7 = out.b; int64_t m9t7a = INT64_C(0), m9t7n = out.n; (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
   if (err->exc) goto L_ret;
+  goto L_ret;
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
-  return;
+  return m9ret;
 }
 
 static m9_sl_BYTE Parquet_MagicBytes (m9_pool *pool, m9_state *err)

@@ -139,12 +139,151 @@ PROCEDURE ReprText (VAR pool: POOL ; r: F64) : STR
   RAISES ValueRange ;
   (* a bare F64 exactly as json.dumps renders it -- Python repr for
      finite values, the NaN / Infinity tokens otherwise.  For
-     composers that hold the value, not a Node.                       *)
+     composers that hold the value, not a Node.
+
+     ReprText ALLOCATES: it carves a DString to hold one number and
+     answers a view of it.  In a loop that is a pool block per value --
+     the zarr proxy measured five million of them emitting a million
+     ndjson rows -- so a composer that already HAS a buffer should call
+     AppendF64 below and copy nothing.                                *)
+
+PROCEDURE AppendF64 (VAR pool: POOL ; VAR d: PTR DynStr.DString ; r: F64)
+  RAISES ValueRange ;
+  (* ReprText's own body, appending straight into d.  Identical bytes,
+     no intermediate string: this is what a row emitter wants.        *)
 
 PROCEDURE NumText (VAR pool: POOL ; n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
   (* the number as Python str() renders it -- the digits for an
      integer, repr for a float.  TypeMismatch when n is not Num.     *)
+
+(* ---- building a document ------------------------------------- *)
+
+PROCEDURE NewObj (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Object (NONE) ;
+  RETURN n
+END NewObj ;
+
+PROCEDURE NewArr (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Arr (NONE, 0) ;
+  RETURN n
+END NewArr ;
+
+PROCEDURE NewStr (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
+  RAISES ValueRange =
+VAR
+  n : PTR Node IN pool ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  EscapeBody (pool, d, s) ;
+  n := NEW (pool, Node) ;
+  n.v := Value.Str (DynStr.View (d)) ;
+  RETURN n
+END NewStr ;
+
+PROCEDURE NewI64 (VAR pool: POOL ; v: I64) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Num (F64 (v), v, TRUE) ;
+  RETURN n
+END NewI64 ;
+
+PROCEDURE NewF64 (VAR pool: POOL ; r: F64) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  (* the integer slot is unread while isInt is FALSE; 0 rather than a
+     conversion that could trap on a huge or non-finite r *)
+  n.v := Value.Num (r, 0, FALSE) ;
+  RETURN n
+END NewF64 ;
+
+PROCEDURE NewBool (VAR pool: POOL ; b: BOOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Bool (b) ;
+  RETURN n
+END NewBool ;
+
+PROCEDURE NewNull (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Null ;
+  RETURN n
+END NewNull ;
+
+PROCEDURE Set (VAR KEPT obj: PTR Node ; RO KEPT name: STR ;
+               VAR KEPT v: PTR Node)
+  RAISES TypeMismatch =
+VAR
+  cur, prev : OPT PTR Node ;
+BEGIN
+  CASE obj.v OF
+  | Object (first) : cur := first
+  ELSE RAISE TypeMismatch ('Set on a node that is not an object')
+  END ;
+  v.name := name ;
+  prev := NONE ;
+  WHILE cur IS SOME p DO
+    IF DynStr.Eq (p.name, name) THEN
+      (* REPLACE IN PLACE: the new node takes the old one's position
+         and its tail, so the member order does not move.  The old
+         node is left to the pool, which is what a pool is for. *)
+      v.next := p.next ;
+      IF prev IS SOME q THEN
+        q.next := SOME (v)
+      ELSE
+        obj.v := Value.Object (SOME (v))
+      END ;
+      RETURN
+    END ;
+    prev := SOME (p) ;
+    cur := p.next
+  END ;
+  v.next := NONE ;
+  IF prev IS SOME q THEN
+    q.next := SOME (v)
+  ELSE
+    obj.v := Value.Object (SOME (v))
+  END
+END Set ;
+
+PROCEDURE Add (VAR KEPT arr: PTR Node ; VAR KEPT v: PTR Node)
+  RAISES TypeMismatch =
+VAR
+  cur, prev, head : OPT PTR Node ;
+  k : I64 ;
+BEGIN
+  (* the head is read out HERE, because rebuilding the variant with
+     the new count is the only way to store it and CASE is the only
+     way back in *)
+  CASE arr.v OF
+  | Arr (first, count) : head := first ; cur := first ; k := count
+  ELSE RAISE TypeMismatch ('Add on a node that is not an array')
+  END ;
+  v.next := NONE ;
+  prev := NONE ;
+  WHILE cur IS SOME p DO
+    prev := SOME (p) ;
+    cur := p.next
+  END ;
+  IF prev IS SOME q THEN
+    q.next := SOME (v) ;
+    arr.v := Value.Arr (head, k + 1)
+  ELSE
+    arr.v := Value.Arr (SOME (v), k + 1)
+  END
+END Add ;
 
 PROCEDURE AppendJString (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
                          RO t: STR)
@@ -153,6 +292,108 @@ PROCEDURE AppendJString (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
      same escaping Compact uses, exported for callers composing
      JSON documents directly (the proxy's catalog builder).  The
      declared raise is conversion accounting; it cannot fire.       *)
+
+(* ---- building a document -----------------------------------------
+
+   Json could PARSE a tree and re-serialise it and could not MAKE
+   one, so every composer in this family wrote its JSON as text and
+   got the escaping right by hand.  These close that: build a tree,
+   hand it to Compact, and the escaping, the float spelling and the
+   member order are the ones already held byte for byte against
+   json.dumps.
+
+   ORDER IS THE POINT.  Set APPENDS a name that is new and REPLACES
+   one that is already there IN PLACE -- which is what Python's
+   {**a, "k": v} does, a shared key keeping a's position and taking
+   b's value.  The ICOS store attributes this was added for are
+   re-derived and diffed against live stores, where a member in the
+   right place with the right value is the whole test.
+
+   A node belongs to at most ONE parent: Set and Add LINK the node
+   given, they do not copy it, so handing the same node to two
+   parents makes a cycle or a shared tail.  Build a child, place it,
+   go on filling it -- that order is fine, because the link is by
+   pointer.
+
+   Set walks the member chain, so an object of n members costs
+   O(n^2) to build.  That is right for what this exists for -- a
+   store's .zattrs, an agent guide: tens of members -- and wrong for
+   a consolidated index of 100,000 entries, which is composed as
+   text and always was.                                             *)
+
+PROCEDURE NewObj (VAR pool: POOL) : PTR Node IN pool ;
+PROCEDURE NewArr (VAR pool: POOL) : PTR Node IN pool ;
+
+PROCEDURE NewStr (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
+  RAISES ValueRange ;
+  (* s is the string's VALUE, not document text.  It is escaped
+     here, because a Node's Str payload is always DOCUMENT text --
+     Text decodes it, Compact decodes it and re-escapes -- so a
+     value carrying a literal backslash stored raw would be read
+     back as an escape and could fail to parse at all.  Escaping at
+     construction keeps built and parsed nodes indistinguishable,
+     which is what lets one tree mix them.                          *)
+
+PROCEDURE NewI64 (VAR pool: POOL ; v: I64) : PTR Node IN pool ;
+PROCEDURE NewF64 (VAR pool: POOL ; r: F64) : PTR Node IN pool ;
+PROCEDURE NewBool (VAR pool: POOL ; b: BOOL) : PTR Node IN pool ;
+PROCEDURE NewNull (VAR pool: POOL) : PTR Node IN pool ;
+
+PROCEDURE Set (VAR KEPT obj: PTR Node ; RO KEPT name: STR ;
+               VAR KEPT v: PTR Node)
+  RAISES TypeMismatch ;
+  (* append v under name, or put it where a member of that name
+     already stands.  TypeMismatch when obj is not an object.
+
+     BOTH POINTERS ARE VAR, and that is par 4.1 rather than a
+     preference: linking WRITES through them, and a value PTR
+     parameter is a shared borrow the checker will not let a
+     procedure write through.  So a member is a named local, not an
+     argument spelled inline -- `n := NewStr (p, s) ; Set (o, k, n)`
+     -- and a composer that wants the one-liner back wraps these in
+     its own helper, where the skip-blanks policy belongs anyway. *)
+
+PROCEDURE Add (VAR KEPT arr: PTR Node ; VAR KEPT v: PTR Node)
+  RAISES TypeMismatch ;
+  (* append to an array, count kept.                               *)
+
+PROCEDURE Clone (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
+  RAISES TypeMismatch ;
+  (* a DEEP copy, in pool.  A node belongs to at most one parent --
+     Set and Add relink the node they are given -- so a subtree that
+     is to appear in a second document is cloned, never linked twice.
+     Merging a shared vocabulary into a per-store document is exactly
+     that case, and linking would quietly corrupt the vocabulary for
+     every later store.
+
+     Deep rather than shallow on purpose: a shallow copy would share
+     the child chain, so a later Set on the copy would reach into the
+     original.  These documents are tens of members; the copy is not
+     worth being clever about.
+
+     STRING PAYLOADS AND MEMBER NAMES ARE COPIED INTO `pool` TOO,
+     which is what makes a clone into a DIFFERENT pool safe.  A Str's
+     text is a VIEW -- of the document when the node came from Parse,
+     of a builder's buffer when it came from NewStr -- so a clone
+     that kept the view would dangle the moment the source pool went
+     away.  Nothing in the type system can see that: a POOL is not
+     part of a STR's type.                                         *)
+
+PROCEDURE Spaced (VAR pool: POOL ; n: PTR Node) : STR
+  RAISES TypeMismatch, ValueRange ;
+  (* Compact's separators are json.dumps' COMPACT ones; these are its
+     DEFAULT ones -- ", " between members and ": " after a name, all
+     on one line.  Same escaping, same float spelling, same order.
+
+     It exists because that is the spelling zarr-python 3 writes a
+     consolidated `.zmetadata` in, and the one icos_ingest.finalize
+     writes a slim root in.  A store's metadata is otherwise NOT
+     byte-comparable across implementations at all -- measured
+     2026-09-09: zarr 2.18.7 indents by four and sorts its keys,
+     zarr 3.3.0 indents by two and keeps insertion order, and the
+     live ICOS stores carry BOTH because one store is rebuilt nightly
+     and the others are not.  The one-line spaced form is the only
+     spelling two of those three agree on.                          *)
 
 PROCEDURE Compact (VAR pool: POOL ; n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
@@ -637,6 +878,57 @@ BEGIN
   END
 END NumText ;
 
+PROCEDURE CopyStr (VAR pool: POOL ; RO s: STR) : STR =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, s) ;
+  RETURN DynStr.View (d)
+END CopyStr ;
+
+PROCEDURE Clone (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
+  RAISES TypeMismatch =
+VAR
+  c, cc : PTR Node IN pool ;
+  cur : OPT PTR Node ;
+BEGIN
+  c := NEW (pool, Node) ;
+  CASE n.v OF
+  | Object (first) :
+      c.v := Value.Object (NONE) ;
+      cur := first ;
+      WHILE cur IS SOME p DO
+        cc := Clone (pool, p) ;
+        Set (c, CopyStr (pool, p.name), cc) ;
+        cur := p.next
+      END
+  | Arr (first, count) :
+      c.v := Value.Arr (NONE, 0) ;
+      cur := first ;
+      WHILE cur IS SOME p DO
+        cc := Clone (pool, p) ;
+        Add (c, cc) ;
+        cur := p.next
+      END
+  | Str (t) :
+      (* THE PAYLOAD IS COPIED, and that is the difference between a
+         clone and a share.  A Str's `s` is a VIEW -- of document text
+         when the node came from Parse, of a builder's buffer when it
+         came from NewStr -- and a clone into a DIFFERENT pool that
+         kept the view would dangle the moment the source pool went
+         away.  Nothing in the type system can see it: a POOL is not
+         part of a STR's type, and the ICOS ObsPack builder segfaulted
+         on exactly this, with the member NAMES dangling too (Set
+         KEEPS the name it is given, so `p.name` needs the same
+         copy).  Same-pool cloning pays one small copy for it. *)
+      c.v := Value.Str (CopyStr (pool, t))
+  ELSE
+      (* Num, Bool, Null: the variant IS the value *)
+      c.v := n.v
+  END ;
+  RETURN c
+END Clone ;
+
 PROCEDURE AppendJString (VAR pool: POOL ;
                          VAR d: PTR DynStr.DString ; RO t: STR)
   RAISES ValueRange =
@@ -755,11 +1047,21 @@ END Text ;
 PROCEDURE EmitJStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
                     RO t: STR)
   RAISES ValueRange =
+BEGIN
+  DynStr.AppendChar (pool, d, '"') ;
+  EscapeBody (pool, d, t) ;
+  DynStr.AppendChar (pool, d, '"')
+END EmitJStr ;
+
+(* the same escaping WITHOUT the quotes: what a Str node's payload
+   holds, since that payload is document text *)
+PROCEDURE EscapeBody (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                      RO t: STR)
+  RAISES ValueRange =
 VAR
   i, v : I64 ;
   ch : CHAR ;
 BEGIN
-  DynStr.AppendChar (pool, d, '"') ;
   FOR i := 0 TO LEN (t) - 1 DO
     ch := t[i] ;
     v := ORD (ch) ;
@@ -791,9 +1093,8 @@ BEGIN
     ELSE
       DynStr.AppendChar (pool, d, ch)
     END
-  END ;
-  DynStr.AppendChar (pool, d, '"')
-END EmitJStr ;
+  END
+END EscapeBody ;
 
 PROCEDURE HexDigit (v: I64) : CHAR
   RAISES ValueRange =
@@ -805,7 +1106,7 @@ BEGIN
 END HexDigit ;
 
 PROCEDURE EmitVal (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
-                   n: PTR Node)
+                   n: PTR Node ; spaced: BOOL)
   RAISES TypeMismatch, ValueRange =
 VAR
   c : OPT PTR Node ;
@@ -817,11 +1118,15 @@ BEGIN
       c := first ;
       sep := FALSE ;
       WHILE c IS SOME p DO
-        IF sep THEN DynStr.AppendChar (pool, d, ',') END ;
+        IF sep THEN
+          DynStr.AppendChar (pool, d, ',') ;
+          IF spaced THEN DynStr.AppendChar (pool, d, ' ') END
+        END ;
         sep := TRUE ;
         EmitJStr (pool, d, DecodeStr (pool, p.name)) ;
         DynStr.AppendChar (pool, d, ':') ;
-        EmitVal (pool, d, p) ;
+        IF spaced THEN DynStr.AppendChar (pool, d, ' ') END ;
+        EmitVal (pool, d, p, spaced) ;
         c := p.next
       END ;
       DynStr.AppendChar (pool, d, '}')
@@ -830,9 +1135,12 @@ BEGIN
       c := first ;
       sep := FALSE ;
       WHILE c IS SOME p DO
-        IF sep THEN DynStr.AppendChar (pool, d, ',') END ;
+        IF sep THEN
+          DynStr.AppendChar (pool, d, ',') ;
+          IF spaced THEN DynStr.AppendChar (pool, d, ' ') END
+        END ;
         sep := TRUE ;
-        EmitVal (pool, d, p) ;
+        EmitVal (pool, d, p, spaced) ;
         c := p.next
       END ;
       DynStr.AppendChar (pool, d, ']')
@@ -889,9 +1197,18 @@ PROCEDURE Compact (VAR pool: POOL ; n: PTR Node) : STR
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  EmitVal (pool, d, n) ;
+  EmitVal (pool, d, n, FALSE) ;
   RETURN DynStr.View (d)
 END Compact ;
+
+PROCEDURE Spaced (VAR pool: POOL ; n: PTR Node) : STR
+  RAISES TypeMismatch, ValueRange =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  EmitVal (pool, d, n, TRUE) ;
+  RETURN DynStr.View (d)
+END Spaced ;
 
 TYPE
   NodeP = PTR Node ;             (* NEW takes a NAMED element type *)
@@ -962,7 +1279,7 @@ BEGIN
       END ;
       DynStr.AppendChar (pool, d, ']')
   ELSE
-    EmitVal (pool, d, n)
+    EmitVal (pool, d, n, FALSE)
   END
 END EmitSorted ;
 
@@ -1052,7 +1369,7 @@ BEGIN
       Indent (pool, d, depth) ;
       DynStr.AppendChar (pool, d, ']')
   ELSE
-    EmitVal (pool, d, n)
+    EmitVal (pool, d, n, FALSE)
   END
 END EmitPretty ;
 

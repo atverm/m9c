@@ -23,6 +23,16 @@ static void ck (bool ok, const char *what)
 
 static uint32_t doc[256], doc2[64], doc3[64], nm[32];
 
+/* an M9 string against ASCII, for the builder checks below */
+static bool eqs (m9_sl_CHAR got, const char *want)
+{
+  int64_t i, n = (int64_t) strlen (want);
+  if (got.len != n) return false;
+  for (i = 0; i < n; i++)
+    if (got.p[i] != (uint32_t) (unsigned char) want[i]) return false;
+  return true;
+}
+
 int main (void)
 {
   m9_pool pool = {0};
@@ -173,6 +183,133 @@ int main (void)
     Json_Text (&pool, Json_Field (ls, sl ("s", nm), &err), &err);
     ck (err.exc == &Json_TypeMismatch, "lone surrogate refused");
     err.exc = NULL;
+  }
+
+  /* ---- BUILDING a document, which Json could not do until
+     2026-09-09: parse and re-serialise existed, construction did
+     not, so every composer in this family wrote JSON as text and
+     got the escaping right by hand.  The expected strings below are
+     json.dumps' output, written here by hand. ---- */
+  {
+    uint32_t b1[64], b2[64], b3[64], b4[64], b5[64], b6[64];
+    Json_Node *o, *arr, *n, *inner;
+    m9_sl_CHAR out;
+
+    o = Json_NewObj (&pool, &err);
+    n = Json_NewI64 (&pool, 1, &err);
+    Json_Set (&o, sl ("a", b1), &n, &err);
+    n = Json_NewStr (&pool, sl ("x", b2), &err);
+    Json_Set (&o, sl ("b", b3), &n, &err);
+    out = Json_Compact (&pool, o, &err);
+    ck (err.exc == NULL && eqs (out, "{\"a\":1,\"b\":\"x\"}"),
+        "a built object serialises in insertion order");
+
+    /* REPLACE IN PLACE, which is python's {**a, "a": 9}: the value
+       is b's and the POSITION is a's.  Appending instead would put
+       "a" last and every re-derived .zattrs would diff. */
+    n = Json_NewI64 (&pool, 9, &err);
+    Json_Set (&o, sl ("a", b4), &n, &err);
+    out = Json_Compact (&pool, o, &err);
+    ck (err.exc == NULL && eqs (out, "{\"a\":9,\"b\":\"x\"}"),
+        "Set replaces in place and keeps the member's position");
+
+    /* and replacing the LAST member keeps the tail correct too */
+    n = Json_NewBool (&pool, true, &err);
+    Json_Set (&o, sl ("b", b5), &n, &err);
+    out = Json_Compact (&pool, o, &err);
+    ck (err.exc == NULL && eqs (out, "{\"a\":9,\"b\":true}"),
+        "replacing the last member keeps the chain");
+
+    arr = Json_NewArr (&pool, &err);
+    n = Json_NewI64 (&pool, 1, &err);  Json_Add (&arr, &n, &err);
+    n = Json_NewNull (&pool, &err);    Json_Add (&arr, &n, &err);
+    n = Json_NewF64 (&pool, 1.5, &err); Json_Add (&arr, &n, &err);
+    ck (Json_Count (arr, &err) == 3, "Add keeps the array count");
+    inner = Json_NewObj (&pool, &err);
+    Json_Set (&inner, sl ("k", b6), &arr, &err);
+    Json_Set (&o, sl ("c", b1), &inner, &err);
+    out = Json_Compact (&pool, o, &err);
+    ck (err.exc == NULL &&
+        eqs (out, "{\"a\":9,\"b\":true,\"c\":{\"k\":[1,null,1.5]}}"),
+        "nested objects and arrays serialise");
+
+    /* NewStr takes a VALUE and stores DOCUMENT text, so a literal
+       backslash survives.  Stored raw it would be read back as an
+       escape -- and \q is not one, so the document would not even
+       parse.  json.dumps(ensure_ascii=False) of these four is what
+       is written here. */
+    {
+      uint32_t v[32];
+      m9_sl_CHAR val = sl ("q\"w\\e", v);          /* q "w \e */
+      val.p[5] = 0x00e9;                            /* ... and an accent */
+      val.len = 6;
+      o = Json_NewObj (&pool, &err);
+      n = Json_NewStr (&pool, val, &err);
+      Json_Set (&o, sl ("s", b1), &n, &err);
+      out = Json_Compact (&pool, o, &err);
+      /* {"s":"q\"w\\e<e9>"} -- 16 scalars, counted out by hand */
+      ck (err.exc == NULL && out.len == 16
+          && out.p[7] == '\\' && out.p[8] == '"'
+          && out.p[10] == '\\' && out.p[11] == '\\'
+          && out.p[13] == 0x00e9,
+          "NewStr escapes the value, and Compact round-trips it");
+      /* and Text gives the VALUE back, unchanged */
+      m9_sl_CHAR back = Json_Text (&pool,
+                          Json_Field (o, sl ("s", b2), &err), &err);
+      ck (err.exc == NULL && back.len == 6 && back.p[1] == '"'
+          && back.p[3] == '\\' && back.p[5] == 0x00e9,
+          "Text answers what NewStr was given");
+    }
+
+    /* a built member set into a PARSED tree: the two kinds mix */
+    {
+      Json_Node *pr = Json_Parse (&pool,
+        sl ("{\"keep\":1,\"drop\":2}", b2), &err);
+      n = Json_NewStr (&pool, sl ("new", b3), &err);
+      Json_Set (&pr, sl ("drop", b4), &n, &err);
+      out = Json_Compact (&pool, pr, &err);
+      ck (err.exc == NULL && eqs (out, "{\"keep\":1,\"drop\":\"new\"}"),
+          "a built node replaces a parsed member in place");
+    }
+
+    /* Clone: a node belongs to ONE parent, so a subtree that appears
+       in a second document is copied.  Deep, so mutating the copy
+       cannot reach the original -- which is the whole failure mode
+       when a shared vocabulary is merged into many documents. */
+    {
+      Json_Node *src = Json_Parse (&pool,
+        sl ("{\"a\":{\"x\":1},\"b\":[1,2]}", b1), &err);
+      Json_Node *cp = Json_Clone (&pool, src, &err);
+      ck (err.exc == NULL, "a document clones");
+      out = Json_Compact (&pool, cp, &err);
+      ck (eqs (out, "{\"a\":{\"x\":1},\"b\":[1,2]}"),
+          "the clone serialises identically");
+      /* mutate the COPY's nested object; the original must not move */
+      {
+        Json_Node *inner = Json_Field (cp, sl ("a", b2), &err);
+        n = Json_NewI64 (&pool, 99, &err);
+        Json_Set (&inner, sl ("x", b3), &n, &err);
+      }
+      out = Json_Compact (&pool, cp, &err);
+      ck (eqs (out, "{\"a\":{\"x\":99},\"b\":[1,2]}"), "the copy changed");
+      out = Json_Compact (&pool, src, &err);
+      ck (eqs (out, "{\"a\":{\"x\":1},\"b\":[1,2]}"),
+          "and the original did NOT -- the copy is deep");
+    }
+
+    /* the refusals */
+    {
+      Json_Node *aa = Json_NewArr (&pool, &err);
+      n = Json_NewI64 (&pool, 1, &err);
+      Json_Set (&aa, sl ("x", b1), &n, &err);
+      ck (err.exc == &Json_TypeMismatch, "Set on an array is refused");
+      err.exc = NULL;
+      Json_Node *oo = Json_NewObj (&pool, &err);
+      n = Json_NewI64 (&pool, 1, &err);
+      Json_Add (&oo, &n, &err);
+      ck (err.exc == &Json_TypeMismatch, "Add on an object is refused");
+      err.exc = NULL;
+    }
   }
 
   m9_pool_free (&pool);

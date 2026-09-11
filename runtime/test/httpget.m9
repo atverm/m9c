@@ -1,0 +1,47 @@
+MODULE httpget ;
+
+(* httpget text|file URL [ACCEPT [COOKIE [DEST]]]
+     text -> `status <n> chars <n>` then the body
+     file -> `status <n> bytes <n>`
+
+   The program the fetch gate drives.  It prints what a checker can
+   compare and nothing else; the assertions live in httpget.sh. *)
+
+IMPORT DynStr ;
+IMPORT Http ;
+IMPORT Io ;
+
+VAR
+  pool : POOL ;
+  mode, url, accept, cookie, dest, body : STR ;
+  status, bytes : I64 ;
+
+BEGIN
+  IF Io.ArgCount () < 3 THEN
+    Io.ErrLine ('usage: httpget text|file URL [ACCEPT [COOKIE [DEST]]]') ;
+    Io.Halt (2)
+  END ;
+  mode := Io.Arg (pool, 1) ;
+  url := Io.Arg (pool, 2) ;
+  accept := '' ; cookie := '' ; dest := '' ;
+  IF Io.ArgCount () > 3 THEN accept := Io.Arg (pool, 3) END ;
+  IF Io.ArgCount () > 4 THEN cookie := Io.Arg (pool, 4) END ;
+  IF Io.ArgCount () > 5 THEN dest := Io.Arg (pool, 5) END ;
+
+  IF DynStr.Eq (mode, 'file') THEN
+    status := Http.GetToFile (pool, url, accept, cookie, dest, bytes) ;
+    Io.Write ('status ') ; Io.WriteI64 (status) ;
+    Io.Write (' bytes ') ; Io.WriteI64 (bytes) ; Io.WriteLine ('')
+  ELSE
+    body := Http.GetText (pool, url, accept, cookie, 4194304, status) ;
+    Io.Write ('status ') ; Io.WriteI64 (status) ;
+    Io.Write (' chars ') ; Io.WriteI64 (LEN (body)) ; Io.WriteLine ('') ;
+    Io.WriteLine (body)
+  END
+EXCEPT
+| Http.TransportError (m) :
+    Io.Write ('transport: ') ; Io.WriteLine (m) ; Io.Halt (1)
+| Io.IOError (p) : Io.Write ('io: ') ; Io.WriteLine (p) ; Io.Halt (1)
+| ValueRange : Io.WriteLine ('value range') ; Io.Halt (1)
+| IndexError : Io.WriteLine ('index') ; Io.Halt (1)
+END httpget .

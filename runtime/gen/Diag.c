@@ -18,10 +18,12 @@ extern int64_t m9_read_stdin (void *, int64_t);
 extern void m9_flush (void);
 extern int m9_arg_len (int);
 extern int m9_arg_copy (int, void *, int);
+extern int64_t m9_read_at (const void *, void *, int64_t, int64_t);
 extern int64_t m9_read_file (const void *, void *, int64_t);
 extern int m9_mkdir (const void *);
 extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
+extern int m9_append_file (const void *, const void *, size_t);
 
 static const uint32_t m9s0[40] = { 97u, 32u, 112u, 97u, 116u, 104u, 32u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 105u, 110u, 103u, 32u, 97u, 32u, 113u, 117u, 111u, 116u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 99u, 104u, 101u, 99u, 107u, 101u, 100u };
 static const uint32_t m9s1[3] = { 99u, 100u, 32u };

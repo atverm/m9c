@@ -3,13 +3,20 @@
 #define M9G_Http_H
 #include "m9rt.h"
 #include "DynStr.h"
+#include "Io.h"
 
+typedef struct Http_Conn Http_Conn;
 
 extern const m9_exc Http_TransportError;
 
+#define Http_MaxHop INT64_C(5)
 #define Http_RecvMax INT64_C(4194304)
+#define Http_IoBlock INT64_C(65536)
+#define Http_HdrMax INT64_C(16384)
 
 int64_t Http_Get (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
 int64_t Http_GetTls (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
+int64_t Http_GetToFile (m9_pool *pool, m9_sl_CHAR url, m9_sl_CHAR accept, m9_sl_CHAR cookie, m9_sl_CHAR dest, int64_t *bytes, m9_state *err);
+m9_sl_CHAR Http_GetText (m9_pool *pool, m9_sl_CHAR url, m9_sl_CHAR accept, m9_sl_CHAR cookie, int64_t cap, int64_t *status, m9_state *err);
 
 #endif

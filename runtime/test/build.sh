@@ -85,6 +85,35 @@ else
   echo "SKIP: frame_driver (no /usr/include/netcdf.h)"
 fi
 
+# Delim: the ROW CURSOR, which is Csv's opposite number -- Csv reads a
+# whole file and hands out columns, this walks a 9 GB one in bounded
+# memory and hands out views.  The fixtures are written by the driver,
+# so this needs nothing on the machine.  The check that matters opens
+# a 4 KiB block over a ~180 KiB file so lines straddle reads
+# repeatedly; measured separately, 4 M rows cost 1.6 MB of RSS at that
+# block and 5.9 MB at 1 MiB, flat in the file size.
+# Zip is in THIS link and not in Delim's imports: the driver is where
+# the two meet, which is where a dependency between them belongs.  M9
+# has no procedure types, so a source cannot be passed as a function;
+# Delim takes pushed bytes instead, and a program reading a plain CSV
+# still links no zlib.
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../zshim.c ../gen/DynStr.c \
+    ../gen/Io.c ../gen/Delim.c ../gen/Zip.c delim_driver.c \
+    -lz -lm -o delim_test
+./delim_test
+
+# Zip: a member read as a STREAM, which is what Delim's source
+# actually is -- SOCAT ships its 9 GB table inside one.  The fixtures
+# come from python's zipfile, so the oracle is a real zip writer; the
+# driver skips out loud without python3.  Measured separately: a
+# 224 MB member inflates in 0.21 s at 2.4 MB of RSS, against python's
+# own zipfile stream at 0.38 s and 12.8 MB, byte counts equal.
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../zshim.c ../gen/DynStr.c \
+    ../gen/Io.c ../gen/Zip.c zip_driver.c -lz -lm -o zip_test
+./zip_test
+
 # The CSV reader, on the ICOS FLUXNET file when it is on this
 # machine.  Skipped out loud otherwise, like the two below.
 gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
@@ -117,17 +146,62 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Json.c json_driver.c \
     -lm -o json_test
 ./json_test
+# ApiSpec: the OpenAPI document a service BUILDS, for one whose routes
+# are handlers and so have no table to read back.  OpenApi.Document is
+# the derived-from-the-router half and keeps its own battery above;
+# this one owns the 3.1 shapes and the JSON escaping that the older
+# module explicitly does not do.  DynStr and nothing else -- a service
+# describing itself must not have to link a TLS stack to do it.
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Http.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/ApiSpec.c \
+    apispec_driver.c -lm -o apispec_test
+./apispec_test
+# Arrow IPC: a columnar stream nobody can read is worse than none, so
+# the oracle is the library the clients use.  The driver checks the
+# framing and the size accounting itself, then has pyarrow read the
+# file back when it is installed (skips out loud otherwise).
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Arrow.c \
+    arrow_driver.c -lm -o arrow_test
+./arrow_test
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Io.c ../gen/Http.c \
     http_driver.c -lssl -lcrypto -o http_test
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Http.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Io.c ../gen/Http.c \
     ../gen/HttpServer.c ../gen/OpenApi.c httpserver_driver.c -lssl -lcrypto \
     -o httpserver_test
 ./httpserver_test
+# A peer that hangs up must be an ERROR, not a death.  SIGPIPE's
+# default action kills the process silently, and the ignore lived
+# inside m9_exec -- so any program that never spawned a child ran
+# with the default, which is how a cancelled download killed the
+# zarr proxy (2026-09-07).  The driver carries its own control: a
+# child that restores SIG_DFL must still die of the same write, or
+# these checks would pass on a platform that never raises it.
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c sigpipe_driver.c \
+    -o sigpipe_test
+./sigpipe_test
+
+# Zarr, the WRITER -- ZarrStore below it is the reader, and the two
+# meet at the format rather than in the code.  Json is in the closure
+# because the consolidated index is RE-SERIALISED rather than pasted;
+# this line missed it on the first try, which is the THIRD time a
+# hand-kept link list in this project has missed Json specifically.  The driver checks the
+# metadata text and the raw chunk bytes itself (at clevel 0 the chunk
+# file IS the buffer), then hands the directory to zarr-python and
+# xarray when they are on the machine.  -l:libblosc.so.1 by soname,
+# as the reader does: libblosc1 ships the runtime and only the -dev
+# package ships the libblosc.so the linker would otherwise want.
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
+    ../gen/Json.c ../gen/Math.c ../gen/Zarr.c zarrw_driver.c \
+    -l:libblosc.so.1 -lm -o zarrw_test
+./zarrw_test
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Json.c \
-    ../gen/Http.c ../gen/ZarrStore.c zarr_driver.c \
+    ../gen/Io.c ../gen/Http.c ../gen/ZarrStore.c zarr_driver.c \
     -l:libblosc.so.1 -lssl -lcrypto -lm -o zarr_test
 [ -d /tmp/m9stores/co2.zarr ] || python3 ../../tools/genstore.py /tmp/m9stores
 python3 -m http.server 18930 --bind 127.0.0.1 --directory /tmp/m9stores \
@@ -138,7 +212,7 @@ sleep 1
 ./zarr_test
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../fmtshim.c ../gen/DynStr.c \
-    ../gen/Json.c ../gen/Http.c ../gen/ZarrStore.c ../gen/Mat.c \
+    ../gen/Json.c ../gen/Io.c ../gen/Http.c ../gen/ZarrStore.c ../gen/Mat.c \
     ../gen/Math.c \
     ../gen/Plot.c plot_driver.c -l:libblosc.so.1 -lssl -lcrypto -lm -o plot_test
 mkdir -p /tmp/m9plots
@@ -165,7 +239,7 @@ gcc -std=c11 -O2 -iquote .. -iquote ../gen ../m9rt.c ../fmtshim.c \
 ./bar_test || { echo "FAIL: the bar battery"; exit 1; }
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Json.c \
-    ../gen/Http.c ../gen/ZarrStore.c bench_driver.c \
+    ../gen/Io.c ../gen/Http.c ../gen/ZarrStore.c bench_driver.c \
     -l:libblosc.so.1 -lssl -lcrypto -lm -o bench_test
 ./bench_test
 kill $ZSRV 2>/dev/null
@@ -199,6 +273,12 @@ ababab
 6
 via heap" ] || { echo "FAIL: string concatenation"; exit 1; }
 echo "PASS (1 check) -- + on strings, across a frame, and HEAP by name"
+
+# Http's URL fetcher, against a local fixture server.  IN THE SUITE
+# rather than beside it (threads.sh is run by hand) because it is
+# local, it takes seconds, and a gate nobody runs rots -- which is the
+# same argument the catbench paragraph below makes.
+sh ./httpget.sh || { echo "FAIL: httpget"; exit 1; }
 
 # catbench is a BENCHMARK, not a driver: nothing ran it, so nothing
 # compiled it, and it sat broken from the m9_err -> m9_state rename

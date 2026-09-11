@@ -190,6 +190,25 @@ one bounded read in a module of whole-file reads, and it exists
 for headers: a 256-byte probe of a half-gigabyte field cache
 decides skip-or-recompute without touching the payload.
 
+### ReadFileAt (VAR pool: POOL ; RO path: STR ; off: I64 ; cap: I64) : SLICE OF BYTE RAISES ValueRange, IOError
+
+`cap` bytes from `off`, or fewer at the end of the file, or an
+EMPTY slice at or past it.  The positioned read the whole-file
+ones cannot express, and what a streaming reader is built on: a
+9 GB delimited table is walked in blocks, and reading it whole is
+not an option at any block size.
+
+It is STATELESS: it opens and closes per call rather than
+handing back a file handle, because a handle is a lifetime and
+M9 would
+need a type for it, a close that cannot be forgotten, and an
+answer for the pool that holds it going away.  One open per
+quarter-gigabyte block is not measurable; a handle type is a
+permanent piece of API.  A caller reading in small pieces pays
+for that choice, and should not.
+
+Seekable files only: a plain file is, a pipe is not.
+
 ### MkDir (RO path: STR) RAISES ValueRange, IOError
 
 create the directory, one level, existing is fine -- what an
@@ -209,6 +228,14 @@ WriteFile narrows CHAR to octet through DynStr.Bytes, one CHAR
 per byte, which is right for text and absurd for a large binary:
 writing a 345 MB field cache through it would build 1.4 GB of
 CHARs first.  That cache is what forced this.
+
+### AppendFileBytes (RO path: STR ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
+
+the same octets APPENDED, the file created if it is absent.  For
+a caller who has a STREAM and a consumer that wants a PATH: a
+NOAA ObsPack member is 244 MB of HDF5 inside a zip and libnetcdf
+opens a path, so the choice was between one 244 MB buffer and
+one 4 MB one.
 
 ### EXCEPTION IOError
 
@@ -277,6 +304,10 @@ _(undocumented)_
 
 _(undocumented)_
 
+### ReadAt (path: C.ConstPtr ; buf: C.MutPtr ; cap: C.SSizeT ; off: C.SSizeT) : C.SSizeT [REENTRANT]
+
+_(undocumented)_
+
 ### ReadWhole (path: C.ConstPtr ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT [SERIAL]
 
 cap = 0 asks for the size and touches nothing; SERIAL until the
@@ -291,5 +322,9 @@ _(undocumented)_
 _(undocumented)_
 
 ### WriteWhole (path: C.ConstPtr ; buf: C.ConstPtr ; n: C.SizeT) : C.Int [SERIAL]
+
+_(undocumented)_
+
+### AppendWhole (path: C.ConstPtr ; buf: C.ConstPtr ; n: C.SizeT) : C.Int [SERIAL]
 
 _(undocumented)_

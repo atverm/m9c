@@ -43,6 +43,14 @@ DEFINITION MODULE Csv ;
    inconvenience: it is the difference between an hour of silent error
    and a line of configuration.
 
+   A FIELD THAT IS NOT A NUMBER IS MISSING, NOT ZERO.  A column the
+   caller declared Real or Real64 is parsed only when the field looks
+   like a number; anything else reads NaN, exactly as an empty field
+   does.  strtod answers 0 for text, and a sentence stored as a
+   measured 0.0 is the worst of the three possible answers -- found
+   in the ICOS ocean store, where 551 comment cells did precisely
+   that.  See IsNumber for what counts.
+
    WHAT IT IS NOT.  Not a general CSV library: no newlines inside
    quoted fields (with "" undoubled by TextAt), no ragged rows, no type
    inference, no streaming.  Each of those is a real feature for
@@ -57,6 +65,7 @@ TYPE
   Kind = CASE RECORD
   | Skip                      (* not parsed; costs only the scan *)
   | Real                      (* F32 *)
+  | Real64                    (* F64 *)
   | Int                       (* I64 *)
   | Stamp : format : I64      (* Time.Instant; one of the Stamp* below *)
   | Text                      (* kept in place; see TextAt *)
@@ -108,6 +117,13 @@ PROCEDURE Find (t: PTR Table ; RO name: STR) : I64 ;
 PROCEDURE SetKind (VAR t: PTR Table ; c: I64 ; k: Kind)
   RAISES IndexError ;
 PROCEDURE SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError ;
+PROCEDURE SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError ;
+  (* MEASUREMENTS ARE F32 by default and the module header says why.
+     This is the exception that header names -- "a caller needing F64
+     measurements should say so and this grows a kind" -- and the
+     caller that needed it is the ICOS ocean store, whose every
+     measurement array is `<f8>`: narrowing here and widening again
+     to write would be two roundings where the file has one number. *)
 PROCEDURE SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError ;
 PROCEDURE SetText (VAR t: PTR Table ; c: I64) RAISES IndexError ;
 PROCEDURE SetSkip (VAR t: PTR Table ; c: I64) RAISES IndexError ;
@@ -126,11 +142,12 @@ CONST
      cross-module variant selector -- the same family as the
      constructor gap above), so the question is answered as an
      integer against these names *)
-  KindSkip  = 0 ;
-  KindReal  = 1 ;
-  KindInt   = 2 ;
-  KindStamp = 3 ;
-  KindText  = 4 ;
+  KindSkip   = 0 ;
+  KindReal   = 1 ;
+  KindInt    = 2 ;
+  KindStamp  = 3 ;
+  KindText   = 4 ;
+  KindReal64 = 5 ;
 
 PROCEDURE KindCodeAt (t: PTR Table ; c: I64) : I64
   RAISES IndexError ;
@@ -145,6 +162,8 @@ PROCEDURE Parse (VAR pool: POOL ; VAR t: PTR Table)
   (* one pass over the whole file *)
 
 PROCEDURE ColF32 (t: PTR Table ; c: I64) : SLICE OF F32
+  RAISES IndexError ;
+PROCEDURE ColF64 (t: PTR Table ; c: I64) : SLICE OF F64
   RAISES IndexError ;
 PROCEDURE ColI64 (t: PTR Table ; c: I64) : SLICE OF I64
   RAISES IndexError ;
@@ -161,6 +180,8 @@ END Csv.
 
 UNSAFE DEFINITION MODULE FOR "C" ccsv ;
 
+PROCEDURE StrToF64 = "m9_strtod" (s: C.ConstPtr) : C.Double
+  [REENTRANT] ;
 PROCEDURE StrToF32 = "m9_strtof" (s: C.ConstPtr) : C.Double
   [REENTRANT] ;
   (* the runtime's one-line shim over strtof, not strtof itself:
@@ -188,7 +209,7 @@ UNSAFE IMPLEMENTATION MODULE Csv ;
 
 IMPORT DynStr ;
 IMPORT Io ;
-FROM ccsv IMPORT StrToF32 ;
+FROM ccsv IMPORT StrToF32, StrToF64 ;
 
 (* Delimiters and quotes are compared as byte VALUES rather than named
    CHAR constants: a CONST of char type is "const form unsupported
@@ -201,6 +222,7 @@ TYPE
      slices needs the element type named -- the same reason Ast
      spells `Kid = OPT PTR Node` *)
   FCol = SLICE OF F32 ;
+  DCol = SLICE OF F64 ;
   ICol = SLICE OF I64 ;
   SCol = SLICE OF Time.Instant ;
 
@@ -214,6 +236,7 @@ TYPE
     kinds   : SLICE OF I64 ;      (* Kind as a code; see KindCode *)
     formats : SLICE OF I64 ;      (* the layout of a Stamp column *)
     fcols   : SLICE OF FCol ;
+    dcols   : SLICE OF DCol ;
     icols   : SLICE OF ICol ;
     scols   : SLICE OF SCol ;
     tofs, tlen : SLICE OF ICol ;  (* a Text column, row by row *)
@@ -222,6 +245,7 @@ TYPE
 
 CONST
   KSkip = 0 ; KReal = 1 ; KInt = 2 ; KStamp = 3 ; KText = 4 ;
+  KReal64 = 5 ;
 
 PROCEDURE Defaults () : Options =
 VAR o : Options ;
@@ -242,6 +266,7 @@ BEGIN
   CASE k OF
   | Skip : RETURN KSkip
   | Real : RETURN KReal
+  | Real64 : RETURN KReal64
   | Int : RETURN KInt
   | Stamp (f) :
       format := f ;
@@ -389,6 +414,7 @@ BEGIN
 
   t.nrows := CountRows (t.buf, t.hdrEnd) ;
   t.fcols := NEW (pool, FCol, t.ncols) ;
+  t.dcols := NEW (pool, DCol, t.ncols) ;
   t.icols := NEW (pool, ICol, t.ncols) ;
   t.scols := NEW (pool, SCol, t.ncols) ;
   t.tofs := NEW (pool, ICol, t.ncols) ;
@@ -439,6 +465,11 @@ BEGIN
   t.kinds[c] := KindCode (k, f) ;
   t.formats[c] := f
 END SetKind ;
+
+PROCEDURE SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError =
+BEGIN
+  t.kinds[c] := KReal64
+END SetReal64 ;
 
 PROCEDURE SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError =
 BEGIN
@@ -560,6 +591,90 @@ BEGIN
   RETURN F32 (StrToF32 (ADR (v)))
 END FieldF32 ;
 
+(* THE WIDE FIELD GOES STRAIGHT THROUGH strtod, with none of the
+   fast path FieldF32 keeps.  That fast path exists because a float32
+   result is a single rounding whichever way it is reached; a float64
+   one is not, and a hand-rolled mantissa would be an ulp out on the
+   values this exists for -- which is the same finding the SOCAT
+   longitude produced from the other side. *)
+(* IS THIS FIELD A NUMBER AT ALL?
+
+   strtod answers 0 for text, so a column declared Real that carries a
+   word read back as a real ZERO -- indistinguishable from a measured
+   one, and silently wrong.  The ICOS ocean store found it: a comment
+   column that pandas' duplicate-name mangling let past the drop rule
+   became a float array, and 551 sentences read as 0.0 where pandas'
+   `to_numeric(errors='coerce')` says NaN.
+
+   So a field the caller declared numeric is parsed only if it LOOKS
+   numeric, and is missing otherwise -- which is what an empty field
+   already answers.  Deliberately narrower than strtod: `0x10` is not
+   a number here, and pandas agrees.                                *)
+PROCEDURE IsNumber (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64) : BOOL
+  RAISES IndexError =
+VAR
+  i, e, digits : I64 ;
+  c : I64 ;
+BEGIN
+  i := ofs ; e := ofs + n ;
+  WHILE i < e AND (I64 (b[i]) = 32 OR I64 (b[i]) = 9) DO i := i + 1 END ;
+  WHILE e > i AND (I64 (b[e - 1]) = 32 OR I64 (b[e - 1]) = 9) DO
+    e := e - 1
+  END ;
+  IF i >= e THEN RETURN FALSE END ;
+  IF I64 (b[i]) = 43 OR I64 (b[i]) = 45 THEN i := i + 1 END ;
+  IF i >= e THEN RETURN FALSE END ;
+  (* nan / inf / infinity, which strtod takes and pandas takes too *)
+  IF Word (b, i, e, 'nan') OR Word (b, i, e, 'inf')
+     OR Word (b, i, e, 'infinity') THEN
+    RETURN TRUE
+  END ;
+  digits := 0 ;
+  WHILE i < e AND IsDigit (b[i]) DO i := i + 1 ; digits := digits + 1 END ;
+  IF i < e AND I64 (b[i]) = 46 THEN
+    i := i + 1 ;
+    WHILE i < e AND IsDigit (b[i]) DO i := i + 1 ; digits := digits + 1 END
+  END ;
+  IF digits = 0 THEN RETURN FALSE END ;
+  IF i < e THEN
+    c := I64 (b[i]) ;
+    IF c # 101 AND c # 69 THEN RETURN FALSE END ;
+    i := i + 1 ;
+    IF i < e THEN
+      IF I64 (b[i]) = 43 OR I64 (b[i]) = 45 THEN i := i + 1 END
+    END ;
+    digits := 0 ;
+    WHILE i < e AND IsDigit (b[i]) DO i := i + 1 ; digits := digits + 1 END ;
+    IF digits = 0 THEN RETURN FALSE END
+  END ;
+  RETURN i = e
+END IsNumber ;
+
+(* the octets at i..e, lower-cased, equal to a lower-case ASCII word *)
+PROCEDURE Word (RO b: SLICE OF BYTE ; i: I64 ; e: I64 ; RO w: STR)
+  : BOOL
+  RAISES IndexError =
+VAR k, c : I64 ;
+BEGIN
+  IF e - i # LEN (w) THEN RETURN FALSE END ;
+  FOR k := 0 TO LEN (w) - 1 DO
+    c := I64 (b[i + k]) ;
+    IF c >= 65 AND c <= 90 THEN c := c + 32 END ;
+    IF c # ORD (w[k]) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+EXCEPT
+| ValueRange : RETURN FALSE
+END Word ;
+
+PROCEDURE FieldF64 (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64) : F64
+  RAISES IndexError =
+VAR v : SLICE OF BYTE ;
+BEGIN
+  v := SLICE (b, ofs, n) ;
+  RETURN F64 (StrToF64 (ADR (v)))
+END FieldF64 ;
+
 PROCEDURE FieldI64 (RO b: SLICE OF BYTE ; ofs: I64 ; n: I64 ;
                     row, col: I64) : I64
   RAISES RangeError, IndexError =
@@ -640,10 +755,13 @@ PROCEDURE Parse (VAR pool: POOL ; VAR t: PTR Table)
 VAR
   i, c, row, start, len, nb, ofs : I64 ;
   f : F32 ;
+  d : F64 ;
   inQuote, atEnd : BOOL ;
 BEGIN
   FOR c := 0 TO t.ncols - 1 DO
-    IF t.kinds[c] = KReal THEN
+    IF t.kinds[c] = KReal64 THEN
+      t.dcols[c] := NEW (pool, F64, t.nrows)
+    ELSIF t.kinds[c] = KReal THEN
       t.fcols[c] := NEW (pool, F32, t.nrows)
     ELSIF t.kinds[c] = KInt THEN
       t.icols[c] := NEW (pool, I64, t.nrows)
@@ -684,8 +802,18 @@ BEGIN
       ofs := start ;
       IF t.opt.quoted THEN Unquote (t.buf, ofs, len) END ;
       IF c < t.ncols THEN
-        IF t.kinds[c] = KReal THEN
-          IF len = 0 THEN
+        IF t.kinds[c] = KReal64 THEN
+          IF len = 0 OR NOT IsNumber (t.buf, ofs, len) THEN
+            t.dcols[c][row] := 0.0 / 0.0
+          ELSE
+            d := FieldF64 (t.buf, ofs, len) ;
+            IF t.opt.hasMissing THEN
+              IF d = F64 (t.opt.missing) THEN d := 0.0 / 0.0 END
+            END ;
+            t.dcols[c][row] := d
+          END
+        ELSIF t.kinds[c] = KReal THEN
+          IF len = 0 OR NOT IsNumber (t.buf, ofs, len) THEN
             t.fcols[c][row] := 0.0 / 0.0
           ELSE
             f := FieldF32 (t.buf, ofs, len) ;
@@ -726,6 +854,18 @@ BEGIN
   END ;
   t.parsed := TRUE
 END Parse ;
+
+PROCEDURE ColF64 (t: PTR Table ; c: I64) : SLICE OF F64
+  RAISES IndexError =
+BEGIN
+  RETURN t.dcols[c]
+END ColF64 ;
+
+PROCEDURE ColF64 (t: PTR Table ; c: I64) : SLICE OF F64
+  RAISES IndexError =
+BEGIN
+  RETURN t.dcols[c]
+END ColF64 ;
 
 PROCEDURE ColF32 (t: PTR Table ; c: I64) : SLICE OF F32
   RAISES IndexError =

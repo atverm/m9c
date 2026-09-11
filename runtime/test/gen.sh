@@ -11,4 +11,12 @@
 #
 # Sourced, not executed: it is called from inside gates that have
 # already cd'd to runtime/test.
-( cd ../../host/fpc && fpc -O2 gentest.pas >/dev/null && ./gentest >/dev/null )
+# THE DIAGNOSTICS SURVIVE A FAILURE.  Both were >/dev/null, so a
+# generator that refused a module exited non-zero into `set -e` and
+# every caller died with NO OUTPUT AT ALL -- a zero-length log and a
+# status of 1, which reads like the shell being broken.  Cost an hour
+# on 2026-09-10, when the refusal was one line naming its own cause.
+( cd ../../host/fpc &&
+  { fpc -O2 gentest.pas > /tmp/m9gen.log 2>&1 &&
+    ./gentest >> /tmp/m9gen.log 2>&1 ; } ||
+  { echo "gen.sh: the FPC generator failed --"; cat /tmp/m9gen.log; exit 1; } )

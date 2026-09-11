@@ -46,6 +46,15 @@ does), and INT64 columns named in nsCols annotated as
 TIMESTAMP(NANOS, adjusted-to-UTC) -- pyarrow then reads a real
 timestamp[ns] column, not a bare integer.
 
+### BytesX (VAR pool: POOL ; f: PTR Frame.Fr ; RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ; RO nsCols: SLICE OF STR) : SLICE OF BYTE RAISES Bad, ValueRange, Overflow, IndexError
+
+WriteX's document, IN MEMORY, for a caller that is answering a
+request rather than filling a directory.  The whole file was
+already assembled in a buffer before WriteX touched the disk;
+this hands that buffer over instead, so a server does not need a
+per-request temp file it must then read back and remove.  No
+Io.IOError, because nothing is opened.
+
 ### Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError
 
 _(undocumented)_

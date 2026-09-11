@@ -5,6 +5,13 @@ DEFINITION MODULE Http ;
    ADDRESS; here each failure RAISES with its name, and the payload
    lands in a slice the caller sized.                                *)
 
+IMPORT Io ;
+  (* for Io.IOError, which GetToFile raises when the DISK refuses --
+     a definition that names another module's exception must import
+     it, and m9c accepts one that does not while the bootstrap
+     generator answers `unknown exception in handler` from the
+     implementation, half a file away *)
+
 EXCEPTION
   TransportError (RO msg: STR) ;
 
@@ -35,6 +42,55 @@ PROCEDURE GetTls (RO host: STR ; port: I64 ;
      TransportError like any other failure to connect: a caller
      cannot proceed either way, and the two are not usefully
      distinguished at this layer.                                   *)
+
+(* ---- fetching a URL: redirects, chunked bodies, and the disk ------
+
+   Get and GetTls above are the one-shot form: you name the host, the
+   port and the path, and the whole body lands in a slice you sized.
+   That is HTTP/1.0 and it is enough for a probe.  It is not enough to
+   fetch data from a repository, and every gap below was MEASURED on
+   the ICOS Carbon Portal rather than anticipated:
+
+   * `https://doi.org/<doi>` answers 302 to another HOST, so a
+     redirect must be followed and the connection remade;
+   * `/licence_accept?ids=...` answers 302 with a RELATIVE Location
+     and a Set-Cookie the next request must carry;
+   * doi.org's 302 AND the crosscite 200 behind it both arrive
+     `Transfer-Encoding: chunked`, so a decoder is mandatory rather
+     than defensive;
+   * `Accept` decides what a metadata endpoint answers at all -- the
+     same collection URL gives 200 for `application/json` and
+     **406 Not Acceptable** for `application/ld+json`;
+   * and the objects are files, so the body goes to the DISK in
+     blocks rather than into a buffer the size of the download.
+
+   The cookie handling is deliberately NARROW and the definition says
+   so: a `Set-Cookie` on a response is carried, name and value only,
+   as the `Cookie` of the NEXT request in the SAME redirect chain.
+   No domain matching, no path matching, no expiry, nothing kept
+   between calls.  That is exactly the licence handshake and nothing
+   more; a caller who needs a cookie jar does not have one here.   *)
+
+CONST
+  MaxHop = 5 ;                    (* redirects followed before refusing *)
+
+PROCEDURE GetToFile (VAR pool: POOL ; RO url: STR ; RO accept: STR ;
+                     RO cookie: STR ; RO dest: STR ; VAR bytes: I64)
+  : I64
+  RAISES TransportError, Io.IOError, ValueRange ;
+  (* GET `url`, following redirects, writing the body to `dest` in
+     blocks -- the peak is one block and not one download.  Answers
+     the FINAL status; `bytes` is what was written, which is 0 unless
+     the status is 200.  `accept` and `cookie` are sent when they are
+     not empty. *)
+
+PROCEDURE GetText (VAR pool: POOL ; RO url: STR ; RO accept: STR ;
+                   RO cookie: STR ; cap: I64 ; VAR status: I64) : STR
+  RAISES TransportError, ValueRange ;
+  (* the same, for a document small enough to hold: the body decoded
+     from UTF-8, refused BY NAME past `cap` octets rather than
+     truncated -- a truncated JSON document is a parse error three
+     layers away from its cause. *)
 
 END Http.
 
@@ -98,6 +154,7 @@ UNSAFE IMPLEMENTATION MODULE Http ;
 FROM csock IMPORT Connect, Read, Write, Close ;
 FROM csock IMPORT TlsConnect, TlsRead, TlsWrite, TlsClose ;
 IMPORT DynStr ;
+IMPORT Io ;
 
 CONST
   RecvMax = 4194304 ;
@@ -231,5 +288,451 @@ PROCEDURE GetTls (RO host: STR ; port: I64 ;
 BEGIN
   RETURN Fetch (TRUE, host, port, path, body, bodyLen)
 END GetTls ;
+
+(* ---- the URL fetcher --------------------------------------------- *)
+
+CONST
+  IoBlock = 65536 ;               (* one socket read, and the peak *)
+  HdrMax = 16384 ;                (* a response header block *)
+
+TYPE
+  (* one connection, read through a buffer, so the header parser and
+     the body reader can take bytes without either of them owning the
+     socket's arithmetic *)
+  Conn = RECORD
+    secure : BOOL ;
+    fd : I64 ;
+    buf : SLICE OF BYTE ;
+    at : I64 ;                    (* next unread byte in buf *)
+    n : I64 ;                     (* bytes held *)
+    eof : BOOL ;
+  END ;
+
+PROCEDURE ConnRead (VAR c: Conn) : I64
+  RAISES ValueRange =
+VAR got : I64 ;
+BEGIN
+  IF c.eof THEN RETURN 0 END ;
+  IF c.secure THEN
+    got := I64 (TlsRead (C.Int (c.fd), ADR (c.buf), C.SizeT (LEN (c.buf))))
+  ELSE
+    got := I64 (Read (C.Int (c.fd), ADR (c.buf), C.SizeT (LEN (c.buf))))
+  END ;
+  IF got <= 0 THEN c.eof := TRUE ; c.at := 0 ; c.n := 0 ; RETURN 0 END ;
+  c.at := 0 ; c.n := got ;
+  RETURN got
+END ConnRead ;
+
+(* one byte, or -1 at end of stream *)
+PROCEDURE ConnByte (VAR c: Conn) : I64
+  RAISES ValueRange, IndexError =
+VAR v : I64 ;
+BEGIN
+  IF c.at >= c.n THEN
+    IF ConnRead (c) = 0 THEN RETURN -1 END
+  END ;
+  v := I64 (c.buf[c.at]) ;
+  c.at := c.at + 1 ;
+  RETURN v
+END ConnByte ;
+
+PROCEDURE CloseConn (VAR c: Conn)
+  RAISES ValueRange =
+VAR rc : I64 ;
+BEGIN
+  IF c.fd < 0 THEN RETURN END ;
+  IF c.secure THEN
+    rc := I64 (TlsClose (C.Int (c.fd)))
+  ELSE
+    rc := I64 (Close (C.Int (c.fd)))
+  END ;
+  c.fd := -1
+END CloseConn ;
+
+PROCEDURE Lower (c: I64) : I64 =
+BEGIN
+  IF c >= 65 AND c <= 90 THEN RETURN c + 32 END ;
+  RETURN c
+END Lower ;
+
+(* `name` is lower-case and includes its colon *)
+PROCEDURE HeaderIs (RO line: STR ; RO name: STR) : BOOL
+  RAISES ValueRange =
+VAR i : I64 ;
+BEGIN
+  IF LEN (line) < LEN (name) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (name) - 1 DO
+    IF Lower (I64 (line[i])) # I64 (name[i]) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END HeaderIs ;
+
+PROCEDURE HeaderVal (RO line: STR ; skip: I64) : STR
+  RAISES ValueRange =
+VAR a, b : I64 ;
+BEGIN
+  a := skip ;
+  WHILE a < LEN (line) AND (line[a] = ' ' OR I64 (line[a]) = 9) DO
+    a := a + 1
+  END ;
+  b := LEN (line) ;
+  WHILE b > a AND (line[b - 1] = ' ' OR I64 (line[b - 1]) = 9) DO
+    b := b - 1
+  END ;
+  RETURN SLICE (line, a, b - a)
+END HeaderVal ;
+
+PROCEDURE Digits (RO s: STR) : I64
+  RAISES ValueRange =
+VAR i, v : I64 ;
+BEGIN
+  v := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] < '0' OR s[i] > '9' THEN RETURN v END ;
+    v := v * 10 + (I64 (s[i]) - 48)
+  END ;
+  RETURN v
+END Digits ;
+
+PROCEDURE HexVal (RO s: STR) : I64
+  RAISES ValueRange =
+VAR i, v, c : I64 ;
+BEGIN
+  v := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := Lower (I64 (s[i])) ;
+    IF c >= 48 AND c <= 57 THEN v := v * 16 + (c - 48)
+    ELSIF c >= 97 AND c <= 102 THEN v := v * 16 + (c - 87)
+    ELSE RETURN v END
+  END ;
+  RETURN v
+END HexVal ;
+
+(* one CRLF-terminated line, LF tolerated alone; -1 at end of stream *)
+PROCEDURE Line (VAR pool: POOL ; VAR c: Conn ; VAR out: STR) : I64
+  RAISES ValueRange, IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  v, n : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  n := 0 ;
+  LOOP
+    v := ConnByte (c) ;
+    IF v < 0 THEN
+      IF n = 0 THEN RETURN -1 END ;
+      EXIT
+    END ;
+    IF v = 10 THEN EXIT END ;
+    IF v # 13 THEN DynStr.AppendChar (pool, d, CHR (v)) END ;
+    n := n + 1 ;
+    IF n > HdrMax THEN RETURN -2 END
+  END ;
+  out := DynStr.View (d) ;
+  RETURN LEN (out)
+END Line ;
+
+(* scheme, host, port and path out of an absolute URL, or a path out
+   of a relative one resolved against `baseHost` *)
+PROCEDURE SplitUrl (VAR pool: POOL ; RO url: STR ; VAR secure: BOOL ;
+                    VAR host: STR ; VAR port: I64 ; VAR path: STR)
+  RAISES TransportError, ValueRange =
+VAR i, j, colon : I64 ;  rest : STR ;
+BEGIN
+  IF LEN (url) > 8 AND DynStr.Eq (SLICE (url, 0, 8), 'https://') THEN
+    secure := TRUE ; port := 443 ; rest := SLICE (url, 8, LEN (url) - 8)
+  ELSIF LEN (url) > 7 AND DynStr.Eq (SLICE (url, 0, 7), 'http://') THEN
+    secure := FALSE ; port := 80 ; rest := SLICE (url, 7, LEN (url) - 7)
+  ELSE
+    RAISE TransportError ('not an http or https URL')
+  END ;
+  i := 0 ;
+  WHILE i < LEN (rest) AND rest[i] # '/' DO i := i + 1 END ;
+  host := SLICE (rest, 0, i) ;
+  IF i >= LEN (rest) THEN
+    path := Cat1 (pool, '/')
+  ELSE
+    path := SLICE (rest, i, LEN (rest) - i)
+  END ;
+  colon := -1 ;
+  FOR j := 0 TO LEN (host) - 1 DO
+    IF host[j] = ':' THEN colon := j END
+  END ;
+  IF colon >= 0 THEN
+    port := Digits (SLICE (host, colon + 1, LEN (host) - colon - 1)) ;
+    host := SLICE (host, 0, colon)
+  END ;
+  IF LEN (host) = 0 THEN RAISE TransportError ('no host in the URL') END
+END SplitUrl ;
+
+PROCEDURE Cat1 (VAR pool: POOL ; RO a: STR) : STR
+  RAISES ValueRange =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, a) ;
+  RETURN DynStr.View (d)
+END Cat1 ;
+
+(* up to `want` bytes out of the connection into `out`, answering how
+   many; 0 means the stream has ended.  Block-wise on purpose -- a
+   500 MB object read a byte at a time through ConnByte would spend
+   its time in the buffer arithmetic. *)
+PROCEDURE Pull (VAR c: Conn ; VAR out: SLICE OF BYTE ; at: I64 ;
+                want: I64) : I64
+  RAISES ValueRange, IndexError =
+VAR i, have : I64 ;
+BEGIN
+  IF want <= 0 THEN RETURN 0 END ;
+  IF c.at >= c.n THEN
+    IF ConnRead (c) = 0 THEN RETURN 0 END
+  END ;
+  have := c.n - c.at ;
+  IF have > want THEN have := want END ;
+  FOR i := 0 TO have - 1 DO out[at + i] := c.buf[c.at + i] END ;
+  c.at := c.at + have ;
+  RETURN have
+END Pull ;
+
+(* ---- ONE request, and the response it produces ---------------------
+
+   `toFile` decides where the body goes and nothing else: the header
+   parse, the redirect fields and the three body framings are the same
+   code either way.                                                  *)
+PROCEDURE Once (VAR pool: POOL ; secure: BOOL ; RO host: STR ;
+                port: I64 ; RO path: STR ; RO accept: STR ;
+                RO cookie: STR ; RO dest: STR ; toFile: BOOL ;
+                cap: I64 ; VAR loc: STR ; VAR setCookie: STR ;
+                VAR bytes: I64 ; VAR text: STR) : I64
+  RAISES TransportError, Io.IOError, ValueRange, IndexError =
+VAR
+  scratch : POOL ;
+  c : Conn ;
+  req : PTR DynStr.DString IN scratch ;
+  acc : PTR DynStr.DString IN scratch ;
+  hz, wire, blk : SLICE OF BYTE ;
+  line : STR ;
+  status, n, ln, clen, want, got, held, i : I64 ;
+  chunked, first, opened : BOOL ;
+BEGIN
+  loc := '' ; setCookie := '' ; bytes := 0 ; text := '' ;
+  hz := DynStr.Bytes (scratch, host, TRUE) ;
+  c.secure := secure ;
+  c.at := 0 ; c.n := 0 ; c.eof := FALSE ;
+  c.buf := NEW (scratch, BYTE, IoBlock) ;
+  IF secure THEN
+    c.fd := I64 (TlsConnect (ADR (hz), C.Int (port)))
+  ELSE
+    c.fd := I64 (Connect (ADR (hz), C.Int (port)))
+  END ;
+  IF c.fd < 0 THEN RAISE TransportError ('connect failed') END ;
+
+  BEGIN
+    req := DynStr.New (scratch) ;
+    DynStr.Append (scratch, req, 'GET ') ;
+    DynStr.Append (scratch, req, path) ;
+    DynStr.Append (scratch, req, ' HTTP/1.1') ;
+    CrLf (scratch, req) ;
+    DynStr.Append (scratch, req, 'Host: ') ;
+    DynStr.Append (scratch, req, host) ;
+    CrLf (scratch, req) ;
+    (* identity BY NAME: a server that decided to gzip would hand back
+       bytes this module does not decode, and the failure would look
+       like corrupt data rather than a missing feature *)
+    DynStr.Append (scratch, req, 'Accept-Encoding: identity') ;
+    CrLf (scratch, req) ;
+    (* no keep-alive: one request per connection, so a body with no
+       framing at all ends at the close *)
+    DynStr.Append (scratch, req, 'Connection: close') ;
+    CrLf (scratch, req) ;
+    IF LEN (accept) > 0 THEN
+      DynStr.Append (scratch, req, 'Accept: ') ;
+      DynStr.Append (scratch, req, accept) ;
+      CrLf (scratch, req)
+    END ;
+    IF LEN (cookie) > 0 THEN
+      DynStr.Append (scratch, req, 'Cookie: ') ;
+      DynStr.Append (scratch, req, cookie) ;
+      CrLf (scratch, req)
+    END ;
+    CrLf (scratch, req) ;
+    wire := DynStr.Bytes (scratch, DynStr.View (req), FALSE) ;
+    IF secure THEN
+      n := I64 (TlsWrite (C.Int (c.fd), ADR (wire), C.SizeT (LEN (wire))))
+    ELSE
+      n := I64 (Write (C.Int (c.fd), ADR (wire), C.SizeT (LEN (wire))))
+    END ;
+    IF n < 0 THEN RAISE TransportError ('send failed') END ;
+
+    (* ---- the status line and the headers ---- *)
+    ln := Line (scratch, c, line) ;
+    IF ln < 12 THEN RAISE TransportError ('short response') END ;
+    status := (I64 (line[9]) - 48) * 100 + (I64 (line[10]) - 48) * 10
+              + (I64 (line[11]) - 48) ;
+    clen := -1 ; chunked := FALSE ;
+    LOOP
+      ln := Line (scratch, c, line) ;
+      IF ln = -2 THEN RAISE TransportError ('header line too long') END ;
+      IF ln <= 0 THEN EXIT END ;
+      IF HeaderIs (line, 'content-length:') THEN
+        clen := Digits (HeaderVal (line, 15))
+      ELSIF HeaderIs (line, 'transfer-encoding:') THEN
+        (* the only one this speaks; anything else is refused rather
+           than read as though it were identity *)
+        IF HeaderIs (HeaderVal (line, 18), 'chunked') THEN
+          chunked := TRUE
+        ELSE
+          RAISE TransportError ('unsupported transfer-encoding')
+        END
+      ELSIF HeaderIs (line, 'location:') THEN
+        loc := Cat1 (pool, HeaderVal (line, 9))
+      ELSIF HeaderIs (line, 'set-cookie:') THEN
+        (* name=value only, up to the first ';' -- the narrowing the
+           definition states *)
+        line := HeaderVal (line, 11) ;
+        i := 0 ;
+        WHILE i < LEN (line) AND line[i] # ';' DO i := i + 1 END ;
+        setCookie := Cat1 (pool, SLICE (line, 0, i))
+      END
+    END ;
+
+    (* ---- the body ---- *)
+    opened := FALSE ;
+    acc := DynStr.New (pool) ;
+    blk := NEW (scratch, BYTE, IoBlock) ;
+    held := 0 ;
+    want := clen ;
+    IF chunked THEN want := 0 END ;
+    first := TRUE ;
+    LOOP
+      IF chunked AND want = 0 THEN
+        IF NOT first THEN
+          ln := Line (scratch, c, line)          (* the chunk's CRLF *)
+        END ;
+        first := FALSE ;
+        ln := Line (scratch, c, line) ;
+        IF ln < 0 THEN EXIT END ;
+        i := 0 ;
+        WHILE i < LEN (line) AND line[i] # ';' DO i := i + 1 END ;
+        want := HexVal (SLICE (line, 0, i)) ;
+        IF want = 0 THEN EXIT END
+      END ;
+      IF want < 0 THEN
+        got := Pull (c, blk, held, IoBlock - held)   (* to end of stream *)
+      ELSE
+        n := IoBlock - held ;
+        IF n > want THEN n := want END ;
+        got := Pull (c, blk, held, n) ;
+        want := want - got
+      END ;
+      IF got = 0 AND (want <= 0 OR c.eof) THEN
+        IF NOT chunked THEN EXIT END ;
+        IF want > 0 THEN EXIT END
+      END ;
+      IF got = 0 AND NOT chunked THEN EXIT END ;
+      held := held + got ;
+      bytes := bytes + got ;
+      IF toFile AND held >= IoBlock THEN
+        IF opened THEN
+          Io.AppendFileBytes (dest, SLICE (blk, 0, held))
+        ELSE
+          Io.WriteFileBytes (dest, SLICE (blk, 0, held)) ;
+          opened := TRUE
+        END ;
+        held := 0
+      END ;
+      IF NOT toFile THEN
+        IF bytes > cap THEN
+          RAISE TransportError ('the document is larger than the cap')
+        END ;
+        FOR i := 0 TO held - 1 DO
+          DynStr.AppendChar (pool, acc, CHR (I64 (blk[i])))
+        END ;
+        held := 0
+      END
+    END ;
+    IF toFile THEN
+      IF opened THEN
+        Io.AppendFileBytes (dest, SLICE (blk, 0, held))
+      ELSE
+        Io.WriteFileBytes (dest, SLICE (blk, 0, held))
+      END
+    ELSE
+      FOR i := 0 TO held - 1 DO
+        DynStr.AppendChar (pool, acc, CHR (I64 (blk[i])))
+      END ;
+      text := DynStr.View (acc)
+    END
+  FINALLY
+    CloseConn (c)
+  END ;
+  RETURN status
+END Once ;
+
+(* ---- following the chain ------------------------------------------ *)
+PROCEDURE Follow (VAR pool: POOL ; RO url: STR ; RO accept: STR ;
+                  RO cookie: STR ; RO dest: STR ; toFile: BOOL ;
+                  cap: I64 ; VAR bytes: I64 ; VAR text: STR) : I64
+  RAISES TransportError, Io.IOError, ValueRange, IndexError =
+VAR
+  secure : BOOL ;
+  host, path, loc, sc, ck : STR ;
+  port, status, hop : I64 ;
+BEGIN
+  ck := cookie ;
+  SplitUrl (pool, url, secure, host, port, path) ;
+  FOR hop := 0 TO MaxHop DO
+    status := Once (pool, secure, host, port, path, accept, ck, dest,
+                    toFile, cap, loc, sc, bytes, text) ;
+    IF status < 300 OR status > 399 OR LEN (loc) = 0 THEN
+      RETURN status
+    END ;
+    IF hop = MaxHop THEN
+      RAISE TransportError ('too many redirects')
+    END ;
+    (* A RELATIVE Location keeps the CURRENT ORIGIN -- scheme, host
+       AND PORT.  The origin is carried as three values rather than
+       re-spelled as a URL and re-parsed, because the first version
+       did re-spell it and DROPPED THE PORT: against a fixture on
+       18991 the licence redirect went to port 80 and answered
+       `connect failed`, which reads like the server being down. *)
+    IF loc[0] = '/' THEN
+      path := loc
+    ELSE
+      SplitUrl (pool, loc, secure, host, port, path)
+    END ;
+    IF LEN (sc) > 0 THEN ck := sc END
+  END ;
+  RETURN status
+END Follow ;
+
+PROCEDURE GetToFile (VAR pool: POOL ; RO url: STR ; RO accept: STR ;
+                     RO cookie: STR ; RO dest: STR ; VAR bytes: I64)
+  : I64
+  RAISES TransportError, Io.IOError, ValueRange =
+VAR text : STR ;
+BEGIN
+  RETURN Follow (pool, url, accept, cookie, dest, TRUE, 0, bytes, text)
+EXCEPT
+| IndexError : RAISE TransportError ('a malformed response')
+END GetToFile ;
+
+PROCEDURE GetText (VAR pool: POOL ; RO url: STR ; RO accept: STR ;
+                   RO cookie: STR ; cap: I64 ; VAR status: I64) : STR
+  RAISES TransportError, ValueRange =
+VAR
+  scratch : POOL ;
+  text : STR ;
+  bytes : I64 ;
+BEGIN
+  status := Follow (pool, url, accept, cookie, '', FALSE, cap, bytes,
+                    text) ;
+  (* the accumulator holds OCTETS, one per scalar; the document is
+     UTF-8 and the caller wants text *)
+  RETURN DynStr.FromUtf8 (pool, DynStr.Bytes (scratch, text, FALSE))
+EXCEPT
+| IndexError : RAISE TransportError ('a malformed response')
+| Io.IOError (p) : RAISE TransportError ('unexpected file error')
+END GetText ;
 
 END Http.
