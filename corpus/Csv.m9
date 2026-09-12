@@ -51,11 +51,12 @@ DEFINITION MODULE Csv ;
    in the ICOS ocean store, where 551 comment cells did precisely
    that.  See IsNumber for what counts.
 
-   WHAT IT IS NOT.  Not a general CSV library: no newlines inside
-   quoted fields (with "" undoubled by TextAt), no ragged rows, no type
-   inference, no streaming.  Each of those is a real feature for
-   somebody and none is free, so they arrive when a caller needs
-   one.                                                             *)
+   WHAT IT IS NOT.  Not a general CSV library: no ragged rows, no
+   type inference, no streaming.  A quoted field MAY carry a newline
+   and a doubled "" (TextAt undoubles it) -- both arrived when a
+   caller needed them, the FLUXNET shuttle's BADM tables, and each
+   of the rest is a real feature for somebody and none is free, so
+   they arrive the same way.                                        *)
 
 IMPORT Time ;
 
@@ -105,6 +106,15 @@ PROCEDURE Open (VAR pool: POOL ; RO path: STR ; RO opt: Options)
      values, because the caller declares the column kinds first.
      Every column is Skip until a setter names it: a column nobody
      declared is scanned past, never parsed and never carried.     *)
+
+PROCEDURE OpenBytes (VAR pool: POOL ; RO src: SLICE OF BYTE ;
+                     RO opt: Options) : PTR Table IN pool
+  RAISES ParseError, ValueRange ;
+  (* the same, over bytes the caller already holds -- a ZIP member
+     inflated into memory, a body off the wire.  The octets are COPIED
+     into the table (plus the trailing zero Open's file read carries),
+     so the caller's buffer is free the moment this returns and the
+     table never reaches into a pool it does not own.                *)
 
 PROCEDURE Rows (t: PTR Table) : I64 ;
 PROCEDURE Cols (t: PTR Table) : I64 ;
@@ -297,14 +307,23 @@ END IsDigit ;
 (* the number of rows, counted before anything is allocated: one pass
    over the file to learn a number is cheaper than growing hundreds
    of columns by doubling *)
-PROCEDURE CountRows (RO b: SLICE OF BYTE ; from: I64) : I64
+PROCEDURE CountRows (RO b: SLICE OF BYTE ; from: I64 ; quoted: BOOL)
+  : I64
   RAISES IndexError =
 VAR
   i, n : I64 ;
+  inQuote : BOOL ;
 BEGIN
   n := 0 ;
+  inQuote := FALSE ;
   FOR i := from TO LEN (b) - 1 DO
-    IF I64 (b[i]) = 10 THEN n := n + 1 END
+    (* a newline INSIDE a quoted field is part of the field, exactly
+       as Parse treats it; counting it here as a row used to hand back
+       a row count larger than Parse fills, and the tail rows read as
+       empty text -- silently.  78 of the 783 FLUXNET shuttle BADM
+       tables carry a multi-line site description. *)
+    IF quoted AND I64 (b[i]) = 34 THEN inQuote := NOT inQuote END ;
+    IF I64 (b[i]) = 10 AND NOT inQuote THEN n := n + 1 END
   END ;
   (* a file whose last line has no newline still has that line *)
   IF LEN (b) > from THEN
@@ -344,12 +363,38 @@ END Unquote ;
 PROCEDURE Open (VAR pool: POOL ; RO path: STR ; RO opt: Options)
   : PTR Table IN pool
   RAISES ParseError, ValueRange, Io.IOError =
+BEGIN
+  RETURN Build (pool, Io.ReadFileBytes (pool, path), opt)
+END Open ;
+
+PROCEDURE OpenBytes (VAR pool: POOL ; RO src: SLICE OF BYTE ;
+                     RO opt: Options) : PTR Table IN pool
+  RAISES ParseError, ValueRange =
+VAR
+  buf : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  (* copied, and one zero past the end: a C string function called
+     on a field inside it must not run off the buffer, which is the
+     contract Io.ReadFileBytes gives Open *)
+  buf := NEW (pool, BYTE, LEN (src) + 1) ;
+  FOR i := 0 TO LEN (src) - 1 DO buf[i] := src[i] END ;
+  (* the zero is PAST the slice, exactly as ReadFileBytes places it:
+     inside it, the row counter would see one byte more than the file
+     and answer one row too many -- which the driver caught *)
+  RETURN Build (pool, SLICE (buf, 0, LEN (src)), opt)
+END OpenBytes ;
+
+(* the header and the row count over a buffer the table will keep *)
+PROCEDURE Build (VAR pool: POOL ; RO KEPT buf: SLICE OF BYTE ;
+                 RO opt: Options) : PTR Table IN pool
+  RAISES ParseError, ValueRange =
 VAR
   t : PTR Table IN pool ;
   i, start, n, from : I64 ;
 BEGIN
   t := NEW (pool, Table) ;
-  t.buf := Io.ReadFileBytes (pool, path) ;
+  t.buf := buf ;
   t.opt := opt ;
   t.delim := ORD (opt.delimiter) ;
   t.parsed := FALSE ;
@@ -412,7 +457,7 @@ BEGIN
     t.hdrEnd := from
   END ;
 
-  t.nrows := CountRows (t.buf, t.hdrEnd) ;
+  t.nrows := CountRows (t.buf, t.hdrEnd, opt.quoted) ;
   t.fcols := NEW (pool, FCol, t.ncols) ;
   t.dcols := NEW (pool, DCol, t.ncols) ;
   t.icols := NEW (pool, ICol, t.ncols) ;
@@ -420,7 +465,7 @@ BEGIN
   t.tofs := NEW (pool, ICol, t.ncols) ;
   t.tlen := NEW (pool, ICol, t.ncols) ;
   RETURN t
-END Open ;
+END Build ;
 
 PROCEDURE Rows (t: PTR Table) : I64 =
 BEGIN

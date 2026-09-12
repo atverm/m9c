@@ -455,7 +455,7 @@ m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   int64_t n = 0; (void) n;
   pb = DynStr_Bytes (&(scratch), path, true, err);
   if (err->exc) goto L_ret;
-  n = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0))))) m9gv = m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0)))); m9_mon_leave (&m9_gate_cio); m9gv; }));
+  n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0)))));
   if ((n < INT64_C(0))) {
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Io_IOError);
@@ -468,7 +468,7 @@ m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   }
   b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), n, err);
   if (err->exc) goto L_ret;
-  n = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(n)))) m9gv = m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(n))); m9_mon_leave (&m9_gate_cio); m9gv; }));
+  n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(n))));
   if ((n < INT64_C(0))) {
     { __typeof__(path) m9t2 = path; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Io_IOError);
@@ -499,7 +499,7 @@ m9_sl_BYTE Io_ReadFileBytes (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   int64_t n = 0; (void) n;
   pb = DynStr_Bytes (&(scratch), path, true, err);
   if (err->exc) goto L_ret;
-  n = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0))))) m9gv = m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0)))); m9_mon_leave (&m9_gate_cio); m9gv; }));
+  n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0)))));
   if ((n < INT64_C(0))) {
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Io_IOError);
@@ -513,7 +513,7 @@ m9_sl_BYTE Io_ReadFileBytes (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  n = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(n)))) m9gv = m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(n))); m9_mon_leave (&m9_gate_cio); m9gv; }));
+  n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(n))));
   if ((n < INT64_C(0))) {
     { __typeof__(path) m9t3 = path; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Io_IOError);
@@ -544,7 +544,7 @@ void Io_WriteFile (m9_sl_CHAR path, m9_sl_CHAR content, m9_state *err)
   if (err->exc) goto L_ret;
   cb = DynStr_Bytes (&(scratch), content, false, err);
   if (err->exc) goto L_ret;
-  rc = ({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_write_file (((void *)(pb).p), ((void *)(cb).p), ((size_t)((cb).len)))) m9gv = m9_write_file (((void *)(pb).p), ((void *)(cb).p), ((size_t)((cb).len))); m9_mon_leave (&m9_gate_cio); m9gv; });
+  rc = m9_write_file (((void *)(pb).p), ((void *)(cb).p), ((size_t)((cb).len)));
   if (((int64_t)(rc) != INT64_C(0))) {
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Io_IOError);
@@ -617,7 +617,7 @@ int64_t Io_FileSize (m9_sl_CHAR path, m9_state *err)
   int64_t n = 0; (void) n;
   pb = DynStr_Bytes (&(scratch), path, true, err);
   if (err->exc) goto L_ret;
-  n = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0))))) m9gv = m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0)))); m9_mon_leave (&m9_gate_cio); m9gv; }));
+  n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0)))));
   if ((n < INT64_C(0))) {
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Io_IOError);
@@ -654,7 +654,7 @@ m9_sl_BYTE Io_ReadFileHead (m9_pool *pool, m9_sl_CHAR path, int64_t cap, m9_stat
   }
   b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), cap, err);
   if (err->exc) goto L_ret;
-  n = (int64_t)(({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(cap)))) m9gv = m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(cap))); m9_mon_leave (&m9_gate_cio); m9gv; }));
+  n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(cap))));
   if ((n < INT64_C(0))) {
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Io_IOError);
@@ -771,7 +771,7 @@ void Io_WriteFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_state *err)
   int rc = {0}; (void) rc;
   pb = DynStr_Bytes (&(scratch), path, true, err);
   if (err->exc) goto L_ret;
-  rc = ({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_write_file (((void *)(pb).p), ((void *)(content).p), ((size_t)((content).len)))) m9gv = m9_write_file (((void *)(pb).p), ((void *)(content).p), ((size_t)((content).len))); m9_mon_leave (&m9_gate_cio); m9gv; });
+  rc = m9_write_file (((void *)(pb).p), ((void *)(content).p), ((size_t)((content).len)));
   if (((int64_t)(rc) != INT64_C(0))) {
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Io_IOError);
@@ -795,7 +795,7 @@ void Io_AppendFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_state *err)
   int rc = {0}; (void) rc;
   pb = DynStr_Bytes (&(scratch), path, true, err);
   if (err->exc) goto L_ret;
-  rc = ({ m9_mon_enter (&m9_gate_cio); __typeof__(m9_append_file (((void *)(pb).p), ((void *)(content).p), ((size_t)((content).len)))) m9gv = m9_append_file (((void *)(pb).p), ((void *)(content).p), ((size_t)((content).len))); m9_mon_leave (&m9_gate_cio); m9gv; });
+  rc = m9_append_file (((void *)(pb).p), ((void *)(content).p), ((size_t)((content).len)));
   if (((int64_t)(rc) != INT64_C(0))) {
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Io_IOError);

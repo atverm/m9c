@@ -52,17 +52,18 @@ struct Csv_Table {
   bool parsed;
 };
 
-static const uint32_t m9s0[13] = { 110u, 111u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 108u, 105u, 110u, 101u };
-static const uint32_t m9s1[22] = { 119u, 114u, 111u, 110u, 103u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 32u, 111u, 102u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
+static const uint32_t m9s0[22] = { 119u, 114u, 111u, 110u, 103u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 32u, 111u, 102u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
+static const uint32_t m9s1[13] = { 110u, 111u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 108u, 105u, 110u, 101u };
 static const uint32_t m9s2[3] = { 110u, 97u, 110u };
 static const uint32_t m9s3[3] = { 105u, 110u, 102u };
 static const uint32_t m9s4[8] = { 105u, 110u, 102u, 105u, 110u, 105u, 116u, 121u };
 
 static int64_t Csv_KindCode (Csv_Kind k, int64_t *format, m9_state *err);
 static bool Csv_IsDigit (uint8_t b, m9_state *err);
-static int64_t Csv_CountRows (m9_sl_BYTE b, int64_t from, m9_state *err);
+static int64_t Csv_CountRows (m9_sl_BYTE b, int64_t from, bool quoted, m9_state *err);
 static int64_t Csv_SkipLines (m9_sl_BYTE b, int64_t skip, m9_state *err);
 static void Csv_Unquote (m9_sl_BYTE b, int64_t *ofs, int64_t *len, m9_state *err);
+static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9_state *err);
 static float Csv_Pow10F32 (int64_t k, m9_state *err);
 static float Csv_FieldF32 (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
 static bool Csv_IsNumber (m9_sl_BYTE b, int64_t ofs, int64_t n, m9_state *err);
@@ -104,133 +105,38 @@ Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_state 
   (void) m9res;
   err->res = &m9frame;
   Csv_Table * m9ret = NULL;
-  Csv_Table * t = NULL; (void) t;
+  err->res = m9res;
+  m9ret = Csv_Build (pool, Io_ReadFileBytes (pool, path, err), opt, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Csv_Table * Csv_OpenBytes (m9_pool *pool, m9_sl_BYTE src, Csv_Options opt, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  Csv_Table * m9ret = NULL;
+  m9_sl_BYTE buf = {0}; (void) buf;
   int64_t i = 0; (void) i;
-  int64_t start = 0; (void) start;
-  int64_t n = 0; (void) n;
-  int64_t from = 0; (void) from;
-  t = (Csv_Table *) m9_pool_alloc (&((*pool)), sizeof (Csv_Table), 1, err);
+  buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_add_i64 ((src).len, INT64_C(1), err), err);
   if (err->exc) goto L_ret;
-  t->buf = Io_ReadFileBytes (pool, path, err);
-  if (err->exc) goto L_ret;
-  t->opt = opt;
-  t->delim = (int64_t)(opt.delimiter);
-  t->parsed = false;
-  from = Csv_SkipLines (t->buf, opt.skipLines, err);
-  if (err->exc) goto L_ret;
-  n = INT64_C(1);
-  i = from;
-  for (;;) {
-    if (!((i < (t->buf).len))) break;
-    bool m9t1 = ((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == INT64_C(10));
-    if (err->exc) goto L_ret;
-    if (m9t1) {
-      break;
-    }
-    bool m9t2 = ((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == t->delim);
-    if (err->exc) goto L_ret;
-    if (m9t2) {
-      n = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-    }
-    i = m9_add_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_ret;
-  }
-  if ((i >= (t->buf).len)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 13 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 13 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    err->i[0] = m9_add_i64 (opt.skipLines, INT64_C(1), err);
-    err->i[1] = INT64_C(0);
-    m9_raise (err, &Csv_ParseError);
-    goto L_ret;
-  }
-  t->ncols = n;
-  t->nameOfs = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
-  if (err->exc) goto L_ret;
-  t->nameLen = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
-  if (err->exc) goto L_ret;
-  t->kinds = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
-  if (err->exc) goto L_ret;
-  t->formats = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
-  if (err->exc) goto L_ret;
-  { int64_t m9t4to;
+  { int64_t m9t1to;
   i = INT64_C(0);
-  m9t4to = m9_sub_i64 (n, INT64_C(1), err);
+  m9t1to = m9_sub_i64 ((src).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; i <= m9t4to; i += 1) {
-    (*(int64_t *) m9_at (t->kinds.p, i, t->kinds.len, sizeof (int64_t), err)) = Csv_KSkip;
+  for (; i <= m9t1to; i += 1) {
+    (*(uint8_t *) m9_at (buf.p, i, buf.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (src.p, i, src.len, sizeof (uint8_t), err));
     if (err->exc) goto L_ret;
   } }
-  if (opt.header) {
-    n = INT64_C(0);
-    start = from;
-    i = from;
-    for (;;) {
-      if (!((i < (t->buf).len))) break;
-      bool m9t5 = (((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == INT64_C(10)) || ((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == t->delim));
-      if (err->exc) goto L_ret;
-      if (m9t5) {
-        (*(int64_t *) m9_at (t->nameOfs.p, n, t->nameOfs.len, sizeof (int64_t), err)) = start;
-        if (err->exc) goto L_ret;
-        (*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err)) = m9_sub_i64 (i, start, err);
-        if (err->exc) goto L_ret;
-        bool m9t6 = ((*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err)) > INT64_C(0));
-        if (err->exc) goto L_ret;
-        if (m9t6) {
-          bool m9t7 = ((int64_t)((*(uint8_t *) m9_at (t->buf.p, m9_sub_i64 (i, INT64_C(1), err), t->buf.len, sizeof (uint8_t), err))) == INT64_C(13));
-          if (err->exc) goto L_ret;
-          if (m9t7) {
-            (*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err)) = m9_sub_i64 ((*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err)), INT64_C(1), err);
-            if (err->exc) goto L_ret;
-          }
-        }
-        if (opt.quoted) {
-          Csv_Unquote (t->buf, &((*(int64_t *) m9_at (t->nameOfs.p, n, t->nameOfs.len, sizeof (int64_t), err))), &((*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err))), err);
-          if (err->exc) goto L_ret;
-        }
-        n = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-        start = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-        bool m9t8 = ((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == INT64_C(10));
-        if (err->exc) goto L_ret;
-        if (m9t8) {
-          break;
-        }
-      }
-      i = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-    }
-    t->hdrEnd = m9_add_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_ret;
-  } else {
-    { int64_t m9t9to;
-    i = INT64_C(0);
-    m9t9to = m9_sub_i64 (t->ncols, INT64_C(1), err);
-    if (err->exc) goto L_ret;
-    for (; i <= m9t9to; i += 1) {
-      (*(int64_t *) m9_at (t->nameOfs.p, i, t->nameOfs.len, sizeof (int64_t), err)) = from;
-      if (err->exc) goto L_ret;
-      (*(int64_t *) m9_at (t->nameLen.p, i, t->nameLen.len, sizeof (int64_t), err)) = INT64_C(0);
-      if (err->exc) goto L_ret;
-    } }
-    t->hdrEnd = from;
-  }
-  t->nrows = Csv_CountRows (t->buf, t->hdrEnd, err);
-  if (err->exc) goto L_ret;
-  t->fcols = M9_POOL_SL (m9_sl_m9_sl_F32, m9_sl_F32, &((*pool)), t->ncols, err);
-  if (err->exc) goto L_ret;
-  t->dcols = M9_POOL_SL (m9_sl_m9_sl_F64, m9_sl_F64, &((*pool)), t->ncols, err);
-  if (err->exc) goto L_ret;
-  t->icols = M9_POOL_SL (m9_sl_m9_sl_I64, m9_sl_I64, &((*pool)), t->ncols, err);
-  if (err->exc) goto L_ret;
-  t->scols = M9_POOL_SL (m9_sl_m9_sl_Time_Instant, m9_sl_Time_Instant, &((*pool)), t->ncols, err);
-  if (err->exc) goto L_ret;
-  t->tofs = M9_POOL_SL (m9_sl_m9_sl_I64, m9_sl_I64, &((*pool)), t->ncols, err);
-  if (err->exc) goto L_ret;
-  t->tlen = M9_POOL_SL (m9_sl_m9_sl_I64, m9_sl_I64, &((*pool)), t->ncols, err);
-  if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = t;
+  m9ret = Csv_Build (pool, ({ __typeof__(buf) m9t2 = buf; int64_t m9t2a = INT64_C(0), m9t2n = (src).len; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), opt, err);
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -646,7 +552,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
       if (err->exc) goto L_ret;
       if (m9t17) {
         if ((c != (*t)->ncols)) {
-          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 22 })) m9t18 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 22 }); err->s[0].p = m9t18.p; err->s[0].len = m9t18.len; }
+          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 22 })) m9t18 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 22 }); err->s[0].p = m9t18.p; err->s[0].len = m9t18.len; }
           err->i[0] = m9_add_i64 (row, INT64_C(2), err);
           err->i[1] = c;
           m9_raise (err, &Csv_ParseError);
@@ -881,7 +787,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Csv_CountRows (m9_sl_BYTE b, int64_t from, m9_state *err)
+static int64_t Csv_CountRows (m9_sl_BYTE b, int64_t from, bool quoted, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -890,23 +796,30 @@ static int64_t Csv_CountRows (m9_sl_BYTE b, int64_t from, m9_state *err)
   int64_t m9ret = 0;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
+  bool inQuote = false; (void) inQuote;
   n = INT64_C(0);
+  inQuote = false;
   { int64_t m9t1to;
   i = from;
   m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    bool m9t2 = ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(10));
+    bool m9t2 = (quoted && ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(34)));
     if (err->exc) goto L_ret;
     if (m9t2) {
+      inQuote = (!inQuote);
+    }
+    bool m9t3 = (((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) == INT64_C(10)) && (!inQuote));
+    if (err->exc) goto L_ret;
+    if (m9t3) {
       n = m9_add_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
     }
   } }
   if (((b).len > from)) {
-    bool m9t3 = ((int64_t)((*(uint8_t *) m9_at (b.p, m9_sub_i64 ((b).len, INT64_C(1), err), b.len, sizeof (uint8_t), err))) != INT64_C(10));
+    bool m9t4 = ((int64_t)((*(uint8_t *) m9_at (b.p, m9_sub_i64 ((b).len, INT64_C(1), err), b.len, sizeof (uint8_t), err))) != INT64_C(10));
     if (err->exc) goto L_ret;
-    if (m9t3) {
+    if (m9t4) {
       n = m9_add_i64 (n, INT64_C(1), err);
       if (err->exc) goto L_ret;
     }
@@ -976,6 +889,146 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
+}
+
+static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  Csv_Table * m9ret = NULL;
+  Csv_Table * t = NULL; (void) t;
+  int64_t i = 0; (void) i;
+  int64_t start = 0; (void) start;
+  int64_t n = 0; (void) n;
+  int64_t from = 0; (void) from;
+  t = (Csv_Table *) m9_pool_alloc (&((*pool)), sizeof (Csv_Table), 1, err);
+  if (err->exc) goto L_ret;
+  t->buf = buf;
+  t->opt = opt;
+  t->delim = (int64_t)(opt.delimiter);
+  t->parsed = false;
+  from = Csv_SkipLines (t->buf, opt.skipLines, err);
+  if (err->exc) goto L_ret;
+  n = INT64_C(1);
+  i = from;
+  for (;;) {
+    if (!((i < (t->buf).len))) break;
+    bool m9t1 = ((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == INT64_C(10));
+    if (err->exc) goto L_ret;
+    if (m9t1) {
+      break;
+    }
+    bool m9t2 = ((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == t->delim);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      n = m9_add_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+    }
+    i = m9_add_i64 (i, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
+  if ((i >= (t->buf).len)) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 13 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 13 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    err->i[0] = m9_add_i64 (opt.skipLines, INT64_C(1), err);
+    err->i[1] = INT64_C(0);
+    m9_raise (err, &Csv_ParseError);
+    goto L_ret;
+  }
+  t->ncols = n;
+  t->nameOfs = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
+  if (err->exc) goto L_ret;
+  t->nameLen = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
+  if (err->exc) goto L_ret;
+  t->kinds = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
+  if (err->exc) goto L_ret;
+  t->formats = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
+  if (err->exc) goto L_ret;
+  { int64_t m9t4to;
+  i = INT64_C(0);
+  m9t4to = m9_sub_i64 (n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t4to; i += 1) {
+    (*(int64_t *) m9_at (t->kinds.p, i, t->kinds.len, sizeof (int64_t), err)) = Csv_KSkip;
+    if (err->exc) goto L_ret;
+  } }
+  if (opt.header) {
+    n = INT64_C(0);
+    start = from;
+    i = from;
+    for (;;) {
+      if (!((i < (t->buf).len))) break;
+      bool m9t5 = (((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == INT64_C(10)) || ((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == t->delim));
+      if (err->exc) goto L_ret;
+      if (m9t5) {
+        (*(int64_t *) m9_at (t->nameOfs.p, n, t->nameOfs.len, sizeof (int64_t), err)) = start;
+        if (err->exc) goto L_ret;
+        (*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err)) = m9_sub_i64 (i, start, err);
+        if (err->exc) goto L_ret;
+        bool m9t6 = ((*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err)) > INT64_C(0));
+        if (err->exc) goto L_ret;
+        if (m9t6) {
+          bool m9t7 = ((int64_t)((*(uint8_t *) m9_at (t->buf.p, m9_sub_i64 (i, INT64_C(1), err), t->buf.len, sizeof (uint8_t), err))) == INT64_C(13));
+          if (err->exc) goto L_ret;
+          if (m9t7) {
+            (*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err)) = m9_sub_i64 ((*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err)), INT64_C(1), err);
+            if (err->exc) goto L_ret;
+          }
+        }
+        if (opt.quoted) {
+          Csv_Unquote (t->buf, &((*(int64_t *) m9_at (t->nameOfs.p, n, t->nameOfs.len, sizeof (int64_t), err))), &((*(int64_t *) m9_at (t->nameLen.p, n, t->nameLen.len, sizeof (int64_t), err))), err);
+          if (err->exc) goto L_ret;
+        }
+        n = m9_add_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        start = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        bool m9t8 = ((int64_t)((*(uint8_t *) m9_at (t->buf.p, i, t->buf.len, sizeof (uint8_t), err))) == INT64_C(10));
+        if (err->exc) goto L_ret;
+        if (m9t8) {
+          break;
+        }
+      }
+      i = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+    }
+    t->hdrEnd = m9_add_i64 (i, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  } else {
+    { int64_t m9t9to;
+    i = INT64_C(0);
+    m9t9to = m9_sub_i64 (t->ncols, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t9to; i += 1) {
+      (*(int64_t *) m9_at (t->nameOfs.p, i, t->nameOfs.len, sizeof (int64_t), err)) = from;
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (t->nameLen.p, i, t->nameLen.len, sizeof (int64_t), err)) = INT64_C(0);
+      if (err->exc) goto L_ret;
+    } }
+    t->hdrEnd = from;
+  }
+  t->nrows = Csv_CountRows (t->buf, t->hdrEnd, opt.quoted, err);
+  if (err->exc) goto L_ret;
+  t->fcols = M9_POOL_SL (m9_sl_m9_sl_F32, m9_sl_F32, &((*pool)), t->ncols, err);
+  if (err->exc) goto L_ret;
+  t->dcols = M9_POOL_SL (m9_sl_m9_sl_F64, m9_sl_F64, &((*pool)), t->ncols, err);
+  if (err->exc) goto L_ret;
+  t->icols = M9_POOL_SL (m9_sl_m9_sl_I64, m9_sl_I64, &((*pool)), t->ncols, err);
+  if (err->exc) goto L_ret;
+  t->scols = M9_POOL_SL (m9_sl_m9_sl_Time_Instant, m9_sl_Time_Instant, &((*pool)), t->ncols, err);
+  if (err->exc) goto L_ret;
+  t->tofs = M9_POOL_SL (m9_sl_m9_sl_I64, m9_sl_I64, &((*pool)), t->ncols, err);
+  if (err->exc) goto L_ret;
+  t->tlen = M9_POOL_SL (m9_sl_m9_sl_I64, m9_sl_I64, &((*pool)), t->ncols, err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = t;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
 }
 
 static float Csv_Pow10F32 (int64_t k, m9_state *err)

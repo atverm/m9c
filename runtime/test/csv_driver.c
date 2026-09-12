@@ -112,6 +112,63 @@ int main (void)
     f = Csv_ColF32 (w, 1, &e);
     ok ("float32 collapses them, as the header says it would",
         ((float *) f.p)[0] == ((float *) f.p)[1]);
+    /* THE SAME BYTES WITHOUT A FILE.  OpenBytes takes what a caller
+       already holds -- a ZIP member inflated in memory, which is how
+       the FLUXNET shuttle ships its BADM tables -- and must answer
+       exactly what Open answers over the file.  The buffer is freed
+       (overwritten) before the table is read, which is the copy
+       contract shown to matter rather than stated. */
+    {
+      FILE *h = fopen (FX, "rb");
+      static unsigned char raw[512];
+      size_t n = fread (raw, 1, sizeof raw, h);
+      m9_sl_BYTE src = { raw, (int64_t) n };
+      fclose (h);
+      w = Csv_OpenBytes (&pool, src, o, &e);
+      ok ("OpenBytes opens", !e.exc && Csv_Rows (w, &e) == 3
+          && Csv_Cols (w, &e) == 2);
+      memset (raw, 'X', sizeof raw);
+      ok ("and names its columns after the source is gone",
+          strcmp (C (Csv_Name (&pool, w, 1, &e), buf, sizeof buf), "b") == 0);
+      Csv_SetReal64 (&w, 0, &e);
+      Csv_Parse (&pool, &w, &e);
+      d = Csv_ColF64 (w, 0, &e);
+      ok ("and parses the same values", !e.exc && d.len == 3
+          && ((double *) d.p)[0] == 3.141592653589793
+          && ((double *) d.p)[2] != ((double *) d.p)[2]);
+    }
+    remove (FX);
+  }
+
+  /* A QUOTED FIELD MAY SPAN LINES.  The row count is taken before
+     Parse by a pass that used to count every newline; inside quotes
+     Parse already kept going, so the two disagreed and the tail rows
+     came back as empty text with nothing said.  The FLUXNET shuttle's
+     site descriptions are where it showed: 78 of 783 BADM tables. */
+  {
+    static const char *FX = "/tmp/m9csv-quoted.csv";
+    FILE *g = fopen (FX, "wb");
+    Csv_Table *w;
+    Csv_Options o;
+    if (!g) { printf ("FAIL: cannot write %s\n", FX); return 1; }
+    fputs ("k,v\n"
+           "1,\"first line\nsecond \"\"quoted\"\" line\"\n"
+           "2,plain\n", g);
+    fclose (g);
+    o = Csv_Defaults (&e);
+    o.quoted = true;
+    w = Csv_Open (&pool, S (FX), o, &e);
+    ok ("a quoted newline is not a row", !e.exc && Csv_Rows (w, &e) == 2);
+    Csv_SetInt (&w, 0, &e);
+    Csv_SetText (&w, 1, &e);
+    Csv_Parse (&pool, &w, &e);
+    ok ("and the table parses", !e.exc);
+    ok ("the field keeps its newline and undoubles its quotes",
+        strcmp (C (Csv_TextAt (&pool, w, 1, 0, &e), buf, sizeof buf),
+                "first line\nsecond \"quoted\" line") == 0);
+    ok ("and the row after it is intact",
+        strcmp (C (Csv_TextAt (&pool, w, 1, 1, &e), buf, sizeof buf),
+                "plain") == 0);
     remove (FX);
   }
 

@@ -131,7 +131,8 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
     b->next = pool->head;
     b->used = 0;
     pool->head = b;
-    m9_reg_add (b, pool);
+    /* still registered from its last life: retag, no lock */
+    __atomic_store_n (&b->owner, pool, __ATOMIC_RELEASE);
   }
   else if (b == NULL || b->cap - b->used < need) {
     /* SLACK, BOUNDED.  An exact fit above the block minimum is what
@@ -164,13 +165,17 @@ void m9_pool_free (m9_pool *pool)
   m9_pool_block *b = pool->head, *n;
   while (b != NULL) {
     n = b->next;
-    m9_reg_remove (b);
     if (b->cap == M9_POOL_BLOCK_MIN && m9_block_cached < M9_POOL_CACHE_MAX) {
+      /* stays registered; an owner of NULL is what the listing skips */
+      __atomic_store_n (&b->owner, (m9_pool *) NULL, __ATOMIC_RELEASE);
       b->next = m9_block_cache;
       m9_block_cache = b;
       m9_block_cached++;
     }
-    else free (b);
+    else {
+      m9_reg_remove (b);
+      free (b);
+    }
     b = n;
   }
   pool->head = NULL;
@@ -1197,7 +1202,16 @@ void m9_meminfo (void *buf)
    a pool struct may sit inside storage that was freed with its owner
    while its blocks were not (a POOL field in a record carved from
    another pool), and those blocks are exactly the leak worth seeing.
-   Registration costs one lock per BLOCK, not per allocation. */
+   Registration costs one lock per BLOCK, not per allocation -- and
+   NOT per recycled block: a block taken from or returned to the
+   thread-local cache stays on the list and only its owner tag moves,
+   with an atomic store, so a burst of frame pools (every `+` in a
+   loop opens and closes one) touches the lock never.  Measured
+   before this: eight threads building fluxnet-shuttle sites ran
+   SLOWER than one (109 s against 57 s on fifteen archives), 700% CPU
+   in lll_lock_wait under m9_pool_alloc and m9_pool_free, the
+   registry lock the only shared thing on the path.  A cached block
+   carries owner NULL and the listing skips it. */
 static m9_lock_t m9_reg_lock = M9_LOCK_INIT;
 static m9_pool_block *m9_reg_head = NULL;
 
@@ -1237,13 +1251,15 @@ static int m9_reg_group (int64_t want, int64_t *out, int64_t *count)
   for (b = m9_reg_head; b != NULL && b->rnext != NULL; b = b->rnext) ;
   for (; b != NULL; b = b->rprev) {
     int first = 1;
+    m9_pool *owner = __atomic_load_n (&b->owner, __ATOMIC_ACQUIRE);
+    if (owner == NULL) continue;             /* a cached block, nobody's */
     for (c = b->rnext; c != NULL; c = c->rnext)
-      if (c->owner == b->owner) { first = 0; break; }
+      if (__atomic_load_n (&c->owner, __ATOMIC_ACQUIRE) == owner) { first = 0; break; }
     if (!first) continue;
     if (idx == want && out != NULL) {
       int64_t used = 0, cap = 0, n = 0;
       for (c = b; c != NULL; c = c->rprev)
-        if (c->owner == b->owner) { used += (int64_t) c->used; cap += (int64_t) c->cap; n++; }
+        if (__atomic_load_n (&c->owner, __ATOMIC_ACQUIRE) == owner) { used += (int64_t) c->used; cap += (int64_t) c->cap; n++; }
       out[0] = used; out[1] = cap; out[2] = n;
       found = 1;
     }

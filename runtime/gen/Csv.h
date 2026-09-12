@@ -79,6 +79,7 @@ struct Csv_Options {
 
 Csv_Options Csv_Defaults (m9_state *err);
 Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_state *err);
+Csv_Table * Csv_OpenBytes (m9_pool *pool, m9_sl_BYTE src, Csv_Options opt, m9_state *err);
 int64_t Csv_Rows (Csv_Table * t, m9_state *err);
 int64_t Csv_Cols (Csv_Table * t, m9_state *err);
 m9_sl_CHAR Csv_Name (m9_pool *pool, Csv_Table * t, int64_t c, m9_state *err);

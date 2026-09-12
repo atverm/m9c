@@ -315,10 +315,15 @@ _(undocumented)_
 
 _(undocumented)_
 
-### ReadWhole (path: C.ConstPtr ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT [SERIAL]
+### ReadWhole (path: C.ConstPtr ; buf: C.MutPtr ; cap: C.SSizeT) : C.SSizeT [REENTRANT]
 
-cap = 0 asks for the size and touches nothing; SERIAL until the
-shim's error path is audited, not asserted
+cap = 0 asks for the size and touches nothing.  REENTRANT: the
+shim opens a PRIVATE FILE* on its own path, reads, and closes it,
+touching no shared state -- the identical shape as m9_read_at,
+which was REENTRANT from the start.  glibc stdio locks each FILE
+and the open-file table internally, so two threads reading two
+files do not race.  The audit the old note deferred is this
+sentence; SERIAL had been provisional, not asserted.
 
 ### CMkDir (path: C.ConstPtr) : C.Int [REENTRANT]
 
@@ -328,10 +333,17 @@ _(undocumented)_
 
 _(undocumented)_
 
-### WriteWhole (path: C.ConstPtr ; buf: C.ConstPtr ; n: C.SizeT) : C.Int [SERIAL]
+### WriteWhole (path: C.ConstPtr ; buf: C.ConstPtr ; n: C.SizeT) : C.Int [REENTRANT]
 
-_(undocumented)_
+REENTRANT, same reasoning as ReadWhole: a private FILE* opened
+"wb" on this path, written, closed -- no shared state.  A caller
+that writes the SAME path from two threads races, but it raced
+under SERIAL too (the gate ordered nothing); distinct paths, the
+zarr writer's case, are safe.  This is what let a threaded
+builder serialise 8 workers behind one gate on a slow fs.
 
-### AppendWhole (path: C.ConstPtr ; buf: C.ConstPtr ; n: C.SizeT) : C.Int [SERIAL]
+### AppendWhole (path: C.ConstPtr ; buf: C.ConstPtr ; n: C.SizeT) : C.Int [REENTRANT]
 
-_(undocumented)_
+REENTRANT: private FILE* "ab"; O_APPEND makes each write atomic
+to the file, so two threads appending distinct files never race
+and even the same file interleaves whole records, not bytes.

@@ -1,0 +1,175 @@
+MODULE IoPar ;
+
+(* Eight threads writing, reading back, appending and removing
+   DISTINCT files at once -- the test behind Io's [REENTRANT] tag on
+   the whole-file primitives (64ac53f).  Until then m9_read_file,
+   m9_write_file and m9_append_file were [SERIAL], so every thread's
+   file I/O queued on one gate; on a slow filesystem (millions of
+   small zarr files over virtiofs) that was one file per round trip,
+   eight workers doing the work of one.
+
+   Each worker takes a number, writes NFile files of its own, reads
+   every one back and compares it to what it wrote, appends a tail and
+   checks the size, then removes it.  Nothing is shared between
+   workers but the directory.
+
+   WHAT THIS CANNOT SHOW is the marking itself: declared [SERIAL] the
+   same program passes, slower.  What it FAILS on is the only way the
+   tag can become a lie -- a shim that grows shared state (a static
+   buffer, an unlocked table, a FILE* kept across calls).  The
+   contract is "distinct paths from any number of threads are
+   correct", and that is what is checked.  Run by threads.sh. *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT DynStr ;
+
+CONST
+  NWork = 8 ;
+  NFile = 100 ;
+  Repeat = 40 ;             (* lines per file: a few kilobytes each *)
+  Dir = 'iopar.d' ;
+  Tail = 'appended' ;
+
+TYPE
+  Work = MONITOR RECORD
+    n : I64 ;               (* workers finished *)
+    next : I64 ;            (* the next worker number to hand out *)
+  END ;
+
+  Job = RECORD
+    w : Work ;
+    bad : SLICE OF I64 ;    (* per worker: checks that failed *)
+    done : SLICE OF I64 ;   (* per worker: files that passed whole *)
+  END ;
+
+PROCEDURE Name (k, i: I64) : STR =
+BEGIN
+  RETURN Dir + '/w' + Fmt.I64Str (k) + '-' + Fmt.I64Str (i) + '.txt'
+END Name ;
+
+PROCEDURE Content (k, i: I64) : STR =
+VAR
+  line, s : STR ;
+  j : I64 ;
+BEGIN
+  (* ASCII only, so the CHAR count below is the byte count too *)
+  line := 'worker ' + Fmt.I64Str (k) + ' file ' + Fmt.I64Str (i)
+          + ' -- a line long enough that the file is a few kilobytes'
+          + 0AC ;
+  s := '' ;
+  j := 0 ;
+  WHILE j < Repeat DO
+    s := s + line ;
+    j := j + 1
+  END ;
+  RETURN s
+END Content ;
+
+(* one file's whole life; answers how many of its checks failed *)
+PROCEDURE OneFile (k, i: I64) : I64 =
+VAR
+  pool : POOL ;
+  path, want, got : STR ;
+  tail : SLICE OF BYTE ;
+  bad, size : I64 ;
+BEGIN
+  bad := 0 ;
+  path := Name (k, i) ;
+  want := Content (k, i) ;
+  BEGIN
+    Io.WriteFile (path, want) ;
+    got := Io.ReadFile (pool, path) ;
+    IF NOT DynStr.Eq (got, want) THEN bad := bad + 1 END ;
+    tail := DynStr.Bytes (pool, Tail, FALSE) ;
+    Io.AppendFileBytes (path, tail) ;
+    size := Io.FileSize (path) ;
+    IF size # LEN (want) + LEN (tail) THEN bad := bad + 1 END ;
+    IF NOT Io.Remove (path) THEN bad := bad + 1 END
+  EXCEPT
+  | Io.IOError : bad := bad + 100
+  | ValueRange : bad := bad + 1000
+  END ;
+  RETURN bad
+END OneFile ;
+
+PROCEDURE Claim (VAR w: Work) : I64 =
+VAR k : I64 ;
+BEGIN
+  (* bound to the monitor: the read and the write are one claim *)
+  k := w.next ;
+  w.next := w.next + 1 ;
+  RETURN k
+END Claim ;
+
+PROCEDURE Finish (VAR w: Work) =
+BEGIN
+  w.n := w.n + 1 ;
+  SIGNAL (w)
+END Finish ;
+
+PROCEDURE Worker (VAR j: Job) =
+VAR k, i, bad : I64 ;
+BEGIN
+  k := Claim (j.w) ;
+  IF k < NWork THEN
+    i := 0 ;
+    WHILE i < NFile DO
+      bad := OneFile (k, i) ;
+      j.bad[k] := j.bad[k] + bad ;
+      IF bad = 0 THEN j.done[k] := j.done[k] + 1 END ;
+      i := i + 1
+    END
+  END ;
+  Finish (j.w)
+END Worker ;
+
+PROCEDURE AwaitAll (VAR w: Work ; want: I64) =
+BEGIN
+  WHILE w.n < want DO
+    WAIT (w)
+  END
+END AwaitAll ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  i, bad, done : I64 ;
+
+BEGIN
+  BEGIN
+    Io.MkDir (Dir)
+  EXCEPT
+  | Io.IOError : Io.WriteLine ('iopar: FAILED, cannot make ' + Dir)
+  | ValueRange : Io.WriteLine ('iopar: FAILED, the directory name')
+  END ;
+  j := NEW (pool, Job) ;
+  j.bad := NEW (pool, I64, NWork) ;
+  j.done := NEW (pool, I64, NWork) ;
+  (* no zeroing: pool storage is defined-zero, and the monitor may not
+     be reached from outside a bound procedure anyway *)
+  i := 0 ;
+  WHILE i < NWork DO
+    THREAD (Worker, j) ;
+    i := i + 1
+  END ;
+  AwaitAll (j.w, NWork) ;
+
+  bad := 0 ;
+  done := 0 ;
+  i := 0 ;
+  WHILE i < NWork DO
+    bad := bad + j.bad[i] ;
+    done := done + j.done[i] ;
+    i := i + 1
+  END ;
+  IF (bad = 0) AND (done = NWork * NFile) THEN
+    Io.WriteLine ('iopar: ' + Fmt.I64Str (done)
+                  + ' files written, read back, appended and removed by '
+                  + Fmt.I64Str (NWork) + ' threads, all identical')
+  ELSE
+    Io.WriteLine ('iopar: FAILED, ' + Fmt.I64Str (bad)
+                  + ' checks failed, ' + Fmt.I64Str (done)
+                  + ' files clean')
+  END
+END IoPar.

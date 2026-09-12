@@ -271,9 +271,14 @@ PROCEDURE ReadAt = "m9_read_at" (path: C.ConstPtr ; buf: C.MutPtr ;
 
 PROCEDURE ReadWhole = "m9_read_file" (path: C.ConstPtr ;
                                       buf: C.MutPtr ; cap: C.SSizeT)
-  : C.SSizeT  [SERIAL] ;
-  (* cap = 0 asks for the size and touches nothing; SERIAL until the
-     shim's error path is audited, not asserted                      *)
+  : C.SSizeT  [REENTRANT] ;
+  (* cap = 0 asks for the size and touches nothing.  REENTRANT: the
+     shim opens a PRIVATE FILE* on its own path, reads, and closes it,
+     touching no shared state -- the identical shape as m9_read_at,
+     which was REENTRANT from the start.  glibc stdio locks each FILE
+     and the open-file table internally, so two threads reading two
+     files do not race.  The audit the old note deferred is this
+     sentence; SERIAL had been provisional, not asserted.            *)
 
 PROCEDURE CMkDir = "m9_mkdir" (path: C.ConstPtr) : C.Int
   [REENTRANT] ;
@@ -282,10 +287,19 @@ PROCEDURE CRename = "m9_rename" (from: C.ConstPtr ; to: C.ConstPtr)
   [REENTRANT] ;
 PROCEDURE WriteWhole = "m9_write_file" (path: C.ConstPtr ;
                                         buf: C.ConstPtr ; n: C.SizeT)
-  : C.Int  [SERIAL] ;
+  : C.Int  [REENTRANT] ;
+  (* REENTRANT, same reasoning as ReadWhole: a private FILE* opened
+     "wb" on this path, written, closed -- no shared state.  A caller
+     that writes the SAME path from two threads races, but it raced
+     under SERIAL too (the gate ordered nothing); distinct paths, the
+     zarr writer's case, are safe.  This is what let a threaded
+     builder serialise 8 workers behind one gate on a slow fs.       *)
 PROCEDURE AppendWhole = "m9_append_file" (path: C.ConstPtr ;
                                           buf: C.ConstPtr ; n: C.SizeT)
-  : C.Int  [SERIAL] ;
+  : C.Int  [REENTRANT] ;
+  (* REENTRANT: private FILE* "ab"; O_APPEND makes each write atomic
+     to the file, so two threads appending distinct files never race
+     and even the same file interleaves whole records, not bytes.    *)
 
 END cio.
 

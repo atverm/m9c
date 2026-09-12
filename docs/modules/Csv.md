@@ -51,11 +51,12 @@ measured 0.0 is the worst of the three possible answers -- found
 in the ICOS ocean store, where 551 comment cells did precisely
 that.  See IsNumber for what counts.
 
-WHAT IT IS NOT.  Not a general CSV library: no newlines inside
-quoted fields (with "" undoubled by TextAt), no ragged rows, no type
-inference, no streaming.  Each of those is a real feature for
-somebody and none is free, so they arrive when a caller needs
-one.
+WHAT IT IS NOT.  Not a general CSV library: no ragged rows, no
+type inference, no streaming.  A quoted field MAY carry a newline
+and a doubled "" (TextAt undoubles it) -- both arrived when a
+caller needed them, the FLUXNET shuttle's BADM tables, and each
+of the rest is a real feature for somebody and none is free, so
+they arrive the same way.
 
 ### TYPE Table
 
@@ -105,6 +106,14 @@ reads the file and the header and counts the rows; parses no
 values, because the caller declares the column kinds first.
 Every column is Skip until a setter names it: a column nobody
 declared is scanned past, never parsed and never carried.
+
+### OpenBytes (VAR pool: POOL ; RO src: SLICE OF BYTE ; RO opt: Options) : PTR Table IN pool RAISES ParseError, ValueRange
+
+the same, over bytes the caller already holds -- a ZIP member
+inflated into memory, a body off the wire.  The octets are COPIED
+into the table (plus the trailing zero Open's file read carries),
+so the caller's buffer is free the moment this returns and the
+table never reaches into a pool it does not own.
 
 ### Rows (t: PTR Table) : I64
 

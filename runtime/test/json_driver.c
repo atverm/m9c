@@ -297,6 +297,30 @@ int main (void)
           "and the original did NOT -- the copy is deep");
     }
 
+    /* A MEMBER NAME FROM DATA.  The FLUXNET shuttle put a Windows path
+       into a BADM group name; set RAW, the backslash-u in it read
+       back as a broken unicode escape.  Name spells it as document
+       text, and the parsed document hands the value back. */
+    {
+      uint32_t v[32], w[64];
+      m9_sl_CHAR raw = sl ("badm_c:\\users\\x", v);   /* one \ each */
+      m9_sl_CHAR nm = Json_Name (&pool, raw, &err);
+      o = Json_NewObj (&pool, &err);
+      n = Json_NewI64 (&pool, 7, &err);
+      Json_Set (&o, nm, &n, &err);
+      out = Json_Compact (&pool, o, &err);
+      /* {"badm_c:\\users\\x":7} -- the two backslashes doubled */
+      ck (err.exc == NULL && out.len == 23 && out.p[9] == '\\'
+          && out.p[10] == '\\' && out.p[11] == 'u',
+          "Name escapes a backslash in a member name");
+      Json_Node *pr2 = Json_Parse (&pool, out, &err);
+      m9_sl_CHAR got = Json_NameAt (pr2, 0, &err);
+      ck (err.exc == NULL && got.len == nm.len
+          && Json_Field (pr2, nm, &err) != NULL
+          && Json_AsI64 (Json_Field (pr2, nm, &err), &err) == 7,
+          "and the parsed document answers to the same spelling");
+      (void) w;
+    }
     /* the refusals */
     {
       Json_Node *aa = Json_NewArr (&pool, &err);

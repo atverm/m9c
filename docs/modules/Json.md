@@ -192,6 +192,14 @@ _(undocumented)_
 
 _(undocumented)_
 
+### Name (VAR pool: POOL ; RO s: STR) : STR RAISES ValueRange
+
+_(undocumented)_
+
+### VAR 
+
+_(undocumented)_
+
 ### NewF64 (VAR pool: POOL ; r: F64) : PTR Node IN pool
 
 _(documented with the group below)_
@@ -281,6 +289,17 @@ _(documented with the group below)_
 ### NewNull (VAR pool: POOL) : PTR Node IN pool
 
 _(documented with the group below)_
+
+### Name (VAR pool: POOL ; RO s: STR) : STR RAISES ValueRange
+
+the DOCUMENT spelling of a member name whose VALUE is s -- what
+Set and Field expect, since a name inside a Node is document
+text exactly as a Str payload is.  A literal name needs none of
+this; a name that comes from DATA does: the FLUXNET shuttle's
+BADM export put a Windows path into a group name, and
+`badm_c:\users\...` set raw was read back as a broken escape.
+Escaped exactly as NewStr escapes a value, so a name built here
+and one parsed from a document compare equal.
 
 ### Set (VAR KEPT obj: PTR Node ; RO KEPT name: STR ; VAR KEPT v: PTR Node) RAISES TypeMismatch
 

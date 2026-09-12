@@ -72,6 +72,32 @@ fi
 echo "threads: $runs runs of THREAD/MONITOR/WAIT/SIGNAL answered $want;"
 echo "         5 runs of the [SERIAL] gate lost no updates"
 
+# ---- CONCURRENT FILE I/O, which Io's [REENTRANT] tag on the whole-file
+# primitives claims (64ac53f; they were [SERIAL] until 2026-09-12, and
+# one gate was serialising every thread's file I/O).  IoPar.m9: eight
+# workers each write, read back, append to and remove their OWN files.
+# The marking itself is not what this can see -- [SERIAL] passes it
+# too, slower -- what it fails on is a shim that grows shared state,
+# which is the only way the tag becomes a lie.  Every check is against
+# what the worker itself wrote, not against a recorded output.
+cp IoPar.m9 "$OUT/"
+( cd "$OUT" && "$M9C" --make -o iopar IoPar.m9 -I. >/dev/null )
+
+ibad=0
+for i in $(seq 5); do
+  out=$(cd "$OUT" && ./iopar 2>&1 || echo "CRASHED ($?)")
+  case "$out" in
+    *"all identical") : ;;
+    *) ibad=$((ibad + 1)); echo "  $out" | head -3 ;;
+  esac
+done
+if [ "$ibad" -ne 0 ]; then
+  echo "threads: concurrent file I/O failed in $ibad of 5 runs"
+  exit 1
+fi
+echo "         5 runs of eight threads over 800 distinct files agreed"
+echo "         with what each thread wrote, byte for byte"
+
 # ---- CONCURRENT HTTPS, which the shim's [REENTRANT] tag now claims.
 # It said [SERIAL] until 2026-08-30 and that was load-bearing: the
 # slot table was claimed without a lock, so two threads could take
