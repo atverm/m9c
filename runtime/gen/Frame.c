@@ -966,7 +966,7 @@ Frame_Fr * Frame_FromCsv (m9_pool *pool, Csv_Table * t, m9_state *err)
   Frame_Fr * f = NULL; (void) f;
   int64_t c = 0; (void) c;
   int64_t r = 0; (void) r;
-  int64_t k = 0; (void) k;
+  Csv_Kind k = {0}; (void) k;
   m9_sl_Time_Instant stamps = {0}; (void) stamps;
   m9_sl_I64 epoch = {0}; (void) epoch;
   m9_sl_m9_sl_CHAR texts = {0}; (void) texts;
@@ -977,46 +977,60 @@ Frame_Fr * Frame_FromCsv (m9_pool *pool, Csv_Table * t, m9_state *err)
   m9t1to = m9_sub_i64 (Csv_Cols (t, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; c <= m9t1to; c += 1) {
-    k = Csv_KindCodeAt (t, c, err);
+    k = Csv_KindAt (t, c, err);
     if (err->exc) goto L_ret;
-    if ((k == Csv_KindReal)) {
+    { __typeof__(k) m9t2 = k;
+    switch (m9t2.tag) {
+    case Csv_Kind_Real:
+    {
       Frame_AddF32 (pool, &(f), Csv_Name (pool, t, c, err), Csv_ColF32 (t, c, err), (0.0f / 0.0f), err);
       if (err->exc) goto L_ret;
-    } else {
-      if ((k == Csv_KindInt)) {
-        Frame_AddI64 (pool, &(f), Csv_Name (pool, t, c, err), Csv_ColI64 (t, c, err), Frame_MissI (err), err);
+    } break;
+    case Csv_Kind_Int:
+    {
+      Frame_AddI64 (pool, &(f), Csv_Name (pool, t, c, err), Csv_ColI64 (t, c, err), Frame_MissI (err), err);
+      if (err->exc) goto L_ret;
+    } break;
+    case Csv_Kind_Stamp:
+    {
+      stamps = Csv_ColStamp (t, c, err);
+      if (err->exc) goto L_ret;
+      epoch = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), (stamps).len, err);
+      if (err->exc) goto L_ret;
+      { int64_t m9t3to;
+      r = INT64_C(0);
+      m9t3to = m9_sub_i64 ((stamps).len, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      for (; r <= m9t3to; r += 1) {
+        (*(int64_t *) m9_at (epoch.p, r, epoch.len, sizeof (int64_t), err)) = m9_i64_f64 ((double)(Math_Floor (((*(Time_Instant *) m9_at (stamps.p, r, stamps.len, sizeof (Time_Instant), err)).t + 0.5), err)), err);
         if (err->exc) goto L_ret;
-    } else {
-      if ((k == Csv_KindStamp)) {
-        stamps = Csv_ColStamp (t, c, err);
+      } }
+      Frame_AddI64 (pool, &(f), Csv_Name (pool, t, c, err), epoch, Frame_MissI (err), err);
+      if (err->exc) goto L_ret;
+    } break;
+    case Csv_Kind_Text:
+    {
+      texts = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), Csv_Rows (t, err), err);
+      if (err->exc) goto L_ret;
+      { int64_t m9t4to;
+      r = INT64_C(0);
+      m9t4to = m9_sub_i64 (Csv_Rows (t, err), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      for (; r <= m9t4to; r += 1) {
+        (*(m9_sl_CHAR *) m9_at (texts.p, r, texts.len, sizeof (m9_sl_CHAR), err)) = Csv_TextAt (pool, t, c, r, err);
         if (err->exc) goto L_ret;
-        epoch = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), (stamps).len, err);
-        if (err->exc) goto L_ret;
-        { int64_t m9t2to;
-        r = INT64_C(0);
-        m9t2to = m9_sub_i64 ((stamps).len, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-        for (; r <= m9t2to; r += 1) {
-          (*(int64_t *) m9_at (epoch.p, r, epoch.len, sizeof (int64_t), err)) = m9_i64_f64 ((double)(Math_Floor (((*(Time_Instant *) m9_at (stamps.p, r, stamps.len, sizeof (Time_Instant), err)).t + 0.5), err)), err);
-          if (err->exc) goto L_ret;
-        } }
-        Frame_AddI64 (pool, &(f), Csv_Name (pool, t, c, err), epoch, Frame_MissI (err), err);
-        if (err->exc) goto L_ret;
-    } else {
-      if ((k == Csv_KindText)) {
-        texts = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), Csv_Rows (t, err), err);
-        if (err->exc) goto L_ret;
-        { int64_t m9t3to;
-        r = INT64_C(0);
-        m9t3to = m9_sub_i64 (Csv_Rows (t, err), INT64_C(1), err);
-        if (err->exc) goto L_ret;
-        for (; r <= m9t3to; r += 1) {
-          (*(m9_sl_CHAR *) m9_at (texts.p, r, texts.len, sizeof (m9_sl_CHAR), err)) = Csv_TextAt (pool, t, c, r, err);
-          if (err->exc) goto L_ret;
-        } }
-        Frame_AddStrs (pool, &(f), Csv_Name (pool, t, c, err), texts, err);
-        if (err->exc) goto L_ret;
-    } } } }
+      } }
+      Frame_AddStrs (pool, &(f), Csv_Name (pool, t, c, err), texts, err);
+      if (err->exc) goto L_ret;
+    } break;
+    case Csv_Kind_Skip:
+    {
+    } break;
+    case Csv_Kind_Real64:
+    {
+    } break;
+    default: m9_trap_tag ();
+    } }
   } }
   err->res = m9res;
   m9ret = f;

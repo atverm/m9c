@@ -118,3 +118,37 @@ which is how the Kalman-style gain is built in one call
 ### SpdInverse (VAR pool: POOL ; a: PTR Matrix) : PTR Matrix IN pool RAISES SizeError, NotSPD, ValueRange
 
 CholSolve against the identity: the posterior covariance step
+
+### CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64) : PTR Matrix IN pool RAISES SizeError
+
+(L L^T)^-1 from the factor Cholesky answered, in two contiguous
+passes on `threads` threads (2026-09-15, the year inversion's
+8-hour inverse):
+
+  T = (L^-1)^T   row j of T is column j of L^-1: a forward
+                 substitution against the identity's column j,
+                 zero above j, reading row i of L along its
+                 columns -- contiguous, and the zeros halve it;
+  P = T T^T      P[a,b] = sum over k >= max(a,b) of T[a,k] T[b,k]
+                 -- two rows read along their columns.
+
+SpdInverse's back substitution read the factor DOWN a column for
+each of n identity columns, a cache miss per multiply: n = 16 629
+took 8 hours; this takes n^3/3 flops instead of n^3 and reads
+memory the way it lies.  Columns of T and rows of P are
+independent, so the work is claimed in bands by `threads`
+workers, each writing only its own rows; the arithmetic of every
+cell is the same in the same order whatever the thread count, so
+the answer is bit-identical for 1 and for 32.  threads <= 1 runs
+in the caller's thread.
+
+### AddNormal (VAR pool: POOL ; h: PTR Matrix ; RO w: SLICE OF F64 ; VAR k: PTR Matrix ; threads: I64) RAISES SizeError
+
+k := k + H^T diag (w) H, the normal matrix of a weighted least
+squares, accumulated where it lies: one pass over the rows of H
+per band of columns, zeros of H skipped, the upper triangle
+computed and the lower mirrored at the end.  A worker owns a band
+of rows of k and reads every row of H, so nothing is written
+twice; the per-cell sums run over the rows of H ascending in
+every band, as the serial loop did, so the result does not depend
+on the thread count.

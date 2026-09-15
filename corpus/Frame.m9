@@ -663,33 +663,37 @@ PROCEDURE FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool
   RAISES SizeError, Duplicate, IndexError, ValueRange =
 VAR
   f : PTR Fr IN pool ;
-  c, r, k : I64 ;
+  c, r : I64 ;
+  k : Csv.Kind ;
   stamps : SLICE OF Time.Instant ;
   epoch : SLICE OF I64 ;
   texts : SLICE OF STR ;
 BEGIN
   f := New (pool, Csv.Rows (t)) ;
   FOR c := 0 TO Csv.Cols (t) - 1 DO
-    k := Csv.KindCodeAt (t, c) ;
-    IF k = Csv.KindReal THEN
+    k := Csv.KindAt (t, c) ;
+    CASE k OF
+    | Real :
       AddF32 (pool, f, Csv.Name (pool, t, c), Csv.ColF32 (t, c),
               0.0 / 0.0)
-    ELSIF k = Csv.KindInt THEN
+    | Int :
       AddI64 (pool, f, Csv.Name (pool, t, c), Csv.ColI64 (t, c),
               MissI ())
-    ELSIF k = Csv.KindStamp THEN
+    | Stamp :
       stamps := Csv.ColStamp (t, c) ;
       epoch := NEW (pool, I64, LEN (stamps)) ;
       FOR r := 0 TO LEN (stamps) - 1 DO
         epoch[r] := I64 (Math.Floor (stamps[r].t + 0.5))
       END ;
       AddI64 (pool, f, Csv.Name (pool, t, c), epoch, MissI ())
-    ELSIF k = Csv.KindText THEN
+    | Text :
       texts := NEW (pool, STR, Csv.Rows (t)) ;
       FOR r := 0 TO Csv.Rows (t) - 1 DO
         texts[r] := Csv.TextAt (pool, t, c, r)
       END ;
       AddStrs (pool, f, Csv.Name (pool, t, c), texts)
+    | Skip :
+    | Real64 :
     END
   END ;
   RETURN f

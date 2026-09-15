@@ -78,6 +78,9 @@ ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 # a corpus module gentest.pas deliberately does not generate
 NOT_GENERATED = {
     'LibmGate': 'gendiff-only fixture (96 libm-named locals)',
+    'KindUse':  'gendiff-only fixture (a case record used across a module)',
+    'EnumUse':  'gendiff-only fixture (an enumeration used across a module)',
+    'Palette':  'gendiff-only fixture (an enumeration declaration)',
     'Lsp':      'program module built by m9c --make from the library',
     'M9fmt':    'program module built by m9c --make from the library',
 }
@@ -88,6 +91,9 @@ EXTRA_DEPS = {
 # a corpus module build.sh deliberately does not install
 NOT_INSTALLED = {
     'LibmGate': 'gendiff-only fixture',
+    'KindUse':  'gendiff-only fixture',
+    'EnumUse':  'gendiff-only fixture',
+    'Palette':  'gendiff-only fixture',
     'Hello':    'demo program',
     'Concat':   'demo program (the executable half of the + decision)',
     'M9c':      'the compiler itself, installed as a binary',
@@ -126,7 +132,7 @@ def gendiff():
     out = {}
     for line in rd('runtime/test/gendiff.sh').splitlines():
         mm = re.match(r'run\s+(\w+)((?:\s+\w+)*)\s*$', line)
-        if mm and mm.group(1) != 'LibmGate':
+        if mm and mm.group(1) not in ('LibmGate', 'KindUse', 'EnumUse', 'Palette'):
             out[mm.group(1)] = mm.group(2).split()
     return out
 

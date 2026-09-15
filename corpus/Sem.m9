@@ -422,6 +422,120 @@ BEGIN
   END
 END CheckExcName ;
 
+(* ---- a type named in a KNOWN module must exist there ----
+
+   The softness contract stands: an unknown type never diagnoses,
+   because a bare name found nowhere may simply be a missing IMPORT,
+   and a checker that guesses produces diagnostics nobody can act on.
+   But `DynStr.Dstring' names a module that IS loaded and a type it
+   does not declare.  That is a typo, not softness -- and it rode
+   through --check without a word to surface as cc's `unknown type
+   name DynStr_Dstring', the M9 name mangled and the M9 line gone
+   (2026-09-15).  Same rule as ExcKnown, two hundred lines up: only
+   a known, non-foreign module lacking the name is an error.
+
+   Checked ONCE, at the declaration, in declaration order; every
+   lookup that follows stays soft, so nothing cascades. *)
+PROCEDURE TypeKnown (RO qual: STR ; RO nm: STR) : BOOL =
+VAR m : I64 ;
+BEGIN
+  IF LEN (qual) = 0 THEN RETURN TRUE END ;
+  m := FindMod (qual) ;
+  IF m < 0 THEN RETURN TRUE END ;
+  IF LEN (mods[m].foreignLang) > 0 THEN RETURN TRUE END ;
+  IF FindTypeIn (m, nm) IS SOME t THEN RETURN TRUE END ;
+  RETURN IsOpaqueIn (m, nm)
+END TypeKnown ;
+
+PROCEDURE CheckFieldTypes (fs: Ast.Kid ; RO ctx: STR) ;
+
+PROCEDURE CheckTypeNode (t: Ast.Kid ; RO ctx: STR) =
+  (* every qualident reachable through PTR, OPT, SHARED, SLICE, ARRAY,
+     GRID and the fields of a record, monitor or case record *)
+VAR i : I64 ;
+BEGIN
+  IF t IS SOME n THEN
+    CASE n.kind OF
+    | Ast.NQualident :
+        IF LEN (n.b) > 0 AND NOT TypeKnown (n.a, n.b) THEN
+          ErrN (n, ctx, 'unknown type: ' + n.a + '.' + n.b + ' -- '
+                        + n.a + ' declares no such type')
+        END
+    | Ast.NPtrType : CheckTypeNode (n.kids[0], ctx)
+    | Ast.NOptType : CheckTypeNode (n.kids[0], ctx)
+    | Ast.NSharedType : CheckTypeNode (n.kids[0], ctx)
+    | Ast.NSliceType : CheckTypeNode (n.kids[0], ctx)
+    | Ast.NArrayType : CheckTypeNode (n.kids[1], ctx)
+    | Ast.NGridType : CheckTypeNode (n.kids[1], ctx)
+    | Ast.NRecordType :
+        (* kids[0] is the extension base, when there is one *)
+        CheckTypeNode (n.kids[0], ctx) ;
+        CheckFieldTypes (n.kids[1], ctx)
+    | Ast.NMonitorType : CheckFieldTypes (n.kids[0], ctx)
+    | Ast.NCaseRecordType :
+        FOR i := 0 TO n.nkids - 1 DO
+          IF n.kids[i] IS SOME v THEN CheckFieldTypes (v.kids[0], ctx) END
+        END
+    ELSE
+    END
+  END
+END CheckTypeNode ;
+
+PROCEDURE CheckFieldTypes (fs: Ast.Kid ; RO ctx: STR) =
+VAR i : I64 ;
+BEGIN
+  IF fs IS SOME seq THEN
+    FOR i := 0 TO seq.nkids - 1 DO
+      IF seq.kids[i] IS SOME g THEN CheckTypeNode (g.kids[1], ctx) END
+    END
+  END
+END CheckFieldTypes ;
+
+PROCEDURE CheckVarTypes (holder: PTR Ast.Node ; RO ctx: STR) =
+  (* the VAR sections directly under a unit or a procedure body *)
+VAR a, b : I64 ;
+BEGIN
+  FOR a := 0 TO holder.nkids - 1 DO
+    IF holder.kids[a] IS SOME sect THEN
+      IF sect.kind = Ast.NVarSection THEN
+        FOR b := 0 TO sect.nkids - 1 DO
+          IF sect.kids[b] IS SOME vd THEN CheckTypeNode (vd.kids[1], ctx) END
+        END
+      ELSIF sect.kind = Ast.NTypeSection THEN
+        FOR b := 0 TO sect.nkids - 1 DO
+          IF sect.kids[b] IS SOME td THEN CheckTypeNode (td.kids[0], ctx) END
+        END
+      END
+    END
+  END
+END CheckVarTypes ;
+
+PROCEDURE CheckDeclTypes (u: PTR Ast.Node) =
+  (* one pass over a unit, in declaration order: its TYPE and VAR
+     sections under the unit's own name, then each procedure's
+     parameters, return type and locals under the procedure's *)
+VAR i, a : I64 ;
+BEGIN
+  CheckVarTypes (u, u.a) ;
+  FOR i := 0 TO u.nkids - 1 DO
+    IF u.kids[i] IS SOME d THEN
+      IF d.kind = Ast.NProcDecl THEN
+        IF d.kids[0] IS SOME pl THEN
+          FOR a := 0 TO pl.nkids - 1 DO
+            IF pl.kids[a] IS SOME grp THEN
+              CheckTypeNode (grp.kids[1], u.a + '.' + d.a)
+            END
+          END
+        END ;
+        CheckTypeNode (d.kids[1], u.a + '.' + d.a) ;
+        IF d.kids[4] IS SOME body THEN
+          CheckVarTypes (body, u.a + '.' + d.a)
+        END
+      END
+    END
+  END
+END CheckDeclTypes ;
+
 (* the signature as TEXT: two declarations are the same declaration
    exactly when the printer renders them the same way, which is why
    def/impl conformance is a string comparison and not a tree walk *)
@@ -653,6 +767,15 @@ BEGIN
               END ;
               IF body.kind = Ast.NCaseRecordType THEN
                 AddVariants (m, td.a, body)
+              END ;
+              (* an enumeration is a payload-less case record: its
+                 members ARE its variants, so Colour.Red constructs, a
+                 CASE over it is total, and it crosses modules -- all
+                 from the case-record machinery.  nkIdent and a
+                 payload-less nkVariant have the same shape here:
+                 name in .a, no payload kid (docs/enum-plan.md). *)
+              IF body.kind = Ast.NEnumType THEN
+                AddVariants (m, td.a, body)
               END
             ELSE
               IF u.kind = Ast.NDefinition THEN AddOpaque (m, td.a) END
@@ -738,6 +861,7 @@ PROCEDURE ScalarAlias (RO name: STR) : STR ;
 PROCEDURE WidthTwin (RO name: STR ; single: BOOL) : STR ;
 
 PROCEDURE CanonT (t: Ast.Kid ; depth: I64) : STR ;
+PROCEDURE ArrEnumBoundOf (declN: Ast.Kid) : STR ;
 
 (* hoisted rather than nested: M9 has no nested procedures.  They
    PARSE -- a procedure body accepts declarations, and PROCEDURE is
@@ -749,7 +873,7 @@ BEGIN
   IF mi < 0 THEN RETURN '' END ;
   IF FindTypeIn (mi, typeName) IS SOME td THEN
     IF td.kind = Ast.NRecordType OR td.kind = Ast.NCaseRecordType OR
-       td.kind = Ast.NMonitorType THEN
+       td.kind = Ast.NMonitorType OR td.kind = Ast.NEnumType THEN
       RETURN Qualify (mods[mi].name, typeName)
     END ;
     RETURN CanonT (SOME (td), depth + 1)
@@ -1742,7 +1866,7 @@ END FlushPend ;
 PROCEDURE DesigDeclType (d: PTR Ast.Node ; RO ctx: STR) : Ast.Kid =
 VAR
   j, q : I64 ;
-  it : STR ;
+  it, eb : STR ;
   declN, res : Ast.Kid ;
   deref, known : BOOL ;
 BEGIN
@@ -1751,11 +1875,24 @@ BEGIN
     (* every axis of every subscript is an index *)
     IF d.kids[j] IS SOME isel THEN
       IF isel.kind = Ast.NSelIndex THEN
-        FOR q := 0 TO isel.nkids - 1 DO
-          it := ExprType (isel.kids[q], ctx) ;
-          IF NOT IsIntish (it) THEN
-            ErrN (d, ctx, Cat ('index must be an integer, not ',
-              TyName (it)))
+        eb := ArrEnumBoundOf (declN) ;
+        IF LEN (eb) > 0 THEN
+          (* ARRAY Colour OF T: the one subscript is a Colour value *)
+          IF isel.nkids >= 1 THEN
+            it := ExprType (isel.kids[0], ctx) ;
+            IF LEN (it) > 0 AND NOT Text.Eq (it, eb) THEN
+              ErrN (d, ctx, S4 ('an ARRAY ', TyName (eb),
+                ' OF is indexed by a ', Cat (TyName (eb),
+                Cat (' value, not ', TyName (it)))))
+            END
+          END
+        ELSE
+          FOR q := 0 TO isel.nkids - 1 DO
+            it := ExprType (isel.kids[q], ctx) ;
+            IF NOT IsIntish (it) THEN
+              ErrN (d, ctx, Cat ('index must be an integer, not ',
+                TyName (it)))
+            END
           END
         END
       END
@@ -2113,6 +2250,7 @@ VAR
   j, m : I64 ;
   found : BOOL ;
   vi : VariantInfo ;
+  vfields : Ast.Kid ;
 BEGIN
   IF ScopeType (d.a) IS SOME dn0 THEN
     RETURN CanonT (DesigDeclType (d, ctx), 0)
@@ -2155,6 +2293,24 @@ BEGIN
         (* an imported CONST is still a literal *)
         s := ModConstType (d.a, sf.a, found) ;
         IF found THEN RETURN s END
+      END
+    END
+  END ;
+  (* Mod.Type.Variant with no payload: the cross-module twin of the
+     two-part form above, Palette.Hue.Warm.  d.a is a module name (not
+     in scope, or the first branch would have answered), the first
+     selector its enumeration or case-record type, the second a member.
+     Typing it is what lets FOR over an imported enumeration reach the
+     enum branch instead of falling through to the integer path
+     (docs/enum-plan.md, part 2). *)
+  IF d.nkids = 2 THEN
+    IF d.kids[0] IS SOME sfT THEN
+      IF d.kids[1] IS SOME sfV THEN
+        IF sfT.kind = Ast.NSelField AND sfV.kind = Ast.NSelField THEN
+          IF TryVariantMod (FindMod (d.a), sfT.a, sfV.a, om, vfields) THEN
+            RETURN Qualify (om, sfT.a)
+          END
+        END
       END
     END
   END ;
@@ -2698,6 +2854,91 @@ BEGIN
   RETURN Text.Eq (t, 'U8') OR Text.Eq (t, 'U16') OR Text.Eq (t, 'U32')
 END IsTotalWideningTo64 ;
 
+(* a conversion FROM an integer TO an enumeration (or a payload-less
+   case record), the checked inverse of ORD: Colour (i) is the i-th
+   member, and RAISES ValueRange when i is out of 0..n-1 -- the same
+   discipline as I64 (x), because a tag that named no member would be
+   the museum's Trunc(NaN) again.  Answers the canonical type name, or
+   '' when `name' is not such a type. *)
+PROCEDURE AllPayloadless (n: Ast.Kid) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF n IS SOME t THEN
+    IF t.kind = Ast.NEnumType THEN RETURN TRUE END ;
+    IF t.kind = Ast.NCaseRecordType THEN
+      FOR i := 0 TO t.nkids - 1 DO
+        IF t.kids[i] IS SOME v THEN
+          IF v.kids[0] IS SOME vf THEN RETURN FALSE END
+        END
+      END ;
+      RETURN TRUE
+    END
+  END ;
+  RETURN FALSE
+END AllPayloadless ;
+
+PROCEDURE IsTagged (RO canon: STR) : BOOL =
+  (* the canonical name (Mod.Type) resolves to an enumeration or a
+     case record -- a value CASE reaches by tag, which is exactly what
+     NAME can name (docs/enum-plan.md, part 2) *)
+VAR dot : I64 ;
+BEGIN
+  dot := Text.FindChar (canon, '.') ;
+  IF dot < 0 THEN RETURN FALSE END ;
+  IF LookupTypeName (SLICE (canon, 0, dot),
+                     SLICE (canon, dot + 1, LEN (canon) - dot - 1))
+       IS SOME t THEN
+    RETURN t.kind = Ast.NEnumType OR t.kind = Ast.NCaseRecordType
+  END ;
+  RETURN FALSE
+END IsTagged ;
+
+(* the canonical enumeration (or case-record) type an ARRAY bound
+   names, or '' when the bound is an integer.  ARRAY Colour OF T is
+   indexed by the type: its subscript is a member, not an ordinal, so
+   the index check wants the enumeration here (docs/enum-plan.md,
+   part 2). *)
+PROCEDURE ArrEnumBoundOf (declN: Ast.Kid) : STR =
+VAR canon : STR ;
+BEGIN
+  IF ResolveType (declN) IS SOME r THEN
+    IF r.kind = Ast.NArrayType THEN
+      IF r.kids[0] IS SOME b THEN
+        IF b.kind = Ast.NDesignator THEN
+          canon := '' ;
+          IF b.nkids = 0 THEN canon := CanonQual ('', b.a, 0)
+          ELSIF b.nkids = 1 THEN
+            IF b.kids[0] IS SOME sf THEN
+              IF sf.kind = Ast.NSelField THEN canon := CanonQual (b.a, sf.a, 0)
+              END
+            END
+          END ;
+          IF IsTagged (canon) THEN RETURN canon END
+        END
+      END
+    END
+  END ;
+  RETURN ''
+END ArrEnumBoundOf ;
+
+PROCEDURE EnumConvType (RO name: STR) : STR =
+VAR
+  dot : I64 ;
+  md, ty : STR ;
+BEGIN
+  dot := Text.FindChar (name, '.') ;
+  IF dot >= 0 THEN
+    md := SLICE (name, 0, dot) ;
+    ty := SLICE (name, dot + 1, LEN (name) - dot - 1)
+  ELSE
+    md := '' ; ty := name
+  END ;
+  IF AllPayloadless (LookupTypeName (md, ty)) THEN
+    RETURN CanonQual (md, ty, 0)
+  END ;
+  RETURN ''
+END EnumConvType ;
+
 PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR =
 VAR
@@ -2788,6 +3029,21 @@ BEGIN
   IF Text.Eq (name, 'ORD') THEN
     Arity (site, ctx, name, 1, nargs) ;
     RETURN 'I64'
+  END ;
+  IF Text.Eq (name, 'NAME') THEN
+    (* the identifier text of an enumeration member (or any
+       payload-less case record variant), as a STR: NAME (Colour.Red)
+       is 'Red'.  The argument must be one of those types -- its
+       canonical form is nominal, and a value that CASE reaches by
+       tag is exactly what has a name (docs/enum-plan.md, part 2) *)
+    Arity (site, ctx, name, 1, nargs) ;
+    IF nargs = 1 AND NOT IsTagged (aTy[0]) THEN
+      IF LEN (aTy[0]) > 0 THEN
+        ErrN (site, ctx, Cat ('NAME needs an enumeration or a case '
+          + 'record, not ', TyName (aTy[0])))
+      END
+    END ;
+    RETURN 'SLICE OF CHAR'
   END ;
   IF Text.Eq (name, 'VIEW') THEN
     IF nargs < 2 THEN
@@ -2901,27 +3157,55 @@ BEGIN
     RETURN ''
   END ;
 
+  (* a variant constructor with payload: Type.Variant (args), or
+     Mod.Type.Variant (args) from another module.  The three-part
+     form was read as a two-part one -- type `Csv', variant
+     `Kind.Stamp' -- and refused as `unknown procedure: Csv' until
+     2026-09-15; nobody had written one, so nothing knew.  With a
+     module named, the variant is looked for THERE and nowhere else:
+     that is what the qualification says. *)
   dot := Text.FindChar (name, '.') ;
+  isVar := FALSE ;
   IF dot > 0 THEN
-    IF FindVariant (SLICE (name, 0, dot),
-                    SLICE (name, dot + 1, LEN (name) - dot - 1),
-                    om, fields) THEN
-      flat := FlatFields (fields, nflat) ;
-      Arity (site, ctx, name, nflat, nargs) ;
-      canonCtx := om ;
-      FOR k := 0 TO nargs - 1 DO
-        IF k < nflat THEN
-          pTy := CanonT (flat[k], 0) ;
-          IF NOT Compat (pTy, aTy[k]) THEN
-            ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
-              S4 (': cannot pass ', TyName (aTy[k]), ' where ',
-                  Cat (TyName (pTy), ' is expected'))))
-          END
-        END
-      END ;
-      canonCtx := '' ;
-      RETURN Qualify (om, SLICE (name, 0, dot))
+    t := SLICE (name, dot + 1, LEN (name) - dot - 1) ;
+    g := Text.FindChar (t, '.') ;
+    IF g > 0 THEN
+      om := SLICE (name, 0, dot) ;
+      isVar := TryVariantMod (FindMod (om), SLICE (t, 0, g),
+                              SLICE (t, g + 1, LEN (t) - g - 1),
+                              om, fields) ;
+      t := SLICE (t, 0, g)
+    ELSE
+      isVar := FindVariant (SLICE (name, 0, dot), t, om, fields) ;
+      t := SLICE (name, 0, dot)
     END
+  END ;
+  IF isVar THEN
+    flat := FlatFields (fields, nflat) ;
+    Arity (site, ctx, name, nflat, nargs) ;
+    canonCtx := om ;
+    FOR k := 0 TO nargs - 1 DO
+      IF k < nflat THEN
+        pTy := CanonT (flat[k], 0) ;
+        IF NOT Compat (pTy, aTy[k]) THEN
+          ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
+            S4 (': cannot pass ', TyName (aTy[k]), ' where ',
+                Cat (TyName (pTy), ' is expected'))))
+        END
+      END
+    END ;
+    canonCtx := '' ;
+    RETURN Qualify (om, t)
+  END ;
+  t := EnumConvType (name) ;
+  IF LEN (t) > 0 THEN
+    Arity (site, ctx, name, 1, nargs) ;
+    IF nargs = 1 AND NOT IsIntish (aTy[0]) THEN
+      ErrN (site, ctx, S4 ('argument 1 of ', name,
+        ': cannot convert ', Cat (TyName (aTy[0]),
+          ' to an enumeration; an integer position is expected')))
+    END ;
+    RETURN t
   END ;
   ErrN (site, ctx, Cat ('unknown procedure: ', name)) ;
   RETURN ''
@@ -3451,13 +3735,24 @@ BEGIN
 END WidthTwin ;
 
 PROCEDURE DesigName (d: PTR Ast.Node) : STR =
+  (* the dotted callee name: `P', `Mod.P', `Type.Variant', and --
+     since 2026-09-15 -- `Mod.Type.Variant', the three-part imported
+     variant constructor.  Every field selector joins; a call target
+     is only ever one of these shapes, because F(x).field does not
+     parse and a field chain cannot be called.  A leading index or
+     deref stops it (returns the base), as before. *)
+VAR
+  res : STR ;
+  i : I64 ;
 BEGIN
-  IF d.nkids = 1 THEN
-    IF d.kids[0] IS SOME sel THEN
-      IF sel.kind = Ast.NSelField THEN RETURN Qualify (d.a, sel.a) END
+  res := d.a ;
+  FOR i := 0 TO d.nkids - 1 DO
+    IF d.kids[i] IS SOME sel THEN
+      IF sel.kind = Ast.NSelField THEN res := Qualify (res, sel.a)
+      ELSE RETURN d.a END
     END
   END ;
-  RETURN d.a
+  RETURN res
 END DesigName ;
 
 (* ---- the variant set of a KNOWN selector type ----
@@ -3902,15 +4197,29 @@ BEGIN
 END CheckCond ;
 
 PROCEDURE CheckForBounds (KEPT st: PTR Ast.Node ; RO ctx: STR) =
-VAR t : STR ;
+  (* integer bounds, or two bounds of ONE enumeration: FOR c :=
+     Colour.Red TO Colour.Blue walks the members in declaration order.
+     A step is only for the integer form (docs/enum-plan.md, part 2). *)
+VAR t, u : STR ;
 BEGIN
   t := ExprType (st.kids[0], ctx) ;
+  u := ExprType (st.kids[1], ctx) ;
+  IF IsTagged (t) OR IsTagged (u) THEN
+    IF NOT Text.Eq (t, u) THEN
+      ErrN (st, ctx, S4 ('FOR over an enumeration needs both bounds of one type, not ',
+        TyName (t), ' and ', TyName (u)))
+    END ;
+    IF st.kids[2] IS SOME estep THEN
+      ErrN (st, ctx, 'FOR over an enumeration takes no BY step')
+    END ;
+    BindName (st.a, NONE) ;
+    RETURN
+  END ;
   IF NOT IsIntish (t) THEN
     ErrN (st, ctx, Cat ('FOR bounds must be integers, not ', TyName (t)))
   END ;
-  t := ExprType (st.kids[1], ctx) ;
-  IF NOT IsIntish (t) THEN
-    ErrN (st, ctx, Cat ('FOR bounds must be integers, not ', TyName (t)))
+  IF NOT IsIntish (u) THEN
+    ErrN (st, ctx, Cat ('FOR bounds must be integers, not ', TyName (u)))
   END ;
   IF st.kids[2] IS SOME step THEN
     t := ExprType (st.kids[2], ctx) ;
@@ -4315,6 +4624,10 @@ BEGIN
     END ;
     RETURN
   END ;
+  (* the integer-to-enumeration conversion raises the same way *)
+  IF LEN (EnumConvType (name)) > 0 THEN
+    RaisedAdd ('ValueRange', Cat (name, ' conversion'))
+  END ;
   pr := LookupProc (name, found) ;
   IF NOT found THEN RETURN END ;
   CallsAdd (name) ;
@@ -4574,6 +4887,10 @@ BEGIN
       IF u.kind = Ast.NDefinition AND LEN (u.b) > 0 THEN
         CheckForeignDef (u)
       ELSE
+        (* declarations before bodies: a type spelled wrong is
+           reported where it is written, once, ahead of whatever the
+           bodies make of a variable that has no type *)
+        CheckDeclTypes (u) ;
         IF u.kind = Ast.NImplementation THEN CheckConformance (u) END ;
         FOR j := 0 TO u.nkids - 1 DO
           IF u.kids[j] IS SOME d THEN

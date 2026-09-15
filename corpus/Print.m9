@@ -321,6 +321,15 @@ BEGIN
         FieldsLines (pool, d, n.kids[0], ind + 1) ;
         Sp (pool, d, ind) ;
         DynStr.Append (pool, d, 'END')
+    | Ast.NEnumType :
+        DynStr.AppendChar (pool, d, '(') ;
+        FOR i := 0 TO n.nkids - 1 DO
+          IF n.kids[i] IS SOME m THEN
+            IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
+            DynStr.Append (pool, d, m.a)
+          END
+        END ;
+        DynStr.AppendChar (pool, d, ')')
     ELSE
       DynStr.Append (pool, d, '?type?')
     END

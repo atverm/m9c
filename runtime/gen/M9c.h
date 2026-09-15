@@ -15,8 +15,8 @@
 
 static const uint32_t M9c_StdLib_d[11] = { 47u, 117u, 115u, 114u, 47u, 108u, 105u, 98u, 47u, 109u, 57u };
 #define M9c_StdLib ((m9_sl_CHAR){ (uint32_t *) M9c_StdLib_d, 11 })
-static const uint32_t M9c_Version_d[5] = { 48u, 46u, 57u, 46u, 48u };
-#define M9c_Version ((m9_sl_CHAR){ (uint32_t *) M9c_Version_d, 5 })
+static const uint32_t M9c_Version_d[6] = { 48u, 46u, 49u, 48u, 46u, 48u };
+#define M9c_Version ((m9_sl_CHAR){ (uint32_t *) M9c_Version_d, 6 })
 static const uint32_t M9c_StdInclude_d[15] = { 47u, 117u, 115u, 114u, 47u, 105u, 110u, 99u, 108u, 117u, 100u, 101u, 47u, 109u, 57u };
 #define M9c_StdInclude ((m9_sl_CHAR){ (uint32_t *) M9c_StdInclude_d, 15 })
 static const uint32_t M9c_StdArchive_d[18] = { 47u, 117u, 115u, 114u, 47u, 108u, 105u, 98u, 47u, 108u, 105u, 98u, 109u, 57u, 114u, 116u, 46u, 97u };

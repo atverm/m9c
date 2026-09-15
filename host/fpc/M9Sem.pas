@@ -105,6 +105,11 @@ type
     function RaisesOf (p: TNode): TStringArray;
     function ExcKnown (const qual, nm: string): Boolean;
     procedure CheckExcName (n: TNode; const ctx: string);
+    function TypeKnown (const qual, nm: string): Boolean;
+    procedure CheckTypeNode (t: TNode; const ctx: string);
+    procedure CheckFieldTypes (fs: TNode; const ctx: string);
+    procedure CheckVarTypes (holder: TNode; const ctx: string);
+    procedure CheckDeclTypes (u: TNode);
     procedure CollectUnit (u: TNode);
     procedure CheckForeignDef (u: TNode);
     procedure CheckConformance (u: TNode);
@@ -120,10 +125,15 @@ type
                            out vi: TVariantInfo): Boolean;
     function FindVariant (const tn, vn: string; out ownerMod: string;
                           out fields: TNode): Boolean;
+    function VariantIn (const mn, tn, vn: string; out ownerMod: string;
+      out fields: TNode): Boolean;
     function ResolveType (t: TNode): TNode;
     function LookupTypeName (const modName, typeName: string): TNode;
     function CanonQual (const modName, typeName: string;
                         depth: Integer): string;
+    function AllPayloadless (n: TNode): Boolean;
+    function IsTagged (const canon: string): Boolean;
+    function EnumConvType (const name: string): string;
     function CanonT (t: TNode; depth: Integer): string;
     function IsReadonlyT (declN, res: TNode): Boolean;
     procedure CheckThreadChains;
@@ -421,6 +431,117 @@ begin
     ErrN (n, ctx, 'unknown exception: ' + nm);
 end;
 
+{ ---- a type named in a KNOWN module must exist there ----
+
+  The softness contract stands: an unknown type never diagnoses,
+  because a bare name found nowhere may simply be a missing IMPORT,
+  and a checker that guesses produces diagnostics nobody can act on.
+  But `DynStr.Dstring' names a module that IS loaded and a type it
+  does not declare.  That is a typo, not softness -- and it rode
+  through --check without a word to surface as cc's `unknown type
+  name DynStr_Dstring', the M9 name mangled and the M9 line gone
+  (2026-09-15).  Same rule as ExcKnown above: only a known,
+  non-foreign module lacking the name is an error.
+
+  Checked ONCE, at the declaration, in declaration order; every
+  lookup that follows stays soft, so nothing cascades. }
+
+function TSem.TypeKnown (const qual, nm: string): Boolean;
+var m : TModuleInfo;
+begin
+  Result := True;
+  if qual = '' then Exit;
+  m := FindMod (qual);
+  if m = nil then Exit;
+  if m.foreignLang <> '' then Exit;
+  if m.FindType (nm) <> nil then Exit;
+  Result := InList (nm, m.opaque);
+end;
+
+procedure TSem.CheckTypeNode (t: TNode; const ctx: string);
+{ every qualident reachable through PTR, OPT, SHARED, SLICE, ARRAY,
+  GRID and the fields of a record, monitor or case record }
+var i : Integer;
+begin
+  if t = nil then Exit;
+  case t.kind of
+    nkQualident :
+      if (t.b <> '') and not TypeKnown (t.a, t.b) then
+        ErrN (t, ctx, 'unknown type: ' + t.a + '.' + t.b + ' -- '
+                      + t.a + ' declares no such type');
+    nkPtrType, nkOptType, nkSharedType, nkSliceType :
+      CheckTypeNode (t.kids[0], ctx);
+    nkArrayType, nkGridType :
+      CheckTypeNode (t.kids[1], ctx);
+    nkRecordType :
+      begin
+        { kids[0] is the extension base, when there is one }
+        CheckTypeNode (t.kids[0], ctx);
+        CheckFieldTypes (t.kids[1], ctx);
+      end;
+    nkMonitorType :
+      CheckFieldTypes (t.kids[0], ctx);
+    nkCaseRecordType :
+      for i := 0 to High (t.kids) do
+        if t.kids[i] <> nil then CheckFieldTypes (t.kids[i].kids[0], ctx);
+  end;
+end;
+
+procedure TSem.CheckFieldTypes (fs: TNode; const ctx: string);
+var i : Integer;
+begin
+  if fs = nil then Exit;
+  for i := 0 to High (fs.kids) do
+    if fs.kids[i] <> nil then CheckTypeNode (fs.kids[i].kids[1], ctx);
+end;
+
+procedure TSem.CheckVarTypes (holder: TNode; const ctx: string);
+{ the VAR and TYPE sections directly under a unit or a procedure body }
+var a, b : Integer;
+begin
+  if holder = nil then Exit;
+  for a := 0 to High (holder.kids) do
+    if holder.kids[a] <> nil then
+    begin
+      if holder.kids[a].kind = nkVarSection then
+      begin
+        for b := 0 to High (holder.kids[a].kids) do
+          if holder.kids[a].kids[b] <> nil then
+            CheckTypeNode (holder.kids[a].kids[b].kids[1], ctx);
+      end
+      else if holder.kids[a].kind = nkTypeSection then
+      begin
+        for b := 0 to High (holder.kids[a].kids) do
+          if holder.kids[a].kids[b] <> nil then
+            CheckTypeNode (holder.kids[a].kids[b].kids[0], ctx);
+      end;
+    end;
+end;
+
+procedure TSem.CheckDeclTypes (u: TNode);
+{ one pass over a unit, in declaration order: its TYPE and VAR
+  sections under the unit's own name, then each procedure's
+  parameters, return type and locals under the procedure's }
+var
+  i, a : Integer;
+  d, pl : TNode;
+begin
+  CheckVarTypes (u, u.a);
+  for i := 0 to High (u.kids) do
+  begin
+    d := u.kids[i];
+    if (d = nil) or (d.kind <> nkProcDecl) then Continue;
+    pl := d.kids[0];
+    if pl <> nil then
+      for a := 0 to High (pl.kids) do
+        if pl.kids[a] <> nil then
+          CheckTypeNode (pl.kids[a].kids[1], u.a + '.' + d.a);
+    CheckTypeNode (d.kids[1], u.a + '.' + d.a);
+    if d.kids[4] <> nil then
+      CheckVarTypes (d.kids[4], u.a + '.' + d.a);
+  end;
+end;
+
 { ---- registry ---- }
 
 procedure TSem.CollectUnit (u: TNode);
@@ -510,7 +631,11 @@ begin
             m.tdNames[High (m.tdNames)] := td.a;
             m.tdNodes[High (m.tdNodes)] := td.kids[0];
           end;
-          if td.kids[0].kind = nkCaseRecordType then
+          { an enumeration is a payload-less case record: its
+            members ARE its variants (nkIdent, no payload kid), so it
+            registers the same way and inherits construction, CASE
+            totality and cross-module reach (docs/enum-plan.md) }
+          if td.kids[0].kind in [nkCaseRecordType, nkEnumType] then
           begin
             cr := td.kids[0];
             k := Length (m.vts);
@@ -521,7 +646,10 @@ begin
             for vi := 0 to High (cr.kids) do
             begin
               m.vts[k].variants[vi] := cr.kids[vi].a;
-              m.vts[k].fields[vi] := cr.kids[vi].kids[0];
+              if Length (cr.kids[vi].kids) > 0 then
+                m.vts[k].fields[vi] := cr.kids[vi].kids[0]
+              else
+                m.vts[k].fields[vi] := nil;
             end;
           end;
         end;
@@ -684,6 +812,31 @@ begin
   if (Result <> nil) and (Result.kind = nkQualident) then Result := nil;
 end;
 
+{ the variant of a type in EXACTLY the module named: the three-part
+  constructor Mod.Type.Variant (args) looks here and nowhere else,
+  which is what the qualification says }
+function TSem.VariantIn (const mn, tn, vn: string; out ownerMod: string;
+  out fields: TNode): Boolean;
+var
+  m : TModuleInfo;
+  a, b : Integer;
+begin
+  Result := False;
+  ownerMod := '';
+  fields := nil;
+  m := FindMod (mn);
+  if m = nil then Exit;
+  for a := 0 to High (m.vts) do
+    if m.vts[a].typeName = tn then
+      for b := 0 to High (m.vts[a].variants) do
+        if m.vts[a].variants[b] = vn then
+        begin
+          ownerMod := m.name;
+          fields := m.vts[a].fields[b];
+          Exit (True);
+        end;
+end;
+
 function TSem.FindVariant (const tn, vn: string; out ownerMod: string;
   out fields: TNode): Boolean;
 var i, j, k : Integer;
@@ -724,6 +877,48 @@ end;
 { canonical type of a named type.  Records, case records, monitors,
   and opaque types are nominal -- 'Mod.Name'; aliases chase to their
   structure.  '' when the name cannot be found (softness).           }
+{ integer -> enumeration (or payload-less case record), the checked
+  inverse of ORD; RAISES ValueRange out of 0..n-1.  Answers the
+  canonical type, or '' (docs/enum-plan.md, part 2). }
+function TSem.AllPayloadless (n: TNode): Boolean;
+var i : Integer;
+begin
+  Result := False;
+  if n = nil then Exit;
+  if n.kind = nkEnumType then Exit (True);
+  if n.kind = nkCaseRecordType then
+  begin
+    for i := 0 to High (n.kids) do
+      if (n.kids[i] <> nil) and (Length (n.kids[i].kids) > 0)
+         and (n.kids[i].kids[0] <> nil) then Exit (False);
+    Result := True;
+  end;
+end;
+
+function TSem.IsTagged (const canon: string): Boolean;
+{ the canonical name (Mod.Type) resolves to an enumeration or a case
+  record -- a value CASE reaches by tag, which is what NAME can name }
+var dot : Integer; t : TNode;
+begin
+  Result := False;
+  dot := Pos ('.', canon);
+  if dot = 0 then Exit;
+  t := LookupTypeName (Copy (canon, 1, dot - 1), Copy (canon, dot + 1, MaxInt));
+  if t <> nil then
+    Result := t.kind in [nkEnumType, nkCaseRecordType];
+end;
+
+function TSem.EnumConvType (const name: string): string;
+var dot : Integer; md, ty : string;
+begin
+  Result := '';
+  dot := Pos ('.', name);
+  if dot > 0 then begin md := Copy (name, 1, dot - 1); ty := Copy (name, dot + 1, MaxInt); end
+  else begin md := ''; ty := name; end;
+  if AllPayloadless (LookupTypeName (md, ty)) then
+    Result := CanonQual (md, ty, 0);
+end;
+
 function TSem.CanonQual (const modName, typeName: string;
   depth: Integer): string;
 var
@@ -737,7 +932,7 @@ var
     td := mm.FindType (typeName);
     if td <> nil then
     begin
-      if td.kind in [nkRecordType, nkCaseRecordType, nkMonitorType] then
+      if td.kind in [nkRecordType, nkCaseRecordType, nkMonitorType, nkEnumType] then
         Exit (mm.name + '.' + typeName);
       Exit (CanonT (td, depth + 1));
     end;
@@ -1292,10 +1487,19 @@ var
   end;
 
   function DesigName (d: TNode): string;
+  { the dotted callee name: `P', `Mod.P', `Type.Variant', and -- since
+    2026-09-15 -- `Mod.Type.Variant', the three-part imported variant
+    constructor.  Every field selector joins; a call target is only
+    ever one of these shapes, because F(x).field does not parse and a
+    field chain cannot be called.  A leading index or deref stops it. }
+  var i : Integer;
   begin
     Result := d.a;
-    if (Length (d.kids) = 1) and (d.kids[0].kind = nkSelField) then
-      Result := Result + '.' + d.kids[0].a;
+    for i := 0 to High (d.kids) do
+      if d.kids[i].kind = nkSelField then
+        Result := Result + '.' + d.kids[i].a
+      else
+        Exit (d.a);
   end;
 
   function ExprType (e: TNode): string; forward;
@@ -1310,6 +1514,26 @@ var
     Result := (s = '') or (s = '<int>') or IsIntStr (s);
   end;
 
+  { the canonical enumeration (or case-record) type an ARRAY bound
+    names, or '' when the bound is an integer.  ARRAY Colour OF T is
+    indexed by the type: its subscript is a member, not an ordinal, so
+    the index check wants the enumeration here (docs/enum-plan.md
+    part 2). }
+  function ArrEnumBoundOf (declN: TNode): string;
+  var r, b : TNode; canon : string;
+  begin
+    Result := '';
+    r := ResolveType (declN);
+    if (r = nil) or (r.kind <> nkArrayType) then Exit;
+    b := r.kids[0];
+    if (b = nil) or (b.kind <> nkDesignator) then Exit;
+    canon := '';
+    if Length (b.kids) = 0 then canon := CanonQual ('', b.a, 0)
+    else if (Length (b.kids) = 1) and (b.kids[0].kind = nkSelField) then
+      canon := CanonQual (b.a, b.kids[0].a, 0);
+    if IsTagged (canon) then Result := canon;
+  end;
+
   { the designator walk over DECLARED type nodes; guard mode is the
     operand of IS, where the final OPT component is legal.  Errors
     fire only when a selector is applied THROUGH an OPT or CASE
@@ -1319,21 +1543,36 @@ var
     j, k : Integer;
     declN, res, f : TNode;
     sel : TNode;
-    it : string;
+    it, eb : string;
   begin
     declN := ScopeType (d.a);
     for j := 0 to High (d.kids) do
     begin
       sel := d.kids[j];
       if sel.kind = nkSelIndex then
-        { every axis, not just the first: a grid subscript list is as
-          long as the rank and each one of them is an index }
-        for k := 0 to High (sel.kids) do
+      begin
+        eb := ArrEnumBoundOf (declN);
+        if eb <> '' then
         begin
-          it := ExprType (sel.kids[k]);
-          if not IsIntish (it) then
-            ErrN (d, ctx, 'index must be an integer, not ' + TyName (it));
-        end;
+          { ARRAY Colour OF T: the one subscript is a Colour value }
+          if Length (sel.kids) >= 1 then
+          begin
+            it := ExprType (sel.kids[0]);
+            if (it <> '') and (it <> eb) then
+              ErrN (d, ctx, 'an ARRAY ' + TyName (eb) + ' OF is indexed by a '
+                + TyName (eb) + ' value, not ' + TyName (it));
+          end;
+        end
+        else
+          { every axis, not just the first: a grid subscript list is as
+            long as the rank and each one of them is an index }
+          for k := 0 to High (sel.kids) do
+          begin
+            it := ExprType (sel.kids[k]);
+            if not IsIntish (it) then
+              ErrN (d, ctx, 'index must be an integer, not ' + TyName (it));
+          end;
+      end;
       if declN = nil then Continue;
       res := ResolveType (declN);
       { auto-deref before applying the selector }
@@ -1485,6 +1724,16 @@ var
       if (Length (d.kids) = 1) and (d.kids[0].kind = nkSelField) and
          FindVariant (d.a, d.kids[0].a, om, fn) then
         Exit (om + '.' + d.a);
+      { Mod.Type.Variant with no payload: the cross-module twin of the
+        two-part form, Palette.Hue.Warm.  d.a is a module (not in
+        scope, or ScopeType would not be nil), the first selector its
+        enumeration or case-record type, the second a member.  Typing
+        it is what lets FOR over an imported enumeration reach the enum
+        branch instead of the integer path (docs/enum-plan.md part 2). }
+      if (Length (d.kids) = 2) and (d.kids[0].kind = nkSelField) and
+         (d.kids[1].kind = nkSelField) and
+         VariantIn (d.a, d.kids[0].a, d.kids[1].a, om, fn) then
+        Exit (om + '.' + d.kids[0].a);
       { an imported CONST is still a literal }
       if (Length (d.kids) = 1) and (d.kids[0].kind = nkSelField) then
       begin
@@ -1641,7 +1890,7 @@ var
     that returns nothing; '' is a call whose result is unknown.      }
   function CallType (dnode, argl, site: TNode): string;
   var
-    name, om, pTy, amode, aliasTo : string;
+    name, om, pTy, amode, aliasTo, t : string;
     nargs, j, g, k, kept, dot : Integer;
     aTy : array of string;
     aNode : array of TNode;
@@ -1761,6 +2010,16 @@ var
       Arity (1);
       Exit ('I64');
     end;
+  if name = 'NAME' then
+  begin
+    { the identifier text of an enumeration member (or any case-record
+      variant), as a STR: NAME (Colour.Red) is 'Red' }
+    Arity (1);
+    if (nargs = 1) and not IsTagged (aTy[0]) and (aTy[0] <> '') then
+      ErrN (site, ctx, 'NAME needs an enumeration or a case record, not '
+        + TyName (aTy[0]));
+    Exit ('SLICE OF CHAR');
+  end;
     if name = 'VIEW' then
     begin
       { VIEW (g, i, ALL, ...) -- one argument per axis: an index drops
@@ -1957,10 +2216,31 @@ var
       if pr.node.kids[1] <> nil then Exit ('');
       Exit ('<void>');
     end;
+    { a variant constructor with payload: Type.Variant (args), or
+      Mod.Type.Variant (args) from another module.  The three-part
+      form was read as a two-part one -- type `Csv', variant
+      `Kind.Stamp' -- and refused as `unknown procedure: Csv' until
+      2026-09-15; nobody had written one, so nothing knew.  With a
+      module named, the variant is looked for THERE and nowhere else. }
     dot := Pos ('.', name);
-    if (dot > 0) and
-       FindVariant (Copy (name, 1, dot - 1),
-                    Copy (name, dot + 1, MaxInt), om, vfields) then
+    isVar := False;
+    if dot > 0 then
+    begin
+      t := Copy (name, dot + 1, MaxInt);
+      g := Pos ('.', t);
+      if g > 0 then
+      begin
+        isVar := VariantIn (Copy (name, 1, dot - 1), Copy (t, 1, g - 1),
+                            Copy (t, g + 1, MaxInt), om, vfields);
+        t := Copy (t, 1, g - 1);
+      end
+      else
+      begin
+        isVar := FindVariant (Copy (name, 1, dot - 1), t, om, vfields);
+        t := Copy (name, 1, dot - 1);
+      end;
+    end;
+    if isVar then
     begin
       SetLength (flat, 0);
       if vfields <> nil then
@@ -1982,7 +2262,21 @@ var
               [k + 1, name, TyName (aTy[k]), TyName (pTy)]));
         end;
       canonCtx := '';
-      Exit (om + '.' + Copy (name, 1, dot - 1));
+      Exit (om + '.' + t);
+    end;
+    { the integer-to-enumeration conversion: returns the type and
+      raises ValueRange, like every other narrowing }
+    t := EnumConvType (name);
+    if t <> '' then
+    begin
+      Arity (1);
+      if (nargs = 1) and not IsIntish (aTy[0]) then
+        ErrN (site, ctx, 'argument 1 of ' + name +
+          ': cannot convert ' + TyName (aTy[0]) +
+          ' to an enumeration; an integer position is expected');
+      if raised.Values['ValueRange'] = '' then
+        raised.Values['ValueRange'] := name + ' conversion';
+      Exit (t);
     end;
     ErrN (site, ctx, 'unknown procedure: ' + name);
   end;
@@ -2507,10 +2801,31 @@ var
         end;
       nkFor :
         begin
+          { integer bounds, or two bounds of ONE enumeration:
+            FOR c := Colour.Red TO Colour.Blue walks the members in
+            declaration order (docs/enum-plan.md, part 2) }
           t := ExprType (st.kids[0]);
+          u := ExprType (st.kids[1]);
+          if IsTagged (t) or IsTagged (u) then
+          begin
+            if t <> u then
+              ErrN (st, ctx, 'FOR over an enumeration needs both bounds of one type, not ' +
+                TyName (t) + ' and ' + TyName (u));
+            if st.kids[2] <> nil then
+              ErrN (st, ctx, 'FOR over an enumeration takes no BY step');
+            { the loop variable keeps its declared enumeration type --
+              bind nil so ExprType reads the declaration, not tyI64,
+              or NAME (c) inside the body sees an integer }
+            BindName (st.a, nil);
+            pre := OwnSnap;
+            WalkSeq (st.kids[3]);
+            hpre := OwnSnap;
+            OwnRestore (pre);
+            OwnMergeMoves (hpre);
+            Exit;
+          end;
           if not IsIntish (t) then
             ErrN (st, ctx, 'FOR bounds must be integers, not ' + TyName (t));
-          u := ExprType (st.kids[1]);
           if not IsIntish (u) then
             ErrN (st, ctx, 'FOR bounds must be integers, not ' + TyName (u));
           if st.kids[2] <> nil then
@@ -3060,6 +3375,10 @@ begin
       CheckForeignDef (u);
       Continue;
     end;
+    { declarations before bodies: a type spelled wrong is reported
+      where it is written, once, ahead of whatever the bodies make of
+      a variable that has no type }
+    CheckDeclTypes (u);
     if u.kind = nkImplementation then
       CheckConformance (u);
 

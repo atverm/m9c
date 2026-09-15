@@ -131,6 +131,27 @@ EXPLAIN = {
     "unknown-exception": (
         "a RAISE, a RAISES clause or a handler cites an exception name found nowhere -- not declared locally, not predeclared (Overflow/IndexError/OutOfMemory/ValueRange), and not declared in any loaded module",
         "declare the EXCEPTION, or qualify it into the module that owns it (Json.ParseError); an imported exception is reached as Module.Name, never bare -- the checker now refuses what the generator could not emit"),
+    "unknown-type-in-known-module": (
+        "a declaration names a type as Module.Name, the module is imported and loaded, and it declares no type or opaque of that name -- a typo, most often in case (DynStr.Dstring for DynStr.DString), since names are case-sensitive",
+        "spell it as the module declares it (m9c --json Module lists every name); an unknown type is otherwise SOFT and never diagnosed, because a bare name found nowhere may only be a missing IMPORT -- but a known module lacking the name is not softness, and until 2026-09-15 this rode through --check to surface as cc's `unknown type name Module_Name', the M9 line gone"),
+    "name-needs-enum": (
+        "NAME turns an enumeration member -- or a case-record variant -- into its identifier text; applied to anything else (a number, a record, a slice) it has nothing to name",
+        "pass an enumeration or case-record value; NAME (Colour.Red) is 'Red', and it reads the identifier from a table the generator emits per type, so it retires a hand-written code-to-name CASE"),
+    "array-enum-index-int": (
+        "an ARRAY indexed by an enumeration is indexed BY THE TYPE -- its subscript is a member of that enumeration, and its length is the member count -- so an integer subscript (or a value of some other type) is refused; the compiler proves a[Colour.Red] is in range precisely because a Colour is always one of the members",
+        "write the member: a[Colour.Red], not a[0]; that is what makes the array bounds-checked at compile time, with no runtime check and no ordinal to keep in step with the type"),
+    "for-enum-bounds-differ": (
+        "a FOR loop over an enumeration walks the members of ONE enumeration in declaration order, so its two bounds must name that same type; giving Colour.Red as the low bound and a member of a different enumeration as the high bound has no meaning, since members of unrelated enumerations are not comparable",
+        "make both bounds members of the one type -- FOR c := Colour.Red TO Colour.Blue; a loop that must cross two enumerations is two loops, or a conversion through ORD if the ordinals really are meant to line up"),
+    "for-enum-takes-no-step": (
+        "BY names an integer stride and an enumeration's members are not numbers to step over -- the loop already visits every member from the low bound to the high one, with nothing between them to skip -- so BY on an enumeration bound is refused",
+        "drop the BY: FOR c := Colour.Red TO Colour.Blue visits Red, Green, Blue in order; if you need to skip members, guard the body with an IF or CASE rather than striding the loop"),
+    "enum-conversion-no-raises": (
+        "an integer-to-enumeration conversion, Colour (i) or Mod.Type (i), can turn an integer that names no member into a value, so it RAISES ValueRange -- and a procedure that converts without declaring or handling that failure is refused, the same as I64 (x) on a value that might not fit",
+        "add RAISES ValueRange to the signature, or handle it with EXCEPT; the conversion is the checked inverse of ORD, and the exhaustive RAISES accounting reaches it like every other narrowing"),
+    "variant-in-named-module": (
+        "a three-part constructor Mod.Type.Variant (args) names a module, a type in it, and a variant that is not there -- reported as `unknown procedure: Mod.Type.Variant', because a name that is neither a procedure nor a known variant is, to the caller, an unknown callee",
+        "spell the variant as the type declares it (m9c --json Mod lists them); the three-part form is how an imported variant with a payload is built from another module, Mod.Type.Variant, and it looks nowhere but Mod -- before 2026-09-15 it was refused outright as `unknown procedure: Mod' because the callee was split at its first dot"),
     "from-m9-module": (
         "FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way)",
         "use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later"),

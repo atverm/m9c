@@ -50,8 +50,65 @@ struct Mat_Matrix {
   m9_gd2_double d;
 };
 
+typedef struct Mat_Work Mat_Work;
+struct Mat_Work {
+  m9_mon m9mon;
+  int64_t done;
+  int64_t next;
+};
+
+typedef struct Mat_InvJob Mat_InvJob;
+struct Mat_InvJob {
+  Mat_Work w;
+  Mat_Matrix * l;
+  Mat_Matrix * t;
+  Mat_Matrix * p;
+  int64_t n;
+  int64_t band;
+  int64_t nbands;
+  int64_t pass;
+};
+
+typedef struct Mat_NormalJob Mat_NormalJob;
+struct Mat_NormalJob {
+  Mat_Work w;
+  Mat_Matrix * h;
+  Mat_Matrix * k;
+  m9_sl_F64 wt;
+  int64_t n;
+  int64_t m;
+  int64_t band;
+  int64_t nbands;
+};
+
 static bool Mat_IsNaN (double v, m9_state *err);
 static void Mat_Same (Mat_Matrix * a, Mat_Matrix * b, m9_state *err);
+static int64_t Mat_Claim (Mat_Work *w, m9_state *err);
+static void Mat_Finish (Mat_Work *w, m9_state *err);
+static void Mat_AwaitAll (Mat_Work *w, int64_t want, m9_state *err);
+static void Mat_ResetWork (Mat_Work *w, m9_state *err);
+static void Mat_InvBand (Mat_InvJob *j, int64_t b, m9_state *err);
+static void Mat_InvWorker (Mat_InvJob *j, m9_state *err);
+static void Mat_RunInv (Mat_InvJob * *j, int64_t threads, m9_state *err);
+static void Mat_NormalBand (Mat_NormalJob *j, int64_t b, m9_state *err);
+static void Mat_NormalWorker (Mat_NormalJob *j, m9_state *err);
+
+static void *m9_thr_Mat_NormalWorker (void *p)
+{
+  m9_state e = { 0 };
+  Mat_NormalWorker ((Mat_NormalJob *) p, &e);
+  if (e.exc) m9_thread_died (e.exc->name);
+  return NULL;
+}
+
+static void *m9_thr_Mat_InvWorker (void *p)
+{
+  m9_state e = { 0 };
+  Mat_InvWorker ((Mat_InvJob *) p, &e);
+  if (e.exc) m9_thread_died (e.exc->name);
+  return NULL;
+}
+
 
 
 Mat_Matrix * Mat_New (m9_pool *pool, int64_t rows, int64_t cols, m9_state *err)
@@ -816,6 +873,130 @@ L_ret: ;
   return m9ret;
 }
 
+Mat_Matrix * Mat_CholInverse (m9_pool *pool, Mat_Matrix * l, int64_t threads, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  Mat_Matrix * m9ret = NULL;
+  m9_pool scratch = {0}; (void) scratch;
+  Mat_InvJob * j = NULL; (void) j;
+  int64_t n = 0; (void) n;
+  bool m9t1 = (Mat_Rows (l, err) != Mat_Cols (l, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->i[0] = Mat_Rows (l, err);
+    err->i[1] = Mat_Cols (l, err);
+    m9_raise (err, &Mat_SizeError);
+    goto L_ret;
+  }
+  n = Mat_Rows (l, err);
+  if (err->exc) goto L_ret;
+  j = (Mat_InvJob *) m9_pool_alloc (&(scratch), sizeof (Mat_InvJob), 1, err);
+  if (err->exc) goto L_ret;
+  j->n = n;
+  j->l = l;
+  j->t = Mat_New (&(scratch), n, n, err);
+  if (err->exc) goto L_ret;
+  j->p = Mat_New (pool, n, n, err);
+  if (err->exc) goto L_ret;
+  j->band = INT64_C(32);
+  if ((n < INT64_C(128))) {
+    j->band = INT64_C(8);
+  }
+  j->nbands = m9_div_i64 ((m9_sub_i64 (m9_add_i64 (n, j->band, err), INT64_C(1), err)), j->band, err);
+  if (err->exc) goto L_ret;
+  j->pass = INT64_C(1);
+  Mat_RunInv (&(j), threads, err);
+  if (err->exc) goto L_ret;
+  j->pass = INT64_C(2);
+  Mat_RunInv (&(j), threads, err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = j->p;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return m9ret;
+}
+
+void Mat_AddNormal (m9_pool *pool, Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, int64_t threads, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_pool scratch = {0}; (void) scratch;
+  Mat_NormalJob * j = NULL; (void) j;
+  int64_t t = 0; (void) t;
+  int64_t c = 0; (void) c;
+  int64_t cc = 0; (void) cc;
+  bool m9t1 = ((Mat_Rows ((*k), err) != Mat_Cols (h, err)) || (Mat_Cols ((*k), err) != Mat_Cols (h, err)));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->i[0] = Mat_Rows ((*k), err);
+    err->i[1] = Mat_Cols (h, err);
+    m9_raise (err, &Mat_SizeError);
+    goto L_ret;
+  }
+  bool m9t2 = ((w).len != Mat_Rows (h, err));
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    err->i[0] = (w).len;
+    err->i[1] = Mat_Rows (h, err);
+    m9_raise (err, &Mat_SizeError);
+    goto L_ret;
+  }
+  j = (Mat_NormalJob *) m9_pool_alloc (&(scratch), sizeof (Mat_NormalJob), 1, err);
+  if (err->exc) goto L_ret;
+  j->h = h;
+  j->k = (*k);
+  j->wt = w;
+  j->n = Mat_Cols (h, err);
+  if (err->exc) goto L_ret;
+  j->m = Mat_Rows (h, err);
+  if (err->exc) goto L_ret;
+  j->band = INT64_C(64);
+  j->nbands = m9_div_i64 ((m9_sub_i64 (m9_add_i64 (j->n, j->band, err), INT64_C(1), err)), j->band, err);
+  if (err->exc) goto L_ret;
+  Mat_ResetWork (&(j->w), err);
+  if (err->exc) goto L_ret;
+  if ((threads < INT64_C(1))) {
+    threads = INT64_C(1);
+  }
+  { int64_t m9t3to;
+  t = INT64_C(1);
+  m9t3to = threads;
+  for (; t <= m9t3to; t += 1) {
+    m9_thread_start (m9_thr_Mat_NormalWorker, (void *) j, err);
+    if (err->exc) goto L_ret;
+  } }
+  Mat_AwaitAll (&(j->w), threads, err);
+  if (err->exc) goto L_ret;
+  { int64_t m9t4to;
+  c = INT64_C(1);
+  m9t4to = m9_sub_i64 (j->n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; c <= m9t4to; c += 1) {
+    { int64_t m9t5to;
+    cc = INT64_C(0);
+    m9t5to = m9_sub_i64 (c, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; cc <= m9t5to; cc += 1) {
+      (*(double *) m9_gat2 ((*k)->d.p, sizeof (double), (*k)->d.n[0], (*k)->d.n[1], (*k)->d.s[0], (*k)->d.s[1], c, cc, err)) = (*(double *) m9_gat2 ((*k)->d.p, sizeof (double), (*k)->d.n[0], (*k)->d.n[1], (*k)->d.s[0], (*k)->d.s[1], cc, c, err));
+      if (err->exc) goto L_ret;
+    } }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return;
+}
+
 static bool Mat_IsNaN (double v, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -854,6 +1035,316 @@ static void Mat_Same (Mat_Matrix * a, Mat_Matrix * b, m9_state *err)
     m9_raise (err, &Mat_SizeError);
     goto L_ret;
   }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static int64_t Mat_Claim (Mat_Work *w, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  m9_mon_enter (&(*w).m9mon);
+  int64_t b = 0; (void) b;
+  b = (*w).next;
+  (*w).next = m9_add_i64 ((*w).next, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = b;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_mon_leave (&(*w).m9mon);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Mat_Finish (Mat_Work *w, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_mon_enter (&(*w).m9mon);
+  (*w).done = m9_add_i64 ((*w).done, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  m9_mon_signal (&((*w)).m9mon);
+L_ret: ;
+  err->res = m9res;
+  m9_mon_leave (&(*w).m9mon);
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Mat_AwaitAll (Mat_Work *w, int64_t want, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_mon_enter (&(*w).m9mon);
+  for (;;) {
+    if (!(((*w).done < want))) break;
+    m9_mon_wait (&((*w)).m9mon);
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_mon_leave (&(*w).m9mon);
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Mat_ResetWork (Mat_Work *w, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_mon_enter (&(*w).m9mon);
+  (*w).done = INT64_C(0);
+  (*w).next = INT64_C(0);
+L_ret: ;
+  err->res = m9res;
+  m9_mon_leave (&(*w).m9mon);
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Mat_InvBand (Mat_InvJob *j, int64_t b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_pool wpool = {0}; (void) wpool;
+  m9_sl_F64 x = {0}; (void) x;
+  int64_t c0 = 0; (void) c0;
+  int64_t c1 = 0; (void) c1;
+  int64_t col = 0; (void) col;
+  int64_t i = 0; (void) i;
+  int64_t m = 0; (void) m;
+  int64_t a = 0; (void) a;
+  int64_t bb = 0; (void) bb;
+  int64_t kk = 0; (void) kk;
+  int64_t n = 0; (void) n;
+  double acc = 0; (void) acc;
+  n = (*j).n;
+  c0 = m9_mul_i64 (b, (*j).band, err);
+  if (err->exc) goto L_ret;
+  c1 = m9_add_i64 (c0, (*j).band, err);
+  if (err->exc) goto L_ret;
+  if ((c1 > n)) {
+    c1 = n;
+  }
+  if (((*j).pass == INT64_C(1))) {
+    x = M9_POOL_SL (m9_sl_F64, double, &(wpool), n, err);
+    if (err->exc) goto L_ret;
+    { int64_t m9t1to;
+    col = c0;
+    m9t1to = m9_sub_i64 (c1, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; col <= m9t1to; col += 1) {
+      { int64_t m9t2to;
+      i = col;
+      m9t2to = m9_sub_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      for (; i <= m9t2to; i += 1) {
+        if ((i == col)) {
+          acc = 1.0;
+        } else {
+          acc = 0.0;
+        }
+        { int64_t m9t3to;
+        m = col;
+        m9t3to = m9_sub_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        for (; m <= m9t3to; m += 1) {
+          acc = (acc - ((*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, m, err)) * (*(double *) m9_at (x.p, m, x.len, sizeof (double), err))));
+          if (err->exc) goto L_ret;
+        } }
+        (*(double *) m9_at (x.p, i, x.len, sizeof (double), err)) = (acc / (*(double *) m9_gat2 ((*j).l->d.p, sizeof (double), (*j).l->d.n[0], (*j).l->d.n[1], (*j).l->d.s[0], (*j).l->d.s[1], i, i, err)));
+        if (err->exc) goto L_ret;
+      } }
+      { int64_t m9t4to;
+      i = INT64_C(0);
+      m9t4to = m9_sub_i64 (col, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      for (; i <= m9t4to; i += 1) {
+        (*(double *) m9_gat2 ((*j).t->d.p, sizeof (double), (*j).t->d.n[0], (*j).t->d.n[1], (*j).t->d.s[0], (*j).t->d.s[1], col, i, err)) = 0.0;
+        if (err->exc) goto L_ret;
+      } }
+      { int64_t m9t5to;
+      i = col;
+      m9t5to = m9_sub_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      for (; i <= m9t5to; i += 1) {
+        (*(double *) m9_gat2 ((*j).t->d.p, sizeof (double), (*j).t->d.n[0], (*j).t->d.n[1], (*j).t->d.s[0], (*j).t->d.s[1], col, i, err)) = (*(double *) m9_at (x.p, i, x.len, sizeof (double), err));
+        if (err->exc) goto L_ret;
+      } }
+    } }
+  } else {
+    { int64_t m9t6to;
+    a = c0;
+    m9t6to = m9_sub_i64 (c1, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; a <= m9t6to; a += 1) {
+      { int64_t m9t7to;
+      bb = a;
+      m9t7to = m9_sub_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      for (; bb <= m9t7to; bb += 1) {
+        acc = 0.0;
+        { int64_t m9t8to;
+        kk = bb;
+        m9t8to = m9_sub_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        for (; kk <= m9t8to; kk += 1) {
+          acc = (acc + ((*(double *) m9_gat2 ((*j).t->d.p, sizeof (double), (*j).t->d.n[0], (*j).t->d.n[1], (*j).t->d.s[0], (*j).t->d.s[1], a, kk, err)) * (*(double *) m9_gat2 ((*j).t->d.p, sizeof (double), (*j).t->d.n[0], (*j).t->d.n[1], (*j).t->d.s[0], (*j).t->d.s[1], bb, kk, err))));
+          if (err->exc) goto L_ret;
+        } }
+        (*(double *) m9_gat2 ((*j).p->d.p, sizeof (double), (*j).p->d.n[0], (*j).p->d.n[1], (*j).p->d.s[0], (*j).p->d.s[1], a, bb, err)) = acc;
+        if (err->exc) goto L_ret;
+        (*(double *) m9_gat2 ((*j).p->d.p, sizeof (double), (*j).p->d.n[0], (*j).p->d.n[1], (*j).p->d.s[0], (*j).p->d.s[1], bb, a, err)) = acc;
+        if (err->exc) goto L_ret;
+      } }
+    } }
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&wpool);
+  return;
+}
+
+static void Mat_InvWorker (Mat_InvJob *j, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t b = 0; (void) b;
+  b = Mat_Claim (&((*j).w), err);
+  if (err->exc) goto L_ret;
+  for (;;) {
+    if (!((b < (*j).nbands))) break;
+    Mat_InvBand (j, b, err);
+    if (err->exc) goto L_ret;
+    b = Mat_Claim (&((*j).w), err);
+    if (err->exc) goto L_ret;
+  }
+  Mat_Finish (&((*j).w), err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Mat_RunInv (Mat_InvJob * *j, int64_t threads, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t t = 0; (void) t;
+  Mat_ResetWork (&((*j)->w), err);
+  if (err->exc) goto L_ret;
+  if ((threads < INT64_C(1))) {
+    threads = INT64_C(1);
+  }
+  { int64_t m9t1to;
+  t = INT64_C(1);
+  m9t1to = threads;
+  for (; t <= m9t1to; t += 1) {
+    m9_thread_start (m9_thr_Mat_InvWorker, (void *) (*j), err);
+    if (err->exc) goto L_ret;
+  } }
+  Mat_AwaitAll (&((*j)->w), threads, err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Mat_NormalBand (Mat_NormalJob *j, int64_t b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t r0 = 0; (void) r0;
+  int64_t r1 = 0; (void) r1;
+  int64_t i = 0; (void) i;
+  int64_t c = 0; (void) c;
+  int64_t cc = 0; (void) cc;
+  double hic = 0; (void) hic;
+  double hv = 0; (void) hv;
+  r0 = m9_mul_i64 (b, (*j).band, err);
+  if (err->exc) goto L_ret;
+  r1 = m9_add_i64 (r0, (*j).band, err);
+  if (err->exc) goto L_ret;
+  if ((r1 > (*j).n)) {
+    r1 = (*j).n;
+  }
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((*j).m, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { int64_t m9t2to;
+    c = r0;
+    m9t2to = m9_sub_i64 (r1, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; c <= m9t2to; c += 1) {
+      hic = (*(double *) m9_gat2 ((*j).h->d.p, sizeof (double), (*j).h->d.n[0], (*j).h->d.n[1], (*j).h->d.s[0], (*j).h->d.s[1], i, c, err));
+      if (err->exc) goto L_ret;
+      if ((hic != 0.0)) {
+        hic = (hic * (*(double *) m9_at ((*j).wt.p, i, (*j).wt.len, sizeof (double), err)));
+        if (err->exc) goto L_ret;
+        { int64_t m9t3to;
+        cc = c;
+        m9t3to = m9_sub_i64 ((*j).n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        for (; cc <= m9t3to; cc += 1) {
+          hv = (*(double *) m9_gat2 ((*j).h->d.p, sizeof (double), (*j).h->d.n[0], (*j).h->d.n[1], (*j).h->d.s[0], (*j).h->d.s[1], i, cc, err));
+          if (err->exc) goto L_ret;
+          if ((hv != 0.0)) {
+            (*(double *) m9_gat2 ((*j).k->d.p, sizeof (double), (*j).k->d.n[0], (*j).k->d.n[1], (*j).k->d.s[0], (*j).k->d.s[1], c, cc, err)) = ((*(double *) m9_gat2 ((*j).k->d.p, sizeof (double), (*j).k->d.n[0], (*j).k->d.n[1], (*j).k->d.s[0], (*j).k->d.s[1], c, cc, err)) + (hic * hv));
+            if (err->exc) goto L_ret;
+          }
+        } }
+      }
+    } }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Mat_NormalWorker (Mat_NormalJob *j, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t b = 0; (void) b;
+  b = Mat_Claim (&((*j).w), err);
+  if (err->exc) goto L_ret;
+  for (;;) {
+    if (!((b < (*j).nbands))) break;
+    Mat_NormalBand (j, b, err);
+    if (err->exc) goto L_ret;
+    b = Mat_Claim (&((*j).w), err);
+    if (err->exc) goto L_ret;
+  }
+  Mat_Finish (&((*j).w), err);
+  if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);

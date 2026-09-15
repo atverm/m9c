@@ -217,6 +217,16 @@ begin
     nkMonitorType :
       Result := 'MONITOR RECORD' + LF +
         FieldsLines (n.kids[0], ind + 1) + Sp (ind) + 'END';
+    nkEnumType :
+      begin
+        Result := '(';
+        for i := 0 to High (n.kids) do
+        begin
+          if i > 0 then Result := Result + ', ';
+          Result := Result + n.kids[i].a;
+        end;
+        Result := Result + ')';
+      end;
   else
     Result := '?type?';
   end;

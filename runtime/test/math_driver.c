@@ -77,6 +77,7 @@ int main (void)
     VALUE1 (Floor, floor, x);
     VALUE1 (Ceil, ceil, x);
     VALUE1 (Abs, fabs, x);
+    VALUE1 (Fabs, fabs, x);
     if (x > 0.0)
     {
       VALUE1 (Sqrt, sqrt, x);
@@ -150,8 +151,15 @@ int main (void)
     RAISES2 (Atan2, nan, 1.0, ValueRange);
     RAISES2 (Pow, 2.0, nan, ValueRange);
 
-    /* ...except of the two predicates that exist to ask about it */
+    /* ...except the two predicates that exist to ask about it, and
+       Fabs, which is total on purpose: abs of NaN is NaN, no domain
+       error, so the ONEFlux port can take |x| of a gappy series
+       without a handler per element */
     e.exc = NULL;
+    {
+      double fa = Math_Fabs (nan, &e);
+      ok ("Fabs (nan) is NaN and does not raise", fa != fa && !e.exc);
+    }
     ok ("IsNaN (nan) is true and does not raise",
         Math_IsNaN (nan, &e) && !e.exc);
     ok ("IsNaN (1.0) is false", !Math_IsNaN (1.0, &e) && !e.exc);

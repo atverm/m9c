@@ -1,0 +1,13 @@
+(* EXPECT: NAME needs an enumeration or a case record, not I64 *)
+(* NAME turns a member of an enumeration -- or a variant of a case
+   record -- into its identifier text.  Applied to a plain integer it
+   has nothing to name, and the checker says so rather than emitting a
+   table index into a table that does not exist (docs/enum-plan.md,
+   part 2). *)
+MODULE m ;
+IMPORT Io ;
+VAR i : I64 ;
+BEGIN
+  i := 3 ;
+  Io.WriteLine (NAME (i))
+END m.

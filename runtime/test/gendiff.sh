@@ -89,4 +89,32 @@ run Diag DynStr Io Lex
 run LibmGate
 grep -q 'float cos_' /tmp/gen_fpc.txt \
   || { echo "LibmGate: libm names NOT escaped -- IsLibM gone from BOTH generators?"; exit 1; }
+# KindUse is a gendiff-only fixture too: a CASE RECORD declared in
+# ANOTHER module (Csv.Kind), constructed and CASEd from here -- the
+# two forms both generators refused until 2026-09-15 while Csv, Frame
+# and Plot routed around them with integer codes.  The grep proves the
+# constructor was EMITTED: two generators refusing together would also
+# agree byte for byte.
+run KindUse Csv Io DynStr Time
+grep -q 'Csv_Kind_Real' /tmp/gen_fpc.txt \
+  || { echo "KindUse: Csv.Kind.Real NOT generated -- the cross-module constructor gone from BOTH generators?"; exit 1; }
+# EnumUse/Palette are gendiff-only fixtures too: an ENUMERATION, the
+# Pascal-faced payload-less case record.  The grep proves the tag was
+# emitted; two generators refusing together would also agree.
+run Palette
+run EnumUse Palette Io
+grep -q 'Palette_Hue_Cool' /tmp/gen_fpc.txt \
+  || { echo "EnumUse: Palette.Hue.Cool NOT generated -- enum construction gone from BOTH generators?"; exit 1; }
+# EnumUse.AllHues is a FOR over the enumeration; the loop runs on the
+# tag, `c.tag <= ...; c.tag++`.  The grep proves the loop was emitted:
+# two generators both refusing FOR-over-enum would still agree byte
+# for byte (docs/enum-plan.md, part 2).
+grep -q '\.tag <= ' /tmp/gen_fpc.txt \
+  || { echo "EnumUse: FOR over the enumeration NOT generated -- the tag loop gone from BOTH generators?"; exit 1; }
+# EnumUse.Tables indexes ARRAY Colour OF T by the enumeration: the
+# subscript is the member's tag, a.v[(k).tag], with no runtime bounds
+# check because the index IS the type.  The grep proves that emit:
+# two generators both refusing enum-indexed arrays would still agree.
+grep -q '\.v\[(' /tmp/gen_fpc.txt \
+  || { echo "EnumUse: enum-indexed array NOT generated -- a.v[(k).tag] gone from BOTH generators?"; exit 1; }
 echo "gendiff: $n modules, generated C byte-identical to the oracle"

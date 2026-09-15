@@ -33,6 +33,9 @@ static const uint32_t m9s1[1] = { 33u };
 static const uint32_t m9s2[5] = { 119u, 111u, 114u, 108u, 100u };
 static const uint32_t m9s3[2] = { 97u, 98u };
 static const uint32_t m9s4[8] = { 118u, 105u, 97u, 32u, 104u, 101u, 97u, 112u };
+static const uint32_t m9s5[1] = { 97u };
+static const uint32_t m9s6[1] = { 98u };
+static const uint32_t m9s7[1] = { 99u };
 
 static m9_sl_CHAR Concat_Greeting (m9_sl_CHAR who, m9_state *err);
 
@@ -83,6 +86,8 @@ int main (int argc, char **argv)
   DynStr_Append (&(m9_heap), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err);
   if (err->exc) goto L_ret;
   Io_WriteLine (DynStr_View (d, err), err);
+  if (err->exc) goto L_ret;
+  Io_WriteLine (m9_cat (err->res, m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 1 }), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), err), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 }), err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   m9_pool_free (&m9frame);

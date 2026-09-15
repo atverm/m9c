@@ -1,0 +1,19 @@
+DEFINITION MODULE Palette ;
+
+(* a small enumeration in its own module, so EnumUse can import it --
+   the cross-module half of the type family (docs/enum-plan.md) *)
+
+TYPE Hue = (Warm, Cool, Neutral) ;
+
+PROCEDURE Warmest () : Hue ;
+
+END Palette.
+
+IMPLEMENTATION MODULE Palette ;
+
+PROCEDURE Warmest () : Hue =
+BEGIN
+  RETURN Hue.Warm
+END Warmest ;
+
+END Palette.

@@ -35,28 +35,68 @@ struct Frame_Data {
   } u;
 };
 #define Frame_Data_F64s 0
+static const uint32_t Frame_Data_nm0[] = { 70u, 54u, 52u, 115u };
 #define Frame_Data_F32s 1
+static const uint32_t Frame_Data_nm1[] = { 70u, 51u, 50u, 115u };
 #define Frame_Data_I64s 2
+static const uint32_t Frame_Data_nm2[] = { 73u, 54u, 52u, 115u };
 #define Frame_Data_I32s 3
+static const uint32_t Frame_Data_nm3[] = { 73u, 51u, 50u, 115u };
 #define Frame_Data_I16s 4
+static const uint32_t Frame_Data_nm4[] = { 73u, 49u, 54u, 115u };
 #define Frame_Data_Bytes 5
+static const uint32_t Frame_Data_nm5[] = { 66u, 121u, 116u, 101u, 115u };
 #define Frame_Data_Bools 6
+static const uint32_t Frame_Data_nm6[] = { 66u, 111u, 111u, 108u, 115u };
 #define Frame_Data_Strs 7
+static const uint32_t Frame_Data_nm7[] = { 83u, 116u, 114u, 115u };
+static const m9_sl_CHAR __attribute__((__unused__)) Frame_Data_names[] = {
+  { (uint32_t *) Frame_Data_nm0, 4 },
+  { (uint32_t *) Frame_Data_nm1, 4 },
+  { (uint32_t *) Frame_Data_nm2, 4 },
+  { (uint32_t *) Frame_Data_nm3, 4 },
+  { (uint32_t *) Frame_Data_nm4, 4 },
+  { (uint32_t *) Frame_Data_nm5, 5 },
+  { (uint32_t *) Frame_Data_nm6, 5 },
+  { (uint32_t *) Frame_Data_nm7, 4 },
+};
 
 typedef struct Frame_Conv Frame_Conv;
 struct Frame_Conv { int32_t tag; };
 #define Frame_Conv_AtStart 0
+static const uint32_t Frame_Conv_nm0[] = { 65u, 116u, 83u, 116u, 97u, 114u, 116u };
 #define Frame_Conv_AtEnd 1
+static const uint32_t Frame_Conv_nm1[] = { 65u, 116u, 69u, 110u, 100u };
 #define Frame_Conv_AtMid 2
+static const uint32_t Frame_Conv_nm2[] = { 65u, 116u, 77u, 105u, 100u };
+static const m9_sl_CHAR __attribute__((__unused__)) Frame_Conv_names[] = {
+  { (uint32_t *) Frame_Conv_nm0, 7 },
+  { (uint32_t *) Frame_Conv_nm1, 5 },
+  { (uint32_t *) Frame_Conv_nm2, 5 },
+};
 
 typedef struct Frame_How Frame_How;
 struct Frame_How { int32_t tag; };
 #define Frame_How_Mean 0
+static const uint32_t Frame_How_nm0[] = { 77u, 101u, 97u, 110u };
 #define Frame_How_Sum 1
+static const uint32_t Frame_How_nm1[] = { 83u, 117u, 109u };
 #define Frame_How_Lo 2
+static const uint32_t Frame_How_nm2[] = { 76u, 111u };
 #define Frame_How_Hi 3
+static const uint32_t Frame_How_nm3[] = { 72u, 105u };
 #define Frame_How_First 4
+static const uint32_t Frame_How_nm4[] = { 70u, 105u, 114u, 115u, 116u };
 #define Frame_How_Last 5
+static const uint32_t Frame_How_nm5[] = { 76u, 97u, 115u, 116u };
+static const m9_sl_CHAR __attribute__((__unused__)) Frame_How_names[] = {
+  { (uint32_t *) Frame_How_nm0, 4 },
+  { (uint32_t *) Frame_How_nm1, 3 },
+  { (uint32_t *) Frame_How_nm2, 2 },
+  { (uint32_t *) Frame_How_nm3, 2 },
+  { (uint32_t *) Frame_How_nm4, 5 },
+  { (uint32_t *) Frame_How_nm5, 4 },
+};
 
 extern const m9_exc Frame_Unknown;
 extern const m9_exc Frame_WrongType;

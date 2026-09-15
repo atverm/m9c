@@ -85,7 +85,8 @@ type
     nkDesignator,                 { a=base ident; kids: selectors }
     nkSelField,                   { a=field }
     nkSelIndex,                   { kids[0]=index expr }
-    nkArgList
+    nkArgList,
+    nkEnumType                    { kids: nkIdent per member, in order }
   );
 
   TNode = class

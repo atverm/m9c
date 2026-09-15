@@ -24,7 +24,13 @@ struct ZarrStore_Dtype {
   } u;
 };
 #define ZarrStore_Dtype_Float 0
+static const uint32_t ZarrStore_Dtype_nm0[] = { 70u, 108u, 111u, 97u, 116u };
 #define ZarrStore_Dtype_Int 1
+static const uint32_t ZarrStore_Dtype_nm1[] = { 73u, 110u, 116u };
+static const m9_sl_CHAR __attribute__((__unused__)) ZarrStore_Dtype_names[] = {
+  { (uint32_t *) ZarrStore_Dtype_nm0, 5 },
+  { (uint32_t *) ZarrStore_Dtype_nm1, 3 },
+};
 
 extern const m9_exc ZarrStore_IOError;
 extern const m9_exc ZarrStore_FormatError;

@@ -170,39 +170,23 @@ constructor and the GENERATOR refuses it -- "unknown name: Csv".
 Logged as a gap between the two rather than papered over; a C
 caller can still pass a Kind.
 
-### CONST KindSkip
+### KindAt (t: PTR Table ; c: I64) : Kind RAISES IndexError
 
 _(documented with the group below)_
 
-### CONST KindReal
+### IsSet (t: PTR Table ; c: I64) : BOOL RAISES IndexError
 
-_(documented with the group below)_
-
-### CONST KindInt
-
-_(documented with the group below)_
-
-### CONST KindStamp
-
-_(documented with the group below)_
-
-### CONST KindText
-
-_(documented with the group below)_
-
-### CONST KindReal64
-
-_(documented with the group below)_
-
-### KindCodeAt (t: PTR Table ; c: I64) : I64 RAISES IndexError
-
-_(documented with the group below)_
+whether column c has had its kind named -- FALSE while it is
+still Skip.  The count of parsed columns, without spelling out
+every kind at the call site.
 
 ### FormatAt (t: PTR Table ; c: I64) : I64 RAISES IndexError
 
-the kind the caller set (KindSkip until set) and, for a Stamp
-column, its format.  Added for Frame.m9, which walks a parsed
-table and must ask rather than guess.
+the kind the caller set (Skip until set) and, for a Stamp
+column, its format.  A caller in another module CASEs the Kind
+directly now (the cross-module variant selector the enumeration
+work gave the generator); the integer codes it used to answer
+against are gone.
 
 ### Parse (VAR pool: POOL ; VAR t: PTR Table) RAISES ParseError, RangeError, ValueRange, IndexError
 

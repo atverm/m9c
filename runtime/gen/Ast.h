@@ -87,6 +87,7 @@ typedef struct Ast_Node Ast_Node;
 #define Ast_NSelIndex INT64_C(79)
 #define Ast_NArgList INT64_C(80)
 #define Ast_NGridType INT64_C(81)
+#define Ast_NEnumType INT64_C(82)
 
 #ifndef M9SL_m9_sl_Ast_Nodep
 #define M9SL_m9_sl_Ast_Nodep

@@ -703,7 +703,7 @@ END PVariant ;
 
 PROCEDURE PType (VAR pool: POOL ; VAR p: Parser)
   : PTR Ast.Node =
-VAR n : PTR Ast.Node ;
+VAR n, n2 : PTR Ast.Node ;
 BEGIN
   IF p.cur.kind = TkIdent THEN
     RETURN PQualident (pool, p)
@@ -786,6 +786,24 @@ BEGIN
     Bump (p) ;
     Expect (p, TkPTR) ;
     Ast.Add (pool, n, SOME (PType (pool, p))) ;
+    RETURN n
+  ELSIF p.cur.kind = TkLParen THEN
+    (* an enumeration: (Red, Green, Blue) -- a member per kid, in
+       declaration order, ordinals 0..n-1 (docs/enum-plan.md).  No
+       explicit values: those are protocol numbers, and a wire format
+       keeps its CONSTs *)
+    n := Nn (pool, p, Ast.NEnumType) ;
+    Bump (p) ;
+    n2 := Nn (pool, p, Ast.NIdent) ;
+    n2.a := TakeIdent (p, 'enumeration member') ;
+    Ast.Add (pool, n, SOME (n2)) ;
+    WHILE p.cur.kind = TkComma DO
+      Bump (p) ;
+      n2 := Nn (pool, p, Ast.NIdent) ;
+      n2.a := TakeIdent (p, 'enumeration member') ;
+      Ast.Add (pool, n, SOME (n2))
+    END ;
+    Expect (p, TkRParen) ;
     RETURN n
   END ;
   Rerr (p, 'type expected, found ' + Lex.KindName (p.cur.kind)) ;

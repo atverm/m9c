@@ -54,6 +54,11 @@ PROCEDURE Abs (x: F64) : F64 RAISES ValueRange ;
   (* |x|.  Raises on NaN, like everything here; it is the cheapest
      place in a program to notice one.                              *)
 
+PROCEDURE Fabs (x: F64) : F64 ;
+  (* |x|, total: NaN passes through, like C fabs and numpy.abs.  Abs
+     raises on NaN; this is for code where NaN is a missing value,
+     not an error (the flux processing the ONEFlux port does). *)
+
 PROCEDURE Sqrt (x: F64) : F64 RAISES ValueRange ;
   (* domain: x >= 0 *)
 
@@ -139,6 +144,7 @@ PROCEDURE IsFinite (x: F64) : BOOL ;
    definition rather than in the compiler. *)
 
 PROCEDURE AbsF32 (x: F32) : F32 RAISES ValueRange ;
+PROCEDURE FabsF32 (x: F32) : F32 ;   (* |x|, total: NaN through (fabsf) *)
 PROCEDURE SqrtF32 (x: F32) : F32 RAISES ValueRange ;
 PROCEDURE LogF32 (x: F32) : F32 RAISES ValueRange ;
 PROCEDURE Log10F32 (x: F32) : F32 RAISES ValueRange ;
@@ -293,6 +299,11 @@ BEGIN
   Arg (x) ;
   RETURN F64 (CFabs (C.Double (x)))
 END Abs ;
+
+PROCEDURE Fabs (x: F64) : F64 =
+BEGIN
+  RETURN F64 (CFabs (C.Double (x)))
+END Fabs ;
 
 PROCEDURE Sqrt (x: F64) : F64 RAISES ValueRange =
 BEGIN
@@ -490,6 +501,11 @@ BEGIN
   ArgF32 (x) ;
   RETURN F32 (CFabsF32 (C.Float (x)))
 END AbsF32 ;
+
+PROCEDURE FabsF32 (x: F32) : F32 =
+BEGIN
+  RETURN F32 (CFabsF32 (C.Float (x)))
+END FabsF32 ;
 
 PROCEDURE SqrtF32 (x: F32) : F32 RAISES ValueRange =
 BEGIN

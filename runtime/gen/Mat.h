@@ -7,14 +7,29 @@
 typedef struct Mat_Matrix Mat_Matrix;
 typedef struct Mat_ReduceOp Mat_ReduceOp;
 typedef struct Mat_Matrix Mat_Matrix;
+typedef struct Mat_Work Mat_Work;
+typedef struct Mat_InvJob Mat_InvJob;
+typedef struct Mat_NormalJob Mat_NormalJob;
 
 typedef struct Mat_ReduceOp Mat_ReduceOp;
 struct Mat_ReduceOp { int32_t tag; };
 #define Mat_ReduceOp_Mean 0
+static const uint32_t Mat_ReduceOp_nm0[] = { 77u, 101u, 97u, 110u };
 #define Mat_ReduceOp_Min 1
+static const uint32_t Mat_ReduceOp_nm1[] = { 77u, 105u, 110u };
 #define Mat_ReduceOp_Max 2
+static const uint32_t Mat_ReduceOp_nm2[] = { 77u, 97u, 120u };
 #define Mat_ReduceOp_Sum 3
+static const uint32_t Mat_ReduceOp_nm3[] = { 83u, 117u, 109u };
 #define Mat_ReduceOp_Count 4
+static const uint32_t Mat_ReduceOp_nm4[] = { 67u, 111u, 117u, 110u, 116u };
+static const m9_sl_CHAR __attribute__((__unused__)) Mat_ReduceOp_names[] = {
+  { (uint32_t *) Mat_ReduceOp_nm0, 4 },
+  { (uint32_t *) Mat_ReduceOp_nm1, 3 },
+  { (uint32_t *) Mat_ReduceOp_nm2, 3 },
+  { (uint32_t *) Mat_ReduceOp_nm3, 3 },
+  { (uint32_t *) Mat_ReduceOp_nm4, 5 },
+};
 
 extern const m9_exc Mat_SizeError;
 extern const m9_exc Mat_NotSPD;
@@ -43,5 +58,7 @@ Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_state *err);
 Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_state *err);
 Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_state *err);
 Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err);
+Mat_Matrix * Mat_CholInverse (m9_pool *pool, Mat_Matrix * l, int64_t threads, m9_state *err);
+void Mat_AddNormal (m9_pool *pool, Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, int64_t threads, m9_state *err);
 
 #endif

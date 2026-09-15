@@ -339,6 +339,10 @@ parsediff compares printed text and gendiff compares emitted C.
 
 _(undocumented)_
 
+### CONST NEnumType
+
+_(undocumented)_
+
 ### TYPE Kid
 
 named so NEW can say it;

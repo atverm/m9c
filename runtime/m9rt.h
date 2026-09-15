@@ -338,6 +338,15 @@ static inline uint32_t m9_chr (int64_t v, m9_state *err)
   return (uint32_t) v;
 }
 
+/* an integer to an enumeration tag: the checked inverse of ORD.  A
+   value outside 0..n-1 names no member and is ValueRange, the same
+   discipline every other narrowing keeps (docs/enum-plan.md). */
+static inline int32_t m9_enum (int64_t v, int64_t n, m9_state *err)
+{
+  if (v < 0 || v >= n) { err->i[0] = v; m9_raise (err, &m9_exc_ValueRange); return 0; }
+  return (int32_t) v;
+}
+
 static inline int64_t m9_i64_f64 (double v, m9_state *err)
 {
   /* Trunc(NaN) is ValueRange, never INT64_MIN: the museum's ghost */

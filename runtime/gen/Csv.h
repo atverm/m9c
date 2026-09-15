@@ -19,11 +19,25 @@ struct Csv_Kind {
   } u;
 };
 #define Csv_Kind_Skip 0
+static const uint32_t Csv_Kind_nm0[] = { 83u, 107u, 105u, 112u };
 #define Csv_Kind_Real 1
+static const uint32_t Csv_Kind_nm1[] = { 82u, 101u, 97u, 108u };
 #define Csv_Kind_Real64 2
+static const uint32_t Csv_Kind_nm2[] = { 82u, 101u, 97u, 108u, 54u, 52u };
 #define Csv_Kind_Int 3
+static const uint32_t Csv_Kind_nm3[] = { 73u, 110u, 116u };
 #define Csv_Kind_Stamp 4
+static const uint32_t Csv_Kind_nm4[] = { 83u, 116u, 97u, 109u, 112u };
 #define Csv_Kind_Text 5
+static const uint32_t Csv_Kind_nm5[] = { 84u, 101u, 120u, 116u };
+static const m9_sl_CHAR __attribute__((__unused__)) Csv_Kind_names[] = {
+  { (uint32_t *) Csv_Kind_nm0, 4 },
+  { (uint32_t *) Csv_Kind_nm1, 4 },
+  { (uint32_t *) Csv_Kind_nm2, 6 },
+  { (uint32_t *) Csv_Kind_nm3, 3 },
+  { (uint32_t *) Csv_Kind_nm4, 5 },
+  { (uint32_t *) Csv_Kind_nm5, 4 },
+};
 
 extern const m9_exc Csv_ParseError;
 extern const m9_exc Csv_RangeError;
@@ -32,19 +46,11 @@ extern const m9_exc Csv_RangeError;
 #define Csv_StampYmdHms INT64_C(1)
 #define Csv_StampIso INT64_C(2)
 #define Csv_StampEpoch INT64_C(3)
-#define Csv_KindSkip INT64_C(0)
-#define Csv_KindReal INT64_C(1)
-#define Csv_KindInt INT64_C(2)
-#define Csv_KindStamp INT64_C(3)
-#define Csv_KindText INT64_C(4)
-#define Csv_KindReal64 INT64_C(5)
-#define Csv_KSkip INT64_C(0)
-#define Csv_KReal INT64_C(1)
-#define Csv_KInt INT64_C(2)
-#define Csv_KStamp INT64_C(3)
-#define Csv_KText INT64_C(4)
-#define Csv_KReal64 INT64_C(5)
 
+#ifndef M9SL_m9_sl_Csv_Kind
+#define M9SL_m9_sl_Csv_Kind
+typedef struct { Csv_Kind *p; int64_t len; } m9_sl_Csv_Kind;
+#endif
 #ifndef M9SL_m9_sl_m9_sl_F32
 #define M9SL_m9_sl_m9_sl_F32
 typedef struct { m9_sl_F32 *p; int64_t len; } m9_sl_m9_sl_F32;
@@ -91,7 +97,8 @@ void Csv_SetInt (Csv_Table * *t, int64_t c, m9_state *err);
 void Csv_SetText (Csv_Table * *t, int64_t c, m9_state *err);
 void Csv_SetSkip (Csv_Table * *t, int64_t c, m9_state *err);
 void Csv_SetStamp (Csv_Table * *t, int64_t c, int64_t format, m9_state *err);
-int64_t Csv_KindCodeAt (Csv_Table * t, int64_t c, m9_state *err);
+Csv_Kind Csv_KindAt (Csv_Table * t, int64_t c, m9_state *err);
+bool Csv_IsSet (Csv_Table * t, int64_t c, m9_state *err);
 int64_t Csv_FormatAt (Csv_Table * t, int64_t c, m9_state *err);
 void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err);
 m9_sl_F32 Csv_ColF32 (Csv_Table * t, int64_t c, m9_state *err);

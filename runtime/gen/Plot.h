@@ -10,7 +10,13 @@ typedef struct Plot_Cmap Plot_Cmap;
 typedef struct Plot_Cmap Plot_Cmap;
 struct Plot_Cmap { int32_t tag; };
 #define Plot_Cmap_Viridis 0
+static const uint32_t Plot_Cmap_nm0[] = { 86u, 105u, 114u, 105u, 100u, 105u, 115u };
 #define Plot_Cmap_Coolwarm 1
+static const uint32_t Plot_Cmap_nm1[] = { 67u, 111u, 111u, 108u, 119u, 97u, 114u, 109u };
+static const m9_sl_CHAR __attribute__((__unused__)) Plot_Cmap_names[] = {
+  { (uint32_t *) Plot_Cmap_nm0, 7 },
+  { (uint32_t *) Plot_Cmap_nm1, 8 },
+};
 
 #define Plot_BarVertical INT64_C(0)
 #define Plot_BarHorizontal INT64_C(1)

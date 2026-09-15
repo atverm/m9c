@@ -116,6 +116,42 @@ PROCEDURE SpdInverse (VAR pool: POOL ; a: PTR Matrix)
   RAISES SizeError, NotSPD, ValueRange ;
   (* CholSolve against the identity: the posterior covariance step *)
 
+PROCEDURE CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64)
+  : PTR Matrix IN pool
+  RAISES SizeError ;
+  (* (L L^T)^-1 from the factor Cholesky answered, in two contiguous
+     passes on `threads` threads (2026-09-15, the year inversion's
+     8-hour inverse):
+
+       T = (L^-1)^T   row j of T is column j of L^-1: a forward
+                      substitution against the identity's column j,
+                      zero above j, reading row i of L along its
+                      columns -- contiguous, and the zeros halve it;
+       P = T T^T      P[a,b] = sum over k >= max(a,b) of T[a,k] T[b,k]
+                      -- two rows read along their columns.
+
+     SpdInverse's back substitution read the factor DOWN a column for
+     each of n identity columns, a cache miss per multiply: n = 16 629
+     took 8 hours; this takes n^3/3 flops instead of n^3 and reads
+     memory the way it lies.  Columns of T and rows of P are
+     independent, so the work is claimed in bands by `threads`
+     workers, each writing only its own rows; the arithmetic of every
+     cell is the same in the same order whatever the thread count, so
+     the answer is bit-identical for 1 and for 32.  threads <= 1 runs
+     in the caller's thread.                                        *)
+
+PROCEDURE AddNormal (VAR pool: POOL ; h: PTR Matrix ; RO w: SLICE OF F64 ;
+                     VAR k: PTR Matrix ; threads: I64)
+  RAISES SizeError ;
+  (* k := k + H^T diag (w) H, the normal matrix of a weighted least
+     squares, accumulated where it lies: one pass over the rows of H
+     per band of columns, zeros of H skipped, the upper triangle
+     computed and the lower mirrored at the end.  A worker owns a band
+     of rows of k and reads every row of H, so nothing is written
+     twice; the per-cell sums run over the rows of H ascending in
+     every band, as the serial loop did, so the result does not depend
+     on the thread count.                                           *)
+
 END Mat.
 
 
@@ -471,5 +507,209 @@ BEGIN
   l := Cholesky (pool, a) ;
   RETURN CholSolve (pool, l, Identity (pool, Rows (a)))
 END SpdInverse ;
+
+(* ---- the threaded kernels: a band counter in a monitor, the
+   matrices shared by pointer, every worker writing its own rows ---- *)
+
+TYPE
+  Work = MONITOR RECORD
+    done : I64 ;                 (* workers finished *)
+    next : I64 ;                 (* the next band to claim *)
+  END ;
+
+  InvJob = RECORD
+    w : Work ;
+    l : PTR Matrix ;             (* the factor, read by all *)
+    t : PTR Matrix ;             (* the transpose of the inverse factor: row j belongs to the band holding j *)
+    p : PTR Matrix ;             (* the inverse: rows of a band *)
+    n, band, nbands, pass : I64
+  END ;
+
+  NormalJob = RECORD
+    w : Work ;
+    h : PTR Matrix ;
+    k : PTR Matrix ;
+    wt : SLICE OF F64 ;
+    n, m, band, nbands : I64
+  END ;
+
+PROCEDURE Claim (VAR w: Work) : I64 =
+VAR b : I64 ;
+BEGIN
+  b := w.next ;
+  w.next := w.next + 1 ;
+  RETURN b
+END Claim ;
+
+PROCEDURE Finish (VAR w: Work) =
+BEGIN
+  w.done := w.done + 1 ;
+  SIGNAL (w)
+END Finish ;
+
+PROCEDURE AwaitAll (VAR w: Work ; want: I64) =
+BEGIN
+  WHILE w.done < want DO WAIT (w) END
+END AwaitAll ;
+
+PROCEDURE ResetWork (VAR w: Work) =
+BEGIN
+  w.done := 0 ;
+  w.next := 0
+END ResetWork ;
+
+PROCEDURE InvBand (VAR j: InvJob ; b: I64) =
+  (* pass 1: rows [c0, c1) of T; pass 2: rows [c0, c1) of P and their mirror *)
+VAR
+  wpool : POOL ;
+  x : SLICE OF F64 ;
+  c0, c1, col, i, m, a, bb, kk, n : I64 ;
+  acc : F64 ;
+BEGIN
+  n := j.n ;
+  c0 := b * j.band ;
+  c1 := c0 + j.band ;
+  IF c1 > n THEN c1 := n END ;
+  IF j.pass = 1 THEN
+    x := NEW (wpool, F64, n) ;
+    FOR col := c0 TO c1 - 1 DO
+      (* L x = e_col: x is zero above col *)
+      FOR i := col TO n - 1 DO
+        IF i = col THEN acc := 1.0 ELSE acc := 0.0 END ;
+        FOR m := col TO i - 1 DO
+          acc := acc - j.l.d[i, m] * x[m]
+        END ;
+        x[i] := acc / j.l.d[i, i]
+      END ;
+      FOR i := 0 TO col - 1 DO j.t.d[col, i] := 0.0 END ;
+      FOR i := col TO n - 1 DO j.t.d[col, i] := x[i] END
+    END
+  ELSE
+    FOR a := c0 TO c1 - 1 DO
+      FOR bb := a TO n - 1 DO
+        acc := 0.0 ;
+        FOR kk := bb TO n - 1 DO
+          acc := acc + j.t.d[a, kk] * j.t.d[bb, kk]
+        END ;
+        j.p.d[a, bb] := acc ;
+        j.p.d[bb, a] := acc
+      END
+    END
+  END
+END InvBand ;
+
+PROCEDURE InvWorker (VAR j: InvJob) =
+VAR b : I64 ;
+BEGIN
+  b := Claim (j.w) ;
+  WHILE b < j.nbands DO
+    InvBand (j, b) ;
+    b := Claim (j.w)
+  END ;
+  Finish (j.w)
+END InvWorker ;
+
+PROCEDURE RunInv (VAR j: PTR InvJob ; threads: I64) =
+  (* one thread is still a thread: the worker takes the job record by
+     reference and THREAD hands it the pointer, as chapter 16 does *)
+VAR t : I64 ;
+BEGIN
+  ResetWork (j.w) ;
+  IF threads < 1 THEN threads := 1 END ;
+  FOR t := 1 TO threads DO THREAD (InvWorker, j) END ;
+  AwaitAll (j.w, threads)
+END RunInv ;
+
+PROCEDURE CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64)
+  : PTR Matrix IN pool
+  RAISES SizeError =
+VAR
+  scratch : POOL ;
+  j : PTR InvJob IN scratch ;
+  n : I64 ;
+BEGIN
+  IF Rows (l) # Cols (l) THEN RAISE SizeError (Rows (l), Cols (l)) END ;
+  n := Rows (l) ;
+  j := NEW (scratch, InvJob) ;
+  j.n := n ;
+  j.l := l ;
+  j.t := New (scratch, n, n) ;
+  j.p := New (pool, n, n) ;
+  (* small bands, claimed as workers free up: the work per row of T
+     falls with its index and the work per row of P likewise, so a
+     static split would leave most threads waiting on the first *)
+  j.band := 32 ;
+  IF n < 128 THEN j.band := 8 END ;
+  j.nbands := (n + j.band - 1) DIV j.band ;
+  j.pass := 1 ;
+  RunInv (j, threads) ;
+  j.pass := 2 ;
+  RunInv (j, threads) ;
+  RETURN j.p
+END CholInverse ;
+
+PROCEDURE NormalBand (VAR j: NormalJob ; b: I64) =
+VAR
+  r0, r1, i, c, cc : I64 ;
+  hic, hv : F64 ;
+BEGIN
+  r0 := b * j.band ;
+  r1 := r0 + j.band ;
+  IF r1 > j.n THEN r1 := j.n END ;
+  FOR i := 0 TO j.m - 1 DO
+    FOR c := r0 TO r1 - 1 DO
+      hic := j.h.d[i, c] ;
+      IF hic # 0.0 THEN
+        hic := hic * j.wt[i] ;
+        FOR cc := c TO j.n - 1 DO
+          hv := j.h.d[i, cc] ;
+          IF hv # 0.0 THEN
+            j.k.d[c, cc] := j.k.d[c, cc] + hic * hv
+          END
+        END
+      END
+    END
+  END
+END NormalBand ;
+
+PROCEDURE NormalWorker (VAR j: NormalJob) =
+VAR b : I64 ;
+BEGIN
+  b := Claim (j.w) ;
+  WHILE b < j.nbands DO
+    NormalBand (j, b) ;
+    b := Claim (j.w)
+  END ;
+  Finish (j.w)
+END NormalWorker ;
+
+PROCEDURE AddNormal (VAR pool: POOL ; h: PTR Matrix ; RO w: SLICE OF F64 ;
+                     VAR k: PTR Matrix ; threads: I64)
+  RAISES SizeError =
+VAR
+  scratch : POOL ;
+  j : PTR NormalJob IN scratch ;
+  t, c, cc : I64 ;
+BEGIN
+  IF Rows (k) # Cols (h) OR Cols (k) # Cols (h) THEN RAISE SizeError (Rows (k), Cols (h)) END ;
+  IF LEN (w) # Rows (h) THEN RAISE SizeError (LEN (w), Rows (h)) END ;
+  j := NEW (scratch, NormalJob) ;
+  j.h := h ;
+  j.k := k ;
+  j.wt := w ;
+  j.n := Cols (h) ;
+  j.m := Rows (h) ;
+  j.band := 64 ;
+  j.nbands := (j.n + j.band - 1) DIV j.band ;
+  ResetWork (j.w) ;
+  IF threads < 1 THEN threads := 1 END ;
+  FOR t := 1 TO threads DO THREAD (NormalWorker, j) END ;
+  AwaitAll (j.w, threads) ;
+  FOR c := 1 TO j.n - 1 DO
+    FOR cc := 0 TO c - 1 DO
+      k.d[c, cc] := k.d[cc, c]
+    END
+  END
+END AddNormal ;
 
 END Mat.

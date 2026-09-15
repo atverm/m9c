@@ -1,0 +1,17 @@
+(* EXPECT: FOR over an enumeration needs both bounds of one type, not m.Colour and m.Fruit *)
+(* A FOR loop over an enumeration walks the members of ONE type, so
+   its two bounds must name that type -- Colour.Red up to Colour.Green,
+   never Colour.Red up to a member of some other enumeration.  Mixing
+   two enumerations has no meaning (their members are not comparable),
+   and the checker says so rather than letting the generator compare
+   tags from unrelated tables (docs/enum-plan.md, part 2). *)
+MODULE m ;
+IMPORT Io ;
+TYPE Colour = (Red, Green) ;
+TYPE Fruit = (Apple, Pear) ;
+VAR c : Colour ;
+BEGIN
+  FOR c := Colour.Red TO Fruit.Pear DO
+    Io.WriteI64 (7)
+  END
+END m.

@@ -683,6 +683,26 @@ begin
         Expect (tkPTR, 'PTR');
         Result.Add (PType ());
       end;
+    tkLParen :
+      begin
+        { an enumeration: (Red, Green, Blue) -- a member per kid, in
+          declaration order, ordinals 0..n-1 (docs/enum-plan.md).  No
+          explicit values: those are protocol numbers, and a wire
+          format keeps its CONSTs }
+        Result := NewNode (nkEnumType);
+        Bump;
+        n := NewNode (nkIdent);
+        n.a := TakeIdent ('enumeration member');
+        Result.Add (n);
+        while cur.kind = tkComma do
+        begin
+          Bump;
+          n := NewNode (nkIdent);
+          n.a := TakeIdent ('enumeration member');
+          Result.Add (n);
+        end;
+        Expect (tkRParen, ')');
+      end;
   else
     begin
       Err ('type expected, found ' + KindName (cur.kind));

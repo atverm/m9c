@@ -83,6 +83,9 @@ type
     function GridTy (elem: TNode; const rank: string): string;
     function IsAllArg (e: TNode): Boolean;
     function ArrCount (e: TNode): string;
+    function ArrEnumBoundNode (b: TNode): TNode;
+    function CRPrefix (const tn: string): string;
+    function CRNode (const tn: string): TNode;
     function TagOfType (t: TNode): string;
     function TagOfExpr (e: TNode): string;
     function ScopeNode (const n: string): TNode;
@@ -93,6 +96,7 @@ type
     function StrCodes (const s: string; n: TNode): string;
     function DES (d: TNode; out tag: string): string;
     function EX (e: TNode; const want: string): string;
+    function EnumConvCount (n: TNode): Integer;
     function CallC (dnode, argl, site: TNode; out tag: string): string;
     function ConstLbl (d: TNode): string;
     function DesigDecl (d: TNode): TNode;
@@ -539,7 +543,7 @@ begin
           begin
             r2 := TNode (extTypes.Objects[ei]);
             if r2.kind in [nkRecordType, nkCaseRecordType,
-                           nkMonitorType] then
+                           nkMonitorType, nkEnumType] then
               Exit (t.a + '_' + t.b);
             Exit (TyC (r2));              { alias, chased }
           end;
@@ -556,7 +560,7 @@ begin
         if r2 <> nil then
         begin
           if r2.kind in [nkRecordType, nkCaseRecordType,
-                         nkMonitorType] then
+                         nkMonitorType, nkEnumType] then
             Exit (modName + '_' + t.a);
           Exit (TyC (r2));                { local alias, chased }
         end;
@@ -566,7 +570,7 @@ begin
         begin
           r2 := TNode (extTypes.Objects[ei]);
           if r2.kind in [nkRecordType, nkCaseRecordType,
-                         nkMonitorType] then
+                         nkMonitorType, nkEnumType] then
             Exit (Copy (extTypes[ei], 1,
               Length (extTypes[ei]) - Length (t.a) - 1) + '_' + t.a);
           Exit (TyC (r2));
@@ -678,10 +682,39 @@ begin
   Result := nm;
 end;
 
+{ the enumeration or case-record type node an ARRAY bound names, or
+  nil when the bound is an integer.  ARRAY Colour OF T is indexed by
+  the type: its length is the variant count and its subscript is a
+  member, not an ordinal (docs/enum-plan.md, part 2). }
+function TGen.ArrEnumBoundNode (b: TNode): TNode;
+var ci : Integer; t : TNode;
+begin
+  Result := nil;
+  if (b = nil) or (b.kind <> nkDesignator) then Exit;
+  if Length (b.kids) = 0 then
+  begin
+    t := FindType (b.a);
+    if (t <> nil) and (t.kind in [nkEnumType, nkCaseRecordType]) then
+      Result := t;
+  end
+  else if (Length (b.kids) = 1) and (b.kids[0].kind = nkSelField) then
+  begin
+    ci := extTypes.IndexOf (b.a + '.' + b.kids[0].a);
+    if ci >= 0 then
+    begin
+      t := TNode (extTypes.Objects[ci]);
+      if (t <> nil) and (t.kind in [nkEnumType, nkCaseRecordType]) then
+        Result := t;
+    end;
+  end;
+end;
+
 function TGen.ArrCount (e: TNode): string;
-var ci : Integer;
+var ci : Integer; et : TNode;
 begin
   if e.kind = nkInt then Exit (e.a);
+  et := ArrEnumBoundNode (e);
+  if et <> nil then Exit (IntToStr (Length (et.kids)));
   if (e.kind = nkDesignator) and (Length (e.kids) = 0) then
   begin
     ci := consts.IndexOf (e.a);
@@ -692,15 +725,63 @@ begin
   Result := '0';
 end;
 
+{ ---- a case record that lives in another module ----
+
+  A CR: tag names the case record type; until 2026-09-15 it named it
+  BARE, so every consumer prefixed modName and looked it up locally,
+  and a value typed `Shape.Kind' -- a parameter, a variable, a call
+  result -- could not be CASEd ("CASE over this selector unsupported
+  yet") nor built ("unknown name: Shape").  Csv, Frame and Plot each
+  grew an integer face to route around it, in their own comments.
+
+  Now the tag carries the module when there is one -- `CR:Kind' at
+  home, `CR:Shape.Kind' abroad -- and these two answer, for either
+  spelling, the C prefix and the declaring node.  The header of the
+  other module already declares Shape_Kind and its tags; nothing has
+  to be re-emitted. }
+
+function TGen.CRPrefix (const tn: string): string;
+var i : Integer;
+begin
+  i := Pos ('.', tn);
+  if i > 0 then
+    Exit (Copy (tn, 1, i - 1) + '_' + Copy (tn, i + 1, MaxInt));
+  Result := modName + '_' + tn;
+end;
+
+function TGen.CRNode (const tn: string): TNode;
+var ei : Integer;
+begin
+  if Pos ('.', tn) > 0 then
+  begin
+    ei := extTypes.IndexOf (tn);
+    if ei >= 0 then Exit (TNode (extTypes.Objects[ei]));
+    Exit (nil);
+  end;
+  Result := FindType (tn);
+end;
+
 function TGen.TagOfType (t: TNode): string;
-var r : TNode;
+var
+  r : TNode;
+  ei : Integer;
 begin
   Result := '?';
   if (t <> nil) and (t.kind = nkQualident) and (t.b = '') then
   begin
     r := FindType (t.a);
-    if (r <> nil) and (r.kind = nkCaseRecordType) then
+    if (r <> nil) and (r.kind in [nkCaseRecordType, nkEnumType]) then
       Exit ('CR:' + t.a);
+  end;
+  if (t <> nil) and (t.kind = nkQualident) and (t.b <> '') then
+  begin
+    ei := extTypes.IndexOf (t.a + '.' + t.b);
+    if ei >= 0 then
+    begin
+      r := TNode (extTypes.Objects[ei]);
+      if (r <> nil) and (r.kind in [nkCaseRecordType, nkEnumType]) then
+        Exit ('CR:' + t.a + '.' + t.b);
+    end;
   end;
   r := Resolve (t);
   if r = nil then Exit;
@@ -879,7 +960,7 @@ end;
 
 function TGen.DES (d: TNode; out tag: string): string;
 var
-  ci, j, k, rk : Integer;
+  ci, j, k, rk, ei : Integer;
   tnd, r, inner : TNode;
   sel : TNode;
   base, ix, ec, nsx : string;
@@ -918,12 +999,29 @@ begin
     end;
     { payload-less variant constructor: Type.Variant }
     r := FindType (d.a);
-    if (r <> nil) and (r.kind = nkCaseRecordType) and
+    if (r <> nil) and (r.kind in [nkCaseRecordType, nkEnumType]) and
        (Length (d.kids) = 1) and (d.kids[0].kind = nkSelField) then
     begin
       tag := 'CR:' + d.a;
       Exit ('((' + modName + '_' + d.a + '){ .tag = ' + modName +
         '_' + d.a + '_' + d.kids[0].a + ' })');
+    end;
+    { and across a module: Mod.Type.Variant, the checker's spelling
+      for an imported variant, refused here until 2026-09-15 }
+    if (extMods.IndexOf (d.a) >= 0) and (Length (d.kids) = 2) and
+       (d.kids[0].kind = nkSelField) and (d.kids[1].kind = nkSelField) then
+    begin
+      ei := extTypes.IndexOf (d.a + '.' + d.kids[0].a);
+      if ei >= 0 then
+      begin
+        r := TNode (extTypes.Objects[ei]);
+        if (r <> nil) and (r.kind in [nkCaseRecordType, nkEnumType]) then
+        begin
+          tag := 'CR:' + d.a + '.' + d.kids[0].a;
+          Exit ('((' + d.a + '_' + d.kids[0].a + '){ .tag = ' +
+            d.a + '_' + d.kids[0].a + '_' + d.kids[1].a + ' })');
+        end;
+      end;
     end;
     { HEAP: the predeclared pool that is never freed (par 4.3).  A
       name in both ends or neither -- the checker types it, so the
@@ -1018,10 +1116,18 @@ begin
           begin
             base := Result;
             ec := TyC (r.kids[1]);
-            Result := '(*(' + ec + ' *) m9_at (' + base + '.v, ' + ix +
-              ', INT64_C(' + ArrCount (r.kids[0]) + '), sizeof (' + ec +
-              '), err))';
-            stRaise := True;
+            if ArrEnumBoundNode (r.kids[0]) <> nil then
+              { ARRAY Colour OF T: the subscript is an enum value, its
+                tag 0..n-1 by construction -- no runtime bounds check,
+                a.v[(k).tag] directly (docs/enum-plan.md, part 2) }
+              Result := '(' + base + '.v[(' + ix + ').tag])'
+            else
+            begin
+              Result := '(*(' + ec + ' *) m9_at (' + base + '.v, ' + ix +
+                ', INT64_C(' + ArrCount (r.kids[0]) + '), sizeof (' + ec +
+                '), err))';
+              stRaise := True;
+            end;
             tnd := r.kids[1];
           end
           else
@@ -1034,19 +1140,61 @@ end;
 
 { ---- calls ---- }
 
+{ the member count of a type convertible from an integer -- an
+  enumeration, or a case record all of whose variants are payload-less
+  -- else -1 (docs/enum-plan.md, part 2). }
+function TGen.EnumConvCount (n: TNode): Integer;
+var i : Integer;
+begin
+  Result := -1;
+  if n = nil then Exit;
+  if n.kind = nkEnumType then Exit (Length (n.kids));
+  if n.kind = nkCaseRecordType then
+  begin
+    for i := 0 to High (n.kids) do
+      if (Length (n.kids[i].kids) > 0) and (n.kids[i].kids[0] <> nil) then Exit (-1);
+    Exit (Length (n.kids));
+  end;
+end;
+
 function TGen.CallC (dnode, argl, site: TNode; out tag: string): string;
 var
   name, args, at, want, tn, vn, cfunc, gname : string;
   pi, g, j, k, nargs, dot : Integer;
-  pl, grp, arg, vt, vd, pnode : TNode;
+  pl, grp, arg, vt, vd, pnode, xvt, enode : TNode;
+  ec : Integer;
   isref : Boolean;
 begin
   tag := '?';
   name := dnode.a;
-  if (Length (dnode.kids) = 1) and (dnode.kids[0].kind = nkSelField) then
-    name := name + '.' + dnode.kids[0].a;
+  { the dotted callee name: every field selector joins, so
+    Mod.Type.Variant reaches the constructor branch whole -- the
+    two-part cut read it as procedure `Csv' and refused it as
+    `callee unsupported yet' until 2026-09-15 }
+  for k := 0 to High (dnode.kids) do
+    if dnode.kids[k].kind = nkSelField then
+      name := name + '.' + dnode.kids[k].a;
   nargs := 0;
   if argl <> nil then nargs := Length (argl.kids);
+
+  { AN INTEGER TO AN ENUMERATION: Colour (i), or Palette.Hue (i), the
+    checked inverse of ORD.  The callee is a type -- an enum or a
+    payload-less case record -- and CRNode/CRPrefix resolve it for
+    either spelling.  m9_enum raises ValueRange for a value that names
+    no member (docs/enum-plan.md, part 2). }
+  if nargs = 1 then
+  begin
+    enode := CRNode (name);
+    ec := EnumConvCount (enode);
+    if ec >= 0 then
+    begin
+      tag := 'CR:' + name;
+      stRaise := True;
+      Exit ('((' + CRPrefix (name) + '){ .tag = m9_enum ((int64_t)(' +
+        EX (argl.kids[0], '') + '), INT64_C(' + IntToStr (ec) +
+        '), err) })');
+    end;
+  end;
 
   { An ALIAS FOR A SCALAR IS A CONVERSION under its own name.  The
     checker already treats `TYPE Real = F32` as F32 for assignment,
@@ -1147,7 +1295,21 @@ begin
   if name = 'ORD' then
   begin
     tag := 'I64';
+    { an enumeration (or any payload-less case record) answers its
+      tag; a CHAR answers its code point.  ORD (Colour.Red) is 0,
+      ORD (c) is the member's position, 0..n-1 (docs/enum-plan.md) }
+    if Copy (TagOfExpr (argl.kids[0]), 1, 3) = 'CR:' then
+      Exit ('(int64_t)((' + EX (argl.kids[0], '') + ').tag)');
     Exit ('(int64_t)(' + EX (argl.kids[0], 'CHAR') + ')');
+  end;
+  if name = 'NAME' then
+  begin
+    { the member's identifier as a STR, from the table emitted beside
+      the tag #defines: NAME (Colour.Red) is 'Red' }
+    tag := 'SLICE';
+    at := TagOfExpr (argl.kids[0]);
+    Exit ('(' + CRPrefix (Copy (at, 4, MaxInt)) + '_names[(' +
+      EX (argl.kids[0], '') + ').tag])');
   end;
   if name = 'CHR' then
   begin
@@ -1320,7 +1482,21 @@ begin
     end;
     { variant constructor with payload: Type.Variant (args) }
     vt := FindType (tn);
-    if (vt <> nil) and (vt.kind = nkCaseRecordType) then
+    { and Mod.Type.Variant (args), the type's module named: the
+      callee split at its first dot reads as module Mod, procedure
+      `Type.Variant', which is no procedure.  CRPrefix and the CR:
+      tag both carry `Mod.Type' since 2026-09-15. }
+    if (vt = nil) and (Pos ('.', vn) > 0) then
+    begin
+      xvt := CRNode (tn + '.' + Copy (vn, 1, Pos ('.', vn) - 1));
+      if (xvt <> nil) and (xvt.kind in [nkCaseRecordType, nkEnumType]) then
+      begin
+        tn := tn + '.' + Copy (vn, 1, Pos ('.', vn) - 1);
+        vn := Copy (vn, Pos ('.', vn) + 1, MaxInt);
+        vt := xvt;
+      end;
+    end;
+    if (vt <> nil) and (vt.kind in [nkCaseRecordType, nkEnumType]) then
     begin
       vd := nil;
       for g := 0 to High (vt.kids) do
@@ -1346,8 +1522,8 @@ begin
             Inc (k);
           end;
       if k <> nargs then Err (site, 'arity mismatch constructing ' + name);
-      Result := '((' + modName + '_' + tn + '){ .tag = ' + modName +
-        '_' + tn + '_' + vn;
+      Result := '((' + CRPrefix (tn) + '){ .tag = ' + CRPrefix (tn) +
+        '_' + vn;
       if args <> '' then
         Result := Result + ', .u.' + vn + ' = { ' + args + ' }';
       Result := Result + ' })';
@@ -2154,6 +2330,22 @@ begin
     nkFor :
       begin
         stRaise := False;
+        { FOR over an enumeration walks its tags: the variable is a
+          struct, so the loop runs on `.tag' (docs/enum-plan.md, 2) }
+        if Copy (TagOfExpr (st.kids[0]), 1, 3) = 'CR:' then
+        begin
+          w := NewTmp;
+          Line (pbuf, ind, '{ int32_t ' + w + 'to;');
+          Line (pbuf, ind, CN (st.a) + '.tag = (' + EX (st.kids[0], '') + ').tag;');
+          Line (pbuf, ind, w + 'to = (' + EX (st.kids[1], '') + ').tag;');
+          Line (pbuf, ind, 'for (; ' + CN (st.a) + '.tag <= ' + w +
+            'to; ' + CN (st.a) + '.tag++) {');
+          sv := inSwitch; inSwitch := 0; j2 := finDepth; finDepth := 0;
+          EmitSeq (st.kids[3], ind + 1);
+          inSwitch := sv; finDepth := j2;
+          Line (pbuf, ind, '} }');
+          Exit;
+        end;
         l := EX (st.kids[0], '');
         w := NewTmp;
         Line (pbuf, ind, '{ int64_t ' + w + 'to;');
@@ -2268,8 +2460,8 @@ begin
         hadElse := False;
         if Copy (tg, 1, 3) = 'CR:' then
         begin
-          l := modName + '_' + Copy (tg, 4, MaxInt) + '_';
-          vtN := FindType (Copy (tg, 4, MaxInt));
+          l := CRPrefix (Copy (tg, 4, MaxInt)) + '_';
+          vtN := CRNode (Copy (tg, 4, MaxInt));
           Line (pbuf, ind, 'switch (' + w + '.tag) {');
           Inc (inSwitch);
           for j := 1 to High (st.kids) do
@@ -2777,7 +2969,7 @@ begin
           else if (r <> nil) and
                   (r.kind in [nkGridType, nkSliceType, nkArrayType,
                               nkRecordType, nkCaseRecordType,
-                              nkMonitorType]) then
+                              nkMonitorType, nkEnumType]) then
             init := ' = {0}'
           else if (cty = 'double') or (cty = 'float') then init := ' = 0'
           else if cty = 'bool' then init := ' = false'
@@ -2907,7 +3099,7 @@ begin
   for i := 0 to High (tyNames) do
     if tyOpaque[i] or
        ((tyNodes[i] <> nil) and
-        (tyNodes[i].kind in [nkRecordType, nkMonitorType, nkCaseRecordType])) then
+        (tyNodes[i].kind in [nkRecordType, nkMonitorType, nkCaseRecordType, nkEnumType])) then
       hdr.Add ('typedef struct ' + modName + '_' + tyNames[i] + ' ' +
         modName + '_' + tyNames[i] + ';');
   hdr.Add ('');
@@ -2916,13 +3108,13 @@ begin
     variants with payload fields become union members named after
     the variant }
   for i := 0 to High (tyNames) do
-    if (tyNodes[i] <> nil) and (tyNodes[i].kind = nkCaseRecordType) then
+    if (tyNodes[i] <> nil) and (tyNodes[i].kind in [nkCaseRecordType, nkEnumType]) then
     begin
       d := tyNodes[i];
       if tyFromDef[i] then tgt := hdr else tgt := src;
       cs := '';
       for ci := 0 to High (d.kids) do
-        if d.kids[ci].kids[0] <> nil then cs := 'y';
+        if (Length (d.kids[ci].kids) > 0) and (d.kids[ci].kids[0] <> nil) then cs := 'y';
       { a NAMED struct, like records: an anonymous typedef cannot be
         forward-declared, so a SLICE OF this variant put an undeclared
         name in the header (demo/functional/SliceVar.m9) }
@@ -2938,7 +3130,7 @@ begin
         tgt.Add ('  int32_t tag;');
         tgt.Add ('  union {');
         for ci := 0 to High (d.kids) do
-          if d.kids[ci].kids[0] <> nil then
+          if (Length (d.kids[ci].kids) > 0) and (d.kids[ci].kids[0] <> nil) then
           begin
             s := '    struct { ';
             for j2 := 0 to High (d.kids[ci].kids[0].kids) do
@@ -2954,8 +3146,24 @@ begin
         tgt.Add ('};');
       end;
       for ci := 0 to High (d.kids) do
+      begin
         tgt.Add ('#define ' + modName + '_' + tyNames[i] + '_' +
           d.kids[ci].a + ' ' + IntToStr (ci));
+        { NAME's food: one code-point array per member }
+        tgt.Add ('static const uint32_t ' + modName + '_' + tyNames[i] +
+          '_nm' + IntToStr (ci) + '[] = { ' +
+          StrCodes (d.kids[ci].a, d.kids[ci]) + ' };');
+      end;
+      { and the table NAME indexes by tag }
+      { __unused__: the table is dead when nobody calls NAME on this
+        type, and -Werror=unused-const-variable would reject it }
+      tgt.Add ('static const m9_sl_CHAR __attribute__((__unused__)) ' +
+        modName + '_' + tyNames[i] + '_names[] = {');
+      for ci := 0 to High (d.kids) do
+        tgt.Add ('  { (uint32_t *) ' + modName + '_' + tyNames[i] +
+          '_nm' + IntToStr (ci) + ', ' + IntToStr (Length (d.kids[ci].a)) +
+          ' },');
+      tgt.Add ('};');
       tgt.Add ('');
     end;
 
@@ -3047,6 +3255,11 @@ begin
         ' ((m9_sl_CHAR){ (uint32_t *) ' + modName + '_' + consts[ci] +
         '_d, ' + IntToStr (Length (e.a)) + ' })');
     end
+    { a CHAR constant: one code point, emitted like the char literal it
+      names -- <cp>u -- so `s + NL` joins it as a code point (par 2.2) }
+    else if e.kind = nkChar then
+      hdrConsts.Add ('#define ' + modName + '_' + consts[ci] +
+        ' (' + IntToStr (CharVal (e.a)) + 'u)')
     else
       Err (e, 'const form unsupported yet: ' + consts[ci]);
   end;

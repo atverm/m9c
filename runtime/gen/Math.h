@@ -10,6 +10,7 @@
 #define Math_HugeF32 (3.4028234663852886E38)
 
 double Math_Abs (double x, m9_state *err);
+double Math_Fabs (double x, m9_state *err);
 double Math_Sqrt (double x, m9_state *err);
 double Math_Log (double x, m9_state *err);
 double Math_Log10 (double x, m9_state *err);
@@ -32,6 +33,7 @@ double Math_Erfc (double x, m9_state *err);
 bool Math_IsNaN (double x, m9_state *err);
 bool Math_IsFinite (double x, m9_state *err);
 float Math_AbsF32 (float x, m9_state *err);
+float Math_FabsF32 (float x, m9_state *err);
 float Math_SqrtF32 (float x, m9_state *err);
 float Math_LogF32 (float x, m9_state *err);
 float Math_Log10F32 (float x, m9_state *err);

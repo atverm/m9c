@@ -1,0 +1,15 @@
+(* EXPECT: unhandled RAISES ValueRange from Colour conversion *)
+(* Colour (i) is the checked inverse of ORD: it turns an integer
+   position into a member and RAISES ValueRange when the integer names
+   no member, exactly as I64 (x) raises on a value that does not fit.
+   A procedure that converts and does not declare or handle the
+   failure is refused -- the exhaustive RAISES accounting reaches the
+   new conversion (docs/enum-plan.md, part 2). *)
+MODULE m ;
+TYPE Colour = (Red, Green, Blue) ;
+PROCEDURE Bad (i: I64) : Colour =
+BEGIN
+  RETURN Colour (i)
+END Bad ;
+BEGIN
+END m.

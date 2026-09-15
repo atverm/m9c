@@ -1,0 +1,15 @@
+(* EXPECT: unknown type: Lib.Dstring -- Lib declares no such type *)
+(* The softness contract says an unknown TYPE never diagnoses, so a
+   bare name that is nowhere may be a missing IMPORT and nothing
+   cascades.  This is not that: Lib is loaded and has no Dstring.  It
+   is a typo, and until 2026-09-15 it sailed through --check to
+   surface as cc's `unknown type name Lib_Dstring', the M9 name
+   mangled and the M9 line gone. *)
+DEFINITION MODULE Lib ;
+TYPE DString = RECORD n : I64 END ;
+END Lib.
+MODULE m ;
+IMPORT Lib ;
+VAR d : PTR Lib.Dstring ;
+BEGIN
+END m.

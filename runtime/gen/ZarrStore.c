@@ -7,7 +7,13 @@
 typedef struct ZarrStore_Comp ZarrStore_Comp;
 struct ZarrStore_Comp { int32_t tag; };
 #define ZarrStore_Comp_Blosc 0
+static const uint32_t ZarrStore_Comp_nm0[] = { 66u, 108u, 111u, 115u, 99u };
 #define ZarrStore_Comp_Raw 1
+static const uint32_t ZarrStore_Comp_nm1[] = { 82u, 97u, 119u };
+static const m9_sl_CHAR __attribute__((__unused__)) ZarrStore_Comp_names[] = {
+  { (uint32_t *) ZarrStore_Comp_nm0, 5 },
+  { (uint32_t *) ZarrStore_Comp_nm1, 3 },
+};
 
 const m9_exc ZarrStore_IOError = { "IOError" };
 const m9_exc ZarrStore_FormatError = { "FormatError" };

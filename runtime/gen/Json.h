@@ -21,11 +21,25 @@ struct Json_Value {
   } u;
 };
 #define Json_Value_Object 0
+static const uint32_t Json_Value_nm0[] = { 79u, 98u, 106u, 101u, 99u, 116u };
 #define Json_Value_Arr 1
+static const uint32_t Json_Value_nm1[] = { 65u, 114u, 114u };
 #define Json_Value_Str 2
+static const uint32_t Json_Value_nm2[] = { 83u, 116u, 114u };
 #define Json_Value_Num 3
+static const uint32_t Json_Value_nm3[] = { 78u, 117u, 109u };
 #define Json_Value_Bool 4
+static const uint32_t Json_Value_nm4[] = { 66u, 111u, 111u, 108u };
 #define Json_Value_Null 5
+static const uint32_t Json_Value_nm5[] = { 78u, 117u, 108u, 108u };
+static const m9_sl_CHAR __attribute__((__unused__)) Json_Value_names[] = {
+  { (uint32_t *) Json_Value_nm0, 6 },
+  { (uint32_t *) Json_Value_nm1, 3 },
+  { (uint32_t *) Json_Value_nm2, 3 },
+  { (uint32_t *) Json_Value_nm3, 3 },
+  { (uint32_t *) Json_Value_nm4, 4 },
+  { (uint32_t *) Json_Value_nm5, 4 },
+};
 
 extern const m9_exc Json_ParseError;
 extern const m9_exc Json_TypeMismatch;

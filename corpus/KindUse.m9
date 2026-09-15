@@ -1,0 +1,42 @@
+MODULE KindUse ;
+
+(* gendiff-only fixture: a CASE RECORD used from ANOTHER module.
+
+   Csv.Kind is the type whose own comment said, for a year, that "an
+   M9 caller in another module cannot write Csv.Kind.Real today" and
+   that "a caller in another module cannot CASE over Csv.Kind" -- the
+   generator refused both, the checker accepted both, and Csv, Frame
+   and Plot each grew an integer face to route around it.  This module
+   writes every form that was refused before 2026-09-15: the
+   constructor, the CASE with its payload binder, and the payload
+   constructor Csv.Kind.Stamp (12) -- which the CHECKER had refused
+   one stage earlier, as `unknown procedure: Csv', because nobody had
+   ever written one.  gendiff holds the two generators to the same
+   bytes for it, and greps for Csv_Kind_Real so that both generators
+   refusing together cannot pass.  docs/enum-plan.md, step 1. *)
+
+IMPORT Io ;
+IMPORT Csv ;
+
+VAR
+  k : Csv.Kind ;
+
+PROCEDURE Width (x: Csv.Kind) : I64 =
+  (* total, no ELSE: the checker proves every variant is here *)
+BEGIN
+  CASE x OF
+  | Skip : RETURN 0
+  | Real : RETURN 4
+  | Real64 : RETURN 8
+  | Int : RETURN 8
+  | Stamp (f) : RETURN f
+  | Text : RETURN 1
+  END
+END Width ;
+
+BEGIN
+  k := Csv.Kind.Real ;
+  Io.WriteI64 (Width (k)) ;
+  Io.WriteI64 (Width (Csv.Kind.Stamp (12))) ;
+  Io.WriteLine ('')
+END KindUse.

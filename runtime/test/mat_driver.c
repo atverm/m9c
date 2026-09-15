@@ -166,6 +166,49 @@ int main (void)
           if (d > worst) worst = d;
         }
       ck (worst < 1e-13, "SpdInverse matches numpy.linalg.inv");
+      /* CholInverse: the same inverse from the factor, contiguous and
+         banded -- against numpy, and 1 thread against 3 BIT FOR BIT,
+         which is the claim the banding makes */
+      Mat_Matrix *Ci1 = Mat_CholInverse (&pool, L, 1, &err);
+      ck (err.exc == NULL, "CholInverse from the factor succeeds");
+      worst = 0;
+      for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++) {
+          snprintf (nm, sizeof nm, "inv_%d_%d", i, j);
+          double d = fabs (Mat_Get (Ci1, i, j, &err) - gold (nm));
+          if (d > worst) worst = d;
+        }
+      ck (worst < 1e-13, "CholInverse matches numpy.linalg.inv");
+      Mat_Matrix *Ci3 = Mat_CholInverse (&pool, L, 3, &err);
+      bool same = err.exc == NULL;
+      for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+          {
+            double a = Mat_Get (Ci1, i, j, &err), b = Mat_Get (Ci3, i, j, &err);
+            if (memcmp (&a, &b, sizeof (double)) != 0) same = false;
+          }
+      ck (same, "CholInverse on 3 threads is bit-identical to 1");
+      /* a larger one, so every band holds more than the whole: a
+         diagonally dominant 100 x 100, its inverse by SpdInverse and
+         by CholInverse on 4 threads agree to 1e-13 relative */
+      {
+        int n = 100;
+        Mat_Matrix *G = Mat_New (&pool, n, n, &err);
+        for (int i = 0; i < n; i++)
+          for (int j = 0; j < n; j++)
+            Mat_Set (&G, i, j, (i == j) ? 4.0 + 0.01 * i : 1.0 / (1.0 + abs (i - j)), &err);
+        Mat_Matrix *Gi = Mat_SpdInverse (&pool, G, &err);
+        Mat_Matrix *GL = Mat_Cholesky (&pool, G, &err);
+        Mat_Matrix *Gc = Mat_CholInverse (&pool, GL, 4, &err);
+        double w = 0, sc = 0;
+        for (int i = 0; i < n; i++)
+          for (int j = 0; j < n; j++) {
+            double a = Mat_Get (Gi, i, j, &err), b = Mat_Get (Gc, i, j, &err);
+            if (fabs (a) > sc) sc = fabs (a);
+            if (fabs (a - b) > w) w = fabs (a - b);
+          }
+        ck (err.exc == NULL && w / sc < 1e-13, "CholInverse (4 threads, 100 x 100) matches SpdInverse to 1e-13");
+      }
 
       /* shape refusals and NotSPD */
       Mat_MulM (&pool, B, A, &err);       /* 4x2 times 4x4 */
@@ -193,6 +236,34 @@ int main (void)
       for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
           Mat_Set (&Bc, i, j, 0.5 * Av[i][j], &err);
+      /* AddNormal: K += H^T R^-1 H, against the same thing composed
+         from Transpose and MulM, to 1e-14; 1 thread and 2 bit-identical */
+      {
+        double wv[3] = {1.0 / Rv[0], 1.0 / Rv[1], 1.0 / Rv[2]};
+        m9_sl_F64 ws = { wv, 3 };
+        Mat_Matrix *K1 = Mat_New (&pool, 4, 4, &err);
+        Mat_Matrix *K2 = Mat_New (&pool, 4, 4, &err);
+        Mat_AddNormal (&pool, H, ws, &K1, 1, &err);
+        ck (err.exc == NULL, "AddNormal succeeds");
+        Mat_AddNormal (&pool, H, ws, &K2, 2, &err);
+        Mat_Matrix *Hw = Mat_New (&pool, 3, 4, &err);
+        for (int i = 0; i < 3; i++)
+          for (int j = 0; j < 4; j++) Mat_Set (&Hw, i, j, Hv[i][j] * wv[i], &err);
+        Mat_Matrix *Kref = Mat_MulM (&pool, Mat_Transpose (&pool, Hw, &err), H, &err);
+        double w = 0; bool same = true;
+        for (int i = 0; i < 4; i++)
+          for (int j = 0; j < 4; j++) {
+            double d = fabs (Mat_Get (K1, i, j, &err) - Mat_Get (Kref, i, j, &err));
+            if (d > w) w = d;
+            {
+              double a = Mat_Get (K1, i, j, &err), b = Mat_Get (K2, i, j, &err);
+              if (memcmp (&a, &b, sizeof (double)) != 0) same = false;
+            }
+          }
+        ck (w < 1e-14, "AddNormal equals H^T R^-1 H composed from MulM");
+        ck (same, "AddNormal on 2 threads is bit-identical to 1");
+        ck (Mat_Get (K1, 0, 1, &err) == Mat_Get (K1, 1, 0, &err), "AddNormal's result is symmetric");
+      }
       Mat_Matrix *Ht = Mat_Transpose (&pool, H, &err);
       Mat_Matrix *BHt = Mat_MulM (&pool, Bc, Ht, &err);
       Mat_Matrix *S = Mat_AddM (&pool, Mat_MulM (&pool, H, BHt, &err),

@@ -68,6 +68,22 @@ L_ret: ;
   return m9ret;
 }
 
+double Math_Fabs (double x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  err->res = m9res;
+  m9ret = (double)(fabs (((double)(x))));
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 double Math_Sqrt (double x, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -493,6 +509,22 @@ float Math_AbsF32 (float x, m9_state *err)
   float m9ret = 0;
   Math_ArgF32 (x, err);
   if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = (float)(fabsf (((float)(x))));
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+float Math_FabsF32 (float x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  float m9ret = 0;
   err->res = m9res;
   m9ret = (float)(fabsf (((float)(x))));
   goto L_ret;

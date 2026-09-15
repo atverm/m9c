@@ -58,6 +58,12 @@ _(documented with the group below)_
 |x|.  Raises on NaN, like everything here; it is the cheapest
 place in a program to notice one.
 
+### Fabs (x: F64) : F64
+
+|x|, total: NaN passes through, like C fabs and numpy.abs.  Abs
+raises on NaN; this is for code where NaN is a missing value,
+not an error (the flux processing the ONEFlux port does).
+
 ### Sqrt (x: F64) : F64 RAISES ValueRange
 
 domain: x >= 0
@@ -166,7 +172,11 @@ asked.  Everything else here refuses it.
 
 ### AbsF32 (x: F32) : F32 RAISES ValueRange
 
-_(undocumented)_
+_(documented with the group below)_
+
+### FabsF32 (x: F32) : F32
+
+|x|, total: NaN through (fabsf)
 
 ### SqrtF32 (x: F32) : F32 RAISES ValueRange
 

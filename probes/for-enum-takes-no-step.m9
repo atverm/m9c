@@ -1,0 +1,15 @@
+(* EXPECT: FOR over an enumeration takes no BY step *)
+(* BY names an integer stride, and an enumeration's members are not
+   numbers to stride over -- the loop visits every member in
+   declaration order, nothing between them to skip.  The checker
+   refuses BY on an enumeration rather than emitting a step it cannot
+   give a meaning (docs/enum-plan.md, part 2). *)
+MODULE m ;
+IMPORT Io ;
+TYPE Colour = (Red, Green, Blue) ;
+VAR c : Colour ;
+BEGIN
+  FOR c := Colour.Red TO Colour.Blue BY 2 DO
+    Io.WriteI64 (7)
+  END
+END m.

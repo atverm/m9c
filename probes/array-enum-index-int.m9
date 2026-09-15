@@ -1,0 +1,13 @@
+(* EXPECT: an ARRAY m.Colour OF is indexed by a m.Colour value, not an integer literal *)
+(* An ARRAY indexed by an enumeration is indexed BY THE TYPE: its
+   subscript is a member of that enumeration, never an ordinal, which
+   is the whole point -- the compiler proves the index is in range
+   because a Colour is always one of Red, Green, Blue.  Reaching for
+   a[0] discards that guarantee and is refused; write a[Colour.Red]
+   (docs/enum-plan.md, part 2). *)
+MODULE m ;
+TYPE Colour = (Red, Green, Blue) ;
+VAR names : ARRAY Colour OF I64 ;
+BEGIN
+  names[0] := 7
+END m.

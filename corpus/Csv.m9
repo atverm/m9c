@@ -146,26 +146,20 @@ PROCEDURE SetStamp (VAR t: PTR Table ; c: I64 ; format: I64)
      Logged as a gap between the two rather than papered over; a C
      caller can still pass a Kind.                                  *)
 
-CONST
-  (* the kind CODES, for KindCodeAt: a caller in another module
-     cannot CASE over Csv.Kind today (the generator cannot type a
-     cross-module variant selector -- the same family as the
-     constructor gap above), so the question is answered as an
-     integer against these names *)
-  KindSkip   = 0 ;
-  KindReal   = 1 ;
-  KindInt    = 2 ;
-  KindStamp  = 3 ;
-  KindText   = 4 ;
-  KindReal64 = 5 ;
-
-PROCEDURE KindCodeAt (t: PTR Table ; c: I64) : I64
+PROCEDURE KindAt (t: PTR Table ; c: I64) : Kind
   RAISES IndexError ;
+PROCEDURE IsSet (t: PTR Table ; c: I64) : BOOL
+  RAISES IndexError ;
+  (* whether column c has had its kind named -- FALSE while it is
+     still Skip.  The count of parsed columns, without spelling out
+     every kind at the call site. *)
 PROCEDURE FormatAt (t: PTR Table ; c: I64) : I64
   RAISES IndexError ;
-  (* the kind the caller set (KindSkip until set) and, for a Stamp
-     column, its format.  Added for Frame.m9, which walks a parsed
-     table and must ask rather than guess. *)
+  (* the kind the caller set (Skip until set) and, for a Stamp
+     column, its format.  A caller in another module CASEs the Kind
+     directly now (the cross-module variant selector the enumeration
+     work gave the generator); the integer codes it used to answer
+     against are gone. *)
 
 PROCEDURE Parse (VAR pool: POOL ; VAR t: PTR Table)
   RAISES ParseError, RangeError, ValueRange, IndexError ;
@@ -243,7 +237,7 @@ TYPE
     hdrEnd  : I64 ;               (* first byte of the first data row *)
     ncols, nrows : I64 ;
     nameOfs, nameLen : SLICE OF I64 ;   (* header names, in place *)
-    kinds   : SLICE OF I64 ;      (* Kind as a code; see KindCode *)
+    kinds   : SLICE OF Kind ;     (* the column's Kind, directly *)
     formats : SLICE OF I64 ;      (* the layout of a Stamp column *)
     fcols   : SLICE OF FCol ;
     dcols   : SLICE OF DCol ;
@@ -254,8 +248,6 @@ TYPE
   END ;
 
 CONST
-  KSkip = 0 ; KReal = 1 ; KInt = 2 ; KStamp = 3 ; KText = 4 ;
-  KReal64 = 5 ;
 
 PROCEDURE Defaults () : Options =
 VAR o : Options ;
@@ -270,28 +262,24 @@ BEGIN
   RETURN o
 END Defaults ;
 
-PROCEDURE KindCode (k: Kind ; VAR format: I64) : I64 =
-BEGIN
-  format := 0 ;
-  CASE k OF
-  | Skip : RETURN KSkip
-  | Real : RETURN KReal
-  | Real64 : RETURN KReal64
-  | Int : RETURN KInt
-  | Stamp (f) :
-      format := f ;
-      RETURN KStamp
-  | Text : RETURN KText
-  END
-END KindCode ;
-
-PROCEDURE KindCodeAt (t: PTR Table ; c: I64) : I64
+PROCEDURE KindAt (t: PTR Table ; c: I64) : Kind
   RAISES IndexError =
 BEGIN
-  (* KSkip..KText are declared equal to KindSkip..KindText; the
-     driver holds the two spellings together *)
   RETURN t.kinds[c]
-END KindCodeAt ;
+END KindAt ;
+
+PROCEDURE IsSet (t: PTR Table ; c: I64) : BOOL
+  RAISES IndexError =
+BEGIN
+  CASE t.kinds[c] OF
+  | Skip : RETURN FALSE
+  | Real : RETURN TRUE
+  | Real64 : RETURN TRUE
+  | Int : RETURN TRUE
+  | Stamp : RETURN TRUE
+  | Text : RETURN TRUE
+  END
+END IsSet ;
 
 PROCEDURE FormatAt (t: PTR Table ; c: I64) : I64
   RAISES IndexError =
@@ -416,12 +404,12 @@ BEGIN
   t.ncols := n ;
   t.nameOfs := NEW (pool, I64, n) ;
   t.nameLen := NEW (pool, I64, n) ;
-  t.kinds := NEW (pool, I64, n) ;
+  t.kinds := NEW (pool, Kind, n) ;
   t.formats := NEW (pool, I64, n) ;
   (* every column is Skip until a setter names its kind -- what the
      definition promises.  It was Real here until 2026-09-06, and a
      caller that declared two of 244 columns got all 244 parsed. *)
-  FOR i := 0 TO n - 1 DO t.kinds[i] := KSkip END ;
+  FOR i := 0 TO n - 1 DO t.kinds[i] := Kind.Skip END ;
 
   IF opt.header THEN
     n := 0 ;
@@ -505,41 +493,47 @@ END Find ;
 
 PROCEDURE SetKind (VAR t: PTR Table ; c: I64 ; k: Kind)
   RAISES IndexError =
-VAR f : I64 ;
 BEGIN
-  t.kinds[c] := KindCode (k, f) ;
-  t.formats[c] := f
+  t.kinds[c] := k ;
+  CASE k OF
+  | Stamp (fmt) : t.formats[c] := fmt
+  | Skip :
+  | Real :
+  | Real64 :
+  | Int :
+  | Text :
+  END
 END SetKind ;
 
 PROCEDURE SetReal64 (VAR t: PTR Table ; c: I64) RAISES IndexError =
 BEGIN
-  t.kinds[c] := KReal64
+  t.kinds[c] := Kind.Real64
 END SetReal64 ;
 
 PROCEDURE SetReal (VAR t: PTR Table ; c: I64) RAISES IndexError =
 BEGIN
-  t.kinds[c] := KReal
+  t.kinds[c] := Kind.Real
 END SetReal ;
 
 PROCEDURE SetInt (VAR t: PTR Table ; c: I64) RAISES IndexError =
 BEGIN
-  t.kinds[c] := KInt
+  t.kinds[c] := Kind.Int
 END SetInt ;
 
 PROCEDURE SetText (VAR t: PTR Table ; c: I64) RAISES IndexError =
 BEGIN
-  t.kinds[c] := KText
+  t.kinds[c] := Kind.Text
 END SetText ;
 
 PROCEDURE SetSkip (VAR t: PTR Table ; c: I64) RAISES IndexError =
 BEGIN
-  t.kinds[c] := KSkip
+  t.kinds[c] := Kind.Skip
 END SetSkip ;
 
 PROCEDURE SetStamp (VAR t: PTR Table ; c: I64 ; format: I64)
   RAISES IndexError =
 BEGIN
-  t.kinds[c] := KStamp ;
+  t.kinds[c] := Kind.Stamp (format) ;
   t.formats[c] := format
 END SetStamp ;
 
@@ -804,17 +798,19 @@ VAR
   inQuote, atEnd : BOOL ;
 BEGIN
   FOR c := 0 TO t.ncols - 1 DO
-    IF t.kinds[c] = KReal64 THEN
+    CASE t.kinds[c] OF
+    | Real64 :
       t.dcols[c] := NEW (pool, F64, t.nrows)
-    ELSIF t.kinds[c] = KReal THEN
+    | Real :
       t.fcols[c] := NEW (pool, F32, t.nrows)
-    ELSIF t.kinds[c] = KInt THEN
+    | Int :
       t.icols[c] := NEW (pool, I64, t.nrows)
-    ELSIF t.kinds[c] = KStamp THEN
+    | Stamp :
       t.scols[c] := NEW (pool, Time.Instant, t.nrows)
-    ELSIF t.kinds[c] = KText THEN
+    | Text :
       t.tofs[c] := NEW (pool, I64, t.nrows) ;
       t.tlen[c] := NEW (pool, I64, t.nrows)
+    | Skip :
     END
   END ;
 
@@ -847,7 +843,8 @@ BEGIN
       ofs := start ;
       IF t.opt.quoted THEN Unquote (t.buf, ofs, len) END ;
       IF c < t.ncols THEN
-        IF t.kinds[c] = KReal64 THEN
+        CASE t.kinds[c] OF
+        | Real64 :
           IF len = 0 OR NOT IsNumber (t.buf, ofs, len) THEN
             t.dcols[c][row] := 0.0 / 0.0
           ELSE
@@ -857,7 +854,7 @@ BEGIN
             END ;
             t.dcols[c][row] := d
           END
-        ELSIF t.kinds[c] = KReal THEN
+        | Real :
           IF len = 0 OR NOT IsNumber (t.buf, ofs, len) THEN
             t.fcols[c][row] := 0.0 / 0.0
           ELSE
@@ -867,18 +864,19 @@ BEGIN
             END ;
             t.fcols[c][row] := f
           END
-        ELSIF t.kinds[c] = KInt THEN
+        | Int :
           IF len > 0 THEN
             t.icols[c][row] := FieldI64 (t.buf, ofs, len, row, c)
           END
-        ELSIF t.kinds[c] = KStamp THEN
+        | Stamp :
           IF len > 0 THEN
             t.scols[c][row] := FieldStamp (pool, t.buf, ofs, len,
               t.formats[c], t.opt.utcOffset, row, c)
           END
-        ELSIF t.kinds[c] = KText THEN
+        | Text :
           t.tofs[c][row] := ofs ;
           t.tlen[c][row] := len
+        | Skip :
         END
       END ;
       c := c + 1 ;

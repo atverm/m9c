@@ -20,11 +20,25 @@ struct Dict_Value {
   } u;
 };
 #define Dict_Value_Null 0
+static const uint32_t Dict_Value_nm0[] = { 78u, 117u, 108u, 108u };
 #define Dict_Value_Bool 1
+static const uint32_t Dict_Value_nm1[] = { 66u, 111u, 111u, 108u };
 #define Dict_Value_Int 2
+static const uint32_t Dict_Value_nm2[] = { 73u, 110u, 116u };
 #define Dict_Value_Real 3
+static const uint32_t Dict_Value_nm3[] = { 82u, 101u, 97u, 108u };
 #define Dict_Value_Str 4
+static const uint32_t Dict_Value_nm4[] = { 83u, 116u, 114u };
 #define Dict_Value_Idx 5
+static const uint32_t Dict_Value_nm5[] = { 73u, 100u, 120u };
+static const m9_sl_CHAR __attribute__((__unused__)) Dict_Value_names[] = {
+  { (uint32_t *) Dict_Value_nm0, 4 },
+  { (uint32_t *) Dict_Value_nm1, 4 },
+  { (uint32_t *) Dict_Value_nm2, 3 },
+  { (uint32_t *) Dict_Value_nm3, 4 },
+  { (uint32_t *) Dict_Value_nm4, 3 },
+  { (uint32_t *) Dict_Value_nm5, 3 },
+};
 
 extern const m9_exc Dict_NotFound;
 

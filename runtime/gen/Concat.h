@@ -6,5 +6,7 @@
 #include "DynStr.h"
 
 
+#define Concat_Bar (124u)
+
 
 #endif

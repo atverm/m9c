@@ -653,6 +653,7 @@ END IsPtrK ;
 PROCEDURE IsRecK (k: I64) : BOOL =
 BEGIN
   RETURN k = Ast.NRecordType OR k = Ast.NCaseRecordType OR
+         k = Ast.NEnumType OR
          k = Ast.NMonitorType
 END IsRecK ;
 
@@ -699,10 +700,46 @@ BEGIN
   END
 END Resolve ;
 
+(* the enumeration or case-record type node an ARRAY bound names, or
+   NONE when the bound is an integer.  ARRAY Colour OF T is indexed by
+   the type: its length is the variant count and its subscript is a
+   member, not an ordinal (docs/enum-plan.md, part 2). *)
+PROCEDURE ArrEnumBoundNode (b: Ast.Kid) : Ast.Kid =
+VAR ci : I64 ;
+BEGIN
+  IF b IS SOME bn THEN
+    IF bn.kind = Ast.NDesignator THEN
+      IF bn.nkids = 0 THEN
+        IF FindTypeN (bn.a) IS SOME t THEN
+          IF t.kind = Ast.NEnumType OR t.kind = Ast.NCaseRecordType THEN
+            RETURN SOME (t)
+          END
+        END
+      ELSIF bn.nkids = 1 THEN
+        IF bn.kids[0] IS SOME sf THEN
+          IF sf.kind = Ast.NSelField THEN
+            ci := MFind (extTypes, S3 (bn.a, '.', sf.a)) ;
+            IF ci >= 0 THEN
+              IF extTypes.es[ci].v IS SOME xt THEN
+                IF xt.kind = Ast.NEnumType OR xt.kind = Ast.NCaseRecordType THEN
+                  RETURN SOME (xt)
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN NONE
+END ArrEnumBoundNode ;
+
 PROCEDURE ArrCount (e: PTR Ast.Node) : STR =
 VAR ci : I64 ;
 BEGIN
   IF e.kind = Ast.NInt THEN RETURN e.a END ;
+  (* ARRAY Colour OF T: the count is the number of members *)
+  IF ArrEnumBoundNode (SOME (e)) IS SOME et THEN RETURN ItoA (et.nkids) END ;
   IF e.kind = Ast.NDesignator THEN
     IF e.nkids = 0 THEN
       ci := MFind (consts, e.a) ;
@@ -1017,14 +1054,62 @@ BEGIN
   RETURN FALSE
 END IsAllArg ;
 
+(* ---- a case record that lives in another module ----
+
+   A CR: tag names the case record type; until 2026-09-15 it named it
+   BARE, so every consumer prefixed modName and looked it up locally,
+   and a value typed `Shape.Kind' -- a parameter, a variable, a call
+   result -- could not be CASEd ("CASE over this selector unsupported
+   yet") nor built ("unknown name: Shape").  Csv, Frame and Plot each
+   grew an integer face to route around it, in their own comments.
+
+   Now the tag carries the module when there is one -- `CR:Kind' at
+   home, `CR:Shape.Kind' abroad -- and these two answer, for either
+   spelling, the C prefix and the declaring node.  The header of the
+   other module already declares Shape_Kind and its tags; nothing has
+   to be re-emitted. *)
+PROCEDURE CRPrefix (RO tn: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (tn) - 1 DO
+    IF tn[i] = '.' THEN
+      RETURN S3 (SLICE (tn, 0, i), '_', SLICE (tn, i + 1, LEN (tn) - i - 1))
+    END
+  END ;
+  RETURN S3 (modName, '_', tn)
+END CRPrefix ;
+
+PROCEDURE CRNode (RO tn: STR) : Ast.Kid =
+VAR i, ei : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (tn) - 1 DO
+    IF tn[i] = '.' THEN
+      ei := MFind (extTypes, tn) ;
+      IF ei >= 0 THEN RETURN extTypes.es[ei].v END ;
+      RETURN NONE
+    END
+  END ;
+  RETURN FindTypeN (tn)
+END CRNode ;
+
 PROCEDURE TagOfType (t: Ast.Kid) : STR =
+VAR ei : I64 ;
 BEGIN
   IF t IS SOME n0 THEN
     IF n0.kind = Ast.NQualident THEN
       IF LEN (n0.b) = 0 THEN
         IF FindTypeN (n0.a) IS SOME cr THEN
-          IF cr.kind = Ast.NCaseRecordType THEN
+          IF cr.kind = Ast.NCaseRecordType OR cr.kind = Ast.NEnumType THEN
             RETURN S2 ('CR:', n0.a)
+          END
+        END
+      ELSE
+        ei := MFind (extTypes, S3 (n0.a, '.', n0.b)) ;
+        IF ei >= 0 THEN
+          IF extTypes.es[ei].v IS SOME cr2 THEN
+            IF cr2.kind = Ast.NCaseRecordType OR cr2.kind = Ast.NEnumType THEN
+              RETURN S4 ('CR:', n0.a, '.', n0.b)
+            END
           END
         END
       END
@@ -1625,12 +1710,32 @@ BEGIN
     END ;
     (* payload-less variant constructor: Type.Variant *)
     IF FindTypeN (d.a) IS SOME vt THEN
-      IF vt.kind = Ast.NCaseRecordType AND d.nkids = 1 THEN
+      IF (vt.kind = Ast.NCaseRecordType OR vt.kind = Ast.NEnumType) AND d.nkids = 1 THEN
         IF d.kids[0] IS SOME sf2 THEN
           IF sf2.kind = Ast.NSelField THEN
             tag := S2 ('CR:', d.a) ;
             RETURN S7 ('((', modName, '_', d.a, '){ .tag = ',
               S5 (modName, '_', d.a, '_', sf2.a), ' })')
+          END
+        END
+      END
+    END ;
+    (* and across a module: Mod.Type.Variant, the checker's spelling
+       for an imported variant, refused here until 2026-09-15 *)
+    IF MFind (extMods, d.a) >= 0 AND d.nkids = 2 THEN
+      IF d.kids[0] IS SOME sfT THEN
+        IF d.kids[1] IS SOME sfV THEN
+          IF sfT.kind = Ast.NSelField AND sfV.kind = Ast.NSelField THEN
+            ci := MFind (extTypes, S3 (d.a, '.', sfT.a)) ;
+            IF ci >= 0 THEN
+              IF extTypes.es[ci].v IS SOME xvt THEN
+                IF xvt.kind = Ast.NCaseRecordType OR xvt.kind = Ast.NEnumType THEN
+                  tag := S4 ('CR:', d.a, '.', sfT.a) ;
+                  RETURN S7 ('((', d.a, '_', sfT.a, '){ .tag = ',
+                    S5 (d.a, '_', sfT.a, '_', sfV.a), ' })')
+                END
+              END
+            END
           END
         END
       END
@@ -1748,12 +1853,20 @@ BEGIN
           ELSIF r.kind = Ast.NArrayType THEN
             base := res ;
             ec := TyC (r.kids[1]) ;
-            cnt := ArrCount2 (r.kids[0]) ;
-            res := S9 ('(*(', ec, ' *) m9_at (', base, '.v, ', ix,
-              ', INT64_C(', cnt, S5 ('), sizeof (', ec, '), err))',
-              '', '')) ;
-            stRaise := TRUE ;
-            tnd := r.kids[1]
+            IF ArrEnumBoundNode (r.kids[0]) IS SOME earr THEN
+              (* ARRAY Colour OF T: the subscript is an enum value, its
+                 tag 0..n-1 by construction -- no runtime bounds check,
+                 a.v[(k).tag] directly (docs/enum-plan.md, part 2) *)
+              res := S5 ('(', base, '.v[(', ix, ').tag])') ;
+              tnd := r.kids[1]
+            ELSE
+              cnt := ArrCount2 (r.kids[0]) ;
+              res := S9 ('(*(', ec, ' *) m9_at (', base, '.v, ', ix,
+                ', INT64_C(', cnt, S5 ('), sizeof (', ec, '), err))',
+                '', '')) ;
+              stRaise := TRUE ;
+              tnd := r.kids[1]
+            END
           ELSE
             Err2 (d.line, 'index into a non-array unsupported yet') ;
             RETURN '0'
@@ -2095,12 +2208,40 @@ END EX ;
 
 (* ---- calls ---- *)
 
+PROCEDURE EnumConvCount (n: PTR Ast.Node) : I64 =
+  (* the member count of a type convertible from an integer -- an
+     enumeration, or a case record all of whose variants are
+     payload-less -- else -1.  A typed parameter, so the field reads
+     do not fall on an IS SOME binder (which the FPC generator types
+     as unknown -- `field on non-record'). *)
+VAR i : I64 ;
+BEGIN
+  IF n.kind = Ast.NEnumType THEN RETURN n.nkids END ;
+  IF n.kind = Ast.NCaseRecordType THEN
+    FOR i := 0 TO n.nkids - 1 DO
+      IF n.kids[i] IS SOME v THEN
+        IF v.kids[0] IS SOME vf THEN RETURN 0 - 1 END
+      END
+    END ;
+    RETURN n.nkids
+  END ;
+  RETURN 0 - 1
+END EnumConvCount ;
+
+PROCEDURE Arg0 (argl: Ast.Kid) : Ast.Kid =
+  (* the first argument as a node, without a field read on an IS SOME
+     binder at the caller *)
+BEGIN
+  IF argl IS SOME a THEN RETURN a.kids[0] END ;
+  RETURN NONE
+END Arg0 ;
+
 PROCEDURE CallC (dn: Ast.Kid ; argl: Ast.Kid ; VAR tag: STR) : STR =
 VAR
   name, args, at, want2, tn, vn, cfunc, e1, e2, res, cnt : STR ;
-  gname : STR ;
-  pi, g, j, k2, nargs, dot, nf32, nf64, eln : I64 ;
-  pnodeK, ak, vgrid, aliasK : Ast.Kid ;
+  gname, xtn : STR ;
+  pi, g, j, k, k2, nargs, dot, dot2, nf32, nf64, eln : I64 ;
+  pnodeK, ak, vgrid, aliasK, enode : Ast.Kid ;
   ser : BOOL ;
   d3 : PTR DynStr.DString IN gpool ;
 BEGIN
@@ -2110,9 +2251,13 @@ BEGIN
   eln := 0 ;
   IF dn IS SOME d9 THEN eln := d9.line END ;
   IF dn IS SOME dnode THEN
+    (* the dotted callee name: every field selector joins, so
+       Mod.Type.Variant reaches the constructor branch whole -- the
+       two-part cut read it as procedure `Csv' and refused it as
+       `callee unsupported yet' until 2026-09-15 *)
     name := dnode.a ;
-    IF dnode.nkids = 1 THEN
-      IF dnode.kids[0] IS SOME sf THEN
+    FOR j := 0 TO dnode.nkids - 1 DO
+      IF dnode.kids[j] IS SOME sf THEN
         IF sf.kind = Ast.NSelField THEN name := S3 (name, '.', sf.a) END
       END
     END
@@ -2121,6 +2266,24 @@ BEGIN
     RETURN '0'
   END ;
   IF argl IS SOME al0 THEN nargs := al0.nkids END ;
+
+  (* AN INTEGER TO AN ENUMERATION: Colour (i), or Palette.Hue (i),
+     the checked inverse of ORD.  The callee is a type -- an enum or a
+     payload-less case record -- and CRNode/CRPrefix already resolve
+     it for either spelling.  m9_enum raises ValueRange for a value
+     that names no member (docs/enum-plan.md). *)
+  IF nargs = 1 THEN
+    IF CRNode (name) IS SOME enode THEN
+      nf32 := EnumConvCount (enode) ;      (* reuse nf32 as a scratch *)
+      IF nf32 >= 0 THEN
+        tag := S2 ('CR:', name) ;
+        stRaise := TRUE ;
+        RETURN S7 ('((', CRPrefix (name), '){ .tag = m9_enum ((int64_t)(',
+          EX (Arg0 (argl), ''), '), INT64_C(', ItoA (nf32),
+          '), err) })')
+      END
+    END
+  END ;
 
   (* An ALIAS FOR A SCALAR IS A CONVERSION under its own name.  The
      checker already treats `TYPE Real = F32` as F32 for assignment,
@@ -2234,7 +2397,23 @@ BEGIN
     END ;
     IF DynStr.Eq (name, 'ORD') THEN
       tag := 'I64' ;
+      (* an enumeration (or any payload-less case record) answers its
+         tag; a CHAR answers its code point.  ORD (Colour.Red) is 0,
+         ORD (c) is the member's position, 0..n-1 (docs/enum-plan.md) *)
+      IF StartsW (TagOfExpr (al.kids[0]), 'CR:') THEN
+        RETURN S3 ('(int64_t)((', EX (al.kids[0], ''), ').tag)')
+      END ;
       RETURN S3 ('(int64_t)(', EX (al.kids[0], 'CHAR'), ')')
+    END ;
+    IF DynStr.Eq (name, 'NAME') THEN
+      (* the member's identifier as a STR, from the table emitted
+         beside the tag #defines: NAME (Colour.Red) is 'Red'.  The
+         tag names the type -- CR:Kind at home, CR:Mod.Kind abroad --
+         and CRPrefix turns either into the C table name *)
+      tag := 'SLICE' ;
+      at := TagOfExpr (al.kids[0]) ;
+      RETURN S6 ('(', CRPrefix (SLICE (at, 3, LEN (at) - 3)), '_names[(',
+        EX (al.kids[0], ''), ').tag])', '')
     END ;
     IF DynStr.Eq (name, 'CHR') THEN
       tag := 'CHAR' ;
@@ -2424,8 +2603,26 @@ BEGIN
     END ;
     (* variant constructor with payload: Type.Variant (args) *)
     IF FindTypeN (tn) IS SOME vt THEN
-      IF vt.kind = Ast.NCaseRecordType THEN
+      IF vt.kind = Ast.NCaseRecordType OR vt.kind = Ast.NEnumType THEN
         RETURN VariantCtor (vt, tn, vn, argl, nargs, tag)
+      END
+    END ;
+    (* and Mod.Type.Variant (args), the type's module named: the
+       callee split at its first dot reads as module Mod, procedure
+       `Type.Variant', which is no procedure.  CRPrefix and the CR:
+       tag both carry `Mod.Type' since 2026-09-15. *)
+    dot2 := 0 - 1 ;
+    FOR k := 0 TO LEN (vn) - 1 DO
+      IF vn[k] = '.' AND dot2 < 0 THEN dot2 := k END
+    END ;
+    IF dot2 > 0 THEN
+      xtn := S3 (tn, '.', SLICE (vn, 0, dot2)) ;
+      IF CRNode (xtn) IS SOME xvt THEN
+        IF xvt.kind = Ast.NCaseRecordType OR xvt.kind = Ast.NEnumType THEN
+          RETURN VariantCtor (xvt, xtn,
+                              SLICE (vn, dot2 + 1, LEN (vn) - dot2 - 1),
+                              argl, nargs, tag)
+        END
       END
     END ;
     (* cross-module call: Mod.Proc against a loaded extern def *)
@@ -2623,8 +2820,8 @@ BEGIN
     IF k2 # nargs THEN
       Err2 (eln, 'variant constructor arity wrong')
     END ;
-    res := S7 ('((', modName, '_', tn, '){ .tag = ',
-      S5 (modName, '_', tn, '_', vn), '') ;
+    res := S5 ('((', CRPrefix (tn), '){ .tag = ',
+      S3 (CRPrefix (tn), '_', vn), '') ;
     IF LEN (args) > 0 THEN
       res := S6 (res, ', .u.', vn, ' = { ', args, ' }')
     END ;
@@ -2937,6 +3134,25 @@ BEGIN
         Line (KPbuf, ind, '}')
     | Ast.NFor :
         stRaise := FALSE ;
+        (* FOR over an enumeration walks its tags: the variable is a
+           struct, so the loop runs on `.tag' -- c.tag = lo.tag;
+           c.tag <= hi.tag; c.tag++ (docs/enum-plan.md, part 2) *)
+        IF StartsW (TagOfExpr (st.kids[0]), 'CR:') THEN
+          w := NewTmp () ;
+          Line (KPbuf, ind, S3 ('{ int32_t ', w, 'to;')) ;
+          Line (KPbuf, ind, S5 (CN (st.a), '.tag = (', EX (st.kids[0], ''),
+            ').tag;', '')) ;
+          Line (KPbuf, ind, S5 (w, 'to = (', EX (st.kids[1], ''),
+            ').tag;', '')) ;
+          Line (KPbuf, ind, S9 ('for (; ', CN (st.a), '.tag <= ', w,
+            'to; ', CN (st.a), '.tag++', ') {', '')) ;
+          sv := inSwitch ; inSwitch := 0 ;
+          sf := finDepth ; finDepth := 0 ;
+          EmitSeq (st.kids[3], ind + 1) ;
+          inSwitch := sv ; finDepth := sf ;
+          Line (KPbuf, ind, '} }') ;
+          RETURN
+        END ;
         l := EX (st.kids[0], '') ;
         w := NewTmp () ;
         Line (KPbuf, ind, S3 ('{ int64_t ', w, 'to;')) ;
@@ -3199,8 +3415,8 @@ VAR
   hadElse, opened : BOOL ;
 BEGIN
   tn := SLICE (tg, 3, LEN (tg) - 3) ;
-  l := S4 (modName, '_', tn, '_') ;
-  vtN := FindTypeN (tn) ;
+  l := S2 (CRPrefix (tn), '_') ;
+  vtN := CRNode (tn) ;
   hadElse := FALSE ;
   Line (KPbuf, ind, S3 ('switch (', w, '.tag) {')) ;
   inSwitch := inSwitch + 1 ;
@@ -3632,6 +3848,13 @@ BEGIN
     IF NOT DynStr.Eq (retC, 'void') THEN
       Line (KPbuf, 1, S4 (retC, ' m9ret', ZeroInit (retC), ';'))
     END ;
+    (* the monitor is entered BEFORE the locals are declared -- the
+       order the bootstrap generator emits (M9Gen.pas), which gendiff
+       holds this one to; a monitor-bound procedure with a local VAR
+       first appeared in the corpus with Mat's banded kernels *)
+    IF LEN (monPar) > 0 THEN
+      Line (KPbuf, 1, S3 ('m9_mon_enter (&(*', monPar, ').m9mon);'))
+    END ;
 
     (* locals: zero-initialized, pools registered for L_ret free *)
     body := gps[gi].body ;
@@ -3655,7 +3878,8 @@ BEGIN
                      rk0.kind = Ast.NSliceType OR
                      rk0.kind = Ast.NArrayType OR
                      rk0.kind = Ast.NRecordType OR
-                     rk0.kind = Ast.NCaseRecordType THEN
+                     rk0.kind = Ast.NCaseRecordType OR
+                     rk0.kind = Ast.NEnumType THEN
                     init := ' = {0}'
                   END
                 END ;
@@ -3692,9 +3916,6 @@ BEGIN
         MAdd (scope, mvN[i], mvT[i], 'l')
       END ;
 
-      IF LEN (monPar) > 0 THEN
-        Line (KPbuf, 1, S3 ('m9_mon_enter (&(*', monPar, ').m9mon);'))
-      END ;
       (* the body's block goes through the statement emitter so a
          proc-level EXCEPT/FINALLY gets the full treatment *)
       EmitStmt (bd.kids[bd.nkids - 1], 1)
@@ -3828,7 +4049,8 @@ BEGIN
     IF tys[i].node IS SOME tn THEN
       IF tn.kind = Ast.NRecordType OR
          tn.kind = Ast.NMonitorType OR
-         tn.kind = Ast.NCaseRecordType THEN anyPay := TRUE END
+         tn.kind = Ast.NCaseRecordType OR
+         tn.kind = Ast.NEnumType THEN anyPay := TRUE END
     END ;
     IF anyPay THEN
       Line (KHdr, 0, S6 ('typedef struct ', modName, '_', tys[i].name,
@@ -3842,7 +4064,7 @@ BEGIN
      the variant *)
   FOR i := 0 TO ntys - 1 DO
     IF tys[i].node IS SOME d THEN
-      IF d.kind = Ast.NCaseRecordType THEN
+      IF d.kind = Ast.NCaseRecordType OR d.kind = Ast.NEnumType THEN
         IF tys[i].fdef THEN buf := KHdr ELSE buf := KSrc END ;
         anyPay := FALSE ;
         FOR ci := 0 TO d.nkids - 1 DO
@@ -3890,9 +4112,27 @@ BEGIN
         FOR ci := 0 TO d.nkids - 1 DO
           IF d.kids[ci] IS SOME v THEN
             Line (buf, 0, S7 ('#define ', modName, '_', tys[i].name,
-              '_', v.a, S2 (' ', ItoA (ci))))
+              '_', v.a, S2 (' ', ItoA (ci)))) ;
+            (* NAME's food: one code-point array per member *)
+            Line (buf, 0, S9 ('static const uint32_t ', modName, '_',
+              tys[i].name, '_nm', ItoA (ci), '[] = { ',
+              StrCodes (v.a), ' };'))
           END
         END ;
+        (* and the table NAME indexes by tag *)
+        (* __unused__: the table is dead when nobody calls NAME on
+           this type, and -Werror=unused-const-variable would reject
+           it; the linker strips it either way *)
+        Line (buf, 0, S6 ('static const m9_sl_CHAR __attribute__((__unused__)) ',
+          modName, '_', tys[i].name, '_names[] = {', '')) ;
+        FOR ci := 0 TO d.nkids - 1 DO
+          IF d.kids[ci] IS SOME v THEN
+            Line (buf, 0, S9 ('  { (uint32_t *) ', modName, '_',
+              tys[i].name, '_nm', ItoA (ci), ', ',
+              ItoA (LEN (v.a)), ' },'))
+          END
+        END ;
+        Line (buf, 0, '};') ;
         Line (buf, 0, '')
       END
     END
@@ -4002,6 +4242,12 @@ BEGIN
         Line (KHdrConsts, 0, S9 ('#define ', modName, '_',
           consts.es[ci].k, ' ((m9_sl_CHAR){ (uint32_t *) ', modName,
           '_', consts.es[ci].k, S4 ('_d, ', ItoA (LEN (e.a)), ' })', '')))
+      (* a CHAR constant: one code point, emitted like the char
+         literal it names -- <cp>u -- so `s + NL` joins it as a code
+         point the way `s + 0AC` does (par 2.2) *)
+      ELSIF e.kind = Ast.NChar THEN
+        Line (KHdrConsts, 0, S7 ('#define ', modName, '_',
+          consts.es[ci].k, ' (', S2 (ItoA (CharVal (e.a)), 'u'), ')'))
       ELSE
         Err2 (e.line, 'const form unsupported yet')
       END
@@ -4070,6 +4316,7 @@ BEGIN
   (* the trampolines go AFTER the prototypes they call and before the
      bodies, which is the only place both are visible *)
   DynStr.Append (gpool, bSrc, DynStr.View (bThr)) ;
+  IF thrSeen.n > 0 THEN Line (KSrc, 0, '') END ;
   DynStr.Append (gpool, bSrc, DynStr.View (bPbuf)) ;
 
   hOut := DynStr.View (bHdr) ;

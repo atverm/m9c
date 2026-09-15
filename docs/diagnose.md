@@ -19,6 +19,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `unknown procedure: Pair` | a type alias converts under its own name only when it aliases a scalar; a record alias is not a conversion | construct the record; conversions are for numeric widths and CHAR | `alias-nonscalar-conversion` |
 | `cannot assign ALL to I64` | ALL is the axis-keeping marker for VIEW and has no value outside one | use ALL only as a VIEW argument; a whole-axis loop is FOR i := 0 TO LEN (g, k) - 1 | `all-outside-a-view` |
 | `G expects 1 argument(s), got 2` | the call passes a different number of arguments from the declaration | read the signature in docs/modules/<M>.md; every parameter is positional and required | `arity-mismatch` |
+| `an ARRAY m.Colour OF is indexed by a m.Colour value, not an integer literal` | an ARRAY indexed by an enumeration is indexed BY THE TYPE -- its subscript is a member of that enumeration, and its length is the member count -- so an integer subscript (or a value of some other type) is refused; the compiler proves a[Colour.Red] is in range precisely because a Colour is always one of the members | write the member: a[Colour.Red], not a[0]; that is what makes the array bounds-checked at compile time, with no runtime check and no ordinal to keep in step with the type | `array-enum-index-int` |
 | `BYTE is a raw octet: no arithmetic` | BYTE is a raw octet, not a number: no +, -, comparison as magnitude | convert with U8 (b) or I64 (b) first, and back with BYTE (x), each of which RAISES ValueRange | `byte-arithmetic` |
 | `ByteSize needs a slice, not I64` | ByteSize answers the bytes a slice's elements occupy, so its argument must be a slice | for a scalar or record use SizeOf (x); for the data behind a slice, ByteSize (s) = LEN (s) * SizeOf (element) | `bytesize-not-slice` |
 | `CASE label is a CHAR/string literal but the selector is I64` | the CASE label's type is not the selector's type | labels must be literals or CONSTs of the selector's type; a CHAR selector takes 'x' or 41C | `case-label-mismatch` |
@@ -34,6 +35,9 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `a borrow is not yours to free` | the value came in as a value/VAR/RO parameter -- a borrow -- and a borrow is not yours to free | only OWN parameters and locals holding owned PTRs may be DISPOSEd; move ownership with OWN | `dispose-a-borrow` |
 | `the pool owns p; free the pool` | PTR T IN pool is carved from a pool and the pool frees it as a whole | never DISPOSE a pool-interior pointer; free the pool (par 4.3, docs/pools.md) | `dispose-pool-interior` |
 | `DIV is integer division` | DIV and MOD are integer operators | use / for floats; Math.Fmod for a float remainder | `div-on-float` |
+| `unhandled RAISES ValueRange from Colour conversion` | an integer-to-enumeration conversion, Colour (i) or Mod.Type (i), can turn an integer that names no member into a value, so it RAISES ValueRange -- and a procedure that converts without declaring or handling that failure is refused, the same as I64 (x) on a value that might not fit | add RAISES ValueRange to the signature, or handle it with EXCEPT; the conversion is the checked inverse of ORD, and the exhaustive RAISES accounting reaches it like every other narrowing | `enum-conversion-no-raises` |
+| `FOR over an enumeration needs both bounds of one type, not m.Colour and m.Fruit` | a FOR loop over an enumeration walks the members of ONE enumeration in declaration order, so its two bounds must name that same type; giving Colour.Red as the low bound and a member of a different enumeration as the high bound has no meaning, since members of unrelated enumerations are not comparable | make both bounds members of the one type -- FOR c := Colour.Red TO Colour.Blue; a loop that must cross two enumerations is two loops, or a conversion through ORD if the ordinals really are meant to line up | `for-enum-bounds-differ` |
+| `FOR over an enumeration takes no BY step` | BY names an integer stride and an enumeration's members are not numbers to step over -- the loop already visits every member from the low bound to the high one, with nothing between them to skip -- so BY on an enumeration bound is refused | drop the BY: FOR c := Colour.Red TO Colour.Blue visits Red, Green, Blue in order; if you need to skip members, guard the body with an IF or CASE rather than striding the loop | `for-enum-takes-no-step` |
 | `is an M9 module -- use IMPORT lib` | FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way) | use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later | `from-m9-module` |
 | `axis 2 of a GRID 2 OF F64 does not exist` | LEN (g, k) names an axis the grid's rank does not have (axes are 0-based) | a GRID 2 has axes 0 and 1 | `grid-len-axis-exists` |
 | `LEN of a GRID needs an axis` | a GRID has one extent per axis, so LEN needs to be told which | LEN (g, 0); LEN (s) without an axis is for slices | `grid-len-needs-an-axis` |
@@ -53,6 +57,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `module-level state requires STATEFUL on the definition` | a module-level VAR is state, and a module with state must say so | add [STATEFUL] to the DEFINITION MODULE, or move the state into a record the caller owns (par 6) | `module-state-without-stateful` |
 | `monitor field n is reached from outside a procedure bound to the monitor (par 6)` | a monitor serialises access by letting only its BOUND procedures reach its fields, and the binding is the FIRST parameter (par 6) | add a short bound procedure -- PROCEDURE Count (VAR g: Gate) : I64 -- and call that instead | `monitor-outside` |
 | `cannot move borrowed q into an OWN parameter` | an OWN parameter takes ownership, and a borrow has none to give | pass something you own -- a local, an OWN parameter -- or take the argument as VAR instead | `move-borrow-into-own` |
+| `NAME needs an enumeration or a case record, not I64` | NAME turns an enumeration member -- or a case-record variant -- into its identifier text; applied to anything else (a number, a record, a slice) it has nothing to name | pass an enumeration or case-record value; NAME (Colour.Red) is 'Red', and it reads the identifier from a table the generator emits per type, so it retires a hand-written code-to-name CASE | `name-needs-enum` |
 | `NEW takes the pool first, then the type` | NEW's arguments are the wrong way round: the pool comes first, then the type | NEW (pool, T) for a pointer, NEW (pool, T, n) for a slice, NEW (pool, T, n1, n2) for a grid (par 4.3) | `new-reversed` |
 | `no field w` | the record has no field of that name | read the record in docs/modules/<M>.md; a variant's payload is reached through CASE | `no-such-field` |
 | `opaque type not defined in the implementation` | the DEFINITION declares an opaque TYPE the IMPLEMENTATION never completes | TYPE T = RECORD ... END in the implementation | `opaque-not-defined` |
@@ -70,10 +75,12 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `unknown name: alex` | a bare name used as a value is declared nowhere -- not a local, parameter, IS SOME binder, CONST, type, or module | declare it, import the module it comes from, or fix the typo; the checker now names it rather than leaving it to the generator (par: the checker refuses what the generator cannot see) | `undefined-name` |
 | `unknown procedure: Nonexistent` | no procedure of that name is visible -- MOST OFTEN a real name whose module is not IMPORTed in THIS module (an IMPLEMENTATION has its own IMPORT list), otherwise a guessed name | add IMPORT M to the implementation; then confirm the name in docs/modules/M.md or with m9c --doc | `unknown-callee` |
 | `unknown exception: NoSuchExc` | a RAISE, a RAISES clause or a handler cites an exception name found nowhere -- not declared locally, not predeclared (Overflow/IndexError/OutOfMemory/ValueRange), and not declared in any loaded module | declare the EXCEPTION, or qualify it into the module that owns it (Json.ParseError); an imported exception is reached as Module.Name, never bare -- the checker now refuses what the generator could not emit | `unknown-exception` |
+| `unknown type: Lib.Dstring -- Lib declares no such type` | a declaration names a type as Module.Name, the module is imported and loaded, and it declares no type or opaque of that name -- a typo, most often in case (DynStr.Dstring for DynStr.DString), since names are case-sensitive | spell it as the module declares it (m9c --json Module lists every name); an unknown type is otherwise SOFT and never diagnosed, because a bare name found nowhere may only be a missing IMPORT -- but a known module lacking the name is not softness, and until 2026-09-15 this rode through --check to surface as cc's `unknown type name Module_Name', the M9 line gone | `unknown-type-in-known-module` |
 | `use of s after it was DISPOSEd` | the name was DISPOSEd on an earlier line and is dead | do not read it; re-assign to bring it back to life (par 4.2) | `use-after-dispose` |
 | `use of s after it was moved` | assigning a bare owned pointer to another name MOVES it; the source is dead | use the destination; if both must live, that is a SHARED handle | `use-after-move-assign` |
 | `use of s after it was consumed by SHARED` | SHARED (s) consumed s; the handle is what lives on | use the SHARED result; s is gone | `use-after-shared` |
 | `must be a variable (VAR/OWN parameter)` | a VAR or OWN argument must be something that can be written to -- a variable, field or element | store the expression in a local first | `var-arg-not-designator` |
+| `unknown procedure: Lib.Kind.Nope` | a three-part constructor Mod.Type.Variant (args) names a module, a type in it, and a variant that is not there -- reported as `unknown procedure: Mod.Type.Variant', because a name that is neither a procedure nor a known variant is, to the caller, an unknown callee | spell the variant as the type declares it (m9c --json Mod lists them); the three-part form is how an imported variant with a payload is built from another module, Mod.Type.Variant, and it looks nowhere but Mod -- before 2026-09-15 it was refused outright as `unknown procedure: Mod' because the callee was split at its first dot | `variant-in-named-module` |
 | `needs 3 axis arguments, not 2` | VIEW takes exactly one argument per axis of the grid: an index (drops it) or ALL (keeps it) | VIEW (g, i, ALL, ALL) for a GRID 3 | `view-axis-count` |
 | `a VIEW that keeps no axis is an index` | a VIEW with an index on every axis is a single element, not a view | subscript instead: g[i, j] | `view-keeps-nothing` |
 | `VIEW needs a GRID` | VIEW is a GRID operation; a slice has no strides to keep | SLICE (s, start, len) for a sub-slice | `view-of-a-slice` |
@@ -139,6 +146,25 @@ MODULE m ;
 VAR x : I64 ;
 PROCEDURE G (a: I64) = BEGIN x := a END G ;
 PROCEDURE F () = BEGIN G (1, 2) END F ;
+END m.
+```
+
+### array-enum-index-int
+
+`an ARRAY m.Colour OF is indexed by a m.Colour value, not an integer literal`
+
+```
+(* An ARRAY indexed by an enumeration is indexed BY THE TYPE: its
+   subscript is a member of that enumeration, never an ordinal, which
+   is the whole point -- the compiler proves the index is in range
+   because a Colour is always one of Red, Green, Blue.  Reaching for
+   a[0] discards that guarantee and is refused; write a[Colour.Red]
+   (docs/enum-plan.md, part 2). *)
+MODULE m ;
+TYPE Colour = (Red, Green, Blue) ;
+VAR names : ARRAY Colour OF I64 ;
+BEGIN
+  names[0] := 7
 END m.
 ```
 
@@ -345,6 +371,71 @@ END m.
 MODULE m ;
 VAR a, b : F64 ;
 PROCEDURE F () = BEGIN a := b DIV b END F ;
+END m.
+```
+
+### enum-conversion-no-raises
+
+`unhandled RAISES ValueRange from Colour conversion`
+
+```
+(* Colour (i) is the checked inverse of ORD: it turns an integer
+   position into a member and RAISES ValueRange when the integer names
+   no member, exactly as I64 (x) raises on a value that does not fit.
+   A procedure that converts and does not declare or handle the
+   failure is refused -- the exhaustive RAISES accounting reaches the
+   new conversion (docs/enum-plan.md, part 2). *)
+MODULE m ;
+TYPE Colour = (Red, Green, Blue) ;
+PROCEDURE Bad (i: I64) : Colour =
+BEGIN
+  RETURN Colour (i)
+END Bad ;
+BEGIN
+END m.
+```
+
+### for-enum-bounds-differ
+
+`FOR over an enumeration needs both bounds of one type, not m.Colour and m.Fruit`
+
+```
+(* A FOR loop over an enumeration walks the members of ONE type, so
+   its two bounds must name that type -- Colour.Red up to Colour.Green,
+   never Colour.Red up to a member of some other enumeration.  Mixing
+   two enumerations has no meaning (their members are not comparable),
+   and the checker says so rather than letting the generator compare
+   tags from unrelated tables (docs/enum-plan.md, part 2). *)
+MODULE m ;
+IMPORT Io ;
+TYPE Colour = (Red, Green) ;
+TYPE Fruit = (Apple, Pear) ;
+VAR c : Colour ;
+BEGIN
+  FOR c := Colour.Red TO Fruit.Pear DO
+    Io.WriteI64 (7)
+  END
+END m.
+```
+
+### for-enum-takes-no-step
+
+`FOR over an enumeration takes no BY step`
+
+```
+(* BY names an integer stride, and an enumeration's members are not
+   numbers to stride over -- the loop visits every member in
+   declaration order, nothing between them to skip.  The checker
+   refuses BY on an enumeration rather than emitting a step it cannot
+   give a meaning (docs/enum-plan.md, part 2). *)
+MODULE m ;
+IMPORT Io ;
+TYPE Colour = (Red, Green, Blue) ;
+VAR c : Colour ;
+BEGIN
+  FOR c := Colour.Red TO Colour.Blue BY 2 DO
+    Io.WriteI64 (7)
+  END
 END m.
 ```
 
@@ -636,6 +727,25 @@ PROCEDURE F (q: PTR R) = BEGIN G (q) END F ;
 END m.
 ```
 
+### name-needs-enum
+
+`NAME needs an enumeration or a case record, not I64`
+
+```
+(* NAME turns a member of an enumeration -- or a variant of a case
+   record -- into its identifier text.  Applied to a plain integer it
+   has nothing to name, and the checker says so rather than emitting a
+   table index into a table that does not exist (docs/enum-plan.md,
+   part 2). *)
+MODULE m ;
+IMPORT Io ;
+VAR i : I64 ;
+BEGIN
+  i := 3 ;
+  Io.WriteLine (NAME (i))
+END m.
+```
+
 ### new-reversed
 
 `NEW takes the pool first, then the type`
@@ -904,6 +1014,27 @@ BEGIN
 END m.
 ```
 
+### unknown-type-in-known-module
+
+`unknown type: Lib.Dstring -- Lib declares no such type`
+
+```
+(* The softness contract says an unknown TYPE never diagnoses, so a
+   bare name that is nowhere may be a missing IMPORT and nothing
+   cascades.  This is not that: Lib is loaded and has no Dstring.  It
+   is a typo, and until 2026-09-15 it sailed through --check to
+   surface as cc's `unknown type name Lib_Dstring', the M9 name
+   mangled and the M9 line gone. *)
+DEFINITION MODULE Lib ;
+TYPE DString = RECORD n : I64 END ;
+END Lib.
+MODULE m ;
+IMPORT Lib ;
+VAR d : PTR Lib.Dstring ;
+BEGIN
+END m.
+```
+
 ### use-after-dispose
 
 `use of s after it was DISPOSEd`
@@ -951,6 +1082,31 @@ END m.
 MODULE m ;
 PROCEDURE G (VAR a: I64) = BEGIN a := 0 END G ;
 PROCEDURE F () = BEGIN G (1 + 2) END F ;
+END m.
+```
+
+### variant-in-named-module
+
+`unknown procedure: Lib.Kind.Nope`
+
+```
+(* The three-part constructor Mod.Type.Variant (args) names the module
+   the type lives in, and the variant is looked for THERE and nowhere
+   else.  Until 2026-09-15 the callee was split at its first dot --
+   type `Lib', variant `Kind.Stamp' -- and every such call was refused
+   as `unknown procedure: Lib', so nobody could construct an imported
+   variant with a payload from another module. *)
+DEFINITION MODULE Lib ;
+TYPE Kind = CASE RECORD | Plain | Stamp : format : I64 END ;
+END Lib.
+MODULE m ;
+IMPORT Lib ;
+VAR k : Lib.Kind ;
+VAR n : I64 ;
+BEGIN
+  k := Lib.Kind.Stamp (3) ;      (* valid since 2026-09-15 *)
+  CASE k OF | Plain : n := 0 | Stamp (f) : n := f END ;
+  k := Lib.Kind.Nope (3)         (* Kind has no Nope *)
 END m.
 ```
 

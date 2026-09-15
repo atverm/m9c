@@ -1,0 +1,85 @@
+MODULE EnumUse ;
+
+(* gendiff-only fixture: an ENUMERATION, exercised the way KindUse
+   exercises a case record.  An enumeration is a payload-less case
+   record with a Pascal face -- TYPE Colour = (Red, Green, Blue) --
+   so the same machinery constructs Palette.Hue.Warm, CASEs it, and
+   crosses the module boundary.  docs/enum-plan.md, the type family. *)
+
+IMPORT Io ;
+IMPORT Palette ;
+
+TYPE Band = (Lo, Mid, Hi) ;   (* a LOCAL enumeration, for the array below *)
+
+VAR h : Palette.Hue ;
+
+PROCEDURE Nm (x: Palette.Hue) : STR =
+BEGIN
+  CASE x OF
+  | Warm : RETURN 'warm'
+  | Cool : RETURN 'cool'
+  | Neutral : RETURN 'neutral'
+  END
+END Nm ;
+
+PROCEDURE Round (i: I64) RAISES ValueRange =
+  (* the conversion and ORD together: Hue (i) then ORD back *)
+BEGIN
+  Io.WriteI64 (ORD (Palette.Hue (i)))
+END Round ;
+
+PROCEDURE AllHues () =
+  (* FOR over an enumeration: the loop variable walks the members in
+     declaration order, Warm through Neutral, no ordinals in sight *)
+VAR c : Palette.Hue ;
+BEGIN
+  FOR c := Palette.Hue.Warm TO Palette.Hue.Neutral DO
+    Io.WriteLine (NAME (c))
+  END
+END AllHues ;
+
+PROCEDURE Tables () =
+  (* enumeration-indexed arrays: the index IS the type, so the length
+     is the member count and a[Band.Lo] needs no ordinal.  A local
+     enumeration (Band) and an imported one (Palette.Hue) exercise
+     both bound lookups (docs/enum-plan.md, part 2). *)
+VAR
+  bw : ARRAY Band OF I64 ;
+  hw : ARRAY Palette.Hue OF I64 ;
+  b : Band ;
+  h2 : Palette.Hue ;
+BEGIN
+  bw[Band.Lo] := 1 ;
+  bw[Band.Mid] := 2 ;
+  bw[Band.Hi] := 3 ;
+  hw[Palette.Hue.Warm] := 10 ;
+  hw[Palette.Hue.Cool] := 20 ;
+  hw[Palette.Hue.Neutral] := 30 ;
+  FOR b := Band.Lo TO Band.Hi DO
+    Io.WriteI64 (bw[b])
+  END ;
+  Io.WriteLine ('') ;
+  FOR h2 := Palette.Hue.Warm TO Palette.Hue.Neutral DO
+    Io.WriteI64 (hw[h2])
+  END ;
+  Io.WriteLine ('') ;
+  Io.Write ('lens ') ;
+  Io.WriteI64 (LEN (bw)) ;
+  Io.WriteI64 (LEN (hw)) ;
+  Io.WriteLine ('')
+END Tables ;
+
+BEGIN
+  h := Palette.Hue.Cool ;
+  Io.WriteLine (Nm (h)) ;
+  Io.WriteLine (Nm (Palette.Warmest ())) ;
+  Io.WriteI64 (ORD (h)) ;                (* 1 *)
+  Round (2) ;                            (* Neutral, ORD 2 *)
+  Io.WriteLine ('') ;
+  Io.WriteLine (NAME (h)) ;              (* Cool *)
+  Io.WriteLine (NAME (Palette.Hue.Warm)) ;
+  AllHues () ;
+  Tables ()
+EXCEPT
+| ValueRange : Io.WriteLine ('out of range')
+END EnumUse.

@@ -283,7 +283,8 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 [ "$(./concat_test)" = "hello, world!
 ababab
 6
-via heap" ] || { echo "FAIL: string concatenation"; exit 1; }
+via heap
+a|b|c" ] || { echo "FAIL: string concatenation"; exit 1; }
 echo "PASS (1 check) -- + on strings, across a frame, and HEAP by name"
 
 # Http's URL fetcher, against a local fixture server.  IN THE SUITE
