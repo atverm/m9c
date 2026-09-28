@@ -14,7 +14,7 @@
 # written will call.  It comes out when the transcription is done.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh          # runtime/gen is BUILT here, not found
+. ./lib/gen.sh          # runtime/gen is BUILT here, not found
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \

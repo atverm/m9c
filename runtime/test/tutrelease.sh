@@ -53,7 +53,7 @@ VER=$("$M9C" --version 2>&1 | head -1)
 # what the reader's package installs
 RT=$SRC/runtime
 LIB=$SRC/corpus
-. ./tutcommon.sh
+. ./lib/tutcommon.sh
 
 # the two that bind C libraries CI does not have; tutdiff skips them
 # for the same reason and says so

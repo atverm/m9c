@@ -6,7 +6,7 @@
 # principle applied to prose: examples are gated, so they cannot rot.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh
+. ./lib/gen.sh
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Lex.c \
@@ -25,7 +25,7 @@ RT=$(cd .. && pwd)
 LIB=$(cd ../../corpus && pwd)
 W=/tmp/m9tut-gate
 rm -rf "$W"; mkdir -p "$W"
-. ./tutcommon.sh
+. ./lib/tutcommon.sh
 
 # the zarr chapter needs libblosc and a generatable store; CI has
 # neither, so it SKIPS OUT LOUD there rather than passing quietly

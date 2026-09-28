@@ -5,7 +5,7 @@
 # deliberately changing an example, read the diff, then commit both.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh
+. ./lib/gen.sh
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Lex.c \
@@ -18,7 +18,7 @@ RT=$(cd .. && pwd)
 LIB=$(cd ../../corpus && pwd)
 W=/tmp/m9tut-gen
 rm -rf "$W"; mkdir -p "$W" "$EXA/expect"
-. ./tutcommon.sh
+. ./lib/tutcommon.sh
 for f in "$EXA"/C*.m9; do
   m=$(basename "$f" .m9)
   tut_build "$m" || exit 1

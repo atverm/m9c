@@ -28,7 +28,7 @@ ldconfig -p 2>/dev/null | grep -q 'libblosc\.so\.1' || \
 ldconfig -p 2>/dev/null | grep -q 'libnetcdf\.so' || \
   { echo "SKIP: tutor (no libnetcdf; cells link it)"; exit 0; }
 
-. ./gen.sh
+. ./lib/gen.sh
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Lex.c \

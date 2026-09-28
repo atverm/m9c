@@ -1,5 +1,6 @@
 # tutcommon: shared by tutgen.sh and tutdiff.sh -- SOURCED, not run,
-# which is why it has no execute bit (the gen.sh precedent).  One
+# which is why it has no execute bit and lives in lib/ (the gen.sh
+# precedent; a sourced file in the gate glob read as exit 126).  One
 # definition of how each tutorial example is built and run, so the
 # recorder and the gate cannot drift.
 #
@@ -60,10 +61,16 @@ TUT_SRV=
 tut_serve () {                  # the zarr chapters' local stores
   [ -n "$TUT_SRV" ] && return 0
   mkdir -p /tmp/m9stores
-  [ -d /tmp/m9stores/co2.zarr ] || \
-    cp -r "$EXA/data/co2.zarr" /tmp/m9stores/
-  [ -d /tmp/m9stores/icos-obspack.zarr ] || \
-    cp -r "$EXA/data/icos-obspack.zarr" /tmp/m9stores/
+  # the metadata file, not the directory: an EMPTY store directory
+  # (what a reboot's tmpfiles cleaning leaves, 2026-09-28) satisfied
+  # `[ -d ]`, and a `cp -r` into it would nest the store one level
+  # down -- so the stale directory goes before the copy
+  [ -f /tmp/m9stores/co2.zarr/.zarray ] || {
+    rm -rf /tmp/m9stores/co2.zarr
+    cp -r "$EXA/data/co2.zarr" /tmp/m9stores/; }
+  [ -f /tmp/m9stores/icos-obspack.zarr/.zgroup ] || {
+    rm -rf /tmp/m9stores/icos-obspack.zarr
+    cp -r "$EXA/data/icos-obspack.zarr" /tmp/m9stores/; }
   python3 -m http.server 18931 --bind 127.0.0.1 \
       --directory /tmp/m9stores >/dev/null 2>&1 &
   TUT_SRV=$!

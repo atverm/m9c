@@ -51,7 +51,7 @@ SRC="../m9rt.c ../gen/System.c ../gen/Io.c ../gen/DynStr.c ../gen/Text.c sysx_dr
 # runtime/gen is BUILT here when FPC is about, for the reason gen.sh
 # gives: a gate compiled from a stale gen tests the previous version
 # of what is being changed and says PASS.
-command -v fpc >/dev/null 2>&1 && . ./gen.sh
+command -v fpc >/dev/null 2>&1 && . ./lib/gen.sh
 
 $CC $FLAGS -O1 -o "$W/sysx_child" sysx_child.c || { bad "the child would not build"; exit 1; }
 # shellcheck disable=SC2086

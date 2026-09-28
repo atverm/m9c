@@ -6,7 +6,7 @@
 # in the same commit as the change, exactly as lextest.golden is.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh
+. ./lib/gen.sh
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label \
     -Wno-unused-parameter -Wno-unused-function \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \

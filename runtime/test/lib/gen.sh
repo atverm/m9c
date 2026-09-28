@@ -9,7 +9,7 @@
 # probediff had actually seen.  An artifact nobody produced in this
 # run is not evidence.
 #
-# Sourced, not executed: it is called from inside gates that have
+# Sourced, not executed (`. ./lib/gen.sh`), from inside gates that have
 # already cd'd to runtime/test.
 # THE DIAGNOSTICS SURVIVE A FAILURE.  Both were >/dev/null, so a
 # generator that refused a module exited non-zero into `set -e` and

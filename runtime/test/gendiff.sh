@@ -18,7 +18,7 @@ if [ -d ../gen ]; then
 else
   GENWAS=
 fi
-. ./gen.sh          # runtime/gen is BUILT here, not found
+. ./lib/gen.sh          # runtime/gen is BUILT here, not found
 if [ -n "$GENWAS" ]; then
   stale=$(diff -rq "$GENWAS" ../gen 2>&1 || :)
   rm -rf "$GENWAS"

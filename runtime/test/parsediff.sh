@@ -3,7 +3,7 @@
 # the FPC oracle, byte-compared over every corpus and museum file.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh          # runtime/gen is BUILT here, not found
+. ./lib/gen.sh          # runtime/gen is BUILT here, not found
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Lex.c ../gen/Ast.c \
     ../gen/Print.c ../gen/Parse.c parsedump_m9.c -o parsedump_m9

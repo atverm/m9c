@@ -12,7 +12,7 @@
 # checkers disagree about, which is the worklist.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh          # runtime/gen is BUILT here, not found
+. ./lib/gen.sh          # runtime/gen is BUILT here, not found
 P=../../probes
 
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \

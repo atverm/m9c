@@ -12,7 +12,7 @@
 # status 0.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh          # runtime/gen is BUILT here, not found
+. ./lib/gen.sh          # runtime/gen is BUILT here, not found
 
 command -v python3 >/dev/null 2>&1 || { echo "lsp: SKIP (no python3)"; exit 0; }
 

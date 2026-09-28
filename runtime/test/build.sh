@@ -4,7 +4,7 @@
 # RETURN/raise jumps there; uniformity beats a warning.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh          # runtime/gen is BUILT here, not found
+. ./lib/gen.sh          # runtime/gen is BUILT here, not found
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c dynstr_driver.c -o dynstr_test
 ./dynstr_test
@@ -229,8 +229,13 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     ../gen/Io.c ../gen/Http.c ../gen/ZarrStore.c zarr_driver.c \
     -l:libblosc.so.1 -lssl -lcrypto -lm -o zarr_test
 # time.zarr is the newest store: a /tmp/m9stores from before it
-# exists has co2 and bench and still needs the regeneration
-[ -d /tmp/m9stores/co2.zarr ] && [ -d /tmp/m9stores/time.zarr ] \
+# exists has co2 and bench and still needs the regeneration.  THE
+# TEST IS THE METADATA FILE, NOT THE DIRECTORY: on 2026-09-28 the
+# stores had survived a reboot as EMPTY directories (tmpfiles cleaned
+# the files, left the dirs), `[ -d ]` was satisfied, and zarr_test
+# opened a co2.zarr with no .zarray ("OpenArray co2.zarr / FormatError").
+[ -f /tmp/m9stores/co2.zarr/.zarray ] && [ -f /tmp/m9stores/bench.zarr/.zarray ] \
+    && [ -f /tmp/m9stores/time.zarr/.zarray ] \
     || python3 ../../tools/genstore.py /tmp/m9stores
 python3 -m http.server 18930 --bind 127.0.0.1 --directory /tmp/m9stores \
     >/dev/null 2>&1 &

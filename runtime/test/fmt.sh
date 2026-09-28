@@ -12,7 +12,7 @@
 # both ways; -w rewrites once and then never again.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh          # runtime/gen is BUILT here, not found
+. ./lib/gen.sh          # runtime/gen is BUILT here, not found
 
 SRC=$(cd ../../corpus && pwd)
 RT=$(cd .. && pwd)

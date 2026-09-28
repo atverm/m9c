@@ -9,7 +9,7 @@
 # gated.  The EXIT trap carries the real status across the cleanup.
 set -e
 cd "$(dirname "$0")"
-. ./gen.sh          # runtime/gen is BUILT here, not found
+. ./lib/gen.sh          # runtime/gen is BUILT here, not found
 
 SRC=$(cd ../../corpus && pwd)
 RT=$(cd .. && pwd)
