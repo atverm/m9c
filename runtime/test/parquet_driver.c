@@ -97,14 +97,14 @@ int main (void)
   {
     m9_state e2 = {0};
     Parquet_Read (&pool, S ("sample_dict.parquet"), &e2);
-    ok ("a dictionary file refuses", e2.exc == &Parquet_Bad);
+    ok ("a dictionary file refuses", e2.exc == &Faults_BadArg);
     e2.exc = NULL;
     Parquet_Read (&pool, S ("sample_snappy.parquet"), &e2);
-    ok ("a snappy file refuses", e2.exc == &Parquet_Bad);
+    ok ("a snappy file refuses", e2.exc == &Faults_BadArg);
     e2.exc = NULL;
     Parquet_Read (&pool, S ("sample_nullbool.parquet"), &e2);
     ok ("a null boolean refuses (no missing value exists)",
-        e2.exc == &Parquet_Bad);
+        e2.exc == &Faults_BadArg);
   }
 
   /* ---- write and re-read, bitwise ---- */

@@ -3,14 +3,15 @@
 #define M9G_Arrow_H
 #include "m9rt.h"
 #include "DynStr.h"
+#include "Faults.h"
+
+void Arrow_m9init (m9_state *err);
 
 typedef struct Arrow_Table Arrow_Table;
 typedef struct Arrow_Col Arrow_Col;
 typedef struct Arrow_Kv Arrow_Kv;
 typedef struct Arrow_Table Arrow_Table;
 typedef struct Arrow_Fb Arrow_Fb;
-
-extern const m9_exc Arrow_Bad;
 
 #define Arrow_TyI8 INT64_C(0)
 #define Arrow_TyI16 INT64_C(1)

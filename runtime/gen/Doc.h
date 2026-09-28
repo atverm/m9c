@@ -8,6 +8,8 @@
 #include "Print.h"
 #include "Lex.h"
 
+void Doc_m9init (m9_state *err);
+
 typedef struct Doc_Stats Doc_Stats;
 typedef struct Doc_Anchor Doc_Anchor;
 

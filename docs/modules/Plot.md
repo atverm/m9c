@@ -27,7 +27,7 @@ for.
 
 ### AddLine (RO xs: SLICE OF F64 ; RO ys: SLICE OF F64 ; colorIdx: I64 ; RO KEPT label: STR)
 
-up to 4 series, up to 1024 points; colorIdx 0..3 = matplotlib
+up to 4 series, up to 8192 points; colorIdx 0..3 = matplotlib
 C0..C3; NaN values lift the pen, as mpl does.  The label slice
 is retained until Render -- ledger material, like AddRoute.
 
@@ -66,7 +66,7 @@ positions ignored: slots 0, 1, 2
 
 ### AddBars (RO at: SLICE OF F64 ; RO v: SLICE OF F64 ; colorIdx: I64 ; RO KEPT label: STR)
 
-one bar series: up to 4 of them, up to 1024 bars each, drawn
+one bar series: up to 4 of them, up to 8192 bars each, drawn
 UNDER any lines and dots.
 
   at -- where each bar sits on the CATEGORY axis (x for vertical
@@ -116,6 +116,28 @@ override the palette for one series with an SVG colour --
 verbatim, so it is the caller's business that it is a colour;
 an empty string restores the palette entry.
 
+### Viridis () : Cmap
+
+_(documented with the group below)_
+
+### Coolwarm () : Cmap
+
+the colour maps as PROCEDURES, written when a payload-less
+variant constructor from ANOTHER module type-checked and the
+generator refused it (met by RenderHeat's first caller outside
+this file).  Since 2026-09-15 `Plot.Cmap.Viridis` works from
+anywhere; these two remain as the shorter spelling their callers
+use, and answer exactly that constructor.
+
+### SetLineColor (series: I64 ; RO KEPT hex: STR)
+
+the line twin of SetBarColor: override one line series' palette
+entry with an SVG colour -- 'black', '#cc3311'.  Written into
+the document verbatim, so it is the caller's business that it is
+a colour; an empty string restores the C0..C3 entry.  Added
+because the palette has no black and a measured series wants
+one (Alex, 2026-09-01).
+
 ### SetLogX (on: BOOL)
 
 _(documented with the group below)_
@@ -144,6 +166,12 @@ _(undocumented)_
 
 symmetric centres the scale on zero, for anomaly fields;
 NaN cells render white
+
+### SetHeatRange (lo: F64 ; hi: F64)
+
+pin the next RenderHeat's colour range to [lo, hi], overriding
+both the data min/max and symmetric; ClearFigure clears it.  For
+a rounded, stable scale that a caller controls.
 
 ### FmtG (dst: C.MutPtr ; v: C.Double) : C.Int [REENTRANT]
 

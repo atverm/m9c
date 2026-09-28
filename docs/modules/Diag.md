@@ -28,12 +28,17 @@ position.  Two shapes, m9c's own:
   LINE:COL MSG            the checker's
   FILE:LINE:COL: MSG      the parser's (`parse: ...`) and the
                           --no-unsafe refusal (`no-unsafe: ...`)
+  FILE:LINE: gen: MSG     the generator's, which has no column
+                          and is answered at column 1
 The second is found by the leftmost `:D+:D+: `, so a path may
-hold colons and a message may quote source text.  msg keeps the
-prefix (`parse: `) and is a view into line, hence KEPT.  FALSE
-for anything else -- summaries, and the generator's
-FILE:LINE: gen: MSG, which has no column and is never printed
-under --check.
+hold colons and a message may quote source text; the third by
+the leftmost `:D+: gen: `.  msg keeps the prefix (`parse: `,
+`gen: `) and is a view into line, hence KEPT.  FALSE for
+anything else -- the summaries.  The generator's shape was
+dropped on purpose until 2026-09-27, when --check began to run
+the generator (docs/agent-review-2026-09-27.md F4): before that
+a construct the checker accepts and the generator refuses was
+invisible to every editor.
 
 ### One (VAR pool: POOL ; line, col: I64 ; RO KEPT msg: STR) : SLICE OF Finding
 

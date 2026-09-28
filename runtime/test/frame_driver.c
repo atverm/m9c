@@ -193,14 +193,14 @@ int main (void)
     m9_sl_F64 dummy = { (double[]){1, 2}, 2 };
     e2.exc = NULL;
     Frame_AddF64 (&pool, &fr, S ("SHORT"), dummy, nan (""), &e2);
-    ok ("a wrong-length column refuses", e2.exc == &Frame_SizeError);
+    ok ("a wrong-length column refuses", e2.exc == &Faults_SizeError);
     e2.exc = NULL;
     Frame_ColF64 (fr, S ("TA"), &e2);
     ok ("F64 accessor on an F32 column refuses",
         e2.exc == &Frame_WrongType);
     e2.exc = NULL;
     Frame_Average (&pool, ts, 5000, hsl, 1, &e2);
-    ok ("a non-multiple resolution refuses", e2.exc == &Frame_BadArg);
+    ok ("a non-multiple resolution refuses", e2.exc == &Faults_BadArg);
     e2.exc = NULL;
     Frame_How bads[5] = { Frame_HowMean (&e2), Frame_HowMean (&e2),
                           Frame_HowMean (&e2), Frame_HowLo (&e2),
@@ -355,8 +355,8 @@ int main (void)
       m9_state e3 = {0};
       Frame_TsFromNc (&pool, S ("/tmp/frame_bad.nc"), &e3);
       ok ("months-since is refused by name",
-          e3.exc == &Frame_BadArg);
-      if (e3.exc && e3.exc != &Frame_BadArg)
+          e3.exc == &Faults_BadArg);
+      if (e3.exc && e3.exc != &Faults_BadArg)
         printf ("  (raised %s instead)\n", e3.exc->name);
       if (!e3.exc) printf ("  (raised nothing)\n");
     }

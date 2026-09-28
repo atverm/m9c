@@ -116,6 +116,15 @@ fi
 [ "$(./hello Alex)" = "hello, Alex
 1" ] || { echo "FAIL: arguments did not reach the linked program"; exit 1; }
 
+# A MODULE BODY IS INITIALISATION, AND IT RUNS.  InitState sets its
+# sum to 42 in its implementation body; before 2026-09-15 that body
+# was accepted and silently never emitted, so an importer read zero.
+# InitMain prints InitState.Total (), which must be 42, not 0.
+M9RUNTIME="$RT" "$M9C" --make -o initmain "$RT/test/InitMain.m9" \
+    -I "$RT/test" -I "$SRC"
+[ "$(./initmain)" = "42" ] \
+  || { echo "FAIL: an implementation-module body did not run (init dropped)"; exit 1; }
+
 # a C compiler that fails must fail m9c, and must not be reported as
 # success just because the M9 half went fine
 if "$M9C" -c "$SRC/DynStr.m9" -- -iquote . -DM9_NO_SUCH 2>/dev/null; then
@@ -692,7 +701,36 @@ grep -q "cannot assign" ck.err ||
 if "$M9C" --check -c "$SRC/DynStr.m9" 2>/dev/null; then
   echo "FAIL: --check -c should be refused"; exit 1
 fi
-echo "m9c: --check answers diagnostics and writes nothing"
+# and the GENERATOR's refusals reach --check too (2026-09-27): this
+# program passes the checker and the generator refuses it, so until
+# that day an editor called it clean and the build said no.  Still
+# nothing on disk.
+cat > Late.m9 <<'LATE'
+MODULE Late ;
+IMPORT Io ;
+PROCEDURE F (x: I64) : I64 RAISES ValueRange =
+BEGIN
+  IF x < 0 THEN RAISE ValueRange END ;
+  RETURN x
+END F ;
+VAR n : I64 ;
+BEGIN
+  n := F (3) ;
+  Io.WriteI64 (n)
+EXCEPT
+| ValueRange : Io.WriteLine ('negative')
+FINALLY
+  Io.WriteLine ('')
+END Late.
+LATE
+if M9LIBRARY="$SRC" "$M9C" --check Late.m9 2>late.err; then
+  echo "FAIL: --check accepted a program the generator refuses"; cat late.err; exit 1
+fi
+grep -q "gen: EXCEPT and FINALLY" late.err ||
+  { echo "FAIL: --check exit 1 without the generator's line:"; cat late.err; exit 1; }
+[ -z "$(ls -A "$CK" | grep -v -E '^(Broke|Late)\.m9$|\.err$')" ] ||
+  { echo "FAIL: --check on a generator refusal wrote files:"; ls -A "$CK"; exit 1; }
+echo "m9c: --check answers diagnostics, the generator's included, and writes nothing"
 
 # THE VERSION CANNOT DRIFT FROM THE CHANGELOG.  Two releases in a row
 # shipped a first build whose receipt said the previous version,

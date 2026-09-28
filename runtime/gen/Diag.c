@@ -120,6 +120,29 @@ bool Diag_Parse (m9_sl_CHAR line, Diag_Finding *f, m9_state *err)
     i = m9_add_i64 (i, INT64_C(1), err);
     if (err->exc) goto L_ret;
   }
+  i = INT64_C(1);
+  for (;;) {
+    if (!((i < (line).len))) break;
+    bool m9t8 = ((*(uint32_t *) m9_at (line.p, i, line.len, sizeof (uint32_t), err)) == 58u);
+    if (err->exc) goto L_ret;
+    if (m9t8) {
+      j = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      bool m9t9 = ((((((((Diag_TakeI64 (line, &(j), &(ln), err) && (m9_add_i64 (j, INT64_C(6), err) < (line).len)) && ((*(uint32_t *) m9_at (line.p, j, line.len, sizeof (uint32_t), err)) == 58u)) && ((*(uint32_t *) m9_at (line.p, m9_add_i64 (j, INT64_C(1), err), line.len, sizeof (uint32_t), err)) == 32u)) && ((*(uint32_t *) m9_at (line.p, m9_add_i64 (j, INT64_C(2), err), line.len, sizeof (uint32_t), err)) == 103u)) && ((*(uint32_t *) m9_at (line.p, m9_add_i64 (j, INT64_C(3), err), line.len, sizeof (uint32_t), err)) == 101u)) && ((*(uint32_t *) m9_at (line.p, m9_add_i64 (j, INT64_C(4), err), line.len, sizeof (uint32_t), err)) == 110u)) && ((*(uint32_t *) m9_at (line.p, m9_add_i64 (j, INT64_C(5), err), line.len, sizeof (uint32_t), err)) == 58u)) && ((*(uint32_t *) m9_at (line.p, m9_add_i64 (j, INT64_C(6), err), line.len, sizeof (uint32_t), err)) == 32u));
+      if (err->exc) goto L_ret;
+      if (m9t9) {
+        (*f).line = ln;
+        (*f).col = INT64_C(1);
+        (*f).msg = ({ __typeof__(line) m9t10 = line; int64_t m9t10a = m9_add_i64 (j, INT64_C(2), err), m9t10n = m9_sub_i64 (m9_sub_i64 ((line).len, j, err), INT64_C(2), err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; });
+        if (err->exc) goto L_ret;
+        err->res = m9res;
+        m9ret = true;
+        goto L_ret;
+      }
+    }
+    i = m9_add_i64 (i, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  }
   err->res = m9res;
   m9ret = false;
   goto L_ret;
@@ -738,4 +761,21 @@ L_ret: ;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
+}
+
+void Diag_m9init (m9_state *err)
+{
+  static int m9done = 0;
+  if (m9done) return;
+  m9done = 1;
+  m9_pool m9frame = {0};
+  m9_pool *m9prev = err->res;
+  err->res = &m9frame;
+  DynStr_m9init (err); if (err->exc) goto L_ret;
+  Io_m9init (err); if (err->exc) goto L_ret;
+  Lex_m9init (err); if (err->exc) goto L_ret;
+L_ret: ;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&m9frame);
+  err->res = m9prev;
 }

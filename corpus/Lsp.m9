@@ -33,7 +33,7 @@ IMPORT Json ;
 IMPORT Diag ;
 
 CONST
-  Version = '0.10.0' ;
+  Version = '0.11.0' ;
   RdCap = 65536 ;
 
 VAR

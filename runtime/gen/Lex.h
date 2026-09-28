@@ -4,6 +4,8 @@
 #include "m9rt.h"
 #include "DynStr.h"
 
+void Lex_m9init (m9_state *err);
+
 typedef struct Lex_Token Lex_Token;
 typedef struct Lex_Lexer Lex_Lexer;
 typedef struct Lex_Comment Lex_Comment;

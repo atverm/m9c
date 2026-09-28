@@ -134,6 +134,33 @@ int main (void)
   err.exc = NULL;
 
   ZarrStore_CloseArray (&a, &err);
+
+  /* xarray's datetime64: dtype "<M8[ns]" is an <i8 of epoch
+     nanoseconds wearing a unit, and reads as one.  genstore's
+     time.zarr holds four stamps; the integers are numpy's own
+     (t.astype ('int64')), the third is 2025-07-15T12:00:00Z and the
+     fourth is a second BEFORE the epoch, so the sign survives too.
+     A store whose time axis is this (ICOS obspack, 2026) used to be
+     refused at OpenArray with "dtype not supported".                */
+  ZarrStore_Array *t = ZarrStore_OpenArray (s, sl ("time.zarr", ub), &err);
+  ck (err.exc == NULL && t != NULL, "OpenArray time.zarr (<M8[ns])");
+  if (err.exc == NULL) {
+    ck (ZarrStore_Rank (t, &err) == 1 && ZarrStore_Extent (t, 0, &err) == 4,
+        "time.zarr is 1 x 4");
+    ix[0] = 2;
+    ck (ZarrStore_GetI64 (&t, (m9_sl_I64){ ix, 1 }, &err)
+          == INT64_C (1752580800000000000) && err.exc == NULL,
+        "time[2] = 1752580800000000000 ns = 2025-07-15T12:00:00Z");
+    ix[0] = 3;
+    ck (ZarrStore_GetI64 (&t, (m9_sl_I64){ ix, 1 }, &err)
+          == INT64_C (-1000000000) && err.exc == NULL,
+        "time[3] = -1e9 ns, one second before the epoch");
+    ck (ZarrStore_HasFill (t, &err) && ZarrStore_Fill (t, &err) == 0.0,
+        "time.zarr declares fill 0, as zarr writes for M8");
+    ZarrStore_CloseArray (&t, &err);
+  }
+  err.exc = NULL;
+
   ZarrStore_Close (&s, &err);
   ck (err.exc == NULL, "Close raises nothing");
 

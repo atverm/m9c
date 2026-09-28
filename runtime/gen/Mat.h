@@ -3,6 +3,9 @@
 #define M9G_Mat_H
 #include "m9rt.h"
 #include "Math.h"
+#include "Faults.h"
+
+void Mat_m9init (m9_state *err);
 
 typedef struct Mat_Matrix Mat_Matrix;
 typedef struct Mat_ReduceOp Mat_ReduceOp;
@@ -10,6 +13,7 @@ typedef struct Mat_Matrix Mat_Matrix;
 typedef struct Mat_Work Mat_Work;
 typedef struct Mat_InvJob Mat_InvJob;
 typedef struct Mat_NormalJob Mat_NormalJob;
+typedef struct Mat_CholJob Mat_CholJob;
 
 typedef struct Mat_ReduceOp Mat_ReduceOp;
 struct Mat_ReduceOp { int32_t tag; };
@@ -31,7 +35,6 @@ static const m9_sl_CHAR __attribute__((__unused__)) Mat_ReduceOp_names[] = {
   { (uint32_t *) Mat_ReduceOp_nm4, 5 },
 };
 
-extern const m9_exc Mat_SizeError;
 extern const m9_exc Mat_NotSPD;
 
 #ifndef M9SL_m9_gd2_double
@@ -58,6 +61,7 @@ Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_state *err);
 Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_state *err);
 Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_state *err);
 Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err);
+Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_state *err);
 Mat_Matrix * Mat_CholInverse (m9_pool *pool, Mat_Matrix * l, int64_t threads, m9_state *err);
 void Mat_AddNormal (m9_pool *pool, Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, int64_t threads, m9_state *err);
 

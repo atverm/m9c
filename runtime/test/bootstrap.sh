@@ -13,15 +13,18 @@
 set -e
 cd "$(dirname "$0")"
 
-MODS="DynStr Mat Stats System Frame Parquet Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Csv Delim Zip NetCDF Grib Syslog Logger Hello Concat Gen Sem Doc M9c Diag"
+MODS="DynStr Faults Mat Stats System Frame Parquet Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Csv Delim Zip NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse Gen Sem Doc M9c Diag"
 deps_of () {
   case $1 in
     Json|Lex)      echo DynStr ;;
     Http)          echo DynStr Io ;;
-    ApiSpec|Arrow) echo DynStr ;;
+    ApiSpec)       echo DynStr ;;
+    Arrow)         echo DynStr Faults ;;
     Zarr)          echo DynStr Json Io Math ;;
     Delim|Zip)     echo DynStr Io ;;
-    Mat|Stats)     echo Math ;;
+    Mat)           echo Math Faults ;;
+    Sort)          echo Math ;;
+    Stats)         echo Math Bits Faults ;;
     System)        echo Io DynStr Text ;;
     HttpServer)    echo DynStr Http ;;
     OpenApi)       echo HttpServer DynStr ;;
@@ -32,12 +35,13 @@ deps_of () {
     Time)          echo DynStr Fmt ;;
     Text)          echo DynStr ;;
     Csv)           echo DynStr Io Time ;;
-    Frame)         echo Csv Io Math DynStr Fmt Time NetCDF ;;
-    Parquet)       echo Frame Io DynStr Csv Math Fmt Time NetCDF ;;
-    NetCDF|Grib)   echo DynStr ;;
+    Frame)         echo Csv Io Math DynStr Fmt Time NetCDF Faults ;;
+    Parquet)       echo Frame Io DynStr Csv Math Fmt Time NetCDF Faults ;;
+    NetCDF|Grib)   echo DynStr Faults ;;
     Syslog)        echo DynStr ;;
     Logger)        echo DynStr Fmt Io Syslog Time ;;
     Hello|Concat)  echo Io DynStr ;;
+    Narrow|ProcUse) echo Io ;;
     M9c)           echo Io Ast Parse Gen Sem DynStr Doc Lex System ;;
     Sem)           echo Ast DynStr Print Text ;;
     Doc)           echo Ast DynStr Text Print Lex ;;

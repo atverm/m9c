@@ -3,9 +3,20 @@ MODULE httpget ;
 (* httpget text|file URL [ACCEPT [COOKIE [DEST]]]
      text -> `status <n> chars <n>` then the body
      file -> `status <n> bytes <n>`
+   httpget req METHOD URL [BODY [HEADER ...]]
+     -> `status <n> chars <n>`, then one line
+        `hdr <x-answer>|<content-length>|<location>` read back
+        through Http.Header, then the body
+   httpget session URL [URL ...]
+     -> one Http.Client for every URL in turn: `status <n> <body>` per
+        URL on one line, then `kept <n>` -- how many of them were
+        answered over a connection kept from the request before
 
    The program the fetch gate drives.  It prints what a checker can
-   compare and nothing else; the assertions live in httpget.sh. *)
+   compare and nothing else; the assertions live in httpget.sh.  The
+   request's header lines arrive as separate arguments and are joined
+   with a line feed here, because a line feed inside one shell
+   argument is a quoting exercise nobody should have to pass. *)
 
 IMPORT DynStr ;
 IMPORT Http ;
@@ -13,30 +24,84 @@ IMPORT Io ;
 
 VAR
   pool : POOL ;
-  mode, url, accept, cookie, dest, body : STR ;
-  status, bytes : I64 ;
+  mode, url, accept, cookie, dest, body, method, hdrs, resp, rh : STR ;
+  hd : PTR DynStr.DString IN pool ;
+  cl : PTR Http.Client IN pool ;
+  status, bytes, i : I64 ;
 
 BEGIN
   IF Io.ArgCount () < 3 THEN
     Io.ErrLine ('usage: httpget text|file URL [ACCEPT [COOKIE [DEST]]]') ;
+    Io.ErrLine ('       httpget req METHOD URL [BODY [HEADER ...]]') ;
+    Io.ErrLine ('       httpget session URL [URL ...]') ;
     Io.Halt (2)
   END ;
   mode := Io.Arg (pool, 1) ;
-  url := Io.Arg (pool, 2) ;
-  accept := '' ; cookie := '' ; dest := '' ;
-  IF Io.ArgCount () > 3 THEN accept := Io.Arg (pool, 3) END ;
-  IF Io.ArgCount () > 4 THEN cookie := Io.Arg (pool, 4) END ;
-  IF Io.ArgCount () > 5 THEN dest := Io.Arg (pool, 5) END ;
 
-  IF DynStr.Eq (mode, 'file') THEN
-    status := Http.GetToFile (pool, url, accept, cookie, dest, bytes) ;
+  IF DynStr.Eq (mode, 'session') THEN
+    cl := Http.NewClient (pool) ;
+    i := 2 ;
+    WHILE i < Io.ArgCount () DO
+      resp := Http.SendText (pool, cl, 'GET', Io.Arg (pool, i), '', '',
+                             4194304, status, rh) ;
+      Io.Write ('status ') ; Io.WriteI64 (status) ; Io.Write (' ') ;
+      Io.WriteLine (resp) ;
+      i := i + 1
+    END ;
+    Io.Write ('kept ') ; Io.WriteI64 (Http.Kept (cl)) ; Io.WriteLine ('') ;
+    Http.CloseClient (cl)
+  ELSIF DynStr.Eq (mode, 'req') THEN
+    IF Io.ArgCount () < 4 THEN
+      Io.ErrLine ('usage: httpget req METHOD URL [BODY [HEADER ...]]') ;
+      Io.Halt (2)
+    END ;
+    method := Io.Arg (pool, 2) ;
+    url := Io.Arg (pool, 3) ;
+    body := '' ;
+    IF Io.ArgCount () > 4 THEN
+      body := Io.Arg (pool, 4) ;
+      IF LEN (body) > 1 AND body[0] = '@' THEN
+        (* a body too long for an argument comes from a file *)
+        body := Io.ReadFile (pool, SLICE (body, 1, LEN (body) - 1))
+      ELSE
+        (* argv is octets; the shell typed UTF-8 *)
+        body := DynStr.FromUtf8 (pool, DynStr.Bytes (pool, body, FALSE))
+      END
+    END ;
+    hd := DynStr.New (pool) ;
+    i := 5 ;
+    WHILE i < Io.ArgCount () DO
+      DynStr.Append (pool, hd, Io.Arg (pool, i)) ;
+      DynStr.AppendChar (pool, hd, 0AC) ;
+      i := i + 1
+    END ;
+    hdrs := DynStr.View (hd) ;
+    resp := Http.RequestText (pool, method, url, hdrs, body, 4194304,
+                              status, rh) ;
     Io.Write ('status ') ; Io.WriteI64 (status) ;
-    Io.Write (' bytes ') ; Io.WriteI64 (bytes) ; Io.WriteLine ('')
+    Io.Write (' chars ') ; Io.WriteI64 (LEN (resp)) ; Io.WriteLine ('') ;
+    (* three names in three spellings: Header compares without case *)
+    Io.WriteLine ('hdr ' + Http.Header (rh, 'X-Answer') + '|'
+                  + Http.Header (rh, 'content-length') + '|'
+                  + Http.Header (rh, 'Location')) ;
+    Io.WriteLine (resp)
   ELSE
-    body := Http.GetText (pool, url, accept, cookie, 4194304, status) ;
-    Io.Write ('status ') ; Io.WriteI64 (status) ;
-    Io.Write (' chars ') ; Io.WriteI64 (LEN (body)) ; Io.WriteLine ('') ;
-    Io.WriteLine (body)
+    url := Io.Arg (pool, 2) ;
+    accept := '' ; cookie := '' ; dest := '' ;
+    IF Io.ArgCount () > 3 THEN accept := Io.Arg (pool, 3) END ;
+    IF Io.ArgCount () > 4 THEN cookie := Io.Arg (pool, 4) END ;
+    IF Io.ArgCount () > 5 THEN dest := Io.Arg (pool, 5) END ;
+
+    IF DynStr.Eq (mode, 'file') THEN
+      status := Http.GetToFile (pool, url, accept, cookie, dest, bytes) ;
+      Io.Write ('status ') ; Io.WriteI64 (status) ;
+      Io.Write (' bytes ') ; Io.WriteI64 (bytes) ; Io.WriteLine ('')
+    ELSE
+      body := Http.GetText (pool, url, accept, cookie, 4194304, status) ;
+      Io.Write ('status ') ; Io.WriteI64 (status) ;
+      Io.Write (' chars ') ; Io.WriteI64 (LEN (body)) ; Io.WriteLine ('') ;
+      Io.WriteLine (body)
+    END
   END
 EXCEPT
 | Http.TransportError (m) :

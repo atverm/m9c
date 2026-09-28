@@ -1,0 +1,7 @@
+(* EXPECT: cannot assign OPT PROCEDURE (I64 ; I64) : I64 to OPT PROCEDURE (I64 ; I64) : BOOL (no implicit conversions, par 2.1) *)
+MODULE m ;
+TYPE Less = PROCEDURE (a: I64 ; b: I64) : BOOL ;
+VAR f : OPT Less ;
+PROCEDURE Sum (a: I64 ; b: I64) : I64 = BEGIN RETURN a + b END Sum ;
+PROCEDURE F () = BEGIN f := SOME (Sum) END F ;
+END m.

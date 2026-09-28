@@ -3,6 +3,10 @@
 #define M9G_Stats_H
 #include "m9rt.h"
 #include "Math.h"
+#include "Bits.h"
+#include "Faults.h"
+
+void Stats_m9init (m9_state *err);
 
 typedef struct Stats_Fit Stats_Fit;
 typedef struct Stats_Reg Stats_Reg;
@@ -10,14 +14,13 @@ typedef struct Stats_Test Stats_Test;
 typedef struct Stats_Stream Stats_Stream;
 
 extern const m9_exc Stats_TooFew;
-extern const m9_exc Stats_BadArg;
 
-#define Stats_MulA INT64_C(6364136223846793005)
-#define Stats_AddC INT64_C(1442695040888963407)
 #define Stats_TwoP53 (9007199254740992.0)
 #define Stats_TwoP53i INT64_C(9007199254740992)
 #define Stats_TwoP62 INT64_C(4611686018427387904)
-#define Stats_TwoP52 INT64_C(4503599627370496)
+#define Stats_SmGamma INT64_C(-7046029254386353131)
+#define Stats_SmMul1 INT64_C(-4658895280553007687)
+#define Stats_SmMul2 INT64_C(-7723592293110705685)
 
 typedef struct Stats_Fit Stats_Fit;
 struct Stats_Fit {
@@ -43,7 +46,10 @@ struct Stats_Test {
 
 typedef struct Stats_Stream Stats_Stream;
 struct Stats_Stream {
-  int64_t x;
+  int64_t s0;
+  int64_t s1;
+  int64_t s2;
+  int64_t s3;
   bool have;
   double spare;
 };

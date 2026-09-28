@@ -76,13 +76,6 @@ timestamp, nanoseconds,
 NO timezone: naive, as a
 numpy datetime64 lands
 
-### EXCEPTION Bad
-
-what this writer will not do, named: a column length that
-disagrees with the table's, a type outside the subset, a value
-that will not fit the width it was asked for, or metadata past
-the builder's room.  Never a silent narrowing.
-
 ### New (VAR pool: POOL ; rows: I64) : PTR Table IN pool
 
 an empty table of `rows` rows.  Columns are added in order and
@@ -94,26 +87,26 @@ a schema custom_metadata entry -- where a data passport rides.
 KEPT: the table holds VIEWS of the caller's strings, as
 HttpServer.AddRoute holds its own, so they must outlive it.
 
-### AddInt (VAR pool: POOL ; VAR t: PTR Table ; RO KEPT name: STR ; ty: I64 ; RO KEPT v: SLICE OF I64) RAISES Bad
+### AddInt (VAR pool: POOL ; VAR t: PTR Table ; RO KEPT name: STR ; ty: I64 ; RO KEPT v: SLICE OF I64) RAISES Faults.BadArg
 
 an integer or timestamp column, values carried as I64 and
 narrowed to the declared width.  A value that will not fit
 RAISES rather than wrapping: the width is the wire's, and a
 silent truncation here is a wrong number in someone's dataframe.
 
-### AddF32 (VAR pool: POOL ; VAR t: PTR Table ; RO KEPT name: STR ; RO KEPT v: SLICE OF F32) RAISES Bad
+### AddF32 (VAR pool: POOL ; VAR t: PTR Table ; RO KEPT name: STR ; RO KEPT v: SLICE OF F32) RAISES Faults.BadArg
 
 _(undocumented)_
 
-### AddF64 (VAR pool: POOL ; VAR t: PTR Table ; RO KEPT name: STR ; RO KEPT v: SLICE OF F64) RAISES Bad
+### AddF64 (VAR pool: POOL ; VAR t: PTR Table ; RO KEPT name: STR ; RO KEPT v: SLICE OF F64) RAISES Faults.BadArg
 
 _(undocumented)_
 
-### AddStr (VAR pool: POOL ; VAR t: PTR Table ; RO KEPT name: STR ; RO KEPT v: SLICE OF STR) RAISES Bad, ValueRange
+### AddStr (VAR pool: POOL ; VAR t: PTR Table ; RO KEPT name: STR ; RO KEPT v: SLICE OF STR) RAISES Faults.BadArg, ValueRange
 
 UTF-8 on the wire, encoded here from the caller's CHARs.
 
-### Stream (VAR pool: POOL ; t: PTR Table) : SLICE OF BYTE RAISES Bad, ValueRange
+### Stream (VAR pool: POOL ; t: PTR Table) : SLICE OF BYTE RAISES Faults.BadArg, ValueRange
 
 the whole stream, in pool.
 

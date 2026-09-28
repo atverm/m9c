@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>
+#include <errno.h>
 
 #ifdef _WIN32
 typedef SOCKET sock_t;
@@ -99,9 +100,59 @@ int tcp_listen (int port, int backlog)
   return fd_of (fd);
 }
 
+/* accept(2) fails for two kinds of reason, and a server must tell
+   them apart: the LISTENER is gone (EBADF, EINVAL, ENOTSOCK -- there
+   is nothing to accept from any more), or something TRANSIENT
+   happened -- a queued client reset before it was accepted
+   (ECONNABORTED), a signal (EINTR), a spurious wake-up (EAGAIN), or
+   the process is out of descriptors for the moment (EMFILE/ENFILE,
+   which a burst of clients causes and which clears as workers close
+   connections).  A caller that treats every -1 as the end of the
+   accept loop takes the whole server down on the first aborted
+   client under load -- which is what happened.  So the transient
+   cases are retried here, with a short sleep for descriptor
+   exhaustion, and -1 means the listener is dead.                   */
 int tcp_accept (int fd)
 {
-  return fd_of (accept (sock_of (fd), NULL, NULL));
+  for (;;) {
+    sock_t s = accept (sock_of (fd), NULL, NULL);
+    if (s != BAD_SOCK) return fd_of (s);
+#ifdef _WIN32
+    {
+      int e = WSAGetLastError ();
+      if (e == WSAECONNRESET || e == WSAEINTR || e == WSAEWOULDBLOCK) continue;
+      if (e == WSAEMFILE) { Sleep (10); continue; }
+      return -1;
+    }
+#else
+    {
+      int e = errno;
+      /* Linux additionally reports a peer's network errors through
+         accept (its man page lists them); the three that POSIX does
+         not name are guarded so the file still compiles elsewhere. */
+      if (e == EINTR || e == ECONNABORTED || e == EAGAIN ||
+          e == EWOULDBLOCK || e == ENETDOWN || e == ENOPROTOOPT ||
+          e == EHOSTUNREACH || e == EOPNOTSUPP || e == ENETUNREACH
+#ifdef EPROTO
+          || e == EPROTO
+#endif
+#ifdef EHOSTDOWN
+          || e == EHOSTDOWN
+#endif
+#ifdef ENONET
+          || e == ENONET
+#endif
+          )
+        continue;                        /* transient, or a peer that gave up */
+      if (e == EMFILE || e == ENFILE || e == ENOBUFS || e == ENOMEM) {
+        struct timespec t = { 0, 10 * 1000 * 1000 };
+        nanosleep (&t, NULL);            /* let the workers close something */
+        continue;
+      }
+      return -1;                         /* EBADF, EINVAL, ENOTSOCK: no listener */
+    }
+#endif
+  }
 }
 
 /* Every address getaddrinfo answers is tried in order, not the first

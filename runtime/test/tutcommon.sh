@@ -32,7 +32,7 @@ tut_build () {                  # tut_build MODULE -> $W/MODULE
   C10Icos)
     ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
     ( cd "$W" && gcc -O2 -flto "$m.o" ZarrStore.o Json.o Http.o \
-        Mat.o Math.o Plot.o DynStr.o Io.o Fmt.o \
+        Faults.o Mat.o Math.o Plot.o DynStr.o Io.o Fmt.o \
         "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/tlsshim.c" "$RT/fmtshim.c" \
         -iquote "$RT" -l:libblosc.so.1 -lssl -lcrypto -lm -o "$m" \
         2>/dev/null ) || return 1 ;;
@@ -41,14 +41,14 @@ tut_build () {                  # tut_build MODULE -> $W/MODULE
     # -lnetcdf only because it never reaches a NetCDF procedure and
     # -flto drops the dead ones.  Writing a file leaves nc_* live.
     ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
-    ( cd "$W" && gcc -O2 -flto "$m.o" Csv.o Frame.o NetCDF.o Stats.o \
-        Math.o Time.o Fmt.o DynStr.o Io.o \
+    ( cd "$W" && gcc -O2 -flto "$m.o" Faults.o Csv.o Frame.o NetCDF.o Stats.o \
+        Math.o Bits.o Time.o Fmt.o DynStr.o Io.o \
         "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/fmtshim.c" \
         -iquote "$RT" -lnetcdf -lm -o "$m" \
         2>/dev/null ) || return 1 ;;
   C9Plot)
     ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
-    ( cd "$W" && gcc -O2 -flto "$m.o" Plot.o Mat.o Math.o DynStr.o Io.o \
+    ( cd "$W" && gcc -O2 -flto "$m.o" Plot.o Faults.o Mat.o Math.o DynStr.o Io.o \
         "$RT/m9rt.c" "$RT/fmtshim.c" -iquote "$RT" -lm -o "$m" \
         2>/dev/null ) || return 1 ;;
   *)

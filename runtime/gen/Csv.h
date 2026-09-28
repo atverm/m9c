@@ -6,6 +6,8 @@
 #include "Io.h"
 #include "Time.h"
 
+void Csv_m9init (m9_state *err);
+
 typedef struct Csv_Table Csv_Table;
 typedef struct Csv_Kind Csv_Kind;
 typedef struct Csv_Options Csv_Options;

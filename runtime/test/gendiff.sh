@@ -44,15 +44,16 @@ run () {
   n=$((n+1))
 }
 run DynStr
-run Mat Math
-run Stats Math
+run Faults
+run Mat Math Faults
+run Stats Math Bits Faults
 run System Io DynStr Text
 run Json DynStr
 run Http DynStr Io
 run HttpServer DynStr Http
 run OpenApi HttpServer DynStr
 run ApiSpec DynStr
-run Arrow DynStr
+run Arrow DynStr Faults
 run ZarrStore DynStr Json Http
 run Zarr DynStr Json Io Math
 run Plot DynStr Mat
@@ -66,17 +67,21 @@ run Io DynStr
 run Time DynStr Fmt
 run Text DynStr
 run Math
+run Bits
+run Sort Math
 run Csv DynStr Io Time
 run Delim DynStr Io
 run Zip DynStr Io
-run Frame Csv Io Math DynStr Fmt Time NetCDF
-run Parquet Frame Io DynStr Csv Math Fmt Time NetCDF
-run NetCDF DynStr
-run Grib DynStr
+run Frame Csv Io Math DynStr Fmt Time NetCDF Faults
+run Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults
+run NetCDF DynStr Faults
+run Grib DynStr Faults
 run Syslog DynStr
 run Logger DynStr Fmt Io Syslog Time
 run Hello Io DynStr
 run Concat Io DynStr
+run Narrow Io
+run ProcUse Io
 run Sem Ast DynStr Print Text
 run Doc Ast DynStr Text Print Lex
 run M9c Io Ast Parse Gen Sem DynStr Doc Lex System
@@ -117,4 +122,14 @@ grep -q '\.tag <= ' /tmp/gen_fpc.txt \
 # two generators both refusing enum-indexed arrays would still agree.
 grep -q '\.v\[(' /tmp/gen_fpc.txt \
   || { echo "EnumUse: enum-indexed array NOT generated -- a.v[(k).tag] gone from BOTH generators?"; exit 1; }
+# EnumUse compares enum values with = / #, which is a `.tag` compare,
+# not a struct == (which gcc refuses).  The grep proves it.
+grep -q '\.tag == \|\.tag != ' /tmp/gen_fpc.txt \
+  || { echo "EnumUse: enum = / # NOT a tag compare -- struct == gone from BOTH generators?"; exit 1; }
+# Every module runs its imports' initialisers before its own body:
+# `Mod_m9init (err); if (err->exc) goto L_ret;`.  The grep proves the
+# init machinery is emitted (a library body is RUN, not dropped);
+# two generators both dropping it would still agree byte for byte.
+grep -q '_m9init (err); if (err->exc) goto L_ret;' /tmp/gen_fpc.txt \
+  || { echo "EnumUse: module init NOT generated -- a library body would be silently dropped?"; exit 1; }
 echo "gendiff: $n modules, generated C byte-identical to the oracle"

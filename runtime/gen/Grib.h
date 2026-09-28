@@ -3,6 +3,9 @@
 #define M9G_Grib_H
 #include "m9rt.h"
 #include "DynStr.h"
+#include "Faults.h"
+
+void Grib_m9init (m9_state *err);
 
 typedef struct Grib_File Grib_File;
 typedef struct Grib_Message Grib_Message;
@@ -11,7 +14,6 @@ typedef struct Grib_File Grib_File;
 typedef struct Grib_Message Grib_Message;
 
 extern const m9_exc Grib_Error;
-extern const m9_exc Grib_SizeError;
 
 #define Grib_MaxStr INT64_C(1024)
 #define Grib_Nowhere INT64_C(0)

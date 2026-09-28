@@ -5,18 +5,76 @@
 #include "DynStr.h"
 #include "Io.h"
 
+void Http_m9init (m9_state *err);
+
 typedef struct Http_Conn Http_Conn;
+typedef struct Http_Cookie Http_Cookie;
+typedef struct Http_Client Http_Client;
+typedef struct Http_Req Http_Req;
+typedef struct Http_Resp Http_Resp;
 
 extern const m9_exc Http_TransportError;
 
 #define Http_MaxHop INT64_C(5)
-#define Http_RecvMax INT64_C(4194304)
+#define Http_JarMax INT64_C(256)
 #define Http_IoBlock INT64_C(65536)
 #define Http_HdrMax INT64_C(16384)
+
+#ifndef M9SL_m9_sl_Http_Cookie
+#define M9SL_m9_sl_Http_Cookie
+typedef struct { Http_Cookie *p; int64_t len; } m9_sl_Http_Cookie;
+#endif
+#ifndef M9SL_m9_arr_256_bool
+#define M9SL_m9_arr_256_bool
+typedef struct { bool v[256]; } m9_arr_256_bool;
+#endif
+
+typedef struct Http_Conn Http_Conn;
+struct Http_Conn {
+  bool secure;
+  int64_t fd;
+  m9_sl_BYTE buf;
+  int64_t at;
+  int64_t n;
+  bool eof;
+  bool gotAny;
+};
+
+typedef struct Http_Cookie Http_Cookie;
+struct Http_Cookie {
+  m9_sl_CHAR name;
+  m9_sl_CHAR value;
+  m9_sl_CHAR domain;
+  m9_sl_CHAR path;
+  bool hostOnly;
+  bool secure;
+  double expires;
+};
+
+typedef struct Http_Client Http_Client;
+struct Http_Client {
+  m9_sl_Http_Cookie cookies;
+  int64_t n;
+  Http_Conn c;
+  bool open;
+  bool secure;
+  m9_sl_CHAR host;
+  int64_t port;
+  int64_t kept;
+};
 
 int64_t Http_Get (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
 int64_t Http_GetTls (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
 int64_t Http_GetToFile (m9_pool *pool, m9_sl_CHAR url, m9_sl_CHAR accept, m9_sl_CHAR cookie, m9_sl_CHAR dest, int64_t *bytes, m9_state *err);
 m9_sl_CHAR Http_GetText (m9_pool *pool, m9_sl_CHAR url, m9_sl_CHAR accept, m9_sl_CHAR cookie, int64_t cap, int64_t *status, m9_state *err);
+m9_sl_BYTE Http_Request (m9_pool *pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_BYTE body, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err);
+m9_sl_CHAR Http_RequestText (m9_pool *pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_CHAR text, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err);
+m9_sl_CHAR Http_Header (m9_sl_CHAR headers, m9_sl_CHAR name, m9_state *err);
+Http_Client * Http_NewClient (m9_pool *pool, m9_state *err);
+m9_sl_BYTE Http_Send (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_BYTE body, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err);
+m9_sl_CHAR Http_SendText (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_CHAR text, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err);
+void Http_CloseClient (Http_Client * *cl, m9_state *err);
+int64_t Http_Kept (Http_Client * cl, m9_state *err);
+m9_sl_CHAR Http_CookieValue (Http_Client * cl, m9_sl_CHAR name, m9_state *err);
 
 #endif

@@ -16,12 +16,12 @@ TYPE
   END ;
 
 EXCEPTION
-  IOError (RO msg: STR) ;
+  StoreError (RO msg: STR) ;
   FormatError (RO msg: STR) ;
   HttpStatus (code: I64) ;
 
 PROCEDURE Open (RO url: STR) : SHARED PTR Store
-  RAISES IOError, FormatError ;
+  RAISES StoreError, FormatError ;
   (* SHARED because every Array retains its Store -- retention is
      part of the contract, and plain borrows refuse it (par 4.2).
      FormatError is in the signature: the caller that ignored a bad
@@ -29,26 +29,26 @@ PROCEDURE Open (RO url: STR) : SHARED PTR Store
 
 PROCEDURE OpenArray (s: SHARED PTR Store ; RO path: STR)
   : PTR Array
-  RAISES IOError, FormatError ;
+  RAISES StoreError, FormatError ;
   (* fill_value validation happens HERE, at open: an integer dtype
      with fill NaN raises FormatError now, not Trunc(NaN) later.
      [the FPC crash-at-read bug, moved to the contract boundary]     *)
 
 PROCEDURE GetF64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : F64
-  RAISES IOError ;
+  RAISES StoreError ;
   (* IndexError needs no declaration: it is a checked runtime error,
      always on, catchable.  There is no flag that turns it off.
      [the -fsoft-check-all "unreachable" bug: unrepresentable]       *)
 
 PROCEDURE GetI64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : I64
-  RAISES IOError, ValueRange ;
+  RAISES StoreError, ValueRange ;
   (* ValueRange covers BOTH: float element non-finite or beyond I64
      [Trunc(NaN) crash], and U64 element above I64 range [the silent
      negative-wrap that numpy commits without a warning].            *)
 
 PROCEDURE ReadChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)
   : RO SLICE OF BYTE
-  RAISES IOError ;
+  RAISES StoreError ;
   (* READONLY slice into the cache: the caller can read at native
      speed but cannot retain it past the next call or mutate it --
      the FPC cache-aliasing hazard is a compile error, and the
@@ -178,7 +178,7 @@ END StartsWith ;
 PROCEDURE Fetch (st: SHARED PTR Store ; VAR pool: POOL ;
                  RO rel: STR ; maxLen: I64)
   : SLICE OF BYTE
-  RAISES IOError, HttpStatus =
+  RAISES StoreError, HttpStatus =
 VAR
   d : PTR DynStr.DString IN pool ;
   buf : SLICE OF BYTE ;
@@ -198,14 +198,14 @@ BEGIN
   IF status # 200 THEN RAISE HttpStatus (status) END ;
   RETURN SLICE (buf, 0, n)
 EXCEPT
-| TransportError (msg) : RAISE IOError (msg)
-| ValueRange : RAISE IOError ('store path is not ascii')
+| TransportError (msg) : RAISE StoreError (msg)
+| ValueRange : RAISE StoreError ('store path is not ascii')
 END Fetch ;
 
 (* ---- open ---- *)
 
 PROCEDURE Open (RO url: STR) : SHARED PTR Store
-  RAISES IOError, FormatError =
+  RAISES StoreError, FormatError =
 VAR
   s : PTR Store ;
   j, start : I64 ;
@@ -348,7 +348,7 @@ END S1Fill ;
 
 PROCEDURE OpenArray (s: SHARED PTR Store ; RO path: STR)
   : PTR Array
-  RAISES IOError, FormatError =
+  RAISES StoreError, FormatError =
 VAR
   scratch : POOL ;                 (* .zarray text, json tree: dies here *)
   a : PTR Array ;
@@ -399,6 +399,14 @@ BEGIN
     ELSIF Json.StrIs (dt, '<u4') THEN a.meta.dt := Dtype.Int (4, FALSE)
     ELSIF Json.StrIs (dt, '<u2') THEN a.meta.dt := Dtype.Int (2, FALSE)
     ELSIF Json.StrIs (dt, '|u1') THEN a.meta.dt := Dtype.Int (1, FALSE)
+    ELSIF Json.StrIs (dt, '<M8[ns]') THEN
+      (* xarray's datetime64: an <i8 of epoch NANOSECONDS wearing a
+         unit.  Read as what it is -- GetI64 answers the nanoseconds
+         and the caller divides -- rather than refused for the name.
+         Only [ns] is accepted: another unit is a different scale and
+         guessing which would be how a time axis silently shifts.
+         (ICOS obspack moved its time axis to this in 2026.) *)
+      a.meta.dt := Dtype.Int (8, TRUE)
     ELSIF Json.StrIs (dt, '|S1') THEN
       (* a ONE-BYTE string element read as its byte: GetI64 answers
          the character code, which is what a categorical flag is.
@@ -500,7 +508,7 @@ EXCEPT
 | HttpStatus (404) :
     RAISE FormatError ('array not found (no .zarray)')
 | HttpStatus (code) :
-    RAISE IOError ('metadata fetch failed')
+    RAISE StoreError ('metadata fetch failed')
 | ParseError (msg, line, col) :
     RAISE FormatError ('bad .zarray json')
 | TypeMismatch (msg) :
@@ -523,7 +531,7 @@ END SameCoords ;
 
 PROCEDURE Decompress (VAR a: PTR Array ; RO raw: SLICE OF BYTE ;
                       dest: SLICE OF BYTE)
-  RAISES IOError =
+  RAISES StoreError =
 VAR i : I64 ;
 BEGIN
   CASE a.meta.comp OF
@@ -531,11 +539,11 @@ BEGIN
       IF DecompressCtx (ADR (raw), ADR (dest),
                         C.SizeT (LEN (dest)), C.Int (1))
          # C.Int (LEN (dest)) THEN
-        RAISE IOError ('blosc decompress failed or short')
+        RAISE StoreError ('blosc decompress failed or short')
       END
   | Raw :
       IF LEN (raw) # LEN (dest) THEN
-        RAISE IOError ('raw chunk size mismatch')
+        RAISE StoreError ('raw chunk size mismatch')
       END ;
       FOR i := 0 TO LEN (raw) - 1 DO dest[i] := raw[i] END
   END
@@ -578,7 +586,7 @@ END FillChunk ;
 
 PROCEDURE GetChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)
   : PTR ChunkBuf IN a.cache
-  RAISES IOError =
+  RAISES StoreError =
 VAR
   scratch : POOL ;                 (* key text + compressed bytes *)
   d : PTR DynStr.DString IN scratch ;
@@ -616,12 +624,12 @@ EXCEPT
                                         it means "entirely fill_value";
                                         fill pre-validated at open    *)
 | HttpStatus (code) :
-    RAISE IOError ('chunk fetch failed')
+    RAISE StoreError ('chunk fetch failed')
 END GetChunk ;
 
 PROCEDURE ReadChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)
   : RO SLICE OF BYTE
-  RAISES IOError =
+  RAISES StoreError =
 VAR p : PTR ChunkBuf IN a.cache ;
 BEGIN
   p := GetChunk (a, coords) ;
@@ -633,7 +641,7 @@ END ReadChunk ;
 PROCEDURE Locate (VAR a: PTR Array ; RO idx: SLICE OF I64 ;
                   VAR ofs: I64)
   : PTR ChunkBuf IN a.cache
-  RAISES IOError =
+  RAISES StoreError =
 VAR
   cc, inc : ARRAY MaxRank OF I64 ;
   d, stride : I64 ;
@@ -723,7 +731,7 @@ BEGIN
 END ReadInt ;
 
 PROCEDURE GetF64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : F64
-  RAISES IOError =
+  RAISES StoreError =
 VAR
   ofs : I64 ;
   p : PTR ChunkBuf IN a.cache ;
@@ -733,7 +741,7 @@ BEGIN
 END GetF64 ;
 
 PROCEDURE GetI64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : I64
-  RAISES IOError, ValueRange =
+  RAISES StoreError, ValueRange =
 VAR
   ofs : I64 ;
   p : PTR ChunkBuf IN a.cache ;

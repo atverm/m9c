@@ -74,11 +74,11 @@ int main (void)
 
   /* SizeError with payload, through the slot ABI */
   Mat_New (&pool, 0, 5, &err);
-  ck (err.exc == &Mat_SizeError && err.i[0] == 0 && err.i[1] == 5,
+  ck (err.exc == &Faults_SizeError && err.i[0] == 0 && err.i[1] == 5,
       "New(0,5) raises SizeError(0,5)");
   err.exc = NULL;
   Mat_ColReduce (m, op (Mat_ReduceOp_Sum), (m9_sl_F64){ out, 1 }, &err);
-  ck (err.exc == &Mat_SizeError && err.i[0] == 1 && err.i[1] == 2,
+  ck (err.exc == &Faults_SizeError && err.i[0] == 1 && err.i[1] == 2,
       "ColReduce wrong out length raises SizeError(1,2)");
   err.exc = NULL;
 
@@ -208,11 +208,36 @@ int main (void)
             if (fabs (a - b) > w) w = fabs (a - b);
           }
         ck (err.exc == NULL && w / sc < 1e-13, "CholInverse (4 threads, 100 x 100) matches SpdInverse to 1e-13");
+        /* CholeskyT: the blocked, banded factor must be the serial
+           factor BIT FOR BIT -- on the 100 x 100 (three panels of 32
+           and a rest) at 1 and 4 threads, and on the 4 x 4 */
+        Mat_Matrix *GT1 = Mat_CholeskyT (&pool, G, 1, &err);
+        Mat_Matrix *GT4 = Mat_CholeskyT (&pool, G, 4, &err);
+        bool bit = err.exc == NULL;
+        for (int i = 0; i < n; i++)
+          for (int j = 0; j < n; j++) {
+            double a = Mat_Get (GL, i, j, &err), b = Mat_Get (GT1, i, j, &err), c = Mat_Get (GT4, i, j, &err);
+            if (memcmp (&a, &b, sizeof (double)) != 0 || memcmp (&a, &c, sizeof (double)) != 0) bit = false;
+          }
+        ck (bit, "CholeskyT (1 and 4 threads, 100 x 100) is bit-identical to Cholesky");
+        Mat_Matrix *LT = Mat_CholeskyT (&pool, A, 2, &err);
+        bit = err.exc == NULL;
+        for (int i = 0; i < 4; i++)
+          for (int j = 0; j < 4; j++) {
+            double a = Mat_Get (L, i, j, &err), b = Mat_Get (LT, i, j, &err);
+            if (memcmp (&a, &b, sizeof (double)) != 0) bit = false;
+          }
+        ck (bit, "CholeskyT on the 4 x 4 is bit-identical to Cholesky");
+        Mat_Matrix *NS2 = Mat_Identity (&pool, 40, &err);
+        Mat_Set (&NS2, 37, 37, -1.0, &err);
+        Mat_CholeskyT (&pool, NS2, 2, &err);
+        ck (err.exc == &Mat_NotSPD, "CholeskyT raises NotSPD on a negative pivot in a later panel");
+        err.exc = NULL;
       }
 
       /* shape refusals and NotSPD */
       Mat_MulM (&pool, B, A, &err);       /* 4x2 times 4x4 */
-      ck (err.exc == &Mat_SizeError, "MulM shape mismatch is SizeError");
+      ck (err.exc == &Faults_SizeError, "MulM shape mismatch is SizeError");
       err.exc = NULL;
       Mat_Matrix *NS = Mat_Identity (&pool, 3, &err);
       Mat_Set (&NS, 2, 2, -1.0, &err);

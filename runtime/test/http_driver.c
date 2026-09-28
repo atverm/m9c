@@ -39,6 +39,32 @@ int main (void)
                      (m9_sl_BYTE){ body, sizeof body }, &blen, &err);
   ck (err.exc == NULL && status == 404, "missing file is 404");
 
+  /* Content-Length-honest (2026-09-27): a body the buffer cannot hold
+     is REFUSED BY NAME, never truncated to fit -- the old reader cut
+     it at LEN (body) and, worse, at an undocumented 4 MB ceiling
+     that surfaced three layers up as a blosc error. */
+  blen = -1;
+  status = Http_Get (sl ("127.0.0.1", hb), 18923, sl ("/hello.txt", pb),
+                     (m9_sl_BYTE){ body, 10 }, &blen, &err);
+  ck (err.exc == &Http_TransportError,
+      "a 22-byte body into a 10-byte buffer raises TransportError");
+  ck (blen == 0, "and bodyLen says 0, not 10");
+  err.exc = NULL;
+
+  /* and a body past the old 4 MB ceiling arrives whole: big.bin is
+     written by build.sh, 5 MB of (i * 7 + 11) % 251 */
+  {
+    static uint8_t big[6 * 1024 * 1024];
+    int64_t i, bad = 0;
+    status = Http_Get (sl ("127.0.0.1", hb), 18923, sl ("/big.bin", pb),
+                       (m9_sl_BYTE){ big, sizeof big }, &blen, &err);
+    ck (err.exc == NULL && status == 200, "5 MB GET answers 200");
+    ck (blen == 5 * 1024 * 1024, "and bodyLen is the whole 5 MB");
+    for (i = 0; i < blen && i < 5 * 1024 * 1024; i++)
+      if (big[i] != (uint8_t) ((i * 7 + 11) % 251)) bad++;
+    ck (bad == 0, "and every byte is the file's");
+  }
+
   /* connection refused: TransportError through the slot ABI,
      with the FINALLY-closed fd behind it */
   Http_Get (sl ("127.0.0.1", hb), 18924, sl ("/", pb),

@@ -65,6 +65,8 @@ int main (int argc, char **argv)
   m9_pool m9frame = {0};
   err->res = &m9frame;
   m9_args (argc, argv);
+  Io_m9init (err); if (err->exc) goto L_ret;
+  DynStr_m9init (err); if (err->exc) goto L_ret;
   Io_WriteLine (Concat_Greeting (((m9_sl_CHAR){ (uint32_t *) m9s2, 5 }), err), err);
   if (err->exc) goto L_ret;
   s = (m9_sl_CHAR){ NULL, 0 };

@@ -9,6 +9,9 @@
 #include "Fmt.h"
 #include "Time.h"
 #include "NetCDF.h"
+#include "Faults.h"
+
+void Frame_m9init (m9_state *err);
 
 typedef struct Frame_Data Frame_Data;
 typedef struct Frame_Col Frame_Col;
@@ -101,9 +104,7 @@ static const m9_sl_CHAR __attribute__((__unused__)) Frame_How_names[] = {
 extern const m9_exc Frame_Unknown;
 extern const m9_exc Frame_WrongType;
 extern const m9_exc Frame_Duplicate;
-extern const m9_exc Frame_SizeError;
 extern const m9_exc Frame_Disorder;
-extern const m9_exc Frame_BadArg;
 
 #define Frame_KindF64 INT64_C(0)
 #define Frame_KindF32 INT64_C(1)

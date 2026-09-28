@@ -49,6 +49,27 @@ BEGIN
   i := 42
 END Fine.
 FIN
+# accepted by the checker, refused by the generator: until 2026-09-27
+# --check stopped before the generator and the editor called this
+# clean (docs/agent-review-2026-09-27.md F4)
+cat > Late.m9 <<'LATE'
+MODULE Late ;
+IMPORT Io ;
+PROCEDURE F (x: I64) : I64 RAISES ValueRange =
+BEGIN
+  IF x < 0 THEN RAISE ValueRange END ;
+  RETURN x
+END F ;
+VAR n : I64 ;
+BEGIN
+  n := F (3) ;
+  Io.WriteI64 (n)
+EXCEPT
+| ValueRange : Io.WriteLine ('negative')
+FINALLY
+  Io.WriteLine ('')
+END Late.
+LATE
 
 # the version the server announces is gated against debian/changelog
 # exactly as m9c --version is in m9c.sh: 0.4.1 shipped an m9lsp that
@@ -111,6 +132,19 @@ send({'jsonrpc':'2.0','method':'textDocument/didOpen',
 r = recv()
 check(r['params']['uri'] == uri2, 'the clean file answers too')
 check(r['params']['diagnostics'] == [], 'and its list is empty')
+
+uri3 = 'file://' + w + '/Late.m9'
+send({'jsonrpc':'2.0','method':'textDocument/didOpen',
+      'params':{'textDocument':{'uri':uri3,'languageId':'m9','version':1,
+                                'text':open(w+'/Late.m9').read()}}})
+r = recv()
+check(r['params']['uri'] == uri3, 'the generator-refused file answers')
+ds = r['params']['diagnostics']
+check(len(ds) >= 1, "the generator's refusal reaches the editor")
+check(ds and 'gen: EXCEPT and FINALLY' in ds[0]['message'],
+      "and it is the generator's own line")
+check(ds and ds[0]['range']['start']['line'] == 8,
+      'anchored at the block, 0-based 8')
 
 send({'jsonrpc':'2.0','id':7,'method':'no/such','params':{}})
 r = recv()

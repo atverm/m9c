@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.5.0, 2026-09-03
+## Report — revision 0.10.0 + develop, 2026-09-27
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -31,11 +31,11 @@ to reduce, so the list is meant to shrink.
 |---|---|
 | **Compiler** | `m9c`, self-hosted. Lexer, parser and code generator are written in M9; the three-stage bootstrap is byte-identical at the fixpoint (§9.5) |
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
-| **Checked today** | exact widths and explicit conversion, exhaustive `RAISES`, total `CASE`, `OPT` before use, parameter-mode borrows, moves and pools, `STATEFUL`, definition/implementation conformance |
-| **Specified but not yet checked** | four, each named where it is stated: a `STATEFUL` module reached by two threads (§6); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); `F32 (F64)` narrowing (§2.1) |
-| **Specified but not yet generated** | `OPT T` for a non-pointer `T` (§11 maps it; the generator refuses it); `TRANSFER` (§6) |
-| **Specified, unbuilt** | `TRANSFER` (§6); four pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.5.0, six distributions, built from this tree |
+| **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
+| **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); `F32 (F64)` narrowing (§2.1); flow-sensitive `OPT`; a loop-carried use after move, an owned field, a pool value stored beyond a direct `RETURN` or in a module variable (§4) |
+| **Accepted by the checker, refused by the generator** — so `m9c --check` and the editor do not show them | `OPT T` for a non-pointer `T`; `CASE` over a call; `CONST` over an expression or a record; an array bound from an imported `CONST`; `EXCEPT` and `FINALLY` on one block; `ELSIF` after `IS SOME`; `EXIT` inside a `CASE` arm or across `FINALLY`; a scalar `CASE` without `ELSE` (semantics undecided); a string literal beyond ASCII; a `THREAD` target in another module (a link error) |
+| **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` (§6); the pre-registered candidates with their adoption triggers (§9.6) |
+| **Release** | 0.10.0 on six distributions and a Windows zip; this revision describes the development tree after it |
 
 ### Contents
 
@@ -149,7 +149,18 @@ a type agree by construction or do not compile.)*
 
 Integer overflow raises `Overflow` (§5). It never wraps. Wrapping
 arithmetic exists as explicit operators `+% -% *%` for the rare code
-that wants modular semantics and is willing to say so.
+that wants modular semantics and is willing to say so.  *This
+sentence was false for the seven widths other than I64 until
+2026-09-27: every integer operation went through the 64-bit checked
+helper and the result was stored into the narrow C type unchecked,
+so `I32 max + 1` was -2147483648 and `U32 3 - 5` was 4294967294 with
+nothing raised -- the museum's founding class, inside this section's
+own promise, found by an agent reviewing the language against this
+report (`docs/agent-review-2026-09-27.md`).  Each width now has its
+own helper (`m9_add_i32`, `m9_sub_u8`, ...), the narrow six computed
+exactly in 64 bits and held to the type's range, U64 as its own
+unsigned arithmetic; `corpus/Narrow.m9` runs every case under
+build.sh.*
 
 There are **no implicit conversions**, including widenings.
 `F64(i)`, `I32(x) RAISES ValueRange` — every conversion is written,
@@ -219,6 +230,92 @@ in memory -- because they ask *this* machine's layout; a **wire**
 format still uses the exact-width types and `ToBytesLE`/`FromBytesLE`,
 which fix the width regardless of the host. Asking `SizeOf` at the
 wire is the `LONGREAL`-stride bug in a new hat.
+
+### 2.2.2 Enumerations — a closed set of names, checked as one
+
+*Added to this report 2026-09-27; built 2026-09-15 and released in
+0.10.0.  The design and its measurements are `docs/enum-plan.md`;
+this section is the specification the compiler is held to.*
+
+```
+TYPE Colour = (Red, Green, Blue) ;
+```
+
+An enumeration is a payload-less CASE RECORD with a Pascal face: its
+members are ordered as declared, from 0, and nothing else is known
+about them — no explicit values, because a value is a protocol
+number and a wire format keeps its CONSTs.  A member is named through
+its type, `Colour.Red`, inside a `CASE` arm bare.  Five operations
+and nothing more:
+
+- `ORD (c)` — the position, an `I64`;
+- `Colour (i)` — the checked inverse, `RAISES ValueRange` outside
+  `0 .. n-1`, the same discipline as every other narrowing;
+- `NAME (c)` — the member's identifier as text, from a table the
+  generator emits per type, so a code-to-name `CASE` is never
+  written by hand again (that was the adoption trigger, met three
+  times);
+- `FOR c := Colour.Red TO Colour.Blue DO` — a walk over members in
+  declaration order;
+- `ARRAY Colour OF T` — an array indexed BY the type: its length is
+  the member count, its subscript a member, and the bounds are proven
+  at compile time with no ordinal and no runtime check.
+
+A `CASE` over an enumeration is total and has no `ELSE`, exactly as
+over a CASE RECORD: adding a member names every arm that must now
+decide.  Two enumeration values compare by tag with `=` and `#`.  An
+enumeration may cross a module boundary like any type; the ONEFlux
+port found the three places where that did not yet hold (equality,
+an imported enumeration-indexed field, an implementation body that
+was silently dropped) and they are fixed and probed.
+
+Not in the language: explicit ordinals, subranges, `SUCC`/`PRED`
+(write `Colour (ORD (c) + 1)` and take the `ValueRange`), and an
+array CONSTANT indexed by an enumeration, which waits on the
+aggregate constructor (§9.6).
+
+### 2.2.3 Procedure types — a value that is a top-level procedure
+
+*Built 2026-09-27, the day the pre-registered trigger (§9.6) was
+found met four times over; `docs/proctype-plan.md` records the
+decisions.*
+
+```
+TYPE Less   = PROCEDURE (a: I64 ; b: I64) : BOOL ;
+TYPE Kernel = PROCEDURE (x: F64) : F64 RAISES ValueRange ;
+
+PROCEDURE Pick (less: Less ; a: I64 ; b: I64) : I64 =
+BEGIN
+  IF less (a, b) THEN RETURN a END ;
+  RETURN b
+END Pick ;
+```
+
+A procedure type is declared with `TYPE` and used by name.  It is
+**structural**: two procedure types are the same type when their
+canonical text is the same — the parameter modes and types with no
+names, the result with its `RO`, the `RAISES` names sorted — and a
+procedure **fits** the type when its head renders that same text,
+`RAISES` included, to the letter.  Its values are **top-level M9
+procedures**, `Up` or `Mod.Up`; there is no capture and no closure, so
+nothing observable is implicit and the C is a function pointer.  A
+foreign procedure is not a value (another ABI, no error slot), and a
+`PURE` body may not call through a value, since nothing is known about
+which procedure runs.
+
+A **parameter** may be of a procedure type and is called through
+directly.  A **variable or field** of a procedure type must be `OPT`,
+because a procedure value has no zero and a zeroed one would be a call
+into nothing: `f : OPT Less ; f := SOME (Up) ; IF f IS SOME l THEN l (a,
+b) END`.  A call through a value is checked against the type's own
+parameter list — arity, modes, borrows, moves, `KEPT` — and raises
+what the type's `RAISES` declares; that is what keeps §5's exhaustive
+`RAISES` true across a call whose target is decided at run time.
+
+Not in the language: a slice or array of procedure values (refused
+"not yet"; a table of them is the aggregate constructor's business,
+§9.6), a procedure answering a procedure value, comparing two values,
+an anonymous procedure type in a parameter list (name it).
 
 ### 2.3 `+` concatenates strings, into the procedure's frame
 
@@ -479,19 +576,31 @@ DEFINITION MODULE ZarrStore ;
 TYPE Store ;                       (* opaque *)
 TYPE Array ;
 
-PROCEDURE Open (url: SLICE OF CHAR) : PTR Store
+PROCEDURE Open (RO url: STR) : SHARED PTR Store
+  RAISES IOError, FormatError ;
+  (* SHARED because every Array retains its Store *)
+
+PROCEDURE OpenArray (s: SHARED PTR Store ; RO path: STR) : PTR Array
   RAISES IOError, FormatError ;
 
-PROCEDURE GetF64 (a: PTR Array ; idx: SLICE OF I64) : F64
-  RAISES IndexError ;
-  (* PURE: no observable effect, result depends only on arguments
-     and the state reachable from them *)
-
-PROCEDURE ReadChunk (VAR a: Array ; coords: SLICE OF I64)
-  : SLICE OF BYTE [RO]
+PROCEDURE GetF64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : F64
   RAISES IOError ;
+  (* IndexError needs no declaration: it is a checked runtime error;
+     VAR because the array caches the chunk it last decoded *)
+
+PROCEDURE ReadChunk (VAR a: PTR Array ; RO coords: SLICE OF I64)
+  : RO SLICE OF BYTE
+  RAISES IOError ;
+  (* a view into the cache: read it now, do not keep it *)
 
 END ZarrStore.
+```
+
+*(These are `corpus/ZarrStore.m9`'s own lines as of 2026-09-27.  The
+example used to show `SLICE OF BYTE [RO]` and `VAR a: Array`, a
+spelling §2.4 retired and a signature no M9 caller can write.)*
+
+```
 ```
 
 Rules:
@@ -561,8 +670,10 @@ Rules:
 
    What is **not** enforced is the second half — that a `STATEFUL`
    non-monitor module is reached by only one thread. §6 states the
-   rule and §6 also states, now, that no check implements it. It is
-   the last rule in this report with no check behind it. *(Observed
+   rule and §6 also states, now, that no check implements it. *(This
+   used to say it was "the last rule in this report with no check
+   behind it"; the table at the head of the report is the honest
+   list, and it is longer than one.)* *(Observed
    failure: `blosc_decompress` versus `blosc_decompress_ctx` — global
    hidden state, thread-safety documented only in prose.)*
 
@@ -678,7 +789,7 @@ END
 
 Exceptions are declared, with their payloads, in the definition
 module that owns the failure:
-`EXCEPTION ParseError (msg: SLICE OF CHAR [RO] ; line, col: I64) ;`
+`EXCEPTION ParseError (RO msg: STR ; line, col: I64) ;`
 — a RAISES clause may only cite an exception the reader can find.
 `Overflow`, `IndexError`, `OutOfMemory`, and `ValueRange` are
 predeclared; the first three are the unchecked runtime checks of §3,
@@ -692,9 +803,14 @@ literal payloads where a handler states them, which is how a handler
 for one HTTP status is kept from catching another; the gap is in the
 checker's account of which handlers can fire.
 
-There is no catch-all except at a thread's root. Errors are values
-carrying a message slice and an optional cause chain; they are not a
-class hierarchy. Status-code style remains available and encouraged
+There is no catch-all except at a thread's root, and that one is
+generated, not written: the grammar's `Handler` names an exception.
+Errors are values: an exception's identity and its declared payload
+— up to four integers, two reals and three strings, a limit both
+generators refuse to exceed — and nothing else; there is no class
+hierarchy and no cause chain. *(This paragraph promised "an optional
+cause chain" until 2026-09-27; nothing implemented one.)*
+Status-code style remains available and encouraged
 for *expected* conditions (`OPT`, BOOL returns) — RAISES is for
 contract violations and environmental failure, preserving Wirth's
 distinction while refusing his conclusion.
@@ -717,7 +833,19 @@ Threads are in the language; data races are not.
   would make this the one place in the language where an error is a
   silence. SHARABLE is computed structurally and
   stated in definition modules — it is Send/Sync with Wirth's
-  spelling.
+  spelling.  *Stated, not built, as of 2026-09-27: no checker computes
+  SHARABLE or reads it from a definition, the SHARED count is not
+  atomic, and `THREAD`'s argument was walked by neither checker — the
+  generator refused a non-pointer shape and nothing matched the
+  argument to the target's parameter or moved it.  The type-and-move
+  half was added the same day, in both checkers, held together by
+  the probes `thread-argument-type` and `thread-moves-its-argument`:
+  `P (VAR r: T)` takes a `PTR T`, a `SHARED PTR T` or a monitor `T`
+  by name, `P (p: PTR T)` a `PTR T`, and a bare owned pointer handed
+  over is moved and dead in the caller.  The sharability half remains
+  a rule the reviewer holds, and the corpus's own thread code keeps
+  it by handing a thread an owned value or a monitor and nothing
+  else.*
 - `MONITOR RECORD ... END` revives Modula-75's monitors, closing a
   fifty-year loop: all access to the record's fields is implicitly
   serialized; `WAIT`/`SIGNAL` condition variables live inside it.
@@ -852,8 +980,11 @@ features:
 - **No inheritance beyond single type extension.** No multiple
   inheritance, no interfaces-as-hierarchy; a CASE RECORD with a total
   CASE covers closed variants better.
-- **No exceptions as control flow.** RAISES is for failure; the
-  compiler warns on RAISE/EXCEPT within one procedure.
+- **No exceptions as control flow.** RAISES is for failure; a
+  procedure that raises and handles its own exception is writing a
+  GOTO with a longer name.  *(This item said "the compiler warns" on
+  it until 2026-09-27; the checker has no warning channel and never
+  did.  It is a rule the reviewer holds.)*
 - **No async/await.** Threads, monitors, and coroutines compose; a
   second color of function does not.
 - **No reflection, no runtime code generation.**
@@ -876,7 +1007,7 @@ features:
    evidence of one afternoon, everything the zarr stack needed — but
    they *forbid* rather than *check* the hard patterns: doubly
    linked structures, caches handing out references into themselves
-   (`ReadChunk` returns `[RO]` and the caller may not retain
+   (`ReadChunk` answers an `RO SLICE` the caller may not retain
    it — the FPC cache-aliasing hazard becomes illegal instead of
    documented), iterator invalidation. Rust checks these; M9 makes
    you restructure into pools, indices, or copies. That is a real
@@ -910,7 +1041,7 @@ features:
    (`corpus/Lex.m9`, `Parse.m9`, `Gen.m9`), and the fixpoint is
    checked rather than asserted: stage 1 is C from the host
    generator, stage 2 is C from the M9 generator compiled by stage 1,
-   stage 3 the same again — **stage 3 = stage 2 = stage 1, 26 files
+   stage 3 the same again — **stage 3 = stage 2 = stage 1, the C of every bootstrap module (41 today, 26 when this was first written)
    byte-identical**, with the host compiler out of the loop
    (`runtime/test/bootstrap.sh`). The checker exists on both sides
    and the two are held to identical diagnostics, text and
@@ -931,9 +1062,10 @@ features:
 
    | candidate | shape | trigger |
    |---|---|---|
-   | Enumerations, and array constants indexed by them | `Var = [U10, V10, ...]`, `ARRAY [Var] OF I64 = [...]`, an entry required per enumerator | a **second** hand-rolled code-to-name table. Count today: one — a 29-arm dispatch whose first transcription got one code wrong, which is the failure the feature would make uncompilable |
+   | ~~Enumerations~~ | **built 2026-09-15, released in 0.10.0** (§2.2.2): `TYPE Colour = (Red, Green, Blue)`, `ORD`, the checked conversion `Colour (i)`, `NAME`, `FOR` over the members, `ARRAY Colour OF T`, a total `CASE` with no `ELSE`.  The trigger had been met three times over when it was measured (`Lex.KwName`, `Lex.KindName`, `HttpServer.Reason`; `docs/enum-plan.md`).  The array CONSTANT indexed by an enumeration — `ARRAY Colour OF I64 = [...]` — is NOT built: it is the aggregate constructor below wearing an index type | *was:* a second hand-rolled code-to-name table |
    | `SET` and `IN` | a word-set over a small enumeration | a **second** hand-rolled membership table. Count today: one. The place that wanted it had 89 members and so would not have fitted a machine word — evidence *against* the word-set type, recorded rather than ignored |
-   | `Bits.And/Or/Xor/Shl/Shr` | a module the generator inlines to C operators, unsigned only, shift counts checked | the first program that needs bit manipulation. A hash map is the likely one |
+   | ~~`Bits.And/Or/Xor/Shl/Shr`~~ | **built 2026-09-27** as `corpus/Bits.m9`, a library module and not a language change: And, Or, Xor, Not, Shl, Shr (logical), Test, Count, bound to `static inline` C operators in the runtime header so the generator needed nothing. Two things moved from the pre-registration. It is on **I64** read as its two's-complement pattern, not unsigned: every caller in the corpus held its bits in an I64 (a generator state, a flag column, the bytes of a little-endian integer), and U64 is the type the generator serves worst, so an unsigned-only module would have cost two checked conversions per call for no safety. And the trigger was not a hash map but bit work in the applications built on the corpus, which is the demand the table exists to record. Shift counts are checked: outside 0..63 is `ValueRange` by name, where C says undefined | *was:* the first program that needs bit manipulation |
+   | ~~Procedure types~~ | **built 2026-09-27** (§2.2.3): named, structural, top-level procedures as values, `OPT` for a variable or field, calls through a value checked against the type and raising its `RAISES`.  The trigger -- "a second program whose operations cannot be enumerated; defunctionalisation has produced something better twice" -- had been met four times over when the review of that day counted: a route table, a push interface, a record the loop drives, a reverse-communication MINPACK, each recorded by its author as the absence of this feature | *was:* CLAUDE.md's pre-registration; this table never carried the row |
    | An **aggregate constructor** | `[a, b, c]`, and a record value `Row (200, 'OK')`, usable as a CONST | something needs to **enumerate** a mapping the program also uses -- the routes-as-data precedent, where `OpenApi` derives the document from the router rather than being maintained beside it |
    | A typed `CONST` | `CONST Pi : F32 = 3.14159...` | a program must reproduce a foreign constant bit for bit and cannot |
 
@@ -973,7 +1105,7 @@ features:
 
 ## 10. Grammar (complete, in Wirth's own EBNF)
 
-Seventy productions; the ceiling is one hundred, and past it a
+Seventy-two productions; the ceiling is one hundred, and past it a
 feature dies.  Sixty-one keywords: the fifty-eight the language was
 designed with, plus RO, GRID and KEPT, each appended to the table
 rather than inserted into it, because a token code that moves is a
@@ -1018,7 +1150,10 @@ HandlerArg  = ident | number | string .
 
 Type        = Qualident | ArrayType | GridType | SliceType | RecordType
             | CaseRecordType | MonitorType | PtrType | OptType
-            | SharedType .
+            | SharedType | EnumType | ProcType .
+EnumType    = "(" IdentList ")" .
+ProcType    = "PROCEDURE" "(" [ ParamList ] ")" [ ":" [ "RO" ] Type ]
+              [ "RAISES" Qualident { "," Qualident } ] .
 ArrayType   = "ARRAY" ConstExpr "OF" Type .
 GridType    = "GRID" ConstExpr "OF" Type .
 SliceType   = "SLICE" "OF" Type [ Attrib ] .
@@ -1151,7 +1286,7 @@ that tree is what the M9 sources in the same commit produce.
 
 No packing pragmas, no struct overlay of wire bytes: wire formats go
 through `SLICE OF BYTE` and explicit conversion, always — the
-LONGREAL lesson generalized. `[RO]` and `IN pool` are checker
+LONGREAL lesson generalized. `RO`, `KEPT` and `IN pool` are checker
 facts, erased in C. Every owned `NEW` carries the rc header (8 bytes)
 so `SHARED (x)` is `rc := 1` in place, handle copies are `rc++`, and
 `DISPOSE` of a handle is `rc--`, freeing at zero; pool allocations

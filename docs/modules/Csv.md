@@ -163,12 +163,14 @@ _(documented with the group below)_
 
 ### SetStamp (VAR t: PTR Table ; c: I64 ; format: I64) RAISES IndexError
 
-the same thing as SetKind, said without naming the variant.  An
-M9 caller in another module cannot write `Csv.Kind.Real` today:
-the checker resolves a cross-module payload-less variant
-constructor and the GENERATOR refuses it -- "unknown name: Csv".
-Logged as a gap between the two rather than papered over; a C
-caller can still pass a Kind.
+the same thing as SetKind, said without naming the variant.
+These setters date from when a caller in another module could
+not write `Csv.Kind.Real` (the checker accepted it, the
+generator refused it).  That gap CLOSED 2026-09-15
+(`corpus/KindUse.m9` is the gendiff fixture that writes every
+form); `SetKind (t, c, Csv.Kind.Real)` works from anywhere and
+is the preferred spelling.  The setters stay for their callers
+and for C, which has no constructor syntax.
 
 ### KindAt (t: PTR Table ; c: I64) : Kind RAISES IndexError
 

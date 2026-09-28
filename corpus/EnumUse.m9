@@ -69,6 +69,16 @@ BEGIN
   Io.WriteLine ('')
 END Tables ;
 
+PROCEDURE CrossField () =
+VAR wt : Palette.Weights ; hh : Palette.Hue ;
+BEGIN
+  wt := Palette.MakeWeights () ;
+  hh := Palette.Hue.Neutral ;
+  Io.Write ('cross ') ;
+  Io.WriteI64 (wt.w[hh]) ;
+  Io.WriteLine ('')
+END CrossField ;
+
 BEGIN
   h := Palette.Hue.Cool ;
   Io.WriteLine (Nm (h)) ;
@@ -79,7 +89,13 @@ BEGIN
   Io.WriteLine (NAME (h)) ;              (* Cool *)
   Io.WriteLine (NAME (Palette.Hue.Warm)) ;
   AllHues () ;
-  Tables ()
+  Tables () ;
+  (* enumeration values compare by = / # (docs/enum-plan.md) *)
+  IF h = Palette.Hue.Cool THEN Io.WriteLine ('h is cool') END ;
+  IF h # Palette.Hue.Warm THEN Io.WriteLine ('h is not warm') END ;
+  (* index an imported record's ARRAY Hue OF I64 field, by an imported
+     enum value -- the cross-module case (docs/enum-plan.md, part 2) *)
+  CrossField ()
 EXCEPT
 | ValueRange : Io.WriteLine ('out of range')
 END EnumUse.

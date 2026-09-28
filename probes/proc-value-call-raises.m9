@@ -1,0 +1,6 @@
+(* EXPECT: unhandled RAISES ValueRange from call to k *)
+MODULE m ;
+TYPE Kernel = PROCEDURE (x: F64) : F64 RAISES ValueRange ;
+VAR y : F64 ;
+PROCEDURE Apply (k: Kernel ; x: F64) = BEGIN y := k (x) END Apply ;
+END m.

@@ -21,24 +21,23 @@ statistic, and a NaN that travels is the museum's founding bug.
 The random Stream is a RECORD the caller owns, like the Fortran
 port's Random.Stream: no module state, so two streams cannot
 alias and a run is reproducible from its seed by construction.
-The generator is a 64-bit multiplicative-congruential (Knuth's
-MMIX constants) answering the top 53 bits -- chosen because M9
-has no bit operators yet (Bits is pre-registered), and an LCG is
-the strongest generator expressible in wrapping arithmetic alone.
-The driver holds the first draws bit-for-bit to an independent
-reimplementation and the moments of a million draws to their
-distribution values.  When Bits arrives, a stronger generator can
-replace this one behind the same record.
+The generator is xoshiro256** (Blackman and Vigna, 2021: 256 bits
+of state, period 2^256 - 1, passes BigCrush), seeded through
+splitmix64 so that any I64 seed, zero included, gives a full
+state; a uniform draw is the top 53 bits of one output.  It
+replaced Knuth's MMIX LCG on 2026-09-27, the day corpus/Bits.m9
+made a rotate and an xor expressible -- the LCG was the strongest
+generator wrapping arithmetic alone could spell, and its low bits
+were as weak as every LCG's.  The change moved every seeded
+golden in the repository, deliberately and at once.  The driver
+holds the first draws bit-for-bit to an independent
+reimplementation (tools/statsgold.py) and the moments of a
+million draws to their distribution values.
 
 ### EXCEPTION TooFew
 
 the statistic needs at least `need` values; the sample has
 `got`.  Mean of nothing is not zero, it is a refusal.
-
-### EXCEPTION BadArg
-
-a percentile outside [0,100], a nonpositive sigma or lambda,
-an empty range: named, not NaN'd
 
 ### Mean (RO xs: SLICE OF F64) : F64 RAISES TooFew, ValueRange
 
@@ -64,7 +63,7 @@ _(undocumented)_
 
 _(documented with the group below)_
 
-### Percentile (RO xs: SLICE OF F64 ; p: F64) : F64 RAISES TooFew, BadArg, ValueRange
+### Percentile (RO xs: SLICE OF F64 ; p: F64) : F64 RAISES TooFew, Faults.BadArg, ValueRange
 
 numpy.percentile's linear rule: at rank (n-1) * p/100,
 interpolated between the two order statistics around it
@@ -106,7 +105,7 @@ ttest_ind (equal_var = False).
 
 the standard normal CDF, through Math.Erfc
 
-### TTail (t: F64 ; dof: F64) : F64 RAISES ValueRange, Overflow, BadArg
+### TTail (t: F64 ; dof: F64) : F64 RAISES ValueRange, Overflow, Faults.BadArg
 
 upper tail P(T > t) of Student's t -- the p-value building
 block, exposed because sooner or later a caller wants the
@@ -114,22 +113,24 @@ one-sided answer the tests do not give
 
 ### TYPE Stream
 
-the 64-bit generator state, AS A BIT
-PATTERN: the wrapping ops are defined
-mod 2^64 whatever the sign, and keeping
-the state signed keeps every step inside
-checked I64 arithmetic -- U64 division
-is not generatable today (owed ledger)
+the four 64-bit words of xoshiro256**
+state, each held AS A BIT PATTERN in
+an I64: Bits and the wrapping ops are
+defined on the pattern whatever the
+sign, and U64 is the type the
+generator serves worst
 
-### Seed (s: I64) : Stream
+### Seed (s: I64) : Stream RAISES ValueRange
 
-any seed is legal; equal seeds give equal streams
+any seed is legal; equal seeds give equal streams.  ValueRange
+is Bits speaking through a shift count that is a constant here
+-- the set is proved, not narrowed by hand
 
-### Uniform (VAR st: Stream) : F64
+### Uniform (VAR st: Stream) : F64 RAISES ValueRange
 
 [0, 1), 53 random bits
 
-### UniformI (VAR st: Stream ; lo, hi: I64) : I64 RAISES BadArg
+### UniformI (VAR st: Stream ; lo, hi: I64) : I64 RAISES Faults.BadArg, ValueRange
 
 an integer in [lo, hi], inclusive, unbiased by rejection
 
@@ -137,10 +138,10 @@ an integer in [lo, hi], inclusive, unbiased by rejection
 
 standard normal, polar method
 
-### Exponential (VAR st: Stream ; lambda: F64) : F64 RAISES ValueRange, BadArg
+### Exponential (VAR st: Stream ; lambda: F64) : F64 RAISES ValueRange, Faults.BadArg
 
 _(undocumented)_
 
-### LogNormal (VAR st: Stream ; mu, sigma: F64) : F64 RAISES ValueRange, Overflow, BadArg
+### LogNormal (VAR st: Stream ; mu, sigma: F64) : F64 RAISES ValueRange, Overflow, Faults.BadArg
 
 _(undocumented)_

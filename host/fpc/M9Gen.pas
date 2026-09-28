@@ -78,6 +78,8 @@ type
     function ConstValue (e: TNode): TNode;
     function IsAdaptive (e: TNode): Boolean;
     function BuiltinC (const n: string): string;
+    function ISuf (const t: string): string;
+    function ProcTypedefC (const name: string; ptn: TNode): string;
     function TyC (t: TNode): string;
     function SliceTy (elem: TNode): string;
     function GridTy (elem: TNode; const rank: string): string;
@@ -108,6 +110,7 @@ type
     procedure Line (sl: TStringList; ind: Integer; const s: string);
     procedure GenProc (const gp: TGProc);
     procedure GenMain;
+    procedure GenInit (const forModule: string);
   public
     Errors : TStringList;
     HText, CText : string;
@@ -501,6 +504,25 @@ end;
 
 { ---- type mapping ---- }
 
+{ the checked helper's width suffix for an integer type tag.  Each of
+  the eight exact widths has its own helper since 2026-09-27: before
+  that everything went through the I64 one and a narrow result was
+  stored unchecked, so `I32 max + 1` wrapped in silence
+  (docs/agent-review-2026-09-27.md F1).  A tag that is none of the
+  eight -- a C.* value, an enumeration's ordinal -- is a 64-bit value
+  to the checker and keeps the I64 helper.  Mirrors Gen.ISuf. }
+function TGen.ISuf (const t: string): string;
+begin
+  if t = 'I8' then Exit ('i8');
+  if t = 'I16' then Exit ('i16');
+  if t = 'I32' then Exit ('i32');
+  if t = 'U8' then Exit ('u8');
+  if t = 'U16' then Exit ('u16');
+  if t = 'U32' then Exit ('u32');
+  if t = 'U64' then Exit ('u64');
+  Result := 'i64';
+end;
+
 function TGen.BuiltinC (const n: string): string;
 begin
   if n = 'I8'  then Exit ('int8_t');
@@ -543,7 +565,7 @@ begin
           begin
             r2 := TNode (extTypes.Objects[ei]);
             if r2.kind in [nkRecordType, nkCaseRecordType,
-                           nkMonitorType, nkEnumType] then
+                           nkMonitorType, nkEnumType, nkProcType] then
               Exit (t.a + '_' + t.b);
             Exit (TyC (r2));              { alias, chased }
           end;
@@ -559,8 +581,11 @@ begin
         r2 := FindType (t.a);
         if r2 <> nil then
         begin
+          { a procedure type is a NAMED C typedef like a record's,
+            emitted into the header beside the slice typedefs
+            (par 2.2.3) }
           if r2.kind in [nkRecordType, nkCaseRecordType,
-                         nkMonitorType, nkEnumType] then
+                         nkMonitorType, nkEnumType, nkProcType] then
             Exit (modName + '_' + t.a);
           Exit (TyC (r2));                { local alias, chased }
         end;
@@ -570,7 +595,7 @@ begin
         begin
           r2 := TNode (extTypes.Objects[ei]);
           if r2.kind in [nkRecordType, nkCaseRecordType,
-                         nkMonitorType, nkEnumType] then
+                         nkMonitorType, nkEnumType, nkProcType] then
             Exit (Copy (extTypes[ei], 1,
               Length (extTypes[ei]) - Length (t.a) - 1) + '_' + t.a);
           Exit (TyC (r2));
@@ -580,8 +605,9 @@ begin
     nkPtrType, nkSharedType : Exit (TyC (t.kids[0]) + ' *');
     nkOptType :
       begin
+        { a procedure value is pointer-shaped too: NONE is NULL }
         if Resolve (t.kids[0]) <> nil then
-          if Resolve (t.kids[0]).kind in [nkPtrType, nkSharedType] then
+          if Resolve (t.kids[0]).kind in [nkPtrType, nkSharedType, nkProcType] then
             Exit (TyC (t.kids[0]));
         Err (t, 'OPT of non-pointer unsupported yet');
       end;
@@ -796,6 +822,7 @@ begin
     nkGridType : Result := 'GRID';
     nkArrayType : Result := 'ARR';
     nkRecordType, nkMonitorType : Result := 'REC';
+    nkProcType : Result := 'PROC';
   end;
 end;
 
@@ -964,6 +991,7 @@ var
   tnd, r, inner : TNode;
   sel : TNode;
   base, ix, ec, nsx : string;
+  enumIx : Boolean;
 begin
   tag := '?';
   tnd := ScopeNode (d.a);
@@ -996,6 +1024,19 @@ begin
         tag := TagOfExpr (TNode (extConsts.Objects[ci]));
         Exit (d.a + '_' + d.kids[0].a);
       end;
+    end;
+    { a top-level procedure named as a VALUE (par 2.2.3): its C
+      function, this module's or an imported module's }
+    if (Length (d.kids) = 0) and (FindProc (d.a) >= 0) then
+    begin
+      tag := 'PROC';
+      Exit (modName + '_' + d.a);
+    end;
+    if (Length (d.kids) = 1) and (d.kids[0].kind = nkSelField) and
+       (extProcs.IndexOf (d.a + '.' + d.kids[0].a) >= 0) then
+    begin
+      tag := 'PROC';
+      Exit (d.a + '_' + d.kids[0].a);
     end;
     { payload-less variant constructor: Type.Variant }
     r := FindType (d.a);
@@ -1116,10 +1157,16 @@ begin
           begin
             base := Result;
             ec := TyC (r.kids[1]);
-            if ArrEnumBoundNode (r.kids[0]) <> nil then
-              { ARRAY Colour OF T: the subscript is an enum value, its
-                tag 0..n-1 by construction -- no runtime bounds check,
-                a.v[(k).tag] directly (docs/enum-plan.md, part 2) }
+            { ARRAY Colour OF T: the subscript is an enum value, its
+              tag 0..n-1 by construction -- no runtime bounds check,
+              a.v[(k).tag] directly.  Detect it from the SUBSCRIPT's
+              type, not the array's bound: an imported enum indexes an
+              imported record's field the same way, where the bound
+              resolves only in its own module (docs/enum-plan.md). }
+            enumIx := ArrEnumBoundNode (r.kids[0]) <> nil;
+            if (not enumIx) and (Length (sel.kids) >= 1) then
+              enumIx := Copy (TagOfExpr (sel.kids[0]), 1, 3) = 'CR:';
+            if enumIx then
               Result := '(' + base + '.v[(' + ix + ').tag])'
             else
             begin
@@ -1160,6 +1207,8 @@ end;
 function TGen.CallC (dnode, argl, site: TNode; out tag: string): string;
 var
   name, args, at, want, tn, vn, cfunc, gname : string;
+  pv : Boolean;                     { a call through a procedure value }
+  svt : TNode;
   pi, g, j, k, nargs, dot : Integer;
   pl, grp, arg, vt, vd, pnode, xvt, enode : TNode;
   ec : Integer;
@@ -1539,9 +1588,26 @@ begin
   end
   else
   begin
+    { a call THROUGH A PROCEDURE VALUE (par 2.2.3): a parameter or an
+      IS SOME binder whose type is a procedure type.  Its head drives
+      the argument conversion below exactly as a declaration's would,
+      and the call is `name (args, err)` on the C pointer. }
+    pv := False;
+    svt := Resolve (ScopeNode (name));
+    if (svt <> nil) and (svt.kind = nkProcType) then
+    begin
+      pnode := svt;
+      cfunc := CN (name);
+      pv := True;
+    end;
     { the module's own procedures shadow foreign imports }
-    pi := FindProc (name);
-    if pi >= 0 then
+    if pv then
+      pi := -1
+    else
+      pi := FindProc (name);
+    if pv then
+      { nothing: the value is the callee }
+    else if pi >= 0 then
     begin
       pnode := procs[pi].node;
       cfunc := modName + '_' + name;
@@ -1884,20 +1950,24 @@ begin
           else
           begin
             stRaise := True;
-            if cop = '+' then Result := 'm9_add_i64 (' + l + ', ' + r + ', err)'
-            else if cop = '-' then Result := 'm9_sub_i64 (' + l + ', ' + r + ', err)'
-            else Result := 'm9_mul_i64 (' + l + ', ' + r + ', err)';
+            if cop = '+' then Result := 'm9_add_' + ISuf (lt) + ' (' + l + ', ' + r + ', err)'
+            else if cop = '-' then Result := 'm9_sub_' + ISuf (lt) + ' (' + l + ', ' + r + ', err)'
+            else Result := 'm9_mul_' + ISuf (lt) + ' (' + l + ', ' + r + ', err)';
           end;
         end
         else if cop = '/' then
           Result := '(' + l + ' / ' + r + ')'
         else if cop = 'DIV' then
-          begin stRaise := True; Result := 'm9_div_i64 (' + l + ', ' + r + ', err)' end
+          begin stRaise := True; Result := 'm9_div_' + ISuf (lt) + ' (' + l + ', ' + r + ', err)' end
         else if cop = 'MOD' then
-          begin stRaise := True; Result := 'm9_mod_i64 (' + l + ', ' + r + ', err)' end
+          begin stRaise := True; Result := 'm9_mod_' + ISuf (lt) + ' (' + l + ', ' + r + ', err)' end
         else if cop = '+%' then Result := 'm9_addw_i64 (' + l + ', ' + r + ')'
         else if cop = '-%' then Result := 'm9_subw_i64 (' + l + ', ' + r + ')'
         else if cop = '*%' then Result := 'm9_mulw_i64 (' + l + ', ' + r + ')'
+        else if ((cop = '==') or (cop = '!=')) and (Copy (lt, 1, 3) = 'CR:') then
+          { two enumeration (or case-record) values compare by tag: a
+            struct == is not valid C (docs/enum-plan.md) }
+          Result := '((' + l + ').tag ' + cop + ' (' + r + ').tag)'
         else
           Result := '(' + l + ' ' + cop + ' ' + r + ')';
       end;
@@ -1909,7 +1979,7 @@ begin
         begin
           lt := TagOfExpr (e.kids[0]);
           if (lt = 'F64') or (lt = 'F32') then Result := '(- ' + l + ')'
-          else begin stRaise := True; Result := 'm9_neg_i64 (' + l + ', err)' end;
+          else begin stRaise := True; Result := 'm9_neg_' + ISuf (lt) + ' (' + l + ', err)' end;
         end
         else Result := l;
       end;
@@ -3057,6 +3127,8 @@ begin
   if dbgSrc <> '' then
     Line (pbuf, 1, 'err->file = "' + dbgSrc + '";');
   Line (pbuf, 1, 'm9_args (argc, argv);');
+  for i := 0 to extMods.Count - 1 do
+    Line (pbuf, 1, extMods[i] + '_m9init (err); if (err->exc) goto L_ret;');
   { the body is a BLOCK, so EXCEPT at the root goes through the same
     handler machinery every other frame uses }
   EmitStmt (mainBody, 1);
@@ -3065,6 +3137,71 @@ begin
     Line (pbuf, 1, 'm9_pool_free (&' + localPools[i] + ');');
   Line (pbuf, 1, 'return m9_exit (err);');
   pbuf.Add ('}');
+end;
+
+procedure TGen.GenInit (const forModule: string);
+var
+  i : Integer;
+begin
+  scope.Clear;
+  SetLength (localPools, 0);
+  tmpN := 0;
+  exitLbl := 'L_ret';
+  raiseLbl := 'L_ret';
+  curRetq := '';
+  curRetTag := '';
+  finDepth := 0;
+  inSwitch := 0;
+  for i := 0 to High (modVarN) do
+    scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
+  pbuf.Add ('');
+  pbuf.Add ('void ' + forModule + '_m9init (m9_state *err)');
+  pbuf.Add ('{');
+  Line (pbuf, 1, 'static int m9done = 0;');
+  Line (pbuf, 1, 'if (m9done) return;');
+  Line (pbuf, 1, 'm9done = 1;');
+  Line (pbuf, 1, 'm9_pool m9frame = {0};');
+  Line (pbuf, 1, 'm9_pool *m9prev = err->res;');
+  PoolReg ('m9frame');
+  Line (pbuf, 1, 'err->res = &m9frame;');
+  for i := 0 to extMods.Count - 1 do
+    Line (pbuf, 1, extMods[i] + '_m9init (err); if (err->exc) goto L_ret;');
+  if mainBody <> nil then EmitStmt (mainBody, 1);
+  Line (pbuf, 0, 'L_ret: ;');
+  for i := 0 to High (localPools) do
+    Line (pbuf, 1, 'm9_pool_free (&' + localPools[i] + ');');
+  Line (pbuf, 1, 'm9_pool_free (&m9frame);');
+  Line (pbuf, 1, 'err->res = m9prev;');
+  pbuf.Add ('}');
+end;
+
+{ the C typedef of a procedure type: `typedef R (*Mod_Name) (T1, T2 *,
+  m9_state *err);` -- a value parameter is its C type, VAR and OWN a
+  pointer to it, exactly the heading rule, so a procedure of the same
+  head IS a value of the type in C.  Mirrors Gen.ProcTypedefC. }
+function TGen.ProcTypedefC (const name: string; ptn: TNode): string;
+var
+  retC, ps, cty : string;
+  g, j : Integer;
+  pl, grp : TNode;
+begin
+  retC := 'void';
+  if ptn.kids[1] <> nil then retC := TyC (ptn.kids[1]);
+  ps := '';
+  pl := ptn.kids[0];
+  if pl <> nil then
+    for g := 0 to High (pl.kids) do
+    begin
+      grp := pl.kids[g];
+      if grp = nil then Continue;
+      cty := TyC (grp.kids[1]);
+      if grp.kids[0] <> nil then
+        for j := 0 to High (grp.kids[0].kids) do
+          if grp.f1 or grp.f2 then ps := ps + cty + ' *, '
+          else ps := ps + cty + ', ';
+    end;
+  Result := 'typedef ' + retC + ' (*' + modName + '_' + name + ') (' + ps
+    + 'm9_state *err);';
 end;
 
 procedure TGen.Emit (const forModule: string);
@@ -3086,6 +3223,11 @@ begin
   for i := 0 to extMods.Count - 1 do
     hdr.Add ('#include "' + extMods[i] + '.h"');
   hdr.Add ('');
+  if not isProgram then
+  begin
+    hdr.Add ('void ' + forModule + '_m9init (m9_state *err);');
+    hdr.Add ('');
+  end;
   src.Add ('/* generated by M9Gen from ' + forModule + '.m9 -- do not edit */');
   src.Add ('#include "' + forModule + '.h"');
   for i := 0 to extMods.Count - 1 do
@@ -3103,6 +3245,15 @@ begin
       hdr.Add ('typedef struct ' + modName + '_' + tyNames[i] + ' ' +
         modName + '_' + tyNames[i] + ';');
   hdr.Add ('');
+
+  { procedure types (par 2.2.3): a function-pointer typedef with the
+    err slot last, the same C signature a procedure of that head
+    gets.  Into the discovered-typedef stream, AFTER the slice
+    typedefs its parameters register on the way and BEFORE the record
+    bodies that may hold a field of it. }
+  for i := 0 to High (tyNames) do
+    if (tyNodes[i] <> nil) and (tyNodes[i].kind = nkProcType) then
+      tdefs.Add (ProcTypedefC (tyNames[i], tyNodes[i]));
 
   { case records: tagged structs, tags from 0 in declaration order;
     variants with payload fields become union members named after
@@ -3294,7 +3445,8 @@ begin
     prototypes they discover along the way land before them }
   for i := 0 to High (procs) do
     GenProc (procs[i]);
-  if isProgram and (mainBody <> nil) then GenMain;
+  if isProgram then begin if mainBody <> nil then GenMain; end
+  else GenInit (forModule);
 
   { header assembly: consts, discovered typedefs, transparent def
     records, prototypes -- in dependency order }

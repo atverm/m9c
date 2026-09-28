@@ -5,6 +5,8 @@
 #include "DynStr.h"
 #include "Io.h"
 
+void Delim_m9init (m9_state *err);
+
 typedef struct Delim_Reader Delim_Reader;
 typedef struct Delim_Reader Delim_Reader;
 

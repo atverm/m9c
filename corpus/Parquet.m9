@@ -21,19 +21,16 @@ DEFINITION MODULE Parquet ;
    otherwise with the column named: CHAR beyond 127 would need real
    UTF-8 transcoding and nothing here needs it yet. *)
 
+IMPORT Faults ;
+
 IMPORT Frame ;
 IMPORT Io ;
 
-EXCEPTION
-  Bad (RO what: STR) ;
-  (* the refusal, always naming what was met: 'codec 1 (snappy)',
-     'encoding 8 (RLE_DICTIONARY)', 'nested schema', ... *)
-
 PROCEDURE Write (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR)
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError ;
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
 
 PROCEDURE WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR)
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError ;
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
   (* the time axis becomes an INT64 column 'time' (epoch seconds),
      and the resolution, convention and description ride in the
      file-level key_value_metadata, so TsRead answers the same
@@ -42,7 +39,7 @@ PROCEDURE WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR)
 PROCEDURE WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
                   RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                   RO nsCols: SLICE OF STR)
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError ;
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
   (* Write plus two things a data service needs: file-level
      key_value_metadata pairs (the zarr proxy rides its JSON-LD
      data passport under 'data_passport', as pyarrow's writer
@@ -53,7 +50,7 @@ PROCEDURE WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
 PROCEDURE BytesX (VAR pool: POOL ; f: PTR Frame.Fr ;
                   RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                   RO nsCols: SLICE OF STR) : SLICE OF BYTE
-  RAISES Bad, ValueRange, Overflow, IndexError ;
+  RAISES Faults.BadArg, ValueRange, Overflow, IndexError ;
   (* WriteX's document, IN MEMORY, for a caller that is answering a
      request rather than filling a directory.  The whole file was
      already assembled in a buffer before WriteX touched the disk;
@@ -62,15 +59,17 @@ PROCEDURE BytesX (VAR pool: POOL ; f: PTR Frame.Fr ;
      Io.IOError, because nothing is opened.                          *)
 
 PROCEDURE Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError ;
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
 
 PROCEDURE TsRead (VAR pool: POOL ; RO path: STR) : PTR Frame.Ts
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError ;
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError ;
 
 END Parquet.
 
 
 IMPLEMENTATION MODULE Parquet ;
+
+IMPORT Faults ;
 
 IMPORT DynStr ;
 
@@ -219,7 +218,7 @@ BEGIN
 END PI64F ;
 
 PROCEDURE PStrRaw (VAR pool: POOL ; VAR u: Buf ; RO s: STR)
-  RAISES ValueRange, Bad =
+  RAISES ValueRange, Faults.BadArg =
   (* thrift binary carries BYTES: the text goes out as UTF-8, and
      the length prefix is the BYTE length, not the scalar count --
      the ASCII-only refusal fell when the zarr proxy's passports
@@ -239,7 +238,7 @@ END PStrRaw ;
 
 PROCEDURE PStrF (VAR pool: POOL ; VAR u: Buf ; VAR last: I64 ;
                  id: I64 ; RO s: STR)
-  RAISES ValueRange, Bad =
+  RAISES ValueRange, Faults.BadArg =
 BEGIN
   PField (pool, u, last, id, CtBinary) ;
   PStrRaw (pool, u, s)
@@ -261,9 +260,10 @@ END PListF ;
 (* ---- the writer ---- *)
 
 PROCEDURE ColPhys (k: I64) : I64 =
-  (* physical type from a Frame kind code -- the generators cannot
-     CASE a cross-module variant, so the kind travels as an integer
-     (Frame's own cross-module face) *)
+  (* physical type from a Frame kind code.  The kind travels as an
+     integer because Frame's cross-module face predates the generator
+     learning to CASE a cross-module variant (2026-09-15); a CASE over
+     Frame.Data would do now and would make this total.  Ledgered. *)
 BEGIN
   IF k = Frame.KindF64 THEN RETURN PtDouble END ;
   IF k = Frame.KindF32 THEN RETURN PtFloat END ;
@@ -284,7 +284,7 @@ END ColConv ;
 
 PROCEDURE PutValues (VAR pool: POOL ; VAR u: Buf ; f: PTR Frame.Fr ;
                      RO name: STR ; k: I64)
-  RAISES ValueRange, Overflow, IndexError, Bad =
+  RAISES ValueRange, Overflow, IndexError, Faults.BadArg =
 VAR
   r, x : I64 ;
   v64 : SLICE OF F64 ;
@@ -367,8 +367,8 @@ BEGIN
     END
   END
 EXCEPT
-| Frame.Unknown : RAISE Bad ('internal: column vanished')
-| Frame.WrongType : RAISE Bad ('internal: column type changed')
+| Frame.Unknown : RAISE Faults.BadArg ('internal: column vanished')
+| Frame.WrongType : RAISE Faults.BadArg ('internal: column type changed')
 END PutValues ;
 
 PROCEDURE PStrVal (VAR pool: POOL ; VAR u: Buf ; RO s: STR)
@@ -390,7 +390,7 @@ END PStrVal ;
 
 PROCEDURE PageFor (VAR pool: POOL ; f: PTR Frame.Fr ;
                    RO name: STR ; k: I64) : Buf
-  RAISES ValueRange, Overflow, IndexError, Bad =
+  RAISES ValueRange, Overflow, IndexError, Faults.BadArg =
   (* one DATA_PAGE: thrift PageHeader, then PLAIN values *)
 VAR
   vals, page : Buf ;
@@ -417,7 +417,7 @@ END PageFor ;
 
 PROCEDURE SchemaElem (VAR pool: POOL ; VAR u: Buf ; RO name: STR ;
                       k: I64 ; ns: BOOL)
-  RAISES ValueRange, Overflow, Bad =
+  RAISES ValueRange, Overflow, Faults.BadArg =
 VAR last, l2, l3, l4 : I64 ;
 BEGIN
   last := 0 ;
@@ -460,7 +460,7 @@ BEGIN
 END InList ;
 
 PROCEDURE MetaKV (VAR pool: POOL ; VAR u: Buf ; RO k, v: STR)
-  RAISES ValueRange, Bad =
+  RAISES ValueRange, Faults.BadArg =
 VAR last : I64 ;
 BEGIN
   last := 0 ;
@@ -482,7 +482,7 @@ PROCEDURE WriteAny (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
                     withTs: BOOL ; ts: PTR Frame.Ts ;
                     RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                     RO nsCols: SLICE OF STR)
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
 BEGIN
   Io.WriteFileBytes (path,
     AnyBytes (pool, f, withTs, ts, kvK, kvV, nsCols))
@@ -492,7 +492,7 @@ PROCEDURE AnyBytes (VAR pool: POOL ; f: PTR Frame.Fr ;
                     withTs: BOOL ; ts: PTR Frame.Ts ;
                     RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                     RO nsCols: SLICE OF STR) : SLICE OF BYTE
-  RAISES Bad, ValueRange, Overflow, IndexError =
+  RAISES Faults.BadArg, ValueRange, Overflow, IndexError =
 VAR
   out, meta, page : Buf ;
   pages : SLICE OF Buf ;
@@ -589,7 +589,7 @@ BEGIN
 END MagicBytes ;
 
 PROCEDURE Write (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR)
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
 VAR none : SLICE OF STR ;
 BEGIN
   none := NEW (pool, STR, 0) ;
@@ -599,7 +599,7 @@ END Write ;
 PROCEDURE WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ;
                   RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                   RO nsCols: SLICE OF STR)
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
 BEGIN
   WriteAny (pool, f, path, FALSE, NIL9 (pool), kvK, kvV, nsCols)
 END WriteX ;
@@ -616,13 +616,13 @@ BEGIN
   t := NEW (pool, I64, 1) ;
   RETURN Frame.NewTs (pool, f, t, 1, Frame.ConvStart (), '')
 EXCEPT
-| Frame.SizeError : RAISE Overflow    (* unreachable *)
+| Faults.SizeError : RAISE Overflow    (* unreachable *)
 | Frame.Disorder : RAISE Overflow
-| Frame.BadArg : RAISE Overflow
+| Faults.BadArg : RAISE Overflow
 END NIL9 ;
 
 PROCEDURE WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR)
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
 VAR
   f2 : PTR Frame.Fr IN pool ;
   none : SLICE OF STR ;
@@ -639,13 +639,13 @@ BEGIN
   none := NEW (pool, STR, 0) ;
   WriteAny (pool, f2, path, TRUE, ts, none, none, none)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('internal: ts frame sizes disagree')
-| Frame.Duplicate : RAISE Bad ('a column is already named time')
+| Faults.SizeError : RAISE Faults.BadArg ('internal: ts frame sizes disagree')
+| Frame.Duplicate : RAISE Faults.BadArg ('a column is already named time')
 END WriteTs ;
 
 PROCEDURE AddCopy (VAR pool: POOL ; VAR dst: PTR Frame.Fr ;
                    src: PTR Frame.Fr ; RO name: STR)
-  RAISES Frame.SizeError, Frame.Duplicate, IndexError, Bad =
+  RAISES Faults.SizeError, Frame.Duplicate, IndexError, Faults.BadArg =
 VAR k : I64 ;
 BEGIN
   k := KindQ (src, name) ;
@@ -673,16 +673,16 @@ BEGIN
     Frame.AddStrs (pool, dst, name, Frame.ColStrs (src, name))
   END
 EXCEPT
-| Frame.Unknown : RAISE Bad ('internal: column vanished')
-| Frame.WrongType : RAISE Bad ('internal: column type changed')
+| Frame.Unknown : RAISE Faults.BadArg ('internal: column vanished')
+| Frame.WrongType : RAISE Faults.BadArg ('internal: column type changed')
 END AddCopy ;
 
 PROCEDURE KindQ (f: PTR Frame.Fr ; RO name: STR) : I64
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   RETURN Frame.KindOf (f, name)
 EXCEPT
-| Frame.Unknown : RAISE Bad ('internal: column vanished')
+| Frame.Unknown : RAISE Faults.BadArg ('internal: column vanished')
 END KindQ ;
 
 (* ---- the reader ---- *)
@@ -693,14 +693,14 @@ TYPE
     at : I64 ;
   END ;
 
-PROCEDURE R8 (VAR r: Rd) : I64 RAISES Bad =
+PROCEDURE R8 (VAR r: Rd) : I64 RAISES Faults.BadArg =
 BEGIN
-  IF r.at >= LEN (r.b) THEN RAISE Bad ('truncated metadata') END ;
+  IF r.at >= LEN (r.b) THEN RAISE Faults.BadArg ('truncated metadata') END ;
   r.at := r.at + 1 ;
   RETURN I64 (r.b[r.at - 1])
 END R8 ;
 
-PROCEDURE RVar (VAR r: Rd) : I64 RAISES Bad, Overflow =
+PROCEDURE RVar (VAR r: Rd) : I64 RAISES Faults.BadArg, Overflow =
 VAR v, m, b : I64 ;
 BEGIN
   v := 0 ;
@@ -714,7 +714,7 @@ BEGIN
   RETURN v + b * m
 END RVar ;
 
-PROCEDURE RZig (VAR r: Rd) : I64 RAISES Bad, Overflow =
+PROCEDURE RZig (VAR r: Rd) : I64 RAISES Faults.BadArg, Overflow =
 VAR k : I64 ;
 BEGIN
   k := RVar (r) ;
@@ -722,13 +722,13 @@ BEGIN
   RETURN -(k DIV 2) - 1
 END RZig ;
 
-PROCEDURE RSkipBytes (VAR r: Rd ; k: I64) RAISES Bad =
+PROCEDURE RSkipBytes (VAR r: Rd ; k: I64) RAISES Faults.BadArg =
 BEGIN
-  IF r.at + k > LEN (r.b) THEN RAISE Bad ('truncated metadata') END ;
+  IF r.at + k > LEN (r.b) THEN RAISE Faults.BadArg ('truncated metadata') END ;
   r.at := r.at + k
 END RSkipBytes ;
 
-PROCEDURE RSkip (VAR r: Rd ; ct: I64) RAISES Bad, Overflow =
+PROCEDURE RSkip (VAR r: Rd ; ct: I64) RAISES Faults.BadArg, Overflow =
   (* skip one value of compact type ct, recursively *)
 VAR n, i, et, hdr : I64 ;
 BEGIN
@@ -754,11 +754,11 @@ BEGIN
   ELSIF ct = CtStruct THEN
     RSkipStruct (r)
   ELSE
-    RAISE Bad ('thrift type unsupported')
+    RAISE Faults.BadArg ('thrift type unsupported')
   END
 END RSkip ;
 
-PROCEDURE RSkipStruct (VAR r: Rd) RAISES Bad, Overflow =
+PROCEDURE RSkipStruct (VAR r: Rd) RAISES Faults.BadArg, Overflow =
 VAR b, ct, delta, dummy : I64 ;
 BEGIN
   b := R8 (r) ;
@@ -775,7 +775,7 @@ END RSkipStruct ;
 
 (* one struct field header; answers FALSE at stop *)
 PROCEDURE RField (VAR r: Rd ; VAR last: I64 ; VAR id, ct: I64) : BOOL
-  RAISES Bad, Overflow =
+  RAISES Faults.BadArg, Overflow =
 VAR b, delta : I64 ;
 BEGIN
   b := R8 (r) ;
@@ -792,13 +792,13 @@ BEGIN
 END RField ;
 
 PROCEDURE RStr (VAR pool: POOL ; VAR r: Rd) : STR
-  RAISES Bad, Overflow, ValueRange =
+  RAISES Faults.BadArg, Overflow, ValueRange =
 VAR
   n, i : I64 ;
   s : SLICE OF CHAR ;
 BEGIN
   n := RVar (r) ;
-  IF r.at + n > LEN (r.b) THEN RAISE Bad ('truncated string') END ;
+  IF r.at + n > LEN (r.b) THEN RAISE Faults.BadArg ('truncated string') END ;
   s := DynStr.FromUtf8 (pool, SLICE (r.b, r.at, n)) ;
   r.at := r.at + n ;
   RETURN s
@@ -826,7 +826,7 @@ TYPE
   END ;
 
 PROCEDURE ReadSchema (VAR pool: POOL ; VAR r: Rd ; VAR m: Meta)
-  RAISES Bad, Overflow, ValueRange =
+  RAISES Faults.BadArg, Overflow, ValueRange =
 VAR
   hdr, n, i, last, id, ct, children : I64 ;
   first : BOOL ;
@@ -835,7 +835,7 @@ BEGIN
   hdr := R8 (r) ;
   n := hdr DIV 16 ;
   IF n = 15 THEN n := RVar (r) END ;
-  IF hdr MOD 16 # CtStruct THEN RAISE Bad ('schema shape') END ;
+  IF hdr MOD 16 # CtStruct THEN RAISE Faults.BadArg ('schema shape') END ;
   m.cols := NEW (pool, ColInfo, n) ;
   m.ncols := 0 ;
   first := TRUE ;
@@ -867,7 +867,7 @@ BEGIN
       first := FALSE
       (* the root: children counted, nothing else kept *)
     ELSE
-      IF children > 0 THEN RAISE Bad ('nested schema') END ;
+      IF children > 0 THEN RAISE Faults.BadArg ('nested schema') END ;
       m.cols[m.ncols] := ci ;
       m.ncols := m.ncols + 1
     END
@@ -876,16 +876,16 @@ END ReadSchema ;
 
 PROCEDURE ReadMeta (VAR pool: POOL ; RO whole: SLICE OF BYTE)
   : Meta
-  RAISES Bad, Overflow, ValueRange, IndexError =
+  RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
 VAR
   r : Rd ;
   m : Meta ;
   mlen, last, id, ct, hdr, n, g, i : I64 ;
 BEGIN
-  IF LEN (whole) < 12 THEN RAISE Bad ('not a parquet file') END ;
+  IF LEN (whole) < 12 THEN RAISE Faults.BadArg ('not a parquet file') END ;
   IF NOT (I64 (whole[0]) = 80 AND I64 (whole[1]) = 65
           AND I64 (whole[2]) = 82 AND I64 (whole[3]) = 49) THEN
-    RAISE Bad ('missing PAR1 magic')
+    RAISE Faults.BadArg ('missing PAR1 magic')
   END ;
   mlen := I64 (whole[LEN (whole) - 8])
           + 256 * I64 (whole[LEN (whole) - 7])
@@ -907,7 +907,7 @@ BEGIN
       hdr := R8 (r) ;
       n := hdr DIV 16 ;
       IF n = 15 THEN n := RVar (r) END ;
-      IF n # 1 THEN RAISE Bad ('more than one row group') END ;
+      IF n # 1 THEN RAISE Faults.BadArg ('more than one row group') END ;
       FOR g := 1 TO n DO
         ReadRowGroup (pool, r, m)
       END
@@ -926,7 +926,7 @@ BEGIN
 END ReadMeta ;
 
 PROCEDURE ReadKV (VAR pool: POOL ; VAR r: Rd ; VAR m: Meta)
-  RAISES Bad, Overflow, ValueRange, IndexError =
+  RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
 VAR last, id, ct : I64 ;
 BEGIN
   last := 0 ;
@@ -945,7 +945,7 @@ BEGIN
 END ReadKV ;
 
 PROCEDURE ReadRowGroup (VAR pool: POOL ; VAR r: Rd ; VAR m: Meta)
-  RAISES Bad, Overflow, ValueRange, IndexError =
+  RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
 VAR
   last, id, ct, hdr, n, c : I64 ;
 BEGIN
@@ -955,7 +955,7 @@ BEGIN
       hdr := R8 (r) ;
       n := hdr DIV 16 ;
       IF n = 15 THEN n := RVar (r) END ;
-      IF n # m.ncols THEN RAISE Bad ('column count mismatch') END ;
+      IF n # m.ncols THEN RAISE Faults.BadArg ('column count mismatch') END ;
       FOR c := 0 TO n - 1 DO
         ReadChunk (pool, r, m, c)
       END
@@ -967,7 +967,7 @@ END ReadRowGroup ;
 
 PROCEDURE ReadChunk (VAR pool: POOL ; VAR r: Rd ; VAR m: Meta ;
                      c: I64)
-  RAISES Bad, Overflow, ValueRange, IndexError =
+  RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
 VAR
   last, id, ct, last2, id2, ct2 : I64 ;
 BEGIN
@@ -1010,7 +1010,7 @@ END CodecName ;
    answers, per row, whether the value is PRESENT *)
 PROCEDURE ReadDefs (VAR pool: POOL ; VAR r: Rd ; n: I64)
   : SLICE OF BOOL
-  RAISES Bad, Overflow, ValueRange =
+  RAISES Faults.BadArg, Overflow, ValueRange =
 VAR
   present : SLICE OF BOOL ;
   seclen, hdr, cnt, v, i, k, b, got : I64 ;
@@ -1056,17 +1056,17 @@ BEGIN
   RETURN present
 END ReadDefs ;
 
-PROCEDURE R8bp (VAR r: Rd) : I64 RAISES Bad =
+PROCEDURE R8bp (VAR r: Rd) : I64 RAISES Faults.BadArg =
 BEGIN
-  IF r.at >= LEN (r.b) THEN RAISE Bad ('truncated page') END ;
+  IF r.at >= LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
   r.at := r.at + 1 ;
   RETURN I64 (r.b[r.at - 1])
 END R8bp ;
 
-PROCEDURE RdLE (VAR r: Rd ; k: I64) : I64 RAISES Bad =
+PROCEDURE RdLE (VAR r: Rd ; k: I64) : I64 RAISES Faults.BadArg =
 VAR i, v, m : I64 ;
 BEGIN
-  IF r.at + k > LEN (r.b) THEN RAISE Bad ('truncated page') END ;
+  IF r.at + k > LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
   v := 0 ;
   m := 1 ;
   FOR i := 0 TO k - 1 DO
@@ -1080,7 +1080,7 @@ END RdLE ;
 PROCEDURE ReadColumn (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                       RO whole: SLICE OF BYTE ; RO ci: ColInfo ;
                       rows: I64)
-  RAISES Bad, Overflow, ValueRange, IndexError =
+  RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
 VAR
   r : Rd ;
   last, id, ct, ptype, uncomp, nvals, enc, i, got, lo, hi : I64 ;
@@ -1096,9 +1096,9 @@ VAR
   x, n, bacc, bleft : I64 ;
   s : SLICE OF CHAR ;
 BEGIN
-  IF ci.codec # 0 THEN RAISE Bad (CodecName (ci.codec)) END ;
+  IF ci.codec # 0 THEN RAISE Faults.BadArg (CodecName (ci.codec)) END ;
   IF ci.hasDict THEN
-    RAISE Bad ('encoding 8 (RLE_DICTIONARY)')
+    RAISE Faults.BadArg ('encoding 8 (RLE_DICTIONARY)')
   END ;
   r.b := whole ;
   r.at := ci.off ;
@@ -1116,20 +1116,20 @@ BEGIN
     ELSIF id = 5 AND ct = CtStruct THEN
       ReadDph (r, nvals, enc)
     ELSIF id = 7 AND ct = CtStruct THEN
-      RAISE Bad ('data page v2')
+      RAISE Faults.BadArg ('data page v2')
     ELSE
       RSkip (r, ct)
     END
   END ;
-  IF ptype = 2 THEN RAISE Bad ('encoding: a dictionary page') END ;
-  IF ptype # 0 THEN RAISE Bad ('page type unsupported') END ;
+  IF ptype = 2 THEN RAISE Faults.BadArg ('encoding: a dictionary page') END ;
+  IF ptype # 0 THEN RAISE Faults.BadArg ('page type unsupported') END ;
   IF enc # EncPlain THEN
     IF enc = 2 OR enc = 8 THEN
-      RAISE Bad ('encoding 8 (RLE_DICTIONARY)')
+      RAISE Faults.BadArg ('encoding 8 (RLE_DICTIONARY)')
     END ;
-    RAISE Bad ('a non-PLAIN encoding')
+    RAISE Faults.BadArg ('a non-PLAIN encoding')
   END ;
-  IF nvals # rows THEN RAISE Bad ('a second data page') END ;
+  IF nvals # rows THEN RAISE Faults.BadArg ('a second data page') END ;
 
   IF ci.optional THEN
     present := ReadDefs (pool, r, rows)
@@ -1144,7 +1144,7 @@ BEGIN
     v64 := NEW (pool, F64, rows) ;
     FOR i := 0 TO rows - 1 DO
       IF present[i] THEN
-        IF r.at + 8 > LEN (r.b) THEN RAISE Bad ('truncated page') END ;
+        IF r.at + 8 > LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
         v64[i] := F64.FromBytesLE (SLICE (r.b, r.at, 8)) ;
         r.at := r.at + 8
       ELSE
@@ -1156,7 +1156,7 @@ BEGIN
     v32 := NEW (pool, F32, rows) ;
     FOR i := 0 TO rows - 1 DO
       IF present[i] THEN
-        IF r.at + 4 > LEN (r.b) THEN RAISE Bad ('truncated page') END ;
+        IF r.at + 4 > LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
         v32[i] := F32.FromBytesLE (SLICE (r.b, r.at, 4)) ;
         r.at := r.at + 4
       ELSE
@@ -1223,7 +1223,7 @@ BEGIN
     FOR i := 0 TO rows - 1 DO
       IF NOT present[i] THEN
         (* a boolean has no missing value to substitute *)
-        RAISE Bad (ci.name)
+        RAISE Faults.BadArg (ci.name)
       END ;
       IF bleft = 0 THEN
         bacc := R8bp (r) ;
@@ -1239,7 +1239,7 @@ BEGIN
     FOR i := 0 TO rows - 1 DO
       IF present[i] THEN
         n := RdLE (r, 4) ;
-        IF r.at + n > LEN (r.b) THEN RAISE Bad ('truncated page') END ;
+        IF r.at + n > LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
         vs[i] := DynStr.FromUtf8 (pool, SLICE (r.b, r.at, n)) ;
         r.at := r.at + n ;
       ELSE
@@ -1248,12 +1248,12 @@ BEGIN
     END ;
     AddStrsQ (pool, f, ci.name, vs)
   ELSE
-    RAISE Bad ('physical type unsupported')
+    RAISE Faults.BadArg ('physical type unsupported')
   END
 END ReadColumn ;
 
 PROCEDURE ReadDph (VAR r: Rd ; VAR nvals, enc: I64)
-  RAISES Bad, Overflow =
+  RAISES Faults.BadArg, Overflow =
 VAR last, id, ct : I64 ;
 BEGIN
   last := 0 ;
@@ -1272,94 +1272,94 @@ END ReadDph ;
    Parquet's exceptions, not Frame's internals *)
 PROCEDURE AddF64Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                    RO name: STR ; v: SLICE OF F64)
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   Frame.AddF64 (pool, f, name, v, 0.0 / 0.0)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('column length mismatch')
-| Frame.Duplicate : RAISE Bad (name)
+| Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
+| Frame.Duplicate : RAISE Faults.BadArg (name)
 END AddF64Q ;
 
 PROCEDURE AddF32Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                    RO name: STR ; v: SLICE OF F32)
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   Frame.AddF32 (pool, f, name, v, F32 (0.0 / 0.0))
 EXCEPT
-| Frame.SizeError : RAISE Bad ('column length mismatch')
-| Frame.Duplicate : RAISE Bad (name)
+| Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
+| Frame.Duplicate : RAISE Faults.BadArg (name)
 END AddF32Q ;
 
 PROCEDURE AddI64Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                    RO name: STR ; v: SLICE OF I64)
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   Frame.AddI64 (pool, f, name, v, -9223372036854775807 - 1)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('column length mismatch')
-| Frame.Duplicate : RAISE Bad (name)
+| Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
+| Frame.Duplicate : RAISE Faults.BadArg (name)
 END AddI64Q ;
 
 PROCEDURE AddI32Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                    RO name: STR ; v: SLICE OF I32)
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   Frame.AddI32 (pool, f, name, v, -2147483647 - 1)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('column length mismatch')
-| Frame.Duplicate : RAISE Bad (name)
+| Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
+| Frame.Duplicate : RAISE Faults.BadArg (name)
 END AddI32Q ;
 
 PROCEDURE AddI16Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                    RO name: STR ; v: SLICE OF I16)
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   Frame.AddI16 (pool, f, name, v, -32768)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('column length mismatch')
-| Frame.Duplicate : RAISE Bad (name)
+| Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
+| Frame.Duplicate : RAISE Faults.BadArg (name)
 END AddI16Q ;
 
 PROCEDURE AddBytesQ (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                      RO name: STR ; v: SLICE OF BYTE)
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   Frame.AddBytes (pool, f, name, v, 255)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('column length mismatch')
-| Frame.Duplicate : RAISE Bad (name)
+| Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
+| Frame.Duplicate : RAISE Faults.BadArg (name)
 END AddBytesQ ;
 
 PROCEDURE AddBoolsQ (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                      RO name: STR ; v: SLICE OF BOOL)
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   Frame.AddBools (pool, f, name, v)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('column length mismatch')
-| Frame.Duplicate : RAISE Bad (name)
+| Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
+| Frame.Duplicate : RAISE Faults.BadArg (name)
 END AddBoolsQ ;
 
 PROCEDURE AddStrsQ (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                     RO name: STR ; KEPT v: SLICE OF STR)
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   Frame.AddStrs (pool, f, name, v)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('column length mismatch')
-| Frame.Duplicate : RAISE Bad (name)
+| Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
+| Frame.Duplicate : RAISE Faults.BadArg (name)
 END AddStrsQ ;
 
 PROCEDURE BytesX (VAR pool: POOL ; f: PTR Frame.Fr ;
                   RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ;
                   RO nsCols: SLICE OF STR) : SLICE OF BYTE
-  RAISES Bad, ValueRange, Overflow, IndexError =
+  RAISES Faults.BadArg, ValueRange, Overflow, IndexError =
 BEGIN
   RETURN AnyBytes (pool, f, FALSE, NIL9 (pool), kvK, kvV, nsCols)
 END BytesX ;
 
 PROCEDURE Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
 VAR
   whole : SLICE OF BYTE ;
   m : Meta ;
@@ -1376,15 +1376,15 @@ BEGIN
 END Read ;
 
 PROCEDURE NewQ (VAR pool: POOL ; rows: I64) : PTR Frame.Fr
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   RETURN Frame.New (pool, rows)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('negative row count')
+| Faults.SizeError : RAISE Faults.BadArg ('negative row count')
 END NewQ ;
 
 PROCEDURE TsRead (VAR pool: POOL ; RO path: STR) : PTR Frame.Ts
-  RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError =
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError =
 VAR
   whole : SLICE OF BYTE ;
   m : Meta ;
@@ -1409,7 +1409,7 @@ BEGIN
       ReadColumn (pool, f, whole, m.cols[c], m.rows)
     END
   END ;
-  IF LEN (tsec) = 0 THEN RAISE Bad ('no time column') END ;
+  IF LEN (tsec) = 0 THEN RAISE Faults.BadArg ('no time column') END ;
   conv := Frame.ConvStart () ;
   res := 0 ;
   descr := '' ;
@@ -1440,22 +1440,22 @@ END TsRead ;
 PROCEDURE NewTsQ (VAR pool: POOL ; KEPT f: PTR Frame.Fr ;
                   KEPT t: SLICE OF I64 ; res: I64 ; conv: Frame.Conv ;
                   RO descr: STR) : PTR Frame.Ts
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   RETURN Frame.NewTs (pool, f, t, res, conv, descr)
 EXCEPT
-| Frame.SizeError : RAISE Bad ('time length mismatch')
-| Frame.Disorder : RAISE Bad ('time axis disorder')
-| Frame.BadArg : RAISE Bad ('bad resolution')
+| Faults.SizeError : RAISE Faults.BadArg ('time length mismatch')
+| Frame.Disorder : RAISE Faults.BadArg ('time axis disorder')
+| Faults.BadArg : RAISE Faults.BadArg ('bad resolution')
 END NewTsQ ;
 
 PROCEDURE ColI64Q (f: PTR Frame.Fr ; RO name: STR) : SLICE OF I64
-  RAISES Bad =
+  RAISES Faults.BadArg =
 BEGIN
   RETURN Frame.ColI64 (f, name)
 EXCEPT
-| Frame.Unknown : RAISE Bad (name)
-| Frame.WrongType : RAISE Bad ('time is not int64')
+| Frame.Unknown : RAISE Faults.BadArg (name)
+| Frame.WrongType : RAISE Faults.BadArg ('time is not int64')
 END ColI64Q ;
 
 PROCEDURE EqS (RO a, b: STR) : BOOL =
@@ -1468,13 +1468,13 @@ BEGIN
   RETURN TRUE
 END EqS ;
 
-PROCEDURE TextI64 (RO s: STR) : I64 RAISES Bad, Overflow =
+PROCEDURE TextI64 (RO s: STR) : I64 RAISES Faults.BadArg, Overflow =
 VAR i, v : I64 ;
 BEGIN
   v := 0 ;
-  IF LEN (s) = 0 THEN RAISE Bad ('empty number') END ;
+  IF LEN (s) = 0 THEN RAISE Faults.BadArg ('empty number') END ;
   FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] < '0' OR s[i] > '9' THEN RAISE Bad (s) END ;
+    IF s[i] < '0' OR s[i] > '9' THEN RAISE Faults.BadArg (s) END ;
     v := v * 10 + (ORD (s[i]) - 48)
   END ;
   RETURN v

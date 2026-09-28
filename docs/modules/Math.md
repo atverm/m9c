@@ -64,6 +64,37 @@ place in a program to notice one.
 raises on NaN; this is for code where NaN is a missing value,
 not an error (the flux processing the ONEFlux port does).
 
+### AbsI64 (v: I64) : I64
+
+|v|; the one value with no absolute, MIN (I64), raises Overflow
+as the negation it is
+
+### MinI64 (a: I64 ; b: I64) : I64
+
+_(documented with the group below)_
+
+### MaxI64 (a: I64 ; b: I64) : I64
+
+_(documented with the group below)_
+
+### ClampI64 (v: I64 ; lo: I64 ; hi: I64) : I64
+
+v held to lo .. hi; lo > hi answers lo, as the composition
+Max (lo, Min (v, hi)) does
+
+### Min (a: F64 ; b: F64) : F64 RAISES ValueRange
+
+_(documented with the group below)_
+
+### Max (a: F64 ; b: F64) : F64 RAISES ValueRange
+
+a NaN operand raises, as every checked Math procedure does: the
+comparison that decides would be silently false
+
+### Clamp (v: F64 ; lo: F64 ; hi: F64) : F64 RAISES ValueRange
+
+_(documented with the group below)_
+
 ### Sqrt (x: F64) : F64 RAISES ValueRange
 
 domain: x >= 0

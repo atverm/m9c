@@ -106,6 +106,12 @@ wait, and do nothing else -- no timer, no signal, no
 cancellation.  It exists for BACKOFF: a retry loop that cannot
 pause is a retry loop that hammers whatever refused it.
 
+### CivilFromDays (z: I64 ; VAR y, m, d: I64)
+
+the inverse of DaysFromCivil: the proleptic Gregorian date of
+day z since 1970-01-01.  Private until 2026-09-27; the ONEFlux
+port had written its own (M9-REPORT.md item 12).
+
 ### DaysFromCivil (y, m, d: I64) : I64
 
 days since 1970-01-01 for a proleptic Gregorian date, Howard

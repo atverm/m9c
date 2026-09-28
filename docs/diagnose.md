@@ -53,6 +53,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `undeclared retention: borrowed msg reaches module state -- declare KEPT msg (par 4.1)` | a borrowed parameter is stored somewhere that outlives the call -- module state, the caller's storage, or the answer -- and the signature does not say so | declare the parameter KEPT so every caller can see the retention, or copy the bytes instead of keeping the borrow (par 4.1, docs/retention.md) | `kept-undeclared` |
 | `undeclared retention: borrowed msg (carried by t) reaches module state -- declare KEPT msg (par 4.1)` | a borrowed parameter was copied into a local (or bound by IS SOME or a CASE pattern) and the copy was stored somewhere that outlives the call -- the local carried the borrow | the retention is real even though indirect: declare the parameter KEPT, or copy the bytes instead of the reference (par 4.1, docs/retention.md) | `kept-via-local` |
 | `cannot lend the value parameter p as VAR` | a value PTR parameter is a shared borrow; passing it on as VAR would launder it into a mutable one | take the parameter as VAR yourself if you need to pass it as VAR (par 4.1) | `lend-value-ptr-as-var` |
+| `integer literal 40000 does not fit I16` | an integer literal adapts to the width it is stored into, and this one is outside that width's range -- until 2026-09-27 it compiled and the C conversion wrapped it (I16 := 40000 stored -25536) | use a wider type, or the value you meant; a computed value that may not fit converts explicitly with I16 (x) RAISES ValueRange (par 2.1) | `literal-does-not-fit` |
 | `a local CONST may not shadow a module CONST: Tag` | a procedure declares a CONST with the same name as one the module already declares | rename one of them.  Which would win depends on lookup order, and the map answers the first hit, so the shadow is refused rather than resolved (docs/frame-pools.md) | `local-const-shadow` |
 | `module-level state requires STATEFUL on the definition` | a module-level VAR is state, and a module with state must say so | add [STATEFUL] to the DEFINITION MODULE, or move the state into a record the caller owns (par 6) | `module-state-without-stateful` |
 | `monitor field n is reached from outside a procedure bound to the monitor (par 6)` | a monitor serialises access by letting only its BOUND procedures reach its fields, and the binding is the FIRST parameter (par 6) | add a short bound procedure -- PROCEDURE Count (VAR g: Gate) : I64 -- and call that instead | `monitor-outside` |
@@ -63,6 +64,11 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `opaque type not defined in the implementation` | the DEFINITION declares an opaque TYPE the IMPLEMENTATION never completes | TYPE T = RECORD ... END in the implementation | `opaque-not-defined` |
 | `OPT value used without IS SOME guard` | an OPT field was read without IS SOME; OPT is traced through fields, not only names | IF r.f IS SOME p THEN ... END, and use p inside (par 2.2) | `opt-through-field` |
 | `pool-interior pointer escapes its pool` | PTR T IN pool cannot outlive its pool, and this pool dies with the frame | take the pool as a VAR parameter so the caller owns it, or return by value (docs/pools.md) | `pool-escape-on-return` |
+| `a field of procedure type must be OPT (par 2.2.3)` | a record field of procedure type starts zeroed like every field, and a zero procedure value cannot be called | declare the field OPT and read it through IS SOME (par 2.2.3) | `proc-field-must-be-opt` |
+| `PURE procedure calls through the procedure value k (par 3.2)` | a PURE body may call only PURE procedures, and a procedure value names no procedure the checker could look at | take the value out of the PURE procedure, or make the computation a named PURE procedure (par 3.2) | `proc-value-call-in-pure` |
+| `unhandled RAISES ValueRange from call to k` | a call through a procedure value raises what the TYPE declares, since nothing is known about which procedure runs | handle it, or add the exception to the caller's own RAISES (par 2.2.3, par 5) | `proc-value-call-raises` |
+| `cannot assign OPT PROCEDURE (I64 ; I64) : I64 to OPT PROCEDURE (I64 ; I64) : BOOL (no implicit conversions, par 2.1)` | a procedure fits a procedure type only when its head renders the same text: modes, types, result and RAISES, to the letter | assign a procedure with exactly the declared signature, or change the type (par 2.2.3) | `proc-value-signature-differs` |
+| `a variable of procedure type must be OPT (par 2.2.3)` | a procedure value has no zero: a zeroed variable of procedure type would be a call into nothing | declare it OPT Less and take the value through IS SOME; a PARAMETER of procedure type needs no OPT (par 2.2.3) | `proc-var-must-be-opt` |
 | `cannot allocate from the pool pool in a PURE procedure (par 3.2)` | NEW from a pool the CALLER owns consumes the caller's storage and answers a slice into the caller's arena -- an effect (par 3.2) | use a local VAR scratch: POOL, or drop [PURE] | `pure-allocates` |
 | `PURE procedure calls Note, which is not PURE (par 3.2)` | a PURE procedure may call only PURE procedures -- which is what makes 'no I/O' true without the checker knowing what I/O is, since a foreign procedure is [SERIAL] or [REENTRANT] and never [PURE] | declare the callee [PURE] too if it really is, or drop [PURE] from the caller | `pure-calls-impure` |
 | `cannot write through the VAR parameter acc in a PURE procedure (par 3.2)` | a PURE procedure has no observable effect (par 3.2), and writing through a caller's VAR binding is precisely what the caller observes | answer a value instead of writing through a parameter, or drop [PURE] | `pure-writes-var` |
@@ -71,6 +77,8 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot RETURN SLICE OF CHAR from a function of type I64` | the RETURN's type is not the function's declared result type | convert explicitly, or change the declaration | `return-mismatch` |
 | `RETURN with a value in a proper procedure` | a proper procedure (no ': T') cannot RETURN a value | declare a result type, or RETURN without a value | `return-value-in-proper-proc` |
 | `signature differs from definition` | the IMPLEMENTATION's procedure heading is not the DEFINITION's, printed canonically (modes, types, RAISES all count) | copy the definition's heading exactly; the IMPLEMENTATION adds only '=' | `signature-differs-from-definition` |
+| `THREAD (Work): cannot pass I64 where PTR m.Rec is expected` | THREAD hands its argument to the target's first parameter, and this one is not of that type -- until 2026-09-27 neither checker looked at the argument (only the generator refused a non-pointer shape) | pass what the target declares: a PTR T or SHARED PTR T for a `VAR r: T` or `p: PTR T` parameter, or a monitor by name (par 6) | `thread-argument-type` |
+| `use of p after it was moved into a THREAD running Work` | a bare owned pointer handed to a THREAD is MOVED: the thread owns it now, and reading or writing it in the caller is a race the language refuses by construction | hand the thread a record it may share -- a MONITOR, or a pool value both sides may read -- or do not touch the owned value again after the THREAD (par 6, par 4.2) | `thread-moves-its-argument` |
 | `is not total (missing R)` | CASE over a CASE RECORD must name every variant of the selector's own type | add the missing arm; there is no ELSE for variants (par 8) | `totality-uses-selector-type` |
 | `unknown name: alex` | a bare name used as a value is declared nowhere -- not a local, parameter, IS SOME binder, CONST, type, or module | declare it, import the module it comes from, or fix the typo; the checker now names it rather than leaving it to the generator (par: the checker refuses what the generator cannot see) | `undefined-name` |
 | `unknown procedure: Nonexistent` | no procedure of that name is visible -- MOST OFTEN a real name whose module is not IMPORTed in THIS module (an IMPLEMENTATION has its own IMPORT list), otherwise a guessed name | add IMPORT M to the implementation; then confirm the name in docs/modules/M.md or with m9c --doc | `unknown-callee` |
@@ -646,6 +654,17 @@ PROCEDURE F (p: PTR R) = BEGIN G (p) END F ;
 END m.
 ```
 
+### literal-does-not-fit
+
+`integer literal 40000 does not fit I16`
+
+```
+MODULE m ;
+VAR s : I16 ;
+PROCEDURE F () = BEGIN s := 40000 END F ;
+END m.
+```
+
 ### local-const-shadow
 
 `a local CONST may not shadow a module CONST: Tag`
@@ -810,6 +829,67 @@ BEGIN r := NEW (pool, R) ; RETURN r END F ;
 END m.
 ```
 
+### proc-field-must-be-opt
+
+`a field of procedure type must be OPT (par 2.2.3)`
+
+```
+MODULE m ;
+TYPE Less = PROCEDURE (a: I64 ; b: I64) : BOOL ;
+TYPE R = RECORD f : Less ; n : I64 END ;
+VAR r : R ;
+PROCEDURE F () = BEGIN r.n := 0 END F ;
+END m.
+```
+
+### proc-value-call-in-pure
+
+`PURE procedure calls through the procedure value k (par 3.2)`
+
+```
+MODULE m ;
+TYPE Kernel = PROCEDURE (x: F64) : F64 ;
+PROCEDURE Apply (k: Kernel ; x: F64) : F64 [PURE] = BEGIN RETURN k (x) END Apply ;
+END m.
+```
+
+### proc-value-call-raises
+
+`unhandled RAISES ValueRange from call to k`
+
+```
+MODULE m ;
+TYPE Kernel = PROCEDURE (x: F64) : F64 RAISES ValueRange ;
+VAR y : F64 ;
+PROCEDURE Apply (k: Kernel ; x: F64) = BEGIN y := k (x) END Apply ;
+END m.
+```
+
+### proc-value-signature-differs
+
+`cannot assign OPT PROCEDURE (I64 ; I64) : I64 to OPT PROCEDURE (I64 ; I64) : BOOL (no implicit conversions, par 2.1)`
+
+```
+MODULE m ;
+TYPE Less = PROCEDURE (a: I64 ; b: I64) : BOOL ;
+VAR f : OPT Less ;
+PROCEDURE Sum (a: I64 ; b: I64) : I64 = BEGIN RETURN a + b END Sum ;
+PROCEDURE F () = BEGIN f := SOME (Sum) END F ;
+END m.
+```
+
+### proc-var-must-be-opt
+
+`a variable of procedure type must be OPT (par 2.2.3)`
+
+```
+MODULE m ;
+TYPE Less = PROCEDURE (a: I64 ; b: I64) : BOOL ;
+VAR f : Less ;
+PROCEDURE F () = BEGIN END F ;
+END m.
+```
+
 ### pure-allocates
 
 `cannot allocate from the pool pool in a PURE procedure (par 3.2)`
@@ -955,6 +1035,33 @@ PROCEDURE F (a: I64) : I64 ;
 END m.
 IMPLEMENTATION MODULE m ;
 PROCEDURE F (a: F64) : I64 = BEGIN RETURN 0 END F ;
+END m.
+```
+
+### thread-argument-type
+
+`THREAD (Work): cannot pass I64 where PTR m.Rec is expected`
+
+```
+MODULE m ;
+TYPE Rec = RECORD n : I64 ; END ;
+VAR x : I64 ;
+PROCEDURE Work (r: PTR Rec) = BEGIN x := r.n END Work ;
+PROCEDURE F () = BEGIN THREAD (Work, x) END F ;
+END m.
+```
+
+### thread-moves-its-argument
+
+`use of p after it was moved into a THREAD running Work`
+
+```
+MODULE m ;
+TYPE Rec = RECORD n : I64 END ;
+VAR y : I64 ;
+PROCEDURE Work (OWN r: PTR Rec) = BEGIN y := r.n ; DISPOSE (r) END Work ;
+PROCEDURE F () = VAR p : PTR Rec ;
+BEGIN p := NEW (Rec) ; THREAD (Work, p) ; p.n := 8 END F ;
 END m.
 ```
 

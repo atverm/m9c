@@ -6,6 +6,8 @@
 #include "DynStr.h"
 #include "Text.h"
 
+void System_m9init (m9_state *err);
+
 typedef struct System_Memory System_Memory;
 typedef struct System_PoolInfo System_PoolInfo;
 typedef struct System_Result System_Result;

@@ -330,6 +330,24 @@ BEGIN
           END
         END ;
         DynStr.AppendChar (pool, d, ')')
+    | Ast.NProcType :
+        (* inline, RAISES on the same line: a type is one line where a
+           declaration's heading breaks before its RAISES *)
+        DynStr.Append (pool, d, 'PROCEDURE (') ;
+        EParams (pool, d, n.kids[0]) ;
+        DynStr.AppendChar (pool, d, ')') ;
+        IF n.kids[1] IS SOME rt THEN
+          DynStr.Append (pool, d, ' : ') ;
+          IF n.f3 THEN DynStr.Append (pool, d, 'RO ') END ;
+          EType (pool, d, n.kids[1], ind)
+        END ;
+        IF n.kids[2] IS SOME rs THEN
+          DynStr.Append (pool, d, ' RAISES ') ;
+          FOR i := 0 TO rs.nkids - 1 DO
+            IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
+            IF rs.kids[i] IS SOME q THEN Qual (pool, d, q) END
+          END
+        END
     ELSE
       DynStr.Append (pool, d, '?type?')
     END

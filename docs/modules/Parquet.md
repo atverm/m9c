@@ -21,23 +21,18 @@ Strings are ASCII in this subset, both directions, refused
 otherwise with the column named: CHAR beyond 127 would need real
 UTF-8 transcoding and nothing here needs it yet.
 
-### EXCEPTION Bad
-
-the refusal, always naming what was met: 'codec 1 (snappy)',
-'encoding 8 (RLE_DICTIONARY)', 'nested schema', ...
-
-### Write (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR) RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError
+### Write (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR) RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
 
 _(undocumented)_
 
-### WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR) RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError
+### WriteTs (VAR pool: POOL ; ts: PTR Frame.Ts ; RO path: STR) RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
 
 the time axis becomes an INT64 column 'time' (epoch seconds),
 and the resolution, convention and description ride in the
 file-level key_value_metadata, so TsRead answers the same
 frame back
 
-### WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ; RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ; RO nsCols: SLICE OF STR) RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError
+### WriteX (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR ; RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ; RO nsCols: SLICE OF STR) RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
 
 Write plus two things a data service needs: file-level
 key_value_metadata pairs (the zarr proxy rides its JSON-LD
@@ -46,7 +41,7 @@ does), and INT64 columns named in nsCols annotated as
 TIMESTAMP(NANOS, adjusted-to-UTC) -- pyarrow then reads a real
 timestamp[ns] column, not a bare integer.
 
-### BytesX (VAR pool: POOL ; f: PTR Frame.Fr ; RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ; RO nsCols: SLICE OF STR) : SLICE OF BYTE RAISES Bad, ValueRange, Overflow, IndexError
+### BytesX (VAR pool: POOL ; f: PTR Frame.Fr ; RO kvK: SLICE OF STR ; RO kvV: SLICE OF STR ; RO nsCols: SLICE OF STR) : SLICE OF BYTE RAISES Faults.BadArg, ValueRange, Overflow, IndexError
 
 WriteX's document, IN MEMORY, for a caller that is answering a
 request rather than filling a directory.  The whole file was
@@ -55,10 +50,10 @@ this hands that buffer over instead, so a server does not need a
 per-request temp file it must then read back and remove.  No
 Io.IOError, because nothing is opened.
 
-### Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError
+### Read (VAR pool: POOL ; RO path: STR) : PTR Frame.Fr RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
 
 _(undocumented)_
 
-### TsRead (VAR pool: POOL ; RO path: STR) : PTR Frame.Ts RAISES Io.IOError, Bad, ValueRange, Overflow, IndexError
+### TsRead (VAR pool: POOL ; RO path: STR) : PTR Frame.Ts RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
 
 _(undocumented)_

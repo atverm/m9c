@@ -73,10 +73,6 @@ where each message begins
 
 _(documented with the group below)_
 
-### EXCEPTION SizeError
-
-_(documented with the group below)_
-
 ### Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool RAISES Error, ValueRange
 
 _(documented with the group below)_
@@ -152,14 +148,14 @@ _(documented with the group below)_
 the number of elements a key holds -- for `values`, the number
 of grid points
 
-### Values (m: PTR Message ; out: SLICE OF F64) RAISES Error, SizeError, ValueRange
+### Values (m: PTR Message ; out: SLICE OF F64) RAISES Error, Faults.SizeError, ValueRange
 
 the decoded field.  LEN (out) must be Size (m, 'values'), and is
 checked here rather than trusted: the C call takes a length by
 pointer and will happily write what the caller claimed there
 was room for.
 
-### Floats (m: PTR Message ; RO key: STR ; out: SLICE OF F32) RAISES Error, SizeError, ValueRange
+### Floats (m: PTR Message ; RO key: STR ; out: SLICE OF F32) RAISES Error, Faults.SizeError, ValueRange
 
 the same, into single precision, because that is what some
 readers do and it is not the same answer.  the model's buffer is
@@ -172,14 +168,14 @@ values differ from the double read, by at most one float32 ULP.
 A port that reads doubles here cannot be held to the original
 bit for bit, so the port reads floats and says why.
 
-### Doubles (m: PTR Message ; RO key: STR ; out: SLICE OF F64) RAISES Error, SizeError, ValueRange
+### Doubles (m: PTR Message ; RO key: STR ; out: SLICE OF F64) RAISES Error, Faults.SizeError, ValueRange
 
 any double array, by key, with the same length check.  `values`
 is the common one and has its own name above; this is for the
 others -- `pv`, the vertical coordinate coefficients, which
 the model's grid check reads to build akm and bkm.
 
-### ReadGrid2 (VAR pool: POOL ; m: PTR Message) : GRID 2 OF F64 RAISES Error, SizeError, ValueRange
+### ReadGrid2 (VAR pool: POOL ; m: PTR Message) : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange
 
 the field as Nj by Ni, the shape the message declares.  Latitude
 first, because that is the order the values are stored in and

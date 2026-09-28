@@ -9,12 +9,16 @@ DEFINITION MODULE Text ;
    ledger's "inventory before manufacturing" firing for the second
    time, so this module is the inventory.
 
-   Everything that can return a VIEW returns a view.  Trim, Slice and
-   the pieces from Split are sub-slices of the caller's own storage:
-   no copy, no allocation, no pool argument, and the RO annotation
-   says the result must not be written through.  Only the procedures
-   that must build something new -- Join, Lower, Upper -- take a pool,
-   and their names say they are making rather than looking.
+   Everything that can return a VIEW returns a view.  Trim and the
+   pieces from Split are sub-slices of the caller's own storage: no
+   copy, no allocation, no pool argument.  Only the procedures that
+   must build something new -- Join, Lower, Upper, and since
+   2026-09-27 Cat, Keep and Fields -- take a pool, and their names say
+   they are making rather than looking.  (This paragraph named a
+   `Slice` procedure and an RO result annotation until 2026-09-27;
+   neither exists: `SLICE (s, start, len)` is the language's, and a
+   view is written through or not by the mode of the parameter it
+   came from.)
 
    Case folding is ASCII ONLY and says so in its name's absence: there
    is no Unicode case table here, because a wrong one is worse than
@@ -70,6 +74,23 @@ PROCEDURE Split (VAR pool: POOL ; RO s: STR ; sep: CHAR)
      different function, and callers that want it can say so; a split
      that silently loses fields is how CSV readers corrupt data.
      The PIECES are views into s -- only the vector is allocated.   *)
+
+PROCEDURE Fields (VAR pool: POOL ; RO s: STR ; sep: CHAR)
+  : SLICE OF STR ;
+  (* Split without the empty pieces: `a,,b,` gives [a, b], which is
+     C's strtok and awk's default, where Split gives [a, '', b, ''].
+     The ONEFlux port carried this beside Split (Common.Tokens) *)
+
+PROCEDURE Keep (VAR pool: POOL ; RO s: STR) : STR ;
+  (* a COPY of s in pool.  The one thing to do with a string that
+     dies with its frame -- a `+` result, a view of a scratch buffer
+     -- before storing it in a record that outlives the frame.  The
+     ONEFlux port carried these six lines in six modules and the bugs
+     were the forgotten ones (par 2.3). *)
+
+PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR ;
+  (* a + b, in pool rather than in the frame: for the result that is
+     stored, where `+` is for the result that is used *)
 
 PROCEDURE Join (VAR pool: POOL ; parts: SLICE OF STR ; RO sep: STR)
   : STR ;
@@ -221,6 +242,52 @@ BEGIN
   parts[n] := SLICE (s, start, LEN (s) - start) ;
   RETURN parts
 END Split ;
+
+PROCEDURE Fields (VAR pool: POOL ; RO s: STR ; sep: CHAR)
+  : SLICE OF STR =
+VAR
+  parts : SLICE OF STR ;
+  i, start, n : I64 ;
+BEGIN
+  parts := NEW (pool, STR, CountChar (s, sep) + 1) ;
+  n := 0 ;
+  start := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = sep THEN
+      IF i > start THEN
+        parts[n] := SLICE (s, start, i - start) ;
+        n := n + 1
+      END ;
+      start := i + 1
+    END
+  END ;
+  IF LEN (s) > start THEN
+    parts[n] := SLICE (s, start, LEN (s) - start) ;
+    n := n + 1
+  END ;
+  RETURN SLICE (parts, 0, n)
+END Fields ;
+
+PROCEDURE Keep (VAR pool: POOL ; RO s: STR) : STR =
+VAR
+  r : STR ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, CHAR, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO r[i] := s[i] END ;
+  RETURN r
+END Keep ;
+
+PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR =
+VAR
+  r : STR ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, CHAR, LEN (a) + LEN (b)) ;
+  FOR i := 0 TO LEN (a) - 1 DO r[i] := a[i] END ;
+  FOR i := 0 TO LEN (b) - 1 DO r[LEN (a) + i] := b[i] END ;
+  RETURN r
+END Cat ;
 
 PROCEDURE Join (VAR pool: POOL ; parts: SLICE OF STR ; RO sep: STR)
   : STR =

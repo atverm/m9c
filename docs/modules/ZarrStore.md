@@ -18,7 +18,7 @@ _(documented with the group below)_
 
 tagged union, CASE total
 
-### EXCEPTION IOError
+### EXCEPTION StoreError
 
 _(documented with the group below)_
 
@@ -30,32 +30,32 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### Open (RO url: STR) : SHARED PTR Store RAISES IOError, FormatError
+### Open (RO url: STR) : SHARED PTR Store RAISES StoreError, FormatError
 
 SHARED because every Array retains its Store -- retention is
 part of the contract, and plain borrows refuse it (par 4.2).
 FormatError is in the signature: the caller that ignored a bad
 url today cannot exist -- unhandled RAISES does not compile.
 
-### OpenArray (s: SHARED PTR Store ; RO path: STR) : PTR Array RAISES IOError, FormatError
+### OpenArray (s: SHARED PTR Store ; RO path: STR) : PTR Array RAISES StoreError, FormatError
 
 fill_value validation happens HERE, at open: an integer dtype
 with fill NaN raises FormatError now, not Trunc(NaN) later.
 [the FPC crash-at-read bug, moved to the contract boundary]
 
-### GetF64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : F64 RAISES IOError
+### GetF64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : F64 RAISES StoreError
 
 IndexError needs no declaration: it is a checked runtime error,
 always on, catchable.  There is no flag that turns it off.
 [the -fsoft-check-all "unreachable" bug: unrepresentable]
 
-### GetI64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : I64 RAISES IOError, ValueRange
+### GetI64 (VAR a: PTR Array ; RO idx: SLICE OF I64) : I64 RAISES StoreError, ValueRange
 
 ValueRange covers BOTH: float element non-finite or beyond I64
 [Trunc(NaN) crash], and U64 element above I64 range [the silent
 negative-wrap that numpy commits without a warning].
 
-### ReadChunk (VAR a: PTR Array ; RO coords: SLICE OF I64) : SLICE OF BYTE RAISES IOError
+### ReadChunk (VAR a: PTR Array ; RO coords: SLICE OF I64) : SLICE OF BYTE RAISES StoreError
 
 READONLY slice into the cache: the caller can read at native
 speed but cannot retain it past the next call or mutate it --

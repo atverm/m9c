@@ -805,6 +805,31 @@ BEGIN
     END ;
     Expect (p, TkRParen) ;
     RETURN n
+  ELSIF p.cur.kind = TkPROCEDURE THEN
+    (* a procedure type: PROCEDURE (params) [: T] [RAISES ...], the
+       head of a ProcDecl without a name, and the same three kids so
+       the checker's parameter walk serves both (docs/proctype-plan.md) *)
+    n := Nn (pool, p, Ast.NProcType) ;
+    Bump (p) ;
+    Expect (p, TkLParen) ;
+    Ast.Add (pool, n, SOME (PParamList (pool, p))) ;
+    Expect (p, TkRParen) ;
+    IF p.cur.kind = TkColon THEN
+      Bump (p) ;
+      IF p.cur.kind = TkRO THEN
+        n.f3 := TRUE ;
+        Bump (p)
+      END ;
+      Ast.Add (pool, n, SOME (PType (pool, p)))
+    ELSE
+      Ast.Add (pool, n, NONE)
+    END ;
+    IF p.cur.kind = TkRAISES THEN
+      Ast.Add (pool, n, SOME (PRaises (pool, p)))
+    ELSE
+      Ast.Add (pool, n, NONE)
+    END ;
+    RETURN n
   END ;
   Rerr (p, 'type expected, found ' + Lex.KindName (p.cur.kind)) ;
   n := Nn (pool, p, Ast.NQualident) ;

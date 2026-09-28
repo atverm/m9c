@@ -1,0 +1,23 @@
+STATEFUL DEFINITION MODULE InitState ;
+
+(* a library whose BODY is its initialisation: it runs before any
+   importer's body, so Total reads the initialised sum, not zero.
+   The gate that a module body is RUN, not silently dropped. *)
+
+PROCEDURE Total () : I64 ;
+
+END InitState.
+
+IMPLEMENTATION MODULE InitState ;
+
+VAR sum : I64 ;
+
+PROCEDURE Total () : I64 =
+BEGIN
+  RETURN sum
+END Total ;
+
+BEGIN
+  sum := 40 ;
+  sum := sum + 2
+END InitState.

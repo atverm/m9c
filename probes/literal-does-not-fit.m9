@@ -1,0 +1,5 @@
+(* EXPECT: integer literal 40000 does not fit I16 *)
+MODULE m ;
+VAR s : I16 ;
+PROCEDURE F () = BEGIN s := 40000 END F ;
+END m.

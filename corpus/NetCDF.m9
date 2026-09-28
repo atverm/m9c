@@ -32,6 +32,8 @@ DEFINITION MODULE NetCDF ;
    root.  A caller that wants concurrency needs one process per file
    or a MONITOR.                                                     *)
 
+IMPORT Faults ;
+
 TYPE
   File ;                            (* opaque; an ncid and its name *)
 
@@ -41,7 +43,6 @@ EXCEPTION
        (nc_strerror), status is the number.  All three, because a
        reader who has only one of them goes looking for the other
        two.                                                          *)
-  SizeError (got, want: I64) ;
 
 CONST
   (* nc_type, from netcdf.h.  Named here rather than passed as bare
@@ -138,7 +139,7 @@ PROCEDURE VarShape (VAR pool: POOL ; f: PTR File ; varid: I64)
 PROCEDURE GetF64 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF F64)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
   (* one hyperslab into a flat slice.  LEN (out) must be the product
      of count, and is checked: the C call would otherwise write past
      the end of a buffer the caller sized wrongly, which is the whole
@@ -147,11 +148,11 @@ PROCEDURE GetF64 (f: PTR File ; varid: I64 ;
 PROCEDURE GetF32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF F32)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
 PROCEDURE GetI64 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF I64)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
   (* the same hyperslab read at the other two widths, with the same
      LEN (out) = product-of-count check.  netCDF CONVERTS on the way
      out, so the file's own type need not be the one asked for --
@@ -161,9 +162,9 @@ PROCEDURE GetI64 (f: PTR File ; varid: I64 ;
      most this layer can do about it.                              *)
 
 PROCEDURE ReadGrid2 (VAR pool: POOL ; f: PTR File ; RO name: STR)
-  : GRID 2 OF F64 RAISES Error, SizeError, ValueRange ;
+  : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange ;
 PROCEDURE ReadGrid3 (VAR pool: POOL ; f: PTR File ; RO name: STR)
-  : GRID 3 OF F64 RAISES Error, SizeError, ValueRange ;
+  : GRID 3 OF F64 RAISES Error, Faults.SizeError, ValueRange ;
   (* a whole variable, shape and all, as a GRID.  These exist because
      a GRID can today only come from NEW or VIEW: there is no way to
      say "this slice, seen as 3 axes", so a reader that wants indexed
@@ -238,15 +239,15 @@ PROCEDURE VarDims (VAR pool: POOL ; f: PTR File ; varid: I64)
 PROCEDURE GetI32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF I32)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
 PROCEDURE GetI16 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF I16)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
 PROCEDURE GetBytes (f: PTR File ; varid: I64 ;
                     RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                     out: SLICE OF BYTE)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
 
 (* ---- writing ---- *)
 
@@ -254,7 +255,20 @@ PROCEDURE GetBytes (f: PTR File ; varid: I64 ;
    declared in define mode, then EndDef, then data.  A Put before
    EndDef is an Error from the library, not a check of ours, and it
    is worth knowing that the order is the API rather than a
-   convention this module invented. *)
+   convention this module invented.
+
+   Every writer below takes the file as a VALUE pointer, `f: PTR
+   File`, although each one changes the file.  Deliberate, and
+   re-derived on 2026-09-27 when a review asked for VAR: the state
+   that changes belongs to the netCDF LIBRARY behind the handle, and
+   nothing in the M9 record moves, so the parameter is a shared borrow
+   of a handle and a caller holding the file as a value parameter of
+   its own -- every helper in Frame -- can lend it onward.  Declared
+   VAR, par 4.1 refused exactly that lending in the 27 places Frame
+   makes it, and every port beside this repository would have had to
+   thread VAR through its helpers for no change in what runs.  So the
+   corpus convention "a mutator takes VAR" has this stated exception:
+   a handle to state a foreign library owns. *)
 
 PROCEDURE DefDim (f: PTR File ; RO name: STR ; extent: I64) : I64
   RAISES Error, ValueRange ;
@@ -303,7 +317,7 @@ PROCEDURE EndDef (f: PTR File) RAISES Error ;
 PROCEDURE PutF64 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO data: SLICE OF F64)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
 PROCEDURE FillF32 (f: PTR File ; varid: I64 ; fill: F32)
   RAISES Error, ValueRange ;
   (* the value an UNWRITTEN cell reads back as.  netCDF's default is
@@ -336,7 +350,7 @@ PROCEDURE Chunking (f: PTR File ; varid: I64 ; RO sizes: SLICE OF I64)
 PROCEDURE PutChars (f: PTR File ; varid: I64 ;
                     RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                     RO text: STR)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
   (* one hyperslab of TEXT out, for a char variable.
 
      CF's labelled axes (6.1) are char arrays -- a `species_name(
@@ -350,19 +364,19 @@ PROCEDURE PutChars (f: PTR File ; varid: I64 ;
 PROCEDURE PutI64 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO v: SLICE OF I64)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
 PROCEDURE PutI32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO v: SLICE OF I32)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
 PROCEDURE PutI16 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO v: SLICE OF I16)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
 PROCEDURE PutBytes (f: PTR File ; varid: I64 ;
                     RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                     RO v: SLICE OF BYTE)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
 
 (* typed fill values, one per storage type: _FillValue must carry
    the VARIABLE's own type or cfchecks calls the file broken, and
@@ -380,13 +394,13 @@ PROCEDURE FillByte (f: PTR File ; varid: I64 ; fill: BYTE)
 
 PROCEDURE GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ;
                     n, width: I64) : SLICE OF STR
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
   (* the reverse of PutChars: an n x width char matrix, each row
      answered as a STR with trailing NULs and blanks removed *)
 
 PROCEDURE GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ;
                    out: SLICE OF BYTE)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
   (* the same matrix in BLOCKS and as OCTETS: `n` rows from `row`,
      into a buffer the caller sized at n * width.  GetChars answers
      STRs and therefore holds the whole variable twice, which a
@@ -396,13 +410,13 @@ PROCEDURE GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ;
 PROCEDURE PutF32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO data: SLICE OF F32)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
   (* one hyperslab out, the mirror of GetF64/GetF32.
 
        start -- the corner, one index per axis, outermost first.
        count -- the extent along each axis from that corner.
        data  -- LEN (data) must be the PRODUCT of count, and is
-                checked: SizeError rather than letting the C call
+                checked: Faults.SizeError rather than letting the C call
                 read past the end of a buffer the caller sized
                 wrongly.  Same rule as the readers, stated on both
                 sides because getting it wrong writes garbage into a
@@ -566,6 +580,8 @@ UNSAFE IMPLEMENTATION MODULE NetCDF ;
 
 (* UNSAFE for one reason: ADR at the C boundary.  Everything else is
    checked code; the audit surface is this file, grep ADR.          *)
+
+IMPORT Faults ;
 
 IMPORT DynStr ;
 FROM cnc IMPORT CLen, CCopy,
@@ -949,17 +965,17 @@ BEGIN
   RETURN n
 END Product ;
 
-PROCEDURE Want (have: I64 ; RO count: SLICE OF I64) RAISES SizeError =
+PROCEDURE Want (have: I64 ; RO count: SLICE OF I64) RAISES Faults.SizeError =
 VAR n : I64 ;
 BEGIN
   n := Product (count) ;
-  IF have # n THEN RAISE SizeError (have, n) END
+  IF have # n THEN RAISE Faults.SizeError (have, n) END
 END Want ;
 
 PROCEDURE GetF64 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF F64)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -975,7 +991,7 @@ END GetF64 ;
 PROCEDURE GetF32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF F32)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -991,7 +1007,7 @@ END GetF32 ;
 PROCEDURE GetI64 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF I64)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1007,7 +1023,7 @@ END GetI64 ;
 PROCEDURE GetI32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF I32)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1023,7 +1039,7 @@ END GetI32 ;
 PROCEDURE GetI16 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   out: SLICE OF I16)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1039,7 +1055,7 @@ END GetI16 ;
 PROCEDURE GetBytes (f: PTR File ; varid: I64 ;
                     RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                     out: SLICE OF BYTE)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1055,7 +1071,7 @@ END GetBytes ;
 PROCEDURE PutI64 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO v: SLICE OF I64)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1071,7 +1087,7 @@ END PutI64 ;
 PROCEDURE PutI32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO v: SLICE OF I32)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1087,7 +1103,7 @@ END PutI32 ;
 PROCEDURE PutI16 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO v: SLICE OF I16)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1103,7 +1119,7 @@ END PutI16 ;
 PROCEDURE PutBytes (f: PTR File ; varid: I64 ;
                     RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                     RO v: SLICE OF BYTE)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1183,7 +1199,7 @@ END FillByte ;
 
 PROCEDURE GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ;
                     n, width: I64) : SLICE OF STR
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   raw : SLICE OF BYTE ;
@@ -1216,13 +1232,13 @@ END GetChars ;
 
 PROCEDURE GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ;
                    out: SLICE OF BYTE)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
   st, ct : SLICE OF I64 ;
 BEGIN
-  IF LEN (out) # n * width THEN RAISE SizeError (LEN (out), n * width) END ;
+  IF LEN (out) # n * width THEN RAISE Faults.SizeError (LEN (out), n * width) END ;
   st := NEW (scratch, I64, 2) ;
   ct := NEW (scratch, I64, 2) ;
   st[0] := row ; st[1] := 0 ;
@@ -1242,7 +1258,7 @@ BEGIN
 END Zeros ;
 
 PROCEDURE ReadGrid2 (VAR pool: POOL ; f: PTR File ; RO name: STR)
-  : GRID 2 OF F64 RAISES Error, SizeError, ValueRange =
+  : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   shape : SLICE OF I64 ;
@@ -1252,7 +1268,7 @@ VAR
 BEGIN
   varid := VarId (f, name) ;
   shape := VarShape (scratch, f, varid) ;
-  IF LEN (shape) # 2 THEN RAISE SizeError (LEN (shape), 2) END ;
+  IF LEN (shape) # 2 THEN RAISE Faults.SizeError (LEN (shape), 2) END ;
   flat := NEW (scratch, F64, Product (shape)) ;
   GetF64 (f, varid, Zeros (scratch, 2), shape, flat) ;
   g := NEW (pool, F64, shape[0], shape[1]) ;
@@ -1268,7 +1284,7 @@ BEGIN
 END ReadGrid2 ;
 
 PROCEDURE ReadGrid3 (VAR pool: POOL ; f: PTR File ; RO name: STR)
-  : GRID 3 OF F64 RAISES Error, SizeError, ValueRange =
+  : GRID 3 OF F64 RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   shape : SLICE OF I64 ;
@@ -1278,7 +1294,7 @@ VAR
 BEGIN
   varid := VarId (f, name) ;
   shape := VarShape (scratch, f, varid) ;
-  IF LEN (shape) # 3 THEN RAISE SizeError (LEN (shape), 3) END ;
+  IF LEN (shape) # 3 THEN RAISE Faults.SizeError (LEN (shape), 3) END ;
   flat := NEW (scratch, F64, Product (shape)) ;
   GetF64 (f, varid, Zeros (scratch, 3), shape, flat) ;
   g := NEW (pool, F64, shape[0], shape[1], shape[2]) ;
@@ -1465,7 +1481,7 @@ END EndDef ;
 PROCEDURE PutF64 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO data: SLICE OF F64)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1481,7 +1497,7 @@ END PutF64 ;
 PROCEDURE PutF32 (f: PTR File ; varid: I64 ;
                   RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                   RO data: SLICE OF F32)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1532,7 +1548,7 @@ END Chunking ;
 PROCEDURE PutChars (f: PTR File ; varid: I64 ;
                     RO start: SLICE OF I64 ; RO count: SLICE OF I64 ;
                     RO text: STR)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   s, c : SLICE OF U64 ;
@@ -1541,7 +1557,7 @@ VAR
 BEGIN
   n := 1 ;
   FOR i := 0 TO LEN (count) - 1 DO n := n * count[i] END ;
-  IF LEN (text) > n THEN RAISE SizeError (LEN (text), n) END ;
+  IF LEN (text) > n THEN RAISE Faults.SizeError (LEN (text), n) END ;
   (* padded with NUL to the full count: netCDF writes exactly what it
      is given and a char variable's remaining bytes are otherwise
      whatever the file had *)

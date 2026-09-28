@@ -98,6 +98,25 @@ int main (void)
     p = Text_Split (&pool, S ("a,b,c"), ',', &err);
     ok ("join is the inverse",
         is (Text_Join (&pool, p, S (","), &err), "a,b,c"));
+
+    /* Fields drops the empties (2026-09-27, the ONEFlux port's
+       Common.Tokens); Keep copies; Cat builds in the pool */
+    p = Text_Fields (&pool, S (",a,,b,"), ',', &err);
+    ok ("fields drops empty pieces", p.len == 2 && is (p.p[0], "a") && is (p.p[1], "b"));
+    p = Text_Fields (&pool, S (",,"), ',', &err);
+    ok ("fields of only separators is empty", p.len == 0);
+    p = Text_Fields (&pool, S ("one"), ',', &err);
+    ok ("fields of no separator is the string", p.len == 1 && is (p.p[0], "one"));
+    {
+      m9_sl_CHAR src = S ("kept");
+      m9_sl_CHAR cp = Text_Keep (&pool, src, &err);
+      ok ("keep copies the scalars", is (cp, "kept") && cp.p != src.p);
+      ok ("cat builds a + b in the pool",
+          is (Text_Cat (&pool, S ("ab"), S ("cd"), &err), "abcd"));
+      ok ("cat of two empties is empty",
+          Text_Cat (&pool, S (""), S (""), &err).len == 0);
+    }
+    p = Text_Split (&pool, S ("a,b,c"), ',', &err);   /* the join checks below read p */
     ok ("join with a longer separator",
         is (Text_Join (&pool, p, S (" -- "), &err), "a -- b -- c"));
   }

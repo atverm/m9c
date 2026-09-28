@@ -38,9 +38,22 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -lm -o math_test
 ./math_test
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/Mat.c ../gen/Math.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../gen/Mat.c ../gen/Math.c \
     mat_driver.c -lm -o mat_test
 ./mat_test
+# Sort: stable merge sorts against a reference, the F64 NaN refusal,
+# the argsort's stability, and By called through a C function of the
+# procedure type's own signature -- the ABI of par 2.2.3 proven
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Sort.c ../gen/Math.c \
+    sort_driver.c -lm -o sort_test
+./sort_test
+# Bits: the 64-bit pattern operations against C's own operators over
+# a sweep, and the shift counts C leaves undefined refused BY NAME
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Bits.c bits_driver.c \
+    -o bits_test
+./bits_test
 
 # System: the process seen from inside.  The driver is run with a
 # known argument line so the three argument views can be checked
@@ -55,7 +68,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 # (tools/statsgold.py regenerates them by hand), so the gate needs
 # no python and cannot regenerate what it compares against.
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/Stats.c ../gen/Math.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../gen/Stats.c ../gen/Math.c ../gen/Bits.c \
     stats_driver.c -lm -o stats_test
 ./stats_test
 
@@ -65,7 +78,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 # without it, like the other format batteries.
 if [ -f /usr/include/netcdf.h ]; then
   gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-      -iquote .. -iquote ../gen ../m9rt.c ../fmtshim.c ../gen/Frame.c \
+      -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../fmtshim.c ../gen/Frame.c \
       ../gen/Csv.c ../gen/DynStr.c ../gen/Io.c ../gen/Math.c \
       ../gen/Fmt.c ../gen/Time.c ../gen/Text.c ../gen/NetCDF.c \
       frame_driver.c -lnetcdf -lm -o frame_test
@@ -75,7 +88,7 @@ if [ -f /usr/include/netcdf.h ]; then
   # (tools/parquetgold.py); the pyarrow re-read inside the driver
   # skips out loud when python3/pyarrow are absent
   gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-      -iquote .. -iquote ../gen ../m9rt.c ../fmtshim.c ../gen/Parquet.c \
+      -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../fmtshim.c ../gen/Parquet.c \
       ../gen/Frame.c ../gen/Csv.c ../gen/DynStr.c ../gen/Io.c \
       ../gen/Math.c ../gen/Fmt.c ../gen/Time.c ../gen/Text.c \
       ../gen/NetCDF.c \
@@ -139,7 +152,7 @@ gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
 # machine without a dependency is a test nobody notices losing.
 if [ -f /usr/include/netcdf.h ]; then
   gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-      -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/NetCDF.c \
+      -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../gen/DynStr.c ../gen/NetCDF.c \
       netcdf_driver.c -lnetcdf -lm -o netcdf_test
   ./netcdf_test
 else
@@ -148,7 +161,7 @@ fi
 ECH=$(ls /usr/include/eccodes.h /usr/include/*/eccodes.h 2>/dev/null | head -1)
 if [ -n "$ECH" ]; then
   gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-      -iquote .. -iquote ../gen -I"$(dirname "$ECH")" ../m9rt.c ../gen/DynStr.c \
+      -iquote .. -iquote ../gen -I"$(dirname "$ECH")" ../m9rt.c ../gen/Faults.c ../gen/DynStr.c \
       ../gen/Grib.c grib_driver.c -leccodes -lm -o grib_test
   ./grib_test
 else
@@ -173,7 +186,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 # framing and the size accounting itself, then has pyarrow read the
 # file back when it is installed (skips out loud otherwise).
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Arrow.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../gen/DynStr.c ../gen/Arrow.c \
     arrow_driver.c -lm -o arrow_test
 ./arrow_test
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
@@ -215,7 +228,10 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Json.c \
     ../gen/Io.c ../gen/Http.c ../gen/ZarrStore.c zarr_driver.c \
     -l:libblosc.so.1 -lssl -lcrypto -lm -o zarr_test
-[ -d /tmp/m9stores/co2.zarr ] || python3 ../../tools/genstore.py /tmp/m9stores
+# time.zarr is the newest store: a /tmp/m9stores from before it
+# exists has co2 and bench and still needs the regeneration
+[ -d /tmp/m9stores/co2.zarr ] && [ -d /tmp/m9stores/time.zarr ] \
+    || python3 ../../tools/genstore.py /tmp/m9stores
 python3 -m http.server 18930 --bind 127.0.0.1 --directory /tmp/m9stores \
     >/dev/null 2>&1 &
 ZSRV=$!
@@ -223,7 +239,7 @@ trap 'rc=$?; kill $ZSRV 2>/dev/null || :; exit $rc' EXIT
 sleep 1
 ./zarr_test
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
-    -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../fmtshim.c ../gen/DynStr.c \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../tcpshim.c ../tlsshim.c ../fmtshim.c ../gen/DynStr.c \
     ../gen/Json.c ../gen/Io.c ../gen/Http.c ../gen/ZarrStore.c ../gen/Mat.c \
     ../gen/Math.c \
     ../gen/Plot.c plot_driver.c -l:libblosc.so.1 -lssl -lcrypto -lm -o plot_test
@@ -245,7 +261,7 @@ cmp /tmp/m9plots/co2_anomaly.svg ../../reference/m2-stack/co2_anomaly.svg \
 # others, that a chosen colour replaces the palette, and that a log
 # axis ticks the decades and labels them by value.  Shown able to
 # fail: dropping the stack base turns the touching-edges check red.
-gcc -std=c11 -O2 -iquote .. -iquote ../gen ../m9rt.c ../fmtshim.c \
+gcc -std=c11 -O2 -iquote .. -iquote ../gen ../m9rt.c ../gen/Faults.c ../fmtshim.c \
     ../gen/DynStr.c ../gen/Io.c ../gen/Math.c ../gen/Mat.c ../gen/Plot.c \
     bar_driver.c -lm -o bar_test
 ./bar_test || { echo "FAIL: the bar battery"; exit 1; }
@@ -257,12 +273,16 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 kill $ZSRV 2>/dev/null
 trap - EXIT
 printf 'hello from the shim\nM9' > hello.txt
+# 5 MB, past the one-shot reader's old 4 MB ceiling; the driver checks
+# every byte against the same formula
+python3 -c 'import sys; sys.stdout.buffer.write(bytes((i * 7 + 11) % 251 for i in range(5 * 1024 * 1024)))' > big.bin
 python3 -m http.server 18923 --bind 127.0.0.1 --directory . >/dev/null 2>&1 &
 SRV=$!
-trap 'rc=$?; kill $SRV 2>/dev/null || :; exit $rc' EXIT
+trap 'rc=$?; kill $SRV 2>/dev/null || :; rm -f big.bin; exit $rc' EXIT
 sleep 1
 ./http_test
 kill $SRV 2>/dev/null
+rm -f big.bin
 trap - EXIT
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Hello.c \
@@ -286,6 +306,43 @@ ababab
 via heap
 a|b|c" ] || { echo "FAIL: string concatenation"; exit 1; }
 echo "PASS (1 check) -- + on strings, across a frame, and HEAP by name"
+
+# every integer width traps on overflow (par 2.1): until 2026-09-27
+# the narrow ones wrapped silently through the I64 helper
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
+    ../gen/Narrow.c -o narrow_test
+[ "$(./narrow_test)" = "I32 max + 1: raised
+I32 min - 1: raised
+I16 30000 * 2: raised
+I8 127 + 1: raised
+I8 -(-128): raised
+I32 min DIV -1: raised
+U8 0 - 1: raised
+U16 65535 + 1: raised
+U32 3 - 5: raised
+U32 65536 * 65536: raised
+U64 0 - 1: raised
+U64 2^62 * 4: raised
+I32 100 + 200: 300
+I16 -5 * 6: -30
+U32 5 - 3: 2
+U64 2^62 * 3 DIV 3 = 2^62: 4611686018427387904
+I32 7 MOD 3: 1" ] || { echo "FAIL: narrow integer arithmetic does not trap"; ./narrow_test; exit 1; }
+echo "PASS (17 checks) -- every integer width traps on overflow"
+# procedure types (par 2.2.3): a value called through a parameter,
+# through an OPT variable and an OPT field, VAR and RO inside the
+# type, the type's RAISES honoured
+gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
+    -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
+    ../gen/ProcUse.c -o procuse_test
+[ "$(./procuse_test)" = "Pick Up 3 2 -> 2
+Pick Down 3 2 -> 3
+Pick chosen 7 9 -> 9
+Apply Twice 1.5 -> 3
+Each AddLen -> 15
+ValueRange raised, as Kernel declares" ] || { echo "FAIL: procedure types"; ./procuse_test; exit 1; }
+echo "PASS (6 checks) -- procedure types: values, OPT, IS SOME, VAR and RO, RAISES"
 
 # Http's URL fetcher, against a local fixture server.  IN THE SUITE
 # rather than beside it (threads.sh is run by hand) because it is

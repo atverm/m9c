@@ -314,6 +314,84 @@ static inline int64_t m9_mod_i64 (int64_t a, int64_t b, m9_state *err)
   return a % b;
 }
 
+/* The seven other widths, each with its own helper since 2026-09-27.
+   Before that every integer operation went through the I64 helper
+   above and the result was assigned back into the narrow C type
+   unchecked, so `I32 max + 1` was -2147483648 and `U32 3 - 5` was
+   4294967294 with no Overflow raised -- the museum's founding class
+   inside par 2.1's own promise (docs/agent-review-2026-09-27.md F1).
+   The narrow six compute exactly in 64 bits, where no operand pair
+   can overflow, and then hold the result to the type's range; U64
+   is its own arithmetic, because half its values do not exist in
+   int64_t.  Every helper takes its operands as the C type the
+   generator declared, so a call site reads like the I64 one. */
+#define M9_NARROW_ARITH(SUF, T, LO, HI)                                     \
+  static inline T m9_add_##SUF (int64_t a, int64_t b, m9_state *err)       \
+  { int64_t r = a + b;                                                      \
+    if (r < (LO) || r > (HI)) { m9_raise (err, &m9_exc_Overflow); return 0; } \
+    return (T) r; }                                                         \
+  static inline T m9_sub_##SUF (int64_t a, int64_t b, m9_state *err)       \
+  { int64_t r = a - b;                                                      \
+    if (r < (LO) || r > (HI)) { m9_raise (err, &m9_exc_Overflow); return 0; } \
+    return (T) r; }                                                         \
+  static inline T m9_mul_##SUF (int64_t a, int64_t b, m9_state *err)       \
+  { int64_t r = a * b;                                                      \
+    if (r < (LO) || r > (HI)) { m9_raise (err, &m9_exc_Overflow); return 0; } \
+    return (T) r; }                                                         \
+  static inline T m9_div_##SUF (int64_t a, int64_t b, m9_state *err)       \
+  { int64_t r;                                                              \
+    if (b == 0) { m9_raise (err, &m9_exc_Overflow); return 0; }             \
+    r = a / b;                                                              \
+    if (r < (LO) || r > (HI)) { m9_raise (err, &m9_exc_Overflow); return 0; } \
+    return (T) r; }                                                         \
+  static inline T m9_mod_##SUF (int64_t a, int64_t b, m9_state *err)       \
+  { if (b == 0) { m9_raise (err, &m9_exc_Overflow); return 0; }             \
+    return (T) (a % b); }                                                   \
+  static inline T m9_neg_##SUF (int64_t a, m9_state *err)                  \
+  { int64_t r = -a;                                                         \
+    if (r < (LO) || r > (HI)) { m9_raise (err, &m9_exc_Overflow); return 0; } \
+    return (T) r; }
+
+M9_NARROW_ARITH (i8,  int8_t,   INT8_MIN,  INT8_MAX)
+M9_NARROW_ARITH (i16, int16_t,  INT16_MIN, INT16_MAX)
+M9_NARROW_ARITH (i32, int32_t,  INT32_MIN, INT32_MAX)
+M9_NARROW_ARITH (u8,  uint8_t,  0, UINT8_MAX)
+M9_NARROW_ARITH (u16, uint16_t, 0, UINT16_MAX)
+M9_NARROW_ARITH (u32, uint32_t, 0, UINT32_MAX)
+
+static inline uint64_t m9_add_u64 (uint64_t a, uint64_t b, m9_state *err)
+{
+  uint64_t r;
+  if (__builtin_add_overflow (a, b, &r)) { m9_raise (err, &m9_exc_Overflow); return 0; }
+  return r;
+}
+static inline uint64_t m9_sub_u64 (uint64_t a, uint64_t b, m9_state *err)
+{
+  if (a < b) { m9_raise (err, &m9_exc_Overflow); return 0; }
+  return a - b;
+}
+static inline uint64_t m9_mul_u64 (uint64_t a, uint64_t b, m9_state *err)
+{
+  uint64_t r;
+  if (__builtin_mul_overflow (a, b, &r)) { m9_raise (err, &m9_exc_Overflow); return 0; }
+  return r;
+}
+static inline uint64_t m9_div_u64 (uint64_t a, uint64_t b, m9_state *err)
+{
+  if (b == 0) { m9_raise (err, &m9_exc_Overflow); return 0; }
+  return a / b;
+}
+static inline uint64_t m9_mod_u64 (uint64_t a, uint64_t b, m9_state *err)
+{
+  if (b == 0) { m9_raise (err, &m9_exc_Overflow); return 0; }
+  return a % b;
+}
+static inline uint64_t m9_neg_u64 (uint64_t a, m9_state *err)
+{
+  if (a != 0) { m9_raise (err, &m9_exc_Overflow); return 0; }
+  return 0;
+}
+
 /* wrapping +%, -%, *%: defined two's-complement via unsigned */
 static inline int64_t m9_addw_i64 (int64_t a, int64_t b)
 { return (int64_t) ((uint64_t) a + (uint64_t) b); }
@@ -321,6 +399,40 @@ static inline int64_t m9_subw_i64 (int64_t a, int64_t b)
 { return (int64_t) ((uint64_t) a - (uint64_t) b); }
 static inline int64_t m9_mulw_i64 (int64_t a, int64_t b)
 { return (int64_t) ((uint64_t) a * (uint64_t) b); }
+
+/* corpus/Bits.m9: the 64-bit pattern operations, through uint64_t so
+   that no operator ever sees a negative left operand -- a left shift
+   of a negative int is undefined in C, a right shift of one is
+   implementation-defined, and & | ^ ~ on the unsigned pattern are
+   what every reader of a two's-complement word means.  The shifts
+   take 0..63 only, and Bits checks that BEFORE calling, where it can
+   raise ValueRange; these have no error slot.  `static inline`
+   rather than a definition in m9rt.c so the operator is visible to
+   the C compiler in every translation unit, LTO or not: the generated
+   C declares each `extern` after including this header, which C11
+   (6.2.2p4) reads as the prior internal linkage. */
+static inline int64_t m9_bits_and (int64_t a, int64_t b)
+{ return (int64_t) ((uint64_t) a & (uint64_t) b); }
+static inline int64_t m9_bits_or (int64_t a, int64_t b)
+{ return (int64_t) ((uint64_t) a | (uint64_t) b); }
+static inline int64_t m9_bits_xor (int64_t a, int64_t b)
+{ return (int64_t) ((uint64_t) a ^ (uint64_t) b); }
+static inline int64_t m9_bits_not (int64_t a)
+{ return (int64_t) (~ (uint64_t) a); }
+static inline int64_t m9_bits_shl (int64_t a, int64_t n)
+{ return (int64_t) ((uint64_t) a << (unsigned) n); }
+static inline int64_t m9_bits_shr (int64_t a, int64_t n)
+{ return (int64_t) ((uint64_t) a >> (unsigned) n); }
+static inline int64_t m9_bits_count (int64_t a)
+{
+  /* Kernighan's loop rather than __builtin_popcountll: the same
+     answer on every compiler this header may meet, and a byte's
+     worth of iterations for the flag words that call it */
+  uint64_t u = (uint64_t) a;
+  int64_t n = 0;
+  while (u) { u &= u - 1; n++; }
+  return n;
+}
 
 /* ---- checked conversions (ValueRange, par 2.1) ---- */
 

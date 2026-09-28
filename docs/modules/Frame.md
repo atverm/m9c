@@ -35,19 +35,10 @@ of a column that cannot answer it (a mean of flags)
 
 _(documented with the group below)_
 
-### EXCEPTION SizeError
-
-a column whose length is not the frame's row count; a reducer
-slice whose length is not the column count
-
 ### EXCEPTION Disorder
 
 the time axis is not strictly increasing at this row, or a
 stamp is off the resolution grid
-
-### EXCEPTION BadArg
-
-_(undocumented)_
 
 ### TYPE Data
 
@@ -80,39 +71,39 @@ polars' first()/last().
 
 _(undocumented)_
 
-### New (VAR pool: POOL ; rows: I64) : PTR Fr IN pool RAISES SizeError
+### New (VAR pool: POOL ; rows: I64) : PTR Fr IN pool RAISES Faults.SizeError
 
 rows < 0 refuses; 0 is a legal empty frame
 
-### AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; v: SLICE OF F64 ; miss: F64) RAISES SizeError, Duplicate
+### AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF F64 ; miss: F64) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; v: SLICE OF F32 ; miss: F32) RAISES SizeError, Duplicate
+### AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF F32 ; miss: F32) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; v: SLICE OF I64 ; miss: I64) RAISES SizeError, Duplicate
+### AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF I64 ; miss: I64) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; v: SLICE OF I32 ; miss: I32) RAISES SizeError, Duplicate
+### AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF I32 ; miss: I32) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; v: SLICE OF I16 ; miss: I16) RAISES SizeError, Duplicate
+### AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF I16 ; miss: I16) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; v: SLICE OF BYTE ; miss: BYTE) RAISES SizeError, Duplicate
+### AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF BYTE ; miss: BYTE) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; v: SLICE OF BOOL) RAISES SizeError, Duplicate
+### AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF BOOL) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; KEPT v: SLICE OF STR) RAISES SizeError, Duplicate
+### AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; KEPT v: SLICE OF STR) RAISES Faults.SizeError, Duplicate
 
 the slice is TAKEN, not copied: the frame views the caller's
 storage, the AddRoute/Json.Parse retention contract.  Length
@@ -166,7 +157,7 @@ _(documented with the group below)_
 
 the everyday accessors; the other types go through GetCol
 
-### FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool RAISES SizeError, Duplicate, IndexError, ValueRange
+### FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool RAISES Faults.SizeError, Duplicate, IndexError, ValueRange
 
 every non-Skip column of a PARSED Csv.Table, with the kinds the
 caller declared there: Real -> F32s (miss NaN), Int -> I64s
@@ -260,7 +251,7 @@ _(documented with the group below)_
 
 'start' | 'end' | 'mid'
 
-### WriteNc (VAR pool: POOL ; f: PTR Fr ; RO KEPT path: STR ; RO dim: STR) RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError
+### WriteNc (VAR pool: POOL ; f: PTR Fr ; RO KEPT path: STR ; RO dim: STR) RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError
 
 a netCDF-4 file with one dimension named `dim`, one variable
 per column in its OWN storage type, the column's missing value
@@ -270,7 +261,7 @@ invented at export time.  Strs columns become an n x width char
 matrix over a per-column length dimension, the PutChars
 convention.
 
-### WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR) RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError
+### WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR) RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError
 
 WriteNc over the dimension 'time', plus the time coordinate:
 I64 seconds, units 'seconds since 1970-01-01 00:00:00 +00:00'
@@ -283,7 +274,7 @@ cell_methods is deliberately NOT written: the frame does not
 know whether a column is a mean over its period or a point
 sample, and writing 'mean' unasked would be a lie in metadata.
 
-### FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange, Overflow, IndexError
+### FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, ValueRange, Overflow, IndexError
 
 every variable whose FIRST dimension is `dim`: 1-D numerics
 into their matching arms, 2-D char matrices into Strs.  A
@@ -293,7 +284,7 @@ failure this module exists to prevent.  _FillValue becomes the
 column's missing value; units / long_name / standard_name are
 read when present.
 
-### TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts RAISES NetCDF.Error, BadArg, SizeError, Duplicate, Disorder, ValueRange, Overflow, IndexError
+### TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, Disorder, ValueRange, Overflow, IndexError
 
 FromNc over 'time', with the time variable itself parsed from
 its CF units -- seconds, minutes, hours or days since a date,
@@ -305,7 +296,7 @@ attributes WriteTsNc writes; a foreign file without them gets
 convention start and the axis's own smallest gap, both stated
 choices rather than inference.
 
-### NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ; res: I64 ; conv: Conv ; RO descr: STR) : PTR Ts IN pool RAISES SizeError, Disorder, BadArg
+### NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ; res: I64 ; conv: Conv ; RO descr: STR) : PTR Ts IN pool RAISES Faults.SizeError, Disorder, Faults.BadArg
 
 time is epoch seconds UTC, one per row, STRICTLY increasing and
 on the res grid (relative to its own first stamp); res > 0.
@@ -367,7 +358,7 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ; how: SLICE OF How ; minCount: I64) : PTR Ts IN pool RAISES SizeError, WrongType, BadArg, ValueRange, Overflow, IndexError
+### Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ; how: SLICE OF How ; minCount: I64) : PTR Ts IN pool RAISES Faults.SizeError, WrongType, Faults.BadArg, ValueRange, Overflow, IndexError
 
 resample to a coarser resolution.  toRes must be a positive
 multiple of the frame's resolution (refused otherwise, named);
@@ -380,7 +371,7 @@ are excluded from Mean/Sum/Lo/Hi; a window with fewer than
 minCount live values answers the column's missing value.
 Output labels follow the frame's own convention at toRes.
 
-### MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool RAISES SizeError, Duplicate, Disorder, BadArg, WrongType, ValueRange, Overflow, IndexError
+### MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool RAISES Faults.SizeError, Duplicate, Disorder, Faults.BadArg, WrongType, ValueRange, Overflow, IndexError
 
 every absent period between the first and last stamp becomes a
 row of missing values (Strs: '').  The time axis comes out

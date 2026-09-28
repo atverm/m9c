@@ -3,6 +3,8 @@
 #define M9G_Math_H
 #include "m9rt.h"
 
+void Math_m9init (m9_state *err);
+
 
 #define Math_Pi (3.14159265358979311600)
 #define Math_E (2.71828182845904509080)
@@ -11,6 +13,13 @@
 
 double Math_Abs (double x, m9_state *err);
 double Math_Fabs (double x, m9_state *err);
+int64_t Math_AbsI64 (int64_t v, m9_state *err);
+int64_t Math_MinI64 (int64_t a, int64_t b, m9_state *err);
+int64_t Math_MaxI64 (int64_t a, int64_t b, m9_state *err);
+int64_t Math_ClampI64 (int64_t v, int64_t lo, int64_t hi, m9_state *err);
+double Math_Min (double a, double b, m9_state *err);
+double Math_Max (double a, double b, m9_state *err);
+double Math_Clamp (double v, double lo, double hi, m9_state *err);
 double Math_Sqrt (double x, m9_state *err);
 double Math_Log (double x, m9_state *err);
 double Math_Log10 (double x, m9_state *err);

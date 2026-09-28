@@ -5,6 +5,8 @@
 #include "DynStr.h"
 #include "Io.h"
 
+void Zip_m9init (m9_state *err);
+
 typedef struct Zip_Archive Zip_Archive;
 typedef struct Zip_Member Zip_Member;
 typedef struct Zip_Entry Zip_Entry;

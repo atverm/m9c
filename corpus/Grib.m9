@@ -57,6 +57,8 @@ DEFINITION MODULE Grib ;
    decoding to a differential test, because 160 clean runs of two
    message shapes is an argument and not a proof.                   *)
 
+IMPORT Faults ;
+
 TYPE
   File ;                          (* an open GRIB file *)
   Message ;                       (* one decoded message from it *)
@@ -69,7 +71,6 @@ TYPE
 
 EXCEPTION
   Error (RO op: STR ; RO key: STR ; RO detail: STR ; code: I64) ;
-  SizeError (got, want: I64) ;
 
 PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool
   RAISES Error, ValueRange ;
@@ -134,14 +135,14 @@ PROCEDURE Size (m: PTR Message ; RO key: STR) : I64
      of grid points *)
 
 PROCEDURE Values (m: PTR Message ; out: SLICE OF F64)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
   (* the decoded field.  LEN (out) must be Size (m, 'values'), and is
      checked here rather than trusted: the C call takes a length by
      pointer and will happily write what the caller claimed there
      was room for.                                                   *)
 
 PROCEDURE Floats (m: PTR Message ; RO key: STR ; out: SLICE OF F32)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
   (* the same, into single precision, because that is what some
      readers do and it is not the same answer.  the model's buffer is
      `real(kind=4) :: zsec4` and it reads through
@@ -154,14 +155,14 @@ PROCEDURE Floats (m: PTR Message ; RO key: STR ; out: SLICE OF F32)
      bit for bit, so the port reads floats and says why.            *)
 
 PROCEDURE Doubles (m: PTR Message ; RO key: STR ; out: SLICE OF F64)
-  RAISES Error, SizeError, ValueRange ;
+  RAISES Error, Faults.SizeError, ValueRange ;
   (* any double array, by key, with the same length check.  `values`
      is the common one and has its own name above; this is for the
      others -- `pv`, the vertical coordinate coefficients, which
      the model's grid check reads to build akm and bkm.               *)
 
 PROCEDURE ReadGrid2 (VAR pool: POOL ; m: PTR Message)
-  : GRID 2 OF F64 RAISES Error, SizeError, ValueRange ;
+  : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange ;
   (* the field as Nj by Ni, the shape the message declares.  Latitude
      first, because that is the order the values are stored in and
      the order every GRIB tool prints them.                          *)
@@ -243,6 +244,8 @@ END cgrib.
 UNSAFE IMPLEMENTATION MODULE Grib ;
 
 (* UNSAFE for one reason: ADR at the C boundary.  Grep ADR.         *)
+
+IMPORT Faults ;
 
 IMPORT DynStr ;
 FROM cgrib IMPORT COpen, CClose, CLen, CCopy, NewFromFile, HandleDelete,
@@ -563,13 +566,13 @@ BEGIN
 END GetStr ;
 
 PROCEDURE Values (m: PTR Message ; out: SLICE OF F64)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 BEGIN
   Doubles (m, 'values', out)
 END Values ;
 
 PROCEDURE Doubles (m: PTR Message ; RO key: STR ; out: SLICE OF F64)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   kb : SLICE OF BYTE ;
@@ -578,7 +581,7 @@ VAR
 BEGIN
   IF NOT m.live THEN Dead ('codes_get_double_array', key) END ;
   want := Size (m, key) ;
-  IF LEN (out) # want THEN RAISE SizeError (LEN (out), want) END ;
+  IF LEN (out) # want THEN RAISE Faults.SizeError (LEN (out), want) END ;
   kb := DynStr.Bytes (scratch, key, TRUE) ;
   n[0] := U64 (LEN (out)) ;
   Check ('codes_get_double_array', key,
@@ -586,7 +589,7 @@ BEGIN
 END Doubles ;
 
 PROCEDURE Floats (m: PTR Message ; RO key: STR ; out: SLICE OF F32)
-  RAISES Error, SizeError, ValueRange =
+  RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   kb : SLICE OF BYTE ;
@@ -595,7 +598,7 @@ VAR
 BEGIN
   IF NOT m.live THEN Dead ('codes_get_float_array', key) END ;
   want := Size (m, key) ;
-  IF LEN (out) # want THEN RAISE SizeError (LEN (out), want) END ;
+  IF LEN (out) # want THEN RAISE Faults.SizeError (LEN (out), want) END ;
   kb := DynStr.Bytes (scratch, key, TRUE) ;
   n[0] := U64 (LEN (out)) ;
   Check ('codes_get_float_array', key,
@@ -603,7 +606,7 @@ BEGIN
 END Floats ;
 
 PROCEDURE ReadGrid2 (VAR pool: POOL ; m: PTR Message)
-  : GRID 2 OF F64 RAISES Error, SizeError, ValueRange =
+  : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
   flat : SLICE OF F64 ;

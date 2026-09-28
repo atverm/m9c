@@ -5,18 +5,22 @@
 
 extern int fmt_g (void *, double);
 
-static m9_arr_4096_double serX;
-static m9_arr_4096_double serY;
+static double heatLo;
+static double heatHi;
+static bool heatFixed;
+static m9_arr_32768_double serX;
+static m9_arr_32768_double serY;
 static m9_arr_4_int64_t serN;
 static m9_arr_4_int64_t serCol;
 static m9_arr_4_m9_sl_CHAR serLbl;
 static int64_t nSer;
-static m9_arr_4096_double barAt;
-static m9_arr_4096_double barV;
+static m9_arr_32768_double barAt;
+static m9_arr_32768_double barV;
 static m9_arr_4_int64_t barN;
 static m9_arr_4_int64_t barCol;
 static m9_arr_4_m9_sl_CHAR barLbl;
 static m9_arr_4_m9_sl_CHAR barHex;
+static m9_arr_4_m9_sl_CHAR serHex;
 static m9_arr_4_m9_sl_F64 barErr;
 static m9_arr_4_bool barHasErr;
 static int64_t nBar;
@@ -182,6 +186,7 @@ static double Plot_PYof (double y, double ymin, double ymax, m9_state *err);
 static double Plot_Log10 (double v, m9_state *err);
 static bool Plot_Loggable (double v, bool lg, m9_state *err);
 static double Plot_Axis (double v, bool lg, m9_state *err);
+static void Plot_EmitLineColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m9_state *err);
 static void Plot_EmitBarColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m9_state *err);
 static void Plot_EmitWhisker (m9_pool *pool, DynStr_DString * *d, double x0, double y0, double x1, double y1, bool horiz, m9_state *err);
 static double Plot_DecadeFloor (double v, m9_state *err);
@@ -211,6 +216,8 @@ void Plot_ClearFigure (m9_state *err)
     if (err->exc) goto L_ret;
     (*(m9_sl_CHAR *) m9_at (barHex.v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)) = (m9_sl_CHAR){ NULL, 0 };
     if (err->exc) goto L_ret;
+    (*(m9_sl_CHAR *) m9_at (serHex.v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)) = (m9_sl_CHAR){ NULL, 0 };
+    if (err->exc) goto L_ret;
   } }
   barDir = Plot_BarVertical;
   barMode = Plot_BarGrouped;
@@ -219,6 +226,7 @@ void Plot_ClearFigure (m9_state *err)
   barWidth = 0.8;
   logX = false;
   logY = false;
+  heatFixed = false;
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -245,9 +253,9 @@ void Plot_AddLine (m9_sl_F64 xs, m9_sl_F64 ys, int64_t colorIdx, m9_sl_CHAR labe
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (nSer, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err)) = (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err));
+    (*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err));
     if (err->exc) goto L_ret;
-    (*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (nSer, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err)) = (*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err));
+    (*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (nSer, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = (*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err));
     if (err->exc) goto L_ret;
   } }
   (*(int64_t *) m9_at (serN.v, nSer, INT64_C(4), sizeof (int64_t), err)) = n;
@@ -305,9 +313,9 @@ void Plot_AddBars (m9_sl_F64 at, m9_sl_F64 v, int64_t colorIdx, m9_sl_CHAR label
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (nBar, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err)) = (*(double *) m9_at (at.p, i, at.len, sizeof (double), err));
+    (*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = (*(double *) m9_at (at.p, i, at.len, sizeof (double), err));
     if (err->exc) goto L_ret;
-    (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (nBar, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err)) = (*(double *) m9_at (v.p, i, v.len, sizeof (double), err));
+    (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (nBar, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err)) = (*(double *) m9_at (v.p, i, v.len, sizeof (double), err));
     if (err->exc) goto L_ret;
   } }
   (*(int64_t *) m9_at (barN.v, nBar, INT64_C(4), sizeof (int64_t), err)) = n;
@@ -374,6 +382,55 @@ void Plot_SetBarColor (int64_t series, m9_sl_CHAR hex, m9_state *err)
     goto L_ret;
   }
   (*(m9_sl_CHAR *) m9_at (barHex.v, series, INT64_C(4), sizeof (m9_sl_CHAR), err)) = hex;
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+Plot_Cmap Plot_Viridis (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  Plot_Cmap m9ret = {0};
+  err->res = m9res;
+  m9ret = ((Plot_Cmap){ .tag = Plot_Cmap_Viridis });
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Plot_Cmap Plot_Coolwarm (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  Plot_Cmap m9ret = {0};
+  err->res = m9res;
+  m9ret = ((Plot_Cmap){ .tag = Plot_Cmap_Coolwarm });
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+void Plot_SetLineColor (int64_t series, m9_sl_CHAR hex, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  if (((series < INT64_C(0)) || (series >= Plot_MaxSer))) {
+    goto L_ret;
+  }
+  (*(m9_sl_CHAR *) m9_at (serHex.v, series, INT64_C(4), sizeof (m9_sl_CHAR), err)) = hex;
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -462,9 +519,9 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
     m9t2to = m9_sub_i64 ((*(int64_t *) m9_at (serN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      v = (*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+      v = (*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
       if (err->exc) goto L_ret;
-      w = (*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+      w = (*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
       if (err->exc) goto L_ret;
       bool m9t3 = (Plot_Loggable (v, logX, err) && Plot_Loggable (w, logY, err));
       if (err->exc) goto L_ret;
@@ -550,7 +607,7 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
       for (; i <= m9t7to; i += 1) {
         v = Plot_BarPos (s, i, err);
         if (err->exc) goto L_ret;
-        w = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+        w = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
         if (err->exc) goto L_ret;
         bool m9t8 = (!Plot_IsNaN (w, err));
         if (err->exc) goto L_ret;
@@ -858,7 +915,7 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
       m9t13to = m9_sub_i64 ((*(int64_t *) m9_at (barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; i <= m9t13to; i += 1) {
-        w = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+        w = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
         if (err->exc) goto L_ret;
         bool m9t14 = (!Plot_IsNaN (w, err));
         if (err->exc) goto L_ret;
@@ -980,7 +1037,7 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
         m9t17to = m9_sub_i64 ((*(int64_t *) m9_at (barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
         if (err->exc) goto L_ret;
         for (; i <= m9t17to; i += 1) {
-          w = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+          w = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
           if (err->exc) goto L_ret;
           bool m9t18 = (!Plot_IsNaN (w, err));
           if (err->exc) goto L_ret;
@@ -1062,9 +1119,9 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
     m9t24to = m9_sub_i64 ((*(int64_t *) m9_at (serN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t24to; i += 1) {
-      v = (*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+      v = (*(double *) m9_at (serX.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
       if (err->exc) goto L_ret;
-      w = (*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+      w = (*(double *) m9_at (serY.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
       if (err->exc) goto L_ret;
       bool m9t25 = (!((Plot_Loggable (v, logX, err) && Plot_Loggable (w, logY, err))));
       if (err->exc) goto L_ret;
@@ -1095,7 +1152,7 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
     } }
     DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s63, 22 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitColor (pool, &(d), (*(int64_t *) m9_at (serCol.v, s, INT64_C(4), sizeof (int64_t), err)), err);
+    Plot_EmitLineColor (pool, &(d), s, err);
     if (err->exc) goto L_ret;
     DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s64, 22 }), err);
     if (err->exc) goto L_ret;
@@ -1124,7 +1181,7 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
     if (err->exc) goto L_ret;
     DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s69, 10 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitColor (pool, &(d), (*(int64_t *) m9_at (serCol.v, s, INT64_C(4), sizeof (int64_t), err)), err);
+    Plot_EmitLineColor (pool, &(d), s, err);
     if (err->exc) goto L_ret;
     DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s70, 20 }), err);
     if (err->exc) goto L_ret;
@@ -1259,6 +1316,10 @@ m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plo
       mn = (- mx);
     }
   }
+  if (heatFixed) {
+    mn = heatLo;
+    mx = heatHi;
+  }
   if ((mx == mn)) {
     mx = (mn + 1.0);
   }
@@ -1382,6 +1443,23 @@ L_ret: ;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
+}
+
+void Plot_SetHeatRange (double lo, double hi, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  if ((lo < hi)) {
+    heatLo = lo;
+    heatHi = hi;
+    heatFixed = true;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
 }
 
 static bool Plot_IsNaN (double v, m9_state *err)
@@ -1807,6 +1885,27 @@ L_ret: ;
   return m9ret;
 }
 
+static void Plot_EmitLineColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9t1 = (((*(m9_sl_CHAR *) m9_at (serHex.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err))).len > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    DynStr_Append (pool, d, (*(m9_sl_CHAR *) m9_at (serHex.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err)), err);
+    if (err->exc) goto L_ret;
+  } else {
+    Plot_EmitColor (pool, d, (*(int64_t *) m9_at (serCol.v, s, INT64_C(4), sizeof (int64_t), err)), err);
+    if (err->exc) goto L_ret;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
 static void Plot_EmitBarColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -2025,7 +2124,7 @@ static double Plot_BarPos (int64_t s, int64_t i, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+  m9ret = (*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -2065,9 +2164,9 @@ static double Plot_SlotWidth (m9_state *err)
     m9t2to = m9_sub_i64 ((*(int64_t *) m9_at (barN.v, s, INT64_C(4), sizeof (int64_t), err)), INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      a = (*(double *) m9_at (barAt.v, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(1), err), INT64_C(4096), sizeof (double), err));
+      a = (*(double *) m9_at (barAt.v, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(1), err), INT64_C(32768), sizeof (double), err));
       if (err->exc) goto L_ret;
-      b = (*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+      b = (*(double *) m9_at (barAt.v, m9_add_i64 (m9_mul_i64 (s, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
       if (err->exc) goto L_ret;
       bool m9t3 = (!((Plot_IsNaN (a, err) || Plot_IsNaN (b, err))));
       if (err->exc) goto L_ret;
@@ -2121,7 +2220,7 @@ static double Plot_StackBase (int64_t s, int64_t i, m9_state *err)
     bool m9t2 = (i < (*(int64_t *) m9_at (barN.v, k, INT64_C(4), sizeof (int64_t), err)));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      v = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (k, Plot_MaxPts, err), i, err), INT64_C(4096), sizeof (double), err));
+      v = (*(double *) m9_at (barV.v, m9_add_i64 (m9_mul_i64 (k, Plot_MaxPts, err), i, err), INT64_C(32768), sizeof (double), err));
       if (err->exc) goto L_ret;
       bool m9t3 = (!Plot_IsNaN (v, err));
       if (err->exc) goto L_ret;
@@ -2137,4 +2236,20 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
+}
+
+void Plot_m9init (m9_state *err)
+{
+  static int m9done = 0;
+  if (m9done) return;
+  m9done = 1;
+  m9_pool m9frame = {0};
+  m9_pool *m9prev = err->res;
+  err->res = &m9frame;
+  DynStr_m9init (err); if (err->exc) goto L_ret;
+  Mat_m9init (err); if (err->exc) goto L_ret;
+L_ret: ;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&m9frame);
+  err->res = m9prev;
 }

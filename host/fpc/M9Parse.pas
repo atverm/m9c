@@ -703,6 +703,28 @@ begin
         end;
         Expect (tkRParen, ')');
       end;
+    tkPROCEDURE :
+      begin
+        { a procedure type: PROCEDURE (params) [: T] [RAISES ...], the
+          head of a ProcDecl without a name, and the same three kids
+          so the checker's parameter walk serves both
+          (docs/proctype-plan.md) }
+        Result := NewNode (nkProcType);
+        Bump;
+        Expect (tkLParen, '(');
+        Result.Add (PParamList);
+        Expect (tkRParen, ')');
+        if cur.kind = tkColon then
+        begin
+          Bump;
+          if cur.kind = tkRO then begin Result.f3 := True; Bump; end;
+          Result.Add (PType ());
+        end
+        else
+          Result.Add (nil);
+        if cur.kind = tkRAISES then Result.Add (PRaises)
+        else Result.Add (nil);
+      end;
   else
     begin
       Err ('type expected, found ' + KindName (cur.kind));

@@ -31,7 +31,7 @@ PROCEDURE AddLine (RO xs: SLICE OF F64 ;
                    RO ys: SLICE OF F64 ;
                    colorIdx: I64 ;
                    RO KEPT label: STR) ;
-  (* up to 4 series, up to 1024 points; colorIdx 0..3 = matplotlib
+  (* up to 4 series, up to 8192 points; colorIdx 0..3 = matplotlib
      C0..C3; NaN values lift the pen, as mpl does.  The label slice
      is retained until Render -- ledger material, like AddRoute.     *)
 
@@ -44,11 +44,12 @@ PROCEDURE SetDots (RO KEPT xs: SLICE OF F64 ; RO KEPT ys: SLICE OF F64) ;
      ClearFigure drops the layer with everything else.              *)
 
 CONST
-  (* bar style codes.  Plain I64 constants rather than a CASE RECORD
-     because a payload-less variant constructor cannot be written from
-     another module today (the generator gap Csv and Frame already
-     route around); a named constant reads the same at a call site and
-     works everywhere. *)
+  (* bar style codes.  Plain I64 constants, chosen when a payload-less
+     variant constructor could not be written from another module.
+     That generator gap closed 2026-09-15; the codes stay because
+     every caller spells them and a named constant reads the same at
+     a call site.  Ledgered in `docs/p3-ledger.md` as a workaround
+     left standing. *)
   BarVertical   = 0 ;   (* bars rise from the x axis        *)
   BarHorizontal = 1 ;   (* bars run right from the y axis   *)
   BarGrouped    = 0 ;   (* series side by side in each slot *)
@@ -60,7 +61,7 @@ PROCEDURE AddBars (RO at: SLICE OF F64 ;
                    RO v: SLICE OF F64 ;
                    colorIdx: I64 ;
                    RO KEPT label: STR) ;
-  (* one bar series: up to 4 of them, up to 1024 bars each, drawn
+  (* one bar series: up to 4 of them, up to 8192 bars each, drawn
      UNDER any lines and dots.
 
        at -- where each bar sits on the CATEGORY axis (x for vertical
@@ -108,6 +109,23 @@ PROCEDURE SetBarColor (series: I64 ; RO KEPT hex: STR) ;
      verbatim, so it is the caller's business that it is a colour;
      an empty string restores the palette entry.                   *)
 
+PROCEDURE Viridis () : Cmap ;
+PROCEDURE Coolwarm () : Cmap ;
+  (* the colour maps as PROCEDURES, written when a payload-less
+     variant constructor from ANOTHER module type-checked and the
+     generator refused it (met by RenderHeat's first caller outside
+     this file).  Since 2026-09-15 `Plot.Cmap.Viridis` works from
+     anywhere; these two remain as the shorter spelling their callers
+     use, and answer exactly that constructor. *)
+
+PROCEDURE SetLineColor (series: I64 ; RO KEPT hex: STR) ;
+  (* the line twin of SetBarColor: override one line series' palette
+     entry with an SVG colour -- 'black', '#cc3311'.  Written into
+     the document verbatim, so it is the caller's business that it is
+     a colour; an empty string restores the C0..C3 entry.  Added
+     because the palette has no black and a measured series wants
+     one (Alex, 2026-09-01).                                        *)
+
 PROCEDURE SetLogX (on: BOOL) ;
 PROCEDURE SetLogY (on: BOOL) ;
   (* a base-10 logarithmic axis, for lines, dots and bars alike.
@@ -139,6 +157,11 @@ PROCEDURE RenderHeat (VAR pool: POOL ;
   (* symmetric centres the scale on zero, for anomaly fields;
      NaN cells render white                                          *)
 
+PROCEDURE SetHeatRange (lo: F64 ; hi: F64) ;
+  (* pin the next RenderHeat's colour range to [lo, hi], overriding
+     both the data min/max and symmetric; ClearFigure clears it.  For
+     a rounded, stable scale that a caller controls.                 *)
+
 END Plot.
 
 
@@ -159,9 +182,16 @@ FROM cfmt IMPORT FmtG ;
 IMPORT Mat ;
 IMPORT DynStr ;
 
+VAR
+  heatLo, heatHi : F64 ;
+  heatFixed : BOOL ;
+
 CONST
   MaxSer  = 4 ;
-  MaxPts  = 1024 ;
+  MaxPts  = 8192 ;        (* was 1024: a year of hourly-selected obs
+                             at one station is ~1 700 rows, and the
+                             cap cut the station series at day 230
+                             (2026-09-15) *)
   FigW    = 720.0 ;
   FigH    = 440.0 ;
   MLeft   = 70.0 ;
@@ -176,7 +206,7 @@ CONST
                             the same softness the reversed NEW had *)
 
 VAR
-  serX, serY : ARRAY 4096 OF F64 ;       (* MaxSer x MaxPts, flat *)
+  serX, serY : ARRAY 32768 OF F64 ;      (* MaxSer x MaxPts, flat *)
   serN, serCol : ARRAY 4 OF I64 ;
   serLbl : ARRAY 4 OF STR ;
   nSer : I64 ;
@@ -185,9 +215,10 @@ VAR
      so the two layers are read the same way.  Everything here is
      zero or FALSE until a caller asks for it, which is what keeps a
      figure without bars emitting exactly the bytes it always did. *)
-  barAt, barV : ARRAY 4096 OF F64 ;
+  barAt, barV : ARRAY 32768 OF F64 ;
   barN, barCol : ARRAY 4 OF I64 ;
   barLbl, barHex : ARRAY 4 OF STR ;
+  serHex : ARRAY 4 OF STR ;
   barErr : ARRAY 4 OF SLICE OF F64 ;     (* retained, see the def *)
   barHasErr : ARRAY 4 OF BOOL ;
   nBar : I64 ;
@@ -311,6 +342,15 @@ BEGIN
   RETURN FigH - MBottom - (y - ymin) / (ymax - ymin) * (FigH - MTop - MBottom)
 END PYof ;
 
+PROCEDURE SetHeatRange (lo: F64 ; hi: F64) =
+BEGIN
+  IF lo < hi THEN
+    heatLo := lo ;
+    heatHi := hi ;
+    heatFixed := TRUE
+  END
+END SetHeatRange ;
+
 PROCEDURE ClearFigure () =
 VAR i : I64 ;
 BEGIN
@@ -319,7 +359,8 @@ BEGIN
   nBar := 0 ;
   FOR i := 0 TO MaxSer - 1 DO
     barHasErr[i] := FALSE ;
-    barHex[i] := ''
+    barHex[i] := '' ;
+    serHex[i] := ''
   END ;
   (* the style defaults ARE the documented ones, set here rather than
      at declaration so a second figure starts where the first did *)
@@ -329,7 +370,8 @@ BEGIN
   barFilled := TRUE ;
   barWidth := 0.8 ;
   logX := FALSE ;
-  logY := FALSE
+  logY := FALSE ;
+  heatFixed := FALSE
 END ClearFigure ;
 
 (* base-10 log, by the identity log10 x = ln x / ln 10, because Math
@@ -412,6 +454,35 @@ BEGIN
   IF series < 0 OR series >= MaxSer THEN RETURN END ;
   barHex[series] := hex
 END SetBarColor ;
+
+PROCEDURE Viridis () : Cmap =
+BEGIN
+  RETURN Cmap.Viridis
+END Viridis ;
+
+PROCEDURE Coolwarm () : Cmap =
+BEGIN
+  RETURN Cmap.Coolwarm
+END Coolwarm ;
+
+PROCEDURE SetLineColor (series: I64 ; RO KEPT hex: STR) =
+BEGIN
+  IF series < 0 OR series >= MaxSer THEN RETURN END ;
+  serHex[series] := hex
+END SetLineColor ;
+
+PROCEDURE EmitLineColor (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+                         s: I64) =
+  (* the caller's colour if one was named, else the palette.  Kept
+     as one procedure so the line and its legend swatch cannot
+     disagree -- they are two call sites of the same question. *)
+BEGIN
+  IF LEN (serHex[s]) > 0 THEN
+    DynStr.Append (pool, d, serHex[s])
+  ELSE
+    EmitColor (pool, d, serCol[s])
+  END
+END EmitLineColor ;
 
 PROCEDURE AddBars (RO at: SLICE OF F64 ;
                    RO v: SLICE OF F64 ;
@@ -947,7 +1018,7 @@ BEGIN
       END
     END ;
     DynStr.Append (pool, d, '" fill="none" stroke="') ;
-    EmitColor (pool, d, serCol[s]) ;
+    EmitLineColor (pool, d, s) ;
     DynStr.Append (pool, d, '" stroke-width="1.8"/>')
   END ;
 
@@ -960,7 +1031,7 @@ BEGIN
     EmitR (pool, d, FigW - MRight - 126.0) ;
     DynStr.Append (pool, d, '" y2="') ; EmitR (pool, d, ly - 4.0) ;
     DynStr.Append (pool, d, '" stroke="') ;
-    EmitColor (pool, d, serCol[s]) ;
+    EmitLineColor (pool, d, s) ;
     DynStr.Append (pool, d, '" stroke-width="2"/>') ;
     DynStr.Append (pool, d, '<text x="') ;
     EmitR (pool, d, FigW - MRight - 120.0) ;
@@ -1029,6 +1100,11 @@ BEGIN
   Mat.MinMax (m, mn, mx) ;
   IF symmetric THEN
     IF -mn > mx THEN mx := -mn ELSE mn := -mx END
+  END ;
+  (* a pinned range wins over both, symmetric included *)
+  IF heatFixed THEN
+    mn := heatLo ;
+    mx := heatHi
   END ;
   IF mx = mn THEN mx := mn + 1.0 END ;
   cw := (FigW - MLeft - MRight - 60.0) / F64 (nc) ;

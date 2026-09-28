@@ -13,6 +13,7 @@ pairwise one).
 Requires: numpy, zarr<3 (v2 store layout), numcodecs (blosc).
 Usage: python3 genstore.py [outdir]   (default ./stores)
 """
+import math
 import os
 import shutil
 import sys
@@ -63,8 +64,37 @@ def bench_store(root):
     n = int(np.isfinite(b).sum())
     s = float(np.nansum(b))
     assert n == 15800721, n
-    assert repr(s) == "6324247734.661942", repr(s)
-    print("bench.zarr written; nansum and n goldens verified")
+    # np.nansum is a PAIRWISE reduction whose grouping changed between
+    # numpy versions: 6324247734.661942 (the driver's recorded golden,
+    # numpy of 2026-08-21) and ...661961 (numpy 1.26.4 on zoefii) are
+    # both this array.  The correctly rounded sum is unique, so THAT is
+    # what is pinned; nansum is held to it within the order tolerance
+    # the bench driver already documents.
+    exact = math.fsum(b[np.isfinite(b)].tolist())
+    assert repr(exact) == "6324247734.661941", repr(exact)
+    assert abs(s - exact) < 1e-4, (repr(s), repr(exact))
+    print("bench.zarr written; n golden verified, fsum %r, nansum %r"
+          % (exact, s))
+
+
+def time_store(root):
+    """4 x <M8[ns], one chunk, blosc lz4: xarray's datetime64 axis,
+    which is an <i8 of epoch nanoseconds wearing a unit.  The driver
+    reads the integers numpy itself assigns (astype int64); one stamp
+    is before the epoch so the sign is exercised.  zarr writes
+    fill_value 0 for this dtype, and the driver checks that too."""
+    path = os.path.join(root, "time.zarr")
+    shutil.rmtree(path, ignore_errors=True)
+    t = np.array(["2025-01-01T00:00:00", "2025-01-01T01:00:00",
+                  "2025-07-15T12:00:00", "1969-12-31T23:59:59"],
+                 dtype="<M8[ns]")
+    z = zarr.open(path, mode="w", shape=(4,), chunks=(4,),
+                  dtype="<M8[ns]", compressor=zarr.Blosc(cname="lz4"))
+    z[:] = t
+    i = t.astype("int64")
+    assert int(i[2]) == 1752580800000000000, i[2]
+    assert int(i[3]) == -1000000000, i[3]
+    print("time.zarr written; the two integer goldens verified")
 
 
 def main():
@@ -72,6 +102,7 @@ def main():
     os.makedirs(root, exist_ok=True)
     co2_store(root)
     bench_store(root)
+    time_store(root)
     print("stores in", os.path.abspath(root),
           "(not for the repo: ~102MB)")
 

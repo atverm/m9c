@@ -6,6 +6,8 @@
 #include "Lex.h"
 #include "DynStr.h"
 
+void Parse_m9init (m9_state *err);
+
 typedef struct Parse_Parser Parse_Parser;
 
 #define Parse_MaxErr INT64_C(64)

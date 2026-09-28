@@ -21,22 +21,25 @@ DEFINITION MODULE Stats ;
    The random Stream is a RECORD the caller owns, like the Fortran
    port's Random.Stream: no module state, so two streams cannot
    alias and a run is reproducible from its seed by construction.
-   The generator is a 64-bit multiplicative-congruential (Knuth's
-   MMIX constants) answering the top 53 bits -- chosen because M9
-   has no bit operators yet (Bits is pre-registered), and an LCG is
-   the strongest generator expressible in wrapping arithmetic alone.
-   The driver holds the first draws bit-for-bit to an independent
-   reimplementation and the moments of a million draws to their
-   distribution values.  When Bits arrives, a stronger generator can
-   replace this one behind the same record. *)
+   The generator is xoshiro256** (Blackman and Vigna, 2021: 256 bits
+   of state, period 2^256 - 1, passes BigCrush), seeded through
+   splitmix64 so that any I64 seed, zero included, gives a full
+   state; a uniform draw is the top 53 bits of one output.  It
+   replaced Knuth's MMIX LCG on 2026-09-27, the day corpus/Bits.m9
+   made a rotate and an xor expressible -- the LCG was the strongest
+   generator wrapping arithmetic alone could spell, and its low bits
+   were as weak as every LCG's.  The change moved every seeded
+   golden in the repository, deliberately and at once.  The driver
+   holds the first draws bit-for-bit to an independent
+   reimplementation (tools/statsgold.py) and the moments of a
+   million draws to their distribution values. *)
+
+IMPORT Faults ;
 
 EXCEPTION
   TooFew (got, need: I64) ;
   (* the statistic needs at least `need` values; the sample has
      `got`.  Mean of nothing is not zero, it is a refusal. *)
-  BadArg (RO what: STR) ;
-  (* a percentile outside [0,100], a nonpositive sigma or lambda,
-     an empty range: named, not NaN'd *)
 
 PROCEDURE Mean (RO xs: SLICE OF F64) : F64
   RAISES TooFew, ValueRange ;
@@ -54,7 +57,7 @@ PROCEDURE StdP (RO xs: SLICE OF F64) : F64
 PROCEDURE Median (RO xs: SLICE OF F64) : F64
   RAISES TooFew, ValueRange ;
 PROCEDURE Percentile (RO xs: SLICE OF F64 ; p: F64) : F64
-  RAISES TooFew, BadArg, ValueRange ;
+  RAISES TooFew, Faults.BadArg, ValueRange ;
   (* numpy.percentile's linear rule: at rank (n-1) * p/100,
      interpolated between the two order statistics around it *)
 
@@ -96,43 +99,48 @@ PROCEDURE TTest2 (RO xs, ys: SLICE OF F64) : Test
 PROCEDURE NormalCdf (x: F64) : F64 RAISES ValueRange ;
   (* the standard normal CDF, through Math.Erfc *)
 PROCEDURE TTail (t: F64 ; dof: F64) : F64
-  RAISES ValueRange, Overflow, BadArg ;
+  RAISES ValueRange, Overflow, Faults.BadArg ;
   (* upper tail P(T > t) of Student's t -- the p-value building
      block, exposed because sooner or later a caller wants the
      one-sided answer the tests do not give *)
 
 TYPE
   Stream = RECORD
-    x : I64 ;            (* the 64-bit generator state, AS A BIT
-                            PATTERN: the wrapping ops are defined
-                            mod 2^64 whatever the sign, and keeping
-                            the state signed keeps every step inside
-                            checked I64 arithmetic -- U64 division
-                            is not generatable today (owed ledger) *)
-    have : BOOL ;        (* a cached second normal draw *)
+    s0, s1, s2, s3 : I64 ;  (* the four 64-bit words of xoshiro256**
+                               state, each held AS A BIT PATTERN in
+                               an I64: Bits and the wrapping ops are
+                               defined on the pattern whatever the
+                               sign, and U64 is the type the
+                               generator serves worst *)
+    have : BOOL ;           (* a cached second normal draw *)
     spare : F64 ;
   END ;
 
-PROCEDURE Seed (s: I64) : Stream ;
-  (* any seed is legal; equal seeds give equal streams *)
-PROCEDURE Uniform (VAR st: Stream) : F64 ;
+PROCEDURE Seed (s: I64) : Stream RAISES ValueRange ;
+  (* any seed is legal; equal seeds give equal streams.  ValueRange
+     is Bits speaking through a shift count that is a constant here
+     -- the set is proved, not narrowed by hand *)
+PROCEDURE Uniform (VAR st: Stream) : F64 RAISES ValueRange ;
   (* [0, 1), 53 random bits *)
 PROCEDURE UniformI (VAR st: Stream ; lo, hi: I64) : I64
-  RAISES BadArg ;
+  RAISES Faults.BadArg, ValueRange ;
   (* an integer in [lo, hi], inclusive, unbiased by rejection *)
 PROCEDURE Normal (VAR st: Stream) : F64 RAISES ValueRange ;
   (* standard normal, polar method *)
 PROCEDURE Exponential (VAR st: Stream ; lambda: F64) : F64
-  RAISES ValueRange, BadArg ;
+  RAISES ValueRange, Faults.BadArg ;
 PROCEDURE LogNormal (VAR st: Stream ; mu, sigma: F64) : F64
-  RAISES ValueRange, Overflow, BadArg ;
+  RAISES ValueRange, Overflow, Faults.BadArg ;
 
 END Stats.
 
 
 IMPLEMENTATION MODULE Stats ;
 
+IMPORT Faults ;
+
 IMPORT Math ;
+IMPORT Bits ;
 
 (* ---- guards ---- *)
 
@@ -261,7 +269,7 @@ BEGIN
 END Sorted ;
 
 PROCEDURE Percentile (RO xs: SLICE OF F64 ; p: F64) : F64
-  RAISES TooFew, BadArg, ValueRange =
+  RAISES TooFew, Faults.BadArg, ValueRange =
 VAR
   scratch : POOL ;
   a : SLICE OF F64 ;
@@ -270,7 +278,7 @@ VAR
 BEGIN
   Need (xs, 1) ;
   IF NOT (p >= 0.0 AND p <= 100.0) THEN
-    RAISE BadArg ('percentile outside [0, 100]')
+    RAISE Faults.BadArg ('percentile outside [0, 100]')
   END ;
   a := Sorted (scratch, xs) ;
   h := F64 (LEN (xs) - 1) * p / 100.0 ;
@@ -400,11 +408,11 @@ BEGIN
 END NormalCdf ;
 
 PROCEDURE TTail (t: F64 ; dof: F64) : F64
-  RAISES ValueRange, Overflow, BadArg =
+  RAISES ValueRange, Overflow, Faults.BadArg =
 VAR p : F64 ;
 BEGIN
   IF NOT (dof > 0.0) THEN
-    RAISE BadArg ('degrees of freedom must be positive')
+    RAISE Faults.BadArg ('degrees of freedom must be positive')
   END ;
   p := 0.5 * BetaI (dof / 2.0, 0.5, dof / (dof + t * t)) ;
   IF t < 0.0 THEN
@@ -416,7 +424,7 @@ END TTail ;
 PROCEDURE TwoSided (t: F64 ; dof: F64) : F64
   RAISES ValueRange, Overflow =
 BEGIN
-  (* dof > 0 by construction at every caller, so BadArg is
+  (* dof > 0 by construction at every caller, so Faults.BadArg is
      unreachable and not declared: the private twin of TTail *)
   RETURN BetaI (dof / 2.0, 0.5, dof / (dof + t * t))
 END TwoSided ;
@@ -502,72 +510,99 @@ END TTest2 ;
 (* ---- random draws ---- *)
 
 CONST
-  MulA = 6364136223846793005 ;     (* Knuth, MMIX *)
-  AddC = 1442695040888963407 ;
   TwoP53 = 9007199254740992.0 ;
   TwoP53i = 9007199254740992 ;
   TwoP62 = 4611686018427387904 ;
-  TwoP52 = 4503599627370496 ;
+  (* splitmix64's three constants, 0x9E3779B97F4A7C15, 0xBF58476D1CE4E5B9
+     and 0x94D049BB133111EB, as I64 PATTERNS: each is above 2^63, which
+     no I64 literal can spell, so the value minus 2^64 stands in -- the
+     same 64 bits, and the wrapping ops do not care about the sign *)
+  SmGamma = -7046029254386353131 ;
+  SmMul1 = -4658895280553007687 ;
+  SmMul2 = -7723592293110705685 ;
 
-PROCEDURE Step (VAR st: Stream) =
+(* rotate left by k in 1..63; the ValueRange in every RAISES below is
+   Bits refusing a shift count, which these constants never are *)
+PROCEDURE Rotl (x: I64 ; k: I64) : I64 RAISES ValueRange =
 BEGIN
-  st.x := st.x *% MulA +% AddC
-END Step ;
+  RETURN Bits.Or (Bits.Shl (x, k), Bits.Shr (x, 64 - k))
+END Rotl ;
 
-PROCEDURE Top53 (x: I64) : I64 =
-  (* the top 53 bits of x read as a 64-bit unsigned pattern.  With
-     u = x mod 2^64: for x >= 0, u = x, and truncation is floor; for
-     x < 0, u = x + 2^64 and (y + 2^63) div 2048 = y div 2048 + 2^52
-     with y = x + 2^63 in [0, 2^63) -- built in two 2^62 halves so
-     no checked add can overflow.  Exact, and held bit for bit to an
-     independent reimplementation by the driver. *)
+(* one splitmix64 output, advancing x: the seeding generator the
+   xoshiro authors prescribe, so that no seed yields the all-zero
+   state xoshiro cannot leave *)
+PROCEDURE SplitMix (VAR x: I64) : I64 RAISES ValueRange =
+VAR z : I64 ;
 BEGIN
-  IF x >= 0 THEN
-    RETURN x DIV 2048
-  END ;
-  RETURN (x + TwoP62 + TwoP62) DIV 2048 + TwoP52
+  x := x +% SmGamma ;
+  z := x ;
+  z := Bits.Xor (z, Bits.Shr (z, 30)) *% SmMul1 ;
+  z := Bits.Xor (z, Bits.Shr (z, 27)) *% SmMul2 ;
+  RETURN Bits.Xor (z, Bits.Shr (z, 31))
+END SplitMix ;
+
+(* xoshiro256**: the reference algorithm line for line, with *% for
+   the two multiplies the reference does in uint64_t *)
+PROCEDURE Next (VAR st: Stream) : I64 RAISES ValueRange =
+VAR r, t : I64 ;
+BEGIN
+  r := Rotl (st.s1 *% 5, 7) *% 9 ;
+  t := Bits.Shl (st.s1, 17) ;
+  st.s2 := Bits.Xor (st.s2, st.s0) ;
+  st.s3 := Bits.Xor (st.s3, st.s1) ;
+  st.s1 := Bits.Xor (st.s1, st.s2) ;
+  st.s0 := Bits.Xor (st.s0, st.s3) ;
+  st.s2 := Bits.Xor (st.s2, t) ;
+  st.s3 := Rotl (st.s3, 45) ;
+  RETURN r
+END Next ;
+
+(* the top 53 bits of a 64-bit pattern, as the authors recommend for
+   a double: a logical shift, zeros entering above, so the answer is
+   in [0, 2^53) whatever the sign of x *)
+PROCEDURE Top53 (x: I64) : I64 RAISES ValueRange =
+BEGIN
+  RETURN Bits.Shr (x, 11)
 END Top53 ;
 
-PROCEDURE Seed (s: I64) : Stream =
-VAR st : Stream ;
+PROCEDURE Seed (s: I64) : Stream RAISES ValueRange =
+VAR st : Stream ;  x : I64 ;
 BEGIN
-  st.x := s ;                    (* any I64 IS a 64-bit pattern *)
+  x := s ;                       (* any I64 IS a 64-bit pattern *)
+  st.s0 := SplitMix (x) ;
+  st.s1 := SplitMix (x) ;
+  st.s2 := SplitMix (x) ;
+  st.s3 := SplitMix (x) ;
   st.have := FALSE ;
   st.spare := 0.0 ;
-  (* warm past the seed's own bits *)
-  Step (st) ;
-  Step (st) ;
   RETURN st
 END Seed ;
 
-PROCEDURE Uniform (VAR st: Stream) : F64 =
+PROCEDURE Uniform (VAR st: Stream) : F64 RAISES ValueRange =
 BEGIN
-  Step (st) ;
   (* F64 of a 53-bit integer is exact *)
-  RETURN F64 (Top53 (st.x)) / TwoP53
+  RETURN F64 (Top53 (Next (st))) / TwoP53
 END Uniform ;
 
 PROCEDURE UniformI (VAR st: Stream ; lo, hi: I64) : I64
-  RAISES BadArg =
+  RAISES Faults.BadArg, ValueRange =
 VAR
   m, limit, k : I64 ;
 BEGIN
-  IF hi < lo THEN RAISE BadArg ('empty range') END ;
+  IF hi < lo THEN RAISE Faults.BadArg ('empty range') END ;
   IF lo < -TwoP62 OR hi > TwoP62 - 1 THEN
     (* keeps hi - lo + 1 from overflowing; nobody rolls a die with
        2^62 faces *)
-    RAISE BadArg ('range wider than the generator draws')
+    RAISE Faults.BadArg ('range wider than the generator draws')
   END ;
   m := hi - lo + 1 ;
   IF m > TwoP53i THEN
-    RAISE BadArg ('range wider than the generator draws')
+    RAISE Faults.BadArg ('range wider than the generator draws')
   END ;
   limit := (TwoP53i DIV m) * m ;
-  Step (st) ;
-  k := Top53 (st.x) ;
+  k := Top53 (Next (st)) ;
   WHILE k >= limit DO
-    Step (st) ;
-    k := Top53 (st.x)
+    k := Top53 (Next (st))
   END ;
   RETURN lo + k MOD m
 END UniformI ;
@@ -595,19 +630,19 @@ BEGIN
 END Normal ;
 
 PROCEDURE Exponential (VAR st: Stream ; lambda: F64) : F64
-  RAISES ValueRange, BadArg =
+  RAISES ValueRange, Faults.BadArg =
 VAR u : F64 ;
 BEGIN
-  IF NOT (lambda > 0.0) THEN RAISE BadArg ('lambda must be positive') END ;
+  IF NOT (lambda > 0.0) THEN RAISE Faults.BadArg ('lambda must be positive') END ;
   u := Uniform (st) ;
   (* 1 - u is in (0, 1]: Log never sees zero *)
   RETURN -Math.Log (1.0 - u) / lambda
 END Exponential ;
 
 PROCEDURE LogNormal (VAR st: Stream ; mu, sigma: F64) : F64
-  RAISES ValueRange, Overflow, BadArg =
+  RAISES ValueRange, Overflow, Faults.BadArg =
 BEGIN
-  IF NOT (sigma > 0.0) THEN RAISE BadArg ('sigma must be positive') END ;
+  IF NOT (sigma > 0.0) THEN RAISE Faults.BadArg ('sigma must be positive') END ;
   RETURN Math.Exp (mu + sigma * Normal (st))
 END LogNormal ;
 

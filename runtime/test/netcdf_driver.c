@@ -160,7 +160,7 @@ int main (void)
       NetCDF_GetF64 (f, v, (m9_sl_I64){ start, 2 }, (m9_sl_I64){ c3, 2 },
                      (m9_sl_F64){ small, 2 }, &e);
       ok ("a buffer smaller than the slab raises SizeError",
-          e.exc == &NetCDF_SizeError && e.i[0] == 2 &&
+          e.exc == &Faults_SizeError && e.i[0] == 2 &&
           e.i[1] == NLAT * NLON);
       e.exc = NULL;
     }

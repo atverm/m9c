@@ -28,6 +28,7 @@ end;
 
 function E (n: TNode): string; forward;
 function TypeStr (n: TNode; ind: Integer): string; forward;
+function ParamsStr (pl: TNode): string; forward;
 function SeqStr (n: TNode; ind: Integer): string; forward;
 function DeclLines (n: TNode; ind: Integer): string; forward;
 
@@ -226,6 +227,24 @@ begin
           Result := Result + n.kids[i].a;
         end;
         Result := Result + ')';
+      end;
+    nkProcType :
+      begin
+        { inline, RAISES on the same line: a type is one line where a
+          declaration's heading breaks before its RAISES }
+        Result := 'PROCEDURE (' + ParamsStr (n.kids[0]) + ')';
+        if n.kids[1] <> nil then
+          if n.f3 then Result := Result + ' : RO ' + TypeStr (n.kids[1], ind)
+          else Result := Result + ' : ' + TypeStr (n.kids[1], ind);
+        if n.kids[2] <> nil then
+        begin
+          Result := Result + ' RAISES ';
+          for i := 0 to High (n.kids[2].kids) do
+          begin
+            if i > 0 then Result := Result + ', ';
+            Result := Result + QualStr (n.kids[2].kids[i]);
+          end;
+        end;
       end;
   else
     Result := '?type?';

@@ -114,6 +114,23 @@ Worth transcribing rather than approximating: 500 of the NOAA
 ObsPack store's 971 time axes are neither the whole array nor
 the 50,000 its data columns take.
 
+### DeclareF32 (VAR pool: POOL ; RO adir: STR ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
+
+THE CHUNK-WISE WRITER, half one: `.zarray` (an `<f4` with a NaN
+fill) and `.zattrs` for an array whose chunks the caller will
+write ONE AT A TIME with PutChunkF32 -- a panel too large to hold
+whole (fluxnet-shuttle's era5_hh is 771 x 788,928, 2.4 GB per
+variable) is written one time band at a time, 27 MB.  A declared
+array with no chunks READS AS ALL FILL, so this is for a caller
+that will write every chunk.
+
+### PutChunkF32 (VAR pool: POOL ; RO adir: STR ; RO ci: SLICE OF I64 ; RO data: SLICE OF F32 ; RO chunks: SLICE OF I64 ; comp: I64) RAISES Error, ValueRange
+
+half two: ONE WHOLE CHUNK at grid index `ci` (per axis), `data`
+holding exactly the product of `chunks` elements in C order --
+an edge chunk padded by the caller with the fill, as zarr pads
+it -- to `<ci0>.<ci1>...` under adir, compressed as declared.
+
 ### WriteIntFill (VAR pool: POOL ; RO adir: STR ; RO data: SLICE OF I64 ; width: I64 ; signed: BOOL ; hasFill: BOOL ; fill: I64 ; RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ; RO dims: SLICE OF STR ; comp: I64) RAISES Error, ValueRange
 
 WriteInt, with the fill the SOURCE declares: `hasFill` FALSE

@@ -1,0 +1,99 @@
+MODULE ProcUse ;
+
+(* Procedure types, exercised in every position par 2.2.3 allows,
+   and RUN by runtime/test/build.sh against its expected output: a
+   named type with and without a result and a RAISES clause, a
+   parameter of the type called through, an OPT variable and an OPT
+   field taking SOME of a procedure and yielding it through IS SOME,
+   a VAR and an RO parameter inside the type.  gendiff holds both
+   generators to the same C for it.  docs/proctype-plan.md. *)
+
+IMPORT Io ;
+
+TYPE
+  Less = PROCEDURE (a: I64 ; b: I64) : BOOL ;
+  Kernel = PROCEDURE (x: F64) : F64 RAISES ValueRange ;
+  Step = PROCEDURE (VAR acc: I64 ; RO s: STR) ;
+  Holder = RECORD
+    k : OPT Kernel ;
+    n : I64 ;
+  END ;
+
+VAR
+  h : Holder ;
+  chosen : OPT Less ;
+  total : I64 ;
+
+PROCEDURE Up (a: I64 ; b: I64) : BOOL =
+BEGIN
+  RETURN a < b
+END Up ;
+
+PROCEDURE Down (a: I64 ; b: I64) : BOOL =
+BEGIN
+  RETURN a > b
+END Down ;
+
+PROCEDURE Twice (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  IF x < 0.0 THEN RAISE ValueRange END ;
+  RETURN x * 2.0
+END Twice ;
+
+PROCEDURE AddLen (VAR acc: I64 ; RO s: STR) =
+BEGIN
+  acc := acc + LEN (s)
+END AddLen ;
+
+PROCEDURE Apply (k: Kernel ; x: F64) : F64 RAISES ValueRange =
+BEGIN
+  RETURN k (x)
+END Apply ;
+
+PROCEDURE Pick (less: Less ; a: I64 ; b: I64) : I64 =
+  (* the smaller by the caller's order *)
+BEGIN
+  IF less (a, b) THEN RETURN a END ;
+  RETURN b
+END Pick ;
+
+PROCEDURE Each (f: Step ; VAR acc: I64) =
+BEGIN
+  f (acc, 'one') ;
+  f (acc, 'three') ;
+  f (acc, 'fifteen')
+END Each ;
+
+PROCEDURE Show (RO what: STR ; v: I64) =
+BEGIN
+  Io.Write (what) ; Io.Write (' ') ; Io.WriteI64 (v) ; Io.WriteLine ('')
+END Show ;
+
+PROCEDURE Run () RAISES ValueRange =
+VAR v : I64 ;
+BEGIN
+  Show ('Pick Up 3 2 ->', Pick (Up, 3, 2)) ;
+  Show ('Pick Down 3 2 ->', Pick (Down, 3, 2)) ;
+  chosen := SOME (Down) ;
+  IF chosen IS SOME l THEN
+    Show ('Pick chosen 7 9 ->', Pick (l, 7, 9))
+  END ;
+  h.k := SOME (Twice) ;
+  IF h.k IS SOME k THEN
+    Show ('Apply Twice 1.5 ->', I64 (Apply (k, 1.5)))
+  END ;
+  total := 0 ;
+  Each (AddLen, total) ;
+  Show ('Each AddLen ->', total) ;
+  (* on a statement of its own: a raising call nested as an argument
+     is not guarded before the enclosing call runs (the generator's
+     statement-level guard; the ONEFlux report's item 18) *)
+  v := I64 (Apply (Twice, -1.0)) ;
+  Show ('Apply Twice -1 ->', v)
+END Run ;
+
+BEGIN
+  Run ()
+EXCEPT
+| ValueRange : Io.WriteLine ('ValueRange raised, as Kernel declares')
+END ProcUse.

@@ -8,6 +8,8 @@
 #include "Syslog.h"
 #include "Time.h"
 
+void Logger_m9init (m9_state *err);
+
 
 #define Logger_Debug INT64_C(0)
 #define Logger_Info INT64_C(1)

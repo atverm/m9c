@@ -5,6 +5,8 @@
 #include "DynStr.h"
 #include "Http.h"
 
+void HttpServer_m9init (m9_state *err);
+
 typedef struct HttpServer_Router HttpServer_Router;
 typedef struct HttpServer_Route HttpServer_Route;
 typedef struct HttpServer_Router HttpServer_Router;

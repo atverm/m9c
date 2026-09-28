@@ -172,11 +172,11 @@ int main (void)
     ok ("a NaN in the sample refuses", e2.exc == &m9_exc_ValueRange);
     e2.exc = NULL;
     Stats_Percentile (S (X, NX), 101.0, &e2);
-    ok ("percentile 101 refuses", e2.exc == &Stats_BadArg);
+    ok ("percentile 101 refuses", e2.exc == &Faults_BadArg);
     e2.exc = NULL;
     Stats_Stream st = Stats_Seed (1, &e2);
     Stats_UniformI (&st, 5, 4, &e2);
-    ok ("empty integer range refuses", e2.exc == &Stats_BadArg);
+    ok ("empty integer range refuses", e2.exc == &Faults_BadArg);
   }
 
   /* the comparison can fail: a perturbed golden must not pass */

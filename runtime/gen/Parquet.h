@@ -10,13 +10,14 @@
 #include "Fmt.h"
 #include "Time.h"
 #include "NetCDF.h"
+#include "Faults.h"
+
+void Parquet_m9init (m9_state *err);
 
 typedef struct Parquet_Buf Parquet_Buf;
 typedef struct Parquet_Rd Parquet_Rd;
 typedef struct Parquet_ColInfo Parquet_ColInfo;
 typedef struct Parquet_Meta Parquet_Meta;
-
-extern const m9_exc Parquet_Bad;
 
 #define Parquet_CtStop INT64_C(0)
 #define Parquet_CtTrue INT64_C(1)

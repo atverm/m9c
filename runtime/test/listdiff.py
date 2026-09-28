@@ -96,6 +96,8 @@ NOT_INSTALLED = {
     'Palette':  'gendiff-only fixture',
     'Hello':    'demo program',
     'Concat':   'demo program (the executable half of the + decision)',
+    'Narrow':   'test program (every integer width traps on overflow)',
+    'ProcUse':  'test program (procedure types, par 2.2.3)',
     'M9c':      'the compiler itself, installed as a binary',
 }
 

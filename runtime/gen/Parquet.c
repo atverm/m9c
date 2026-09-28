@@ -8,8 +8,7 @@
 #include "Fmt.h"
 #include "Time.h"
 #include "NetCDF.h"
-
-const m9_exc Parquet_Bad = { "Bad" };
+#include "Faults.h"
 
 extern void m9_put_chars (const void *, size_t);
 extern int m9_argc (void);
@@ -327,17 +326,17 @@ void Parquet_WriteTs (m9_pool *pool, Frame_Ts * ts, m9_sl_CHAR path, m9_state *e
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 33 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 33 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Duplicate) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 30 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 30 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -462,7 +461,7 @@ Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   } }
   if (((tsec).len == INT64_C(0))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 14 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 14 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   conv = Frame_ConvStart (err);
@@ -1060,14 +1059,14 @@ L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s11, 25 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s11, 25 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_WrongType) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s12, 29 })) m9t15 = ((m9_sl_CHAR){ (uint32_t *) m9s12, 29 }); err->s[0].p = m9t15.p; err->s[0].len = m9t15.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -1519,7 +1518,7 @@ static Frame_Ts * Parquet_NIL9 (m9_pool *pool, m9_state *err)
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     m9_raise (err, &m9_exc_Overflow);
     goto L_ret;
@@ -1531,7 +1530,7 @@ L_hdl_m9t1: ;
     goto L_ret;
     goto L_dn_m9t2;
   }
-  if (err->exc == &Frame_BadArg) {
+  if (err->exc == &Faults_BadArg) {
     err->exc = NULL;
     m9_raise (err, &m9_exc_Overflow);
     goto L_ret;
@@ -1590,14 +1589,14 @@ L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s17, 25 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s17, 25 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_WrongType) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s18, 29 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s18, 29 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -1625,7 +1624,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s19, 25 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s19, 25 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -1646,7 +1645,7 @@ static int64_t Parquet_R8 (Parquet_Rd *r, m9_state *err)
   int64_t m9ret = 0;
   if (((*r).at >= ((*r).b).len)) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s20, 18 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s20, 18 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   (*r).at = m9_add_i64 ((*r).at, INT64_C(1), err);
@@ -1732,7 +1731,7 @@ static void Parquet_RSkipBytes (Parquet_Rd *r, int64_t k, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s21, 18 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s21, 18 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   (*r).at = m9_add_i64 ((*r).at, k, err);
@@ -1798,7 +1797,7 @@ static void Parquet_RSkip (Parquet_Rd *r, int64_t ct, m9_state *err)
       if (err->exc) goto L_ret;
   } else {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s22, 23 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s22, 23 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   } } } } } } }
 L_ret: ;
@@ -1893,7 +1892,7 @@ static m9_sl_CHAR Parquet_RStr (m9_pool *pool, Parquet_Rd *r, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s23, 16 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s23, 16 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   s = DynStr_FromUtf8 (pool, ({ __typeof__((*r).b) m9t3 = (*r).b; int64_t m9t3a = (*r).at, m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
@@ -1937,7 +1936,7 @@ static void Parquet_ReadSchema (m9_pool *pool, Parquet_Rd *r, Parquet_Meta *m, m
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s24, 12 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s24, 12 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   (*m).cols = M9_POOL_SL (m9_sl_Parquet_ColInfo, Parquet_ColInfo, &((*pool)), n, err);
@@ -1992,7 +1991,7 @@ static void Parquet_ReadSchema (m9_pool *pool, Parquet_Rd *r, Parquet_Meta *m, m
     } else {
       if ((children > INT64_C(0))) {
         { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s25, 13 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s25, 13 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
-        m9_raise (err, &Parquet_Bad);
+        m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
       (*(Parquet_ColInfo *) m9_at ((*m).cols.p, (*m).ncols, (*m).cols.len, sizeof (Parquet_ColInfo), err)) = ci;
@@ -2026,14 +2025,14 @@ static Parquet_Meta Parquet_ReadMeta (m9_pool *pool, m9_sl_BYTE whole, m9_state 
   int64_t i = 0; (void) i;
   if (((whole).len < INT64_C(12))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s26, 18 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s26, 18 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   bool m9t2 = (!((((((int64_t)((*(uint8_t *) m9_at (whole.p, INT64_C(0), whole.len, sizeof (uint8_t), err))) == INT64_C(80)) && ((int64_t)((*(uint8_t *) m9_at (whole.p, INT64_C(1), whole.len, sizeof (uint8_t), err))) == INT64_C(65))) && ((int64_t)((*(uint8_t *) m9_at (whole.p, INT64_C(2), whole.len, sizeof (uint8_t), err))) == INT64_C(82))) && ((int64_t)((*(uint8_t *) m9_at (whole.p, INT64_C(3), whole.len, sizeof (uint8_t), err))) == INT64_C(49)))));
   if (err->exc) goto L_ret;
   if (m9t2) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s27, 18 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s27, 18 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   mlen = m9_add_i64 (m9_add_i64 (m9_add_i64 ((int64_t)((*(uint8_t *) m9_at (whole.p, m9_sub_i64 ((whole).len, INT64_C(8), err), whole.len, sizeof (uint8_t), err))), m9_mul_i64 (INT64_C(256), (int64_t)((*(uint8_t *) m9_at (whole.p, m9_sub_i64 ((whole).len, INT64_C(7), err), whole.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(65536), (int64_t)((*(uint8_t *) m9_at (whole.p, m9_sub_i64 ((whole).len, INT64_C(6), err), whole.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(16777216), (int64_t)((*(uint8_t *) m9_at (whole.p, m9_sub_i64 ((whole).len, INT64_C(5), err), whole.len, sizeof (uint8_t), err))), err), err);
@@ -2071,7 +2070,7 @@ static Parquet_Meta Parquet_ReadMeta (m9_pool *pool, m9_sl_BYTE whole, m9_state 
         }
         if ((n != INT64_C(1))) {
           { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s28, 23 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s28, 23 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
-          m9_raise (err, &Parquet_Bad);
+          m9_raise (err, &Faults_BadArg);
           goto L_ret;
         }
         { int64_t m9t7to;
@@ -2178,7 +2177,7 @@ static void Parquet_ReadRowGroup (m9_pool *pool, Parquet_Rd *r, Parquet_Meta *m,
       }
       if ((n != (*m).ncols)) {
         { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s29, 21 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s29, 21 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-        m9_raise (err, &Parquet_Bad);
+        m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
       { int64_t m9t3to;
@@ -2398,7 +2397,7 @@ static int64_t Parquet_R8bp (Parquet_Rd *r, m9_state *err)
   int64_t m9ret = 0;
   if (((*r).at >= ((*r).b).len)) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s36, 14 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s36, 14 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   (*r).at = m9_add_i64 ((*r).at, INT64_C(1), err);
@@ -2427,7 +2426,7 @@ static int64_t Parquet_RdLE (Parquet_Rd *r, int64_t k, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s37, 14 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s37, 14 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   v = INT64_C(0);
@@ -2487,12 +2486,12 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
   m9_sl_CHAR s = {0}; (void) s;
   if ((ci.codec != INT64_C(0))) {
     { __typeof__(Parquet_CodecName (ci.codec, err)) m9t1 = Parquet_CodecName (ci.codec, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if (ci.hasDict) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s38, 27 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s38, 27 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   r.b = whole;
@@ -2522,7 +2521,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
     } else {
       if (((id == INT64_C(7)) && (ct == Parquet_CtStruct))) {
         { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s39, 12 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s39, 12 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-        m9_raise (err, &Parquet_Bad);
+        m9_raise (err, &Faults_BadArg);
         goto L_ret;
     } else {
       Parquet_RSkip (&(r), ct, err);
@@ -2531,27 +2530,27 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
   }
   if ((ptype == INT64_C(2))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s40, 27 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s40, 27 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if ((ptype != INT64_C(0))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s41, 21 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s41, 21 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if ((enc != Parquet_EncPlain)) {
     if (((enc == INT64_C(2)) || (enc == INT64_C(8)))) {
       { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s42, 27 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s42, 27 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
-      m9_raise (err, &Parquet_Bad);
+      m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s43, 20 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s43, 20 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if ((nvals != rows)) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s44, 18 })) m9t9 = ((m9_sl_CHAR){ (uint32_t *) m9s44, 18 }); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if (ci.optional) {
@@ -2584,7 +2583,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
         if (err->exc) goto L_ret;
         if (m9t13) {
           { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s45, 14 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s45, 14 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; }
-          m9_raise (err, &Parquet_Bad);
+          m9_raise (err, &Faults_BadArg);
           goto L_ret;
         }
         (*(double *) m9_at (v64.p, i, v64.len, sizeof (double), err)) = m9_f64_from_le (({ __typeof__(r.b) m9t15 = r.b; int64_t m9t15a = r.at, m9t15n = INT64_C(8); (__typeof__(m9t15)){ m9t15.p + m9_chk_slice (m9t15a, m9t15n, m9t15.len, err), m9t15n }; }), err);
@@ -2614,7 +2613,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
           if (err->exc) goto L_ret;
           if (m9t18) {
             { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s46, 14 })) m9t19 = ((m9_sl_CHAR){ (uint32_t *) m9s46, 14 }); err->s[0].p = m9t19.p; err->s[0].len = m9t19.len; }
-            m9_raise (err, &Parquet_Bad);
+            m9_raise (err, &Faults_BadArg);
             goto L_ret;
           }
           (*(float *) m9_at (v32.p, i, v32.len, sizeof (float), err)) = m9_f32_from_le (({ __typeof__(r.b) m9t20 = r.b; int64_t m9t20a = r.at, m9t20n = INT64_C(4); (__typeof__(m9t20)){ m9t20.p + m9_chk_slice (m9t20a, m9t20n, m9t20.len, err), m9t20n }; }), err);
@@ -2749,7 +2748,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
         if (err->exc) goto L_ret;
         if (m9t30) {
           { __typeof__(ci.name) m9t31 = ci.name; err->s[0].p = m9t31.p; err->s[0].len = m9t31.len; }
-          m9_raise (err, &Parquet_Bad);
+          m9_raise (err, &Faults_BadArg);
           goto L_ret;
         }
         if ((bleft == INT64_C(0))) {
@@ -2784,7 +2783,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
           if (err->exc) goto L_ret;
           if (m9t34) {
             { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s47, 14 })) m9t35 = ((m9_sl_CHAR){ (uint32_t *) m9s47, 14 }); err->s[0].p = m9t35.p; err->s[0].len = m9t35.len; }
-            m9_raise (err, &Parquet_Bad);
+            m9_raise (err, &Faults_BadArg);
             goto L_ret;
           }
           (*(m9_sl_CHAR *) m9_at (vs.p, i, vs.len, sizeof (m9_sl_CHAR), err)) = DynStr_FromUtf8 (pool, ({ __typeof__(r.b) m9t36 = r.b; int64_t m9t36a = r.at, m9t36n = n; (__typeof__(m9t36)){ m9t36.p + m9_chk_slice (m9t36a, m9t36n, m9t36.len, err), m9t36n }; }), err);
@@ -2800,7 +2799,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_sl_BYTE whole, 
       if (err->exc) goto L_ret;
   } else {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s48, 25 })) m9t37 = ((m9_sl_CHAR){ (uint32_t *) m9s48, 25 }); err->s[0].p = m9t37.p; err->s[0].len = m9t37.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   } } } } } }
 L_ret: ;
@@ -2851,17 +2850,17 @@ static void Parquet_AddF64Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s49, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s49, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Duplicate) {
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -2883,17 +2882,17 @@ static void Parquet_AddF32Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s50, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s50, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Duplicate) {
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -2915,17 +2914,17 @@ static void Parquet_AddI64Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s51, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s51, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Duplicate) {
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -2947,17 +2946,17 @@ static void Parquet_AddI32Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s52, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s52, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Duplicate) {
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -2979,17 +2978,17 @@ static void Parquet_AddI16Q (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_s
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s53, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s53, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Duplicate) {
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -3011,17 +3010,17 @@ static void Parquet_AddBytesQ (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s54, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s54, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Duplicate) {
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -3043,17 +3042,17 @@ static void Parquet_AddBoolsQ (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s55, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s55, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Duplicate) {
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -3075,17 +3074,17 @@ static void Parquet_AddStrsQ (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s56, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s56, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Duplicate) {
     err->exc = NULL;
     { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -3110,10 +3109,10 @@ static Frame_Fr * Parquet_NewQ (m9_pool *pool, int64_t rows, m9_state *err)
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s57, 18 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s57, 18 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -3138,24 +3137,24 @@ static Frame_Ts * Parquet_NewTsQ (m9_pool *pool, Frame_Fr * f, m9_sl_I64 t, int6
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
-  if (err->exc == &Frame_SizeError) {
+  if (err->exc == &Faults_SizeError) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s58, 20 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s58, 20 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_Disorder) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s59, 18 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s59, 18 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
-  if (err->exc == &Frame_BadArg) {
+  if (err->exc == &Faults_BadArg) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s60, 14 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s60, 14 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -3183,14 +3182,14 @@ L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
     err->exc = NULL;
     { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_WrongType) {
     err->exc = NULL;
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s61, 17 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s61, 17 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -3249,7 +3248,7 @@ static int64_t Parquet_TextI64 (m9_sl_CHAR s, m9_state *err)
   v = INT64_C(0);
   if (((s).len == INT64_C(0))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s62, 12 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s62, 12 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
-    m9_raise (err, &Parquet_Bad);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   { int64_t m9t2to;
@@ -3261,7 +3260,7 @@ static int64_t Parquet_TextI64 (m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t3) {
       { __typeof__(s) m9t4 = s; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
-      m9_raise (err, &Parquet_Bad);
+      m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
     v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
@@ -3274,4 +3273,27 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
+}
+
+void Parquet_m9init (m9_state *err)
+{
+  static int m9done = 0;
+  if (m9done) return;
+  m9done = 1;
+  m9_pool m9frame = {0};
+  m9_pool *m9prev = err->res;
+  err->res = &m9frame;
+  Frame_m9init (err); if (err->exc) goto L_ret;
+  Io_m9init (err); if (err->exc) goto L_ret;
+  DynStr_m9init (err); if (err->exc) goto L_ret;
+  Csv_m9init (err); if (err->exc) goto L_ret;
+  Math_m9init (err); if (err->exc) goto L_ret;
+  Fmt_m9init (err); if (err->exc) goto L_ret;
+  Time_m9init (err); if (err->exc) goto L_ret;
+  NetCDF_m9init (err); if (err->exc) goto L_ret;
+  Faults_m9init (err); if (err->exc) goto L_ret;
+L_ret: ;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&m9frame);
+  err->res = m9prev;
 }

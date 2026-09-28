@@ -5,7 +5,12 @@ DEFINITION MODULE Palette ;
 
 TYPE Hue = (Warm, Cool, Neutral) ;
 
+TYPE Weights = RECORD
+  w : ARRAY Hue OF I64 ;   (* an enum-indexed array as a record field *)
+END ;
+
 PROCEDURE Warmest () : Hue ;
+PROCEDURE MakeWeights () : Weights ;
 
 END Palette.
 
@@ -15,5 +20,12 @@ PROCEDURE Warmest () : Hue =
 BEGIN
   RETURN Hue.Warm
 END Warmest ;
+
+PROCEDURE MakeWeights () : Weights =
+VAR wt : Weights ; h : Hue ;
+BEGIN
+  FOR h := Hue.Warm TO Hue.Neutral DO wt.w[h] := ORD (h) * 10 END ;
+  RETURN wt
+END MakeWeights ;
 
 END Palette.

@@ -17,13 +17,9 @@ of this declaration put the variants in a margin comment's
 interior -- the lexer shrugged, the parser refused; P1 caught a
 corpus bug on its first run.
 
-### EXCEPTION SizeError
+### New (VAR pool: POOL ; rows, cols: I64) : PTR Matrix IN pool RAISES Faults.SizeError
 
-_(documented with the group below)_
-
-### New (VAR pool: POOL ; rows, cols: I64) : PTR Matrix IN pool RAISES SizeError
-
-nonpositive dimensions are SizeError at the door, not a zero-
+nonpositive dimensions are Faults.SizeError at the door, not a zero-
 element surprise later.  Storage is defined-zero (par 4.3): the
 M2 version handed out uninitialized REALs.
 
@@ -49,13 +45,13 @@ _(documented with the group below)_
 r/c bounds are checked runtime errors like all indexing:
 always on, undeclarable, catchable.
 
-### ColReduce (m: PTR Matrix ; op: ReduceOp ; out: SLICE OF F64) RAISES SizeError
+### ColReduce (m: PTR Matrix ; op: ReduceOp ; out: SLICE OF F64) RAISES Faults.SizeError
 
 out[c] receives the NaN-aware statistic of column c.  The M2
 version silently skipped columns beyond HIGH (out); here
-LEN (out) # Cols (m) is SizeError, said out loud.
+LEN (out) # Cols (m) is Faults.SizeError, said out loud.
 
-### SubRowVector (VAR pool: POOL ; m: PTR Matrix ; RO v: SLICE OF F64) : PTR Matrix IN pool RAISES SizeError
+### SubRowVector (VAR pool: POOL ; m: PTR Matrix ; RO v: SLICE OF F64) : PTR Matrix IN pool RAISES Faults.SizeError
 
 result[r,c] := m[r,c] - v[c], broadcast over rows
 
@@ -70,24 +66,24 @@ Cholesky met a nonpositive pivot at this row: the matrix is not
 symmetric positive definite.  For a covariance matrix that is a
 data or modelling error worth a name, not a NaN worth nothing.
 
-### MulM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool RAISES SizeError
+### MulM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError
 
-a (r x k) times b (k x c); Cols (a) # Rows (b) is SizeError
+a (r x k) times b (k x c); Cols (a) # Rows (b) is Faults.SizeError
 
-### MulV (VAR pool: POOL ; a: PTR Matrix ; RO x: SLICE OF F64) : PTR Matrix IN pool RAISES SizeError
+### MulV (VAR pool: POOL ; a: PTR Matrix ; RO x: SLICE OF F64) : PTR Matrix IN pool RAISES Faults.SizeError
 
 a times a column vector, answered as an n x 1 matrix so it can
 feed straight back into MulM/CholSolve
 
-### Transpose (VAR pool: POOL ; m: PTR Matrix) : PTR Matrix IN pool RAISES SizeError
+### Transpose (VAR pool: POOL ; m: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError
 
 _(undocumented)_
 
-### AddM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool RAISES SizeError
+### AddM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError
 
 _(documented with the group below)_
 
-### SubM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool RAISES SizeError
+### SubM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError
 
 _(documented with the group below)_
 
@@ -95,31 +91,46 @@ _(documented with the group below)_
 
 in place, the one mutator: scaling allocates nothing
 
-### Identity (VAR pool: POOL ; n: I64) : PTR Matrix IN pool RAISES SizeError
+### Identity (VAR pool: POOL ; n: I64) : PTR Matrix IN pool RAISES Faults.SizeError
 
 _(undocumented)_
 
-### CopyM (VAR pool: POOL ; m: PTR Matrix) : PTR Matrix IN pool RAISES SizeError
+### CopyM (VAR pool: POOL ; m: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError
 
 _(undocumented)_
 
-### Cholesky (VAR pool: POOL ; a: PTR Matrix) : PTR Matrix IN pool RAISES SizeError, NotSPD, ValueRange
+### Cholesky (VAR pool: POOL ; a: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError, NotSPD, ValueRange
 
 the lower-triangular L with L L^T = a.  Only the lower triangle
 of a is read, which is the usual contract and means a matrix
 that is SPD in its lower half is never betrayed by garbage in
 its upper.
 
-### CholSolve (VAR pool: POOL ; l, b: PTR Matrix) : PTR Matrix IN pool RAISES SizeError
+### CholSolve (VAR pool: POOL ; l, b: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError
 
 solve A X = B given L = Cholesky (A); B may carry many columns,
 which is how the Kalman-style gain is built in one call
 
-### SpdInverse (VAR pool: POOL ; a: PTR Matrix) : PTR Matrix IN pool RAISES SizeError, NotSPD, ValueRange
+### SpdInverse (VAR pool: POOL ; a: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError, NotSPD, ValueRange
 
 CholSolve against the identity: the posterior covariance step
 
-### CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64) : PTR Matrix IN pool RAISES SizeError
+### CholeskyT (VAR pool: POOL ; a: PTR Matrix ; threads: I64) : PTR Matrix IN pool RAISES Faults.SizeError, NotSPD, ValueRange
+
+Cholesky's factor, computed BLOCKED and on threads (2026-09-15):
+the lower triangle of a is copied and factored in place, panel
+by panel -- the diagonal block serially, the rows below it as
+independent forward substitutions, the trailing lower triangle
+updated a row at a time -- with the rows of the last two steps
+claimed in bands by `threads` workers.  Every cell sees the
+same subtractions in the same order the serial Cholesky applies
+(k ascending, one running value, never a panel dot product
+subtracted whole), so the factor is BIT-IDENTICAL to Cholesky's
+at any thread count; the gate holds it so.  On 16 629 unknowns
+the serial factorisation was the last single-threaded minutes
+of a solve whose other stages were already banded.
+
+### CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64) : PTR Matrix IN pool RAISES Faults.SizeError
 
 (L L^T)^-1 from the factor Cholesky answered, in two contiguous
 passes on `threads` threads (2026-09-15, the year inversion's
@@ -142,7 +153,7 @@ cell is the same in the same order whatever the thread count, so
 the answer is bit-identical for 1 and for 32.  threads <= 1 runs
 in the caller's thread.
 
-### AddNormal (VAR pool: POOL ; h: PTR Matrix ; RO w: SLICE OF F64 ; VAR k: PTR Matrix ; threads: I64) RAISES SizeError
+### AddNormal (VAR pool: POOL ; h: PTR Matrix ; RO w: SLICE OF F64 ; VAR k: PTR Matrix ; threads: I64) RAISES Faults.SizeError
 
 k := k + H^T diag (w) H, the normal matrix of a weighted least
 squares, accumulated where it lies: one pass over the rows of H

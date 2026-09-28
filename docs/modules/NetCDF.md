@@ -43,13 +43,6 @@ op is what was attempted, detail is the library's own message
 reader who has only one of them goes looking for the other
 two.
 
-### EXCEPTION SizeError
-
-nc_type, from netcdf.h.  Named here rather than passed as bare
-integers: a variable declared with the wrong type code is a bug
-that reads back as garbage, and the museum has that shape
-already (the 16-byte stride over 8-byte doubles).
-
 ### CONST TypeByte
 
 _(documented with the group below)_
@@ -170,18 +163,18 @@ M9's: the last axis is contiguous in both.  A NetCDF file and a
 GRID agree about layout without anybody transposing anything,
 which is the one place row-major pays for itself twice.
 
-### GetF64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF F64) RAISES Error, SizeError, ValueRange
+### GetF64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF F64) RAISES Error, Faults.SizeError, ValueRange
 
 one hyperslab into a flat slice.  LEN (out) must be the product
 of count, and is checked: the C call would otherwise write past
 the end of a buffer the caller sized wrongly, which is the whole
 class of bug this language exists to remove.
 
-### GetF32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF F32) RAISES Error, SizeError, ValueRange
+### GetF32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF F32) RAISES Error, Faults.SizeError, ValueRange
 
 _(undocumented)_
 
-### GetI64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF I64) RAISES Error, SizeError, ValueRange
+### GetI64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF I64) RAISES Error, Faults.SizeError, ValueRange
 
 the same hyperslab read at the other two widths, with the same
 LEN (out) = product-of-count check.  netCDF CONVERTS on the way
@@ -191,11 +184,11 @@ precision into an F32 buffer.  The width is the caller's
 decision and is written down at the call site, which is the
 most this layer can do about it.
 
-### ReadGrid2 (VAR pool: POOL ; f: PTR File ; RO name: STR) : GRID 2 OF F64 RAISES Error, SizeError, ValueRange
+### ReadGrid2 (VAR pool: POOL ; f: PTR File ; RO name: STR) : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange
 
 _(documented with the group below)_
 
-### ReadGrid3 (VAR pool: POOL ; f: PTR File ; RO name: STR) : GRID 3 OF F64 RAISES Error, SizeError, ValueRange
+### ReadGrid3 (VAR pool: POOL ; f: PTR File ; RO name: STR) : GRID 3 OF F64 RAISES Error, Faults.SizeError, ValueRange
 
 a whole variable, shape and all, as a GRID.  These exist because
 a GRID can today only come from NEW or VIEW: there is no way to
@@ -274,15 +267,15 @@ enumeration: how many variables, their names, their nc_type
 order.  Added for Frame.m9, which walks a file it did not
 write.
 
-### GetI32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF I32) RAISES Error, SizeError, ValueRange
+### GetI32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF I32) RAISES Error, Faults.SizeError, ValueRange
 
 _(undocumented)_
 
-### GetI16 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF I16) RAISES Error, SizeError, ValueRange
+### GetI16 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF I16) RAISES Error, Faults.SizeError, ValueRange
 
 _(undocumented)_
 
-### GetBytes (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF BYTE) RAISES Error, SizeError, ValueRange
+### GetBytes (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; out: SLICE OF BYTE) RAISES Error, Faults.SizeError, ValueRange
 
 _(undocumented)_
 
@@ -332,7 +325,7 @@ reaching the file as mojibake.
 leaves define mode and commits the header.  Nothing may be
 declared afterwards and nothing may be written before.
 
-### PutF64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO data: SLICE OF F64) RAISES Error, SizeError, ValueRange
+### PutF64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO data: SLICE OF F64) RAISES Error, Faults.SizeError, ValueRange
 
 _(undocumented)_
 
@@ -365,7 +358,7 @@ reader slices along is read whole for one value.  A map for one
 release at one time wants (1,1,1,1,nz,ny,nx), not a chunk that
 cuts across time.
 
-### PutChars (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO text: STR) RAISES Error, SizeError, ValueRange
+### PutChars (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO text: STR) RAISES Error, Faults.SizeError, ValueRange
 
 one hyperslab of TEXT out, for a char variable.
 
@@ -377,19 +370,19 @@ PADDED WITH NUL to the count, because a char variable's trailing
 bytes are whatever was there otherwise, and netCDF does not do it
 for you.
 
-### PutI64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO v: SLICE OF I64) RAISES Error, SizeError, ValueRange
+### PutI64 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO v: SLICE OF I64) RAISES Error, Faults.SizeError, ValueRange
 
 _(undocumented)_
 
-### PutI32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO v: SLICE OF I32) RAISES Error, SizeError, ValueRange
+### PutI32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO v: SLICE OF I32) RAISES Error, Faults.SizeError, ValueRange
 
 _(undocumented)_
 
-### PutI16 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO v: SLICE OF I16) RAISES Error, SizeError, ValueRange
+### PutI16 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO v: SLICE OF I16) RAISES Error, Faults.SizeError, ValueRange
 
 _(undocumented)_
 
-### PutBytes (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO v: SLICE OF BYTE) RAISES Error, SizeError, ValueRange
+### PutBytes (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO v: SLICE OF BYTE) RAISES Error, Faults.SizeError, ValueRange
 
 _(undocumented)_
 
@@ -413,12 +406,12 @@ _(undocumented)_
 
 _(undocumented)_
 
-### GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ; n, width: I64) : SLICE OF STR RAISES Error, SizeError, ValueRange
+### GetChars (VAR pool: POOL ; f: PTR File ; varid: I64 ; n, width: I64) : SLICE OF STR RAISES Error, Faults.SizeError, ValueRange
 
 the reverse of PutChars: an n x width char matrix, each row
 answered as a STR with trailing NULs and blanks removed
 
-### GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ; out: SLICE OF BYTE) RAISES Error, SizeError, ValueRange
+### GetText (f: PTR File ; varid: I64 ; row, n, width: I64 ; out: SLICE OF BYTE) RAISES Error, Faults.SizeError, ValueRange
 
 the same matrix in BLOCKS and as OCTETS: `n` rows from `row`,
 into a buffer the caller sized at n * width.  GetChars answers
@@ -426,14 +419,14 @@ STRs and therefore holds the whole variable twice, which a
 400,000-row identifier column cannot afford; this is the form
 for a caller that walks the rows and keeps nothing.
 
-### PutF32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO data: SLICE OF F32) RAISES Error, SizeError, ValueRange
+### PutF32 (f: PTR File ; varid: I64 ; RO start: SLICE OF I64 ; RO count: SLICE OF I64 ; RO data: SLICE OF F32) RAISES Error, Faults.SizeError, ValueRange
 
 one hyperslab out, the mirror of GetF64/GetF32.
 
 start -- the corner, one index per axis, outermost first.
 count -- the extent along each axis from that corner.
 data  -- LEN (data) must be the PRODUCT of count, and is
-         checked: SizeError rather than letting the C call
+         checked: Faults.SizeError rather than letting the C call
          read past the end of a buffer the caller sized
          wrongly.  Same rule as the readers, stated on both
          sides because getting it wrong writes garbage into a

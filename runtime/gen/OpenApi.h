@@ -5,6 +5,8 @@
 #include "HttpServer.h"
 #include "DynStr.h"
 
+void OpenApi_m9init (m9_state *err);
+
 
 m9_sl_CHAR OpenApi_Document (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Router * r, m9_state *err);
 

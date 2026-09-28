@@ -4,6 +4,8 @@
 #include "m9rt.h"
 #include "DynStr.h"
 
+void Io_m9init (m9_state *err);
+
 
 extern const m9_exc Io_IOError;
 

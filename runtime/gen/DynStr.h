@@ -3,6 +3,8 @@
 #define M9G_DynStr_H
 #include "m9rt.h"
 
+void DynStr_m9init (m9_state *err);
+
 typedef struct DynStr_DString DynStr_DString;
 typedef struct DynStr_DString DynStr_DString;
 

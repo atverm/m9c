@@ -859,7 +859,7 @@ BEGIN
           ei := MFind (extTypes, S3 (n.a, '.', n.b)) ;
           IF ei >= 0 THEN
             IF extTypes.es[ei].v IS SOME r2 THEN
-              IF IsRecK (r2.kind) THEN
+              IF IsRecK (r2.kind) OR r2.kind = Ast.NProcType THEN
                 RETURN S3 (n.a, '_', n.b)
               END ;
               RETURN TyC (extTypes.es[ei].v)
@@ -878,7 +878,10 @@ BEGIN
         s := BuiltinC (n.a) ;
         IF LEN (s) > 0 THEN RETURN s END ;
         IF FindTypeN (n.a) IS SOME r3 THEN
-          IF IsRecK (r3.kind) THEN
+          (* a procedure type is a NAMED C typedef like a record's,
+             emitted into the header beside the slice typedefs
+             (par 2.2.3) *)
+          IF IsRecK (r3.kind) OR r3.kind = Ast.NProcType THEN
             RETURN S3 (modName, '_', n.a)
           END ;
           RETURN TyC (SOME (r3))
@@ -886,7 +889,7 @@ BEGIN
         ei := ExtBare (n.a) ;
         IF ei >= 0 THEN
           IF extTypes.es[ei].v IS SOME r4 THEN
-            IF IsRecK (r4.kind) THEN
+            IF IsRecK (r4.kind) OR r4.kind = Ast.NProcType THEN
               RETURN S3 (SLICE (extTypes.es[ei].k, 0,
                 LEN (extTypes.es[ei].k) - LEN (n.a) - 1), '_', n.a)
             END ;
@@ -900,7 +903,8 @@ BEGIN
         RETURN S2 (TyC (n.kids[0]), ' *')
     | Ast.NOptType :
         IF Resolve (n.kids[0]) IS SOME r5 THEN
-          IF IsPtrK (r5.kind) THEN
+          (* a procedure value is pointer-shaped too: NONE is NULL *)
+          IF IsPtrK (r5.kind) OR r5.kind = Ast.NProcType THEN
             RETURN TyC (n.kids[0])
           END
         END ;
@@ -1020,6 +1024,25 @@ END GridTy ;
 
 (* the ALL axis marker: a predeclared identifier, so it is a bare
    designator with that name and no selectors *)
+(* the checked helper's width suffix for an integer type tag.  Each
+   of the eight exact widths has its own helper since 2026-09-27:
+   before that everything went through the I64 one and a narrow
+   result was stored unchecked, so `I32 max + 1` wrapped in silence
+   (docs/agent-review-2026-09-27.md F1).  A tag that is none of the
+   eight -- a C.* value, an enumeration's ordinal -- is a 64-bit
+   value to the checker and keeps the I64 helper. *)
+PROCEDURE ISuf (RO t: STR) : STR =
+BEGIN
+  IF DynStr.Eq (t, 'I8') THEN RETURN 'i8' END ;
+  IF DynStr.Eq (t, 'I16') THEN RETURN 'i16' END ;
+  IF DynStr.Eq (t, 'I32') THEN RETURN 'i32' END ;
+  IF DynStr.Eq (t, 'U8') THEN RETURN 'u8' END ;
+  IF DynStr.Eq (t, 'U16') THEN RETURN 'u16' END ;
+  IF DynStr.Eq (t, 'U32') THEN RETURN 'u32' END ;
+  IF DynStr.Eq (t, 'U64') THEN RETURN 'u64' END ;
+  RETURN 'i64'
+END ISuf ;
+
 PROCEDURE IsWidthConv (RO n: STR) : BOOL =
 BEGIN
   IF DynStr.Eq (n, 'I8') OR DynStr.Eq (n, 'I16') THEN RETURN TRUE END ;
@@ -1129,6 +1152,7 @@ BEGIN
     | Ast.NArrayType : RETURN 'ARR'
     | Ast.NRecordType : RETURN 'REC'
     | Ast.NMonitorType : RETURN 'REC'
+    | Ast.NProcType : RETURN 'PROC'
     ELSE RETURN '?'
     END
   END ;
@@ -1471,7 +1495,7 @@ END DesigDecl ;
 (* exception descriptor reference by bare name: this module, the
    predeclared four, then imported definitions *)
 (* A QUALIFIED name resolves in exactly the module it states:
-   Io.IOError and ZarrStore.IOError are two descriptors, and the
+   Io.IOError and ZarrStore.IOError (StoreError since 2026-09-27) were two descriptors, and the
    first version dropped the qualifier and answered whichever module
    registered the bare name first -- a handler for ZarrStore.IOError
    compiled to a test against &Io_IOError and matched nothing.
@@ -1661,7 +1685,7 @@ VAR
   tnd, r2 : Ast.Kid ;
   res, base, ix, ec, cnt : STR ;
   dg, dns : PTR DynStr.DString IN gpool ;
-  known, fldOk : BOOL ;
+  known, fldOk, enumIx : BOOL ;
 BEGIN
   tag := '?' ;
   tnd := ScopeNode (d.a) ;
@@ -1704,6 +1728,24 @@ BEGIN
           IF ci >= 0 THEN
             tag := TagOfExpr (extConsts.es[ci].v) ;
             RETURN S3 (d.a, '_', sf1.a)
+          END
+        END
+      END
+    END ;
+    (* a top-level procedure named as a VALUE (par 2.2.3): its C
+       function, this module's or an imported module's; the checker
+       has already held its head to the procedure type it lands in *)
+    IF d.nkids = 0 THEN
+      IF FindProcN (d.a) >= 0 THEN
+        tag := 'PROC' ;
+        RETURN S3 (modName, '_', d.a)
+      END
+    ELSIF d.nkids = 1 THEN
+      IF d.kids[0] IS SOME sfp THEN
+        IF sfp.kind = Ast.NSelField THEN
+          IF MFind (extProcs, S3 (d.a, '.', sfp.a)) >= 0 THEN
+            tag := 'PROC' ;
+            RETURN S3 (d.a, '_', sfp.a)
           END
         END
       END
@@ -1853,10 +1895,23 @@ BEGIN
           ELSIF r.kind = Ast.NArrayType THEN
             base := res ;
             ec := TyC (r.kids[1]) ;
+            (* ARRAY Colour OF T: the subscript is an enum value, its
+               tag 0..n-1 by construction -- no runtime bounds check,
+               a.v[(k).tag] directly.  Detect it from the SUBSCRIPT's
+               type, not the array's bound: an imported enum indexes an
+               imported record's field the same way, where the bound
+               name resolves only in its own module (docs/enum-plan.md,
+               part 2) *)
+            enumIx := FALSE ;
             IF ArrEnumBoundNode (r.kids[0]) IS SOME earr THEN
-              (* ARRAY Colour OF T: the subscript is an enum value, its
-                 tag 0..n-1 by construction -- no runtime bounds check,
-                 a.v[(k).tag] directly (docs/enum-plan.md, part 2) *)
+              enumIx := TRUE
+            END ;
+            IF NOT enumIx THEN
+              IF sel.nkids >= 1 THEN
+                enumIx := StartsW (TagOfExpr (sel.kids[0]), 'CR:')
+              END
+            END ;
+            IF enumIx THEN
               res := S5 ('(', base, '.v[(', ix, ').tag])') ;
               tnd := r.kids[1]
             ELSE
@@ -2159,27 +2214,33 @@ BEGIN
           ELSE
             stRaise := TRUE ;
             IF DynStr.Eq (cop, '+') THEN
-              RETURN S5 ('m9_add_i64 (', l, ', ', r, ', err)')
+              RETURN S5 (S3 ('m9_add_', ISuf (lt), ' ('), l, ', ', r, ', err)')
             ELSIF DynStr.Eq (cop, '-') THEN
-              RETURN S5 ('m9_sub_i64 (', l, ', ', r, ', err)')
+              RETURN S5 (S3 ('m9_sub_', ISuf (lt), ' ('), l, ', ', r, ', err)')
             ELSE
-              RETURN S5 ('m9_mul_i64 (', l, ', ', r, ', err)')
+              RETURN S5 (S3 ('m9_mul_', ISuf (lt), ' ('), l, ', ', r, ', err)')
             END
           END
         ELSIF DynStr.Eq (cop, '/') THEN
           RETURN S5 ('(', l, ' / ', r, ')')
         ELSIF DynStr.Eq (cop, 'DIV') THEN
           stRaise := TRUE ;
-          RETURN S5 ('m9_div_i64 (', l, ', ', r, ', err)')
+          RETURN S5 (S3 ('m9_div_', ISuf (lt), ' ('), l, ', ', r, ', err)')
         ELSIF DynStr.Eq (cop, 'MOD') THEN
           stRaise := TRUE ;
-          RETURN S5 ('m9_mod_i64 (', l, ', ', r, ', err)')
+          RETURN S5 (S3 ('m9_mod_', ISuf (lt), ' ('), l, ', ', r, ', err)')
         ELSIF DynStr.Eq (cop, '+%') THEN
           RETURN S5 ('m9_addw_i64 (', l, ', ', r, ')')
         ELSIF DynStr.Eq (cop, '-%') THEN
           RETURN S5 ('m9_subw_i64 (', l, ', ', r, ')')
         ELSIF DynStr.Eq (cop, '*%') THEN
           RETURN S5 ('m9_mulw_i64 (', l, ', ', r, ')')
+        ELSIF (DynStr.Eq (cop, '==') OR DynStr.Eq (cop, '!=')) AND
+              StartsW (lt, 'CR:') THEN
+          (* two enumeration (or case-record) values compare by tag:
+             `k = Kind.Int' is a struct == in C, which gcc refuses --
+             the tag is what carries identity (docs/enum-plan.md) *)
+          RETURN S7 ('((', l, ').tag ', cop, ' (', r, ').tag)')
         ELSE
           RETURN S5 ('(', l, S3 (' ', cop, ' '), r, ')')
         END
@@ -2193,7 +2254,7 @@ BEGIN
             RETURN S3 ('(- ', l, ')')
           ELSE
             stRaise := TRUE ;
-            RETURN S3 ('m9_neg_i64 (', l, ', err)')
+            RETURN S3 (S3 ('m9_neg_', ISuf (lt), ' ('), l, ', err)')
           END
         ELSE
           RETURN l
@@ -2242,7 +2303,7 @@ VAR
   gname, xtn : STR ;
   pi, g, j, k, k2, nargs, dot, dot2, nf32, nf64, eln : I64 ;
   pnodeK, ak, vgrid, aliasK, enode : Ast.Kid ;
-  ser : BOOL ;
+  ser, pv : BOOL ;
   d3 : PTR DynStr.DString IN gpool ;
 BEGIN
   tag := '?' ;
@@ -2632,6 +2693,19 @@ BEGIN
       cfunc := S3 (tn, '_', vn)
     END
   ELSE
+    (* a call THROUGH A PROCEDURE VALUE (par 2.2.3): a parameter or
+       an IS SOME binder whose type is a procedure type.  Its head
+       drives the argument conversion below exactly as a declaration's
+       would, and the call is `name (args, err)` on the C pointer. *)
+    pv := FALSE ;
+    IF Resolve (ScopeNode (name)) IS SOME svt THEN
+      IF svt.kind = Ast.NProcType THEN
+        pnodeK := SOME (svt) ;
+        cfunc := CN (name) ;
+        pv := TRUE
+      END
+    END ;
+    IF NOT pv THEN
     (* the module's own procedures shadow foreign imports *)
     pi := FindProcN (name) ;
     IF pi >= 0 THEN
@@ -2706,6 +2780,7 @@ BEGIN
           RETURN S4 (fp.b, ' (', args, ')')
         END
       END
+    END
     END
   END ;
   IF pnodeK IS SOME pn THEN
@@ -3712,6 +3787,40 @@ BEGIN
   RETURN ' = {0}'
 END ZeroInit ;
 
+(* the C typedef of a procedure type -- `typedef R ( * Mod_Name) (T1,
+   T2 *, m9_state *err);` with the star written apart here because
+   the two characters together open a comment -- a value parameter is
+   its C type, VAR and OWN are a pointer to it, exactly GenProc's rule
+   for a heading, so a procedure of the same head IS a value of the
+   type in C *)
+PROCEDURE ProcTypedefC (RO name: STR ; ptn: PTR Ast.Node) : STR =
+VAR
+  retC, ps, cty : STR ;
+  g, j : I64 ;
+BEGIN
+  retC := 'void' ;
+  IF ptn.kids[1] IS SOME rt THEN retC := TyC (ptn.kids[1]) END ;
+  ps := '' ;
+  IF ptn.kids[0] IS SOME pl THEN
+    FOR g := 0 TO pl.nkids - 1 DO
+      IF pl.kids[g] IS SOME grp THEN
+        cty := TyC (grp.kids[1]) ;
+        IF grp.kids[0] IS SOME ids THEN
+          FOR j := 0 TO ids.nkids - 1 DO
+            IF grp.f1 OR grp.f2 THEN
+              ps := S3 (ps, cty, ' *, ')
+            ELSE
+              ps := S3 (ps, cty, ', ')
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN S7 ('typedef ', retC, ' (*', modName, '_', name,
+             S3 (') (', ps, 'm9_state *err);'))
+END ProcTypedefC ;
+
 PROCEDURE GenProc (gi: I64) =
 VAR
   pl, grp, body, ids : Ast.Kid ;
@@ -3990,6 +4099,10 @@ BEGIN
     Line (KPbuf, 1, S3 ('err->file = "', dbgSrc, '";'))
   END ;
   Line (KPbuf, 1, 'm9_args (argc, argv);') ;
+  FOR i := 0 TO extMods.n - 1 DO
+    Line (KPbuf, 1, S3 (extMods.es[i].k, '_m9init (err);',
+      ' if (err->exc) goto L_ret;'))
+  END ;
   EmitStmt (mainBody, 1) ;
   Line (KPbuf, 0, 'L_ret: ;') ;
   FOR i := 0 TO nlp - 1 DO
@@ -3998,6 +4111,56 @@ BEGIN
   Line (KPbuf, 1, 'return m9_exit (err);') ;
   Line (KPbuf, 0, '}')
 END GenMain ;
+
+(* a NON-program module's body is its INITIALISATION, and it RUNS --
+   Modula-2's rule.  Every module emits an idempotent Mod_m9init that
+   runs its direct imports' inits first (so a module sees its
+   dependencies initialised) and then its own body; a body-less module
+   still emits one, a no-op chain, so the ordering reaches through it.
+   A program's main calls its imports' inits before its own body.
+   Before this a library body was accepted and silently dropped --
+   an init nobody ran, the contract broken without a word.          *)
+PROCEDURE GenInit (RO forModule: STR) =
+VAR i : I64 ;
+BEGIN
+  scope.n := 0 ;
+  nlp := 0 ;
+  nout := 0 ;
+  tmpN := 0 ;
+  exitLbl := 'L_ret' ;
+  raiseLbl := 'L_ret' ;
+  curRetq := '' ;
+  curRetTag := '' ;
+  finDepth := 0 ;
+  inSwitch := 0 ;
+  FOR i := 0 TO nmv - 1 DO
+    MAdd (scope, mvN[i], mvT[i], 'l')
+  END ;
+  Line (KPbuf, 0, '') ;
+  Line (KPbuf, 0, S3 ('void ', forModule, '_m9init (m9_state *err)')) ;
+  Line (KPbuf, 0, '{') ;
+  Line (KPbuf, 1, 'static int m9done = 0;') ;
+  Line (KPbuf, 1, 'if (m9done) return;') ;
+  Line (KPbuf, 1, 'm9done = 1;') ;
+  Line (KPbuf, 1, 'm9_pool m9frame = {0};') ;
+  Line (KPbuf, 1, 'm9_pool *m9prev = err->res;') ;
+  PoolReg ('m9frame') ;
+  Line (KPbuf, 1, 'err->res = &m9frame;') ;
+  (* direct imports first, so their state is ready *)
+  FOR i := 0 TO extMods.n - 1 DO
+    Line (KPbuf, 1, S3 (extMods.es[i].k, '_m9init (err);',
+      ' if (err->exc) goto L_ret;'))
+  END ;
+  EmitStmt (mainBody, 1) ;
+  Line (KPbuf, 0, 'L_ret: ;') ;
+  FOR i := 0 TO nlp - 1 DO
+    Line (KPbuf, 1, S3 ('m9_pool_free (&', lpools[i], ');'))
+  END ;
+  Line (KPbuf, 1, 'm9_pool_free (&m9frame);') ;
+  Line (KPbuf, 1, 'err->res = m9prev;')
+  ;
+  Line (KPbuf, 0, '}')
+END GenInit ;
 
 PROCEDURE Emit (RO forModule: STR) =
 VAR
@@ -4032,6 +4195,12 @@ BEGIN
     Line (KHdr, 0, S3 ('#include "', extMods.es[i].k, '.h"'))
   END ;
   Line (KHdr, 0, '') ;
+  (* every library module declares its initialiser, so an importer can
+     run it before the module's state is used (docs/enum-plan.md) *)
+  IF NOT isProgram THEN
+    Line (KHdr, 0, S3 ('void ', forModule, '_m9init (m9_state *err);')) ;
+    Line (KHdr, 0, '')
+  END ;
   Line (KSrc, 0, S3 ('/* generated by M9Gen from ', forModule,
     '.m9 -- do not edit */')) ;
   Line (KSrc, 0, S3 ('#include "', forModule, '.h"')) ;
@@ -4058,6 +4227,19 @@ BEGIN
     END
   END ;
   Line (KHdr, 0, '') ;
+
+  (* procedure types (par 2.2.3): a function-pointer typedef with the
+     err slot last, the same C signature GenProc gives a procedure of
+     that head.  Into the discovered-typedef stream, AFTER the slice
+     typedefs its parameters register on the way and BEFORE the
+     record bodies that may hold a field of it. *)
+  FOR i := 0 TO ntys - 1 DO
+    IF tys[i].node IS SOME ptn THEN
+      IF ptn.kind = Ast.NProcType THEN
+        Line (KTdefs, 0, ProcTypedefC (tys[i].name, ptn))
+      END
+    END
+  END ;
 
   (* case records: tagged structs, tags from 0 in declaration order;
      variants with payload fields become union members named after
@@ -4293,6 +4475,8 @@ BEGIN
   END ;
   IF isProgram THEN
     IF mainBody IS SOME mb THEN GenMain () END
+  ELSE
+    GenInit (forModule)
   END ;
 
   (* header assembly: consts, discovered typedefs, transparent def

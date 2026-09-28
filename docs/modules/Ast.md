@@ -337,11 +337,18 @@ parsediff compares printed text and gendiff compares emitted C.
 
 ### CONST NGridType
 
-_(undocumented)_
+_(documented with the group below)_
 
 ### CONST NEnumType
 
-_(undocumented)_
+_(documented with the group below)_
+
+### CONST NProcType
+
+PROCEDURE (params) [: T] [RAISES ...] as a TYPE;
+kids as a ProcDecl's head: [0] NParamList,
+[1] result type or NONE, [2] NRaises or NONE.
+docs/proctype-plan.md, 2026-09-27
 
 ### TYPE Kid
 

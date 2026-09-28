@@ -3,12 +3,14 @@
 #define M9G_NetCDF_H
 #include "m9rt.h"
 #include "DynStr.h"
+#include "Faults.h"
+
+void NetCDF_m9init (m9_state *err);
 
 typedef struct NetCDF_File NetCDF_File;
 typedef struct NetCDF_File NetCDF_File;
 
 extern const m9_exc NetCDF_Error;
-extern const m9_exc NetCDF_SizeError;
 
 #define NetCDF_TypeByte INT64_C(1)
 #define NetCDF_TypeChar INT64_C(2)

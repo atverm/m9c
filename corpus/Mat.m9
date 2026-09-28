@@ -5,6 +5,8 @@ DEFINITION MODULE Mat ;
    written once, and are auto-vectorised by the compiler.  This is
    also all numpy ever promised.                                     *)
 
+IMPORT Faults ;
+
 TYPE
   Matrix ;                               (* opaque; lives in a POOL *)
 
@@ -17,12 +19,9 @@ TYPE
      interior -- the lexer shrugged, the parser refused; P1 caught a
      corpus bug on its first run.                                    *)
 
-EXCEPTION
-  SizeError (got, want: I64) ;
-
 PROCEDURE New (VAR pool: POOL ; rows, cols: I64) : PTR Matrix IN pool
-  RAISES SizeError ;
-  (* nonpositive dimensions are SizeError at the door, not a zero-
+  RAISES Faults.SizeError ;
+  (* nonpositive dimensions are Faults.SizeError at the door, not a zero-
      element surprise later.  Storage is defined-zero (par 4.3): the
      M2 version handed out uninitialized REALs.                      *)
 
@@ -41,15 +40,15 @@ PROCEDURE Set (VAR m: PTR Matrix ; r, c: I64 ; v: F64) ;
      always on, undeclarable, catchable.                             *)
 
 PROCEDURE ColReduce (m: PTR Matrix ; op: ReduceOp ; out: SLICE OF F64)
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
   (* out[c] receives the NaN-aware statistic of column c.  The M2
      version silently skipped columns beyond HIGH (out); here
-     LEN (out) # Cols (m) is SizeError, said out loud.               *)
+     LEN (out) # Cols (m) is Faults.SizeError, said out loud.               *)
 
 PROCEDURE SubRowVector (VAR pool: POOL ; m: PTR Matrix ;
                         RO v: SLICE OF F64)
   : PTR Matrix IN pool
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
   (* result[r,c] := m[r,c] - v[c], broadcast over rows *)
 
 PROCEDURE MinMax (m: PTR Matrix ; VAR mn, mx: F64) ;
@@ -61,7 +60,7 @@ PROCEDURE MinMax (m: PTR Matrix ; VAR mn, mx: F64) ;
    The cited need: the ICOS inversion x = xb + B H^T K^-1 (y - H xb)
    with K = H B H^T + R, which composes from multiply, transpose and
    an SPD solve.  Everything answers a NEW matrix from the pool; the
-   inputs are never written.  Shape mismatches are SizeError with the
+   inputs are never written.  Shape mismatches are Faults.SizeError with the
    offending pair.  A general (non-SPD) LU solve is deliberately
    absent until something needs it: K and B are covariance matrices,
    and covariances are SPD or the problem is already wrong. *)
@@ -73,33 +72,33 @@ EXCEPTION
      data or modelling error worth a name, not a NaN worth nothing. *)
 
 PROCEDURE MulM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
-  RAISES SizeError ;
-  (* a (r x k) times b (k x c); Cols (a) # Rows (b) is SizeError *)
+  RAISES Faults.SizeError ;
+  (* a (r x k) times b (k x c); Cols (a) # Rows (b) is Faults.SizeError *)
 
 PROCEDURE MulV (VAR pool: POOL ; a: PTR Matrix ; RO x: SLICE OF F64)
   : PTR Matrix IN pool
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
   (* a times a column vector, answered as an n x 1 matrix so it can
      feed straight back into MulM/CholSolve *)
 
 PROCEDURE Transpose (VAR pool: POOL ; m: PTR Matrix)
-  : PTR Matrix IN pool RAISES SizeError ;
+  : PTR Matrix IN pool RAISES Faults.SizeError ;
 
 PROCEDURE AddM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
 PROCEDURE SubM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
 PROCEDURE Scale (VAR m: PTR Matrix ; s: F64) ;
   (* in place, the one mutator: scaling allocates nothing *)
 
 PROCEDURE Identity (VAR pool: POOL ; n: I64) : PTR Matrix IN pool
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
 PROCEDURE CopyM (VAR pool: POOL ; m: PTR Matrix) : PTR Matrix IN pool
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
 
 PROCEDURE Cholesky (VAR pool: POOL ; a: PTR Matrix)
   : PTR Matrix IN pool
-  RAISES SizeError, NotSPD, ValueRange ;
+  RAISES Faults.SizeError, NotSPD, ValueRange ;
   (* the lower-triangular L with L L^T = a.  Only the lower triangle
      of a is read, which is the usual contract and means a matrix
      that is SPD in its lower half is never betrayed by garbage in
@@ -107,18 +106,34 @@ PROCEDURE Cholesky (VAR pool: POOL ; a: PTR Matrix)
 
 PROCEDURE CholSolve (VAR pool: POOL ; l, b: PTR Matrix)
   : PTR Matrix IN pool
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
   (* solve A X = B given L = Cholesky (A); B may carry many columns,
      which is how the Kalman-style gain is built in one call *)
 
 PROCEDURE SpdInverse (VAR pool: POOL ; a: PTR Matrix)
   : PTR Matrix IN pool
-  RAISES SizeError, NotSPD, ValueRange ;
+  RAISES Faults.SizeError, NotSPD, ValueRange ;
   (* CholSolve against the identity: the posterior covariance step *)
+
+PROCEDURE CholeskyT (VAR pool: POOL ; a: PTR Matrix ; threads: I64)
+  : PTR Matrix IN pool
+  RAISES Faults.SizeError, NotSPD, ValueRange ;
+  (* Cholesky's factor, computed BLOCKED and on threads (2026-09-15):
+     the lower triangle of a is copied and factored in place, panel
+     by panel -- the diagonal block serially, the rows below it as
+     independent forward substitutions, the trailing lower triangle
+     updated a row at a time -- with the rows of the last two steps
+     claimed in bands by `threads` workers.  Every cell sees the
+     same subtractions in the same order the serial Cholesky applies
+     (k ascending, one running value, never a panel dot product
+     subtracted whole), so the factor is BIT-IDENTICAL to Cholesky's
+     at any thread count; the gate holds it so.  On 16 629 unknowns
+     the serial factorisation was the last single-threaded minutes
+     of a solve whose other stages were already banded.            *)
 
 PROCEDURE CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64)
   : PTR Matrix IN pool
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
   (* (L L^T)^-1 from the factor Cholesky answered, in two contiguous
      passes on `threads` threads (2026-09-15, the year inversion's
      8-hour inverse):
@@ -142,7 +157,7 @@ PROCEDURE CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64)
 
 PROCEDURE AddNormal (VAR pool: POOL ; h: PTR Matrix ; RO w: SLICE OF F64 ;
                      VAR k: PTR Matrix ; threads: I64)
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
   (* k := k + H^T diag (w) H, the normal matrix of a weighted least
      squares, accumulated where it lies: one pass over the rows of H
      per band of columns, zeros of H skipped, the upper triangle
@@ -156,6 +171,8 @@ END Mat.
 
 
 IMPLEMENTATION MODULE Mat ;
+
+IMPORT Faults ;
 
 IMPORT Math ;
 
@@ -174,16 +191,11 @@ TYPE
      docs/nd-arrays.md, before the feature was designed.  The check is
      now per axis and the driver asserts the raise.                  *)
 
-PROCEDURE IsNaN (v: F64) : BOOL =
-BEGIN
-  RETURN NOT (v = v)
-END IsNaN ;
-
 PROCEDURE New (VAR pool: POOL ; rows, cols: I64) : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR m : PTR Matrix IN pool ;
 BEGIN
-  IF rows <= 0 OR cols <= 0 THEN RAISE SizeError (rows, cols) END ;
+  IF rows <= 0 OR cols <= 0 THEN RAISE Faults.SizeError (rows, cols) END ;
   m := NEW (pool, Matrix) ;
   m.d := NEW (pool, F64, rows, cols) ;
   RETURN m
@@ -210,20 +222,20 @@ BEGIN
 END Set ;
 
 PROCEDURE ColReduce (m: PTR Matrix ; op: ReduceOp ; out: SLICE OF F64)
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   r, c, n : I64 ;
   acc, v  : F64 ;
 BEGIN
   IF LEN (out) # LEN (m.d, 1) THEN
-    RAISE SizeError (LEN (out), LEN (m.d, 1))
+    RAISE Faults.SizeError (LEN (out), LEN (m.d, 1))
   END ;
   FOR c := 0 TO LEN (m.d, 1) - 1 DO
     n := 0 ;
     acc := 0.0 ;
     FOR r := 0 TO LEN (m.d, 0) - 1 DO
       v := m.d[r, c] ;
-      IF NOT IsNaN (v) THEN
+      IF NOT Math.IsNaN (v) THEN
         IF n = 0 THEN
           acc := v
         ELSE
@@ -259,13 +271,13 @@ END ColReduce ;
 PROCEDURE SubRowVector (VAR pool: POOL ; m: PTR Matrix ;
                         RO v: SLICE OF F64)
   : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   res  : PTR Matrix IN pool ;
   r, c : I64 ;
 BEGIN
   IF LEN (v) # LEN (m.d, 1) THEN
-    RAISE SizeError (LEN (v), LEN (m.d, 1))
+    RAISE Faults.SizeError (LEN (v), LEN (m.d, 1))
   END ;
   res := New (pool, LEN (m.d, 0), LEN (m.d, 1)) ;
   FOR r := 0 TO LEN (m.d, 0) - 1 DO
@@ -288,7 +300,7 @@ BEGIN
   FOR r := 0 TO LEN (m.d, 0) - 1 DO
   FOR c := 0 TO LEN (m.d, 1) - 1 DO
     v := m.d[r, c] ;
-    IF NOT IsNaN (v) THEN
+    IF NOT Math.IsNaN (v) THEN
       IF NOT seen THEN
         mn := v ; mx := v ; seen := TRUE
       ELSE
@@ -304,13 +316,13 @@ END MinMax ;
 (* ---- linear algebra ---- *)
 
 PROCEDURE MulM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   m : PTR Matrix IN pool ;
   r, c, k : I64 ;
   acc : F64 ;
 BEGIN
-  IF Cols (a) # Rows (b) THEN RAISE SizeError (Cols (a), Rows (b)) END ;
+  IF Cols (a) # Rows (b) THEN RAISE Faults.SizeError (Cols (a), Rows (b)) END ;
   m := New (pool, Rows (a), Cols (b)) ;
   FOR r := 0 TO Rows (a) - 1 DO
     FOR c := 0 TO Cols (b) - 1 DO
@@ -326,13 +338,13 @@ END MulM ;
 
 PROCEDURE MulV (VAR pool: POOL ; a: PTR Matrix ; RO x: SLICE OF F64)
   : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   m : PTR Matrix IN pool ;
   r, k : I64 ;
   acc : F64 ;
 BEGIN
-  IF Cols (a) # LEN (x) THEN RAISE SizeError (Cols (a), LEN (x)) END ;
+  IF Cols (a) # LEN (x) THEN RAISE Faults.SizeError (Cols (a), LEN (x)) END ;
   m := New (pool, Rows (a), 1) ;
   FOR r := 0 TO Rows (a) - 1 DO
     acc := 0.0 ;
@@ -345,7 +357,7 @@ BEGIN
 END MulV ;
 
 PROCEDURE Transpose (VAR pool: POOL ; m: PTR Matrix)
-  : PTR Matrix IN pool RAISES SizeError =
+  : PTR Matrix IN pool RAISES Faults.SizeError =
 VAR
   t : PTR Matrix IN pool ;
   r, c : I64 ;
@@ -359,14 +371,14 @@ BEGIN
   RETURN t
 END Transpose ;
 
-PROCEDURE Same (a, b: PTR Matrix) RAISES SizeError =
+PROCEDURE Same (a, b: PTR Matrix) RAISES Faults.SizeError =
 BEGIN
-  IF Rows (a) # Rows (b) THEN RAISE SizeError (Rows (a), Rows (b)) END ;
-  IF Cols (a) # Cols (b) THEN RAISE SizeError (Cols (a), Cols (b)) END
+  IF Rows (a) # Rows (b) THEN RAISE Faults.SizeError (Rows (a), Rows (b)) END ;
+  IF Cols (a) # Cols (b) THEN RAISE Faults.SizeError (Cols (a), Cols (b)) END
 END Same ;
 
 PROCEDURE AddM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   m : PTR Matrix IN pool ;
   r, c : I64 ;
@@ -382,7 +394,7 @@ BEGIN
 END AddM ;
 
 PROCEDURE SubM (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   m : PTR Matrix IN pool ;
   r, c : I64 ;
@@ -408,7 +420,7 @@ BEGIN
 END Scale ;
 
 PROCEDURE Identity (VAR pool: POOL ; n: I64) : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   m : PTR Matrix IN pool ;
   i : I64 ;
@@ -421,7 +433,7 @@ BEGIN
 END Identity ;
 
 PROCEDURE CopyM (VAR pool: POOL ; m: PTR Matrix) : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   t : PTR Matrix IN pool ;
   r, c : I64 ;
@@ -437,13 +449,13 @@ END CopyM ;
 
 PROCEDURE Cholesky (VAR pool: POOL ; a: PTR Matrix)
   : PTR Matrix IN pool
-  RAISES SizeError, NotSPD, ValueRange =
+  RAISES Faults.SizeError, NotSPD, ValueRange =
 VAR
   l : PTR Matrix IN pool ;
   n, i, j, k : I64 ;
   acc : F64 ;
 BEGIN
-  IF Rows (a) # Cols (a) THEN RAISE SizeError (Rows (a), Cols (a)) END ;
+  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
   n := Rows (a) ;
   l := New (pool, n, n) ;
   FOR i := 0 TO n - 1 DO
@@ -468,14 +480,14 @@ END Cholesky ;
 
 PROCEDURE CholSolve (VAR pool: POOL ; l, b: PTR Matrix)
   : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   x : PTR Matrix IN pool ;
   n, i, k, c : I64 ;
   acc : F64 ;
 BEGIN
-  IF Rows (l) # Cols (l) THEN RAISE SizeError (Rows (l), Cols (l)) END ;
-  IF Rows (b) # Rows (l) THEN RAISE SizeError (Rows (b), Rows (l)) END ;
+  IF Rows (l) # Cols (l) THEN RAISE Faults.SizeError (Rows (l), Cols (l)) END ;
+  IF Rows (b) # Rows (l) THEN RAISE Faults.SizeError (Rows (b), Rows (l)) END ;
   n := Rows (l) ;
   x := CopyM (pool, b) ;
   FOR c := 0 TO Cols (b) - 1 DO
@@ -501,7 +513,7 @@ END CholSolve ;
 
 PROCEDURE SpdInverse (VAR pool: POOL ; a: PTR Matrix)
   : PTR Matrix IN pool
-  RAISES SizeError, NotSPD, ValueRange =
+  RAISES Faults.SizeError, NotSPD, ValueRange =
 VAR l : PTR Matrix IN pool ;
 BEGIN
   l := Cholesky (pool, a) ;
@@ -620,15 +632,138 @@ BEGIN
   AwaitAll (j.w, threads)
 END RunInv ;
 
+(* ---- the blocked Cholesky: a panel's rows below the diagonal
+   block and the trailing update, both in row bands ---- *)
+
+TYPE
+  CholJob = RECORD
+    w : Work ;
+    l : PTR Matrix ;             (* the factor in the making, lower triangle *)
+    n, k0, k1, pass, band, nbands : I64 ;
+    bad : I64                    (* a NotSPD row, -1 while none *)
+  END ;
+
+PROCEDURE CholBand (VAR j: CholJob ; b: I64) =
+VAR
+  r0, r1, i, jj, k : I64 ;
+  acc : F64 ;
+BEGIN
+  r0 := j.k1 + b * j.band ;
+  r1 := r0 + j.band ;
+  IF r1 > j.n THEN r1 := j.n END ;
+  IF j.pass = 1 THEN
+    (* the panel below the diagonal block: row i's entries in columns
+       k0..k1-1, each the serial recurrence continued from the value
+       the earlier panels' updates left in l[i, jj] *)
+    FOR i := r0 TO r1 - 1 DO
+      FOR jj := j.k0 TO j.k1 - 1 DO
+        acc := j.l.d[i, jj] ;
+        FOR k := j.k0 TO jj - 1 DO
+          acc := acc - j.l.d[i, k] * j.l.d[jj, k]
+        END ;
+        j.l.d[i, jj] := acc / j.l.d[jj, jj]
+      END
+    END
+  ELSE
+    (* the trailing update: the lower triangle of rows k1.., the
+       panel's products subtracted k ascending from the running value *)
+    FOR i := r0 TO r1 - 1 DO
+      FOR jj := j.k1 TO i DO
+        acc := j.l.d[i, jj] ;
+        FOR k := j.k0 TO j.k1 - 1 DO
+          acc := acc - j.l.d[i, k] * j.l.d[jj, k]
+        END ;
+        j.l.d[i, jj] := acc
+      END
+    END
+  END
+END CholBand ;
+
+PROCEDURE CholWorker (VAR j: CholJob) =
+VAR b : I64 ;
+BEGIN
+  b := Claim (j.w) ;
+  WHILE b < j.nbands DO
+    CholBand (j, b) ;
+    b := Claim (j.w)
+  END ;
+  Finish (j.w)
+END CholWorker ;
+
+PROCEDURE RunChol (VAR j: PTR CholJob ; threads: I64) =
+VAR t : I64 ;
+BEGIN
+  ResetWork (j.w) ;
+  IF threads < 1 THEN threads := 1 END ;
+  FOR t := 1 TO threads DO THREAD (CholWorker, j) END ;
+  AwaitAll (j.w, threads)
+END RunChol ;
+
+PROCEDURE CholeskyT (VAR pool: POOL ; a: PTR Matrix ; threads: I64)
+  : PTR Matrix IN pool
+  RAISES Faults.SizeError, NotSPD, ValueRange =
+VAR
+  scratch : POOL ;
+  j : PTR CholJob IN scratch ;
+  l : PTR Matrix IN pool ;
+  n, nb, k0, k1, i, jj, k : I64 ;
+  acc : F64 ;
+BEGIN
+  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
+  n := Rows (a) ;
+  l := New (pool, n, n) ;
+  FOR i := 0 TO n - 1 DO
+    FOR jj := 0 TO i DO l.d[i, jj] := a.d[i, jj] END
+  END ;
+  nb := 128 ;
+  IF n < 512 THEN nb := 32 END ;
+  j := NEW (scratch, CholJob) ;
+  j.n := n ;
+  j.band := 32 ;
+  k0 := 0 ;
+  WHILE k0 < n DO
+    k1 := k0 + nb ;
+    IF k1 > n THEN k1 := n END ;
+    (* the diagonal block, serially: the serial recurrence on rows
+       k0..k1-1 within their own columns *)
+    FOR i := k0 TO k1 - 1 DO
+      FOR jj := k0 TO i DO
+        acc := l.d[i, jj] ;
+        FOR k := k0 TO jj - 1 DO
+          acc := acc - l.d[i, k] * l.d[jj, k]
+        END ;
+        IF i = jj THEN
+          IF acc <= 0.0 THEN RAISE NotSPD (i) END ;
+          l.d[i, jj] := Math.Sqrt (acc)
+        ELSE
+          l.d[i, jj] := acc / l.d[jj, jj]
+        END
+      END
+    END ;
+    IF k1 < n THEN
+      j.l := l ;
+      j.k0 := k0 ; j.k1 := k1 ;
+      j.nbands := (n - k1 + j.band - 1) DIV j.band ;
+      j.pass := 1 ;
+      RunChol (j, threads) ;
+      j.pass := 2 ;
+      RunChol (j, threads) ;
+      l := j.l
+    END ;
+    k0 := k1
+  END ;
+  RETURN l
+END CholeskyT ;
+
 PROCEDURE CholInverse (VAR pool: POOL ; KEPT l: PTR Matrix ; threads: I64)
   : PTR Matrix IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   scratch : POOL ;
   j : PTR InvJob IN scratch ;
   n : I64 ;
 BEGIN
-  IF Rows (l) # Cols (l) THEN RAISE SizeError (Rows (l), Cols (l)) END ;
+  IF Rows (l) # Cols (l) THEN RAISE Faults.SizeError (Rows (l), Cols (l)) END ;
   n := Rows (l) ;
   j := NEW (scratch, InvJob) ;
   j.n := n ;
@@ -685,14 +820,14 @@ END NormalWorker ;
 
 PROCEDURE AddNormal (VAR pool: POOL ; h: PTR Matrix ; RO w: SLICE OF F64 ;
                      VAR k: PTR Matrix ; threads: I64)
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR
   scratch : POOL ;
   j : PTR NormalJob IN scratch ;
   t, c, cc : I64 ;
 BEGIN
-  IF Rows (k) # Cols (h) OR Cols (k) # Cols (h) THEN RAISE SizeError (Rows (k), Cols (h)) END ;
-  IF LEN (w) # Rows (h) THEN RAISE SizeError (LEN (w), Rows (h)) END ;
+  IF Rows (k) # Cols (h) OR Cols (k) # Cols (h) THEN RAISE Faults.SizeError (Rows (k), Cols (h)) END ;
+  IF LEN (w) # Rows (h) THEN RAISE Faults.SizeError (LEN (w), Rows (h)) END ;
   j := NEW (scratch, NormalJob) ;
   j.h := h ;
   j.k := k ;

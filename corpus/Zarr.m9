@@ -135,6 +135,27 @@ PROCEDURE GuessChunks (VAR pool: POOL ; RO shape: SLICE OF I64 ;
      ObsPack store's 971 time axes are neither the whole array nor
      the 50,000 its data columns take. *)
 
+PROCEDURE DeclareF32 (VAR pool: POOL ; RO adir: STR ;
+                      RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                      RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* THE CHUNK-WISE WRITER, half one: `.zarray` (an `<f4` with a NaN
+     fill) and `.zattrs` for an array whose chunks the caller will
+     write ONE AT A TIME with PutChunkF32 -- a panel too large to hold
+     whole (fluxnet-shuttle's era5_hh is 771 x 788,928, 2.4 GB per
+     variable) is written one time band at a time, 27 MB.  A declared
+     array with no chunks READS AS ALL FILL, so this is for a caller
+     that will write every chunk. *)
+
+PROCEDURE PutChunkF32 (VAR pool: POOL ; RO adir: STR ;
+                       RO ci: SLICE OF I64 ; RO data: SLICE OF F32 ;
+                       RO chunks: SLICE OF I64 ; comp: I64)
+  RAISES Error, ValueRange ;
+  (* half two: ONE WHOLE CHUNK at grid index `ci` (per axis), `data`
+     holding exactly the product of `chunks` elements in C order --
+     an edge chunk padded by the caller with the fill, as zarr pads
+     it -- to `<ci0>.<ci1>...` under adir, compressed as declared. *)
+
 PROCEDURE WriteIntFill (VAR pool: POOL ; RO adir: STR ;
                         RO data: SLICE OF I64 ; width: I64 ;
                         signed: BOOL ; hasFill: BOOL ; fill: I64 ;
@@ -846,6 +867,55 @@ BEGIN
 EXCEPT
 | Io.IOError (p) : RAISE Error (Cat (pool, 'cannot write array ', adir))
 END Emit ;
+
+PROCEDURE DeclareF32 (VAR pool: POOL ; RO adir: STR ;
+                      RO shape: SLICE OF I64 ; RO chunks: SLICE OF I64 ;
+                      RO dims: SLICE OF STR ; comp: I64)
+  RAISES Error, ValueRange =
+BEGIN
+  CheckGrid (pool, adir, shape, chunks) ;
+  MkDirP (pool, adir) ;
+  WriteText (pool, Cat (pool, adir, '/.zarray'),
+             Meta (pool, '<f4', '"NaN"', 'null', shape, chunks, comp)) ;
+  WriteText (pool, Cat (pool, adir, '/.zattrs'), DimsJson (pool, dims))
+EXCEPT
+| Io.IOError (p) : RAISE Error (Cat (pool, 'cannot declare array ', adir))
+END DeclareF32 ;
+
+PROCEDURE PutChunkF32 (VAR pool: POOL ; RO adir: STR ;
+                       RO ci: SLICE OF I64 ; RO data: SLICE OF F32 ;
+                       RO chunks: SLICE OF I64 ; comp: I64)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  raw : SLICE OF BYTE ;
+  nm : PTR DynStr.DString IN scratch ;
+  cn, i : I64 ;
+BEGIN
+  IF LEN (ci) # LEN (chunks) THEN
+    RAISE Error (Cat (pool, 'chunk index rank differs from the grid for ', adir))
+  END ;
+  cn := 1 ;
+  FOR i := 0 TO LEN (chunks) - 1 DO
+    IF ci[i] < 0 THEN RAISE Error (Cat (pool, 'a negative chunk index for ', adir)) END ;
+    cn := cn * chunks[i]
+  END ;
+  IF LEN (data) # cn THEN
+    RAISE Error (Cat (pool, 'not a whole chunk for ', adir))
+  END ;
+  raw := NEW (scratch, BYTE, cn * 4) ;
+  FOR i := 0 TO cn - 1 DO
+    F32.ToBytesLE (data[i], SLICE (raw, i * 4, 4))
+  END ;
+  nm := DynStr.New (scratch) ;
+  DynStr.Append (scratch, nm, adir) ;
+  DynStr.AppendChar (scratch, nm, '/') ;
+  FOR i := 0 TO LEN (ci) - 1 DO
+    IF i > 0 THEN DynStr.AppendChar (scratch, nm, '.') END ;
+    DynStr.AppendI64 (scratch, nm, ci[i])
+  END ;
+  PutChunk (pool, DynStr.View (nm), raw, 4, comp)
+END PutChunkF32 ;
 
 PROCEDURE WriteF32Fill (VAR pool: POOL ; RO adir: STR ;
                         RO data: SLICE OF F32 ; hasFill: BOOL ;

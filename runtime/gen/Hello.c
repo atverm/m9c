@@ -66,6 +66,8 @@ int main (int argc, char **argv)
   m9_pool m9frame = {0};
   err->res = &m9frame;
   m9_args (argc, argv);
+  Io_m9init (err); if (err->exc) goto L_ret;
+  DynStr_m9init (err); if (err->exc) goto L_ret;
   bool m9t3 = (Io_ArgCount (err) <= INT64_C(1));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {

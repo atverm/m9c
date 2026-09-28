@@ -4,6 +4,8 @@
 #include "m9rt.h"
 #include "DynStr.h"
 
+void Text_m9init (m9_state *err);
+
 
 static const uint32_t Text_LowerAlpha_d[26] = { 97u, 98u, 99u, 100u, 101u, 102u, 103u, 104u, 105u, 106u, 107u, 108u, 109u, 110u, 111u, 112u, 113u, 114u, 115u, 116u, 117u, 118u, 119u, 120u, 121u, 122u };
 #define Text_LowerAlpha ((m9_sl_CHAR){ (uint32_t *) Text_LowerAlpha_d, 26 })
@@ -27,6 +29,9 @@ m9_sl_CHAR Text_TrimLeft (m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_TrimRight (m9_sl_CHAR s, m9_state *err);
 int64_t Text_CountChar (m9_sl_CHAR s, uint32_t c, m9_state *err);
 m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state *err);
+m9_sl_m9_sl_CHAR Text_Fields (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state *err);
+m9_sl_CHAR Text_Keep (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Text_Cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
 m9_sl_CHAR Text_Join (m9_pool *pool, m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_state *err);
 m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_state *err);

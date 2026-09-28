@@ -4,6 +4,8 @@
 #include "m9rt.h"
 #include "DynStr.h"
 
+void ApiSpec_m9init (m9_state *err);
+
 typedef struct ApiSpec_Spec ApiSpec_Spec;
 typedef struct ApiSpec_Param ApiSpec_Param;
 typedef struct ApiSpec_Op ApiSpec_Op;

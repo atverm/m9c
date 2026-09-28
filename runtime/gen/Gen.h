@@ -5,6 +5,8 @@
 #include "Ast.h"
 #include "DynStr.h"
 
+void Gen_m9init (m9_state *err);
+
 typedef struct Gen_MEnt Gen_MEnt;
 typedef struct Gen_Map Gen_Map;
 typedef struct Gen_GP Gen_GP;

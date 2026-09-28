@@ -1,0 +1,7 @@
+(* EXPECT: a field of procedure type must be OPT (par 2.2.3) *)
+MODULE m ;
+TYPE Less = PROCEDURE (a: I64 ; b: I64) : BOOL ;
+TYPE R = RECORD f : Less ; n : I64 END ;
+VAR r : R ;
+PROCEDURE F () = BEGIN r.n := 0 END F ;
+END m.

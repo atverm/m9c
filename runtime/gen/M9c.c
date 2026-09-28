@@ -275,7 +275,7 @@ static const uint32_t m9s180[50] = { 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u
 static const uint32_t m9s181[49] = { 32u, 32u, 45u, 103u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 100u, 101u, 98u, 117u, 103u, 32u, 105u, 110u, 102u, 111u, 114u, 109u, 97u, 116u, 105u, 111u, 110u, 59u, 32u, 107u, 101u, 101u, 112u, 115u, 32u, 116u, 104u, 101u, 32u, 67u };
 static const uint32_t m9s182[48] = { 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 105u, 116u, 32u, 110u, 97u, 109u, 101u, 115u, 44u, 32u, 97u, 110u, 100u, 32u, 99u, 104u, 97u, 110u, 103u, 101u, 115u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u };
 static const uint32_t m9s183[49] = { 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 101u, 108u, 115u, 101u, 32u, 45u, 45u, 32u, 115u, 116u, 105u, 108u, 108u, 32u, 45u, 79u, 50u, 44u, 32u, 115u, 116u, 105u, 108u, 108u, 32u, 45u, 102u, 108u, 116u, 111u };
-static const uint32_t m9s184[51] = { 32u, 32u, 45u, 45u, 99u, 104u, 101u, 99u, 107u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 99u, 104u, 101u, 99u, 107u, 32u, 111u, 110u, 108u, 121u, 59u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u, 32u, 97u, 116u, 32u, 97u, 108u, 108u };
+static const uint32_t m9s184[68] = { 32u, 32u, 45u, 45u, 99u, 104u, 101u, 99u, 107u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 99u, 104u, 101u, 99u, 107u, 32u, 111u, 110u, 108u, 121u, 44u, 32u, 116u, 104u, 101u, 32u, 103u, 101u, 110u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 105u, 110u, 99u, 108u, 117u, 100u, 101u, 100u, 59u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u };
 static const uint32_t m9s185[48] = { 32u, 32u, 45u, 45u, 100u, 111u, 99u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 78u, 65u, 77u, 69u, 46u, 109u, 100u, 44u, 32u, 116u, 104u, 101u, 32u, 68u, 69u, 70u, 73u, 78u, 73u, 84u, 73u, 79u, 78u };
 static const uint32_t m9s186[47] = { 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 97u, 115u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u, 44u, 32u, 97u, 110u, 100u };
 static const uint32_t m9s187[31] = { 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 32u, 110u, 111u, 116u, 104u, 105u, 110u, 103u, 32u, 101u, 108u, 115u, 101u };
@@ -2575,7 +2575,7 @@ static void M9c_Help (m9_state *err)
   if (err->exc) goto L_ret;
   Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s183, 49 }), err);
   if (err->exc) goto L_ret;
-  Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s184, 51 }), err);
+  Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s184, 68 }), err);
   if (err->exc) goto L_ret;
   Io_WriteLine (((m9_sl_CHAR){ (uint32_t *) m9s185, 48 }), err);
   if (err->exc) goto L_ret;
@@ -3642,6 +3642,15 @@ int main (int argc, char **argv)
   m9_pool m9frame = {0};
   err->res = &m9frame;
   m9_args (argc, argv);
+  Io_m9init (err); if (err->exc) goto L_ret;
+  Ast_m9init (err); if (err->exc) goto L_ret;
+  Parse_m9init (err); if (err->exc) goto L_ret;
+  Gen_m9init (err); if (err->exc) goto L_ret;
+  Sem_m9init (err); if (err->exc) goto L_ret;
+  DynStr_m9init (err); if (err->exc) goto L_ret;
+  Doc_m9init (err); if (err->exc) goto L_ret;
+  Lex_m9init (err); if (err->exc) goto L_ret;
+  System_m9init (err); if (err->exc) goto L_ret;
   M9c_Locate (err);
   if (err->exc) goto L_hdl_m9t1;
   bool m9t3 = (Io_ArgCount (err) < INT64_C(2));
@@ -3787,9 +3796,6 @@ int main (int argc, char **argv)
           if (err->exc) goto L_hdl_m9t1;
         } }
       } }
-      if (doCheck) {
-        goto L_ret;
-      }
       if (doDoc) {
         Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s364, 3 }), err), M9c_DocText (root, name, err), err);
         if (err->exc) goto L_hdl_m9t1;
@@ -3822,6 +3828,9 @@ int main (int argc, char **argv)
         if (err->exc) goto L_hdl_m9t1;
         failed = true;
       } else {
+        if (doCheck) {
+          goto L_ret;
+      } else {
         Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s370, 2 }), err), Gen_HText (err), err);
         if (err->exc) goto L_hdl_m9t1;
         Io_WriteFile (M9c_Suffix (name, ((m9_sl_CHAR){ (uint32_t *) m9s371, 2 }), err), Gen_CText (err), err);
@@ -3849,7 +3858,7 @@ int main (int argc, char **argv)
             failed = true;
           }
         }
-      }
+      } }
     } }
   } }
   if (failed) {

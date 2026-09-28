@@ -5,6 +5,8 @@
 #include "DynStr.h"
 #include "Mat.h"
 
+void Plot_m9init (m9_state *err);
+
 typedef struct Plot_Cmap Plot_Cmap;
 
 typedef struct Plot_Cmap Plot_Cmap;
@@ -25,7 +27,7 @@ static const m9_sl_CHAR __attribute__((__unused__)) Plot_Cmap_names[] = {
 #define Plot_BarAtValue INT64_C(0)
 #define Plot_BarDiscrete INT64_C(1)
 #define Plot_MaxSer INT64_C(4)
-#define Plot_MaxPts INT64_C(1024)
+#define Plot_MaxPts INT64_C(8192)
 #define Plot_FigW (720.0)
 #define Plot_FigH (440.0)
 #define Plot_MLeft (70.0)
@@ -36,9 +38,9 @@ static const uint32_t Plot_HexDigits_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u
 #define Plot_HexDigits ((m9_sl_CHAR){ (uint32_t *) Plot_HexDigits_d, 16 })
 #define Plot_Cap (3.0)
 
-#ifndef M9SL_m9_arr_4096_double
-#define M9SL_m9_arr_4096_double
-typedef struct { double v[4096]; } m9_arr_4096_double;
+#ifndef M9SL_m9_arr_32768_double
+#define M9SL_m9_arr_32768_double
+typedef struct { double v[32768]; } m9_arr_32768_double;
 #endif
 #ifndef M9SL_m9_arr_4_int64_t
 #define M9SL_m9_arr_4_int64_t
@@ -68,9 +70,13 @@ void Plot_AddBars (m9_sl_F64 at, m9_sl_F64 v, int64_t colorIdx, m9_sl_CHAR label
 void Plot_SetBarStyle (int64_t dir, int64_t mode, int64_t place, bool filled, double width, m9_state *err);
 void Plot_SetBarErrors (int64_t series, m9_sl_F64 err_, m9_state *err);
 void Plot_SetBarColor (int64_t series, m9_sl_CHAR hex, m9_state *err);
+Plot_Cmap Plot_Viridis (m9_state *err);
+Plot_Cmap Plot_Coolwarm (m9_state *err);
+void Plot_SetLineColor (int64_t series, m9_sl_CHAR hex, m9_state *err);
 void Plot_SetLogX (bool on, m9_state *err);
 void Plot_SetLogY (bool on, m9_state *err);
 m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_sl_CHAR ylabel, m9_state *err);
 m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plot_Cmap cmap, bool symmetric, m9_state *err);
+void Plot_SetHeatRange (double lo, double hi, m9_state *err);
 
 #endif

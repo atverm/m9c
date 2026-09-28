@@ -3,6 +3,8 @@
 #define M9G_Fmt_H
 #include "m9rt.h"
 
+void Fmt_m9init (m9_state *err);
+
 
 #define Fmt_MaxDecimals INT64_C(17)
 static const uint32_t Fmt_HexDigits_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 65u, 66u, 67u, 68u, 69u, 70u };

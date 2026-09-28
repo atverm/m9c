@@ -7,6 +7,8 @@
 #include "Print.h"
 #include "Text.h"
 
+void Sem_m9init (m9_state *err);
+
 typedef struct Sem_ProcInfo Sem_ProcInfo;
 typedef struct Sem_Edge Sem_Edge;
 typedef struct Sem_Binding Sem_Binding;

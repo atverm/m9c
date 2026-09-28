@@ -106,143 +106,152 @@ static const uint32_t m9s11[4] = { 110u, 117u, 108u, 108u };
 static const uint32_t m9s12[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
 static const uint32_t m9s13[18] = { 103u, 117u, 101u, 115u, 115u, 95u, 99u, 104u, 117u, 110u, 107u, 115u, 32u, 105u, 110u, 100u, 101u, 120u };
 static const uint32_t m9s14[21] = { 103u, 117u, 101u, 115u, 115u, 95u, 99u, 104u, 117u, 110u, 107u, 115u, 32u, 111u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
-static const uint32_t m9s15[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s16[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s15[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
+static const uint32_t m9s16[3] = { 60u, 102u, 52u };
 static const uint32_t m9s17[5] = { 34u, 78u, 97u, 78u, 34u };
-static const uint32_t m9s18[3] = { 60u, 102u, 52u };
-static const uint32_t m9s19[5] = { 34u, 78u, 97u, 78u, 34u };
-static const uint32_t m9s20[3] = { 60u, 102u, 56u };
-static const uint32_t m9s21[32] = { 97u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s22[2] = { 124u, 83u };
-static const uint32_t m9s23[40] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 105u, 115u, 32u, 108u, 111u, 110u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 105u, 116u, 115u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s24[40] = { 116u, 104u, 101u, 32u, 102u, 105u, 108u, 108u, 32u, 105u, 115u, 32u, 108u, 111u, 110u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 105u, 116u, 115u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s25[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s26[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s27[32] = { 97u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s28[2] = { 124u, 83u };
-static const uint32_t m9s29[40] = { 116u, 104u, 101u, 32u, 102u, 105u, 108u, 108u, 32u, 105u, 115u, 32u, 108u, 111u, 110u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 105u, 116u, 115u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s30[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s31[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s32[32] = { 97u, 32u, 60u, 85u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s33[37] = { 100u, 97u, 116u, 97u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 109u, 97u, 116u, 99u, 104u, 32u, 115u, 104u, 97u, 112u, 101u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s34[39] = { 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 115u, 32u, 108u, 111u, 110u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 60u, 85u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s35[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s36[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s37[22] = { 114u, 97u, 110u, 107u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 49u, 46u, 46u, 53u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s38[36] = { 97u, 110u, 32u, 101u, 109u, 112u, 116u, 121u, 32u, 118u, 108u, 101u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 104u, 97u, 115u, 32u, 110u, 111u, 32u, 99u, 104u, 117u, 110u, 107u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s39[37] = { 100u, 97u, 116u, 97u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 109u, 97u, 116u, 99u, 104u, 32u, 115u, 104u, 97u, 112u, 101u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s40[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
-static const uint32_t m9s41[2] = { 124u, 79u };
-static const uint32_t m9s42[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s43[21] = { 91u, 123u, 34u, 105u, 100u, 34u, 58u, 32u, 34u, 118u, 108u, 101u, 110u, 45u, 117u, 116u, 102u, 56u, 34u, 125u, 93u };
-static const uint32_t m9s44[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
-static const uint32_t m9s45[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 97u, 114u, 114u, 97u, 121u, 32u };
-static const uint32_t m9s46[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s47[3] = { 60u, 102u, 52u };
-static const uint32_t m9s48[5] = { 34u, 78u, 97u, 78u, 34u };
-static const uint32_t m9s49[3] = { 60u, 102u, 56u };
-static const uint32_t m9s50[5] = { 34u, 78u, 97u, 78u, 34u };
+static const uint32_t m9s18[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s19[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s20[21] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 97u, 114u, 114u, 97u, 121u, 32u };
+static const uint32_t m9s21[43] = { 99u, 104u, 117u, 110u, 107u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 114u, 97u, 110u, 107u, 32u, 100u, 105u, 102u, 102u, 101u, 114u, 115u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 103u, 114u, 105u, 100u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s22[27] = { 97u, 32u, 110u, 101u, 103u, 97u, 116u, 105u, 118u, 101u, 32u, 99u, 104u, 117u, 110u, 107u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s23[22] = { 110u, 111u, 116u, 32u, 97u, 32u, 119u, 104u, 111u, 108u, 101u, 32u, 99u, 104u, 117u, 110u, 107u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s24[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s25[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s26[5] = { 34u, 78u, 97u, 78u, 34u };
+static const uint32_t m9s27[3] = { 60u, 102u, 52u };
+static const uint32_t m9s28[5] = { 34u, 78u, 97u, 78u, 34u };
+static const uint32_t m9s29[3] = { 60u, 102u, 56u };
+static const uint32_t m9s30[32] = { 97u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s31[2] = { 124u, 83u };
+static const uint32_t m9s32[40] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 105u, 115u, 32u, 108u, 111u, 110u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 105u, 116u, 115u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s33[40] = { 116u, 104u, 101u, 32u, 102u, 105u, 108u, 108u, 32u, 105u, 115u, 32u, 108u, 111u, 110u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 105u, 116u, 115u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s34[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s35[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s36[32] = { 97u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s37[2] = { 124u, 83u };
+static const uint32_t m9s38[40] = { 116u, 104u, 101u, 32u, 102u, 105u, 108u, 108u, 32u, 105u, 115u, 32u, 108u, 111u, 110u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 105u, 116u, 115u, 32u, 124u, 83u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s39[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s40[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s41[32] = { 97u, 32u, 60u, 85u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s42[37] = { 100u, 97u, 116u, 97u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 109u, 97u, 116u, 99u, 104u, 32u, 115u, 104u, 97u, 112u, 101u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s43[39] = { 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 115u, 32u, 108u, 111u, 110u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 60u, 85u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s44[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s45[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s46[22] = { 114u, 97u, 110u, 107u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 49u, 46u, 46u, 53u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s47[36] = { 97u, 110u, 32u, 101u, 109u, 112u, 116u, 121u, 32u, 118u, 108u, 101u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 104u, 97u, 115u, 32u, 110u, 111u, 32u, 99u, 104u, 117u, 110u, 107u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s48[37] = { 100u, 97u, 116u, 97u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 109u, 97u, 116u, 99u, 104u, 32u, 115u, 104u, 97u, 112u, 101u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s49[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
+static const uint32_t m9s50[2] = { 124u, 79u };
 static const uint32_t m9s51[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s52[7] = { 60u, 77u, 56u, 91u, 110u, 115u, 93u };
-static const uint32_t m9s53[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s54[25] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 97u, 112u, 112u, 101u, 110u, 100u, 105u, 110u, 103u, 32u, 116u, 111u, 32u };
-static const uint32_t m9s55[25] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 97u, 112u, 112u, 101u, 110u, 100u, 105u, 110u, 103u, 32u, 116u, 111u, 32u };
-static const uint32_t m9s56[25] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 97u, 112u, 112u, 101u, 110u, 100u, 105u, 110u, 103u, 32u, 116u, 111u, 32u };
-static const uint32_t m9s57[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
-static const uint32_t m9s58[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s59[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
-static const uint32_t m9s60[12] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 115u, 101u, 97u, 108u, 32u };
-static const uint32_t m9s61[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 115u, 101u, 97u, 108u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s62[53] = { 114u, 101u, 102u, 117u, 115u, 105u, 110u, 103u, 32u, 97u, 32u, 70u, 85u, 76u, 76u, 32u, 99u, 111u, 110u, 115u, 111u, 108u, 105u, 100u, 97u, 116u, 101u, 32u, 111u, 102u, 32u, 97u, 32u, 115u, 104u, 97u, 108u, 108u, 111u, 119u, 45u, 114u, 111u, 111u, 116u, 32u, 115u, 116u, 111u, 114u, 101u, 58u, 32u };
-static const uint32_t m9s63[14] = { 123u, 34u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u, 34u, 58u, 32u, 123u };
-static const uint32_t m9s64[26] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 99u, 111u, 110u, 115u, 111u, 108u, 105u, 100u, 97u, 116u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s65[14] = { 123u, 34u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u, 34u, 58u, 32u, 123u };
-static const uint32_t m9s66[7] = { 46u, 122u, 103u, 114u, 111u, 117u, 112u };
-static const uint32_t m9s67[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
-static const uint32_t m9s68[1] = { 47u };
-static const uint32_t m9s69[8] = { 47u, 46u, 122u, 103u, 114u, 111u, 117u, 112u };
-static const uint32_t m9s70[7] = { 46u, 122u, 103u, 114u, 111u, 117u, 112u };
-static const uint32_t m9s71[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
-static const uint32_t m9s72[10] = { 47u, 95u, 99u, 111u, 109u, 98u, 105u, 110u, 101u, 100u };
-static const uint32_t m9s73[9] = { 95u, 99u, 111u, 109u, 98u, 105u, 110u, 101u, 100u };
-static const uint32_t m9s74[12] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 114u, 101u, 97u, 100u, 32u };
-static const uint32_t m9s75[26] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 99u, 111u, 110u, 115u, 111u, 108u, 105u, 100u, 97u, 116u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s76[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 114u, 101u, 97u, 116u, 101u, 32u };
-static const uint32_t m9s77[4] = { 122u, 115u, 116u, 100u };
-static const uint32_t m9s78[3] = { 108u, 122u, 52u };
-static const uint32_t m9s79[55] = { 110u, 111u, 116u, 32u, 97u, 32u, 90u, 97u, 114u, 114u, 32u, 99u, 111u, 109u, 112u, 114u, 101u, 115u, 115u, 111u, 114u, 32u, 99u, 111u, 100u, 101u, 32u, 45u, 45u, 32u, 117u, 115u, 101u, 32u, 90u, 97u, 114u, 114u, 46u, 76u, 122u, 52u, 32u, 111u, 114u, 32u, 90u, 97u, 114u, 114u, 46u, 90u, 115u, 116u, 100u };
-static const uint32_t m9s80[55] = { 110u, 111u, 116u, 32u, 97u, 32u, 90u, 97u, 114u, 114u, 32u, 99u, 111u, 109u, 112u, 114u, 101u, 115u, 115u, 111u, 114u, 32u, 99u, 111u, 100u, 101u, 32u, 45u, 45u, 32u, 117u, 115u, 101u, 32u, 90u, 97u, 114u, 114u, 46u, 76u, 122u, 52u, 32u, 111u, 114u, 32u, 90u, 97u, 114u, 114u, 46u, 90u, 115u, 116u, 100u };
-static const uint32_t m9s81[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s82[26] = { 123u, 34u, 105u, 100u, 34u, 58u, 32u, 34u, 98u, 108u, 111u, 115u, 99u, 34u, 44u, 32u, 34u, 99u, 110u, 97u, 109u, 101u, 34u, 58u, 32u, 34u };
-static const uint32_t m9s83[13] = { 34u, 44u, 32u, 34u, 99u, 108u, 101u, 118u, 101u, 108u, 34u, 58u, 32u };
-static const uint32_t m9s84[31] = { 44u, 32u, 34u, 115u, 104u, 117u, 102u, 102u, 108u, 101u, 34u, 58u, 32u, 49u, 44u, 32u, 34u, 98u, 108u, 111u, 99u, 107u, 115u, 105u, 122u, 101u, 34u, 58u, 32u, 48u, 125u };
-static const uint32_t m9s85[11] = { 123u, 34u, 115u, 104u, 97u, 112u, 101u, 34u, 58u, 32u, 91u };
-static const uint32_t m9s86[2] = { 44u, 32u };
-static const uint32_t m9s87[14] = { 93u, 44u, 32u, 34u, 99u, 104u, 117u, 110u, 107u, 115u, 34u, 58u, 32u, 91u };
-static const uint32_t m9s88[2] = { 44u, 32u };
-static const uint32_t m9s89[13] = { 93u, 44u, 32u, 34u, 100u, 116u, 121u, 112u, 101u, 34u, 58u, 32u, 34u };
-static const uint32_t m9s90[17] = { 34u, 44u, 32u, 34u, 102u, 105u, 108u, 108u, 95u, 118u, 97u, 108u, 117u, 101u, 34u, 58u, 32u };
-static const uint32_t m9s91[27] = { 44u, 32u, 34u, 111u, 114u, 100u, 101u, 114u, 34u, 58u, 32u, 34u, 67u, 34u, 44u, 32u, 34u, 102u, 105u, 108u, 116u, 101u, 114u, 115u, 34u, 58u, 32u };
-static const uint32_t m9s92[44] = { 44u, 32u, 34u, 100u, 105u, 109u, 101u, 110u, 115u, 105u, 111u, 110u, 95u, 115u, 101u, 112u, 97u, 114u, 97u, 116u, 111u, 114u, 34u, 58u, 32u, 34u, 46u, 34u, 44u, 32u, 34u, 99u, 111u, 109u, 112u, 114u, 101u, 115u, 115u, 111u, 114u, 34u, 58u, 32u };
-static const uint32_t m9s93[19] = { 44u, 32u, 34u, 122u, 97u, 114u, 114u, 95u, 102u, 111u, 114u, 109u, 97u, 116u, 34u, 58u, 32u, 50u, 125u };
-static const uint32_t m9s94[23] = { 123u, 34u, 95u, 65u, 82u, 82u, 65u, 89u, 95u, 68u, 73u, 77u, 69u, 78u, 83u, 73u, 79u, 78u, 83u, 34u, 58u, 32u, 91u };
+static const uint32_t m9s52[21] = { 91u, 123u, 34u, 105u, 100u, 34u, 58u, 32u, 34u, 118u, 108u, 101u, 110u, 45u, 117u, 116u, 102u, 56u, 34u, 125u, 93u };
+static const uint32_t m9s53[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s54[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 97u, 114u, 114u, 97u, 121u, 32u };
+static const uint32_t m9s55[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s56[3] = { 60u, 102u, 52u };
+static const uint32_t m9s57[5] = { 34u, 78u, 97u, 78u, 34u };
+static const uint32_t m9s58[3] = { 60u, 102u, 56u };
+static const uint32_t m9s59[5] = { 34u, 78u, 97u, 78u, 34u };
+static const uint32_t m9s60[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s61[7] = { 60u, 77u, 56u, 91u, 110u, 115u, 93u };
+static const uint32_t m9s62[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s63[25] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 97u, 112u, 112u, 101u, 110u, 100u, 105u, 110u, 103u, 32u, 116u, 111u, 32u };
+static const uint32_t m9s64[25] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 97u, 112u, 112u, 101u, 110u, 100u, 105u, 110u, 103u, 32u, 116u, 111u, 32u };
+static const uint32_t m9s65[25] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 97u, 112u, 112u, 101u, 110u, 100u, 105u, 110u, 103u, 32u, 116u, 111u, 32u };
+static const uint32_t m9s66[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
+static const uint32_t m9s67[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s68[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s69[12] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 115u, 101u, 97u, 108u, 32u };
+static const uint32_t m9s70[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 115u, 101u, 97u, 108u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s71[53] = { 114u, 101u, 102u, 117u, 115u, 105u, 110u, 103u, 32u, 97u, 32u, 70u, 85u, 76u, 76u, 32u, 99u, 111u, 110u, 115u, 111u, 108u, 105u, 100u, 97u, 116u, 101u, 32u, 111u, 102u, 32u, 97u, 32u, 115u, 104u, 97u, 108u, 108u, 111u, 119u, 45u, 114u, 111u, 111u, 116u, 32u, 115u, 116u, 111u, 114u, 101u, 58u, 32u };
+static const uint32_t m9s72[14] = { 123u, 34u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u, 34u, 58u, 32u, 123u };
+static const uint32_t m9s73[26] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 99u, 111u, 110u, 115u, 111u, 108u, 105u, 100u, 97u, 116u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s74[14] = { 123u, 34u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u, 34u, 58u, 32u, 123u };
+static const uint32_t m9s75[7] = { 46u, 122u, 103u, 114u, 111u, 117u, 112u };
+static const uint32_t m9s76[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s77[1] = { 47u };
+static const uint32_t m9s78[8] = { 47u, 46u, 122u, 103u, 114u, 111u, 117u, 112u };
+static const uint32_t m9s79[7] = { 46u, 122u, 103u, 114u, 111u, 117u, 112u };
+static const uint32_t m9s80[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s81[10] = { 47u, 95u, 99u, 111u, 109u, 98u, 105u, 110u, 101u, 100u };
+static const uint32_t m9s82[9] = { 95u, 99u, 111u, 109u, 98u, 105u, 110u, 101u, 100u };
+static const uint32_t m9s83[12] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 114u, 101u, 97u, 100u, 32u };
+static const uint32_t m9s84[26] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 99u, 111u, 110u, 115u, 111u, 108u, 105u, 100u, 97u, 116u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s85[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 114u, 101u, 97u, 116u, 101u, 32u };
+static const uint32_t m9s86[4] = { 122u, 115u, 116u, 100u };
+static const uint32_t m9s87[3] = { 108u, 122u, 52u };
+static const uint32_t m9s88[55] = { 110u, 111u, 116u, 32u, 97u, 32u, 90u, 97u, 114u, 114u, 32u, 99u, 111u, 109u, 112u, 114u, 101u, 115u, 115u, 111u, 114u, 32u, 99u, 111u, 100u, 101u, 32u, 45u, 45u, 32u, 117u, 115u, 101u, 32u, 90u, 97u, 114u, 114u, 46u, 76u, 122u, 52u, 32u, 111u, 114u, 32u, 90u, 97u, 114u, 114u, 46u, 90u, 115u, 116u, 100u };
+static const uint32_t m9s89[55] = { 110u, 111u, 116u, 32u, 97u, 32u, 90u, 97u, 114u, 114u, 32u, 99u, 111u, 109u, 112u, 114u, 101u, 115u, 115u, 111u, 114u, 32u, 99u, 111u, 100u, 101u, 32u, 45u, 45u, 32u, 117u, 115u, 101u, 32u, 90u, 97u, 114u, 114u, 46u, 76u, 122u, 52u, 32u, 111u, 114u, 32u, 90u, 97u, 114u, 114u, 46u, 90u, 115u, 116u, 100u };
+static const uint32_t m9s90[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s91[26] = { 123u, 34u, 105u, 100u, 34u, 58u, 32u, 34u, 98u, 108u, 111u, 115u, 99u, 34u, 44u, 32u, 34u, 99u, 110u, 97u, 109u, 101u, 34u, 58u, 32u, 34u };
+static const uint32_t m9s92[13] = { 34u, 44u, 32u, 34u, 99u, 108u, 101u, 118u, 101u, 108u, 34u, 58u, 32u };
+static const uint32_t m9s93[31] = { 44u, 32u, 34u, 115u, 104u, 117u, 102u, 102u, 108u, 101u, 34u, 58u, 32u, 49u, 44u, 32u, 34u, 98u, 108u, 111u, 99u, 107u, 115u, 105u, 122u, 101u, 34u, 58u, 32u, 48u, 125u };
+static const uint32_t m9s94[11] = { 123u, 34u, 115u, 104u, 97u, 112u, 101u, 34u, 58u, 32u, 91u };
 static const uint32_t m9s95[2] = { 44u, 32u };
-static const uint32_t m9s96[2] = { 93u, 125u };
-static const uint32_t m9s97[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 99u, 104u, 117u, 110u, 107u, 32u };
-static const uint32_t m9s98[22] = { 114u, 97u, 110u, 107u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 48u, 46u, 46u, 53u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s99[35] = { 99u, 104u, 117u, 110u, 107u, 115u, 32u, 114u, 97u, 110u, 107u, 32u, 100u, 105u, 102u, 102u, 101u, 114u, 115u, 32u, 102u, 114u, 111u, 109u, 32u, 115u, 104u, 97u, 112u, 101u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s100[32] = { 99u, 104u, 117u, 110u, 107u, 32u, 115u, 105u, 122u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s101[22] = { 97u, 32u, 110u, 101u, 103u, 97u, 116u, 105u, 118u, 101u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s102[2] = { 47u, 48u };
-static const uint32_t m9s103[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s104[37] = { 100u, 97u, 116u, 97u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 109u, 97u, 116u, 99u, 104u, 32u, 115u, 104u, 97u, 112u, 101u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s105[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
-static const uint32_t m9s106[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s107[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
-static const uint32_t m9s108[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 97u, 114u, 114u, 97u, 121u, 32u };
-static const uint32_t m9s109[42] = { 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 102u, 105u, 116u, 32u, 116u, 104u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s110[3] = { 124u, 117u, 49u };
-static const uint32_t m9s111[3] = { 60u, 117u, 50u };
-static const uint32_t m9s112[37] = { 111u, 110u, 108u, 121u, 32u, 124u, 117u, 49u, 32u, 97u, 110u, 100u, 32u, 60u, 117u, 50u, 32u, 97u, 114u, 101u, 32u, 111u, 102u, 102u, 101u, 114u, 101u, 100u, 32u, 117u, 110u, 115u, 105u, 103u, 110u, 101u, 100u };
-static const uint32_t m9s113[3] = { 124u, 105u, 49u };
-static const uint32_t m9s114[3] = { 60u, 105u, 50u };
-static const uint32_t m9s115[3] = { 60u, 105u, 52u };
-static const uint32_t m9s116[3] = { 60u, 105u, 56u };
-static const uint32_t m9s117[34] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 49u, 44u, 32u, 50u, 44u, 32u, 52u, 32u, 111u, 114u, 32u, 56u };
-static const uint32_t m9s118[64] = { 65u, 66u, 67u, 68u, 69u, 70u, 71u, 72u, 73u, 74u, 75u, 76u, 77u, 78u, 79u, 80u, 81u, 82u, 83u, 84u, 85u, 86u, 87u, 88u, 89u, 90u, 97u, 98u, 99u, 100u, 101u, 102u, 103u, 104u, 105u, 106u, 107u, 108u, 109u, 110u, 111u, 112u, 113u, 114u, 115u, 116u, 117u, 118u, 119u, 120u, 121u, 122u, 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 43u, 47u };
-static const uint32_t m9s119[2] = { 61u, 61u };
-static const uint32_t m9s120[2] = { 60u, 85u };
-static const uint32_t m9s121[2] = { 47u, 48u };
-static const uint32_t m9s122[2] = { 46u, 48u };
-static const uint32_t m9s123[32] = { 99u, 104u, 117u, 110u, 107u, 32u, 115u, 105u, 122u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
-static const uint32_t m9s124[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 111u, 112u, 101u, 110u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s125[21] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 102u, 108u, 117u, 115u, 104u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s126[26] = { 109u, 111u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 83u, 101u, 97u, 108u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s127[8] = { 47u, 46u, 122u, 103u, 114u, 111u, 117u, 112u };
-static const uint32_t m9s128[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
-static const uint32_t m9s129[1] = { 47u };
-static const uint32_t m9s130[1] = { 47u };
-static const uint32_t m9s131[2] = { 44u, 32u };
-static const uint32_t m9s132[3] = { 34u, 58u, 32u };
-static const uint32_t m9s133[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
-static const uint32_t m9s134[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
-static const uint32_t m9s135[7] = { 46u, 122u, 97u, 114u, 114u, 97u, 121u };
-static const uint32_t m9s136[7] = { 46u, 122u, 103u, 114u, 111u, 117u, 112u };
-static const uint32_t m9s137[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s96[14] = { 93u, 44u, 32u, 34u, 99u, 104u, 117u, 110u, 107u, 115u, 34u, 58u, 32u, 91u };
+static const uint32_t m9s97[2] = { 44u, 32u };
+static const uint32_t m9s98[13] = { 93u, 44u, 32u, 34u, 100u, 116u, 121u, 112u, 101u, 34u, 58u, 32u, 34u };
+static const uint32_t m9s99[17] = { 34u, 44u, 32u, 34u, 102u, 105u, 108u, 108u, 95u, 118u, 97u, 108u, 117u, 101u, 34u, 58u, 32u };
+static const uint32_t m9s100[27] = { 44u, 32u, 34u, 111u, 114u, 100u, 101u, 114u, 34u, 58u, 32u, 34u, 67u, 34u, 44u, 32u, 34u, 102u, 105u, 108u, 116u, 101u, 114u, 115u, 34u, 58u, 32u };
+static const uint32_t m9s101[44] = { 44u, 32u, 34u, 100u, 105u, 109u, 101u, 110u, 115u, 105u, 111u, 110u, 95u, 115u, 101u, 112u, 97u, 114u, 97u, 116u, 111u, 114u, 34u, 58u, 32u, 34u, 46u, 34u, 44u, 32u, 34u, 99u, 111u, 109u, 112u, 114u, 101u, 115u, 115u, 111u, 114u, 34u, 58u, 32u };
+static const uint32_t m9s102[19] = { 44u, 32u, 34u, 122u, 97u, 114u, 114u, 95u, 102u, 111u, 114u, 109u, 97u, 116u, 34u, 58u, 32u, 50u, 125u };
+static const uint32_t m9s103[23] = { 123u, 34u, 95u, 65u, 82u, 82u, 65u, 89u, 95u, 68u, 73u, 77u, 69u, 78u, 83u, 73u, 79u, 78u, 83u, 34u, 58u, 32u, 91u };
+static const uint32_t m9s104[2] = { 44u, 32u };
+static const uint32_t m9s105[2] = { 93u, 125u };
+static const uint32_t m9s106[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 99u, 104u, 117u, 110u, 107u, 32u };
+static const uint32_t m9s107[22] = { 114u, 97u, 110u, 107u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 48u, 46u, 46u, 53u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s108[35] = { 99u, 104u, 117u, 110u, 107u, 115u, 32u, 114u, 97u, 110u, 107u, 32u, 100u, 105u, 102u, 102u, 101u, 114u, 115u, 32u, 102u, 114u, 111u, 109u, 32u, 115u, 104u, 97u, 112u, 101u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s109[32] = { 99u, 104u, 117u, 110u, 107u, 32u, 115u, 105u, 122u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s110[22] = { 97u, 32u, 110u, 101u, 103u, 97u, 116u, 105u, 118u, 101u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s111[2] = { 47u, 48u };
+static const uint32_t m9s112[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 119u, 114u, 105u, 116u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s113[37] = { 100u, 97u, 116u, 97u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 109u, 97u, 116u, 99u, 104u, 32u, 115u, 104u, 97u, 112u, 101u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s114[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
+static const uint32_t m9s115[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s116[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s117[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 97u, 114u, 114u, 97u, 121u, 32u };
+static const uint32_t m9s118[42] = { 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 102u, 105u, 116u, 32u, 116u, 104u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s119[3] = { 124u, 117u, 49u };
+static const uint32_t m9s120[3] = { 60u, 117u, 50u };
+static const uint32_t m9s121[37] = { 111u, 110u, 108u, 121u, 32u, 124u, 117u, 49u, 32u, 97u, 110u, 100u, 32u, 60u, 117u, 50u, 32u, 97u, 114u, 101u, 32u, 111u, 102u, 102u, 101u, 114u, 101u, 100u, 32u, 117u, 110u, 115u, 105u, 103u, 110u, 101u, 100u };
+static const uint32_t m9s122[3] = { 124u, 105u, 49u };
+static const uint32_t m9s123[3] = { 60u, 105u, 50u };
+static const uint32_t m9s124[3] = { 60u, 105u, 52u };
+static const uint32_t m9s125[3] = { 60u, 105u, 56u };
+static const uint32_t m9s126[34] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 119u, 105u, 100u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 49u, 44u, 32u, 50u, 44u, 32u, 52u, 32u, 111u, 114u, 32u, 56u };
+static const uint32_t m9s127[64] = { 65u, 66u, 67u, 68u, 69u, 70u, 71u, 72u, 73u, 74u, 75u, 76u, 77u, 78u, 79u, 80u, 81u, 82u, 83u, 84u, 85u, 86u, 87u, 88u, 89u, 90u, 97u, 98u, 99u, 100u, 101u, 102u, 103u, 104u, 105u, 106u, 107u, 108u, 109u, 110u, 111u, 112u, 113u, 114u, 115u, 116u, 117u, 118u, 119u, 120u, 121u, 122u, 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 43u, 47u };
+static const uint32_t m9s128[2] = { 61u, 61u };
+static const uint32_t m9s129[2] = { 60u, 85u };
+static const uint32_t m9s130[2] = { 47u, 48u };
+static const uint32_t m9s131[2] = { 46u, 48u };
+static const uint32_t m9s132[32] = { 99u, 104u, 117u, 110u, 107u, 32u, 115u, 105u, 122u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u, 32u, 102u, 111u, 114u, 32u };
+static const uint32_t m9s133[20] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 111u, 112u, 101u, 110u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s134[21] = { 105u, 110u, 100u, 101u, 120u, 32u, 101u, 114u, 114u, 111u, 114u, 32u, 102u, 108u, 117u, 115u, 104u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s135[26] = { 109u, 111u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 83u, 101u, 97u, 108u, 32u, 111u, 110u, 32u };
+static const uint32_t m9s136[8] = { 47u, 46u, 122u, 103u, 114u, 111u, 117u, 112u };
+static const uint32_t m9s137[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
 static const uint32_t m9s138[1] = { 47u };
 static const uint32_t m9s139[1] = { 47u };
-static const uint32_t m9s140[33] = { 125u, 44u, 32u, 34u, 122u, 97u, 114u, 114u, 95u, 99u, 111u, 110u, 115u, 111u, 108u, 105u, 100u, 97u, 116u, 101u, 100u, 95u, 102u, 111u, 114u, 109u, 97u, 116u, 34u, 58u, 32u, 49u, 125u };
-static const uint32_t m9s141[11] = { 47u, 46u, 122u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u };
-static const uint32_t m9s142[27] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 46u, 122u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s143[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
-static const uint32_t m9s144[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
-static const uint32_t m9s145[18] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 97u, 114u, 107u, 32u, 115u, 108u, 105u, 109u, 58u, 32u };
-static const uint32_t m9s146[33] = { 114u, 111u, 111u, 116u, 32u, 46u, 122u, 97u, 116u, 116u, 114u, 115u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s147[7] = { 46u, 122u, 97u, 114u, 114u, 97u, 121u };
-static const uint32_t m9s148[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
-static const uint32_t m9s149[7] = { 46u, 122u, 103u, 114u, 111u, 117u, 112u };
-static const uint32_t m9s150[1] = { 47u };
-static const uint32_t m9s151[1] = { 47u };
+static const uint32_t m9s140[2] = { 44u, 32u };
+static const uint32_t m9s141[3] = { 34u, 58u, 32u };
+static const uint32_t m9s142[8] = { 47u, 46u, 122u, 97u, 114u, 114u, 97u, 121u };
+static const uint32_t m9s143[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s144[7] = { 46u, 122u, 97u, 114u, 114u, 97u, 121u };
+static const uint32_t m9s145[7] = { 46u, 122u, 103u, 114u, 111u, 117u, 112u };
+static const uint32_t m9s146[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s147[1] = { 47u };
+static const uint32_t m9s148[1] = { 47u };
+static const uint32_t m9s149[33] = { 125u, 44u, 32u, 34u, 122u, 97u, 114u, 114u, 95u, 99u, 111u, 110u, 115u, 111u, 108u, 105u, 100u, 97u, 116u, 101u, 100u, 95u, 102u, 111u, 114u, 109u, 97u, 116u, 34u, 58u, 32u, 49u, 125u };
+static const uint32_t m9s150[11] = { 47u, 46u, 122u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u };
+static const uint32_t m9s151[27] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 46u, 122u, 109u, 101u, 116u, 97u, 100u, 97u, 116u, 97u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s152[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s153[8] = { 47u, 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s154[18] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 97u, 114u, 107u, 32u, 115u, 108u, 105u, 109u, 58u, 32u };
+static const uint32_t m9s155[33] = { 114u, 111u, 111u, 116u, 32u, 46u, 122u, 97u, 116u, 116u, 114u, 115u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s156[7] = { 46u, 122u, 97u, 114u, 114u, 97u, 121u };
+static const uint32_t m9s157[7] = { 46u, 122u, 97u, 116u, 116u, 114u, 115u };
+static const uint32_t m9s158[7] = { 46u, 122u, 103u, 114u, 111u, 117u, 112u };
+static const uint32_t m9s159[1] = { 47u };
+static const uint32_t m9s160[1] = { 47u };
 
 static double Zarr_NaN64 (m9_state *err);
 static void Zarr_WriteText (m9_pool *pool, m9_sl_CHAR path, m9_sl_CHAR text, m9_state *err);
@@ -616,6 +625,112 @@ L_ret: ;
   return m9ret;
 }
 
+void Zarr_DeclareF32 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 shape, m9_sl_I64 chunks, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  Zarr_CheckGrid (pool, adir, shape, chunks, err);
+  if (err->exc) goto L_hdl_m9t1;
+  Zarr_MkDirP (pool, adir, err);
+  if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s15, 8 }), err), Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), ((m9_sl_CHAR){ (uint32_t *) m9s18, 4 }), shape, chunks, comp, err), err);
+  if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s19, 8 }), err), Zarr_DimsJson (pool, dims, err), err);
+  if (err->exc) goto L_hdl_m9t1;
+  goto L_dn_m9t2;
+L_hdl_m9t1: ;
+  if (err->exc == &Io_IOError) {
+    m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
+    err->exc = NULL;
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s20, 21 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s20, 21 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    m9_raise (err, &Zarr_Error);
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  goto L_ret;
+L_dn_m9t2: ;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+void Zarr_PutChunkF32 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 ci, m9_sl_F32 data, m9_sl_I64 chunks, int64_t comp, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_pool scratch = {0}; (void) scratch;
+  m9_sl_BYTE raw = {0}; (void) raw;
+  DynStr_DString * nm = NULL; (void) nm;
+  int64_t cn = 0; (void) cn;
+  int64_t i = 0; (void) i;
+  if (((ci).len != (chunks).len)) {
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s21, 43 }), adir, err)) m9t1 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s21, 43 }), adir, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    m9_raise (err, &Zarr_Error);
+    goto L_ret;
+  }
+  cn = INT64_C(1);
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 ((chunks).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    bool m9t3 = ((*(int64_t *) m9_at (ci.p, i, ci.len, sizeof (int64_t), err)) < INT64_C(0));
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s22, 27 }), adir, err)) m9t4 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s22, 27 }), adir, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+      m9_raise (err, &Zarr_Error);
+      goto L_ret;
+    }
+    cn = m9_mul_i64 (cn, (*(int64_t *) m9_at (chunks.p, i, chunks.len, sizeof (int64_t), err)), err);
+    if (err->exc) goto L_ret;
+  } }
+  if (((data).len != cn)) {
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s23, 22 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s23, 22 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    m9_raise (err, &Zarr_Error);
+    goto L_ret;
+  }
+  raw = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_mul_i64 (cn, INT64_C(4), err), err);
+  if (err->exc) goto L_ret;
+  { int64_t m9t6to;
+  i = INT64_C(0);
+  m9t6to = m9_sub_i64 (cn, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t6to; i += 1) {
+    m9_f32_to_le ((*(float *) m9_at (data.p, i, data.len, sizeof (float), err)), ({ __typeof__(raw) m9t7 = raw; int64_t m9t7a = m9_mul_i64 (i, INT64_C(4), err), m9t7n = INT64_C(4); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), err);
+    if (err->exc) goto L_ret;
+  } }
+  nm = DynStr_New (&(scratch), err);
+  if (err->exc) goto L_ret;
+  DynStr_Append (&(scratch), &(nm), adir, err);
+  if (err->exc) goto L_ret;
+  DynStr_AppendChar (&(scratch), &(nm), 47u, err);
+  if (err->exc) goto L_ret;
+  { int64_t m9t8to;
+  i = INT64_C(0);
+  m9t8to = m9_sub_i64 ((ci).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t8to; i += 1) {
+    if ((i > INT64_C(0))) {
+      DynStr_AppendChar (&(scratch), &(nm), 46u, err);
+      if (err->exc) goto L_ret;
+    }
+    DynStr_AppendI64 (&(scratch), &(nm), (*(int64_t *) m9_at (ci.p, i, ci.len, sizeof (int64_t), err)), err);
+    if (err->exc) goto L_ret;
+  } }
+  Zarr_PutChunk (pool, DynStr_View (nm, err), raw, INT64_C(4), comp, err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return;
+}
+
 void Zarr_WriteIntFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, int64_t width, bool signed_, bool hasFill, int64_t fill, m9_sl_I64 shape, m9_sl_I64 chunks, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -665,7 +780,7 @@ void Zarr_WriteIntFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, int64_t 
     txt = Zarr_Cat (pool, DynStr_View (d, err), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
-    txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s15, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
+    txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s24, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_hdl_m9t1;
   }
   Zarr_Emit (pool, adir, dt, txt, fb, width, raw, shape, chunks, dims, comp, err);
@@ -674,7 +789,7 @@ void Zarr_WriteIntFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, int64_t 
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 20 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 20 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s25, 20 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s25, 20 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -712,7 +827,7 @@ void Zarr_WriteF32Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F32 data, bool has
   } }
   fv = (float)(Zarr_NaN64 (err));
   if (err->exc) goto L_ret;
-  txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
+  txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s26, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
   if ((hasFill && (fill == fill))) {
     fv = (float)(fill);
@@ -723,7 +838,7 @@ void Zarr_WriteF32Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F32 data, bool has
   if (err->exc) goto L_ret;
   m9_f32_to_le (fv, fb, err);
   if (err->exc) goto L_ret;
-  Zarr_Emit (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s18, 3 }), txt, fb, INT64_C(4), raw, shape, chunks, dims, comp, err);
+  Zarr_Emit (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s27, 3 }), txt, fb, INT64_C(4), raw, shape, chunks, dims, comp, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -756,7 +871,7 @@ void Zarr_WriteF64Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F64 data, bool has
   } }
   fv = Zarr_NaN64 (err);
   if (err->exc) goto L_ret;
-  txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s19, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
+  txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s28, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
   if ((hasFill && (fill == fill))) {
     fv = fill;
@@ -767,7 +882,7 @@ void Zarr_WriteF64Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F64 data, bool has
   if (err->exc) goto L_ret;
   m9_f64_to_le (fv, fb, err);
   if (err->exc) goto L_ret;
-  Zarr_Emit (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s20, 3 }), txt, fb, INT64_C(8), raw, shape, chunks, dims, comp, err);
+  Zarr_Emit (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s29, 3 }), txt, fb, INT64_C(8), raw, shape, chunks, dims, comp, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -791,13 +906,13 @@ void Zarr_WriteStrFixedFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR da
   int64_t i = 0; (void) i;
   int64_t k = 0; (void) k;
   if ((width < INT64_C(1))) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s21, 32 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s21, 32 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s30, 32 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s30, 32 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Zarr_Error);
     goto L_hdl_m9t1;
   }
   d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s22, 2 }), err);
+  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s31, 2 }), err);
   if (err->exc) goto L_hdl_m9t1;
   DynStr_AppendI64 (&(scratch), &(d), width, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -811,7 +926,7 @@ void Zarr_WriteStrFixedFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR da
     u = DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_hdl_m9t1;
     if (((u).len > width)) {
-      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s23, 40 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s23, 40 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 40 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 40 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
       m9_raise (err, &Zarr_Error);
       goto L_hdl_m9t1;
     }
@@ -846,7 +961,7 @@ void Zarr_WriteStrFixedFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR da
     u = DynStr_Utf8 (&(scratch), fill, err);
     if (err->exc) goto L_hdl_m9t1;
     if (((u).len > width)) {
-      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s24, 40 }), adir, err)) m9t9 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s24, 40 }), adir, err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; }
+      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s33, 40 }), adir, err)) m9t9 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s33, 40 }), adir, err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; }
       m9_raise (err, &Zarr_Error);
       goto L_hdl_m9t1;
     }
@@ -861,7 +976,7 @@ void Zarr_WriteStrFixedFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR da
     txt = Zarr_Base64 (pool, fb, err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
-    txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s25, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
+    txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s34, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_hdl_m9t1;
   }
   Zarr_Emit (pool, adir, DynStr_View (d, err), txt, fb, width, raw, shape, chunks, dims, comp, err);
@@ -870,7 +985,7 @@ void Zarr_WriteStrFixedFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR da
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s26, 20 }), adir, err)) m9t11 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s26, 20 }), adir, err); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s35, 20 }), adir, err)) m9t11 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s35, 20 }), adir, err); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -911,13 +1026,13 @@ void Zarr_WriteOctets (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, int64_t w
   m9_sl_CHAR txt = {0}; (void) txt;
   int64_t i = 0; (void) i;
   if ((width < INT64_C(1))) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s27, 32 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s27, 32 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s36, 32 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s36, 32 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Zarr_Error);
     goto L_hdl_m9t1;
   }
   d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s28, 2 }), err);
+  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), err);
   if (err->exc) goto L_hdl_m9t1;
   DynStr_AppendI64 (&(scratch), &(d), width, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -935,7 +1050,7 @@ void Zarr_WriteOctets (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, int64_t w
     u = DynStr_Utf8 (&(scratch), fill, err);
     if (err->exc) goto L_hdl_m9t1;
     if (((u).len > width)) {
-      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s29, 40 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s29, 40 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s38, 40 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s38, 40 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
       m9_raise (err, &Zarr_Error);
       goto L_hdl_m9t1;
     }
@@ -950,7 +1065,7 @@ void Zarr_WriteOctets (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, int64_t w
     txt = Zarr_Base64 (pool, fb, err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
-    txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s30, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
+    txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s39, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_hdl_m9t1;
   }
   Zarr_Emit (pool, adir, DynStr_View (d, err), txt, fb, width, raw, shape, chunks, dims, comp, err);
@@ -959,7 +1074,7 @@ void Zarr_WriteOctets (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, int64_t w
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s31, 20 }), adir, err)) m9t7 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s31, 20 }), adir, err); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s40, 20 }), adir, err)) m9t7 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s40, 20 }), adir, err); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -990,7 +1105,7 @@ void Zarr_WriteStrUcs4 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, i
   int64_t v = 0; (void) v;
   int64_t b = 0; (void) b;
   if ((width < INT64_C(1))) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 32 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 32 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s41, 32 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s41, 32 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Zarr_Error);
     goto L_hdl_m9t1;
   }
@@ -1004,7 +1119,7 @@ void Zarr_WriteStrUcs4 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, i
     if (err->exc) goto L_hdl_m9t1;
   } }
   if (((data).len != n)) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s33, 37 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s33, 37 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s42, 37 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s42, 37 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Zarr_Error);
     goto L_hdl_m9t1;
   }
@@ -1018,7 +1133,7 @@ void Zarr_WriteStrUcs4 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, i
     s = (*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err));
     if (err->exc) goto L_hdl_m9t1;
     if (((s).len > width)) {
-      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s34, 39 }), adir, err)) m9t7 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s34, 39 }), adir, err); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s43, 39 }), adir, err)) m9t7 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s43, 39 }), adir, err); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
       m9_raise (err, &Zarr_Error);
       goto L_hdl_m9t1;
     }
@@ -1052,13 +1167,13 @@ void Zarr_WriteStrUcs4 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, i
     (*(uint8_t *) m9_at (fb.p, i, fb.len, sizeof (uint8_t), err)) = m9_byte (INT64_C(0), err);
     if (err->exc) goto L_hdl_m9t1;
   } }
-  Zarr_Emit (pool, adir, Zarr_UDtype (pool, width, err), ((m9_sl_CHAR){ (uint32_t *) m9s35, 4 }), fb, m9_mul_i64 (width, INT64_C(4), err), raw, shape, chunks, dims, comp, err);
+  Zarr_Emit (pool, adir, Zarr_UDtype (pool, width, err), ((m9_sl_CHAR){ (uint32_t *) m9s44, 4 }), fb, m9_mul_i64 (width, INT64_C(4), err), raw, shape, chunks, dims, comp, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s36, 20 }), adir, err)) m9t11 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s36, 20 }), adir, err); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s45, 20 }), adir, err)) m9t11 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s45, 20 }), adir, err); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1089,7 +1204,7 @@ void Zarr_WriteStrVlen (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, m
   int64_t total = 0; (void) total;
   r = (shape).len;
   if (((r < INT64_C(1)) || (r > Zarr_MaxRank))) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s37, 22 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s37, 22 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s46, 22 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s46, 22 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Zarr_Error);
     goto L_hdl_m9t1;
   }
@@ -1102,7 +1217,7 @@ void Zarr_WriteStrVlen (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, m
     bool m9t5 = ((*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err)) < INT64_C(1));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t5) {
-      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s38, 36 }), adir, err)) m9t6 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s38, 36 }), adir, err); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s47, 36 }), adir, err)) m9t6 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s47, 36 }), adir, err); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
       m9_raise (err, &Zarr_Error);
       goto L_hdl_m9t1;
     }
@@ -1110,7 +1225,7 @@ void Zarr_WriteStrVlen (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, m
     if (err->exc) goto L_hdl_m9t1;
   } }
   if (((data).len != n)) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s39, 37 }), adir, err)) m9t7 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s39, 37 }), adir, err); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s48, 37 }), adir, err)) m9t7 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s48, 37 }), adir, err); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
     m9_raise (err, &Zarr_Error);
     goto L_hdl_m9t1;
   }
@@ -1152,10 +1267,10 @@ void Zarr_WriteStrVlen (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, m
   } }
   Zarr_MkDirP (pool, adir, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s40, 8 }), err), Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s41, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s42, 4 }), ((m9_sl_CHAR){ (uint32_t *) m9s43, 21 }), shape, shape, comp, err), err);
+  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s49, 8 }), err), Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s50, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s51, 4 }), ((m9_sl_CHAR){ (uint32_t *) m9s52, 21 }), shape, shape, comp, err), err);
   if (err->exc) goto L_hdl_m9t1;
   if (((dims).len > INT64_C(0))) {
-    Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s44, 8 }), err), Zarr_DimsJson (pool, dims, err), err);
+    Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s53, 8 }), err), Zarr_DimsJson (pool, dims, err), err);
     if (err->exc) goto L_hdl_m9t1;
   }
   Zarr_PutChunk (pool, Zarr_ZeroChunk (pool, adir, r, err), buf, INT64_C(1), comp, err);
@@ -1165,14 +1280,14 @@ L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s45, 19 }), adir, err)) m9t11 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s45, 19 }), adir, err); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s54, 19 }), adir, err)) m9t11 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s54, 19 }), adir, err); err->s[0].p = m9t11.p; err->s[0].len = m9t11.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s46, 20 }), adir, err)) m9t12 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s46, 20 }), adir, err); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s55, 20 }), adir, err)) m9t12 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s55, 20 }), adir, err); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1194,7 +1309,7 @@ Zarr_Sink * Zarr_SinkF32 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
   err->res = &m9frame;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
-  s = Zarr_NewSink (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s47, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s48, 5 }), INT64_C(4), chunk, dims, comp, err);
+  s = Zarr_NewSink (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s56, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s57, 5 }), INT64_C(4), chunk, dims, comp, err);
   if (err->exc) goto L_ret;
   s->isFloat = true;
   m9_f32_to_le ((float)(Zarr_NaN64 (err)), s->fillB, err);
@@ -1216,7 +1331,7 @@ Zarr_Sink * Zarr_SinkF64 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
   err->res = &m9frame;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
-  s = Zarr_NewSink (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s49, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s50, 5 }), INT64_C(8), chunk, dims, comp, err);
+  s = Zarr_NewSink (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s58, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s59, 5 }), INT64_C(8), chunk, dims, comp, err);
   if (err->exc) goto L_ret;
   s->isFloat = true;
   m9_f64_to_le (Zarr_NaN64 (err), s->fillB, err);
@@ -1238,7 +1353,7 @@ Zarr_Sink * Zarr_SinkInt (m9_pool *pool, m9_sl_CHAR adir, int64_t width, bool si
   err->res = &m9frame;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
-  s = Zarr_NewSink (pool, adir, Zarr_IntDtype (pool, width, signed_, err), ((m9_sl_CHAR){ (uint32_t *) m9s51, 4 }), width, chunk, dims, comp, err);
+  s = Zarr_NewSink (pool, adir, Zarr_IntDtype (pool, width, signed_, err), ((m9_sl_CHAR){ (uint32_t *) m9s60, 4 }), width, chunk, dims, comp, err);
   if (err->exc) goto L_ret;
   s->signed_ = signed_;
   err->res = m9res;
@@ -1258,7 +1373,7 @@ Zarr_Sink * Zarr_SinkTimeNs (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_s
   err->res = &m9frame;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
-  s = Zarr_NewSink (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s52, 7 }), ((m9_sl_CHAR){ (uint32_t *) m9s53, 4 }), INT64_C(8), chunk, dims, comp, err);
+  s = Zarr_NewSink (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s61, 7 }), ((m9_sl_CHAR){ (uint32_t *) m9s62, 4 }), INT64_C(8), chunk, dims, comp, err);
   if (err->exc) goto L_ret;
   s->isTime = true;
   err->res = m9res;
@@ -1289,7 +1404,7 @@ void Zarr_PutF32 (Zarr_Sink * *s, float v, m9_state *err)
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s54, 25 }), (*s)->adir, err)) m9t4 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s54, 25 }), (*s)->adir, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s63, 25 }), (*s)->adir, err)) m9t4 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s63, 25 }), (*s)->adir, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1322,7 +1437,7 @@ void Zarr_PutF64 (Zarr_Sink * *s, double v, m9_state *err)
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s55, 25 }), (*s)->adir, err)) m9t4 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s55, 25 }), (*s)->adir, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s64, 25 }), (*s)->adir, err)) m9t4 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s64, 25 }), (*s)->adir, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1359,7 +1474,7 @@ void Zarr_PutI64 (Zarr_Sink * *s, int64_t v, m9_state *err)
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s56, 25 }), (*s)->adir, err)) m9t3 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s56, 25 }), (*s)->adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s65, 25 }), (*s)->adir, err)) m9t3 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s65, 25 }), (*s)->adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1411,10 +1526,10 @@ void Zarr_Seal (Zarr_Sink * *s, m9_state *err)
   if (err->exc) goto L_hdl_m9t1;
   (*(int64_t *) m9_at (chunks.p, INT64_C(0), chunks.len, sizeof (int64_t), err)) = (*s)->chunk;
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (&(scratch), Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s57, 8 }), err), Zarr_Meta (&(scratch), (*s)->dtype, (*s)->fill, ((m9_sl_CHAR){ (uint32_t *) m9s58, 4 }), shape, chunks, (*s)->comp, err), err);
+  Zarr_WriteText (&(scratch), Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s66, 8 }), err), Zarr_Meta (&(scratch), (*s)->dtype, (*s)->fill, ((m9_sl_CHAR){ (uint32_t *) m9s67, 4 }), shape, chunks, (*s)->comp, err), err);
   if (err->exc) goto L_hdl_m9t1;
   if ((((*s)->dims).len > INT64_C(0))) {
-    Zarr_WriteText (&(scratch), Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s59, 8 }), err), Zarr_DimsJson (&(scratch), (*s)->dims, err), err);
+    Zarr_WriteText (&(scratch), Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s68, 8 }), err), Zarr_DimsJson (&(scratch), (*s)->dims, err), err);
     if (err->exc) goto L_hdl_m9t1;
   }
   (*s)->sealed = true;
@@ -1423,14 +1538,14 @@ L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s60, 12 }), (*s)->adir, err)) m9t3 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s60, 12 }), (*s)->adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s69, 12 }), (*s)->adir, err)) m9t3 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s69, 12 }), (*s)->adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s61, 20 }), (*s)->adir, err)) m9t4 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s61, 20 }), (*s)->adir, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s70, 20 }), (*s)->adir, err)) m9t4 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s70, 20 }), (*s)->adir, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1455,13 +1570,13 @@ void Zarr_Consolidate (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
   bool m9t3 = Zarr_IsSlim (pool, store, err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s62, 53 }), store, err)) m9t4 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s62, 53 }), store, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s71, 53 }), store, err)) m9t4 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s71, 53 }), store, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Zarr_Error);
     goto L_hdl_m9t1;
   }
   d = DynStr_New (pool, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s63, 14 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s72, 14 }), err);
   if (err->exc) goto L_hdl_m9t1;
   n = INT64_C(0);
   Zarr_Walk (pool, &(d), &(n), store, store, (m9_sl_CHAR){ NULL, 0 }, true, err);
@@ -1472,7 +1587,7 @@ void Zarr_Consolidate (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s64, 26 }), store, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s64, 26 }), store, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s73, 26 }), store, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s73, 26 }), store, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1501,12 +1616,12 @@ void Zarr_ConsolidateSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
   if (err->exc) goto L_hdl_m9t1;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s65, 14 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s74, 14 }), err);
   if (err->exc) goto L_hdl_m9t1;
   n = INT64_C(0);
-  Zarr_AddMeta (pool, &(d), &(n), store, (m9_sl_CHAR){ NULL, 0 }, ((m9_sl_CHAR){ (uint32_t *) m9s66, 7 }), err);
+  Zarr_AddMeta (pool, &(d), &(n), store, (m9_sl_CHAR){ NULL, 0 }, ((m9_sl_CHAR){ (uint32_t *) m9s75, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_AddMeta (pool, &(d), &(n), store, (m9_sl_CHAR){ NULL, 0 }, ((m9_sl_CHAR){ (uint32_t *) m9s67, 7 }), err);
+  Zarr_AddMeta (pool, &(d), &(n), store, (m9_sl_CHAR){ NULL, 0 }, ((m9_sl_CHAR){ (uint32_t *) m9s76, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
   kids = Io_ListDir (&(scratch), store, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -1520,28 +1635,28 @@ void Zarr_ConsolidateSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
     bool m9t4 = (((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).p, INT64_C(0), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err)) != 46u) && ((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).p, INT64_C(0), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err)) != 95u));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
-      sub = Zarr_Cat (&(scratch), store, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s68, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+      sub = Zarr_Cat (&(scratch), store, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s77, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
       if (err->exc) goto L_hdl_m9t1;
       bool m9t5 = Zarr_IsDir (&(scratch), sub, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t5) {
-        bool m9t6 = Io_Exists (Zarr_Cat (&(scratch), sub, ((m9_sl_CHAR){ (uint32_t *) m9s69, 8 }), err), err);
+        bool m9t6 = Io_Exists (Zarr_Cat (&(scratch), sub, ((m9_sl_CHAR){ (uint32_t *) m9s78, 8 }), err), err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t6) {
-          Zarr_AddMeta (pool, &(d), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s70, 7 }), err);
+          Zarr_AddMeta (pool, &(d), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s79, 7 }), err);
           if (err->exc) goto L_hdl_m9t1;
-          Zarr_AddMeta (pool, &(d), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s71, 7 }), err);
+          Zarr_AddMeta (pool, &(d), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s80, 7 }), err);
           if (err->exc) goto L_hdl_m9t1;
         }
       }
     }
   } }
-  sub = Zarr_Cat (&(scratch), store, ((m9_sl_CHAR){ (uint32_t *) m9s72, 10 }), err);
+  sub = Zarr_Cat (&(scratch), store, ((m9_sl_CHAR){ (uint32_t *) m9s81, 10 }), err);
   if (err->exc) goto L_hdl_m9t1;
   bool m9t7 = Zarr_IsDir (&(scratch), sub, err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
-    Zarr_WalkSorted (pool, &(d), &(n), sub, ((m9_sl_CHAR){ (uint32_t *) m9s73, 9 }), err);
+    Zarr_WalkSorted (pool, &(d), &(n), sub, ((m9_sl_CHAR){ (uint32_t *) m9s82, 9 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
   Zarr_Finish (pool, store, &(d), err);
@@ -1551,14 +1666,14 @@ L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s74, 12 }), store, err)) m9t8 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s74, 12 }), store, err); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s83, 12 }), store, err)) m9t8 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s83, 12 }), store, err); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s75, 26 }), store, err)) m9t9 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s75, 26 }), store, err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s84, 26 }), store, err)) m9t9 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s84, 26 }), store, err); err->s[0].p = m9t9.p; err->s[0].len = m9t9.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1683,7 +1798,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s76, 14 }), path, err)) m9t6 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s76, 14 }), path, err); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s85, 14 }), path, err)) m9t6 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s85, 14 }), path, err); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1708,17 +1823,17 @@ static m9_sl_CHAR Zarr_CodecName (int64_t comp, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s77, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s86, 4 });
     goto L_ret;
   }
   bool m9t2 = ((comp > Zarr_Lz4Base) && (comp <= m9_add_i64 (Zarr_Lz4Base, INT64_C(9), err)));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s78, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s87, 3 });
     goto L_ret;
   }
-  { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s79, 55 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s79, 55 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+  { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s88, 55 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s88, 55 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
   m9_raise (err, &Zarr_Error);
   goto L_ret;
 L_ret: ;
@@ -1751,7 +1866,7 @@ static int64_t Zarr_Level (int64_t comp, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s80, 55 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s80, 55 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+  { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s89, 55 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s89, 55 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
   m9_raise (err, &Zarr_Error);
   goto L_ret;
 L_ret: ;
@@ -1770,21 +1885,21 @@ static m9_sl_CHAR Zarr_CompressorJson (m9_pool *pool, int64_t comp, m9_state *er
   DynStr_DString * d = NULL; (void) d;
   if ((comp <= INT64_C(0))) {
     err->res = m9res;
-    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s81, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
+    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s90, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s82, 26 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s91, 26 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (pool, &(d), Zarr_CodecName (comp, err), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s83, 13 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s92, 13 }), err);
   if (err->exc) goto L_ret;
   DynStr_AppendI64 (pool, &(d), Zarr_Level (comp, err), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s84, 31 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s93, 31 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1808,7 +1923,7 @@ static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m
   int64_t i = 0; (void) i;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s85, 11 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s94, 11 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -1816,13 +1931,13 @@ static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s86, 2 }), err);
+      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s95, 2 }), err);
       if (err->exc) goto L_ret;
     }
     DynStr_AppendI64 (pool, &(d), (*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s87, 14 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s96, 14 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t2to;
   i = INT64_C(0);
@@ -1830,29 +1945,29 @@ static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s88, 2 }), err);
+      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s97, 2 }), err);
       if (err->exc) goto L_ret;
     }
     DynStr_AppendI64 (pool, &(d), (*(int64_t *) m9_at (chunks.p, i, chunks.len, sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s89, 13 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s98, 13 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (pool, &(d), dtype, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s90, 17 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s99, 17 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (pool, &(d), fill, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s91, 27 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s100, 27 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (pool, &(d), filters, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s92, 44 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s101, 44 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (pool, &(d), Zarr_CompressorJson (pool, comp, err), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s93, 19 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s102, 19 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1876,7 +1991,7 @@ static m9_sl_CHAR Zarr_DimsJson (m9_pool *pool, m9_sl_m9_sl_CHAR dims, m9_state 
   int64_t i = 0; (void) i;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s94, 23 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s103, 23 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -1884,7 +1999,7 @@ static m9_sl_CHAR Zarr_DimsJson (m9_pool *pool, m9_sl_m9_sl_CHAR dims, m9_state 
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s95, 2 }), err);
+      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s104, 2 }), err);
       if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (pool, &(d), 34u, err);
@@ -1894,7 +2009,7 @@ static m9_sl_CHAR Zarr_DimsJson (m9_pool *pool, m9_sl_m9_sl_CHAR dims, m9_state 
     DynStr_AppendChar (pool, &(d), 34u, err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s96, 2 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s105, 2 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1942,7 +2057,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s97, 19 }), path, err)) m9t4 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s97, 19 }), path, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s106, 19 }), path, err)) m9t4 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s106, 19 }), path, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -1964,12 +2079,12 @@ static void Zarr_CheckGrid (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 shape, m9_
   err->res = &m9frame;
   int64_t i = 0; (void) i;
   if (((shape).len > Zarr_MaxRank)) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s98, 22 }), adir, err)) m9t1 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s98, 22 }), adir, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s107, 22 }), adir, err)) m9t1 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s107, 22 }), adir, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
   }
   if (((chunks).len != (shape).len)) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s99, 35 }), adir, err)) m9t2 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s99, 35 }), adir, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s108, 35 }), adir, err)) m9t2 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s108, 35 }), adir, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
   }
@@ -1981,14 +2096,14 @@ static void Zarr_CheckGrid (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 shape, m9_
     bool m9t4 = ((*(int64_t *) m9_at (chunks.p, i, chunks.len, sizeof (int64_t), err)) <= INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t4) {
-      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s100, 32 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s100, 32 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s109, 32 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s109, 32 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
       m9_raise (err, &Zarr_Error);
       goto L_ret;
     }
     bool m9t6 = ((*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err)) < INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s101, 22 }), adir, err)) m9t7 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s101, 22 }), adir, err); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+      { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s110, 22 }), adir, err)) m9t7 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s110, 22 }), adir, err); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
       m9_raise (err, &Zarr_Error);
       goto L_ret;
     }
@@ -2028,7 +2143,7 @@ static void Zarr_WriteChunks (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, in
   if (err->exc) goto L_hdl_m9t1;
   r = (shape).len;
   if ((r == INT64_C(0))) {
-    Zarr_PutChunk (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s102, 2 }), err), raw, esize, comp, err);
+    Zarr_PutChunk (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s111, 2 }), err), raw, esize, comp, err);
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
@@ -2188,7 +2303,7 @@ static void Zarr_WriteChunks (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, in
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s103, 20 }), adir, err)) m9t14 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s103, 20 }), adir, err); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s112, 20 }), adir, err)) m9t14 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s112, 20 }), adir, err); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2224,15 +2339,15 @@ static void Zarr_Emit (m9_pool *pool, m9_sl_CHAR adir, m9_sl_CHAR dtype, m9_sl_C
   bool m9t4 = ((raw).len != m9_mul_i64 (n, esize, err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t4) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s104, 37 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s104, 37 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s113, 37 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s113, 37 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Zarr_Error);
     goto L_hdl_m9t1;
   }
   Zarr_MkDirP (pool, adir, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s105, 8 }), err), Zarr_Meta (pool, dtype, fill, ((m9_sl_CHAR){ (uint32_t *) m9s106, 4 }), shape, chunks, comp, err), err);
+  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s114, 8 }), err), Zarr_Meta (pool, dtype, fill, ((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), shape, chunks, comp, err), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s107, 8 }), err), Zarr_DimsJson (pool, dims, err), err);
+  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s116, 8 }), err), Zarr_DimsJson (pool, dims, err), err);
   if (err->exc) goto L_hdl_m9t1;
   Zarr_WriteChunks (pool, adir, raw, esize, shape, chunks, fillB, comp, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -2241,7 +2356,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s108, 19 }), adir, err)) m9t6 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s108, 19 }), adir, err); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s117, 19 }), adir, err)) m9t6 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s117, 19 }), adir, err); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2321,7 +2436,7 @@ static void Zarr_FitsInt (m9_pool *pool, int64_t v, int64_t width, bool signed_,
     goto L_ret;
   } } } }
   if (((v < lo) || (v > hi))) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s109, 42 }), adir, err)) m9t1 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s109, 42 }), adir, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s118, 42 }), adir, err)) m9t1 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s118, 42 }), adir, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
   }
@@ -2341,45 +2456,45 @@ static m9_sl_CHAR Zarr_IntDtype (m9_pool *pool, int64_t width, bool signed_, m9_
   if ((!signed_)) {
     if ((width == INT64_C(1))) {
       err->res = m9res;
-      m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s110, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+      m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s119, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
     if ((width == INT64_C(2))) {
       err->res = m9res;
-      m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s111, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+      m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s120, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s112, 37 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9t1 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s112, 37 }), (m9_sl_CHAR){ NULL, 0 }, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s121, 37 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9t1 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s121, 37 }), (m9_sl_CHAR){ NULL, 0 }, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
   }
   if ((width == INT64_C(1))) {
     err->res = m9res;
-    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s113, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s122, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if ((width == INT64_C(2))) {
     err->res = m9res;
-    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s114, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s123, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if ((width == INT64_C(4))) {
     err->res = m9res;
-    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s115, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s124, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if ((width == INT64_C(8))) {
     err->res = m9res;
-    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+    m9ret = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s125, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s117, 34 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9t2 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s117, 34 }), (m9_sl_CHAR){ NULL, 0 }, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+  { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s126, 34 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9t2 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s126, 34 }), (m9_sl_CHAR){ NULL, 0 }, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
   m9_raise (err, &Zarr_Error);
   goto L_ret;
 L_ret: ;
@@ -2402,7 +2517,7 @@ static m9_sl_CHAR Zarr_Base64 (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   int64_t n = 0; (void) n;
   int64_t v = 0; (void) v;
   int64_t rest = 0; (void) rest;
-  Alphabet = ((m9_sl_CHAR){ (uint32_t *) m9s118, 64 });
+  Alphabet = ((m9_sl_CHAR){ (uint32_t *) m9s127, 64 });
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (pool, &(d), 34u, err);
@@ -2435,7 +2550,7 @@ static m9_sl_CHAR Zarr_Base64 (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
     if (err->exc) goto L_ret;
     DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s119, 2 }), err);
+    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), err);
     if (err->exc) goto L_ret;
   } else {
     if ((rest == INT64_C(2))) {
@@ -2473,7 +2588,7 @@ static m9_sl_CHAR Zarr_UDtype (m9_pool *pool, int64_t width, m9_state *err)
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s120, 2 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s129, 2 }), err);
   if (err->exc) goto L_ret;
   DynStr_AppendI64 (pool, &(d), width, err);
   if (err->exc) goto L_ret;
@@ -2501,14 +2616,14 @@ static m9_sl_CHAR Zarr_ZeroChunk (m9_pool *pool, m9_sl_CHAR adir, int64_t r, m9_
   if (err->exc) goto L_ret;
   DynStr_Append (pool, &(d), adir, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s121, 2 }), err);
+  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s130, 2 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(1);
   m9t1to = m9_sub_i64 (r, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s122, 2 }), err);
+    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s131, 2 }), err);
     if (err->exc) goto L_ret;
   } }
   err->res = m9res;
@@ -2532,7 +2647,7 @@ static Zarr_Sink * Zarr_NewSink (m9_pool *pool, m9_sl_CHAR adir, m9_sl_CHAR dtyp
   Zarr_Sink * s = NULL; (void) s;
   int64_t i = 0; (void) i;
   if ((chunk <= INT64_C(0))) {
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s123, 32 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s123, 32 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s132, 32 }), adir, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s132, 32 }), adir, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Zarr_Error);
     goto L_hdl_m9t1;
   }
@@ -2574,7 +2689,7 @@ static Zarr_Sink * Zarr_NewSink (m9_pool *pool, m9_sl_CHAR adir, m9_sl_CHAR dtyp
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s124, 20 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s124, 20 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s133, 20 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s133, 20 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2633,7 +2748,7 @@ static void Zarr_Flush (Zarr_Sink * *s, bool pad, m9_state *err)
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s125, 21 }), (*s)->adir, err)) m9t5 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s125, 21 }), (*s)->adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s134, 21 }), (*s)->adir, err)) m9t5 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s134, 21 }), (*s)->adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2655,7 +2770,7 @@ static void Zarr_Room (Zarr_Sink * *s, m9_state *err)
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   if ((*s)->sealed) {
-    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s126, 26 }), (*s)->adir, err)) m9t1 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s126, 26 }), (*s)->adir, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s135, 26 }), (*s)->adir, err)) m9t1 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s135, 26 }), (*s)->adir, err); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
   }
@@ -2744,7 +2859,7 @@ static bool Zarr_IsDir (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Io_Exists (Zarr_Cat (pool, path, ((m9_sl_CHAR){ (uint32_t *) m9s127, 8 }), err), err) || Io_Exists (Zarr_Cat (pool, path, ((m9_sl_CHAR){ (uint32_t *) m9s128, 8 }), err), err));
+  m9ret = (Io_Exists (Zarr_Cat (pool, path, ((m9_sl_CHAR){ (uint32_t *) m9s136, 8 }), err), err) || Io_Exists (Zarr_Cat (pool, path, ((m9_sl_CHAR){ (uint32_t *) m9s137, 8 }), err), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -2760,15 +2875,15 @@ static void Zarr_AddMeta (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR body = {0}; (void) body;
-  bool m9t3 = (!Io_Exists (Zarr_Cat (pool, dir, Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s129, 1 }), leaf, err), err), err));
+  bool m9t3 = (!Io_Exists (Zarr_Cat (pool, dir, Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s138, 1 }), leaf, err), err), err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
     goto L_ret;
   }
-  body = Zarr_ReadText (pool, Zarr_Cat (pool, dir, Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s130, 1 }), leaf, err), err), err);
+  body = Zarr_ReadText (pool, Zarr_Cat (pool, dir, Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), leaf, err), err), err);
   if (err->exc) goto L_hdl_m9t1;
   if (((*n) > INT64_C(0))) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s131, 2 }), err);
+    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s140, 2 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
   DynStr_AppendChar (pool, d, 34u, err);
@@ -2781,7 +2896,7 @@ static void Zarr_AddMeta (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_
   }
   DynStr_Append (pool, d, leaf, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s132, 3 }), err);
+  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s141, 3 }), err);
   if (err->exc) goto L_hdl_m9t1;
   DynStr_Append (pool, d, Json_Spaced (pool, Json_Parse (pool, body, err), err), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -2828,18 +2943,18 @@ static void Zarr_Walk (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHA
   m9_sl_CHAR sub = {0}; (void) sub;
   m9_sl_CHAR subRel = {0}; (void) subRel;
   int64_t i = 0; (void) i;
-  bool m9t3 = Io_Exists (Zarr_Cat (pool, dir, ((m9_sl_CHAR){ (uint32_t *) m9s133, 8 }), err), err);
+  bool m9t3 = Io_Exists (Zarr_Cat (pool, dir, ((m9_sl_CHAR){ (uint32_t *) m9s142, 8 }), err), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s134, 7 }), err);
+    Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s143, 7 }), err);
     if (err->exc) goto L_hdl_m9t1;
-    Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s135, 7 }), err);
+    Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s144, 7 }), err);
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s136, 7 }), err);
+  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s145, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s137, 7 }), err);
+  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s146, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if ((!deep)) {
     goto L_ret;
@@ -2856,13 +2971,13 @@ static void Zarr_Walk (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHA
     bool m9t5 = ((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).p, INT64_C(0), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err)) != 46u);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t5) {
-      sub = Zarr_Cat (&(scratch), dir, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s138, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+      sub = Zarr_Cat (&(scratch), dir, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s147, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
       if (err->exc) goto L_hdl_m9t1;
       bool m9t6 = Zarr_IsDir (&(scratch), sub, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t6) {
         if (((rel).len > INT64_C(0))) {
-          subRel = Zarr_Cat (&(scratch), rel, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+          subRel = Zarr_Cat (&(scratch), rel, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s148, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
           if (err->exc) goto L_hdl_m9t1;
         } else {
           subRel = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
@@ -2896,16 +3011,16 @@ static void Zarr_Finish (m9_pool *pool, m9_sl_CHAR store, DynStr_DString * *d, m
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s140, 33 }), err);
+  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s149, 33 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s141, 11 }), err), DynStr_View ((*d), err), err);
+  Zarr_WriteText (pool, Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s150, 11 }), err), DynStr_View ((*d), err), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s142, 27 }), store, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s142, 27 }), store, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s151, 27 }), store, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s151, 27 }), store, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -2926,7 +3041,7 @@ static Json_Node * Zarr_RootAttrs (m9_pool *pool, m9_sl_CHAR store, m9_state *er
   err->res = &m9frame;
   Json_Node * m9ret = NULL;
   m9_sl_CHAR path = {0}; (void) path;
-  path = Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s143, 8 }), err);
+  path = Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s152, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
   bool m9t3 = Io_Exists (path, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -3010,14 +3125,14 @@ static void Zarr_MarkSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
   if (err->exc) goto L_hdl_m9t1;
   Json_Set (&(a), Zarr_SlimAttr, &(v), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s144, 8 }), err), Json_Spaced (pool, a, err), err);
+  Zarr_WriteText (pool, Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s153, 8 }), err), Json_Spaced (pool, a, err), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s145, 18 }), store, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s145, 18 }), store, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s154, 18 }), store, err)) m9t3 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s154, 18 }), store, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -3025,7 +3140,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
     m9_sl_CHAR m = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s146, 33 }), store, err)) m9t4 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s146, 33 }), store, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s155, 33 }), store, err)) m9t4 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s155, 33 }), store, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Zarr_Error);
     goto L_ret;
     goto L_dn_m9t2;
@@ -3049,11 +3164,11 @@ static void Zarr_WalkSorted (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_
   m9_sl_CHAR sub = {0}; (void) sub;
   m9_sl_CHAR subRel = {0}; (void) subRel;
   int64_t i = 0; (void) i;
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s147, 7 }), err);
+  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s156, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s148, 7 }), err);
+  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s157, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s149, 7 }), err);
+  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s158, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
   kids = Io_ListDir (&(scratch), dir, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -3067,12 +3182,12 @@ static void Zarr_WalkSorted (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_
     bool m9t4 = ((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).p, INT64_C(0), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err)) != 46u);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
-      sub = Zarr_Cat (&(scratch), dir, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s150, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+      sub = Zarr_Cat (&(scratch), dir, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s159, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
       if (err->exc) goto L_hdl_m9t1;
       bool m9t5 = Zarr_IsDir (&(scratch), sub, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t5) {
-        subRel = Zarr_Cat (&(scratch), rel, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s151, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+        subRel = Zarr_Cat (&(scratch), rel, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s160, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
         if (err->exc) goto L_hdl_m9t1;
         Zarr_WalkSorted (pool, d, n, sub, subRel, err);
         if (err->exc) goto L_hdl_m9t1;
@@ -3094,4 +3209,22 @@ L_ret: ;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
+}
+
+void Zarr_m9init (m9_state *err)
+{
+  static int m9done = 0;
+  if (m9done) return;
+  m9done = 1;
+  m9_pool m9frame = {0};
+  m9_pool *m9prev = err->res;
+  err->res = &m9frame;
+  DynStr_m9init (err); if (err->exc) goto L_ret;
+  Json_m9init (err); if (err->exc) goto L_ret;
+  Io_m9init (err); if (err->exc) goto L_ret;
+  Math_m9init (err); if (err->exc) goto L_ret;
+L_ret: ;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&m9frame);
+  err->res = m9prev;
 }

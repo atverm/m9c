@@ -1,0 +1,5 @@
+(* EXPECT: PURE procedure calls through the procedure value k (par 3.2) *)
+MODULE m ;
+TYPE Kernel = PROCEDURE (x: F64) : F64 ;
+PROCEDURE Apply (k: Kernel ; x: F64) : F64 [PURE] = BEGIN RETURN k (x) END Apply ;
+END m.

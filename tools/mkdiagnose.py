@@ -98,6 +98,30 @@ EXPLAIN = {
     "int-slash-division": (
         "/ is float division",
         "DIV for integers"),
+    "proc-var-must-be-opt": (
+        "a procedure value has no zero: a zeroed variable of procedure type would be a call into nothing",
+        "declare it OPT Less and take the value through IS SOME; a PARAMETER of procedure type needs no OPT (par 2.2.3)"),
+    "proc-field-must-be-opt": (
+        "a record field of procedure type starts zeroed like every field, and a zero procedure value cannot be called",
+        "declare the field OPT and read it through IS SOME (par 2.2.3)"),
+    "proc-value-signature-differs": (
+        "a procedure fits a procedure type only when its head renders the same text: modes, types, result and RAISES, to the letter",
+        "assign a procedure with exactly the declared signature, or change the type (par 2.2.3)"),
+    "proc-value-call-raises": (
+        "a call through a procedure value raises what the TYPE declares, since nothing is known about which procedure runs",
+        "handle it, or add the exception to the caller's own RAISES (par 2.2.3, par 5)"),
+    "proc-value-call-in-pure": (
+        "a PURE body may call only PURE procedures, and a procedure value names no procedure the checker could look at",
+        "take the value out of the PURE procedure, or make the computation a named PURE procedure (par 3.2)"),
+    "thread-argument-type": (
+        "THREAD hands its argument to the target's first parameter, and this one is not of that type -- until 2026-09-27 neither checker looked at the argument (only the generator refused a non-pointer shape)",
+        "pass what the target declares: a PTR T or SHARED PTR T for a `VAR r: T` or `p: PTR T` parameter, or a monitor by name (par 6)"),
+    "thread-moves-its-argument": (
+        "a bare owned pointer handed to a THREAD is MOVED: the thread owns it now, and reading or writing it in the caller is a race the language refuses by construction",
+        "hand the thread a record it may share -- a MONITOR, or a pool value both sides may read -- or do not touch the owned value again after the THREAD (par 6, par 4.2)"),
+    "literal-does-not-fit": (
+        "an integer literal adapts to the width it is stored into, and this one is outside that width's range -- until 2026-09-27 it compiled and the C conversion wrapped it (I16 := 40000 stored -25536)",
+        "use a wider type, or the value you meant; a computed value that may not fit converts explicitly with I16 (x) RAISES ValueRange (par 2.1)"),
     "is-some-on-non-opt": (
         "IS SOME is the guard for OPT; the operand is not OPT (a cross-module PTR T IN pool may type as unknown and NOT be diagnosed -- check the declaration)",
         "declare the type OPT PTR T, or drop the guard if it cannot be absent"),

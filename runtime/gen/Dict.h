@@ -3,6 +3,8 @@
 #define M9G_Dict_H
 #include "m9rt.h"
 
+void Dict_m9init (m9_state *err);
+
 typedef struct Dict_Dict Dict_Dict;
 typedef struct Dict_Value Dict_Value;
 typedef struct Dict_Ent Dict_Ent;

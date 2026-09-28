@@ -241,11 +241,15 @@ a backtrace still names
 what is missing is line numbers and locals.
 .TP
 .B \-\-check
-Check the module and its imports, print the diagnostics, and write
-nothing at all \(em no C, no header, no documentation. The exit code
-says whether the program exists. This is the flag an editor or a
-language server wants: diagnostics without artifacts appearing beside
-the file being edited. It cannot be combined with
+Check the module and its imports, run the generator, print every
+diagnostic the build would print \(em the checker's and the
+generator's refusals alike \(em and write nothing at all: no C, no
+header, no documentation. The exit code says whether the program
+exists. This is the flag an editor or a language server wants:
+diagnostics without artifacts appearing beside the file being edited.
+(Until 0.11 it stopped before the generator, so a construct the
+checker accepts and the generator refuses was invisible to editors.)
+It cannot be combined with
 .BR \-c ,
 .BR \-o ,
 .BR \-\-ar ,

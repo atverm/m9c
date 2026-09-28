@@ -1,0 +1,145 @@
+MODULE Narrow ;
+
+(* Integer arithmetic on every width traps on overflow -- the
+   executable half of report par 2.1, run by runtime/test/build.sh.
+
+   Until 2026-09-27 it did not: every operation went through the I64
+   helper and the result was assigned back into the narrow C type
+   unchecked, so `I32 max + 1` was -2147483648 and `U32 3 - 5` was
+   4294967294 with no Overflow raised.  Found by an agent's review
+   (docs/agent-review-2026-09-27.md F1), which ran exactly the
+   expressions below.  Each case prints `raised` or the value, and
+   build.sh compares the whole text: a width that starts wrapping
+   again changes a line.                                            *)
+
+IMPORT Io ;
+
+PROCEDURE Say (RO what: STR ; raised: BOOL ; v: I64) =
+BEGIN
+  Io.Write (what) ;
+  IF raised THEN
+    Io.WriteLine (': raised')
+  ELSE
+    Io.Write (': ') ; Io.WriteI64 (v) ; Io.WriteLine ('')
+  END
+END Say ;
+
+PROCEDURE AddI32 () =
+VAR a, b : I32 ;
+BEGIN
+  a := 2147483647 ; b := a + 1 ; Say ('I32 max + 1', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('I32 max + 1', TRUE, 0)
+END AddI32 ;
+
+PROCEDURE SubI32 () =
+VAR a, b : I32 ;
+BEGIN
+  a := -2147483648 ; b := a - 1 ; Say ('I32 min - 1', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('I32 min - 1', TRUE, 0)
+END SubI32 ;
+
+PROCEDURE MulI16 () =
+VAR a, b : I16 ;
+BEGIN
+  a := 30000 ; b := a * 2 ; Say ('I16 30000 * 2', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('I16 30000 * 2', TRUE, 0)
+END MulI16 ;
+
+PROCEDURE AddI8 () =
+VAR a, b : I8 ;
+BEGIN
+  a := 127 ; b := a + 1 ; Say ('I8 127 + 1', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('I8 127 + 1', TRUE, 0)
+END AddI8 ;
+
+PROCEDURE NegI8 () =
+VAR a, b : I8 ;
+BEGIN
+  a := -128 ; b := -a ; Say ('I8 -(-128)', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('I8 -(-128)', TRUE, 0)
+END NegI8 ;
+
+PROCEDURE DivI32 () =
+VAR a, b : I32 ;
+BEGIN
+  a := -2147483648 ; b := a DIV (-1) ; Say ('I32 min DIV -1', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('I32 min DIV -1', TRUE, 0)
+END DivI32 ;
+
+PROCEDURE SubU8 () =
+VAR a, b : U8 ;
+BEGIN
+  a := 0 ; b := a - 1 ; Say ('U8 0 - 1', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('U8 0 - 1', TRUE, 0)
+END SubU8 ;
+
+PROCEDURE AddU16 () =
+VAR a, b : U16 ;
+BEGIN
+  a := 65535 ; b := a + 1 ; Say ('U16 65535 + 1', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('U16 65535 + 1', TRUE, 0)
+END AddU16 ;
+
+PROCEDURE SubU32 () =
+VAR a, b : U32 ;
+BEGIN
+  a := 3 ; b := a - 5 ; Say ('U32 3 - 5', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('U32 3 - 5', TRUE, 0)
+END SubU32 ;
+
+PROCEDURE MulU32 () =
+VAR a, b : U32 ;
+BEGIN
+  a := 65536 ; b := a * 65536 ; Say ('U32 65536 * 65536', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('U32 65536 * 65536', TRUE, 0)
+END MulU32 ;
+
+PROCEDURE SubU64 () =
+VAR a, b : U64 ;
+BEGIN
+  a := 0 ; b := a - 1 ; Say ('U64 0 - 1', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('U64 0 - 1', TRUE, 0)
+| ValueRange : Say ('U64 0 - 1', TRUE, 0)
+END SubU64 ;
+
+PROCEDURE MulU64 () =
+VAR a, b : U64 ;
+BEGIN
+  a := 4611686018427387904 ; b := a * 4 ; Say ('U64 2^62 * 4', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('U64 2^62 * 4', TRUE, 0)
+| ValueRange : Say ('U64 2^62 * 4', TRUE, 0)
+END MulU64 ;
+
+(* and the controls: in range, nothing raises, the value is right *)
+PROCEDURE InRange () =
+VAR
+  a, b : I32 ;  s, t : I16 ;  u, v : U32 ;  w, x : U64 ;
+BEGIN
+  a := 100 ; b := a + 200 ; Say ('I32 100 + 200', FALSE, I64 (b)) ;
+  s := -5 ; t := s * 6 ; Say ('I16 -5 * 6', FALSE, I64 (t)) ;
+  u := 5 ; v := u - 3 ; Say ('U32 5 - 3', FALSE, I64 (v)) ;
+  w := 4611686018427387904 ; x := w * 3 ; x := x DIV 3 ;
+  Say ('U64 2^62 * 3 DIV 3 = 2^62', FALSE, I64 (x)) ;
+  a := 7 ; b := a MOD 3 ; Say ('I32 7 MOD 3', FALSE, I64 (b))
+EXCEPT
+| Overflow : Say ('in range', TRUE, 0)
+| ValueRange : Say ('in range', TRUE, 0)
+END InRange ;
+
+BEGIN
+  AddI32 () ; SubI32 () ; MulI16 () ; AddI8 () ; NegI8 () ; DivI32 () ;
+  SubU8 () ; AddU16 () ; SubU32 () ; MulU32 () ; SubU64 () ; MulU64 () ;
+  InRange ()
+END Narrow.

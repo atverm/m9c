@@ -464,9 +464,24 @@ BEGIN
     | Ast.NPtrType : CheckTypeNode (n.kids[0], ctx)
     | Ast.NOptType : CheckTypeNode (n.kids[0], ctx)
     | Ast.NSharedType : CheckTypeNode (n.kids[0], ctx)
-    | Ast.NSliceType : CheckTypeNode (n.kids[0], ctx)
-    | Ast.NArrayType : CheckTypeNode (n.kids[1], ctx)
+    | Ast.NSliceType :
+        CheckTypeNode (n.kids[0], ctx) ;
+        IF IsBareProc (n.kids[0]) THEN
+          ErrN (n, ctx, 'a slice or array of procedure values is not in the language yet (par 2.2.3)')
+        END
+    | Ast.NArrayType :
+        CheckTypeNode (n.kids[1], ctx) ;
+        IF IsBareProc (n.kids[1]) THEN
+          ErrN (n, ctx, 'a slice or array of procedure values is not in the language yet (par 2.2.3)')
+        END
     | Ast.NGridType : CheckTypeNode (n.kids[1], ctx)
+    | Ast.NProcType :
+        IF n.kids[0] IS SOME pl THEN
+          FOR i := 0 TO pl.nkids - 1 DO
+            IF pl.kids[i] IS SOME grp THEN CheckTypeNode (grp.kids[1], ctx) END
+          END
+        END ;
+        CheckTypeNode (n.kids[1], ctx)
     | Ast.NRecordType :
         (* kids[0] is the extension base, when there is one *)
         CheckTypeNode (n.kids[0], ctx) ;
@@ -486,7 +501,12 @@ VAR i : I64 ;
 BEGIN
   IF fs IS SOME seq THEN
     FOR i := 0 TO seq.nkids - 1 DO
-      IF seq.kids[i] IS SOME g THEN CheckTypeNode (g.kids[1], ctx) END
+      IF seq.kids[i] IS SOME g THEN
+        CheckTypeNode (g.kids[1], ctx) ;
+        IF IsBareProc (g.kids[1]) THEN
+          ErrN (g, ctx, 'a field of procedure type must be OPT (par 2.2.3)')
+        END
+      END
     END
   END
 END CheckFieldTypes ;
@@ -499,7 +519,12 @@ BEGIN
     IF holder.kids[a] IS SOME sect THEN
       IF sect.kind = Ast.NVarSection THEN
         FOR b := 0 TO sect.nkids - 1 DO
-          IF sect.kids[b] IS SOME vd THEN CheckTypeNode (vd.kids[1], ctx) END
+          IF sect.kids[b] IS SOME vd THEN
+            CheckTypeNode (vd.kids[1], ctx) ;
+            IF IsBareProc (vd.kids[1]) THEN
+              ErrN (vd, ctx, 'a variable of procedure type must be OPT (par 2.2.3)')
+            END
+          END
         END
       ELSIF sect.kind = Ast.NTypeSection THEN
         FOR b := 0 TO sect.nkids - 1 DO
@@ -528,6 +553,10 @@ BEGIN
           END
         END ;
         CheckTypeNode (d.kids[1], u.a + '.' + d.a) ;
+        IF IsBareProc (d.kids[1]) THEN
+          ErrN (d, u.a + '.' + d.a,
+            'a procedure cannot answer a procedure value (par 2.2.3)')
+        END ;
         IF d.kids[4] IS SOME body THEN
           CheckVarTypes (body, u.a + '.' + d.a)
         END
@@ -907,12 +936,111 @@ BEGIN
   RETURN ''
 END CanonQual ;
 
+(* scalar-by-scalar order on two names, for the RAISES list below *)
+PROCEDURE SigLess (RO a: STR ; RO b: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i < LEN (a) AND i < LEN (b) DO
+    IF a[i] # b[i] THEN RETURN a[i] < b[i] END ;
+    i := i + 1
+  END ;
+  RETURN LEN (a) < LEN (b)
+END SigLess ;
+
+(* the canonical text of a procedure type, or of a procedure's head
+   (par 2.2.3): the parameter modes and types with no names, the
+   result with its RO, and the RAISES names bare and sorted.  Two
+   procedure types are the same type exactly when this text is the
+   same, and a procedure fits a procedure type exactly when its head
+   renders the same -- RAISES included, to the letter: a value that
+   raised less than its type says would be harmless, one that raised
+   more would let a caller handle less than the type promised, and
+   the rule that is one comparison is the one a reader can apply. *)
+PROCEDURE ProcSig (pl: Ast.Kid ; rt: Ast.Kid ; ro: BOOL ; rs: Ast.Kid ;
+                   depth: I64) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  g, j, i, k : I64 ;
+  first : BOOL ;
+  s, tmp : STR ;
+  names : SLICE OF STR ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (pool, d, 'PROCEDURE (') ;
+  first := TRUE ;
+  IF pl IS SOME pln THEN
+    FOR g := 0 TO pln.nkids - 1 DO
+      IF pln.kids[g] IS SOME grp THEN
+        s := CanonT (grp.kids[1], depth + 1) ;
+        IF LEN (s) = 0 THEN RETURN '' END ;
+        IF grp.kids[0] IS SOME ids THEN
+          FOR j := 0 TO ids.nkids - 1 DO
+            IF NOT first THEN DynStr.Append (pool, d, ' ; ') END ;
+            first := FALSE ;
+            IF grp.f1 THEN DynStr.Append (pool, d, 'VAR ') END ;
+            IF grp.f2 THEN DynStr.Append (pool, d, 'OWN ') END ;
+            IF grp.f3 THEN DynStr.Append (pool, d, 'RO ') END ;
+            IF grp.f4 THEN DynStr.Append (pool, d, 'KEPT ') END ;
+            DynStr.Append (pool, d, s)
+          END
+        END
+      END
+    END
+  END ;
+  DynStr.AppendChar (pool, d, ')') ;
+  IF rt IS SOME rtn THEN
+    s := CanonT (rt, depth + 1) ;
+    IF LEN (s) = 0 THEN RETURN '' END ;
+    DynStr.Append (pool, d, ' : ') ;
+    IF ro THEN DynStr.Append (pool, d, 'RO ') END ;
+    DynStr.Append (pool, d, s)
+  END ;
+  IF rs IS SOME rsn THEN
+    names := NEW (pool, STR, rsn.nkids) ;
+    FOR i := 0 TO rsn.nkids - 1 DO
+      IF rsn.kids[i] IS SOME q THEN
+        IF LEN (q.b) > 0 THEN names[i] := q.b ELSE names[i] := q.a END
+      END
+    END ;
+    FOR i := 1 TO rsn.nkids - 1 DO
+      k := i ;
+      WHILE k > 0 AND SigLess (names[k], names[k - 1]) DO
+        tmp := names[k] ;
+        names[k] := names[k - 1] ;
+        names[k - 1] := tmp ;
+        k := k - 1
+      END
+    END ;
+    DynStr.Append (pool, d, ' RAISES ') ;
+    FOR i := 0 TO rsn.nkids - 1 DO
+      IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
+      DynStr.Append (pool, d, names[i])
+    END
+  END ;
+  RETURN DynStr.View (d)
+END ProcSig ;
+
+(* does a declared type resolve to a bare procedure type?  The four
+   refusals of par 2.2.3 ask this: a variable or field of procedure
+   type must be OPT, because a procedure value has no zero and a
+   zeroed one would be a call into nothing. *)
+PROCEDURE IsBareProc (t: Ast.Kid) : BOOL =
+BEGIN
+  IF ResolveType (t) IS SOME r THEN
+    RETURN r.kind = Ast.NProcType
+  END ;
+  RETURN FALSE
+END IsBareProc ;
+
 PROCEDURE CanonT (t: Ast.Kid ; depth: I64) : STR =
 VAR s : STR ;
 BEGIN
   IF depth > MaxDepth THEN RETURN '' END ;
   IF t IS SOME n THEN
     CASE n.kind OF
+    | Ast.NProcType :
+        RETURN ProcSig (n.kids[0], n.kids[1], n.f3, n.kids[2], depth)
     | Ast.NQualident :
         IF LEN (n.b) > 0 THEN
           IF Text.Eq (n.a, 'C') THEN RETURN Qualify ('C', n.b) END ;
@@ -2135,6 +2263,61 @@ END GridOf ;
 
 (* assignment compatibility: may a src value land where dst is
    expected?  Unknown is compatible with everything. *)
+(* the range of an integer width a literal is stored into; FALSE for
+   a type that is not a narrow integer -- I64 holds every literal the
+   lexer accepts, and U64's upper half cannot be spelled as one *)
+PROCEDURE LitRange (RO t: STR ; VAR lo: I64 ; VAR hi: I64) : BOOL =
+BEGIN
+  IF Text.Eq (t, 'I8') THEN lo := -128 ; hi := 127 ; RETURN TRUE END ;
+  IF Text.Eq (t, 'I16') THEN lo := -32768 ; hi := 32767 ; RETURN TRUE END ;
+  IF Text.Eq (t, 'I32') THEN
+    lo := -2147483648 ; hi := 2147483647 ; RETURN TRUE
+  END ;
+  IF Text.Eq (t, 'U8') OR Text.Eq (t, 'BYTE') THEN
+    lo := 0 ; hi := 255 ; RETURN TRUE
+  END ;
+  IF Text.Eq (t, 'U16') THEN lo := 0 ; hi := 65535 ; RETURN TRUE END ;
+  IF Text.Eq (t, 'U32') THEN lo := 0 ; hi := 4294967295 ; RETURN TRUE END ;
+  IF Text.Eq (t, 'U64') THEN lo := 0 ; hi := 9223372036854775807 ; RETURN TRUE END ;
+  RETURN FALSE
+END LitRange ;
+
+(* a decimal literal node's value, negated when asked; FALSE for a hex
+   literal (a bit pattern, left to the width it names) or one too
+   long to hold *)
+PROCEDURE LitVal (lit: PTR Ast.Node ; neg: BOOL ; VAR v: I64) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF lit.kind # Ast.NInt THEN RETURN FALSE END ;
+  IF LEN (lit.a) = 0 OR LEN (lit.a) > 18 THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (lit.a) - 1 DO
+    IF lit.a[i] < '0' OR lit.a[i] > '9' THEN RETURN FALSE END
+  END ;
+  v := AtoI (lit.a) ;
+  IF neg THEN v := -v END ;
+  RETURN TRUE
+END LitVal ;
+
+(* an integer literal stored where a narrow width is expected must
+   fit it.  `s := 40000` for an I16 passed this checker and the C
+   conversion stored -25536 until 2026-09-27 -- the same silence as
+   the narrow arithmetic fixed the same day (docs/agent-review-
+   2026-09-27.md F1).  Answers the offending value through v. *)
+PROCEDURE LitOut (n: PTR Ast.Node ; RO t: STR ; VAR v: I64) : BOOL =
+VAR lo, hi : I64 ;
+BEGIN
+  IF NOT LitRange (t, lo, hi) THEN RETURN FALSE END ;
+  IF n.kind = Ast.NUn AND Text.Eq (n.a, '-') THEN
+    IF n.kids[0] IS SOME c THEN
+      IF NOT LitVal (c, TRUE, v) THEN RETURN FALSE END ;
+      RETURN v < lo OR v > hi
+    END ;
+    RETURN FALSE
+  END ;
+  IF NOT LitVal (n, FALSE, v) THEN RETURN FALSE END ;
+  RETURN v < lo OR v > hi
+END LitOut ;
+
 PROCEDURE Compat (RO dst: STR ; RO src: STR) : BOOL =
 BEGIN
   IF Text.Eq (dst, '<void>') OR Text.Eq (src, '<void>') THEN
@@ -2668,6 +2851,27 @@ BEGIN
     | Ast.NBin : RETURN BinType (e, ctx)
     | Ast.NDesignator :
         NoteUse (e, ctx) ;
+        (* a top-level M9 procedure named as a VALUE has its head's
+           type (par 2.2.3) -- Up, or Mod.Up; a scope name shadows it
+           as it shadows anything.  A foreign procedure is a C symbol
+           with another ABI and no value at all. *)
+        IF (e.nkids = 0 OR (e.nkids = 1 AND FindMod (e.a) >= 0)) AND
+           ScopeFind (e.a) < 0 THEN
+          pr := LookupProc (DesigName (e), found) ;
+          IF found THEN
+            IF pr.node IS SOME pn THEN
+              IF LEN (pr.foreign) > 0 THEN
+                ErrN (e, ctx, S3 ('a foreign procedure is not a value: ',
+                  DesigName (e), ' (par 2.2.3)')) ;
+                RETURN ''
+              END ;
+              canonCtx := pr.modName ;
+              t := ProcSig (pn.kids[0], pn.kids[1], pn.f3, pn.kids[2], 0) ;
+              canonCtx := '' ;
+              RETURN t
+            END
+          END
+        END ;
         (* a bare value name known to NO part of the checker's name
            universe is undefined -- the symmetric twin of the
            unknown-procedure check.  Only here (a body-walk value
@@ -2943,7 +3147,7 @@ PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR =
 VAR
   name, pTy, amode, om, t : STR ;
-  nargs, j, g, k, kept, rank, dot, nflat : I64 ;
+  nargs, j, g, k, kept, rank, dot, nflat, si : I64 ;
   aTy : SLICE OF STR ;
   aNode : SLICE OF AKid ;
   flat : SLICE OF AKid ;
@@ -3124,7 +3328,32 @@ BEGIN
     RETURN name
   END ;
 
-  pr := LookupProc (name, found) ;
+  (* a call THROUGH A PROCEDURE VALUE (par 2.2.3): a parameter or an
+     IS SOME binder whose type is a procedure type.  The type's own
+     head stands in for the callee's declaration and the same checks
+     run over it; nothing is known about which procedure runs, so a
+     PURE body may not make the call. *)
+  found := FALSE ;
+  si := ScopeFind (name) ;
+  IF si >= 0 THEN
+    IF ResolveType (scope[si].ty) IS SOME ptn THEN
+      IF ptn.kind = Ast.NProcType THEN
+        IF curPure THEN
+          ErrN (site, ctx, S3 ('PURE procedure calls through the procedure value ',
+            name, ' (par 3.2)'))
+        END ;
+        pr.node := SOME (ptn) ;
+        pr.modName := '' ;
+        IF scope[si].ty IS SOME tq THEN
+          IF tq.kind = Ast.NQualident THEN
+            IF LEN (tq.b) > 0 THEN pr.modName := tq.a END
+          END
+        END ;
+        found := TRUE
+      END
+    END
+  END ;
+  IF NOT found THEN pr := LookupProc (name, found) END ;
   IF found THEN
     IF pr.node IS SOME pn THEN
       canonCtx := pr.modName ;
@@ -3863,6 +4092,73 @@ END CheckCaseTotal ;
 (* a function called as a statement throws its answer away, and in a
    language where failure travels in the result that is how a caller
    loses the thing it was supposed to check *)
+(* THREAD (P, arg), par 6: the argument is held to P's first
+   parameter, and a bare owned pointer handed over is MOVED -- the
+   thread owns it now.  Until 2026-09-27 neither checker looked at
+   the argument (docs/agent-review-2026-09-27.md F2): `THREAD (Work,
+   x)` with an I64 reached the generator, and an owned pointer stayed
+   live in the caller after a thread had it.  The shapes that pass:
+   `P (VAR r: T)` takes a PTR T or SHARED PTR T -- the record by
+   reference, chapter 16's job -- or a monitor T by name; `P (p: PTR
+   T)` and `P (OWN p: PTR T)` take a PTR T.  A pool value is the
+   pool's and is lent, a VAR parameter is a borrow and is lent;
+   sharability itself is still unbuilt and the reviewer holds it. *)
+PROCEDURE CheckThread (st: PTR Ast.Node ; RO ctx: STR) =
+VAR
+  name, pTy, aTy, amode : STR ;
+  pr : ProcInfo ;
+  found, pooled : BOOL ;
+BEGIN
+  aTy := ExprType (st.kids[1], ctx) ;
+  IF st.kids[0] IS SOME tn THEN
+    IF tn.kind # Ast.NDesignator THEN RETURN END ;
+    name := DesigName (tn) ;
+    RootAdd (name) ;
+    pTy := '' ;
+    pr := LookupProc (name, found) ;
+    IF found THEN
+      IF pr.node IS SOME pn THEN
+        canonCtx := pr.modName ;
+        IF pn.kids[0] IS SOME pl THEN
+          IF pl.nkids > 0 THEN
+            IF pl.kids[0] IS SOME grp THEN
+              pTy := CanonT (grp.kids[1], 0)
+            END
+          END
+        END ;
+        canonCtx := ''
+      END
+    END ;
+    IF LEN (pTy) > 0 AND LEN (aTy) > 0 THEN
+      IF NOT (Compat (pTy, aTy) OR Compat (Cat ('PTR ', pTy), aTy) OR
+              Compat (Cat ('SHARED PTR ', pTy), aTy)) THEN
+        ErrN (st, ctx, S5 ('THREAD (', name, '): cannot pass ',
+          TyName (aTy), S3 (' where ', TyName (pTy), ' is expected')))
+      END
+    END ;
+    IF st.kids[1] IS SOME an THEN
+      IF an.kind = Ast.NDesignator THEN
+        IF an.nkids = 0 THEN
+          amode := ScopeMode (an.a) ;
+          IF NOT (Text.Eq (amode, ModeVal) OR Text.Eq (amode, ModeVar) OR
+                  Text.Eq (amode, ModeBinder) OR Text.Eq (amode, ModeRo)) THEN
+            IF ResolveType (ScopeType (an.a)) IS SOME ares THEN
+              IF ares.kind = Ast.NPtrType THEN
+                pooled := FALSE ;
+                IF ares.kids[1] IS SOME poolName THEN pooled := TRUE END ;
+                IF NOT pooled AND OwnedCandKind (an.a) > 0 THEN
+                  OwnMark (an.a, Cat ('moved into a THREAD running ', name),
+                           st)
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END
+END CheckThread ;
+
 PROCEDURE CheckCallStmt (KEPT st: PTR Ast.Node ; RO ctx: STR) =
 VAR t : STR ;
 BEGIN
@@ -3957,6 +4253,7 @@ PROCEDURE CheckAssign (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
   beyond, isShared : BOOL ;
   vname, t, u, lhsMode, dmode : STR ;
+  lv : I64 ;
 BEGIN
   IF st.kids[0] IS SOME lhs THEN
     (* the types first, in the oracle's order: the left side, the
@@ -4000,9 +4297,17 @@ BEGIN
         IF NOT Compat (t, u) THEN
           ErrN (rhn, ctx, S5 ('cannot assign ', TyName (u), ' to ',
             TyName (t), ' (no implicit conversions, par 2.1)'))
+        ELSIF LitOut (rhn, t, lv) THEN
+          ErrN (rhn, ctx, S4 ('integer literal ', ItoA (lv),
+            ' does not fit ', TyName (t)))
         END
       END
     END ;
+    (* a WRITE through a selector is a use of its root: `p.n := 8`
+       after p was moved is the same fault as reading p.n.  The oracle
+       had this and this side did not, found by the THREAD probe of
+       2026-09-27 (docs/agent-review-2026-09-27.md F2). *)
+    IF lhs.nkids > 0 THEN NoteUse (lhs, ctx) END ;
     beyond := CheckWrite (lhs, ctx) ;
     (* a bare owned pointer on the right MOVES out of its name; a
        bare name on the left is (re)initialised *)
@@ -4087,10 +4392,9 @@ BEGIN
         CheckDispose (st, ctx)
     | Ast.NThread :
         (* a THREAD root: everything it can reach must be safe to run
-           concurrently, which is what the BFS below decides *)
-        IF st.kids[0] IS SOME tn THEN
-          IF tn.kind = Ast.NDesignator THEN RootAdd (DesigName (tn)) END
-        END
+           concurrently, which is what the BFS below decides; and the
+           argument is checked and, when owned, moved *)
+        CheckThread (st, ctx)
     | Ast.NIf :
         CheckCond (st.kids[0], ctx) ;
         pre := OwnSnap () ;
@@ -4594,7 +4898,7 @@ VAR
   name, argTy : STR ;
   pr : ProcInfo ;
   found : BOOL ;
-  j, jj, nf32, nf64 : I64 ;
+  j, jj, nf32, nf64, si : I64 ;
 BEGIN
   name := DesigName (dn) ;
   (* the FPC checker chases inside CallType, which is also where it
@@ -4627,6 +4931,27 @@ BEGIN
   (* the integer-to-enumeration conversion raises the same way *)
   IF LEN (EnumConvType (name)) > 0 THEN
     RaisedAdd ('ValueRange', Cat (name, ' conversion'))
+  END ;
+  (* a call through a procedure value raises what its TYPE declares
+     (par 2.2.3); it names no procedure, so it joins no call graph *)
+  si := ScopeFind (name) ;
+  IF si >= 0 THEN
+    IF ResolveType (scope[si].ty) IS SOME ptn THEN
+      IF ptn.kind = Ast.NProcType THEN
+        IF ptn.kids[2] IS SOME rs THEN
+          FOR j := 0 TO rs.nkids - 1 DO
+            IF rs.kids[j] IS SOME q THEN
+              IF LEN (q.b) > 0 THEN
+                RaisedAdd (q.b, Cat ('call to ', name))
+              ELSE
+                RaisedAdd (q.a, Cat ('call to ', name))
+              END
+            END
+          END
+        END ;
+        RETURN
+      END
+    END
   END ;
   pr := LookupProc (name, found) ;
   IF NOT found THEN RETURN END ;

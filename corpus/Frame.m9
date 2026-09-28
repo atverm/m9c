@@ -22,6 +22,8 @@ DEFINITION MODULE Frame ;
    time, an hour of error nobody could see.  A zone is the caller's
    problem exactly once, at construction. *)
 
+IMPORT Faults ;
+
 IMPORT Csv ;
 IMPORT Io ;
 IMPORT NetCDF ;
@@ -33,13 +35,9 @@ EXCEPTION
   (* the accessor's type is not the column's, or a reducer was asked
      of a column that cannot answer it (a mean of flags) *)
   Duplicate (RO name: STR) ;
-  SizeError (got, want: I64) ;
-  (* a column whose length is not the frame's row count; a reducer
-     slice whose length is not the column count *)
   Disorder (row: I64) ;
   (* the time axis is not strictly increasing at this row, or a
      stamp is off the resolution grid *)
-  BadArg (RO what: STR) ;
 
 TYPE
   Data = CASE RECORD
@@ -98,33 +96,33 @@ TYPE
 (* ---- construction ---- *)
 
 PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Fr IN pool
-  RAISES SizeError ;
+  RAISES Faults.SizeError ;
   (* rows < 0 refuses; 0 is a legal empty frame *)
 
 PROCEDURE AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF F64 ; miss: F64)
-  RAISES SizeError, Duplicate ;
+                  RO v: SLICE OF F64 ; miss: F64)
+  RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF F32 ; miss: F32)
-  RAISES SizeError, Duplicate ;
+                  RO v: SLICE OF F32 ; miss: F32)
+  RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF I64 ; miss: I64)
-  RAISES SizeError, Duplicate ;
+                  RO v: SLICE OF I64 ; miss: I64)
+  RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF I32 ; miss: I32)
-  RAISES SizeError, Duplicate ;
+                  RO v: SLICE OF I32 ; miss: I32)
+  RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF I16 ; miss: I16)
-  RAISES SizeError, Duplicate ;
+                  RO v: SLICE OF I16 ; miss: I16)
+  RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                    v: SLICE OF BYTE ; miss: BYTE)
-  RAISES SizeError, Duplicate ;
+                    RO v: SLICE OF BYTE ; miss: BYTE)
+  RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                    v: SLICE OF BOOL)
-  RAISES SizeError, Duplicate ;
+                    RO v: SLICE OF BOOL)
+  RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
                    KEPT v: SLICE OF STR)
-  RAISES SizeError, Duplicate ;
+  RAISES Faults.SizeError, Duplicate ;
   (* the slice is TAKEN, not copied: the frame views the caller's
      storage, the AddRoute/Json.Parse retention contract.  Length
      must equal the frame's rows. *)
@@ -163,7 +161,7 @@ PROCEDURE ColBools (f: PTR Fr ; RO name: STR) : SLICE OF BOOL
 (* ---- CSV ---- *)
 
 PROCEDURE FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool
-  RAISES SizeError, Duplicate, IndexError, ValueRange ;
+  RAISES Faults.SizeError, Duplicate, IndexError, ValueRange ;
   (* every non-Skip column of a PARSED Csv.Table, with the kinds the
      caller declared there: Real -> F32s (miss NaN), Int -> I64s
      (miss MIN I64, stated below), Stamp -> I64s epoch seconds,
@@ -182,11 +180,13 @@ PROCEDURE WriteCsv (VAR pool: POOL ; f: PTR Fr ; RO path: STR)
 
 (* ---- the cross-module face of the variants ----
 
-   A caller in another module cannot CASE over Frame.Data or
-   Frame.Conv today (the generators cannot type a cross-module
-   variant selector -- the gap first logged in Csv.m9), so the
-   questions are answered as integers and typed accessors instead;
-   Parquet.m9 is the consumer that forced them. *)
+   Integer kind codes and typed accessors, written when a caller in
+   another module could not CASE over Frame.Data or Frame.Conv (the
+   generators could not type a cross-module variant selector).  That
+   gap closed 2026-09-15 (`corpus/KindUse.m9`); the face stays
+   because Parquet.m9 is built on it -- retiring it means moving
+   Parquet's ColPhys/ColConv onto the variants, ledgered in
+   `docs/p3-ledger.md` as a workaround left standing. *)
 
 CONST
   KindF64 = 0 ;
@@ -224,7 +224,7 @@ PROCEDURE ConvName (conv: Conv) : STR ;
 
 PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
                    RO KEPT path: STR ; RO dim: STR)
-  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError ;
+  RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError ;
   (* a netCDF-4 file with one dimension named `dim`, one variable
      per column in its OWN storage type, the column's missing value
      as a TYPED _FillValue, and units / long_name / standard_name
@@ -234,7 +234,7 @@ PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
      convention. *)
 
 PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR)
-  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError ;
+  RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError ;
   (* WriteNc over the dimension 'time', plus the time coordinate:
      I64 seconds, units 'seconds since 1970-01-01 00:00:00 +00:00'
      (the zone STATED -- the roundtrip demo found a CF axis that was
@@ -247,7 +247,7 @@ PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR)
      sample, and writing 'mean' unasked would be a lie in metadata. *)
 
 PROCEDURE FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr
-  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange,
+  RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, ValueRange,
          Overflow, IndexError ;
   (* every variable whose FIRST dimension is `dim`: 1-D numerics
      into their matching arms, 2-D char matrices into Strs.  A
@@ -258,7 +258,7 @@ PROCEDURE FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr
      read when present. *)
 
 PROCEDURE TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts
-  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, Disorder,
+  RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, Disorder,
          ValueRange, Overflow, IndexError ;
   (* FromNc over 'time', with the time variable itself parsed from
      its CF units -- seconds, minutes, hours or days since a date,
@@ -275,7 +275,7 @@ PROCEDURE TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts
 PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ;
                  res: I64 ; conv: Conv ; RO descr: STR)
   : PTR Ts IN pool
-  RAISES SizeError, Disorder, BadArg ;
+  RAISES Faults.SizeError, Disorder, Faults.BadArg ;
   (* time is epoch seconds UTC, one per row, STRICTLY increasing and
      on the res grid (relative to its own first stamp); res > 0.
      Gaps are legal -- MakeContiguous is how they close. *)
@@ -302,7 +302,7 @@ PROCEDURE ConvMid () : Conv ;
 PROCEDURE Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ;
                    how: SLICE OF How ; minCount: I64)
   : PTR Ts IN pool
-  RAISES SizeError, WrongType, BadArg, ValueRange, Overflow,
+  RAISES Faults.SizeError, WrongType, Faults.BadArg, ValueRange, Overflow,
          IndexError ;
   (* resample to a coarser resolution.  toRes must be a positive
      multiple of the frame's resolution (refused otherwise, named);
@@ -316,7 +316,7 @@ PROCEDURE Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ;
      Output labels follow the frame's own convention at toRes. *)
 
 PROCEDURE MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool
-  RAISES SizeError, Duplicate, Disorder, BadArg, WrongType,
+  RAISES Faults.SizeError, Duplicate, Disorder, Faults.BadArg, WrongType,
          ValueRange, Overflow, IndexError ;
   (* every absent period between the first and last stamp becomes a
      row of missing values (Strs: '').  The time axis comes out
@@ -328,6 +328,8 @@ END Frame.
 
 
 IMPLEMENTATION MODULE Frame ;
+
+IMPORT Faults ;
 
 IMPORT Math ;
 IMPORT DynStr ;
@@ -367,10 +369,10 @@ END MissI ;
 (* ---- construction ---- *)
 
 PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Fr IN pool
-  RAISES SizeError =
+  RAISES Faults.SizeError =
 VAR f : PTR Fr IN pool ;
 BEGIN
-  IF rows < 0 THEN RAISE SizeError (rows, 0) END ;
+  IF rows < 0 THEN RAISE Faults.SizeError (rows, 0) END ;
   f := NEW (pool, Fr) ;
   f.cols := NEW (pool, Col, 4) ;
   f.ncols := 0 ;
@@ -395,9 +397,9 @@ END Grow ;
 
 PROCEDURE Admit (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
                  n: I64)
-  RAISES SizeError, Duplicate =
+  RAISES Faults.SizeError, Duplicate =
 BEGIN
-  IF n # f.rows THEN RAISE SizeError (n, f.rows) END ;
+  IF n # f.rows THEN RAISE Faults.SizeError (n, f.rows) END ;
   IF Find (f, name) >= 0 THEN RAISE Duplicate (name) END ;
   Grow (pool, f)
 END Admit ;
@@ -425,8 +427,8 @@ BEGIN
 END Copy ;
 
 PROCEDURE AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF F64 ; miss: F64)
-  RAISES SizeError, Duplicate =
+                  RO v: SLICE OF F64 ; miss: F64)
+  RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
   Admit (pool, f, name, LEN (v)) ;
@@ -437,8 +439,8 @@ BEGIN
 END AddF64 ;
 
 PROCEDURE AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF F32 ; miss: F32)
-  RAISES SizeError, Duplicate =
+                  RO v: SLICE OF F32 ; miss: F32)
+  RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
   Admit (pool, f, name, LEN (v)) ;
@@ -449,8 +451,8 @@ BEGIN
 END AddF32 ;
 
 PROCEDURE AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF I64 ; miss: I64)
-  RAISES SizeError, Duplicate =
+                  RO v: SLICE OF I64 ; miss: I64)
+  RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
   Admit (pool, f, name, LEN (v)) ;
@@ -461,8 +463,8 @@ BEGIN
 END AddI64 ;
 
 PROCEDURE AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF I32 ; miss: I32)
-  RAISES SizeError, Duplicate =
+                  RO v: SLICE OF I32 ; miss: I32)
+  RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
   Admit (pool, f, name, LEN (v)) ;
@@ -473,8 +475,8 @@ BEGIN
 END AddI32 ;
 
 PROCEDURE AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  v: SLICE OF I16 ; miss: I16)
-  RAISES SizeError, Duplicate =
+                  RO v: SLICE OF I16 ; miss: I16)
+  RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
   Admit (pool, f, name, LEN (v)) ;
@@ -485,8 +487,8 @@ BEGIN
 END AddI16 ;
 
 PROCEDURE AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                    v: SLICE OF BYTE ; miss: BYTE)
-  RAISES SizeError, Duplicate =
+                    RO v: SLICE OF BYTE ; miss: BYTE)
+  RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
   Admit (pool, f, name, LEN (v)) ;
@@ -497,8 +499,8 @@ BEGIN
 END AddBytes ;
 
 PROCEDURE AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                    v: SLICE OF BOOL)
-  RAISES SizeError, Duplicate =
+                    RO v: SLICE OF BOOL)
+  RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
   Admit (pool, f, name, LEN (v)) ;
@@ -510,7 +512,7 @@ END AddBools ;
 
 PROCEDURE AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
                    KEPT v: SLICE OF STR)
-  RAISES SizeError, Duplicate =
+  RAISES Faults.SizeError, Duplicate =
 VAR
   c : Col ;
   bigger : SLICE OF StrTab ;
@@ -562,21 +564,11 @@ BEGIN
   RETURN f.cols[c].name
 END NameAt ;
 
-PROCEDURE Eq (RO a, b: STR) : BOOL =
-VAR i : I64 ;
-BEGIN
-  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
-  FOR i := 0 TO LEN (a) - 1 DO
-    IF a[i] # b[i] THEN RETURN FALSE END
-  END ;
-  RETURN TRUE
-END Eq ;
-
 PROCEDURE Find (f: PTR Fr ; RO name: STR) : I64 =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO f.ncols - 1 DO
-    IF Eq (f.cols[i].name, name) THEN RETURN i END
+    IF DynStr.Eq (f.cols[i].name, name) THEN RETURN i END
   END ;
   RETURN -1
 END Find ;
@@ -660,7 +652,7 @@ END ColStrs ;
 (* ---- CSV ---- *)
 
 PROCEDURE FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool
-  RAISES SizeError, Duplicate, IndexError, ValueRange =
+  RAISES Faults.SizeError, Duplicate, IndexError, ValueRange =
 VAR
   f : PTR Fr IN pool ;
   c, r : I64 ;
@@ -793,14 +785,14 @@ END WriteCsv ;
 PROCEDURE NewTs (VAR pool: POOL ; KEPT f: PTR Fr ; KEPT time: SLICE OF I64 ;
                  res: I64 ; conv: Conv ; RO descr: STR)
   : PTR Ts IN pool
-  RAISES SizeError, Disorder, BadArg =
+  RAISES Faults.SizeError, Disorder, Faults.BadArg =
 VAR
   ts : PTR Ts IN pool ;
   i : I64 ;
 BEGIN
-  IF res <= 0 THEN RAISE BadArg ('resolution must be positive') END ;
+  IF res <= 0 THEN RAISE Faults.BadArg ('resolution must be positive') END ;
   IF LEN (time) # f.rows THEN
-    RAISE SizeError (LEN (time), f.rows)
+    RAISE Faults.SizeError (LEN (time), f.rows)
   END ;
   FOR i := 1 TO LEN (time) - 1 DO
     IF time[i] <= time[i - 1] THEN RAISE Disorder (i) END ;
@@ -881,7 +873,7 @@ END LabelOf ;
 PROCEDURE Average (VAR pool: POOL ; KEPT ts: PTR Ts ; toRes: I64 ;
                    how: SLICE OF How ; minCount: I64)
   : PTR Ts IN pool
-  RAISES SizeError, WrongType, BadArg, ValueRange, Overflow,
+  RAISES Faults.SizeError, WrongType, Faults.BadArg, ValueRange, Overflow,
          IndexError =
 VAR
   out : PTR Fr IN pool ;
@@ -891,10 +883,10 @@ VAR
   n, nwin, r, c, w, prev, ws : I64 ;
 BEGIN
   IF toRes <= 0 OR toRes MOD ts.res # 0 THEN
-    RAISE BadArg ('toRes must be a positive multiple of the resolution')
+    RAISE Faults.BadArg ('toRes must be a positive multiple of the resolution')
   END ;
   IF LEN (how) # ts.f.ncols THEN
-    RAISE SizeError (LEN (how), ts.f.ncols)
+    RAISE Faults.SizeError (LEN (how), ts.f.ncols)
   END ;
   n := ts.f.rows ;
   (* pass 1: window of every row, count distinct (times ascend) *)
@@ -936,7 +928,7 @@ END Average ;
 PROCEDURE Reduce (VAR pool: POOL ; src: PTR Fr ; VAR out: PTR Fr ;
                   RO c: Col ;
                   h: How ; win: SLICE OF I64 ; nwin, minCount: I64)
-  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+  RAISES WrongType, Faults.SizeError, ValueRange, Overflow, IndexError =
 BEGIN
   CASE c.data OF
   | F64s (v, m) : ReduceF64 (pool, out, c, v, m, h, win, nwin, minCount)
@@ -960,7 +952,7 @@ END Carry ;
 PROCEDURE ReduceF64 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
                      v: SLICE OF F64 ; miss: F64 ; h: How ;
                      win: SLICE OF I64 ; nwin, minCount: I64)
-  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+  RAISES WrongType, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   acc, o64 : SLICE OF F64 ;
   cnt : SLICE OF I64 ;
@@ -1035,7 +1027,7 @@ END ReduceF64 ;
 PROCEDURE ReduceF32 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
                      v: SLICE OF F32 ; miss: F32 ; h: How ;
                      win: SLICE OF I64 ; nwin, minCount: I64)
-  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+  RAISES WrongType, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   wide : SLICE OF F64 ;
   r : I64 ;
@@ -1054,7 +1046,7 @@ END ReduceF32 ;
 PROCEDURE ReduceI64 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
                      v: SLICE OF I64 ; miss: I64 ; h: How ;
                      win: SLICE OF I64 ; nwin, minCount: I64)
-  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+  RAISES WrongType, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   acc, oi : SLICE OF I64 ;
   cnt : SLICE OF I64 ;
@@ -1114,7 +1106,7 @@ END ReduceI64 ;
 PROCEDURE ReduceI32 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
                      v: SLICE OF I32 ; miss: I32 ; h: How ;
                      win: SLICE OF I64 ; nwin, minCount: I64)
-  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+  RAISES WrongType, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   wide : SLICE OF I64 ;
   narrow : SLICE OF I32 ;
@@ -1144,7 +1136,7 @@ END ReduceI32 ;
 PROCEDURE ReduceI16 (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
                      v: SLICE OF I16 ; miss: I16 ; h: How ;
                      win: SLICE OF I64 ; nwin, minCount: I64)
-  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+  RAISES WrongType, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   wide : SLICE OF I64 ;
   narrow : SLICE OF I16 ;
@@ -1173,7 +1165,7 @@ END ReduceI16 ;
 PROCEDURE ReduceBytes (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
                        v: SLICE OF BYTE ; miss: BYTE ; h: How ;
                        win: SLICE OF I64 ; nwin, minCount: I64)
-  RAISES WrongType, SizeError, ValueRange, Overflow, IndexError =
+  RAISES WrongType, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   wide : SLICE OF I64 ;
   narrow : SLICE OF BYTE ;
@@ -1210,7 +1202,7 @@ END ReduceBytes ;
 PROCEDURE ReduceBools (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
                        v: SLICE OF BOOL ; h: How ;
                        win: SLICE OF I64 ; nwin: I64)
-  RAISES WrongType, SizeError, IndexError =
+  RAISES WrongType, Faults.SizeError, IndexError =
   (* Lo is ALL (a FALSE anywhere wins), Hi is ANY, First/Last are
      positional -- polars' own min/max/first/last over booleans.
      Mean and Sum are refused: a boolean has no arithmetic. *)
@@ -1264,7 +1256,7 @@ END ReduceBools ;
 PROCEDURE ReduceStrs (VAR pool: POOL ; VAR out: PTR Fr ; RO c: Col ;
                       v: SLICE OF STR ; h: How ;
                       win: SLICE OF I64 ; nwin: I64)
-  RAISES WrongType, SizeError, IndexError =
+  RAISES WrongType, Faults.SizeError, IndexError =
 VAR
   o : SLICE OF STR ;
   first : SLICE OF BOOL ;
@@ -1308,7 +1300,7 @@ END ReduceStrs ;
 (* ---- make contiguous ---- *)
 
 PROCEDURE MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool
-  RAISES SizeError, Duplicate, Disorder, BadArg, WrongType,
+  RAISES Faults.SizeError, Duplicate, Disorder, Faults.BadArg, WrongType,
          ValueRange, Overflow, IndexError =
 VAR
   out : PTR Fr IN pool ;
@@ -1318,7 +1310,7 @@ VAR
   n, total, r, i, c : I64 ;
 BEGIN
   n := ts.f.rows ;
-  IF n = 0 THEN RAISE BadArg ('an empty frame has no first period') END ;
+  IF n = 0 THEN RAISE Faults.BadArg ('an empty frame has no first period') END ;
   total := (ts.time[n - 1] - ts.time[0]) DIV ts.res + 1 ;
   otime := NEW (pool, I64, total) ;
   at := NEW (pool, I64, total) ;
@@ -1345,7 +1337,7 @@ END MakeContiguous ;
 PROCEDURE Fill (VAR pool: POOL ; src: PTR Fr ; VAR out: PTR Fr ;
                 RO c: Col ;
                 at: SLICE OF I64 ; total: I64)
-  RAISES SizeError, Duplicate, WrongType, ValueRange, Overflow,
+  RAISES Faults.SizeError, Duplicate, WrongType, ValueRange, Overflow,
          IndexError =
 VAR
   i : I64 ;
@@ -1434,7 +1426,7 @@ END NcMeta ;
 
 PROCEDURE DefCols (VAR pool: POOL ; src: PTR Fr ; nc: PTR NetCDF.File ;
                    did: I64 ; vids: SLICE OF I64)
-  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
+  RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError =
   (* define mode: one variable per column, typed fill, metadata *)
 VAR
   c, i, w, vid, wdid : I64 ;
@@ -1495,7 +1487,7 @@ END DefCols ;
 
 PROCEDURE PutCols (VAR pool: POOL ; src: PTR Fr ; nc: PTR NetCDF.File ;
                    vids: SLICE OF I64)
-  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
+  RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   c, i, w : I64 ;
   st, ct, st2, ct2 : SLICE OF I64 ;
@@ -1540,7 +1532,7 @@ END PutCols ;
 
 PROCEDURE WriteNc (VAR pool: POOL ; f: PTR Fr ;
                    RO KEPT path: STR ; RO dim: STR)
-  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
+  RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   nc : PTR NetCDF.File IN pool ;
   did : I64 ;
@@ -1565,7 +1557,7 @@ BEGIN
 END ConvName ;
 
 PROCEDURE WriteTsNc (VAR pool: POOL ; ts: PTR Ts ; RO KEPT path: STR)
-  RAISES NetCDF.Error, SizeError, ValueRange, Overflow, IndexError =
+  RAISES NetCDF.Error, Faults.SizeError, ValueRange, Overflow, IndexError =
 VAR
   nc : PTR NetCDF.File IN pool ;
   did, bdid, tvid, bvid, r : I64 ;
@@ -1626,7 +1618,7 @@ END WriteTsNc ;
 
 PROCEDURE ReadCol (VAR pool: POOL ; VAR f: PTR Fr ;
                    nc: PTR NetCDF.File ; vid, n: I64 ; RO name: STR)
-  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange,
+  RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, ValueRange,
          Overflow, IndexError =
 VAR
   t, w, i : I64 ;
@@ -1705,7 +1697,7 @@ BEGIN
         ELSIF I64 (vb[i]) = 0 THEN
           vbo[i] := FALSE
         ELSE
-          RAISE BadArg (name)
+          RAISE Faults.BadArg (name)
         END
       END ;
       AddBools (pool, f, name, vbo)
@@ -1722,7 +1714,7 @@ BEGIN
   ELSE
     (* a column that silently vanished is the failure this module
        exists to prevent *)
-    RAISE BadArg (name)
+    RAISE Faults.BadArg (name)
   END ;
   IF NetCDF.HasAtt (nc, vid, 'units') THEN
     SetMeta2 (pool, f, name, '', '', NetCDF.GetAttStr (pool, nc, vid,
@@ -1749,7 +1741,7 @@ EXCEPT
 END SetMeta2 ;
 
 PROCEDURE FromNc (VAR pool: POOL ; RO KEPT path: STR ; RO dim: STR) : PTR Fr
-  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, ValueRange,
+  RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, ValueRange,
          Overflow, IndexError =
 VAR
   nc : PTR NetCDF.File IN pool ;
@@ -1778,7 +1770,7 @@ END FromNc ;
 
 PROCEDURE ParseSince (VAR pool: POOL ; RO units: STR ;
                       VAR mult, base: I64)
-  RAISES BadArg, ValueRange =
+  RAISES Faults.BadArg, ValueRange =
   (* 'seconds|minutes|hours|days since YYYY-MM-DD[ hh:mm:ss][zone]',
      zone empty, 'Z', 'UTC' or '+00:00'; anything else refused WITH
      THE STRING, because a wrong time axis is an hour of silent
@@ -1798,7 +1790,7 @@ BEGIN
   ELSIF Starts (units, 'days since ') THEN
     mult := 86400 ; i := 11
   ELSE
-    RAISE BadArg (units)
+    RAISE Faults.BadArg (units)
   END ;
   y := Num (units, i, 4) ;
   mo := Num (units, i + 5, 2) ;
@@ -1815,12 +1807,12 @@ BEGIN
      welcome; anything else is refused *)
   WHILE k < LEN (units) AND units[k] = ' ' DO k := k + 1 END ;
   IF k < LEN (units) THEN
-    IF NOT (Eq (SLICE (units, k, LEN (units) - k), 'Z')
-            OR Eq (SLICE (units, k, LEN (units) - k), 'UTC')
-            OR Eq (SLICE (units, k, LEN (units) - k), '+00:00')
-            OR Eq (SLICE (units, k, LEN (units) - k), '+0000')
-            OR Eq (SLICE (units, k, LEN (units) - k), '00:00')) THEN
-      RAISE BadArg (units)
+    IF NOT (DynStr.Eq (SLICE (units, k, LEN (units) - k), 'Z')
+            OR DynStr.Eq (SLICE (units, k, LEN (units) - k), 'UTC')
+            OR DynStr.Eq (SLICE (units, k, LEN (units) - k), '+00:00')
+            OR DynStr.Eq (SLICE (units, k, LEN (units) - k), '+0000')
+            OR DynStr.Eq (SLICE (units, k, LEN (units) - k), '00:00')) THEN
+      RAISE Faults.BadArg (units)
     END
   END ;
   c.year := y ;
@@ -1844,21 +1836,21 @@ BEGIN
 END Starts ;
 
 PROCEDURE Num (RO s: STR ; at, n: I64) : I64
-  RAISES BadArg, ValueRange =
+  RAISES Faults.BadArg, ValueRange =
 VAR
   i, v : I64 ;
 BEGIN
-  IF at + n > LEN (s) THEN RAISE BadArg (s) END ;
+  IF at + n > LEN (s) THEN RAISE Faults.BadArg (s) END ;
   v := 0 ;
   FOR i := at TO at + n - 1 DO
-    IF s[i] < '0' OR s[i] > '9' THEN RAISE BadArg (s) END ;
+    IF s[i] < '0' OR s[i] > '9' THEN RAISE Faults.BadArg (s) END ;
     v := v * 10 + (ORD (s[i]) - 48)
   END ;
   RETURN v
 END Num ;
 
 PROCEDURE TsFromNc (VAR pool: POOL ; RO KEPT path: STR) : PTR Ts
-  RAISES NetCDF.Error, BadArg, SizeError, Duplicate, Disorder,
+  RAISES NetCDF.Error, Faults.BadArg, Faults.SizeError, Duplicate, Disorder,
          ValueRange, Overflow, IndexError =
 VAR
   nc : PTR NetCDF.File IN pool ;
@@ -1910,7 +1902,7 @@ BEGIN
     rank := NetCDF.VarRank (nc, vid) ;
     vdims := NetCDF.VarDims (pool, nc, vid) ;
     nm := NetCDF.VarName (pool, nc, vid) ;
-    IF vid # tvid AND NOT Eq (nm, 'time_bnds')
+    IF vid # tvid AND NOT DynStr.Eq (nm, 'time_bnds')
        AND rank >= 1 AND vdims[0] = did
        AND (rank = 1 OR (rank = 2
                          AND NetCDF.VarType (nc, vid)
@@ -1924,9 +1916,9 @@ BEGIN
   IF NetCDF.HasAtt (nc, NetCDF.Global, 'frame_time_convention') THEN
     cn := NetCDF.GetAttStr (pool, nc, NetCDF.Global,
                             'frame_time_convention') ;
-    IF Eq (cn, 'end') THEN
+    IF DynStr.Eq (cn, 'end') THEN
       conv := Conv.AtEnd
-    ELSIF Eq (cn, 'mid') THEN
+    ELSIF DynStr.Eq (cn, 'mid') THEN
       conv := Conv.AtMid
     END
   END ;

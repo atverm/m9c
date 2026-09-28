@@ -4,6 +4,8 @@
 #include "m9rt.h"
 #include "DynStr.h"
 
+void Syslog_m9init (m9_state *err);
+
 
 #define Syslog_Emerg INT64_C(0)
 #define Syslog_Alert INT64_C(1)

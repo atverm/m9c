@@ -198,6 +198,29 @@ int main (void)
     ok ("Erf of NaN raises ValueRange", e2.exc == &m9_exc_ValueRange);
   }
 
+  /* the extrema (2026-09-27): integer ones total but for MIN (I64),
+     real ones refusing a NaN like every checked Math procedure */
+  {
+    m9_state e3 = {0};
+    ok ("AbsI64 (-7) = 7", Math_AbsI64 (-7, &e3) == 7);
+    ok ("AbsI64 (5) = 5", Math_AbsI64 (5, &e3) == 5);
+    ok ("MinI64 / MaxI64", Math_MinI64 (3, -2, &e3) == -2 &&
+        Math_MaxI64 (3, -2, &e3) == 3);
+    ok ("ClampI64 inside, below, above",
+        Math_ClampI64 (5, 0, 10, &e3) == 5 &&
+        Math_ClampI64 (-5, 0, 10, &e3) == 0 &&
+        Math_ClampI64 (50, 0, 10, &e3) == 10);
+    ok ("Min / Max / Clamp on F64",
+        Math_Min (1.5, -2.5, &e3) == -2.5 && Math_Max (1.5, -2.5, &e3) == 1.5 &&
+        Math_Clamp (7.0, 0.0, 1.0, &e3) == 1.0);
+    ok ("extrema raised nothing", e3.exc == NULL);
+    Math_AbsI64 (INT64_MIN, &e3);
+    ok ("AbsI64 (MIN) raises Overflow", e3.exc == &m9_exc_Overflow);
+    e3.exc = NULL;
+    Math_Min (nan (""), 1.0, &e3);
+    ok ("Min of NaN raises ValueRange", e3.exc == &m9_exc_ValueRange);
+  }
+
   printf (failed ? "FAIL (%d of %d checks)\n" : "PASS (%d checks)\n",
           failed ? failed : checks, checks);
   return failed != 0;

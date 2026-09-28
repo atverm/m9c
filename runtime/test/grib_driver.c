@@ -114,7 +114,7 @@ int main (void)
     double small[4];
     Grib_Values (m, (m9_sl_F64){ small, 4 }, &e);
     ok ("a buffer smaller than the field raises SizeError",
-        e.exc == &Grib_SizeError && e.i[0] == 4 && e.i[1] == NVALUES);
+        e.exc == &Faults_SizeError && e.i[0] == 4 && e.i[1] == NVALUES);
     e.exc = NULL;
   }
 

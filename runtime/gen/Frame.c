@@ -7,13 +7,12 @@
 #include "Fmt.h"
 #include "Time.h"
 #include "NetCDF.h"
+#include "Faults.h"
 
 const m9_exc Frame_Unknown = { "Unknown" };
 const m9_exc Frame_WrongType = { "WrongType" };
 const m9_exc Frame_Duplicate = { "Duplicate" };
-const m9_exc Frame_SizeError = { "SizeError" };
 const m9_exc Frame_Disorder = { "Disorder" };
-const m9_exc Frame_BadArg = { "BadArg" };
 
 extern double m9_strtod (const void *);
 extern double m9_strtof (const void *);
@@ -213,7 +212,6 @@ static void Frame_Grow (m9_pool *pool, Frame_Fr * *f, m9_state *err);
 static void Frame_Admit (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, int64_t n, m9_state *err);
 static Frame_Col Frame_Blank (m9_pool *pool, m9_sl_CHAR name, m9_state *err);
 static m9_sl_CHAR Frame_Copy (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
-static bool Frame_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
 static bool Frame_IsNaN64 (double v, m9_state *err);
 static bool Frame_IsNaN32 (float v, m9_state *err);
 static void Frame_PutF64 (m9_pool *pool, DynStr_DString * *d, double v, double miss, m9_state *err);
@@ -254,7 +252,7 @@ Frame_Fr * Frame_New (m9_pool *pool, int64_t rows, m9_state *err)
   if ((rows < INT64_C(0))) {
     err->i[0] = rows;
     err->i[1] = INT64_C(0);
-    m9_raise (err, &Frame_SizeError);
+    m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
   f = (Frame_Fr *) m9_pool_alloc (&((*pool)), sizeof (Frame_Fr), 1, err);
@@ -569,7 +567,7 @@ int64_t Frame_Find (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9t1to = m9_sub_i64 (f->ncols, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    bool m9t2 = Frame_Eq ((*(Frame_Col *) m9_at (f->cols.p, i, f->cols.len, sizeof (Frame_Col), err)).name, name, err);
+    bool m9t2 = DynStr_Eq ((*(Frame_Col *) m9_at (f->cols.p, i, f->cols.len, sizeof (Frame_Col), err)).name, name, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -2188,7 +2186,7 @@ Frame_Ts * Frame_TsFromNc (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     if (err->exc) goto L_ret;
     nm = NetCDF_VarName (pool, nc, vid, err);
     if (err->exc) goto L_ret;
-    bool m9t6 = (((((vid != tvid) && (!Frame_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s23, 9 }), err))) && (rank >= INT64_C(1))) && ((*(int64_t *) m9_at (vdims.p, INT64_C(0), vdims.len, sizeof (int64_t), err)) == did)) && (((rank == INT64_C(1)) || (((rank == INT64_C(2)) && (NetCDF_VarType (nc, vid, err) == NetCDF_TypeChar))))));
+    bool m9t6 = (((((vid != tvid) && (!DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s23, 9 }), err))) && (rank >= INT64_C(1))) && ((*(int64_t *) m9_at (vdims.p, INT64_C(0), vdims.len, sizeof (int64_t), err)) == did)) && (((rank == INT64_C(1)) || (((rank == INT64_C(2)) && (NetCDF_VarType (nc, vid, err) == NetCDF_TypeChar))))));
     if (err->exc) goto L_ret;
     if (m9t6) {
       Frame_ReadCol (pool, &(f), nc, vid, n, nm, err);
@@ -2201,12 +2199,12 @@ Frame_Ts * Frame_TsFromNc (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   if (m9t7) {
     cn = NetCDF_GetAttStr (pool, nc, NetCDF_Global, ((m9_sl_CHAR){ (uint32_t *) m9s25, 21 }), err);
     if (err->exc) goto L_ret;
-    bool m9t8 = Frame_Eq (cn, ((m9_sl_CHAR){ (uint32_t *) m9s26, 3 }), err);
+    bool m9t8 = DynStr_Eq (cn, ((m9_sl_CHAR){ (uint32_t *) m9s26, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t8) {
       conv = ((Frame_Conv){ .tag = Frame_Conv_AtEnd });
     } else {
-      bool m9t9 = Frame_Eq (cn, ((m9_sl_CHAR){ (uint32_t *) m9s27, 3 }), err);
+      bool m9t9 = DynStr_Eq (cn, ((m9_sl_CHAR){ (uint32_t *) m9s27, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t9) {
         conv = ((Frame_Conv){ .tag = Frame_Conv_AtMid });
@@ -2264,13 +2262,13 @@ Frame_Ts * Frame_NewTs (m9_pool *pool, Frame_Fr * f, m9_sl_I64 time, int64_t res
   int64_t i = 0; (void) i;
   if ((res <= INT64_C(0))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s32, 27 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s32, 27 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
-    m9_raise (err, &Frame_BadArg);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if (((time).len != f->rows)) {
     err->i[0] = (time).len;
     err->i[1] = f->rows;
-    m9_raise (err, &Frame_SizeError);
+    m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
   { int64_t m9t2to;
@@ -2557,13 +2555,13 @@ Frame_Ts * Frame_Average (m9_pool *pool, Frame_Ts * ts, int64_t toRes, m9_sl_Fra
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s33, 51 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s33, 51 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-    m9_raise (err, &Frame_BadArg);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if (((how).len != ts->f->ncols)) {
     err->i[0] = (how).len;
     err->i[1] = ts->f->ncols;
-    m9_raise (err, &Frame_SizeError);
+    m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
   n = ts->f->rows;
@@ -2645,7 +2643,7 @@ Frame_Ts * Frame_MakeContiguous (m9_pool *pool, Frame_Ts * ts, m9_state *err)
   n = ts->f->rows;
   if ((n == INT64_C(0))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s34, 34 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s34, 34 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
-    m9_raise (err, &Frame_BadArg);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   total = m9_add_i64 (m9_div_i64 ((m9_sub_i64 ((*(int64_t *) m9_at (ts->time.p, m9_sub_i64 (n, INT64_C(1), err), ts->time.len, sizeof (int64_t), err)), (*(int64_t *) m9_at (ts->time.p, INT64_C(0), ts->time.len, sizeof (int64_t), err)), err)), ts->res, err), INT64_C(1), err);
@@ -2752,7 +2750,7 @@ static void Frame_Admit (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, int64_t 
   if ((n != (*f)->rows)) {
     err->i[0] = n;
     err->i[1] = (*f)->rows;
-    m9_raise (err, &Frame_SizeError);
+    m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
   bool m9t1 = (Frame_Find ((*f), name, err) >= INT64_C(0));
@@ -2817,41 +2815,6 @@ static m9_sl_CHAR Frame_Copy (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
-static bool Frame_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  bool m9ret = false;
-  int64_t i = 0; (void) i;
-  if (((a).len != (b).len)) {
-    err->res = m9res;
-    m9ret = false;
-    goto L_ret;
-  }
-  { int64_t m9t1to;
-  i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    bool m9t2 = ((*(uint32_t *) m9_at (a.p, i, a.len, sizeof (uint32_t), err)) != (*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)));
-    if (err->exc) goto L_ret;
-    if (m9t2) {
-      err->res = m9res;
-      m9ret = false;
-      goto L_ret;
-    }
-  } }
-  err->res = m9res;
-  m9ret = true;
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -4616,7 +4579,7 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64
               if (err->exc) goto L_ret;
           } else {
             { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
-            m9_raise (err, &Frame_BadArg);
+            m9_raise (err, &Faults_BadArg);
             goto L_ret;
           } }
         } }
@@ -4642,7 +4605,7 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64
       if (err->exc) goto L_ret;
   } else {
     { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
-    m9_raise (err, &Frame_BadArg);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   } } } } } } }
   bool m9t7 = NetCDF_HasAtt (nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s44, 5 }), err);
@@ -4735,7 +4698,7 @@ static void Frame_ParseSince (m9_pool *pool, m9_sl_CHAR units, int64_t *mult, in
       i = INT64_C(11);
   } else {
     { __typeof__(units) m9t5 = units; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
-    m9_raise (err, &Frame_BadArg);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   } } } }
   y = Frame_Num (units, i, INT64_C(4), err);
@@ -4769,11 +4732,11 @@ static void Frame_ParseSince (m9_pool *pool, m9_sl_CHAR units, int64_t *mult, in
     if (err->exc) goto L_ret;
   }
   if ((k < (units).len)) {
-    bool m9t14 = (!(((((Frame_Eq (({ __typeof__(units) m9t9 = units; int64_t m9t9a = k, m9t9n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s54, 1 }), err) || Frame_Eq (({ __typeof__(units) m9t10 = units; int64_t m9t10a = k, m9t10n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s55, 3 }), err)) || Frame_Eq (({ __typeof__(units) m9t11 = units; int64_t m9t11a = k, m9t11n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t11)){ m9t11.p + m9_chk_slice (m9t11a, m9t11n, m9t11.len, err), m9t11n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s56, 6 }), err)) || Frame_Eq (({ __typeof__(units) m9t12 = units; int64_t m9t12a = k, m9t12n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t12)){ m9t12.p + m9_chk_slice (m9t12a, m9t12n, m9t12.len, err), m9t12n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s57, 5 }), err)) || Frame_Eq (({ __typeof__(units) m9t13 = units; int64_t m9t13a = k, m9t13n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s58, 5 }), err))));
+    bool m9t14 = (!(((((DynStr_Eq (({ __typeof__(units) m9t9 = units; int64_t m9t9a = k, m9t9n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s54, 1 }), err) || DynStr_Eq (({ __typeof__(units) m9t10 = units; int64_t m9t10a = k, m9t10n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s55, 3 }), err)) || DynStr_Eq (({ __typeof__(units) m9t11 = units; int64_t m9t11a = k, m9t11n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t11)){ m9t11.p + m9_chk_slice (m9t11a, m9t11n, m9t11.len, err), m9t11n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s56, 6 }), err)) || DynStr_Eq (({ __typeof__(units) m9t12 = units; int64_t m9t12a = k, m9t12n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t12)){ m9t12.p + m9_chk_slice (m9t12a, m9t12n, m9t12.len, err), m9t12n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s57, 5 }), err)) || DynStr_Eq (({ __typeof__(units) m9t13 = units; int64_t m9t13a = k, m9t13n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s58, 5 }), err))));
     if (err->exc) goto L_ret;
     if (m9t14) {
       { __typeof__(units) m9t15 = units; err->s[0].p = m9t15.p; err->s[0].len = m9t15.len; }
-      m9_raise (err, &Frame_BadArg);
+      m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
   }
@@ -4841,7 +4804,7 @@ static int64_t Frame_Num (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t1) {
     { __typeof__(s) m9t2 = s; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-    m9_raise (err, &Frame_BadArg);
+    m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   v = INT64_C(0);
@@ -4854,7 +4817,7 @@ static int64_t Frame_Num (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t4) {
       { __typeof__(s) m9t5 = s; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
-      m9_raise (err, &Frame_BadArg);
+      m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
     v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
@@ -4867,4 +4830,26 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
+}
+
+void Frame_m9init (m9_state *err)
+{
+  static int m9done = 0;
+  if (m9done) return;
+  m9done = 1;
+  m9_pool m9frame = {0};
+  m9_pool *m9prev = err->res;
+  err->res = &m9frame;
+  Csv_m9init (err); if (err->exc) goto L_ret;
+  Io_m9init (err); if (err->exc) goto L_ret;
+  Math_m9init (err); if (err->exc) goto L_ret;
+  DynStr_m9init (err); if (err->exc) goto L_ret;
+  Fmt_m9init (err); if (err->exc) goto L_ret;
+  Time_m9init (err); if (err->exc) goto L_ret;
+  NetCDF_m9init (err); if (err->exc) goto L_ret;
+  Faults_m9init (err); if (err->exc) goto L_ret;
+L_ret: ;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&m9frame);
+  err->res = m9prev;
 }

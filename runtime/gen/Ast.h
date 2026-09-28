@@ -3,6 +3,8 @@
 #define M9G_Ast_H
 #include "m9rt.h"
 
+void Ast_m9init (m9_state *err);
+
 typedef struct Ast_Node Ast_Node;
 
 #define Ast_NFile INT64_C(0)
@@ -88,6 +90,7 @@ typedef struct Ast_Node Ast_Node;
 #define Ast_NArgList INT64_C(80)
 #define Ast_NGridType INT64_C(81)
 #define Ast_NEnumType INT64_C(82)
+#define Ast_NProcType INT64_C(83)
 
 #ifndef M9SL_m9_sl_Ast_Nodep
 #define M9SL_m9_sl_Ast_Nodep

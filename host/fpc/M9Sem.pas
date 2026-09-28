@@ -135,6 +135,9 @@ type
     function IsTagged (const canon: string): Boolean;
     function EnumConvType (const name: string): string;
     function CanonT (t: TNode; depth: Integer): string;
+    function ProcSig (pl, rt: TNode; ro: Boolean; rs: TNode;
+                      depth: Integer): string;
+    function IsBareProc (t: TNode): Boolean;
     function IsReadonlyT (declN, res: TNode): Boolean;
     procedure CheckThreadChains;
   public
@@ -233,6 +236,64 @@ end;
 { assignment compatibility: may a src value land where dst is
   expected?  '' (unknown) is compatible with everything: softness
   is the contract.  Literals adapt; nothing else converts.          }
+{ the range of an integer width a literal is stored into; False for a
+  type that is not a narrow integer -- I64 holds every literal the
+  lexer accepts, and U64's upper half cannot be spelled as one }
+function LitRange (const t: string; out lo, hi: Int64): Boolean;
+begin
+  lo := 0; hi := 0;
+  Result := True;
+  if t = 'I8' then begin lo := -128; hi := 127; Exit; end;
+  if t = 'I16' then begin lo := -32768; hi := 32767; Exit; end;
+  if t = 'I32' then begin lo := -2147483648; hi := 2147483647; Exit; end;
+  if (t = 'U8') or (t = 'BYTE') then begin lo := 0; hi := 255; Exit; end;
+  if t = 'U16' then begin lo := 0; hi := 65535; Exit; end;
+  if t = 'U32' then begin lo := 0; hi := 4294967295; Exit; end;
+  if t = 'U64' then begin lo := 0; hi := 9223372036854775807; Exit; end;
+  Result := False;
+end;
+
+{ a decimal literal node's value, negated when asked; False for a hex
+  literal (a bit pattern, left to the width it names) or one too long
+  to hold }
+function LitVal (lit: TNode; neg: Boolean; out v: Int64): Boolean;
+var
+  i : Integer;
+begin
+  v := 0;
+  if lit.kind <> nkInt then Exit (False);
+  if (Length (lit.a) = 0) or (Length (lit.a) > 18) then Exit (False);
+  for i := 1 to Length (lit.a) do
+    if (lit.a[i] < '0') or (lit.a[i] > '9') then Exit (False);
+  v := StrToInt64 (lit.a);
+  if neg then v := -v;
+  Result := True;
+end;
+
+{ an integer literal stored where a narrow width is expected must fit
+  it.  `s := 40000` for an I16 passed this checker and the C
+  conversion stored -25536 until 2026-09-27 -- the same silence as
+  the narrow arithmetic fixed the same day
+  (docs/agent-review-2026-09-27.md F1).  Mirrors Sem.LitOut. }
+function LitOut (n: TNode; const t: string; out v: Int64): Boolean;
+var
+  lo, hi : Int64;
+begin
+  v := 0;
+  if not LitRange (t, lo, hi) then Exit (False);
+  if (n.kind = nkUn) and (n.a = '-') then
+  begin
+    if (Length (n.kids) > 0) and (n.kids[0] <> nil) then
+    begin
+      if not LitVal (n.kids[0], True, v) then Exit (False);
+      Exit ((v < lo) or (v > hi));
+    end;
+    Exit (False);
+  end;
+  if not LitVal (n, False, v) then Exit (False);
+  Result := (v < lo) or (v > hi);
+end;
+
 function Compat (const dst, src: string): Boolean;
 begin
   if (dst = '<void>') or (src = '<void>') then Exit (False);
@@ -469,10 +530,30 @@ begin
       if (t.b <> '') and not TypeKnown (t.a, t.b) then
         ErrN (t, ctx, 'unknown type: ' + t.a + '.' + t.b + ' -- '
                       + t.a + ' declares no such type');
-    nkPtrType, nkOptType, nkSharedType, nkSliceType :
+    nkPtrType, nkOptType, nkSharedType :
       CheckTypeNode (t.kids[0], ctx);
-    nkArrayType, nkGridType :
+    nkSliceType :
+      begin
+        CheckTypeNode (t.kids[0], ctx);
+        if IsBareProc (t.kids[0]) then
+          ErrN (t, ctx, 'a slice or array of procedure values is not in the language yet (par 2.2.3)');
+      end;
+    nkArrayType :
+      begin
+        CheckTypeNode (t.kids[1], ctx);
+        if IsBareProc (t.kids[1]) then
+          ErrN (t, ctx, 'a slice or array of procedure values is not in the language yet (par 2.2.3)');
+      end;
+    nkGridType :
       CheckTypeNode (t.kids[1], ctx);
+    nkProcType :
+      begin
+        if t.kids[0] <> nil then
+          for i := 0 to High (t.kids[0].kids) do
+            if t.kids[0].kids[i] <> nil then
+              CheckTypeNode (t.kids[0].kids[i].kids[1], ctx);
+        CheckTypeNode (t.kids[1], ctx);
+      end;
     nkRecordType :
       begin
         { kids[0] is the extension base, when there is one }
@@ -492,7 +573,12 @@ var i : Integer;
 begin
   if fs = nil then Exit;
   for i := 0 to High (fs.kids) do
-    if fs.kids[i] <> nil then CheckTypeNode (fs.kids[i].kids[1], ctx);
+    if fs.kids[i] <> nil then
+    begin
+      CheckTypeNode (fs.kids[i].kids[1], ctx);
+      if IsBareProc (fs.kids[i].kids[1]) then
+        ErrN (fs.kids[i], ctx, 'a field of procedure type must be OPT (par 2.2.3)');
+    end;
 end;
 
 procedure TSem.CheckVarTypes (holder: TNode; const ctx: string);
@@ -507,7 +593,12 @@ begin
       begin
         for b := 0 to High (holder.kids[a].kids) do
           if holder.kids[a].kids[b] <> nil then
+          begin
             CheckTypeNode (holder.kids[a].kids[b].kids[1], ctx);
+            if IsBareProc (holder.kids[a].kids[b].kids[1]) then
+              ErrN (holder.kids[a].kids[b], ctx,
+                'a variable of procedure type must be OPT (par 2.2.3)');
+          end;
       end
       else if holder.kids[a].kind = nkTypeSection then
       begin
@@ -537,6 +628,9 @@ begin
         if pl.kids[a] <> nil then
           CheckTypeNode (pl.kids[a].kids[1], u.a + '.' + d.a);
     CheckTypeNode (d.kids[1], u.a + '.' + d.a);
+    if IsBareProc (d.kids[1]) then
+      ErrN (d, u.a + '.' + d.a,
+        'a procedure cannot answer a procedure value (par 2.2.3)');
     if d.kids[4] <> nil then
       CheckVarTypes (d.kids[4], u.a + '.' + d.a);
   end;
@@ -958,12 +1052,94 @@ begin
   end;
 end;
 
+{ the canonical text of a procedure type, or of a procedure's head
+  (par 2.2.3): the parameter modes and types with no names, the result
+  with its RO, and the RAISES names bare and sorted.  Two procedure
+  types are the same type exactly when this text is the same, and a
+  procedure fits a procedure type exactly when its head renders the
+  same -- RAISES included, to the letter.  Mirrors Sem.ProcSig. }
+function TSem.ProcSig (pl, rt: TNode; ro: Boolean; rs: TNode;
+                       depth: Integer): string;
+var
+  g, j, i, k : Integer;
+  first : Boolean;
+  s, tmp : string;
+  names : array of string;
+begin
+  Result := 'PROCEDURE (';
+  first := True;
+  if pl <> nil then
+    for g := 0 to High (pl.kids) do
+      if pl.kids[g] <> nil then
+      begin
+        s := CanonT (pl.kids[g].kids[1], depth + 1);
+        if s = '' then Exit ('');
+        if pl.kids[g].kids[0] <> nil then
+          for j := 0 to High (pl.kids[g].kids[0].kids) do
+          begin
+            if not first then Result := Result + ' ; ';
+            first := False;
+            if pl.kids[g].f1 then Result := Result + 'VAR ';
+            if pl.kids[g].f2 then Result := Result + 'OWN ';
+            if pl.kids[g].f3 then Result := Result + 'RO ';
+            if pl.kids[g].f4 then Result := Result + 'KEPT ';
+            Result := Result + s;
+          end;
+      end;
+  Result := Result + ')';
+  if rt <> nil then
+  begin
+    s := CanonT (rt, depth + 1);
+    if s = '' then Exit ('');
+    Result := Result + ' : ';
+    if ro then Result := Result + 'RO ';
+    Result := Result + s;
+  end;
+  if rs <> nil then
+  begin
+    SetLength (names, Length (rs.kids));
+    for i := 0 to High (rs.kids) do
+      if rs.kids[i] <> nil then
+        if rs.kids[i].b <> '' then names[i] := rs.kids[i].b
+        else names[i] := rs.kids[i].a;
+    for i := 1 to High (names) do
+    begin
+      k := i;
+      while (k > 0) and (names[k] < names[k - 1]) do
+      begin
+        tmp := names[k];
+        names[k] := names[k - 1];
+        names[k - 1] := tmp;
+        Dec (k);
+      end;
+    end;
+    Result := Result + ' RAISES ';
+    for i := 0 to High (names) do
+    begin
+      if i > 0 then Result := Result + ', ';
+      Result := Result + names[i];
+    end;
+  end;
+end;
+
+{ does a declared type resolve to a bare procedure type?  The four
+  refusals of par 2.2.3 ask this: a variable or field of procedure
+  type must be OPT, because a procedure value has no zero. }
+function TSem.IsBareProc (t: TNode): Boolean;
+var r : TNode;
+begin
+  r := ResolveType (t);
+  Result := (r <> nil) and (r.kind = nkProcType);
+end;
+
 function TSem.CanonT (t: TNode; depth: Integer): string;
 var s : string;
 begin
   Result := '';
   if (t = nil) or (depth > 8) then Exit;
   case t.kind of
+    nkProcType :
+      Result := ProcSig (t.kids[0], t.kids[1], t.f3, t.kids[2], depth);
     nkQualident :
       if t.b <> '' then
       begin
@@ -1898,6 +2074,8 @@ var
     pl, grp, vfields, ares, dcl : TNode;
     isVar : Boolean;
     flat : array of TNode;
+    ptn, sty : TNode;                { a call through a procedure value }
+    haveHead : Boolean;
 
     procedure Arity (want: Integer);
     begin
@@ -2099,7 +2277,39 @@ var
       Arity (1);
       Exit (name);
     end;
-    if LookupProcInfo (name, pr) then
+    { a call THROUGH A PROCEDURE VALUE (par 2.2.3): a parameter or an
+      IS SOME binder whose type is a procedure type.  The type's own
+      head stands in for the callee's declaration and the same checks
+      run over it; nothing is known about which procedure runs, so a
+      PURE body may not make the call.  Mirrors Sem.CallType. }
+    haveHead := False;
+    sty := ScopeType (name);
+    if sty <> nil then
+    begin
+      ptn := ResolveType (sty);
+      if (ptn <> nil) and (ptn.kind = nkProcType) then
+      begin
+        if curPure then
+          ErrN (site, ctx, 'PURE procedure calls through the procedure value '
+            + name + ' (par 3.2)');
+        pr.node := ptn;
+        pr.modName := '';
+        if (sty.kind = nkQualident) and (sty.b <> '') then
+          pr.modName := sty.a;
+        SetLength (pr.raises, 0);
+        if ptn.kids[2] <> nil then
+        begin
+          SetLength (pr.raises, Length (ptn.kids[2].kids));
+          for j := 0 to High (ptn.kids[2].kids) do
+            if ptn.kids[2].kids[j].b <> '' then
+              pr.raises[j] := ptn.kids[2].kids[j].b
+            else
+              pr.raises[j] := ptn.kids[2].kids[j].a;
+        end;
+        haveHead := True;
+      end;
+    end;
+    if haveHead or LookupProcInfo (name, pr) then
     begin
       for j := 0 to High (pr.raises) do
         if raised.Values[pr.raises[j]] = '' then
@@ -2576,6 +2786,27 @@ var
       nkDesignator :
         begin
           NoteUse (e);
+          { a top-level M9 procedure named as a VALUE has its head's
+            type (par 2.2.3) -- Up, or Mod.Up; a scope name shadows
+            it as it shadows anything.  A foreign procedure is a C
+            symbol with another ABI and no value at all. }
+          if ((Length (e.kids) = 0) or
+              ((Length (e.kids) = 1) and (FindMod (e.a) <> nil))) and
+             (ScopeType (e.a) = nil) and
+             LookupProcInfo (DesigName (e), pr) and (pr.node <> nil) then
+          begin
+            if pr.foreign <> '' then
+            begin
+              ErrN (e, ctx, 'a foreign procedure is not a value: '
+                + DesigName (e) + ' (par 2.2.3)');
+              Exit ('');
+            end;
+            canonCtx := pr.modName;
+            t := ProcSig (pr.node.kids[0], pr.node.kids[1], pr.node.f3,
+                          pr.node.kids[2], 0);
+            canonCtx := '';
+            Exit (t);
+          end;
           { a bare value name known to NO part of the checker's name
             universe is undefined -- the symmetric twin of the
             unknown-procedure check.  Only in ExprType (a body-walk
@@ -2636,6 +2867,10 @@ var
   procedure WalkStmt (st: TNode);
   var
     j, k : Integer;
+    lv : Int64;                      { an out-of-range literal's value }
+    tname, tpTy, taTy, tamode : string;   { THREAD's target and argument }
+    tpr : TProcInfo;
+    tpl, tares : TNode;
     lblTxt : string;                 { a scalar CASE label, printed }
     labelsVariant, hasElse, beyond, haveSelVi : Boolean;
     vi, selVi : TVariantInfo;
@@ -2690,7 +2925,10 @@ var
           else if not Compat (t, u) then
             ErrN (st.kids[1], ctx, Format (
               'cannot assign %s to %s (no implicit conversions, par 2.1)',
-              [TyName (u), TyName (t)]));
+              [TyName (u), TyName (t)]))
+          else if LitOut (st.kids[1], t, lv) then
+            ErrN (st.kids[1], ctx, 'integer literal ' + IntToStr (lv)
+              + ' does not fit ' + TyName (t));
           { P3: borrow-write legality, then the retention ledger --
             a borrowed reference param stored beyond the frame is
             measured, not (yet) rejected: the kill-gate reads it }
@@ -3030,12 +3268,47 @@ var
         end;
       nkThread :
         begin
+          { par 6: the argument held to the target's first parameter,
+            and a bare owned pointer MOVED into the thread.  Mirrors
+            Sem.CheckThread; neither checker looked at the argument
+            before 2026-09-27 (docs/agent-review-2026-09-27.md F2). }
+          taTy := ExprType (st.kids[1]);
           if st.kids[0].kind = nkDesignator then
           begin
+            tname := DesigName (st.kids[0]);
             SetLength (threadRoots, Length (threadRoots) + 1);
-            threadRoots[High (threadRoots)] := DesigName (st.kids[0]);
+            threadRoots[High (threadRoots)] := tname;
+            tpTy := '';
+            if LookupProcInfo (tname, tpr) then
+            begin
+              canonCtx := tpr.modName;
+              tpl := tpr.node.kids[0];
+              if (tpl <> nil) and (Length (tpl.kids) > 0) then
+                tpTy := CanonT (tpl.kids[0].kids[1], 0);
+              canonCtx := '';
+            end;
+            if (tpTy <> '') and (taTy <> '') then
+              if not (Compat (tpTy, taTy) or Compat ('PTR ' + tpTy, taTy) or
+                      Compat ('SHARED PTR ' + tpTy, taTy)) then
+                ErrN (st, ctx, Format (
+                  'THREAD (%s): cannot pass %s where %s is expected',
+                  [tname, TyName (taTy), TyName (tpTy)]));
+            if (st.kids[1].kind = nkDesignator) and
+               (Length (st.kids[1].kids) = 0) then
+            begin
+              tamode := ScopeMode (st.kids[1].a);
+              if not ((tamode = 'p') or (tamode = 'v') or
+                      (tamode = 'b') or (tamode = 'r')) then
+              begin
+                tares := ResolveType (ScopeType (st.kids[1].a));
+                if (tares <> nil) and (tares.kind = nkPtrType) and
+                   (tares.kids[1] = nil) and
+                   (OwnedCandKind (st.kids[1].a) > 0) then
+                  OwnMark (st.kids[1].a,
+                    'moved into a THREAD running ' + tname, st);
+              end;
+            end;
           end;
-          ExprType (st.kids[1]);
         end;
       nkTransfer :
         begin ExprType (st.kids[0]); ExprType (st.kids[1]); end;

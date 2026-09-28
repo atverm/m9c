@@ -42,7 +42,7 @@ COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc M9c"
 # did, and /usr/lib/m9 of that release held no Lsp.m9: the claim had
 # no gate.  debian/tests/compile-a-program builds both now.
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
-         Json Dict Mat Math Time Logger Syslog Http HttpServer OpenApi ApiSpec \
+         Json Dict Faults Mat Math Bits Sort Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc \
          NetCDF Grib Csv Delim Zip Stats System Frame Parquet \
          Plot ZarrStore Zarr Diag Lsp M9fmt"

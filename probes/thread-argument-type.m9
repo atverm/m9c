@@ -1,0 +1,7 @@
+(* EXPECT: THREAD (Work): cannot pass I64 where PTR m.Rec is expected *)
+MODULE m ;
+TYPE Rec = RECORD n : I64 ; END ;
+VAR x : I64 ;
+PROCEDURE Work (r: PTR Rec) = BEGIN x := r.n END Work ;
+PROCEDURE F () = BEGIN THREAD (Work, x) END F ;
+END m.

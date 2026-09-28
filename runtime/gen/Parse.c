@@ -993,7 +993,43 @@ static Ast_Node * Parse_PType (m9_pool *pool, Parse_Parser *p, m9_state *err)
       err->res = m9res;
       m9ret = n;
       goto L_ret;
-  } } } } } } } } } } } }
+  } else {
+    if (((*p).cur.kind == Parse_TkPROCEDURE)) {
+      n = Parse_Nn (pool, p, Ast_NProcType, err);
+      if (err->exc) goto L_ret;
+      Parse_Bump (p, err);
+      if (err->exc) goto L_ret;
+      Parse_Expect (p, Parse_TkLParen, err);
+      if (err->exc) goto L_ret;
+      Ast_Add (pool, &(n), Parse_PParamList (pool, p, err), err);
+      if (err->exc) goto L_ret;
+      Parse_Expect (p, Parse_TkRParen, err);
+      if (err->exc) goto L_ret;
+      if (((*p).cur.kind == Parse_TkColon)) {
+        Parse_Bump (p, err);
+        if (err->exc) goto L_ret;
+        if (((*p).cur.kind == Parse_TkRO)) {
+          n->f3 = true;
+          Parse_Bump (p, err);
+          if (err->exc) goto L_ret;
+        }
+        Ast_Add (pool, &(n), Parse_PType (pool, p, err), err);
+        if (err->exc) goto L_ret;
+      } else {
+        Ast_Add (pool, &(n), NULL, err);
+        if (err->exc) goto L_ret;
+      }
+      if (((*p).cur.kind == Parse_TkRAISES)) {
+        Ast_Add (pool, &(n), Parse_PRaises (pool, p, err), err);
+        if (err->exc) goto L_ret;
+      } else {
+        Ast_Add (pool, &(n), NULL, err);
+        if (err->exc) goto L_ret;
+      }
+      err->res = m9res;
+      m9ret = n;
+      goto L_ret;
+  } } } } } } } } } } } } }
   Parse_Rerr (p, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s43, 21 }), Lex_KindName ((*p).cur.kind, err), err), err);
   if (err->exc) goto L_ret;
   n = Parse_Nn (pool, p, Ast_NQualident, err);
@@ -2944,4 +2980,21 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
+}
+
+void Parse_m9init (m9_state *err)
+{
+  static int m9done = 0;
+  if (m9done) return;
+  m9done = 1;
+  m9_pool m9frame = {0};
+  m9_pool *m9prev = err->res;
+  err->res = &m9frame;
+  Ast_m9init (err); if (err->exc) goto L_ret;
+  Lex_m9init (err); if (err->exc) goto L_ret;
+  DynStr_m9init (err); if (err->exc) goto L_ret;
+L_ret: ;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&m9frame);
+  err->res = m9prev;
 }

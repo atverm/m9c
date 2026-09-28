@@ -84,6 +84,154 @@ L_ret: ;
   return m9ret;
 }
 
+int64_t Math_AbsI64 (int64_t v, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  if ((v < INT64_C(0))) {
+    err->res = m9res;
+    m9ret = m9_neg_i64 (v, err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = v;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Math_MinI64 (int64_t a, int64_t b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  if ((b < a)) {
+    err->res = m9res;
+    m9ret = b;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = a;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Math_MaxI64 (int64_t a, int64_t b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  if ((b > a)) {
+    err->res = m9res;
+    m9ret = b;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = a;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Math_ClampI64 (int64_t v, int64_t lo, int64_t hi, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  err->res = m9res;
+  m9ret = Math_MaxI64 (lo, Math_MinI64 (v, hi, err), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Math_Min (double a, double b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  Math_Arg (a, err);
+  if (err->exc) goto L_ret;
+  Math_Arg (b, err);
+  if (err->exc) goto L_ret;
+  if ((b < a)) {
+    err->res = m9res;
+    m9ret = b;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = a;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Math_Max (double a, double b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  Math_Arg (a, err);
+  if (err->exc) goto L_ret;
+  Math_Arg (b, err);
+  if (err->exc) goto L_ret;
+  if ((b > a)) {
+    err->res = m9res;
+    m9ret = b;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = a;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Math_Clamp (double v, double lo, double hi, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  err->res = m9res;
+  m9ret = Math_Max (lo, Math_Min (v, hi, err), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 double Math_Sqrt (double x, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -1068,4 +1216,18 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
+}
+
+void Math_m9init (m9_state *err)
+{
+  static int m9done = 0;
+  if (m9done) return;
+  m9done = 1;
+  m9_pool m9frame = {0};
+  m9_pool *m9prev = err->res;
+  err->res = &m9frame;
+L_ret: ;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&m9frame);
+  err->res = m9prev;
 }

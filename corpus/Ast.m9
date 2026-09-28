@@ -37,6 +37,10 @@ CONST
      compares these numbers across the two implementations:
      parsediff compares printed text and gendiff compares emitted C. *)
   NGridType = 81 ; NEnumType = 82 ;
+  NProcType = 83 ;   (* PROCEDURE (params) [: T] [RAISES ...] as a TYPE;
+                        kids as a ProcDecl's head: [0] NParamList,
+                        [1] result type or NONE, [2] NRaises or NONE.
+                        docs/proctype-plan.md, 2026-09-27 *)
 
 TYPE
   Kid = OPT PTR Node ;               (* named so NEW can say it;

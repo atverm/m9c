@@ -7,6 +7,8 @@
 #include "Io.h"
 #include "Math.h"
 
+void Zarr_m9init (m9_state *err);
+
 typedef struct Zarr_Sink Zarr_Sink;
 typedef struct Zarr_Sink Zarr_Sink;
 
@@ -44,6 +46,8 @@ void Zarr_WriteInt (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, int64_t widt
 void Zarr_WriteTimeNs (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, m9_sl_I64 shape, m9_sl_I64 chunks, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);
 void Zarr_WriteBool (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BOOL data, m9_sl_I64 shape, m9_sl_I64 chunks, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);
 m9_sl_I64 Zarr_GuessChunks (m9_pool *pool, m9_sl_I64 shape, int64_t typesize, m9_state *err);
+void Zarr_DeclareF32 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 shape, m9_sl_I64 chunks, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);
+void Zarr_PutChunkF32 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 ci, m9_sl_F32 data, m9_sl_I64 chunks, int64_t comp, m9_state *err);
 void Zarr_WriteIntFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, int64_t width, bool signed_, bool hasFill, int64_t fill, m9_sl_I64 shape, m9_sl_I64 chunks, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);
 void Zarr_WriteF32Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F32 data, bool hasFill, double fill, m9_sl_I64 shape, m9_sl_I64 chunks, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);
 void Zarr_WriteF64Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F64 data, bool hasFill, double fill, m9_sl_I64 shape, m9_sl_I64 chunks, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);

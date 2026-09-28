@@ -6,6 +6,8 @@
 #include "Io.h"
 #include "Lex.h"
 
+void Diag_m9init (m9_state *err);
+
 typedef struct Diag_Finding Diag_Finding;
 
 #ifndef M9SL_m9_sl_Diag_Finding

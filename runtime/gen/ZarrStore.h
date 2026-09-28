@@ -6,6 +6,8 @@
 #include "Json.h"
 #include "Http.h"
 
+void ZarrStore_m9init (m9_state *err);
+
 typedef struct ZarrStore_Store ZarrStore_Store;
 typedef struct ZarrStore_Array ZarrStore_Array;
 typedef struct ZarrStore_Dtype ZarrStore_Dtype;
@@ -32,7 +34,7 @@ static const m9_sl_CHAR __attribute__((__unused__)) ZarrStore_Dtype_names[] = {
   { (uint32_t *) ZarrStore_Dtype_nm1, 3 },
 };
 
-extern const m9_exc ZarrStore_IOError;
+extern const m9_exc ZarrStore_StoreError;
 extern const m9_exc ZarrStore_FormatError;
 extern const m9_exc ZarrStore_HttpStatus;
 

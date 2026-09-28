@@ -159,141 +159,6 @@ PROCEDURE NumText (VAR pool: POOL ; n: PTR Node) : STR
 
 (* ---- building a document ------------------------------------- *)
 
-PROCEDURE NewObj (VAR pool: POOL) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
-BEGIN
-  n := NEW (pool, Node) ;
-  n.v := Value.Object (NONE) ;
-  RETURN n
-END NewObj ;
-
-PROCEDURE NewArr (VAR pool: POOL) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
-BEGIN
-  n := NEW (pool, Node) ;
-  n.v := Value.Arr (NONE, 0) ;
-  RETURN n
-END NewArr ;
-
-PROCEDURE NewStr (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
-  RAISES ValueRange =
-VAR
-  n : PTR Node IN pool ;
-  d : PTR DynStr.DString IN pool ;
-BEGIN
-  d := DynStr.New (pool) ;
-  EscapeBody (pool, d, s) ;
-  n := NEW (pool, Node) ;
-  n.v := Value.Str (DynStr.View (d)) ;
-  RETURN n
-END NewStr ;
-
-PROCEDURE NewI64 (VAR pool: POOL ; v: I64) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
-BEGIN
-  n := NEW (pool, Node) ;
-  n.v := Value.Num (F64 (v), v, TRUE) ;
-  RETURN n
-END NewI64 ;
-
-PROCEDURE Name (VAR pool: POOL ; RO s: STR) : STR
-  RAISES ValueRange =
-VAR d : PTR DynStr.DString IN pool ;
-BEGIN
-  d := DynStr.New (pool) ;
-  EscapeBody (pool, d, s) ;
-  RETURN DynStr.View (d)
-END Name ;
-
-PROCEDURE NewF64 (VAR pool: POOL ; r: F64) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
-BEGIN
-  n := NEW (pool, Node) ;
-  (* the integer slot is unread while isInt is FALSE; 0 rather than a
-     conversion that could trap on a huge or non-finite r *)
-  n.v := Value.Num (r, 0, FALSE) ;
-  RETURN n
-END NewF64 ;
-
-PROCEDURE NewBool (VAR pool: POOL ; b: BOOL) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
-BEGIN
-  n := NEW (pool, Node) ;
-  n.v := Value.Bool (b) ;
-  RETURN n
-END NewBool ;
-
-PROCEDURE NewNull (VAR pool: POOL) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
-BEGIN
-  n := NEW (pool, Node) ;
-  n.v := Value.Null ;
-  RETURN n
-END NewNull ;
-
-PROCEDURE Set (VAR KEPT obj: PTR Node ; RO KEPT name: STR ;
-               VAR KEPT v: PTR Node)
-  RAISES TypeMismatch =
-VAR
-  cur, prev : OPT PTR Node ;
-BEGIN
-  CASE obj.v OF
-  | Object (first) : cur := first
-  ELSE RAISE TypeMismatch ('Set on a node that is not an object')
-  END ;
-  v.name := name ;
-  prev := NONE ;
-  WHILE cur IS SOME p DO
-    IF DynStr.Eq (p.name, name) THEN
-      (* REPLACE IN PLACE: the new node takes the old one's position
-         and its tail, so the member order does not move.  The old
-         node is left to the pool, which is what a pool is for. *)
-      v.next := p.next ;
-      IF prev IS SOME q THEN
-        q.next := SOME (v)
-      ELSE
-        obj.v := Value.Object (SOME (v))
-      END ;
-      RETURN
-    END ;
-    prev := SOME (p) ;
-    cur := p.next
-  END ;
-  v.next := NONE ;
-  IF prev IS SOME q THEN
-    q.next := SOME (v)
-  ELSE
-    obj.v := Value.Object (SOME (v))
-  END
-END Set ;
-
-PROCEDURE Add (VAR KEPT arr: PTR Node ; VAR KEPT v: PTR Node)
-  RAISES TypeMismatch =
-VAR
-  cur, prev, head : OPT PTR Node ;
-  k : I64 ;
-BEGIN
-  (* the head is read out HERE, because rebuilding the variant with
-     the new count is the only way to store it and CASE is the only
-     way back in *)
-  CASE arr.v OF
-  | Arr (first, count) : head := first ; cur := first ; k := count
-  ELSE RAISE TypeMismatch ('Add on a node that is not an array')
-  END ;
-  v.next := NONE ;
-  prev := NONE ;
-  WHILE cur IS SOME p DO
-    prev := SOME (p) ;
-    cur := p.next
-  END ;
-  IF prev IS SOME q THEN
-    q.next := SOME (v) ;
-    arr.v := Value.Arr (head, k + 1)
-  ELSE
-    arr.v := Value.Arr (SOME (v), k + 1)
-  END
-END Add ;
-
 PROCEDURE AppendJString (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
                          RO t: STR)
   RAISES ValueRange ;
@@ -1409,5 +1274,144 @@ BEGIN
   ELSE RETURN FALSE
   END
 END IsNull ;
+
+(* ---- building a document: the bodies (moved here from the DEFINITION
+   module 2026-09-27, where six of them had sat, compiled and shipped,
+   and documented twice in docs/modules/Json.md; review F7) ---- *)
+
+PROCEDURE NewObj (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Object (NONE) ;
+  RETURN n
+END NewObj ;
+
+PROCEDURE NewArr (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Arr (NONE, 0) ;
+  RETURN n
+END NewArr ;
+
+PROCEDURE NewStr (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
+  RAISES ValueRange =
+VAR
+  n : PTR Node IN pool ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  EscapeBody (pool, d, s) ;
+  n := NEW (pool, Node) ;
+  n.v := Value.Str (DynStr.View (d)) ;
+  RETURN n
+END NewStr ;
+
+PROCEDURE NewI64 (VAR pool: POOL ; v: I64) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Num (F64 (v), v, TRUE) ;
+  RETURN n
+END NewI64 ;
+
+PROCEDURE Name (VAR pool: POOL ; RO s: STR) : STR
+  RAISES ValueRange =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  EscapeBody (pool, d, s) ;
+  RETURN DynStr.View (d)
+END Name ;
+
+PROCEDURE NewF64 (VAR pool: POOL ; r: F64) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  (* the integer slot is unread while isInt is FALSE; 0 rather than a
+     conversion that could trap on a huge or non-finite r *)
+  n.v := Value.Num (r, 0, FALSE) ;
+  RETURN n
+END NewF64 ;
+
+PROCEDURE NewBool (VAR pool: POOL ; b: BOOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Bool (b) ;
+  RETURN n
+END NewBool ;
+
+PROCEDURE NewNull (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Null ;
+  RETURN n
+END NewNull ;
+
+PROCEDURE Set (VAR KEPT obj: PTR Node ; RO KEPT name: STR ;
+               VAR KEPT v: PTR Node)
+  RAISES TypeMismatch =
+VAR
+  cur, prev : OPT PTR Node ;
+BEGIN
+  CASE obj.v OF
+  | Object (first) : cur := first
+  ELSE RAISE TypeMismatch ('Set on a node that is not an object')
+  END ;
+  v.name := name ;
+  prev := NONE ;
+  WHILE cur IS SOME p DO
+    IF DynStr.Eq (p.name, name) THEN
+      (* REPLACE IN PLACE: the new node takes the old one's position
+         and its tail, so the member order does not move.  The old
+         node is left to the pool, which is what a pool is for. *)
+      v.next := p.next ;
+      IF prev IS SOME q THEN
+        q.next := SOME (v)
+      ELSE
+        obj.v := Value.Object (SOME (v))
+      END ;
+      RETURN
+    END ;
+    prev := SOME (p) ;
+    cur := p.next
+  END ;
+  v.next := NONE ;
+  IF prev IS SOME q THEN
+    q.next := SOME (v)
+  ELSE
+    obj.v := Value.Object (SOME (v))
+  END
+END Set ;
+
+PROCEDURE Add (VAR KEPT arr: PTR Node ; VAR KEPT v: PTR Node)
+  RAISES TypeMismatch =
+VAR
+  cur, prev, head : OPT PTR Node ;
+  k : I64 ;
+BEGIN
+  (* the head is read out HERE, because rebuilding the variant with
+     the new count is the only way to store it and CASE is the only
+     way back in *)
+  CASE arr.v OF
+  | Arr (first, count) : head := first ; cur := first ; k := count
+  ELSE RAISE TypeMismatch ('Add on a node that is not an array')
+  END ;
+  v.next := NONE ;
+  prev := NONE ;
+  WHILE cur IS SOME p DO
+    prev := SOME (p) ;
+    cur := p.next
+  END ;
+  IF prev IS SOME q THEN
+    q.next := SOME (v) ;
+    arr.v := Value.Arr (head, k + 1)
+  ELSE
+    arr.v := Value.Arr (SOME (v), k + 1)
+  END
+END Add ;
 
 END Json.

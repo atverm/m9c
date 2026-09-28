@@ -162,7 +162,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.10.0' ;
+  Version = '0.11.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -1410,7 +1410,7 @@ BEGIN
   Io.WriteLine ('  -g               debug information; keeps the C') ;
   Io.WriteLine ('                   it names, and changes nothing') ;
   Io.WriteLine ('                   else -- still -O2, still -flto') ;
-  Io.WriteLine ('  --check          check only; write nothing at all') ;
+  Io.WriteLine ('  --check          check only, the generator included; write nothing') ;
   Io.WriteLine ('  --doc            write NAME.md, the DEFINITION') ;
   Io.WriteLine ('                   module as documentation, and') ;
   Io.WriteLine ('                   nothing else') ;
@@ -2187,10 +2187,13 @@ BEGIN
       FOR i := 0 TO root.nkids - 1 DO
         IF root.kids[i] IS SOME u THEN Gen.LoadUnit (u) END
       END ;
-      (* --check is the stop with empty hands: the diagnostics have
-         been printed, the exit code says whether the program exists,
-         and nothing appears on disk.  What an editor asks. *)
-      IF doCheck THEN RETURN END ;
+      (* --check used to stop HERE, before the generator -- so the
+         dozen constructs the checker accepts and the generator
+         refuses (OPT over a value type, CASE over a call, EXCEPT and
+         FINALLY on one block, ...) never reached the editor, and a
+         file the LSP called clean failed at the build.  Since
+         2026-09-27 (docs/agent-review-2026-09-27.md F4) --check runs
+         the generator too and stops before anything is written. *)
       (* --doc STILL CHECKS, and stops here.  Documentation for a
          program the checker rejects is a lie about a program that
          does not exist, and everything above this line is what makes
@@ -2220,6 +2223,12 @@ BEGIN
         END ;
         DiagN ('m9c: ', Gen.Errs (), ' generator errors in ', main) ;
         failed := TRUE
+      ELSIF doCheck THEN
+        (* the stop with empty hands: every diagnostic the build would
+           print has been printed, the exit code says whether the
+           program exists, and nothing appears on disk.  What an
+           editor asks. *)
+        RETURN
       ELSE
         Io.WriteFile (Suffix (name, '.h'), Gen.HText ()) ;
         Io.WriteFile (Suffix (name, '.c'), Gen.CText ()) ;
