@@ -162,7 +162,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.11.0' ;
+  Version = '0.12.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -845,6 +845,17 @@ BEGIN
     IF Io.Exists (Cat (rt, '/tcpshim.c')) THEN
       Word (Cat (rt, '/tcpshim.c'))
     END ;
+    (* the TLS half of csock, over OpenSSL.  Http binds tls_connect/
+       read/write/close unconditionally, so a program that makes ANY
+       request -- over plain http included -- referenced four symbols
+       the flagless link never supplied and failed on them (measured
+       against the installed 0.11.0 package, 2026-09-28; the tutorial's
+       chapter 11 had named the shim by hand).  Not on Windows: the
+       shim is OpenSSL and does not build under mingw (the SChannel
+       question is open), so there the line stays as it was. *)
+    IF NOT windows AND Io.Exists (Cat (rt, '/tlsshim.c')) THEN
+      Word (Cat (rt, '/tlsshim.c'))
+    END ;
     (* fmt_g, Plot's %.4g twin: pure libc, so it always travels --
        without it the FLAGLESS link could never build a program that
        plots, and every gate had quietly hand-linked the shim (found
@@ -877,14 +888,24 @@ BEGIN
 END AddRuntime ;
 
 (* The system libraries the runtime needs, after it on the line: libm,
-   which Fmt and Time need and which is never wrong to name; and on
-   Windows Winsock, because tcpshim.c is a member of the runtime on
-   every platform and there its socket calls live in ws2_32 rather
-   than in the C library.  A program that opens no socket pays
-   nothing for the name: the linker takes from an import library only
-   what is referenced. *)
+   which Fmt and Time need and which is never wrong to name; on POSIX
+   OpenSSL, because tlsshim.c is a member of the runtime there (the
+   sources beside the header and the installed archive alike since
+   0.12) and Http references its four symbols from every request path;
+   and on Windows Winsock, because tcpshim.c is a member of the runtime
+   on every platform and there its socket calls live in ws2_32 rather
+   than in the C library.  A program that opens no socket pays nothing
+   for the names: --as-needed keeps libssl and libcrypto out of a
+   binary that referenced nothing in them (Ubuntu's ld already does
+   this by default, Fedora's and Arch's do not), and an import library
+   gives up only what is referenced. *)
 PROCEDURE SystemLibs () =
 BEGIN
+  IF NOT windows THEN
+    Word ('-Wl,--as-needed') ;
+    Word ('-lssl') ;
+    Word ('-lcrypto')
+  END ;
   Word ('-lm') ;
   IF windows THEN Word ('-lws2_32') END
 END SystemLibs ;
@@ -1465,7 +1486,8 @@ BEGIN
   Io.WriteLine ('    import closure it has just resolved, plus the') ;
   Io.WriteLine ('    runtime -- its sources when they are beside the') ;
   Io.WriteLine ('    header that was included, else the installed') ;
-  Io.WriteLine ('    archive -- and -lm') ;
+  Io.WriteLine ('    archive -- then -lssl -lcrypto (as-needed; the') ;
+  Io.WriteLine ('    runtime carries the TLS shim Http binds) and -lm') ;
   Io.WriteLine ('') ;
   Io.WriteLine ('--doc checks the module and then writes NAME.md') ;
   Io.WriteLine ('instead of C: the module comment, then every') ;
@@ -1526,7 +1548,7 @@ BEGIN
   Io.WriteLine ('  for m in DynStr Text Io Lex Ast Parse Print Sem Gen') ;
   Io.WriteLine ('  do m9c -c corpus/$m.m9 ; done') ;
   Io.WriteLine ('  m9c --ar libm9.a corpus/M9c.m9') ;
-  Io.WriteLine ('  cc prog.c libm9.a -lm9rt -lm') ;
+  Io.WriteLine ('  cc prog.c libm9.a -lm9rt -lssl -lcrypto -lm') ;
   Io.WriteLine ('') ;
   Io.WriteLine ('And when a default is wrong, take the line over:') ;
   Io.WriteLine ('') ;

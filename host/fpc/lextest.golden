@@ -25,7 +25,7 @@
 ../../corpus/LibmGate.m9                 tokens=233 errors=0
 ../../corpus/Logger.m9                   tokens=867 errors=0
 ../../corpus/Lsp.m9                      tokens=2497 errors=0
-../../corpus/M9c.m9                      tokens=9630 errors=0
+../../corpus/M9c.m9                      tokens=9684 errors=0
 ../../corpus/M9fmt.m9                    tokens=2338 errors=0
 ../../corpus/Mat.m9                      tokens=5090 errors=0
 ../../corpus/Math.m9                     tokens=3838 errors=0
@@ -39,7 +39,7 @@
 ../../corpus/Print.m9                    tokens=7448 errors=0
 ../../corpus/ProcUse.m9                  tokens=479 errors=0
 ../../corpus/Sem.m9                      tokens=32847 errors=0
-../../corpus/Sort.m9                     tokens=2048 errors=0
+../../corpus/Sort.m9                     tokens=2217 errors=0
 ../../corpus/Stats.m9                    tokens=3760 errors=0
 ../../corpus/Syslog.m9                   tokens=646 errors=0
 ../../corpus/System.m9                   tokens=2443 errors=0

@@ -1,7 +1,17 @@
 DEFINITION MODULE Sort ;
 
-(* Sorting, stable, in place, over a slice -- so a sub-range is
-   `SLICE (a, start, len)` and needs no offsets in the signature.
+(* Sorting, stable, in place, over a slice -- so a sub-range needs no
+   offsets in the signature: name the view, then sort it,
+
+       sub := SLICE (a, start, len) ;
+       Sort.I64s (sub) ;
+
+   and the parent's elements move, since a view shares the buffer.
+   The two lines are not one: `Sort.I64s (SLICE (a, 0, n))` is
+   refused, because a VAR argument must be a designator and a SLICE
+   expression is not one (probe `var-arg-not-designator`; the zarr
+   proxy port hit it on 2026-09-28 after this comment had said
+   otherwise).
 
    Until 2026-09-27 the corpus exported no sort at all: Stats kept a
    private heapsort, Zarr an insertion sort whose comment said "the
@@ -35,10 +45,21 @@ PROCEDURE F64s (VAR a: SLICE OF F64) RAISES NotANumber ;
 PROCEDURE I64s (VAR a: SLICE OF I64) ;
   (* ascending, stable *)
 
-PROCEDURE Strs (VAR KEPT a: SLICE OF STR) ;
+PROCEDURE Strs (VAR a: SLICE OF STR) ;
   (* ascending by scalar value, position by position, the shorter
      first when one is a prefix of the other; stable.  No locale:
-     'B' sorts before 'a' *)
+     'B' sorts before 'a'.
+
+     Not KEPT, on purpose.  The first version merged through a
+     scratch SLICE OF STR, and `tmp[k] := a[j]` is, to the checker,
+     a borrowed string stored into another parameter's storage: it
+     demanded KEPT a, and the mark climbed into every caller -- in
+     the zarr proxy port from Shuttle.FlatVars up into SetupRun, a
+     thread root (2026-09-28).  This version
+     sorts an index permutation (the strings are only READ, through
+     RO) and applies it in place through one local, which the
+     checker sees as movement within the caller's own slice.  Same
+     n log n, same stability, no scratch strings. *)
 
 PROCEDURE ArgF64 (RO v: SLICE OF F64 ; VAR idx: SLICE OF I64)
   RAISES NotANumber, IndexError ;
@@ -148,39 +169,69 @@ BEGIN
   RETURN LEN (a) < LEN (b)
 END StrLess ;
 
-PROCEDURE MergeStrs (VAR KEPT a: SLICE OF STR ; VAR KEPT tmp: SLICE OF STR ;
-                     lo: I64 ; mid: I64 ; hi: I64) =
+(* the string sort is an ARGSORT over indices (the ArgF64 shape below)
+   followed by an in-place permutation: the strings are read through
+   RO and moved only within a, so no KEPT -- see the definition *)
+PROCEDURE MergeArgStrs (RO v: SLICE OF STR ; VAR idx: SLICE OF I64 ;
+                        VAR tmp: SLICE OF I64 ; lo: I64 ; mid: I64 ;
+                        hi: I64) =
 VAR i, j, k : I64 ;
 BEGIN
   i := lo ; j := mid ; k := lo ;
   WHILE i < mid AND j < hi DO
-    IF StrLess (a[j], a[i]) THEN tmp[k] := a[j] ; j := j + 1
-    ELSE tmp[k] := a[i] ; i := i + 1 END ;
+    IF StrLess (v[idx[j]], v[idx[i]]) THEN tmp[k] := idx[j] ; j := j + 1
+    ELSE tmp[k] := idx[i] ; i := i + 1 END ;
     k := k + 1
   END ;
-  WHILE i < mid DO tmp[k] := a[i] ; i := i + 1 ; k := k + 1 END ;
-  WHILE j < hi DO tmp[k] := a[j] ; j := j + 1 ; k := k + 1 END ;
-  FOR k := lo TO hi - 1 DO a[k] := tmp[k] END
-END MergeStrs ;
+  WHILE i < mid DO tmp[k] := idx[i] ; i := i + 1 ; k := k + 1 END ;
+  WHILE j < hi DO tmp[k] := idx[j] ; j := j + 1 ; k := k + 1 END ;
+  FOR k := lo TO hi - 1 DO idx[k] := tmp[k] END
+END MergeArgStrs ;
 
-PROCEDURE SortStrs (VAR KEPT a: SLICE OF STR ; VAR KEPT tmp: SLICE OF STR ;
-                    lo: I64 ; hi: I64) =
+PROCEDURE SortArgStrs (RO v: SLICE OF STR ; VAR idx: SLICE OF I64 ;
+                       VAR tmp: SLICE OF I64 ; lo: I64 ; hi: I64) =
 VAR mid : I64 ;
 BEGIN
   IF hi - lo < 2 THEN RETURN END ;
   mid := lo + (hi - lo) DIV 2 ;
-  SortStrs (a, tmp, lo, mid) ;
-  SortStrs (a, tmp, mid, hi) ;
-  MergeStrs (a, tmp, lo, mid, hi)
-END SortStrs ;
+  SortArgStrs (v, idx, tmp, lo, mid) ;
+  SortArgStrs (v, idx, tmp, mid, hi) ;
+  MergeArgStrs (v, idx, tmp, lo, mid, hi)
+END SortArgStrs ;
 
-PROCEDURE Strs (VAR KEPT a: SLICE OF STR) =
+PROCEDURE Strs (VAR a: SLICE OF STR) =
 VAR
   scratch : POOL ;
-  tmp : SLICE OF STR ;
+  idx, tmp : SLICE OF I64 ;
+  i, k, j : I64 ;
+  hold : STR ;
 BEGIN
-  tmp := NEW (scratch, STR, LEN (a)) ;
-  SortStrs (a, tmp, 0, LEN (a))
+  IF LEN (a) < 2 THEN RETURN END ;
+  idx := NEW (scratch, I64, LEN (a)) ;
+  tmp := NEW (scratch, I64, LEN (a)) ;
+  FOR i := 0 TO LEN (a) - 1 DO idx[i] := i END ;
+  SortArgStrs (a, idx, tmp, 0, LEN (a)) ;
+  (* apply the permutation in place, one cycle at a time: idx[k] is
+     where the element that belongs at k now sits.  Lift a[i] out,
+     pull each element of the cycle one seat forward, drop the lifted
+     one into the last seat; idx[k] := k marks a seat filled, so the
+     outer loop skips cycles already walked.  Every element moves
+     once. *)
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF idx[i] # i THEN
+      hold := a[i] ;
+      k := i ;
+      j := idx[k] ;
+      WHILE j # i DO
+        a[k] := a[j] ;
+        idx[k] := k ;
+        k := j ;
+        j := idx[k]
+      END ;
+      a[k] := hold ;
+      idx[k] := k
+    END
+  END
 END Strs ;
 
 (* indices ordered by the values they index: the merge compares

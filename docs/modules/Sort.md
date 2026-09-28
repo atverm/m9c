@@ -1,7 +1,17 @@
 # Sort
 
-Sorting, stable, in place, over a slice -- so a sub-range is
-`SLICE (a, start, len)` and needs no offsets in the signature.
+Sorting, stable, in place, over a slice -- so a sub-range needs no
+offsets in the signature: name the view, then sort it,
+
+    sub := SLICE (a, start, len) ;
+    Sort.I64s (sub) ;
+
+and the parent's elements move, since a view shares the buffer.
+The two lines are not one: `Sort.I64s (SLICE (a, 0, n))` is
+refused, because a VAR argument must be a designator and a SLICE
+expression is not one (probe `var-arg-not-designator`; the zarr
+proxy port hit it on 2026-09-28 after this comment had said
+otherwise).
 
 Until 2026-09-27 the corpus exported no sort at all: Stats kept a
 private heapsort, Zarr an insertion sort whose comment said "the
@@ -37,11 +47,22 @@ ascending, stable; -0.0 and 0.0 are equal and keep their order
 
 ascending, stable
 
-### Strs (VAR KEPT a: SLICE OF STR)
+### Strs (VAR a: SLICE OF STR)
 
 ascending by scalar value, position by position, the shorter
 first when one is a prefix of the other; stable.  No locale:
-'B' sorts before 'a'
+'B' sorts before 'a'.
+
+Not KEPT, on purpose.  The first version merged through a
+scratch SLICE OF STR, and `tmp[k] := a[j]` is, to the checker,
+a borrowed string stored into another parameter's storage: it
+demanded KEPT a, and the mark climbed into every caller -- in
+the zarr proxy port from Shuttle.FlatVars up into SetupRun, a
+thread root (2026-09-28).  This version
+sorts an index permutation (the strings are only READ, through
+RO) and applies it in place through one local, which the
+checker sees as movement within the caller's own slice.  Same
+n log n, same stability, no scratch strings.
 
 ### ArgF64 (RO v: SLICE OF F64 ; VAR idx: SLICE OF I64) RAISES NotANumber, IndexError
 

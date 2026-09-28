@@ -154,6 +154,40 @@ int main (void)
     ok ("Strs is strcmp's order on ASCII", same && e.exc == NULL);
   }
 
+  /* Strs at size: 400 random words over a 3-letter alphabet, lengths
+     0..5, so the permutation has long cycles and many equal keys.
+     Since 2026-09-28 Strs is an argsort applied IN PLACE by cycle
+     following (no KEPT); a wrong cycle walk shows here, not on ten
+     words.  Held to qsort's strcmp order; equal strings are
+     indistinguishable, so stability is not observable and is not
+     claimed by this check. */
+  {
+    enum { M = 400 };
+    static char text[M][8];
+    static const char *sorted[M];
+    static uint32_t bufs[M][8];
+    static m9_sl_CHAR sl[M];
+    char back[8];
+    int same = 1;
+    for (i = 0; i < M; i++) {
+      int64_t len = rnd (6), j;
+      for (j = 0; j < len; j++) text[i][j] = (char) ('a' + rnd (3));
+      text[i][len] = 0;
+      sl[i] = S (text[i], bufs[i]);
+      sorted[i] = text[i];
+    }
+    m9_sl_m9_sl_CHAR ssl = { sl, M };
+    Sort_Strs (&ssl, &e);
+    qsort (sorted, (size_t) M, sizeof *sorted, cmp_cstr);
+    for (i = 0; i < M; i++) {
+      int64_t j;
+      for (j = 0; j < sl[i].len && j < 7; j++) back[j] = (char) sl[i].p[j];
+      back[j] = 0;
+      if (strcmp (back, sorted[i]) != 0) same = 0;
+    }
+    ok ("Strs at 400 with long cycles is strcmp's order", same && e.exc == NULL);
+  }
+
   /* By: a C function IS a value of the type; descending by a table
      with ties, stable on the ties */
   {

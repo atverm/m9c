@@ -1,0 +1,32 @@
+MODULE HttpPing ;
+
+(* m9c.sh's link fixture: a program that makes ONE request over plain
+   http, to a loopback port nothing listens on, built by the FLAGLESS
+   m9c line.  Http binds the TLS shim (tls_connect/read/write/close)
+   from every request path, so until 0.12 this referenced four symbols
+   the supplied line never provided and failed to link -- against the
+   installed 0.11.0 package and the source tree alike (2026-09-28).
+   The request must fail BY NAME: the test is the link, and a
+   TransportError from a refused port is the proof it ran. *)
+
+IMPORT Io ;
+IMPORT Http ;
+
+VAR
+  pool : POOL ;
+  status : I64 ;
+  respHeaders : STR ;
+  reply : STR ;
+
+BEGIN
+  reply := Http.RequestText (pool, 'POST', 'http://127.0.0.1:1/ping',
+                             'Content-Type: text/plain', 'ping', 65536,
+                             status, respHeaders) ;
+  Io.WriteLine (reply)
+EXCEPT
+| Http.TransportError :
+    Io.WriteLine ('linked: the loopback port refused, as expected')
+| ValueRange :
+    Io.ErrLine ('a value did not fit') ;
+    Io.Halt (1)
+END HttpPing.

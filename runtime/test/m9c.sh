@@ -68,6 +68,28 @@ done
 
 echo "m9c: 9 modules compiled by M9 itself, byte-identical to the oracle"
 
+# THE FLAGLESS LINK OF A PROGRAM THAT MAKES AN Http REQUEST.  Http
+# binds the TLS shim from every request path, plain http included, and
+# the supplied line named neither tlsshim.c nor OpenSSL: a loopback
+# POST failed on four undefined tls_* against the installed 0.11.0
+# package and this tree alike (2026-09-28).  Shown able to fail with
+# the m9c of that day.  M9RUNTIME names the runtime because the work
+# directory is not a source tree; nothing after -- so the line is the
+# one a first-time user types.
+LINK=/tmp/m9c-link
+RT=$(cd .. && pwd)
+rm -rf "$LINK"; mkdir -p "$LINK"
+cp HttpPing.m9 "$LINK/"
+( cd "$LINK" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -v -o httpping HttpPing.m9 2>"$LINK/cc.txt" ) || {
+  echo "FAIL: a program that makes an Http request did not build flagless:"
+  tail -12 "$LINK/cc.txt"; exit 1; }
+grep -q 'tlsshim.c' "$LINK/cc.txt" && grep -q -- '-lssl' "$LINK/cc.txt" || {
+  echo "FAIL: the supplied line names neither the TLS shim nor OpenSSL"; cat "$LINK/cc.txt"; exit 1; }
+out=$("$LINK/httpping" 2>/dev/null)
+[ "$out" = "linked: the loopback port refused, as expected" ] || {
+  echo "FAIL: httpping printed '$out'"; exit 1; }
+echo "m9c: a plain-http request program links flagless (tlsshim + OpenSSL supplied)"
+
 # the point of connecting Sem: a compiler that translates what it
 # knows to be wrong is a translator.  A program with a semantic error
 # must produce diagnostics on stderr, NO output files, and exit 1.

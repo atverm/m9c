@@ -50,8 +50,8 @@ static void Sort_SortF64 (m9_sl_F64 *a, m9_sl_F64 *tmp, int64_t lo, int64_t hi, 
 static void Sort_MergeI64 (m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
 static void Sort_SortI64 (m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t hi, m9_state *err);
 static bool Sort_StrLess (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
-static void Sort_MergeStrs (m9_sl_m9_sl_CHAR *a, m9_sl_m9_sl_CHAR *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
-static void Sort_SortStrs (m9_sl_m9_sl_CHAR *a, m9_sl_m9_sl_CHAR *tmp, int64_t lo, int64_t hi, m9_state *err);
+static void Sort_MergeArgStrs (m9_sl_m9_sl_CHAR v, m9_sl_I64 *idx, m9_sl_I64 *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
+static void Sort_SortArgStrs (m9_sl_m9_sl_CHAR v, m9_sl_I64 *idx, m9_sl_I64 *tmp, int64_t lo, int64_t hi, m9_state *err);
 static void Sort_MergeArg (m9_sl_F64 v, m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
 static void Sort_SortArg (m9_sl_F64 v, m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t hi, m9_state *err);
 static void Sort_MergeBy (m9_sl_I64 *a, m9_sl_I64 *tmp, Sort_Less less, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
@@ -117,11 +117,58 @@ void Sort_Strs (m9_sl_m9_sl_CHAR *a, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
-  m9_sl_m9_sl_CHAR tmp = {0}; (void) tmp;
-  tmp = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(scratch), ((*a)).len, err);
+  m9_sl_I64 idx = {0}; (void) idx;
+  m9_sl_I64 tmp = {0}; (void) tmp;
+  int64_t i = 0; (void) i;
+  int64_t k = 0; (void) k;
+  int64_t j = 0; (void) j;
+  m9_sl_CHAR hold = {0}; (void) hold;
+  if ((((*a)).len < INT64_C(2))) {
+    goto L_ret;
+  }
+  idx = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), ((*a)).len, err);
   if (err->exc) goto L_ret;
-  Sort_SortStrs (a, &(tmp), INT64_C(0), ((*a)).len, err);
+  tmp = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), ((*a)).len, err);
   if (err->exc) goto L_ret;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (((*a)).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)) = i;
+    if (err->exc) goto L_ret;
+  } }
+  Sort_SortArgStrs ((*a), &(idx), &(tmp), INT64_C(0), ((*a)).len, err);
+  if (err->exc) goto L_ret;
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 (((*a)).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    bool m9t3 = ((*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)) != i);
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      hold = (*(m9_sl_CHAR *) m9_at ((*a).p, i, (*a).len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+      k = i;
+      j = (*(int64_t *) m9_at (idx.p, k, idx.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+      for (;;) {
+        if (!((j != i))) break;
+        (*(m9_sl_CHAR *) m9_at ((*a).p, k, (*a).len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*a).p, j, (*a).len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(int64_t *) m9_at (idx.p, k, idx.len, sizeof (int64_t), err)) = k;
+        if (err->exc) goto L_ret;
+        k = j;
+        j = (*(int64_t *) m9_at (idx.p, k, idx.len, sizeof (int64_t), err));
+        if (err->exc) goto L_ret;
+      }
+      (*(m9_sl_CHAR *) m9_at ((*a).p, k, (*a).len, sizeof (m9_sl_CHAR), err)) = hold;
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (idx.p, k, idx.len, sizeof (int64_t), err)) = k;
+      if (err->exc) goto L_ret;
+    }
+  } }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -396,7 +443,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Sort_MergeStrs (m9_sl_m9_sl_CHAR *a, m9_sl_m9_sl_CHAR *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err)
+static void Sort_MergeArgStrs (m9_sl_m9_sl_CHAR v, m9_sl_I64 *idx, m9_sl_I64 *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -410,15 +457,15 @@ static void Sort_MergeStrs (m9_sl_m9_sl_CHAR *a, m9_sl_m9_sl_CHAR *tmp, int64_t 
   k = lo;
   for (;;) {
     if (!(((i < mid) && (j < hi)))) break;
-    bool m9t1 = Sort_StrLess ((*(m9_sl_CHAR *) m9_at ((*a).p, j, (*a).len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at ((*a).p, i, (*a).len, sizeof (m9_sl_CHAR), err)), err);
+    bool m9t1 = Sort_StrLess ((*(m9_sl_CHAR *) m9_at (v.p, (*(int64_t *) m9_at ((*idx).p, j, (*idx).len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at (v.p, (*(int64_t *) m9_at ((*idx).p, i, (*idx).len, sizeof (int64_t), err)), v.len, sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      (*(m9_sl_CHAR *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*a).p, j, (*a).len, sizeof (m9_sl_CHAR), err));
+      (*(int64_t *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (int64_t), err)) = (*(int64_t *) m9_at ((*idx).p, j, (*idx).len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
       j = m9_add_i64 (j, INT64_C(1), err);
       if (err->exc) goto L_ret;
     } else {
-      (*(m9_sl_CHAR *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*a).p, i, (*a).len, sizeof (m9_sl_CHAR), err));
+      (*(int64_t *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (int64_t), err)) = (*(int64_t *) m9_at ((*idx).p, i, (*idx).len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
       i = m9_add_i64 (i, INT64_C(1), err);
       if (err->exc) goto L_ret;
@@ -428,7 +475,7 @@ static void Sort_MergeStrs (m9_sl_m9_sl_CHAR *a, m9_sl_m9_sl_CHAR *tmp, int64_t 
   }
   for (;;) {
     if (!((i < mid))) break;
-    (*(m9_sl_CHAR *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*a).p, i, (*a).len, sizeof (m9_sl_CHAR), err));
+    (*(int64_t *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (int64_t), err)) = (*(int64_t *) m9_at ((*idx).p, i, (*idx).len, sizeof (int64_t), err));
     if (err->exc) goto L_ret;
     i = m9_add_i64 (i, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -437,7 +484,7 @@ static void Sort_MergeStrs (m9_sl_m9_sl_CHAR *a, m9_sl_m9_sl_CHAR *tmp, int64_t 
   }
   for (;;) {
     if (!((j < hi))) break;
-    (*(m9_sl_CHAR *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*a).p, j, (*a).len, sizeof (m9_sl_CHAR), err));
+    (*(int64_t *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (int64_t), err)) = (*(int64_t *) m9_at ((*idx).p, j, (*idx).len, sizeof (int64_t), err));
     if (err->exc) goto L_ret;
     j = m9_add_i64 (j, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -449,7 +496,7 @@ static void Sort_MergeStrs (m9_sl_m9_sl_CHAR *a, m9_sl_m9_sl_CHAR *tmp, int64_t 
   m9t2to = m9_sub_i64 (hi, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; k <= m9t2to; k += 1) {
-    (*(m9_sl_CHAR *) m9_at ((*a).p, k, (*a).len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (m9_sl_CHAR), err));
+    (*(int64_t *) m9_at ((*idx).p, k, (*idx).len, sizeof (int64_t), err)) = (*(int64_t *) m9_at ((*tmp).p, k, (*tmp).len, sizeof (int64_t), err));
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
@@ -458,7 +505,7 @@ L_ret: ;
   return;
 }
 
-static void Sort_SortStrs (m9_sl_m9_sl_CHAR *a, m9_sl_m9_sl_CHAR *tmp, int64_t lo, int64_t hi, m9_state *err)
+static void Sort_SortArgStrs (m9_sl_m9_sl_CHAR v, m9_sl_I64 *idx, m9_sl_I64 *tmp, int64_t lo, int64_t hi, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -472,11 +519,11 @@ static void Sort_SortStrs (m9_sl_m9_sl_CHAR *a, m9_sl_m9_sl_CHAR *tmp, int64_t l
   }
   mid = m9_add_i64 (lo, m9_div_i64 ((m9_sub_i64 (hi, lo, err)), INT64_C(2), err), err);
   if (err->exc) goto L_ret;
-  Sort_SortStrs (a, tmp, lo, mid, err);
+  Sort_SortArgStrs (v, idx, tmp, lo, mid, err);
   if (err->exc) goto L_ret;
-  Sort_SortStrs (a, tmp, mid, hi, err);
+  Sort_SortArgStrs (v, idx, tmp, mid, hi, err);
   if (err->exc) goto L_ret;
-  Sort_MergeStrs (a, tmp, lo, mid, hi, err);
+  Sort_MergeArgStrs (v, idx, tmp, lo, mid, hi, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;

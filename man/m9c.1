@@ -562,14 +562,24 @@ decision;
 .IP \(bu 3
 and, when linking, one object per module in the import closure it has
 just resolved \(em these are not guessed, they are the modules it read
-and checked a moment ago \(em together with the runtime and
+and checked a moment ago \(em together with the runtime, then
+.B \-Wl,\-\-as\-needed \-lssl \-lcrypto
+and
 .BR \-lm ,
 and on Windows
 .B \-lws2_32
-as well, because the runtime's TCP shim is a member on every platform
-and its socket calls live in Winsock there rather than in the C
-library (an import library costs a program that opens no socket
-nothing).
+in place of OpenSSL, because the runtime's TCP shim is a member on
+every platform and its socket calls live in Winsock there rather than
+in the C library (an import library costs a program that opens no
+socket nothing). OpenSSL is named because the runtime's TLS shim is a
+member too (since 0.12; on Windows it is not, the shim being OpenSSL)
+and the standard
+.B Http
+module binds its four symbols from every request path, plain http
+included \(em a program that POSTed to a loopback console failed to
+link against the 0.11.0 package on exactly those four.
+.B \-\-as\-needed
+keeps both libraries out of a binary that referenced nothing in them.
 .PP
 The runtime that is linked is the one whose header was included: the
 sources beside that header when they are there, and an archive only
