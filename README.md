@@ -151,6 +151,18 @@ Idempotence and comment survival are gated over the whole corpus
 decision the gate measures rather than makes.  Chapter 0 of the
 tutorial carries editor configuration.
 
+## Claude Code skills
+
+`skills/` holds two skills for [Claude Code](https://claude.com/claude-code):
+`m9`, the short list of what a Pascal or Modula-2 hand gets wrong in
+M9, each item pointing at the gated document that settles it; and
+`m9-lookup`, how to find what already exists before writing it
+(`m9c --json`, never a remembered list of names).  Copy both
+directories into your project's `.claude/skills/`; `skills/README.md`
+says the rest.  They are this repository's own working skills, not a
+summary written for the public: everything they point at is
+something a gate keeps true.
+
 ## Layout
 
 This repository is mirrored from the development tree's `main` after
