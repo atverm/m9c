@@ -22,8 +22,9 @@ and, as text and runnable examples, in the
 repository, [m9c](https://github.com/atverm/m9c), is the compiler,
 runtime and standard library themselves -- `./build.sh` needs gcc and
 nothing else -- and its [release page](https://github.com/atverm/m9c/releases)
-carries the install packages for six Linux distributions and, since
-0.8.0, an **experimental** Windows zip.
+carries the install packages for six Linux distributions, since
+0.8.0 an **experimental** Windows zip and, since 0.12.0, an
+**experimental** macOS Homebrew tap.
 
 Every feature in the report (`docs/M9-report.md`, installed with the
 package as `/usr/share/doc/m9/M9-report.md`) cites a real observed
@@ -100,6 +101,32 @@ converter) and **chapter 17** (it runs `sort` and `uniq`, which
 Windows does not have).  Everything else — including the zarr
 chapters over TLS and the threaded ones — runs.  Report what breaks;
 that is what the label is for.
+
+## macOS — experimental
+
+    brew tap atverm/m9 && brew install m9
+
+builds the release tarball on your Mac with Homebrew's gcc and installs
+it, with OpenSSL, blosc and netCDF from Homebrew beside it, so a
+program that opens an https URL, reads a zarr chunk or writes a netCDF
+file links on the first try.  The gcc is the point: Apple's `cc` is
+clang, which takes neither gcc's inliner budget nor a nested function
+and warns on every build, so m9c on a Mac drives Homebrew's gcc
+through `<prefix>/gcc/bin/gcc` — the arrangement the Windows zip has
+with the gcc in its box.  `./build.sh` in a checkout works with either
+compiler.
+
+**Experimental, and here is what that means.** It is the same
+compiler: every macOS difference in the runtime and the driver is
+under `__APPLE__` or `macos` and the generated C never names a
+platform.  It is verified on one Apple-silicon Mac, where Linux is
+tested across six distributions; Intel Macs are untested.  The whole
+tutorial runs there — zarr over TLS and the threaded chapters
+included.  Two things a macOS
+reader meets that Linux does not: a zeroed pthread mutex is invalid
+there, so monitors are initialised on first entry, and Apple's
+`memcpy` is a macro when optimising, which the runtime header turns
+off.  Report what breaks; that is what the label is for.
 
 ## Editors
 

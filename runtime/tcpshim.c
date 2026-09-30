@@ -23,6 +23,10 @@
 #include <windows.h>
 #else
 #define _POSIX_C_SOURCE 200112L   /* getaddrinfo under -std=c11 */
+#ifdef __APPLE__
+/* Darwin hides everything past POSIX once _POSIX_C_SOURCE is named */
+#define _DARWIN_C_SOURCE
+#endif
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <netdb.h>

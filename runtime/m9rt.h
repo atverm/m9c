@@ -5,6 +5,29 @@
 #ifndef M9RT_H
 #define M9RT_H
 
+/* ON macOS, NO FORTIFY MACROS, and this has to be said before the
+   first system header.  A FOR "C" unit declares the C function it
+   calls BY ITS OWN NAME -- NetCDF and Grib say CCopy = "memcpy", and
+   the generator emits `extern void * memcpy (...)` for it.  Apple's
+   <string.h> makes memcpy a function-like MACRO whenever the compiler
+   is optimising (_FORTIFY_SOURCE unset means level 2 there), so that
+   declaration expands in the middle and does not parse:
+     NetCDF.c:54: expected declaration specifiers or '...' before
+     '__builtin_object_size'
+   which took Frame and Parquet with it, and chapters 7 and 14 of the
+   tutorial (measured 2026-09-29, gcc 16 and Apple's cc alike).  glibc
+   fortifies with inline functions, which a second declaration does
+   not disturb, so Linux never saw it.
+   A packager's -D_FORTIFY_SOURCE is honoured -- and brings the
+   failure back.  The fix that needs no platform named is the
+   generator's: C11 7.1.4 lets ANY library function be a macro as
+   well, and `extern void * (memcpy) (...)` is the declaration that
+   survives one.  That changes every foreign declaration emitted, by
+   both generators, on every platform; it is owed, not done here. */
+#if defined (__APPLE__) && !defined (_FORTIFY_SOURCE)
+#define _FORTIFY_SOURCE 0
+#endif
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -529,6 +552,51 @@ void m9_mon_enter (m9_mon *m);
 void m9_mon_leave (m9_mon *m);
 void m9_mon_wait (m9_mon *m);
 void m9_mon_signal (m9_mon *m);
+#elif defined (__APPLE__)
+/* macOS IS THE OTHER PORT, AND IT KEEPS pthreads.  There
+   PTHREAD_MUTEX_INITIALIZER is { 0x32AAABA7, {0} } -- a signature,
+   then zeros -- and the condition variable's is the same shape, so a
+   zeroed monitor is an invalid mutex AND an invalid condition
+   variable: lock, wait and unlock each return EINVAL at once, so
+   nobody is excluded and nobody sleeps.  Measured 2026-09-29, before
+   this branch existed: serialtest kept 305 of 2400 updates, and
+   thrtest PASSED twenty runs out of twenty -- with a WAIT that
+   returns at once its one waiter can only have gone round the loop
+   until the worker was done, which is the right answer reached the
+   wrong way, and why a total is not a test of a monitor.
+
+   Nothing in the system is zero BY CONTRACT and pairs with a
+   condition variable (os_unfair_lock is, and has none), so the
+   monitor is MADE ON FIRST ENTRY: one flag, zero as carved, read
+   with an atomic load on every enter and written once under a lock
+   of the runtime's own.  Only enter looks, because a bound procedure
+   enters before it can WAIT or SIGNAL and a [SERIAL] gate does
+   nothing else.  There is still no destructor and none is needed:
+   neither object owns anything until a thread sleeps on it, and
+   storage that is carved again arrives zeroed and is made again. */
+typedef struct {
+  pthread_mutex_t mu;
+  pthread_cond_t  cv;
+  int             made;         /* 0 as carved; 1 once mu and cv are */
+} m9_mon;
+
+void m9_mon_make (m9_mon *m);
+
+static inline void m9_mon_enter (m9_mon *m)
+{
+  if (!__atomic_load_n (&m->made, __ATOMIC_ACQUIRE)) m9_mon_make (m);
+  pthread_mutex_lock (&m->mu);
+}
+
+static inline void m9_mon_leave (m9_mon *m)
+{ pthread_mutex_unlock (&m->mu); }
+
+static inline void m9_mon_wait (m9_mon *m)
+{ pthread_cond_wait (&m->cv, &m->mu); }
+
+/* BROADCAST, for the reason given on the POSIX side below */
+static inline void m9_mon_signal (m9_mon *m)
+{ pthread_cond_broadcast (&m->cv); }
 #else
 typedef struct {
   pthread_mutex_t mu;

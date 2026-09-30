@@ -113,6 +113,10 @@ VAR
   prefix  : STR ;
   windows : BOOL ;   (* System.Os: ';' separates $M9LIBRARY, and the
                         C compiler is gcc, bundled or on PATH *)
+  macos   : BOOL ;   (* System.Os: cc is Apple clang and the linker
+                        is ld64, neither of which takes gcc's or GNU
+                        ld's words, and OpenSSL is not the system's
+                        (see OsslDir) *)
   (* module names already loaded, so a diamond is loaded once and a
      cycle terminates rather than recurring *)
   loaded  : SLICE OF STR ;
@@ -336,6 +340,7 @@ END DirOf ;
 PROCEDURE Locate () RAISES ValueRange =
 BEGIN
   windows := DynStr.Eq (System.Os (), 'windows') ;
+  macos := DynStr.Eq (System.Os (), 'macos') ;
   prefix := DirOf (DirOf (System.Executable (pool)))
 END Locate ;
 
@@ -383,13 +388,22 @@ BEGIN
 END IncPlace ;
 
 (* the bundled tool when the zip carries it, the PATH one otherwise.
-   Windows only: a Linux package depends on gcc and does not ship one *)
+   Windows and macOS: a Linux package depends on gcc and does not ship
+   one.  On macOS the system's cc is clang under gcc's name, which
+   takes neither --param nor a nested function, so an install that
+   wants gcc's code carries gcc -- <prefix>/gcc/bin, a directory of
+   its own because nothing about that gcc's layout depends on the
+   name, as ucrt64's does. *)
 PROCEDURE Bundled (RO tool: STR ; RO fallback: STR) : STR
   RAISES ValueRange =
 VAR p : STR ;
 BEGIN
   IF windows AND LEN (prefix) > 0 THEN
     p := Cat (prefix, Cat ('/ucrt64/bin/', tool)) ;
+    IF Io.Exists (p) THEN RETURN p END
+  END ;
+  IF macos AND LEN (prefix) > 0 THEN
+    p := Cat (prefix, Cat ('/gcc/bin/', tool)) ;
     IF Io.Exists (p) THEN RETURN p END
   END ;
   RETURN fallback
@@ -758,6 +772,7 @@ BEGIN
   v := Io.Env (pool, 'CC') ;
   IF LEN (v) > 0 THEN RETURN v END ;
   IF windows THEN RETURN Bundled ('gcc.exe', 'gcc') END ;
+  IF macos THEN RETURN Bundled ('gcc', 'cc') END ;
   RETURN 'cc'
 END CcName ;
 
@@ -767,6 +782,9 @@ END CcName ;
 PROCEDURE ArName () : STR RAISES ValueRange =
 BEGIN
   IF windows THEN RETURN Bundled ('ar.exe', 'ar') END ;
+  (* gcc-ar, not ar: the objects are -flto's, and the system's ar
+     writes an index that does not see into them *)
+  IF macos THEN RETURN Bundled ('gcc-ar', 'ar') END ;
   RETURN 'ar'
 END ArName ;
 
@@ -887,6 +905,43 @@ BEGIN
   RETURN FALSE
 END AddRuntime ;
 
+(* WHERE OPENSSL IS, ON macOS.  The system ships LibreSSL's dylibs
+   and no headers, so there is no place cc finds by itself: this
+   compiler's own prefix first (an install that carries its OpenSSL
+   beside its runtime, as the Windows zip carries its gcc), then
+   Homebrew's two prefixes.  Empty when none of them has ssl.h, and
+   then the line names no directory and cc says what is missing. *)
+PROCEDURE OsslDir () : STR RAISES ValueRange =
+BEGIN
+  IF LEN (prefix) > 0
+     AND Io.Exists (Cat (prefix, '/include/openssl/ssl.h')) THEN
+    RETURN prefix
+  END ;
+  IF Io.Exists ('/opt/homebrew/opt/openssl@3/include/openssl/ssl.h') THEN
+    RETURN '/opt/homebrew/opt/openssl@3'
+  END ;
+  IF Io.Exists ('/usr/local/opt/openssl@3/include/openssl/ssl.h') THEN
+    RETURN '/usr/local/opt/openssl@3'
+  END ;
+  RETURN ''
+END OsslDir ;
+
+(* What Apple's cc needs said that gcc does not, after the defaults:
+   the generated C parenthesises every comparison and assigns a FOR
+   variable to itself, both of which clang warns about by default and
+   gcc does not (gcc ignores a -Wno- it does not know, so CC=gcc on
+   macOS is unharmed); and the directory OpenSSL's headers are in,
+   for the tlsshim.c that travels as a source. *)
+PROCEDURE MacFlags () RAISES ValueRange =
+VAR o : STR ;
+BEGIN
+  IF NOT macos THEN RETURN END ;
+  Word ('-Wno-parentheses-equality') ;
+  Word ('-Wno-self-assign') ;
+  o := OsslDir () ;
+  IF LEN (o) > 0 THEN Word (Cat ('-I', Cat (o, '/include'))) END
+END MacFlags ;
+
 (* The system libraries the runtime needs, after it on the line: libm,
    which Fmt and Time need and which is never wrong to name; on POSIX
    OpenSSL, because tlsshim.c is a member of the runtime there (the
@@ -899,9 +954,27 @@ END AddRuntime ;
    binary that referenced nothing in them (Ubuntu's ld already does
    this by default, Fedora's and Arch's do not), and an import library
    gives up only what is referenced. *)
-PROCEDURE SystemLibs () =
+PROCEDURE SystemLibs () RAISES ValueRange =
+VAR o : STR ;
 BEGIN
-  IF NOT windows THEN
+  IF macos THEN
+    (* ld64 has no --as-needed; -dead_strip_dylibs is its word for
+       the same thing, and against static archives neither is needed *)
+    o := OsslDir () ;
+    IF LEN (o) > 0 THEN Word (Cat ('-L', Cat (o, '/lib'))) END ;
+    Word ('-Wl,-dead_strip_dylibs') ;
+    (* AND THE CODE NOTHING REACHES, which on Linux -flto removes by
+       itself: the linker plugin tells gcc what the program uses, and
+       a Frame that never reaches NetCDF links without libnetcdf
+       (the tutorial's chapter 7 depends on it).  Apple's ld takes no
+       plugin, so gcc's LTO must keep every external function, NetCDF's
+       stay, and the link wants 44 nc_ symbols -- measured 2026-09-29.
+       ld's own dead stripping removes them, and with them the
+       references; the system's cc did not need it and is not hurt. *)
+    Word ('-Wl,-dead_strip') ;
+    Word ('-lssl') ;
+    Word ('-lcrypto')
+  ELSIF NOT windows THEN
     Word ('-Wl,--as-needed') ;
     Word ('-lssl') ;
     Word ('-lcrypto')
@@ -1125,7 +1198,13 @@ BEGIN
        dropped: hoisting the GRID descriptor into locals by hand,
        ON TOP of LTO, was worth 3% (0.0088 -> 0.0085).  LTO already
        does it.  See the port's README. *)
-    Word ('-flto') ;
+    (* =auto on macOS, which is what the measurement further down
+       says Linux wants and has not been given: the platform is new,
+       so there is no build whose flags this changes, and the bundled
+       gcc warns about serial LTRANS jobs on every link of two
+       partitions without it (measured 2026-09-29: 1.25 s and the
+       warning, 1.03 s and quiet).  Apple's cc takes the spelling. *)
+    IF macos THEN Word ('-flto=auto') ELSE Word ('-flto') END ;
     (* ON WINDOWS, ONE LTO PARTITION.  gcc runs its LTRANS stage in
        parallel through a Makefile it writes and a `make` it looks
        for on PATH; the bundled ucrt64\ carries no make (MSYS2 ships
@@ -1176,8 +1255,13 @@ BEGIN
        ignores the flag with a warning, so $CC=clang still builds.
        Two words, as cc receives them: the shell used to split them
        and there is no shell now. *)
-    Word ('--param') ;
-    Word ('max-inline-insns-auto=200') ;
+    (* not to the system's cc on macOS, which is clang and says so
+       on every build; the bundled gcc, and a $CC, get it as ever *)
+    IF NOT (macos AND DynStr.Eq (CcName (), 'cc')) THEN
+      Word ('--param') ;
+      Word ('max-inline-insns-auto=200')
+    END ;
+    MacFlags () ;
     (* -fPIC only when asked, and --so asks.  Not the default,
        because on x86-64 it costs an indirection on every global and
        the overwhelming majority of these objects go into a program
@@ -1273,8 +1357,9 @@ BEGIN
          out of a temporary object nobody named.  Measured, not
          guessed: that is exactly what the first --so run said. *)
       Word ('-O2') ;
-      Word ('-flto') ;
+      IF macos THEN Word ('-flto=auto') ELSE Word ('-flto') END ;
       IF windows THEN Word ('-flto-partition=one') END ;
+      MacFlags () ;
       Word ('-fPIC') ;
       Word ('-iquote') ;
       Word (RtDir ()) ;

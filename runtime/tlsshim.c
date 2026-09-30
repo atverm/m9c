@@ -63,6 +63,10 @@
    Link: -lssl -lcrypto -lcrypt32 -lws2_32 there, -lssl -lcrypto here. */
 #ifndef _WIN32
 #define _POSIX_C_SOURCE 200112L
+#ifdef __APPLE__
+/* Darwin hides everything past POSIX once _POSIX_C_SOURCE is named */
+#define _DARWIN_C_SOURCE
+#endif
 #endif
 #ifdef _WIN32
 /* wincrypt.h BEFORE the OpenSSL headers: it defines X509_NAME and a

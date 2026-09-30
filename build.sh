@@ -30,6 +30,25 @@ OUT=${OUT:-out}
 DESTDIR=$1
 
 WARN="-std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter"
+# Apple's cc is clang, which warns by default about two things the
+# generated C does on purpose (a parenthesised comparison, a FOR
+# variable assigned to itself) and gcc does not.  After -Wall, because
+# clang's -Wall turns them back on.
+# And macOS ships no OpenSSL headers, so tlsshim.c needs telling where
+# Homebrew's are -- the same two places m9c looks (OsslDir), and only
+# when the packager's CPPFLAGS have not already said.
+case $(uname -s) in
+  Darwin)
+    WARN="$WARN -Wno-parentheses-equality -Wno-self-assign"
+    case "$CPPFLAGS" in
+      *openssl*) ;;
+      *) for d in /opt/homebrew/opt/openssl@3 /usr/local/opt/openssl@3; do
+           if [ -f "$d/include/openssl/ssl.h" ]; then
+             CPPFLAGS="$CPPFLAGS -I$d/include"; break
+           fi
+         done ;;
+    esac ;;
+esac
 
 # the modules m9c itself is made of, in dependency order
 COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc M9c"

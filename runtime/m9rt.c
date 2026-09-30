@@ -13,6 +13,10 @@
    zeroed record, an unfound program is still -1. */
 #ifndef _WIN32
 #define _POSIX_C_SOURCE 200112L
+#ifdef __APPLE__
+/* Darwin hides everything past POSIX once _POSIX_C_SOURCE is named */
+#define _DARWIN_C_SOURCE
+#endif
 /* 64-bit off_t even on a 32-bit host: m9_read_at walks files
    past 2 GB, which is the whole reason it exists. */
 #define _FILE_OFFSET_BITS 64
@@ -53,7 +57,15 @@ const m9_exc m9_exc_ValueRange  = { "ValueRange" };
    because nothing generates into a sys/ directory. */
 #include <sys/time.h>
 #include <sys/times.h>       /* the monotonic tick a deadline is measured on */
+#ifdef __APPLE__
+/* macOS has no sysinfo and no /proc: memory is asked of Mach and
+   sysctl, and the executable's path of dyld */
+#include <sys/sysctl.h>
+#include <mach/mach.h>
+#include <mach-o/dyld.h>
+#else
 #include <sys/sysinfo.h>
+#endif
 #include <sys/resource.h>
 #include <sys/wait.h>
 #include <spawn.h>
@@ -1058,6 +1070,29 @@ void m9_mon_signal (m9_mon *m) { WakeAllConditionVariable ((CONDITION_VARIABLE *
 
 #else
 
+#ifdef __APPLE__
+/* THE MONITOR, MADE ON FIRST ENTRY (the macOS note in the header).
+   Two threads can arrive at a monitor nobody has entered yet, so the
+   making is under a lock, and the flag is looked at again inside it:
+   the second one in finds the work done.  The lock is one for the
+   whole program and is taken once per monitor, not once per entry --
+   enter's own test is an atomic load and nothing else.  The flag is
+   stored LAST, with release, so a thread that reads 1 without the
+   lock reads it after both objects exist. */
+static pthread_mutex_t m9_mon_make_lock = PTHREAD_MUTEX_INITIALIZER;
+
+void m9_mon_make (m9_mon *m)
+{
+  pthread_mutex_lock (&m9_mon_make_lock);
+  if (!m->made) {
+    pthread_mutex_init (&m->mu, NULL);
+    pthread_cond_init (&m->cv, NULL);
+    __atomic_store_n (&m->made, 1, __ATOMIC_RELEASE);
+  }
+  pthread_mutex_unlock (&m9_mon_make_lock);
+}
+#endif
+
 int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err)
 {
   pthread_t t;
@@ -1118,6 +1153,19 @@ int m9_exe_path (void *buf, int cap)
   n = readlink ("/proc/self/exe", (char *) buf, (size_t) cap);
   if (n >= cap) n = -1;             /* truncated: no answer */
 #endif
+#ifdef __APPLE__
+  /* dyld knows the path the image was loaded from; realpath resolves
+     the symlink a ~/.local/bin/m9c is, so the prefix is the install's
+     and not the link's */
+  {
+    char raw[PATH_MAX], real[PATH_MAX];
+    uint32_t sz = (uint32_t) sizeof raw;
+    if (_NSGetExecutablePath (raw, &sz) == 0 && realpath (raw, real) != NULL) {
+      size_t len = strlen (real);
+      if (len < (size_t) cap) { memcpy (buf, real, len); n = (ssize_t) len; }
+    }
+  }
+#endif
   if (n < 0 && m9_saved_argv != NULL && m9_saved_argc > 0
       && strchr (m9_saved_argv[0], '/') != NULL) {
     size_t len = strlen (m9_saved_argv[0]);
@@ -1149,6 +1197,28 @@ void m9_meminfo (void *buf)
     o[2] = (int64_t) ms.ullTotalPhys;
     o[3] = (int64_t) ms.ullAvailPhys;
   }
+#elif defined (__APPLE__)
+  /* no /proc: the task's own counters from Mach (resident and its
+     high water), the machine's total from sysctl, and what could be
+     allocated from the VM statistics -- free plus inactive pages,
+     the nearest thing to MemAvailable the kernel publishes */
+  struct mach_task_basic_info ti;
+  mach_msg_type_number_t tn = MACH_TASK_BASIC_INFO_COUNT;
+  vm_statistics64_data_t vs;
+  mach_msg_type_number_t vn = HOST_VM_INFO64_COUNT;
+  int64_t total = 0;
+  size_t tlen = sizeof total;
+  o[0] = o[1] = o[2] = o[3] = 0;
+  if (task_info (mach_task_self (), MACH_TASK_BASIC_INFO,
+                 (task_info_t) &ti, &tn) == KERN_SUCCESS) {
+    o[0] = (int64_t) ti.resident_size;
+    o[1] = (int64_t) ti.resident_size_max;
+  }
+  if (sysctlbyname ("hw.memsize", &total, &tlen, NULL, 0) == 0) o[2] = total;
+  if (host_statistics64 (mach_host_self (), HOST_VM_INFO64,
+                         (host_info64_t) &vs, &vn) == KERN_SUCCESS)
+    o[3] = ((int64_t) vs.free_count + (int64_t) vs.inactive_count)
+           * (int64_t) sysconf (_SC_PAGESIZE);
 #else
   long page = sysconf (_SC_PAGESIZE);
   struct rusage ru;
