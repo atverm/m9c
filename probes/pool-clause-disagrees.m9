@@ -1,0 +1,13 @@
+(* EXPECT: d is declared IN scratch but allocated in p (par 4.3) *)
+MODULE m ;
+TYPE Node = RECORD v : I64 END ;
+PROCEDURE F (VAR p: POOL) =
+VAR
+  scratch : POOL ;
+  d : PTR Node IN scratch ;
+BEGIN
+  d := NEW (p, Node) ;
+  d.v := 1
+END F ;
+BEGIN
+END m.

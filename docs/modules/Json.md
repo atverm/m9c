@@ -22,9 +22,11 @@ _(documented with the group below)_
 a RAISES clause may only cite an exception the reader can find
 (par 5); IndexError and ValueRange are predeclared, so not here.
 
-### Parse (VAR pool: POOL ; RO src: STR) : PTR Node IN pool RAISES ParseError
+### Parse (RO src: STR) : PTR Node RAISES ParseError
 
-the whole tree allocates from pool; free the pool, free the tree.
+the whole tree is built in the caller's frame (par 4.3): it lives
+as long as the caller does, and a caller that must keep it longer
+Clones it into a pool.
 ParseError carries line and column -- errors are values.
 
 ### Field (obj: PTR Node ; RO name: STR) : OPT PTR Node
@@ -95,7 +97,14 @@ through StrIs, so a configuration could ask "is the mode 'fast'"
 and could not read a path out of the file.  Found by the ported model's
 pathnames moving into the options document.
 
-### Text (VAR pool: POOL ; n: PTR Node) : STR RAISES TypeMismatch, ValueRange
+### ParseIn (VAR pool: POOL ; RO src: STR) : PTR Node IN pool RAISES ParseError
+
+Parse with the tree in pool: for a document a module keeps past
+the frame that read it.  String payloads are VIEWS into src, as
+Parse's are, so src must outlive the tree -- a file read into
+the same pool, or a literal.
+
+### Text (n: PTR Node) : STR RAISES TypeMismatch, ValueRange
 
 the DECODED text of a JSON string: escapes resolved the way
 json.loads resolves them -- quote, backslash, slash, the five
@@ -121,20 +130,20 @@ be a type confusion the way AsI64 can.
 
 _(documented with the group below)_
 
-### CompactSorted (VAR pool: POOL ; n: PTR Node) : STR RAISES TypeMismatch, ValueRange, IndexError
+### CompactSorted (n: PTR Node) : STR RAISES TypeMismatch, ValueRange, IndexError
 
 Compact with every object's members sorted by name -- the
 json.dumps(sort_keys=True, separators=(",", ":")) rendering the
 proxy's passportSha256 canonicalises over.  Same float refusal
 as Compact.
 
-### Pretty (VAR pool: POOL ; n: PTR Node) : STR RAISES TypeMismatch, ValueRange
+### Pretty (n: PTR Node) : STR RAISES TypeMismatch, ValueRange
 
 json.dumps(indent=2): document order, two-space indentation,
 ": " after keys, one element per line, empty containers inline
 -- the rendering the proxy's saved passport files use.
 
-### ReprText (VAR pool: POOL ; r: F64) : STR RAISES ValueRange
+### ReprText (r: F64) : STR RAISES ValueRange
 
 a bare F64 exactly as json.dumps renders it -- Python repr for
 finite values, the NaN / Infinity tokens otherwise.  For
@@ -146,32 +155,32 @@ the zarr proxy measured five million of them emitting a million
 ndjson rows -- so a composer that already HAS a buffer should call
 AppendF64 below and copy nothing.
 
-### AppendF64 (VAR pool: POOL ; VAR d: PTR DynStr.DString ; r: F64) RAISES ValueRange
+### AppendF64 (VAR d: PTR DynStr.DString ; r: F64) RAISES ValueRange
 
 ReprText's own body, appending straight into d.  Identical bytes,
 no intermediate string: this is what a row emitter wants.
 
-### NumText (VAR pool: POOL ; n: PTR Node) : STR RAISES TypeMismatch, ValueRange
+### NumText (n: PTR Node) : STR RAISES TypeMismatch, ValueRange
 
 the number as Python str() renders it -- the digits for an
 integer, repr for a float.  TypeMismatch when n is not Num.
 
-### AppendJString (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO t: STR) RAISES ValueRange
+### AppendJString (VAR d: PTR DynStr.DString ; RO t: STR) RAISES ValueRange
 
 t appended as a JSON string literal, quotes included -- the
 same escaping Compact uses, exported for callers composing
 JSON documents directly (the proxy's catalog builder).  The
 declared raise is conversion accounting; it cannot fire.
 
-### NewObj (VAR pool: POOL) : PTR Node IN pool
+### NewObj () : PTR Node
 
 _(documented with the group below)_
 
-### NewArr (VAR pool: POOL) : PTR Node IN pool
+### NewArr () : PTR Node
 
 _(documented with the group below)_
 
-### NewStr (VAR pool: POOL ; RO s: STR) : PTR Node IN pool RAISES ValueRange
+### NewStr (RO s: STR) : PTR Node RAISES ValueRange
 
 s is the string's VALUE, not document text.  It is escaped
 here, because a Node's Str payload is always DOCUMENT text --
@@ -181,23 +190,51 @@ back as an escape and could fail to parse at all.  Escaping at
 construction keeps built and parsed nodes indistinguishable,
 which is what lets one tree mix them.
 
-### NewI64 (VAR pool: POOL ; v: I64) : PTR Node IN pool
+### NewI64 (v: I64) : PTR Node
+
+_(undocumented)_
+
+### NewF64 (r: F64) : PTR Node
+
+_(undocumented)_
+
+### NewBool (b: BOOL) : PTR Node
+
+_(undocumented)_
+
+### NewNull () : PTR Node
+
+_(undocumented)_
+
+### NewObjIn (VAR pool: POOL) : PTR Node IN pool
 
 _(documented with the group below)_
 
-### NewF64 (VAR pool: POOL ; r: F64) : PTR Node IN pool
+### NewArrIn (VAR pool: POOL) : PTR Node IN pool
 
 _(documented with the group below)_
 
-### NewBool (VAR pool: POOL ; b: BOOL) : PTR Node IN pool
+### NewStrIn (VAR pool: POOL ; RO s: STR) : PTR Node IN pool RAISES ValueRange
+
+NewStr with the node and its escaped payload in pool
+
+### NewI64In (VAR pool: POOL ; v: I64) : PTR Node IN pool
 
 _(documented with the group below)_
 
-### NewNull (VAR pool: POOL) : PTR Node IN pool
+### NewF64In (VAR pool: POOL ; r: F64) : PTR Node IN pool
 
 _(documented with the group below)_
 
-### Name (VAR pool: POOL ; RO s: STR) : STR RAISES ValueRange
+### NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool
+
+_(documented with the group below)_
+
+### NewNullIn (VAR pool: POOL) : PTR Node IN pool
+
+_(documented with the group below)_
+
+### Name (RO s: STR) : STR RAISES ValueRange
 
 the DOCUMENT spelling of a member name whose VALUE is s -- what
 Set and Field expect, since a name inside a Node is document
@@ -225,9 +262,13 @@ its own helper, where the skip-blanks policy belongs anyway.
 
 append to an array, count kept.
 
-### Clone (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool RAISES TypeMismatch
+### CloneIn (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool RAISES TypeMismatch
 
-a DEEP copy, in pool.  A node belongs to at most one parent --
+Clone with every node, payload and member name in pool
+
+### Clone (n: PTR Node) : PTR Node RAISES TypeMismatch
+
+a DEEP copy, in the caller's frame.  A node belongs to at most one parent --
 Set and Add relink the node they are given -- so a subtree that
 is to appear in a second document is cloned, never linked twice.
 Merging a shared vocabulary into a per-store document is exactly
@@ -239,15 +280,15 @@ the child chain, so a later Set on the copy would reach into the
 original.  These documents are tens of members; the copy is not
 worth being clever about.
 
-STRING PAYLOADS AND MEMBER NAMES ARE COPIED INTO `pool` TOO,
-which is what makes a clone into a DIFFERENT pool safe.  A Str's
+STRING PAYLOADS AND MEMBER NAMES ARE COPIED TOO, which is what
+makes a clone that outlives its source document safe.  A Str's
 text is a VIEW -- of the document when the node came from Parse,
 of a builder's buffer when it came from NewStr -- so a clone
 that kept the view would dangle the moment the source pool went
 away.  Nothing in the type system can see that: a POOL is not
 part of a STR's type.
 
-### Spaced (VAR pool: POOL ; n: PTR Node) : STR RAISES TypeMismatch, ValueRange
+### Spaced (n: PTR Node) : STR RAISES TypeMismatch, ValueRange
 
 Compact's separators are json.dumps' COMPACT ones; these are its
 DEFAULT ones -- ", " between members and ": " after a name, all
@@ -263,7 +304,7 @@ live ICOS stores carry BOTH because one store is rebuilt nightly
 and the others are not.  The one-line spaced form is the only
 spelling two of those three agree on.
 
-### Compact (VAR pool: POOL ; n: PTR Node) : STR RAISES TypeMismatch, ValueRange
+### Compact (n: PTR Node) : STR RAISES TypeMismatch, ValueRange
 
 the tree re-serialised COMPACT, python-json.dumps style:
 member order preserved (the parser keeps document order),

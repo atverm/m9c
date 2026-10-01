@@ -16,9 +16,9 @@ typedef struct ApiSpec_Spec ApiSpec_Spec;
 #define ApiSpec_TyInt INT64_C(2)
 #define ApiSpec_TyBool INT64_C(3)
 
-ApiSpec_Spec * ApiSpec_NewSpec (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR version, m9_state *err);
-void ApiSpec_AddOp (m9_pool *pool, ApiSpec_Spec * *s, m9_sl_CHAR method, m9_sl_CHAR path, m9_sl_CHAR summary, m9_sl_CHAR description, int64_t status, m9_sl_CHAR ctype, m9_state *err);
-void ApiSpec_AddParam (m9_pool *pool, ApiSpec_Spec * *s, m9_sl_CHAR name, bool inPath, bool required, int64_t ty, bool nullable, m9_sl_CHAR description, m9_state *err);
-m9_sl_CHAR ApiSpec_Render (m9_pool *pool, ApiSpec_Spec * s, m9_state *err);
+ApiSpec_Spec * ApiSpec_NewSpec (m9_sl_CHAR title, m9_sl_CHAR version, m9_state *err);
+void ApiSpec_AddOp (ApiSpec_Spec * *s, m9_pool *s_pool, m9_sl_CHAR method, m9_sl_CHAR path, m9_sl_CHAR summary, m9_sl_CHAR description, int64_t status, m9_sl_CHAR ctype, m9_state *err);
+void ApiSpec_AddParam (ApiSpec_Spec * *s, m9_pool *s_pool, m9_sl_CHAR name, bool inPath, bool required, int64_t ty, bool nullable, m9_sl_CHAR description, m9_state *err);
+m9_sl_CHAR ApiSpec_Render (ApiSpec_Spec * s, m9_state *err);
 
 #endif

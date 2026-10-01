@@ -63,6 +63,8 @@ struct Http_Resp {
   bool keepable;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[20] = { 97u, 32u, 109u, 97u, 108u, 102u, 111u, 114u, 109u, 101u, 100u, 32u, 114u, 101u, 115u, 112u, 111u, 110u, 115u, 101u };
 static const uint32_t m9s1[20] = { 97u, 32u, 109u, 97u, 108u, 102u, 111u, 114u, 109u, 101u, 100u, 32u, 114u, 101u, 115u, 112u, 111u, 110u, 115u, 101u };
 static const uint32_t m9s2[21] = { 117u, 110u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 102u, 105u, 108u, 101u, 32u, 101u, 114u, 114u, 111u, 114u };
@@ -135,22 +137,22 @@ static const uint32_t m9s68[2] = { 59u, 32u };
 
 static m9_mon m9_gate_csock;
 
-static void Http_CrLf (m9_pool *pool, DynStr_DString * *d, m9_state *err);
-static int64_t Http_ConnRead (Http_Conn *c, m9_state *err);
-static int64_t Http_ConnByte (Http_Conn *c, m9_state *err);
-static void Http_CloseConn (Http_Conn *c, m9_state *err);
+static void Http_CrLf (DynStr_DString * *d, m9_pool *d_pool, m9_state *err);
+static int64_t Http_ConnRead (Http_Conn *c, m9_pool *c_pool, m9_state *err);
+static int64_t Http_ConnByte (Http_Conn *c, m9_pool *c_pool, m9_state *err);
+static void Http_CloseConn (Http_Conn *c, m9_pool *c_pool, m9_state *err);
 static int64_t Http_Lower (int64_t c, m9_state *err);
 static bool Http_HeaderIs (m9_sl_CHAR line, m9_sl_CHAR name, m9_state *err);
 static m9_sl_CHAR Http_HeaderVal (m9_sl_CHAR line, int64_t skip, m9_state *err);
 static int64_t Http_Digits (m9_sl_CHAR s, m9_state *err);
 static int64_t Http_HexVal (m9_sl_CHAR s, m9_state *err);
-static int64_t Http_Line (m9_pool *pool, Http_Conn *c, m9_sl_CHAR *out, m9_state *err);
+static int64_t Http_Line (Http_Conn *c, m9_pool *c_pool, m9_sl_CHAR *out, m9_state *err);
 static void Http_SplitUrl (m9_pool *pool, m9_sl_CHAR url, bool *secure, m9_sl_CHAR *host, int64_t *port, m9_sl_CHAR *path, m9_state *err);
 static m9_sl_CHAR Http_Cat1 (m9_pool *pool, m9_sl_CHAR a, m9_state *err);
-static int64_t Http_Pull (Http_Conn *c, m9_sl_BYTE *out, int64_t at, int64_t want, m9_state *err);
-static void Http_SendAll (Http_Conn *c, m9_sl_BYTE data, m9_state *err);
-static void Http_OpenConn (m9_pool *pool, Http_Conn *c, bool secure, m9_sl_CHAR host, int64_t port, m9_state *err);
-static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sink, Http_Resp *rs, m9_state *err);
+static int64_t Http_Pull (Http_Conn *c, m9_pool *c_pool, m9_sl_BYTE *out, int64_t at, int64_t want, m9_state *err);
+static void Http_SendAll (Http_Conn *c, m9_pool *c_pool, m9_sl_BYTE data, m9_state *err);
+static void Http_OpenConn (m9_pool *pool, Http_Conn *c, m9_pool *c_pool, bool secure, m9_sl_CHAR host, int64_t port, m9_state *err);
+static void Http_Once (m9_pool *pool, Http_Conn *c, m9_pool *c_pool, Http_Req rq, m9_sl_BYTE *sink, Http_Resp *rs, m9_pool *rs_pool, m9_state *err);
 static int64_t Http_Follow (m9_pool *pool, m9_sl_CHAR url, m9_sl_CHAR accept, m9_sl_CHAR cookie, m9_sl_CHAR dest, bool toFile, int64_t cap, int64_t *bytes, m9_sl_CHAR *text, m9_state *err);
 static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err);
 static bool Http_EqNoCase (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
@@ -164,12 +166,12 @@ static bool Http_TimeOf (m9_sl_CHAR tok, int64_t *hh, int64_t *mm, int64_t *ss, 
 static int64_t Http_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_state *err);
 static double Http_HttpDate (m9_sl_CHAR s, m9_state *err);
 static int64_t Http_Find (Http_Client * cl, m9_sl_CHAR name, m9_sl_CHAR domain, m9_sl_CHAR path, m9_state *err);
-static void Http_Remove (Http_Client * *cl, int64_t k, m9_state *err);
-static void Http_Grow (m9_pool *pool, Http_Client * *cl, m9_state *err);
-static void Http_Store (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR line, m9_sl_CHAR host, m9_sl_CHAR reqPath, double now, m9_state *err);
+static void Http_Remove (Http_Client * *cl, m9_pool *cl_pool, int64_t k, m9_state *err);
+static void Http_Grow (Http_Client * *cl, m9_pool *cl_pool, m9_state *err);
+static void Http_Store (m9_pool *pool, Http_Client * *cl, m9_pool *cl_pool, m9_sl_CHAR line, m9_sl_CHAR host, m9_sl_CHAR reqPath, double now, m9_state *err);
 static bool Http_Matches (Http_Client * cl, int64_t i, bool secure, m9_sl_CHAR host, m9_sl_CHAR p, m9_state *err);
-static m9_sl_CHAR Http_CookieHeader (m9_pool *pool, Http_Client * *cl, bool secure, m9_sl_CHAR host, m9_sl_CHAR reqPath, double now, m9_state *err);
-static bool Http_Attempt (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sink, Http_Resp *rs, bool fresh, m9_state *err);
+static m9_sl_CHAR Http_CookieHeader (Http_Client * *cl, m9_pool *cl_pool, bool secure, m9_sl_CHAR host, m9_sl_CHAR reqPath, double now, m9_state *err);
+static bool Http_Attempt (m9_pool *pool, Http_Conn *c, m9_pool *c_pool, Http_Req rq, m9_sl_BYTE *sink, Http_Resp *rs, m9_pool *rs_pool, bool fresh, m9_state *err);
 
 
 int64_t Http_Get (m9_sl_CHAR host, int64_t port, m9_sl_CHAR path, m9_sl_BYTE body, int64_t *bodyLen, m9_state *err)
@@ -273,6 +275,7 @@ L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -283,7 +286,7 @@ m9_sl_BYTE Http_Request (m9_pool *pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_BYTE m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   Http_Conn c = {0}; (void) c;
@@ -314,9 +317,9 @@ m9_sl_BYTE Http_Request (m9_pool *pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl
   rq.keepHdrs = true;
   rq.keep = false;
   rq.cap = cap;
-  Http_OpenConn (&(scratch), &(c), secure, host, port, err);
+  Http_OpenConn (&(scratch), &(c), err->res, secure, host, port, err);
   if (err->exc) goto L_hdl_m9t1;
-  Http_Once (pool, &(c), rq, &(none), &(rs), err);
+  Http_Once (pool, &(c), err->res, rq, &(none), &(rs), err->res, err);
   if (err->exc) goto L_hdl_m9t1;
   (*status) = rs.status;
   (*respHeaders) = rs.hdrs;
@@ -346,6 +349,8 @@ L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
   *respHeaders = m9_rehome (&m9frame, m9res, *respHeaders, err);
+  *respHeaders = m9_rehome (&scratch, m9res, *respHeaders, err);
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -369,7 +374,9 @@ m9_sl_CHAR Http_RequestText (m9_pool *pool, m9_sl_CHAR method, m9_sl_CHAR url, m
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   *respHeaders = m9_rehome (&m9frame, m9res, *respHeaders, err);
+  *respHeaders = m9_rehome (&scratch, m9res, *respHeaders, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -447,7 +454,7 @@ Http_Client * Http_NewClient (m9_pool *pool, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Http_Client * m9ret = NULL;
   Http_Client * cl = NULL; (void) cl;
   cl = (Http_Client *) m9_pool_alloc (&((*pool)), sizeof (Http_Client), 1, err);
@@ -467,16 +474,17 @@ Http_Client * Http_NewClient (m9_pool *pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_BYTE Http_Send (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_BYTE body, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err)
+m9_sl_BYTE Http_Send (m9_pool *pool, Http_Client * *cl, m9_pool *cl_pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_BYTE body, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_BYTE m9ret = {0};
   Http_Req rq = {0}; (void) rq;
   Http_Resp rs = {0}; (void) rs;
@@ -500,7 +508,7 @@ m9_sl_BYTE Http_Send (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl
   Http_SplitUrl (pool, url, &(secure), &(host), &(port), &(path), err);
   if (err->exc) goto L_hdl_m9t1;
   now = (double)(m9_now ());
-  ck = Http_CookieHeader (pool, cl, secure, host, path, now, err);
+  ck = Http_CookieHeader (cl, cl_pool, secure, host, path, now, err);
   if (err->exc) goto L_hdl_m9t1;
   rq.method = method;
   rq.host = host;
@@ -524,11 +532,11 @@ m9_sl_BYTE Http_Send (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
       if ((*cl)->open) {
-        Http_CloseConn (&((*cl)->c), err);
+        Http_CloseConn (&((*cl)->c), cl_pool, err);
         if (err->exc) goto L_hdl_m9t1;
         (*cl)->open = false;
       }
-      Http_OpenConn (pool, &((*cl)->c), secure, host, port, err);
+      Http_OpenConn (pool, &((*cl)->c), cl_pool, secure, host, port, err);
       if (err->exc) goto L_hdl_m9t1;
       (*cl)->open = true;
       (*cl)->secure = secure;
@@ -541,7 +549,7 @@ m9_sl_BYTE Http_Send (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl
       (*cl)->c.n = INT64_C(0);
       (*cl)->c.eof = false;
     }
-    ok = Http_Attempt (pool, &((*cl)->c), rq, &(none), &(rs), fresh, err);
+    ok = Http_Attempt (pool, &((*cl)->c), cl_pool, rq, &(none), &(rs), err->res, fresh, err);
     if (err->exc) goto L_hdl_m9t1;
     if (ok) {
       break;
@@ -574,7 +582,7 @@ m9_sl_BYTE Http_Send (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl
     bool m9t8 = Http_HeaderIs (({ __typeof__(rs.hdrs) m9t7 = rs.hdrs; int64_t m9t7a = k, m9t7n = m9_sub_i64 (i, k, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s8, 11 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t8) {
-      Http_Store (pool, cl, Http_HeaderVal (({ __typeof__(rs.hdrs) m9t10 = rs.hdrs; int64_t m9t10a = k, m9t10n = m9_sub_i64 (i, k, err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; }), INT64_C(11), err), host, path, now, err);
+      Http_Store (pool, cl, cl_pool, Http_HeaderVal (({ __typeof__(rs.hdrs) m9t10 = rs.hdrs; int64_t m9t10a = k, m9t10n = m9_sub_i64 (i, k, err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; }), INT64_C(11), err), host, path, now, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     k = m9_add_i64 (i, INT64_C(1), err);
@@ -608,11 +616,13 @@ L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
   *respHeaders = m9_rehome (&m9frame, m9res, *respHeaders, err);
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_adopt_if (&m9frame, cl_pool, (*cl));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Http_SendText (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_CHAR text, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err)
+m9_sl_CHAR Http_SendText (m9_pool *pool, Http_Client * *cl, m9_pool *cl_pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_CHAR text, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -621,7 +631,7 @@ m9_sl_CHAR Http_SendText (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m
   m9_sl_CHAR m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE raw = {0}; (void) raw;
-  raw = Http_Send (pool, cl, method, url, headers, DynStr_Utf8 (&(scratch), text, err), cap, status, respHeaders, err);
+  raw = Http_Send (pool, cl, cl_pool, method, url, headers, DynStr_Utf8 (&(scratch), text, err), cap, status, respHeaders, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_FromUtf8 (pool, raw, err);
@@ -630,25 +640,29 @@ m9_sl_CHAR Http_SendText (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   *respHeaders = m9_rehome (&m9frame, m9res, *respHeaders, err);
+  *respHeaders = m9_rehome (&scratch, m9res, *respHeaders, err);
+  m9_adopt_if (&m9frame, cl_pool, (*cl));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-void Http_CloseClient (Http_Client * *cl, m9_state *err)
+void Http_CloseClient (Http_Client * *cl, m9_pool *cl_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   if ((*cl)->open) {
-    Http_CloseConn (&((*cl)->c), err);
+    Http_CloseConn (&((*cl)->c), cl_pool, err);
     if (err->exc) goto L_ret;
   }
   (*cl)->open = false;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, cl_pool, (*cl));
   m9_pool_free (&m9frame);
   return;
 }
@@ -701,23 +715,24 @@ L_ret: ;
   return m9ret;
 }
 
-static void Http_CrLf (m9_pool *pool, DynStr_DString * *d, m9_state *err)
+static void Http_CrLf (DynStr_DString * *d, m9_pool *d_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_AppendChar (pool, d, 13u, err);
+  DynStr_AppendChar (d, d_pool, 13u, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, d, 10u, err);
+  DynStr_AppendChar (d, d_pool, 10u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static int64_t Http_ConnRead (Http_Conn *c, m9_state *err)
+static int64_t Http_ConnRead (Http_Conn *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -751,11 +766,12 @@ static int64_t Http_ConnRead (Http_Conn *c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c).buf.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static int64_t Http_ConnByte (Http_Conn *c, m9_state *err)
+static int64_t Http_ConnByte (Http_Conn *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -764,7 +780,7 @@ static int64_t Http_ConnByte (Http_Conn *c, m9_state *err)
   int64_t m9ret = 0;
   int64_t v = 0; (void) v;
   if (((*c).at >= (*c).n)) {
-    bool m9t1 = (Http_ConnRead (c, err) == INT64_C(0));
+    bool m9t1 = (Http_ConnRead (c, c_pool, err) == INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
@@ -782,11 +798,12 @@ static int64_t Http_ConnByte (Http_Conn *c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c).buf.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Http_CloseConn (Http_Conn *c, m9_state *err)
+static void Http_CloseConn (Http_Conn *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -805,6 +822,7 @@ static void Http_CloseConn (Http_Conn *c, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c).buf.p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -976,21 +994,22 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Http_Line (m9_pool *pool, Http_Conn *c, m9_sl_CHAR *out, m9_state *err)
+static int64_t Http_Line (Http_Conn *c, m9_pool *c_pool, m9_sl_CHAR *out, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   int64_t m9ret = 0;
+  m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   int64_t v = 0; (void) v;
   int64_t n = 0; (void) n;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
   n = INT64_C(0);
   for (;;) {
-    v = Http_ConnByte (c, err);
+    v = Http_ConnByte (c, c_pool, err);
     if (err->exc) goto L_ret;
     if ((v < INT64_C(0))) {
       if ((n == INT64_C(0))) {
@@ -1005,7 +1024,7 @@ static int64_t Http_Line (m9_pool *pool, Http_Conn *c, m9_sl_CHAR *out, m9_state
       break;
     }
     if ((v != INT64_C(13))) {
-      DynStr_AppendChar (pool, &(d), m9_chr (v, err), err);
+      DynStr_AppendChar (&(d), &(pool), m9_chr (v, err), err);
       if (err->exc) goto L_ret;
     }
     n = m9_add_i64 (n, INT64_C(1), err);
@@ -1025,7 +1044,10 @@ static int64_t Http_Line (m9_pool *pool, Http_Conn *c, m9_sl_CHAR *out, m9_state
 L_ret: ;
   err->res = m9res;
   *out = m9_rehome (&m9frame, m9res, *out, err);
+  *out = m9_rehome (&pool, m9res, *out, err);
+  m9_adopt_if (&m9frame, c_pool, (*c).buf.p);
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
@@ -1118,7 +1140,7 @@ static m9_sl_CHAR Http_Cat1 (m9_pool *pool, m9_sl_CHAR a, m9_state *err)
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), a, err);
+  DynStr_Append (&(d), &((*pool)), a, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1131,7 +1153,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t Http_Pull (Http_Conn *c, m9_sl_BYTE *out, int64_t at, int64_t want, m9_state *err)
+static int64_t Http_Pull (Http_Conn *c, m9_pool *c_pool, m9_sl_BYTE *out, int64_t at, int64_t want, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1146,7 +1168,7 @@ static int64_t Http_Pull (Http_Conn *c, m9_sl_BYTE *out, int64_t at, int64_t wan
     goto L_ret;
   }
   if (((*c).at >= (*c).n)) {
-    bool m9t1 = (Http_ConnRead (c, err) == INT64_C(0));
+    bool m9t1 = (Http_ConnRead (c, c_pool, err) == INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
@@ -1174,11 +1196,13 @@ static int64_t Http_Pull (Http_Conn *c, m9_sl_BYTE *out, int64_t at, int64_t wan
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c).buf.p);
+  m9_adopt_if (&m9frame, m9res, (*out).p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Http_SendAll (Http_Conn *c, m9_sl_BYTE data, m9_state *err)
+static void Http_SendAll (Http_Conn *c, m9_pool *c_pool, m9_sl_BYTE data, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1206,11 +1230,12 @@ static void Http_SendAll (Http_Conn *c, m9_sl_BYTE data, m9_state *err)
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c).buf.p);
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Http_OpenConn (m9_pool *pool, Http_Conn *c, bool secure, m9_sl_CHAR host, int64_t port, m9_state *err)
+static void Http_OpenConn (m9_pool *pool, Http_Conn *c, m9_pool *c_pool, bool secure, m9_sl_CHAR host, int64_t port, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1241,12 +1266,13 @@ static void Http_OpenConn (m9_pool *pool, Http_Conn *c, bool secure, m9_sl_CHAR 
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c).buf.p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sink, Http_Resp *rs, m9_state *err)
+static void Http_Once (m9_pool *pool, Http_Conn *c, m9_pool *c_pool, Http_Req rq, m9_sl_BYTE *sink, Http_Resp *rs, m9_pool *rs_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1290,49 +1316,49 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
   bool m9t1 = false; (void) m9t1;
   req = DynStr_New (&(scratch), err);
   if (err->exc) goto L_fin_m9t2;
-  DynStr_Append (&(scratch), &(req), rq.method, err);
+  DynStr_Append (&(req), &(scratch), rq.method, err);
   if (err->exc) goto L_fin_m9t2;
-  DynStr_Append (&(scratch), &(req), ((m9_sl_CHAR){ (uint32_t *) m9s18, 1 }), err);
+  DynStr_Append (&(req), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s18, 1 }), err);
   if (err->exc) goto L_fin_m9t2;
-  DynStr_Append (&(scratch), &(req), rq.path, err);
+  DynStr_Append (&(req), &(scratch), rq.path, err);
   if (err->exc) goto L_fin_m9t2;
-  DynStr_Append (&(scratch), &(req), ((m9_sl_CHAR){ (uint32_t *) m9s19, 9 }), err);
+  DynStr_Append (&(req), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s19, 9 }), err);
   if (err->exc) goto L_fin_m9t2;
-  Http_CrLf (&(scratch), &(req), err);
+  Http_CrLf (&(req), &(scratch), err);
   if (err->exc) goto L_fin_m9t2;
-  DynStr_Append (&(scratch), &(req), ((m9_sl_CHAR){ (uint32_t *) m9s20, 6 }), err);
+  DynStr_Append (&(req), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s20, 6 }), err);
   if (err->exc) goto L_fin_m9t2;
-  DynStr_Append (&(scratch), &(req), rq.host, err);
+  DynStr_Append (&(req), &(scratch), rq.host, err);
   if (err->exc) goto L_fin_m9t2;
-  Http_CrLf (&(scratch), &(req), err);
+  Http_CrLf (&(req), &(scratch), err);
   if (err->exc) goto L_fin_m9t2;
-  DynStr_Append (&(scratch), &(req), ((m9_sl_CHAR){ (uint32_t *) m9s21, 25 }), err);
+  DynStr_Append (&(req), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s21, 25 }), err);
   if (err->exc) goto L_fin_m9t2;
-  Http_CrLf (&(scratch), &(req), err);
+  Http_CrLf (&(req), &(scratch), err);
   if (err->exc) goto L_fin_m9t2;
   if (rq.keep) {
-    DynStr_Append (&(scratch), &(req), ((m9_sl_CHAR){ (uint32_t *) m9s22, 22 }), err);
+    DynStr_Append (&(req), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s22, 22 }), err);
     if (err->exc) goto L_fin_m9t2;
   } else {
-    DynStr_Append (&(scratch), &(req), ((m9_sl_CHAR){ (uint32_t *) m9s23, 17 }), err);
+    DynStr_Append (&(req), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s23, 17 }), err);
     if (err->exc) goto L_fin_m9t2;
   }
-  Http_CrLf (&(scratch), &(req), err);
+  Http_CrLf (&(req), &(scratch), err);
   if (err->exc) goto L_fin_m9t2;
   if (((rq.accept).len > INT64_C(0))) {
-    DynStr_Append (&(scratch), &(req), ((m9_sl_CHAR){ (uint32_t *) m9s24, 8 }), err);
+    DynStr_Append (&(req), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s24, 8 }), err);
     if (err->exc) goto L_fin_m9t2;
-    DynStr_Append (&(scratch), &(req), rq.accept, err);
+    DynStr_Append (&(req), &(scratch), rq.accept, err);
     if (err->exc) goto L_fin_m9t2;
-    Http_CrLf (&(scratch), &(req), err);
+    Http_CrLf (&(req), &(scratch), err);
     if (err->exc) goto L_fin_m9t2;
   }
   if (((rq.cookie).len > INT64_C(0))) {
-    DynStr_Append (&(scratch), &(req), ((m9_sl_CHAR){ (uint32_t *) m9s25, 8 }), err);
+    DynStr_Append (&(req), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s25, 8 }), err);
     if (err->exc) goto L_fin_m9t2;
-    DynStr_Append (&(scratch), &(req), rq.cookie, err);
+    DynStr_Append (&(req), &(scratch), rq.cookie, err);
     if (err->exc) goto L_fin_m9t2;
-    Http_CrLf (&(scratch), &(req), err);
+    Http_CrLf (&(req), &(scratch), err);
     if (err->exc) goto L_fin_m9t2;
   }
   k = INT64_C(0);
@@ -1355,9 +1381,9 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
       if (err->exc) goto L_fin_m9t2;
     }
     if ((n > INT64_C(0))) {
-      DynStr_Append (&(scratch), &(req), ({ __typeof__(rq.extra) m9t5 = rq.extra; int64_t m9t5a = k, m9t5n = n; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), err);
+      DynStr_Append (&(req), &(scratch), ({ __typeof__(rq.extra) m9t5 = rq.extra; int64_t m9t5a = k, m9t5n = n; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), err);
       if (err->exc) goto L_fin_m9t2;
-      Http_CrLf (&(scratch), &(req), err);
+      Http_CrLf (&(req), &(scratch), err);
       if (err->exc) goto L_fin_m9t2;
     }
     k = m9_add_i64 (i, INT64_C(1), err);
@@ -1366,22 +1392,22 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
   bool m9t6 = (((rq.body).len > INT64_C(0)) || (!((DynStr_Eq (rq.method, ((m9_sl_CHAR){ (uint32_t *) m9s26, 3 }), err) || DynStr_Eq (rq.method, ((m9_sl_CHAR){ (uint32_t *) m9s27, 4 }), err)))));
   if (err->exc) goto L_fin_m9t2;
   if (m9t6) {
-    DynStr_Append (&(scratch), &(req), ((m9_sl_CHAR){ (uint32_t *) m9s28, 16 }), err);
+    DynStr_Append (&(req), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s28, 16 }), err);
     if (err->exc) goto L_fin_m9t2;
-    DynStr_AppendI64 (&(scratch), &(req), (rq.body).len, err);
+    DynStr_AppendI64 (&(req), &(scratch), (rq.body).len, err);
     if (err->exc) goto L_fin_m9t2;
-    Http_CrLf (&(scratch), &(req), err);
+    Http_CrLf (&(req), &(scratch), err);
     if (err->exc) goto L_fin_m9t2;
   }
-  Http_CrLf (&(scratch), &(req), err);
+  Http_CrLf (&(req), &(scratch), err);
   if (err->exc) goto L_fin_m9t2;
   wire = DynStr_Bytes (&(scratch), DynStr_View (req, err), false, err);
   if (err->exc) goto L_fin_m9t2;
-  Http_SendAll (c, wire, err);
+  Http_SendAll (c, c_pool, wire, err);
   if (err->exc) goto L_fin_m9t2;
-  Http_SendAll (c, rq.body, err);
+  Http_SendAll (c, c_pool, rq.body, err);
   if (err->exc) goto L_fin_m9t2;
-  ln = Http_Line (&(scratch), c, &(line), err);
+  ln = Http_Line (c, c_pool, &(line), err);
   if (err->exc) goto L_fin_m9t2;
   if ((ln < INT64_C(12))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s29, 14 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s29, 14 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
@@ -1400,7 +1426,7 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
   hd = DynStr_New (&(scratch), err);
   if (err->exc) goto L_fin_m9t2;
   for (;;) {
-    ln = Http_Line (&(scratch), c, &(line), err);
+    ln = Http_Line (c, c_pool, &(line), err);
     if (err->exc) goto L_fin_m9t2;
     bool m9t8 = (ln == m9_neg_i64 (INT64_C(2), err));
     if (err->exc) goto L_fin_m9t2;
@@ -1413,9 +1439,9 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
       break;
     }
     if (rq.keepHdrs) {
-      DynStr_Append (&(scratch), &(hd), line, err);
+      DynStr_Append (&(hd), &(scratch), line, err);
       if (err->exc) goto L_fin_m9t2;
-      DynStr_AppendChar (&(scratch), &(hd), 10u, err);
+      DynStr_AppendChar (&(hd), &(scratch), 10u, err);
       if (err->exc) goto L_fin_m9t2;
     }
     bool m9t10 = Http_HeaderIs (line, ((m9_sl_CHAR){ (uint32_t *) m9s31, 15 }), err);
@@ -1502,11 +1528,11 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
   for (;;) {
     if ((chunked && (want == INT64_C(0)))) {
       if ((!first)) {
-        ln = Http_Line (&(scratch), c, &(line), err);
+        ln = Http_Line (c, c_pool, &(line), err);
         if (err->exc) goto L_fin_m9t2;
       }
       first = false;
-      ln = Http_Line (&(scratch), c, &(line), err);
+      ln = Http_Line (c, c_pool, &(line), err);
       if (err->exc) goto L_fin_m9t2;
       if ((ln < INT64_C(0))) {
         break;
@@ -1527,7 +1553,7 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
       }
     }
     if ((want < INT64_C(0))) {
-      got = Http_Pull (c, &(blk), held, m9_sub_i64 (Http_IoBlock, held, err), err);
+      got = Http_Pull (c, c_pool, &(blk), held, m9_sub_i64 (Http_IoBlock, held, err), err);
       if (err->exc) goto L_fin_m9t2;
     } else {
       n = m9_sub_i64 (Http_IoBlock, held, err);
@@ -1535,7 +1561,7 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
       if ((n > want)) {
         n = want;
       }
-      got = Http_Pull (c, &(blk), held, n, err);
+      got = Http_Pull (c, c_pool, &(blk), held, n, err);
       if (err->exc) goto L_fin_m9t2;
       want = m9_sub_i64 (want, got, err);
       if (err->exc) goto L_fin_m9t2;
@@ -1598,7 +1624,7 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
       m9t29to = m9_sub_i64 (held, INT64_C(1), err);
       if (err->exc) goto L_fin_m9t2;
       for (; i <= m9t29to; i += 1) {
-        DynStr_AppendChar (pool, &(acc), m9_chr ((int64_t)((*(uint8_t *) m9_at (blk.p, i, blk.len, sizeof (uint8_t), err))), err), err);
+        DynStr_AppendChar (&(acc), &((*pool)), m9_chr ((int64_t)((*(uint8_t *) m9_at (blk.p, i, blk.len, sizeof (uint8_t), err))), err), err);
         if (err->exc) goto L_fin_m9t2;
       } }
       held = INT64_C(0);
@@ -1619,7 +1645,7 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
   } }
   if (ended) {
     for (;;) {
-      ln = Http_Line (&(scratch), c, &(line), err);
+      ln = Http_Line (c, c_pool, &(line), err);
       if (err->exc) goto L_fin_m9t2;
       if ((ln <= INT64_C(0))) {
         break;
@@ -1630,13 +1656,19 @@ static void Http_Once (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sin
   done = true;
 L_fin_m9t2: ;
   if ((!((done && (*rs).keepable)))) {
-    Http_CloseConn (c, err);
+    Http_CloseConn (c, c_pool, err);
     if (err->exc) goto L_ret;
   }
   if (m9t1) goto L_ret;
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c).buf.p);
+  m9_adopt_if (&m9frame, m9res, (*sink).p);
+  m9_adopt_if (&m9frame, rs_pool, (*rs).loc.p);
+  m9_adopt_if (&m9frame, rs_pool, (*rs).setCookie.p);
+  m9_adopt_if (&m9frame, rs_pool, (*rs).hdrs.p);
+  m9_adopt_if (&m9frame, rs_pool, (*rs).text.p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -1680,9 +1712,9 @@ static int64_t Http_Follow (m9_pool *pool, m9_sl_CHAR url, m9_sl_CHAR accept, m9
     rq.host = host;
     rq.path = path;
     rq.cookie = ck;
-    Http_OpenConn (&(scratch), &(c), secure, host, port, err);
+    Http_OpenConn (&(scratch), &(c), err->res, secure, host, port, err);
     if (err->exc) goto L_ret;
-    Http_Once (pool, &(c), rq, &(none), &(rs), err);
+    Http_Once (pool, &(c), err->res, rq, &(none), &(rs), err->res, err);
     if (err->exc) goto L_ret;
     (*bytes) = rs.bytes;
     (*text) = rs.text;
@@ -1714,6 +1746,7 @@ static int64_t Http_Follow (m9_pool *pool, m9_sl_CHAR url, m9_sl_CHAR accept, m9
 L_ret: ;
   err->res = m9res;
   *text = m9_rehome (&m9frame, m9res, *text, err);
+  *text = m9_rehome (&scratch, m9res, *text, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -1747,9 +1780,9 @@ static int64_t Http_Fetch (bool secure, m9_sl_CHAR host, int64_t port, m9_sl_CHA
   rq.keep = false;
   rq.cap = INT64_C(0);
   sink = body;
-  Http_OpenConn (&(scratch), &(c), secure, host, port, err);
+  Http_OpenConn (&(scratch), &(c), err->res, secure, host, port, err);
   if (err->exc) goto L_hdl_m9t1;
-  Http_Once (&(scratch), &(c), rq, &(sink), &(rs), err);
+  Http_Once (&(scratch), &(c), err->res, rq, &(sink), &(rs), err->res, err);
   if (err->exc) goto L_hdl_m9t1;
   (*bodyLen) = rs.bytes;
   err->res = m9res;
@@ -2370,7 +2403,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Http_Remove (Http_Client * *cl, int64_t k, m9_state *err)
+static void Http_Remove (Http_Client * *cl, m9_pool *cl_pool, int64_t k, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2389,11 +2422,12 @@ static void Http_Remove (Http_Client * *cl, int64_t k, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, cl_pool, (*cl));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Http_Grow (m9_pool *pool, Http_Client * *cl, m9_state *err)
+static void Http_Grow (Http_Client * *cl, m9_pool *cl_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2406,7 +2440,7 @@ static void Http_Grow (m9_pool *pool, Http_Client * *cl, m9_state *err)
     goto L_ret;
   }
   if ((((*cl)->cookies).len >= Http_JarMax)) {
-    Http_Remove (cl, INT64_C(0), err);
+    Http_Remove (cl, cl_pool, INT64_C(0), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -2415,7 +2449,7 @@ static void Http_Grow (m9_pool *pool, Http_Client * *cl, m9_state *err)
   if ((n2 > Http_JarMax)) {
     n2 = Http_JarMax;
   }
-  nw = M9_POOL_SL (m9_sl_Http_Cookie, Http_Cookie, &((*pool)), n2, err);
+  nw = M9_POOL_SL (m9_sl_Http_Cookie, Http_Cookie, cl_pool, n2, err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -2428,11 +2462,12 @@ static void Http_Grow (m9_pool *pool, Http_Client * *cl, m9_state *err)
   (*cl)->cookies = nw;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, cl_pool, (*cl));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Http_Store (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR line, m9_sl_CHAR host, m9_sl_CHAR reqPath, double now, m9_state *err)
+static void Http_Store (m9_pool *pool, Http_Client * *cl, m9_pool *cl_pool, m9_sl_CHAR line, m9_sl_CHAR host, m9_sl_CHAR reqPath, double now, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2591,7 +2626,7 @@ static void Http_Store (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR line, m9_sl
   if (err->exc) goto L_ret;
   if (((expires > 0.0) && (expires <= now))) {
     if ((k >= INT64_C(0))) {
-      Http_Remove (cl, k, err);
+      Http_Remove (cl, cl_pool, k, err);
       if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -2612,7 +2647,7 @@ static void Http_Store (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR line, m9_sl
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  Http_Grow (pool, cl, err);
+  Http_Grow (cl, cl_pool, err);
   if (err->exc) goto L_ret;
   (*(Http_Cookie *) m9_at ((*cl)->cookies.p, (*cl)->n, (*cl)->cookies.len, sizeof (Http_Cookie), err)) = ck;
   if (err->exc) goto L_ret;
@@ -2620,6 +2655,7 @@ static void Http_Store (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR line, m9_sl
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, cl_pool, (*cl));
   m9_pool_free (&m9frame);
   return;
 }
@@ -2666,13 +2702,14 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Http_CookieHeader (m9_pool *pool, Http_Client * *cl, bool secure, m9_sl_CHAR host, m9_sl_CHAR reqPath, double now, m9_state *err)
+static m9_sl_CHAR Http_CookieHeader (Http_Client * *cl, m9_pool *cl_pool, bool secure, m9_sl_CHAR host, m9_sl_CHAR reqPath, double now, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   m9_arr_256_bool sent = {0}; (void) sent;
   int64_t i = 0; (void) i;
@@ -2685,7 +2722,7 @@ static m9_sl_CHAR Http_CookieHeader (m9_pool *pool, Http_Client * *cl, bool secu
     bool m9t1 = (((*(Http_Cookie *) m9_at ((*cl)->cookies.p, i, (*cl)->cookies.len, sizeof (Http_Cookie), err)).expires > 0.0) && ((*(Http_Cookie *) m9_at ((*cl)->cookies.p, i, (*cl)->cookies.len, sizeof (Http_Cookie), err)).expires <= now));
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Http_Remove (cl, i, err);
+      Http_Remove (cl, cl_pool, i, err);
       if (err->exc) goto L_ret;
     } else {
       i = m9_add_i64 (i, INT64_C(1), err);
@@ -2702,7 +2739,7 @@ static m9_sl_CHAR Http_CookieHeader (m9_pool *pool, Http_Client * *cl, bool secu
     (*(bool *) m9_at (sent.v, i, INT64_C(256), sizeof (bool), err)) = false;
     if (err->exc) goto L_ret;
   } }
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
   count = INT64_C(0);
   for (;;) {
@@ -2729,17 +2766,17 @@ static m9_sl_CHAR Http_CookieHeader (m9_pool *pool, Http_Client * *cl, bool secu
     (*(bool *) m9_at (sent.v, best, INT64_C(256), sizeof (bool), err)) = true;
     if (err->exc) goto L_ret;
     if ((count == INT64_C(0))) {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s67, 8 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s67, 8 }), err);
       if (err->exc) goto L_ret;
     } else {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s68, 2 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s68, 2 }), err);
       if (err->exc) goto L_ret;
     }
-    DynStr_Append (pool, &(d), (*(Http_Cookie *) m9_at ((*cl)->cookies.p, best, (*cl)->cookies.len, sizeof (Http_Cookie), err)).name, err);
+    DynStr_Append (&(d), &(pool), (*(Http_Cookie *) m9_at ((*cl)->cookies.p, best, (*cl)->cookies.len, sizeof (Http_Cookie), err)).name, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), 61u, err);
+    DynStr_AppendChar (&(d), &(pool), 61u, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), (*(Http_Cookie *) m9_at ((*cl)->cookies.p, best, (*cl)->cookies.len, sizeof (Http_Cookie), err)).value, err);
+    DynStr_Append (&(d), &(pool), (*(Http_Cookie *) m9_at ((*cl)->cookies.p, best, (*cl)->cookies.len, sizeof (Http_Cookie), err)).value, err);
     if (err->exc) goto L_ret;
     count = m9_add_i64 (count, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -2749,7 +2786,7 @@ static m9_sl_CHAR Http_CookieHeader (m9_pool *pool, Http_Client * *cl, bool secu
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  DynStr_AppendChar (pool, &(d), 10u, err);
+  DynStr_AppendChar (&(d), &(pool), 10u, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -2758,18 +2795,21 @@ static m9_sl_CHAR Http_CookieHeader (m9_pool *pool, Http_Client * *cl, bool secu
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&pool, m9res, m9ret, err);
+  m9_adopt_if (&m9frame, cl_pool, (*cl));
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
-static bool Http_Attempt (m9_pool *pool, Http_Conn *c, Http_Req rq, m9_sl_BYTE *sink, Http_Resp *rs, bool fresh, m9_state *err)
+static bool Http_Attempt (m9_pool *pool, Http_Conn *c, m9_pool *c_pool, Http_Req rq, m9_sl_BYTE *sink, Http_Resp *rs, m9_pool *rs_pool, bool fresh, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  Http_Once (pool, c, rq, sink, rs, err);
+  Http_Once (pool, c, c_pool, rq, sink, rs, rs_pool, err);
   if (err->exc) goto L_hdl_m9t1;
   err->res = m9res;
   m9ret = true;
@@ -2793,6 +2833,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c).buf.p);
+  m9_adopt_if (&m9frame, m9res, (*sink).p);
+  m9_adopt_if (&m9frame, rs_pool, (*rs).loc.p);
+  m9_adopt_if (&m9frame, rs_pool, (*rs).setCookie.p);
+  m9_adopt_if (&m9frame, rs_pool, (*rs).hdrs.p);
+  m9_adopt_if (&m9frame, rs_pool, (*rs).text.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2802,13 +2848,10 @@ void Http_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

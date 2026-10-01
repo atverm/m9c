@@ -32,6 +32,7 @@ struct ProcUse_Holder {
 static ProcUse_Holder h;
 static ProcUse_Less chosen;
 static int64_t total;
+static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[3] = { 111u, 110u, 101u };
 static const uint32_t m9s1[5] = { 116u, 104u, 114u, 101u, 101u };
@@ -242,8 +243,7 @@ int main (int argc, char **argv)
 {
   m9_state errv = {0};
   m9_state *err = &errv;
-  m9_pool m9frame = {0};
-  err->res = &m9frame;
+  err->res = &m9mframe;
   m9_args (argc, argv);
   Io_m9init (err); if (err->exc) goto L_ret;
   ProcUse_Run (err);
@@ -259,6 +259,6 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
-  m9_pool_free (&m9frame);
+  m9_pool_free (&m9mframe);
   return m9_exit (err);
 }

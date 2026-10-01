@@ -134,7 +134,7 @@ struct Parse_Parser {
   m9_arr_64_m9_sl_CHAR errMsg;
 };
 
-void Parse_Init (Parse_Parser *p, m9_sl_CHAR src, m9_state *err);
-Ast_Node * Parse_File (m9_pool *pool, Parse_Parser *p, m9_state *err);
+void Parse_Init (Parse_Parser *p, m9_pool *p_pool, m9_sl_CHAR src, m9_state *err);
+Ast_Node * Parse_File (m9_pool *pool, Parse_Parser *p, m9_pool *p_pool, m9_state *err);
 
 #endif

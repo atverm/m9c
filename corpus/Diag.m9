@@ -86,7 +86,7 @@ PROCEDURE Json (VAR pool: POOL ; RO fs: SLICE OF Finding) : STR
        {"ok":false,"diags":[{"line":L,"col":C,"msg":"..."},...]}
      ok is exactly "no finding".                                     *)
 
-PROCEDURE LexJson (VAR pool: POOL ; RO KEPT src: STR) : STR
+PROCEDURE LexJson (RO KEPT src: STR) : STR
   RAISES ValueRange, IndexError ;
   (* the compiler's own tokens and comments, for a page that paints:
        {"tokens":[[kind,line,col,len],...],
@@ -94,7 +94,7 @@ PROCEDURE LexJson (VAR pool: POOL ; RO KEPT src: STR) : STR
      kind is Lex's stable code (0 is EOF and is not listed; 1 is an
      error token), len the token's text length in CHARs.            *)
 
-PROCEDURE JStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO s: STR)
+PROCEDURE JStr (VAR d: PTR DynStr.DString ; RO s: STR)
   RAISES ValueRange ;
   (* a JSON string literal appended to d: the escapes RFC 8259
      requires and no others -- `"` and `\` backslashed, controls as
@@ -111,25 +111,25 @@ IMPORT Lex ;
 
 (* ---- JSON out ---- *)
 
-PROCEDURE JStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO s: STR)
+PROCEDURE JStr (VAR d: PTR DynStr.DString ; RO s: STR)
   RAISES ValueRange =
 VAR i, c : I64 ;
 BEGIN
-  DynStr.AppendChar (pool, d, 022C) ;
+  DynStr.AppendChar (d, 022C) ;
   FOR i := 0 TO LEN (s) - 1 DO
     c := ORD (s[i]) ;
     IF c = 0x22 OR c = 0x5C THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, s[i])
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, s[i])
     ELSIF c < 0x20 THEN
-      DynStr.Append (pool, d, '\u00') ;
-      DynStr.AppendChar (pool, d, HexDigit (c DIV 16)) ;
-      DynStr.AppendChar (pool, d, HexDigit (c MOD 16))
+      DynStr.Append (d, '\u00') ;
+      DynStr.AppendChar (d, HexDigit (c DIV 16)) ;
+      DynStr.AppendChar (d, HexDigit (c MOD 16))
     ELSE
-      DynStr.AppendChar (pool, d, s[i])
+      DynStr.AppendChar (d, s[i])
     END
   END ;
-  DynStr.AppendChar (pool, d, 022C)
+  DynStr.AppendChar (d, 022C)
 END JStr ;
 
 PROCEDURE HexDigit (v: I64) : CHAR RAISES ValueRange =
@@ -229,11 +229,11 @@ BEGIN
   RETURN FALSE
 END HasQuote ;
 
-PROCEDURE Quoted (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO s: STR) =
+PROCEDURE Quoted (VAR d: PTR DynStr.DString ; RO s: STR) =
 BEGIN
-  DynStr.AppendChar (pool, d, 027C) ;
-  DynStr.Append (pool, d, s) ;
-  DynStr.AppendChar (pool, d, 027C)
+  DynStr.AppendChar (d, 027C) ;
+  DynStr.Append (d, s) ;
+  DynStr.AppendChar (d, 027C)
 END Quoted ;
 
 (* the captured output, or empty when there was none to read *)
@@ -253,7 +253,7 @@ PROCEDURE Check (VAR pool: POOL ; RO m9c: STR ; RO flags: STR ;
 VAR
   scratch : POOL ;
   cmd : PTR DynStr.DString IN scratch ;
-  d : PTR DynStr.DString ;
+  d : PTR DynStr.DString IN pool ;
   fs : SLICE OF Finding ;
   text, line : STR ;
   rc, i, j, n, nl, mstart : I64 ;
@@ -262,22 +262,22 @@ BEGIN
     RETURN One (pool, 1, 1, 'a path containing a quote is not checked')
   END ;
   cmd := DynStr.New (scratch) ;
-  DynStr.AppendChar (scratch, cmd, '(') ;
+  DynStr.AppendChar (cmd, '(') ;
   IF LEN (dir) > 0 THEN
-    DynStr.Append (scratch, cmd, 'cd ') ;
-    Quoted (scratch, cmd, dir) ;
-    DynStr.Append (scratch, cmd, ' && ')
+    DynStr.Append (cmd, 'cd ') ;
+    Quoted (cmd, dir) ;
+    DynStr.Append (cmd, ' && ')
   END ;
-  DynStr.Append (scratch, cmd, m9c) ;
+  DynStr.Append (cmd, m9c) ;
   IF LEN (flags) > 0 THEN
-    DynStr.AppendChar (scratch, cmd, ' ') ;
-    DynStr.Append (scratch, cmd, flags)
+    DynStr.AppendChar (cmd, ' ') ;
+    DynStr.Append (cmd, flags)
   END ;
-  DynStr.Append (scratch, cmd, ' --check ') ;
-  Quoted (scratch, cmd, file) ;
-  DynStr.Append (scratch, cmd, ') > ') ;
-  Quoted (scratch, cmd, outFile) ;
-  DynStr.Append (scratch, cmd, ' 2>&1') ;
+  DynStr.Append (cmd, ' --check ') ;
+  Quoted (cmd, file) ;
+  DynStr.Append (cmd, ') > ') ;
+  Quoted (cmd, outFile) ;
+  DynStr.Append (cmd, ' 2>&1') ;
   rc := Io.Run (DynStr.View (cmd)) ;
   IF rc = 0 THEN RETURN NEW (pool, Finding, 0) END ;
   text := OutText (pool, outFile) ;
@@ -314,9 +314,9 @@ BEGIN
   WHILE j < LEN (text) AND text[j] # 0AC DO j := j + 1 END ;
   IF j > 0 THEN RETURN One (pool, 1, 1, SLICE (text, 0, j)) END ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, 'm9c: exit ') ;
+  DynStr.Append (d, 'm9c: exit ') ;
   IF rc >= 256 THEN rc := rc DIV 256 END ;
-  DynStr.AppendI64 (pool, d, rc) ;
+  DynStr.AppendI64 (d, rc) ;
   RETURN One (pool, 1, 1, DynStr.View (d))
 END Check ;
 
@@ -343,28 +343,28 @@ BEGIN
     END
   END ;
   docs := DynStr.New (scratch) ;
-  DynStr.Append (scratch, docs, workDir) ;
-  DynStr.Append (scratch, docs, '/docs') ;
+  DynStr.Append (docs, workDir) ;
+  DynStr.Append (docs, '/docs') ;
   cmd := DynStr.New (scratch) ;
-  DynStr.Append (scratch, cmd, 'mkdir -p ') ;
-  Quoted (scratch, cmd, DynStr.View (docs)) ;
-  DynStr.Append (scratch, cmd, ' && cd ') ;
-  Quoted (scratch, cmd, DynStr.View (docs)) ;
-  DynStr.Append (scratch, cmd, ' && test -f ') ;
-  DynStr.Append (scratch, cmd, name) ;
-  DynStr.Append (scratch, cmd, '.json || ') ;
-  DynStr.Append (scratch, cmd, m9c) ;
+  DynStr.Append (cmd, 'mkdir -p ') ;
+  Quoted (cmd, DynStr.View (docs)) ;
+  DynStr.Append (cmd, ' && cd ') ;
+  Quoted (cmd, DynStr.View (docs)) ;
+  DynStr.Append (cmd, ' && test -f ') ;
+  DynStr.Append (cmd, name) ;
+  DynStr.Append (cmd, '.json || ') ;
+  DynStr.Append (cmd, m9c) ;
   IF LEN (flags) > 0 THEN
-    DynStr.AppendChar (scratch, cmd, ' ') ;
-    DynStr.Append (scratch, cmd, flags)
+    DynStr.AppendChar (cmd, ' ') ;
+    DynStr.Append (cmd, flags)
   END ;
-  DynStr.Append (scratch, cmd, ' --json ') ;
-  DynStr.Append (scratch, cmd, name) ;
-  DynStr.Append (scratch, cmd, ' > dc.txt 2>&1') ;
+  DynStr.Append (cmd, ' --json ') ;
+  DynStr.Append (cmd, name) ;
+  DynStr.Append (cmd, ' > dc.txt 2>&1') ;
   rc := Io.Run (DynStr.View (cmd)) ;
-  DynStr.Append (scratch, docs, '/') ;
-  DynStr.Append (scratch, docs, name) ;
-  DynStr.Append (scratch, docs, '.json') ;
+  DynStr.Append (docs, '/') ;
+  DynStr.Append (docs, name) ;
+  DynStr.Append (docs, '.json') ;
   RETURN Io.ReadFile (pool, DynStr.View (docs))
 EXCEPT
 | Io.IOError (p) :
@@ -375,40 +375,41 @@ END DocJson ;
 PROCEDURE Json (VAR pool: POOL ; RO fs: SLICE OF Finding) : STR
   RAISES ValueRange, IndexError =
 VAR
-  d : PTR DynStr.DString ;
+  d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
   IF LEN (fs) = 0 THEN RETURN '{"ok":true,"diags":[]}' END ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"ok":false,"diags":[') ;
+  DynStr.Append (d, '{"ok":false,"diags":[') ;
   FOR i := 0 TO LEN (fs) - 1 DO
-    IF i > 0 THEN DynStr.AppendChar (pool, d, 02CC) END ;
-    DynStr.Append (pool, d, '{"line":') ;
-    DynStr.AppendI64 (pool, d, fs[i].line) ;
-    DynStr.Append (pool, d, ',"col":') ;
-    DynStr.AppendI64 (pool, d, fs[i].col) ;
-    DynStr.Append (pool, d, ',"msg":') ;
-    JStr (pool, d, fs[i].msg) ;
-    DynStr.AppendChar (pool, d, 07DC)
+    IF i > 0 THEN DynStr.AppendChar (d, 02CC) END ;
+    DynStr.Append (d, '{"line":') ;
+    DynStr.AppendI64 (d, fs[i].line) ;
+    DynStr.Append (d, ',"col":') ;
+    DynStr.AppendI64 (d, fs[i].col) ;
+    DynStr.Append (d, ',"msg":') ;
+    JStr (d, fs[i].msg) ;
+    DynStr.AppendChar (d, 07DC)
   END ;
-  DynStr.Append (pool, d, ']}') ;
+  DynStr.Append (d, ']}') ;
   RETURN DynStr.View (d)
 END Json ;
 
 (* ---- the compiler's own tokens ---- *)
 
-PROCEDURE LexJson (VAR pool: POOL ; RO KEPT src: STR) : STR
+PROCEDURE LexJson (RO KEPT src: STR) : STR
   RAISES ValueRange, IndexError =
 VAR
+  pool : POOL ;
   lx : Lex.Lexer ;
   t : Lex.Token ;
   cm : Lex.Comment ;
-  d : PTR DynStr.DString ;
+  d : PTR DynStr.DString IN pool ;
   first : BOOL ;
   i : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"tokens":[') ;
+  DynStr.Append (d, '{"tokens":[') ;
   Lex.Collect (TRUE) ;
   Lex.Init (lx, src) ;
   first := TRUE ;
@@ -416,32 +417,32 @@ BEGIN
     Lex.Next (lx, t) ;
     (* kinds are stable I64 codes by Lex's own contract: 0 is EOF *)
     IF t.kind = 0 THEN EXIT END ;
-    IF NOT first THEN DynStr.AppendChar (pool, d, 02CC) END ;
+    IF NOT first THEN DynStr.AppendChar (d, 02CC) END ;
     first := FALSE ;
-    DynStr.AppendChar (pool, d, 05BC) ;
-    DynStr.AppendI64 (pool, d, t.kind) ;
-    DynStr.AppendChar (pool, d, 02CC) ;
-    DynStr.AppendI64 (pool, d, t.line) ;
-    DynStr.AppendChar (pool, d, 02CC) ;
-    DynStr.AppendI64 (pool, d, t.col) ;
-    DynStr.AppendChar (pool, d, 02CC) ;
-    DynStr.AppendI64 (pool, d, LEN (t.text)) ;
-    DynStr.AppendChar (pool, d, 05DC)
+    DynStr.AppendChar (d, 05BC) ;
+    DynStr.AppendI64 (d, t.kind) ;
+    DynStr.AppendChar (d, 02CC) ;
+    DynStr.AppendI64 (d, t.line) ;
+    DynStr.AppendChar (d, 02CC) ;
+    DynStr.AppendI64 (d, t.col) ;
+    DynStr.AppendChar (d, 02CC) ;
+    DynStr.AppendI64 (d, LEN (t.text)) ;
+    DynStr.AppendChar (d, 05DC)
   END ;
   Lex.Collect (FALSE) ;
-  DynStr.Append (pool, d, '],"comments":[') ;
+  DynStr.Append (d, '],"comments":[') ;
   FOR i := 0 TO Lex.ComCount () - 1 DO
     cm := Lex.ComAt (i) ;
-    IF i > 0 THEN DynStr.AppendChar (pool, d, 02CC) END ;
-    DynStr.Append (pool, d, '{"line":') ;
-    DynStr.AppendI64 (pool, d, cm.line) ;
-    DynStr.Append (pool, d, ',"col":') ;
-    DynStr.AppendI64 (pool, d, cm.col) ;
-    DynStr.Append (pool, d, ',"text":') ;
-    JStr (pool, d, cm.text) ;
-    DynStr.AppendChar (pool, d, 07DC)
+    IF i > 0 THEN DynStr.AppendChar (d, 02CC) END ;
+    DynStr.Append (d, '{"line":') ;
+    DynStr.AppendI64 (d, cm.line) ;
+    DynStr.Append (d, ',"col":') ;
+    DynStr.AppendI64 (d, cm.col) ;
+    DynStr.Append (d, ',"text":') ;
+    JStr (d, cm.text) ;
+    DynStr.AppendChar (d, 07DC)
   END ;
-  DynStr.Append (pool, d, ']}') ;
+  DynStr.Append (d, ']}') ;
   RETURN DynStr.View (d)
 END LexJson ;
 

@@ -47,20 +47,22 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### NewSpec (VAR pool: POOL ; RO KEPT title: STR ; RO KEPT version: STR) : PTR Spec IN pool
+### NewSpec (RO KEPT title: STR ; RO KEPT version: STR) : PTR Spec
 
-an empty document.  The strings are KEPT, as HttpServer.AddRoute
-keeps its own: the spec holds VIEWS, not copies, so the caller's
-strings must outlive it.
+an empty document, in the caller's frame; AddOp and AddParam grow
+it in the pool of the variable holding it (rule 2 of
+docs/pool-elision-plan.md).  The strings are KEPT, as
+HttpServer.AddRoute keeps its own: the spec holds VIEWS, not
+copies, so the caller's strings must outlive it.
 
-### AddOp (VAR pool: POOL ; VAR s: PTR Spec ; RO KEPT method: STR ; RO KEPT path: STR ; RO KEPT summary: STR ; RO KEPT description: STR ; status: I64 ; RO KEPT ctype: STR)
+### AddOp (VAR s: PTR Spec ; RO KEPT method: STR ; RO KEPT path: STR ; RO KEPT summary: STR ; RO KEPT description: STR ; status: I64 ; RO KEPT ctype: STR)
 
 one operation.  Operations render in the order added, and those
 sharing a path gather into one path object, so the reading order
 of the calls is the reading order of the document.  An empty
 description is omitted rather than emitted empty.
 
-### AddParam (VAR pool: POOL ; VAR s: PTR Spec ; RO KEPT name: STR ; inPath: BOOL ; required: BOOL ; ty: I64 ; nullable: BOOL ; RO KEPT description: STR) RAISES IndexError
+### AddParam (VAR s: PTR Spec ; RO KEPT name: STR ; inPath: BOOL ; required: BOOL ; ty: I64 ; nullable: BOOL ; RO KEPT description: STR) RAISES IndexError
 
 a parameter of the operation most recently added -- the shape
 the calls read in: one AddOp, then its AddParams.  With no
@@ -70,9 +72,9 @@ IndexError (0, 0) instead of losing the parameter in silence.
 A path parameter is required by the specification whatever
 `required` says, and renders so.
 
-### Render (VAR pool: POOL ; s: PTR Spec) : STR RAISES ValueRange
+### Render (s: PTR Spec) : STR RAISES ValueRange
 
-the document text, in pool.  Every string is JSON-escaped the
+the document text, in the caller's frame.  Every string is JSON-escaped the
 way Json does it -- quote, backslash, the five control
 shorthands, backslash-u00xx for the rest -- and every other code
 point rides through unescaped, so the result is UTF-8 the moment

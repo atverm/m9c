@@ -1,0 +1,30 @@
+MODULE Stale ;
+
+(* a caller written before its callee lost its pool by hand: Sum and
+   Squares take none here, and the extra pool argument is STALE.  The
+   tool drops it by arity -- the callee takes no pool and the call
+   hands one argument too many -- and it is no use of the caller's
+   pool, so Total loses its parameter like any other.  (Json and Text
+   were elided by hand in stage 2, before the tool; the zarr proxy
+   kept 123 pools only to hand them on this way.) *)
+
+IMPORT Io ;
+IMPORT Grow ;
+
+VAR
+  pool : POOL ;
+  l : PTR Grow.List IN pool ;
+
+PROCEDURE Total (l: PTR Grow.List) : I64 =
+VAR s : SLICE OF I64 ;
+BEGIN
+  s := Grow.Squares (3) ;
+  RETURN Grow.Sum (l) + s[2]
+END Total ;
+
+BEGIN
+  l := Grow.NewList (pool) ;
+  Grow.Push (l, 5) ;
+  Io.WriteI64 (Total (l)) ;
+  Io.WriteLine ('')
+END Stale.

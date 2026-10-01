@@ -121,7 +121,7 @@ END SplitLines ;
 PROCEDURE Spaces (VAR d: PTR DynStr.DString ; k: I64) =
 VAR i : I64 ;
 BEGIN
-  FOR i := 0 TO k - 1 DO DynStr.AppendChar (pool, d, ' ') END
+  FOR i := 0 TO k - 1 DO DynStr.AppendChar (d, ' ') END
 END Spaces ;
 
 (* the comment's own lines: the first at its recorded column, the
@@ -137,8 +137,8 @@ BEGIN
   FOR i := 0 TO ncl - 1 DO
     IF i = 0 THEN Spaces (d, col - 1)
     END ;
-    DynStr.Append (pool, d, cl[i]) ;
-    DynStr.AppendChar (pool, d, 0AC)
+    DynStr.Append (d, cl[i]) ;
+    DynStr.AppendChar (d, 0AC)
   END
 END EmitComment ;
 
@@ -155,16 +155,16 @@ END Usage ;
 (* FILE:LINE:COL: parse: MSG -- the shape m9c prints, so an editor
    that already reads one reads the other *)
 PROCEDURE ErrPos (RO path: STR ; ln, cl: I64 ; RO msg: STR) =
-VAR d : PTR DynStr.DString ;
+VAR d : PTR DynStr.DString IN HEAP ;
 BEGIN
   d := DynStr.New (HEAP) ;
-  DynStr.Append (HEAP, d, path) ;
-  DynStr.AppendChar (HEAP, d, ':') ;
-  DynStr.AppendI64 (HEAP, d, ln) ;
-  DynStr.AppendChar (HEAP, d, ':') ;
-  DynStr.AppendI64 (HEAP, d, cl) ;
-  DynStr.Append (HEAP, d, ': parse: ') ;
-  DynStr.Append (HEAP, d, msg) ;
+  DynStr.Append (d, path) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.AppendI64 (d, ln) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.AppendI64 (d, cl) ;
+  DynStr.Append (d, ': parse: ') ;
+  DynStr.Append (d, msg) ;
   Io.ErrLine (DynStr.View (d))
 END ErrPos ;
 
@@ -182,7 +182,7 @@ VAR
   cblank : SLICE OF BOOL ;      (* blank line above this comment *)
   tblank : SLICE OF BOOL ;      (* blank line above this output line *)
   emitted, lastBlank : BOOL ;
-  d : PTR DynStr.DString ;
+  d : PTR DynStr.DString IN pool ;
   cm, pm : Lex.Comment ;
 BEGIN
   Lex.Collect (TRUE) ;
@@ -283,7 +283,7 @@ BEGIN
       IF anchor[i] = k AND NOT trail[i] THEN
         cm := Lex.ComAt (i) ;
         IF cblank[i] AND NOT lastBlank THEN
-          DynStr.AppendChar (pool, d, 0AC)
+          DynStr.AppendChar (d, 0AC)
         END ;
         EmitComment (d, cm.col, cm.text) ;
         lastBlank := FALSE ;
@@ -291,27 +291,27 @@ BEGIN
       END
     END ;
     IF tblank[k] AND NOT emitted AND NOT lastBlank THEN
-      DynStr.AppendChar (pool, d, 0AC)
+      DynStr.AppendChar (d, 0AC)
     END ;
     lastBlank := LEN (lines[k - 1]) = 0 ;
-    DynStr.Append (pool, d, lines[k - 1]) ;
+    DynStr.Append (d, lines[k - 1]) ;
     FOR i := 0 TO Lex.ComCount () - 1 DO
       IF anchor[i] = k AND trail[i] THEN
         cm := Lex.ComAt (i) ;
-        DynStr.Append (pool, d, '  ') ;
+        DynStr.Append (d, '  ') ;
         (* multi-line trailing: first line here, the rest verbatim *)
         a := Text.FindChar (cm.text, 0AC) ;
         IF a < 0 THEN
-          DynStr.Append (pool, d, cm.text)
+          DynStr.Append (d, cm.text)
         ELSE
-          DynStr.Append (pool, d, SLICE (cm.text, 0, a)) ;
-          DynStr.AppendChar (pool, d, 0AC) ;
-          DynStr.Append (pool, d,
+          DynStr.Append (d, SLICE (cm.text, 0, a)) ;
+          DynStr.AppendChar (d, 0AC) ;
+          DynStr.Append (d,
             SLICE (cm.text, a + 1, LEN (cm.text) - a - 1))
         END
       END
     END ;
-    DynStr.AppendChar (pool, d, 0AC)
+    DynStr.AppendChar (d, 0AC)
   END ;
   FOR i := 0 TO Lex.ComCount () - 1 DO
     IF anchor[i] = nlines + 1 THEN

@@ -323,10 +323,10 @@ FROM csock IMPORT TlsConnect, TlsRead, TlsWrite, TlsClose, NowSec ;
 IMPORT DynStr ;
 IMPORT Io ;
 
-PROCEDURE CrLf (VAR pool: POOL ; VAR d: PTR DynStr.DString) =
+PROCEDURE CrLf (VAR d: PTR DynStr.DString) =
 BEGIN
-  DynStr.AppendChar (pool, d, 0DC) ;
-  DynStr.AppendChar (pool, d, 0AC)
+  DynStr.AppendChar (d, 0DC) ;
+  DynStr.AppendChar (d, 0AC)
 END CrLf ;
 
 (* ---- the URL fetcher --------------------------------------------- *)
@@ -437,9 +437,10 @@ BEGIN
 END HexVal ;
 
 (* one CRLF-terminated line, LF tolerated alone; -1 at end of stream *)
-PROCEDURE Line (VAR pool: POOL ; VAR c: Conn ; VAR out: STR) : I64
+PROCEDURE Line (VAR c: Conn ; VAR out: STR) : I64
   RAISES ValueRange, IndexError =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   v, n : I64 ;
 BEGIN
@@ -452,7 +453,7 @@ BEGIN
       EXIT
     END ;
     IF v = 10 THEN EXIT END ;
-    IF v # 13 THEN DynStr.AppendChar (pool, d, CHR (v)) END ;
+    IF v # 13 THEN DynStr.AppendChar (d, CHR (v)) END ;
     n := n + 1 ;
     IF n > HdrMax THEN RETURN -2 END
   END ;
@@ -498,7 +499,7 @@ PROCEDURE Cat1 (VAR pool: POOL ; RO a: STR) : STR
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, a) ;
+  DynStr.Append (d, a) ;
   RETURN DynStr.View (d)
 END Cat1 ;
 
@@ -600,7 +601,7 @@ PROCEDURE Once (VAR pool: POOL ; VAR c: Conn ; RO rq: Req ;
 VAR
   scratch : POOL ;
   req : PTR DynStr.DString IN scratch ;
-  acc : PTR DynStr.DString IN scratch ;
+  acc : PTR DynStr.DString IN pool ;
   hd : PTR DynStr.DString IN scratch ;
   wire, blk : SLICE OF BYTE ;
   line, val : STR ;
@@ -615,36 +616,36 @@ BEGIN
 
   BEGIN
     req := DynStr.New (scratch) ;
-    DynStr.Append (scratch, req, rq.method) ;
-    DynStr.Append (scratch, req, ' ') ;
-    DynStr.Append (scratch, req, rq.path) ;
-    DynStr.Append (scratch, req, ' HTTP/1.1') ;
-    CrLf (scratch, req) ;
-    DynStr.Append (scratch, req, 'Host: ') ;
-    DynStr.Append (scratch, req, rq.host) ;
-    CrLf (scratch, req) ;
+    DynStr.Append (req, rq.method) ;
+    DynStr.Append (req, ' ') ;
+    DynStr.Append (req, rq.path) ;
+    DynStr.Append (req, ' HTTP/1.1') ;
+    CrLf (req) ;
+    DynStr.Append (req, 'Host: ') ;
+    DynStr.Append (req, rq.host) ;
+    CrLf (req) ;
     (* identity BY NAME: a server that decided to gzip would hand back
        bytes this module does not decode, and the failure would look
        like corrupt data rather than a missing feature *)
-    DynStr.Append (scratch, req, 'Accept-Encoding: identity') ;
-    CrLf (scratch, req) ;
+    DynStr.Append (req, 'Accept-Encoding: identity') ;
+    CrLf (req) ;
     IF rq.keep THEN
-      DynStr.Append (scratch, req, 'Connection: keep-alive')
+      DynStr.Append (req, 'Connection: keep-alive')
     ELSE
       (* one request per connection, so a body with no framing at all
          ends at the close *)
-      DynStr.Append (scratch, req, 'Connection: close')
+      DynStr.Append (req, 'Connection: close')
     END ;
-    CrLf (scratch, req) ;
+    CrLf (req) ;
     IF LEN (rq.accept) > 0 THEN
-      DynStr.Append (scratch, req, 'Accept: ') ;
-      DynStr.Append (scratch, req, rq.accept) ;
-      CrLf (scratch, req)
+      DynStr.Append (req, 'Accept: ') ;
+      DynStr.Append (req, rq.accept) ;
+      CrLf (req)
     END ;
     IF LEN (rq.cookie) > 0 THEN
-      DynStr.Append (scratch, req, 'Cookie: ') ;
-      DynStr.Append (scratch, req, rq.cookie) ;
-      CrLf (scratch, req)
+      DynStr.Append (req, 'Cookie: ') ;
+      DynStr.Append (req, rq.cookie) ;
+      CrLf (req)
     END ;
     (* the caller's own lines, one per line feed, sent as given; a
        carriage return before the line feed is tolerated, not doubled *)
@@ -655,8 +656,8 @@ BEGIN
       n := i - k ;
       IF n > 0 AND I64 (rq.extra[i - 1]) = 13 THEN n := n - 1 END ;
       IF n > 0 THEN
-        DynStr.Append (scratch, req, SLICE (rq.extra, k, n)) ;
-        CrLf (scratch, req)
+        DynStr.Append (req, SLICE (rq.extra, k, n)) ;
+        CrLf (req)
       END ;
       k := i + 1
     END ;
@@ -664,17 +665,17 @@ BEGIN
        server does not wait for one *)
     IF LEN (rq.body) > 0 OR
        NOT (DynStr.Eq (rq.method, 'GET') OR DynStr.Eq (rq.method, 'HEAD')) THEN
-      DynStr.Append (scratch, req, 'Content-Length: ') ;
-      DynStr.AppendI64 (scratch, req, LEN (rq.body)) ;
-      CrLf (scratch, req)
+      DynStr.Append (req, 'Content-Length: ') ;
+      DynStr.AppendI64 (req, LEN (rq.body)) ;
+      CrLf (req)
     END ;
-    CrLf (scratch, req) ;
+    CrLf (req) ;
     wire := DynStr.Bytes (scratch, DynStr.View (req), FALSE) ;
     SendAll (c, wire) ;
     SendAll (c, rq.body) ;
 
     (* ---- the status line and the headers ---- *)
-    ln := Line (scratch, c, line) ;
+    ln := Line (c, line) ;
     IF ln < 12 THEN RAISE TransportError ('short response') END ;
     http11 := line[7] = '1' ;
     rs.status := (I64 (line[9]) - 48) * 100 + (I64 (line[10]) - 48) * 10
@@ -682,12 +683,12 @@ BEGIN
     clen := -1 ; chunked := FALSE ; connClose := FALSE ; connKeep := FALSE ;
     hd := DynStr.New (scratch) ;
     LOOP
-      ln := Line (scratch, c, line) ;
+      ln := Line (c, line) ;
       IF ln = -2 THEN RAISE TransportError ('header line too long') END ;
       IF ln <= 0 THEN EXIT END ;
       IF rq.keepHdrs THEN
-        DynStr.Append (scratch, hd, line) ;
-        DynStr.AppendChar (scratch, hd, 0AC)
+        DynStr.Append (hd, line) ;
+        DynStr.AppendChar (hd, 0AC)
       END ;
       IF HeaderIs (line, 'content-length:') THEN
         clen := Digits (HeaderVal (line, 15))
@@ -733,10 +734,10 @@ BEGIN
     LOOP
       IF chunked AND want = 0 THEN
         IF NOT first THEN
-          ln := Line (scratch, c, line)          (* the chunk's CRLF *)
+          ln := Line (c, line)          (* the chunk's CRLF *)
         END ;
         first := FALSE ;
-        ln := Line (scratch, c, line) ;
+        ln := Line (c, line) ;
         IF ln < 0 THEN EXIT END ;
         i := 0 ;
         WHILE i < LEN (line) AND line[i] # ';' DO i := i + 1 END ;
@@ -782,7 +783,7 @@ BEGIN
           RAISE TransportError ('the document is larger than the cap')
         END ;
         FOR i := 0 TO held - 1 DO
-          DynStr.AppendChar (pool, acc, CHR (I64 (blk[i])))
+          DynStr.AppendChar (acc, CHR (I64 (blk[i])))
         END ;
         held := 0
       END
@@ -801,7 +802,7 @@ BEGIN
        a blank line and read as `short response` *)
     IF ended THEN
       LOOP
-        ln := Line (scratch, c, line) ;
+        ln := Line (c, line) ;
         IF ln <= 0 THEN EXIT END
       END
     END ;
@@ -1249,7 +1250,7 @@ END Remove ;
 
 (* room for one more: double the slice up to JarMax, and past that
    the oldest cookie leaves *)
-PROCEDURE Grow (VAR pool: POOL ; VAR cl: PTR Client) =
+PROCEDURE Grow (VAR cl: PTR Client) =
 VAR
   nw : SLICE OF Cookie ;
   i, n2 : I64 ;
@@ -1261,7 +1262,7 @@ BEGIN
   END ;
   n2 := 2 * LEN (cl.cookies) ;
   IF n2 > JarMax THEN n2 := JarMax END ;
-  nw := NEW (pool, Cookie, n2) ;
+  nw := NEW (cl, Cookie, n2) ;
   FOR i := 0 TO cl.n - 1 DO nw[i] := cl.cookies[i] END ;
   cl.cookies := nw
 END Grow ;
@@ -1353,7 +1354,7 @@ BEGIN
     cl.cookies[k] := ck ;
     RETURN
   END ;
-  Grow (pool, cl) ;
+  Grow (cl) ;
   cl.cookies[cl.n] := ck ;
   cl.n := cl.n + 1
 END Store ;
@@ -1374,11 +1375,12 @@ END Matches ;
 (* the Cookie header line for this request, with its line feed, or ''
    -- expired cookies leave the jar first, and the matches go longest
    path first, ties in arrival order (RFC 6265 5.4) *)
-PROCEDURE CookieHeader (VAR pool: POOL ; VAR cl: PTR Client ;
+PROCEDURE CookieHeader (VAR cl: PTR Client ;
                         secure: BOOL ; RO host: STR ; RO reqPath: STR ;
                         now: F64) : STR
   RAISES ValueRange =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   sent : ARRAY JarMax OF BOOL ;
   i, best, count : I64 ;
@@ -1409,17 +1411,17 @@ BEGIN
     IF best < 0 THEN EXIT END ;
     sent[best] := TRUE ;
     IF count = 0 THEN
-      DynStr.Append (pool, d, 'Cookie: ')
+      DynStr.Append (d, 'Cookie: ')
     ELSE
-      DynStr.Append (pool, d, '; ')
+      DynStr.Append (d, '; ')
     END ;
-    DynStr.Append (pool, d, cl.cookies[best].name) ;
-    DynStr.AppendChar (pool, d, '=') ;
-    DynStr.Append (pool, d, cl.cookies[best].value) ;
+    DynStr.Append (d, cl.cookies[best].name) ;
+    DynStr.AppendChar (d, '=') ;
+    DynStr.Append (d, cl.cookies[best].value) ;
     count := count + 1
   END ;
   IF count = 0 THEN RETURN '' END ;
-  DynStr.AppendChar (pool, d, 0AC) ;
+  DynStr.AppendChar (d, 0AC) ;
   RETURN DynStr.View (d)
 END CookieHeader ;
 
@@ -1456,7 +1458,7 @@ BEGIN
   IF LEN (method) = 0 THEN RAISE TransportError ('no method') END ;
   SplitUrl (pool, url, secure, host, port, path) ;
   now := F64 (NowSec ()) ;
-  ck := CookieHeader (pool, cl, secure, host, path, now) ;
+  ck := CookieHeader (cl, secure, host, path, now) ;
   rq.method := method ; rq.host := host ; rq.path := path ;
   rq.extra := ck + headers ;
   rq.body := body ; rq.accept := '' ; rq.cookie := '' ; rq.dest := '' ;

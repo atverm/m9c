@@ -158,11 +158,11 @@ instead of at zero, because zero is not on the axis.
 ClearFigure turns both off again: a second figure in the same
 program starts linear, like it starts empty.
 
-### Render (VAR pool: POOL ; RO title: STR ; RO xlabel: STR ; RO ylabel: STR) : STR RAISES ValueRange
+### Render (RO title: STR ; RO xlabel: STR ; RO ylabel: STR) : STR RAISES ValueRange
 
 _(undocumented)_
 
-### RenderHeat (VAR pool: POOL ; RO title: STR ; m: PTR Mat.Matrix ; cmap: Cmap ; symmetric: BOOL) : STR RAISES ValueRange
+### RenderHeat (RO title: STR ; m: PTR Mat.Matrix ; cmap: Cmap ; symmetric: BOOL) : STR RAISES ValueRange
 
 symmetric centres the scale on zero, for anomaly fields;
 NaN cells render white

@@ -148,8 +148,15 @@ channel, re-anchored token by token, columns preserved.  Build it
 with `m9c --make -o m9fmt M9fmt`; `-w` rewrites, `--check` gates.
 Idempotence and comment survival are gated over the whole corpus
 (`runtime/test/fmt.sh`); the corpus itself stays hand-laid-out, a
-decision the gate measures rather than makes.  Chapter 0 of the
-tutorial carries editor configuration.
+decision the gate measures rather than makes.  `m9elide` (`m9c --make
+-o m9elide M9elide`) is the pool elision plan's rewriting tool: it
+drops a `VAR pool: POOL` parameter where the frame form of `NEW` and
+the pool a `VAR` parameter carries make it redundant, rewrites every
+call, keeps comments by editing the source at the parser's positions,
+and proves each edit by re-parsing; `--keep Mod.Proc` states a
+decision, and `m9c --check` afterwards names the rest
+(`runtime/test/elide.sh`).  Chapter 0 of the tutorial carries editor
+configuration.
 
 ## Claude Code skills
 

@@ -91,6 +91,8 @@ struct Zarr_Sink {
   bool sealed;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[25] = { 98u, 108u, 111u, 115u, 99u, 32u, 99u, 108u, 101u, 118u, 101u, 108u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 49u, 46u, 46u, 57u };
 static const uint32_t m9s1[25] = { 98u, 108u, 111u, 115u, 99u, 32u, 99u, 108u, 101u, 118u, 101u, 108u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 49u, 46u, 46u, 57u };
 static const uint32_t m9s2[8] = { 47u, 46u, 122u, 103u, 114u, 111u, 117u, 112u };
@@ -262,7 +264,7 @@ static m9_sl_CHAR Zarr_CodecName (int64_t comp, m9_state *err);
 static int64_t Zarr_Level (int64_t comp, m9_state *err);
 static m9_sl_CHAR Zarr_CompressorJson (m9_pool *pool, int64_t comp, m9_state *err);
 static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m9_sl_CHAR filters, m9_sl_I64 shape, m9_sl_I64 chunks, int64_t comp, m9_state *err);
-static m9_sl_CHAR Zarr_DimsJson (m9_pool *pool, m9_sl_m9_sl_CHAR dims, m9_state *err);
+static m9_sl_CHAR Zarr_DimsJson (m9_sl_m9_sl_CHAR dims, m9_state *err);
 static void Zarr_PutChunk (m9_pool *pool, m9_sl_CHAR path, m9_sl_BYTE raw, int64_t typesize, int64_t comp, m9_state *err);
 static void Zarr_CheckGrid (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 shape, m9_sl_I64 chunks, m9_state *err);
 static void Zarr_WriteChunks (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, int64_t esize, m9_sl_I64 shape, m9_sl_I64 chunks, m9_sl_BYTE fillB, int64_t comp, m9_state *err);
@@ -270,22 +272,22 @@ static void Zarr_Emit (m9_pool *pool, m9_sl_CHAR adir, m9_sl_CHAR dtype, m9_sl_C
 static void Zarr_PutIntLE (m9_sl_BYTE *raw, int64_t at, int64_t width, int64_t v, m9_state *err);
 static void Zarr_FitsInt (m9_pool *pool, int64_t v, int64_t width, bool signed_, m9_sl_CHAR adir, m9_state *err);
 static m9_sl_CHAR Zarr_IntDtype (m9_pool *pool, int64_t width, bool signed_, m9_state *err);
-static m9_sl_CHAR Zarr_Base64 (m9_pool *pool, m9_sl_BYTE b, m9_state *err);
-static m9_sl_CHAR Zarr_UDtype (m9_pool *pool, int64_t width, m9_state *err);
-static m9_sl_CHAR Zarr_ZeroChunk (m9_pool *pool, m9_sl_CHAR adir, int64_t r, m9_state *err);
+static m9_sl_CHAR Zarr_Base64 (m9_sl_BYTE b, m9_state *err);
+static m9_sl_CHAR Zarr_UDtype (int64_t width, m9_state *err);
+static m9_sl_CHAR Zarr_ZeroChunk (m9_sl_CHAR adir, int64_t r, m9_state *err);
 static Zarr_Sink * Zarr_NewSink (m9_pool *pool, m9_sl_CHAR adir, m9_sl_CHAR dtype, m9_sl_CHAR fill, int64_t esize, int64_t chunk, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);
-static void Zarr_Flush (Zarr_Sink * *s, bool pad, m9_state *err);
-static void Zarr_Room (Zarr_Sink * *s, m9_state *err);
+static void Zarr_Flush (Zarr_Sink * *s, m9_pool *s_pool, bool pad, m9_state *err);
+static void Zarr_Room (Zarr_Sink * *s, m9_pool *s_pool, m9_state *err);
 static void Zarr_SortNames (m9_sl_m9_sl_CHAR *a, m9_state *err);
 static bool Zarr_Less (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
 static bool Zarr_IsDir (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
-static void Zarr_AddMeta (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHAR dir, m9_sl_CHAR rel, m9_sl_CHAR leaf, m9_state *err);
-static void Zarr_Walk (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHAR root, m9_sl_CHAR dir, m9_sl_CHAR rel, bool deep, m9_state *err);
-static void Zarr_Finish (m9_pool *pool, m9_sl_CHAR store, DynStr_DString * *d, m9_state *err);
+static void Zarr_AddMeta (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, int64_t *n, m9_sl_CHAR dir, m9_sl_CHAR rel, m9_sl_CHAR leaf, m9_state *err);
+static void Zarr_Walk (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, int64_t *n, m9_sl_CHAR root, m9_sl_CHAR dir, m9_sl_CHAR rel, bool deep, m9_state *err);
+static void Zarr_Finish (m9_pool *pool, m9_sl_CHAR store, DynStr_DString * *d, m9_pool *d_pool, m9_state *err);
 static Json_Node * Zarr_RootAttrs (m9_pool *pool, m9_sl_CHAR store, m9_state *err);
 static bool Zarr_IsSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err);
 static void Zarr_MarkSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err);
-static void Zarr_WalkSorted (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHAR dir, m9_sl_CHAR rel, m9_state *err);
+static void Zarr_WalkSorted (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, int64_t *n, m9_sl_CHAR dir, m9_sl_CHAR rel, m9_state *err);
 
 
 int64_t Zarr_Lz4 (int64_t clevel, m9_state *err)
@@ -533,7 +535,7 @@ m9_sl_I64 Zarr_GuessChunks (m9_pool *pool, m9_sl_I64 shape, int64_t typesize, m9
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_I64 m9ret = {0};
   m9_sl_I64 out = {0}; (void) out;
   int64_t i = 0; (void) i;
@@ -621,6 +623,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -637,7 +640,7 @@ void Zarr_DeclareF32 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 shape, m9_sl_I64
   if (err->exc) goto L_hdl_m9t1;
   Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s15, 8 }), err), Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), ((m9_sl_CHAR){ (uint32_t *) m9s18, 4 }), shape, chunks, comp, err), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s19, 8 }), err), Zarr_DimsJson (pool, dims, err), err);
+  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s19, 8 }), err), Zarr_DimsJson (dims, err), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -706,9 +709,9 @@ void Zarr_PutChunkF32 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 ci, m9_sl_F32 d
   } }
   nm = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(scratch), &(nm), adir, err);
+  DynStr_Append (&(nm), &(scratch), adir, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (&(scratch), &(nm), 47u, err);
+  DynStr_AppendChar (&(nm), &(scratch), 47u, err);
   if (err->exc) goto L_ret;
   { int64_t m9t8to;
   i = INT64_C(0);
@@ -716,10 +719,10 @@ void Zarr_PutChunkF32 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 ci, m9_sl_F32 d
   if (err->exc) goto L_ret;
   for (; i <= m9t8to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_AppendChar (&(scratch), &(nm), 46u, err);
+      DynStr_AppendChar (&(nm), &(scratch), 46u, err);
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendI64 (&(scratch), &(nm), (*(int64_t *) m9_at (ci.p, i, ci.len, sizeof (int64_t), err)), err);
+    DynStr_AppendI64 (&(nm), &(scratch), (*(int64_t *) m9_at (ci.p, i, ci.len, sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
   } }
   Zarr_PutChunk (pool, DynStr_View (nm, err), raw, INT64_C(4), comp, err);
@@ -775,7 +778,7 @@ void Zarr_WriteIntFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, int64_t 
     if (err->exc) goto L_hdl_m9t1;
     d = DynStr_New (&(scratch), err);
     if (err->exc) goto L_hdl_m9t1;
-    DynStr_AppendI64 (&(scratch), &(d), fill, err);
+    DynStr_AppendI64 (&(d), &(scratch), fill, err);
     if (err->exc) goto L_hdl_m9t1;
     txt = Zarr_Cat (pool, DynStr_View (d, err), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_hdl_m9t1;
@@ -831,7 +834,7 @@ void Zarr_WriteF32Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F32 data, bool has
   if (err->exc) goto L_ret;
   if ((hasFill && (fill == fill))) {
     fv = (float)(fill);
-    txt = Json_ReprText (pool, (double)(fv), err);
+    txt = Json_ReprText ((double)(fv), err);
     if (err->exc) goto L_ret;
   }
   fb = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), INT64_C(4), err);
@@ -875,7 +878,7 @@ void Zarr_WriteF64Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F64 data, bool has
   if (err->exc) goto L_ret;
   if ((hasFill && (fill == fill))) {
     fv = fill;
-    txt = Json_ReprText (pool, fv, err);
+    txt = Json_ReprText (fv, err);
     if (err->exc) goto L_ret;
   }
   fb = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), INT64_C(8), err);
@@ -912,9 +915,9 @@ void Zarr_WriteStrFixedFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR da
   }
   d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s31, 2 }), err);
+  DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s31, 2 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendI64 (&(scratch), &(d), width, err);
+  DynStr_AppendI64 (&(d), &(scratch), width, err);
   if (err->exc) goto L_hdl_m9t1;
   raw = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_mul_i64 ((data).len, width, err), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -973,7 +976,7 @@ void Zarr_WriteStrFixedFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR da
       (*(uint8_t *) m9_at (fb.p, k, fb.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (u.p, k, u.len, sizeof (uint8_t), err));
       if (err->exc) goto L_hdl_m9t1;
     } }
-    txt = Zarr_Base64 (pool, fb, err);
+    txt = Zarr_Base64 (fb, err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
     txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s34, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
@@ -1032,9 +1035,9 @@ void Zarr_WriteOctets (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, int64_t w
   }
   d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), err);
+  DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendI64 (&(scratch), &(d), width, err);
+  DynStr_AppendI64 (&(d), &(scratch), width, err);
   if (err->exc) goto L_hdl_m9t1;
   fb = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), width, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -1062,7 +1065,7 @@ void Zarr_WriteOctets (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, int64_t w
       (*(uint8_t *) m9_at (fb.p, i, fb.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (u.p, i, u.len, sizeof (uint8_t), err));
       if (err->exc) goto L_hdl_m9t1;
     } }
-    txt = Zarr_Base64 (pool, fb, err);
+    txt = Zarr_Base64 (fb, err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
     txt = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s39, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
@@ -1167,7 +1170,7 @@ void Zarr_WriteStrUcs4 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, i
     (*(uint8_t *) m9_at (fb.p, i, fb.len, sizeof (uint8_t), err)) = m9_byte (INT64_C(0), err);
     if (err->exc) goto L_hdl_m9t1;
   } }
-  Zarr_Emit (pool, adir, Zarr_UDtype (pool, width, err), ((m9_sl_CHAR){ (uint32_t *) m9s44, 4 }), fb, m9_mul_i64 (width, INT64_C(4), err), raw, shape, chunks, dims, comp, err);
+  Zarr_Emit (pool, adir, Zarr_UDtype (width, err), ((m9_sl_CHAR){ (uint32_t *) m9s44, 4 }), fb, m9_mul_i64 (width, INT64_C(4), err), raw, shape, chunks, dims, comp, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -1270,10 +1273,10 @@ void Zarr_WriteStrVlen (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, m
   Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s49, 8 }), err), Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s50, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s51, 4 }), ((m9_sl_CHAR){ (uint32_t *) m9s52, 21 }), shape, shape, comp, err), err);
   if (err->exc) goto L_hdl_m9t1;
   if (((dims).len > INT64_C(0))) {
-    Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s53, 8 }), err), Zarr_DimsJson (pool, dims, err), err);
+    Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s53, 8 }), err), Zarr_DimsJson (dims, err), err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  Zarr_PutChunk (pool, Zarr_ZeroChunk (pool, adir, r, err), buf, INT64_C(1), comp, err);
+  Zarr_PutChunk (pool, Zarr_ZeroChunk (adir, r, err), buf, INT64_C(1), comp, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -1306,7 +1309,7 @@ Zarr_Sink * Zarr_SinkF32 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
   s = Zarr_NewSink (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s56, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s57, 5 }), INT64_C(4), chunk, dims, comp, err);
@@ -1319,6 +1322,7 @@ Zarr_Sink * Zarr_SinkF32 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1328,7 +1332,7 @@ Zarr_Sink * Zarr_SinkF64 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
   s = Zarr_NewSink (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s58, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s59, 5 }), INT64_C(8), chunk, dims, comp, err);
@@ -1341,6 +1345,7 @@ Zarr_Sink * Zarr_SinkF64 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1350,7 +1355,7 @@ Zarr_Sink * Zarr_SinkInt (m9_pool *pool, m9_sl_CHAR adir, int64_t width, bool si
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
   s = Zarr_NewSink (pool, adir, Zarr_IntDtype (pool, width, signed_, err), ((m9_sl_CHAR){ (uint32_t *) m9s60, 4 }), width, chunk, dims, comp, err);
@@ -1361,6 +1366,7 @@ Zarr_Sink * Zarr_SinkInt (m9_pool *pool, m9_sl_CHAR adir, int64_t width, bool si
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1370,7 +1376,7 @@ Zarr_Sink * Zarr_SinkTimeNs (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_s
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
   s = Zarr_NewSink (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s61, 7 }), ((m9_sl_CHAR){ (uint32_t *) m9s62, 4 }), INT64_C(8), chunk, dims, comp, err);
@@ -1381,18 +1387,19 @@ Zarr_Sink * Zarr_SinkTimeNs (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_s
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Zarr_PutF32 (Zarr_Sink * *s, float v, m9_state *err)
+void Zarr_PutF32 (Zarr_Sink * *s, m9_pool *s_pool, float v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
-  Zarr_Room (s, err);
+  Zarr_Room (s, s_pool, err);
   if (err->exc) goto L_hdl_m9t1;
   m9_f32_to_le (v, ({ __typeof__((*s)->buf) m9t3 = (*s)->buf; int64_t m9t3a = m9_mul_i64 ((*s)->n, INT64_C(4), err), m9t3n = INT64_C(4); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -1413,19 +1420,20 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, s_pool, (*s));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-void Zarr_PutF64 (Zarr_Sink * *s, double v, m9_state *err)
+void Zarr_PutF64 (Zarr_Sink * *s, m9_pool *s_pool, double v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
-  Zarr_Room (s, err);
+  Zarr_Room (s, s_pool, err);
   if (err->exc) goto L_hdl_m9t1;
   m9_f64_to_le (v, ({ __typeof__((*s)->buf) m9t3 = (*s)->buf; int64_t m9t3a = m9_mul_i64 ((*s)->n, INT64_C(8), err), m9t3n = INT64_C(8); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -1446,19 +1454,20 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, s_pool, (*s));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-void Zarr_PutI64 (Zarr_Sink * *s, int64_t v, m9_state *err)
+void Zarr_PutI64 (Zarr_Sink * *s, m9_pool *s_pool, int64_t v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
-  Zarr_Room (s, err);
+  Zarr_Room (s, s_pool, err);
   if (err->exc) goto L_hdl_m9t1;
   if ((!(*s)->isTime)) {
     Zarr_FitsInt (&(scratch), v, (*s)->esize, (*s)->signed_, (*s)->adir, err);
@@ -1483,6 +1492,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, s_pool, (*s));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -1504,7 +1514,7 @@ L_ret: ;
   return m9ret;
 }
 
-void Zarr_Seal (Zarr_Sink * *s, m9_state *err)
+void Zarr_Seal (Zarr_Sink * *s, m9_pool *s_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1516,7 +1526,7 @@ void Zarr_Seal (Zarr_Sink * *s, m9_state *err)
   if ((*s)->sealed) {
     goto L_ret;
   }
-  Zarr_Flush (s, true, err);
+  Zarr_Flush (s, s_pool, true, err);
   if (err->exc) goto L_hdl_m9t1;
   shape = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -1529,7 +1539,7 @@ void Zarr_Seal (Zarr_Sink * *s, m9_state *err)
   Zarr_WriteText (&(scratch), Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s66, 8 }), err), Zarr_Meta (&(scratch), (*s)->dtype, (*s)->fill, ((m9_sl_CHAR){ (uint32_t *) m9s67, 4 }), shape, chunks, (*s)->comp, err), err);
   if (err->exc) goto L_hdl_m9t1;
   if ((((*s)->dims).len > INT64_C(0))) {
-    Zarr_WriteText (&(scratch), Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s68, 8 }), err), Zarr_DimsJson (&(scratch), (*s)->dims, err), err);
+    Zarr_WriteText (&(scratch), Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s68, 8 }), err), Zarr_DimsJson ((*s)->dims, err), err);
     if (err->exc) goto L_hdl_m9t1;
   }
   (*s)->sealed = true;
@@ -1554,6 +1564,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, s_pool, (*s));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -1576,12 +1587,12 @@ void Zarr_Consolidate (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
   }
   d = DynStr_New (pool, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s72, 14 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s72, 14 }), err);
   if (err->exc) goto L_hdl_m9t1;
   n = INT64_C(0);
-  Zarr_Walk (pool, &(d), &(n), store, store, (m9_sl_CHAR){ NULL, 0 }, true, err);
+  Zarr_Walk (pool, &(d), &((*pool)), &(n), store, store, (m9_sl_CHAR){ NULL, 0 }, true, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_Finish (pool, store, &(d), err);
+  Zarr_Finish (pool, store, &(d), &((*pool)), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -1616,12 +1627,12 @@ void Zarr_ConsolidateSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
   if (err->exc) goto L_hdl_m9t1;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s74, 14 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s74, 14 }), err);
   if (err->exc) goto L_hdl_m9t1;
   n = INT64_C(0);
-  Zarr_AddMeta (pool, &(d), &(n), store, (m9_sl_CHAR){ NULL, 0 }, ((m9_sl_CHAR){ (uint32_t *) m9s75, 7 }), err);
+  Zarr_AddMeta (pool, &(d), &((*pool)), &(n), store, (m9_sl_CHAR){ NULL, 0 }, ((m9_sl_CHAR){ (uint32_t *) m9s75, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_AddMeta (pool, &(d), &(n), store, (m9_sl_CHAR){ NULL, 0 }, ((m9_sl_CHAR){ (uint32_t *) m9s76, 7 }), err);
+  Zarr_AddMeta (pool, &(d), &((*pool)), &(n), store, (m9_sl_CHAR){ NULL, 0 }, ((m9_sl_CHAR){ (uint32_t *) m9s76, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
   kids = Io_ListDir (&(scratch), store, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -1643,9 +1654,9 @@ void Zarr_ConsolidateSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
         bool m9t6 = Io_Exists (Zarr_Cat (&(scratch), sub, ((m9_sl_CHAR){ (uint32_t *) m9s78, 8 }), err), err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t6) {
-          Zarr_AddMeta (pool, &(d), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s79, 7 }), err);
+          Zarr_AddMeta (pool, &(d), &((*pool)), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s79, 7 }), err);
           if (err->exc) goto L_hdl_m9t1;
-          Zarr_AddMeta (pool, &(d), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s80, 7 }), err);
+          Zarr_AddMeta (pool, &(d), &((*pool)), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s80, 7 }), err);
           if (err->exc) goto L_hdl_m9t1;
         }
       }
@@ -1656,10 +1667,10 @@ void Zarr_ConsolidateSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
   bool m9t7 = Zarr_IsDir (&(scratch), sub, err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
-    Zarr_WalkSorted (pool, &(d), &(n), sub, ((m9_sl_CHAR){ (uint32_t *) m9s82, 9 }), err);
+    Zarr_WalkSorted (pool, &(d), &((*pool)), &(n), sub, ((m9_sl_CHAR){ (uint32_t *) m9s82, 9 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  Zarr_Finish (pool, store, &(d), err);
+  Zarr_Finish (pool, store, &(d), &((*pool)), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -1747,9 +1758,9 @@ static m9_sl_CHAR Zarr_Cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b, m9_state 
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), a, err);
+  DynStr_Append (&(d), &((*pool)), a, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), b, err);
+  DynStr_Append (&(d), &((*pool)), b, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1784,7 +1795,7 @@ static void Zarr_MkDirP (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
       Io_MkDir (DynStr_View (d, err), err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    DynStr_AppendChar (&(scratch), &(d), (*(uint32_t *) m9_at (path.p, i, path.len, sizeof (uint32_t), err)), err);
+    DynStr_AppendChar (&(d), &(scratch), (*(uint32_t *) m9_at (path.p, i, path.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_hdl_m9t1;
   } }
   bool m9t5 = (DynStr_Len (d, err) > INT64_C(0));
@@ -1891,15 +1902,15 @@ static m9_sl_CHAR Zarr_CompressorJson (m9_pool *pool, int64_t comp, m9_state *er
   }
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s91, 26 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s91, 26 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Zarr_CodecName (comp, err), err);
+  DynStr_Append (&(d), &((*pool)), Zarr_CodecName (comp, err), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s92, 13 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s92, 13 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (pool, &(d), Zarr_Level (comp, err), err);
+  DynStr_AppendI64 (&(d), &((*pool)), Zarr_Level (comp, err), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s93, 31 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s93, 31 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1923,7 +1934,7 @@ static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m
   int64_t i = 0; (void) i;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s94, 11 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s94, 11 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -1931,13 +1942,13 @@ static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s95, 2 }), err);
+      DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s95, 2 }), err);
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendI64 (pool, &(d), (*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err)), err);
+    DynStr_AppendI64 (&(d), &((*pool)), (*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s96, 14 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s96, 14 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t2to;
   i = INT64_C(0);
@@ -1945,29 +1956,29 @@ static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s97, 2 }), err);
+      DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s97, 2 }), err);
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendI64 (pool, &(d), (*(int64_t *) m9_at (chunks.p, i, chunks.len, sizeof (int64_t), err)), err);
+    DynStr_AppendI64 (&(d), &((*pool)), (*(int64_t *) m9_at (chunks.p, i, chunks.len, sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s98, 13 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s98, 13 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), dtype, err);
+  DynStr_Append (&(d), &((*pool)), dtype, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s99, 17 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s99, 17 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), fill, err);
+  DynStr_Append (&(d), &((*pool)), fill, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s100, 27 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s100, 27 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), filters, err);
+  DynStr_Append (&(d), &((*pool)), filters, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s101, 44 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s101, 44 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Zarr_CompressorJson (pool, comp, err), err);
+  DynStr_Append (&(d), &((*pool)), Zarr_CompressorJson (pool, comp, err), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s102, 19 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s102, 19 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1980,18 +1991,19 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Zarr_DimsJson (m9_pool *pool, m9_sl_m9_sl_CHAR dims, m9_state *err)
+static m9_sl_CHAR Zarr_DimsJson (m9_sl_m9_sl_CHAR dims, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s103, 23 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s103, 23 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -1999,17 +2011,17 @@ static m9_sl_CHAR Zarr_DimsJson (m9_pool *pool, m9_sl_m9_sl_CHAR dims, m9_state 
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s104, 2 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s104, 2 }), err);
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendChar (pool, &(d), 34u, err);
+    DynStr_AppendChar (&(d), &(pool), 34u, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), (*(m9_sl_CHAR *) m9_at (dims.p, i, dims.len, sizeof (m9_sl_CHAR), err)), err);
+    DynStr_Append (&(d), &(pool), (*(m9_sl_CHAR *) m9_at (dims.p, i, dims.len, sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), 34u, err);
+    DynStr_AppendChar (&(d), &(pool), 34u, err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s105, 2 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s105, 2 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -2018,7 +2030,9 @@ static m9_sl_CHAR Zarr_DimsJson (m9_pool *pool, m9_sl_m9_sl_CHAR dims, m9_state 
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
@@ -2262,9 +2276,9 @@ static void Zarr_WriteChunks (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, in
     }
     nm = DynStr_New (&(scratch), err);
     if (err->exc) goto L_hdl_m9t1;
-    DynStr_Append (&(scratch), &(nm), adir, err);
+    DynStr_Append (&(nm), &(scratch), adir, err);
     if (err->exc) goto L_hdl_m9t1;
-    DynStr_AppendChar (&(scratch), &(nm), 47u, err);
+    DynStr_AppendChar (&(nm), &(scratch), 47u, err);
     if (err->exc) goto L_hdl_m9t1;
     { int64_t m9t12to;
     i = INT64_C(0);
@@ -2272,10 +2286,10 @@ static void Zarr_WriteChunks (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, in
     if (err->exc) goto L_hdl_m9t1;
     for (; i <= m9t12to; i += 1) {
       if ((i > INT64_C(0))) {
-        DynStr_AppendChar (&(scratch), &(nm), 46u, err);
+        DynStr_AppendChar (&(nm), &(scratch), 46u, err);
         if (err->exc) goto L_hdl_m9t1;
       }
-      DynStr_AppendI64 (&(scratch), &(nm), (*(int64_t *) m9_at (ci.v, i, INT64_C(5), sizeof (int64_t), err)), err);
+      DynStr_AppendI64 (&(nm), &(scratch), (*(int64_t *) m9_at (ci.v, i, INT64_C(5), sizeof (int64_t), err)), err);
       if (err->exc) goto L_hdl_m9t1;
     } }
     Zarr_PutChunk (pool, DynStr_View (nm, err), buf, esize, comp, err);
@@ -2347,7 +2361,7 @@ static void Zarr_Emit (m9_pool *pool, m9_sl_CHAR adir, m9_sl_CHAR dtype, m9_sl_C
   if (err->exc) goto L_hdl_m9t1;
   Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s114, 8 }), err), Zarr_Meta (pool, dtype, fill, ((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), shape, chunks, comp, err), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s116, 8 }), err), Zarr_DimsJson (pool, dims, err), err);
+  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s116, 8 }), err), Zarr_DimsJson (dims, err), err);
   if (err->exc) goto L_hdl_m9t1;
   Zarr_WriteChunks (pool, adir, raw, esize, shape, chunks, fillB, comp, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -2397,6 +2411,7 @@ static void Zarr_PutIntLE (m9_sl_BYTE *raw, int64_t at, int64_t width, int64_t v
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*raw).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -2504,13 +2519,14 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Zarr_Base64 (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
+static m9_sl_CHAR Zarr_Base64 (m9_sl_BYTE b, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   m9_sl_CHAR Alphabet = {0}; (void) Alphabet;
   int64_t i = 0; (void) i;
@@ -2518,9 +2534,9 @@ static m9_sl_CHAR Zarr_Base64 (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   int64_t v = 0; (void) v;
   int64_t rest = 0; (void) rest;
   Alphabet = ((m9_sl_CHAR){ (uint32_t *) m9s127, 64 });
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, &(d), 34u, err);
+  DynStr_AppendChar (&(d), &(pool), 34u, err);
   if (err->exc) goto L_ret;
   n = (b).len;
   i = INT64_C(0);
@@ -2530,13 +2546,13 @@ static m9_sl_CHAR Zarr_Base64 (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
     if (!(m9t1)) break;
     v = m9_add_i64 (m9_add_i64 (m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), INT64_C(65536), err), m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err))), INT64_C(256), err), err), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err))), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 (v, INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 (v, INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
     i = m9_add_i64 (i, INT64_C(3), err);
     if (err->exc) goto L_ret;
@@ -2546,26 +2562,26 @@ static m9_sl_CHAR Zarr_Base64 (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   if ((rest == INT64_C(1))) {
     v = m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), INT64_C(65536), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), err);
     if (err->exc) goto L_ret;
   } else {
     if ((rest == INT64_C(2))) {
       v = m9_add_i64 (m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), INT64_C(65536), err), m9_mul_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err))), INT64_C(256), err), err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err)), err);
+      DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err)), err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+      DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (pool, &(d), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+      DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (pool, &(d), 61u, err);
+      DynStr_AppendChar (&(d), &(pool), 61u, err);
       if (err->exc) goto L_ret;
   } }
-  DynStr_AppendChar (pool, &(d), 34u, err);
+  DynStr_AppendChar (&(d), &(pool), 34u, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -2574,23 +2590,26 @@ static m9_sl_CHAR Zarr_Base64 (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
-static m9_sl_CHAR Zarr_UDtype (m9_pool *pool, int64_t width, m9_state *err)
+static m9_sl_CHAR Zarr_UDtype (int64_t width, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s129, 2 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s129, 2 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (pool, &(d), width, err);
+  DynStr_AppendI64 (&(d), &(pool), width, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -2599,31 +2618,34 @@ static m9_sl_CHAR Zarr_UDtype (m9_pool *pool, int64_t width, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
-static m9_sl_CHAR Zarr_ZeroChunk (m9_pool *pool, m9_sl_CHAR adir, int64_t r, m9_state *err)
+static m9_sl_CHAR Zarr_ZeroChunk (m9_sl_CHAR adir, int64_t r, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), adir, err);
+  DynStr_Append (&(d), &(pool), adir, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s130, 2 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s130, 2 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(1);
   m9t1to = m9_sub_i64 (r, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s131, 2 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s131, 2 }), err);
     if (err->exc) goto L_ret;
   } }
   err->res = m9res;
@@ -2633,7 +2655,9 @@ static m9_sl_CHAR Zarr_ZeroChunk (m9_pool *pool, m9_sl_CHAR adir, int64_t r, m9_
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
@@ -2642,7 +2666,7 @@ static Zarr_Sink * Zarr_NewSink (m9_pool *pool, m9_sl_CHAR adir, m9_sl_CHAR dtyp
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
   int64_t i = 0; (void) i;
@@ -2698,11 +2722,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Zarr_Flush (Zarr_Sink * *s, bool pad, m9_state *err)
+static void Zarr_Flush (Zarr_Sink * *s, m9_pool *s_pool, bool pad, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2733,11 +2758,11 @@ static void Zarr_Flush (Zarr_Sink * *s, bool pad, m9_state *err)
   }
   nm = DynStr_New (&(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(nm), (*s)->adir, err);
+  DynStr_Append (&(nm), &(scratch), (*s)->adir, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendChar (&(scratch), &(nm), 47u, err);
+  DynStr_AppendChar (&(nm), &(scratch), 47u, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendI64 (&(scratch), &(nm), (*s)->ci, err);
+  DynStr_AppendI64 (&(nm), &(scratch), (*s)->ci, err);
   if (err->exc) goto L_hdl_m9t1;
   Zarr_PutChunk (&(scratch), DynStr_View (nm, err), (*s)->buf, (*s)->esize, (*s)->comp, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -2757,12 +2782,13 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, s_pool, (*s));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-static void Zarr_Room (Zarr_Sink * *s, m9_state *err)
+static void Zarr_Room (Zarr_Sink * *s, m9_pool *s_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2775,11 +2801,12 @@ static void Zarr_Room (Zarr_Sink * *s, m9_state *err)
     goto L_ret;
   }
   if (((*s)->n == (*s)->chunk)) {
-    Zarr_Flush (s, false, err);
+    Zarr_Flush (s, s_pool, false, err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, s_pool, (*s));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -2816,6 +2843,7 @@ static void Zarr_SortNames (m9_sl_m9_sl_CHAR *a, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -2868,7 +2896,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Zarr_AddMeta (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHAR dir, m9_sl_CHAR rel, m9_sl_CHAR leaf, m9_state *err)
+static void Zarr_AddMeta (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, int64_t *n, m9_sl_CHAR dir, m9_sl_CHAR rel, m9_sl_CHAR leaf, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2883,22 +2911,22 @@ static void Zarr_AddMeta (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_
   body = Zarr_ReadText (pool, Zarr_Cat (pool, dir, Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), leaf, err), err), err);
   if (err->exc) goto L_hdl_m9t1;
   if (((*n) > INT64_C(0))) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s140, 2 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s140, 2 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  DynStr_AppendChar (pool, d, 34u, err);
+  DynStr_AppendChar (d, d_pool, 34u, err);
   if (err->exc) goto L_hdl_m9t1;
   if (((rel).len > INT64_C(0))) {
-    DynStr_Append (pool, d, rel, err);
+    DynStr_Append (d, d_pool, rel, err);
     if (err->exc) goto L_hdl_m9t1;
-    DynStr_AppendChar (pool, d, 47u, err);
+    DynStr_AppendChar (d, d_pool, 47u, err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  DynStr_Append (pool, d, leaf, err);
+  DynStr_Append (d, d_pool, leaf, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s141, 3 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s141, 3 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (pool, d, Json_Spaced (pool, Json_Parse (pool, body, err), err), err);
+  DynStr_Append (d, d_pool, Json_Spaced (Json_Parse (body, err), err), err);
   if (err->exc) goto L_hdl_m9t1;
   (*n) = m9_add_i64 ((*n), INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -2928,11 +2956,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Zarr_Walk (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHAR root, m9_sl_CHAR dir, m9_sl_CHAR rel, bool deep, m9_state *err)
+static void Zarr_Walk (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, int64_t *n, m9_sl_CHAR root, m9_sl_CHAR dir, m9_sl_CHAR rel, bool deep, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2946,15 +2975,15 @@ static void Zarr_Walk (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHA
   bool m9t3 = Io_Exists (Zarr_Cat (pool, dir, ((m9_sl_CHAR){ (uint32_t *) m9s142, 8 }), err), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s143, 7 }), err);
+    Zarr_AddMeta (pool, d, d_pool, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s143, 7 }), err);
     if (err->exc) goto L_hdl_m9t1;
-    Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s144, 7 }), err);
+    Zarr_AddMeta (pool, d, d_pool, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s144, 7 }), err);
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s145, 7 }), err);
+  Zarr_AddMeta (pool, d, d_pool, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s145, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s146, 7 }), err);
+  Zarr_AddMeta (pool, d, d_pool, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s146, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if ((!deep)) {
     goto L_ret;
@@ -2983,7 +3012,7 @@ static void Zarr_Walk (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHA
           subRel = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_hdl_m9t1;
         }
-        Zarr_Walk (pool, d, n, root, sub, subRel, true, err);
+        Zarr_Walk (pool, d, d_pool, n, root, sub, subRel, true, err);
         if (err->exc) goto L_hdl_m9t1;
       }
     }
@@ -3000,18 +3029,19 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-static void Zarr_Finish (m9_pool *pool, m9_sl_CHAR store, DynStr_DString * *d, m9_state *err)
+static void Zarr_Finish (m9_pool *pool, m9_sl_CHAR store, DynStr_DString * *d, m9_pool *d_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s149, 33 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s149, 33 }), err);
   if (err->exc) goto L_hdl_m9t1;
   Zarr_WriteText (pool, Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s150, 11 }), err), DynStr_View ((*d), err), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -3029,6 +3059,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -3038,7 +3069,7 @@ static Json_Node * Zarr_RootAttrs (m9_pool *pool, m9_sl_CHAR store, m9_state *er
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   m9_sl_CHAR path = {0}; (void) path;
   path = Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s152, 8 }), err);
@@ -3047,12 +3078,12 @@ static Json_Node * Zarr_RootAttrs (m9_pool *pool, m9_sl_CHAR store, m9_state *er
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
     err->res = m9res;
-    m9ret = Json_Parse (pool, Zarr_ReadText (pool, path, err), err);
+    m9ret = Json_Parse (Zarr_ReadText (pool, path, err), err);
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = Json_NewObj (pool, err);
+  m9ret = Json_NewObj (err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_ret;
   goto L_dn_m9t2;
@@ -3061,7 +3092,7 @@ L_hdl_m9t1: ;
     m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
     err->exc = NULL;
     err->res = m9res;
-    m9ret = Json_NewObj (pool, err);
+    m9ret = Json_NewObj (err);
     if (err->exc) goto L_ret;
     goto L_ret;
     goto L_dn_m9t2;
@@ -3072,7 +3103,7 @@ L_hdl_m9t1: ;
     int64_t c = err->i[1]; (void) c;
     err->exc = NULL;
     err->res = m9res;
-    m9ret = Json_NewObj (pool, err);
+    m9ret = Json_NewObj (err);
     if (err->exc) goto L_ret;
     goto L_ret;
     goto L_dn_m9t2;
@@ -3081,6 +3112,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -3121,11 +3153,11 @@ static void Zarr_MarkSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
   Json_Node * v = NULL; (void) v;
   a = Zarr_RootAttrs (pool, store, err);
   if (err->exc) goto L_hdl_m9t1;
-  v = Json_NewStr (pool, Zarr_SlimValue, err);
+  v = Json_NewStr (Zarr_SlimValue, err);
   if (err->exc) goto L_hdl_m9t1;
-  Json_Set (&(a), Zarr_SlimAttr, &(v), err);
+  Json_Set (&(a), err->res, Zarr_SlimAttr, &(v), err->res, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s153, 8 }), err), Json_Spaced (pool, a, err), err);
+  Zarr_WriteText (pool, Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s153, 8 }), err), Json_Spaced (a, err), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -3153,7 +3185,7 @@ L_ret: ;
   return;
 }
 
-static void Zarr_WalkSorted (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_sl_CHAR dir, m9_sl_CHAR rel, m9_state *err)
+static void Zarr_WalkSorted (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, int64_t *n, m9_sl_CHAR dir, m9_sl_CHAR rel, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3164,11 +3196,11 @@ static void Zarr_WalkSorted (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_
   m9_sl_CHAR sub = {0}; (void) sub;
   m9_sl_CHAR subRel = {0}; (void) subRel;
   int64_t i = 0; (void) i;
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s156, 7 }), err);
+  Zarr_AddMeta (pool, d, d_pool, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s156, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s157, 7 }), err);
+  Zarr_AddMeta (pool, d, d_pool, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s157, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_AddMeta (pool, d, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s158, 7 }), err);
+  Zarr_AddMeta (pool, d, d_pool, n, dir, rel, ((m9_sl_CHAR){ (uint32_t *) m9s158, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
   kids = Io_ListDir (&(scratch), dir, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -3189,7 +3221,7 @@ static void Zarr_WalkSorted (m9_pool *pool, DynStr_DString * *d, int64_t *n, m9_
       if (m9t5) {
         subRel = Zarr_Cat (&(scratch), rel, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s160, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
         if (err->exc) goto L_hdl_m9t1;
-        Zarr_WalkSorted (pool, d, n, sub, subRel, err);
+        Zarr_WalkSorted (pool, d, d_pool, n, sub, subRel, err);
         if (err->exc) goto L_hdl_m9t1;
       }
     }
@@ -3206,6 +3238,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -3216,15 +3249,12 @@ void Zarr_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Json_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Math_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

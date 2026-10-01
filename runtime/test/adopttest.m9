@@ -1,0 +1,405 @@
+MODULE AdoptTest ;
+
+(* Rule 1 of docs/pool-elision-plan.md, end to end: `NEW (T)` with
+   no pool allocates from the frame, and what leaves a frame --
+   through the result, or a VAR parameter's target -- keeps its
+   storage alive in the caller.  Every value here is READ after the
+   frame that made it is gone, through as many frames as the shape
+   needs, and the numbers are checked against ones computed in the
+   gate, not against what the program printed last time.  The loop
+   at the end shows the memory is bounded, which is the difference
+   between adoption and a leak. *)
+
+IMPORT Io ;
+IMPORT System ;
+IMPORT Json ;
+
+TYPE
+  Node = RECORD
+    v : I64 ;
+    left, right : OPT PTR Node ;
+  END ;
+  Pair = RECORD
+    root : PTR Node ;
+    xs : SLICE OF F64 ;
+    name : STR ;
+  END ;
+  Bag = RECORD
+    items : ARRAY 3 OF SLICE OF I64 ;
+  END ;
+  Shape = CASE RECORD
+  | Dot
+  | Poly : pts: SLICE OF I64
+  END ;
+
+(* a complete binary tree of DEPTH levels below the root, values in
+   heap order: node v has children 2v and 2v+1 *)
+PROCEDURE Build (depth, v: I64) : PTR Node =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := v ;
+  IF depth > 0 THEN
+    n.left := SOME (Build (depth - 1, 2 * v)) ;
+    n.right := SOME (Build (depth - 1, 2 * v + 1))
+  END ;
+  RETURN n
+END Build ;
+
+PROCEDURE Sum (n: PTR Node) : I64 =
+VAR s : I64 ;
+BEGIN
+  s := n.v ;
+  IF n.left IS SOME l THEN s := s + Sum (l) END ;
+  IF n.right IS SOME r THEN s := s + Sum (r) END ;
+  RETURN s
+END Sum ;
+
+(* the non-tail shape: the pointer is used here, then handed on *)
+PROCEDURE Mid (depth: I64) : PTR Node =
+VAR
+  t : PTR Node ;
+  k : I64 ;
+BEGIN
+  t := Build (depth, 1) ;
+  k := Sum (t) ;
+  IF k < 0 THEN RETURN Build (0, 0) END ;
+  RETURN t
+END Mid ;
+
+PROCEDURE Squares (n: I64) : SLICE OF I64 =
+VAR
+  s : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  s := NEW (I64, n) ;
+  FOR i := 0 TO n - 1 DO s[i] := i * i END ;
+  RETURN s
+END Squares ;
+
+(* the VAR-parameter path: the target is set to a frame allocation *)
+PROCEDURE FillOut (VAR out: SLICE OF I64 ; n: I64) =
+VAR i : I64 ;
+BEGIN
+  out := NEW (I64, n) ;
+  FOR i := 0 TO n - 1 DO out[i] := 3 * i END
+END FillOut ;
+
+(* a record answer whose every pointer-bearing field is a frame
+   allocation, the string included *)
+PROCEDURE MakePair (depth: I64) : Pair =
+VAR
+  p : Pair ;
+  i : I64 ;
+BEGIN
+  p.root := Build (depth, 1) ;
+  p.xs := NEW (F64, 4) ;
+  FOR i := 0 TO 3 DO p.xs[i] := 0.5 * F64 (i) END ;
+  p.name := 'pair-' + 'of-' + 'four' ;
+  RETURN p
+END MakePair ;
+
+PROCEDURE MakeBag () : Bag =
+VAR
+  b : Bag ;
+  i, j : I64 ;
+BEGIN
+  FOR i := 0 TO 2 DO
+    b.items[i] := NEW (I64, 2) ;
+    FOR j := 0 TO 1 DO b.items[i][j] := 10 * i + j END
+  END ;
+  RETURN b
+END MakeBag ;
+
+PROCEDURE MakePoly (n: I64) : Shape =
+VAR
+  pts : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  pts := NEW (I64, n) ;
+  FOR i := 0 TO n - 1 DO pts[i] := 7 * i END ;
+  RETURN Shape.Poly (pts)
+END MakePoly ;
+
+PROCEDURE Table (r, c: I64) : GRID 2 OF F64 =
+VAR
+  g : GRID 2 OF F64 ;
+  i, j : I64 ;
+BEGIN
+  g := NEW (F64, r, c) ;
+  FOR i := 0 TO r - 1 DO
+    FOR j := 0 TO c - 1 DO g[i, j] := F64 (10 * i + j) END
+  END ;
+  RETURN g
+END Table ;
+
+(* Rule 2: a VAR parameter of a pointer-bearing type carries the pool
+   its object lives in, and `NEW (l, Item)` allocates there -- so a
+   callee whose frame dies can grow its caller's object.  Three roots
+   are exercised: a frame local (Grown), a local declared IN a pool
+   (GrowPooled), and a module variable (GrowModule); the item pushed
+   last through a binder (a record's OPT field) covers the fourth. *)
+TYPE
+  Item = RECORD
+    v : I64 ;
+    next : OPT PTR Item ;
+  END ;
+  List = RECORD
+    n : I64 ;
+    head : OPT PTR Item ;
+  END ;
+  Holder = RECORD
+    list : OPT PTR List ;
+  END ;
+  ListP = PTR List ;              (* a name for the pointer: P9's shape *)
+
+PROCEDURE Push (VAR l: PTR List ; v: I64) =
+VAR it : PTR Item ;
+BEGIN
+  it := NEW (l, Item) ;         (* in the pool l lives in (rule 2) *)
+  it.v := v ;
+  it.next := l.head ;
+  l.head := SOME (it) ;
+  l.n := l.n + 1
+END Push ;
+
+(* a pool pointer is nobody's to own: `j := NEW (l, Item)` lives in
+   l's pool, so linking j into n items is n copies, not a move and
+   n-1 uses after it (the shape FLEXPART's RunBands has, found by
+   stage 6 of the pool elision: before stage 5 the local said
+   `IN pool` and was no owned candidate, and the elided declaration
+   has no clause to say so).  Answers the shared item's v read back
+   through every link. *)
+PROCEDURE Shared (VAR l: PTR List ; n: I64) : I64 =
+VAR
+  j, b : PTR Item ;
+  i, acc : I64 ;
+BEGIN
+  j := NEW (l, Item) ;
+  j.v := 7 ;
+  j.next := NONE ;
+  acc := 0 ;
+  FOR i := 1 TO n DO
+    b := NEW (l, Item) ;
+    b.v := i ;
+    b.next := SOME (j) ;
+    IF b.next IS SOME k THEN acc := acc + k.v END
+  END ;
+  RETURN acc + j.v
+END Shared ;
+
+(* the zarr proxy's composer shape: a tree that outlives the frame
+   is made in a POOL by Json's In constructors, and a helper that
+   takes it VAR KEPT makes each member in the same pool and links it.
+   A frame-made member here is refused by the checker; a pool-made
+   one carries no taint.  Read back after Scribble, through Compact. *)
+PROCEDURE PutS (VAR pool: POOL ; VAR KEPT o: PTR Json.Node ;
+                RO KEPT k: STR ; RO v: STR)
+  RAISES Json.TypeMismatch, ValueRange =
+VAR n : PTR Json.Node IN pool ;
+BEGIN
+  n := Json.NewStrIn (pool, v) ;
+  Json.Set (o, k, n)
+END PutS ;
+
+PROCEDURE Doc (VAR pool: POOL) : PTR Json.Node IN pool
+  RAISES Json.TypeMismatch, ValueRange =
+VAR o : PTR Json.Node IN pool ;
+BEGIN
+  o := Json.NewObjIn (pool) ;
+  PutS (pool, o, 'a', 'x') ;
+  PutS (pool, o, 'b', 'yz') ;
+  RETURN o
+END Doc ;
+
+(* the zarr proxy's P9: a VAR parameter typed through a pointer ALIAS
+   is the pointer it names, so it carries its object's pool (rule 2)
+   and may hand the object on to a mutator spelled PTR List *)
+PROCEDURE PushP (VAR l: ListP ; v: I64) =
+BEGIN
+  Push (l, v)
+END PushP ;
+
+PROCEDURE NewList () : PTR List =
+VAR l : PTR List ;
+BEGIN
+  l := NEW (List) ;
+  l.n := 0 ;
+  l.head := NONE ;
+  RETURN l
+END NewList ;
+
+PROCEDURE NewListIn (VAR pool: POOL) : PTR List IN pool =
+VAR l : PTR List IN pool ;
+BEGIN
+  l := NEW (pool, List) ;
+  l.n := 0 ;
+  l.head := NONE ;
+  RETURN l
+END NewListIn ;
+
+PROCEDURE ListSum (l: PTR List) : I64 =
+VAR
+  c : OPT PTR Item ;
+  s : I64 ;
+BEGIN
+  s := 0 ;
+  c := l.head ;
+  WHILE c IS SOME it DO
+    s := s + it.v ;
+    c := it.next
+  END ;
+  RETURN s
+END ListSum ;
+
+(* a list in this frame, grown by k calls whose frames are gone, and
+   once more through a binder over a record field *)
+PROCEDURE Grown (k: I64) : I64 =
+VAR
+  l : PTR List ;
+  h : Holder ;
+  i : I64 ;
+BEGIN
+  l := NewList () ;
+  FOR i := 1 TO k DO Push (l, i) END ;
+  h.list := SOME (l) ;
+  IF h.list IS SOME hl THEN Push (hl, 100) END ;
+  Scribble () ;
+  RETURN ListSum (l)
+END Grown ;
+
+(* a list declared IN the caller's pool, grown here: the items land
+   in that pool, not in this frame *)
+PROCEDURE GrowPooled (VAR pool: POOL ; k: I64) : PTR List IN pool =
+VAR
+  l : PTR List IN pool ;
+  i : I64 ;
+BEGIN
+  l := NewListIn (pool) ;
+  FOR i := 1 TO k DO Push (l, i) END ;
+  RETURN l
+END GrowPooled ;
+
+VAR ml : PTR List ;             (* lives in the module frame *)
+
+PROCEDURE GrowModule (k: I64) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 1 TO k DO Push (ml, i) END
+END GrowModule ;
+
+(* a proper procedure that carves a block of its own and fills it: the
+   frame a caller just freed comes back through the per-thread cache,
+   so whatever that caller failed to adopt is overwritten here *)
+PROCEDURE Scribble () =
+VAR
+  junk : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  junk := NEW (I64, 64) ;
+  FOR i := 0 TO 63 DO junk[i] := 999 END
+END Scribble ;
+
+(* one iteration's worth of frames: everything it built dies here *)
+PROCEDURE Step (i: I64) : I64 =
+VAR
+  t : PTR Node ;
+  s : SLICE OF I64 ;
+BEGIN
+  t := Mid (4) ;
+  s := Squares (16) ;
+  RETURN Sum (t) + s[15] + i
+END Step ;
+
+PROCEDURE Check (RO what: STR ; got, want: I64) =
+BEGIN
+  IF got = want THEN
+    Io.Write ('ok   ')
+  ELSE
+    Io.Write ('FAIL ')
+  END ;
+  Io.Write (what) ;
+  Io.Write (' = ') ;
+  Io.WriteI64 (got) ;
+  IF got # want THEN
+    Io.Write (' (want ') ;
+    Io.WriteI64 (want) ;
+    Io.Write (')')
+  END ;
+  Io.WriteLine ('')
+END Check ;
+
+VAR
+  t : PTR Node ;
+  s, o : SLICE OF I64 ;
+  p : Pair ;
+  b : Bag ;
+  sh : Shape ;
+  g : GRID 2 OF F64 ;
+  i, acc : I64 ;
+  m : System.Memory ;
+  lp : POOL ;
+  pl : PTR List IN lp ;
+  jd, jc : PTR Json.Node IN lp ;
+
+BEGIN
+  (* rule 2, before anything else has a block to recycle *)
+  Check ('grown', Grown (10), 155) ;
+  pl := GrowPooled (lp, 20) ;
+  Scribble () ;
+  Check ('pooled', ListSum (pl), 210) ;
+  Check ('shared', Shared (pl, 4), 35) ;
+  PushP (pl, 100) ;
+  Scribble () ;
+  Check ('alias', ListSum (pl), 310) ;
+  jd := Doc (lp) ;
+  jc := Json.CloneIn (lp, Json.Parse ('{"c":[1,2,3],"d":"e"}')) ;
+  Scribble () ;
+  (* {"a":"x","b":"yz"} is 18 characters, {"c":[1,2,3],"d":"e"} 21 *)
+  Check ('json', LEN (Json.Compact (jd)) + LEN (Json.Compact (jc)), 39) ;
+  ml := NewList () ;
+  GrowModule (30) ;
+  Scribble () ;
+  Check ('module', ListSum (ml), 465) ;
+  (* a depth-4 tree in heap order holds 1..31, whose sum is 496 *)
+  t := Build (4, 1) ;
+  Check ('tree', Sum (t), 496) ;
+  t := Mid (4) ;
+  Check ('mid', Sum (t), 496) ;
+  s := Squares (10) ;
+  Check ('squares', s[9], 81) ;
+  FillOut (o, 5) ;
+  (* another frame in between: a freed block is recycled through the
+     per-thread cache with its bytes intact, so a target that was NOT
+     adopted reads right by luck until the next frame carves the same
+     block -- which Scribble does.  Shown able to fail: with
+     m9_pool_adopt a no-op this check reads 999 for 12. *)
+  Scribble () ;
+  Check ('out', o[4] + LEN (o), 17) ;
+  p := MakePair (2) ;
+  Check ('pair.root', Sum (p.root), 28) ;
+  Check ('pair.xs', LEN (p.xs), 4) ;
+  Check ('pair.name', LEN (p.name), 12) ;
+  b := MakeBag () ;
+  Check ('bag', b.items[2][1] + b.items[0][1], 22) ;
+  sh := MakePoly (5) ;
+  CASE sh OF
+  | Dot : Check ('poly', 0, 28)
+  | Poly (pts) : Check ('poly', pts[4], 28)
+  END ;
+  g := Table (3, 4) ;
+  IF g[2, 3] = 23.0 THEN Check ('grid', 23, 23) ELSE Check ('grid', 0, 23) END ;
+  (* bounded: 20000 rounds of a depth-4 tree and a 16-slice, each
+     round's frames gone before the next begins *)
+  acc := 0 ;
+  FOR i := 1 TO 20000 DO acc := acc + Step (i) END ;
+  Check ('loop', acc, 20000 * (496 + 225) + 20000 * 20001 DIV 2) ;
+  m := System.Mem () ;
+  Io.Write ('peak-kb ') ;
+  Io.WriteI64 (m.peak DIV 1024) ;
+  Io.WriteLine ('')
+EXCEPT
+| Json.TypeMismatch : Io.WriteLine ('FAIL json: TypeMismatch')
+| Json.ParseError (msg, line, col) : Io.WriteLine ('FAIL json: ParseError')
+| ValueRange : Io.WriteLine ('FAIL json: ValueRange')
+END AdoptTest.

@@ -40,7 +40,7 @@ int main (void)
 
   m9_sl_CHAR src = sl ("{\"a\":1,\"b\":[1.5,true,null,\"xy\"],"
                        "\"c\":{\"d\":-7},\"e\":2.5e2}", doc);
-  Json_Node *root = Json_Parse (&pool, src, &err);
+  Json_Node *root = Json_Parse (src, &err);
   ck (err.exc == NULL && root != NULL, "Parse");
 
   Json_Node *a = Json_Field (root, sl ("a", nm), &err);
@@ -105,17 +105,16 @@ int main (void)
   err.exc = NULL;
 
   /* ParseError carries line and column */
-  Json_Parse (&pool, sl ("{\"a\" 1}", nm), &err);
+  Json_Parse (sl ("{\"a\" 1}", nm), &err);
   ck (err.exc == &Json_ParseError && err.i[0] == 1,
       "malformed doc raises ParseError at line 1");
   err.exc = NULL;
-  Json_Parse (&pool, sl ("tru", nm), &err);
+  Json_Parse (sl ("tru", nm), &err);
   ck (err.exc == &Json_ParseError, "bare 'tru' raises ParseError");
   err.exc = NULL;
 
   /* whitespace and nesting round out the walk */
-  Json_Node *w = Json_Parse (&pool,
-    sl ("  [ { \"k\" : [ 42 ] } ] ", doc), &err);
+  Json_Node *w = Json_Parse (sl ("  [ { \"k\" : [ 42 ] } ] ", doc), &err);
   ck (err.exc == NULL &&
       Json_AsI64 (Json_Item (Json_Field (Json_Item (w, 0, &err),
         sl ("k", nm), &err), 0, &err), &err) == 42,
@@ -133,29 +132,26 @@ int main (void)
     m9_sl_CHAR esrc = sl ("{\"q\":\"a\\\"b\\\\c\\/d\","
                           "\"u\":\"\\u00e9\\ud83d\\ude00\\n\","
                           "\"t\":\"plain\"}", doc);
-    Json_Node *er = Json_Parse (&pool, esrc, &err);
+    Json_Node *er = Json_Parse (esrc, &err);
     ck (err.exc == NULL && er != NULL, "escape doc parses");
 
-    m9_sl_CHAR q = Json_Text (&pool,
-      Json_Field (er, sl ("q", nm), &err), &err);
+    m9_sl_CHAR q = Json_Text (Json_Field (er, sl ("q", nm), &err), &err);
     static const uint32_t qx[] =
       { 'a', '"', 'b', '\\', 'c', '/', 'd' };
     ck (err.exc == NULL && q.len == 7 &&
         memcmp (q.p, qx, sizeof qx) == 0, "Text decodes q");
 
-    m9_sl_CHAR u = Json_Text (&pool,
-      Json_Field (er, sl ("u", nm), &err), &err);
+    m9_sl_CHAR u = Json_Text (Json_Field (er, sl ("u", nm), &err), &err);
     ck (err.exc == NULL && u.len == 3 && u.p[0] == 0xE9 &&
         u.p[1] == 0x1F600 && u.p[2] == 10,
         "Text combines the surrogate pair");
 
-    m9_sl_CHAR pl = Json_Text (&pool,
-      Json_Field (er, sl ("t", nm), &err), &err);
+    m9_sl_CHAR pl = Json_Text (Json_Field (er, sl ("t", nm), &err), &err);
     ck (err.exc == NULL && pl.len == 5 &&
         pl.p >= doc && pl.p < doc + 256,
         "escape-free Text is the parse view");
 
-    m9_sl_CHAR cj = Json_Compact (&pool, er, &err);
+    m9_sl_CHAR cj = Json_Compact (er, &err);
     static const uint32_t cx[] =
       { '{', '"', 'q', '"', ':', '"', 'a', '\\', '"', 'b', '\\',
         '\\', 'c', '/', 'd', '"', ',', '"', 'u', '"', ':', '"',
@@ -167,9 +163,8 @@ int main (void)
 
     /* sort_keys orders by the DECODED name: "b\u0041" is bA, which
        sorts after a */
-    Json_Node *sr = Json_Parse (&pool,
-      sl ("{\"b\\u0041\":1,\"a\":2}", doc2), &err);
-    m9_sl_CHAR cs = Json_CompactSorted (&pool, sr, &err);
+    Json_Node *sr = Json_Parse (sl ("{\"b\\u0041\":1,\"a\":2}", doc2), &err);
+    m9_sl_CHAR cs = Json_CompactSorted (sr, &err);
     static const uint32_t sx[] =
       { '{', '"', 'a', '"', ':', '2', ',', '"', 'b', 'A', '"', ':',
         '1', '}' };
@@ -178,9 +173,8 @@ int main (void)
         "CompactSorted sorts decoded names");
 
     /* a lone surrogate refuses where Python carries it */
-    Json_Node *ls = Json_Parse (&pool,
-      sl ("{\"s\":\"\\ud800x\"}", doc3), &err);
-    Json_Text (&pool, Json_Field (ls, sl ("s", nm), &err), &err);
+    Json_Node *ls = Json_Parse (sl ("{\"s\":\"\\ud800x\"}", doc3), &err);
+    Json_Text (Json_Field (ls, sl ("s", nm), &err), &err);
     ck (err.exc == &Json_TypeMismatch, "lone surrogate refused");
     err.exc = NULL;
   }
@@ -195,40 +189,40 @@ int main (void)
     Json_Node *o, *arr, *n, *inner;
     m9_sl_CHAR out;
 
-    o = Json_NewObj (&pool, &err);
-    n = Json_NewI64 (&pool, 1, &err);
-    Json_Set (&o, sl ("a", b1), &n, &err);
-    n = Json_NewStr (&pool, sl ("x", b2), &err);
-    Json_Set (&o, sl ("b", b3), &n, &err);
-    out = Json_Compact (&pool, o, &err);
+    o = Json_NewObj (&err);
+    n = Json_NewI64 (1, &err);
+    Json_Set (&o, &pool,sl ("a", b1), &n, &pool, &err);
+    n = Json_NewStr (sl ("x", b2), &err);
+    Json_Set (&o, &pool,sl ("b", b3), &n, &pool, &err);
+    out = Json_Compact (o, &err);
     ck (err.exc == NULL && eqs (out, "{\"a\":1,\"b\":\"x\"}"),
         "a built object serialises in insertion order");
 
     /* REPLACE IN PLACE, which is python's {**a, "a": 9}: the value
        is b's and the POSITION is a's.  Appending instead would put
        "a" last and every re-derived .zattrs would diff. */
-    n = Json_NewI64 (&pool, 9, &err);
-    Json_Set (&o, sl ("a", b4), &n, &err);
-    out = Json_Compact (&pool, o, &err);
+    n = Json_NewI64 (9, &err);
+    Json_Set (&o, &pool,sl ("a", b4), &n, &pool, &err);
+    out = Json_Compact (o, &err);
     ck (err.exc == NULL && eqs (out, "{\"a\":9,\"b\":\"x\"}"),
         "Set replaces in place and keeps the member's position");
 
     /* and replacing the LAST member keeps the tail correct too */
-    n = Json_NewBool (&pool, true, &err);
-    Json_Set (&o, sl ("b", b5), &n, &err);
-    out = Json_Compact (&pool, o, &err);
+    n = Json_NewBool (true, &err);
+    Json_Set (&o, &pool,sl ("b", b5), &n, &pool, &err);
+    out = Json_Compact (o, &err);
     ck (err.exc == NULL && eqs (out, "{\"a\":9,\"b\":true}"),
         "replacing the last member keeps the chain");
 
-    arr = Json_NewArr (&pool, &err);
-    n = Json_NewI64 (&pool, 1, &err);  Json_Add (&arr, &n, &err);
-    n = Json_NewNull (&pool, &err);    Json_Add (&arr, &n, &err);
-    n = Json_NewF64 (&pool, 1.5, &err); Json_Add (&arr, &n, &err);
+    arr = Json_NewArr (&err);
+    n = Json_NewI64 (1, &err);  Json_Add (&arr, &pool, &n, &pool, &err);
+    n = Json_NewNull (&err);    Json_Add (&arr, &pool, &n, &pool, &err);
+    n = Json_NewF64 (1.5, &err); Json_Add (&arr, &pool, &n, &pool, &err);
     ck (Json_Count (arr, &err) == 3, "Add keeps the array count");
-    inner = Json_NewObj (&pool, &err);
-    Json_Set (&inner, sl ("k", b6), &arr, &err);
-    Json_Set (&o, sl ("c", b1), &inner, &err);
-    out = Json_Compact (&pool, o, &err);
+    inner = Json_NewObj (&err);
+    Json_Set (&inner, &pool,sl ("k", b6), &arr, &pool, &err);
+    Json_Set (&o, &pool,sl ("c", b1), &inner, &pool, &err);
+    out = Json_Compact (o, &err);
     ck (err.exc == NULL &&
         eqs (out, "{\"a\":9,\"b\":true,\"c\":{\"k\":[1,null,1.5]}}"),
         "nested objects and arrays serialise");
@@ -243,10 +237,10 @@ int main (void)
       m9_sl_CHAR val = sl ("q\"w\\e", v);          /* q "w \e */
       val.p[5] = 0x00e9;                            /* ... and an accent */
       val.len = 6;
-      o = Json_NewObj (&pool, &err);
-      n = Json_NewStr (&pool, val, &err);
-      Json_Set (&o, sl ("s", b1), &n, &err);
-      out = Json_Compact (&pool, o, &err);
+      o = Json_NewObj (&err);
+      n = Json_NewStr (val, &err);
+      Json_Set (&o, &pool,sl ("s", b1), &n, &pool, &err);
+      out = Json_Compact (o, &err);
       /* {"s":"q\"w\\e<e9>"} -- 16 scalars, counted out by hand */
       ck (err.exc == NULL && out.len == 16
           && out.p[7] == '\\' && out.p[8] == '"'
@@ -254,8 +248,7 @@ int main (void)
           && out.p[13] == 0x00e9,
           "NewStr escapes the value, and Compact round-trips it");
       /* and Text gives the VALUE back, unchanged */
-      m9_sl_CHAR back = Json_Text (&pool,
-                          Json_Field (o, sl ("s", b2), &err), &err);
+      m9_sl_CHAR back = Json_Text (Json_Field (o, sl ("s", b2), &err), &err);
       ck (err.exc == NULL && back.len == 6 && back.p[1] == '"'
           && back.p[3] == '\\' && back.p[5] == 0x00e9,
           "Text answers what NewStr was given");
@@ -263,11 +256,10 @@ int main (void)
 
     /* a built member set into a PARSED tree: the two kinds mix */
     {
-      Json_Node *pr = Json_Parse (&pool,
-        sl ("{\"keep\":1,\"drop\":2}", b2), &err);
-      n = Json_NewStr (&pool, sl ("new", b3), &err);
-      Json_Set (&pr, sl ("drop", b4), &n, &err);
-      out = Json_Compact (&pool, pr, &err);
+      Json_Node *pr = Json_Parse (sl ("{\"keep\":1,\"drop\":2}", b2), &err);
+      n = Json_NewStr (sl ("new", b3), &err);
+      Json_Set (&pr, &pool,sl ("drop", b4), &n, &pool, &err);
+      out = Json_Compact (pr, &err);
       ck (err.exc == NULL && eqs (out, "{\"keep\":1,\"drop\":\"new\"}"),
           "a built node replaces a parsed member in place");
     }
@@ -277,22 +269,21 @@ int main (void)
        cannot reach the original -- which is the whole failure mode
        when a shared vocabulary is merged into many documents. */
     {
-      Json_Node *src = Json_Parse (&pool,
-        sl ("{\"a\":{\"x\":1},\"b\":[1,2]}", b1), &err);
-      Json_Node *cp = Json_Clone (&pool, src, &err);
+      Json_Node *src = Json_Parse (sl ("{\"a\":{\"x\":1},\"b\":[1,2]}", b1), &err);
+      Json_Node *cp = Json_Clone (src, &err);
       ck (err.exc == NULL, "a document clones");
-      out = Json_Compact (&pool, cp, &err);
+      out = Json_Compact (cp, &err);
       ck (eqs (out, "{\"a\":{\"x\":1},\"b\":[1,2]}"),
           "the clone serialises identically");
       /* mutate the COPY's nested object; the original must not move */
       {
         Json_Node *inner = Json_Field (cp, sl ("a", b2), &err);
-        n = Json_NewI64 (&pool, 99, &err);
-        Json_Set (&inner, sl ("x", b3), &n, &err);
+        n = Json_NewI64 (99, &err);
+        Json_Set (&inner, &pool,sl ("x", b3), &n, &pool, &err);
       }
-      out = Json_Compact (&pool, cp, &err);
+      out = Json_Compact (cp, &err);
       ck (eqs (out, "{\"a\":{\"x\":99},\"b\":[1,2]}"), "the copy changed");
-      out = Json_Compact (&pool, src, &err);
+      out = Json_Compact (src, &err);
       ck (eqs (out, "{\"a\":{\"x\":1},\"b\":[1,2]}"),
           "and the original did NOT -- the copy is deep");
     }
@@ -304,16 +295,16 @@ int main (void)
     {
       uint32_t v[32], w[64];
       m9_sl_CHAR raw = sl ("badm_c:\\users\\x", v);   /* one \ each */
-      m9_sl_CHAR nm = Json_Name (&pool, raw, &err);
-      o = Json_NewObj (&pool, &err);
-      n = Json_NewI64 (&pool, 7, &err);
-      Json_Set (&o, nm, &n, &err);
-      out = Json_Compact (&pool, o, &err);
+      m9_sl_CHAR nm = Json_Name (raw, &err);
+      o = Json_NewObj (&err);
+      n = Json_NewI64 (7, &err);
+      Json_Set (&o, &pool,nm, &n, &pool, &err);
+      out = Json_Compact (o, &err);
       /* {"badm_c:\\users\\x":7} -- the two backslashes doubled */
       ck (err.exc == NULL && out.len == 23 && out.p[9] == '\\'
           && out.p[10] == '\\' && out.p[11] == 'u',
           "Name escapes a backslash in a member name");
-      Json_Node *pr2 = Json_Parse (&pool, out, &err);
+      Json_Node *pr2 = Json_Parse (out, &err);
       m9_sl_CHAR got = Json_NameAt (pr2, 0, &err);
       ck (err.exc == NULL && got.len == nm.len
           && Json_Field (pr2, nm, &err) != NULL
@@ -323,14 +314,14 @@ int main (void)
     }
     /* the refusals */
     {
-      Json_Node *aa = Json_NewArr (&pool, &err);
-      n = Json_NewI64 (&pool, 1, &err);
-      Json_Set (&aa, sl ("x", b1), &n, &err);
+      Json_Node *aa = Json_NewArr (&err);
+      n = Json_NewI64 (1, &err);
+      Json_Set (&aa, &pool,sl ("x", b1), &n, &pool, &err);
       ck (err.exc == &Json_TypeMismatch, "Set on an array is refused");
       err.exc = NULL;
-      Json_Node *oo = Json_NewObj (&pool, &err);
-      n = Json_NewI64 (&pool, 1, &err);
-      Json_Add (&oo, &n, &err);
+      Json_Node *oo = Json_NewObj (&err);
+      n = Json_NewI64 (1, &err);
+      Json_Add (&oo, &pool, &n, &pool, &err);
       ck (err.exc == &Json_TypeMismatch, "Add on an object is refused");
       err.exc = NULL;
     }
@@ -338,6 +329,37 @@ int main (void)
 
   m9_pool_free (&pool);
   if (fails) { printf ("FAIL (%d of %d)\n", fails, checks); return 1; }
+  /* ---- the pool-destination twins: the same tree built in a pool,
+     parsed into a pool, cloned into a pool, serialises identically
+     and reads back after the frame-built one is gone ---- */
+  {
+    m9_pool tp = {0};
+    /* one buffer per name: Set KEEPS its name, and the nested lookups
+       below evaluate their arguments in an order C does not fix */
+    static uint32_t k1[8], k2[8], k3[8], k4[8], k5[8], src2[64];
+    Json_Node *o = Json_NewObjIn (&tp, &err);
+    Json_Node *v = Json_NewStrIn (&tp, sl ("x\\y", doc2), &err);
+    Json_Set (&o, &tp, sl ("k", k1), &v, &tp, &err);
+    Json_Node *arr = Json_NewArrIn (&tp, &err);
+    Json_Node *i1 = Json_NewI64In (&tp, 7, &err);
+    Json_Node *f1 = Json_NewF64In (&tp, 2.5, &err);
+    Json_Node *b1 = Json_NewBoolIn (&tp, true, &err);
+    Json_Node *n1 = Json_NewNullIn (&tp, &err);
+    Json_Add (&arr, &tp, &i1, &tp, &err);
+    Json_Add (&arr, &tp, &f1, &tp, &err);
+    Json_Add (&arr, &tp, &b1, &tp, &err);
+    Json_Add (&arr, &tp, &n1, &tp, &err);
+    Json_Set (&o, &tp, sl ("a", k2), &arr, &tp, &err);
+    ck (err.exc == NULL && eqs (Json_Compact (o, &err), "{\"k\":\"x\\\\y\",\"a\":[7,2.5,true,null]}"),
+        "a tree built by the In twins serialises as the frame one would");
+    Json_Node *p = Json_ParseIn (&tp, sl ("{\"q\":[1,{\"r\":\"s\"}]}", src2), &err);
+    Json_Node *c = Json_CloneIn (&tp, p, &err);
+    ck (err.exc == NULL && eqs (Json_Compact (c, &err), "{\"q\":[1,{\"r\":\"s\"}]}"),
+        "ParseIn then CloneIn round-trips");
+    ck (Json_StrIs (Json_Field (Json_Item (Json_Field (c, sl ("q", k3), &err), 1, &err), sl ("r", k4), &err), sl ("s", k5), &err),
+        "the clone's payloads read back");
+    m9_pool_free (&tp);
+  }
   printf ("PASS (%d checks)\n", checks);
   return 0;
 }

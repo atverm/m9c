@@ -1,0 +1,8 @@
+(* EXPECT: an allocation in pool scratch escapes its pool, which dies with this frame (par 4.3) *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F () : PTR R =
+VAR scratch : POOL ; p : PTR R ;
+BEGIN p := NEW (scratch, R) ; RETURN p END F ;
+BEGIN
+END m.

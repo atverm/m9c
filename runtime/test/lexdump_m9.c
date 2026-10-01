@@ -14,6 +14,7 @@ int main (int argc, char **argv)
   Lex_Lexer lx = {0};
   Lex_Token t = {0};
   m9_state err = {0};
+  m9_pool pool = {0};     /* the lexer's and the token's pool (rule 2) */
 
   if (argc < 2) { fprintf (stderr, "usage: lexdump_m9 FILE\n"); return 2; }
   f = fopen (argv[1], "rb");
@@ -25,11 +26,11 @@ int main (int argc, char **argv)
   chars = malloc (sizeof (uint32_t) * (size_t) len);
   for (i = 0; i < len; i++) chars[i] = (uint32_t) (unsigned char) bytes[i];
 
-  Lex_Init (&lx, (m9_sl_CHAR){ chars, len }, &err);
+  Lex_Init (&lx, &pool, (m9_sl_CHAR){ chars, len }, &err);
   for (;;) {
     int64_t j;
     m9_sl_CHAR nm;
-    Lex_Next (&lx, &t, &err);
+    Lex_Next (&lx, &pool, &t, &pool, &err);
     if (err.exc) { fprintf (stderr, "lexer raised %s\n", err.exc->name); return 1; }
     nm = Lex_KindName (t.kind, &err);
     printf ("%lld:%lld ", (long long) t.line, (long long) t.col);

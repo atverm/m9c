@@ -626,6 +626,12 @@ static inline void m9_mon_signal (m9_mon *m)
    starts it detached, because par 6 has no join -- a thread is
    waited for through a monitor, not by a handle. */
 int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err);
+/* the same, handing the thread the pool its argument lives in as
+   well: rule 2 of docs/pool-elision-plan.md gives a VAR parameter of
+   a pointer-bearing type a hidden pool argument, and a THREAD target
+   is such a procedure, so the generated thunk takes two words */
+int m9_thread_start2 (void *(*fn) (void *, struct m9_pool *), void *arg,
+                      struct m9_pool *pool, m9_state *err);
 void m9_thread_died (const char *name);
 
 /* ---- wire boundary: explicit width, explicit endianness ---- */
@@ -738,6 +744,32 @@ int m9_pool_owns (const m9_pool *pool, const void *p);
    frame that never allocated has no blocks and the test is one load. */
 m9_sl_CHAR m9_rehome (const m9_pool *frame, m9_pool *res, m9_sl_CHAR s,
                       m9_state *err);
+
+/* ADOPTION (docs/pool-elision-plan.md, rule 1).  `NEW (T)` with no
+   pool allocates from the frame arena, and a frame pointer that
+   leaves -- the result, or a VAR/OWN parameter's target -- cannot be
+   copied the way a string is: a graph of pointers has no address
+   test that finds all of it.  So the whole arena moves instead: its
+   blocks are spliced into the caller's arena, nothing is copied and
+   nothing needs fixing up, and the frame's arena is empty afterwards
+   so the exit frees nothing.  The price is that the callee's
+   intermediate allocations travel with its answer until the caller
+   exits, which is what an explicit `NEW (pool, T)` into the caller's
+   pool cost before.
+
+   m9_pool_adopt: every block of `src` becomes `dst`'s.  The blocks go
+   in AFTER dst's head so dst keeps carving from its own head and
+   m9_cat's in-place extension of the top allocation stays possible.
+   m9_adopt_if: the exit test the generator emits once per pointer
+   component of the leaving value: adopt when p lies in `frame`.  A
+   frame that never allocated has no blocks and the test is one load;
+   a second component after an adoption finds the frame empty.      */
+void m9_pool_adopt (m9_pool *dst, m9_pool *src);
+static inline void m9_adopt_if (m9_pool *frame, m9_pool *res, const void *p)
+{
+  if (frame->head != NULL && p != NULL && m9_pool_owns (frame, p))
+    m9_pool_adopt (res, frame);
+}
 
 /* typed pool slice: n evaluated once (GNU statement expression --
    same toolchain family as the overflow builtins)                  */

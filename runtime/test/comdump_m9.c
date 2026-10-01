@@ -18,6 +18,7 @@ int main (int argc, char **argv)
   Lex_Lexer lx = {0};
   Lex_Token t = {0};
   m9_state err = {0};
+  m9_pool pool = {0};     /* the lexer's and the token's pool (rule 2) */
 
   if (argc < 2) { fprintf (stderr, "usage: comdump_m9 FILE\n"); return 2; }
   f = fopen (argv[1], "rb");
@@ -30,9 +31,9 @@ int main (int argc, char **argv)
   for (i = 0; i < len; i++) chars[i] = (uint32_t) (unsigned char) bytes[i];
 
   Lex_Collect (true, &err);
-  Lex_Init (&lx, (m9_sl_CHAR){ chars, len }, &err);
+  Lex_Init (&lx, &pool, (m9_sl_CHAR){ chars, len }, &err);
   do {
-    Lex_Next (&lx, &t, &err);
+    Lex_Next (&lx, &pool, &t, &pool, &err);
     if (err.exc) { fprintf (stderr, "lexer raised %s\n", err.exc->name); return 1; }
   } while (t.kind != 0);
 

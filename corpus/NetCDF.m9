@@ -129,7 +129,7 @@ PROCEDURE DimLenOf (f: PTR File ; RO name: STR) : I64
 
 PROCEDURE VarRank (f: PTR File ; varid: I64) : I64
   RAISES Error, ValueRange ;
-PROCEDURE VarShape (VAR pool: POOL ; f: PTR File ; varid: I64)
+PROCEDURE VarShape (f: PTR File ; varid: I64)
   : SLICE OF I64 RAISES Error, ValueRange ;
   (* the extents, outermost axis first -- C order, which is also
      M9's: the last axis is contiguous in both.  A NetCDF file and a
@@ -161,9 +161,9 @@ PROCEDURE GetI64 (f: PTR File ; varid: I64 ;
      decision and is written down at the call site, which is the
      most this layer can do about it.                              *)
 
-PROCEDURE ReadGrid2 (VAR pool: POOL ; f: PTR File ; RO name: STR)
+PROCEDURE ReadGrid2 (f: PTR File ; RO name: STR)
   : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange ;
-PROCEDURE ReadGrid3 (VAR pool: POOL ; f: PTR File ; RO name: STR)
+PROCEDURE ReadGrid3 (f: PTR File ; RO name: STR)
   : GRID 3 OF F64 RAISES Error, Faults.SizeError, ValueRange ;
   (* a whole variable, shape and all, as a GRID.  These exist because
      a GRID can today only come from NEW or VIEW: there is no way to
@@ -229,7 +229,7 @@ PROCEDURE VarCount (f: PTR File) : I64 RAISES Error ;
 PROCEDURE VarName (VAR pool: POOL ; f: PTR File ; varid: I64) : STR
   RAISES Error, ValueRange ;
 PROCEDURE VarType (f: PTR File ; varid: I64) : I64 RAISES Error ;
-PROCEDURE VarDims (VAR pool: POOL ; f: PTR File ; varid: I64)
+PROCEDURE VarDims (f: PTR File ; varid: I64)
   : SLICE OF I64 RAISES Error, ValueRange ;
   (* enumeration: how many variables, their names, their nc_type
      (against the Type* constants) and their dimension IDS in
@@ -903,7 +903,7 @@ BEGIN
   RETURN I64 (n[0])
 END VarRank ;
 
-PROCEDURE VarShape (VAR pool: POOL ; f: PTR File ; varid: I64)
+PROCEDURE VarShape (f: PTR File ; varid: I64)
   : SLICE OF I64 RAISES Error, ValueRange =
 VAR
   dims : ARRAY MaxRank OF I32 ;
@@ -915,14 +915,14 @@ BEGIN
   Check ('nc_inq_vardimid', I64 (NcInqVarDimIds (C.Int (f.ncid),
                                                  C.Int (varid),
                                                  ADR (dims)))) ;
-  out := NEW (pool, I64, rank) ;
+  out := NEW (I64, rank) ;
   FOR i := 0 TO rank - 1 DO
     out[i] := DimLen (f, I64 (dims[i]))
   END ;
   RETURN out
 END VarShape ;
 
-PROCEDURE VarDims (VAR pool: POOL ; f: PTR File ; varid: I64)
+PROCEDURE VarDims (f: PTR File ; varid: I64)
   : SLICE OF I64 RAISES Error, ValueRange =
 VAR
   dims : ARRAY MaxRank OF I32 ;
@@ -934,7 +934,7 @@ BEGIN
   Check ('nc_inq_vardimid', I64 (NcInqVarDimIds (C.Int (f.ncid),
                                                  C.Int (varid),
                                                  ADR (dims)))) ;
-  out := NEW (pool, I64, rank) ;
+  out := NEW (I64, rank) ;
   FOR i := 0 TO rank - 1 DO
     out[i] := I64 (dims[i])
   END ;
@@ -943,13 +943,13 @@ END VarDims ;
 
 (* start and count as the C API wants them: size_t, unsigned, and
    therefore refusing a negative rather than reading it as enormous *)
-PROCEDURE Extents (VAR pool: POOL ; RO v: SLICE OF I64)
+PROCEDURE Extents (RO v: SLICE OF I64)
   : SLICE OF U64 RAISES ValueRange =
 VAR
   out : SLICE OF U64 ;
   i : I64 ;
 BEGIN
-  out := NEW (pool, U64, LEN (v)) ;
+  out := NEW (U64, LEN (v)) ;
   FOR i := 0 TO LEN (v) - 1 DO
     IF v[i] < 0 THEN RAISE ValueRange END ;
     out[i] := U64 (v[i])
@@ -981,8 +981,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (out), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_get_vara_double',
     I64 (NcGetVaraDouble (C.Int (f.ncid), C.Int (varid), ADR (s),
                           ADR (c), ADR (out))))
@@ -997,8 +997,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (out), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_get_vara_float',
     I64 (NcGetVaraFloat (C.Int (f.ncid), C.Int (varid), ADR (s),
                          ADR (c), ADR (out))))
@@ -1013,8 +1013,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (out), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_get_vara_longlong',
     I64 (NcGetVaraLong (C.Int (f.ncid), C.Int (varid), ADR (s),
                         ADR (c), ADR (out))))
@@ -1029,8 +1029,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (out), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_get_vara_int',
     I64 (NcGetVaraInt (C.Int (f.ncid), C.Int (varid), ADR (s),
                        ADR (c), ADR (out))))
@@ -1045,8 +1045,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (out), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_get_vara_short',
     I64 (NcGetVaraShort (C.Int (f.ncid), C.Int (varid), ADR (s),
                          ADR (c), ADR (out))))
@@ -1061,8 +1061,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (out), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_get_vara_ubyte',
     I64 (NcGetVaraUByte (C.Int (f.ncid), C.Int (varid), ADR (s),
                          ADR (c), ADR (out))))
@@ -1077,8 +1077,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (v), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_put_vara_longlong',
     I64 (NcPutVaraLong (C.Int (f.ncid), C.Int (varid), ADR (s),
                         ADR (c), ADR (v))))
@@ -1093,8 +1093,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (v), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_put_vara_int',
     I64 (NcPutVaraInt (C.Int (f.ncid), C.Int (varid), ADR (s),
                        ADR (c), ADR (v))))
@@ -1109,8 +1109,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (v), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_put_vara_short',
     I64 (NcPutVaraShort (C.Int (f.ncid), C.Int (varid), ADR (s),
                          ADR (c), ADR (v))))
@@ -1125,8 +1125,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (v), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_put_vara_ubyte',
     I64 (NcPutVaraUByte (C.Int (f.ncid), C.Int (varid), ADR (s),
                          ADR (c), ADR (v))))
@@ -1213,8 +1213,8 @@ BEGIN
   ct := NEW (scratch, I64, 2) ;
   st[0] := 0 ; st[1] := 0 ;
   ct[0] := n ; ct[1] := width ;
-  s := Extents (scratch, st) ;
-  c := Extents (scratch, ct) ;
+  s := Extents (st) ;
+  c := Extents (ct) ;
   Check ('nc_get_vara_text',
     I64 (NcGetVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
                         ADR (c), ADR (raw)))) ;
@@ -1243,21 +1243,21 @@ BEGIN
   ct := NEW (scratch, I64, 2) ;
   st[0] := row ; st[1] := 0 ;
   ct[0] := n ; ct[1] := width ;
-  s := Extents (scratch, st) ;
-  c := Extents (scratch, ct) ;
+  s := Extents (st) ;
+  c := Extents (ct) ;
   Check ('nc_get_vara_text',
     I64 (NcGetVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
                         ADR (c), ADR (out))))
 END GetText ;
 
-PROCEDURE Zeros (VAR pool: POOL ; n: I64) : SLICE OF I64 =
+PROCEDURE Zeros (n: I64) : SLICE OF I64 =
 VAR out : SLICE OF I64 ;
 BEGIN
-  out := NEW (pool, I64, n) ;          (* pools carve zeroed (par 4.3) *)
+  out := NEW (I64, n) ;          (* pools carve zeroed (par 4.3) *)
   RETURN out
 END Zeros ;
 
-PROCEDURE ReadGrid2 (VAR pool: POOL ; f: PTR File ; RO name: STR)
+PROCEDURE ReadGrid2 (f: PTR File ; RO name: STR)
   : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
@@ -1267,11 +1267,11 @@ VAR
   varid, i, j : I64 ;
 BEGIN
   varid := VarId (f, name) ;
-  shape := VarShape (scratch, f, varid) ;
+  shape := VarShape (f, varid) ;
   IF LEN (shape) # 2 THEN RAISE Faults.SizeError (LEN (shape), 2) END ;
   flat := NEW (scratch, F64, Product (shape)) ;
-  GetF64 (f, varid, Zeros (scratch, 2), shape, flat) ;
-  g := NEW (pool, F64, shape[0], shape[1]) ;
+  GetF64 (f, varid, Zeros (2), shape, flat) ;
+  g := NEW (F64, shape[0], shape[1]) ;
   (* the copy the missing GRID-over-a-slice view costs: NetCDF hands
      back C order and a GRID is C order, so these bytes are already
      in the right places and are moved anyway *)
@@ -1283,7 +1283,7 @@ BEGIN
   RETURN g
 END ReadGrid2 ;
 
-PROCEDURE ReadGrid3 (VAR pool: POOL ; f: PTR File ; RO name: STR)
+PROCEDURE ReadGrid3 (f: PTR File ; RO name: STR)
   : GRID 3 OF F64 RAISES Error, Faults.SizeError, ValueRange =
 VAR
   scratch : POOL ;
@@ -1293,11 +1293,11 @@ VAR
   varid, i, j, k : I64 ;
 BEGIN
   varid := VarId (f, name) ;
-  shape := VarShape (scratch, f, varid) ;
+  shape := VarShape (f, varid) ;
   IF LEN (shape) # 3 THEN RAISE Faults.SizeError (LEN (shape), 3) END ;
   flat := NEW (scratch, F64, Product (shape)) ;
-  GetF64 (f, varid, Zeros (scratch, 3), shape, flat) ;
-  g := NEW (pool, F64, shape[0], shape[1], shape[2]) ;
+  GetF64 (f, varid, Zeros (3), shape, flat) ;
+  g := NEW (F64, shape[0], shape[1], shape[2]) ;
   FOR i := 0 TO shape[0] - 1 DO
     FOR j := 0 TO shape[1] - 1 DO
       FOR k := 0 TO shape[2] - 1 DO
@@ -1487,8 +1487,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (data), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_put_vara_double',
     I64 (NcPutVaraDouble (C.Int (f.ncid), C.Int (varid), ADR (s),
                           ADR (c), ADR (data))))
@@ -1503,8 +1503,8 @@ VAR
   s, c : SLICE OF U64 ;
 BEGIN
   Want (LEN (data), count) ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_put_vara_float',
     I64 (NcPutVaraFloat (C.Int (f.ncid), C.Int (varid), ADR (s),
                          ADR (c), ADR (data))))
@@ -1539,7 +1539,7 @@ PROCEDURE Chunking (f: PTR File ; varid: I64 ; RO sizes: SLICE OF I64)
   RAISES Error, ValueRange =
 VAR scratch : POOL ; c : SLICE OF U64 ;
 BEGIN
-  c := Extents (scratch, sizes) ;
+  c := Extents (sizes) ;
   (* storage 0 is NC_CHUNKED *)
   Check ('nc_def_var_chunking',
     I64 (NcChunking (C.Int (f.ncid), C.Int (varid), C.Int (0), ADR (c))))
@@ -1565,8 +1565,8 @@ BEGIN
   FOR i := 0 TO LEN (text) - 1 DO
     b[i] := BYTE (ORD (text[i]))
   END ;
-  s := Extents (scratch, start) ;
-  c := Extents (scratch, count) ;
+  s := Extents (start) ;
+  c := Extents (count) ;
   Check ('nc_put_vara_text',
     I64 (NcPutVaraText (C.Int (f.ncid), C.Int (varid), ADR (s),
                         ADR (c), ADR (b))))

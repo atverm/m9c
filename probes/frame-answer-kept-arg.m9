@@ -1,0 +1,12 @@
+(* EXPECT: a KEPT parameter cannot take the answer of Label *)
+MODULE m ;
+VAR saved : STR ;
+PROCEDURE Label (n: I64) : STR =
+BEGIN
+  IF n > 0 THEN RETURN 'n-' + 'positive' END ;
+  RETURN 'n-' + 'other'
+END Label ;
+PROCEDURE Keep (RO KEPT s: STR) = BEGIN saved := s END Keep ;
+PROCEDURE F () = BEGIN Keep (Label (2)) END F ;
+BEGIN
+END m.

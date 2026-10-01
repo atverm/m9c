@@ -57,12 +57,12 @@ int main (void)
   Csv_Table *t = Csv_Open (&pool, S ("frame_sample.csv"), o, &e);
   ok ("csv opens", e.exc == NULL && t);
   if (e.exc) { printf ("exc %s\n", e.exc->name); return 1; }
-  Csv_SetStamp (&t, 0, 0 /* StampYmdHm */, &e);
-  Csv_SetReal (&t, 1, &e);
-  Csv_SetReal (&t, 2, &e);
-  Csv_SetInt (&t, 3, &e);
-  Csv_SetText (&t, 4, &e);
-  Csv_Parse (&pool, &t, &e);
+  Csv_SetStamp (&t, &pool, 0, 0 /* StampYmdHm */, &e);
+  Csv_SetReal (&t, &pool, 1, &e);
+  Csv_SetReal (&t, &pool, 2, &e);
+  Csv_SetInt (&t, &pool, 3, &e);
+  Csv_SetText (&t, &pool, 4, &e);
+  Csv_Parse (&pool, &t, &pool, &e);
   ok ("csv parses", e.exc == NULL);
   if (e.exc) { printf ("exc %s\n", e.exc->name); return 1; }
 
@@ -87,7 +87,7 @@ int main (void)
   ok ("TA and QC match polars bit for bit", bad == 0);
 
   /* metadata, incl. the unit */
-  Frame_SetMeta (&pool, &fr, S ("TA"), S ("air temperature"),
+  Frame_SetMeta (&pool, &fr, &pool,S ("TA"), S ("air temperature"),
                  S ("air_temperature"), S ("degC"), &e);
   Frame_Col col = Frame_GetCol (fr, S ("TA"), &e);
   ok ("unit is carried",
@@ -150,18 +150,18 @@ int main (void)
   ok ("the contiguous axis has no seams", mono);
 
   /* csv round trip: export, re-read, bit-identical */
-  Frame_WriteCsv (&pool, fr, S ("/tmp/frame_rt.csv"), &e);
+  Frame_WriteCsv ( fr, S ("/tmp/frame_rt.csv"), &e);
   ok ("WriteCsv writes", e.exc == NULL);
   {
     Csv_Options o2 = Csv_Defaults (&e);
     o2.quoted = true;
     Csv_Table *t2 = Csv_Open (&pool, S ("/tmp/frame_rt.csv"), o2, &e);
-    Csv_SetInt (&t2, 0, &e);       /* TIMESTAMP went out as epoch */
-    Csv_SetReal (&t2, 1, &e);
-    Csv_SetReal (&t2, 2, &e);
-    Csv_SetInt (&t2, 3, &e);
-    Csv_SetText (&t2, 4, &e);
-    Csv_Parse (&pool, &t2, &e);
+    Csv_SetInt (&t2, &pool, 0, &e);       /* TIMESTAMP went out as epoch */
+    Csv_SetReal (&t2, &pool, 1, &e);
+    Csv_SetReal (&t2, &pool, 2, &e);
+    Csv_SetInt (&t2, &pool, 3, &e);
+    Csv_SetText (&t2, &pool, 4, &e);
+    Csv_Parse (&pool, &t2, &pool, &e);
     Frame_Fr *fr2 = Frame_FromCsv (&pool, t2, &e);
     ok ("round trip parses", e.exc == NULL && fr2);
     m9_sl_F32 ta2 = Frame_ColF32 (fr2, S ("TA"), &e);
@@ -187,12 +187,12 @@ int main (void)
     m9_state e2 = {0};
     static double nine[16] = {0};
     m9_sl_F64 full = { nine, Frame_Rows (fr, &e2) };
-    Frame_AddF64 (&pool, &fr, S ("TA"), full, nan (""), &e2);
+    Frame_AddF64 (&pool, &fr, &pool,S ("TA"), full, nan (""), &e2);
     ok ("a duplicate name refuses", e2.exc == &Frame_Duplicate);
     e2.exc = NULL;
     m9_sl_F64 dummy = { (double[]){1, 2}, 2 };
     e2.exc = NULL;
-    Frame_AddF64 (&pool, &fr, S ("SHORT"), dummy, nan (""), &e2);
+    Frame_AddF64 (&pool, &fr, &pool,S ("SHORT"), dummy, nan (""), &e2);
     ok ("a wrong-length column refuses", e2.exc == &Faults_SizeError);
     e2.exc = NULL;
     Frame_ColF64 (fr, S ("TA"), &e2);
@@ -220,7 +220,7 @@ int main (void)
     static bool dayv[9] = {false, false, true, true, true,
                            true, false, false, false};
     m9_sl_BOOL day = { dayv, 9 };
-    Frame_AddBools (&pool, &fr, S ("DAY"), day, &e);
+    Frame_AddBools (&pool, &fr, &pool,S ("DAY"), day, &e);
     ok ("a bool column joins", e.exc == NULL);
     m9_sl_BOOL got = Frame_ColBools (fr, S ("DAY"), &e);
     ok ("and reads back", e.exc == NULL && got.p[2] && !got.p[0]);
@@ -241,7 +241,7 @@ int main (void)
     ok ("MakeContiguous refuses a bool column by name",
         e4.exc == &Frame_WrongType);
     /* CSV writes true/false */
-    Frame_WriteCsv (&pool, fr, S ("/tmp/frame_rt2.csv"), &e);
+    Frame_WriteCsv ( fr, S ("/tmp/frame_rt2.csv"), &e);
     int sawtrue = 0;
     { FILE *cf = fopen ("/tmp/frame_rt2.csv", "r"); char l2[512];
       while (cf && fgets (l2, sizeof l2, cf))

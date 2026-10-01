@@ -85,7 +85,7 @@ PROCEDURE Add (t: Instant ; s: Span) : Instant RAISES ValueRange ;
      exact durations.  The order is part of the definition, because
      a different order gives a different answer.                    *)
 
-PROCEDURE Iso (VAR pool: POOL ; t: Instant ; decimals: I64) : STR
+PROCEDURE Iso (t: Instant ; decimals: I64) : STR
   RAISES ValueRange ;
   (* RFC 3339, always Z: 2026-08-22T14:03:09.250Z                   *)
 
@@ -369,31 +369,32 @@ BEGIN
   RETURN s
 END Diff ;
 
-PROCEDURE Iso (VAR pool: POOL ; t: Instant ; decimals: I64) : STR
+PROCEDURE Iso (t: Instant ; decimals: I64) : STR
   RAISES ValueRange =
 VAR
+  pool : POOL ;
   c : Civil ;
   d : PTR DynStr.DString IN pool ;
 BEGIN
   c := ToCivil (t) ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, Fmt.I64Pad (c.year, 4, TRUE)) ;
-  DynStr.AppendChar (pool, d, '-') ;
-  DynStr.Append (pool, d, Fmt.I64Pad (c.month, 2, TRUE)) ;
-  DynStr.AppendChar (pool, d, '-') ;
-  DynStr.Append (pool, d, Fmt.I64Pad (c.day, 2, TRUE)) ;
-  DynStr.AppendChar (pool, d, 'T') ;
-  DynStr.Append (pool, d, Fmt.I64Pad (c.hour, 2, TRUE)) ;
-  DynStr.AppendChar (pool, d, ':') ;
-  DynStr.Append (pool, d, Fmt.I64Pad (c.minute, 2, TRUE)) ;
-  DynStr.AppendChar (pool, d, ':') ;
+  DynStr.Append (d, Fmt.I64Pad (c.year, 4, TRUE)) ;
+  DynStr.AppendChar (d, '-') ;
+  DynStr.Append (d, Fmt.I64Pad (c.month, 2, TRUE)) ;
+  DynStr.AppendChar (d, '-') ;
+  DynStr.Append (d, Fmt.I64Pad (c.day, 2, TRUE)) ;
+  DynStr.AppendChar (d, 'T') ;
+  DynStr.Append (d, Fmt.I64Pad (c.hour, 2, TRUE)) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.Append (d, Fmt.I64Pad (c.minute, 2, TRUE)) ;
+  DynStr.AppendChar (d, ':') ;
   IF decimals = 0 THEN
-    DynStr.Append (pool, d, Fmt.I64Pad (I64 (c.second), 2, TRUE))
+    DynStr.Append (d, Fmt.I64Pad (I64 (c.second), 2, TRUE))
   ELSE
-    IF c.second < 10.0 THEN DynStr.AppendChar (pool, d, '0') END ;
-    DynStr.Append (pool, d, Fmt.Fixed (c.second, decimals))
+    IF c.second < 10.0 THEN DynStr.AppendChar (d, '0') END ;
+    DynStr.Append (d, Fmt.Fixed (c.second, decimals))
   END ;
-  DynStr.AppendChar (pool, d, 'Z') ;
+  DynStr.AppendChar (d, 'Z') ;
   RETURN DynStr.View (d)
 END Iso ;
 

@@ -80,32 +80,32 @@ int main (void)
 
   /* ---- split keeps empty fields, on purpose ---- */
   {
-    m9_sl_m9_sl_CHAR p = Text_Split (&pool, S ("a,b,c"), ',', &err);
+    m9_sl_m9_sl_CHAR p = Text_Split (S ("a,b,c"), ',', &err);
     ok ("split count", p.len == 3);
     ok ("split[0]", is (p.p[0], "a"));
     ok ("split[2]", is (p.p[2], "c"));
 
-    p = Text_Split (&pool, S ("a,,b"), ',', &err);
+    p = Text_Split (S ("a,,b"), ',', &err);
     ok ("split keeps the empty middle", p.len == 3 && p.p[1].len == 0);
 
-    p = Text_Split (&pool, S (","), ',', &err);
+    p = Text_Split (S (","), ',', &err);
     ok ("a lone separator gives two empties",
         p.len == 2 && p.p[0].len == 0 && p.p[1].len == 0);
 
-    p = Text_Split (&pool, S ("nosep"), ',', &err);
+    p = Text_Split (S ("nosep"), ',', &err);
     ok ("no separator gives one piece", p.len == 1 && is (p.p[0], "nosep"));
 
-    p = Text_Split (&pool, S ("a,b,c"), ',', &err);
+    p = Text_Split (S ("a,b,c"), ',', &err);
     ok ("join is the inverse",
-        is (Text_Join (&pool, p, S (","), &err), "a,b,c"));
+        is (Text_Join (p, S (","), &err), "a,b,c"));
 
     /* Fields drops the empties (2026-09-27, the ONEFlux port's
        Common.Tokens); Keep copies; Cat builds in the pool */
-    p = Text_Fields (&pool, S (",a,,b,"), ',', &err);
+    p = Text_Fields (S (",a,,b,"), ',', &err);
     ok ("fields drops empty pieces", p.len == 2 && is (p.p[0], "a") && is (p.p[1], "b"));
-    p = Text_Fields (&pool, S (",,"), ',', &err);
+    p = Text_Fields (S (",,"), ',', &err);
     ok ("fields of only separators is empty", p.len == 0);
-    p = Text_Fields (&pool, S ("one"), ',', &err);
+    p = Text_Fields (S ("one"), ',', &err);
     ok ("fields of no separator is the string", p.len == 1 && is (p.p[0], "one"));
     {
       m9_sl_CHAR src = S ("kept");
@@ -116,14 +116,14 @@ int main (void)
       ok ("cat of two empties is empty",
           Text_Cat (&pool, S (""), S (""), &err).len == 0);
     }
-    p = Text_Split (&pool, S ("a,b,c"), ',', &err);   /* the join checks below read p */
+    p = Text_Split (S ("a,b,c"), ',', &err);   /* the join checks below read p */
     ok ("join with a longer separator",
-        is (Text_Join (&pool, p, S (" -- "), &err), "a -- b -- c"));
+        is (Text_Join (p, S (" -- "), &err), "a -- b -- c"));
   }
 
   /* ---- case, ASCII only ---- */
-  ok ("Lower", is (Text_Lower (&pool, S ("MiXeD 123!"), &err), "mixed 123!"));
-  ok ("Upper", is (Text_Upper (&pool, S ("MiXeD 123!"), &err), "MIXED 123!"));
+  ok ("Lower", is (Text_Lower (S ("MiXeD 123!"), &err), "mixed 123!"));
+  ok ("Upper", is (Text_Upper (S ("MiXeD 123!"), &err), "MIXED 123!"));
   ok ("text raised nothing", err.exc == NULL);
 
   /* ---- Log: capture stderr and read it back ---- */

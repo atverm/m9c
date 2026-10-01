@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.10.0 + develop, 2026-09-27
+## Report — revision 0.13.0, 2026-10-01
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -434,6 +434,32 @@ would let the compiler place these too; until then a string that must
 outlive its frame is declared in the context that needs it, or copied
 into a pool that has a name.
 
+**A call's answer is frame storage when its callee built it** (stage
+2 of `docs/pool-elision-plan.md`, 2026-09-30).  The signature cannot
+say: a pool-less function answering a pointer may answer a view of
+its argument (`Text.Trim`), storage from a module pool (a compiler's
+string helpers), or -- since the frame form of `NEW` -- storage built
+in its caller's arena.  When this was measured, every one of the
+corpus's 75 pool-less pointer answers was of the first two kinds, so
+the checker reads the body: a procedure ANSWERS FRAME STORAGE when a
+`RETURN` of its answers a frame `NEW`, a `+` (in a function answering
+a string), a local that was assigned one of these, or a call to a
+procedure that answers frame storage; and, when it takes no pool and
+answers a string, when it declares a local `POOL`, because the
+generator now re-homes a string answer out of every local pool as it
+does out of the frame -- `VAR scratch: POOL` + `DynStr` + `RETURN
+DynStr.View (d)` is thereby a string builder that takes no pool.  A
+callee that took a pool answers in it unless its `RETURN` says
+otherwise.  Such an answer is tainted exactly as a `+` is, with the
+callee named: `the answer of Split dies with this frame; it cannot be
+stored in module variable saved`.  One relaxation keeps the builder
+idiom: a frame value handed to a `KEPT` parameter is refused unless
+another `VAR` or `KEPT` argument of the same call is a frame value
+too -- `Json.Set (obj, name, v)` on two fresh nodes links storage of
+one lifetime to storage of the same lifetime.  Still not seen: an
+answer stored into a field of a local, and a call through a procedure
+value (no body to read).
+
 ### 2.4 Read-only borrow is a parameter mode
 
 `RO` is the fourth binding mode, beside `VAR` and `OWN` and the
@@ -739,15 +765,20 @@ its place yet.
 
 ### 4.2 Ownership
 
-`PTR T` obtained from `NEW` is owned by exactly one binding. Passing
+`PTR T` obtained from `NEW (OWN, T)` is owned by exactly one binding. Passing
 it by value lends it (§4.1); assigning it to a variable or record
 field **moves** it, and the source binding becomes unusable —
 enforced at compile time. `DISPOSE` consumes it. A procedure that
 retains must take the parameter as `OWN p: PTR T`, which is visible
-in the definition module: retention is part of the contract.
+in the definition module: retention is part of the contract.  *(The
+spelling was `NEW (T)` until 2026-09-30, when `NEW (T)` became the
+frame allocation of §4.3: the first argument now always says who
+frees the storage — a pool, `OWN`, or nothing for the frame — and
+the owned heap object, whose reasons to exist are `SHARED`, `THREAD`
+and `DISPOSE`, says so.)*
 
 For shared ownership, `SHARED PTR T` is reference-counted; creating
-one is explicit — `SHARED (NEW (Store))` consumes the owned pointer
+one is explicit — `SHARED (NEW (OWN, Store))` consumes the owned pointer
 and yields the first handle — cycles are the programmer's declared
 problem, and the count is not atomic unless the type is SHARABLE
 (§6). *(The form was forced by ZarrStore: an Array must retain its
@@ -767,6 +798,126 @@ scope, not by inference. This is the intended idiom for
 parse-trees, request handlers, and chunk caches: the Json module of
 2026-08-20, which leaked every node by design, becomes correct by
 freeing its pool.
+
+**The frame is the pool that needs no name.**  `NEW (T)`, `NEW (T,
+n)` and `NEW (T, n0, n1)` name no pool and allocate from the
+procedure's own arena, the one `+` uses (§2.3), and the four
+spellings are told apart by the first argument alone: a pool's name,
+`OWN` (§4.2), or a type.  A frame allocation that LEAVES — the
+result, or what a `VAR`/`OWN` parameter's target is set to — keeps
+its storage: a function whose answer carries a pointer builds in its
+caller's arena from the start, exactly as a `RETURN` expression does,
+and a procedure that sets a reference parameter's target to a frame
+allocation has its whole arena ADOPTED by the caller's at exit, the
+blocks spliced across with nothing copied and nothing to fix up.  So
+`RETURN NEW (T)`, `t := Build (n) ; RETURN t`, a returned record with
+pointer fields, an array of slices, a variant's payload and a grid
+all reach the caller alive, and through any number of frames.  What
+a frame allocation may NOT do is what a concatenation may not (§2.3):
+be stored in a module variable, in a component reached through a
+reference parameter, or through a `KEPT` parameter; be handed to a
+`THREAD`; be `DISPOSE`d, `SHARED` or moved into an `OWN` parameter,
+each refused by name — `a frame allocation dies with this frame`,
+`the frame owns p`, `allocate it with OWN`.  The price is stated with
+the mechanism (`docs/pool-elision-plan.md`): the callee's
+intermediate allocations travel with its answer until the caller
+exits, which is what a callee allocating everything into the caller's
+pool cost before, and `VAR scratch: POOL` remains the way to say
+"dies here" inside such a callee.  *(Built 2026-09-30, stage 1 of the
+plan; the named pool parameter stays legal everywhere, and the
+corpus moves module by module.)*
+
+**A `VAR` parameter carries its object's pool** (rule 2 of the plan,
+stage 3, 2026-09-30).  A `VAR` parameter written as `PTR T` or `OPT
+PTR T`, or as a name for one (`TYPE SinkP = PTR Sink`), or of a
+record, monitor, array or variant type that can hold a pointer, is
+passed with the pool its object lives in as a hidden argument beside
+it, and `NEW (d, T)` or `NEW (d, T, n)` inside the
+callee allocates there: `Dict.Put (VAR d: PTR Dict ; RO KEPT key: STR
+; val: Value)` grows the table in the pool the caller's variable was
+declared in, and the parameter that used to say so is gone.  The
+pool is named from the ROOT of the argument's designator at the
+call, never from a body: a local's `IN` clause, else the frame; a
+module variable's `IN` clause, else the module frame, which is a
+file-level static shared with the init body; a `VAR` parameter's own
+hidden pool; a binder's origin's.  Three roots have no pool to name
+and are refused at the call — an `OWN` parameter's object (heap
+storage), a component reached through a value parameter (a borrow
+whose pool nobody stated) and a `VAR` slice (an output slot): `the
+pool of h is not known here, and the callee may allocate in it -- h
+is a value parameter`.  A `VAR` target set to a frame allocation is
+adopted into that pool at exit rather than into the caller's arena,
+and a `THREAD` target receives its argument's pool through the thunk
+(§6).  Two things follow for the checker: a local declared `IN` a
+pool may not be given a frame value, since its growth would outlive
+its head (`it cannot be held by n, which is declared IN a pool`), and
+a bare slice, grid or string `VAR` parameter carries nothing and
+stays what it was — re-homed or adopted at exit.  The price is one
+pointer argument per such parameter whether or not the callee
+allocates, paid so that the ABI is read off the heading and both
+generators agree without reading a body; a container therefore
+offers `New ()` for a table that dies with the frame and `NewIn
+(pool)` for one declared `IN pool`, since the head and the entries
+must share a pool.  Still lent, not proven: a pool-less local that
+holds a VIEW of a durable object hands its frame to the callee as
+that object's pool, exactly as it would have handed any pool before.
+*(Built 2026-09-30, stage 3; Dict and ApiSpec ported; 64 exported
+procedures in 28 corpus modules carry a hidden pool, zero refusals in
+any tree.)*
+
+**The corpus is migrated** (stage 5, 2026-09-30).  `m9elide` was run
+over every M9 source in the repository with a stated keep list, and
+120 procedures lost their pool parameter (24 answer in the frame, 65
+grow the object a `VAR` parameter hands in, 31 keep a scratch pool of
+the name their parameter had), 1,947 calls lost the argument, and 22
+locals gained the `IN` clause they had omitted; 314 keep it, each
+with its reason in the ledger.  Three of those reasons are the rule
+restated for the reader: a constructor whose result type promises
+`PTR T IN pool` keeps the pool, because a frame answer cannot keep
+that promise (`Csv.Open`, `Frame.New`, `Mat.New`); a reader that
+answers INTO the caller's pool by design keeps it (`Io.ReadFile`,
+`Text.Keep`, `DynStr.Bytes` and kin, 33 named); and a procedure that
+grows an object rooted at a pool-less local, or whose answer a kept
+procedure returns, keeps it because the checker could not otherwise
+name the storage.  Two use-after-frees drove the last of those, both
+found by the gates and neither by the checker: the parser held every
+node in a pool-less local and `Ast.Add (n, kid)` grew it in the
+parser's frame, and `RegisterUnit` held `RaisesOf`'s answer in a
+record field that a value parameter carried into a module table.
+The checker now taints a local whose COMPONENT takes a frame value,
+so copying that local into a module variable is refused by name
+(`frame-ptr-record-copy`, `frame-ptr-pooled-component`), and a
+variable declared `IN p` may not be given an allocation made in
+another named pool (`acc is declared IN scratch but allocated in
+pool`, `pool-clause-disagrees`), since rule 2 reads the clause as
+the truth; a pointer-bearing record handed by VALUE to a callee that
+retains it is still not a retention the checker sees, and is owed.
+
+**Storage in a local pool is frame storage that nobody rescues**
+(2026-10-01).  `VAR scratch: POOL` dies with the frame as the
+frame's own arena does, but what lives in it is neither re-homed
+nor adopted at exit -- only a `RETURN`ed string is copied out.  The
+checker therefore treats an allocation made in a local pool
+(`NEW (scratch, T)`, `DynStr.New (scratch)`, a name declared `IN
+scratch`), and a VIEW of one -- the answer of a procedure that
+answers `RO` is a view of its arguments (`DynStr.View`) -- exactly
+as it treats a frame value: it may not be stored in a module
+variable, through a reference parameter, in a name declared `IN` a
+pool that outlives the frame, or through a `KEPT` parameter unless
+the same pool is among the call's arguments (`PutS (sp, o, k, v)`
+with `o IN sp`), and it may not be `RETURN`ed by shape any more than
+by declaration (`an allocation in pool scratch escapes its pool`);
+a bare local that takes such a value carries the taint.  Handing it
+to a `THREAD` stays as lent as any pool pointer.  The rule exists
+because a view's pool is not part of a `STR`'s type: the zarr proxy's
+`Variables.FillId` kept `DynStr.View (d)` of a scratch-pool string in
+its `VAR` record once `m9elide` had turned its pool parameter into a
+local pool, `--check` accepted it, and the catalogue answered ids
+like `realish.panel.co2\x00\x00lish` -- the one unsound rewrite in
+70 scratch-pool conversions, now refused by both checkers
+(`pool-view-via-var`, `pool-ptr-via-var`, `pool-escape-by-shape`)
+and not made by the tool (a view stored through a parameter or into
+an element keeps the parameter).
 
 No other allocation exists. `malloc` is visible or absent.
 
@@ -826,7 +977,11 @@ Threads are in the language; data races are not.
   being moved into the thread. A MONITOR is shared *by reference* —
   one lock guarding one record is its whole point — so the compiler
   passes its address, and `THREAD (P, gate)` calls a `P` declared
-  `VAR g: Gate`. Anything else must already be pointer-shaped.
+  `VAR g: Gate`. Anything else must already be pointer-shaped.  Since
+  rule 2 of the pool elision plan (§4.3) the thread also receives the
+  pool `gate` lives in, as `P`'s hidden argument: the pool is exactly
+  as shared as the object, and the sharability rule below covers
+  both.
   An unhandled `RAISE` inside a thread stops the program with the
   exception's name: par 11 gives every procedure an error slot and
   the caller checks it, and a thread has no caller, so swallowing it
@@ -1068,6 +1223,7 @@ features:
    | ~~Procedure types~~ | **built 2026-09-27** (§2.2.3): named, structural, top-level procedures as values, `OPT` for a variable or field, calls through a value checked against the type and raising its `RAISES`.  The trigger -- "a second program whose operations cannot be enumerated; defunctionalisation has produced something better twice" -- had been met four times over when the review of that day counted: a route table, a push interface, a record the loop drives, a reverse-communication MINPACK, each recorded by its author as the absence of this feature | *was:* CLAUDE.md's pre-registration; this table never carried the row |
    | An **aggregate constructor** | `[a, b, c]`, and a record value `Row (200, 'OK')`, usable as a CONST | something needs to **enumerate** a mapping the program also uses -- the routes-as-data precedent, where `OpenApi` derives the document from the router rather than being maintained beside it |
    | A typed `CONST` | `CONST Pi : F32 = 3.14159...` | a program must reproduce a foreign constant bit for bit and cannot |
+   | **Pool elision** | `NEW (T)` with no pool lands in the frame and its arena is ADOPTED by the caller's at exit when the result points into it; a `VAR` pointer parameter carries its object's pool implicitly; `HEAP`, a program's pool and an object-held cache stay named (`docs/pool-elision-plan.md`) | *met 2026-09-30; rules 1 and 2 BUILT the same day (stages 1 to 3 of the plan), the corpus moving module by module -- Text, Json, Dict, ApiSpec so far:* the parameter carried no signal -- 98% of allocating corpus procedures take one, and across the four trees (corpus, zarr proxy, FLEXPART, flexinv) between 1% and 10% of the 18,600 pool mentions name a lifetime that is not a frame |
 
    *Measured 2026-08-31, and it corrected two things this table used to
    say.* First, these are **separable**, and a constant lookup table
@@ -1208,7 +1364,7 @@ Factor      = number | string | "TRUE" | "FALSE" | "NONE"
             | NewExpr | SliceExpr
             | Designator [ "(" [ ExprList ] ")" ]
             | "(" Expr ")" | "NOT" Factor .
-NewExpr     = "NEW" "(" [ Designator "," ] Qualident [ "," Expr ] ")" .
+NewExpr     = "NEW" "(" ( "OWN" "," Qualident | Designator { "," Expr } ) ")" .
 SliceExpr   = "SLICE" "(" Expr "," Expr "," Expr ")" .
 Designator  = ident { "." ident | "[" Expr "]" } .
 
@@ -1239,9 +1395,11 @@ Notes, each a decision:
    guarded suite. Elsewhere IS is a plain BOOL test with no binding.
 5. **THREAD, WAIT, SIGNAL, TRANSFER are statements**, not
    expressions: nothing to bind, nothing to forget to bind.
-6. **NEW's first-argument ambiguity** (pool designator vs owned
-   type) is resolved by name resolution, not grammar — both parse
-   as the same shape.
+6. **NEW's first-argument ambiguity** (a pool's name vs a type's)
+   is resolved by name resolution, not grammar — both parse as the
+   same shape, and `NEW (a, b)` is the pool form when `a` is a
+   variable and the frame form with extent `b` when `a` is a type
+   (§4.3); `OWN` in that position is the owned heap (§4.2).
 7. The lexer's `^` token is bound to nothing: `.` selects through
    PTR (Oberon's implicit dereference). It stays lexed and reserved
    until P3 decides whether explicit dereference earns a place.
@@ -1287,10 +1445,15 @@ that tree is what the M9 sources in the same commit produce.
 No packing pragmas, no struct overlay of wire bytes: wire formats go
 through `SLICE OF BYTE` and explicit conversion, always — the
 LONGREAL lesson generalized. `RO`, `KEPT` and `IN pool` are checker
-facts, erased in C. Every owned `NEW` carries the rc header (8 bytes)
+facts, erased in C. Every `NEW (OWN, T)` carries the rc header (8 bytes)
 so `SHARED (x)` is `rc := 1` in place, handle copies are `rc++`, and
 `DISPOSE` of a handle is `rc--`, freeing at zero; pool allocations
-carry no header — the pool owns them and frees as a unit.
+carry no header — the pool owns them and frees as a unit.  A frame
+allocation is a pool allocation from `err->res` (below), and a
+procedure whose result or reference parameter can carry a pointer
+ends with one `m9_adopt_if (&m9frame, m9res, p)` per pointer
+component: the address test that, when `p` lies in the dying frame,
+splices the frame's blocks into the caller's arena (§4.3).
 
 **Errors: slot, not longjmp.** Every M9 procedure gets a final
 parameter `m9_state *err`; uniformity beats micro-optimization until

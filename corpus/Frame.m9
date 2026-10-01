@@ -170,7 +170,7 @@ PROCEDURE FromCsv (VAR pool: POOL ; t: PTR Csv.Table) : PTR Fr IN pool
      must exist, and the far end of the line is the one value real
      data never means. *)
 
-PROCEDURE WriteCsv (VAR pool: POOL ; f: PTR Fr ; RO path: STR)
+PROCEDURE WriteCsv (f: PTR Fr ; RO path: STR)
   RAISES Io.IOError, ValueRange, Overflow, IndexError ;
   (* header = short names; a missing value writes an EMPTY field;
      floats write 17 significant digits (round-trip exact -- the
@@ -382,26 +382,26 @@ BEGIN
   RETURN f
 END New ;
 
-PROCEDURE Grow (VAR pool: POOL ; VAR f: PTR Fr) =
+PROCEDURE Grow (VAR f: PTR Fr) =
 VAR
   bigger : SLICE OF Col ;
   i : I64 ;
 BEGIN
   IF f.ncols < LEN (f.cols) THEN RETURN END ;
-  bigger := NEW (pool, Col, 2 * LEN (f.cols)) ;
+  bigger := NEW (f, Col, 2 * LEN (f.cols)) ;
   FOR i := 0 TO f.ncols - 1 DO
     bigger[i] := f.cols[i]
   END ;
   f.cols := bigger
 END Grow ;
 
-PROCEDURE Admit (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
+PROCEDURE Admit (VAR f: PTR Fr ; RO name: STR ;
                  n: I64)
   RAISES Faults.SizeError, Duplicate =
 BEGIN
   IF n # f.rows THEN RAISE Faults.SizeError (n, f.rows) END ;
   IF Find (f, name) >= 0 THEN RAISE Duplicate (name) END ;
-  Grow (pool, f)
+  Grow (f)
 END Admit ;
 
 PROCEDURE Blank (VAR pool: POOL ; RO name: STR) : Col =
@@ -431,7 +431,7 @@ PROCEDURE AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
-  Admit (pool, f, name, LEN (v)) ;
+  Admit (f, name, LEN (v)) ;
   c := Blank (pool, name) ;
   c.data := Data.F64s (v, miss) ;
   f.cols[f.ncols] := c ;
@@ -443,7 +443,7 @@ PROCEDURE AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
-  Admit (pool, f, name, LEN (v)) ;
+  Admit (f, name, LEN (v)) ;
   c := Blank (pool, name) ;
   c.data := Data.F32s (v, miss) ;
   f.cols[f.ncols] := c ;
@@ -455,7 +455,7 @@ PROCEDURE AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
-  Admit (pool, f, name, LEN (v)) ;
+  Admit (f, name, LEN (v)) ;
   c := Blank (pool, name) ;
   c.data := Data.I64s (v, miss) ;
   f.cols[f.ncols] := c ;
@@ -467,7 +467,7 @@ PROCEDURE AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
-  Admit (pool, f, name, LEN (v)) ;
+  Admit (f, name, LEN (v)) ;
   c := Blank (pool, name) ;
   c.data := Data.I32s (v, miss) ;
   f.cols[f.ncols] := c ;
@@ -479,7 +479,7 @@ PROCEDURE AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
-  Admit (pool, f, name, LEN (v)) ;
+  Admit (f, name, LEN (v)) ;
   c := Blank (pool, name) ;
   c.data := Data.I16s (v, miss) ;
   f.cols[f.ncols] := c ;
@@ -491,7 +491,7 @@ PROCEDURE AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
-  Admit (pool, f, name, LEN (v)) ;
+  Admit (f, name, LEN (v)) ;
   c := Blank (pool, name) ;
   c.data := Data.Bytes (v, miss) ;
   f.cols[f.ncols] := c ;
@@ -503,7 +503,7 @@ PROCEDURE AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
-  Admit (pool, f, name, LEN (v)) ;
+  Admit (f, name, LEN (v)) ;
   c := Blank (pool, name) ;
   c.data := Data.Bools (v) ;
   f.cols[f.ncols] := c ;
@@ -518,7 +518,7 @@ VAR
   bigger : SLICE OF StrTab ;
   i : I64 ;
 BEGIN
-  Admit (pool, f, name, LEN (v)) ;
+  Admit (f, name, LEN (v)) ;
   IF f.nstr >= LEN (f.strs) THEN
     bigger := NEW (pool, StrTab, 2 * LEN (f.strs)) ;
     FOR i := 0 TO f.nstr - 1 DO
@@ -701,24 +701,24 @@ BEGIN
   RETURN NOT (v = v)
 END IsNaN32 ;
 
-PROCEDURE PutF64 (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE PutF64 (VAR d: PTR DynStr.DString ;
                   v, miss: F64)
   RAISES ValueRange, Overflow =
 BEGIN
   IF IsNaN64 (v) OR v = miss THEN RETURN END ;   (* empty field *)
-  DynStr.Append (pool, d, Fmt.Sci (v, 16))
+  DynStr.Append (d, Fmt.Sci (v, 16))
 END PutF64 ;
 
-PROCEDURE PutF32 (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE PutF32 (VAR d: PTR DynStr.DString ;
                   v, miss: F32)
   RAISES ValueRange, Overflow =
 BEGIN
   IF IsNaN32 (v) OR v = miss THEN RETURN END ;
   (* 9 significant digits round-trips every F32 *)
-  DynStr.Append (pool, d, Fmt.Sci (F64 (v), 8))
+  DynStr.Append (d, Fmt.Sci (F64 (v), 8))
 END PutF32 ;
 
-PROCEDURE PutStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE PutStr (VAR d: PTR DynStr.DString ;
                   RO s: STR) =
 VAR
   i : I64 ;
@@ -729,53 +729,54 @@ BEGIN
     IF s[i] = ',' OR s[i] = '"' OR s[i] = 00AC THEN needs := TRUE END
   END ;
   IF NOT needs THEN
-    DynStr.Append (pool, d, s) ;
+    DynStr.Append (d, s) ;
     RETURN
   END ;
-  DynStr.AppendChar (pool, d, '"') ;
+  DynStr.AppendChar (d, '"') ;
   FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = '"' THEN DynStr.AppendChar (pool, d, '"') END ;
-    DynStr.AppendChar (pool, d, s[i])
+    IF s[i] = '"' THEN DynStr.AppendChar (d, '"') END ;
+    DynStr.AppendChar (d, s[i])
   END ;
-  DynStr.AppendChar (pool, d, '"')
+  DynStr.AppendChar (d, '"')
 END PutStr ;
 
-PROCEDURE WriteCsv (VAR pool: POOL ; f: PTR Fr ; RO path: STR)
+PROCEDURE WriteCsv (f: PTR Fr ; RO path: STR)
   RAISES Io.IOError, ValueRange, Overflow, IndexError =
 VAR
-  d : PTR DynStr.DString ;
+  pool : POOL ;
+  d : PTR DynStr.DString IN pool ;
   c, r : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
   FOR c := 0 TO f.ncols - 1 DO
-    IF c > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
-    PutStr (pool, d, f.cols[c].name)
+    IF c > 0 THEN DynStr.AppendChar (d, ',') END ;
+    PutStr (d, f.cols[c].name)
   END ;
-  DynStr.AppendChar (pool, d, 00AC) ;
+  DynStr.AppendChar (d, 00AC) ;
   FOR r := 0 TO f.rows - 1 DO
     FOR c := 0 TO f.ncols - 1 DO
-      IF c > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
+      IF c > 0 THEN DynStr.AppendChar (d, ',') END ;
       CASE f.cols[c].data OF
-      | F64s (v, m) : PutF64 (pool, d, v[r], m)
-      | F32s (v, m) : PutF32 (pool, d, v[r], m)
+      | F64s (v, m) : PutF64 (d, v[r], m)
+      | F32s (v, m) : PutF32 (d, v[r], m)
       | I64s (v, m) :
-          IF v[r] # m THEN DynStr.AppendI64 (pool, d, v[r]) END
+          IF v[r] # m THEN DynStr.AppendI64 (d, v[r]) END
       | I32s (v, m) :
-          IF v[r] # m THEN DynStr.AppendI64 (pool, d, I64 (v[r])) END
+          IF v[r] # m THEN DynStr.AppendI64 (d, I64 (v[r])) END
       | I16s (v, m) :
-          IF v[r] # m THEN DynStr.AppendI64 (pool, d, I64 (v[r])) END
+          IF v[r] # m THEN DynStr.AppendI64 (d, I64 (v[r])) END
       | Bytes (v, m) :
-          IF v[r] # m THEN DynStr.AppendI64 (pool, d, I64 (v[r])) END
+          IF v[r] # m THEN DynStr.AppendI64 (d, I64 (v[r])) END
       | Bools (v) :
           IF v[r] THEN
-            DynStr.Append (pool, d, 'true')
+            DynStr.Append (d, 'true')
           ELSE
-            DynStr.Append (pool, d, 'false')
+            DynStr.Append (d, 'false')
           END
-      | Strs (si) : PutStr (pool, d, f.strs[si].v[r])
+      | Strs (si) : PutStr (d, f.strs[si].v[r])
       END
     END ;
-    DynStr.AppendChar (pool, d, 00AC)
+    DynStr.AppendChar (d, 00AC)
   END ;
   Io.WriteFile (path, DynStr.View (d))
 END WriteCsv ;
@@ -1707,7 +1708,7 @@ BEGIN
       AddBytes (pool, f, name, vb, 255)
     END
   ELSIF t = NetCDF.TypeChar THEN
-    shape := NetCDF.VarShape (pool, nc, vid) ;
+    shape := NetCDF.VarShape (nc, vid) ;
     w := shape[1] ;
     vs := NetCDF.GetChars (pool, nc, vid, n, w) ;
     AddStrs (pool, f, name, vs)
@@ -1756,7 +1757,7 @@ BEGIN
   nv := NetCDF.VarCount (nc) ;
   FOR vid := 0 TO nv - 1 DO
     rank := NetCDF.VarRank (nc, vid) ;
-    vdims := NetCDF.VarDims (pool, nc, vid) ;
+    vdims := NetCDF.VarDims (nc, vid) ;
     IF rank >= 1 AND vdims[0] = did
        AND (rank = 1 OR (rank = 2
                          AND NetCDF.VarType (nc, vid)
@@ -1768,7 +1769,7 @@ BEGIN
   RETURN f
 END FromNc ;
 
-PROCEDURE ParseSince (VAR pool: POOL ; RO units: STR ;
+PROCEDURE ParseSince (RO units: STR ;
                       VAR mult, base: I64)
   RAISES Faults.BadArg, ValueRange =
   (* 'seconds|minutes|hours|days since YYYY-MM-DD[ hh:mm:ss][zone]',
@@ -1869,7 +1870,7 @@ BEGIN
   n := NetCDF.DimLen (nc, did) ;
   tvid := NetCDF.VarId (nc, 'time') ;
   (* the axis, through its own units *)
-  ParseSince (pool, NetCDF.GetAttStr (pool, nc, tvid, 'units'),
+  ParseSince (NetCDF.GetAttStr (pool, nc, tvid, 'units'),
               mult, base) ;
   st := NEW (pool, I64, 1) ;
   ct := NEW (pool, I64, 1) ;
@@ -1900,7 +1901,7 @@ BEGIN
   nv := NetCDF.VarCount (nc) ;
   FOR vid := 0 TO nv - 1 DO
     rank := NetCDF.VarRank (nc, vid) ;
-    vdims := NetCDF.VarDims (pool, nc, vid) ;
+    vdims := NetCDF.VarDims (nc, vid) ;
     nm := NetCDF.VarName (pool, nc, vid) ;
     IF vid # tvid AND NOT DynStr.Eq (nm, 'time_bnds')
        AND rank >= 1 AND vdims[0] = did

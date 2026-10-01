@@ -64,7 +64,7 @@ LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
          Json Dict Faults Mat Math Bits Sort Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc \
          NetCDF Grib Csv Delim Zip Stats System Frame Parquet \
-         Plot ZarrStore Zarr Diag Lsp M9fmt"
+         Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
 
 mkdir -p "$OUT"
 

@@ -125,10 +125,10 @@ int main (void)
   }
 
   /* ---- ISO ---- */
-  to_c (Time_Iso (&pool, inst (0.0), 0, &err), buf, sizeof buf);
+  to_c (Time_Iso ( inst (0.0), 0, &err), buf, sizeof buf);
   ok ("epoch is 1970-01-01T00:00:00Z",
       strcmp (buf, "1970-01-01T00:00:00Z") == 0);
-  to_c (Time_Iso (&pool, inst (1755871389.25), 3, &err), buf, sizeof buf);
+  to_c (Time_Iso ( inst (1755871389.25), 3, &err), buf, sizeof buf);
   ok ("iso with milliseconds",
       strcmp (buf, "2025-08-22T14:03:09.250Z") == 0);
   ok ("iso raised nothing", err.exc == NULL);
@@ -163,21 +163,21 @@ int main (void)
     memset (&s, 0, sizeof s);
     s.months = 1;
     got = Time_Add (jan31, s, &err);
-    to_c (Time_Iso (&pool, got, 0, &err), buf, sizeof buf);
+    to_c (Time_Iso ( got, 0, &err), buf, sizeof buf);
     ok ("31 Jan + 1 month clamps to 28 Feb",
         strcmp (buf, "2025-02-28T00:00:00Z") == 0);
 
     c.year = 2024;                       /* leap */
     jan31 = Time_FromCivil (c, &err);
     got = Time_Add (jan31, s, &err);
-    to_c (Time_Iso (&pool, got, 0, &err), buf, sizeof buf);
+    to_c (Time_Iso ( got, 0, &err), buf, sizeof buf);
     ok ("31 Jan 2024 + 1 month clamps to 29 Feb",
         strcmp (buf, "2024-02-29T00:00:00Z") == 0);
 
     s.months = 0; s.years = 1;
     c.year = 2024; c.month = 2; c.day = 29;
     got = Time_Add (Time_FromCivil (c, &err), s, &err);
-    to_c (Time_Iso (&pool, got, 0, &err), buf, sizeof buf);
+    to_c (Time_Iso ( got, 0, &err), buf, sizeof buf);
     ok ("29 Feb + 1 year clamps to 28 Feb",
         strcmp (buf, "2025-02-28T00:00:00Z") == 0);
     ok ("clamping raised nothing", err.exc == NULL);

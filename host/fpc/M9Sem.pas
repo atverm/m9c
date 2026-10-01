@@ -39,6 +39,8 @@ type
     raises : array of string;
     sig    : string;
     node   : TNode;
+    body   : TNode;                 { the implementation's node, when
+                                      one was loaded (AnswersFrame) }
     fromDef, hasBody : Boolean;
   end;
 
@@ -99,7 +101,18 @@ type
     tyCHAR : TNode;                    { its element }
     threadRoots : array of string;
     callGraph : TStringList;
+    ansMemo : TStringList;             { AnswersFrame: Module.Proc=yes|no|busy }
     function FindMod (const n: string): TModuleInfo;
+    function ProcNamed (const modn, callee: string; out pr: TProcInfo): Boolean;
+    function NewIsFrameIn (e: TNode; const modn: string): Boolean;
+    function AssignEvidence (k: TNode; const name, modn: string;
+      isStr: Boolean; body: TNode; depth: Integer): Boolean;
+    function ExprEvidence (k: TNode; const modn: string; isStr: Boolean;
+      body: TNode; depth: Integer): Boolean;
+    function FrameEvidence (k: TNode; const modn: string; isStr: Boolean;
+      body: TNode; scratchCounts: Boolean): Boolean;
+    function AnswersFrame (const qual: string; const pr: TProcInfo): Boolean;
+    function CallAnswersFrame (dn: TNode): string;
     procedure ErrN (n: TNode; const ctx, msg: string);
     function SigOf (p: TNode): string;
     function RaisesOf (p: TNode): TStringArray;
@@ -389,6 +402,7 @@ begin
   callGraph := TStringList.Create; callGraph.CaseSensitive := True;
   RoCand := TStringList.Create; RoCand.CaseSensitive := True;
   varParams := TStringList.Create; varParams.CaseSensitive := True;
+  ansMemo := TStringList.Create; ansMemo.CaseSensitive := True;
   keptParams := TStringList.Create; keptParams.CaseSensitive := True;
   keptUsed := TStringList.Create; keptUsed.CaseSensitive := True;
   varWritten := TStringList.Create; varWritten.CaseSensitive := True;
@@ -404,6 +418,7 @@ end;
 
 destructor TSem.Destroy;
 begin
+  ansMemo.Free;
   Errors.Free;
   Ledger.Free;
   fromMap.Free;
@@ -419,6 +434,204 @@ begin
   for i := 0 to High (mods) do
     if mods[i].name = n then Exit (mods[i]);
   Result := nil;
+end;
+
+{ ---- does a procedure ANSWER frame storage?  A memoised summary of
+  its body; Sem.AnswersFrame says why the signature cannot tell.  A
+  frame NEW, a `+` in a function that answers a string, a local POOL
+  in one, or a call to a procedure that answers frame storage is the
+  evidence; a cycle adds none. ---- }
+
+function TSem.ProcNamed (const modn, callee: string; out pr: TProcInfo): Boolean;
+var
+  m : TModuleInfo;
+  dot, pi : Integer;
+begin
+  Result := False;
+  dot := Pos ('.', callee);
+  if dot > 0 then
+  begin
+    m := FindMod (Copy (callee, 1, dot - 1));
+    if m = nil then Exit;
+    pi := m.FindProc (Copy (callee, dot + 1, MaxInt));
+  end
+  else
+  begin
+    m := FindMod (modn);
+    if m = nil then Exit;
+    pi := m.FindProc (callee);
+  end;
+  if pi < 0 then Exit;
+  pr := m.procs[pi];
+  Result := True;
+end;
+
+{ is the NEW's storage the frame's?  A type's name first is the frame
+  form, a variable's a pool; decided without the procedure's scope.
+  Mirrors Sem.NewIsFrameIn. }
+function TSem.NewIsFrameIn (e: TNode; const modn: string): Boolean;
+var
+  d : TNode;
+  m : TModuleInfo;
+begin
+  d := e.kids[0];
+  if d = nil then Exit (True);
+  Result := False;
+  if Length (d.kids) = 0 then
+  begin
+    if (d.a = 'OWN') or (d.a = 'HEAP') then Exit;
+    if InList (d.a, BuiltinTypes) or (d.a = 'STR') then Exit (True);
+    m := FindMod (modn);
+    if (m <> nil) and (m.FindType (d.a) <> nil) then Exit (True);
+  end
+  else if (Length (d.kids) = 1) and (d.kids[0].kind = nkSelField) then
+  begin
+    m := FindMod (d.a);
+    if (m <> nil) and (m.FindType (d.kids[0].a) <> nil) then Exit (True);
+  end;
+end;
+
+{ does any `NAME := rhs` under K have frame evidence on its right? }
+function TSem.AssignEvidence (k: TNode; const name, modn: string;
+  isStr: Boolean; body: TNode; depth: Integer): Boolean;
+var i : Integer;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if (k.kind = nkAssign) and (k.kids[0] <> nil) and
+     (k.kids[0].kind = nkDesignator) and (Length (k.kids[0].kids) = 0) and
+     (k.kids[0].a = name) then
+    if ExprEvidence (k.kids[1], modn, isStr, body, depth) then Exit (True);
+  for i := 0 to High (k.kids) do
+    if AssignEvidence (k.kids[i], name, modn, isStr, body, depth) then
+      Exit (True);
+end;
+
+{ is the value of expression K frame storage?  Mirrors Sem.ExprEvidence. }
+function TSem.ExprEvidence (k: TNode; const modn: string; isStr: Boolean;
+  body: TNode; depth: Integer): Boolean;
+var
+  pr : TProcInfo;
+  nm : string;
+  i : Integer;
+begin
+  Result := False;
+  if depth > 4 then Exit;
+  if k = nil then Exit;
+  if (k.kind = nkParen) or (k.kind = nkSomeExpr) then
+    Exit (ExprEvidence (k.kids[0], modn, isStr, body, depth));
+  if k.kind = nkNewExpr then Exit (NewIsFrameIn (k, modn));
+  if k.kind = nkBin then Exit (isStr and (k.a = '+'));
+  if k.kind = nkCallExpr then
+  begin
+    if (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) then
+    begin
+      nm := k.kids[0].a;
+      for i := 0 to High (k.kids[0].kids) do
+        if k.kids[0].kids[i].kind = nkSelField then
+          nm := nm + '.' + k.kids[0].kids[i].a
+        else
+        begin
+          nm := k.kids[0].a;
+          break;
+        end;
+      if ProcNamed (modn, nm, pr) and (pr.foreign = '') then
+        Exit (AnswersFrame (pr.modName + '.' + pr.name, pr));
+    end;
+    Exit;
+  end;
+  if (k.kind = nkDesignator) and (Length (k.kids) = 0) then
+    Result := AssignEvidence (body, k.a, modn, isStr, body, depth + 1);
+end;
+
+{ the evidence for a procedure of module MODN whose body is K: a
+  RETURN whose expression is frame storage, or -- for a string
+  answer -- a local POOL, whose strings are re-homed out at exit }
+function TSem.FrameEvidence (k: TNode; const modn: string; isStr: Boolean;
+  body: TNode; scratchCounts: Boolean): Boolean;
+var i : Integer;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if k.kind = nkReturn then
+  begin
+    if ExprEvidence (k.kids[0], modn, isStr, body, 0) then Exit (True);
+  end
+  else if (k.kind = nkVarDecl) and isStr and scratchCounts and (k.kids[1] <> nil) and
+          (k.kids[1].kind = nkQualident) and (k.kids[1].a = 'POOL') and
+          (k.kids[1].b = '') then
+    Exit (True);
+  for i := 0 to High (k.kids) do
+    if FrameEvidence (k.kids[i], modn, isStr, body, scratchCounts) then Exit (True);
+end;
+
+function TSem.AnswersFrame (const qual: string; const pr: TProcInfo): Boolean;
+var
+  ix, g : Integer;
+  isStr, hasPool : Boolean;
+  pl : TNode;
+begin
+  ix := ansMemo.IndexOfName (qual);
+  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
+  { in progress counts as no: a cycle adds no evidence of its own }
+  ansMemo.Values[qual] := 'busy';
+  Result := False;
+  if pr.body <> nil then
+  begin
+    { a procedure that takes a pool answers in it (docs/pools.md) }
+    hasPool := False;
+    pl := pr.body.kids[0];
+    if pl <> nil then
+      for g := 0 to High (pl.kids) do
+        if (pl.kids[g] <> nil) and (pl.kids[g].kids[1] <> nil) and
+           (pl.kids[g].kids[1].kind = nkQualident) and
+           (pl.kids[g].kids[1].a = 'POOL') and (pl.kids[g].kids[1].b = '') then
+          hasPool := True;
+    { ... but only for what it returns; a local POOL is evidence only
+      in a pool-less string function (Sem.AnswersFrame says why) }
+    isStr := (pr.body.kids[1] <> nil) and
+             (CanonT (pr.body.kids[1], 0) = 'SLICE OF CHAR');
+    Result := FrameEvidence (pr.body.kids[4], pr.modName, isStr,
+                             pr.body.kids[4], not hasPool);
+  end;
+  if Result then ansMemo.Values[qual] := 'yes'
+  else ansMemo.Values[qual] := 'no';
+end;
+
+{ Does this call answer FRAME storage -- the callee's name, or ''?
+  Mirrors Sem.CallAnswersFrame: not foreign, no POOL parameter, a
+  pointer-bearing answer that is not RO, and AnswersFrame's evidence. }
+function TSem.CallAnswersFrame (dn: TNode): string;
+var
+  name : string;
+  pr : TProcInfo;
+  i : Integer;
+  r, r2 : TNode;
+  ref : Boolean;
+begin
+  Result := '';
+  if dn.kind <> nkDesignator then Exit;
+  name := dn.a;
+  for i := 0 to High (dn.kids) do
+    if dn.kids[i].kind = nkSelField then name := name + '.' + dn.kids[i].a
+    else Exit;
+  if not LookupProcInfo (name, pr) then Exit;
+  if pr.foreign <> '' then Exit;
+  if not AnswersFrame (pr.modName + '.' + pr.name, pr) then Exit;
+  if pr.node = nil then Exit;
+  if pr.node.f3 then Exit;
+  ref := False;
+  r := ResolveType (pr.node.kids[1]);
+  if r <> nil then
+  begin
+    if r.kind in [nkPtrType, nkSliceType, nkGridType] then ref := True
+    else if r.kind = nkOptType then
+    begin
+      r2 := ResolveType (r.kids[0]);
+      if (r2 <> nil) and (r2.kind = nkPtrType) then ref := True;
+    end;
+  end;
+  if ref then Result := name;
 end;
 
 procedure TSem.ErrN (n: TNode; const ctx, msg: string);
@@ -678,12 +891,17 @@ begin
             p.raises := RaisesOf (d);
             p.sig := SigOf (d);
             p.node := d;
+            p.body := nil;
             p.fromDef := u.kind = nkDefinition;
             p.hasBody := d.kids[4] <> nil;
+            if p.hasBody then p.body := d;
             m.AddProc (p);
           end
           else if d.kids[4] <> nil then
+          begin
             m.procs[pi].hasBody := True;
+            m.procs[pi].body := d;
+          end;
         end;
       nkExcSection :
         { the declared exceptions: RAISE/RAISES/handler may only cite
@@ -1338,6 +1556,8 @@ var
     assignment of a concatenation, cleared when the name is given a
     durable value again (so a reused local never false-positives). }
   fval : TStringList;
+  fvalKind : TStringList;   { parallel to fval: what each name holds }
+  pval : TStringList;       { bare names holding a POOL allocation: a copy out is no move (mirrors Sem) }
 
   function ScopeType (const nm: string): TNode;
   var ix : Integer;
@@ -1440,21 +1660,235 @@ var
     Result := (m = 'l') or (m = 'b') or (m = 'p');
   end;
 
+  { the LOCAL pool a kind names -- 'an allocation in pool P' or 'a
+    view into pool P' (FrameWhat, par 4.3) -- or '' for a frame kind
+    (mirrors Sem.KindPool) }
+  function KindPool (const what: string): string;
+  begin
+    if Copy (what, 1, 22) = 'an allocation in pool ' then
+      Exit (Copy (what, 23, Length (what) - 22));
+    if Copy (what, 1, 17) = 'a view into pool ' then
+      Exit (Copy (what, 18, Length (what) - 17));
+    Result := '';
+  end;
+
   { does this right-hand side yield a FRAME-SCOPED string (par 2.3)?
     A concatenation is one -- it is built in the frame arena -- and so
     is a bare name that already holds one (fval).  Through parens and
     SOME.  `u` is the RHS's type, so a numeric `+` (not SLICE OF CHAR)
     is not mistaken for a concatenation. }
-  function FrameRHS (e: TNode; const u: string): Boolean;
+  { what the name holds: 'a concatenation', 'a frame allocation', or
+    '' when it is not tainted.  The kind rides in fval's Objects. }
+  function FvalKindOf (const nm: string): string;
+  var ix : Integer;
+  begin
+    ix := fval.IndexOf (nm);
+    if ix < 0 then Exit ('');
+    Result := fvalKind[ix];
+  end;
+
+  procedure FvalAdd (const nm, what: string);
+  var ix : Integer;
+  begin
+    ix := fval.IndexOf (nm);
+    { a name already tainted keeps its kind, unless the new one names
+      a local pool: frame storage is re-homed or adopted at exit, a
+      local pool's is freed (mirrors Sem.FvalAdd) }
+    if ix >= 0 then
+    begin
+      if KindPool (what) <> '' then fvalKind[ix] := what;
+      Exit;
+    end;
+    fval.Add (nm);
+    fvalKind.Add (what);
+  end;
+
+  { Is this NEW the FRAME form -- `NEW (T)` or `NEW (T, n...)`, no
+    pool named (docs/pool-elision-plan.md, rule 1)?  Decided by NAME:
+    a first argument that is a variable in scope, HEAP, or OWN is not
+    the frame form.  Quiet; NewForm is the one that diagnoses. }
+  function DesigName (d: TNode): string; forward;
+
+  function NewIsFrame (e: TNode): Boolean; forward;
+
+  { a NEW from a named pool or an object's pool: not the frame form,
+    not OWN (mirrors Sem.IsPoolNew) }
+  function IsPoolNew (e: TNode): Boolean;
   begin
     Result := False;
+    if (e = nil) or (e.kind <> nkNewExpr) then Exit;
+    if (e.kids[0] <> nil) and (Length (e.kids[0].kids) = 0) and
+       (e.kids[0].a = 'OWN') then Exit;
+    Result := not NewIsFrame (e);
+  end;
+
+  { HEAP, or a name declared POOL in scope (mirrors Sem.IsPoolName) }
+  function IsPoolName (const nm: string): Boolean;
+  var q : TNode;
+  begin
+    if nm = 'HEAP' then Exit (True);
+    q := ScopeType (nm);
+    Result := (q <> nil) and (q.kind = nkQualident) and (q.a = 'POOL') and
+              (q.b = '');
+  end;
+
+  { the pool an allocation on the right-hand side names, for the
+    declared-pool check (mirrors Sem.AllocPoolOf): NEW (Q, T) with Q
+    a pool in scope or HEAP, or a call whose result type promises
+    `IN r` with a bare name Q handed to r; '' otherwise }
+  function AllocPoolOf (e: TNode): string;
+  var
+    pr : TProcInfo;
+    pn, rt, rn, pl, al, an : TNode;
+    i, j, ix, want : Integer;
+  begin
+    Result := '';
+    if e = nil then Exit;
+    if e.kind = nkNewExpr then
+    begin
+      if (e.kids[0] <> nil) and (Length (e.kids[0].kids) = 0) and
+         (e.kids[0].a <> 'OWN') and IsPoolName (e.kids[0].a) then
+        Result := e.kids[0].a;
+      Exit;
+    end;
+    if e.kind <> nkCallExpr then Exit;
+    if (e.kids[0] = nil) or (e.kids[0].kind <> nkDesignator) then Exit;
+    if not LookupProcInfo (DesigName (e.kids[0]), pr) then Exit;
+    pn := pr.node;
+    if pn = nil then Exit;
+    rt := pn.kids[1];
+    if (rt = nil) or (rt.kind <> nkPtrType) then Exit;
+    rn := rt.kids[1];
+    if rn = nil then Exit;
+    want := -1; ix := 0;
+    pl := pn.kids[0];
+    if pl <> nil then
+      for i := 0 to High (pl.kids) do
+        if (pl.kids[i] <> nil) and (pl.kids[i].kids[0] <> nil) then
+          for j := 0 to High (pl.kids[i].kids[0].kids) do
+          begin
+            if (pl.kids[i].kids[0].kids[j] <> nil) and
+               (pl.kids[i].kids[0].kids[j].a = rn.a) then want := ix;
+            Inc (ix);
+          end;
+    al := e.kids[1];
+    if (al = nil) or (want < 0) or (want > High (al.kids)) then Exit;
+    an := al.kids[want];
+    if (an <> nil) and (an.kind = nkDesignator) and (Length (an.kids) = 0) then
+      Result := an.a;
+  end;
+
+  function NewIsFrame (e: TNode): Boolean;
+  begin
+    if e.kids[0] = nil then Exit (True);
+    if Length (e.kids[0].kids) > 0 then Exit (False);
+    if (e.kids[0].a = 'OWN') or (e.kids[0].a = 'HEAP') then Exit (False);
+    Result := ScopeMode (e.kids[0].a) = '';
+  end;
+
+  { what the frame-scoped value IS, for the diagnostic and the taint:
+    'a concatenation', 'a frame allocation' (a NEW with no pool), or
+    '' when the right-hand side is neither and holds neither }
+  function DeclPool (t: TNode): TNode; forward;
+  function FrameWhat (e: TNode; const u: string): string; forward;
+
+  { the LOCAL pool an expression's storage lives in, by its shape: the
+    pool a NEW names or a call's `IN r` promise names (AllocPoolOf),
+    or the IN clause of a bare name -- when that pool is a local of
+    this procedure (mirrors Sem.LocalPoolOf) }
+  function LocalPoolOf (e: TNode): string;
+  var p : string;
+  begin
+    Result := '';
+    p := '';
+    if (e.kind = nkNewExpr) or (e.kind = nkCallExpr) then
+      p := AllocPoolOf (e)
+    else if (e.kind = nkDesignator) and (Length (e.kids) = 0) then
+    begin
+      if DeclPool (ScopeType (e.a)) <> nil then
+        p := DeclPool (ScopeType (e.a)).a;
+    end;
+    if (p <> '') and (ScopeMode (p) = 'l') then Result := p;
+  end;
+
+  { the local pool a VIEW looks into: a callee that answers RO
+    answers a view of its arguments (DynStr.View), so an argument
+    whose storage is in a local pool makes the answer live there too
+    (mirrors Sem.ViewedPool) }
+  function ViewedPool (dn, args: TNode): string;
+  var
+    pr : TProcInfo;
+    i : Integer;
+    p : string;
+  begin
+    Result := '';
+    if dn.kind <> nkDesignator then Exit;
+    if not LookupProcInfo (DesigName (dn), pr) then Exit;
+    if pr.node = nil then Exit;
+    if not pr.node.f3 then Exit;
+    if args = nil then Exit;
+    for i := 0 to High (args.kids) do
+    begin
+      p := KindPool (FrameWhat (args.kids[i], ''));
+      if p <> '' then Exit (p);
+    end;
+  end;
+
+  { what the frame-scoped value IS: 'a concatenation', 'a frame
+    allocation', 'the answer of F', 'an allocation in pool P' or 'a
+    view into pool P' for a LOCAL pool P (par 4.3: dies with the
+    frame as the others do, but is neither re-homed nor adopted at
+    exit), or '' (mirrors Sem.FrameWhat) }
+  function FrameWhat (e: TNode; const u: string): string;
+  var nm, p : string;
+  begin
+    Result := '';
     while (e <> nil) and ((e.kind = nkParen) or (e.kind = nkSomeExpr)) do
       e := e.kids[0];
     if e = nil then Exit;
     if (e.kind = nkBin) and (e.a = '+') and (u = 'SLICE OF CHAR') then
-      Exit (True);
+      Exit ('a concatenation');
+    if (e.kind = nkNewExpr) and NewIsFrame (e) then
+      Exit ('a frame allocation');
+    if (e.kind = nkCallExpr) and (e.kids[0] <> nil) then
+    begin
+      nm := CallAnswersFrame (e.kids[0]);
+      if nm <> '' then Exit ('the answer of ' + nm);
+      p := ViewedPool (e.kids[0], e.kids[1]);
+      if p <> '' then Exit ('a view into pool ' + p);
+    end;
     if (e.kind = nkDesignator) and (Length (e.kids) = 0) then
-      Result := fval.IndexOf (e.a) >= 0;
+    begin
+      nm := FvalKindOf (e.a);
+      if nm <> '' then Exit (nm);
+    end;
+    p := LocalPoolOf (e);
+    if p <> '' then Result := 'an allocation in pool ' + p;
+  end;
+
+  function FrameRHS (e: TNode; const u: string): Boolean;
+  begin
+    Result := FrameWhat (e, u) <> '';
+  end;
+
+  { a designator with at most one field selector as the qualident it
+    spells, for the type position of a NEW; nil for anything else }
+  function AsQual (d: TNode): TNode;
+  begin
+    Result := nil;
+    if d = nil then Exit;
+    if (d.kind <> nkQualident) and (d.kind <> nkDesignator) then Exit;
+    if Length (d.kids) > 1 then Exit;
+    Result := TNode.Create (nkQualident);
+    Result.line := d.line;
+    Result.col := d.col;
+    Result.a := d.a;
+    Result.b := d.b;
+    if Length (d.kids) = 1 then
+    begin
+      if d.kids[0].kind <> nkSelField then Exit (nil);
+      Result.b := d.kids[0].a;
+    end;
   end;
 
   { a ref value rooted at frame storage SRC was stored into the
@@ -1679,6 +2113,192 @@ var
   end;
 
   function ExprType (e: TNode): string; forward;
+
+  { The four spellings of NEW, told apart by NAME (par 10, item 6):
+
+      NEW (T)             the frame, one T          (par 4.3)
+      NEW (T, n ...)      the frame, a slice or a grid
+      NEW (pool, T ...)   the named pool, as it always was
+      NEW (OWN, T)        one owned T: DISPOSE, SHARED, THREAD (par 4.2)
+
+    Answers 'frame', 'pool' or 'own', or '' after diagnosing.  ty is
+    the type's node and ext0 the index of the first extent, whose kid
+    is nil when there is none.  Mirrors Sem.NewForm. }
+  { can a value of this type carry a pointer?  Gen.HasPtr's twin;
+    mirrors Sem.PtrBearing }
+  function PtrBearing (t: TNode; depth: Integer): Boolean;
+  var
+    r, fs, g, arm, afs, ag : TNode;
+    i, j : Integer;
+  begin
+    Result := False;
+    if depth > 8 then Exit;
+    r := ResolveType (t);
+    if r = nil then Exit;
+    case r.kind of
+      nkPtrType, nkSliceType, nkGridType : Result := True;
+      nkOptType : Result := PtrBearing (r.kids[0], depth + 1);
+      nkArrayType : Result := PtrBearing (r.kids[1], depth + 1);
+      nkRecordType, nkMonitorType :
+        begin
+          if r.kind = nkMonitorType then fs := r.kids[0] else fs := r.kids[1];
+          if fs = nil then Exit;
+          for i := 0 to High (fs.kids) do
+          begin
+            g := fs.kids[i];
+            if (g <> nil) and PtrBearing (g.kids[1], depth + 1) then
+              Exit (True);
+          end;
+        end;
+      nkCaseRecordType :
+        for i := 0 to High (r.kids) do
+        begin
+          arm := r.kids[i];
+          if arm = nil then continue;
+          afs := arm.kids[0];
+          if afs = nil then continue;
+          for j := 0 to High (afs.kids) do
+          begin
+            ag := afs.kids[j];
+            if (ag <> nil) and PtrBearing (ag.kids[1], depth + 1) then
+              Exit (True);
+          end;
+        end;
+    end;
+  end;
+
+  { does a VAR parameter of this type carry its object's pool as a
+    hidden argument (docs/pool-elision-plan.md, rule 2)?  Mirrors
+    Sem.PtrParamTy: PTR and OPT PTR by node kind, a pointer-bearing
+    record, monitor, array or variant by resolution, never a bare
+    slice or grid. }
+  function PtrParamTy (t: TNode): Boolean;
+  var r : TNode;
+  begin
+    Result := False;
+    if t = nil then Exit;
+    if t.kind = nkPtrType then Exit (True);
+    if t.kind = nkOptType then
+      Exit ((t.kids[0] <> nil) and (t.kids[0].kind = nkPtrType));
+    if t.kind in [nkSliceType, nkGridType] then Exit;
+    r := ResolveType (t);
+    if r = nil then Exit;
+    { a name for a pointer is the pointer it names (mirrors Sem) }
+    if r.kind = nkPtrType then Exit (True);
+    if r.kind = nkOptType then
+      Exit ((r.kids[0] <> nil) and (r.kids[0].kind = nkPtrType));
+    if r.kind in [nkRecordType, nkMonitorType, nkArrayType, nkCaseRecordType] then
+      Result := PtrBearing (t, 0);
+  end;
+
+  { the pool a declared type names: the IN clause of `PTR T IN p` or
+    `OPT PTR T IN p`, through a type name; nil for anything else }
+  function DeclPool (t: TNode): TNode;
+  var r : TNode;
+  begin
+    Result := nil;
+    r := ResolveType (t);
+    if r = nil then Exit;
+    if r.kind = nkOptType then Exit (DeclPool (r.kids[0]));
+    if r.kind = nkPtrType then Result := r.kids[1];
+  end;
+
+  { the pool of the object a designator names, as a call handing the
+    object to a VAR pointer parameter needs it (rule 2): '' when the
+    generator can name it from the ROOT, else why not.  Mirrors
+    Sem.ObjPoolIssue. }
+  function ObjPoolIssue (a: TNode): string;
+  var
+    m : string;
+    res : TNode;
+  begin
+    m := ScopeMode (a.a);
+    if m = 'v' then
+    begin
+      if PtrParamTy (ScopeType (a.a)) then Exit ('');
+      Exit ('VAR parameter ' + a.a + ' carries no pool');
+    end
+    else if m = 'o' then
+      Exit (a.a + ' is an OWN parameter')
+    else if (m = 'p') or (m = 'r') then
+    begin
+      res := ResolveType (ScopeType (a.a));
+      if (Length (a.kids) = 0) and (res <> nil) and (res.kind = nkPtrType) then
+        Exit ('');
+      Exit (a.a + ' is a value parameter');
+    end;
+    Result := '';
+  end;
+
+  function NewForm (e: TNode; out ty: TNode; out ext0: Integer): string;
+  var
+    t : string;
+    isVar : Boolean;
+    d : TNode;
+  begin
+    ty := nil;
+    ext0 := 2;
+    Result := '';
+    d := e.kids[0];
+    if d <> nil then
+    begin
+      if (Length (d.kids) = 0) and (d.a = 'OWN') then
+      begin
+        ty := e.kids[1];
+        if e.kids[2] <> nil then
+        begin
+          ErrN (e, ctx, 'NEW (OWN, T) allocates one object; a slice lives in a pool or in the frame');
+          Exit ('');
+        end;
+        Exit ('own');
+      end;
+      isVar := True;
+      if Length (d.kids) = 0 then
+      begin
+        if (ScopeMode (d.a) = '') and (d.a <> 'HEAP') then isVar := False;
+      end
+      else if (Length (d.kids) = 1) and (d.kids[0].kind = nkSelField) then
+      begin
+        if (ScopeMode (d.a) = '') and (FindMod (d.a) <> nil) then
+          isVar := False;
+      end;
+      if isVar and (Length (d.kids) = 0) and (ScopeMode (d.a) = 'v') and
+         PtrParamTy (ScopeType (d.a)) then
+      begin
+        { `NEW (d, T)`: the pool d's object lives in, carried in by
+          rule 2 -- how a VAR pointer parameter grows its object }
+        ty := AsQual (e.kids[1]);
+        if ty <> nil then Exit ('pool');
+        ErrN (e, ctx, 'NEW needs a type name after the pool');
+        Exit ('');
+      end;
+      if isVar then
+      begin
+        t := ExprType (e.kids[0]);
+        if (t <> '') and (t <> 'POOL') then
+        begin
+          ErrN (e, ctx, 'NEW''s first argument is the pool, not ' +
+            TyName (t));
+          Exit ('');
+        end;
+        ty := AsQual (e.kids[1]);
+        if ty <> nil then Exit ('pool');
+        ErrN (e, ctx, 'NEW needs a type name after the pool');
+        Exit ('');
+      end;
+      { a type name, so the frame form with extents }
+      ty := AsQual (e.kids[0]);
+      if (ty <> nil) and (CanonT (ty, 0) = '') then
+      begin
+        t := ExprType (e.kids[0]);   { says `unknown name` }
+        Exit ('');
+      end;
+      ext0 := 1;
+      Exit ('frame');
+    end;
+    ty := e.kids[1];
+    Result := 'frame';
+  end;
 
   function CT (t: TNode): string;
   begin
@@ -2066,8 +2686,8 @@ var
     that returns nothing; '' is a call whose result is unknown.      }
   function CallType (dnode, argl, site: TNode): string;
   var
-    name, om, pTy, amode, aliasTo, t : string;
-    nargs, j, g, k, kept, dot : Integer;
+    name, om, pTy, amode, aliasTo, t, what, why : string;
+    nargs, j, g, k, kept, dot, nFrameKept : Integer;
     aTy : array of string;
     aNode : array of TNode;
     pr : TProcInfo;
@@ -2082,6 +2702,19 @@ var
       if nargs <> want then
         ErrN (site, ctx, Format ('%s expects %d argument(s), got %d',
           [name, want, nargs]));
+    end;
+
+    { is the pool P itself one of the arguments?  Then the callee
+      keeps in P what it keeps (mirrors Sem.PoolAmong) }
+    function PoolAmong (const p: string): Boolean;
+    var i : Integer;
+    begin
+      Result := False;
+      if p = '' then Exit;
+      for i := 0 to nargs - 1 do
+        if (aNode[i] <> nil) and (aNode[i].kind = nkDesignator) and
+           (Length (aNode[i].kids) = 0) and (aNode[i].a = p) then
+          Exit (True);
     end;
 
   begin
@@ -2294,6 +2927,7 @@ var
             + name + ' (par 3.2)');
         pr.node := ptn;
         pr.modName := '';
+        pr.foreign := '';
         if (sty.kind = nkQualident) and (sty.b <> '') then
           pr.modName := sty.a;
         SetLength (pr.raises, 0);
@@ -2317,6 +2951,23 @@ var
       canonCtx := pr.modName;
       pl := pr.node.kids[0];
       Arity (CountParams (pl));
+      { how many VAR or KEPT arguments are FRAME values: a frame value
+        handed to a KEPT parameter is refused unless another frame
+        value is the keeper (mirrors Sem.CallType) }
+      nFrameKept := 0;
+      k := 0;
+      if pl <> nil then
+        for g := 0 to High (pl.kids) do
+        begin
+          grp := pl.kids[g];
+          for j := 0 to High (grp.kids[0].kids) do
+          begin
+            if (k < nargs) and (grp.f1 or grp.f2 or grp.f4) and
+               (FrameWhat (aNode[k], aTy[k]) <> '') then
+              Inc (nFrameKept);
+            Inc (k);
+          end;
+        end;
       k := 0;
       if pl <> nil then
         for g := 0 to High (pl.kids) do
@@ -2350,6 +3001,20 @@ var
                   'argument %d of %s: cannot lend the value parameter ' +
                   '%s as VAR (shared borrow, par 4.1)',
                   [k + 1, name, aNode[k].a]));
+              { rule 2: the callee may allocate in the object's pool,
+                which the generator names from the ROOT of this
+                designator's declaration -- so the root must have one
+                to name (mirrors Sem.CheckArg) }
+              if grp.f1 and (aNode[k].kind = nkDesignator) and
+                 PtrParamTy (grp.kids[1]) and (pr.foreign = '') then
+              begin
+                why := ObjPoolIssue (aNode[k]);
+                if why <> '' then
+                  ErrN (site, ctx, Format (
+                    'argument %d of %s: the pool of %s is not known here,' +
+                    ' and the callee may allocate in it -- %s (par 4.3)',
+                    [k + 1, name, aNode[k].a, why]));
+              end;
               { RO measurement: lending a VAR param onward as VAR or
                 OWN is a potential write -- conservatively not RO }
               if (grp.f1 or grp.f2) and (aNode[k].kind = nkDesignator)
@@ -2364,6 +3029,11 @@ var
                   ErrN (site, ctx, Format (
                     'argument %d of %s: cannot move borrowed %s into ' +
                     'an OWN parameter (par 4.2)',
+                    [k + 1, name, aNode[k].a]))
+                else if fval.IndexOf (aNode[k].a) >= 0 then
+                  ErrN (site, ctx, Format (
+                    'argument %d of %s: cannot move %s into ' +
+                    'an OWN parameter -- it lives in the frame (par 4.3)',
                     [k + 1, name, aNode[k].a]))
                 else
                 begin
@@ -2389,13 +3059,15 @@ var
                 turn. }
               if grp.f4 then
               begin
-                dcl := StripParens (aNode[k]);
-                if (dcl <> nil) and (dcl.kind = nkBin) and
-                   (dcl.a = '+') and (aTy[k] = 'SLICE OF CHAR') then
+                { a concatenation, a frame allocation, or a name
+                  holding either }
+                what := FrameWhat (aNode[k], aTy[k]);
+                if (what <> '') and (nFrameKept <= 1) and
+                   not PoolAmong (KindPool (what)) then
                   ErrN (site, ctx, Format (
                     'argument %d of %s: a KEPT parameter cannot take' +
-                    ' a concatenation -- it dies with this frame' +
-                    ' (par 4.1)', [k + 1, name]));
+                    ' %s -- it dies with this frame' +
+                    ' (par 4.1)', [k + 1, name, what]));
                 aliasTo := EscRootOf (aNode[k]);
                 if (aliasTo <> '') and IsRefTy (aTy[k]) then
                 begin
@@ -2585,9 +3257,9 @@ var
 
   function ExprType (e: TNode): string;
   var
-    j : Integer;
-    t, u : string;
-    res, inr, pt : TNode;
+    j, ext0, nx : Integer;
+    t, u, form : string;
+    res, inr, pt, tyk : TNode;
     pr : TProcInfo;
   begin
     Result := '';
@@ -2620,6 +3292,11 @@ var
             if (u = 'p') or (u = 'v') or (u = 'b') or (u = 'r') then
               ErrN (e, ctx, 'SHARED consumes an owned pointer; ' +
                 inr.a + ' is a borrow (par 4.2)')
+            else if fval.IndexOf (inr.a) >= 0 then
+              { a frame allocation has no rc header and dies with the
+                frame: only NEW (OWN, T) can become SHARED }
+              ErrN (e, ctx, 'SHARED needs an OWN allocation; ' +
+                inr.a + ' lives in the frame (par 4.2)')
             else if OwnedCandKind (inr.a) = 1 then
               OwnMark (inr.a, 'consumed by SHARED', e);
           end;
@@ -2634,56 +3311,61 @@ var
             chapter 4's own example into exactly this (2026-08-29).
             A checker softer than the generator is a checker that
             misses; the second argument BEING a pool is conclusive. }
-          if e.kids[0] <> nil then u := ExprType (e.kids[0])
-          else u := '';
-          { the type position holding the name of a POOL VARIABLE is
-            conclusive: a pool is not a type and nothing can be
-            allocated OF one.  A pool's own type is not recorded as a
-            value type -- ExprType of a pool name is unknown, which is
-            why the softer tests said nothing -- so the scope's
-            declared TYPE NODE is what answers. }
-          { par 3.2: allocating from a pool the CALLER owns consumes
-            the caller's storage and answers a slice into the caller's
-            arena -- an effect, and the one a PURE body could still
-            have, since NEW is a builtin (rule 3 does not see it) and
-            not an assignment target (rules 1 and 2 do not either).
-            A pool declared LOCAL is invisible outside the frame and
-            stays legal. }
-          if curPure and (e.kids[0] <> nil) and
-             (e.kids[0].kind = nkDesignator) and
-             ((ScopeMode (e.kids[0].a) = 'v') or
-              (ScopeMode (e.kids[0].a) = 'o') or
-              (ScopeMode (e.kids[0].a) = 'm')) then
-            ErrN (e, ctx, 'cannot allocate from the pool ' + e.kids[0].a +
-              ' in a PURE procedure (par 3.2)');
-          pt := ScopeType (e.kids[1].a);
-          if (e.kids[1].kind = nkQualident) and (pt <> nil) and
-             (pt.kind = nkQualident) and (pt.a = 'POOL') then
-            ErrN (e, ctx, 'NEW takes the pool first, then the type');
-          if (u <> '') and (u <> 'POOL') then
-            ErrN (e, ctx, 'NEW''s first argument is the pool, not '
-                          + TyName (u));
-          t := CanonT (e.kids[1], 0);
-          if e.kids[2] <> nil then
+          form := NewForm (e, tyk, ext0);
+          if form = '' then Exit ('');
+          if form = 'pool' then
           begin
-            { one extent is a slice; more than one is a GRID, and the
-              arity states the rank so the two cannot disagree }
-            for j := 2 to High (e.kids) do
+            { par 3.2: allocating from a pool the CALLER owns consumes
+              the caller's storage and answers a slice into the
+              caller's arena -- an effect, and the one a PURE body
+              could still have, since NEW is a builtin (rule 3 does
+              not see it) and not an assignment target (rules 1 and 2
+              do not either).  A pool declared LOCAL is invisible
+              outside the frame and stays legal, and so is the frame
+              itself, so the test is the pool's binding MODE. }
+            if curPure and (e.kids[0].kind = nkDesignator) and
+               ((ScopeMode (e.kids[0].a) = 'v') or
+                (ScopeMode (e.kids[0].a) = 'o') or
+                (ScopeMode (e.kids[0].a) = 'm')) then
+              ErrN (e, ctx, 'cannot allocate from the pool ' + e.kids[0].a +
+                ' in a PURE procedure (par 3.2)');
+          end;
+          if form = 'frame' then
+            { `NEW (Point, pool)`, the reversed spelling: it reads as
+              the frame form with a pool for an extent, so name what
+              was meant.  A tutorial reader followed chapter 4's own
+              example into exactly this (2026-08-29). }
+            for j := ext0 to High (e.kids) do
+              if (e.kids[j] <> nil) and (e.kids[j].kind = nkDesignator) and
+                 (Length (e.kids[j].kids) = 0) then
+              begin
+                pt := ScopeType (e.kids[j].a);
+                if (pt <> nil) and (pt.kind = nkQualident) and
+                   (pt.a = 'POOL') then
+                begin
+                  ErrN (e, ctx, 'NEW takes the pool first, then the type');
+                  Exit ('');
+                end;
+              end;
+          t := CanonT (tyk, 0);
+          nx := 0;
+          for j := ext0 to High (e.kids) do
+            if e.kids[j] <> nil then
             begin
+              Inc (nx);
               u := ExprType (e.kids[j]);
               if not IsIntish (u) then
                 ErrN (e, ctx,
                   'NEW extent must be an integer, not ' + TyName (u));
             end;
-            { one extent is a SLICE, as it always was; more than one
-              is a GRID, and the arity states the rank }
-            if Length (e.kids) = 3 then
-            begin
-              if t <> '' then Result := 'SLICE OF ' + t;
-            end
-            else
-              Result := GridOf (Length (e.kids) - 2, t);
+          { one extent is a slice; more than one is a GRID, and the
+            arity states the rank so the two cannot disagree }
+          if nx = 1 then
+          begin
+            if t <> '' then Result := 'SLICE OF ' + t;
           end
+          else if nx > 1 then
+            Result := GridOf (nx, t)
           else if t <> '' then
             Result := 'PTR ' + t;
         end;
@@ -2878,7 +3560,8 @@ var
     covered : TStringList;
     lbl, dcl : TNode;
     vname : string;
-    t, u, selTy, dmode : string;
+    t, u, selTy, dmode, what, apool, par : string;
+    said : Boolean;
     pre, hpre : string;
     snaps : array of string;
   begin
@@ -2896,27 +3579,93 @@ var
             caller's arena at exit, as it does the result.  A bare
             frame-mode destination merely inherits the taint and is
             cleared when given a durable value. }
-          if FrameRHS (st.kids[1], u) then
+          what := FrameWhat (st.kids[1], u);
+          if what <> '' then
           begin
+            { a frame value is par 2.3's rule; storage in a local
+              pool, or a view of it, is par 4.3's, refused at the same
+              places, and where the destination is declared IN a pool
+              that is NOT local (mirrors Sem.CheckAssign) }
+            if KindPool (what) <> '' then par := '4.3' else par := '2.3';
             dmode := ScopeMode (st.kids[0].a);
             if (dmode = 'm') and not curInBody then
-              ErrN (st.kids[1], ctx, 'a concatenation dies with this' +
+              ErrN (st.kids[1], ctx, what + ' dies with this' +
                 ' frame; it cannot be stored in module variable ' +
-                st.kids[0].a + ' (par 2.3)')
+                st.kids[0].a + ' (par ' + par + ')')
             else if (dmode = 'r') or
                     (((dmode = 'v') or (dmode = 'o') or (dmode = 'p')) and
                      (Length (st.kids[0].kids) > 0)) then
-              ErrN (st.kids[1], ctx, 'a concatenation dies with this' +
+              ErrN (st.kids[1], ctx, what + ' dies with this' +
                 ' frame; it cannot be stored through ' + st.kids[0].a +
-                ', which outlives it (par 2.3)')
+                ', which outlives it (par ' + par + ')')
             else if (Length (st.kids[0].kids) = 0) and
-                    IsFrameMode (dmode) and
-                    (fval.IndexOf (st.kids[0].a) < 0) then
-              fval.Add (st.kids[0].a);
+                    IsFrameMode (dmode) then
+            begin
+              { a local declared IN a pool claims that pool's
+                lifetime, and rule 2 hands that pool to every callee
+                that grows the object (mirrors Sem.CheckAssign) }
+              if (dmode = 'l') and
+                 (DeclPool (ScopeType (st.kids[0].a)) <> nil) then
+              begin
+                if KindPool (what) = '' then
+                  ErrN (st.kids[1], ctx, what + ' dies with this' +
+                    ' frame; it cannot be held by ' + st.kids[0].a +
+                    ', which is declared IN a pool (par 4.3)')
+                else if (ScopeMode (DeclPool (ScopeType (st.kids[0].a)).a) <> 'l')
+                        and (AllocPoolOf (st.kids[1]) = '') then
+                  ErrN (st.kids[1], ctx, what + ' dies with this' +
+                    ' frame; it cannot be held by ' + st.kids[0].a +
+                    ', which is declared IN a pool (par 4.3)');
+              end
+              else
+                FvalAdd (st.kids[0].a, what);
+            end
+            else if (Length (st.kids[0].kids) > 0) and (dmode = 'l') then
+            begin
+              { a COMPONENT of a local: declared IN a pool the target
+                outlives the frame; otherwise the local carries the
+                taint (mirrors Sem.CheckAssign, stage 5 of the pool
+                elision) }
+              if DeclPool (ScopeType (st.kids[0].a)) <> nil then
+              begin
+                if (KindPool (what) = '') or
+                   (ScopeMode (DeclPool (ScopeType (st.kids[0].a)).a) <> 'l') then
+                  ErrN (st.kids[1], ctx, what + ' dies with this' +
+                    ' frame; it cannot be stored through ' + st.kids[0].a +
+                    ', which is declared IN a pool (par 4.3)');
+              end
+              else
+                FvalAdd (st.kids[0].a, what);
+            end;
           end
           else if (Length (st.kids[0].kids) = 0) and
                   (fval.IndexOf (st.kids[0].a) >= 0) then
+          begin
+            fvalKind.Delete (fval.IndexOf (st.kids[0].a));
             fval.Delete (fval.IndexOf (st.kids[0].a));
+          end;
+          { a bare name given a pool allocation holds nobody's object }
+          if Length (st.kids[0].kids) = 0 then
+          begin
+            if IsPoolNew (st.kids[1]) then
+            begin
+              if pval.IndexOf (st.kids[0].a) < 0 then pval.Add (st.kids[0].a);
+            end
+            else if pval.IndexOf (st.kids[0].a) >= 0 then
+              pval.Delete (pval.IndexOf (st.kids[0].a));
+          end;
+          { par 4.3: the IN clause must be the pool the object was
+            allocated in (mirrors Sem.CheckAssign, stage 5) }
+          if (Length (st.kids[0].kids) = 0) and
+             (DeclPool (ScopeType (st.kids[0].a)) <> nil) then
+          begin
+            apool := AllocPoolOf (st.kids[1]);
+            if (apool <> '') and
+               (apool <> DeclPool (ScopeType (st.kids[0].a)).a) then
+              ErrN (st.kids[1], ctx, st.kids[0].a + ' is declared IN ' +
+                DeclPool (ScopeType (st.kids[0].a)).a +
+                ' but allocated in ' + apool + ' (par 4.3)');
+          end;
           { anchored at the RIGHT-HAND SIDE, not the statement: a
             value on its own line used to be reported one line too
             high, at the := (found by the first m9edit user) }
@@ -2980,9 +3729,12 @@ var
           { moves: a bare owned pointer on the right moves out; a
             bare name on the left is (re)initialized }
           dcl := StripParens (st.kids[1]);
+          { a name holding a FRAME allocation is not owned -- the
+            frame is -- so copying it is a copy, not a move }
           if (dcl <> nil) and (dcl.kind = nkDesignator) and
              (Length (dcl.kids) = 0) and
-             (OwnedCandKind (dcl.a) = 1) then
+             (OwnedCandKind (dcl.a) = 1) and (fval.IndexOf (dcl.a) < 0) and
+             (pval.IndexOf (dcl.a) < 0) then
             OwnMark (dcl.a, 'moved', st);
           if Length (st.kids[0].kids) = 0 then
             OwnAlive (st.kids[0].a);
@@ -3205,6 +3957,7 @@ var
                 [TyName (t), TyName (retTy)]));
             { P3: a pool-interior pointer may not escape a pool that
               dies with this frame (par 4.3) }
+            said := False;
             if (st.kids[0].kind = nkDesignator) and
                (Length (st.kids[0].kids) = 0) then
             begin
@@ -3212,10 +3965,23 @@ var
               if (dcl <> nil) and (dcl.kind = nkPtrType) and
                  (dcl.kids[1] <> nil) and
                  (ScopeMode (dcl.kids[1].a) = 'l') then
+              begin
                 ErrN (st, ctx,
                   'pool-interior pointer escapes its pool: ' +
                   st.kids[0].a + ' lives in ' + dcl.kids[1].a +
                   ', which dies with this frame (par 4.3)');
+                said := True;
+              end;
+            end;
+            { the same by SHAPE: an allocation in a local pool held in
+              a pool-less name, or a view of one -- except a string,
+              re-homed at exit (mirrors Sem.CheckReturn) }
+            if (not said) and (t <> 'SLICE OF CHAR') then
+            begin
+              what := FrameWhat (st.kids[0], t);
+              if KindPool (what) <> '' then
+                ErrN (st, ctx, what +
+                  ' escapes its pool, which dies with this frame (par 4.3)');
             end;
             { par 4.1 direction: what is RETURNed reaches the caller }
             vname := EscRootOf (st.kids[0]);
@@ -3254,6 +4020,9 @@ var
             if (vname = 'p') or (vname = 'v') or (vname = 'b') or (vname = 'r') then
               ErrN (st, ctx, 'cannot DISPOSE ' + st.kids[0].a +
                 ': a borrow is not yours to free (take OWN, par 4.2)')
+            else if fval.IndexOf (st.kids[0].a) >= 0 then
+              ErrN (st, ctx, 'the frame owns ' + st.kids[0].a +
+                '; it is freed at exit, not by DISPOSE (par 4.3)')
             else
             begin
               dcl := ResolveType (ScopeType (st.kids[0].a));
@@ -3276,6 +4045,16 @@ var
           if st.kids[0].kind = nkDesignator then
           begin
             tname := DesigName (st.kids[0]);
+            { a frame allocation, or a name holding one, dies when
+              this frame exits, which a thread does not wait for:
+              storage handed to a thread is allocated with OWN }
+            what := FrameWhat (st.kids[1], taTy);
+            { a local pool's object is lent as any pool pointer is,
+              unchecked until SHARABLE (mirrors Sem) }
+            if (what <> '') and (KindPool (what) = '') then
+              ErrN (st, ctx, 'THREAD (' + tname + '): cannot hand ' + what +
+                ' to a thread -- it dies with this frame; allocate it' +
+                ' with OWN (par 4.3)');
             SetLength (threadRoots, Length (threadRoots) + 1);
             threadRoots[High (threadRoots)] := tname;
             tpTy := '';
@@ -3303,7 +4082,8 @@ var
                 tares := ResolveType (ScopeType (st.kids[1].a));
                 if (tares <> nil) and (tares.kind = nkPtrType) and
                    (tares.kids[1] = nil) and
-                   (OwnedCandKind (st.kids[1].a) > 0) then
+                   (OwnedCandKind (st.kids[1].a) > 0) and
+                   (fval.IndexOf (st.kids[1].a) < 0) then
                   OwnMark (st.kids[1].a,
                     'moved into a THREAD running ' + tname, st);
               end;
@@ -3375,6 +4155,8 @@ begin
   carryPair := TStringList.Create; carryPair.CaseSensitive := True;
   carryEdge := TStringList.Create; carryEdge.CaseSensitive := True;
   fval := TStringList.Create; fval.CaseSensitive := True;
+  fvalKind := TStringList.Create;
+  pval := TStringList.Create; pval.CaseSensitive := True;
   pendN := 0;
   SetLength (pendLn, 0); SetLength (pendCl, 0);
   SetLength (pendSrc, 0); SetLength (pendDst, 0);
@@ -3490,6 +4272,8 @@ begin
   carryPair.Free;
   carryEdge.Free;
   fval.Free;
+  fvalKind.Free;
+  pval.Free;
 end;
 
 procedure TSem.CheckThreadChains;

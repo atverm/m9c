@@ -156,7 +156,7 @@ does not already know the file wants to ask
 
 _(documented with the group below)_
 
-### VarShape (VAR pool: POOL ; f: PTR File ; varid: I64) : SLICE OF I64 RAISES Error, ValueRange
+### VarShape (f: PTR File ; varid: I64) : SLICE OF I64 RAISES Error, ValueRange
 
 the extents, outermost axis first -- C order, which is also
 M9's: the last axis is contiguous in both.  A NetCDF file and a
@@ -184,11 +184,11 @@ precision into an F32 buffer.  The width is the caller's
 decision and is written down at the call site, which is the
 most this layer can do about it.
 
-### ReadGrid2 (VAR pool: POOL ; f: PTR File ; RO name: STR) : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange
+### ReadGrid2 (f: PTR File ; RO name: STR) : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange
 
 _(documented with the group below)_
 
-### ReadGrid3 (VAR pool: POOL ; f: PTR File ; RO name: STR) : GRID 3 OF F64 RAISES Error, Faults.SizeError, ValueRange
+### ReadGrid3 (f: PTR File ; RO name: STR) : GRID 3 OF F64 RAISES Error, Faults.SizeError, ValueRange
 
 a whole variable, shape and all, as a GRID.  These exist because
 a GRID can today only come from NEW or VIEW: there is no way to
@@ -260,7 +260,7 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
-### VarDims (VAR pool: POOL ; f: PTR File ; varid: I64) : SLICE OF I64 RAISES Error, ValueRange
+### VarDims (f: PTR File ; varid: I64) : SLICE OF I64 RAISES Error, ValueRange
 
 enumeration: how many variables, their names, their nc_type
 (against the Type* constants) and their dimension IDS in

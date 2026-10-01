@@ -54,6 +54,8 @@ extern int64_t m9_bits_shl (int64_t, int64_t);
 extern int64_t m9_bits_shr (int64_t, int64_t);
 extern int64_t m9_bits_count (int64_t);
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[27] = { 112u, 101u, 114u, 99u, 101u, 110u, 116u, 105u, 108u, 101u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 91u, 48u, 44u, 32u, 49u, 48u, 48u, 93u };
 static const uint32_t m9s1[35] = { 100u, 101u, 103u, 114u, 101u, 101u, 115u, 32u, 111u, 102u, 32u, 102u, 114u, 101u, 101u, 100u, 111u, 109u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
 static const uint32_t m9s2[11] = { 101u, 109u, 112u, 116u, 121u, 32u, 114u, 97u, 110u, 103u, 101u };
@@ -65,7 +67,7 @@ static const uint32_t m9s6[22] = { 115u, 105u, 103u, 109u, 97u, 32u, 109u, 117u,
 static void Stats_Need (m9_sl_F64 xs, int64_t n, m9_state *err);
 static double Stats_SumSq (m9_sl_F64 xs, double m, m9_state *err);
 static void Stats_Sort (m9_sl_F64 *a, m9_state *err);
-static m9_sl_F64 Stats_Sorted (m9_pool *scratch, m9_sl_F64 xs, m9_state *err);
+static m9_sl_F64 Stats_Sorted (m9_sl_F64 xs, m9_state *err);
 static double Stats_LnGamma (double x, m9_state *err);
 static double Stats_BetaCf (double a, double b, double x, m9_state *err);
 static double Stats_BetaI (double a, double b, double x, m9_state *err);
@@ -189,7 +191,7 @@ double Stats_Median (m9_sl_F64 xs, m9_state *err)
   int64_t n = 0; (void) n;
   Stats_Need (xs, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  a = Stats_Sorted (&(scratch), xs, err);
+  a = Stats_Sorted (xs, err);
   if (err->exc) goto L_ret;
   n = (xs).len;
   bool m9t1 = (m9_mod_i64 (n, INT64_C(2), err) == INT64_C(1));
@@ -230,7 +232,7 @@ double Stats_Percentile (m9_sl_F64 xs, double p, m9_state *err)
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  a = Stats_Sorted (&(scratch), xs, err);
+  a = Stats_Sorted (xs, err);
   if (err->exc) goto L_ret;
   h = (((double)(m9_sub_i64 ((xs).len, INT64_C(1), err)) * p) / 100.0);
   if (err->exc) goto L_ret;
@@ -813,20 +815,21 @@ static void Stats_Sort (m9_sl_F64 *a, m9_state *err)
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
   m9_pool_free (&m9frame);
   return;
 }
 
-static m9_sl_F64 Stats_Sorted (m9_pool *scratch, m9_sl_F64 xs, m9_state *err)
+static m9_sl_F64 Stats_Sorted (m9_sl_F64 xs, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_F64 m9ret = {0};
   m9_sl_F64 a = {0}; (void) a;
   int64_t i = 0; (void) i;
-  a = M9_POOL_SL (m9_sl_F64, double, &((*scratch)), (xs).len, err);
+  a = M9_POOL_SL (m9_sl_F64, double, err->res, (xs).len, err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -843,6 +846,7 @@ static m9_sl_F64 Stats_Sorted (m9_pool *scratch, m9_sl_F64 xs, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1114,14 +1118,11 @@ void Stats_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   Math_m9init (err); if (err->exc) goto L_ret;
   Bits_m9init (err); if (err->exc) goto L_ret;
   Faults_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

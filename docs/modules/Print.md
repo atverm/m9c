@@ -26,10 +26,10 @@ file.
 
 _(undocumented)_
 
-### ParamsText (VAR pool: POOL ; k: Ast.Kid) : STR
+### ParamsText (k: Ast.Kid) : STR
 
 _(undocumented)_
 
-### ExprText (VAR pool: POOL ; k: Ast.Kid) : STR
+### ExprText (k: Ast.Kid) : STR
 
 _(undocumented)_

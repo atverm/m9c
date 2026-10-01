@@ -81,7 +81,7 @@ numpy datetime64 lands
 an empty table of `rows` rows.  Columns are added in order and
 that is the order the schema and the batch carry.
 
-### Meta (VAR pool: POOL ; VAR t: PTR Table ; RO KEPT key: STR ; RO KEPT value: STR)
+### Meta (VAR t: PTR Table ; RO KEPT key: STR ; RO KEPT value: STR)
 
 a schema custom_metadata entry -- where a data passport rides.
 KEPT: the table holds VIEWS of the caller's strings, as

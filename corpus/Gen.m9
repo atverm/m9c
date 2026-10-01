@@ -130,6 +130,21 @@ VAR
   outStr : SLICE OF STR ;  (* the VAR/OWN STR parameters, whose
                               targets are re-homed at L_ret *)
   nout : I64 ;
+  adoptC : SLICE OF STR ;  (* the VAR/OWN parameters of a pointer-
+                              bearing type, whose targets are tested
+                              for adoption at L_ret (rule 1) *)
+  adoptT : SLICE OF AKid ;
+  adoptD : SLICE OF STR ;  (* ... and the pool each is adopted INTO:
+                              the caller's arena, or the object's own
+                              pool that a VAR parameter carries
+                              (rule 2) *)
+  nadopt : I64 ;
+  mvBase : I64 ;           (* where the module variables start in
+                              scope, so a designator's root can be
+                              told a module variable from a local *)
+  bpool : Map ;            (* binder -> the C expression of the pool
+                              its origin lives in (rule 2); the most
+                              recent entry of a name is the live one *)
   isProgram : BOOL ;       (* MODULE m -- emit a main () *)
   mainBody : Ast.Kid ;     (* its block *)
   strNode : Ast.Kid ;      (* the STR that STR names *)
@@ -145,8 +160,8 @@ PROCEDURE S2 (RO a: STR ;
 VAR d : PTR DynStr.DString IN gpool ;
 BEGIN
   d := DynStr.New (gpool) ;
-  DynStr.Append (gpool, d, a) ;
-  DynStr.Append (gpool, d, b) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
   RETURN DynStr.View (d)
 END S2 ;
 
@@ -155,9 +170,9 @@ PROCEDURE S3 (RO a: STR ; RO b: STR ;
 VAR d : PTR DynStr.DString IN gpool ;
 BEGIN
   d := DynStr.New (gpool) ;
-  DynStr.Append (gpool, d, a) ;
-  DynStr.Append (gpool, d, b) ;
-  DynStr.Append (gpool, d, c) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
   RETURN DynStr.View (d)
 END S3 ;
 
@@ -167,10 +182,10 @@ PROCEDURE S4 (RO a: STR ; RO b: STR ;
 VAR d : PTR DynStr.DString IN gpool ;
 BEGIN
   d := DynStr.New (gpool) ;
-  DynStr.Append (gpool, d, a) ;
-  DynStr.Append (gpool, d, b) ;
-  DynStr.Append (gpool, d, c) ;
-  DynStr.Append (gpool, d, e) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
+  DynStr.Append (d, e) ;
   RETURN DynStr.View (d)
 END S4 ;
 
@@ -180,11 +195,11 @@ PROCEDURE S5 (RO a: STR ; RO b: STR ;
 VAR d : PTR DynStr.DString IN gpool ;
 BEGIN
   d := DynStr.New (gpool) ;
-  DynStr.Append (gpool, d, a) ;
-  DynStr.Append (gpool, d, b) ;
-  DynStr.Append (gpool, d, c) ;
-  DynStr.Append (gpool, d, e) ;
-  DynStr.Append (gpool, d, f) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
+  DynStr.Append (d, e) ;
+  DynStr.Append (d, f) ;
   RETURN DynStr.View (d)
 END S5 ;
 
@@ -195,12 +210,12 @@ PROCEDURE S6 (RO a: STR ; RO b: STR ;
 VAR d : PTR DynStr.DString IN gpool ;
 BEGIN
   d := DynStr.New (gpool) ;
-  DynStr.Append (gpool, d, a) ;
-  DynStr.Append (gpool, d, b) ;
-  DynStr.Append (gpool, d, c) ;
-  DynStr.Append (gpool, d, e) ;
-  DynStr.Append (gpool, d, f) ;
-  DynStr.Append (gpool, d, g) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
+  DynStr.Append (d, e) ;
+  DynStr.Append (d, f) ;
+  DynStr.Append (d, g) ;
   RETURN DynStr.View (d)
 END S6 ;
 
@@ -211,13 +226,13 @@ PROCEDURE S7 (RO a: STR ; RO b: STR ;
 VAR d : PTR DynStr.DString IN gpool ;
 BEGIN
   d := DynStr.New (gpool) ;
-  DynStr.Append (gpool, d, a) ;
-  DynStr.Append (gpool, d, b) ;
-  DynStr.Append (gpool, d, c) ;
-  DynStr.Append (gpool, d, e) ;
-  DynStr.Append (gpool, d, f) ;
-  DynStr.Append (gpool, d, g) ;
-  DynStr.Append (gpool, d, h) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
+  DynStr.Append (d, e) ;
+  DynStr.Append (d, f) ;
+  DynStr.Append (d, g) ;
+  DynStr.Append (d, h) ;
   RETURN DynStr.View (d)
 END S7 ;
 
@@ -229,15 +244,15 @@ PROCEDURE S9 (RO a: STR ; RO b: STR ;
 VAR d : PTR DynStr.DString IN gpool ;
 BEGIN
   d := DynStr.New (gpool) ;
-  DynStr.Append (gpool, d, a) ;
-  DynStr.Append (gpool, d, b) ;
-  DynStr.Append (gpool, d, c) ;
-  DynStr.Append (gpool, d, e) ;
-  DynStr.Append (gpool, d, f) ;
-  DynStr.Append (gpool, d, g) ;
-  DynStr.Append (gpool, d, h) ;
-  DynStr.Append (gpool, d, i2) ;
-  DynStr.Append (gpool, d, j2) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
+  DynStr.Append (d, e) ;
+  DynStr.Append (d, f) ;
+  DynStr.Append (d, g) ;
+  DynStr.Append (d, h) ;
+  DynStr.Append (d, i2) ;
+  DynStr.Append (d, j2) ;
   RETURN DynStr.View (d)
 END S9 ;
 
@@ -245,7 +260,7 @@ PROCEDURE ItoA (v: I64) : STR =
 VAR d : PTR DynStr.DString IN gpool ;
 BEGIN
   d := DynStr.New (gpool) ;
-  DynStr.AppendI64 (gpool, d, v) ;
+  DynStr.AppendI64 (d, v) ;
   RETURN DynStr.View (d)
 END ItoA ;
 
@@ -277,6 +292,32 @@ BEGIN
   outStr[nout] := nm ;
   nout := nout + 1
 END OutReg ;
+
+(* register a VAR/OWN parameter of a pointer-bearing type for the
+   exit adoption test (docs/pool-elision-plan.md, rule 1) *)
+PROCEDURE AdoptReg (RO KEPT nm: STR ; KEPT t: Ast.Kid ; RO KEPT dst: STR) =
+VAR nb, nd : SLICE OF STR ;
+    nt : SLICE OF AKid ;
+    k  : I64 ;
+BEGIN
+  IF nadopt = LEN (adoptC) THEN
+    nb := NEW (gpool, STR, 2 * LEN (adoptC)) ;
+    nd := NEW (gpool, STR, 2 * LEN (adoptC)) ;
+    nt := NEW (gpool, AKid, 2 * LEN (adoptC)) ;
+    FOR k := 0 TO nadopt - 1 DO
+      nb[k] := adoptC[k] ;
+      nd[k] := adoptD[k] ;
+      nt[k] := adoptT[k]
+    END ;
+    adoptC := nb ;
+    adoptD := nd ;
+    adoptT := nt
+  END ;
+  adoptC[nadopt] := nm ;
+  adoptD[nadopt] := dst ;
+  adoptT[nadopt] := t ;
+  nadopt := nadopt + 1
+END AdoptReg ;
 
 PROCEDURE SetDebugSource (RO KEPT file: STR) =
 BEGIN
@@ -410,6 +451,7 @@ BEGIN
   MInit (extMods) ;
   MInit (extExcs) ;
   MInit (foreignProcs) ;
+  MInit (bpool) ;
   MInit (arrSeen) ;
   MInit (thrSeen) ;
   MInit (gateSeen) ;
@@ -421,6 +463,9 @@ BEGIN
   mvT := NEW (gpool, AKid, 8) ;
   lpools := NEW (gpool, STR, 8) ;
   outStr := NEW (gpool, STR, 8) ;
+  adoptC := NEW (gpool, STR, 8) ;
+  adoptT := NEW (gpool, AKid, 8) ;
+  adoptD := NEW (gpool, STR, 8) ;
   bHdr := DynStr.New (gpool) ;
   bSrc := DynStr.New (gpool) ;
   bTdefs := DynStr.New (gpool) ;
@@ -442,31 +487,31 @@ VAR
   t : STR ;
 BEGIN
   d := DynStr.New (gpool) ;
-  FOR i := 1 TO ind * 2 DO DynStr.AppendChar (gpool, d, ' ') END ;
-  DynStr.Append (gpool, d, s) ;
-  DynStr.AppendChar (gpool, d, 0AC) ;
+  FOR i := 1 TO ind * 2 DO DynStr.AppendChar (d, ' ') END ;
+  DynStr.Append (d, s) ;
+  DynStr.AppendChar (d, 0AC) ;
   t := DynStr.View (d) ;
   CASE buf OF
-  | KHdr : DynStr.Append (gpool, bHdr, t)
-  | KSrc : DynStr.Append (gpool, bSrc, t)
+  | KHdr : DynStr.Append (bHdr, t)
+  | KSrc : DynStr.Append (bSrc, t)
   | KTdefs :
-      DynStr.Append (gpool, bTdefs, t) ;
+      DynStr.Append (bTdefs, t) ;
       tdefN := tdefN + 1
-  | KPbuf : DynStr.Append (gpool, bPbuf, t)
+  | KPbuf : DynStr.Append (bPbuf, t)
   | KSprotos :
-      DynStr.Append (gpool, bSprotos, t) ;
+      DynStr.Append (bSprotos, t) ;
       sprotoN := sprotoN + 1
   | KLit :
-      DynStr.Append (gpool, bLit, t) ;
+      DynStr.Append (bLit, t) ;
       litN := litN + 1
-  | KHdrRecs : DynStr.Append (gpool, bHdrRecs, t)
-  | KHdrProtos : DynStr.Append (gpool, bHdrProtos, t)
+  | KHdrRecs : DynStr.Append (bHdrRecs, t)
+  | KHdrProtos : DynStr.Append (bHdrProtos, t)
   | KHdrConsts :
-      DynStr.Append (gpool, bHdrConsts, t) ;
+      DynStr.Append (bHdrConsts, t) ;
       hdrConstN := hdrConstN + 1
-  | KRec2 : DynStr.Append (gpool, bRec2, t)
-  | KThr : DynStr.Append (gpool, bThr, t)
-  | KGate : DynStr.Append (gpool, bGate, t)
+  | KRec2 : DynStr.Append (bRec2, t)
+  | KThr : DynStr.Append (bThr, t)
+  | KGate : DynStr.Append (bGate, t)
   ELSE
     Err2 (0, 'internal: unknown output bucket')
   END
@@ -928,14 +973,14 @@ BEGIN
              found by ASan under the proxy's session registry *)
           ec2 := TyC (n.kids[1]) ;
           da := DynStr.New (gpool) ;
-          DynStr.Append (gpool, da, 'm9_arr_') ;
-          DynStr.Append (gpool, da, ArrCount (cnt)) ;
-          DynStr.AppendChar (gpool, da, '_') ;
+          DynStr.Append (da, 'm9_arr_') ;
+          DynStr.Append (da, ArrCount (cnt)) ;
+          DynStr.AppendChar (da, '_') ;
           FOR ai := 0 TO LEN (ec2) - 1 DO
             IF ec2[ai] = '*' THEN
-              DynStr.AppendChar (gpool, da, 'p')
+              DynStr.AppendChar (da, 'p')
             ELSIF ec2[ai] # ' ' THEN
-              DynStr.AppendChar (gpool, da, ec2[ai])
+              DynStr.AppendChar (da, ec2[ai])
             END
           END ;
           s := DynStr.View (da) ;
@@ -976,10 +1021,10 @@ BEGIN
   END ;
   ec := TyC (elem) ;
   d := DynStr.New (gpool) ;
-  DynStr.Append (gpool, d, 'm9_sl_') ;
+  DynStr.Append (d, 'm9_sl_') ;
   FOR i := 0 TO LEN (ec) - 1 DO
-    IF ec[i] = '*' THEN DynStr.AppendChar (gpool, d, 'p')
-    ELSIF ec[i] # ' ' THEN DynStr.AppendChar (gpool, d, ec[i]) END
+    IF ec[i] = '*' THEN DynStr.AppendChar (d, 'p')
+    ELSIF ec[i] # ' ' THEN DynStr.AppendChar (d, ec[i]) END
   END ;
   nm := DynStr.View (d) ;
   IF MFind (arrSeen, nm) < 0 AND dry = 0 THEN
@@ -1004,12 +1049,12 @@ VAR
 BEGIN
   ec := TyC (elem) ;
   d := DynStr.New (gpool) ;
-  DynStr.Append (gpool, d, 'm9_gd') ;
-  DynStr.Append (gpool, d, rank) ;
-  DynStr.AppendChar (gpool, d, '_') ;
+  DynStr.Append (d, 'm9_gd') ;
+  DynStr.Append (d, rank) ;
+  DynStr.AppendChar (d, '_') ;
   FOR i := 0 TO LEN (ec) - 1 DO
-    IF ec[i] = '*' THEN DynStr.AppendChar (gpool, d, 'p')
-    ELSIF ec[i] # ' ' THEN DynStr.AppendChar (gpool, d, ec[i]) END
+    IF ec[i] = '*' THEN DynStr.AppendChar (d, 'p')
+    ELSIF ec[i] # ' ' THEN DynStr.AppendChar (d, ec[i]) END
   END ;
   nm := DynStr.View (d) ;
   IF MFind (arrSeen, nm) < 0 AND dry = 0 THEN
@@ -1203,6 +1248,267 @@ BEGIN
   RETURN NONE
 END FieldType ;
 
+(* ---- the frame form of NEW, and adoption at exit (rule 1 of
+   docs/pool-elision-plan.md) ---- *)
+
+(* a designator with at most one field selector as a fresh qualident
+   node, for the type position of a NEW *)
+PROCEDURE AsQualG (k: Ast.Kid) : Ast.Kid =
+VAR q : PTR Ast.Node IN gpool ;
+BEGIN
+  IF k IS SOME d THEN
+    IF d.kind # Ast.NQualident AND d.kind # Ast.NDesignator THEN
+      RETURN NONE
+    END ;
+    IF d.nkids > 1 THEN RETURN NONE END ;
+    q := Ast.NewNode (gpool, Ast.NQualident, d.line, d.col) ;
+    q.a := S2 (d.a, '') ;
+    q.b := S2 (d.b, '') ;
+    IF d.nkids = 1 THEN
+      IF d.kids[0] IS SOME sel THEN
+        IF sel.kind # Ast.NSelField THEN RETURN NONE END ;
+        q.b := S2 (sel.a, '')
+      END
+    END ;
+    RETURN SOME (q)
+  END ;
+  RETURN NONE
+END AsQualG ;
+
+(* the four spellings of NEW, told apart by NAME (par 10, item 6):
+   'frame' for NEW (T) and NEW (T, n...), 'pool' for NEW (pool, T...),
+   'own' for NEW (OWN, T).  The checker (Sem.NewForm) has already
+   refused anything else; this side only has to agree.  ty is the
+   type's node and ext0 the index of the first extent, whose kid may
+   be NONE. *)
+PROCEDURE NewShape (e: PTR Ast.Node ; VAR ty: Ast.Kid ;
+                    VAR ext0: I64) : STR =
+VAR isVar : BOOL ;
+BEGIN
+  ty := NONE ;
+  ext0 := 2 ;
+  IF e.kids[0] IS SOME d THEN
+    IF d.nkids = 0 AND DynStr.Eq (d.a, 'OWN') THEN
+      ty := e.kids[1] ;
+      RETURN 'own'
+    END ;
+    isVar := TRUE ;
+    IF d.nkids = 0 THEN
+      IF LEN (ScopeMode (d.a)) = 0 AND NOT DynStr.Eq (d.a, 'HEAP') THEN
+        isVar := FALSE
+      END
+    ELSIF d.nkids = 1 THEN
+      IF d.kids[0] IS SOME sel THEN
+        IF sel.kind = Ast.NSelField THEN
+          IF LEN (ScopeMode (d.a)) = 0 AND
+             MFind (extMods, d.a) >= 0 THEN
+            isVar := FALSE
+          END
+        END
+      END
+    END ;
+    IF isVar THEN
+      ty := AsQualG (e.kids[1]) ;
+      RETURN 'pool'
+    END ;
+    ty := AsQualG (e.kids[0]) ;
+    ext0 := 1 ;
+    RETURN 'frame'
+  END ;
+  ty := e.kids[1] ;
+  RETURN 'frame'
+END NewShape ;
+
+(* can a value of this type carry a pointer into the frame?  A PTR,
+   an OPT PTR, a slice or a grid can; a record or an array can when a
+   component can; a SHARED handle (heap), a procedure value and a
+   scalar cannot.  Bounded, since a record may name itself through a
+   PTR -- which is where the walk stops anyway. *)
+PROCEDURE HasPtr (t: Ast.Kid ; depth: I64) : BOOL =
+VAR i, j : I64 ;
+  fsk : Ast.Kid ;
+BEGIN
+  IF depth > 8 THEN RETURN FALSE END ;
+  IF Resolve (t) IS SOME r THEN
+    CASE r.kind OF
+    | Ast.NPtrType : RETURN TRUE
+    | Ast.NOptType : RETURN HasPtr (r.kids[0], depth + 1)
+    | Ast.NSliceType : RETURN TRUE
+    | Ast.NGridType : RETURN TRUE
+    | Ast.NArrayType : RETURN HasPtr (r.kids[1], depth + 1)
+    | Ast.NRecordType :
+        fsk := r.kids[1] ;
+        IF fsk IS SOME fs THEN
+          FOR i := 0 TO fs.nkids - 1 DO
+            IF fs.kids[i] IS SOME g THEN
+              IF HasPtr (g.kids[1], depth + 1) THEN RETURN TRUE END
+            END
+          END
+        END ;
+        RETURN FALSE
+    | Ast.NMonitorType :
+        fsk := r.kids[0] ;
+        IF fsk IS SOME fs THEN
+          FOR i := 0 TO fs.nkids - 1 DO
+            IF fs.kids[i] IS SOME g THEN
+              IF HasPtr (g.kids[1], depth + 1) THEN RETURN TRUE END
+            END
+          END
+        END ;
+        RETURN FALSE
+    | Ast.NCaseRecordType :
+        FOR i := 0 TO r.nkids - 1 DO
+          IF r.kids[i] IS SOME v THEN
+            IF v.kids[0] IS SOME vfs THEN
+              FOR j := 0 TO vfs.nkids - 1 DO
+                IF vfs.kids[j] IS SOME fg THEN
+                  IF HasPtr (fg.kids[1], depth + 1) THEN RETURN TRUE END
+                END
+              END
+            END
+          END
+        END ;
+        RETURN FALSE
+    ELSE RETURN FALSE
+    END
+  END ;
+  RETURN FALSE
+END HasPtr ;
+
+(* the exit test, one line per pointer component of the value EXPR
+   of type T: adopt the frame's arena into the caller's when the
+   component points into it.  An array loops; a record and a variant
+   walk their fields (every arm of a variant -- reading an inactive
+   arm's pointer bits compares an address and nothing else, and a
+   spurious adoption keeps memory where a missed one would free it
+   under a live pointer). *)
+(* does a VAR parameter of this type carry its object's pool as a
+   hidden argument (docs/pool-elision-plan.md, rule 2)?  Written as
+   `PTR T` or `OPT PTR T`: yes, by node kind and no lookup.  A record,
+   monitor, array or variant that can hold a pointer: yes, since a
+   component of it may be handed on.  A bare slice, grid or string:
+   no -- those are output slots, re-homed or adopted at exit.
+   Sem.PtrParamTy is the twin; gendiff holds the two generators to
+   one answer. *)
+PROCEDURE PoolParamTy (t: Ast.Kid) : BOOL =
+BEGIN
+  IF t IS SOME n THEN
+    IF n.kind = Ast.NPtrType THEN RETURN TRUE END ;
+    IF n.kind = Ast.NOptType THEN
+      IF n.kids[0] IS SOME inner THEN RETURN inner.kind = Ast.NPtrType END ;
+      RETURN FALSE
+    END ;
+    IF n.kind = Ast.NSliceType OR n.kind = Ast.NGridType THEN RETURN FALSE END ;
+    IF Resolve (t) IS SOME r THEN
+      (* a name for a pointer -- `SinkP = PTR Zarr.Sink`, `Ast.Kid =
+         OPT PTR Node` -- is the pointer it names (the proxy's P9) *)
+      IF r.kind = Ast.NPtrType THEN RETURN TRUE END ;
+      IF r.kind = Ast.NOptType THEN
+        IF r.kids[0] IS SOME inner THEN RETURN inner.kind = Ast.NPtrType END ;
+        RETURN FALSE
+      END ;
+      IF r.kind = Ast.NRecordType OR r.kind = Ast.NMonitorType OR
+         r.kind = Ast.NArrayType OR r.kind = Ast.NCaseRecordType THEN
+        RETURN HasPtr (t, 0)
+      END
+    END
+  END ;
+  RETURN FALSE
+END PoolParamTy ;
+
+(* the exit test, one line per pointer component of EXPR of type T,
+   each adopting the frame into DST: the caller's arena for a result,
+   the object's own pool for a VAR parameter's target (rule 2) *)
+PROCEDURE AdoptEmit (RO expr: STR ; t: Ast.Kid ; RO dst: STR ;
+                     ind: I64 ; depth: I64) =
+VAR i, j, k : I64 ;
+  fsk : Ast.Kid ;
+  kv : STR ;
+BEGIN
+  IF depth > 8 THEN RETURN END ;
+  IF Resolve (t) IS SOME r THEN
+    CASE r.kind OF
+    | Ast.NPtrType :
+        Line (KPbuf, ind, S5 ('m9_adopt_if (&m9frame, ', dst, ', ', expr, ');'))
+    | Ast.NOptType :
+        IF HasPtr (r.kids[0], depth + 1) THEN
+          Line (KPbuf, ind, S5 ('m9_adopt_if (&m9frame, ', dst, ', ', expr, ');'))
+        END
+    | Ast.NSliceType :
+        Line (KPbuf, ind, S5 ('m9_adopt_if (&m9frame, ', dst, ', ', expr, '.p);'))
+    | Ast.NGridType :
+        Line (KPbuf, ind, S5 ('m9_adopt_if (&m9frame, ', dst, ', ', expr, '.p);'))
+    | Ast.NArrayType :
+        IF HasPtr (r.kids[1], depth + 1) THEN
+          kv := S2 ('m9k', ItoA (depth)) ;
+          Line (KPbuf, ind, S9 ('for (int64_t ', kv, ' = 0; ', kv, ' < ',
+            ArrCount2 (r.kids[0]), '; ', kv, '++) {')) ;
+          AdoptEmit (S4 (expr, '.v[', kv, ']'), r.kids[1], dst, ind + 1,
+                     depth + 1) ;
+          Line (KPbuf, ind, '}')
+        END
+    | Ast.NRecordType :
+        fsk := r.kids[1] ;
+        IF fsk IS SOME fs THEN
+          FOR i := 0 TO fs.nkids - 1 DO
+            IF fs.kids[i] IS SOME g THEN
+              IF HasPtr (g.kids[1], depth + 1) THEN
+                IF g.kids[0] IS SOME ids THEN
+                  FOR j := 0 TO ids.nkids - 1 DO
+                    IF ids.kids[j] IS SOME id THEN
+                      AdoptEmit (S3 (expr, '.', CN (id.a)), g.kids[1],
+                                 dst, ind, depth + 1)
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+    | Ast.NMonitorType :
+        fsk := r.kids[0] ;
+        IF fsk IS SOME fs THEN
+          FOR i := 0 TO fs.nkids - 1 DO
+            IF fs.kids[i] IS SOME g THEN
+              IF HasPtr (g.kids[1], depth + 1) THEN
+                IF g.kids[0] IS SOME ids THEN
+                  FOR j := 0 TO ids.nkids - 1 DO
+                    IF ids.kids[j] IS SOME id THEN
+                      AdoptEmit (S3 (expr, '.', CN (id.a)), g.kids[1],
+                                 dst, ind, depth + 1)
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+    | Ast.NCaseRecordType :
+        FOR i := 0 TO r.nkids - 1 DO
+          IF r.kids[i] IS SOME v THEN
+            IF v.kids[0] IS SOME vfs THEN
+              FOR j := 0 TO vfs.nkids - 1 DO
+                IF vfs.kids[j] IS SOME fg THEN
+                  IF HasPtr (fg.kids[1], depth + 1) THEN
+                    IF fg.kids[0] IS SOME fids THEN
+                      FOR k := 0 TO fids.nkids - 1 DO
+                        IF fids.kids[k] IS SOME fid THEN
+                          AdoptEmit (S5 (expr, '.u.', v.a, '.', CN (fid.a)),
+                                     fg.kids[1], dst, ind, depth + 1)
+                        END
+                      END
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+    ELSE
+    END
+  END
+END AdoptEmit ;
+
 PROCEDURE CharVal (RO lit: STR) : I64 =
 VAR
   v, i, dg : I64 ;
@@ -1228,9 +1534,9 @@ BEGIN
     IF ORD (s[i]) > 127 THEN
       Err2 (0, 'non-ASCII string literal unsupported yet')
     END ;
-    IF i > 0 THEN DynStr.Append (gpool, d, ', ') END ;
-    DynStr.AppendI64 (gpool, d, ORD (s[i])) ;
-    DynStr.AppendChar (gpool, d, 'u')
+    IF i > 0 THEN DynStr.Append (d, ', ') END ;
+    DynStr.AppendI64 (d, ORD (s[i])) ;
+    DynStr.AppendChar (d, 'u')
   END ;
   RETURN DynStr.View (d)
 END StrCodes ;
@@ -1603,8 +1909,9 @@ END OptInner ;
 
 PROCEDURE TagOfExpr (k: Ast.Kid) : STR =
 VAR
-  t2, u2, res, dc : STR ;
-  ci : I64 ;
+  t2, u2, res, dc, sh : STR ;
+  ci, ext0, nx : I64 ;
+  tyk : Ast.Kid ;
 BEGIN
   IF k IS SOME e THEN
     res := '?' ;
@@ -1656,12 +1963,14 @@ BEGIN
         IF DynStr.Eq (e.a, 'NOT') THEN res := 'BOOL'
         ELSE res := TagOfExpr (e.kids[0]) END
     | Ast.NNewExpr :
-        IF e.nkids > 3 THEN
-          res := 'GRID'
-        ELSE
-          IF e.kids[2] IS SOME dm1 THEN res := 'SLICE'
-          ELSE res := 'PTR' END
-        END
+        sh := NewShape (e, tyk, ext0) ;
+        nx := 0 ;
+        FOR ci := ext0 TO e.nkids - 1 DO
+          IF e.kids[ci] IS SOME dm1 THEN nx := nx + 1 END
+        END ;
+        IF nx > 1 THEN res := 'GRID'
+        ELSIF nx = 1 THEN res := 'SLICE'
+        ELSE res := 'PTR' END
     | Ast.NSliceOf3 : res := 'SLICE'
     | Ast.NNoneLit : res := 'OPTPTR'
     ELSE
@@ -1678,6 +1987,73 @@ BEGIN
 END TagOfExpr ;
 
 (* ---- designators ---- *)
+
+(* the C address of the pool a NEW's first argument names: a POOL
+   variable or HEAP by designator, or a VAR parameter's hidden pool
+   (rule 2), which is a pointer already *)
+PROCEDURE PoolAddrC (pd: PTR Ast.Node) : STR =
+VAR tg : STR ;
+BEGIN
+  IF pd.nkids = 0 AND DynStr.Eq (ScopeMode (pd.a), 'v') AND
+     PoolParamTy (ScopeNode (pd.a)) THEN
+    RETURN S2 (CN (pd.a), '_pool')
+  END ;
+  tg := '?' ;
+  RETURN S3 ('&(', DES (pd, tg), ')')
+END PoolAddrC ;
+
+(* the pool of the object a designator names, from its ROOT (rule 2
+   of docs/pool-elision-plan.md): a VAR parameter's hidden pool; a
+   binder's origin's; a local's IN clause, else this frame's arena
+   (the result slot, which is the caller's in a pointer-answering
+   function); a module variable's IN clause, else the module frame.
+   The checker refused every root this cannot name (Sem.ObjPoolIssue),
+   so the arena answered for the rest is never reached. *)
+PROCEDURE ObjPoolC (a: PTR Ast.Node) : STR =
+VAR
+  m : STR ;
+  ix, i : I64 ;
+  t : Ast.Kid ;
+BEGIN
+  m := ScopeMode (a.a) ;
+  IF DynStr.Eq (m, 'v') THEN
+    IF PoolParamTy (ScopeNode (a.a)) THEN RETURN S2 (CN (a.a), '_pool') END ;
+    RETURN 'err->res'
+  END ;
+  IF DynStr.Eq (m, 'b') THEN
+    i := bpool.n - 1 ;
+    WHILE i >= 0 DO
+      IF DynStr.Eq (bpool.es[i].k, a.a) THEN RETURN bpool.es[i].t END ;
+      i := i - 1
+    END ;
+    RETURN 'err->res'
+  END ;
+  IF DynStr.Eq (m, 'l') THEN
+    t := ScopeNode (a.a) ;
+    IF t IS SOME tn THEN
+      IF tn.kind = Ast.NOptType THEN t := tn.kids[0] END
+    END ;
+    IF Resolve (t) IS SOME r THEN
+      IF r.kind = Ast.NPtrType THEN
+        IF r.kids[1] IS SOME pn THEN RETURN PoolAddrC (pn) END
+      END
+    END ;
+    ix := MFind (scope, a.a) ;
+    IF ix >= mvBase AND ix < mvBase + nmv THEN RETURN '&m9mframe' END ;
+    RETURN 'err->res'
+  END ;
+  RETURN 'err->res'
+END ObjPoolC ;
+
+(* a binder's pool is its origin's when the origin is a designator,
+   else the arena a call's answer lands in *)
+PROCEDURE OriginPool (k: Ast.Kid) : STR =
+BEGIN
+  IF k IS SOME o THEN
+    IF o.kind = Ast.NDesignator THEN RETURN ObjPoolC (o) END
+  END ;
+  RETURN 'err->res'
+END OriginPool ;
 
 PROCEDURE DES (d: PTR Ast.Node ; VAR tag: STR) : STR =
 VAR
@@ -1839,8 +2215,8 @@ BEGIN
             ec := TyC (r.kids[1]) ;
             dg := DynStr.New (gpool) ;
             FOR jj := 0 TO sel.nkids - 1 DO
-              IF jj > 0 THEN DynStr.Append (gpool, dg, ', ') END ;
-              DynStr.Append (gpool, dg, EX (sel.kids[jj], ''))
+              IF jj > 0 THEN DynStr.Append (dg, ', ') END ;
+              DynStr.Append (dg, EX (sel.kids[jj], ''))
             END ;
             cnt := ArrCount2 (r.kids[0]) ;
             rk := sel.nkids ;
@@ -1851,29 +2227,29 @@ BEGIN
                  the same checks -- see runtime/m9rt.h and
                  the port's gat_cost.c. *)
               dns := DynStr.New (gpool) ;
-              DynStr.Append (gpool, dns, '(*(') ;
-              DynStr.Append (gpool, dns, ec) ;
-              DynStr.Append (gpool, dns, ' *) m9_gat') ;
-              DynStr.Append (gpool, dns, ItoA (rk)) ;
-              DynStr.Append (gpool, dns, ' (') ;
-              DynStr.Append (gpool, dns, base) ;
-              DynStr.Append (gpool, dns, '.p, sizeof (') ;
-              DynStr.Append (gpool, dns, ec) ;
-              DynStr.Append (gpool, dns, '), ') ;
+              DynStr.Append (dns, '(*(') ;
+              DynStr.Append (dns, ec) ;
+              DynStr.Append (dns, ' *) m9_gat') ;
+              DynStr.Append (dns, ItoA (rk)) ;
+              DynStr.Append (dns, ' (') ;
+              DynStr.Append (dns, base) ;
+              DynStr.Append (dns, '.p, sizeof (') ;
+              DynStr.Append (dns, ec) ;
+              DynStr.Append (dns, '), ') ;
               FOR jj := 0 TO rk - 1 DO
-                DynStr.Append (gpool, dns, base) ;
-                DynStr.Append (gpool, dns, '.n[') ;
-                DynStr.Append (gpool, dns, ItoA (jj)) ;
-                DynStr.Append (gpool, dns, '], ')
+                DynStr.Append (dns, base) ;
+                DynStr.Append (dns, '.n[') ;
+                DynStr.Append (dns, ItoA (jj)) ;
+                DynStr.Append (dns, '], ')
               END ;
               FOR jj := 0 TO rk - 1 DO
-                DynStr.Append (gpool, dns, base) ;
-                DynStr.Append (gpool, dns, '.s[') ;
-                DynStr.Append (gpool, dns, ItoA (jj)) ;
-                DynStr.Append (gpool, dns, '], ')
+                DynStr.Append (dns, base) ;
+                DynStr.Append (dns, '.s[') ;
+                DynStr.Append (dns, ItoA (jj)) ;
+                DynStr.Append (dns, '], ')
               END ;
-              DynStr.Append (gpool, dns, DynStr.View (dg)) ;
-              DynStr.Append (gpool, dns, ', err))') ;
+              DynStr.Append (dns, DynStr.View (dg)) ;
+              DynStr.Append (dns, ', err))') ;
               res := DynStr.View (dns)
             ELSE
               res := S9 ('(*(', ec, ' *) m9_gat (', base, '.p, sizeof (',
@@ -1942,11 +2318,11 @@ END DES ;
 
 PROCEDURE EX (k: Ast.Kid ; RO want: STR) : STR =
 VAR
-  l, r, lt, rt, w, tg, cop, a1, a2, cnt, res : STR ;
+  l, r, lt, rt, w, tg, cop, a1, a2, cnt, res, sh : STR ;
   d2 : PTR DynStr.DString IN gpool ;
-  jj, rk : I64 ;
+  jj, rk, ext0, nx : I64 ;
   isCat : BOOL ;
-  inr : Ast.Kid ;
+  inr, tyk : Ast.Kid ;
 BEGIN
   IF k IS SOME e THEN
     CASE e.kind OF
@@ -1997,60 +2373,70 @@ BEGIN
         RETURN CallC (e.kids[0], e.kids[1], tg)
     | Ast.NNewExpr :
         stRaise := TRUE ;
-        IF e.kids[0] IS SOME pd THEN
-          tg := '?' ;
-          r := S3 ('&(', DES (pd, tg), ')') ;
-          IF e.nkids > 3 THEN
-            (* more than one extent is a GRID.  Row-major: the last
-               axis has stride 1, so an innermost loop over the
-               rightmost subscript walks memory in order.  The oracle
-               computes TyC, then the temp, then the grid typedef,
-               then the extents in order -- side effects are part of
-               the bytes, so the order is reproduced deliberately. *)
-            l := TyC (e.kids[1]) ;
-            w := NewTmp () ;
-            rk := e.nkids - 2 ;
-            a1 := GridTy (e.kids[1], ItoA (rk)) ;
-            d2 := DynStr.New (gpool) ;
-            DynStr.Append (gpool, d2, S5 ('({ ', a1, ' ', w, '; ')) ;
-            FOR jj := 2 TO e.nkids - 1 DO
-              a2 := EX (e.kids[jj], '') ;
-              DynStr.Append (gpool, d2,
-                S7 (w, '.n[', ItoA (jj - 2), '] = ', a2, '; ', ''))
-            END ;
-            DynStr.Append (gpool, d2,
-              S5 (w, '.s[', ItoA (rk - 1), '] = 1; ', '')) ;
-            jj := rk - 2 ;
-            WHILE jj >= 0 DO
-              DynStr.Append (gpool, d2,
-                S9 (w, '.s[', ItoA (jj), '] = ', w, '.s[',
-                    ItoA (jj + 1), '] * ', w)) ;
-              DynStr.Append (gpool, d2,
-                S5 ('.n[', ItoA (jj + 1), ']; ', '', '')) ;
-              jj := jj - 1
-            END ;
-            DynStr.Append (gpool, d2,
-              S9 (w, '.p = (', l, ' *) m9_pool_alloc (', r,
-                  ', sizeof (', l, '), m9_gcount (', w)) ;
-            DynStr.Append (gpool, d2,
-              S7 ('.n, ', ItoA (rk), ', err), err); ', w, '; })', '', '')) ;
-            RETURN DynStr.View (d2)
-          ELSE
-            IF e.kids[2] IS SOME dm2 THEN
-              l := TyC (e.kids[1]) ;
-              a1 := SliceTy (e.kids[1]) ;  (* oracle order: TyC, then *)
-              a2 := EX (e.kids[2], '') ;   (* SliceTy, then the count *)
-              RETURN S9 ('M9_POOL_SL (', a1, ', ', l,
-                ', ', r, ', ', a2, ', err)')
-            ELSE
-              l := TyC (e.kids[1]) ;
-              RETURN S7 ('(', l, ' *) m9_pool_alloc (', r,
-                ', sizeof (', l, '), 1, err)')
-            END
-          END
-        ELSE
-          l := TyC (e.kids[1]) ;
+        sh := NewShape (e, tyk, ext0) ;
+        IF DynStr.Eq (sh, 'own') THEN
+          l := TyC (tyk) ;
           RETURN S5 ('(', l, ' *) m9_new (sizeof (', l, '), err)')
+        END ;
+        IF DynStr.Eq (sh, 'pool') THEN
+          r := 'err->res' ;
+          IF e.kids[0] IS SOME pd THEN r := PoolAddrC (pd) END
+        ELSE
+          (* the frame form: the result slot, which is this frame's
+             arena in the body and the caller's while a RETURN
+             expression is emitted -- `+`'s rule exactly (par 2.3),
+             so `RETURN NEW (T, n)` lands where it is going *)
+          r := 'err->res'
+        END ;
+        nx := 0 ;
+        FOR jj := ext0 TO e.nkids - 1 DO
+          IF e.kids[jj] IS SOME dm1 THEN nx := nx + 1 END
+        END ;
+        IF nx > 1 THEN
+          (* more than one extent is a GRID.  Row-major: the last
+             axis has stride 1, so an innermost loop over the
+             rightmost subscript walks memory in order.  The oracle
+             computes TyC, then the temp, then the grid typedef,
+             then the extents in order -- side effects are part of
+             the bytes, so the order is reproduced deliberately. *)
+          l := TyC (tyk) ;
+          w := NewTmp () ;
+          rk := nx ;
+          a1 := GridTy (tyk, ItoA (rk)) ;
+          d2 := DynStr.New (gpool) ;
+          DynStr.Append (d2, S5 ('({ ', a1, ' ', w, '; ')) ;
+          FOR jj := ext0 TO e.nkids - 1 DO
+            a2 := EX (e.kids[jj], '') ;
+            DynStr.Append (d2,
+              S7 (w, '.n[', ItoA (jj - ext0), '] = ', a2, '; ', ''))
+          END ;
+          DynStr.Append (d2,
+            S5 (w, '.s[', ItoA (rk - 1), '] = 1; ', '')) ;
+          jj := rk - 2 ;
+          WHILE jj >= 0 DO
+            DynStr.Append (d2,
+              S9 (w, '.s[', ItoA (jj), '] = ', w, '.s[',
+                  ItoA (jj + 1), '] * ', w)) ;
+            DynStr.Append (d2,
+              S5 ('.n[', ItoA (jj + 1), ']; ', '', '')) ;
+            jj := jj - 1
+          END ;
+          DynStr.Append (d2,
+            S9 (w, '.p = (', l, ' *) m9_pool_alloc (', r,
+                ', sizeof (', l, '), m9_gcount (', w)) ;
+          DynStr.Append (d2,
+            S7 ('.n, ', ItoA (rk), ', err), err); ', w, '; })', '', '')) ;
+          RETURN DynStr.View (d2)
+        ELSIF nx = 1 THEN
+          l := TyC (tyk) ;
+          a1 := SliceTy (tyk) ;          (* oracle order: TyC, then *)
+          a2 := EX (e.kids[ext0], '') ;  (* SliceTy, then the count *)
+          RETURN S9 ('M9_POOL_SL (', a1, ', ', l,
+            ', ', r, ', ', a2, ', err)')
+        ELSE
+          l := TyC (tyk) ;
+          RETURN S7 ('(', l, ' *) m9_pool_alloc (', r,
+            ', sizeof (', l, '), 1, err)')
         END
     | Ast.NSliceOf3 :
         stRaise := TRUE ;
@@ -2061,33 +2447,33 @@ BEGIN
           a1 := EX (e.kids[1], '') ;
           a2 := EX (e.kids[2], '') ;
           d2 := DynStr.New (gpool) ;
-          DynStr.Append (gpool, d2, '({ __typeof__(') ;
-          DynStr.Append (gpool, d2, l) ;
-          DynStr.Append (gpool, d2, ') ') ;
-          DynStr.Append (gpool, d2, w) ;
-          DynStr.Append (gpool, d2, ' = ') ;
-          DynStr.Append (gpool, d2, l) ;
-          DynStr.Append (gpool, d2, '; int64_t ') ;
-          DynStr.Append (gpool, d2, w) ;
-          DynStr.Append (gpool, d2, 'a = ') ;
-          DynStr.Append (gpool, d2, a1) ;
-          DynStr.Append (gpool, d2, ', ') ;
-          DynStr.Append (gpool, d2, w) ;
-          DynStr.Append (gpool, d2, 'n = ') ;
-          DynStr.Append (gpool, d2, a2) ;
-          DynStr.Append (gpool, d2, '; (__typeof__(') ;
-          DynStr.Append (gpool, d2, w) ;
-          DynStr.Append (gpool, d2, ')){ ') ;
-          DynStr.Append (gpool, d2, w) ;
-          DynStr.Append (gpool, d2, '.p + m9_chk_slice (') ;
-          DynStr.Append (gpool, d2, w) ;
-          DynStr.Append (gpool, d2, 'a, ') ;
-          DynStr.Append (gpool, d2, w) ;
-          DynStr.Append (gpool, d2, 'n, ') ;
-          DynStr.Append (gpool, d2, w) ;
-          DynStr.Append (gpool, d2, '.len, err), ') ;
-          DynStr.Append (gpool, d2, w) ;
-          DynStr.Append (gpool, d2, 'n }; })') ;
+          DynStr.Append (d2, '({ __typeof__(') ;
+          DynStr.Append (d2, l) ;
+          DynStr.Append (d2, ') ') ;
+          DynStr.Append (d2, w) ;
+          DynStr.Append (d2, ' = ') ;
+          DynStr.Append (d2, l) ;
+          DynStr.Append (d2, '; int64_t ') ;
+          DynStr.Append (d2, w) ;
+          DynStr.Append (d2, 'a = ') ;
+          DynStr.Append (d2, a1) ;
+          DynStr.Append (d2, ', ') ;
+          DynStr.Append (d2, w) ;
+          DynStr.Append (d2, 'n = ') ;
+          DynStr.Append (d2, a2) ;
+          DynStr.Append (d2, '; (__typeof__(') ;
+          DynStr.Append (d2, w) ;
+          DynStr.Append (d2, ')){ ') ;
+          DynStr.Append (d2, w) ;
+          DynStr.Append (d2, '.p + m9_chk_slice (') ;
+          DynStr.Append (d2, w) ;
+          DynStr.Append (d2, 'a, ') ;
+          DynStr.Append (d2, w) ;
+          DynStr.Append (d2, 'n, ') ;
+          DynStr.Append (d2, w) ;
+          DynStr.Append (d2, '.len, err), ') ;
+          DynStr.Append (d2, w) ;
+          DynStr.Append (d2, 'n }; })') ;
           RETURN DynStr.View (d2)
         ELSIF DynStr.Eq (lt, 'ARR') THEN
           (* the view of an array's elements (par 2.2) *)
@@ -2104,27 +2490,27 @@ BEGIN
             a2 := EX (e.kids[2], '') ;
             cnt := ArrCount2 (inn.kids[0]) ;
             d2 := DynStr.New (gpool) ;
-            DynStr.Append (gpool, d2, '({ int64_t ') ;
-            DynStr.Append (gpool, d2, w) ;
-            DynStr.Append (gpool, d2, 'a = ') ;
-            DynStr.Append (gpool, d2, a1) ;
-            DynStr.Append (gpool, d2, ', ') ;
-            DynStr.Append (gpool, d2, w) ;
-            DynStr.Append (gpool, d2, 'n = ') ;
-            DynStr.Append (gpool, d2, a2) ;
-            DynStr.Append (gpool, d2, '; (') ;
-            DynStr.Append (gpool, d2, SliceTy (inn.kids[1])) ;
-            DynStr.Append (gpool, d2, '){ (') ;
-            DynStr.Append (gpool, d2, l) ;
-            DynStr.Append (gpool, d2, ').v + m9_chk_slice (') ;
-            DynStr.Append (gpool, d2, w) ;
-            DynStr.Append (gpool, d2, 'a, ') ;
-            DynStr.Append (gpool, d2, w) ;
-            DynStr.Append (gpool, d2, 'n, INT64_C(') ;
-            DynStr.Append (gpool, d2, cnt) ;
-            DynStr.Append (gpool, d2, '), err), ') ;
-            DynStr.Append (gpool, d2, w) ;
-            DynStr.Append (gpool, d2, 'n }; })') ;
+            DynStr.Append (d2, '({ int64_t ') ;
+            DynStr.Append (d2, w) ;
+            DynStr.Append (d2, 'a = ') ;
+            DynStr.Append (d2, a1) ;
+            DynStr.Append (d2, ', ') ;
+            DynStr.Append (d2, w) ;
+            DynStr.Append (d2, 'n = ') ;
+            DynStr.Append (d2, a2) ;
+            DynStr.Append (d2, '; (') ;
+            DynStr.Append (d2, SliceTy (inn.kids[1])) ;
+            DynStr.Append (d2, '){ (') ;
+            DynStr.Append (d2, l) ;
+            DynStr.Append (d2, ').v + m9_chk_slice (') ;
+            DynStr.Append (d2, w) ;
+            DynStr.Append (d2, 'a, ') ;
+            DynStr.Append (d2, w) ;
+            DynStr.Append (d2, 'n, INT64_C(') ;
+            DynStr.Append (d2, cnt) ;
+            DynStr.Append (d2, '), err), ') ;
+            DynStr.Append (d2, w) ;
+            DynStr.Append (d2, 'n }; })') ;
             RETURN DynStr.View (d2)
           ELSE
             Err2 (e.line, 'SLICE() argument form unsupported yet') ;
@@ -2425,29 +2811,29 @@ BEGIN
         want2 := GridTy (vd.kids[1], ItoA (k2)) ;
         e1 := EX (al.kids[0], '') ;
         d3 := DynStr.New (gpool) ;
-        DynStr.Append (gpool, d3, S7 ('({ ', tn, ' ', vn, ' = ', e1, '; ')) ;
-        DynStr.Append (gpool, d3,
+        DynStr.Append (d3, S7 ('({ ', tn, ' ', vn, ' = ', e1, '; ')) ;
+        DynStr.Append (d3,
           S7 (want2, ' ', vn, 'r; int64_t ', vn, 'o = 0; ', '')) ;
         g := 0 ;
         FOR j := 1 TO nargs - 1 DO
           IF IsAllArg (al.kids[j]) THEN
-            DynStr.Append (gpool, d3,
+            DynStr.Append (d3,
               S9 (vn, 'r.n[', ItoA (g), '] = ', vn, '.n[',
                   ItoA (j - 1), ']; ', '')) ;
-            DynStr.Append (gpool, d3,
+            DynStr.Append (d3,
               S9 (vn, 'r.s[', ItoA (g), '] = ', vn, '.s[',
                   ItoA (j - 1), ']; ', '')) ;
             g := g + 1
           ELSE
             e2 := EX (al.kids[j], '') ;
-            DynStr.Append (gpool, d3,
+            DynStr.Append (d3,
               S9 (vn, 'o += m9_gdrop (', e2, ', ', vn, '.n[',
                   ItoA (j - 1), '], ', vn)) ;
-            DynStr.Append (gpool, d3,
+            DynStr.Append (d3,
               S5 ('.s[', ItoA (j - 1), '], err); ', '', ''))
           END
         END ;
-        DynStr.Append (gpool, d3,
+        DynStr.Append (d3,
           S9 (vn, 'r.p = ', vn, '.p + ', vn, 'o; ', vn, 'r; })', '')) ;
         stRaise := TRUE ;
         tag := 'GRID' ;
@@ -2809,6 +3195,12 @@ BEGIN
                       ELSE
                         Err2 (eln,
                           'VAR argument must be a designator')
+                      END ;
+                      (* rule 2: the object's pool rides behind it,
+                         named from the root of the designator *)
+                      IF grp.f1 AND arg.kind = Ast.NDesignator AND
+                         PoolParamTy (grp.kids[1]) THEN
+                        args := S3 (args, ', ', ObjPoolC (arg))
                       END
                     ELSE
                       want2 := TagOfType (grp.kids[1]) ;
@@ -2983,6 +3375,7 @@ BEGIN
                           S2 (bn, ';'))
                       END ;
                       nbl := nbl + 1 ;
+                      MAdd (bpool, arg.a, NONE, 'err->res') ;
                       MAdd (scope, arg.a, fg.kids[1], 'b')
                     ELSIF arg.kind = Ast.NInt THEN
                       cond := S5 (cond, ' && ', slot, ' == INT64_C(',
@@ -3054,9 +3447,10 @@ PROCEDURE EmitRaise (st: PTR Ast.Node ; ind: I64) ;
 
 PROCEDURE EmitStmt (k: Ast.Kid ; ind: I64) =
 VAR
-  l, r, tg, w, cnd, stp, bname : STR ;
-  j, j2, savedScope, sv, sf : I64 ;
+  l, r, tg, w, cnd, stp, bname, thrPool : STR ;
+  j, j2, savedScope, sv, sf, thrPi : I64 ;
   vtN, vd : Ast.Kid ;
+  thrWants : BOOL ;
 BEGIN
   IF k IS SOME st THEN
     DbgLine (st) ;
@@ -3099,6 +3493,7 @@ BEGIN
                 Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
               END ;
               savedScope := scope.n ;
+              MAdd (bpool, bname, NONE, OriginPool (isn.kids[0])) ;
               MAdd (scope, bname, vtN, 'b') ;
               Line (KPbuf, ind, S3 ('if (', CN (bname), ' != NULL) {')) ;
               EmitSeq (st.kids[1], ind + 1) ;
@@ -3179,6 +3574,7 @@ BEGIN
               Line (KPbuf, ind + 1,
                 S3 ('if (!(', CN (bname), ' != NULL)) break;')) ;
               savedScope := scope.n ;
+              MAdd (bpool, bname, NONE, OriginPool (isn.kids[0])) ;
               MAdd (scope, bname, vtN, 'b') ;
               sv := inSwitch ; inSwitch := 0 ;
               sf := finDepth ; finDepth := 0 ;
@@ -3341,10 +3737,14 @@ BEGIN
             l := '0' ;
             vd := NONE ;
             vtN := NONE ;
+            thrPool := 'NULL' ;
             IF st.kids[1] IS SOME az THEN
               l := DES (az, tg) ;
               vd := DesigDecl (az) ;
-              vtN := Resolve (vd)
+              vtN := Resolve (vd) ;
+              (* rule 2: the pool the argument lives in crosses with
+                 it, since the target's first parameter carries one *)
+              thrPool := ObjPoolC (az)
             END ;
             IF vtN IS SOME an THEN
               IF an.kind = Ast.NMonitorType THEN
@@ -3362,21 +3762,40 @@ BEGIN
               ELSE
                 IF MFind (thrSeen, bname) < 0 THEN
                   MAdd (thrSeen, bname, NONE, '') ;
+                  thrWants := FALSE ;
+                  thrPi := FindProcN (bname) ;
+                  IF thrPi >= 0 THEN
+                    IF gps[thrPi].node IS SOME tdn THEN
+                      IF tdn.kids[0] IS SOME tpl THEN
+                        IF tpl.nkids > 0 THEN
+                          IF tpl.kids[0] IS SOME tg0 THEN
+                            thrWants := tg0.f1 AND PoolParamTy (tg0.kids[1])
+                          END
+                        END
+                      END
+                    END
+                  END ;
                   Line (KThr, 0, S4 ('static void *m9_thr_', modName,
-                    '_', S2 (bname, ' (void *p)'))) ;
+                    '_', S2 (bname, ' (void *p, m9_pool *pool)'))) ;
                   Line (KThr, 0, '{') ;
                   Line (KThr, 0, '  m9_state e = { 0 };') ;
-                  Line (KThr, 0, S6 ('  ', modName, '_', bname, ' ((',
-                    S3 (w, ') p, &e);', ''))) ;
+                  IF thrWants THEN
+                    Line (KThr, 0, S6 ('  ', modName, '_', bname, ' ((',
+                      S3 (w, ') p, pool, &e);', '')))
+                  ELSE
+                    Line (KThr, 0, '  (void) pool;') ;
+                    Line (KThr, 0, S6 ('  ', modName, '_', bname, ' ((',
+                      S3 (w, ') p, &e);', '')))
+                  END ;
                   Line (KThr, 0,
                     '  if (e.exc) m9_thread_died (e.exc->name);') ;
                   Line (KThr, 0, '  return NULL;') ;
                   Line (KThr, 0, '}') ;
                   Line (KThr, 0, '')
                 END ;
-                Line (KPbuf, ind, S6 ('m9_thread_start (m9_thr_',
+                Line (KPbuf, ind, S6 ('m9_thread_start2 (m9_thr_',
                   modName, '_', bname, ', (void *) ',
-                  S3 (l, ', err);', ''))) ;
+                  S5 (l, ', ', thrPool, ', err);', ''))) ;
                 Line (KPbuf, ind,
                   S3 ('if (err->exc) goto ', raiseLbl, ';'))
               END
@@ -3533,6 +3952,8 @@ BEGIN
                                         ' = ', w, '.u.', lbl.a, '.',
                                         S5 (fldn, '; (void) ', bname,
                                             ';', ''))) ;
+                                    MAdd (bpool, bid.a, NONE,
+                                          OriginPool (st.kids[0])) ;
                                     MAdd (scope, bid.a, vg.kids[1], 'b')
                                   END
                                 END
@@ -3807,7 +4228,9 @@ BEGIN
         cty := TyC (grp.kids[1]) ;
         IF grp.kids[0] IS SOME ids THEN
           FOR j := 0 TO ids.nkids - 1 DO
-            IF grp.f1 OR grp.f2 THEN
+            IF grp.f1 AND PoolParamTy (grp.kids[1]) THEN
+              ps := S3 (ps, cty, ' *, m9_pool *, ')   (* rule 2 *)
+            ELSIF grp.f1 OR grp.f2 THEN
               ps := S3 (ps, cty, ' *, ')
             ELSE
               ps := S3 (ps, cty, ', ')
@@ -3826,7 +4249,7 @@ VAR
   pl, grp, body, ids : Ast.Kid ;
   g, j, i, k : I64 ;
   ci2, cj2 : I64 ;             (* the procedure's own CONSTs *)
-  sig, retC, mode, cty, init, nm : STR ;
+  sig, retC, mode, cty, init, nm, dst : STR ;
   monPar : STR ;   (* the monitor this proc is bound to *)
   nb : SLICE OF STR ;
   rk : Ast.Kid ;
@@ -3835,6 +4258,7 @@ BEGIN
   scope.n := 0 ;
   nlp := 0 ;
   nout := 0 ;
+  nadopt := 0 ;
   tmpN := 0 ;
   exitLbl := 'L_ret' ;
   raiseLbl := 'L_ret' ;
@@ -3886,8 +4310,21 @@ BEGIN
                   sig := S5 (sig, cty, ' ', CN (pid.a), ', ')
                 ELSE
                   sig := S5 (sig, cty, ' *', CN (pid.a), ', ') ;
+                  (* rule 2 of docs/pool-elision-plan.md: a VAR
+                     parameter of a pointer-bearing type carries the
+                     pool its object lives in, right behind it, and
+                     its target is adopted into THAT pool at exit
+                     rather than into the caller's arena *)
+                  IF DynStr.Eq (mode, 'v') AND PoolParamTy (grpn.kids[1]) THEN
+                    sig := S4 (sig, 'm9_pool *', CN (pid.a), '_pool, ') ;
+                    dst := S2 (CN (pid.a), '_pool')
+                  ELSE
+                    dst := 'm9res'
+                  END ;
                   IF DynStr.Eq (cty, 'm9_sl_CHAR') THEN
                     OutReg (CN (pid.a))
+                  ELSIF HasPtr (grpn.kids[1], 0) THEN
+                    AdoptReg (CN (pid.a), grpn.kids[1], dst)
                   END
                 END
               END
@@ -3930,7 +4367,25 @@ BEGIN
     Line (KPbuf, 1,
       'm9_pool *m9res = err->res ? err->res : &m9_heap;') ;
     Line (KPbuf, 1, '(void) m9res;') ;
-    Line (KPbuf, 1, 'err->res = &m9frame;') ;
+    (* A FUNCTION WHOSE ANSWER CARRIES A POINTER BUILDS IN ITS
+       CALLER'S ARENA from the first statement, not only in its
+       RETURN expression (rule 1 of docs/pool-elision-plan.md): what
+       it allocates is on its way out, and adoption at the exit would
+       carry the same bytes up in the frame's own 64 KB blocks, one
+       block per level of a recursive builder.  So the slot is left
+       as the caller's, the frame stays empty, and the exit's adoption
+       test finds nothing to move.  A function answering a scalar or
+       a string, and a proper procedure, claim the slot as before:
+       their temporaries die here, and a string answer is re-homed. *)
+    IF d.kids[1] IS SOME rtn0 THEN
+      IF NOT DynStr.Eq (retC, 'm9_sl_CHAR') AND HasPtr (d.kids[1], 0) THEN
+        Line (KPbuf, 1, 'err->res = m9res;')
+      ELSE
+        Line (KPbuf, 1, 'err->res = &m9frame;')
+      END
+    ELSE
+      Line (KPbuf, 1, 'err->res = &m9frame;')
+    END ;
     IF LEN (dbgSrc) > 0 THEN
       Line (KPbuf, 1, S3 ('err->file = "', dbgSrc, '";'))
     END ;
@@ -4021,6 +4476,7 @@ BEGIN
       END ;
 
       (* module state, visible after params and locals (first hit wins) *)
+      mvBase := scope.n ;
       FOR i := 0 TO nmv - 1 DO
         MAdd (scope, mvN[i], mvT[i], 'l')
       END ;
@@ -4043,12 +4499,37 @@ BEGIN
        answer, a view of either, are all caught; a literal, a borrow,
        or a string in a pool the caller named is not moved.  This is
        what lets a string procedure take no pool. *)
+    (* ... and from every LOCAL named pool as well, since 2026-09-30:
+       `VAR scratch: POOL` + DynStr + `RETURN DynStr.View (d)` is then
+       a string builder that takes no pool, the scratch dying here
+       and the answer copied out (docs/pool-elision-plan.md, stage 2).
+       The frame is lpools[0]; a pool with no block is one load. *)
     IF DynStr.Eq (retC, 'm9_sl_CHAR') THEN
-      Line (KPbuf, 1, 'm9ret = m9_rehome (&m9frame, m9res, m9ret, err);')
+      FOR i := 0 TO nlp - 1 DO
+        Line (KPbuf, 1, S3 ('m9ret = m9_rehome (&', lpools[i],
+                            ', m9res, m9ret, err);'))
+      END
     END ;
     FOR i := 0 TO nout - 1 DO
-      Line (KPbuf, 1, S5 ('*', outStr[i], ' = m9_rehome (&m9frame, m9res, *',
-                          outStr[i], ', err);'))
+      FOR k := 0 TO nlp - 1 DO
+        Line (KPbuf, 1, S7 ('*', outStr[i], ' = m9_rehome (&', lpools[k],
+                            ', m9res, *', outStr[i], ', err);'))
+      END
+    END ;
+    (* rule 1 of docs/pool-elision-plan.md: a frame allocation that
+       leaves -- through the result, or a VAR/OWN parameter's target
+       -- takes the whole arena with it into the caller's, which a
+       copy could not do for a graph.  One address test per pointer
+       component; a frame that never allocated has no blocks. *)
+    IF d.kids[1] IS SOME rtn THEN
+      IF NOT DynStr.Eq (retC, 'm9_sl_CHAR') THEN
+        IF HasPtr (d.kids[1], 0) THEN
+          AdoptEmit ('m9ret', d.kids[1], 'm9res', 1, 0)
+        END
+      END
+    END ;
+    FOR i := 0 TO nadopt - 1 DO
+      AdoptEmit (S3 ('(*', adoptC[i], ')'), adoptT[i], adoptD[i], 1, 0)
     END ;
     IF LEN (monPar) > 0 THEN
       Line (KPbuf, 1, S3 ('m9_mon_leave (&(*', monPar, ').m9mon);'))
@@ -4077,6 +4558,7 @@ BEGIN
   scope.n := 0 ;
   nlp := 0 ;
   nout := 0 ;
+  nadopt := 0 ;
   tmpN := 0 ;
   exitLbl := 'L_ret' ;
   raiseLbl := 'L_ret' ;
@@ -4084,6 +4566,7 @@ BEGIN
   curRetTag := '' ;
   finDepth := 0 ;
   inSwitch := 0 ;
+  mvBase := scope.n ;
   FOR i := 0 TO nmv - 1 DO
     MAdd (scope, mvN[i], mvT[i], 'l')
   END ;
@@ -4092,9 +4575,8 @@ BEGIN
   Line (KPbuf, 0, '{') ;
   Line (KPbuf, 1, 'm9_state errv = {0};') ;
   Line (KPbuf, 1, 'm9_state *err = &errv;') ;
-  Line (KPbuf, 1, 'm9_pool m9frame = {0};') ;
-  PoolReg ('m9frame') ;
-  Line (KPbuf, 1, 'err->res = &m9frame;') ;
+  PoolReg ('m9mframe') ;
+  Line (KPbuf, 1, 'err->res = &m9mframe;') ;
   IF LEN (dbgSrc) > 0 THEN
     Line (KPbuf, 1, S3 ('err->file = "', dbgSrc, '";'))
   END ;
@@ -4126,6 +4608,7 @@ BEGIN
   scope.n := 0 ;
   nlp := 0 ;
   nout := 0 ;
+  nadopt := 0 ;
   tmpN := 0 ;
   exitLbl := 'L_ret' ;
   raiseLbl := 'L_ret' ;
@@ -4133,6 +4616,7 @@ BEGIN
   curRetTag := '' ;
   finDepth := 0 ;
   inSwitch := 0 ;
+  mvBase := scope.n ;
   FOR i := 0 TO nmv - 1 DO
     MAdd (scope, mvN[i], mvT[i], 'l')
   END ;
@@ -4142,10 +4626,13 @@ BEGIN
   Line (KPbuf, 1, 'static int m9done = 0;') ;
   Line (KPbuf, 1, 'if (m9done) return;') ;
   Line (KPbuf, 1, 'm9done = 1;') ;
-  Line (KPbuf, 1, 'm9_pool m9frame = {0};') ;
+  (* the init body's frame is the MODULE's lifetime: the checker
+     exempts a store into a module variable here (par 2.3) because
+     the frame and the module variables share one, so the arena is
+     static and never freed -- a frame allocation the body keeps in a
+     module variable stays valid for the process (rule 1) *)
   Line (KPbuf, 1, 'm9_pool *m9prev = err->res;') ;
-  PoolReg ('m9frame') ;
-  Line (KPbuf, 1, 'err->res = &m9frame;') ;
+  Line (KPbuf, 1, 'err->res = &m9mframe;') ;
   (* direct imports first, so their state is ready *)
   FOR i := 0 TO extMods.n - 1 DO
     Line (KPbuf, 1, S3 (extMods.es[i].k, '_m9init (err);',
@@ -4156,7 +4643,6 @@ BEGIN
   FOR i := 0 TO nlp - 1 DO
     Line (KPbuf, 1, S3 ('m9_pool_free (&', lpools[i], ');'))
   END ;
-  Line (KPbuf, 1, 'm9_pool_free (&m9frame);') ;
   Line (KPbuf, 1, 'err->res = m9prev;')
   ;
   Line (KPbuf, 0, '}')
@@ -4466,7 +4952,13 @@ BEGIN
   FOR i := 0 TO nmv - 1 DO
     Line (KRec2, 0, S5 ('static ', TyC (mvT[i]), ' ', CN (mvN[i]), ';'))
   END ;
-  IF nmv > 0 THEN Line (KRec2, 0, '') END ;
+  (* the MODULE FRAME: the arena of the init body (a program's main),
+     static and at file scope since 2026-09-30 so that a module
+     variable declared without a pool has one to be grown in (rule 2
+     of docs/pool-elision-plan.md) -- a module variable lives as long
+     as the module, and so does this *)
+  Line (KRec2, 0, 'static m9_pool m9mframe = {0};') ;
+  Line (KRec2, 0, '') ;
 
   (* procedures emit into pbuf; typedefs, string literals, and static
      prototypes they discover along the way land before them *)
@@ -4481,27 +4973,27 @@ BEGIN
 
   (* header assembly: consts, discovered typedefs, transparent def
      records, prototypes -- in dependency order *)
-  DynStr.Append (gpool, bHdr, DynStr.View (bHdrConsts)) ;
+  DynStr.Append (bHdr, DynStr.View (bHdrConsts)) ;
   IF hdrConstN > 0 THEN Line (KHdr, 0, '') END ;
-  DynStr.Append (gpool, bHdr, DynStr.View (bTdefs)) ;
+  DynStr.Append (bHdr, DynStr.View (bTdefs)) ;
   IF tdefN > 0 THEN Line (KHdr, 0, '') END ;
-  DynStr.Append (gpool, bHdr, DynStr.View (bHdrRecs)) ;
-  DynStr.Append (gpool, bHdr, DynStr.View (bHdrProtos)) ;
+  DynStr.Append (bHdr, DynStr.View (bHdrRecs)) ;
+  DynStr.Append (bHdr, DynStr.View (bHdrProtos)) ;
   Line (KHdr, 0, '') ;
   Line (KHdr, 0, '#endif') ;
 
-  DynStr.Append (gpool, bSrc, DynStr.View (bRec2)) ;
-  DynStr.Append (gpool, bSrc, DynStr.View (bLit)) ;
+  DynStr.Append (bSrc, DynStr.View (bRec2)) ;
+  DynStr.Append (bSrc, DynStr.View (bLit)) ;
   IF litN > 0 THEN Line (KSrc, 0, '') END ;
-  DynStr.Append (gpool, bSrc, DynStr.View (bGate)) ;
+  DynStr.Append (bSrc, DynStr.View (bGate)) ;
   IF gateSeen.n > 0 THEN Line (KSrc, 0, '') END ;
-  DynStr.Append (gpool, bSrc, DynStr.View (bSprotos)) ;
+  DynStr.Append (bSrc, DynStr.View (bSprotos)) ;
   IF sprotoN > 0 THEN Line (KSrc, 0, '') END ;
   (* the trampolines go AFTER the prototypes they call and before the
      bodies, which is the only place both are visible *)
-  DynStr.Append (gpool, bSrc, DynStr.View (bThr)) ;
+  DynStr.Append (bSrc, DynStr.View (bThr)) ;
   IF thrSeen.n > 0 THEN Line (KSrc, 0, '') END ;
-  DynStr.Append (gpool, bSrc, DynStr.View (bPbuf)) ;
+  DynStr.Append (bSrc, DynStr.View (bPbuf)) ;
 
   hOut := DynStr.View (bHdr) ;
   cOut := DynStr.View (bSrc)

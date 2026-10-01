@@ -1,0 +1,11 @@
+(* EXPECT: a frame allocation dies with this frame; it cannot be held by n, which is declared IN a pool (par 4.3) *)
+MODULE m ;
+TYPE Node = RECORD v : I64 END ;
+PROCEDURE F (VAR p: POOL) =
+VAR n : PTR Node IN p ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := 1
+END F ;
+BEGIN
+END m.

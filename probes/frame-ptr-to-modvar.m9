@@ -1,0 +1,12 @@
+(* EXPECT: a frame allocation dies with this frame; it cannot be stored in module variable saved *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR saved : PTR R ;
+PROCEDURE Keep () =
+VAR p : PTR R ;
+BEGIN
+  p := NEW (R) ;
+  saved := p
+END Keep ;
+BEGIN
+END m.

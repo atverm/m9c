@@ -83,6 +83,7 @@ NOT_GENERATED = {
     'Palette':  'gendiff-only fixture (an enumeration declaration)',
     'Lsp':      'program module built by m9c --make from the library',
     'M9fmt':    'program module built by m9c --make from the library',
+    'M9elide':  'program module built by m9c --make from the library',
 }
 # a gentest dep outside the module's import closure, and why it is there
 EXTRA_DEPS = {

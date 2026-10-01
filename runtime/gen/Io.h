@@ -35,7 +35,7 @@ m9_sl_CHAR Io_Arg (m9_pool *pool, int64_t i, m9_state *err);
 m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 m9_sl_BYTE Io_ReadFileBytes (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 void Io_WriteFile (m9_sl_CHAR path, m9_sl_CHAR content, m9_state *err);
-m9_sl_BYTE Io_ReadStdin (m9_pool *pool, int64_t cap, m9_state *err);
+m9_sl_BYTE Io_ReadStdin (int64_t cap, m9_state *err);
 void Io_Flush (m9_state *err);
 int64_t Io_FileSize (m9_sl_CHAR path, m9_state *err);
 m9_sl_BYTE Io_ReadFileHead (m9_pool *pool, m9_sl_CHAR path, int64_t cap, m9_state *err);

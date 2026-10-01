@@ -142,14 +142,12 @@ PROCEDURE SetLogY (on: BOOL) ;
      ClearFigure turns both off again: a second figure in the same
      program starts linear, like it starts empty.                  *)
 
-PROCEDURE Render (VAR pool: POOL ;
-                  RO title: STR ;
+PROCEDURE Render (RO title: STR ;
                   RO xlabel: STR ;
                   RO ylabel: STR) : STR
   RAISES ValueRange ;
 
-PROCEDURE RenderHeat (VAR pool: POOL ;
-                      RO title: STR ;
+PROCEDURE RenderHeat (RO title: STR ;
                       m: PTR Mat.Matrix ;
                       cmap: Cmap ;
                       symmetric: BOOL) : STR
@@ -232,7 +230,7 @@ BEGIN
   RETURN NOT (v = v)
 END IsNaN ;
 
-PROCEDURE EmitR (VAR pool: POOL ; VAR d: PTR DynStr.DString ; v: F64)
+PROCEDURE EmitR (VAR d: PTR DynStr.DString ; v: F64)
   RAISES ValueRange =
 VAR
   buf : ARRAY 32 OF BYTE ;
@@ -240,19 +238,19 @@ VAR
 BEGIN
   n := I64 (FmtG (ADR (buf), C.Double (v))) ;
   FOR i := 0 TO n - 1 DO
-    DynStr.AppendChar (pool, d, CHR (ORD (buf[i])))
+    DynStr.AppendChar (d, CHR (ORD (buf[i])))
   END
 END EmitR ;
 
-PROCEDURE EmitColor (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitColor (VAR d: PTR DynStr.DString ;
                      idx: I64) =
 BEGIN
   CASE idx OF
-  | 0 : DynStr.Append (pool, d, '#1f77b4')
-  | 1 : DynStr.Append (pool, d, '#ff7f0e')
-  | 2 : DynStr.Append (pool, d, '#2ca02c')
-  | 3 : DynStr.Append (pool, d, '#d62728')
-  ELSE DynStr.Append (pool, d, '#333333')
+  | 0 : DynStr.Append (d, '#1f77b4')
+  | 1 : DynStr.Append (d, '#ff7f0e')
+  | 2 : DynStr.Append (d, '#2ca02c')
+  | 3 : DynStr.Append (d, '#d62728')
+  ELSE DynStr.Append (d, '#333333')
   END
 END EmitColor ;
 
@@ -278,14 +276,14 @@ BEGIN
   END
 END CmapPt ;
 
-PROCEDURE EmitHexByte (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitHexByte (VAR d: PTR DynStr.DString ;
                        v: I64) =
 BEGIN
-  DynStr.AppendChar (pool, d, HexDigits[v DIV 16]) ;
-  DynStr.AppendChar (pool, d, HexDigits[v MOD 16])
+  DynStr.AppendChar (d, HexDigits[v DIV 16]) ;
+  DynStr.AppendChar (d, HexDigits[v MOD 16])
 END EmitHexByte ;
 
-PROCEDURE EmitCmap (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitCmap (VAR d: PTR DynStr.DString ;
                     cmap: Cmap ; t: F64)
   RAISES ValueRange =
 VAR
@@ -300,10 +298,10 @@ BEGIN
   f := f - F64 (seg) ;
   CmapPt (cmap, seg, r0, g0, b0) ;
   CmapPt (cmap, seg + 1, r1, g1, b1) ;
-  DynStr.AppendChar (pool, d, '#') ;
-  EmitHexByte (pool, d, I64 (F64 (r0) + f * (F64 (r1) - F64 (r0)))) ;
-  EmitHexByte (pool, d, I64 (F64 (g0) + f * (F64 (g1) - F64 (g0)))) ;
-  EmitHexByte (pool, d, I64 (F64 (b0) + f * (F64 (b1) - F64 (b0))))
+  DynStr.AppendChar (d, '#') ;
+  EmitHexByte (d, I64 (F64 (r0) + f * (F64 (r1) - F64 (r0)))) ;
+  EmitHexByte (d, I64 (F64 (g0) + f * (F64 (g1) - F64 (g0)))) ;
+  EmitHexByte (d, I64 (F64 (b0) + f * (F64 (b1) - F64 (b0))))
 END EmitCmap ;
 
 (* Heckbert's nice tick spacing, transcribed *)
@@ -471,16 +469,16 @@ BEGIN
   serHex[series] := hex
 END SetLineColor ;
 
-PROCEDURE EmitLineColor (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitLineColor (VAR d: PTR DynStr.DString ;
                          s: I64) =
   (* the caller's colour if one was named, else the palette.  Kept
      as one procedure so the line and its legend swatch cannot
      disagree -- they are two call sites of the same question. *)
 BEGIN
   IF LEN (serHex[s]) > 0 THEN
-    DynStr.Append (pool, d, serHex[s])
+    DynStr.Append (d, serHex[s])
   ELSE
-    EmitColor (pool, d, serCol[s])
+    EmitColor (d, serCol[s])
   END
 END EmitLineColor ;
 
@@ -506,52 +504,52 @@ END AddBars ;
 
 (* a bar series' colour: the caller's own if SetBarColor named one,
    and otherwise the C0..C3 palette the lines use *)
-PROCEDURE EmitBarColor (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitBarColor (VAR d: PTR DynStr.DString ;
                         s: I64) =
 BEGIN
   IF LEN (barHex[s]) > 0 THEN
-    DynStr.Append (pool, d, barHex[s])
+    DynStr.Append (d, barHex[s])
   ELSE
-    EmitColor (pool, d, barCol[s])
+    EmitColor (d, barCol[s])
   END
 END EmitBarColor ;
 
 (* an error whisker: the line, then a cap across each end.  `horiz`
    says which way the caps turn, which is the only difference
    between the two directions. *)
-PROCEDURE EmitWhisker (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitWhisker (VAR d: PTR DynStr.DString ;
                        x0, y0, x1, y1: F64 ; horiz: BOOL)
   RAISES ValueRange =
 BEGIN
-  DynStr.Append (pool, d, '<path d="M ') ;
-  EmitR (pool, d, x0) ; DynStr.AppendChar (pool, d, ' ') ;
-  EmitR (pool, d, y0) ; DynStr.Append (pool, d, ' L ') ;
-  EmitR (pool, d, x1) ; DynStr.AppendChar (pool, d, ' ') ;
-  EmitR (pool, d, y1) ;
+  DynStr.Append (d, '<path d="M ') ;
+  EmitR (d, x0) ; DynStr.AppendChar (d, ' ') ;
+  EmitR (d, y0) ; DynStr.Append (d, ' L ') ;
+  EmitR (d, x1) ; DynStr.AppendChar (d, ' ') ;
+  EmitR (d, y1) ;
   IF horiz THEN
-    DynStr.Append (pool, d, ' M ') ;
-    EmitR (pool, d, x0) ; DynStr.AppendChar (pool, d, ' ') ;
-    EmitR (pool, d, y0 - Cap) ; DynStr.Append (pool, d, ' L ') ;
-    EmitR (pool, d, x0) ; DynStr.AppendChar (pool, d, ' ') ;
-    EmitR (pool, d, y0 + Cap) ;
-    DynStr.Append (pool, d, ' M ') ;
-    EmitR (pool, d, x1) ; DynStr.AppendChar (pool, d, ' ') ;
-    EmitR (pool, d, y1 - Cap) ; DynStr.Append (pool, d, ' L ') ;
-    EmitR (pool, d, x1) ; DynStr.AppendChar (pool, d, ' ') ;
-    EmitR (pool, d, y1 + Cap)
+    DynStr.Append (d, ' M ') ;
+    EmitR (d, x0) ; DynStr.AppendChar (d, ' ') ;
+    EmitR (d, y0 - Cap) ; DynStr.Append (d, ' L ') ;
+    EmitR (d, x0) ; DynStr.AppendChar (d, ' ') ;
+    EmitR (d, y0 + Cap) ;
+    DynStr.Append (d, ' M ') ;
+    EmitR (d, x1) ; DynStr.AppendChar (d, ' ') ;
+    EmitR (d, y1 - Cap) ; DynStr.Append (d, ' L ') ;
+    EmitR (d, x1) ; DynStr.AppendChar (d, ' ') ;
+    EmitR (d, y1 + Cap)
   ELSE
-    DynStr.Append (pool, d, ' M ') ;
-    EmitR (pool, d, x0 - Cap) ; DynStr.AppendChar (pool, d, ' ') ;
-    EmitR (pool, d, y0) ; DynStr.Append (pool, d, ' L ') ;
-    EmitR (pool, d, x0 + Cap) ; DynStr.AppendChar (pool, d, ' ') ;
-    EmitR (pool, d, y0) ;
-    DynStr.Append (pool, d, ' M ') ;
-    EmitR (pool, d, x1 - Cap) ; DynStr.AppendChar (pool, d, ' ') ;
-    EmitR (pool, d, y1) ; DynStr.Append (pool, d, ' L ') ;
-    EmitR (pool, d, x1 + Cap) ; DynStr.AppendChar (pool, d, ' ') ;
-    EmitR (pool, d, y1)
+    DynStr.Append (d, ' M ') ;
+    EmitR (d, x0 - Cap) ; DynStr.AppendChar (d, ' ') ;
+    EmitR (d, y0) ; DynStr.Append (d, ' L ') ;
+    EmitR (d, x0 + Cap) ; DynStr.AppendChar (d, ' ') ;
+    EmitR (d, y0) ;
+    DynStr.Append (d, ' M ') ;
+    EmitR (d, x1 - Cap) ; DynStr.AppendChar (d, ' ') ;
+    EmitR (d, y1) ; DynStr.Append (d, ' L ') ;
+    EmitR (d, x1 + Cap) ; DynStr.AppendChar (d, ' ') ;
+    EmitR (d, y1)
   END ;
-  DynStr.Append (pool, d, '" fill="none" stroke="#222" stroke-width="1.2"/>')
+  DynStr.Append (d, '" fill="none" stroke="#222" stroke-width="1.2"/>')
 END EmitWhisker ;
 
 (* the decade at or below an axis coordinate, which is already a
@@ -678,12 +676,12 @@ BEGIN
   nSer := nSer + 1
 END AddLine ;
 
-PROCEDURE Render (VAR pool: POOL ;
-                  RO title: STR ;
+PROCEDURE Render (RO title: STR ;
                   RO xlabel: STR ;
                   RO ylabel: STR) : STR
   RAISES ValueRange =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   s, i : I64 ;
   xmin, xmax, ymin, ymax, pad, step, t, px, py, ly, v, w : F64 ;
@@ -784,9 +782,9 @@ BEGIN
   ymax := ymax + pad ;
 
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" ') ;
-  DynStr.Append (pool, d, 'font-family="DejaVu Sans, Helvetica, sans-serif">') ;
-  DynStr.Append (pool, d, '<rect width="720" height="440" fill="white"/>') ;
+  DynStr.Append (d, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" ') ;
+  DynStr.Append (d, 'font-family="DejaVu Sans, Helvetica, sans-serif">') ;
+  DynStr.Append (d, '<rect width="720" height="440" fill="white"/>') ;
 
   (* A LOG AXIS IS TICKED ON THE DECADES, not on NiceStep's round
      numbers: on a logarithmic axis the round numbers are the powers,
@@ -797,17 +795,17 @@ BEGIN
   IF logY THEN
     t := DecadeFloor (ymin) ;
     WHILE t <= ymax DO
-      DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, MLeft) ;
-      DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, PYof (t, ymin, ymax)) ;
-      DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, FigW - MRight) ;
-      DynStr.Append (pool, d, '" y2="') ; EmitR (pool, d, PYof (t, ymin, ymax)) ;
-      DynStr.Append (pool, d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
-      DynStr.Append (pool, d, '<text x="') ; EmitR (pool, d, MLeft - 8.0) ;
-      DynStr.Append (pool, d, '" y="') ;
-      EmitR (pool, d, PYof (t, ymin, ymax) + 4.0) ;
-      DynStr.Append (pool, d, '" font-size="11" fill="#444" text-anchor="end">') ;
-      EmitR (pool, d, Pow10 (t)) ;
-      DynStr.Append (pool, d, '</text>') ;
+      DynStr.Append (d, '<line x1="') ; EmitR (d, MLeft) ;
+      DynStr.Append (d, '" y1="') ; EmitR (d, PYof (t, ymin, ymax)) ;
+      DynStr.Append (d, '" x2="') ; EmitR (d, FigW - MRight) ;
+      DynStr.Append (d, '" y2="') ; EmitR (d, PYof (t, ymin, ymax)) ;
+      DynStr.Append (d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
+      DynStr.Append (d, '<text x="') ; EmitR (d, MLeft - 8.0) ;
+      DynStr.Append (d, '" y="') ;
+      EmitR (d, PYof (t, ymin, ymax) + 4.0) ;
+      DynStr.Append (d, '" font-size="11" fill="#444" text-anchor="end">') ;
+      EmitR (d, Pow10 (t)) ;
+      DynStr.Append (d, '</text>') ;
       t := t + 1.0
     END
   ELSE
@@ -815,35 +813,35 @@ BEGIN
   t := FloorMul (ymin, step) ;
   WHILE t < ymin DO t := t + step END ;
   WHILE t <= ymax DO
-    DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, MLeft) ;
-    DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, PYof (t, ymin, ymax)) ;
-    DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, FigW - MRight) ;
-    DynStr.Append (pool, d, '" y2="') ; EmitR (pool, d, PYof (t, ymin, ymax)) ;
-    DynStr.Append (pool, d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
-    DynStr.Append (pool, d, '<text x="') ; EmitR (pool, d, MLeft - 8.0) ;
-    DynStr.Append (pool, d, '" y="') ;
-    EmitR (pool, d, PYof (t, ymin, ymax) + 4.0) ;
-    DynStr.Append (pool, d, '" font-size="11" fill="#444" text-anchor="end">') ;
-    EmitR (pool, d, t) ;
-    DynStr.Append (pool, d, '</text>') ;
+    DynStr.Append (d, '<line x1="') ; EmitR (d, MLeft) ;
+    DynStr.Append (d, '" y1="') ; EmitR (d, PYof (t, ymin, ymax)) ;
+    DynStr.Append (d, '" x2="') ; EmitR (d, FigW - MRight) ;
+    DynStr.Append (d, '" y2="') ; EmitR (d, PYof (t, ymin, ymax)) ;
+    DynStr.Append (d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
+    DynStr.Append (d, '<text x="') ; EmitR (d, MLeft - 8.0) ;
+    DynStr.Append (d, '" y="') ;
+    EmitR (d, PYof (t, ymin, ymax) + 4.0) ;
+    DynStr.Append (d, '" font-size="11" fill="#444" text-anchor="end">') ;
+    EmitR (d, t) ;
+    DynStr.Append (d, '</text>') ;
     t := t + step
   END
   END ;
   IF logX THEN
     t := DecadeFloor (xmin) ;
     WHILE t <= xmax DO
-      DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
-      DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, MTop) ;
-      DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
-      DynStr.Append (pool, d, '" y2="') ;
-      EmitR (pool, d, FigH - MBottom) ;
-      DynStr.Append (pool, d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
-      DynStr.Append (pool, d, '<text x="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
-      DynStr.Append (pool, d, '" y="') ;
-      EmitR (pool, d, FigH - MBottom + 18.0) ;
-      DynStr.Append (pool, d, '" font-size="11" fill="#444" text-anchor="middle">') ;
-      EmitR (pool, d, Pow10 (t)) ;
-      DynStr.Append (pool, d, '</text>') ;
+      DynStr.Append (d, '<line x1="') ; EmitR (d, PXof (t, xmin, xmax)) ;
+      DynStr.Append (d, '" y1="') ; EmitR (d, MTop) ;
+      DynStr.Append (d, '" x2="') ; EmitR (d, PXof (t, xmin, xmax)) ;
+      DynStr.Append (d, '" y2="') ;
+      EmitR (d, FigH - MBottom) ;
+      DynStr.Append (d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
+      DynStr.Append (d, '<text x="') ; EmitR (d, PXof (t, xmin, xmax)) ;
+      DynStr.Append (d, '" y="') ;
+      EmitR (d, FigH - MBottom + 18.0) ;
+      DynStr.Append (d, '" font-size="11" fill="#444" text-anchor="middle">') ;
+      EmitR (d, Pow10 (t)) ;
+      DynStr.Append (d, '</text>') ;
       t := t + 1.0
     END
   ELSE
@@ -851,34 +849,34 @@ BEGIN
   t := FloorMul (xmin, step) ;
   WHILE t < xmin DO t := t + step END ;
   WHILE t <= xmax DO
-    DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
-    DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, MTop) ;
-    DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
-    DynStr.Append (pool, d, '" y2="') ;
-    EmitR (pool, d, FigH - MBottom) ;
-    DynStr.Append (pool, d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
-    DynStr.Append (pool, d, '<text x="') ; EmitR (pool, d, PXof (t, xmin, xmax)) ;
-    DynStr.Append (pool, d, '" y="') ;
-    EmitR (pool, d, FigH - MBottom + 18.0) ;
-    DynStr.Append (pool, d, '" font-size="11" fill="#444" text-anchor="middle">') ;
-    EmitR (pool, d, t) ;
-    DynStr.Append (pool, d, '</text>') ;
+    DynStr.Append (d, '<line x1="') ; EmitR (d, PXof (t, xmin, xmax)) ;
+    DynStr.Append (d, '" y1="') ; EmitR (d, MTop) ;
+    DynStr.Append (d, '" x2="') ; EmitR (d, PXof (t, xmin, xmax)) ;
+    DynStr.Append (d, '" y2="') ;
+    EmitR (d, FigH - MBottom) ;
+    DynStr.Append (d, '" stroke="#e0e0e0" stroke-width="1"/>') ;
+    DynStr.Append (d, '<text x="') ; EmitR (d, PXof (t, xmin, xmax)) ;
+    DynStr.Append (d, '" y="') ;
+    EmitR (d, FigH - MBottom + 18.0) ;
+    DynStr.Append (d, '" font-size="11" fill="#444" text-anchor="middle">') ;
+    EmitR (d, t) ;
+    DynStr.Append (d, '</text>') ;
     t := t + step
   END
   END ;
 
-  DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, MLeft) ;
-  DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, MTop) ;
-  DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, MLeft) ;
-  DynStr.Append (pool, d, '" y2="') ; EmitR (pool, d, FigH - MBottom) ;
-  DynStr.Append (pool, d, '" stroke="black" stroke-width="1.2"/>') ;
-  DynStr.Append (pool, d, '<line x1="') ; EmitR (pool, d, MLeft) ;
-  DynStr.Append (pool, d, '" y1="') ;
-  EmitR (pool, d, FigH - MBottom) ;
-  DynStr.Append (pool, d, '" x2="') ; EmitR (pool, d, FigW - MRight) ;
-  DynStr.Append (pool, d, '" y2="') ;
-  EmitR (pool, d, FigH - MBottom) ;
-  DynStr.Append (pool, d, '" stroke="black" stroke-width="1.2"/>') ;
+  DynStr.Append (d, '<line x1="') ; EmitR (d, MLeft) ;
+  DynStr.Append (d, '" y1="') ; EmitR (d, MTop) ;
+  DynStr.Append (d, '" x2="') ; EmitR (d, MLeft) ;
+  DynStr.Append (d, '" y2="') ; EmitR (d, FigH - MBottom) ;
+  DynStr.Append (d, '" stroke="black" stroke-width="1.2"/>') ;
+  DynStr.Append (d, '<line x1="') ; EmitR (d, MLeft) ;
+  DynStr.Append (d, '" y1="') ;
+  EmitR (d, FigH - MBottom) ;
+  DynStr.Append (d, '" x2="') ; EmitR (d, FigW - MRight) ;
+  DynStr.Append (d, '" y2="') ;
+  EmitR (d, FigH - MBottom) ;
+  DynStr.Append (d, '" stroke="black" stroke-width="1.2"/>') ;
 
   (* THE BARS, under the dots and the lines.  Each is a rectangle
      from its baseline to its value on the VALUE axis, and one slot
@@ -921,29 +919,29 @@ BEGIN
           END ;
           IF c1 < c0 THEN t := c0 ; c0 := c1 ; c1 := t END ;
           IF v1 < v0 THEN t := v0 ; v0 := v1 ; v1 := t END ;
-          DynStr.Append (pool, d, '<rect x="') ;
-          IF barDir = BarHorizontal THEN EmitR (pool, d, v0)
-          ELSE EmitR (pool, d, c0) END ;
-          DynStr.Append (pool, d, '" y="') ;
-          IF barDir = BarHorizontal THEN EmitR (pool, d, c0)
-          ELSE EmitR (pool, d, v0) END ;
-          DynStr.Append (pool, d, '" width="') ;
-          IF barDir = BarHorizontal THEN EmitR (pool, d, v1 - v0)
-          ELSE EmitR (pool, d, c1 - c0) END ;
-          DynStr.Append (pool, d, '" height="') ;
-          IF barDir = BarHorizontal THEN EmitR (pool, d, c1 - c0)
-          ELSE EmitR (pool, d, v1 - v0) END ;
+          DynStr.Append (d, '<rect x="') ;
+          IF barDir = BarHorizontal THEN EmitR (d, v0)
+          ELSE EmitR (d, c0) END ;
+          DynStr.Append (d, '" y="') ;
+          IF barDir = BarHorizontal THEN EmitR (d, c0)
+          ELSE EmitR (d, v0) END ;
+          DynStr.Append (d, '" width="') ;
+          IF barDir = BarHorizontal THEN EmitR (d, v1 - v0)
+          ELSE EmitR (d, c1 - c0) END ;
+          DynStr.Append (d, '" height="') ;
+          IF barDir = BarHorizontal THEN EmitR (d, c1 - c0)
+          ELSE EmitR (d, v1 - v0) END ;
           (* FILLED OR NOT is one attribute pair, and an unfilled bar
              still needs its outline in the series colour or it is
              invisible *)
           IF barFilled THEN
-            DynStr.Append (pool, d, '" fill="') ;
-            EmitBarColor (pool, d, s) ;
-            DynStr.Append (pool, d, '" stroke="none"/>')
+            DynStr.Append (d, '" fill="') ;
+            EmitBarColor (d, s) ;
+            DynStr.Append (d, '" stroke="none"/>')
           ELSE
-            DynStr.Append (pool, d, '" fill="none" stroke="') ;
-            EmitBarColor (pool, d, s) ;
-            DynStr.Append (pool, d, '" stroke-width="1.6"/>')
+            DynStr.Append (d, '" fill="none" stroke="') ;
+            EmitBarColor (d, s) ;
+            DynStr.Append (d, '" stroke-width="1.6"/>')
           END
         END
       END
@@ -970,12 +968,12 @@ BEGIN
                     c0 := PYof (Axis (v, logY), ymin, ymax) ;
                     v0 := PXof (Axis (top - e, logX), xmin, xmax) ;
                     v1 := PXof (Axis (top + e, logX), xmin, xmax) ;
-                    EmitWhisker (pool, d, v0, c0, v1, c0, TRUE)
+                    EmitWhisker (d, v0, c0, v1, c0, TRUE)
                   ELSE
                     c0 := PXof (Axis (v, logX), xmin, xmax) ;
                     v0 := PYof (Axis (top - e, logY), ymin, ymax) ;
                     v1 := PYof (Axis (top + e, logY), ymin, ymax) ;
-                    EmitWhisker (pool, d, c0, v0, c0, v1, FALSE)
+                    EmitWhisker (d, c0, v0, c0, v1, FALSE)
                   END
                 END
               END
@@ -991,16 +989,16 @@ BEGIN
     v := dotX[i] ;
     w := dotY[i] ;
     IF Loggable (v, logX) AND Loggable (w, logY) THEN
-      DynStr.Append (pool, d, '<circle cx="') ;
-      EmitR (pool, d, PXof (Axis (v, logX), xmin, xmax)) ;
-      DynStr.Append (pool, d, '" cy="') ;
-      EmitR (pool, d, PYof (Axis (w, logY), ymin, ymax)) ;
-      DynStr.Append (pool, d, '" r="0.7" fill="black"/>')
+      DynStr.Append (d, '<circle cx="') ;
+      EmitR (d, PXof (Axis (v, logX), xmin, xmax)) ;
+      DynStr.Append (d, '" cy="') ;
+      EmitR (d, PYof (Axis (w, logY), ymin, ymax)) ;
+      DynStr.Append (d, '" r="0.7" fill="black"/>')
     END
   END ;
 
   FOR s := 0 TO nSer - 1 DO
-    DynStr.Append (pool, d, '<path d="') ;
+    DynStr.Append (d, '<path d="') ;
     pen := FALSE ;
     FOR i := 0 TO serN[s] - 1 DO
       v := serX[s * MaxPts + i] ;
@@ -1010,35 +1008,35 @@ BEGIN
       ELSE
         px := PXof (Axis (v, logX), xmin, xmax) ;
         py := PYof (Axis (w, logY), ymin, ymax) ;
-        IF pen THEN DynStr.Append (pool, d, 'L ')
-        ELSE DynStr.Append (pool, d, 'M ') END ;
-        EmitR (pool, d, px) ; DynStr.AppendChar (pool, d, ' ') ;
-        EmitR (pool, d, py) ; DynStr.AppendChar (pool, d, ' ') ;
+        IF pen THEN DynStr.Append (d, 'L ')
+        ELSE DynStr.Append (d, 'M ') END ;
+        EmitR (d, px) ; DynStr.AppendChar (d, ' ') ;
+        EmitR (d, py) ; DynStr.AppendChar (d, ' ') ;
         pen := TRUE
       END
     END ;
-    DynStr.Append (pool, d, '" fill="none" stroke="') ;
-    EmitLineColor (pool, d, s) ;
-    DynStr.Append (pool, d, '" stroke-width="1.8"/>')
+    DynStr.Append (d, '" fill="none" stroke="') ;
+    EmitLineColor (d, s) ;
+    DynStr.Append (d, '" stroke-width="1.8"/>')
   END ;
 
   ly := MTop + 14.0 ;
   FOR s := 0 TO nSer - 1 DO
-    DynStr.Append (pool, d, '<line x1="') ;
-    EmitR (pool, d, FigW - MRight - 150.0) ;
-    DynStr.Append (pool, d, '" y1="') ; EmitR (pool, d, ly - 4.0) ;
-    DynStr.Append (pool, d, '" x2="') ;
-    EmitR (pool, d, FigW - MRight - 126.0) ;
-    DynStr.Append (pool, d, '" y2="') ; EmitR (pool, d, ly - 4.0) ;
-    DynStr.Append (pool, d, '" stroke="') ;
-    EmitLineColor (pool, d, s) ;
-    DynStr.Append (pool, d, '" stroke-width="2"/>') ;
-    DynStr.Append (pool, d, '<text x="') ;
-    EmitR (pool, d, FigW - MRight - 120.0) ;
-    DynStr.Append (pool, d, '" y="') ; EmitR (pool, d, ly) ;
-    DynStr.Append (pool, d, '" font-size="11" fill="#222">') ;
-    DynStr.Append (pool, d, serLbl[s]) ;
-    DynStr.Append (pool, d, '</text>') ;
+    DynStr.Append (d, '<line x1="') ;
+    EmitR (d, FigW - MRight - 150.0) ;
+    DynStr.Append (d, '" y1="') ; EmitR (d, ly - 4.0) ;
+    DynStr.Append (d, '" x2="') ;
+    EmitR (d, FigW - MRight - 126.0) ;
+    DynStr.Append (d, '" y2="') ; EmitR (d, ly - 4.0) ;
+    DynStr.Append (d, '" stroke="') ;
+    EmitLineColor (d, s) ;
+    DynStr.Append (d, '" stroke-width="2"/>') ;
+    DynStr.Append (d, '<text x="') ;
+    EmitR (d, FigW - MRight - 120.0) ;
+    DynStr.Append (d, '" y="') ; EmitR (d, ly) ;
+    DynStr.Append (d, '" font-size="11" fill="#222">') ;
+    DynStr.Append (d, serLbl[s]) ;
+    DynStr.Append (d, '</text>') ;
     ly := ly + 16.0
   END ;
 
@@ -1046,51 +1044,51 @@ BEGIN
      entries: a small rectangle rather than a stroke, because that is
      what the reader is looking for on the chart *)
   FOR s := 0 TO nBar - 1 DO
-    DynStr.Append (pool, d, '<rect x="') ;
-    EmitR (pool, d, FigW - MRight - 150.0) ;
-    DynStr.Append (pool, d, '" y="') ; EmitR (pool, d, ly - 11.0) ;
-    DynStr.Append (pool, d, '" width="24" height="9"') ;
+    DynStr.Append (d, '<rect x="') ;
+    EmitR (d, FigW - MRight - 150.0) ;
+    DynStr.Append (d, '" y="') ; EmitR (d, ly - 11.0) ;
+    DynStr.Append (d, '" width="24" height="9"') ;
     IF barFilled THEN
-      DynStr.Append (pool, d, ' fill="') ;
-      EmitBarColor (pool, d, s) ;
-      DynStr.Append (pool, d, '" stroke="none"/>')
+      DynStr.Append (d, ' fill="') ;
+      EmitBarColor (d, s) ;
+      DynStr.Append (d, '" stroke="none"/>')
     ELSE
-      DynStr.Append (pool, d, ' fill="none" stroke="') ;
-      EmitBarColor (pool, d, s) ;
-      DynStr.Append (pool, d, '" stroke-width="1.6"/>')
+      DynStr.Append (d, ' fill="none" stroke="') ;
+      EmitBarColor (d, s) ;
+      DynStr.Append (d, '" stroke-width="1.6"/>')
     END ;
-    DynStr.Append (pool, d, '<text x="') ;
-    EmitR (pool, d, FigW - MRight - 120.0) ;
-    DynStr.Append (pool, d, '" y="') ; EmitR (pool, d, ly) ;
-    DynStr.Append (pool, d, '" font-size="11" fill="#222">') ;
-    DynStr.Append (pool, d, barLbl[s]) ;
-    DynStr.Append (pool, d, '</text>') ;
+    DynStr.Append (d, '<text x="') ;
+    EmitR (d, FigW - MRight - 120.0) ;
+    DynStr.Append (d, '" y="') ; EmitR (d, ly) ;
+    DynStr.Append (d, '" font-size="11" fill="#222">') ;
+    DynStr.Append (d, barLbl[s]) ;
+    DynStr.Append (d, '</text>') ;
     ly := ly + 16.0
   END ;
 
-  DynStr.Append (pool, d, '<text x="360" y="24" font-size="14" fill="#111" text-anchor="middle">') ;
-  DynStr.Append (pool, d, title) ;
-  DynStr.Append (pool, d, '</text>') ;
-  DynStr.Append (pool, d, '<text x="360" y="') ;
-  EmitR (pool, d, FigH - 14.0) ;
-  DynStr.Append (pool, d, '" font-size="12" fill="#222" text-anchor="middle">') ;
-  DynStr.Append (pool, d, xlabel) ;
-  DynStr.Append (pool, d, '</text>') ;
-  DynStr.Append (pool, d, '<text x="18" y="230" font-size="12" fill="#222" text-anchor="middle" ') ;
-  DynStr.Append (pool, d, 'transform="rotate(-90 18 230)">') ;
-  DynStr.Append (pool, d, ylabel) ;
-  DynStr.Append (pool, d, '</text>') ;
-  DynStr.Append (pool, d, '</svg>') ;
+  DynStr.Append (d, '<text x="360" y="24" font-size="14" fill="#111" text-anchor="middle">') ;
+  DynStr.Append (d, title) ;
+  DynStr.Append (d, '</text>') ;
+  DynStr.Append (d, '<text x="360" y="') ;
+  EmitR (d, FigH - 14.0) ;
+  DynStr.Append (d, '" font-size="12" fill="#222" text-anchor="middle">') ;
+  DynStr.Append (d, xlabel) ;
+  DynStr.Append (d, '</text>') ;
+  DynStr.Append (d, '<text x="18" y="230" font-size="12" fill="#222" text-anchor="middle" ') ;
+  DynStr.Append (d, 'transform="rotate(-90 18 230)">') ;
+  DynStr.Append (d, ylabel) ;
+  DynStr.Append (d, '</text>') ;
+  DynStr.Append (d, '</svg>') ;
   RETURN DynStr.View (d)
 END Render ;
 
-PROCEDURE RenderHeat (VAR pool: POOL ;
-                      RO title: STR ;
+PROCEDURE RenderHeat (RO title: STR ;
                       m: PTR Mat.Matrix ;
                       cmap: Cmap ;
                       symmetric: BOOL) : STR
   RAISES ValueRange =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   r, c, nr, nc, i : I64 ;
   mn, mx, cw, ch, t, v : F64 ;
@@ -1111,61 +1109,61 @@ BEGIN
   ch := (FigH - MTop - MBottom) / F64 (nr) ;
 
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" ') ;
-  DynStr.Append (pool, d, 'font-family="DejaVu Sans, Helvetica, sans-serif">') ;
-  DynStr.Append (pool, d, '<rect width="720" height="440" fill="white"/>') ;
+  DynStr.Append (d, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 440" ') ;
+  DynStr.Append (d, 'font-family="DejaVu Sans, Helvetica, sans-serif">') ;
+  DynStr.Append (d, '<rect width="720" height="440" fill="white"/>') ;
 
   FOR r := 0 TO nr - 1 DO
     FOR c := 0 TO nc - 1 DO
       v := Mat.Get (m, r, c) ;
-      DynStr.Append (pool, d, '<rect x="') ;
-      EmitR (pool, d, MLeft + F64 (c) * cw) ;
-      DynStr.Append (pool, d, '" y="') ;
-      EmitR (pool, d, MTop + F64 (r) * ch) ;
-      DynStr.Append (pool, d, '" width="') ;
-      EmitR (pool, d, cw + 0.5) ;
-      DynStr.Append (pool, d, '" height="') ;
-      EmitR (pool, d, ch + 0.5) ;
-      DynStr.Append (pool, d, '" fill="') ;
+      DynStr.Append (d, '<rect x="') ;
+      EmitR (d, MLeft + F64 (c) * cw) ;
+      DynStr.Append (d, '" y="') ;
+      EmitR (d, MTop + F64 (r) * ch) ;
+      DynStr.Append (d, '" width="') ;
+      EmitR (d, cw + 0.5) ;
+      DynStr.Append (d, '" height="') ;
+      EmitR (d, ch + 0.5) ;
+      DynStr.Append (d, '" fill="') ;
       IF NOT (v = v) THEN
-        DynStr.Append (pool, d, '#ffffff')
+        DynStr.Append (d, '#ffffff')
       ELSE
-        EmitCmap (pool, d, cmap, (v - mn) / (mx - mn))
+        EmitCmap (d, cmap, (v - mn) / (mx - mn))
       END ;
-      DynStr.Append (pool, d, '"/>')
+      DynStr.Append (d, '"/>')
     END
   END ;
 
   FOR i := 0 TO 99 DO
     t := F64 (i) / 99.0 ;
-    DynStr.Append (pool, d, '<rect x="') ;
-    EmitR (pool, d, FigW - MRight - 38.0) ;
-    DynStr.Append (pool, d, '" y="') ;
-    EmitR (pool, d, MTop + t * (FigH - MTop - MBottom - 3.4)) ;
-    DynStr.Append (pool, d, '" width="16" height="') ;
-    EmitR (pool, d, (FigH - MTop - MBottom) / 100.0 + 0.5) ;
-    DynStr.Append (pool, d, '" fill="') ;
-    EmitCmap (pool, d, cmap, 1.0 - t) ;
-    DynStr.Append (pool, d, '"/>')
+    DynStr.Append (d, '<rect x="') ;
+    EmitR (d, FigW - MRight - 38.0) ;
+    DynStr.Append (d, '" y="') ;
+    EmitR (d, MTop + t * (FigH - MTop - MBottom - 3.4)) ;
+    DynStr.Append (d, '" width="16" height="') ;
+    EmitR (d, (FigH - MTop - MBottom) / 100.0 + 0.5) ;
+    DynStr.Append (d, '" fill="') ;
+    EmitCmap (d, cmap, 1.0 - t) ;
+    DynStr.Append (d, '"/>')
   END ;
-  DynStr.Append (pool, d, '<text x="') ;
-  EmitR (pool, d, FigW - MRight - 30.0) ;
-  DynStr.Append (pool, d, '" y="') ; EmitR (pool, d, MTop - 6.0) ;
-  DynStr.Append (pool, d, '" font-size="10" fill="#333" text-anchor="middle">') ;
-  EmitR (pool, d, mx) ;
-  DynStr.Append (pool, d, '</text>') ;
-  DynStr.Append (pool, d, '<text x="') ;
-  EmitR (pool, d, FigW - MRight - 30.0) ;
-  DynStr.Append (pool, d, '" y="') ;
-  EmitR (pool, d, FigH - MBottom + 14.0) ;
-  DynStr.Append (pool, d, '" font-size="10" fill="#333" text-anchor="middle">') ;
-  EmitR (pool, d, mn) ;
-  DynStr.Append (pool, d, '</text>') ;
+  DynStr.Append (d, '<text x="') ;
+  EmitR (d, FigW - MRight - 30.0) ;
+  DynStr.Append (d, '" y="') ; EmitR (d, MTop - 6.0) ;
+  DynStr.Append (d, '" font-size="10" fill="#333" text-anchor="middle">') ;
+  EmitR (d, mx) ;
+  DynStr.Append (d, '</text>') ;
+  DynStr.Append (d, '<text x="') ;
+  EmitR (d, FigW - MRight - 30.0) ;
+  DynStr.Append (d, '" y="') ;
+  EmitR (d, FigH - MBottom + 14.0) ;
+  DynStr.Append (d, '" font-size="10" fill="#333" text-anchor="middle">') ;
+  EmitR (d, mn) ;
+  DynStr.Append (d, '</text>') ;
 
-  DynStr.Append (pool, d, '<text x="360" y="24" font-size="14" fill="#111" text-anchor="middle">') ;
-  DynStr.Append (pool, d, title) ;
-  DynStr.Append (pool, d, '</text>') ;
-  DynStr.Append (pool, d, '</svg>') ;
+  DynStr.Append (d, '<text x="360" y="24" font-size="14" fill="#111" text-anchor="middle">') ;
+  DynStr.Append (d, title) ;
+  DynStr.Append (d, '</text>') ;
+  DynStr.Append (d, '</svg>') ;
   RETURN DynStr.View (d)
 END RenderHeat ;
 

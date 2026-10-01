@@ -165,7 +165,7 @@ cannot run off the buffer.
 
 _(undocumented)_
 
-### ReadStdin (VAR pool: POOL ; cap: I64) : SLICE OF BYTE
+### ReadStdin (cap: I64) : SLICE OF BYTE
 
 one read(2) from standard input: up to cap bytes, and an EMPTY
 slice at end of input.  The whole-file rule above is for files;

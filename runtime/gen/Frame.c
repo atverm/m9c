@@ -147,6 +147,8 @@ struct Frame_Ts {
   m9_sl_CHAR descr;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[4] = { 116u, 114u, 117u, 101u };
 static const uint32_t m9s1[5] = { 102u, 97u, 108u, 115u, 101u };
 static const uint32_t m9s2[5] = { 115u, 116u, 97u, 114u, 116u };
@@ -208,35 +210,35 @@ static const uint32_t m9s57[5] = { 43u, 48u, 48u, 48u, 48u };
 static const uint32_t m9s58[5] = { 48u, 48u, 58u, 48u, 48u };
 
 static int64_t Frame_MissI (m9_state *err);
-static void Frame_Grow (m9_pool *pool, Frame_Fr * *f, m9_state *err);
-static void Frame_Admit (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, int64_t n, m9_state *err);
+static void Frame_Grow (Frame_Fr * *f, m9_pool *f_pool, m9_state *err);
+static void Frame_Admit (Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, int64_t n, m9_state *err);
 static Frame_Col Frame_Blank (m9_pool *pool, m9_sl_CHAR name, m9_state *err);
 static m9_sl_CHAR Frame_Copy (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
 static bool Frame_IsNaN64 (double v, m9_state *err);
 static bool Frame_IsNaN32 (float v, m9_state *err);
-static void Frame_PutF64 (m9_pool *pool, DynStr_DString * *d, double v, double miss, m9_state *err);
-static void Frame_PutF32 (m9_pool *pool, DynStr_DString * *d, float v, float miss, m9_state *err);
-static void Frame_PutStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err);
+static void Frame_PutF64 (DynStr_DString * *d, m9_pool *d_pool, double v, double miss, m9_state *err);
+static void Frame_PutF32 (DynStr_DString * *d, m9_pool *d_pool, float v, float miss, m9_state *err);
+static void Frame_PutStr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err);
 static int64_t Frame_FloorDiv (int64_t a, int64_t b, m9_state *err);
 static int64_t Frame_StartOf (Frame_Ts * ts, int64_t t, m9_state *err);
 static int64_t Frame_LabelOf (Frame_Conv conv, int64_t start, int64_t res, m9_state *err);
-static void Frame_Reduce (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Col c, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
-static void Frame_Carry (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_state *err);
-static void Frame_ReduceF64 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_F64 v, double miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
-static void Frame_ReduceF32 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_F32 v, float miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
-static void Frame_ReduceI64 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_I64 v, int64_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
-static void Frame_ReduceI32 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_I32 v, int32_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
-static void Frame_ReduceI16 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_I16 v, int16_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
-static void Frame_ReduceBytes (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_BYTE v, uint8_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
-static void Frame_ReduceBools (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_BOOL v, Frame_How h, m9_sl_I64 win, int64_t nwin, m9_state *err);
-static void Frame_ReduceStrs (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_m9_sl_CHAR v, Frame_How h, m9_sl_I64 win, int64_t nwin, m9_state *err);
-static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Col c, m9_sl_I64 at, int64_t total, m9_state *err);
+static void Frame_Reduce (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
+static void Frame_Carry (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_state *err);
+static void Frame_ReduceF64 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_F64 v, double miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
+static void Frame_ReduceF32 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_F32 v, float miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
+static void Frame_ReduceI64 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_I64 v, int64_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
+static void Frame_ReduceI32 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_I32 v, int32_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
+static void Frame_ReduceI16 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_I16 v, int16_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
+static void Frame_ReduceBytes (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_BYTE v, uint8_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err);
+static void Frame_ReduceBools (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_BOOL v, Frame_How h, m9_sl_I64 win, int64_t nwin, m9_state *err);
+static void Frame_ReduceStrs (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_m9_sl_CHAR v, Frame_How h, m9_sl_I64 win, int64_t nwin, m9_state *err);
+static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_I64 at, int64_t total, m9_state *err);
 static void Frame_NcMeta (NetCDF_File * f, int64_t vid, Frame_Col c, m9_state *err);
 static void Frame_DefCols (m9_pool *pool, Frame_Fr * src, NetCDF_File * nc, int64_t did, m9_sl_I64 vids, m9_state *err);
 static void Frame_PutCols (m9_pool *pool, Frame_Fr * src, NetCDF_File * nc, m9_sl_I64 vids, m9_state *err);
-static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64_t vid, int64_t n, m9_sl_CHAR name, m9_state *err);
-static void Frame_SetMeta2 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_CHAR long_, m9_sl_CHAR cf, m9_sl_CHAR unit, m9_state *err);
-static void Frame_ParseSince (m9_pool *pool, m9_sl_CHAR units, int64_t *mult, int64_t *base, m9_state *err);
+static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, NetCDF_File * nc, int64_t vid, int64_t n, m9_sl_CHAR name, m9_state *err);
+static void Frame_SetMeta2 (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_CHAR long_, m9_sl_CHAR cf, m9_sl_CHAR unit, m9_state *err);
+static void Frame_ParseSince (m9_sl_CHAR units, int64_t *mult, int64_t *base, m9_state *err);
 static bool Frame_Starts (m9_sl_CHAR s, m9_sl_CHAR p, m9_state *err);
 static int64_t Frame_Num (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err);
 
@@ -246,7 +248,7 @@ Frame_Fr * Frame_New (m9_pool *pool, int64_t rows, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Fr * m9ret = NULL;
   Frame_Fr * f = NULL; (void) f;
   if ((rows < INT64_C(0))) {
@@ -269,18 +271,19 @@ Frame_Fr * Frame_New (m9_pool *pool, int64_t rows, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Frame_AddF64 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_F64 v, double miss, m9_state *err)
+void Frame_AddF64 (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_F64 v, double miss, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   Frame_Col c = {0}; (void) c;
-  Frame_Admit (pool, f, name, (v).len, err);
+  Frame_Admit (f, f_pool, name, (v).len, err);
   if (err->exc) goto L_ret;
   c = Frame_Blank (pool, name, err);
   if (err->exc) goto L_ret;
@@ -291,18 +294,19 @@ void Frame_AddF64 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_F64 v, d
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Frame_AddF32 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_F32 v, float miss, m9_state *err)
+void Frame_AddF32 (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_F32 v, float miss, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   Frame_Col c = {0}; (void) c;
-  Frame_Admit (pool, f, name, (v).len, err);
+  Frame_Admit (f, f_pool, name, (v).len, err);
   if (err->exc) goto L_ret;
   c = Frame_Blank (pool, name, err);
   if (err->exc) goto L_ret;
@@ -313,18 +317,19 @@ void Frame_AddF32 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_F32 v, f
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Frame_AddI64 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_I64 v, int64_t miss, m9_state *err)
+void Frame_AddI64 (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_I64 v, int64_t miss, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   Frame_Col c = {0}; (void) c;
-  Frame_Admit (pool, f, name, (v).len, err);
+  Frame_Admit (f, f_pool, name, (v).len, err);
   if (err->exc) goto L_ret;
   c = Frame_Blank (pool, name, err);
   if (err->exc) goto L_ret;
@@ -335,18 +340,19 @@ void Frame_AddI64 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_I64 v, i
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Frame_AddI32 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_I32 v, int32_t miss, m9_state *err)
+void Frame_AddI32 (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_I32 v, int32_t miss, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   Frame_Col c = {0}; (void) c;
-  Frame_Admit (pool, f, name, (v).len, err);
+  Frame_Admit (f, f_pool, name, (v).len, err);
   if (err->exc) goto L_ret;
   c = Frame_Blank (pool, name, err);
   if (err->exc) goto L_ret;
@@ -357,18 +363,19 @@ void Frame_AddI32 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_I32 v, i
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Frame_AddI16 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_I16 v, int16_t miss, m9_state *err)
+void Frame_AddI16 (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_I16 v, int16_t miss, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   Frame_Col c = {0}; (void) c;
-  Frame_Admit (pool, f, name, (v).len, err);
+  Frame_Admit (f, f_pool, name, (v).len, err);
   if (err->exc) goto L_ret;
   c = Frame_Blank (pool, name, err);
   if (err->exc) goto L_ret;
@@ -379,18 +386,19 @@ void Frame_AddI16 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_I16 v, i
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Frame_AddBytes (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_BYTE v, uint8_t miss, m9_state *err)
+void Frame_AddBytes (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_BYTE v, uint8_t miss, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   Frame_Col c = {0}; (void) c;
-  Frame_Admit (pool, f, name, (v).len, err);
+  Frame_Admit (f, f_pool, name, (v).len, err);
   if (err->exc) goto L_ret;
   c = Frame_Blank (pool, name, err);
   if (err->exc) goto L_ret;
@@ -401,18 +409,19 @@ void Frame_AddBytes (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_BYTE v
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Frame_AddBools (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_BOOL v, m9_state *err)
+void Frame_AddBools (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_BOOL v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   Frame_Col c = {0}; (void) c;
-  Frame_Admit (pool, f, name, (v).len, err);
+  Frame_Admit (f, f_pool, name, (v).len, err);
   if (err->exc) goto L_ret;
   c = Frame_Blank (pool, name, err);
   if (err->exc) goto L_ret;
@@ -423,11 +432,12 @@ void Frame_AddBools (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_BOOL v
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Frame_AddStrs (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_m9_sl_CHAR v, m9_state *err)
+void Frame_AddStrs (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_m9_sl_CHAR v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -436,7 +446,7 @@ void Frame_AddStrs (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_m9_sl_C
   Frame_Col c = {0}; (void) c;
   m9_sl_Frame_StrTab bigger = {0}; (void) bigger;
   int64_t i = 0; (void) i;
-  Frame_Admit (pool, f, name, (v).len, err);
+  Frame_Admit (f, f_pool, name, (v).len, err);
   if (err->exc) goto L_ret;
   if (((*f)->nstr >= ((*f)->strs).len)) {
     bigger = M9_POOL_SL (m9_sl_Frame_StrTab, Frame_StrTab, &((*pool)), m9_mul_i64 (INT64_C(2), ((*f)->strs).len, err), err);
@@ -464,11 +474,12 @@ void Frame_AddStrs (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_m9_sl_C
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Frame_SetMeta (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_CHAR long_, m9_sl_CHAR cf, m9_sl_CHAR unit, m9_state *err)
+void Frame_SetMeta (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_CHAR long_, m9_sl_CHAR cf, m9_sl_CHAR unit, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -496,6 +507,7 @@ void Frame_SetMeta (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_CHAR lo
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
@@ -590,7 +602,7 @@ Frame_Col Frame_GetCol (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Col m9ret = {0};
   int64_t i = 0; (void) i;
   i = Frame_Find (f, name, err);
@@ -606,6 +618,17 @@ Frame_Col Frame_GetCol (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.name.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.long_.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.cf.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.unit.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.F64s.v64.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.F32s.v32.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.I64s.vi64.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.I32s.vi32.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.I16s.vi16.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.Bytes.vb.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.Bools.vbo.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -615,7 +638,7 @@ m9_sl_F64 Frame_ColF64 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_F64 m9ret = {0};
   Frame_Col c = {0}; (void) c;
   c = Frame_GetCol (f, name, err);
@@ -675,6 +698,7 @@ m9_sl_F64 Frame_ColF64 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -684,7 +708,7 @@ m9_sl_F32 Frame_ColF32 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_F32 m9ret = {0};
   Frame_Col c = {0}; (void) c;
   c = Frame_GetCol (f, name, err);
@@ -744,6 +768,7 @@ m9_sl_F32 Frame_ColF32 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -753,7 +778,7 @@ m9_sl_I64 Frame_ColI64 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_I64 m9ret = {0};
   Frame_Col c = {0}; (void) c;
   c = Frame_GetCol (f, name, err);
@@ -813,6 +838,7 @@ m9_sl_I64 Frame_ColI64 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -822,7 +848,7 @@ m9_sl_m9_sl_CHAR Frame_ColStrs (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_m9_sl_CHAR m9ret = {0};
   Frame_Col c = {0}; (void) c;
   c = Frame_GetCol (f, name, err);
@@ -882,6 +908,7 @@ m9_sl_m9_sl_CHAR Frame_ColStrs (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -891,7 +918,7 @@ m9_sl_BOOL Frame_ColBools (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_BOOL m9ret = {0};
   Frame_Col c = {0}; (void) c;
   c = Frame_GetCol (f, name, err);
@@ -950,6 +977,7 @@ m9_sl_BOOL Frame_ColBools (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -959,7 +987,7 @@ Frame_Fr * Frame_FromCsv (m9_pool *pool, Csv_Table * t, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Fr * m9ret = NULL;
   Frame_Fr * f = NULL; (void) f;
   int64_t c = 0; (void) c;
@@ -981,12 +1009,12 @@ Frame_Fr * Frame_FromCsv (m9_pool *pool, Csv_Table * t, m9_state *err)
     switch (m9t2.tag) {
     case Csv_Kind_Real:
     {
-      Frame_AddF32 (pool, &(f), Csv_Name (pool, t, c, err), Csv_ColF32 (t, c, err), (0.0f / 0.0f), err);
+      Frame_AddF32 (pool, &(f), &((*pool)), Csv_Name (pool, t, c, err), Csv_ColF32 (t, c, err), (0.0f / 0.0f), err);
       if (err->exc) goto L_ret;
     } break;
     case Csv_Kind_Int:
     {
-      Frame_AddI64 (pool, &(f), Csv_Name (pool, t, c, err), Csv_ColI64 (t, c, err), Frame_MissI (err), err);
+      Frame_AddI64 (pool, &(f), &((*pool)), Csv_Name (pool, t, c, err), Csv_ColI64 (t, c, err), Frame_MissI (err), err);
       if (err->exc) goto L_ret;
     } break;
     case Csv_Kind_Stamp:
@@ -1003,7 +1031,7 @@ Frame_Fr * Frame_FromCsv (m9_pool *pool, Csv_Table * t, m9_state *err)
         (*(int64_t *) m9_at (epoch.p, r, epoch.len, sizeof (int64_t), err)) = m9_i64_f64 ((double)(Math_Floor (((*(Time_Instant *) m9_at (stamps.p, r, stamps.len, sizeof (Time_Instant), err)).t + 0.5), err)), err);
         if (err->exc) goto L_ret;
       } }
-      Frame_AddI64 (pool, &(f), Csv_Name (pool, t, c, err), epoch, Frame_MissI (err), err);
+      Frame_AddI64 (pool, &(f), &((*pool)), Csv_Name (pool, t, c, err), epoch, Frame_MissI (err), err);
       if (err->exc) goto L_ret;
     } break;
     case Csv_Kind_Text:
@@ -1018,7 +1046,7 @@ Frame_Fr * Frame_FromCsv (m9_pool *pool, Csv_Table * t, m9_state *err)
         (*(m9_sl_CHAR *) m9_at (texts.p, r, texts.len, sizeof (m9_sl_CHAR), err)) = Csv_TextAt (pool, t, c, r, err);
         if (err->exc) goto L_ret;
       } }
-      Frame_AddStrs (pool, &(f), Csv_Name (pool, t, c, err), texts, err);
+      Frame_AddStrs (pool, &(f), &((*pool)), Csv_Name (pool, t, c, err), texts, err);
       if (err->exc) goto L_ret;
     } break;
     case Csv_Kind_Skip:
@@ -1035,20 +1063,22 @@ Frame_Fr * Frame_FromCsv (m9_pool *pool, Csv_Table * t, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err)
+void Frame_WriteCsv (Frame_Fr * f, m9_sl_CHAR path, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   int64_t c = 0; (void) c;
   int64_t r = 0; (void) r;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   c = INT64_C(0);
@@ -1056,13 +1086,13 @@ void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err
   if (err->exc) goto L_ret;
   for (; c <= m9t1to; c += 1) {
     if ((c > INT64_C(0))) {
-      DynStr_AppendChar (pool, &(d), 44u, err);
+      DynStr_AppendChar (&(d), &(pool), 44u, err);
       if (err->exc) goto L_ret;
     }
-    Frame_PutStr (pool, &(d), (*(Frame_Col *) m9_at (f->cols.p, c, f->cols.len, sizeof (Frame_Col), err)).name, err);
+    Frame_PutStr (&(d), &(pool), (*(Frame_Col *) m9_at (f->cols.p, c, f->cols.len, sizeof (Frame_Col), err)).name, err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_AppendChar (pool, &(d), 10u, err);
+  DynStr_AppendChar (&(d), &(pool), 10u, err);
   if (err->exc) goto L_ret;
   { int64_t m9t2to;
   r = INT64_C(0);
@@ -1075,7 +1105,7 @@ void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err
     if (err->exc) goto L_ret;
     for (; c <= m9t3to; c += 1) {
       if ((c > INT64_C(0))) {
-        DynStr_AppendChar (pool, &(d), 44u, err);
+        DynStr_AppendChar (&(d), &(pool), 44u, err);
         if (err->exc) goto L_ret;
       }
       { __typeof__((*(Frame_Col *) m9_at (f->cols.p, c, f->cols.len, sizeof (Frame_Col), err)).data) m9t4 = (*(Frame_Col *) m9_at (f->cols.p, c, f->cols.len, sizeof (Frame_Col), err)).data;
@@ -1084,13 +1114,13 @@ void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err
       case Frame_Data_F64s: {
         m9_sl_F64 v = m9t4.u.F64s.v64; (void) v;
         double m = m9t4.u.F64s.m64; (void) m;
-        Frame_PutF64 (pool, &(d), (*(double *) m9_at (v.p, r, v.len, sizeof (double), err)), m, err);
+        Frame_PutF64 (&(d), &(pool), (*(double *) m9_at (v.p, r, v.len, sizeof (double), err)), m, err);
         if (err->exc) goto L_ret;
       } break;
       case Frame_Data_F32s: {
         m9_sl_F32 v = m9t4.u.F32s.v32; (void) v;
         float m = m9t4.u.F32s.m32; (void) m;
-        Frame_PutF32 (pool, &(d), (*(float *) m9_at (v.p, r, v.len, sizeof (float), err)), m, err);
+        Frame_PutF32 (&(d), &(pool), (*(float *) m9_at (v.p, r, v.len, sizeof (float), err)), m, err);
         if (err->exc) goto L_ret;
       } break;
       case Frame_Data_I64s: {
@@ -1099,7 +1129,7 @@ void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err
         bool m9t5 = ((*(int64_t *) m9_at (v.p, r, v.len, sizeof (int64_t), err)) != m);
         if (err->exc) goto L_ret;
         if (m9t5) {
-          DynStr_AppendI64 (pool, &(d), (*(int64_t *) m9_at (v.p, r, v.len, sizeof (int64_t), err)), err);
+          DynStr_AppendI64 (&(d), &(pool), (*(int64_t *) m9_at (v.p, r, v.len, sizeof (int64_t), err)), err);
           if (err->exc) goto L_ret;
         }
       } break;
@@ -1109,7 +1139,7 @@ void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err
         bool m9t6 = ((*(int32_t *) m9_at (v.p, r, v.len, sizeof (int32_t), err)) != m);
         if (err->exc) goto L_ret;
         if (m9t6) {
-          DynStr_AppendI64 (pool, &(d), (int64_t)((*(int32_t *) m9_at (v.p, r, v.len, sizeof (int32_t), err))), err);
+          DynStr_AppendI64 (&(d), &(pool), (int64_t)((*(int32_t *) m9_at (v.p, r, v.len, sizeof (int32_t), err))), err);
           if (err->exc) goto L_ret;
         }
       } break;
@@ -1119,7 +1149,7 @@ void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err
         bool m9t7 = ((*(int16_t *) m9_at (v.p, r, v.len, sizeof (int16_t), err)) != m);
         if (err->exc) goto L_ret;
         if (m9t7) {
-          DynStr_AppendI64 (pool, &(d), (int64_t)((*(int16_t *) m9_at (v.p, r, v.len, sizeof (int16_t), err))), err);
+          DynStr_AppendI64 (&(d), &(pool), (int64_t)((*(int16_t *) m9_at (v.p, r, v.len, sizeof (int16_t), err))), err);
           if (err->exc) goto L_ret;
         }
       } break;
@@ -1129,7 +1159,7 @@ void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err
         bool m9t8 = ((*(uint8_t *) m9_at (v.p, r, v.len, sizeof (uint8_t), err)) != m);
         if (err->exc) goto L_ret;
         if (m9t8) {
-          DynStr_AppendI64 (pool, &(d), (int64_t)((*(uint8_t *) m9_at (v.p, r, v.len, sizeof (uint8_t), err))), err);
+          DynStr_AppendI64 (&(d), &(pool), (int64_t)((*(uint8_t *) m9_at (v.p, r, v.len, sizeof (uint8_t), err))), err);
           if (err->exc) goto L_ret;
         }
       } break;
@@ -1138,22 +1168,22 @@ void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err
         bool m9t9 = (*(bool *) m9_at (v.p, r, v.len, sizeof (bool), err));
         if (err->exc) goto L_ret;
         if (m9t9) {
-          DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s0, 4 }), err);
+          DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s0, 4 }), err);
           if (err->exc) goto L_ret;
         } else {
-          DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s1, 5 }), err);
+          DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s1, 5 }), err);
           if (err->exc) goto L_ret;
         }
       } break;
       case Frame_Data_Strs: {
         int64_t si = m9t4.u.Strs.si; (void) si;
-        Frame_PutStr (pool, &(d), (*(m9_sl_CHAR *) m9_at ((*(Frame_StrTab *) m9_at (f->strs.p, si, f->strs.len, sizeof (Frame_StrTab), err)).v.p, r, (*(Frame_StrTab *) m9_at (f->strs.p, si, f->strs.len, sizeof (Frame_StrTab), err)).v.len, sizeof (m9_sl_CHAR), err)), err);
+        Frame_PutStr (&(d), &(pool), (*(m9_sl_CHAR *) m9_at ((*(Frame_StrTab *) m9_at (f->strs.p, si, f->strs.len, sizeof (Frame_StrTab), err)).v.p, r, (*(Frame_StrTab *) m9_at (f->strs.p, si, f->strs.len, sizeof (Frame_StrTab), err)).v.len, sizeof (m9_sl_CHAR), err)), err);
         if (err->exc) goto L_ret;
       } break;
       default: m9_trap_tag ();
       } }
     } }
-    DynStr_AppendChar (pool, &(d), 10u, err);
+    DynStr_AppendChar (&(d), &(pool), 10u, err);
     if (err->exc) goto L_ret;
   } }
   Io_WriteFile (path, DynStr_View (d, err), err);
@@ -1161,6 +1191,7 @@ void Frame_WriteCsv (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return;
 }
 
@@ -1237,7 +1268,7 @@ m9_sl_I32 Frame_ColI32 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_I32 m9ret = {0};
   Frame_Col c = {0}; (void) c;
   c = Frame_GetCol (f, name, err);
@@ -1297,6 +1328,7 @@ m9_sl_I32 Frame_ColI32 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1306,7 +1338,7 @@ m9_sl_I16 Frame_ColI16 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_I16 m9ret = {0};
   Frame_Col c = {0}; (void) c;
   c = Frame_GetCol (f, name, err);
@@ -1366,6 +1398,7 @@ m9_sl_I16 Frame_ColI16 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1375,7 +1408,7 @@ m9_sl_BYTE Frame_ColBytes (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_BYTE m9ret = {0};
   Frame_Col c = {0}; (void) c;
   c = Frame_GetCol (f, name, err);
@@ -1435,6 +1468,7 @@ m9_sl_BYTE Frame_ColBytes (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1910,7 +1944,7 @@ void Frame_WriteNc (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_sl_CHAR dim
   if (err->exc) goto L_ret;
   Frame_PutCols (pool, f, nc, vids, err);
   if (err->exc) goto L_ret;
-  NetCDF_Close (&(nc), err);
+  NetCDF_Close (&(nc), &((*pool)), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -2027,7 +2061,7 @@ void Frame_WriteTsNc (m9_pool *pool, Frame_Ts * ts, m9_sl_CHAR path, m9_state *e
   if (err->exc) goto L_ret;
   Frame_PutCols (pool, ts->f, nc, vids, err);
   if (err->exc) goto L_ret;
-  NetCDF_Close (&(nc), err);
+  NetCDF_Close (&(nc), &((*pool)), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -2040,7 +2074,7 @@ Frame_Fr * Frame_FromNc (m9_pool *pool, m9_sl_CHAR path, m9_sl_CHAR dim, m9_stat
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Fr * m9ret = NULL;
   NetCDF_File * nc = NULL; (void) nc;
   Frame_Fr * f = NULL; (void) f;
@@ -2067,22 +2101,23 @@ Frame_Fr * Frame_FromNc (m9_pool *pool, m9_sl_CHAR path, m9_sl_CHAR dim, m9_stat
   for (; vid <= m9t1to; vid += 1) {
     rank = NetCDF_VarRank (nc, vid, err);
     if (err->exc) goto L_ret;
-    vdims = NetCDF_VarDims (pool, nc, vid, err);
+    vdims = NetCDF_VarDims (nc, vid, err);
     if (err->exc) goto L_ret;
     bool m9t2 = (((rank >= INT64_C(1)) && ((*(int64_t *) m9_at (vdims.p, INT64_C(0), vdims.len, sizeof (int64_t), err)) == did)) && (((rank == INT64_C(1)) || (((rank == INT64_C(2)) && (NetCDF_VarType (nc, vid, err) == NetCDF_TypeChar))))));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Frame_ReadCol (pool, &(f), nc, vid, n, NetCDF_VarName (pool, nc, vid, err), err);
+      Frame_ReadCol (pool, &(f), &((*pool)), nc, vid, n, NetCDF_VarName (pool, nc, vid, err), err);
       if (err->exc) goto L_ret;
     }
   } }
-  NetCDF_Close (&(nc), err);
+  NetCDF_Close (&(nc), &((*pool)), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = f;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2092,7 +2127,7 @@ Frame_Ts * Frame_TsFromNc (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Ts * m9ret = NULL;
   NetCDF_File * nc = NULL; (void) nc;
   Frame_Fr * f = NULL; (void) f;
@@ -2124,7 +2159,7 @@ Frame_Ts * Frame_TsFromNc (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   if (err->exc) goto L_ret;
   tvid = NetCDF_VarId (nc, ((m9_sl_CHAR){ (uint32_t *) m9s21, 4 }), err);
   if (err->exc) goto L_ret;
-  Frame_ParseSince (pool, NetCDF_GetAttStr (pool, nc, tvid, ((m9_sl_CHAR){ (uint32_t *) m9s22, 5 }), err), &(mult), &(base), err);
+  Frame_ParseSince (NetCDF_GetAttStr (pool, nc, tvid, ((m9_sl_CHAR){ (uint32_t *) m9s22, 5 }), err), &(mult), &(base), err);
   if (err->exc) goto L_ret;
   st = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), INT64_C(1), err);
   if (err->exc) goto L_ret;
@@ -2182,14 +2217,14 @@ Frame_Ts * Frame_TsFromNc (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   for (; vid <= m9t5to; vid += 1) {
     rank = NetCDF_VarRank (nc, vid, err);
     if (err->exc) goto L_ret;
-    vdims = NetCDF_VarDims (pool, nc, vid, err);
+    vdims = NetCDF_VarDims (nc, vid, err);
     if (err->exc) goto L_ret;
     nm = NetCDF_VarName (pool, nc, vid, err);
     if (err->exc) goto L_ret;
     bool m9t6 = (((((vid != tvid) && (!DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s23, 9 }), err))) && (rank >= INT64_C(1))) && ((*(int64_t *) m9_at (vdims.p, INT64_C(0), vdims.len, sizeof (int64_t), err)) == did)) && (((rank == INT64_C(1)) || (((rank == INT64_C(2)) && (NetCDF_VarType (nc, vid, err) == NetCDF_TypeChar))))));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      Frame_ReadCol (pool, &(f), nc, vid, n, nm, err);
+      Frame_ReadCol (pool, &(f), &((*pool)), nc, vid, n, nm, err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -2239,7 +2274,7 @@ Frame_Ts * Frame_TsFromNc (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     cn = NetCDF_GetAttStr (pool, nc, NetCDF_Global, ((m9_sl_CHAR){ (uint32_t *) m9s31, 11 }), err);
     if (err->exc) goto L_ret;
   }
-  NetCDF_Close (&(nc), err);
+  NetCDF_Close (&(nc), &((*pool)), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = Frame_NewTs (pool, f, tsec, res, conv, cn, err);
@@ -2247,6 +2282,7 @@ Frame_Ts * Frame_TsFromNc (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2256,7 +2292,7 @@ Frame_Ts * Frame_NewTs (m9_pool *pool, Frame_Fr * f, m9_sl_I64 time, int64_t res
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Ts * m9ret = NULL;
   Frame_Ts * ts = NULL; (void) ts;
   int64_t i = 0; (void) i;
@@ -2304,6 +2340,7 @@ Frame_Ts * Frame_NewTs (m9_pool *pool, Frame_Fr * f, m9_sl_I64 time, int64_t res
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2313,13 +2350,14 @@ Frame_Fr * Frame_TsFrame (Frame_Ts * ts, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Fr * m9ret = NULL;
   err->res = m9res;
   m9ret = ts->f;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2329,13 +2367,14 @@ m9_sl_I64 Frame_TsTime (Frame_Ts * ts, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_I64 m9ret = {0};
   err->res = m9res;
   m9ret = ts->time;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2538,7 +2577,7 @@ Frame_Ts * Frame_Average (m9_pool *pool, Frame_Ts * ts, int64_t toRes, m9_sl_Fra
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Ts * m9ret = NULL;
   Frame_Fr * out = NULL; (void) out;
   Frame_Ts * result = NULL; (void) result;
@@ -2605,7 +2644,7 @@ Frame_Ts * Frame_Average (m9_pool *pool, Frame_Ts * ts, int64_t toRes, m9_sl_Fra
   m9t5to = m9_sub_i64 (ts->f->ncols, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; c <= m9t5to; c += 1) {
-    Frame_Reduce (pool, ts->f, &(out), (*(Frame_Col *) m9_at (ts->f->cols.p, c, ts->f->cols.len, sizeof (Frame_Col), err)), (*(Frame_How *) m9_at (how.p, c, how.len, sizeof (Frame_How), err)), win, nwin, minCount, err);
+    Frame_Reduce (pool, ts->f, &(out), &((*pool)), (*(Frame_Col *) m9_at (ts->f->cols.p, c, ts->f->cols.len, sizeof (Frame_Col), err)), (*(Frame_How *) m9_at (how.p, c, how.len, sizeof (Frame_How), err)), win, nwin, minCount, err);
     if (err->exc) goto L_ret;
   } }
   result = (Frame_Ts *) m9_pool_alloc (&((*pool)), sizeof (Frame_Ts), 1, err);
@@ -2620,6 +2659,7 @@ Frame_Ts * Frame_Average (m9_pool *pool, Frame_Ts * ts, int64_t toRes, m9_sl_Fra
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2629,7 +2669,7 @@ Frame_Ts * Frame_MakeContiguous (m9_pool *pool, Frame_Ts * ts, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Ts * m9ret = NULL;
   Frame_Fr * out = NULL; (void) out;
   Frame_Ts * result = NULL; (void) result;
@@ -2677,7 +2717,7 @@ Frame_Ts * Frame_MakeContiguous (m9_pool *pool, Frame_Ts * ts, m9_state *err)
   m9t4to = m9_sub_i64 (ts->f->ncols, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; c <= m9t4to; c += 1) {
-    Frame_Fill (pool, ts->f, &(out), (*(Frame_Col *) m9_at (ts->f->cols.p, c, ts->f->cols.len, sizeof (Frame_Col), err)), at, total, err);
+    Frame_Fill (pool, ts->f, &(out), &((*pool)), (*(Frame_Col *) m9_at (ts->f->cols.p, c, ts->f->cols.len, sizeof (Frame_Col), err)), at, total, err);
     if (err->exc) goto L_ret;
   } }
   result = (Frame_Ts *) m9_pool_alloc (&((*pool)), sizeof (Frame_Ts), 1, err);
@@ -2692,6 +2732,7 @@ Frame_Ts * Frame_MakeContiguous (m9_pool *pool, Frame_Ts * ts, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2713,7 +2754,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Frame_Grow (m9_pool *pool, Frame_Fr * *f, m9_state *err)
+static void Frame_Grow (Frame_Fr * *f, m9_pool *f_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2724,7 +2765,7 @@ static void Frame_Grow (m9_pool *pool, Frame_Fr * *f, m9_state *err)
   if (((*f)->ncols < ((*f)->cols).len)) {
     goto L_ret;
   }
-  bigger = M9_POOL_SL (m9_sl_Frame_Col, Frame_Col, &((*pool)), m9_mul_i64 (INT64_C(2), ((*f)->cols).len, err), err);
+  bigger = M9_POOL_SL (m9_sl_Frame_Col, Frame_Col, f_pool, m9_mul_i64 (INT64_C(2), ((*f)->cols).len, err), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -2737,11 +2778,12 @@ static void Frame_Grow (m9_pool *pool, Frame_Fr * *f, m9_state *err)
   (*f)->cols = bigger;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_Admit (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, int64_t n, m9_state *err)
+static void Frame_Admit (Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, int64_t n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2760,10 +2802,11 @@ static void Frame_Admit (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, int64_t 
     m9_raise (err, &Frame_Duplicate);
     goto L_ret;
   }
-  Frame_Grow (pool, f, err);
+  Frame_Grow (f, f_pool, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
@@ -2773,7 +2816,7 @@ static Frame_Col Frame_Blank (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Frame_Col m9ret = {0};
   Frame_Col c = {0}; (void) c;
   c.name = Frame_Copy (pool, name, err);
@@ -2786,6 +2829,17 @@ static Frame_Col Frame_Blank (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.name.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.long_.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.cf.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.unit.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.F64s.v64.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.F32s.v32.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.I64s.vi64.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.I32s.vi32.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.I16s.vi16.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.Bytes.vb.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.data.u.Bools.vbo.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -2851,7 +2905,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Frame_PutF64 (m9_pool *pool, DynStr_DString * *d, double v, double miss, m9_state *err)
+static void Frame_PutF64 (DynStr_DString * *d, m9_pool *d_pool, double v, double miss, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2862,15 +2916,16 @@ static void Frame_PutF64 (m9_pool *pool, DynStr_DString * *d, double v, double m
   if (m9t1) {
     goto L_ret;
   }
-  DynStr_Append (pool, d, Fmt_Sci (v, INT64_C(16), err), err);
+  DynStr_Append (d, d_pool, Fmt_Sci (v, INT64_C(16), err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_PutF32 (m9_pool *pool, DynStr_DString * *d, float v, float miss, m9_state *err)
+static void Frame_PutF32 (DynStr_DString * *d, m9_pool *d_pool, float v, float miss, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2881,15 +2936,16 @@ static void Frame_PutF32 (m9_pool *pool, DynStr_DString * *d, float v, float mis
   if (m9t1) {
     goto L_ret;
   }
-  DynStr_Append (pool, d, Fmt_Sci ((double)(v), INT64_C(8), err), err);
+  DynStr_Append (d, d_pool, Fmt_Sci ((double)(v), INT64_C(8), err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_PutStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err)
+static void Frame_PutStr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2910,11 +2966,11 @@ static void Frame_PutStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_s
     }
   } }
   if ((!needs)) {
-    DynStr_Append (pool, d, s, err);
+    DynStr_Append (d, d_pool, s, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  DynStr_AppendChar (pool, d, 34u, err);
+  DynStr_AppendChar (d, d_pool, 34u, err);
   if (err->exc) goto L_ret;
   { int64_t m9t3to;
   i = INT64_C(0);
@@ -2924,16 +2980,17 @@ static void Frame_PutStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_s
     bool m9t4 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 34u);
     if (err->exc) goto L_ret;
     if (m9t4) {
-      DynStr_AppendChar (pool, d, 34u, err);
+      DynStr_AppendChar (d, d_pool, 34u, err);
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendChar (pool, d, (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
+    DynStr_AppendChar (d, d_pool, (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_AppendChar (pool, d, 34u, err);
+  DynStr_AppendChar (d, d_pool, 34u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -3035,7 +3092,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Frame_Reduce (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Col c, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
+static void Frame_Reduce (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3046,72 +3103,74 @@ static void Frame_Reduce (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_
   case Frame_Data_F64s: {
     m9_sl_F64 v = m9t1.u.F64s.v64; (void) v;
     double m = m9t1.u.F64s.m64; (void) m;
-    Frame_ReduceF64 (pool, out, c, v, m, h, win, nwin, minCount, err);
+    Frame_ReduceF64 (pool, out, out_pool, c, v, m, h, win, nwin, minCount, err);
     if (err->exc) goto L_ret;
   } break;
   case Frame_Data_F32s: {
     m9_sl_F32 v = m9t1.u.F32s.v32; (void) v;
     float m = m9t1.u.F32s.m32; (void) m;
-    Frame_ReduceF32 (pool, out, c, v, m, h, win, nwin, minCount, err);
+    Frame_ReduceF32 (pool, out, out_pool, c, v, m, h, win, nwin, minCount, err);
     if (err->exc) goto L_ret;
   } break;
   case Frame_Data_I64s: {
     m9_sl_I64 v = m9t1.u.I64s.vi64; (void) v;
     int64_t m = m9t1.u.I64s.mi64; (void) m;
-    Frame_ReduceI64 (pool, out, c, v, m, h, win, nwin, minCount, err);
+    Frame_ReduceI64 (pool, out, out_pool, c, v, m, h, win, nwin, minCount, err);
     if (err->exc) goto L_ret;
   } break;
   case Frame_Data_I32s: {
     m9_sl_I32 v = m9t1.u.I32s.vi32; (void) v;
     int32_t m = m9t1.u.I32s.mi32; (void) m;
-    Frame_ReduceI32 (pool, out, c, v, m, h, win, nwin, minCount, err);
+    Frame_ReduceI32 (pool, out, out_pool, c, v, m, h, win, nwin, minCount, err);
     if (err->exc) goto L_ret;
   } break;
   case Frame_Data_I16s: {
     m9_sl_I16 v = m9t1.u.I16s.vi16; (void) v;
     int16_t m = m9t1.u.I16s.mi16; (void) m;
-    Frame_ReduceI16 (pool, out, c, v, m, h, win, nwin, minCount, err);
+    Frame_ReduceI16 (pool, out, out_pool, c, v, m, h, win, nwin, minCount, err);
     if (err->exc) goto L_ret;
   } break;
   case Frame_Data_Bytes: {
     m9_sl_BYTE v = m9t1.u.Bytes.vb; (void) v;
     uint8_t m = m9t1.u.Bytes.mb; (void) m;
-    Frame_ReduceBytes (pool, out, c, v, m, h, win, nwin, minCount, err);
+    Frame_ReduceBytes (pool, out, out_pool, c, v, m, h, win, nwin, minCount, err);
     if (err->exc) goto L_ret;
   } break;
   case Frame_Data_Bools: {
     m9_sl_BOOL v = m9t1.u.Bools.vbo; (void) v;
-    Frame_ReduceBools (pool, out, c, v, h, win, nwin, err);
+    Frame_ReduceBools (pool, out, out_pool, c, v, h, win, nwin, err);
     if (err->exc) goto L_ret;
   } break;
   case Frame_Data_Strs: {
     int64_t si = m9t1.u.Strs.si; (void) si;
-    Frame_ReduceStrs (pool, out, c, (*(Frame_StrTab *) m9_at (src->strs.p, si, src->strs.len, sizeof (Frame_StrTab), err)).v, h, win, nwin, err);
+    Frame_ReduceStrs (pool, out, out_pool, c, (*(Frame_StrTab *) m9_at (src->strs.p, si, src->strs.len, sizeof (Frame_StrTab), err)).v, h, win, nwin, err);
     if (err->exc) goto L_ret;
   } break;
   default: m9_trap_tag ();
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_Carry (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_state *err)
+static void Frame_Carry (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Frame_SetMeta (pool, out, c.name, c.long_, c.cf, c.unit, err);
+  Frame_SetMeta (pool, out, out_pool, c.name, c.long_, c.cf, c.unit, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_ReduceF64 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_F64 v, double miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
+static void Frame_ReduceF64 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_F64 v, double miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3261,9 +3320,9 @@ static void Frame_ReduceF64 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_
       } }
     }
   } }
-  Frame_AddF64 (pool, out, c.name, o64, miss, err);
+  Frame_AddF64 (pool, out, out_pool, c.name, o64, miss, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_Carry (pool, out, c, err);
+  Frame_Carry (pool, out, out_pool, c, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -3283,11 +3342,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_ReduceF32 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_F32 v, float miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
+static void Frame_ReduceF32 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_F32 v, float miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3307,15 +3367,16 @@ static void Frame_ReduceF32 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_
     if (err->exc) goto L_ret;
   } }
   wmiss = (double)(miss);
-  Frame_ReduceF64 (pool, out, c, wide, wmiss, h, win, nwin, minCount, err);
+  Frame_ReduceF64 (pool, out, out_pool, c, wide, wmiss, h, win, nwin, minCount, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_ReduceI64 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_I64 v, int64_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
+static void Frame_ReduceI64 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_I64 v, int64_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3452,9 +3513,9 @@ static void Frame_ReduceI64 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_
       if (err->exc) goto L_hdl_m9t1;
     }
   } }
-  Frame_AddI64 (pool, out, c.name, oi, miss, err);
+  Frame_AddI64 (pool, out, out_pool, c.name, oi, miss, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_Carry (pool, out, c, err);
+  Frame_Carry (pool, out, out_pool, c, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -3474,11 +3535,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_ReduceI32 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_I32 v, int32_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
+static void Frame_ReduceI32 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_I32 v, int32_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3501,7 +3563,7 @@ static void Frame_ReduceI32 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_
   } }
   tmp = Frame_New (pool, nwin, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_ReduceI64 (pool, &(tmp), c, wide, (int64_t)(miss), h, win, nwin, minCount, err);
+  Frame_ReduceI64 (pool, &(tmp), &((*pool)), c, wide, (int64_t)(miss), h, win, nwin, minCount, err);
   if (err->exc) goto L_hdl_m9t1;
   got = Frame_ColI64 (tmp, c.name, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -3515,9 +3577,9 @@ static void Frame_ReduceI32 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_
     (*(int32_t *) m9_at (narrow.p, r, narrow.len, sizeof (int32_t), err)) = m9_i32 ((*(int64_t *) m9_at (got.p, r, got.len, sizeof (int64_t), err)), err);
     if (err->exc) goto L_hdl_m9t1;
   } }
-  Frame_AddI32 (pool, out, c.name, narrow, miss, err);
+  Frame_AddI32 (pool, out, out_pool, c.name, narrow, miss, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_Carry (pool, out, c, err);
+  Frame_Carry (pool, out, out_pool, c, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -3537,11 +3599,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_ReduceI16 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_I16 v, int16_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
+static void Frame_ReduceI16 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_I16 v, int16_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3564,7 +3627,7 @@ static void Frame_ReduceI16 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_
   } }
   tmp = Frame_New (pool, nwin, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_ReduceI64 (pool, &(tmp), c, wide, (int64_t)(miss), h, win, nwin, minCount, err);
+  Frame_ReduceI64 (pool, &(tmp), &((*pool)), c, wide, (int64_t)(miss), h, win, nwin, minCount, err);
   if (err->exc) goto L_hdl_m9t1;
   got = Frame_ColI64 (tmp, c.name, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -3578,9 +3641,9 @@ static void Frame_ReduceI16 (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_
     (*(int16_t *) m9_at (narrow.p, r, narrow.len, sizeof (int16_t), err)) = m9_i16 ((*(int64_t *) m9_at (got.p, r, got.len, sizeof (int64_t), err)), err);
     if (err->exc) goto L_hdl_m9t1;
   } }
-  Frame_AddI16 (pool, out, c.name, narrow, miss, err);
+  Frame_AddI16 (pool, out, out_pool, c.name, narrow, miss, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_Carry (pool, out, c, err);
+  Frame_Carry (pool, out, out_pool, c, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -3600,11 +3663,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_ReduceBytes (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_BYTE v, uint8_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
+static void Frame_ReduceBytes (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_BYTE v, uint8_t miss, Frame_How h, m9_sl_I64 win, int64_t nwin, int64_t minCount, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3655,7 +3719,7 @@ static void Frame_ReduceBytes (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_s
   } }
   tmp = Frame_New (pool, nwin, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_ReduceI64 (pool, &(tmp), c, wide, (int64_t)(miss), h, win, nwin, minCount, err);
+  Frame_ReduceI64 (pool, &(tmp), &((*pool)), c, wide, (int64_t)(miss), h, win, nwin, minCount, err);
   if (err->exc) goto L_hdl_m9t1;
   got = Frame_ColI64 (tmp, c.name, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -3669,9 +3733,9 @@ static void Frame_ReduceBytes (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_s
     (*(uint8_t *) m9_at (narrow.p, r, narrow.len, sizeof (uint8_t), err)) = m9_byte ((*(int64_t *) m9_at (got.p, r, got.len, sizeof (int64_t), err)), err);
     if (err->exc) goto L_hdl_m9t1;
   } }
-  Frame_AddBytes (pool, out, c.name, narrow, miss, err);
+  Frame_AddBytes (pool, out, out_pool, c.name, narrow, miss, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_Carry (pool, out, c, err);
+  Frame_Carry (pool, out, out_pool, c, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -3691,11 +3755,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_ReduceBools (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_BOOL v, Frame_How h, m9_sl_I64 win, int64_t nwin, m9_state *err)
+static void Frame_ReduceBools (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_BOOL v, Frame_How h, m9_sl_I64 win, int64_t nwin, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3821,9 +3886,9 @@ static void Frame_ReduceBools (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_s
     default: m9_trap_tag ();
     } }
   } }
-  Frame_AddBools (pool, out, c.name, o, err);
+  Frame_AddBools (pool, out, out_pool, c.name, o, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_Carry (pool, out, c, err);
+  Frame_Carry (pool, out, out_pool, c, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -3843,11 +3908,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_ReduceStrs (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl_m9_sl_CHAR v, Frame_How h, m9_sl_I64 win, int64_t nwin, m9_state *err)
+static void Frame_ReduceStrs (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_m9_sl_CHAR v, Frame_How h, m9_sl_I64 win, int64_t nwin, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -3943,9 +4009,9 @@ static void Frame_ReduceStrs (m9_pool *pool, Frame_Fr * *out, Frame_Col c, m9_sl
     default: m9_trap_tag ();
     } }
   } }
-  Frame_AddStrs (pool, out, c.name, o, err);
+  Frame_AddStrs (pool, out, out_pool, c.name, o, err);
   if (err->exc) goto L_hdl_m9t1;
-  Frame_Carry (pool, out, c, err);
+  Frame_Carry (pool, out, out_pool, c, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -3965,11 +4031,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Col c, m9_sl_I64 at, int64_t total, m9_state *err)
+static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, m9_pool *out_pool, Frame_Col c, m9_sl_I64 at, int64_t total, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4005,7 +4072,7 @@ static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Co
         if (err->exc) goto L_hdl_m9t1;
       }
     } }
-    Frame_AddF64 (pool, out, c.name, o64, m, err);
+    Frame_AddF64 (pool, out, out_pool, c.name, o64, m, err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Frame_Data_F32s: {
@@ -4028,7 +4095,7 @@ static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Co
         if (err->exc) goto L_hdl_m9t1;
       }
     } }
-    Frame_AddF32 (pool, out, c.name, o32, m, err);
+    Frame_AddF32 (pool, out, out_pool, c.name, o32, m, err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Frame_Data_I64s: {
@@ -4051,7 +4118,7 @@ static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Co
         if (err->exc) goto L_hdl_m9t1;
       }
     } }
-    Frame_AddI64 (pool, out, c.name, oi64, m, err);
+    Frame_AddI64 (pool, out, out_pool, c.name, oi64, m, err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Frame_Data_I32s: {
@@ -4074,7 +4141,7 @@ static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Co
         if (err->exc) goto L_hdl_m9t1;
       }
     } }
-    Frame_AddI32 (pool, out, c.name, oi32, m, err);
+    Frame_AddI32 (pool, out, out_pool, c.name, oi32, m, err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Frame_Data_I16s: {
@@ -4097,7 +4164,7 @@ static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Co
         if (err->exc) goto L_hdl_m9t1;
       }
     } }
-    Frame_AddI16 (pool, out, c.name, oi16, m, err);
+    Frame_AddI16 (pool, out, out_pool, c.name, oi16, m, err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Frame_Data_Bytes: {
@@ -4120,7 +4187,7 @@ static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Co
         if (err->exc) goto L_hdl_m9t1;
       }
     } }
-    Frame_AddBytes (pool, out, c.name, ob, m, err);
+    Frame_AddBytes (pool, out, out_pool, c.name, ob, m, err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Frame_Data_Bools: {
@@ -4148,12 +4215,12 @@ static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, Frame_Co
         if (err->exc) goto L_hdl_m9t1;
       }
     } }
-    Frame_AddStrs (pool, out, c.name, os, err);
+    Frame_AddStrs (pool, out, out_pool, c.name, os, err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   default: m9_trap_tag ();
   } }
-  Frame_SetMeta (pool, out, c.name, c.long_, c.cf, c.unit, err);
+  Frame_SetMeta (pool, out, out_pool, c.name, c.long_, c.cf, c.unit, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -4167,6 +4234,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, out_pool, (*out));
   m9_pool_free (&m9frame);
   return;
 }
@@ -4447,7 +4515,7 @@ L_ret: ;
   return;
 }
 
-static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64_t vid, int64_t n, m9_sl_CHAR name, m9_state *err)
+static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, NetCDF_File * nc, int64_t vid, int64_t n, m9_sl_CHAR name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4492,10 +4560,10 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64
     NetCDF_GetF64 (nc, vid, st, ct, v64, err);
     if (err->exc) goto L_ret;
     if (hasFill) {
-      Frame_AddF64 (pool, f, name, v64, fill, err);
+      Frame_AddF64 (pool, f, f_pool, name, v64, fill, err);
       if (err->exc) goto L_ret;
     } else {
-      Frame_AddF64 (pool, f, name, v64, (0.0 / 0.0), err);
+      Frame_AddF64 (pool, f, f_pool, name, v64, (0.0 / 0.0), err);
       if (err->exc) goto L_ret;
     }
   } else {
@@ -4505,10 +4573,10 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64
       NetCDF_GetF32 (nc, vid, st, ct, v32, err);
       if (err->exc) goto L_ret;
       if (hasFill) {
-        Frame_AddF32 (pool, f, name, v32, (float)(fill), err);
+        Frame_AddF32 (pool, f, f_pool, name, v32, (float)(fill), err);
         if (err->exc) goto L_ret;
       } else {
-        Frame_AddF32 (pool, f, name, v32, (float)((0.0 / 0.0)), err);
+        Frame_AddF32 (pool, f, f_pool, name, v32, (float)((0.0 / 0.0)), err);
         if (err->exc) goto L_ret;
       }
   } else {
@@ -4518,10 +4586,10 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64
       NetCDF_GetI64 (nc, vid, st, ct, vi64, err);
       if (err->exc) goto L_ret;
       if (hasFill) {
-        Frame_AddI64 (pool, f, name, vi64, m9_i64_f64 ((double)(fill), err), err);
+        Frame_AddI64 (pool, f, f_pool, name, vi64, m9_i64_f64 ((double)(fill), err), err);
         if (err->exc) goto L_ret;
       } else {
-        Frame_AddI64 (pool, f, name, vi64, Frame_MissI (err), err);
+        Frame_AddI64 (pool, f, f_pool, name, vi64, Frame_MissI (err), err);
         if (err->exc) goto L_ret;
       }
   } else {
@@ -4531,10 +4599,10 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64
       NetCDF_GetI32 (nc, vid, st, ct, vi32, err);
       if (err->exc) goto L_ret;
       if (hasFill) {
-        Frame_AddI32 (pool, f, name, vi32, m9_i32 (fill, err), err);
+        Frame_AddI32 (pool, f, f_pool, name, vi32, m9_i32 (fill, err), err);
         if (err->exc) goto L_ret;
       } else {
-        Frame_AddI32 (pool, f, name, vi32, m9_sub_i64 (m9_neg_i64 (INT64_C(2147483647), err), INT64_C(1), err), err);
+        Frame_AddI32 (pool, f, f_pool, name, vi32, m9_sub_i64 (m9_neg_i64 (INT64_C(2147483647), err), INT64_C(1), err), err);
         if (err->exc) goto L_ret;
       }
   } else {
@@ -4544,10 +4612,10 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64
       NetCDF_GetI16 (nc, vid, st, ct, vi16, err);
       if (err->exc) goto L_ret;
       if (hasFill) {
-        Frame_AddI16 (pool, f, name, vi16, m9_i16 (fill, err), err);
+        Frame_AddI16 (pool, f, f_pool, name, vi16, m9_i16 (fill, err), err);
         if (err->exc) goto L_ret;
       } else {
-        Frame_AddI16 (pool, f, name, vi16, m9_neg_i64 (INT64_C(32768), err), err);
+        Frame_AddI16 (pool, f, f_pool, name, vi16, m9_neg_i64 (INT64_C(32768), err), err);
         if (err->exc) goto L_ret;
       }
   } else {
@@ -4583,25 +4651,25 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64
             goto L_ret;
           } }
         } }
-        Frame_AddBools (pool, f, name, vbo, err);
+        Frame_AddBools (pool, f, f_pool, name, vbo, err);
         if (err->exc) goto L_ret;
       } else {
         if (hasFill) {
-          Frame_AddBytes (pool, f, name, vb, m9_byte (m9_i64_f64 ((double)(fill), err), err), err);
+          Frame_AddBytes (pool, f, f_pool, name, vb, m9_byte (m9_i64_f64 ((double)(fill), err), err), err);
           if (err->exc) goto L_ret;
       } else {
-        Frame_AddBytes (pool, f, name, vb, INT64_C(255), err);
+        Frame_AddBytes (pool, f, f_pool, name, vb, INT64_C(255), err);
         if (err->exc) goto L_ret;
       } }
   } else {
     if ((t == NetCDF_TypeChar)) {
-      shape = NetCDF_VarShape (pool, nc, vid, err);
+      shape = NetCDF_VarShape (nc, vid, err);
       if (err->exc) goto L_ret;
       w = (*(int64_t *) m9_at (shape.p, INT64_C(1), shape.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
       vs = NetCDF_GetChars (pool, nc, vid, n, w, err);
       if (err->exc) goto L_ret;
-      Frame_AddStrs (pool, f, name, vs, err);
+      Frame_AddStrs (pool, f, f_pool, name, vs, err);
       if (err->exc) goto L_ret;
   } else {
     { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
@@ -4611,34 +4679,35 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, NetCDF_File * nc, int64
   bool m9t7 = NetCDF_HasAtt (nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s44, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t7) {
-    Frame_SetMeta2 (pool, f, name, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, NetCDF_GetAttStr (pool, nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s45, 5 }), err), err);
+    Frame_SetMeta2 (pool, f, f_pool, name, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, NetCDF_GetAttStr (pool, nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s45, 5 }), err), err);
     if (err->exc) goto L_ret;
   }
   bool m9t8 = NetCDF_HasAtt (nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s46, 9 }), err);
   if (err->exc) goto L_ret;
   if (m9t8) {
-    Frame_SetMeta2 (pool, f, name, NetCDF_GetAttStr (pool, nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s47, 9 }), err), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+    Frame_SetMeta2 (pool, f, f_pool, name, NetCDF_GetAttStr (pool, nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s47, 9 }), err), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
   }
   bool m9t9 = NetCDF_HasAtt (nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s48, 13 }), err);
   if (err->exc) goto L_ret;
   if (m9t9) {
-    Frame_SetMeta2 (pool, f, name, (m9_sl_CHAR){ NULL, 0 }, NetCDF_GetAttStr (pool, nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s49, 13 }), err), (m9_sl_CHAR){ NULL, 0 }, err);
+    Frame_SetMeta2 (pool, f, f_pool, name, (m9_sl_CHAR){ NULL, 0 }, NetCDF_GetAttStr (pool, nc, vid, ((m9_sl_CHAR){ (uint32_t *) m9s49, 13 }), err), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_SetMeta2 (m9_pool *pool, Frame_Fr * *f, m9_sl_CHAR name, m9_sl_CHAR long_, m9_sl_CHAR cf, m9_sl_CHAR unit, m9_state *err)
+static void Frame_SetMeta2 (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_CHAR long_, m9_sl_CHAR cf, m9_sl_CHAR unit, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Frame_SetMeta (pool, f, name, long_, cf, unit, err);
+  Frame_SetMeta (pool, f, f_pool, name, long_, cf, unit, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -4652,11 +4721,12 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Frame_ParseSince (m9_pool *pool, m9_sl_CHAR units, int64_t *mult, int64_t *base, m9_state *err)
+static void Frame_ParseSince (m9_sl_CHAR units, int64_t *mult, int64_t *base, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -4837,9 +4907,8 @@ void Frame_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   Csv_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Math_m9init (err); if (err->exc) goto L_ret;
@@ -4849,7 +4918,5 @@ void Frame_m9init (m9_state *err)
   NetCDF_m9init (err); if (err->exc) goto L_ret;
   Faults_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

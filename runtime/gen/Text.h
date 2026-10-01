@@ -28,12 +28,12 @@ m9_sl_CHAR Text_Trim (m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_TrimLeft (m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_TrimRight (m9_sl_CHAR s, m9_state *err);
 int64_t Text_CountChar (m9_sl_CHAR s, uint32_t c, m9_state *err);
-m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state *err);
-m9_sl_m9_sl_CHAR Text_Fields (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state *err);
+m9_sl_m9_sl_CHAR Text_Split (m9_sl_CHAR s, uint32_t sep, m9_state *err);
+m9_sl_m9_sl_CHAR Text_Fields (m9_sl_CHAR s, uint32_t sep, m9_state *err);
 m9_sl_CHAR Text_Keep (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_Cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
-m9_sl_CHAR Text_Join (m9_pool *pool, m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_state *err);
-m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
-m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Text_Join (m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_state *err);
+m9_sl_CHAR Text_Lower (m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Text_Upper (m9_sl_CHAR s, m9_state *err);
 
 #endif

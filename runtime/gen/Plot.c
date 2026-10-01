@@ -34,6 +34,7 @@ static bool logY;
 static m9_sl_F64 dotX;
 static m9_sl_F64 dotY;
 static int64_t dotN;
+static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[62] = { 60u, 115u, 118u, 103u, 32u, 120u, 109u, 108u, 110u, 115u, 61u, 34u, 104u, 116u, 116u, 112u, 58u, 47u, 47u, 119u, 119u, 119u, 46u, 119u, 51u, 46u, 111u, 114u, 103u, 47u, 50u, 48u, 48u, 48u, 47u, 115u, 118u, 103u, 34u, 32u, 118u, 105u, 101u, 119u, 66u, 111u, 120u, 61u, 34u, 48u, 32u, 48u, 32u, 55u, 50u, 48u, 32u, 52u, 52u, 48u, 34u, 32u };
 static const uint32_t m9s1[49] = { 102u, 111u, 110u, 116u, 45u, 102u, 97u, 109u, 105u, 108u, 121u, 61u, 34u, 68u, 101u, 106u, 97u, 86u, 117u, 32u, 83u, 97u, 110u, 115u, 44u, 32u, 72u, 101u, 108u, 118u, 101u, 116u, 105u, 99u, 97u, 44u, 32u, 115u, 97u, 110u, 115u, 45u, 115u, 101u, 114u, 105u, 102u, 34u, 62u };
@@ -174,11 +175,11 @@ static const uint32_t m9s135[3] = { 32u, 76u, 32u };
 static const uint32_t m9s136[48] = { 34u, 32u, 102u, 105u, 108u, 108u, 61u, 34u, 110u, 111u, 110u, 101u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 61u, 34u, 35u, 50u, 50u, 50u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 119u, 105u, 100u, 116u, 104u, 61u, 34u, 49u, 46u, 50u, 34u, 47u, 62u };
 
 static bool Plot_IsNaN (double v, m9_state *err);
-static void Plot_EmitR (m9_pool *pool, DynStr_DString * *d, double v, m9_state *err);
-static void Plot_EmitColor (m9_pool *pool, DynStr_DString * *d, int64_t idx, m9_state *err);
+static void Plot_EmitR (DynStr_DString * *d, m9_pool *d_pool, double v, m9_state *err);
+static void Plot_EmitColor (DynStr_DString * *d, m9_pool *d_pool, int64_t idx, m9_state *err);
 static void Plot_CmapPt (Plot_Cmap cmap, int64_t i, int64_t *r, int64_t *g, int64_t *b, m9_state *err);
-static void Plot_EmitHexByte (m9_pool *pool, DynStr_DString * *d, int64_t v, m9_state *err);
-static void Plot_EmitCmap (m9_pool *pool, DynStr_DString * *d, Plot_Cmap cmap, double t, m9_state *err);
+static void Plot_EmitHexByte (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state *err);
+static void Plot_EmitCmap (DynStr_DString * *d, m9_pool *d_pool, Plot_Cmap cmap, double t, m9_state *err);
 static double Plot_NiceStep (double span, m9_state *err);
 static double Plot_FloorMul (double v, double step, m9_state *err);
 static double Plot_PXof (double x, double xmin, double xmax, m9_state *err);
@@ -186,9 +187,9 @@ static double Plot_PYof (double y, double ymin, double ymax, m9_state *err);
 static double Plot_Log10 (double v, m9_state *err);
 static bool Plot_Loggable (double v, bool lg, m9_state *err);
 static double Plot_Axis (double v, bool lg, m9_state *err);
-static void Plot_EmitLineColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m9_state *err);
-static void Plot_EmitBarColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m9_state *err);
-static void Plot_EmitWhisker (m9_pool *pool, DynStr_DString * *d, double x0, double y0, double x1, double y1, bool horiz, m9_state *err);
+static void Plot_EmitLineColor (DynStr_DString * *d, m9_pool *d_pool, int64_t s, m9_state *err);
+static void Plot_EmitBarColor (DynStr_DString * *d, m9_pool *d_pool, int64_t s, m9_state *err);
+static void Plot_EmitWhisker (DynStr_DString * *d, m9_pool *d_pool, double x0, double y0, double x1, double y1, bool horiz, m9_state *err);
 static double Plot_DecadeFloor (double v, m9_state *err);
 static double Plot_Pow10 (double k, m9_state *err);
 static void Plot_ExtendRange (double *cmin, double *cmax, double *vmin, double *vmax, bool *seen, double c0, double c1, double v0, double v1, m9_state *err);
@@ -464,13 +465,14 @@ L_ret: ;
   return;
 }
 
-m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_sl_CHAR ylabel, m9_state *err)
+m9_sl_CHAR Plot_Render (m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_sl_CHAR ylabel, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   int64_t s = 0; (void) s;
   int64_t i = 0; (void) i;
@@ -678,50 +680,50 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
   }
   ymin = (ymin - pad);
   ymax = (ymax + pad);
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s0, 62 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s0, 62 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s1, 49 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s1, 49 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s2, 45 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s2, 45 }), err);
   if (err->exc) goto L_ret;
   if (logY) {
     t = Plot_DecadeFloor (ymin, err);
     if (err->exc) goto L_ret;
     for (;;) {
       if (!((t <= ymax))) break;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_MLeft, err);
+      Plot_EmitR (&(d), &(pool), Plot_MLeft, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s4, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s4, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PYof (t, ymin, ymax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PYof (t, ymin, ymax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s5, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s5, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_FigW - Plot_MRight), err);
+      Plot_EmitR (&(d), &(pool), (Plot_FigW - Plot_MRight), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s6, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s6, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PYof (t, ymin, ymax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PYof (t, ymin, ymax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s7, 37 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s7, 37 }), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s8, 9 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s8, 9 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_MLeft - 8.0), err);
+      Plot_EmitR (&(d), &(pool), (Plot_MLeft - 8.0), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s9, 5 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s9, 5 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_PYof (t, ymin, ymax, err) + 4.0), err);
+      Plot_EmitR (&(d), &(pool), (Plot_PYof (t, ymin, ymax, err) + 4.0), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s10, 47 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s10, 47 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_Pow10 (t, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_Pow10 (t, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s11, 7 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s11, 7 }), err);
       if (err->exc) goto L_ret;
       t = (t + 1.0);
     }
@@ -736,37 +738,37 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
     }
     for (;;) {
       if (!((t <= ymax))) break;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s12, 10 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s12, 10 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_MLeft, err);
+      Plot_EmitR (&(d), &(pool), Plot_MLeft, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s13, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s13, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PYof (t, ymin, ymax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PYof (t, ymin, ymax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s14, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s14, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_FigW - Plot_MRight), err);
+      Plot_EmitR (&(d), &(pool), (Plot_FigW - Plot_MRight), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s15, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s15, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PYof (t, ymin, ymax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PYof (t, ymin, ymax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s16, 37 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s16, 37 }), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s17, 9 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s17, 9 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_MLeft - 8.0), err);
+      Plot_EmitR (&(d), &(pool), (Plot_MLeft - 8.0), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s18, 5 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s18, 5 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_PYof (t, ymin, ymax, err) + 4.0), err);
+      Plot_EmitR (&(d), &(pool), (Plot_PYof (t, ymin, ymax, err) + 4.0), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s19, 47 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s19, 47 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), t, err);
+      Plot_EmitR (&(d), &(pool), t, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s20, 7 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s20, 7 }), err);
       if (err->exc) goto L_ret;
       t = (t + step);
     }
@@ -776,37 +778,37 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
     if (err->exc) goto L_ret;
     for (;;) {
       if (!((t <= xmax))) break;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s21, 10 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s21, 10 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PXof (t, xmin, xmax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PXof (t, xmin, xmax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s22, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s22, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_MTop, err);
+      Plot_EmitR (&(d), &(pool), Plot_MTop, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s23, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s23, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PXof (t, xmin, xmax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PXof (t, xmin, xmax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s24, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s24, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_FigH - Plot_MBottom), err);
+      Plot_EmitR (&(d), &(pool), (Plot_FigH - Plot_MBottom), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s25, 37 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s25, 37 }), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s26, 9 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s26, 9 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PXof (t, xmin, xmax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PXof (t, xmin, xmax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s27, 5 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s27, 5 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), ((Plot_FigH - Plot_MBottom) + 18.0), err);
+      Plot_EmitR (&(d), &(pool), ((Plot_FigH - Plot_MBottom) + 18.0), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s28, 50 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s28, 50 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_Pow10 (t, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_Pow10 (t, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s29, 7 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s29, 7 }), err);
       if (err->exc) goto L_ret;
       t = (t + 1.0);
     }
@@ -821,76 +823,76 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
     }
     for (;;) {
       if (!((t <= xmax))) break;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s30, 10 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s30, 10 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PXof (t, xmin, xmax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PXof (t, xmin, xmax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s31, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s31, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_MTop, err);
+      Plot_EmitR (&(d), &(pool), Plot_MTop, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s32, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s32, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PXof (t, xmin, xmax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PXof (t, xmin, xmax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s33, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s33, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_FigH - Plot_MBottom), err);
+      Plot_EmitR (&(d), &(pool), (Plot_FigH - Plot_MBottom), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s34, 37 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s34, 37 }), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s35, 9 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s35, 9 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PXof (t, xmin, xmax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PXof (t, xmin, xmax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s36, 5 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s36, 5 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), ((Plot_FigH - Plot_MBottom) + 18.0), err);
+      Plot_EmitR (&(d), &(pool), ((Plot_FigH - Plot_MBottom) + 18.0), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s37, 50 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s37, 50 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), t, err);
+      Plot_EmitR (&(d), &(pool), t, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s38, 7 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s38, 7 }), err);
       if (err->exc) goto L_ret;
       t = (t + step);
     }
   }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s39, 10 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s39, 10 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), Plot_MLeft, err);
+  Plot_EmitR (&(d), &(pool), Plot_MLeft, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s40, 6 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s40, 6 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), Plot_MTop, err);
+  Plot_EmitR (&(d), &(pool), Plot_MTop, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s41, 6 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s41, 6 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), Plot_MLeft, err);
+  Plot_EmitR (&(d), &(pool), Plot_MLeft, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s42, 6 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s42, 6 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), (Plot_FigH - Plot_MBottom), err);
+  Plot_EmitR (&(d), &(pool), (Plot_FigH - Plot_MBottom), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s43, 37 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s43, 37 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s44, 10 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s44, 10 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), Plot_MLeft, err);
+  Plot_EmitR (&(d), &(pool), Plot_MLeft, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s45, 6 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s45, 6 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), (Plot_FigH - Plot_MBottom), err);
+  Plot_EmitR (&(d), &(pool), (Plot_FigH - Plot_MBottom), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s46, 6 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s46, 6 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), (Plot_FigW - Plot_MRight), err);
+  Plot_EmitR (&(d), &(pool), (Plot_FigW - Plot_MRight), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s47, 6 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s47, 6 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), (Plot_FigH - Plot_MBottom), err);
+  Plot_EmitR (&(d), &(pool), (Plot_FigH - Plot_MBottom), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s48, 37 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s48, 37 }), err);
   if (err->exc) goto L_ret;
   if ((nBar > INT64_C(0))) {
     slot = (Plot_SlotWidth (err) * barWidth);
@@ -965,55 +967,55 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
             v0 = v1;
             v1 = t;
           }
-          DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s49, 9 }), err);
+          DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s49, 9 }), err);
           if (err->exc) goto L_ret;
           if ((barDir == Plot_BarHorizontal)) {
-            Plot_EmitR (pool, &(d), v0, err);
+            Plot_EmitR (&(d), &(pool), v0, err);
             if (err->exc) goto L_ret;
           } else {
-            Plot_EmitR (pool, &(d), c0, err);
+            Plot_EmitR (&(d), &(pool), c0, err);
             if (err->exc) goto L_ret;
           }
-          DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s50, 5 }), err);
+          DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s50, 5 }), err);
           if (err->exc) goto L_ret;
           if ((barDir == Plot_BarHorizontal)) {
-            Plot_EmitR (pool, &(d), c0, err);
+            Plot_EmitR (&(d), &(pool), c0, err);
             if (err->exc) goto L_ret;
           } else {
-            Plot_EmitR (pool, &(d), v0, err);
+            Plot_EmitR (&(d), &(pool), v0, err);
             if (err->exc) goto L_ret;
           }
-          DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s51, 9 }), err);
+          DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s51, 9 }), err);
           if (err->exc) goto L_ret;
           if ((barDir == Plot_BarHorizontal)) {
-            Plot_EmitR (pool, &(d), (v1 - v0), err);
+            Plot_EmitR (&(d), &(pool), (v1 - v0), err);
             if (err->exc) goto L_ret;
           } else {
-            Plot_EmitR (pool, &(d), (c1 - c0), err);
+            Plot_EmitR (&(d), &(pool), (c1 - c0), err);
             if (err->exc) goto L_ret;
           }
-          DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s52, 10 }), err);
+          DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s52, 10 }), err);
           if (err->exc) goto L_ret;
           if ((barDir == Plot_BarHorizontal)) {
-            Plot_EmitR (pool, &(d), (c1 - c0), err);
+            Plot_EmitR (&(d), &(pool), (c1 - c0), err);
             if (err->exc) goto L_ret;
           } else {
-            Plot_EmitR (pool, &(d), (v1 - v0), err);
+            Plot_EmitR (&(d), &(pool), (v1 - v0), err);
             if (err->exc) goto L_ret;
           }
           if (barFilled) {
-            DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s53, 8 }), err);
+            DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s53, 8 }), err);
             if (err->exc) goto L_ret;
-            Plot_EmitBarColor (pool, &(d), s, err);
+            Plot_EmitBarColor (&(d), &(pool), s, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s54, 17 }), err);
+            DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s54, 17 }), err);
             if (err->exc) goto L_ret;
           } else {
-            DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s55, 22 }), err);
+            DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s55, 22 }), err);
             if (err->exc) goto L_ret;
-            Plot_EmitBarColor (pool, &(d), s, err);
+            Plot_EmitBarColor (&(d), &(pool), s, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s56, 22 }), err);
+            DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s56, 22 }), err);
             if (err->exc) goto L_ret;
           }
         }
@@ -1062,7 +1064,7 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
                     if (err->exc) goto L_ret;
                     v1 = Plot_PXof (Plot_Axis ((top + e), logX, err), xmin, xmax, err);
                     if (err->exc) goto L_ret;
-                    Plot_EmitWhisker (pool, &(d), v0, c0, v1, c0, true, err);
+                    Plot_EmitWhisker (&(d), &(pool), v0, c0, v1, c0, true, err);
                     if (err->exc) goto L_ret;
                   } else {
                     c0 = Plot_PXof (Plot_Axis (v, logX, err), xmin, xmax, err);
@@ -1071,7 +1073,7 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
                     if (err->exc) goto L_ret;
                     v1 = Plot_PYof (Plot_Axis ((top + e), logY, err), ymin, ymax, err);
                     if (err->exc) goto L_ret;
-                    Plot_EmitWhisker (pool, &(d), c0, v0, c0, v1, false, err);
+                    Plot_EmitWhisker (&(d), &(pool), c0, v0, c0, v1, false, err);
                     if (err->exc) goto L_ret;
                   }
                 }
@@ -1094,15 +1096,15 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
     bool m9t22 = (Plot_Loggable (v, logX, err) && Plot_Loggable (w, logY, err));
     if (err->exc) goto L_ret;
     if (m9t22) {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s57, 12 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s57, 12 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PXof (Plot_Axis (v, logX, err), xmin, xmax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PXof (Plot_Axis (v, logX, err), xmin, xmax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s58, 6 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s58, 6 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), Plot_PYof (Plot_Axis (w, logY, err), ymin, ymax, err), err);
+      Plot_EmitR (&(d), &(pool), Plot_PYof (Plot_Axis (w, logY, err), ymin, ymax, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s59, 24 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s59, 24 }), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -1111,7 +1113,7 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
   m9t23to = m9_sub_i64 (nSer, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; s <= m9t23to; s += 1) {
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s60, 9 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s60, 9 }), err);
     if (err->exc) goto L_ret;
     pen = false;
     { int64_t m9t24to;
@@ -1133,28 +1135,28 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
         py = Plot_PYof (Plot_Axis (w, logY, err), ymin, ymax, err);
         if (err->exc) goto L_ret;
         if (pen) {
-          DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s61, 2 }), err);
+          DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s61, 2 }), err);
           if (err->exc) goto L_ret;
         } else {
-          DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s62, 2 }), err);
+          DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s62, 2 }), err);
           if (err->exc) goto L_ret;
         }
-        Plot_EmitR (pool, &(d), px, err);
+        Plot_EmitR (&(d), &(pool), px, err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, &(d), 32u, err);
+        DynStr_AppendChar (&(d), &(pool), 32u, err);
         if (err->exc) goto L_ret;
-        Plot_EmitR (pool, &(d), py, err);
+        Plot_EmitR (&(d), &(pool), py, err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, &(d), 32u, err);
+        DynStr_AppendChar (&(d), &(pool), 32u, err);
         if (err->exc) goto L_ret;
         pen = true;
       }
     } }
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s63, 22 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s63, 22 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitLineColor (pool, &(d), s, err);
+    Plot_EmitLineColor (&(d), &(pool), s, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s64, 22 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s64, 22 }), err);
     if (err->exc) goto L_ret;
   } }
   ly = (Plot_MTop + 14.0);
@@ -1163,41 +1165,41 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
   m9t26to = m9_sub_i64 (nSer, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; s <= m9t26to; s += 1) {
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s65, 10 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s65, 10 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), ((Plot_FigW - Plot_MRight) - 150.0), err);
+    Plot_EmitR (&(d), &(pool), ((Plot_FigW - Plot_MRight) - 150.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s66, 6 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s66, 6 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), (ly - 4.0), err);
+    Plot_EmitR (&(d), &(pool), (ly - 4.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s67, 6 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s67, 6 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), ((Plot_FigW - Plot_MRight) - 126.0), err);
+    Plot_EmitR (&(d), &(pool), ((Plot_FigW - Plot_MRight) - 126.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s68, 6 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s68, 6 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), (ly - 4.0), err);
+    Plot_EmitR (&(d), &(pool), (ly - 4.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s69, 10 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s69, 10 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitLineColor (pool, &(d), s, err);
+    Plot_EmitLineColor (&(d), &(pool), s, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s70, 20 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s70, 20 }), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s71, 9 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s71, 9 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), ((Plot_FigW - Plot_MRight) - 120.0), err);
+    Plot_EmitR (&(d), &(pool), ((Plot_FigW - Plot_MRight) - 120.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s72, 5 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s72, 5 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), ly, err);
+    Plot_EmitR (&(d), &(pool), ly, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s73, 29 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s73, 29 }), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), (*(m9_sl_CHAR *) m9_at (serLbl.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err)), err);
+    DynStr_Append (&(d), &(pool), (*(m9_sl_CHAR *) m9_at (serLbl.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s74, 7 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s74, 7 }), err);
     if (err->exc) goto L_ret;
     ly = (ly + 16.0);
   } }
@@ -1206,72 +1208,72 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
   m9t27to = m9_sub_i64 (nBar, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; s <= m9t27to; s += 1) {
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s75, 9 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s75, 9 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), ((Plot_FigW - Plot_MRight) - 150.0), err);
+    Plot_EmitR (&(d), &(pool), ((Plot_FigW - Plot_MRight) - 150.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s76, 5 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s76, 5 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), (ly - 11.0), err);
+    Plot_EmitR (&(d), &(pool), (ly - 11.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s77, 23 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s77, 23 }), err);
     if (err->exc) goto L_ret;
     if (barFilled) {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s78, 7 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s78, 7 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitBarColor (pool, &(d), s, err);
+      Plot_EmitBarColor (&(d), &(pool), s, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s79, 17 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s79, 17 }), err);
       if (err->exc) goto L_ret;
     } else {
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s80, 21 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s80, 21 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitBarColor (pool, &(d), s, err);
+      Plot_EmitBarColor (&(d), &(pool), s, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s81, 22 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s81, 22 }), err);
       if (err->exc) goto L_ret;
     }
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s82, 9 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s82, 9 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), ((Plot_FigW - Plot_MRight) - 120.0), err);
+    Plot_EmitR (&(d), &(pool), ((Plot_FigW - Plot_MRight) - 120.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s83, 5 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s83, 5 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), ly, err);
+    Plot_EmitR (&(d), &(pool), ly, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s84, 29 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s84, 29 }), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), (*(m9_sl_CHAR *) m9_at (barLbl.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err)), err);
+    DynStr_Append (&(d), &(pool), (*(m9_sl_CHAR *) m9_at (barLbl.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s85, 7 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s85, 7 }), err);
     if (err->exc) goto L_ret;
     ly = (ly + 16.0);
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s86, 69 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s86, 69 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), title, err);
+  DynStr_Append (&(d), &(pool), title, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s87, 7 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s87, 7 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s88, 17 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s88, 17 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), (Plot_FigH - 14.0), err);
+  Plot_EmitR (&(d), &(pool), (Plot_FigH - 14.0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s89, 50 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s89, 50 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), xlabel, err);
+  DynStr_Append (&(d), &(pool), xlabel, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s90, 7 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s90, 7 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s91, 69 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s91, 69 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s92, 31 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s92, 31 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ylabel, err);
+  DynStr_Append (&(d), &(pool), ylabel, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s93, 7 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s93, 7 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s94, 6 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s94, 6 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1280,17 +1282,20 @@ m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_s
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
-m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plot_Cmap cmap, bool symmetric, m9_state *err)
+m9_sl_CHAR Plot_RenderHeat (m9_sl_CHAR title, Mat_Matrix * m, Plot_Cmap cmap, bool symmetric, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool pool = {0}; (void) pool;
   DynStr_DString * d = NULL; (void) d;
   int64_t r = 0; (void) r;
   int64_t c = 0; (void) c;
@@ -1325,13 +1330,13 @@ m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plo
   }
   cw = (((((Plot_FigW - Plot_MLeft) - Plot_MRight) - 60.0)) / (double)(nc));
   ch = ((((Plot_FigH - Plot_MTop) - Plot_MBottom)) / (double)(nr));
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s95, 62 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s95, 62 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s96, 49 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s96, 49 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s97, 45 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s97, 45 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   r = INT64_C(0);
@@ -1345,32 +1350,32 @@ m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plo
     for (; c <= m9t2to; c += 1) {
       v = Mat_Get (m, r, c, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s98, 9 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s98, 9 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_MLeft + ((double)(c) * cw)), err);
+      Plot_EmitR (&(d), &(pool), (Plot_MLeft + ((double)(c) * cw)), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s99, 5 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s99, 5 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (Plot_MTop + ((double)(r) * ch)), err);
+      Plot_EmitR (&(d), &(pool), (Plot_MTop + ((double)(r) * ch)), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s100, 9 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s100, 9 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (cw + 0.5), err);
+      Plot_EmitR (&(d), &(pool), (cw + 0.5), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s101, 10 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s101, 10 }), err);
       if (err->exc) goto L_ret;
-      Plot_EmitR (pool, &(d), (ch + 0.5), err);
+      Plot_EmitR (&(d), &(pool), (ch + 0.5), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s102, 8 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s102, 8 }), err);
       if (err->exc) goto L_ret;
       if ((!((v == v)))) {
-        DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s103, 7 }), err);
+        DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s103, 7 }), err);
         if (err->exc) goto L_ret;
       } else {
-        Plot_EmitCmap (pool, &(d), cmap, (((v - mn)) / ((mx - mn))), err);
+        Plot_EmitCmap (&(d), &(pool), cmap, (((v - mn)) / ((mx - mn))), err);
         if (err->exc) goto L_ret;
       }
-      DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s104, 3 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s104, 3 }), err);
       if (err->exc) goto L_ret;
     } }
   } }
@@ -1379,60 +1384,60 @@ m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plo
   m9t3to = INT64_C(99);
   for (; i <= m9t3to; i += 1) {
     t = ((double)(i) / 99.0);
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s105, 9 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s105, 9 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), ((Plot_FigW - Plot_MRight) - 38.0), err);
+    Plot_EmitR (&(d), &(pool), ((Plot_FigW - Plot_MRight) - 38.0), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s106, 5 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s106, 5 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), (Plot_MTop + (t * ((((Plot_FigH - Plot_MTop) - Plot_MBottom) - 3.4)))), err);
+    Plot_EmitR (&(d), &(pool), (Plot_MTop + (t * ((((Plot_FigH - Plot_MTop) - Plot_MBottom) - 3.4)))), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s107, 21 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s107, 21 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, &(d), (((((Plot_FigH - Plot_MTop) - Plot_MBottom)) / 100.0) + 0.5), err);
+    Plot_EmitR (&(d), &(pool), (((((Plot_FigH - Plot_MTop) - Plot_MBottom)) / 100.0) + 0.5), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s108, 8 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s108, 8 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitCmap (pool, &(d), cmap, (1.0 - t), err);
+    Plot_EmitCmap (&(d), &(pool), cmap, (1.0 - t), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s109, 3 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s109, 3 }), err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s110, 9 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s110, 9 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), ((Plot_FigW - Plot_MRight) - 30.0), err);
+  Plot_EmitR (&(d), &(pool), ((Plot_FigW - Plot_MRight) - 30.0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s111, 5 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s111, 5 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), (Plot_MTop - 6.0), err);
+  Plot_EmitR (&(d), &(pool), (Plot_MTop - 6.0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s112, 50 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s112, 50 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), mx, err);
+  Plot_EmitR (&(d), &(pool), mx, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s113, 7 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s113, 7 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s114, 9 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s114, 9 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), ((Plot_FigW - Plot_MRight) - 30.0), err);
+  Plot_EmitR (&(d), &(pool), ((Plot_FigW - Plot_MRight) - 30.0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s115, 5 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s115, 5 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), ((Plot_FigH - Plot_MBottom) + 14.0), err);
+  Plot_EmitR (&(d), &(pool), ((Plot_FigH - Plot_MBottom) + 14.0), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s116, 50 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s116, 50 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, &(d), mn, err);
+  Plot_EmitR (&(d), &(pool), mn, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s117, 7 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s117, 7 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s118, 69 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s118, 69 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), title, err);
+  DynStr_Append (&(d), &(pool), title, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s119, 7 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s119, 7 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s120, 6 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s120, 6 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1441,7 +1446,9 @@ m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plo
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
@@ -1478,7 +1485,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Plot_EmitR (m9_pool *pool, DynStr_DString * *d, double v, m9_state *err)
+static void Plot_EmitR (DynStr_DString * *d, m9_pool *d_pool, double v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1493,16 +1500,17 @@ static void Plot_EmitR (m9_pool *pool, DynStr_DString * *d, double v, m9_state *
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    DynStr_AppendChar (pool, d, m9_chr ((int64_t)((*(uint8_t *) m9_at (buf.v, i, INT64_C(32), sizeof (uint8_t), err))), err), err);
+    DynStr_AppendChar (d, d_pool, m9_chr ((int64_t)((*(uint8_t *) m9_at (buf.v, i, INT64_C(32), sizeof (uint8_t), err))), err), err);
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Plot_EmitColor (m9_pool *pool, DynStr_DString * *d, int64_t idx, m9_state *err)
+static void Plot_EmitColor (DynStr_DString * *d, m9_pool *d_pool, int64_t idx, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1512,31 +1520,32 @@ static void Plot_EmitColor (m9_pool *pool, DynStr_DString * *d, int64_t idx, m9_
   switch (m9t1) {
   case INT64_C(0):
   {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s121, 7 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s121, 7 }), err);
     if (err->exc) goto L_ret;
   } break;
   case INT64_C(1):
   {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s122, 7 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s122, 7 }), err);
     if (err->exc) goto L_ret;
   } break;
   case INT64_C(2):
   {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s123, 7 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s123, 7 }), err);
     if (err->exc) goto L_ret;
   } break;
   case INT64_C(3):
   {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s124, 7 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s124, 7 }), err);
     if (err->exc) goto L_ret;
   } break;
   default: {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s125, 7 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s125, 7 }), err);
     if (err->exc) goto L_ret;
   } break;
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -1627,23 +1636,24 @@ L_ret: ;
   return;
 }
 
-static void Plot_EmitHexByte (m9_pool *pool, DynStr_DString * *d, int64_t v, m9_state *err)
+static void Plot_EmitHexByte (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_AppendChar (pool, d, (*(uint32_t *) m9_at (Plot_HexDigits.p, m9_div_i64 (v, INT64_C(16), err), Plot_HexDigits.len, sizeof (uint32_t), err)), err);
+  DynStr_AppendChar (d, d_pool, (*(uint32_t *) m9_at (Plot_HexDigits.p, m9_div_i64 (v, INT64_C(16), err), Plot_HexDigits.len, sizeof (uint32_t), err)), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, d, (*(uint32_t *) m9_at (Plot_HexDigits.p, m9_mod_i64 (v, INT64_C(16), err), Plot_HexDigits.len, sizeof (uint32_t), err)), err);
+  DynStr_AppendChar (d, d_pool, (*(uint32_t *) m9_at (Plot_HexDigits.p, m9_mod_i64 (v, INT64_C(16), err), Plot_HexDigits.len, sizeof (uint32_t), err)), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Plot_EmitCmap (m9_pool *pool, DynStr_DString * *d, Plot_Cmap cmap, double t, m9_state *err)
+static void Plot_EmitCmap (DynStr_DString * *d, m9_pool *d_pool, Plot_Cmap cmap, double t, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1674,16 +1684,17 @@ static void Plot_EmitCmap (m9_pool *pool, DynStr_DString * *d, Plot_Cmap cmap, d
   if (err->exc) goto L_ret;
   Plot_CmapPt (cmap, m9_add_i64 (seg, INT64_C(1), err), &(r1), &(g1), &(b1), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, d, 35u, err);
+  DynStr_AppendChar (d, d_pool, 35u, err);
   if (err->exc) goto L_ret;
-  Plot_EmitHexByte (pool, d, m9_i64_f64 ((double)(((double)(r0) + (f * (((double)(r1) - (double)(r0)))))), err), err);
+  Plot_EmitHexByte (d, d_pool, m9_i64_f64 ((double)(((double)(r0) + (f * (((double)(r1) - (double)(r0)))))), err), err);
   if (err->exc) goto L_ret;
-  Plot_EmitHexByte (pool, d, m9_i64_f64 ((double)(((double)(g0) + (f * (((double)(g1) - (double)(g0)))))), err), err);
+  Plot_EmitHexByte (d, d_pool, m9_i64_f64 ((double)(((double)(g0) + (f * (((double)(g1) - (double)(g0)))))), err), err);
   if (err->exc) goto L_ret;
-  Plot_EmitHexByte (pool, d, m9_i64_f64 ((double)(((double)(b0) + (f * (((double)(b1) - (double)(b0)))))), err), err);
+  Plot_EmitHexByte (d, d_pool, m9_i64_f64 ((double)(((double)(b0) + (f * (((double)(b1) - (double)(b0)))))), err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -1885,7 +1896,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Plot_EmitLineColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m9_state *err)
+static void Plot_EmitLineColor (DynStr_DString * *d, m9_pool *d_pool, int64_t s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1894,19 +1905,20 @@ static void Plot_EmitLineColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m
   bool m9t1 = (((*(m9_sl_CHAR *) m9_at (serHex.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err))).len > INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    DynStr_Append (pool, d, (*(m9_sl_CHAR *) m9_at (serHex.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err)), err);
+    DynStr_Append (d, d_pool, (*(m9_sl_CHAR *) m9_at (serHex.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
   } else {
-    Plot_EmitColor (pool, d, (*(int64_t *) m9_at (serCol.v, s, INT64_C(4), sizeof (int64_t), err)), err);
+    Plot_EmitColor (d, d_pool, (*(int64_t *) m9_at (serCol.v, s, INT64_C(4), sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Plot_EmitBarColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m9_state *err)
+static void Plot_EmitBarColor (DynStr_DString * *d, m9_pool *d_pool, int64_t s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1915,111 +1927,113 @@ static void Plot_EmitBarColor (m9_pool *pool, DynStr_DString * *d, int64_t s, m9
   bool m9t1 = (((*(m9_sl_CHAR *) m9_at (barHex.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err))).len > INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    DynStr_Append (pool, d, (*(m9_sl_CHAR *) m9_at (barHex.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err)), err);
+    DynStr_Append (d, d_pool, (*(m9_sl_CHAR *) m9_at (barHex.v, s, INT64_C(4), sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
   } else {
-    Plot_EmitColor (pool, d, (*(int64_t *) m9_at (barCol.v, s, INT64_C(4), sizeof (int64_t), err)), err);
+    Plot_EmitColor (d, d_pool, (*(int64_t *) m9_at (barCol.v, s, INT64_C(4), sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Plot_EmitWhisker (m9_pool *pool, DynStr_DString * *d, double x0, double y0, double x1, double y1, bool horiz, m9_state *err)
+static void Plot_EmitWhisker (DynStr_DString * *d, m9_pool *d_pool, double x0, double y0, double x1, double y1, bool horiz, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s126, 11 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s126, 11 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, d, x0, err);
+  Plot_EmitR (d, d_pool, x0, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, d, 32u, err);
+  DynStr_AppendChar (d, d_pool, 32u, err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, d, y0, err);
+  Plot_EmitR (d, d_pool, y0, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s127, 3 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s127, 3 }), err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, d, x1, err);
+  Plot_EmitR (d, d_pool, x1, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, d, 32u, err);
+  DynStr_AppendChar (d, d_pool, 32u, err);
   if (err->exc) goto L_ret;
-  Plot_EmitR (pool, d, y1, err);
+  Plot_EmitR (d, d_pool, y1, err);
   if (err->exc) goto L_ret;
   if (horiz) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s128, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s128, 3 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, x0, err);
+    Plot_EmitR (d, d_pool, x0, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 32u, err);
+    DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, (y0 - Plot_Cap), err);
+    Plot_EmitR (d, d_pool, (y0 - Plot_Cap), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s129, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s129, 3 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, x0, err);
+    Plot_EmitR (d, d_pool, x0, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 32u, err);
+    DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, (y0 + Plot_Cap), err);
+    Plot_EmitR (d, d_pool, (y0 + Plot_Cap), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s130, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s130, 3 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, x1, err);
+    Plot_EmitR (d, d_pool, x1, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 32u, err);
+    DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, (y1 - Plot_Cap), err);
+    Plot_EmitR (d, d_pool, (y1 - Plot_Cap), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s131, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s131, 3 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, x1, err);
+    Plot_EmitR (d, d_pool, x1, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 32u, err);
+    DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, (y1 + Plot_Cap), err);
+    Plot_EmitR (d, d_pool, (y1 + Plot_Cap), err);
     if (err->exc) goto L_ret;
   } else {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s132, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s132, 3 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, (x0 - Plot_Cap), err);
+    Plot_EmitR (d, d_pool, (x0 - Plot_Cap), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 32u, err);
+    DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, y0, err);
+    Plot_EmitR (d, d_pool, y0, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s133, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s133, 3 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, (x0 + Plot_Cap), err);
+    Plot_EmitR (d, d_pool, (x0 + Plot_Cap), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 32u, err);
+    DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, y0, err);
+    Plot_EmitR (d, d_pool, y0, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s134, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s134, 3 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, (x1 - Plot_Cap), err);
+    Plot_EmitR (d, d_pool, (x1 - Plot_Cap), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 32u, err);
+    DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, y1, err);
+    Plot_EmitR (d, d_pool, y1, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s135, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s135, 3 }), err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, (x1 + Plot_Cap), err);
+    Plot_EmitR (d, d_pool, (x1 + Plot_Cap), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 32u, err);
+    DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    Plot_EmitR (pool, d, y1, err);
+    Plot_EmitR (d, d_pool, y1, err);
     if (err->exc) goto L_ret;
   }
-  DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s136, 48 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s136, 48 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -2243,13 +2257,10 @@ void Plot_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Mat_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

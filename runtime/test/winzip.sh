@@ -419,8 +419,18 @@ n=$(wine reg query 'HKCU\Environment' /v Path 2>/dev/null | tr -d '\r' |
 # advice a reader wants, matched by a check meant for gcc.  What a
 # toolchain actually emits is `warning:` / `error:` with the colon,
 # and lto-wrapper's note carries neither.
+#
+# AND NOT THE HOST'S BROWSER.  The third run starts the tutorial, wine's
+# winebrowser hands the URL to the HOST's Chrome, and run headless
+# (over ssh, no DISPLAY) Chrome writes its own complaint into the log:
+#   [3332465:3332465:1001/182601.106071:ERROR:ui/ozone/...] Missing X server or $DISPLAY
+# which matched `error:` and reddened the gate on 0.12.0's release day
+# (44 of 45) for a line no Windows reader can ever see.  Lines in
+# Chromium's own [pid:tid:MMDD/HHMMSS.usec:LEVEL:file] shape are not
+# the install's; everything else still counts.
 w=$(grep -inE 'warning:|error:|lto-wrapper|ShellExecuteEx' \
-      "$W/install.log" "$W/second.log" "$W/third.log" || true)
+      "$W/install.log" "$W/second.log" "$W/third.log" |
+    grep -vE ':\[[0-9]+:[0-9]+:[0-9]{4}/[0-9.]+:[A-Z0-9]+:[^]]*\] ' || true)
 if [ -z "$w" ]; then ok "no warning and no error in either log"
 else bad "the log carries a warning a first-time reader would see:"; printf '%s\n' "$w" | sed 's/^/        /'
 fi

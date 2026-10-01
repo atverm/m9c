@@ -94,40 +94,42 @@ struct Mat_CholJob {
   int64_t bad;
 };
 
+static m9_pool m9mframe = {0};
+
 static void Mat_Same (Mat_Matrix * a, Mat_Matrix * b, m9_state *err);
 static int64_t Mat_Claim (Mat_Work *w, m9_state *err);
 static void Mat_Finish (Mat_Work *w, m9_state *err);
 static void Mat_AwaitAll (Mat_Work *w, int64_t want, m9_state *err);
 static void Mat_ResetWork (Mat_Work *w, m9_state *err);
-static void Mat_InvBand (Mat_InvJob *j, int64_t b, m9_state *err);
-static void Mat_InvWorker (Mat_InvJob *j, m9_state *err);
-static void Mat_RunInv (Mat_InvJob * *j, int64_t threads, m9_state *err);
-static void Mat_CholBand (Mat_CholJob *j, int64_t b, m9_state *err);
-static void Mat_CholWorker (Mat_CholJob *j, m9_state *err);
-static void Mat_RunChol (Mat_CholJob * *j, int64_t threads, m9_state *err);
-static void Mat_NormalBand (Mat_NormalJob *j, int64_t b, m9_state *err);
-static void Mat_NormalWorker (Mat_NormalJob *j, m9_state *err);
+static void Mat_InvBand (Mat_InvJob *j, m9_pool *j_pool, int64_t b, m9_state *err);
+static void Mat_InvWorker (Mat_InvJob *j, m9_pool *j_pool, m9_state *err);
+static void Mat_RunInv (Mat_InvJob * *j, m9_pool *j_pool, int64_t threads, m9_state *err);
+static void Mat_CholBand (Mat_CholJob *j, m9_pool *j_pool, int64_t b, m9_state *err);
+static void Mat_CholWorker (Mat_CholJob *j, m9_pool *j_pool, m9_state *err);
+static void Mat_RunChol (Mat_CholJob * *j, m9_pool *j_pool, int64_t threads, m9_state *err);
+static void Mat_NormalBand (Mat_NormalJob *j, m9_pool *j_pool, int64_t b, m9_state *err);
+static void Mat_NormalWorker (Mat_NormalJob *j, m9_pool *j_pool, m9_state *err);
 
-static void *m9_thr_Mat_NormalWorker (void *p)
+static void *m9_thr_Mat_NormalWorker (void *p, m9_pool *pool)
 {
   m9_state e = { 0 };
-  Mat_NormalWorker ((Mat_NormalJob *) p, &e);
+  Mat_NormalWorker ((Mat_NormalJob *) p, pool, &e);
   if (e.exc) m9_thread_died (e.exc->name);
   return NULL;
 }
 
-static void *m9_thr_Mat_InvWorker (void *p)
+static void *m9_thr_Mat_InvWorker (void *p, m9_pool *pool)
 {
   m9_state e = { 0 };
-  Mat_InvWorker ((Mat_InvJob *) p, &e);
+  Mat_InvWorker ((Mat_InvJob *) p, pool, &e);
   if (e.exc) m9_thread_died (e.exc->name);
   return NULL;
 }
 
-static void *m9_thr_Mat_CholWorker (void *p)
+static void *m9_thr_Mat_CholWorker (void *p, m9_pool *pool)
 {
   m9_state e = { 0 };
-  Mat_CholWorker ((Mat_CholJob *) p, &e);
+  Mat_CholWorker ((Mat_CholJob *) p, pool, &e);
   if (e.exc) m9_thread_died (e.exc->name);
   return NULL;
 }
@@ -139,7 +141,7 @@ Mat_Matrix * Mat_New (m9_pool *pool, int64_t rows, int64_t cols, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   if (((rows <= INT64_C(0)) || (cols <= INT64_C(0)))) {
@@ -157,6 +159,7 @@ Mat_Matrix * Mat_New (m9_pool *pool, int64_t rows, int64_t cols, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -210,7 +213,7 @@ L_ret: ;
   return m9ret;
 }
 
-void Mat_Set (Mat_Matrix * *m, int64_t r, int64_t c, double v, m9_state *err)
+void Mat_Set (Mat_Matrix * *m, m9_pool *m_pool, int64_t r, int64_t c, double v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -220,6 +223,7 @@ void Mat_Set (Mat_Matrix * *m, int64_t r, int64_t c, double v, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m_pool, (*m));
   m9_pool_free (&m9frame);
   return;
 }
@@ -339,7 +343,7 @@ Mat_Matrix * Mat_SubRowVector (m9_pool *pool, Mat_Matrix * m, m9_sl_F64 v, m9_st
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * res = NULL; (void) res;
   int64_t r = 0; (void) r;
@@ -371,6 +375,7 @@ Mat_Matrix * Mat_SubRowVector (m9_pool *pool, Mat_Matrix * m, m9_sl_F64 v, m9_st
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -429,7 +434,7 @@ Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t r = 0; (void) r;
@@ -474,6 +479,7 @@ Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -483,7 +489,7 @@ Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_state *err
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t r = 0; (void) r;
@@ -521,6 +527,7 @@ Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_state *err
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -530,7 +537,7 @@ Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * t = NULL; (void) t;
   int64_t r = 0; (void) r;
@@ -556,6 +563,7 @@ Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -565,7 +573,7 @@ Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t r = 0; (void) r;
@@ -593,6 +601,7 @@ Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -602,7 +611,7 @@ Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t r = 0; (void) r;
@@ -630,11 +639,12 @@ Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Mat_Scale (Mat_Matrix * *m, double s, m9_state *err)
+void Mat_Scale (Mat_Matrix * *m, m9_pool *m_pool, double s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -658,6 +668,7 @@ void Mat_Scale (Mat_Matrix * *m, double s, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m_pool, (*m));
   m9_pool_free (&m9frame);
   return;
 }
@@ -667,7 +678,7 @@ Mat_Matrix * Mat_Identity (m9_pool *pool, int64_t n, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * m = NULL; (void) m;
   int64_t i = 0; (void) i;
@@ -686,6 +697,7 @@ Mat_Matrix * Mat_Identity (m9_pool *pool, int64_t n, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -695,7 +707,7 @@ Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * t = NULL; (void) t;
   int64_t r = 0; (void) r;
@@ -721,6 +733,7 @@ Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -730,7 +743,7 @@ Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * l = NULL; (void) l;
   int64_t n = 0; (void) n;
@@ -788,6 +801,7 @@ Mat_Matrix * Mat_Cholesky (m9_pool *pool, Mat_Matrix * a, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -797,7 +811,7 @@ Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_st
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * x = NULL; (void) x;
   int64_t n = 0; (void) n;
@@ -872,6 +886,7 @@ Mat_Matrix * Mat_CholSolve (m9_pool *pool, Mat_Matrix * l, Mat_Matrix * b, m9_st
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -881,7 +896,7 @@ Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   Mat_Matrix * l = NULL; (void) l;
   l = Mat_Cholesky (pool, a, err);
@@ -892,6 +907,7 @@ Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -901,7 +917,7 @@ Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_s
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   Mat_CholJob * j = NULL; (void) j;
@@ -995,10 +1011,10 @@ Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_s
       j->nbands = m9_div_i64 ((m9_sub_i64 (m9_add_i64 (m9_sub_i64 (n, k1, err), j->band, err), INT64_C(1), err)), j->band, err);
       if (err->exc) goto L_ret;
       j->pass = INT64_C(1);
-      Mat_RunChol (&(j), threads, err);
+      Mat_RunChol (&(j), &(scratch), threads, err);
       if (err->exc) goto L_ret;
       j->pass = INT64_C(2);
-      Mat_RunChol (&(j), threads, err);
+      Mat_RunChol (&(j), &(scratch), threads, err);
       if (err->exc) goto L_ret;
       l = j->l;
     }
@@ -1009,6 +1025,7 @@ Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_s
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -1019,7 +1036,7 @@ Mat_Matrix * Mat_CholInverse (m9_pool *pool, Mat_Matrix * l, int64_t threads, m9
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Mat_Matrix * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   Mat_InvJob * j = NULL; (void) j;
@@ -1049,22 +1066,23 @@ Mat_Matrix * Mat_CholInverse (m9_pool *pool, Mat_Matrix * l, int64_t threads, m9
   j->nbands = m9_div_i64 ((m9_sub_i64 (m9_add_i64 (n, j->band, err), INT64_C(1), err)), j->band, err);
   if (err->exc) goto L_ret;
   j->pass = INT64_C(1);
-  Mat_RunInv (&(j), threads, err);
+  Mat_RunInv (&(j), &(scratch), threads, err);
   if (err->exc) goto L_ret;
   j->pass = INT64_C(2);
-  Mat_RunInv (&(j), threads, err);
+  Mat_RunInv (&(j), &(scratch), threads, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = j->p;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-void Mat_AddNormal (m9_pool *pool, Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, int64_t threads, m9_state *err)
+void Mat_AddNormal (Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, m9_pool *k_pool, int64_t threads, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1112,7 +1130,7 @@ void Mat_AddNormal (m9_pool *pool, Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k,
   t = INT64_C(1);
   m9t3to = threads;
   for (; t <= m9t3to; t += 1) {
-    m9_thread_start (m9_thr_Mat_NormalWorker, (void *) j, err);
+    m9_thread_start2 (m9_thr_Mat_NormalWorker, (void *) j, &(scratch), err);
     if (err->exc) goto L_ret;
   } }
   Mat_AwaitAll (&(j->w), threads, err);
@@ -1133,6 +1151,7 @@ void Mat_AddNormal (m9_pool *pool, Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k,
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, k_pool, (*k));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -1239,7 +1258,7 @@ L_ret: ;
   return;
 }
 
-static void Mat_InvBand (Mat_InvJob *j, int64_t b, m9_state *err)
+static void Mat_InvBand (Mat_InvJob *j, m9_pool *j_pool, int64_t b, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1340,12 +1359,15 @@ static void Mat_InvBand (Mat_InvJob *j, int64_t b, m9_state *err)
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, j_pool, (*j).l);
+  m9_adopt_if (&m9frame, j_pool, (*j).t);
+  m9_adopt_if (&m9frame, j_pool, (*j).p);
   m9_pool_free (&m9frame);
   m9_pool_free (&wpool);
   return;
 }
 
-static void Mat_InvWorker (Mat_InvJob *j, m9_state *err)
+static void Mat_InvWorker (Mat_InvJob *j, m9_pool *j_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1356,7 +1378,7 @@ static void Mat_InvWorker (Mat_InvJob *j, m9_state *err)
   if (err->exc) goto L_ret;
   for (;;) {
     if (!((b < (*j).nbands))) break;
-    Mat_InvBand (j, b, err);
+    Mat_InvBand (j, j_pool, b, err);
     if (err->exc) goto L_ret;
     b = Mat_Claim (&((*j).w), err);
     if (err->exc) goto L_ret;
@@ -1365,11 +1387,14 @@ static void Mat_InvWorker (Mat_InvJob *j, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, j_pool, (*j).l);
+  m9_adopt_if (&m9frame, j_pool, (*j).t);
+  m9_adopt_if (&m9frame, j_pool, (*j).p);
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Mat_RunInv (Mat_InvJob * *j, int64_t threads, m9_state *err)
+static void Mat_RunInv (Mat_InvJob * *j, m9_pool *j_pool, int64_t threads, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1385,18 +1410,19 @@ static void Mat_RunInv (Mat_InvJob * *j, int64_t threads, m9_state *err)
   t = INT64_C(1);
   m9t1to = threads;
   for (; t <= m9t1to; t += 1) {
-    m9_thread_start (m9_thr_Mat_InvWorker, (void *) (*j), err);
+    m9_thread_start2 (m9_thr_Mat_InvWorker, (void *) (*j), j_pool, err);
     if (err->exc) goto L_ret;
   } }
   Mat_AwaitAll (&((*j)->w), threads, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, j_pool, (*j));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Mat_CholBand (Mat_CholJob *j, int64_t b, m9_state *err)
+static void Mat_CholBand (Mat_CholJob *j, m9_pool *j_pool, int64_t b, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1467,11 +1493,12 @@ static void Mat_CholBand (Mat_CholJob *j, int64_t b, m9_state *err)
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, j_pool, (*j).l);
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Mat_CholWorker (Mat_CholJob *j, m9_state *err)
+static void Mat_CholWorker (Mat_CholJob *j, m9_pool *j_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1482,7 +1509,7 @@ static void Mat_CholWorker (Mat_CholJob *j, m9_state *err)
   if (err->exc) goto L_ret;
   for (;;) {
     if (!((b < (*j).nbands))) break;
-    Mat_CholBand (j, b, err);
+    Mat_CholBand (j, j_pool, b, err);
     if (err->exc) goto L_ret;
     b = Mat_Claim (&((*j).w), err);
     if (err->exc) goto L_ret;
@@ -1491,11 +1518,12 @@ static void Mat_CholWorker (Mat_CholJob *j, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, j_pool, (*j).l);
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Mat_RunChol (Mat_CholJob * *j, int64_t threads, m9_state *err)
+static void Mat_RunChol (Mat_CholJob * *j, m9_pool *j_pool, int64_t threads, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1511,18 +1539,19 @@ static void Mat_RunChol (Mat_CholJob * *j, int64_t threads, m9_state *err)
   t = INT64_C(1);
   m9t1to = threads;
   for (; t <= m9t1to; t += 1) {
-    m9_thread_start (m9_thr_Mat_CholWorker, (void *) (*j), err);
+    m9_thread_start2 (m9_thr_Mat_CholWorker, (void *) (*j), j_pool, err);
     if (err->exc) goto L_ret;
   } }
   Mat_AwaitAll (&((*j)->w), threads, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, j_pool, (*j));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Mat_NormalBand (Mat_NormalJob *j, int64_t b, m9_state *err)
+static void Mat_NormalBand (Mat_NormalJob *j, m9_pool *j_pool, int64_t b, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1574,11 +1603,14 @@ static void Mat_NormalBand (Mat_NormalJob *j, int64_t b, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, j_pool, (*j).h);
+  m9_adopt_if (&m9frame, j_pool, (*j).k);
+  m9_adopt_if (&m9frame, j_pool, (*j).wt.p);
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Mat_NormalWorker (Mat_NormalJob *j, m9_state *err)
+static void Mat_NormalWorker (Mat_NormalJob *j, m9_pool *j_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1589,7 +1621,7 @@ static void Mat_NormalWorker (Mat_NormalJob *j, m9_state *err)
   if (err->exc) goto L_ret;
   for (;;) {
     if (!((b < (*j).nbands))) break;
-    Mat_NormalBand (j, b, err);
+    Mat_NormalBand (j, j_pool, b, err);
     if (err->exc) goto L_ret;
     b = Mat_Claim (&((*j).w), err);
     if (err->exc) goto L_ret;
@@ -1598,6 +1630,9 @@ static void Mat_NormalWorker (Mat_NormalJob *j, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, j_pool, (*j).h);
+  m9_adopt_if (&m9frame, j_pool, (*j).k);
+  m9_adopt_if (&m9frame, j_pool, (*j).wt.p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -1607,13 +1642,10 @@ void Mat_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   Math_m9init (err); if (err->exc) goto L_ret;
   Faults_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

@@ -1,0 +1,6 @@
+(* EXPECT: the frame owns p; it is freed at exit, not by DISPOSE *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F () = VAR p : PTR R ;
+BEGIN p := NEW (R) ; DISPOSE (p) END F ;
+END m.

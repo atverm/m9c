@@ -8,8 +8,7 @@ DEFINITION MODULE OpenApi ;
 
 IMPORT HttpServer ;
 
-PROCEDURE Document (VAR pool: POOL ;
-                    RO title: STR ;
+PROCEDURE Document (RO title: STR ;
                     RO version: STR ;
                     r: PTR HttpServer.Router)
   : RO STR ;
@@ -38,56 +37,56 @@ BEGIN
   RETURN FALSE
 END PathSeen ;
 
-PROCEDURE AppendMethod (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE AppendMethod (VAR d: PTR DynStr.DString ;
                         RO m: STR) =
 BEGIN
   (* OpenAPI wants lowercase method keys; the known verbs map, an
      unknown verb passes through verbatim and the document's reader
      rejects it -- the failure stays visible                         *)
-  IF DynStr.Eq (m, 'GET') THEN DynStr.Append (pool, d, 'get')
-  ELSIF DynStr.Eq (m, 'POST') THEN DynStr.Append (pool, d, 'post')
-  ELSIF DynStr.Eq (m, 'PUT') THEN DynStr.Append (pool, d, 'put')
-  ELSIF DynStr.Eq (m, 'DELETE') THEN DynStr.Append (pool, d, 'delete')
-  ELSIF DynStr.Eq (m, 'HEAD') THEN DynStr.Append (pool, d, 'head')
-  ELSE DynStr.Append (pool, d, m)
+  IF DynStr.Eq (m, 'GET') THEN DynStr.Append (d, 'get')
+  ELSIF DynStr.Eq (m, 'POST') THEN DynStr.Append (d, 'post')
+  ELSIF DynStr.Eq (m, 'PUT') THEN DynStr.Append (d, 'put')
+  ELSIF DynStr.Eq (m, 'DELETE') THEN DynStr.Append (d, 'delete')
+  ELSIF DynStr.Eq (m, 'HEAD') THEN DynStr.Append (d, 'head')
+  ELSE DynStr.Append (d, m)
   END
 END AppendMethod ;
 
-PROCEDURE Operation (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE Operation (VAR d: PTR DynStr.DString ;
                      r: PTR HttpServer.Router ; j: I64) =
 BEGIN
   (* "get":{"summary":S,"responses":{"200":{"description":S,
      "content":{"text/plain":{}}}}} -- the summary doubles as the
      response description: one string, two mandatory slots           *)
-  DynStr.AppendChar (pool, d, '"') ;
-  AppendMethod (pool, d, HttpServer.RouteMethod (r, j)) ;
-  DynStr.Append (pool, d, '":{"summary":"') ;
-  DynStr.Append (pool, d, HttpServer.RouteSummary (r, j)) ;
-  DynStr.Append (pool, d, '","responses":{"') ;
-  DynStr.AppendI64 (pool, d, HttpServer.RouteStatus (r, j)) ;
-  DynStr.Append (pool, d, '":{"description":"') ;
-  DynStr.Append (pool, d, HttpServer.RouteSummary (r, j)) ;
-  DynStr.Append (pool, d, '","content":{"') ;
-  DynStr.Append (pool, d, HttpServer.RouteType (r, j)) ;
-  DynStr.Append (pool, d, '":{}}}}}')
+  DynStr.AppendChar (d, '"') ;
+  AppendMethod (d, HttpServer.RouteMethod (r, j)) ;
+  DynStr.Append (d, '":{"summary":"') ;
+  DynStr.Append (d, HttpServer.RouteSummary (r, j)) ;
+  DynStr.Append (d, '","responses":{"') ;
+  DynStr.AppendI64 (d, HttpServer.RouteStatus (r, j)) ;
+  DynStr.Append (d, '":{"description":"') ;
+  DynStr.Append (d, HttpServer.RouteSummary (r, j)) ;
+  DynStr.Append (d, '","content":{"') ;
+  DynStr.Append (d, HttpServer.RouteType (r, j)) ;
+  DynStr.Append (d, '":{}}}}}')
 END Operation ;
 
-PROCEDURE Document (VAR pool: POOL ;
-                    RO title: STR ;
+PROCEDURE Document (RO title: STR ;
                     RO version: STR ;
                     r: PTR HttpServer.Router)
   : RO STR =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   i, j, n : I64 ;
   firstPath, firstOp : BOOL ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"openapi":"3.0.3","info":{"title":"') ;
-  DynStr.Append (pool, d, title) ;
-  DynStr.Append (pool, d, '","version":"') ;
-  DynStr.Append (pool, d, version) ;
-  DynStr.Append (pool, d, '"},"paths":{') ;
+  DynStr.Append (d, '{"openapi":"3.0.3","info":{"title":"') ;
+  DynStr.Append (d, title) ;
+  DynStr.Append (d, '","version":"') ;
+  DynStr.Append (d, version) ;
+  DynStr.Append (d, '"},"paths":{') ;
   n := HttpServer.RouteCount (r) ;
   firstPath := TRUE ;
   FOR i := 0 TO n - 1 DO
@@ -95,24 +94,24 @@ BEGIN
       (* one path object per distinct path; every method on that
          path becomes an operation inside it.  O(n^2) over a route
          table: measure before believing it matters.                 *)
-      IF NOT firstPath THEN DynStr.AppendChar (pool, d, ',') END ;
+      IF NOT firstPath THEN DynStr.AppendChar (d, ',') END ;
       firstPath := FALSE ;
-      DynStr.AppendChar (pool, d, '"') ;
-      DynStr.Append (pool, d, HttpServer.RoutePath (r, i)) ;
-      DynStr.Append (pool, d, '":{') ;
+      DynStr.AppendChar (d, '"') ;
+      DynStr.Append (d, HttpServer.RoutePath (r, i)) ;
+      DynStr.Append (d, '":{') ;
       firstOp := TRUE ;
       FOR j := i TO n - 1 DO
         IF DynStr.Eq (HttpServer.RoutePath (r, j),
                       HttpServer.RoutePath (r, i)) THEN
-          IF NOT firstOp THEN DynStr.AppendChar (pool, d, ',') END ;
+          IF NOT firstOp THEN DynStr.AppendChar (d, ',') END ;
           firstOp := FALSE ;
-          Operation (pool, d, r, j)
+          Operation (d, r, j)
         END
       END ;
-      DynStr.AppendChar (pool, d, '}')
+      DynStr.AppendChar (d, '}')
     END
   END ;
-  DynStr.Append (pool, d, '}}') ;
+  DynStr.Append (d, '}}') ;
   RETURN DynStr.View (d)
 END Document ;
 

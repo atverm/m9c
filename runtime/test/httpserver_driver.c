@@ -61,10 +61,10 @@ int main (void)
   HttpServer_Router *r = HttpServer_NewRouter (&pool, &err);
   ck (err.exc == NULL && r != NULL, "NewRouter");
 
-  HttpServer_AddRoute (&pool, &r, sl ("GET", rb[0]), sl ("/hello", rb[1]),
+  HttpServer_AddRoute ( &r, &pool,sl ("GET", rb[0]), sl ("/hello", rb[1]),
     200, sl ("text/plain", rb[2]), sl ("hi from M9", rb[3]),
     sl ("say hello", rb[4]), &err);
-  HttpServer_AddRoute (&pool, &r, sl ("POST", rb[5]), sl ("/echo", rb[6]),
+  HttpServer_AddRoute ( &r, &pool,sl ("POST", rb[5]), sl ("/echo", rb[6]),
     200, sl ("text/plain", rb[7]), sl ("ok", rb[8]),
     sl ("echo it", rb[9]), &err);
   ck (err.exc == NULL && HttpServer_RouteCount (r, &err) == 2, "2 routes");
@@ -75,13 +75,13 @@ int main (void)
   err.exc = NULL;
 
   /* the router describes itself */
-  m9_sl_CHAR doc = OpenApi_Document (&pool, sl ("M9 demo", tb),
+  m9_sl_CHAR doc = OpenApi_Document ( sl ("M9 demo", tb),
     sl ("0.1", rb[10]), r, &err);
   ck (err.exc == NULL, "Document raises nothing");
   ck (sleq (doc, EXPECT), "OpenAPI document matches, char for char");
 
   /* ... and serves its own description */
-  HttpServer_AddRoute (&pool, &r, sl ("GET", rb[11]),
+  HttpServer_AddRoute ( &r, &pool,sl ("GET", rb[11]),
     sl ("/openapi.json", rb[12]), 200, sl ("application/json", rb[13]),
     doc, sl ("the API, derived", rb[14]), &err);
 

@@ -462,8 +462,8 @@ PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, a) ;
-  DynStr.Append (pool, d, b) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
   RETURN DynStr.View (d)
 END Cat ;
 
@@ -482,7 +482,7 @@ BEGIN
     IF path[i] = '/' AND DynStr.Len (d) > 0 THEN
       Io.MkDir (DynStr.View (d))
     END ;
-    DynStr.AppendChar (scratch, d, path[i])
+    DynStr.AppendChar (d, path[i])
   END ;
   IF DynStr.Len (d) > 0 THEN Io.MkDir (DynStr.View (d)) END
 EXCEPT
@@ -562,11 +562,11 @@ VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   IF comp <= 0 THEN RETURN Cat (pool, 'null', '') END ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"id": "blosc", "cname": "') ;
-  DynStr.Append (pool, d, CodecName (comp)) ;
-  DynStr.Append (pool, d, '", "clevel": ') ;
-  DynStr.AppendI64 (pool, d, Level (comp)) ;
-  DynStr.Append (pool, d, ', "shuffle": 1, "blocksize": 0}') ;
+  DynStr.Append (d, '{"id": "blosc", "cname": "') ;
+  DynStr.Append (d, CodecName (comp)) ;
+  DynStr.Append (d, '", "clevel": ') ;
+  DynStr.AppendI64 (d, Level (comp)) ;
+  DynStr.Append (d, ', "shuffle": 1, "blocksize": 0}') ;
   RETURN DynStr.View (d)
 END CompressorJson ;
 
@@ -588,43 +588,44 @@ BEGIN
      zarr 2 sorts these keys instead, so the two cannot both be
      matched; 3 is the one ICOS is moving to. *)
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"shape": [') ;
+  DynStr.Append (d, '{"shape": [') ;
   FOR i := 0 TO LEN (shape) - 1 DO
-    IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
-    DynStr.AppendI64 (pool, d, shape[i])
+    IF i > 0 THEN DynStr.Append (d, ', ') END ;
+    DynStr.AppendI64 (d, shape[i])
   END ;
-  DynStr.Append (pool, d, '], "chunks": [') ;
+  DynStr.Append (d, '], "chunks": [') ;
   FOR i := 0 TO LEN (chunks) - 1 DO
-    IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
-    DynStr.AppendI64 (pool, d, chunks[i])
+    IF i > 0 THEN DynStr.Append (d, ', ') END ;
+    DynStr.AppendI64 (d, chunks[i])
   END ;
-  DynStr.Append (pool, d, '], "dtype": "') ;
-  DynStr.Append (pool, d, dtype) ;
-  DynStr.Append (pool, d, '", "fill_value": ') ;
-  DynStr.Append (pool, d, fill) ;
-  DynStr.Append (pool, d, ', "order": "C", "filters": ') ;
-  DynStr.Append (pool, d, filters) ;
-  DynStr.Append (pool, d, ', "dimension_separator": ".", "compressor": ') ;
-  DynStr.Append (pool, d, CompressorJson (pool, comp)) ;
-  DynStr.Append (pool, d, ', "zarr_format": 2}') ;
+  DynStr.Append (d, '], "dtype": "') ;
+  DynStr.Append (d, dtype) ;
+  DynStr.Append (d, '", "fill_value": ') ;
+  DynStr.Append (d, fill) ;
+  DynStr.Append (d, ', "order": "C", "filters": ') ;
+  DynStr.Append (d, filters) ;
+  DynStr.Append (d, ', "dimension_separator": ".", "compressor": ') ;
+  DynStr.Append (d, CompressorJson (pool, comp)) ;
+  DynStr.Append (d, ', "zarr_format": 2}') ;
   RETURN DynStr.View (d)
 END Meta ;
 
-PROCEDURE DimsJson (VAR pool: POOL ; RO dims: SLICE OF STR) : STR
+PROCEDURE DimsJson (RO dims: SLICE OF STR) : STR
   RAISES ValueRange =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"_ARRAY_DIMENSIONS": [') ;
+  DynStr.Append (d, '{"_ARRAY_DIMENSIONS": [') ;
   FOR i := 0 TO LEN (dims) - 1 DO
-    IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
-    DynStr.AppendChar (pool, d, '"') ;
-    DynStr.Append (pool, d, dims[i]) ;
-    DynStr.AppendChar (pool, d, '"')
+    IF i > 0 THEN DynStr.Append (d, ', ') END ;
+    DynStr.AppendChar (d, '"') ;
+    DynStr.Append (d, dims[i]) ;
+    DynStr.AppendChar (d, '"')
   END ;
-  DynStr.Append (pool, d, ']}') ;
+  DynStr.Append (d, ']}') ;
   RETURN DynStr.View (d)
 END DimsJson ;
 
@@ -770,11 +771,11 @@ BEGIN
       END
     END ;
     nm := DynStr.New (scratch) ;
-    DynStr.Append (scratch, nm, adir) ;
-    DynStr.AppendChar (scratch, nm, '/') ;
+    DynStr.Append (nm, adir) ;
+    DynStr.AppendChar (nm, '/') ;
     FOR i := 0 TO r - 1 DO
-      IF i > 0 THEN DynStr.AppendChar (scratch, nm, '.') END ;
-      DynStr.AppendI64 (scratch, nm, ci[i])
+      IF i > 0 THEN DynStr.AppendChar (nm, '.') END ;
+      DynStr.AppendI64 (nm, ci[i])
     END ;
     PutChunk (pool, DynStr.View (nm), buf, esize, comp) ;
     (* and the chunk odometer, the same way *)
@@ -862,7 +863,7 @@ BEGIN
      ZERO dimensions still has to say so.  The ICOS ecosystem store's
      0-d `temporal_resolution` is exactly that case, and it was a
      failing driver check before this line lost its guard. *)
-  WriteText (pool, Cat (pool, adir, '/.zattrs'), DimsJson (pool, dims)) ;
+  WriteText (pool, Cat (pool, adir, '/.zattrs'), DimsJson (dims)) ;
   WriteChunks (pool, adir, raw, esize, shape, chunks, fillB, comp)
 EXCEPT
 | Io.IOError (p) : RAISE Error (Cat (pool, 'cannot write array ', adir))
@@ -877,7 +878,7 @@ BEGIN
   MkDirP (pool, adir) ;
   WriteText (pool, Cat (pool, adir, '/.zarray'),
              Meta (pool, '<f4', '"NaN"', 'null', shape, chunks, comp)) ;
-  WriteText (pool, Cat (pool, adir, '/.zattrs'), DimsJson (pool, dims))
+  WriteText (pool, Cat (pool, adir, '/.zattrs'), DimsJson (dims))
 EXCEPT
 | Io.IOError (p) : RAISE Error (Cat (pool, 'cannot declare array ', adir))
 END DeclareF32 ;
@@ -908,11 +909,11 @@ BEGIN
     F32.ToBytesLE (data[i], SLICE (raw, i * 4, 4))
   END ;
   nm := DynStr.New (scratch) ;
-  DynStr.Append (scratch, nm, adir) ;
-  DynStr.AppendChar (scratch, nm, '/') ;
+  DynStr.Append (nm, adir) ;
+  DynStr.AppendChar (nm, '/') ;
   FOR i := 0 TO LEN (ci) - 1 DO
-    IF i > 0 THEN DynStr.AppendChar (scratch, nm, '.') END ;
-    DynStr.AppendI64 (scratch, nm, ci[i])
+    IF i > 0 THEN DynStr.AppendChar (nm, '.') END ;
+    DynStr.AppendI64 (nm, ci[i])
   END ;
   PutChunk (pool, DynStr.View (nm), raw, 4, comp)
 END PutChunkF32 ;
@@ -940,7 +941,7 @@ BEGIN
      NaN fill IS the default, so the two spellings agree *)
   IF hasFill AND fill = fill THEN
     fv := F32 (fill) ;
-    txt := Json.ReprText (pool, F64 (fv))
+    txt := Json.ReprText (F64 (fv))
   END ;
   fb := NEW (scratch, BYTE, 4) ;
   F32.ToBytesLE (fv, fb) ;
@@ -977,7 +978,7 @@ BEGIN
   txt := Cat (pool, '"NaN"', '') ;
   IF hasFill AND fill = fill THEN
     fv := fill ;
-    txt := Json.ReprText (pool, fv)
+    txt := Json.ReprText (fv)
   END ;
   fb := NEW (scratch, BYTE, 8) ;
   F64.ToBytesLE (fv, fb) ;
@@ -1086,7 +1087,7 @@ BEGIN
     FitsInt (pool, fill, width, signed, adir) ;
     PutIntLE (fb, 0, width, fill) ;
     d := DynStr.New (scratch) ;
-    DynStr.AppendI64 (scratch, d, fill) ;
+    DynStr.AppendI64 (d, fill) ;
     txt := Cat (pool, DynStr.View (d), '')
   ELSE
     (* fill_value NULL, never 0: a zarr fill of 0 on an integer column
@@ -1159,9 +1160,10 @@ END WriteBool ;
    what zarr-python writes and what a reader decodes.  Plain RFC 4648
    with padding; M9 has no shifts, so the six-bit groups come out by
    DIV and MOD. *)
-PROCEDURE Base64 (VAR pool: POOL ; RO b: SLICE OF BYTE) : STR
+PROCEDURE Base64 (RO b: SLICE OF BYTE) : STR
   RAISES ValueRange, IndexError =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   Alphabet : STR ;
   i, n, v, rest : I64 ;
@@ -1171,31 +1173,31 @@ BEGIN
   Alphabet :=
     'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/' ;
   d := DynStr.New (pool) ;
-  DynStr.AppendChar (pool, d, '"') ;
+  DynStr.AppendChar (d, '"') ;
   n := LEN (b) ;
   i := 0 ;
   WHILE i + 3 <= n DO
     v := I64 (b[i]) * 65536 + I64 (b[i + 1]) * 256 + I64 (b[i + 2]) ;
-    DynStr.AppendChar (pool, d, Alphabet[v DIV 262144]) ;
-    DynStr.AppendChar (pool, d, Alphabet[(v DIV 4096) MOD 64]) ;
-    DynStr.AppendChar (pool, d, Alphabet[(v DIV 64) MOD 64]) ;
-    DynStr.AppendChar (pool, d, Alphabet[v MOD 64]) ;
+    DynStr.AppendChar (d, Alphabet[v DIV 262144]) ;
+    DynStr.AppendChar (d, Alphabet[(v DIV 4096) MOD 64]) ;
+    DynStr.AppendChar (d, Alphabet[(v DIV 64) MOD 64]) ;
+    DynStr.AppendChar (d, Alphabet[v MOD 64]) ;
     i := i + 3
   END ;
   rest := n - i ;
   IF rest = 1 THEN
     v := I64 (b[i]) * 65536 ;
-    DynStr.AppendChar (pool, d, Alphabet[v DIV 262144]) ;
-    DynStr.AppendChar (pool, d, Alphabet[(v DIV 4096) MOD 64]) ;
-    DynStr.Append (pool, d, '==')
+    DynStr.AppendChar (d, Alphabet[v DIV 262144]) ;
+    DynStr.AppendChar (d, Alphabet[(v DIV 4096) MOD 64]) ;
+    DynStr.Append (d, '==')
   ELSIF rest = 2 THEN
     v := I64 (b[i]) * 65536 + I64 (b[i + 1]) * 256 ;
-    DynStr.AppendChar (pool, d, Alphabet[v DIV 262144]) ;
-    DynStr.AppendChar (pool, d, Alphabet[(v DIV 4096) MOD 64]) ;
-    DynStr.AppendChar (pool, d, Alphabet[(v DIV 64) MOD 64]) ;
-    DynStr.AppendChar (pool, d, '=')
+    DynStr.AppendChar (d, Alphabet[v DIV 262144]) ;
+    DynStr.AppendChar (d, Alphabet[(v DIV 4096) MOD 64]) ;
+    DynStr.AppendChar (d, Alphabet[(v DIV 64) MOD 64]) ;
+    DynStr.AppendChar (d, '=')
   END ;
-  DynStr.AppendChar (pool, d, '"') ;
+  DynStr.AppendChar (d, '"') ;
   RETURN DynStr.View (d)
 END Base64 ;
 
@@ -1216,8 +1218,8 @@ BEGIN
     RAISE Error (Cat (pool, 'a |S width must be positive for ', adir))
   END ;
   d := DynStr.New (scratch) ;
-  DynStr.Append (scratch, d, '|S') ;
-  DynStr.AppendI64 (scratch, d, width) ;
+  DynStr.Append (d, '|S') ;
+  DynStr.AppendI64 (d, width) ;
   fb := NEW (scratch, BYTE, width) ;
   FOR i := 0 TO width - 1 DO fb[i] := BYTE (0) END ;
   IF hasFill THEN
@@ -1227,7 +1229,7 @@ BEGIN
         'the fill is longer than its |S width in ', adir))
     END ;
     FOR i := 0 TO LEN (u) - 1 DO fb[i] := u[i] END ;
-    txt := Base64 (pool, fb)
+    txt := Base64 (fb)
   ELSE
     txt := Cat (pool, 'null', '')
   END ;
@@ -1255,8 +1257,8 @@ BEGIN
     RAISE Error (Cat (pool, 'a |S width must be positive for ', adir))
   END ;
   d := DynStr.New (scratch) ;
-  DynStr.Append (scratch, d, '|S') ;
-  DynStr.AppendI64 (scratch, d, width) ;
+  DynStr.Append (d, '|S') ;
+  DynStr.AppendI64 (d, width) ;
   raw := NEW (scratch, BYTE, LEN (data) * width) ;
   FOR i := 0 TO LEN (data) - 1 DO
     u := DynStr.Utf8 (scratch, data[i]) ;
@@ -1284,7 +1286,7 @@ BEGIN
         'the fill is longer than its |S width in ', adir))
     END ;
     FOR k := 0 TO LEN (u) - 1 DO fb[k] := u[k] END ;
-    txt := Base64 (pool, fb)
+    txt := Base64 (fb)
   ELSE
     (* fill_value null, as the live |S stores carry it *)
     txt := Cat (pool, 'null', '')
@@ -1348,32 +1350,34 @@ BEGIN
   END ;
   fb := NEW (scratch, BYTE, width * 4) ;
   FOR i := 0 TO width * 4 - 1 DO fb[i] := BYTE (0) END ;
-  Emit (pool, adir, UDtype (pool, width), 'null', fb, width * 4, raw,
+  Emit (pool, adir, UDtype (width), 'null', fb, width * 4, raw,
         shape, chunks, dims, comp)
 EXCEPT
 | IndexError : RAISE Error (Cat (pool, 'index error writing ', adir))
 END WriteStrUcs4 ;
 
-PROCEDURE UDtype (VAR pool: POOL ; width: I64) : STR
+PROCEDURE UDtype (width: I64) : STR
   RAISES ValueRange =
-VAR d : PTR DynStr.DString IN pool ;
+VAR pool : POOL ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '<U') ;
-  DynStr.AppendI64 (pool, d, width) ;
+  DynStr.Append (d, '<U') ;
+  DynStr.AppendI64 (d, width) ;
   RETURN DynStr.View (d)
 END UDtype ;
 
-PROCEDURE ZeroChunk (VAR pool: POOL ; RO adir: STR ; r: I64) : STR
+PROCEDURE ZeroChunk (RO adir: STR ; r: I64) : STR
   RAISES ValueRange =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, adir) ;
-  DynStr.Append (pool, d, '/0') ;
-  FOR i := 1 TO r - 1 DO DynStr.Append (pool, d, '.0') END ;
+  DynStr.Append (d, adir) ;
+  DynStr.Append (d, '/0') ;
+  FOR i := 1 TO r - 1 DO DynStr.Append (d, '.0') END ;
   RETURN DynStr.View (d)
 END ZeroChunk ;
 
@@ -1429,11 +1433,11 @@ BEGIN
              Meta (pool, '|O', 'null', '[{"id": "vlen-utf8"}]',
                    shape, shape, comp)) ;
   IF LEN (dims) > 0 THEN
-    WriteText (pool, Cat (pool, adir, '/.zattrs'), DimsJson (pool, dims))
+    WriteText (pool, Cat (pool, adir, '/.zattrs'), DimsJson (dims))
   END ;
   (* typesize 1: after the filter the chunk is octets, not elements,
      which is what zarr's own writers tell blosc for an object array *)
-  PutChunk (pool, ZeroChunk (pool, adir, r), buf, 1, comp)
+  PutChunk (pool, ZeroChunk (adir, r), buf, 1, comp)
 EXCEPT
 | Io.IOError (p) :
     RAISE Error (Cat (pool, 'cannot write array ', adir))
@@ -1567,9 +1571,9 @@ BEGIN
     END
   END ;
   nm := DynStr.New (scratch) ;
-  DynStr.Append (scratch, nm, s.adir) ;
-  DynStr.AppendChar (scratch, nm, '/') ;
-  DynStr.AppendI64 (scratch, nm, s.ci) ;
+  DynStr.Append (nm, s.adir) ;
+  DynStr.AppendChar (nm, '/') ;
+  DynStr.AppendI64 (nm, s.ci) ;
   PutChunk (scratch, DynStr.View (nm), s.buf, s.esize, s.comp) ;
   s.ci := s.ci + 1 ;
   s.n := 0
@@ -1650,7 +1654,7 @@ BEGIN
                    s.comp)) ;
   IF LEN (s.dims) > 0 THEN
     WriteText (scratch, Cat (scratch, s.adir, '/.zattrs'),
-               DimsJson (scratch, s.dims))
+               DimsJson (s.dims))
   END ;
   s.sealed := TRUE
 EXCEPT
@@ -1706,20 +1710,20 @@ VAR body : STR ;
 BEGIN
   IF NOT Io.Exists (Cat (pool, dir, Cat (pool, '/', leaf))) THEN RETURN END ;
   body := ReadText (pool, Cat (pool, dir, Cat (pool, '/', leaf))) ;
-  IF n > 0 THEN DynStr.Append (pool, d, ', ') END ;
-  DynStr.AppendChar (pool, d, '"') ;
+  IF n > 0 THEN DynStr.Append (d, ', ') END ;
+  DynStr.AppendChar (d, '"') ;
   IF LEN (rel) > 0 THEN
-    DynStr.Append (pool, d, rel) ;
-    DynStr.AppendChar (pool, d, '/')
+    DynStr.Append (d, rel) ;
+    DynStr.AppendChar (d, '/')
   END ;
-  DynStr.Append (pool, d, leaf) ;
-  DynStr.Append (pool, d, '": ') ;
+  DynStr.Append (d, leaf) ;
+  DynStr.Append (d, '": ') ;
   (* RE-SERIALISED, not pasted.  The file on disk may be indented by
      four (zarr 2), by two (zarr 3) or written by this module, and a
      consolidated index that pasted them would inherit whichever.
      json.dumps' default separators are the one spelling zarr 3 and
      icos_ingest.finalize agree on -- see Json.Spaced's note. *)
-  DynStr.Append (pool, d, Json.Spaced (pool, Json.Parse (pool, body))) ;
+  DynStr.Append (d, Json.Spaced (Json.Parse (body))) ;
   n := n + 1
 EXCEPT
 | Io.IOError (p) : RETURN
@@ -1770,7 +1774,7 @@ PROCEDURE Finish (VAR pool: POOL ; RO store: STR ;
                   VAR d: PTR DynStr.DString)
   RAISES Error, ValueRange =
 BEGIN
-  DynStr.Append (pool, d, '}, "zarr_consolidated_format": 1}') ;
+  DynStr.Append (d, '}, "zarr_consolidated_format": 1}') ;
   WriteText (pool, Cat (pool, store, '/.zmetadata'), DynStr.View (d))
 EXCEPT
 | Io.IOError (p) :
@@ -1789,12 +1793,12 @@ VAR path : STR ;
 BEGIN
   path := Cat (pool, store, '/.zattrs') ;
   IF Io.Exists (path) THEN
-    RETURN Json.Parse (pool, ReadText (pool, path))
+    RETURN Json.Parse (ReadText (pool, path))
   END ;
-  RETURN Json.NewObj (pool)
+  RETURN Json.NewObj ()
 EXCEPT
-| Io.IOError (p) : RETURN Json.NewObj (pool)
-| Json.ParseError (m, l, c) : RETURN Json.NewObj (pool)
+| Io.IOError (p) : RETURN Json.NewObj ()
+| Json.ParseError (m, l, c) : RETURN Json.NewObj ()
 END RootAttrs ;
 
 PROCEDURE IsSlim (VAR pool: POOL ; RO store: STR) : BOOL
@@ -1809,12 +1813,13 @@ END IsSlim ;
 PROCEDURE MarkSlim (VAR pool: POOL ; RO store: STR)
   RAISES Error, ValueRange =
 VAR
-  a, v : PTR Json.Node IN pool ;
+  a, v : PTR Json.Node ;           (* both in this frame: RootAttrs
+                                      answers a Parse, NewStr a node *)
 BEGIN
   a := RootAttrs (pool, store) ;
-  v := Json.NewStr (pool, SlimValue) ;
+  v := Json.NewStr (SlimValue) ;
   Json.Set (a, SlimAttr, v) ;
-  WriteText (pool, Cat (pool, store, '/.zattrs'), Json.Spaced (pool, a))
+  WriteText (pool, Cat (pool, store, '/.zattrs'), Json.Spaced (a))
 EXCEPT
 | Io.IOError (p) :
     RAISE Error (Cat (pool, 'cannot mark slim: ', store))
@@ -1833,7 +1838,7 @@ BEGIN
       'refusing a FULL consolidate of a shallow-root store: ', store))
   END ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"metadata": {') ;
+  DynStr.Append (d, '{"metadata": {') ;
   n := 0 ;
   Walk (pool, d, n, store, store, '', TRUE) ;
   Finish (pool, store, d)
@@ -1887,7 +1892,7 @@ BEGIN
      one carrying it -- exactly as the reference does *)
   MarkSlim (pool, store) ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"metadata": {') ;
+  DynStr.Append (d, '{"metadata": {') ;
   n := 0 ;
   AddMeta (pool, d, n, store, '', '.zgroup') ;
   AddMeta (pool, d, n, store, '', '.zattrs') ;

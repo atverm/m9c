@@ -1,0 +1,168 @@
+STATEFUL DEFINITION MODULE Grow ;
+
+(* the shapes m9elide must tell apart, one procedure each: a
+   constructor that PROMISES the pool (`: PTR List IN pool`, kept), a
+   mutator that grows an object, a slice, a string and a frame-built
+   list answered, a wrapper that only hands its pool on, a keeper
+   whose pool reaches a module table through a library call, and an
+   output slot that allocates with nothing to grow *)
+
+TYPE
+  Item ;                                 (* opaque; lives in a POOL *)
+  List = RECORD
+    n : I64 ;
+    head : OPT PTR Item ;
+  END ;
+  Named = RECORD
+    id : STR ;
+  END ;
+
+PROCEDURE NewList (VAR pool: POOL) : PTR List IN pool ;
+  (* an empty list, in pool: the IN clause is a promise the frame
+     cannot keep, so the tool leaves this pool alone *)
+
+PROCEDURE Push (VAR l: PTR List ; v: I64) ;
+  (* v in front of l *)
+
+PROCEDURE Sum (l: PTR List) : I64 ;
+
+PROCEDURE Squares (n: I64) : SLICE OF I64 ;
+  (* 0, 1, 4, ... *)
+
+PROCEDURE Pair () : PTR List ;
+  (* a list holding 2 and 1; no promise about where *)
+
+PROCEDURE Label (VAR pool: POOL ; v: I64) : STR ;
+  (* the digits of v after 'v=' *)
+
+PROCEDURE Remember (VAR pool: POOL ; RO s: STR) ;
+  (* keeps a copy of s in the module's table, in pool *)
+
+PROCEDURE Count () : I64 ;
+  (* how many were remembered *)
+
+PROCEDURE Fill (VAR pool: POOL ; VAR out: SLICE OF I64 ; n: I64) ;
+  (* out becomes n copies of n *)
+
+PROCEDURE FillId (VAR pool: POOL ; VAR n: Named ; v: I64) ;
+  (* n.id becomes 'id-' and the digits of v: a VIEW of a string built
+     in pool, stored through a VAR parameter, so the pool must stay --
+     as a local scratch pool it would die under n *)
+
+END Grow.
+
+
+IMPLEMENTATION MODULE Grow ;
+
+IMPORT Text ;
+IMPORT Fmt ;
+IMPORT DynStr ;
+
+TYPE
+  Item = RECORD
+    v : I64 ;
+    next : OPT PTR Item ;
+  END ;
+
+VAR
+  own : POOL ;
+  table : SLICE OF STR ;
+  nt : I64 ;
+
+PROCEDURE NewList (VAR pool: POOL) : PTR List IN pool =
+VAR l : PTR List IN pool ;
+BEGIN
+  l := NEW (pool, List) ;
+  l.n := 0 ;
+  l.head := NONE ;
+  RETURN l
+END NewList ;
+
+PROCEDURE Push (VAR l: PTR List ; v: I64) =
+VAR it : PTR Item ;
+BEGIN
+  it := NEW (l, Item) ;             (* the pool l lives in *)
+  it.v := v ;
+  it.next := l.head ;
+  l.head := SOME (it) ;
+  l.n := l.n + 1
+END Push ;
+
+PROCEDURE Sum (l: PTR List) : I64 =
+VAR
+  c : OPT PTR Item ;
+  s : I64 ;
+BEGIN
+  s := 0 ;
+  c := l.head ;
+  WHILE c IS SOME it DO
+    s := s + it.v ;
+    c := it.next
+  END ;
+  RETURN s
+END Sum ;
+
+PROCEDURE Squares (n: I64) : SLICE OF I64 =
+VAR
+  s : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  s := NEW (I64, n) ;
+  FOR i := 0 TO n - 1 DO s[i] := i * i END ;
+  RETURN s
+END Squares ;
+
+PROCEDURE Pair () : PTR List =
+VAR l : PTR List ;
+BEGIN
+  l := NEW (List) ;
+  l.n := 0 ;
+  l.head := NONE ;
+  Push (l, 1) ;
+  Push (l, 2) ;
+  RETURN l
+END Pair ;
+
+PROCEDURE Label (VAR pool: POOL ; v: I64) : STR =
+BEGIN
+  RETURN Text.Cat (pool, 'v=', Fmt.I64Str (v))
+END Label ;
+
+PROCEDURE Remember (VAR pool: POOL ; RO s: STR) =
+VAR
+  nb : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF nt = LEN (table) THEN
+    nb := NEW (own, STR, 2 * LEN (table) + 4) ;
+    FOR i := 0 TO nt - 1 DO nb[i] := table[i] END ;
+    table := nb
+  END ;
+  table[nt] := Text.Keep (pool, s) ;
+  nt := nt + 1
+END Remember ;
+
+PROCEDURE Count () : I64 =
+BEGIN
+  RETURN nt
+END Count ;
+
+PROCEDURE Fill (VAR pool: POOL ; VAR out: SLICE OF I64 ; n: I64) =
+VAR i : I64 ;
+BEGIN
+  out := NEW (pool, I64, n) ;
+  FOR i := 0 TO n - 1 DO out[i] := n END
+END Fill ;
+
+PROCEDURE FillId (VAR pool: POOL ; VAR n: Named ; v: I64) =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'id-') ;
+  DynStr.AppendI64 (d, v) ;
+  n.id := DynStr.View (d)
+END FillId ;
+
+BEGIN
+  nt := 0
+END Grow.

@@ -1,0 +1,11 @@
+(* EXPECT: a frame allocation dies with this frame; it cannot be stored through n, which is declared IN a pool (par 4.3) *)
+MODULE m ;
+TYPE Node = RECORD names : SLICE OF STR END ;
+PROCEDURE F (VAR p: POOL) =
+VAR n : PTR Node IN p ;
+BEGIN
+  n := NEW (p, Node) ;
+  n.names := NEW (STR, 2)
+END F ;
+BEGIN
+END m.

@@ -34,6 +34,8 @@ struct HttpServer_Router {
   int64_t count;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[13] = { 108u, 105u, 115u, 116u, 101u, 110u, 32u, 102u, 97u, 105u, 108u, 101u, 100u };
 static const uint32_t m9s1[13] = { 97u, 99u, 99u, 101u, 112u, 116u, 32u, 102u, 97u, 105u, 108u, 101u, 100u };
 static const uint32_t m9s2[2] = { 79u, 75u };
@@ -53,7 +55,7 @@ static m9_mon m9_gate_csrv;
 
 static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, m9_state *err);
 static m9_sl_CHAR HttpServer_Reason (int64_t status, m9_state *err);
-static void HttpServer_CrLf (m9_pool *pool, DynStr_DString * *d, m9_state *err);
+static void HttpServer_CrLf (DynStr_DString * *d, m9_pool *d_pool, m9_state *err);
 static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_state *err);
 static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err);
 
@@ -63,7 +65,7 @@ HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   HttpServer_Router * m9ret = NULL;
   HttpServer_Router * r = NULL; (void) r;
   r = (HttpServer_Router *) m9_pool_alloc (&((*pool)), sizeof (HttpServer_Router), 1, err);
@@ -76,18 +78,19 @@ HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void HttpServer_AddRoute (m9_pool *pool, HttpServer_Router * *r, m9_sl_CHAR method, m9_sl_CHAR path, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_sl_CHAR summary, m9_state *err)
+void HttpServer_AddRoute (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_CHAR method, m9_sl_CHAR path, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_sl_CHAR summary, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   HttpServer_Route * nr = NULL; (void) nr;
-  nr = (HttpServer_Route *) m9_pool_alloc (&((*pool)), sizeof (HttpServer_Route), 1, err);
+  nr = (HttpServer_Route *) m9_pool_alloc (r_pool, sizeof (HttpServer_Route), 1, err);
   if (err->exc) goto L_ret;
   nr->method = method;
   nr->path = path;
@@ -107,6 +110,7 @@ void HttpServer_AddRoute (m9_pool *pool, HttpServer_Router * *r, m9_sl_CHAR meth
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return;
 }
@@ -272,7 +276,7 @@ static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, 
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   HttpServer_Route * m9ret = NULL;
   HttpServer_Route * c = NULL; (void) c;
   int64_t j = 0; (void) j;
@@ -302,6 +306,7 @@ static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -352,18 +357,19 @@ L_ret: ;
   return m9ret;
 }
 
-static void HttpServer_CrLf (m9_pool *pool, DynStr_DString * *d, m9_state *err)
+static void HttpServer_CrLf (DynStr_DString * *d, m9_pool *d_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_AppendChar (pool, d, 13u, err);
+  DynStr_AppendChar (d, d_pool, 13u, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, d, 10u, err);
+  DynStr_AppendChar (d, d_pool, 10u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -380,31 +386,31 @@ static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9
   int64_t n = 0; (void) n;
   d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s7, 9 }), err);
+  DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s7, 9 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(scratch), &(d), status, err);
+  DynStr_AppendI64 (&(d), &(scratch), status, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (&(scratch), &(d), 32u, err);
+  DynStr_AppendChar (&(d), &(scratch), 32u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(scratch), &(d), HttpServer_Reason (status, err), err);
+  DynStr_Append (&(d), &(scratch), HttpServer_Reason (status, err), err);
   if (err->exc) goto L_ret;
-  HttpServer_CrLf (&(scratch), &(d), err);
+  HttpServer_CrLf (&(d), &(scratch), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s8, 14 }), err);
+  DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s8, 14 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(scratch), &(d), ctype, err);
+  DynStr_Append (&(d), &(scratch), ctype, err);
   if (err->exc) goto L_ret;
-  HttpServer_CrLf (&(scratch), &(d), err);
+  HttpServer_CrLf (&(d), &(scratch), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s9, 16 }), err);
+  DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s9, 16 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(scratch), &(d), (body).len, err);
+  DynStr_AppendI64 (&(d), &(scratch), (body).len, err);
   if (err->exc) goto L_ret;
-  HttpServer_CrLf (&(scratch), &(d), err);
+  HttpServer_CrLf (&(d), &(scratch), err);
   if (err->exc) goto L_ret;
-  HttpServer_CrLf (&(scratch), &(d), err);
+  HttpServer_CrLf (&(d), &(scratch), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(scratch), &(d), body, err);
+  DynStr_Append (&(d), &(scratch), body, err);
   if (err->exc) goto L_ret;
   wire = DynStr_Bytes (&(scratch), DynStr_View (d, err), false, err);
   if (err->exc) goto L_ret;
@@ -507,13 +513,10 @@ void HttpServer_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Http_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

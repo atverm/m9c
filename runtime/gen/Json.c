@@ -22,6 +22,8 @@ struct Json_Cursor {
   int64_t col;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[31] = { 116u, 114u, 97u, 105u, 108u, 105u, 110u, 103u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 115u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 118u, 97u, 108u, 117u, 101u };
 static const uint32_t m9s1[14] = { 97u, 114u, 114u, 97u, 121u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
 static const uint32_t m9s2[14] = { 97u, 114u, 114u, 97u, 121u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
@@ -30,87 +32,91 @@ static const uint32_t m9s4[15] = { 110u, 117u, 109u, 98u, 101u, 114u, 32u, 101u,
 static const uint32_t m9s5[15] = { 110u, 117u, 109u, 98u, 101u, 114u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
 static const uint32_t m9s6[22] = { 116u, 114u, 117u, 101u, 32u, 111u, 114u, 32u, 102u, 97u, 108u, 115u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
 static const uint32_t m9s7[17] = { 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s8[17] = { 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s9[3] = { 78u, 97u, 78u };
-static const uint32_t m9s10[8] = { 73u, 110u, 102u, 105u, 110u, 105u, 116u, 121u };
-static const uint32_t m9s11[9] = { 45u, 73u, 110u, 102u, 105u, 110u, 105u, 116u, 121u };
-static const uint32_t m9s12[15] = { 110u, 117u, 109u, 98u, 101u, 114u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s13[35] = { 83u, 101u, 116u, 32u, 111u, 110u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s14[34] = { 65u, 100u, 100u, 32u, 111u, 110u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u };
-static const uint32_t m9s15[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s16[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s17[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s18[14] = { 118u, 97u, 108u, 117u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s19[32] = { 99u, 111u, 108u, 111u, 110u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 109u, 101u, 109u, 98u, 101u, 114u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s20[31] = { 99u, 111u, 109u, 109u, 97u, 32u, 111u, 114u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 98u, 114u, 97u, 99u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s21[33] = { 99u, 111u, 109u, 109u, 97u, 32u, 111u, 114u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 98u, 114u, 97u, 99u, 107u, 101u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s22[15] = { 115u, 116u, 114u, 105u, 110u, 103u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s23[19] = { 117u, 110u, 116u, 101u, 114u, 109u, 105u, 110u, 97u, 116u, 101u, 100u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s24[14] = { 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s25[34] = { 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 100u, 101u, 99u, 105u, 109u, 97u, 108u, 32u, 112u, 111u, 105u, 110u, 116u };
-static const uint32_t m9s26[26] = { 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 105u, 110u, 32u, 101u, 120u, 112u, 111u, 110u, 101u, 110u, 116u };
-static const uint32_t m9s27[22] = { 110u, 117u, 109u, 98u, 101u, 114u, 32u, 117u, 110u, 114u, 101u, 112u, 114u, 101u, 115u, 101u, 110u, 116u, 97u, 98u, 108u, 101u };
-static const uint32_t m9s28[15] = { 111u, 98u, 106u, 101u, 99u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s29[24] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 117u, 110u, 105u, 99u, 111u, 100u, 101u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
-static const uint32_t m9s30[25] = { 98u, 97u, 100u, 32u, 104u, 101u, 120u, 32u, 105u, 110u, 32u, 117u, 110u, 105u, 99u, 111u, 100u, 101u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
-static const uint32_t m9s31[23] = { 101u, 115u, 99u, 97u, 112u, 101u, 32u, 97u, 116u, 32u, 101u, 110u, 100u, 32u, 111u, 102u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s32[32] = { 108u, 111u, 110u, 101u, 32u, 115u, 117u, 114u, 114u, 111u, 103u, 97u, 116u, 101u, 32u, 105u, 110u, 32u, 117u, 110u, 105u, 99u, 111u, 100u, 101u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
+static const uint32_t m9s8[31] = { 116u, 114u, 97u, 105u, 108u, 105u, 110u, 103u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 115u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s9[17] = { 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s10[3] = { 78u, 97u, 78u };
+static const uint32_t m9s11[8] = { 73u, 110u, 102u, 105u, 110u, 105u, 116u, 121u };
+static const uint32_t m9s12[9] = { 45u, 73u, 110u, 102u, 105u, 110u, 105u, 116u, 121u };
+static const uint32_t m9s13[15] = { 110u, 117u, 109u, 98u, 101u, 114u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s14[35] = { 83u, 101u, 116u, 32u, 111u, 110u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
+static const uint32_t m9s15[34] = { 65u, 100u, 100u, 32u, 111u, 110u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u };
+static const uint32_t m9s16[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s17[5] = { 102u, 97u, 108u, 115u, 101u };
+static const uint32_t m9s18[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s19[14] = { 118u, 97u, 108u, 117u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s20[32] = { 99u, 111u, 108u, 111u, 110u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 109u, 101u, 109u, 98u, 101u, 114u, 32u, 110u, 97u, 109u, 101u };
+static const uint32_t m9s21[31] = { 99u, 111u, 109u, 109u, 97u, 32u, 111u, 114u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 98u, 114u, 97u, 99u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s22[33] = { 99u, 111u, 109u, 109u, 97u, 32u, 111u, 114u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 98u, 114u, 97u, 99u, 107u, 101u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s23[15] = { 115u, 116u, 114u, 105u, 110u, 103u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s24[19] = { 117u, 110u, 116u, 101u, 114u, 109u, 105u, 110u, 97u, 116u, 101u, 100u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s25[14] = { 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s26[34] = { 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 100u, 101u, 99u, 105u, 109u, 97u, 108u, 32u, 112u, 111u, 105u, 110u, 116u };
+static const uint32_t m9s27[26] = { 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 105u, 110u, 32u, 101u, 120u, 112u, 111u, 110u, 101u, 110u, 116u };
+static const uint32_t m9s28[22] = { 110u, 117u, 109u, 98u, 101u, 114u, 32u, 117u, 110u, 114u, 101u, 112u, 114u, 101u, 115u, 101u, 110u, 116u, 97u, 98u, 108u, 101u };
+static const uint32_t m9s29[15] = { 111u, 98u, 106u, 101u, 99u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s30[24] = { 116u, 114u, 117u, 110u, 99u, 97u, 116u, 101u, 100u, 32u, 117u, 110u, 105u, 99u, 111u, 100u, 101u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
+static const uint32_t m9s31[25] = { 98u, 97u, 100u, 32u, 104u, 101u, 120u, 32u, 105u, 110u, 32u, 117u, 110u, 105u, 99u, 111u, 100u, 101u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
+static const uint32_t m9s32[23] = { 101u, 115u, 99u, 97u, 112u, 101u, 32u, 97u, 116u, 32u, 101u, 110u, 100u, 32u, 111u, 102u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
 static const uint32_t m9s33[32] = { 108u, 111u, 110u, 101u, 32u, 115u, 117u, 114u, 114u, 111u, 103u, 97u, 116u, 101u, 32u, 105u, 110u, 32u, 117u, 110u, 105u, 99u, 111u, 100u, 101u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
 static const uint32_t m9s34[32] = { 108u, 111u, 110u, 101u, 32u, 115u, 117u, 114u, 114u, 111u, 103u, 97u, 116u, 101u, 32u, 105u, 110u, 32u, 117u, 110u, 105u, 99u, 111u, 100u, 101u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
-static const uint32_t m9s35[24] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 105u, 110u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s36[4] = { 92u, 117u, 48u, 48u };
-static const uint32_t m9s37[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s38[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s39[4] = { 110u, 117u, 108u, 108u };
-static const uint32_t m9s40[2] = { 123u, 125u };
-static const uint32_t m9s41[2] = { 58u, 32u };
-static const uint32_t m9s42[2] = { 91u, 93u };
+static const uint32_t m9s35[32] = { 108u, 111u, 110u, 101u, 32u, 115u, 117u, 114u, 114u, 111u, 103u, 97u, 116u, 101u, 32u, 105u, 110u, 32u, 117u, 110u, 105u, 99u, 111u, 100u, 101u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
+static const uint32_t m9s36[24] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 105u, 110u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s37[4] = { 92u, 117u, 48u, 48u };
+static const uint32_t m9s38[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s39[5] = { 102u, 97u, 108u, 115u, 101u };
+static const uint32_t m9s40[4] = { 110u, 117u, 108u, 108u };
+static const uint32_t m9s41[2] = { 123u, 125u };
+static const uint32_t m9s42[2] = { 58u, 32u };
+static const uint32_t m9s43[2] = { 91u, 93u };
 
-static uint32_t Json_Cur (Json_Cursor *c, m9_state *err);
-static void Json_Bump (Json_Cursor *c, m9_state *err);
-static void Json_Skip (Json_Cursor *c, m9_state *err);
-static void Json_Fail (Json_Cursor *c, m9_sl_CHAR msg, m9_state *err);
-static Json_Node * Json_ParseValue (m9_pool *pool, Json_Cursor *c, m9_state *err);
-static Json_Node * Json_ParseObject (m9_pool *pool, Json_Cursor *c, m9_state *err);
-static Json_Node * Json_ParseArray (m9_pool *pool, Json_Cursor *c, m9_state *err);
-static m9_sl_CHAR Json_ParseString (Json_Cursor *c, m9_state *err);
-static Json_Node * Json_ParseNumber (m9_pool *pool, Json_Cursor *c, m9_state *err);
-static bool Json_Match (Json_Cursor *c, m9_sl_CHAR lit, m9_state *err);
+static uint32_t Json_Cur (Json_Cursor * *c, m9_pool *c_pool, m9_state *err);
+static void Json_Bump (Json_Cursor * *c, m9_pool *c_pool, m9_state *err);
+static void Json_Skip (Json_Cursor * *c, m9_pool *c_pool, m9_state *err);
+static void Json_Fail (Json_Cursor * *c, m9_pool *c_pool, m9_sl_CHAR msg, m9_state *err);
+static Json_Node * Json_ParseValue (Json_Cursor * *c, m9_pool *c_pool, m9_state *err);
+static Json_Node * Json_ParseObject (Json_Cursor * *c, m9_pool *c_pool, m9_state *err);
+static Json_Node * Json_ParseArray (Json_Cursor * *c, m9_pool *c_pool, m9_state *err);
+static m9_sl_CHAR Json_ParseString (Json_Cursor * *c, m9_pool *c_pool, m9_state *err);
+static Json_Node * Json_ParseNumber (Json_Cursor * *c, m9_pool *c_pool, m9_state *err);
+static bool Json_Match (Json_Cursor * *c, m9_pool *c_pool, m9_sl_CHAR lit, m9_state *err);
 static Json_Node * Json_MemberNode (Json_Node * obj, int64_t i, m9_state *err);
-static m9_sl_CHAR Json_CopyStr (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
+static m9_sl_CHAR Json_CopyStrTo (Json_Node * *dst, m9_pool *dst_pool, m9_sl_CHAR s, m9_state *err);
+static void Json_CopyInto (Json_Node * *root, m9_pool *root_pool, Json_Node * *c, m9_pool *c_pool, Json_Node * n, m9_state *err);
 static bool Json_HasBackslash (m9_sl_CHAR t, m9_state *err);
 static int64_t Json_HexVal (uint32_t ch, m9_state *err);
 static int64_t Json_Hex4 (m9_sl_CHAR t, int64_t at, m9_state *err);
-static m9_sl_CHAR Json_DecodeStr (m9_pool *pool, m9_sl_CHAR t, m9_state *err);
-static void Json_EmitJStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR t, m9_state *err);
-static void Json_EscapeBody (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR t, m9_state *err);
+static m9_sl_CHAR Json_DecodeStr (m9_sl_CHAR t, m9_state *err);
+static void Json_EmitJStr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_state *err);
+static void Json_EscapeBody (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_state *err);
 static uint32_t Json_HexDigit (int64_t v, m9_state *err);
-static void Json_EmitVal (m9_pool *pool, DynStr_DString * *d, Json_Node * n, bool spaced, m9_state *err);
-static void Json_EmitSorted (m9_pool *pool, DynStr_DString * *d, Json_Node * n, m9_state *err);
+static void Json_EmitVal (DynStr_DString * *d, m9_pool *d_pool, Json_Node * n, bool spaced, m9_state *err);
+static void Json_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, Json_Node * n, m9_state *err);
 static bool Json_NameLess (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
-static void Json_Indent (m9_pool *pool, DynStr_DString * *d, int64_t depth, m9_state *err);
-static void Json_EmitPretty (m9_pool *pool, DynStr_DString * *d, Json_Node * n, int64_t depth, m9_state *err);
+static void Json_Indent (DynStr_DString * *d, m9_pool *d_pool, int64_t depth, m9_state *err);
+static void Json_EmitPretty (DynStr_DString * *d, m9_pool *d_pool, Json_Node * n, int64_t depth, m9_state *err);
 
 
-Json_Node * Json_Parse (m9_pool *pool, m9_sl_CHAR src, m9_state *err)
+Json_Node * Json_Parse (m9_sl_CHAR src, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
-  Json_Cursor c = {0}; (void) c;
+  Json_Cursor * c = NULL; (void) c;
   Json_Node * n = NULL; (void) n;
-  c.src = src;
-  c.pos = INT64_C(0);
-  c.line = INT64_C(1);
-  c.col = INT64_C(1);
-  n = Json_ParseValue (pool, &(c), err);
+  c = (Json_Cursor *) m9_pool_alloc (err->res, sizeof (Json_Cursor), 1, err);
   if (err->exc) goto L_ret;
-  Json_Skip (&(c), err);
+  c->src = src;
+  c->pos = INT64_C(0);
+  c->line = INT64_C(1);
+  c->col = INT64_C(1);
+  n = Json_ParseValue (&(c), err->res, err);
   if (err->exc) goto L_ret;
-  if ((c.pos < (c.src).len)) {
-    Json_Fail (&(c), ((m9_sl_CHAR){ (uint32_t *) m9s0, 31 }), err);
+  Json_Skip (&(c), err->res, err);
+  if (err->exc) goto L_ret;
+  if ((c->pos < (c->src).len)) {
+    Json_Fail (&(c), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 31 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -118,6 +124,7 @@ Json_Node * Json_Parse (m9_pool *pool, m9_sl_CHAR src, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -127,7 +134,7 @@ Json_Node * Json_Field (Json_Node * obj, m9_sl_CHAR name, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * c = NULL; (void) c;
   { __typeof__(obj->v) m9t1 = obj->v;
@@ -159,6 +166,7 @@ Json_Node * Json_Field (Json_Node * obj, m9_sl_CHAR name, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -168,7 +176,7 @@ Json_Node * Json_Item (Json_Node * arr, int64_t i, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * c = NULL; (void) c;
   int64_t j = 0; (void) j;
@@ -210,6 +218,7 @@ Json_Node * Json_Item (Json_Node * arr, int64_t i, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -305,7 +314,7 @@ Json_Node * Json_MemberAt (Json_Node * obj, int64_t i, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   err->res = m9res;
   m9ret = Json_MemberNode (obj, i, err);
@@ -313,6 +322,7 @@ Json_Node * Json_MemberAt (Json_Node * obj, int64_t i, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -441,7 +451,40 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Json_Text (m9_pool *pool, Json_Node * n, m9_state *err)
+Json_Node * Json_ParseIn (m9_pool *pool, m9_sl_CHAR src, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Json_Node * m9ret = NULL;
+  Json_Cursor * c = NULL; (void) c;
+  Json_Node * n = NULL; (void) n;
+  c = (Json_Cursor *) m9_pool_alloc (&((*pool)), sizeof (Json_Cursor), 1, err);
+  if (err->exc) goto L_ret;
+  c->src = src;
+  c->pos = INT64_C(0);
+  c->line = INT64_C(1);
+  c->col = INT64_C(1);
+  n = Json_ParseValue (&(c), &((*pool)), err);
+  if (err->exc) goto L_ret;
+  Json_Skip (&(c), &((*pool)), err);
+  if (err->exc) goto L_ret;
+  if ((c->pos < (c->src).len)) {
+    Json_Fail (&(c), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s8, 31 }), err);
+    if (err->exc) goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_CHAR Json_Text (Json_Node * n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -453,12 +496,12 @@ m9_sl_CHAR Json_Text (m9_pool *pool, Json_Node * n, m9_state *err)
   case Json_Value_Str: {
     m9_sl_CHAR t = m9t1.u.Str.s; (void) t;
     err->res = m9res;
-    m9ret = Json_DecodeStr (pool, t, err);
+    m9ret = Json_DecodeStr (t, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s8, 17 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s8, 17 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 17 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 17 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -525,17 +568,18 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Json_CompactSorted (m9_pool *pool, Json_Node * n, m9_state *err)
+m9_sl_CHAR Json_CompactSorted (Json_Node * n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
-  Json_EmitSorted (pool, &(d), n, err);
+  Json_EmitSorted (&(d), &(scratch), n, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -544,21 +588,24 @@ m9_sl_CHAR Json_CompactSorted (m9_pool *pool, Json_Node * n, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_CHAR Json_Pretty (m9_pool *pool, Json_Node * n, m9_state *err)
+m9_sl_CHAR Json_Pretty (Json_Node * n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
-  Json_EmitPretty (pool, &(d), n, INT64_C(0), err);
+  Json_EmitPretty (&(d), &(scratch), n, INT64_C(0), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -567,21 +614,24 @@ m9_sl_CHAR Json_Pretty (m9_pool *pool, Json_Node * n, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_CHAR Json_ReprText (m9_pool *pool, double r, m9_state *err)
+m9_sl_CHAR Json_ReprText (double r, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
-  Json_AppendF64 (pool, &(d), r, err);
+  Json_AppendF64 (&(d), &(scratch), r, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -590,11 +640,13 @@ m9_sl_CHAR Json_ReprText (m9_pool *pool, double r, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return m9ret;
 }
 
-void Json_AppendF64 (m9_pool *pool, DynStr_DString * *d, double r, m9_state *err)
+void Json_AppendF64 (DynStr_DString * *d, m9_pool *d_pool, double r, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -604,17 +656,17 @@ void Json_AppendF64 (m9_pool *pool, DynStr_DString * *d, double r, m9_state *err
   int64_t n = 0; (void) n;
   int64_t i = 0; (void) i;
   if ((r != r)) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s9, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s10, 3 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if ((r > 1.7976931348623157E308)) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s10, 8 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s11, 8 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if ((r < (0.0 - 1.7976931348623157E308))) {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s11, 9 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s12, 9 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -624,22 +676,24 @@ void Json_AppendF64 (m9_pool *pool, DynStr_DString * *d, double r, m9_state *err
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    DynStr_AppendChar (pool, d, m9_chr ((int64_t)((*(uint8_t *) m9_at (buf.v, i, INT64_C(32), sizeof (uint8_t), err))), err), err);
+    DynStr_AppendChar (d, d_pool, m9_chr ((int64_t)((*(uint8_t *) m9_at (buf.v, i, INT64_C(32), sizeof (uint8_t), err))), err), err);
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-m9_sl_CHAR Json_NumText (m9_pool *pool, Json_Node * n, m9_state *err)
+m9_sl_CHAR Json_NumText (Json_Node * n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   { __typeof__(n->v) m9t1 = n->v;
   switch (m9t1.tag) {
@@ -647,13 +701,13 @@ m9_sl_CHAR Json_NumText (m9_pool *pool, Json_Node * n, m9_state *err)
     double r = m9t1.u.Num.r; (void) r;
     int64_t i = m9t1.u.Num.i; (void) i;
     bool isInt = m9t1.u.Num.isInt; (void) isInt;
-    d = DynStr_New (pool, err);
+    d = DynStr_New (&(scratch), err);
     if (err->exc) goto L_ret;
     if (isInt) {
-      DynStr_AppendI64 (pool, &(d), i, err);
+      DynStr_AppendI64 (&(d), &(scratch), i, err);
       if (err->exc) goto L_ret;
     } else {
-      Json_AppendF64 (pool, &(d), r, err);
+      Json_AppendF64 (&(d), &(scratch), r, err);
       if (err->exc) goto L_ret;
     }
     err->res = m9res;
@@ -662,7 +716,7 @@ m9_sl_CHAR Json_NumText (m9_pool *pool, Json_Node * n, m9_state *err)
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s12, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s12, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -670,30 +724,181 @@ m9_sl_CHAR Json_NumText (m9_pool *pool, Json_Node * n, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return m9ret;
 }
 
-void Json_AppendJString (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR t, m9_state *err)
+void Json_AppendJString (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Json_EmitJStr (pool, d, t, err);
+  Json_EmitJStr (d, d_pool, t, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-Json_Node * Json_NewObj (m9_pool *pool, m9_state *err)
+Json_Node * Json_NewObj (m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
+  Json_Node * m9ret = NULL;
+  Json_Node * n = NULL; (void) n;
+  n = (Json_Node *) m9_pool_alloc (err->res, sizeof (Json_Node), 1, err);
+  if (err->exc) goto L_ret;
+  n->v = ((Json_Value){ .tag = Json_Value_Object, .u.Object = { NULL } });
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Json_Node * Json_NewArr (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Json_Node * m9ret = NULL;
+  Json_Node * n = NULL; (void) n;
+  n = (Json_Node *) m9_pool_alloc (err->res, sizeof (Json_Node), 1, err);
+  if (err->exc) goto L_ret;
+  n->v = ((Json_Value){ .tag = Json_Value_Arr, .u.Arr = { NULL, INT64_C(0) } });
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Json_Node * Json_NewStr (m9_sl_CHAR s, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Json_Node * m9ret = NULL;
+  Json_Node * n = NULL; (void) n;
+  n = (Json_Node *) m9_pool_alloc (err->res, sizeof (Json_Node), 1, err);
+  if (err->exc) goto L_ret;
+  n->v = ((Json_Value){ .tag = Json_Value_Str, .u.Str = { Json_Name (s, err) } });
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Json_Node * Json_NewI64 (int64_t v, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Json_Node * m9ret = NULL;
+  Json_Node * n = NULL; (void) n;
+  n = (Json_Node *) m9_pool_alloc (err->res, sizeof (Json_Node), 1, err);
+  if (err->exc) goto L_ret;
+  n->v = ((Json_Value){ .tag = Json_Value_Num, .u.Num = { (double)(v), v, true } });
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Json_Node * Json_NewF64 (double r, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Json_Node * m9ret = NULL;
+  Json_Node * n = NULL; (void) n;
+  n = (Json_Node *) m9_pool_alloc (err->res, sizeof (Json_Node), 1, err);
+  if (err->exc) goto L_ret;
+  n->v = ((Json_Value){ .tag = Json_Value_Num, .u.Num = { r, INT64_C(0), false } });
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Json_Node * Json_NewBool (bool b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Json_Node * m9ret = NULL;
+  Json_Node * n = NULL; (void) n;
+  n = (Json_Node *) m9_pool_alloc (err->res, sizeof (Json_Node), 1, err);
+  if (err->exc) goto L_ret;
+  n->v = ((Json_Value){ .tag = Json_Value_Bool, .u.Bool = { b } });
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Json_Node * Json_NewNull (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Json_Node * m9ret = NULL;
+  Json_Node * n = NULL; (void) n;
+  n = (Json_Node *) m9_pool_alloc (err->res, sizeof (Json_Node), 1, err);
+  if (err->exc) goto L_ret;
+  n->v = ((Json_Value){ .tag = Json_Value_Null });
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+Json_Node * Json_NewObjIn (m9_pool *pool, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
   n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
@@ -704,16 +909,17 @@ Json_Node * Json_NewObj (m9_pool *pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Json_Node * Json_NewArr (m9_pool *pool, m9_state *err)
+Json_Node * Json_NewArrIn (m9_pool *pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
   n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
@@ -724,42 +930,39 @@ Json_Node * Json_NewArr (m9_pool *pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Json_Node * Json_NewStr (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
+Json_Node * Json_NewStrIn (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
-  DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
-  if (err->exc) goto L_ret;
-  Json_EscapeBody (pool, &(d), s, err);
-  if (err->exc) goto L_ret;
   n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
   if (err->exc) goto L_ret;
-  n->v = ((Json_Value){ .tag = Json_Value_Str, .u.Str = { DynStr_View (d, err) } });
+  n->v = ((Json_Value){ .tag = Json_Value_Str, .u.Str = { Json_CopyStrTo (&(n), &((*pool)), Json_Name (s, err), err) } });
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = n;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Json_Node * Json_NewI64 (m9_pool *pool, int64_t v, m9_state *err)
+Json_Node * Json_NewI64In (m9_pool *pool, int64_t v, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
   n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
@@ -770,16 +973,17 @@ Json_Node * Json_NewI64 (m9_pool *pool, int64_t v, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Json_Node * Json_NewF64 (m9_pool *pool, double r, m9_state *err)
+Json_Node * Json_NewF64In (m9_pool *pool, double r, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
   n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
@@ -790,16 +994,17 @@ Json_Node * Json_NewF64 (m9_pool *pool, double r, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Json_Node * Json_NewBool (m9_pool *pool, bool b, m9_state *err)
+Json_Node * Json_NewBoolIn (m9_pool *pool, bool b, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
   n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
@@ -810,16 +1015,17 @@ Json_Node * Json_NewBool (m9_pool *pool, bool b, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Json_Node * Json_NewNull (m9_pool *pool, m9_state *err)
+Json_Node * Json_NewNullIn (m9_pool *pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
   n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
@@ -830,21 +1036,23 @@ Json_Node * Json_NewNull (m9_pool *pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Json_Name (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
+m9_sl_CHAR Json_Name (m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
-  Json_EscapeBody (pool, &(d), s, err);
+  Json_EscapeBody (&(d), &(scratch), s, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -853,11 +1061,13 @@ m9_sl_CHAR Json_Name (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return m9ret;
 }
 
-void Json_Set (Json_Node * *obj, m9_sl_CHAR name, Json_Node * *v, m9_state *err)
+void Json_Set (Json_Node * *obj, m9_pool *obj_pool, m9_sl_CHAR name, Json_Node * *v, m9_pool *v_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -872,7 +1082,7 @@ void Json_Set (Json_Node * *obj, m9_sl_CHAR name, Json_Node * *v, m9_state *err)
     cur = first;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 35 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s14, 35 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s14, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -906,11 +1116,13 @@ void Json_Set (Json_Node * *obj, m9_sl_CHAR name, Json_Node * *v, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, obj_pool, (*obj));
+  m9_adopt_if (&m9frame, v_pool, (*v));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Json_Add (Json_Node * *arr, Json_Node * *v, m9_state *err)
+void Json_Add (Json_Node * *arr, m9_pool *arr_pool, Json_Node * *v, m9_pool *v_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -930,7 +1142,7 @@ void Json_Add (Json_Node * *arr, Json_Node * *v, m9_state *err)
     k = count;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s14, 34 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s14, 34 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s15, 34 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s15, 34 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -954,82 +1166,68 @@ void Json_Add (Json_Node * *arr, Json_Node * *v, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, arr_pool, (*arr));
+  m9_adopt_if (&m9frame, v_pool, (*v));
   m9_pool_free (&m9frame);
   return;
 }
 
-Json_Node * Json_Clone (m9_pool *pool, Json_Node * n, m9_state *err)
+Json_Node * Json_CloneIn (m9_pool *pool, Json_Node * n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * c = NULL; (void) c;
-  Json_Node * cc = NULL; (void) cc;
-  Json_Node * cur = NULL; (void) cur;
   c = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
   if (err->exc) goto L_ret;
-  { __typeof__(n->v) m9t1 = n->v;
-  switch (m9t1.tag) {
-  case Json_Value_Object: {
-    Json_Node * first = m9t1.u.Object.first; (void) first;
-    c->v = ((Json_Value){ .tag = Json_Value_Object, .u.Object = { NULL } });
-    cur = first;
-    for (;;) {
-      Json_Node * p = cur;
-      if (!(p != NULL)) break;
-      cc = Json_Clone (pool, p, err);
-      if (err->exc) goto L_ret;
-      Json_Set (&(c), Json_CopyStr (pool, p->name, err), &(cc), err);
-      if (err->exc) goto L_ret;
-      cur = p->next;
-    }
-  } break;
-  case Json_Value_Arr: {
-    Json_Node * first = m9t1.u.Arr.first; (void) first;
-    int64_t count = m9t1.u.Arr.count; (void) count;
-    c->v = ((Json_Value){ .tag = Json_Value_Arr, .u.Arr = { NULL, INT64_C(0) } });
-    cur = first;
-    for (;;) {
-      Json_Node * p = cur;
-      if (!(p != NULL)) break;
-      cc = Json_Clone (pool, p, err);
-      if (err->exc) goto L_ret;
-      Json_Add (&(c), &(cc), err);
-      if (err->exc) goto L_ret;
-      cur = p->next;
-    }
-  } break;
-  case Json_Value_Str: {
-    m9_sl_CHAR t = m9t1.u.Str.s; (void) t;
-    c->v = ((Json_Value){ .tag = Json_Value_Str, .u.Str = { Json_CopyStr (pool, t, err) } });
-    if (err->exc) goto L_ret;
-  } break;
-  default: {
-    c->v = n->v;
-  } break;
-  } }
+  Json_CopyInto (&(c), &((*pool)), &(c), &((*pool)), n, err);
+  if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = c;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_CHAR Json_Spaced (m9_pool *pool, Json_Node * n, m9_state *err)
+Json_Node * Json_Clone (Json_Node * n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Json_Node * m9ret = NULL;
+  Json_Node * c = NULL; (void) c;
+  c = (Json_Node *) m9_pool_alloc (err->res, sizeof (Json_Node), 1, err);
+  if (err->exc) goto L_ret;
+  Json_CopyInto (&(c), err->res, &(c), err->res, n, err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = c;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_CHAR Json_Spaced (Json_Node * n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
-  Json_EmitVal (pool, &(d), n, true, err);
+  Json_EmitVal (&(d), &(scratch), n, true, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1038,21 +1236,24 @@ m9_sl_CHAR Json_Spaced (m9_pool *pool, Json_Node * n, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return m9ret;
 }
 
-m9_sl_CHAR Json_Compact (m9_pool *pool, Json_Node * n, m9_state *err)
+m9_sl_CHAR Json_Compact (Json_Node * n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
-  Json_EmitVal (pool, &(d), n, false, err);
+  Json_EmitVal (&(d), &(scratch), n, false, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1061,20 +1262,22 @@ m9_sl_CHAR Json_Compact (m9_pool *pool, Json_Node * n, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return m9ret;
 }
 
-static uint32_t Json_Cur (Json_Cursor *c, m9_state *err)
+static uint32_t Json_Cur (Json_Cursor * *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   uint32_t m9ret = 0;
-  if (((*c).pos < ((*c).src).len)) {
+  if (((*c)->pos < ((*c)->src).len)) {
     err->res = m9res;
-    m9ret = (*(uint32_t *) m9_at ((*c).src.p, (*c).pos, (*c).src.len, sizeof (uint32_t), err));
+    m9ret = (*(uint32_t *) m9_at ((*c)->src.p, (*c)->pos, (*c)->src.len, sizeof (uint32_t), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   } else {
@@ -1084,181 +1287,187 @@ static uint32_t Json_Cur (Json_Cursor *c, m9_state *err)
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Json_Bump (Json_Cursor *c, m9_state *err)
+static void Json_Bump (Json_Cursor * *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  bool m9t1 = (Json_Cur (c, err) == 10u);
+  bool m9t1 = (Json_Cur (c, c_pool, err) == 10u);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    (*c).line = m9_add_i64 ((*c).line, INT64_C(1), err);
+    (*c)->line = m9_add_i64 ((*c)->line, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    (*c).col = INT64_C(1);
+    (*c)->col = INT64_C(1);
   } else {
-    (*c).col = m9_add_i64 ((*c).col, INT64_C(1), err);
+    (*c)->col = m9_add_i64 ((*c)->col, INT64_C(1), err);
     if (err->exc) goto L_ret;
   }
-  (*c).pos = m9_add_i64 ((*c).pos, INT64_C(1), err);
+  (*c)->pos = m9_add_i64 ((*c)->pos, INT64_C(1), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Json_Skip (Json_Cursor *c, m9_state *err)
+static void Json_Skip (Json_Cursor * *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   for (;;) {
-    bool m9t1 = ((((Json_Cur (c, err) == 32u) || (Json_Cur (c, err) == 9u)) || (Json_Cur (c, err) == 10u)) || (Json_Cur (c, err) == 13u));
+    bool m9t1 = ((((Json_Cur (c, c_pool, err) == 32u) || (Json_Cur (c, c_pool, err) == 9u)) || (Json_Cur (c, c_pool, err) == 10u)) || (Json_Cur (c, c_pool, err) == 13u));
     if (err->exc) goto L_ret;
     if (!(m9t1)) break;
-    Json_Bump (c, err);
+    Json_Bump (c, c_pool, err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Json_Fail (Json_Cursor *c, m9_sl_CHAR msg, m9_state *err)
+static void Json_Fail (Json_Cursor * *c, m9_pool *c_pool, m9_sl_CHAR msg, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   { __typeof__(msg) m9t1 = msg; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
-  err->i[0] = (*c).line;
-  err->i[1] = (*c).col;
+  err->i[0] = (*c)->line;
+  err->i[1] = (*c)->col;
   m9_raise (err, &Json_ParseError);
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
   return;
 }
 
-static Json_Node * Json_ParseValue (m9_pool *pool, Json_Cursor *c, m9_state *err)
+static Json_Node * Json_ParseValue (Json_Cursor * *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
-  Json_Skip (c, err);
+  Json_Skip (c, c_pool, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Json_Cur (c, err)) m9t1 = Json_Cur (c, err);
+  { __typeof__(Json_Cur (c, c_pool, err)) m9t1 = Json_Cur (c, c_pool, err);
   if (err->exc) goto L_ret;
   switch (m9t1) {
   case 123u:
   {
     err->res = m9res;
-    m9ret = Json_ParseObject (pool, c, err);
+    m9ret = Json_ParseObject (c, c_pool, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   } break;
   case 91u:
   {
     err->res = m9res;
-    m9ret = Json_ParseArray (pool, c, err);
+    m9ret = Json_ParseArray (c, c_pool, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   } break;
   case 34u:
   {
-    n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+    n = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
     if (err->exc) goto L_ret;
-    n->v = ((Json_Value){ .tag = Json_Value_Str, .u.Str = { Json_ParseString (c, err) } });
+    n->v = ((Json_Value){ .tag = Json_Value_Str, .u.Str = { Json_ParseString (c, c_pool, err) } });
     if (err->exc) goto L_ret;
     err->res = m9res;
     m9ret = n;
     goto L_ret;
   } break;
   default: {
-    bool m9t2 = Json_Match (c, ((m9_sl_CHAR){ (uint32_t *) m9s15, 4 }), err);
+    bool m9t2 = Json_Match (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+      n = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
       if (err->exc) goto L_ret;
       n->v = ((Json_Value){ .tag = Json_Value_Bool, .u.Bool = { true } });
       err->res = m9res;
       m9ret = n;
       goto L_ret;
     } else {
-      bool m9t3 = Json_Match (c, ((m9_sl_CHAR){ (uint32_t *) m9s16, 5 }), err);
+      bool m9t3 = Json_Match (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+        n = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
         if (err->exc) goto L_ret;
         n->v = ((Json_Value){ .tag = Json_Value_Bool, .u.Bool = { false } });
         err->res = m9res;
         m9ret = n;
         goto L_ret;
     } else {
-      bool m9t4 = Json_Match (c, ((m9_sl_CHAR){ (uint32_t *) m9s17, 4 }), err);
+      bool m9t4 = Json_Match (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s18, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t4) {
-        n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+        n = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
         if (err->exc) goto L_ret;
         n->v = ((Json_Value){ .tag = Json_Value_Null });
         err->res = m9res;
         m9ret = n;
         goto L_ret;
     } else {
-      bool m9t5 = ((Json_Cur (c, err) == 45u) || (((Json_Cur (c, err) >= 48u) && (Json_Cur (c, err) <= 57u))));
+      bool m9t5 = ((Json_Cur (c, c_pool, err) == 45u) || (((Json_Cur (c, c_pool, err) >= 48u) && (Json_Cur (c, c_pool, err) <= 57u))));
       if (err->exc) goto L_ret;
       if (m9t5) {
         err->res = m9res;
-        m9ret = Json_ParseNumber (pool, c, err);
+        m9ret = Json_ParseNumber (c, c_pool, err);
         if (err->exc) goto L_ret;
         goto L_ret;
     } else {
-      Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s18, 14 }), err);
+      Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s19, 14 }), err);
       if (err->exc) goto L_ret;
     } } } }
   } break;
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static Json_Node * Json_ParseObject (m9_pool *pool, Json_Cursor *c, m9_state *err)
+static Json_Node * Json_ParseObject (Json_Cursor * *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
   Json_Node * child = NULL; (void) child;
   Json_Node * head = NULL; (void) head;
   Json_Node * last = NULL; (void) last;
   m9_sl_CHAR nm = {0}; (void) nm;
-  Json_Bump (c, err);
+  Json_Bump (c, c_pool, err);
   if (err->exc) goto L_ret;
-  Json_Skip (c, err);
+  Json_Skip (c, c_pool, err);
   if (err->exc) goto L_ret;
   head = NULL;
   last = NULL;
-  bool m9t1 = (Json_Cur (c, err) == 125u);
+  bool m9t1 = (Json_Cur (c, c_pool, err) == 125u);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Json_Bump (c, err);
+    Json_Bump (c, c_pool, err);
     if (err->exc) goto L_ret;
-    n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+    n = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
     if (err->exc) goto L_ret;
     n->v = ((Json_Value){ .tag = Json_Value_Object, .u.Object = { NULL } });
     err->res = m9res;
@@ -1266,21 +1475,21 @@ static Json_Node * Json_ParseObject (m9_pool *pool, Json_Cursor *c, m9_state *er
     goto L_ret;
   }
   for (;;) {
-    Json_Skip (c, err);
+    Json_Skip (c, c_pool, err);
     if (err->exc) goto L_ret;
-    nm = Json_ParseString (c, err);
+    nm = Json_ParseString (c, c_pool, err);
     if (err->exc) goto L_ret;
-    Json_Skip (c, err);
+    Json_Skip (c, c_pool, err);
     if (err->exc) goto L_ret;
-    bool m9t2 = (Json_Cur (c, err) != 58u);
+    bool m9t2 = (Json_Cur (c, c_pool, err) != 58u);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s19, 32 }), err);
+      Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s20, 32 }), err);
       if (err->exc) goto L_ret;
     }
-    Json_Bump (c, err);
+    Json_Bump (c, c_pool, err);
     if (err->exc) goto L_ret;
-    child = Json_ParseValue (pool, c, err);
+    child = Json_ParseValue (c, c_pool, err);
     if (err->exc) goto L_ret;
     child->name = nm;
     { Json_Node * lp = last;
@@ -1290,26 +1499,26 @@ static Json_Node * Json_ParseObject (m9_pool *pool, Json_Cursor *c, m9_state *er
       head = child;
     } }
     last = child;
-    Json_Skip (c, err);
+    Json_Skip (c, c_pool, err);
     if (err->exc) goto L_ret;
-    bool m9t3 = (Json_Cur (c, err) == 44u);
+    bool m9t3 = (Json_Cur (c, c_pool, err) == 44u);
     if (err->exc) goto L_ret;
     if (m9t3) {
-      Json_Bump (c, err);
+      Json_Bump (c, c_pool, err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t4 = (Json_Cur (c, err) == 125u);
+      bool m9t4 = (Json_Cur (c, c_pool, err) == 125u);
       if (err->exc) goto L_ret;
       if (m9t4) {
-        Json_Bump (c, err);
+        Json_Bump (c, c_pool, err);
         if (err->exc) goto L_ret;
         break;
     } else {
-      Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s20, 31 }), err);
+      Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s21, 31 }), err);
       if (err->exc) goto L_ret;
     } }
   }
-  n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+  n = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
   if (err->exc) goto L_ret;
   n->v = ((Json_Value){ .tag = Json_Value_Object, .u.Object = { head } });
   err->res = m9res;
@@ -1317,35 +1526,37 @@ static Json_Node * Json_ParseObject (m9_pool *pool, Json_Cursor *c, m9_state *er
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static Json_Node * Json_ParseArray (m9_pool *pool, Json_Cursor *c, m9_state *err)
+static Json_Node * Json_ParseArray (Json_Cursor * *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * n = NULL; (void) n;
   Json_Node * child = NULL; (void) child;
   Json_Node * head = NULL; (void) head;
   Json_Node * last = NULL; (void) last;
   int64_t k = 0; (void) k;
-  Json_Bump (c, err);
+  Json_Bump (c, c_pool, err);
   if (err->exc) goto L_ret;
-  Json_Skip (c, err);
+  Json_Skip (c, c_pool, err);
   if (err->exc) goto L_ret;
   head = NULL;
   last = NULL;
   k = INT64_C(0);
-  bool m9t1 = (Json_Cur (c, err) == 93u);
+  bool m9t1 = (Json_Cur (c, c_pool, err) == 93u);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Json_Bump (c, err);
+    Json_Bump (c, c_pool, err);
     if (err->exc) goto L_ret;
-    n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+    n = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
     if (err->exc) goto L_ret;
     n->v = ((Json_Value){ .tag = Json_Value_Arr, .u.Arr = { NULL, INT64_C(0) } });
     err->res = m9res;
@@ -1353,7 +1564,7 @@ static Json_Node * Json_ParseArray (m9_pool *pool, Json_Cursor *c, m9_state *err
     goto L_ret;
   }
   for (;;) {
-    child = Json_ParseValue (pool, c, err);
+    child = Json_ParseValue (c, c_pool, err);
     if (err->exc) goto L_ret;
     { Json_Node * lp = last;
     if (lp != NULL) {
@@ -1364,26 +1575,26 @@ static Json_Node * Json_ParseArray (m9_pool *pool, Json_Cursor *c, m9_state *err
     last = child;
     k = m9_add_i64 (k, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    Json_Skip (c, err);
+    Json_Skip (c, c_pool, err);
     if (err->exc) goto L_ret;
-    bool m9t2 = (Json_Cur (c, err) == 44u);
+    bool m9t2 = (Json_Cur (c, c_pool, err) == 44u);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Json_Bump (c, err);
+      Json_Bump (c, c_pool, err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t3 = (Json_Cur (c, err) == 93u);
+      bool m9t3 = (Json_Cur (c, c_pool, err) == 93u);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        Json_Bump (c, err);
+        Json_Bump (c, c_pool, err);
         if (err->exc) goto L_ret;
         break;
     } else {
-      Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s21, 33 }), err);
+      Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s22, 33 }), err);
       if (err->exc) goto L_ret;
     } }
   }
-  n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+  n = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
   if (err->exc) goto L_ret;
   n->v = ((Json_Value){ .tag = Json_Value_Arr, .u.Arr = { head, k } });
   err->res = m9res;
@@ -1391,11 +1602,13 @@ static Json_Node * Json_ParseArray (m9_pool *pool, Json_Cursor *c, m9_state *err
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Json_ParseString (Json_Cursor *c, m9_state *err)
+static m9_sl_CHAR Json_ParseString (Json_Cursor * *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1404,35 +1617,35 @@ static m9_sl_CHAR Json_ParseString (Json_Cursor *c, m9_state *err)
   m9_sl_CHAR m9ret = {0};
   int64_t start = 0; (void) start;
   m9_sl_CHAR s = {0}; (void) s;
-  bool m9t1 = (Json_Cur (c, err) != 34u);
+  bool m9t1 = (Json_Cur (c, c_pool, err) != 34u);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s22, 15 }), err);
+    Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s23, 15 }), err);
     if (err->exc) goto L_ret;
   }
-  Json_Bump (c, err);
+  Json_Bump (c, c_pool, err);
   if (err->exc) goto L_ret;
-  start = (*c).pos;
+  start = (*c)->pos;
   for (;;) {
-    bool m9t2 = (Json_Cur (c, err) != 34u);
+    bool m9t2 = (Json_Cur (c, c_pool, err) != 34u);
     if (err->exc) goto L_ret;
     if (!(m9t2)) break;
-    if (((*c).pos >= ((*c).src).len)) {
-      Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s23, 19 }), err);
+    if (((*c)->pos >= ((*c)->src).len)) {
+      Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s24, 19 }), err);
       if (err->exc) goto L_ret;
     }
-    bool m9t3 = (Json_Cur (c, err) == 92u);
+    bool m9t3 = (Json_Cur (c, c_pool, err) == 92u);
     if (err->exc) goto L_ret;
     if (m9t3) {
-      Json_Bump (c, err);
+      Json_Bump (c, c_pool, err);
       if (err->exc) goto L_ret;
     }
-    Json_Bump (c, err);
+    Json_Bump (c, c_pool, err);
     if (err->exc) goto L_ret;
   }
-  s = ({ __typeof__((*c).src) m9t4 = (*c).src; int64_t m9t4a = start, m9t4n = m9_sub_i64 ((*c).pos, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+  s = ({ __typeof__((*c)->src) m9t4 = (*c)->src; int64_t m9t4a = start, m9t4n = m9_sub_i64 ((*c)->pos, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
   if (err->exc) goto L_ret;
-  Json_Bump (c, err);
+  Json_Bump (c, c_pool, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = s;
@@ -1440,17 +1653,19 @@ static m9_sl_CHAR Json_ParseString (Json_Cursor *c, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static Json_Node * Json_ParseNumber (m9_pool *pool, Json_Cursor *c, m9_state *err)
+static Json_Node * Json_ParseNumber (Json_Cursor * *c, m9_pool *c_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
+  m9_pool scratch = {0}; (void) scratch;
   Json_Node * n = NULL; (void) n;
   bool neg = false; (void) neg;
   bool negE = false; (void) negE;
@@ -1463,29 +1678,29 @@ static Json_Node * Json_ParseNumber (m9_pool *pool, Json_Cursor *c, m9_state *er
   double frac = 0; (void) frac;
   double sc = 0; (void) sc;
   m9_sl_BYTE tb = {0}; (void) tb;
-  start = (*c).pos;
+  start = (*c)->pos;
   neg = false;
-  bool m9t3 = (Json_Cur (c, err) == 45u);
+  bool m9t3 = (Json_Cur (c, c_pool, err) == 45u);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
     neg = true;
-    Json_Bump (c, err);
+    Json_Bump (c, c_pool, err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  bool m9t4 = ((Json_Cur (c, err) < 48u) || (Json_Cur (c, err) > 57u));
+  bool m9t4 = ((Json_Cur (c, c_pool, err) < 48u) || (Json_Cur (c, c_pool, err) > 57u));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t4) {
-    Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s24, 14 }), err);
+    Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s25, 14 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
   ip = INT64_C(0);
   r = 0.0;
   isInt = true;
   for (;;) {
-    bool m9t5 = ((Json_Cur (c, err) >= 48u) && (Json_Cur (c, err) <= 57u));
+    bool m9t5 = ((Json_Cur (c, c_pool, err) >= 48u) && (Json_Cur (c, c_pool, err) <= 57u));
     if (err->exc) goto L_hdl_m9t1;
     if (!(m9t5)) break;
-    d = m9_sub_i64 ((int64_t)(Json_Cur (c, err)), (int64_t)(48u), err);
+    d = m9_sub_i64 ((int64_t)(Json_Cur (c, c_pool, err)), (int64_t)(48u), err);
     if (err->exc) goto L_hdl_m9t1;
     r = ((r * 10.0) + (double)(d));
     bool m9t6 = (isInt && ((ip <= m9_div_i64 ((m9_sub_i64 (INT64_MAX, d, err)), INT64_C(10), err))));
@@ -1496,71 +1711,71 @@ static Json_Node * Json_ParseNumber (m9_pool *pool, Json_Cursor *c, m9_state *er
     } else {
       isInt = false;
     }
-    Json_Bump (c, err);
+    Json_Bump (c, c_pool, err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  bool m9t7 = (Json_Cur (c, err) == 46u);
+  bool m9t7 = (Json_Cur (c, c_pool, err) == 46u);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
     isInt = false;
-    Json_Bump (c, err);
+    Json_Bump (c, c_pool, err);
     if (err->exc) goto L_hdl_m9t1;
-    bool m9t8 = ((Json_Cur (c, err) < 48u) || (Json_Cur (c, err) > 57u));
+    bool m9t8 = ((Json_Cur (c, c_pool, err) < 48u) || (Json_Cur (c, c_pool, err) > 57u));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t8) {
-      Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s25, 34 }), err);
+      Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s26, 34 }), err);
       if (err->exc) goto L_hdl_m9t1;
     }
     frac = 0.0;
     sc = 0.1;
     for (;;) {
-      bool m9t9 = ((Json_Cur (c, err) >= 48u) && (Json_Cur (c, err) <= 57u));
+      bool m9t9 = ((Json_Cur (c, c_pool, err) >= 48u) && (Json_Cur (c, c_pool, err) <= 57u));
       if (err->exc) goto L_hdl_m9t1;
       if (!(m9t9)) break;
-      frac = (frac + (sc * (double)(m9_sub_i64 ((int64_t)(Json_Cur (c, err)), (int64_t)(48u), err))));
+      frac = (frac + (sc * (double)(m9_sub_i64 ((int64_t)(Json_Cur (c, c_pool, err)), (int64_t)(48u), err))));
       if (err->exc) goto L_hdl_m9t1;
       sc = (sc / 10.0);
-      Json_Bump (c, err);
+      Json_Bump (c, c_pool, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     r = (r + frac);
   }
-  bool m9t10 = ((Json_Cur (c, err) == 101u) || (Json_Cur (c, err) == 69u));
+  bool m9t10 = ((Json_Cur (c, c_pool, err) == 101u) || (Json_Cur (c, c_pool, err) == 69u));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t10) {
     isInt = false;
-    Json_Bump (c, err);
+    Json_Bump (c, c_pool, err);
     if (err->exc) goto L_hdl_m9t1;
     negE = false;
-    bool m9t11 = (Json_Cur (c, err) == 45u);
+    bool m9t11 = (Json_Cur (c, c_pool, err) == 45u);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t11) {
       negE = true;
-      Json_Bump (c, err);
+      Json_Bump (c, c_pool, err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
-      bool m9t12 = (Json_Cur (c, err) == 43u);
+      bool m9t12 = (Json_Cur (c, c_pool, err) == 43u);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t12) {
-        Json_Bump (c, err);
+        Json_Bump (c, c_pool, err);
         if (err->exc) goto L_hdl_m9t1;
     } }
-    bool m9t13 = ((Json_Cur (c, err) < 48u) || (Json_Cur (c, err) > 57u));
+    bool m9t13 = ((Json_Cur (c, c_pool, err) < 48u) || (Json_Cur (c, c_pool, err) > 57u));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t13) {
-      Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s26, 26 }), err);
+      Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s27, 26 }), err);
       if (err->exc) goto L_hdl_m9t1;
     }
     ex = INT64_C(0);
     for (;;) {
-      bool m9t14 = ((Json_Cur (c, err) >= 48u) && (Json_Cur (c, err) <= 57u));
+      bool m9t14 = ((Json_Cur (c, c_pool, err) >= 48u) && (Json_Cur (c, c_pool, err) <= 57u));
       if (err->exc) goto L_hdl_m9t1;
       if (!(m9t14)) break;
       if ((ex < INT64_C(1000))) {
-        ex = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (ex, INT64_C(10), err), (int64_t)(Json_Cur (c, err)), err), (int64_t)(48u), err);
+        ex = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (ex, INT64_C(10), err), (int64_t)(Json_Cur (c, c_pool, err)), err), (int64_t)(48u), err);
         if (err->exc) goto L_hdl_m9t1;
       }
-      Json_Bump (c, err);
+      Json_Bump (c, c_pool, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     for (;;) {
@@ -1580,11 +1795,11 @@ static Json_Node * Json_ParseNumber (m9_pool *pool, Json_Cursor *c, m9_state *er
     if (err->exc) goto L_hdl_m9t1;
   }
   if ((!isInt)) {
-    tb = DynStr_Bytes (pool, ({ __typeof__((*c).src) m9t15 = (*c).src; int64_t m9t15a = start, m9t15n = m9_sub_i64 ((*c).pos, start, err); (__typeof__(m9t15)){ m9t15.p + m9_chk_slice (m9t15a, m9t15n, m9t15.len, err), m9t15n }; }), true, err);
+    tb = DynStr_Bytes (&(scratch), ({ __typeof__((*c)->src) m9t15 = (*c)->src; int64_t m9t15a = start, m9t15n = m9_sub_i64 ((*c)->pos, start, err); (__typeof__(m9t15)){ m9t15.p + m9_chk_slice (m9t15a, m9t15n, m9t15.len, err), m9t15n }; }), true, err);
     if (err->exc) goto L_hdl_m9t1;
     r = (double)(m9_strtod (((void *)(tb).p)));
   }
-  n = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+  n = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
   if (err->exc) goto L_hdl_m9t1;
   n->v = ((Json_Value){ .tag = Json_Value_Num, .u.Num = { r, ip, isInt } });
   err->res = m9res;
@@ -1594,10 +1809,10 @@ static Json_Node * Json_ParseNumber (m9_pool *pool, Json_Cursor *c, m9_state *er
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    Json_Fail (c, ((m9_sl_CHAR){ (uint32_t *) m9s27, 22 }), err);
+    Json_Fail (c, c_pool, ((m9_sl_CHAR){ (uint32_t *) m9s28, 22 }), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = (Json_Node *) m9_pool_alloc (&((*pool)), sizeof (Json_Node), 1, err);
+    m9ret = (Json_Node *) m9_pool_alloc (c_pool, sizeof (Json_Node), 1, err);
     if (err->exc) goto L_ret;
     goto L_ret;
     goto L_dn_m9t2;
@@ -1606,11 +1821,14 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return m9ret;
 }
 
-static bool Json_Match (Json_Cursor *c, m9_sl_CHAR lit, m9_state *err)
+static bool Json_Match (Json_Cursor * *c, m9_pool *c_pool, m9_sl_CHAR lit, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1618,7 +1836,7 @@ static bool Json_Match (Json_Cursor *c, m9_sl_CHAR lit, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   int64_t i = 0; (void) i;
-  bool m9t1 = (m9_add_i64 ((*c).pos, (lit).len, err) > ((*c).src).len);
+  bool m9t1 = (m9_add_i64 ((*c)->pos, (lit).len, err) > ((*c)->src).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -1630,7 +1848,7 @@ static bool Json_Match (Json_Cursor *c, m9_sl_CHAR lit, m9_state *err)
   m9t2to = m9_sub_i64 ((lit).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    bool m9t3 = ((*(uint32_t *) m9_at ((*c).src.p, m9_add_i64 ((*c).pos, i, err), (*c).src.len, sizeof (uint32_t), err)) != (*(uint32_t *) m9_at (lit.p, i, lit.len, sizeof (uint32_t), err)));
+    bool m9t3 = ((*(uint32_t *) m9_at ((*c)->src.p, m9_add_i64 ((*c)->pos, i, err), (*c)->src.len, sizeof (uint32_t), err)) != (*(uint32_t *) m9_at (lit.p, i, lit.len, sizeof (uint32_t), err)));
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
@@ -1638,15 +1856,16 @@ static bool Json_Match (Json_Cursor *c, m9_sl_CHAR lit, m9_state *err)
       goto L_ret;
     }
   } }
-  (*c).pos = m9_add_i64 ((*c).pos, (lit).len, err);
+  (*c)->pos = m9_add_i64 ((*c)->pos, (lit).len, err);
   if (err->exc) goto L_ret;
-  (*c).col = m9_add_i64 ((*c).col, (lit).len, err);
+  (*c)->col = m9_add_i64 ((*c)->col, (lit).len, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = true;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, c_pool, (*c));
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1656,7 +1875,7 @@ static Json_Node * Json_MemberNode (Json_Node * obj, int64_t i, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Json_Node * m9ret = NULL;
   Json_Node * c = NULL; (void) c;
   int64_t n = 0; (void) n;
@@ -1667,7 +1886,7 @@ static Json_Node * Json_MemberNode (Json_Node * obj, int64_t i, m9_state *err)
     c = first;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s28, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s28, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s29, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s29, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -1689,31 +1908,123 @@ static Json_Node * Json_MemberNode (Json_Node * obj, int64_t i, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static m9_sl_CHAR Json_CopyStr (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
+static m9_sl_CHAR Json_CopyStrTo (Json_Node * *dst, m9_pool *dst_pool, m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
+  m9_sl_CHAR c = {0}; (void) c;
+  int64_t i = 0; (void) i;
+  c = M9_POOL_SL (m9_sl_CHAR, uint32_t, dst_pool, (s).len, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), s, err);
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    (*(uint32_t *) m9_at (c.p, i, c.len, sizeof (uint32_t), err)) = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
+    if (err->exc) goto L_ret;
+  } }
   err->res = m9res;
-  m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  m9ret = c;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_adopt_if (&m9frame, dst_pool, (*dst));
   m9_pool_free (&m9frame);
   return m9ret;
+}
+
+static void Json_CopyInto (Json_Node * *root, m9_pool *root_pool, Json_Node * *c, m9_pool *c_pool, Json_Node * n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  Json_Node * cc = NULL; (void) cc;
+  Json_Node * cur = NULL; (void) cur;
+  Json_Node * head = NULL; (void) head;
+  Json_Node * last = NULL; (void) last;
+  int64_t k = 0; (void) k;
+  { __typeof__(n->v) m9t1 = n->v;
+  switch (m9t1.tag) {
+  case Json_Value_Object: {
+    Json_Node * first = m9t1.u.Object.first; (void) first;
+    head = NULL;
+    last = NULL;
+    cur = first;
+    for (;;) {
+      Json_Node * p = cur;
+      if (!(p != NULL)) break;
+      cc = (Json_Node *) m9_pool_alloc (root_pool, sizeof (Json_Node), 1, err);
+      if (err->exc) goto L_ret;
+      Json_CopyInto (root, root_pool, &(cc), err->res, p, err);
+      if (err->exc) goto L_ret;
+      cc->name = Json_CopyStrTo (root, root_pool, p->name, err);
+      if (err->exc) goto L_ret;
+      cc->next = NULL;
+      { Json_Node * lp = last;
+      if (lp != NULL) {
+        lp->next = cc;
+      } else {
+        head = cc;
+      } }
+      last = cc;
+      cur = p->next;
+    }
+    (*c)->v = ((Json_Value){ .tag = Json_Value_Object, .u.Object = { head } });
+  } break;
+  case Json_Value_Arr: {
+    Json_Node * first = m9t1.u.Arr.first; (void) first;
+    int64_t count = m9t1.u.Arr.count; (void) count;
+    head = NULL;
+    last = NULL;
+    k = INT64_C(0);
+    cur = first;
+    for (;;) {
+      Json_Node * p = cur;
+      if (!(p != NULL)) break;
+      cc = (Json_Node *) m9_pool_alloc (root_pool, sizeof (Json_Node), 1, err);
+      if (err->exc) goto L_ret;
+      Json_CopyInto (root, root_pool, &(cc), err->res, p, err);
+      if (err->exc) goto L_ret;
+      cc->next = NULL;
+      { Json_Node * lp = last;
+      if (lp != NULL) {
+        lp->next = cc;
+      } else {
+        head = cc;
+      } }
+      last = cc;
+      k = m9_add_i64 (k, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      cur = p->next;
+    }
+    (*c)->v = ((Json_Value){ .tag = Json_Value_Arr, .u.Arr = { head, k } });
+  } break;
+  case Json_Value_Str: {
+    m9_sl_CHAR t = m9t1.u.Str.s; (void) t;
+    (*c)->v = ((Json_Value){ .tag = Json_Value_Str, .u.Str = { Json_CopyStrTo (root, root_pool, t, err) } });
+    if (err->exc) goto L_ret;
+  } break;
+  default: {
+    (*c)->v = n->v;
+  } break;
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, root_pool, (*root));
+  m9_adopt_if (&m9frame, c_pool, (*c));
+  m9_pool_free (&m9frame);
+  return;
 }
 
 static bool Json_HasBackslash (m9_sl_CHAR t, m9_state *err)
@@ -1794,7 +2105,7 @@ static int64_t Json_Hex4 (m9_sl_CHAR t, int64_t at, m9_state *err)
   bool m9t1 = (m9_add_i64 (at, INT64_C(3), err) >= (t).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s29, 24 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s29, 24 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s30, 24 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s30, 24 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   }
@@ -1806,7 +2117,7 @@ static int64_t Json_Hex4 (m9_sl_CHAR t, int64_t at, m9_state *err)
     h = Json_HexVal ((*(uint32_t *) m9_at (t.p, m9_add_i64 (at, k, err), t.len, sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
     if ((h < INT64_C(0))) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s30, 25 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s30, 25 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s31, 25 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s31, 25 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
       m9_raise (err, &Json_TypeMismatch);
       goto L_ret;
     }
@@ -1822,13 +2133,14 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR Json_DecodeStr (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
+static m9_sl_CHAR Json_DecodeStr (m9_sl_CHAR t, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
@@ -1841,7 +2153,7 @@ static m9_sl_CHAR Json_DecodeStr (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
     m9ret = t;
     goto L_ret;
   }
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
   i = INT64_C(0);
   for (;;) {
@@ -1852,7 +2164,7 @@ static m9_sl_CHAR Json_DecodeStr (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
       bool m9t2 = (m9_add_i64 (i, INT64_C(1), err) >= (t).len);
       if (err->exc) goto L_ret;
       if (m9t2) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s31, 23 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s31, 23 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s32, 23 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s32, 23 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
         m9_raise (err, &Json_TypeMismatch);
         goto L_ret;
       }
@@ -1861,27 +2173,27 @@ static m9_sl_CHAR Json_DecodeStr (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
       i = m9_add_i64 (i, INT64_C(2), err);
       if (err->exc) goto L_ret;
       if ((((ch == 34u) || (ch == 47u)) || ((int64_t)(ch) == INT64_C(92)))) {
-        DynStr_AppendChar (pool, &(d), ch, err);
+        DynStr_AppendChar (&(d), &(scratch), ch, err);
         if (err->exc) goto L_ret;
       } else {
         if ((ch == 98u)) {
-          DynStr_AppendChar (pool, &(d), 8u, err);
+          DynStr_AppendChar (&(d), &(scratch), 8u, err);
           if (err->exc) goto L_ret;
       } else {
         if ((ch == 116u)) {
-          DynStr_AppendChar (pool, &(d), 9u, err);
+          DynStr_AppendChar (&(d), &(scratch), 9u, err);
           if (err->exc) goto L_ret;
       } else {
         if ((ch == 110u)) {
-          DynStr_AppendChar (pool, &(d), 10u, err);
+          DynStr_AppendChar (&(d), &(scratch), 10u, err);
           if (err->exc) goto L_ret;
       } else {
         if ((ch == 102u)) {
-          DynStr_AppendChar (pool, &(d), 12u, err);
+          DynStr_AppendChar (&(d), &(scratch), 12u, err);
           if (err->exc) goto L_ret;
       } else {
         if ((ch == 114u)) {
-          DynStr_AppendChar (pool, &(d), 13u, err);
+          DynStr_AppendChar (&(d), &(scratch), 13u, err);
           if (err->exc) goto L_ret;
       } else {
         if ((ch == 117u)) {
@@ -1896,7 +2208,7 @@ static m9_sl_CHAR Json_DecodeStr (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
               lo = Json_Hex4 (t, m9_add_i64 (i, INT64_C(2), err), err);
               if (err->exc) goto L_ret;
               if (((lo < INT64_C(56320)) || (lo > INT64_C(57343)))) {
-                { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s32, 32 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s32, 32 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+                { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s33, 32 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s33, 32 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
                 m9_raise (err, &Json_TypeMismatch);
                 goto L_ret;
               }
@@ -1905,25 +2217,25 @@ static m9_sl_CHAR Json_DecodeStr (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
               i = m9_add_i64 (i, INT64_C(6), err);
               if (err->exc) goto L_ret;
             } else {
-              { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s33, 32 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s33, 32 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+              { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s34, 32 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s34, 32 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
               m9_raise (err, &Json_TypeMismatch);
               goto L_ret;
             }
           } else {
             if (((v >= INT64_C(56320)) && (v <= INT64_C(57343)))) {
-              { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s34, 32 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s34, 32 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+              { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s35, 32 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s35, 32 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
               m9_raise (err, &Json_TypeMismatch);
               goto L_ret;
           } }
-          DynStr_AppendChar (pool, &(d), m9_chr (v, err), err);
+          DynStr_AppendChar (&(d), &(scratch), m9_chr (v, err), err);
           if (err->exc) goto L_ret;
       } else {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s35, 24 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s35, 24 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s36, 24 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s36, 24 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
         m9_raise (err, &Json_TypeMismatch);
         goto L_ret;
       } } } } } } }
     } else {
-      DynStr_AppendChar (pool, &(d), ch, err);
+      DynStr_AppendChar (&(d), &(scratch), ch, err);
       if (err->exc) goto L_ret;
       i = m9_add_i64 (i, INT64_C(1), err);
       if (err->exc) goto L_ret;
@@ -1936,29 +2248,32 @@ static m9_sl_CHAR Json_DecodeStr (m9_pool *pool, m9_sl_CHAR t, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return m9ret;
 }
 
-static void Json_EmitJStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR t, m9_state *err)
+static void Json_EmitJStr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_AppendChar (pool, d, 34u, err);
+  DynStr_AppendChar (d, d_pool, 34u, err);
   if (err->exc) goto L_ret;
-  Json_EscapeBody (pool, d, t, err);
+  Json_EscapeBody (d, d_pool, t, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, d, 34u, err);
+  DynStr_AppendChar (d, d_pool, 34u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Json_EscapeBody (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR t, m9_state *err)
+static void Json_EscapeBody (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1976,61 +2291,62 @@ static void Json_EscapeBody (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR t, m
     if (err->exc) goto L_ret;
     v = (int64_t)(ch);
     if ((ch == 34u)) {
-      DynStr_AppendChar (pool, d, 92u, err);
+      DynStr_AppendChar (d, d_pool, 92u, err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (pool, d, 34u, err);
+      DynStr_AppendChar (d, d_pool, 34u, err);
       if (err->exc) goto L_ret;
     } else {
       if ((v == INT64_C(92))) {
-        DynStr_AppendChar (pool, d, 92u, err);
+        DynStr_AppendChar (d, d_pool, 92u, err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, 92u, err);
+        DynStr_AppendChar (d, d_pool, 92u, err);
         if (err->exc) goto L_ret;
     } else {
       if ((v == INT64_C(8))) {
-        DynStr_AppendChar (pool, d, 92u, err);
+        DynStr_AppendChar (d, d_pool, 92u, err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, 98u, err);
+        DynStr_AppendChar (d, d_pool, 98u, err);
         if (err->exc) goto L_ret;
     } else {
       if ((v == INT64_C(9))) {
-        DynStr_AppendChar (pool, d, 92u, err);
+        DynStr_AppendChar (d, d_pool, 92u, err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, 116u, err);
+        DynStr_AppendChar (d, d_pool, 116u, err);
         if (err->exc) goto L_ret;
     } else {
       if ((v == INT64_C(10))) {
-        DynStr_AppendChar (pool, d, 92u, err);
+        DynStr_AppendChar (d, d_pool, 92u, err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, 110u, err);
+        DynStr_AppendChar (d, d_pool, 110u, err);
         if (err->exc) goto L_ret;
     } else {
       if ((v == INT64_C(12))) {
-        DynStr_AppendChar (pool, d, 92u, err);
+        DynStr_AppendChar (d, d_pool, 92u, err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, 102u, err);
+        DynStr_AppendChar (d, d_pool, 102u, err);
         if (err->exc) goto L_ret;
     } else {
       if ((v == INT64_C(13))) {
-        DynStr_AppendChar (pool, d, 92u, err);
+        DynStr_AppendChar (d, d_pool, 92u, err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, 114u, err);
+        DynStr_AppendChar (d, d_pool, 114u, err);
         if (err->exc) goto L_ret;
     } else {
       if ((v < INT64_C(32))) {
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s36, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s37, 4 }), err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, Json_HexDigit (m9_div_i64 (v, INT64_C(16), err), err), err);
+        DynStr_AppendChar (d, d_pool, Json_HexDigit (m9_div_i64 (v, INT64_C(16), err), err), err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, Json_HexDigit (m9_mod_i64 (v, INT64_C(16), err), err), err);
+        DynStr_AppendChar (d, d_pool, Json_HexDigit (m9_mod_i64 (v, INT64_C(16), err), err), err);
         if (err->exc) goto L_ret;
     } else {
-      DynStr_AppendChar (pool, d, ch, err);
+      DynStr_AppendChar (d, d_pool, ch, err);
       if (err->exc) goto L_ret;
     } } } } } } } }
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -2058,7 +2374,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Json_EmitVal (m9_pool *pool, DynStr_DString * *d, Json_Node * n, bool spaced, m9_state *err)
+static void Json_EmitVal (DynStr_DString * *d, m9_pool *d_pool, Json_Node * n, bool spaced, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2070,7 +2386,7 @@ static void Json_EmitVal (m9_pool *pool, DynStr_DString * *d, Json_Node * n, boo
   switch (m9t1.tag) {
   case Json_Value_Object: {
     Json_Node * first = m9t1.u.Object.first; (void) first;
-    DynStr_AppendChar (pool, d, 123u, err);
+    DynStr_AppendChar (d, d_pool, 123u, err);
     if (err->exc) goto L_ret;
     c = first;
     sep = false;
@@ -2078,33 +2394,33 @@ static void Json_EmitVal (m9_pool *pool, DynStr_DString * *d, Json_Node * n, boo
       Json_Node * p = c;
       if (!(p != NULL)) break;
       if (sep) {
-        DynStr_AppendChar (pool, d, 44u, err);
+        DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) goto L_ret;
         if (spaced) {
-          DynStr_AppendChar (pool, d, 32u, err);
+          DynStr_AppendChar (d, d_pool, 32u, err);
           if (err->exc) goto L_ret;
         }
       }
       sep = true;
-      Json_EmitJStr (pool, d, Json_DecodeStr (pool, p->name, err), err);
+      Json_EmitJStr (d, d_pool, Json_DecodeStr (p->name, err), err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (pool, d, 58u, err);
+      DynStr_AppendChar (d, d_pool, 58u, err);
       if (err->exc) goto L_ret;
       if (spaced) {
-        DynStr_AppendChar (pool, d, 32u, err);
+        DynStr_AppendChar (d, d_pool, 32u, err);
         if (err->exc) goto L_ret;
       }
-      Json_EmitVal (pool, d, p, spaced, err);
+      Json_EmitVal (d, d_pool, p, spaced, err);
       if (err->exc) goto L_ret;
       c = p->next;
     }
-    DynStr_AppendChar (pool, d, 125u, err);
+    DynStr_AppendChar (d, d_pool, 125u, err);
     if (err->exc) goto L_ret;
   } break;
   case Json_Value_Arr: {
     Json_Node * first = m9t1.u.Arr.first; (void) first;
     int64_t count = m9t1.u.Arr.count; (void) count;
-    DynStr_AppendChar (pool, d, 91u, err);
+    DynStr_AppendChar (d, d_pool, 91u, err);
     if (err->exc) goto L_ret;
     c = first;
     sep = false;
@@ -2112,24 +2428,24 @@ static void Json_EmitVal (m9_pool *pool, DynStr_DString * *d, Json_Node * n, boo
       Json_Node * p = c;
       if (!(p != NULL)) break;
       if (sep) {
-        DynStr_AppendChar (pool, d, 44u, err);
+        DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) goto L_ret;
         if (spaced) {
-          DynStr_AppendChar (pool, d, 32u, err);
+          DynStr_AppendChar (d, d_pool, 32u, err);
           if (err->exc) goto L_ret;
         }
       }
       sep = true;
-      Json_EmitVal (pool, d, p, spaced, err);
+      Json_EmitVal (d, d_pool, p, spaced, err);
       if (err->exc) goto L_ret;
       c = p->next;
     }
-    DynStr_AppendChar (pool, d, 93u, err);
+    DynStr_AppendChar (d, d_pool, 93u, err);
     if (err->exc) goto L_ret;
   } break;
   case Json_Value_Str: {
     m9_sl_CHAR t = m9t1.u.Str.s; (void) t;
-    Json_EmitJStr (pool, d, Json_DecodeStr (pool, t, err), err);
+    Json_EmitJStr (d, d_pool, Json_DecodeStr (t, err), err);
     if (err->exc) goto L_ret;
   } break;
   case Json_Value_Num: {
@@ -2137,37 +2453,38 @@ static void Json_EmitVal (m9_pool *pool, DynStr_DString * *d, Json_Node * n, boo
     int64_t i = m9t1.u.Num.i; (void) i;
     bool isInt = m9t1.u.Num.isInt; (void) isInt;
     if (isInt) {
-      DynStr_AppendI64 (pool, d, i, err);
+      DynStr_AppendI64 (d, d_pool, i, err);
       if (err->exc) goto L_ret;
     } else {
-      Json_AppendF64 (pool, d, r, err);
+      Json_AppendF64 (d, d_pool, r, err);
       if (err->exc) goto L_ret;
     }
   } break;
   case Json_Value_Bool: {
     bool b = m9t1.u.Bool.b; (void) b;
     if (b) {
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s37, 4 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s38, 4 }), err);
       if (err->exc) goto L_ret;
     } else {
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s38, 5 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s39, 5 }), err);
       if (err->exc) goto L_ret;
     }
   } break;
   case Json_Value_Null:
   {
-    DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s39, 4 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s40, 4 }), err);
     if (err->exc) goto L_ret;
   } break;
   default: m9_trap_tag ();
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Json_EmitSorted (m9_pool *pool, DynStr_DString * *d, Json_Node * n, m9_state *err)
+static void Json_EmitSorted (DynStr_DString * *d, m9_pool *d_pool, Json_Node * n, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2195,9 +2512,9 @@ static void Json_EmitSorted (m9_pool *pool, DynStr_DString * *d, Json_Node * n, 
       if (err->exc) goto L_ret;
       c = p->next;
     }
-    ms = M9_POOL_SL (m9_sl_Json_Nodep, Json_Node *, &((*pool)), cnt, err);
+    ms = M9_POOL_SL (m9_sl_Json_Nodep, Json_Node *, d_pool, cnt, err);
     if (err->exc) goto L_ret;
-    nms = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), cnt, err);
+    nms = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, d_pool, cnt, err);
     if (err->exc) goto L_ret;
     cnt = INT64_C(0);
     c = first;
@@ -2206,7 +2523,7 @@ static void Json_EmitSorted (m9_pool *pool, DynStr_DString * *d, Json_Node * n, 
       if (!(p != NULL)) break;
       (*(Json_Node * *) m9_at (ms.p, cnt, ms.len, sizeof (Json_Node *), err)) = p;
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (nms.p, cnt, nms.len, sizeof (m9_sl_CHAR), err)) = Json_DecodeStr (pool, p->name, err);
+      (*(m9_sl_CHAR *) m9_at (nms.p, cnt, nms.len, sizeof (m9_sl_CHAR), err)) = Json_DecodeStr (p->name, err);
       if (err->exc) goto L_ret;
       cnt = m9_add_i64 (cnt, INT64_C(1), err);
       if (err->exc) goto L_ret;
@@ -2238,7 +2555,7 @@ static void Json_EmitSorted (m9_pool *pool, DynStr_DString * *d, Json_Node * n, 
         if (err->exc) goto L_ret;
       }
     } }
-    DynStr_AppendChar (pool, d, 123u, err);
+    DynStr_AppendChar (d, d_pool, 123u, err);
     if (err->exc) goto L_ret;
     sep = false;
     { int64_t m9t4to;
@@ -2247,24 +2564,24 @@ static void Json_EmitSorted (m9_pool *pool, DynStr_DString * *d, Json_Node * n, 
     if (err->exc) goto L_ret;
     for (; i <= m9t4to; i += 1) {
       if (sep) {
-        DynStr_AppendChar (pool, d, 44u, err);
+        DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) goto L_ret;
       }
       sep = true;
-      Json_EmitJStr (pool, d, (*(m9_sl_CHAR *) m9_at (nms.p, i, nms.len, sizeof (m9_sl_CHAR), err)), err);
+      Json_EmitJStr (d, d_pool, (*(m9_sl_CHAR *) m9_at (nms.p, i, nms.len, sizeof (m9_sl_CHAR), err)), err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (pool, d, 58u, err);
+      DynStr_AppendChar (d, d_pool, 58u, err);
       if (err->exc) goto L_ret;
-      Json_EmitSorted (pool, d, (*(Json_Node * *) m9_at (ms.p, i, ms.len, sizeof (Json_Node *), err)), err);
+      Json_EmitSorted (d, d_pool, (*(Json_Node * *) m9_at (ms.p, i, ms.len, sizeof (Json_Node *), err)), err);
       if (err->exc) goto L_ret;
     } }
-    DynStr_AppendChar (pool, d, 125u, err);
+    DynStr_AppendChar (d, d_pool, 125u, err);
     if (err->exc) goto L_ret;
   } break;
   case Json_Value_Arr: {
     Json_Node * first = m9t1.u.Arr.first; (void) first;
     int64_t count = m9t1.u.Arr.count; (void) count;
-    DynStr_AppendChar (pool, d, 91u, err);
+    DynStr_AppendChar (d, d_pool, 91u, err);
     if (err->exc) goto L_ret;
     c = first;
     sep = false;
@@ -2272,24 +2589,25 @@ static void Json_EmitSorted (m9_pool *pool, DynStr_DString * *d, Json_Node * n, 
       Json_Node * p = c;
       if (!(p != NULL)) break;
       if (sep) {
-        DynStr_AppendChar (pool, d, 44u, err);
+        DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) goto L_ret;
       }
       sep = true;
-      Json_EmitSorted (pool, d, p, err);
+      Json_EmitSorted (d, d_pool, p, err);
       if (err->exc) goto L_ret;
       c = p->next;
     }
-    DynStr_AppendChar (pool, d, 93u, err);
+    DynStr_AppendChar (d, d_pool, 93u, err);
     if (err->exc) goto L_ret;
   } break;
   default: {
-    Json_EmitVal (pool, d, n, false, err);
+    Json_EmitVal (d, d_pool, n, false, err);
     if (err->exc) goto L_ret;
   } break;
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -2325,30 +2643,31 @@ L_ret: ;
   return m9ret;
 }
 
-static void Json_Indent (m9_pool *pool, DynStr_DString * *d, int64_t depth, m9_state *err)
+static void Json_Indent (DynStr_DString * *d, m9_pool *d_pool, int64_t depth, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   int64_t i = 0; (void) i;
-  DynStr_AppendChar (pool, d, 10u, err);
+  DynStr_AppendChar (d, d_pool, 10u, err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(1);
   m9t1to = m9_mul_i64 (depth, INT64_C(2), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    DynStr_AppendChar (pool, d, 32u, err);
+    DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Json_EmitPretty (m9_pool *pool, DynStr_DString * *d, Json_Node * n, int64_t depth, m9_state *err)
+static void Json_EmitPretty (DynStr_DString * *d, m9_pool *d_pool, Json_Node * n, int64_t depth, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -2371,75 +2690,76 @@ static void Json_EmitPretty (m9_pool *pool, DynStr_DString * *d, Json_Node * n, 
       c = p->next;
     }
     if ((cnt == INT64_C(0))) {
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s40, 2 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s41, 2 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
     c = first;
-    DynStr_AppendChar (pool, d, 123u, err);
+    DynStr_AppendChar (d, d_pool, 123u, err);
     if (err->exc) goto L_ret;
     sep = false;
     for (;;) {
       Json_Node * p = c;
       if (!(p != NULL)) break;
       if (sep) {
-        DynStr_AppendChar (pool, d, 44u, err);
+        DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) goto L_ret;
       }
       sep = true;
-      Json_Indent (pool, d, m9_add_i64 (depth, INT64_C(1), err), err);
+      Json_Indent (d, d_pool, m9_add_i64 (depth, INT64_C(1), err), err);
       if (err->exc) goto L_ret;
-      Json_EmitJStr (pool, d, Json_DecodeStr (pool, p->name, err), err);
+      Json_EmitJStr (d, d_pool, Json_DecodeStr (p->name, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s41, 2 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s42, 2 }), err);
       if (err->exc) goto L_ret;
-      Json_EmitPretty (pool, d, p, m9_add_i64 (depth, INT64_C(1), err), err);
+      Json_EmitPretty (d, d_pool, p, m9_add_i64 (depth, INT64_C(1), err), err);
       if (err->exc) goto L_ret;
       c = p->next;
     }
-    Json_Indent (pool, d, depth, err);
+    Json_Indent (d, d_pool, depth, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 125u, err);
+    DynStr_AppendChar (d, d_pool, 125u, err);
     if (err->exc) goto L_ret;
   } break;
   case Json_Value_Arr: {
     Json_Node * first = m9t1.u.Arr.first; (void) first;
     int64_t count = m9t1.u.Arr.count; (void) count;
     if ((count == INT64_C(0))) {
-      DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s42, 2 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s43, 2 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
     c = first;
-    DynStr_AppendChar (pool, d, 91u, err);
+    DynStr_AppendChar (d, d_pool, 91u, err);
     if (err->exc) goto L_ret;
     sep = false;
     for (;;) {
       Json_Node * p = c;
       if (!(p != NULL)) break;
       if (sep) {
-        DynStr_AppendChar (pool, d, 44u, err);
+        DynStr_AppendChar (d, d_pool, 44u, err);
         if (err->exc) goto L_ret;
       }
       sep = true;
-      Json_Indent (pool, d, m9_add_i64 (depth, INT64_C(1), err), err);
+      Json_Indent (d, d_pool, m9_add_i64 (depth, INT64_C(1), err), err);
       if (err->exc) goto L_ret;
-      Json_EmitPretty (pool, d, p, m9_add_i64 (depth, INT64_C(1), err), err);
+      Json_EmitPretty (d, d_pool, p, m9_add_i64 (depth, INT64_C(1), err), err);
       if (err->exc) goto L_ret;
       c = p->next;
     }
-    Json_Indent (pool, d, depth, err);
+    Json_Indent (d, d_pool, depth, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, d, 93u, err);
+    DynStr_AppendChar (d, d_pool, 93u, err);
     if (err->exc) goto L_ret;
   } break;
   default: {
-    Json_EmitVal (pool, d, n, false, err);
+    Json_EmitVal (d, d_pool, n, false, err);
     if (err->exc) goto L_ret;
   } break;
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -2449,12 +2769,9 @@ void Json_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

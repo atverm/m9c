@@ -47,6 +47,8 @@ struct Delim_Reader {
   m9_arr_1024_int64_t fe;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[28] = { 70u, 101u, 101u, 100u, 32u, 111u, 110u, 32u, 97u, 32u, 102u, 105u, 108u, 101u, 45u, 98u, 97u, 99u, 107u, 101u, 100u, 32u, 114u, 101u, 97u, 100u, 101u, 114u };
 static const uint32_t m9s1[46] = { 97u, 32u, 114u, 111u, 119u, 32u, 119u, 105u, 116u, 104u, 32u, 109u, 111u, 114u, 101u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 114u, 101u, 97u, 100u, 101u, 114u, 32u, 97u, 99u, 99u, 101u, 112u, 116u, 115u };
 static const uint32_t m9s2[46] = { 97u, 32u, 114u, 111u, 119u, 32u, 119u, 105u, 116u, 104u, 32u, 109u, 111u, 114u, 101u, 32u, 102u, 105u, 101u, 108u, 100u, 115u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 114u, 101u, 97u, 100u, 101u, 114u, 32u, 97u, 99u, 99u, 101u, 112u, 116u, 115u };
@@ -54,9 +56,9 @@ static const uint32_t m9s3[33] = { 97u, 32u, 108u, 105u, 110u, 101u, 32u, 108u, 
 static const uint32_t m9s4[47] = { 97u, 32u, 98u, 108u, 111u, 99u, 107u, 32u, 117u, 110u, 100u, 101u, 114u, 32u, 52u, 48u, 57u, 54u, 32u, 98u, 121u, 116u, 101u, 115u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 119u, 111u, 114u, 116u, 104u, 32u, 97u, 32u, 115u, 121u, 115u, 99u, 97u, 108u, 108u };
 
 static Delim_Reader * Delim_New (m9_pool *pool, uint8_t delim, int64_t block, m9_state *err);
-static void Delim_Compact (Delim_Reader * *r, m9_state *err);
-static void Delim_Refill (Delim_Reader * *r, m9_state *err);
-static bool Delim_SplitLine (Delim_Reader * *r, m9_state *err);
+static void Delim_Compact (Delim_Reader * *r, m9_pool *r_pool, m9_state *err);
+static void Delim_Refill (Delim_Reader * *r, m9_pool *r_pool, m9_state *err);
+static bool Delim_SplitLine (Delim_Reader * *r, m9_pool *r_pool, m9_state *err);
 
 
 Delim_Reader * Delim_Open (m9_pool *pool, m9_sl_CHAR path, uint8_t delim, int64_t block, m9_state *err)
@@ -64,7 +66,7 @@ Delim_Reader * Delim_Open (m9_pool *pool, m9_sl_CHAR path, uint8_t delim, int64_
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Delim_Reader * m9ret = NULL;
   Delim_Reader * r = NULL; (void) r;
   r = Delim_New (pool, delim, block, err);
@@ -75,6 +77,7 @@ Delim_Reader * Delim_Open (m9_pool *pool, m9_sl_CHAR path, uint8_t delim, int64_
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -84,7 +87,7 @@ Delim_Reader * Delim_OpenPush (m9_pool *pool, uint8_t delim, int64_t block, m9_s
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Delim_Reader * m9ret = NULL;
   Delim_Reader * r = NULL; (void) r;
   r = Delim_New (pool, delim, block, err);
@@ -96,11 +99,12 @@ Delim_Reader * Delim_OpenPush (m9_pool *pool, uint8_t delim, int64_t block, m9_s
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t Delim_Feed (Delim_Reader * *r, m9_sl_BYTE src, m9_state *err)
+int64_t Delim_Feed (Delim_Reader * *r, m9_pool *r_pool, m9_sl_BYTE src, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -115,7 +119,7 @@ int64_t Delim_Feed (Delim_Reader * *r, m9_sl_BYTE src, m9_state *err)
     m9_raise (err, &Delim_Error);
     goto L_ret;
   }
-  Delim_Compact (r, err);
+  Delim_Compact (r, r_pool, err);
   if (err->exc) goto L_ret;
   room = m9_sub_i64 (((*r)->buf).len, (*r)->len, err);
   if (err->exc) goto L_ret;
@@ -141,11 +145,12 @@ int64_t Delim_Feed (Delim_Reader * *r, m9_sl_BYTE src, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Delim_Finish (Delim_Reader * *r, m9_state *err)
+void Delim_Finish (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -155,6 +160,7 @@ void Delim_Finish (Delim_Reader * *r, m9_state *err)
   (*r)->hungry = false;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return;
 }
@@ -175,7 +181,7 @@ L_ret: ;
   return m9ret;
 }
 
-bool Delim_Next (Delim_Reader * *r, m9_state *err)
+bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -211,7 +217,7 @@ bool Delim_Next (Delim_Reader * *r, m9_state *err)
       }
       (*r)->fsBase = (*r)->pos;
       (*r)->endl = e;
-      bool m9t3 = (!Delim_SplitLine (r, err));
+      bool m9t3 = (!Delim_SplitLine (r, r_pool, err));
       if (err->exc) goto L_ret;
       if (m9t3) {
         { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 46 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
@@ -237,7 +243,7 @@ bool Delim_Next (Delim_Reader * *r, m9_state *err)
         }
         (*r)->fsBase = (*r)->pos;
         (*r)->endl = e;
-        bool m9t6 = (!Delim_SplitLine (r, err));
+        bool m9t6 = (!Delim_SplitLine (r, r_pool, err));
         if (err->exc) goto L_ret;
         if (m9t6) {
           { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 46 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 46 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
@@ -261,18 +267,19 @@ bool Delim_Next (Delim_Reader * *r, m9_state *err)
       goto L_ret;
     }
     if ((*r)->push) {
-      Delim_Compact (r, err);
+      Delim_Compact (r, r_pool, err);
       if (err->exc) goto L_ret;
       (*r)->hungry = true;
       err->res = m9res;
       m9ret = false;
       goto L_ret;
     }
-    Delim_Refill (r, err);
+    Delim_Refill (r, r_pool, err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -298,7 +305,7 @@ m9_sl_BYTE Delim_Field (Delim_Reader * r, int64_t i, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_BYTE m9ret = {0};
   if (((i < INT64_C(0)) || (i >= r->nf))) {
     m9_raise (err, &m9_exc_IndexError);
@@ -310,6 +317,7 @@ m9_sl_BYTE Delim_Field (Delim_Reader * r, int64_t i, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -319,7 +327,7 @@ m9_sl_BYTE Delim_Line (Delim_Reader * r, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_BYTE m9ret = {0};
   err->res = m9res;
   m9ret = ({ __typeof__(r->buf) m9t1 = r->buf; int64_t m9t1a = r->fsBase, m9t1n = m9_sub_i64 (r->endl, r->fsBase, err); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
@@ -327,6 +335,7 @@ m9_sl_BYTE Delim_Line (Delim_Reader * r, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -576,7 +585,7 @@ static Delim_Reader * Delim_New (m9_pool *pool, uint8_t delim, int64_t block, m9
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Delim_Reader * m9ret = NULL;
   Delim_Reader * r = NULL; (void) r;
   if ((block <= INT64_C(0))) {
@@ -608,11 +617,12 @@ static Delim_Reader * Delim_New (m9_pool *pool, uint8_t delim, int64_t block, m9
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void Delim_Compact (Delim_Reader * *r, m9_state *err)
+static void Delim_Compact (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -636,11 +646,12 @@ static void Delim_Compact (Delim_Reader * *r, m9_state *err)
   (*r)->pos = INT64_C(0);
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return;
 }
 
-static void Delim_Refill (Delim_Reader * *r, m9_state *err)
+static void Delim_Refill (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -649,7 +660,7 @@ static void Delim_Refill (Delim_Reader * *r, m9_state *err)
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE got = {0}; (void) got;
   int64_t i = 0; (void) i;
-  Delim_Compact (r, err);
+  Delim_Compact (r, r_pool, err);
   if (err->exc) goto L_ret;
   if ((*r)->eof) {
     goto L_ret;
@@ -672,12 +683,13 @@ static void Delim_Refill (Delim_Reader * *r, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
 }
 
-static bool Delim_SplitLine (Delim_Reader * *r, m9_state *err)
+static bool Delim_SplitLine (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -727,6 +739,7 @@ static bool Delim_SplitLine (Delim_Reader * *r, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, r_pool, (*r));
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -736,13 +749,10 @@ void Delim_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

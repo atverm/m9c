@@ -107,21 +107,21 @@ BEGIN
   RETURN v
 END ContentLength ;
 
-PROCEDURE CrLf (VAR pool: POOL ; VAR d: PTR DynStr.DString) =
+PROCEDURE CrLf (VAR d: PTR DynStr.DString) =
 BEGIN
-  DynStr.AppendChar (pool, d, 0DC) ;
-  DynStr.AppendChar (pool, d, 0AC)
+  DynStr.AppendChar (d, 0DC) ;
+  DynStr.AppendChar (d, 0AC)
 END CrLf ;
 
-PROCEDURE StatusLine (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE StatusLine (VAR d: PTR DynStr.DString ;
                       status: I64) =
 BEGIN
-  DynStr.Append (pool, d, 'HTTP/1.0 ') ;
-  DynStr.AppendI64 (pool, d, status) ;
-  IF status = 200 THEN DynStr.Append (pool, d, ' OK')
-  ELSIF status = 404 THEN DynStr.Append (pool, d, ' Not Found')
-  ELSE DynStr.Append (pool, d, ' Error') END ;
-  CrLf (pool, d)
+  DynStr.Append (d, 'HTTP/1.0 ') ;
+  DynStr.AppendI64 (d, status) ;
+  IF status = 200 THEN DynStr.Append (d, ' OK')
+  ELSIF status = 404 THEN DynStr.Append (d, ' Not Found')
+  ELSE DynStr.Append (d, ' Error') END ;
+  CrLf (d)
 END StatusLine ;
 
 (* Latin-1 text out: headers and pages are ASCII; program OUTPUT can
@@ -130,20 +130,20 @@ PROCEDURE Respond (fd: I64 ; status: I64 ; RO ctype: STR ;
                    RO body: STR ; headOnly: BOOL) =
 VAR
   scratch : POOL ;
-  d : PTR DynStr.DString ;
+  d : PTR DynStr.DString IN scratch ;
   b : SLICE OF BYTE ;
   n : I64 ;
 BEGIN
   d := DynStr.New (scratch) ;
-  StatusLine (scratch, d, status) ;
-  DynStr.Append (scratch, d, 'Content-Type: ') ;
-  DynStr.Append (scratch, d, ctype) ;
-  CrLf (scratch, d) ;
-  DynStr.Append (scratch, d, 'Content-Length: ') ;
-  DynStr.AppendI64 (scratch, d, LEN (body)) ;
-  CrLf (scratch, d) ;
-  CrLf (scratch, d) ;
-  IF NOT headOnly THEN DynStr.Append (scratch, d, body) END ;
+  StatusLine (d, status) ;
+  DynStr.Append (d, 'Content-Type: ') ;
+  DynStr.Append (d, ctype) ;
+  CrLf (d) ;
+  DynStr.Append (d, 'Content-Length: ') ;
+  DynStr.AppendI64 (d, LEN (body)) ;
+  CrLf (d) ;
+  CrLf (d) ;
+  IF NOT headOnly THEN DynStr.Append (d, body) END ;
   b := DynStr.Bytes (scratch, DynStr.View (d), FALSE) ;
   n := I64 (Write (C.Int (fd), ADR (b), C.SizeT (LEN (b))))
 EXCEPT
@@ -155,22 +155,22 @@ PROCEDURE RespondBytes (fd: I64 ; RO ctype: STR ;
                         RO body: SLICE OF BYTE ; headOnly: BOOL) =
 VAR
   scratch : POOL ;
-  d : PTR DynStr.DString ;
+  d : PTR DynStr.DString IN scratch ;
   h : SLICE OF BYTE ;
   n : I64 ;
 BEGIN
   d := DynStr.New (scratch) ;
-  StatusLine (scratch, d, 200) ;
-  DynStr.Append (scratch, d, 'Content-Type: ') ;
-  DynStr.Append (scratch, d, ctype) ;
-  CrLf (scratch, d) ;
-  DynStr.Append (scratch, d, 'Content-Length: ') ;
-  DynStr.AppendI64 (scratch, d, LEN (body)) ;
-  CrLf (scratch, d) ;
+  StatusLine (d, 200) ;
+  DynStr.Append (d, 'Content-Type: ') ;
+  DynStr.Append (d, ctype) ;
+  CrLf (d) ;
+  DynStr.Append (d, 'Content-Length: ') ;
+  DynStr.AppendI64 (d, LEN (body)) ;
+  CrLf (d) ;
   (* a fresh run must show its fresh figure *)
-  DynStr.Append (scratch, d, 'Cache-Control: no-store') ;
-  CrLf (scratch, d) ;
-  CrLf (scratch, d) ;
+  DynStr.Append (d, 'Cache-Control: no-store') ;
+  CrLf (d) ;
+  CrLf (d) ;
   h := DynStr.Bytes (scratch, DynStr.View (d), FALSE) ;
   n := I64 (Write (C.Int (fd), ADR (h), C.SizeT (LEN (h)))) ;
   IF NOT headOnly AND LEN (body) > 0 THEN
@@ -279,13 +279,13 @@ BEGIN
   IF NOT ok THEN RETURN src END ;
   Io.WriteFile (workDir + '/' + name + '.m9', src) ;
   cmd := DynStr.New (scratch) ;
-  DynStr.Append (scratch, cmd, 'cd ') ;
-  DynStr.Append (scratch, cmd, workDir) ;
-  DynStr.Append (scratch, cmd, ' && ') ;
-  DynStr.Append (scratch, cmd, FmtCmd (scratch)) ;
-  DynStr.Append (scratch, cmd, ' ') ;
-  DynStr.Append (scratch, cmd, name) ;
-  DynStr.Append (scratch, cmd, '.m9 > fmt.txt 2>fmt.err') ;
+  DynStr.Append (cmd, 'cd ') ;
+  DynStr.Append (cmd, workDir) ;
+  DynStr.Append (cmd, ' && ') ;
+  DynStr.Append (cmd, FmtCmd (scratch)) ;
+  DynStr.Append (cmd, ' ') ;
+  DynStr.Append (cmd, name) ;
+  DynStr.Append (cmd, '.m9 > fmt.txt 2>fmt.err') ;
   rc := Io.Run (DynStr.View (cmd)) ;
   IF rc # 0 THEN RETURN src END ;
   RETURN Io.ReadFile (pool, workDir + '/fmt.txt')
@@ -298,25 +298,25 @@ END FmtProg ;
 PROCEDURE ExamplesJson (VAR pool: POOL ; RO pageDir: STR) : STR
   RAISES ValueRange, IndexError =
 VAR
-  d : PTR DynStr.DString ;
+  d : PTR DynStr.DString IN pool ;
   listing, entries : SLICE OF STR ;
   i, n : I64 ;
   f : STR ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.AppendChar (pool, d, 05BC) ;
+  DynStr.AppendChar (d, 05BC) ;
   n := 0 ;
   entries := Io.ListDir (pool, pageDir + '/examples') ;
   listing := SortStrs (entries) ;
   FOR i := 0 TO LEN (listing) - 1 DO
     f := listing[i] ;
     IF SafeName (f) AND Text.EndsWith (f, '.m9') THEN
-      IF n > 0 THEN DynStr.AppendChar (pool, d, 02CC) END ;
-      Diag.JStr (pool, d, f) ;
+      IF n > 0 THEN DynStr.AppendChar (d, 02CC) END ;
+      Diag.JStr (d, f) ;
       n := n + 1
     END
   END ;
-  DynStr.AppendChar (pool, d, 05DC) ;
+  DynStr.AppendChar (d, 05DC) ;
   RETURN DynStr.View (d)
 EXCEPT
 | Io.IOError (p) : RETURN '[]'
@@ -385,7 +385,7 @@ PROCEDURE RunProg (VAR pool: POOL ; RO KEPT src: STR ;
 VAR
   scratch : POOL ;
   cmd : PTR DynStr.DString IN scratch ;
-  d : PTR DynStr.DString ;
+  d : PTR DynStr.DString IN pool ;
   name, txt, files, f : STR ;
   ok : BOOL ;
   rc, i, j : I64 ;
@@ -401,26 +401,26 @@ BEGIN
      closure's objects, so stale .o files are harmless -- stale .m9
      MAINS are not, and go *)
   cmd := DynStr.New (scratch) ;
-  DynStr.Append (scratch, cmd, 'cd ') ;
-  DynStr.Append (scratch, cmd, workDir) ;
-  DynStr.Append (scratch, cmd,
+  DynStr.Append (cmd, 'cd ') ;
+  DynStr.Append (cmd, workDir) ;
+  DynStr.Append (cmd,
     ' && rm -f prog run.txt cc.txt *.m9 && rm -rf out && mkdir out') ;
   rc := Io.Run (DynStr.View (cmd)) ;
   Io.WriteFile (workDir + '/' + name + '.m9', src) ;
 
   cmd := DynStr.New (scratch) ;
-  DynStr.Append (scratch, cmd, 'cd ') ;
-  DynStr.Append (scratch, cmd, workDir) ;
-  DynStr.Append (scratch, cmd, ' && timeout 60 ') ;
-  DynStr.Append (scratch, cmd, M9cCmd (scratch)) ;
+  DynStr.Append (cmd, 'cd ') ;
+  DynStr.Append (cmd, workDir) ;
+  DynStr.Append (cmd, ' && timeout 60 ') ;
+  DynStr.Append (cmd, M9cCmd (scratch)) ;
   (* -g so an unhandled exception's message carries FILE:LINE --
      a learning aid; the editor is not a hot loop *)
-  DynStr.Append (scratch, cmd, ' --make -g -o prog ') ;
-  DynStr.Append (scratch, cmd, name) ;
-  DynStr.Append (scratch, cmd, '.m9 > cc.txt 2>&1') ;
+  DynStr.Append (cmd, ' --make -g -o prog ') ;
+  DynStr.Append (cmd, name) ;
+  DynStr.Append (cmd, '.m9 > cc.txt 2>&1') ;
   rc := Io.Run (DynStr.View (cmd)) ;
   IF rc # 0 THEN
-    DynStr.Append (pool, d, 'compile failed' + Nl ()) ;
+    DynStr.Append (d, 'compile failed' + Nl ()) ;
     AppendCapped (pool, d, workDir + '/cc.txt') ;
     RETURN DynStr.View (d)
   END ;
@@ -428,29 +428,29 @@ BEGIN
   (* run FROM out/, so whatever the program writes lands where
      /out/NAME can serve it *)
   cmd := DynStr.New (scratch) ;
-  DynStr.Append (scratch, cmd, 'cd ') ;
-  DynStr.Append (scratch, cmd, workDir) ;
+  DynStr.Append (cmd, 'cd ') ;
+  DynStr.Append (cmd, workDir) ;
   IF bwrapOk THEN
     (* the binary is BOUND to a fixed path first: a workdir that
        itself lives under /tmp would otherwise be shadowed by its
        own bind -- the tutor's recorded trap, met again *)
-    DynStr.Append (scratch, cmd,
+    DynStr.Append (cmd,
       '/out && timeout 15 bwrap --die-with-parent --dev-bind / /') ;
-    DynStr.Append (scratch, cmd,
+    DynStr.Append (cmd,
       ' --bind "$(pwd)" /tmp --chdir /tmp') ;
-    DynStr.Append (scratch, cmd,
+    DynStr.Append (cmd,
       ' --ro-bind "$(dirname "$(pwd)")/prog" /tmp/.m9edit-prog') ;
-    DynStr.Append (scratch, cmd,
+    DynStr.Append (cmd,
       ' /tmp/.m9edit-prog > ../run.txt 2>&1')
   ELSE
-    DynStr.Append (scratch, cmd,
+    DynStr.Append (cmd,
       '/out && timeout 15 ../prog > ../run.txt 2>&1')
   END ;
   rc := Io.Run (DynStr.View (cmd)) ;
 
-  DynStr.Append (pool, d, 'exit ') ;
-  DynStr.AppendI64 (pool, d, ExitCode (rc)) ;
-  DynStr.Append (pool, d, Nl ()) ;
+  DynStr.Append (d, 'exit ') ;
+  DynStr.AppendI64 (d, ExitCode (rc)) ;
+  DynStr.Append (d, Nl ()) ;
   AppendCapped (pool, d, workDir + '/run.txt') ;
   files := '' ;
   listing := Io.ListDir (scratch, workDir + '/out') ;
@@ -458,19 +458,19 @@ BEGIN
   FOR i := 0 TO LEN (listing) - 1 DO
     f := listing[i] ;
     IF SafeName (f) THEN
-      DynStr.Append (pool, d, 'file: /out/') ;
-      DynStr.Append (pool, d, f) ;
-      DynStr.Append (pool, d, Nl ()) ;
+      DynStr.Append (d, 'file: /out/') ;
+      DynStr.Append (d, f) ;
+      DynStr.Append (d, Nl ()) ;
       j := j + 1
     END
   END ;
   IF j = 0 AND NOT bwrapOk THEN
-    DynStr.Append (pool, d,
+    DynStr.Append (d,
       '(files written with relative names appear here;') ;
-    DynStr.Append (pool, d, Nl ()) ;
-    DynStr.Append (pool, d,
+    DynStr.Append (d, Nl ()) ;
+    DynStr.Append (d,
       ' /tmp/NAME needs bubblewrap installed)') ;
-    DynStr.Append (pool, d, Nl ())
+    DynStr.Append (d, Nl ())
   END ;
   RETURN DynStr.View (d)
 END RunProg ;
@@ -489,17 +489,17 @@ VAR t : STR ;
 BEGIN
   t := Io.ReadFile (pool, path) ;
   IF LEN (t) > OutMax THEN
-    DynStr.Append (pool, d, SLICE (t, 0, OutMax)) ;
-    DynStr.Append (pool, d, Nl ()) ;
-    DynStr.Append (pool, d, '... output capped ...') ;
-    DynStr.Append (pool, d, Nl ())
+    DynStr.Append (d, SLICE (t, 0, OutMax)) ;
+    DynStr.Append (d, Nl ()) ;
+    DynStr.Append (d, '... output capped ...') ;
+    DynStr.Append (d, Nl ())
   ELSE
-    DynStr.Append (pool, d, t)
+    DynStr.Append (d, t)
   END
 EXCEPT
 | Io.IOError (p) :
-    DynStr.Append (pool, d, '(no output)') ;
-    DynStr.Append (pool, d, Nl ())
+    DynStr.Append (d, '(no output)') ;
+    DynStr.Append (d, Nl ())
 END AppendCapped ;
 
 PROCEDURE ServeExample (fd: I64 ; RO pageDir: STR ; RO name: STR)
@@ -620,7 +620,7 @@ BEGIN
 
     IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/lex') THEN
       Respond (fd, 200, 'application/json',
-               Diag.LexJson (scratch, body), FALSE) ;
+               Diag.LexJson (body), FALSE) ;
       RETURN
     END ;
     IF DynStr.Eq (method, 'POST') AND DynStr.Eq (path, '/check') THEN

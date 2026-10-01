@@ -81,7 +81,7 @@ the cell shape:
   {"ok":false,"diags":[{"line":L,"col":C,"msg":"..."},...]}
 ok is exactly "no finding".
 
-### LexJson (VAR pool: POOL ; RO KEPT src: STR) : STR RAISES ValueRange, IndexError
+### LexJson (RO KEPT src: STR) : STR RAISES ValueRange, IndexError
 
 the compiler's own tokens and comments, for a page that paints:
   {"tokens":[[kind,line,col,len],...],
@@ -89,7 +89,7 @@ the compiler's own tokens and comments, for a page that paints:
 kind is Lex's stable code (0 is EOF and is not listed; 1 is an
 error token), len the token's text length in CHARs.
 
-### JStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange
+### JStr (VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange
 
 a JSON string literal appended to d: the escapes RFC 8259
 requires and no others -- `"` and `\` backslashed, controls as

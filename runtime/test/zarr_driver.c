@@ -41,6 +41,7 @@ static m9_sl_I64 at (int64_t r, int64_t c)
 int main (void)
 {
   m9_state err = {0};
+  m9_pool pool = {0};     /* what a VAR array parameter carries (rule 2) */
   uint32_t ub[64];
   int64_t r, c, n;
   double v, sum, mean;
@@ -54,24 +55,24 @@ int main (void)
   if (err.exc) { printf ("exc: %s\n", err.exc->name); return 1; }
 
   /* corner goldens, exact to the last digit */
-  ckd (ZarrStore_GetF64 (&a, at (0, 0), &err), 394.9816047538945,
+  ckd (ZarrStore_GetF64 (&a, &pool, at (0, 0), &err), 394.9816047538945,
        "co2[0,0]");
-  ckd (ZarrStore_GetF64 (&a, at (99, 49), &err), 403.89249513322846,
+  ckd (ZarrStore_GetF64 (&a, &pool, at (99, 49), &err), 403.89249513322846,
        "co2[99,49]");
-  ckd (ZarrStore_GetF64 (&a, at (42, 17), &err), 404.6119210027921,
+  ckd (ZarrStore_GetF64 (&a, &pool, at (42, 17), &err), 404.6119210027921,
        "co2[42,17]");
-  ck (isnan (ZarrStore_GetF64 (&a, at (10, 5), &err)), "co2[10,5] NaN");
+  ck (isnan (ZarrStore_GetF64 (&a, &pool, at (10, 5), &err)), "co2[10,5] NaN");
   ck (err.exc == NULL, "corner reads raise nothing");
 
   /* deleted chunk 2.1 (rows 60:90, cols 20:40) answers fill NaN */
-  ck (isnan (ZarrStore_GetF64 (&a, at (60, 20), &err)), "missing chunk fills NaN");
-  ck (isnan (ZarrStore_GetF64 (&a, at (89, 39), &err)), "fill at chunk corner");
+  ck (isnan (ZarrStore_GetF64 (&a, &pool, at (60, 20), &err)), "missing chunk fills NaN");
+  ck (isnan (ZarrStore_GetF64 (&a, &pool, at (89, 39), &err)), "fill at chunk corner");
 
   /* nanmean, sequential row-major -- the oracle's order */
   sum = 0; n = 0;
   for (r = 0; r < 100; r++)
     for (c = 0; c < 50; c++) {
-      v = ZarrStore_GetF64 (&a, at (r, c), &err);
+      v = ZarrStore_GetF64 (&a, &pool, at (r, c), &err);
       if (!isnan (v)) { sum += v; n++; }
     }
   ck (err.exc == NULL, "full scan raises nothing");
@@ -93,13 +94,13 @@ int main (void)
     double cs; int64_t cn; double cmax;
     cs = 0; cn = 0;
     for (r = 0; r < 100; r++) {
-      v = ZarrStore_GetF64 (&a, at (r, 0), &err);
+      v = ZarrStore_GetF64 (&a, &pool, at (r, 0), &err);
       if (!isnan (v)) { cs += v; cn++; }
     }
     ckd (cs / (double) cn, 398.44711629284063, "colMean[0]");
     cs = 0; cn = 0;
     for (r = 0; r < 100; r++) {
-      v = ZarrStore_GetF64 (&a, at (r, 25), &err);
+      v = ZarrStore_GetF64 (&a, &pool, at (r, 25), &err);
       if (!isnan (v)) { cs += v; cn++; }
     }
     /* the recorded colMean[25] came from np.nanmean's pairwise
@@ -110,21 +111,21 @@ int main (void)
         "colMean[25] agrees with numpy to the recorded digits");
     cmax = -1e300;
     for (r = 0; r < 100; r++) {
-      v = ZarrStore_GetF64 (&a, at (r, 49), &err);
+      v = ZarrStore_GetF64 (&a, &pool, at (r, 49), &err);
       if (!isnan (v) && v > cmax) cmax = v;
     }
     ckd (cmax, 419.98230813001754, "colMax[49]");
   }
 
   /* Trunc(NaN) is a catchable ValueRange, not INT64_MIN */
-  ZarrStore_GetI64 (&a, at (10, 5), &err);
+  ZarrStore_GetI64 (&a, &pool, at (10, 5), &err);
   ck (err.exc == &m9_exc_ValueRange, "GetI64 of NaN raises ValueRange");
   err.exc = NULL;
-  ck (ZarrStore_GetI64 (&a, at (0, 0), &err) == 394 && err.exc == NULL,
+  ck (ZarrStore_GetI64 (&a, &pool, at (0, 0), &err) == 394 && err.exc == NULL,
       "GetI64 truncates 394.98 to 394");
 
   /* bounds are semantics */
-  ZarrStore_GetF64 (&a, at (100, 0), &err);
+  ZarrStore_GetF64 (&a, &pool, at (100, 0), &err);
   ck (err.exc == &m9_exc_IndexError, "GetF64[100,0] raises IndexError");
   err.exc = NULL;
 
@@ -148,11 +149,11 @@ int main (void)
     ck (ZarrStore_Rank (t, &err) == 1 && ZarrStore_Extent (t, 0, &err) == 4,
         "time.zarr is 1 x 4");
     ix[0] = 2;
-    ck (ZarrStore_GetI64 (&t, (m9_sl_I64){ ix, 1 }, &err)
+    ck (ZarrStore_GetI64 (&t, &pool, (m9_sl_I64){ ix, 1 }, &err)
           == INT64_C (1752580800000000000) && err.exc == NULL,
         "time[2] = 1752580800000000000 ns = 2025-07-15T12:00:00Z");
     ix[0] = 3;
-    ck (ZarrStore_GetI64 (&t, (m9_sl_I64){ ix, 1 }, &err)
+    ck (ZarrStore_GetI64 (&t, &pool, (m9_sl_I64){ ix, 1 }, &err)
           == INT64_C (-1000000000) && err.exc == NULL,
         "time[3] = -1e9 ns, one second before the epoch");
     ck (ZarrStore_HasFill (t, &err) && ZarrStore_Fill (t, &err) == 0.0,

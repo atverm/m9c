@@ -115,7 +115,7 @@ R=$(printf "MODULE H ;\nIMPORT Io ;\nBEGIN\n  Io.WriteLine ('hi from the gate')\
     curl -s -X POST --data-binary @- http://127.0.0.1:$PORT/run)
 echo "$R" | grep -q '^exit 0' || { echo "edit: hello did not run:"; echo "$R" | head -3; exit 1; }
 echo "$R" | grep -q 'hi from the gate' || { echo "edit: output lost"; exit 1; }
-R=$(printf "MODULE F ;\nIMPORT Plot ;\nIMPORT Io ;\nVAR\n  pool : POOL ;\n  xs, ys : ARRAY 2 OF F64 ;\n  svg : STR ;\nBEGIN\n  xs[0] := 0.0 ; xs[1] := 1.0 ;\n  ys[0] := 0.0 ; ys[1] := 1.0 ;\n  Plot.ClearFigure () ;\n  Plot.AddLine (xs, ys, 0, 'y') ;\n  svg := Plot.Render (pool, 't', 'x', 'y') ;\n  Io.WriteFile ('f.svg', svg)\nEXCEPT\n| ValueRange :\n    Io.Halt (1)\n| Io.IOError (p) :\n    Io.Halt (1)\nEND F.\n" | \
+R=$(printf "MODULE F ;\nIMPORT Plot ;\nIMPORT Io ;\nVAR\n  pool : POOL ;\n  xs, ys : ARRAY 2 OF F64 ;\n  svg : STR ;\nBEGIN\n  xs[0] := 0.0 ; xs[1] := 1.0 ;\n  ys[0] := 0.0 ; ys[1] := 1.0 ;\n  Plot.ClearFigure () ;\n  Plot.AddLine (xs, ys, 0, 'y') ;\n  svg := Plot.Render ('t', 'x', 'y') ;\n  Io.WriteFile ('f.svg', svg)\nEXCEPT\n| ValueRange :\n    Io.Halt (1)\n| Io.IOError (p) :\n    Io.Halt (1)\nEND F.\n" | \
     curl -s -X POST --data-binary @- http://127.0.0.1:$PORT/run)
 echo "$R" | grep -q 'file: /out/f.svg' || \
   { echo "edit: the figure was not produced:"; echo "$R" | head -4; exit 1; }

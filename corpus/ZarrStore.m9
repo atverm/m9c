@@ -185,9 +185,9 @@ VAR
   n, status : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, st.root) ;
-  DynStr.AppendChar (pool, d, '/') ;
-  DynStr.Append (pool, d, rel) ;
+  DynStr.Append (d, st.root) ;
+  DynStr.AppendChar (d, '/') ;
+  DynStr.Append (d, rel) ;
   buf := NEW (pool, BYTE, maxLen) ;
   n := 0 ;
   IF st.secure THEN
@@ -210,7 +210,7 @@ VAR
   s : PTR Store ;
   j, start : I64 ;
 BEGIN
-  s := NEW (Store) ;
+  s := NEW (OWN, Store) ;
   IF StartsWith (url, 'https://') THEN
     s.secure := TRUE ;
     start := 8
@@ -354,19 +354,19 @@ VAR
   a : PTR Array ;
   d : PTR DynStr.DString IN scratch ;
   raw : SLICE OF BYTE ;
-  root : PTR Json.Node IN scratch ;
+  root : PTR Json.Node ;      (* Parse answers into this frame *)
   crank, sfb : I64 ;
 BEGIN
-  a := NEW (Array) ;
+  a := NEW (OWN, Array) ;
   a.st := s ;
   a.path := CopyChars (a.cache, path) ;
   a.last := NONE ;
 
   d := DynStr.New (scratch) ;
-  DynStr.Append (scratch, d, path) ;
-  DynStr.Append (scratch, d, '/.zarray') ;
+  DynStr.Append (d, path) ;
+  DynStr.Append (d, '/.zarray') ;
   raw := Fetch (s, scratch, DynStr.View (d), MetaMax) ;
-  root := Json.Parse (scratch, DynStr.Chars (scratch, raw)) ;
+  root := Json.Parse (DynStr.Chars (scratch, raw)) ;
 
   IF Json.Field (root, 'zarr_format') IS SOME zf THEN
     IF Json.AsI64 (zf) # 2 THEN
@@ -600,11 +600,11 @@ BEGIN
   (* OPT must be guarded: no nil dereference exists to write.        *)
 
   d := DynStr.New (scratch) ;
-  DynStr.Append (scratch, d, a.path) ;
-  DynStr.AppendChar (scratch, d, '/') ;
+  DynStr.Append (d, a.path) ;
+  DynStr.AppendChar (d, '/') ;
   FOR i := 0 TO a.meta.rank - 1 DO
-    IF i > 0 THEN DynStr.AppendChar (scratch, d, a.meta.sep) END ;
-    DynStr.AppendI64 (scratch, d, coords[i])
+    IF i > 0 THEN DynStr.AppendChar (d, a.meta.sep) END ;
+    DynStr.AppendI64 (d, coords[i])
   END ;
   raw := Fetch (a.st, scratch, DynStr.View (d), ChunkBytes (a) + 1024) ;
 

@@ -34,11 +34,11 @@ typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
 #endif
 
 Arrow_Table * Arrow_New (m9_pool *pool, int64_t rows, m9_state *err);
-void Arrow_Meta (m9_pool *pool, Arrow_Table * *t, m9_sl_CHAR key, m9_sl_CHAR value, m9_state *err);
-void Arrow_AddInt (m9_pool *pool, Arrow_Table * *t, m9_sl_CHAR name, int64_t ty, m9_sl_I64 v, m9_state *err);
-void Arrow_AddF32 (m9_pool *pool, Arrow_Table * *t, m9_sl_CHAR name, m9_sl_F32 v, m9_state *err);
-void Arrow_AddF64 (m9_pool *pool, Arrow_Table * *t, m9_sl_CHAR name, m9_sl_F64 v, m9_state *err);
-void Arrow_AddStr (m9_pool *pool, Arrow_Table * *t, m9_sl_CHAR name, m9_sl_m9_sl_CHAR v, m9_state *err);
+void Arrow_Meta (Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR key, m9_sl_CHAR value, m9_state *err);
+void Arrow_AddInt (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR name, int64_t ty, m9_sl_I64 v, m9_state *err);
+void Arrow_AddF32 (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR name, m9_sl_F32 v, m9_state *err);
+void Arrow_AddF64 (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR name, m9_sl_F64 v, m9_state *err);
+void Arrow_AddStr (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR name, m9_sl_m9_sl_CHAR v, m9_state *err);
 m9_sl_BYTE Arrow_Stream (m9_pool *pool, Arrow_Table * t, m9_state *err);
 int64_t Arrow_NBytes (Arrow_Table * t, m9_state *err);
 

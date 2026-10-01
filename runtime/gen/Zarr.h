@@ -60,11 +60,11 @@ Zarr_Sink * Zarr_SinkF32 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
 Zarr_Sink * Zarr_SinkF64 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);
 Zarr_Sink * Zarr_SinkInt (m9_pool *pool, m9_sl_CHAR adir, int64_t width, bool signed_, int64_t chunk, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);
 Zarr_Sink * Zarr_SinkTimeNs (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m9_sl_CHAR dims, int64_t comp, m9_state *err);
-void Zarr_PutF32 (Zarr_Sink * *s, float v, m9_state *err);
-void Zarr_PutF64 (Zarr_Sink * *s, double v, m9_state *err);
-void Zarr_PutI64 (Zarr_Sink * *s, int64_t v, m9_state *err);
+void Zarr_PutF32 (Zarr_Sink * *s, m9_pool *s_pool, float v, m9_state *err);
+void Zarr_PutF64 (Zarr_Sink * *s, m9_pool *s_pool, double v, m9_state *err);
+void Zarr_PutI64 (Zarr_Sink * *s, m9_pool *s_pool, int64_t v, m9_state *err);
 int64_t Zarr_Rows (Zarr_Sink * s, m9_state *err);
-void Zarr_Seal (Zarr_Sink * *s, m9_state *err);
+void Zarr_Seal (Zarr_Sink * *s, m9_pool *s_pool, m9_state *err);
 void Zarr_Consolidate (m9_pool *pool, m9_sl_CHAR store, m9_state *err);
 void Zarr_ConsolidateSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err);
 

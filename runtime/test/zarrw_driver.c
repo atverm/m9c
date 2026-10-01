@@ -691,10 +691,10 @@ int main (int argc, char **argv)
     sk = Zarr_SinkF32 (&pool, sl (ROOT "/_obs/streamed", nb[37]), 7,
                        (m9_sl_m9_sl_CHAR){ sd, 1 }, 0, err);
     ck (err->exc == NULL, "a float sink opens");
-    for (k = 0; k < 1000; k++) Zarr_PutF32 (&sk, (float) k * 0.5f, err);
+    for (k = 0; k < 1000; k++) Zarr_PutF32 (&sk, &pool,(float) k * 0.5f, err);
     ck (err->exc == NULL && Zarr_Rows (sk, err) == 1000,
         "1000 values go in");
-    Zarr_Seal (&sk, err);
+    Zarr_Seal (&sk, &pool,err);
     ck (err->exc == NULL, "and it seals");
     cktext (ROOT "/_obs/streamed/.zarray",
             "{\"shape\": [1000], \"chunks\": [7], \"dtype\": \"<f4\", "
@@ -718,18 +718,18 @@ int main (int argc, char **argv)
     sd[0] = sl ("flag_dim", nb[39]);
     sk = Zarr_SinkInt (&pool, sl (ROOT "/_obs/flag", nb[38]), 1, true,
                        64, (m9_sl_m9_sl_CHAR){ sd, 1 }, 0, err);
-    for (k = 0; k < 100; k++) Zarr_PutI64 (&sk, (k % 5) - 1, err);
+    for (k = 0; k < 100; k++) Zarr_PutI64 (&sk, &pool,(k % 5) - 1, err);
     ck (err->exc == NULL, "an int8 sink takes -1..3");
     {
       m9_state e2 = {0}; e2.res = &pool;
-      Zarr_PutI64 (&sk, 300, &e2);
+      Zarr_PutI64 (&sk, &pool,300, &e2);
       ck (e2.exc != NULL, "300 in an int8 column RAISES, it does not wrap");
       e2.exc = NULL;
     }
-    Zarr_Seal (&sk, err);
+    Zarr_Seal (&sk, &pool,err);
     {
       m9_state e2 = {0}; e2.res = &pool;
-      Zarr_PutF32 (&sk, 1.0f, &e2);
+      Zarr_PutF32 (&sk, &pool,1.0f, &e2);
       ck (e2.exc != NULL, "a sealed sink refuses more values");
       e2.exc = NULL;
     }

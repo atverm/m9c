@@ -2,6 +2,8 @@
 #include "Text.h"
 #include "DynStr.h"
 
+static m9_pool m9mframe = {0};
+
 static bool Text_Blank (uint32_t c, m9_state *err);
 
 
@@ -296,12 +298,12 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state *err)
+m9_sl_m9_sl_CHAR Text_Split (m9_sl_CHAR s, uint32_t sep, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_m9_sl_CHAR m9ret = {0};
   m9_sl_m9_sl_CHAR parts = {0}; (void) parts;
   int64_t i = 0; (void) i;
@@ -309,7 +311,7 @@ m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state
   int64_t n = 0; (void) n;
   n = m9_add_i64 (Text_CountChar (s, sep, err), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  parts = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), n, err);
+  parts = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, n, err);
   if (err->exc) goto L_ret;
   n = INT64_C(0);
   start = INT64_C(0);
@@ -336,22 +338,23 @@ m9_sl_m9_sl_CHAR Text_Split (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_m9_sl_CHAR Text_Fields (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_state *err)
+m9_sl_m9_sl_CHAR Text_Fields (m9_sl_CHAR s, uint32_t sep, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_m9_sl_CHAR m9ret = {0};
   m9_sl_m9_sl_CHAR parts = {0}; (void) parts;
   int64_t i = 0; (void) i;
   int64_t start = 0; (void) start;
   int64_t n = 0; (void) n;
-  parts = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_add_i64 (Text_CountChar (s, sep, err), INT64_C(1), err), err);
+  parts = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, m9_add_i64 (Text_CountChar (s, sep, err), INT64_C(1), err), err);
   if (err->exc) goto L_ret;
   n = INT64_C(0);
   start = INT64_C(0);
@@ -385,6 +388,7 @@ m9_sl_m9_sl_CHAR Text_Fields (m9_pool *pool, m9_sl_CHAR s, uint32_t sep, m9_stat
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -455,32 +459,30 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Text_Join (m9_pool *pool, m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_state *err)
+m9_sl_CHAR Text_Join (m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  DynStr_DString * d = NULL; (void) d;
+  m9_sl_CHAR s = {0}; (void) s;
   int64_t i = 0; (void) i;
-  d = DynStr_New (pool, err);
-  if (err->exc) goto L_ret;
+  s = (m9_sl_CHAR){ NULL, 0 };
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((parts).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_Append (pool, &(d), sep, err);
+      s = m9_cat (err->res, s, sep, err);
       if (err->exc) goto L_ret;
     }
-    DynStr_Append (pool, &(d), (*(m9_sl_CHAR *) m9_at (parts.p, i, parts.len, sizeof (m9_sl_CHAR), err)), err);
+    s = m9_cat (err->res, s, (*(m9_sl_CHAR *) m9_at (parts.p, i, parts.len, sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
   } }
   err->res = m9res;
-  m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  m9ret = s;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -489,18 +491,17 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
+m9_sl_CHAR Text_Lower (m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  DynStr_DString * d = NULL; (void) d;
+  m9_sl_CHAR r = {0}; (void) r;
   int64_t i = 0; (void) i;
   uint32_t c = 0; (void) c;
-  d = DynStr_New (pool, err);
-  if (err->exc) goto L_ret;
+  r = (m9_sl_CHAR){ NULL, 0 };
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
@@ -512,12 +513,11 @@ m9_sl_CHAR Text_Lower (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
       c = (*(uint32_t *) m9_at (Text_LowerAlpha.p, m9_sub_i64 ((int64_t)(c), INT64_C(65), err), Text_LowerAlpha.len, sizeof (uint32_t), err));
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendChar (pool, &(d), c, err);
+    r = m9_cat_ch (err->res, r, c, err);
     if (err->exc) goto L_ret;
   } }
   err->res = m9res;
-  m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  m9ret = r;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -526,18 +526,17 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
+m9_sl_CHAR Text_Upper (m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  DynStr_DString * d = NULL; (void) d;
+  m9_sl_CHAR r = {0}; (void) r;
   int64_t i = 0; (void) i;
   uint32_t c = 0; (void) c;
-  d = DynStr_New (pool, err);
-  if (err->exc) goto L_ret;
+  r = (m9_sl_CHAR){ NULL, 0 };
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
@@ -549,12 +548,11 @@ m9_sl_CHAR Text_Upper (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
       c = (*(uint32_t *) m9_at (Text_UpperAlpha.p, m9_sub_i64 ((int64_t)(c), INT64_C(97), err), Text_UpperAlpha.len, sizeof (uint32_t), err));
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendChar (pool, &(d), c, err);
+    r = m9_cat_ch (err->res, r, c, err);
     if (err->exc) goto L_ret;
   } }
   err->res = m9res;
-  m9ret = DynStr_View (d, err);
-  if (err->exc) goto L_ret;
+  m9ret = r;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -584,12 +582,9 @@ void Text_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

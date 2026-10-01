@@ -166,7 +166,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.12.0' ;
+  Version = '0.13.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -204,9 +204,9 @@ PROCEDURE Diag (RO a: STR ; RO b: STR ; RO c: STR) =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, a) ;
-  DynStr.Append (pool, d, b) ;
-  DynStr.Append (pool, d, c) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
   Io.ErrLine (DynStr.View (d))
 END Diag ;
 
@@ -214,10 +214,10 @@ PROCEDURE DiagN (RO a: STR ; n: I64 ; RO b: STR ; RO c: STR) =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, a) ;
-  DynStr.AppendI64 (pool, d, n) ;
-  DynStr.Append (pool, d, b) ;
-  DynStr.Append (pool, d, c) ;
+  DynStr.Append (d, a) ;
+  DynStr.AppendI64 (d, n) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
   Io.ErrLine (DynStr.View (d))
 END DiagN ;
 
@@ -228,12 +228,12 @@ PROCEDURE Diag2 (RO a: STR ; ln: I64 ; cl: I64 ; RO b: STR ; RO c: STR) =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, a) ;
-  DynStr.AppendI64 (pool, d, ln) ;
-  DynStr.AppendChar (pool, d, ':') ;
-  DynStr.AppendI64 (pool, d, cl) ;
-  DynStr.Append (pool, d, b) ;
-  DynStr.Append (pool, d, c) ;
+  DynStr.Append (d, a) ;
+  DynStr.AppendI64 (d, ln) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.AppendI64 (d, cl) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
   Io.ErrLine (DynStr.View (d))
 END Diag2 ;
 
@@ -241,8 +241,8 @@ PROCEDURE Suffix (RO name: STR ; RO ext: STR) : STR =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, name) ;
-  DynStr.Append (pool, d, ext) ;
+  DynStr.Append (d, name) ;
+  DynStr.Append (d, ext) ;
   RETURN DynStr.View (d)
 END Suffix ;
 
@@ -456,8 +456,8 @@ BEGIN
   IF NOT windows THEN RETURN s END ;
   d := DynStr.New (pool) ;
   FOR i := 0 TO LEN (s) - 1 DO
-    IF s[i] = '/' THEN DynStr.AppendChar (pool, d, 05CC)
-    ELSE DynStr.AppendChar (pool, d, s[i]) END
+    IF s[i] = '/' THEN DynStr.AppendChar (d, 05CC)
+    ELSE DynStr.AppendChar (d, s[i]) END
   END ;
   RETURN DynStr.View (d)
 END Native ;
@@ -496,9 +496,9 @@ VAR s : PTR DynStr.DString IN pool ;
 BEGIN
   IF LEN (d) = 0 THEN RETURN f END ;
   s := DynStr.New (pool) ;
-  DynStr.Append (pool, s, d) ;
-  DynStr.AppendChar (pool, s, '/') ;
-  DynStr.Append (pool, s, f) ;
+  DynStr.Append (s, d) ;
+  DynStr.AppendChar (s, '/') ;
+  DynStr.Append (s, f) ;
   RETURN DynStr.View (s)
 END Join ;
 
@@ -727,10 +727,10 @@ VAR
   i : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, prog) ;
+  DynStr.Append (d, prog) ;
   FOR i := 0 TO nwords - 1 DO
-    DynStr.AppendChar (pool, d, ' ') ;
-    DynStr.Append (pool, d, words[i])
+    DynStr.AppendChar (d, ' ') ;
+    DynStr.Append (d, words[i])
   END ;
   RETURN DynStr.View (d)
 END Line ;
@@ -840,8 +840,8 @@ PROCEDURE Cat (RO a: STR ; RO b: STR) : STR =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, a) ;
-  DynStr.Append (pool, d, b) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
   RETURN DynStr.View (d)
 END Cat ;
 
@@ -1794,8 +1794,8 @@ PROCEDURE Complain (RO what: STR ; RO path: STR) =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, what) ;
-  DynStr.Append (pool, d, ': ') ;
+  DynStr.Append (d, what) ;
+  DynStr.Append (d, ': ') ;
   Diag ('m9c: ', DynStr.View (d), path) ;
   failed := TRUE
 END Complain ;
@@ -1826,20 +1826,20 @@ BEGIN
        these across the library rather than recomputing what the
        tool already measured. *)
     d := DynStr.New (pool) ;
-    DynStr.Append (pool, d, 'doc ') ;
-    DynStr.Append (pool, d, name) ;
-    DynStr.Append (pool, d, ' procs ') ;
-    DynStr.AppendI64 (pool, d, st.procsDoc) ;
-    DynStr.AppendChar (pool, d, '/') ;
-    DynStr.AppendI64 (pool, d, st.procs) ;
-    DynStr.Append (pool, d, ' others ') ;
-    DynStr.AppendI64 (pool, d, st.othersDoc) ;
-    DynStr.AppendChar (pool, d, '/') ;
-    DynStr.AppendI64 (pool, d, st.others) ;
-    DynStr.Append (pool, d, ' paramlines ') ;
-    DynStr.AppendI64 (pool, d, st.paramsDoc) ;
-    DynStr.Append (pool, d, ' drift ') ;
-    DynStr.AppendI64 (pool, d, st.unknownParam) ;
+    DynStr.Append (d, 'doc ') ;
+    DynStr.Append (d, name) ;
+    DynStr.Append (d, ' procs ') ;
+    DynStr.AppendI64 (d, st.procsDoc) ;
+    DynStr.AppendChar (d, '/') ;
+    DynStr.AppendI64 (d, st.procs) ;
+    DynStr.Append (d, ' others ') ;
+    DynStr.AppendI64 (d, st.othersDoc) ;
+    DynStr.AppendChar (d, '/') ;
+    DynStr.AppendI64 (d, st.others) ;
+    DynStr.Append (d, ' paramlines ') ;
+    DynStr.AppendI64 (d, st.paramsDoc) ;
+    DynStr.Append (d, ' drift ') ;
+    DynStr.AppendI64 (d, st.unknownParam) ;
     Io.ErrLine (DynStr.View (d))
   END ;
   IF st.unknownParam > 0 THEN

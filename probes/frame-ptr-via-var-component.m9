@@ -1,0 +1,9 @@
+(* EXPECT: a frame allocation dies with this frame; it cannot be stored through n, which outlives it *)
+MODULE m ;
+TYPE Node = RECORD v : I64 ; next : OPT PTR Node END ;
+PROCEDURE Grow (VAR n: Node) =
+BEGIN
+  n.next := SOME (NEW (Node))
+END Grow ;
+BEGIN
+END m.

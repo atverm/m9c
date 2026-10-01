@@ -191,6 +191,57 @@ EXPLAIN = {
     "new-reversed": (
         "NEW's arguments are the wrong way round: the pool comes first, then the type",
         "NEW (pool, T) for a pointer, NEW (pool, T, n) for a slice, NEW (pool, T, n1, n2) for a grid (par 4.3)"),
+    "frame-ptr-to-modvar": (
+        "NEW (T) with no pool allocates from the procedure's frame, which dies when the frame returns; a module variable outlives it and would point at freed storage (par 4.3, docs/pool-elision-plan.md)",
+        "allocate it where the reader lives: NEW (HEAP, T) for the process's lifetime, NEW (pool, T) in a pool the caller owns, or return it -- a returned frame pointer keeps its storage"),
+    "frame-ptr-via-var-component": (
+        "a frame allocation stored into a COMPONENT reached through a reference parameter (a field, an element, a pointer's target) is not seen by the exit adoption, which looks at the parameter itself, so the caller would hold freed storage (par 4.3)",
+        "assign the whole VAR parameter (its target is adopted at exit), or allocate in the pool the object lives in: NEW (pool, T)"),
+    "frame-ptr-in-pooled-local": (
+        "a local declared IN a pool claims that pool's lifetime, and rule 2 of the pool elision plan hands that pool to every callee that grows the object -- a frame value held there would have its growth outlive its head (par 4.3)",
+        "drop the IN clause when the object dies with the frame, or allocate it in the pool it is declared in: NEW (pool, T)"),
+    "frame-ptr-record-copy": (
+        "a frame value stored into a COMPONENT of a local (a record field, a pointer's target) taints the local as a whole, so copying that local into a module variable would hand the module storage that dies with the frame (par 2.3)",
+        "keep the record in the frame, or build the component in the pool the module variable owns: NEW (pool, T), or a callee that takes the pool"),
+    "frame-ptr-pooled-component": (
+        "a local declared IN a pool has a target that outlives the frame, so a component of it may not hold a frame value (par 4.3)",
+        "allocate the component in the pool the local is declared in: NEW (pool, T), or a callee that takes the pool"),
+    "pool-clause-disagrees": (
+        "the IN clause of a declaration is the pool rule 2 hands to every callee that grows the object, so it must be the pool the object was allocated in; a buffer grown in the declared pool while the head lives in another dies at the wrong time (par 4.3)",
+        "declare the variable IN the pool it is allocated in, or allocate it in the pool it is declared in"),
+    "pool-view-via-var": (
+        "a view answered by a procedure that takes no pool and answers RO (DynStr.View) lives where its argument does; an argument in a LOCAL pool makes the view die with the frame, neither re-homed nor adopted at exit, so it may not be stored through a reference parameter, in a module variable, or through KEPT -- the zarr proxy read freed memory back as variable ids once a scratch pool had replaced a pool parameter (par 4.3)",
+        "build the string in the pool the record lives in -- take the pool as a parameter, or NEW (v, T) under rule 2 -- or copy it there with Text.Keep (pool, s)"),
+    "pool-ptr-via-var": (
+        "an allocation in a LOCAL pool, or a name declared IN one, dies with the frame and is neither re-homed nor adopted at exit, so it may not be stored through a reference parameter, in a module variable, through KEPT, or in a name declared IN a pool that outlives the frame (par 4.3)",
+        "allocate in the pool the destination lives in, or in the frame (NEW (T)) so that the store adopts it"),
+    "pool-escape-by-shape": (
+        "the RETURN rule for a name declared IN a local pool, applied by SHAPE: a pool-less name holding an allocation made in a local pool, or a view of one, answers storage that is freed when the frame exits; a STR alone is re-homed at exit (par 4.3)",
+        "answer frame storage (NEW (T), rule 1) or allocate in a pool the caller hands in"),
+    "pool-root-own": (
+        "a VAR parameter of a pointer-bearing type carries the pool its object lives in, named from the ROOT of the argument (rule 2 of the pool elision plan); an OWN parameter's object is heap storage with no pool to name (par 4.3)",
+        "grow an owned object through a procedure that takes it OWN, or hold it in a pool and hand the pooled variable on"),
+    "pool-root-value": (
+        "the same hidden pool cannot be named for a component reached through a value parameter: the object is a borrow whose pool nobody stated (par 4.1, 4.3)",
+        "take the object as VAR, so its pool comes in with it"),
+    "frame-ptr-to-thread": (
+        "a frame allocation dies when this frame returns, and a thread does not wait for that",
+        "allocate what a thread receives with NEW (OWN, T): the thread owns it and DISPOSEs it (par 4.2, 6)"),
+    "frame-ptr-dispose": (
+        "the frame owns its allocations and frees them as a unit at exit; there is nothing for DISPOSE to free",
+        "drop the DISPOSE, or allocate with NEW (OWN, T) if one binding must own and free it (par 4.2)"),
+    "frame-ptr-kept-arg": (
+        "a KEPT parameter is retained past the call, and a frame allocation dies with the frame that made it (par 4.1)",
+        "allocate it in a pool the keeper can see -- NEW (pool, T) with the caller's pool, or NEW (HEAP, T)"),
+    "frame-answer-to-modvar": (
+        "a function that takes no pool and answers a pointer built in its body (a NEW with no pool, a `+`, a local POOL for a string) answers storage that lives in ITS CALLER's frame (par 4.3, rule 1); a module variable outlives that frame",
+        "give the callee a pool to build in -- NEW (pool, T) with the caller's pool, or NEW (HEAP, T) -- or copy the answer into a durable pool before storing it"),
+    "frame-answer-kept-arg": (
+        "a string a function built with `+` is re-homed into its caller's frame and dies with it; a KEPT parameter would retain it past that frame (par 2.3, 4.1)",
+        "Text.Keep (pool, s) into a pool the keeper can see, or build the string in that pool"),
+    "frame-ptr-shared": (
+        "SHARED needs the rc header only NEW (OWN, T) carries; a frame allocation has none and dies with the frame (par 4.2)",
+        "s := NEW (OWN, T) ; g := SHARED (s)"),
     "no-such-field": (
         "the record has no field of that name",
         "read the record in docs/modules/<M>.md; a variant's payload is reached through CASE"),

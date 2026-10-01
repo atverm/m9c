@@ -229,7 +229,7 @@ PROCEDURE Keep (RO s: STR) : STR =
 VAR d : PTR DynStr.DString IN HEAP ;
 BEGIN
   d := DynStr.New (HEAP) ;
-  DynStr.Append (HEAP, d, s) ;
+  DynStr.Append (d, s) ;
   RETURN DynStr.View (d)
 END Keep ;
 
@@ -396,34 +396,54 @@ BEGIN
   RETURN n
 END DesigToQual ;
 
+(* NEW (T), NEW (T, n...), NEW (pool, T, n...), NEW (OWN, T).  The
+   first argument says who frees the storage: nothing (the frame, par
+   4.3), a pool's name, or OWN (one binding, DISPOSE).  A pool and a
+   type are both spelled as a designator, so `NEW (a, b)` is resolved
+   by NAME in the checkers and generators, not here (report par 10,
+   item 6): kids[0] is the first argument or NONE, kids[1] the second
+   as an EXPRESSION (a type name in the pool and OWN forms, an extent
+   in the frame form), kids[2..] the rest, with a NONE in kids[2] when
+   there is no third.  The single-argument form keeps kids[1] as a
+   qualident, as it always was. *)
 PROCEDURE PNew (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
 VAR n, d1, d2 : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NNewExpr) ;
   Expect (p, TkNEW) ;
   Expect (p, TkLParen) ;
-  d1 := PDesignator (pool, p) ;
-  IF p.cur.kind = TkComma THEN
+  IF p.cur.kind = TkOWN THEN
+    d1 := Nn (pool, p, Ast.NDesignator) ;
+    d1.a := 'OWN' ;
     Bump (p) ;
+    Expect (p, TkComma) ;
     d2 := PDesignator (pool, p) ;
     Ast.Add (pool, n, SOME (d1)) ;
     Ast.Add (pool, n, SOME (DesigToQual (pool, p, d2))) ;
+    Ast.Add (pool, n, NONE)
+  ELSE
+    d1 := PDesignator (pool, p) ;
     IF p.cur.kind = TkComma THEN
       Bump (p) ;
+      Ast.Add (pool, n, SOME (d1)) ;
       Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
-      (* further extents make it a GRID: the arity states the rank,
-         so the rank cannot disagree with what the caller gave *)
-      WHILE p.cur.kind = TkComma DO
+      IF p.cur.kind = TkComma THEN
         Bump (p) ;
-        Ast.Add (pool, n, SOME (PExpr (pool, p)))
+        Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+        (* further extents make it a GRID: the arity states the rank,
+           so the rank cannot disagree with what the caller gave *)
+        WHILE p.cur.kind = TkComma DO
+          Bump (p) ;
+          Ast.Add (pool, n, SOME (PExpr (pool, p)))
+        END
+      ELSE
+        Ast.Add (pool, n, NONE)
       END
     ELSE
+      Ast.Add (pool, n, NONE) ;
+      Ast.Add (pool, n, SOME (DesigToQual (pool, p, d1))) ;
       Ast.Add (pool, n, NONE)
     END
-  ELSE
-    Ast.Add (pool, n, NONE) ;
-    Ast.Add (pool, n, SOME (DesigToQual (pool, p, d1))) ;
-    Ast.Add (pool, n, NONE)
   END ;
   Expect (p, TkRParen) ;
   RETURN n

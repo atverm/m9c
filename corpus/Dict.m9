@@ -49,15 +49,20 @@ TYPE
 
 EXCEPTION NotFound (RO key: STR) ;
 
-PROCEDURE New (VAR pool: POOL) : PTR Dict IN pool ;
-  (* an empty table.  Keys and values live in pool and the table
-     dies with it, so there is no Dispose -- the same lifetime story
-     DynStr tells.  Insertion order is remembered, which is what
-     makes KeyAt/ValAt below a stable walk rather than a hash
-     order that changes when the table grows.                      *)
+PROCEDURE New () : PTR Dict ;
+  (* an empty table in the caller's frame.  Put grows it in the pool
+     of the variable that holds it (rule 2 of docs/pool-elision-
+     plan.md), so a table that dies with its frame is made by this
+     and one declared IN a pool by NewIn.  There is no Dispose --
+     the same lifetime story DynStr tells.  Insertion order is
+     remembered, which is what makes KeyAt/ValAt below a stable walk
+     rather than a hash order that changes when the table grows.   *)
 
-PROCEDURE Put (VAR pool: POOL ; VAR d: PTR Dict ; RO KEPT key: STR ;
-               val: Value) ;
+PROCEDURE NewIn (VAR pool: POOL) : PTR Dict IN pool ;
+  (* the same table with its head and entries in pool: for a variable
+     declared `PTR Dict IN pool`, whose growth Put then places there *)
+
+PROCEDURE Put (VAR d: PTR Dict ; RO KEPT key: STR ; val: Value) ;
   (* inserts, or replaces the value of an existing key.  Replacing
      keeps the key's original position in the iteration order.       *)
 
@@ -140,18 +145,33 @@ BEGIN
   RETURN TRUE
 END Eq ;
 
-PROCEDURE New (VAR pool: POOL) : PTR Dict IN pool =
-VAR
-  d : PTR Dict IN pool ;
-  i : I64 ;
+(* the entry array and the index table of a fresh head, in the pool
+   the head lives in -- `NEW (d, T, n)` is rule 2's spelling of "the
+   pool d's object lives in", carried in with d *)
+PROCEDURE Init (VAR d: PTR Dict) =
+VAR i : I64 ;
 BEGIN
-  d := NEW (pool, Dict) ;
-  d.ents := NEW (pool, Ent, InitEnts) ;
+  d.ents := NEW (d, Ent, InitEnts) ;
   d.n := 0 ;
-  d.idx := NEW (pool, I64, InitSlots) ;
-  FOR i := 0 TO LEN (d.idx) - 1 DO d.idx[i] := Empty END ;
+  d.idx := NEW (d, I64, InitSlots) ;
+  FOR i := 0 TO LEN (d.idx) - 1 DO d.idx[i] := Empty END
+END Init ;
+
+PROCEDURE New () : PTR Dict =
+VAR d : PTR Dict ;
+BEGIN
+  d := NEW (Dict) ;
+  Init (d) ;
   RETURN d
 END New ;
+
+PROCEDURE NewIn (VAR pool: POOL) : PTR Dict IN pool =
+VAR d : PTR Dict IN pool ;
+BEGIN
+  d := NEW (pool, Dict) ;
+  Init (d) ;
+  RETURN d
+END NewIn ;
 
 (* the slot holding key, or the first free slot on its probe path.
    Linear probing: the table is never full (load factor <= 1/2), so
@@ -171,12 +191,12 @@ BEGIN
   END
 END Slot ;
 
-PROCEDURE Regrow (VAR pool: POOL ; VAR d: PTR Dict) =
+PROCEDURE Regrow (VAR d: PTR Dict) =
 VAR
   i, s, cap : I64 ;
 BEGIN
   cap := 2 * LEN (d.idx) ;
-  d.idx := NEW (pool, I64, cap) ;
+  d.idx := NEW (d, I64, cap) ;
   FOR i := 0 TO cap - 1 DO d.idx[i] := Empty END ;
   (* rebuilt from the entry array, so insertion order survives a
      rehash by construction -- there is no order to rebuild *)
@@ -190,8 +210,7 @@ BEGIN
   END
 END Regrow ;
 
-PROCEDURE Put (VAR pool: POOL ; VAR d: PTR Dict ; RO KEPT key: STR ;
-               val: Value) =
+PROCEDURE Put (VAR d: PTR Dict ; RO KEPT key: STR ; val: Value) =
 VAR
   s, e, i : I64 ;
   ne : SLICE OF Ent ;
@@ -203,7 +222,7 @@ BEGIN
     RETURN
   END ;
   IF d.n = LEN (d.ents) THEN
-    ne := NEW (pool, Ent, 2 * LEN (d.ents)) ;
+    ne := NEW (d, Ent, 2 * LEN (d.ents)) ;
     FOR i := 0 TO d.n - 1 DO ne[i] := d.ents[i] END ;
     d.ents := ne
   END ;
@@ -213,7 +232,7 @@ BEGIN
   d.ents[d.n].val := val ;
   d.idx[s] := d.n ;
   d.n := d.n + 1 ;
-  IF 2 * d.n >= LEN (d.idx) THEN Regrow (pool, d) END
+  IF 2 * d.n >= LEN (d.idx) THEN Regrow (d) END
 END Put ;
 
 PROCEDURE Find (d: PTR Dict ; RO key: STR ; VAR val: Value) : BOOL =

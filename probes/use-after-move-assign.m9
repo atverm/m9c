@@ -3,5 +3,5 @@ MODULE m ;
 TYPE R = RECORD v : I64 END ;
 VAR x : I64 ;
 PROCEDURE F () = VAR s, t : PTR R ;
-BEGIN s := NEW (R) ; t := s ; x := s.v ; DISPOSE (t) END F ;
+BEGIN s := NEW (OWN, R) ; t := s ; x := s.v ; DISPOSE (t) END F ;
 END m.

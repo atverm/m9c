@@ -65,7 +65,7 @@ BEGIN
   Io.WriteLine ('') ;
   (* HEAP is a pool like any other, so it can be passed by name *)
   d := DynStr.New (HEAP) ;
-  DynStr.Append (HEAP, d, 'via heap') ;
+  DynStr.Append (d, 'via heap') ;
   Io.WriteLine (DynStr.View (d)) ;
   (* a CHAR joins as one code point, from a literal or a CONST *)
   Io.WriteLine ('a' + Bar + 'b' + Bar + 'c')

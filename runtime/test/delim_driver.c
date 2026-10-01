@@ -77,18 +77,18 @@ int main (int argc, char **argv)
   r = Delim_Open (&pool, sl (SMALL, nb[0]), (uint8_t) '\t', 4096, err);
   ck (err->exc == NULL, "the reader opens");
 
-  ck (Delim_Next (&r, err) && Delim_Count (r, err) == 3
+  ck (Delim_Next (&r, &pool, err) && Delim_Count (r, err) == 3
       && Delim_Is (r, 0, sl ("Expocode", nb[1]), err)
       && Delim_Is (r, 1, sl ("Dataset Name", nb[2]), err),
       "the listing header is just the first row");
-  ck (Delim_Next (&r, err) && Delim_Is (r, 2, sl ("Finnmaid", nb[1]), err),
+  ck (Delim_Next (&r, &pool, err) && Delim_Is (r, 2, sl ("Finnmaid", nb[1]), err),
       "a listing row");
-  ck (Delim_Next (&r, err), "the second listing row");
-  ck (Delim_Next (&r, err) && Delim_Count (r, err) == 5
+  ck (Delim_Next (&r, &pool, err), "the second listing row");
+  ck (Delim_Next (&r, &pool, err) && Delim_Count (r, err) == 5
       && Delim_Is (r, 1, sl ("yr", nb[1]), err),
       "the DATA header follows in the same walk -- no read-ahead ate it");
 
-  ck (Delim_Next (&r, err) && Delim_Count (r, err) == 5, "the first data row");
+  ck (Delim_Next (&r, &pool, err) && Delim_Count (r, err) == 5, "the first data row");
   ck (Delim_LineNo (r, err) == 5, "lines are counted from one");
   {
     float v = Delim_F32At (r, 3, &ok, err);
@@ -99,12 +99,12 @@ int main (int argc, char **argv)
     ck (Delim_I64At (r, 3, &ok, err) == 0 && !ok,
         "a float is NOT an integer, and says so rather than truncating");
   }
-  ck (Delim_Next (&r, err), "the second data row");
+  ck (Delim_Next (&r, &pool, err), "the second data row");
   {
     float v = Delim_F32At (r, 4, &ok, err);
     ck (ok && v != v, "NaN parses AS NaN -- it is a value, not a refusal");
   }
-  ck (Delim_Next (&r, err), "the third data row");
+  ck (Delim_Next (&r, &pool, err), "the third data row");
   {
     m9_sl_BYTE f = Delim_Field (r, 4, err);
     Delim_F32At (r, 4, &ok, err);
@@ -112,8 +112,8 @@ int main (int argc, char **argv)
         "an EMPTY field is missing, not zero");
     ck (Delim_F32At (r, 3, &ok, err) == -64.25f && ok, "a negative float");
   }
-  ck (!Delim_Next (&r, err), "and then the file ends");
-  ck (!Delim_Next (&r, err), "which is idempotent");
+  ck (!Delim_Next (&r, &pool, err), "and then the file ends");
+  ck (!Delim_Next (&r, &pool, err), "which is idempotent");
 
   /* ---- lines straddling block boundaries, which is the point ---- */
   {
@@ -126,7 +126,7 @@ int main (int argc, char **argv)
 
     r = Delim_Open (&pool, sl (BIG, nb[0]), (uint8_t) '\t', 4096, err);
     ck (err->exc == NULL, "a 4 KiB block over a ~180 KiB file");
-    while (Delim_Next (&r, err)) {
+    while (Delim_Next (&r, &pool, err)) {
       int64_t v = Delim_I64At (r, 1, &ok, err);
       if (!ok) { ck (false, "a row lost its integer at a block edge"); break; }
       sum += v;
@@ -143,26 +143,26 @@ int main (int argc, char **argv)
   /* ---- the edges ---- */
   put (SMALL, "a\tb\r\nc\td\r\n");
   r = Delim_Open (&pool, sl (SMALL, nb[0]), (uint8_t) '\t', 4096, err);
-  ck (Delim_Next (&r, err) && Delim_Is (r, 1, sl ("b", nb[1]), err),
+  ck (Delim_Next (&r, &pool, err) && Delim_Is (r, 1, sl ("b", nb[1]), err),
       "a CRLF file reads like an LF one");
 
   put (SMALL, "x\ty\nlast\tline-no-newline");
   r = Delim_Open (&pool, sl (SMALL, nb[0]), (uint8_t) '\t', 4096, err);
-  Delim_Next (&r, err);
-  ck (Delim_Next (&r, err)
+  Delim_Next (&r, &pool, err);
+  ck (Delim_Next (&r, &pool, err)
       && Delim_Is (r, 1, sl ("line-no-newline", nb[1]), err),
       "a final line without a newline is a line");
-  ck (!Delim_Next (&r, err), "and the file still ends");
+  ck (!Delim_Next (&r, &pool, err), "and the file still ends");
 
   put (SMALL, "\n\na\n");
   r = Delim_Open (&pool, sl (SMALL, nb[0]), (uint8_t) '\t', 4096, err);
-  ck (Delim_Next (&r, err) && Delim_Count (r, err) == 1
+  ck (Delim_Next (&r, &pool, err) && Delim_Count (r, err) == 1
       && Delim_Field (r, 0, err).len == 0,
       "an empty line is ONE empty field, not zero fields");
 
   put (SMALL, "one\n");
   r = Delim_Open (&pool, sl (SMALL, nb[0]), (uint8_t) '\t', 4096, err);
-  ck (Delim_Next (&r, err) && Delim_Count (r, err) == 1
+  ck (Delim_Next (&r, &pool, err) && Delim_Count (r, err) == 1
       && Delim_Is (r, 0, sl ("one", nb[1]), err),
       "a line with no delimiter is one field");
   {
@@ -182,7 +182,7 @@ int main (int argc, char **argv)
     m9_state e = {0}; e.res = &pool;
     Delim_Reader *lr = Delim_Open (&pool, sl (LONG_, nb[0]),
                                    (uint8_t) '\t', 4096, &e);
-    while (e.exc == NULL && Delim_Next (&lr, &e)) { }
+    while (e.exc == NULL && Delim_Next (&lr, &pool, &e)) { }
     ck (e.exc != NULL, "a line longer than the block is refused BY NAME");
     e.exc = NULL;
   }
@@ -197,7 +197,7 @@ int main (int argc, char **argv)
      through the strict decoder, so a field is text or it raises */
   put (SMALL, "caf\xc3\xa9\tplain\n");
   r = Delim_Open (&pool, sl (SMALL, nb[0]), (uint8_t) '\t', 4096, err);
-  Delim_Next (&r, err);
+  Delim_Next (&r, &pool, err);
   {
     m9_sl_CHAR t = Delim_Text (&pool, r, 0, err);
     ck (err->exc == NULL && t.len == 4 && t.p[3] == 0x00e9,
@@ -223,15 +223,15 @@ int main (int argc, char **argv)
     ck (err->exc == NULL, "a push reader opens");
     ck (Delim_Hungry (pr, err), "and starts hungry");
     for (;;) {
-      while (Delim_Next (&pr, err)) {
+      while (Delim_Next (&pr, &pool, err)) {
         if (rows > 0) sum += Delim_I64At (pr, 1, &ok, err);
         rows++;
       }
       if (err->exc || !Delim_Hungry (pr, err)) break;
-      if (at >= len) { Delim_Finish (&pr, err); continue; }
+      if (at >= len) { Delim_Finish (&pr, &pool, err); continue; }
       {
         m9_sl_BYTE part = { (void *) (doc + at), len - at };
-        int64_t took = Delim_Feed (&pr, part, err);
+        int64_t took = Delim_Feed (&pr, &pool, part, err);
         if (took == 0) break;
         at += took;
       }
@@ -249,7 +249,7 @@ int main (int argc, char **argv)
     put (SMALL, "a\tb\n");
     Delim_Reader *fr = Delim_Open (&pool, sl (SMALL, nb[0]),
                                    (uint8_t) '\t', 4096, &e);
-    Delim_Feed (&fr, part, &e);
+    Delim_Feed (&fr, &pool, part, &e);
     ck (e.exc != NULL, "Feed on a file-backed reader is refused");
     e.exc = NULL;
   }
@@ -278,26 +278,26 @@ int main (int argc, char **argv)
       pr = Delim_OpenPush (&pool, (uint8_t) '\t', 4096, err);
       ck (err->exc == NULL, "the zip member and the cursor both open");
       for (;;) {
-        while (Delim_Next (&pr, err)) {
+        while (Delim_Next (&pr, &pool, err)) {
           sum += Delim_I64At (pr, 1, &ok, err);
           rows++;
         }
         if (err->exc || !Delim_Hungry (pr, err)) break;
         if (at >= have) {
-          if (ended) { Delim_Finish (&pr, err); continue; }
+          if (ended) { Delim_Finish (&pr, &pool, err); continue; }
           {
             m9_sl_BYTE d = { blk, (int64_t) sizeof blk };
-            have = Zip_Read (&zm, &d, err);
+            have = Zip_Read (&zm, &pool, &d, err);
             at = 0;
-            if (have == 0) { ended = true; Delim_Finish (&pr, err); continue; }
+            if (have == 0) { ended = true; Delim_Finish (&pr, &pool, err); continue; }
           }
         }
         {
           m9_sl_BYTE part = { blk + at, have - at };
-          at += Delim_Feed (&pr, part, err);
+          at += Delim_Feed (&pr, &pool, part, err);
         }
       }
-      Zip_Close (&zm, err);
+      Zip_Close (&zm, &pool, err);
       ck (err->exc == NULL && rows == 4000,
           "every row came out of the deflated member");
       ck (sum == 7998000, "and every value did");
@@ -351,9 +351,9 @@ int main (int argc, char **argv)
     fputc ('\n', g);
     fclose (g);
     r = Delim_Open (&pool, sl (WIDE, nb[2]), (uint8_t) ',', 0, err);
-    ck (Delim_Next (&r, err) && Delim_Count (r, err) == 900,
+    ck (Delim_Next (&r, &pool, err) && Delim_Count (r, err) == 900,
         "900 fields are counted, where 512 used to be the silent cap");
-    ck (Delim_Next (&r, err), "and the data row too");
+    ck (Delim_Next (&r, &pool, err), "and the data row too");
     {
       bool ok = false;
       double v = Delim_F64At (r, 899, &ok, err);
@@ -366,7 +366,7 @@ int main (int argc, char **argv)
     fputc ('\n', g);
     fclose (g);
     r = Delim_Open (&pool, sl (WIDE, nb[3]), (uint8_t) ',', 0, &e);
-    if (e.exc == NULL) Delim_Next (&r, &e);
+    if (e.exc == NULL) Delim_Next (&r, &pool, &e);
     ck (e.exc != NULL, "a row past the cap is refused BY NAME, not cut");
     e.exc = NULL;
     remove (WIDE);

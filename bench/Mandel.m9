@@ -31,8 +31,9 @@ CONST
   MaxIter = 50 ;
   Limit = 4.0 ;
 
-PROCEDURE Render (VAR pool: POOL ; n: I64) : STR RAISES ValueRange =
+PROCEDURE Render (n: I64) : STR RAISES ValueRange =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   x, y, k, bits, bit, iter : I64 ;
   cr, ci, zr, zi, t, inv : F64 ;
@@ -40,12 +41,12 @@ BEGIN
   d := DynStr.New (pool) ;
   (* the PBM header, composed rather than spelled: an M9 string
      literal carries no escapes, so a newline is a CHAR (par 2) *)
-  DynStr.Append (pool, d, 'P4') ;
-  DynStr.AppendChar (pool, d, 0AC) ;
-  DynStr.AppendI64 (pool, d, n) ;
-  DynStr.AppendChar (pool, d, 020C) ;
-  DynStr.AppendI64 (pool, d, n) ;
-  DynStr.AppendChar (pool, d, 0AC) ;
+  DynStr.Append (d, 'P4') ;
+  DynStr.AppendChar (d, 0AC) ;
+  DynStr.AppendI64 (d, n) ;
+  DynStr.AppendChar (d, 020C) ;
+  DynStr.AppendI64 (d, n) ;
+  DynStr.AppendChar (d, 0AC) ;
 
   inv := 2.0 / F64 (n) ;
   FOR y := 0 TO n - 1 DO
@@ -73,7 +74,7 @@ BEGIN
         END ;
         bits := bits * 2 + bit
       END ;
-      DynStr.AppendChar (pool, d, CHR (bits)) ;
+      DynStr.AppendChar (d, CHR (bits)) ;
       x := x + 8
     END
   END ;
@@ -93,7 +94,7 @@ BEGIN
   n := Io.ParseI64 (Io.Arg (pool, 1)) ;
   IF n < 8 THEN n := 8 END ;
   n := n - n MOD 8 ;          (* the bitmap is packed eight to a byte *)
-  out := Render (pool, n) ;
+  out := Render (n) ;
   Io.WriteFile (Io.Arg (pool, 2), out)
 EXCEPT
 | ValueRange :

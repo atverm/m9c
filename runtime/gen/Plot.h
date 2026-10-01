@@ -75,8 +75,8 @@ Plot_Cmap Plot_Coolwarm (m9_state *err);
 void Plot_SetLineColor (int64_t series, m9_sl_CHAR hex, m9_state *err);
 void Plot_SetLogX (bool on, m9_state *err);
 void Plot_SetLogY (bool on, m9_state *err);
-m9_sl_CHAR Plot_Render (m9_pool *pool, m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_sl_CHAR ylabel, m9_state *err);
-m9_sl_CHAR Plot_RenderHeat (m9_pool *pool, m9_sl_CHAR title, Mat_Matrix * m, Plot_Cmap cmap, bool symmetric, m9_state *err);
+m9_sl_CHAR Plot_Render (m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_sl_CHAR ylabel, m9_state *err);
+m9_sl_CHAR Plot_RenderHeat (m9_sl_CHAR title, Mat_Matrix * m, Plot_Cmap cmap, bool symmetric, m9_state *err);
 void Plot_SetHeatRange (double lo, double hi, m9_state *err);
 
 #endif

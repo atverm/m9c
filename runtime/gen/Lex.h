@@ -81,8 +81,8 @@ struct Lex_Comment {
   m9_sl_CHAR text;
 };
 
-void Lex_Init (Lex_Lexer *lx, m9_sl_CHAR src, m9_state *err);
-void Lex_Next (Lex_Lexer *lx, Lex_Token *t, m9_state *err);
+void Lex_Init (Lex_Lexer *lx, m9_pool *lx_pool, m9_sl_CHAR src, m9_state *err);
+void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m9_state *err);
 m9_sl_CHAR Lex_KindName (int64_t k, m9_state *err);
 void Lex_Collect (bool on, m9_state *err);
 int64_t Lex_ComCount (m9_state *err);

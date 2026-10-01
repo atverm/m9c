@@ -32,12 +32,12 @@ typedef struct { Zip_Entry *p; int64_t len; } m9_sl_Zip_Entry;
 
 Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 int64_t Zip_Count (Zip_Archive * a, m9_state *err);
-m9_sl_CHAR Zip_NameAt (m9_pool *pool, Zip_Archive * a, int64_t i, m9_state *err);
+m9_sl_CHAR Zip_NameAt (Zip_Archive * a, int64_t i, m9_state *err);
 int64_t Zip_SizeAt (Zip_Archive * a, int64_t i, m9_state *err);
 int64_t Zip_MethodAt (Zip_Archive * a, int64_t i, m9_state *err);
-int64_t Zip_Find (m9_pool *pool, Zip_Archive * a, m9_sl_CHAR name, m9_state *err);
+int64_t Zip_Find (Zip_Archive * a, m9_sl_CHAR name, m9_state *err);
 Zip_Member * Zip_OpenMember (m9_pool *pool, Zip_Archive * a, int64_t i, int64_t block, m9_state *err);
-int64_t Zip_Read (Zip_Member * *m, m9_sl_BYTE *dst, m9_state *err);
-void Zip_Close (Zip_Member * *m, m9_state *err);
+int64_t Zip_Read (Zip_Member * *m, m9_pool *m_pool, m9_sl_BYTE *dst, m9_state *err);
+void Zip_Close (Zip_Member * *m, m9_pool *m_pool, m9_state *err);
 
 #endif

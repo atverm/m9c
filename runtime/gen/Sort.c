@@ -45,6 +45,8 @@ extern float erfcf (float);
 extern float fabsf (float);
 extern float hypotf (float, float);
 
+static m9_pool m9mframe = {0};
+
 static void Sort_MergeF64 (m9_sl_F64 *a, m9_sl_F64 *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
 static void Sort_SortF64 (m9_sl_F64 *a, m9_sl_F64 *tmp, int64_t lo, int64_t hi, m9_state *err);
 static void Sort_MergeI64 (m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t mid, int64_t hi, m9_state *err);
@@ -86,6 +88,7 @@ void Sort_F64s (m9_sl_F64 *a, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -105,6 +108,7 @@ void Sort_I64s (m9_sl_I64 *a, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -171,6 +175,7 @@ void Sort_Strs (m9_sl_m9_sl_CHAR *a, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -212,6 +217,7 @@ void Sort_ArgF64 (m9_sl_F64 v, m9_sl_I64 *idx, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*idx).p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -231,6 +237,7 @@ void Sort_By (m9_sl_I64 *keys, Sort_Less less, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*keys).p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -294,6 +301,8 @@ static void Sort_MergeF64 (m9_sl_F64 *a, m9_sl_F64 *tmp, int64_t lo, int64_t mid
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -320,6 +329,8 @@ static void Sort_SortF64 (m9_sl_F64 *a, m9_sl_F64 *tmp, int64_t lo, int64_t hi, 
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -382,6 +393,8 @@ static void Sort_MergeI64 (m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t mid
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -408,6 +421,8 @@ static void Sort_SortI64 (m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo, int64_t hi, 
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -501,6 +516,8 @@ static void Sort_MergeArgStrs (m9_sl_m9_sl_CHAR v, m9_sl_I64 *idx, m9_sl_I64 *tm
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*idx).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -527,6 +544,8 @@ static void Sort_SortArgStrs (m9_sl_m9_sl_CHAR v, m9_sl_I64 *idx, m9_sl_I64 *tmp
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*idx).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -589,6 +608,8 @@ static void Sort_MergeArg (m9_sl_F64 v, m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -615,6 +636,8 @@ static void Sort_SortArg (m9_sl_F64 v, m9_sl_I64 *a, m9_sl_I64 *tmp, int64_t lo,
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -677,6 +700,8 @@ static void Sort_MergeBy (m9_sl_I64 *a, m9_sl_I64 *tmp, Sort_Less less, int64_t 
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -703,6 +728,8 @@ static void Sort_SortBy (m9_sl_I64 *a, m9_sl_I64 *tmp, Sort_Less less, int64_t l
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
+  m9_adopt_if (&m9frame, m9res, (*tmp).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -712,12 +739,9 @@ void Sort_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   Math_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

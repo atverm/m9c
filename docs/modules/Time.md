@@ -86,7 +86,7 @@ to the last of the target month: 31 January plus one month is
 exact durations.  The order is part of the definition, because
 a different order gives a different answer.
 
-### Iso (VAR pool: POOL ; t: Instant ; decimals: I64) : STR RAISES ValueRange
+### Iso (t: Instant ; decimals: I64) : STR RAISES ValueRange
 
 RFC 3339, always Z: 2026-08-22T14:03:09.250Z
 

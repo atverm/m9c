@@ -42,6 +42,8 @@ extern float erfcf (float);
 extern float fabsf (float);
 extern float hypotf (float, float);
 
+static m9_pool m9mframe = {0};
+
 static void Math_Arg (double x, m9_state *err);
 static double Math_Ans (double v, m9_state *err);
 static double Math_AnsFinite (double v, m9_state *err);
@@ -1223,11 +1225,8 @@ void Math_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

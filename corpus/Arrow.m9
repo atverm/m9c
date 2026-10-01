@@ -64,7 +64,7 @@ PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Table IN pool ;
   (* an empty table of `rows` rows.  Columns are added in order and
      that is the order the schema and the batch carry.               *)
 
-PROCEDURE Meta (VAR pool: POOL ; VAR t: PTR Table ;
+PROCEDURE Meta (VAR t: PTR Table ;
                 RO KEPT key: STR ; RO KEPT value: STR) ;
   (* a schema custom_metadata entry -- where a data passport rides.
      KEPT: the table holds VIEWS of the caller's strings, as
@@ -523,11 +523,11 @@ BEGIN
   RETURN t
 END New ;
 
-PROCEDURE Meta (VAR pool: POOL ; VAR t: PTR Table ;
+PROCEDURE Meta (VAR t: PTR Table ;
                 RO KEPT key: STR ; RO KEPT value: STR) =
-VAR m : PTR Kv IN pool ;
+VAR m : PTR Kv ;
 BEGIN
-  m := NEW (pool, Kv) ;
+  m := NEW (t, Kv) ;
   m.k := key ; m.v := value ; m.next := NONE ;
   IF t.lastM IS SOME p THEN p.next := SOME (m)
   ELSE t.firstM := SOME (m) END ;

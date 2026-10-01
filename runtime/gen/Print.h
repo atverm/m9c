@@ -10,7 +10,7 @@ void Print_m9init (m9_state *err);
 
 m9_sl_CHAR Print_Tree (m9_pool *pool, Ast_Node * root, m9_state *err);
 m9_sl_CHAR Print_TypeText (m9_pool *pool, Ast_Node * k, m9_state *err);
-m9_sl_CHAR Print_ParamsText (m9_pool *pool, Ast_Node * k, m9_state *err);
-m9_sl_CHAR Print_ExprText (m9_pool *pool, Ast_Node * k, m9_state *err);
+m9_sl_CHAR Print_ParamsText (Ast_Node * k, m9_state *err);
+m9_sl_CHAR Print_ExprText (Ast_Node * k, m9_state *err);
 
 #endif

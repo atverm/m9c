@@ -1,0 +1,4 @@
+MODULE Bad ;
+BEGIN
+  IF > 2 THEN END
+END Bad.

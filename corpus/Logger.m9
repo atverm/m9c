@@ -131,7 +131,7 @@ END LevelName ;
    has no civil form.  Logging does not get to fail. *)
 PROCEDURE Stamp () : STR =
 BEGIN
-  RETURN Time.Iso (pool, Time.Now (), 3)
+  RETURN Time.Iso (Time.Now (), 3)
 EXCEPT
 | ValueRange :
     RETURN '(no timestamp)'
@@ -141,59 +141,59 @@ PROCEDURE Start (level: I64 ; RO text: STR) =
 BEGIN
   IF NOT Enabled (level) THEN RETURN END ;
   line := DynStr.New (pool) ;
-  DynStr.Append (pool, line, Stamp ()) ;
-  DynStr.AppendChar (pool, line, ' ') ;
-  DynStr.Append (pool, line, LevelName (level)) ;
-  DynStr.AppendChar (pool, line, ' ') ;
+  DynStr.Append (line, Stamp ()) ;
+  DynStr.AppendChar (line, ' ') ;
+  DynStr.Append (line, LevelName (level)) ;
+  DynStr.AppendChar (line, ' ') ;
   (* remembered rather than recomputed: Done has to know where the
      text begins to hand syslog a line without a second timestamp
      and a second level word in it, and the only moment that offset
      is known for certain is now *)
   bodyAt := DynStr.Len (line) ;
   curLevelOfLine := level ;
-  DynStr.Append (pool, line, text) ;
+  DynStr.Append (line, text) ;
   building := TRUE
 END Start ;
 
 PROCEDURE Key (RO key: STR) =
 BEGIN
-  DynStr.AppendChar (pool, line, ' ') ;
-  DynStr.Append (pool, line, key) ;
-  DynStr.AppendChar (pool, line, '=')
+  DynStr.AppendChar (line, ' ') ;
+  DynStr.Append (line, key) ;
+  DynStr.AppendChar (line, '=')
 END Key ;
 
 PROCEDURE Str (RO key: STR ; RO val: STR) =
 BEGIN
   IF NOT building THEN RETURN END ;
   Key (key) ;
-  DynStr.Append (pool, line, val)
+  DynStr.Append (line, val)
 END Str ;
 
 PROCEDURE Int (RO key: STR ; v: I64) =
 BEGIN
   IF NOT building THEN RETURN END ;
   Key (key) ;
-  DynStr.AppendI64 (pool, line, v)
+  DynStr.AppendI64 (line, v)
 END Int ;
 
 PROCEDURE Real (RO key: STR ; v: F64 ; decimals: I64) =
 BEGIN
   IF NOT building THEN RETURN END ;
   Key (key) ;
-  DynStr.Append (pool, line, Fmt.Fixed (v, decimals))
+  DynStr.Append (line, Fmt.Fixed (v, decimals))
 EXCEPT
 | ValueRange :
     (* a magnitude Fixed will not scale still gets a field, because
        a line with '?' in it beats a line that never arrived *)
-    DynStr.Append (pool, line, '?')
+    DynStr.Append (line, '?')
 END Real ;
 
 PROCEDURE Bool (RO key: STR ; v: BOOL) =
 BEGIN
   IF NOT building THEN RETURN END ;
   Key (key) ;
-  IF v THEN DynStr.Append (pool, line, 'true')
-  ELSE DynStr.Append (pool, line, 'false') END
+  IF v THEN DynStr.Append (line, 'true')
+  ELSE DynStr.Append (line, 'false') END
 END Bool ;
 
 PROCEDURE Done () =

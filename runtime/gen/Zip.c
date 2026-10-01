@@ -59,6 +59,8 @@ struct Zip_Member {
   bool done;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[23] = { 110u, 111u, 116u, 32u, 97u, 32u, 122u, 105u, 112u, 32u, 40u, 116u, 111u, 111u, 32u, 115u, 104u, 111u, 114u, 116u, 41u, 58u, 32u };
 static const uint32_t m9s1[38] = { 110u, 111u, 32u, 101u, 110u, 100u, 45u, 111u, 102u, 45u, 99u, 101u, 110u, 116u, 114u, 97u, 108u, 45u, 100u, 105u, 114u, 101u, 99u, 116u, 111u, 114u, 121u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 105u, 110u, 32u };
 static const uint32_t m9s2[39] = { 97u, 32u, 109u, 117u, 108u, 116u, 105u, 45u, 100u, 105u, 115u, 107u, 32u, 97u, 114u, 99u, 104u, 105u, 118u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 58u, 32u };
@@ -75,7 +77,7 @@ static const uint32_t m9s12[26] = { 116u, 104u, 101u, 32u, 109u, 101u, 109u, 98u
 static const uint32_t m9s13[49] = { 97u, 32u, 122u, 105u, 112u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 108u, 97u, 114u, 103u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 50u, 94u, 54u, 51u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 114u, 101u, 112u, 114u, 101u, 115u, 101u, 110u, 116u, 97u, 98u, 108u, 101u };
 
 static int64_t Zip_U (m9_sl_BYTE b, int64_t at, int64_t n, m9_state *err);
-static void Zip_Fill (Zip_Member * *m, m9_state *err);
+static void Zip_Fill (Zip_Member * *m, m9_pool *m_pool, m9_state *err);
 
 
 Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
@@ -83,7 +85,7 @@ Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Zip_Archive * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   Zip_Archive * a = NULL; (void) a;
@@ -299,6 +301,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -320,7 +323,7 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Zip_NameAt (m9_pool *pool, Zip_Archive * a, int64_t i, m9_state *err)
+m9_sl_CHAR Zip_NameAt (Zip_Archive * a, int64_t i, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -384,7 +387,7 @@ L_ret: ;
   return m9ret;
 }
 
-int64_t Zip_Find (m9_pool *pool, Zip_Archive * a, m9_sl_CHAR name, m9_state *err)
+int64_t Zip_Find (Zip_Archive * a, m9_sl_CHAR name, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -420,7 +423,7 @@ Zip_Member * Zip_OpenMember (m9_pool *pool, Zip_Archive * a, int64_t i, int64_t 
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Zip_Member * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   Zip_Member * m = NULL; (void) m;
@@ -480,12 +483,13 @@ Zip_Member * Zip_OpenMember (m9_pool *pool, Zip_Archive * a, int64_t i, int64_t 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-int64_t Zip_Read (Zip_Member * *m, m9_sl_BYTE *dst, m9_state *err)
+int64_t Zip_Read (Zip_Member * *m, m9_pool *m_pool, m9_sl_BYTE *dst, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -535,7 +539,7 @@ int64_t Zip_Read (Zip_Member * *m, m9_sl_BYTE *dst, m9_state *err)
     goto L_ret;
   }
   for (;;) {
-    Zip_Fill (m, err);
+    Zip_Fill (m, m_pool, err);
     if (err->exc) goto L_ret;
     (*(int64_t *) m9_at ((*m)->io2.p, INT64_C(0), (*m)->io2.len, sizeof (int64_t), err)) = INT64_C(0);
     if (err->exc) goto L_ret;
@@ -576,12 +580,14 @@ int64_t Zip_Read (Zip_Member * *m, m9_sl_BYTE *dst, m9_state *err)
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m_pool, (*m));
+  m9_adopt_if (&m9frame, m9res, (*dst).p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-void Zip_Close (Zip_Member * *m, m9_state *err)
+void Zip_Close (Zip_Member * *m, m9_pool *m_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -594,6 +600,7 @@ void Zip_Close (Zip_Member * *m, m9_state *err)
   (*m)->done = true;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m_pool, (*m));
   m9_pool_free (&m9frame);
   return;
 }
@@ -632,7 +639,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Zip_Fill (Zip_Member * *m, m9_state *err)
+static void Zip_Fill (Zip_Member * *m, m9_pool *m_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -667,6 +674,7 @@ static void Zip_Fill (Zip_Member * *m, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m_pool, (*m));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
@@ -677,13 +685,10 @@ void Zip_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

@@ -153,7 +153,7 @@ cell is the same in the same order whatever the thread count, so
 the answer is bit-identical for 1 and for 32.  threads <= 1 runs
 in the caller's thread.
 
-### AddNormal (VAR pool: POOL ; h: PTR Matrix ; RO w: SLICE OF F64 ; VAR k: PTR Matrix ; threads: I64) RAISES Faults.SizeError
+### AddNormal (h: PTR Matrix ; RO w: SLICE OF F64 ; VAR k: PTR Matrix ; threads: I64) RAISES Faults.SizeError
 
 k := k + H^T diag (w) H, the normal matrix of a weighted least
 squares, accumulated where it lies: one pass over the rows of H

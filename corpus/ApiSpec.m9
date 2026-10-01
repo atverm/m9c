@@ -39,13 +39,14 @@ CONST
   TyInt  = 2 ;
   TyBool = 3 ;
 
-PROCEDURE NewSpec (VAR pool: POOL ; RO KEPT title: STR ;
-                   RO KEPT version: STR) : PTR Spec IN pool ;
-  (* an empty document.  The strings are KEPT, as HttpServer.AddRoute
-     keeps its own: the spec holds VIEWS, not copies, so the caller's
-     strings must outlive it.                                        *)
+PROCEDURE NewSpec (RO KEPT title: STR ; RO KEPT version: STR) : PTR Spec ;
+  (* an empty document, in the caller's frame; AddOp and AddParam grow
+     it in the pool of the variable holding it (rule 2 of
+     docs/pool-elision-plan.md).  The strings are KEPT, as
+     HttpServer.AddRoute keeps its own: the spec holds VIEWS, not
+     copies, so the caller's strings must outlive it.               *)
 
-PROCEDURE AddOp (VAR pool: POOL ; VAR s: PTR Spec ;
+PROCEDURE AddOp (VAR s: PTR Spec ;
                  RO KEPT method: STR ; RO KEPT path: STR ;
                  RO KEPT summary: STR ; RO KEPT description: STR ;
                  status: I64 ; RO KEPT ctype: STR) ;
@@ -54,7 +55,7 @@ PROCEDURE AddOp (VAR pool: POOL ; VAR s: PTR Spec ;
      of the calls is the reading order of the document.  An empty
      description is omitted rather than emitted empty.               *)
 
-PROCEDURE AddParam (VAR pool: POOL ; VAR s: PTR Spec ;
+PROCEDURE AddParam (VAR s: PTR Spec ;
                     RO KEPT name: STR ; inPath: BOOL ; required: BOOL ;
                     ty: I64 ; nullable: BOOL ;
                     RO KEPT description: STR)
@@ -67,9 +68,9 @@ PROCEDURE AddParam (VAR pool: POOL ; VAR s: PTR Spec ;
      A path parameter is required by the specification whatever
      `required` says, and renders so.                                *)
 
-PROCEDURE Render (VAR pool: POOL ; s: PTR Spec) : RO STR
+PROCEDURE Render (s: PTR Spec) : RO STR
   RAISES ValueRange ;
-  (* the document text, in pool.  Every string is JSON-escaped the
+  (* the document text, in the caller's frame.  Every string is JSON-escaped the
      way Json does it -- quote, backslash, the five control
      shorthands, backslash-u00xx for the rest -- and every other code
      point rides through unescaped, so the result is UTF-8 the moment
@@ -105,11 +106,10 @@ TYPE
     count : I64 ;
   END ;
 
-PROCEDURE NewSpec (VAR pool: POOL ; RO KEPT title: STR ;
-                   RO KEPT version: STR) : PTR Spec IN pool =
-VAR s : PTR Spec IN pool ;
+PROCEDURE NewSpec (RO KEPT title: STR ; RO KEPT version: STR) : PTR Spec =
+VAR s : PTR Spec ;
 BEGIN
-  s := NEW (pool, Spec) ;
+  s := NEW (Spec) ;
   s.title := title ;
   s.version := version ;
   s.first := NONE ;
@@ -118,13 +118,13 @@ BEGIN
   RETURN s
 END NewSpec ;
 
-PROCEDURE AddOp (VAR pool: POOL ; VAR s: PTR Spec ;
+PROCEDURE AddOp (VAR s: PTR Spec ;
                  RO KEPT method: STR ; RO KEPT path: STR ;
                  RO KEPT summary: STR ; RO KEPT description: STR ;
                  status: I64 ; RO KEPT ctype: STR) =
-VAR o : PTR Op IN pool ;
+VAR o : PTR Op ;
 BEGIN
-  o := NEW (pool, Op) ;
+  o := NEW (s, Op) ;                (* in the pool s lives in (rule 2) *)
   o.method := method ;
   o.path := path ;
   o.summary := summary ;
@@ -140,15 +140,15 @@ BEGIN
   s.count := s.count + 1
 END AddOp ;
 
-PROCEDURE AddParam (VAR pool: POOL ; VAR s: PTR Spec ;
+PROCEDURE AddParam (VAR s: PTR Spec ;
                     RO KEPT name: STR ; inPath: BOOL ; required: BOOL ;
                     ty: I64 ; nullable: BOOL ;
                     RO KEPT description: STR)
   RAISES IndexError =
-VAR q : PTR Param IN pool ;
+VAR q : PTR Param ;
 BEGIN
   IF s.last IS SOME o THEN
-    q := NEW (pool, Param) ;
+    q := NEW (s, Param) ;
     q.name := name ;
     q.description := description ;
     q.inPath := inPath ;
@@ -171,46 +171,46 @@ BEGIN
   RETURN CHR (87 + v)                    (* 'a' .. 'f' *)
 END HexD ;
 
-PROCEDURE Str (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO s: STR)
+PROCEDURE Str (VAR d: PTR DynStr.DString ; RO s: STR)
   RAISES ValueRange =
   (* a quoted, escaped JSON string: Json.EmitJStr's rules, restated
      so this module keeps its single import *)
 VAR i, v : I64 ; ch : CHAR ;
 BEGIN
-  DynStr.AppendChar (pool, d, '"') ;
+  DynStr.AppendChar (d, '"') ;
   FOR i := 0 TO LEN (s) - 1 DO
     ch := s[i] ;
     v := ORD (ch) ;
     IF ch = '"' THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, '"')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, '"')
     ELSIF v = 92 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 05CC)
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 05CC)
     ELSIF v = 8 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 'b')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 'b')
     ELSIF v = 9 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 't')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 't')
     ELSIF v = 10 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 'n')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 'n')
     ELSIF v = 12 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 'f')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 'f')
     ELSIF v = 13 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 'r')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 'r')
     ELSIF v < 32 THEN
-      DynStr.Append (pool, d, '\u00') ;
-      DynStr.AppendChar (pool, d, HexD (v DIV 16)) ;
-      DynStr.AppendChar (pool, d, HexD (v MOD 16))
+      DynStr.Append (d, '\u00') ;
+      DynStr.AppendChar (d, HexD (v DIV 16)) ;
+      DynStr.AppendChar (d, HexD (v MOD 16))
     ELSE
-      DynStr.AppendChar (pool, d, ch)
+      DynStr.AppendChar (d, ch)
     END
   END ;
-  DynStr.AppendChar (pool, d, '"')
+  DynStr.AppendChar (d, '"')
 END Str ;
 
 PROCEDURE TypeName (ty: I64) : STR =
@@ -225,81 +225,81 @@ BEGIN
   RETURN 'string'
 END TypeName ;
 
-PROCEDURE Method (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO m: STR) =
+PROCEDURE Method (VAR d: PTR DynStr.DString ; RO m: STR) =
 BEGIN
   (* OpenAPI wants lowercase verb keys; the known verbs map and an
      unknown one passes through, so the document's reader rejects it
      and the mistake stays visible -- OpenApi.AppendMethod's rule *)
-  IF DynStr.Eq (m, 'GET') THEN DynStr.Append (pool, d, 'get')
-  ELSIF DynStr.Eq (m, 'POST') THEN DynStr.Append (pool, d, 'post')
-  ELSIF DynStr.Eq (m, 'PUT') THEN DynStr.Append (pool, d, 'put')
-  ELSIF DynStr.Eq (m, 'DELETE') THEN DynStr.Append (pool, d, 'delete')
-  ELSIF DynStr.Eq (m, 'HEAD') THEN DynStr.Append (pool, d, 'head')
-  ELSE DynStr.Append (pool, d, m)
+  IF DynStr.Eq (m, 'GET') THEN DynStr.Append (d, 'get')
+  ELSIF DynStr.Eq (m, 'POST') THEN DynStr.Append (d, 'post')
+  ELSIF DynStr.Eq (m, 'PUT') THEN DynStr.Append (d, 'put')
+  ELSIF DynStr.Eq (m, 'DELETE') THEN DynStr.Append (d, 'delete')
+  ELSIF DynStr.Eq (m, 'HEAD') THEN DynStr.Append (d, 'head')
+  ELSE DynStr.Append (d, m)
   END
 END Method ;
 
-PROCEDURE EmitParam (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitParam (VAR d: PTR DynStr.DString ;
                      q: PTR Param)
   RAISES ValueRange =
 BEGIN
-  DynStr.Append (pool, d, '{"name":') ;
-  Str (pool, d, q.name) ;
+  DynStr.Append (d, '{"name":') ;
+  Str (d, q.name) ;
   IF q.inPath THEN
-    DynStr.Append (pool, d, ',"in":"path","required":true')
+    DynStr.Append (d, ',"in":"path","required":true')
   ELSE
-    DynStr.Append (pool, d, ',"in":"query","required":') ;
-    IF q.required THEN DynStr.Append (pool, d, 'true')
-    ELSE DynStr.Append (pool, d, 'false') END
+    DynStr.Append (d, ',"in":"query","required":') ;
+    IF q.required THEN DynStr.Append (d, 'true')
+    ELSE DynStr.Append (d, 'false') END
   END ;
-  DynStr.Append (pool, d, ',"schema":{') ;
+  DynStr.Append (d, ',"schema":{') ;
   IF q.nullable THEN
-    DynStr.Append (pool, d, '"anyOf":[{"type":') ;
-    Str (pool, d, TypeName (q.ty)) ;
-    DynStr.Append (pool, d, '},{"type":"null"}]')
+    DynStr.Append (d, '"anyOf":[{"type":') ;
+    Str (d, TypeName (q.ty)) ;
+    DynStr.Append (d, '},{"type":"null"}]')
   ELSE
-    DynStr.Append (pool, d, '"type":') ;
-    Str (pool, d, TypeName (q.ty))
+    DynStr.Append (d, '"type":') ;
+    Str (d, TypeName (q.ty))
   END ;
-  DynStr.AppendChar (pool, d, '}') ;
+  DynStr.AppendChar (d, '}') ;
   IF LEN (q.description) > 0 THEN
-    DynStr.Append (pool, d, ',"description":') ;
-    Str (pool, d, q.description)
+    DynStr.Append (d, ',"description":') ;
+    Str (d, q.description)
   END ;
-  DynStr.AppendChar (pool, d, '}')
+  DynStr.AppendChar (d, '}')
 END EmitParam ;
 
-PROCEDURE EmitOp (VAR pool: POOL ; VAR d: PTR DynStr.DString ; o: PTR Op)
+PROCEDURE EmitOp (VAR d: PTR DynStr.DString ; o: PTR Op)
   RAISES ValueRange =
 VAR c : OPT PTR Param ; firstQ : BOOL ;
 BEGIN
-  DynStr.AppendChar (pool, d, '"') ;
-  Method (pool, d, o.method) ;
-  DynStr.Append (pool, d, '":{"summary":') ;
-  Str (pool, d, o.summary) ;
+  DynStr.AppendChar (d, '"') ;
+  Method (d, o.method) ;
+  DynStr.Append (d, '":{"summary":') ;
+  Str (d, o.summary) ;
   IF LEN (o.description) > 0 THEN
-    DynStr.Append (pool, d, ',"description":') ;
-    Str (pool, d, o.description)
+    DynStr.Append (d, ',"description":') ;
+    Str (d, o.description)
   END ;
   IF o.firstP IS SOME p0 THEN
-    DynStr.Append (pool, d, ',"parameters":[') ;
+    DynStr.Append (d, ',"parameters":[') ;
     firstQ := TRUE ;
     c := SOME (p0) ;
     WHILE c IS SOME q DO
-      IF NOT firstQ THEN DynStr.AppendChar (pool, d, ',') END ;
+      IF NOT firstQ THEN DynStr.AppendChar (d, ',') END ;
       firstQ := FALSE ;
-      EmitParam (pool, d, q) ;
+      EmitParam (d, q) ;
       c := q.next
     END ;
-    DynStr.AppendChar (pool, d, ']')
+    DynStr.AppendChar (d, ']')
   END ;
-  DynStr.Append (pool, d, ',"responses":{"') ;
-  DynStr.AppendI64 (pool, d, o.status) ;
-  DynStr.Append (pool, d, '":{"description":') ;
-  Str (pool, d, o.summary) ;
-  DynStr.Append (pool, d, ',"content":{') ;
-  Str (pool, d, o.ctype) ;
-  DynStr.Append (pool, d, ':{"schema":{}}}}}}')
+  DynStr.Append (d, ',"responses":{"') ;
+  DynStr.AppendI64 (d, o.status) ;
+  DynStr.Append (d, '":{"description":') ;
+  Str (d, o.summary) ;
+  DynStr.Append (d, ',"content":{') ;
+  Str (d, o.ctype) ;
+  DynStr.Append (d, ':{"schema":{}}}}}}')
 END EmitOp ;
 
 PROCEDURE OpAt (s: PTR Spec ; i: I64) : OPT PTR Op =
@@ -328,27 +328,29 @@ BEGIN
   RETURN FALSE
 END PathSeen ;
 
-PROCEDURE Render (VAR pool: POOL ; s: PTR Spec) : RO STR
+PROCEDURE Render (s: PTR Spec) : RO STR
   RAISES ValueRange =
 VAR
+  pool : POOL ;                     (* the builder's scratch: the answer
+                                       is copied out of it at exit *)
   d : PTR DynStr.DString IN pool ;
   i, j : I64 ;
   firstPath, firstOp : BOOL ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"openapi":"3.1.0","info":{"title":') ;
-  Str (pool, d, s.title) ;
-  DynStr.Append (pool, d, ',"version":') ;
-  Str (pool, d, s.version) ;
-  DynStr.Append (pool, d, '},"paths":{') ;
+  DynStr.Append (d, '{"openapi":"3.1.0","info":{"title":') ;
+  Str (d, s.title) ;
+  DynStr.Append (d, ',"version":') ;
+  Str (d, s.version) ;
+  DynStr.Append (d, '},"paths":{') ;
   firstPath := TRUE ;
   FOR i := 0 TO s.count - 1 DO
     IF NOT PathSeen (s, i) THEN
       IF OpAt (s, i) IS SOME oi THEN
-        IF NOT firstPath THEN DynStr.AppendChar (pool, d, ',') END ;
+        IF NOT firstPath THEN DynStr.AppendChar (d, ',') END ;
         firstPath := FALSE ;
-        Str (pool, d, oi.path) ;
-        DynStr.Append (pool, d, ':{') ;
+        Str (d, oi.path) ;
+        DynStr.Append (d, ':{') ;
         firstOp := TRUE ;
         (* one path object, every method on it: an O(n^2) walk over a
            table of tens.  Measure before believing it matters --
@@ -356,17 +358,17 @@ BEGIN
         FOR j := i TO s.count - 1 DO
           IF OpAt (s, j) IS SOME oj THEN
             IF DynStr.Eq (oj.path, oi.path) THEN
-              IF NOT firstOp THEN DynStr.AppendChar (pool, d, ',') END ;
+              IF NOT firstOp THEN DynStr.AppendChar (d, ',') END ;
               firstOp := FALSE ;
-              EmitOp (pool, d, oj)
+              EmitOp (d, oj)
             END
           END
         END ;
-        DynStr.AppendChar (pool, d, '}')
+        DynStr.AppendChar (d, '}')
       END
     END
   END ;
-  DynStr.Append (pool, d, '}}') ;
+  DynStr.Append (d, '}}') ;
   RETURN DynStr.View (d)
 END Render ;
 

@@ -55,7 +55,7 @@ static void bump_free (void)
 #endif
 static const int mode = MODE;
 static m9_pool pool;
-static m9_err err;
+static m9_state err;      /* was m9_err, the runtime's old name for it */
 
 static Node *make (long long depth)
 {

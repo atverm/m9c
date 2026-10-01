@@ -33,7 +33,7 @@ IMPORT Json ;
 IMPORT Diag ;
 
 CONST
-  Version = '0.12.0' ;
+  Version = '0.13.0' ;
   RdCap = 65536 ;
 
 VAR
@@ -66,7 +66,7 @@ BEGIN
     inBuf := nb ;
     room := LEN (inBuf) - inLen
   END ;
-  got := Io.ReadStdin (HEAP, room) ;
+  got := Io.ReadStdin (room) ;
   IF LEN (got) = 0 THEN
     atEof := TRUE ;
     RETURN FALSE
@@ -78,10 +78,11 @@ END Fill ;
 
 (* one header line as text, CR and LF stripped; FALSE at end of
    input.  Header octets are ASCII by protocol. *)
-PROCEDURE ReadLine (VAR pool: POOL ; VAR line: STR) : BOOL
+PROCEDURE ReadLine (VAR line: STR) : BOOL
   RAISES ValueRange =
 VAR
-  d : PTR DynStr.DString ;
+  pool : POOL ;
+  d : PTR DynStr.DString IN pool ;
   i : I64 ;
   found : BOOL ;
 BEGIN
@@ -98,7 +99,7 @@ BEGIN
   i := inPos ;
   WHILE inBuf[i] # 0x0A DO
     IF inBuf[i] # 0x0D THEN
-      DynStr.AppendChar (pool, d, CHR (I64 (inBuf[i])))
+      DynStr.AppendChar (d, CHR (I64 (inBuf[i])))
     END ;
     i := i + 1
   END ;
@@ -108,10 +109,11 @@ BEGIN
 END ReadLine ;
 
 (* exactly n body octets as text, one CHAR per octet *)
-PROCEDURE ReadBody (VAR pool: POOL ; n: I64 ; VAR body: STR) : BOOL
+PROCEDURE ReadBody (n: I64 ; VAR body: STR) : BOOL
   RAISES ValueRange =
 VAR
-  d : PTR DynStr.DString ;
+  pool : POOL ;
+  d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
   WHILE inLen - inPos < n DO
@@ -119,7 +121,7 @@ BEGIN
   END ;
   d := DynStr.New (pool) ;
   FOR i := 0 TO n - 1 DO
-    DynStr.AppendChar (pool, d, CHR (I64 (inBuf[inPos + i])))
+    DynStr.AppendChar (d, CHR (I64 (inBuf[inPos + i])))
   END ;
   inPos := inPos + n ;
   body := DynStr.View (d) ;
@@ -145,34 +147,36 @@ END ByteLen ;
 PROCEDURE Send (RO body: STR) =
 VAR
   scratch : POOL ;
-  d : PTR DynStr.DString ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
   d := DynStr.New (scratch) ;
-  DynStr.Append (scratch, d, 'Content-Length: ') ;
-  DynStr.AppendI64 (scratch, d, ByteLen (body)) ;
-  DynStr.AppendChar (scratch, d, 0DC) ;
-  DynStr.AppendChar (scratch, d, 0AC) ;
-  DynStr.AppendChar (scratch, d, 0DC) ;
-  DynStr.AppendChar (scratch, d, 0AC) ;
+  DynStr.Append (d, 'Content-Length: ') ;
+  DynStr.AppendI64 (d, ByteLen (body)) ;
+  DynStr.AppendChar (d, 0DC) ;
+  DynStr.AppendChar (d, 0AC) ;
+  DynStr.AppendChar (d, 0DC) ;
+  DynStr.AppendChar (d, 0AC) ;
   Io.Write (DynStr.View (d)) ;
   Io.Write (body) ;
   Io.Flush ()
 END Send ;
 
-PROCEDURE ItoA (VAR pool: POOL ; v: I64) : STR =
-VAR d : PTR DynStr.DString ;
+PROCEDURE ItoA (v: I64) : STR =
+VAR pool : POOL ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.AppendI64 (pool, d, v) ;
+  DynStr.AppendI64 (d, v) ;
   RETURN DynStr.View (d)
 END ItoA ;
 
-PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR =
-VAR d : PTR DynStr.DString ;
+PROCEDURE Cat (RO a: STR ; RO b: STR) : STR =
+VAR pool : POOL ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, a) ;
-  DynStr.Append (pool, d, b) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
   RETURN DynStr.View (d)
 END Cat ;
 
@@ -180,10 +184,11 @@ END Cat ;
 
 (* file:///a/b%2Dc -> /a/b-c.  Only the path is wanted here; the
    URI itself is echoed back verbatim, so this never round-trips. *)
-PROCEDURE UriPath (VAR pool: POOL ; RO uri: STR) : STR
+PROCEDURE UriPath (RO uri: STR) : STR
   RAISES ValueRange =
 VAR
-  d : PTR DynStr.DString ;
+  pool : POOL ;
+  d : PTR DynStr.DString IN pool ;
   i, hi, lo : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
@@ -194,14 +199,14 @@ BEGIN
       hi := HexVal (uri[i + 1]) ;
       lo := HexVal (uri[i + 2]) ;
       IF hi >= 0 AND lo >= 0 THEN
-        DynStr.AppendChar (pool, d, CHR (hi * 16 + lo)) ;
+        DynStr.AppendChar (d, CHR (hi * 16 + lo)) ;
         i := i + 3
       ELSE
-        DynStr.AppendChar (pool, d, uri[i]) ;
+        DynStr.AppendChar (d, uri[i]) ;
         i := i + 1
       END
     ELSE
-      DynStr.AppendChar (pool, d, uri[i]) ;
+      DynStr.AppendChar (d, uri[i]) ;
       i := i + 1
     END
   END ;
@@ -216,10 +221,11 @@ BEGIN
   RETURN -1
 END HexVal ;
 
-PROCEDURE DiagJson (VAR pool: POOL ; ln, cl: I64 ; RO msg: STR) : STR
+PROCEDURE DiagJson (ln, cl: I64 ; RO msg: STR) : STR
   RAISES ValueRange =
 VAR
-  d : PTR DynStr.DString ;
+  pool : POOL ;
+  d : PTR DynStr.DString IN pool ;
   l0, c0 : I64 ;
 BEGIN
   l0 := ln - 1 ;
@@ -227,17 +233,17 @@ BEGIN
   IF l0 < 0 THEN l0 := 0 END ;
   IF c0 < 0 THEN c0 := 0 END ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"range":{"start":{"line":') ;
-  DynStr.AppendI64 (pool, d, l0) ;
-  DynStr.Append (pool, d, ',"character":') ;
-  DynStr.AppendI64 (pool, d, c0) ;
-  DynStr.Append (pool, d, '},"end":{"line":') ;
-  DynStr.AppendI64 (pool, d, l0) ;
-  DynStr.Append (pool, d, ',"character":') ;
-  DynStr.AppendI64 (pool, d, c0) ;
-  DynStr.Append (pool, d, '}},"severity":1,"source":"m9c","message":') ;
-  Diag.JStr (pool, d, msg) ;
-  DynStr.AppendChar (pool, d, 07DC) ;
+  DynStr.Append (d, '{"range":{"start":{"line":') ;
+  DynStr.AppendI64 (d, l0) ;
+  DynStr.Append (d, ',"character":') ;
+  DynStr.AppendI64 (d, c0) ;
+  DynStr.Append (d, '},"end":{"line":') ;
+  DynStr.AppendI64 (d, l0) ;
+  DynStr.Append (d, ',"character":') ;
+  DynStr.AppendI64 (d, c0) ;
+  DynStr.Append (d, '}},"severity":1,"source":"m9c","message":') ;
+  Diag.JStr (d, msg) ;
+  DynStr.AppendChar (d, 07DC) ;
   RETURN DynStr.View (d)
 END DiagJson ;
 
@@ -250,79 +256,81 @@ END DiagJson ;
 PROCEDURE Check (VAR pool: POOL ; RO uri: STR)
   RAISES ValueRange, IndexError =
 VAR
-  body : PTR DynStr.DString ;
+  body : PTR DynStr.DString IN pool ;
   path, one : STR ;
   fs : SLICE OF Diag.Finding ;
   i, n : I64 ;
   bad : BOOL ;
 BEGIN
-  path := UriPath (pool, uri) ;
+  path := UriPath (uri) ;
   bad := FALSE ;
   FOR i := 0 TO LEN (path) - 1 DO
     IF path[i] = 027C OR path[i] = 022C THEN bad := TRUE END
   END ;
   body := DynStr.New (pool) ;
-  DynStr.Append (pool, body,
+  DynStr.Append (body,
     '{"jsonrpc":"2.0","method":"textDocument/publishDiagnostics",') ;
-  DynStr.Append (pool, body, '"params":{"uri":') ;
-  Diag.JStr (pool, body, uri) ;
-  DynStr.Append (pool, body, ',"diagnostics":[') ;
+  DynStr.Append (body, '"params":{"uri":') ;
+  Diag.JStr (body, uri) ;
+  DynStr.Append (body, ',"diagnostics":[') ;
   n := 0 ;
   IF bad THEN
-    one := DiagJson (pool, 1, 1,
+    one := DiagJson (1, 1,
       'm9lsp: a path containing a quote is not checked') ;
-    DynStr.Append (pool, body, one) ;
+    DynStr.Append (body, one) ;
     n := 1
   ELSE
     fs := Diag.Check (pool, m9c, '', '', path, errFile) ;
     FOR i := 0 TO LEN (fs) - 1 DO
-      one := DiagJson (pool, fs[i].line, fs[i].col, fs[i].msg) ;
-      IF n > 0 THEN DynStr.AppendChar (pool, body, 02CC) END ;
-      DynStr.Append (pool, body, one) ;
+      one := DiagJson (fs[i].line, fs[i].col, fs[i].msg) ;
+      IF n > 0 THEN DynStr.AppendChar (body, 02CC) END ;
+      DynStr.Append (body, one) ;
       n := n + 1
     END
   END ;
-  DynStr.Append (pool, body, ']}}') ;
+  DynStr.Append (body, ']}}') ;
   Send (DynStr.View (body))
 END Check ;
 
 (* ---- the loop ---------------------------------------------------- *)
 
-PROCEDURE Respond (VAR pool: POOL ; RO idText: STR ; RO result: STR) =
-VAR d : PTR DynStr.DString ;
+PROCEDURE Respond (RO idText: STR ; RO result: STR) =
+VAR pool : POOL ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"jsonrpc":"2.0","id":') ;
-  DynStr.Append (pool, d, idText) ;
-  DynStr.Append (pool, d, ',"result":') ;
-  DynStr.Append (pool, d, result) ;
-  DynStr.AppendChar (pool, d, 07DC) ;
+  DynStr.Append (d, '{"jsonrpc":"2.0","id":') ;
+  DynStr.Append (d, idText) ;
+  DynStr.Append (d, ',"result":') ;
+  DynStr.Append (d, result) ;
+  DynStr.AppendChar (d, 07DC) ;
   Send (DynStr.View (d))
 END Respond ;
 
 (* the request id, re-rendered: a number, or a string, per JSON-RPC *)
-PROCEDURE RenderIdS (VAR pool: POOL ; idn: PTR Json.Node) : STR
+PROCEDURE RenderIdS (idn: PTR Json.Node) : STR
   RAISES ValueRange =
-VAR d : PTR DynStr.DString ;
+VAR pool : POOL ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  Diag.JStr (pool, d, Json.AsStr (idn)) ;
+  Diag.JStr (d, Json.AsStr (idn)) ;
   RETURN DynStr.View (d)
 EXCEPT
 | Json.TypeMismatch (m) :
     RETURN ''
 END RenderIdS ;
 
-PROCEDURE RenderId (VAR pool: POOL ; idn: PTR Json.Node) : STR
+PROCEDURE RenderId (idn: PTR Json.Node) : STR
   RAISES ValueRange =
 BEGIN
-  RETURN ItoA (pool, Json.AsI64 (idn))
+  RETURN ItoA (Json.AsI64 (idn))
 EXCEPT
 | Json.TypeMismatch (m) :
-    RETURN RenderIdS (pool, idn)
+    RETURN RenderIdS (idn)
 END RenderId ;
 
-PROCEDURE DocUri (VAR pool: POOL ; msg: PTR Json.Node) : STR =
+PROCEDURE DocUri (msg: PTR Json.Node) : STR =
 BEGIN
   IF Json.Field (msg, 'params') IS SOME p THEN
     IF Json.Field (p, 'textDocument') IS SOME td THEN
@@ -337,7 +345,7 @@ EXCEPT
     RETURN ''
 END DocUri ;
 
-PROCEDURE MethodOf (VAR pool: POOL ; msg: PTR Json.Node) : STR =
+PROCEDURE MethodOf (msg: PTR Json.Node) : STR =
 BEGIN
   IF Json.Field (msg, 'method') IS SOME mn THEN
     RETURN Json.AsStr (mn)
@@ -353,38 +361,36 @@ VAR
   msg : PTR Json.Node ;
   method, ids, uri : STR ;
 BEGIN
-  msg := Json.Parse (pool, body) ;
-  method := MethodOf (pool, msg) ;
+  msg := Json.Parse (body) ;
+  method := MethodOf (msg) ;
   ids := '' ;
   IF Json.Field (msg, 'id') IS SOME idn THEN
-    ids := RenderId (pool, idn)
+    ids := RenderId (idn)
   END ;
   IF Text.Eq (method, 'initialize') THEN
-    Respond (pool, ids, Cat (pool,
-      '{"capabilities":{"textDocumentSync":{"openClose":true,"change":0,"save":true}},"serverInfo":{"name":"m9lsp","version":"',
-      Cat (pool, Version, '"}}')))
+    Respond (ids, Cat ('{"capabilities":{"textDocumentSync":{"openClose":true,"change":0,"save":true}},"serverInfo":{"name":"m9lsp","version":"',
+      Cat (Version, '"}}')))
   ELSIF Text.Eq (method, 'shutdown') THEN
-    Respond (pool, ids, 'null')
+    Respond (ids, 'null')
   ELSIF Text.Eq (method, 'exit') THEN
     Io.Flush () ;
     Io.Halt (0)
   ELSIF Text.Eq (method, 'textDocument/didOpen') OR
         Text.Eq (method, 'textDocument/didSave') THEN
-    uri := DocUri (pool, msg) ;
+    uri := DocUri (msg) ;
     IF LEN (uri) > 0 THEN Check (pool, uri) END
   ELSE
     (* a REQUEST we do not know must be answered or the client
        hangs; a notification must not be *)
     IF LEN (ids) > 0 THEN
-      Send (Cat (pool, Cat (pool,
-        '{"jsonrpc":"2.0","id":', ids),
+      Send (Cat (Cat ('{"jsonrpc":"2.0","id":', ids),
         ',"error":{"code":-32601,"message":"method not found"}}'))
     END
   END
 EXCEPT
 | Json.ParseError (m, l, c) :
     (* a malformed frame is the client's bug; surviving it is ours *)
-    Io.ErrLine (Cat (pool, 'm9lsp: unparsable message: ', m))
+    Io.ErrLine (Cat ('m9lsp: unparsable message: ', m))
 END Handle ;
 
 PROCEDURE Serve () RAISES ValueRange =
@@ -395,15 +401,15 @@ VAR
 BEGIN
   WHILE TRUE DO
     clen := -1 ;
-    IF NOT ReadLine (reqPool, line) THEN RETURN END ;
+    IF NOT ReadLine (line) THEN RETURN END ;
     WHILE LEN (line) > 0 DO
       IF Text.StartsWith (line, 'Content-Length: ') THEN
         clen := Io.ParseI64 (SLICE (line, 16, LEN (line) - 16))
       END ;
-      IF NOT ReadLine (reqPool, line) THEN RETURN END
+      IF NOT ReadLine (line) THEN RETURN END
     END ;
     IF clen >= 0 THEN
-      IF NOT ReadBody (reqPool, clen, body) THEN RETURN END ;
+      IF NOT ReadBody (clen, body) THEN RETURN END ;
       Handle (reqPool, body)
     END
   END

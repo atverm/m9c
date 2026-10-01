@@ -307,6 +307,28 @@ m9_sl_CHAR m9_rehome (const m9_pool *frame, m9_pool *res, m9_sl_CHAR s,
   return m9_strdup (res, s, err);
 }
 
+void m9_pool_adopt (m9_pool *dst, m9_pool *src)
+{
+  m9_pool_block *b, *last;
+  if (src->head == NULL || dst == src) return;
+  /* every block changes owner; the registry lists by that tag
+     (System.PoolAt), and the tag is what a cached block's reuse
+     retargets the same way, so no lock is taken here either */
+  last = NULL;
+  for (b = src->head; b != NULL; b = b->next) {
+    __atomic_store_n (&b->owner, dst, __ATOMIC_RELEASE);
+    last = b;
+  }
+  if (dst->head == NULL) {
+    dst->head = src->head;
+  }
+  else {
+    last->next = dst->head->next;
+    dst->head->next = src->head;
+  }
+  src->head = NULL;
+}
+
 void *m9_new (size_t size, m9_state *err)
 {
   m9_hdr *h = malloc (sizeof (m9_hdr) + size);
@@ -1020,12 +1042,46 @@ void m9_thread_died (const char *name)
   abort ();
 }
 
+/* the two-word thunk of rule 2 (docs/pool-elision-plan.md): a THREAD
+   target's first parameter carries the pool its object lives in, so
+   the thread is started with the argument AND that pool, through one
+   heap cell the thread frees on entry -- on both platforms, since
+   pthread_create carries one word as _beginthreadex does */
+typedef struct {
+  void *(*fn) (void *, m9_pool *);
+  void *arg;
+  m9_pool *pool;
+} m9_thread_cell2;
+
 #ifdef _WIN32
 
 /* _beginthreadex wants unsigned (__stdcall *) (void *); the
    generator's trampoline is void *(*) (void *).  One heap cell
    carries the pair across, freed by the thread that took it. */
 typedef struct { void *(*fn) (void *); void *arg; } m9_thread_cell;
+
+static unsigned __stdcall m9_thread_tramp2 (void *p)
+{
+  m9_thread_cell2 c = *(m9_thread_cell2 *) p;
+  free (p);
+  (void) c.fn (c.arg, c.pool);
+  return 0;
+}
+
+int m9_thread_start2 (void *(*fn) (void *, m9_pool *), void *arg,
+                      m9_pool *pool, m9_state *err)
+{
+  m9_thread_cell2 *c = malloc (sizeof *c);
+  uintptr_t h;
+  if (c == NULL) { m9_raise (err, &m9_exc_OutOfMemory); return -1; }
+  c->fn = fn;
+  c->arg = arg;
+  c->pool = pool;
+  h = _beginthreadex (NULL, 0, m9_thread_tramp2, c, 0, NULL);
+  if (h == 0) { free (c); m9_raise (err, &m9_exc_OutOfMemory); return -1; }
+  CloseHandle ((HANDLE) h);
+  return 0;
+}
 
 static unsigned __stdcall m9_thread_tramp (void *p)
 {
@@ -1098,6 +1154,29 @@ int m9_thread_start (void *(*fn) (void *), void *arg, m9_state *err)
   pthread_t t;
   int rc = pthread_create (&t, NULL, fn, arg);
   if (rc != 0) { m9_raise (err, &m9_exc_OutOfMemory); return rc; }
+  pthread_detach (t);
+  return 0;
+}
+
+static void *m9_thread_tramp2 (void *p)
+{
+  m9_thread_cell2 c = *(m9_thread_cell2 *) p;
+  free (p);
+  return c.fn (c.arg, c.pool);
+}
+
+int m9_thread_start2 (void *(*fn) (void *, m9_pool *), void *arg,
+                      m9_pool *pool, m9_state *err)
+{
+  pthread_t t;
+  int rc;
+  m9_thread_cell2 *c = malloc (sizeof *c);
+  if (c == NULL) { m9_raise (err, &m9_exc_OutOfMemory); return -1; }
+  c->fn = fn;
+  c->arg = arg;
+  c->pool = pool;
+  rc = pthread_create (&t, NULL, m9_thread_tramp2, c);
+  if (rc != 0) { free (c); m9_raise (err, &m9_exc_OutOfMemory); return rc; }
   pthread_detach (t);
   return 0;
 }

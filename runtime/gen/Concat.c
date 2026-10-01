@@ -27,6 +27,7 @@ extern int m9_append_file (const void *, const void *, size_t);
 static m9_sl_CHAR s;
 static DynStr_DString * d;
 static int64_t n;
+static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[7] = { 104u, 101u, 108u, 108u, 111u, 44u, 32u };
 static const uint32_t m9s1[1] = { 33u };
@@ -62,8 +63,7 @@ int main (int argc, char **argv)
 {
   m9_state errv = {0};
   m9_state *err = &errv;
-  m9_pool m9frame = {0};
-  err->res = &m9frame;
+  err->res = &m9mframe;
   m9_args (argc, argv);
   Io_m9init (err); if (err->exc) goto L_ret;
   DynStr_m9init (err); if (err->exc) goto L_ret;
@@ -85,13 +85,13 @@ int main (int argc, char **argv)
   if (err->exc) goto L_ret;
   d = DynStr_New (&(m9_heap), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(m9_heap), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err);
+  DynStr_Append (&(d), &m9mframe, ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err);
   if (err->exc) goto L_ret;
   Io_WriteLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
   Io_WriteLine (m9_cat (err->res, m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 1 }), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), err), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 }), err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
+  m9_pool_free (&m9mframe);
   return m9_exit (err);
 }

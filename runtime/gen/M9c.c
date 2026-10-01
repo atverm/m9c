@@ -91,6 +91,7 @@ static m9_sl_CHAR name;
 static m9_sl_CHAR mainSrc;
 static bool found;
 static bool mainTrust;
+static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[3] = { 46u, 109u, 57u };
 static const uint32_t m9s1[7] = { 119u, 105u, 110u, 100u, 111u, 119u, 115u };
@@ -634,11 +635,11 @@ static void M9c_Diag (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err)
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), a, err);
+  DynStr_Append (&(d), &(pool), a, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), b, err);
+  DynStr_Append (&(d), &(pool), b, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), c, err);
+  DynStr_Append (&(d), &(pool), c, err);
   if (err->exc) goto L_ret;
   Io_ErrLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
@@ -657,13 +658,13 @@ static void M9c_DiagN (m9_sl_CHAR a, int64_t n, m9_sl_CHAR b, m9_sl_CHAR c, m9_s
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), a, err);
+  DynStr_Append (&(d), &(pool), a, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(pool), &(d), n, err);
+  DynStr_AppendI64 (&(d), &(pool), n, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), b, err);
+  DynStr_Append (&(d), &(pool), b, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), c, err);
+  DynStr_Append (&(d), &(pool), c, err);
   if (err->exc) goto L_ret;
   Io_ErrLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
@@ -682,17 +683,17 @@ static void M9c_Diag2 (m9_sl_CHAR a, int64_t ln, int64_t cl, m9_sl_CHAR b, m9_sl
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), a, err);
+  DynStr_Append (&(d), &(pool), a, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(pool), &(d), ln, err);
+  DynStr_AppendI64 (&(d), &(pool), ln, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (&(pool), &(d), 58u, err);
+  DynStr_AppendChar (&(d), &(pool), 58u, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(pool), &(d), cl, err);
+  DynStr_AppendI64 (&(d), &(pool), cl, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), b, err);
+  DynStr_Append (&(d), &(pool), b, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), c, err);
+  DynStr_Append (&(d), &(pool), c, err);
   if (err->exc) goto L_ret;
   Io_ErrLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
@@ -712,9 +713,9 @@ static m9_sl_CHAR M9c_Suffix (m9_sl_CHAR name, m9_sl_CHAR ext, m9_state *err)
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), name, err);
+  DynStr_Append (&(d), &(pool), name, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), ext, err);
+  DynStr_Append (&(d), &(pool), ext, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -1116,10 +1117,10 @@ static m9_sl_CHAR M9c_Native (m9_sl_CHAR s, m9_state *err)
     bool m9t2 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 47u);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      DynStr_AppendChar (&(pool), &(d), 92u, err);
+      DynStr_AppendChar (&(d), &(pool), 92u, err);
       if (err->exc) goto L_ret;
     } else {
-      DynStr_AppendChar (&(pool), &(d), (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
+      DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -1139,7 +1140,7 @@ static m9_sl_m9_sl_CHAR M9c_ChildEnv (m9_sl_CHAR prog, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR bin = {0}; (void) bin;
   m9_sl_m9_sl_CHAR env = {0}; (void) env;
@@ -1162,6 +1163,7 @@ static m9_sl_m9_sl_CHAR M9c_ChildEnv (m9_sl_CHAR prog, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1181,11 +1183,11 @@ static m9_sl_CHAR M9c_Join (m9_sl_CHAR d, m9_sl_CHAR f, m9_state *err)
   }
   s = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(s), d, err);
+  DynStr_Append (&(s), &(pool), d, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (&(pool), &(s), 47u, err);
+  DynStr_AppendChar (&(s), &(pool), 47u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(s), f, err);
+  DynStr_Append (&(s), &(pool), f, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (s, err);
@@ -1636,16 +1638,16 @@ static m9_sl_CHAR M9c_Line (m9_sl_CHAR prog, m9_state *err)
   int64_t i = 0; (void) i;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), prog, err);
+  DynStr_Append (&(d), &(pool), prog, err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (nwords, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    DynStr_AppendChar (&(pool), &(d), 32u, err);
+    DynStr_AppendChar (&(d), &(pool), 32u, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(pool), &(d), (*(m9_sl_CHAR *) m9_at (words.p, i, words.len, sizeof (m9_sl_CHAR), err)), err);
+    DynStr_Append (&(d), &(pool), (*(m9_sl_CHAR *) m9_at (words.p, i, words.len, sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
   } }
   err->res = m9res;
@@ -1853,9 +1855,9 @@ static m9_sl_CHAR M9c_Cat (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), a, err);
+  DynStr_Append (&(d), &(pool), a, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), b, err);
+  DynStr_Append (&(d), &(pool), b, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -3266,9 +3268,9 @@ static void M9c_Complain (m9_sl_CHAR what, m9_sl_CHAR path, m9_state *err)
   DynStr_DString * d = NULL; (void) d;
   d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), what, err);
+  DynStr_Append (&(d), &(pool), what, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(pool), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s362, 2 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s362, 2 }), err);
   if (err->exc) goto L_ret;
   M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s363, 5 }), DynStr_View (d, err), path, err);
   if (err->exc) goto L_ret;
@@ -3294,33 +3296,33 @@ static m9_sl_CHAR M9c_DocText (Ast_Node * root, m9_sl_CHAR name, m9_state *err)
   if (verbose) {
     d = DynStr_New (&(pool), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(pool), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s364, 4 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s364, 4 }), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(pool), &(d), name, err);
+    DynStr_Append (&(d), &(pool), name, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(pool), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s365, 7 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s365, 7 }), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (&(pool), &(d), st.procsDoc, err);
+    DynStr_AppendI64 (&(d), &(pool), st.procsDoc, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (&(pool), &(d), 47u, err);
+    DynStr_AppendChar (&(d), &(pool), 47u, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (&(pool), &(d), st.procs, err);
+    DynStr_AppendI64 (&(d), &(pool), st.procs, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(pool), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s366, 8 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s366, 8 }), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (&(pool), &(d), st.othersDoc, err);
+    DynStr_AppendI64 (&(d), &(pool), st.othersDoc, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (&(pool), &(d), 47u, err);
+    DynStr_AppendChar (&(d), &(pool), 47u, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (&(pool), &(d), st.others, err);
+    DynStr_AppendI64 (&(d), &(pool), st.others, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(pool), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s367, 12 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s367, 12 }), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (&(pool), &(d), st.paramsDoc, err);
+    DynStr_AppendI64 (&(d), &(pool), st.paramsDoc, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(pool), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s368, 7 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s368, 7 }), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (&(pool), &(d), st.unknownParam, err);
+    DynStr_AppendI64 (&(d), &(pool), st.unknownParam, err);
     if (err->exc) goto L_ret;
     Io_ErrLine (DynStr_View (d, err), err);
     if (err->exc) goto L_ret;
@@ -3375,14 +3377,14 @@ static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Ast_Node * m9ret = NULL;
   Parse_Parser p = {0}; (void) p;
   Ast_Node * root = NULL; (void) root;
   int64_t i = 0; (void) i;
-  Parse_Init (&(p), src, err);
+  Parse_Init (&(p), err->res, src, err);
   if (err->exc) goto L_ret;
-  root = Parse_File (&(pool), &(p), err);
+  root = Parse_File (&(pool), &(p), err->res, err);
   if (err->exc) goto L_ret;
   Lex_Collect (false, err);
   if (err->exc) goto L_ret;
@@ -3407,6 +3409,7 @@ static Ast_Node * M9c_ParseText (m9_sl_CHAR src, m9_sl_CHAR path, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -3416,7 +3419,7 @@ static Ast_Node * M9c_ParseFile (m9_sl_CHAR path, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Ast_Node * m9ret = NULL;
   err->res = m9res;
   m9ret = M9c_ParseText (Io_ReadFile (&(pool), path, err), path, err);
@@ -3424,6 +3427,7 @@ static Ast_Node * M9c_ParseFile (m9_sl_CHAR path, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -3812,8 +3816,7 @@ int main (int argc, char **argv)
 {
   m9_state errv = {0};
   m9_state *err = &errv;
-  m9_pool m9frame = {0};
-  err->res = &m9frame;
+  err->res = &m9mframe;
   m9_args (argc, argv);
   Io_m9init (err); if (err->exc) goto L_ret;
   Ast_m9init (err); if (err->exc) goto L_ret;
@@ -4068,6 +4071,6 @@ L_hdl_m9t1: ;
   goto L_ret;
 L_dn_m9t2: ;
 L_ret: ;
-  m9_pool_free (&m9frame);
+  m9_pool_free (&m9mframe);
   return m9_exit (err);
 }

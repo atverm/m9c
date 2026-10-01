@@ -57,12 +57,12 @@ static int64_t drain (m9_pool *pool, Zip_Archive *a, int64_t idx,
   for (;;) {
     m9_sl_BYTE dst = { out + total, piece };
     if (total + piece > (int64_t) sizeof out) break;
-    got = Zip_Read (&m, &dst, err);
-    if (err->exc) { Zip_Close (&m, err); return -1; }
+    got = Zip_Read (&m, pool, &dst, err);
+    if (err->exc) { Zip_Close (&m, pool, err); return -1; }
     if (got == 0) break;
     total += got;
   }
-  Zip_Close (&m, err);
+  Zip_Close (&m, pool, err);
   return total;
 }
 
@@ -103,16 +103,16 @@ int main (int argc, char **argv)
   a = Zip_Open (&pool, sl (ZIP, nb[0]), err);
   ck (err->exc == NULL, "the archive opens past its comment");
   ck (Zip_Count (a, err) == 3, "three members");
-  ck (Zip_Find (&pool, a, sl ("data.tsv", nb[1]), err) == 0, "found by name");
-  ck (Zip_Find (&pool, a, sl ("plain.txt", nb[1]), err) == 1, "and the second");
-  ck (Zip_Find (&pool, a, sl ("nope", nb[1]), err) == -1,
+  ck (Zip_Find ( a, sl ("data.tsv", nb[1]), err) == 0, "found by name");
+  ck (Zip_Find ( a, sl ("plain.txt", nb[1]), err) == 1, "and the second");
+  ck (Zip_Find ( a, sl ("nope", nb[1]), err) == -1,
       "an absent name answers -1 rather than raising");
   ck (Zip_SizeAt (a, 0, err) == wantn,
       "the uncompressed size is the central directory's");
   ck (Zip_MethodAt (a, 0, err) == 8 && Zip_MethodAt (a, 1, err) == 0,
       "deflated and stored are told apart");
   {
-    m9_sl_CHAR nm = Zip_NameAt (&pool, a, 2, err);
+    m9_sl_CHAR nm = Zip_NameAt ( a, 2, err);
     ck (nm.len == 8 && nm.p[3] == 0x00e9,
         "a UTF-8 name is decoded when the flag says it is UTF-8");
   }

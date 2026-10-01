@@ -139,12 +139,30 @@ process holding the port and nothing else.
    Par 4.1; probes `write-through-value-ptr`,
    `lend-value-ptr-as-var`.
 
-10. **The pool parameter appears exactly when the allocation outlives
-    the call.**  `NEW (pool, T, n)` -- pool FIRST (a reversed NEW is
-    refused by name).  `PTR T IN pool` cannot be RETURNed past its
-    pool's frame and cannot be DISPOSEd (the pool frees it).  Owned
-    `PTR T` (no IN) is DISPOSEd; a bare assignment MOVES it and the
-    source is dead.  `SHARED (x)` makes a refcounted handle.  Par
+10. **NEW's first argument says who frees the storage.**  `NEW (pool,
+    T, n)` a pool (pool FIRST; a reversed NEW is refused by name);
+    `NEW (T)` / `NEW (T, n)` nothing -- the FRAME, and a function
+    answering a pointer builds in its caller's arena, so `RETURN t`
+    of a frame pointer just works; `NEW (OWN, T)` one owning binding,
+    which is DISPOSEd, MOVED by a bare assignment, handed to a THREAD
+    or made `SHARED (x)`.  A frame pointer may do none of those and
+    may not be stored in a module variable or through a reference
+    parameter (refused by name, `frame-ptr-*` probes).  `PTR T IN
+    pool` cannot be RETURNed past its pool's frame and cannot be
+    DISPOSEd.  A VAR parameter of a pointer-bearing type brings its
+    object's pool in with it, so a mutator takes no pool and grows
+    its object with `NEW (d, T)`; the pool is named from the ROOT of
+    the argument, and an OWN parameter, a value parameter's component
+    or a VAR slice as that root is refused (`pool-root-*` probes).  A
+    local declared `IN pool` may not hold a frame value
+    (`frame-ptr-in-pooled-local`), and a frame value stored into a
+    FIELD of a local taints the local, so copying it into a module
+    variable is refused (`frame-ptr-record-copy`).  The library is
+    migrated: `DynStr.Append (d, s)`, `Time.Iso (t, 0)`, `Plot.Render
+    (title, x, y)` take no pool; a constructor that answers `PTR T
+    IN pool` (`Csv.Open`, `Frame.New`, `Mat.New`) and a reader that
+    answers INTO the caller's pool (`Io.ReadFile`, `Text.Keep`,
+    `DynStr.Bytes`) still do -- ask `m9c --json MODULE`.  Par
     4.2-4.3; tutorial 4; probes `pool-escape-on-return`,
     `use-after-move-assign`.
 

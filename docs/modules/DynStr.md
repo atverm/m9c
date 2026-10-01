@@ -19,7 +19,7 @@ pool -- where the string and every buffer it later outgrows
         refuses to let it outlive the pool it came from; that
         is why there is no Dispose.
 
-### AppendChar (VAR pool: POOL ; VAR d: PTR DString ; ch: CHAR)
+### AppendChar (VAR d: PTR DString ; ch: CHAR)
 
 one scalar onto the end, growing the buffer when it is full.
 
@@ -29,7 +29,7 @@ d  -- VAR because growing REPLACES the buffer; a caller
 ch -- any Unicode scalar.  No encoding happens here: CHAR is
       the unit, and octets are Bytes' business.
 
-### Append (VAR pool: POOL ; VAR d: PTR DString ; RO s: STR)
+### Append (VAR d: PTR DString ; RO s: STR)
 
 the whole of s onto the end, one AppendChar at a time.
 
@@ -62,7 +62,7 @@ slice-to-slice equality.  Json and ZarrStore had each grown a
 private copy before HttpServer became the third caller --
 inventory before manufacturing, consolidated here.
 
-### AppendI64 (VAR pool: POOL ; VAR d: PTR DString ; v: I64)
+### AppendI64 (VAR d: PTR DString ; v: I64)
 
 decimal text of v.  Negating MIN(I64) traps Overflow (par 2.1);
 no caller formats it today, and the trap is declared behavior,

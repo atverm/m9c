@@ -1,0 +1,7 @@
+(* EXPECT: SHARED needs an OWN allocation; s lives in the frame *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR g : SHARED PTR R ;
+PROCEDURE F () = VAR s : PTR R ;
+BEGIN s := NEW (R) ; g := SHARED (s) END F ;
+END m.

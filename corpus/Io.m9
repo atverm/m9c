@@ -146,7 +146,7 @@ PROCEDURE ReadFileBytes (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE
 PROCEDURE WriteFile (RO path: STR ; RO content: STR)
   RAISES ValueRange, IOError ;
 
-PROCEDURE ReadStdin (VAR pool: POOL ; cap: I64) : SLICE OF BYTE ;
+PROCEDURE ReadStdin (cap: I64) : SLICE OF BYTE ;
   (* one read(2) from standard input: up to cap bytes, and an EMPTY
      slice at end of input.  The whole-file rule above is for files;
      a stream has no whole, and a language server frames its own
@@ -332,8 +332,8 @@ BEGIN
   (* M9 string literals carry no escapes, by design (par 2): a
      newline is a CHAR, so the line is composed rather than spelled *)
   d := DynStr.New (scratch) ;
-  DynStr.Append (scratch, d, s) ;
-  DynStr.AppendChar (scratch, d, 0AC) ;
+  DynStr.Append (d, s) ;
+  DynStr.AppendChar (d, 0AC) ;
   Write (DynStr.View (d))
 END WriteLine ;
 
@@ -343,7 +343,7 @@ VAR
   d : PTR DynStr.DString IN scratch ;
 BEGIN
   d := DynStr.New (scratch) ;
-  DynStr.AppendI64 (scratch, d, v) ;
+  DynStr.AppendI64 (d, v) ;
   Write (DynStr.View (d))
 END WriteI64 ;
 
@@ -364,8 +364,8 @@ VAR
   v : STR ;
 BEGIN
   d := DynStr.New (scratch) ;
-  DynStr.Append (scratch, d, s) ;
-  DynStr.AppendChar (scratch, d, 0AC) ;
+  DynStr.Append (d, s) ;
+  DynStr.AppendChar (d, 0AC) ;
   v := DynStr.View (d) ;      (* a designator: ADR needs storage *)
   PutErr (ADR (v), C.SizeT (LEN (v)))
 END ErrLine ;
@@ -552,13 +552,13 @@ BEGIN
   RETURN SLICE (b, 0, n)
 END ReadFileBytes ;
 
-PROCEDURE ReadStdin (VAR pool: POOL ; cap: I64) : SLICE OF BYTE =
+PROCEDURE ReadStdin (cap: I64) : SLICE OF BYTE =
 VAR
   b : SLICE OF BYTE ;
   n : I64 ;
 BEGIN
-  IF cap <= 0 THEN RETURN NEW (pool, BYTE, 0) END ;
-  b := NEW (pool, BYTE, cap) ;
+  IF cap <= 0 THEN RETURN NEW (BYTE, 0) END ;
+  b := NEW (BYTE, cap) ;
   n := I64 (ReadIn (ADR (b), C.SSizeT (cap))) ;
   IF n <= 0 THEN RETURN SLICE (b, 0, 0) END ;
   RETURN SLICE (b, 0, n)

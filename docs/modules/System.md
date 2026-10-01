@@ -115,7 +115,7 @@ the arguments after the program name, all of them, in order
 
 is the word `name` (say `--verbose`) among the options
 
-### Value (VAR pool: POOL ; RO name: STR ; RO dflt: STR) : STR RAISES ValueRange, IndexError
+### Value (RO name: STR ; RO dflt: STR) : STR RAISES ValueRange, IndexError
 
 the text after `name=` in the first option that carries it, else
 dflt: Value (pool, '--out', 'a.nc')

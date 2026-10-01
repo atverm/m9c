@@ -94,7 +94,7 @@ mistake the C API will not tell you about, and neither can this
 the next message, with ok FALSE at end of file.  End of file is
 not an error: it is how a walk stops.
 
-### BuildIndex (VAR pool: POOL ; RO data: SLICE OF BYTE) : Index RAISES Error, ValueRange, IndexError
+### BuildIndex (RO data: SLICE OF BYTE) : Index RAISES Error, ValueRange, IndexError
 
 where every message in a file begins and how long it is, found
 by walking the GRIB HEADERS ALONE -- no ecCodes, no handle, no
@@ -175,7 +175,7 @@ is the common one and has its own name above; this is for the
 others -- `pv`, the vertical coordinate coefficients, which
 the model's grid check reads to build akm and bkm.
 
-### ReadGrid2 (VAR pool: POOL ; m: PTR Message) : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange
+### ReadGrid2 (m: PTR Message) : GRID 2 OF F64 RAISES Error, Faults.SizeError, ValueRange
 
 the field as Nj by Ni, the shape the message declares.  Latitude
 first, because that is the order the values are stored in and

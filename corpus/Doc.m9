@@ -151,15 +151,16 @@ TYPE
 
 (* ---- rendering, through Print rather than beside it ---- *)
 
-PROCEDURE Qual (VAR pool: POOL ; k: Ast.Kid) : STR =
-VAR d : PTR DynStr.DString IN pool ;
+PROCEDURE Qual (k: Ast.Kid) : STR =
+VAR pool : POOL ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
   IF k IS SOME q THEN
-    DynStr.Append (pool, d, q.a) ;
+    DynStr.Append (d, q.a) ;
     IF LEN (q.b) > 0 THEN
-      DynStr.AppendChar (pool, d, '.') ;
-      DynStr.Append (pool, d, q.b)
+      DynStr.AppendChar (d, '.') ;
+      DynStr.Append (d, q.b)
     END
   END ;
   RETURN DynStr.View (d)
@@ -175,32 +176,32 @@ VAR
   i : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, p.a) ;
-  DynStr.Append (pool, d, ' (') ;
+  DynStr.Append (d, p.a) ;
+  DynStr.Append (d, ' (') ;
   IF p.nkids > 0 THEN
-    DynStr.Append (pool, d, Print.ParamsText (pool, p.kids[0]))
+    DynStr.Append (d, Print.ParamsText (p.kids[0]))
   END ;
-  DynStr.AppendChar (pool, d, ')') ;
+  DynStr.AppendChar (d, ')') ;
   IF p.nkids > 1 THEN
     IF p.kids[1] IS SOME rt THEN
-      DynStr.Append (pool, d, ' : ') ;
-      DynStr.Append (pool, d, Print.TypeText (pool, p.kids[1]))
+      DynStr.Append (d, ' : ') ;
+      DynStr.Append (d, Print.TypeText (pool, p.kids[1]))
     END
   END ;
   IF p.nkids > 2 THEN
     IF p.kids[2] IS SOME rs THEN
-      DynStr.Append (pool, d, ' RAISES ') ;
+      DynStr.Append (d, ' RAISES ') ;
       FOR i := 0 TO rs.nkids - 1 DO
-        IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
-        DynStr.Append (pool, d, Qual (pool, rs.kids[i]))
+        IF i > 0 THEN DynStr.Append (d, ', ') END ;
+        DynStr.Append (d, Qual (rs.kids[i]))
       END
     END
   END ;
   IF p.nkids > 3 THEN
     IF p.kids[3] IS SOME at THEN
-      DynStr.Append (pool, d, ' [') ;
-      DynStr.Append (pool, d, at.a) ;
-      DynStr.AppendChar (pool, d, ']')
+      DynStr.Append (d, ' [') ;
+      DynStr.Append (d, at.a) ;
+      DynStr.AppendChar (d, ']')
     END
   END ;
   RETURN DynStr.View (d)
@@ -215,7 +216,7 @@ VAR
   i, j : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.AppendChar (pool, d, ' ') ;
+  DynStr.AppendChar (d, ' ') ;
   IF p.nkids > 0 THEN
     IF p.kids[0] IS SOME pl THEN
       FOR i := 0 TO pl.nkids - 1 DO
@@ -224,8 +225,8 @@ BEGIN
             IF pm.kids[0] IS SOME il THEN
               FOR j := 0 TO il.nkids - 1 DO
                 IF il.kids[j] IS SOME id THEN
-                  DynStr.Append (pool, d, id.a) ;
-                  DynStr.AppendChar (pool, d, ' ')
+                  DynStr.Append (d, id.a) ;
+                  DynStr.AppendChar (d, ' ')
                 END
               END
             END
@@ -254,35 +255,35 @@ END HexDigit ;
    be escaped, and the three controls a comment can carry.  Anything
    else below 0x20 cannot come out of the lexer's comment channel,
    but is escaped rather than assumed away. *)
-PROCEDURE JsonStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ; RO s: STR)
+PROCEDURE JsonStr (VAR d: PTR DynStr.DString ; RO s: STR)
   RAISES IndexError =
 VAR
   i, c : I64 ;
   ch : CHAR ;
 BEGIN
-  DynStr.AppendChar (pool, d, '"') ;
+  DynStr.AppendChar (d, '"') ;
   FOR i := 0 TO LEN (s) - 1 DO
     ch := s[i] ;
     IF ch = '"' THEN
-      DynStr.Append (pool, d, '\"')
+      DynStr.Append (d, '\"')
     ELSIF ch = '\' THEN
-      DynStr.Append (pool, d, '\\')
+      DynStr.Append (d, '\\')
     ELSIF ch = 0AC THEN
-      DynStr.Append (pool, d, '\n')
+      DynStr.Append (d, '\n')
     ELSIF ch = 0DC THEN
-      DynStr.Append (pool, d, '\r')
+      DynStr.Append (d, '\r')
     ELSIF ch = 09C THEN
-      DynStr.Append (pool, d, '\t')
+      DynStr.Append (d, '\t')
     ELSIF ORD (ch) < 32 THEN
       c := ORD (ch) ;
-      DynStr.Append (pool, d, '\u00') ;
-      DynStr.AppendChar (pool, d, HexDigit (c DIV 16)) ;
-      DynStr.AppendChar (pool, d, HexDigit (c MOD 16))
+      DynStr.Append (d, '\u00') ;
+      DynStr.AppendChar (d, HexDigit (c DIV 16)) ;
+      DynStr.AppendChar (d, HexDigit (c MOD 16))
     ELSE
-      DynStr.AppendChar (pool, d, ch)
+      DynStr.AppendChar (d, ch)
     END
   END ;
-  DynStr.AppendChar (pool, d, '"')
+  DynStr.AppendChar (d, '"')
 END JsonStr ;
 
 (* the parameter list as `[{"names":[..],"mode":"VAR","type":".."}]`,
@@ -295,45 +296,45 @@ VAR
   i, j : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.AppendChar (pool, d, '[') ;
+  DynStr.AppendChar (d, '[') ;
   IF p.nkids > 0 THEN
     IF p.kids[0] IS SOME pl THEN
       FOR i := 0 TO pl.nkids - 1 DO
         IF pl.kids[i] IS SOME pm THEN
-          IF i > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
-          DynStr.Append (pool, d, '{"names":[') ;
+          IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
+          DynStr.Append (d, '{"names":[') ;
           IF pm.nkids > 0 THEN
             IF pm.kids[0] IS SOME il THEN
               FOR j := 0 TO il.nkids - 1 DO
                 IF il.kids[j] IS SOME id THEN
-                  IF j > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
-                  JsonStr (pool, d, id.a)
+                  IF j > 0 THEN DynStr.AppendChar (d, ',') END ;
+                  JsonStr (d, id.a)
                 END
               END
             END
           END ;
-          DynStr.Append (pool, d, '],"mode":') ;
+          DynStr.Append (d, '],"mode":') ;
           IF pm.f1 THEN
-            DynStr.Append (pool, d, '"VAR"')
+            DynStr.Append (d, '"VAR"')
           ELSIF pm.f2 THEN
-            DynStr.Append (pool, d, '"OWN"')
+            DynStr.Append (d, '"OWN"')
           ELSIF pm.f3 THEN
-            DynStr.Append (pool, d, '"RO"')
+            DynStr.Append (d, '"RO"')
           ELSE
-            DynStr.Append (pool, d, '""')
+            DynStr.Append (d, '""')
           END ;
-          DynStr.Append (pool, d, ',"type":') ;
+          DynStr.Append (d, ',"type":') ;
           IF pm.nkids > 1 THEN
-            JsonStr (pool, d, Print.TypeText (pool, pm.kids[1]))
+            JsonStr (d, Print.TypeText (pool, pm.kids[1]))
           ELSE
-            DynStr.Append (pool, d, '""')
+            DynStr.Append (d, '""')
           END ;
-          DynStr.AppendChar (pool, d, '}')
+          DynStr.AppendChar (d, '}')
         END
       END
     END
   END ;
-  DynStr.AppendChar (pool, d, ']') ;
+  DynStr.AppendChar (d, ']') ;
   RETURN DynStr.View (d)
 END ParamsJson ;
 
@@ -355,16 +356,16 @@ VAR
   i : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.AppendChar (pool, d, '[') ;
+  DynStr.AppendChar (d, '[') ;
   IF p.nkids > 2 THEN
     IF p.kids[2] IS SOME rs THEN
       FOR i := 0 TO rs.nkids - 1 DO
-        IF i > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
-        JsonStr (pool, d, Qual (pool, rs.kids[i]))
+        IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
+        JsonStr (d, Qual (rs.kids[i]))
       END
     END
   END ;
-  DynStr.AppendChar (pool, d, ']') ;
+  DynStr.AppendChar (d, ']') ;
   RETURN DynStr.View (d)
 END RaisesJson ;
 
@@ -477,14 +478,14 @@ BEGIN
   col := 0 ;
   WHILE i < n DO
     IF t[i] = 0AC THEN
-      DynStr.AppendChar (pool, d, t[i]) ;
+      DynStr.AppendChar (d, t[i]) ;
       atLineStart := TRUE ;
       col := 0
     ELSIF atLineStart AND t[i] = ' ' AND col < ind THEN
       col := col + 1                           (* drop the margin *)
     ELSE
       atLineStart := FALSE ;
-      DynStr.AppendChar (pool, d, t[i])
+      DynStr.AppendChar (d, t[i])
     END ;
     i := i + 1
   END ;
@@ -594,7 +595,7 @@ END ParamStart ;
    legitimately names `s`, which is a parameter of the first two and
    not of the third.  Checking against the owner alone reported eight
    false drifts across the corpus, all of this shape. *)
-PROCEDURE CheckParams (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE CheckParams (VAR d: PTR DynStr.DString ;
                        RO b: STR ; start: I64 ; RO names: STR ;
                        VAR st: Stats) =
 VAR
@@ -622,11 +623,11 @@ BEGIN
                document is what a reader sees, and a name that no
                longer exists in the signature is exactly the drift
                they would otherwise believe. *)
-            DynStr.Append (pool, d, '**drift: `') ;
-            DynStr.Append (pool, d, nm) ;
-            DynStr.Append (pool, d, '` is documented but is not a ') ;
-            DynStr.Append (pool, d, 'parameter here**') ;
-            DynStr.AppendChar (pool, d, 0AC)
+            DynStr.Append (d, '**drift: `') ;
+            DynStr.Append (d, nm) ;
+            DynStr.Append (d, '` is documented but is not a ') ;
+            DynStr.Append (d, 'parameter here**') ;
+            DynStr.AppendChar (d, 0AC)
           END
         END
       END ;
@@ -640,9 +641,9 @@ PROCEDURE Cat3 (RO a: STR ; RO b: STR ; RO c: STR) : STR =
 VAR d : PTR DynStr.DString IN HEAP ;
 BEGIN
   d := DynStr.New (HEAP) ;
-  DynStr.Append (HEAP, d, a) ;
-  DynStr.Append (HEAP, d, b) ;
-  DynStr.Append (HEAP, d, c) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
+  DynStr.Append (d, c) ;
   RETURN DynStr.View (d)
 END Cat3 ;
 
@@ -670,19 +671,20 @@ END KindWord ;
 
 (* the parameters of every declaration this comment documents: the
    owner, plus the run of `shared` declarations immediately above it *)
-PROCEDURE GroupParams (VAR pool: POOL ; RO anch: SLICE OF Anchor ;
+PROCEDURE GroupParams (RO anch: SLICE OF Anchor ;
                        nanch, owner: I64) : STR
   RAISES IndexError =
 VAR
+  pool : POOL ;
   d : PTR DynStr.DString IN pool ;
   i : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, anch[owner].params) ;
+  DynStr.Append (d, anch[owner].params) ;
   i := owner - 1 ;
   WHILE i >= 0 DO
     IF anch[i].shared THEN
-      DynStr.Append (pool, d, anch[i].params) ;
+      DynStr.Append (d, anch[i].params) ;
       i := i - 1
     ELSE
       i := -1
@@ -785,9 +787,9 @@ VAR
 BEGIN
   anch := NEW (pool, Anchor, MaxAnchor) ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '{"module":') ;
-  JsonStr (pool, d, modName) ;
-  DynStr.Append (pool, d, ',"doc":') ;
+  DynStr.Append (d, '{"module":') ;
+  JsonStr (d, modName) ;
+  DynStr.Append (d, ',"doc":') ;
 
   (* the first DEFINITION unit is the module; a file holds one *)
   first := TRUE ;
@@ -800,13 +802,13 @@ BEGIN
         st.mods := st.mods + 1 ;
         IF haveMod THEN
           st.modsDoc := st.modsDoc + 1 ;
-          JsonStr (pool, d, modDoc)
+          JsonStr (d, modDoc)
         ELSE
-          DynStr.Append (pool, d, 'null')
+          DynStr.Append (d, 'null')
         END ;
-        DynStr.Append (pool, d, ',"declarations":[') ;
+        DynStr.Append (d, ',"declarations":[') ;
         FOR i := 0 TO nanch - 1 DO
-          IF i > 0 THEN DynStr.AppendChar (pool, d, ',') END ;
+          IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
           IF anch[i].kind = Ast.NProcDecl THEN
             st.procs := st.procs + 1 ;
             IF anch[i].hasDoc THEN st.procsDoc := st.procsDoc + 1 END
@@ -814,56 +816,56 @@ BEGIN
             st.others := st.others + 1 ;
             IF anch[i].hasDoc THEN st.othersDoc := st.othersDoc + 1 END
           END ;
-          DynStr.Append (pool, d, '{"kind":') ;
-          JsonStr (pool, d, KindJson (anch[i].kind)) ;
-          DynStr.Append (pool, d, ',"name":') ;
-          JsonStr (pool, d, anch[i].name) ;
-          DynStr.Append (pool, d, ',"line":') ;
-          DynStr.AppendI64 (pool, d, anch[i].line) ;
+          DynStr.Append (d, '{"kind":') ;
+          JsonStr (d, KindJson (anch[i].kind)) ;
+          DynStr.Append (d, ',"name":') ;
+          JsonStr (d, anch[i].name) ;
+          DynStr.Append (d, ',"line":') ;
+          DynStr.AppendI64 (d, anch[i].line) ;
           IF anch[i].kind = Ast.NProcDecl THEN
-            DynStr.Append (pool, d, ',"signature":') ;
-            JsonStr (pool, d, anch[i].sig) ;
-            DynStr.Append (pool, d, ',"params":') ;
-            DynStr.Append (pool, d, anch[i].paramsJson) ;
-            DynStr.Append (pool, d, ',"result":') ;
+            DynStr.Append (d, ',"signature":') ;
+            JsonStr (d, anch[i].sig) ;
+            DynStr.Append (d, ',"params":') ;
+            DynStr.Append (d, anch[i].paramsJson) ;
+            DynStr.Append (d, ',"result":') ;
             IF LEN (anch[i].resultText) > 0 THEN
-              JsonStr (pool, d, anch[i].resultText)
+              JsonStr (d, anch[i].resultText)
             ELSE
-              DynStr.Append (pool, d, 'null')
+              DynStr.Append (d, 'null')
             END ;
-            DynStr.Append (pool, d, ',"raises":') ;
-            DynStr.Append (pool, d, anch[i].raisesJson) ;
-            DynStr.Append (pool, d, ',"attrib":') ;
+            DynStr.Append (d, ',"raises":') ;
+            DynStr.Append (d, anch[i].raisesJson) ;
+            DynStr.Append (d, ',"attrib":') ;
             IF LEN (anch[i].attribText) > 0 THEN
-              JsonStr (pool, d, anch[i].attribText)
+              JsonStr (d, anch[i].attribText)
             ELSE
-              DynStr.Append (pool, d, 'null')
+              DynStr.Append (d, 'null')
             END
           END ;
-          DynStr.Append (pool, d, ',"doc":') ;
+          DynStr.Append (d, ',"doc":') ;
           IF anch[i].hasDoc THEN
-            JsonStr (pool, d, anch[i].doc)
+            JsonStr (d, anch[i].doc)
           ELSE
-            DynStr.Append (pool, d, 'null')
+            DynStr.Append (d, 'null')
           END ;
-          DynStr.Append (pool, d, ',"shared":') ;
+          DynStr.Append (d, ',"shared":') ;
           IF anch[i].shared THEN
-            DynStr.Append (pool, d, 'true')
+            DynStr.Append (d, 'true')
           ELSE
-            DynStr.Append (pool, d, 'false')
+            DynStr.Append (d, 'false')
           END ;
-          DynStr.AppendChar (pool, d, '}')
+          DynStr.AppendChar (d, '}')
         END ;
-        DynStr.AppendChar (pool, d, ']')
+        DynStr.AppendChar (d, ']')
       END
     END
   END ;
   IF first THEN
     (* no definition unit at all: still a document, and an honest one *)
-    DynStr.Append (pool, d, 'null,"declarations":[]')
+    DynStr.Append (d, 'null,"declarations":[]')
   END ;
-  DynStr.AppendChar (pool, d, '}') ;
-  DynStr.AppendChar (pool, d, 0AC) ;
+  DynStr.AppendChar (d, '}') ;
+  DynStr.AppendChar (d, 0AC) ;
   RETURN DynStr.View (d)
 END Json ;
 
@@ -880,9 +882,9 @@ VAR
 BEGIN
   anch := NEW (pool, Anchor, MaxAnchor) ;
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, '# ') ;
-  DynStr.Append (pool, d, modName) ;
-  DynStr.AppendChar (pool, d, 0AC) ;
+  DynStr.Append (d, '# ') ;
+  DynStr.Append (d, modName) ;
+  DynStr.AppendChar (d, 0AC) ;
 
   FOR u := 0 TO root.nkids - 1 DO
     IF root.kids[u] IS SOME unit THEN
@@ -893,9 +895,9 @@ BEGIN
         st.mods := st.mods + 1 ;
         IF haveMod THEN st.modsDoc := st.modsDoc + 1 END ;
         IF LEN (modDoc) > 0 THEN
-          DynStr.AppendChar (pool, d, 0AC) ;
-          DynStr.Append (pool, d, modDoc) ;
-          DynStr.AppendChar (pool, d, 0AC)
+          DynStr.AppendChar (d, 0AC) ;
+          DynStr.Append (d, modDoc) ;
+          DynStr.AppendChar (d, 0AC)
         END ;
 
         FOR i := 0 TO nanch - 1 DO
@@ -908,33 +910,33 @@ BEGIN
             IF anch[i].hasDoc THEN st.othersDoc := st.othersDoc + 1 END
           END ;
 
-          DynStr.AppendChar (pool, d, 0AC) ;
-          DynStr.Append (pool, d, '### ') ;
+          DynStr.AppendChar (d, 0AC) ;
+          DynStr.Append (d, '### ') ;
           IF anch[i].kind = Ast.NProcDecl THEN
-            DynStr.Append (pool, d, anch[i].sig)
+            DynStr.Append (d, anch[i].sig)
           ELSE
-            DynStr.Append (pool, d, KindWord (anch[i].kind)) ;
-            DynStr.AppendChar (pool, d, ' ') ;
-            DynStr.Append (pool, d, anch[i].name)
+            DynStr.Append (d, KindWord (anch[i].kind)) ;
+            DynStr.AppendChar (d, ' ') ;
+            DynStr.Append (d, anch[i].name)
           END ;
-          DynStr.AppendChar (pool, d, 0AC) ;
-          DynStr.AppendChar (pool, d, 0AC) ;
+          DynStr.AppendChar (d, 0AC) ;
+          DynStr.AppendChar (d, 0AC) ;
 
           IF anch[i].hasDoc THEN
             b := anch[i].doc ;
             ps := ParamStart (b) ;
             IF ps >= 0 AND anch[i].kind = Ast.NProcDecl THEN
-              CheckParams (pool, d, b, ps,
-                           GroupParams (pool, anch, nanch, i), st)
+              CheckParams (d, b, ps,
+                           GroupParams (anch, nanch, i), st)
             END ;
-            DynStr.Append (pool, d, b) ;
-            DynStr.AppendChar (pool, d, 0AC)
+            DynStr.Append (d, b) ;
+            DynStr.AppendChar (d, 0AC)
           ELSIF anch[i].shared THEN
-            DynStr.Append (pool, d, '_(documented with the group below)_') ;
-            DynStr.AppendChar (pool, d, 0AC)
+            DynStr.Append (d, '_(documented with the group below)_') ;
+            DynStr.AppendChar (d, 0AC)
           ELSE
-            DynStr.Append (pool, d, '_(undocumented)_') ;
-            DynStr.AppendChar (pool, d, 0AC)
+            DynStr.Append (d, '_(undocumented)_') ;
+            DynStr.AppendChar (d, 0AC)
           END
         END
       END

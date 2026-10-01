@@ -17,13 +17,13 @@ typedef struct { uint32_t v[20]; } m9_arr_20_uint32_t;
 #endif
 
 DynStr_DString * DynStr_New (m9_pool *pool, m9_state *err);
-void DynStr_AppendChar (m9_pool *pool, DynStr_DString * *d, uint32_t ch, m9_state *err);
-void DynStr_Append (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err);
+void DynStr_AppendChar (DynStr_DString * *d, m9_pool *d_pool, uint32_t ch, m9_state *err);
+void DynStr_Append (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err);
 int64_t DynStr_Len (DynStr_DString * d, m9_state *err);
 m9_sl_CHAR DynStr_View (DynStr_DString * d, m9_state *err);
 bool DynStr_Equal (DynStr_DString * d, m9_sl_CHAR s, m9_state *err);
 bool DynStr_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
-void DynStr_AppendI64 (m9_pool *pool, DynStr_DString * *d, int64_t v, m9_state *err);
+void DynStr_AppendI64 (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state *err);
 m9_sl_BYTE DynStr_Bytes (m9_pool *pool, m9_sl_CHAR s, bool zeroTerm, m9_state *err);
 m9_sl_BYTE DynStr_Utf8 (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR DynStr_Chars (m9_pool *pool, m9_sl_BYTE b, m9_state *err);

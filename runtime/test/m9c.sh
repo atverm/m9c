@@ -418,8 +418,8 @@ static m9_sl_CHAR S (const char *s)
   return (m9_sl_CHAR){ sb, (int64_t) n }; }
 int main (void)
 {
-  m9_pool p = {0}; m9_state e = {0};
-  Json_Node *root = Json_Parse (&p, S ("{\"a\":[1,2,{\"b\":true}]}"), &e);
+  m9_state e = {0};   /* no frame: Parse builds in HEAP for a C caller */
+  Json_Node *root = Json_Parse (S ("{\"a\":[1,2,{\"b\":true}]}"), &e);
   Json_Node *a = Json_Field (root, S ("a"), &e);
   Json_Node *b = Json_Field (Json_Item (a, 2, &e), S ("b"), &e);
   printf ("%lld %s %s\n", (long long) Json_Count (a, &e),
@@ -687,7 +687,7 @@ for want in '"module":"DynStr"' '"kind":"procedure","name":"AppendChar"' \
 done
 python3 -c 'import json,sys; d=json.load(open("DynStr.json")); \
   p=[x for x in d["declarations"] if x["name"]=="AppendChar"][0]; \
-  assert p["params"][1]["mode"]=="VAR" and p["result"] is None, p; \
+  assert p["params"][0]["mode"]=="VAR" and p["result"] is None, p; \
   print("m9c: --json parses, %d declarations" % len(d["declarations"]))' ||
   { echo "FAIL: DynStr.json is not the JSON a reader expects"; exit 1; }
 if M9LIBRARY="$SRC" "$M9C" --json -c "$SRC/DynStr.m9" 2>jc.txt; then

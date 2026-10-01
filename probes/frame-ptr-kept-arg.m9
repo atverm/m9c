@@ -1,0 +1,8 @@
+(* EXPECT: a KEPT parameter cannot take a frame allocation *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR saved : OPT PTR R ;
+PROCEDURE Keep (KEPT p: PTR R) = BEGIN saved := SOME (p) END Keep ;
+PROCEDURE F () = BEGIN Keep (NEW (R)) END F ;
+BEGIN
+END m.

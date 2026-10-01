@@ -4,5 +4,5 @@ TYPE Rec = RECORD n : I64 END ;
 VAR y : I64 ;
 PROCEDURE Work (OWN r: PTR Rec) = BEGIN y := r.n ; DISPOSE (r) END Work ;
 PROCEDURE F () = VAR p : PTR Rec ;
-BEGIN p := NEW (Rec) ; THREAD (Work, p) ; p.n := 8 END F ;
+BEGIN p := NEW (OWN, Rec) ; THREAD (Work, p) ; p.n := 8 END F ;
 END m.

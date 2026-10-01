@@ -52,6 +52,8 @@ struct Csv_Table {
   bool parsed;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[22] = { 119u, 114u, 111u, 110u, 103u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 32u, 111u, 102u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
 static const uint32_t m9s1[13] = { 110u, 111u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 108u, 105u, 110u, 101u };
 static const uint32_t m9s2[3] = { 110u, 97u, 110u };
@@ -102,7 +104,7 @@ Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_state 
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Csv_Table * m9ret = NULL;
   err->res = m9res;
   m9ret = Csv_Build (pool, Io_ReadFileBytes (pool, path, err), opt, err);
@@ -110,6 +112,7 @@ Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_state 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -119,7 +122,7 @@ Csv_Table * Csv_OpenBytes (m9_pool *pool, m9_sl_BYTE src, Csv_Options opt, m9_st
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Csv_Table * m9ret = NULL;
   m9_sl_BYTE buf = {0}; (void) buf;
   int64_t i = 0; (void) i;
@@ -139,6 +142,7 @@ Csv_Table * Csv_OpenBytes (m9_pool *pool, m9_sl_BYTE src, Csv_Options opt, m9_st
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -240,7 +244,7 @@ L_ret: ;
   return m9ret;
 }
 
-void Csv_SetKind (Csv_Table * *t, int64_t c, Csv_Kind k, m9_state *err)
+void Csv_SetKind (Csv_Table * *t, m9_pool *t_pool, int64_t c, Csv_Kind k, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -274,11 +278,12 @@ void Csv_SetKind (Csv_Table * *t, int64_t c, Csv_Kind k, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, t_pool, (*t));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Csv_SetReal (Csv_Table * *t, int64_t c, m9_state *err)
+void Csv_SetReal (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -288,11 +293,12 @@ void Csv_SetReal (Csv_Table * *t, int64_t c, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, t_pool, (*t));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Csv_SetReal64 (Csv_Table * *t, int64_t c, m9_state *err)
+void Csv_SetReal64 (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -302,11 +308,12 @@ void Csv_SetReal64 (Csv_Table * *t, int64_t c, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, t_pool, (*t));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Csv_SetInt (Csv_Table * *t, int64_t c, m9_state *err)
+void Csv_SetInt (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -316,11 +323,12 @@ void Csv_SetInt (Csv_Table * *t, int64_t c, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, t_pool, (*t));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Csv_SetText (Csv_Table * *t, int64_t c, m9_state *err)
+void Csv_SetText (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -330,11 +338,12 @@ void Csv_SetText (Csv_Table * *t, int64_t c, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, t_pool, (*t));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Csv_SetSkip (Csv_Table * *t, int64_t c, m9_state *err)
+void Csv_SetSkip (Csv_Table * *t, m9_pool *t_pool, int64_t c, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -344,11 +353,12 @@ void Csv_SetSkip (Csv_Table * *t, int64_t c, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, t_pool, (*t));
   m9_pool_free (&m9frame);
   return;
 }
 
-void Csv_SetStamp (Csv_Table * *t, int64_t c, int64_t format, m9_state *err)
+void Csv_SetStamp (Csv_Table * *t, m9_pool *t_pool, int64_t c, int64_t format, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -360,6 +370,7 @@ void Csv_SetStamp (Csv_Table * *t, int64_t c, int64_t format, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, t_pool, (*t));
   m9_pool_free (&m9frame);
   return;
 }
@@ -452,7 +463,7 @@ L_ret: ;
   return m9ret;
 }
 
-void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
+void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -652,6 +663,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_state *err)
   (*t)->parsed = true;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, t_pool, (*t));
   m9_pool_free (&m9frame);
   return;
 }
@@ -661,7 +673,7 @@ m9_sl_F32 Csv_ColF32 (Csv_Table * t, int64_t c, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_F32 m9ret = {0};
   err->res = m9res;
   m9ret = (*(m9_sl_F32 *) m9_at (t->fcols.p, c, t->fcols.len, sizeof (m9_sl_F32), err));
@@ -669,6 +681,7 @@ m9_sl_F32 Csv_ColF32 (Csv_Table * t, int64_t c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -678,7 +691,7 @@ m9_sl_F64 Csv_ColF64 (Csv_Table * t, int64_t c, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_F64 m9ret = {0};
   err->res = m9res;
   m9ret = (*(m9_sl_F64 *) m9_at (t->dcols.p, c, t->dcols.len, sizeof (m9_sl_F64), err));
@@ -686,6 +699,7 @@ m9_sl_F64 Csv_ColF64 (Csv_Table * t, int64_t c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -695,7 +709,7 @@ m9_sl_I64 Csv_ColI64 (Csv_Table * t, int64_t c, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_I64 m9ret = {0};
   err->res = m9res;
   m9ret = (*(m9_sl_I64 *) m9_at (t->icols.p, c, t->icols.len, sizeof (m9_sl_I64), err));
@@ -703,6 +717,7 @@ m9_sl_I64 Csv_ColI64 (Csv_Table * t, int64_t c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -712,7 +727,7 @@ m9_sl_Time_Instant Csv_ColStamp (Csv_Table * t, int64_t c, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_Time_Instant m9ret = {0};
   err->res = m9res;
   m9ret = (*(m9_sl_Time_Instant *) m9_at (t->scols.p, c, t->scols.len, sizeof (m9_sl_Time_Instant), err));
@@ -720,6 +735,7 @@ m9_sl_Time_Instant Csv_ColStamp (Csv_Table * t, int64_t c, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -921,7 +937,7 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Csv_Table * m9ret = NULL;
   Csv_Table * t = NULL; (void) t;
   int64_t i = 0; (void) i;
@@ -1052,6 +1068,7 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1558,14 +1575,11 @@ void Csv_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Time_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

@@ -88,7 +88,7 @@ how many times c occurs.  Split allocates CountChar + 1 pieces,
 which is what this is for: sizing the vector before filling it,
 in one pass each, with no growable array in between.
 
-### Split (VAR pool: POOL ; RO s: STR ; sep: CHAR) : SLICE OF STR
+### Split (RO s: STR ; sep: CHAR) : SLICE OF STR
 
 n separators give n+1 pieces, empties included: 'a,,b' splits
 into three, and ',' into two empty ones.  Dropping empties is a
@@ -96,7 +96,7 @@ different function, and callers that want it can say so; a split
 that silently loses fields is how CSV readers corrupt data.
 The PIECES are views into s -- only the vector is allocated.
 
-### Fields (VAR pool: POOL ; RO s: STR ; sep: CHAR) : SLICE OF STR
+### Fields (RO s: STR ; sep: CHAR) : SLICE OF STR
 
 Split without the empty pieces: `a,,b,` gives [a, b], which is
 C's strtok and awk's default, where Split gives [a, '', b, ''].
@@ -115,23 +115,24 @@ were the forgotten ones (par 2.3).
 a + b, in pool rather than in the frame: for the result that is
 stored, where `+` is for the result that is used
 
-### Join (VAR pool: POOL ; parts: SLICE OF STR ; RO sep: STR) : STR
+### Join (parts: SLICE OF STR ; RO sep: STR) : STR
 
 the inverse of Split, and exact: Join (Split (s, c), c) is s
 again, because Split keeps its empties.
 
   parts -- BORROWED and copied out of; the result is new
-           storage in pool and shares nothing with them, so the
+           storage in the caller's frame (par 4.3) and shares
+           nothing with them, so the
            pieces may be views of a buffer the caller is about
            to reuse.
   sep   -- placed BETWEEN pieces, so an empty parts gives an
            empty result and a one-element parts gives that
            element with no separator at all.
 
-### Lower (VAR pool: POOL ; RO s: STR) : STR
+### Lower (RO s: STR) : STR
 
 _(documented with the group below)_
 
-### Upper (VAR pool: POOL ; RO s: STR) : STR
+### Upper (RO s: STR) : STR
 
 ASCII A..Z only; every other scalar passes through untouched

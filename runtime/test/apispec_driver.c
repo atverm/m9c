@@ -64,34 +64,34 @@ int main (int argc, char **argv)
   m9_args (argc, argv);
   err->res = &pool;
 
-  s = ApiSpec_NewSpec (&pool, sl ("t", b[0]), sl ("1.1", b[1]), err);
+  s = ApiSpec_NewSpec (sl ("t", b[0]), sl ("1.1", b[1]), err);
   ck (!err->exc, "NewSpec");
 
   /* an operation with no description and no parameters: both are
      OMITTED, not emitted empty */
-  ApiSpec_AddOp (&pool, &s, sl ("GET", b[2]), sl ("/version", b[3]),
+  ApiSpec_AddOp (&s, &pool,sl ("GET", b[2]), sl ("/version", b[3]),
                  sl ("Version", b[4]), sl ("", b[5]), 200,
                  sl ("application/json", b[6]), err);
   ck (!err->exc, "AddOp");
 
   /* a second method on the SAME path must join that path object */
-  ApiSpec_AddOp (&pool, &s, sl ("POST", b[7]), sl ("/version", b[8]),
+  ApiSpec_AddOp (&s, &pool,sl ("POST", b[7]), sl ("/version", b[8]),
                  sl ("Stamp", b[9]), sl ("", b[10]), 201,
                  sl ("text/plain", b[11]), err);
 
   /* escaping: a quote and a backslash must survive as escapes */
-  ApiSpec_AddOp (&pool, &s, sl ("GET", b[12]), sl ("/q", b[13]),
+  ApiSpec_AddOp (&s, &pool,sl ("GET", b[12]), sl ("/q", b[13]),
                  sl ("Q", b[14]), sl ("a \"b\" \\ c", b[15]), 200,
                  sl ("application/json", b[15]), err);
-  ApiSpec_AddParam (&pool, &s, sl ("id", b[16]), false, true,
+  ApiSpec_AddParam (&s, &pool,sl ("id", b[16]), false, true,
                     0 /* TyStr */, false, sl ("the id", b[17]), err);
-  ApiSpec_AddParam (&pool, &s, sl ("n", b[18]), false, false,
+  ApiSpec_AddParam (&s, &pool,sl ("n", b[18]), false, false,
                     1 /* TyNum */, true, sl ("", b[19]), err);
-  ApiSpec_AddParam (&pool, &s, sl ("store", b[20]), true, false,
+  ApiSpec_AddParam (&s, &pool,sl ("store", b[20]), true, false,
                     0, false, sl ("", b[21]), err);
   ck (!err->exc, "AddParam");
 
-  utf8 (ApiSpec_Render (&pool, s, err), got, sizeof got);
+  utf8 (ApiSpec_Render (s, err), got, sizeof got);
   ck (!err->exc, "Render");
 
   ck (strstr (got, "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"t\",\"version\":\"1.1\"}")

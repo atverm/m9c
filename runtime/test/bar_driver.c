@@ -81,7 +81,7 @@ int main (void)
   /* ---- 1. a plain vertical bar chart: four bars, filled ---- */
   Plot_ClearFigure (&err);
   Plot_AddBars (f64s (at, 4), f64s (v1, 4), 0, sl ("a", t1), &err);
-  svg = flat (Plot_Render (&pool, sl ("bars", t2), sl ("x", t3),
+  svg = flat (Plot_Render ( sl ("bars", t2), sl ("x", t3),
                            sl ("y", t4), &err), &n);
   ok ("a bar figure renders", !err.exc && n > 0);
   ok ("four bars, four rectangles (plus the white ground and the legend swatch)",
@@ -96,7 +96,7 @@ int main (void)
   Plot_SetBarStyle (Plot_BarVertical, Plot_BarGrouped, Plot_BarAtValue,
                     false, 0.8, &err);
   Plot_AddBars (f64s (at, 4), f64s (v1, 4), 0, sl ("a", t1), &err);
-  svg = flat (Plot_Render (&pool, sl ("outline", t2), sl ("x", t3),
+  svg = flat (Plot_Render ( sl ("outline", t2), sl ("x", t3),
                            sl ("y", t4), &err), &n);
   ok ("unfilled bars are outlines",
       count (svg, n, "fill=\"none\" stroke=") >= 4);
@@ -109,7 +109,7 @@ int main (void)
   Plot_SetBarStyle (Plot_BarHorizontal, Plot_BarGrouped, Plot_BarDiscrete,
                     true, 0.8, &err);
   Plot_AddBars (f64s (at, 4), f64s (v1, 4), 1, sl ("h", t1), &err);
-  svg = flat (Plot_Render (&pool, sl ("horizontal", t2), sl ("x", t3),
+  svg = flat (Plot_Render ( sl ("horizontal", t2), sl ("x", t3),
                            sl ("y", t4), &err), &n);
   ok ("horizontal bars render", !err.exc && count (svg, n, "<rect") == 6);
   {
@@ -131,7 +131,7 @@ int main (void)
                     true, 0.8, &err);
   Plot_AddBars (f64s (at, 4), f64s (v1, 4), 0, sl ("a", t1), &err);
   Plot_AddBars (f64s (at, 4), f64s (v2, 4), 1, sl ("b", t2), &err);
-  svg = flat (Plot_Render (&pool, sl ("stacked", t3), sl ("x", t4),
+  svg = flat (Plot_Render ( sl ("stacked", t3), sl ("x", t4),
                            sl ("y", t3), &err), &n);
   /* the ground, eight bars, and a legend swatch PER SERIES */
   ok ("two stacked series draw eight bars", count (svg, n, "<rect") == 11);
@@ -165,7 +165,7 @@ int main (void)
                     true, 0.8, &err);
   Plot_AddBars (f64s (at, 4), f64s (v1, 4), 0, sl ("a", t1), &err);
   Plot_SetBarErrors (0, f64s (e1, 4), &err);
-  svg = flat (Plot_Render (&pool, sl ("errors", t2), sl ("x", t3),
+  svg = flat (Plot_Render ( sl ("errors", t2), sl ("x", t3),
                            sl ("y", t4), &err), &n);
   ok ("a whisker for each usable error, and only those",
       count (svg, n, "stroke=\"#222\"") == 2);
@@ -176,7 +176,7 @@ int main (void)
   Plot_ClearFigure (&err);
   Plot_AddBars (f64s (at, 4), f64s (v1, 4), 0, sl ("a", t1), &err);
   Plot_SetBarColor (0, sl ("#cc3311", t2), &err);
-  svg = flat (Plot_Render (&pool, sl ("colour", t3), sl ("x", t4),
+  svg = flat (Plot_Render ( sl ("colour", t3), sl ("x", t4),
                            sl ("y", t3), &err), &n);
   ok ("the chosen colour is used", count (svg, n, "#cc3311") >= 4);
   ok ("and the palette colour is not", count (svg, n, "#1f77b4") == 0);
@@ -189,7 +189,7 @@ int main (void)
     Plot_ClearFigure (&err);
     Plot_SetLogY (true, &err);
     Plot_AddBars (f64s (at, 4), f64s (lv, 4), 0, sl ("a", t1), &err);
-    svg = flat (Plot_Render (&pool, sl ("log", t2), sl ("x", t3),
+    svg = flat (Plot_Render ( sl ("log", t2), sl ("x", t3),
                              sl ("y", t4), &err), &n);
     ok ("a log axis renders", !err.exc && n > 0);
     /* every decade the data spans is ticked, and each is labelled
@@ -212,7 +212,7 @@ int main (void)
     Plot_SetLogX (true, &err);
     Plot_SetLogY (true, &err);
     Plot_AddLine (f64s (lx, 4), f64s (ly, 4), 0, sl ("l", t1), &err);
-    svg = flat (Plot_Render (&pool, sl ("logline", t2), sl ("x", t3),
+    svg = flat (Plot_Render ( sl ("logline", t2), sl ("x", t3),
                              sl ("y", t4), &err), &n);
     ok ("a log line plot renders", !err.exc && n > 0);
     ok ("the unshowable point lifts the pen (two subpaths)",
@@ -225,7 +225,7 @@ int main (void)
             so the next figure is not the last one's ---- */
   Plot_ClearFigure (&err);
   Plot_AddBars (f64s (at, 4), f64s (v1, 4), 0, sl ("a", t1), &err);
-  svg = flat (Plot_Render (&pool, sl ("default again", t2), sl ("x", t3),
+  svg = flat (Plot_Render ( sl ("default again", t2), sl ("x", t3),
                            sl ("y", t4), &err), &n);
   ok ("ClearFigure restores filled, linear, grouped",
       count (svg, n, "stroke=\"none\"") >= 4 &&

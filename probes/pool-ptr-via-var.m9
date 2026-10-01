@@ -1,0 +1,12 @@
+(* EXPECT: an allocation in pool scratch dies with this frame; it cannot be stored through v, which outlives it (par 4.3) *)
+MODULE m ;
+TYPE Buf = RECORD n : I64 END ;
+TYPE Var = RECORD b : OPT PTR Buf END ;
+PROCEDURE Fill (VAR v: Var) =
+VAR scratch : POOL ; b : PTR Buf IN scratch ;
+BEGIN
+  b := NEW (scratch, Buf) ;
+  v.b := SOME (b)
+END Fill ;
+BEGIN
+END m.

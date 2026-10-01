@@ -71,8 +71,8 @@ BEGIN
     hd := DynStr.New (pool) ;
     i := 5 ;
     WHILE i < Io.ArgCount () DO
-      DynStr.Append (pool, hd, Io.Arg (pool, i)) ;
-      DynStr.AppendChar (pool, hd, 0AC) ;
+      DynStr.Append (hd, Io.Arg (pool, i)) ;
+      DynStr.AppendChar (hd, 0AC) ;
       i := i + 1
     END ;
     hdrs := DynStr.View (hd) ;

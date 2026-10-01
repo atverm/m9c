@@ -71,9 +71,9 @@ m9_sl_BYTE Http_Request (m9_pool *pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl
 m9_sl_CHAR Http_RequestText (m9_pool *pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_CHAR text, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err);
 m9_sl_CHAR Http_Header (m9_sl_CHAR headers, m9_sl_CHAR name, m9_state *err);
 Http_Client * Http_NewClient (m9_pool *pool, m9_state *err);
-m9_sl_BYTE Http_Send (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_BYTE body, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err);
-m9_sl_CHAR Http_SendText (m9_pool *pool, Http_Client * *cl, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_CHAR text, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err);
-void Http_CloseClient (Http_Client * *cl, m9_state *err);
+m9_sl_BYTE Http_Send (m9_pool *pool, Http_Client * *cl, m9_pool *cl_pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_BYTE body, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err);
+m9_sl_CHAR Http_SendText (m9_pool *pool, Http_Client * *cl, m9_pool *cl_pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_CHAR text, int64_t cap, int64_t *status, m9_sl_CHAR *respHeaders, m9_state *err);
+void Http_CloseClient (Http_Client * *cl, m9_pool *cl_pool, m9_state *err);
 int64_t Http_Kept (Http_Client * cl, m9_state *err);
 m9_sl_CHAR Http_CookieValue (Http_Client * cl, m9_sl_CHAR name, m9_state *err);
 

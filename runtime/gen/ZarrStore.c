@@ -69,6 +69,8 @@ struct ZarrStore_Array {
   ZarrStore_ChunkBuf * last;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[8] = { 104u, 116u, 116u, 112u, 115u, 58u, 47u, 47u };
 static const uint32_t m9s1[7] = { 104u, 116u, 116u, 112u, 58u, 47u, 47u };
 static const uint32_t m9s2[64] = { 111u, 110u, 108u, 121u, 32u, 104u, 116u, 116u, 112u, 58u, 47u, 47u, 32u, 97u, 110u, 100u, 32u, 104u, 116u, 116u, 112u, 115u, 58u, 47u, 47u, 32u, 115u, 116u, 111u, 114u, 101u, 115u, 59u, 32u, 102u, 105u, 108u, 101u, 115u, 32u, 97u, 114u, 114u, 105u, 118u, 101u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 110u, 32u, 79u, 83u, 32u, 109u, 111u, 100u, 117u, 108u, 101u };
@@ -128,16 +130,16 @@ static m9_sl_CHAR ZarrStore_CopyChars (m9_pool *pool, m9_sl_CHAR s, m9_state *er
 static bool ZarrStore_StartsWith (m9_sl_CHAR s, m9_sl_CHAR p, m9_state *err);
 static m9_sl_BYTE ZarrStore_Fetch (ZarrStore_Store * st, m9_pool *pool, m9_sl_CHAR rel, int64_t maxLen, m9_state *err);
 static int64_t ZarrStore_ItemBytes (ZarrStore_Dtype dt, m9_state *err);
-static int64_t ZarrStore_ChunkBytes (ZarrStore_Array * *a, m9_state *err);
+static int64_t ZarrStore_ChunkBytes (ZarrStore_Array * *a, m9_pool *a_pool, m9_state *err);
 static int64_t ZarrStore_ReadDims (Json_Node * sh, m9_arr_8_int64_t *out, m9_state *err);
 static bool ZarrStore_IntFillBytes (int64_t v, int64_t w, bool signed_, m9_sl_BYTE dest, m9_state *err);
 static int64_t ZarrStore_Sextet (uint32_t ch, m9_state *err);
 static bool ZarrStore_S1Fill (Json_Node * fv, int64_t *b, m9_state *err);
-static bool ZarrStore_SameCoords (ZarrStore_Array * *a, ZarrStore_ChunkBuf * p, m9_sl_I64 coords, m9_state *err);
-static void ZarrStore_Decompress (ZarrStore_Array * *a, m9_sl_BYTE raw, m9_sl_BYTE dest, m9_state *err);
-static ZarrStore_ChunkBuf * ZarrStore_FillChunk (ZarrStore_Array * *a, m9_state *err);
-static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_sl_I64 coords, m9_state *err);
-static ZarrStore_ChunkBuf * ZarrStore_Locate (ZarrStore_Array * *a, m9_sl_I64 idx, int64_t *ofs, m9_state *err);
+static bool ZarrStore_SameCoords (ZarrStore_Array * *a, m9_pool *a_pool, ZarrStore_ChunkBuf * p, m9_sl_I64 coords, m9_state *err);
+static void ZarrStore_Decompress (ZarrStore_Array * *a, m9_pool *a_pool, m9_sl_BYTE raw, m9_sl_BYTE dest, m9_state *err);
+static ZarrStore_ChunkBuf * ZarrStore_FillChunk (ZarrStore_Array * *a, m9_pool *a_pool, m9_state *err);
+static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_pool *a_pool, m9_sl_I64 coords, m9_state *err);
+static ZarrStore_ChunkBuf * ZarrStore_Locate (ZarrStore_Array * *a, m9_pool *a_pool, m9_sl_I64 idx, int64_t *ofs, m9_state *err);
 static double ZarrStore_PowByte (int64_t w, m9_state *err);
 static double ZarrStore_ElemF64 (m9_sl_BYTE buf, int64_t ofs, ZarrStore_Dtype dt, m9_state *err);
 static int64_t ZarrStore_ReadInt (m9_sl_BYTE buf, int64_t ofs, int64_t w, bool signed_, m9_state *err);
@@ -225,7 +227,7 @@ ZarrStore_Array * ZarrStore_OpenArray (ZarrStore_Store * s, m9_sl_CHAR path, m9_
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   ZarrStore_Array * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   ZarrStore_Array * a = NULL; (void) a;
@@ -242,13 +244,13 @@ ZarrStore_Array * ZarrStore_OpenArray (ZarrStore_Store * s, m9_sl_CHAR path, m9_
   a->last = NULL;
   d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(d), path, err);
+  DynStr_Append (&(d), &(scratch), path, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(d), ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err);
+  DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
   raw = ZarrStore_Fetch (s, &(scratch), DynStr_View (d, err), ZarrStore_MetaMax, err);
   if (err->exc) goto L_hdl_m9t1;
-  root = Json_Parse (&(scratch), DynStr_Chars (&(scratch), raw, err), err);
+  root = Json_Parse (DynStr_Chars (&(scratch), raw, err), err);
   if (err->exc) goto L_hdl_m9t1;
   { Json_Node * zf = Json_Field (root, ((m9_sl_CHAR){ (uint32_t *) m9s5, 11 }), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -527,12 +529,13 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-double ZarrStore_GetF64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_state *err)
+double ZarrStore_GetF64 (ZarrStore_Array * *a, m9_pool *a_pool, m9_sl_I64 idx, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -541,7 +544,7 @@ double ZarrStore_GetF64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_state *err)
   double m9ret = 0;
   int64_t ofs = 0; (void) ofs;
   ZarrStore_ChunkBuf * p = NULL; (void) p;
-  p = ZarrStore_Locate (a, idx, &(ofs), err);
+  p = ZarrStore_Locate (a, a_pool, idx, &(ofs), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = ZarrStore_ElemF64 (p->buf, ofs, (*a)->meta.dt, err);
@@ -549,11 +552,12 @@ double ZarrStore_GetF64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, a_pool, (*a));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-int64_t ZarrStore_GetI64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_state *err)
+int64_t ZarrStore_GetI64 (ZarrStore_Array * *a, m9_pool *a_pool, m9_sl_I64 idx, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -562,7 +566,7 @@ int64_t ZarrStore_GetI64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_state *err)
   int64_t m9ret = 0;
   int64_t ofs = 0; (void) ofs;
   ZarrStore_ChunkBuf * p = NULL; (void) p;
-  p = ZarrStore_Locate (a, idx, &(ofs), err);
+  p = ZarrStore_Locate (a, a_pool, idx, &(ofs), err);
   if (err->exc) goto L_ret;
   { __typeof__((*a)->meta.dt) m9t1 = (*a)->meta.dt;
   switch (m9t1.tag) {
@@ -585,19 +589,20 @@ int64_t ZarrStore_GetI64 (ZarrStore_Array * *a, m9_sl_I64 idx, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, a_pool, (*a));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-m9_sl_BYTE ZarrStore_ReadChunk (ZarrStore_Array * *a, m9_sl_I64 coords, m9_state *err)
+m9_sl_BYTE ZarrStore_ReadChunk (ZarrStore_Array * *a, m9_pool *a_pool, m9_sl_I64 coords, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_BYTE m9ret = {0};
   ZarrStore_ChunkBuf * p = NULL; (void) p;
-  p = ZarrStore_GetChunk (a, coords, err);
+  p = ZarrStore_GetChunk (a, a_pool, coords, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = ({ __typeof__(p->buf) m9t1 = p->buf; int64_t m9t1a = INT64_C(0), m9t1n = (p->buf).len; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
@@ -605,6 +610,8 @@ m9_sl_BYTE ZarrStore_ReadChunk (ZarrStore_Array * *a, m9_sl_I64 coords, m9_state
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_adopt_if (&m9frame, a_pool, (*a));
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -705,6 +712,7 @@ void ZarrStore_CloseArray (ZarrStore_Array * *a, m9_state *err)
   m9_dispose ((*a));
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a));
   m9_pool_free (&m9frame);
   return;
 }
@@ -794,7 +802,7 @@ static m9_sl_BYTE ZarrStore_Fetch (ZarrStore_Store * st, m9_pool *pool, m9_sl_CH
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_BYTE m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
   m9_sl_BYTE buf = {0}; (void) buf;
@@ -802,11 +810,11 @@ static m9_sl_BYTE ZarrStore_Fetch (ZarrStore_Store * st, m9_pool *pool, m9_sl_CH
   int64_t status = 0; (void) status;
   d = DynStr_New (pool, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (pool, &(d), st->root, err);
+  DynStr_Append (&(d), &((*pool)), st->root, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendChar (pool, &(d), 47u, err);
+  DynStr_AppendChar (&(d), &((*pool)), 47u, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (pool, &(d), rel, err);
+  DynStr_Append (&(d), &((*pool)), rel, err);
   if (err->exc) goto L_hdl_m9t1;
   buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), maxLen, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -848,6 +856,7 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -882,7 +891,7 @@ L_ret: ;
   return m9ret;
 }
 
-static int64_t ZarrStore_ChunkBytes (ZarrStore_Array * *a, m9_state *err)
+static int64_t ZarrStore_ChunkBytes (ZarrStore_Array * *a, m9_pool *a_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -906,6 +915,7 @@ static int64_t ZarrStore_ChunkBytes (ZarrStore_Array * *a, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, a_pool, (*a));
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1107,7 +1117,7 @@ L_ret: ;
   return m9ret;
 }
 
-static bool ZarrStore_SameCoords (ZarrStore_Array * *a, ZarrStore_ChunkBuf * p, m9_sl_I64 coords, m9_state *err)
+static bool ZarrStore_SameCoords (ZarrStore_Array * *a, m9_pool *a_pool, ZarrStore_ChunkBuf * p, m9_sl_I64 coords, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1133,11 +1143,12 @@ static bool ZarrStore_SameCoords (ZarrStore_Array * *a, ZarrStore_ChunkBuf * p, 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, a_pool, (*a));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static void ZarrStore_Decompress (ZarrStore_Array * *a, m9_sl_BYTE raw, m9_sl_BYTE dest, m9_state *err)
+static void ZarrStore_Decompress (ZarrStore_Array * *a, m9_pool *a_pool, m9_sl_BYTE raw, m9_sl_BYTE dest, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -1174,16 +1185,17 @@ static void ZarrStore_Decompress (ZarrStore_Array * *a, m9_sl_BYTE raw, m9_sl_BY
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, a_pool, (*a));
   m9_pool_free (&m9frame);
   return;
 }
 
-static ZarrStore_ChunkBuf * ZarrStore_FillChunk (ZarrStore_Array * *a, m9_state *err)
+static ZarrStore_ChunkBuf * ZarrStore_FillChunk (ZarrStore_Array * *a, m9_pool *a_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   ZarrStore_ChunkBuf * m9ret = NULL;
   ZarrStore_ChunkBuf * p = NULL; (void) p;
   int64_t n = 0; (void) n;
@@ -1192,7 +1204,7 @@ static ZarrStore_ChunkBuf * ZarrStore_FillChunk (ZarrStore_Array * *a, m9_state 
   int64_t w = 0; (void) w;
   p = (ZarrStore_ChunkBuf *) m9_pool_alloc (&((*a)->cache), sizeof (ZarrStore_ChunkBuf), 1, err);
   if (err->exc) goto L_ret;
-  p->buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*a)->cache), ZarrStore_ChunkBytes (a, err), err);
+  p->buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*a)->cache), ZarrStore_ChunkBytes (a, a_pool, err), err);
   if (err->exc) goto L_ret;
   { __typeof__((*a)->meta.dt) m9t1 = (*a)->meta.dt;
   switch (m9t1.tag) {
@@ -1245,16 +1257,18 @@ static ZarrStore_ChunkBuf * ZarrStore_FillChunk (ZarrStore_Array * *a, m9_state 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_adopt_if (&m9frame, a_pool, (*a));
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_sl_I64 coords, m9_state *err)
+static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_pool *a_pool, m9_sl_I64 coords, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   ZarrStore_ChunkBuf * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * d = NULL; (void) d;
@@ -1263,7 +1277,7 @@ static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_sl_I64 
   int64_t i = 0; (void) i;
   { ZarrStore_ChunkBuf * q = (*a)->last;
   if (q != NULL) {
-    bool m9t3 = ZarrStore_SameCoords (a, q, coords, err);
+    bool m9t3 = ZarrStore_SameCoords (a, a_pool, q, coords, err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t3) {
       err->res = m9res;
@@ -1273,9 +1287,9 @@ static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_sl_I64 
   } }
   d = DynStr_New (&(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(d), (*a)->path, err);
+  DynStr_Append (&(d), &(scratch), (*a)->path, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendChar (&(scratch), &(d), 47u, err);
+  DynStr_AppendChar (&(d), &(scratch), 47u, err);
   if (err->exc) goto L_hdl_m9t1;
   { int64_t m9t4to;
   i = INT64_C(0);
@@ -1283,13 +1297,13 @@ static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_sl_I64 
   if (err->exc) goto L_hdl_m9t1;
   for (; i <= m9t4to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_AppendChar (&(scratch), &(d), (*a)->meta.sep, err);
+      DynStr_AppendChar (&(d), &(scratch), (*a)->meta.sep, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    DynStr_AppendI64 (&(scratch), &(d), (*(int64_t *) m9_at (coords.p, i, coords.len, sizeof (int64_t), err)), err);
+    DynStr_AppendI64 (&(d), &(scratch), (*(int64_t *) m9_at (coords.p, i, coords.len, sizeof (int64_t), err)), err);
     if (err->exc) goto L_hdl_m9t1;
   } }
-  raw = ZarrStore_Fetch ((*a)->st, &(scratch), DynStr_View (d, err), m9_add_i64 (ZarrStore_ChunkBytes (a, err), INT64_C(1024), err), err);
+  raw = ZarrStore_Fetch ((*a)->st, &(scratch), DynStr_View (d, err), m9_add_i64 (ZarrStore_ChunkBytes (a, a_pool, err), INT64_C(1024), err), err);
   if (err->exc) goto L_hdl_m9t1;
   p = (ZarrStore_ChunkBuf *) m9_pool_alloc (&((*a)->cache), sizeof (ZarrStore_ChunkBuf), 1, err);
   if (err->exc) goto L_hdl_m9t1;
@@ -1301,9 +1315,9 @@ static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_sl_I64 
     (*(int64_t *) m9_at (p->coords.v, i, INT64_C(8), sizeof (int64_t), err)) = (*(int64_t *) m9_at (coords.p, i, coords.len, sizeof (int64_t), err));
     if (err->exc) goto L_hdl_m9t1;
   } }
-  p->buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*a)->cache), ZarrStore_ChunkBytes (a, err), err);
+  p->buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*a)->cache), ZarrStore_ChunkBytes (a, a_pool, err), err);
   if (err->exc) goto L_hdl_m9t1;
-  ZarrStore_Decompress (a, raw, p->buf, err);
+  ZarrStore_Decompress (a, a_pool, raw, p->buf, err);
   if (err->exc) goto L_hdl_m9t1;
   (*a)->last = p;
   err->res = m9res;
@@ -1314,7 +1328,7 @@ L_hdl_m9t1: ;
   if (err->exc == &ZarrStore_HttpStatus && err->i[0] == INT64_C(404)) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = ZarrStore_FillChunk (a, err);
+    m9ret = ZarrStore_FillChunk (a, a_pool, err);
     if (err->exc) goto L_ret;
     goto L_ret;
     goto L_dn_m9t2;
@@ -1331,17 +1345,19 @@ L_hdl_m9t1: ;
 L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_adopt_if (&m9frame, a_pool, (*a));
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-static ZarrStore_ChunkBuf * ZarrStore_Locate (ZarrStore_Array * *a, m9_sl_I64 idx, int64_t *ofs, m9_state *err)
+static ZarrStore_ChunkBuf * ZarrStore_Locate (ZarrStore_Array * *a, m9_pool *a_pool, m9_sl_I64 idx, int64_t *ofs, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   ZarrStore_ChunkBuf * m9ret = NULL;
   m9_arr_8_int64_t cc = {0}; (void) cc;
   m9_arr_8_int64_t inc = {0}; (void) inc;
@@ -1372,7 +1388,7 @@ static ZarrStore_ChunkBuf * ZarrStore_Locate (ZarrStore_Array * *a, m9_sl_I64 id
     (*(int64_t *) m9_at (inc.v, d, INT64_C(8), sizeof (int64_t), err)) = m9_mod_i64 ((*(int64_t *) m9_at (idx.p, d, idx.len, sizeof (int64_t), err)), (*(int64_t *) m9_at ((*a)->meta.chunks.v, d, INT64_C(8), sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
   } }
-  p = ZarrStore_GetChunk (a, ((m9_sl_I64){ (cc).v, INT64_C(8) }), err);
+  p = ZarrStore_GetChunk (a, a_pool, ((m9_sl_I64){ (cc).v, INT64_C(8) }), err);
   if (err->exc) goto L_ret;
   (*ofs) = INT64_C(0);
   stride = INT64_C(1);
@@ -1393,6 +1409,8 @@ static ZarrStore_ChunkBuf * ZarrStore_Locate (ZarrStore_Array * *a, m9_sl_I64 id
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_adopt_if (&m9frame, a_pool, (*a));
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -1527,14 +1545,11 @@ void ZarrStore_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Json_m9init (err); if (err->exc) goto L_ret;
   Http_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

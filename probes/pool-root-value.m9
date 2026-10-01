@@ -1,0 +1,13 @@
+(* EXPECT: argument 1 of Grow: the pool of h is not known here, and the callee may allocate in it -- h is a value parameter (par 4.3) *)
+MODULE m ;
+TYPE Node = RECORD v : I64 ; next : PTR Node END ;
+PROCEDURE Grow (VAR n: PTR Node) =
+BEGIN
+  n.v := n.v + 1
+END Grow ;
+PROCEDURE Walk (h: PTR Node) =
+BEGIN
+  Grow (h.next)
+END Walk ;
+BEGIN
+END m.

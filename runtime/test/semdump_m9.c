@@ -34,8 +34,8 @@ static Ast_Node *parse_unit (const char *path, m9_state *err)
   Ast_Node *root;
 
   memset (&p, 0, sizeof p);
-  Parse_Init (&p, read_unit (path), err);
-  root = Parse_File (&pool, &p, err);
+  Parse_Init (&p, &pool,read_unit (path), err);
+  root = Parse_File (&pool, &p, &pool,err);
   if (err->exc) { fprintf (stderr, "%s: raised %s\n", path, err->exc->name);
                   exit (3); }
   if (p.nerr > 0) { fprintf (stderr, "%s: parse errors\n", path); exit (2); }

@@ -38,6 +38,17 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `unhandled RAISES ValueRange from Colour conversion` | an integer-to-enumeration conversion, Colour (i) or Mod.Type (i), can turn an integer that names no member into a value, so it RAISES ValueRange -- and a procedure that converts without declaring or handling that failure is refused, the same as I64 (x) on a value that might not fit | add RAISES ValueRange to the signature, or handle it with EXCEPT; the conversion is the checked inverse of ORD, and the exhaustive RAISES accounting reaches it like every other narrowing | `enum-conversion-no-raises` |
 | `FOR over an enumeration needs both bounds of one type, not m.Colour and m.Fruit` | a FOR loop over an enumeration walks the members of ONE enumeration in declaration order, so its two bounds must name that same type; giving Colour.Red as the low bound and a member of a different enumeration as the high bound has no meaning, since members of unrelated enumerations are not comparable | make both bounds members of the one type -- FOR c := Colour.Red TO Colour.Blue; a loop that must cross two enumerations is two loops, or a conversion through ORD if the ordinals really are meant to line up | `for-enum-bounds-differ` |
 | `FOR over an enumeration takes no BY step` | BY names an integer stride and an enumeration's members are not numbers to step over -- the loop already visits every member from the low bound to the high one, with nothing between them to skip -- so BY on an enumeration bound is refused | drop the BY: FOR c := Colour.Red TO Colour.Blue visits Red, Green, Blue in order; if you need to skip members, guard the body with an IF or CASE rather than striding the loop | `for-enum-takes-no-step` |
+| `a KEPT parameter cannot take the answer of Label` | a string a function built with `+` is re-homed into its caller's frame and dies with it; a KEPT parameter would retain it past that frame (par 2.3, 4.1) | Text.Keep (pool, s) into a pool the keeper can see, or build the string in that pool | `frame-answer-kept-arg` |
+| `the answer of Make dies with this frame; it cannot be stored in module variable saved` | a function that takes no pool and answers a pointer built in its body (a NEW with no pool, a `+`, a local POOL for a string) answers storage that lives in ITS CALLER's frame (par 4.3, rule 1); a module variable outlives that frame | give the callee a pool to build in -- NEW (pool, T) with the caller's pool, or NEW (HEAP, T) -- or copy the answer into a durable pool before storing it | `frame-answer-to-modvar` |
+| `the frame owns p; it is freed at exit, not by DISPOSE` | the frame owns its allocations and frees them as a unit at exit; there is nothing for DISPOSE to free | drop the DISPOSE, or allocate with NEW (OWN, T) if one binding must own and free it (par 4.2) | `frame-ptr-dispose` |
+| `a frame allocation dies with this frame; it cannot be held by n, which is declared IN a pool (par 4.3)` | a local declared IN a pool claims that pool's lifetime, and rule 2 of the pool elision plan hands that pool to every callee that grows the object -- a frame value held there would have its growth outlive its head (par 4.3) | drop the IN clause when the object dies with the frame, or allocate it in the pool it is declared in: NEW (pool, T) | `frame-ptr-in-pooled-local` |
+| `a KEPT parameter cannot take a frame allocation` | a KEPT parameter is retained past the call, and a frame allocation dies with the frame that made it (par 4.1) | allocate it in a pool the keeper can see -- NEW (pool, T) with the caller's pool, or NEW (HEAP, T) | `frame-ptr-kept-arg` |
+| `a frame allocation dies with this frame; it cannot be stored through n, which is declared IN a pool (par 4.3)` | a local declared IN a pool has a target that outlives the frame, so a component of it may not hold a frame value (par 4.3) | allocate the component in the pool the local is declared in: NEW (pool, T), or a callee that takes the pool | `frame-ptr-pooled-component` |
+| `the answer of Make dies with this frame; it cannot be stored in module variable tab (par 2.3)` | a frame value stored into a COMPONENT of a local (a record field, a pointer's target) taints the local as a whole, so copying that local into a module variable would hand the module storage that dies with the frame (par 2.3) | keep the record in the frame, or build the component in the pool the module variable owns: NEW (pool, T), or a callee that takes the pool | `frame-ptr-record-copy` |
+| `SHARED needs an OWN allocation; s lives in the frame` | SHARED needs the rc header only NEW (OWN, T) carries; a frame allocation has none and dies with the frame (par 4.2) | s := NEW (OWN, T) ; g := SHARED (s) | `frame-ptr-shared` |
+| `a frame allocation dies with this frame; it cannot be stored in module variable saved` | NEW (T) with no pool allocates from the procedure's frame, which dies when the frame returns; a module variable outlives it and would point at freed storage (par 4.3, docs/pool-elision-plan.md) | allocate it where the reader lives: NEW (HEAP, T) for the process's lifetime, NEW (pool, T) in a pool the caller owns, or return it -- a returned frame pointer keeps its storage | `frame-ptr-to-modvar` |
+| `THREAD (Work): cannot hand a frame allocation to a thread` | a frame allocation dies when this frame returns, and a thread does not wait for that | allocate what a thread receives with NEW (OWN, T): the thread owns it and DISPOSEs it (par 4.2, 6) | `frame-ptr-to-thread` |
+| `a frame allocation dies with this frame; it cannot be stored through n, which outlives it` | a frame allocation stored into a COMPONENT reached through a reference parameter (a field, an element, a pointer's target) is not seen by the exit adoption, which looks at the parameter itself, so the caller would hold freed storage (par 4.3) | assign the whole VAR parameter (its target is adopted at exit), or allocate in the pool the object lives in: NEW (pool, T) | `frame-ptr-via-var-component` |
 | `is an M9 module -- use IMPORT lib` | FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way) | use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later | `from-m9-module` |
 | `axis 2 of a GRID 2 OF F64 does not exist` | LEN (g, k) names an axis the grid's rank does not have (axes are 0-based) | a GRID 2 has axes 0 and 1 | `grid-len-axis-exists` |
 | `LEN of a GRID needs an axis` | a GRID has one extent per axis, so LEN needs to be told which | LEN (g, 0); LEN (s) without an axis is for slices | `grid-len-needs-an-axis` |
@@ -63,7 +74,13 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `no field w` | the record has no field of that name | read the record in docs/modules/<M>.md; a variant's payload is reached through CASE | `no-such-field` |
 | `opaque type not defined in the implementation` | the DEFINITION declares an opaque TYPE the IMPLEMENTATION never completes | TYPE T = RECORD ... END in the implementation | `opaque-not-defined` |
 | `OPT value used without IS SOME guard` | an OPT field was read without IS SOME; OPT is traced through fields, not only names | IF r.f IS SOME p THEN ... END, and use p inside (par 2.2) | `opt-through-field` |
+| `d is declared IN scratch but allocated in p (par 4.3)` | the IN clause of a declaration is the pool rule 2 hands to every callee that grows the object, so it must be the pool the object was allocated in; a buffer grown in the declared pool while the head lives in another dies at the wrong time (par 4.3) | declare the variable IN the pool it is allocated in, or allocate it in the pool it is declared in | `pool-clause-disagrees` |
+| `an allocation in pool scratch escapes its pool, which dies with this frame (par 4.3)` | the RETURN rule for a name declared IN a local pool, applied by SHAPE: a pool-less name holding an allocation made in a local pool, or a view of one, answers storage that is freed when the frame exits; a STR alone is re-homed at exit (par 4.3) | answer frame storage (NEW (T), rule 1) or allocate in a pool the caller hands in | `pool-escape-by-shape` |
 | `pool-interior pointer escapes its pool` | PTR T IN pool cannot outlive its pool, and this pool dies with the frame | take the pool as a VAR parameter so the caller owns it, or return by value (docs/pools.md) | `pool-escape-on-return` |
+| `an allocation in pool scratch dies with this frame; it cannot be stored through v, which outlives it (par 4.3)` | an allocation in a LOCAL pool, or a name declared IN one, dies with the frame and is neither re-homed nor adopted at exit, so it may not be stored through a reference parameter, in a module variable, through KEPT, or in a name declared IN a pool that outlives the frame (par 4.3) | allocate in the pool the destination lives in, or in the frame (NEW (T)) so that the store adopts it | `pool-ptr-via-var` |
+| `argument 1 of Grow: the pool of o is not known here, and the callee may allocate in it -- o is an OWN parameter (par 4.3)` | a VAR parameter of a pointer-bearing type carries the pool its object lives in, named from the ROOT of the argument (rule 2 of the pool elision plan); an OWN parameter's object is heap storage with no pool to name (par 4.3) | grow an owned object through a procedure that takes it OWN, or hold it in a pool and hand the pooled variable on | `pool-root-own` |
+| `argument 1 of Grow: the pool of h is not known here, and the callee may allocate in it -- h is a value parameter (par 4.3)` | the same hidden pool cannot be named for a component reached through a value parameter: the object is a borrow whose pool nobody stated (par 4.1, 4.3) | take the object as VAR, so its pool comes in with it | `pool-root-value` |
+| `a view into pool scratch dies with this frame; it cannot be stored through v, which outlives it (par 4.3)` | a view answered by a procedure that takes no pool and answers RO (DynStr.View) lives where its argument does; an argument in a LOCAL pool makes the view die with the frame, neither re-homed nor adopted at exit, so it may not be stored through a reference parameter, in a module variable, or through KEPT -- the zarr proxy read freed memory back as variable ids once a scratch pool had replaced a pool parameter (par 4.3) | build the string in the pool the record lives in -- take the pool as a parameter, or NEW (v, T) under rule 2 -- or copy it there with Text.Keep (pool, s) | `pool-view-via-var` |
 | `a field of procedure type must be OPT (par 2.2.3)` | a record field of procedure type starts zeroed like every field, and a zero procedure value cannot be called | declare the field OPT and read it through IS SOME (par 2.2.3) | `proc-field-must-be-opt` |
 | `PURE procedure calls through the procedure value k (par 3.2)` | a PURE body may call only PURE procedures, and a procedure value names no procedure the checker could look at | take the value out of the PURE procedure, or make the computation a named PURE procedure (par 3.2) | `proc-value-call-in-pure` |
 | `unhandled RAISES ValueRange from call to k` | a call through a procedure value raises what the TYPE declares, since nothing is known about which procedure runs | handle it, or add the exception to the caller's own RAISES (par 2.2.3, par 5) | `proc-value-call-raises` |
@@ -330,7 +347,7 @@ MODULE m ;
 TYPE R = RECORD v : I64 END ;
 VAR g : SHARED PTR R ; b : BOOL ; x : I64 ;
 PROCEDURE F () = VAR s : PTR R ;
-BEGIN s := NEW (R) ;
+BEGIN s := NEW (OWN, R) ;
 IF b THEN g := SHARED (s) END ;
 x := s.v END F ;
 END m.
@@ -444,6 +461,189 @@ BEGIN
   FOR c := Colour.Red TO Colour.Blue BY 2 DO
     Io.WriteI64 (7)
   END
+END m.
+```
+
+### frame-answer-kept-arg
+
+`a KEPT parameter cannot take the answer of Label`
+
+```
+MODULE m ;
+VAR saved : STR ;
+PROCEDURE Label (n: I64) : STR =
+BEGIN
+  IF n > 0 THEN RETURN 'n-' + 'positive' END ;
+  RETURN 'n-' + 'other'
+END Label ;
+PROCEDURE Keep (RO KEPT s: STR) = BEGIN saved := s END Keep ;
+PROCEDURE F () = BEGIN Keep (Label (2)) END F ;
+BEGIN
+END m.
+```
+
+### frame-answer-to-modvar
+
+`the answer of Make dies with this frame; it cannot be stored in module variable saved`
+
+```
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR saved : PTR R ;
+PROCEDURE Make (v: I64) : PTR R =
+VAR p : PTR R ;
+BEGIN
+  p := NEW (R) ;
+  p.v := v ;
+  RETURN p
+END Make ;
+PROCEDURE Keep () =
+BEGIN
+  saved := Make (3)
+END Keep ;
+BEGIN
+END m.
+```
+
+### frame-ptr-dispose
+
+`the frame owns p; it is freed at exit, not by DISPOSE`
+
+```
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F () = VAR p : PTR R ;
+BEGIN p := NEW (R) ; DISPOSE (p) END F ;
+END m.
+```
+
+### frame-ptr-in-pooled-local
+
+`a frame allocation dies with this frame; it cannot be held by n, which is declared IN a pool (par 4.3)`
+
+```
+MODULE m ;
+TYPE Node = RECORD v : I64 END ;
+PROCEDURE F (VAR p: POOL) =
+VAR n : PTR Node IN p ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := 1
+END F ;
+BEGIN
+END m.
+```
+
+### frame-ptr-kept-arg
+
+`a KEPT parameter cannot take a frame allocation`
+
+```
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR saved : OPT PTR R ;
+PROCEDURE Keep (KEPT p: PTR R) = BEGIN saved := SOME (p) END Keep ;
+PROCEDURE F () = BEGIN Keep (NEW (R)) END F ;
+BEGIN
+END m.
+```
+
+### frame-ptr-pooled-component
+
+`a frame allocation dies with this frame; it cannot be stored through n, which is declared IN a pool (par 4.3)`
+
+```
+MODULE m ;
+TYPE Node = RECORD names : SLICE OF STR END ;
+PROCEDURE F (VAR p: POOL) =
+VAR n : PTR Node IN p ;
+BEGIN
+  n := NEW (p, Node) ;
+  n.names := NEW (STR, 2)
+END F ;
+BEGIN
+END m.
+```
+
+### frame-ptr-record-copy
+
+`the answer of Make dies with this frame; it cannot be stored in module variable tab (par 2.3)`
+
+```
+MODULE m ;
+TYPE Info = RECORD names : SLICE OF STR END ;
+VAR tab : Info ;
+PROCEDURE Make () : SLICE OF STR =
+BEGIN
+  RETURN NEW (STR, 2)
+END Make ;
+PROCEDURE F () =
+VAR p : Info ;
+BEGIN
+  p.names := Make () ;
+  tab := p
+END F ;
+BEGIN
+END m.
+```
+
+### frame-ptr-shared
+
+`SHARED needs an OWN allocation; s lives in the frame`
+
+```
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR g : SHARED PTR R ;
+PROCEDURE F () = VAR s : PTR R ;
+BEGIN s := NEW (R) ; g := SHARED (s) END F ;
+END m.
+```
+
+### frame-ptr-to-modvar
+
+`a frame allocation dies with this frame; it cannot be stored in module variable saved`
+
+```
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR saved : PTR R ;
+PROCEDURE Keep () =
+VAR p : PTR R ;
+BEGIN
+  p := NEW (R) ;
+  saved := p
+END Keep ;
+BEGIN
+END m.
+```
+
+### frame-ptr-to-thread
+
+`THREAD (Work): cannot hand a frame allocation to a thread`
+
+```
+MODULE m ;
+TYPE Rec = RECORD n : I64 END ;
+PROCEDURE Work (OWN r: PTR Rec) = BEGIN r.n := 1 ; DISPOSE (r) END Work ;
+PROCEDURE F () =
+VAR p : PTR Rec ;
+BEGIN p := NEW (Rec) ; THREAD (Work, p) END F ;
+END m.
+```
+
+### frame-ptr-via-var-component
+
+`a frame allocation dies with this frame; it cannot be stored through n, which outlives it`
+
+```
+MODULE m ;
+TYPE Node = RECORD v : I64 ; next : OPT PTR Node END ;
+PROCEDURE Grow (VAR n: Node) =
+BEGIN
+  n.next := SOME (NEW (Node))
+END Grow ;
+BEGIN
 END m.
 ```
 
@@ -816,6 +1016,39 @@ VAR p : PTR R ; x : I64 ;
 BEGIN x := p.nxt.v END m.
 ```
 
+### pool-clause-disagrees
+
+`d is declared IN scratch but allocated in p (par 4.3)`
+
+```
+MODULE m ;
+TYPE Node = RECORD v : I64 END ;
+PROCEDURE F (VAR p: POOL) =
+VAR
+  scratch : POOL ;
+  d : PTR Node IN scratch ;
+BEGIN
+  d := NEW (p, Node) ;
+  d.v := 1
+END F ;
+BEGIN
+END m.
+```
+
+### pool-escape-by-shape
+
+`an allocation in pool scratch escapes its pool, which dies with this frame (par 4.3)`
+
+```
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+PROCEDURE F () : PTR R =
+VAR scratch : POOL ; p : PTR R ;
+BEGIN p := NEW (scratch, R) ; RETURN p END F ;
+BEGIN
+END m.
+```
+
 ### pool-escape-on-return
 
 `pool-interior pointer escapes its pool`
@@ -826,6 +1059,83 @@ TYPE R = RECORD v : I64 END ;
 PROCEDURE F () : PTR R = 
 VAR pool : POOL ; r : PTR R IN pool ;
 BEGIN r := NEW (pool, R) ; RETURN r END F ;
+END m.
+```
+
+### pool-ptr-via-var
+
+`an allocation in pool scratch dies with this frame; it cannot be stored through v, which outlives it (par 4.3)`
+
+```
+MODULE m ;
+TYPE Buf = RECORD n : I64 END ;
+TYPE Var = RECORD b : OPT PTR Buf END ;
+PROCEDURE Fill (VAR v: Var) =
+VAR scratch : POOL ; b : PTR Buf IN scratch ;
+BEGIN
+  b := NEW (scratch, Buf) ;
+  v.b := SOME (b)
+END Fill ;
+BEGIN
+END m.
+```
+
+### pool-root-own
+
+`argument 1 of Grow: the pool of o is not known here, and the callee may allocate in it -- o is an OWN parameter (par 4.3)`
+
+```
+MODULE m ;
+TYPE Node = RECORD v : I64 ; next : OPT PTR Node END ;
+PROCEDURE Grow (VAR n: PTR Node) =
+BEGIN
+  n.next := SOME (NEW (n, Node))
+END Grow ;
+PROCEDURE Take (OWN o: PTR Node) =
+BEGIN
+  Grow (o) ;
+  DISPOSE (o)
+END Take ;
+BEGIN
+END m.
+```
+
+### pool-root-value
+
+`argument 1 of Grow: the pool of h is not known here, and the callee may allocate in it -- h is a value parameter (par 4.3)`
+
+```
+MODULE m ;
+TYPE Node = RECORD v : I64 ; next : PTR Node END ;
+PROCEDURE Grow (VAR n: PTR Node) =
+BEGIN
+  n.v := n.v + 1
+END Grow ;
+PROCEDURE Walk (h: PTR Node) =
+BEGIN
+  Grow (h.next)
+END Walk ;
+BEGIN
+END m.
+```
+
+### pool-view-via-var
+
+`a view into pool scratch dies with this frame; it cannot be stored through v, which outlives it (par 4.3)`
+
+```
+MODULE m ;
+TYPE Buf = RECORD n : I64 ; s : STR END ;
+TYPE Var = RECORD id : STR END ;
+PROCEDURE View (b: PTR Buf) : RO STR =
+BEGIN RETURN SLICE (b.s, 0, b.n) END View ;
+PROCEDURE FillId (VAR v: Var) =
+VAR scratch : POOL ; b : PTR Buf IN scratch ;
+BEGIN
+  b := NEW (scratch, Buf) ;
+  v.id := View (b)
+END FillId ;
+BEGIN
 END m.
 ```
 
@@ -1061,7 +1371,7 @@ TYPE Rec = RECORD n : I64 END ;
 VAR y : I64 ;
 PROCEDURE Work (OWN r: PTR Rec) = BEGIN y := r.n ; DISPOSE (r) END Work ;
 PROCEDURE F () = VAR p : PTR Rec ;
-BEGIN p := NEW (Rec) ; THREAD (Work, p) ; p.n := 8 END F ;
+BEGIN p := NEW (OWN, Rec) ; THREAD (Work, p) ; p.n := 8 END F ;
 END m.
 ```
 
@@ -1151,7 +1461,7 @@ MODULE m ;
 TYPE R = RECORD v : I64 END ;
 VAR x : I64 ;
 PROCEDURE F () = VAR s : PTR R ;
-BEGIN s := NEW (R) ; DISPOSE (s) ; x := s.v END F ;
+BEGIN s := NEW (OWN, R) ; DISPOSE (s) ; x := s.v END F ;
 END m.
 ```
 
@@ -1164,7 +1474,7 @@ MODULE m ;
 TYPE R = RECORD v : I64 END ;
 VAR x : I64 ;
 PROCEDURE F () = VAR s, t : PTR R ;
-BEGIN s := NEW (R) ; t := s ; x := s.v ; DISPOSE (t) END F ;
+BEGIN s := NEW (OWN, R) ; t := s ; x := s.v ; DISPOSE (t) END F ;
 END m.
 ```
 
@@ -1177,7 +1487,7 @@ MODULE m ;
 TYPE R = RECORD v : I64 END ;
 VAR g : SHARED PTR R ; x : I64 ;
 PROCEDURE F () = VAR s : PTR R ;
-BEGIN s := NEW (R) ; g := SHARED (s) ; x := s.v END F ;
+BEGIN s := NEW (OWN, R) ; g := SHARED (s) ; x := s.v END F ;
 END m.
 ```
 

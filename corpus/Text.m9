@@ -67,16 +67,14 @@ PROCEDURE CountChar (RO s: STR ; c: CHAR) : I64 ;
      which is what this is for: sizing the vector before filling it,
      in one pass each, with no growable array in between.           *)
 
-PROCEDURE Split (VAR pool: POOL ; RO s: STR ; sep: CHAR)
-  : SLICE OF STR ;
+PROCEDURE Split (RO s: STR ; sep: CHAR) : SLICE OF STR ;
   (* n separators give n+1 pieces, empties included: 'a,,b' splits
      into three, and ',' into two empty ones.  Dropping empties is a
      different function, and callers that want it can say so; a split
      that silently loses fields is how CSV readers corrupt data.
      The PIECES are views into s -- only the vector is allocated.   *)
 
-PROCEDURE Fields (VAR pool: POOL ; RO s: STR ; sep: CHAR)
-  : SLICE OF STR ;
+PROCEDURE Fields (RO s: STR ; sep: CHAR) : SLICE OF STR ;
   (* Split without the empty pieces: `a,,b,` gives [a, b], which is
      C's strtok and awk's default, where Split gives [a, '', b, ''].
      The ONEFlux port carried this beside Split (Common.Tokens) *)
@@ -92,21 +90,21 @@ PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR ;
   (* a + b, in pool rather than in the frame: for the result that is
      stored, where `+` is for the result that is used *)
 
-PROCEDURE Join (VAR pool: POOL ; parts: SLICE OF STR ; RO sep: STR)
-  : STR ;
+PROCEDURE Join (parts: SLICE OF STR ; RO sep: STR) : STR ;
   (* the inverse of Split, and exact: Join (Split (s, c), c) is s
      again, because Split keeps its empties.
 
        parts -- BORROWED and copied out of; the result is new
-                storage in pool and shares nothing with them, so the
+                storage in the caller's frame (par 4.3) and shares
+                nothing with them, so the
                 pieces may be views of a buffer the caller is about
                 to reuse.
        sep   -- placed BETWEEN pieces, so an empty parts gives an
                 empty result and a one-element parts gives that
                 element with no separator at all.                   *)
 
-PROCEDURE Lower (VAR pool: POOL ; RO s: STR) : STR ;
-PROCEDURE Upper (VAR pool: POOL ; RO s: STR) : STR ;
+PROCEDURE Lower (RO s: STR) : STR ;
+PROCEDURE Upper (RO s: STR) : STR ;
   (* ASCII A..Z only; every other scalar passes through untouched *)
 
 END Text.
@@ -221,14 +219,13 @@ BEGIN
   RETURN TrimLeft (TrimRight (s))
 END Trim ;
 
-PROCEDURE Split (VAR pool: POOL ; RO s: STR ; sep: CHAR)
-  : SLICE OF STR =
+PROCEDURE Split (RO s: STR ; sep: CHAR) : SLICE OF STR =
 VAR
   parts : SLICE OF STR ;
   i, start, n : I64 ;
 BEGIN
   n := CountChar (s, sep) + 1 ;
-  parts := NEW (pool, STR, n) ;
+  parts := NEW (STR, n) ;
   n := 0 ;
   start := 0 ;
   FOR i := 0 TO LEN (s) - 1 DO
@@ -243,13 +240,12 @@ BEGIN
   RETURN parts
 END Split ;
 
-PROCEDURE Fields (VAR pool: POOL ; RO s: STR ; sep: CHAR)
-  : SLICE OF STR =
+PROCEDURE Fields (RO s: STR ; sep: CHAR) : SLICE OF STR =
 VAR
   parts : SLICE OF STR ;
   i, start, n : I64 ;
 BEGIN
-  parts := NEW (pool, STR, CountChar (s, sep) + 1) ;
+  parts := NEW (STR, CountChar (s, sep) + 1) ;
   n := 0 ;
   start := 0 ;
   FOR i := 0 TO LEN (s) - 1 DO
@@ -289,48 +285,49 @@ BEGIN
   RETURN r
 END Cat ;
 
-PROCEDURE Join (VAR pool: POOL ; parts: SLICE OF STR ; RO sep: STR)
-  : STR =
+PROCEDURE Join (parts: SLICE OF STR ; RO sep: STR) : STR =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  s : STR ;
   i : I64 ;
 BEGIN
-  d := DynStr.New (pool) ;
+  (* `+` extends the arena's top allocation in place (par 2.3), so
+     this is one growing string, not a copy per piece *)
+  s := '' ;
   FOR i := 0 TO LEN (parts) - 1 DO
-    IF i > 0 THEN DynStr.Append (pool, d, sep) END ;
-    DynStr.Append (pool, d, parts[i])
+    IF i > 0 THEN s := s + sep END ;
+    s := s + parts[i]
   END ;
-  RETURN DynStr.View (d)
+  RETURN s
 END Join ;
 
-PROCEDURE Lower (VAR pool: POOL ; RO s: STR) : STR =
+PROCEDURE Lower (RO s: STR) : STR =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  r : STR ;
   i : I64 ;
   c : CHAR ;
 BEGIN
-  d := DynStr.New (pool) ;
+  r := '' ;
   FOR i := 0 TO LEN (s) - 1 DO
     c := s[i] ;
     IF c >= 'A' AND c <= 'Z' THEN c := LowerAlpha[ORD (c) - 65] END ;
-    DynStr.AppendChar (pool, d, c)
+    r := r + c
   END ;
-  RETURN DynStr.View (d)
+  RETURN r
 END Lower ;
 
-PROCEDURE Upper (VAR pool: POOL ; RO s: STR) : STR =
+PROCEDURE Upper (RO s: STR) : STR =
 VAR
-  d : PTR DynStr.DString IN pool ;
+  r : STR ;
   i : I64 ;
   c : CHAR ;
 BEGIN
-  d := DynStr.New (pool) ;
+  r := '' ;
   FOR i := 0 TO LEN (s) - 1 DO
     c := s[i] ;
     IF c >= 'a' AND c <= 'z' THEN c := UpperAlpha[ORD (c) - 97] END ;
-    DynStr.AppendChar (pool, d, c)
+    r := r + c
   END ;
-  RETURN DynStr.View (d)
+  RETURN r
 END Upper ;
 
 END Text.

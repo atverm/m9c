@@ -113,6 +113,6 @@ struct Ast_Node {
 };
 
 Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, m9_state *err);
-void Ast_Add (m9_pool *pool, Ast_Node * *n, Ast_Node * kid, m9_state *err);
+void Ast_Add (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, Ast_Node * kid, m9_state *err);
 
 #endif

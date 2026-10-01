@@ -68,12 +68,16 @@ int main (void)
   int64_t i;
   char name[32];
 
-  d = Dict_New (&pool, &err);
+  /* the frame form: a C caller has no frame, so err.res says where
+     New builds the head; Put then grows it in the pool named beside
+     the table (rule 2 of docs/pool-elision-plan.md) */
+  err.res = &pool;
+  d = Dict_New (&err);
   ok ("new is empty", Dict_Count (d, &err) == 0);
 
-  Dict_Put (&pool, &d, S ("alpha"), VInt (10), &err);
-  Dict_Put (&pool, &d, S ("beta"), VInt (20), &err);
-  Dict_Put (&pool, &d, S ("gamma"), VInt (30), &err);
+  Dict_Put (&d, &pool,S ("alpha"), VInt (10), &err);
+  Dict_Put (&d, &pool,S ("beta"), VInt (20), &err);
+  Dict_Put (&d, &pool,S ("gamma"), VInt (30), &err);
   ok ("three keys", Dict_Count (d, &err) == 3);
   ok ("get alpha", is_int (Dict_Get (d, S ("alpha"), &err), 10));
   ok ("get beta", is_int (Dict_Get (d, S ("beta"), &err), 20));
@@ -85,10 +89,10 @@ int main (void)
 
   /* one table, mixed values: the whole reason the value is a variant.
      A config or a database row is heterogeneous by nature. */
-  Dict_Put (&pool, &d, S ("host"), VStr ("localhost"), &err);
-  Dict_Put (&pool, &d, S ("ratio"), VReal (0.25), &err);
-  Dict_Put (&pool, &d, S ("debug"), VBool (true), &err);
-  Dict_Put (&pool, &d, S ("absent"), VNull (), &err);
+  Dict_Put (&d, &pool,S ("host"), VStr ("localhost"), &err);
+  Dict_Put (&d, &pool,S ("ratio"), VReal (0.25), &err);
+  Dict_Put (&d, &pool,S ("debug"), VBool (true), &err);
+  Dict_Put (&d, &pool,S ("absent"), VNull (), &err);
   v = Dict_Get (d, S ("host"), &err);
   ok ("string value tag", v.tag == Dict_Value_Str);
   ok ("string value bytes", slice_is (v.u.Str.s, "localhost"));
@@ -102,18 +106,18 @@ int main (void)
 
   /* replacing keeps the value AND the original position, and may
      change the variant: a row's column can be re-typed */
-  Dict_Put (&pool, &d, S ("alpha"), VStr ("eleven"), &err);
+  Dict_Put (&d, &pool,S ("alpha"), VStr ("eleven"), &err);
   v = Dict_Get (d, S ("alpha"), &err);
   ok ("replace changes variant", v.tag == Dict_Value_Str);
   ok ("replace does not grow", Dict_Count (d, &err) == 7);
   ok ("replace keeps position", slice_is (Dict_KeyAt (d, 0, &err), "alpha"));
-  Dict_Put (&pool, &d, S ("alpha"), VInt (11), &err);
+  Dict_Put (&d, &pool,S ("alpha"), VInt (11), &err);
 
   /* every bit pattern is a value some caller meant to store, so
      absence cannot be a sentinel -- it is an exception carrying the
      key that was missing */
-  ok ("find present", Dict_Find (d, S ("beta"), &v, &err) && is_int (v, 20));
-  ok ("find absent is false", !Dict_Find (d, S ("nope"), &v, &err));
+  ok ("find present", Dict_Find (d, S ("beta"), &v, &pool, &err) && is_int (v, 20));
+  ok ("find absent is false", !Dict_Find (d, S ("nope"), &v, &pool, &err));
   ok ("find never raises", err.exc == NULL);
   Dict_Get (d, S ("nope"), &err);
   ok ("get absent raises", err.exc == &Dict_NotFound);
@@ -128,7 +132,7 @@ int main (void)
   for (i = 0; i < 200; i++)
     {
       snprintf (name, sizeof name, "k%lld", (long long) i);
-      Dict_Put (&pool, &d, S (name), VInt (i * 7), &err);
+      Dict_Put (&d, &pool,S (name), VInt (i * 7), &err);
     }
   ok ("count after growth", Dict_Count (d, &err) == 207);
   ok ("growth raised nothing", err.exc == NULL);
@@ -163,7 +167,7 @@ int main (void)
      table shows the change, because it never took a copy */
   {
     m9_sl_CHAR k = S ("mutable");
-    Dict_Put (&pool, &d, k, VInt (99), &err);
+    Dict_Put (&d, &pool,k, VInt (99), &err);
     ok ("borrowed key found before",
         is_int (Dict_Get (d, S ("mutable"), &err), 99));
     ((uint32_t *) k.p)[0] = 'M';

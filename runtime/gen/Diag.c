@@ -25,6 +25,8 @@ extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[40] = { 97u, 32u, 112u, 97u, 116u, 104u, 32u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 105u, 110u, 103u, 32u, 97u, 32u, 113u, 117u, 111u, 116u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 99u, 104u, 101u, 99u, 107u, 101u, 100u };
 static const uint32_t m9s1[3] = { 99u, 100u, 32u };
 static const uint32_t m9s2[4] = { 32u, 38u, 38u, 32u };
@@ -58,11 +60,11 @@ static const uint32_t m9s28[4] = { 92u, 117u, 48u, 48u };
 static uint32_t Diag_HexDigit (int64_t v, m9_state *err);
 static bool Diag_TakeI64 (m9_sl_CHAR s, int64_t *i, int64_t *v, m9_state *err);
 static bool Diag_HasQuote (m9_sl_CHAR s, m9_state *err);
-static void Diag_Quoted (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err);
+static void Diag_Quoted (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err);
 static m9_sl_CHAR Diag_OutText (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 
 
-bool Diag_Parse (m9_sl_CHAR line, Diag_Finding *f, m9_state *err)
+bool Diag_Parse (m9_sl_CHAR line, Diag_Finding *f, m9_pool *f_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -148,6 +150,7 @@ bool Diag_Parse (m9_sl_CHAR line, Diag_Finding *f, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f).msg.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -157,7 +160,7 @@ m9_sl_Diag_Finding Diag_One (m9_pool *pool, int64_t line, int64_t col, m9_sl_CHA
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_Diag_Finding m9ret = {0};
   m9_sl_Diag_Finding fs = {0}; (void) fs;
   fs = M9_POOL_SL (m9_sl_Diag_Finding, Diag_Finding, &((*pool)), INT64_C(1), err);
@@ -173,6 +176,7 @@ m9_sl_Diag_Finding Diag_One (m9_pool *pool, int64_t line, int64_t col, m9_sl_CHA
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -182,7 +186,7 @@ m9_sl_Diag_Finding Diag_Check (m9_pool *pool, m9_sl_CHAR m9c, m9_sl_CHAR flags, 
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_Diag_Finding m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   DynStr_DString * cmd = NULL; (void) cmd;
@@ -206,33 +210,33 @@ m9_sl_Diag_Finding Diag_Check (m9_pool *pool, m9_sl_CHAR m9c, m9_sl_CHAR flags, 
   }
   cmd = DynStr_New (&(scratch), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (&(scratch), &(cmd), 40u, err);
+  DynStr_AppendChar (&(cmd), &(scratch), 40u, err);
   if (err->exc) goto L_ret;
   if (((dir).len > INT64_C(0))) {
-    DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s1, 3 }), err);
+    DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s1, 3 }), err);
     if (err->exc) goto L_ret;
-    Diag_Quoted (&(scratch), &(cmd), dir, err);
+    Diag_Quoted (&(cmd), &(scratch), dir, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s2, 4 }), err);
+    DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s2, 4 }), err);
     if (err->exc) goto L_ret;
   }
-  DynStr_Append (&(scratch), &(cmd), m9c, err);
+  DynStr_Append (&(cmd), &(scratch), m9c, err);
   if (err->exc) goto L_ret;
   if (((flags).len > INT64_C(0))) {
-    DynStr_AppendChar (&(scratch), &(cmd), 32u, err);
+    DynStr_AppendChar (&(cmd), &(scratch), 32u, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(scratch), &(cmd), flags, err);
+    DynStr_Append (&(cmd), &(scratch), flags, err);
     if (err->exc) goto L_ret;
   }
-  DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s3, 9 }), err);
+  DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s3, 9 }), err);
   if (err->exc) goto L_ret;
-  Diag_Quoted (&(scratch), &(cmd), file, err);
+  Diag_Quoted (&(cmd), &(scratch), file, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s4, 4 }), err);
+  DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s4, 4 }), err);
   if (err->exc) goto L_ret;
-  Diag_Quoted (&(scratch), &(cmd), outFile, err);
+  Diag_Quoted (&(cmd), &(scratch), outFile, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s5, 5 }), err);
+  DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s5, 5 }), err);
   if (err->exc) goto L_ret;
   rc = Io_Run (DynStr_View (cmd, err), err);
   if (err->exc) goto L_ret;
@@ -274,7 +278,7 @@ m9_sl_Diag_Finding Diag_Check (m9_pool *pool, m9_sl_CHAR m9c, m9_sl_CHAR flags, 
     }
     line = ({ __typeof__(text) m9t5 = text; int64_t m9t5a = i, m9t5n = m9_sub_i64 (j, i, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
     if (err->exc) goto L_ret;
-    bool m9t6 = Diag_Parse (line, &((*(Diag_Finding *) m9_at (fs.p, n, fs.len, sizeof (Diag_Finding), err))), err);
+    bool m9t6 = Diag_Parse (line, &((*(Diag_Finding *) m9_at (fs.p, n, fs.len, sizeof (Diag_Finding), err))), err->res, err);
     if (err->exc) goto L_ret;
     if (m9t6) {
       mstart = m9_sub_i64 (j, ((*(Diag_Finding *) m9_at (fs.p, n, fs.len, sizeof (Diag_Finding), err)).msg).len, err);
@@ -313,13 +317,13 @@ m9_sl_Diag_Finding Diag_Check (m9_pool *pool, m9_sl_CHAR m9c, m9_sl_CHAR flags, 
   }
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s6, 10 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s6, 10 }), err);
   if (err->exc) goto L_ret;
   if ((rc >= INT64_C(256))) {
     rc = m9_div_i64 (rc, INT64_C(256), err);
     if (err->exc) goto L_ret;
   }
-  DynStr_AppendI64 (pool, &(d), rc, err);
+  DynStr_AppendI64 (&(d), &((*pool)), rc, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = Diag_One (pool, INT64_C(1), INT64_C(1), DynStr_View (d, err), err);
@@ -327,6 +331,7 @@ m9_sl_Diag_Finding Diag_Check (m9_pool *pool, m9_sl_CHAR m9c, m9_sl_CHAR flags, 
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -367,47 +372,47 @@ m9_sl_CHAR Diag_DocJson (m9_pool *pool, m9_sl_CHAR m9c, m9_sl_CHAR flags, m9_sl_
   } }
   docs = DynStr_New (&(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(docs), workDir, err);
+  DynStr_Append (&(docs), &(scratch), workDir, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(docs), ((m9_sl_CHAR){ (uint32_t *) m9s7, 5 }), err);
+  DynStr_Append (&(docs), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s7, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   cmd = DynStr_New (&(scratch), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s8, 9 }), err);
+  DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s8, 9 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Diag_Quoted (&(scratch), &(cmd), DynStr_View (docs, err), err);
+  Diag_Quoted (&(cmd), &(scratch), DynStr_View (docs, err), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s9, 7 }), err);
+  DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s9, 7 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Diag_Quoted (&(scratch), &(cmd), DynStr_View (docs, err), err);
+  Diag_Quoted (&(cmd), &(scratch), DynStr_View (docs, err), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s10, 12 }), err);
+  DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s10, 12 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(cmd), name, err);
+  DynStr_Append (&(cmd), &(scratch), name, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s11, 9 }), err);
+  DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s11, 9 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(cmd), m9c, err);
+  DynStr_Append (&(cmd), &(scratch), m9c, err);
   if (err->exc) goto L_hdl_m9t1;
   if (((flags).len > INT64_C(0))) {
-    DynStr_AppendChar (&(scratch), &(cmd), 32u, err);
+    DynStr_AppendChar (&(cmd), &(scratch), 32u, err);
     if (err->exc) goto L_hdl_m9t1;
-    DynStr_Append (&(scratch), &(cmd), flags, err);
+    DynStr_Append (&(cmd), &(scratch), flags, err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s12, 8 }), err);
+  DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s12, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(cmd), name, err);
+  DynStr_Append (&(cmd), &(scratch), name, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(cmd), ((m9_sl_CHAR){ (uint32_t *) m9s13, 14 }), err);
+  DynStr_Append (&(cmd), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s13, 14 }), err);
   if (err->exc) goto L_hdl_m9t1;
   rc = Io_Run (DynStr_View (cmd, err), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(docs), ((m9_sl_CHAR){ (uint32_t *) m9s14, 1 }), err);
+  DynStr_Append (&(docs), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s14, 1 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(docs), name, err);
+  DynStr_Append (&(docs), &(scratch), name, err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (&(scratch), &(docs), ((m9_sl_CHAR){ (uint32_t *) m9s15, 5 }), err);
+  DynStr_Append (&(docs), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s15, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   err->res = m9res;
   m9ret = Io_ReadFile (pool, DynStr_View (docs, err), err);
@@ -428,6 +433,7 @@ L_dn_m9t2: ;
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -449,7 +455,7 @@ m9_sl_CHAR Diag_Json (m9_pool *pool, m9_sl_Diag_Finding fs, m9_state *err)
   }
   d = DynStr_New (pool, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s17, 21 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s17, 21 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -457,25 +463,25 @@ m9_sl_CHAR Diag_Json (m9_pool *pool, m9_sl_Diag_Finding fs, m9_state *err)
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
     if ((i > INT64_C(0))) {
-      DynStr_AppendChar (pool, &(d), 44u, err);
+      DynStr_AppendChar (&(d), &((*pool)), 44u, err);
       if (err->exc) goto L_ret;
     }
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s18, 8 }), err);
+    DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s18, 8 }), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (pool, &(d), (*(Diag_Finding *) m9_at (fs.p, i, fs.len, sizeof (Diag_Finding), err)).line, err);
+    DynStr_AppendI64 (&(d), &((*pool)), (*(Diag_Finding *) m9_at (fs.p, i, fs.len, sizeof (Diag_Finding), err)).line, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s19, 7 }), err);
+    DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s19, 7 }), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (pool, &(d), (*(Diag_Finding *) m9_at (fs.p, i, fs.len, sizeof (Diag_Finding), err)).col, err);
+    DynStr_AppendI64 (&(d), &((*pool)), (*(Diag_Finding *) m9_at (fs.p, i, fs.len, sizeof (Diag_Finding), err)).col, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s20, 7 }), err);
+    DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s20, 7 }), err);
     if (err->exc) goto L_ret;
-    Diag_JStr (pool, &(d), (*(Diag_Finding *) m9_at (fs.p, i, fs.len, sizeof (Diag_Finding), err)).msg, err);
+    Diag_JStr (&(d), &((*pool)), (*(Diag_Finding *) m9_at (fs.p, i, fs.len, sizeof (Diag_Finding), err)).msg, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), 125u, err);
+    DynStr_AppendChar (&(d), &((*pool)), 125u, err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s21, 2 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s21, 2 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -488,61 +494,62 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Diag_LexJson (m9_pool *pool, m9_sl_CHAR src, m9_state *err)
+m9_sl_CHAR Diag_LexJson (m9_sl_CHAR src, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool pool = {0}; (void) pool;
   Lex_Lexer lx = {0}; (void) lx;
   Lex_Token t = {0}; (void) t;
   Lex_Comment cm = {0}; (void) cm;
   DynStr_DString * d = NULL; (void) d;
   bool first = false; (void) first;
   int64_t i = 0; (void) i;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s22, 11 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s22, 11 }), err);
   if (err->exc) goto L_ret;
   Lex_Collect (true, err);
   if (err->exc) goto L_ret;
-  Lex_Init (&(lx), src, err);
+  Lex_Init (&(lx), err->res, src, err);
   if (err->exc) goto L_ret;
   first = true;
   for (;;) {
-    Lex_Next (&(lx), &(t), err);
+    Lex_Next (&(lx), err->res, &(t), err->res, err);
     if (err->exc) goto L_ret;
     if ((t.kind == INT64_C(0))) {
       break;
     }
     if ((!first)) {
-      DynStr_AppendChar (pool, &(d), 44u, err);
+      DynStr_AppendChar (&(d), &(pool), 44u, err);
       if (err->exc) goto L_ret;
     }
     first = false;
-    DynStr_AppendChar (pool, &(d), 91u, err);
+    DynStr_AppendChar (&(d), &(pool), 91u, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (pool, &(d), t.kind, err);
+    DynStr_AppendI64 (&(d), &(pool), t.kind, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), 44u, err);
+    DynStr_AppendChar (&(d), &(pool), 44u, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (pool, &(d), t.line, err);
+    DynStr_AppendI64 (&(d), &(pool), t.line, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), 44u, err);
+    DynStr_AppendChar (&(d), &(pool), 44u, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (pool, &(d), t.col, err);
+    DynStr_AppendI64 (&(d), &(pool), t.col, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), 44u, err);
+    DynStr_AppendChar (&(d), &(pool), 44u, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (pool, &(d), (t.text).len, err);
+    DynStr_AppendI64 (&(d), &(pool), (t.text).len, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), 93u, err);
+    DynStr_AppendChar (&(d), &(pool), 93u, err);
     if (err->exc) goto L_ret;
   }
   Lex_Collect (false, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s23, 14 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s23, 14 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -552,25 +559,25 @@ m9_sl_CHAR Diag_LexJson (m9_pool *pool, m9_sl_CHAR src, m9_state *err)
     cm = Lex_ComAt (i, err);
     if (err->exc) goto L_ret;
     if ((i > INT64_C(0))) {
-      DynStr_AppendChar (pool, &(d), 44u, err);
+      DynStr_AppendChar (&(d), &(pool), 44u, err);
       if (err->exc) goto L_ret;
     }
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s24, 8 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s24, 8 }), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (pool, &(d), cm.line, err);
+    DynStr_AppendI64 (&(d), &(pool), cm.line, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s25, 7 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s25, 7 }), err);
     if (err->exc) goto L_ret;
-    DynStr_AppendI64 (pool, &(d), cm.col, err);
+    DynStr_AppendI64 (&(d), &(pool), cm.col, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s26, 8 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s26, 8 }), err);
     if (err->exc) goto L_ret;
-    Diag_JStr (pool, &(d), cm.text, err);
+    Diag_JStr (&(d), &(pool), cm.text, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (pool, &(d), 125u, err);
+    DynStr_AppendChar (&(d), &(pool), 125u, err);
     if (err->exc) goto L_ret;
   } }
-  DynStr_Append (pool, &(d), ((m9_sl_CHAR){ (uint32_t *) m9s27, 2 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s27, 2 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -579,11 +586,13 @@ m9_sl_CHAR Diag_LexJson (m9_pool *pool, m9_sl_CHAR src, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
-void Diag_JStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err)
+void Diag_JStr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -591,7 +600,7 @@ void Diag_JStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   int64_t i = 0; (void) i;
   int64_t c = 0; (void) c;
-  DynStr_AppendChar (pool, d, 34u, err);
+  DynStr_AppendChar (d, d_pool, 34u, err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -601,27 +610,28 @@ void Diag_JStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err)
     c = (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)));
     if (err->exc) goto L_ret;
     if (((c == INT64_C(0x22)) || (c == INT64_C(0x5C)))) {
-      DynStr_AppendChar (pool, d, 92u, err);
+      DynStr_AppendChar (d, d_pool, 92u, err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (pool, d, (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
+      DynStr_AppendChar (d, d_pool, (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
       if (err->exc) goto L_ret;
     } else {
       if ((c < INT64_C(0x20))) {
-        DynStr_Append (pool, d, ((m9_sl_CHAR){ (uint32_t *) m9s28, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s28, 4 }), err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, Diag_HexDigit (m9_div_i64 (c, INT64_C(16), err), err), err);
+        DynStr_AppendChar (d, d_pool, Diag_HexDigit (m9_div_i64 (c, INT64_C(16), err), err), err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (pool, d, Diag_HexDigit (m9_mod_i64 (c, INT64_C(16), err), err), err);
+        DynStr_AppendChar (d, d_pool, Diag_HexDigit (m9_mod_i64 (c, INT64_C(16), err), err), err);
         if (err->exc) goto L_ret;
     } else {
-      DynStr_AppendChar (pool, d, (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
+      DynStr_AppendChar (d, d_pool, (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
       if (err->exc) goto L_ret;
     } }
   } }
-  DynStr_AppendChar (pool, d, 34u, err);
+  DynStr_AppendChar (d, d_pool, 34u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -708,20 +718,21 @@ L_ret: ;
   return m9ret;
 }
 
-static void Diag_Quoted (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err)
+static void Diag_Quoted (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  DynStr_AppendChar (pool, d, 39u, err);
+  DynStr_AppendChar (d, d_pool, 39u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, d, s, err);
+  DynStr_Append (d, d_pool, s, err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, d, 39u, err);
+  DynStr_AppendChar (d, d_pool, 39u, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -768,14 +779,11 @@ void Diag_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Lex_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

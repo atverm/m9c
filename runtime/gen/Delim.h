@@ -22,10 +22,10 @@ typedef struct { int64_t v[1024]; } m9_arr_1024_int64_t;
 
 Delim_Reader * Delim_Open (m9_pool *pool, m9_sl_CHAR path, uint8_t delim, int64_t block, m9_state *err);
 Delim_Reader * Delim_OpenPush (m9_pool *pool, uint8_t delim, int64_t block, m9_state *err);
-int64_t Delim_Feed (Delim_Reader * *r, m9_sl_BYTE src, m9_state *err);
-void Delim_Finish (Delim_Reader * *r, m9_state *err);
+int64_t Delim_Feed (Delim_Reader * *r, m9_pool *r_pool, m9_sl_BYTE src, m9_state *err);
+void Delim_Finish (Delim_Reader * *r, m9_pool *r_pool, m9_state *err);
 bool Delim_Hungry (Delim_Reader * r, m9_state *err);
-bool Delim_Next (Delim_Reader * *r, m9_state *err);
+bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err);
 int64_t Delim_Count (Delim_Reader * r, m9_state *err);
 m9_sl_BYTE Delim_Field (Delim_Reader * r, int64_t i, m9_state *err);
 m9_sl_BYTE Delim_Line (Delim_Reader * r, m9_state *err);

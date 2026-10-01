@@ -1,0 +1,16 @@
+(* EXPECT: the answer of Make dies with this frame; it cannot be stored in module variable tab (par 2.3) *)
+MODULE m ;
+TYPE Info = RECORD names : SLICE OF STR END ;
+VAR tab : Info ;
+PROCEDURE Make () : SLICE OF STR =
+BEGIN
+  RETURN NEW (STR, 2)
+END Make ;
+PROCEDURE F () =
+VAR p : Info ;
+BEGIN
+  p.names := Make () ;
+  tab := p
+END F ;
+BEGIN
+END m.

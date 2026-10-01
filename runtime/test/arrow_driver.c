@@ -61,16 +61,16 @@ int main (int argc, char **argv)
   deps[0] = sl ("AA", s0); deps[1] = sl ("B", s1); deps[2] = sl ("CCC", s2);
 
   t = Arrow_New (&pool, 3, err);
-  Arrow_Meta (&pool, &t, sl ("data_passport", nb[0]), sl ("{\"n\":1}", nb[1]), err);
-  Arrow_Meta (&pool, &t, sl ("Conventions", nb[2]), sl ("CF-1.7", nb[3]), err);
-  Arrow_AddInt (&pool, &t, sl ("time", nb[4]), 7 /* TyTsNs */,
+  Arrow_Meta ( &t, &pool,sl ("data_passport", nb[0]), sl ("{\"n\":1}", nb[1]), err);
+  Arrow_Meta ( &t, &pool,sl ("Conventions", nb[2]), sl ("CF-1.7", nb[3]), err);
+  Arrow_AddInt (&pool, &t, &pool,sl ("time", nb[4]), 7 /* TyTsNs */,
                 (m9_sl_I64){ ts, 3 }, err);
-  Arrow_AddF32 (&pool, &t, sl ("lat", nb[5]), (m9_sl_F32){ lat, 3 }, err);
-  Arrow_AddInt (&pool, &t, sl ("qc", nb[6]), 0 /* TyI8 */,
+  Arrow_AddF32 (&pool, &t, &pool,sl ("lat", nb[5]), (m9_sl_F32){ lat, 3 }, err);
+  Arrow_AddInt (&pool, &t, &pool,sl ("qc", nb[6]), 0 /* TyI8 */,
                 (m9_sl_I64){ qc, 3 }, err);
-  Arrow_AddStr (&pool, &t, sl ("dep", nb[7]),
+  Arrow_AddStr (&pool, &t, &pool,sl ("dep", nb[7]),
                 (m9_sl_m9_sl_CHAR){ deps, 3 }, err);
-  Arrow_AddInt (&pool, &t, sl ("ci", nb[8]), 2 /* TyI32 */,
+  Arrow_AddInt (&pool, &t, &pool,sl ("ci", nb[8]), 2 /* TyI32 */,
                 (m9_sl_I64){ ci, 3 }, err);
   ck (err->exc == NULL, "a five-column table builds");
 
@@ -107,21 +107,21 @@ int main (int argc, char **argv)
   {
     Arrow_Table *r = Arrow_New (&pool, 3, err);
     m9_state e2 = {0}; e2.res = &pool;
-    Arrow_AddInt (&pool, &r, sl ("short", nb[9]), 3,
+    Arrow_AddInt (&pool, &r, &pool,sl ("short", nb[9]), 3,
                   (m9_sl_I64){ ts, 2 }, &e2);
     ck (e2.exc != NULL, "a column shorter than the table is refused");
   }
   {
     Arrow_Table *r = Arrow_New (&pool, 3, err);
     m9_state e2 = {0}; e2.res = &pool;
-    Arrow_AddInt (&pool, &r, sl ("wide", nb[10]), 0 /* TyI8 */,
+    Arrow_AddInt (&pool, &r, &pool,sl ("wide", nb[10]), 0 /* TyI8 */,
                   (m9_sl_I64){ wide, 3 }, &e2);
     ck (e2.exc != NULL, "300 in an int8 column is refused, not wrapped");
   }
   {
     Arrow_Table *r = Arrow_New (&pool, 3, err);
     m9_state e2 = {0}; e2.res = &pool;
-    Arrow_AddInt (&pool, &r, sl ("nope", nb[11]), 4 /* TyF32 */,
+    Arrow_AddInt (&pool, &r, &pool,sl ("nope", nb[11]), 4 /* TyF32 */,
                   (m9_sl_I64){ ts, 3 }, &e2);
     ck (e2.exc != NULL, "AddInt given a float type is refused");
   }

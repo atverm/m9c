@@ -260,9 +260,9 @@ int main (int argc, char **argv)
   ok ("Flag sees --verbose", System_Flag (S ("--verbose"), &e));
   ok ("Flag does not see --quiet", !System_Flag (S ("--quiet"), &e));
   ok ("Flag does not see -b, which is after the --", !System_Flag (S ("-b"), &e));
-  ok ("Value reads --out=x.nc", eq (System_Value (&pool, S ("--out"), S ("d"), &e), "x.nc"));
+  ok ("Value reads --out=x.nc", eq (System_Value ( S ("--out"), S ("d"), &e), "x.nc"));
   ok ("Value answers the default for an absent option",
-      eq (System_Value (&pool, S ("--in"), S ("d"), &e), "d"));
+      eq (System_Value ( S ("--in"), S ("d"), &e), "d"));
   args = System_Positional (&pool, &e);
   ok ("Positional is a and -b, the latter because of the --",
       args.len == 2 && eq (args.p[0], "a") && eq (args.p[1], "-b"));

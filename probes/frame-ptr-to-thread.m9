@@ -1,0 +1,8 @@
+(* EXPECT: THREAD (Work): cannot hand a frame allocation to a thread *)
+MODULE m ;
+TYPE Rec = RECORD n : I64 END ;
+PROCEDURE Work (OWN r: PTR Rec) = BEGIN r.n := 1 ; DISPOSE (r) END Work ;
+PROCEDURE F () =
+VAR p : PTR Rec ;
+BEGIN p := NEW (Rec) ; THREAD (Work, p) END F ;
+END m.

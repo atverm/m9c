@@ -91,9 +91,9 @@ int main (void)
     o = Csv_Defaults (&e);
     w = Csv_Open (&pool, S (FX), o, &e);
     ok ("f64 fixture opens", !e.exc && Csv_Rows (w, &e) == 3);
-    Csv_SetReal64 (&w, 0, &e);
-    Csv_SetReal64 (&w, 1, &e);
-    Csv_Parse (&pool, &w, &e);
+    Csv_SetReal64 (&w, &pool,0, &e);
+    Csv_SetReal64 (&w, &pool,1, &e);
+    Csv_Parse (&pool, &w, &pool, &e);
     ok ("f64 fixture parses", !e.exc);
     d = Csv_ColF64 (w, 0, &e);
     ok ("pi survives to the last digit",
@@ -107,8 +107,8 @@ int main (void)
     /* and the SAME file through the float32 kind cannot tell them
        apart, which is what makes the new kind worth having */
     w = Csv_Open (&pool, S (FX), o, &e);
-    Csv_SetReal (&w, 1, &e);
-    Csv_Parse (&pool, &w, &e);
+    Csv_SetReal (&w, &pool,1, &e);
+    Csv_Parse (&pool, &w, &pool, &e);
     f = Csv_ColF32 (w, 1, &e);
     ok ("float32 collapses them, as the header says it would",
         ((float *) f.p)[0] == ((float *) f.p)[1]);
@@ -130,8 +130,8 @@ int main (void)
       memset (raw, 'X', sizeof raw);
       ok ("and names its columns after the source is gone",
           strcmp (C (Csv_Name (&pool, w, 1, &e), buf, sizeof buf), "b") == 0);
-      Csv_SetReal64 (&w, 0, &e);
-      Csv_Parse (&pool, &w, &e);
+      Csv_SetReal64 (&w, &pool,0, &e);
+      Csv_Parse (&pool, &w, &pool, &e);
       d = Csv_ColF64 (w, 0, &e);
       ok ("and parses the same values", !e.exc && d.len == 3
           && ((double *) d.p)[0] == 3.141592653589793
@@ -159,9 +159,9 @@ int main (void)
     o.quoted = true;
     w = Csv_Open (&pool, S (FX), o, &e);
     ok ("a quoted newline is not a row", !e.exc && Csv_Rows (w, &e) == 2);
-    Csv_SetInt (&w, 0, &e);
-    Csv_SetText (&w, 1, &e);
-    Csv_Parse (&pool, &w, &e);
+    Csv_SetInt (&w, &pool,0, &e);
+    Csv_SetText (&w, &pool,1, &e);
+    Csv_Parse (&pool, &w, &pool, &e);
     ok ("and the table parses", !e.exc);
     ok ("the field keeps its newline and undoubles its quotes",
         strcmp (C (Csv_TextAt (&pool, w, 1, 0, &e), buf, sizeof buf),
@@ -209,8 +209,8 @@ int main (void)
     fclose (g);
     o = Csv_Defaults (&e);
     w = Csv_Open (&pool, S (FX), o, &e);
-    Csv_SetReal64 (&w, 0, &e);
-    Csv_Parse (&pool, &w, &e);
+    Csv_SetReal64 (&w, &pool,0, &e);
+    Csv_Parse (&pool, &w, &pool, &e);
     ok ("text fixture parses", !e.exc && Csv_Rows (w, &e) == 11);
     d = Csv_ColF64 (w, 0, &e);
     v = (double *) d.p;
@@ -228,8 +228,8 @@ int main (void)
     ok ("digits followed by letters are NaN", v[10] != v[10]);
     /* the same rule on the float32 kind, which shares the test */
     w = Csv_Open (&pool, S (FX), o, &e);
-    Csv_SetReal (&w, 0, &e);
-    Csv_Parse (&pool, &w, &e);
+    Csv_SetReal (&w, &pool,0, &e);
+    Csv_Parse (&pool, &w, &pool, &e);
     f = Csv_ColF32 (w, 0, &e);
     ok ("and the float32 kind refuses the same field",
         ((float *) f.p)[0] != ((float *) f.p)[0]
@@ -279,18 +279,18 @@ int main (void)
   /* the layout is part of the kind: YYYYMMDDhhmm rather than
      "a timestamp, somehow".  Both spellings, because both are API:
      the variant for a C caller, the setter for an M9 one. */
-  Csv_SetKind (&t, ts_start,
+  Csv_SetKind (&t, &pool,ts_start,
                (Csv_Kind){ Csv_Kind_Stamp, { { Csv_StampYmdHm } } }, &e);
-  Csv_SetStamp (&t, ts_end, Csv_StampYmdHm, &e);
+  Csv_SetStamp (&t, &pool,ts_end, Csv_StampYmdHm, &e);
   /* every other column is a measurement, and that has to be SAID:
      Open leaves a column Skip until a setter names its kind, so the
      242 of them are declared here, one by one */
   for (int64_t c = 0; c < Csv_Cols (t, &e); c++)
-    if (c != ts_start && c != ts_end) Csv_SetReal (&t, c, &e);
+    if (c != ts_start && c != ts_end) Csv_SetReal (&t, &pool,c, &e);
   ok ("the column kinds are accepted", !e.exc);
 
   clock_gettime (CLOCK_MONOTONIC, &t0);
-  Csv_Parse (&pool, &t, &e);
+  Csv_Parse (&pool, &t, &pool, &e);
   clock_gettime (CLOCK_MONOTONIC, &t1);
   ok ("Parse", !e.exc);
   if (e.exc) { printf ("  raised %s\n", e.exc->name); return 1; }

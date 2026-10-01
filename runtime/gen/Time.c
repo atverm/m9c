@@ -6,6 +6,8 @@
 extern double m9_now (void);
 extern void m9_sleep_ms (int64_t);
 
+static m9_pool m9mframe = {0};
+
 static double Time_FloorDiv (double x, double by, m9_state *err);
 static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_state *err);
 static int64_t Time_FloorDivI (int64_t a, int64_t b, m9_state *err);
@@ -221,51 +223,52 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_state *err)
+m9_sl_CHAR Time_Iso (Time_Instant t, int64_t decimals, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
+  m9_pool pool = {0}; (void) pool;
   Time_Civil c = {0}; (void) c;
   DynStr_DString * d = NULL; (void) d;
   c = Time_ToCivil (t, err);
   if (err->exc) goto L_ret;
-  d = DynStr_New (pool, err);
+  d = DynStr_New (&(pool), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (c.year, INT64_C(4), true, err), err);
+  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.year, INT64_C(4), true, err), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, &(d), 45u, err);
+  DynStr_AppendChar (&(d), &(pool), 45u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (c.month, INT64_C(2), true, err), err);
+  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.month, INT64_C(2), true, err), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, &(d), 45u, err);
+  DynStr_AppendChar (&(d), &(pool), 45u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (c.day, INT64_C(2), true, err), err);
+  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.day, INT64_C(2), true, err), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, &(d), 84u, err);
+  DynStr_AppendChar (&(d), &(pool), 84u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (c.hour, INT64_C(2), true, err), err);
+  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.hour, INT64_C(2), true, err), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, &(d), 58u, err);
+  DynStr_AppendChar (&(d), &(pool), 58u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (pool, &(d), Fmt_I64Pad (c.minute, INT64_C(2), true, err), err);
+  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.minute, INT64_C(2), true, err), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendChar (pool, &(d), 58u, err);
+  DynStr_AppendChar (&(d), &(pool), 58u, err);
   if (err->exc) goto L_ret;
   if ((decimals == INT64_C(0))) {
-    DynStr_Append (pool, &(d), Fmt_I64Pad (m9_i64_f64 ((double)(c.second), err), INT64_C(2), true, err), err);
+    DynStr_Append (&(d), &(pool), Fmt_I64Pad (m9_i64_f64 ((double)(c.second), err), INT64_C(2), true, err), err);
     if (err->exc) goto L_ret;
   } else {
     if ((c.second < 10.0)) {
-      DynStr_AppendChar (pool, &(d), 48u, err);
+      DynStr_AppendChar (&(d), &(pool), 48u, err);
       if (err->exc) goto L_ret;
     }
-    DynStr_Append (pool, &(d), Fmt_Fixed (c.second, decimals, err), err);
+    DynStr_Append (&(d), &(pool), Fmt_Fixed (c.second, decimals, err), err);
     if (err->exc) goto L_ret;
   }
-  DynStr_AppendChar (pool, &(d), 90u, err);
+  DynStr_AppendChar (&(d), &(pool), 90u, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = DynStr_View (d, err);
@@ -274,7 +277,9 @@ m9_sl_CHAR Time_Iso (m9_pool *pool, Time_Instant t, int64_t decimals, m9_state *
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&pool, m9res, m9ret, err);
   m9_pool_free (&m9frame);
+  m9_pool_free (&pool);
   return m9ret;
 }
 
@@ -668,13 +673,10 @@ void Time_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Fmt_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

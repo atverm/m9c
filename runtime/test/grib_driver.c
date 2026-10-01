@@ -120,7 +120,7 @@ int main (void)
 
   /* the grid, per axis */
   {
-    m9_gd2_double g = Grib_ReadGrid2 (&pool, m, &e);
+    m9_gd2_double g = Grib_ReadGrid2 ( m, &e);
     ok ("ReadGrid2 is Nj by Ni",
         !e.exc && g.n[0] == NJ && g.n[1] == NI);
     ok ("ReadGrid2 holds the same values",
@@ -134,7 +134,7 @@ int main (void)
   }
 
   /* release, and then use it: the C API would read freed memory */
-  Grib_Release (&m, &e);
+  Grib_Release (&m, &pool, &e);
   ok ("Release", !e.exc);
   {
     Grib_GetI64 (m, S ("Ni"), &e);
@@ -148,7 +148,7 @@ int main (void)
   /* the walk ends, and the end is not an error */
   m = Grib_Next (&pool, f, &have, &e);
   ok ("the walk ends without raising", !e.exc && !have);
-  Grib_Close (&f, &e);
+  Grib_Close (&f, &pool, &e);
 
   /* ---- the differential: the same file through the C API ---- */
   {
@@ -211,7 +211,7 @@ int main (void)
         Grib_Message *rm = Grib_Next (&pool, rf, &have, &e);
         if (e.exc || !have) break;
         ch = codes_grib_handle_new_from_file (NULL, fp, &cerr);
-        if (ch == NULL) { mism++; Grib_Release (&rm, &e); break; }
+        if (ch == NULL) { mism++; Grib_Release (&rm, &pool, &e); break; }
         {
           long cni = 0, cnj = 0, clev = 0;
           size_t csz = 0, slen = 64;
@@ -246,7 +246,7 @@ int main (void)
           }
         }
         codes_handle_delete (ch);
-        Grib_Release (&rm, &e);
+        Grib_Release (&rm, &pool, &e);
         n++;
       }
       clock_gettime (CLOCK_MONOTONIC, &t1);
@@ -259,7 +259,7 @@ int main (void)
               + 1e-9 * (double) (t1.tv_nsec - t0.tv_nsec));
       free (mv); free (cv);
       if (fp) fclose (fp);
-      Grib_Close (&rf, &e);
+      Grib_Close (&rf, &pool, &e);
     }
   }
 

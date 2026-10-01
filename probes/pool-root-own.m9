@@ -1,0 +1,14 @@
+(* EXPECT: argument 1 of Grow: the pool of o is not known here, and the callee may allocate in it -- o is an OWN parameter (par 4.3) *)
+MODULE m ;
+TYPE Node = RECORD v : I64 ; next : OPT PTR Node END ;
+PROCEDURE Grow (VAR n: PTR Node) =
+BEGIN
+  n.next := SOME (NEW (n, Node))
+END Grow ;
+PROCEDURE Take (OWN o: PTR Node) =
+BEGIN
+  Grow (o) ;
+  DISPOSE (o)
+END Take ;
+BEGIN
+END m.

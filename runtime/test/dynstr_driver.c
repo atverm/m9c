@@ -28,10 +28,10 @@ int main (void)
   DynStr_DString *d = DynStr_New (&pool, &err);
   ck (err.exc == NULL && d != NULL, "New");
 
-  DynStr_Append (&pool, &d, sl ("Hello, M9", b1), &err);
+  DynStr_Append ( &d, &pool,sl ("Hello, M9", b1), &err);
   ck (err.exc == NULL, "Append raises nothing");
   ck (DynStr_Len (d, &err) == 9, "Len 9");
-  DynStr_AppendChar (&pool, &d, 33u /* ! */, &err);
+  DynStr_AppendChar ( &d, &pool,33u /* ! */, &err);
   ck (DynStr_Len (d, &err) == 10, "Len 10");
 
   m9_sl_CHAR v = DynStr_View (d, &err);
@@ -42,7 +42,7 @@ int main (void)
   ck (DynStr_Equal (d, sl ("Hello, M9!", b1), &err), "Equal");
 
   /* growth across the 16-char seed capacity */
-  DynStr_Append (&pool, &d, sl (" and more text to grow", b1), &err);
+  DynStr_Append ( &d, &pool,sl (" and more text to grow", b1), &err);
   ck (err.exc == NULL && DynStr_Len (d, &err) == 32, "grown to 32");
 
   /* AppendI64: negative near MIN, zero -- and AT MIN, where the
@@ -50,15 +50,15 @@ int main (void)
      wrapping example through Io.WriteI64; "near MIN" could not see
      it, the recurring lesson about tests that cannot fail) */
   DynStr_DString *mn = DynStr_New (&pool, &err);
-  DynStr_AppendI64 (&pool, &mn, INT64_MIN, &err);
+  DynStr_AppendI64 ( &mn, &pool,INT64_MIN, &err);
   ck (err.exc == NULL &&
       DynStr_Eq (DynStr_View (mn, &err),
                  sl ("-9223372036854775808", b1), &err),
       "AppendI64 at MIN");
   DynStr_DString *n = DynStr_New (&pool, &err);
-  DynStr_AppendI64 (&pool, &n, INT64_C(-1234567890123456789), &err);
-  DynStr_AppendChar (&pool, &n, 32u, &err);
-  DynStr_AppendI64 (&pool, &n, 0, &err);
+  DynStr_AppendI64 ( &n, &pool,INT64_C(-1234567890123456789), &err);
+  DynStr_AppendChar ( &n, &pool,32u, &err);
+  DynStr_AppendI64 ( &n, &pool,0, &err);
   ck (err.exc == NULL &&
       DynStr_Eq (DynStr_View (n, &err), sl ("-1234567890123456789 0", b1),
                  &err),

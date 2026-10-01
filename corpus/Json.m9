@@ -25,10 +25,11 @@ EXCEPTION
   (* a RAISES clause may only cite an exception the reader can find
      (par 5); IndexError and ValueRange are predeclared, so not here. *)
 
-PROCEDURE Parse (VAR pool: POOL ; RO src: STR)
-  : PTR Node IN pool
+PROCEDURE Parse (RO src: STR) : PTR Node
   RAISES ParseError ;
-  (* the whole tree allocates from pool; free the pool, free the tree.
+  (* the whole tree is built in the caller's frame (par 4.3): it lives
+     as long as the caller does, and a caller that must keep it longer
+     Clones it into a pool.
      ParseError carries line and column -- errors are values.          *)
 
 PROCEDURE Field (obj: PTR Node ; RO name: STR)
@@ -99,7 +100,14 @@ PROCEDURE AsStr (n: PTR Node) : STR
      and could not read a path out of the file.  Found by the ported model's
      pathnames moving into the options document.                    *)
 
-PROCEDURE Text (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE ParseIn (VAR pool: POOL ; RO src: STR) : PTR Node IN pool
+  RAISES ParseError ;
+  (* Parse with the tree in pool: for a document a module keeps past
+     the frame that read it.  String payloads are VIEWS into src, as
+     Parse's are, so src must outlive the tree -- a file read into
+     the same pool, or a literal. *)
+
+PROCEDURE Text (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
   (* the DECODED text of a JSON string: escapes resolved the way
      json.loads resolves them -- quote, backslash, slash, the five
@@ -122,20 +130,20 @@ PROCEDURE StrIs (n: PTR Node ; RO s: STR) : BOOL ;
 
 PROCEDURE IsNull (n: PTR Node) : BOOL ;
 
-PROCEDURE CompactSorted (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE CompactSorted (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange, IndexError ;
   (* Compact with every object's members sorted by name -- the
      json.dumps(sort_keys=True, separators=(",", ":")) rendering the
      proxy's passportSha256 canonicalises over.  Same float refusal
      as Compact.                                                      *)
 
-PROCEDURE Pretty (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE Pretty (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
   (* json.dumps(indent=2): document order, two-space indentation,
      ": " after keys, one element per line, empty containers inline
      -- the rendering the proxy's saved passport files use.           *)
 
-PROCEDURE ReprText (VAR pool: POOL ; r: F64) : STR
+PROCEDURE ReprText (r: F64) : STR
   RAISES ValueRange ;
   (* a bare F64 exactly as json.dumps renders it -- Python repr for
      finite values, the NaN / Infinity tokens otherwise.  For
@@ -147,19 +155,19 @@ PROCEDURE ReprText (VAR pool: POOL ; r: F64) : STR
      ndjson rows -- so a composer that already HAS a buffer should call
      AppendF64 below and copy nothing.                                *)
 
-PROCEDURE AppendF64 (VAR pool: POOL ; VAR d: PTR DynStr.DString ; r: F64)
+PROCEDURE AppendF64 (VAR d: PTR DynStr.DString ; r: F64)
   RAISES ValueRange ;
   (* ReprText's own body, appending straight into d.  Identical bytes,
      no intermediate string: this is what a row emitter wants.        *)
 
-PROCEDURE NumText (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE NumText (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
   (* the number as Python str() renders it -- the digits for an
      integer, repr for a float.  TypeMismatch when n is not Num.     *)
 
 (* ---- building a document ------------------------------------- *)
 
-PROCEDURE AppendJString (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE AppendJString (VAR d: PTR DynStr.DString ;
                          RO t: STR)
   RAISES ValueRange ;
   (* t appended as a JSON string literal, quotes included -- the
@@ -195,10 +203,10 @@ PROCEDURE AppendJString (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
    a consolidated index of 100,000 entries, which is composed as
    text and always was.                                             *)
 
-PROCEDURE NewObj (VAR pool: POOL) : PTR Node IN pool ;
-PROCEDURE NewArr (VAR pool: POOL) : PTR Node IN pool ;
+PROCEDURE NewObj () : PTR Node ;
+PROCEDURE NewArr () : PTR Node ;
 
-PROCEDURE NewStr (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
+PROCEDURE NewStr (RO s: STR) : PTR Node
   RAISES ValueRange ;
   (* s is the string's VALUE, not document text.  It is escaped
      here, because a Node's Str payload is always DOCUMENT text --
@@ -208,12 +216,34 @@ PROCEDURE NewStr (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
      construction keeps built and parsed nodes indistinguishable,
      which is what lets one tree mix them.                          *)
 
-PROCEDURE NewI64 (VAR pool: POOL ; v: I64) : PTR Node IN pool ;
-PROCEDURE NewF64 (VAR pool: POOL ; r: F64) : PTR Node IN pool ;
-PROCEDURE NewBool (VAR pool: POOL ; b: BOOL) : PTR Node IN pool ;
-PROCEDURE NewNull (VAR pool: POOL) : PTR Node IN pool ;
+PROCEDURE NewI64 (v: I64) : PTR Node ;
+PROCEDURE NewF64 (r: F64) : PTR Node ;
+PROCEDURE NewBool (b: BOOL) : PTR Node ;
+PROCEDURE NewNull () : PTR Node ;
 
-PROCEDURE Name (VAR pool: POOL ; RO s: STR) : STR
+(* THE SAME CONSTRUCTORS WITH THE NODE IN A NAMED POOL, for a tree
+   that outlives the frame that builds it: a cache, a passport, a
+   store's metadata held by a server between requests.  The frame
+   forms above build in the caller's arena, which is right for a
+   tree that is composed and serialised in one frame and wrong for
+   one a module keeps -- the checker refuses a frame node stored
+   anywhere durable.  A node made here carries no frame taint, so a
+   helper that takes the tree VAR KEPT may make a member in the
+   tree's pool and Set it (`n := NewStrIn (pool, v) ; Set (o, k, n)`),
+   which is the shape the zarr proxy composes its documents in.
+   Dict spells the same pair as New/NewIn.  Members of one tree share
+   a pool: Set and Add link by pointer and copy nothing. *)
+PROCEDURE NewObjIn (VAR pool: POOL) : PTR Node IN pool ;
+PROCEDURE NewArrIn (VAR pool: POOL) : PTR Node IN pool ;
+PROCEDURE NewStrIn (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
+  RAISES ValueRange ;
+  (* NewStr with the node and its escaped payload in pool *)
+PROCEDURE NewI64In (VAR pool: POOL ; v: I64) : PTR Node IN pool ;
+PROCEDURE NewF64In (VAR pool: POOL ; r: F64) : PTR Node IN pool ;
+PROCEDURE NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool ;
+PROCEDURE NewNullIn (VAR pool: POOL) : PTR Node IN pool ;
+
+PROCEDURE Name (RO s: STR) : STR
   RAISES ValueRange ;
   (* the DOCUMENT spelling of a member name whose VALUE is s -- what
      Set and Field expect, since a name inside a Node is document
@@ -242,9 +272,13 @@ PROCEDURE Add (VAR KEPT arr: PTR Node ; VAR KEPT v: PTR Node)
   RAISES TypeMismatch ;
   (* append to an array, count kept.                               *)
 
-PROCEDURE Clone (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
+PROCEDURE CloneIn (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
   RAISES TypeMismatch ;
-  (* a DEEP copy, in pool.  A node belongs to at most one parent --
+  (* Clone with every node, payload and member name in pool *)
+
+PROCEDURE Clone (n: PTR Node) : PTR Node
+  RAISES TypeMismatch ;
+  (* a DEEP copy, in the caller's frame.  A node belongs to at most one parent --
      Set and Add relink the node they are given -- so a subtree that
      is to appear in a second document is cloned, never linked twice.
      Merging a shared vocabulary into a per-store document is exactly
@@ -256,15 +290,15 @@ PROCEDURE Clone (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
      original.  These documents are tens of members; the copy is not
      worth being clever about.
 
-     STRING PAYLOADS AND MEMBER NAMES ARE COPIED INTO `pool` TOO,
-     which is what makes a clone into a DIFFERENT pool safe.  A Str's
+     STRING PAYLOADS AND MEMBER NAMES ARE COPIED TOO, which is what
+     makes a clone that outlives its source document safe.  A Str's
      text is a VIEW -- of the document when the node came from Parse,
      of a builder's buffer when it came from NewStr -- so a clone
      that kept the view would dangle the moment the source pool went
      away.  Nothing in the type system can see that: a POOL is not
      part of a STR's type.                                         *)
 
-PROCEDURE Spaced (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE Spaced (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
   (* Compact's separators are json.dumps' COMPACT ones; these are its
      DEFAULT ones -- ", " between members and ": " after a name, all
@@ -280,7 +314,7 @@ PROCEDURE Spaced (VAR pool: POOL ; n: PTR Node) : STR
      and the others are not.  The one-line spaced form is the only
      spelling two of those three agree on.                          *)
 
-PROCEDURE Compact (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE Compact (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange ;
   (* the tree re-serialised COMPACT, python-json.dumps style:
      member order preserved (the parser keeps document order),
@@ -340,52 +374,51 @@ TYPE
     line, col : I64 ;
   END ;
 
-PROCEDURE Cur (VAR c: Cursor) : CHAR =
+PROCEDURE Cur (VAR c: PTR Cursor) : CHAR =
 BEGIN
   IF c.pos < LEN (c.src) THEN RETURN c.src[c.pos] ELSE RETURN 0C END
 END Cur ;
 
-PROCEDURE Bump (VAR c: Cursor) =
+PROCEDURE Bump (VAR c: PTR Cursor) =
 BEGIN
   IF Cur (c) = 0AC THEN c.line := c.line + 1 ; c.col := 1
   ELSE c.col := c.col + 1 END ;
   c.pos := c.pos + 1
 END Bump ;
 
-PROCEDURE Skip (VAR c: Cursor) =
+PROCEDURE Skip (VAR c: PTR Cursor) =
 BEGIN
   WHILE Cur (c) = ' ' OR Cur (c) = 09C OR Cur (c) = 0AC OR Cur (c) = 0DC DO
     Bump (c)
   END
 END Skip ;
 
-PROCEDURE Fail (VAR c: Cursor ; RO msg: STR)
+PROCEDURE Fail (VAR c: PTR Cursor ; RO msg: STR)
   RAISES ParseError =
 BEGIN
   RAISE ParseError (msg, c.line, c.col)
 END Fail ;
 
-PROCEDURE ParseValue (VAR pool: POOL ; VAR c: Cursor)
-  : PTR Node IN pool
+PROCEDURE ParseValue (VAR c: PTR Cursor) : PTR Node
   RAISES ParseError =
-VAR n : PTR Node IN pool ;
+VAR n : PTR Node ;
 BEGIN
   Skip (c) ;
   CASE Cur (c) OF
-  | '{' : RETURN ParseObject (pool, c)
-  | '[' : RETURN ParseArray (pool, c)
-  | '"' : n := NEW (pool, Node) ;
+  | '{' : RETURN ParseObject (c)
+  | '[' : RETURN ParseArray (c)
+  | '"' : n := NEW (c, Node) ;
           n.v := Value.Str (ParseString (c)) ;
           RETURN n
   ELSE
     IF Match (c, 'true') THEN
-      n := NEW (pool, Node) ; n.v := Value.Bool (TRUE) ; RETURN n
+      n := NEW (c, Node) ; n.v := Value.Bool (TRUE) ; RETURN n
     ELSIF Match (c, 'false') THEN
-      n := NEW (pool, Node) ; n.v := Value.Bool (FALSE) ; RETURN n
+      n := NEW (c, Node) ; n.v := Value.Bool (FALSE) ; RETURN n
     ELSIF Match (c, 'null') THEN
-      n := NEW (pool, Node) ; n.v := Value.Null ; RETURN n
+      n := NEW (c, Node) ; n.v := Value.Null ; RETURN n
     ELSIF Cur (c) = '-' OR (Cur (c) >= '0' AND Cur (c) <= '9') THEN
-      RETURN ParseNumber (pool, c)
+      RETURN ParseNumber (c)
     ELSE
       Fail (c, 'value expected')
     END
@@ -423,11 +456,10 @@ BEGIN
   END
 END AsI64 ;
 
-PROCEDURE ParseObject (VAR pool: POOL ; VAR c: Cursor)
-  : PTR Node IN pool
+PROCEDURE ParseObject (VAR c: PTR Cursor) : PTR Node
   RAISES ParseError =
 VAR
-  n, child   : PTR Node IN pool ;
+  n, child   : PTR Node ;
   head, last : OPT PTR Node ;
   RO nm         : STR ;
 BEGIN
@@ -436,7 +468,7 @@ BEGIN
   head := NONE ; last := NONE ;
   IF Cur (c) = '}' THEN
     Bump (c) ;
-    n := NEW (pool, Node) ; n.v := Value.Object (NONE) ; RETURN n
+    n := NEW (c, Node) ; n.v := Value.Object (NONE) ; RETURN n
   END ;
   LOOP
     Skip (c) ;
@@ -444,7 +476,7 @@ BEGIN
     Skip (c) ;
     IF Cur (c) # ':' THEN Fail (c, 'colon expected after member name') END ;
     Bump (c) ;
-    child := ParseValue (pool, c) ;
+    child := ParseValue (c) ;
     child.name := nm ;
     IF last IS SOME lp THEN lp.next := SOME (child)
     ELSE head := SOME (child) END ;
@@ -454,16 +486,15 @@ BEGIN
     ELSIF Cur (c) = '}' THEN Bump (c) ; EXIT
     ELSE Fail (c, 'comma or closing brace expected') END
   END ;
-  n := NEW (pool, Node) ;
+  n := NEW (c, Node) ;
   n.v := Value.Object (head) ;
   RETURN n
 END ParseObject ;
 
-PROCEDURE ParseArray (VAR pool: POOL ; VAR c: Cursor)
-  : PTR Node IN pool
+PROCEDURE ParseArray (VAR c: PTR Cursor) : PTR Node
   RAISES ParseError =
 VAR
-  n, child   : PTR Node IN pool ;
+  n, child   : PTR Node ;
   head, last : OPT PTR Node ;
   k          : I64 ;
 BEGIN
@@ -472,10 +503,10 @@ BEGIN
   head := NONE ; last := NONE ; k := 0 ;
   IF Cur (c) = ']' THEN
     Bump (c) ;
-    n := NEW (pool, Node) ; n.v := Value.Arr (NONE, 0) ; RETURN n
+    n := NEW (c, Node) ; n.v := Value.Arr (NONE, 0) ; RETURN n
   END ;
   LOOP
-    child := ParseValue (pool, c) ;
+    child := ParseValue (c) ;
     IF last IS SOME lp THEN lp.next := SOME (child)
     ELSE head := SOME (child) END ;
     last := SOME (child) ;
@@ -485,12 +516,12 @@ BEGIN
     ELSIF Cur (c) = ']' THEN Bump (c) ; EXIT
     ELSE Fail (c, 'comma or closing bracket expected') END
   END ;
-  n := NEW (pool, Node) ;
+  n := NEW (c, Node) ;
   n.v := Value.Arr (head, k) ;
   RETURN n
 END ParseArray ;
 
-PROCEDURE ParseString (VAR c: Cursor) : RO STR
+PROCEDURE ParseString (VAR c: PTR Cursor) : RO STR
   RAISES ParseError =
 VAR
   start : I64 ;
@@ -513,11 +544,11 @@ BEGIN
      it when a real store demands it, with a museum piece.            *)
 END ParseString ;
 
-PROCEDURE ParseNumber (VAR pool: POOL ; VAR c: Cursor)
-  : PTR Node IN pool
+PROCEDURE ParseNumber (VAR c: PTR Cursor) : PTR Node
   RAISES ParseError =
 VAR
-  n                : PTR Node IN pool ;
+  scratch          : POOL ;      (* strtod's zero-terminated bytes *)
+  n                : PTR Node ;
   neg, negE, isInt : BOOL ;
   ip, d, ex, start : I64 ;
   r, frac, sc      : F64 ;
@@ -575,21 +606,21 @@ BEGIN
     (* the accumulated r is an ulp off for some tokens; a document
        held to Python's bytes takes libc's value, the same strtod
        repr round-trips against.  The token includes its sign.      *)
-    tb := DynStr.Bytes (pool, SLICE (c.src, start, c.pos - start),
+    tb := DynStr.Bytes (scratch, SLICE (c.src, start, c.pos - start),
                         TRUE) ;
     r := F64 (StrToD (ADR (tb)))
   END ;
-  n := NEW (pool, Node) ;
+  n := NEW (c, Node) ;
   n.v := Value.Num (r, ip, isInt) ;
   RETURN n
 EXCEPT
 | ValueRange :
     (* DynStr.Bytes' accounting arm; a digit token cannot fire it *)
     Fail (c, 'number unrepresentable') ;
-    RETURN NEW (pool, Node)
+    RETURN NEW (c, Node)
 END ParseNumber ;
 
-PROCEDURE Match (VAR c: Cursor ; RO lit: STR) : BOOL =
+PROCEDURE Match (VAR c: PTR Cursor ; RO lit: STR) : BOOL =
 VAR i : I64 ;
 BEGIN
   IF c.pos + LEN (lit) > LEN (c.src) THEN RETURN FALSE END ;
@@ -601,19 +632,37 @@ BEGIN
   RETURN TRUE
 END Match ;
 
-PROCEDURE Parse (VAR pool: POOL ; RO src: STR)
-  : PTR Node IN pool
+PROCEDURE Parse (RO src: STR) : PTR Node
   RAISES ParseError =
 VAR
-  c : Cursor ;
-  n : PTR Node IN pool ;
+  c : PTR Cursor ;
+  n : PTR Node ;
 BEGIN
+  (* the cursor is the parser's allocation root: every node is NEW
+     (c, Node), so the tree lands where the cursor lives -- here the
+     frame, which for a function answering a pointer is the caller's
+     arena; in ParseIn the pool *)
+  c := NEW (Cursor) ;
   c.src := src ; c.pos := 0 ; c.line := 1 ; c.col := 1 ;
-  n := ParseValue (pool, c) ;
+  n := ParseValue (c) ;
   Skip (c) ;
   IF c.pos < LEN (c.src) THEN Fail (c, 'trailing characters after value') END ;
   RETURN n
 END Parse ;
+
+PROCEDURE ParseIn (VAR pool: POOL ; RO src: STR) : PTR Node IN pool
+  RAISES ParseError =
+VAR
+  c : PTR Cursor IN pool ;
+  n : PTR Node IN pool ;
+BEGIN
+  c := NEW (pool, Cursor) ;
+  c.src := src ; c.pos := 0 ; c.line := 1 ; c.col := 1 ;
+  n := ParseValue (c) ;
+  Skip (c) ;
+  IF c.pos < LEN (c.src) THEN Fail (c, 'trailing characters after value') END ;
+  RETURN n
+END ParseIn ;
 
 PROCEDURE Item (arr: PTR Node ; i: I64) : PTR Node
   RAISES TypeMismatch, IndexError =
@@ -737,64 +786,114 @@ BEGIN
   END
 END StrIs ;
 
-PROCEDURE ReprText (VAR pool: POOL ; r: F64) : STR
+PROCEDURE ReprText (r: F64) : STR
   RAISES ValueRange =
-VAR d : PTR DynStr.DString IN pool ;
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
-  d := DynStr.New (pool) ;
-  AppendF64 (pool, d, r) ;
+  (* built in a scratch pool that dies here; the answer is re-homed
+     into the caller's frame at exit (par 2.3) *)
+  d := DynStr.New (scratch) ;
+  AppendF64 (d, r) ;
   RETURN DynStr.View (d)
 END ReprText ;
 
-PROCEDURE NumText (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE NumText (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange =
-VAR d : PTR DynStr.DString IN pool ;
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
   CASE n.v OF
   | Num (r, i, isInt) :
-      d := DynStr.New (pool) ;
+      d := DynStr.New (scratch) ;
       IF isInt THEN
-        DynStr.AppendI64 (pool, d, i)
+        DynStr.AppendI64 (d, i)
       ELSE
-        AppendF64 (pool, d, r)
+        AppendF64 (d, r)
       END ;
       RETURN DynStr.View (d)
   ELSE RAISE TypeMismatch ('number expected')
   END
 END NumText ;
 
-PROCEDURE CopyStr (VAR pool: POOL ; RO s: STR) : STR =
-VAR d : PTR DynStr.DString IN pool ;
-BEGIN
-  d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, s) ;
-  RETURN DynStr.View (d)
-END CopyStr ;
-
-PROCEDURE Clone (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
-  RAISES TypeMismatch =
+(* a copy of s in the pool dst lives in (rule 2): the payloads and
+   member names of a clone share their tree's pool *)
+PROCEDURE CopyStrTo (VAR dst: PTR Node ; RO s: STR) : STR =
 VAR
-  c, cc : PTR Node IN pool ;
-  cur : OPT PTR Node ;
+  c : STR ;
+  i : I64 ;
+BEGIN
+  c := NEW (dst, CHAR, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO c[i] := s[i] END ;
+  RETURN c
+END CopyStrTo ;
+
+PROCEDURE Clone (n: PTR Node) : PTR Node
+  RAISES TypeMismatch =
+VAR c : PTR Node ;
+BEGIN
+  c := NEW (Node) ;
+  CopyInto (c, c, n) ;
+  RETURN c
+END Clone ;
+
+PROCEDURE CloneIn (VAR pool: POOL ; n: PTR Node) : PTR Node IN pool
+  RAISES TypeMismatch =
+VAR c : PTR Node IN pool ;
 BEGIN
   c := NEW (pool, Node) ;
+  CopyInto (c, c, n) ;
+  RETURN c
+END CloneIn ;
+
+(* the deep copy itself: c already exists, in the frame or in a pool,
+   and every node, payload and name the copy makes is allocated where
+   the ROOT lives -- root is the clone's root, carried down the
+   recursion as its own VAR parameter so that NEW (root, T) names the
+   tree's pool at every depth; a child held in a local would name
+   this frame instead (rule 2 reads the pool off the argument's root,
+   and a pool-less local is the frame), which is how the first
+   CloneIn handed back grandchildren that died with the copy.  So
+   Clone and CloneIn differ only in where the root was made.  The
+   member chains are linked here as the parser links them, not
+   through Set and Add, which KEEP their object and would want c
+   declared so. *)
+PROCEDURE CopyInto (VAR root: PTR Node ; VAR c: PTR Node ; n: PTR Node)
+  RAISES TypeMismatch =
+VAR
+  cc : PTR Node ;
+  cur, head, last : OPT PTR Node ;
+  k : I64 ;
+BEGIN
   CASE n.v OF
   | Object (first) :
-      c.v := Value.Object (NONE) ;
+      head := NONE ; last := NONE ;
       cur := first ;
       WHILE cur IS SOME p DO
-        cc := Clone (pool, p) ;
-        Set (c, CopyStr (pool, p.name), cc) ;
+        cc := NEW (root, Node) ;
+        CopyInto (root, cc, p) ;
+        cc.name := CopyStrTo (root, p.name) ;
+        cc.next := NONE ;
+        IF last IS SOME lp THEN lp.next := SOME (cc) ELSE head := SOME (cc) END ;
+        last := SOME (cc) ;
         cur := p.next
-      END
+      END ;
+      c.v := Value.Object (head)
   | Arr (first, count) :
-      c.v := Value.Arr (NONE, 0) ;
+      head := NONE ; last := NONE ; k := 0 ;
       cur := first ;
       WHILE cur IS SOME p DO
-        cc := Clone (pool, p) ;
-        Add (c, cc) ;
+        cc := NEW (root, Node) ;
+        CopyInto (root, cc, p) ;
+        cc.next := NONE ;
+        IF last IS SOME lp THEN lp.next := SOME (cc) ELSE head := SOME (cc) END ;
+        last := SOME (cc) ;
+        k := k + 1 ;
         cur := p.next
-      END
+      END ;
+      c.v := Value.Arr (head, k)
   | Str (t) :
       (* THE PAYLOAD IS COPIED, and that is the difference between a
          clone and a share.  A Str's `s` is a VIEW -- of document text
@@ -803,22 +902,19 @@ BEGIN
          kept the view would dangle the moment the source pool went
          away.  Nothing in the type system can see it: a POOL is not
          part of a STR's type, and the ICOS ObsPack builder segfaulted
-         on exactly this, with the member NAMES dangling too (Set
-         KEEPS the name it is given, so `p.name` needs the same
-         copy).  Same-pool cloning pays one small copy for it. *)
-      c.v := Value.Str (CopyStr (pool, t))
+         on exactly this, with the member NAMES dangling too.  The
+         names are copied above for the same reason. *)
+      c.v := Value.Str (CopyStrTo (root, t))
   ELSE
       (* Num, Bool, Null: the variant IS the value *)
       c.v := n.v
-  END ;
-  RETURN c
-END Clone ;
+  END
+END CopyInto ;
 
-PROCEDURE AppendJString (VAR pool: POOL ;
-                         VAR d: PTR DynStr.DString ; RO t: STR)
+PROCEDURE AppendJString (VAR d: PTR DynStr.DString ; RO t: STR)
   RAISES ValueRange =
 BEGIN
-  EmitJStr (pool, d, t)
+  EmitJStr (d, t)
 END AppendJString ;
 
 PROCEDURE HasBackslash (RO t: STR) : BOOL =
@@ -862,17 +958,20 @@ BEGIN
   RETURN v
 END Hex4 ;
 
-PROCEDURE DecodeStr (VAR pool: POOL ; RO t: STR) : STR
+PROCEDURE DecodeStr (RO t: STR) : STR
   RAISES TypeMismatch, ValueRange =
   (* the raw source text of a parsed string, decoded json.loads'
-     way.  Escape-free input answers the input view unchanged.      *)
+     way.  Escape-free input answers the input view unchanged; a
+     decoded one is built in a scratch pool and re-homed out (par
+     2.3).                                                          *)
 VAR
-  d : PTR DynStr.DString IN pool ;
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
   i, v, lo : I64 ;
   ch : CHAR ;
 BEGIN
   IF NOT HasBackslash (t) THEN RETURN t END ;
-  d := DynStr.New (pool) ;
+  d := DynStr.New (scratch) ;
   i := 0 ;
   WHILE i < LEN (t) DO
     ch := t[i] ;
@@ -883,12 +982,12 @@ BEGIN
       ch := t[i + 1] ;
       i := i + 2 ;
       IF ch = '"' OR ch = '/' OR ORD (ch) = 92 THEN
-        DynStr.AppendChar (pool, d, ch)
-      ELSIF ch = 'b' THEN DynStr.AppendChar (pool, d, 08C)
-      ELSIF ch = 't' THEN DynStr.AppendChar (pool, d, 09C)
-      ELSIF ch = 'n' THEN DynStr.AppendChar (pool, d, 0AC)
-      ELSIF ch = 'f' THEN DynStr.AppendChar (pool, d, 0CC)
-      ELSIF ch = 'r' THEN DynStr.AppendChar (pool, d, 0DC)
+        DynStr.AppendChar (d, ch)
+      ELSIF ch = 'b' THEN DynStr.AppendChar (d, 08C)
+      ELSIF ch = 't' THEN DynStr.AppendChar (d, 09C)
+      ELSIF ch = 'n' THEN DynStr.AppendChar (d, 0AC)
+      ELSIF ch = 'f' THEN DynStr.AppendChar (d, 0CC)
+      ELSIF ch = 'r' THEN DynStr.AppendChar (d, 0DC)
       ELSIF ch = 'u' THEN
         v := Hex4 (t, i) ;
         i := i + 4 ;
@@ -908,39 +1007,39 @@ BEGIN
         ELSIF v >= 56320 AND v <= 57343 THEN
           RAISE TypeMismatch ('lone surrogate in unicode escape')
         END ;
-        DynStr.AppendChar (pool, d, CHR (v))
+        DynStr.AppendChar (d, CHR (v))
       ELSE
         RAISE TypeMismatch ('unknown escape in string')
       END
     ELSE
-      DynStr.AppendChar (pool, d, ch) ;
+      DynStr.AppendChar (d, ch) ;
       i := i + 1
     END
   END ;
   RETURN DynStr.View (d)
 END DecodeStr ;
 
-PROCEDURE Text (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE Text (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange =
 BEGIN
   CASE n.v OF
-  | Str (t) : RETURN DecodeStr (pool, t)
+  | Str (t) : RETURN DecodeStr (t)
   ELSE RAISE TypeMismatch ('expected a string')
   END
 END Text ;
 
-PROCEDURE EmitJStr (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitJStr (VAR d: PTR DynStr.DString ;
                     RO t: STR)
   RAISES ValueRange =
 BEGIN
-  DynStr.AppendChar (pool, d, '"') ;
-  EscapeBody (pool, d, t) ;
-  DynStr.AppendChar (pool, d, '"')
+  DynStr.AppendChar (d, '"') ;
+  EscapeBody (d, t) ;
+  DynStr.AppendChar (d, '"')
 END EmitJStr ;
 
 (* the same escaping WITHOUT the quotes: what a Str node's payload
    holds, since that payload is document text *)
-PROCEDURE EscapeBody (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EscapeBody (VAR d: PTR DynStr.DString ;
                       RO t: STR)
   RAISES ValueRange =
 VAR
@@ -951,32 +1050,32 @@ BEGIN
     ch := t[i] ;
     v := ORD (ch) ;
     IF ch = '"' THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, '"')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, '"')
     ELSIF v = 92 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 05CC)
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 05CC)
     ELSIF v = 8 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 'b')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 'b')
     ELSIF v = 9 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 't')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 't')
     ELSIF v = 10 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 'n')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 'n')
     ELSIF v = 12 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 'f')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 'f')
     ELSIF v = 13 THEN
-      DynStr.AppendChar (pool, d, 05CC) ;
-      DynStr.AppendChar (pool, d, 'r')
+      DynStr.AppendChar (d, 05CC) ;
+      DynStr.AppendChar (d, 'r')
     ELSIF v < 32 THEN
-      DynStr.Append (pool, d, '\u00') ;
-      DynStr.AppendChar (pool, d, HexDigit (v DIV 16)) ;
-      DynStr.AppendChar (pool, d, HexDigit (v MOD 16))
+      DynStr.Append (d, '\u00') ;
+      DynStr.AppendChar (d, HexDigit (v DIV 16)) ;
+      DynStr.AppendChar (d, HexDigit (v MOD 16))
     ELSE
-      DynStr.AppendChar (pool, d, ch)
+      DynStr.AppendChar (d, ch)
     END
   END
 END EscapeBody ;
@@ -990,7 +1089,7 @@ BEGIN
   RETURN CHR (ORD ('a') + v - 10)
 END HexDigit ;
 
-PROCEDURE EmitVal (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitVal (VAR d: PTR DynStr.DString ;
                    n: PTR Node ; spaced: BOOL)
   RAISES TypeMismatch, ValueRange =
 VAR
@@ -999,58 +1098,58 @@ VAR
 BEGIN
   CASE n.v OF
   | Object (first) :
-      DynStr.AppendChar (pool, d, '{') ;
+      DynStr.AppendChar (d, '{') ;
       c := first ;
       sep := FALSE ;
       WHILE c IS SOME p DO
         IF sep THEN
-          DynStr.AppendChar (pool, d, ',') ;
-          IF spaced THEN DynStr.AppendChar (pool, d, ' ') END
+          DynStr.AppendChar (d, ',') ;
+          IF spaced THEN DynStr.AppendChar (d, ' ') END
         END ;
         sep := TRUE ;
-        EmitJStr (pool, d, DecodeStr (pool, p.name)) ;
-        DynStr.AppendChar (pool, d, ':') ;
-        IF spaced THEN DynStr.AppendChar (pool, d, ' ') END ;
-        EmitVal (pool, d, p, spaced) ;
+        EmitJStr (d, DecodeStr (p.name)) ;
+        DynStr.AppendChar (d, ':') ;
+        IF spaced THEN DynStr.AppendChar (d, ' ') END ;
+        EmitVal (d, p, spaced) ;
         c := p.next
       END ;
-      DynStr.AppendChar (pool, d, '}')
+      DynStr.AppendChar (d, '}')
   | Arr (first, count) :
-      DynStr.AppendChar (pool, d, '[') ;
+      DynStr.AppendChar (d, '[') ;
       c := first ;
       sep := FALSE ;
       WHILE c IS SOME p DO
         IF sep THEN
-          DynStr.AppendChar (pool, d, ',') ;
-          IF spaced THEN DynStr.AppendChar (pool, d, ' ') END
+          DynStr.AppendChar (d, ',') ;
+          IF spaced THEN DynStr.AppendChar (d, ' ') END
         END ;
         sep := TRUE ;
-        EmitVal (pool, d, p, spaced) ;
+        EmitVal (d, p, spaced) ;
         c := p.next
       END ;
-      DynStr.AppendChar (pool, d, ']')
+      DynStr.AppendChar (d, ']')
   | Str (t) :
-      EmitJStr (pool, d, DecodeStr (pool, t))
+      EmitJStr (d, DecodeStr (t))
   | Num (r, i, isInt) :
       IF isInt THEN
-        DynStr.AppendI64 (pool, d, i)
+        DynStr.AppendI64 (d, i)
       ELSE
-        AppendF64 (pool, d, r)
+        AppendF64 (d, r)
       END
   | Bool (b) :
       IF b THEN
-        DynStr.Append (pool, d, 'true')
+        DynStr.Append (d, 'true')
       ELSE
-        DynStr.Append (pool, d, 'false')
+        DynStr.Append (d, 'false')
       END
   | Null :
-      DynStr.Append (pool, d, 'null')
+      DynStr.Append (d, 'null')
   END
 END EmitVal ;
 
 (* a float exactly as json.dumps renders it: Python repr for finite
    values, the NaN / Infinity / -Infinity tokens otherwise *)
-PROCEDURE AppendF64 (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE AppendF64 (VAR d: PTR DynStr.DString ;
                      r: F64)
   RAISES ValueRange =
 VAR
@@ -1058,47 +1157,51 @@ VAR
   n, i : I64 ;
 BEGIN
   IF r # r THEN
-    DynStr.Append (pool, d, 'NaN') ;
+    DynStr.Append (d, 'NaN') ;
     RETURN
   END ;
   (* MAX (F64) is a generator gap; the largest finite double,
      spelled out *)
   IF r > 1.7976931348623157E308 THEN
-    DynStr.Append (pool, d, 'Infinity') ;
+    DynStr.Append (d, 'Infinity') ;
     RETURN
   END ;
   IF r < 0.0 - 1.7976931348623157E308 THEN
-    DynStr.Append (pool, d, '-Infinity') ;
+    DynStr.Append (d, '-Infinity') ;
     RETURN
   END ;
   n := I64 (ReprF64 (C.Double (r), ADR (buf))) ;
   FOR i := 0 TO n - 1 DO
-    DynStr.AppendChar (pool, d, CHR (I64 (buf[i])))
+    DynStr.AppendChar (d, CHR (I64 (buf[i])))
   END
 END AppendF64 ;
 
-PROCEDURE Compact (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE Compact (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange =
-VAR d : PTR DynStr.DString IN pool ;
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
-  d := DynStr.New (pool) ;
-  EmitVal (pool, d, n, FALSE) ;
+  d := DynStr.New (scratch) ;
+  EmitVal (d, n, FALSE) ;
   RETURN DynStr.View (d)
 END Compact ;
 
-PROCEDURE Spaced (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE Spaced (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange =
-VAR d : PTR DynStr.DString IN pool ;
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
-  d := DynStr.New (pool) ;
-  EmitVal (pool, d, n, TRUE) ;
+  d := DynStr.New (scratch) ;
+  EmitVal (d, n, TRUE) ;
   RETURN DynStr.View (d)
 END Spaced ;
 
 TYPE
   NodeP = PTR Node ;             (* NEW takes a NAMED element type *)
 
-PROCEDURE EmitSorted (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitSorted (VAR d: PTR DynStr.DString ;
                       n: PTR Node)
   RAISES TypeMismatch, ValueRange, IndexError =
 VAR
@@ -1118,15 +1221,15 @@ BEGIN
         cnt := cnt + 1 ;
         c := p.next
       END ;
-      ms := NEW (pool, NodeP, cnt) ;
-      nms := NEW (pool, STR, cnt) ;
+      ms := NEW (d, NodeP, cnt) ;
+      nms := NEW (d, STR, cnt) ;
       cnt := 0 ;
       c := first ;
       WHILE c IS SOME p DO
         ms[cnt] := p ;
         (* sort_keys orders by the DECODED name, so decode before
            the sort as well as for the emission *)
-        nms[cnt] := DecodeStr (pool, p.name) ;
+        nms[cnt] := DecodeStr (p.name) ;
         cnt := cnt + 1 ;
         c := p.next
       END ;
@@ -1142,29 +1245,29 @@ BEGIN
           j := j - 1
         END
       END ;
-      DynStr.AppendChar (pool, d, '{') ;
+      DynStr.AppendChar (d, '{') ;
       sep := FALSE ;
       FOR i := 0 TO cnt - 1 DO
-        IF sep THEN DynStr.AppendChar (pool, d, ',') END ;
+        IF sep THEN DynStr.AppendChar (d, ',') END ;
         sep := TRUE ;
-        EmitJStr (pool, d, nms[i]) ;
-        DynStr.AppendChar (pool, d, ':') ;
-        EmitSorted (pool, d, ms[i])
+        EmitJStr (d, nms[i]) ;
+        DynStr.AppendChar (d, ':') ;
+        EmitSorted (d, ms[i])
       END ;
-      DynStr.AppendChar (pool, d, '}')
+      DynStr.AppendChar (d, '}')
   | Arr (first, count) :
-      DynStr.AppendChar (pool, d, '[') ;
+      DynStr.AppendChar (d, '[') ;
       c := first ;
       sep := FALSE ;
       WHILE c IS SOME p DO
-        IF sep THEN DynStr.AppendChar (pool, d, ',') END ;
+        IF sep THEN DynStr.AppendChar (d, ',') END ;
         sep := TRUE ;
-        EmitSorted (pool, d, p) ;
+        EmitSorted (d, p) ;
         c := p.next
       END ;
-      DynStr.AppendChar (pool, d, ']')
+      DynStr.AppendChar (d, ']')
   ELSE
-    EmitVal (pool, d, n, FALSE)
+    EmitVal (d, n, FALSE)
   END
 END EmitSorted ;
 
@@ -1182,27 +1285,29 @@ BEGIN
   RETURN LEN (a) < LEN (b)
 END NameLess ;
 
-PROCEDURE CompactSorted (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE CompactSorted (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange, IndexError =
-VAR d : PTR DynStr.DString IN pool ;
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
-  d := DynStr.New (pool) ;
-  EmitSorted (pool, d, n) ;
+  d := DynStr.New (scratch) ;
+  EmitSorted (d, n) ;
   RETURN DynStr.View (d)
 END CompactSorted ;
 
-PROCEDURE Indent (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE Indent (VAR d: PTR DynStr.DString ;
                   depth: I64)
   RAISES ValueRange =
 VAR i : I64 ;
 BEGIN
-  DynStr.AppendChar (pool, d, 0AC) ;
+  DynStr.AppendChar (d, 0AC) ;
   FOR i := 1 TO depth * 2 DO
-    DynStr.AppendChar (pool, d, ' ')
+    DynStr.AppendChar (d, ' ')
   END
 END Indent ;
 
-PROCEDURE EmitPretty (VAR pool: POOL ; VAR d: PTR DynStr.DString ;
+PROCEDURE EmitPretty (VAR d: PTR DynStr.DString ;
                       n: PTR Node ; depth: I64)
   RAISES TypeMismatch, ValueRange =
 VAR
@@ -1219,51 +1324,53 @@ BEGIN
         c := p.next
       END ;
       IF cnt = 0 THEN
-        DynStr.Append (pool, d, '{}') ;
+        DynStr.Append (d, '{}') ;
         RETURN
       END ;
       c := first ;
-      DynStr.AppendChar (pool, d, '{') ;
+      DynStr.AppendChar (d, '{') ;
       sep := FALSE ;
       WHILE c IS SOME p DO
-        IF sep THEN DynStr.AppendChar (pool, d, ',') END ;
+        IF sep THEN DynStr.AppendChar (d, ',') END ;
         sep := TRUE ;
-        Indent (pool, d, depth + 1) ;
-        EmitJStr (pool, d, DecodeStr (pool, p.name)) ;
-        DynStr.Append (pool, d, ': ') ;
-        EmitPretty (pool, d, p, depth + 1) ;
+        Indent (d, depth + 1) ;
+        EmitJStr (d, DecodeStr (p.name)) ;
+        DynStr.Append (d, ': ') ;
+        EmitPretty (d, p, depth + 1) ;
         c := p.next
       END ;
-      Indent (pool, d, depth) ;
-      DynStr.AppendChar (pool, d, '}')
+      Indent (d, depth) ;
+      DynStr.AppendChar (d, '}')
   | Arr (first, count) :
       IF count = 0 THEN
-        DynStr.Append (pool, d, '[]') ;
+        DynStr.Append (d, '[]') ;
         RETURN
       END ;
       c := first ;
-      DynStr.AppendChar (pool, d, '[') ;
+      DynStr.AppendChar (d, '[') ;
       sep := FALSE ;
       WHILE c IS SOME p DO
-        IF sep THEN DynStr.AppendChar (pool, d, ',') END ;
+        IF sep THEN DynStr.AppendChar (d, ',') END ;
         sep := TRUE ;
-        Indent (pool, d, depth + 1) ;
-        EmitPretty (pool, d, p, depth + 1) ;
+        Indent (d, depth + 1) ;
+        EmitPretty (d, p, depth + 1) ;
         c := p.next
       END ;
-      Indent (pool, d, depth) ;
-      DynStr.AppendChar (pool, d, ']')
+      Indent (d, depth) ;
+      DynStr.AppendChar (d, ']')
   ELSE
-    EmitVal (pool, d, n, FALSE)
+    EmitVal (d, n, FALSE)
   END
 END EmitPretty ;
 
-PROCEDURE Pretty (VAR pool: POOL ; n: PTR Node) : STR
+PROCEDURE Pretty (n: PTR Node) : STR
   RAISES TypeMismatch, ValueRange =
-VAR d : PTR DynStr.DString IN pool ;
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
-  d := DynStr.New (pool) ;
-  EmitPretty (pool, d, n, 0) ;
+  d := DynStr.New (scratch) ;
+  EmitPretty (d, n, 0) ;
   RETURN DynStr.View (d)
 END Pretty ;
 
@@ -1279,77 +1386,135 @@ END IsNull ;
    module 2026-09-27, where six of them had sat, compiled and shipped,
    and documented twice in docs/modules/Json.md; review F7) ---- *)
 
-PROCEDURE NewObj (VAR pool: POOL) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
+PROCEDURE NewObj () : PTR Node =
+VAR n : PTR Node ;
 BEGIN
-  n := NEW (pool, Node) ;
+  n := NEW (Node) ;
   n.v := Value.Object (NONE) ;
   RETURN n
 END NewObj ;
 
-PROCEDURE NewArr (VAR pool: POOL) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
+PROCEDURE NewArr () : PTR Node =
+VAR n : PTR Node ;
 BEGIN
-  n := NEW (pool, Node) ;
+  n := NEW (Node) ;
   n.v := Value.Arr (NONE, 0) ;
   RETURN n
 END NewArr ;
 
-PROCEDURE NewStr (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
+PROCEDURE NewStr (RO s: STR) : PTR Node
   RAISES ValueRange =
 VAR
-  n : PTR Node IN pool ;
-  d : PTR DynStr.DString IN pool ;
+  n : PTR Node ;
 BEGIN
-  d := DynStr.New (pool) ;
-  EscapeBody (pool, d, s) ;
-  n := NEW (pool, Node) ;
-  n.v := Value.Str (DynStr.View (d)) ;
+  n := NEW (Node) ;
+  n.v := Value.Str (Name (s)) ;
   RETURN n
 END NewStr ;
 
-PROCEDURE NewI64 (VAR pool: POOL ; v: I64) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
+PROCEDURE NewI64 (v: I64) : PTR Node =
+VAR n : PTR Node ;
 BEGIN
-  n := NEW (pool, Node) ;
+  n := NEW (Node) ;
   n.v := Value.Num (F64 (v), v, TRUE) ;
   RETURN n
 END NewI64 ;
 
-PROCEDURE Name (VAR pool: POOL ; RO s: STR) : STR
+PROCEDURE Name (RO s: STR) : STR
   RAISES ValueRange =
-VAR d : PTR DynStr.DString IN pool ;
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
 BEGIN
-  d := DynStr.New (pool) ;
-  EscapeBody (pool, d, s) ;
+  d := DynStr.New (scratch) ;
+  EscapeBody (d, s) ;
   RETURN DynStr.View (d)
 END Name ;
 
-PROCEDURE NewF64 (VAR pool: POOL ; r: F64) : PTR Node IN pool =
-VAR n : PTR Node IN pool ;
+PROCEDURE NewF64 (r: F64) : PTR Node =
+VAR n : PTR Node ;
 BEGIN
-  n := NEW (pool, Node) ;
+  n := NEW (Node) ;
   (* the integer slot is unread while isInt is FALSE; 0 rather than a
      conversion that could trap on a huge or non-finite r *)
   n.v := Value.Num (r, 0, FALSE) ;
   RETURN n
 END NewF64 ;
 
-PROCEDURE NewBool (VAR pool: POOL ; b: BOOL) : PTR Node IN pool =
+PROCEDURE NewBool (b: BOOL) : PTR Node =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := Value.Bool (b) ;
+  RETURN n
+END NewBool ;
+
+PROCEDURE NewNull () : PTR Node =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := Value.Null ;
+  RETURN n
+END NewNull ;
+
+PROCEDURE NewObjIn (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Object (NONE) ;
+  RETURN n
+END NewObjIn ;
+
+PROCEDURE NewArrIn (VAR pool: POOL) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Arr (NONE, 0) ;
+  RETURN n
+END NewArrIn ;
+
+PROCEDURE NewStrIn (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
+  RAISES ValueRange =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  (* Name escapes into this frame; the payload is copied beside the
+     node, so the tree holds no view into a frame that ends here *)
+  n.v := Value.Str (CopyStrTo (n, Name (s))) ;
+  RETURN n
+END NewStrIn ;
+
+PROCEDURE NewI64In (VAR pool: POOL ; v: I64) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Num (F64 (v), v, TRUE) ;
+  RETURN n
+END NewI64In ;
+
+PROCEDURE NewF64In (VAR pool: POOL ; r: F64) : PTR Node IN pool =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := Value.Num (r, 0, FALSE) ;
+  RETURN n
+END NewF64In ;
+
+PROCEDURE NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool =
 VAR n : PTR Node IN pool ;
 BEGIN
   n := NEW (pool, Node) ;
   n.v := Value.Bool (b) ;
   RETURN n
-END NewBool ;
+END NewBoolIn ;
 
-PROCEDURE NewNull (VAR pool: POOL) : PTR Node IN pool =
+PROCEDURE NewNullIn (VAR pool: POOL) : PTR Node IN pool =
 VAR n : PTR Node IN pool ;
 BEGIN
   n := NEW (pool, Node) ;
   n.v := Value.Null ;
   RETURN n
-END NewNull ;
+END NewNullIn ;
 
 PROCEDURE Set (VAR KEPT obj: PTR Node ; RO KEPT name: STR ;
                VAR KEPT v: PTR Node)

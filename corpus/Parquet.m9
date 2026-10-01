@@ -126,7 +126,7 @@ BEGIN
   RETURN u
 END NewBuf ;
 
-PROCEDURE Room (VAR pool: POOL ; VAR u: Buf ; k: I64) =
+PROCEDURE Room (VAR u: Buf ; k: I64) =
 VAR
   big : SLICE OF BYTE ;
   i, c : I64 ;
@@ -134,7 +134,7 @@ BEGIN
   IF u.n + k <= LEN (u.b) THEN RETURN END ;
   c := 2 * LEN (u.b) ;
   WHILE c < u.n + k DO c := 2 * c END ;
-  big := NEW (pool, BYTE, c) ;
+  big := NEW (u, BYTE, c) ;
   FOR i := 0 TO u.n - 1 DO
     big[i] := u.b[i]
   END ;
@@ -144,7 +144,7 @@ END Room ;
 PROCEDURE P8 (VAR pool: POOL ; VAR u: Buf ; v: I64)
   RAISES ValueRange =
 BEGIN
-  Room (pool, u, 1) ;
+  Room (u, 1) ;
   u.b[u.n] := BYTE (v) ;
   u.n := u.n + 1
 END P8 ;
@@ -164,7 +164,7 @@ END PLE ;
 PROCEDURE PBytes (VAR pool: POOL ; VAR u: Buf ; RO s: SLICE OF BYTE) =
 VAR i : I64 ;
 BEGIN
-  Room (pool, u, LEN (s)) ;
+  Room (u, LEN (s)) ;
   FOR i := 0 TO LEN (s) - 1 DO
     u.b[u.n + i] := s[i]
   END ;
@@ -229,7 +229,7 @@ VAR
 BEGIN
   bb := DynStr.Utf8 (pool, s) ;
   PVar (pool, u, LEN (bb)) ;
-  Room (pool, u, LEN (bb)) ;
+  Room (u, LEN (bb)) ;
   FOR i := 0 TO LEN (bb) - 1 DO
     u.b[u.n + i] := bb[i]
   END ;
@@ -299,14 +299,14 @@ VAR
 BEGIN
   IF k = Frame.KindF64 THEN
     v64 := Frame.ColF64 (f, name) ;
-    Room (pool, u, 8 * LEN (v64)) ;
+    Room (u, 8 * LEN (v64)) ;
     FOR r := 0 TO LEN (v64) - 1 DO
       F64.ToBytesLE (v64[r], SLICE (u.b, u.n, 8)) ;
       u.n := u.n + 8
     END
   ELSIF k = Frame.KindF32 THEN
     v32 := Frame.ColF32 (f, name) ;
-    Room (pool, u, 4 * LEN (v32)) ;
+    Room (u, 4 * LEN (v32)) ;
     FOR r := 0 TO LEN (v32) - 1 DO
       F32.ToBytesLE (v32[r], SLICE (u.b, u.n, 4)) ;
       u.n := u.n + 4
@@ -381,7 +381,7 @@ VAR
 BEGIN
   bb := DynStr.Utf8 (pool, s) ;
   PLE (pool, u, LEN (bb), 4) ;
-  Room (pool, u, LEN (bb)) ;
+  Room (u, LEN (bb)) ;
   FOR i := 0 TO LEN (bb) - 1 DO
     u.b[u.n + i] := bb[i]
   END ;
@@ -469,12 +469,13 @@ BEGIN
   P8 (pool, u, CtStop)
 END MetaKV ;
 
-PROCEDURE I64Text (VAR pool: POOL ; v: I64) : STR
+PROCEDURE I64Text (v: I64) : STR
   RAISES ValueRange, Overflow =
-VAR d : PTR DynStr.DString ;
+VAR pool : POOL ;
+    d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.AppendI64 (pool, d, v) ;
+  DynStr.AppendI64 (d, v) ;
   RETURN DynStr.View (d)
 END I64Text ;
 
@@ -503,7 +504,7 @@ VAR
 BEGIN
   nc := Frame.Cols (f) ;
   out := NewBuf (pool, 4096) ;
-  PBytes (pool, out, MagicBytes (pool)) ;
+  PBytes (pool, out, MagicBytes ()) ;
   pages := NEW (pool, Buf, nc) ;
   offs := NEW (pool, I64, nc) ;
   names := NEW (pool, STR, nc) ;
@@ -563,7 +564,7 @@ BEGIN
     IF withTs THEN
       conv := Frame.TsConv (ts) ;
       MetaKV (pool, meta, 'frame_resolution_seconds',
-              I64Text (pool, Frame.TsRes (ts))) ;
+              I64Text (Frame.TsRes (ts))) ;
       MetaKV (pool, meta, 'frame_time_convention',
               Frame.ConvName (conv)) ;
       MetaKV (pool, meta, 'description', Frame.TsDescr (ts))
@@ -576,14 +577,14 @@ BEGIN
 
   PBytes (pool, out, SLICE (meta.b, 0, meta.n)) ;
   PLE (pool, out, meta.n, 4) ;
-  PBytes (pool, out, MagicBytes (pool)) ;
+  PBytes (pool, out, MagicBytes ()) ;
   RETURN SLICE (out.b, 0, out.n)
 END AnyBytes ;
 
-PROCEDURE MagicBytes (VAR pool: POOL) : SLICE OF BYTE =
+PROCEDURE MagicBytes () : SLICE OF BYTE =
 VAR m : SLICE OF BYTE ;
 BEGIN
-  m := NEW (pool, BYTE, 4) ;
+  m := NEW (BYTE, 4) ;
   m[0] := 80 ; m[1] := 65 ; m[2] := 82 ; m[3] := 49 ;   (* PAR1 *)
   RETURN m
 END MagicBytes ;

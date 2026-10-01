@@ -66,6 +66,11 @@ type
                                   FINALLY label, else L_ret }
     curRetq : string;           { the innermost block's return flag }
     localPools : array of string;
+    mvBase : Integer;           { where the module variables start in
+                                  scope (rule 2: a root that is one
+                                  lives in the module frame) }
+    bpool : TStringList;        { binder=pool expression (rule 2); the
+                                  last entry of a name is the live one }
     strNode : TNode;            { the SLICE OF CHAR that STR names }
     isProgram : Boolean;        { MODULE m -- emit a main () }
     mainBody : TNode;           { its statement sequence }
@@ -93,6 +98,15 @@ type
     function ScopeNode (const n: string): TNode;
     function ScopeMode (const n: string): string;
     function FieldType (rec: TNode; const f: string): TNode;
+    function AsQualG (d: TNode): TNode;
+    function NewShape (e: TNode; out ty: TNode; out ext0: Integer): string;
+    function HasPtr (t: TNode; depth: Integer): Boolean;
+    function PoolParamTy (t: TNode): Boolean;
+    procedure AdoptEmit (const expr: string; t: TNode; const dst: string;
+                         ind, depth: Integer);
+    function PoolAddrC (pd: TNode): string;
+    function ObjPoolC (a: TNode): string;
+    function OriginPool (k: TNode): string;
     procedure Err (n: TNode; const msg: string);
     function CharVal (const lit: string): Int64;
     function StrCodes (const s: string; n: TNode): string;
@@ -230,6 +244,7 @@ begin
   thrBuf := TStringList.Create; thrBuf.CaseSensitive := True;
   rec2Gates := TStringList.Create; rec2Gates.CaseSensitive := True;
   thrSeen := TStringList.Create; thrSeen.CaseSensitive := True;
+  bpool := TStringList.Create; bpool.CaseSensitive := True;
   arrSeen := TStringList.Create; arrSeen.CaseSensitive := True;
   scope := TStringList.Create; scope.CaseSensitive := True;
   extProcs := TStringList.Create; extProcs.CaseSensitive := True;
@@ -250,7 +265,7 @@ destructor TGen.Destroy;
 begin
   Errors.Free; consts.Free; hdr.Free; src.Free; tdefs.Free;
   pbuf.Free; sprotos.Free; arrSeen.Free; scope.Free;
-  thrBuf.Free; thrSeen.Free; rec2Gates.Free;
+  thrBuf.Free; thrSeen.Free; rec2Gates.Free; bpool.Free;
   extProcs.Free; extMods.Free; foreignProcs.Free; litBuf.Free;
   foreignUnit.Free; gateSeen.Free;
   extExcs.Free; extTypes.Free; extConsts.Free;
@@ -859,10 +874,254 @@ begin
         Exit (fs.kids[i].kids[1]);
 end;
 
+{ ---- the frame form of NEW, and adoption at exit (rule 1 of
+  docs/pool-elision-plan.md); mirrors Gen.AsQualG, NewShape, HasPtr
+  and AdoptEmit ---- }
+
+function TGen.AsQualG (d: TNode): TNode;
+begin
+  Result := nil;
+  if d = nil then Exit;
+  if (d.kind <> nkQualident) and (d.kind <> nkDesignator) then Exit;
+  if Length (d.kids) > 1 then Exit;
+  Result := TNode.Create (nkQualident);
+  Result.line := d.line;
+  Result.col := d.col;
+  Result.a := d.a;
+  Result.b := d.b;
+  if Length (d.kids) = 1 then
+  begin
+    if d.kids[0].kind <> nkSelField then Exit (nil);
+    Result.b := d.kids[0].a;
+  end;
+end;
+
+{ 'frame' for NEW (T) and NEW (T, n...), 'pool' for NEW (pool, T...),
+  'own' for NEW (OWN, T), told apart by NAME; the checker has refused
+  anything else.  ty is the type's node, ext0 the first extent's index. }
+function TGen.NewShape (e: TNode; out ty: TNode; out ext0: Integer): string;
+var
+  d : TNode;
+  isVar : Boolean;
+begin
+  ty := nil;
+  ext0 := 2;
+  d := e.kids[0];
+  if d <> nil then
+  begin
+    if (Length (d.kids) = 0) and (d.a = 'OWN') then
+    begin
+      ty := e.kids[1];
+      Exit ('own');
+    end;
+    isVar := True;
+    if Length (d.kids) = 0 then
+    begin
+      if (ScopeMode (d.a) = '') and (d.a <> 'HEAP') then isVar := False;
+    end
+    else if (Length (d.kids) = 1) and (d.kids[0].kind = nkSelField) then
+    begin
+      if (ScopeMode (d.a) = '') and (extMods.IndexOf (d.a) >= 0) then
+        isVar := False;
+    end;
+    if isVar then
+    begin
+      ty := AsQualG (e.kids[1]);
+      Exit ('pool');
+    end;
+    ty := AsQualG (e.kids[0]);
+    ext0 := 1;
+    Exit ('frame');
+  end;
+  ty := e.kids[1];
+  Result := 'frame';
+end;
+
+{ can a value of this type carry a pointer into the frame? }
+function TGen.HasPtr (t: TNode; depth: Integer): Boolean;
+var
+  r, fs : TNode;
+  i, j : Integer;
+begin
+  Result := False;
+  if depth > 8 then Exit;
+  r := Resolve (t);
+  if r = nil then Exit;
+  case r.kind of
+    nkPtrType, nkSliceType, nkGridType : Result := True;
+    nkOptType : Result := HasPtr (r.kids[0], depth + 1);
+    nkArrayType : Result := HasPtr (r.kids[1], depth + 1);
+    nkRecordType, nkMonitorType :
+      begin
+        if r.kind = nkMonitorType then fs := r.kids[0] else fs := r.kids[1];
+        if fs = nil then Exit;
+        for i := 0 to High (fs.kids) do
+          if (fs.kids[i] <> nil) and HasPtr (fs.kids[i].kids[1], depth + 1) then
+            Exit (True);
+      end;
+    nkCaseRecordType :
+      for i := 0 to High (r.kids) do
+        if (r.kids[i] <> nil) and (r.kids[i].kids[0] <> nil) then
+          for j := 0 to High (r.kids[i].kids[0].kids) do
+            if (r.kids[i].kids[0].kids[j] <> nil) and
+               HasPtr (r.kids[i].kids[0].kids[j].kids[1], depth + 1) then
+              Exit (True);
+  end;
+end;
+
+{ does a VAR parameter of this type carry its object's pool as a
+  hidden argument (docs/pool-elision-plan.md, rule 2)?  Mirrors
+  Gen.PoolParamTy: PTR and OPT PTR by node kind, a pointer-bearing
+  record, monitor, array or variant by resolution, never a bare slice
+  or grid. }
+function TGen.PoolParamTy (t: TNode): Boolean;
+var r : TNode;
+begin
+  Result := False;
+  if t = nil then Exit;
+  if t.kind = nkPtrType then Exit (True);
+  if t.kind = nkOptType then
+    Exit ((t.kids[0] <> nil) and (t.kids[0].kind = nkPtrType));
+  if t.kind in [nkSliceType, nkGridType] then Exit;
+  r := Resolve (t);
+  if r = nil then Exit;
+  { a name for a pointer is the pointer it names (mirrors Gen) }
+  if r.kind = nkPtrType then Exit (True);
+  if r.kind = nkOptType then
+    Exit ((r.kids[0] <> nil) and (r.kids[0].kind = nkPtrType));
+  if r.kind in [nkRecordType, nkMonitorType, nkArrayType, nkCaseRecordType] then
+    Result := HasPtr (t, 0);
+end;
+
+{ the exit test, one line per pointer component of EXPR of type T,
+  each adopting the frame into DST: the caller's arena for a result,
+  the object's own pool for a VAR parameter's target (rule 2) }
+procedure TGen.AdoptEmit (const expr: string; t: TNode; const dst: string;
+                          ind, depth: Integer);
+var
+  r, fs, g, ids, v, vfs, fg, fids : TNode;
+  i, j, k : Integer;
+  kv : string;
+begin
+  if depth > 8 then Exit;
+  r := Resolve (t);
+  if r = nil then Exit;
+  case r.kind of
+    nkPtrType :
+      Line (pbuf, ind, 'm9_adopt_if (&m9frame, ' + dst + ', ' + expr + ');');
+    nkOptType :
+      if HasPtr (r.kids[0], depth + 1) then
+        Line (pbuf, ind, 'm9_adopt_if (&m9frame, ' + dst + ', ' + expr + ');');
+    nkSliceType, nkGridType :
+      Line (pbuf, ind, 'm9_adopt_if (&m9frame, ' + dst + ', ' + expr + '.p);');
+    nkArrayType :
+      if HasPtr (r.kids[1], depth + 1) then
+      begin
+        kv := 'm9k' + IntToStr (depth);
+        Line (pbuf, ind, 'for (int64_t ' + kv + ' = 0; ' + kv + ' < ' +
+          ArrCount (r.kids[0]) + '; ' + kv + '++) {');
+        AdoptEmit (expr + '.v[' + kv + ']', r.kids[1], dst, ind + 1, depth + 1);
+        Line (pbuf, ind, '}');
+      end;
+    nkRecordType, nkMonitorType :
+      begin
+        if r.kind = nkMonitorType then fs := r.kids[0] else fs := r.kids[1];
+        if fs = nil then Exit;
+        for i := 0 to High (fs.kids) do
+        begin
+          g := fs.kids[i];
+          if (g = nil) or not HasPtr (g.kids[1], depth + 1) then continue;
+          ids := g.kids[0];
+          if ids = nil then continue;
+          for j := 0 to High (ids.kids) do
+            if ids.kids[j] <> nil then
+              AdoptEmit (expr + '.' + CN (ids.kids[j].a), g.kids[1], dst,
+                         ind, depth + 1);
+        end;
+      end;
+    nkCaseRecordType :
+      for i := 0 to High (r.kids) do
+      begin
+        v := r.kids[i];
+        if v = nil then continue;
+        vfs := v.kids[0];
+        if vfs = nil then continue;
+        for j := 0 to High (vfs.kids) do
+        begin
+          fg := vfs.kids[j];
+          if (fg = nil) or not HasPtr (fg.kids[1], depth + 1) then continue;
+          fids := fg.kids[0];
+          if fids = nil then continue;
+          for k := 0 to High (fids.kids) do
+            if fids.kids[k] <> nil then
+              AdoptEmit (expr + '.u.' + v.a + '.' + CN (fids.kids[k].a),
+                         fg.kids[1], dst, ind, depth + 1);
+        end;
+      end;
+  end;
+end;
+
+{ the C address of the pool a NEW's first argument names: a POOL
+  variable or HEAP by designator, or a VAR parameter's hidden pool
+  (rule 2), which is a pointer already.  Mirrors Gen.PoolAddrC. }
+function TGen.PoolAddrC (pd: TNode): string;
+var tg : string;
+begin
+  if (Length (pd.kids) = 0) and (ScopeMode (pd.a) = 'v') and
+     PoolParamTy (ScopeNode (pd.a)) then
+    Exit (CN (pd.a) + '_pool');
+  Result := '&(' + DES (pd, tg) + ')';
+end;
+
+{ the pool of the object a designator names, from its ROOT (rule 2
+  of docs/pool-elision-plan.md).  Mirrors Gen.ObjPoolC, which says
+  which root gets what. }
+function TGen.ObjPoolC (a: TNode): string;
+var
+  m : string;
+  ix, i : Integer;
+  t, r : TNode;
+begin
+  m := ScopeMode (a.a);
+  if m = 'v' then
+  begin
+    if PoolParamTy (ScopeNode (a.a)) then Exit (CN (a.a) + '_pool');
+    Exit ('err->res');
+  end;
+  if m = 'b' then
+  begin
+    for i := bpool.Count - 1 downto 0 do
+      if bpool.Names[i] = a.a then Exit (bpool.ValueFromIndex[i]);
+    Exit ('err->res');
+  end;
+  if m = 'l' then
+  begin
+    t := ScopeNode (a.a);
+    if (t <> nil) and (t.kind = nkOptType) then t := t.kids[0];
+    r := Resolve (t);
+    if (r <> nil) and (r.kind = nkPtrType) and (r.kids[1] <> nil) then
+      Exit (PoolAddrC (r.kids[1]));
+    ix := scope.IndexOfName (a.a);
+    if (ix >= mvBase) and (ix < mvBase + Length (modVarN)) then
+      Exit ('&m9mframe');
+    Exit ('err->res');
+  end;
+  Result := 'err->res';
+end;
+
+{ a binder's pool is its origin's when the origin is a designator,
+  else the arena a call's answer lands in }
+function TGen.OriginPool (k: TNode): string;
+begin
+  if (k <> nil) and (k.kind = nkDesignator) then Exit (ObjPoolC (k));
+  Result := 'err->res';
+end;
+
 function TGen.TagOfExpr (e: TNode): string;
 var
-  t, u : string;
-  ci : Integer;
+  t, u, sh : string;
+  ci, ext0, nx : Integer;
+  tyk : TNode;
 begin
   Result := '?';
   if e = nil then Exit;
@@ -907,9 +1166,15 @@ begin
       if e.a = 'NOT' then Result := 'BOOL'
       else Result := TagOfExpr (e.kids[0]);
     nkNewExpr :
-      if Length (e.kids) > 3 then Result := 'GRID'
-      else if e.kids[2] <> nil then Result := 'SLICE'
-      else Result := 'PTR';
+      begin
+        sh := NewShape (e, tyk, ext0);
+        nx := 0;
+        for ci := ext0 to High (e.kids) do
+          if e.kids[ci] <> nil then Inc (nx);
+        if nx > 1 then Result := 'GRID'
+        else if nx = 1 then Result := 'SLICE'
+        else Result := 'PTR';
+      end;
     nkSliceOf3 : Result := 'SLICE';
     nkNoneLit : Result := 'OPTPTR';
   end;
@@ -1708,6 +1973,11 @@ begin
             end
             else
               Err (site, 'VAR argument must be a designator');
+            { rule 2: the object's pool rides behind it, named from
+              the root of the designator (mirrors Gen.CallC) }
+            if grp.f1 and (arg.kind = nkDesignator) and
+               PoolParamTy (grp.kids[1]) then
+              args := args + ', ' + ObjPoolC (arg);
           end
           else
           begin
@@ -1742,10 +2012,10 @@ end;
 
 function TGen.EX (e: TNode; const want: string): string;
 var
-  l, r, lt, rt, w, tg : string;
+  l, r, lt, rt, w, tg, sh : string;
   cop : string;
-  j, k : Integer;
-  inr : TNode;
+  j, k, ext0, nx : Integer;
+  inr, tyk : TNode;
 begin
   Result := '0';
   if e = nil then Exit;
@@ -1795,50 +2065,60 @@ begin
     nkNewExpr :
       begin
         stRaise := True;
-        if e.kids[0] = nil then
+        sh := NewShape (e, tyk, ext0);
+        if sh = 'own' then
         begin
-          l := TyC (e.kids[1]);
-          Result := '(' + l + ' *) m9_new (sizeof (' + l + '), err)';
+          l := TyC (tyk);
+          Exit ('(' + l + ' *) m9_new (sizeof (' + l + '), err)');
+        end;
+        if sh = 'pool' then
+        begin
+          r := 'err->res';
+          if e.kids[0] <> nil then r := PoolAddrC (e.kids[0]);
+        end
+        else
+          { the frame form: the result slot, which is this frame's
+            arena in the body and the caller's while a RETURN
+            expression is emitted -- `+`'s rule exactly (par 2.3) }
+          r := 'err->res';
+        nx := 0;
+        for j := ext0 to High (e.kids) do
+          if e.kids[j] <> nil then Inc (nx);
+        if nx > 1 then
+        begin
+          { more than one extent is a GRID.  Row-major: the last
+            axis has stride 1, so the innermost loop over the
+            rightmost subscript walks memory in order.  The extents
+            are stored before they are multiplied, so a shape that
+            overflows raises rather than allocating a small buffer
+            and then indexing past it. }
+          l := TyC (tyk);
+          w := NewTmp;
+          k := nx;
+          Result := '({ ' + GridTy (tyk, IntToStr (k)) + ' ' + w + '; ';
+          for j := ext0 to High (e.kids) do
+            Result := Result + w + '.n[' + IntToStr (j - ext0) + '] = ' +
+              EX (e.kids[j], '') + '; ';
+          Result := Result + w + '.s[' + IntToStr (k - 1) + '] = 1; ';
+          for j := k - 2 downto 0 do
+            Result := Result + w + '.s[' + IntToStr (j) + '] = ' + w +
+              '.s[' + IntToStr (j + 1) + '] * ' + w + '.n[' +
+              IntToStr (j + 1) + ']; ';
+          Result := Result + w + '.p = (' + l + ' *) m9_pool_alloc (' + r +
+            ', sizeof (' + l + '), m9_gcount (' + w + '.n, ' +
+            IntToStr (k) + ', err), err); ' + w + '; })';
+        end
+        else if nx = 1 then
+        begin
+          l := TyC (tyk);
+          Result := 'M9_POOL_SL (' + SliceTy (tyk) + ', ' + l +
+            ', ' + r + ', ' + EX (e.kids[ext0], '') + ', err)';
         end
         else
         begin
-          r := '&(' + DES (e.kids[0], tg) + ')';
-          if Length (e.kids) > 3 then
-          begin
-            { more than one extent is a GRID.  Row-major: the last
-              axis has stride 1, so the innermost loop over the
-              rightmost subscript walks memory in order.  The extents
-              are stored before they are multiplied, so a shape that
-              overflows raises rather than allocating a small buffer
-              and then indexing past it. }
-            l := TyC (e.kids[1]);
-            w := NewTmp;
-            k := Length (e.kids) - 2;
-            Result := '({ ' + GridTy (e.kids[1], IntToStr (k)) + ' ' + w + '; ';
-            for j := 2 to High (e.kids) do
-              Result := Result + w + '.n[' + IntToStr (j - 2) + '] = ' +
-                EX (e.kids[j], '') + '; ';
-            Result := Result + w + '.s[' + IntToStr (k - 1) + '] = 1; ';
-            for j := k - 2 downto 0 do
-              Result := Result + w + '.s[' + IntToStr (j) + '] = ' + w +
-                '.s[' + IntToStr (j + 1) + '] * ' + w + '.n[' +
-                IntToStr (j + 1) + ']; ';
-            Result := Result + w + '.p = (' + l + ' *) m9_pool_alloc (' + r +
-              ', sizeof (' + l + '), m9_gcount (' + w + '.n, ' +
-              IntToStr (k) + ', err), err); ' + w + '; })';
-          end
-          else if e.kids[2] <> nil then
-          begin
-            l := TyC (e.kids[1]);
-            Result := 'M9_POOL_SL (' + SliceTy (e.kids[1]) + ', ' + l +
-              ', ' + r + ', ' + EX (e.kids[2], '') + ', err)';
-          end
-          else
-          begin
-            l := TyC (e.kids[1]);
-            Result := '(' + l + ' *) m9_pool_alloc (' + r +
-              ', sizeof (' + l + '), 1, err)';
-          end;
+          l := TyC (tyk);
+          Result := '(' + l + ' *) m9_pool_alloc (' + r +
+            ', sizeof (' + l + '), 1, err)';
         end;
       end;
     nkSliceOf3 :
@@ -2190,6 +2470,7 @@ begin
             else
               binderLines.Add (TyC (fld) + ' ' + CN (arg.a) + ' = ' +
                 slot + '; (void) ' + CN (arg.a) + ';');
+            bpool.Add (arg.a + '=err->res');
             scope.AddObject (arg.a + '=b', TObject (fld));
           end
           else if arg.kind = nkInt then
@@ -2251,9 +2532,9 @@ end;
 procedure TGen.EmitStmt (st: TNode; ind: Integer);
 var
   l, l2, r, tg, w, cnd, stp, bname, fldn : string;
-  j, i2, j2, k2, savedScope, g2, jj, sv : Integer;
+  j, i2, j2, k2, savedScope, g2, jj, sv, thrPi : Integer;
   vtN, vd, lbl : TNode;
-  opened, hadElse : Boolean;
+  opened, hadElse, thrWants : Boolean;
 begin
   DbgLine (st);
   case st.kind of
@@ -2294,6 +2575,7 @@ begin
             ' = ' + cnd + ';');
           if stRaise then Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
           savedScope := scope.Count;
+          bpool.Add (bname + '=' + OriginPool (st.kids[0].kids[0]));
           scope.AddObject (bname + '=b', TObject (vtN));
           Line (pbuf, ind, 'if (' + CN (bname) + ' != NULL) {');
           EmitSeq (st.kids[1], ind + 1);
@@ -2372,6 +2654,7 @@ begin
             Line (pbuf, ind + 1, 'if (err->exc) goto ' + raiseLbl + ';');
           Line (pbuf, ind + 1, 'if (!(' + CN (bname) + ' != NULL)) break;');
           savedScope := scope.Count;
+          bpool.Add (bname + '=' + OriginPool (st.kids[0].kids[0]));
           scope.AddObject (bname + '=b', TObject (vtN));
           sv := inSwitch; inSwitch := 0; j2 := finDepth; finDepth := 0;
           EmitSeq (st.kids[1], ind + 1);
@@ -2570,6 +2853,8 @@ begin
                               TyC (vd.kids[0].kids[g2].kids[1]) + ' ' +
                               bname + ' = ' + w + '.u.' + lbl.a + '.' +
                               fldn + '; (void) ' + bname + ';');
+                            bpool.Add (lbl.kids[0].kids[k2].a + '=' +
+                              OriginPool (st.kids[0]));
                             scope.AddObject (lbl.kids[0].kids[k2].a +
                               '=b', TObject (vd.kids[0].kids[g2].kids[1]));
                           end;
@@ -2716,19 +3001,38 @@ begin
             if thrSeen.IndexOf (bname) < 0 then
             begin
               thrSeen.Add (bname);
+              { rule 2: the thunk takes the pool the argument lives in
+                as well, and hands it on when the target's first
+                parameter carries one (mirrors Gen.EmitStmt) }
+              thrWants := False;
+              thrPi := FindProc (bname);
+              if (thrPi >= 0) and (procs[thrPi].node <> nil) and
+                 (procs[thrPi].node.kids[0] <> nil) and
+                 (Length (procs[thrPi].node.kids[0].kids) > 0) and
+                 (procs[thrPi].node.kids[0].kids[0] <> nil) then
+                thrWants := procs[thrPi].node.kids[0].kids[0].f1 and
+                  PoolParamTy (procs[thrPi].node.kids[0].kids[0].kids[1]);
               thrBuf.Add ('static void *m9_thr_' + modName + '_' + bname +
-                ' (void *p)');
+                ' (void *p, m9_pool *pool)');
               thrBuf.Add ('{');
               thrBuf.Add ('  m9_state e = { 0 };');
-              thrBuf.Add ('  ' + modName + '_' + bname + ' ((' +
-                w + ') p, &e);');
+              if thrWants then
+                thrBuf.Add ('  ' + modName + '_' + bname + ' ((' +
+                  w + ') p, pool, &e);')
+              else
+              begin
+                thrBuf.Add ('  (void) pool;');
+                thrBuf.Add ('  ' + modName + '_' + bname + ' ((' +
+                  w + ') p, &e);');
+              end;
               thrBuf.Add ('  if (e.exc) m9_thread_died (e.exc->name);');
               thrBuf.Add ('  return NULL;');
               thrBuf.Add ('}');
               thrBuf.Add ('');
             end;
-            Line (pbuf, ind, 'm9_thread_start (m9_thr_' + modName + '_' +
-              bname + ', (void *) ' + l + ', err);');
+            Line (pbuf, ind, 'm9_thread_start2 (m9_thr_' + modName + '_' +
+              bname + ', (void *) ' + l + ', ' + ObjPoolC (st.kids[1]) +
+              ', err);');
             Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
           end;
         end;
@@ -2875,7 +3179,7 @@ end;
 procedure TGen.GenProc (const gp: TGProc);
 var
   d, pl, grp, body, vt, r : TNode;
-  g, j, i : Integer;
+  g, j, i, k : Integer;
   ci2, cj2, svConsts : Integer;   { the procedure's own CONSTs }
   sig, retC, mode, cty, init : string;
   names : string;
@@ -2883,11 +3187,21 @@ var
   monN : TNode;
   outStr : array of string;      { the VAR/OWN STR parameters, whose
                                    targets are re-homed at L_ret }
+  adoptN : array of string;      { the VAR/OWN parameters of a
+                                   pointer-bearing type, whose targets
+                                   are tested for adoption at L_ret }
+  adoptT : array of TNode;
+  adoptD : array of string;      { ... and the pool each is adopted
+                                   into (rule 2) }
+  dst : string;
 begin
   d := gp.node;
   scope.Clear;
   SetLength (localPools, 0);
   SetLength (outStr, 0);
+  SetLength (adoptN, 0);
+  SetLength (adoptT, 0);
+  SetLength (adoptD, 0);
   tmpN := 0;
   exitLbl := 'L_ret';
   raiseLbl := 'L_ret';
@@ -2948,10 +3262,30 @@ begin
         else
         begin
           sig := sig + cty + ' *' + CN (grp.kids[0].kids[j].a) + ', ';
+          { rule 2 of docs/pool-elision-plan.md: a VAR parameter of
+            a pointer-bearing type carries the pool its object lives
+            in, right behind it, and its target is adopted into THAT
+            pool at exit (mirrors Gen.GenProc) }
+          if (mode = 'v') and PoolParamTy (grp.kids[1]) then
+          begin
+            sig := sig + 'm9_pool *' + CN (grp.kids[0].kids[j].a) + '_pool, ';
+            dst := CN (grp.kids[0].kids[j].a) + '_pool';
+          end
+          else
+            dst := 'm9res';
           if cty = 'm9_sl_CHAR' then
           begin
             SetLength (outStr, Length (outStr) + 1);
             outStr[High (outStr)] := CN (grp.kids[0].kids[j].a);
+          end
+          else if HasPtr (grp.kids[1], 0) then
+          begin
+            SetLength (adoptN, Length (adoptN) + 1);
+            adoptN[High (adoptN)] := CN (grp.kids[0].kids[j].a);
+            SetLength (adoptT, Length (adoptT) + 1);
+            adoptT[High (adoptT)] := grp.kids[1];
+            SetLength (adoptD, Length (adoptD) + 1);
+            adoptD[High (adoptD)] := dst;
           end;
         end;
       end;
@@ -2988,7 +3322,15 @@ begin
   PoolReg ('m9frame');
   Line (pbuf, 1, 'm9_pool *m9res = err->res ? err->res : &m9_heap;');
   Line (pbuf, 1, '(void) m9res;');
-  Line (pbuf, 1, 'err->res = &m9frame;');
+  { a function whose answer carries a pointer builds in its CALLER's
+    arena from the first statement (rule 1 of docs/pool-elision-
+    plan.md): the slot is left as the caller's and the frame stays
+    empty.  Mirrors Gen.GenProc, which says why. }
+  if (d.kids[1] <> nil) and (retC <> 'm9_sl_CHAR') and
+     HasPtr (d.kids[1], 0) then
+    Line (pbuf, 1, 'err->res = m9res;')
+  else
+    Line (pbuf, 1, 'err->res = &m9frame;');
   if dbgSrc <> '' then
     Line (pbuf, 1, 'err->file = "' + dbgSrc + '";');
   { PROCEDURE-LOCAL CONSTs, in the same map the module's own use.  The
@@ -3059,6 +3401,7 @@ begin
       end;
 
   { module state, visible after params and locals (first hit wins) }
+  mvBase := scope.Count;
   for i := 0 to High (modVarN) do
     scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
 
@@ -3075,11 +3418,25 @@ begin
     of either, are all caught; a literal, a borrow, or a string in a
     pool the caller named is not moved.  This is what lets a string
     procedure take no pool. }
+  { ... and from every LOCAL named pool as well (the frame is
+    localPools[0]); mirrors Gen.GenProc, which says why }
   if retC = 'm9_sl_CHAR' then
-    Line (pbuf, 1, 'm9ret = m9_rehome (&m9frame, m9res, m9ret, err);');
+    for i := 0 to High (localPools) do
+      Line (pbuf, 1, 'm9ret = m9_rehome (&' + localPools[i] +
+        ', m9res, m9ret, err);');
   for i := 0 to High (outStr) do
-    Line (pbuf, 1, '*' + outStr[i] + ' = m9_rehome (&m9frame, m9res, *' +
-      outStr[i] + ', err);');
+    for k := 0 to High (localPools) do
+      Line (pbuf, 1, '*' + outStr[i] + ' = m9_rehome (&' + localPools[k] +
+        ', m9res, *' + outStr[i] + ', err);');
+  { rule 1 of docs/pool-elision-plan.md: a frame allocation that
+    leaves -- through the result, or a VAR/OWN parameter's target --
+    takes the whole arena with it into the caller's, which a copy
+    could not do for a graph.  Mirrors Gen.GenProc. }
+  if (d.kids[1] <> nil) and (retC <> 'm9_sl_CHAR') and
+     HasPtr (d.kids[1], 0) then
+    AdoptEmit ('m9ret', d.kids[1], 'm9res', 1, 0);
+  for i := 0 to High (adoptN) do
+    AdoptEmit ('(*' + adoptN[i] + ')', adoptT[i], adoptD[i], 1, 0);
   { every exit passes through L_ret, so a RAISE drops the lock for
     the same reason a RETURN does }
   if monPar <> '' then
@@ -3114,6 +3471,7 @@ begin
   curRetTag := '';
   finDepth := 0;
   inSwitch := 0;
+  mvBase := scope.Count;
   for i := 0 to High (modVarN) do
     scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
   pbuf.Add ('');
@@ -3121,9 +3479,8 @@ begin
   pbuf.Add ('{');
   Line (pbuf, 1, 'm9_state errv = {0};');
   Line (pbuf, 1, 'm9_state *err = &errv;');
-  Line (pbuf, 1, 'm9_pool m9frame = {0};');
-  PoolReg ('m9frame');
-  Line (pbuf, 1, 'err->res = &m9frame;');
+  PoolReg ('m9mframe');
+  Line (pbuf, 1, 'err->res = &m9mframe;');
   if dbgSrc <> '' then
     Line (pbuf, 1, 'err->file = "' + dbgSrc + '";');
   Line (pbuf, 1, 'm9_args (argc, argv);');
@@ -3152,6 +3509,7 @@ begin
   curRetTag := '';
   finDepth := 0;
   inSwitch := 0;
+  mvBase := scope.Count;
   for i := 0 to High (modVarN) do
     scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
   pbuf.Add ('');
@@ -3160,17 +3518,17 @@ begin
   Line (pbuf, 1, 'static int m9done = 0;');
   Line (pbuf, 1, 'if (m9done) return;');
   Line (pbuf, 1, 'm9done = 1;');
-  Line (pbuf, 1, 'm9_pool m9frame = {0};');
+  { the init body's frame is the MODULE's lifetime (the checker
+    exempts a store into a module variable here, par 2.3), so the
+    arena is static and never freed -- mirrors Gen.GenInit }
   Line (pbuf, 1, 'm9_pool *m9prev = err->res;');
-  PoolReg ('m9frame');
-  Line (pbuf, 1, 'err->res = &m9frame;');
+  Line (pbuf, 1, 'err->res = &m9mframe;');
   for i := 0 to extMods.Count - 1 do
     Line (pbuf, 1, extMods[i] + '_m9init (err); if (err->exc) goto L_ret;');
   if mainBody <> nil then EmitStmt (mainBody, 1);
   Line (pbuf, 0, 'L_ret: ;');
   for i := 0 to High (localPools) do
     Line (pbuf, 1, 'm9_pool_free (&' + localPools[i] + ');');
-  Line (pbuf, 1, 'm9_pool_free (&m9frame);');
   Line (pbuf, 1, 'err->res = m9prev;');
   pbuf.Add ('}');
 end;
@@ -3197,7 +3555,9 @@ begin
       cty := TyC (grp.kids[1]);
       if grp.kids[0] <> nil then
         for j := 0 to High (grp.kids[0].kids) do
-          if grp.f1 or grp.f2 then ps := ps + cty + ' *, '
+          if grp.f1 and PoolParamTy (grp.kids[1]) then
+            ps := ps + cty + ' *, m9_pool *, '     { rule 2 }
+          else if grp.f1 or grp.f2 then ps := ps + cty + ' *, '
           else ps := ps + cty + ', ';
     end;
   Result := 'typedef ' + retC + ' (*' + modName + '_' + name + ') (' + ps
@@ -3214,6 +3574,7 @@ var
 begin
   hdr.Clear; src.Clear; tdefs.Clear; pbuf.Clear; sprotos.Clear;
   thrBuf.Clear; thrSeen.Clear; rec2Gates.Clear; gateSeen.Clear;
+  bpool.Clear;
   arrSeen.Clear; litBuf.Clear; hdrRecs.Clear; hdrProtos.Clear;
   hdrConsts.Clear; rec2 := TStringList.Create;
   hdr.Add ('/* generated by M9Gen from ' + forModule + '.m9 -- do not edit */');
@@ -3439,7 +3800,11 @@ begin
     their array typedefs register before tdefs is spliced. }
   for i := 0 to High (modVarN) do
     rec2.Add ('static ' + TyC (modVarT[i]) + ' ' + CN (modVarN[i]) + ';');
-  if Length (modVarN) > 0 then rec2.Add ('');
+  { the MODULE FRAME, static and at file scope, so that a module
+    variable declared without a pool has one to be grown in (rule 2
+    of docs/pool-elision-plan.md; mirrors Gen.Emit) }
+  rec2.Add ('static m9_pool m9mframe = {0};');
+  rec2.Add ('');
 
   { procedures emit into pbuf; typedefs, string literals, and static
     prototypes they discover along the way land before them }

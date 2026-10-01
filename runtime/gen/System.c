@@ -39,6 +39,8 @@ extern int64_t m9_exec_len (int, int);
 extern int64_t m9_exec_copy (int, int, void *, int64_t);
 extern void m9_exec_release (int);
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[5] = { 108u, 105u, 110u, 117u, 120u };
 static const uint32_t m9s1[7] = { 119u, 105u, 110u, 100u, 111u, 119u, 115u };
 static const uint32_t m9s2[5] = { 109u, 97u, 99u, 111u, 115u };
@@ -52,7 +54,7 @@ static const uint32_t m9s8[2] = { 45u, 45u };
 static void System_Put (m9_pool *scratch, m9_sl_BYTE *block, int64_t *k, m9_sl_CHAR s, m9_state *err);
 static m9_sl_CHAR System_Stream (m9_pool *pool, int64_t h, int64_t which, m9_state *err);
 static bool System_IsOption (m9_sl_CHAR a, m9_state *err);
-static m9_sl_CHAR System_Dup (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
+static m9_sl_CHAR System_Dup (m9_sl_CHAR s, m9_state *err);
 
 
 m9_sl_CHAR System_Os (m9_state *err)
@@ -120,6 +122,7 @@ m9_sl_CHAR System_Executable (m9_pool *pool, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -247,7 +250,7 @@ System_Result System_Exec (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   System_Result m9ret = {0};
   err->res = m9res;
   m9ret = System_ExecWithin (pool, prog, args, input, env, 0.0, err);
@@ -255,6 +258,8 @@ System_Result System_Exec (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHAR args
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.out.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.err_.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -264,7 +269,7 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   System_Result m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE block = {0}; (void) block;
@@ -356,6 +361,8 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.out.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.err_.p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -384,7 +391,7 @@ m9_sl_m9_sl_CHAR System_Args (m9_pool *pool, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_m9_sl_CHAR m9ret = {0};
   m9_sl_m9_sl_CHAR a = {0}; (void) a;
   int64_t i = 0; (void) i;
@@ -409,6 +416,7 @@ m9_sl_m9_sl_CHAR System_Args (m9_pool *pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -455,7 +463,7 @@ L_ret: ;
   return m9ret;
 }
 
-m9_sl_CHAR System_Value (m9_pool *pool, m9_sl_CHAR name, m9_sl_CHAR dflt, m9_state *err)
+m9_sl_CHAR System_Value (m9_sl_CHAR name, m9_sl_CHAR dflt, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -479,7 +487,7 @@ m9_sl_CHAR System_Value (m9_pool *pool, m9_sl_CHAR name, m9_sl_CHAR dflt, m9_sta
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
-      m9ret = System_Dup (pool, dflt, err);
+      m9ret = System_Dup (dflt, err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -487,18 +495,19 @@ m9_sl_CHAR System_Value (m9_pool *pool, m9_sl_CHAR name, m9_sl_CHAR dflt, m9_sta
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
-      m9ret = System_Dup (pool, ({ __typeof__((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err))) m9t4 = (*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err)); int64_t m9t4a = (prefix).len, m9t4n = m9_sub_i64 (((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err))).len, (prefix).len, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err);
+      m9ret = System_Dup (({ __typeof__((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err))) m9t4 = (*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err)); int64_t m9t4a = (prefix).len, m9t4n = m9_sub_i64 (((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err))).len, (prefix).len, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
   } }
   err->res = m9res;
-  m9ret = System_Dup (pool, dflt, err);
+  m9ret = System_Dup (dflt, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -509,7 +518,7 @@ m9_sl_m9_sl_CHAR System_Positional (m9_pool *pool, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_sl_m9_sl_CHAR m9ret = {0};
   m9_sl_m9_sl_CHAR a = {0}; (void) a;
   m9_sl_m9_sl_CHAR p = {0}; (void) p;
@@ -575,6 +584,7 @@ m9_sl_m9_sl_CHAR System_Positional (m9_pool *pool, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -603,6 +613,7 @@ static void System_Put (m9_pool *scratch, m9_sl_BYTE *block, int64_t *k, m9_sl_C
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*block).p);
   m9_pool_free (&m9frame);
   return;
 }
@@ -628,6 +639,7 @@ static m9_sl_CHAR System_Stream (m9_pool *pool, int64_t h, int64_t which, m9_sta
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -650,7 +662,7 @@ L_ret: ;
   return m9ret;
 }
 
-static m9_sl_CHAR System_Dup (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
+static m9_sl_CHAR System_Dup (m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -659,7 +671,7 @@ static m9_sl_CHAR System_Dup (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR r = {0}; (void) r;
   int64_t j = 0; (void) j;
-  r = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), (s).len, err);
+  r = M9_POOL_SL (m9_sl_CHAR, uint32_t, err->res, (s).len, err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   j = INT64_C(0);
@@ -684,14 +696,11 @@ void System_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   Io_m9init (err); if (err->exc) goto L_ret;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Text_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

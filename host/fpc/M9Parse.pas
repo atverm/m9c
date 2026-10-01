@@ -1245,37 +1245,57 @@ function TParser.PNew: TNode;
 var
   d1, d2 : TNode;
 begin
+  { NEW (T), NEW (T, n...), NEW (pool, T, n...), NEW (OWN, T): the
+    first argument says who frees the storage -- nothing (the frame),
+    a pool, or OWN.  A pool and a type are both designators, so
+    `NEW (a, b)` is resolved by NAME downstream (report par 10, item
+    6): kids[0] is the first argument or nil, kids[1] the second as an
+    EXPRESSION, kids[2..] the rest with a nil in kids[2] when there is
+    no third.  Mirrors Parse.PNew. }
   Result := NewNode (nkNewExpr);
   Expect (tkNEW, 'NEW');
   Expect (tkLParen, '(');
-  d1 := PDesignator;
-  if cur.kind = tkComma then
+  if cur.kind = tkOWN then
   begin
+    d1 := NewNode (nkDesignator);
+    d1.a := 'OWN';
     Bump;
+    Expect (tkComma, ',');
     d2 := PDesignator;
-    Result.Add (d1);                       { pool }
-    Result.Add (DesigToQual (d2));         { type }
-    if cur.kind = tkComma then
-    begin
-      Bump;
-      Result.Add (PExpr);                  { count, or the first extent }
-      { further extents make it a GRID: NEW (p, F64, nx, ny, nz).  The
-        arity states the rank, so the rank cannot disagree with the
-        number of extents the caller gave. }
-      while cur.kind = tkComma do
-      begin
-        Bump;
-        Result.Add (PExpr);
-      end;
-    end
-    else
-      Result.Add (nil);
+    Result.Add (d1);
+    Result.Add (DesigToQual (d2));
+    Result.Add (nil);
   end
   else
   begin
-    Result.Add (nil);
-    Result.Add (DesigToQual (d1));
-    Result.Add (nil);
+    d1 := PDesignator;
+    if cur.kind = tkComma then
+    begin
+      Bump;
+      Result.Add (d1);                       { pool, or the type }
+      Result.Add (PExpr);                    { type, or the first extent }
+      if cur.kind = tkComma then
+      begin
+        Bump;
+        Result.Add (PExpr);
+        { further extents make it a GRID: NEW (p, F64, nx, ny, nz).  The
+          arity states the rank, so the rank cannot disagree with the
+          number of extents the caller gave. }
+        while cur.kind = tkComma do
+        begin
+          Bump;
+          Result.Add (PExpr);
+        end;
+      end
+      else
+        Result.Add (nil);
+    end
+    else
+    begin
+      Result.Add (nil);
+      Result.Add (DesigToQual (d1));
+      Result.Add (nil);
+    end;
   end;
   Expect (tkRParen, ')');
 end;

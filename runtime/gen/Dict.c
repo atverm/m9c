@@ -15,45 +15,59 @@ struct Dict_Dict {
   m9_sl_I64 idx;
 };
 
+static m9_pool m9mframe = {0};
+
 static bool Dict_Eq (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
+static void Dict_Init (Dict_Dict * *d, m9_pool *d_pool, m9_state *err);
 static int64_t Dict_Slot (Dict_Dict * d, m9_sl_CHAR key, m9_state *err);
-static void Dict_Regrow (m9_pool *pool, Dict_Dict * *d, m9_state *err);
+static void Dict_Regrow (Dict_Dict * *d, m9_pool *d_pool, m9_state *err);
 
 
-Dict_Dict * Dict_New (m9_pool *pool, m9_state *err)
+Dict_Dict * Dict_New (m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Dict_Dict * m9ret = NULL;
   Dict_Dict * d = NULL; (void) d;
-  int64_t i = 0; (void) i;
-  d = (Dict_Dict *) m9_pool_alloc (&((*pool)), sizeof (Dict_Dict), 1, err);
+  d = (Dict_Dict *) m9_pool_alloc (err->res, sizeof (Dict_Dict), 1, err);
   if (err->exc) goto L_ret;
-  d->ents = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, &((*pool)), Dict_InitEnts, err);
+  Dict_Init (&(d), err->res, err);
   if (err->exc) goto L_ret;
-  d->n = INT64_C(0);
-  d->idx = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), Dict_InitSlots, err);
-  if (err->exc) goto L_ret;
-  { int64_t m9t1to;
-  i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((d->idx).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    (*(int64_t *) m9_at (d->idx.p, i, d->idx.len, sizeof (int64_t), err)) = Dict_Empty;
-    if (err->exc) goto L_ret;
-  } }
   err->res = m9res;
   m9ret = d;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Dict_Put (m9_pool *pool, Dict_Dict * *d, m9_sl_CHAR key, Dict_Value val, m9_state *err)
+Dict_Dict * Dict_NewIn (m9_pool *pool, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Dict_Dict * m9ret = NULL;
+  Dict_Dict * d = NULL; (void) d;
+  d = (Dict_Dict *) m9_pool_alloc (&((*pool)), sizeof (Dict_Dict), 1, err);
+  if (err->exc) goto L_ret;
+  Dict_Init (&(d), &((*pool)), err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = d;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+void Dict_Put (Dict_Dict * *d, m9_pool *d_pool, m9_sl_CHAR key, Dict_Value val, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -73,7 +87,7 @@ void Dict_Put (m9_pool *pool, Dict_Dict * *d, m9_sl_CHAR key, Dict_Value val, m9
     goto L_ret;
   }
   if (((*d)->n == ((*d)->ents).len)) {
-    ne = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, &((*pool)), m9_mul_i64 (INT64_C(2), ((*d)->ents).len, err), err);
+    ne = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, d_pool, m9_mul_i64 (INT64_C(2), ((*d)->ents).len, err), err);
     if (err->exc) goto L_ret;
     { int64_t m9t1to;
     i = INT64_C(0);
@@ -96,16 +110,17 @@ void Dict_Put (m9_pool *pool, Dict_Dict * *d, m9_sl_CHAR key, Dict_Value val, m9
   bool m9t2 = (m9_mul_i64 (INT64_C(2), (*d)->n, err) >= ((*d)->idx).len);
   if (err->exc) goto L_ret;
   if (m9t2) {
-    Dict_Regrow (pool, d, err);
+    Dict_Regrow (d, d_pool, err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
 
-bool Dict_Find (Dict_Dict * d, m9_sl_CHAR key, Dict_Value *val, m9_state *err)
+bool Dict_Find (Dict_Dict * d, m9_sl_CHAR key, Dict_Value *val, m9_pool *val_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -127,6 +142,7 @@ bool Dict_Find (Dict_Dict * d, m9_sl_CHAR key, Dict_Value *val, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, val_pool, (*val).u.Str.s.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -136,7 +152,7 @@ Dict_Value Dict_Get (Dict_Dict * d, m9_sl_CHAR key, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Dict_Value m9ret = {0};
   int64_t e = 0; (void) e;
   e = (*(int64_t *) m9_at (d->idx.p, Dict_Slot (d, key, err), d->idx.len, sizeof (int64_t), err));
@@ -152,6 +168,7 @@ Dict_Value Dict_Get (Dict_Dict * d, m9_sl_CHAR key, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.u.Str.s.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -218,7 +235,7 @@ Dict_Value Dict_ValAt (Dict_Dict * d, int64_t i, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Dict_Value m9ret = {0};
   if (((i < INT64_C(0)) || (i >= d->n))) {
     err->i[0] = i;
@@ -232,6 +249,7 @@ Dict_Value Dict_ValAt (Dict_Dict * d, int64_t i, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.u.Str.s.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -298,6 +316,33 @@ L_ret: ;
   return m9ret;
 }
 
+static void Dict_Init (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  (*d)->ents = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, d_pool, Dict_InitEnts, err);
+  if (err->exc) goto L_ret;
+  (*d)->n = INT64_C(0);
+  (*d)->idx = M9_POOL_SL (m9_sl_I64, int64_t, d_pool, Dict_InitSlots, err);
+  if (err->exc) goto L_ret;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (((*d)->idx).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    (*(int64_t *) m9_at ((*d)->idx.p, i, (*d)->idx.len, sizeof (int64_t), err)) = Dict_Empty;
+    if (err->exc) goto L_ret;
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
+  m9_pool_free (&m9frame);
+  return;
+}
+
 static int64_t Dict_Slot (Dict_Dict * d, m9_sl_CHAR key, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -338,7 +383,7 @@ L_ret: ;
   return m9ret;
 }
 
-static void Dict_Regrow (m9_pool *pool, Dict_Dict * *d, m9_state *err)
+static void Dict_Regrow (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -349,7 +394,7 @@ static void Dict_Regrow (m9_pool *pool, Dict_Dict * *d, m9_state *err)
   int64_t cap = 0; (void) cap;
   cap = m9_mul_i64 (INT64_C(2), ((*d)->idx).len, err);
   if (err->exc) goto L_ret;
-  (*d)->idx = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), cap, err);
+  (*d)->idx = M9_POOL_SL (m9_sl_I64, int64_t, d_pool, cap, err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
@@ -381,6 +426,7 @@ static void Dict_Regrow (m9_pool *pool, Dict_Dict * *d, m9_state *err)
   } }
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
   m9_pool_free (&m9frame);
   return;
 }
@@ -390,11 +436,8 @@ void Dict_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

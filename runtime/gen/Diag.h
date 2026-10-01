@@ -22,12 +22,12 @@ struct Diag_Finding {
   m9_sl_CHAR msg;
 };
 
-bool Diag_Parse (m9_sl_CHAR line, Diag_Finding *f, m9_state *err);
+bool Diag_Parse (m9_sl_CHAR line, Diag_Finding *f, m9_pool *f_pool, m9_state *err);
 m9_sl_Diag_Finding Diag_One (m9_pool *pool, int64_t line, int64_t col, m9_sl_CHAR msg, m9_state *err);
 m9_sl_Diag_Finding Diag_Check (m9_pool *pool, m9_sl_CHAR m9c, m9_sl_CHAR flags, m9_sl_CHAR dir, m9_sl_CHAR file, m9_sl_CHAR outFile, m9_state *err);
 m9_sl_CHAR Diag_DocJson (m9_pool *pool, m9_sl_CHAR m9c, m9_sl_CHAR flags, m9_sl_CHAR workDir, m9_sl_CHAR name, m9_state *err);
 m9_sl_CHAR Diag_Json (m9_pool *pool, m9_sl_Diag_Finding fs, m9_state *err);
-m9_sl_CHAR Diag_LexJson (m9_pool *pool, m9_sl_CHAR src, m9_state *err);
-void Diag_JStr (m9_pool *pool, DynStr_DString * *d, m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Diag_LexJson (m9_sl_CHAR src, m9_state *err);
+void Diag_JStr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state *err);
 
 #endif

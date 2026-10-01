@@ -77,6 +77,9 @@ TYPE
     name, foreign, attrib, modName, sig : STR ;
     raises : SLICE OF STR ;
     node : Ast.Kid ;
+    body : Ast.Kid ;                 (* the implementation's node, when
+                                        one was loaded: AnswersFrame
+                                        reads its body *)
     fromDef, hasBody : BOOL ;
   END ;
 
@@ -164,6 +167,9 @@ VAR
      alias edges the targets close over, and ledger stores PENDED
      until the walk ends and every escape of the destination has
      been seen.  All reset per procedure (CheckProcBody).           *)
+  ansName : SLICE OF STR ;       (* AnswersFrame's memo: Module.Proc *)
+  ansState : SLICE OF STR ;      (* 'yes', 'no', or 'busy' *)
+  nans : I64 ;
   escName : SLICE OF STR ;
   escTgt : SLICE OF STR ;
   nesc : I64 ;
@@ -201,9 +207,23 @@ VAR
      reference parameter, or via RETURN of the holding name) is the
      use-after-free the frame model would otherwise permit silently.
      Tainted on assignment of a concatenation, cleared when the name
-     is given a durable value again.  Reset per frame. *)
+     is given a durable value again.  Reset per frame.  Since the
+     frame form of NEW (docs/pool-elision-plan.md, rule 1) a name may
+     also hold a FRAME ALLOCATION, and fvalKind says which, for the
+     diagnostic: 'a concatenation' or 'a frame allocation'. *)
   fvalName : SLICE OF STR ;
+  fvalKind : SLICE OF STR ;
   nfval : I64 ;
+  (* the bare names holding a POOL allocation -- `NEW (pool, T)` or
+     the object form `NEW (d, T)` -- which is nobody's to own: a
+     copy out of such a name is a copy, not a move.  Before stage 5
+     such a local said `IN pool` and was no owned candidate by type;
+     the elided `j : PTR Job ; j := NEW (f, Job)` is the same storage
+     with no clause to say so (VertTransform.RunBands handed j to a
+     Band per thread in a loop and read `use of j after it was
+     moved`). *)
+  pvalName : SLICE OF STR ;
+  npval : I64 ;
 
 (* ---- output ---- *)
 
@@ -229,8 +249,12 @@ BEGIN
   raised := NEW (pool, Binding, 8) ;
   handled := NEW (pool, STR, 8) ;
   escName := NEW (pool, STR, 16) ;
+  ansName := NEW (pool, STR, 64) ;
+  ansState := NEW (pool, STR, 64) ;
   escTgt := NEW (pool, STR, 16) ;
   fvalName := NEW (pool, STR, 16) ;
+  fvalKind := NEW (pool, STR, 16) ;
+  pvalName := NEW (pool, STR, 16) ;
   edgeA := NEW (pool, STR, 8) ;
   edgeB := NEW (pool, STR, 8) ;
   pendSrc := NEW (pool, STR, 8) ;
@@ -268,13 +292,13 @@ PROCEDURE Diag (VAR list: SLICE OF STR ; VAR n: I64 ;
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.AppendI64 (pool, d, line) ;
-  DynStr.AppendChar (pool, d, ':') ;
-  DynStr.AppendI64 (pool, d, col) ;
-  DynStr.AppendChar (pool, d, ' ') ;
-  DynStr.Append (pool, d, ctx) ;
-  DynStr.Append (pool, d, ': ') ;
-  DynStr.Append (pool, d, msg) ;
+  DynStr.AppendI64 (d, line) ;
+  DynStr.AppendChar (d, ':') ;
+  DynStr.AppendI64 (d, col) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.Append (d, ctx) ;
+  DynStr.Append (d, ': ') ;
+  DynStr.Append (d, msg) ;
   PushErr (list, n, DynStr.View (d))
 END Diag ;
 
@@ -575,25 +599,25 @@ VAR
   i : I64 ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.AppendChar (pool, d, '(') ;
-  DynStr.Append (pool, d, Print.ParamsText (pool, p.kids[0])) ;
-  DynStr.AppendChar (pool, d, ')') ;
+  DynStr.AppendChar (d, '(') ;
+  DynStr.Append (d, Print.ParamsText (p.kids[0])) ;
+  DynStr.AppendChar (d, ')') ;
   IF p.kids[1] IS SOME rt THEN
-    DynStr.Append (pool, d, ' : ') ;
-    DynStr.Append (pool, d, Print.TypeText (pool, p.kids[1]))
+    DynStr.Append (d, ' : ') ;
+    DynStr.Append (d, Print.TypeText (pool, p.kids[1]))
   END ;
   IF p.kids[2] IS SOME rs THEN
-    DynStr.Append (pool, d, ' RAISES ') ;
+    DynStr.Append (d, ' RAISES ') ;
     r := RaisesOf (pool, p) ;
     FOR i := 0 TO LEN (r) - 1 DO
-      IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
-      DynStr.Append (pool, d, r[i])
+      IF i > 0 THEN DynStr.Append (d, ', ') END ;
+      DynStr.Append (d, r[i])
     END
   END ;
   IF p.kids[3] IS SOME at THEN
-    DynStr.Append (pool, d, ' [') ;
-    DynStr.Append (pool, d, at.a) ;
-    DynStr.AppendChar (pool, d, ']')
+    DynStr.Append (d, ' [') ;
+    DynStr.Append (d, at.a) ;
+    DynStr.AppendChar (d, ']')
   END ;
   RETURN DynStr.View (d)
 END SigOf ;
@@ -760,13 +784,18 @@ BEGIN
           p.raises := RaisesOf (pool, d) ;
           p.sig := SigOf (d) ;
           p.node := SOME (d) ;
+          p.body := NONE ;
           p.fromDef := u.kind = Ast.NDefinition ;
           p.hasBody := FALSE ;
-          IF d.kids[4] IS SOME bd THEN p.hasBody := TRUE END ;
+          IF d.kids[4] IS SOME bd THEN
+            p.hasBody := TRUE ;
+            p.body := SOME (d)
+          END ;
           AddProc (m, p)
         ELSE
           IF d.kids[4] IS SOME bd2 THEN
-            mods[m].procs[pi].hasBody := TRUE
+            mods[m].procs[pi].hasBody := TRUE ;
+            mods[m].procs[pi].body := SOME (d)
           END
         END
       ELSIF d.kind = Ast.NExcSection THEN
@@ -967,7 +996,7 @@ VAR
   names : SLICE OF STR ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, 'PROCEDURE (') ;
+  DynStr.Append (d, 'PROCEDURE (') ;
   first := TRUE ;
   IF pl IS SOME pln THEN
     FOR g := 0 TO pln.nkids - 1 DO
@@ -976,25 +1005,25 @@ BEGIN
         IF LEN (s) = 0 THEN RETURN '' END ;
         IF grp.kids[0] IS SOME ids THEN
           FOR j := 0 TO ids.nkids - 1 DO
-            IF NOT first THEN DynStr.Append (pool, d, ' ; ') END ;
+            IF NOT first THEN DynStr.Append (d, ' ; ') END ;
             first := FALSE ;
-            IF grp.f1 THEN DynStr.Append (pool, d, 'VAR ') END ;
-            IF grp.f2 THEN DynStr.Append (pool, d, 'OWN ') END ;
-            IF grp.f3 THEN DynStr.Append (pool, d, 'RO ') END ;
-            IF grp.f4 THEN DynStr.Append (pool, d, 'KEPT ') END ;
-            DynStr.Append (pool, d, s)
+            IF grp.f1 THEN DynStr.Append (d, 'VAR ') END ;
+            IF grp.f2 THEN DynStr.Append (d, 'OWN ') END ;
+            IF grp.f3 THEN DynStr.Append (d, 'RO ') END ;
+            IF grp.f4 THEN DynStr.Append (d, 'KEPT ') END ;
+            DynStr.Append (d, s)
           END
         END
       END
     END
   END ;
-  DynStr.AppendChar (pool, d, ')') ;
+  DynStr.AppendChar (d, ')') ;
   IF rt IS SOME rtn THEN
     s := CanonT (rt, depth + 1) ;
     IF LEN (s) = 0 THEN RETURN '' END ;
-    DynStr.Append (pool, d, ' : ') ;
-    IF ro THEN DynStr.Append (pool, d, 'RO ') END ;
-    DynStr.Append (pool, d, s)
+    DynStr.Append (d, ' : ') ;
+    IF ro THEN DynStr.Append (d, 'RO ') END ;
+    DynStr.Append (d, s)
   END ;
   IF rs IS SOME rsn THEN
     names := NEW (pool, STR, rsn.nkids) ;
@@ -1012,10 +1041,10 @@ BEGIN
         k := k - 1
       END
     END ;
-    DynStr.Append (pool, d, ' RAISES ') ;
+    DynStr.Append (d, ' RAISES ') ;
     FOR i := 0 TO rsn.nkids - 1 DO
-      IF i > 0 THEN DynStr.Append (pool, d, ', ') END ;
-      DynStr.Append (pool, d, names[i])
+      IF i > 0 THEN DynStr.Append (d, ', ') END ;
+      DynStr.Append (d, names[i])
     END
   END ;
   RETURN DynStr.View (d)
@@ -1064,13 +1093,13 @@ BEGIN
     | Ast.NArrayType :
         s := CanonT (n.kids[1], depth + 1) ;
         IF LEN (s) > 0 THEN
-          RETURN Cat (Cat (Cat ('ARRAY ', Print.ExprText (pool, n.kids[0])),
+          RETURN Cat (Cat (Cat ('ARRAY ', Print.ExprText (n.kids[0])),
                            ' OF '), s)
         END
     | Ast.NGridType :
         s := CanonT (n.kids[1], depth + 1) ;
         IF LEN (s) > 0 THEN
-          RETURN Cat (Cat (Cat ('GRID ', Print.ExprText (pool, n.kids[0])),
+          RETURN Cat (Cat (Cat ('GRID ', Print.ExprText (n.kids[0])),
                            ' OF '), s)
         END
     ELSE
@@ -1492,20 +1521,97 @@ BEGIN
   RETURN FALSE
 END FvalHas ;
 
-PROCEDURE FvalAdd (RO KEPT nm: STR) =
+(* the LOCAL pool a kind names -- 'an allocation in pool P' or 'a view
+   into pool P' (FrameWhat, par 4.3) -- or '' for a frame kind.  Read
+   back from the text so that one string carries both the diagnostic
+   and the taint, as the frame kinds do. *)
+PROCEDURE KindPool (RO what: STR) : STR =
+BEGIN
+  IF Text.StartsWith (what, 'an allocation in pool ') THEN
+    RETURN SLICE (what, 22, LEN (what) - 22)
+  END ;
+  IF Text.StartsWith (what, 'a view into pool ') THEN
+    RETURN SLICE (what, 17, LEN (what) - 17)
+  END ;
+  RETURN ''
+END KindPool ;
+
+(* what the name holds: 'a concatenation', 'a frame allocation', or
+   '' when it is not tainted *)
+PROCEDURE FvalKindOf (RO nm: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nfval - 1 DO
+    IF Text.Eq (fvalName[i], nm) THEN RETURN fvalKind[i] END
+  END ;
+  RETURN ''
+END FvalKindOf ;
+
+PROCEDURE FvalAdd (RO KEPT nm: STR ; RO KEPT what: STR) =
+VAR
+  ns, nk : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  (* a name already tainted keeps its kind, unless the new one names
+     a local pool: frame storage is re-homed or adopted at exit, a
+     local pool's is freed, so a slice built in the frame that takes
+     one element viewing a local pool is the pool's problem *)
+  FOR i := 0 TO nfval - 1 DO
+    IF Text.Eq (fvalName[i], nm) THEN
+      IF LEN (KindPool (what)) > 0 THEN fvalKind[i] := what END ;
+      RETURN
+    END
+  END ;
+  IF nfval = LEN (fvalName) THEN
+    ns := NEW (pool, STR, 2 * LEN (fvalName)) ;
+    nk := NEW (pool, STR, 2 * LEN (fvalName)) ;
+    FOR i := 0 TO nfval - 1 DO
+      ns[i] := fvalName[i] ;
+      nk[i] := fvalKind[i]
+    END ;
+    fvalName := ns ;
+    fvalKind := nk
+  END ;
+  fvalName[nfval] := nm ;
+  fvalKind[nfval] := what ;
+  nfval := nfval + 1
+END FvalAdd ;
+
+PROCEDURE PvalHas (RO nm: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO npval - 1 DO
+    IF Text.Eq (pvalName[i], nm) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END PvalHas ;
+
+PROCEDURE PvalDel (RO nm: STR) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO npval - 1 DO
+    IF Text.Eq (pvalName[i], nm) THEN
+      pvalName[i] := pvalName[npval - 1] ;
+      npval := npval - 1 ;
+      RETURN
+    END
+  END
+END PvalDel ;
+
+PROCEDURE PvalAdd (RO KEPT nm: STR) =
 VAR
   ns : SLICE OF STR ;
   i : I64 ;
 BEGIN
-  IF FvalHas (nm) THEN RETURN END ;
-  IF nfval = LEN (fvalName) THEN
-    ns := NEW (pool, STR, 2 * LEN (fvalName)) ;
-    FOR i := 0 TO nfval - 1 DO ns[i] := fvalName[i] END ;
-    fvalName := ns
+  IF PvalHas (nm) THEN RETURN END ;
+  IF npval = LEN (pvalName) THEN
+    ns := NEW (pool, STR, 2 * LEN (pvalName)) ;
+    FOR i := 0 TO npval - 1 DO ns[i] := pvalName[i] END ;
+    pvalName := ns
   END ;
-  fvalName[nfval] := nm ;
-  nfval := nfval + 1
-END FvalAdd ;
+  pvalName[npval] := nm ;
+  npval := npval + 1
+END PvalAdd ;
 
 PROCEDURE FvalDel (RO nm: STR) =
 VAR i : I64 ;
@@ -1513,11 +1619,27 @@ BEGIN
   FOR i := 0 TO nfval - 1 DO
     IF Text.Eq (fvalName[i], nm) THEN
       fvalName[i] := fvalName[nfval - 1] ;
+      fvalKind[i] := fvalKind[nfval - 1] ;
       nfval := nfval - 1 ;
       RETURN
     END
   END
 END FvalDel ;
+
+(* Is this NEW the FRAME form -- `NEW (T)` or `NEW (T, n...)`, no
+   pool named (docs/pool-elision-plan.md, rule 1)?  Decided by NAME,
+   as report par 10 item 6 says: a first argument that is a variable
+   in scope, HEAP, or OWN is not the frame form.  Quiet -- NewForm
+   below is the one that diagnoses. *)
+PROCEDURE NewIsFrame (e: PTR Ast.Node) : BOOL =
+BEGIN
+  IF e.kids[0] IS SOME d THEN
+    IF d.nkids > 0 THEN RETURN FALSE END ;
+    IF Text.Eq (d.a, 'OWN') OR Text.Eq (d.a, 'HEAP') THEN RETURN FALSE END ;
+    RETURN ScopeFind (d.a) < 0
+  END ;
+  RETURN TRUE
+END NewIsFrame ;
 
 PROCEDURE EscAlias (RO KEPT a: STR ; RO KEPT b: STR) =
 VAR
@@ -1591,17 +1713,381 @@ END FrameCore ;
    is a bare name that already holds one (fval).  `u` is the RHS's
    type, so a numeric `+` (not SLICE OF CHAR) is not mistaken for a
    concatenation. *)
-PROCEDURE FrameRHS (k: Ast.Kid ; RO u: STR) : BOOL =
+(* Does this call answer FRAME storage -- the callee's name, or ''?
+   A callee that takes no pool and answers a pointer-bearing value
+   that is not RO builds its answer in ITS CALLER's arena (rule 1 of
+   docs/pool-elision-plan.md, and par 2.3 for a string re-homed at
+   exit), so the answer lives in this frame and dies with it.  Not
+   frame storage: a foreign procedure's pointer (the library's) and an
+   RO answer (a view of something that exists already); a callee that
+   took a pool answers in it unless its RETURN says otherwise, which
+   AnswersFrame reads from its body. *)
+PROCEDURE LookupProc (RO callee: STR ; VAR found: BOOL) : ProcInfo ;
+PROCEDURE DesigName (d: PTR Ast.Node) : STR ;
+
+(* ---- does a procedure ANSWER frame storage?  A summary of its body,
+   memoised per Module.Proc, because the signature cannot say: a
+   pool-less function answering a pointer may answer a VIEW of its
+   argument (Text.Trim), storage from a module pool (Gen's S2), or --
+   since the frame form of NEW -- storage built in its caller's arena
+   (rule 1).  The corpus's 75 pool-less pointer answers were all of
+   the first two kinds when this was measured, so the default is NO
+   and the evidence for YES is in the body: a frame NEW, a `+` in a
+   function that answers a string, a local POOL in one (its answer is
+   re-homed out of it), or a call to a procedure that answers frame
+   storage.  Over-approximate on purpose: a frame temporary in a
+   function that answers a view makes the answer count as frame
+   storage, and the cost is a Text.Keep at a durable store. *)
+PROCEDURE AnsFind (RO q: STR) : I64 =
+VAR i : I64 ;
 BEGIN
-  IF FrameCore (k) IS SOME e THEN
-    IF e.kind = Ast.NBin AND Text.Eq (e.a, '+') AND
-       Text.Eq (u, 'SLICE OF CHAR') THEN RETURN TRUE END ;
-    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
-      RETURN FvalHas (e.a)
+  FOR i := 0 TO nans - 1 DO
+    IF Text.Eq (ansName[i], q) THEN RETURN i END
+  END ;
+  RETURN -1
+END AnsFind ;
+
+PROCEDURE AnsSet (RO KEPT q: STR ; RO KEPT state: STR) =
+VAR
+  i : I64 ;
+  nn, ns : SLICE OF STR ;
+BEGIN
+  i := AnsFind (q) ;
+  IF i >= 0 THEN ansState[i] := state ; RETURN END ;
+  IF nans = LEN (ansName) THEN
+    nn := NEW (pool, STR, 2 * LEN (ansName)) ;
+    ns := NEW (pool, STR, 2 * LEN (ansName)) ;
+    FOR i := 0 TO nans - 1 DO
+      nn[i] := ansName[i] ;
+      ns[i] := ansState[i]
+    END ;
+    ansName := nn ;
+    ansState := ns
+  END ;
+  ansName[nans] := q ;
+  ansState[nans] := state ;
+  nans := nans + 1
+END AnsSet ;
+
+PROCEDURE AnswersFrame (RO KEPT qual: STR ; pr: ProcInfo) : BOOL ;
+
+(* a callee named inside module MOD, as ProcInfo; found says so *)
+PROCEDURE ProcNamed (RO mod: STR ; RO callee: STR ; VAR found: BOOL) : ProcInfo =
+VAR
+  dot, m, pi : I64 ;
+  empty : ProcInfo ;
+BEGIN
+  found := FALSE ;
+  dot := Text.FindChar (callee, '.') ;
+  IF dot >= 0 THEN
+    m := FindMod (SLICE (callee, 0, dot)) ;
+    IF m < 0 THEN RETURN empty END ;
+    pi := FindProcIn (m, SLICE (callee, dot + 1, LEN (callee) - dot - 1))
+  ELSE
+    m := FindMod (mod) ;
+    IF m < 0 THEN RETURN empty END ;
+    pi := FindProcIn (m, callee)
+  END ;
+  IF pi < 0 THEN RETURN empty END ;
+  found := TRUE ;
+  RETURN mods[m].procs[pi]
+END ProcNamed ;
+
+(* is there frame storage under node K of a procedure of module MOD
+   whose answer is a string when isStr? *)
+(* Is the NEW's storage the frame's?  A type's name in the first
+   position is the frame form, a variable's a pool; decided without
+   the procedure's scope, so a local that shadows a type name of its
+   module reads as the type.  Quiet, like NewIsFrame. *)
+PROCEDURE NewIsFrameIn (e: PTR Ast.Node ; RO mod: STR) : BOOL =
+VAR m : I64 ;
+BEGIN
+  IF e.kids[0] IS SOME d THEN
+    IF d.nkids = 0 THEN
+      IF Text.Eq (d.a, 'OWN') OR Text.Eq (d.a, 'HEAP') THEN RETURN FALSE END ;
+      IF IsBuiltinTy (d.a) OR Text.Eq (d.a, 'STR') THEN RETURN TRUE END ;
+      m := FindMod (mod) ;
+      IF m >= 0 THEN
+        IF FindTypeIn (m, d.a) IS SOME t THEN RETURN TRUE END
+      END ;
+      RETURN FALSE
+    END ;
+    IF d.nkids = 1 THEN
+      IF d.kids[0] IS SOME sel THEN
+        IF sel.kind = Ast.NSelField THEN
+          m := FindMod (d.a) ;
+          IF m >= 0 THEN
+            IF FindTypeIn (m, sel.a) IS SOME t2 THEN RETURN TRUE END
+          END
+        END
+      END
+    END ;
+    RETURN FALSE
+  END ;
+  RETURN TRUE
+END NewIsFrameIn ;
+
+PROCEDURE ExprEvidence (k: Ast.Kid ; RO mod: STR ; isStr: BOOL ;
+                        body: Ast.Kid ; depth: I64) : BOOL ;
+
+(* does any `NAME := rhs` under K have frame evidence on its right? *)
+PROCEDURE AssignEvidence (k: Ast.Kid ; RO name: STR ; RO mod: STR ;
+                          isStr: BOOL ; body: Ast.Kid ; depth: I64) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NAssign THEN
+      IF e.kids[0] IS SOME lhs THEN
+        IF lhs.kind = Ast.NDesignator AND lhs.nkids = 0 THEN
+          IF Text.Eq (lhs.a, name) THEN
+            IF ExprEvidence (e.kids[1], mod, isStr, body, depth) THEN
+              RETURN TRUE
+            END
+          END
+        END
+      END
+    END ;
+    FOR i := 0 TO e.nkids - 1 DO
+      IF AssignEvidence (e.kids[i], name, mod, isStr, body, depth) THEN
+        RETURN TRUE
+      END
     END
   END ;
   RETURN FALSE
-END FrameRHS ;
+END AssignEvidence ;
+
+(* is the value of expression K frame storage?  A frame NEW; a `+`
+   in answer position of a string function (a numeric `+` cannot be
+   the answer of one); a call to a procedure that answers frame
+   storage; a bare local that was assigned any of these (followed
+   through assignments, four deep).  A view, a literal and a call
+   answering a view or module-pool storage are not. *)
+PROCEDURE ExprEvidence (k: Ast.Kid ; RO mod: STR ; isStr: BOOL ;
+                        body: Ast.Kid ; depth: I64) : BOOL =
+VAR
+  found : BOOL ;
+  pr : ProcInfo ;
+  nm : STR ;
+BEGIN
+  IF depth > 4 THEN RETURN FALSE END ;
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NParen OR e.kind = Ast.NSomeExpr THEN
+      RETURN ExprEvidence (e.kids[0], mod, isStr, body, depth)
+    END ;
+    IF e.kind = Ast.NNewExpr THEN RETURN NewIsFrameIn (e, mod) END ;
+    IF e.kind = Ast.NBin THEN
+      RETURN isStr AND Text.Eq (e.a, '+')
+    END ;
+    IF e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME dn THEN
+        IF dn.kind = Ast.NDesignator THEN
+          nm := DesigName (dn) ;
+          pr := ProcNamed (mod, nm, found) ;
+          IF found THEN
+            IF LEN (pr.foreign) = 0 THEN
+              RETURN AnswersFrame (Qualify (pr.modName, pr.name), pr)
+            END
+          END
+        END
+      END ;
+      RETURN FALSE
+    END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      RETURN AssignEvidence (body, e.a, mod, isStr, body, depth + 1)
+    END
+  END ;
+  RETURN FALSE
+END ExprEvidence ;
+
+(* the evidence for a procedure of module MOD whose body is K: a
+   RETURN whose expression is frame storage, or -- when it answers a
+   string -- a local POOL, whose strings are re-homed out of it at
+   exit (par 2.3) and so live in the caller's frame *)
+PROCEDURE FrameEvidence (k: Ast.Kid ; RO mod: STR ; isStr: BOOL ;
+                         body: Ast.Kid ; scratchCounts: BOOL) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NReturn THEN
+      IF ExprEvidence (e.kids[0], mod, isStr, body, 0) THEN RETURN TRUE END
+    ELSIF e.kind = Ast.NVarDecl THEN
+      IF isStr AND scratchCounts THEN
+        IF e.kids[1] IS SOME vt THEN
+          IF vt.kind = Ast.NQualident THEN
+            IF Text.Eq (vt.a, 'POOL') AND LEN (vt.b) = 0 THEN RETURN TRUE END
+          END
+        END
+      END
+    END ;
+    FOR i := 0 TO e.nkids - 1 DO
+      IF FrameEvidence (e.kids[i], mod, isStr, body, scratchCounts) THEN
+        RETURN TRUE
+      END
+    END
+  END ;
+  RETURN FALSE
+END FrameEvidence ;
+
+PROCEDURE AnswersFrame (RO KEPT qual: STR ; pr: ProcInfo) : BOOL =
+VAR
+  i, g : I64 ;
+  res, isStr, hasPool : BOOL ;
+BEGIN
+  i := AnsFind (qual) ;
+  IF i >= 0 THEN RETURN Text.Eq (ansState[i], 'yes') END ;
+  (* in progress counts as no: a cycle adds no evidence of its own *)
+  AnsSet (qual, 'busy') ;
+  res := FALSE ;
+  IF pr.body IS SOME d THEN
+    (* a procedure that takes a pool answers in it, by the rule of
+       docs/pools.md; its scratch pools and temporaries say nothing
+       about where the answer lives *)
+    hasPool := FALSE ;
+    IF d.kids[0] IS SOME pl THEN
+      FOR g := 0 TO pl.nkids - 1 DO
+        IF pl.kids[g] IS SOME grp THEN
+          IF grp.kids[1] IS SOME pt THEN
+            IF pt.kind = Ast.NQualident THEN
+              IF Text.Eq (pt.a, 'POOL') AND LEN (pt.b) = 0 THEN
+                hasPool := TRUE
+              END
+            END
+          END
+        END
+      END
+    END ;
+    (* ... but only for what it returns: a RETURN of a frame NEW, of
+       a `+`, or of a frame-answering call is evidence whether or not
+       a pool was taken (a reader that hands on a frame-built answer
+       is a frame-answering reader), while a local POOL is evidence
+       only in a pool-less string function *)
+    isStr := FALSE ;
+    IF d.kids[1] IS SOME rt THEN
+      isStr := Text.Eq (CanonT (d.kids[1], 0), 'SLICE OF CHAR')
+    END ;
+    res := FrameEvidence (d.kids[4], pr.modName, isStr, d.kids[4],
+                          NOT hasPool)
+  END ;
+  IF res THEN AnsSet (qual, 'yes') ELSE AnsSet (qual, 'no') END ;
+  RETURN res
+END AnswersFrame ;
+
+PROCEDURE CallAnswersFrame (dn: PTR Ast.Node) : STR =
+VAR
+  name : STR ;
+  pr : ProcInfo ;
+  found, ref : BOOL ;
+BEGIN
+  IF dn.kind # Ast.NDesignator THEN RETURN '' END ;
+  name := DesigName (dn) ;
+  pr := LookupProc (name, found) ;
+  IF NOT found THEN RETURN '' END ;
+  IF LEN (pr.foreign) > 0 THEN RETURN '' END ;
+  IF NOT AnswersFrame (Qualify (pr.modName, pr.name), pr) THEN RETURN '' END ;
+  IF pr.node IS SOME pn THEN
+    IF pn.f3 THEN RETURN '' END ;
+    ref := FALSE ;
+    IF ResolveType (pn.kids[1]) IS SOME r THEN
+      IF r.kind = Ast.NPtrType OR r.kind = Ast.NSliceType OR
+         r.kind = Ast.NGridType THEN
+        ref := TRUE
+      ELSIF r.kind = Ast.NOptType THEN
+        IF ResolveType (r.kids[0]) IS SOME r2 THEN
+          IF r2.kind = Ast.NPtrType THEN ref := TRUE END
+        END
+      END
+    END ;
+    IF ref THEN RETURN name END
+  END ;
+  RETURN ''
+END CallAnswersFrame ;
+
+PROCEDURE DeclPool (t: Ast.Kid) : Ast.Kid ;
+PROCEDURE AllocPoolOf (k: Ast.Kid ; RO ctx: STR) : STR ;
+PROCEDURE FrameWhat (k: Ast.Kid ; RO u: STR) : STR ;
+
+(* the LOCAL pool an expression's storage lives in, by its shape: the
+   pool a NEW names or a call's `IN r` promise names (AllocPoolOf), or
+   the IN clause of a bare name -- when that pool is a local of this
+   procedure, so dies with its frame; '' for any other pool and any
+   other shape *)
+PROCEDURE LocalPoolOf (e: PTR Ast.Node) : STR =
+VAR p : STR ;
+BEGIN
+  p := '' ;
+  IF e.kind = Ast.NNewExpr OR e.kind = Ast.NCallExpr THEN
+    p := AllocPoolOf (SOME (e), '')
+  ELSIF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+    IF DeclPool (ScopeType (e.a)) IS SOME dp THEN p := dp.a END
+  END ;
+  IF LEN (p) > 0 THEN
+    IF Text.Eq (ScopeMode (p), ModeLocal) THEN RETURN p END
+  END ;
+  RETURN ''
+END LocalPoolOf ;
+
+(* the local pool a VIEW looks into: a callee that answers RO answers
+   a view of its arguments (DynStr.View, par 4.1), so an argument
+   whose storage is in a local pool -- by shape, or a name holding
+   such a value -- makes the answer live there too; '' otherwise *)
+PROCEDURE ViewedPool (dn: PTR Ast.Node ; args: Ast.Kid) : STR =
+VAR
+  pr : ProcInfo ;
+  found : BOOL ;
+  i : I64 ;
+  p : STR ;
+BEGIN
+  IF dn.kind # Ast.NDesignator THEN RETURN '' END ;
+  pr := LookupProc (DesigName (dn), found) ;
+  IF NOT found THEN RETURN '' END ;
+  IF pr.node IS SOME pn THEN
+    IF NOT pn.f3 THEN RETURN '' END ;
+    IF args IS SOME al THEN
+      FOR i := 0 TO al.nkids - 1 DO
+        p := KindPool (FrameWhat (al.kids[i], '')) ;
+        IF LEN (p) > 0 THEN RETURN p END
+      END
+    END
+  END ;
+  RETURN ''
+END ViewedPool ;
+
+PROCEDURE FrameWhat (k: Ast.Kid ; RO u: STR) : STR =
+  (* what the frame-scoped value IS, for the diagnostic and the taint:
+     'a concatenation', 'a frame allocation' (a NEW with no pool,
+     docs/pool-elision-plan.md rule 1), 'the answer of F' (a call that
+     built its answer here), 'an allocation in pool P' or 'a view into
+     pool P' for a LOCAL pool P (par 4.3: it dies with the frame as
+     the others do, but is neither re-homed nor adopted at exit -- the
+     zarr proxy's FillId stored DynStr.View of a scratch-pool string
+     into its VAR record, --check accepted it, and the ids read back
+     as freed memory, 2026-10-01), or '' when the right-hand side is
+     none of these and holds none *)
+VAR nm, p : STR ;
+BEGIN
+  IF FrameCore (k) IS SOME e THEN
+    IF e.kind = Ast.NBin AND Text.Eq (e.a, '+') AND
+       Text.Eq (u, 'SLICE OF CHAR') THEN RETURN 'a concatenation' END ;
+    IF e.kind = Ast.NNewExpr THEN
+      IF NewIsFrame (e) THEN RETURN 'a frame allocation' END
+    END ;
+    IF e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME dn THEN
+        nm := CallAnswersFrame (dn) ;
+        IF LEN (nm) > 0 THEN RETURN Cat ('the answer of ', nm) END ;
+        p := ViewedPool (dn, e.kids[1]) ;
+        IF LEN (p) > 0 THEN RETURN Cat ('a view into pool ', p) END
+      END
+    END ;
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 THEN
+      nm := FvalKindOf (e.a) ;
+      IF LEN (nm) > 0 THEN RETURN nm END
+    END ;
+    p := LocalPoolOf (e) ;
+    IF LEN (p) > 0 THEN RETURN Cat ('an allocation in pool ', p) END
+  END ;
+  RETURN ''
+END FrameWhat ;
 
 (* a ref value rooted at frame storage SRC was stored into the
    designator rooted DST (dstSel: through a selector) *)
@@ -1720,27 +2206,18 @@ END CarryFrom ;
 PROCEDURE AppendTgt (VAR d: PTR DynStr.DString ; RO t: STR) =
 BEGIN
   IF Text.Eq (t, '<module>') THEN
-    DynStr.Append (pool, d, 'module state')
+    DynStr.Append (d, 'module state')
   ELSIF Text.Eq (t, '<return>') THEN
-    DynStr.Append (pool, d, 'the RETURN value')
+    DynStr.Append (d, 'the RETURN value')
   ELSIF Text.Eq (t, '<call>') THEN
-    DynStr.Append (pool, d, 'a callee')
+    DynStr.Append (d, 'a callee')
   ELSIF Text.Eq (t, '<unknown>') THEN
-    DynStr.Append (pool, d, 'an unknown name')
+    DynStr.Append (d, 'an unknown name')
   ELSE
-    DynStr.Append (pool, d, 'the caller through ') ;
-    DynStr.Append (pool, d, t)
+    DynStr.Append (d, 'the caller through ') ;
+    DynStr.Append (d, t)
   END
 END AppendTgt ;
-
-(* the expression under any parens -- the oracle's StripParens *)
-PROCEDURE Bare (k: Ast.Kid) : Ast.Kid =
-BEGIN
-  IF k IS SOME e THEN
-    IF e.kind = Ast.NParen THEN RETURN Bare (e.kids[0]) END
-  END ;
-  RETURN k
-END Bare ;
 
 PROCEDURE KeptPush (RO KEPT nm: STR ; line, col: I64) =
 VAR
@@ -1812,11 +2289,11 @@ VAR
   d, de, dm, ds : PTR DynStr.DString IN pool ;
 BEGIN
   ds := DynStr.New (pool) ;
-  DynStr.Append (pool, ds, src) ;
+  DynStr.Append (ds, src) ;
   IF LEN (carrier) > 0 THEN
-    DynStr.Append (pool, ds, ' (carried by ') ;
-    DynStr.Append (pool, ds, carrier) ;
-    DynStr.Append (pool, ds, ')')
+    DynStr.Append (ds, ' (carried by ') ;
+    DynStr.Append (ds, carrier) ;
+    DynStr.Append (ds, ')')
   END ;
   tl := NEW (pool, STR, 8) ;
   ntl := 0 ;
@@ -1852,31 +2329,31 @@ BEGIN
   d := DynStr.New (pool) ;
   IF ntl = 0 THEN
     IF selfHit THEN
-      DynStr.Append (pool, d, 'self-store: borrowed ') ;
-      DynStr.Append (pool, d, DynStr.View (ds)) ;
-      DynStr.Append (pool, d, ' stored into ') ;
-      DynStr.Append (pool, d, dst) ;
-      DynStr.Append (pool, d, ', which reaches the caller only through ') ;
-      DynStr.Append (pool, d, src) ;
-      DynStr.Append (pool, d, ' itself (par 4.1)')
+      DynStr.Append (d, 'self-store: borrowed ') ;
+      DynStr.Append (d, DynStr.View (ds)) ;
+      DynStr.Append (d, ' stored into ') ;
+      DynStr.Append (d, dst) ;
+      DynStr.Append (d, ', which reaches the caller only through ') ;
+      DynStr.Append (d, src) ;
+      DynStr.Append (d, ' itself (par 4.1)')
     ELSE
-      DynStr.Append (pool, d, 'frame-store: borrowed ') ;
-      DynStr.Append (pool, d, DynStr.View (ds)) ;
-      DynStr.Append (pool, d, ' stored into ') ;
-      DynStr.Append (pool, d, dst) ;
-      DynStr.Append (pool, d, ', which never escapes the frame (par 4.1)')
+      DynStr.Append (d, 'frame-store: borrowed ') ;
+      DynStr.Append (d, DynStr.View (ds)) ;
+      DynStr.Append (d, ' stored into ') ;
+      DynStr.Append (d, dst) ;
+      DynStr.Append (d, ', which never escapes the frame (par 4.1)')
     END
   ELSE
-    DynStr.Append (pool, d, 'retention: borrowed ') ;
-    DynStr.Append (pool, d, DynStr.View (ds)) ;
-    DynStr.Append (pool, d, ' stored into ') ;
-    DynStr.Append (pool, d, dst) ;
-    DynStr.Append (pool, d, ' -- reaches ') ;
+    DynStr.Append (d, 'retention: borrowed ') ;
+    DynStr.Append (d, DynStr.View (ds)) ;
+    DynStr.Append (d, ' stored into ') ;
+    DynStr.Append (d, dst) ;
+    DynStr.Append (d, ' -- reaches ') ;
     FOR j := 0 TO ntl - 1 DO
-      IF j > 0 THEN DynStr.Append (pool, d, ', ') END ;
+      IF j > 0 THEN DynStr.Append (d, ', ') END ;
       AppendTgt (d, tl[j])
     END ;
-    DynStr.Append (pool, d, ' (par 4.1/4.2)') ;
+    DynStr.Append (d, ' (par 4.1/4.2)') ;
     KeptUse (src) ;
     (* the CHECK behind the measurement: a retention must be in the
        signature, the way a raise must be in RAISES.  '<call>'
@@ -1887,20 +2364,20 @@ BEGIN
     first := TRUE ;
     FOR j := 0 TO ntl - 1 DO
       IF NOT Text.Eq (tl[j], '<call>') THEN
-        IF NOT first THEN DynStr.Append (pool, de, ', ') END ;
+        IF NOT first THEN DynStr.Append (de, ', ') END ;
         AppendTgt (de, tl[j]) ;
         first := FALSE
       END
     END ;
     IF NOT first AND NOT KeptHas (src) THEN
       dm := DynStr.New (pool) ;
-      DynStr.Append (pool, dm, 'undeclared retention: borrowed ') ;
-      DynStr.Append (pool, dm, DynStr.View (ds)) ;
-      DynStr.Append (pool, dm, ' reaches ') ;
-      DynStr.Append (pool, dm, DynStr.View (de)) ;
-      DynStr.Append (pool, dm, ' -- declare KEPT ') ;
-      DynStr.Append (pool, dm, src) ;
-      DynStr.Append (pool, dm, ' (par 4.1)') ;
+      DynStr.Append (dm, 'undeclared retention: borrowed ') ;
+      DynStr.Append (dm, DynStr.View (ds)) ;
+      DynStr.Append (dm, ' reaches ') ;
+      DynStr.Append (dm, DynStr.View (de)) ;
+      DynStr.Append (dm, ' -- declare KEPT ') ;
+      DynStr.Append (dm, src) ;
+      DynStr.Append (dm, ' (par 4.1)') ;
       Diag (errs, nerrs, line, col, ctx, DynStr.View (dm))
     END
   END ;
@@ -2092,10 +2569,10 @@ BEGIN
             (* one subscript per axis, counted against the rank in
                the type: the check a flat slice with arithmetic on
                top cannot make *)
-            IF sel.nkids # AtoI (Print.ExprText (pool, r.kids[0])) THEN
+            IF sel.nkids # AtoI (Print.ExprText (r.kids[0])) THEN
               ErrN (d, ctx, S5 ('a GRID ',
-                Print.ExprText (pool, r.kids[0]), ' needs ',
-                Print.ExprText (pool, r.kids[0]),
+                Print.ExprText (r.kids[0]), ' needs ',
+                Print.ExprText (r.kids[0]),
                 Cat (' subscripts, not ', ItoA (sel.nkids))))
             END ;
             declN := r.kids[1]
@@ -2169,7 +2646,7 @@ PROCEDURE ItoA (v: I64) : STR =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.AppendI64 (pool, d, v) ;
+  DynStr.AppendI64 (d, v) ;
   RETURN DynStr.View (d)
 END ItoA ;
 
@@ -2626,11 +3103,118 @@ BEGIN
   RETURN FALSE
 END BareNameKnown ;
 
+(* a designator with at most one field selector as the qualident it
+   spells, for the type position of a NEW; NONE for anything else *)
+PROCEDURE AsQual (k: Ast.Kid) : Ast.Kid =
+VAR q : PTR Ast.Node IN pool ;
+BEGIN
+  IF k IS SOME d THEN
+    IF d.kind # Ast.NQualident AND d.kind # Ast.NDesignator THEN
+      RETURN NONE
+    END ;
+    IF d.nkids > 1 THEN RETURN NONE END ;
+    (* a fresh node with its names COPIED, so nothing of the borrowed
+       tree is retained through the answer *)
+    q := Ast.NewNode (pool, Ast.NQualident, d.line, d.col) ;
+    q.a := Text.Keep (pool, d.a) ;
+    q.b := Text.Keep (pool, d.b) ;
+    IF d.nkids = 1 THEN
+      IF d.kids[0] IS SOME sel THEN
+        IF sel.kind # Ast.NSelField THEN RETURN NONE END ;
+        q.b := Text.Keep (pool, sel.a)
+      END
+    END ;
+    RETURN SOME (q)
+  END ;
+  RETURN NONE
+END AsQual ;
+
+(* The four spellings of NEW, told apart by NAME (par 10, item 6):
+
+     NEW (T)             the frame, one T          (par 4.3)
+     NEW (T, n ...)      the frame, a slice or a grid
+     NEW (pool, T ...)   the named pool, as it always was
+     NEW (OWN, T)        one owned T: DISPOSE, SHARED, THREAD (par 4.2)
+
+   Answers 'frame', 'pool' or 'own', or '' after diagnosing.  ty is
+   the type's node and ext0 the index of the first extent, whose kid
+   is NONE when there is none.  A first argument that is a variable
+   in scope, HEAP, or a designator with selectors is a pool; a bare
+   name that is not a variable, or Module.Name where Module is a
+   module, is a type (docs/pool-elision-plan.md, rule 1). *)
+PROCEDURE NewForm (e: PTR Ast.Node ; RO ctx: STR ; VAR ty: Ast.Kid ;
+                   VAR ext0: I64) : STR =
+VAR
+  t : STR ;
+  isVar : BOOL ;
+BEGIN
+  ty := NONE ;
+  ext0 := 2 ;
+  IF e.kids[0] IS SOME d THEN
+    IF d.nkids = 0 AND Text.Eq (d.a, 'OWN') THEN
+      ty := e.kids[1] ;
+      IF e.kids[2] IS SOME x THEN
+        ErrN (e, ctx, 'NEW (OWN, T) allocates one object; a slice lives in a pool or in the frame') ;
+        RETURN ''
+      END ;
+      RETURN 'own'
+    END ;
+    isVar := TRUE ;
+    IF d.nkids = 0 THEN
+      IF ScopeFind (d.a) < 0 AND NOT Text.Eq (d.a, 'HEAP') THEN
+        isVar := FALSE
+      END
+    ELSIF d.nkids = 1 THEN
+      IF d.kids[0] IS SOME sel THEN
+        IF sel.kind = Ast.NSelField THEN
+          IF ScopeFind (d.a) < 0 AND FindMod (d.a) >= 0 THEN
+            isVar := FALSE
+          END
+        END
+      END
+    END ;
+    IF isVar AND d.nkids = 0 THEN
+      IF Text.Eq (ScopeMode (d.a), ModeVar) AND PtrParamTy (ScopeType (d.a)) THEN
+        (* `NEW (d, T)`: the pool d's object lives in, carried in by
+           rule 2 -- how a VAR pointer parameter grows its object *)
+        ty := AsQual (e.kids[1]) ;
+        IF ty IS SOME q0 THEN RETURN 'pool' END ;
+        ErrN (e, ctx, 'NEW needs a type name after the pool') ;
+        RETURN ''
+      END
+    END ;
+    IF isVar THEN
+      t := ExprType (e.kids[0], ctx) ;
+      IF LEN (t) > 0 AND NOT Text.Eq (t, 'POOL') THEN
+        ErrN (e, ctx, Cat ("NEW's first argument is the pool, not ",
+          TyName (t))) ;
+        RETURN ''
+      END ;
+      ty := AsQual (e.kids[1]) ;
+      IF ty IS SOME q THEN RETURN 'pool' END ;
+      ErrN (e, ctx, 'NEW needs a type name after the pool') ;
+      RETURN ''
+    END ;
+    (* a type name, so the frame form with extents *)
+    ty := AsQual (e.kids[0]) ;
+    IF ty IS SOME q2 THEN
+      IF LEN (CanonT (SOME (q2), 0)) = 0 THEN
+        t := ExprType (e.kids[0], ctx) ;   (* says `unknown name` *)
+        RETURN ''
+      END
+    END ;
+    ext0 := 1 ;
+    RETURN 'frame'
+  END ;
+  ty := e.kids[1] ;
+  RETURN 'frame'
+END NewForm ;
+
 PROCEDURE ExprType (k: Ast.Kid ; RO ctx: STR) : STR =
 VAR
-  t, u : STR ;
-  j : I64 ;
-  res : Ast.Kid ;
+  t, u, form : STR ;
+  j, ext0, nx : I64 ;
+  res, tyk : Ast.Kid ;
   pr : ProcInfo ;
   found : BOOL ;
 BEGIN
@@ -2663,6 +3247,11 @@ BEGIN
                  Text.Eq (u, ModeBinder) OR Text.Eq (u, ModeRo) THEN
                 ErrN (e, ctx, S3 ('SHARED consumes an owned pointer; ',
                   inr.a, ' is a borrow (par 4.2)'))
+              ELSIF FvalHas (inr.a) THEN
+                (* a frame allocation has no rc header and dies with
+                   the frame: only NEW (OWN, T) can become SHARED *)
+                ErrN (e, ctx, S3 ('SHARED needs an OWN allocation; ',
+                  inr.a, ' lives in the frame (par 4.2)'))
               ELSE
                 IF OwnedCandKind (inr.a) = 1 THEN
                   OwnMark (inr.a, 'consumed by SHARED', e)
@@ -2682,58 +3271,69 @@ BEGIN
            chapter 4's own example into exactly this (2026-08-29).
            A checker softer than the generator is a checker that
            misses; the second argument BEING a pool is conclusive. *)
-        IF e.kids[0] IS SOME pd THEN t := ExprType (e.kids[0], ctx) END ;
-        (* par 3.2: allocating from a pool the CALLER owns consumes the
-           caller's storage and answers a slice into the caller's
-           arena -- an effect, and the one a PURE body could still
-           have, since NEW is a builtin (rule 3 does not see it) and
-           not an assignment target (rules 1 and 2 do not either).  A
-           pool declared LOCAL is invisible outside the frame and
-           stays legal, so the test is the pool's binding MODE. *)
-        IF curPure THEN
-          IF e.kids[0] IS SOME pn THEN
-            IF pn.kind = Ast.NDesignator THEN
-              IF Text.Eq (ScopeMode (pn.a), ModeVar) OR
-                 Text.Eq (ScopeMode (pn.a), ModeOwn) OR
-                 Text.Eq (ScopeMode (pn.a), ModeModule) THEN
-                ErrN (e, ctx, Cat (Cat ('cannot allocate from the pool ',
-                  pn.a), ' in a PURE procedure (par 3.2)'))
-              END
-            END
-          END
-        END ;
-        (* the type position holding the name of a POOL VARIABLE is
-           conclusive: a pool is not a type and nothing can be
-           allocated OF one.  A pool's own type is not recorded as a
-           value type -- ExprType of a pool name is unknown, which is
-           why a test on that says nothing -- so the scope's declared
-           TYPE NODE is what answers. *)
-        IF e.kids[1] IS SOME tn THEN
-          IF tn.kind = Ast.NQualident THEN
-            IF ScopeType (tn.a) IS SOME ptn THEN
-              IF ptn.kind = Ast.NQualident THEN
-                IF DynStr.Eq (ptn.a, 'POOL') THEN
-                  ErrN (e, ctx, 'NEW takes the pool first, then the type')
+        form := NewForm (e, ctx, tyk, ext0) ;
+        IF LEN (form) = 0 THEN RETURN '' END ;
+        IF Text.Eq (form, 'pool') THEN
+          (* par 3.2: allocating from a pool the CALLER owns consumes
+             the caller's storage and answers a slice into the
+             caller's arena -- an effect, and the one a PURE body
+             could still have, since NEW is a builtin (rule 3 does not
+             see it) and not an assignment target (rules 1 and 2 do
+             not either).  A pool declared LOCAL is invisible outside
+             the frame and stays legal, and so is the frame itself,
+             so the test is the pool's binding MODE. *)
+          IF curPure THEN
+            IF e.kids[0] IS SOME pn THEN
+              IF pn.kind = Ast.NDesignator THEN
+                IF Text.Eq (ScopeMode (pn.a), ModeVar) OR
+                   Text.Eq (ScopeMode (pn.a), ModeOwn) OR
+                   Text.Eq (ScopeMode (pn.a), ModeModule) THEN
+                  ErrN (e, ctx, Cat (Cat ('cannot allocate from the pool ',
+                    pn.a), ' in a PURE procedure (par 3.2)'))
                 END
               END
             END
           END
         END ;
-        t := CanonT (e.kids[1], 0) ;
-        IF e.kids[2] IS SOME cnt THEN
-          FOR j := 2 TO e.nkids - 1 DO
+        IF Text.Eq (form, 'frame') THEN
+          (* `NEW (Point, pool)`, the reversed spelling: it reads as
+             the frame form with a pool for an extent, so name what
+             was meant.  A tutorial reader followed chapter 4's own
+             example into exactly this (2026-08-29). *)
+          FOR j := ext0 TO e.nkids - 1 DO
+            IF e.kids[j] IS SOME xn THEN
+              IF xn.kind = Ast.NDesignator AND xn.nkids = 0 THEN
+                IF ScopeType (xn.a) IS SOME ptn THEN
+                  IF ptn.kind = Ast.NQualident THEN
+                    IF DynStr.Eq (ptn.a, 'POOL') THEN
+                      ErrN (e, ctx, 'NEW takes the pool first, then the type') ;
+                      RETURN ''
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END ;
+        t := CanonT (tyk, 0) ;
+        nx := 0 ;
+        FOR j := ext0 TO e.nkids - 1 DO
+          IF e.kids[j] IS SOME cnt THEN
+            nx := nx + 1 ;
             u := ExprType (e.kids[j], ctx) ;
             IF NOT IsIntish (u) THEN
               ErrN (e, ctx, Cat ('NEW extent must be an integer, not ',
                 TyName (u)))
             END
-          END ;
-          IF e.nkids = 3 THEN
-            IF LEN (t) > 0 THEN RETURN Cat ('SLICE OF ', t) END ;
-            RETURN ''
-          END ;
-          RETURN GridOf (e.nkids - 2, t)
+          END
         END ;
+        (* one extent is a slice; more than one is a GRID, and the
+           arity states the rank so the two cannot disagree *)
+        IF nx = 1 THEN
+          IF LEN (t) > 0 THEN RETURN Cat ('SLICE OF ', t) END ;
+          RETURN ''
+        END ;
+        IF nx > 1 THEN RETURN GridOf (nx, t) END ;
         IF LEN (t) > 0 THEN RETURN Cat ('PTR ', t) END ;
         RETURN ''
     | Ast.NSliceOf3 :
@@ -3014,6 +3614,122 @@ BEGIN
   RETURN FALSE
 END BaseIsPtr ;
 
+(* can a value of this type carry a pointer?  Gen.HasPtr's twin: a
+   pointer, a slice, a grid, and any record, array or variant holding
+   one, through OPT and through a type name. *)
+PROCEDURE PtrBearing (t: Ast.Kid ; depth: I64) : BOOL =
+VAR
+  i, j : I64 ;
+  fsk : Ast.Kid ;
+BEGIN
+  IF depth > 8 THEN RETURN FALSE END ;
+  IF ResolveType (t) IS SOME r THEN
+    CASE r.kind OF
+    | Ast.NPtrType, Ast.NSliceType, Ast.NGridType : RETURN TRUE
+    | Ast.NOptType : RETURN PtrBearing (r.kids[0], depth + 1)
+    | Ast.NArrayType : RETURN PtrBearing (r.kids[1], depth + 1)
+    | Ast.NRecordType, Ast.NMonitorType :
+        IF r.kind = Ast.NMonitorType THEN fsk := r.kids[0]
+        ELSE fsk := r.kids[1] END ;
+        IF fsk IS SOME fs THEN
+          FOR i := 0 TO fs.nkids - 1 DO
+            IF fs.kids[i] IS SOME g THEN
+              IF PtrBearing (g.kids[1], depth + 1) THEN RETURN TRUE END
+            END
+          END
+        END ;
+        RETURN FALSE
+    | Ast.NCaseRecordType :
+        FOR i := 0 TO r.nkids - 1 DO
+          IF r.kids[i] IS SOME arm THEN
+            IF arm.kids[0] IS SOME afs THEN
+              FOR j := 0 TO afs.nkids - 1 DO
+                IF afs.kids[j] IS SOME ag THEN
+                  IF PtrBearing (ag.kids[1], depth + 1) THEN RETURN TRUE END
+                END
+              END
+            END
+          END
+        END ;
+        RETURN FALSE
+    ELSE
+      RETURN FALSE
+    END
+  END ;
+  RETURN FALSE
+END PtrBearing ;
+
+(* does a VAR parameter of this type carry its object's pool as a
+   hidden argument (docs/pool-elision-plan.md, rule 2)?  Written as
+   `PTR T` or `OPT PTR T`: yes, by node kind and no lookup.  A record,
+   monitor, array or variant that can hold a pointer: yes, since a
+   component of it may be handed on.  A bare slice, grid or string:
+   no -- those are output slots, re-homed or adopted at exit.  Both
+   compilers must answer this identically, and gendiff holds them
+   to it. *)
+PROCEDURE PtrParamTy (t: Ast.Kid) : BOOL =
+BEGIN
+  IF t IS SOME n THEN
+    IF n.kind = Ast.NPtrType THEN RETURN TRUE END ;
+    IF n.kind = Ast.NOptType THEN
+      IF n.kids[0] IS SOME inner THEN RETURN inner.kind = Ast.NPtrType END ;
+      RETURN FALSE
+    END ;
+    IF n.kind = Ast.NSliceType OR n.kind = Ast.NGridType THEN RETURN FALSE END ;
+    IF ResolveType (t) IS SOME r THEN
+      (* a name for a pointer -- `SinkP = PTR Zarr.Sink`, `Ast.Kid =
+         OPT PTR Node` -- is the pointer it names (the proxy's P9) *)
+      IF r.kind = Ast.NPtrType THEN RETURN TRUE END ;
+      IF r.kind = Ast.NOptType THEN
+        IF r.kids[0] IS SOME inner THEN RETURN inner.kind = Ast.NPtrType END ;
+        RETURN FALSE
+      END ;
+      IF r.kind = Ast.NRecordType OR r.kind = Ast.NMonitorType OR
+         r.kind = Ast.NArrayType OR r.kind = Ast.NCaseRecordType THEN
+        RETURN PtrBearing (t, 0)
+      END
+    END
+  END ;
+  RETURN FALSE
+END PtrParamTy ;
+
+(* the pool a declared type names: the IN clause of `PTR T IN p` or
+   `OPT PTR T IN p`, through a type name; NONE for anything else *)
+PROCEDURE DeclPool (t: Ast.Kid) : Ast.Kid =
+BEGIN
+  IF ResolveType (t) IS SOME r THEN
+    IF r.kind = Ast.NOptType THEN RETURN DeclPool (r.kids[0]) END ;
+    IF r.kind = Ast.NPtrType THEN RETURN r.kids[1] END
+  END ;
+  RETURN NONE
+END DeclPool ;
+
+(* the pool of the object a designator names, as a call handing the
+   object to a VAR pointer parameter needs it (rule 2): '' when the
+   generator can name it from the ROOT of the designator, else why it
+   cannot.  A local's pool is its IN clause or the frame; a module
+   variable's is its IN clause or the module frame; a VAR parameter's
+   is the hidden one it carries; a binder's is its origin's.  An OWN
+   parameter's object is heap storage with no pool, a value
+   parameter's is a borrow whose pool nobody named, and a VAR slice
+   carries none -- those are refused.  A bare value parameter is
+   refused as a lent borrow before this is asked. *)
+PROCEDURE ObjPoolIssue (a: PTR Ast.Node) : STR =
+VAR m : STR ;
+BEGIN
+  m := ScopeMode (a.a) ;
+  IF Text.Eq (m, ModeVar) THEN
+    IF PtrParamTy (ScopeType (a.a)) THEN RETURN '' END ;
+    RETURN S3 ('VAR parameter ', a.a, ' carries no pool')
+  ELSIF Text.Eq (m, ModeOwn) THEN
+    RETURN Cat (a.a, ' is an OWN parameter')
+  ELSIF Text.Eq (m, ModeVal) OR Text.Eq (m, ModeRo) THEN
+    IF a.nkids = 0 AND BaseIsPtr (a) THEN RETURN '' END ;
+    RETURN Cat (a.a, ' is a value parameter')
+  END ;
+  RETURN ''
+END ObjPoolIssue ;
+
 (* the flattened field types of a variant: one entry per binder *)
 PROCEDURE FlatFields (KEPT fields: Ast.Kid ; VAR n: I64) : SLICE OF AKid =
 VAR
@@ -3147,7 +3863,7 @@ PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR =
 VAR
   name, pTy, amode, om, t : STR ;
-  nargs, j, g, k, kept, rank, dot, nflat, si : I64 ;
+  nargs, j, g, k, kept, rank, dot, nflat, si, nFrameKept : I64 ;
   aTy : SLICE OF STR ;
   aNode : SLICE OF AKid ;
   flat : SLICE OF AKid ;
@@ -3344,6 +4060,7 @@ BEGIN
         END ;
         pr.node := SOME (ptn) ;
         pr.modName := '' ;
+        pr.foreign := '' ;
         IF scope[si].ty IS SOME tq THEN
           IF tq.kind = Ast.NQualident THEN
             IF LEN (tq.b) > 0 THEN pr.modName := tq.a END
@@ -3358,6 +4075,32 @@ BEGIN
     IF pr.node IS SOME pn THEN
       canonCtx := pr.modName ;
       Arity (site, ctx, name, CountParams (pn.kids[0]), nargs) ;
+      (* how many VAR or KEPT arguments are FRAME values: a frame value
+         handed to a KEPT parameter is refused (it dies with this
+         frame), unless another frame value is the keeper -- a node
+         linked under a node of the same frame lives exactly as long
+         as it does.  `Set (obj, name, v)` on two fresh nodes is the
+         shape (docs/pool-elision-plan.md, stage 2). *)
+      nFrameKept := 0 ;
+      k := 0 ;
+      IF pn.kids[0] IS SOME pl0 THEN
+        FOR g := 0 TO pl0.nkids - 1 DO
+          IF pl0.kids[g] IS SOME grp0 THEN
+            IF grp0.kids[0] IS SOME ids0 THEN
+              FOR j := 0 TO ids0.nkids - 1 DO
+                IF k < nargs THEN
+                  IF grp0.f1 OR grp0.f2 OR grp0.f4 THEN
+                    IF LEN (FrameWhat (aNode[k], aTy[k])) > 0 THEN
+                      nFrameKept := nFrameKept + 1
+                    END
+                  END
+                END ;
+                k := k + 1
+              END
+            END
+          END
+        END
+      END ;
       k := 0 ;
       IF pn.kids[0] IS SOME pl THEN
         FOR g := 0 TO pl.nkids - 1 DO
@@ -3368,7 +4111,9 @@ BEGIN
               FOR j := 0 TO ids.nkids - 1 DO
                 IF k < nargs THEN
                   CheckArg (site, ctx, name, k, pTy, aTy[k], aNode[k],
-                            isVar, grp.f2, grp.f4)
+                            isVar, grp.f2, grp.f4, nFrameKept,
+                            grp.f1 AND PtrParamTy (grp.kids[1]) AND
+                            LEN (pr.foreign) = 0, argl)
                 END ;
                 k := k + 1
               END
@@ -3440,12 +4185,32 @@ BEGIN
   RETURN ''
 END CallType ;
 
+(* is the pool P itself one of a call's arguments?  Then the callee
+   keeps in P what it keeps, and a value living in P may be handed to
+   its KEPT parameter: `PutS (sp, o, k, v)` with o IN sp *)
+PROCEDURE PoolAmong (args: Ast.Kid ; RO p: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (p) = 0 THEN RETURN FALSE END ;
+  IF args IS SOME al THEN
+    FOR i := 0 TO al.nkids - 1 DO
+      IF al.kids[i] IS SOME a THEN
+        IF a.kind = Ast.NDesignator AND a.nkids = 0 AND Text.Eq (a.a, p) THEN
+          RETURN TRUE
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END PoolAmong ;
+
 (* one argument against one parameter: type, mode, and the two par 4
    rules that are pure checks rather than flow *)
 PROCEDURE CheckArg (site: PTR Ast.Node ; RO ctx: STR ; RO name: STR ;
                     k: I64 ; RO pTy: STR ; RO aTy: STR ; an: Ast.Kid ;
-                    isVar: BOOL ; isOwn: BOOL ; isKept: BOOL) =
-VAR amode, aroot : STR ;
+                    isVar: BOOL ; isOwn: BOOL ; isKept: BOOL ;
+                    nFrameKept: I64 ; wantsPool: BOOL ; args: Ast.Kid) =
+VAR amode, aroot, what, why : STR ;
 BEGIN
   IF Text.Eq (aTy, '<void>') THEN
     ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
@@ -3472,6 +4237,17 @@ BEGIN
             S3 (': cannot lend the value parameter ', a.a,
                 ' as VAR (shared borrow, par 4.1)')))
         END
+      END ;
+      (* rule 2: the callee may allocate in the object's pool, which
+         the generator names from the ROOT of this designator's
+         declaration -- so the root must have one to name *)
+      IF wantsPool THEN
+        why := ObjPoolIssue (a) ;
+        IF LEN (why) > 0 THEN
+          ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
+            S4 (': the pool of ', a.a, ' is not known here, and the callee may allocate in it -- ',
+                Cat (why, ' (par 4.3)'))))
+        END
       END
     END ;
     IF isOwn AND a.kind = Ast.NDesignator THEN
@@ -3482,6 +4258,10 @@ BEGIN
           ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
             S3 (': cannot move borrowed ', a.a,
                 ' into an OWN parameter (par 4.2)')))
+        ELSIF FvalHas (a.a) THEN
+          ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
+            S3 (': cannot move ', a.a,
+                ' into an OWN parameter -- it lives in the frame (par 4.3)')))
         ELSE
           IF ResolveType (ScopeType (a.a)) IS SOME ares THEN
             IF ares.kind = Ast.NPtrType THEN
@@ -3513,13 +4293,14 @@ BEGIN
      storage, par 2.3) is refused outright, and a borrow is a
      retention the CALLER must declare in turn. *)
   IF isKept THEN
-    IF Bare (an) IS SOME a0 THEN
-      IF a0.kind = Ast.NBin AND Text.Eq (a0.a, '+') AND
-         Text.Eq (aTy, 'SLICE OF CHAR') THEN
-        ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
-          Cat (name, ': a KEPT parameter cannot take a concatenation' +
-                     ' -- it dies with this frame (par 4.1)')))
-      END
+    (* a concatenation, a frame allocation, an answer built here, or a
+       name holding one -- unless the keeper is a frame value too *)
+    what := FrameWhat (an, aTy) ;
+    IF LEN (what) > 0 AND nFrameKept <= 1 AND
+       NOT PoolAmong (args, KindPool (what)) THEN
+      ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
+        S4 (name, ': a KEPT parameter cannot take ', what,
+            ' -- it dies with this frame (par 4.1)')))
     END ;
     aroot := EscRootOf (an) ;
     IF LEN (aroot) > 0 AND IsRefTy (aTy) THEN
@@ -3683,6 +4464,9 @@ BEGIN
          Text.Eq (amode, ModeBinder) OR Text.Eq (amode, ModeRo) THEN
         ErrN (st, ctx, S3 ('cannot DISPOSE ', d.a,
           ': a borrow is not yours to free (take OWN, par 4.2)'))
+      ELSIF FvalHas (d.a) THEN
+        ErrN (st, ctx, S3 ('the frame owns ', d.a,
+          '; it is freed at exit, not by DISPOSE (par 4.3)'))
       ELSE
         IF ResolveType (ScopeType (d.a)) IS SOME dcl THEN
           IF dcl.kind = Ast.NPtrType THEN
@@ -3729,13 +4513,13 @@ PROCEDURE SigDiff (RO want: STR ; RO got: STR) : STR =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, 'signature differs from definition:') ;
-  DynStr.AppendChar (pool, d, 0AC) ;
-  DynStr.Append (pool, d, '    definition     ') ;
-  DynStr.Append (pool, d, want) ;
-  DynStr.AppendChar (pool, d, 0AC) ;
-  DynStr.Append (pool, d, '    implementation ') ;
-  DynStr.Append (pool, d, got) ;
+  DynStr.Append (d, 'signature differs from definition:') ;
+  DynStr.AppendChar (d, 0AC) ;
+  DynStr.Append (d, '    definition     ') ;
+  DynStr.Append (d, want) ;
+  DynStr.AppendChar (d, 0AC) ;
+  DynStr.Append (d, '    implementation ') ;
+  DynStr.Append (d, got) ;
   RETURN DynStr.View (d)
 END SigDiff ;
 
@@ -3811,8 +4595,8 @@ PROCEDURE Cat (RO a: STR ; RO b: STR) : STR =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, a) ;
-  DynStr.Append (pool, d, b) ;
+  DynStr.Append (d, a) ;
+  DynStr.Append (d, b) ;
   RETURN DynStr.View (d)
 END Cat ;
 
@@ -3820,9 +4604,9 @@ PROCEDURE Qualify (RO a: STR ; RO b: STR) : STR =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, a) ;
-  DynStr.AppendChar (pool, d, '.') ;
-  DynStr.Append (pool, d, b) ;
+  DynStr.Append (d, a) ;
+  DynStr.AppendChar (d, '.') ;
+  DynStr.Append (d, b) ;
   RETURN DynStr.View (d)
 END Qualify ;
 
@@ -4105,7 +4889,7 @@ END CheckCaseTotal ;
    sharability itself is still unbuilt and the reviewer holds it. *)
 PROCEDURE CheckThread (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
-  name, pTy, aTy, amode : STR ;
+  name, pTy, aTy, amode, what : STR ;
   pr : ProcInfo ;
   found, pooled : BOOL ;
 BEGIN
@@ -4136,6 +4920,18 @@ BEGIN
           TyName (aTy), S3 (' where ', TyName (pTy), ' is expected')))
       END
     END ;
+    (* a frame allocation, or a name holding one, dies when this
+       frame exits, which a thread does not wait for: storage handed
+       to a thread is allocated with OWN (docs/pool-elision-plan.md) *)
+    what := FrameWhat (st.kids[1], aTy) ;
+    IF LEN (what) > 0 AND LEN (KindPool (what)) = 0 THEN
+      (* a local pool's object is lent as any pool pointer is (the
+         thread receives the pool through the thunk, and Mat.AddNormal
+         WAITs for its workers before the pool dies): unchecked until
+         SHARABLE, like the rest *)
+      ErrN (st, ctx, S5 ('THREAD (', name, '): cannot hand ', what,
+        ' to a thread -- it dies with this frame; allocate it with OWN (par 4.3)'))
+    END ;
     IF st.kids[1] IS SOME an THEN
       IF an.kind = Ast.NDesignator THEN
         IF an.nkids = 0 THEN
@@ -4146,7 +4942,8 @@ BEGIN
               IF ares.kind = Ast.NPtrType THEN
                 pooled := FALSE ;
                 IF ares.kids[1] IS SOME poolName THEN pooled := TRUE END ;
-                IF NOT pooled AND OwnedCandKind (an.a) > 0 THEN
+                IF NOT pooled AND OwnedCandKind (an.a) > 0 AND
+                   NOT FvalHas (an.a) THEN
                   OwnMark (an.a, Cat ('moved into a THREAD running ', name),
                            st)
                 END
@@ -4249,10 +5046,102 @@ BEGIN
   END
 END WalkSeq ;
 
+(* a NEW from a named pool or an object's pool: not the frame form,
+   not OWN *)
+PROCEDURE IsPoolNew (k: Ast.Kid) : BOOL =
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NNewExpr THEN
+      IF e.kids[0] IS SOME d THEN
+        IF d.nkids = 0 AND Text.Eq (d.a, 'OWN') THEN RETURN FALSE END
+      END ;
+      RETURN NOT NewIsFrame (e)
+    END
+  END ;
+  RETURN FALSE
+END IsPoolNew ;
+
+(* HEAP, or a name declared POOL in scope *)
+PROCEDURE IsPoolName (RO nm: STR) : BOOL =
+BEGIN
+  IF Text.Eq (nm, 'HEAP') THEN RETURN TRUE END ;
+  IF ScopeType (nm) IS SOME q THEN
+    IF q.kind = Ast.NQualident THEN
+      RETURN Text.Eq (q.a, 'POOL') AND LEN (q.b) = 0
+    END
+  END ;
+  RETURN FALSE
+END IsPoolName ;
+
+(* the pool an allocation on the right-hand side names, for the
+   declared-pool check: `NEW (Q, T)` with Q a pool in scope or HEAP,
+   or a call whose result type promises `IN r` with a bare name Q
+   handed to r; '' when the shape says nothing *)
+PROCEDURE AllocPoolOf (k: Ast.Kid ; RO ctx: STR) : STR =
+VAR
+  pr : ProcInfo ;
+  found : BOOL ;
+  i, j, ix, want : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NNewExpr THEN
+      IF e.kids[0] IS SOME d THEN
+        IF d.nkids = 0 AND NOT Text.Eq (d.a, 'OWN') THEN
+          IF IsPoolName (d.a) THEN RETURN d.a END
+        END
+      END ;
+      RETURN ''
+    END ;
+    IF e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME dn THEN
+        IF dn.kind = Ast.NDesignator THEN
+          pr := LookupProc (DesigName (dn), found) ;
+          IF found THEN
+            IF pr.node IS SOME pn THEN
+              IF pn.kids[1] IS SOME rt THEN
+                IF rt.kind = Ast.NPtrType THEN
+                  IF rt.kids[1] IS SOME rn THEN
+                    want := -1 ;
+                    ix := 0 ;
+                    IF pn.kids[0] IS SOME pl THEN
+                      FOR i := 0 TO pl.nkids - 1 DO
+                        IF pl.kids[i] IS SOME grp THEN
+                          IF grp.kids[0] IS SOME ids THEN
+                            FOR j := 0 TO ids.nkids - 1 DO
+                              IF ids.kids[j] IS SOME id THEN
+                                IF Text.Eq (id.a, rn.a) THEN want := ix END
+                              END ;
+                              ix := ix + 1
+                            END
+                          END
+                        END
+                      END
+                    END ;
+                    IF e.kids[1] IS SOME al THEN
+                      IF want >= 0 AND want < al.nkids THEN
+                        IF al.kids[want] IS SOME an THEN
+                          IF an.kind = Ast.NDesignator AND an.nkids = 0 THEN
+                            RETURN an.a
+                          END
+                        END
+                      END
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN ''
+END AllocPoolOf ;
+
 PROCEDURE CheckAssign (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
   beyond, isShared : BOOL ;
-  vname, t, u, lhsMode, dmode : STR ;
+  vname, t, u, lhsMode, dmode, what, apool, par : STR ;
   lv : I64 ;
 BEGIN
   IF st.kids[0] IS SOME lhs THEN
@@ -4270,21 +5159,88 @@ BEGIN
        destination merely inherits the taint and is cleared when
        given a durable value. *)
     IF st.kids[1] IS SOME frhs THEN
-      IF FrameRHS (st.kids[1], u) THEN
+      what := FrameWhat (st.kids[1], u) ;
+      IF LEN (what) > 0 THEN
+        (* a frame value is par 2.3's rule; storage in a local pool,
+           or a view of it, is par 4.3's, refused at the same places
+           and for the same reason -- and additionally where the
+           destination is declared IN a pool that is NOT local, since
+           that pool outlives the frame while a local pool's value
+           may rest in a name declared IN any local pool, all of which
+           die together (the clause check below speaks when an
+           allocation names a pool other than the declared one) *)
+        IF LEN (KindPool (what)) > 0 THEN par := '4.3' ELSE par := '2.3' END ;
         dmode := ScopeMode (lhs.a) ;
         IF Text.Eq (dmode, ModeModule) AND NOT curInBody THEN
-          ErrN (frhs, ctx, S3 ('a concatenation dies with this frame; it cannot be stored in module variable ',
-            lhs.a, ' (par 2.3)'))
+          ErrN (frhs, ctx, S4 (what, ' dies with this frame; it cannot be stored in module variable ',
+            lhs.a, S3 (' (par ', par, ')')))
         ELSIF Text.Eq (dmode, ModeRo) OR
               ((Text.Eq (dmode, ModeVar) OR Text.Eq (dmode, ModeOwn) OR
                 Text.Eq (dmode, ModeVal)) AND lhs.nkids > 0) THEN
-          ErrN (frhs, ctx, S3 ('a concatenation dies with this frame; it cannot be stored through ',
-            lhs.a, ', which outlives it (par 2.3)'))
+          ErrN (frhs, ctx, S4 (what, ' dies with this frame; it cannot be stored through ',
+            lhs.a, S3 (', which outlives it (par ', par, ')')))
         ELSIF lhs.nkids = 0 AND IsFrameMode (dmode) THEN
-          FvalAdd (lhs.a)
+          (* a local declared IN a pool claims that pool's lifetime,
+             and rule 2 hands that pool to every callee that grows
+             the object: a frame value held there would have its
+             growth outlive its head (docs/pool-elision-plan.md) *)
+          IF Text.Eq (dmode, ModeLocal) THEN
+            IF DeclPool (ScopeType (lhs.a)) IS SOME dp THEN
+              IF LEN (KindPool (what)) = 0 THEN
+                ErrN (frhs, ctx, S4 (what, ' dies with this frame; it cannot be held by ',
+                  lhs.a, ', which is declared IN a pool (par 4.3)'))
+              ELSIF NOT Text.Eq (ScopeMode (dp.a), ModeLocal) AND
+                    LEN (AllocPoolOf (st.kids[1], ctx)) = 0 THEN
+                ErrN (frhs, ctx, S4 (what, ' dies with this frame; it cannot be held by ',
+                  lhs.a, ', which is declared IN a pool (par 4.3)'))
+              END
+            ELSE
+              FvalAdd (lhs.a, what)
+            END
+          ELSE
+            FvalAdd (lhs.a, what)
+          END
+        ELSIF lhs.nkids > 0 AND Text.Eq (dmode, ModeLocal) THEN
+          (* a COMPONENT of a local: the record, or the pointer's
+             target, now holds a frame value.  Declared IN a pool, the
+             target outlives the frame and the store is refused;
+             otherwise the local carries the taint, so copying it out
+             is refused as the value itself would be.  Found by stage
+             5 of the pool elision: RegisterUnit's ProcInfo held
+             RaisesOf's answer in a field and was appended to a module
+             table, and every exception name read empty. *)
+          IF DeclPool (ScopeType (lhs.a)) IS SOME dp2 THEN
+            IF LEN (KindPool (what)) = 0 OR
+               NOT Text.Eq (ScopeMode (dp2.a), ModeLocal) THEN
+              ErrN (frhs, ctx, S4 (what, ' dies with this frame; it cannot be stored through ',
+                lhs.a, ', which is declared IN a pool (par 4.3)'))
+            END
+          ELSE
+            FvalAdd (lhs.a, what)
+          END
         END
       ELSIF lhs.nkids = 0 THEN
         FvalDel (lhs.a)
+      END ;
+      (* a bare name given a pool allocation holds nobody's object *)
+      IF lhs.nkids = 0 THEN
+        IF IsPoolNew (st.kids[1]) THEN PvalAdd (lhs.a) ELSE PvalDel (lhs.a) END
+      END ;
+      (* par 4.3: the IN clause of a declaration is the pool rule 2
+         hands to every callee that grows the object, so it must be
+         the pool the object was allocated in.  `acc : PTR DString IN
+         scratch ; acc := DynStr.New (pool)` grew its buffer in the
+         wrong arena once the parameter that used to say `pool` was
+         gone (stage 5, Http.Once: the first chunked body past one
+         read block crashed). *)
+      IF lhs.nkids = 0 THEN
+        IF DeclPool (ScopeType (lhs.a)) IS SOME dp THEN
+          apool := AllocPoolOf (st.kids[1], ctx) ;
+          IF LEN (apool) > 0 AND NOT Text.Eq (apool, dp.a) THEN
+            ErrN (frhs, ctx, S5 (lhs.a, ' is declared IN ', dp.a,
+              ' but allocated in ', Cat (apool, ' (par 4.3)')))
+          END
+        END
       END
     END ;
     (* anchored at the RIGHT-HAND SIDE, not the statement: a value
@@ -4310,11 +5266,17 @@ BEGIN
     IF lhs.nkids > 0 THEN NoteUse (lhs, ctx) END ;
     beyond := CheckWrite (lhs, ctx) ;
     (* a bare owned pointer on the right MOVES out of its name; a
-       bare name on the left is (re)initialised *)
+       bare name on the left is (re)initialised.  A name holding a
+       FRAME allocation is not owned -- the frame is -- so copying it
+       is a copy, not a move (docs/pool-elision-plan.md, rule 1). *)
     IF st.kids[1] IS SOME rhs THEN
       IF rhs.kind = Ast.NDesignator THEN
         IF rhs.nkids = 0 THEN
-          IF OwnedCandKind (rhs.a) = 1 THEN OwnMark (rhs.a, 'moved', st) END
+          IF OwnedCandKind (rhs.a) = 1 THEN
+            IF NOT FvalHas (rhs.a) AND NOT PvalHas (rhs.a) THEN
+              OwnMark (rhs.a, 'moved', st)
+            END
+          END
         END
       END
     END ;
@@ -4573,7 +5535,7 @@ BEGIN
                        interval overlap and a CONST designator needs the
                        value, and guessing at either would be worse than
                        the gap. *)
-                    lblTxt := Print.ExprText (pool, lbl.kids[0]) ;
+                    lblTxt := Print.ExprText (lbl.kids[0]) ;
                     IF NOT Text.Eq (lblTxt, '') THEN
                       dup := FALSE ;
                       FOR m := 0 TO nseen - 1 DO
@@ -4623,8 +5585,11 @@ BEGIN
 END IsVariantLabel ;
 
 PROCEDURE CheckReturn (st: PTR Ast.Node ; RO ctx: STR) =
-VAR t : STR ;
+VAR
+  t, what : STR ;
+  said : BOOL ;
 BEGIN
+  said := FALSE ;
   IF st.kids[0] IS SOME v THEN
     t := ExprType (st.kids[0], ctx) ;
     IF Text.Eq (curRetTy, '<void>') THEN
@@ -4649,11 +5614,22 @@ BEGIN
               IF Text.Eq (ScopeMode (pn.a), ModeLocal) THEN
                 ErrN (st, ctx, S5 ('pool-interior pointer escapes its pool: ',
                   v.a, ' lives in ', pn.a,
-                  ', which dies with this frame (par 4.3)'))
+                  ', which dies with this frame (par 4.3)')) ;
+                said := TRUE
               END
             END
           END
         END
+      END
+    END ;
+    (* the same by SHAPE rather than by declaration: an allocation
+       made in a local pool and held in a pool-less name, or a view
+       of one (FrameWhat's pool kinds) -- except a string, which the
+       generator re-homes out of a local pool at exit (par 2.3) *)
+    IF NOT said AND NOT Text.Eq (t, 'SLICE OF CHAR') THEN
+      what := FrameWhat (st.kids[0], t) ;
+      IF LEN (KindPool (what)) > 0 THEN
+        ErrN (st, ctx, Cat (what, ' escapes its pool, which dies with this frame (par 4.3)'))
       END
     END ;
     (* par 4.1 direction: what is RETURNed reaches the caller *)
@@ -4709,6 +5685,7 @@ BEGIN
     nedge := 0 ;
     npend := 0 ;
     nfval := 0 ;
+    npval := 0 ;
     curInBody := FALSE ;
     (* par 3.2: kid 3 is the attribute, if any *)
     curPure := FALSE ;
@@ -5236,6 +6213,7 @@ BEGIN
                  module variables *)
               curPure := FALSE ;
               nfval := 0 ;
+              npval := 0 ;
               curInBody := TRUE ;
               boundMon := '' ;      (* a module body binds no monitor *)
               WalkStmt (d.kids[0], Cat (u.a, ' body')) ;

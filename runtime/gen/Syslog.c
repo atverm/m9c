@@ -6,6 +6,8 @@ extern void m9_openlog (const void *, int, int, int);
 extern void m9_syslog (int, const void *, int);
 extern void m9_closelog (void);
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[23] = { 40u, 109u, 101u, 115u, 115u, 97u, 103u, 101u, 32u, 110u, 111u, 116u, 32u, 101u, 110u, 99u, 111u, 100u, 97u, 98u, 108u, 101u, 41u };
 
 static m9_mon m9_gate_csyslog;
@@ -179,12 +181,9 @@ void Syslog_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

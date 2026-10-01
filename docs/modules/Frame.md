@@ -167,7 +167,7 @@ Text -> Strs (materialised).  The integer missing value is
 must exist, and the far end of the line is the one value real
 data never means.
 
-### WriteCsv (VAR pool: POOL ; f: PTR Fr ; RO path: STR) RAISES Io.IOError, ValueRange, Overflow, IndexError
+### WriteCsv (f: PTR Fr ; RO path: STR) RAISES Io.IOError, ValueRange, Overflow, IndexError
 
 header = short names; a missing value writes an EMPTY field;
 floats write 17 significant digits (round-trip exact -- the

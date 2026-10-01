@@ -1,0 +1,43 @@
+MODULE UseGrow ;
+
+(* a program using Grow with its own pool: after m9elide the calls
+   into the procedures that lost their parameter lose the argument,
+   the others keep it, and the program prints the same five lines *)
+
+IMPORT Io ;
+IMPORT Grow ;
+
+VAR
+  pool : POOL ;
+  l : PTR Grow.List IN pool ;
+  s, f : SLICE OF I64 ;
+  i : I64 ;
+  nm : Grow.Named ;
+
+PROCEDURE Local () : I64 =
+VAR
+  scratch : POOL ;
+  q : PTR Grow.List ;
+BEGIN
+  q := Grow.Pair () ;
+  Grow.Push (q, 3) ;
+  RETURN Grow.Sum (q)
+END Local ;
+
+BEGIN
+  l := Grow.NewList (pool) ;
+  FOR i := 1 TO 10 DO Grow.Push (l, i) END ;
+  s := Grow.Squares (5) ;
+  Grow.Remember (pool, Grow.Label (pool, Grow.Sum (l))) ;
+  Grow.Fill (pool, f, 3) ;
+  Io.WriteI64 (Grow.Sum (l)) ;
+  Io.WriteLine ('') ;
+  Io.WriteI64 (s[4] + f[2]) ;
+  Io.WriteLine ('') ;
+  Io.WriteI64 (Local ()) ;
+  Io.WriteLine ('') ;
+  Io.WriteI64 (Grow.Count ()) ;
+  Io.WriteLine ('') ;
+  Grow.FillId (pool, nm, 7) ;
+  Io.WriteLine (nm.id)
+END UseGrow.

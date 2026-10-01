@@ -57,7 +57,7 @@ static void scan (ZarrStore_Array *a, m9_state *err,
       for (r = 0; r < 500; r++)
         for (c = 0; c < 500; c++) {
           gr = cr * 500 + r; gc = cc * 500 + c;
-          v = ZarrStore_GetF64 (&a, at (gr, gc), err);
+          v = ZarrStore_GetF64 (&a, &m9_heap, at (gr, gc), err);
           if (!isnan (v)) { *sum += v; (*n)++; }
         }
 }

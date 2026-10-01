@@ -434,6 +434,104 @@ dynamic one, because a static link drags in the same libc for both.
 This is the one axis where the result is not close, and it is the
 axis Rust hedges on in its own documentation.
 
+## The same programs on Apple silicon (2026-09-30)
+
+The three programs again, unchanged, on a MacBook with an **Apple M5
+Pro** (6 performance + 12 efficiency cores, macOS 26.5.1), the day
+after the macOS port landed.  Same protocol: every output diffed
+against the M9 one, one warm-up, best of three.  `gcc` here is
+Homebrew's gcc 16.2 — the compiler the macOS install drives — and
+`clang` is Apple's 21; rustc 1.98.1, fpc 3.2.2, Scala 3.9 on OpenJDK
+27, Python 3.13 with numpy 2.5.3.  The laptop column is the x86 table
+above.
+
+    machine   Apple M5 Pro, macOS 26.5.1 (arm64)
+    gcc       16.2.0 (Homebrew)   -O2 -std=c11
+    clang     Apple 21            -O2 -std=c11 -ffp-contract=off (see below)
+    rustc     1.98.1              -O -C debuginfo=0
+    fpc       3.2.2               -O2, {$R+}{$Q+} and -dUNCHECKED
+    scala     3.9.0 (scala-cli 1.17.1), OpenJDK 27
+    python    3.13.15, numpy 2.5.3
+
+**binary-trees, depth 18**
+
+| implementation                       | M5 Pro | x86 laptop |
+|--------------------------------------|-------:|-----------:|
+| Rust, `typed-arena`                  | 0.13s  | 0.29s |
+| C, plain bump arena, no zeroing      | 0.14s  | 0.53s |
+| C, m9rt POOL (zeroes every alloc)    | 0.24s  | 0.79s |
+| Scala 3, JVM                         | 0.30s  | 0.42s |
+| **M9** (POOL + checks + err-slot ABI) | **0.41s** | 0.91s |
+| Object Pascal, `New`/`Dispose`       | 0.71s  | 1.04s |
+| Rust, idiomatic `Box`                | 0.99s  | 0.86s |
+| Python 3, tuples                     | 3.06s  | 5.9s |
+
+M9 is 2.2× faster than on the laptop and every row but one moved
+with it; `Box` Rust is the row that got *slower*, and lands 2.4×
+behind M9 here.  What did not carry over is the decomposition: on x86
+the checks and the err-slot ABI cost 15% over the C pool (0.79 →
+0.91), on the M5 Pro they cost 70% (0.24 → 0.41).  The zeroing is
+the same 70% either way (0.14 → 0.24 against 0.53 → 0.79).  Not
+explained; a profile is owed, the same one the fannkuch gap has been
+owed.
+
+**fannkuch-redux, n = 11**
+
+| implementation                        | M5 Pro | x86 laptop | checked? |
+|---------------------------------------|-------:|-----------:|----------|
+| Rust `-O -C overflow-checks=on`       | 1.19s  | 1.24s | bounds + overflow |
+| Rust `-O` (release default)           | 1.21s  | 1.31s | bounds only |
+| **M9**, clang -O2                     | **1.30s** | 1.58s | bounds + overflow, always |
+| Object Pascal, fpc -O2 `-dUNCHECKED`  | 1.34s  | 1.67s | nothing |
+| Scala 3, JVM                          | 1.37s  | — | bounds; ints wrap |
+| C, gcc -O2                            | 1.52s  | 1.94s | nothing |
+| **M9**, gcc -O2                       | **1.63s** | 1.87s | bounds + overflow, always |
+| Object Pascal, fpc -O2 `{$R+}{$Q+}`   | 3.04s  | 3.40s | bounds + overflow |
+| Python 3                              | 29.6s  | — | |
+
+The checks cost M9 7% over unchecked C under gcc (1.52 → 1.63), and
+Apple's clang is the better C compiler for this loop by enough that
+checked M9 under clang beats unchecked C under gcc.  fpc's checks
+still cost it 2.3×, the number this language exists to refute.
+
+**mandelbrot, N = 4000**
+
+| implementation                  | M5 Pro | x86 laptop |
+|---------------------------------|-------:|-----------:|
+| **M9**, gcc -O2 (all checks)    | **0.49s** | 0.73s |
+| **M9**, clang -O2               | 0.50s  | 0.76s |
+| C, gcc -O2                      | 0.49s  | 0.73s |
+| C, clang -O2                    | 0.50s  | 0.75s |
+| Rust, `-O`                      | 0.49s  | 0.75s |
+| Scala 3 on OpenJDK 27           | 0.49s (0.44s compute) | 0.93s |
+| Object Pascal, fpc -O2, either  | 1.77s  | 2.26s |
+| Python + numpy                  | 2.34s  | 3.5–4.0s |
+| Python 3, pure                  | 18s, scaled from 0.18s at N=400 | ~36–42s |
+
+Parity again, to the hundredth, five natives and the JVM's compute
+time in one row; fpc 3.6× off the pack, as before.
+
+**Three things the run found, none of them about the M5.**
+
+- **The diff caught clang fusing multiply-adds.**  At the comparison
+  size the two clang-built mandelbrots diverged from every other
+  implementation and the script refused to time anything, as it
+  should.  On arm64 clang contracts `a*b+c` into an FMA by default
+  (`-ffp-contract=on`) and the rounding of the boundary pixels
+  changes; gcc does not, because `-std=c11` puts it in ISO mode where
+  its default is `off`.  With `-ffp-contract=off` on the clang lines
+  all nine bitmaps are the same bytes, and that is what the table
+  measures.  x86 never showed it: no FMA without `-march`.  The
+  museum's founding bug in another coat — an arithmetic that depends
+  on which compiler flag you did not set.
+- **`bench/bintrees_c.c` no longer compiled**: it declared its error
+  slot as `m9_err`, the type the runtime renamed `m9_state`.  Fixed
+  with this section; the C baseline had been un-runnable since the
+  rename, unnoticed because no gate builds it.
+- **The runners are GNU-only** (`/usr/bin/time -f`, `stat -c`,
+  `~/.cargo/bin`); on the Mac they ran as patched copies with
+  Homebrew's GNU `time` and `stat` and Homebrew's rustc.  Owed.
+
 ## Not yet measured
 
 Stated so the gaps are not mistaken for results:

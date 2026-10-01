@@ -20,8 +20,8 @@ PROCEDURE Greet (VAR pool: POOL ; RO who: STR) =
 VAR d : PTR DynStr.DString IN pool ;
 BEGIN
   d := DynStr.New (pool) ;
-  DynStr.Append (pool, d, 'hello, ') ;
-  DynStr.Append (pool, d, who) ;
+  DynStr.Append (d, 'hello, ') ;
+  DynStr.Append (d, who) ;
   Io.WriteLine (DynStr.View (d)) ;
   greeted := greeted + 1
 END Greet ;

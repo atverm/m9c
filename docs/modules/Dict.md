@@ -47,15 +47,22 @@ an index into the caller's storage
 
 _(documented with the group below)_
 
-### New (VAR pool: POOL) : PTR Dict IN pool
+### New () : PTR Dict
 
-an empty table.  Keys and values live in pool and the table
-dies with it, so there is no Dispose -- the same lifetime story
-DynStr tells.  Insertion order is remembered, which is what
-makes KeyAt/ValAt below a stable walk rather than a hash
-order that changes when the table grows.
+an empty table in the caller's frame.  Put grows it in the pool
+of the variable that holds it (rule 2 of docs/pool-elision-
+plan.md), so a table that dies with its frame is made by this
+and one declared IN a pool by NewIn.  There is no Dispose --
+the same lifetime story DynStr tells.  Insertion order is
+remembered, which is what makes KeyAt/ValAt below a stable walk
+rather than a hash order that changes when the table grows.
 
-### Put (VAR pool: POOL ; VAR d: PTR Dict ; RO KEPT key: STR ; val: Value)
+### NewIn (VAR pool: POOL) : PTR Dict IN pool
+
+the same table with its head and entries in pool: for a variable
+declared `PTR Dict IN pool`, whose growth Put then places there
+
+### Put (VAR d: PTR Dict ; RO KEPT key: STR ; val: Value)
 
 inserts, or replaces the value of an existing key.  Replacing
 keeps the key's original position in the iteration order.

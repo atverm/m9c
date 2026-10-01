@@ -35,6 +35,8 @@ struct Grib_Message {
   bool live;
 };
 
+static m9_pool m9mframe = {0};
+
 static const uint32_t m9s0[2] = { 114u, 98u };
 static const uint32_t m9s1[5] = { 102u, 111u, 112u, 101u, 110u };
 static const uint32_t m9s2[19] = { 99u, 111u, 100u, 101u, 115u, 95u, 99u, 111u, 117u, 110u, 116u, 95u, 105u, 110u, 95u, 102u, 105u, 108u, 101u };
@@ -74,7 +76,7 @@ Grib_File * Grib_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Grib_File * m9ret = NULL;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
@@ -102,12 +104,13 @@ Grib_File * Grib_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
 }
 
-void Grib_Close (Grib_File * *f, m9_state *err)
+void Grib_Close (Grib_File * *f, m9_pool *f_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -121,6 +124,7 @@ void Grib_Close (Grib_File * *f, m9_state *err)
   rc = ({ m9_mon_enter (&m9_gate_cgrib); __typeof__(fclose ((*f)->fp)) m9gv = fclose ((*f)->fp); m9_mon_leave (&m9_gate_cgrib); m9gv; });
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, f_pool, (*f));
   m9_pool_free (&m9frame);
   return;
 }
@@ -150,7 +154,7 @@ Grib_Message * Grib_Next (m9_pool *pool, Grib_File * f, bool *ok, m9_state *err)
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Grib_Message * m9ret = NULL;
   m9_arr_1_int32_t err_ = {0}; (void) err_;
   void * h = NULL; (void) h;
@@ -184,16 +188,17 @@ Grib_Message * Grib_Next (m9_pool *pool, Grib_File * f, bool *ok, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-Grib_Index Grib_BuildIndex (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
+Grib_Index Grib_BuildIndex (m9_sl_BYTE data, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Grib_Index m9ret = {0};
   Grib_Index ix = {0}; (void) ix;
   int64_t p = 0; (void) p;
@@ -226,9 +231,9 @@ Grib_Index Grib_BuildIndex (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
     goto L_ret;
   }
   ix.n = n;
-  ix.off = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
+  ix.off = M9_POOL_SL (m9_sl_I64, int64_t, err->res, n, err);
   if (err->exc) goto L_ret;
-  ix.len = M9_POOL_SL (m9_sl_I64, int64_t, &((*pool)), n, err);
+  ix.len = M9_POOL_SL (m9_sl_I64, int64_t, err->res, n, err);
   if (err->exc) goto L_ret;
   n = INT64_C(0);
   p = INT64_C(0);
@@ -257,6 +262,8 @@ Grib_Index Grib_BuildIndex (m9_pool *pool, m9_sl_BYTE data, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.off.p);
+  m9_adopt_if (&m9frame, m9res, m9ret.len.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -266,7 +273,7 @@ Grib_Message * Grib_FromBytes (m9_pool *pool, m9_sl_BYTE data, int64_t off, int6
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   Grib_Message * m9ret = NULL;
   Grib_Message * m = NULL; (void) m;
   void * h = NULL; (void) h;
@@ -290,11 +297,12 @@ Grib_Message * Grib_FromBytes (m9_pool *pool, m9_sl_BYTE data, int64_t off, int6
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
   m9_pool_free (&m9frame);
   return m9ret;
 }
 
-void Grib_Release (Grib_Message * *m, m9_state *err)
+void Grib_Release (Grib_Message * *m, m9_pool *m_pool, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -310,6 +318,7 @@ void Grib_Release (Grib_Message * *m, m9_state *err)
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m_pool, (*m));
   m9_pool_free (&m9frame);
   return;
 }
@@ -445,6 +454,7 @@ m9_sl_CHAR Grib_GetStr (m9_pool *pool, Grib_Message * m, m9_sl_CHAR key, m9_stat
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -563,12 +573,12 @@ L_ret: ;
   return;
 }
 
-m9_gd2_double Grib_ReadGrid2 (m9_pool *pool, Grib_Message * m, m9_state *err)
+m9_gd2_double Grib_ReadGrid2 (Grib_Message * m, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
-  err->res = &m9frame;
+  err->res = m9res;
   m9_gd2_double m9ret = {0};
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_F64 flat = {0}; (void) flat;
@@ -585,7 +595,7 @@ m9_gd2_double Grib_ReadGrid2 (m9_pool *pool, Grib_Message * m, m9_state *err)
   if (err->exc) goto L_ret;
   Grib_Values (m, flat, err);
   if (err->exc) goto L_ret;
-  g = ({ m9_gd2_double m9t1; m9t1.n[0] = nj; m9t1.n[1] = ni; m9t1.s[1] = 1; m9t1.s[0] = m9t1.s[1] * m9t1.n[1]; m9t1.p = (double *) m9_pool_alloc (&((*pool)), sizeof (double), m9_gcount (m9t1.n, 2, err), err); m9t1; });
+  g = ({ m9_gd2_double m9t1; m9t1.n[0] = nj; m9t1.n[1] = ni; m9t1.s[1] = 1; m9t1.s[0] = m9t1.s[1] * m9t1.n[1]; m9t1.p = (double *) m9_pool_alloc (err->res, sizeof (double), m9_gcount (m9t1.n, 2, err), err); m9t1; });
   if (err->exc) goto L_ret;
   { int64_t m9t2to;
   j = INT64_C(0);
@@ -606,6 +616,7 @@ m9_gd2_double Grib_ReadGrid2 (m9_pool *pool, Grib_Message * m, m9_state *err)
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return m9ret;
@@ -879,13 +890,10 @@ void Grib_m9init (m9_state *err)
   static int m9done = 0;
   if (m9done) return;
   m9done = 1;
-  m9_pool m9frame = {0};
   m9_pool *m9prev = err->res;
-  err->res = &m9frame;
+  err->res = &m9mframe;
   DynStr_m9init (err); if (err->exc) goto L_ret;
   Faults_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
-  m9_pool_free (&m9frame);
-  m9_pool_free (&m9frame);
   err->res = m9prev;
 }

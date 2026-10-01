@@ -1,0 +1,27 @@
+MODULE Pooled ;
+
+(* what the tool leaves to the checker: a module variable, declared
+   IN a pool, that is given the answer of a procedure which, once
+   elided, answers frame storage.  m9elide rewrites the call; `m9c
+   --check` then refuses the store by name, and holding the answer
+   in a local (or keeping Pair's pool with --keep) is the migration's
+   decision.  A LOCAL declared IN a pool that holds such an answer
+   loses its clause in the same run: the tool can see that one. *)
+
+IMPORT Io ;
+IMPORT Grow ;
+
+VAR
+  scratch : POOL ;
+  q : PTR Grow.List IN scratch ;
+
+PROCEDURE Make () : I64 =
+BEGIN
+  q := Grow.Pair (scratch) ;
+  RETURN Grow.Sum (q)
+END Make ;
+
+BEGIN
+  Io.WriteI64 (Make ()) ;
+  Io.WriteLine ('')
+END Pooled.

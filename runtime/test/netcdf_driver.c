@@ -87,7 +87,7 @@ int main (void)
     NetCDF_PutF64 (f, v, (m9_sl_I64){ start, 2 }, (m9_sl_I64){ count, 2 },
                    (m9_sl_F64){ data, NLAT * NLON }, &e);
     ok ("PutF64", !e.exc);
-    NetCDF_Close (&f, &e);
+    NetCDF_Close (&f, &pool, &e);
     ok ("Close after write", !e.exc);
   }
 
@@ -103,7 +103,7 @@ int main (void)
     ok ("VarId", !e.exc);
     ok ("VarRank", NetCDF_VarRank (f, v, &e) == 2);
     {
-      m9_sl_I64 shape = NetCDF_VarShape (&pool, f, v, &e);
+      m9_sl_I64 shape = NetCDF_VarShape ( f, v, &e);
       ok ("VarShape", !e.exc && shape.len == 2 &&
           shape.p[0] == NLAT && shape.p[1] == NLON);
     }
@@ -137,7 +137,7 @@ int main (void)
 
     /* ReadGrid2: shape and values, indexed per axis */
     {
-      m9_gd2_double g = NetCDF_ReadGrid2 (&pool, f, S ("t2m"), &e);
+      m9_gd2_double g = NetCDF_ReadGrid2 ( f, S ("t2m"), &e);
       int bad = 0;
       ok ("ReadGrid2 shape", !e.exc && g.n[0] == NLAT && g.n[1] == NLON);
       for (i = 0; i < NLAT; i++)
@@ -183,7 +183,7 @@ int main (void)
                               buf, sizeof buf), "Variable not found"));
       e.exc = NULL;
     }
-    NetCDF_Close (&f, &e);
+    NetCDF_Close (&f, &pool, &e);
     ok ("Close after read", !e.exc);
   }
 

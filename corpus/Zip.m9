@@ -47,7 +47,7 @@ PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR)
 
 PROCEDURE Count (a: PTR Archive) : I64 ;
 
-PROCEDURE NameAt (VAR pool: POOL ; a: PTR Archive ; i: I64) : STR
+PROCEDURE NameAt (a: PTR Archive ; i: I64) : STR
   RAISES IndexError ;
   (* the member's name as stored.  ZIP names are bytes; this decodes
      UTF-8 when the entry's flag bit 11 says so and Latin-1 when it
@@ -59,7 +59,7 @@ PROCEDURE SizeAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError ;
 
 PROCEDURE MethodAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError ;
 
-PROCEDURE Find (VAR pool: POOL ; a: PTR Archive ; RO name: STR) : I64
+PROCEDURE Find (a: PTR Archive ; RO name: STR) : I64
   RAISES ValueRange, IndexError ;
   (* the index of that member, or -1. *)
 
@@ -283,7 +283,7 @@ BEGIN
   RETURN a.n
 END Count ;
 
-PROCEDURE NameAt (VAR pool: POOL ; a: PTR Archive ; i: I64) : STR
+PROCEDURE NameAt (a: PTR Archive ; i: I64) : STR
   RAISES IndexError =
 BEGIN
   IF i < 0 OR i >= a.n THEN RAISE IndexError END ;
@@ -302,7 +302,7 @@ BEGIN
   RETURN a.e[i].method
 END MethodAt ;
 
-PROCEDURE Find (VAR pool: POOL ; a: PTR Archive ; RO name: STR) : I64
+PROCEDURE Find (a: PTR Archive ; RO name: STR) : I64
   RAISES ValueRange, IndexError =
 VAR i : I64 ;
 BEGIN

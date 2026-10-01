@@ -116,7 +116,7 @@ PROCEDURE Args (VAR pool: POOL) : SLICE OF STR RAISES ValueRange, IndexError ;
    which is the point. *)
 PROCEDURE Flag (RO name: STR) : BOOL RAISES ValueRange, IndexError ;
   (* is the word `name` (say `--verbose`) among the options *)
-PROCEDURE Value (VAR pool: POOL ; RO name: STR ; RO dflt: STR) : STR
+PROCEDURE Value (RO name: STR ; RO dflt: STR) : STR
   RAISES ValueRange, IndexError ;
   (* the text after `name=` in the first option that carries it, else
      dflt: Value (pool, '--out', 'a.nc') *)
@@ -381,17 +381,17 @@ END Flag ;
 
 (* a copy of s that lives in pool, for an answer that must outlive
    the frame it was found in *)
-PROCEDURE Dup (VAR pool: POOL ; RO s: STR) : STR =
+PROCEDURE Dup (RO s: STR) : STR =
 VAR
   r : STR ;
   j : I64 ;
 BEGIN
-  r := NEW (pool, CHAR, LEN (s)) ;
+  r := NEW (CHAR, LEN (s)) ;
   FOR j := 0 TO LEN (s) - 1 DO r[j] := s[j] END ;
   RETURN r
 END Dup ;
 
-PROCEDURE Value (VAR pool: POOL ; RO name: STR ; RO dflt: STR) : STR
+PROCEDURE Value (RO name: STR ; RO dflt: STR) : STR
   RAISES ValueRange, IndexError =
 VAR
   scratch : POOL ;
@@ -402,12 +402,12 @@ BEGIN
   prefix := name + '=' ;
   a := Args (scratch) ;
   FOR i := 0 TO LEN (a) - 1 DO
-    IF Text.Eq (a[i], '--') THEN RETURN Dup (pool, dflt) END ;
+    IF Text.Eq (a[i], '--') THEN RETURN Dup (dflt) END ;
     IF Text.StartsWith (a[i], prefix) THEN
-      RETURN Dup (pool, SLICE (a[i], LEN (prefix), LEN (a[i]) - LEN (prefix)))
+      RETURN Dup (SLICE (a[i], LEN (prefix), LEN (a[i]) - LEN (prefix)))
     END
   END ;
-  RETURN Dup (pool, dflt)
+  RETURN Dup (dflt)
 END Value ;
 
 PROCEDURE Positional (VAR pool: POOL) : SLICE OF STR

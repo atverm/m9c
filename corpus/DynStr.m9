@@ -17,7 +17,7 @@ PROCEDURE New (VAR pool: POOL) : PTR DString IN pool ;
                refuses to let it outlive the pool it came from; that
                is why there is no Dispose.                          *)
 
-PROCEDURE AppendChar (VAR pool: POOL ; VAR d: PTR DString ; ch: CHAR) ;
+PROCEDURE AppendChar (VAR d: PTR DString ; ch: CHAR) ;
   (* one scalar onto the end, growing the buffer when it is full.
 
        d  -- VAR because growing REPLACES the buffer; a caller
@@ -26,7 +26,7 @@ PROCEDURE AppendChar (VAR pool: POOL ; VAR d: PTR DString ; ch: CHAR) ;
        ch -- any Unicode scalar.  No encoding happens here: CHAR is
              the unit, and octets are Bytes' business.              *)
 
-PROCEDURE Append (VAR pool: POOL ; VAR d: PTR DString ;
+PROCEDURE Append (VAR d: PTR DString ;
                   RO s: STR) ;
   (* the whole of s onto the end, one AppendChar at a time.
 
@@ -56,7 +56,7 @@ PROCEDURE Eq (RO a: STR ;
      private copy before HttpServer became the third caller --
      inventory before manufacturing, consolidated here.              *)
 
-PROCEDURE AppendI64 (VAR pool: POOL ; VAR d: PTR DString ; v: I64) ;
+PROCEDURE AppendI64 (VAR d: PTR DString ; v: I64) ;
   (* decimal text of v.  Negating MIN(I64) traps Overflow (par 2.1);
      no caller formats it today, and the trap is declared behavior,
      not a surprise.                                                 *)
@@ -124,12 +124,12 @@ BEGIN
   RETURN d
 END New ;
 
-PROCEDURE Grow (VAR pool: POOL ; VAR d: PTR DString) =
+PROCEDURE Grow (VAR d: PTR DString) =
 VAR
   nb : STR ;
   i  : I64 ;
 BEGIN
-  nb := NEW (pool, CHAR, 2 * LEN (d.buf)) ;
+  nb := NEW (d, CHAR, 2 * LEN (d.buf)) ;
   FOR i := 0 TO d.len - 1 DO nb[i] := d.buf[i] END ;
   d.buf := nb
   (* the abandoned buffer stays in the pool until the pool dies:
@@ -138,18 +138,18 @@ BEGIN
      less than one chunk read; measure before believing otherwise.   *)
 END Grow ;
 
-PROCEDURE AppendChar (VAR pool: POOL ; VAR d: PTR DString ; ch: CHAR) =
+PROCEDURE AppendChar (VAR d: PTR DString ; ch: CHAR) =
 BEGIN
-  IF d.len = LEN (d.buf) THEN Grow (pool, d) END ;
+  IF d.len = LEN (d.buf) THEN Grow (d) END ;
   d.buf[d.len] := ch ;
   d.len := d.len + 1
 END AppendChar ;
 
-PROCEDURE Append (VAR pool: POOL ; VAR d: PTR DString ;
+PROCEDURE Append (VAR d: PTR DString ;
                   RO s: STR) =
 VAR i : I64 ;
 BEGIN
-  FOR i := 0 TO LEN (s) - 1 DO AppendChar (pool, d, s[i]) END
+  FOR i := 0 TO LEN (s) - 1 DO AppendChar (d, s[i]) END
 END Append ;
 
 PROCEDURE Len (d: PTR DString) : I64 =
@@ -183,19 +183,19 @@ BEGIN
   RETURN TRUE
 END Eq ;
 
-PROCEDURE AppendI64 (VAR pool: POOL ; VAR d: PTR DString ; v: I64) =
+PROCEDURE AppendI64 (VAR d: PTR DString ; v: I64) =
 VAR
   tmp : ARRAY 20 OF CHAR ;
   n, x : I64 ;
 BEGIN
-  IF v = 0 THEN AppendChar (pool, d, '0') ; RETURN END ;
+  IF v = 0 THEN AppendChar (d, '0') ; RETURN END ;
   (* the digit loop runs in NEGATIVE space: -MIN (I64) does not fit
      an I64, so `x := -v` would trap on exactly one value -- and did,
      as an unhandled Overflow out of Io.WriteI64 (MAX (I64) +% 1),
      found by the tutorial's wrapping example.  MOD and DIV truncate
      toward zero, so a negative x yields remainders in -9..0 and one
      negation of the DIGIT, which cannot overflow, recovers it.     *)
-  IF v < 0 THEN AppendChar (pool, d, '-') ; x := v ELSE x := 0 - v END ;
+  IF v < 0 THEN AppendChar (d, '-') ; x := v ELSE x := 0 - v END ;
   n := 0 ;
   WHILE x # 0 DO
     tmp[n] := DigitChars[0 - (x MOD 10)] ;
@@ -204,7 +204,7 @@ BEGIN
   END ;
   WHILE n > 0 DO
     n := n - 1 ;
-    AppendChar (pool, d, tmp[n])
+    AppendChar (d, tmp[n])
   END
 END AppendI64 ;
 

@@ -120,7 +120,12 @@ begin
                     Result := 'NEW (';
                     if n.kids[0] <> nil then
                       Result := Result + DesigStr (n.kids[0]) + ', ';
-                    Result := Result + QualStr (n.kids[1]);
+                    { a qualident in the single-argument form, an
+                      expression in the others }
+                    if (n.kids[1] <> nil) and (n.kids[1].kind = nkQualident) then
+                      Result := Result + QualStr (n.kids[1])
+                    else
+                      Result := Result + E (n.kids[1]);
                     for i := 2 to High (n.kids) do
                       if n.kids[i] <> nil then
                         Result := Result + ', ' + E (n.kids[i]);

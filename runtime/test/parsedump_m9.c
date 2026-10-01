@@ -28,8 +28,8 @@ int main (int argc, char **argv)
   for (i = 0; i < len; i++) chars[i] = (uint32_t) (unsigned char) bytes[i];
 
   memset (&p, 0, sizeof p);
-  Parse_Init (&p, (m9_sl_CHAR){ chars, len }, &err);
-  root = Parse_File (&pool, &p, &err);
+  Parse_Init (&p, &pool,(m9_sl_CHAR){ chars, len }, &err);
+  root = Parse_File (&pool, &p, &pool,&err);
   if (err.exc) { fprintf (stderr, "raised %s\n", err.exc->name); return 3; }
   out = Print_Tree (&pool, root, &err);
   if (err.exc) { fprintf (stderr, "print raised %s\n", err.exc->name); return 3; }

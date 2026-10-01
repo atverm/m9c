@@ -49,7 +49,7 @@ int main (void)
   Mat_Matrix *grid = Mat_New (&pool, 100, 50, &err);
   for (r = 0; r < 100; r++)
     for (c = 0; c < 50; c++)
-      Mat_Set (&grid, r, c, ZarrStore_GetF64 (&a, at (r, c), &err), &err);
+      Mat_Set (&grid, &pool, r, c, ZarrStore_GetF64 (&a, &pool, at (r, c), &err), &err);
   if (err.exc) { printf ("load failed: %s\n", err.exc->name); return 1; }
 
   Mat_ColReduce (grid, (Mat_ReduceOp){ Mat_ReduceOp_Mean },
@@ -74,7 +74,7 @@ int main (void)
                 sl ("column min", u4), &err);
   {
     uint32_t t1[80], t2[32], t3[32];
-    m9_sl_CHAR svg = Plot_Render (&pool,
+    m9_sl_CHAR svg = Plot_Render (
       sl ("CO2 column statistics (zarr via Modula-2)", t1),
       sl ("column index", t2), sl ("CO2 [ppm]", t3), &err);
     if (err.exc || save ("/tmp/m9plots/co2_columns.svg", svg))
@@ -82,7 +82,7 @@ int main (void)
   }
   {
     uint32_t t1[80];
-    m9_sl_CHAR svg = Plot_RenderHeat (&pool,
+    m9_sl_CHAR svg = Plot_RenderHeat (
       sl ("CO2 field - white block is the missing chunk (fill=NaN)", t1),
       grid, (Plot_Cmap){ Plot_Cmap_Viridis }, false, &err);
     if (err.exc || save ("/tmp/m9plots/co2_field.svg", svg))
@@ -90,7 +90,7 @@ int main (void)
   }
   {
     uint32_t t1[80];
-    m9_sl_CHAR svg = Plot_RenderHeat (&pool,
+    m9_sl_CHAR svg = Plot_RenderHeat (
       sl ("CO2 anomaly vs column mean (Mat.SubRowVector)", t1),
       anom, (Plot_Cmap){ Plot_Cmap_Coolwarm }, true, &err);
     if (err.exc || save ("/tmp/m9plots/co2_anomaly.svg", svg))

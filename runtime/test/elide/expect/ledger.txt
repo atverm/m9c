@@ -1,0 +1,11 @@
+elide: Grow.NewList: keeps pool: it answers a pointer into its pool
+elide: Grow.Push: loses pool, grows l
+elide: Grow.Squares: loses pool, answers in the frame
+elide: Grow.Pair: loses pool, answers in the frame
+elide: Grow.Label: keeps pool: its pool is handed to Text.Cat, which is not in a file named here
+elide: Grow.Remember: keeps pool: its pool is handed to Text.Keep, which is not in a file named here
+elide: Grow.Fill: keeps pool: it allocates from its pool with nothing to grow and nothing pointer-shaped to answer
+elide: Grow.FillId: keeps pool: a view of its scratch string is stored through n
+elide: Grow: module pool own stays
+elide: UseGrow: module pool pool stays
+elide: 3 procedures lose their pool (2 answer in the frame, 1 grow an object, 0 keep a scratch pool), 5 keep it; 6 calls lose an argument; HEAP at 0 sites, 2 module pools stay; 0 locals lose their IN clause, 0 gain one; 0 stale pool arguments go

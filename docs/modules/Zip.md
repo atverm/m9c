@@ -59,7 +59,7 @@ reads the central directory, nothing else.
 
 _(documented with the group below)_
 
-### NameAt (VAR pool: POOL ; a: PTR Archive ; i: I64) : STR RAISES IndexError
+### NameAt (a: PTR Archive ; i: I64) : STR RAISES IndexError
 
 the member's name as stored.  ZIP names are bytes; this decodes
 UTF-8 when the entry's flag bit 11 says so and Latin-1 when it
@@ -74,7 +74,7 @@ the UNCOMPRESSED size.
 
 _(documented with the group below)_
 
-### Find (VAR pool: POOL ; a: PTR Archive ; RO name: STR) : I64 RAISES ValueRange, IndexError
+### Find (a: PTR Archive ; RO name: STR) : I64 RAISES ValueRange, IndexError
 
 the index of that member, or -1.
 

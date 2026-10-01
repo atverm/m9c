@@ -33,12 +33,12 @@ int main (void)
   ck (err.exc == NULL && m != NULL, "New 3x2");
   ck (Mat_Rows (m, &err) == 3 && Mat_Cols (m, &err) == 2, "Rows/Cols");
 
-  Mat_Set (&m, 0, 0, 1.0, &err);
-  Mat_Set (&m, 0, 1, 2.0, &err);
-  Mat_Set (&m, 1, 0, NAN, &err);
-  Mat_Set (&m, 1, 1, 4.0, &err);
-  Mat_Set (&m, 2, 0, 5.0, &err);
-  Mat_Set (&m, 2, 1, 6.0, &err);
+  Mat_Set (&m, &pool,0, 0, 1.0, &err);
+  Mat_Set (&m, &pool,0, 1, 2.0, &err);
+  Mat_Set (&m, &pool,1, 0, NAN, &err);
+  Mat_Set (&m, &pool,1, 1, 4.0, &err);
+  Mat_Set (&m, &pool,2, 0, 5.0, &err);
+  Mat_Set (&m, &pool,2, 1, 6.0, &err);
   ck (err.exc == NULL, "Set raises nothing");
   ck (Mat_Get (m, 2, 1, &err) == 6.0, "Get [2,1]");
   ck (isnan (Mat_Get (m, 1, 0, &err)), "NaN survives Set/Get");
@@ -67,7 +67,7 @@ int main (void)
 
   /* an all-NaN column answers NaN, not 0.0 -- the M2 lie refused */
   Mat_Matrix *z = Mat_New (&pool, 1, 1, &err);
-  Mat_Set (&z, 0, 0, NAN, &err);
+  Mat_Set (&z, &pool,0, 0, NAN, &err);
   double zout[1];
   Mat_ColReduce (z, op (Mat_ReduceOp_Mean), (m9_sl_F64){ zout, 1 }, &err);
   ck (isnan (zout[0]), "all-NaN column answers NaN");
@@ -96,8 +96,8 @@ int main (void)
      plausible number from the next row. */
   {
     Mat_Matrix *w = Mat_New (&pool, 2, 3, &err);
-    Mat_Set (&w, 0, 0, 10.0, &err);
-    Mat_Set (&w, 1, 0, 20.0, &err);
+    Mat_Set (&w, &pool,0, 0, 10.0, &err);
+    Mat_Set (&w, &pool,1, 0, 20.0, &err);
     double v = Mat_Get (w, 0, 3, &err);
     ck (err.exc == &m9_exc_IndexError,
         "Get [0,3] on a 3-column matrix raises IndexError");
@@ -135,8 +135,8 @@ int main (void)
       Mat_Matrix *A = Mat_New (&pool, 4, 4, &err);
       Mat_Matrix *B = Mat_New (&pool, 4, 2, &err);
       for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) Mat_Set (&A, i, j, Av[i][j], &err);
-        for (int j = 0; j < 2; j++) Mat_Set (&B, i, j, Bv[i][j], &err);
+        for (int j = 0; j < 4; j++) Mat_Set (&A, &pool,i, j, Av[i][j], &err);
+        for (int j = 0; j < 2; j++) Mat_Set (&B, &pool,i, j, Bv[i][j], &err);
       }
       char nm[24]; double worst = 0;
       Mat_Matrix *L = Mat_Cholesky (&pool, A, &err);
@@ -196,7 +196,7 @@ int main (void)
         Mat_Matrix *G = Mat_New (&pool, n, n, &err);
         for (int i = 0; i < n; i++)
           for (int j = 0; j < n; j++)
-            Mat_Set (&G, i, j, (i == j) ? 4.0 + 0.01 * i : 1.0 / (1.0 + abs (i - j)), &err);
+            Mat_Set (&G, &pool,i, j, (i == j) ? 4.0 + 0.01 * i : 1.0 / (1.0 + abs (i - j)), &err);
         Mat_Matrix *Gi = Mat_SpdInverse (&pool, G, &err);
         Mat_Matrix *GL = Mat_Cholesky (&pool, G, &err);
         Mat_Matrix *Gc = Mat_CholInverse (&pool, GL, 4, &err);
@@ -229,7 +229,7 @@ int main (void)
           }
         ck (bit, "CholeskyT on the 4 x 4 is bit-identical to Cholesky");
         Mat_Matrix *NS2 = Mat_Identity (&pool, 40, &err);
-        Mat_Set (&NS2, 37, 37, -1.0, &err);
+        Mat_Set (&NS2, &pool,37, 37, -1.0, &err);
         Mat_CholeskyT (&pool, NS2, 2, &err);
         ck (err.exc == &Mat_NotSPD, "CholeskyT raises NotSPD on a negative pivot in a later panel");
         err.exc = NULL;
@@ -240,7 +240,7 @@ int main (void)
       ck (err.exc == &Faults_SizeError, "MulM shape mismatch is SizeError");
       err.exc = NULL;
       Mat_Matrix *NS = Mat_Identity (&pool, 3, &err);
-      Mat_Set (&NS, 2, 2, -1.0, &err);
+      Mat_Set (&NS, &pool,2, 2, -1.0, &err);
       Mat_Cholesky (&pool, NS, &err);
       ck (err.exc == &Mat_NotSPD, "a negative pivot raises NotSPD");
       err.exc = NULL;
@@ -255,12 +255,12 @@ int main (void)
       Mat_Matrix *R = Mat_New (&pool, 3, 3, &err);
       Mat_Matrix *Bc = Mat_New (&pool, 4, 4, &err);
       for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 4; j++) Mat_Set (&H, i, j, Hv[i][j], &err);
-        Mat_Set (&R, i, i, Rv[i], &err);
+        for (int j = 0; j < 4; j++) Mat_Set (&H, &pool,i, j, Hv[i][j], &err);
+        Mat_Set (&R, &pool,i, i, Rv[i], &err);
       }
       for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-          Mat_Set (&Bc, i, j, 0.5 * Av[i][j], &err);
+          Mat_Set (&Bc, &pool,i, j, 0.5 * Av[i][j], &err);
       /* AddNormal: K += H^T R^-1 H, against the same thing composed
          from Transpose and MulM, to 1e-14; 1 thread and 2 bit-identical */
       {
@@ -268,12 +268,12 @@ int main (void)
         m9_sl_F64 ws = { wv, 3 };
         Mat_Matrix *K1 = Mat_New (&pool, 4, 4, &err);
         Mat_Matrix *K2 = Mat_New (&pool, 4, 4, &err);
-        Mat_AddNormal (&pool, H, ws, &K1, 1, &err);
+        Mat_AddNormal ( H, ws, &K1, &pool, 1, &err);
         ck (err.exc == NULL, "AddNormal succeeds");
-        Mat_AddNormal (&pool, H, ws, &K2, 2, &err);
+        Mat_AddNormal ( H, ws, &K2, &pool, 2, &err);
         Mat_Matrix *Hw = Mat_New (&pool, 3, 4, &err);
         for (int i = 0; i < 3; i++)
-          for (int j = 0; j < 4; j++) Mat_Set (&Hw, i, j, Hv[i][j] * wv[i], &err);
+          for (int j = 0; j < 4; j++) Mat_Set (&Hw, &pool,i, j, Hv[i][j] * wv[i], &err);
         Mat_Matrix *Kref = Mat_MulM (&pool, Mat_Transpose (&pool, Hw, &err), H, &err);
         double w = 0; bool same = true;
         for (int i = 0; i < 4; i++)
@@ -300,7 +300,7 @@ int main (void)
       Mat_Matrix *Hxb = Mat_MulV (&pool, H, xb, &err);
       Mat_Matrix *innov = Mat_New (&pool, 3, 1, &err);
       for (int i = 0; i < 3; i++)
-        Mat_Set (&innov, i, 0, yv[i] - Mat_Get (Hxb, i, 0, &err), &err);
+        Mat_Set (&innov, &pool,i, 0, yv[i] - Mat_Get (Hxb, i, 0, &err), &err);
       Mat_Matrix *dx = Mat_MulM (&pool, K, innov, &err);
       worst = 0;
       for (int i = 0; i < 4; i++) {

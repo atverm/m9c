@@ -1,0 +1,23 @@
+MODULE Pooled ;
+
+(* Pooled.m9 as the migration decides it: Pair's answer is held in a
+   local of the frame it lives in, so after m9elide the program
+   compiles and prints what it printed before *)
+
+IMPORT Io ;
+IMPORT Grow ;
+
+VAR
+  scratch : POOL ;
+
+PROCEDURE Make () : I64 =
+VAR r : PTR Grow.List ;
+BEGIN
+  r := Grow.Pair (scratch) ;
+  RETURN Grow.Sum (r)
+END Make ;
+
+BEGIN
+  Io.WriteI64 (Make ()) ;
+  Io.WriteLine ('')
+END Pooled.

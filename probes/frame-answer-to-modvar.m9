@@ -1,0 +1,17 @@
+(* EXPECT: the answer of Make dies with this frame; it cannot be stored in module variable saved *)
+MODULE m ;
+TYPE R = RECORD v : I64 END ;
+VAR saved : PTR R ;
+PROCEDURE Make (v: I64) : PTR R =
+VAR p : PTR R ;
+BEGIN
+  p := NEW (R) ;
+  p.v := v ;
+  RETURN p
+END Make ;
+PROCEDURE Keep () =
+BEGIN
+  saved := Make (3)
+END Keep ;
+BEGIN
+END m.
