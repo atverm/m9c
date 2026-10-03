@@ -138,6 +138,17 @@ begin
     nkDesignator: Result := DesigStr (n);
     nkQualident : Result := QualStr (n);
     nkIdent     : Result := n.a;
+    nkAggregate : begin
+                    { on one line: the form a diagnostic quotes; a
+                      declaration prints one element to a line }
+                    Result := '[';
+                    for i := 0 to High (n.kids) do
+                    begin
+                      if i > 0 then Result := Result + ', ';
+                      Result := Result + E (n.kids[i]);
+                    end;
+                    Result := Result + ']';
+                  end;
   else
     Result := '?expr?';
   end;
@@ -478,7 +489,7 @@ end;
 
 function DeclLines (n: TNode; ind: Integer): string;
 var
-  i : Integer;
+  i, j : Integer;
   d : TNode;
 begin
   Result := '';
@@ -487,8 +498,26 @@ begin
       begin
         Result := Sp (ind) + 'CONST' + LF;
         for i := 0 to High (n.kids) do
-          Result := Result + Sp (ind + 1) + n.kids[i].a + ' = ' +
-            E (n.kids[i].kids[0]) + ' ;' + LF;
+        begin
+          d := n.kids[i].kids[0];
+          Result := Result + Sp (ind + 1) + n.kids[i].a + ' = ';
+          if (d <> nil) and (d.kind = nkAggregate) then
+          begin
+            { a CONST's aggregate, one element to a line, always:
+              mirrors Print.EAggregate }
+            Result := Result + '[' + LF;
+            for j := 0 to High (d.kids) do
+            begin
+              Result := Result + Sp (ind + 2) + E (d.kids[j]);
+              if j < High (d.kids) then Result := Result + ',';
+              Result := Result + LF;
+            end;
+            Result := Result + Sp (ind + 1) + ']';
+          end
+          else
+            Result := Result + E (d);
+          Result := Result + ' ;' + LF;
+        end;
       end;
     nkTypeSection :
       begin

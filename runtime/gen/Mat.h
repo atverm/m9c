@@ -36,6 +36,11 @@ static const m9_sl_CHAR __attribute__((__unused__)) Mat_ReduceOp_names[] = {
 };
 
 extern const m9_exc Mat_NotSPD;
+extern const m9_exc Mat_Singular;
+extern const m9_exc Mat_NoConverge;
+
+#define Mat_Eps (2.220446049250313e-16)
+#define Mat_MaxSweeps INT64_C(60)
 
 #ifndef M9SL_m9_gd2_double
 #define M9SL_m9_gd2_double
@@ -64,5 +69,12 @@ Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err);
 Mat_Matrix * Mat_CholeskyT (m9_pool *pool, Mat_Matrix * a, int64_t threads, m9_state *err);
 Mat_Matrix * Mat_CholInverse (m9_pool *pool, Mat_Matrix * l, int64_t threads, m9_state *err);
 void Mat_AddNormal (Mat_Matrix * h, m9_sl_F64 w, Mat_Matrix * *k, m9_pool *k_pool, int64_t threads, m9_state *err);
+Mat_Matrix * Mat_Solve (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *err);
+double Mat_Det (Mat_Matrix * a, m9_state *err);
+Mat_Matrix * Mat_Inverse (m9_pool *pool, Mat_Matrix * a, m9_state *err);
+void Mat_Qr (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *q, m9_pool *q_pool, Mat_Matrix * *r, m9_pool *r_pool, m9_state *err);
+Mat_Matrix * Mat_LstSq (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *err);
+void Mat_Svd (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *u, m9_pool *u_pool, m9_sl_F64 *s, Mat_Matrix * *vt, m9_pool *vt_pool, m9_state *err);
+void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m9_pool *v_pool, m9_state *err);
 
 #endif

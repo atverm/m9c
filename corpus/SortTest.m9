@@ -1,0 +1,177 @@
+MODULE SortTest ;
+
+(* Sort against numpy: the index sorts, unique and the binary
+   searches, from runtime/test/gold/Sort.gold (tools/sortgold.py);
+   and the sorts themselves against the order the index sort gives,
+   which numpy has just vouched for.  Everything here is exact.
+
+   One thing numpy and Sort answer differently and both rightly:
+   unique of a vector holding 0.0 and -0.0 keeps one zero, numpy the
+   negative and Sort the first it met; they are equal as values, and
+   that is what is compared. *)
+
+IMPORT Check ;
+IMPORT Io ;
+IMPORT Sort ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+
+PROCEDURE F64s (RO name: STR) : SLICE OF F64 =
+BEGIN
+  RETURN Check.GoldF64s (t, gold, name)
+END F64s ;
+
+PROCEDURE I64s (RO name: STR) : SLICE OF I64 =
+BEGIN
+  RETURN Check.GoldI64s (t, gold, name)
+END I64s ;
+
+PROCEDURE Strs (RO name: STR) : SLICE OF STR =
+BEGIN
+  RETURN Check.GoldStrs (t, gold, name)
+END Strs ;
+
+PROCEDURE Reals () RAISES Sort.NotANumber =
+VAR
+  v, sorted, probes, u, w : SLICE OF F64 ;
+  idx, lower, upper, find : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  v := F64s ('in.f') ;
+  idx := NEW (I64, LEN (v)) ;
+  Sort.ArgF64 (v, idx) ;
+  Check.EqI64s (t, 'ArgF64, stable', idx, I64s ('want.argsort.f')) ;
+  u := Sort.UniqueF64 (v) ;
+  Check.NearF64s (t, 'UniqueF64', u, F64s ('want.unique.f'), 0.0, 0.0) ;
+  w := NEW (F64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := v[i] END ;
+  Sort.F64s (w) ;
+  sorted := F64s ('in.f.sorted') ;
+  Check.NearF64s (t, 'F64s', w, sorted, 0.0, 0.0) ;
+  probes := F64s ('in.f.probes') ;
+  lower := NEW (I64, LEN (probes)) ;
+  upper := NEW (I64, LEN (probes)) ;
+  find := NEW (I64, LEN (probes)) ;
+  FOR i := 0 TO LEN (probes) - 1 DO
+    lower[i] := Sort.LowerF64 (sorted, probes[i]) ;
+    upper[i] := Sort.UpperF64 (sorted, probes[i]) ;
+    find[i] := Sort.FindF64 (sorted, probes[i])
+  END ;
+  Check.EqI64s (t, 'LowerF64 is searchsorted left', lower,
+                I64s ('want.lower.f')) ;
+  Check.EqI64s (t, 'UpperF64 is searchsorted right', upper,
+                I64s ('want.upper.f')) ;
+  Check.EqI64s (t, 'FindF64: the first equal, or -1', find,
+                I64s ('want.find.f')) ;
+  Check.EqI64 (t, 'LowerF64 of a NaN is past the end',
+               Sort.LowerF64 (sorted, 0.0 / 0.0), LEN (sorted)) ;
+  Check.EqI64 (t, 'FindF64 of a NaN is -1', Sort.FindF64 (sorted, 0.0 / 0.0),
+               -1) ;
+
+  (* nothing *)
+  v := F64s ('in.f.empty') ;
+  idx := NEW (I64, 0) ;
+  Sort.ArgF64 (v, idx) ;
+  Check.EqI64s (t, 'ArgF64 of nothing', idx, I64s ('want.argsort.f.empty')) ;
+  u := Sort.UniqueF64 (v) ;
+  Check.NearF64s (t, 'UniqueF64 of nothing', u, F64s ('want.unique.f.empty'),
+                  0.0, 0.0) ;
+  Check.EqI64 (t, 'LowerF64 in nothing', Sort.LowerF64 (v, 1.0), 0) ;
+  Check.EqI64 (t, 'FindF64 in nothing', Sort.FindF64 (v, 1.0), -1)
+END Reals ;
+
+PROCEDURE Integers () =
+VAR
+  v, sorted, probes, w : SLICE OF I64 ;
+  idx, lower, upper, find : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  v := I64s ('in.i') ;
+  idx := NEW (I64, LEN (v)) ;
+  Sort.ArgI64 (v, idx) ;
+  Check.EqI64s (t, 'ArgI64, stable', idx, I64s ('want.argsort.i')) ;
+  Check.EqI64s (t, 'UniqueI64', Sort.UniqueI64 (v), I64s ('want.unique.i')) ;
+  w := NEW (I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := v[i] END ;
+  Sort.I64s (w) ;
+  sorted := I64s ('in.i.sorted') ;
+  Check.EqI64s (t, 'I64s', w, sorted) ;
+  probes := I64s ('in.i.probes') ;
+  lower := NEW (I64, LEN (probes)) ;
+  upper := NEW (I64, LEN (probes)) ;
+  find := NEW (I64, LEN (probes)) ;
+  FOR i := 0 TO LEN (probes) - 1 DO
+    lower[i] := Sort.LowerI64 (sorted, probes[i]) ;
+    upper[i] := Sort.UpperI64 (sorted, probes[i]) ;
+    find[i] := Sort.FindI64 (sorted, probes[i])
+  END ;
+  Check.EqI64s (t, 'LowerI64', lower, I64s ('want.lower.i')) ;
+  Check.EqI64s (t, 'UpperI64', upper, I64s ('want.upper.i')) ;
+  Check.EqI64s (t, 'FindI64', find, I64s ('want.find.i'))
+END Integers ;
+
+PROCEDURE Strings () =
+VAR
+  v, u, probes, w : SLICE OF STR ;
+  idx, find : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  v := Strs ('in.s') ;
+  idx := NEW (I64, LEN (v)) ;
+  Sort.ArgStr (v, idx) ;
+  Check.EqI64s (t, 'ArgStr, stable, upper case before lower', idx,
+                I64s ('want.argsort.s')) ;
+  u := Sort.UniqueStrs (v) ;
+  Check.EqStrs (t, 'UniqueStrs', u, Strs ('want.unique.s')) ;
+  (* Strs itself: the sorted strings, with their repeats, are v taken
+     in the order ArgStr gave *)
+  w := Strs ('in.s') ;
+  Sort.Strs (w) ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    Check.EqStr (t, 'Strs puts the strings in ArgStr order', w[i], v[idx[i]])
+  END ;
+  probes := Strs ('in.s.probes') ;
+  find := NEW (I64, LEN (probes)) ;
+  FOR i := 0 TO LEN (probes) - 1 DO
+    find[i] := Sort.FindStr (u, probes[i])
+  END ;
+  Check.EqI64s (t, 'FindStr in the unique strings', find,
+                I64s ('want.find.s'))
+END Strings ;
+
+(* the refusals *)
+PROCEDURE NaNRefused () : BOOL =
+VAR u : SLICE OF F64 ;
+BEGIN
+  u := Sort.UniqueF64 (Check.GoldF64s (t, gold, 'in.f.withnan')) ;
+  RETURN FALSE
+EXCEPT
+| Sort.NotANumber : RETURN TRUE
+END NaNRefused ;
+
+PROCEDURE ShortIndexRefused () : BOOL =
+VAR idx : SLICE OF I64 ;
+BEGIN
+  idx := NEW (I64, 2) ;
+  Sort.ArgI64 (I64s ('in.i'), idx) ;
+  RETURN FALSE
+EXCEPT
+| IndexError : RETURN TRUE
+END ShortIndexRefused ;
+
+BEGIN
+  gold := Check.GoldPath ('Sort.gold') ;
+  Reals () ;
+  Integers () ;
+  Strings () ;
+  Check.That (t, 'UniqueF64 refuses a NaN by name', NaNRefused ()) ;
+  Check.That (t, 'ArgI64 refuses an index slice of another length',
+              ShortIndexRefused ()) ;
+  Io.Halt (Check.Done (t, 'Sort'))
+EXCEPT
+| Sort.NotANumber :
+    Check.That (t, 'no NotANumber escapes the real checks', FALSE) ;
+    Io.Halt (Check.Done (t, 'Sort'))
+END SortTest.

@@ -198,8 +198,10 @@ void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m
   ln = (*lx).line;
   cl = (*lx).col;
   start = (*lx).pos;
-  c = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    c = m9v;
+  }
   if ((c == 0u)) {
     Lex_Mk (t, t_pool, Lex_KEOF, (m9_sl_CHAR){ NULL, 0 }, ln, cl, err);
     if (err->exc) goto L_ret;
@@ -217,8 +219,10 @@ void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m
     }
     Lex_Mk (t, t_pool, Lex_KIdent, ({ __typeof__((*lx).src) m9t3 = (*lx).src; int64_t m9t3a = start, m9t3n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), ln, cl, err);
     if (err->exc) goto L_ret;
-    (*t).kind = Lex_Lookup ((*t).text, err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*t).kind) m9v = Lex_Lookup ((*t).text, err);
+      if (err->exc) goto L_ret;
+      (*t).kind = m9v;
+    }
     bool m9t4 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 95u);
     if (err->exc) goto L_ret;
     if (m9t4) {
@@ -266,21 +270,32 @@ void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m
   }
   Lex_Advance (lx, lx_pool, err);
   if (err->exc) goto L_ret;
-  n = (int64_t)((*(uint32_t *) m9_at ((*lx).src.p, start, (*lx).src.len, sizeof (uint32_t), err)));
-  if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = (int64_t)((*(uint32_t *) m9_at ((*lx).src.p, start, (*lx).src.len, sizeof (uint32_t), err)));
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   head = ((m9_sl_CHAR){ (uint32_t *) m9s3, 23 });
   { int64_t m9t10to;
   start = INT64_C(0);
   m9t10to = m9_sub_i64 ((head).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; start <= m9t10to; start += 1) {
-    (*(uint32_t *) m9_at (errBuf.v, start, INT64_C(32), sizeof (uint32_t), err)) = (*(uint32_t *) m9_at (head.p, start, head.len, sizeof (uint32_t), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint32_t *) m9_at (errBuf.v, start, INT64_C(32), sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (head.p, start, head.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint32_t *) m9_at (errBuf.v, start, INT64_C(32), sizeof (uint32_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
-  (*(uint32_t *) m9_at (errBuf.v, INT64_C(23), INT64_C(32), sizeof (uint32_t), err)) = (*(uint32_t *) m9_at (Lex_HexMsg.p, m9_mod_i64 ((m9_div_i64 (n, INT64_C(16), err)), INT64_C(16), err), Lex_HexMsg.len, sizeof (uint32_t), err));
-  if (err->exc) goto L_ret;
-  (*(uint32_t *) m9_at (errBuf.v, INT64_C(24), INT64_C(32), sizeof (uint32_t), err)) = (*(uint32_t *) m9_at (Lex_HexMsg.p, m9_mod_i64 (n, INT64_C(16), err), Lex_HexMsg.len, sizeof (uint32_t), err));
-  if (err->exc) goto L_ret;
+  { __typeof__((*(uint32_t *) m9_at (errBuf.v, INT64_C(23), INT64_C(32), sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (Lex_HexMsg.p, m9_mod_i64 ((m9_div_i64 (n, INT64_C(16), err)), INT64_C(16), err), Lex_HexMsg.len, sizeof (uint32_t), err));
+    if (err->exc) goto L_ret;
+    (*(uint32_t *) m9_at (errBuf.v, INT64_C(23), INT64_C(32), sizeof (uint32_t), err)) = m9v;
+    if (err->exc) goto L_ret;
+  }
+  { __typeof__((*(uint32_t *) m9_at (errBuf.v, INT64_C(24), INT64_C(32), sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (Lex_HexMsg.p, m9_mod_i64 (n, INT64_C(16), err), Lex_HexMsg.len, sizeof (uint32_t), err));
+    if (err->exc) goto L_ret;
+    (*(uint32_t *) m9_at (errBuf.v, INT64_C(24), INT64_C(32), sizeof (uint32_t), err)) = m9v;
+    if (err->exc) goto L_ret;
+  }
   Lex_Mk (t, t_pool, Lex_KError, ({ int64_t m9t11a = INT64_C(0), m9t11n = INT64_C(25); (m9_sl_CHAR){ (errBuf).v + m9_chk_slice (m9t11a, m9t11n, INT64_C(32), err), m9t11n }; }), ln, cl, err);
   if (err->exc) goto L_ret;
 L_ret: ;
@@ -579,19 +594,26 @@ static void Lex_Note (int64_t line, int64_t col, int64_t endLine, m9_sl_CHAR tex
   int64_t i = 0; (void) i;
   if ((ncom == (coms).len)) {
     if (((coms).len == INT64_C(0))) {
-      nc = M9_POOL_SL (m9_sl_Lex_Comment, Lex_Comment, &(m9_heap), INT64_C(64), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(nc) m9v = M9_POOL_SL (m9_sl_Lex_Comment, Lex_Comment, &(m9_heap), INT64_C(64), err);
+        if (err->exc) goto L_ret;
+        nc = m9v;
+      }
     } else {
-      nc = M9_POOL_SL (m9_sl_Lex_Comment, Lex_Comment, &(m9_heap), m9_mul_i64 (INT64_C(2), (coms).len, err), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(nc) m9v = M9_POOL_SL (m9_sl_Lex_Comment, Lex_Comment, &(m9_heap), m9_mul_i64 (INT64_C(2), (coms).len, err), err);
+        if (err->exc) goto L_ret;
+        nc = m9v;
+      }
     }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (ncom, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(Lex_Comment *) m9_at (nc.p, i, nc.len, sizeof (Lex_Comment), err)) = (*(Lex_Comment *) m9_at (coms.p, i, coms.len, sizeof (Lex_Comment), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Lex_Comment *) m9_at (nc.p, i, nc.len, sizeof (Lex_Comment), err))) m9v = (*(Lex_Comment *) m9_at (coms.p, i, coms.len, sizeof (Lex_Comment), err));
+        if (err->exc) goto L_ret;
+        (*(Lex_Comment *) m9_at (nc.p, i, nc.len, sizeof (Lex_Comment), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     coms = nc;
   }
@@ -603,8 +625,10 @@ static void Lex_Note (int64_t line, int64_t col, int64_t endLine, m9_sl_CHAR tex
   if (err->exc) goto L_ret;
   (*(Lex_Comment *) m9_at (coms.p, ncom, coms.len, sizeof (Lex_Comment), err)).text = text;
   if (err->exc) goto L_ret;
-  ncom = m9_add_i64 (ncom, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(ncom) m9v = m9_add_i64 (ncom, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    ncom = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -1062,15 +1086,21 @@ static void Lex_Advance (Lex_Lexer *lx, m9_pool *lx_pool, m9_state *err)
   bool m9t1 = (Lex_Peek (lx, lx_pool, INT64_C(0), err) == 10u);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    (*lx).line = m9_add_i64 ((*lx).line, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*lx).line) m9v = m9_add_i64 ((*lx).line, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      (*lx).line = m9v;
+    }
     (*lx).col = INT64_C(1);
   } else {
-    (*lx).col = m9_add_i64 ((*lx).col, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*lx).col) m9v = m9_add_i64 ((*lx).col, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      (*lx).col = m9v;
+    }
   }
-  (*lx).pos = m9_add_i64 ((*lx).pos, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*lx).pos) m9v = m9_add_i64 ((*lx).pos, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*lx).pos = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, lx_pool, (*lx).src.p);
@@ -1155,14 +1185,18 @@ static void Lex_Skip (Lex_Lexer *lx, m9_pool *lx_pool, bool *bad, int64_t *eline
   uint32_t c = 0; (void) c;
   (*bad) = false;
   for (;;) {
-    c = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+      if (err->exc) goto L_ret;
+      c = m9v;
+    }
     for (;;) {
       if (!(((((c == 32u) || (c == 9u)) || (c == 13u)) || (c == 10u)))) break;
       Lex_Advance (lx, lx_pool, err);
       if (err->exc) goto L_ret;
-      c = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+        if (err->exc) goto L_ret;
+        c = m9v;
+      }
     }
     bool m9t1 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 40u) && (Lex_Peek (lx, lx_pool, INT64_C(1), err) == 42u));
     if (err->exc) goto L_ret;
@@ -1175,8 +1209,10 @@ static void Lex_Skip (Lex_Lexer *lx, m9_pool *lx_pool, bool *bad, int64_t *eline
         bool m9t2 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 40u) && (Lex_Peek (lx, lx_pool, INT64_C(1), err) == 42u));
         if (err->exc) goto L_ret;
         if (m9t2) {
-          depth = m9_add_i64 (depth, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          { __typeof__(depth) m9v = m9_add_i64 (depth, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            depth = m9v;
+          }
           Lex_Advance (lx, lx_pool, err);
           if (err->exc) goto L_ret;
           Lex_Advance (lx, lx_pool, err);
@@ -1185,8 +1221,10 @@ static void Lex_Skip (Lex_Lexer *lx, m9_pool *lx_pool, bool *bad, int64_t *eline
           bool m9t3 = ((Lex_Peek (lx, lx_pool, INT64_C(0), err) == 42u) && (Lex_Peek (lx, lx_pool, INT64_C(1), err) == 41u));
           if (err->exc) goto L_ret;
           if (m9t3) {
-            depth = m9_sub_i64 (depth, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            { __typeof__(depth) m9v = m9_sub_i64 (depth, INT64_C(1), err);
+              if (err->exc) goto L_ret;
+              depth = m9v;
+            }
             Lex_Advance (lx, lx_pool, err);
             if (err->exc) goto L_ret;
             Lex_Advance (lx, lx_pool, err);
@@ -1526,8 +1564,10 @@ static void Lex_Number (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *
     goto L_ret;
   }
   hasHexLetter = false;
-  c = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    c = m9v;
+  }
   for (;;) {
     bool m9t6 = Lex_IsHexUp (c, err);
     if (err->exc) goto L_ret;
@@ -1539,11 +1579,15 @@ static void Lex_Number (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *
     }
     Lex_Advance (lx, lx_pool, err);
     if (err->exc) goto L_ret;
-    c = Lex_Peek (lx, lx_pool, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(c) m9v = Lex_Peek (lx, lx_pool, INT64_C(0), err);
+      if (err->exc) goto L_ret;
+      c = m9v;
+    }
   }
-  run = ({ __typeof__((*lx).src) m9t8 = (*lx).src; int64_t m9t8a = start, m9t8n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; });
-  if (err->exc) goto L_ret;
+  { __typeof__(run) m9v = ({ __typeof__((*lx).src) m9t8 = (*lx).src; int64_t m9t8a = start, m9t8n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; });
+    if (err->exc) goto L_ret;
+    run = m9v;
+  }
   if (hasHexLetter) {
     bool m9t9 = ((*(uint32_t *) m9_at (run.p, m9_sub_i64 ((run).len, INT64_C(1), err), run.len, sizeof (uint32_t), err)) != 67u);
     if (err->exc) goto L_ret;
@@ -1565,19 +1609,27 @@ static void Lex_Number (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *
     m9t11to = m9_sub_i64 ((run).len, INT64_C(2), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t11to; i += 1) {
-      c = (*(uint32_t *) m9_at (run.p, i, run.len, sizeof (uint32_t), err));
-      if (err->exc) goto L_ret;
+      { __typeof__(c) m9v = (*(uint32_t *) m9_at (run.p, i, run.len, sizeof (uint32_t), err));
+        if (err->exc) goto L_ret;
+        c = m9v;
+      }
       bool m9t12 = Lex_IsDigit (c, err);
       if (err->exc) goto L_ret;
       if (m9t12) {
-        d = m9_sub_i64 ((int64_t)(c), INT64_C(48), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(d) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(48), err);
+          if (err->exc) goto L_ret;
+          d = m9v;
+        }
       } else {
-        d = m9_sub_i64 ((int64_t)(c), INT64_C(55), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(d) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(55), err);
+          if (err->exc) goto L_ret;
+          d = m9v;
+        }
       }
-      cv = m9_add_i64 (m9_mul_i64 (cv, INT64_C(16), err), d, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(cv) m9v = m9_add_i64 (m9_mul_i64 (cv, INT64_C(16), err), d, err);
+        if (err->exc) goto L_ret;
+        cv = m9v;
+      }
       if ((cv > INT64_C(1114111))) {
         Lex_Mk (t, t_pool, Lex_KError, ((m9_sl_CHAR){ (uint32_t *) m9s128, 54 }), ln, cl, err);
         if (err->exc) goto L_ret;

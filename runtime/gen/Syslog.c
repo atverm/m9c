@@ -23,8 +23,10 @@ void Syslog_Open (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_state 
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
-  b = DynStr_Bytes (&(scratch), ident, false, err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = DynStr_Bytes (&(scratch), ident, false, err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   ({ m9_mon_enter (&m9_gate_csyslog); m9_openlog (((void *)(b).p), ((int)((b).len)), ((int)(options)), ((int)(facility))); m9_mon_leave (&m9_gate_csyslog); });
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -81,8 +83,10 @@ void Syslog_Send (int64_t priority, m9_sl_CHAR text, m9_state *err)
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
-  b = DynStr_Bytes (&(scratch), text, false, err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = DynStr_Bytes (&(scratch), text, false, err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   n = (b).len;
   if ((n > Syslog_MaxMsg)) {
     n = Syslog_MaxMsg;
@@ -158,8 +162,10 @@ static void Syslog_SendAscii (int64_t priority, m9_sl_CHAR text, m9_state *err)
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
-  b = DynStr_Bytes (&(scratch), text, false, err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = DynStr_Bytes (&(scratch), text, false, err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   m9_syslog (((int)(priority)), ((void *)(b).p), ((int)((b).len)));
   goto L_dn_m9t2;
 L_hdl_m9t1: ;

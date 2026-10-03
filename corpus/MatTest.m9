@@ -1,0 +1,390 @@
+MODULE MatTest ;
+
+(* Mat's general linear algebra against numpy.linalg: Solve, Det,
+   Inverse, Qr, LstSq, Svd, EigSym.  (The reductions and the Cholesky
+   family stay with runtime/test/mat_driver.c.)  Goldens:
+   runtime/test/gold/Mat.gold from tools/matgoldm9.py, a matrix as
+   one vector, row after row.
+
+   THE TOLERANCE is 1e-13, absolute and relative, the Cholesky gate's
+   -- these matrices have entries near one and condition numbers
+   under twenty.  One matrix is held looser and says why: Hilbert's,
+   whose condition number of 4.8e5 is five digits that neither
+   answer has, numpy's or this one.
+
+   Signs: a QR factorisation, a singular vector pair and an
+   eigenvector are each unique only up to a sign.  Mat says which
+   sign it answers, the generator brings numpy's answer to the same,
+   and so the comparison is of matrices and not of magnitudes. *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Io ;
+IMPORT Mat ;
+
+CONST
+  Tol = 1.0e-13 ;
+  Names = ['t64', 'a5', 'w35'] ;
+  NRows = [6, 5, 3] ;
+  NCols = [4, 5, 5] ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+  pool : POOL ;
+
+PROCEDURE F64s (RO name: STR) : SLICE OF F64 =
+BEGIN
+  RETURN Check.GoldF64s (t, gold, name)
+END F64s ;
+
+(* the golden vector `name' as a matrix of that shape *)
+PROCEDURE M (RO name: STR ; rows, cols: I64) : PTR Mat.Matrix
+  RAISES Faults.SizeError =
+VAR
+  m : PTR Mat.Matrix IN pool ;
+  v : SLICE OF F64 ;
+  r, c : I64 ;
+BEGIN
+  v := F64s (name) ;
+  IF LEN (v) # rows * cols THEN RAISE Faults.SizeError (LEN (v), rows * cols) END ;
+  m := Mat.New (pool, rows, cols) ;
+  FOR r := 0 TO rows - 1 DO
+    FOR c := 0 TO cols - 1 DO Mat.Set (m, r, c, v[r * cols + c]) END
+  END ;
+  RETURN m
+END M ;
+
+(* a matrix as one vector, row after row *)
+PROCEDURE Flat (m: PTR Mat.Matrix) : SLICE OF F64 =
+VAR
+  v : SLICE OF F64 ;
+  r, c, n : I64 ;
+BEGIN
+  n := Mat.Cols (m) ;
+  v := NEW (F64, Mat.Rows (m) * n) ;
+  FOR r := 0 TO Mat.Rows (m) - 1 DO
+    FOR c := 0 TO n - 1 DO v[r * n + c] := Mat.Get (m, r, c) END
+  END ;
+  RETURN v
+END Flat ;
+
+PROCEDURE Same (RO label: STR ; m: PTR Mat.Matrix ; RO name: STR) =
+BEGIN
+  Check.NearF64s (t, label, Flat (m), F64s (name), Tol, Tol)
+END Same ;
+
+(* ---- LU ---- *)
+
+PROCEDURE Lu ()
+  RAISES Faults.SizeError, Mat.Singular =
+VAR
+  a, b, x : PTR Mat.Matrix IN pool ;
+  ones : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  a := M ('in.a5', 5, 5) ;
+  b := M ('in.b52', 5, 2) ;
+  Same ('Solve: five unknowns, two right sides', Mat.Solve (pool, a, b),
+        'want.solve.a5') ;
+  Check.Near (t, 'Det', Mat.Det (a), Check.GoldF64 (t, gold, 'want.det.a5'),
+              0.0, Tol) ;
+  Same ('Inverse', Mat.Inverse (pool, a), 'want.inv.a5') ;
+
+  a := M ('in.piv', 3, 3) ;
+  b := M ('in.bp', 3, 1) ;
+  Same ('Solve: a zero on the diagonal, so rows are exchanged',
+        Mat.Solve (pool, a, b), 'want.solve.piv') ;
+  Check.Near (t, 'Det: its sign is that of the exchanges', Mat.Det (a),
+              Check.GoldF64 (t, gold, 'want.det.piv'), 0.0, Tol) ;
+
+  (* Hilbert 5: the answer is all ones, and the matrix has 4.8e5 for
+     a condition number, so 1e-16 * 4.8e5 = 5e-11 is what an answer
+     may be off by -- numpy's is, by 3e-12.  Held at 1e-9. *)
+  a := M ('in.h5', 5, 5) ;
+  b := M ('in.bh', 5, 1) ;
+  x := Mat.Solve (pool, a, b) ;
+  Check.NearF64s (t, 'Solve: Hilbert 5 against numpy, at its condition',
+                  Flat (x), F64s ('want.solve.h5'), 0.0, 1.0e-9) ;
+  ones := NEW (F64, 5) ;
+  FOR i := 0 TO 4 DO ones[i] := 1.0 END ;
+  Check.NearF64s (t, 'Solve: Hilbert 5 against the truth, at its condition',
+                  Flat (x), ones, 0.0, 1.0e-9) ;
+
+  a := M ('in.sing', 3, 3) ;
+  Check.EqF64 (t, 'Det of a singular matrix is 0.0', Mat.Det (a),
+               Check.GoldF64 (t, gold, 'want.det.sing'))
+END Lu ;
+
+(* ---- QR and least squares ---- *)
+
+PROCEDURE Qrs ()
+  RAISES Faults.SizeError, Mat.Singular, ValueRange, IndexError =
+VAR
+  a, b, q, r : PTR Mat.Matrix IN pool ;
+  i, d, k : I64 ;
+  positive : BOOL ;
+BEGIN
+  FOR i := 0 TO LEN (Names) - 1 DO
+    a := M ('in.' + Names[i], NRows[i], NCols[i]) ;
+    Mat.Qr (pool, a, q, r) ;
+    k := NRows[i] ;
+    IF NCols[i] < k THEN k := NCols[i] END ;
+    Check.EqI64 (t, 'Qr ' + Names[i] + ': q has the smaller extent for columns',
+                 Mat.Cols (q), k) ;
+    Check.EqI64 (t, 'Qr ' + Names[i] + ': and r for rows', Mat.Rows (r), k) ;
+    Same ('Qr ' + Names[i] + ': q', q, 'want.qr.' + Names[i] + '.q') ;
+    Same ('Qr ' + Names[i] + ': r', r, 'want.qr.' + Names[i] + '.r') ;
+    positive := TRUE ;
+    FOR d := 0 TO k - 1 DO
+      IF Mat.Get (r, d, d) < 0.0 THEN positive := FALSE END
+    END ;
+    Check.That (t, 'Qr ' + Names[i] + ': no negative on the diagonal of r',
+                positive)
+  END ;
+
+  a := M ('in.l83', 8, 3) ;
+  b := M ('in.b82', 8, 2) ;
+  Same ('LstSq: eight equations, three unknowns, two right sides',
+        Mat.LstSq (pool, a, b), 'want.lstsq')
+END Qrs ;
+
+(* ---- SVD ---- *)
+
+(* u diag (s) vt, as one vector *)
+PROCEDURE Recomposed (u: PTR Mat.Matrix ; RO s: SLICE OF F64 ;
+                      vt: PTR Mat.Matrix) : SLICE OF F64 =
+VAR
+  v : SLICE OF F64 ;
+  r, c, k, n : I64 ;
+  acc : F64 ;
+BEGIN
+  n := Mat.Cols (vt) ;
+  v := NEW (F64, Mat.Rows (u) * n) ;
+  FOR r := 0 TO Mat.Rows (u) - 1 DO
+    FOR c := 0 TO n - 1 DO
+      acc := 0.0 ;
+      FOR k := 0 TO LEN (s) - 1 DO
+        acc := acc + Mat.Get (u, r, k) * s[k] * Mat.Get (vt, k, c)
+      END ;
+      v[r * n + c] := acc
+    END
+  END ;
+  RETURN v
+END Recomposed ;
+
+PROCEDURE Svds ()
+  RAISES Faults.SizeError, Mat.NoConverge, ValueRange, IndexError =
+VAR
+  a, u, vt : PTR Mat.Matrix IN pool ;
+  s : SLICE OF F64 ;
+  i, k : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (Names) - 1 DO
+    a := M ('in.' + Names[i], NRows[i], NCols[i]) ;
+    k := NRows[i] ;
+    IF NCols[i] < k THEN k := NCols[i] END ;
+    s := NEW (pool, F64, k) ;
+    Mat.Svd (pool, a, u, s, vt) ;
+    Check.NearF64s (t, 'Svd ' + Names[i] + ': the singular values, descending',
+                    s, F64s ('want.svd.' + Names[i] + '.s'), 0.0, Tol) ;
+    Same ('Svd ' + Names[i] + ': u', u, 'want.svd.' + Names[i] + '.u') ;
+    Same ('Svd ' + Names[i] + ': vt', vt, 'want.svd.' + Names[i] + '.vt') ;
+    Check.NearF64s (t, 'Svd ' + Names[i] + ': u diag (s) vt is the matrix',
+                    Recomposed (u, s, vt), Flat (a), Tol, Tol)
+  END ;
+
+  (* rank 2 of 3: the third value is zero, to rounding in numpy and
+     here, and the vectors that go with a zero are not the matrix's
+     to determine -- so the values and the product are what is held *)
+  a := M ('in.r2', 4, 3) ;
+  s := NEW (pool, F64, 3) ;
+  Mat.Svd (pool, a, u, s, vt) ;
+  Check.NearF64s (t, 'Svd of rank 2: two values and a zero', s,
+                  F64s ('want.svd.r2.s'), Tol, Tol) ;
+  Check.NearF64s (t, 'Svd of rank 2: the product is still the matrix',
+                  Recomposed (u, s, vt), Flat (a), Tol, Tol) ;
+
+  (* the matrix LstSq refuses below as Singular: Svd says how singular *)
+  a := M ('in.rank2', 8, 3) ;
+  Mat.Svd (pool, a, u, s, vt) ;
+  Check.NearF64s (t, 'Svd of a column that is the sum of two: the last value is rounding',
+                  s, F64s ('want.rank2.s'), Tol, Tol)
+END Svds ;
+
+(* ---- symmetric eigen ---- *)
+
+PROCEDURE Eigs ()
+  RAISES Faults.SizeError, Mat.NoConverge, ValueRange, IndexError =
+VAR
+  a, low, v : PTR Mat.Matrix IN pool ;
+  w : SLICE OF F64 ;
+  r, c : I64 ;
+BEGIN
+  a := M ('in.s5', 5, 5) ;
+  w := NEW (pool, F64, 5) ;
+  Mat.EigSym (pool, a, w, v) ;
+  Check.NearF64s (t, 'EigSym: the eigenvalues, ascending', w,
+                  F64s ('want.eig.s5.w'), Tol, Tol) ;
+  Same ('EigSym: the eigenvectors, as columns', v, 'want.eig.s5.v') ;
+
+  (* only the lower triangle is read: the same matrix with nonsense
+     above its diagonal has the same answer *)
+  low := M ('in.s5', 5, 5) ;
+  FOR r := 0 TO 4 DO
+    FOR c := r + 1 TO 4 DO Mat.Set (low, r, c, 1.0e6) END
+  END ;
+  Mat.EigSym (pool, low, w, v) ;
+  Check.NearF64s (t, 'EigSym reads the lower triangle only', w,
+                  F64s ('want.eig.s5.w'), Tol, Tol) ;
+
+  a := M ('in.rep', 3, 3) ;
+  w := NEW (pool, F64, 3) ;
+  Mat.EigSym (pool, a, w, v) ;
+  Check.NearF64s (t, 'EigSym: an eigenvalue twice', w,
+                  F64s ('want.eig.rep.w'), Tol, Tol)
+END Eigs ;
+
+(* ---- the refusals: what each is refused as, '' when it is not ---- *)
+
+PROCEDURE SolveRefusal (a, b: PTR Mat.Matrix) : STR =
+VAR x : PTR Mat.Matrix IN pool ;
+BEGIN
+  x := Mat.Solve (pool, a, b) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError : RETURN 'SizeError'
+| Mat.Singular (col) : RETURN 'Singular'
+END SolveRefusal ;
+
+PROCEDURE SingularAt (a, b: PTR Mat.Matrix) : I64 =
+VAR x : PTR Mat.Matrix IN pool ;
+BEGIN
+  x := Mat.Solve (pool, a, b) ;
+  RETURN -1
+EXCEPT
+| Faults.SizeError : RETURN -2
+| Mat.Singular (col) : RETURN col
+END SingularAt ;
+
+PROCEDURE InverseRefusal (a: PTR Mat.Matrix) : STR =
+VAR x : PTR Mat.Matrix IN pool ;
+BEGIN
+  x := Mat.Inverse (pool, a) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError : RETURN 'SizeError'
+| Mat.Singular (col) : RETURN 'Singular'
+END InverseRefusal ;
+
+PROCEDURE DetRefusal (a: PTR Mat.Matrix) : STR =
+VAR d : F64 ;
+BEGIN
+  d := Mat.Det (a) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError : RETURN 'SizeError'
+END DetRefusal ;
+
+PROCEDURE LstSqRefusal (a, b: PTR Mat.Matrix) : STR =
+VAR x : PTR Mat.Matrix IN pool ;
+BEGIN
+  x := Mat.LstSq (pool, a, b) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError : RETURN 'SizeError'
+| Mat.Singular (col) : RETURN 'Singular'
+| ValueRange : RETURN 'ValueRange'
+END LstSqRefusal ;
+
+PROCEDURE SvdRefusal (a: PTR Mat.Matrix ; n: I64) : STR =
+VAR
+  u, vt : PTR Mat.Matrix IN pool ;
+  s : SLICE OF F64 ;
+BEGIN
+  s := NEW (pool, F64, n) ;
+  Mat.Svd (pool, a, u, s, vt) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError : RETURN 'SizeError'
+| Mat.NoConverge (sweeps) : RETURN 'NoConverge'
+| ValueRange : RETURN 'ValueRange'
+END SvdRefusal ;
+
+PROCEDURE EigRefusal (a: PTR Mat.Matrix ; n: I64) : STR =
+VAR
+  v : PTR Mat.Matrix IN pool ;
+  w : SLICE OF F64 ;
+BEGIN
+  w := NEW (pool, F64, n) ;
+  Mat.EigSym (pool, a, w, v) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError : RETURN 'SizeError'
+| Mat.NoConverge (sweeps) : RETURN 'NoConverge'
+| ValueRange : RETURN 'ValueRange'
+END EigRefusal ;
+
+PROCEDURE Refusals () RAISES Faults.SizeError =
+VAR a5, b52, t64, sing, bp, l83, b82, rank : PTR Mat.Matrix IN pool ;
+BEGIN
+  a5 := M ('in.a5', 5, 5) ;
+  b52 := M ('in.b52', 5, 2) ;
+  t64 := M ('in.t64', 6, 4) ;
+  sing := M ('in.sing', 3, 3) ;
+  bp := M ('in.bp', 3, 1) ;
+  l83 := M ('in.l83', 8, 3) ;
+  b82 := M ('in.b82', 8, 2) ;
+  rank := M ('in.rank', 8, 3) ;
+  Check.EqStr (t, 'Solve refuses a matrix that is not square',
+               SolveRefusal (t64, b52), 'SizeError') ;
+  Check.EqStr (t, 'Solve refuses a right side of another height',
+               SolveRefusal (a5, bp), 'SizeError') ;
+  Check.EqStr (t, 'Solve refuses a singular matrix',
+               SolveRefusal (sing, bp), 'Singular') ;
+  Check.EqI64 (t, 'and names the column that had no pivot',
+               SingularAt (sing, bp), 2) ;
+  Check.EqStr (t, 'Inverse refuses a singular matrix',
+               InverseRefusal (sing), 'Singular') ;
+  Check.EqStr (t, 'Det refuses a matrix that is not square',
+               DetRefusal (t64), 'SizeError') ;
+  Check.EqStr (t, 'LstSq refuses more unknowns than equations',
+               LstSqRefusal (M ('in.w35', 3, 5), bp), 'SizeError') ;
+  Check.EqStr (t, 'LstSq refuses a right side of another height',
+               LstSqRefusal (l83, b52), 'SizeError') ;
+  Check.EqStr (t, 'LstSq refuses a column that is another column again',
+               LstSqRefusal (rank, b82), 'Singular') ;
+  Check.EqStr (t, 'and a column that is the sum of two, which no exact zero marks',
+               LstSqRefusal (M ('in.rank2', 8, 3), b82), 'Singular') ;
+  Check.EqStr (t, 'LstSq takes the same right side with full rank',
+               LstSqRefusal (l83, b82), '') ;
+  Check.EqStr (t, 'Svd refuses a slice of the wrong length',
+               SvdRefusal (t64, 6), 'SizeError') ;
+  Check.EqStr (t, 'and takes the right one', SvdRefusal (t64, 4), '') ;
+  Check.EqStr (t, 'EigSym refuses a matrix that is not square',
+               EigRefusal (t64, 4), 'SizeError') ;
+  Check.EqStr (t, 'EigSym refuses a slice of the wrong length',
+               EigRefusal (a5, 4), 'SizeError')
+END Refusals ;
+
+PROCEDURE Fail (RO what: STR) =
+BEGIN
+  Check.That (t, what, FALSE) ;
+  Io.Halt (Check.Done (t, 'Mat'))
+END Fail ;
+
+BEGIN
+  gold := Check.GoldPath ('Mat.gold') ;
+  Lu () ;
+  Qrs () ;
+  Svds () ;
+  Eigs () ;
+  Refusals () ;
+  Io.Halt (Check.Done (t, 'Mat'))
+EXCEPT
+| Faults.SizeError : Fail ('no SizeError escapes')
+| Mat.Singular (col) : Fail ('no Singular escapes')
+| Mat.NoConverge (sweeps) : Fail ('no NoConverge escapes')
+| ValueRange : Fail ('no ValueRange escapes')
+| IndexError : Fail ('no IndexError escapes')
+END MatTest.

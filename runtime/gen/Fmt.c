@@ -46,19 +46,27 @@ m9_sl_CHAR Fmt_I64Str (int64_t v, m9_state *err)
   s = (m9_sl_CHAR){ NULL, 0 };
   q = v;
   if ((q > INT64_C(0))) {
-    q = m9_neg_i64 (q, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(q) m9v = m9_neg_i64 (q, err);
+      if (err->exc) goto L_ret;
+      q = m9v;
+    }
   }
   for (;;) {
     if (!((q != INT64_C(0)))) break;
-    s = m9_cat (err->res, ({ __typeof__(Fmt_HexDigits) m9t1 = Fmt_HexDigits; int64_t m9t1a = m9_neg_i64 ((m9_mod_i64 (q, INT64_C(10), err)), err), m9t1n = INT64_C(1); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), s, err);
-    if (err->exc) goto L_ret;
-    q = m9_div_i64 (q, INT64_C(10), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = m9_cat (err->res, ({ __typeof__(Fmt_HexDigits) m9t1 = Fmt_HexDigits; int64_t m9t1a = m9_neg_i64 ((m9_mod_i64 (q, INT64_C(10), err)), err), m9t1n = INT64_C(1); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), s, err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
+    { __typeof__(q) m9v = m9_div_i64 (q, INT64_C(10), err);
+      if (err->exc) goto L_ret;
+      q = m9v;
+    }
   }
   if ((v < INT64_C(0))) {
-    s = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s1, 1 }), s, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s1, 1 }), s, err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
   }
   err->res = m9res;
   m9ret = s;
@@ -82,8 +90,10 @@ m9_sl_CHAR Fmt_I64Pad (int64_t v, int64_t width, bool zero, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   bool neg = false; (void) neg;
-  body = Fmt_I64Str (v, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(body) m9v = Fmt_I64Str (v, err);
+    if (err->exc) goto L_ret;
+    body = m9v;
+  }
   n = (body).len;
   if ((n >= width)) {
     err->res = m9res;
@@ -92,8 +102,10 @@ m9_sl_CHAR Fmt_I64Pad (int64_t v, int64_t width, bool zero, m9_state *err)
   }
   neg = false;
   if ((n > INT64_C(0))) {
-    neg = ((*(uint32_t *) m9_at (body.p, INT64_C(0), body.len, sizeof (uint32_t), err)) == 45u);
-    if (err->exc) goto L_ret;
+    { __typeof__(neg) m9v = ((*(uint32_t *) m9_at (body.p, INT64_C(0), body.len, sizeof (uint32_t), err)) == 45u);
+      if (err->exc) goto L_ret;
+      neg = m9v;
+    }
   }
   if ((zero && neg)) {
     s = ((m9_sl_CHAR){ (uint32_t *) m9s2, 1 });
@@ -102,11 +114,15 @@ m9_sl_CHAR Fmt_I64Pad (int64_t v, int64_t width, bool zero, m9_state *err)
     m9t1to = m9_sub_i64 (width, n, err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      s = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s3, 1 }), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s3, 1 }), err);
+        if (err->exc) goto L_ret;
+        s = m9v;
+      }
     } }
-    s = m9_cat (err->res, s, ({ __typeof__(body) m9t2 = body; int64_t m9t2a = INT64_C(1), m9t2n = m9_sub_i64 (n, INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = m9_cat (err->res, s, ({ __typeof__(body) m9t2 = body; int64_t m9t2a = INT64_C(1), m9t2n = m9_sub_i64 (n, INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
   } else {
     s = (m9_sl_CHAR){ NULL, 0 };
     { int64_t m9t3to;
@@ -115,15 +131,21 @@ m9_sl_CHAR Fmt_I64Pad (int64_t v, int64_t width, bool zero, m9_state *err)
     if (err->exc) goto L_ret;
     for (; i <= m9t3to; i += 1) {
       if (zero) {
-        s = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s4, 1 }), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s4, 1 }), err);
+          if (err->exc) goto L_ret;
+          s = m9v;
+        }
       } else {
-        s = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s5, 1 }), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s5, 1 }), err);
+          if (err->exc) goto L_ret;
+          s = m9v;
+        }
       }
     } }
-    s = m9_cat (err->res, s, body, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = m9_cat (err->res, s, body, err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
   }
   err->res = m9res;
   m9ret = s;
@@ -174,12 +196,18 @@ m9_sl_CHAR Fmt_Fixed (double v, int64_t decimals, m9_state *err)
   if (neg) {
     av = (- av);
   }
-  scale = Fmt_Pow10I (decimals, err);
-  if (err->exc) goto L_ret;
-  scaled = (av * Fmt_Pow10 (decimals, err));
-  if (err->exc) goto L_ret;
-  frac = m9_i64_f64 ((double)(scaled), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(scale) m9v = Fmt_Pow10I (decimals, err);
+    if (err->exc) goto L_ret;
+    scale = m9v;
+  }
+  { __typeof__(scaled) m9v = (av * Fmt_Pow10 (decimals, err));
+    if (err->exc) goto L_ret;
+    scaled = m9v;
+  }
+  { __typeof__(frac) m9v = m9_i64_f64 ((double)(scaled), err);
+    if (err->exc) goto L_ret;
+    frac = m9v;
+  }
   if (((scaled - (double)(frac)) > 0.5)) {
     scaled = (scaled + 1.0);
   } else {
@@ -190,19 +218,27 @@ m9_sl_CHAR Fmt_Fixed (double v, int64_t decimals, m9_state *err)
         scaled = (scaled + 1.0);
       }
   } }
-  whole = m9_div_i64 (m9_i64_f64 ((double)(scaled), err), scale, err);
-  if (err->exc) goto L_ret;
-  frac = m9_mod_i64 (m9_i64_f64 ((double)(scaled), err), scale, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(whole) m9v = m9_div_i64 (m9_i64_f64 ((double)(scaled), err), scale, err);
+    if (err->exc) goto L_ret;
+    whole = m9v;
+  }
+  { __typeof__(frac) m9v = m9_mod_i64 (m9_i64_f64 ((double)(scaled), err), scale, err);
+    if (err->exc) goto L_ret;
+    frac = m9v;
+  }
   s = (m9_sl_CHAR){ NULL, 0 };
   if (neg) {
     s = ((m9_sl_CHAR){ (uint32_t *) m9s9, 1 });
   }
-  s = m9_cat (err->res, s, Fmt_I64Str (whole, err), err);
-  if (err->exc) goto L_ret;
-  if ((decimals > INT64_C(0))) {
-    s = m9_cat (err->res, m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 }), err), Fmt_I64Pad (frac, decimals, true, err), err);
+  { __typeof__(s) m9v = m9_cat (err->res, s, Fmt_I64Str (whole, err), err);
     if (err->exc) goto L_ret;
+    s = m9v;
+  }
+  if ((decimals > INT64_C(0))) {
+    { __typeof__(s) m9v = m9_cat (err->res, m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 }), err), Fmt_I64Pad (frac, decimals, true, err), err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
   }
   err->res = m9res;
   m9ret = s;
@@ -271,19 +307,27 @@ m9_sl_CHAR Fmt_Sci (double v, int64_t decimals, m9_state *err)
   if (neg) {
     av = (- av);
   }
-  scale = Fmt_Pow10I (decimals, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(scale) m9v = Fmt_Pow10I (decimals, err);
+    if (err->exc) goto L_ret;
+    scale = m9v;
+  }
   if ((av == 0.0)) {
     expo = INT64_C(0);
     whole = INT64_C(0);
     frac = INT64_C(0);
   } else {
-    expo = Fmt_Norm (&(av), err);
-    if (err->exc) goto L_ret;
-    scaled = (av * Fmt_Pow10 (decimals, err));
-    if (err->exc) goto L_ret;
-    frac = m9_i64_f64 ((double)(scaled), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(expo) m9v = Fmt_Norm (&(av), err);
+      if (err->exc) goto L_ret;
+      expo = m9v;
+    }
+    { __typeof__(scaled) m9v = (av * Fmt_Pow10 (decimals, err));
+      if (err->exc) goto L_ret;
+      scaled = m9v;
+    }
+    { __typeof__(frac) m9v = m9_i64_f64 ((double)(scaled), err);
+      if (err->exc) goto L_ret;
+      frac = m9v;
+    }
     if (((scaled - (double)(frac)) > 0.5)) {
       scaled = (scaled + 1.0);
     } else {
@@ -294,26 +338,36 @@ m9_sl_CHAR Fmt_Sci (double v, int64_t decimals, m9_state *err)
           scaled = (scaled + 1.0);
         }
     } }
-    whole = m9_div_i64 (m9_i64_f64 ((double)(scaled), err), scale, err);
-    if (err->exc) goto L_ret;
-    frac = m9_mod_i64 (m9_i64_f64 ((double)(scaled), err), scale, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(whole) m9v = m9_div_i64 (m9_i64_f64 ((double)(scaled), err), scale, err);
+      if (err->exc) goto L_ret;
+      whole = m9v;
+    }
+    { __typeof__(frac) m9v = m9_mod_i64 (m9_i64_f64 ((double)(scaled), err), scale, err);
+      if (err->exc) goto L_ret;
+      frac = m9v;
+    }
     if ((whole >= INT64_C(10))) {
       whole = INT64_C(1);
       frac = INT64_C(0);
-      expo = m9_add_i64 (expo, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(expo) m9v = m9_add_i64 (expo, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        expo = m9v;
+      }
     }
   }
   s = (m9_sl_CHAR){ NULL, 0 };
   if (neg) {
     s = ((m9_sl_CHAR){ (uint32_t *) m9s14, 1 });
   }
-  s = m9_cat (err->res, s, Fmt_I64Str (whole, err), err);
-  if (err->exc) goto L_ret;
-  if ((decimals > INT64_C(0))) {
-    s = m9_cat (err->res, m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s15, 1 }), err), Fmt_I64Pad (frac, decimals, true, err), err);
+  { __typeof__(s) m9v = m9_cat (err->res, s, Fmt_I64Str (whole, err), err);
     if (err->exc) goto L_ret;
+    s = m9v;
+  }
+  if ((decimals > INT64_C(0))) {
+    { __typeof__(s) m9v = m9_cat (err->res, m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s15, 1 }), err), Fmt_I64Pad (frac, decimals, true, err), err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
   }
   err->res = m9res;
   m9ret = m9_cat (err->res, m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s16, 1 }), err), Fmt_I64Str (expo, err), err);
@@ -356,8 +410,10 @@ m9_sl_CHAR Fmt_Bits (double v, m9_state *err)
   m9_pool scratch = {0}; (void) scratch;
   int64_t i = 0; (void) i;
   int64_t x = 0; (void) x;
-  b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), INT64_C(8), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
   m9_f64_to_le (v, b, err);
   if (err->exc) goto L_ret;
   s = (m9_sl_CHAR){ NULL, 0 };
@@ -365,10 +421,14 @@ m9_sl_CHAR Fmt_Bits (double v, m9_state *err)
   i = INT64_C(0);
   m9t1to = INT64_C(7);
   for (; i <= m9t1to; i += 1) {
-    x = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
-    if (err->exc) goto L_ret;
-    s = m9_cat (err->res, m9_cat (err->res, s, ({ __typeof__(Fmt_HexDigits) m9t2 = Fmt_HexDigits; int64_t m9t2a = m9_div_i64 (x, INT64_C(16), err), m9t2n = INT64_C(1); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err), ({ __typeof__(Fmt_HexDigits) m9t3 = Fmt_HexDigits; int64_t m9t3a = m9_mod_i64 (x, INT64_C(16), err), m9t3n = INT64_C(1); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(x) m9v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
+      if (err->exc) goto L_ret;
+      x = m9v;
+    }
+    { __typeof__(s) m9v = m9_cat (err->res, m9_cat (err->res, s, ({ __typeof__(Fmt_HexDigits) m9t2 = Fmt_HexDigits; int64_t m9t2a = m9_div_i64 (x, INT64_C(16), err), m9t2n = INT64_C(1); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err), ({ __typeof__(Fmt_HexDigits) m9t3 = Fmt_HexDigits; int64_t m9t3a = m9_mod_i64 (x, INT64_C(16), err), m9t3n = INT64_C(1); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
   } }
   err->res = m9res;
   m9ret = s;
@@ -396,14 +456,19 @@ double Fmt_ParseBits (m9_sl_CHAR s, m9_state *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), INT64_C(8), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = INT64_C(7);
   for (; i <= m9t1to; i += 1) {
-    (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (m9_mul_i64 (Fmt_HexVal ((*(uint32_t *) m9_at (s.p, m9_mul_i64 (INT64_C(2), i, err), s.len, sizeof (uint32_t), err)), err), INT64_C(16), err), Fmt_HexVal ((*(uint32_t *) m9_at (s.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), i, err), INT64_C(1), err), s.len, sizeof (uint32_t), err)), err), err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (m9_mul_i64 (Fmt_HexVal ((*(uint32_t *) m9_at (s.p, m9_mul_i64 (INT64_C(2), i, err), s.len, sizeof (uint32_t), err)), err), INT64_C(16), err), Fmt_HexVal ((*(uint32_t *) m9_at (s.p, m9_add_i64 (m9_mul_i64 (INT64_C(2), i, err), INT64_C(1), err), s.len, sizeof (uint32_t), err)), err), err), err);
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   err->res = m9res;
   m9ret = m9_f64_from_le (b, err);
@@ -444,14 +509,18 @@ double Fmt_ParseF64 (m9_sl_CHAR s, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t1) {
     neg = true;
-    i = m9_add_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
   } else {
     bool m9t2 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 43u);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      i = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        i = m9v;
+      }
   } }
   mant = 0.0;
   expo = INT64_C(0);
@@ -467,22 +536,32 @@ double Fmt_ParseF64 (m9_sl_CHAR s, m9_state *err)
         goto L_ret;
       }
       seenDot = true;
-      i = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        i = m9v;
+      }
     } else {
       bool m9t4 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) >= 48u) && ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) <= 57u));
       if (err->exc) goto L_ret;
       if (m9t4) {
-        mant = ((mant * 10.0) + (double)(m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)));
-        if (err->exc) goto L_ret;
-        if (seenDot) {
-          expo = m9_sub_i64 (expo, INT64_C(1), err);
+        { __typeof__(mant) m9v = ((mant * 10.0) + (double)(m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)));
           if (err->exc) goto L_ret;
+          mant = m9v;
         }
-        digits = m9_add_i64 (digits, INT64_C(1), err);
-        if (err->exc) goto L_ret;
-        i = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        if (seenDot) {
+          { __typeof__(expo) m9v = m9_sub_i64 (expo, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            expo = m9v;
+          }
+        }
+        { __typeof__(digits) m9v = m9_add_i64 (digits, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          digits = m9v;
+        }
+        { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          i = m9v;
+        }
     } else {
       break;
     } }
@@ -495,23 +574,31 @@ double Fmt_ParseF64 (m9_sl_CHAR s, m9_state *err)
     bool m9t5 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 101u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 69u));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      i = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        i = m9v;
+      }
       esign = INT64_C(1);
       if ((i < n)) {
         bool m9t6 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 45u);
         if (err->exc) goto L_ret;
         if (m9t6) {
-          esign = m9_neg_i64 (INT64_C(1), err);
-          if (err->exc) goto L_ret;
-          i = m9_add_i64 (i, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          { __typeof__(esign) m9v = m9_neg_i64 (INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            esign = m9v;
+          }
+          { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            i = m9v;
+          }
         } else {
           bool m9t7 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 43u);
           if (err->exc) goto L_ret;
           if (m9t7) {
-            i = m9_add_i64 (i, INT64_C(1), err);
-            if (err->exc) goto L_ret;
+            { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+              if (err->exc) goto L_ret;
+              i = m9v;
+            }
         } }
       }
       eval = INT64_C(0);
@@ -527,24 +614,34 @@ double Fmt_ParseF64 (m9_sl_CHAR s, m9_state *err)
           m9_raise (err, &m9_exc_ValueRange);
           goto L_ret;
         }
-        eval = m9_add_i64 (m9_mul_i64 (eval, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
-        if (err->exc) goto L_ret;
-        i = m9_add_i64 (i, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(eval) m9v = m9_add_i64 (m9_mul_i64 (eval, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+          if (err->exc) goto L_ret;
+          eval = m9v;
+        }
+        { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          i = m9v;
+        }
       }
-      expo = m9_add_i64 (expo, m9_mul_i64 (esign, eval, err), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(expo) m9v = m9_add_i64 (expo, m9_mul_i64 (esign, eval, err), err);
+        if (err->exc) goto L_ret;
+        expo = m9v;
+      }
     }
   }
   if ((i != n)) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  scale = Fmt_Pow10 (expo, err);
-  if (err->exc) goto L_ret;
-  if ((expo < INT64_C(0))) {
-    mant = (mant / Fmt_Pow10 (m9_neg_i64 (expo, err), err));
+  { __typeof__(scale) m9v = Fmt_Pow10 (expo, err);
     if (err->exc) goto L_ret;
+    scale = m9v;
+  }
+  if ((expo < INT64_C(0))) {
+    { __typeof__(mant) m9v = (mant / Fmt_Pow10 (m9_neg_i64 (expo, err), err));
+      if (err->exc) goto L_ret;
+      mant = m9v;
+    }
   } else {
     mant = (mant * scale);
   }
@@ -601,8 +698,10 @@ static int64_t Fmt_Pow10I (int64_t n, m9_state *err)
   i = INT64_C(1);
   m9t1to = n;
   for (; i <= m9t1to; i += 1) {
-    p = m9_mul_i64 (p, INT64_C(10), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(p) m9v = m9_mul_i64 (p, INT64_C(10), err);
+      if (err->exc) goto L_ret;
+      p = m9v;
+    }
   } }
   err->res = m9res;
   m9ret = p;
@@ -633,8 +732,10 @@ static m9_sl_CHAR Fmt_PadLeft (m9_sl_CHAR body, int64_t width, m9_state *err)
   m9t1to = m9_sub_i64 (width, (body).len, err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    s = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s17, 1 }), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s17, 1 }), err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
   } }
   err->res = m9res;
   m9ret = m9_cat (err->res, s, body, err);
@@ -661,30 +762,42 @@ static int64_t Fmt_Norm (double *a, m9_state *err)
   step = INT64_C(256);
   for (;;) {
     if (!((step >= INT64_C(1)))) break;
-    p = Fmt_Pow10 (step, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(p) m9v = Fmt_Pow10 (step, err);
+      if (err->exc) goto L_ret;
+      p = m9v;
+    }
     for (;;) {
       if (!(((*a) >= p))) break;
       (*a) = ((*a) / p);
-      e = m9_add_i64 (e, step, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(e) m9v = m9_add_i64 (e, step, err);
+        if (err->exc) goto L_ret;
+        e = m9v;
+      }
     }
-    step = m9_div_i64 (step, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(step) m9v = m9_div_i64 (step, INT64_C(2), err);
+      if (err->exc) goto L_ret;
+      step = m9v;
+    }
   }
   step = INT64_C(256);
   for (;;) {
     if (!((step >= INT64_C(1)))) break;
-    p = Fmt_Pow10 (step, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(p) m9v = Fmt_Pow10 (step, err);
+      if (err->exc) goto L_ret;
+      p = m9v;
+    }
     for (;;) {
       if (!((((*a) * p) < 10.0))) break;
       (*a) = ((*a) * p);
-      e = m9_sub_i64 (e, step, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(e) m9v = m9_sub_i64 (e, step, err);
+        if (err->exc) goto L_ret;
+        e = m9v;
+      }
     }
-    step = m9_div_i64 (step, INT64_C(2), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(step) m9v = m9_div_i64 (step, INT64_C(2), err);
+      if (err->exc) goto L_ret;
+      step = m9v;
+    }
   }
   err->res = m9res;
   m9ret = e;

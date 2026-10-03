@@ -14,6 +14,7 @@ extern int64_t tls_read (int, void *, size_t);
 extern int64_t tls_write (int, const void *, size_t);
 extern int tls_close (int);
 extern double m9_now (void);
+extern void m9_sleep_ms (int64_t);
 extern int tcp_listen (int, int);
 extern int tcp_accept (int);
 
@@ -68,8 +69,10 @@ HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_state *err)
   err->res = m9res;
   HttpServer_Router * m9ret = NULL;
   HttpServer_Router * r = NULL; (void) r;
-  r = (HttpServer_Router *) m9_pool_alloc (&((*pool)), sizeof (HttpServer_Router), 1, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(r) m9v = (HttpServer_Router *) m9_pool_alloc (&((*pool)), sizeof (HttpServer_Router), 1, err);
+    if (err->exc) goto L_ret;
+    r = m9v;
+  }
   r->first = NULL;
   r->last = NULL;
   r->count = INT64_C(0);
@@ -90,8 +93,10 @@ void HttpServer_AddRoute (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_CHAR me
   (void) m9res;
   err->res = &m9frame;
   HttpServer_Route * nr = NULL; (void) nr;
-  nr = (HttpServer_Route *) m9_pool_alloc (r_pool, sizeof (HttpServer_Route), 1, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nr) m9v = (HttpServer_Route *) m9_pool_alloc (r_pool, sizeof (HttpServer_Route), 1, err);
+    if (err->exc) goto L_ret;
+    nr = m9v;
+  }
   nr->method = method;
   nr->path = path;
   nr->status = status;
@@ -106,8 +111,10 @@ void HttpServer_AddRoute (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_CHAR me
     (*r)->first = nr;
   } }
   (*r)->last = nr;
-  (*r)->count = m9_add_i64 ((*r)->count, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*r)->count) m9v = m9_add_i64 ((*r)->count, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*r)->count = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
@@ -139,8 +146,10 @@ m9_sl_CHAR HttpServer_RouteMethod (HttpServer_Router * r, int64_t i, m9_state *e
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
-  p = HttpServer_RouteAt (r, i, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
+    if (err->exc) goto L_ret;
+    p = m9v;
+  }
   err->res = m9res;
   m9ret = p->method;
   goto L_ret;
@@ -159,8 +168,10 @@ m9_sl_CHAR HttpServer_RoutePath (HttpServer_Router * r, int64_t i, m9_state *err
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
-  p = HttpServer_RouteAt (r, i, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
+    if (err->exc) goto L_ret;
+    p = m9v;
+  }
   err->res = m9res;
   m9ret = p->path;
   goto L_ret;
@@ -179,8 +190,10 @@ int64_t HttpServer_RouteStatus (HttpServer_Router * r, int64_t i, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   HttpServer_Route * p = NULL; (void) p;
-  p = HttpServer_RouteAt (r, i, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
+    if (err->exc) goto L_ret;
+    p = m9v;
+  }
   err->res = m9res;
   m9ret = p->status;
   goto L_ret;
@@ -198,8 +211,10 @@ m9_sl_CHAR HttpServer_RouteType (HttpServer_Router * r, int64_t i, m9_state *err
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
-  p = HttpServer_RouteAt (r, i, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
+    if (err->exc) goto L_ret;
+    p = m9v;
+  }
   err->res = m9res;
   m9ret = p->ctype;
   goto L_ret;
@@ -218,8 +233,10 @@ m9_sl_CHAR HttpServer_RouteSummary (HttpServer_Router * r, int64_t i, m9_state *
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   HttpServer_Route * p = NULL; (void) p;
-  p = HttpServer_RouteAt (r, i, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(p) m9v = HttpServer_RouteAt (r, i, err);
+    if (err->exc) goto L_ret;
+    p = m9v;
+  }
   err->res = m9res;
   m9ret = p->summary;
   goto L_ret;
@@ -258,8 +275,10 @@ void HttpServer_Serve (HttpServer_Router * r, int64_t port, int64_t maxRequests,
     }
     HttpServer_Answer (r, cfd, err);
     if (err->exc) goto L_fin_m9t3;
-    served = m9_add_i64 (served, INT64_C(1), err);
-    if (err->exc) goto L_fin_m9t3;
+    { __typeof__(served) m9v = m9_add_i64 (served, INT64_C(1), err);
+      if (err->exc) goto L_fin_m9t3;
+      served = m9v;
+    }
   }
 L_fin_m9t3: ;
   n = (int64_t)(tcp_close (((int)(lfd))));
@@ -296,8 +315,10 @@ static HttpServer_Route * HttpServer_RouteAt (HttpServer_Router * r, int64_t i, 
       m9ret = rt;
       goto L_ret;
     }
-    j = m9_sub_i64 (j, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(j) m9v = m9_sub_i64 (j, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      j = m9v;
+    }
     c = rt->next;
   }
   err->i[0] = i;
@@ -384,8 +405,10 @@ static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9
   DynStr_DString * d = NULL; (void) d;
   m9_sl_BYTE wire = {0}; (void) wire;
   int64_t n = 0; (void) n;
-  d = DynStr_New (&(scratch), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(scratch), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s7, 9 }), err);
   if (err->exc) goto L_ret;
   DynStr_AppendI64 (&(d), &(scratch), status, err);
@@ -412,8 +435,10 @@ static void HttpServer_Respond (int64_t fd, int64_t status, m9_sl_CHAR ctype, m9
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(scratch), body, err);
   if (err->exc) goto L_ret;
-  wire = DynStr_Bytes (&(scratch), DynStr_View (d, err), false, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(wire) m9v = DynStr_Bytes (&(scratch), DynStr_View (d, err), false, err);
+    if (err->exc) goto L_ret;
+    wire = m9v;
+  }
   n = (int64_t)(tcp_write (((int)(fd)), ((void *)(wire).p), ((size_t)((wire).len))));
 L_ret: ;
   err->res = m9res;
@@ -438,16 +463,20 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t sp1 = 0; (void) sp1;
   int64_t sp2 = 0; (void) sp2;
-  buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), HttpServer_ReqMax, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), HttpServer_ReqMax, err);
+    if (err->exc) goto L_ret;
+    buf = m9v;
+  }
   bool m9t1 = false; (void) m9t1;
   n = (int64_t)(tcp_read (((int)(fd)), ((void *)(buf).p), ((size_t)(HttpServer_ReqMax))));
   if ((n <= INT64_C(0))) {
     m9t1 = true;
     goto L_fin_m9t2;
   }
-  req = DynStr_Chars (&(scratch), ({ __typeof__(buf) m9t3 = buf; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
-  if (err->exc) goto L_fin_m9t2;
+  { __typeof__(req) m9v = DynStr_Chars (&(scratch), ({ __typeof__(buf) m9t3 = buf; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
+    if (err->exc) goto L_fin_m9t2;
+    req = m9v;
+  }
   sp1 = INT64_C(0);
   i = INT64_C(0);
   for (;;) {
@@ -457,8 +486,10 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
     if (m9t4) {
       sp1 = i;
     }
-    i = m9_add_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_fin_m9t2;
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_fin_m9t2;
+      i = m9v;
+    }
   }
   sp2 = INT64_C(0);
   for (;;) {
@@ -468,8 +499,10 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
     if (m9t5) {
       sp2 = i;
     }
-    i = m9_add_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_fin_m9t2;
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_fin_m9t2;
+      i = m9v;
+    }
   }
   if (((sp1 == INT64_C(0)) || (sp2 == INT64_C(0)))) {
     HttpServer_Respond (fd, INT64_C(400), ((m9_sl_CHAR){ (uint32_t *) m9s10, 10 }), ((m9_sl_CHAR){ (uint32_t *) m9s11, 22 }), err);
@@ -477,10 +510,14 @@ static void HttpServer_Answer (HttpServer_Router * r, int64_t fd, m9_state *err)
     m9t1 = true;
     goto L_fin_m9t2;
   }
-  method = ({ __typeof__(req) m9t6 = req; int64_t m9t6a = INT64_C(0), m9t6n = sp1; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
-  if (err->exc) goto L_fin_m9t2;
-  path = ({ __typeof__(req) m9t7 = req; int64_t m9t7a = m9_add_i64 (sp1, INT64_C(1), err), m9t7n = m9_sub_i64 (m9_sub_i64 (sp2, sp1, err), INT64_C(1), err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
-  if (err->exc) goto L_fin_m9t2;
+  { __typeof__(method) m9v = ({ __typeof__(req) m9t6 = req; int64_t m9t6a = INT64_C(0), m9t6n = sp1; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
+    if (err->exc) goto L_fin_m9t2;
+    method = m9v;
+  }
+  { __typeof__(path) m9v = ({ __typeof__(req) m9t7 = req; int64_t m9t7a = m9_add_i64 (sp1, INT64_C(1), err), m9t7n = m9_sub_i64 (m9_sub_i64 (sp2, sp1, err), INT64_C(1), err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
+    if (err->exc) goto L_fin_m9t2;
+    path = m9v;
+  }
   cur = r->first;
   for (;;) {
     HttpServer_Route * rt = cur;

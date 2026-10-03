@@ -60,6 +60,24 @@ int main (void)
   ok ("LastChar", Text_LastChar (S ("a/b/c"), '/', &err) == 3);
   ok ("LastChar absent", Text_LastChar (S ("abc"), '/', &err) == -1);
   ok ("Contains", Text_Contains (S ("abcdef"), S ("cde"), &err));
+  {
+    /* membership in a list of strings: the index, or -1.  'pp' and
+       'ppmv' are the neighbours a prefix compare would let in. */
+    m9_sl_CHAR units[4];
+    m9_sl_m9_sl_CHAR among;
+    m9_sl_m9_sl_CHAR none = { units, 0 };
+    units[0] = S ("ppm"); units[1] = S ("ppb"); units[2] = S ("");
+    units[3] = S ("ppm");
+    among.p = units; among.len = 4;
+    ok ("IndexOf first of two", Text_IndexOf (among, S ("ppm"), &err) == 0);
+    ok ("IndexOf", Text_IndexOf (among, S ("ppb"), &err) == 1);
+    ok ("IndexOf the empty string", Text_IndexOf (among, S (""), &err) == 2);
+    ok ("IndexOf absent, shorter", Text_IndexOf (among, S ("pp"), &err) == -1);
+    ok ("IndexOf absent, longer", Text_IndexOf (among, S ("ppmv"), &err) == -1);
+    ok ("OneOf", Text_OneOf (S ("ppb"), among, &err));
+    ok ("not OneOf", !Text_OneOf (S ("ppt"), among, &err));
+    ok ("OneOf of nothing", !Text_OneOf (S ("ppm"), none, &err));
+  }
   ok ("StartsWith", Text_StartsWith (S ("prefix-rest"), S ("prefix"), &err));
   ok ("not StartsWith", !Text_StartsWith (S ("ab"), S ("abc"), &err));
   ok ("EndsWith", Text_EndsWith (S ("file.m9"), S (".m9"), &err));

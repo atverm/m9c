@@ -21,11 +21,21 @@ FORWARD ONLY.  A deflate stream has no index, so there is no seek:
 `Read` continues from where the last one stopped, and that is the
 whole contract.  It is also all a row cursor needs.
 
-`Close` MATTERS.  The z_stream struct lives in this module's pool,
-but zlib allocates its own window behind it, and that window is
-freed by Close and by nothing else -- not by the pool going away.
-A builder that opens one member per run can be forgiven; a loop
-that opens thousands cannot.
+THE INFLATE IS WRITTEN HERE, IN M9 (2026-10-02; Alex's decision).
+Until then the stream went to zlib through a shim, and so a
+program that read a member needed zlib on its own link line: the
+compiler supplies the runtime and no other library.  Now a
+program that imports Zip links as any program does, on every
+platform.  The decoder is RFC 1951's, table-driven.  It is SLOWER
+than zlib, measured on a 92 MB table that deflate takes to a
+fifth: a member read as a stream at 235 MB/s where zlib gave 500
+(0.46), a gzip file with its CRC at 215 MB/s where zlib gave 305
+(0.7).  What is left is the price of an index checked at every
+byte copied; zlib copies a run with one memcpy.
+
+`Close` frees nothing any more -- the decoder's window is in the
+pool the member lives in and goes with it -- and is kept because
+callers call it: it marks the member finished.
 
 ### TYPE Archive
 
@@ -93,18 +103,42 @@ loops until 0.
 
 _(undocumented)_
 
-### InflSize () : C.SSizeT [REENTRANT]
+### Gunzip (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE RAISES Error, Io.IOError, ValueRange
 
-_(undocumented)_
+the uncompressed bytes of the file at path
 
-### InflInit (zs: C.MutPtr) : C.Int [REENTRANT]
+### GunzipBytes (VAR pool: POOL ; RO data: SLICE OF BYTE) : SLICE OF BYTE RAISES Error, ValueRange
 
-_(undocumented)_
+the same of bytes already held, an HTTP body sent with
+Content-Encoding: gzip for one
 
-### InflStep (zs: C.MutPtr ; src: C.ConstPtr ; nsrc: C.SSizeT ; dst: C.MutPtr ; ndst: C.SSizeT ; out: C.MutPtr) : C.Int [REENTRANT]
+### Deflate (VAR pool: POOL ; RO data: SLICE OF BYTE) : SLICE OF BYTE RAISES ValueRange
 
-_(undocumented)_
+the bare deflate stream (RFC 1951), no header and no checksum
 
-### InflEnd (zs: C.MutPtr) [REENTRANT]
+### Compress (VAR pool: POOL ; RO data: SLICE OF BYTE) : SLICE OF BYTE RAISES ValueRange
 
-_(undocumented)_
+the zlib wrapping (RFC 1950): two bytes of header, the stream,
+its Adler-32.  Python's zlib.decompress reads it; a PNG's image
+data is this.
+
+### Decompress (VAR pool: POOL ; RO data: SLICE OF BYTE) : SLICE OF BYTE RAISES Error, ValueRange
+
+what Compress, or any zlib, wrapped: Python's zlib.decompress.
+Error by name for what does not begin as zlib, asks for a preset
+dictionary, is damaged or stops early, has an Adler-32 its bytes
+do not bear out, or goes on after it.
+
+### Gzip (VAR pool: POOL ; RO data: SLICE OF BYTE) : SLICE OF BYTE RAISES ValueRange
+
+a gzip file's bytes (RFC 1952): one member, no name, no time --
+so the same bytes in give the same bytes out -- with its CRC-32
+and length.  GunzipBytes undoes it.
+
+### Crc32 (RO b: SLICE OF BYTE) : I64 RAISES ValueRange
+
+the CRC-32 of gzip, zip and PNG (zlib.crc32), 0 .. 4294967295
+
+### Adler32 (RO b: SLICE OF BYTE) : I64
+
+the checksum of the zlib wrapping (zlib.adler32)

@@ -67,8 +67,49 @@ PROCEDURE ArgF64 (RO v: SLICE OF F64 ; VAR idx: SLICE OF I64)
      equal values keep index order.  LEN (idx) must be LEN (v)
      (IndexError otherwise); v is not moved *)
 
+PROCEDURE ArgI64 (RO v: SLICE OF I64 ; VAR idx: SLICE OF I64)
+  RAISES IndexError ;
+PROCEDURE ArgStr (RO v: SLICE OF STR ; VAR idx: SLICE OF I64)
+  RAISES IndexError ;
+  (* ArgF64 for integers and for strings (in Strs's order): the
+     indices that sort v, stable, v not moved; LEN (idx) must be
+     LEN (v) *)
+
 PROCEDURE By (VAR keys: SLICE OF I64 ; less: Less) ;
   (* the keys in the caller's order, stable *)
+
+PROCEDURE UniqueF64 (RO v: SLICE OF F64) : SLICE OF F64
+  RAISES NotANumber ;
+PROCEDURE UniqueI64 (RO v: SLICE OF I64) : SLICE OF I64 ;
+PROCEDURE UniqueStrs (RO v: SLICE OF STR) : SLICE OF STR ;
+  (* the distinct values of v, ascending: numpy.unique.  The answer
+     is new storage in the caller's frame and v is not moved; the
+     strings of UniqueStrs are copies, so the answer does not hold
+     on to v.  -0.0 and 0.0 are
+     one value (the first met stays); a NaN is NotANumber, as it is
+     for the sort this stands on. *)
+
+PROCEDURE LowerF64 (RO a: SLICE OF F64 ; x: F64) : I64 ;
+PROCEDURE UpperF64 (RO a: SLICE OF F64 ; x: F64) : I64 ;
+PROCEDURE FindF64 (RO a: SLICE OF F64 ; x: F64) : I64 ;
+PROCEDURE LowerI64 (RO a: SLICE OF I64 ; x: I64) : I64 ;
+PROCEDURE UpperI64 (RO a: SLICE OF I64 ; x: I64) : I64 ;
+PROCEDURE FindI64 (RO a: SLICE OF I64 ; x: I64) : I64 ;
+PROCEDURE FindStr (RO a: SLICE OF STR ; RO s: STR) : I64 ;
+  (* BINARY SEARCH in a slice that is ASCENDING -- which is the
+     caller's to ensure: these read about log2 (LEN (a)) elements and
+     cannot notice a slice that is not sorted.
+
+       Lower:  the first index whose element is not less than x,
+               0 .. LEN (a): where x would be inserted to stay
+               before its equals (numpy.searchsorted, side='left')
+       Upper:  the first index whose element is greater than x:
+               after its equals (side='right').  Upper - Lower is
+               how many elements equal x.
+       Find:   the index of the FIRST element equal to x, or -1
+
+     A NaN x is after everything, as numpy has it: Lower and Upper
+     answer LEN (a), and Find -1. *)
 
 END Sort.
 
@@ -280,6 +321,60 @@ BEGIN
   SortArg (v, idx, tmp, 0, LEN (v))
 END ArgF64 ;
 
+(* the integer twin of MergeArg and SortArg: one comparison differs *)
+PROCEDURE MergeArgI64 (RO v: SLICE OF I64 ; VAR a: SLICE OF I64 ;
+                       VAR tmp: SLICE OF I64 ; lo: I64 ; mid: I64 ;
+                       hi: I64) =
+VAR i, j, k : I64 ;
+BEGIN
+  i := lo ; j := mid ; k := lo ;
+  WHILE i < mid AND j < hi DO
+    IF v[a[j]] < v[a[i]] THEN tmp[k] := a[j] ; j := j + 1
+    ELSE tmp[k] := a[i] ; i := i + 1 END ;
+    k := k + 1
+  END ;
+  WHILE i < mid DO tmp[k] := a[i] ; i := i + 1 ; k := k + 1 END ;
+  WHILE j < hi DO tmp[k] := a[j] ; j := j + 1 ; k := k + 1 END ;
+  FOR k := lo TO hi - 1 DO a[k] := tmp[k] END
+END MergeArgI64 ;
+
+PROCEDURE SortArgI64 (RO v: SLICE OF I64 ; VAR a: SLICE OF I64 ;
+                      VAR tmp: SLICE OF I64 ; lo: I64 ; hi: I64) =
+VAR mid : I64 ;
+BEGIN
+  IF hi - lo < 2 THEN RETURN END ;
+  mid := lo + (hi - lo) DIV 2 ;
+  SortArgI64 (v, a, tmp, lo, mid) ;
+  SortArgI64 (v, a, tmp, mid, hi) ;
+  MergeArgI64 (v, a, tmp, lo, mid, hi)
+END SortArgI64 ;
+
+PROCEDURE ArgI64 (RO v: SLICE OF I64 ; VAR idx: SLICE OF I64)
+  RAISES IndexError =
+VAR
+  scratch : POOL ;
+  tmp : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (idx) # LEN (v) THEN RAISE IndexError (LEN (idx), LEN (v)) END ;
+  FOR i := 0 TO LEN (v) - 1 DO idx[i] := i END ;
+  tmp := NEW (scratch, I64, LEN (v)) ;
+  SortArgI64 (v, idx, tmp, 0, LEN (v))
+END ArgI64 ;
+
+PROCEDURE ArgStr (RO v: SLICE OF STR ; VAR idx: SLICE OF I64)
+  RAISES IndexError =
+VAR
+  scratch : POOL ;
+  tmp : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (idx) # LEN (v) THEN RAISE IndexError (LEN (idx), LEN (v)) END ;
+  FOR i := 0 TO LEN (v) - 1 DO idx[i] := i END ;
+  tmp := NEW (scratch, I64, LEN (v)) ;
+  SortArgStrs (v, idx, tmp, 0, LEN (v))
+END ArgStr ;
+
 (* the caller's order, called through: the one comparison that is a
    procedure value.  Stable for the same reason as the others -- the
    right side is taken only when less (right, left) holds. *)
@@ -317,5 +412,182 @@ BEGIN
   tmp := NEW (scratch, I64, LEN (keys)) ;
   SortBy (keys, tmp, less, 0, LEN (keys))
 END By ;
+
+(* ---- unique: sort a copy, keep the first of each run ---- *)
+
+PROCEDURE UniqueF64 (RO v: SLICE OF F64) : SLICE OF F64
+  RAISES NotANumber =
+VAR
+  w, out : SLICE OF F64 ;
+  i, n : I64 ;
+BEGIN
+  w := NEW (F64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := v[i] END ;
+  F64s (w) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (w) - 1 DO
+    IF i = 0 THEN
+      n := 1
+    ELSIF w[i] # w[n - 1] THEN
+      w[n] := w[i] ;
+      n := n + 1
+    END
+  END ;
+  out := NEW (F64, n) ;
+  FOR i := 0 TO n - 1 DO out[i] := w[i] END ;
+  RETURN out
+END UniqueF64 ;
+
+PROCEDURE UniqueI64 (RO v: SLICE OF I64) : SLICE OF I64 =
+VAR
+  w, out : SLICE OF I64 ;
+  i, n : I64 ;
+BEGIN
+  w := NEW (I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := v[i] END ;
+  I64s (w) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (w) - 1 DO
+    IF i = 0 THEN
+      n := 1
+    ELSIF w[i] # w[n - 1] THEN
+      w[n] := w[i] ;
+      n := n + 1
+    END
+  END ;
+  out := NEW (I64, n) ;
+  FOR i := 0 TO n - 1 DO out[i] := w[i] END ;
+  RETURN out
+END UniqueI64 ;
+
+(* the indices are sorted, and the answer takes a COPY of the first
+   string of each run of equals.  A copy, because an answer holding
+   v's own strings is a retention: the checker asks for KEPT on v
+   (it did, on the first version of this), and a KEPT parameter
+   refuses a caller whose strings are frame values -- the pieces of a
+   Text.Split, which is who asks for unique strings. *)
+PROCEDURE UniqueStrs (RO v: SLICE OF STR) : SLICE OF STR =
+VAR
+  scratch : POOL ;
+  idx, tmp : SLICE OF I64 ;
+  out : SLICE OF STR ;
+  i, n, last : I64 ;
+BEGIN
+  idx := NEW (scratch, I64, LEN (v)) ;
+  tmp := NEW (scratch, I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO idx[i] := i END ;
+  SortArgStrs (v, idx, tmp, 0, LEN (v)) ;
+  (* count the runs, then take the head of each *)
+  n := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    IF i = 0 THEN
+      n := 1
+    ELSIF StrLess (v[idx[i - 1]], v[idx[i]]) THEN
+      n := n + 1
+    END
+  END ;
+  out := NEW (STR, n) ;
+  n := 0 ;
+  last := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    IF i = 0 THEN
+      out[0] := v[idx[0]] + '' ;
+      n := 1
+    ELSIF StrLess (v[last], v[idx[i]]) THEN
+      out[n] := v[idx[i]] + '' ;
+      n := n + 1
+    END ;
+    last := idx[i]
+  END ;
+  RETURN out
+END UniqueStrs ;
+
+(* ---- binary search ---- *)
+
+PROCEDURE LowerF64 (RO a: SLICE OF F64 ; x: F64) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  IF Math.IsNaN (x) THEN RETURN LEN (a) END ;
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF a[mid] < x THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  RETURN lo
+END LowerF64 ;
+
+PROCEDURE UpperF64 (RO a: SLICE OF F64 ; x: F64) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  IF Math.IsNaN (x) THEN RETURN LEN (a) END ;
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF a[mid] <= x THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  RETURN lo
+END UpperF64 ;
+
+PROCEDURE FindF64 (RO a: SLICE OF F64 ; x: F64) : I64 =
+VAR i : I64 ;
+BEGIN
+  i := LowerF64 (a, x) ;
+  IF i < LEN (a) THEN
+    IF a[i] = x THEN RETURN i END
+  END ;
+  RETURN -1
+END FindF64 ;
+
+PROCEDURE LowerI64 (RO a: SLICE OF I64 ; x: I64) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF a[mid] < x THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  RETURN lo
+END LowerI64 ;
+
+PROCEDURE UpperI64 (RO a: SLICE OF I64 ; x: I64) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF a[mid] <= x THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  RETURN lo
+END UpperI64 ;
+
+PROCEDURE FindI64 (RO a: SLICE OF I64 ; x: I64) : I64 =
+VAR i : I64 ;
+BEGIN
+  i := LowerI64 (a, x) ;
+  IF i < LEN (a) THEN
+    IF a[i] = x THEN RETURN i END
+  END ;
+  RETURN -1
+END FindI64 ;
+
+PROCEDURE FindStr (RO a: SLICE OF STR ; RO s: STR) : I64 =
+VAR lo, hi, mid : I64 ;
+BEGIN
+  lo := 0 ;
+  hi := LEN (a) ;
+  WHILE lo < hi DO
+    mid := lo + (hi - lo) DIV 2 ;
+    IF StrLess (a[mid], s) THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  IF lo < LEN (a) THEN
+    (* a[lo] is not less than s; equal when s is not less than it *)
+    IF NOT StrLess (s, a[lo]) THEN RETURN lo END
+  END ;
+  RETURN -1
+END FindStr ;
 
 END Sort.

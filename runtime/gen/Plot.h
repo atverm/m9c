@@ -4,10 +4,18 @@
 #include "m9rt.h"
 #include "DynStr.h"
 #include "Mat.h"
+#include "Math.h"
+#include "Faults.h"
+#include "Fmt.h"
+#include "Text.h"
+#include "Time.h"
 
 void Plot_m9init (m9_state *err);
 
 typedef struct Plot_Cmap Plot_Cmap;
+typedef struct Plot_Trace Plot_Trace;
+typedef struct Plot_ChartSpec Plot_ChartSpec;
+typedef struct Plot_Geo Plot_Geo;
 
 typedef struct Plot_Cmap Plot_Cmap;
 struct Plot_Cmap { int32_t tag; };
@@ -26,6 +34,8 @@ static const m9_sl_CHAR __attribute__((__unused__)) Plot_Cmap_names[] = {
 #define Plot_BarStacked INT64_C(1)
 #define Plot_BarAtValue INT64_C(0)
 #define Plot_BarDiscrete INT64_C(1)
+#define Plot_TaylorMax (1.65)
+#define Plot_ChartSlots INT64_C(6)
 #define Plot_MaxSer INT64_C(4)
 #define Plot_MaxPts INT64_C(8192)
 #define Plot_FigW (720.0)
@@ -37,7 +47,37 @@ static const m9_sl_CHAR __attribute__((__unused__)) Plot_Cmap_names[] = {
 static const uint32_t Plot_HexDigits_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 97u, 98u, 99u, 100u, 101u, 102u };
 #define Plot_HexDigits ((m9_sl_CHAR){ (uint32_t *) Plot_HexDigits_d, 16 })
 #define Plot_Cap (3.0)
+#define Plot_TOx (95.0)
+#define Plot_TOy (650.0)
+#define Plot_TScale (340.0)
+static const uint32_t Plot_Thin_d[32] = { 115u, 116u, 114u, 111u, 107u, 101u, 61u, 34u, 35u, 53u, 53u, 53u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 119u, 105u, 100u, 116u, 104u, 61u, 34u, 48u, 46u, 56u, 34u };
+#define Plot_Thin ((m9_sl_CHAR){ (uint32_t *) Plot_Thin_d, 32 })
+static const uint32_t Plot_Ink_d[32] = { 115u, 116u, 114u, 111u, 107u, 101u, 61u, 34u, 35u, 48u, 48u, 48u, 34u, 32u, 115u, 116u, 114u, 111u, 107u, 101u, 45u, 119u, 105u, 100u, 116u, 104u, 61u, 34u, 49u, 46u, 50u, 34u };
+#define Plot_Ink ((m9_sl_CHAR){ (uint32_t *) Plot_Ink_d, 32 })
+#define Plot_CharW (6.4)
+#define Plot_RowH (20.0)
+#define Plot_MaxMarks INT64_C(40)
+static const uint32_t Plot_CSurface_d[7] = { 35u, 102u, 99u, 102u, 99u, 102u, 98u };
+#define Plot_CSurface ((m9_sl_CHAR){ (uint32_t *) Plot_CSurface_d, 7 })
+static const uint32_t Plot_CInk_d[7] = { 35u, 48u, 98u, 48u, 98u, 48u, 98u };
+#define Plot_CInk ((m9_sl_CHAR){ (uint32_t *) Plot_CInk_d, 7 })
+static const uint32_t Plot_CInk2_d[7] = { 35u, 53u, 50u, 53u, 49u, 52u, 101u };
+#define Plot_CInk2 ((m9_sl_CHAR){ (uint32_t *) Plot_CInk2_d, 7 })
+static const uint32_t Plot_CMuted_d[7] = { 35u, 56u, 57u, 56u, 55u, 56u, 49u };
+#define Plot_CMuted ((m9_sl_CHAR){ (uint32_t *) Plot_CMuted_d, 7 })
+static const uint32_t Plot_CGrid_d[7] = { 35u, 101u, 49u, 101u, 48u, 100u, 57u };
+#define Plot_CGrid ((m9_sl_CHAR){ (uint32_t *) Plot_CGrid_d, 7 })
+static const uint32_t Plot_CAxis_d[7] = { 35u, 99u, 51u, 99u, 50u, 98u, 55u };
+#define Plot_CAxis ((m9_sl_CHAR){ (uint32_t *) Plot_CAxis_d, 7 })
 
+#ifndef M9SL_m9_sl_Plot_Trace
+#define M9SL_m9_sl_Plot_Trace
+typedef struct { Plot_Trace *p; int64_t len; } m9_sl_Plot_Trace;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_CHAR
+#define M9SL_m9_sl_m9_sl_CHAR
+typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
 #ifndef M9SL_m9_arr_32768_double
 #define M9SL_m9_arr_32768_double
 typedef struct { double v[32768]; } m9_arr_32768_double;
@@ -58,10 +98,89 @@ typedef struct { m9_sl_F64 v[4]; } m9_arr_4_m9_sl_F64;
 #define M9SL_m9_arr_4_bool
 typedef struct { bool v[4]; } m9_arr_4_bool;
 #endif
+#ifndef M9SL_m9_arr_6_double
+#define M9SL_m9_arr_6_double
+typedef struct { double v[6]; } m9_arr_6_double;
+#endif
+#ifndef M9SL_m9_arr_6_m9_sl_CHAR
+#define M9SL_m9_arr_6_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[6]; } m9_arr_6_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_13_double
+#define M9SL_m9_arr_13_double
+typedef struct { double v[13]; } m9_arr_13_double;
+#endif
+#ifndef M9SL_m9_arr_13_m9_sl_CHAR
+#define M9SL_m9_arr_13_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[13]; } m9_arr_13_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_16_double
+#define M9SL_m9_arr_16_double
+typedef struct { double v[16]; } m9_arr_16_double;
+#endif
+#ifndef M9SL_m9_arr_2_double
+#define M9SL_m9_arr_2_double
+typedef struct { double v[2]; } m9_arr_2_double;
+#endif
+#ifndef M9SL_m9_arr_3_double
+#define M9SL_m9_arr_3_double
+typedef struct { double v[3]; } m9_arr_3_double;
+#endif
+#ifndef M9SL_m9_arr_9_m9_sl_CHAR
+#define M9SL_m9_arr_9_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[9]; } m9_arr_9_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_gd2_double
+#define M9SL_m9_gd2_double
+M9_GRID_T (m9_gd2_double, double, 2)
+#endif
 #ifndef M9SL_m9_arr_32_uint8_t
 #define M9SL_m9_arr_32_uint8_t
 typedef struct { uint8_t v[32]; } m9_arr_32_uint8_t;
 #endif
+
+typedef struct Plot_Trace Plot_Trace;
+struct Plot_Trace {
+  m9_sl_CHAR label;
+  m9_sl_CHAR short_;
+  m9_sl_CHAR key;
+  m9_sl_F64 x;
+  m9_sl_F64 y;
+  double width;
+  m9_sl_CHAR dash;
+  bool marks;
+};
+
+typedef struct Plot_ChartSpec Plot_ChartSpec;
+struct Plot_ChartSpec {
+  int64_t width;
+  int64_t height;
+  m9_sl_CHAR title;
+  m9_sl_CHAR ylabel;
+  double x0;
+  double x1;
+  bool band;
+  m9_sl_CHAR bandKey;
+  m9_sl_F64 bandX;
+  m9_sl_F64 outerLo;
+  m9_sl_F64 outerHi;
+  m9_sl_F64 innerLo;
+  m9_sl_F64 innerHi;
+  m9_sl_CHAR outerLabel;
+  m9_sl_CHAR innerLabel;
+  m9_sl_Plot_Trace lines;
+  bool dots;
+  m9_sl_CHAR dotsKey;
+  m9_sl_CHAR dotsLabel;
+  m9_sl_F64 dotsX;
+  m9_sl_F64 dotsY;
+  m9_sl_F64 hoverX;
+  m9_sl_m9_sl_CHAR hoverHead;
+  m9_sl_m9_sl_CHAR hoverNames;
+  m9_sl_m9_sl_CHAR hoverKeys;
+  m9_sl_m9_sl_CHAR hoverVals;
+  m9_sl_CHAR unit;
+};
 
 void Plot_ClearFigure (m9_state *err);
 void Plot_AddLine (m9_sl_F64 xs, m9_sl_F64 ys, int64_t colorIdx, m9_sl_CHAR label, m9_state *err);
@@ -78,5 +197,10 @@ void Plot_SetLogY (bool on, m9_state *err);
 m9_sl_CHAR Plot_Render (m9_sl_CHAR title, m9_sl_CHAR xlabel, m9_sl_CHAR ylabel, m9_state *err);
 m9_sl_CHAR Plot_RenderHeat (m9_sl_CHAR title, Mat_Matrix * m, Plot_Cmap cmap, bool symmetric, m9_state *err);
 void Plot_SetHeatRange (double lo, double hi, m9_state *err);
+bool Plot_TaylorXY (double ratio, double corr, double *x, double *y, m9_state *err);
+m9_sl_CHAR Plot_RenderTaylor (m9_sl_CHAR title, m9_gd2_double ratio, m9_gd2_double corr, m9_sl_m9_sl_CHAR cases, m9_sl_m9_sl_CHAR names, m9_state *err);
+m9_sl_CHAR Plot_Chart (Plot_ChartSpec s, m9_state *err);
+m9_sl_CHAR Plot_MonthName (int64_t m, m9_state *err);
+m9_sl_CHAR Plot_Panels (int64_t cols, int64_t rows, m9_sl_m9_sl_CHAR figures, m9_sl_CHAR title, int64_t width, int64_t height, m9_state *err);
 
 #endif

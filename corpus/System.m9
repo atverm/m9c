@@ -124,6 +124,21 @@ PROCEDURE Positional (VAR pool: POOL) : SLICE OF STR
   RAISES ValueRange, IndexError ;
   (* every argument that is not an option, in order *)
 
+PROCEDURE Glob (RO pattern: STR) : SLICE OF STR RAISES ValueRange ;
+  (* the paths that exist and fit the pattern, SORTED by code point:
+     Python's glob.glob, which answers them in the order the
+     filesystem happens to hold, sorted.  The pattern is cut at its
+     slashes and each piece is a Text.Match pattern for one name:
+     `data/*/L2_[0-9][0-9].nc'.  A piece with no star, question mark
+     or bracket is just a name.
+
+     As in every shell, a name that begins with a dot is found only
+     by a piece that begins with one.  A pattern that matches nothing
+     answers an empty slice, and so does one that looks in a
+     directory that is not there: nothing found is not a failure.
+     A pattern that ENDS in a slash asks for directories only; they
+     are answered without it.  There is no `**'. *)
+
 END System.
 
 UNSAFE DEFINITION MODULE FOR "C" csys ;
@@ -437,5 +452,163 @@ BEGIN
   END ;
   RETURN p
 END Positional ;
+
+(* ---- Glob ---- *)
+
+PROCEDURE HasMagic (RO s: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = '*' OR s[i] = '?' OR s[i] = '[' THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END HasMagic ;
+
+PROCEDURE Joined (RO dir, name: STR) : STR =
+BEGIN
+  IF LEN (dir) = 0 THEN RETURN name + '' END ;
+  IF dir[LEN (dir) - 1] = '/' THEN RETURN dir + name END ;
+  RETURN dir + '/' + name
+END Joined ;
+
+(* the names in a directory, and none where it is not one *)
+PROCEDURE Entries (VAR pool: POOL ; RO dir: STR) : SLICE OF STR =
+BEGIN
+  IF LEN (dir) = 0 THEN RETURN Io.ListDir (pool, '.') END ;
+  RETURN Io.ListDir (pool, dir)
+EXCEPT
+| Io.IOError : RETURN NEW (pool, STR, 0)
+| ValueRange : RETURN NEW (pool, STR, 0)
+END Entries ;
+
+(* can it be listed?  Io has no question for this, and listing is the
+   one a directory answers and a file does not *)
+PROCEDURE IsDir (RO path: STR) : BOOL =
+VAR
+  scratch : POOL ;
+  names : SLICE OF STR ;
+BEGIN
+  names := Io.ListDir (scratch, path) ;
+  RETURN TRUE
+EXCEPT
+| Io.IOError : RETURN FALSE
+| ValueRange : RETURN FALSE
+END IsDir ;
+
+(* a name beginning with a dot is hidden from a piece that does not *)
+PROCEDURE Fits (RO piece, name: STR) : BOOL =
+BEGIN
+  IF LEN (name) > 0 AND name[0] = '.' THEN
+    IF LEN (piece) = 0 OR piece[0] # '.' THEN RETURN FALSE END
+  END ;
+  RETURN Text.Match (piece, name)
+END Fits ;
+
+(* every path of dirs taken one piece of the pattern further *)
+PROCEDURE Expand (RO dirs: SLICE OF STR ; RO piece: STR) : SLICE OF STR =
+VAR
+  scratch : POOL ;
+  names, out : SLICE OF STR ;
+  d, k, n : I64 ;
+BEGIN
+  IF NOT HasMagic (piece) THEN
+    out := NEW (STR, LEN (dirs)) ;
+    FOR d := 0 TO LEN (dirs) - 1 DO out[d] := Joined (dirs[d], piece) END ;
+    RETURN out
+  END ;
+  (* counted, then written: a slice does not grow *)
+  n := 0 ;
+  FOR d := 0 TO LEN (dirs) - 1 DO
+    names := Entries (scratch, dirs[d]) ;
+    FOR k := 0 TO LEN (names) - 1 DO
+      IF Fits (piece, names[k]) THEN n := n + 1 END
+    END
+  END ;
+  out := NEW (STR, n) ;
+  n := 0 ;
+  FOR d := 0 TO LEN (dirs) - 1 DO
+    names := Entries (scratch, dirs[d]) ;
+    FOR k := 0 TO LEN (names) - 1 DO
+      IF Fits (piece, names[k]) AND n < LEN (out) THEN
+        out[n] := Joined (dirs[d], names[k]) ;
+        n := n + 1
+      END
+    END
+  END ;
+  RETURN out
+END Expand ;
+
+(* by code point, and of two that agree as far as the shorter goes,
+   the shorter first.  Sort.Strs orders the same way; it is not
+   imported because the compiler links System, and would then link
+   Sort and Math in every place it is built by hand. *)
+PROCEDURE Before (RO a, b: STR) : BOOL =
+VAR i, n : I64 ;
+BEGIN
+  n := LEN (a) ;
+  IF LEN (b) < n THEN n := LEN (b) END ;
+  FOR i := 0 TO n - 1 DO
+    IF a[i] < b[i] THEN RETURN TRUE END ;
+    IF a[i] > b[i] THEN RETURN FALSE END
+  END ;
+  RETURN LEN (a) < LEN (b)
+END Before ;
+
+PROCEDURE Glob (RO pattern: STR) : SLICE OF STR RAISES ValueRange =
+VAR
+  pieces, found, out : SLICE OF STR ;
+  held : STR ;
+  i, k, n : I64 ;
+  any, spelled, there, dirsOnly : BOOL ;
+BEGIN
+  pieces := Text.Split (pattern, '/') ;
+  found := NEW (STR, 1) ;
+  IF LEN (pattern) > 0 AND pattern[0] = '/' THEN
+    found[0] := '/'
+  ELSE
+    found[0] := ''
+  END ;
+  any := FALSE ;
+  spelled := FALSE ;
+  FOR i := 0 TO LEN (pieces) - 1 DO
+    IF LEN (pieces[i]) > 0 THEN
+      found := Expand (found, pieces[i]) ;
+      spelled := NOT HasMagic (pieces[i]) ;
+      any := TRUE
+    END
+  END ;
+  IF NOT any AND LEN (found[0]) = 0 THEN RETURN NEW (STR, 0) END ;
+  (* a last piece that was matched is there; one that was spelled out
+     has yet to be looked for.  And a pattern that ends in a slash
+     asks for directories. *)
+  n := LEN (found) ;
+  dirsOnly := any AND pattern[LEN (pattern) - 1] = '/' ;
+  IF spelled OR dirsOnly THEN
+    n := 0 ;
+    FOR k := 0 TO LEN (found) - 1 DO
+      IF dirsOnly THEN
+        there := IsDir (found[k])
+      ELSE
+        there := Io.Exists (found[k])
+      END ;
+      IF there THEN
+        found[n] := found[k] ;
+        n := n + 1
+      END
+    END
+  END ;
+  out := NEW (STR, n) ;
+  FOR k := 0 TO n - 1 DO out[k] := found[k] END ;
+  FOR i := 1 TO n - 1 DO
+    held := out[i] ;
+    k := i ;
+    WHILE k > 0 AND Before (held, out[k - 1]) DO
+      out[k] := out[k - 1] ;
+      k := k - 1
+    END ;
+    out[k] := held
+  END ;
+  RETURN out
+END Glob ;
 
 END System.

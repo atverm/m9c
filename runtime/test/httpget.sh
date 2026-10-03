@@ -72,6 +72,25 @@ ck "a chunked body, five chunks, one over the read block" \
 ck "a body framed only by the close" \
    "status 200 chars 1500" "$("$OUT/httpget" text "$U/toclose" | head -1)"
 
+# a body that stops short of its framing is a lost connection, not a
+# short document (Python: IncompleteRead).  Until 2026-10-02 the first
+# of these answered `status 200 chars 10`.
+ck "a body shorter than its Content-Length is refused by name" \
+   "transport: the body ended before its Content-Length" \
+   "$("$OUT/httpget" text "$U/short" || true)"
+
+ck "a chunked body that ends without its last chunk is refused" \
+   "transport: the body ended before its last chunk" \
+   "$("$OUT/httpget" text "$U/shortchunk" || true)"
+
+ck "and so is one that ends in the middle of a chunk" \
+   "transport: the body ended before its last chunk" \
+   "$("$OUT/httpget" text "$U/shortmid" || true)"
+
+ck "to a file as well: the status is not answered for half a download" \
+   "transport: the body ended before its Content-Length" \
+   "$("$OUT/httpget" file "$U/short" '' '' "$OUT/short.bin" || true)"
+
 ck "a RELATIVE redirect carrying the licence cookie" \
    "status 200 chars 1500" "$("$OUT/httpget" text "$U/licence" | head -1)"
 
@@ -222,6 +241,93 @@ ck "a second Set-Cookie replaces a in place and Max-Age=0 deletes b" \
 
 ck "a fresh Client has an empty jar" \
    "status 200 " "$($S $J/show | sed -n 1p)"
+
+# ---- Http.RequestRetry: a server that is busy for a while.  The
+# server counts the requests it saw per key (`ok at request K`), the
+# client says how many tries it made, and the two must agree.  Each
+# check has a key of its own, so a rerun of one line means what it
+# meant the first time only against a fresh server -- which every run
+# of this gate starts. ----
+T="$OUT/httpget retry"
+ms () { echo $(( ($(date +%s%N) - $1) / 1000000 )); }
+between () {                 # between <what> <lo> <hi> <got>
+  checks=$((checks + 1))
+  if [ "$4" -ge "$2" ] && [ "$4" -le "$3" ]; then
+    echo "  ok   $1 ($4 ms)"
+  else
+    echo "  FAIL $1: $4 ms, expected $2 to $3"
+    fails=$((fails + 1))
+  fi
+}
+
+ck "two 503s and then a 200: three tries, and the server saw three" \
+   "status 200 tries 3 ok at request 3" "$($T GET "$U/flaky/a/2" 3 0)"
+
+ck "a 503 that outlives the retries comes back as itself" \
+   "status 503 tries 3 busy" "$($T GET "$U/flaky/b/5" 2 0)"
+
+ck "and the server saw exactly the tries: the next request is the fourth" \
+   "status 503 tries 1 busy" "$($T GET "$U/flaky/b/5" 0 0)"
+
+ck "a POST is never sent twice on a status" \
+   "status 503 tries 1 busy" "$($T POST "$U/flaky/c/1" 3 0)"
+
+ck "a PUT is idempotent and goes again" \
+   "status 200 tries 2 ok at request 2" "$($T PUT "$U/flaky/d/1" 3 0)"
+
+# a method goes on the wire as it was written, and `get` is not GET to
+# a server: the 501 is an answer, and not one to ask again for
+ck "a 501 is not tried again" \
+   "status 501 tries 1" "$($T get "$U/flaky/dd/1" 3 0 | head -1 | cut -c1-18)"
+
+ck "a 404 is an answer, not a failure: one try" \
+   "status 404 tries 1 " "$($T GET "$U/nowhere" 3 0)"
+
+ck "no retries asked: one try" \
+   "status 503 tries 1 busy" "$($T GET "$U/flaky/e/1" 0 0)"
+
+t0=$(date +%s%N)
+ck "a 429 with Retry-After: 1 is tried again" \
+   "status 200 tries 2 ok at request 2" "$($T GET "$U/after/f" 2 0)"
+between "and after the second it asked for, not at once" 1000 2500 "$(ms $t0)"
+
+t0=$(date +%s%N)
+ck "a Retry-After of an hour is not waited for and not defied" \
+   "status 503 tries 1 request 1" "$($T GET "$U/longafter/g" 3 0)"
+between "and the answer came back at once" 0 900 "$(ms $t0)"
+
+ck "a 413 that says when to come back is tried again" \
+   "status 200 tries 2 ok at request 2" "$($T GET "$U/large/h" 3 0)"
+
+ck "a 413 that does not is the answer" \
+   "status 413 tries 1 never" "$($T GET "$U/largeplain/i" 3 0)"
+
+ck "a connection closed without an answer: a GET goes again" \
+   "status 200 tries 3 ok at request 3" "$($T GET "$U/drop/j/2" 3 0)"
+
+ck "but a POST does not -- the server may have acted on it" \
+   "transport: short response tries 1" "$($T POST "$U/drop/k/1" 3 0 || true)"
+
+ck "a connection never made is tried again, and raised when the tries are out" \
+   "transport: connect failed tries 3" "$($T GET "http://127.0.0.1:1/x" 2 0 || true)"
+
+ck "whatever the method: nothing was sent" \
+   "transport: connect failed tries 3" "$($T POST "http://127.0.0.1:1/x" 2 0 || true)"
+
+# 5 MB against this program's cap of 4 MB: it would fail the same way
+# every time, and it fails AFTER part of an answer arrived, which is
+# the line RequestRetry draws
+ck "a failure after part of an answer arrived is not tried again" \
+   "transport: the document is larger than the cap tries 1" \
+   "$($T GET "$U/big" 3 0 || true)"
+
+# the backoff: nothing before the first retry, then 0.4 s and 0.8 s
+# for a factor of 0.2 -- 1.2 s in all, and not 2.8 s (a wait before
+# the first retry too) nor 0.6 s (the factor not doubled)
+t0=$(date +%s%N)
+ck "three 503s with a factor of 0.2 s: four tries" \
+   "status 200 tries 4 ok at request 4" "$($T GET "$U/flaky/l/3" 3 200)"
+between "and 0 + 0.4 + 0.8 seconds of waiting" 1200 2000 "$(ms $t0)"
 
 if [ "${M9HTTP_LIVE:-0}" = "1" ]; then
   D=$("$OUT/httpget" text 'https://doi.org/10.18160/JZ2X-GZGU' 'application/ld+json' | head -1)

@@ -1,0 +1,9 @@
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path               2
+  assignments                                     3   passed over, a type unknown: 1 -- line 69
+  arguments                                       5
+  RETURN values                                   3
+  operands of a comparison or an operator         3
+  CASE labels                                     2
+  THREAD arguments                                0
+  CASE over variants, proved total                1

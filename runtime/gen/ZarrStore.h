@@ -5,6 +5,7 @@
 #include "DynStr.h"
 #include "Json.h"
 #include "Http.h"
+#include "Io.h"
 
 void ZarrStore_m9init (m9_state *err);
 

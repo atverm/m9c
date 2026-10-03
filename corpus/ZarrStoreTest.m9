@@ -1,0 +1,217 @@
+MODULE ZarrStoreTest ;
+
+(* ZarrStore on the LOCAL DISK against zarr-python: the two stores
+   checked in under docs/tutorial/examples/data, read by path, every
+   number held to what zarr 2 reads from the same files
+   (runtime/test/gold/ZarrStore.gold, tools/zarrstoregold.py).
+
+   co2.zarr: 100 x 50 f8 with a chunk deleted, which reads as NaN;
+   icos-obspack.zarr: a station's time (i4), values (f4) and quality
+   flags (|S1) -- three dtypes, two kinds of fill.  The HTTP store is
+   held by the drivers (runtime/test/zarr_driver.c against a server);
+   this is the same reader with the transport swapped, so what it
+   checks is the transport: the path, the missing key, the sizes. *)
+
+IMPORT Arrays ;
+IMPORT Check ;
+IMPORT Io ;
+IMPORT ZarrStore ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+  pool : POOL ;
+
+CONST
+  Co2 = 'docs/tutorial/examples/data/co2.zarr' ;
+  Obs = 'file://docs/tutorial/examples/data/icos-obspack.zarr/' ;
+
+PROCEDURE Co2Store () RAISES ZarrStore.StoreError, ZarrStore.FormatError, ValueRange =
+VAR
+  st : SHARED PTR ZarrStore.Store ;
+  a : PTR ZarrStore.Array ;
+  ii, jj, shape : SLICE OF I64 ;
+  want, got, all : SLICE OF F64 ;
+  idx : SLICE OF I64 ;
+  i, j, k, n, missing : I64 ;
+  v : F64 ;
+  chunk : SLICE OF BYTE ;
+BEGIN
+  st := ZarrStore.Open (Co2) ;
+  a := ZarrStore.OpenArray (st, '') ;
+  shape := Check.GoldI64s (t, gold, 'co2.shape') ;
+  Check.EqI64 (t, 'co2.zarr: rank 2', ZarrStore.Rank (a), 2) ;
+  Check.EqI64 (t, 'co2.zarr: 100 rows', ZarrStore.Extent (a, 0), shape[0]) ;
+  Check.EqI64 (t, 'co2.zarr: 50 columns', ZarrStore.Extent (a, 1), shape[1]) ;
+  Check.That (t, 'co2.zarr: the fill is NaN and said',
+              ZarrStore.HasFill (a) AND NOT (ZarrStore.Fill (a) = ZarrStore.Fill (a))) ;
+  ii := Check.GoldI64s (t, gold, 'co2.at.i') ;
+  jj := Check.GoldI64s (t, gold, 'co2.at.j') ;
+  want := Check.GoldF64s (t, gold, 'co2.at') ;
+  got := NEW (pool, F64, LEN (ii)) ;
+  idx := NEW (pool, I64, 2) ;
+  FOR k := 0 TO LEN (ii) - 1 DO
+    idx[0] := ii[k] ;
+    idx[1] := jj[k] ;
+    got[k] := ZarrStore.GetF64 (a, idx)
+  END ;
+  Check.NearF64s (t, 'co2.zarr: ten values by index, corners, chunk edges and the missing chunk, as zarr reads them',
+                  got, want, 0.0, 0.0) ;
+  (* every value: the count, the sum to the bit, the column means *)
+  all := NEW (pool, F64, shape[0] * shape[1]) ;
+  n := 0 ;
+  missing := 0 ;
+  FOR i := 0 TO shape[0] - 1 DO
+    FOR j := 0 TO shape[1] - 1 DO
+      idx[0] := i ;
+      idx[1] := j ;
+      v := ZarrStore.GetF64 (a, idx) ;
+      all[i * shape[1] + j] := v ;
+      IF v = v THEN n := n + 1 END ;
+      IF NOT (v = v) AND i >= 60 AND i < 90 AND j >= 20 AND j < 40 THEN
+        missing := missing + 1
+      END
+    END
+  END ;
+  Check.EqI64 (t, 'co2.zarr: 4399 values that are not NaN', n,
+               Check.GoldI64 (t, gold, 'co2.count')) ;
+  Check.EqI64 (t, 'co2.zarr: the deleted chunk is 600 NaN', missing,
+               Check.GoldI64 (t, gold, 'co2.missing')) ;
+  Check.EqF64 (t, 'co2.zarr: the sum of every value, to the bit (math.fsum)',
+               Arrays.NanSum (all), Check.GoldF64 (t, gold, 'co2.sum')) ;
+  got := NEW (pool, F64, shape[1]) ;
+  FOR j := 0 TO shape[1] - 1 DO
+    k := 0 ;
+    v := 0.0 ;
+    FOR i := 0 TO shape[0] - 1 DO
+      IF all[i * shape[1] + j] = all[i * shape[1] + j] THEN
+        v := v + all[i * shape[1] + j] ;
+        k := k + 1
+      END
+    END ;
+    got[j] := v / F64 (k)
+  END ;
+  Check.NearF64s (t, 'co2.zarr: the fifty column means are numpy nanmean (pairwise there, sequential here)',
+                  got, Check.GoldF64s (t, gold, 'co2.colmean'), 0.0, 1.0e-14) ;
+  (* a raw chunk: 30 x 20 of 8 bytes once blosc has let go of it *)
+  idx[0] := 0 ;
+  idx[1] := 0 ;
+  chunk := ZarrStore.ReadChunk (a, idx) ;
+  Check.EqI64 (t, 'co2.zarr: a chunk is 4800 bytes', LEN (chunk), 4800) ;
+  ZarrStore.CloseArray (a) ;
+  ZarrStore.Close (st)
+END Co2Store ;
+
+PROCEDURE ObsStore () RAISES ZarrStore.StoreError, ZarrStore.FormatError, ValueRange =
+VAR
+  st : SHARED PTR ZarrStore.Store ;
+  time, co2, flag : PTR ZarrStore.Array ;
+  at, wantT, gotT, wantQ, gotQ : SLICE OF I64 ;
+  wantC, gotC, all : SLICE OF F64 ;
+  idx : SLICE OF I64 ;
+  k, n, nan, us : I64 ;
+  v : F64 ;
+BEGIN
+  st := ZarrStore.Open (Obs) ;
+  time := ZarrStore.OpenArray (st, 'HTM150/time_co2') ;
+  co2 := ZarrStore.OpenArray (st, 'HTM150/co2') ;
+  flag := ZarrStore.OpenArray (st, 'HTM150/co2_qc_flag') ;
+  n := Check.GoldI64 (t, gold, 'obs.len') ;
+  Check.That (t, 'obspack: three arrays of 84672',
+              ZarrStore.Extent (time, 0) = n AND ZarrStore.Extent (co2, 0) = n
+              AND ZarrStore.Extent (flag, 0) = n) ;
+  Check.That (t, 'obspack: the time has no fill, the values fill with NaN, the flags with a byte',
+              NOT ZarrStore.HasFill (time) AND ZarrStore.HasFill (co2)
+              AND NOT (ZarrStore.Fill (co2) = ZarrStore.Fill (co2))
+              AND ZarrStore.HasFill (flag)
+              AND I64 (ZarrStore.Fill (flag)) = Check.GoldI64 (t, gold, 'obs.flag.fill')) ;
+  at := Check.GoldI64s (t, gold, 'obs.at') ;
+  wantT := Check.GoldI64s (t, gold, 'obs.time') ;
+  wantC := Check.GoldF64s (t, gold, 'obs.co2') ;
+  wantQ := Check.GoldI64s (t, gold, 'obs.flag') ;
+  gotT := NEW (pool, I64, LEN (at)) ;
+  gotC := NEW (pool, F64, LEN (at)) ;
+  gotQ := NEW (pool, I64, LEN (at)) ;
+  idx := NEW (pool, I64, 1) ;
+  FOR k := 0 TO LEN (at) - 1 DO
+    idx[0] := at[k] ;
+    gotT[k] := ZarrStore.GetI64 (time, idx) ;
+    gotC[k] := ZarrStore.GetF64 (co2, idx) ;
+    gotQ[k] := ZarrStore.GetI64 (flag, idx)
+  END ;
+  Check.EqI64s (t, 'obspack: the time (i4) at nine indexes, both chunks', gotT, wantT) ;
+  Check.NearF64s (t, 'obspack: the values (f4) at nine indexes, as zarr widens them', gotC, wantC, 0.0, 0.0) ;
+  Check.EqI64s (t, 'obspack: the flags (|S1) at nine indexes, as bytes', gotQ, wantQ) ;
+  all := NEW (pool, F64, n) ;
+  nan := 0 ;
+  us := 0 ;
+  FOR k := 0 TO n - 1 DO
+    idx[0] := k ;
+    v := ZarrStore.GetF64 (co2, idx) ;
+    all[k] := v ;
+    IF NOT (v = v) THEN nan := nan + 1 END ;
+    IF ZarrStore.GetI64 (flag, idx) = 85 THEN us := us + 1 END
+  END ;
+  Check.EqI64 (t, 'obspack: 4625 of the values are NaN', nan, Check.GoldI64 (t, gold, 'obs.nan')) ;
+  Check.EqF64 (t, 'obspack: the sum of the values, to the bit',
+               Arrays.NanSum (all), Check.GoldF64 (t, gold, 'obs.co2.sum')) ;
+  Check.EqI64 (t, 'obspack: 2840 flags are U', us, Check.GoldI64 (t, gold, 'obs.flag.U')) ;
+  ZarrStore.CloseArray (time) ;
+  ZarrStore.CloseArray (co2) ;
+  ZarrStore.CloseArray (flag) ;
+  ZarrStore.Close (st)
+END ObsStore ;
+
+(* what opening an array is refused as, in a store at `path` *)
+PROCEDURE Refusal (RO path: STR ; RO array: STR) : STR =
+VAR
+  st : SHARED PTR ZarrStore.Store ;
+  a : PTR ZarrStore.Array ;
+  why : STR ;
+BEGIN
+  st := ZarrStore.Open (path) ;
+  a := ZarrStore.OpenArray (st, array) ;
+  ZarrStore.CloseArray (a) ;
+  ZarrStore.Close (st) ;
+  RETURN ''
+EXCEPT
+| ZarrStore.StoreError (msg) :
+    why := msg ;
+    RETURN 'StoreError: ' + why
+| ZarrStore.FormatError (msg) :
+    why := msg ;
+    RETURN 'FormatError: ' + why
+| ValueRange : RETURN 'ValueRange'
+END Refusal ;
+
+PROCEDURE Refusals () =
+BEGIN
+  Check.That (t, 'a directory that is no store is refused as a store error',
+              LEN (Refusal ('docs/tutorial/examples/data', '')) > 0) ;
+  Check.That (t, 'an array that is not in the store is refused',
+              LEN (Refusal (Co2, 'nowhere')) > 0) ;
+  Check.EqStr (t, 'a path of nothing is refused', Refusal ('', ''),
+               'FormatError: a store needs a path') ;
+  Check.EqStr (t, 'file:// alone is refused', Refusal ('file://', ''),
+               'FormatError: a store needs a path') ;
+  Check.EqStr (t, 'a trailing slash is dropped: the array opens',
+               Refusal (Co2 + '/', ''), '')
+END Refusals ;
+
+BEGIN
+  gold := Check.GoldPath ('ZarrStore.gold') ;
+  Co2Store () ;
+  ObsStore () ;
+  Refusals () ;
+  Io.Halt (Check.Done (t, 'ZarrStore'))
+EXCEPT
+| ZarrStore.StoreError (msg) :
+    Check.That (t, 'no StoreError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'ZarrStore'))
+| ZarrStore.FormatError (msg) :
+    Check.That (t, 'no FormatError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'ZarrStore'))
+| ValueRange :
+    Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'ZarrStore'))
+END ZarrStoreTest.

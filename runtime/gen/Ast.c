@@ -12,13 +12,17 @@ Ast_Node * Ast_NewNode (m9_pool *pool, int64_t kind, int64_t line, int64_t col, 
   err->res = m9res;
   Ast_Node * m9ret = NULL;
   Ast_Node * n = NULL; (void) n;
-  n = (Ast_Node *) m9_pool_alloc (&((*pool)), sizeof (Ast_Node), 1, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = (Ast_Node *) m9_pool_alloc (&((*pool)), sizeof (Ast_Node), 1, err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   n->kind = kind;
   n->line = line;
   n->col = col;
-  n->kids = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &((*pool)), INT64_C(4), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(n->kids) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &((*pool)), INT64_C(4), err);
+    if (err->exc) goto L_ret;
+    n->kids = m9v;
+  }
   n->nkids = INT64_C(0);
   err->res = m9res;
   m9ret = n;
@@ -39,22 +43,29 @@ void Ast_Add (m9_pool *pool, Ast_Node * *n, m9_pool *n_pool, Ast_Node * kid, m9_
   m9_sl_Ast_Nodep nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if (((*n)->nkids == ((*n)->kids).len)) {
-    nb = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &((*pool)), m9_mul_i64 (INT64_C(2), ((*n)->kids).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &((*pool)), m9_mul_i64 (INT64_C(2), ((*n)->kids).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 ((*n)->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(Ast_Node * *) m9_at (nb.p, i, nb.len, sizeof (Ast_Node *), err)) = (*(Ast_Node * *) m9_at ((*n)->kids.p, i, (*n)->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Ast_Node * *) m9_at (nb.p, i, nb.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at ((*n)->kids.p, i, (*n)->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        (*(Ast_Node * *) m9_at (nb.p, i, nb.len, sizeof (Ast_Node *), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     (*n)->kids = nb;
   }
   (*(Ast_Node * *) m9_at ((*n)->kids.p, (*n)->nkids, (*n)->kids.len, sizeof (Ast_Node *), err)) = kid;
   if (err->exc) goto L_ret;
-  (*n)->nkids = m9_add_i64 ((*n)->nkids, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*n)->nkids) m9v = m9_add_i64 ((*n)->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*n)->nkids = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, n_pool, (*n));

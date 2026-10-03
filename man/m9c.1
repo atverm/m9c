@@ -257,6 +257,32 @@ It cannot be combined with
 or
 .BR \-\-doc .
 .TP
+.B \-\-review
+Do what
+.B \-\-check
+does, and if the program is accepted print its review page on standard
+output: what the checker PROVED, what a person DECIDED \(em each named
+pool, pool parameter, KEPT parameter, use of HEAP, owned allocation,
+THREAD and module variable, with the lines they stand on \(em what is
+TRUSTED (UNSAFE units and foreign procedures), and how much there was
+to check. PROVED says that every function answers on every path, and
+then counts the sites where the checker held two types to each other
+\(em assignments, arguments, RETURN values, operands, CASE labels,
+THREAD arguments \(em and the CASEs over variants it proved total.
+The checker never diagnoses a type it could not determine, so each of
+those rows also says how many sites it PASSED OVER for that reason,
+with the first lines they stand on: a program that compiles has not
+had those compared at all. A row whose count is zero is still
+printed: an absent line and a zero are different claims. Nothing is
+printed for a program the checker or the generator refuses, and
+nothing is written. It cannot be combined with
+.BR \-c ,
+.BR \-o ,
+.BR \-\-ar ,
+.B \-\-so
+or
+.BR \-\-doc .
+.TP
 .B \-\-doc
 Check the module, then write
 .IB NAME .md

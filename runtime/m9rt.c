@@ -172,7 +172,7 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
   return at;
 }
 
-void m9_pool_free (m9_pool *pool)
+void (m9_pool_free) (m9_pool *pool)
 {
   m9_pool_block *b = pool->head, *n;
   while (b != NULL) {
@@ -356,6 +356,14 @@ void *m9_share (void *p)
 
 void *m9_share_copy (void *p)
 {
+  /* A SHARED pointer is never NULL in a program the checker passed.
+     Until 2026-10-03 the generator wrapped `s := Open (x)` as
+     m9_share_copy (Open (x)) and tested the error slot only AFTER,
+     so a raising Open handed NULL here (ZarrStoreTest, SIGSEGV
+     where a refusal was expected); since then a call that raised
+     answers nothing -- the test comes first (report par 5) -- and
+     this line is a defence, not a path. */
+  if (p == NULL) return p;
   m9_hdr *h = (m9_hdr *) p - 1;
   h->rc++;
   return p;

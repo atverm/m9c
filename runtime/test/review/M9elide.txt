@@ -1,0 +1,36 @@
+REVIEW M9elide -- 77 procedures with a body, 52 of them functions; 2 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path              52
+  assignments                                   424   passed over, a type unknown: 2
+  arguments                                     776   passed over, a type unknown: 6
+  RETURN values                                 188
+  operands of a comparison or an operator       502   passed over, a type unknown: 13
+  CASE labels                                     0   passed over, a type unknown: 10
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    1   pool
+  local pools                                     0
+  pool parameters                                 0
+  KEPT parameters                                 8   ProcAdd, TypeAdd, TypeAdd, Register, LexAll, EditAdd, +2 more
+  HEAP named                                      0
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                               41   failed, write, mods, nmods, dirs, ndirs, +35 more
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                 1
+  RAISE statements                                0
+  handlers                                        5
+  NEW in the frame                                0
+  NEW in a named pool                            45

@@ -48,8 +48,10 @@ m9_sl_CHAR OpenApi_Document (m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Ro
   int64_t n = 0; (void) n;
   bool firstPath = false; (void) firstPath;
   bool firstOp = false; (void) firstOp;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s0, 36 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), title, err);
@@ -60,8 +62,10 @@ m9_sl_CHAR OpenApi_Document (m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Ro
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s2, 12 }), err);
   if (err->exc) goto L_ret;
-  n = HttpServer_RouteCount (r, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = HttpServer_RouteCount (r, err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   firstPath = true;
   { int64_t m9t1to;
   i = INT64_C(0);

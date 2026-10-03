@@ -130,6 +130,38 @@ the Send before -- a measurement, not a promise
 the value of the first live cookie named `name`, whatever its
 domain and path; '' when there is none
 
+### CONST MaxWait
+
+seconds; urllib3's backoff_max
+
+### Backoff (failures: I64 ; factor: F64) : F64
+
+the seconds to wait after `failures` failures in a row: 0.0
+after the first, then factor * 2 ^ (failures - 1), at most
+MaxWait.  0.0 for a factor that is not positive.
+
+### Retryable (RO method: STR ; status: I64 ; hasRetryAfter: BOOL) : BOOL RAISES ValueRange
+
+whether a request by this method, answered with this status, is
+worth making again; the method is read without regard to case
+
+### RetryAfter (RO headers: STR ; now: F64) : F64 RAISES ValueRange
+
+the seconds a response asks to be left alone: its Retry-After
+header as a count of seconds, or as an HTTP date measured from
+`now` (seconds since the epoch) and 0.0 when that date is past.
+-1.0 when there is no such header or it is neither.  A count of
+more than fifteen digits answers 1.0e15, which is more than
+MaxWait like every count that long.
+
+### RequestRetry (VAR pool: POOL ; RO method: STR ; RO url: STR ; RO headers: STR ; RO body: SLICE OF BYTE ; cap: I64 ; retries: I64 ; factor: F64 ; VAR status: I64 ; VAR respHeaders: STR ; VAR tries: I64) : SLICE OF BYTE RAISES TransportError, ValueRange
+
+Request, made at most 1 + retries times; `tries` says how many
+it took.  The answer is the LAST one's, whatever its status: a
+503 that outlived the retries comes back as a 503, and a
+transport failure that did is raised as it would have been the
+first time.  Each try is a connection of its own.
+
 ### Connect (host: C.ConstPtr ; port: C.Int) : C.Int [SERIAL]
 
 the shim resolves and connects; SERIAL until its thread safety
@@ -164,5 +196,9 @@ _(undocumented)_
 _(undocumented)_
 
 ### NowSec () : C.Double [REENTRANT]
+
+_(undocumented)_
+
+### SleepMs (ms: C.SSizeT) [REENTRANT]
 
 _(undocumented)_

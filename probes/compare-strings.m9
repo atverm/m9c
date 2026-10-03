@@ -1,0 +1,8 @@
+(* EXPECT: no '=' between two strings: Text.Eq (a, b) answers equality *)
+MODULE m ;
+VAR hit : BOOL ;
+PROCEDURE F (RO name: STR) =
+BEGIN
+  IF name = 'cancel' THEN hit := TRUE END
+END F ;
+END m.

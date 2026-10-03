@@ -10,6 +10,9 @@
 #include "Time.h"
 #include "NetCDF.h"
 #include "Faults.h"
+#include "Sort.h"
+#include "Stats.h"
+#include "Text.h"
 
 void Frame_m9init (m9_state *err);
 
@@ -22,6 +25,7 @@ typedef struct Frame_How Frame_How;
 typedef struct Frame_Fr Frame_Fr;
 typedef struct Frame_StrTab Frame_StrTab;
 typedef struct Frame_Ts Frame_Ts;
+typedef struct Frame_Keys Frame_Keys;
 
 typedef struct Frame_Data Frame_Data;
 struct Frame_Data {
@@ -114,7 +118,14 @@ extern const m9_exc Frame_Disorder;
 #define Frame_KindByte INT64_C(5)
 #define Frame_KindStr INT64_C(6)
 #define Frame_KindBool INT64_C(7)
+#define Frame_KeyReal INT64_C(0)
+#define Frame_KeyInt INT64_C(1)
+#define Frame_KeyStr INT64_C(2)
+#define Frame_KeyBool INT64_C(3)
 
+typedef double (*Frame_Agg) (m9_sl_F64, m9_sl_F64, m9_state *err);
+typedef double (*Frame_RowFn) (m9_sl_F64, m9_sl_F64, m9_state *err);
+typedef bool (*Frame_RowTest) (m9_sl_F64, m9_sl_F64, m9_state *err);
 #ifndef M9SL_m9_sl_Frame_Col
 #define M9SL_m9_sl_Frame_Col
 typedef struct { Frame_Col *p; int64_t len; } m9_sl_Frame_Col;
@@ -126,6 +137,10 @@ typedef struct { Frame_StrTab *p; int64_t len; } m9_sl_Frame_StrTab;
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_9_m9_sl_CHAR
+#define M9SL_m9_arr_9_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[9]; } m9_arr_9_m9_sl_CHAR;
 #endif
 #ifndef M9SL_m9_sl_Time_Instant
 #define M9SL_m9_sl_Time_Instant
@@ -199,5 +214,17 @@ Frame_Conv Frame_ConvEnd (m9_state *err);
 Frame_Conv Frame_ConvMid (m9_state *err);
 Frame_Ts * Frame_Average (m9_pool *pool, Frame_Ts * ts, int64_t toRes, m9_sl_Frame_How how, int64_t minCount, m9_state *err);
 Frame_Ts * Frame_MakeContiguous (m9_pool *pool, Frame_Ts * ts, m9_state *err);
+Frame_Fr * Frame_Take (m9_pool *pool, Frame_Fr * f, m9_sl_I64 rows, m9_state *err);
+Frame_Fr * Frame_Filter (m9_pool *pool, Frame_Fr * f, m9_sl_BOOL mask, m9_state *err);
+m9_sl_I64 Frame_OrderBy (Frame_Fr * f, m9_sl_CHAR name, bool descending, m9_state *err);
+Frame_Fr * Frame_SortBy (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name, bool descending, m9_state *err);
+Frame_Fr * Frame_GroupBy (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR key, m9_sl_Frame_How how, int64_t minCount, m9_state *err);
+m9_sl_I64 Frame_GroupSizes (Frame_Fr * f, m9_sl_CHAR key, m9_state *err);
+Frame_Fr * Frame_Join (m9_pool *pool, Frame_Fr * a, Frame_Fr * b, m9_sl_CHAR key, m9_state *err);
+Frame_Fr * Frame_JoinLeft (m9_pool *pool, Frame_Fr * a, Frame_Fr * b, m9_sl_CHAR key, m9_state *err);
+Frame_Fr * Frame_Describe (m9_pool *pool, Frame_Fr * f, m9_state *err);
+Frame_Fr * Frame_Aggregate (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR key, m9_sl_CHAR name, Frame_Agg agg, m9_sl_F64 p, m9_state *err);
+void Frame_Compute (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_m9_sl_CHAR cols, m9_sl_CHAR name, Frame_RowFn fn, m9_sl_F64 p, m9_state *err);
+Frame_Fr * Frame_FilterBy (m9_pool *pool, Frame_Fr * f, m9_sl_m9_sl_CHAR cols, Frame_RowTest test, m9_sl_F64 p, m9_state *err);
 
 #endif

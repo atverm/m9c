@@ -1,0 +1,9 @@
+(* EXPECT: a function must RETURN or RAISE on every path *)
+MODULE m ;
+PROCEDURE Sign (v: F64) : I64 =
+BEGIN
+  IF v > 0.0 THEN RETURN 1
+  ELSIF v < 0.0 THEN RETURN -1
+  END
+END Sign ;
+END m.

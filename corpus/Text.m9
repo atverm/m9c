@@ -57,6 +57,21 @@ PROCEDURE EndsWith (RO s: STR ; RO suffix: STR) : BOOL ;
      rather than making every caller write it; Gen and M9c had both
      grown a private StartsW before this module existed.            *)
 
+PROCEDURE IndexOf (RO among: SLICE OF STR ; RO s: STR) : I64 ;
+PROCEDURE OneOf (RO s: STR ; RO among: SLICE OF STR) : BOOL ;
+  (* membership in a list of strings: the index of the first element
+     equal to s, or -1; and the yes/no form.  A linear search, which
+     is what the chain of comparisons it replaces was.
+
+       among -- usually a constant table (report par 2.2.4):
+                  CONST Units = ['ppm', 'ppb', 'ppt'] ;
+                  ... IF Text.OneOf (u, Units) THEN ...
+                A table is lent whole to an RO parameter and to
+                nothing else, which is why this one is RO.  The
+                compiler held 29 such lists as `Eq (n, 'a') OR Eq
+                (n, 'b') OR ...`, one of them 96 names long, when
+                these two were written (2026-10-01).                *)
+
 PROCEDURE Trim (RO s: STR) : STR ;
 PROCEDURE TrimLeft (RO s: STR) : STR ;
 PROCEDURE TrimRight (RO s: STR) : STR ;
@@ -90,7 +105,7 @@ PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR ;
   (* a + b, in pool rather than in the frame: for the result that is
      stored, where `+` is for the result that is used *)
 
-PROCEDURE Join (parts: SLICE OF STR ; RO sep: STR) : STR ;
+PROCEDURE Join (RO parts: SLICE OF STR ; RO sep: STR) : STR ;
   (* the inverse of Split, and exact: Join (Split (s, c), c) is s
      again, because Split keeps its empties.
 
@@ -106,6 +121,30 @@ PROCEDURE Join (parts: SLICE OF STR ; RO sep: STR) : STR ;
 PROCEDURE Lower (RO s: STR) : STR ;
 PROCEDURE Upper (RO s: STR) : STR ;
   (* ASCII A..Z only; every other scalar passes through untouched *)
+
+PROCEDURE Replace (RO s: STR ; RO old: STR ; RO by: STR) : STR ;
+  (* s with every occurrence of `old' replaced by `by': found left to
+     right, and never overlapping, so 'aaaa' with 'aa' replaced is
+     two replacements and not three.  Python's str.replace.  An
+     EMPTY old occurs nowhere here and s comes back as it was;
+     Python finds it between every two characters, which is nobody's
+     meaning.  A copy either way: the answer shares nothing with s. *)
+
+PROCEDURE Match (RO pattern: STR ; RO s: STR) : BOOL ;
+  (* does the WHOLE of s fit the shell pattern?  Python's
+     fnmatch.fnmatchcase, case-sensitive:
+
+       *        any run of characters, none included
+       ?        any one character
+       [abc]    one of those; [a-c] one in that range; [!abc] one
+                that is not; a ] straight after the [ or the [! is a
+                member, and so is a - at either end
+       a [ that no ] closes, and every other character, stand for
+       themselves.  There is no escape character.
+
+     A range written backwards, [c-a], holds nothing.  The / is a
+     character like any other here; System.Glob is what knows about
+     directories. *)
 
 END Text.
 
@@ -157,6 +196,25 @@ PROCEDURE Contains (RO hay: STR ; RO needle: STR) : BOOL =
 BEGIN
   RETURN Find (hay, needle) >= 0
 END Contains ;
+
+PROCEDURE IndexOf (RO among: SLICE OF STR ; RO s: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  (* the length is compared here, before the call: most of a list
+     differs from s in length, and the compiler's own lists cost it
+     4.5% of its generation time until this line (measured) *)
+  FOR i := 0 TO LEN (among) - 1 DO
+    IF LEN (among[i]) = LEN (s) THEN
+      IF Eq (among[i], s) THEN RETURN i END
+    END
+  END ;
+  RETURN -1
+END IndexOf ;
+
+PROCEDURE OneOf (RO s: STR ; RO among: SLICE OF STR) : BOOL =
+BEGIN
+  RETURN IndexOf (among, s) >= 0
+END OneOf ;
 
 PROCEDURE FindChar (RO s: STR ; c: CHAR) : I64 =
 VAR i : I64 ;
@@ -285,7 +343,7 @@ BEGIN
   RETURN r
 END Cat ;
 
-PROCEDURE Join (parts: SLICE OF STR ; RO sep: STR) : STR =
+PROCEDURE Join (RO parts: SLICE OF STR ; RO sep: STR) : STR =
 VAR
   s : STR ;
   i : I64 ;
@@ -329,5 +387,123 @@ BEGIN
   END ;
   RETURN r
 END Upper ;
+
+PROCEDURE Replace (RO s: STR ; RO old: STR ; RO by: STR) : STR =
+VAR
+  r : STR ;
+  i, n, m : I64 ;
+BEGIN
+  n := LEN (s) ;
+  m := LEN (old) ;
+  r := '' ;
+  IF m = 0 THEN RETURN r + s END ;
+  i := 0 ;
+  WHILE i < n DO
+    IF i + m <= n AND DynStr.Eq (SLICE (s, i, m), old) THEN
+      r := r + by ;
+      i := i + m
+    ELSE
+      r := r + s[i] ;
+      i := i + 1
+    END
+  END ;
+  RETURN r
+END Replace ;
+
+(* ---- Match ---- *)
+
+(* the ] that closes the set opened by the [ at i, or -1 when none
+   does and the [ is a character like any other.  A ] met straight
+   after the [ or the [! is a member and closes nothing. *)
+PROCEDURE SetEnd (RO pat: STR ; i: I64) : I64 =
+VAR j, n : I64 ;
+BEGIN
+  n := LEN (pat) ;
+  j := i + 1 ;
+  IF j < n AND pat[j] = '!' THEN j := j + 1 END ;
+  IF j < n AND pat[j] = ']' THEN j := j + 1 END ;
+  WHILE j < n AND pat[j] # ']' DO j := j + 1 END ;
+  IF j >= n THEN RETURN -1 END ;
+  RETURN j
+END SetEnd ;
+
+(* is c among the members pat[a .. b - 1]?  Read left to right: a
+   character with a - and another after it is a range, anything else
+   is itself -- so a - at either end is a hyphen, and so is one that
+   follows a range. *)
+PROCEDURE InSet (RO pat: STR ; a, b: I64 ; c: CHAR) : BOOL =
+VAR q : I64 ;
+BEGIN
+  q := a ;
+  WHILE q < b DO
+    IF q + 2 < b AND pat[q + 1] = '-' THEN
+      IF pat[q] <= c AND c <= pat[q + 2] THEN RETURN TRUE END ;
+      q := q + 3
+    ELSE
+      IF pat[q] = c THEN RETURN TRUE END ;
+      q := q + 1
+    END
+  END ;
+  RETURN FALSE
+END InSet ;
+
+(* how much of the pattern from p on takes the one character c: 0
+   when it does not.  pat[p] is not a star. *)
+PROCEDURE Takes (RO pat: STR ; p: I64 ; c: CHAR) : I64 =
+VAR
+  e, a : I64 ;
+  negated : BOOL ;
+BEGIN
+  IF pat[p] = '?' THEN RETURN 1 END ;
+  IF pat[p] = '[' THEN
+    e := SetEnd (pat, p) ;
+    IF e >= 0 THEN
+      a := p + 1 ;
+      negated := pat[a] = '!' ;
+      IF negated THEN a := a + 1 END ;
+      IF InSet (pat, a, e, c) # negated THEN RETURN e + 1 - p END ;
+      RETURN 0
+    END
+  END ;
+  IF pat[p] = c THEN RETURN 1 END ;
+  RETURN 0
+END Takes ;
+
+PROCEDURE Match (RO pattern: STR ; RO s: STR) : BOOL =
+VAR
+  p, i, np, ns, step : I64 ;
+  starP, starI : I64 ;         (* the last star, and what it has taken *)
+BEGIN
+  np := LEN (pattern) ;
+  ns := LEN (s) ;
+  p := 0 ;
+  i := 0 ;
+  starP := -1 ;
+  starI := 0 ;
+  LOOP
+    IF p < np AND pattern[p] = '*' THEN
+      (* take nothing yet, and remember where to come back to *)
+      starP := p ;
+      starI := i ;
+      p := p + 1
+    ELSE
+      step := 0 ;
+      IF p < np AND i < ns THEN step := Takes (pattern, p, s[i]) END ;
+      IF step > 0 THEN
+        p := p + step ;
+        i := i + 1
+      ELSIF p = np AND i = ns THEN
+        RETURN TRUE
+      ELSIF starP >= 0 AND starI < ns THEN
+        (* the last star takes one character more *)
+        starI := starI + 1 ;
+        i := starI ;
+        p := starP + 1
+      ELSE
+        RETURN FALSE
+      END
+    END
+  END
+END Match ;
 
 END Text.

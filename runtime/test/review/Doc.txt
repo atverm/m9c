@@ -1,0 +1,36 @@
+REVIEW Doc -- 26 procedures with a body, 22 of them functions; 2 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path              22
+  assignments                                   120
+  arguments                                     347
+  RETURN values                                  39
+  operands of a comparison or an operator       167
+  CASE labels                                     0
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    0
+  local pools                                     2   Qual.pool, GroupParams.pool
+  pool parameters                                10   SigText, ParamNames, ParamsJson, ResultText, RaisesJson, Collect, +4 more
+  KEPT parameters                                 2   Collect, Gather
+  HEAP named                                      1   Cat3
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                                0
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                 0
+  RAISE statements                                0
+  handlers                                        0
+  NEW in the frame                                0
+  NEW in a named pool                             2

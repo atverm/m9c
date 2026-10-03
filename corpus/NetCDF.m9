@@ -607,7 +607,6 @@ CONST
   ModeClobber = 0 ;                 (* NC_CLOBBER *)
   ModeNoClobber = 4 ;               (* NC_NOCLOBBER *)
   ModeNetcdf4 = 4096 ;              (* NC_NETCDF4 *)
-  ModeNetcdf4 = 4096 ;              (* NC_NETCDF4 *)
   MaxName = 1024 ;
   MaxRank = 8 ;                     (* the ranks the ported model declares *)
   MaxAtt = 8192 ;

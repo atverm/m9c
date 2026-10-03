@@ -4,7 +4,12 @@ The day's zarr reader, restated as an M9 contract.  Each comment
 names the 2026-08-20 bug the construct makes uncompilable.
 HTTP-backed zarr v2 store, as the M2 stack's zarrhttp was: C-order,
 little-endian numeric dtypes, blosc or raw chunks, missing chunk
-means fill_value.  Local-file stores arrive with an OS module.
+means fill_value.  Since 2026-10-03 a store on the LOCAL DISK too:
+Open takes `file:///data/co2.zarr`, or a bare path; a key is then a
+file under that directory, and one that is not there is a missing
+chunk, as a 404 is.  Held to zarr-python's reading of the two
+stores checked in under docs/tutorial/examples/data by
+corpus/ZarrStoreTest.m9.
 
 ### TYPE Store
 
@@ -32,6 +37,9 @@ _(documented with the group below)_
 
 ### Open (RO url: STR) : SHARED PTR Store RAISES StoreError, FormatError
 
+`http://host[:port]/root`, `https://...`, `file://PATH` or a
+PATH with no scheme at all.  Nothing is read at Open: a store
+that is not there is found out by the first OpenArray.
 SHARED because every Array retains its Store -- retention is
 part of the contract, and plain borrows refuse it (par 4.2).
 FormatError is in the signature: the caller that ignored a bad

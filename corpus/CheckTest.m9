@@ -1,0 +1,152 @@
+MODULE CheckTest ;
+
+(* Check, held to itself.  A test library that cannot fail proves
+   nothing, so this runs every check BOTH ways: once where it must
+   hold and once where it must not, into a second counter `bad`
+   whose failure lines are the first part of this program's output.
+   The golden readers likewise: a file that is right, and the eight
+   ways one can be wrong.  Run from the repository root, as the gate
+   runs it, so that the golden file's path in a failure line is the
+   same on every machine.
+   runtime/test/m9test.sh compares that output with
+   runtime/test/checktest.want, line for line -- the format of a
+   failure line is part of what is gated -- and then this program
+   checks the two counters with Check itself. *)
+
+IMPORT Check ;
+IMPORT Io ;
+
+CONST
+  Ones = [1, 2, 3] ;
+  Twos = [1, 5, 9] ;
+  Short = [1, 2] ;
+  Abc = ['a', 'b', 'c'] ;
+  Abd = ['a', 'b', 'd '] ;
+  Xs = [1.0, 2.0, 4.0] ;
+  Ys = [1.0, 2.5, 4.0] ;
+  Flags = [TRUE, FALSE] ;
+  Flips = [FALSE, FALSE] ;
+  Words = ['a', 'b', ''] ;
+
+VAR
+  good, bad, t : Check.T ;
+  nan, inf, zero : F64 ;
+  gold : STR ;
+  none : SLICE OF F64 ;
+  nob : SLICE OF BOOL ;
+  noi, ends : SLICE OF I64 ;
+
+PROCEDURE RaisesVR () RAISES ValueRange =
+BEGIN
+  RAISE ValueRange
+END RaisesVR ;
+
+PROCEDURE RaisesIx () =
+VAR i, v : I64 ;
+BEGIN
+  i := 3 ;
+  v := Ones[i]
+END RaisesIx ;
+
+PROCEDURE RaisesOv () =
+VAR a, b : I64 ;
+BEGIN
+  a := 9223372036854775807 ;
+  b := a + 1
+END RaisesOv ;
+
+PROCEDURE Quiet () =
+BEGIN
+END Quiet ;
+
+PROCEDURE QuietVR () RAISES ValueRange =
+  (* says it may; does not *)
+BEGIN
+  IF zero > 1.0 THEN RAISE ValueRange END
+END QuietVR ;
+
+BEGIN
+  zero := 0.0 ;
+  nan := zero / zero ;
+  inf := 1.0 / zero ;
+
+  (* every check where it must hold *)
+  Check.That (good, 'That', TRUE) ;
+  Check.EqI64 (good, 'EqI64', -7, -7) ;
+  Check.EqBool (good, 'EqBool', FALSE, FALSE) ;
+  Check.EqStr (good, 'EqStr', 'abc', 'abc') ;
+  Check.EqStr (good, 'EqStr empty', '', '') ;
+  Check.EqF64 (good, 'EqF64', 0.1, 0.1) ;
+  Check.EqF64 (good, 'EqF64 NaN is NaN', nan, nan) ;
+  Check.EqF64 (good, 'EqF64 -0.0 is 0.0', -zero, zero) ;
+  Check.Near (good, 'Near absolute', 1.0, 1.05, 0.1, 0.0) ;
+  Check.Near (good, 'Near relative', 1000.0, 1001.0, 0.0, 0.002) ;
+  Check.Near (good, 'Near NaN', nan, nan, 0.0, 0.0) ;
+  Check.Near (good, 'Near Inf', inf, inf, 0.0, 0.0) ;
+  Check.EqI64s (good, 'EqI64s', Ones, Ones) ;
+  Check.EqStrs (good, 'EqStrs', Abc, Abc) ;
+  Check.NearF64s (good, 'NearF64s', Xs, Ys, 0.5, 0.0) ;
+  Check.RaisesValueRange (good, 'RaisesValueRange', RaisesVR) ;
+  Check.Raises (good, 'Raises IndexError', RaisesIx, 'IndexError') ;
+  Check.Raises (good, 'Raises Overflow', RaisesOv, 'Overflow') ;
+  Check.EqBools (good, 'EqBools', Flags, Flags) ;
+
+  (* golden values, read from runtime/test/gold/Check.gold *)
+  gold := Check.GoldPath ('Check.gold') ;
+  Check.NearF64s (good, 'GoldF64s', Check.GoldF64s (good, gold, 'reals'),
+                  Xs, 0.0, 0.0) ;
+  Check.EqI64s (good, 'GoldI64s', Check.GoldI64s (good, gold, 'ints'), Ones) ;
+  Check.EqBools (good, 'GoldBools', Check.GoldBools (good, gold, 'flags'),
+                 Flags) ;
+  Check.EqStrs (good, 'GoldStrs, the last one empty',
+                Check.GoldStrs (good, gold, 'words'), Words) ;
+  Check.EqF64 (good, 'GoldF64, a NaN', Check.GoldF64 (good, gold, 'nan'), nan) ;
+  Check.EqI64 (good, 'GoldI64', Check.GoldI64 (good, gold, 'answer'), -42) ;
+  ends := Check.GoldI64s (good, gold, 'ends') ;
+  Check.EqI64 (good, 'GoldI64s reads the smallest I64', ends[0],
+               -9223372036854775807 - 1) ;
+  Check.EqI64 (good, 'and the largest', ends[1], 9223372036854775807) ;
+
+  (* and where it must not: one line each, recorded *)
+  Check.That (bad, 'That', FALSE) ;
+  Check.EqI64 (bad, 'EqI64', -7, 7) ;
+  Check.EqBool (bad, 'EqBool', FALSE, TRUE) ;
+  Check.EqStr (bad, 'EqStr', 'abc', 'abc ') ;
+  Check.EqF64 (bad, 'EqF64', 0.1, 0.2) ;
+  Check.EqF64 (bad, 'EqF64 NaN is not a number', nan, 1.0) ;
+  Check.EqF64 (bad, 'EqF64 one ulp apart', 0.1 + 0.2, 0.3) ;
+  Check.Near (bad, 'Near absolute', 1.0, 1.2, 0.1, 0.0) ;
+  Check.Near (bad, 'Near relative', 1000.0, 1003.0, 0.0, 0.002) ;
+  Check.Near (bad, 'Near NaN', 1.0, nan, 1.0, 1.0) ;
+  Check.Near (bad, 'Near Inf', inf, -inf, 1.0, 1.0) ;
+  Check.EqI64s (bad, 'EqI64s', Ones, Twos) ;
+  Check.EqI64s (bad, 'EqI64s length', Short, Ones) ;
+  Check.EqStrs (bad, 'EqStrs', Abc, Abd) ;
+  Check.NearF64s (bad, 'NearF64s', Xs, Ys, 0.1, 0.0) ;
+  Check.Raises (bad, 'Raises nothing', Quiet, 'IndexError') ;
+  Check.Raises (bad, 'Raises another', RaisesIx, 'Overflow') ;
+  Check.Raises (bad, 'Raises asked for ValueRange', Quiet, 'ValueRange') ;
+  Check.RaisesValueRange (bad, 'RaisesValueRange nothing', QuietVR) ;
+  Check.EqBools (bad, 'EqBools', Flags, Flips) ;
+
+  (* a golden file that is wrong is a failed check, eight ways *)
+  none := Check.GoldF64s (bad, gold, 'absent') ;
+  none := Check.GoldF64s (bad, gold, 'ints') ;
+  none := Check.GoldF64s (bad, gold, 'short') ;
+  none := Check.GoldF64s (bad, gold, 'nothex') ;
+  nob := Check.GoldBools (bad, gold, 'notbool') ;
+  noi := Check.GoldI64s (bad, gold, 'notint') ;
+  noi := Check.GoldI64s (bad, gold, 'toobig') ;
+  none := Check.GoldF64s (bad, Check.GoldPath ('Absent.gold'), 'reals') ;
+  Check.EqI64 (t, 'a golden that is wrong answers nothing',
+               LEN (none) + LEN (nob) + LEN (noi), 0) ;
+
+  (* the counters, by Check itself *)
+  Check.EqI64 (t, 'every good check counted', good.checks, 27) ;
+  Check.EqI64 (t, 'no good check failed', good.failed, 0) ;
+  Check.EqI64 (t, 'every bad check counted', bad.checks, 28) ;
+  Check.EqI64 (t, 'every bad check failed', bad.failed, 28) ;
+  Check.EqI64 (t, 'Done answers 0 for a pass', Check.Done (good, 'good'), 0) ;
+  Check.EqI64 (t, 'Done answers 1 for a failure', Check.Done (bad, 'bad'), 1) ;
+  Io.Halt (Check.Done (t, 'Check'))
+END CheckTest.

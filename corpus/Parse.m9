@@ -1265,6 +1265,25 @@ BEGIN
   RETURN n
 END PProcDecl ;
 
+(* Aggregate = "[" ConstExpr { "," ConstExpr } "]" -- the value of a
+   CONST and nothing else (report par 10).  The elements are parsed
+   as expressions; that they are constants, and of one type, is the
+   checker's to say, with a position.  An empty list is a parse
+   error: an aggregate with no element has no element type. *)
+PROCEDURE PAggregate (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+VAR n : PTR Ast.Node ;
+BEGIN
+  n := Nn (pool, p, Ast.NAggregate) ;
+  Bump (p) ;                                       (* consume '[' *)
+  Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+  WHILE p.cur.kind = TkComma DO
+    Bump (p) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p)))
+  END ;
+  Expect (p, TkRBrack) ;
+  RETURN n
+END PAggregate ;
+
 PROCEDURE PDeclaration (VAR pool: POOL ; VAR p: Parser)
   : PTR Ast.Node =
 VAR n, d : PTR Ast.Node ;
@@ -1276,7 +1295,11 @@ BEGIN
       d := Nn (pool, p, Ast.NConstDecl) ;
       d.a := TakeIdent (p, 'constant name') ;
       Expect (p, TkEq) ;
-      Ast.Add (pool, d, SOME (PExpr (pool, p))) ;
+      IF p.cur.kind = TkLBrack THEN
+        Ast.Add (pool, d, SOME (PAggregate (pool, p)))
+      ELSE
+        Ast.Add (pool, d, SOME (PExpr (pool, p)))
+      END ;
       Expect (p, TkSemi) ;
       Ast.Add (pool, n, SOME (d))
     END ;

@@ -89,8 +89,68 @@ class H(BaseHTTPRequestHandler):
         else:
             self._raw(b"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n")
 
+    # ---- Http.RequestRetry: a server that is busy for a while ----
+    # Every try is a connection of its own, so the count is the SERVER's,
+    # per key, across connections: the path is /KIND/KEY[/N].
+    #   /flaky/KEY/N    503 `busy` to the first N requests, then 200
+    #   /after/KEY      429 with Retry-After: 1 once, then 200
+    #   /longafter/KEY  503 with Retry-After: 3600, always
+    #   /large/KEY      413 with Retry-After: 0 once, then 200
+    #   /largeplain/KEY 413 with no Retry-After, always
+    #   /drop/KEY/N     the first N connections are closed without a byte
+    # The 200 says `ok at request K`, which is how the gate reads how many
+    # requests the server saw.
+    hits = {}
+    RETRY_KINDS = ("flaky", "after", "longafter", "large", "largeplain", "drop")
+
+    def _retry(self):
+        n = int(self.headers.get("Content-Length", "0"))
+        if n:
+            self.rfile.read(n)
+        parts = self.path.split("/")
+        kind = parts[1]
+        key = "/".join(parts[1:3])
+        seen = H.hits[key] = H.hits.get(key, 0) + 1
+        self.close_connection = True
+
+        def answer(status, body, extra=b""):
+            self._raw(b"HTTP/1.1 " + status + b"\r\n" + extra
+                      + b"Content-Length: %d\r\n"
+                      b"Connection: close\r\n" % len(body), body)
+
+        ok = b"ok at request %d" % seen
+        if kind == "flaky":
+            if seen <= int(parts[3]):
+                answer(b"503 Service Unavailable", b"busy")
+            else:
+                answer(b"200 OK", ok)
+        elif kind == "after":
+            if seen == 1:
+                answer(b"429 Too Many Requests", b"slow down", b"Retry-After: 1\r\n")
+            else:
+                answer(b"200 OK", ok)
+        elif kind == "longafter":
+            answer(b"503 Service Unavailable", b"request %d" % seen,
+                   b"Retry-After: 3600\r\n")
+        elif kind == "large":
+            if seen == 1:
+                answer(b"413 Content Too Large", b"later", b"Retry-After: 0\r\n")
+            else:
+                answer(b"200 OK", ok)
+        elif kind == "largeplain":
+            answer(b"413 Content Too Large", b"never")
+        elif seen > int(parts[3]):               # drop: answered at last
+            answer(b"200 OK", ok)
+        # else: nothing is written, and the connection closes
+
+    def _is_retry(self):
+        return self.path.split("/")[1] in H.RETRY_KINDS
+
     def do_GET(self):                                    # noqa: N802
         p = self.path
+        if self._is_retry():
+            self._retry()
+            return
         if p.startswith("/keep/"):
             self._keep()
             return
@@ -122,6 +182,23 @@ class H(BaseHTTPRequestHandler):
                              b"Connection: close\r\n\r\n")
             self.wfile.write(PLAIN)
             self.close_connection = True
+        elif p == "/short":
+            # a hundred bytes promised, ten sent, and the close
+            self._raw(b"HTTP/1.1 200 OK\r\n"
+                      b"Content-Length: 100\r\n"
+                      b"Connection: close\r\n", b"0123456789")
+        elif p == "/shortchunk":
+            # one chunk, and the close where the last chunk should be
+            self.wfile.write(b"HTTP/1.1 200 OK\r\n"
+                             b"Transfer-Encoding: chunked\r\n"
+                             b"Connection: close\r\n\r\n"
+                             b"a\r\n0123456789\r\n")
+        elif p == "/shortmid":
+            # the close in the middle of a chunk
+            self.wfile.write(b"HTTP/1.1 200 OK\r\n"
+                             b"Transfer-Encoding: chunked\r\n"
+                             b"Connection: close\r\n\r\n"
+                             b"64\r\n0123456789")
         elif p == "/big":
             self._raw(b"HTTP/1.1 200 OK\r\n"
                       b"Content-Type: application/octet-stream\r\n"
@@ -195,6 +272,9 @@ class H(BaseHTTPRequestHandler):
 
     def _any(self):
         p = self.path
+        if self._is_retry():
+            self._retry()
+            return
         if p == "/reflect":
             self._reflect()
         elif p == "/see-other":

@@ -51,6 +51,34 @@ PROCEDURE LedgerAt (i: I64) : STR RAISES IndexError ;
      a ledger that silently stops seeing a borrow understates the
      rate the gate is judged on, which has happened once already.   *)
 
+CONST
+  StatKinds = 7 ;
+  StatSites = 6 ;
+
+PROCEDURE StatName (i: I64) : STR ;
+PROCEDURE StatChecked (i: I64) : I64 ;
+PROCEDURE StatSkipped (i: I64) : I64 ;
+PROCEDURE StatLines (i: I64) : I64 ;
+PROCEDURE StatLine (i, j: I64) : I64 ;
+  (* what the checker EXAMINED and what it PASSED OVER, for `m9c
+     --review`.  This checker never diagnoses an unknown type -- that
+     softness is its contract -- so a site where one side had no type
+     was accepted without being looked at, and "it compiled" does not
+     say how many of those there were.  These do.
+
+       i -- 0 .. StatKinds - 1: assignments, arguments, RETURN values,
+            operands, CASE labels, THREAD arguments (each a place two
+            types are held to each other: checked when both are
+            known, skipped when either is not), and CASE over
+            variants (checked when it was held to be total, skipped
+            when the selector's type could not be resolved).
+       j -- 0 .. StatLines (i) - 1: StatLine (i, j) is the source
+            line of a site of kind i that was passed over, the first
+            StatSites different lines in the order they were met.
+
+     Module state like the diagnostics, and for the same reason: they
+     accumulate over every CheckFile of the process.                *)
+
 END Sem.
 
 
@@ -65,6 +93,10 @@ IMPORT Print ;
 IMPORT Text ;
 
 CONST
+  (* the kinds of site the review counters distinguish; the order is
+     StatName's and the page's *)
+  StAssign = 0 ; StArg = 1 ; StReturn = 2 ; StOperand = 3 ;
+  StLabel = 4 ; StThread = 5 ; StCase = 6 ;
   MaxDepth = 8 ;              (* alias-chasing bound, as the oracle *)
   (* binding modes, one letter each, as the oracle spells them *)
   ModeVal = 'p' ; ModeVar = 'v' ; ModeOwn = 'o' ; ModeRo = 'r' ;
@@ -91,6 +123,7 @@ TYPE
   Binding = RECORD
     name, mode : STR ;
     ty : Ast.Kid ;
+    ro : BOOL ;                (* a variable declared `VAR RO' *)
   END ;
 
   VariantInfo = RECORD
@@ -128,6 +161,17 @@ VAR
   nerrs : I64 ;
   ledger : SLICE OF STR ;
   nledger : I64 ;
+  (* m9c --review: what was EXAMINED and what was PASSED OVER, per
+     kind of site.  Softness is this checker's contract -- an unknown
+     type never diagnoses -- and that makes "it compiled" a weaker
+     claim than it sounds: a comparison one side of which had no type
+     was not a comparison at all.  These say how often.  Counted on
+     this side only; the oracle's diagnostics are what semdiff holds
+     it to, and a count is not a diagnostic. *)
+  statC, statS : ARRAY 7 OF I64 ;         (* StatKinds of them *)
+  statR : ARRAY 7 OF I64 ;                (* lines recorded, per kind *)
+  statL : ARRAY 42 OF I64 ;               (* StatKinds * StatSites lines
+                                             of sites passed over *)
   curMod, canonCtx : STR ;
   scope : SLICE OF Binding ;
   nscope : I64 ;
@@ -147,6 +191,8 @@ VAR
   consts : SLICE OF Binding ;   (* module CONST name -> literal type *)
   nconsts : I64 ;
   svConsts : I64 ;         (* nconsts before a procedure's own CONSTs *)
+  nAgg : I64 ;             (* aggregate CONSTs in this unit: the walk
+                              that guards them is skipped at zero *)
   own : SLICE OF Binding ;      (* owned name -> alive, or what took it *)
   nown : I64 ;
   curRetTy : STR ;              (* the enclosing procedure's result *)
@@ -905,13 +951,25 @@ BEGIN
   END
 END ResolveType ;
 
+(* Three lists of type names, each a constant table (report par
+   2.2.4) and a search; chains of Text.Eq until 2026-10-01. *)
+CONST
+  BuiltinTys = [
+    'I8', 'I16', 'I32', 'I64', 'U8', 'U16', 'U32', 'U64', 'F32', 'F64',
+    'BYTE', 'BOOL', 'CHAR'
+  ] ;
+  (* the conversions that can refuse a value: RAISES ValueRange *)
+  ConvVR = [
+    'I8', 'I16', 'I32', 'I64', 'U8', 'U16', 'U32', 'U64', 'BYTE', 'CHR'
+  ] ;
+  (* what widens to an I64 without loss, so I64 (x) is total *)
+  WidensTo64 = [
+    'C.Int', 'C.SSizeT', 'BYTE', 'I8', 'I16', 'I32', 'U8', 'U16', 'U32'
+  ] ;
+
 PROCEDURE IsBuiltinTy (RO n: STR) : BOOL =
 BEGIN
-  RETURN Text.Eq (n, 'I8') OR Text.Eq (n, 'I16') OR Text.Eq (n, 'I32') OR
-         Text.Eq (n, 'I64') OR Text.Eq (n, 'U8') OR Text.Eq (n, 'U16') OR
-         Text.Eq (n, 'U32') OR Text.Eq (n, 'U64') OR Text.Eq (n, 'F32') OR
-         Text.Eq (n, 'F64') OR Text.Eq (n, 'BYTE') OR Text.Eq (n, 'BOOL') OR
-         Text.Eq (n, 'CHAR')
+  RETURN Text.OneOf (n, BuiltinTys)
 END IsBuiltinTy ;
 
 PROCEDURE ScalarAlias (RO name: STR) : STR ;
@@ -981,11 +1039,10 @@ END SigLess ;
    (par 2.2.3): the parameter modes and types with no names, the
    result with its RO, and the RAISES names bare and sorted.  Two
    procedure types are the same type exactly when this text is the
-   same, and a procedure fits a procedure type exactly when its head
-   renders the same -- RAISES included, to the letter: a value that
-   raised less than its type says would be harmless, one that raised
-   more would let a caller handle less than the type promised, and
-   the rule that is one comparison is the one a reader can apply. *)
+   same.  A procedure FITS a procedure type when its head renders the
+   same up to RAISES and it raises no more than the type allows
+   (ProcFits, since 2026-10-02; until then the RAISES had to match to
+   the letter too, which made every quiet callback declare one). *)
 PROCEDURE ProcSig (pl: Ast.Kid ; rt: Ast.Kid ; ro: BOOL ; rs: Ast.Kid ;
                    depth: I64) : STR =
 VAR
@@ -1077,6 +1134,16 @@ BEGIN
         END ;
         IF IsBuiltinTy (n.a) THEN RETURN n.a END ;
         IF Text.Eq (n.a, 'STR') THEN RETURN 'SLICE OF CHAR' END ;
+        (* POOL is a type like any other to the comparison of an
+           argument with its parameter.  Until 2026-10-01 it had no
+           canonical form, so both sides of every pool argument were
+           unknown and `Compat' never looked: 128 of the 175
+           passed-over argument lines `m9c --review' listed for the
+           library named a pool, and `TakesInt (pool)' -- a pool
+           where an I64 is wanted -- was accepted by this checker and
+           by the generator.  HEAP already answered 'POOL' in
+           DesigStrType, alone. *)
+        IF Text.Eq (n.a, 'POOL') THEN RETURN 'POOL' END ;
         RETURN CanonQual ('', n.a, depth)
     | Ast.NPtrType :
         s := CanonT (n.kids[0], depth + 1) ;
@@ -1134,8 +1201,18 @@ BEGIN
   scope[nscope].name := nm ;
   scope[nscope].ty := t ;
   scope[nscope].mode := mode ;
+  scope[nscope].ro := FALSE ;
   nscope := nscope + 1
 END ScopeAdd ;
+
+(* was the name, as it is seen here, declared `VAR RO'? *)
+PROCEDURE ScopeRo (RO nm: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  i := ScopeFind (nm) ;
+  IF i < 0 THEN RETURN FALSE END ;
+  RETURN scope[i].ro
+END ScopeRo ;
 
 PROCEDURE ScopeFind (RO nm: STR) : I64 =
 VAR i : I64 ;
@@ -1198,7 +1275,8 @@ BEGIN
             IF vd.kids[0] IS SOME ids THEN
               FOR c := 0 TO ids.nkids - 1 DO
                 IF ids.kids[c] IS SOME id THEN
-                  ScopeAdd (id.a, vd.kids[1], mode)
+                  ScopeAdd (id.a, vd.kids[1], mode) ;
+                  scope[nscope - 1].ro := vd.f3
                 END
               END
             END
@@ -1239,6 +1317,7 @@ BEGIN
                 Cat ('a local CONST may not shadow a module CONST: ',
                      cd.a))
             END ;
+            CheckAggregate (cd, ctx, 2) ;
             ConstAdd (cd.a, LitType (cd.kids[0]))
           END
         END
@@ -1372,6 +1451,9 @@ VAR
   beyond, deref, known : BOOL ;
 BEGIN
   beyond := FALSE ;
+  IF IsConstHere (d.a) THEN
+    ErrN (d, ctx, Cat ('cannot write the CONST ', d.a))
+  END ;
   (* par 3.2: a PURE procedure has no observable effect, so the two
      ways a body can be observed from outside its own frame are
      refused -- writing through a caller's binding, and writing the
@@ -1390,6 +1472,13 @@ BEGIN
   IF Text.Eq (ScopeMode (d.a), ModeRo) THEN
     ErrN (d, ctx, Cat (Cat ('cannot write through the RO parameter ',
       d.a), ' (par 4.1)'))
+  END ;
+  (* a variable declared `VAR RO': the name may be given a new view,
+     nothing may be written through it -- as an RO field (par 2.4,
+     2026-10-03; it was parsed and never read) *)
+  IF d.nkids > 0 AND ScopeRo (d.a) THEN
+    ErrN (d, ctx, Cat (Cat ('cannot write through the RO variable ',
+      d.a), ' (par 2.4)'))
   END ;
   IF d.nkids = 0 THEN RETURN FALSE END ;
   mode := ScopeMode (d.a) ;
@@ -2005,6 +2094,7 @@ END CallAnswersFrame ;
 PROCEDURE DeclPool (t: Ast.Kid) : Ast.Kid ;
 PROCEDURE AllocPoolOf (k: Ast.Kid ; RO ctx: STR) : STR ;
 PROCEDURE FrameWhat (k: Ast.Kid ; RO u: STR) : STR ;
+PROCEDURE DesigPath (d: PTR Ast.Node) : STR ;
 
 (* the LOCAL pool an expression's storage lives in, by its shape: the
    pool a NEW names or a call's `IN r` promise names (AllocPoolOf), or
@@ -2083,11 +2173,42 @@ BEGIN
       nm := FvalKindOf (e.a) ;
       IF LEN (nm) > 0 THEN RETURN nm END
     END ;
+    (* a COMPONENT that was itself given frame storage carries it:
+       `c.pix := NEW (scratch, BYTE, n)' taints the path `c.pix' (and
+       c, for a copy of the whole), and `RETURN c.pix' passed until
+       2026-10-03 while `RETURN c' was refused -- Png.Raster died on
+       it.  The PATH, not the local: an element of `mine := NEW
+       (scratch, STR, n)' is a string header whose bytes live where
+       they were made, and storing `mine[i]' is sound (the zarr
+       proxy does, 2 sites; a rule by the local refused them). *)
+    IF e.kind = Ast.NDesignator AND e.nkids > 0 THEN
+      nm := FvalKindOf (DesigPath (e)) ;
+      IF LEN (nm) > 0 THEN RETURN nm END
+    END ;
     p := LocalPoolOf (e) ;
     IF LEN (p) > 0 THEN RETURN Cat ('an allocation in pool ', p) END
   END ;
   RETURN ''
 END FrameWhat ;
+
+(* the designator's component path for the taint table: the root,
+   `.field' for each field selector, `[]' for each index -- `c.pix',
+   `b.rows[]'.  A bare local never contains a dot or a bracket, so
+   the paths share the locals' table without meeting them. *)
+PROCEDURE DesigPath (d: PTR Ast.Node) : STR =
+VAR
+  res : STR ;
+  i : I64 ;
+BEGIN
+  res := d.a ;
+  FOR i := 0 TO d.nkids - 1 DO
+    IF d.kids[i] IS SOME sel THEN
+      IF sel.kind = Ast.NSelField THEN res := res + '.' + sel.a
+      ELSE res := res + '[]' END
+    END
+  END ;
+  RETURN res
+END DesigPath ;
 
 (* a ref value rooted at frame storage SRC was stored into the
    designator rooted DST (dstSel: through a selector) *)
@@ -2795,6 +2916,86 @@ BEGIN
   RETURN v < lo OR v > hi
 END LitOut ;
 
+(* ---- a procedure fits a procedure type that lets it raise MORE than
+   it does (report par 2.2.3; Alex's decision of 2026-10-02).  The
+   fit was to the letter, RAISES included, and so a function that
+   cannot raise had to SAY `RAISES ValueRange' to be handed to
+   Numeric, and Check needed two types where one would do.  Raising
+   less is sound: the caller of a value handles what the TYPE says,
+   which is then a superset; and nothing moves in the C, where every
+   procedure takes the error slot whatever it declares.  Raising
+   more is refused as it always was.  Everything else in the
+   canonical text -- modes, types, the result -- is still held to
+   the letter. ---- *)
+
+(* how much of the canonical text of a procedure type comes before
+   its own RAISES clause: all of it when it has none, -1 when s is
+   not a procedure type.  A parameter may itself be a procedure type
+   with a RAISES of its own, inside the parentheses; the result
+   cannot be one. *)
+PROCEDURE ProcHead (RO s: STR) : I64 =
+VAR i, depth, close : I64 ;
+BEGIN
+  IF NOT Text.StartsWith (s, 'PROCEDURE (') THEN RETURN -1 END ;
+  depth := 0 ;
+  close := -1 ;
+  i := 10 ;
+  WHILE i < LEN (s) AND close < 0 DO
+    IF s[i] = '(' THEN
+      depth := depth + 1
+    ELSIF s[i] = ')' THEN
+      depth := depth - 1 ;
+      IF depth = 0 THEN close := i END
+    END ;
+    i := i + 1
+  END ;
+  IF close < 0 THEN RETURN -1 END ;
+  i := close ;
+  WHILE i + 8 <= LEN (s) DO
+    IF Text.Eq (SLICE (s, i, 8), ' RAISES ') THEN RETURN i END ;
+    i := i + 1
+  END ;
+  RETURN LEN (s)
+END ProcHead ;
+
+(* two lists as they stand after RAISES, `A, B': is every name of
+   src one of dst's? *)
+PROCEDURE RaisesWithin (RO src: STR ; RO dst: STR) : BOOL =
+VAR
+  a, b, ea, eb : I64 ;
+  found : BOOL ;
+BEGIN
+  a := 0 ;
+  WHILE a < LEN (src) DO
+    ea := a ;
+    WHILE ea < LEN (src) AND src[ea] # ',' DO ea := ea + 1 END ;
+    found := FALSE ;
+    b := 0 ;
+    WHILE b < LEN (dst) AND NOT found DO
+      eb := b ;
+      WHILE eb < LEN (dst) AND dst[eb] # ',' DO eb := eb + 1 END ;
+      found := Text.Eq (SLICE (src, a, ea - a), SLICE (dst, b, eb - b)) ;
+      b := eb + 2
+    END ;
+    IF NOT found THEN RETURN FALSE END ;
+    a := ea + 2
+  END ;
+  RETURN TRUE
+END RaisesWithin ;
+
+PROCEDURE ProcFits (RO dst: STR ; RO src: STR) : BOOL =
+VAR hd, hs : I64 ;
+BEGIN
+  hd := ProcHead (dst) ;
+  hs := ProcHead (src) ;
+  IF hd < 0 OR hs < 0 THEN RETURN FALSE END ;
+  IF NOT Text.Eq (SLICE (dst, 0, hd), SLICE (src, 0, hs)) THEN RETURN FALSE END ;
+  IF hs = LEN (src) THEN RETURN TRUE END ;        (* src raises nothing *)
+  IF hd = LEN (dst) THEN RETURN FALSE END ;       (* and dst allows nothing *)
+  RETURN RaisesWithin (SLICE (src, hs + 8, LEN (src) - hs - 8),
+                       SLICE (dst, hd + 8, LEN (dst) - hd - 8))
+END ProcFits ;
+
 PROCEDURE Compat (RO dst: STR ; RO src: STR) : BOOL =
 BEGIN
   IF Text.Eq (dst, '<void>') OR Text.Eq (src, '<void>') THEN
@@ -2827,16 +3028,136 @@ BEGIN
   IF Text.StartsWith (dst, 'PTR ') THEN
     IF Text.Eq (src, Cat ('SHARED ', dst)) THEN RETURN TRUE END
   END ;
+  (* a procedure that raises no more than the type allows, bare or as
+     the OPT a variable of procedure type must be *)
+  IF ProcFits (dst, src) THEN RETURN TRUE END ;
+  IF Text.StartsWith (dst, 'OPT ') AND Text.StartsWith (src, 'OPT ') THEN
+    RETURN ProcFits (SLICE (dst, 4, LEN (dst) - 4), SLICE (src, 4, LEN (src) - 4))
+  END ;
   RETURN FALSE
 END Compat ;
 
+(* one site where two types are about to be held to each other: it
+   was EXAMINED when both are known, and PASSED OVER when either is
+   the empty string, which is exactly the case Compat answers TRUE
+   for without looking.  Called beside every Compat that decides a
+   diagnostic, never inside it: several sites ask Compat twice. *)
+PROCEDURE PassedOver (kind, line: I64) =
+  (* count it, and keep the first StatSites DIFFERENT lines: a count
+     a reviewer cannot go and look at is a count they have to take on
+     trust, which is what the page exists to end *)
+VAR r : I64 ;
+BEGIN
+  statS[kind] := statS[kind] + 1 ;
+  r := statR[kind] ;
+  IF r < StatSites THEN
+    IF r = 0 THEN
+      statL[kind * StatSites] := line ;
+      statR[kind] := 1
+    ELSIF statL[kind * StatSites + r - 1] # line THEN
+      statL[kind * StatSites + r] := line ;
+      statR[kind] := r + 1
+    END
+  END
+END PassedOver ;
+
+PROCEDURE Agree (kind: I64 ; RO a: STR ; RO b: STR ; line: I64) =
+BEGIN
+  IF LEN (a) = 0 OR LEN (b) = 0 THEN
+    PassedOver (kind, line)
+  ELSE
+    statC[kind] := statC[kind] + 1
+  END
+END Agree ;
+
+PROCEDURE StatName (i: I64) : STR =
+BEGIN
+  CASE i OF
+  | 0 : RETURN 'assignments'
+  | 1 : RETURN 'arguments'
+  | 2 : RETURN 'RETURN values'
+  | 3 : RETURN 'operands of a comparison or an operator'
+  | 4 : RETURN 'CASE labels'
+  | 5 : RETURN 'THREAD arguments'
+  | 6 : RETURN 'CASE over variants, proved total'
+  ELSE RETURN ''
+  END
+END StatName ;
+
+PROCEDURE StatChecked (i: I64) : I64 =
+BEGIN
+  RETURN statC[i]
+END StatChecked ;
+
+PROCEDURE StatSkipped (i: I64) : I64 =
+BEGIN
+  RETURN statS[i]
+END StatSkipped ;
+
+PROCEDURE StatLines (i: I64) : I64 =
+BEGIN
+  RETURN statR[i]
+END StatLines ;
+
+PROCEDURE StatLine (i, j: I64) : I64 =
+BEGIN
+  RETURN statL[i * StatSites + j]
+END StatLine ;
+
+(* the type one element of an aggregate has (par 2.2.4): a literal,
+   or a negated numeric literal.  An integer is an I64, a real an
+   F64, a string a STR whatever its length -- a table has one element
+   type and nothing in it adapts.  '' for anything else. *)
+PROCEDURE AggElemType (k: Ast.Kid) : STR =
+BEGIN
+  IF k IS SOME e THEN
+    CASE e.kind OF
+    | Ast.NInt : RETURN 'I64'
+    | Ast.NReal : RETURN 'F64'
+    | Ast.NChar : RETURN 'CHAR'
+    | Ast.NString : RETURN 'SLICE OF CHAR'
+    | Ast.NTrue : RETURN 'BOOL'
+    | Ast.NFalse : RETURN 'BOOL'
+    | Ast.NUn :
+        IF Text.Eq (e.a, '-') THEN
+          IF e.kids[0] IS SOME o THEN
+            IF o.kind = Ast.NInt THEN RETURN 'I64' END ;
+            IF o.kind = Ast.NReal THEN RETURN 'F64' END
+          END
+        END ;
+        RETURN ''
+    ELSE
+      RETURN ''
+    END
+  END ;
+  RETURN ''
+END AggElemType ;
+
+(* [ e1, ..., en ] is an ARRAY n OF T, T being what every element
+   is; unknown ('') when the elements do not agree, which
+   CheckAggregate says by name *)
+PROCEDURE AggType (e: PTR Ast.Node) : STR =
+VAR
+  i : I64 ;
+  t : STR ;
+BEGIN
+  IF e.nkids = 0 THEN RETURN '' END ;
+  t := AggElemType (e.kids[0]) ;
+  IF LEN (t) = 0 THEN RETURN '' END ;
+  FOR i := 1 TO e.nkids - 1 DO
+    IF NOT Text.Eq (AggElemType (e.kids[i]), t) THEN RETURN '' END
+  END ;
+  RETURN S4 ('ARRAY ', ItoA (e.nkids), ' OF ', t)
+END AggType ;
+
 (* the type of a module-level CONST: literals and literal
-   arithmetic, and nothing fancier *)
+   arithmetic, an aggregate of literals, and nothing fancier *)
 PROCEDURE LitType (k: Ast.Kid) : STR =
 VAR l, r : STR ;
 BEGIN
   IF k IS SOME e THEN
     CASE e.kind OF
+    | Ast.NAggregate : RETURN AggType (e)
     | Ast.NInt : RETURN '<int>'
     | Ast.NReal : RETURN '<real>'
     | Ast.NChar : RETURN 'CHAR'
@@ -2866,7 +3187,8 @@ END LitType ;
 
 PROCEDURE ConstClear () =
 BEGIN
-  nconsts := 0
+  nconsts := 0 ;
+  nAgg := 0
 END ConstClear ;
 
 PROCEDURE ConstAdd (RO KEPT nm: STR ; RO KEPT ty: STR) =
@@ -2898,6 +3220,154 @@ BEGIN
   RETURN ''
 END ConstType ;
 
+(* is this name, HERE, a constant?  A parameter, a local or a module
+   variable of the same name shadows it, as it does in the generated
+   C -- the lookup that forgot that typed a parameter named like a
+   module CONST as the constant (found 2026-10-01). *)
+PROCEDURE IsConstHere (RO nm: STR) : BOOL =
+VAR
+  found : BOOL ;
+  t : STR ;
+BEGIN
+  IF LEN (ScopeMode (nm)) > 0 THEN RETURN FALSE END ;
+  t := ConstType (nm, found) ;
+  RETURN found
+END IsConstHere ;
+
+(* ... and a constant TABLE, the value of an aggregate (par 2.2.4) *)
+PROCEDURE IsAggConst (RO nm: STR) : BOOL =
+VAR
+  found : BOOL ;
+  t : STR ;
+BEGIN
+  IF LEN (ScopeMode (nm)) > 0 THEN RETURN FALSE END ;
+  t := ConstType (nm, found) ;
+  RETURN found AND Text.StartsWith (t, 'ARRAY ')
+END IsAggConst ;
+
+(* par 2.2.4: what an aggregate CONST must be -- literals of one
+   type, at module level, in a module's own part.
+     where -- 0 a module's own, 1 exported by a DEFINITION, 2 local
+              to a procedure *)
+PROCEDURE CheckAggregate (cd: PTR Ast.Node ; RO ctx: STR ; where: I64) =
+VAR
+  i : I64 ;
+  t0, t : STR ;
+BEGIN
+  IF cd.kids[0] IS SOME ag THEN
+    IF ag.kind = Ast.NAggregate THEN
+      nAgg := nAgg + 1 ;
+      IF where = 1 THEN
+        ErrN (cd, ctx, S3 ('an aggregate CONST is not exported yet: ',
+          cd.a, ' (par 2.2.4)'))
+      ELSIF where = 2 THEN
+        ErrN (cd, ctx, S3 ('an aggregate CONST belongs at module level: ',
+          cd.a, ' (par 2.2.4)'))
+      END ;
+      t0 := AggElemType (ag.kids[0]) ;
+      FOR i := 0 TO ag.nkids - 1 DO
+        IF ag.kids[i] IS SOME el THEN
+          t := AggElemType (ag.kids[i]) ;
+          IF LEN (t) = 0 THEN
+            ErrN (el, ctx, S5 ('element ', ItoA (i + 1), ' of ', cd.a,
+              ' is not a literal: an aggregate holds literals (par 2.2.4)'))
+          ELSIF LEN (t0) > 0 AND NOT Text.Eq (t, t0) THEN
+            ErrN (el, ctx, S5 ('element ', ItoA (i + 1), ' of ', cd.a,
+              S5 (' is ', TyName (t), ' where the first is ', TyName (t0),
+                  ': an aggregate has one element type (par 2.2.4)')))
+          END
+        END
+      END
+    END
+  END
+END CheckAggregate ;
+
+(* par 2.2.4: a constant table is read-only DATA, so its whole value
+   goes only where nothing can write through it -- indexed, under
+   LEN, or lent to an RO parameter (CallType holds that last one,
+   argument by argument).  Anything else that names it bare would
+   make an alias: s := Primes, SLICE (Primes, 0, 2), RETURN Primes. *)
+PROCEDURE AggWalk (n: PTR Ast.Node ; parent: I64 ; RO ctx: STR) =
+VAR i, first : I64 ;
+BEGIN
+  IF n.kind = Ast.NDesignator AND n.nkids = 0 AND
+     parent # Ast.NArgList THEN
+    IF IsAggConst (n.a) THEN
+      ErrN (n, ctx, S3 ('the CONST table ', n.a,
+        ' can only be indexed, measured with LEN, or lent to an RO'
+        + ' parameter (par 2.2.4)'))
+    END
+  END ;
+  first := 0 ;
+  (* the left side of an assignment is CheckWrite's to refuse *)
+  IF n.kind = Ast.NAssign THEN
+    IF n.kids[0] IS SOME lhs THEN
+      IF lhs.nkids = 0 THEN first := 1 END
+    END
+  END ;
+  FOR i := first TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME k THEN AggWalk (k, n.kind, ctx) END
+  END
+END AggWalk ;
+
+(* one argument that names a constant: it cannot be a VAR or OWN
+   argument (there is nothing to write), and a constant table goes
+   only to an RO parameter (par 2.2.4) *)
+PROCEDURE ConstArg (site: PTR Ast.Node ; RO ctx: STR ; RO name: STR ;
+                    k: I64 ; an: Ast.Kid ; isVar: BOOL ; isRo: BOOL) =
+BEGIN
+  IF an IS SOME a THEN
+    IF a.kind = Ast.NDesignator THEN
+      IF IsConstHere (a.a) THEN
+        IF isVar THEN
+          ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
+            S3 (': the CONST ', a.a,
+                ' cannot be passed to a VAR or OWN parameter')))
+        ELSIF a.nkids = 0 AND NOT isRo AND IsAggConst (a.a) THEN
+          ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
+            S3 (': the CONST table ', a.a,
+                ' can be lent only to an RO parameter (par 2.2.4)')))
+        END
+      END
+    END
+  END
+END ConstArg ;
+
+(* par 2.4: read-only storage -- a string literal, what an RO
+   parameter views, a CONST -- is lent only to an RO parameter.  A
+   by-value SLICE or GRID parameter can be written through, and
+   `Up ('abc')` with `s[0] := 'X'` inside was accepted and died with
+   SIGSEGV until 2026-10-01 (museum/write-through-literal.m9).  The
+   caller has established that the parameter is neither VAR, OWN nor
+   RO. *)
+PROCEDURE RoArg (site: PTR Ast.Node ; RO ctx: STR ; RO name: STR ;
+                 k: I64 ; an: Ast.Kid ; RO pTy: STR ; RO aTy: STR) =
+VAR what : STR ;
+BEGIN
+  what := '' ;
+  IF Text.StartsWith (pTy, 'SLICE OF') OR Text.StartsWith (pTy, 'GRID ') THEN
+    IF an IS SOME a THEN
+      IF a.kind = Ast.NString THEN
+        what := 'a string literal'
+      ELSIF a.kind = Ast.NDesignator AND
+            (Text.StartsWith (aTy, 'SLICE OF') OR
+             Text.StartsWith (aTy, 'GRID ') OR Text.Eq (aTy, '<str1>')) THEN
+        IF Text.Eq (ScopeMode (a.a), ModeRo) THEN
+          what := Cat ('the RO parameter ', a.a)
+        ELSIF ScopeRo (a.a) THEN
+          what := Cat ('the RO variable ', a.a)
+        ELSIF IsConstHere (a.a) THEN
+          what := Cat ('the CONST ', a.a)
+        END
+      END
+    END
+  END ;
+  IF LEN (what) > 0 THEN
+    ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
+      S3 (': ', what, ' can be lent only to an RO parameter (par 2.4)')))
+  END
+END RoArg ;
+
 PROCEDURE ExprType (k: Ast.Kid ; RO ctx: STR) : STR ;
 PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR ;
@@ -2925,7 +3395,7 @@ BEGIN
      program that must not grow can grep for it (par 4.3). *)
   IF Text.Eq (d.a, 'HEAP') AND d.nkids = 0 THEN RETURN 'POOL' END ;
   s := ConstType (d.a, found) ;
-  IF found THEN
+  IF found AND LEN (ScopeMode (d.a)) = 0 THEN
     FOR j := 0 TO d.nkids - 1 DO
       IF d.kids[j] IS SOME sel THEN
         IF sel.kind = Ast.NSelIndex THEN
@@ -2987,6 +3457,8 @@ BEGIN
   RETURN Text.Eq (s, 'SLICE OF CHAR') OR Text.Eq (s, '<str1>')
 END StrSide ;
 
+PROCEDURE IsComposite (RO t: STR) : BOOL ;
+
 PROCEDURE BinType (e: PTR Ast.Node ; RO ctx: STR) : STR =
 VAR lt, rt, op : STR ;
 BEGIN
@@ -3007,9 +3479,28 @@ BEGIN
     IF Text.Eq (lt, '<void>') OR Text.Eq (rt, '<void>') THEN
       ErrN (e, ctx, 'comparing a call that returns no value')
     ELSE
+      Agree (StOperand, lt, rt, e.line) ;
       IF NOT (Compat (lt, rt) OR Compat (rt, lt)) THEN
         ErrN (e, ctx, S4 ('cannot compare ', TyName (lt), ' with ',
           TyName (rt)))
+      (* an operator compares SCALARS.  Two strings, two arrays, two
+         records agree in type and were let through to a C that has
+         no == for a struct: `IF name = 'cancel'` was the C
+         compiler's to refuse until 2026-10-02 (par 2.3). *)
+      ELSIF StrSide (lt) AND StrSide (rt) AND
+            (Text.Eq (lt, 'SLICE OF CHAR') OR
+             Text.Eq (rt, 'SLICE OF CHAR')) THEN
+        ErrN (e, ctx, S3 ("no '", op, "' between two strings: Text.Eq"
+          + ' (a, b) answers equality, and no operator orders them'
+          + ' (par 2.3)'))
+      ELSIF IsComposite (lt) THEN
+        ErrN (e, ctx, S5 ("no '", op, "' between two values of type ",
+          TyName (lt), ': an operator compares numbers, characters,'
+          + ' booleans, enumeration values and pointers (par 2.3)'))
+      ELSIF IsComposite (rt) THEN
+        ErrN (e, ctx, S5 ("no '", op, "' between two values of type ",
+          TyName (rt), ': an operator compares numbers, characters,'
+          + ' booleans, enumeration values and pointers (par 2.3)'))
       END
     END ;
     RETURN 'BOOL'
@@ -3045,6 +3536,7 @@ BEGIN
     IF NOT NumSide (rt) THEN
       ErrN (e, ctx, S3 (op, ' needs numeric operands, not ', TyName (rt)))
     ELSE
+      Agree (StOperand, lt, rt, e.line) ;
       IF NOT (Compat (lt, rt) OR Compat (rt, lt)) THEN
         ErrN (e, ctx, S5 ('no implicit conversions: ', TyName (lt), ' ',
           op, Cat (' ', TyName (rt))))
@@ -3797,6 +4289,36 @@ BEGIN
   RETURN FALSE
 END AllPayloadless ;
 
+(* a value two of which no single operator compares: a slice, an
+   array, a grid, a record, a monitor, a case record that carries a
+   payload -- what the C has no == for *)
+PROCEDURE IsComposite (RO t: STR) : BOOL =
+VAR
+  dot : I64 ;
+  md, ty : STR ;
+  k : Ast.Kid ;
+BEGIN
+  IF Text.StartsWith (t, 'SLICE OF ') OR Text.StartsWith (t, 'ARRAY ') OR
+     Text.StartsWith (t, 'GRID ') THEN
+    RETURN TRUE
+  END ;
+  dot := Text.FindChar (t, '.') ;
+  IF dot >= 0 THEN
+    md := SLICE (t, 0, dot) ;
+    ty := SLICE (t, dot + 1, LEN (t) - dot - 1)
+  ELSE
+    md := '' ; ty := t
+  END ;
+  k := LookupTypeName (md, ty) ;
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NRecordType OR n.kind = Ast.NMonitorType THEN
+      RETURN TRUE
+    END ;
+    IF n.kind = Ast.NCaseRecordType THEN RETURN NOT AllPayloadless (k) END
+  END ;
+  RETURN FALSE
+END IsComposite ;
+
 PROCEDURE IsTagged (RO canon: STR) : BOOL =
   (* the canonical name (Mod.Type) resolves to an enumeration or a
      case record -- a value CASE reaches by tag, which is exactly what
@@ -4110,6 +4632,10 @@ BEGIN
             IF grp.kids[0] IS SOME ids THEN
               FOR j := 0 TO ids.nkids - 1 DO
                 IF k < nargs THEN
+                  ConstArg (site, ctx, name, k, aNode[k], isVar, grp.f3) ;
+                  IF NOT isVar AND NOT grp.f3 THEN
+                    RoArg (site, ctx, name, k, aNode[k], pTy, aTy[k])
+                  END ;
                   CheckArg (site, ctx, name, k, pTy, aTy[k], aNode[k],
                             isVar, grp.f2, grp.f4, nFrameKept,
                             grp.f1 AND PtrParamTy (grp.kids[1]) AND
@@ -4161,6 +4687,7 @@ BEGIN
     FOR k := 0 TO nargs - 1 DO
       IF k < nflat THEN
         pTy := CanonT (flat[k], 0) ;
+        Agree (StArg, pTy, aTy[k], site.line) ;
         IF NOT Compat (pTy, aTy[k]) THEN
           ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
             S4 (': cannot pass ', TyName (aTy[k]), ' where ',
@@ -4216,6 +4743,7 @@ BEGIN
     ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
       Cat (name, ' returns no value')))
   ELSE
+    Agree (StArg, pTy, aTy, site.line) ;
     IF NOT Compat (pTy, aTy) THEN
       ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
         S4 (': cannot pass ', TyName (aTy), ' where ',
@@ -4810,6 +5338,25 @@ END VariantHas ;
    uninitialised-Result bug that seeded the museum is unrepresentable
    once this holds: there is no path out of the CASE that assigns
    nothing.                                                          *)
+PROCEDURE HasPatternArm (st: PTR Ast.Node) : BOOL =
+VAR j, k : I64 ;
+BEGIN
+  FOR j := 1 TO st.nkids - 1 DO
+    IF st.kids[j] IS SOME arm THEN
+      IF arm.kind = Ast.NCaseArm THEN
+        IF arm.kids[0] IS SOME lbls THEN
+          FOR k := 0 TO lbls.nkids - 1 DO
+            IF lbls.kids[k] IS SOME lbl THEN
+              IF lbl.kind = Ast.NLabelPattern THEN RETURN TRUE END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END HasPatternArm ;
+
 PROCEDURE CheckCaseTotal (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
   selTy : STR ;
@@ -4819,7 +5366,14 @@ VAR
   hasElse, labelsVariant : BOOL ;
 BEGIN
   selTy := DesigCanon (st.kids[0], ctx) ;
-  IF NOT VariantOfType (selTy, mi, vi) THEN RETURN END ;
+  IF NOT VariantOfType (selTy, mi, vi) THEN
+    (* a CASE with an arm that BINDS a payload ranges over variants,
+       whatever its selector's type could not be resolved to: nothing
+       was proved about its totality, and --review says so.  (A
+       scalar CASE is not a totality site at all and is not counted.) *)
+    IF HasPatternArm (st) THEN PassedOver (StCase, st.line) END ;
+    RETURN
+  END ;
   covered := NEW (pool, STR, 16) ;
   ncov := 0 ;
   hasElse := FALSE ;
@@ -4858,6 +5412,7 @@ BEGIN
     END
   END ;
   IF NOT labelsVariant OR hasElse THEN RETURN END ;
+  statC[StCase] := statC[StCase] + 1 ;
   FOR k := 0 TO LEN (mods[mi].vts[vi].variants) - 1 DO
     c := 0 ;
     FOR j := 0 TO ncov - 1 DO
@@ -4913,6 +5468,7 @@ BEGIN
         canonCtx := ''
       END
     END ;
+    Agree (StThread, pTy, aTy, st.line) ;
     IF LEN (pTy) > 0 AND LEN (aTy) > 0 THEN
       IF NOT (Compat (pTy, aTy) OR Compat (Cat ('PTR ', pTy), aTy) OR
               Compat (Cat ('SHARED PTR ', pTy), aTy)) THEN
@@ -5216,11 +5772,17 @@ BEGIN
                 lhs.a, ', which is declared IN a pool (par 4.3)'))
             END
           ELSE
-            FvalAdd (lhs.a, what)
+            FvalAdd (lhs.a, what) ;
+            (* and the component itself, by its path, so that copying
+               the component out is refused as the whole is
+               (FrameWhat; Png.Raster's `RETURN c.pix', 2026-10-03) *)
+            FvalAdd (Text.Keep (pool, DesigPath (lhs)), what)
           END
         END
       ELSIF lhs.nkids = 0 THEN
         FvalDel (lhs.a)
+      ELSIF Text.Eq (ScopeMode (lhs.a), ModeLocal) THEN
+        FvalDel (DesigPath (lhs))
       END ;
       (* a bare name given a pool allocation holds nobody's object *)
       IF lhs.nkids = 0 THEN
@@ -5250,6 +5812,7 @@ BEGIN
       IF Text.Eq (u, '<void>') THEN
         ErrN (rhn, ctx, 'the right-hand side returns no value')
       ELSE
+        Agree (StAssign, t, u, rhn.line) ;
         IF NOT Compat (t, u) THEN
           ErrN (rhn, ctx, S5 ('cannot assign ', TyName (u), ' to ',
             TyName (t), ' (no implicit conversions, par 2.1)'))
@@ -5462,6 +6025,43 @@ BEGIN
   END
 END CheckCond ;
 
+(* THE LOOP VARIABLE IS A VARIABLE: declared, of a type its bounds
+   can count in, and of that type inside the loop.  Until 2026-10-02
+   FOR bound the name afresh -- with NO type here, as an I64 in the
+   oracle -- over whatever had been declared.  So here every loop
+   variable was unknown to the checker: `s := i` with s a string and
+   `x := x + i` with x an F64 were passed over, the implicit
+   conversion par 2.1 refuses let through by the one name every loop
+   has; and both checkers accepted a loop variable nobody declared,
+   or one declared F64.  Found by `m9c --review`, whose page for
+   Stats listed a dozen passed-over sites that had only `i` in
+   common.
+     bound -- the bounds' type when they are an enumeration's
+     enum  -- whether they are *)
+PROCEDURE CheckForVar (KEPT st: PTR Ast.Node ; RO ctx: STR ; RO bound: STR ;
+                       enum: BOOL) =
+VAR vt : STR ;
+BEGIN
+  IF ScopeFind (st.a) < 0 THEN
+    ErrN (st, ctx, S3 ('FOR variable ', st.a, ' is not declared')) ;
+    (* bound without a type, so that its uses say nothing more *)
+    BindName (st.a, NONE)
+  ELSE
+    vt := CanonT (ScopeType (st.a), 0) ;
+    IF LEN (vt) > 0 THEN
+      IF enum THEN
+        IF LEN (bound) > 0 AND NOT Text.Eq (vt, bound) THEN
+          ErrN (st, ctx, S5 ('FOR variable ', st.a, ' is ', TyName (vt),
+            Cat (', and its bounds are ', TyName (bound))))
+        END
+      ELSIF NOT IsIntStr (vt) THEN
+        ErrN (st, ctx, S5 ('FOR variable ', st.a, ' is ', TyName (vt),
+          ': a loop over integers counts in an integer variable'))
+      END
+    END
+  END
+END CheckForVar ;
+
 PROCEDURE CheckForBounds (KEPT st: PTR Ast.Node ; RO ctx: STR) =
   (* integer bounds, or two bounds of ONE enumeration: FOR c :=
      Colour.Red TO Colour.Blue walks the members in declaration order.
@@ -5478,7 +6078,7 @@ BEGIN
     IF st.kids[2] IS SOME estep THEN
       ErrN (st, ctx, 'FOR over an enumeration takes no BY step')
     END ;
-    BindName (st.a, NONE) ;
+    CheckForVar (st, ctx, t, TRUE) ;
     RETURN
   END ;
   IF NOT IsIntish (t) THEN
@@ -5493,7 +6093,7 @@ BEGIN
       ErrN (st, ctx, Cat ('FOR step must be an integer, not ', TyName (t)))
     END
   END ;
-  BindName (st.a, NONE)
+  CheckForVar (st, ctx, '', FALSE)
 END CheckForBounds ;
 
 (* a scalar CASE label must be comparable with the selector.  The
@@ -5517,12 +6117,14 @@ BEGIN
               IF lbl.kind = Ast.NLabelRange THEN
                 IF NOT IsVariantLabel (lbl) THEN
                   t := ExprType (lbl.kids[0], ctx) ;
+                  Agree (StLabel, selTy, t, lbl.line) ;
                   IF NOT (Compat (selTy, t) OR Compat (t, selTy)) THEN
                     ErrN (lbl, ctx, S4 ('CASE label is ', TyName (t),
                       ' but the selector is ', TyName (selTy)))
                   END ;
                   IF lbl.kids[1] IS SOME hi THEN
                     t := ExprType (lbl.kids[1], ctx) ;
+                    Agree (StLabel, selTy, t, hi.line) ;
                     IF NOT (Compat (selTy, t) OR Compat (t, selTy)) THEN
                       ErrN (hi, ctx, S4 ('CASE label is ', TyName (t),
                         ' but the selector is ', TyName (selTy)))
@@ -5598,6 +6200,7 @@ BEGIN
       IF Text.Eq (t, '<void>') THEN
         ErrN (v, ctx, 'RETURN of a call that returns no value')
       ELSE
+        Agree (StReturn, curRetTy, t, v.line) ;
         IF NOT Compat (curRetTy, t) THEN
           ErrN (v, ctx, S4 ('cannot RETURN ', TyName (t),
             ' from a function of type ', TyName (curRetTy)))
@@ -5647,6 +6250,106 @@ BEGIN
   END
 END CheckReturn ;
 
+(* ---- par 3 rule 4: a function answers on every path ----
+
+   Can control pass this statement?  A function whose body can be
+   passed reaches its END with nothing to answer, and the emitted C
+   would hand back the zero its result was initialised to -- the
+   uninitialised-Result class the language was founded to close,
+   which until 2026-10-01 was closed for CASE alone: the tutorial's
+   own Sign, with its ELSE removed, compiled and answered 0.
+
+   STRUCTURAL and conservative, on purpose, so that the rule is one a
+   reader can apply by eye: a WHILE or a FOR can always be passed; a
+   LOOP only through an EXIT of its own; an IF when a branch can be
+   or there is no ELSE; a CASE when an arm can be (a CASE without
+   ELSE is total, CheckCaseTotal holds that); a block when its
+   statements or one of its handlers can be.  A call is never an
+   ending, whatever the callee does: `Fail (c, msg)` that always
+   raises reads, here and to a reviewer, as a statement that returns.
+   Measured before it was built: 1 function of 1,167 in the
+   repository needed a RAISE of its own.                             *)
+
+PROCEDURE EndsSeq (k: Ast.Kid) : BOOL ;
+
+PROCEDURE HasExit (k: Ast.Kid) : BOOL =
+  (* an EXIT that belongs to the LOOP whose body this is: a nested
+     LOOP owns its own *)
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NExit THEN RETURN TRUE END ;
+    IF n.kind = Ast.NLoop THEN RETURN FALSE END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF HasExit (n.kids[i]) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END HasExit ;
+
+PROCEDURE EndsStmt (n: PTR Ast.Node) : BOOL =
+VAR
+  i : I64 ;
+  hasElse : BOOL ;
+BEGIN
+  CASE n.kind OF
+  | Ast.NReturn, Ast.NRaiseStmt :
+      RETURN TRUE
+  | Ast.NIf :
+      IF NOT EndsSeq (n.kids[1]) THEN RETURN FALSE END ;
+      hasElse := FALSE ;
+      FOR i := 2 TO n.nkids - 1 DO
+        IF n.kids[i] IS SOME e THEN
+          IF e.kind = Ast.NElsif THEN
+            IF NOT EndsSeq (e.kids[1]) THEN RETURN FALSE END
+          ELSIF e.kind = Ast.NElse THEN
+            hasElse := TRUE ;
+            IF NOT EndsSeq (e.kids[0]) THEN RETURN FALSE END
+          END
+        END
+      END ;
+      RETURN hasElse
+  | Ast.NCase :
+      FOR i := 1 TO n.nkids - 1 DO
+        IF n.kids[i] IS SOME arm THEN
+          IF arm.kind = Ast.NCaseArm THEN
+            IF NOT EndsSeq (arm.kids[1]) THEN RETURN FALSE END
+          ELSIF arm.kind = Ast.NElse THEN
+            IF NOT EndsSeq (arm.kids[0]) THEN RETURN FALSE END
+          END
+        END
+      END ;
+      RETURN n.nkids > 1
+  | Ast.NLoop :
+      RETURN NOT HasExit (n.kids[0])
+  | Ast.NBlock :
+      IF NOT EndsSeq (n.kids[0]) THEN RETURN FALSE END ;
+      FOR i := 1 TO n.nkids - 1 DO
+        IF n.kids[i] IS SOME h THEN
+          IF h.kind = Ast.NHandler THEN
+            IF NOT EndsSeq (h.kids[2]) THEN RETURN FALSE END
+          END
+        END
+      END ;
+      RETURN TRUE
+  ELSE
+    RETURN FALSE
+  END
+END EndsStmt ;
+
+PROCEDURE EndsSeq (k: Ast.Kid) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    FOR i := 0 TO n.nkids - 1 DO
+      IF n.kids[i] IS SOME st THEN
+        IF EndsStmt (st) THEN RETURN TRUE END
+      END
+    END
+  END ;
+  RETURN FALSE
+END EndsSeq ;
+
 PROCEDURE CheckProcBody (u: PTR Ast.Node ; KEPT d: PTR Ast.Node ;
                          RO KEPT ctx: STR) =
 VAR rk : I64 ;
@@ -5693,6 +6396,21 @@ BEGIN
       IF Text.Eq (at.a, 'PURE') THEN curPure := TRUE END
     END ;
     boundMon := BoundMonitorOf (d) ;
+    (* par 3 rule 4, before the walk so that it is the procedure's
+       first diagnostic on both sides *)
+    IF d.kids[1] IS SOME rtf THEN
+      IF body.kids[body.nkids - 1] IS SOME blk0 THEN
+        IF NOT EndsStmt (blk0) THEN
+          ErrN (d, ctx, 'a function must RETURN or RAISE on every path: '
+                        + d.a + ' can reach its END (par 3)')
+        END
+      END
+    END ;
+    IF nAgg > 0 THEN
+      IF body.kids[body.nkids - 1] IS SOME blk1 THEN
+        AggWalk (blk1, Ast.NProcBody, ctx)
+      END
+    END ;
     WalkStmt (body.kids[body.nkids - 1], ctx) ;
     FlushPend (ctx) ;
     ReportUnhandled (body, ctx, RaisesOf (pool, d)) ;
@@ -5814,11 +6532,7 @@ END ScalarAlias ;
 
 PROCEDURE IsConvVR (RO nm: STR) : BOOL =
 BEGIN
-  RETURN Text.Eq (nm, 'I8') OR Text.Eq (nm, 'I16') OR
-         Text.Eq (nm, 'I32') OR Text.Eq (nm, 'I64') OR
-         Text.Eq (nm, 'U8') OR Text.Eq (nm, 'U16') OR
-         Text.Eq (nm, 'U32') OR Text.Eq (nm, 'U64') OR
-         Text.Eq (nm, 'BYTE') OR Text.Eq (nm, 'CHR')
+  RETURN Text.OneOf (nm, ConvVR)
 END IsConvVR ;
 
 (* I64 of a NARROWER integer is total: every BYTE, I8..I32, U8..U32,
@@ -5829,11 +6543,7 @@ END IsConvVR ;
 PROCEDURE TotalWidening (RO name: STR ; RO argTy: STR) : BOOL =
 BEGIN
   IF NOT Text.Eq (name, 'I64') THEN RETURN FALSE END ;
-  RETURN Text.Eq (argTy, 'C.Int') OR Text.Eq (argTy, 'C.SSizeT') OR
-         Text.Eq (argTy, 'BYTE') OR Text.Eq (argTy, 'I8') OR
-         Text.Eq (argTy, 'I16') OR Text.Eq (argTy, 'I32') OR
-         Text.Eq (argTy, 'U8') OR Text.Eq (argTy, 'U16') OR
-         Text.Eq (argTy, 'U32')
+  RETURN Text.OneOf (argTy, WidensTo64)
 END TotalWidening ;
 
 PROCEDURE WalkExpr (k: Ast.Kid ; RO ctx: STR) ;
@@ -6136,6 +6846,338 @@ BEGIN
   END
 END CheckThreadChains ;
 
+(* ---- A MODULE IS NAMED ONLY WHERE IT IS IMPORTED (report par 3,
+   rule 5; Alex's decision of 2026-10-02).  The checker is handed the
+   whole import closure, and every lookup asks FindMod, which knows
+   all of it -- so `Text.Keep' compiled in a program that imported
+   only Check, because Check imports Text.  What a module depends on
+   was not readable off its IMPORT lines.
+
+   One pass over the unit's tree, the same walk in both checkers.  A
+   qualified name -- a qualident `M.T', or a designator `M.x...' --
+   whose first part is a module the checker knows must be imported
+   by the module that writes it: by its definition or by its
+   implementation, either serves both (2,302 sites in 55 files lean
+   on that, measured).  A name declared in the enclosing procedure,
+   or at the module's own level, is that name and not the module.
+   Said ONCE a module and unit: the mistake is one missing line. ---- *)
+
+(* does the module `me' -- any unit of that name in the file --
+   import `name', or is it `name' itself? *)
+PROCEDURE ModImports (root: PTR Ast.Node ; RO me: STR ; RO name: STR) : BOOL =
+VAR i, j, k : I64 ;
+BEGIN
+  IF Text.Eq (me, name) THEN RETURN TRUE END ;
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME u THEN
+      IF Text.Eq (u.a, me) THEN
+        FOR j := 0 TO u.nkids - 1 DO
+          IF u.kids[j] IS SOME imp THEN
+            IF imp.kind = Ast.NFromImport THEN
+              IF Text.Eq (imp.a, name) THEN RETURN TRUE END
+            ELSIF imp.kind = Ast.NImportList THEN
+              IF imp.kids[0] IS SOME ids THEN
+                FOR k := 0 TO ids.nkids - 1 DO
+                  IF ids.kids[k] IS SOME id THEN
+                    IF Text.Eq (id.a, name) THEN RETURN TRUE END
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END ModImports ;
+
+(* is `name' declared under k: a variable, parameter, binder, type,
+   constant or exception? *)
+PROCEDURE DeclaresName (k: Ast.Kid ; RO name: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NIdent OR n.kind = Ast.NIsSome OR n.kind = Ast.NTypeDecl
+       OR n.kind = Ast.NConstDecl OR n.kind = Ast.NExcDecl THEN
+      IF Text.Eq (n.a, name) THEN RETURN TRUE END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF DeclaresName (n.kids[i], name) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END DeclaresName ;
+
+(* in the procedure or module body `scope', or at the level of the
+   module `me' *)
+PROCEDURE NameShadowed (root: PTR Ast.Node ; RO me: STR ; scope: Ast.Kid ;
+                        RO name: STR) : BOOL =
+VAR i, j : I64 ;
+BEGIN
+  IF DeclaresName (scope, name) THEN RETURN TRUE END ;
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME u THEN
+      IF Text.Eq (u.a, me) THEN
+        FOR j := 0 TO u.nkids - 1 DO
+          IF u.kids[j] IS SOME d THEN
+            IF d.kind # Ast.NProcDecl AND d.kind # Ast.NModBody
+               AND d.kind # Ast.NImportList AND d.kind # Ast.NFromImport THEN
+              IF DeclaresName (u.kids[j], name) THEN RETURN TRUE END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END NameShadowed ;
+
+PROCEDURE ImportWalk (root: PTR Ast.Node ; u: PTR Ast.Node ; scope: Ast.Kid ;
+                      k: Ast.Kid ; VAR seen: SLICE OF BOOL) =
+VAR
+  i, m : I64 ;
+  qualified : BOOL ;
+BEGIN
+  IF k IS SOME n THEN
+    qualified := FALSE ;
+    IF n.kind = Ast.NQualident THEN
+      qualified := LEN (n.b) > 0
+    ELSIF n.kind = Ast.NDesignator AND n.nkids > 0 THEN
+      IF n.kids[0] IS SOME sel THEN qualified := sel.kind = Ast.NSelField END
+    END ;
+    IF qualified THEN
+      m := FindMod (n.a) ;
+      IF m >= 0 AND m < LEN (seen) THEN
+        IF NOT seen[m] THEN
+          IF NOT ModImports (root, u.a, n.a) THEN
+            IF NOT NameShadowed (root, u.a, scope, n.a) THEN
+              seen[m] := TRUE ;
+              ErrN (n, u.a, 'module ' + n.a +
+                    ' is named and not imported: write IMPORT ' + n.a +
+                    ' (par 3)')
+            END
+          END
+        END
+      END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF n.kind = Ast.NProcDecl OR n.kind = Ast.NModBody THEN
+        ImportWalk (root, u, k, n.kids[i], seen)
+      ELSE
+        ImportWalk (root, u, scope, n.kids[i], seen)
+      END
+    END
+  END
+END ImportWalk ;
+
+PROCEDURE CheckImports (root: PTR Ast.Node ; u: PTR Ast.Node) =
+VAR
+  seen : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  seen := NEW (BOOL, nmods) ;
+  FOR i := 0 TO u.nkids - 1 DO
+    ImportWalk (root, u, NONE, u.kids[i], seen)
+  END
+END CheckImports ;
+
+(* ---- A NAME IS DECLARED ONCE IN ITS SCOPE (report par 3, rule 6;
+   2026-10-03).  Neither checker had a word for a name declared twice:
+   a module CONST written a second time, a VAR, a TYPE, a local beside
+   a parameter of the same name -- each passed `--check' and was the C
+   compiler's to refuse, and a PROCEDURE declared twice was not even
+   that: the generator kept the second body and dropped the first,
+   and the program built and ran with half its code gone.  Found
+   lifting Chart into Plot, whose second `Ink' met the first.
+
+   One pass over the unit, the same in both checkers: the module's
+   own level -- every CONST, TYPE, VAR, EXCEPTION and PROCEDURE name,
+   across its sections -- and each procedure's parameters and locals
+   together.  Refused at the SECOND declaration, naming the line of
+   the first.  A local named like a module-level name is a shadow and
+   stays legal (decision 20); the two units of a module are two
+   scopes, since the implementation re-declares what the definition
+   heads.  A FORWARD declaration -- a heading without a body -- is
+   closed by the one declaration with a body that follows it (the
+   toolchain has 46), and nothing else may close it or follow that.
+   Measured over 425 files here and in two applications: the 46
+   forwards and TWO real duplicates, both in the shipped library --
+   `Csv.ColF64' declared twice with the same body, and the constant
+   `NetCDF.ModeNetcdf4'.
+   Not covered: an enumeration's members, a binder. ---- *)
+
+CONST
+  DeclPlain = 0 ;      (* a constant, type, variable, exception, parameter *)
+  DeclForward = 1 ;    (* a procedure heading without a body *)
+  DeclBody = 2 ;       (* a procedure with its body *)
+
+(* `id' declares `id.a' in the scope whose names so far are
+   names[0 .. n): refuse the second, or add the first *)
+PROCEDURE DeclOnce (KEPT id: PTR Ast.Node ; what: I64 ; RO me: STR ; RO where: STR ;
+                    VAR names: SLICE OF STR ; VAR lines: SLICE OF I64 ;
+                    VAR open: SLICE OF BOOL ; VAR n: I64) =
+VAR
+  i : I64 ;
+  ns : SLICE OF STR ;
+  ls : SLICE OF I64 ;
+  os : SLICE OF BOOL ;
+BEGIN
+  FOR i := 0 TO n - 1 DO
+    IF Text.Eq (names[i], id.a) THEN
+      IF open[i] AND what = DeclBody THEN
+        open[i] := FALSE
+      ELSE
+        ErrN (id, me, id.a + ' is declared twice in ' + where +
+              ': the first is at line ' + ItoA (lines[i]) + ' (par 3)')
+      END ;
+      RETURN
+    END
+  END ;
+  IF n = LEN (names) THEN
+    ns := NEW (pool, STR, 2 * n + 16) ;
+    ls := NEW (pool, I64, 2 * n + 16) ;
+    os := NEW (pool, BOOL, 2 * n + 16) ;
+    FOR i := 0 TO n - 1 DO
+      ns[i] := names[i] ;
+      ls[i] := lines[i] ;
+      os[i] := open[i]
+    END ;
+    names := ns ;
+    lines := ls ;
+    open := os
+  END ;
+  names[n] := id.a ;
+  lines[n] := id.line ;
+  open[n] := what = DeclForward ;
+  n := n + 1
+END DeclOnce ;
+
+(* the names a declaration section declares: a CONST, TYPE or
+   EXCEPTION declaration is its own name, a VAR declaration the
+   identifiers of its list *)
+PROCEDURE SectionNames (sec: Ast.Kid ; RO me: STR ; RO where: STR ;
+                        VAR names: SLICE OF STR ; VAR lines: SLICE OF I64 ;
+                        VAR open: SLICE OF BOOL ; VAR n: I64) =
+VAR i, j : I64 ;
+BEGIN
+  IF sec IS SOME s THEN
+    IF s.kind = Ast.NConstSection OR s.kind = Ast.NTypeSection
+       OR s.kind = Ast.NExcSection THEN
+      FOR i := 0 TO s.nkids - 1 DO
+        IF s.kids[i] IS SOME d THEN
+          DeclOnce (d, DeclPlain, me, where, names, lines, open, n)
+        END
+      END
+    ELSIF s.kind = Ast.NVarSection THEN
+      FOR i := 0 TO s.nkids - 1 DO
+        IF s.kids[i] IS SOME d THEN
+          IF d.kids[0] IS SOME ids THEN
+            FOR j := 0 TO ids.nkids - 1 DO
+              IF ids.kids[j] IS SOME id THEN
+                DeclOnce (id, DeclPlain, me, where, names, lines, open, n)
+              END
+            END
+          END
+        END
+      END
+    END
+  END
+END SectionNames ;
+
+PROCEDURE CheckDeclaredOnce (u: PTR Ast.Node) =
+VAR
+  names : SLICE OF STR ;
+  lines : SLICE OF I64 ;
+  open : SLICE OF BOOL ;
+  n, i, j, k, what : I64 ;
+  where : STR ;
+BEGIN
+  names := NEW (pool, STR, 64) ;
+  lines := NEW (pool, I64, 64) ;
+  open := NEW (pool, BOOL, 64) ;
+  n := 0 ;
+  where := 'module ' + u.a ;
+  FOR i := 0 TO u.nkids - 1 DO
+    IF u.kids[i] IS SOME d THEN
+      IF d.kind = Ast.NProcDecl THEN
+        what := DeclForward ;
+        IF d.nkids > 4 THEN
+          IF d.kids[4] IS SOME body THEN what := DeclBody END
+        END ;
+        DeclOnce (d, what, u.a, where, names, lines, open, n)
+      ELSE
+        SectionNames (u.kids[i], u.a, where, names, lines, open, n)
+      END
+    END
+  END ;
+  (* each procedure: its parameters, then its locals, one scope *)
+  FOR i := 0 TO u.nkids - 1 DO
+    IF u.kids[i] IS SOME p THEN
+      IF p.kind = Ast.NProcDecl THEN
+        n := 0 ;
+        where := 'procedure ' + p.a ;
+        IF p.kids[0] IS SOME params THEN
+          FOR j := 0 TO params.nkids - 1 DO
+            IF params.kids[j] IS SOME pr THEN
+              IF pr.kids[0] IS SOME ids THEN
+                FOR k := 0 TO ids.nkids - 1 DO
+                  IF ids.kids[k] IS SOME id THEN
+                    DeclOnce (id, DeclPlain, u.a, where, names, lines, open, n)
+                  END
+                END
+              END
+            END
+          END
+        END ;
+        IF p.nkids > 4 THEN
+          IF p.kids[4] IS SOME body THEN
+            FOR j := 0 TO body.nkids - 1 DO
+              SectionNames (body.kids[j], u.a, where, names, lines, open, n)
+            END
+          END
+        END
+      END
+    END
+  END
+END CheckDeclaredOnce ;
+
+(* an IMPLEMENTATION sees the constants of its DEFINITION, the unit of
+   the same name in this file.  It saw only its own until 2026-10-02,
+   so `n := K` -- K a real constant of the definition, n an I64 --
+   passed here, built, and answered 1 for 1.5, while a client's
+   `n := Mod.K` was refused.  Found by --review: Http's page listed
+   MaxWait as passed over wherever the implementation used it.
+
+   Called AFTER the implementation's own constants are in, and adds
+   only a name that is not: a constant the implementation declares
+   under the same name is the implementation's. *)
+PROCEDURE AddDefConsts (root: PTR Ast.Node ; u: PTR Ast.Node) =
+VAR
+  i, j, k : I64 ;
+  seen : BOOL ;
+  ty : STR ;
+BEGIN
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME d THEN
+      IF d.kind = Ast.NDefinition AND LEN (d.b) = 0 AND Text.Eq (d.a, u.a) THEN
+        FOR j := 0 TO d.nkids - 1 DO
+          IF d.kids[j] IS SOME cs THEN
+            IF cs.kind = Ast.NConstSection THEN
+              FOR k := 0 TO cs.nkids - 1 DO
+                IF cs.kids[k] IS SOME cd THEN
+                  ty := ConstType (cd.a, seen) ;
+                  IF NOT seen THEN ConstAdd (cd.a, LitType (cd.kids[0])) END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END
+END AddDefConsts ;
+
 PROCEDURE CheckFile (KEPT root: PTR Ast.Node) =
 VAR i, j, k, fm : I64 ;
 BEGIN
@@ -6173,6 +7215,8 @@ BEGIN
           END
         END
       END ;
+      CheckImports (root, u) ;
+      CheckDeclaredOnce (u) ;
       (* module CONSTs, so a designator naming one has a type *)
       ConstClear () ;
       FOR j := 0 TO u.nkids - 1 DO
@@ -6180,12 +7224,18 @@ BEGIN
           IF cs.kind = Ast.NConstSection THEN
             FOR k := 0 TO cs.nkids - 1 DO
               IF cs.kids[k] IS SOME cd THEN
+                IF u.kind = Ast.NDefinition THEN
+                  CheckAggregate (cd, u.a, 1)
+                ELSE
+                  CheckAggregate (cd, u.a, 0)
+                END ;
                 ConstAdd (cd.a, LitType (cd.kids[0]))
               END
             END
           END
         END
       END ;
+      IF u.kind = Ast.NImplementation THEN AddDefConsts (root, u) END ;
       IF u.kind = Ast.NDefinition AND LEN (u.b) > 0 THEN
         CheckForeignDef (u)
       ELSE
@@ -6216,6 +7266,9 @@ BEGIN
               npval := 0 ;
               curInBody := TRUE ;
               boundMon := '' ;      (* a module body binds no monitor *)
+              IF nAgg > 0 THEN
+                AggWalk (d, Ast.NModBody, Cat (u.a, ' body'))
+              END ;
               WalkStmt (d.kids[0], Cat (u.a, ' body')) ;
               (* the module body has no caller to declare RAISES to,
                  and so no clause: whatever it can raise, it must

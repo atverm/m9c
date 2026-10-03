@@ -51,7 +51,7 @@ case $(uname -s) in
 esac
 
 # the modules m9c itself is made of, in dependency order
-COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc M9c"
+COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc Review M9c"
 
 # everything else a program may import: the standard library, shipped
 # as source (M9 has no binary module format -- the .m9 IS the
@@ -61,8 +61,8 @@ COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc M9c"
 # did, and /usr/lib/m9 of that release held no Lsp.m9: the claim had
 # no gate.  debian/tests/compile-a-program builds both now.
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
-         Json Dict Faults Mat Math Bits Sort Time Logger Syslog Http HttpServer OpenApi ApiSpec \
-         Arrow Doc \
+         Json Dict Faults Mat Math Bits Sort Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
+         Arrow Doc Review \
          NetCDF Grib Csv Delim Zip Stats System Frame Parquet \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
 

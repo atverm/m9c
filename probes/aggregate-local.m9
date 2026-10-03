@@ -1,0 +1,8 @@
+(* EXPECT: an aggregate CONST belongs at module level: Local *)
+MODULE m ;
+PROCEDURE F (i: I64) : I64 RAISES IndexError =
+CONST Local = [1, 2] ;
+BEGIN
+  RETURN Local[i]
+END F ;
+END m.

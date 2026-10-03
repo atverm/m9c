@@ -31,8 +31,10 @@ Dict_Dict * Dict_New (m9_state *err)
   err->res = m9res;
   Dict_Dict * m9ret = NULL;
   Dict_Dict * d = NULL; (void) d;
-  d = (Dict_Dict *) m9_pool_alloc (err->res, sizeof (Dict_Dict), 1, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = (Dict_Dict *) m9_pool_alloc (err->res, sizeof (Dict_Dict), 1, err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   Dict_Init (&(d), err->res, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
@@ -53,8 +55,10 @@ Dict_Dict * Dict_NewIn (m9_pool *pool, m9_state *err)
   err->res = m9res;
   Dict_Dict * m9ret = NULL;
   Dict_Dict * d = NULL; (void) d;
-  d = (Dict_Dict *) m9_pool_alloc (&((*pool)), sizeof (Dict_Dict), 1, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = (Dict_Dict *) m9_pool_alloc (&((*pool)), sizeof (Dict_Dict), 1, err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   Dict_Init (&(d), &((*pool)), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
@@ -77,25 +81,34 @@ void Dict_Put (Dict_Dict * *d, m9_pool *d_pool, m9_sl_CHAR key, Dict_Value val, 
   int64_t e = 0; (void) e;
   int64_t i = 0; (void) i;
   m9_sl_Dict_Ent ne = {0}; (void) ne;
-  s = Dict_Slot ((*d), key, err);
-  if (err->exc) goto L_ret;
-  e = (*(int64_t *) m9_at ((*d)->idx.p, s, (*d)->idx.len, sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  { __typeof__(s) m9v = Dict_Slot ((*d), key, err);
+    if (err->exc) goto L_ret;
+    s = m9v;
+  }
+  { __typeof__(e) m9v = (*(int64_t *) m9_at ((*d)->idx.p, s, (*d)->idx.len, sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    e = m9v;
+  }
   if ((e != Dict_Empty)) {
     (*(Dict_Ent *) m9_at ((*d)->ents.p, e, (*d)->ents.len, sizeof (Dict_Ent), err)).val = val;
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if (((*d)->n == ((*d)->ents).len)) {
-    ne = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, d_pool, m9_mul_i64 (INT64_C(2), ((*d)->ents).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ne) m9v = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, d_pool, m9_mul_i64 (INT64_C(2), ((*d)->ents).len, err), err);
+      if (err->exc) goto L_ret;
+      ne = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 ((*d)->n, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(Dict_Ent *) m9_at (ne.p, i, ne.len, sizeof (Dict_Ent), err)) = (*(Dict_Ent *) m9_at ((*d)->ents.p, i, (*d)->ents.len, sizeof (Dict_Ent), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Dict_Ent *) m9_at (ne.p, i, ne.len, sizeof (Dict_Ent), err))) m9v = (*(Dict_Ent *) m9_at ((*d)->ents.p, i, (*d)->ents.len, sizeof (Dict_Ent), err));
+        if (err->exc) goto L_ret;
+        (*(Dict_Ent *) m9_at (ne.p, i, ne.len, sizeof (Dict_Ent), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     (*d)->ents = ne;
   }
@@ -105,8 +118,10 @@ void Dict_Put (Dict_Dict * *d, m9_pool *d_pool, m9_sl_CHAR key, Dict_Value val, 
   if (err->exc) goto L_ret;
   (*(int64_t *) m9_at ((*d)->idx.p, s, (*d)->idx.len, sizeof (int64_t), err)) = (*d)->n;
   if (err->exc) goto L_ret;
-  (*d)->n = m9_add_i64 ((*d)->n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*d)->n) m9v = m9_add_i64 ((*d)->n, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*d)->n = m9v;
+  }
   bool m9t2 = (m9_mul_i64 (INT64_C(2), (*d)->n, err) >= ((*d)->idx).len);
   if (err->exc) goto L_ret;
   if (m9t2) {
@@ -128,15 +143,19 @@ bool Dict_Find (Dict_Dict * d, m9_sl_CHAR key, Dict_Value *val, m9_pool *val_poo
   err->res = &m9frame;
   bool m9ret = false;
   int64_t e = 0; (void) e;
-  e = (*(int64_t *) m9_at (d->idx.p, Dict_Slot (d, key, err), d->idx.len, sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  { __typeof__(e) m9v = (*(int64_t *) m9_at (d->idx.p, Dict_Slot (d, key, err), d->idx.len, sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    e = m9v;
+  }
   if ((e == Dict_Empty)) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
-  (*val) = (*(Dict_Ent *) m9_at (d->ents.p, e, d->ents.len, sizeof (Dict_Ent), err)).val;
-  if (err->exc) goto L_ret;
+  { __typeof__((*val)) m9v = (*(Dict_Ent *) m9_at (d->ents.p, e, d->ents.len, sizeof (Dict_Ent), err)).val;
+    if (err->exc) goto L_ret;
+    (*val) = m9v;
+  }
   err->res = m9res;
   m9ret = true;
   goto L_ret;
@@ -155,8 +174,10 @@ Dict_Value Dict_Get (Dict_Dict * d, m9_sl_CHAR key, m9_state *err)
   err->res = m9res;
   Dict_Value m9ret = {0};
   int64_t e = 0; (void) e;
-  e = (*(int64_t *) m9_at (d->idx.p, Dict_Slot (d, key, err), d->idx.len, sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  { __typeof__(e) m9v = (*(int64_t *) m9_at (d->idx.p, Dict_Slot (d, key, err), d->idx.len, sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    e = m9v;
+  }
   if ((e == Dict_Empty)) {
     { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Dict_NotFound);
@@ -269,8 +290,10 @@ int64_t Dict_Hash (m9_sl_CHAR key, m9_state *err)
   m9t1to = m9_sub_i64 ((key).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    h = m9_mod_i64 ((m9_add_i64 (m9_mul_i64 (h, Dict_HashMul, err), (int64_t)((*(uint32_t *) m9_at (key.p, i, key.len, sizeof (uint32_t), err))), err)), Dict_HashPrime, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(h) m9v = m9_mod_i64 ((m9_add_i64 (m9_mul_i64 (h, Dict_HashMul, err), (int64_t)((*(uint32_t *) m9_at (key.p, i, key.len, sizeof (uint32_t), err))), err)), Dict_HashPrime, err);
+      if (err->exc) goto L_ret;
+      h = m9v;
+    }
   } }
   err->res = m9res;
   m9ret = h;
@@ -323,11 +346,15 @@ static void Dict_Init (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   int64_t i = 0; (void) i;
-  (*d)->ents = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, d_pool, Dict_InitEnts, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*d)->ents) m9v = M9_POOL_SL (m9_sl_Dict_Ent, Dict_Ent, d_pool, Dict_InitEnts, err);
+    if (err->exc) goto L_ret;
+    (*d)->ents = m9v;
+  }
   (*d)->n = INT64_C(0);
-  (*d)->idx = M9_POOL_SL (m9_sl_I64, int64_t, d_pool, Dict_InitSlots, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*d)->idx) m9v = M9_POOL_SL (m9_sl_I64, int64_t, d_pool, Dict_InitSlots, err);
+    if (err->exc) goto L_ret;
+    (*d)->idx = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (((*d)->idx).len, INT64_C(1), err);
@@ -354,11 +381,15 @@ static int64_t Dict_Slot (Dict_Dict * d, m9_sl_CHAR key, m9_state *err)
   int64_t s = 0; (void) s;
   int64_t e = 0; (void) e;
   cap = (d->idx).len;
-  s = m9_mod_i64 (Dict_Hash (key, err), cap, err);
-  if (err->exc) goto L_ret;
-  for (;;) {
-    e = (*(int64_t *) m9_at (d->idx.p, s, d->idx.len, sizeof (int64_t), err));
+  { __typeof__(s) m9v = m9_mod_i64 (Dict_Hash (key, err), cap, err);
     if (err->exc) goto L_ret;
+    s = m9v;
+  }
+  for (;;) {
+    { __typeof__(e) m9v = (*(int64_t *) m9_at (d->idx.p, s, d->idx.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+      e = m9v;
+    }
     if ((e == Dict_Empty)) {
       err->res = m9res;
       m9ret = s;
@@ -371,8 +402,10 @@ static int64_t Dict_Slot (Dict_Dict * d, m9_sl_CHAR key, m9_state *err)
       m9ret = s;
       goto L_ret;
     }
-    s = m9_add_i64 (s, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = m9_add_i64 (s, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
     if ((s == cap)) {
       s = INT64_C(0);
     }
@@ -392,10 +425,14 @@ static void Dict_Regrow (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t s = 0; (void) s;
   int64_t cap = 0; (void) cap;
-  cap = m9_mul_i64 (INT64_C(2), ((*d)->idx).len, err);
-  if (err->exc) goto L_ret;
-  (*d)->idx = M9_POOL_SL (m9_sl_I64, int64_t, d_pool, cap, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(cap) m9v = m9_mul_i64 (INT64_C(2), ((*d)->idx).len, err);
+    if (err->exc) goto L_ret;
+    cap = m9v;
+  }
+  { __typeof__((*d)->idx) m9v = M9_POOL_SL (m9_sl_I64, int64_t, d_pool, cap, err);
+    if (err->exc) goto L_ret;
+    (*d)->idx = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (cap, INT64_C(1), err);
@@ -409,14 +446,18 @@ static void Dict_Regrow (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
   m9t2to = m9_sub_i64 ((*d)->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    s = m9_mod_i64 (Dict_Hash ((*(Dict_Ent *) m9_at ((*d)->ents.p, i, (*d)->ents.len, sizeof (Dict_Ent), err)).key, err), cap, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = m9_mod_i64 (Dict_Hash ((*(Dict_Ent *) m9_at ((*d)->ents.p, i, (*d)->ents.len, sizeof (Dict_Ent), err)).key, err), cap, err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
     for (;;) {
       bool m9t3 = ((*(int64_t *) m9_at ((*d)->idx.p, s, (*d)->idx.len, sizeof (int64_t), err)) != Dict_Empty);
       if (err->exc) goto L_ret;
       if (!(m9t3)) break;
-      s = m9_add_i64 (s, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(s) m9v = m9_add_i64 (s, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        s = m9v;
+      }
       if ((s == cap)) {
         s = INT64_C(0);
       }

@@ -4,6 +4,7 @@
 #include "m9rt.h"
 #include "DynStr.h"
 #include "Io.h"
+#include "Bits.h"
 
 void Zip_m9init (m9_state *err);
 
@@ -11,7 +12,9 @@ typedef struct Zip_Archive Zip_Archive;
 typedef struct Zip_Member Zip_Member;
 typedef struct Zip_Entry Zip_Entry;
 typedef struct Zip_Archive Zip_Archive;
+typedef struct Zip_Infl Zip_Infl;
 typedef struct Zip_Member Zip_Member;
+typedef struct Zip_Sink Zip_Sink;
 
 extern const m9_exc Zip_Error;
 
@@ -24,10 +27,43 @@ extern const m9_exc Zip_Error;
 #define Zip_SigLoc64 INT64_C(117853008)
 #define Zip_SigCen INT64_C(33639248)
 #define Zip_SigLoc INT64_C(67324752)
+#define Zip_WinSize INT64_C(32768)
+#define Zip_WinMask INT64_C(32767)
+#define Zip_FastBits INT64_C(10)
+#define Zip_FastSize INT64_C(1024)
+#define Zip_LowWater INT64_C(512)
+#define Zip_StHeader INT64_C(0)
+#define Zip_StStored INT64_C(1)
+#define Zip_StCodes INT64_C(2)
+#define Zip_StDone INT64_C(3)
+#define Zip_HashSize INT64_C(32768)
+#define Zip_MaxChain INT64_C(24)
+#define Zip_MinMatch INT64_C(3)
+#define Zip_MaxMatch INT64_C(258)
 
 #ifndef M9SL_m9_sl_Zip_Entry
 #define M9SL_m9_sl_Zip_Entry
 typedef struct { Zip_Entry *p; int64_t len; } m9_sl_Zip_Entry;
+#endif
+#ifndef M9SL_m9_arr_17_int64_t
+#define M9SL_m9_arr_17_int64_t
+typedef struct { int64_t v[17]; } m9_arr_17_int64_t;
+#endif
+#ifndef M9SL_m9_arr_29_int64_t
+#define M9SL_m9_arr_29_int64_t
+typedef struct { int64_t v[29]; } m9_arr_29_int64_t;
+#endif
+#ifndef M9SL_m9_arr_30_int64_t
+#define M9SL_m9_arr_30_int64_t
+typedef struct { int64_t v[30]; } m9_arr_30_int64_t;
+#endif
+#ifndef M9SL_m9_arr_19_int64_t
+#define M9SL_m9_arr_19_int64_t
+typedef struct { int64_t v[19]; } m9_arr_19_int64_t;
+#endif
+#ifndef M9SL_m9_arr_256_int64_t
+#define M9SL_m9_arr_256_int64_t
+typedef struct { int64_t v[256]; } m9_arr_256_int64_t;
 #endif
 
 Zip_Archive * Zip_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
@@ -39,5 +75,13 @@ int64_t Zip_Find (Zip_Archive * a, m9_sl_CHAR name, m9_state *err);
 Zip_Member * Zip_OpenMember (m9_pool *pool, Zip_Archive * a, int64_t i, int64_t block, m9_state *err);
 int64_t Zip_Read (Zip_Member * *m, m9_pool *m_pool, m9_sl_BYTE *dst, m9_state *err);
 void Zip_Close (Zip_Member * *m, m9_pool *m_pool, m9_state *err);
+m9_sl_BYTE Zip_Gunzip (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
+m9_sl_BYTE Zip_GunzipBytes (m9_pool *pool, m9_sl_BYTE data, m9_state *err);
+m9_sl_BYTE Zip_Deflate (m9_pool *pool, m9_sl_BYTE data, m9_state *err);
+m9_sl_BYTE Zip_Compress (m9_pool *pool, m9_sl_BYTE data, m9_state *err);
+m9_sl_BYTE Zip_Decompress (m9_pool *pool, m9_sl_BYTE data, m9_state *err);
+m9_sl_BYTE Zip_Gzip (m9_pool *pool, m9_sl_BYTE data, m9_state *err);
+int64_t Zip_Crc32 (m9_sl_BYTE b, m9_state *err);
+int64_t Zip_Adler32 (m9_sl_BYTE b, m9_state *err);
 
 #endif

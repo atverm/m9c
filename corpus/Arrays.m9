@@ -1,0 +1,686 @@
+DEFINITION MODULE Arrays ;
+
+(* Array operations over a SLICE OF F64 and a GRID 2 OF F64: the
+   NaN-aware reductions, along an axis and over the whole; the index
+   of the extreme; the running sum; arithmetic element by element;
+   masks, where and select; concatenation.  What a numpy script
+   reaches for first, held to numpy by corpus/ArraysTest.m9 against
+   goldens from tools/arraysgold.py.
+
+   AN ANSWER TAKES NO POOL.  Every procedure that answers a slice
+   builds it in the caller's frame (par 4.3): use it, pass it on, or
+   copy it into a pool if it must outlive the procedure that asked.
+   Nothing here writes through an argument; every array parameter is
+   RO, so a constant table is an array like any other.
+
+   NaN IS MISSING, AND THE RULES ARE NUMPY'S nan* FAMILY'S: a NaN
+   takes no part in a sum, a mean, a minimum, a maximum or a count.
+   Where numpy raises or warns, the answer here is stated:
+
+     NanSum of nothing (empty, or all NaN)      0.0, as numpy
+     NanMean, NanMin, NanMax of nothing         NaN (numpy: NaN and a
+                                                warning; nanmin of an
+                                                EMPTY array raises)
+     NanArgMin, NanArgMax of nothing            -1 (numpy raises); an
+                                                index or -1 is the
+                                                corpus's "not found"
+
+   Everything else carries NaN as IEEE does: CumSum is NaN from the
+   first NaN on, x + NaN is NaN, and a comparison with NaN is FALSE
+   all four ways -- so GreaterEq is not Not (Less), and both exist.
+
+   A SUM IS COMPENSATED.  NanSum and NanMean add with Neumaier's
+   correction term: what each addition lost is kept and given back
+   at the end, so [1, 1e100, 1, -1e100] sums to 2.0 where a running
+   sum, and numpy's pairwise nansum, answer 0.0.  The bound, not a
+   promise of more: the error is at most an ulp of the answer plus
+   n * 2.5e-32 * (the sum of the magnitudes) -- as if the additions
+   had been done in twice the precision and rounded once.  For data
+   whose large terms cancel to within twelve digits or so that is
+   the correctly rounded sum; the test holds it to math.fsum to the
+   bit on its vectors, one of them 5500 values cancelling over six
+   decades that numpy gets right to seven digits.  CumSum is the
+   plain running sum, because that is what numpy's is and every
+   element of it is checked.
+
+   A length that does not match is Faults.SizeError (got, want); an
+   axis that is neither 0 nor 1 is Faults.BadArg.
+
+   F64 only, and rank 2 only, on purpose: a twin per type and per
+   rank is written when a caller exists (docs/plan-0.14.md, stage 4,
+   publishes the count). *)
+
+IMPORT Faults ;
+
+(* ---- reductions over a slice ---- *)
+
+PROCEDURE NanSum (RO a: SLICE OF F64) : F64 ;
+PROCEDURE NanMean (RO a: SLICE OF F64) : F64 ;
+PROCEDURE NanMin (RO a: SLICE OF F64) : F64 ;
+PROCEDURE NanMax (RO a: SLICE OF F64) : F64 ;
+PROCEDURE Count (RO a: SLICE OF F64) : I64 ;
+  (* over the values that are not NaN; Count is how many there are *)
+
+PROCEDURE NanArgMin (RO a: SLICE OF F64) : I64 ;
+PROCEDURE NanArgMax (RO a: SLICE OF F64) : I64 ;
+  (* the index of the smallest and of the largest value that is not
+     NaN -- the FIRST such index when several are equal -- or -1 *)
+
+PROCEDURE CumSum (RO a: SLICE OF F64) : SLICE OF F64 ;
+  (* out[i] = a[0] + ... + a[i], added in that order *)
+
+(* ---- element by element ---- *)
+
+PROCEDURE Add (RO a, b: SLICE OF F64) : SLICE OF F64
+  RAISES Faults.SizeError ;
+PROCEDURE Sub (RO a, b: SLICE OF F64) : SLICE OF F64
+  RAISES Faults.SizeError ;
+PROCEDURE Mul (RO a, b: SLICE OF F64) : SLICE OF F64
+  RAISES Faults.SizeError ;
+PROCEDURE Div (RO a, b: SLICE OF F64) : SLICE OF F64
+  RAISES Faults.SizeError ;
+  (* a[i] op b[i]; the lengths must agree.  Division is IEEE's: x / 0
+     is an infinity and 0 / 0 is NaN, and neither raises. *)
+
+PROCEDURE AddScalar (RO a: SLICE OF F64 ; k: F64) : SLICE OF F64 ;
+PROCEDURE MulScalar (RO a: SLICE OF F64 ; k: F64) : SLICE OF F64 ;
+PROCEDURE DivScalar (RO a: SLICE OF F64 ; k: F64) : SLICE OF F64 ;
+  (* a[i] op k.  There is no SubScalar: a - k is AddScalar (a, -k),
+     to the bit.  DivScalar exists because a / k is not a * (1 / k). *)
+
+(* ---- masks ---- *)
+
+PROCEDURE Less (RO a: SLICE OF F64 ; k: F64) : SLICE OF BOOL ;
+PROCEDURE LessEq (RO a: SLICE OF F64 ; k: F64) : SLICE OF BOOL ;
+PROCEDURE Greater (RO a: SLICE OF F64 ; k: F64) : SLICE OF BOOL ;
+PROCEDURE GreaterEq (RO a: SLICE OF F64 ; k: F64) : SLICE OF BOOL ;
+PROCEDURE IsNaN (RO a: SLICE OF F64) : SLICE OF BOOL ;
+  (* a mask: one BOOL for each element.  A NaN element is FALSE in
+     all four comparisons and TRUE in IsNaN only. *)
+
+PROCEDURE Not (RO m: SLICE OF BOOL) : SLICE OF BOOL ;
+PROCEDURE And (RO m, n: SLICE OF BOOL) : SLICE OF BOOL
+  RAISES Faults.SizeError ;
+PROCEDURE Or (RO m, n: SLICE OF BOOL) : SLICE OF BOOL
+  RAISES Faults.SizeError ;
+PROCEDURE CountTrue (RO m: SLICE OF BOOL) : I64 ;
+
+PROCEDURE Where (RO m: SLICE OF BOOL ; RO a, b: SLICE OF F64)
+  : SLICE OF F64 RAISES Faults.SizeError ;
+PROCEDURE WhereScalar (RO m: SLICE OF BOOL ; RO a: SLICE OF F64 ;
+                       k: F64) : SLICE OF F64 RAISES Faults.SizeError ;
+  (* a[i] where m[i], else b[i] (or k): as long as the mask *)
+
+PROCEDURE Select (RO a: SLICE OF F64 ; RO m: SLICE OF BOOL)
+  : SLICE OF F64 RAISES Faults.SizeError ;
+  (* the elements of a where m is TRUE, in order: numpy's a[m].
+     CountTrue (m) long *)
+
+PROCEDURE Concat (RO a, b: SLICE OF F64) : SLICE OF F64 ;
+  (* a, then b, in new storage *)
+
+(* ---- a grid: along an axis, and over the whole ---- *)
+
+PROCEDURE NanSumAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF F64
+  RAISES Faults.BadArg ;
+PROCEDURE NanMeanAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF F64
+  RAISES Faults.BadArg ;
+PROCEDURE NanMinAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF F64
+  RAISES Faults.BadArg ;
+PROCEDURE NanMaxAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF F64
+  RAISES Faults.BadArg ;
+PROCEDURE CountAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF I64
+  RAISES Faults.BadArg ;
+  (* the reduction ALONG axis, which is the axis that disappears, as
+     numpy's axis= is:
+
+       axis -- 0: down the rows, one answer for each COLUMN,
+                  LEN (g, 1) of them
+               1: along the columns, one answer for each ROW,
+                  LEN (g, 0) of them
+               anything else is Faults.BadArg
+
+     Each answer follows the slice form's rules: a column of NaN has
+     NanSum 0.0, NanMean NaN and Count 0. *)
+
+PROCEDURE NanSumGrid (RO g: GRID 2 OF F64) : F64 ;
+PROCEDURE NanMeanGrid (RO g: GRID 2 OF F64) : F64 ;
+PROCEDURE NanMinGrid (RO g: GRID 2 OF F64) : F64 ;
+PROCEDURE NanMaxGrid (RO g: GRID 2 OF F64) : F64 ;
+PROCEDURE CountGrid (RO g: GRID 2 OF F64) : I64 ;
+  (* over every element, in row order *)
+
+END Arrays.
+
+
+IMPLEMENTATION MODULE Arrays ;
+
+IMPORT Faults ;
+IMPORT Math ;
+
+(* ONE accumulator serves every reduction, slice or grid: it takes a
+   value at a time, skips NaN, and carries what the five answers
+   need.  A statistic costs the other four a few additions; a second
+   copy of the NaN rule would cost a bug. *)
+TYPE
+  Acc = RECORD
+    n : I64 ;                  (* values taken, NaN not among them *)
+    sum, comp : F64 ;          (* the running sum and Neumaier's
+                                  correction: what the additions
+                                  lost, to be given back at the end *)
+    mn, mx : F64 ;
+  END ;
+
+CONST
+  OpAdd = 0 ; OpSub = 1 ; OpMul = 2 ; OpDiv = 3 ;
+  OpLess = 0 ; OpLessEq = 1 ; OpGreater = 2 ; OpGreaterEq = 3 ;
+
+PROCEDURE NaN () : F64 =
+VAR z : F64 ;
+BEGIN
+  z := 0.0 ;
+  RETURN z / z
+END NaN ;
+
+PROCEDURE Take (VAR s: Acc ; v: F64) =
+VAR t : F64 ;
+BEGIN
+  IF NOT Math.IsNaN (v) THEN
+    IF s.n = 0 THEN
+      s.mn := v ;
+      s.mx := v
+    ELSE
+      IF v < s.mn THEN s.mn := v END ;
+      IF v > s.mx THEN s.mx := v END
+    END ;
+    s.n := s.n + 1 ;
+    t := s.sum + v ;
+    (* the correction is what the larger operand could not hold of
+       the smaller; an infinite t has none to give *)
+    IF Math.IsFinite (t) THEN
+      IF Math.Fabs (s.sum) >= Math.Fabs (v) THEN
+        s.comp := s.comp + ((s.sum - t) + v)
+      ELSE
+        s.comp := s.comp + ((v - t) + s.sum)
+      END
+    END ;
+    s.sum := t
+  END
+END Take ;
+
+PROCEDURE SumOf (RO s: Acc) : F64 =
+BEGIN
+  IF NOT Math.IsFinite (s.sum) THEN RETURN s.sum END ;
+  RETURN s.sum + s.comp
+END SumOf ;
+
+PROCEDURE MeanOf (RO s: Acc) : F64 =
+BEGIN
+  IF s.n = 0 THEN RETURN NaN () END ;
+  RETURN SumOf (s) / F64 (s.n)
+END MeanOf ;
+
+PROCEDURE MinOf (RO s: Acc) : F64 =
+BEGIN
+  IF s.n = 0 THEN RETURN NaN () END ;
+  RETURN s.mn
+END MinOf ;
+
+PROCEDURE MaxOf (RO s: Acc) : F64 =
+BEGIN
+  IF s.n = 0 THEN RETURN NaN () END ;
+  RETURN s.mx
+END MaxOf ;
+
+PROCEDURE Over (RO a: SLICE OF F64) : Acc =
+VAR
+  s : Acc ;
+  i : I64 ;
+BEGIN
+  s.n := 0 ;
+  s.sum := 0.0 ;
+  s.comp := 0.0 ;
+  s.mn := 0.0 ;
+  s.mx := 0.0 ;
+  FOR i := 0 TO LEN (a) - 1 DO Take (s, a[i]) END ;
+  RETURN s
+END Over ;
+
+PROCEDURE NanSum (RO a: SLICE OF F64) : F64 =
+BEGIN
+  RETURN SumOf (Over (a))
+END NanSum ;
+
+PROCEDURE NanMean (RO a: SLICE OF F64) : F64 =
+BEGIN
+  RETURN MeanOf (Over (a))
+END NanMean ;
+
+PROCEDURE NanMin (RO a: SLICE OF F64) : F64 =
+BEGIN
+  RETURN MinOf (Over (a))
+END NanMin ;
+
+PROCEDURE NanMax (RO a: SLICE OF F64) : F64 =
+BEGIN
+  RETURN MaxOf (Over (a))
+END NanMax ;
+
+PROCEDURE Count (RO a: SLICE OF F64) : I64 =
+VAR s : Acc ;
+BEGIN
+  s := Over (a) ;
+  RETURN s.n
+END Count ;
+
+PROCEDURE NanArgMin (RO a: SLICE OF F64) : I64 =
+VAR i, at : I64 ;
+BEGIN
+  at := -1 ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF NOT Math.IsNaN (a[i]) THEN
+      IF at < 0 THEN
+        at := i
+      ELSIF a[i] < a[at] THEN
+        at := i
+      END
+    END
+  END ;
+  RETURN at
+END NanArgMin ;
+
+PROCEDURE NanArgMax (RO a: SLICE OF F64) : I64 =
+VAR i, at : I64 ;
+BEGIN
+  at := -1 ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF NOT Math.IsNaN (a[i]) THEN
+      IF at < 0 THEN
+        at := i
+      ELSIF a[i] > a[at] THEN
+        at := i
+      END
+    END
+  END ;
+  RETURN at
+END NanArgMax ;
+
+PROCEDURE CumSum (RO a: SLICE OF F64) : SLICE OF F64 =
+VAR
+  out : SLICE OF F64 ;
+  i : I64 ;
+  run : F64 ;
+BEGIN
+  out := NEW (F64, LEN (a)) ;
+  run := 0.0 ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    run := run + a[i] ;
+    out[i] := run
+  END ;
+  RETURN out
+END CumSum ;
+
+(* ---- element by element ---- *)
+
+PROCEDURE Binary (RO a, b: SLICE OF F64 ; op: I64) : SLICE OF F64
+  RAISES Faults.SizeError =
+VAR
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (b) # LEN (a) THEN RAISE Faults.SizeError (LEN (b), LEN (a)) END ;
+  out := NEW (F64, LEN (a)) ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    CASE op OF
+    | OpAdd : out[i] := a[i] + b[i]
+    | OpSub : out[i] := a[i] - b[i]
+    | OpMul : out[i] := a[i] * b[i]
+    ELSE out[i] := a[i] / b[i]
+    END
+  END ;
+  RETURN out
+END Binary ;
+
+PROCEDURE Add (RO a, b: SLICE OF F64) : SLICE OF F64
+  RAISES Faults.SizeError =
+BEGIN
+  RETURN Binary (a, b, OpAdd)
+END Add ;
+
+PROCEDURE Sub (RO a, b: SLICE OF F64) : SLICE OF F64
+  RAISES Faults.SizeError =
+BEGIN
+  RETURN Binary (a, b, OpSub)
+END Sub ;
+
+PROCEDURE Mul (RO a, b: SLICE OF F64) : SLICE OF F64
+  RAISES Faults.SizeError =
+BEGIN
+  RETURN Binary (a, b, OpMul)
+END Mul ;
+
+PROCEDURE Div (RO a, b: SLICE OF F64) : SLICE OF F64
+  RAISES Faults.SizeError =
+BEGIN
+  RETURN Binary (a, b, OpDiv)
+END Div ;
+
+PROCEDURE Scalar (RO a: SLICE OF F64 ; k: F64 ; op: I64) : SLICE OF F64 =
+VAR
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  out := NEW (F64, LEN (a)) ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    CASE op OF
+    | OpAdd : out[i] := a[i] + k
+    | OpMul : out[i] := a[i] * k
+    ELSE out[i] := a[i] / k
+    END
+  END ;
+  RETURN out
+END Scalar ;
+
+PROCEDURE AddScalar (RO a: SLICE OF F64 ; k: F64) : SLICE OF F64 =
+BEGIN
+  RETURN Scalar (a, k, OpAdd)
+END AddScalar ;
+
+PROCEDURE MulScalar (RO a: SLICE OF F64 ; k: F64) : SLICE OF F64 =
+BEGIN
+  RETURN Scalar (a, k, OpMul)
+END MulScalar ;
+
+PROCEDURE DivScalar (RO a: SLICE OF F64 ; k: F64) : SLICE OF F64 =
+BEGIN
+  RETURN Scalar (a, k, OpDiv)
+END DivScalar ;
+
+(* ---- masks ---- *)
+
+PROCEDURE Compare (RO a: SLICE OF F64 ; k: F64 ; op: I64)
+  : SLICE OF BOOL =
+VAR
+  out : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  out := NEW (BOOL, LEN (a)) ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    CASE op OF
+    | OpLess : out[i] := a[i] < k
+    | OpLessEq : out[i] := a[i] <= k
+    | OpGreater : out[i] := a[i] > k
+    ELSE out[i] := a[i] >= k
+    END
+  END ;
+  RETURN out
+END Compare ;
+
+PROCEDURE Less (RO a: SLICE OF F64 ; k: F64) : SLICE OF BOOL =
+BEGIN
+  RETURN Compare (a, k, OpLess)
+END Less ;
+
+PROCEDURE LessEq (RO a: SLICE OF F64 ; k: F64) : SLICE OF BOOL =
+BEGIN
+  RETURN Compare (a, k, OpLessEq)
+END LessEq ;
+
+PROCEDURE Greater (RO a: SLICE OF F64 ; k: F64) : SLICE OF BOOL =
+BEGIN
+  RETURN Compare (a, k, OpGreater)
+END Greater ;
+
+PROCEDURE GreaterEq (RO a: SLICE OF F64 ; k: F64) : SLICE OF BOOL =
+BEGIN
+  RETURN Compare (a, k, OpGreaterEq)
+END GreaterEq ;
+
+PROCEDURE IsNaN (RO a: SLICE OF F64) : SLICE OF BOOL =
+VAR
+  out : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  out := NEW (BOOL, LEN (a)) ;
+  FOR i := 0 TO LEN (a) - 1 DO out[i] := Math.IsNaN (a[i]) END ;
+  RETURN out
+END IsNaN ;
+
+PROCEDURE Not (RO m: SLICE OF BOOL) : SLICE OF BOOL =
+VAR
+  out : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  out := NEW (BOOL, LEN (m)) ;
+  FOR i := 0 TO LEN (m) - 1 DO out[i] := NOT m[i] END ;
+  RETURN out
+END Not ;
+
+PROCEDURE And (RO m, n: SLICE OF BOOL) : SLICE OF BOOL
+  RAISES Faults.SizeError =
+VAR
+  out : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  IF LEN (n) # LEN (m) THEN RAISE Faults.SizeError (LEN (n), LEN (m)) END ;
+  out := NEW (BOOL, LEN (m)) ;
+  FOR i := 0 TO LEN (m) - 1 DO out[i] := m[i] AND n[i] END ;
+  RETURN out
+END And ;
+
+PROCEDURE Or (RO m, n: SLICE OF BOOL) : SLICE OF BOOL
+  RAISES Faults.SizeError =
+VAR
+  out : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  IF LEN (n) # LEN (m) THEN RAISE Faults.SizeError (LEN (n), LEN (m)) END ;
+  out := NEW (BOOL, LEN (m)) ;
+  FOR i := 0 TO LEN (m) - 1 DO out[i] := m[i] OR n[i] END ;
+  RETURN out
+END Or ;
+
+PROCEDURE CountTrue (RO m: SLICE OF BOOL) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (m) - 1 DO
+    IF m[i] THEN n := n + 1 END
+  END ;
+  RETURN n
+END CountTrue ;
+
+PROCEDURE Where (RO m: SLICE OF BOOL ; RO a, b: SLICE OF F64)
+  : SLICE OF F64 RAISES Faults.SizeError =
+VAR
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (a) # LEN (m) THEN RAISE Faults.SizeError (LEN (a), LEN (m)) END ;
+  IF LEN (b) # LEN (m) THEN RAISE Faults.SizeError (LEN (b), LEN (m)) END ;
+  out := NEW (F64, LEN (m)) ;
+  FOR i := 0 TO LEN (m) - 1 DO
+    IF m[i] THEN out[i] := a[i] ELSE out[i] := b[i] END
+  END ;
+  RETURN out
+END Where ;
+
+PROCEDURE WhereScalar (RO m: SLICE OF BOOL ; RO a: SLICE OF F64 ;
+                       k: F64) : SLICE OF F64 RAISES Faults.SizeError =
+VAR
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (a) # LEN (m) THEN RAISE Faults.SizeError (LEN (a), LEN (m)) END ;
+  out := NEW (F64, LEN (m)) ;
+  FOR i := 0 TO LEN (m) - 1 DO
+    IF m[i] THEN out[i] := a[i] ELSE out[i] := k END
+  END ;
+  RETURN out
+END WhereScalar ;
+
+PROCEDURE Select (RO a: SLICE OF F64 ; RO m: SLICE OF BOOL)
+  : SLICE OF F64 RAISES Faults.SizeError =
+VAR
+  out : SLICE OF F64 ;
+  i, n : I64 ;
+BEGIN
+  IF LEN (m) # LEN (a) THEN RAISE Faults.SizeError (LEN (m), LEN (a)) END ;
+  out := NEW (F64, CountTrue (m)) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF m[i] THEN
+      out[n] := a[i] ;
+      n := n + 1
+    END
+  END ;
+  RETURN out
+END Select ;
+
+PROCEDURE Concat (RO a, b: SLICE OF F64) : SLICE OF F64 =
+VAR
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  out := NEW (F64, LEN (a) + LEN (b)) ;
+  FOR i := 0 TO LEN (a) - 1 DO out[i] := a[i] END ;
+  FOR i := 0 TO LEN (b) - 1 DO out[LEN (a) + i] := b[i] END ;
+  RETURN out
+END Concat ;
+
+(* ---- a grid ---- *)
+
+(* one accumulator for each answer along axis: a column's when axis
+   is 0, a row's when it is 1.  The inner loop indexes the last axis
+   either way, which is the order the grid is stored in (par 2.2.1). *)
+PROCEDURE Along (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF Acc
+  RAISES Faults.BadArg =
+VAR
+  s : SLICE OF Acc ;
+  r, c : I64 ;
+BEGIN
+  IF axis = 0 THEN
+    s := NEW (Acc, LEN (g, 1)) ;
+    FOR r := 0 TO LEN (g, 0) - 1 DO
+      FOR c := 0 TO LEN (g, 1) - 1 DO Take (s[c], g[r, c]) END
+    END
+  ELSIF axis = 1 THEN
+    s := NEW (Acc, LEN (g, 0)) ;
+    FOR r := 0 TO LEN (g, 0) - 1 DO
+      FOR c := 0 TO LEN (g, 1) - 1 DO Take (s[r], g[r, c]) END
+    END
+  ELSE
+    RAISE Faults.BadArg ('axis of a GRID 2 is 0 or 1')
+  END ;
+  RETURN s
+END Along ;
+
+PROCEDURE NanSumAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF F64
+  RAISES Faults.BadArg =
+VAR
+  s : SLICE OF Acc ;
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  s := Along (g, axis) ;
+  out := NEW (F64, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO out[i] := SumOf (s[i]) END ;
+  RETURN out
+END NanSumAxis ;
+
+PROCEDURE NanMeanAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF F64
+  RAISES Faults.BadArg =
+VAR
+  s : SLICE OF Acc ;
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  s := Along (g, axis) ;
+  out := NEW (F64, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO out[i] := MeanOf (s[i]) END ;
+  RETURN out
+END NanMeanAxis ;
+
+PROCEDURE NanMinAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF F64
+  RAISES Faults.BadArg =
+VAR
+  s : SLICE OF Acc ;
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  s := Along (g, axis) ;
+  out := NEW (F64, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO out[i] := MinOf (s[i]) END ;
+  RETURN out
+END NanMinAxis ;
+
+PROCEDURE NanMaxAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF F64
+  RAISES Faults.BadArg =
+VAR
+  s : SLICE OF Acc ;
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  s := Along (g, axis) ;
+  out := NEW (F64, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO out[i] := MaxOf (s[i]) END ;
+  RETURN out
+END NanMaxAxis ;
+
+PROCEDURE CountAxis (RO g: GRID 2 OF F64 ; axis: I64) : SLICE OF I64
+  RAISES Faults.BadArg =
+VAR
+  s : SLICE OF Acc ;
+  out : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  s := Along (g, axis) ;
+  out := NEW (I64, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO out[i] := s[i].n END ;
+  RETURN out
+END CountAxis ;
+
+PROCEDURE Whole (RO g: GRID 2 OF F64) : Acc =
+VAR
+  s : Acc ;
+  r, c : I64 ;
+BEGIN
+  s.n := 0 ;
+  s.sum := 0.0 ;
+  s.comp := 0.0 ;
+  s.mn := 0.0 ;
+  s.mx := 0.0 ;
+  FOR r := 0 TO LEN (g, 0) - 1 DO
+    FOR c := 0 TO LEN (g, 1) - 1 DO Take (s, g[r, c]) END
+  END ;
+  RETURN s
+END Whole ;
+
+PROCEDURE NanSumGrid (RO g: GRID 2 OF F64) : F64 =
+BEGIN
+  RETURN SumOf (Whole (g))
+END NanSumGrid ;
+
+PROCEDURE NanMeanGrid (RO g: GRID 2 OF F64) : F64 =
+BEGIN
+  RETURN MeanOf (Whole (g))
+END NanMeanGrid ;
+
+PROCEDURE NanMinGrid (RO g: GRID 2 OF F64) : F64 =
+BEGIN
+  RETURN MinOf (Whole (g))
+END NanMinGrid ;
+
+PROCEDURE NanMaxGrid (RO g: GRID 2 OF F64) : F64 =
+BEGIN
+  RETURN MaxOf (Whole (g))
+END NanMaxGrid ;
+
+PROCEDURE CountGrid (RO g: GRID 2 OF F64) : I64 =
+VAR s : Acc ;
+BEGIN
+  s := Whole (g) ;
+  RETURN s.n
+END CountGrid ;
+
+END Arrays.

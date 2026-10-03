@@ -1,0 +1,36 @@
+REVIEW Parse -- 50 procedures with a body, 43 of them functions; 8 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path              43
+  assignments                                   211
+  arguments                                    1551
+  RETURN values                                 128
+  operands of a comparison or an operator       205
+  CASE labels                                    37
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    0
+  local pools                                     0
+  pool parameters                                34   Nn, PQualident, PIdentList, PArgList, DesigToQual, PNew, +28 more
+  KEPT parameters                                 5   Init, DesigToQual, PFactor, PProcDecl, PUnit
+  HEAP named                                      1   Keep
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                                0
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                 3
+  RAISE statements                                0
+  handlers                                        0
+  NEW in the frame                                0
+  NEW in a named pool                             0

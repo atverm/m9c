@@ -30,6 +30,7 @@ struct Sem_Binding {
   m9_sl_CHAR name;
   m9_sl_CHAR mode;
   Ast_Node * ty;
+  bool ro;
 };
 
 typedef struct Sem_VariantInfo Sem_VariantInfo;
@@ -69,6 +70,10 @@ static m9_sl_m9_sl_CHAR errs;
 static int64_t nerrs;
 static m9_sl_m9_sl_CHAR ledger;
 static int64_t nledger;
+static m9_arr_7_int64_t statC;
+static m9_arr_7_int64_t statS;
+static m9_arr_7_int64_t statR;
+static m9_arr_42_int64_t statL;
 static m9_sl_CHAR curMod;
 static m9_sl_CHAR canonCtx;
 static m9_sl_Sem_Binding scope;
@@ -89,6 +94,7 @@ static Ast_Node * strNode;
 static m9_sl_Sem_Binding consts;
 static int64_t nconsts;
 static int64_t svConsts;
+static int64_t nAgg;
 static m9_sl_Sem_Binding own;
 static int64_t nown;
 static m9_sl_CHAR curRetTy;
@@ -128,6 +134,79 @@ static m9_sl_m9_sl_CHAR fvalKind;
 static int64_t nfval;
 static m9_sl_m9_sl_CHAR pvalName;
 static int64_t npval;
+static const uint32_t BuiltinTys_s0[2] = { 73u, 56u };
+static const uint32_t BuiltinTys_s1[3] = { 73u, 49u, 54u };
+static const uint32_t BuiltinTys_s2[3] = { 73u, 51u, 50u };
+static const uint32_t BuiltinTys_s3[3] = { 73u, 54u, 52u };
+static const uint32_t BuiltinTys_s4[2] = { 85u, 56u };
+static const uint32_t BuiltinTys_s5[3] = { 85u, 49u, 54u };
+static const uint32_t BuiltinTys_s6[3] = { 85u, 51u, 50u };
+static const uint32_t BuiltinTys_s7[3] = { 85u, 54u, 52u };
+static const uint32_t BuiltinTys_s8[3] = { 70u, 51u, 50u };
+static const uint32_t BuiltinTys_s9[3] = { 70u, 54u, 52u };
+static const uint32_t BuiltinTys_s10[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t BuiltinTys_s11[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t BuiltinTys_s12[4] = { 67u, 72u, 65u, 82u };
+static const m9_arr_13_m9_sl_CHAR BuiltinTys_k = { {
+  { (uint32_t *) BuiltinTys_s0, 2 },
+  { (uint32_t *) BuiltinTys_s1, 3 },
+  { (uint32_t *) BuiltinTys_s2, 3 },
+  { (uint32_t *) BuiltinTys_s3, 3 },
+  { (uint32_t *) BuiltinTys_s4, 2 },
+  { (uint32_t *) BuiltinTys_s5, 3 },
+  { (uint32_t *) BuiltinTys_s6, 3 },
+  { (uint32_t *) BuiltinTys_s7, 3 },
+  { (uint32_t *) BuiltinTys_s8, 3 },
+  { (uint32_t *) BuiltinTys_s9, 3 },
+  { (uint32_t *) BuiltinTys_s10, 4 },
+  { (uint32_t *) BuiltinTys_s11, 4 },
+  { (uint32_t *) BuiltinTys_s12, 4 }
+} };
+static m9_arr_13_m9_sl_CHAR * const BuiltinTys = (m9_arr_13_m9_sl_CHAR *) &BuiltinTys_k;
+static const uint32_t ConvVR_s0[2] = { 73u, 56u };
+static const uint32_t ConvVR_s1[3] = { 73u, 49u, 54u };
+static const uint32_t ConvVR_s2[3] = { 73u, 51u, 50u };
+static const uint32_t ConvVR_s3[3] = { 73u, 54u, 52u };
+static const uint32_t ConvVR_s4[2] = { 85u, 56u };
+static const uint32_t ConvVR_s5[3] = { 85u, 49u, 54u };
+static const uint32_t ConvVR_s6[3] = { 85u, 51u, 50u };
+static const uint32_t ConvVR_s7[3] = { 85u, 54u, 52u };
+static const uint32_t ConvVR_s8[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t ConvVR_s9[3] = { 67u, 72u, 82u };
+static const m9_arr_10_m9_sl_CHAR ConvVR_k = { {
+  { (uint32_t *) ConvVR_s0, 2 },
+  { (uint32_t *) ConvVR_s1, 3 },
+  { (uint32_t *) ConvVR_s2, 3 },
+  { (uint32_t *) ConvVR_s3, 3 },
+  { (uint32_t *) ConvVR_s4, 2 },
+  { (uint32_t *) ConvVR_s5, 3 },
+  { (uint32_t *) ConvVR_s6, 3 },
+  { (uint32_t *) ConvVR_s7, 3 },
+  { (uint32_t *) ConvVR_s8, 4 },
+  { (uint32_t *) ConvVR_s9, 3 }
+} };
+static m9_arr_10_m9_sl_CHAR * const ConvVR = (m9_arr_10_m9_sl_CHAR *) &ConvVR_k;
+static const uint32_t WidensTo64_s0[5] = { 67u, 46u, 73u, 110u, 116u };
+static const uint32_t WidensTo64_s1[8] = { 67u, 46u, 83u, 83u, 105u, 122u, 101u, 84u };
+static const uint32_t WidensTo64_s2[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t WidensTo64_s3[2] = { 73u, 56u };
+static const uint32_t WidensTo64_s4[3] = { 73u, 49u, 54u };
+static const uint32_t WidensTo64_s5[3] = { 73u, 51u, 50u };
+static const uint32_t WidensTo64_s6[2] = { 85u, 56u };
+static const uint32_t WidensTo64_s7[3] = { 85u, 49u, 54u };
+static const uint32_t WidensTo64_s8[3] = { 85u, 51u, 50u };
+static const m9_arr_9_m9_sl_CHAR WidensTo64_k = { {
+  { (uint32_t *) WidensTo64_s0, 5 },
+  { (uint32_t *) WidensTo64_s1, 8 },
+  { (uint32_t *) WidensTo64_s2, 4 },
+  { (uint32_t *) WidensTo64_s3, 2 },
+  { (uint32_t *) WidensTo64_s4, 3 },
+  { (uint32_t *) WidensTo64_s5, 3 },
+  { (uint32_t *) WidensTo64_s6, 2 },
+  { (uint32_t *) WidensTo64_s7, 3 },
+  { (uint32_t *) WidensTo64_s8, 3 }
+} };
+static m9_arr_9_m9_sl_CHAR * const WidensTo64 = (m9_arr_9_m9_sl_CHAR *) &WidensTo64_k;
 static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[40] = { 70u, 82u, 79u, 77u, 32u, 105u, 109u, 112u, 111u, 114u, 116u, 115u, 32u, 102u, 114u, 111u, 109u, 32u, 97u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 70u, 79u, 82u, 45u, 67u, 32u, 117u, 110u, 105u, 116u, 59u, 32u };
@@ -138,78 +217,78 @@ static const uint32_t m9s4[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
 static const uint32_t m9s5[5] = { 32u, 98u, 111u, 100u, 121u };
 static const uint32_t m9s6[5] = { 32u, 98u, 111u, 100u, 121u };
 static const uint32_t m9s7[5] = { 32u, 98u, 111u, 100u, 121u };
-static const uint32_t m9s8[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s9[2] = { 58u, 32u };
-static const uint32_t m9s10[8] = { 79u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
-static const uint32_t m9s11[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
-static const uint32_t m9s12[11] = { 79u, 117u, 116u, 79u, 102u, 77u, 101u, 109u, 111u, 114u, 121u };
-static const uint32_t m9s13[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
-static const uint32_t m9s14[19] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 58u, 32u };
-static const uint32_t m9s15[49] = { 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 111u, 102u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 79u, 80u, 84u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s16[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u, 58u, 32u };
-static const uint32_t m9s17[1] = { 46u };
-static const uint32_t m9s18[4] = { 32u, 45u, 45u, 32u };
-static const uint32_t m9s19[22] = { 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 115u, 32u, 110u, 111u, 32u, 115u, 117u, 99u, 104u, 32u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s20[75] = { 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 111u, 114u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 111u, 102u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 121u, 101u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s21[75] = { 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 111u, 114u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 111u, 102u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 121u, 101u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s22[52] = { 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 111u, 102u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 79u, 80u, 84u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s23[1] = { 46u };
-static const uint32_t m9s24[1] = { 46u };
+static const uint32_t m9s8[5] = { 32u, 98u, 111u, 100u, 121u };
+static const uint32_t m9s9[11] = { 97u, 115u, 115u, 105u, 103u, 110u, 109u, 101u, 110u, 116u, 115u };
+static const uint32_t m9s10[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 115u };
+static const uint32_t m9s11[13] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 118u, 97u, 108u, 117u, 101u, 115u };
+static const uint32_t m9s12[39] = { 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 32u, 111u, 102u, 32u, 97u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 105u, 115u, 111u, 110u, 32u, 111u, 114u, 32u, 97u, 110u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u };
+static const uint32_t m9s13[11] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 115u };
+static const uint32_t m9s14[16] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 115u };
+static const uint32_t m9s15[32] = { 67u, 65u, 83u, 69u, 32u, 111u, 118u, 101u, 114u, 32u, 118u, 97u, 114u, 105u, 97u, 110u, 116u, 115u, 44u, 32u, 112u, 114u, 111u, 118u, 101u, 100u, 32u, 116u, 111u, 116u, 97u, 108u };
+static const uint32_t m9s16[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s17[2] = { 58u, 32u };
+static const uint32_t m9s18[8] = { 79u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
+static const uint32_t m9s19[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
+static const uint32_t m9s20[11] = { 79u, 117u, 116u, 79u, 102u, 77u, 101u, 109u, 111u, 114u, 121u };
+static const uint32_t m9s21[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
+static const uint32_t m9s22[19] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 58u, 32u };
+static const uint32_t m9s23[49] = { 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 111u, 102u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 79u, 80u, 84u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s24[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u, 58u, 32u };
 static const uint32_t m9s25[1] = { 46u };
-static const uint32_t m9s26[55] = { 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s27[1] = { 46u };
-static const uint32_t m9s28[3] = { 32u, 58u, 32u };
-static const uint32_t m9s29[8] = { 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
-static const uint32_t m9s30[2] = { 44u, 32u };
-static const uint32_t m9s31[2] = { 32u, 91u };
-static const uint32_t m9s32[3] = { 83u, 84u, 82u };
-static const uint32_t m9s33[2] = { 73u, 56u };
-static const uint32_t m9s34[3] = { 73u, 49u, 54u };
-static const uint32_t m9s35[3] = { 73u, 51u, 50u };
-static const uint32_t m9s36[3] = { 73u, 54u, 52u };
-static const uint32_t m9s37[2] = { 85u, 56u };
-static const uint32_t m9s38[3] = { 85u, 49u, 54u };
-static const uint32_t m9s39[3] = { 85u, 51u, 50u };
-static const uint32_t m9s40[3] = { 85u, 54u, 52u };
+static const uint32_t m9s26[4] = { 32u, 45u, 45u, 32u };
+static const uint32_t m9s27[22] = { 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 115u, 32u, 110u, 111u, 32u, 115u, 117u, 99u, 104u, 32u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s28[75] = { 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 111u, 114u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 111u, 102u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 121u, 101u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s29[75] = { 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 111u, 114u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 111u, 102u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 121u, 101u, 116u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s30[52] = { 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 111u, 102u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 79u, 80u, 84u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s31[1] = { 46u };
+static const uint32_t m9s32[1] = { 46u };
+static const uint32_t m9s33[1] = { 46u };
+static const uint32_t m9s34[55] = { 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s35[1] = { 46u };
+static const uint32_t m9s36[3] = { 32u, 58u, 32u };
+static const uint32_t m9s37[8] = { 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
+static const uint32_t m9s38[2] = { 44u, 32u };
+static const uint32_t m9s39[2] = { 32u, 91u };
+static const uint32_t m9s40[3] = { 83u, 84u, 82u };
 static const uint32_t m9s41[3] = { 70u, 51u, 50u };
-static const uint32_t m9s42[3] = { 70u, 54u, 52u };
-static const uint32_t m9s43[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s44[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s45[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s46[3] = { 70u, 51u, 50u };
-static const uint32_t m9s47[3] = { 70u, 51u, 50u };
-static const uint32_t m9s48[3] = { 70u, 51u, 50u };
-static const uint32_t m9s49[1] = { 67u };
-static const uint32_t m9s50[1] = { 67u };
-static const uint32_t m9s51[3] = { 83u, 84u, 82u };
-static const uint32_t m9s52[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s53[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s54[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s55[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s56[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s57[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s58[4] = { 32u, 79u, 70u, 32u };
-static const uint32_t m9s59[5] = { 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s60[4] = { 32u, 79u, 70u, 32u };
-static const uint32_t m9s61[11] = { 80u, 82u, 79u, 67u, 69u, 68u, 85u, 82u, 69u, 32u, 40u };
-static const uint32_t m9s62[3] = { 32u, 59u, 32u };
-static const uint32_t m9s63[4] = { 86u, 65u, 82u, 32u };
-static const uint32_t m9s64[4] = { 79u, 87u, 78u, 32u };
+static const uint32_t m9s42[3] = { 70u, 51u, 50u };
+static const uint32_t m9s43[3] = { 70u, 51u, 50u };
+static const uint32_t m9s44[1] = { 67u };
+static const uint32_t m9s45[1] = { 67u };
+static const uint32_t m9s46[3] = { 83u, 84u, 82u };
+static const uint32_t m9s47[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s48[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s49[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s50[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s51[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s52[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s53[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s54[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s55[4] = { 32u, 79u, 70u, 32u };
+static const uint32_t m9s56[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s57[4] = { 32u, 79u, 70u, 32u };
+static const uint32_t m9s58[11] = { 80u, 82u, 79u, 67u, 69u, 68u, 85u, 82u, 69u, 32u, 40u };
+static const uint32_t m9s59[3] = { 32u, 59u, 32u };
+static const uint32_t m9s60[4] = { 86u, 65u, 82u, 32u };
+static const uint32_t m9s61[4] = { 79u, 87u, 78u, 32u };
+static const uint32_t m9s62[3] = { 82u, 79u, 32u };
+static const uint32_t m9s63[5] = { 75u, 69u, 80u, 84u, 32u };
+static const uint32_t m9s64[3] = { 32u, 58u, 32u };
 static const uint32_t m9s65[3] = { 82u, 79u, 32u };
-static const uint32_t m9s66[5] = { 75u, 69u, 80u, 84u, 32u };
-static const uint32_t m9s67[3] = { 32u, 58u, 32u };
-static const uint32_t m9s68[3] = { 82u, 79u, 32u };
-static const uint32_t m9s69[8] = { 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
-static const uint32_t m9s70[2] = { 44u, 32u };
-static const uint32_t m9s71[45] = { 97u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 115u, 104u, 97u, 100u, 111u, 119u, 32u, 97u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 58u, 32u };
-static const uint32_t m9s72[2] = { 82u, 79u };
-static const uint32_t m9s73[2] = { 82u, 79u };
-static const uint32_t m9s74[39] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 86u, 65u, 82u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s66[8] = { 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
+static const uint32_t m9s67[2] = { 44u, 32u };
+static const uint32_t m9s68[45] = { 97u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 115u, 104u, 97u, 100u, 111u, 119u, 32u, 97u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 58u, 32u };
+static const uint32_t m9s69[2] = { 82u, 79u };
+static const uint32_t m9s70[2] = { 82u, 79u };
+static const uint32_t m9s71[23] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
+static const uint32_t m9s72[39] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 86u, 65u, 82u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s73[30] = { 32u, 105u, 110u, 32u, 97u, 32u, 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
+static const uint32_t m9s74[33] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 101u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
 static const uint32_t m9s75[30] = { 32u, 105u, 110u, 32u, 97u, 32u, 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
-static const uint32_t m9s76[33] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 101u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s77[30] = { 32u, 105u, 110u, 32u, 97u, 32u, 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
-static const uint32_t m9s78[38] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s79[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s76[38] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s77[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s78[37] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 82u, 79u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s79[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 52u, 41u };
 static const uint32_t m9s80[40] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 58u, 32u };
 static const uint32_t m9s81[39] = { 32u, 105u, 115u, 32u, 97u, 32u, 115u, 104u, 97u, 114u, 101u, 100u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 32u, 40u, 116u, 97u, 107u, 101u, 32u, 86u, 65u, 82u, 44u, 32u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
 static const uint32_t m9s82[34] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 82u, 79u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
@@ -246,524 +325,594 @@ static const uint32_t m9s112[18] = { 97u, 32u, 102u, 114u, 97u, 109u, 101u, 32u,
 static const uint32_t m9s113[14] = { 116u, 104u, 101u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 32u, 111u, 102u, 32u };
 static const uint32_t m9s114[17] = { 97u, 32u, 118u, 105u, 101u, 119u, 32u, 105u, 110u, 116u, 111u, 32u, 112u, 111u, 111u, 108u, 32u };
 static const uint32_t m9s115[22] = { 97u, 110u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 32u, 112u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s116[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
-static const uint32_t m9s117[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
-static const uint32_t m9s118[12] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u, 115u, 116u, 97u, 116u, 101u };
-static const uint32_t m9s119[8] = { 60u, 114u, 101u, 116u, 117u, 114u, 110u, 62u };
-static const uint32_t m9s120[16] = { 116u, 104u, 101u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s121[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s122[8] = { 97u, 32u, 99u, 97u, 108u, 108u, 101u, 101u };
-static const uint32_t m9s123[9] = { 60u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 62u };
-static const uint32_t m9s124[15] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u };
-static const uint32_t m9s125[19] = { 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
-static const uint32_t m9s126[13] = { 32u, 40u, 99u, 97u, 114u, 114u, 105u, 101u, 100u, 32u, 98u, 121u, 32u };
-static const uint32_t m9s127[1] = { 41u };
-static const uint32_t m9s128[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
-static const uint32_t m9s129[9] = { 60u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 62u };
-static const uint32_t m9s130[21] = { 115u, 101u, 108u, 102u, 45u, 115u, 116u, 111u, 114u, 101u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s131[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
-static const uint32_t m9s132[40] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
-static const uint32_t m9s133[17] = { 32u, 105u, 116u, 115u, 101u, 108u, 102u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s134[22] = { 102u, 114u, 97u, 109u, 101u, 45u, 115u, 116u, 111u, 114u, 101u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s135[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
-static const uint32_t m9s136[41] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 110u, 101u, 118u, 101u, 114u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s137[20] = { 114u, 101u, 116u, 101u, 110u, 116u, 105u, 111u, 110u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s138[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
-static const uint32_t m9s139[12] = { 32u, 45u, 45u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
-static const uint32_t m9s140[2] = { 44u, 32u };
-static const uint32_t m9s141[14] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 47u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s142[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s143[2] = { 44u, 32u };
-static const uint32_t m9s144[31] = { 117u, 110u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 114u, 101u, 116u, 101u, 110u, 116u, 105u, 111u, 110u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s145[9] = { 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
-static const uint32_t m9s146[17] = { 32u, 45u, 45u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 75u, 69u, 80u, 84u, 32u };
-static const uint32_t m9s147[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s148[18] = { 107u, 101u, 112u, 116u, 45u, 117u, 110u, 115u, 101u, 101u, 110u, 58u, 32u, 75u, 69u, 80u, 84u, 32u };
-static const uint32_t m9s149[48] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 115u, 101u, 101u, 110u, 32u, 114u, 101u, 116u, 97u, 105u, 110u, 101u, 100u, 32u, 98u, 121u, 32u, 116u, 104u, 105u, 115u, 32u, 97u, 110u, 97u, 108u, 121u, 115u, 105u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s150[9] = { 97u, 110u, 32u, 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s151[20] = { 32u, 79u, 70u, 32u, 105u, 115u, 32u, 105u, 110u, 100u, 101u, 120u, 101u, 100u, 32u, 98u, 121u, 32u, 97u, 32u };
-static const uint32_t m9s152[12] = { 32u, 118u, 97u, 108u, 117u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s153[30] = { 105u, 110u, 100u, 101u, 120u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s154[38] = { 79u, 80u, 84u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 117u, 115u, 101u, 100u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 103u, 117u, 97u, 114u, 100u, 58u, 32u };
-static const uint32_t m9s155[50] = { 67u, 65u, 83u, 69u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 105u, 115u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 100u, 32u, 98u, 121u, 32u, 67u, 65u, 83u, 69u, 44u, 32u, 110u, 111u, 116u, 32u, 98u, 121u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 58u, 32u };
-static const uint32_t m9s156[9] = { 110u, 111u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
-static const uint32_t m9s157[23] = { 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s158[14] = { 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
-static const uint32_t m9s159[65] = { 32u, 105u, 115u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 116u, 111u, 32u, 116u, 104u, 101u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u };
-static const uint32_t m9s160[7] = { 97u, 32u, 71u, 82u, 73u, 68u, 32u };
-static const uint32_t m9s161[7] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u };
-static const uint32_t m9s162[17] = { 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s163[33] = { 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s164[34] = { 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s165[2] = { 73u, 56u };
-static const uint32_t m9s166[3] = { 73u, 49u, 54u };
-static const uint32_t m9s167[3] = { 73u, 51u, 50u };
-static const uint32_t m9s168[3] = { 73u, 54u, 52u };
-static const uint32_t m9s169[2] = { 85u, 56u };
-static const uint32_t m9s170[3] = { 85u, 49u, 54u };
-static const uint32_t m9s171[3] = { 85u, 51u, 50u };
-static const uint32_t m9s172[3] = { 85u, 54u, 52u };
-static const uint32_t m9s173[3] = { 70u, 51u, 50u };
-static const uint32_t m9s174[3] = { 70u, 54u, 52u };
-static const uint32_t m9s175[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s176[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s177[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s116[1] = { 46u };
+static const uint32_t m9s117[2] = { 91u, 93u };
+static const uint32_t m9s118[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
+static const uint32_t m9s119[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
+static const uint32_t m9s120[12] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u, 115u, 116u, 97u, 116u, 101u };
+static const uint32_t m9s121[8] = { 60u, 114u, 101u, 116u, 117u, 114u, 110u, 62u };
+static const uint32_t m9s122[16] = { 116u, 104u, 101u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s123[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s124[8] = { 97u, 32u, 99u, 97u, 108u, 108u, 101u, 101u };
+static const uint32_t m9s125[9] = { 60u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 62u };
+static const uint32_t m9s126[15] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u };
+static const uint32_t m9s127[19] = { 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
+static const uint32_t m9s128[13] = { 32u, 40u, 99u, 97u, 114u, 114u, 105u, 101u, 100u, 32u, 98u, 121u, 32u };
+static const uint32_t m9s129[1] = { 41u };
+static const uint32_t m9s130[8] = { 60u, 109u, 111u, 100u, 117u, 108u, 101u, 62u };
+static const uint32_t m9s131[9] = { 60u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 62u };
+static const uint32_t m9s132[21] = { 115u, 101u, 108u, 102u, 45u, 115u, 116u, 111u, 114u, 101u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s133[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
+static const uint32_t m9s134[40] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 114u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
+static const uint32_t m9s135[17] = { 32u, 105u, 116u, 115u, 101u, 108u, 102u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s136[22] = { 102u, 114u, 97u, 109u, 101u, 45u, 115u, 116u, 111u, 114u, 101u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s137[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
+static const uint32_t m9s138[41] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 110u, 101u, 118u, 101u, 114u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s139[20] = { 114u, 101u, 116u, 101u, 110u, 116u, 105u, 111u, 110u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s140[13] = { 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u };
+static const uint32_t m9s141[12] = { 32u, 45u, 45u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
+static const uint32_t m9s142[2] = { 44u, 32u };
+static const uint32_t m9s143[14] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 47u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s144[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s145[2] = { 44u, 32u };
+static const uint32_t m9s146[31] = { 117u, 110u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 114u, 101u, 116u, 101u, 110u, 116u, 105u, 111u, 110u, 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s147[9] = { 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
+static const uint32_t m9s148[17] = { 32u, 45u, 45u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 75u, 69u, 80u, 84u, 32u };
+static const uint32_t m9s149[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s150[18] = { 107u, 101u, 112u, 116u, 45u, 117u, 110u, 115u, 101u, 101u, 110u, 58u, 32u, 75u, 69u, 80u, 84u, 32u };
+static const uint32_t m9s151[48] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 115u, 101u, 101u, 110u, 32u, 114u, 101u, 116u, 97u, 105u, 110u, 101u, 100u, 32u, 98u, 121u, 32u, 116u, 104u, 105u, 115u, 32u, 97u, 110u, 97u, 108u, 121u, 115u, 105u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s152[9] = { 97u, 110u, 32u, 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s153[20] = { 32u, 79u, 70u, 32u, 105u, 115u, 32u, 105u, 110u, 100u, 101u, 120u, 101u, 100u, 32u, 98u, 121u, 32u, 97u, 32u };
+static const uint32_t m9s154[12] = { 32u, 118u, 97u, 108u, 117u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s155[30] = { 105u, 110u, 100u, 101u, 120u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s156[38] = { 79u, 80u, 84u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 117u, 115u, 101u, 100u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 103u, 117u, 97u, 114u, 100u, 58u, 32u };
+static const uint32_t m9s157[50] = { 67u, 65u, 83u, 69u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 105u, 115u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 100u, 32u, 98u, 121u, 32u, 67u, 65u, 83u, 69u, 44u, 32u, 110u, 111u, 116u, 32u, 98u, 121u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 58u, 32u };
+static const uint32_t m9s158[9] = { 110u, 111u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s159[23] = { 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s160[14] = { 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 102u, 105u, 101u, 108u, 100u, 32u };
+static const uint32_t m9s161[65] = { 32u, 105u, 115u, 32u, 114u, 101u, 97u, 99u, 104u, 101u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 116u, 111u, 32u, 116u, 104u, 101u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 54u, 41u };
+static const uint32_t m9s162[7] = { 97u, 32u, 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s163[7] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u };
+static const uint32_t m9s164[17] = { 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s165[33] = { 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s166[34] = { 97u, 110u, 32u, 97u, 114u, 114u, 97u, 121u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s167[2] = { 73u, 56u };
+static const uint32_t m9s168[3] = { 73u, 49u, 54u };
+static const uint32_t m9s169[3] = { 73u, 51u, 50u };
+static const uint32_t m9s170[3] = { 73u, 54u, 52u };
+static const uint32_t m9s171[2] = { 85u, 56u };
+static const uint32_t m9s172[3] = { 85u, 49u, 54u };
+static const uint32_t m9s173[3] = { 85u, 51u, 50u };
+static const uint32_t m9s174[3] = { 85u, 54u, 52u };
+static const uint32_t m9s175[3] = { 70u, 51u, 50u };
+static const uint32_t m9s176[3] = { 70u, 54u, 52u };
+static const uint32_t m9s177[5] = { 60u, 105u, 110u, 116u, 62u };
 static const uint32_t m9s178[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s179[18] = { 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s180[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s181[14] = { 97u, 32u, 114u, 101u, 97u, 108u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s182[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s183[21] = { 97u, 32u, 67u, 72u, 65u, 82u, 47u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s184[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
-static const uint32_t m9s185[4] = { 78u, 79u, 78u, 69u };
-static const uint32_t m9s186[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s187[8] = { 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s188[5] = { 60u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s189[3] = { 65u, 76u, 76u };
-static const uint32_t m9s190[15] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s191[4] = { 32u, 79u, 70u, 32u };
-static const uint32_t m9s192[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s179[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s180[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s181[18] = { 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s182[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s183[14] = { 97u, 32u, 114u, 101u, 97u, 108u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s184[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s185[21] = { 97u, 32u, 67u, 72u, 65u, 82u, 47u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s186[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
+static const uint32_t m9s187[4] = { 78u, 79u, 78u, 69u };
+static const uint32_t m9s188[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s189[8] = { 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s190[5] = { 60u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s191[3] = { 65u, 76u, 76u };
+static const uint32_t m9s192[15] = { 97u, 110u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 116u, 121u, 112u, 101u };
 static const uint32_t m9s193[4] = { 32u, 79u, 70u, 32u };
 static const uint32_t m9s194[5] = { 71u, 82u, 73u, 68u, 32u };
 static const uint32_t m9s195[4] = { 32u, 79u, 70u, 32u };
-static const uint32_t m9s196[2] = { 73u, 56u };
-static const uint32_t m9s197[3] = { 73u, 49u, 54u };
-static const uint32_t m9s198[3] = { 73u, 51u, 50u };
-static const uint32_t m9s199[2] = { 85u, 56u };
-static const uint32_t m9s200[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s201[3] = { 85u, 49u, 54u };
-static const uint32_t m9s202[3] = { 85u, 51u, 50u };
-static const uint32_t m9s203[3] = { 85u, 54u, 52u };
-static const uint32_t m9s204[1] = { 45u };
-static const uint32_t m9s205[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s206[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s207[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s208[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s209[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s210[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s211[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s212[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s213[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s214[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s215[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s216[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s217[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s218[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s219[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
-static const uint32_t m9s220[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s221[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
-static const uint32_t m9s222[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s223[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s224[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s225[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s226[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
-static const uint32_t m9s227[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s228[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s229[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s230[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s231[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s232[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s233[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s234[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s235[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s236[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s237[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s238[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s239[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s240[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s241[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s242[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s243[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s244[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s245[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s246[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s247[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
-static const uint32_t m9s248[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s249[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s250[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s251[34] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 99u, 111u, 110u, 115u, 117u, 109u, 101u, 115u, 32u, 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 59u, 32u };
-static const uint32_t m9s252[22] = { 32u, 105u, 115u, 32u, 97u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s253[32] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 59u, 32u };
-static const uint32_t m9s254[29] = { 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s255[18] = { 99u, 111u, 110u, 115u, 117u, 109u, 101u, 100u, 32u, 98u, 121u, 32u, 83u, 72u, 65u, 82u, 69u, 68u };
-static const uint32_t m9s256[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s257[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
-static const uint32_t m9s258[4] = { 112u, 111u, 111u, 108u };
-static const uint32_t m9s259[30] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s260[30] = { 32u, 105u, 110u, 32u, 97u, 32u, 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
-static const uint32_t m9s261[5] = { 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s262[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s263[39] = { 78u, 69u, 87u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 116u, 104u, 101u, 110u, 32u, 116u, 104u, 101u, 32u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s264[35] = { 78u, 69u, 87u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s265[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s266[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s267[36] = { 83u, 76u, 73u, 67u, 69u, 32u, 115u, 116u, 97u, 114u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s268[37] = { 83u, 76u, 73u, 67u, 69u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s269[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s270[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s271[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s272[34] = { 83u, 76u, 73u, 67u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 111u, 114u, 32u, 97u, 114u, 114u, 97u, 121u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s273[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s274[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
-static const uint32_t m9s275[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s276[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
-static const uint32_t m9s277[4] = { 79u, 80u, 84u, 32u };
-static const uint32_t m9s278[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
-static const uint32_t m9s279[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s280[3] = { 78u, 79u, 84u };
-static const uint32_t m9s281[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s282[30] = { 78u, 79u, 84u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s283[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s284[6] = { 117u, 110u, 97u, 114u, 121u, 32u };
-static const uint32_t m9s285[30] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s286[36] = { 97u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 58u, 32u };
-static const uint32_t m9s287[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
-static const uint32_t m9s288[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s289[3] = { 70u, 51u, 50u };
-static const uint32_t m9s290[3] = { 70u, 54u, 52u };
-static const uint32_t m9s291[3] = { 73u, 54u, 52u };
-static const uint32_t m9s292[3] = { 73u, 54u, 52u };
-static const uint32_t m9s293[3] = { 67u, 72u, 82u };
-static const uint32_t m9s294[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s295[3] = { 65u, 68u, 82u };
-static const uint32_t m9s296[37] = { 65u, 68u, 82u, 32u, 101u, 120u, 105u, 115u, 116u, 115u, 32u, 111u, 110u, 108u, 121u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 85u, 78u, 83u, 65u, 70u, 69u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 115u };
-static const uint32_t m9s297[3] = { 70u, 51u, 50u };
-static const uint32_t m9s298[3] = { 70u, 54u, 52u };
-static const uint32_t m9s299[3] = { 76u, 69u, 78u };
-static const uint32_t m9s300[41] = { 76u, 69u, 78u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 110u, 32u, 97u, 120u, 105u, 115u, 32u, 111u, 110u, 108u, 121u, 32u, 111u, 110u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 44u, 32u, 110u, 111u, 116u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s301[33] = { 76u, 69u, 78u, 32u, 97u, 120u, 105u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s302[5] = { 97u, 120u, 105u, 115u, 32u };
-static const uint32_t m9s303[6] = { 32u, 111u, 102u, 32u, 97u, 32u };
-static const uint32_t m9s304[15] = { 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 105u, 115u, 116u };
-static const uint32_t m9s305[3] = { 73u, 54u, 52u };
-static const uint32_t m9s306[39] = { 76u, 69u, 78u, 32u, 111u, 102u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 97u, 120u, 105u, 115u, 58u, 32u, 76u, 69u, 78u, 32u, 40u, 103u, 44u, 32u, 48u, 41u };
-static const uint32_t m9s307[3] = { 73u, 54u, 52u };
-static const uint32_t m9s308[3] = { 79u, 82u, 68u };
-static const uint32_t m9s309[3] = { 73u, 54u, 52u };
-static const uint32_t m9s310[4] = { 78u, 65u, 77u, 69u };
-static const uint32_t m9s311[36] = { 78u, 65u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 111u, 114u, 32u, 97u, 32u, 99u, 97u, 115u, 101u, 32u };
-static const uint32_t m9s312[12] = { 114u, 101u, 99u, 111u, 114u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s313[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s314[4] = { 86u, 73u, 69u, 87u };
-static const uint32_t m9s315[43] = { 86u, 73u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 103u, 114u, 105u, 100u, 32u, 97u, 110u, 100u, 32u, 111u, 110u, 101u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 112u, 101u, 114u, 32u, 97u, 120u, 105u, 115u };
-static const uint32_t m9s316[23] = { 86u, 73u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s317[2] = { 97u, 32u };
-static const uint32_t m9s318[7] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u };
-static const uint32_t m9s319[21] = { 32u, 97u, 120u, 105u, 115u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s320[5] = { 60u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s321[36] = { 97u, 32u, 86u, 73u, 69u, 87u, 32u, 97u, 120u, 105u, 115u, 32u, 105u, 115u, 32u, 97u, 110u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 111u, 114u, 32u, 65u, 76u, 76u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s322[59] = { 97u, 32u, 86u, 73u, 69u, 87u, 32u, 116u, 104u, 97u, 116u, 32u, 107u, 101u, 101u, 112u, 115u, 32u, 110u, 111u, 32u, 97u, 120u, 105u, 115u, 32u, 105u, 115u, 32u, 97u, 110u, 32u, 105u, 110u, 100u, 101u, 120u, 58u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 115u };
-static const uint32_t m9s323[3] = { 77u, 65u, 88u };
-static const uint32_t m9s324[6] = { 83u, 105u, 122u, 101u, 79u, 102u };
-static const uint32_t m9s325[3] = { 73u, 54u, 52u };
-static const uint32_t m9s326[8] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u };
-static const uint32_t m9s327[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
-static const uint32_t m9s328[28] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s329[3] = { 73u, 54u, 52u };
-static const uint32_t m9s330[15] = { 70u, 54u, 52u, 46u, 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s331[15] = { 70u, 51u, 50u, 46u, 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s332[13] = { 70u, 54u, 52u, 46u, 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s333[13] = { 70u, 51u, 50u, 46u, 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s334[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s335[2] = { 67u, 46u };
-static const uint32_t m9s336[49] = { 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 115u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u };
-static const uint32_t m9s337[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
-static const uint32_t m9s338[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s339[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s340[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s341[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
-static const uint32_t m9s342[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
-static const uint32_t m9s343[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s344[14] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 49u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s345[17] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 116u, 32u };
-static const uint32_t m9s346[51] = { 32u, 116u, 111u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 59u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 111u, 110u, 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s347[19] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 58u, 32u };
-static const uint32_t m9s348[3] = { 65u, 76u, 76u };
-static const uint32_t m9s349[5] = { 60u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s350[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s351[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s352[30] = { 105u, 110u, 100u, 101u, 120u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s353[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s354[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s355[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
-static const uint32_t m9s356[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s357[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
-static const uint32_t m9s358[3] = { 65u, 78u, 68u };
-static const uint32_t m9s359[2] = { 79u, 82u };
-static const uint32_t m9s360[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s361[26] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s362[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s363[26] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s364[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s365[1] = { 61u };
-static const uint32_t m9s366[1] = { 35u };
-static const uint32_t m9s367[1] = { 60u };
-static const uint32_t m9s368[2] = { 60u, 61u };
-static const uint32_t m9s369[1] = { 62u };
-static const uint32_t m9s370[2] = { 62u, 61u };
-static const uint32_t m9s371[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s372[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s373[38] = { 99u, 111u, 109u, 112u, 97u, 114u, 105u, 110u, 103u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 116u, 104u, 97u, 116u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s374[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 32u };
-static const uint32_t m9s375[6] = { 32u, 119u, 105u, 116u, 104u, 32u };
-static const uint32_t m9s376[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s377[1] = { 43u };
-static const uint32_t m9s378[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s379[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 101u, 32u };
-static const uint32_t m9s380[14] = { 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s381[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s382[33] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 101u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 119u, 105u, 116u, 104u, 32u };
-static const uint32_t m9s383[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s384[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s385[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s386[59] = { 66u, 89u, 84u, 69u, 32u, 105u, 115u, 32u, 97u, 32u, 114u, 97u, 119u, 32u, 111u, 99u, 116u, 101u, 116u, 58u, 32u, 110u, 111u, 32u, 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 40u, 99u, 111u, 110u, 118u, 101u, 114u, 116u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s387[29] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s388[29] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s389[25] = { 110u, 111u, 32u, 105u, 109u, 112u, 108u, 105u, 99u, 105u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 115u, 58u, 32u };
-static const uint32_t m9s390[1] = { 32u };
-static const uint32_t m9s391[1] = { 32u };
-static const uint32_t m9s392[1] = { 47u };
-static const uint32_t m9s393[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s394[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s395[39] = { 39u, 47u, 39u, 32u, 105u, 115u, 32u, 102u, 108u, 111u, 97u, 116u, 32u, 100u, 105u, 118u, 105u, 115u, 105u, 111u, 110u, 59u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 32u, 117u, 115u, 101u, 32u, 68u, 73u, 86u };
-static const uint32_t m9s396[3] = { 68u, 73u, 86u };
-static const uint32_t m9s397[3] = { 77u, 79u, 68u };
-static const uint32_t m9s398[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s399[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s400[33] = { 32u, 105u, 115u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 100u, 105u, 118u, 105u, 115u, 105u, 111u, 110u, 59u, 32u, 102u, 108u, 111u, 97u, 116u, 115u, 32u, 117u, 115u, 101u, 32u };
-static const uint32_t m9s401[3] = { 39u, 47u, 39u };
-static const uint32_t m9s402[2] = { 43u, 37u };
-static const uint32_t m9s403[2] = { 45u, 37u };
-static const uint32_t m9s404[2] = { 42u, 37u };
-static const uint32_t m9s405[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s406[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s407[35] = { 119u, 114u, 97u, 112u, 112u, 105u, 110u, 103u, 32u, 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 105u, 115u, 32u, 102u, 111u, 114u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u };
-static const uint32_t m9s408[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s409[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s410[5] = { 60u, 105u, 110u, 116u, 62u };
-static const uint32_t m9s411[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
-static const uint32_t m9s412[3] = { 65u, 76u, 76u };
-static const uint32_t m9s413[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s414[3] = { 79u, 87u, 78u };
-static const uint32_t m9s415[74] = { 78u, 69u, 87u, 32u, 40u, 79u, 87u, 78u, 44u, 32u, 84u, 41u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 59u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 114u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s416[3] = { 111u, 119u, 110u };
-static const uint32_t m9s417[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s418[4] = { 112u, 111u, 111u, 108u };
-static const uint32_t m9s419[36] = { 78u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 97u, 109u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s420[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s421[38] = { 78u, 69u, 87u, 39u, 115u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 105u, 115u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s422[4] = { 112u, 111u, 111u, 108u };
-static const uint32_t m9s423[36] = { 78u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 97u, 109u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s424[5] = { 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s425[5] = { 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s426[3] = { 83u, 84u, 82u };
-static const uint32_t m9s427[14] = { 86u, 65u, 82u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s428[16] = { 32u, 99u, 97u, 114u, 114u, 105u, 101u, 115u, 32u, 110u, 111u, 32u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s429[20] = { 32u, 105u, 115u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
-static const uint32_t m9s430[21] = { 32u, 105u, 115u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
-static const uint32_t m9s431[9] = { 32u, 101u, 120u, 112u, 101u, 99u, 116u, 115u, 32u };
-static const uint32_t m9s432[18] = { 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 40u, 115u, 41u, 44u, 32u, 103u, 111u, 116u, 32u };
-static const uint32_t m9s433[5] = { 67u, 46u, 73u, 110u, 116u };
-static const uint32_t m9s434[8] = { 67u, 46u, 83u, 83u, 105u, 122u, 101u, 84u };
-static const uint32_t m9s435[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s436[2] = { 73u, 56u };
-static const uint32_t m9s437[3] = { 73u, 49u, 54u };
-static const uint32_t m9s438[3] = { 73u, 51u, 50u };
-static const uint32_t m9s439[2] = { 85u, 56u };
-static const uint32_t m9s440[3] = { 85u, 49u, 54u };
-static const uint32_t m9s441[3] = { 85u, 51u, 50u };
-static const uint32_t m9s442[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s443[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s444[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s445[17] = { 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s446[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s447[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s448[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
-static const uint32_t m9s449[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
-static const uint32_t m9s450[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s451[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s452[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s453[39] = { 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 40u, 86u, 65u, 82u, 47u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 41u };
-static const uint32_t m9s454[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s455[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s456[34] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 108u, 101u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
-static const uint32_t m9s457[32] = { 32u, 97u, 115u, 32u, 86u, 65u, 82u, 32u, 40u, 115u, 104u, 97u, 114u, 101u, 100u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 44u, 32u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s458[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s459[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s460[14] = { 58u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s461[57] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 107u, 110u, 111u, 119u, 110u, 32u, 104u, 101u, 114u, 101u, 44u, 32u, 97u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 101u, 32u, 109u, 97u, 121u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 110u, 32u, 105u, 116u, 32u, 45u, 45u, 32u };
-static const uint32_t m9s462[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s463[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s464[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s465[23] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 111u, 118u, 101u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s466[32] = { 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s467[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s468[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s469[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 111u, 118u, 101u, 32u };
-static const uint32_t m9s470[57] = { 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 45u, 45u, 32u, 105u, 116u, 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s471[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s472[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s473[16] = { 58u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 119u, 110u, 115u, 32u };
-static const uint32_t m9s474[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s475[31] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s476[31] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s477[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s478[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s479[31] = { 58u, 32u, 97u, 32u, 75u, 69u, 80u, 84u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 116u, 97u, 107u, 101u, 32u };
-static const uint32_t m9s480[37] = { 32u, 45u, 45u, 32u, 105u, 116u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s481[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s482[4] = { 32u, 111u, 102u, 32u };
-static const uint32_t m9s483[11] = { 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
-static const uint32_t m9s484[39] = { 32u, 105u, 115u, 32u, 107u, 101u, 112u, 116u, 32u, 98u, 121u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 101u, 32u, 45u, 45u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 75u, 69u, 80u, 84u, 32u };
-static const uint32_t m9s485[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
-static const uint32_t m9s486[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
-static const uint32_t m9s487[9] = { 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
-static const uint32_t m9s488[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s489[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s490[7] = { 117u, 115u, 101u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s491[14] = { 32u, 97u, 102u, 116u, 101u, 114u, 32u, 105u, 116u, 32u, 119u, 97u, 115u, 32u };
-static const uint32_t m9s492[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s493[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s494[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s495[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u };
-static const uint32_t m9s496[51] = { 58u, 32u, 97u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 121u, 111u, 117u, 114u, 115u, 32u, 116u, 111u, 32u, 102u, 114u, 101u, 101u, 32u, 40u, 116u, 97u, 107u, 101u, 32u, 79u, 87u, 78u, 44u, 32u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
-static const uint32_t m9s497[15] = { 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 111u, 119u, 110u, 115u, 32u };
-static const uint32_t m9s498[47] = { 59u, 32u, 105u, 116u, 32u, 105u, 115u, 32u, 102u, 114u, 101u, 101u, 100u, 32u, 97u, 116u, 32u, 101u, 120u, 105u, 116u, 44u, 32u, 110u, 111u, 116u, 32u, 98u, 121u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s499[14] = { 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 119u, 110u, 115u, 32u };
-static const uint32_t m9s500[42] = { 59u, 32u, 102u, 114u, 101u, 101u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 110u, 111u, 116u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s501[8] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u, 100u };
-static const uint32_t m9s502[8] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u, 100u };
-static const uint32_t m9s503[34] = { 115u, 105u, 103u, 110u, 97u, 116u, 117u, 114u, 101u, 32u, 100u, 105u, 102u, 102u, 101u, 114u, 115u, 32u, 102u, 114u, 111u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 58u };
-static const uint32_t m9s504[19] = { 32u, 32u, 32u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 32u, 32u, 32u, 32u, 32u };
-static const uint32_t m9s505[19] = { 32u, 32u, 32u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u, 32u };
-static const uint32_t m9s506[54] = { 109u, 111u, 100u, 117u, 108u, 101u, 45u, 108u, 101u, 118u, 101u, 108u, 32u, 115u, 116u, 97u, 116u, 101u, 32u, 114u, 101u, 113u, 117u, 105u, 114u, 101u, 115u, 32u, 83u, 84u, 65u, 84u, 69u, 70u, 85u, 76u, 32u, 111u, 110u, 32u, 116u, 104u, 101u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s507[46] = { 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 32u, 98u, 117u, 116u, 32u, 110u, 111u, 116u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 101u, 100u };
-static const uint32_t m9s508[45] = { 111u, 112u, 97u, 113u, 117u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 102u, 105u, 110u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s509[1] = { 67u };
-static const uint32_t m9s510[51] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 67u, 32u, 110u, 97u, 109u, 101u, 32u, 40u, 61u, 32u, 34u, 99u, 95u, 110u, 97u, 109u, 101u, 34u, 41u };
-static const uint32_t m9s511[47] = { 110u, 97u, 116u, 105u, 118u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 105u, 110u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 115u, 105u, 103u, 110u, 97u, 116u, 117u, 114u, 101u, 59u, 32u, 117u, 115u, 101u, 32u, 67u, 46u, 42u, 32u, 116u, 121u, 112u, 101u, 115u };
-static const uint32_t m9s512[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
-static const uint32_t m9s513[9] = { 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u };
-static const uint32_t m9s514[54] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 91u, 83u, 69u, 82u, 73u, 65u, 76u, 93u, 32u, 111u, 114u, 32u, 91u, 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u, 93u };
-static const uint32_t m9s515[44] = { 67u, 65u, 83u, 69u, 32u, 111u, 118u, 101u, 114u, 32u, 67u, 65u, 83u, 69u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 111u, 116u, 97u, 108u, 32u, 40u, 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s516[1] = { 41u };
-static const uint32_t m9s517[4] = { 80u, 84u, 82u, 32u };
-static const uint32_t m9s518[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s519[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
-static const uint32_t m9s520[15] = { 41u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
-static const uint32_t m9s521[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
-static const uint32_t m9s522[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s523[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
-static const uint32_t m9s524[15] = { 41u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 104u, 97u, 110u, 100u, 32u };
-static const uint32_t m9s525[71] = { 32u, 116u, 111u, 32u, 97u, 32u, 116u, 104u, 114u, 101u, 97u, 100u, 32u, 45u, 45u, 32u, 105u, 116u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 116u, 32u, 119u, 105u, 116u, 104u, 32u, 79u, 87u, 78u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s526[28] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 84u, 72u, 82u, 69u, 65u, 68u, 32u, 114u, 117u, 110u, 110u, 105u, 110u, 103u, 32u };
-static const uint32_t m9s527[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s528[27] = { 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 114u, 101u, 115u, 117u, 108u, 116u, 32u, 100u, 105u, 115u, 99u, 97u, 114u, 100u, 101u, 100u, 58u, 32u };
-static const uint32_t m9s529[9] = { 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u };
-static const uint32_t m9s530[5] = { 82u, 65u, 73u, 83u, 69u };
-static const uint32_t m9s531[5] = { 82u, 65u, 73u, 83u, 69u };
-static const uint32_t m9s532[3] = { 79u, 87u, 78u };
-static const uint32_t m9s533[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s534[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s535[3] = { 52u, 46u, 51u };
-static const uint32_t m9s536[3] = { 50u, 46u, 51u };
-static const uint32_t m9s537[62] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
-static const uint32_t m9s538[6] = { 32u, 40u, 112u, 97u, 114u, 32u };
-static const uint32_t m9s539[1] = { 41u };
-static const uint32_t m9s540[51] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
-static const uint32_t m9s541[25] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 111u, 117u, 116u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 116u, 32u, 40u, 112u, 97u, 114u, 32u };
-static const uint32_t m9s542[1] = { 41u };
-static const uint32_t m9s543[44] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 104u, 101u, 108u, 100u, 32u, 98u, 121u, 32u };
-static const uint32_t m9s544[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s545[44] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 104u, 101u, 108u, 100u, 32u, 98u, 121u, 32u };
-static const uint32_t m9s546[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s547[51] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
-static const uint32_t m9s548[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s549[16] = { 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u };
-static const uint32_t m9s550[18] = { 32u, 98u, 117u, 116u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 100u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s551[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s552[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s553[36] = { 116u, 104u, 101u, 32u, 114u, 105u, 103u, 104u, 116u, 45u, 104u, 97u, 110u, 100u, 32u, 115u, 105u, 100u, 101u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s554[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 115u, 115u, 105u, 103u, 110u, 32u };
-static const uint32_t m9s555[4] = { 32u, 116u, 111u, 32u };
-static const uint32_t m9s556[35] = { 32u, 40u, 110u, 111u, 32u, 105u, 109u, 112u, 108u, 105u, 99u, 105u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 115u, 44u, 32u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
-static const uint32_t m9s557[16] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 32u };
-static const uint32_t m9s558[14] = { 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 102u, 105u, 116u, 32u };
-static const uint32_t m9s559[5] = { 109u, 111u, 118u, 101u, 100u };
-static const uint32_t m9s560[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s561[15] = { 79u, 80u, 84u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
-static const uint32_t m9s562[5] = { 97u, 108u, 105u, 118u, 101u };
-static const uint32_t m9s563[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s564[28] = { 99u, 111u, 110u, 100u, 105u, 116u, 105u, 111u, 110u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 66u, 79u, 79u, 76u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s565[59] = { 70u, 79u, 82u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 98u, 111u, 116u, 104u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 111u, 102u, 32u, 111u, 110u, 101u, 32u, 116u, 121u, 112u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s566[5] = { 32u, 97u, 110u, 100u, 32u };
-static const uint32_t m9s567[40] = { 70u, 79u, 82u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 110u, 111u, 32u, 66u, 89u, 32u, 115u, 116u, 101u, 112u };
-static const uint32_t m9s568[33] = { 70u, 79u, 82u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s569[33] = { 70u, 79u, 82u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s570[33] = { 70u, 79u, 82u, 32u, 115u, 116u, 101u, 112u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
-static const uint32_t m9s571[14] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 105u, 115u, 32u };
-static const uint32_t m9s572[21] = { 32u, 98u, 117u, 116u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 105u, 115u, 32u };
-static const uint32_t m9s573[14] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 105u, 115u, 32u };
-static const uint32_t m9s574[21] = { 32u, 98u, 117u, 116u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 105u, 115u, 32u };
-static const uint32_t m9s575[11] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u };
-static const uint32_t m9s576[14] = { 32u, 97u, 112u, 112u, 101u, 97u, 114u, 115u, 32u, 116u, 119u, 105u, 99u, 101u };
-static const uint32_t m9s577[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s578[41] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u };
-static const uint32_t m9s579[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s580[38] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 111u, 102u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 116u, 104u, 97u, 116u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s581[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u };
-static const uint32_t m9s582[25] = { 32u, 102u, 114u, 111u, 109u, 32u, 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
-static const uint32_t m9s583[40] = { 112u, 111u, 111u, 108u, 45u, 105u, 110u, 116u, 101u, 114u, 105u, 111u, 114u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 58u, 32u };
-static const uint32_t m9s584[10] = { 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s585[38] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s586[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s587[55] = { 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
-static const uint32_t m9s588[8] = { 60u, 114u, 101u, 116u, 117u, 114u, 110u, 62u };
-static const uint32_t m9s589[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s590[36] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s591[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
-static const uint32_t m9s592[4] = { 80u, 85u, 82u, 69u };
-static const uint32_t m9s593[8] = { 79u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
-static const uint32_t m9s594[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
-static const uint32_t m9s595[11] = { 79u, 117u, 116u, 79u, 102u, 77u, 101u, 109u, 111u, 114u, 121u };
-static const uint32_t m9s596[2] = { 73u, 56u };
-static const uint32_t m9s597[3] = { 73u, 49u, 54u };
-static const uint32_t m9s598[3] = { 73u, 51u, 50u };
-static const uint32_t m9s599[3] = { 73u, 54u, 52u };
-static const uint32_t m9s600[2] = { 85u, 56u };
-static const uint32_t m9s601[3] = { 85u, 49u, 54u };
-static const uint32_t m9s602[3] = { 85u, 51u, 50u };
-static const uint32_t m9s603[3] = { 85u, 54u, 52u };
-static const uint32_t m9s604[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s605[3] = { 67u, 72u, 82u };
-static const uint32_t m9s606[3] = { 73u, 54u, 52u };
-static const uint32_t m9s607[5] = { 67u, 46u, 73u, 110u, 116u };
-static const uint32_t m9s608[8] = { 67u, 46u, 83u, 83u, 105u, 122u, 101u, 84u };
-static const uint32_t m9s609[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s610[2] = { 73u, 56u };
-static const uint32_t m9s611[3] = { 73u, 49u, 54u };
-static const uint32_t m9s612[3] = { 73u, 51u, 50u };
-static const uint32_t m9s613[2] = { 85u, 56u };
-static const uint32_t m9s614[3] = { 85u, 49u, 54u };
-static const uint32_t m9s615[3] = { 85u, 51u, 50u };
-static const uint32_t m9s616[3] = { 70u, 51u, 50u };
-static const uint32_t m9s617[3] = { 70u, 54u, 52u };
-static const uint32_t m9s618[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
-static const uint32_t m9s619[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
-static const uint32_t m9s620[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
-static const uint32_t m9s621[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
-static const uint32_t m9s622[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
-static const uint32_t m9s623[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
-static const uint32_t m9s624[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
-static const uint32_t m9s625[17] = { 117u, 110u, 104u, 97u, 110u, 100u, 108u, 101u, 100u, 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
-static const uint32_t m9s626[6] = { 32u, 102u, 114u, 111u, 109u, 32u };
-static const uint32_t m9s627[4] = { 80u, 85u, 82u, 69u };
-static const uint32_t m9s628[21] = { 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 115u, 32u };
-static const uint32_t m9s629[29] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 80u, 85u, 82u, 69u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
-static const uint32_t m9s630[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
-static const uint32_t m9s631[45] = { 83u, 69u, 82u, 73u, 65u, 76u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 84u, 72u, 82u, 69u, 65u, 68u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u, 32u, 40u };
-static const uint32_t m9s632[9] = { 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
-static const uint32_t m9s633[1] = { 41u };
+static const uint32_t m9s196[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s197[4] = { 32u, 79u, 70u, 32u };
+static const uint32_t m9s198[2] = { 73u, 56u };
+static const uint32_t m9s199[3] = { 73u, 49u, 54u };
+static const uint32_t m9s200[3] = { 73u, 51u, 50u };
+static const uint32_t m9s201[2] = { 85u, 56u };
+static const uint32_t m9s202[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s203[3] = { 85u, 49u, 54u };
+static const uint32_t m9s204[3] = { 85u, 51u, 50u };
+static const uint32_t m9s205[3] = { 85u, 54u, 52u };
+static const uint32_t m9s206[1] = { 45u };
+static const uint32_t m9s207[11] = { 80u, 82u, 79u, 67u, 69u, 68u, 85u, 82u, 69u, 32u, 40u };
+static const uint32_t m9s208[8] = { 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
+static const uint32_t m9s209[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s210[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s211[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s212[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s213[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s214[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s215[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s216[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s217[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s218[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s219[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s220[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s221[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s222[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s223[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
+static const uint32_t m9s224[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s225[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
+static const uint32_t m9s226[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s227[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s228[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s229[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s230[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
+static const uint32_t m9s231[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s232[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s233[3] = { 73u, 54u, 52u };
+static const uint32_t m9s234[3] = { 70u, 54u, 52u };
+static const uint32_t m9s235[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s236[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s237[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s238[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s239[1] = { 45u };
+static const uint32_t m9s240[3] = { 73u, 54u, 52u };
+static const uint32_t m9s241[3] = { 70u, 54u, 52u };
+static const uint32_t m9s242[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s243[4] = { 32u, 79u, 70u, 32u };
+static const uint32_t m9s244[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s245[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s246[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s247[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s248[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s249[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s250[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s251[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s252[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s253[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s254[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s255[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s256[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s257[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s258[40] = { 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u, 58u, 32u };
+static const uint32_t m9s259[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s260[44] = { 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 98u, 101u, 108u, 111u, 110u, 103u, 115u, 32u, 97u, 116u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 108u, 101u, 118u, 101u, 108u, 58u, 32u };
+static const uint32_t m9s261[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s262[8] = { 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s263[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s264[58] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 104u, 111u, 108u, 100u, 115u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s265[8] = { 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s266[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s267[4] = { 32u, 105u, 115u, 32u };
+static const uint32_t m9s268[20] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u, 116u, 104u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s269[47] = { 58u, 32u, 97u, 110u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 104u, 97u, 115u, 32u, 111u, 110u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 116u, 121u, 112u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s270[16] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 116u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s271[57] = { 32u, 99u, 97u, 110u, 32u, 111u, 110u, 108u, 121u, 32u, 98u, 101u, 32u, 105u, 110u, 100u, 101u, 120u, 101u, 100u, 44u, 32u, 109u, 101u, 97u, 115u, 117u, 114u, 101u, 100u, 32u, 119u, 105u, 116u, 104u, 32u, 76u, 69u, 78u, 44u, 32u, 111u, 114u, 32u, 108u, 101u, 110u, 116u, 32u, 116u, 111u, 32u, 97u, 110u, 32u, 82u, 79u };
+static const uint32_t m9s272[22] = { 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s273[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s274[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s275[12] = { 58u, 32u, 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
+static const uint32_t m9s276[43] = { 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 112u, 97u, 115u, 115u, 101u, 100u, 32u, 116u, 111u, 32u, 97u, 32u, 86u, 65u, 82u, 32u, 111u, 114u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
+static const uint32_t m9s277[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s278[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s279[18] = { 58u, 32u, 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u, 116u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s280[48] = { 32u, 99u, 97u, 110u, 32u, 98u, 101u, 32u, 108u, 101u, 110u, 116u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 111u, 32u, 97u, 110u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s281[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
+static const uint32_t m9s282[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s283[16] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s284[8] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u };
+static const uint32_t m9s285[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s286[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s287[17] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s288[16] = { 116u, 104u, 101u, 32u, 82u, 79u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s289[10] = { 116u, 104u, 101u, 32u, 67u, 79u, 78u, 83u, 84u, 32u };
+static const uint32_t m9s290[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s291[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s292[2] = { 58u, 32u };
+static const uint32_t m9s293[46] = { 32u, 99u, 97u, 110u, 32u, 98u, 101u, 32u, 108u, 101u, 110u, 116u, 32u, 111u, 110u, 108u, 121u, 32u, 116u, 111u, 32u, 97u, 110u, 32u, 82u, 79u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 52u, 41u };
+static const uint32_t m9s294[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s295[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s296[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s297[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s298[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s299[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s300[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s301[6] = { 60u, 110u, 111u, 110u, 101u, 62u };
+static const uint32_t m9s302[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s303[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s304[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s305[34] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 99u, 111u, 110u, 115u, 117u, 109u, 101u, 115u, 32u, 97u, 110u, 32u, 111u, 119u, 110u, 101u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 59u, 32u };
+static const uint32_t m9s306[22] = { 32u, 105u, 115u, 32u, 97u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s307[32] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 105u, 111u, 110u, 59u, 32u };
+static const uint32_t m9s308[29] = { 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s309[18] = { 99u, 111u, 110u, 115u, 117u, 109u, 101u, 100u, 32u, 98u, 121u, 32u, 83u, 72u, 65u, 82u, 69u, 68u };
+static const uint32_t m9s310[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s311[7] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u };
+static const uint32_t m9s312[4] = { 112u, 111u, 111u, 108u };
+static const uint32_t m9s313[30] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 102u, 114u, 111u, 109u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s314[30] = { 32u, 105u, 110u, 32u, 97u, 32u, 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
+static const uint32_t m9s315[5] = { 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s316[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s317[39] = { 78u, 69u, 87u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 116u, 104u, 101u, 110u, 32u, 116u, 104u, 101u, 32u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s318[35] = { 78u, 69u, 87u, 32u, 101u, 120u, 116u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s319[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s320[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s321[36] = { 83u, 76u, 73u, 67u, 69u, 32u, 115u, 116u, 97u, 114u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s322[37] = { 83u, 76u, 73u, 67u, 69u, 32u, 108u, 101u, 110u, 103u, 116u, 104u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s323[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s324[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s325[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s326[34] = { 83u, 76u, 73u, 67u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 111u, 114u, 32u, 97u, 114u, 114u, 97u, 121u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s327[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s328[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
+static const uint32_t m9s329[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s330[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
+static const uint32_t m9s331[4] = { 79u, 80u, 84u, 32u };
+static const uint32_t m9s332[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 79u, 80u, 84u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u };
+static const uint32_t m9s333[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s334[3] = { 78u, 79u, 84u };
+static const uint32_t m9s335[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s336[30] = { 78u, 79u, 84u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s337[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s338[6] = { 117u, 110u, 97u, 114u, 121u, 32u };
+static const uint32_t m9s339[30] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s340[36] = { 97u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 58u, 32u };
+static const uint32_t m9s341[12] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s342[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
+static const uint32_t m9s343[3] = { 70u, 51u, 50u };
+static const uint32_t m9s344[3] = { 70u, 54u, 52u };
+static const uint32_t m9s345[3] = { 73u, 54u, 52u };
+static const uint32_t m9s346[3] = { 73u, 54u, 52u };
+static const uint32_t m9s347[3] = { 67u, 72u, 82u };
+static const uint32_t m9s348[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s349[3] = { 65u, 68u, 82u };
+static const uint32_t m9s350[37] = { 65u, 68u, 82u, 32u, 101u, 120u, 105u, 115u, 116u, 115u, 32u, 111u, 110u, 108u, 121u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 85u, 78u, 83u, 65u, 70u, 69u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 115u };
+static const uint32_t m9s351[3] = { 70u, 51u, 50u };
+static const uint32_t m9s352[3] = { 70u, 54u, 52u };
+static const uint32_t m9s353[3] = { 76u, 69u, 78u };
+static const uint32_t m9s354[41] = { 76u, 69u, 78u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 97u, 110u, 32u, 97u, 120u, 105u, 115u, 32u, 111u, 110u, 108u, 121u, 32u, 111u, 110u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 44u, 32u, 110u, 111u, 116u, 32u, 111u, 110u, 32u };
+static const uint32_t m9s355[33] = { 76u, 69u, 78u, 32u, 97u, 120u, 105u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s356[5] = { 97u, 120u, 105u, 115u, 32u };
+static const uint32_t m9s357[6] = { 32u, 111u, 102u, 32u, 97u, 32u };
+static const uint32_t m9s358[15] = { 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 101u, 120u, 105u, 115u, 116u };
+static const uint32_t m9s359[3] = { 73u, 54u, 52u };
+static const uint32_t m9s360[39] = { 76u, 69u, 78u, 32u, 111u, 102u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 97u, 120u, 105u, 115u, 58u, 32u, 76u, 69u, 78u, 32u, 40u, 103u, 44u, 32u, 48u, 41u };
+static const uint32_t m9s361[3] = { 73u, 54u, 52u };
+static const uint32_t m9s362[3] = { 79u, 82u, 68u };
+static const uint32_t m9s363[3] = { 73u, 54u, 52u };
+static const uint32_t m9s364[4] = { 78u, 65u, 77u, 69u };
+static const uint32_t m9s365[36] = { 78u, 65u, 77u, 69u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 111u, 114u, 32u, 97u, 32u, 99u, 97u, 115u, 101u, 32u };
+static const uint32_t m9s366[12] = { 114u, 101u, 99u, 111u, 114u, 100u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s367[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s368[4] = { 86u, 73u, 69u, 87u };
+static const uint32_t m9s369[43] = { 86u, 73u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 103u, 114u, 105u, 100u, 32u, 97u, 110u, 100u, 32u, 111u, 110u, 101u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 112u, 101u, 114u, 32u, 97u, 120u, 105u, 115u };
+static const uint32_t m9s370[23] = { 86u, 73u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s371[2] = { 97u, 32u };
+static const uint32_t m9s372[7] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u };
+static const uint32_t m9s373[21] = { 32u, 97u, 120u, 105u, 115u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s374[5] = { 60u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s375[36] = { 97u, 32u, 86u, 73u, 69u, 87u, 32u, 97u, 120u, 105u, 115u, 32u, 105u, 115u, 32u, 97u, 110u, 32u, 105u, 110u, 100u, 101u, 120u, 32u, 111u, 114u, 32u, 65u, 76u, 76u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s376[59] = { 97u, 32u, 86u, 73u, 69u, 87u, 32u, 116u, 104u, 97u, 116u, 32u, 107u, 101u, 101u, 112u, 115u, 32u, 110u, 111u, 32u, 97u, 120u, 105u, 115u, 32u, 105u, 115u, 32u, 97u, 110u, 32u, 105u, 110u, 100u, 101u, 120u, 58u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 116u, 104u, 101u, 32u, 115u, 117u, 98u, 115u, 99u, 114u, 105u, 112u, 116u, 115u };
+static const uint32_t m9s377[3] = { 77u, 65u, 88u };
+static const uint32_t m9s378[6] = { 83u, 105u, 122u, 101u, 79u, 102u };
+static const uint32_t m9s379[3] = { 73u, 54u, 52u };
+static const uint32_t m9s380[8] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u };
+static const uint32_t m9s381[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s382[28] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s383[3] = { 73u, 54u, 52u };
+static const uint32_t m9s384[15] = { 70u, 54u, 52u, 46u, 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s385[15] = { 70u, 51u, 50u, 46u, 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s386[13] = { 70u, 54u, 52u, 46u, 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s387[13] = { 70u, 51u, 50u, 46u, 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s388[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s389[2] = { 67u, 46u };
+static const uint32_t m9s390[49] = { 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 115u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u };
+static const uint32_t m9s391[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
+static const uint32_t m9s392[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s393[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s394[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s395[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
+static const uint32_t m9s396[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
+static const uint32_t m9s397[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s398[14] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 49u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s399[17] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 116u, 32u };
+static const uint32_t m9s400[51] = { 32u, 116u, 111u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 59u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 111u, 110u, 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s401[19] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 58u, 32u };
+static const uint32_t m9s402[3] = { 65u, 76u, 76u };
+static const uint32_t m9s403[5] = { 60u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s404[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s405[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s406[30] = { 105u, 110u, 100u, 101u, 120u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s407[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s408[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s409[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s410[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s411[6] = { 60u, 115u, 116u, 114u, 49u, 62u };
+static const uint32_t m9s412[9] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u };
+static const uint32_t m9s413[6] = { 65u, 82u, 82u, 65u, 89u, 32u };
+static const uint32_t m9s414[5] = { 71u, 82u, 73u, 68u, 32u };
+static const uint32_t m9s415[3] = { 65u, 78u, 68u };
+static const uint32_t m9s416[2] = { 79u, 82u };
+static const uint32_t m9s417[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s418[26] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s419[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s420[26] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 66u, 79u, 79u, 76u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s421[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s422[1] = { 61u };
+static const uint32_t m9s423[1] = { 35u };
+static const uint32_t m9s424[1] = { 60u };
+static const uint32_t m9s425[2] = { 60u, 61u };
+static const uint32_t m9s426[1] = { 62u };
+static const uint32_t m9s427[2] = { 62u, 61u };
+static const uint32_t m9s428[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s429[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s430[38] = { 99u, 111u, 109u, 112u, 97u, 114u, 105u, 110u, 103u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 116u, 104u, 97u, 116u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s431[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 32u };
+static const uint32_t m9s432[6] = { 32u, 119u, 105u, 116u, 104u, 32u };
+static const uint32_t m9s433[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s434[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s435[4] = { 110u, 111u, 32u, 39u };
+static const uint32_t m9s436[30] = { 39u, 32u, 98u, 101u, 116u, 119u, 101u, 101u, 110u, 32u, 116u, 119u, 111u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 115u, 58u, 32u, 84u, 101u, 120u, 116u, 46u, 69u, 113u };
+static const uint32_t m9s437[53] = { 32u, 40u, 97u, 44u, 32u, 98u, 41u, 32u, 97u, 110u, 115u, 119u, 101u, 114u, 115u, 32u, 101u, 113u, 117u, 97u, 108u, 105u, 116u, 121u, 44u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 111u, 114u, 100u, 101u, 114u, 115u, 32u, 116u, 104u, 101u, 109u };
+static const uint32_t m9s438[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s439[4] = { 110u, 111u, 32u, 39u };
+static const uint32_t m9s440[29] = { 39u, 32u, 98u, 101u, 116u, 119u, 101u, 101u, 110u, 32u, 116u, 119u, 111u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
+static const uint32_t m9s441[43] = { 58u, 32u, 97u, 110u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 115u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 115u, 44u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 115u, 44u };
+static const uint32_t m9s442[52] = { 32u, 98u, 111u, 111u, 108u, 101u, 97u, 110u, 115u, 44u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 97u, 110u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s443[4] = { 110u, 111u, 32u, 39u };
+static const uint32_t m9s444[29] = { 39u, 32u, 98u, 101u, 116u, 119u, 101u, 101u, 110u, 32u, 116u, 119u, 111u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
+static const uint32_t m9s445[43] = { 58u, 32u, 97u, 110u, 32u, 111u, 112u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 99u, 111u, 109u, 112u, 97u, 114u, 101u, 115u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 115u, 44u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 115u, 44u };
+static const uint32_t m9s446[52] = { 32u, 98u, 111u, 111u, 108u, 101u, 97u, 110u, 115u, 44u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 118u, 97u, 108u, 117u, 101u, 115u, 32u, 97u, 110u, 100u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 115u, 32u, 40u, 112u, 97u, 114u, 32u, 50u, 46u, 51u, 41u };
+static const uint32_t m9s447[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s448[1] = { 43u };
+static const uint32_t m9s449[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s450[19] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 101u, 32u };
+static const uint32_t m9s451[14] = { 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s452[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s453[33] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 99u, 111u, 110u, 99u, 97u, 116u, 101u, 110u, 97u, 116u, 101u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 119u, 105u, 116u, 104u, 32u };
+static const uint32_t m9s454[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s455[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s456[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s457[59] = { 66u, 89u, 84u, 69u, 32u, 105u, 115u, 32u, 97u, 32u, 114u, 97u, 119u, 32u, 111u, 99u, 116u, 101u, 116u, 58u, 32u, 110u, 111u, 32u, 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 40u, 99u, 111u, 110u, 118u, 101u, 114u, 116u, 32u, 102u, 105u, 114u, 115u, 116u, 44u, 32u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s458[29] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s459[29] = { 32u, 110u, 101u, 101u, 100u, 115u, 32u, 110u, 117u, 109u, 101u, 114u, 105u, 99u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s460[25] = { 110u, 111u, 32u, 105u, 109u, 112u, 108u, 105u, 99u, 105u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 115u, 58u, 32u };
+static const uint32_t m9s461[1] = { 32u };
+static const uint32_t m9s462[1] = { 32u };
+static const uint32_t m9s463[1] = { 47u };
+static const uint32_t m9s464[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s465[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s466[39] = { 39u, 47u, 39u, 32u, 105u, 115u, 32u, 102u, 108u, 111u, 97u, 116u, 32u, 100u, 105u, 118u, 105u, 115u, 105u, 111u, 110u, 59u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 32u, 117u, 115u, 101u, 32u, 68u, 73u, 86u };
+static const uint32_t m9s467[3] = { 68u, 73u, 86u };
+static const uint32_t m9s468[3] = { 77u, 79u, 68u };
+static const uint32_t m9s469[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s470[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s471[33] = { 32u, 105u, 115u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 100u, 105u, 118u, 105u, 115u, 105u, 111u, 110u, 59u, 32u, 102u, 108u, 111u, 97u, 116u, 115u, 32u, 117u, 115u, 101u, 32u };
+static const uint32_t m9s472[3] = { 39u, 47u, 39u };
+static const uint32_t m9s473[2] = { 43u, 37u };
+static const uint32_t m9s474[2] = { 45u, 37u };
+static const uint32_t m9s475[2] = { 42u, 37u };
+static const uint32_t m9s476[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s477[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s478[35] = { 119u, 114u, 97u, 112u, 112u, 105u, 110u, 103u, 32u, 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 105u, 115u, 32u, 102u, 111u, 114u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u };
+static const uint32_t m9s479[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s480[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s481[5] = { 60u, 105u, 110u, 116u, 62u };
+static const uint32_t m9s482[6] = { 60u, 114u, 101u, 97u, 108u, 62u };
+static const uint32_t m9s483[3] = { 65u, 76u, 76u };
+static const uint32_t m9s484[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s485[3] = { 79u, 87u, 78u };
+static const uint32_t m9s486[74] = { 78u, 69u, 87u, 32u, 40u, 79u, 87u, 78u, 44u, 32u, 84u, 41u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 59u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 114u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s487[3] = { 111u, 119u, 110u };
+static const uint32_t m9s488[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s489[4] = { 112u, 111u, 111u, 108u };
+static const uint32_t m9s490[36] = { 78u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 97u, 109u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s491[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s492[38] = { 78u, 69u, 87u, 39u, 115u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 105u, 115u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s493[4] = { 112u, 111u, 111u, 108u };
+static const uint32_t m9s494[36] = { 78u, 69u, 87u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 97u, 109u, 101u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s495[5] = { 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s496[5] = { 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s497[3] = { 83u, 84u, 82u };
+static const uint32_t m9s498[14] = { 86u, 65u, 82u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s499[16] = { 32u, 99u, 97u, 114u, 114u, 105u, 101u, 115u, 32u, 110u, 111u, 32u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s500[20] = { 32u, 105u, 115u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
+static const uint32_t m9s501[21] = { 32u, 105u, 115u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u };
+static const uint32_t m9s502[9] = { 32u, 101u, 120u, 112u, 101u, 99u, 116u, 115u, 32u };
+static const uint32_t m9s503[18] = { 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 40u, 115u, 41u, 44u, 32u, 103u, 111u, 116u, 32u };
+static const uint32_t m9s504[5] = { 67u, 46u, 73u, 110u, 116u };
+static const uint32_t m9s505[8] = { 67u, 46u, 83u, 83u, 105u, 122u, 101u, 84u };
+static const uint32_t m9s506[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s507[2] = { 73u, 56u };
+static const uint32_t m9s508[3] = { 73u, 49u, 54u };
+static const uint32_t m9s509[3] = { 73u, 51u, 50u };
+static const uint32_t m9s510[2] = { 85u, 56u };
+static const uint32_t m9s511[3] = { 85u, 49u, 54u };
+static const uint32_t m9s512[3] = { 85u, 51u, 50u };
+static const uint32_t m9s513[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s514[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s515[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s516[17] = { 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s517[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s518[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s519[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
+static const uint32_t m9s520[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
+static const uint32_t m9s521[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s522[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s523[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s524[39] = { 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u, 40u, 86u, 65u, 82u, 47u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 41u };
+static const uint32_t m9s525[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s526[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s527[34] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 108u, 101u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u };
+static const uint32_t m9s528[32] = { 32u, 97u, 115u, 32u, 86u, 65u, 82u, 32u, 40u, 115u, 104u, 97u, 114u, 101u, 100u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 44u, 32u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s529[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s530[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s531[14] = { 58u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s532[57] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 107u, 110u, 111u, 119u, 110u, 32u, 104u, 101u, 114u, 101u, 44u, 32u, 97u, 110u, 100u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 101u, 32u, 109u, 97u, 121u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 110u, 32u, 105u, 116u, 32u, 45u, 45u, 32u };
+static const uint32_t m9s533[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s534[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s535[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s536[23] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 111u, 118u, 101u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s537[32] = { 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s538[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s539[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s540[14] = { 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 109u, 111u, 118u, 101u, 32u };
+static const uint32_t m9s541[57] = { 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 45u, 45u, 32u, 105u, 116u, 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s542[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s543[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s544[16] = { 58u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 119u, 110u, 115u, 32u };
+static const uint32_t m9s545[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s546[31] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s547[31] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 110u, 32u, 79u, 87u, 78u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s548[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s549[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s550[31] = { 58u, 32u, 97u, 32u, 75u, 69u, 80u, 84u, 32u, 112u, 97u, 114u, 97u, 109u, 101u, 116u, 101u, 114u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 116u, 97u, 107u, 101u, 32u };
+static const uint32_t m9s551[37] = { 32u, 45u, 45u, 32u, 105u, 116u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s552[9] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s553[4] = { 32u, 111u, 102u, 32u };
+static const uint32_t m9s554[11] = { 58u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 101u, 100u, 32u };
+static const uint32_t m9s555[39] = { 32u, 105u, 115u, 32u, 107u, 101u, 112u, 116u, 32u, 98u, 121u, 32u, 116u, 104u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 101u, 32u, 45u, 45u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 75u, 69u, 80u, 84u, 32u };
+static const uint32_t m9s556[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 49u, 41u };
+static const uint32_t m9s557[6] = { 60u, 99u, 97u, 108u, 108u, 62u };
+static const uint32_t m9s558[9] = { 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
+static const uint32_t m9s559[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s560[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s561[7] = { 117u, 115u, 101u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s562[14] = { 32u, 97u, 102u, 116u, 101u, 114u, 32u, 105u, 116u, 32u, 119u, 97u, 115u, 32u };
+static const uint32_t m9s563[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s564[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s565[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s566[15] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u };
+static const uint32_t m9s567[51] = { 58u, 32u, 97u, 32u, 98u, 111u, 114u, 114u, 111u, 119u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 121u, 111u, 117u, 114u, 115u, 32u, 116u, 111u, 32u, 102u, 114u, 101u, 101u, 32u, 40u, 116u, 97u, 107u, 101u, 32u, 79u, 87u, 78u, 44u, 32u, 112u, 97u, 114u, 32u, 52u, 46u, 50u, 41u };
+static const uint32_t m9s568[15] = { 116u, 104u, 101u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 111u, 119u, 110u, 115u, 32u };
+static const uint32_t m9s569[47] = { 59u, 32u, 105u, 116u, 32u, 105u, 115u, 32u, 102u, 114u, 101u, 101u, 100u, 32u, 97u, 116u, 32u, 101u, 120u, 105u, 116u, 44u, 32u, 110u, 111u, 116u, 32u, 98u, 121u, 32u, 68u, 73u, 83u, 80u, 79u, 83u, 69u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s570[14] = { 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 32u, 111u, 119u, 110u, 115u, 32u };
+static const uint32_t m9s571[42] = { 59u, 32u, 102u, 114u, 101u, 101u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 110u, 111u, 116u, 32u, 116u, 104u, 101u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s572[8] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u, 100u };
+static const uint32_t m9s573[8] = { 68u, 73u, 83u, 80u, 79u, 83u, 69u, 100u };
+static const uint32_t m9s574[34] = { 115u, 105u, 103u, 110u, 97u, 116u, 117u, 114u, 101u, 32u, 100u, 105u, 102u, 102u, 101u, 114u, 115u, 32u, 102u, 114u, 111u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 58u };
+static const uint32_t m9s575[19] = { 32u, 32u, 32u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 32u, 32u, 32u, 32u, 32u };
+static const uint32_t m9s576[19] = { 32u, 32u, 32u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u, 32u };
+static const uint32_t m9s577[54] = { 109u, 111u, 100u, 117u, 108u, 101u, 45u, 108u, 101u, 118u, 101u, 108u, 32u, 115u, 116u, 97u, 116u, 101u, 32u, 114u, 101u, 113u, 117u, 105u, 114u, 101u, 115u, 32u, 83u, 84u, 65u, 84u, 69u, 70u, 85u, 76u, 32u, 111u, 110u, 32u, 116u, 104u, 101u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s578[46] = { 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 32u, 98u, 117u, 116u, 32u, 110u, 111u, 116u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 101u, 100u };
+static const uint32_t m9s579[45] = { 111u, 112u, 97u, 113u, 117u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 102u, 105u, 110u, 101u, 100u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 105u, 109u, 112u, 108u, 101u, 109u, 101u, 110u, 116u, 97u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s580[1] = { 67u };
+static const uint32_t m9s581[51] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 98u, 111u, 117u, 110u, 100u, 32u, 67u, 32u, 110u, 97u, 109u, 101u, 32u, 40u, 61u, 32u, 34u, 99u, 95u, 110u, 97u, 109u, 101u, 34u, 41u };
+static const uint32_t m9s582[47] = { 110u, 97u, 116u, 105u, 118u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 105u, 110u, 32u, 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 115u, 105u, 103u, 110u, 97u, 116u, 117u, 114u, 101u, 59u, 32u, 117u, 115u, 101u, 32u, 67u, 46u, 42u, 32u, 116u, 121u, 112u, 101u, 115u };
+static const uint32_t m9s583[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
+static const uint32_t m9s584[9] = { 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u };
+static const uint32_t m9s585[54] = { 102u, 111u, 114u, 101u, 105u, 103u, 110u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 109u, 117u, 115u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 32u, 91u, 83u, 69u, 82u, 73u, 65u, 76u, 93u, 32u, 111u, 114u, 32u, 91u, 82u, 69u, 69u, 78u, 84u, 82u, 65u, 78u, 84u, 93u };
+static const uint32_t m9s586[44] = { 67u, 65u, 83u, 69u, 32u, 111u, 118u, 101u, 114u, 32u, 67u, 65u, 83u, 69u, 32u, 82u, 69u, 67u, 79u, 82u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 116u, 111u, 116u, 97u, 108u, 32u, 40u, 109u, 105u, 115u, 115u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s587[1] = { 41u };
+static const uint32_t m9s588[4] = { 80u, 84u, 82u, 32u };
+static const uint32_t m9s589[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s590[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
+static const uint32_t m9s591[15] = { 41u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 112u, 97u, 115u, 115u, 32u };
+static const uint32_t m9s592[7] = { 32u, 119u, 104u, 101u, 114u, 101u, 32u };
+static const uint32_t m9s593[12] = { 32u, 105u, 115u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s594[8] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 40u };
+static const uint32_t m9s595[15] = { 41u, 58u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 104u, 97u, 110u, 100u, 32u };
+static const uint32_t m9s596[71] = { 32u, 116u, 111u, 32u, 97u, 32u, 116u, 104u, 114u, 101u, 97u, 100u, 32u, 45u, 45u, 32u, 105u, 116u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 32u, 105u, 116u, 32u, 119u, 105u, 116u, 104u, 32u, 79u, 87u, 78u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s597[28] = { 109u, 111u, 118u, 101u, 100u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 84u, 72u, 82u, 69u, 65u, 68u, 32u, 114u, 117u, 110u, 110u, 105u, 110u, 103u, 32u };
+static const uint32_t m9s598[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s599[27] = { 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 114u, 101u, 115u, 117u, 108u, 116u, 32u, 100u, 105u, 115u, 99u, 97u, 114u, 100u, 101u, 100u, 58u, 32u };
+static const uint32_t m9s600[9] = { 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u };
+static const uint32_t m9s601[5] = { 82u, 65u, 73u, 83u, 69u };
+static const uint32_t m9s602[5] = { 82u, 65u, 73u, 83u, 69u };
+static const uint32_t m9s603[3] = { 79u, 87u, 78u };
+static const uint32_t m9s604[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s605[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s606[3] = { 52u, 46u, 51u };
+static const uint32_t m9s607[3] = { 50u, 46u, 51u };
+static const uint32_t m9s608[62] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 105u, 110u, 32u, 109u, 111u, 100u, 117u, 108u, 101u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s609[6] = { 32u, 40u, 112u, 97u, 114u, 32u };
+static const uint32_t m9s610[1] = { 41u };
+static const uint32_t m9s611[51] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
+static const uint32_t m9s612[25] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 111u, 117u, 116u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 116u, 32u, 40u, 112u, 97u, 114u, 32u };
+static const uint32_t m9s613[1] = { 41u };
+static const uint32_t m9s614[44] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 104u, 101u, 108u, 100u, 32u, 98u, 121u, 32u };
+static const uint32_t m9s615[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s616[44] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 104u, 101u, 108u, 100u, 32u, 98u, 121u, 32u };
+static const uint32_t m9s617[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s618[51] = { 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 59u, 32u, 105u, 116u, 32u, 99u, 97u, 110u, 110u, 111u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 111u, 114u, 101u, 100u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u };
+static const uint32_t m9s619[39] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u, 97u, 32u, 112u, 111u, 111u, 108u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s620[16] = { 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 73u, 78u, 32u };
+static const uint32_t m9s621[18] = { 32u, 98u, 117u, 116u, 32u, 97u, 108u, 108u, 111u, 99u, 97u, 116u, 101u, 100u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s622[10] = { 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s623[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s624[36] = { 116u, 104u, 101u, 32u, 114u, 105u, 103u, 104u, 116u, 45u, 104u, 97u, 110u, 100u, 32u, 115u, 105u, 100u, 101u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s625[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 97u, 115u, 115u, 105u, 103u, 110u, 32u };
+static const uint32_t m9s626[4] = { 32u, 116u, 111u, 32u };
+static const uint32_t m9s627[35] = { 32u, 40u, 110u, 111u, 32u, 105u, 109u, 112u, 108u, 105u, 99u, 105u, 116u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 115u, 44u, 32u, 112u, 97u, 114u, 32u, 50u, 46u, 49u, 41u };
+static const uint32_t m9s628[16] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 32u };
+static const uint32_t m9s629[14] = { 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 102u, 105u, 116u, 32u };
+static const uint32_t m9s630[5] = { 109u, 111u, 118u, 101u, 100u };
+static const uint32_t m9s631[11] = { 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s632[15] = { 79u, 80u, 84u, 32u, 83u, 72u, 65u, 82u, 69u, 68u, 32u, 80u, 84u, 82u, 32u };
+static const uint32_t m9s633[5] = { 97u, 108u, 105u, 118u, 101u };
+static const uint32_t m9s634[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s635[28] = { 99u, 111u, 110u, 100u, 105u, 116u, 105u, 111u, 110u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 66u, 79u, 79u, 76u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s636[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s637[16] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u };
+static const uint32_t m9s638[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s639[4] = { 32u, 105u, 115u, 32u };
+static const uint32_t m9s640[21] = { 44u, 32u, 97u, 110u, 100u, 32u, 105u, 116u, 115u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 97u, 114u, 101u, 32u };
+static const uint32_t m9s641[13] = { 70u, 79u, 82u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u, 32u };
+static const uint32_t m9s642[4] = { 32u, 105u, 115u, 32u };
+static const uint32_t m9s643[52] = { 58u, 32u, 97u, 32u, 108u, 111u, 111u, 112u, 32u, 111u, 118u, 101u, 114u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 115u, 32u, 105u, 110u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 118u, 97u, 114u, 105u, 97u, 98u, 108u, 101u };
+static const uint32_t m9s644[59] = { 70u, 79u, 82u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 98u, 111u, 116u, 104u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 111u, 102u, 32u, 111u, 110u, 101u, 32u, 116u, 121u, 112u, 101u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s645[5] = { 32u, 97u, 110u, 100u, 32u };
+static const uint32_t m9s646[40] = { 70u, 79u, 82u, 32u, 111u, 118u, 101u, 114u, 32u, 97u, 110u, 32u, 101u, 110u, 117u, 109u, 101u, 114u, 97u, 116u, 105u, 111u, 110u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 110u, 111u, 32u, 66u, 89u, 32u, 115u, 116u, 101u, 112u };
+static const uint32_t m9s647[33] = { 70u, 79u, 82u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s648[33] = { 70u, 79u, 82u, 32u, 98u, 111u, 117u, 110u, 100u, 115u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 115u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s649[33] = { 70u, 79u, 82u, 32u, 115u, 116u, 101u, 112u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 110u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 44u, 32u, 110u, 111u, 116u, 32u };
+static const uint32_t m9s650[14] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s651[21] = { 32u, 98u, 117u, 116u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s652[14] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s653[21] = { 32u, 98u, 117u, 116u, 32u, 116u, 104u, 101u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 105u, 115u, 32u };
+static const uint32_t m9s654[11] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u };
+static const uint32_t m9s655[14] = { 32u, 97u, 112u, 112u, 101u, 97u, 114u, 115u, 32u, 116u, 119u, 105u, 99u, 101u };
+static const uint32_t m9s656[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s657[41] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u };
+static const uint32_t m9s658[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s659[38] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 111u, 102u, 32u, 97u, 32u, 99u, 97u, 108u, 108u, 32u, 116u, 104u, 97u, 116u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 115u, 32u, 110u, 111u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s660[14] = { 99u, 97u, 110u, 110u, 111u, 116u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u };
+static const uint32_t m9s661[25] = { 32u, 102u, 114u, 111u, 109u, 32u, 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 111u, 102u, 32u, 116u, 121u, 112u, 101u, 32u };
+static const uint32_t m9s662[40] = { 112u, 111u, 111u, 108u, 45u, 105u, 110u, 116u, 101u, 114u, 105u, 111u, 114u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 58u, 32u };
+static const uint32_t m9s663[10] = { 32u, 108u, 105u, 118u, 101u, 115u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s664[38] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s665[13] = { 83u, 76u, 73u, 67u, 69u, 32u, 79u, 70u, 32u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s666[55] = { 32u, 101u, 115u, 99u, 97u, 112u, 101u, 115u, 32u, 105u, 116u, 115u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 100u, 105u, 101u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 116u, 104u, 105u, 115u, 32u, 102u, 114u, 97u, 109u, 101u, 32u, 40u, 112u, 97u, 114u, 32u, 52u, 46u, 51u, 41u };
+static const uint32_t m9s667[8] = { 60u, 114u, 101u, 116u, 117u, 114u, 110u, 62u };
+static const uint32_t m9s668[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s669[36] = { 82u, 69u, 84u, 85u, 82u, 78u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 105u, 110u, 32u, 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s670[6] = { 60u, 118u, 111u, 105u, 100u, 62u };
+static const uint32_t m9s671[4] = { 80u, 85u, 82u, 69u };
+static const uint32_t m9s672[47] = { 97u, 32u, 102u, 117u, 110u, 99u, 116u, 105u, 111u, 110u, 32u, 109u, 117u, 115u, 116u, 32u, 82u, 69u, 84u, 85u, 82u, 78u, 32u, 111u, 114u, 32u, 82u, 65u, 73u, 83u, 69u, 32u, 111u, 110u, 32u, 101u, 118u, 101u, 114u, 121u, 32u, 112u, 97u, 116u, 104u, 58u, 32u };
+static const uint32_t m9s673[26] = { 32u, 99u, 97u, 110u, 32u, 114u, 101u, 97u, 99u, 104u, 32u, 105u, 116u, 115u, 32u, 69u, 78u, 68u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
+static const uint32_t m9s674[8] = { 79u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
+static const uint32_t m9s675[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
+static const uint32_t m9s676[11] = { 79u, 117u, 116u, 79u, 102u, 77u, 101u, 109u, 111u, 114u, 121u };
+static const uint32_t m9s677[3] = { 73u, 54u, 52u };
+static const uint32_t m9s678[3] = { 70u, 51u, 50u };
+static const uint32_t m9s679[3] = { 70u, 54u, 52u };
+static const uint32_t m9s680[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
+static const uint32_t m9s681[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
+static const uint32_t m9s682[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
+static const uint32_t m9s683[11] = { 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u };
+static const uint32_t m9s684[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
+static const uint32_t m9s685[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
+static const uint32_t m9s686[8] = { 99u, 97u, 108u, 108u, 32u, 116u, 111u, 32u };
+static const uint32_t m9s687[17] = { 117u, 110u, 104u, 97u, 110u, 100u, 108u, 101u, 100u, 32u, 82u, 65u, 73u, 83u, 69u, 83u, 32u };
+static const uint32_t m9s688[6] = { 32u, 102u, 114u, 111u, 109u, 32u };
+static const uint32_t m9s689[4] = { 80u, 85u, 82u, 69u };
+static const uint32_t m9s690[21] = { 80u, 85u, 82u, 69u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 115u, 32u };
+static const uint32_t m9s691[29] = { 44u, 32u, 119u, 104u, 105u, 99u, 104u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 80u, 85u, 82u, 69u, 32u, 40u, 112u, 97u, 114u, 32u, 51u, 46u, 50u, 41u };
+static const uint32_t m9s692[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
+static const uint32_t m9s693[45] = { 83u, 69u, 82u, 73u, 65u, 76u, 32u, 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u, 99u, 97u, 108u, 108u, 101u, 100u, 32u, 102u, 114u, 111u, 109u, 32u, 84u, 72u, 82u, 69u, 65u, 68u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u, 32u, 40u };
+static const uint32_t m9s694[9] = { 32u, 114u, 101u, 97u, 99u, 104u, 101u, 115u, 32u };
+static const uint32_t m9s695[1] = { 41u };
+static const uint32_t m9s696[7] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u };
+static const uint32_t m9s697[41] = { 32u, 105u, 115u, 32u, 110u, 97u, 109u, 101u, 100u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 116u, 32u, 105u, 109u, 112u, 111u, 114u, 116u, 101u, 100u, 58u, 32u, 119u, 114u, 105u, 116u, 101u, 32u, 73u, 77u, 80u, 79u, 82u, 84u, 32u };
+static const uint32_t m9s698[8] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
+static const uint32_t m9s699[22] = { 32u, 105u, 115u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u, 32u, 116u, 119u, 105u, 99u, 101u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s700[23] = { 58u, 32u, 116u, 104u, 101u, 32u, 102u, 105u, 114u, 115u, 116u, 32u, 105u, 115u, 32u, 97u, 116u, 32u, 108u, 105u, 110u, 101u, 32u };
+static const uint32_t m9s701[8] = { 32u, 40u, 112u, 97u, 114u, 32u, 51u, 41u };
+static const uint32_t m9s702[7] = { 109u, 111u, 100u, 117u, 108u, 101u, 32u };
+static const uint32_t m9s703[10] = { 112u, 114u, 111u, 99u, 101u, 100u, 117u, 114u, 101u, 32u };
 
 static void Sem_Setup (m9_state *err);
 static void Sem_PushErr (m9_sl_m9_sl_CHAR *list, int64_t *n, m9_sl_CHAR s, m9_state *err);
@@ -806,6 +955,7 @@ static m9_sl_CHAR Sem_ProcSig (Ast_Node * pl, Ast_Node * rt, bool ro, Ast_Node *
 static bool Sem_IsBareProc (Ast_Node * t, m9_state *err);
 static void Sem_ScopeClear (m9_state *err);
 static void Sem_ScopeAdd (m9_sl_CHAR nm, Ast_Node * t, m9_sl_CHAR mode, m9_state *err);
+static bool Sem_ScopeRo (m9_sl_CHAR nm, m9_state *err);
 static int64_t Sem_ScopeFind (m9_sl_CHAR nm, m9_state *err);
 static m9_sl_CHAR Sem_ScopeMode (m9_sl_CHAR nm, m9_state *err);
 static Ast_Node * Sem_ScopeType (m9_sl_CHAR nm, m9_state *err);
@@ -848,6 +998,7 @@ static m9_sl_CHAR Sem_CallAnswersFrame (Ast_Node * dn, m9_state *err);
 static Ast_Node * Sem_DeclPool (Ast_Node * t, m9_state *err);
 static m9_sl_CHAR Sem_AllocPoolOf (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err);
 static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err);
+static m9_sl_CHAR Sem_DesigPath (Ast_Node * d, m9_state *err);
 static m9_sl_CHAR Sem_LocalPoolOf (Ast_Node * e, m9_state *err);
 static m9_sl_CHAR Sem_ViewedPool (Ast_Node * dn, Ast_Node * args, m9_state *err);
 static void Sem_EscStore (m9_sl_CHAR dst, bool dstSel, m9_sl_CHAR src, m9_state *err);
@@ -881,16 +1032,30 @@ static m9_sl_CHAR Sem_GridOf (int64_t rank, m9_sl_CHAR elem, m9_state *err);
 static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err);
 static bool Sem_LitVal (Ast_Node * lit, bool neg, int64_t *v, m9_state *err);
 static bool Sem_LitOut (Ast_Node * n, m9_sl_CHAR t, int64_t *v, m9_state *err);
+static int64_t Sem_ProcHead (m9_sl_CHAR s, m9_state *err);
+static bool Sem_RaisesWithin (m9_sl_CHAR src, m9_sl_CHAR dst, m9_state *err);
+static bool Sem_ProcFits (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err);
 static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err);
+static void Sem_PassedOver (int64_t kind, int64_t line, m9_state *err);
+static void Sem_Agree (int64_t kind, m9_sl_CHAR a, m9_sl_CHAR b, int64_t line, m9_state *err);
+static m9_sl_CHAR Sem_AggElemType (Ast_Node * k, m9_state *err);
+static m9_sl_CHAR Sem_AggType (Ast_Node * e, m9_state *err);
 static m9_sl_CHAR Sem_LitType (Ast_Node * k, m9_state *err);
 static void Sem_ConstClear (m9_state *err);
 static void Sem_ConstAdd (m9_sl_CHAR nm, m9_sl_CHAR ty, m9_state *err);
 static m9_sl_CHAR Sem_ConstType (m9_sl_CHAR nm, bool *found, m9_state *err);
+static bool Sem_IsConstHere (m9_sl_CHAR nm, m9_state *err);
+static bool Sem_IsAggConst (m9_sl_CHAR nm, m9_state *err);
+static void Sem_CheckAggregate (Ast_Node * cd, m9_sl_CHAR ctx, int64_t where, m9_state *err);
+static void Sem_AggWalk (Ast_Node * n, int64_t parent, m9_sl_CHAR ctx, m9_state *err);
+static void Sem_ConstArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t k, Ast_Node * an, bool isVar, bool isRo, m9_state *err);
+static void Sem_RoArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t k, Ast_Node * an, m9_sl_CHAR pTy, m9_sl_CHAR aTy, m9_state *err);
 static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err);
 static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site, m9_sl_CHAR ctx, m9_state *err);
 static m9_sl_CHAR Sem_DesigStrType (Ast_Node * d, bool guard, m9_sl_CHAR ctx, m9_state *err);
 static bool Sem_NumSide (m9_sl_CHAR s, m9_state *err);
 static bool Sem_StrSide (m9_sl_CHAR s, m9_state *err);
+static bool Sem_IsComposite (m9_sl_CHAR t, m9_state *err);
 static m9_sl_CHAR Sem_BinType (Ast_Node * e, m9_sl_CHAR ctx, m9_state *err);
 static bool Sem_BareNameKnown (m9_sl_CHAR nm, m9_state *err);
 static Ast_Node * Sem_AsQual (Ast_Node * k, m9_state *err);
@@ -935,6 +1100,7 @@ static void Sem_FromAdd (m9_sl_CHAR nm, m9_sl_CHAR owner, m9_state *err);
 static m9_sl_CHAR Sem_FromOwner (m9_sl_CHAR nm, m9_state *err);
 static bool Sem_VariantOfType (m9_sl_CHAR canon, int64_t *mi, int64_t *vi, m9_state *err);
 static bool Sem_VariantHas (int64_t mi, int64_t vi, m9_sl_CHAR nm, m9_state *err);
+static bool Sem_HasPatternArm (Ast_Node * st, m9_state *err);
 static void Sem_CheckCaseTotal (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err);
 static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err);
 static void Sem_CheckCallStmt (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err);
@@ -947,10 +1113,14 @@ static bool Sem_IsPoolName (m9_sl_CHAR nm, m9_state *err);
 static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err);
 static void Sem_OwnSeed (m9_state *err);
 static void Sem_CheckCond (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err);
+static void Sem_CheckForVar (Ast_Node * st, m9_sl_CHAR ctx, m9_sl_CHAR bound, bool enum_, m9_state *err);
 static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err);
 static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err);
 static bool Sem_IsVariantLabel (Ast_Node * lbl, m9_state *err);
 static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err);
+static bool Sem_EndsSeq (Ast_Node * k, m9_state *err);
+static bool Sem_HasExit (Ast_Node * k, m9_state *err);
+static bool Sem_EndsStmt (Ast_Node * n, m9_state *err);
 static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_state *err);
 static void Sem_RaisedClear (m9_state *err);
 static void Sem_RaisedAdd (m9_sl_CHAR nm, m9_sl_CHAR origin, m9_state *err);
@@ -972,6 +1142,15 @@ static void Sem_GraphSet (m9_sl_CHAR caller, m9_state *err);
 static int64_t Sem_GraphFind (m9_sl_CHAR caller, m9_state *err);
 static void Sem_RootAdd (m9_sl_CHAR nm, m9_state *err);
 static void Sem_CheckThreadChains (m9_state *err);
+static bool Sem_ModImports (Ast_Node * root, m9_sl_CHAR me, m9_sl_CHAR name, m9_state *err);
+static bool Sem_DeclaresName (Ast_Node * k, m9_sl_CHAR name, m9_state *err);
+static bool Sem_NameShadowed (Ast_Node * root, m9_sl_CHAR me, Ast_Node * scope, m9_sl_CHAR name, m9_state *err);
+static void Sem_ImportWalk (Ast_Node * root, Ast_Node * u, Ast_Node * scope, Ast_Node * k, m9_sl_BOOL *seen, m9_state *err);
+static void Sem_CheckImports (Ast_Node * root, Ast_Node * u, m9_state *err);
+static void Sem_DeclOnce (Ast_Node * id, int64_t what, m9_sl_CHAR me, m9_sl_CHAR where, m9_sl_m9_sl_CHAR *names, m9_sl_I64 *lines, m9_sl_BOOL *open, int64_t *n, m9_state *err);
+static void Sem_SectionNames (Ast_Node * sec, m9_sl_CHAR me, m9_sl_CHAR where, m9_sl_m9_sl_CHAR *names, m9_sl_I64 *lines, m9_sl_BOOL *open, int64_t *n, m9_state *err);
+static void Sem_CheckDeclaredOnce (Ast_Node * u, m9_state *err);
+static void Sem_AddDefConsts (Ast_Node * root, Ast_Node * u, m9_state *err);
 
 
 void Sem_LoadFile (Ast_Node * root, m9_state *err)
@@ -1036,8 +1215,10 @@ void Sem_CheckFile (Ast_Node * root, m9_state *err)
         if (err->exc) goto L_ret;
         if (imp != NULL) {
           if ((imp->kind == Ast_NFromImport)) {
-            fm = Sem_FindMod (imp->a, err);
-            if (err->exc) goto L_ret;
+            { __typeof__(fm) m9v = Sem_FindMod (imp->a, err);
+              if (err->exc) goto L_ret;
+              fm = m9v;
+            }
             if ((fm >= INT64_C(0))) {
               bool m9t3 = (((*(Sem_ModuleInfo *) m9_at (mods.p, fm, mods.len, sizeof (Sem_ModuleInfo), err)).foreignLang).len == INT64_C(0));
               if (err->exc) goto L_ret;
@@ -1065,6 +1246,10 @@ void Sem_CheckFile (Ast_Node * root, m9_state *err)
           }
         } }
       } }
+      Sem_CheckImports (root, u, err);
+      if (err->exc) goto L_ret;
+      Sem_CheckDeclaredOnce (u, err);
+      if (err->exc) goto L_ret;
       Sem_ConstClear (err);
       if (err->exc) goto L_ret;
       { int64_t m9t5to;
@@ -1084,6 +1269,13 @@ void Sem_CheckFile (Ast_Node * root, m9_state *err)
               { Ast_Node * cd = (*(Ast_Node * *) m9_at (cs->kids.p, k, cs->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (cd != NULL) {
+                if ((u->kind == Ast_NDefinition)) {
+                  Sem_CheckAggregate (cd, u->a, INT64_C(1), err);
+                  if (err->exc) goto L_ret;
+                } else {
+                  Sem_CheckAggregate (cd, u->a, INT64_C(0), err);
+                  if (err->exc) goto L_ret;
+                }
                 Sem_ConstAdd (cd->a, Sem_LitType ((*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err)), err), err);
                 if (err->exc) goto L_ret;
               } }
@@ -1091,6 +1283,10 @@ void Sem_CheckFile (Ast_Node * root, m9_state *err)
           }
         } }
       } }
+      if ((u->kind == Ast_NImplementation)) {
+        Sem_AddDefConsts (root, u, err);
+        if (err->exc) goto L_ret;
+      }
       if (((u->kind == Ast_NDefinition) && ((u->b).len > INT64_C(0)))) {
         Sem_CheckForeignDef (u, err);
         if (err->exc) goto L_ret;
@@ -1128,11 +1324,15 @@ void Sem_CheckFile (Ast_Node * root, m9_state *err)
                 npval = INT64_C(0);
                 curInBody = true;
                 boundMon = (m9_sl_CHAR){ NULL, 0 };
-                Sem_WalkStmt ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(0), d->kids.len, sizeof (Ast_Node *), err)), Sem_Cat (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s5, 5 }), err), err);
+                if ((nAgg > INT64_C(0))) {
+                  Sem_AggWalk (d, Ast_NModBody, Sem_Cat (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s5, 5 }), err), err);
+                  if (err->exc) goto L_ret;
+                }
+                Sem_WalkStmt ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(0), d->kids.len, sizeof (Ast_Node *), err)), Sem_Cat (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s6, 5 }), err), err);
                 if (err->exc) goto L_ret;
-                Sem_ReportUnhandled (d, Sem_Cat (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s6, 5 }), err), M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(0), err), err);
+                Sem_ReportUnhandled (d, Sem_Cat (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s7, 5 }), err), M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(0), err), err);
                 if (err->exc) goto L_ret;
-                Sem_GraphSet (Sem_Cat (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s7, 5 }), err), err);
+                Sem_GraphSet (Sem_Cat (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s8, 5 }), err), err);
                 if (err->exc) goto L_ret;
             } }
           } }
@@ -1228,6 +1428,138 @@ L_ret: ;
   return m9ret;
 }
 
+m9_sl_CHAR Sem_StatName (int64_t i, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  { __typeof__(i) m9t1 = i;
+  switch (m9t1) {
+  case INT64_C(0):
+  {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s9, 11 });
+    goto L_ret;
+  } break;
+  case INT64_C(1):
+  {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s10, 9 });
+    goto L_ret;
+  } break;
+  case INT64_C(2):
+  {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s11, 13 });
+    goto L_ret;
+  } break;
+  case INT64_C(3):
+  {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s12, 39 });
+    goto L_ret;
+  } break;
+  case INT64_C(4):
+  {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s13, 11 });
+    goto L_ret;
+  } break;
+  case INT64_C(5):
+  {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s14, 16 });
+    goto L_ret;
+  } break;
+  case INT64_C(6):
+  {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s15, 32 });
+    goto L_ret;
+  } break;
+  default: {
+    err->res = m9res;
+    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    goto L_ret;
+  } break;
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Sem_StatChecked (int64_t i, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  err->res = m9res;
+  m9ret = (*(int64_t *) m9_at (statC.v, i, INT64_C(7), sizeof (int64_t), err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Sem_StatSkipped (int64_t i, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  err->res = m9res;
+  m9ret = (*(int64_t *) m9_at (statS.v, i, INT64_C(7), sizeof (int64_t), err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Sem_StatLines (int64_t i, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  err->res = m9res;
+  m9ret = (*(int64_t *) m9_at (statR.v, i, INT64_C(7), sizeof (int64_t), err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Sem_StatLine (int64_t i, int64_t j, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  err->res = m9res;
+  m9ret = (*(int64_t *) m9_at (statL.v, m9_add_i64 (m9_mul_i64 (i, Sem_StatSites, err), j, err), INT64_C(42), sizeof (int64_t), err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 static void Sem_Setup (m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -1240,78 +1572,144 @@ static void Sem_Setup (m9_state *err)
     goto L_ret;
   }
   inited = true;
-  ch = Ast_NewNode (&(pool), Ast_NQualident, INT64_C(0), INT64_C(0), err);
-  if (err->exc) goto L_ret;
-  ch->a = ((m9_sl_CHAR){ (uint32_t *) m9s8, 4 });
-  sn = Ast_NewNode (&(pool), Ast_NSliceType, INT64_C(0), INT64_C(0), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(ch) m9v = Ast_NewNode (&(pool), Ast_NQualident, INT64_C(0), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    ch = m9v;
+  }
+  ch->a = ((m9_sl_CHAR){ (uint32_t *) m9s16, 4 });
+  { __typeof__(sn) m9v = Ast_NewNode (&(pool), Ast_NSliceType, INT64_C(0), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    sn = m9v;
+  }
   Ast_Add (&(pool), &(sn), &(pool), ch, err);
   if (err->exc) goto L_ret;
   Ast_Add (&(pool), &(sn), &(pool), NULL, err);
   if (err->exc) goto L_ret;
   strNode = sn;
-  mods = M9_POOL_SL (m9_sl_Sem_ModuleInfo, Sem_ModuleInfo, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  errs = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
-  if (err->exc) goto L_ret;
-  ledger = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  scope = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), INT64_C(32), err);
-  if (err->exc) goto L_ret;
-  fromMap = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  graph = M9_POOL_SL (m9_sl_Sem_Edge, Sem_Edge, &(pool), INT64_C(32), err);
-  if (err->exc) goto L_ret;
-  calls = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
-  if (err->exc) goto L_ret;
-  roots = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  raised = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  handled = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  escName = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
-  if (err->exc) goto L_ret;
-  ansName = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(64), err);
-  if (err->exc) goto L_ret;
-  ansState = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(64), err);
-  if (err->exc) goto L_ret;
-  escTgt = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
-  if (err->exc) goto L_ret;
-  fvalName = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
-  if (err->exc) goto L_ret;
-  fvalKind = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
-  if (err->exc) goto L_ret;
-  pvalName = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
-  if (err->exc) goto L_ret;
-  edgeA = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  edgeB = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  pendSrc = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  pendDst = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  pendLine = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  pendCol = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  keptP = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  keptLn = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  keptCl = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  keptU = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  carryN = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  carryB = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  carryEA = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  carryEB = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(mods) m9v = M9_POOL_SL (m9_sl_Sem_ModuleInfo, Sem_ModuleInfo, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    mods = m9v;
+  }
+  { __typeof__(errs) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    errs = m9v;
+  }
+  { __typeof__(ledger) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    ledger = m9v;
+  }
+  { __typeof__(scope) m9v = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), INT64_C(32), err);
+    if (err->exc) goto L_ret;
+    scope = m9v;
+  }
+  { __typeof__(fromMap) m9v = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    fromMap = m9v;
+  }
+  { __typeof__(graph) m9v = M9_POOL_SL (m9_sl_Sem_Edge, Sem_Edge, &(pool), INT64_C(32), err);
+    if (err->exc) goto L_ret;
+    graph = m9v;
+  }
+  { __typeof__(calls) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    calls = m9v;
+  }
+  { __typeof__(roots) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    roots = m9v;
+  }
+  { __typeof__(raised) m9v = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    raised = m9v;
+  }
+  { __typeof__(handled) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    handled = m9v;
+  }
+  { __typeof__(escName) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    escName = m9v;
+  }
+  { __typeof__(ansName) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(64), err);
+    if (err->exc) goto L_ret;
+    ansName = m9v;
+  }
+  { __typeof__(ansState) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(64), err);
+    if (err->exc) goto L_ret;
+    ansState = m9v;
+  }
+  { __typeof__(escTgt) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    escTgt = m9v;
+  }
+  { __typeof__(fvalName) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    fvalName = m9v;
+  }
+  { __typeof__(fvalKind) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    fvalKind = m9v;
+  }
+  { __typeof__(pvalName) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    pvalName = m9v;
+  }
+  { __typeof__(edgeA) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    edgeA = m9v;
+  }
+  { __typeof__(edgeB) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    edgeB = m9v;
+  }
+  { __typeof__(pendSrc) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    pendSrc = m9v;
+  }
+  { __typeof__(pendDst) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    pendDst = m9v;
+  }
+  { __typeof__(pendLine) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    pendLine = m9v;
+  }
+  { __typeof__(pendCol) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    pendCol = m9v;
+  }
+  { __typeof__(keptP) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    keptP = m9v;
+  }
+  { __typeof__(keptLn) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    keptLn = m9v;
+  }
+  { __typeof__(keptCl) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    keptCl = m9v;
+  }
+  { __typeof__(keptU) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    keptU = m9v;
+  }
+  { __typeof__(carryN) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    carryN = m9v;
+  }
+  { __typeof__(carryB) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    carryB = m9v;
+  }
+  { __typeof__(carryEA) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    carryEA = m9v;
+  }
+  { __typeof__(carryEB) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    carryEB = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -1327,22 +1725,29 @@ static void Sem_PushErr (m9_sl_m9_sl_CHAR *list, int64_t *n, m9_sl_CHAR s, m9_st
   m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if (((*n) == ((*list)).len)) {
-    nb = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), ((*list)).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), ((*list)).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 ((*n), INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*list).p, i, (*list).len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*list).p, i, (*list).len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     (*list) = nb;
   }
   (*(m9_sl_CHAR *) m9_at ((*list).p, (*n), (*list).len, sizeof (m9_sl_CHAR), err)) = s;
   if (err->exc) goto L_ret;
-  (*n) = m9_add_i64 ((*n), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*n) = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, (*list).p);
@@ -1357,8 +1762,10 @@ static void Sem_Diag (m9_sl_m9_sl_CHAR *list, int64_t *n, int64_t line, int64_t 
   (void) m9res;
   err->res = &m9frame;
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_AppendI64 (&(d), &(pool), line, err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(d), &(pool), 58u, err);
@@ -1369,7 +1776,7 @@ static void Sem_Diag (m9_sl_m9_sl_CHAR *list, int64_t *n, int64_t line, int64_t 
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), ctx, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s9, 2 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s17, 2 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), msg, err);
   if (err->exc) goto L_ret;
@@ -1437,40 +1844,62 @@ static int64_t Sem_NewMod (m9_sl_CHAR n, m9_state *err)
   m9_sl_Sem_ModuleInfo nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if ((nmods == (mods).len)) {
-    nb = M9_POOL_SL (m9_sl_Sem_ModuleInfo, Sem_ModuleInfo, &(pool), m9_mul_i64 (INT64_C(2), (mods).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Sem_ModuleInfo, Sem_ModuleInfo, &(pool), m9_mul_i64 (INT64_C(2), (mods).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nmods, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(Sem_ModuleInfo *) m9_at (nb.p, i, nb.len, sizeof (Sem_ModuleInfo), err)) = (*(Sem_ModuleInfo *) m9_at (mods.p, i, mods.len, sizeof (Sem_ModuleInfo), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Sem_ModuleInfo *) m9_at (nb.p, i, nb.len, sizeof (Sem_ModuleInfo), err))) m9v = (*(Sem_ModuleInfo *) m9_at (mods.p, i, mods.len, sizeof (Sem_ModuleInfo), err));
+        if (err->exc) goto L_ret;
+        (*(Sem_ModuleInfo *) m9_at (nb.p, i, nb.len, sizeof (Sem_ModuleInfo), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     mods = nb;
   }
   (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).name = n;
   if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).procs = M9_POOL_SL (m9_sl_Sem_ProcInfo, Sem_ProcInfo, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).procs) m9v = M9_POOL_SL (m9_sl_Sem_ProcInfo, Sem_ProcInfo, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).procs = m9v;
+    if (err->exc) goto L_ret;
+  }
   (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).nprocs = INT64_C(0);
   if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).vts = M9_POOL_SL (m9_sl_Sem_VariantInfo, Sem_VariantInfo, &(pool), INT64_C(4), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).vts) m9v = M9_POOL_SL (m9_sl_Sem_VariantInfo, Sem_VariantInfo, &(pool), INT64_C(4), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).vts = m9v;
+    if (err->exc) goto L_ret;
+  }
   (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).nvts = INT64_C(0);
   if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames = m9v;
+    if (err->exc) goto L_ret;
+  }
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes = m9v;
+    if (err->exc) goto L_ret;
+  }
   (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).ntds = INT64_C(0);
   if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).opaque = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(4), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).opaque) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(4), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).opaque = m9v;
+    if (err->exc) goto L_ret;
+  }
   (*(Sem_ModuleInfo *) m9_at (mods.p, nmods, mods.len, sizeof (Sem_ModuleInfo), err)).nopaque = INT64_C(0);
   if (err->exc) goto L_ret;
-  nmods = m9_add_i64 (nmods, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nmods) m9v = m9_add_i64 (nmods, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nmods = m9v;
+  }
   err->res = m9res;
   m9ret = m9_sub_i64 (nmods, INT64_C(1), err);
   if (err->exc) goto L_ret;
@@ -1586,8 +2015,10 @@ static m9_sl_m9_sl_CHAR Sem_RaisesOf (m9_pool *pl, Ast_Node * p, m9_state *err)
   { Ast_Node * rs = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(2), p->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (rs != NULL) {
-    r = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pl)), rs->nkids, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(r) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pl)), rs->nkids, err);
+      if (err->exc) goto L_ret;
+      r = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (rs->nkids, INT64_C(1), err);
@@ -1632,8 +2063,10 @@ static bool Sem_ExcKnown (m9_sl_CHAR qual, m9_sl_CHAR nm, m9_state *err)
   bool m9t1 = (((qual).len > INT64_C(0)) && (!Text_Eq (qual, curMod, err)));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    m = Sem_FindMod (qual, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(m) m9v = Sem_FindMod (qual, err);
+      if (err->exc) goto L_ret;
+      m = m9v;
+    }
     if ((m < INT64_C(0))) {
       err->res = m9res;
       m9ret = true;
@@ -1651,7 +2084,7 @@ static bool Sem_ExcKnown (m9_sl_CHAR qual, m9_sl_CHAR nm, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t3 = (((Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s10, 8 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s11, 10 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s12, 11 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s13, 10 }), err));
+  bool m9t3 = (((Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s18, 8 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s19, 10 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s20, 11 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s21, 10 }), err));
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
@@ -1697,7 +2130,7 @@ static void Sem_CheckExcName (Ast_Node * n, m9_sl_CHAR ctx, m9_state *err)
   bool m9t1 = (!Sem_ExcKnown (qual, nm, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Sem_ErrN (n, ctx, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s14, 19 }), nm, err), err);
+    Sem_ErrN (n, ctx, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s22, 19 }), nm, err), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -1719,8 +2152,10 @@ static bool Sem_TypeKnown (m9_sl_CHAR qual, m9_sl_CHAR nm, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  m = Sem_FindMod (qual, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Sem_FindMod (qual, err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   if ((m < INT64_C(0))) {
     err->res = m9res;
     m9ret = true;
@@ -1772,7 +2207,7 @@ static void Sem_CheckFieldTypes (Ast_Node * fs, m9_sl_CHAR ctx, m9_state *err)
         bool m9t2 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err)), err);
         if (err->exc) goto L_ret;
         if (m9t2) {
-          Sem_ErrN (g, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s15, 49 }), err);
+          Sem_ErrN (g, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s23, 49 }), err);
           if (err->exc) goto L_ret;
         }
       } }
@@ -1800,7 +2235,7 @@ static void Sem_CheckTypeNode (Ast_Node * t, m9_sl_CHAR ctx, m9_state *err)
       bool m9t2 = (((n->b).len > INT64_C(0)) && (!Sem_TypeKnown (n->a, n->b, err)));
       if (err->exc) goto L_ret;
       if (m9t2) {
-        Sem_ErrN (n, ctx, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s16, 14 }), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s17, 1 }), err), n->b, err), ((m9_sl_CHAR){ (uint32_t *) m9s18, 4 }), err), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s19, 22 }), err), err);
+        Sem_ErrN (n, ctx, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s24, 14 }), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s25, 1 }), err), n->b, err), ((m9_sl_CHAR){ (uint32_t *) m9s26, 4 }), err), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s27, 22 }), err), err);
         if (err->exc) goto L_ret;
       }
     } break;
@@ -1826,7 +2261,7 @@ static void Sem_CheckTypeNode (Ast_Node * t, m9_sl_CHAR ctx, m9_state *err)
       bool m9t3 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        Sem_ErrN (n, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s20, 75 }), err);
+        Sem_ErrN (n, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s28, 75 }), err);
         if (err->exc) goto L_ret;
       }
     } break;
@@ -1837,7 +2272,7 @@ static void Sem_CheckTypeNode (Ast_Node * t, m9_sl_CHAR ctx, m9_state *err)
       bool m9t4 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
       if (m9t4) {
-        Sem_ErrN (n, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s21, 75 }), err);
+        Sem_ErrN (n, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s29, 75 }), err);
         if (err->exc) goto L_ret;
       }
     } break;
@@ -1934,7 +2369,7 @@ static void Sem_CheckVarTypes (Ast_Node * holder, m9_sl_CHAR ctx, m9_state *err)
             bool m9t3 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err)), err);
             if (err->exc) goto L_ret;
             if (m9t3) {
-              Sem_ErrN (vd, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s22, 52 }), err);
+              Sem_ErrN (vd, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s30, 52 }), err);
               if (err->exc) goto L_ret;
             }
           } }
@@ -1992,23 +2427,23 @@ static void Sem_CheckDeclTypes (Ast_Node * u, m9_state *err)
             { Ast_Node * grp = (*(Ast_Node * *) m9_at (pl->kids.p, a, pl->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (grp != NULL) {
-              Sem_CheckTypeNode ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s23, 1 }), err), d->a, err), err);
+              Sem_CheckTypeNode ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s31, 1 }), err), d->a, err), err);
               if (err->exc) goto L_ret;
             } }
           } }
         } }
-        Sem_CheckTypeNode ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s24, 1 }), err), d->a, err), err);
+        Sem_CheckTypeNode ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s32, 1 }), err), d->a, err), err);
         if (err->exc) goto L_ret;
         bool m9t3 = Sem_IsBareProc ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), err);
         if (err->exc) goto L_ret;
         if (m9t3) {
-          Sem_ErrN (d, m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s25, 1 }), err), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s26, 55 }), err);
+          Sem_ErrN (d, m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s33, 1 }), err), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 55 }), err);
           if (err->exc) goto L_ret;
         }
         { Ast_Node * body = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (body != NULL) {
-          Sem_CheckVarTypes (body, m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s27, 1 }), err), d->a, err), err);
+          Sem_CheckVarTypes (body, m9_cat (err->res, m9_cat (err->res, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s35, 1 }), err), d->a, err), err);
           if (err->exc) goto L_ret;
         } }
       }
@@ -2030,8 +2465,10 @@ static m9_sl_CHAR Sem_SigOf (Ast_Node * p, m9_state *err)
   DynStr_DString * d = NULL; (void) d;
   m9_sl_m9_sl_CHAR r = {0}; (void) r;
   int64_t i = 0; (void) i;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_AppendChar (&(d), &(pool), 40u, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), Print_ParamsText ((*(Ast_Node * *) m9_at (p->kids.p, INT64_C(0), p->kids.len, sizeof (Ast_Node *), err)), err), err);
@@ -2041,7 +2478,7 @@ static m9_sl_CHAR Sem_SigOf (Ast_Node * p, m9_state *err)
   { Ast_Node * rt = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (rt != NULL) {
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s28, 3 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s36, 3 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(pool), Print_TypeText (&(pool), (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(1), p->kids.len, sizeof (Ast_Node *), err)), err), err);
     if (err->exc) goto L_ret;
@@ -2049,17 +2486,19 @@ static m9_sl_CHAR Sem_SigOf (Ast_Node * p, m9_state *err)
   { Ast_Node * rs = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(2), p->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (rs != NULL) {
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s29, 8 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s37, 8 }), err);
     if (err->exc) goto L_ret;
-    r = Sem_RaisesOf (&(pool), p, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(r) m9v = Sem_RaisesOf (&(pool), p, err);
+      if (err->exc) goto L_ret;
+      r = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 ((r).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
       if ((i > INT64_C(0))) {
-        DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s30, 2 }), err);
+        DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s38, 2 }), err);
         if (err->exc) goto L_ret;
       }
       DynStr_Append (&(d), &(pool), (*(m9_sl_CHAR *) m9_at (r.p, i, r.len, sizeof (m9_sl_CHAR), err)), err);
@@ -2069,7 +2508,7 @@ static m9_sl_CHAR Sem_SigOf (Ast_Node * p, m9_state *err)
   { Ast_Node * at = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(3), p->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (at != NULL) {
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s31, 2 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s39, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(pool), at->a, err);
     if (err->exc) goto L_ret;
@@ -2098,23 +2537,31 @@ static void Sem_AddProc (int64_t m, Sem_ProcInfo p, m9_state *err)
   bool m9t1 = ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nprocs == ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    nb = M9_POOL_SL (m9_sl_Sem_ProcInfo, Sem_ProcInfo, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Sem_ProcInfo, Sem_ProcInfo, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nprocs, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(Sem_ProcInfo *) m9_at (nb.p, i, nb.len, sizeof (Sem_ProcInfo), err)) = (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Sem_ProcInfo *) m9_at (nb.p, i, nb.len, sizeof (Sem_ProcInfo), err))) m9v = (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err));
+        if (err->exc) goto L_ret;
+        (*(Sem_ProcInfo *) m9_at (nb.p, i, nb.len, sizeof (Sem_ProcInfo), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs = nb;
     if (err->exc) goto L_ret;
   }
   (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nprocs, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)) = p;
   if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nprocs = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nprocs, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nprocs) m9v = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nprocs, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nprocs = m9v;
+    if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -2133,19 +2580,29 @@ static void Sem_AddType (int64_t m, m9_sl_CHAR n, Ast_Node * body, m9_state *err
   bool m9t1 = ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ntds == ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames).len, err), err);
-    if (err->exc) goto L_ret;
-    nk = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
+    { __typeof__(nk) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes).len, err), err);
+      if (err->exc) goto L_ret;
+      nk = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ntds, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      (*(Ast_Node * *) m9_at (nk.p, i, nk.len, sizeof (Ast_Node *), err)) = (*(Ast_Node * *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(Ast_Node * *) m9_at (nk.p, i, nk.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        (*(Ast_Node * *) m9_at (nk.p, i, nk.len, sizeof (Ast_Node *), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNames = ns;
     if (err->exc) goto L_ret;
@@ -2156,8 +2613,11 @@ static void Sem_AddType (int64_t m, m9_sl_CHAR n, Ast_Node * body, m9_state *err
   if (err->exc) goto L_ret;
   (*(Ast_Node * *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes.p, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ntds, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).tdNodes.len, sizeof (Ast_Node *), err)) = body;
   if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ntds = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ntds, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ntds) m9v = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ntds, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ntds = m9v;
+    if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -2176,19 +2636,29 @@ static void Sem_AddConst (int64_t m, m9_sl_CHAR n, m9_sl_CHAR ty, m9_state *err)
   bool m9t1 = ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ncns == ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnNames).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnNames).len, err), INT64_C(16), err), err);
-    if (err->exc) goto L_ret;
-    ts = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnTypes).len, err), INT64_C(16), err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnNames).len, err), INT64_C(16), err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
+    { __typeof__(ts) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnTypes).len, err), INT64_C(16), err), err);
+      if (err->exc) goto L_ret;
+      ts = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ncns, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnNames.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnNames.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (ts.p, i, ts.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnTypes.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnTypes.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnNames.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnNames.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ts.p, i, ts.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnTypes.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnTypes.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ts.p, i, ts.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnNames = ns;
     if (err->exc) goto L_ret;
@@ -2199,8 +2669,11 @@ static void Sem_AddConst (int64_t m, m9_sl_CHAR n, m9_sl_CHAR ty, m9_state *err)
   if (err->exc) goto L_ret;
   (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnTypes.p, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ncns, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).cnTypes.len, sizeof (m9_sl_CHAR), err)) = ty;
   if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ncns = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ncns, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ncns) m9v = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ncns, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).ncns = m9v;
+    if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -2218,23 +2691,31 @@ static void Sem_AddExc (int64_t m, m9_sl_CHAR n, m9_state *err)
   bool m9t1 = ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nexc == ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames).len, err), INT64_C(16), err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames).len, err), INT64_C(16), err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nexc, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames = ns;
     if (err->exc) goto L_ret;
   }
   (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames.p, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nexc, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).exNames.len, sizeof (m9_sl_CHAR), err)) = n;
   if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nexc = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nexc, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nexc) m9v = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nexc, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nexc = m9v;
+    if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -2281,8 +2762,10 @@ static m9_sl_CHAR Sem_ModConstType (m9_sl_CHAR modName, m9_sl_CHAR n, bool *foun
   int64_t m = 0; (void) m;
   int64_t i = 0; (void) i;
   (*found) = false;
-  m = Sem_FindMod (modName, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Sem_FindMod (modName, err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   if ((m < INT64_C(0))) {
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -2324,23 +2807,31 @@ static void Sem_AddOpaque (int64_t m, m9_sl_CHAR n, m9_state *err)
   bool m9t1 = ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nopaque == ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nopaque, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque = ns;
     if (err->exc) goto L_ret;
   }
   (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.p, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nopaque, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.len, sizeof (m9_sl_CHAR), err)) = n;
   if (err->exc) goto L_ret;
-  (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nopaque = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nopaque, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nopaque) m9v = m9_add_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nopaque, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nopaque = m9v;
+    if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -2359,27 +2850,40 @@ static void Sem_AddVariants (int64_t m, m9_sl_CHAR tn, Ast_Node * cr, m9_state *
   bool m9t1 = ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nvts == ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    nb = M9_POOL_SL (m9_sl_Sem_VariantInfo, Sem_VariantInfo, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Sem_VariantInfo, Sem_VariantInfo, &(pool), m9_mul_i64 (INT64_C(2), ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nvts, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(Sem_VariantInfo *) m9_at (nb.p, i, nb.len, sizeof (Sem_VariantInfo), err)) = (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Sem_VariantInfo *) m9_at (nb.p, i, nb.len, sizeof (Sem_VariantInfo), err))) m9v = (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err));
+        if (err->exc) goto L_ret;
+        (*(Sem_VariantInfo *) m9_at (nb.p, i, nb.len, sizeof (Sem_VariantInfo), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts = nb;
     if (err->exc) goto L_ret;
   }
-  k = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nvts;
-  if (err->exc) goto L_ret;
+  { __typeof__(k) m9v = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nvts;
+    if (err->exc) goto L_ret;
+    k = m9v;
+  }
   (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).typeName = tn;
   if (err->exc) goto L_ret;
-  (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), cr->nkids, err);
-  if (err->exc) goto L_ret;
-  (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), cr->nkids, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), cr->nkids, err);
+    if (err->exc) goto L_ret;
+    (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants = m9v;
+    if (err->exc) goto L_ret;
+  }
+  { __typeof__((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), cr->nkids, err);
+    if (err->exc) goto L_ret;
+    (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields = m9v;
+    if (err->exc) goto L_ret;
+  }
   { int64_t m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 (cr->nkids, INT64_C(1), err);
@@ -2390,12 +2894,18 @@ static void Sem_AddVariants (int64_t m, m9_sl_CHAR tn, Ast_Node * cr, m9_state *
     if (v != NULL) {
       (*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, i, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err)) = v->a;
       if (err->exc) goto L_ret;
-      (*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, i, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err)) = (*(Ast_Node * *) m9_at (v->kids.p, INT64_C(0), v->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, i, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at (v->kids.p, INT64_C(0), v->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        (*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, i, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, k, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
   } }
-  (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nvts = m9_add_i64 (k, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nvts) m9v = m9_add_i64 (k, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).nvts = m9v;
+    if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -2413,11 +2923,15 @@ static void Sem_CollectUnit (Ast_Node * u, m9_state *err)
   int64_t j = 0; (void) j;
   int64_t pi = 0; (void) pi;
   Sem_ProcInfo p = {0}; (void) p;
-  m = Sem_FindMod (u->a, err);
-  if (err->exc) goto L_ret;
-  if ((m < INT64_C(0))) {
-    m = Sem_NewMod (u->a, err);
+  { __typeof__(m) m9v = Sem_FindMod (u->a, err);
     if (err->exc) goto L_ret;
+    m = m9v;
+  }
+  if ((m < INT64_C(0))) {
+    { __typeof__(m) m9v = Sem_NewMod (u->a, err);
+      if (err->exc) goto L_ret;
+      m = m9v;
+    }
   }
   if ((u->kind == Ast_NDefinition)) {
     (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).hasDef = true;
@@ -2444,12 +2958,16 @@ static void Sem_CollectUnit (Ast_Node * u, m9_state *err)
     if (err->exc) goto L_ret;
     if (d != NULL) {
       if ((d->kind == Ast_NProcDecl)) {
-        pi = Sem_FindProcIn (m, d->a, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(pi) m9v = Sem_FindProcIn (m, d->a, err);
+          if (err->exc) goto L_ret;
+          pi = m9v;
+        }
         if ((pi < INT64_C(0))) {
           p.name = d->a;
-          p.modName = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
-          if (err->exc) goto L_ret;
+          { __typeof__(p.modName) m9v = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
+            if (err->exc) goto L_ret;
+            p.modName = m9v;
+          }
           p.foreign = d->b;
           { Ast_Node * at = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(3), d->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
@@ -2458,10 +2976,14 @@ static void Sem_CollectUnit (Ast_Node * u, m9_state *err)
           } else {
             p.attrib = (m9_sl_CHAR){ NULL, 0 };
           } }
-          p.raises = Sem_RaisesOf (&(pool), d, err);
-          if (err->exc) goto L_ret;
-          p.sig = Sem_SigOf (d, err);
-          if (err->exc) goto L_ret;
+          { __typeof__(p.raises) m9v = Sem_RaisesOf (&(pool), d, err);
+            if (err->exc) goto L_ret;
+            p.raises = m9v;
+          }
+          { __typeof__(p.sig) m9v = Sem_SigOf (d, err);
+            if (err->exc) goto L_ret;
+            p.sig = m9v;
+          }
           p.node = d;
           p.body = NULL;
           p.fromDef = (u->kind == Ast_NDefinition);
@@ -2567,8 +3089,10 @@ static Ast_Node * Sem_LookupTypeName (m9_sl_CHAR modName, m9_sl_CHAR typeName, m
   int64_t m = 0; (void) m;
   int64_t i = 0; (void) i;
   if (((modName).len > INT64_C(0))) {
-    m = Sem_FindMod (modName, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(m) m9v = Sem_FindMod (modName, err);
+      if (err->exc) goto L_ret;
+      m = m9v;
+    }
     if ((m < INT64_C(0))) {
       err->res = m9res;
       m9ret = NULL;
@@ -2579,8 +3103,10 @@ static Ast_Node * Sem_LookupTypeName (m9_sl_CHAR modName, m9_sl_CHAR typeName, m
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  m = Sem_FindMod (curMod, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Sem_FindMod (curMod, err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   if ((m >= INT64_C(0))) {
     { Ast_Node * t = Sem_FindTypeIn (m, typeName, err);
     if (err->exc) goto L_ret;
@@ -2637,24 +3163,32 @@ static Ast_Node * Sem_ResolveType (Ast_Node * t, m9_state *err)
         m9ret = NULL;
         goto L_ret;
       }
-      bool m9t1 = (((n->b).len == INT64_C(0)) && Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s32, 3 }), err));
+      bool m9t1 = (((n->b).len == INT64_C(0)) && Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s40, 3 }), err));
       if (err->exc) goto L_ret;
       if (m9t1) {
         err->res = m9res;
         m9ret = strNode;
         goto L_ret;
       }
-      cur = Sem_LookupTypeName (n->b, n->a, err);
-      if (err->exc) goto L_ret;
-      if (((n->b).len == INT64_C(0))) {
-        cur = Sem_LookupTypeName ((m9_sl_CHAR){ NULL, 0 }, n->a, err);
+      { __typeof__(cur) m9v = Sem_LookupTypeName (n->b, n->a, err);
         if (err->exc) goto L_ret;
-      } else {
-        cur = Sem_LookupTypeName (n->a, n->b, err);
-        if (err->exc) goto L_ret;
+        cur = m9v;
       }
-      depth = m9_add_i64 (depth, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      if (((n->b).len == INT64_C(0))) {
+        { __typeof__(cur) m9v = Sem_LookupTypeName ((m9_sl_CHAR){ NULL, 0 }, n->a, err);
+          if (err->exc) goto L_ret;
+          cur = m9v;
+        }
+      } else {
+        { __typeof__(cur) m9v = Sem_LookupTypeName (n->a, n->b, err);
+          if (err->exc) goto L_ret;
+          cur = m9v;
+        }
+      }
+      { __typeof__(depth) m9v = m9_add_i64 (depth, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        depth = m9v;
+      }
     } else {
       err->res = m9res;
       m9ret = NULL;
@@ -2676,7 +3210,7 @@ static bool Sem_IsBuiltinTy (m9_sl_CHAR n, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((((((((((((Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s33, 2 }), err) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s34, 3 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s35, 3 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s36, 3 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s38, 3 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s39, 3 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s40, 3 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s41, 3 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s42, 3 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s43, 4 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s44, 4 }), err)) || Text_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s45, 4 }), err));
+  m9ret = Text_OneOf (n, ((m9_sl_m9_sl_CHAR){ ((*BuiltinTys)).v, INT64_C(13) }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -2701,14 +3235,20 @@ static m9_sl_CHAR Sem_ScalarAlias (m9_sl_CHAR name, m9_state *err)
     m9ret = name;
     goto L_ret;
   }
-  dot = Text_FindChar (name, 46u, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(dot) m9v = Text_FindChar (name, 46u, err);
+    if (err->exc) goto L_ret;
+    dot = m9v;
+  }
   if ((dot > INT64_C(0))) {
-    t = Sem_CanonQual (({ __typeof__(name) m9t2 = name; int64_t m9t2a = INT64_C(0), m9t2n = dot; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), ({ __typeof__(name) m9t3 = name; int64_t m9t3a = m9_add_i64 (dot, INT64_C(1), err), m9t3n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(t) m9v = Sem_CanonQual (({ __typeof__(name) m9t2 = name; int64_t m9t2a = INT64_C(0), m9t2n = dot; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), ({ __typeof__(name) m9t3 = name; int64_t m9t3a = m9_add_i64 (dot, INT64_C(1), err), m9t3n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), INT64_C(0), err);
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
   } else {
-    t = Sem_CanonQual ((m9_sl_CHAR){ NULL, 0 }, name, INT64_C(0), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(t) m9v = Sem_CanonQual ((m9_sl_CHAR){ NULL, 0 }, name, INT64_C(0), err);
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
   }
   bool m9t4 = Sem_IsBuiltinTy (t, err);
   if (err->exc) goto L_ret;
@@ -2744,7 +3284,7 @@ static m9_sl_CHAR Sem_WidthTwin (m9_sl_CHAR name, bool single, m9_state *err)
   }
   n = (name).len;
   if ((n > INT64_C(3))) {
-    bool m9t2 = Text_Eq (({ __typeof__(name) m9t1 = name; int64_t m9t1a = m9_sub_i64 (n, INT64_C(3), err), m9t1n = INT64_C(3); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s46, 3 }), err);
+    bool m9t2 = Text_Eq (({ __typeof__(name) m9t1 = name; int64_t m9t1a = m9_sub_i64 (n, INT64_C(3), err), m9t1n = INT64_C(3); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s41, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
@@ -2752,11 +3292,13 @@ static m9_sl_CHAR Sem_WidthTwin (m9_sl_CHAR name, bool single, m9_state *err)
       goto L_ret;
     }
   }
-  pr = Sem_LookupProc (Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s47, 3 }), err), &(found), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(pr) m9v = Sem_LookupProc (Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s42, 3 }), err), &(found), err);
+    if (err->exc) goto L_ret;
+    pr = m9v;
+  }
   if (found) {
     err->res = m9res;
-    m9ret = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s48, 3 }), err);
+    m9ret = Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s43, 3 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -2797,11 +3339,11 @@ static m9_sl_CHAR Sem_CanonT (Ast_Node * t, int64_t depth, m9_state *err)
     case INT64_C(26):
     {
       if (((n->b).len > INT64_C(0))) {
-        bool m9t2 = Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s49, 1 }), err);
+        bool m9t2 = Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s44, 1 }), err);
         if (err->exc) goto L_ret;
         if (m9t2) {
           err->res = m9res;
-          m9ret = Sem_Qualify (((m9_sl_CHAR){ (uint32_t *) m9s50, 1 }), n->b, err);
+          m9ret = Sem_Qualify (((m9_sl_CHAR){ (uint32_t *) m9s45, 1 }), n->b, err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
@@ -2817,11 +3359,18 @@ static m9_sl_CHAR Sem_CanonT (Ast_Node * t, int64_t depth, m9_state *err)
         m9ret = n->a;
         goto L_ret;
       }
-      bool m9t4 = Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s51, 3 }), err);
+      bool m9t4 = Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s46, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t4) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s52, 13 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s47, 13 });
+        goto L_ret;
+      }
+      bool m9t5 = Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s48, 4 }), err);
+      if (err->exc) goto L_ret;
+      if (m9t5) {
+        err->res = m9res;
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s49, 4 });
         goto L_ret;
       }
       err->res = m9res;
@@ -2831,66 +3380,78 @@ static m9_sl_CHAR Sem_CanonT (Ast_Node * t, int64_t depth, m9_state *err)
     } break;
     case INT64_C(35):
     {
-      s = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(s) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
+        if (err->exc) goto L_ret;
+        s = m9v;
+      }
       if (((s).len > INT64_C(0))) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s53, 4 }), s, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s50, 4 }), s, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
     } break;
     case INT64_C(36):
     {
-      s = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(s) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
+        if (err->exc) goto L_ret;
+        s = m9v;
+      }
       if (((s).len > INT64_C(0))) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s54, 4 }), s, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s51, 4 }), s, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
     } break;
     case INT64_C(37):
     {
-      s = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(s) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
+        if (err->exc) goto L_ret;
+        s = m9v;
+      }
       if (((s).len > INT64_C(0))) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s55, 11 }), s, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s52, 11 }), s, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
     } break;
     case INT64_C(28):
     {
-      s = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(s) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
+        if (err->exc) goto L_ret;
+        s = m9v;
+      }
       if (((s).len > INT64_C(0))) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s56, 9 }), s, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s53, 9 }), s, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
     } break;
     case INT64_C(27):
     {
-      s = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(s) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
+        if (err->exc) goto L_ret;
+        s = m9v;
+      }
       if (((s).len > INT64_C(0))) {
         err->res = m9res;
-        m9ret = Sem_Cat (Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s57, 6 }), Print_ExprText ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s58, 4 }), err), s, err);
+        m9ret = Sem_Cat (Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s54, 6 }), Print_ExprText ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s55, 4 }), err), s, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
     } break;
     case INT64_C(81):
     {
-      s = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(s) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
+        if (err->exc) goto L_ret;
+        s = m9v;
+      }
       if (((s).len > INT64_C(0))) {
         err->res = m9res;
-        m9ret = Sem_Cat (Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s59, 5 }), Print_ExprText ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s60, 4 }), err), s, err);
+        m9ret = Sem_Cat (Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s56, 5 }), Print_ExprText ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s57, 4 }), err), s, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -2930,16 +3491,20 @@ static m9_sl_CHAR Sem_ArrEnumBoundOf (Ast_Node * declN, m9_state *err)
         if ((b->kind == Ast_NDesignator)) {
           canon = (m9_sl_CHAR){ NULL, 0 };
           if ((b->nkids == INT64_C(0))) {
-            canon = Sem_CanonQual ((m9_sl_CHAR){ NULL, 0 }, b->a, INT64_C(0), err);
-            if (err->exc) goto L_ret;
+            { __typeof__(canon) m9v = Sem_CanonQual ((m9_sl_CHAR){ NULL, 0 }, b->a, INT64_C(0), err);
+              if (err->exc) goto L_ret;
+              canon = m9v;
+            }
           } else {
             if ((b->nkids == INT64_C(1))) {
               { Ast_Node * sf = (*(Ast_Node * *) m9_at (b->kids.p, INT64_C(0), b->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (sf != NULL) {
                 if ((sf->kind == Ast_NSelField)) {
-                  canon = Sem_CanonQual (b->a, sf->a, INT64_C(0), err);
-                  if (err->exc) goto L_ret;
+                  { __typeof__(canon) m9v = Sem_CanonQual (b->a, sf->a, INT64_C(0), err);
+                    if (err->exc) goto L_ret;
+                    canon = m9v;
+                  }
                 }
               } }
           } }
@@ -3025,14 +3590,20 @@ static m9_sl_CHAR Sem_CanonQual (m9_sl_CHAR modName, m9_sl_CHAR typeName, int64_
     goto L_ret;
   }
   if (((canonCtx).len > INT64_C(0))) {
-    m = Sem_FindMod (canonCtx, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(m) m9v = Sem_FindMod (canonCtx, err);
+      if (err->exc) goto L_ret;
+      m = m9v;
+    }
   } else {
-    m = Sem_FindMod (curMod, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(m) m9v = Sem_FindMod (curMod, err);
+      if (err->exc) goto L_ret;
+      m = m9v;
+    }
   }
-  s = Sem_TryModCanon (m, typeName, depth, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(s) m9v = Sem_TryModCanon (m, typeName, depth, err);
+    if (err->exc) goto L_ret;
+    s = m9v;
+  }
   if (((s).len > INT64_C(0))) {
     err->res = m9res;
     m9ret = s;
@@ -3043,8 +3614,10 @@ static m9_sl_CHAR Sem_CanonQual (m9_sl_CHAR modName, m9_sl_CHAR typeName, int64_
   m9t1to = m9_sub_i64 (nmods, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    s = Sem_TryModCanon (i, typeName, depth, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = Sem_TryModCanon (i, typeName, depth, err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
     if (((s).len > INT64_C(0))) {
       err->res = m9res;
       m9ret = s;
@@ -3080,8 +3653,10 @@ static bool Sem_SigLess (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
       if (err->exc) goto L_ret;
       goto L_ret;
     }
-    i = m9_add_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
   }
   err->res = m9res;
   m9ret = ((a).len < (b).len);
@@ -3108,9 +3683,11 @@ static m9_sl_CHAR Sem_ProcSig (Ast_Node * pl, Ast_Node * rt, bool ro, Ast_Node *
   m9_sl_CHAR s = {0}; (void) s;
   m9_sl_CHAR tmp = {0}; (void) tmp;
   m9_sl_m9_sl_CHAR names = {0}; (void) names;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s61, 11 }), err);
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s58, 11 }), err);
   if (err->exc) goto L_ret;
   first = true;
   { Ast_Node * pln = pl;
@@ -3123,8 +3700,10 @@ static m9_sl_CHAR Sem_ProcSig (Ast_Node * pl, Ast_Node * rt, bool ro, Ast_Node *
       { Ast_Node * grp = (*(Ast_Node * *) m9_at (pln->kids.p, g, pln->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (grp != NULL) {
-        s = Sem_CanonT ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(s) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
+          if (err->exc) goto L_ret;
+          s = m9v;
+        }
         if (((s).len == INT64_C(0))) {
           err->res = m9res;
           m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -3139,24 +3718,24 @@ static m9_sl_CHAR Sem_ProcSig (Ast_Node * pl, Ast_Node * rt, bool ro, Ast_Node *
           if (err->exc) goto L_ret;
           for (; j <= m9t2to; j += 1) {
             if ((!first)) {
-              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s62, 3 }), err);
+              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s59, 3 }), err);
               if (err->exc) goto L_ret;
             }
             first = false;
             if (grp->f1) {
-              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s63, 4 }), err);
+              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s60, 4 }), err);
               if (err->exc) goto L_ret;
             }
             if (grp->f2) {
-              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s64, 4 }), err);
+              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s61, 4 }), err);
               if (err->exc) goto L_ret;
             }
             if (grp->f3) {
-              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s65, 3 }), err);
+              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s62, 3 }), err);
               if (err->exc) goto L_ret;
             }
             if (grp->f4) {
-              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s66, 5 }), err);
+              DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s63, 5 }), err);
               if (err->exc) goto L_ret;
             }
             DynStr_Append (&(d), &(pool), s, err);
@@ -3170,17 +3749,19 @@ static m9_sl_CHAR Sem_ProcSig (Ast_Node * pl, Ast_Node * rt, bool ro, Ast_Node *
   if (err->exc) goto L_ret;
   { Ast_Node * rtn = rt;
   if (rtn != NULL) {
-    s = Sem_CanonT (rt, m9_add_i64 (depth, INT64_C(1), err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = Sem_CanonT (rt, m9_add_i64 (depth, INT64_C(1), err), err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
     if (((s).len == INT64_C(0))) {
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
       goto L_ret;
     }
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s67, 3 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s64, 3 }), err);
     if (err->exc) goto L_ret;
     if (ro) {
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s68, 3 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s65, 3 }), err);
       if (err->exc) goto L_ret;
     }
     DynStr_Append (&(d), &(pool), s, err);
@@ -3188,8 +3769,10 @@ static m9_sl_CHAR Sem_ProcSig (Ast_Node * pl, Ast_Node * rt, bool ro, Ast_Node *
   } }
   { Ast_Node * rsn = rs;
   if (rsn != NULL) {
-    names = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), rsn->nkids, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(names) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), rsn->nkids, err);
+      if (err->exc) goto L_ret;
+      names = m9v;
+    }
     { int64_t m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (rsn->nkids, INT64_C(1), err);
@@ -3217,17 +3800,24 @@ static m9_sl_CHAR Sem_ProcSig (Ast_Node * pl, Ast_Node * rt, bool ro, Ast_Node *
         bool m9t5 = ((k > INT64_C(0)) && Sem_SigLess ((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at (names.p, m9_sub_i64 (k, INT64_C(1), err), names.len, sizeof (m9_sl_CHAR), err)), err));
         if (err->exc) goto L_ret;
         if (!(m9t5)) break;
-        tmp = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
-        if (err->exc) goto L_ret;
-        (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (names.p, m9_sub_i64 (k, INT64_C(1), err), names.len, sizeof (m9_sl_CHAR), err));
-        if (err->exc) goto L_ret;
+        { __typeof__(tmp) m9v = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
+          if (err->exc) goto L_ret;
+          tmp = m9v;
+        }
+        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (names.p, m9_sub_i64 (k, INT64_C(1), err), names.len, sizeof (m9_sl_CHAR), err));
+          if (err->exc) goto L_ret;
+          (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
         (*(m9_sl_CHAR *) m9_at (names.p, m9_sub_i64 (k, INT64_C(1), err), names.len, sizeof (m9_sl_CHAR), err)) = tmp;
         if (err->exc) goto L_ret;
-        k = m9_sub_i64 (k, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(k) m9v = m9_sub_i64 (k, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          k = m9v;
+        }
       }
     } }
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s69, 8 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s66, 8 }), err);
     if (err->exc) goto L_ret;
     { int64_t m9t6to;
     i = INT64_C(0);
@@ -3235,7 +3825,7 @@ static m9_sl_CHAR Sem_ProcSig (Ast_Node * pl, Ast_Node * rt, bool ro, Ast_Node *
     if (err->exc) goto L_ret;
     for (; i <= m9t6to; i += 1) {
       if ((i > INT64_C(0))) {
-        DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s70, 2 }), err);
+        DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s67, 2 }), err);
         if (err->exc) goto L_ret;
       }
       DynStr_Append (&(d), &(pool), (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err)), err);
@@ -3298,15 +3888,20 @@ static void Sem_ScopeAdd (m9_sl_CHAR nm, Ast_Node * t, m9_sl_CHAR mode, m9_state
   m9_sl_Sem_Binding nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if ((nscope == (scope).len)) {
-    nb = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_mul_i64 (INT64_C(2), (scope).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_mul_i64 (INT64_C(2), (scope).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nscope, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = (*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err))) m9v = (*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err));
+        if (err->exc) goto L_ret;
+        (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     scope = nb;
   }
@@ -3316,12 +3911,43 @@ static void Sem_ScopeAdd (m9_sl_CHAR nm, Ast_Node * t, m9_sl_CHAR mode, m9_state
   if (err->exc) goto L_ret;
   (*(Sem_Binding *) m9_at (scope.p, nscope, scope.len, sizeof (Sem_Binding), err)).mode = mode;
   if (err->exc) goto L_ret;
-  nscope = m9_add_i64 (nscope, INT64_C(1), err);
+  (*(Sem_Binding *) m9_at (scope.p, nscope, scope.len, sizeof (Sem_Binding), err)).ro = false;
   if (err->exc) goto L_ret;
+  { __typeof__(nscope) m9v = m9_add_i64 (nscope, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nscope = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
+}
+
+static bool Sem_ScopeRo (m9_sl_CHAR nm, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  { __typeof__(i) m9v = Sem_ScopeFind (nm, err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
+  if ((i < INT64_C(0))) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = (*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).ro;
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
 }
 
 static int64_t Sem_ScopeFind (m9_sl_CHAR nm, m9_state *err)
@@ -3363,8 +3989,10 @@ static m9_sl_CHAR Sem_ScopeMode (m9_sl_CHAR nm, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t i = 0; (void) i;
-  i = Sem_ScopeFind (nm, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = Sem_ScopeFind (nm, err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   if ((i < INT64_C(0))) {
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -3389,8 +4017,10 @@ static Ast_Node * Sem_ScopeType (m9_sl_CHAR nm, m9_state *err)
   err->res = m9res;
   Ast_Node * m9ret = NULL;
   int64_t i = 0; (void) i;
-  i = Sem_ScopeFind (nm, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = Sem_ScopeFind (nm, err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   if ((i < INT64_C(0))) {
     err->res = m9res;
     m9ret = NULL;
@@ -3506,6 +4136,8 @@ static void Sem_AddVarsOf (Ast_Node * holder, m9_sl_CHAR mode, m9_state *err)
                 if (id != NULL) {
                   Sem_ScopeAdd (id->a, (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err)), mode, err);
                   if (err->exc) goto L_ret;
+                  (*(Sem_Binding *) m9_at (scope.p, m9_sub_i64 (nscope, INT64_C(1), err), scope.len, sizeof (Sem_Binding), err)).ro = vd->f3;
+                  if (err->exc) goto L_ret;
                 } }
               } }
             } }
@@ -3547,12 +4179,16 @@ static void Sem_AddConstsOf (Ast_Node * holder, m9_sl_CHAR ctx, m9_state *err)
           { Ast_Node * cd = (*(Ast_Node * *) m9_at (sect->kids.p, b, sect->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (cd != NULL) {
-            ty = Sem_ConstType (cd->a, &(seen), err);
-            if (err->exc) goto L_ret;
+            { __typeof__(ty) m9v = Sem_ConstType (cd->a, &(seen), err);
+              if (err->exc) goto L_ret;
+              ty = m9v;
+            }
             if (seen) {
-              Sem_ErrN (cd, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s71, 45 }), cd->a, err), err);
+              Sem_ErrN (cd, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s68, 45 }), cd->a, err), err);
               if (err->exc) goto L_ret;
             }
+            Sem_CheckAggregate (cd, ctx, INT64_C(2), err);
+            if (err->exc) goto L_ret;
             Sem_ConstAdd (cd->a, Sem_LitType ((*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err)), err), err);
             if (err->exc) goto L_ret;
           } }
@@ -3640,14 +4276,18 @@ static m9_sl_CHAR Sem_BoundMonitorOf (Ast_Node * d, m9_state *err)
         if (err->exc) goto L_ret;
         if (ids != NULL) {
           if ((ids->nkids > INT64_C(0))) {
-            rt = Sem_ResolveType ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err);
-            if (err->exc) goto L_ret;
+            { __typeof__(rt) m9v = Sem_ResolveType ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err);
+              if (err->exc) goto L_ret;
+              rt = m9v;
+            }
             for (;;) {
               Ast_Node * rr = rt;
               if (!(rr != NULL)) break;
               if (((rr->kind == Ast_NPtrType) || (rr->kind == Ast_NSharedType))) {
-                rt = Sem_ResolveType ((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err)), err);
-                if (err->exc) goto L_ret;
+                { __typeof__(rt) m9v = Sem_ResolveType ((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err)), err);
+                  if (err->exc) goto L_ret;
+                  rt = m9v;
+                }
               } else {
                 if ((rr->kind == Ast_NMonitorType)) {
                   { Ast_Node * id0 = (*(Ast_Node * *) m9_at (ids->kids.p, INT64_C(0), ids->kids.len, sizeof (Ast_Node *), err));
@@ -3797,7 +4437,7 @@ static bool Sem_IsReadonlyT (Ast_Node * declN, Ast_Node * res, m9_state *err)
     { Ast_Node * at = (*(Ast_Node * *) m9_at (res->kids.p, INT64_C(1), res->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (at != NULL) {
-      bool m9t1 = Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s72, 2 }), err);
+      bool m9t1 = Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s69, 2 }), err);
       if (err->exc) goto L_ret;
       if (m9t1) {
         err->res = m9res;
@@ -3813,7 +4453,7 @@ static bool Sem_IsReadonlyT (Ast_Node * declN, Ast_Node * res, m9_state *err)
       if (err->exc) goto L_ret;
       if (at2 != NULL) {
         err->res = m9res;
-        m9ret = Text_Eq (at2->a, ((m9_sl_CHAR){ (uint32_t *) m9s73, 2 }), err);
+        m9ret = Text_Eq (at2->a, ((m9_sl_CHAR){ (uint32_t *) m9s70, 2 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       } }
@@ -3843,24 +4483,36 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
   bool deref = false; (void) deref;
   bool known = false; (void) known;
   beyond = false;
-  if (curPure) {
-    bool m9t1 = (Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeVar, err) || Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeOwn, err));
+  bool m9t1 = Sem_IsConstHere (d->a, err);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s71, 23 }), d->a, err), err);
     if (err->exc) goto L_ret;
-    if (m9t1) {
-      Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s74, 39 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s75, 30 }), err), err);
+  }
+  if (curPure) {
+    bool m9t2 = (Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeVar, err) || Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeOwn, err));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s72, 39 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s73, 30 }), err), err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t2 = Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeModule, err);
+      bool m9t3 = Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeModule, err);
       if (err->exc) goto L_ret;
-      if (m9t2) {
-        Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s76, 33 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s77, 30 }), err), err);
+      if (m9t3) {
+        Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s74, 33 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s75, 30 }), err), err);
         if (err->exc) goto L_ret;
     } }
   }
-  bool m9t3 = Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeRo, err);
+  bool m9t4 = Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeRo, err);
   if (err->exc) goto L_ret;
-  if (m9t3) {
-    Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s78, 38 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s79, 10 }), err), err);
+  if (m9t4) {
+    Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s76, 38 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s77, 10 }), err), err);
+    if (err->exc) goto L_ret;
+  }
+  bool m9t5 = ((d->nkids > INT64_C(0)) && Sem_ScopeRo (d->a, err));
+  if (err->exc) goto L_ret;
+  if (m9t5) {
+    Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s78, 37 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s79, 10 }), err), err);
     if (err->exc) goto L_ret;
   }
   if ((d->nkids == INT64_C(0))) {
@@ -3868,15 +4520,19 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
     m9ret = false;
     goto L_ret;
   }
-  mode = Sem_ScopeMode (d->a, err);
-  if (err->exc) goto L_ret;
-  declN = Sem_ScopeType (d->a, err);
-  if (err->exc) goto L_ret;
-  { int64_t m9t4to;
+  { __typeof__(mode) m9v = Sem_ScopeMode (d->a, err);
+    if (err->exc) goto L_ret;
+    mode = m9v;
+  }
+  { __typeof__(declN) m9v = Sem_ScopeType (d->a, err);
+    if (err->exc) goto L_ret;
+    declN = m9v;
+  }
+  { int64_t m9t6to;
   j = INT64_C(0);
-  m9t4to = m9_sub_i64 (d->nkids, INT64_C(1), err);
+  m9t6to = m9_sub_i64 (d->nkids, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; j <= m9t4to; j += 1) {
+  for (; j <= m9t6to; j += 1) {
     known = false;
     { Ast_Node * dn0 = declN;
     if (dn0 != NULL) {
@@ -3887,8 +4543,10 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
       m9ret = beyond;
       goto L_ret;
     }
-    res = Sem_ResolveType (declN, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(res) m9v = Sem_ResolveType (declN, err);
+      if (err->exc) goto L_ret;
+      res = m9v;
+    }
     for (;;) {
       deref = false;
       { Ast_Node * r0 = res;
@@ -3897,17 +4555,21 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
           deref = true;
           if ((!beyond)) {
             beyond = true;
-            bool m9t5 = Text_Eq (mode, Sem_ModeVal, err);
+            bool m9t7 = Text_Eq (mode, Sem_ModeVal, err);
             if (err->exc) goto L_ret;
-            if (m9t5) {
+            if (m9t7) {
               Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s80, 40 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s81, 39 }), err), err);
               if (err->exc) goto L_ret;
             }
           }
-          declN = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
-          res = Sem_ResolveType (declN, err);
-          if (err->exc) goto L_ret;
+          { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+            declN = m9v;
+          }
+          { __typeof__(res) m9v = Sem_ResolveType (declN, err);
+            if (err->exc) goto L_ret;
+            res = m9v;
+          }
         }
       } }
       if ((!deref)) {
@@ -3921,14 +4583,16 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
       if (sel != NULL) {
         if ((sel->kind == Ast_NSelField)) {
           if ((r->kind == Ast_NRecordType)) {
-            bool m9t6 = ((j < m9_sub_i64 (d->nkids, INT64_C(1), err)) && Sem_FieldROOf (r, sel->a, err));
+            bool m9t8 = ((j < m9_sub_i64 (d->nkids, INT64_C(1), err)) && Sem_FieldROOf (r, sel->a, err));
             if (err->exc) goto L_ret;
-            if (m9t6) {
+            if (m9t8) {
               Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s82, 34 }), sel->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s83, 10 }), err), err);
               if (err->exc) goto L_ret;
             }
-            declN = Sem_FieldTypeOf (r, sel->a, err);
-            if (err->exc) goto L_ret;
+            { __typeof__(declN) m9v = Sem_FieldTypeOf (r, sel->a, err);
+              if (err->exc) goto L_ret;
+              declN = m9v;
+            }
           } else {
             err->res = m9res;
             m9ret = beyond;
@@ -3937,30 +4601,36 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
         } else {
           if ((sel->kind == Ast_NSelIndex)) {
             if ((r->kind == Ast_NGridType)) {
-              bool m9t7 = Sem_IsReadonlyT (declN, r, err);
+              bool m9t9 = Sem_IsReadonlyT (declN, r, err);
               if (err->exc) goto L_ret;
-              if (m9t7) {
+              if (m9t9) {
                 Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s84, 39 }), d->a, err), err);
                 if (err->exc) goto L_ret;
               }
               beyond = true;
-              declN = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
-              if (err->exc) goto L_ret;
+              { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+                declN = m9v;
+              }
             } else {
               if ((r->kind == Ast_NSliceType)) {
-                bool m9t8 = Sem_IsReadonlyT (declN, r, err);
+                bool m9t10 = Sem_IsReadonlyT (declN, r, err);
                 if (err->exc) goto L_ret;
-                if (m9t8) {
+                if (m9t10) {
                   Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s85, 40 }), d->a, err), err);
                   if (err->exc) goto L_ret;
                 }
                 beyond = true;
-                declN = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
-                if (err->exc) goto L_ret;
+                { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                  declN = m9v;
+                }
             } else {
               if ((r->kind == Ast_NArrayType)) {
-                declN = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
-                if (err->exc) goto L_ret;
+                { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                  declN = m9v;
+                }
             } else {
               err->res = m9res;
               m9ret = beyond;
@@ -3995,8 +4665,10 @@ static bool Sem_IsRefTy (m9_sl_CHAR s0, m9_state *err)
   bool m9t1 = Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s86, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    s = ({ __typeof__(s) m9t2 = s; int64_t m9t2a = INT64_C(4), m9t2n = m9_sub_i64 ((s).len, INT64_C(4), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = ({ __typeof__(s) m9t2 = s; int64_t m9t2a = INT64_C(4), m9t2n = m9_sub_i64 ((s).len, INT64_C(4), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
   }
   err->res = m9res;
   m9ret = ((Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s87, 4 }), err) || Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s88, 11 }), err)) || Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s89, 9 }), err));
@@ -4056,26 +4728,36 @@ static void Sem_EscTarget (m9_sl_CHAR nm, m9_sl_CHAR tgt, m9_state *err)
     goto L_ret;
   }
   if ((nesc == (escName).len)) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (escName).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (escName).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (nesc, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (escName.p, i, escName.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (escName.p, i, escName.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     escName = ns;
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (escTgt).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (escTgt).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (nesc, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t3to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (escTgt.p, i, escTgt.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (escTgt.p, i, escTgt.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     escTgt = ns;
   }
@@ -4083,8 +4765,10 @@ static void Sem_EscTarget (m9_sl_CHAR nm, m9_sl_CHAR tgt, m9_state *err)
   if (err->exc) goto L_ret;
   (*(m9_sl_CHAR *) m9_at (escTgt.p, nesc, escTgt.len, sizeof (m9_sl_CHAR), err)) = tgt;
   if (err->exc) goto L_ret;
-  nesc = m9_add_i64 (nesc, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nesc) m9v = m9_add_i64 (nesc, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nesc = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -4213,19 +4897,29 @@ static void Sem_FvalAdd (m9_sl_CHAR nm, m9_sl_CHAR what, m9_state *err)
     }
   } }
   if ((nfval == (fvalName).len)) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (fvalName).len, err), err);
-    if (err->exc) goto L_ret;
-    nk = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (fvalName).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (fvalName).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
+    { __typeof__(nk) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (fvalName).len, err), err);
+      if (err->exc) goto L_ret;
+      nk = m9v;
+    }
     { int64_t m9t4to;
     i = INT64_C(0);
     m9t4to = m9_sub_i64 (nfval, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t4to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (fvalName.p, i, fvalName.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (nk.p, i, nk.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (fvalKind.p, i, fvalKind.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (fvalName.p, i, fvalName.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(m9_sl_CHAR *) m9_at (nk.p, i, nk.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (fvalKind.p, i, fvalKind.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (nk.p, i, nk.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     fvalName = ns;
     fvalKind = nk;
@@ -4234,8 +4928,10 @@ static void Sem_FvalAdd (m9_sl_CHAR nm, m9_sl_CHAR what, m9_state *err)
   if (err->exc) goto L_ret;
   (*(m9_sl_CHAR *) m9_at (fvalKind.p, nfval, fvalKind.len, sizeof (m9_sl_CHAR), err)) = what;
   if (err->exc) goto L_ret;
-  nfval = m9_add_i64 (nfval, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nfval) m9v = m9_add_i64 (nfval, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nfval = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -4287,10 +4983,15 @@ static void Sem_PvalDel (m9_sl_CHAR nm, m9_state *err)
     bool m9t2 = Text_Eq ((*(m9_sl_CHAR *) m9_at (pvalName.p, i, pvalName.len, sizeof (m9_sl_CHAR), err)), nm, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      (*(m9_sl_CHAR *) m9_at (pvalName.p, i, pvalName.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (pvalName.p, m9_sub_i64 (npval, INT64_C(1), err), pvalName.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      npval = m9_sub_i64 (npval, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (pvalName.p, i, pvalName.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (pvalName.p, m9_sub_i64 (npval, INT64_C(1), err), pvalName.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (pvalName.p, i, pvalName.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__(npval) m9v = m9_sub_i64 (npval, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        npval = m9v;
+      }
       goto L_ret;
     }
   } }
@@ -4314,22 +5015,29 @@ static void Sem_PvalAdd (m9_sl_CHAR nm, m9_state *err)
     goto L_ret;
   }
   if ((npval == (pvalName).len)) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (pvalName).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (pvalName).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (npval, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (pvalName.p, i, pvalName.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (pvalName.p, i, pvalName.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     pvalName = ns;
   }
   (*(m9_sl_CHAR *) m9_at (pvalName.p, npval, pvalName.len, sizeof (m9_sl_CHAR), err)) = nm;
   if (err->exc) goto L_ret;
-  npval = m9_add_i64 (npval, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(npval) m9v = m9_add_i64 (npval, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    npval = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -4351,12 +5059,20 @@ static void Sem_FvalDel (m9_sl_CHAR nm, m9_state *err)
     bool m9t2 = Text_Eq ((*(m9_sl_CHAR *) m9_at (fvalName.p, i, fvalName.len, sizeof (m9_sl_CHAR), err)), nm, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      (*(m9_sl_CHAR *) m9_at (fvalName.p, i, fvalName.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (fvalName.p, m9_sub_i64 (nfval, INT64_C(1), err), fvalName.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (fvalKind.p, i, fvalKind.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (fvalKind.p, m9_sub_i64 (nfval, INT64_C(1), err), fvalKind.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      nfval = m9_sub_i64 (nfval, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (fvalName.p, i, fvalName.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (fvalName.p, m9_sub_i64 (nfval, INT64_C(1), err), fvalName.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (fvalName.p, i, fvalName.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(m9_sl_CHAR *) m9_at (fvalKind.p, i, fvalKind.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (fvalKind.p, m9_sub_i64 (nfval, INT64_C(1), err), fvalKind.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (fvalKind.p, i, fvalKind.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__(nfval) m9v = m9_sub_i64 (nfval, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        nfval = m9v;
+      }
       goto L_ret;
     }
   } }
@@ -4431,26 +5147,36 @@ static void Sem_EscAlias (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
     }
   } }
   if ((nedge == (edgeA).len)) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (edgeA).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (edgeA).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t5to;
     i = INT64_C(0);
     m9t5to = m9_sub_i64 (nedge, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t5to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (edgeA.p, i, edgeA.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (edgeA.p, i, edgeA.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     edgeA = ns;
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (edgeB).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (edgeB).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t6to;
     i = INT64_C(0);
     m9t6to = m9_sub_i64 (nedge, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t6to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (edgeB.p, i, edgeB.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (edgeB.p, i, edgeB.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     edgeB = ns;
   }
@@ -4458,8 +5184,10 @@ static void Sem_EscAlias (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
   if (err->exc) goto L_ret;
   (*(m9_sl_CHAR *) m9_at (edgeB.p, nedge, edgeB.len, sizeof (m9_sl_CHAR), err)) = b;
   if (err->exc) goto L_ret;
-  nedge = m9_add_i64 (nedge, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nedge) m9v = m9_add_i64 (nedge, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nedge = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -4577,31 +5305,43 @@ static Sem_ProcInfo Sem_LookupProc (m9_sl_CHAR callee, bool *found, m9_state *er
   m9_sl_CHAR owner = {0}; (void) owner;
   Sem_ProcInfo empty = {0}; (void) empty;
   (*found) = false;
-  dot = Text_FindChar (callee, 46u, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(dot) m9v = Text_FindChar (callee, 46u, err);
+    if (err->exc) goto L_ret;
+    dot = m9v;
+  }
   if ((dot >= INT64_C(0))) {
-    modName = ({ __typeof__(callee) m9t1 = callee; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
-    if (err->exc) goto L_ret;
-    procName = ({ __typeof__(callee) m9t2 = callee; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((callee).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
-    if (err->exc) goto L_ret;
+    { __typeof__(modName) m9v = ({ __typeof__(callee) m9t1 = callee; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+      if (err->exc) goto L_ret;
+      modName = m9v;
+    }
+    { __typeof__(procName) m9v = ({ __typeof__(callee) m9t2 = callee; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((callee).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+      if (err->exc) goto L_ret;
+      procName = m9v;
+    }
   } else {
     procName = callee;
     modName = curMod;
-    owner = Sem_FromOwner (callee, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(owner) m9v = Sem_FromOwner (callee, err);
+      if (err->exc) goto L_ret;
+      owner = m9v;
+    }
     if (((owner).len > INT64_C(0))) {
       modName = owner;
     }
   }
-  m = Sem_FindMod (modName, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Sem_FindMod (modName, err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   if ((m < INT64_C(0))) {
     err->res = m9res;
     m9ret = empty;
     goto L_ret;
   }
-  pi = Sem_FindProcIn (m, procName, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(pi) m9v = Sem_FindProcIn (m, procName, err);
+    if (err->exc) goto L_ret;
+    pi = m9v;
+  }
   if ((pi < INT64_C(0))) {
     err->res = m9res;
     m9ret = empty;
@@ -4645,8 +5385,10 @@ static m9_sl_CHAR Sem_DesigName (Ast_Node * d, m9_state *err)
     if (err->exc) goto L_ret;
     if (sel != NULL) {
       if ((sel->kind == Ast_NSelField)) {
-        res = Sem_Qualify (res, sel->a, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(res) m9v = Sem_Qualify (res, sel->a, err);
+          if (err->exc) goto L_ret;
+          res = m9v;
+        }
       } else {
         err->res = m9res;
         m9ret = d->a;
@@ -4704,27 +5446,39 @@ static void Sem_AnsSet (m9_sl_CHAR q, m9_sl_CHAR state, m9_state *err)
   int64_t i = 0; (void) i;
   m9_sl_m9_sl_CHAR nn = {0}; (void) nn;
   m9_sl_m9_sl_CHAR ns = {0}; (void) ns;
-  i = Sem_AnsFind (q, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = Sem_AnsFind (q, err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   if ((i >= INT64_C(0))) {
     (*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err)) = state;
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if ((nans == (ansName).len)) {
-    nn = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (ansName).len, err), err);
-    if (err->exc) goto L_ret;
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (ansName).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nn) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (ansName).len, err), err);
+      if (err->exc) goto L_ret;
+      nn = m9v;
+    }
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (ansName).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nans, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (nn.p, i, nn.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (ansName.p, i, ansName.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (nn.p, i, nn.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (ansName.p, i, ansName.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (nn.p, i, nn.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     ansName = nn;
     ansState = ns;
@@ -4733,8 +5487,10 @@ static void Sem_AnsSet (m9_sl_CHAR q, m9_sl_CHAR state, m9_state *err)
   if (err->exc) goto L_ret;
   (*(m9_sl_CHAR *) m9_at (ansState.p, nans, ansState.len, sizeof (m9_sl_CHAR), err)) = state;
   if (err->exc) goto L_ret;
-  nans = m9_add_i64 (nans, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nans) m9v = m9_add_i64 (nans, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nans = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -4753,8 +5509,10 @@ static bool Sem_AnswersFrame (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
   bool res = false; (void) res;
   bool isStr = false; (void) isStr;
   bool hasPool = false; (void) hasPool;
-  i = Sem_AnsFind (qual, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = Sem_AnsFind (qual, err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   if ((i >= INT64_C(0))) {
     err->res = m9res;
     m9ret = Text_Eq ((*(m9_sl_CHAR *) m9_at (ansState.p, i, ansState.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s97, 3 }), err);
@@ -4796,11 +5554,15 @@ static bool Sem_AnswersFrame (m9_sl_CHAR qual, Sem_ProcInfo pr, m9_state *err)
     { Ast_Node * rt = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rt != NULL) {
-      isStr = Text_Eq (Sem_CanonT ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err), ((m9_sl_CHAR){ (uint32_t *) m9s100, 13 }), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(isStr) m9v = Text_Eq (Sem_CanonT ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err), ((m9_sl_CHAR){ (uint32_t *) m9s100, 13 }), err);
+        if (err->exc) goto L_ret;
+        isStr = m9v;
+      }
     } }
-    res = Sem_FrameEvidence ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err)), pr.modName, isStr, (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err)), (!hasPool), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(res) m9v = Sem_FrameEvidence ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err)), pr.modName, isStr, (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err)), (!hasPool), err);
+      if (err->exc) goto L_ret;
+      res = m9v;
+    }
   } }
   if (res) {
     Sem_AnsSet (qual, ((m9_sl_CHAR){ (uint32_t *) m9s101, 3 }), err);
@@ -4830,28 +5592,38 @@ static Sem_ProcInfo Sem_ProcNamed (m9_sl_CHAR mod, m9_sl_CHAR callee, bool *foun
   int64_t pi = 0; (void) pi;
   Sem_ProcInfo empty = {0}; (void) empty;
   (*found) = false;
-  dot = Text_FindChar (callee, 46u, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(dot) m9v = Text_FindChar (callee, 46u, err);
+    if (err->exc) goto L_ret;
+    dot = m9v;
+  }
   if ((dot >= INT64_C(0))) {
-    m = Sem_FindMod (({ __typeof__(callee) m9t1 = callee; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(m) m9v = Sem_FindMod (({ __typeof__(callee) m9t1 = callee; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
+      if (err->exc) goto L_ret;
+      m = m9v;
+    }
     if ((m < INT64_C(0))) {
       err->res = m9res;
       m9ret = empty;
       goto L_ret;
     }
-    pi = Sem_FindProcIn (m, ({ __typeof__(callee) m9t2 = callee; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((callee).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(pi) m9v = Sem_FindProcIn (m, ({ __typeof__(callee) m9t2 = callee; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((callee).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
+      if (err->exc) goto L_ret;
+      pi = m9v;
+    }
   } else {
-    m = Sem_FindMod (mod, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(m) m9v = Sem_FindMod (mod, err);
+      if (err->exc) goto L_ret;
+      m = m9v;
+    }
     if ((m < INT64_C(0))) {
       err->res = m9res;
       m9ret = empty;
       goto L_ret;
     }
-    pi = Sem_FindProcIn (m, callee, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(pi) m9v = Sem_FindProcIn (m, callee, err);
+      if (err->exc) goto L_ret;
+      pi = m9v;
+    }
   }
   if ((pi < INT64_C(0))) {
     err->res = m9res;
@@ -4903,8 +5675,10 @@ static bool Sem_NewIsFrameIn (Ast_Node * e, m9_sl_CHAR mod, m9_state *err)
         m9ret = true;
         goto L_ret;
       }
-      m = Sem_FindMod (mod, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(m) m9v = Sem_FindMod (mod, err);
+        if (err->exc) goto L_ret;
+        m = m9v;
+      }
       if ((m >= INT64_C(0))) {
         { Ast_Node * t = Sem_FindTypeIn (m, d->a, err);
         if (err->exc) goto L_ret;
@@ -4923,8 +5697,10 @@ static bool Sem_NewIsFrameIn (Ast_Node * e, m9_sl_CHAR mod, m9_state *err)
       if (err->exc) goto L_ret;
       if (sel != NULL) {
         if ((sel->kind == Ast_NSelField)) {
-          m = Sem_FindMod (d->a, err);
-          if (err->exc) goto L_ret;
+          { __typeof__(m) m9v = Sem_FindMod (d->a, err);
+            if (err->exc) goto L_ret;
+            m = m9v;
+          }
           if ((m >= INT64_C(0))) {
             { Ast_Node * t2 = Sem_FindTypeIn (m, sel->a, err);
             if (err->exc) goto L_ret;
@@ -4990,10 +5766,14 @@ static bool Sem_ExprEvidence (Ast_Node * k, m9_sl_CHAR mod, bool isStr, Ast_Node
       if (err->exc) goto L_ret;
       if (dn != NULL) {
         if ((dn->kind == Ast_NDesignator)) {
-          nm = Sem_DesigName (dn, err);
-          if (err->exc) goto L_ret;
-          pr = Sem_ProcNamed (mod, nm, &(found), err);
-          if (err->exc) goto L_ret;
+          { __typeof__(nm) m9v = Sem_DesigName (dn, err);
+            if (err->exc) goto L_ret;
+            nm = m9v;
+          }
+          { __typeof__(pr) m9v = Sem_ProcNamed (mod, nm, &(found), err);
+            if (err->exc) goto L_ret;
+            pr = m9v;
+          }
           if (found) {
             if (((pr.foreign).len == INT64_C(0))) {
               err->res = m9res;
@@ -5151,10 +5931,14 @@ static m9_sl_CHAR Sem_CallAnswersFrame (Ast_Node * dn, m9_state *err)
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  name = Sem_DesigName (dn, err);
-  if (err->exc) goto L_ret;
-  pr = Sem_LookupProc (name, &(found), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(name) m9v = Sem_DesigName (dn, err);
+    if (err->exc) goto L_ret;
+    name = m9v;
+  }
+  { __typeof__(pr) m9v = Sem_LookupProc (name, &(found), err);
+    if (err->exc) goto L_ret;
+    pr = m9v;
+  }
   if ((!found)) {
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -5285,8 +6069,10 @@ static m9_sl_CHAR Sem_AllocPoolOf (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       if (err->exc) goto L_ret;
       if (dn != NULL) {
         if ((dn->kind == Ast_NDesignator)) {
-          pr = Sem_LookupProc (Sem_DesigName (dn, err), &(found), err);
-          if (err->exc) goto L_ret;
+          { __typeof__(pr) m9v = Sem_LookupProc (Sem_DesigName (dn, err), &(found), err);
+            if (err->exc) goto L_ret;
+            pr = m9v;
+          }
           if (found) {
             { Ast_Node * pn = pr.node;
             if (pn != NULL) {
@@ -5297,8 +6083,10 @@ static m9_sl_CHAR Sem_AllocPoolOf (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                   { Ast_Node * rn = (*(Ast_Node * *) m9_at (rt->kids.p, INT64_C(1), rt->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
                   if (rn != NULL) {
-                    want = m9_neg_i64 (INT64_C(1), err);
-                    if (err->exc) goto L_ret;
+                    { __typeof__(want) m9v = m9_neg_i64 (INT64_C(1), err);
+                      if (err->exc) goto L_ret;
+                      want = m9v;
+                    }
                     ix = INT64_C(0);
                     { Ast_Node * pl = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
@@ -5328,8 +6116,10 @@ static m9_sl_CHAR Sem_AllocPoolOf (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                                   want = ix;
                                 }
                               } }
-                              ix = m9_add_i64 (ix, INT64_C(1), err);
-                              if (err->exc) goto L_ret;
+                              { __typeof__(ix) m9v = m9_add_i64 (ix, INT64_C(1), err);
+                                if (err->exc) goto L_ret;
+                                ix = m9v;
+                              }
                             } }
                           } }
                         } }
@@ -5401,16 +6191,20 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
       { Ast_Node * dn = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (dn != NULL) {
-        nm = Sem_CallAnswersFrame (dn, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(nm) m9v = Sem_CallAnswersFrame (dn, err);
+          if (err->exc) goto L_ret;
+          nm = m9v;
+        }
         if (((nm).len > INT64_C(0))) {
           err->res = m9res;
           m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s113, 14 }), nm, err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
-        p = Sem_ViewedPool (dn, (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(p) m9v = Sem_ViewedPool (dn, (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err);
+          if (err->exc) goto L_ret;
+          p = m9v;
+        }
         if (((p).len > INT64_C(0))) {
           err->res = m9res;
           m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s114, 17 }), p, err);
@@ -5420,16 +6214,31 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
       } }
     }
     if (((e->kind == Ast_NDesignator) && (e->nkids == INT64_C(0)))) {
-      nm = Sem_FvalKindOf (e->a, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(nm) m9v = Sem_FvalKindOf (e->a, err);
+        if (err->exc) goto L_ret;
+        nm = m9v;
+      }
       if (((nm).len > INT64_C(0))) {
         err->res = m9res;
         m9ret = nm;
         goto L_ret;
       }
     }
-    p = Sem_LocalPoolOf (e, err);
-    if (err->exc) goto L_ret;
+    if (((e->kind == Ast_NDesignator) && (e->nkids > INT64_C(0)))) {
+      { __typeof__(nm) m9v = Sem_FvalKindOf (Sem_DesigPath (e, err), err);
+        if (err->exc) goto L_ret;
+        nm = m9v;
+      }
+      if (((nm).len > INT64_C(0))) {
+        err->res = m9res;
+        m9ret = nm;
+        goto L_ret;
+      }
+    }
+    { __typeof__(p) m9v = Sem_LocalPoolOf (e, err);
+      if (err->exc) goto L_ret;
+      p = m9v;
+    }
     if (((p).len > INT64_C(0))) {
       err->res = m9res;
       m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s115, 22 }), p, err);
@@ -5439,6 +6248,47 @@ static m9_sl_CHAR Sem_FrameWhat (Ast_Node * k, m9_sl_CHAR u, m9_state *err)
   } }
   err->res = m9res;
   m9ret = (m9_sl_CHAR){ NULL, 0 };
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static m9_sl_CHAR Sem_DesigPath (Ast_Node * d, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  m9_sl_CHAR res = {0}; (void) res;
+  int64_t i = 0; (void) i;
+  res = d->a;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (d->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { Ast_Node * sel = (*(Ast_Node * *) m9_at (d->kids.p, i, d->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (sel != NULL) {
+      if ((sel->kind == Ast_NSelField)) {
+        { __typeof__(res) m9v = m9_cat (err->res, m9_cat (err->res, res, ((m9_sl_CHAR){ (uint32_t *) m9s116, 1 }), err), sel->a, err);
+          if (err->exc) goto L_ret;
+          res = m9v;
+        }
+      } else {
+        { __typeof__(res) m9v = m9_cat (err->res, res, ((m9_sl_CHAR){ (uint32_t *) m9s117, 2 }), err);
+          if (err->exc) goto L_ret;
+          res = m9v;
+        }
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = res;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -5457,8 +6307,10 @@ static m9_sl_CHAR Sem_LocalPoolOf (Ast_Node * e, m9_state *err)
   m9_sl_CHAR p = {0}; (void) p;
   p = (m9_sl_CHAR){ NULL, 0 };
   if (((e->kind == Ast_NNewExpr) || (e->kind == Ast_NCallExpr))) {
-    p = Sem_AllocPoolOf (e, (m9_sl_CHAR){ NULL, 0 }, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(p) m9v = Sem_AllocPoolOf (e, (m9_sl_CHAR){ NULL, 0 }, err);
+      if (err->exc) goto L_ret;
+      p = m9v;
+    }
   } else {
     if (((e->kind == Ast_NDesignator) && (e->nkids == INT64_C(0)))) {
       { Ast_Node * dp = Sem_DeclPool (Sem_ScopeType (e->a, err), err);
@@ -5502,8 +6354,10 @@ static m9_sl_CHAR Sem_ViewedPool (Ast_Node * dn, Ast_Node * args, m9_state *err)
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  pr = Sem_LookupProc (Sem_DesigName (dn, err), &(found), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(pr) m9v = Sem_LookupProc (Sem_DesigName (dn, err), &(found), err);
+    if (err->exc) goto L_ret;
+    pr = m9v;
+  }
   if ((!found)) {
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -5523,8 +6377,10 @@ static m9_sl_CHAR Sem_ViewedPool (Ast_Node * dn, Ast_Node * args, m9_state *err)
       m9t1to = m9_sub_i64 (al->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; i <= m9t1to; i += 1) {
-        p = Sem_KindPool (Sem_FrameWhat ((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err)), (m9_sl_CHAR){ NULL, 0 }, err), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(p) m9v = Sem_KindPool (Sem_FrameWhat ((*(Ast_Node * *) m9_at (al->kids.p, i, al->kids.len, sizeof (Ast_Node *), err)), (m9_sl_CHAR){ NULL, 0 }, err), err);
+          if (err->exc) goto L_ret;
+          p = m9v;
+        }
         if (((p).len > INT64_C(0))) {
           err->res = m9res;
           m9ret = p;
@@ -5550,12 +6406,14 @@ static void Sem_EscStore (m9_sl_CHAR dst, bool dstSel, m9_sl_CHAR src, m9_state 
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m = {0}; (void) m;
-  m = Sem_ScopeMode (dst, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Sem_ScopeMode (dst, err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   bool m9t1 = Text_Eq (m, Sem_ModeModule, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Sem_EscTarget (src, ((m9_sl_CHAR){ (uint32_t *) m9s116, 8 }), err);
+    Sem_EscTarget (src, ((m9_sl_CHAR){ (uint32_t *) m9s118, 8 }), err);
     if (err->exc) goto L_ret;
   } else {
     bool m9t2 = ((Text_Eq (m, Sem_ModeVar, err) || Text_Eq (m, Sem_ModeOwn, err)) || Text_Eq (m, Sem_ModeRo, err));
@@ -5592,48 +6450,68 @@ static void Sem_PendPush (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
   m9_sl_I64 nl = {0}; (void) nl;
   int64_t i = 0; (void) i;
   if ((npend == (pendSrc).len)) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (pendSrc).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (pendSrc).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (npend, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     pendSrc = ns;
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (pendDst).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (pendDst).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (npend, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (pendDst.p, i, pendDst.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     pendDst = ns;
-    nl = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), m9_mul_i64 (INT64_C(2), (pendLine).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nl) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), m9_mul_i64 (INT64_C(2), (pendLine).len, err), err);
+      if (err->exc) goto L_ret;
+      nl = m9v;
+    }
     { int64_t m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (npend, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t3to; i += 1) {
-      (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = (*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (pendLine.p, i, pendLine.len, sizeof (int64_t), err));
+        if (err->exc) goto L_ret;
+        (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     pendLine = nl;
-    nl = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), m9_mul_i64 (INT64_C(2), (pendCol).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nl) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), m9_mul_i64 (INT64_C(2), (pendCol).len, err), err);
+      if (err->exc) goto L_ret;
+      nl = m9v;
+    }
     { int64_t m9t4to;
     i = INT64_C(0);
     m9t4to = m9_sub_i64 (npend, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t4to; i += 1) {
-      (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = (*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (pendCol.p, i, pendCol.len, sizeof (int64_t), err));
+        if (err->exc) goto L_ret;
+        (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     pendCol = nl;
   }
@@ -5645,8 +6523,10 @@ static void Sem_PendPush (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
   if (err->exc) goto L_ret;
   (*(int64_t *) m9_at (pendCol.p, npend, pendCol.len, sizeof (int64_t), err)) = col;
   if (err->exc) goto L_ret;
-  npend = m9_add_i64 (npend, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(npend) m9v = m9_add_i64 (npend, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    npend = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -5711,26 +6591,36 @@ static void Sem_CarryAdd (m9_sl_CHAR nm, m9_sl_CHAR borrow, m9_state *err)
     }
   } }
   if ((ncarry == (carryN).len)) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (carryN).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (carryN).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t4to;
     i = INT64_C(0);
     m9t4to = m9_sub_i64 (ncarry, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t4to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (carryN.p, i, carryN.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (carryN.p, i, carryN.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     carryN = ns;
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (carryB).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (carryB).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t5to;
     i = INT64_C(0);
     m9t5to = m9_sub_i64 (ncarry, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t5to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (carryB.p, i, carryB.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (carryB.p, i, carryB.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     carryB = ns;
   }
@@ -5738,8 +6628,10 @@ static void Sem_CarryAdd (m9_sl_CHAR nm, m9_sl_CHAR borrow, m9_state *err)
   if (err->exc) goto L_ret;
   (*(m9_sl_CHAR *) m9_at (carryB.p, ncarry, carryB.len, sizeof (m9_sl_CHAR), err)) = borrow;
   if (err->exc) goto L_ret;
-  ncarry = m9_add_i64 (ncarry, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(ncarry) m9v = m9_add_i64 (ncarry, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    ncarry = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -5775,26 +6667,36 @@ static void Sem_CarryEdgeAdd (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     }
   } }
   if ((ncedge == (carryEA).len)) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (carryEA).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (carryEA).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t5to;
     i = INT64_C(0);
     m9t5to = m9_sub_i64 (ncedge, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t5to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (carryEA.p, i, carryEA.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (carryEA.p, i, carryEA.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     carryEA = ns;
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (carryEB).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (carryEB).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t6to;
     i = INT64_C(0);
     m9t6to = m9_sub_i64 (ncedge, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t6to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (carryEB.p, i, carryEB.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (carryEB.p, i, carryEB.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     carryEB = ns;
   }
@@ -5802,8 +6704,10 @@ static void Sem_CarryEdgeAdd (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
   if (err->exc) goto L_ret;
   (*(m9_sl_CHAR *) m9_at (carryEB.p, ncedge, carryEB.len, sizeof (m9_sl_CHAR), err)) = src;
   if (err->exc) goto L_ret;
-  ncedge = m9_add_i64 (ncedge, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(ncedge) m9v = m9_add_i64 (ncedge, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    ncedge = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -5817,8 +6721,10 @@ static void Sem_CarryFrom (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m = {0}; (void) m;
-  m = Sem_ScopeMode (src, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Sem_ScopeMode (src, err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   bool m9t1 = ((Text_Eq (m, Sem_ModeVal, err) || Text_Eq (m, Sem_ModeVar, err)) || Text_Eq (m, Sem_ModeRo, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -5843,31 +6749,31 @@ static void Sem_AppendTgt (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR t, m
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  bool m9t1 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s117, 8 }), err);
+  bool m9t1 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s119, 8 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s118, 12 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s120, 12 }), err);
     if (err->exc) goto L_ret;
   } else {
-    bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s119, 8 }), err);
+    bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s121, 8 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s120, 16 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s122, 16 }), err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t3 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s121, 6 }), err);
+    bool m9t3 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s123, 6 }), err);
     if (err->exc) goto L_ret;
     if (m9t3) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s122, 8 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s124, 8 }), err);
       if (err->exc) goto L_ret;
   } else {
-    bool m9t4 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s123, 9 }), err);
+    bool m9t4 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s125, 9 }), err);
     if (err->exc) goto L_ret;
     if (m9t4) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s124, 15 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s126, 15 }), err);
       if (err->exc) goto L_ret;
   } else {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s125, 19 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s127, 19 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, t, err);
     if (err->exc) goto L_ret;
@@ -5889,37 +6795,52 @@ static void Sem_KeptPush (m9_sl_CHAR nm, int64_t line, int64_t col, m9_state *er
   m9_sl_I64 nl = {0}; (void) nl;
   int64_t i = 0; (void) i;
   if ((nkept == (keptP).len)) {
-    ns = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (keptP).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (keptP).len, err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nkept, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     keptP = ns;
-    nl = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), m9_mul_i64 (INT64_C(2), (keptLn).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nl) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), m9_mul_i64 (INT64_C(2), (keptLn).len, err), err);
+      if (err->exc) goto L_ret;
+      nl = m9v;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 (nkept, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = (*(int64_t *) m9_at (keptLn.p, i, keptLn.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (keptLn.p, i, keptLn.len, sizeof (int64_t), err));
+        if (err->exc) goto L_ret;
+        (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     keptLn = nl;
-    nl = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), m9_mul_i64 (INT64_C(2), (keptCl).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nl) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), m9_mul_i64 (INT64_C(2), (keptCl).len, err), err);
+      if (err->exc) goto L_ret;
+      nl = m9v;
+    }
     { int64_t m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (nkept, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t3to; i += 1) {
-      (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = (*(int64_t *) m9_at (keptCl.p, i, keptCl.len, sizeof (int64_t), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (keptCl.p, i, keptCl.len, sizeof (int64_t), err));
+        if (err->exc) goto L_ret;
+        (*(int64_t *) m9_at (nl.p, i, nl.len, sizeof (int64_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     keptCl = nl;
   }
@@ -5929,8 +6850,10 @@ static void Sem_KeptPush (m9_sl_CHAR nm, int64_t line, int64_t col, m9_state *er
   if (err->exc) goto L_ret;
   (*(int64_t *) m9_at (keptCl.p, nkept, keptCl.len, sizeof (int64_t), err)) = col;
   if (err->exc) goto L_ret;
-  nkept = m9_add_i64 (nkept, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nkept) m9v = m9_add_i64 (nkept, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nkept = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -6028,27 +6951,33 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
   DynStr_DString * de = NULL; (void) de;
   DynStr_DString * dm = NULL; (void) dm;
   DynStr_DString * ds = NULL; (void) ds;
-  ds = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(ds) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    ds = m9v;
+  }
   DynStr_Append (&(ds), &(pool), src, err);
   if (err->exc) goto L_ret;
   if (((carrier).len > INT64_C(0))) {
-    DynStr_Append (&(ds), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s126, 13 }), err);
+    DynStr_Append (&(ds), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s128, 13 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (&(ds), &(pool), carrier, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(ds), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s127, 1 }), err);
+    DynStr_Append (&(ds), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s129, 1 }), err);
     if (err->exc) goto L_ret;
   }
-  tl = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(tl) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    tl = m9v;
+  }
   ntl = INT64_C(0);
-  dmode = Sem_ScopeMode (dst, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(dmode) m9v = Sem_ScopeMode (dst, err);
+    if (err->exc) goto L_ret;
+    dmode = m9v;
+  }
   bool m9t1 = Text_Eq (dmode, Sem_ModeModule, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Sem_PushErr (&(tl), &(ntl), ((m9_sl_CHAR){ (uint32_t *) m9s128, 8 }), err);
+    Sem_PushErr (&(tl), &(ntl), ((m9_sl_CHAR){ (uint32_t *) m9s130, 8 }), err);
     if (err->exc) goto L_ret;
   } else {
     bool m9t2 = (((Text_Eq (dmode, Sem_ModeVar, err) || Text_Eq (dmode, Sem_ModeOwn, err)) || Text_Eq (dmode, Sem_ModeRo, err)) || Text_Eq (dmode, Sem_ModeVal, err));
@@ -6073,7 +7002,7 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
         }
       } }
   } else {
-    Sem_PushErr (&(tl), &(ntl), ((m9_sl_CHAR){ (uint32_t *) m9s129, 9 }), err);
+    Sem_PushErr (&(tl), &(ntl), ((m9_sl_CHAR){ (uint32_t *) m9s131, 9 }), err);
     if (err->exc) goto L_ret;
   } } }
   selfHit = false;
@@ -6088,53 +7017,60 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
     if (m9t7) {
       selfHit = true;
     } else {
-      (*(m9_sl_CHAR *) m9_at (tl.p, n2, tl.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      n2 = m9_add_i64 (n2, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (tl.p, n2, tl.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (tl.p, n2, tl.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__(n2) m9v = m9_add_i64 (n2, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        n2 = m9v;
+      }
     }
   } }
   ntl = n2;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   if ((ntl == INT64_C(0))) {
     if (selfHit) {
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s130, 21 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s132, 21 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(d), &(pool), DynStr_View (ds, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s131, 13 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s133, 13 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(d), &(pool), dst, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s132, 40 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s134, 40 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(d), &(pool), src, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s133, 17 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s135, 17 }), err);
       if (err->exc) goto L_ret;
     } else {
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s134, 22 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s136, 22 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(d), &(pool), DynStr_View (ds, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s135, 13 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s137, 13 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(d), &(pool), dst, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s136, 41 }), err);
+      DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s138, 41 }), err);
       if (err->exc) goto L_ret;
     }
   } else {
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s137, 20 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s139, 20 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(pool), DynStr_View (ds, err), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s138, 13 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s140, 13 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (&(d), &(pool), dst, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s139, 12 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s141, 12 }), err);
     if (err->exc) goto L_ret;
     { int64_t m9t8to;
     j = INT64_C(0);
@@ -6142,29 +7078,31 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
     if (err->exc) goto L_ret;
     for (; j <= m9t8to; j += 1) {
       if ((j > INT64_C(0))) {
-        DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s140, 2 }), err);
+        DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s142, 2 }), err);
         if (err->exc) goto L_ret;
       }
       Sem_AppendTgt (&(d), &(pool), (*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), err);
       if (err->exc) goto L_ret;
     } }
-    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s141, 14 }), err);
+    DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s143, 14 }), err);
     if (err->exc) goto L_ret;
     Sem_KeptUse (src, err);
     if (err->exc) goto L_ret;
-    de = DynStr_New (&(pool), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(de) m9v = DynStr_New (&(pool), err);
+      if (err->exc) goto L_ret;
+      de = m9v;
+    }
     first = true;
     { int64_t m9t9to;
     j = INT64_C(0);
     m9t9to = m9_sub_i64 (ntl, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; j <= m9t9to; j += 1) {
-      bool m9t10 = (!Text_Eq ((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s142, 6 }), err));
+      bool m9t10 = (!Text_Eq ((*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s144, 6 }), err));
       if (err->exc) goto L_ret;
       if (m9t10) {
         if ((!first)) {
-          DynStr_Append (&(de), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s143, 2 }), err);
+          DynStr_Append (&(de), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s145, 2 }), err);
           if (err->exc) goto L_ret;
         }
         Sem_AppendTgt (&(de), &(pool), (*(m9_sl_CHAR *) m9_at (tl.p, j, tl.len, sizeof (m9_sl_CHAR), err)), err);
@@ -6175,21 +7113,23 @@ static void Sem_EmitPend (int64_t line, int64_t col, m9_sl_CHAR src, m9_sl_CHAR 
     bool m9t11 = ((!first) && (!Sem_KeptHas (src, err)));
     if (err->exc) goto L_ret;
     if (m9t11) {
-      dm = DynStr_New (&(pool), err);
-      if (err->exc) goto L_ret;
-      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s144, 31 }), err);
+      { __typeof__(dm) m9v = DynStr_New (&(pool), err);
+        if (err->exc) goto L_ret;
+        dm = m9v;
+      }
+      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s146, 31 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(dm), &(pool), DynStr_View (ds, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s145, 9 }), err);
+      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s147, 9 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(dm), &(pool), DynStr_View (de, err), err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s146, 17 }), err);
+      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s148, 17 }), err);
       if (err->exc) goto L_ret;
       DynStr_Append (&(dm), &(pool), src, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s147, 10 }), err);
+      DynStr_Append (&(dm), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s149, 10 }), err);
       if (err->exc) goto L_ret;
       Sem_Diag (&(errs), &(nerrs), line, col, ctx, DynStr_View (dm, err), err);
       if (err->exc) goto L_ret;
@@ -6225,10 +7165,14 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
     m9t1to = m9_sub_i64 (nedge, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      a2 = (*(m9_sl_CHAR *) m9_at (edgeA.p, i, edgeA.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      b2 = (*(m9_sl_CHAR *) m9_at (edgeB.p, i, edgeB.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__(a2) m9v = (*(m9_sl_CHAR *) m9_at (edgeA.p, i, edgeA.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        a2 = m9v;
+      }
+      { __typeof__(b2) m9v = (*(m9_sl_CHAR *) m9_at (edgeB.p, i, edgeB.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        b2 = m9v;
+      }
       n2 = nesc;
       { int64_t m9t2to;
       j = INT64_C(0);
@@ -6269,10 +7213,14 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
     m9t7to = m9_sub_i64 (ncedge, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t7to; i += 1) {
-      a2 = (*(m9_sl_CHAR *) m9_at (carryEA.p, i, carryEA.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      b2 = (*(m9_sl_CHAR *) m9_at (carryEB.p, i, carryEB.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__(a2) m9v = (*(m9_sl_CHAR *) m9_at (carryEA.p, i, carryEA.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        a2 = m9v;
+      }
+      { __typeof__(b2) m9v = (*(m9_sl_CHAR *) m9_at (carryEB.p, i, carryEB.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        b2 = m9v;
+      }
       n2 = ncarry;
       { int64_t m9t8to;
       j = INT64_C(0);
@@ -6298,8 +7246,10 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
   m9t11to = m9_sub_i64 (npend, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t11to; i += 1) {
-    dmode = Sem_ScopeMode ((*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err)), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(dmode) m9v = Sem_ScopeMode ((*(m9_sl_CHAR *) m9_at (pendSrc.p, i, pendSrc.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      dmode = m9v;
+    }
     bool m9t12 = ((Text_Eq (dmode, Sem_ModeVal, err) || Text_Eq (dmode, Sem_ModeVar, err)) || Text_Eq (dmode, Sem_ModeRo, err));
     if (err->exc) goto L_ret;
     if (m9t12) {
@@ -6331,7 +7281,7 @@ static void Sem_FlushPend (m9_sl_CHAR ctx, m9_state *err)
     bool m9t17 = (!Sem_KeptUsedHas ((*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err)), err));
     if (err->exc) goto L_ret;
     if (m9t17) {
-      Sem_Diag (&(ledger), &(nledger), (*(int64_t *) m9_at (keptLn.p, i, keptLn.len, sizeof (int64_t), err)), (*(int64_t *) m9_at (keptCl.p, i, keptCl.len, sizeof (int64_t), err)), ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s148, 18 }), (*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s149, 48 }), err), err);
+      Sem_Diag (&(ledger), &(nledger), (*(int64_t *) m9_at (keptLn.p, i, keptLn.len, sizeof (int64_t), err)), (*(int64_t *) m9_at (keptCl.p, i, keptCl.len, sizeof (int64_t), err)), ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s150, 18 }), (*(m9_sl_CHAR *) m9_at (keptP.p, i, keptP.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s151, 48 }), err), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -6361,8 +7311,10 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
   Ast_Node * res = NULL; (void) res;
   bool deref = false; (void) deref;
   bool known = false; (void) known;
-  declN = Sem_ScopeType (d->a, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(declN) m9v = Sem_ScopeType (d->a, err);
+    if (err->exc) goto L_ret;
+    declN = m9v;
+  }
   { int64_t m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 (d->nkids, INT64_C(1), err);
@@ -6372,16 +7324,20 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
     if (err->exc) goto L_ret;
     if (isel != NULL) {
       if ((isel->kind == Ast_NSelIndex)) {
-        eb = Sem_ArrEnumBoundOf (declN, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(eb) m9v = Sem_ArrEnumBoundOf (declN, err);
+          if (err->exc) goto L_ret;
+          eb = m9v;
+        }
         if (((eb).len > INT64_C(0))) {
           if ((isel->nkids >= INT64_C(1))) {
-            it = Sem_ExprType ((*(Ast_Node * *) m9_at (isel->kids.p, INT64_C(0), isel->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-            if (err->exc) goto L_ret;
+            { __typeof__(it) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (isel->kids.p, INT64_C(0), isel->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+              if (err->exc) goto L_ret;
+              it = m9v;
+            }
             bool m9t2 = (((it).len > INT64_C(0)) && (!Text_Eq (it, eb, err)));
             if (err->exc) goto L_ret;
             if (m9t2) {
-              Sem_ErrN (d, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s150, 9 }), Sem_TyName (eb, err), ((m9_sl_CHAR){ (uint32_t *) m9s151, 20 }), Sem_Cat (Sem_TyName (eb, err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s152, 12 }), Sem_TyName (it, err), err), err), err), err);
+              Sem_ErrN (d, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s152, 9 }), Sem_TyName (eb, err), ((m9_sl_CHAR){ (uint32_t *) m9s153, 20 }), Sem_Cat (Sem_TyName (eb, err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s154, 12 }), Sem_TyName (it, err), err), err), err), err);
               if (err->exc) goto L_ret;
             }
           }
@@ -6391,12 +7347,14 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
           m9t3to = m9_sub_i64 (isel->nkids, INT64_C(1), err);
           if (err->exc) goto L_ret;
           for (; q <= m9t3to; q += 1) {
-            it = Sem_ExprType ((*(Ast_Node * *) m9_at (isel->kids.p, q, isel->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-            if (err->exc) goto L_ret;
+            { __typeof__(it) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (isel->kids.p, q, isel->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+              if (err->exc) goto L_ret;
+              it = m9v;
+            }
             bool m9t4 = (!Sem_IsIntish (it, err));
             if (err->exc) goto L_ret;
             if (m9t4) {
-              Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s153, 30 }), Sem_TyName (it, err), err), err);
+              Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s155, 30 }), Sem_TyName (it, err), err), err);
               if (err->exc) goto L_ret;
             }
           } }
@@ -6413,18 +7371,24 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
       m9ret = NULL;
       goto L_ret;
     }
-    res = Sem_ResolveType (declN, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(res) m9v = Sem_ResolveType (declN, err);
+      if (err->exc) goto L_ret;
+      res = m9v;
+    }
     for (;;) {
       deref = false;
       { Ast_Node * r0 = res;
       if (r0 != NULL) {
         if (((r0->kind == Ast_NPtrType) || (r0->kind == Ast_NSharedType))) {
           deref = true;
-          declN = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
-          res = Sem_ResolveType (declN, err);
-          if (err->exc) goto L_ret;
+          { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+            declN = m9v;
+          }
+          { __typeof__(res) m9v = Sem_ResolveType (declN, err);
+            if (err->exc) goto L_ret;
+            res = m9v;
+          }
         }
       } }
       if ((!deref)) {
@@ -6434,14 +7398,14 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
     { Ast_Node * r = res;
     if (r != NULL) {
       if ((r->kind == Ast_NOptType)) {
-        Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s154, 38 }), d->a, err), err);
+        Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s156, 38 }), d->a, err), err);
         if (err->exc) goto L_ret;
         err->res = m9res;
         m9ret = NULL;
         goto L_ret;
       }
       if ((r->kind == Ast_NCaseRecordType)) {
-        Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s155, 50 }), d->a, err), err);
+        Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s157, 50 }), d->a, err), err);
         if (err->exc) goto L_ret;
         err->res = m9res;
         m9ret = NULL;
@@ -6452,8 +7416,10 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
       if (sel != NULL) {
         if ((sel->kind == Ast_NSelField)) {
           if ((r->kind == Ast_NRecordType)) {
-            declN = Sem_FieldTypeOf (r, sel->a, err);
-            if (err->exc) goto L_ret;
+            { __typeof__(declN) m9v = Sem_FieldTypeOf (r, sel->a, err);
+              if (err->exc) goto L_ret;
+              declN = m9v;
+            }
             { Ast_Node * fk = declN;
             if (fk != NULL) {
               q = INT64_C(0);
@@ -6463,7 +7429,7 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
               if (base != NULL) {
                 q = INT64_C(0);
               } else {
-                Sem_ErrN (d, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s156, 9 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s157, 23 }), d->a, err), err);
+                Sem_ErrN (d, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s158, 9 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s159, 23 }), d->a, err), err);
                 if (err->exc) goto L_ret;
               } }
             } }
@@ -6472,11 +7438,13 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
               bool m9t5 = ((Text_Eq (boundMon, (m9_sl_CHAR){ NULL, 0 }, err) || (!Text_Eq (d->a, boundMon, err))) || (j != INT64_C(0)));
               if (err->exc) goto L_ret;
               if (m9t5) {
-                Sem_ErrN (d, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s158, 14 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s159, 65 }), err), err);
+                Sem_ErrN (d, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s160, 14 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s161, 65 }), err), err);
                 if (err->exc) goto L_ret;
               }
-              declN = Sem_MonFieldType (r, sel->a, err);
-              if (err->exc) goto L_ret;
+              { __typeof__(declN) m9v = Sem_MonFieldType (r, sel->a, err);
+                if (err->exc) goto L_ret;
+                declN = m9v;
+              }
           } else {
             err->res = m9res;
             m9ret = NULL;
@@ -6488,27 +7456,33 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
               bool m9t6 = (sel->nkids != Sem_AtoI (Print_ExprText ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), err), err));
               if (err->exc) goto L_ret;
               if (m9t6) {
-                Sem_ErrN (d, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s160, 7 }), Print_ExprText ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s161, 7 }), Print_ExprText ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s162, 17 }), Sem_ItoA (sel->nkids, err), err), err), err);
+                Sem_ErrN (d, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s162, 7 }), Print_ExprText ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s163, 7 }), Print_ExprText ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s164, 17 }), Sem_ItoA (sel->nkids, err), err), err), err);
                 if (err->exc) goto L_ret;
               }
-              declN = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
-              if (err->exc) goto L_ret;
+              { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+                declN = m9v;
+              }
             } else {
               if ((r->kind == Ast_NSliceType)) {
                 if ((sel->nkids != INT64_C(1))) {
-                  Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s163, 33 }), Sem_ItoA (sel->nkids, err), err), err);
+                  Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s165, 33 }), Sem_ItoA (sel->nkids, err), err), err);
                   if (err->exc) goto L_ret;
                 }
-                declN = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
-                if (err->exc) goto L_ret;
+                { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                  declN = m9v;
+                }
             } else {
               if ((r->kind == Ast_NArrayType)) {
                 if ((sel->nkids != INT64_C(1))) {
-                  Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s164, 34 }), Sem_ItoA (sel->nkids, err), err), err);
+                  Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s166, 34 }), Sem_ItoA (sel->nkids, err), err), err);
                   if (err->exc) goto L_ret;
                 }
-                declN = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
-                if (err->exc) goto L_ret;
+                { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                  declN = m9v;
+                }
             } else {
               err->res = m9res;
               m9ret = NULL;
@@ -6586,8 +7560,10 @@ static int64_t Sem_AtoI (m9_sl_CHAR s, m9_state *err)
       m9ret = v;
       goto L_ret;
     }
-    v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+      if (err->exc) goto L_ret;
+      v = m9v;
+    }
   } }
   err->res = m9res;
   m9ret = v;
@@ -6606,8 +7582,10 @@ static m9_sl_CHAR Sem_ItoA (int64_t v, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_AppendI64 (&(d), &(pool), v, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
@@ -6682,28 +7660,28 @@ static bool Sem_IsIntStr (m9_sl_CHAR s, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s165, 2 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s166, 3 }), err));
+  bool m9t1 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s167, 2 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s168, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s167, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s168, 3 }), err));
+  bool m9t2 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s169, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s170, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t3 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s169, 2 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s170, 3 }), err));
+  bool m9t3 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s171, 2 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s172, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t4 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s171, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s172, 3 }), err));
+  bool m9t4 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s173, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s174, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
@@ -6727,7 +7705,7 @@ static bool Sem_IsFloatStr (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s173, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s174, 3 }), err));
+  m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s175, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s176, 3 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -6749,7 +7727,7 @@ static bool Sem_IsIntish (m9_sl_CHAR s, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (Sem_IsIntStr (s, err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s175, 5 }), err));
+  m9ret = (Sem_IsIntStr (s, err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s177, 5 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -6770,7 +7748,7 @@ static bool Sem_IsNumStr (m9_sl_CHAR s, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t1 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s176, 5 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s177, 6 }), err));
+  bool m9t1 = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s178, 5 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s179, 6 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -6794,51 +7772,51 @@ static m9_sl_CHAR Sem_TyName (m9_sl_CHAR s, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  bool m9t1 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s178, 5 }), err);
+  bool m9t1 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s180, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s179, 18 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s181, 18 });
     goto L_ret;
   }
-  bool m9t2 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s180, 6 }), err);
+  bool m9t2 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s182, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s181, 14 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s183, 14 });
     goto L_ret;
   }
-  bool m9t3 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s182, 6 }), err);
+  bool m9t3 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s184, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s183, 21 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s185, 21 });
     goto L_ret;
   }
-  bool m9t4 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s184, 6 }), err);
+  bool m9t4 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s186, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s185, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s187, 4 });
     goto L_ret;
   }
-  bool m9t5 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s186, 6 }), err);
+  bool m9t5 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s188, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s187, 8 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s189, 8 });
     goto L_ret;
   }
-  bool m9t6 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s188, 5 }), err);
+  bool m9t6 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s190, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s189, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s191, 3 });
     goto L_ret;
   }
   if (((s).len == INT64_C(0))) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s190, 15 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s192, 15 });
     goto L_ret;
   }
   err->res = m9res;
@@ -6859,8 +7837,10 @@ static m9_sl_CHAR Sem_AfterOf (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   int64_t i = 0; (void) i;
-  i = Text_Find (s, ((m9_sl_CHAR){ (uint32_t *) m9s191, 4 }), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = Text_Find (s, ((m9_sl_CHAR){ (uint32_t *) m9s193, 4 }), err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   if ((i < INT64_C(0))) {
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -6887,15 +7867,17 @@ static int64_t Sem_GridRank (m9_sl_CHAR s, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t v = 0; (void) v;
   int64_t k = 0; (void) k;
-  bool m9t1 = (!Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s192, 5 }), err));
+  bool m9t1 = (!Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s194, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
     m9ret = INT64_C(0);
     goto L_ret;
   }
-  i = Text_Find (s, ((m9_sl_CHAR){ (uint32_t *) m9s193, 4 }), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = Text_Find (s, ((m9_sl_CHAR){ (uint32_t *) m9s195, 4 }), err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   if ((i <= INT64_C(5))) {
     err->res = m9res;
     m9ret = INT64_C(0);
@@ -6914,8 +7896,10 @@ static int64_t Sem_GridRank (m9_sl_CHAR s, m9_state *err)
       m9ret = INT64_C(0);
       goto L_ret;
     }
-    v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, k, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, k, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+      if (err->exc) goto L_ret;
+      v = m9v;
+    }
   } }
   err->res = m9res;
   m9ret = v;
@@ -6939,7 +7923,7 @@ static m9_sl_CHAR Sem_GridOf (int64_t rank, m9_sl_CHAR elem, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s194, 5 }), Sem_ItoA (rank, err), ((m9_sl_CHAR){ (uint32_t *) m9s195, 4 }), elem, err);
+  m9ret = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s196, 5 }), Sem_ItoA (rank, err), ((m9_sl_CHAR){ (uint32_t *) m9s197, 4 }), elem, err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -6956,37 +7940,43 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s196, 2 }), err);
+  bool m9t1 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s198, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    (*lo) = m9_neg_i64 (INT64_C(128), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*lo)) m9v = m9_neg_i64 (INT64_C(128), err);
+      if (err->exc) goto L_ret;
+      (*lo) = m9v;
+    }
     (*hi) = INT64_C(127);
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s197, 3 }), err);
+  bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s199, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
-    (*lo) = m9_neg_i64 (INT64_C(32768), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*lo)) m9v = m9_neg_i64 (INT64_C(32768), err);
+      if (err->exc) goto L_ret;
+      (*lo) = m9v;
+    }
     (*hi) = INT64_C(32767);
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t3 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s198, 3 }), err);
+  bool m9t3 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s200, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
-    (*lo) = m9_neg_i64 (INT64_C(2147483648), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*lo)) m9v = m9_neg_i64 (INT64_C(2147483648), err);
+      if (err->exc) goto L_ret;
+      (*lo) = m9v;
+    }
     (*hi) = INT64_C(2147483647);
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t4 = (Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s199, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s200, 4 }), err));
+  bool m9t4 = (Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s201, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s202, 4 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
     (*lo) = INT64_C(0);
@@ -6995,7 +7985,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t5 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s201, 3 }), err);
+  bool m9t5 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s203, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
     (*lo) = INT64_C(0);
@@ -7004,7 +7994,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t6 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s202, 3 }), err);
+  bool m9t6 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s204, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
     (*lo) = INT64_C(0);
@@ -7013,7 +8003,7 @@ static bool Sem_LitRange (m9_sl_CHAR t, int64_t *lo, int64_t *hi, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t7 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s203, 3 }), err);
+  bool m9t7 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s205, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t7) {
     (*lo) = INT64_C(0);
@@ -7062,11 +8052,15 @@ static bool Sem_LitVal (Ast_Node * lit, bool neg, int64_t *v, m9_state *err)
       goto L_ret;
     }
   } }
-  (*v) = Sem_AtoI (lit->a, err);
-  if (err->exc) goto L_ret;
-  if (neg) {
-    (*v) = m9_neg_i64 ((*v), err);
+  { __typeof__((*v)) m9v = Sem_AtoI (lit->a, err);
     if (err->exc) goto L_ret;
+    (*v) = m9v;
+  }
+  if (neg) {
+    { __typeof__((*v)) m9v = m9_neg_i64 ((*v), err);
+      if (err->exc) goto L_ret;
+      (*v) = m9v;
+    }
   }
   err->res = m9res;
   m9ret = true;
@@ -7093,7 +8087,7 @@ static bool Sem_LitOut (Ast_Node * n, m9_sl_CHAR t, int64_t *v, m9_state *err)
     m9ret = false;
     goto L_ret;
   }
-  bool m9t2 = ((n->kind == Ast_NUn) && Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s204, 1 }), err));
+  bool m9t2 = ((n->kind == Ast_NUn) && Text_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s206, 1 }), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     { Ast_Node * c = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
@@ -7130,6 +8124,204 @@ L_ret: ;
   return m9ret;
 }
 
+static int64_t Sem_ProcHead (m9_sl_CHAR s, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t i = 0; (void) i;
+  int64_t depth = 0; (void) depth;
+  int64_t close = 0; (void) close;
+  bool m9t1 = (!Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s207, 11 }), err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  depth = INT64_C(0);
+  { __typeof__(close) m9v = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    close = m9v;
+  }
+  i = INT64_C(10);
+  for (;;) {
+    if (!(((i < (s).len) && (close < INT64_C(0))))) break;
+    bool m9t2 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 40u);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__(depth) m9v = m9_add_i64 (depth, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        depth = m9v;
+      }
+    } else {
+      bool m9t3 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 41u);
+      if (err->exc) goto L_ret;
+      if (m9t3) {
+        { __typeof__(depth) m9v = m9_sub_i64 (depth, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          depth = m9v;
+        }
+        if ((depth == INT64_C(0))) {
+          close = i;
+        }
+    } }
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
+  }
+  if ((close < INT64_C(0))) {
+    err->res = m9res;
+    m9ret = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  i = close;
+  for (;;) {
+    bool m9t4 = (m9_add_i64 (i, INT64_C(8), err) <= (s).len);
+    if (err->exc) goto L_ret;
+    if (!(m9t4)) break;
+    bool m9t6 = Text_Eq (({ __typeof__(s) m9t5 = s; int64_t m9t5a = i, m9t5n = INT64_C(8); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s208, 8 }), err);
+    if (err->exc) goto L_ret;
+    if (m9t6) {
+      err->res = m9res;
+      m9ret = i;
+      goto L_ret;
+    }
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
+  }
+  err->res = m9res;
+  m9ret = (s).len;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_RaisesWithin (m9_sl_CHAR src, m9_sl_CHAR dst, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t a = 0; (void) a;
+  int64_t b = 0; (void) b;
+  int64_t ea = 0; (void) ea;
+  int64_t eb = 0; (void) eb;
+  bool found = false; (void) found;
+  a = INT64_C(0);
+  for (;;) {
+    if (!((a < (src).len))) break;
+    ea = a;
+    for (;;) {
+      bool m9t1 = ((ea < (src).len) && ((*(uint32_t *) m9_at (src.p, ea, src.len, sizeof (uint32_t), err)) != 44u));
+      if (err->exc) goto L_ret;
+      if (!(m9t1)) break;
+      { __typeof__(ea) m9v = m9_add_i64 (ea, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        ea = m9v;
+      }
+    }
+    found = false;
+    b = INT64_C(0);
+    for (;;) {
+      if (!(((b < (dst).len) && (!found)))) break;
+      eb = b;
+      for (;;) {
+        bool m9t2 = ((eb < (dst).len) && ((*(uint32_t *) m9_at (dst.p, eb, dst.len, sizeof (uint32_t), err)) != 44u));
+        if (err->exc) goto L_ret;
+        if (!(m9t2)) break;
+        { __typeof__(eb) m9v = m9_add_i64 (eb, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          eb = m9v;
+        }
+      }
+      { __typeof__(found) m9v = Text_Eq (({ __typeof__(src) m9t3 = src; int64_t m9t3a = a, m9t3n = m9_sub_i64 (ea, a, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), ({ __typeof__(dst) m9t4 = dst; int64_t m9t4a = b, m9t4n = m9_sub_i64 (eb, b, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err);
+        if (err->exc) goto L_ret;
+        found = m9v;
+      }
+      { __typeof__(b) m9v = m9_add_i64 (eb, INT64_C(2), err);
+        if (err->exc) goto L_ret;
+        b = m9v;
+      }
+    }
+    if ((!found)) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+    { __typeof__(a) m9v = m9_add_i64 (ea, INT64_C(2), err);
+      if (err->exc) goto L_ret;
+      a = m9v;
+    }
+  }
+  err->res = m9res;
+  m9ret = true;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_ProcFits (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t hd = 0; (void) hd;
+  int64_t hs = 0; (void) hs;
+  { __typeof__(hd) m9v = Sem_ProcHead (dst, err);
+    if (err->exc) goto L_ret;
+    hd = m9v;
+  }
+  { __typeof__(hs) m9v = Sem_ProcHead (src, err);
+    if (err->exc) goto L_ret;
+    hs = m9v;
+  }
+  if (((hd < INT64_C(0)) || (hs < INT64_C(0)))) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  bool m9t3 = (!Text_Eq (({ __typeof__(dst) m9t1 = dst; int64_t m9t1a = INT64_C(0), m9t1n = hd; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), ({ __typeof__(src) m9t2 = src; int64_t m9t2a = INT64_C(0), m9t2n = hs; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err));
+  if (err->exc) goto L_ret;
+  if (m9t3) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  if ((hs == (src).len)) {
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  }
+  if ((hd == (dst).len)) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Sem_RaisesWithin (({ __typeof__(src) m9t4 = src; int64_t m9t4a = m9_add_i64 (hs, INT64_C(8), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((src).len, hs, err), INT64_C(8), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), ({ __typeof__(dst) m9t5 = dst; int64_t m9t5a = m9_add_i64 (hd, INT64_C(8), err), m9t5n = m9_sub_i64 (m9_sub_i64 ((dst).len, hd, err), INT64_C(8), err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -7137,7 +8329,7 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s205, 6 }), err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s206, 6 }), err));
+  bool m9t1 = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s209, 6 }), err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s210, 6 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -7156,23 +8348,23 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     m9ret = true;
     goto L_ret;
   }
-  bool m9t3 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s207, 5 }), err);
+  bool m9t3 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s211, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    m9ret = (Sem_IsIntStr (dst, err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s208, 4 }), err));
+    m9ret = (Sem_IsIntStr (dst, err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s212, 4 }), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t4 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s209, 5 }), err);
+  bool m9t4 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s213, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
-    m9ret = (Sem_IsIntStr (src, err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s210, 4 }), err));
+    m9ret = (Sem_IsIntStr (src, err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s214, 4 }), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t5 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s211, 6 }), err);
+  bool m9t5 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s215, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
     err->res = m9res;
@@ -7180,7 +8372,7 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t6 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s212, 6 }), err);
+  bool m9t6 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s216, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
     err->res = m9res;
@@ -7188,39 +8380,39 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t7 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s213, 6 }), err);
+  bool m9t7 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s217, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t7) {
     err->res = m9res;
-    m9ret = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s214, 4 }), err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s215, 13 }), err));
+    m9ret = (Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s218, 4 }), err) || Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s219, 13 }), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t8 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s216, 6 }), err);
+  bool m9t8 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s220, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t8) {
     err->res = m9res;
-    m9ret = (Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s217, 4 }), err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s218, 13 }), err));
+    m9ret = (Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s221, 4 }), err) || Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s222, 13 }), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t9 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s219, 6 }), err);
+  bool m9t9 = Text_Eq (src, ((m9_sl_CHAR){ (uint32_t *) m9s223, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t9) {
     err->res = m9res;
-    m9ret = Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s220, 4 }), err);
+    m9ret = Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s224, 4 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t10 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s221, 6 }), err);
+  bool m9t10 = Text_Eq (dst, ((m9_sl_CHAR){ (uint32_t *) m9s225, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t10) {
     err->res = m9res;
-    m9ret = Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s222, 4 }), err);
+    m9ret = Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s226, 4 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t11 = (Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s223, 9 }), err) && Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s224, 6 }), err));
+  bool m9t11 = (Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s227, 9 }), err) && Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s228, 6 }), err));
   if (err->exc) goto L_ret;
   if (m9t11) {
     err->res = m9res;
@@ -7228,10 +8420,10 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t13 = Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s225, 4 }), err);
+  bool m9t13 = Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s229, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t13) {
-    bool m9t14 = Text_Eq (src, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s226, 7 }), dst, err), err);
+    bool m9t14 = Text_Eq (src, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s230, 7 }), dst, err), err);
     if (err->exc) goto L_ret;
     if (m9t14) {
       err->res = m9res;
@@ -7239,11 +8431,224 @@ static bool Sem_Compat (m9_sl_CHAR dst, m9_sl_CHAR src, m9_state *err)
       goto L_ret;
     }
   }
+  bool m9t15 = Sem_ProcFits (dst, src, err);
+  if (err->exc) goto L_ret;
+  if (m9t15) {
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  }
+  bool m9t16 = (Text_StartsWith (dst, ((m9_sl_CHAR){ (uint32_t *) m9s231, 4 }), err) && Text_StartsWith (src, ((m9_sl_CHAR){ (uint32_t *) m9s232, 4 }), err));
+  if (err->exc) goto L_ret;
+  if (m9t16) {
+    err->res = m9res;
+    m9ret = Sem_ProcFits (({ __typeof__(dst) m9t17 = dst; int64_t m9t17a = INT64_C(4), m9t17n = m9_sub_i64 ((dst).len, INT64_C(4), err); (__typeof__(m9t17)){ m9t17.p + m9_chk_slice (m9t17a, m9t17n, m9t17.len, err), m9t17n }; }), ({ __typeof__(src) m9t18 = src; int64_t m9t18a = INT64_C(4), m9t18n = m9_sub_i64 ((src).len, INT64_C(4), err); (__typeof__(m9t18)){ m9t18.p + m9_chk_slice (m9t18a, m9t18n, m9t18.len, err), m9t18n }; }), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
   err->res = m9res;
   m9ret = false;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Sem_PassedOver (int64_t kind, int64_t line, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t r = 0; (void) r;
+  { __typeof__((*(int64_t *) m9_at (statS.v, kind, INT64_C(7), sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at (statS.v, kind, INT64_C(7), sizeof (int64_t), err)), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*(int64_t *) m9_at (statS.v, kind, INT64_C(7), sizeof (int64_t), err)) = m9v;
+    if (err->exc) goto L_ret;
+  }
+  { __typeof__(r) m9v = (*(int64_t *) m9_at (statR.v, kind, INT64_C(7), sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    r = m9v;
+  }
+  if ((r < Sem_StatSites)) {
+    if ((r == INT64_C(0))) {
+      (*(int64_t *) m9_at (statL.v, m9_mul_i64 (kind, Sem_StatSites, err), INT64_C(42), sizeof (int64_t), err)) = line;
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (statR.v, kind, INT64_C(7), sizeof (int64_t), err)) = INT64_C(1);
+      if (err->exc) goto L_ret;
+    } else {
+      bool m9t1 = ((*(int64_t *) m9_at (statL.v, m9_sub_i64 (m9_add_i64 (m9_mul_i64 (kind, Sem_StatSites, err), r, err), INT64_C(1), err), INT64_C(42), sizeof (int64_t), err)) != line);
+      if (err->exc) goto L_ret;
+      if (m9t1) {
+        (*(int64_t *) m9_at (statL.v, m9_add_i64 (m9_mul_i64 (kind, Sem_StatSites, err), r, err), INT64_C(42), sizeof (int64_t), err)) = line;
+        if (err->exc) goto L_ret;
+        { __typeof__((*(int64_t *) m9_at (statR.v, kind, INT64_C(7), sizeof (int64_t), err))) m9v = m9_add_i64 (r, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          (*(int64_t *) m9_at (statR.v, kind, INT64_C(7), sizeof (int64_t), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+    } }
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_Agree (int64_t kind, m9_sl_CHAR a, m9_sl_CHAR b, int64_t line, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  if ((((a).len == INT64_C(0)) || ((b).len == INT64_C(0)))) {
+    Sem_PassedOver (kind, line, err);
+    if (err->exc) goto L_ret;
+  } else {
+    { __typeof__((*(int64_t *) m9_at (statC.v, kind, INT64_C(7), sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at (statC.v, kind, INT64_C(7), sizeof (int64_t), err)), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (statC.v, kind, INT64_C(7), sizeof (int64_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static m9_sl_CHAR Sem_AggElemType (Ast_Node * k, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  { Ast_Node * e = k;
+  if (e != NULL) {
+    { __typeof__(e->kind) m9t1 = e->kind;
+    switch (m9t1) {
+    case INT64_C(65):
+    {
+      err->res = m9res;
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s233, 3 });
+      goto L_ret;
+    } break;
+    case INT64_C(66):
+    {
+      err->res = m9res;
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s234, 3 });
+      goto L_ret;
+    } break;
+    case INT64_C(67):
+    {
+      err->res = m9res;
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s235, 4 });
+      goto L_ret;
+    } break;
+    case INT64_C(68):
+    {
+      err->res = m9res;
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s236, 13 });
+      goto L_ret;
+    } break;
+    case INT64_C(69):
+    {
+      err->res = m9res;
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s237, 4 });
+      goto L_ret;
+    } break;
+    case INT64_C(70):
+    {
+      err->res = m9res;
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s238, 4 });
+      goto L_ret;
+    } break;
+    case INT64_C(61):
+    {
+      bool m9t2 = Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s239, 1 }), err);
+      if (err->exc) goto L_ret;
+      if (m9t2) {
+        { Ast_Node * o = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (o != NULL) {
+          if ((o->kind == Ast_NInt)) {
+            err->res = m9res;
+            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s240, 3 });
+            goto L_ret;
+          }
+          if ((o->kind == Ast_NReal)) {
+            err->res = m9res;
+            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s241, 3 });
+            goto L_ret;
+          }
+        } }
+      }
+      err->res = m9res;
+      m9ret = (m9_sl_CHAR){ NULL, 0 };
+      goto L_ret;
+    } break;
+    default: {
+      err->res = m9res;
+      m9ret = (m9_sl_CHAR){ NULL, 0 };
+      goto L_ret;
+    } break;
+    } }
+  } }
+  err->res = m9res;
+  m9ret = (m9_sl_CHAR){ NULL, 0 };
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static m9_sl_CHAR Sem_AggType (Ast_Node * e, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  int64_t i = 0; (void) i;
+  m9_sl_CHAR t = {0}; (void) t;
+  if ((e->nkids == INT64_C(0))) {
+    err->res = m9res;
+    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    goto L_ret;
+  }
+  { __typeof__(t) m9v = Sem_AggElemType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
+  if (((t).len == INT64_C(0))) {
+    err->res = m9res;
+    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    goto L_ret;
+  }
+  { int64_t m9t1to;
+  i = INT64_C(1);
+  m9t1to = m9_sub_i64 (e->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = (!Text_Eq (Sem_AggElemType ((*(Ast_Node * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Ast_Node *), err)), err), t, err));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      err->res = m9res;
+      m9ret = (m9_sl_CHAR){ NULL, 0 };
+      goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s242, 6 }), Sem_ItoA (e->nkids, err), ((m9_sl_CHAR){ (uint32_t *) m9s243, 4 }), t, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
   m9_pool_free (&m9frame);
   return m9ret;
 }
@@ -7261,45 +8666,52 @@ static m9_sl_CHAR Sem_LitType (Ast_Node * k, m9_state *err)
   if (e != NULL) {
     { __typeof__(e->kind) m9t1 = e->kind;
     switch (m9t1) {
+    case INT64_C(84):
+    {
+      err->res = m9res;
+      m9ret = Sem_AggType (e, err);
+      if (err->exc) goto L_ret;
+      goto L_ret;
+    } break;
     case INT64_C(65):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s227, 5 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s244, 5 });
       goto L_ret;
     } break;
     case INT64_C(66):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s228, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s245, 6 });
       goto L_ret;
     } break;
     case INT64_C(67):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s229, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s246, 4 });
       goto L_ret;
     } break;
     case INT64_C(68):
     {
       if (((e->a).len == INT64_C(1))) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s230, 6 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s247, 6 });
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s231, 13 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s248, 13 });
       goto L_ret;
     } break;
     case INT64_C(69):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s232, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s249, 4 });
       goto L_ret;
     } break;
     case INT64_C(70):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s233, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s250, 4 });
       goto L_ret;
     } break;
     case INT64_C(64):
@@ -7318,22 +8730,26 @@ static m9_sl_CHAR Sem_LitType (Ast_Node * k, m9_state *err)
     } break;
     case INT64_C(60):
     {
-      l = Sem_LitType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err);
-      if (err->exc) goto L_ret;
-      r = Sem_LitType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err);
-      if (err->exc) goto L_ret;
-      bool m9t2 = (Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s234, 5 }), err) && Text_Eq (r, ((m9_sl_CHAR){ (uint32_t *) m9s235, 5 }), err));
+      { __typeof__(l) m9v = Sem_LitType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err);
+        if (err->exc) goto L_ret;
+        l = m9v;
+      }
+      { __typeof__(r) m9v = Sem_LitType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err);
+        if (err->exc) goto L_ret;
+        r = m9v;
+      }
+      bool m9t2 = (Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s251, 5 }), err) && Text_Eq (r, ((m9_sl_CHAR){ (uint32_t *) m9s252, 5 }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s236, 5 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s253, 5 });
         goto L_ret;
       }
-      bool m9t3 = (Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s237, 6 }), err) && Text_Eq (r, ((m9_sl_CHAR){ (uint32_t *) m9s238, 6 }), err));
+      bool m9t3 = (Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s254, 6 }), err) && Text_Eq (r, ((m9_sl_CHAR){ (uint32_t *) m9s255, 6 }), err));
       if (err->exc) goto L_ret;
       if (m9t3) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s239, 6 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s256, 6 });
         goto L_ret;
       }
       err->res = m9res;
@@ -7364,6 +8780,7 @@ static void Sem_ConstClear (m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   nconsts = INT64_C(0);
+  nAgg = INT64_C(0);
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -7379,15 +8796,20 @@ static void Sem_ConstAdd (m9_sl_CHAR nm, m9_sl_CHAR ty, m9_state *err)
   m9_sl_Sem_Binding nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if ((nconsts == (consts).len)) {
-    nb = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (consts).len, err), INT64_C(16), err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (consts).len, err), INT64_C(16), err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nconsts, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = (*(Sem_Binding *) m9_at (consts.p, i, consts.len, sizeof (Sem_Binding), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err))) m9v = (*(Sem_Binding *) m9_at (consts.p, i, consts.len, sizeof (Sem_Binding), err));
+        if (err->exc) goto L_ret;
+        (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     consts = nb;
   }
@@ -7397,8 +8819,10 @@ static void Sem_ConstAdd (m9_sl_CHAR nm, m9_sl_CHAR ty, m9_state *err)
   if (err->exc) goto L_ret;
   (*(Sem_Binding *) m9_at (consts.p, nconsts, consts.len, sizeof (Sem_Binding), err)).ty = NULL;
   if (err->exc) goto L_ret;
-  nconsts = m9_add_i64 (nconsts, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nconsts) m9v = m9_add_i64 (nconsts, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nconsts = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -7439,6 +8863,257 @@ L_ret: ;
   return m9ret;
 }
 
+static bool Sem_IsConstHere (m9_sl_CHAR nm, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  bool found = false; (void) found;
+  m9_sl_CHAR t = {0}; (void) t;
+  bool m9t1 = ((Sem_ScopeMode (nm, err)).len > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  { __typeof__(t) m9v = Sem_ConstType (nm, &(found), err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
+  err->res = m9res;
+  m9ret = found;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_IsAggConst (m9_sl_CHAR nm, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  bool found = false; (void) found;
+  m9_sl_CHAR t = {0}; (void) t;
+  bool m9t1 = ((Sem_ScopeMode (nm, err)).len > INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  }
+  { __typeof__(t) m9v = Sem_ConstType (nm, &(found), err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
+  err->res = m9res;
+  m9ret = (found && Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s257, 6 }), err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Sem_CheckAggregate (Ast_Node * cd, m9_sl_CHAR ctx, int64_t where, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  m9_sl_CHAR t0 = {0}; (void) t0;
+  m9_sl_CHAR t = {0}; (void) t;
+  { Ast_Node * ag = (*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err));
+  if (err->exc) goto L_ret;
+  if (ag != NULL) {
+    if ((ag->kind == Ast_NAggregate)) {
+      { __typeof__(nAgg) m9v = m9_add_i64 (nAgg, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        nAgg = m9v;
+      }
+      if ((where == INT64_C(1))) {
+        Sem_ErrN (cd, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s258, 40 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s259, 12 }), err), err);
+        if (err->exc) goto L_ret;
+      } else {
+        if ((where == INT64_C(2))) {
+          Sem_ErrN (cd, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s260, 44 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s261, 12 }), err), err);
+          if (err->exc) goto L_ret;
+      } }
+      { __typeof__(t0) m9v = Sem_AggElemType ((*(Ast_Node * *) m9_at (ag->kids.p, INT64_C(0), ag->kids.len, sizeof (Ast_Node *), err)), err);
+        if (err->exc) goto L_ret;
+        t0 = m9v;
+      }
+      { int64_t m9t1to;
+      i = INT64_C(0);
+      m9t1to = m9_sub_i64 (ag->nkids, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      for (; i <= m9t1to; i += 1) {
+        { Ast_Node * el = (*(Ast_Node * *) m9_at (ag->kids.p, i, ag->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (el != NULL) {
+          { __typeof__(t) m9v = Sem_AggElemType ((*(Ast_Node * *) m9_at (ag->kids.p, i, ag->kids.len, sizeof (Ast_Node *), err)), err);
+            if (err->exc) goto L_ret;
+            t = m9v;
+          }
+          if (((t).len == INT64_C(0))) {
+            Sem_ErrN (el, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s262, 8 }), Sem_ItoA (m9_add_i64 (i, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s263, 4 }), cd->a, ((m9_sl_CHAR){ (uint32_t *) m9s264, 58 }), err), err);
+            if (err->exc) goto L_ret;
+          } else {
+            bool m9t2 = (((t0).len > INT64_C(0)) && (!Text_Eq (t, t0, err)));
+            if (err->exc) goto L_ret;
+            if (m9t2) {
+              Sem_ErrN (el, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s265, 8 }), Sem_ItoA (m9_add_i64 (i, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s266, 4 }), cd->a, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s267, 4 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s268, 20 }), Sem_TyName (t0, err), ((m9_sl_CHAR){ (uint32_t *) m9s269, 47 }), err), err), err);
+              if (err->exc) goto L_ret;
+          } }
+        } }
+      } }
+    }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_AggWalk (Ast_Node * n, int64_t parent, m9_sl_CHAR ctx, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  int64_t first = 0; (void) first;
+  if ((((n->kind == Ast_NDesignator) && (n->nkids == INT64_C(0))) && (parent != Ast_NArgList))) {
+    bool m9t1 = Sem_IsAggConst (n->a, err);
+    if (err->exc) goto L_ret;
+    if (m9t1) {
+      Sem_ErrN (n, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s270, 16 }), n->a, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s271, 57 }), ((m9_sl_CHAR){ (uint32_t *) m9s272, 22 }), err), err), err);
+      if (err->exc) goto L_ret;
+    }
+  }
+  first = INT64_C(0);
+  if ((n->kind == Ast_NAssign)) {
+    { Ast_Node * lhs = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (lhs != NULL) {
+      if ((lhs->nkids == INT64_C(0))) {
+        first = INT64_C(1);
+      }
+    } }
+  }
+  { int64_t m9t2to;
+  i = first;
+  m9t2to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    { Ast_Node * k = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (k != NULL) {
+      Sem_AggWalk (k, n->kind, ctx, err);
+      if (err->exc) goto L_ret;
+    } }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_ConstArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t k, Ast_Node * an, bool isVar, bool isRo, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  { Ast_Node * a = an;
+  if (a != NULL) {
+    if ((a->kind == Ast_NDesignator)) {
+      bool m9t1 = Sem_IsConstHere (a->a, err);
+      if (err->exc) goto L_ret;
+      if (m9t1) {
+        if (isVar) {
+          Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s273, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s274, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s275, 12 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s276, 43 }), err), err), err);
+          if (err->exc) goto L_ret;
+        } else {
+          bool m9t2 = (((a->nkids == INT64_C(0)) && (!isRo)) && Sem_IsAggConst (a->a, err));
+          if (err->exc) goto L_ret;
+          if (m9t2) {
+            Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s277, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s278, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s279, 18 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s280, 48 }), err), err), err);
+            if (err->exc) goto L_ret;
+        } }
+      }
+    }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_RoArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t k, Ast_Node * an, m9_sl_CHAR pTy, m9_sl_CHAR aTy, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR what = {0}; (void) what;
+  what = (m9_sl_CHAR){ NULL, 0 };
+  bool m9t1 = (Text_StartsWith (pTy, ((m9_sl_CHAR){ (uint32_t *) m9s281, 8 }), err) || Text_StartsWith (pTy, ((m9_sl_CHAR){ (uint32_t *) m9s282, 5 }), err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    { Ast_Node * a = an;
+    if (a != NULL) {
+      if ((a->kind == Ast_NString)) {
+        what = ((m9_sl_CHAR){ (uint32_t *) m9s283, 16 });
+      } else {
+        bool m9t2 = ((a->kind == Ast_NDesignator) && (((Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s284, 8 }), err) || Text_StartsWith (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s285, 5 }), err)) || Text_Eq (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s286, 6 }), err))));
+        if (err->exc) goto L_ret;
+        if (m9t2) {
+          bool m9t3 = Text_Eq (Sem_ScopeMode (a->a, err), Sem_ModeRo, err);
+          if (err->exc) goto L_ret;
+          if (m9t3) {
+            { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s287, 17 }), a->a, err);
+              if (err->exc) goto L_ret;
+              what = m9v;
+            }
+          } else {
+            bool m9t4 = Sem_ScopeRo (a->a, err);
+            if (err->exc) goto L_ret;
+            if (m9t4) {
+              { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s288, 16 }), a->a, err);
+                if (err->exc) goto L_ret;
+                what = m9v;
+              }
+          } else {
+            bool m9t5 = Sem_IsConstHere (a->a, err);
+            if (err->exc) goto L_ret;
+            if (m9t5) {
+              { __typeof__(what) m9v = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s289, 10 }), a->a, err);
+                if (err->exc) goto L_ret;
+                what = m9v;
+              }
+          } } }
+      } }
+    } }
+  }
+  if (((what).len > INT64_C(0))) {
+    Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s290, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s291, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s292, 2 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s293, 46 }), err), err), err);
+    if (err->exc) goto L_ret;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
 static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -7463,48 +9138,48 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     case INT64_C(65):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s240, 5 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s294, 5 });
       goto L_ret;
     } break;
     case INT64_C(66):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s241, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s295, 6 });
       goto L_ret;
     } break;
     case INT64_C(67):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s242, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s296, 4 });
       goto L_ret;
     } break;
     case INT64_C(68):
     {
       if (((e->a).len == INT64_C(1))) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s243, 6 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s297, 6 });
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s244, 13 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s298, 13 });
       goto L_ret;
     } break;
     case INT64_C(69):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s245, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s299, 4 });
       goto L_ret;
     } break;
     case INT64_C(70):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s246, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s300, 4 });
       goto L_ret;
     } break;
     case INT64_C(71):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s247, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s301, 6 });
       goto L_ret;
     } break;
     case INT64_C(64):
@@ -7516,13 +9191,15 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(72):
     {
-      t = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-      if (err->exc) goto L_ret;
-      bool m9t2 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s248, 6 }), err)));
+      { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+        if (err->exc) goto L_ret;
+        t = m9v;
+      }
+      bool m9t2 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s302, 6 }), err)));
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s249, 4 }), t, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s303, 4 }), t, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -7532,44 +9209,48 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(73):
     {
-      t = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+        if (err->exc) goto L_ret;
+        t = m9v;
+      }
       { Ast_Node * inr = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (inr != NULL) {
         if ((inr->kind == Ast_NDesignator)) {
-          bool m9t3 = ((inr->nkids == INT64_C(0)) && Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s250, 4 }), err));
+          bool m9t3 = ((inr->nkids == INT64_C(0)) && Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s304, 4 }), err));
           if (err->exc) goto L_ret;
           if (m9t3) {
-            u = Sem_ScopeMode (inr->a, err);
-            if (err->exc) goto L_ret;
+            { __typeof__(u) m9v = Sem_ScopeMode (inr->a, err);
+              if (err->exc) goto L_ret;
+              u = m9v;
+            }
             bool m9t4 = (((Text_Eq (u, Sem_ModeVal, err) || Text_Eq (u, Sem_ModeVar, err)) || Text_Eq (u, Sem_ModeBinder, err)) || Text_Eq (u, Sem_ModeRo, err));
             if (err->exc) goto L_ret;
             if (m9t4) {
-              Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s251, 34 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s252, 22 }), err), err);
+              Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s305, 34 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s306, 22 }), err), err);
               if (err->exc) goto L_ret;
             } else {
               bool m9t5 = Sem_FvalHas (inr->a, err);
               if (err->exc) goto L_ret;
               if (m9t5) {
-                Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s253, 32 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s254, 29 }), err), err);
+                Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s307, 32 }), inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s308, 29 }), err), err);
                 if (err->exc) goto L_ret;
             } else {
               bool m9t6 = (Sem_OwnedCandKind (inr->a, err) == INT64_C(1));
               if (err->exc) goto L_ret;
               if (m9t6) {
-                Sem_OwnMark (inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s255, 18 }), e, err);
+                Sem_OwnMark (inr->a, ((m9_sl_CHAR){ (uint32_t *) m9s309, 18 }), e, err);
                 if (err->exc) goto L_ret;
               }
             } }
           }
         }
       } }
-      bool m9t7 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s256, 4 }), err);
+      bool m9t7 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s310, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t7) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s257, 7 }), t, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s311, 7 }), t, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -7579,14 +9260,16 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(74):
     {
-      form = Sem_NewForm (e, ctx, &(tyk), err->res, &(ext0), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(form) m9v = Sem_NewForm (e, ctx, &(tyk), err->res, &(ext0), err);
+        if (err->exc) goto L_ret;
+        form = m9v;
+      }
       if (((form).len == INT64_C(0))) {
         err->res = m9res;
         m9ret = (m9_sl_CHAR){ NULL, 0 };
         goto L_ret;
       }
-      bool m9t8 = Text_Eq (form, ((m9_sl_CHAR){ (uint32_t *) m9s258, 4 }), err);
+      bool m9t8 = Text_Eq (form, ((m9_sl_CHAR){ (uint32_t *) m9s312, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t8) {
         if (curPure) {
@@ -7597,14 +9280,14 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
               bool m9t9 = ((Text_Eq (Sem_ScopeMode (pn->a, err), Sem_ModeVar, err) || Text_Eq (Sem_ScopeMode (pn->a, err), Sem_ModeOwn, err)) || Text_Eq (Sem_ScopeMode (pn->a, err), Sem_ModeModule, err));
               if (err->exc) goto L_ret;
               if (m9t9) {
-                Sem_ErrN (e, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s259, 30 }), pn->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s260, 30 }), err), err);
+                Sem_ErrN (e, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s313, 30 }), pn->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s314, 30 }), err), err);
                 if (err->exc) goto L_ret;
               }
             }
           } }
         }
       }
-      bool m9t10 = Text_Eq (form, ((m9_sl_CHAR){ (uint32_t *) m9s261, 5 }), err);
+      bool m9t10 = Text_Eq (form, ((m9_sl_CHAR){ (uint32_t *) m9s315, 5 }), err);
       if (err->exc) goto L_ret;
       if (m9t10) {
         { int64_t m9t11to;
@@ -7620,10 +9303,10 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
               if (err->exc) goto L_ret;
               if (ptn != NULL) {
                 if ((ptn->kind == Ast_NQualident)) {
-                  bool m9t12 = DynStr_Eq (ptn->a, ((m9_sl_CHAR){ (uint32_t *) m9s262, 4 }), err);
+                  bool m9t12 = DynStr_Eq (ptn->a, ((m9_sl_CHAR){ (uint32_t *) m9s316, 4 }), err);
                   if (err->exc) goto L_ret;
                   if (m9t12) {
-                    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s263, 39 }), err);
+                    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s317, 39 }), err);
                     if (err->exc) goto L_ret;
                     err->res = m9res;
                     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -7635,8 +9318,10 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
           } }
         } }
       }
-      t = Sem_CanonT (tyk, INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(t) m9v = Sem_CanonT (tyk, INT64_C(0), err);
+        if (err->exc) goto L_ret;
+        t = m9v;
+      }
       nx = INT64_C(0);
       { int64_t m9t13to;
       j = ext0;
@@ -7646,14 +9331,18 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         { Ast_Node * cnt = (*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (cnt != NULL) {
-          nx = m9_add_i64 (nx, INT64_C(1), err);
-          if (err->exc) goto L_ret;
-          u = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-          if (err->exc) goto L_ret;
+          { __typeof__(nx) m9v = m9_add_i64 (nx, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            nx = m9v;
+          }
+          { __typeof__(u) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+            if (err->exc) goto L_ret;
+            u = m9v;
+          }
           bool m9t14 = (!Sem_IsIntish (u, err));
           if (err->exc) goto L_ret;
           if (m9t14) {
-            Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s264, 35 }), Sem_TyName (u, err), err), err);
+            Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s318, 35 }), Sem_TyName (u, err), err), err);
             if (err->exc) goto L_ret;
           }
         } }
@@ -7661,7 +9350,7 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       if ((nx == INT64_C(1))) {
         if (((t).len > INT64_C(0))) {
           err->res = m9res;
-          m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s265, 9 }), t, err);
+          m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s319, 9 }), t, err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
@@ -7677,7 +9366,7 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       }
       if (((t).len > INT64_C(0))) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s266, 4 }), t, err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s320, 4 }), t, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -7687,41 +9376,47 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     } break;
     case INT64_C(75):
     {
-      t = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-      if (err->exc) goto L_ret;
-      u = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+        if (err->exc) goto L_ret;
+        t = m9v;
+      }
+      { __typeof__(u) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+        if (err->exc) goto L_ret;
+        u = m9v;
+      }
       bool m9t15 = (!Sem_IsIntish (u, err));
       if (err->exc) goto L_ret;
       if (m9t15) {
-        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s267, 36 }), Sem_TyName (u, err), err), err);
+        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s321, 36 }), Sem_TyName (u, err), err), err);
         if (err->exc) goto L_ret;
       }
-      u = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(u) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+        if (err->exc) goto L_ret;
+        u = m9v;
+      }
       bool m9t16 = (!Sem_IsIntish (u, err));
       if (err->exc) goto L_ret;
       if (m9t16) {
-        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s268, 37 }), Sem_TyName (u, err), err), err);
+        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s322, 37 }), Sem_TyName (u, err), err), err);
         if (err->exc) goto L_ret;
       }
-      bool m9t17 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s269, 9 }), err);
+      bool m9t17 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s323, 9 }), err);
       if (err->exc) goto L_ret;
       if (m9t17) {
         err->res = m9res;
         m9ret = t;
         goto L_ret;
       }
-      bool m9t18 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s270, 6 }), err);
+      bool m9t18 = Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s324, 6 }), err);
       if (err->exc) goto L_ret;
       if (m9t18) {
         err->res = m9res;
-        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s271, 9 }), Sem_AfterOf (t, err), err);
+        m9ret = Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s325, 9 }), Sem_AfterOf (t, err), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
       if (((t).len > INT64_C(0))) {
-        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s272, 34 }), Sem_TyName (t, err), err), err);
+        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s326, 34 }), Sem_TyName (t, err), err), err);
         if (err->exc) goto L_ret;
       }
       err->res = m9res;
@@ -7734,36 +9429,42 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       if (err->exc) goto L_ret;
       if (o != NULL) {
         if ((o->kind == Ast_NDesignator)) {
-          res = Sem_DesigDeclType (o, ctx, err);
-          if (err->exc) goto L_ret;
+          { __typeof__(res) m9v = Sem_DesigDeclType (o, ctx, err);
+            if (err->exc) goto L_ret;
+            res = m9v;
+          }
           { Ast_Node * b = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (b != NULL) {
             if ((b->kind == Ast_NIsSome)) {
-              t = Sem_CanonT (res, INT64_C(0), err);
-              if (err->exc) goto L_ret;
-              res = Sem_ResolveType (res, err);
-              if (err->exc) goto L_ret;
+              { __typeof__(t) m9v = Sem_CanonT (res, INT64_C(0), err);
+                if (err->exc) goto L_ret;
+                t = m9v;
+              }
+              { __typeof__(res) m9v = Sem_ResolveType (res, err);
+                if (err->exc) goto L_ret;
+                res = m9v;
+              }
               { Ast_Node * rr = res;
               if (rr != NULL) {
                 if ((rr->kind == Ast_NOptType)) {
                   Sem_BindName (b->a, (*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err)), err);
                   if (err->exc) goto L_ret;
                 } else {
-                  bool m9t19 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s273, 4 }), err)));
+                  bool m9t19 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s327, 4 }), err)));
                   if (err->exc) goto L_ret;
                   if (m9t19) {
-                    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s274, 28 }), err);
+                    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s328, 28 }), err);
                     if (err->exc) goto L_ret;
                   }
                   Sem_BindName (b->a, NULL, err);
                   if (err->exc) goto L_ret;
                 }
               } else {
-                bool m9t20 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s275, 4 }), err)));
+                bool m9t20 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s329, 4 }), err)));
                 if (err->exc) goto L_ret;
                 if (m9t20) {
-                  Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s276, 28 }), err);
+                  Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s330, 28 }), err);
                   if (err->exc) goto L_ret;
                 }
                 Sem_BindName (b->a, NULL, err);
@@ -7776,8 +9477,10 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
             }
           } }
         } else {
-          t = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-          if (err->exc) goto L_ret;
+          { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+            if (err->exc) goto L_ret;
+            t = m9v;
+          }
           { Ast_Node * b2 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (b2 != NULL) {
@@ -7787,8 +9490,10 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                 { Ast_Node * cd = (*(Ast_Node * *) m9_at (o->kids.p, INT64_C(0), o->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
                 if (cd != NULL) {
-                  pr = Sem_LookupProc (Sem_DesigName (cd, err), &(found), err);
-                  if (err->exc) goto L_ret;
+                  { __typeof__(pr) m9v = Sem_LookupProc (Sem_DesigName (cd, err), &(found), err);
+                    if (err->exc) goto L_ret;
+                    pr = m9v;
+                  }
                   if (found) {
                     { Ast_Node * pn = pr.node;
                     if (pn != NULL) {
@@ -7797,14 +9502,18 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                         if (err->exc) goto L_ret;
                         if (rt0 != NULL) {
                           canonCtx = pr.modName;
-                          res = Sem_ResolveType (rt0, err);
-                          if (err->exc) goto L_ret;
+                          { __typeof__(res) m9v = Sem_ResolveType (rt0, err);
+                            if (err->exc) goto L_ret;
+                            res = m9v;
+                          }
                           canonCtx = (m9_sl_CHAR){ NULL, 0 };
                           { Ast_Node * rr = res;
                           if (rr != NULL) {
                             if ((rr->kind == Ast_NOptType)) {
-                              res = Sem_QualifiedIn ((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err)), pr.modName, err);
-                              if (err->exc) goto L_ret;
+                              { __typeof__(res) m9v = Sem_QualifiedIn ((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err)), pr.modName, err);
+                                if (err->exc) goto L_ret;
+                                res = m9v;
+                              }
                             } else {
                               res = NULL;
                             }
@@ -7815,10 +9524,10 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
                   }
                 } }
               }
-              bool m9t21 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s277, 4 }), err)));
+              bool m9t21 = (((t).len > INT64_C(0)) && (!Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s331, 4 }), err)));
               if (err->exc) goto L_ret;
               if (m9t21) {
-                Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s278, 28 }), err);
+                Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s332, 28 }), err);
                 if (err->exc) goto L_ret;
               }
               Sem_BindName (b2->a, res, err);
@@ -7828,30 +9537,32 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         }
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s279, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s333, 4 });
       goto L_ret;
     } break;
     case INT64_C(61):
     {
-      t = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-      if (err->exc) goto L_ret;
-      bool m9t22 = Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s280, 3 }), err);
+      { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+        if (err->exc) goto L_ret;
+        t = m9v;
+      }
+      bool m9t22 = Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s334, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t22) {
-        bool m9t23 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s281, 4 }), err)));
+        bool m9t23 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s335, 4 }), err)));
         if (err->exc) goto L_ret;
         if (m9t23) {
-          Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s282, 30 }), Sem_TyName (t, err), err), err);
+          Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s336, 30 }), Sem_TyName (t, err), err), err);
           if (err->exc) goto L_ret;
         }
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s283, 4 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s337, 4 });
         goto L_ret;
       }
       bool m9t24 = (!Sem_NumSide (t, err));
       if (err->exc) goto L_ret;
       if (m9t24) {
-        Sem_ErrN (e, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s284, 6 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s285, 30 }), Sem_TyName (t, err), err), err);
+        Sem_ErrN (e, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s338, 6 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s339, 30 }), Sem_TyName (t, err), err), err);
         if (err->exc) goto L_ret;
       }
       err->res = m9res;
@@ -7872,21 +9583,25 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       bool m9t25 = ((((e->nkids == INT64_C(0)) || (((e->nkids == INT64_C(1)) && (Sem_FindMod (e->a, err) >= INT64_C(0)))))) && (Sem_ScopeFind (e->a, err) < INT64_C(0)));
       if (err->exc) goto L_ret;
       if (m9t25) {
-        pr = Sem_LookupProc (Sem_DesigName (e, err), &(found), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(pr) m9v = Sem_LookupProc (Sem_DesigName (e, err), &(found), err);
+          if (err->exc) goto L_ret;
+          pr = m9v;
+        }
         if (found) {
           { Ast_Node * pn = pr.node;
           if (pn != NULL) {
             if (((pr.foreign).len > INT64_C(0))) {
-              Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s286, 36 }), Sem_DesigName (e, err), ((m9_sl_CHAR){ (uint32_t *) m9s287, 12 }), err), err);
+              Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s340, 36 }), Sem_DesigName (e, err), ((m9_sl_CHAR){ (uint32_t *) m9s341, 12 }), err), err);
               if (err->exc) goto L_ret;
               err->res = m9res;
               m9ret = (m9_sl_CHAR){ NULL, 0 };
               goto L_ret;
             }
             canonCtx = pr.modName;
-            t = Sem_ProcSig ((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err)), (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err)), pn->f3, (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(2), pn->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
-            if (err->exc) goto L_ret;
+            { __typeof__(t) m9v = Sem_ProcSig ((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(0), pn->kids.len, sizeof (Ast_Node *), err)), (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err)), pn->f3, (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(2), pn->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
+              if (err->exc) goto L_ret;
+              t = m9v;
+            }
             canonCtx = (m9_sl_CHAR){ NULL, 0 };
             err->res = m9res;
             m9ret = t;
@@ -7897,7 +9612,7 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       bool m9t26 = ((e->nkids == INT64_C(0)) && (!Sem_BareNameKnown (e->a, err)));
       if (err->exc) goto L_ret;
       if (m9t26) {
-        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s288, 14 }), e->a, err), err);
+        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s342, 14 }), e->a, err), err);
         if (err->exc) goto L_ret;
       }
       err->res = m9res;
@@ -7918,8 +9633,10 @@ static m9_sl_CHAR Sem_ExprType (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       m9t27to = m9_sub_i64 (e->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; j <= m9t27to; j += 1) {
-        t = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, j, e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+          if (err->exc) goto L_ret;
+          t = m9v;
+        }
       } }
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -7969,8 +9686,10 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
   name = (m9_sl_CHAR){ NULL, 0 };
   { Ast_Node * d0 = dn;
   if (d0 != NULL) {
-    name = Sem_DesigName (d0, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(name) m9v = Sem_DesigName (d0, err);
+      if (err->exc) goto L_ret;
+      name = m9v;
+    }
   } else {
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -7981,10 +9700,14 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
   if (al0 != NULL) {
     nargs = al0->nkids;
   } }
-  aTy = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (nargs, INT64_C(1), err), err);
-  if (err->exc) goto L_ret;
-  aNode = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), m9_add_i64 (nargs, INT64_C(1), err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(aTy) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (nargs, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    aTy = m9v;
+  }
+  { __typeof__(aNode) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), m9_add_i64 (nargs, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    aNode = m9v;
+  }
   { Ast_Node * al1 = argl;
   if (al1 != NULL) {
     { int64_t m9t1to;
@@ -7992,15 +9715,23 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     m9t1to = m9_sub_i64 (nargs, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; j <= m9t1to; j += 1) {
-      (*(Ast_Node * *) m9_at (aNode.p, j, aNode.len, sizeof (Ast_Node *), err)) = (*(Ast_Node * *) m9_at (al1->kids.p, j, al1->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)) = Sem_ExprType ((*(Ast_Node * *) m9_at (al1->kids.p, j, al1->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Ast_Node * *) m9_at (aNode.p, j, aNode.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at (al1->kids.p, j, al1->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        (*(Ast_Node * *) m9_at (aNode.p, j, aNode.len, sizeof (Ast_Node *), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err))) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (al1->kids.p, j, al1->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
   } }
   if ((nargs == INT64_C(1))) {
-    name = Sem_ScalarAlias (name, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(name) m9v = Sem_ScalarAlias (name, err);
+      if (err->exc) goto L_ret;
+      name = m9v;
+    }
   }
   if ((nargs >= INT64_C(1))) {
     g = INT64_C(0);
@@ -8010,26 +9741,32 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     m9t2to = m9_sub_i64 (nargs, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; j <= m9t2to; j += 1) {
-      bool m9t3 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s289, 3 }), err);
+      bool m9t3 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s343, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        g = m9_add_i64 (g, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(g) m9v = m9_add_i64 (g, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          g = m9v;
+        }
       }
-      bool m9t4 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s290, 3 }), err);
+      bool m9t4 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s344, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t4) {
-        k = m9_add_i64 (k, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          k = m9v;
+        }
       }
     } }
-    name = Sem_WidthTwin (name, ((g > INT64_C(0)) && (k == INT64_C(0))), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(name) m9v = Sem_WidthTwin (name, ((g > INT64_C(0)) && (k == INT64_C(0))), err);
+      if (err->exc) goto L_ret;
+      name = m9v;
+    }
   }
   bool m9t5 = Sem_IsConvVR (name, err);
   if (err->exc) goto L_ret;
   if (m9t5) {
-    bool m9t6 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s291, 3 }), err) && (nargs == INT64_C(1)));
+    bool m9t6 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s345, 3 }), err) && (nargs == INT64_C(1)));
     if (err->exc) goto L_ret;
     if (m9t6) {
       bool m9t7 = Sem_IsTotalWideningTo64 ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err);
@@ -8038,28 +9775,28 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
         Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
         if (err->exc) goto L_ret;
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s292, 3 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s346, 3 });
         goto L_ret;
       }
     }
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
-    bool m9t8 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s293, 3 }), err);
+    bool m9t8 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s347, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t8) {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s294, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s348, 4 });
       goto L_ret;
     }
     err->res = m9res;
     m9ret = name;
     goto L_ret;
   }
-  bool m9t9 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s295, 3 }), err);
+  bool m9t9 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s349, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t9) {
     if ((!curUnsafe)) {
-      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s296, 37 }), err);
+      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s350, 37 }), err);
       if (err->exc) goto L_ret;
     }
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
@@ -8068,7 +9805,7 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  bool m9t10 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s298, 3 }), err));
+  bool m9t10 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s351, 3 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s352, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t10) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
@@ -8077,20 +9814,20 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     m9ret = name;
     goto L_ret;
   }
-  bool m9t11 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s299, 3 }), err);
+  bool m9t11 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s353, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t11) {
     if ((nargs == INT64_C(2))) {
       bool m9t12 = (Sem_GridRank ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err) == INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t12) {
-        Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s300, 41 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
+        Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s354, 41 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
         if (err->exc) goto L_ret;
       }
       bool m9t13 = (!Sem_IsIntish ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(1), aTy.len, sizeof (m9_sl_CHAR), err)), err));
       if (err->exc) goto L_ret;
       if (m9t13) {
-        Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s301, 33 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(1), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
+        Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s355, 33 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(1), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
         if (err->exc) goto L_ret;
       }
       bool m9t14 = (Sem_GridRank ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err) > INT64_C(0));
@@ -8103,38 +9840,38 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
             bool m9t15 = (Sem_AtoI (an1->a, err) >= Sem_GridRank ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err));
             if (err->exc) goto L_ret;
             if (m9t15) {
-              Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s302, 5 }), an1->a, ((m9_sl_CHAR){ (uint32_t *) m9s303, 6 }), Sem_Cat ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s304, 15 }), err), err), err);
+              Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s356, 5 }), an1->a, ((m9_sl_CHAR){ (uint32_t *) m9s357, 6 }), Sem_Cat ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s358, 15 }), err), err), err);
               if (err->exc) goto L_ret;
             }
           }
         } }
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s305, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s359, 3 });
       goto L_ret;
     }
     bool m9t16 = (Sem_GridRank ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err) > INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t16) {
-      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s306, 39 }), err);
+      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s360, 39 }), err);
       if (err->exc) goto L_ret;
     }
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s307, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s361, 3 });
     goto L_ret;
   }
-  bool m9t17 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s308, 3 }), err);
+  bool m9t17 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s362, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t17) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s309, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s363, 3 });
     goto L_ret;
   }
-  bool m9t18 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s310, 4 }), err);
+  bool m9t18 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s364, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t18) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
@@ -8145,31 +9882,33 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       bool m9t20 = (((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t20) {
-        Sem_ErrN (site, ctx, Sem_Cat (m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s311, 36 }), ((m9_sl_CHAR){ (uint32_t *) m9s312, 12 }), err), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
+        Sem_ErrN (site, ctx, Sem_Cat (m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s365, 36 }), ((m9_sl_CHAR){ (uint32_t *) m9s366, 12 }), err), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
         if (err->exc) goto L_ret;
       }
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s313, 13 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s367, 13 });
     goto L_ret;
   }
-  bool m9t21 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s314, 4 }), err);
+  bool m9t21 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s368, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t21) {
     if ((nargs < INT64_C(2))) {
-      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s315, 43 }), err);
+      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s369, 43 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
       goto L_ret;
     }
-    rank = Sem_GridRank ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(rank) m9v = Sem_GridRank ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      rank = m9v;
+    }
     if ((rank == INT64_C(0))) {
       bool m9t22 = (((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t22) {
-        Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s316, 23 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
+        Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s370, 23 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
         if (err->exc) goto L_ret;
       }
       err->res = m9res;
@@ -8179,7 +9918,7 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     bool m9t23 = (m9_sub_i64 (nargs, INT64_C(1), err) != rank);
     if (err->exc) goto L_ret;
     if (m9t23) {
-      Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s317, 2 }), (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s318, 7 }), Sem_ItoA (rank, err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s319, 21 }), Sem_ItoA (m9_sub_i64 (nargs, INT64_C(1), err), err), err), err), err);
+      Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s371, 2 }), (*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s372, 7 }), Sem_ItoA (rank, err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s373, 21 }), Sem_ItoA (m9_sub_i64 (nargs, INT64_C(1), err), err), err), err), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -8191,22 +9930,24 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     m9t24to = m9_sub_i64 (nargs, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; j <= m9t24to; j += 1) {
-      bool m9t25 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s320, 5 }), err);
+      bool m9t25 = Text_Eq ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s374, 5 }), err);
       if (err->exc) goto L_ret;
       if (m9t25) {
-        kept = m9_add_i64 (kept, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(kept) m9v = m9_add_i64 (kept, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          kept = m9v;
+        }
       } else {
         bool m9t26 = (!Sem_IsIntish ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), err));
         if (err->exc) goto L_ret;
         if (m9t26) {
-          Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s321, 36 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
+          Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s375, 36 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, j, aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
           if (err->exc) goto L_ret;
         }
       }
     } }
     if ((kept == INT64_C(0))) {
-      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s322, 59 }), err);
+      Sem_ErrN (site, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s376, 59 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -8217,7 +9958,7 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t27 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s323, 3 }), err);
+  bool m9t27 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s377, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t27) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
@@ -8243,31 +9984,31 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  bool m9t29 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s324, 6 }), err);
+  bool m9t29 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s378, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t29) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s325, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s379, 3 });
     goto L_ret;
   }
-  bool m9t30 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s326, 8 }), err);
+  bool m9t30 = Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s380, 8 }), err);
   if (err->exc) goto L_ret;
   if (m9t30) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
-    bool m9t31 = (((nargs >= INT64_C(1)) && (((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0))) && (!Text_StartsWith ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s327, 9 }), err)));
+    bool m9t31 = (((nargs >= INT64_C(1)) && (((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0))) && (!Text_StartsWith ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s381, 9 }), err)));
     if (err->exc) goto L_ret;
     if (m9t31) {
-      Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s328, 28 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
+      Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s382, 28 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), err), err);
       if (err->exc) goto L_ret;
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s329, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s383, 3 });
     goto L_ret;
   }
-  bool m9t32 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s330, 15 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s331, 15 }), err));
+  bool m9t32 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s384, 15 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s385, 15 }), err));
   if (err->exc) goto L_ret;
   if (m9t32) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
@@ -8277,16 +10018,16 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t34 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s332, 13 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s333, 13 }), err));
+  bool m9t34 = (Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s386, 13 }), err) || Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s387, 13 }), err));
   if (err->exc) goto L_ret;
   if (m9t34) {
     Sem_Arity (site, ctx, name, INT64_C(2), nargs, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s334, 6 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s388, 6 });
     goto L_ret;
   }
-  bool m9t35 = Text_StartsWith (name, ((m9_sl_CHAR){ (uint32_t *) m9s335, 2 }), err);
+  bool m9t35 = Text_StartsWith (name, ((m9_sl_CHAR){ (uint32_t *) m9s389, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t35) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
@@ -8296,15 +10037,17 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     goto L_ret;
   }
   found = false;
-  si = Sem_ScopeFind (name, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(si) m9v = Sem_ScopeFind (name, err);
+    if (err->exc) goto L_ret;
+    si = m9v;
+  }
   if ((si >= INT64_C(0))) {
     { Ast_Node * ptn = Sem_ResolveType ((*(Sem_Binding *) m9_at (scope.p, si, scope.len, sizeof (Sem_Binding), err)).ty, err);
     if (err->exc) goto L_ret;
     if (ptn != NULL) {
       if ((ptn->kind == Ast_NProcType)) {
         if (curPure) {
-          Sem_ErrN (site, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s336, 49 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s337, 10 }), err), err);
+          Sem_ErrN (site, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s390, 49 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s391, 10 }), err), err);
           if (err->exc) goto L_ret;
         }
         pr.node = ptn;
@@ -8324,8 +10067,10 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     } }
   }
   if ((!found)) {
-    pr = Sem_LookupProc (name, &(found), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(pr) m9v = Sem_LookupProc (name, &(found), err);
+      if (err->exc) goto L_ret;
+      pr = m9v;
+    }
   }
   if (found) {
     { Ast_Node * pn = pr.node;
@@ -8359,13 +10104,17 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
                     bool m9t38 = ((Sem_FrameWhat ((*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err)), (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err)).len > INT64_C(0));
                     if (err->exc) goto L_ret;
                     if (m9t38) {
-                      nFrameKept = m9_add_i64 (nFrameKept, INT64_C(1), err);
-                      if (err->exc) goto L_ret;
+                      { __typeof__(nFrameKept) m9v = m9_add_i64 (nFrameKept, INT64_C(1), err);
+                        if (err->exc) goto L_ret;
+                        nFrameKept = m9v;
+                      }
                     }
                   }
                 }
-                k = m9_add_i64 (k, INT64_C(1), err);
-                if (err->exc) goto L_ret;
+                { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+                  if (err->exc) goto L_ret;
+                  k = m9v;
+                }
               } }
             } }
           } }
@@ -8383,8 +10132,10 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
           { Ast_Node * grp = (*(Ast_Node * *) m9_at (pl->kids.p, g, pl->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (grp != NULL) {
-            pTy = Sem_CanonT ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
-            if (err->exc) goto L_ret;
+            { __typeof__(pTy) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
+              if (err->exc) goto L_ret;
+              pTy = m9v;
+            }
             isVar = (grp->f1 || grp->f2);
             { Ast_Node * ids = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(0), grp->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
@@ -8395,11 +10146,19 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
               if (err->exc) goto L_ret;
               for (; j <= m9t40to; j += 1) {
                 if ((k < nargs)) {
+                  Sem_ConstArg (site, ctx, name, k, (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err)), isVar, grp->f3, err);
+                  if (err->exc) goto L_ret;
+                  if (((!isVar) && (!grp->f3))) {
+                    Sem_RoArg (site, ctx, name, k, (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err)), pTy, (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err);
+                    if (err->exc) goto L_ret;
+                  }
                   Sem_CheckArg (site, ctx, name, k, pTy, (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), (*(Ast_Node * *) m9_at (aNode.p, k, aNode.len, sizeof (Ast_Node *), err)), isVar, grp->f2, grp->f4, nFrameKept, ((grp->f1 && Sem_PtrParamTy ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err)) && ((pr.foreign).len == INT64_C(0))), argl, err);
                   if (err->exc) goto L_ret;
                 }
-                k = m9_add_i64 (k, INT64_C(1), err);
-                if (err->exc) goto L_ret;
+                { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+                  if (err->exc) goto L_ret;
+                  k = m9v;
+                }
               } }
             } }
           } }
@@ -8409,8 +10168,10 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
       { Ast_Node * rt = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (rt != NULL) {
-        pTy = Sem_CanonT ((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(pTy) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
+          if (err->exc) goto L_ret;
+          pTy = m9v;
+        }
       } }
       canonCtx = (m9_sl_CHAR){ NULL, 0 };
       if (((pTy).len > INT64_C(0))) {
@@ -8426,38 +10187,56 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
         goto L_ret;
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s338, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s392, 6 });
       goto L_ret;
     } }
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  dot = Text_FindChar (name, 46u, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(dot) m9v = Text_FindChar (name, 46u, err);
+    if (err->exc) goto L_ret;
+    dot = m9v;
+  }
   isVar = false;
   if ((dot > INT64_C(0))) {
-    t = ({ __typeof__(name) m9t41 = name; int64_t m9t41a = m9_add_i64 (dot, INT64_C(1), err), m9t41n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t41)){ m9t41.p + m9_chk_slice (m9t41a, m9t41n, m9t41.len, err), m9t41n }; });
-    if (err->exc) goto L_ret;
-    g = Text_FindChar (t, 46u, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(t) m9v = ({ __typeof__(name) m9t41 = name; int64_t m9t41a = m9_add_i64 (dot, INT64_C(1), err), m9t41n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t41)){ m9t41.p + m9_chk_slice (m9t41a, m9t41n, m9t41.len, err), m9t41n }; });
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
+    { __typeof__(g) m9v = Text_FindChar (t, 46u, err);
+      if (err->exc) goto L_ret;
+      g = m9v;
+    }
     if ((g > INT64_C(0))) {
-      om = ({ __typeof__(name) m9t42 = name; int64_t m9t42a = INT64_C(0), m9t42n = dot; (__typeof__(m9t42)){ m9t42.p + m9_chk_slice (m9t42a, m9t42n, m9t42.len, err), m9t42n }; });
-      if (err->exc) goto L_ret;
-      isVar = Sem_TryVariantMod (Sem_FindMod (om, err), ({ __typeof__(t) m9t43 = t; int64_t m9t43a = INT64_C(0), m9t43n = g; (__typeof__(m9t43)){ m9t43.p + m9_chk_slice (m9t43a, m9t43n, m9t43.len, err), m9t43n }; }), ({ __typeof__(t) m9t44 = t; int64_t m9t44a = m9_add_i64 (g, INT64_C(1), err), m9t44n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t44)){ m9t44.p + m9_chk_slice (m9t44a, m9t44n, m9t44.len, err), m9t44n }; }), &(om), &(fields), err->res, err);
-      if (err->exc) goto L_ret;
-      t = ({ __typeof__(t) m9t45 = t; int64_t m9t45a = INT64_C(0), m9t45n = g; (__typeof__(m9t45)){ m9t45.p + m9_chk_slice (m9t45a, m9t45n, m9t45.len, err), m9t45n }; });
-      if (err->exc) goto L_ret;
+      { __typeof__(om) m9v = ({ __typeof__(name) m9t42 = name; int64_t m9t42a = INT64_C(0), m9t42n = dot; (__typeof__(m9t42)){ m9t42.p + m9_chk_slice (m9t42a, m9t42n, m9t42.len, err), m9t42n }; });
+        if (err->exc) goto L_ret;
+        om = m9v;
+      }
+      { __typeof__(isVar) m9v = Sem_TryVariantMod (Sem_FindMod (om, err), ({ __typeof__(t) m9t43 = t; int64_t m9t43a = INT64_C(0), m9t43n = g; (__typeof__(m9t43)){ m9t43.p + m9_chk_slice (m9t43a, m9t43n, m9t43.len, err), m9t43n }; }), ({ __typeof__(t) m9t44 = t; int64_t m9t44a = m9_add_i64 (g, INT64_C(1), err), m9t44n = m9_sub_i64 (m9_sub_i64 ((t).len, g, err), INT64_C(1), err); (__typeof__(m9t44)){ m9t44.p + m9_chk_slice (m9t44a, m9t44n, m9t44.len, err), m9t44n }; }), &(om), &(fields), err->res, err);
+        if (err->exc) goto L_ret;
+        isVar = m9v;
+      }
+      { __typeof__(t) m9v = ({ __typeof__(t) m9t45 = t; int64_t m9t45a = INT64_C(0), m9t45n = g; (__typeof__(m9t45)){ m9t45.p + m9_chk_slice (m9t45a, m9t45n, m9t45.len, err), m9t45n }; });
+        if (err->exc) goto L_ret;
+        t = m9v;
+      }
     } else {
-      isVar = Sem_FindVariant (({ __typeof__(name) m9t46 = name; int64_t m9t46a = INT64_C(0), m9t46n = dot; (__typeof__(m9t46)){ m9t46.p + m9_chk_slice (m9t46a, m9t46n, m9t46.len, err), m9t46n }; }), t, &(om), &(fields), err->res, err);
-      if (err->exc) goto L_ret;
-      t = ({ __typeof__(name) m9t47 = name; int64_t m9t47a = INT64_C(0), m9t47n = dot; (__typeof__(m9t47)){ m9t47.p + m9_chk_slice (m9t47a, m9t47n, m9t47.len, err), m9t47n }; });
-      if (err->exc) goto L_ret;
+      { __typeof__(isVar) m9v = Sem_FindVariant (({ __typeof__(name) m9t46 = name; int64_t m9t46a = INT64_C(0), m9t46n = dot; (__typeof__(m9t46)){ m9t46.p + m9_chk_slice (m9t46a, m9t46n, m9t46.len, err), m9t46n }; }), t, &(om), &(fields), err->res, err);
+        if (err->exc) goto L_ret;
+        isVar = m9v;
+      }
+      { __typeof__(t) m9v = ({ __typeof__(name) m9t47 = name; int64_t m9t47a = INT64_C(0), m9t47n = dot; (__typeof__(m9t47)){ m9t47.p + m9_chk_slice (m9t47a, m9t47n, m9t47.len, err), m9t47n }; });
+        if (err->exc) goto L_ret;
+        t = m9v;
+      }
     }
   }
   if (isVar) {
-    flat = Sem_FlatFields (fields, &(nflat), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(flat) m9v = Sem_FlatFields (fields, &(nflat), err);
+      if (err->exc) goto L_ret;
+      flat = m9v;
+    }
     Sem_Arity (site, ctx, name, nflat, nargs, err);
     if (err->exc) goto L_ret;
     canonCtx = om;
@@ -8467,12 +10246,16 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     if (err->exc) goto L_ret;
     for (; k <= m9t48to; k += 1) {
       if ((k < nflat)) {
-        pTy = Sem_CanonT ((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
+        { __typeof__(pTy) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (flat.p, k, flat.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
+          if (err->exc) goto L_ret;
+          pTy = m9v;
+        }
+        Sem_Agree (Sem_StArg, pTy, (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), site->line, err);
         if (err->exc) goto L_ret;
         bool m9t49 = (!Sem_Compat (pTy, (*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err));
         if (err->exc) goto L_ret;
         if (m9t49) {
-          Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s339, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s340, 4 }), name, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s341, 14 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s342, 7 }), Sem_Cat (Sem_TyName (pTy, err), ((m9_sl_CHAR){ (uint32_t *) m9s343, 12 }), err), err), err), err);
+          Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s393, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s394, 4 }), name, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s395, 14 }), Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, k, aTy.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s396, 7 }), Sem_Cat (Sem_TyName (pTy, err), ((m9_sl_CHAR){ (uint32_t *) m9s397, 12 }), err), err), err), err);
           if (err->exc) goto L_ret;
         }
       }
@@ -8483,22 +10266,24 @@ static m9_sl_CHAR Sem_CallType (Ast_Node * dn, Ast_Node * argl, Ast_Node * site,
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  t = Sem_EnumConvType (name, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(t) m9v = Sem_EnumConvType (name, err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
   if (((t).len > INT64_C(0))) {
     Sem_Arity (site, ctx, name, INT64_C(1), nargs, err);
     if (err->exc) goto L_ret;
     bool m9t50 = ((nargs == INT64_C(1)) && (!Sem_IsIntish ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err)));
     if (err->exc) goto L_ret;
     if (m9t50) {
-      Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s344, 14 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s345, 17 }), Sem_Cat (Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s346, 51 }), err), err), err);
+      Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s398, 14 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s399, 17 }), Sem_Cat (Sem_TyName ((*(m9_sl_CHAR *) m9_at (aTy.p, INT64_C(0), aTy.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s400, 51 }), err), err), err);
       if (err->exc) goto L_ret;
     }
     err->res = m9res;
     m9ret = t;
     goto L_ret;
   }
-  Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s347, 19 }), name, err), err);
+  Sem_ErrN (site, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s401, 19 }), name, err), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -8533,50 +10318,58 @@ static m9_sl_CHAR Sem_DesigStrType (Ast_Node * d, bool guard, m9_sl_CHAR ctx, m9
     if (err->exc) goto L_ret;
     goto L_ret;
   } }
-  bool m9t1 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s348, 3 }), err) && (d->nkids == INT64_C(0)));
+  bool m9t1 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s402, 3 }), err) && (d->nkids == INT64_C(0)));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s349, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s403, 5 });
     goto L_ret;
   }
-  bool m9t2 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s350, 4 }), err) && (d->nkids == INT64_C(0)));
+  bool m9t2 = (Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s404, 4 }), err) && (d->nkids == INT64_C(0)));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s351, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s405, 4 });
     goto L_ret;
   }
-  s = Sem_ConstType (d->a, &(found), err);
-  if (err->exc) goto L_ret;
-  if (found) {
-    { int64_t m9t3to;
-    j = INT64_C(0);
-    m9t3to = m9_sub_i64 (d->nkids, INT64_C(1), err);
+  { __typeof__(s) m9v = Sem_ConstType (d->a, &(found), err);
     if (err->exc) goto L_ret;
-    for (; j <= m9t3to; j += 1) {
+    s = m9v;
+  }
+  bool m9t3 = (found && ((Sem_ScopeMode (d->a, err)).len == INT64_C(0)));
+  if (err->exc) goto L_ret;
+  if (m9t3) {
+    { int64_t m9t4to;
+    j = INT64_C(0);
+    m9t4to = m9_sub_i64 (d->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; j <= m9t4to; j += 1) {
       { Ast_Node * sel = (*(Ast_Node * *) m9_at (d->kids.p, j, d->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (sel != NULL) {
         if ((sel->kind == Ast_NSelIndex)) {
-          it = Sem_ExprType ((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-          if (err->exc) goto L_ret;
-          bool m9t4 = (!Sem_IsIntish (it, err));
-          if (err->exc) goto L_ret;
-          if (m9t4) {
-            Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s352, 30 }), Sem_TyName (it, err), err), err);
+          { __typeof__(it) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err)), ctx, err);
             if (err->exc) goto L_ret;
+            it = m9v;
           }
-          bool m9t5 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s353, 13 }), err);
+          bool m9t5 = (!Sem_IsIntish (it, err));
           if (err->exc) goto L_ret;
           if (m9t5) {
-            s = ((m9_sl_CHAR){ (uint32_t *) m9s354, 4 });
-          } else {
-            bool m9t6 = Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s355, 6 }), err);
+            Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s406, 30 }), Sem_TyName (it, err), err), err);
             if (err->exc) goto L_ret;
-            if (m9t6) {
-              s = Sem_AfterOf (s, err);
-              if (err->exc) goto L_ret;
+          }
+          bool m9t6 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s407, 13 }), err);
+          if (err->exc) goto L_ret;
+          if (m9t6) {
+            s = ((m9_sl_CHAR){ (uint32_t *) m9s408, 4 });
+          } else {
+            bool m9t7 = Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s409, 6 }), err);
+            if (err->exc) goto L_ret;
+            if (m9t7) {
+              { __typeof__(s) m9v = Sem_AfterOf (s, err);
+                if (err->exc) goto L_ret;
+                s = m9v;
+              }
           } else {
             s = (m9_sl_CHAR){ NULL, 0 };
           } }
@@ -8594,16 +10387,20 @@ static m9_sl_CHAR Sem_DesigStrType (Ast_Node * d, bool guard, m9_sl_CHAR ctx, m9
     if (err->exc) goto L_ret;
     if (sf != NULL) {
       if ((sf->kind == Ast_NSelField)) {
-        om = Sem_VariantOwnerOf (d->a, sf->a, &(found), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(om) m9v = Sem_VariantOwnerOf (d->a, sf->a, &(found), err);
+          if (err->exc) goto L_ret;
+          om = m9v;
+        }
         if (found) {
           err->res = m9res;
           m9ret = Sem_Qualify (om, d->a, err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
-        s = Sem_ModConstType (d->a, sf->a, &(found), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(s) m9v = Sem_ModConstType (d->a, sf->a, &(found), err);
+          if (err->exc) goto L_ret;
+          s = m9v;
+        }
         if (found) {
           err->res = m9res;
           m9ret = s;
@@ -8620,9 +10417,9 @@ static m9_sl_CHAR Sem_DesigStrType (Ast_Node * d, bool guard, m9_sl_CHAR ctx, m9
       if (err->exc) goto L_ret;
       if (sfV != NULL) {
         if (((sfT->kind == Ast_NSelField) && (sfV->kind == Ast_NSelField))) {
-          bool m9t7 = Sem_TryVariantMod (Sem_FindMod (d->a, err), sfT->a, sfV->a, &(om), &(vfields), err->res, err);
+          bool m9t8 = Sem_TryVariantMod (Sem_FindMod (d->a, err), sfT->a, sfV->a, &(om), &(vfields), err->res, err);
           if (err->exc) goto L_ret;
-          if (m9t7) {
+          if (m9t8) {
             err->res = m9res;
             m9ret = Sem_Qualify (om, sfT->a, err);
             if (err->exc) goto L_ret;
@@ -8668,8 +10465,70 @@ static bool Sem_StrSide (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s356, 13 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s357, 6 }), err));
+  m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s410, 13 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s411, 6 }), err));
   if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_IsComposite (m9_sl_CHAR t, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t dot = 0; (void) dot;
+  m9_sl_CHAR md = {0}; (void) md;
+  m9_sl_CHAR ty = {0}; (void) ty;
+  Ast_Node * k = NULL; (void) k;
+  bool m9t1 = ((Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s412, 9 }), err) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s413, 6 }), err)) || Text_StartsWith (t, ((m9_sl_CHAR){ (uint32_t *) m9s414, 5 }), err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  }
+  { __typeof__(dot) m9v = Text_FindChar (t, 46u, err);
+    if (err->exc) goto L_ret;
+    dot = m9v;
+  }
+  if ((dot >= INT64_C(0))) {
+    { __typeof__(md) m9v = ({ __typeof__(t) m9t2 = t; int64_t m9t2a = INT64_C(0), m9t2n = dot; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+      if (err->exc) goto L_ret;
+      md = m9v;
+    }
+    { __typeof__(ty) m9v = ({ __typeof__(t) m9t3 = t; int64_t m9t3a = m9_add_i64 (dot, INT64_C(1), err), m9t3n = m9_sub_i64 (m9_sub_i64 ((t).len, dot, err), INT64_C(1), err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+      if (err->exc) goto L_ret;
+      ty = m9v;
+    }
+  } else {
+    md = (m9_sl_CHAR){ NULL, 0 };
+    ty = t;
+  }
+  { __typeof__(k) m9v = Sem_LookupTypeName (md, ty, err);
+    if (err->exc) goto L_ret;
+    k = m9v;
+  }
+  { Ast_Node * n = k;
+  if (n != NULL) {
+    if (((n->kind == Ast_NRecordType) || (n->kind == Ast_NMonitorType))) {
+      err->res = m9res;
+      m9ret = true;
+      goto L_ret;
+    }
+    if ((n->kind == Ast_NCaseRecordType)) {
+      err->res = m9res;
+      m9ret = (!Sem_AllPayloadless (k, err));
+      if (err->exc) goto L_ret;
+      goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = false;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -8688,131 +10547,157 @@ static m9_sl_CHAR Sem_BinType (Ast_Node * e, m9_sl_CHAR ctx, m9_state *err)
   m9_sl_CHAR rt = {0}; (void) rt;
   m9_sl_CHAR op = {0}; (void) op;
   op = e->a;
-  lt = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-  if (err->exc) goto L_ret;
-  rt = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-  if (err->exc) goto L_ret;
-  bool m9t1 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s358, 3 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s359, 2 }), err));
+  { __typeof__(lt) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+    if (err->exc) goto L_ret;
+    lt = m9v;
+  }
+  { __typeof__(rt) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+    if (err->exc) goto L_ret;
+    rt = m9v;
+  }
+  bool m9t1 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s415, 3 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s416, 2 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    bool m9t2 = (((lt).len > INT64_C(0)) && (!Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s360, 4 }), err)));
+    bool m9t2 = (((lt).len > INT64_C(0)) && (!Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s417, 4 }), err)));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s361, 26 }), Sem_TyName (lt, err), err), err);
+      Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s418, 26 }), Sem_TyName (lt, err), err), err);
       if (err->exc) goto L_ret;
     }
-    bool m9t3 = (((rt).len > INT64_C(0)) && (!Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s362, 4 }), err)));
+    bool m9t3 = (((rt).len > INT64_C(0)) && (!Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s419, 4 }), err)));
     if (err->exc) goto L_ret;
     if (m9t3) {
-      Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s363, 26 }), Sem_TyName (rt, err), err), err);
+      Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s420, 26 }), Sem_TyName (rt, err), err), err);
       if (err->exc) goto L_ret;
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s364, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s421, 4 });
     goto L_ret;
   }
-  bool m9t4 = (((((Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s365, 1 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s366, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s367, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s368, 2 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s369, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s370, 2 }), err));
+  bool m9t4 = (((((Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s422, 1 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s423, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s424, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s425, 2 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s426, 1 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s427, 2 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
-    bool m9t5 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s371, 6 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s372, 6 }), err));
+    bool m9t5 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s428, 6 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s429, 6 }), err));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s373, 38 }), err);
+      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s430, 38 }), err);
       if (err->exc) goto L_ret;
     } else {
+      Sem_Agree (Sem_StOperand, lt, rt, e->line, err);
+      if (err->exc) goto L_ret;
       bool m9t6 = (!((Sem_Compat (lt, rt, err) || Sem_Compat (rt, lt, err))));
       if (err->exc) goto L_ret;
       if (m9t6) {
-        Sem_ErrN (e, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s374, 15 }), Sem_TyName (lt, err), ((m9_sl_CHAR){ (uint32_t *) m9s375, 6 }), Sem_TyName (rt, err), err), err);
+        Sem_ErrN (e, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s431, 15 }), Sem_TyName (lt, err), ((m9_sl_CHAR){ (uint32_t *) m9s432, 6 }), Sem_TyName (rt, err), err), err);
         if (err->exc) goto L_ret;
-      }
+      } else {
+        bool m9t7 = ((Sem_StrSide (lt, err) && Sem_StrSide (rt, err)) && ((Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s433, 13 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s434, 13 }), err))));
+        if (err->exc) goto L_ret;
+        if (m9t7) {
+          Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s435, 4 }), op, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s436, 30 }), ((m9_sl_CHAR){ (uint32_t *) m9s437, 53 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s438, 10 }), err), err), err);
+          if (err->exc) goto L_ret;
+      } else {
+        bool m9t8 = Sem_IsComposite (lt, err);
+        if (err->exc) goto L_ret;
+        if (m9t8) {
+          Sem_ErrN (e, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s439, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s440, 29 }), Sem_TyName (lt, err), m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s441, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s442, 52 }), err), err), err);
+          if (err->exc) goto L_ret;
+      } else {
+        bool m9t9 = Sem_IsComposite (rt, err);
+        if (err->exc) goto L_ret;
+        if (m9t9) {
+          Sem_ErrN (e, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s443, 4 }), op, ((m9_sl_CHAR){ (uint32_t *) m9s444, 29 }), Sem_TyName (rt, err), m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s445, 43 }), ((m9_sl_CHAR){ (uint32_t *) m9s446, 52 }), err), err), err);
+          if (err->exc) goto L_ret;
+      } } } }
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s376, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s447, 4 });
     goto L_ret;
   }
-  bool m9t7 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s377, 1 }), err) && ((Sem_StrSide (lt, err) || Sem_StrSide (rt, err))));
-  if (err->exc) goto L_ret;
-  if (m9t7) {
-    bool m9t8 = (!((Sem_StrSide (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s378, 4 }), err))));
-    if (err->exc) goto L_ret;
-    if (m9t8) {
-      Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s379, 19 }), Sem_TyName (lt, err), ((m9_sl_CHAR){ (uint32_t *) m9s380, 14 }), err), err);
-      if (err->exc) goto L_ret;
-    } else {
-      bool m9t9 = (!((Sem_StrSide (rt, err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s381, 4 }), err))));
-      if (err->exc) goto L_ret;
-      if (m9t9) {
-        Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s382, 33 }), Sem_TyName (rt, err), (m9_sl_CHAR){ NULL, 0 }, err), err);
-        if (err->exc) goto L_ret;
-      }
-    }
-    err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s383, 13 });
-    goto L_ret;
-  }
-  bool m9t10 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s384, 4 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s385, 4 }), err));
+  bool m9t10 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s448, 1 }), err) && ((Sem_StrSide (lt, err) || Sem_StrSide (rt, err))));
   if (err->exc) goto L_ret;
   if (m9t10) {
-    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s386, 59 }), err);
+    bool m9t11 = (!((Sem_StrSide (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s449, 4 }), err))));
+    if (err->exc) goto L_ret;
+    if (m9t11) {
+      Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s450, 19 }), Sem_TyName (lt, err), ((m9_sl_CHAR){ (uint32_t *) m9s451, 14 }), err), err);
+      if (err->exc) goto L_ret;
+    } else {
+      bool m9t12 = (!((Sem_StrSide (rt, err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s452, 4 }), err))));
+      if (err->exc) goto L_ret;
+      if (m9t12) {
+        Sem_ErrN (e, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s453, 33 }), Sem_TyName (rt, err), (m9_sl_CHAR){ NULL, 0 }, err), err);
+        if (err->exc) goto L_ret;
+      }
+    }
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s454, 13 });
+    goto L_ret;
+  }
+  bool m9t13 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s455, 4 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s456, 4 }), err));
+  if (err->exc) goto L_ret;
+  if (m9t13) {
+    Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s457, 59 }), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  bool m9t11 = (!Sem_NumSide (lt, err));
+  bool m9t14 = (!Sem_NumSide (lt, err));
   if (err->exc) goto L_ret;
-  if (m9t11) {
-    Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s387, 29 }), Sem_TyName (lt, err), err), err);
+  if (m9t14) {
+    Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s458, 29 }), Sem_TyName (lt, err), err), err);
     if (err->exc) goto L_ret;
   } else {
-    bool m9t12 = (!Sem_NumSide (rt, err));
+    bool m9t15 = (!Sem_NumSide (rt, err));
     if (err->exc) goto L_ret;
-    if (m9t12) {
-      Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s388, 29 }), Sem_TyName (rt, err), err), err);
+    if (m9t15) {
+      Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s459, 29 }), Sem_TyName (rt, err), err), err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t13 = (!((Sem_Compat (lt, rt, err) || Sem_Compat (rt, lt, err))));
+      Sem_Agree (Sem_StOperand, lt, rt, e->line, err);
       if (err->exc) goto L_ret;
-      if (m9t13) {
-        Sem_ErrN (e, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s389, 25 }), Sem_TyName (lt, err), ((m9_sl_CHAR){ (uint32_t *) m9s390, 1 }), op, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s391, 1 }), Sem_TyName (rt, err), err), err), err);
+      bool m9t16 = (!((Sem_Compat (lt, rt, err) || Sem_Compat (rt, lt, err))));
+      if (err->exc) goto L_ret;
+      if (m9t16) {
+        Sem_ErrN (e, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s460, 25 }), Sem_TyName (lt, err), ((m9_sl_CHAR){ (uint32_t *) m9s461, 1 }), op, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s462, 1 }), Sem_TyName (rt, err), err), err), err);
         if (err->exc) goto L_ret;
       }
     }
   }
-  bool m9t14 = Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s392, 1 }), err);
+  bool m9t17 = Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s463, 1 }), err);
   if (err->exc) goto L_ret;
-  if (m9t14) {
-    bool m9t15 = (((Sem_IsIntStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s393, 5 }), err)) || Sem_IsIntStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s394, 5 }), err));
+  if (m9t17) {
+    bool m9t18 = (((Sem_IsIntStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s464, 5 }), err)) || Sem_IsIntStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s465, 5 }), err));
     if (err->exc) goto L_ret;
-    if (m9t15) {
-      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s395, 39 }), err);
+    if (m9t18) {
+      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s466, 39 }), err);
       if (err->exc) goto L_ret;
     }
   } else {
-    bool m9t16 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s396, 3 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s397, 3 }), err));
+    bool m9t19 = (Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s467, 3 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s468, 3 }), err));
     if (err->exc) goto L_ret;
-    if (m9t16) {
-      bool m9t17 = (((Sem_IsFloatStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s398, 6 }), err)) || Sem_IsFloatStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s399, 6 }), err));
+    if (m9t19) {
+      bool m9t20 = (((Sem_IsFloatStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s469, 6 }), err)) || Sem_IsFloatStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s470, 6 }), err));
       if (err->exc) goto L_ret;
-      if (m9t17) {
-        Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s400, 33 }), ((m9_sl_CHAR){ (uint32_t *) m9s401, 3 }), err), err);
+      if (m9t20) {
+        Sem_ErrN (e, ctx, Sem_S3 (op, ((m9_sl_CHAR){ (uint32_t *) m9s471, 33 }), ((m9_sl_CHAR){ (uint32_t *) m9s472, 3 }), err), err);
         if (err->exc) goto L_ret;
       }
   } else {
-    bool m9t18 = ((Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s402, 2 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s403, 2 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s404, 2 }), err));
+    bool m9t21 = ((Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s473, 2 }), err) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s474, 2 }), err)) || Text_Eq (op, ((m9_sl_CHAR){ (uint32_t *) m9s475, 2 }), err));
     if (err->exc) goto L_ret;
-    if (m9t18) {
-      bool m9t19 = (((Sem_IsFloatStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s405, 6 }), err)) || Sem_IsFloatStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s406, 6 }), err));
+    if (m9t21) {
+      bool m9t22 = (((Sem_IsFloatStr (lt, err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s476, 6 }), err)) || Sem_IsFloatStr (rt, err)) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s477, 6 }), err));
       if (err->exc) goto L_ret;
-      if (m9t19) {
-        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s407, 35 }), err);
+      if (m9t22) {
+        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s478, 35 }), err);
         if (err->exc) goto L_ret;
       }
   } } }
-  bool m9t20 = Text_Eq (lt, rt, err);
+  bool m9t23 = Text_Eq (lt, rt, err);
   if (err->exc) goto L_ret;
-  if (m9t20) {
+  if (m9t23) {
     err->res = m9res;
     m9ret = lt;
     goto L_ret;
@@ -8822,16 +10707,16 @@ static m9_sl_CHAR Sem_BinType (Ast_Node * e, m9_sl_CHAR ctx, m9_state *err)
     m9ret = (m9_sl_CHAR){ NULL, 0 };
     goto L_ret;
   }
-  bool m9t21 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s408, 5 }), err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s409, 6 }), err));
+  bool m9t24 = (Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s479, 5 }), err) || Text_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s480, 6 }), err));
   if (err->exc) goto L_ret;
-  if (m9t21) {
+  if (m9t24) {
     err->res = m9res;
     m9ret = rt;
     goto L_ret;
   }
-  bool m9t22 = (Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s410, 5 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s411, 6 }), err));
+  bool m9t25 = (Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s481, 5 }), err) || Text_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s482, 6 }), err));
   if (err->exc) goto L_ret;
-  if (m9t22) {
+  if (m9t25) {
     err->res = m9res;
     m9ret = lt;
     goto L_ret;
@@ -8865,14 +10750,16 @@ static bool Sem_BareNameKnown (m9_sl_CHAR nm, m9_state *err)
     goto L_ret;
   }
   found = false;
-  cty = Sem_ConstType (nm, &(found), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(cty) m9v = Sem_ConstType (nm, &(found), err);
+    if (err->exc) goto L_ret;
+    cty = m9v;
+  }
   if (found) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = (Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s412, 3 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s413, 4 }), err));
+  bool m9t2 = (Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s483, 3 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s484, 4 }), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
@@ -8948,12 +10835,18 @@ static Ast_Node * Sem_AsQual (Ast_Node * k, m9_state *err)
       m9ret = NULL;
       goto L_ret;
     }
-    q = Ast_NewNode (&(pool), Ast_NQualident, d->line, d->col, err);
-    if (err->exc) goto L_ret;
-    q->a = Text_Keep (&(pool), d->a, err);
-    if (err->exc) goto L_ret;
-    q->b = Text_Keep (&(pool), d->b, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(q) m9v = Ast_NewNode (&(pool), Ast_NQualident, d->line, d->col, err);
+      if (err->exc) goto L_ret;
+      q = m9v;
+    }
+    { __typeof__(q->a) m9v = Text_Keep (&(pool), d->a, err);
+      if (err->exc) goto L_ret;
+      q->a = m9v;
+    }
+    { __typeof__(q->b) m9v = Text_Keep (&(pool), d->b, err);
+      if (err->exc) goto L_ret;
+      q->b = m9v;
+    }
     if ((d->nkids == INT64_C(1))) {
       { Ast_Node * sel = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(0), d->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
@@ -8963,8 +10856,10 @@ static Ast_Node * Sem_AsQual (Ast_Node * k, m9_state *err)
           m9ret = NULL;
           goto L_ret;
         }
-        q->b = Text_Keep (&(pool), sel->a, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(q->b) m9v = Text_Keep (&(pool), sel->a, err);
+          if (err->exc) goto L_ret;
+          q->b = m9v;
+        }
       } }
     }
     err->res = m9res;
@@ -8995,27 +10890,29 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
   { Ast_Node * d = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (d != NULL) {
-    bool m9t1 = ((d->nkids == INT64_C(0)) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s414, 3 }), err));
+    bool m9t1 = ((d->nkids == INT64_C(0)) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s485, 3 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
-      (*ty) = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*ty)) m9v = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        (*ty) = m9v;
+      }
       { Ast_Node * x = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (x != NULL) {
-        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s415, 74 }), err);
+        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s486, 74 }), err);
         if (err->exc) goto L_ret;
         err->res = m9res;
         m9ret = (m9_sl_CHAR){ NULL, 0 };
         goto L_ret;
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s416, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s487, 3 });
       goto L_ret;
     }
     isVar = true;
     if ((d->nkids == INT64_C(0))) {
-      bool m9t2 = ((Sem_ScopeFind (d->a, err) < INT64_C(0)) && (!Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s417, 4 }), err)));
+      bool m9t2 = ((Sem_ScopeFind (d->a, err) < INT64_C(0)) && (!Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s488, 4 }), err)));
       if (err->exc) goto L_ret;
       if (m9t2) {
         isVar = false;
@@ -9038,15 +10935,17 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
       bool m9t4 = (Text_Eq (Sem_ScopeMode (d->a, err), Sem_ModeVar, err) && Sem_PtrParamTy (Sem_ScopeType (d->a, err), err));
       if (err->exc) goto L_ret;
       if (m9t4) {
-        (*ty) = Sem_AsQual ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err);
-        if (err->exc) goto L_ret;
+        { __typeof__((*ty)) m9v = Sem_AsQual ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err);
+          if (err->exc) goto L_ret;
+          (*ty) = m9v;
+        }
         { Ast_Node * q0 = (*ty);
         if (q0 != NULL) {
           err->res = m9res;
-          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s418, 4 });
+          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s489, 4 });
           goto L_ret;
         } }
-        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s419, 36 }), err);
+        Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s490, 36 }), err);
         if (err->exc) goto L_ret;
         err->res = m9res;
         m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -9054,40 +10953,48 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
       }
     }
     if (isVar) {
-      t = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-      if (err->exc) goto L_ret;
-      bool m9t5 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s420, 4 }), err)));
+      { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+        if (err->exc) goto L_ret;
+        t = m9v;
+      }
+      bool m9t5 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s491, 4 }), err)));
       if (err->exc) goto L_ret;
       if (m9t5) {
-        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s421, 38 }), Sem_TyName (t, err), err), err);
+        Sem_ErrN (e, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s492, 38 }), Sem_TyName (t, err), err), err);
         if (err->exc) goto L_ret;
         err->res = m9res;
         m9ret = (m9_sl_CHAR){ NULL, 0 };
         goto L_ret;
       }
-      (*ty) = Sem_AsQual ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*ty)) m9v = Sem_AsQual ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err);
+        if (err->exc) goto L_ret;
+        (*ty) = m9v;
+      }
       { Ast_Node * q = (*ty);
       if (q != NULL) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s422, 4 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s493, 4 });
         goto L_ret;
       } }
-      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s423, 36 }), err);
+      Sem_ErrN (e, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s494, 36 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
       m9ret = (m9_sl_CHAR){ NULL, 0 };
       goto L_ret;
     }
-    (*ty) = Sem_AsQual ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*ty)) m9v = Sem_AsQual ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err);
+      if (err->exc) goto L_ret;
+      (*ty) = m9v;
+    }
     { Ast_Node * q2 = (*ty);
     if (q2 != NULL) {
       bool m9t6 = ((Sem_CanonT (q2, INT64_C(0), err)).len == INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t6) {
-        t = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+          if (err->exc) goto L_ret;
+          t = m9v;
+        }
         err->res = m9res;
         m9ret = (m9_sl_CHAR){ NULL, 0 };
         goto L_ret;
@@ -9095,13 +11002,15 @@ static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_
     } }
     (*ext0) = INT64_C(1);
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s424, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s495, 5 });
     goto L_ret;
   } }
-  (*ty) = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
-  if (err->exc) goto L_ret;
+  { __typeof__((*ty)) m9v = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    (*ty) = m9v;
+  }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s425, 5 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s496, 5 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -9118,8 +11027,10 @@ static void Sem_BindName (m9_sl_CHAR nm, Ast_Node * t, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   int64_t i = 0; (void) i;
-  i = Sem_ScopeFind (nm, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = Sem_ScopeFind (nm, err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   if ((i < INT64_C(0))) {
     Sem_ScopeAdd (nm, t, Sem_ModeBinder, err);
     if (err->exc) goto L_ret;
@@ -9144,11 +11055,13 @@ static Ast_Node * Sem_QualifiedIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *e
   { Ast_Node * tn = t;
   if (tn != NULL) {
     if ((tn->kind == Ast_NQualident)) {
-      bool m9t1 = ((((tn->b).len == INT64_C(0)) && (!Sem_IsBuiltinTy (tn->a, err))) && (!Text_Eq (tn->a, ((m9_sl_CHAR){ (uint32_t *) m9s426, 3 }), err)));
+      bool m9t1 = ((((tn->b).len == INT64_C(0)) && (!Sem_IsBuiltinTy (tn->a, err))) && (!Text_Eq (tn->a, ((m9_sl_CHAR){ (uint32_t *) m9s497, 3 }), err)));
       if (err->exc) goto L_ret;
       if (m9t1) {
-        n = Ast_NewNode (&(pool), Ast_NQualident, tn->line, tn->col, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(n) m9v = Ast_NewNode (&(pool), Ast_NQualident, tn->line, tn->col, err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
         n->a = modName;
         n->b = tn->a;
         err->res = m9res;
@@ -9157,8 +11070,10 @@ static Ast_Node * Sem_QualifiedIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *e
       }
     } else {
       if (((((tn->kind == Ast_NPtrType) || (tn->kind == Ast_NOptType)) || (tn->kind == Ast_NSharedType)) || (tn->kind == Ast_NSliceType))) {
-        n = Ast_NewNode (&(pool), tn->kind, tn->line, tn->col, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(n) m9v = Ast_NewNode (&(pool), tn->kind, tn->line, tn->col, err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
         if ((tn->nkids > INT64_C(0))) {
           Ast_Add (&(pool), &(n), &(pool), Sem_QualifiedIn ((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err)), modName, err), err);
           if (err->exc) goto L_ret;
@@ -9210,10 +11125,14 @@ static bool Sem_TryVariantMod (int64_t m, m9_sl_CHAR tyName, m9_sl_CHAR vName, m
         bool m9t4 = Text_Eq ((*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err)), vName, err);
         if (err->exc) goto L_ret;
         if (m9t4) {
-          (*owner) = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
-          if (err->exc) goto L_ret;
-          (*fields) = (*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
+          { __typeof__((*owner)) m9v = (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).name;
+            if (err->exc) goto L_ret;
+            (*owner) = m9v;
+          }
+          { __typeof__((*fields)) m9v = (*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+            (*fields) = m9v;
+          }
           err->res = m9res;
           m9ret = true;
           goto L_ret;
@@ -9292,8 +11211,10 @@ static m9_sl_CHAR Sem_VariantOwnerOf (m9_sl_CHAR tyName, m9_sl_CHAR vName, bool 
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR owner = {0}; (void) owner;
   Ast_Node * fields = NULL; (void) fields;
-  (*found) = Sem_FindVariant (tyName, vName, &(owner), &(fields), err->res, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*found)) m9v = Sem_FindVariant (tyName, vName, &(owner), &(fields), err->res, err);
+    if (err->exc) goto L_ret;
+    (*found) = m9v;
+  }
   err->res = m9res;
   m9ret = owner;
   goto L_ret;
@@ -9327,8 +11248,10 @@ static int64_t Sem_CountParams (Ast_Node * pl, m9_state *err)
         { Ast_Node * ids = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(0), grp->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (ids != NULL) {
-          n = m9_add_i64 (n, ids->nkids, err);
-          if (err->exc) goto L_ret;
+          { __typeof__(n) m9v = m9_add_i64 (n, ids->nkids, err);
+            if (err->exc) goto L_ret;
+            n = m9v;
+          }
         } }
       } }
     } }
@@ -9411,11 +11334,15 @@ static bool Sem_PtrBearing (Ast_Node * t, int64_t depth, m9_state *err)
     case INT64_C(32):
     {
       if ((r->kind == Ast_NMonitorType)) {
-        fsk = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        { __typeof__(fsk) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          fsk = m9v;
+        }
       } else {
-        fsk = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
+        { __typeof__(fsk) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          fsk = m9v;
+        }
       }
       { Ast_Node * fs = fsk;
       if (fs != NULL) {
@@ -9570,8 +11497,10 @@ static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR m = {0}; (void) m;
-  m = Sem_ScopeMode (a->a, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Sem_ScopeMode (a->a, err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   bool m9t1 = Text_Eq (m, Sem_ModeVar, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -9583,7 +11512,7 @@ static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err)
       goto L_ret;
     }
     err->res = m9res;
-    m9ret = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s427, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s428, 16 }), err);
+    m9ret = Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s498, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s499, 16 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   } else {
@@ -9591,7 +11520,7 @@ static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t3) {
       err->res = m9res;
-      m9ret = Sem_Cat (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s429, 20 }), err);
+      m9ret = Sem_Cat (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s500, 20 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
   } else {
@@ -9606,7 +11535,7 @@ static m9_sl_CHAR Sem_ObjPoolIssue (Ast_Node * a, m9_state *err)
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = Sem_Cat (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s430, 21 }), err);
+      m9ret = Sem_Cat (a->a, ((m9_sl_CHAR){ (uint32_t *) m9s501, 21 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
   } } }
@@ -9631,8 +11560,10 @@ static m9_sl_Ast_Nodep Sem_FlatFields (Ast_Node * fields, int64_t *n, m9_state *
   int64_t g = 0; (void) g;
   int64_t j = 0; (void) j;
   (*n) = INT64_C(0);
-  out = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), INT64_C(16), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
   { Ast_Node * fs = fields;
   if (fs != NULL) {
     { int64_t m9t1to;
@@ -9652,10 +11583,15 @@ static m9_sl_Ast_Nodep Sem_FlatFields (Ast_Node * fields, int64_t *n, m9_state *
           if (err->exc) goto L_ret;
           for (; j <= m9t2to; j += 1) {
             if (((*n) < (out).len)) {
-              (*(Ast_Node * *) m9_at (out.p, (*n), out.len, sizeof (Ast_Node *), err)) = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
-              if (err->exc) goto L_ret;
-              (*n) = m9_add_i64 ((*n), INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              { __typeof__((*(Ast_Node * *) m9_at (out.p, (*n), out.len, sizeof (Ast_Node *), err))) m9v = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+                (*(Ast_Node * *) m9_at (out.p, (*n), out.len, sizeof (Ast_Node *), err)) = m9v;
+                if (err->exc) goto L_ret;
+              }
+              { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(1), err);
+                if (err->exc) goto L_ret;
+                (*n) = m9v;
+              }
             }
           } }
         } }
@@ -9679,7 +11615,7 @@ static void Sem_Arity (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int64_t
   (void) m9res;
   err->res = &m9frame;
   if ((want != got)) {
-    Sem_ErrN (site, ctx, Sem_S5 (name, ((m9_sl_CHAR){ (uint32_t *) m9s431, 9 }), Sem_ItoA (want, err), ((m9_sl_CHAR){ (uint32_t *) m9s432, 18 }), Sem_ItoA (got, err), err), err);
+    Sem_ErrN (site, ctx, Sem_S5 (name, ((m9_sl_CHAR){ (uint32_t *) m9s502, 9 }), Sem_ItoA (want, err), ((m9_sl_CHAR){ (uint32_t *) m9s503, 18 }), Sem_ItoA (got, err), err), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -9695,21 +11631,21 @@ static bool Sem_IsTotalWideningTo64 (m9_sl_CHAR t, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = (Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s433, 5 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s434, 8 }), err));
+  bool m9t1 = (Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s504, 5 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s505, 8 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s435, 4 }), err);
+  bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s506, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
     m9ret = true;
     goto L_ret;
   }
-  bool m9t3 = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s436, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s437, 3 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s438, 3 }), err));
+  bool m9t3 = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s507, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s508, 3 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s509, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
@@ -9717,7 +11653,7 @@ static bool Sem_IsTotalWideningTo64 (m9_sl_CHAR t, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s439, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s440, 3 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s441, 3 }), err));
+  m9ret = ((Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s510, 2 }), err) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s511, 3 }), err)) || Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s512, 3 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -9781,8 +11717,10 @@ static bool Sem_IsTagged (m9_sl_CHAR canon, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   int64_t dot = 0; (void) dot;
-  dot = Text_FindChar (canon, 46u, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(dot) m9v = Text_FindChar (canon, 46u, err);
+    if (err->exc) goto L_ret;
+    dot = m9v;
+  }
   if ((dot < INT64_C(0))) {
     err->res = m9res;
     m9ret = false;
@@ -9814,13 +11752,19 @@ static m9_sl_CHAR Sem_EnumConvType (m9_sl_CHAR name, m9_state *err)
   int64_t dot = 0; (void) dot;
   m9_sl_CHAR md = {0}; (void) md;
   m9_sl_CHAR ty = {0}; (void) ty;
-  dot = Text_FindChar (name, 46u, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(dot) m9v = Text_FindChar (name, 46u, err);
+    if (err->exc) goto L_ret;
+    dot = m9v;
+  }
   if ((dot >= INT64_C(0))) {
-    md = ({ __typeof__(name) m9t1 = name; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
-    if (err->exc) goto L_ret;
-    ty = ({ __typeof__(name) m9t2 = name; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
-    if (err->exc) goto L_ret;
+    { __typeof__(md) m9v = ({ __typeof__(name) m9t1 = name; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+      if (err->exc) goto L_ret;
+      md = m9v;
+    }
+    { __typeof__(ty) m9v = ({ __typeof__(name) m9t2 = name; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((name).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+      if (err->exc) goto L_ret;
+      ty = m9v;
+    }
   } else {
     md = (m9_sl_CHAR){ NULL, 0 };
     ty = name;
@@ -9895,23 +11839,25 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
   m9_sl_CHAR aroot = {0}; (void) aroot;
   m9_sl_CHAR what = {0}; (void) what;
   m9_sl_CHAR why = {0}; (void) why;
-  bool m9t1 = Text_Eq (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s442, 6 }), err);
+  bool m9t1 = Text_Eq (aTy, ((m9_sl_CHAR){ (uint32_t *) m9s513, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s443, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s444, 4 }), Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s445, 17 }), err), err), err);
+    Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s514, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s515, 4 }), Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s516, 17 }), err), err), err);
     if (err->exc) goto L_ret;
   } else {
+    Sem_Agree (Sem_StArg, pTy, aTy, site->line, err);
+    if (err->exc) goto L_ret;
     bool m9t2 = (!Sem_Compat (pTy, aTy, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s446, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s447, 4 }), name, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s448, 14 }), Sem_TyName (aTy, err), ((m9_sl_CHAR){ (uint32_t *) m9s449, 7 }), Sem_Cat (Sem_TyName (pTy, err), ((m9_sl_CHAR){ (uint32_t *) m9s450, 12 }), err), err), err), err);
+      Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s517, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s518, 4 }), name, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s519, 14 }), Sem_TyName (aTy, err), ((m9_sl_CHAR){ (uint32_t *) m9s520, 7 }), Sem_Cat (Sem_TyName (pTy, err), ((m9_sl_CHAR){ (uint32_t *) m9s521, 12 }), err), err), err), err);
       if (err->exc) goto L_ret;
     }
   }
   { Ast_Node * a = an;
   if (a != NULL) {
     if ((isVar && (a->kind != Ast_NDesignator))) {
-      Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s451, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s452, 4 }), Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s453, 39 }), err), err), err);
+      Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s522, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s523, 4 }), Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s524, 39 }), err), err), err);
       if (err->exc) goto L_ret;
     }
     if ((isVar && (a->kind == Ast_NDesignator))) {
@@ -9919,33 +11865,37 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
         bool m9t3 = (Text_Eq (Sem_ScopeMode (a->a, err), Sem_ModeVal, err) && Sem_BaseIsPtr (a, err));
         if (err->exc) goto L_ret;
         if (m9t3) {
-          Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s454, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s455, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s456, 34 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s457, 32 }), err), err), err);
+          Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s525, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s526, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s527, 34 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s528, 32 }), err), err), err);
           if (err->exc) goto L_ret;
         }
       }
       if (wantsPool) {
-        why = Sem_ObjPoolIssue (a, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(why) m9v = Sem_ObjPoolIssue (a, err);
+          if (err->exc) goto L_ret;
+          why = m9v;
+        }
         if (((why).len > INT64_C(0))) {
-          Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s458, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s459, 4 }), name, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s460, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s461, 57 }), Sem_Cat (why, ((m9_sl_CHAR){ (uint32_t *) m9s462, 10 }), err), err), err), err);
+          Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s529, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s530, 4 }), name, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s531, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s532, 57 }), Sem_Cat (why, ((m9_sl_CHAR){ (uint32_t *) m9s533, 10 }), err), err), err), err);
           if (err->exc) goto L_ret;
         }
       }
     }
     if ((isOwn && (a->kind == Ast_NDesignator))) {
       if ((a->nkids == INT64_C(0))) {
-        amode = Sem_ScopeMode (a->a, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(amode) m9v = Sem_ScopeMode (a->a, err);
+          if (err->exc) goto L_ret;
+          amode = m9v;
+        }
         bool m9t4 = (((Text_Eq (amode, Sem_ModeVal, err) || Text_Eq (amode, Sem_ModeVar, err)) || Text_Eq (amode, Sem_ModeBinder, err)) || Text_Eq (amode, Sem_ModeRo, err));
         if (err->exc) goto L_ret;
         if (m9t4) {
-          Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s463, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s464, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s465, 23 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s466, 32 }), err), err), err);
+          Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s534, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s535, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s536, 23 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s537, 32 }), err), err), err);
           if (err->exc) goto L_ret;
         } else {
           bool m9t5 = Sem_FvalHas (a->a, err);
           if (err->exc) goto L_ret;
           if (m9t5) {
-            Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s467, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s468, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s469, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s470, 57 }), err), err), err);
+            Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s538, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s539, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s540, 14 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s541, 57 }), err), err), err);
             if (err->exc) goto L_ret;
         } else {
           { Ast_Node * ares = Sem_ResolveType (Sem_ScopeType (a->a, err), err);
@@ -9955,13 +11905,13 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
               { Ast_Node * poolName = (*(Ast_Node * *) m9_at (ares->kids.p, INT64_C(1), ares->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (poolName != NULL) {
-                Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s471, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s472, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s473, 16 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s474, 10 }), err), err), err);
+                Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s542, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s543, 4 }), name, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s544, 16 }), a->a, ((m9_sl_CHAR){ (uint32_t *) m9s545, 10 }), err), err), err);
                 if (err->exc) goto L_ret;
               } else {
                 bool m9t6 = (Sem_OwnedCandKind (a->a, err) > INT64_C(0));
                 if (err->exc) goto L_ret;
                 if (m9t6) {
-                  Sem_OwnMark (a->a, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s475, 31 }), name, err), site, err);
+                  Sem_OwnMark (a->a, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s546, 31 }), name, err), site, err);
                   if (err->exc) goto L_ret;
                 }
               } }
@@ -9969,7 +11919,7 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
               bool m9t7 = (Sem_OwnedCandKind (a->a, err) > INT64_C(0));
               if (err->exc) goto L_ret;
               if (m9t7) {
-                Sem_OwnMark (a->a, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s476, 31 }), name, err), site, err);
+                Sem_OwnMark (a->a, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s547, 31 }), name, err), site, err);
                 if (err->exc) goto L_ret;
               }
             }
@@ -9979,21 +11929,27 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
     }
   } }
   if (isKept) {
-    what = Sem_FrameWhat (an, aTy, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(what) m9v = Sem_FrameWhat (an, aTy, err);
+      if (err->exc) goto L_ret;
+      what = m9v;
+    }
     bool m9t8 = ((((what).len > INT64_C(0)) && (nFrameKept <= INT64_C(1))) && (!Sem_PoolAmong (args, Sem_KindPool (what, err), err)));
     if (err->exc) goto L_ret;
     if (m9t8) {
-      Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s477, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s478, 4 }), Sem_S4 (name, ((m9_sl_CHAR){ (uint32_t *) m9s479, 31 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s480, 37 }), err), err), err);
+      Sem_ErrN (site, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s548, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s549, 4 }), Sem_S4 (name, ((m9_sl_CHAR){ (uint32_t *) m9s550, 31 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s551, 37 }), err), err), err);
       if (err->exc) goto L_ret;
     }
-    aroot = Sem_EscRootOf (an, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(aroot) m9v = Sem_EscRootOf (an, err);
+      if (err->exc) goto L_ret;
+      aroot = m9v;
+    }
     bool m9t9 = (((aroot).len > INT64_C(0)) && Sem_IsRefTy (aTy, err));
     if (err->exc) goto L_ret;
     if (m9t9) {
-      amode = Sem_ScopeMode (aroot, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(amode) m9v = Sem_ScopeMode (aroot, err);
+        if (err->exc) goto L_ret;
+        amode = m9v;
+      }
       bool m9t10 = ((Text_Eq (amode, Sem_ModeVal, err) || Text_Eq (amode, Sem_ModeVar, err)) || Text_Eq (amode, Sem_ModeRo, err));
       if (err->exc) goto L_ret;
       if (m9t10) {
@@ -10003,13 +11959,13 @@ static void Sem_CheckArg (Ast_Node * site, m9_sl_CHAR ctx, m9_sl_CHAR name, int6
       bool m9t11 = ((((Text_Eq (amode, Sem_ModeVal, err) || Text_Eq (amode, Sem_ModeVar, err)) || Text_Eq (amode, Sem_ModeRo, err))) && (!Sem_KeptHas (aroot, err)));
       if (err->exc) goto L_ret;
       if (m9t11) {
-        Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s481, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s482, 4 }), name, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s483, 11 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s484, 39 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s485, 10 }), err), err), err);
+        Sem_ErrN (site, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s552, 9 }), Sem_ItoA (m9_add_i64 (k, INT64_C(1), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s553, 4 }), name, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s554, 11 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s555, 39 }), aroot, ((m9_sl_CHAR){ (uint32_t *) m9s556, 10 }), err), err), err);
         if (err->exc) goto L_ret;
       }
       bool m9t12 = Sem_IsFrameMode (amode, err);
       if (err->exc) goto L_ret;
       if (m9t12) {
-        Sem_EscTarget (aroot, ((m9_sl_CHAR){ (uint32_t *) m9s486, 6 }), err);
+        Sem_EscTarget (aroot, ((m9_sl_CHAR){ (uint32_t *) m9s557, 6 }), err);
         if (err->exc) goto L_ret;
       }
     }
@@ -10072,23 +12028,30 @@ static void Sem_OwnSet (m9_sl_CHAR nm, m9_sl_CHAR state, m9_state *err)
   err->res = &m9frame;
   m9_sl_Sem_Binding nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
-  i = Sem_OwnFind (nm, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = Sem_OwnFind (nm, err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   if ((i >= INT64_C(0))) {
     (*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode = state;
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if ((nown == (own).len)) {
-    nb = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (own).len, err), INT64_C(16), err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (own).len, err), INT64_C(16), err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nown, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = (*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err))) m9v = (*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err));
+        if (err->exc) goto L_ret;
+        (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     own = nb;
   }
@@ -10098,8 +12061,10 @@ static void Sem_OwnSet (m9_sl_CHAR nm, m9_sl_CHAR state, m9_state *err)
   if (err->exc) goto L_ret;
   (*(Sem_Binding *) m9_at (own.p, nown, own.len, sizeof (Sem_Binding), err)).ty = NULL;
   if (err->exc) goto L_ret;
-  nown = m9_add_i64 (nown, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nown) m9v = m9_add_i64 (nown, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nown = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -10114,8 +12079,10 @@ static int64_t Sem_OwnedCandKind (m9_sl_CHAR nm, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   m9_sl_CHAR mode = {0}; (void) mode;
-  mode = Sem_ScopeMode (nm, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(mode) m9v = Sem_ScopeMode (nm, err);
+    if (err->exc) goto L_ret;
+    mode = m9v;
+  }
   bool m9t1 = ((!Text_Eq (mode, Sem_ModeLocal, err)) && (!Text_Eq (mode, Sem_ModeOwn, err)));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -10159,7 +12126,7 @@ static void Sem_OwnMark (m9_sl_CHAR nm, m9_sl_CHAR what, Ast_Node * site, m9_sta
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Sem_OwnSet (nm, Sem_S3 (what, ((m9_sl_CHAR){ (uint32_t *) m9s487, 9 }), Sem_ItoA (site->line, err), err), err);
+  Sem_OwnSet (nm, Sem_S3 (what, ((m9_sl_CHAR){ (uint32_t *) m9s558, 9 }), Sem_ItoA (site->line, err), err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -10176,7 +12143,7 @@ static void Sem_OwnAlive (m9_sl_CHAR nm, m9_state *err)
   bool m9t1 = (Sem_OwnFind (nm, err) >= INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Sem_OwnSet (nm, ((m9_sl_CHAR){ (uint32_t *) m9s488, 5 }), err);
+    Sem_OwnSet (nm, ((m9_sl_CHAR){ (uint32_t *) m9s559, 5 }), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -10192,15 +12159,17 @@ static void Sem_NoteUse (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   int64_t i = 0; (void) i;
-  i = Sem_OwnFind (d->a, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = Sem_OwnFind (d->a, err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   if ((i < INT64_C(0))) {
     goto L_ret;
   }
-  bool m9t1 = (!Text_Eq ((*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s489, 5 }), err));
+  bool m9t1 = (!Text_Eq ((*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s560, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Sem_ErrN (d, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s490, 7 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s491, 14 }), Sem_Cat ((*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s492, 10 }), err), err), err);
+    Sem_ErrN (d, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s561, 7 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s562, 14 }), Sem_Cat ((*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s563, 10 }), err), err), err);
     if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -10218,15 +12187,20 @@ static m9_sl_Sem_Binding Sem_OwnSnap (m9_state *err)
   m9_sl_Sem_Binding m9ret = {0};
   m9_sl_Sem_Binding c = {0}; (void) c;
   int64_t i = 0; (void) i;
-  c = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_add_i64 (nown, INT64_C(1), err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(c) m9v = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_add_i64 (nown, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    c = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (nown, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(Sem_Binding *) m9_at (c.p, i, c.len, sizeof (Sem_Binding), err)) = (*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(Sem_Binding *) m9_at (c.p, i, c.len, sizeof (Sem_Binding), err))) m9v = (*(Sem_Binding *) m9_at (own.p, i, own.len, sizeof (Sem_Binding), err));
+      if (err->exc) goto L_ret;
+      (*(Sem_Binding *) m9_at (c.p, i, c.len, sizeof (Sem_Binding), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   err->res = m9res;
   m9ret = c;
@@ -10273,16 +12247,18 @@ static void Sem_OwnMergeMoves (m9_sl_Sem_Binding snap, int64_t n, m9_state *err)
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    bool m9t2 = (!Text_Eq ((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s493, 5 }), err));
+    bool m9t2 = (!Text_Eq ((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s564, 5 }), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      ix = Sem_OwnFind ((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(ix) m9v = Sem_OwnFind ((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name, err);
+        if (err->exc) goto L_ret;
+        ix = m9v;
+      }
       if ((ix < INT64_C(0))) {
         Sem_OwnSet ((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name, (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode, err);
         if (err->exc) goto L_ret;
       } else {
-        bool m9t3 = Text_Eq ((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s494, 5 }), err);
+        bool m9t3 = Text_Eq ((*(Sem_Binding *) m9_at (own.p, ix, own.len, sizeof (Sem_Binding), err)).mode, ((m9_sl_CHAR){ (uint32_t *) m9s565, 5 }), err);
         if (err->exc) goto L_ret;
         if (m9t3) {
           Sem_OwnSet ((*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).name, (*(Sem_Binding *) m9_at (snap.p, i, snap.len, sizeof (Sem_Binding), err)).mode, err);
@@ -10308,23 +12284,27 @@ static void Sem_CheckDispose (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   { Ast_Node * d = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (d != NULL) {
-    t = Sem_DesigStrType (d, false, ctx, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(t) m9v = Sem_DesigStrType (d, false, ctx, err);
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
     if ((d->nkids == INT64_C(0))) {
       Sem_NoteUse (d, ctx, err);
       if (err->exc) goto L_ret;
-      amode = Sem_ScopeMode (d->a, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(amode) m9v = Sem_ScopeMode (d->a, err);
+        if (err->exc) goto L_ret;
+        amode = m9v;
+      }
       bool m9t1 = (((Text_Eq (amode, Sem_ModeVal, err) || Text_Eq (amode, Sem_ModeVar, err)) || Text_Eq (amode, Sem_ModeBinder, err)) || Text_Eq (amode, Sem_ModeRo, err));
       if (err->exc) goto L_ret;
       if (m9t1) {
-        Sem_ErrN (st, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s495, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s496, 51 }), err), err);
+        Sem_ErrN (st, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s566, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s567, 51 }), err), err);
         if (err->exc) goto L_ret;
       } else {
         bool m9t2 = Sem_FvalHas (d->a, err);
         if (err->exc) goto L_ret;
         if (m9t2) {
-          Sem_ErrN (st, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s497, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s498, 47 }), err), err);
+          Sem_ErrN (st, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s568, 15 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s569, 47 }), err), err);
           if (err->exc) goto L_ret;
       } else {
         { Ast_Node * dcl = Sem_ResolveType (Sem_ScopeType (d->a, err), err);
@@ -10334,13 +12314,13 @@ static void Sem_CheckDispose (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
             { Ast_Node * pn = (*(Ast_Node * *) m9_at (dcl->kids.p, INT64_C(1), dcl->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (pn != NULL) {
-              Sem_ErrN (st, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s499, 14 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s500, 42 }), err), err);
+              Sem_ErrN (st, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s570, 14 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s571, 42 }), err), err);
               if (err->exc) goto L_ret;
             } else {
               bool m9t3 = (Sem_OwnedCandKind (d->a, err) > INT64_C(0));
               if (err->exc) goto L_ret;
               if (m9t3) {
-                Sem_OwnMark (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s501, 8 }), st, err);
+                Sem_OwnMark (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s572, 8 }), st, err);
                 if (err->exc) goto L_ret;
               }
             } }
@@ -10348,7 +12328,7 @@ static void Sem_CheckDispose (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
             bool m9t4 = (Sem_OwnedCandKind (d->a, err) > INT64_C(0));
             if (err->exc) goto L_ret;
             if (m9t4) {
-              Sem_OwnMark (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s502, 8 }), st, err);
+              Sem_OwnMark (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s573, 8 }), st, err);
               if (err->exc) goto L_ret;
             }
           }
@@ -10370,19 +12350,21 @@ static m9_sl_CHAR Sem_SigDiff (m9_sl_CHAR want, m9_sl_CHAR got, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s503, 34 }), err);
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s574, 34 }), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(d), &(pool), 10u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s504, 19 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s575, 19 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), want, err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(d), &(pool), 10u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s505, 19 }), err);
+  DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s576, 19 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), got, err);
   if (err->exc) goto L_ret;
@@ -10409,8 +12391,10 @@ static void Sem_CheckConformance (Ast_Node * u, m9_state *err)
   bool defined = false; (void) defined;
   bool hasVars = false; (void) hasVars;
   m9_sl_CHAR isig = {0}; (void) isig;
-  m = Sem_FindMod (u->a, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Sem_FindMod (u->a, err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   if ((m < INT64_C(0))) {
     goto L_ret;
   }
@@ -10427,14 +12411,18 @@ static void Sem_CheckConformance (Ast_Node * u, m9_state *err)
         hasVars = true;
       }
       if ((d->kind == Ast_NProcDecl)) {
-        pi = Sem_FindProcIn (m, d->a, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(pi) m9v = Sem_FindProcIn (m, d->a, err);
+          if (err->exc) goto L_ret;
+          pi = m9v;
+        }
         if ((pi >= INT64_C(0))) {
           bool m9t2 = (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, pi, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).fromDef;
           if (err->exc) goto L_ret;
           if (m9t2) {
-            isig = Sem_SigOf (d, err);
-            if (err->exc) goto L_ret;
+            { __typeof__(isig) m9v = Sem_SigOf (d, err);
+              if (err->exc) goto L_ret;
+              isig = m9v;
+            }
             bool m9t3 = (!Text_Eq ((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, pi, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).sig, isig, err));
             if (err->exc) goto L_ret;
             if (m9t3) {
@@ -10449,7 +12437,7 @@ static void Sem_CheckConformance (Ast_Node * u, m9_state *err)
   bool m9t4 = (hasVars && (!(*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).stateful));
   if (err->exc) goto L_ret;
   if (m9t4) {
-    Sem_ErrN (u, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s506, 54 }), err);
+    Sem_ErrN (u, u->a, ((m9_sl_CHAR){ (uint32_t *) m9s577, 54 }), err);
     if (err->exc) goto L_ret;
   }
   { int64_t m9t5to;
@@ -10460,7 +12448,7 @@ static void Sem_CheckConformance (Ast_Node * u, m9_state *err)
     bool m9t6 = ((*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).fromDef && (!(*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).hasBody));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      Sem_ErrN (u, Sem_Qualify (u->a, (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s507, 46 }), err);
+      Sem_ErrN (u, Sem_Qualify (u->a, (*(Sem_ProcInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).procs.len, sizeof (Sem_ProcInfo), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s578, 46 }), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -10477,7 +12465,7 @@ static void Sem_CheckConformance (Ast_Node * u, m9_state *err)
       defined = false;
     } }
     if ((!defined)) {
-      Sem_ErrN (u, Sem_Qualify (u->a, (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s508, 45 }), err);
+      Sem_ErrN (u, Sem_Qualify (u->a, (*(m9_sl_CHAR *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.p, i, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).opaque.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s579, 45 }), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -10497,7 +12485,7 @@ static bool Sem_IsCType (Ast_Node * k, m9_state *err)
   { Ast_Node * t = k;
   if (t != NULL) {
     err->res = m9res;
-    m9ret = (((t->kind == Ast_NQualident) && Text_Eq (t->a, ((m9_sl_CHAR){ (uint32_t *) m9s509, 1 }), err)) && ((t->b).len > INT64_C(0)));
+    m9ret = (((t->kind == Ast_NQualident) && Text_Eq (t->a, ((m9_sl_CHAR){ (uint32_t *) m9s580, 1 }), err)) && ((t->b).len > INT64_C(0)));
     if (err->exc) goto L_ret;
     goto L_ret;
   } }
@@ -10518,8 +12506,10 @@ static m9_sl_CHAR Sem_Cat (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_Append (&(d), &(pool), a, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(pool), b, err);
@@ -10543,8 +12533,10 @@ static m9_sl_CHAR Sem_Qualify (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_Append (&(d), &(pool), a, err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(d), &(pool), 46u, err);
@@ -10581,10 +12573,12 @@ static void Sem_CheckForeignDef (Ast_Node * u, m9_state *err)
     if (err->exc) goto L_ret;
     if (d != NULL) {
       if ((d->kind == Ast_NProcDecl)) {
-        ctx = Sem_Qualify (u->a, d->a, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(ctx) m9v = Sem_Qualify (u->a, d->a, err);
+          if (err->exc) goto L_ret;
+          ctx = m9v;
+        }
         if (((d->b).len == INT64_C(0))) {
-          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s510, 51 }), err);
+          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s581, 51 }), err);
           if (err->exc) goto L_ret;
         }
         ok = true;
@@ -10617,18 +12611,20 @@ static void Sem_CheckForeignDef (Ast_Node * u, m9_state *err)
           }
         } }
         if ((!ok)) {
-          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s511, 47 }), err);
+          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s582, 47 }), err);
           if (err->exc) goto L_ret;
         }
         ok = false;
         { Ast_Node * at = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(3), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (at != NULL) {
-          ok = (Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s512, 6 }), err) || Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s513, 9 }), err));
-          if (err->exc) goto L_ret;
+          { __typeof__(ok) m9v = (Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s583, 6 }), err) || Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s584, 9 }), err));
+            if (err->exc) goto L_ret;
+            ok = m9v;
+          }
         } }
         if ((!ok)) {
-          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s514, 54 }), err);
+          Sem_ErrN (d, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s585, 54 }), err);
           if (err->exc) goto L_ret;
         }
       }
@@ -10662,15 +12658,20 @@ static void Sem_FromAdd (m9_sl_CHAR nm, m9_sl_CHAR owner, m9_state *err)
   m9_sl_Sem_Binding nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if ((nfrom == (fromMap).len)) {
-    nb = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_mul_i64 (INT64_C(2), (fromMap).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_mul_i64 (INT64_C(2), (fromMap).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nfrom, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = (*(Sem_Binding *) m9_at (fromMap.p, i, fromMap.len, sizeof (Sem_Binding), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err))) m9v = (*(Sem_Binding *) m9_at (fromMap.p, i, fromMap.len, sizeof (Sem_Binding), err));
+        if (err->exc) goto L_ret;
+        (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     fromMap = nb;
   }
@@ -10680,8 +12681,10 @@ static void Sem_FromAdd (m9_sl_CHAR nm, m9_sl_CHAR owner, m9_state *err)
   if (err->exc) goto L_ret;
   (*(Sem_Binding *) m9_at (fromMap.p, nfrom, fromMap.len, sizeof (Sem_Binding), err)).ty = NULL;
   if (err->exc) goto L_ret;
-  nfrom = m9_add_i64 (nfrom, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nfrom) m9v = m9_add_i64 (nfrom, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nfrom = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -10732,23 +12735,35 @@ static bool Sem_VariantOfType (m9_sl_CHAR canon, int64_t *mi, int64_t *vi, m9_st
   int64_t j = 0; (void) j;
   m9_sl_CHAR modName = {0}; (void) modName;
   m9_sl_CHAR tyName = {0}; (void) tyName;
-  (*mi) = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  (*vi) = m9_neg_i64 (INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  dot = Text_FindChar (canon, 46u, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*mi)) m9v = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*mi) = m9v;
+  }
+  { __typeof__((*vi)) m9v = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*vi) = m9v;
+  }
+  { __typeof__(dot) m9v = Text_FindChar (canon, 46u, err);
+    if (err->exc) goto L_ret;
+    dot = m9v;
+  }
   if ((dot < INT64_C(0))) {
     err->res = m9res;
     m9ret = false;
     goto L_ret;
   }
-  modName = ({ __typeof__(canon) m9t1 = canon; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
-  if (err->exc) goto L_ret;
-  tyName = ({ __typeof__(canon) m9t2 = canon; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((canon).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
-  if (err->exc) goto L_ret;
-  m = Sem_FindMod (modName, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(modName) m9v = ({ __typeof__(canon) m9t1 = canon; int64_t m9t1a = INT64_C(0), m9t1n = dot; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    if (err->exc) goto L_ret;
+    modName = m9v;
+  }
+  { __typeof__(tyName) m9v = ({ __typeof__(canon) m9t2 = canon; int64_t m9t2a = m9_add_i64 (dot, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((canon).len, dot, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+    if (err->exc) goto L_ret;
+    tyName = m9v;
+  }
+  { __typeof__(m) m9v = Sem_FindMod (modName, err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   if ((m < INT64_C(0))) {
     err->res = m9res;
     m9ret = false;
@@ -10808,6 +12823,55 @@ L_ret: ;
   return m9ret;
 }
 
+static bool Sem_HasPatternArm (Ast_Node * st, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t j = 0; (void) j;
+  int64_t k = 0; (void) k;
+  { int64_t m9t1to;
+  j = INT64_C(1);
+  m9t1to = m9_sub_i64 (st->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; j <= m9t1to; j += 1) {
+    { Ast_Node * arm = (*(Ast_Node * *) m9_at (st->kids.p, j, st->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (arm != NULL) {
+      if ((arm->kind == Ast_NCaseArm)) {
+        { Ast_Node * lbls = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (lbls != NULL) {
+          { int64_t m9t2to;
+          k = INT64_C(0);
+          m9t2to = m9_sub_i64 (lbls->nkids, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          for (; k <= m9t2to; k += 1) {
+            { Ast_Node * lbl = (*(Ast_Node * *) m9_at (lbls->kids.p, k, lbls->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+            if (lbl != NULL) {
+              if ((lbl->kind == Ast_NLabelPattern)) {
+                err->res = m9res;
+                m9ret = true;
+                goto L_ret;
+              }
+            } }
+          } }
+        } }
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 static void Sem_CheckCaseTotal (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -10824,23 +12888,33 @@ static void Sem_CheckCaseTotal (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   int64_t ncov = 0; (void) ncov;
   bool hasElse = false; (void) hasElse;
   bool labelsVariant = false; (void) labelsVariant;
-  selTy = Sem_DesigCanon ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(selTy) m9v = Sem_DesigCanon ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+    if (err->exc) goto L_ret;
+    selTy = m9v;
+  }
   bool m9t1 = (!Sem_VariantOfType (selTy, &(mi), &(vi), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
+    bool m9t2 = Sem_HasPatternArm (st, err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      Sem_PassedOver (Sem_StCase, st->line, err);
+      if (err->exc) goto L_ret;
+    }
     goto L_ret;
   }
-  covered = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(covered) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    covered = m9v;
+  }
   ncov = INT64_C(0);
   hasElse = false;
   labelsVariant = false;
-  { int64_t m9t2to;
+  { int64_t m9t3to;
   j = INT64_C(1);
-  m9t2to = m9_sub_i64 (st->nkids, INT64_C(1), err);
+  m9t3to = m9_sub_i64 (st->nkids, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  for (; j <= m9t2to; j += 1) {
+  for (; j <= m9t3to; j += 1) {
     { Ast_Node * arm = (*(Ast_Node * *) m9_at (st->kids.p, j, st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (arm != NULL) {
@@ -10848,11 +12922,11 @@ static void Sem_CheckCaseTotal (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         { Ast_Node * lbls = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (lbls != NULL) {
-          { int64_t m9t3to;
+          { int64_t m9t4to;
           k = INT64_C(0);
-          m9t3to = m9_sub_i64 (lbls->nkids, INT64_C(1), err);
+          m9t4to = m9_sub_i64 (lbls->nkids, INT64_C(1), err);
           if (err->exc) goto L_ret;
-          for (; k <= m9t3to; k += 1) {
+          for (; k <= m9t4to; k += 1) {
             { Ast_Node * lbl = (*(Ast_Node * *) m9_at (lbls->kids.p, k, lbls->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (lbl != NULL) {
@@ -10860,8 +12934,10 @@ static void Sem_CheckCaseTotal (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                 if ((ncov < (covered).len)) {
                   (*(m9_sl_CHAR *) m9_at (covered.p, ncov, covered.len, sizeof (m9_sl_CHAR), err)) = lbl->a;
                   if (err->exc) goto L_ret;
-                  ncov = m9_add_i64 (ncov, INT64_C(1), err);
-                  if (err->exc) goto L_ret;
+                  { __typeof__(ncov) m9v = m9_add_i64 (ncov, INT64_C(1), err);
+                    if (err->exc) goto L_ret;
+                    ncov = m9v;
+                  }
                   labelsVariant = true;
                 }
               } else {
@@ -10870,14 +12946,16 @@ static void Sem_CheckCaseTotal (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                   if (err->exc) goto L_ret;
                   if (lv != NULL) {
                     if (((lv->kind == Ast_NDesignator) && (lv->nkids == INT64_C(0)))) {
-                      bool m9t4 = Sem_VariantHas (mi, vi, lv->a, err);
+                      bool m9t5 = Sem_VariantHas (mi, vi, lv->a, err);
                       if (err->exc) goto L_ret;
-                      if (m9t4) {
+                      if (m9t5) {
                         if ((ncov < (covered).len)) {
                           (*(m9_sl_CHAR *) m9_at (covered.p, ncov, covered.len, sizeof (m9_sl_CHAR), err)) = lv->a;
                           if (err->exc) goto L_ret;
-                          ncov = m9_add_i64 (ncov, INT64_C(1), err);
-                          if (err->exc) goto L_ret;
+                          { __typeof__(ncov) m9v = m9_add_i64 (ncov, INT64_C(1), err);
+                            if (err->exc) goto L_ret;
+                            ncov = m9v;
+                          }
                           labelsVariant = true;
                         }
                       }
@@ -10895,26 +12973,33 @@ static void Sem_CheckCaseTotal (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   if (((!labelsVariant) || hasElse)) {
     goto L_ret;
   }
-  { int64_t m9t5to;
-  k = INT64_C(0);
-  m9t5to = m9_sub_i64 (((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  for (; k <= m9t5to; k += 1) {
-    c = INT64_C(0);
-    { int64_t m9t6to;
-    j = INT64_C(0);
-    m9t6to = m9_sub_i64 (ncov, INT64_C(1), err);
+  { __typeof__((*(int64_t *) m9_at (statC.v, Sem_StCase, INT64_C(7), sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at (statC.v, Sem_StCase, INT64_C(7), sizeof (int64_t), err)), INT64_C(1), err);
     if (err->exc) goto L_ret;
-    for (; j <= m9t6to; j += 1) {
-      bool m9t7 = Text_Eq ((*(m9_sl_CHAR *) m9_at (covered.p, j, covered.len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, k, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err)), err);
+    (*(int64_t *) m9_at (statC.v, Sem_StCase, INT64_C(7), sizeof (int64_t), err)) = m9v;
+    if (err->exc) goto L_ret;
+  }
+  { int64_t m9t6to;
+  k = INT64_C(0);
+  m9t6to = m9_sub_i64 (((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; k <= m9t6to; k += 1) {
+    c = INT64_C(0);
+    { int64_t m9t7to;
+    j = INT64_C(0);
+    m9t7to = m9_sub_i64 (ncov, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; j <= m9t7to; j += 1) {
+      bool m9t8 = Text_Eq ((*(m9_sl_CHAR *) m9_at (covered.p, j, covered.len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, k, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err)), err);
       if (err->exc) goto L_ret;
-      if (m9t7) {
-        c = m9_add_i64 (c, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+      if (m9t8) {
+        { __typeof__(c) m9v = m9_add_i64 (c, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          c = m9v;
+        }
       }
     } }
     if ((c == INT64_C(0))) {
-      Sem_ErrN (st, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s515, 44 }), (*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, k, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s516, 1 }), err), err);
+      Sem_ErrN (st, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s586, 44 }), (*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, k, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, vi, (*(Sem_ModuleInfo *) m9_at (mods.p, mi, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s587, 1 }), err), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -10938,21 +13023,27 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   Sem_ProcInfo pr = {0}; (void) pr;
   bool found = false; (void) found;
   bool pooled = false; (void) pooled;
-  aTy = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(aTy) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+    if (err->exc) goto L_ret;
+    aTy = m9v;
+  }
   { Ast_Node * tn = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (tn != NULL) {
     if ((tn->kind != Ast_NDesignator)) {
       goto L_ret;
     }
-    name = Sem_DesigName (tn, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(name) m9v = Sem_DesigName (tn, err);
+      if (err->exc) goto L_ret;
+      name = m9v;
+    }
     Sem_RootAdd (name, err);
     if (err->exc) goto L_ret;
     pTy = (m9_sl_CHAR){ NULL, 0 };
-    pr = Sem_LookupProc (name, &(found), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(pr) m9v = Sem_LookupProc (name, &(found), err);
+      if (err->exc) goto L_ret;
+      pr = m9v;
+    }
     if (found) {
       { Ast_Node * pn = pr.node;
       if (pn != NULL) {
@@ -10964,28 +13055,34 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
             { Ast_Node * grp = (*(Ast_Node * *) m9_at (pl->kids.p, INT64_C(0), pl->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (grp != NULL) {
-              pTy = Sem_CanonT ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
-              if (err->exc) goto L_ret;
+              { __typeof__(pTy) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
+                if (err->exc) goto L_ret;
+                pTy = m9v;
+              }
             } }
           }
         } }
         canonCtx = (m9_sl_CHAR){ NULL, 0 };
       } }
     }
+    Sem_Agree (Sem_StThread, pTy, aTy, st->line, err);
+    if (err->exc) goto L_ret;
     if ((((pTy).len > INT64_C(0)) && ((aTy).len > INT64_C(0)))) {
-      bool m9t1 = (!(((Sem_Compat (pTy, aTy, err) || Sem_Compat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s517, 4 }), pTy, err), aTy, err)) || Sem_Compat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s518, 11 }), pTy, err), aTy, err))));
+      bool m9t1 = (!(((Sem_Compat (pTy, aTy, err) || Sem_Compat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s588, 4 }), pTy, err), aTy, err)) || Sem_Compat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s589, 11 }), pTy, err), aTy, err))));
       if (err->exc) goto L_ret;
       if (m9t1) {
-        Sem_ErrN (st, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s519, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s520, 15 }), Sem_TyName (aTy, err), Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s521, 7 }), Sem_TyName (pTy, err), ((m9_sl_CHAR){ (uint32_t *) m9s522, 12 }), err), err), err);
+        Sem_ErrN (st, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s590, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s591, 15 }), Sem_TyName (aTy, err), Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s592, 7 }), Sem_TyName (pTy, err), ((m9_sl_CHAR){ (uint32_t *) m9s593, 12 }), err), err), err);
         if (err->exc) goto L_ret;
       }
     }
-    what = Sem_FrameWhat ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), aTy, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(what) m9v = Sem_FrameWhat ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), aTy, err);
+      if (err->exc) goto L_ret;
+      what = m9v;
+    }
     bool m9t2 = (((what).len > INT64_C(0)) && ((Sem_KindPool (what, err)).len == INT64_C(0)));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Sem_ErrN (st, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s523, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s524, 15 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s525, 71 }), err), err);
+      Sem_ErrN (st, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s594, 8 }), name, ((m9_sl_CHAR){ (uint32_t *) m9s595, 15 }), what, ((m9_sl_CHAR){ (uint32_t *) m9s596, 71 }), err), err);
       if (err->exc) goto L_ret;
     }
     { Ast_Node * an = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
@@ -10993,8 +13090,10 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     if (an != NULL) {
       if ((an->kind == Ast_NDesignator)) {
         if ((an->nkids == INT64_C(0))) {
-          amode = Sem_ScopeMode (an->a, err);
-          if (err->exc) goto L_ret;
+          { __typeof__(amode) m9v = Sem_ScopeMode (an->a, err);
+            if (err->exc) goto L_ret;
+            amode = m9v;
+          }
           bool m9t3 = (!((((Text_Eq (amode, Sem_ModeVal, err) || Text_Eq (amode, Sem_ModeVar, err)) || Text_Eq (amode, Sem_ModeBinder, err)) || Text_Eq (amode, Sem_ModeRo, err))));
           if (err->exc) goto L_ret;
           if (m9t3) {
@@ -11011,7 +13110,7 @@ static void Sem_CheckThread (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                 bool m9t4 = (((!pooled) && (Sem_OwnedCandKind (an->a, err) > INT64_C(0))) && (!Sem_FvalHas (an->a, err)));
                 if (err->exc) goto L_ret;
                 if (m9t4) {
-                  Sem_OwnMark (an->a, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s526, 28 }), name, err), st, err);
+                  Sem_OwnMark (an->a, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s597, 28 }), name, err), st, err);
                   if (err->exc) goto L_ret;
                 }
               }
@@ -11037,12 +13136,14 @@ static void Sem_CheckCallStmt (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   { Ast_Node * dn = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (dn != NULL) {
-    t = Sem_CallType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), st, ctx, err);
-    if (err->exc) goto L_ret;
-    bool m9t1 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s527, 6 }), err)));
+    { __typeof__(t) m9v = Sem_CallType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), st, ctx, err);
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
+    bool m9t1 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s598, 6 }), err)));
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Sem_ErrN (st, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s528, 27 }), Sem_DesigName (dn, err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s529, 9 }), Sem_TyName (t, err), err), err), err);
+      Sem_ErrN (st, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s599, 27 }), Sem_DesigName (dn, err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s600, 9 }), Sem_TyName (t, err), err), err), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -11066,8 +13167,10 @@ static void Sem_BindPat (Ast_Node * lbl, m9_sl_CHAR selRoot, m9_state *err)
   int64_t n = 0; (void) n;
   bool done = false; (void) done;
   nflat = INT64_C(0);
-  flat = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(flat) m9v = M9_POOL_SL (m9_sl_Ast_Nodep, Ast_Node *, &(pool), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    flat = m9v;
+  }
   done = false;
   { int64_t m9t1to;
   m = INT64_C(0);
@@ -11087,8 +13190,10 @@ static void Sem_BindPat (Ast_Node * lbl, m9_sl_CHAR selRoot, m9_state *err)
         bool m9t4 = ((!done) && Text_Eq ((*(m9_sl_CHAR *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).variants.len, sizeof (m9_sl_CHAR), err)), lbl->a, err));
         if (err->exc) goto L_ret;
         if (m9t4) {
-          flat = Sem_FlatFields ((*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err)), &(nflat), err);
-          if (err->exc) goto L_ret;
+          { __typeof__(flat) m9v = Sem_FlatFields ((*(Ast_Node * *) m9_at ((*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.p, v, (*(Sem_VariantInfo *) m9_at ((*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.p, j, (*(Sem_ModuleInfo *) m9_at (mods.p, m, mods.len, sizeof (Sem_ModuleInfo), err)).vts.len, sizeof (Sem_VariantInfo), err)).fields.len, sizeof (Ast_Node *), err)), &(nflat), err);
+            if (err->exc) goto L_ret;
+            flat = m9v;
+          }
           done = true;
         }
       } }
@@ -11204,10 +13309,10 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
         Sem_CheckExcName (xn, ctx, err);
         if (err->exc) goto L_ret;
         if (((xn->b).len > INT64_C(0))) {
-          Sem_RaisedAdd (xn->b, ((m9_sl_CHAR){ (uint32_t *) m9s530, 5 }), err);
+          Sem_RaisedAdd (xn->b, ((m9_sl_CHAR){ (uint32_t *) m9s601, 5 }), err);
           if (err->exc) goto L_ret;
         } else {
-          Sem_RaisedAdd (xn->a, ((m9_sl_CHAR){ (uint32_t *) m9s531, 5 }), err);
+          Sem_RaisedAdd (xn->a, ((m9_sl_CHAR){ (uint32_t *) m9s602, 5 }), err);
           if (err->exc) goto L_ret;
         }
       } }
@@ -11235,13 +13340,17 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
     {
       Sem_CheckCond ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
       if (err->exc) goto L_ret;
-      pre = Sem_OwnSnap (err);
-      if (err->exc) goto L_ret;
+      { __typeof__(pre) m9v = Sem_OwnSnap (err);
+        if (err->exc) goto L_ret;
+        pre = m9v;
+      }
       npre = nown;
       Sem_WalkSeq ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
       if (err->exc) goto L_ret;
-      acc = Sem_OwnSnap (err);
-      if (err->exc) goto L_ret;
+      { __typeof__(acc) m9v = Sem_OwnSnap (err);
+        if (err->exc) goto L_ret;
+        acc = m9v;
+      }
       nacc = nown;
       Sem_OwnRestore (pre, npre, err);
       if (err->exc) goto L_ret;
@@ -11267,8 +13376,10 @@ static void Sem_WalkStmt (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
             if (err->exc) goto L_ret;
           } }
         } }
-        arm2 = Sem_OwnSnap (err);
-        if (err->exc) goto L_ret;
+        { __typeof__(arm2) m9v = Sem_OwnSnap (err);
+          if (err->exc) goto L_ret;
+          arm2 = m9v;
+        }
         narm2 = nown;
         Sem_OwnRestore (pre, npre, err);
         if (err->exc) goto L_ret;
@@ -11436,7 +13547,7 @@ static bool Sem_IsPoolNew (Ast_Node * k, m9_state *err)
       { Ast_Node * d = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (d != NULL) {
-        bool m9t1 = ((d->nkids == INT64_C(0)) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s532, 3 }), err));
+        bool m9t1 = ((d->nkids == INT64_C(0)) && Text_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s603, 3 }), err));
         if (err->exc) goto L_ret;
         if (m9t1) {
           err->res = m9res;
@@ -11466,7 +13577,7 @@ static bool Sem_IsPoolName (m9_sl_CHAR nm, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s533, 4 }), err);
+  bool m9t1 = Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s604, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -11478,7 +13589,7 @@ static bool Sem_IsPoolName (m9_sl_CHAR nm, m9_state *err)
   if (q != NULL) {
     if ((q->kind == Ast_NQualident)) {
       err->res = m9res;
-      m9ret = (Text_Eq (q->a, ((m9_sl_CHAR){ (uint32_t *) m9s534, 4 }), err) && ((q->b).len == INT64_C(0)));
+      m9ret = (Text_Eq (q->a, ((m9_sl_CHAR){ (uint32_t *) m9s605, 4 }), err) && ((q->b).len == INT64_C(0)));
       if (err->exc) goto L_ret;
       goto L_ret;
     }
@@ -11512,35 +13623,43 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   { Ast_Node * lhs = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (lhs != NULL) {
-    t = Sem_DesigStrType (lhs, false, ctx, err);
-    if (err->exc) goto L_ret;
-    u = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(t) m9v = Sem_DesigStrType (lhs, false, ctx, err);
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
+    { __typeof__(u) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+      if (err->exc) goto L_ret;
+      u = m9v;
+    }
     { Ast_Node * frhs = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (frhs != NULL) {
-      what = Sem_FrameWhat ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), u, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(what) m9v = Sem_FrameWhat ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), u, err);
+        if (err->exc) goto L_ret;
+        what = m9v;
+      }
       if (((what).len > INT64_C(0))) {
         bool m9t1 = ((Sem_KindPool (what, err)).len > INT64_C(0));
         if (err->exc) goto L_ret;
         if (m9t1) {
-          par = ((m9_sl_CHAR){ (uint32_t *) m9s535, 3 });
+          par = ((m9_sl_CHAR){ (uint32_t *) m9s606, 3 });
         } else {
-          par = ((m9_sl_CHAR){ (uint32_t *) m9s536, 3 });
+          par = ((m9_sl_CHAR){ (uint32_t *) m9s607, 3 });
         }
-        dmode = Sem_ScopeMode (lhs->a, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(dmode) m9v = Sem_ScopeMode (lhs->a, err);
+          if (err->exc) goto L_ret;
+          dmode = m9v;
+        }
         bool m9t2 = (Text_Eq (dmode, Sem_ModeModule, err) && (!curInBody));
         if (err->exc) goto L_ret;
         if (m9t2) {
-          Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s537, 62 }), lhs->a, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s538, 6 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s539, 1 }), err), err), err);
+          Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s608, 62 }), lhs->a, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s609, 6 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s610, 1 }), err), err), err);
           if (err->exc) goto L_ret;
         } else {
           bool m9t3 = (Text_Eq (dmode, Sem_ModeRo, err) || (((((Text_Eq (dmode, Sem_ModeVar, err) || Text_Eq (dmode, Sem_ModeOwn, err)) || Text_Eq (dmode, Sem_ModeVal, err))) && (lhs->nkids > INT64_C(0)))));
           if (err->exc) goto L_ret;
           if (m9t3) {
-            Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s540, 51 }), lhs->a, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s541, 25 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s542, 1 }), err), err), err);
+            Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s611, 51 }), lhs->a, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s612, 25 }), par, ((m9_sl_CHAR){ (uint32_t *) m9s613, 1 }), err), err), err);
             if (err->exc) goto L_ret;
         } else {
           bool m9t4 = ((lhs->nkids == INT64_C(0)) && Sem_IsFrameMode (dmode, err));
@@ -11555,13 +13674,13 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                 bool m9t6 = ((Sem_KindPool (what, err)).len == INT64_C(0));
                 if (err->exc) goto L_ret;
                 if (m9t6) {
-                  Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s543, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s544, 39 }), err), err);
+                  Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s614, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s615, 39 }), err), err);
                   if (err->exc) goto L_ret;
                 } else {
                   bool m9t7 = ((!Text_Eq (Sem_ScopeMode (dp->a, err), Sem_ModeLocal, err)) && ((Sem_AllocPoolOf ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err)).len == INT64_C(0)));
                   if (err->exc) goto L_ret;
                   if (m9t7) {
-                    Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s545, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s546, 39 }), err), err);
+                    Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s616, 44 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s617, 39 }), err), err);
                     if (err->exc) goto L_ret;
                 } }
               } else {
@@ -11582,11 +13701,13 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
               bool m9t9 = (((Sem_KindPool (what, err)).len == INT64_C(0)) || (!Text_Eq (Sem_ScopeMode (dp2->a, err), Sem_ModeLocal, err)));
               if (err->exc) goto L_ret;
               if (m9t9) {
-                Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s547, 51 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s548, 39 }), err), err);
+                Sem_ErrN (frhs, ctx, Sem_S4 (what, ((m9_sl_CHAR){ (uint32_t *) m9s618, 51 }), lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s619, 39 }), err), err);
                 if (err->exc) goto L_ret;
               }
             } else {
               Sem_FvalAdd (lhs->a, what, err);
+              if (err->exc) goto L_ret;
+              Sem_FvalAdd (Text_Keep (&(pool), Sem_DesigPath (lhs, err), err), what, err);
               if (err->exc) goto L_ret;
             } }
         } } } }
@@ -11594,11 +13715,17 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         if ((lhs->nkids == INT64_C(0))) {
           Sem_FvalDel (lhs->a, err);
           if (err->exc) goto L_ret;
-      } }
-      if ((lhs->nkids == INT64_C(0))) {
-        bool m9t10 = Sem_IsPoolNew ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), err);
+      } else {
+        bool m9t10 = Text_Eq (Sem_ScopeMode (lhs->a, err), Sem_ModeLocal, err);
         if (err->exc) goto L_ret;
         if (m9t10) {
+          Sem_FvalDel (Sem_DesigPath (lhs, err), err);
+          if (err->exc) goto L_ret;
+      } } }
+      if ((lhs->nkids == INT64_C(0))) {
+        bool m9t11 = Sem_IsPoolNew ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), err);
+        if (err->exc) goto L_ret;
+        if (m9t11) {
           Sem_PvalAdd (lhs->a, err);
           if (err->exc) goto L_ret;
         } else {
@@ -11610,12 +13737,14 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         { Ast_Node * dp = Sem_DeclPool (Sem_ScopeType (lhs->a, err), err);
         if (err->exc) goto L_ret;
         if (dp != NULL) {
-          apool = Sem_AllocPoolOf ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+          { __typeof__(apool) m9v = Sem_AllocPoolOf ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+            if (err->exc) goto L_ret;
+            apool = m9v;
+          }
+          bool m9t12 = (((apool).len > INT64_C(0)) && (!Text_Eq (apool, dp->a, err)));
           if (err->exc) goto L_ret;
-          bool m9t11 = (((apool).len > INT64_C(0)) && (!Text_Eq (apool, dp->a, err)));
-          if (err->exc) goto L_ret;
-          if (m9t11) {
-            Sem_ErrN (frhs, ctx, Sem_S5 (lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s549, 16 }), dp->a, ((m9_sl_CHAR){ (uint32_t *) m9s550, 18 }), Sem_Cat (apool, ((m9_sl_CHAR){ (uint32_t *) m9s551, 10 }), err), err), err);
+          if (m9t12) {
+            Sem_ErrN (frhs, ctx, Sem_S5 (lhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s620, 16 }), dp->a, ((m9_sl_CHAR){ (uint32_t *) m9s621, 18 }), Sem_Cat (apool, ((m9_sl_CHAR){ (uint32_t *) m9s622, 10 }), err), err), err);
             if (err->exc) goto L_ret;
           }
         } }
@@ -11624,22 +13753,24 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
     { Ast_Node * rhn = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rhn != NULL) {
-      bool m9t12 = Text_Eq (u, ((m9_sl_CHAR){ (uint32_t *) m9s552, 6 }), err);
+      bool m9t13 = Text_Eq (u, ((m9_sl_CHAR){ (uint32_t *) m9s623, 6 }), err);
       if (err->exc) goto L_ret;
-      if (m9t12) {
-        Sem_ErrN (rhn, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s553, 36 }), err);
+      if (m9t13) {
+        Sem_ErrN (rhn, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s624, 36 }), err);
         if (err->exc) goto L_ret;
       } else {
-        bool m9t13 = (!Sem_Compat (t, u, err));
+        Sem_Agree (Sem_StAssign, t, u, rhn->line, err);
         if (err->exc) goto L_ret;
-        if (m9t13) {
-          Sem_ErrN (rhn, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s554, 14 }), Sem_TyName (u, err), ((m9_sl_CHAR){ (uint32_t *) m9s555, 4 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s556, 35 }), err), err);
+        bool m9t14 = (!Sem_Compat (t, u, err));
+        if (err->exc) goto L_ret;
+        if (m9t14) {
+          Sem_ErrN (rhn, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s625, 14 }), Sem_TyName (u, err), ((m9_sl_CHAR){ (uint32_t *) m9s626, 4 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s627, 35 }), err), err);
           if (err->exc) goto L_ret;
         } else {
-          bool m9t14 = Sem_LitOut (rhn, t, &(lv), err);
+          bool m9t15 = Sem_LitOut (rhn, t, &(lv), err);
           if (err->exc) goto L_ret;
-          if (m9t14) {
-            Sem_ErrN (rhn, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s557, 16 }), Sem_ItoA (lv, err), ((m9_sl_CHAR){ (uint32_t *) m9s558, 14 }), Sem_TyName (t, err), err), err);
+          if (m9t15) {
+            Sem_ErrN (rhn, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s628, 16 }), Sem_ItoA (lv, err), ((m9_sl_CHAR){ (uint32_t *) m9s629, 14 }), Sem_TyName (t, err), err), err);
             if (err->exc) goto L_ret;
         } }
       }
@@ -11648,20 +13779,22 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       Sem_NoteUse (lhs, ctx, err);
       if (err->exc) goto L_ret;
     }
-    beyond = Sem_CheckWrite (lhs, ctx, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(beyond) m9v = Sem_CheckWrite (lhs, ctx, err);
+      if (err->exc) goto L_ret;
+      beyond = m9v;
+    }
     { Ast_Node * rhs = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rhs != NULL) {
       if ((rhs->kind == Ast_NDesignator)) {
         if ((rhs->nkids == INT64_C(0))) {
-          bool m9t15 = (Sem_OwnedCandKind (rhs->a, err) == INT64_C(1));
+          bool m9t16 = (Sem_OwnedCandKind (rhs->a, err) == INT64_C(1));
           if (err->exc) goto L_ret;
-          if (m9t15) {
-            bool m9t16 = ((!Sem_FvalHas (rhs->a, err)) && (!Sem_PvalHas (rhs->a, err)));
+          if (m9t16) {
+            bool m9t17 = ((!Sem_FvalHas (rhs->a, err)) && (!Sem_PvalHas (rhs->a, err)));
             if (err->exc) goto L_ret;
-            if (m9t16) {
-              Sem_OwnMark (rhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s559, 5 }), st, err);
+            if (m9t17) {
+              Sem_OwnMark (rhs->a, ((m9_sl_CHAR){ (uint32_t *) m9s630, 5 }), st, err);
               if (err->exc) goto L_ret;
             }
           }
@@ -11672,42 +13805,48 @@ static void Sem_CheckAssign (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
       Sem_OwnAlive (lhs->a, err);
       if (err->exc) goto L_ret;
     }
-    vname = Sem_EscRootOf ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), err);
-    if (err->exc) goto L_ret;
-    isShared = (Text_StartsWith (u, ((m9_sl_CHAR){ (uint32_t *) m9s560, 11 }), err) || Text_StartsWith (u, ((m9_sl_CHAR){ (uint32_t *) m9s561, 15 }), err));
-    if (err->exc) goto L_ret;
-    lhsMode = Sem_ScopeMode (lhs->a, err);
-    if (err->exc) goto L_ret;
-    bool m9t17 = ((((vname).len > INT64_C(0)) && Sem_IsRefTy (u, err)) && (!isShared));
-    if (err->exc) goto L_ret;
-    if (m9t17) {
-      bool m9t18 = ((((Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeVal, err) || Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeVar, err)) || Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeRo, err)) || Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeLocal, err)) || Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeBinder, err));
+    { __typeof__(vname) m9v = Sem_EscRootOf ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
-      if (m9t18) {
-        bool m9t19 = ((beyond || Text_Eq (lhsMode, Sem_ModeModule, err)) || ((Text_Eq (lhsMode, Sem_ModeVar, err) && (lhs->nkids > INT64_C(0)))));
+      vname = m9v;
+    }
+    { __typeof__(isShared) m9v = (Text_StartsWith (u, ((m9_sl_CHAR){ (uint32_t *) m9s631, 11 }), err) || Text_StartsWith (u, ((m9_sl_CHAR){ (uint32_t *) m9s632, 15 }), err));
+      if (err->exc) goto L_ret;
+      isShared = m9v;
+    }
+    { __typeof__(lhsMode) m9v = Sem_ScopeMode (lhs->a, err);
+      if (err->exc) goto L_ret;
+      lhsMode = m9v;
+    }
+    bool m9t18 = ((((vname).len > INT64_C(0)) && Sem_IsRefTy (u, err)) && (!isShared));
+    if (err->exc) goto L_ret;
+    if (m9t18) {
+      bool m9t19 = ((((Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeVal, err) || Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeVar, err)) || Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeRo, err)) || Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeLocal, err)) || Text_Eq (Sem_ScopeMode (vname, err), Sem_ModeBinder, err));
+      if (err->exc) goto L_ret;
+      if (m9t19) {
+        bool m9t20 = ((beyond || Text_Eq (lhsMode, Sem_ModeModule, err)) || ((Text_Eq (lhsMode, Sem_ModeVar, err) && (lhs->nkids > INT64_C(0)))));
         if (err->exc) goto L_ret;
-        if (m9t19) {
+        if (m9t20) {
           Sem_PendPush (st->line, st->col, vname, lhs->a, err);
           if (err->exc) goto L_ret;
         }
       }
     }
-    bool m9t20 = ((((vname).len > INT64_C(0)) && Sem_IsRefTy (u, err)) && (lhs->nkids == INT64_C(0)));
+    bool m9t21 = ((((vname).len > INT64_C(0)) && Sem_IsRefTy (u, err)) && (lhs->nkids == INT64_C(0)));
     if (err->exc) goto L_ret;
-    if (m9t20) {
-      bool m9t21 = (Text_Eq (lhsMode, Sem_ModeLocal, err) || Text_Eq (lhsMode, Sem_ModeBinder, err));
+    if (m9t21) {
+      bool m9t22 = (Text_Eq (lhsMode, Sem_ModeLocal, err) || Text_Eq (lhsMode, Sem_ModeBinder, err));
       if (err->exc) goto L_ret;
-      if (m9t21) {
+      if (m9t22) {
         Sem_CarryFrom (lhs->a, vname, err);
         if (err->exc) goto L_ret;
       }
     }
-    bool m9t22 = (((vname).len > INT64_C(0)) && Sem_IsRefTy (u, err));
+    bool m9t23 = (((vname).len > INT64_C(0)) && Sem_IsRefTy (u, err));
     if (err->exc) goto L_ret;
-    if (m9t22) {
-      bool m9t23 = Sem_IsFrameMode (Sem_ScopeMode (vname, err), err);
+    if (m9t23) {
+      bool m9t24 = Sem_IsFrameMode (Sem_ScopeMode (vname, err), err);
       if (err->exc) goto L_ret;
-      if (m9t23) {
+      if (m9t24) {
         Sem_EscStore (lhs->a, (lhs->nkids > INT64_C(0)), vname, err);
         if (err->exc) goto L_ret;
       }
@@ -11734,7 +13873,7 @@ static void Sem_OwnSeed (m9_state *err)
     bool m9t2 = (Sem_OwnedCandKind ((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).name, err) > INT64_C(0));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Sem_OwnSet ((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).name, ((m9_sl_CHAR){ (uint32_t *) m9s562, 5 }), err);
+      Sem_OwnSet ((*(Sem_Binding *) m9_at (scope.p, i, scope.len, sizeof (Sem_Binding), err)).name, ((m9_sl_CHAR){ (uint32_t *) m9s633, 5 }), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -11751,16 +13890,60 @@ static void Sem_CheckCond (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR t = {0}; (void) t;
-  t = Sem_ExprType (k, ctx, err);
-  if (err->exc) goto L_ret;
-  bool m9t1 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s563, 4 }), err)));
+  { __typeof__(t) m9v = Sem_ExprType (k, ctx, err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
+  bool m9t1 = (((t).len > INT64_C(0)) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s634, 4 }), err)));
   if (err->exc) goto L_ret;
   if (m9t1) {
     { Ast_Node * c = k;
     if (c != NULL) {
-      Sem_ErrN (c, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s564, 28 }), Sem_TyName (t, err), err), err);
+      Sem_ErrN (c, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s635, 28 }), Sem_TyName (t, err), err), err);
       if (err->exc) goto L_ret;
     } }
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_CheckForVar (Ast_Node * st, m9_sl_CHAR ctx, m9_sl_CHAR bound, bool enum_, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR vt = {0}; (void) vt;
+  bool m9t1 = (Sem_ScopeFind (st->a, err) < INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    Sem_ErrN (st, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s636, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s637, 16 }), err), err);
+    if (err->exc) goto L_ret;
+    Sem_BindName (st->a, NULL, err);
+    if (err->exc) goto L_ret;
+  } else {
+    { __typeof__(vt) m9v = Sem_CanonT (Sem_ScopeType (st->a, err), INT64_C(0), err);
+      if (err->exc) goto L_ret;
+      vt = m9v;
+    }
+    if (((vt).len > INT64_C(0))) {
+      if (enum_) {
+        bool m9t2 = (((bound).len > INT64_C(0)) && (!Text_Eq (vt, bound, err)));
+        if (err->exc) goto L_ret;
+        if (m9t2) {
+          Sem_ErrN (st, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s638, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s639, 4 }), Sem_TyName (vt, err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s640, 21 }), Sem_TyName (bound, err), err), err), err);
+          if (err->exc) goto L_ret;
+        }
+      } else {
+        bool m9t3 = (!Sem_IsIntStr (vt, err));
+        if (err->exc) goto L_ret;
+        if (m9t3) {
+          Sem_ErrN (st, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s641, 13 }), st->a, ((m9_sl_CHAR){ (uint32_t *) m9s642, 4 }), Sem_TyName (vt, err), ((m9_sl_CHAR){ (uint32_t *) m9s643, 52 }), err), err);
+          if (err->exc) goto L_ret;
+      } }
+    }
   }
 L_ret: ;
   err->res = m9res;
@@ -11776,54 +13959,60 @@ static void Sem_CheckForBounds (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR t = {0}; (void) t;
   m9_sl_CHAR u = {0}; (void) u;
-  t = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-  if (err->exc) goto L_ret;
-  u = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
+  { __typeof__(u) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+    if (err->exc) goto L_ret;
+    u = m9v;
+  }
   bool m9t1 = (Sem_IsTagged (t, err) || Sem_IsTagged (u, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     bool m9t2 = (!Text_Eq (t, u, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Sem_ErrN (st, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s565, 59 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s566, 5 }), Sem_TyName (u, err), err), err);
+      Sem_ErrN (st, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s644, 59 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s645, 5 }), Sem_TyName (u, err), err), err);
       if (err->exc) goto L_ret;
     }
     { Ast_Node * estep = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (estep != NULL) {
-      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s567, 40 }), err);
+      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s646, 40 }), err);
       if (err->exc) goto L_ret;
     } }
-    Sem_BindName (st->a, NULL, err);
+    Sem_CheckForVar (st, ctx, t, true, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   bool m9t3 = (!Sem_IsIntish (t, err));
   if (err->exc) goto L_ret;
   if (m9t3) {
-    Sem_ErrN (st, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s568, 33 }), Sem_TyName (t, err), err), err);
+    Sem_ErrN (st, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s647, 33 }), Sem_TyName (t, err), err), err);
     if (err->exc) goto L_ret;
   }
   bool m9t4 = (!Sem_IsIntish (u, err));
   if (err->exc) goto L_ret;
   if (m9t4) {
-    Sem_ErrN (st, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s569, 33 }), Sem_TyName (u, err), err), err);
+    Sem_ErrN (st, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s648, 33 }), Sem_TyName (u, err), err), err);
     if (err->exc) goto L_ret;
   }
   { Ast_Node * step = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (step != NULL) {
-    t = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
     bool m9t5 = (!Sem_IsIntish (t, err));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      Sem_ErrN (st, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s570, 33 }), Sem_TyName (t, err), err), err);
+      Sem_ErrN (st, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s649, 33 }), Sem_TyName (t, err), err), err);
       if (err->exc) goto L_ret;
     }
   } }
-  Sem_BindName (st->a, NULL, err);
+  Sem_CheckForVar (st, ctx, (m9_sl_CHAR){ NULL, 0 }, false, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -11847,8 +14036,10 @@ static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   m9_arr_256_m9_sl_CHAR seen = {0}; (void) seen;
   bool dup = false; (void) dup;
   nseen = INT64_C(0);
-  selTy = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(selTy) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+    if (err->exc) goto L_ret;
+    selTy = m9v;
+  }
   { int64_t m9t1to;
   j = INT64_C(1);
   m9t1to = m9_sub_i64 (st->nkids, INT64_C(1), err);
@@ -11873,28 +14064,38 @@ static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                 bool m9t3 = (!Sem_IsVariantLabel (lbl, err));
                 if (err->exc) goto L_ret;
                 if (m9t3) {
-                  t = Sem_ExprType ((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+                  { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+                    if (err->exc) goto L_ret;
+                    t = m9v;
+                  }
+                  Sem_Agree (Sem_StLabel, selTy, t, lbl->line, err);
                   if (err->exc) goto L_ret;
                   bool m9t4 = (!((Sem_Compat (selTy, t, err) || Sem_Compat (t, selTy, err))));
                   if (err->exc) goto L_ret;
                   if (m9t4) {
-                    Sem_ErrN (lbl, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s571, 14 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s572, 21 }), Sem_TyName (selTy, err), err), err);
+                    Sem_ErrN (lbl, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s650, 14 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s651, 21 }), Sem_TyName (selTy, err), err), err);
                     if (err->exc) goto L_ret;
                   }
                   { Ast_Node * hi = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
                   if (hi != NULL) {
-                    t = Sem_ExprType ((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+                    { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+                      if (err->exc) goto L_ret;
+                      t = m9v;
+                    }
+                    Sem_Agree (Sem_StLabel, selTy, t, hi->line, err);
                     if (err->exc) goto L_ret;
                     bool m9t5 = (!((Sem_Compat (selTy, t, err) || Sem_Compat (t, selTy, err))));
                     if (err->exc) goto L_ret;
                     if (m9t5) {
-                      Sem_ErrN (hi, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s573, 14 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s574, 21 }), Sem_TyName (selTy, err), err), err);
+                      Sem_ErrN (hi, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s652, 14 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s653, 21 }), Sem_TyName (selTy, err), err), err);
                       if (err->exc) goto L_ret;
                     }
                   } else {
-                    lblTxt = Print_ExprText ((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err)), err);
-                    if (err->exc) goto L_ret;
+                    { __typeof__(lblTxt) m9v = Print_ExprText ((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err)), err);
+                      if (err->exc) goto L_ret;
+                      lblTxt = m9v;
+                    }
                     bool m9t6 = (!Text_Eq (lblTxt, (m9_sl_CHAR){ NULL, 0 }, err));
                     if (err->exc) goto L_ret;
                     if (m9t6) {
@@ -11911,14 +14112,16 @@ static void Sem_CheckCaseLabels (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
                         }
                       } }
                       if (dup) {
-                        Sem_ErrN (lbl, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s575, 11 }), lblTxt, ((m9_sl_CHAR){ (uint32_t *) m9s576, 14 }), err), err);
+                        Sem_ErrN (lbl, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s654, 11 }), lblTxt, ((m9_sl_CHAR){ (uint32_t *) m9s655, 14 }), err), err);
                         if (err->exc) goto L_ret;
                       } else {
                         if ((nseen < INT64_C(256))) {
                           (*(m9_sl_CHAR *) m9_at (seen.v, nseen, INT64_C(256), sizeof (m9_sl_CHAR), err)) = lblTxt;
                           if (err->exc) goto L_ret;
-                          nseen = m9_add_i64 (nseen, INT64_C(1), err);
-                          if (err->exc) goto L_ret;
+                          { __typeof__(nseen) m9v = m9_add_i64 (nseen, INT64_C(1), err);
+                            if (err->exc) goto L_ret;
+                            nseen = m9v;
+                          }
                       } }
                     }
                   } }
@@ -12016,24 +14219,28 @@ static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
   { Ast_Node * v = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (v != NULL) {
-    t = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-    if (err->exc) goto L_ret;
-    bool m9t1 = Text_Eq (curRetTy, ((m9_sl_CHAR){ (uint32_t *) m9s577, 6 }), err);
+    { __typeof__(t) m9v = Sem_ExprType ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
+    bool m9t1 = Text_Eq (curRetTy, ((m9_sl_CHAR){ (uint32_t *) m9s656, 6 }), err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s578, 41 }), err);
+      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s657, 41 }), err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s579, 6 }), err);
+      bool m9t2 = Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s658, 6 }), err);
       if (err->exc) goto L_ret;
       if (m9t2) {
-        Sem_ErrN (v, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s580, 38 }), err);
+        Sem_ErrN (v, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s659, 38 }), err);
         if (err->exc) goto L_ret;
       } else {
+        Sem_Agree (Sem_StReturn, curRetTy, t, v->line, err);
+        if (err->exc) goto L_ret;
         bool m9t3 = (!Sem_Compat (curRetTy, t, err));
         if (err->exc) goto L_ret;
         if (m9t3) {
-          Sem_ErrN (v, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s581, 14 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s582, 25 }), Sem_TyName (curRetTy, err), err), err);
+          Sem_ErrN (v, ctx, Sem_S4 (((m9_sl_CHAR){ (uint32_t *) m9s660, 14 }), Sem_TyName (t, err), ((m9_sl_CHAR){ (uint32_t *) m9s661, 25 }), Sem_TyName (curRetTy, err), err), err);
           if (err->exc) goto L_ret;
         }
       }
@@ -12050,7 +14257,7 @@ static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
               bool m9t4 = Text_Eq (Sem_ScopeMode (pn->a, err), Sem_ModeLocal, err);
               if (err->exc) goto L_ret;
               if (m9t4) {
-                Sem_ErrN (st, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s583, 40 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s584, 10 }), pn->a, ((m9_sl_CHAR){ (uint32_t *) m9s585, 38 }), err), err);
+                Sem_ErrN (st, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s662, 40 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s663, 10 }), pn->a, ((m9_sl_CHAR){ (uint32_t *) m9s664, 38 }), err), err);
                 if (err->exc) goto L_ret;
                 said = true;
               }
@@ -12059,33 +14266,37 @@ static void Sem_CheckReturn (Ast_Node * st, m9_sl_CHAR ctx, m9_state *err)
         } }
       }
     }
-    bool m9t5 = ((!said) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s586, 13 }), err)));
+    bool m9t5 = ((!said) && (!Text_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s665, 13 }), err)));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      what = Sem_FrameWhat ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), t, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(what) m9v = Sem_FrameWhat ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), t, err);
+        if (err->exc) goto L_ret;
+        what = m9v;
+      }
       bool m9t6 = ((Sem_KindPool (what, err)).len > INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t6) {
-        Sem_ErrN (st, ctx, Sem_Cat (what, ((m9_sl_CHAR){ (uint32_t *) m9s587, 55 }), err), err);
+        Sem_ErrN (st, ctx, Sem_Cat (what, ((m9_sl_CHAR){ (uint32_t *) m9s666, 55 }), err), err);
         if (err->exc) goto L_ret;
       }
     }
-    t = Sem_EscRootOf ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(t) m9v = Sem_EscRootOf ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), err);
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
     if (((t).len > INT64_C(0))) {
       bool m9t7 = Sem_IsFrameMode (Sem_ScopeMode (t, err), err);
       if (err->exc) goto L_ret;
       if (m9t7) {
-        Sem_EscTarget (t, ((m9_sl_CHAR){ (uint32_t *) m9s588, 8 }), err);
+        Sem_EscTarget (t, ((m9_sl_CHAR){ (uint32_t *) m9s667, 8 }), err);
         if (err->exc) goto L_ret;
       }
     }
   } else {
-    bool m9t8 = (!Text_Eq (curRetTy, ((m9_sl_CHAR){ (uint32_t *) m9s589, 6 }), err));
+    bool m9t8 = (!Text_Eq (curRetTy, ((m9_sl_CHAR){ (uint32_t *) m9s668, 6 }), err));
     if (err->exc) goto L_ret;
     if (m9t8) {
-      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s590, 36 }), err);
+      Sem_ErrN (st, ctx, ((m9_sl_CHAR){ (uint32_t *) m9s669, 36 }), err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -12093,6 +14304,232 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
+}
+
+static bool Sem_EndsSeq (Ast_Node * k, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  { Ast_Node * n = k;
+  if (n != NULL) {
+    { int64_t m9t1to;
+    i = INT64_C(0);
+    m9t1to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t1to; i += 1) {
+      { Ast_Node * st = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (st != NULL) {
+        bool m9t2 = Sem_EndsStmt (st, err);
+        if (err->exc) goto L_ret;
+        if (m9t2) {
+          err->res = m9res;
+          m9ret = true;
+          goto L_ret;
+        }
+      } }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_HasExit (Ast_Node * k, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  { Ast_Node * n = k;
+  if (n != NULL) {
+    if ((n->kind == Ast_NExit)) {
+      err->res = m9res;
+      m9ret = true;
+      goto L_ret;
+    }
+    if ((n->kind == Ast_NLoop)) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+    { int64_t m9t1to;
+    i = INT64_C(0);
+    m9t1to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t1to; i += 1) {
+      bool m9t2 = Sem_HasExit ((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err)), err);
+      if (err->exc) goto L_ret;
+      if (m9t2) {
+        err->res = m9res;
+        m9ret = true;
+        goto L_ret;
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_EndsStmt (Ast_Node * n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  bool hasElse = false; (void) hasElse;
+  { __typeof__(n->kind) m9t1 = n->kind;
+  switch (m9t1) {
+  case INT64_C(53):
+  case INT64_C(54):
+  {
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  } break;
+  case INT64_C(41):
+  {
+    bool m9t2 = (!Sem_EndsSeq ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err)), err));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+    hasElse = false;
+    { int64_t m9t3to;
+    i = INT64_C(2);
+    m9t3to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t3to; i += 1) {
+      { Ast_Node * e = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (e != NULL) {
+        if ((e->kind == Ast_NElsif)) {
+          bool m9t4 = (!Sem_EndsSeq ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err)), err));
+          if (err->exc) goto L_ret;
+          if (m9t4) {
+            err->res = m9res;
+            m9ret = false;
+            goto L_ret;
+          }
+        } else {
+          if ((e->kind == Ast_NElse)) {
+            hasElse = true;
+            bool m9t5 = (!Sem_EndsSeq ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err));
+            if (err->exc) goto L_ret;
+            if (m9t5) {
+              err->res = m9res;
+              m9ret = false;
+              goto L_ret;
+            }
+        } }
+      } }
+    } }
+    err->res = m9res;
+    m9ret = hasElse;
+    goto L_ret;
+  } break;
+  case INT64_C(48):
+  {
+    { int64_t m9t6to;
+    i = INT64_C(1);
+    m9t6to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t6to; i += 1) {
+      { Ast_Node * arm = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (arm != NULL) {
+        if ((arm->kind == Ast_NCaseArm)) {
+          bool m9t7 = (!Sem_EndsSeq ((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err)), err));
+          if (err->exc) goto L_ret;
+          if (m9t7) {
+            err->res = m9res;
+            m9ret = false;
+            goto L_ret;
+          }
+        } else {
+          if ((arm->kind == Ast_NElse)) {
+            bool m9t8 = (!Sem_EndsSeq ((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err)), err));
+            if (err->exc) goto L_ret;
+            if (m9t8) {
+              err->res = m9res;
+              m9ret = false;
+              goto L_ret;
+            }
+        } }
+      } }
+    } }
+    err->res = m9res;
+    m9ret = (n->nkids > INT64_C(1));
+    goto L_ret;
+  } break;
+  case INT64_C(46):
+  {
+    err->res = m9res;
+    m9ret = (!Sem_HasExit ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err));
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  } break;
+  case INT64_C(21):
+  {
+    bool m9t9 = (!Sem_EndsSeq ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err));
+    if (err->exc) goto L_ret;
+    if (m9t9) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+    { int64_t m9t10to;
+    i = INT64_C(1);
+    m9t10to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t10to; i += 1) {
+      { Ast_Node * h = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (h != NULL) {
+        if ((h->kind == Ast_NHandler)) {
+          bool m9t11 = (!Sem_EndsSeq ((*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err)), err));
+          if (err->exc) goto L_ret;
+          if (m9t11) {
+            err->res = m9res;
+            m9ret = false;
+            goto L_ret;
+          }
+        }
+      } }
+    } }
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  } break;
+  default: {
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+  } break;
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
 }
 
 static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
@@ -12138,12 +14575,14 @@ static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_st
     svConsts = nconsts;
     Sem_AddConstsOf (body, ctx, err);
     if (err->exc) goto L_ret;
-    curRetTy = ((m9_sl_CHAR){ (uint32_t *) m9s591, 6 });
+    curRetTy = ((m9_sl_CHAR){ (uint32_t *) m9s670, 6 });
     { Ast_Node * rt = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rt != NULL) {
-      curRetTy = Sem_CanonT ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(curRetTy) m9v = Sem_CanonT ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
+        if (err->exc) goto L_ret;
+        curRetTy = m9v;
+      }
     } }
     Sem_OwnClear (err);
     if (err->exc) goto L_ret;
@@ -12161,14 +14600,38 @@ static void Sem_CheckProcBody (Ast_Node * u, Ast_Node * d, m9_sl_CHAR ctx, m9_st
     { Ast_Node * at = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(3), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (at != NULL) {
-      bool m9t2 = Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s592, 4 }), err);
+      bool m9t2 = Text_Eq (at->a, ((m9_sl_CHAR){ (uint32_t *) m9s671, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t2) {
         curPure = true;
       }
     } }
-    boundMon = Sem_BoundMonitorOf (d, err);
+    { __typeof__(boundMon) m9v = Sem_BoundMonitorOf (d, err);
+      if (err->exc) goto L_ret;
+      boundMon = m9v;
+    }
+    { Ast_Node * rtf = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
+    if (rtf != NULL) {
+      { Ast_Node * blk0 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (blk0 != NULL) {
+        bool m9t3 = (!Sem_EndsStmt (blk0, err));
+        if (err->exc) goto L_ret;
+        if (m9t3) {
+          Sem_ErrN (d, ctx, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s672, 47 }), d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s673, 26 }), err), err);
+          if (err->exc) goto L_ret;
+        }
+      } }
+    } }
+    if ((nAgg > INT64_C(0))) {
+      { Ast_Node * blk1 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (blk1 != NULL) {
+        Sem_AggWalk (blk1, Ast_NProcBody, ctx, err);
+        if (err->exc) goto L_ret;
+      } }
+    }
     Sem_WalkStmt ((*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err)), ctx, err);
     if (err->exc) goto L_ret;
     Sem_FlushPend (ctx, err);
@@ -12221,15 +14684,20 @@ static void Sem_RaisedAdd (m9_sl_CHAR nm, m9_sl_CHAR origin, m9_state *err)
     }
   } }
   if ((nraised == (raised).len)) {
-    nb = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_mul_i64 (INT64_C(2), (raised).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Sem_Binding, Sem_Binding, &(pool), m9_mul_i64 (INT64_C(2), (raised).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (nraised, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t3to; i += 1) {
-      (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err))) m9v = (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err));
+        if (err->exc) goto L_ret;
+        (*(Sem_Binding *) m9_at (nb.p, i, nb.len, sizeof (Sem_Binding), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     raised = nb;
   }
@@ -12239,8 +14707,10 @@ static void Sem_RaisedAdd (m9_sl_CHAR nm, m9_sl_CHAR origin, m9_state *err)
   if (err->exc) goto L_ret;
   (*(Sem_Binding *) m9_at (raised.p, nraised, raised.len, sizeof (Sem_Binding), err)).ty = NULL;
   if (err->exc) goto L_ret;
-  nraised = m9_add_i64 (nraised, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nraised) m9v = m9_add_i64 (nraised, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nraised = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -12256,22 +14726,29 @@ static void Sem_HandledAdd (m9_sl_CHAR nm, m9_state *err)
   m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if ((nhandled == (handled).len)) {
-    nb = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (handled).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (handled).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nhandled, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (handled.p, i, handled.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (handled.p, i, handled.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     handled = nb;
   }
   (*(m9_sl_CHAR *) m9_at (handled.p, nhandled, handled.len, sizeof (m9_sl_CHAR), err)) = nm;
   if (err->exc) goto L_ret;
-  nhandled = m9_add_i64 (nhandled, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nhandled) m9v = m9_add_i64 (nhandled, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nhandled = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -12316,7 +14793,7 @@ static bool Sem_IsUnchecked (m9_sl_CHAR nm, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s593, 8 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s594, 10 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s595, 11 }), err));
+  m9ret = ((Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s674, 8 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s675, 10 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s676, 11 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -12333,7 +14810,7 @@ static bool Sem_IsConvVR (m9_sl_CHAR nm, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (((((((((Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s596, 2 }), err) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s597, 3 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s598, 3 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s599, 3 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s600, 2 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s601, 3 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s602, 3 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s603, 3 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s604, 4 }), err)) || Text_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s605, 3 }), err));
+  m9ret = Text_OneOf (nm, ((m9_sl_m9_sl_CHAR){ ((*ConvVR)).v, INT64_C(10) }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -12349,7 +14826,7 @@ static bool Sem_TotalWidening (m9_sl_CHAR name, m9_sl_CHAR argTy, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = (!Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s606, 3 }), err));
+  bool m9t1 = (!Text_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s677, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
@@ -12357,7 +14834,7 @@ static bool Sem_TotalWidening (m9_sl_CHAR name, m9_sl_CHAR argTy, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((((((((Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s607, 5 }), err) || Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s608, 8 }), err)) || Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s609, 4 }), err)) || Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s610, 2 }), err)) || Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s611, 3 }), err)) || Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s612, 3 }), err)) || Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s613, 2 }), err)) || Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s614, 3 }), err)) || Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s615, 3 }), err));
+  m9ret = Text_OneOf (argTy, ((m9_sl_m9_sl_CHAR){ ((*WidensTo64)).v, INT64_C(9) }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -12440,8 +14917,10 @@ static m9_sl_CHAR Sem_ArgCanon (Ast_Node * k, m9_sl_CHAR ctx, m9_state *err)
       { Ast_Node * cd = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (cd != NULL) {
-        pr = Sem_LookupProc (Sem_DesigName (cd, err), &(found), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(pr) m9v = Sem_LookupProc (Sem_DesigName (cd, err), &(found), err);
+          if (err->exc) goto L_ret;
+          pr = m9v;
+        }
         if (found) {
           { Ast_Node * pn = pr.node;
           if (pn != NULL) {
@@ -12483,13 +14962,17 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
   int64_t nf32 = 0; (void) nf32;
   int64_t nf64 = 0; (void) nf64;
   int64_t si = 0; (void) si;
-  name = Sem_DesigName (dn, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(name) m9v = Sem_DesigName (dn, err);
+    if (err->exc) goto L_ret;
+    name = m9v;
+  }
   { Ast_Node * alc = argl;
   if (alc != NULL) {
     if ((alc->nkids == INT64_C(1))) {
-      name = Sem_ScalarAlias (name, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(name) m9v = Sem_ScalarAlias (name, err);
+        if (err->exc) goto L_ret;
+        name = m9v;
+      }
     }
     if ((alc->nkids >= INT64_C(1))) {
       nf32 = INT64_C(0);
@@ -12499,23 +14982,31 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
       m9t1to = m9_sub_i64 (alc->nkids, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; jj <= m9t1to; jj += 1) {
-        argTy = Sem_ArgCanon ((*(Ast_Node * *) m9_at (alc->kids.p, jj, alc->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-        if (err->exc) goto L_ret;
-        bool m9t2 = Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s616, 3 }), err);
+        { __typeof__(argTy) m9v = Sem_ArgCanon ((*(Ast_Node * *) m9_at (alc->kids.p, jj, alc->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+          if (err->exc) goto L_ret;
+          argTy = m9v;
+        }
+        bool m9t2 = Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s678, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t2) {
-          nf32 = m9_add_i64 (nf32, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          { __typeof__(nf32) m9v = m9_add_i64 (nf32, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            nf32 = m9v;
+          }
         }
-        bool m9t3 = Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s617, 3 }), err);
+        bool m9t3 = Text_Eq (argTy, ((m9_sl_CHAR){ (uint32_t *) m9s679, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t3) {
-          nf64 = m9_add_i64 (nf64, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          { __typeof__(nf64) m9v = m9_add_i64 (nf64, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            nf64 = m9v;
+          }
         }
       } }
-      name = Sem_WidthTwin (name, ((nf32 > INT64_C(0)) && (nf64 == INT64_C(0))), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(name) m9v = Sem_WidthTwin (name, ((nf32 > INT64_C(0)) && (nf64 == INT64_C(0))), err);
+        if (err->exc) goto L_ret;
+        name = m9v;
+      }
     }
   } }
   bool m9t4 = Sem_IsConvVR (name, err);
@@ -12525,14 +15016,16 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
     { Ast_Node * al = argl;
     if (al != NULL) {
       if ((al->nkids > INT64_C(0))) {
-        argTy = Sem_ArgCanon ((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err)), ctx, err);
-        if (err->exc) goto L_ret;
+        { __typeof__(argTy) m9v = Sem_ArgCanon ((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err)), ctx, err);
+          if (err->exc) goto L_ret;
+          argTy = m9v;
+        }
       }
     } }
     bool m9t5 = (!Sem_TotalWidening (name, argTy, err));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s618, 10 }), Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s619, 11 }), err), err);
+      Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s680, 10 }), Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s681, 11 }), err), err);
       if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -12540,11 +15033,13 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
   bool m9t6 = ((Sem_EnumConvType (name, err)).len > INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t6) {
-    Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s620, 10 }), Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s621, 11 }), err), err);
+    Sem_RaisedAdd (((m9_sl_CHAR){ (uint32_t *) m9s682, 10 }), Sem_Cat (name, ((m9_sl_CHAR){ (uint32_t *) m9s683, 11 }), err), err);
     if (err->exc) goto L_ret;
   }
-  si = Sem_ScopeFind (name, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(si) m9v = Sem_ScopeFind (name, err);
+    if (err->exc) goto L_ret;
+    si = m9v;
+  }
   if ((si >= INT64_C(0))) {
     { Ast_Node * ptn = Sem_ResolveType ((*(Sem_Binding *) m9_at (scope.p, si, scope.len, sizeof (Sem_Binding), err)).ty, err);
     if (err->exc) goto L_ret;
@@ -12562,10 +15057,10 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
             if (err->exc) goto L_ret;
             if (q != NULL) {
               if (((q->b).len > INT64_C(0))) {
-                Sem_RaisedAdd (q->b, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s622, 8 }), name, err), err);
+                Sem_RaisedAdd (q->b, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s684, 8 }), name, err), err);
                 if (err->exc) goto L_ret;
               } else {
-                Sem_RaisedAdd (q->a, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s623, 8 }), name, err), err);
+                Sem_RaisedAdd (q->a, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s685, 8 }), name, err), err);
                 if (err->exc) goto L_ret;
               }
             } }
@@ -12575,8 +15070,10 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
       }
     } }
   }
-  pr = Sem_LookupProc (name, &(found), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(pr) m9v = Sem_LookupProc (name, &(found), err);
+    if (err->exc) goto L_ret;
+    pr = m9v;
+  }
   if ((!found)) {
     goto L_ret;
   }
@@ -12587,7 +15084,7 @@ static void Sem_NoteCall (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR ctx, m9_sta
   m9t8to = m9_sub_i64 ((pr.raises).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; j <= m9t8to; j += 1) {
-    Sem_RaisedAdd ((*(m9_sl_CHAR *) m9_at (pr.raises.p, j, pr.raises.len, sizeof (m9_sl_CHAR), err)), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s624, 8 }), name, err), err);
+    Sem_RaisedAdd ((*(m9_sl_CHAR *) m9_at (pr.raises.p, j, pr.raises.len, sizeof (m9_sl_CHAR), err)), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s686, 8 }), name, err), err);
     if (err->exc) goto L_ret;
   } }
 L_ret: ;
@@ -12629,7 +15126,7 @@ static void Sem_ReportUnhandled (Ast_Node * body, m9_sl_CHAR ctx, m9_sl_m9_sl_CH
           }
         } }
         if ((!ok)) {
-          Sem_ErrN (body, ctx, Sem_Cat (Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s625, 17 }), (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s626, 6 }), err), (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).mode, err), err);
+          Sem_ErrN (body, ctx, Sem_Cat (Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s687, 17 }), (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).name, err), ((m9_sl_CHAR){ (uint32_t *) m9s688, 6 }), err), (*(Sem_Binding *) m9_at (raised.p, i, raised.len, sizeof (Sem_Binding), err)).mode, err), err);
           if (err->exc) goto L_ret;
         }
       }
@@ -12658,13 +15155,15 @@ static void Sem_ReportImpureCalls (Ast_Node * body, m9_sl_CHAR ctx, m9_state *er
   m9t1to = m9_sub_i64 (ncalls, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    pr = Sem_LookupProc ((*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err)), &(found), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(pr) m9v = Sem_LookupProc ((*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err)), &(found), err);
+      if (err->exc) goto L_ret;
+      pr = m9v;
+    }
     if (found) {
-      bool m9t2 = (!Text_Eq (pr.attrib, ((m9_sl_CHAR){ (uint32_t *) m9s627, 4 }), err));
+      bool m9t2 = (!Text_Eq (pr.attrib, ((m9_sl_CHAR){ (uint32_t *) m9s689, 4 }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
-        Sem_ErrN (body, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s628, 21 }), (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s629, 29 }), err), err);
+        Sem_ErrN (body, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s690, 21 }), (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s691, 29 }), err), err);
         if (err->exc) goto L_ret;
       }
     }
@@ -12722,22 +15221,29 @@ static void Sem_CallsAdd (m9_sl_CHAR nm, m9_state *err)
     }
   } }
   if ((ncalls == (calls).len)) {
-    nb = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (calls).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (calls).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t3to;
     i = INT64_C(0);
     m9t3to = m9_sub_i64 (ncalls, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t3to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     calls = nb;
   }
   (*(m9_sl_CHAR *) m9_at (calls.p, ncalls, calls.len, sizeof (m9_sl_CHAR), err)) = nm;
   if (err->exc) goto L_ret;
-  ncalls = m9_add_i64 (ncalls, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(ncalls) m9v = m9_add_i64 (ncalls, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    ncalls = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -12754,34 +15260,46 @@ static void Sem_GraphSet (m9_sl_CHAR caller, m9_state *err)
   m9_sl_m9_sl_CHAR cs = {0}; (void) cs;
   int64_t i = 0; (void) i;
   if ((ngraph == (graph).len)) {
-    nb = M9_POOL_SL (m9_sl_Sem_Edge, Sem_Edge, &(pool), m9_mul_i64 (INT64_C(2), (graph).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_Sem_Edge, Sem_Edge, &(pool), m9_mul_i64 (INT64_C(2), (graph).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (ngraph, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(Sem_Edge *) m9_at (nb.p, i, nb.len, sizeof (Sem_Edge), err)) = (*(Sem_Edge *) m9_at (graph.p, i, graph.len, sizeof (Sem_Edge), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(Sem_Edge *) m9_at (nb.p, i, nb.len, sizeof (Sem_Edge), err))) m9v = (*(Sem_Edge *) m9_at (graph.p, i, graph.len, sizeof (Sem_Edge), err));
+        if (err->exc) goto L_ret;
+        (*(Sem_Edge *) m9_at (nb.p, i, nb.len, sizeof (Sem_Edge), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     graph = nb;
   }
-  cs = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), ncalls, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(cs) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), ncalls, err);
+    if (err->exc) goto L_ret;
+    cs = m9v;
+  }
   { int64_t m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (ncalls, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    (*(m9_sl_CHAR *) m9_at (cs.p, i, cs.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(m9_sl_CHAR *) m9_at (cs.p, i, cs.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (calls.p, i, calls.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+      (*(m9_sl_CHAR *) m9_at (cs.p, i, cs.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   (*(Sem_Edge *) m9_at (graph.p, ngraph, graph.len, sizeof (Sem_Edge), err)).caller = caller;
   if (err->exc) goto L_ret;
   (*(Sem_Edge *) m9_at (graph.p, ngraph, graph.len, sizeof (Sem_Edge), err)).callees = cs;
   if (err->exc) goto L_ret;
-  ngraph = m9_add_i64 (ngraph, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(ngraph) m9v = m9_add_i64 (ngraph, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    ngraph = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -12828,22 +15346,29 @@ static void Sem_RootAdd (m9_sl_CHAR nm, m9_state *err)
   m9_sl_m9_sl_CHAR nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
   if ((nroots == (roots).len)) {
-    nb = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (roots).len, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_mul_i64 (INT64_C(2), (roots).len, err), err);
+      if (err->exc) goto L_ret;
+      nb = m9v;
+    }
     { int64_t m9t1to;
     i = INT64_C(0);
     m9t1to = m9_sub_i64 (nroots, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t1to; i += 1) {
-      (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (roots.p, i, roots.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (roots.p, i, roots.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (nb.p, i, nb.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
     } }
     roots = nb;
   }
   (*(m9_sl_CHAR *) m9_at (roots.p, nroots, roots.len, sizeof (m9_sl_CHAR), err)) = nm;
   if (err->exc) goto L_ret;
-  nroots = m9_add_i64 (nroots, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nroots) m9v = m9_add_i64 (nroots, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    nroots = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -12873,29 +15398,43 @@ static void Sem_CheckThreadChains (m9_state *err)
   m9t1to = m9_sub_i64 (nroots, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    work = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(64), err);
-    if (err->exc) goto L_ret;
-    seen = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(64), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(work) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(64), err);
+      if (err->exc) goto L_ret;
+      work = m9v;
+    }
+    { __typeof__(seen) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(64), err);
+      if (err->exc) goto L_ret;
+      seen = m9v;
+    }
     nwork = INT64_C(0);
     nseen = INT64_C(0);
-    (*(m9_sl_CHAR *) m9_at (work.p, INT64_C(0), work.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (roots.p, i, roots.len, sizeof (m9_sl_CHAR), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(m9_sl_CHAR *) m9_at (work.p, INT64_C(0), work.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (roots.p, i, roots.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+      (*(m9_sl_CHAR *) m9_at (work.p, INT64_C(0), work.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
     nwork = INT64_C(1);
     for (;;) {
       if (!((nwork > INT64_C(0)))) break;
-      c = (*(m9_sl_CHAR *) m9_at (work.p, INT64_C(0), work.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
+      { __typeof__(c) m9v = (*(m9_sl_CHAR *) m9_at (work.p, INT64_C(0), work.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        c = m9v;
+      }
       { int64_t m9t2to;
       j = INT64_C(0);
       m9t2to = m9_sub_i64 (nwork, INT64_C(2), err);
       if (err->exc) goto L_ret;
       for (; j <= m9t2to; j += 1) {
-        (*(m9_sl_CHAR *) m9_at (work.p, j, work.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (work.p, m9_add_i64 (j, INT64_C(1), err), work.len, sizeof (m9_sl_CHAR), err));
-        if (err->exc) goto L_ret;
+        { __typeof__((*(m9_sl_CHAR *) m9_at (work.p, j, work.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (work.p, m9_add_i64 (j, INT64_C(1), err), work.len, sizeof (m9_sl_CHAR), err));
+          if (err->exc) goto L_ret;
+          (*(m9_sl_CHAR *) m9_at (work.p, j, work.len, sizeof (m9_sl_CHAR), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
       } }
-      nwork = m9_sub_i64 (nwork, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(nwork) m9v = m9_sub_i64 (nwork, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        nwork = m9v;
+      }
       already = false;
       { int64_t m9t3to;
       j = INT64_C(0);
@@ -12912,24 +15451,32 @@ static void Sem_CheckThreadChains (m9_state *err)
         if ((nseen < (seen).len)) {
           (*(m9_sl_CHAR *) m9_at (seen.p, nseen, seen.len, sizeof (m9_sl_CHAR), err)) = c;
           if (err->exc) goto L_ret;
-          nseen = m9_add_i64 (nseen, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          { __typeof__(nseen) m9v = m9_add_i64 (nseen, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            nseen = m9v;
+          }
         }
-        pr = Sem_LookupProc (c, &(found), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(pr) m9v = Sem_LookupProc (c, &(found), err);
+          if (err->exc) goto L_ret;
+          pr = m9v;
+        }
         if (found) {
-          bool m9t5 = Text_Eq (pr.attrib, ((m9_sl_CHAR){ (uint32_t *) m9s630, 6 }), err);
+          bool m9t5 = Text_Eq (pr.attrib, ((m9_sl_CHAR){ (uint32_t *) m9s692, 6 }), err);
           if (err->exc) goto L_ret;
           if (m9t5) {
-            Sem_Diag (&(errs), &(nerrs), INT64_C(0), INT64_C(0), (*(m9_sl_CHAR *) m9_at (roots.p, i, roots.len, sizeof (m9_sl_CHAR), err)), Sem_Cat (Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s631, 45 }), (*(m9_sl_CHAR *) m9_at (roots.p, i, roots.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s632, 9 }), err), Sem_Cat (c, ((m9_sl_CHAR){ (uint32_t *) m9s633, 1 }), err), err), err);
+            Sem_Diag (&(errs), &(nerrs), INT64_C(0), INT64_C(0), (*(m9_sl_CHAR *) m9_at (roots.p, i, roots.len, sizeof (m9_sl_CHAR), err)), Sem_Cat (Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s693, 45 }), (*(m9_sl_CHAR *) m9_at (roots.p, i, roots.len, sizeof (m9_sl_CHAR), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s694, 9 }), err), Sem_Cat (c, ((m9_sl_CHAR){ (uint32_t *) m9s695, 1 }), err), err), err);
             if (err->exc) goto L_ret;
           }
         }
-        gi = Sem_GraphFind (Sem_Qualify (curMod, c, err), err);
-        if (err->exc) goto L_ret;
-        if ((gi < INT64_C(0))) {
-          gi = Sem_GraphFind (c, err);
+        { __typeof__(gi) m9v = Sem_GraphFind (Sem_Qualify (curMod, c, err), err);
           if (err->exc) goto L_ret;
+          gi = m9v;
+        }
+        if ((gi < INT64_C(0))) {
+          { __typeof__(gi) m9v = Sem_GraphFind (c, err);
+            if (err->exc) goto L_ret;
+            gi = m9v;
+          }
         }
         if ((gi >= INT64_C(0))) {
           { int64_t m9t6to;
@@ -12938,15 +15485,629 @@ static void Sem_CheckThreadChains (m9_state *err)
           if (err->exc) goto L_ret;
           for (; k <= m9t6to; k += 1) {
             if ((nwork < (work).len)) {
-              (*(m9_sl_CHAR *) m9_at (work.p, nwork, work.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at ((*(Sem_Edge *) m9_at (graph.p, gi, graph.len, sizeof (Sem_Edge), err)).callees.p, k, (*(Sem_Edge *) m9_at (graph.p, gi, graph.len, sizeof (Sem_Edge), err)).callees.len, sizeof (m9_sl_CHAR), err));
-              if (err->exc) goto L_ret;
-              nwork = m9_add_i64 (nwork, INT64_C(1), err);
-              if (err->exc) goto L_ret;
+              { __typeof__((*(m9_sl_CHAR *) m9_at (work.p, nwork, work.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*(Sem_Edge *) m9_at (graph.p, gi, graph.len, sizeof (Sem_Edge), err)).callees.p, k, (*(Sem_Edge *) m9_at (graph.p, gi, graph.len, sizeof (Sem_Edge), err)).callees.len, sizeof (m9_sl_CHAR), err));
+                if (err->exc) goto L_ret;
+                (*(m9_sl_CHAR *) m9_at (work.p, nwork, work.len, sizeof (m9_sl_CHAR), err)) = m9v;
+                if (err->exc) goto L_ret;
+              }
+              { __typeof__(nwork) m9v = m9_add_i64 (nwork, INT64_C(1), err);
+                if (err->exc) goto L_ret;
+                nwork = m9v;
+              }
             }
           } }
         }
       }
     }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static bool Sem_ModImports (Ast_Node * root, m9_sl_CHAR me, m9_sl_CHAR name, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  int64_t j = 0; (void) j;
+  int64_t k = 0; (void) k;
+  bool m9t1 = Text_Eq (me, name, err);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  }
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 (root->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    { Ast_Node * u = (*(Ast_Node * *) m9_at (root->kids.p, i, root->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (u != NULL) {
+      bool m9t3 = Text_Eq (u->a, me, err);
+      if (err->exc) goto L_ret;
+      if (m9t3) {
+        { int64_t m9t4to;
+        j = INT64_C(0);
+        m9t4to = m9_sub_i64 (u->nkids, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        for (; j <= m9t4to; j += 1) {
+          { Ast_Node * imp = (*(Ast_Node * *) m9_at (u->kids.p, j, u->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          if (imp != NULL) {
+            if ((imp->kind == Ast_NFromImport)) {
+              bool m9t5 = Text_Eq (imp->a, name, err);
+              if (err->exc) goto L_ret;
+              if (m9t5) {
+                err->res = m9res;
+                m9ret = true;
+                goto L_ret;
+              }
+            } else {
+              if ((imp->kind == Ast_NImportList)) {
+                { Ast_Node * ids = (*(Ast_Node * *) m9_at (imp->kids.p, INT64_C(0), imp->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+                if (ids != NULL) {
+                  { int64_t m9t6to;
+                  k = INT64_C(0);
+                  m9t6to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
+                  if (err->exc) goto L_ret;
+                  for (; k <= m9t6to; k += 1) {
+                    { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, k, ids->kids.len, sizeof (Ast_Node *), err));
+                    if (err->exc) goto L_ret;
+                    if (id != NULL) {
+                      bool m9t7 = Text_Eq (id->a, name, err);
+                      if (err->exc) goto L_ret;
+                      if (m9t7) {
+                        err->res = m9res;
+                        m9ret = true;
+                        goto L_ret;
+                      }
+                    } }
+                  } }
+                } }
+            } }
+          } }
+        } }
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_DeclaresName (Ast_Node * k, m9_sl_CHAR name, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  { Ast_Node * n = k;
+  if (n != NULL) {
+    if ((((((n->kind == Ast_NIdent) || (n->kind == Ast_NIsSome)) || (n->kind == Ast_NTypeDecl)) || (n->kind == Ast_NConstDecl)) || (n->kind == Ast_NExcDecl))) {
+      bool m9t1 = Text_Eq (n->a, name, err);
+      if (err->exc) goto L_ret;
+      if (m9t1) {
+        err->res = m9res;
+        m9ret = true;
+        goto L_ret;
+      }
+    }
+    { int64_t m9t2to;
+    i = INT64_C(0);
+    m9t2to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t2to; i += 1) {
+      bool m9t3 = Sem_DeclaresName ((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err)), name, err);
+      if (err->exc) goto L_ret;
+      if (m9t3) {
+        err->res = m9res;
+        m9ret = true;
+        goto L_ret;
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Sem_NameShadowed (Ast_Node * root, m9_sl_CHAR me, Ast_Node * scope, m9_sl_CHAR name, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  int64_t j = 0; (void) j;
+  bool m9t1 = Sem_DeclaresName (scope, name, err);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = true;
+    goto L_ret;
+  }
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 (root->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    { Ast_Node * u = (*(Ast_Node * *) m9_at (root->kids.p, i, root->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (u != NULL) {
+      bool m9t3 = Text_Eq (u->a, me, err);
+      if (err->exc) goto L_ret;
+      if (m9t3) {
+        { int64_t m9t4to;
+        j = INT64_C(0);
+        m9t4to = m9_sub_i64 (u->nkids, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        for (; j <= m9t4to; j += 1) {
+          { Ast_Node * d = (*(Ast_Node * *) m9_at (u->kids.p, j, u->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          if (d != NULL) {
+            if (((((d->kind != Ast_NProcDecl) && (d->kind != Ast_NModBody)) && (d->kind != Ast_NImportList)) && (d->kind != Ast_NFromImport))) {
+              bool m9t5 = Sem_DeclaresName ((*(Ast_Node * *) m9_at (u->kids.p, j, u->kids.len, sizeof (Ast_Node *), err)), name, err);
+              if (err->exc) goto L_ret;
+              if (m9t5) {
+                err->res = m9res;
+                m9ret = true;
+                goto L_ret;
+              }
+            }
+          } }
+        } }
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Sem_ImportWalk (Ast_Node * root, Ast_Node * u, Ast_Node * scope, Ast_Node * k, m9_sl_BOOL *seen, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  int64_t m = 0; (void) m;
+  bool qualified = false; (void) qualified;
+  { Ast_Node * n = k;
+  if (n != NULL) {
+    qualified = false;
+    if ((n->kind == Ast_NQualident)) {
+      qualified = ((n->b).len > INT64_C(0));
+    } else {
+      if (((n->kind == Ast_NDesignator) && (n->nkids > INT64_C(0)))) {
+        { Ast_Node * sel = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (sel != NULL) {
+          qualified = (sel->kind == Ast_NSelField);
+        } }
+    } }
+    if (qualified) {
+      { __typeof__(m) m9v = Sem_FindMod (n->a, err);
+        if (err->exc) goto L_ret;
+        m = m9v;
+      }
+      if (((m >= INT64_C(0)) && (m < ((*seen)).len))) {
+        bool m9t1 = (!(*(bool *) m9_at ((*seen).p, m, (*seen).len, sizeof (bool), err)));
+        if (err->exc) goto L_ret;
+        if (m9t1) {
+          bool m9t2 = (!Sem_ModImports (root, u->a, n->a, err));
+          if (err->exc) goto L_ret;
+          if (m9t2) {
+            bool m9t3 = (!Sem_NameShadowed (root, u->a, scope, n->a, err));
+            if (err->exc) goto L_ret;
+            if (m9t3) {
+              (*(bool *) m9_at ((*seen).p, m, (*seen).len, sizeof (bool), err)) = true;
+              if (err->exc) goto L_ret;
+              Sem_ErrN (n, u->a, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s696, 7 }), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s697, 41 }), err), n->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s698, 8 }), err), err);
+              if (err->exc) goto L_ret;
+            }
+          }
+        }
+      }
+    }
+    { int64_t m9t4to;
+    i = INT64_C(0);
+    m9t4to = m9_sub_i64 (n->nkids, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t4to; i += 1) {
+      if (((n->kind == Ast_NProcDecl) || (n->kind == Ast_NModBody))) {
+        Sem_ImportWalk (root, u, k, (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err)), seen, err);
+        if (err->exc) goto L_ret;
+      } else {
+        Sem_ImportWalk (root, u, scope, (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err)), seen, err);
+        if (err->exc) goto L_ret;
+      }
+    } }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*seen).p);
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_CheckImports (Ast_Node * root, Ast_Node * u, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_BOOL seen = {0}; (void) seen;
+  int64_t i = 0; (void) i;
+  { __typeof__(seen) m9v = M9_POOL_SL (m9_sl_BOOL, bool, err->res, nmods, err);
+    if (err->exc) goto L_ret;
+    seen = m9v;
+  }
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (u->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    Sem_ImportWalk (root, u, NULL, (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err)), &(seen), err);
+    if (err->exc) goto L_ret;
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_DeclOnce (Ast_Node * id, int64_t what, m9_sl_CHAR me, m9_sl_CHAR where, m9_sl_m9_sl_CHAR *names, m9_sl_I64 *lines, m9_sl_BOOL *open, int64_t *n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  m9_sl_m9_sl_CHAR ns = {0}; (void) ns;
+  m9_sl_I64 ls = {0}; (void) ls;
+  m9_sl_BOOL os = {0}; (void) os;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((*n), INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = Text_Eq ((*(m9_sl_CHAR *) m9_at ((*names).p, i, (*names).len, sizeof (m9_sl_CHAR), err)), id->a, err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      bool m9t3 = ((*(bool *) m9_at ((*open).p, i, (*open).len, sizeof (bool), err)) && (what == Sem_DeclBody));
+      if (err->exc) goto L_ret;
+      if (m9t3) {
+        (*(bool *) m9_at ((*open).p, i, (*open).len, sizeof (bool), err)) = false;
+        if (err->exc) goto L_ret;
+      } else {
+        Sem_ErrN (id, me, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, id->a, ((m9_sl_CHAR){ (uint32_t *) m9s699, 22 }), err), where, err), ((m9_sl_CHAR){ (uint32_t *) m9s700, 23 }), err), Sem_ItoA ((*(int64_t *) m9_at ((*lines).p, i, (*lines).len, sizeof (int64_t), err)), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s701, 8 }), err), err);
+        if (err->exc) goto L_ret;
+      }
+      goto L_ret;
+    }
+  } }
+  if (((*n) == ((*names)).len)) {
+    { __typeof__(ns) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (*n), err), INT64_C(16), err), err);
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
+    { __typeof__(ls) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (*n), err), INT64_C(16), err), err);
+      if (err->exc) goto L_ret;
+      ls = m9v;
+    }
+    { __typeof__(os) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(pool), m9_add_i64 (m9_mul_i64 (INT64_C(2), (*n), err), INT64_C(16), err), err);
+      if (err->exc) goto L_ret;
+      os = m9v;
+    }
+    { int64_t m9t4to;
+    i = INT64_C(0);
+    m9t4to = m9_sub_i64 ((*n), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; i <= m9t4to; i += 1) {
+      { __typeof__((*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at ((*names).p, i, (*names).len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (ns.p, i, ns.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(int64_t *) m9_at (ls.p, i, ls.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*lines).p, i, (*lines).len, sizeof (int64_t), err));
+        if (err->exc) goto L_ret;
+        (*(int64_t *) m9_at (ls.p, i, ls.len, sizeof (int64_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(bool *) m9_at (os.p, i, os.len, sizeof (bool), err))) m9v = (*(bool *) m9_at ((*open).p, i, (*open).len, sizeof (bool), err));
+        if (err->exc) goto L_ret;
+        (*(bool *) m9_at (os.p, i, os.len, sizeof (bool), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+    } }
+    (*names) = ns;
+    (*lines) = ls;
+    (*open) = os;
+  }
+  (*(m9_sl_CHAR *) m9_at ((*names).p, (*n), (*names).len, sizeof (m9_sl_CHAR), err)) = id->a;
+  if (err->exc) goto L_ret;
+  (*(int64_t *) m9_at ((*lines).p, (*n), (*lines).len, sizeof (int64_t), err)) = id->line;
+  if (err->exc) goto L_ret;
+  (*(bool *) m9_at ((*open).p, (*n), (*open).len, sizeof (bool), err)) = (what == Sem_DeclForward);
+  if (err->exc) goto L_ret;
+  { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*n) = m9v;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*names).p);
+  m9_adopt_if (&m9frame, m9res, (*lines).p);
+  m9_adopt_if (&m9frame, m9res, (*open).p);
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_SectionNames (Ast_Node * sec, m9_sl_CHAR me, m9_sl_CHAR where, m9_sl_m9_sl_CHAR *names, m9_sl_I64 *lines, m9_sl_BOOL *open, int64_t *n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  int64_t j = 0; (void) j;
+  { Ast_Node * s = sec;
+  if (s != NULL) {
+    if ((((s->kind == Ast_NConstSection) || (s->kind == Ast_NTypeSection)) || (s->kind == Ast_NExcSection))) {
+      { int64_t m9t1to;
+      i = INT64_C(0);
+      m9t1to = m9_sub_i64 (s->nkids, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      for (; i <= m9t1to; i += 1) {
+        { Ast_Node * d = (*(Ast_Node * *) m9_at (s->kids.p, i, s->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (d != NULL) {
+          Sem_DeclOnce (d, Sem_DeclPlain, me, where, names, lines, open, n, err);
+          if (err->exc) goto L_ret;
+        } }
+      } }
+    } else {
+      if ((s->kind == Ast_NVarSection)) {
+        { int64_t m9t2to;
+        i = INT64_C(0);
+        m9t2to = m9_sub_i64 (s->nkids, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        for (; i <= m9t2to; i += 1) {
+          { Ast_Node * d = (*(Ast_Node * *) m9_at (s->kids.p, i, s->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          if (d != NULL) {
+            { Ast_Node * ids = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(0), d->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+            if (ids != NULL) {
+              { int64_t m9t3to;
+              j = INT64_C(0);
+              m9t3to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
+              if (err->exc) goto L_ret;
+              for (; j <= m9t3to; j += 1) {
+                { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, j, ids->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+                if (id != NULL) {
+                  Sem_DeclOnce (id, Sem_DeclPlain, me, where, names, lines, open, n, err);
+                  if (err->exc) goto L_ret;
+                } }
+              } }
+            } }
+          } }
+        } }
+    } }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*names).p);
+  m9_adopt_if (&m9frame, m9res, (*lines).p);
+  m9_adopt_if (&m9frame, m9res, (*open).p);
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_CheckDeclaredOnce (Ast_Node * u, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_m9_sl_CHAR names = {0}; (void) names;
+  m9_sl_I64 lines = {0}; (void) lines;
+  m9_sl_BOOL open = {0}; (void) open;
+  int64_t n = 0; (void) n;
+  int64_t i = 0; (void) i;
+  int64_t j = 0; (void) j;
+  int64_t k = 0; (void) k;
+  int64_t what = 0; (void) what;
+  m9_sl_CHAR where = {0}; (void) where;
+  { __typeof__(names) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(pool), INT64_C(64), err);
+    if (err->exc) goto L_ret;
+    names = m9v;
+  }
+  { __typeof__(lines) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(pool), INT64_C(64), err);
+    if (err->exc) goto L_ret;
+    lines = m9v;
+  }
+  { __typeof__(open) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(pool), INT64_C(64), err);
+    if (err->exc) goto L_ret;
+    open = m9v;
+  }
+  n = INT64_C(0);
+  { __typeof__(where) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s702, 7 }), u->a, err);
+    if (err->exc) goto L_ret;
+    where = m9v;
+  }
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (u->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { Ast_Node * d = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (d != NULL) {
+      if ((d->kind == Ast_NProcDecl)) {
+        what = Sem_DeclForward;
+        if ((d->nkids > INT64_C(4))) {
+          { Ast_Node * body = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(4), d->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          if (body != NULL) {
+            what = Sem_DeclBody;
+          } }
+        }
+        Sem_DeclOnce (d, what, u->a, where, &(names), &(lines), &(open), &(n), err);
+        if (err->exc) goto L_ret;
+      } else {
+        Sem_SectionNames ((*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err)), u->a, where, &(names), &(lines), &(open), &(n), err);
+        if (err->exc) goto L_ret;
+      }
+    } }
+  } }
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 (u->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    { Ast_Node * p = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (p != NULL) {
+      if ((p->kind == Ast_NProcDecl)) {
+        n = INT64_C(0);
+        { __typeof__(where) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s703, 10 }), p->a, err);
+          if (err->exc) goto L_ret;
+          where = m9v;
+        }
+        { Ast_Node * params = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(0), p->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+        if (params != NULL) {
+          { int64_t m9t3to;
+          j = INT64_C(0);
+          m9t3to = m9_sub_i64 (params->nkids, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          for (; j <= m9t3to; j += 1) {
+            { Ast_Node * pr = (*(Ast_Node * *) m9_at (params->kids.p, j, params->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+            if (pr != NULL) {
+              { Ast_Node * ids = (*(Ast_Node * *) m9_at (pr->kids.p, INT64_C(0), pr->kids.len, sizeof (Ast_Node *), err));
+              if (err->exc) goto L_ret;
+              if (ids != NULL) {
+                { int64_t m9t4to;
+                k = INT64_C(0);
+                m9t4to = m9_sub_i64 (ids->nkids, INT64_C(1), err);
+                if (err->exc) goto L_ret;
+                for (; k <= m9t4to; k += 1) {
+                  { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, k, ids->kids.len, sizeof (Ast_Node *), err));
+                  if (err->exc) goto L_ret;
+                  if (id != NULL) {
+                    Sem_DeclOnce (id, Sem_DeclPlain, u->a, where, &(names), &(lines), &(open), &(n), err);
+                    if (err->exc) goto L_ret;
+                  } }
+                } }
+              } }
+            } }
+          } }
+        } }
+        if ((p->nkids > INT64_C(4))) {
+          { Ast_Node * body = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(4), p->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          if (body != NULL) {
+            { int64_t m9t5to;
+            j = INT64_C(0);
+            m9t5to = m9_sub_i64 (body->nkids, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            for (; j <= m9t5to; j += 1) {
+              Sem_SectionNames ((*(Ast_Node * *) m9_at (body->kids.p, j, body->kids.len, sizeof (Ast_Node *), err)), u->a, where, &(names), &(lines), &(open), &(n), err);
+              if (err->exc) goto L_ret;
+            } }
+          } }
+        }
+      }
+    } }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Sem_AddDefConsts (Ast_Node * root, Ast_Node * u, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  int64_t j = 0; (void) j;
+  int64_t k = 0; (void) k;
+  bool seen = false; (void) seen;
+  m9_sl_CHAR ty = {0}; (void) ty;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (root->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { Ast_Node * d = (*(Ast_Node * *) m9_at (root->kids.p, i, root->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (d != NULL) {
+      bool m9t2 = (((d->kind == Ast_NDefinition) && ((d->b).len == INT64_C(0))) && Text_Eq (d->a, u->a, err));
+      if (err->exc) goto L_ret;
+      if (m9t2) {
+        { int64_t m9t3to;
+        j = INT64_C(0);
+        m9t3to = m9_sub_i64 (d->nkids, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        for (; j <= m9t3to; j += 1) {
+          { Ast_Node * cs = (*(Ast_Node * *) m9_at (d->kids.p, j, d->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+          if (cs != NULL) {
+            if ((cs->kind == Ast_NConstSection)) {
+              { int64_t m9t4to;
+              k = INT64_C(0);
+              m9t4to = m9_sub_i64 (cs->nkids, INT64_C(1), err);
+              if (err->exc) goto L_ret;
+              for (; k <= m9t4to; k += 1) {
+                { Ast_Node * cd = (*(Ast_Node * *) m9_at (cs->kids.p, k, cs->kids.len, sizeof (Ast_Node *), err));
+                if (err->exc) goto L_ret;
+                if (cd != NULL) {
+                  { __typeof__(ty) m9v = Sem_ConstType (cd->a, &(seen), err);
+                    if (err->exc) goto L_ret;
+                    ty = m9v;
+                  }
+                  if ((!seen)) {
+                    Sem_ConstAdd (cd->a, Sem_LitType ((*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err)), err), err);
+                    if (err->exc) goto L_ret;
+                  }
+                } }
+              } }
+            }
+          } }
+        } }
+      }
+    } }
   } }
 L_ret: ;
   err->res = m9res;

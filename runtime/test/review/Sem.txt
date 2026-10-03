@@ -1,0 +1,36 @@
+REVIEW Sem -- 248 procedures with a body, 150 of them functions; 30 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path             150
+  assignments                                   884   passed over, a type unknown: 4
+  arguments                                    3622   passed over, a type unknown: 27
+  RETURN values                                 574   passed over, a type unknown: 3
+  operands of a comparison or an operator      1026   passed over, a type unknown: 48
+  CASE labels                                    78   passed over, a type unknown: 8
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    1   pool
+  local pools                                     0
+  pool parameters                                 1   RaisesOf
+  KEPT parameters                                73   PushErr, NewMod, RaisesOf, CheckExcName, SigOf, AddType, +67 more
+  HEAP named                                      0
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                               70   mods, nmods, errs, nerrs, ledger, nledger, +64 more
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                 9
+  RAISE statements                                2
+  handlers                                        0
+  NEW in the frame                                1
+  NEW in a named pool                            97

@@ -41,6 +41,13 @@ CONST
                         kids as a ProcDecl's head: [0] NParamList,
                         [1] result type or NONE, [2] NRaises or NONE.
                         docs/proctype-plan.md, 2026-09-27 *)
+  NAggregate = 84 ;  (* [ e1, ..., en ] as the value of a CONST: the
+                        kids are the elements, in order.  Only a
+                        ConstDecl's kid is ever one -- the parser
+                        reads `[' as an aggregate nowhere else -- so
+                        `[' stays what it was in an expression, a
+                        subscript.  docs/plan-0.14.md stage 2a,
+                        2026-10-01 *)
 
 TYPE
   Kid = OPT PTR Node ;               (* named so NEW can say it;

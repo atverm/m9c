@@ -68,5 +68,6 @@ m9_sl_m9_sl_CHAR System_Args (m9_pool *pool, m9_state *err);
 bool System_Flag (m9_sl_CHAR name, m9_state *err);
 m9_sl_CHAR System_Value (m9_sl_CHAR name, m9_sl_CHAR dflt, m9_state *err);
 m9_sl_m9_sl_CHAR System_Positional (m9_pool *pool, m9_state *err);
+m9_sl_m9_sl_CHAR System_Glob (m9_sl_CHAR pattern, m9_state *err);
 
 #endif

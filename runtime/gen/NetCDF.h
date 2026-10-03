@@ -28,7 +28,6 @@ extern const m9_exc NetCDF_Error;
 #define NetCDF_ModeClobber INT64_C(0)
 #define NetCDF_ModeNoClobber INT64_C(4)
 #define NetCDF_ModeNetcdf4 INT64_C(4096)
-#define NetCDF_ModeNetcdf4 INT64_C(4096)
 #define NetCDF_MaxName INT64_C(1024)
 #define NetCDF_MaxRank INT64_C(8)
 #define NetCDF_MaxAtt INT64_C(8192)

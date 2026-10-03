@@ -111,8 +111,10 @@ static void Narrow_AddI32 (m9_state *err)
   int32_t a = 0; (void) a;
   int32_t b = 0; (void) b;
   a = INT64_C(2147483647);
-  b = m9_add_i32 (a, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_add_i32 (a, INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s2, 11 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -139,10 +141,14 @@ static void Narrow_SubI32 (m9_state *err)
   err->res = &m9frame;
   int32_t a = 0; (void) a;
   int32_t b = 0; (void) b;
-  a = m9_neg_i64 (INT64_C(2147483648), err);
-  if (err->exc) goto L_hdl_m9t1;
-  b = m9_sub_i32 (a, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(a) m9v = m9_neg_i64 (INT64_C(2147483648), err);
+    if (err->exc) goto L_hdl_m9t1;
+    a = m9v;
+  }
+  { __typeof__(b) m9v = m9_sub_i32 (a, INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s4, 11 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -170,8 +176,10 @@ static void Narrow_MulI16 (m9_state *err)
   int16_t a = 0; (void) a;
   int16_t b = 0; (void) b;
   a = INT64_C(30000);
-  b = m9_mul_i16 (a, INT64_C(2), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_mul_i16 (a, INT64_C(2), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s6, 13 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -199,8 +207,10 @@ static void Narrow_AddI8 (m9_state *err)
   int8_t a = 0; (void) a;
   int8_t b = 0; (void) b;
   a = INT64_C(127);
-  b = m9_add_i8 (a, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_add_i8 (a, INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s8, 10 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -227,10 +237,14 @@ static void Narrow_NegI8 (m9_state *err)
   err->res = &m9frame;
   int8_t a = 0; (void) a;
   int8_t b = 0; (void) b;
-  a = m9_neg_i64 (INT64_C(128), err);
-  if (err->exc) goto L_hdl_m9t1;
-  b = m9_neg_i8 (a, err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(a) m9v = m9_neg_i64 (INT64_C(128), err);
+    if (err->exc) goto L_hdl_m9t1;
+    a = m9v;
+  }
+  { __typeof__(b) m9v = m9_neg_i8 (a, err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s10, 10 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -257,10 +271,14 @@ static void Narrow_DivI32 (m9_state *err)
   err->res = &m9frame;
   int32_t a = 0; (void) a;
   int32_t b = 0; (void) b;
-  a = m9_neg_i64 (INT64_C(2147483648), err);
-  if (err->exc) goto L_hdl_m9t1;
-  b = m9_div_i32 (a, (m9_neg_i64 (INT64_C(1), err)), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(a) m9v = m9_neg_i64 (INT64_C(2147483648), err);
+    if (err->exc) goto L_hdl_m9t1;
+    a = m9v;
+  }
+  { __typeof__(b) m9v = m9_div_i32 (a, (m9_neg_i64 (INT64_C(1), err)), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s12, 14 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -288,8 +306,10 @@ static void Narrow_SubU8 (m9_state *err)
   uint8_t a = 0; (void) a;
   uint8_t b = 0; (void) b;
   a = INT64_C(0);
-  b = m9_sub_u8 (a, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_sub_u8 (a, INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s14, 8 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -317,8 +337,10 @@ static void Narrow_AddU16 (m9_state *err)
   uint16_t a = 0; (void) a;
   uint16_t b = 0; (void) b;
   a = INT64_C(65535);
-  b = m9_add_u16 (a, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_add_u16 (a, INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s16, 13 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -346,8 +368,10 @@ static void Narrow_SubU32 (m9_state *err)
   uint32_t a = 0; (void) a;
   uint32_t b = 0; (void) b;
   a = INT64_C(3);
-  b = m9_sub_u32 (a, INT64_C(5), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_sub_u32 (a, INT64_C(5), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s18, 9 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -375,8 +399,10 @@ static void Narrow_MulU32 (m9_state *err)
   uint32_t a = 0; (void) a;
   uint32_t b = 0; (void) b;
   a = INT64_C(65536);
-  b = m9_mul_u32 (a, INT64_C(65536), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_mul_u32 (a, INT64_C(65536), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s20, 17 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -404,8 +430,10 @@ static void Narrow_SubU64 (m9_state *err)
   uint64_t a = 0; (void) a;
   uint64_t b = 0; (void) b;
   a = INT64_C(0);
-  b = m9_sub_u64 (a, INT64_C(1), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_sub_u64 (a, INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s22, 9 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -439,8 +467,10 @@ static void Narrow_MulU64 (m9_state *err)
   uint64_t a = 0; (void) a;
   uint64_t b = 0; (void) b;
   a = INT64_C(4611686018427387904);
-  b = m9_mul_u64 (a, INT64_C(4), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_mul_u64 (a, INT64_C(4), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s25, 12 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -480,31 +510,45 @@ static void Narrow_InRange (m9_state *err)
   uint64_t w = 0; (void) w;
   uint64_t x = 0; (void) x;
   a = INT64_C(100);
-  b = m9_add_i32 (a, INT64_C(200), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_add_i32 (a, INT64_C(200), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s28, 13 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
-  s = m9_neg_i64 (INT64_C(5), err);
-  if (err->exc) goto L_hdl_m9t1;
-  t = m9_mul_i16 (s, INT64_C(6), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(s) m9v = m9_neg_i64 (INT64_C(5), err);
+    if (err->exc) goto L_hdl_m9t1;
+    s = m9v;
+  }
+  { __typeof__(t) m9v = m9_mul_i16 (s, INT64_C(6), err);
+    if (err->exc) goto L_hdl_m9t1;
+    t = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s29, 10 }), false, (int64_t)(t), err);
   if (err->exc) goto L_hdl_m9t1;
   u = INT64_C(5);
-  v = m9_sub_u32 (u, INT64_C(3), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(v) m9v = m9_sub_u32 (u, INT64_C(3), err);
+    if (err->exc) goto L_hdl_m9t1;
+    v = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s30, 9 }), false, (int64_t)(v), err);
   if (err->exc) goto L_hdl_m9t1;
   w = INT64_C(4611686018427387904);
-  x = m9_mul_u64 (w, INT64_C(3), err);
-  if (err->exc) goto L_hdl_m9t1;
-  x = m9_div_u64 (x, INT64_C(3), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(x) m9v = m9_mul_u64 (w, INT64_C(3), err);
+    if (err->exc) goto L_hdl_m9t1;
+    x = m9v;
+  }
+  { __typeof__(x) m9v = m9_div_u64 (x, INT64_C(3), err);
+    if (err->exc) goto L_hdl_m9t1;
+    x = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s31, 25 }), false, (int64_t)(x), err);
   if (err->exc) goto L_hdl_m9t1;
   a = INT64_C(7);
-  b = m9_mod_i32 (a, INT64_C(3), err);
-  if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(b) m9v = m9_mod_i32 (a, INT64_C(3), err);
+    if (err->exc) goto L_hdl_m9t1;
+    b = m9v;
+  }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s32, 11 }), false, (int64_t)(b), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;

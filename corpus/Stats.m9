@@ -14,9 +14,24 @@ DEFINITION MODULE Stats ;
    (VarP by n), Percentile interpolates linearly between order
    statistics, exactly numpy.percentile's default.
 
-   A NaN anywhere in a sample RAISES ValueRange rather than answering
-   NaN: a statistic of a sample containing not-a-number is not a
-   statistic, and a NaN that travels is the museum's founding bug.
+   A NaN IS A MISSING VALUE, AND THE COUNT SAYS HOW MANY WERE NOT.
+   Every statistic here is taken over the values that are not NaN,
+   and every count it uses or answers is the count of those: the
+   divisor of a mean, the n - 1 of a variance, the degrees of freedom
+   of a test, the `got` of TooFew, the `n` in a Fit, a Reg and a
+   Test, and Count itself.  For two samples taken together (LinReg,
+   Cov, Corr) a PAIR counts when both its values are present.  A
+   sample with too few values left is TooFew, by that count -- so a
+   statistic of a sample that has values is never NaN, and a sample
+   of nothing but NaN is refused rather than answered.
+
+   (Until 2026-10-02 a NaN anywhere raised ValueRange: "a statistic
+   of a sample containing not-a-number is not a statistic".  The
+   owner reversed it that day.  Measured series have gaps, a module
+   that refuses every series with a gap is only ever called behind a
+   filter the caller writes by hand, and the filter hid what the
+   refusal was meant to keep in view.  What keeps it in view now is
+   the count: read `n`, or call Count, and the gap has a size.)
 
    The random Stream is a RECORD the caller owns, like the Fortran
    port's Random.Stream: no module state, so two streams cannot
@@ -39,31 +54,40 @@ IMPORT Faults ;
 EXCEPTION
   TooFew (got, need: I64) ;
   (* the statistic needs at least `need` values; the sample has
-     `got`.  Mean of nothing is not zero, it is a refusal. *)
+     `got` THAT ARE NOT NaN.  Mean of nothing is not zero, it is a
+     refusal. *)
+
+PROCEDURE Count (RO xs: SLICE OF F64) : I64 ;
+  (* how many of xs are not NaN: the n every statistic below is
+     taken over.  LEN (xs) - Count (xs) is the size of the gap. *)
 
 PROCEDURE Mean (RO xs: SLICE OF F64) : F64
-  RAISES TooFew, ValueRange ;
+  RAISES TooFew ;
+  (* numpy.nanmean *)
 PROCEDURE Var (RO xs: SLICE OF F64) : F64
-  RAISES TooFew, ValueRange ;
+  RAISES TooFew ;
   (* sample variance, ddof = 1: needs two values *)
 PROCEDURE VarP (RO xs: SLICE OF F64) : F64
-  RAISES TooFew, ValueRange ;
+  RAISES TooFew ;
   (* population variance, ddof = 0 *)
 PROCEDURE Std (RO xs: SLICE OF F64) : F64
   RAISES TooFew, ValueRange ;
 PROCEDURE StdP (RO xs: SLICE OF F64) : F64
   RAISES TooFew, ValueRange ;
+  (* the square roots of the two; ValueRange is Math.Sqrt's heading
+     speaking, and a variance is never negative *)
 
 PROCEDURE Median (RO xs: SLICE OF F64) : F64
-  RAISES TooFew, ValueRange ;
+  RAISES TooFew ;
 PROCEDURE Percentile (RO xs: SLICE OF F64 ; p: F64) : F64
   RAISES TooFew, Faults.BadArg, ValueRange ;
-  (* numpy.percentile's linear rule: at rank (n-1) * p/100,
+  (* numpy.nanpercentile's linear rule: at rank (n-1) * p/100,
      interpolated between the two order statistics around it *)
 
 TYPE
   Fit = RECORD
     mu, sigma : F64 ;
+    n : I64 ;                  (* the values it was fitted to *)
   END ;
 
 PROCEDURE NormFit (RO xs: SLICE OF F64) : Fit
@@ -74,27 +98,34 @@ PROCEDURE NormFit (RO xs: SLICE OF F64) : Fit
 TYPE
   Reg = RECORD
     slope, intercept, r, p, stderr : F64 ;
+    n : I64 ;                  (* the PAIRS used: both values present *)
   END ;
 
 PROCEDURE LinReg (RO xs, ys: SLICE OF F64) : Reg
   RAISES TooFew, ValueRange, Overflow ;
   (* least squares of y on x: scipy.stats.linregress's five numbers,
      p two-sided against slope = 0 via the t distribution with n-2
-     degrees of freedom *)
+     degrees of freedom, over the pairs whose both values are
+     present.  ValueRange is a vertical line: all the x equal. *)
 
 TYPE
   Test = RECORD
     t, p, dof : F64 ;
+    n : I64 ;                  (* the values used; both samples
+                                  together for TTest2 *)
   END ;
 
 PROCEDURE TTest1 (RO xs: SLICE OF F64 ; mu: F64) : Test
   RAISES TooFew, ValueRange, Overflow ;
-  (* one-sample t-test against the given mean; p is two-sided *)
+  (* one-sample t-test against the given mean; p is two-sided.
+     ValueRange is a sample that does not vary. *)
 PROCEDURE TTest2 (RO xs, ys: SLICE OF F64) : Test
   RAISES TooFew, ValueRange, Overflow ;
   (* Welch's two-sample t-test -- unequal variances assumed, the
      Welch-Satterthwaite degrees of freedom in `dof`.  scipy's
-     ttest_ind (equal_var = False). *)
+     ttest_ind (equal_var = False, nan_policy = 'omit'): the two
+     samples are independent, so each loses its own NaN and they
+     need not be equally long. *)
 
 PROCEDURE NormalCdf (x: F64) : F64 RAISES ValueRange ;
   (* the standard normal CDF, through Math.Erfc *)
@@ -132,6 +163,206 @@ PROCEDURE Exponential (VAR st: Stream ; lambda: F64) : F64
 PROCEDURE LogNormal (VAR st: Stream ; mu, sigma: F64) : F64
   RAISES ValueRange, Overflow, Faults.BadArg ;
 
+(* ---- histogram and binning: numpy.histogram with a stated range ----
+
+   `bins` equal bins over [lo, hi]: every bin is closed on the left
+   and open on the right, but the last, which holds hi as well.  A
+   value outside [lo, hi] is in no bin, and neither is a NaN.
+   bins < 1, or lo not below hi, or either not finite, is
+   Faults.BadArg. *)
+
+PROCEDURE BinEdges (bins: I64 ; lo, hi: F64) : SLICE OF F64
+  RAISES Faults.BadArg ;
+  (* the bins + 1 edges, lo first and hi last, as numpy.linspace
+     places them *)
+
+PROCEDURE BinOf (x: F64 ; bins: I64 ; lo, hi: F64) : I64
+  RAISES Faults.BadArg ;
+  (* the bin x falls in, 0 .. bins - 1, or -1 when x is outside
+     [lo, hi] or is NaN.  A value on an edge goes where
+     numpy.histogram puts it: the index is computed, then corrected
+     against the edges, so a rounding in the division cannot put a
+     value in the wrong bin *)
+
+PROCEDURE Histogram (RO xs: SLICE OF F64 ; bins: I64 ; lo, hi: F64)
+  : SLICE OF I64 RAISES Faults.BadArg ;
+  (* how many of xs fall in each bin; those outside [lo, hi] and the
+     NaN are not counted, so the counts may add up to less than
+     LEN (xs) *)
+
+(* ---- rolling windows ----
+
+   out[i] is the statistic of the `window` POSITIONS xs[i] ..
+   xs[i + window - 1]: LEN (xs) - window + 1 answers and no padding --
+   the window that ENDS at j is out[j - window + 1].  A window of
+   less than 1 is Faults.BadArg; a sample shorter than one window is
+   TooFew (here by LEN: a window is so many positions, whatever is in
+   them).
+
+   Within a window the statistic is over the values that are not
+   NaN, as everywhere in this module: RollingMean divides by how many
+   there are, not by `window`.  A window holding nothing but NaN has
+   sum 0.0 (numpy.nansum's answer) and mean, minimum and maximum NaN
+   -- the one place this module answers NaN, because a series of
+   answers has to say "no value here" in its own type.  An infinity
+   is a value: a window holding one has it as its sum, and holding
+   both has NaN.
+
+   RollingSum and RollingMean slide: each step adds the value that
+   enters and takes off the one that leaves, both with a correction
+   term (Neumaier), so the cost is one pass whatever the window and
+   the answer is the correctly rounded window sum, or within
+   LEN (xs) * 2.5e-32 * (the sum of all magnitudes) of it.
+   RollingMin and RollingMax are one pass too. *)
+
+PROCEDURE RollingSum (RO xs: SLICE OF F64 ; window: I64) : SLICE OF F64
+  RAISES TooFew, Faults.BadArg ;
+PROCEDURE RollingMean (RO xs: SLICE OF F64 ; window: I64) : SLICE OF F64
+  RAISES TooFew, Faults.BadArg ;
+PROCEDURE RollingMin (RO xs: SLICE OF F64 ; window: I64) : SLICE OF F64
+  RAISES TooFew, Faults.BadArg ;
+PROCEDURE RollingMax (RO xs: SLICE OF F64 ; window: I64) : SLICE OF F64
+  RAISES TooFew, Faults.BadArg ;
+PROCEDURE RollingCount (RO xs: SLICE OF F64 ; window: I64) : SLICE OF I64
+  RAISES TooFew, Faults.BadArg ;
+  (* how many values each window holds that are not NaN: the n of
+     that window's mean *)
+
+(* ---- linear interpolation: numpy.interp ---- *)
+
+PROCEDURE Interp (RO xs: SLICE OF F64 ; RO xp, fp: SLICE OF F64)
+  : SLICE OF F64 RAISES TooFew, Faults.SizeError, Faults.BadArg ;
+  (* the piecewise-linear function through the points (xp[k], fp[k]),
+     read at each of xs.  Left of xp[0] the answer is fp[0] and right
+     of the last point it is the last fp: held, not extrapolated.  A
+     NaN in xs is answered NaN -- where there is no abscissa there is
+     no value -- and a NaN in fp makes NaN of what is read between
+     its neighbours, as numpy's does: this does not fill gaps.
+
+       xp -- the abscissae, STRICTLY ascending and none of them NaN
+             (Faults.BadArg otherwise; numpy does not check and
+             answers nonsense)
+       fp -- the values at them; LEN (fp) must be LEN (xp)
+             (Faults.SizeError), and there must be one at least *)
+
+PROCEDURE Interp1 (x: F64 ; RO xp, fp: SLICE OF F64) : F64
+  RAISES TooFew, Faults.SizeError ;
+  (* one point, and the order of xp NOT checked: a binary search
+     reads log2 (LEN (xp)) of them, as Sort's do.  Use Interp for
+     data whose order has not been established. *)
+
+(* ---- covariance and correlation ----
+
+   Sample covariance divides by n - 1, numpy.cov's default; the
+   correlation is Pearson's r, numpy.corrcoef.  n is the number of
+   PAIRS whose both values are present, and two are needed.  A
+   sample that does not vary has no correlation: Faults.BadArg,
+   where numpy answers NaN and a warning.  (ValueRange in two
+   headings is Math.Sqrt's, as in Std.) *)
+
+PROCEDURE Cov (RO xs, ys: SLICE OF F64) : F64
+  RAISES TooFew, Faults.SizeError ;
+PROCEDURE Corr (RO xs, ys: SLICE OF F64) : F64
+  RAISES TooFew, Faults.SizeError, Faults.BadArg, ValueRange ;
+PROCEDURE Pairs (RO xs, ys: SLICE OF F64) : I64
+  RAISES Faults.SizeError ;
+  (* how many pairs have both values: the n of Cov, Corr and LinReg *)
+
+PROCEDURE CovMatrix (RO g: GRID 2 OF F64) : GRID 2 OF F64
+  RAISES TooFew ;
+PROCEDURE CorrMatrix (RO g: GRID 2 OF F64) : GRID 2 OF F64
+  RAISES TooFew, Faults.BadArg, ValueRange ;
+  (* every pair of COLUMNS: a row of g is one observation and a
+     column one variable, as a table has them.  Each entry is taken
+     over the rows in which BOTH its columns are present -- pairwise,
+     as pandas' DataFrame.cov and corr do -- so two entries may rest
+     on different rows, and a pair of columns with fewer than two
+     such rows is TooFew.  The answer is LEN (g, 1) square and
+     symmetric, the variances -- or 1.0 -- on its diagonal. *)
+
+PROCEDURE Taylor (RO model, ref: SLICE OF F64 ;
+                  VAR ratio, corr, rms: F64)
+  RAISES TooFew, Faults.SizeError, Faults.BadArg, ValueRange ;
+  (* a field against its reference, as a Taylor diagram shows it
+     (Plot.RenderTaylor draws the first two):
+
+       ratio -- the model's standard deviation over the reference's
+       corr  -- their correlation, Pearson's r
+       rms   -- the root-mean-square difference of the two fields,
+                each about its OWN mean, in units of the reference's
+                standard deviation: the distance to REF on the
+                diagram, and rms * rms = ratio * ratio + 1 - 2 *
+                ratio * corr
+
+     Over the PAIRS whose both values are present, two at least
+     (TooFew); the two fields count the same positions
+     (Faults.SizeError).  A field that does not vary has no
+     correlation and a reference that does not vary no unit:
+     Faults.BadArg for either, as in Corr. *)
+
+(* ---- the distributions: density, cumulative, inverse ----
+
+   The standard normal, Student's t and chi-square, each three ways
+   and named as scipy.stats names them: Pdf the density, Cdf the
+   probability of at most x, Ppf the x with a given probability
+   below it -- Cdf's inverse, the "percent point function", which is
+   what a confidence interval is read off.  (NormalCdf and TTail are
+   above; TCdf is 1 - TTail.)
+
+   Each is a function of numbers, not of a sample, so the sample's
+   rule does not apply: a NaN argument is ValueRange.  Degrees of
+   freedom must be positive and a probability in [0, 1], or it is
+   Faults.BadArg; Ppf (0) and Ppf (1) are the ends of the
+   distribution's range, an infinity where it has none.
+
+   Held to scipy.stats over a grid by StatsTest, which states how
+   closely: densities and cumulatives to 1e-12 of the value and the
+   inverses to 1e-10 -- these are series and continued fractions
+   stopped at double precision, a log-gamma good to fifteen digits,
+   and a root found by Newton steps inside a bracket. *)
+
+PROCEDURE NormalPdf (x: F64) : F64 RAISES ValueRange, Overflow ;
+PROCEDURE NormalPpf (p: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow ;
+
+PROCEDURE TPdf (t: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow ;
+PROCEDURE TCdf (t: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow ;
+PROCEDURE TPpf (p: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow ;
+
+PROCEDURE Chi2Pdf (x: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow ;
+PROCEDURE Chi2Cdf (x: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow ;
+PROCEDURE Chi2Ppf (p: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow ;
+
+(* ---- shuffling and choosing, from a Stream ----
+
+   Indices, not values: shuffle or choose the row numbers and read
+   the data through them, whatever its type.  Each is unbiased (the
+   stream's own rejection rule, as in UniformI) and reproducible from
+   the seed; tools/statsgoldm9.py holds the first results to an
+   independent transcription of the same algorithm, to the element. *)
+
+PROCEDURE Shuffle (VAR st: Stream ; VAR a: SLICE OF I64)
+  RAISES ValueRange ;
+  (* a in a uniformly random order, in place (Fisher and Yates, from
+     the last element down) *)
+
+PROCEDURE Permutation (VAR st: Stream ; n: I64) : SLICE OF I64
+  RAISES Faults.BadArg, ValueRange ;
+  (* 0 .. n - 1 in a uniformly random order; n < 0 is Faults.BadArg *)
+
+PROCEDURE Choice (VAR st: Stream ; n, k: I64) : SLICE OF I64
+  RAISES Faults.BadArg, ValueRange ;
+  (* k DIFFERENT indices out of 0 .. n - 1, every such choice and
+     every order of it equally likely: a sample without replacement.
+     k outside 0 .. n is Faults.BadArg.  WITH replacement is k calls
+     of UniformI (st, 0, n - 1), which is why it has no procedure. *)
+
 END Stats.
 
 
@@ -141,32 +372,58 @@ IMPORT Faults ;
 
 IMPORT Math ;
 IMPORT Bits ;
+IMPORT Sort ;
 
 (* ---- guards ---- *)
 
-PROCEDURE Need (RO xs: SLICE OF F64 ; n: I64) RAISES TooFew, ValueRange =
-VAR i : I64 ;
+PROCEDURE Count (RO xs: SLICE OF F64) : I64 =
+VAR i, n : I64 ;
 BEGIN
-  IF LEN (xs) < n THEN RAISE TooFew (LEN (xs), n) END ;
+  n := 0 ;
   FOR i := 0 TO LEN (xs) - 1 DO
-    IF NOT (xs[i] = xs[i]) THEN RAISE ValueRange END
-  END
+    IF xs[i] = xs[i] THEN n := n + 1 END
+  END ;
+  RETURN n
+END Count ;
+
+(* how many values there are to work with, TooFew by THAT count when
+   it is under `need`: the count every statistic divides by *)
+PROCEDURE Need (RO xs: SLICE OF F64 ; need: I64) : I64 RAISES TooFew =
+VAR n : I64 ;
+BEGIN
+  n := Count (xs) ;
+  IF n < need THEN RAISE TooFew (n, need) END ;
+  RETURN n
 END Need ;
+
+PROCEDURE NaN () : F64 =
+VAR z : F64 ;
+BEGIN
+  z := 0.0 ;
+  RETURN z / z
+END NaN ;
 
 (* ---- moments ---- *)
 
-PROCEDURE Mean (RO xs: SLICE OF F64) : F64
-  RAISES TooFew, ValueRange =
+(* the sum of the values that are not NaN, added in order *)
+PROCEDURE Total (RO xs: SLICE OF F64) : F64 =
 VAR
   acc : F64 ;
   i : I64 ;
 BEGIN
-  Need (xs, 1) ;
   acc := 0.0 ;
   FOR i := 0 TO LEN (xs) - 1 DO
-    acc := acc + xs[i]
+    IF xs[i] = xs[i] THEN acc := acc + xs[i] END
   END ;
-  RETURN acc / F64 (LEN (xs))
+  RETURN acc
+END Total ;
+
+PROCEDURE Mean (RO xs: SLICE OF F64) : F64
+  RAISES TooFew =
+VAR n : I64 ;
+BEGIN
+  n := Need (xs, 1) ;
+  RETURN Total (xs) / F64 (n)
 END Mean ;
 
 PROCEDURE SumSq (RO xs: SLICE OF F64 ; m: F64) : F64 =
@@ -179,24 +436,28 @@ VAR
 BEGIN
   acc := 0.0 ;
   FOR i := 0 TO LEN (xs) - 1 DO
-    d := xs[i] - m ;
-    acc := acc + d * d
+    IF xs[i] = xs[i] THEN
+      d := xs[i] - m ;
+      acc := acc + d * d
+    END
   END ;
   RETURN acc
 END SumSq ;
 
 PROCEDURE Var (RO xs: SLICE OF F64) : F64
-  RAISES TooFew, ValueRange =
+  RAISES TooFew =
+VAR n : I64 ;
 BEGIN
-  Need (xs, 2) ;
-  RETURN SumSq (xs, Mean (xs)) / F64 (LEN (xs) - 1)
+  n := Need (xs, 2) ;
+  RETURN SumSq (xs, Mean (xs)) / F64 (n - 1)
 END Var ;
 
 PROCEDURE VarP (RO xs: SLICE OF F64) : F64
-  RAISES TooFew, ValueRange =
+  RAISES TooFew =
+VAR n : I64 ;
 BEGIN
-  Need (xs, 1) ;
-  RETURN SumSq (xs, Mean (xs)) / F64 (LEN (xs))
+  n := Need (xs, 1) ;
+  RETURN SumSq (xs, Mean (xs)) / F64 (n)
 END VarP ;
 
 PROCEDURE Std (RO xs: SLICE OF F64) : F64
@@ -254,15 +515,21 @@ BEGIN
   END
 END Sort ;
 
+(* the values of xs that are not NaN, sorted: LEN of the answer is
+   the count the order statistics work with *)
 PROCEDURE Sorted (RO xs: SLICE OF F64)
   : SLICE OF F64 =
 VAR
   a : SLICE OF F64 ;
-  i : I64 ;
+  i, n : I64 ;
 BEGIN
-  a := NEW (F64, LEN (xs)) ;
+  a := NEW (F64, Count (xs)) ;
+  n := 0 ;
   FOR i := 0 TO LEN (xs) - 1 DO
-    a[i] := xs[i]
+    IF xs[i] = xs[i] THEN
+      a[n] := xs[i] ;
+      n := n + 1
+    END
   END ;
   Sort (a) ;
   RETURN a
@@ -271,35 +538,32 @@ END Sorted ;
 PROCEDURE Percentile (RO xs: SLICE OF F64 ; p: F64) : F64
   RAISES TooFew, Faults.BadArg, ValueRange =
 VAR
-  scratch : POOL ;
   a : SLICE OF F64 ;
-  lo : I64 ;
+  lo, n : I64 ;
   h, frac : F64 ;
 BEGIN
-  Need (xs, 1) ;
+  n := Need (xs, 1) ;
   IF NOT (p >= 0.0 AND p <= 100.0) THEN
     RAISE Faults.BadArg ('percentile outside [0, 100]')
   END ;
   a := Sorted (xs) ;
-  h := F64 (LEN (xs) - 1) * p / 100.0 ;
+  h := F64 (n - 1) * p / 100.0 ;
   lo := I64 (Math.Floor (h)) ;
   frac := h - Math.Floor (h) ;
-  IF lo >= LEN (xs) - 1 THEN
-    RETURN a[LEN (xs) - 1]
+  IF lo >= n - 1 THEN
+    RETURN a[n - 1]
   END ;
   RETURN a[lo] + frac * (a[lo + 1] - a[lo])
 END Percentile ;
 
 PROCEDURE Median (RO xs: SLICE OF F64) : F64
-  RAISES TooFew, ValueRange =
+  RAISES TooFew =
 VAR
-  scratch : POOL ;
   a : SLICE OF F64 ;
   n : I64 ;
 BEGIN
-  Need (xs, 1) ;
+  n := Need (xs, 1) ;
   a := Sorted (xs) ;
-  n := LEN (xs) ;
   IF n MOD 2 = 1 THEN
     RETURN a[n DIV 2]
   END ;
@@ -312,7 +576,7 @@ PROCEDURE NormFit (RO xs: SLICE OF F64) : Fit
   RAISES TooFew, ValueRange =
 VAR f : Fit ;
 BEGIN
-  Need (xs, 2) ;
+  f.n := Need (xs, 2) ;
   f.mu := Mean (xs) ;
   f.sigma := StdP (xs) ;
   RETURN f
@@ -388,19 +652,47 @@ BEGIN
   RETURN h
 END BetaCf ;
 
-PROCEDURE BetaI (a, b, x: F64) : F64 RAISES ValueRange, Overflow =
-  (* the regularised incomplete beta I_x (a, b) *)
-VAR bt : F64 ;
+(* ln (1 - y), right for a small y where forming 1 - y first would
+   have thrown its digits away (Kahan's correction) *)
+PROCEDURE Ln1m (y: F64) : F64 RAISES ValueRange =
+VAR u : F64 ;
+BEGIN
+  u := 1.0 - y ;
+  IF u = 1.0 THEN RETURN -y END ;
+  RETURN Math.Log (u) * (-y) / (u - 1.0)
+END Ln1m ;
+
+(* the logarithm of one of two numbers that add up to 1, the other
+   handed in: taken from whichever is the small one *)
+PROCEDURE LnOf (v, other: F64) : F64 RAISES ValueRange =
+BEGIN
+  IF v < 0.5 THEN RETURN Math.Log (v) END ;
+  RETURN Ln1m (other)
+END LnOf ;
+
+(* the regularised incomplete beta I_x (a, b), with y = 1 - x HANDED
+   IN.  A t statistic gives both exactly -- dof / (dof + t*t) and
+   t*t / (dof + t*t) -- and until 2026-10-02 this took x alone and
+   subtracted it from 1 itself: near the centre of the distribution
+   that is 1 - 1, so the tail came out as exactly one half for every
+   |t| under about 1e-8, and with many degrees of freedom the far
+   tail lost digits the same way (found holding TCdf and TPpf to
+   scipy).  What carries the fix is the two logarithms, each taken
+   from the small one of the pair. *)
+PROCEDURE BetaXY (a, b, x, y: F64) : F64 RAISES ValueRange, Overflow =
+VAR bt, lg : F64 ;
 BEGIN
   IF x <= 0.0 THEN RETURN 0.0 END ;
-  IF x >= 1.0 THEN RETURN 1.0 END ;
-  bt := Math.Exp (LnGamma (a + b) - LnGamma (a) - LnGamma (b)
-                  + a * Math.Log (x) + b * Math.Log (1.0 - x)) ;
+  IF y <= 0.0 THEN RETURN 1.0 END ;
+  lg := LnGamma (a + b) - LnGamma (a) - LnGamma (b)
+        + a * LnOf (x, y) + b * LnOf (y, x) ;
+  bt := 0.0 ;
+  IF lg > -745.0 THEN bt := Math.Exp (lg) END ;
   IF x < (a + 1.0) / (a + b + 2.0) THEN
     RETURN bt * BetaCf (a, b, x) / a
   END ;
-  RETURN 1.0 - bt * BetaCf (b, a, 1.0 - x) / b
-END BetaI ;
+  RETURN 1.0 - bt * BetaCf (b, a, y) / b
+END BetaXY ;
 
 PROCEDURE NormalCdf (x: F64) : F64 RAISES ValueRange =
 BEGIN
@@ -414,7 +706,12 @@ BEGIN
   IF NOT (dof > 0.0) THEN
     RAISE Faults.BadArg ('degrees of freedom must be positive')
   END ;
-  p := 0.5 * BetaI (dof / 2.0, 0.5, dof / (dof + t * t)) ;
+  IF NOT Math.IsFinite (t) THEN
+    IF t > 0.0 THEN RETURN 0.0 END ;
+    RETURN 1.0
+  END ;
+  p := 0.5 * BetaXY (dof / 2.0, 0.5, dof / (dof + t * t),
+                     t * t / (dof + t * t)) ;
   IF t < 0.0 THEN
     RETURN 1.0 - p
   END ;
@@ -426,30 +723,64 @@ PROCEDURE TwoSided (t: F64 ; dof: F64) : F64
 BEGIN
   (* dof > 0 by construction at every caller, so Faults.BadArg is
      unreachable and not declared: the private twin of TTail *)
-  RETURN BetaI (dof / 2.0, 0.5, dof / (dof + t * t))
+  RETURN BetaXY (dof / 2.0, 0.5, dof / (dof + t * t),
+                 t * t / (dof + t * t))
 END TwoSided ;
 
 (* ---- regression and tests ---- *)
+
+(* a pair counts when both its values are present *)
+PROCEDURE Both (x, y: F64) : BOOL =
+BEGIN
+  RETURN (x = x) AND (y = y)
+END Both ;
+
+(* the pairs of two samples, by count; the lengths agree *)
+PROCEDURE NPairs (RO xs, ys: SLICE OF F64) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF Both (xs[i], ys[i]) THEN n := n + 1 END
+  END ;
+  RETURN n
+END NPairs ;
+
+(* the mean of xs over the pairs it makes with ys, n of them *)
+PROCEDURE PairMean (RO xs, ys: SLICE OF F64 ; n: I64) : F64 =
+VAR
+  acc : F64 ;
+  i : I64 ;
+BEGIN
+  acc := 0.0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF Both (xs[i], ys[i]) THEN acc := acc + xs[i] END
+  END ;
+  RETURN acc / F64 (n)
+END PairMean ;
 
 PROCEDURE LinReg (RO xs, ys: SLICE OF F64) : Reg
   RAISES TooFew, ValueRange, Overflow =
 VAR
   g : Reg ;
   mx, my, sxx, syy, sxy, dx, dy, df : F64 ;
-  i : I64 ;
+  i, n : I64 ;
 BEGIN
   IF LEN (xs) # LEN (ys) THEN RAISE TooFew (LEN (ys), LEN (xs)) END ;
-  Need (xs, 3) ;
-  Need (ys, 3) ;
-  mx := Mean (xs) ;
-  my := Mean (ys) ;
+  n := NPairs (xs, ys) ;
+  IF n < 3 THEN RAISE TooFew (n, 3) END ;
+  g.n := n ;
+  mx := PairMean (xs, ys, n) ;
+  my := PairMean (ys, xs, n) ;
   sxx := 0.0 ; syy := 0.0 ; sxy := 0.0 ;
   FOR i := 0 TO LEN (xs) - 1 DO
-    dx := xs[i] - mx ;
-    dy := ys[i] - my ;
-    sxx := sxx + dx * dx ;
-    syy := syy + dy * dy ;
-    sxy := sxy + dx * dy
+    IF Both (xs[i], ys[i]) THEN
+      dx := xs[i] - mx ;
+      dy := ys[i] - my ;
+      sxx := sxx + dx * dx ;
+      syy := syy + dy * dy ;
+      sxy := sxy + dx * dy
+    END
   END ;
   IF sxx = 0.0 THEN RAISE ValueRange END ;   (* a vertical line *)
   g.slope := sxy / sxx ;
@@ -460,7 +791,7 @@ BEGIN
   ELSE
     g.r := sxy / Math.Sqrt (sxx * syy)
   END ;
-  df := F64 (LEN (xs) - 2) ;
+  df := F64 (n - 2) ;
   g.stderr := Math.Sqrt ((syy - g.slope * sxy) / df / sxx) ;
   IF g.stderr = 0.0 THEN
     (* an exact fit: infinite t; p is zero unless the slope is too *)
@@ -477,9 +808,9 @@ VAR
   w : Test ;
   se : F64 ;
 BEGIN
-  Need (xs, 2) ;
-  w.dof := F64 (LEN (xs) - 1) ;
-  se := Std (xs) / Math.Sqrt (F64 (LEN (xs))) ;
+  w.n := Need (xs, 2) ;
+  w.dof := F64 (w.n - 1) ;
+  se := Std (xs) / Math.Sqrt (F64 (w.n)) ;
   IF se = 0.0 THEN RAISE ValueRange END ;    (* a constant sample *)
   w.t := (Mean (xs) - mu) / se ;
   w.p := TwoSided (w.t, w.dof) ;
@@ -491,18 +822,20 @@ PROCEDURE TTest2 (RO xs, ys: SLICE OF F64) : Test
 VAR
   w : Test ;
   vx, vy, ax, ay, s : F64 ;
+  nx, ny : I64 ;
 BEGIN
-  Need (xs, 2) ;
-  Need (ys, 2) ;
+  nx := Need (xs, 2) ;
+  ny := Need (ys, 2) ;
+  w.n := nx + ny ;
   vx := Var (xs) ;
   vy := Var (ys) ;
-  ax := vx / F64 (LEN (xs)) ;
-  ay := vy / F64 (LEN (ys)) ;
+  ax := vx / F64 (nx) ;
+  ay := vy / F64 (ny) ;
   s := ax + ay ;
   IF s = 0.0 THEN RAISE ValueRange END ;     (* two constant samples *)
   w.t := (Mean (xs) - Mean (ys)) / Math.Sqrt (s) ;
-  w.dof := s * s / (ax * ax / F64 (LEN (xs) - 1)
-                    + ay * ay / F64 (LEN (ys) - 1)) ;
+  w.dof := s * s / (ax * ax / F64 (nx - 1)
+                    + ay * ay / F64 (ny - 1)) ;
   w.p := TwoSided (w.t, w.dof) ;
   RETURN w
 END TTest2 ;
@@ -645,5 +978,908 @@ BEGIN
   IF NOT (sigma > 0.0) THEN RAISE Faults.BadArg ('sigma must be positive') END ;
   RETURN Math.Exp (mu + sigma * Normal (st))
 END LogNormal ;
+
+(* ---- histogram and binning ---- *)
+
+PROCEDURE BinsOk (bins: I64 ; lo, hi: F64) RAISES Faults.BadArg =
+BEGIN
+  IF bins < 1 THEN
+    RAISE Faults.BadArg ('a histogram has one bin at least')
+  END ;
+  IF NOT Math.IsFinite (lo) OR NOT Math.IsFinite (hi) OR NOT (lo < hi) THEN
+    RAISE Faults.BadArg ('the range of a histogram is lo < hi, both finite')
+  END
+END BinsOk ;
+
+(* edge k of the bins + 1, as numpy.linspace computes it: lo + k *
+   step, and the last one hi itself rather than what the arithmetic
+   gives *)
+PROCEDURE Edge (k: I64 ; bins: I64 ; lo, hi: F64) : F64 =
+BEGIN
+  IF k >= bins THEN RETURN hi END ;
+  RETURN F64 (k) * ((hi - lo) / F64 (bins)) + lo
+END Edge ;
+
+PROCEDURE BinEdges (bins: I64 ; lo, hi: F64) : SLICE OF F64
+  RAISES Faults.BadArg =
+VAR
+  out : SLICE OF F64 ;
+  k : I64 ;
+BEGIN
+  BinsOk (bins, lo, hi) ;
+  out := NEW (F64, bins + 1) ;
+  FOR k := 0 TO bins DO out[k] := Edge (k, bins, lo, hi) END ;
+  RETURN out
+END BinEdges ;
+
+(* numpy.histogram's own steps, in its order: the index from the
+   division, the top edge folded into the last bin, then the two
+   corrections against the edges -- down if x is below its bin's left
+   edge, up if it has reached the right one.  The arguments are
+   valid.  A NaN is in no bin: it fails both halves of the first
+   test.  (The handler answers a conversion that cannot fail for an
+   x inside a finite range; the checker cannot know that.) *)
+PROCEDURE Bin (x: F64 ; bins: I64 ; lo, hi: F64) : I64 =
+VAR k : I64 ;
+BEGIN
+  IF NOT (x >= lo AND x <= hi) THEN RETURN -1 END ;
+  k := I64 (Math.Floor (((x - lo) / (hi - lo)) * F64 (bins))) ;
+  IF k = bins THEN k := bins - 1 END ;
+  IF x < Edge (k, bins, lo, hi) THEN k := k - 1 END ;
+  IF k # bins - 1 THEN
+    IF x >= Edge (k + 1, bins, lo, hi) THEN k := k + 1 END
+  END ;
+  RETURN k
+EXCEPT
+| ValueRange : RETURN -1
+END Bin ;
+
+PROCEDURE BinOf (x: F64 ; bins: I64 ; lo, hi: F64) : I64
+  RAISES Faults.BadArg =
+BEGIN
+  BinsOk (bins, lo, hi) ;
+  RETURN Bin (x, bins, lo, hi)
+END BinOf ;
+
+PROCEDURE Histogram (RO xs: SLICE OF F64 ; bins: I64 ; lo, hi: F64)
+  : SLICE OF I64 RAISES Faults.BadArg =
+VAR
+  out : SLICE OF I64 ;
+  i, k : I64 ;
+BEGIN
+  BinsOk (bins, lo, hi) ;
+  out := NEW (I64, bins) ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    k := Bin (xs[i], bins, lo, hi) ;
+    IF k >= 0 THEN out[k] := out[k] + 1 END
+  END ;
+  RETURN out
+END Histogram ;
+
+(* ---- rolling windows ---- *)
+
+TYPE
+  Comp = RECORD
+    sum, comp : F64 ;          (* a running sum and what its additions
+                                  lost (Neumaier) *)
+  END ;
+  Win = RECORD
+    s : Comp ;                 (* of the FINITE values in the window *)
+    finite, pinf, ninf : I64 ; (* how many of them, and how many of
+                                  each infinity: an infinity put in a
+                                  sliding sum would leave a NaN behind
+                                  when it slid out, so they are
+                                  counted instead *)
+  END ;
+
+PROCEDURE Inf () : F64 =
+VAR z : F64 ;
+BEGIN
+  z := 0.0 ;
+  RETURN 1.0 / z
+END Inf ;
+
+PROCEDURE Plus (VAR s: Comp ; v: F64) =
+VAR t : F64 ;
+BEGIN
+  t := s.sum + v ;
+  IF Math.Fabs (s.sum) >= Math.Fabs (v) THEN
+    s.comp := s.comp + ((s.sum - t) + v)
+  ELSE
+    s.comp := s.comp + ((v - t) + s.sum)
+  END ;
+  s.sum := t
+END Plus ;
+
+(* a value enters the window (by = 1) or leaves it (by = -1); a NaN
+   does neither.  When the last finite value has left, the sum is
+   put back to exactly zero: numpy.nansum of nothing is 0.0, not what
+   the corrections happen to have left. *)
+PROCEDURE Shift (VAR w: Win ; v: F64 ; by: I64) =
+BEGIN
+  IF v = v THEN
+    IF Math.IsFinite (v) THEN
+      IF by > 0 THEN Plus (w.s, v) ELSE Plus (w.s, -v) END ;
+      w.finite := w.finite + by ;
+      IF w.finite = 0 THEN
+        w.s.sum := 0.0 ;
+        w.s.comp := 0.0
+      END
+    ELSIF v > 0.0 THEN
+      w.pinf := w.pinf + by
+    ELSE
+      w.ninf := w.ninf + by
+    END
+  END
+END Shift ;
+
+PROCEDURE SumNow (RO w: Win) : F64 =
+BEGIN
+  IF w.pinf > 0 THEN
+    IF w.ninf > 0 THEN RETURN NaN () END ;
+    RETURN Inf ()
+  END ;
+  IF w.ninf > 0 THEN RETURN -Inf () END ;
+  RETURN w.s.sum + w.s.comp
+END SumNow ;
+
+PROCEDURE RollOk (RO xs: SLICE OF F64 ; window: I64)
+  RAISES TooFew, Faults.BadArg =
+BEGIN
+  IF window < 1 THEN
+    RAISE Faults.BadArg ('a window holds one value at least')
+  END ;
+  IF LEN (xs) < window THEN RAISE TooFew (LEN (xs), window) END
+END RollOk ;
+
+PROCEDURE Slide (RO xs: SLICE OF F64 ; window: I64 ; mean: BOOL)
+  : SLICE OF F64 RAISES TooFew, Faults.BadArg =
+VAR
+  out : SLICE OF F64 ;
+  w : Win ;
+  i, n : I64 ;
+  v : F64 ;
+BEGIN
+  RollOk (xs, window) ;
+  out := NEW (F64, LEN (xs) - window + 1) ;
+  w.s.sum := 0.0 ;
+  w.s.comp := 0.0 ;
+  w.finite := 0 ;
+  w.pinf := 0 ;
+  w.ninf := 0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    Shift (w, xs[i], 1) ;
+    IF i >= window THEN Shift (w, xs[i - window], -1) END ;
+    IF i >= window - 1 THEN
+      v := SumNow (w) ;
+      IF mean THEN
+        n := w.finite + w.pinf + w.ninf ;
+        IF n = 0 THEN v := NaN () ELSE v := v / F64 (n) END
+      END ;
+      out[i - window + 1] := v
+    END
+  END ;
+  RETURN out
+END Slide ;
+
+PROCEDURE RollingSum (RO xs: SLICE OF F64 ; window: I64) : SLICE OF F64
+  RAISES TooFew, Faults.BadArg =
+BEGIN
+  RETURN Slide (xs, window, FALSE)
+END RollingSum ;
+
+PROCEDURE RollingMean (RO xs: SLICE OF F64 ; window: I64) : SLICE OF F64
+  RAISES TooFew, Faults.BadArg =
+BEGIN
+  RETURN Slide (xs, window, TRUE)
+END RollingMean ;
+
+PROCEDURE RollingCount (RO xs: SLICE OF F64 ; window: I64) : SLICE OF I64
+  RAISES TooFew, Faults.BadArg =
+VAR
+  out : SLICE OF I64 ;
+  i, n : I64 ;
+BEGIN
+  RollOk (xs, window) ;
+  out := NEW (I64, LEN (xs) - window + 1) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF xs[i] = xs[i] THEN n := n + 1 END ;
+    IF i >= window THEN
+      IF xs[i - window] = xs[i - window] THEN n := n - 1 END
+    END ;
+    IF i >= window - 1 THEN out[i - window + 1] := n END
+  END ;
+  RETURN out
+END RollingCount ;
+
+(* the extreme of every window in one pass: a queue of indices whose
+   values are in order, so its head is the window's extreme; an index
+   leaves at the tail when a better value arrives and at the head
+   when the window has moved past it.  A NaN never joins the queue,
+   and a window with an empty queue has no extreme. *)
+PROCEDURE Extreme (RO xs: SLICE OF F64 ; window: I64 ; wantMax: BOOL)
+  : SLICE OF F64 RAISES TooFew, Faults.BadArg =
+VAR
+  scratch : POOL ;
+  out : SLICE OF F64 ;
+  q : SLICE OF I64 ;
+  head, tail, i : I64 ;
+  worse : BOOL ;
+BEGIN
+  RollOk (xs, window) ;
+  out := NEW (F64, LEN (xs) - window + 1) ;
+  q := NEW (scratch, I64, LEN (xs)) ;
+  head := 0 ;
+  tail := 0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF xs[i] = xs[i] THEN
+      LOOP
+        IF tail = head THEN EXIT END ;
+        IF wantMax THEN worse := xs[q[tail - 1]] <= xs[i]
+        ELSE worse := xs[q[tail - 1]] >= xs[i] END ;
+        IF NOT worse THEN EXIT END ;
+        tail := tail - 1
+      END ;
+      q[tail] := i ;
+      tail := tail + 1
+    END ;
+    IF tail > head THEN
+      IF q[head] <= i - window THEN head := head + 1 END
+    END ;
+    IF i >= window - 1 THEN
+      IF tail > head THEN
+        out[i - window + 1] := xs[q[head]]
+      ELSE
+        out[i - window + 1] := NaN ()
+      END
+    END
+  END ;
+  RETURN out
+END Extreme ;
+
+PROCEDURE RollingMin (RO xs: SLICE OF F64 ; window: I64) : SLICE OF F64
+  RAISES TooFew, Faults.BadArg =
+BEGIN
+  RETURN Extreme (xs, window, FALSE)
+END RollingMin ;
+
+PROCEDURE RollingMax (RO xs: SLICE OF F64 ; window: I64) : SLICE OF F64
+  RAISES TooFew, Faults.BadArg =
+BEGIN
+  RETURN Extreme (xs, window, TRUE)
+END RollingMax ;
+
+(* ---- linear interpolation ---- *)
+
+(* numpy.interp's arithmetic for one point: xp is ascending and holds
+   one value at least, x is a number.  The two retries are numpy's:
+   an infinite fp can make the first form NaN where the second, or
+   the constant, is the answer. *)
+PROCEDURE Lerp (x: F64 ; RO xp, fp: SLICE OF F64) : F64 =
+VAR
+  j, n : I64 ;
+  slope, r : F64 ;
+BEGIN
+  n := LEN (xp) ;
+  IF x < xp[0] THEN RETURN fp[0] END ;
+  IF x > xp[n - 1] THEN RETURN fp[n - 1] END ;
+  j := Sort.UpperF64 (xp, x) - 1 ;
+  IF j >= n - 1 THEN RETURN fp[n - 1] END ;
+  IF xp[j] = x THEN RETURN fp[j] END ;
+  slope := (fp[j + 1] - fp[j]) / (xp[j + 1] - xp[j]) ;
+  r := slope * (x - xp[j]) + fp[j] ;
+  IF NOT (r = r) THEN
+    r := slope * (x - xp[j + 1]) + fp[j + 1] ;
+    IF NOT (r = r) THEN
+      IF fp[j] = fp[j + 1] THEN r := fp[j] END
+    END
+  END ;
+  RETURN r
+END Lerp ;
+
+PROCEDURE Interp1 (x: F64 ; RO xp, fp: SLICE OF F64) : F64
+  RAISES TooFew, Faults.SizeError =
+BEGIN
+  IF LEN (xp) < 1 THEN RAISE TooFew (LEN (xp), 1) END ;
+  IF LEN (fp) # LEN (xp) THEN
+    RAISE Faults.SizeError (LEN (fp), LEN (xp))
+  END ;
+  IF NOT (x = x) THEN RETURN x END ;
+  RETURN Lerp (x, xp, fp)
+END Interp1 ;
+
+PROCEDURE Interp (RO xs: SLICE OF F64 ; RO xp, fp: SLICE OF F64)
+  : SLICE OF F64
+  RAISES TooFew, Faults.SizeError, Faults.BadArg =
+VAR
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (xp) < 1 THEN RAISE TooFew (LEN (xp), 1) END ;
+  IF LEN (fp) # LEN (xp) THEN
+    RAISE Faults.SizeError (LEN (fp), LEN (xp))
+  END ;
+  IF NOT (xp[0] = xp[0]) THEN
+    RAISE Faults.BadArg ('xp must be strictly ascending, and no NaN')
+  END ;
+  FOR i := 1 TO LEN (xp) - 1 DO
+    IF NOT (xp[i - 1] < xp[i]) THEN
+      RAISE Faults.BadArg ('xp must be strictly ascending, and no NaN')
+    END
+  END ;
+  out := NEW (F64, LEN (xs)) ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF xs[i] = xs[i] THEN
+      out[i] := Lerp (xs[i], xp, fp)
+    ELSE
+      out[i] := xs[i]
+    END
+  END ;
+  RETURN out
+END Interp ;
+
+(* ---- covariance and correlation ---- *)
+
+PROCEDURE Pairs (RO xs, ys: SLICE OF F64) : I64
+  RAISES Faults.SizeError =
+BEGIN
+  IF LEN (ys) # LEN (xs) THEN
+    RAISE Faults.SizeError (LEN (ys), LEN (xs))
+  END ;
+  RETURN NPairs (xs, ys)
+END Pairs ;
+
+(* the three sums of products of deviations, over the n pairs: the
+   two-pass form SumSq uses, for two samples *)
+PROCEDURE PairSums (RO xs, ys: SLICE OF F64 ; n: I64 ;
+                    VAR sxx, syy, sxy: F64) =
+VAR
+  mx, my, dx, dy : F64 ;
+  i : I64 ;
+BEGIN
+  mx := PairMean (xs, ys, n) ;
+  my := PairMean (ys, xs, n) ;
+  sxx := 0.0 ;
+  syy := 0.0 ;
+  sxy := 0.0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF Both (xs[i], ys[i]) THEN
+      dx := xs[i] - mx ;
+      dy := ys[i] - my ;
+      sxx := sxx + dx * dx ;
+      syy := syy + dy * dy ;
+      sxy := sxy + dx * dy
+    END
+  END
+END PairSums ;
+
+(* a correlation is in [-1, 1]; rounding can put it a hair outside,
+   and numpy clips it the same way *)
+PROCEDURE Clip1 (r: F64) : F64 =
+BEGIN
+  IF r > 1.0 THEN RETURN 1.0 END ;
+  IF r < -1.0 THEN RETURN -1.0 END ;
+  RETURN r
+END Clip1 ;
+
+PROCEDURE Cov (RO xs, ys: SLICE OF F64) : F64
+  RAISES TooFew, Faults.SizeError =
+VAR
+  n : I64 ;
+  sxx, syy, sxy : F64 ;
+BEGIN
+  n := Pairs (xs, ys) ;
+  IF n < 2 THEN RAISE TooFew (n, 2) END ;
+  PairSums (xs, ys, n, sxx, syy, sxy) ;
+  RETURN sxy / F64 (n - 1)
+END Cov ;
+
+PROCEDURE Corr (RO xs, ys: SLICE OF F64) : F64
+  RAISES TooFew, Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  n : I64 ;
+  sxx, syy, sxy : F64 ;
+BEGIN
+  n := Pairs (xs, ys) ;
+  IF n < 2 THEN RAISE TooFew (n, 2) END ;
+  PairSums (xs, ys, n, sxx, syy, sxy) ;
+  IF sxx = 0.0 OR syy = 0.0 THEN
+    RAISE Faults.BadArg ('a sample that does not vary has no correlation')
+  END ;
+  RETURN Clip1 (sxy / Math.Sqrt (sxx) / Math.Sqrt (syy))
+END Corr ;
+
+PROCEDURE Taylor (RO model, ref: SLICE OF F64 ;
+                  VAR ratio, corr, rms: F64)
+  RAISES TooFew, Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  n, i : I64 ;
+  smm, srr, smr, mm, mr, dd, e, rm, rr : F64 ;
+BEGIN
+  n := Pairs (model, ref) ;
+  IF n < 2 THEN RAISE TooFew (n, 2) END ;
+  PairSums (model, ref, n, smm, srr, smr) ;
+  IF smm = 0.0 OR srr = 0.0 THEN
+    RAISE Faults.BadArg ('a field that does not vary has no place on a Taylor diagram')
+  END ;
+  (* the difference summed as a difference, not as smm + srr - 2 smr:
+     a model close to its reference would lose its digits there *)
+  mm := PairMean (model, ref, n) ;
+  mr := PairMean (ref, model, n) ;
+  dd := 0.0 ;
+  FOR i := 0 TO LEN (model) - 1 DO
+    IF Both (model[i], ref[i]) THEN
+      e := (model[i] - mm) - (ref[i] - mr) ;
+      dd := dd + e * e
+    END
+  END ;
+  rm := Math.Sqrt (smm) ;
+  rr := Math.Sqrt (srr) ;
+  (* the divisor n is under every root and goes *)
+  ratio := rm / rr ;
+  corr := Clip1 (smr / rm / rr) ;
+  rms := Math.Sqrt (dd) / rr
+END Taylor ;
+
+(* PairSums for two columns of a grid: over the rows in which both
+   are present, n of them *)
+PROCEDURE ColSums (RO g: GRID 2 OF F64 ; a, b: I64 ; VAR n: I64 ;
+                   VAR sxx, syy, sxy: F64) =
+VAR
+  ma, mb, da, db : F64 ;
+  r : I64 ;
+BEGIN
+  n := 0 ;
+  ma := 0.0 ;
+  mb := 0.0 ;
+  sxx := 0.0 ;
+  syy := 0.0 ;
+  sxy := 0.0 ;
+  FOR r := 0 TO LEN (g, 0) - 1 DO
+    IF Both (g[r, a], g[r, b]) THEN
+      n := n + 1 ;
+      ma := ma + g[r, a] ;
+      mb := mb + g[r, b]
+    END
+  END ;
+  IF n > 0 THEN
+    ma := ma / F64 (n) ;
+    mb := mb / F64 (n) ;
+    FOR r := 0 TO LEN (g, 0) - 1 DO
+      IF Both (g[r, a], g[r, b]) THEN
+        da := g[r, a] - ma ;
+        db := g[r, b] - mb ;
+        sxx := sxx + da * da ;
+        syy := syy + db * db ;
+        sxy := sxy + da * db
+      END
+    END
+  END
+END ColSums ;
+
+PROCEDURE CovMatrix (RO g: GRID 2 OF F64) : GRID 2 OF F64
+  RAISES TooFew =
+VAR
+  out : GRID 2 OF F64 ;
+  k, a, b, n : I64 ;
+  sxx, syy, sxy : F64 ;
+BEGIN
+  k := LEN (g, 1) ;
+  out := NEW (F64, k, k) ;
+  FOR a := 0 TO k - 1 DO
+    FOR b := a TO k - 1 DO
+      ColSums (g, a, b, n, sxx, syy, sxy) ;
+      IF n < 2 THEN RAISE TooFew (n, 2) END ;
+      out[a, b] := sxy / F64 (n - 1) ;
+      out[b, a] := out[a, b]
+    END
+  END ;
+  RETURN out
+END CovMatrix ;
+
+PROCEDURE CorrMatrix (RO g: GRID 2 OF F64) : GRID 2 OF F64
+  RAISES TooFew, Faults.BadArg, ValueRange =
+VAR
+  out : GRID 2 OF F64 ;
+  k, a, b, n : I64 ;
+  sxx, syy, sxy : F64 ;
+BEGIN
+  k := LEN (g, 1) ;
+  out := NEW (F64, k, k) ;
+  FOR a := 0 TO k - 1 DO
+    FOR b := a TO k - 1 DO
+      ColSums (g, a, b, n, sxx, syy, sxy) ;
+      IF n < 2 THEN RAISE TooFew (n, 2) END ;
+      IF sxx = 0.0 OR syy = 0.0 THEN
+        RAISE Faults.BadArg ('a column that does not vary has no correlation')
+      END ;
+      IF a = b THEN
+        out[a, a] := 1.0
+      ELSE
+        out[a, b] := Clip1 (sxy / Math.Sqrt (sxx) / Math.Sqrt (syy)) ;
+        out[b, a] := out[a, b]
+      END
+    END
+  END ;
+  RETURN out
+END CorrMatrix ;
+
+(* ---- the distributions ---- *)
+
+CONST
+  Sqrt2Pi = 2.5066282746310002 ;
+  Ln2 = 0.6931471805599453 ;
+  Tiny = 1.0E-300 ;
+  (* Acklam's rational approximation to the inverse normal: A over B
+     in the middle, C over D in each tail, good to 1.15e-9 before the
+     refinement below takes it to double precision.  Highest power
+     first.  Constant tables (report par 2.2.4), read by Horner. *)
+  PA = [-39.69683028665376, 220.9460984245205, -275.9285104469687,
+        138.3577518672690, -30.66479806614716, 2.506628277459239] ;
+  PB = [-54.47609879822406, 161.5858368580409, -155.6989798598866,
+        66.80131188771972, -13.28068155288572, 1.0] ;
+  PC = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838,
+        -2.549732539343734, 4.374664141464968, 2.938163982698783] ;
+  PD = [0.007784695709041462, 0.3224671290700398, 2.445134137142996,
+        3.754408661907416, 1.0] ;
+  PLow = 0.02425 ;
+
+PROCEDURE Horner (RO c: SLICE OF F64 ; x: F64) : F64 =
+VAR
+  acc : F64 ;
+  i : I64 ;
+BEGIN
+  acc := 0.0 ;
+  FOR i := 0 TO LEN (c) - 1 DO acc := acc * x + c[i] END ;
+  RETURN acc
+END Horner ;
+
+PROCEDURE DofOk (dof: F64) RAISES Faults.BadArg =
+BEGIN
+  IF NOT (dof > 0.0) OR NOT Math.IsFinite (dof) THEN
+    RAISE Faults.BadArg ('degrees of freedom must be positive')
+  END
+END DofOk ;
+
+PROCEDURE ProbOk (p: F64) RAISES Faults.BadArg, ValueRange =
+BEGIN
+  IF NOT (p = p) THEN RAISE ValueRange END ;
+  IF p < 0.0 OR p > 1.0 THEN
+    RAISE Faults.BadArg ('a probability is in [0, 1]')
+  END
+END ProbOk ;
+
+(* e to the x for an x that may be far below anything representable:
+   Math.Exp refuses an infinite argument, and a density there is 0 *)
+PROCEDURE ExpDown (x: F64) : F64 RAISES ValueRange, Overflow =
+BEGIN
+  IF x < -745.0 THEN RETURN 0.0 END ;
+  RETURN Math.Exp (x)
+END ExpDown ;
+
+PROCEDURE NormalPdf (x: F64) : F64 RAISES ValueRange, Overflow =
+BEGIN
+  IF NOT (x = x) THEN RAISE ValueRange END ;
+  IF NOT Math.IsFinite (x) THEN RETURN 0.0 END ;
+  RETURN ExpDown (-0.5 * x * x) / Sqrt2Pi
+END NormalPdf ;
+
+PROCEDURE NormalPpf (p: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow =
+VAR
+  q, r, x, e, u : F64 ;
+  i : I64 ;
+BEGIN
+  ProbOk (p) ;
+  IF p = 0.0 THEN RETURN -Inf () END ;
+  IF p = 1.0 THEN RETURN Inf () END ;
+  IF p < PLow THEN
+    q := Math.Sqrt (-2.0 * Math.Log (p)) ;
+    x := Horner (PC, q) / Horner (PD, q)
+  ELSIF p <= 1.0 - PLow THEN
+    q := p - 0.5 ;
+    r := q * q ;
+    x := Horner (PA, r) * q / Horner (PB, r)
+  ELSE
+    q := Math.Sqrt (-2.0 * Math.Log (1.0 - p)) ;
+    x := -Horner (PC, q) / Horner (PD, q)
+  END ;
+  (* two Halley steps against the distribution itself.  The error is
+     taken in the SMALLER tail, where the difference of two
+     probabilities is not a difference of two numbers near one. *)
+  FOR i := 1 TO 2 DO
+    IF p <= 0.5 THEN
+      e := 0.5 * Math.Erfc (-x / 1.4142135623730951) - p
+    ELSE
+      e := (1.0 - p) - 0.5 * Math.Erfc (x / 1.4142135623730951)
+    END ;
+    u := e * Sqrt2Pi * Math.Exp (0.5 * x * x) ;
+    x := x - u / (1.0 + 0.5 * x * u)
+  END ;
+  RETURN x
+END NormalPpf ;
+
+PROCEDURE TPdf (t: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow =
+BEGIN
+  DofOk (dof) ;
+  IF NOT (t = t) THEN RAISE ValueRange END ;
+  IF NOT Math.IsFinite (t) THEN RETURN 0.0 END ;
+  RETURN ExpDown (LnGamma ((dof + 1.0) / 2.0) - LnGamma (dof / 2.0)
+                  - 0.5 * Math.Log (dof * Math.Pi)
+                  - (dof + 1.0) / 2.0 * Math.Log (1.0 + t * t / dof))
+END TPdf ;
+
+PROCEDURE TCdf (t: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow =
+BEGIN
+  DofOk (dof) ;
+  IF NOT (t = t) THEN RAISE ValueRange END ;
+  (* below zero the answer IS a tail, by symmetry, and is computed as
+     one rather than as one minus a number near one *)
+  IF t < 0.0 THEN RETURN TTail (-t, dof) END ;
+  RETURN 1.0 - TTail (t, dof)
+END TCdf ;
+
+(* ---- the incomplete gamma function, for chi-square ----
+
+   P (a, x) by its series where x < a + 1 and Q (a, x) = 1 - P by its
+   continued fraction elsewhere: each where it converges fast, and
+   each answering the SMALL one of the two directly. *)
+
+PROCEDURE GammaSeries (a, x: F64) : F64 RAISES ValueRange, Overflow =
+VAR
+  ap, del, sum : F64 ;
+  n : I64 ;
+BEGIN
+  ap := a ;
+  del := 1.0 / a ;
+  sum := del ;
+  FOR n := 1 TO 2000 DO
+    ap := ap + 1.0 ;
+    del := del * x / ap ;
+    sum := sum + del ;
+    IF Math.Fabs (del) < Math.Fabs (sum) * 1.0E-17 THEN
+      RETURN sum * ExpDown (a * Math.Log (x) - x - LnGamma (a))
+    END
+  END ;
+  RETURN sum * ExpDown (a * Math.Log (x) - x - LnGamma (a))
+END GammaSeries ;
+
+PROCEDURE GammaFraction (a, x: F64) : F64 RAISES ValueRange, Overflow =
+VAR
+  b, c, d, h, an, del : F64 ;
+  i : I64 ;
+BEGIN
+  b := x + 1.0 - a ;
+  c := 1.0 / Tiny ;
+  d := 1.0 / b ;
+  h := d ;
+  FOR i := 1 TO 2000 DO
+    an := -F64 (i) * (F64 (i) - a) ;
+    b := b + 2.0 ;
+    d := an * d + b ;
+    IF Math.Fabs (d) < Tiny THEN d := Tiny END ;
+    c := b + an / c ;
+    IF Math.Fabs (c) < Tiny THEN c := Tiny END ;
+    d := 1.0 / d ;
+    del := d * c ;
+    h := h * del ;
+    IF Math.Fabs (del - 1.0) < 1.0E-16 THEN
+      RETURN h * ExpDown (a * Math.Log (x) - x - LnGamma (a))
+    END
+  END ;
+  RETURN h * ExpDown (a * Math.Log (x) - x - LnGamma (a))
+END GammaFraction ;
+
+(* the lower and the upper regularised incomplete gamma, x > 0 *)
+PROCEDURE GammaPQ (a, x: F64 ; VAR p, q: F64) RAISES ValueRange, Overflow =
+BEGIN
+  IF x < a + 1.0 THEN
+    p := GammaSeries (a, x) ;
+    q := 1.0 - p
+  ELSE
+    q := GammaFraction (a, x) ;
+    p := 1.0 - q
+  END
+END GammaPQ ;
+
+PROCEDURE Chi2Pdf (x: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow =
+BEGIN
+  DofOk (dof) ;
+  IF NOT (x = x) THEN RAISE ValueRange END ;
+  IF x < 0.0 OR NOT Math.IsFinite (x) THEN RETURN 0.0 END ;
+  IF x = 0.0 THEN
+    IF dof < 2.0 THEN RETURN Inf () END ;
+    IF dof = 2.0 THEN RETURN 0.5 END ;
+    RETURN 0.0
+  END ;
+  RETURN ExpDown ((dof / 2.0 - 1.0) * Math.Log (x) - x / 2.0
+                  - dof / 2.0 * Ln2 - LnGamma (dof / 2.0))
+END Chi2Pdf ;
+
+PROCEDURE Chi2Cdf (x: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow =
+VAR p, q : F64 ;
+BEGIN
+  DofOk (dof) ;
+  IF NOT (x = x) THEN RAISE ValueRange END ;
+  IF x <= 0.0 THEN RETURN 0.0 END ;
+  IF NOT Math.IsFinite (x) THEN RETURN 1.0 END ;
+  GammaPQ (dof / 2.0, x / 2.0, p, q) ;
+  RETURN p
+END Chi2Cdf ;
+
+(* ---- the two inverses that have no formula: a root, bracketed ----
+
+   Newton's step where it stays inside the bracket and a bisection
+   where it does not, so the root is found whatever the start.  What
+   is solved is always the SMALLER tail against its target:
+
+     kind 0 -- Student's upper tail at x >= 0 equals `target`
+     kind 1 -- chi-square's lower tail at x equals `target`
+     kind 2 -- chi-square's upper tail at x equals `target`
+
+   f is the tail minus the target and slope its derivative, the
+   density with the tail's sign. *)
+PROCEDURE Eval (kind: I64 ; x, dof, target: F64 ; VAR f, slope: F64)
+  RAISES Faults.BadArg, ValueRange, Overflow =
+VAR p, q : F64 ;
+BEGIN
+  IF kind = 0 THEN
+    f := TTail (x, dof) - target ;
+    slope := -TPdf (x, dof)
+  ELSE
+    GammaPQ (dof / 2.0, x / 2.0, p, q) ;
+    slope := Chi2Pdf (x, dof) ;
+    IF kind = 1 THEN
+      f := p - target
+    ELSE
+      f := q - target ;
+      slope := -slope
+    END
+  END
+END Eval ;
+
+(* lo and hi bracket the root, x0 is inside; `rising` says whether f
+   goes from negative at lo to positive at hi *)
+PROCEDURE Root (kind: I64 ; dof, target: F64 ; lo, hi, x0: F64 ;
+                rising: BOOL) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow =
+VAR
+  x, xn, f, slope, a, b : F64 ;
+  i : I64 ;
+BEGIN
+  a := lo ;
+  b := hi ;
+  x := x0 ;
+  FOR i := 1 TO 200 DO
+    Eval (kind, x, dof, target, f, slope) ;
+    IF f = 0.0 THEN RETURN x END ;
+    IF (f < 0.0) = rising THEN a := x ELSE b := x END ;
+    xn := x ;
+    IF slope # 0.0 AND Math.IsFinite (slope) THEN xn := x - f / slope END ;
+    IF NOT (xn > a AND xn < b) THEN xn := 0.5 * (a + b) END ;
+    IF Math.Fabs (xn - x) <= 1.0E-15 * Math.Fabs (xn) THEN RETURN xn END ;
+    x := xn
+  END ;
+  RETURN x
+END Root ;
+
+PROCEDURE TPpf (p: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow =
+VAR
+  q, z, t, hi : F64 ;
+BEGIN
+  ProbOk (p) ;
+  DofOk (dof) ;
+  IF p = 0.0 THEN RETURN -Inf () END ;
+  IF p = 1.0 THEN RETURN Inf () END ;
+  IF p = 0.5 THEN RETURN 0.0 END ;
+  (* the smaller tail, taken exactly; its quantile is not negative *)
+  q := p ;
+  IF p > 0.5 THEN q := 1.0 - p END ;
+  z := -NormalPpf (q) ;
+  t := z + (z * z * z + z) / (4.0 * dof) ;       (* Cornish and Fisher *)
+  hi := 1.0 ;
+  IF t > hi THEN hi := 2.0 * t END ;
+  WHILE TTail (hi, dof) > q DO hi := 2.0 * hi END ;
+  IF NOT (t > 0.0 AND t < hi) THEN t := 0.5 * hi END ;
+  t := Root (0, dof, q, 0.0, hi, t, FALSE) ;
+  IF p < 0.5 THEN RETURN -t END ;
+  RETURN t
+END TPpf ;
+
+PROCEDURE Chi2Ppf (p: F64 ; dof: F64) : F64
+  RAISES Faults.BadArg, ValueRange, Overflow =
+VAR
+  z, w, x, hi : F64 ;
+BEGIN
+  ProbOk (p) ;
+  DofOk (dof) ;
+  IF p = 0.0 THEN RETURN 0.0 END ;
+  IF p = 1.0 THEN RETURN Inf () END ;
+  (* Wilson and Hilferty's cube for a start *)
+  z := NormalPpf (p) ;
+  w := 2.0 / (9.0 * dof) ;
+  x := 1.0 - w + z * Math.Sqrt (w) ;
+  x := dof * x * x * x ;
+  hi := dof ;
+  IF x > hi THEN hi := 2.0 * x END ;
+  WHILE Chi2Cdf (hi, dof) < p DO hi := 2.0 * hi END ;
+  IF NOT (x > 0.0 AND x < hi) THEN x := 0.5 * hi END ;
+  IF p <= 0.5 THEN RETURN Root (1, dof, p, 0.0, hi, x, TRUE) END ;
+  RETURN Root (2, dof, 1.0 - p, 0.0, hi, x, FALSE)
+END Chi2Ppf ;
+
+(* ---- shuffling and choosing ---- *)
+
+(* a uniform integer in [0, m), m at least 1 and at most 2^53:
+   UniformI's draw without its argument checks, which are for a
+   caller *)
+PROCEDURE Below (VAR st: Stream ; m: I64) : I64 RAISES ValueRange =
+VAR limit, k : I64 ;
+BEGIN
+  limit := (TwoP53i DIV m) * m ;
+  k := Top53 (Next (st)) ;
+  WHILE k >= limit DO
+    k := Top53 (Next (st))
+  END ;
+  RETURN k MOD m
+END Below ;
+
+PROCEDURE Shuffle (VAR st: Stream ; VAR a: SLICE OF I64)
+  RAISES ValueRange =
+VAR i, j, t : I64 ;
+BEGIN
+  i := LEN (a) - 1 ;
+  WHILE i >= 1 DO
+    j := Below (st, i + 1) ;
+    t := a[i] ;
+    a[i] := a[j] ;
+    a[j] := t ;
+    i := i - 1
+  END
+END Shuffle ;
+
+PROCEDURE Permutation (VAR st: Stream ; n: I64) : SLICE OF I64
+  RAISES Faults.BadArg, ValueRange =
+VAR
+  a : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF n < 0 THEN RAISE Faults.BadArg ('a permutation of fewer than none') END ;
+  a := NEW (I64, n) ;
+  FOR i := 0 TO n - 1 DO a[i] := i END ;
+  Shuffle (st, a) ;
+  RETURN a
+END Permutation ;
+
+PROCEDURE Choice (VAR st: Stream ; n, k: I64) : SLICE OF I64
+  RAISES Faults.BadArg, ValueRange =
+VAR
+  scratch : POOL ;
+  idx, out : SLICE OF I64 ;
+  i, j, t : I64 ;
+BEGIN
+  IF n < 0 OR k < 0 OR k > n THEN
+    RAISE Faults.BadArg ('a choice of k out of n needs 0 <= k <= n')
+  END ;
+  idx := NEW (scratch, I64, n) ;
+  FOR i := 0 TO n - 1 DO idx[i] := i END ;
+  out := NEW (I64, k) ;
+  (* the first k steps of a shuffle from the front: position i takes
+     one of the n - i not yet taken *)
+  FOR i := 0 TO k - 1 DO
+    j := i + Below (st, n - i) ;
+    t := idx[i] ;
+    idx[i] := idx[j] ;
+    idx[j] := t ;
+    out[i] := idx[i]
+  END ;
+  RETURN out
+END Choice ;
 
 END Stats.

@@ -13,7 +13,7 @@
 set -e
 cd "$(dirname "$0")"
 
-MODS="DynStr Faults Mat Stats System Frame Parquet Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Csv Delim Zip NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse Gen Sem Doc M9c Diag"
+MODS="DynStr Faults Mat Stats System Frame Parquet Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Check Arrays Numeric Csv Delim Zip Png NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse Gen Sem Doc Review M9c Diag"
 deps_of () {
   case $1 in
     Json|Lex)      echo DynStr ;;
@@ -21,28 +21,35 @@ deps_of () {
     ApiSpec)       echo DynStr ;;
     Arrow)         echo DynStr Faults ;;
     Zarr)          echo DynStr Json Io Math ;;
-    Delim|Zip)     echo DynStr Io ;;
+    Delim)         echo DynStr Io ;;
+    Zip)           echo DynStr Io Bits ;;
     Mat)           echo Math Faults ;;
     Sort)          echo Math ;;
-    Stats)         echo Math Bits Faults ;;
+    Check)         echo Io Fmt Math Text ;;
+    Arrays)        echo Faults Math ;;
+    Numeric)       echo Faults Math ;;
+    Png)           echo Faults Zip Math DynStr ;;
+    Stats)         echo Math Bits Faults Sort ;;
     System)        echo Io DynStr Text ;;
     HttpServer)    echo DynStr Http ;;
     OpenApi)       echo HttpServer DynStr ;;
-    ZarrStore)     echo DynStr Json Http ;;
-    Plot)          echo DynStr Mat ;;
-    Print|Gen)     echo Ast DynStr ;;
+    ZarrStore)     echo DynStr Json Http Io ;;
+    Plot)          echo DynStr Mat Math Faults Fmt Text Time ;;
+    Print)         echo Ast DynStr ;;
+    Gen)           echo Ast DynStr Text ;;
     Io)            echo DynStr ;;
     Time)          echo DynStr Fmt ;;
     Text)          echo DynStr ;;
     Csv)           echo DynStr Io Time ;;
-    Frame)         echo Csv Io Math DynStr Fmt Time NetCDF Faults ;;
+    Frame)         echo Csv Io Math DynStr Fmt Time NetCDF Faults Sort Stats Text ;;
     Parquet)       echo Frame Io DynStr Csv Math Fmt Time NetCDF Faults ;;
     NetCDF|Grib)   echo DynStr Faults ;;
     Syslog)        echo DynStr ;;
     Logger)        echo DynStr Fmt Io Syslog Time ;;
     Hello|Concat)  echo Io DynStr ;;
-    Narrow|ProcUse) echo Io ;;
-    M9c)           echo Io Ast Parse Gen Sem DynStr Doc Lex System ;;
+    Narrow|ProcUse|AggUse|ShareUse) echo Io ;;
+    M9c)           echo Io Ast Parse Gen Sem DynStr Doc Review Lex System ;;
+    Review)        echo Ast DynStr Text ;;
     Sem)           echo Ast DynStr Print Text ;;
     Doc)           echo Ast DynStr Text Print Lex ;;
     Parse)         echo Ast Lex DynStr ;;
@@ -52,7 +59,7 @@ deps_of () {
 }
 
 CFLAGS="-std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter"
-TOOLC="DynStr Lex Ast Parse Gen"
+TOOLC="DynStr Lex Ast Parse Text Gen"
 
 # build a gendump from one stage's sources
 build_stage () {                       # build_stage <srcdir> <out>

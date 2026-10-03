@@ -92,8 +92,10 @@ ApiSpec_Spec * ApiSpec_NewSpec (m9_sl_CHAR title, m9_sl_CHAR version, m9_state *
   err->res = m9res;
   ApiSpec_Spec * m9ret = NULL;
   ApiSpec_Spec * s = NULL; (void) s;
-  s = (ApiSpec_Spec *) m9_pool_alloc (err->res, sizeof (ApiSpec_Spec), 1, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(s) m9v = (ApiSpec_Spec *) m9_pool_alloc (err->res, sizeof (ApiSpec_Spec), 1, err);
+    if (err->exc) goto L_ret;
+    s = m9v;
+  }
   s->title = title;
   s->version = version;
   s->first = NULL;
@@ -116,8 +118,10 @@ void ApiSpec_AddOp (ApiSpec_Spec * *s, m9_pool *s_pool, m9_sl_CHAR method, m9_sl
   (void) m9res;
   err->res = &m9frame;
   ApiSpec_Op * o = NULL; (void) o;
-  o = (ApiSpec_Op *) m9_pool_alloc (s_pool, sizeof (ApiSpec_Op), 1, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(o) m9v = (ApiSpec_Op *) m9_pool_alloc (s_pool, sizeof (ApiSpec_Op), 1, err);
+    if (err->exc) goto L_ret;
+    o = m9v;
+  }
   o->method = method;
   o->path = path;
   o->summary = summary;
@@ -134,8 +138,10 @@ void ApiSpec_AddOp (ApiSpec_Spec * *s, m9_pool *s_pool, m9_sl_CHAR method, m9_sl
     (*s)->first = o;
   } }
   (*s)->last = o;
-  (*s)->count = m9_add_i64 ((*s)->count, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*s)->count) m9v = m9_add_i64 ((*s)->count, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*s)->count = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, s_pool, (*s));
@@ -152,8 +158,10 @@ void ApiSpec_AddParam (ApiSpec_Spec * *s, m9_pool *s_pool, m9_sl_CHAR name, bool
   ApiSpec_Param * q = NULL; (void) q;
   { ApiSpec_Op * o = (*s)->last;
   if (o != NULL) {
-    q = (ApiSpec_Param *) m9_pool_alloc (s_pool, sizeof (ApiSpec_Param), 1, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(q) m9v = (ApiSpec_Param *) m9_pool_alloc (s_pool, sizeof (ApiSpec_Param), 1, err);
+      if (err->exc) goto L_ret;
+      q = m9v;
+    }
     q->name = name;
     q->description = description;
     q->inPath = inPath;
@@ -194,8 +202,10 @@ m9_sl_CHAR ApiSpec_Render (ApiSpec_Spec * s, m9_state *err)
   int64_t j = 0; (void) j;
   bool firstPath = false; (void) firstPath;
   bool firstOp = false; (void) firstOp;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s0, 35 }), err);
   if (err->exc) goto L_ret;
   ApiSpec_Str (&(d), &(pool), s->title, err);
@@ -308,8 +318,10 @@ static void ApiSpec_Str (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    ch = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
-    if (err->exc) goto L_ret;
+    { __typeof__(ch) m9v = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+      ch = m9v;
+    }
     v = (int64_t)(ch);
     if ((ch == 34u)) {
       DynStr_AppendChar (d, d_pool, 92u, err);
@@ -591,8 +603,10 @@ static ApiSpec_Op * ApiSpec_OpAt (ApiSpec_Spec * s, int64_t i, m9_state *err)
       m9ret = o;
       goto L_ret;
     }
-    j = m9_sub_i64 (j, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(j) m9v = m9_sub_i64 (j, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      j = m9v;
+    }
     c = o->next;
   }
   err->res = m9res;

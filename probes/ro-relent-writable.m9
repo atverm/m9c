@@ -1,0 +1,11 @@
+(* EXPECT: argument 1 of Fill: the RO parameter xs can be lent only to an RO parameter *)
+MODULE m ;
+PROCEDURE Fill (xs: SLICE OF I64) RAISES IndexError =
+BEGIN
+  xs[0] := 9
+END Fill ;
+PROCEDURE Pass (RO xs: SLICE OF I64) RAISES IndexError =
+BEGIN
+  Fill (xs)
+END Pass ;
+END m.

@@ -1,0 +1,555 @@
+MODULE PlotTest ;
+
+(* Plot's Taylor diagram, held two ways (the goldens and the two
+   figures under runtime/test/gold/taylor/ are written by
+   tools/plotgoldm9.py):
+
+   THE GEOMETRY, to numpy.  For thirty-two pairs of series numpy says
+   the ratio of the standard deviations, the correlation, and the
+   centred RMS difference -- from the data.  The diagram is given the
+   first two, and the distance from each point to REF, in the
+   diagram's own units, must be the third: that is what a Taylor
+   diagram is.
+
+   THE DRAWING, to a second drawing: the same figure made in Python
+   from the description, compared byte for byte.
+
+   (The line figures, the bars and the heat map stay with
+   runtime/test/plot_driver.c and the reference stack's SVGs.) *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Mat ;
+IMPORT Math ;
+IMPORT Plot ;
+IMPORT Png ;
+IMPORT Text ;
+IMPORT Time ;
+IMPORT Zip ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+  pool : POOL ;
+
+CONST
+  Names = ['SLP_ERA40', 'Tsfc_ERA40', 'Prc_GPCP', 'Prc 30S-30N_GPCP',
+           'LW_ERS', 'SW_ERS', 'U300_ERA40', 'Guess_BOGUS', 'RH_NCEP',
+           'LHFLX_ERA40', 'TWP_ERA40', 'CLDTOT_NCEP', 'O3_NASA', 'Q_JMA',
+           'PBLH_JMA', 'Omega_CAS'] ;
+  Cases = ['Case A', 'Case B'] ;
+  EdgeNames = ['at REF', 'the origin', 'R < 0', 'a & b <c>'] ;
+  EdgeCases = ['on it', 'off it', 'edges', 'four', 'five', 'six', 'seven'] ;
+
+(* the values of a golden vector as rows by cols, a row a case *)
+PROCEDURE Rows (RO v: SLICE OF F64 ; rows, cols: I64) : GRID 2 OF F64 =
+VAR
+  g : GRID 2 OF F64 ;
+  i, j : I64 ;
+BEGIN
+  g := NEW (pool, F64, rows, cols) ;
+  FOR i := 0 TO rows - 1 DO
+    FOR j := 0 TO cols - 1 DO
+      IF i * cols + j < LEN (v) THEN g[i, j] := v[i * cols + j] END
+    END
+  END ;
+  RETURN g
+END Rows ;
+
+PROCEDURE Geometry () RAISES ValueRange =
+VAR
+  ratio, corr, rms, got, on, want : SLICE OF F64 ;
+  x0, y0, xr, yr, x, y, unit, dx, dy : F64 ;
+  k, inside : I64 ;
+  ok : BOOL ;
+BEGIN
+  ratio := Check.GoldF64s (t, gold, 'taylor.ratio') ;
+  corr := Check.GoldF64s (t, gold, 'taylor.corr') ;
+  rms := Check.GoldF64s (t, gold, 'taylor.rms') ;
+  Check.EqI64 (t, 'thirty-two points from numpy', LEN (ratio), 32) ;
+  x0 := 0.0 ; y0 := 0.0 ; xr := 0.0 ; yr := 0.0 ; x := 0.0 ; y := 0.0 ;
+  ok := Plot.TaylorXY (0.0, 1.0, x0, y0) ;
+  Check.That (t, 'TaylorXY: the origin is on the diagram', ok) ;
+  ok := Plot.TaylorXY (1.0, 1.0, xr, yr) ;
+  Check.That (t, 'TaylorXY: so is REF', ok) ;
+  Check.EqF64 (t, 'TaylorXY: REF is on the horizontal axis', yr, y0) ;
+  unit := xr - x0 ;
+  Check.That (t, 'TaylorXY: and to the right of the origin', unit > 0.0) ;
+  got := NEW (pool, F64, LEN (ratio)) ;
+  inside := 0 ;
+  FOR k := 0 TO LEN (ratio) - 1 DO
+    ok := Plot.TaylorXY (ratio[k], corr[k], x, y) ;
+    IF ok AND x >= x0 AND y <= y0 THEN inside := inside + 1 END ;
+    dx := x - xr ;
+    dy := y - yr ;
+    got[k] := Math.Sqrt (dx * dx + dy * dy) / unit
+  END ;
+  Check.EqI64 (t, 'TaylorXY: every one of them in the quarter above the axis',
+               inside, LEN (ratio)) ;
+  Check.NearF64s (t, 'the distance from a point to REF is the RMS difference numpy measures',
+                  got, rms, 1.0e-12, 0.0) ;
+
+  (* what is on the diagram and what is not *)
+  ratio := Check.GoldF64s (t, gold, 'edge.ratio') ;
+  corr := Check.GoldF64s (t, gold, 'edge.corr') ;
+  want := Check.GoldF64s (t, gold, 'edge.on') ;
+  on := NEW (pool, F64, LEN (ratio)) ;
+  FOR k := 0 TO LEN (ratio) - 1 DO
+    ok := Plot.TaylorXY (ratio[k], corr[k], x, y) ;
+    IF ok THEN on[k] := 1.0 END
+  END ;
+  Check.NearF64s (t, 'TaylorXY: a NaN, a correlation outside 0 .. 1, a ratio outside 0 .. 1.65 are refused, the edges are not',
+                  on, want, 0.0, 0.0) ;
+  x := -1.0 ;
+  y := -2.0 ;
+  ok := Plot.TaylorXY (2.0, 0.5, x, y) ;
+  Check.That (t, 'TaylorXY: a point it refuses leaves x and y alone',
+              NOT ok AND x = -1.0 AND y = -2.0)
+END Geometry ;
+
+(* a document against the file a second drawing wrote: its length, and
+   the first place the two part *)
+PROCEDURE Same (RO what: STR ; RO got: STR ; RO file: STR)
+  RAISES Io.IOError, ValueRange =
+VAR
+  want : STR ;
+  i, first, n : I64 ;
+BEGIN
+  want := Io.ReadFile (pool, Check.GoldPath (file)) ;
+  n := LEN (got) ;
+  IF LEN (want) < n THEN n := LEN (want) END ;
+  first := -1 ;
+  i := 0 ;
+  WHILE i < n AND first < 0 DO
+    IF got[i] # want[i] THEN first := i END ;
+    i := i + 1
+  END ;
+  IF first < 0 AND LEN (got) # LEN (want) THEN first := n END ;
+  Check.EqI64 (t, what + ': as long as the second drawing', LEN (got),
+               LEN (want)) ;
+  Check.EqI64 (t, what + ': the first character that differs (-1: none)',
+               first, -1)
+END Same ;
+
+PROCEDURE Drawings () RAISES Io.IOError, ValueRange, Faults.SizeError =
+VAR
+  ratio, corr : GRID 2 OF F64 ;
+  svg : STR ;
+BEGIN
+  ratio := Rows (Check.GoldF64s (t, gold, 'taylor.ratio'), 2, 16) ;
+  corr := Rows (Check.GoldF64s (t, gold, 'taylor.corr'), 2, 16) ;
+  svg := Plot.RenderTaylor ('Annual', ratio, corr, Cases, Names) ;
+  Same ('the annual figure, sixteen fields and two cases', svg,
+        'taylor/annual.svg') ;
+  (* seven cases, so the colours go round; points on every edge and
+     off it; names that are markup *)
+  ratio := Rows (Check.GoldF64s (t, gold, 'edge.ratio'), 7, 4) ;
+  corr := Rows (Check.GoldF64s (t, gold, 'edge.corr'), 7, 4) ;
+  svg := Plot.RenderTaylor ('Edges & <corners>', ratio, corr, EdgeCases,
+                            EdgeNames) ;
+  Same ('the figure of edges', svg, 'taylor/edge.svg')
+END Drawings ;
+
+(* 1000 * got + want of the SizeError a figure of this shape is
+   refused with; -1 when it is drawn *)
+PROCEDURE Refused (rows, cols, crows, ccols: I64 ; RO cases: SLICE OF STR ;
+                   RO names: SLICE OF STR) : I64 =
+VAR
+  ratio, corr : GRID 2 OF F64 ;
+  svg : STR ;
+  g, w : I64 ;
+BEGIN
+  ratio := NEW (pool, F64, rows, cols) ;
+  corr := NEW (pool, F64, crows, ccols) ;
+  svg := Plot.RenderTaylor ('x', ratio, corr, cases, names) ;
+  RETURN -1
+EXCEPT
+| Faults.SizeError (got, want) :
+    g := got ;
+    w := want ;
+    RETURN 1000 * g + w
+| ValueRange : RETURN -2
+END Refused ;
+
+(* ---- the time-series chart ----
+
+   Plot.Chart over five years of made-up monthly values -- a network
+   line with its band, a station's line with a short label, a dashed
+   reference, a cloud of dots, a hover table -- held by what the
+   document SAYS (the ticks a window gets, the legend, the end label,
+   the hover columns, the empty window) and by what it LOOKS like:
+   Png.FromSvg draws it and the picture is compared with Chrome's
+   render of the same document, as the Taylor diagram is.
+
+   The document is written to /tmp/m9plottest-chart.svg every run, so
+   that Chrome's picture can be made again when the chart changes:
+
+     google-chrome --headless=new --hide-scrollbars --window-size=960,560
+       --screenshot=runtime/test/gold/png/chart-chrome.png
+       file:///tmp/m9plottest-chart.svg *)
+
+CONST
+  Months = 60 ;
+  NDots = 600 ;
+
+(* the spec: the same every run *)
+PROCEDURE Spec (x0, x1: F64) : Plot.ChartSpec RAISES ValueRange =
+VAR
+  s : Plot.ChartSpec ;
+  k, day0 : I64 ;
+  v, phase : F64 ;
+  lines : SLICE OF Plot.Trace ;
+BEGIN
+  s.width := 960 ;
+  s.height := 560 ;
+  s.title := 'CO2 at Cabauw & the network' ;
+  s.ylabel := 'CO2 (ppm)' ;
+  s.unit := 'ppm' ;
+  s.x0 := x0 ;
+  s.x1 := x1 ;
+  s.bandX := NEW (pool, F64, Months) ;
+  s.outerLo := NEW (pool, F64, Months) ;
+  s.outerHi := NEW (pool, F64, Months) ;
+  s.innerLo := NEW (pool, F64, Months) ;
+  s.innerHi := NEW (pool, F64, Months) ;
+  lines := NEW (pool, Plot.Trace, 3) ;
+  lines[0].x := NEW (pool, F64, Months) ;
+  lines[0].y := NEW (pool, F64, Months) ;
+  lines[1].x := NEW (pool, F64, 24) ;
+  lines[1].y := NEW (pool, F64, 24) ;
+  lines[2].x := NEW (pool, F64, Months) ;
+  lines[2].y := NEW (pool, F64, Months) ;
+  s.hoverX := NEW (pool, F64, Months) ;
+  s.hoverHead := NEW (pool, STR, Months) ;
+  s.hoverVals := NEW (pool, STR, 2 * Months) ;
+  s.hoverNames := NEW (pool, STR, 2) ;
+  s.hoverKeys := NEW (pool, STR, 2) ;
+  s.hoverNames[0] := 'Network' ; s.hoverKeys[0] := 'net' ;
+  s.hoverNames[1] := 'Cabauw' ; s.hoverKeys[1] := 's1' ;
+  FOR k := 0 TO Months - 1 DO
+    day0 := Time.DaysFromCivil (2017 + k DIV 12, k MOD 12 + 1, 15) ;
+    phase := 2.0 * Math.Pi * F64 (k) / 12.0 ;
+    v := 405.0 + 0.2 * F64 (k) + 3.0 * Math.Sin (phase) + 0.4 * Math.Sin (0.7 * F64 (k)) ;
+    s.bandX[k] := F64 (day0) ;
+    lines[0].x[k] := F64 (day0) ;
+    lines[0].y[k] := v ;
+    lines[2].x[k] := F64 (day0) ;
+    lines[2].y[k] := 404.0 + 0.2 * F64 (k) ;
+    s.outerLo[k] := v - 2.0 ; s.outerHi[k] := v + 2.0 ;
+    s.innerLo[k] := v - 1.0 ; s.innerHi[k] := v + 1.0 ;
+    IF k >= 30 AND k < 33 THEN
+      (* three months without a band *)
+      s.outerLo[k] := 0.0 / 0.0 ; s.outerHi[k] := 0.0 / 0.0 ;
+      s.innerLo[k] := 0.0 / 0.0 ; s.innerHi[k] := 0.0 / 0.0
+    END ;
+    IF k >= Months - 24 THEN
+      lines[1].x[k - Months + 24] := F64 (day0) ;
+      lines[1].y[k - Months + 24] := v + 1.5 + 0.8 * Math.Sin (1.3 * F64 (k))
+    END ;
+    s.hoverX[k] := F64 (day0) ;
+    s.hoverHead[k] := Plot.MonthName (k MOD 12 + 1) + ' ' + Fmt.I64Str (2017 + k DIV 12) ;
+    s.hoverVals[2 * k] := Fmt.Fixed (v, 1) ;
+    IF k >= Months - 24 THEN
+      s.hoverVals[2 * k + 1] := Fmt.Fixed (lines[1].y[k - Months + 24], 1)
+    ELSE
+      s.hoverVals[2 * k + 1] := ''
+    END
+  END ;
+  (* a month without a value lifts the pen *)
+  lines[0].y[40] := 0.0 / 0.0 ;
+  lines[0].label := 'Network' ; lines[0].key := 'net' ; lines[0].width := 3.0 ;
+  lines[0].short := '' ; lines[0].dash := '' ; lines[0].marks := FALSE ;
+  lines[1].label := 'Cabauw 207 m' ; lines[1].key := 's1' ; lines[1].width := 2.0 ;
+  lines[1].short := 'CBW' ; lines[1].dash := '' ; lines[1].marks := TRUE ;
+  lines[2].label := 'Reference' ; lines[2].key := 'ref' ; lines[2].width := 1.5 ;
+  lines[2].short := '' ; lines[2].dash := '4 3' ; lines[2].marks := FALSE ;
+  s.lines := lines ;
+  s.band := TRUE ;
+  s.bandKey := 'net' ;
+  s.innerLabel := 'Likely range' ;
+  s.outerLabel := 'Possible range' ;
+  s.dots := TRUE ;
+  s.dotsKey := 'gray' ;
+  s.dotsLabel := 'Hourly values' ;
+  s.dotsX := NEW (pool, F64, NDots) ;
+  s.dotsY := NEW (pool, F64, NDots) ;
+  FOR k := 0 TO NDots - 1 DO
+    s.dotsX[k] := s.bandX[0] + F64 (k) * 3.04 ;
+    s.dotsY[k] := 405.0 + 0.2 * F64 (k) / 10.0 + 3.0 * Math.Sin (2.0 * Math.Pi * F64 (k) * 3.04 / 365.25)
+                  + 2.5 * Math.Sin (F64 (k) * 1.3)
+  END ;
+  RETURN s
+END Spec ;
+
+(* how often `needle` occurs in `hay` *)
+PROCEDURE Count (RO hay: STR ; RO needle: STR) : I64 =
+VAR n, at, k : I64 ;
+BEGIN
+  n := 0 ;
+  at := 0 ;
+  WHILE at <= LEN (hay) - LEN (needle) DO
+    k := Text.Find (SLICE (hay, at, LEN (hay) - at), needle) ;
+    IF k < 0 THEN RETURN n END ;
+    n := n + 1 ;
+    at := at + k + LEN (needle)
+  END ;
+  RETURN n
+END Count ;
+
+PROCEDURE Charts ()
+  RAISES Io.IOError, Zip.Error, Png.Error, Faults.BadArg, ValueRange =
+VAR
+  s : Plot.ChartSpec ;
+  svg : STR ;
+  mine, theirs : SLICE OF BYTE ;
+  w, h, rw, rh, i, k, far, d, big : I64 ;
+  sum : F64 ;
+  day : I64 ;
+BEGIN
+  day := Time.DaysFromCivil (2017, 1, 1) ;
+  s := Spec (F64 (day), F64 (Time.DaysFromCivil (2022, 1, 1))) ;
+  svg := Plot.Chart (s) ;
+  Io.WriteFile ('/tmp/m9plottest-chart.svg', svg) ;
+  Check.That (t, 'the chart carries its title, escaped',
+              Text.Contains (svg, '<title>CO2 at Cabauw &amp; the network</title>')) ;
+  Check.That (t, 'five years: the time axis counts years',
+              Text.Contains (svg, '>2017<') AND Text.Contains (svg, '>2021<')
+              AND NOT Text.Contains (svg, '>Jan 2017<')) ;
+  Check.That (t, 'the legend names the line, the two bands, the dots and the other lines',
+              Text.Contains (svg, '>Network<') AND Text.Contains (svg, '>Likely range<')
+              AND Text.Contains (svg, '>Possible range<') AND Text.Contains (svg, '>Hourly values<')
+              AND Text.Contains (svg, '>Cabauw 207 m<') AND Text.Contains (svg, '>Reference<')) ;
+  Check.That (t, 'the station line ends at the edge and gets its short label there',
+              Text.Contains (svg, 'class="cv-end cv-k-s1"') AND Text.Contains (svg, '>CBW<')) ;
+  Check.That (t, 'the reference line is dashed in its own colour',
+              Text.Contains (svg, 'stroke="#52514e" stroke-linejoin="round" stroke-linecap="round" stroke-width="1.5" stroke-dasharray="4 3"')) ;
+  Check.EqI64 (t, 'a hover column for every month in the window',
+               Count (svg, 'data-h="'), Months) ;
+  Check.EqI64 (t, 'the band is drawn in two runs, each in two depths: four shapes',
+               Count (svg, '<path class="cv-outer cv-k-net"') + Count (svg, '<path class="cv-inner cv-k-net"'), 4) ;
+  Check.That (t, 'a window with data does not say it has none',
+              NOT Text.Contains (svg, 'No data in this period')) ;
+  Check.That (t, 'no stylesheet: every colour is an attribute',
+              NOT Text.Contains (svg, '<style') AND NOT Text.Contains (svg, 'var(')) ;
+  Check.That (t, 'the data lie in a clipped group',
+              Text.Contains (svg, '<clipPath id="cv-clip">') AND Text.Contains (svg, '<g clip-path="url(#cv-clip)">')) ;
+
+  (* other windows, other axes *)
+  s := Spec (F64 (Time.DaysFromCivil (2019, 2, 20)), F64 (Time.DaysFromCivil (2019, 12, 20))) ;
+  svg := Plot.Chart (s) ;
+  Check.That (t, 'ten months: the time axis counts months',
+              Text.Contains (svg, '>Mar 2019<') AND NOT Text.Contains (svg, '>2019<')) ;
+  s := Spec (F64 (Time.DaysFromCivil (2019, 3, 3)), F64 (Time.DaysFromCivil (2019, 3, 23))) ;
+  svg := Plot.Chart (s) ;
+  Check.That (t, 'three weeks: the time axis counts days',
+              Text.Contains (svg, ' Mar<') AND NOT Text.Contains (svg, '>Mar 2019<')) ;
+  s := Spec (F64 (Time.DaysFromCivil (2030, 1, 1)), F64 (Time.DaysFromCivil (2031, 1, 1))) ;
+  svg := Plot.Chart (s) ;
+  Check.That (t, 'a window with nothing in it says so',
+              Text.Contains (svg, '>No data in this period<')) ;
+
+  (* the picture *)
+  s := Spec (F64 (day), F64 (Time.DaysFromCivil (2022, 1, 1))) ;
+  svg := Plot.Chart (s) ;
+  w := 0 ; h := 0 ; rw := 0 ; rh := 0 ;
+  mine := Png.Raster (pool, svg, 72.0, w, h) ;
+  Check.That (t, 'Png.FromSvg draws the chart: 960 by 560, with ink on it',
+              w = 960 AND h = 560 AND Dark (mine) > 1000.0) ;
+  theirs := Png.Decode (pool, Io.ReadFileBytes (pool, Check.GoldPath ('png/chart-chrome.png')), rw, rh) ;
+  Check.That (t, 'the chart: the same size as Chrome drew it', w = rw AND h = rh) ;
+  IF LEN (mine) = LEN (theirs) THEN
+    sum := 0.0 ;
+    far := 0 ;
+    i := 0 ;
+    WHILE i < LEN (mine) DO
+      big := 0 ;
+      FOR k := 0 TO 2 DO
+        d := I64 (mine[i + k]) - I64 (theirs[i + k]) ;
+        IF d < 0 THEN d := -d END ;
+        sum := sum + F64 (d) ;
+        IF d > big THEN big := d END
+      END ;
+      IF big > 96 THEN far := far + 1 END ;
+      i := i + 3
+    END ;
+    Check.Near (t, 'the chart: the mean difference from Chrome, of 255',
+                sum / F64 (LEN (mine)), 0.0, 2.5, 0.0) ;
+    Check.Near (t, 'the chart: the share of pixels far from Chrome',
+                F64 (far) / F64 (w * h), 0.0, 0.01, 0.0)
+  END
+END Charts ;
+
+(* ---- panels: four figures of four kinds in one document ----
+
+   Composed from the documents the four renderers answer, drawn by
+   Png.FromSvg and compared with Chrome's render; the test writes
+   /tmp/m9plottest-panels.svg each run for re-recording Chrome's
+   picture (gold/png/panels-chrome.png, 1440 by 900). *)
+
+PROCEDURE FourFigures () : SLICE OF STR
+  RAISES Faults.SizeError, Faults.BadArg, Zip.Error, ValueRange =
+VAR
+  figs : SLICE OF STR ;
+  ratio, corr : GRID 2 OF F64 ;
+  xs, ys : SLICE OF F64 ;
+  m : PTR Mat.Matrix ;
+  i, j : I64 ;
+BEGIN
+  figs := NEW (pool, STR, 4) ;
+  ratio := Rows (Check.GoldF64s (t, gold, 'taylor.ratio'), 2, 16) ;
+  corr := Rows (Check.GoldF64s (t, gold, 'taylor.corr'), 2, 16) ;
+  figs[0] := Plot.RenderTaylor ('Annual', ratio, corr, Cases, Names) ;
+  figs[1] := Plot.Chart (Spec (F64 (Time.DaysFromCivil (2017, 1, 1)),
+                               F64 (Time.DaysFromCivil (2022, 1, 1)))) ;
+  xs := NEW (pool, F64, 50) ;
+  ys := NEW (pool, F64, 50) ;
+  FOR i := 0 TO 49 DO
+    xs[i] := F64 (i) ;
+    ys[i] := 400.0 + 10.0 * Math.Sin (F64 (i) / 4.0)
+  END ;
+  Plot.ClearFigure () ;
+  Plot.AddLine (xs, ys, 0, 'a line') ;
+  figs[2] := Plot.Render ('Lines', 'x', 'y') ;
+  m := Mat.New (pool, 12, 20) ;
+  FOR i := 0 TO 11 DO
+    FOR j := 0 TO 19 DO
+      Mat.Set (m, i, j, Math.Sin (F64 (i) / 3.0) * Math.Cos (F64 (j) / 5.0))
+    END
+  END ;
+  figs[3] := Plot.RenderHeat ('Heat', m, Plot.Coolwarm (), TRUE) ;
+  RETURN figs
+END FourFigures ;
+
+PROCEDURE Composed ()
+  RAISES Io.IOError, Zip.Error, Png.Error, Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  figs, two : SLICE OF STR ;
+  svg : STR ;
+  mine, theirs : SLICE OF BYTE ;
+  w, h, rw, rh, i, k, far, d, big : I64 ;
+  sum : F64 ;
+BEGIN
+  figs := FourFigures () ;
+  svg := Plot.Panels (2, 2, figs, 'Four figures', 1440, 900) ;
+  Io.WriteFile ('/tmp/m9plottest-panels.svg', svg) ;
+  Check.EqI64 (t, 'Panels: four groups, each translated and scaled',
+               Count (svg, '<g class="panel" transform="translate('), 4) ;
+  Check.That (t, 'Panels: the title across the top',
+              Text.Contains (svg, '>Four figures</text>')) ;
+  Check.That (t, 'Panels: the chart keeps its clip path, under a name of its own',
+              Count (svg, 'id="p1-cv-clip"') = 1 AND Count (svg, 'url(#p1-cv-clip)') = 1
+              AND Count (svg, 'id="cv-clip"') = 0) ;
+  Check.That (t, 'Panels: no inner <svg> remains',
+              Count (svg, '<svg') = 1 AND Count (svg, '</svg>') = 1) ;
+  two := NEW (pool, STR, 2) ;
+  two[0] := figs[2] ; two[1] := figs[3] ;
+  svg := Plot.Panels (3, 1, two, '', 900, 300) ;
+  Check.EqI64 (t, 'Panels: two figures in three cells leave one empty, and no title band',
+               Count (svg, '<g class="panel"'), 2) ;
+  Check.That (t, 'Panels: without a title the first cell begins at the top',
+              Text.Contains (svg, 'transform="translate(0.00 ')) ;
+  Check.EqStr (t, 'Panels: more figures than cells is a SizeError',
+               PanelRefusal (1, 1, figs, 400, 400), 'SizeError') ;
+  Check.EqStr (t, 'Panels: a grid of nothing is refused',
+               PanelRefusal (0, 1, two, 400, 400), 'BadArg') ;
+  two[1] := '<p>not a figure</p>' ;
+  Check.EqStr (t, 'Panels: a document that is no figure is refused',
+               PanelRefusal (2, 1, two, 400, 400), 'BadArg') ;
+
+  (* the picture *)
+  svg := Plot.Panels (2, 2, figs, 'Four figures', 1440, 900) ;
+  w := 0 ; h := 0 ; rw := 0 ; rh := 0 ;
+  mine := Png.Raster (pool, svg, 72.0, w, h) ;
+  Check.That (t, 'Png.FromSvg draws the four panels: 1440 by 900',
+              w = 1440 AND h = 900 AND Dark (mine) > 2000.0) ;
+  theirs := Png.Decode (pool, Io.ReadFileBytes (pool, Check.GoldPath ('png/panels-chrome.png')), rw, rh) ;
+  Check.That (t, 'the panels: the same size as Chrome drew them', w = rw AND h = rh) ;
+  IF LEN (mine) = LEN (theirs) THEN
+    sum := 0.0 ;
+    far := 0 ;
+    i := 0 ;
+    WHILE i < LEN (mine) DO
+      big := 0 ;
+      FOR k := 0 TO 2 DO
+        d := I64 (mine[i + k]) - I64 (theirs[i + k]) ;
+        IF d < 0 THEN d := -d END ;
+        sum := sum + F64 (d) ;
+        IF d > big THEN big := d END
+      END ;
+      IF big > 96 THEN far := far + 1 END ;
+      i := i + 3
+    END ;
+    Check.Near (t, 'the panels: the mean difference from Chrome, of 255',
+                sum / F64 (LEN (mine)), 0.0, 2.5, 0.0) ;
+    Check.Near (t, 'the panels: the share of pixels far from Chrome',
+                F64 (far) / F64 (w * h), 0.0, 0.01, 0.0)
+  END
+END Composed ;
+
+PROCEDURE PanelRefusal (cols, rows: I64 ; RO figs: SLICE OF STR ; w, h: I64) : STR =
+VAR svg : STR ;
+BEGIN
+  svg := Plot.Panels (cols, rows, figs, 't', w, h) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError (got, want) : RETURN 'SizeError'
+| Faults.BadArg (what) : RETURN 'BadArg'
+| ValueRange : RETURN 'ValueRange'
+END PanelRefusal ;
+
+PROCEDURE Dark (RO pix: SLICE OF BYTE) : F64 =
+VAR i : I64 ; s : F64 ;
+BEGIN
+  s := 0.0 ;
+  i := 0 ;
+  WHILE i < LEN (pix) DO
+    s := s + F64 (255 - I64 (pix[i])) / 255.0 ;
+    i := i + 3
+  END ;
+  RETURN s
+END Dark ;
+
+PROCEDURE Sizes () =
+BEGIN
+  Check.EqI64 (t, 'RenderTaylor: two cases by sixteen names is drawn',
+               Refused (2, 16, 2, 16, Cases, Names), -1) ;
+  Check.EqI64 (t, 'RenderTaylor: correlations of another number of rows',
+               Refused (2, 16, 3, 16, Cases, Names), 3002) ;
+  Check.EqI64 (t, 'RenderTaylor: of another number of columns',
+               Refused (2, 16, 2, 15, Cases, Names), 15016) ;
+  Check.EqI64 (t, 'RenderTaylor: more rows than cases named',
+               Refused (7, 16, 7, 16, Cases, Names), 2007) ;
+  Check.EqI64 (t, 'RenderTaylor: fewer columns than names',
+               Refused (2, 4, 2, 4, Cases, Names), 16004)
+END Sizes ;
+
+BEGIN
+  gold := Check.GoldPath ('Plot.gold') ;
+  Geometry () ;
+  Drawings () ;
+  Sizes () ;
+  Charts () ;
+  Composed () ;
+  Io.Halt (Check.Done (t, 'Plot'))
+EXCEPT
+| Zip.Error (msg) :
+    Check.That (t, 'no Zip.Error escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Plot'))
+| Png.Error (msg) :
+    Check.That (t, 'no Png.Error escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Plot'))
+| Faults.BadArg (what) :
+    Check.That (t, 'no BadArg escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Plot'))
+| Io.IOError (path) :
+    Check.That (t, 'no IOError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Plot'))
+| Faults.SizeError (got, want) :
+    Check.That (t, 'no SizeError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Plot'))
+| ValueRange :
+    Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Plot'))
+END PlotTest.

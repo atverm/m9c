@@ -1,0 +1,31 @@
+FAIL That
+FAIL EqI64: got -7, want 7
+FAIL EqBool: got FALSE, want TRUE
+FAIL EqStr: got 'abc', want 'abc '
+FAIL EqF64: got 1.00000000000000e-1, want 2.00000000000000e-1
+FAIL EqF64 NaN is not a number: got NaN, want 1.00000000000000e0
+FAIL EqF64 one ulp apart: got 3.00000000000000e-1 (bits 343333333333D33F), want 3.00000000000000e-1 (bits 333333333333D33F)
+FAIL Near absolute: got 1.00000000000000e0, want 1.20000000000000e0 within 1.00000000000000e-1 + 0.00000000000000e0 of it
+FAIL Near relative: got 1.00000000000000e3, want 1.00300000000000e3 within 0.00000000000000e0 + 2.00000000000000e-3 of it
+FAIL Near NaN: got 1.00000000000000e0, want NaN within 1.00000000000000e0 + 1.00000000000000e0 of it
+FAIL Near Inf: got Inf, want -Inf within 1.00000000000000e0 + 1.00000000000000e0 of it
+FAIL EqI64s: 2 of 3 differ, first at [1]: got 2, want 5
+FAIL EqI64s length: length 2, want 3
+FAIL EqStrs: 1 of 3 differ, first at [2]: got 'c', want 'd '
+FAIL NearF64s: 1 of 3 differ, first at [1]: got 2.00000000000000e0, want 2.50000000000000e0
+FAIL Raises nothing: raised nothing, want IndexError
+FAIL Raises another: raised IndexError, want Overflow
+FAIL Raises asked for ValueRange: Check.Raises asks an Action for IndexError or Overflow, not 'ValueRange'
+FAIL RaisesValueRange nothing: raised nothing, want ValueRange
+FAIL EqBools: 1 of 2 differ, first at [0]: got TRUE, want FALSE
+FAIL absent: no such golden in runtime/test/gold/Check.gold
+FAIL ints: is i64 in runtime/test/gold/Check.gold, asked for as f64
+FAIL short: says 3 values and holds 2 in runtime/test/gold/Check.gold
+FAIL nothex: a value is not 16 hex digits, in runtime/test/gold/Check.gold
+FAIL notbool: a value is neither 0 nor 1, in runtime/test/gold/Check.gold
+FAIL notint: a value is not an integer, in runtime/test/gold/Check.gold
+FAIL toobig: a value is not an integer, in runtime/test/gold/Check.gold
+FAIL reals: cannot read runtime/test/gold/Absent.gold
+PASS (27 checks) -- good
+FAILED 28 of 28 -- bad
+PASS (7 checks) -- Check

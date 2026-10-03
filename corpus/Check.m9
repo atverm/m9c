@@ -1,0 +1,672 @@
+DEFINITION MODULE Check ;
+
+(* A test written in M9: checks that count, say what they found, and
+   end in an exit status.
+
+       MODULE TextTest ;
+       IMPORT Check, Io, Text ;
+       VAR t : Check.T ;
+       BEGIN
+         Check.EqI64 (t, 'Find', Text.Find ('abcdef', 'cde'), 2) ;
+         Check.That (t, 'Contains', Text.Contains ('abcdef', 'cde')) ;
+         Io.Halt (Check.Done (t, 'Text'))
+       END TextTest.
+
+   Written because the corpus was gated by C drivers, by hand, against
+   generated headers, and a change to the C a module turns into
+   stranded them without a word: twelve calls in one driver at the
+   0.13.0 release, three hundred in an application's.  A test in M9
+   is checked by the compiler, so the same change is a compile error
+   at the call.
+
+   A check that fails prints ONE line -- FAIL, the caller's label,
+   what was got and what was wanted -- and the run goes on: errors
+   are values here, and a test that stops at its first failure hides
+   the second.  Done prints the count and answers the exit status.
+
+   The state is a record the test owns, not this module's: a zeroed
+   T is ready (a module variable is zero), two of them count apart,
+   and nothing here is STATEFUL.
+
+   WHAT A TEST MUST KNOW ABOUT RAISING.  A call that can raise goes
+   on a statement of its own, its answer in a local, and the local
+   is what is checked: a raising call written as an ARGUMENT of a
+   check is not guarded before the check runs.  And M9 has no handler
+   for "anything", so Raises and RaisesValueRange below serve the
+   three predeclared exceptions; a module's own is tested by a function of
+   the test's that calls, handles it by name and answers TRUE:
+
+       PROCEDURE MissingRaises () : BOOL =
+       VAR v : I64 ;
+       BEGIN
+         v := Dict.Get (d, 'absent') ;
+         RETURN FALSE
+       EXCEPT
+       | Dict.Missing : RETURN TRUE
+       END MissingRaises ;
+       ...
+       Check.That (t, 'Get of an absent key raises', MissingRaises ()) *)
+
+TYPE
+  T = RECORD
+    checks : I64 ;             (* how many were made *)
+    failed : I64 ;             (* how many of them did not hold *)
+  END ;
+
+  Action = PROCEDURE () ;
+  Raiser = PROCEDURE () RAISES ValueRange ;
+    (* what Raises and RaisesValueRange run: a top-level procedure of
+       the test, with no parameters.  TWO types because a procedure
+       fits a procedure type only when its RAISES is the type's, to
+       the letter (par 2.2.3): IndexError and Overflow need no
+       clause, so a procedure that raises one of them is an Action;
+       one that raises ValueRange says so in its heading and is a
+       Raiser. *)
+
+PROCEDURE That (VAR t: T ; RO label: STR ; ok: BOOL) ;
+  (* the plain form: ok must be TRUE.  The line it prints on failure
+     is the label alone, so let the label say what was expected. *)
+
+PROCEDURE EqI64 (VAR t: T ; RO label: STR ; got, want: I64) ;
+PROCEDURE EqBool (VAR t: T ; RO label: STR ; got, want: BOOL) ;
+PROCEDURE EqStr (VAR t: T ; RO label: STR ; RO got, want: STR) ;
+  (* equal, and on failure both values on the line; strings in
+     quotes, so that a trailing blank shows *)
+
+PROCEDURE EqF64 (VAR t: T ; RO label: STR ; got, want: F64) ;
+  (* EXACTLY equal: no tolerance.  Stated, because the comparison
+     alone does not say it: NaN equals NaN here -- a golden NaN is
+     met by a NaN -- and -0.0 equals 0.0. *)
+
+PROCEDURE Near (VAR t: T ; RO label: STR ; got, want: F64 ;
+                absTol, relTol: F64) ;
+  (* |got - want| <= absTol + relTol * |want|.
+
+       absTol -- the absolute tolerance; 0.0 for none
+       relTol -- the relative one, a fraction of |want|; 0.0 for none
+
+     NaN is near NaN and near nothing else; an infinity is near
+     itself only.  Both tolerances are named at every call on
+     purpose: a default would be a number nobody chose. *)
+
+PROCEDURE EqI64s (VAR t: T ; RO label: STR ;
+                  RO got, want: SLICE OF I64) ;
+PROCEDURE EqStrs (VAR t: T ; RO label: STR ;
+                  RO got, want: SLICE OF STR) ;
+PROCEDURE EqBools (VAR t: T ; RO label: STR ;
+                   RO got, want: SLICE OF BOOL) ;
+PROCEDURE NearF64s (VAR t: T ; RO label: STR ;
+                    RO got, want: SLICE OF F64 ; absTol, relTol: F64) ;
+  (* a slice against a slice, ONE check however long: the lengths
+     must agree, then every element as EqI64, EqStr, EqBool or Near
+     would have it (NearF64s with both tolerances 0.0 is exact
+     equality, NaN meeting NaN).  The failure line gives how many elements differ and
+     the first of them, index and both values. *)
+
+PROCEDURE Raises (VAR t: T ; RO label: STR ; act: Action ;
+                  RO want: STR) ;
+PROCEDURE RaisesValueRange (VAR t: T ; RO label: STR ; act: Raiser) ;
+  (* act must raise the predeclared exception named: want for an
+     Action, ValueRange for a Raiser.
+
+       want -- 'IndexError' or 'Overflow'; any other name fails the
+               check, and the line says which two an Action can be
+               asked for
+
+     The failure line says what act did instead: raised nothing, or
+     raised another of the three. *)
+
+PROCEDURE GoldPath (RO file: STR) : STR ;
+PROCEDURE GoldF64s (VAR t: T ; RO path: STR ; RO name: STR) : SLICE OF F64 ;
+PROCEDURE GoldI64s (VAR t: T ; RO path: STR ; RO name: STR) : SLICE OF I64 ;
+PROCEDURE GoldBools (VAR t: T ; RO path: STR ; RO name: STR)
+  : SLICE OF BOOL ;
+PROCEDURE GoldStrs (VAR t: T ; RO path: STR ; RO name: STR)
+  : SLICE OF STR ;
+PROCEDURE GoldF64 (VAR t: T ; RO path: STR ; RO name: STR) : F64 ;
+PROCEDURE GoldI64 (VAR t: T ; RO path: STR ; RO name: STR) : I64 ;
+  (* GOLDEN VALUES: what an outside oracle -- numpy, scipy, polars --
+     answered, written once into a checked-in file by a generator
+     under tools/ and read here, so that a test needs no Python to
+     run and cannot regenerate what it is compared against.
+
+     The file holds one vector a line, `NAME KIND N V1 ... VN`:
+
+       f64:   each value 16 hex digits, the double's bytes low
+              first (Fmt.Bits): exact, no decimal parser between
+              the oracle's number and the test's
+       i64:   decimal
+       bool:  0 or 1
+       str:   a word with no blank in it; the two characters ''
+              stand for the empty string
+
+     and `#` lines are comments.  The generators put the INPUTS in
+     the file beside the answers, so the test and the oracle cannot
+     disagree about what was computed on.
+
+       path -- the file; GoldPath (file) gives the directory handed
+               to the program as its FIRST argument (m9test.sh passes
+               runtime/test/gold), or runtime/test/gold itself when
+               there is none: a test run by hand from the repository
+               root
+       name -- the vector's; GoldF64 and GoldI64 answer its first
+               value
+
+     Errors are values here too: a file that cannot be read, a name
+     that is not in it, a vector asked for as another kind, a count
+     that disagrees with the values -- each is ONE FAILED CHECK with
+     its line, and the answer is empty (or 0), so the test goes on
+     and its comparisons say the rest. *)
+
+PROCEDURE Done (RO t: T ; RO name: STR) : I64 ;
+  (* prints `PASS (n checks) -- name` or `FAILED k of n -- name` and
+     answers the exit status, 0 or 1: Io.Halt (Check.Done (t, 'M'))
+     is a test's last line.  A run that made NO checks is a failure:
+     a test that checks nothing has not passed. *)
+
+END Check.
+
+
+IMPLEMENTATION MODULE Check ;
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Math ;
+IMPORT Text ;
+
+CONST Known = ['IndexError', 'Overflow'] ;
+
+PROCEDURE Bad (VAR t: T ; RO label: STR ; RO detail: STR) =
+BEGIN
+  t.failed := t.failed + 1 ;
+  IF LEN (detail) = 0 THEN
+    Io.WriteLine ('FAIL ' + label)
+  ELSE
+    Io.WriteLine ('FAIL ' + label + ': ' + detail)
+  END
+END Bad ;
+
+(* a real as a person reads it: fifteen digits, and NaN and the
+   infinities by name.  Fifteen and not seventeen because Fmt.Sci is
+   not exact at seventeen -- 1003.0 printed as 1.0029999999999998e3
+   in this module's first failure line -- and every decimal of
+   fifteen digits or fewer prints as it was written.  Sci cannot
+   raise for fourteen decimals; the handler is there because the
+   checker cannot know. *)
+PROCEDURE Num (v: F64) : STR =
+BEGIN
+  IF Math.IsNaN (v) THEN RETURN 'NaN' END ;
+  IF NOT Math.IsFinite (v) THEN
+    IF v > 0.0 THEN RETURN 'Inf' END ;
+    RETURN '-Inf'
+  END ;
+  RETURN Fmt.Sci (v, 14)
+EXCEPT
+| ValueRange : RETURN '?'
+END Num ;
+
+(* ... and as it IS, when fifteen digits do not tell v from the value
+   it was held against: the bit pattern beside it, which no rounding
+   can make equal *)
+PROCEDURE Shown (v, other: F64) : STR =
+BEGIN
+  IF Text.Eq (Num (v), Num (other)) AND v # other THEN
+    RETURN Num (v) + ' (bits ' + Fmt.Bits (v) + ')'
+  END ;
+  RETURN Num (v)
+END Shown ;
+
+PROCEDURE Quote (RO s: STR) : STR =
+BEGIN
+  RETURN "'" + s + "'"
+END Quote ;
+
+PROCEDURE BoolStr (b: BOOL) : STR =
+BEGIN
+  IF b THEN RETURN 'TRUE' END ;
+  RETURN 'FALSE'
+END BoolStr ;
+
+PROCEDURE SameF64 (a, b: F64) : BOOL =
+BEGIN
+  IF Math.IsNaN (a) OR Math.IsNaN (b) THEN
+    RETURN Math.IsNaN (a) AND Math.IsNaN (b)
+  END ;
+  RETURN a = b
+END SameF64 ;
+
+PROCEDURE IsNear (a, b: F64 ; absTol, relTol: F64) : BOOL =
+BEGIN
+  IF Math.IsNaN (a) OR Math.IsNaN (b) THEN
+    RETURN Math.IsNaN (a) AND Math.IsNaN (b)
+  END ;
+  IF NOT Math.IsFinite (a) OR NOT Math.IsFinite (b) THEN
+    RETURN a = b
+  END ;
+  RETURN Math.Fabs (a - b) <= absTol + relTol * Math.Fabs (b)
+END IsNear ;
+
+PROCEDURE That (VAR t: T ; RO label: STR ; ok: BOOL) =
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF NOT ok THEN Bad (t, label, '') END
+END That ;
+
+PROCEDURE EqI64 (VAR t: T ; RO label: STR ; got, want: I64) =
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF got # want THEN
+    Bad (t, label, 'got ' + Fmt.I64Str (got) + ', want ' +
+                   Fmt.I64Str (want))
+  END
+END EqI64 ;
+
+PROCEDURE EqBool (VAR t: T ; RO label: STR ; got, want: BOOL) =
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF got # want THEN
+    Bad (t, label, 'got ' + BoolStr (got) + ', want ' + BoolStr (want))
+  END
+END EqBool ;
+
+PROCEDURE EqStr (VAR t: T ; RO label: STR ; RO got, want: STR) =
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF NOT Text.Eq (got, want) THEN
+    Bad (t, label, 'got ' + Quote (got) + ', want ' + Quote (want))
+  END
+END EqStr ;
+
+PROCEDURE EqF64 (VAR t: T ; RO label: STR ; got, want: F64) =
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF NOT SameF64 (got, want) THEN
+    Bad (t, label, 'got ' + Shown (got, want) + ', want ' +
+                   Shown (want, got))
+  END
+END EqF64 ;
+
+PROCEDURE Near (VAR t: T ; RO label: STR ; got, want: F64 ;
+                absTol, relTol: F64) =
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF NOT IsNear (got, want, absTol, relTol) THEN
+    Bad (t, label, 'got ' + Shown (got, want) + ', want ' +
+                   Shown (want, got) + ' within ' + Num (absTol) +
+                   ' + ' + Num (relTol) + ' of it')
+  END
+END Near ;
+
+(* the three slice forms share their failure line: how many differ,
+   and the first *)
+PROCEDURE Differ (VAR t: T ; RO label: STR ; n, total, first: I64 ;
+                  RO got: STR ; RO want: STR) =
+BEGIN
+  Bad (t, label, Fmt.I64Str (n) + ' of ' + Fmt.I64Str (total) +
+                 ' differ, first at [' + Fmt.I64Str (first) + ']: got ' +
+                 got + ', want ' + want)
+END Differ ;
+
+PROCEDURE Lengths (VAR t: T ; RO label: STR ; got, want: I64) : BOOL =
+BEGIN
+  IF got = want THEN RETURN TRUE END ;
+  Bad (t, label, 'length ' + Fmt.I64Str (got) + ', want ' +
+                 Fmt.I64Str (want)) ;
+  RETURN FALSE
+END Lengths ;
+
+PROCEDURE EqI64s (VAR t: T ; RO label: STR ;
+                  RO got, want: SLICE OF I64) =
+VAR i, n, first : I64 ;
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF Lengths (t, label, LEN (got), LEN (want)) THEN
+    n := 0 ;
+    first := -1 ;
+    FOR i := 0 TO LEN (want) - 1 DO
+      IF got[i] # want[i] THEN
+        IF n = 0 THEN first := i END ;
+        n := n + 1
+      END
+    END ;
+    IF n > 0 THEN
+      Differ (t, label, n, LEN (want), first, Fmt.I64Str (got[first]),
+              Fmt.I64Str (want[first]))
+    END
+  END
+END EqI64s ;
+
+PROCEDURE EqStrs (VAR t: T ; RO label: STR ;
+                  RO got, want: SLICE OF STR) =
+VAR i, n, first : I64 ;
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF Lengths (t, label, LEN (got), LEN (want)) THEN
+    n := 0 ;
+    first := -1 ;
+    FOR i := 0 TO LEN (want) - 1 DO
+      IF NOT Text.Eq (got[i], want[i]) THEN
+        IF n = 0 THEN first := i END ;
+        n := n + 1
+      END
+    END ;
+    IF n > 0 THEN
+      Differ (t, label, n, LEN (want), first, Quote (got[first]),
+              Quote (want[first]))
+    END
+  END
+END EqStrs ;
+
+PROCEDURE EqBools (VAR t: T ; RO label: STR ;
+                   RO got, want: SLICE OF BOOL) =
+VAR i, n, first : I64 ;
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF Lengths (t, label, LEN (got), LEN (want)) THEN
+    n := 0 ;
+    first := -1 ;
+    FOR i := 0 TO LEN (want) - 1 DO
+      IF got[i] # want[i] THEN
+        IF n = 0 THEN first := i END ;
+        n := n + 1
+      END
+    END ;
+    IF n > 0 THEN
+      Differ (t, label, n, LEN (want), first, BoolStr (got[first]),
+              BoolStr (want[first]))
+    END
+  END
+END EqBools ;
+
+PROCEDURE NearF64s (VAR t: T ; RO label: STR ;
+                    RO got, want: SLICE OF F64 ; absTol, relTol: F64) =
+VAR i, n, first : I64 ;
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF Lengths (t, label, LEN (got), LEN (want)) THEN
+    n := 0 ;
+    first := -1 ;
+    FOR i := 0 TO LEN (want) - 1 DO
+      IF NOT IsNear (got[i], want[i], absTol, relTol) THEN
+        IF n = 0 THEN first := i END ;
+        n := n + 1
+      END
+    END ;
+    IF n > 0 THEN
+      Differ (t, label, n, LEN (want), first,
+              Shown (got[first], want[first]),
+              Shown (want[first], got[first]))
+    END
+  END
+END NearF64s ;
+
+(* what act did: the name of the predeclared exception it raised, or
+   '' when it returned.  One for each type, alike but for the call. *)
+PROCEDURE Outcome (act: Action) : STR =
+BEGIN
+  act () ;
+  RETURN ''
+EXCEPT
+| IndexError : RETURN 'IndexError'
+| Overflow : RETURN 'Overflow'
+END Outcome ;
+
+PROCEDURE OutcomeVR (act: Raiser) : STR =
+BEGIN
+  act () ;
+  RETURN ''
+EXCEPT
+| ValueRange : RETURN 'ValueRange'
+| IndexError : RETURN 'IndexError'
+| Overflow : RETURN 'Overflow'
+END OutcomeVR ;
+
+PROCEDURE Raised (VAR t: T ; RO label: STR ; RO did: STR ; RO want: STR) =
+BEGIN
+  IF NOT Text.Eq (did, want) THEN
+    IF LEN (did) = 0 THEN
+      Bad (t, label, 'raised nothing, want ' + want)
+    ELSE
+      Bad (t, label, 'raised ' + did + ', want ' + want)
+    END
+  END
+END Raised ;
+
+PROCEDURE Raises (VAR t: T ; RO label: STR ; act: Action ;
+                  RO want: STR) =
+VAR did : STR ;
+BEGIN
+  t.checks := t.checks + 1 ;
+  IF NOT Text.OneOf (want, Known) THEN
+    Bad (t, label, 'Check.Raises asks an Action for IndexError or ' +
+                   'Overflow, not ' + Quote (want))
+  ELSE
+    did := Outcome (act) ;
+    Raised (t, label, did, want)
+  END
+END Raises ;
+
+PROCEDURE RaisesValueRange (VAR t: T ; RO label: STR ; act: Raiser) =
+VAR did : STR ;
+BEGIN
+  t.checks := t.checks + 1 ;
+  did := OutcomeVR (act) ;
+  Raised (t, label, did, 'ValueRange')
+END RaisesValueRange ;
+
+(* ---- golden files ---- *)
+
+CONST DefaultGold = 'runtime/test/gold' ;
+
+PROCEDURE GoldPath (RO file: STR) : STR =
+VAR scratch : POOL ;
+BEGIN
+  IF Io.ArgCount () > 1 THEN
+    RETURN Io.Arg (scratch, 1) + '/' + file
+  END ;
+  RETURN DefaultGold + '/' + file
+EXCEPT
+| ValueRange : RETURN DefaultGold + '/' + file
+END GoldPath ;
+
+(* a problem with the golden file itself is a failed check, counted
+   like any other, so Done cannot say PASS over a file nobody read *)
+PROCEDURE Fault (VAR t: T ; RO name: STR ; RO detail: STR) =
+BEGIN
+  t.checks := t.checks + 1 ;
+  Bad (t, name, detail)
+END Fault ;
+
+(* decimal, with a sign; ok FALSE for anything else.  Fmt has no
+   integer parser (2026-10-02); when it does, this goes. *)
+PROCEDURE Int (RO s: STR ; VAR ok: BOOL) : I64 =
+VAR
+  i, v, d : I64 ;
+  neg : BOOL ;
+BEGIN
+  ok := FALSE ;
+  v := 0 ;
+  i := 0 ;
+  neg := FALSE ;
+  IF LEN (s) > 0 THEN
+    IF s[0] = '-' THEN neg := TRUE ; i := 1 END
+  END ;
+  IF i >= LEN (s) THEN RETURN 0 END ;
+  (* the digits are taken in NEGATIVE space, where every I64 fits:
+     the smallest one has no positive twin, and it is the missing
+     value of an integer column -- the first Frame golden could not
+     be read until this was so *)
+  WHILE i < LEN (s) DO
+    d := ORD (s[i]) - ORD ('0') ;
+    IF d < 0 OR d > 9 THEN RETURN 0 END ;
+    v := v * 10 - d ;
+    i := i + 1
+  END ;
+  ok := TRUE ;
+  IF neg THEN RETURN v END ;
+  RETURN -v
+EXCEPT
+| Overflow : ok := FALSE ; RETURN 0
+END Int ;
+
+(* the fields of the line `name kind n v1 ... vn`, or nothing and one
+   failed check saying why.  The fields are views of the file's text,
+   which is read into the caller's scratch pool. *)
+PROCEDURE GoldLine (VAR t: T ; VAR scratch: POOL ; RO path: STR ;
+                    RO name: STR ; RO kind: STR) : SLICE OF STR =
+VAR
+  text : STR ;
+  lines, f : SLICE OF STR ;
+  i, n : I64 ;
+  ok : BOOL ;
+BEGIN
+  text := Io.ReadFile (scratch, path) ;
+  lines := Text.Split (text, 0AC) ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF Text.StartsWith (lines[i], name) THEN
+      f := Text.Fields (lines[i], ' ') ;
+      IF LEN (f) >= 3 THEN
+        IF Text.Eq (f[0], name) THEN
+          IF NOT Text.Eq (f[1], kind) THEN
+            Fault (t, name, 'is ' + f[1] + ' in ' + path +
+                            ', asked for as ' + kind) ;
+            RETURN NEW (STR, 0)
+          END ;
+          n := Int (f[2], ok) ;
+          IF NOT ok OR n # LEN (f) - 3 THEN
+            Fault (t, name, 'says ' + f[2] + ' values and holds ' +
+                            Fmt.I64Str (LEN (f) - 3) + ' in ' + path) ;
+            RETURN NEW (STR, 0)
+          END ;
+          RETURN f
+        END
+      END
+    END
+  END ;
+  Fault (t, name, 'no such golden in ' + path) ;
+  RETURN NEW (STR, 0)
+EXCEPT
+| Io.IOError :
+    Fault (t, name, 'cannot read ' + path) ;
+    RETURN NEW (STR, 0)
+| ValueRange :
+    Fault (t, name, 'cannot read ' + path) ;
+    RETURN NEW (STR, 0)
+END GoldLine ;
+
+PROCEDURE GoldF64s (VAR t: T ; RO path: STR ; RO name: STR)
+  : SLICE OF F64 =
+VAR
+  scratch : POOL ;
+  f : SLICE OF STR ;
+  out : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  f := GoldLine (t, scratch, path, name, 'f64') ;
+  IF LEN (f) < 3 THEN RETURN NEW (F64, 0) END ;
+  out := NEW (F64, LEN (f) - 3) ;
+  FOR i := 3 TO LEN (f) - 1 DO
+    out[i - 3] := Fmt.ParseBits (f[i])
+  END ;
+  RETURN out
+EXCEPT
+| ValueRange :
+    Fault (t, name, 'a value is not 16 hex digits, in ' + path) ;
+    RETURN NEW (F64, 0)
+END GoldF64s ;
+
+PROCEDURE GoldI64s (VAR t: T ; RO path: STR ; RO name: STR)
+  : SLICE OF I64 =
+VAR
+  scratch : POOL ;
+  f : SLICE OF STR ;
+  out : SLICE OF I64 ;
+  i : I64 ;
+  ok : BOOL ;
+BEGIN
+  f := GoldLine (t, scratch, path, name, 'i64') ;
+  IF LEN (f) < 3 THEN RETURN NEW (I64, 0) END ;
+  out := NEW (I64, LEN (f) - 3) ;
+  FOR i := 3 TO LEN (f) - 1 DO
+    out[i - 3] := Int (f[i], ok) ;
+    IF NOT ok THEN
+      Fault (t, name, 'a value is not an integer, in ' + path) ;
+      RETURN NEW (I64, 0)
+    END
+  END ;
+  RETURN out
+END GoldI64s ;
+
+PROCEDURE GoldBools (VAR t: T ; RO path: STR ; RO name: STR)
+  : SLICE OF BOOL =
+VAR
+  scratch : POOL ;
+  f : SLICE OF STR ;
+  out : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  f := GoldLine (t, scratch, path, name, 'bool') ;
+  IF LEN (f) < 3 THEN RETURN NEW (BOOL, 0) END ;
+  out := NEW (BOOL, LEN (f) - 3) ;
+  FOR i := 3 TO LEN (f) - 1 DO
+    IF Text.Eq (f[i], '1') THEN
+      out[i - 3] := TRUE
+    ELSIF Text.Eq (f[i], '0') THEN
+      out[i - 3] := FALSE
+    ELSE
+      Fault (t, name, 'a value is neither 0 nor 1, in ' + path) ;
+      RETURN NEW (BOOL, 0)
+    END
+  END ;
+  RETURN out
+END GoldBools ;
+
+PROCEDURE GoldStrs (VAR t: T ; RO path: STR ; RO name: STR)
+  : SLICE OF STR =
+VAR
+  scratch : POOL ;
+  f, out : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  f := GoldLine (t, scratch, path, name, 'str') ;
+  IF LEN (f) < 3 THEN RETURN NEW (STR, 0) END ;
+  out := NEW (STR, LEN (f) - 3) ;
+  FOR i := 3 TO LEN (f) - 1 DO
+    (* copied: the fields are views of a file that goes with scratch *)
+    IF Text.Eq (f[i], "''") THEN out[i - 3] := '' ELSE out[i - 3] := f[i] + '' END
+  END ;
+  RETURN out
+END GoldStrs ;
+
+PROCEDURE GoldF64 (VAR t: T ; RO path: STR ; RO name: STR) : F64 =
+VAR v : SLICE OF F64 ;
+BEGIN
+  v := GoldF64s (t, path, name) ;
+  IF LEN (v) = 0 THEN RETURN 0.0 END ;
+  RETURN v[0]
+END GoldF64 ;
+
+PROCEDURE GoldI64 (VAR t: T ; RO path: STR ; RO name: STR) : I64 =
+VAR v : SLICE OF I64 ;
+BEGIN
+  v := GoldI64s (t, path, name) ;
+  IF LEN (v) = 0 THEN RETURN 0 END ;
+  RETURN v[0]
+END GoldI64 ;
+
+PROCEDURE Done (RO t: T ; RO name: STR) : I64 =
+BEGIN
+  IF t.checks = 0 THEN
+    Io.WriteLine ('FAILED: no checks were made -- ' + name) ;
+    RETURN 1
+  END ;
+  IF t.failed > 0 THEN
+    Io.WriteLine ('FAILED ' + Fmt.I64Str (t.failed) + ' of ' +
+                  Fmt.I64Str (t.checks) + ' -- ' + name) ;
+    RETURN 1
+  END ;
+  Io.WriteLine ('PASS (' + Fmt.I64Str (t.checks) + ' checks) -- ' + name) ;
+  RETURN 0
+END Done ;
+
+END Check.

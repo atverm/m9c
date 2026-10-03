@@ -5,6 +5,7 @@
 #include "Math.h"
 #include "Bits.h"
 #include "Faults.h"
+#include "Sort.h"
 
 void Stats_m9init (m9_state *err);
 
@@ -12,6 +13,8 @@ typedef struct Stats_Fit Stats_Fit;
 typedef struct Stats_Reg Stats_Reg;
 typedef struct Stats_Test Stats_Test;
 typedef struct Stats_Stream Stats_Stream;
+typedef struct Stats_Comp Stats_Comp;
+typedef struct Stats_Win Stats_Win;
 
 extern const m9_exc Stats_TooFew;
 
@@ -21,11 +24,29 @@ extern const m9_exc Stats_TooFew;
 #define Stats_SmGamma INT64_C(-7046029254386353131)
 #define Stats_SmMul1 INT64_C(-4658895280553007687)
 #define Stats_SmMul2 INT64_C(-7723592293110705685)
+#define Stats_Sqrt2Pi (2.5066282746310002)
+#define Stats_Ln2 (0.6931471805599453)
+#define Stats_Tiny (1.0E-300)
+#define Stats_PLow (0.02425)
+
+#ifndef M9SL_m9_arr_6_double
+#define M9SL_m9_arr_6_double
+typedef struct { double v[6]; } m9_arr_6_double;
+#endif
+#ifndef M9SL_m9_arr_5_double
+#define M9SL_m9_arr_5_double
+typedef struct { double v[5]; } m9_arr_5_double;
+#endif
+#ifndef M9SL_m9_gd2_double
+#define M9SL_m9_gd2_double
+M9_GRID_T (m9_gd2_double, double, 2)
+#endif
 
 typedef struct Stats_Fit Stats_Fit;
 struct Stats_Fit {
   double mu;
   double sigma;
+  int64_t n;
 };
 
 typedef struct Stats_Reg Stats_Reg;
@@ -35,6 +56,7 @@ struct Stats_Reg {
   double r;
   double p;
   double stderr;
+  int64_t n;
 };
 
 typedef struct Stats_Test Stats_Test;
@@ -42,6 +64,7 @@ struct Stats_Test {
   double t;
   double p;
   double dof;
+  int64_t n;
 };
 
 typedef struct Stats_Stream Stats_Stream;
@@ -54,6 +77,7 @@ struct Stats_Stream {
   double spare;
 };
 
+int64_t Stats_Count (m9_sl_F64 xs, m9_state *err);
 double Stats_Mean (m9_sl_F64 xs, m9_state *err);
 double Stats_Var (m9_sl_F64 xs, m9_state *err);
 double Stats_VarP (m9_sl_F64 xs, m9_state *err);
@@ -73,5 +97,32 @@ int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_state *err)
 double Stats_Normal (Stats_Stream *st, m9_state *err);
 double Stats_Exponential (Stats_Stream *st, double lambda, m9_state *err);
 double Stats_LogNormal (Stats_Stream *st, double mu, double sigma, m9_state *err);
+m9_sl_F64 Stats_BinEdges (int64_t bins, double lo, double hi, m9_state *err);
+int64_t Stats_BinOf (double x, int64_t bins, double lo, double hi, m9_state *err);
+m9_sl_I64 Stats_Histogram (m9_sl_F64 xs, int64_t bins, double lo, double hi, m9_state *err);
+m9_sl_F64 Stats_RollingSum (m9_sl_F64 xs, int64_t window, m9_state *err);
+m9_sl_F64 Stats_RollingMean (m9_sl_F64 xs, int64_t window, m9_state *err);
+m9_sl_F64 Stats_RollingMin (m9_sl_F64 xs, int64_t window, m9_state *err);
+m9_sl_F64 Stats_RollingMax (m9_sl_F64 xs, int64_t window, m9_state *err);
+m9_sl_I64 Stats_RollingCount (m9_sl_F64 xs, int64_t window, m9_state *err);
+m9_sl_F64 Stats_Interp (m9_sl_F64 xs, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err);
+double Stats_Interp1 (double x, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err);
+double Stats_Cov (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err);
+double Stats_Corr (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err);
+int64_t Stats_Pairs (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err);
+m9_gd2_double Stats_CovMatrix (m9_gd2_double g, m9_state *err);
+m9_gd2_double Stats_CorrMatrix (m9_gd2_double g, m9_state *err);
+void Stats_Taylor (m9_sl_F64 model, m9_sl_F64 ref, double *ratio, double *corr, double *rms, m9_state *err);
+double Stats_NormalPdf (double x, m9_state *err);
+double Stats_NormalPpf (double p, m9_state *err);
+double Stats_TPdf (double t, double dof, m9_state *err);
+double Stats_TCdf (double t, double dof, m9_state *err);
+double Stats_TPpf (double p, double dof, m9_state *err);
+double Stats_Chi2Pdf (double x, double dof, m9_state *err);
+double Stats_Chi2Cdf (double x, double dof, m9_state *err);
+double Stats_Chi2Ppf (double p, double dof, m9_state *err);
+void Stats_Shuffle (Stats_Stream *st, m9_sl_I64 *a, m9_state *err);
+m9_sl_I64 Stats_Permutation (Stats_Stream *st, int64_t n, m9_state *err);
+m9_sl_I64 Stats_Choice (Stats_Stream *st, int64_t n, int64_t k, m9_state *err);
 
 #endif

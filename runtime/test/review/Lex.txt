@@ -1,0 +1,36 @@
+REVIEW Lex -- 19 procedures with a body, 11 of them functions; 6 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path              11
+  assignments                                    57
+  arguments                                     399
+  RETURN values                                 125
+  operands of a comparison or an operator       104
+  CASE labels                                    93
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    0
+  local pools                                     0
+  pool parameters                                 0
+  KEPT parameters                                 3   Note, Init, Mk
+  HEAP named                                      2   Note, Note
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                                4   errBuf, comOn, coms, ncom
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    1   Lex
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                 2
+  RAISE statements                                1
+  handlers                                        0
+  NEW in the frame                                0
+  NEW in a named pool                             2

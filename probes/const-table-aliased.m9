@@ -1,0 +1,9 @@
+(* EXPECT: the CONST table Primes can only be indexed, measured with LEN, or lent to an RO parameter *)
+MODULE m ;
+CONST Primes = [2, 3, 5] ;
+VAR s : SLICE OF I64 ;
+PROCEDURE F () =
+BEGIN
+  s := SLICE (Primes, 0, 2)
+END F ;
+END m.

@@ -4,7 +4,12 @@ DEFINITION MODULE ZarrStore ;
    names the 2026-08-20 bug the construct makes uncompilable.
    HTTP-backed zarr v2 store, as the M2 stack's zarrhttp was: C-order,
    little-endian numeric dtypes, blosc or raw chunks, missing chunk
-   means fill_value.  Local-file stores arrive with an OS module.    *)
+   means fill_value.  Since 2026-10-03 a store on the LOCAL DISK too:
+   Open takes `file:///data/co2.zarr`, or a bare path; a key is then a
+   file under that directory, and one that is not there is a missing
+   chunk, as a 404 is.  Held to zarr-python's reading of the two
+   stores checked in under docs/tutorial/examples/data by
+   corpus/ZarrStoreTest.m9.                                          *)
 
 TYPE
   Store ;                                  (* opaque *)
@@ -22,7 +27,10 @@ EXCEPTION
 
 PROCEDURE Open (RO url: STR) : SHARED PTR Store
   RAISES StoreError, FormatError ;
-  (* SHARED because every Array retains its Store -- retention is
+  (* `http://host[:port]/root`, `https://...`, `file://PATH` or a
+     PATH with no scheme at all.  Nothing is read at Open: a store
+     that is not there is found out by the first OpenArray.
+     SHARED because every Array retains its Store -- retention is
      part of the contract, and plain borrows refuse it (par 4.2).
      FormatError is in the signature: the caller that ignored a bad
      url today cannot exist -- unhandled RAISES does not compile.    *)
@@ -104,6 +112,7 @@ FROM cblosc IMPORT DecompressCtx ;
 IMPORT Json ;
 IMPORT Http ;
 IMPORT DynStr ;
+IMPORT Io ;
 
 CONST
   MaxRank = 8 ;
@@ -131,8 +140,9 @@ TYPE
     pool : POOL ;                 (* owns the host/root copies *)
     host : STR ;
     port : I64 ;
-    root : STR ;
+    root : STR ;                  (* the URL's path, or the directory *)
     secure : BOOL ;               (* https, decided once at open *)
+    local : BOOL ;                (* a directory on this machine *)
   END ;
 
   ChunkBuf = RECORD
@@ -188,6 +198,16 @@ BEGIN
   DynStr.Append (d, st.root) ;
   DynStr.AppendChar (d, '/') ;
   DynStr.Append (d, rel) ;
+  IF st.local THEN
+    (* a file under the directory; one that is not there is what a
+       404 is to the HTTP store, and the callers read it the same *)
+    IF NOT Io.Exists (DynStr.View (d)) THEN RAISE HttpStatus (404) END ;
+    buf := Io.ReadFileBytes (pool, DynStr.View (d)) ;
+    IF LEN (buf) > maxLen THEN
+      RAISE StoreError ('a chunk file larger than its array allows')
+    END ;
+    RETURN buf
+  END ;
   buf := NEW (pool, BYTE, maxLen) ;
   n := 0 ;
   IF st.secure THEN
@@ -199,6 +219,7 @@ BEGIN
   RETURN SLICE (buf, 0, n)
 EXCEPT
 | TransportError (msg) : RAISE StoreError (msg)
+| Io.IOError (path) : RAISE StoreError ('a chunk file that cannot be read')
 | ValueRange : RAISE StoreError ('store path is not ascii')
 END Fetch ;
 
@@ -211,33 +232,40 @@ VAR
   j, start : I64 ;
 BEGIN
   s := NEW (OWN, Store) ;
-  IF StartsWith (url, 'https://') THEN
-    s.secure := TRUE ;
-    start := 8
-  ELSIF StartsWith (url, 'http://') THEN
+  s.local := NOT (StartsWith (url, 'https://') OR StartsWith (url, 'http://')) ;
+  IF s.local THEN
+    (* a directory: file://PATH, or PATH; a trailing slash dropped *)
+    start := 0 ;
+    IF StartsWith (url, 'file://') THEN start := 7 END ;
+    j := LEN (url) ;
+    WHILE j > start + 1 AND url[j - 1] = '/' DO j := j - 1 END ;
+    IF j = start THEN RAISE FormatError ('a store needs a path') END ;
     s.secure := FALSE ;
-    start := 7
+    s.host := '' ;
+    s.port := 0 ;
+    s.root := CopyChars (s.pool, SLICE (url, start, j - start))
   ELSE
-    RAISE FormatError ('only http:// and https:// stores; files arrive with an OS module')
-  END ;
-  j := start ;
-  WHILE j < LEN (url) AND url[j] # ':' AND url[j] # '/' DO
-    j := j + 1
-  END ;
-  s.host := CopyChars (s.pool, SLICE (url, start, j - start)) ;
-  IF LEN (s.host) = 0 THEN RAISE FormatError ('url has no host') END ;
-  IF s.secure THEN s.port := 443 ELSE s.port := 80 END ;
-  IF j < LEN (url) THEN
-    IF url[j] = ':' THEN
-      j := j + 1 ;
-      s.port := 0 ;
-      WHILE j < LEN (url) AND url[j] >= '0' AND url[j] <= '9' DO
-        s.port := s.port * 10 + ORD (url[j]) - 48 ;
-        j := j + 1
+    s.secure := StartsWith (url, 'https://') ;
+    IF s.secure THEN start := 8 ELSE start := 7 END ;
+    j := start ;
+    WHILE j < LEN (url) AND url[j] # ':' AND url[j] # '/' DO
+      j := j + 1
+    END ;
+    s.host := CopyChars (s.pool, SLICE (url, start, j - start)) ;
+    IF LEN (s.host) = 0 THEN RAISE FormatError ('url has no host') END ;
+    IF s.secure THEN s.port := 443 ELSE s.port := 80 END ;
+    IF j < LEN (url) THEN
+      IF url[j] = ':' THEN
+        j := j + 1 ;
+        s.port := 0 ;
+        WHILE j < LEN (url) AND url[j] >= '0' AND url[j] <= '9' DO
+          s.port := s.port * 10 + ORD (url[j]) - 48 ;
+          j := j + 1
+        END
       END
-    END
+    END ;
+    s.root := CopyChars (s.pool, SLICE (url, j, LEN (url) - j))
   END ;
-  s.root := CopyChars (s.pool, SLICE (url, j, LEN (url) - j)) ;
   RETURN SHARED (s)
 END Open ;
 

@@ -19,6 +19,18 @@ void Sort_F64s (m9_sl_F64 *a, m9_state *err);
 void Sort_I64s (m9_sl_I64 *a, m9_state *err);
 void Sort_Strs (m9_sl_m9_sl_CHAR *a, m9_state *err);
 void Sort_ArgF64 (m9_sl_F64 v, m9_sl_I64 *idx, m9_state *err);
+void Sort_ArgI64 (m9_sl_I64 v, m9_sl_I64 *idx, m9_state *err);
+void Sort_ArgStr (m9_sl_m9_sl_CHAR v, m9_sl_I64 *idx, m9_state *err);
 void Sort_By (m9_sl_I64 *keys, Sort_Less less, m9_state *err);
+m9_sl_F64 Sort_UniqueF64 (m9_sl_F64 v, m9_state *err);
+m9_sl_I64 Sort_UniqueI64 (m9_sl_I64 v, m9_state *err);
+m9_sl_m9_sl_CHAR Sort_UniqueStrs (m9_sl_m9_sl_CHAR v, m9_state *err);
+int64_t Sort_LowerF64 (m9_sl_F64 a, double x, m9_state *err);
+int64_t Sort_UpperF64 (m9_sl_F64 a, double x, m9_state *err);
+int64_t Sort_FindF64 (m9_sl_F64 a, double x, m9_state *err);
+int64_t Sort_LowerI64 (m9_sl_I64 a, int64_t x, m9_state *err);
+int64_t Sort_UpperI64 (m9_sl_I64 a, int64_t x, m9_state *err);
+int64_t Sort_FindI64 (m9_sl_I64 a, int64_t x, m9_state *err);
+int64_t Sort_FindStr (m9_sl_m9_sl_CHAR a, m9_sl_CHAR s, m9_state *err);
 
 #endif

@@ -1,0 +1,8 @@
+(* EXPECT: FOR variable x is F64: a loop over integers counts in an integer variable *)
+MODULE m ;
+VAR
+  x : F64 ;
+  n : I64 ;
+BEGIN
+  FOR x := 0 TO 3 DO n := n + 1 END
+END m.

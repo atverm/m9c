@@ -59,19 +59,29 @@ Time_Civil Time_ToCivil (Time_Instant t, m9_state *err)
   double days = 0; (void) days;
   double sod = 0; (void) sod;
   int64_t isod = 0; (void) isod;
-  days = Time_FloorDiv (t.t, Time_SecPerDay, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(days) m9v = Time_FloorDiv (t.t, Time_SecPerDay, err);
+    if (err->exc) goto L_ret;
+    days = m9v;
+  }
   sod = (t.t - (days * Time_SecPerDay));
   Time_CivilFromDays (m9_i64_f64 ((double)(days), err), &(c.year), &(c.month), &(c.day), err);
   if (err->exc) goto L_ret;
-  isod = m9_i64_f64 ((double)(sod), err);
-  if (err->exc) goto L_ret;
-  c.hour = m9_div_i64 (isod, INT64_C(3600), err);
-  if (err->exc) goto L_ret;
-  c.minute = m9_div_i64 ((m9_mod_i64 (isod, INT64_C(3600), err)), INT64_C(60), err);
-  if (err->exc) goto L_ret;
-  c.second = (sod - (double)(m9_add_i64 (m9_mul_i64 (c.hour, INT64_C(3600), err), m9_mul_i64 (c.minute, INT64_C(60), err), err)));
-  if (err->exc) goto L_ret;
+  { __typeof__(isod) m9v = m9_i64_f64 ((double)(sod), err);
+    if (err->exc) goto L_ret;
+    isod = m9v;
+  }
+  { __typeof__(c.hour) m9v = m9_div_i64 (isod, INT64_C(3600), err);
+    if (err->exc) goto L_ret;
+    c.hour = m9v;
+  }
+  { __typeof__(c.minute) m9v = m9_div_i64 ((m9_mod_i64 (isod, INT64_C(3600), err)), INT64_C(60), err);
+    if (err->exc) goto L_ret;
+    c.minute = m9v;
+  }
+  { __typeof__(c.second) m9v = (sod - (double)(m9_add_i64 (m9_mul_i64 (c.hour, INT64_C(3600), err), m9_mul_i64 (c.minute, INT64_C(60), err), err)));
+    if (err->exc) goto L_ret;
+    c.second = m9v;
+  }
   err->res = m9res;
   m9ret = c;
   goto L_ret;
@@ -112,10 +122,14 @@ Time_Instant Time_FromCivil (Time_Civil c, m9_state *err)
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  days = Time_DaysFromCivil (c.year, c.month, c.day, err);
-  if (err->exc) goto L_ret;
-  r.t = ((((double)(days) * Time_SecPerDay) + (double)(m9_add_i64 (m9_mul_i64 (c.hour, INT64_C(3600), err), m9_mul_i64 (c.minute, INT64_C(60), err), err))) + c.second);
-  if (err->exc) goto L_ret;
+  { __typeof__(days) m9v = Time_DaysFromCivil (c.year, c.month, c.day, err);
+    if (err->exc) goto L_ret;
+    days = m9v;
+  }
+  { __typeof__(r.t) m9v = ((((double)(days) * Time_SecPerDay) + (double)(m9_add_i64 (m9_mul_i64 (c.hour, INT64_C(3600), err), m9_mul_i64 (c.minute, INT64_C(60), err), err))) + c.second);
+    if (err->exc) goto L_ret;
+    r.t = m9v;
+  }
   err->res = m9res;
   m9ret = r;
   goto L_ret;
@@ -139,58 +153,94 @@ Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_state *err)
   double rest = 0; (void) rest;
   int64_t tm = 0; (void) tm;
   bool back = false; (void) back;
-  ca = Time_ToCivil (a, err);
-  if (err->exc) goto L_ret;
-  cb = Time_ToCivil (b, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(ca) m9v = Time_ToCivil (a, err);
+    if (err->exc) goto L_ret;
+    ca = m9v;
+  }
+  { __typeof__(cb) m9v = Time_ToCivil (b, err);
+    if (err->exc) goto L_ret;
+    cb = m9v;
+  }
   back = (b.t < a.t);
-  tm = m9_sub_i64 ((m9_add_i64 (m9_mul_i64 (cb.year, INT64_C(12), err), cb.month, err)), (m9_add_i64 (m9_mul_i64 (ca.year, INT64_C(12), err), ca.month, err)), err);
-  if (err->exc) goto L_ret;
-  mid = Time_AddMonthsOnly (a, tm, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(tm) m9v = m9_sub_i64 ((m9_add_i64 (m9_mul_i64 (cb.year, INT64_C(12), err), cb.month, err)), (m9_add_i64 (m9_mul_i64 (ca.year, INT64_C(12), err), ca.month, err)), err);
+    if (err->exc) goto L_ret;
+    tm = m9v;
+  }
+  { __typeof__(mid) m9v = Time_AddMonthsOnly (a, tm, err);
+    if (err->exc) goto L_ret;
+    mid = m9v;
+  }
   if (back) {
     for (;;) {
       if (!(((mid.t < b.t) && (tm < INT64_C(0))))) break;
-      tm = m9_add_i64 (tm, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      mid = Time_AddMonthsOnly (a, tm, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(tm) m9v = m9_add_i64 (tm, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        tm = m9v;
+      }
+      { __typeof__(mid) m9v = Time_AddMonthsOnly (a, tm, err);
+        if (err->exc) goto L_ret;
+        mid = m9v;
+      }
     }
   } else {
     for (;;) {
       if (!(((mid.t > b.t) && (tm > INT64_C(0))))) break;
-      tm = m9_sub_i64 (tm, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      mid = Time_AddMonthsOnly (a, tm, err);
-      if (err->exc) goto L_ret;
+      { __typeof__(tm) m9v = m9_sub_i64 (tm, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        tm = m9v;
+      }
+      { __typeof__(mid) m9v = Time_AddMonthsOnly (a, tm, err);
+        if (err->exc) goto L_ret;
+        mid = m9v;
+      }
     }
   }
   rest = (b.t - mid.t);
   if ((rest < 0.0)) {
     rest = (- rest);
   }
-  s.days = m9_i64_f64 ((double)(Time_FloorDiv (rest, Time_SecPerDay, err)), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(s.days) m9v = m9_i64_f64 ((double)(Time_FloorDiv (rest, Time_SecPerDay, err)), err);
+    if (err->exc) goto L_ret;
+    s.days = m9v;
+  }
   rest = (rest - ((double)(s.days) * Time_SecPerDay));
-  s.hours = m9_i64_f64 ((double)(Time_FloorDiv (rest, 3600.0, err)), err);
-  if (err->exc) goto L_ret;
-  rest = (rest - (double)(m9_mul_i64 (s.hours, INT64_C(3600), err)));
-  if (err->exc) goto L_ret;
-  s.minutes = m9_i64_f64 ((double)(Time_FloorDiv (rest, 60.0, err)), err);
-  if (err->exc) goto L_ret;
-  s.seconds = (rest - (double)(m9_mul_i64 (s.minutes, INT64_C(60), err)));
-  if (err->exc) goto L_ret;
-  s.years = m9_div_i64 (tm, INT64_C(12), err);
-  if (err->exc) goto L_ret;
-  s.months = m9_sub_i64 (tm, m9_mul_i64 (s.years, INT64_C(12), err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(s.hours) m9v = m9_i64_f64 ((double)(Time_FloorDiv (rest, 3600.0, err)), err);
+    if (err->exc) goto L_ret;
+    s.hours = m9v;
+  }
+  { __typeof__(rest) m9v = (rest - (double)(m9_mul_i64 (s.hours, INT64_C(3600), err)));
+    if (err->exc) goto L_ret;
+    rest = m9v;
+  }
+  { __typeof__(s.minutes) m9v = m9_i64_f64 ((double)(Time_FloorDiv (rest, 60.0, err)), err);
+    if (err->exc) goto L_ret;
+    s.minutes = m9v;
+  }
+  { __typeof__(s.seconds) m9v = (rest - (double)(m9_mul_i64 (s.minutes, INT64_C(60), err)));
+    if (err->exc) goto L_ret;
+    s.seconds = m9v;
+  }
+  { __typeof__(s.years) m9v = m9_div_i64 (tm, INT64_C(12), err);
+    if (err->exc) goto L_ret;
+    s.years = m9v;
+  }
+  { __typeof__(s.months) m9v = m9_sub_i64 (tm, m9_mul_i64 (s.years, INT64_C(12), err), err);
+    if (err->exc) goto L_ret;
+    s.months = m9v;
+  }
   if ((b.t < mid.t)) {
-    s.days = m9_neg_i64 (s.days, err);
-    if (err->exc) goto L_ret;
-    s.hours = m9_neg_i64 (s.hours, err);
-    if (err->exc) goto L_ret;
-    s.minutes = m9_neg_i64 (s.minutes, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s.days) m9v = m9_neg_i64 (s.days, err);
+      if (err->exc) goto L_ret;
+      s.days = m9v;
+    }
+    { __typeof__(s.hours) m9v = m9_neg_i64 (s.hours, err);
+      if (err->exc) goto L_ret;
+      s.hours = m9v;
+    }
+    { __typeof__(s.minutes) m9v = m9_neg_i64 (s.minutes, err);
+      if (err->exc) goto L_ret;
+      s.minutes = m9v;
+    }
     s.seconds = (- s.seconds);
   }
   err->res = m9res;
@@ -210,10 +260,14 @@ Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_state *err)
   err->res = &m9frame;
   Time_Instant m9ret = {0};
   Time_Instant r = {0}; (void) r;
-  r = Time_AddMonthsOnly (t, m9_add_i64 (m9_mul_i64 (s.years, INT64_C(12), err), s.months, err), err);
-  if (err->exc) goto L_ret;
-  r.t = (((r.t + ((double)(s.days) * Time_SecPerDay)) + (double)(m9_add_i64 (m9_mul_i64 (s.hours, INT64_C(3600), err), m9_mul_i64 (s.minutes, INT64_C(60), err), err))) + s.seconds);
-  if (err->exc) goto L_ret;
+  { __typeof__(r) m9v = Time_AddMonthsOnly (t, m9_add_i64 (m9_mul_i64 (s.years, INT64_C(12), err), s.months, err), err);
+    if (err->exc) goto L_ret;
+    r = m9v;
+  }
+  { __typeof__(r.t) m9v = (((r.t + ((double)(s.days) * Time_SecPerDay)) + (double)(m9_add_i64 (m9_mul_i64 (s.hours, INT64_C(3600), err), m9_mul_i64 (s.minutes, INT64_C(60), err), err))) + s.seconds);
+    if (err->exc) goto L_ret;
+    r.t = m9v;
+  }
   err->res = m9res;
   m9ret = r;
   goto L_ret;
@@ -233,10 +287,14 @@ m9_sl_CHAR Time_Iso (Time_Instant t, int64_t decimals, m9_state *err)
   m9_pool pool = {0}; (void) pool;
   Time_Civil c = {0}; (void) c;
   DynStr_DString * d = NULL; (void) d;
-  c = Time_ToCivil (t, err);
-  if (err->exc) goto L_ret;
-  d = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(c) m9v = Time_ToCivil (t, err);
+    if (err->exc) goto L_ret;
+    c = m9v;
+  }
+  { __typeof__(d) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.year, INT64_C(4), true, err), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(d), &(pool), 45u, err);
@@ -326,20 +384,32 @@ Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err)
       m9_raise (err, &m9_exc_ValueRange);
       goto L_ret;
     }
-    v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+      if (err->exc) goto L_ret;
+      v = m9v;
+    }
   } }
   c.year = v;
-  c.month = Time_Digits2 (s, INT64_C(5), err);
-  if (err->exc) goto L_ret;
-  c.day = Time_Digits2 (s, INT64_C(8), err);
-  if (err->exc) goto L_ret;
-  c.hour = Time_Digits2 (s, INT64_C(11), err);
-  if (err->exc) goto L_ret;
-  c.minute = Time_Digits2 (s, INT64_C(14), err);
-  if (err->exc) goto L_ret;
-  c.second = Fmt_ParseF64 (({ __typeof__(s) m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(c.month) m9v = Time_Digits2 (s, INT64_C(5), err);
+    if (err->exc) goto L_ret;
+    c.month = m9v;
+  }
+  { __typeof__(c.day) m9v = Time_Digits2 (s, INT64_C(8), err);
+    if (err->exc) goto L_ret;
+    c.day = m9v;
+  }
+  { __typeof__(c.hour) m9v = Time_Digits2 (s, INT64_C(11), err);
+    if (err->exc) goto L_ret;
+    c.hour = m9v;
+  }
+  { __typeof__(c.minute) m9v = Time_Digits2 (s, INT64_C(14), err);
+    if (err->exc) goto L_ret;
+    c.minute = m9v;
+  }
+  { __typeof__(c.second) m9v = Fmt_ParseF64 (({ __typeof__(s) m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err);
+    if (err->exc) goto L_ret;
+    c.second = m9v;
+  }
   err->res = m9res;
   m9ret = Time_FromCivil (c, err);
   if (err->exc) goto L_ret;
@@ -393,37 +463,61 @@ void Time_CivilFromDays (int64_t z, int64_t *y, int64_t *m, int64_t *d, m9_state
   int64_t doy = 0; (void) doy;
   int64_t mp = 0; (void) mp;
   int64_t zz = 0; (void) zz;
-  zz = m9_add_i64 (z, INT64_C(719468), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(zz) m9v = m9_add_i64 (z, INT64_C(719468), err);
+    if (err->exc) goto L_ret;
+    zz = m9v;
+  }
   if ((zz >= INT64_C(0))) {
-    era = m9_div_i64 (zz, INT64_C(146097), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(era) m9v = m9_div_i64 (zz, INT64_C(146097), err);
+      if (err->exc) goto L_ret;
+      era = m9v;
+    }
   } else {
-    era = m9_div_i64 ((m9_sub_i64 (zz, INT64_C(146096), err)), INT64_C(146097), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(era) m9v = m9_div_i64 ((m9_sub_i64 (zz, INT64_C(146096), err)), INT64_C(146097), err);
+      if (err->exc) goto L_ret;
+      era = m9v;
+    }
   }
-  doe = m9_sub_i64 (zz, m9_mul_i64 (era, INT64_C(146097), err), err);
-  if (err->exc) goto L_ret;
-  yoe = m9_div_i64 ((m9_sub_i64 (m9_add_i64 (m9_sub_i64 (doe, m9_div_i64 (doe, INT64_C(1460), err), err), m9_div_i64 (doe, INT64_C(36524), err), err), m9_div_i64 (doe, INT64_C(146096), err), err)), INT64_C(365), err);
-  if (err->exc) goto L_ret;
-  doy = m9_sub_i64 (doe, (m9_sub_i64 (m9_add_i64 (m9_mul_i64 (INT64_C(365), yoe, err), m9_div_i64 (yoe, INT64_C(4), err), err), m9_div_i64 (yoe, INT64_C(100), err), err)), err);
-  if (err->exc) goto L_ret;
-  mp = m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(5), doy, err), INT64_C(2), err)), INT64_C(153), err);
-  if (err->exc) goto L_ret;
-  (*d) = m9_add_i64 (m9_sub_i64 (doy, m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), mp, err), INT64_C(2), err)), INT64_C(5), err), err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(doe) m9v = m9_sub_i64 (zz, m9_mul_i64 (era, INT64_C(146097), err), err);
+    if (err->exc) goto L_ret;
+    doe = m9v;
+  }
+  { __typeof__(yoe) m9v = m9_div_i64 ((m9_sub_i64 (m9_add_i64 (m9_sub_i64 (doe, m9_div_i64 (doe, INT64_C(1460), err), err), m9_div_i64 (doe, INT64_C(36524), err), err), m9_div_i64 (doe, INT64_C(146096), err), err)), INT64_C(365), err);
+    if (err->exc) goto L_ret;
+    yoe = m9v;
+  }
+  { __typeof__(doy) m9v = m9_sub_i64 (doe, (m9_sub_i64 (m9_add_i64 (m9_mul_i64 (INT64_C(365), yoe, err), m9_div_i64 (yoe, INT64_C(4), err), err), m9_div_i64 (yoe, INT64_C(100), err), err)), err);
+    if (err->exc) goto L_ret;
+    doy = m9v;
+  }
+  { __typeof__(mp) m9v = m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(5), doy, err), INT64_C(2), err)), INT64_C(153), err);
+    if (err->exc) goto L_ret;
+    mp = m9v;
+  }
+  { __typeof__((*d)) m9v = m9_add_i64 (m9_sub_i64 (doy, m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), mp, err), INT64_C(2), err)), INT64_C(5), err), err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*d) = m9v;
+  }
   if ((mp < INT64_C(10))) {
-    (*m) = m9_add_i64 (mp, INT64_C(3), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*m)) m9v = m9_add_i64 (mp, INT64_C(3), err);
+      if (err->exc) goto L_ret;
+      (*m) = m9v;
+    }
   } else {
-    (*m) = m9_sub_i64 (mp, INT64_C(9), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*m)) m9v = m9_sub_i64 (mp, INT64_C(9), err);
+      if (err->exc) goto L_ret;
+      (*m) = m9v;
+    }
   }
-  (*y) = m9_add_i64 (yoe, m9_mul_i64 (era, INT64_C(400), err), err);
-  if (err->exc) goto L_ret;
-  if (((*m) <= INT64_C(2))) {
-    (*y) = m9_add_i64 ((*y), INT64_C(1), err);
+  { __typeof__((*y)) m9v = m9_add_i64 (yoe, m9_mul_i64 (era, INT64_C(400), err), err);
     if (err->exc) goto L_ret;
+    (*y) = m9v;
+  }
+  if (((*m) <= INT64_C(2))) {
+    { __typeof__((*y)) m9v = m9_add_i64 ((*y), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      (*y) = m9v;
+    }
   }
 L_ret: ;
   err->res = m9res;
@@ -445,27 +539,41 @@ int64_t Time_DaysFromCivil (int64_t y, int64_t m, int64_t d, m9_state *err)
   int64_t yy = 0; (void) yy;
   yy = y;
   if ((m <= INT64_C(2))) {
-    yy = m9_sub_i64 (yy, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(yy) m9v = m9_sub_i64 (yy, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      yy = m9v;
+    }
   }
   if ((yy >= INT64_C(0))) {
-    era = m9_div_i64 (yy, INT64_C(400), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(era) m9v = m9_div_i64 (yy, INT64_C(400), err);
+      if (err->exc) goto L_ret;
+      era = m9v;
+    }
   } else {
-    era = m9_div_i64 ((m9_sub_i64 (yy, INT64_C(399), err)), INT64_C(400), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(era) m9v = m9_div_i64 ((m9_sub_i64 (yy, INT64_C(399), err)), INT64_C(400), err);
+      if (err->exc) goto L_ret;
+      era = m9v;
+    }
   }
-  yoe = m9_sub_i64 (yy, m9_mul_i64 (era, INT64_C(400), err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(yoe) m9v = m9_sub_i64 (yy, m9_mul_i64 (era, INT64_C(400), err), err);
+    if (err->exc) goto L_ret;
+    yoe = m9v;
+  }
   if ((m > INT64_C(2))) {
-    doy = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_sub_i64 (m, INT64_C(3), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(doy) m9v = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_sub_i64 (m, INT64_C(3), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      doy = m9v;
+    }
   } else {
-    doy = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_add_i64 (m, INT64_C(9), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(doy) m9v = m9_sub_i64 (m9_add_i64 (m9_div_i64 ((m9_add_i64 (m9_mul_i64 (INT64_C(153), (m9_add_i64 (m, INT64_C(9), err)), err), INT64_C(2), err)), INT64_C(5), err), d, err), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      doy = m9v;
+    }
   }
-  doe = m9_add_i64 (m9_sub_i64 (m9_add_i64 (m9_mul_i64 (yoe, INT64_C(365), err), m9_div_i64 (yoe, INT64_C(4), err), err), m9_div_i64 (yoe, INT64_C(100), err), err), doy, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(doe) m9v = m9_add_i64 (m9_sub_i64 (m9_add_i64 (m9_mul_i64 (yoe, INT64_C(365), err), m9_div_i64 (yoe, INT64_C(4), err), err), m9_div_i64 (yoe, INT64_C(100), err), err), doy, err);
+    if (err->exc) goto L_ret;
+    doe = m9v;
+  }
   err->res = m9res;
   m9ret = m9_sub_i64 (m9_add_i64 (m9_mul_i64 (era, INT64_C(146097), err), doe, err), INT64_C(719468), err);
   if (err->exc) goto L_ret;
@@ -583,16 +691,26 @@ static Time_Instant Time_AddMonthsOnly (Time_Instant t, int64_t months, m9_state
   Time_Civil c = {0}; (void) c;
   int64_t total = 0; (void) total;
   int64_t dim = 0; (void) dim;
-  c = Time_ToCivil (t, err);
-  if (err->exc) goto L_ret;
-  total = m9_add_i64 (m9_add_i64 (m9_mul_i64 (c.year, INT64_C(12), err), (m9_sub_i64 (c.month, INT64_C(1), err)), err), months, err);
-  if (err->exc) goto L_ret;
-  c.year = Time_FloorDivI (total, INT64_C(12), err);
-  if (err->exc) goto L_ret;
-  c.month = m9_add_i64 (m9_sub_i64 (total, m9_mul_i64 (c.year, INT64_C(12), err), err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  dim = Time_DaysInMonth (c.year, c.month, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(c) m9v = Time_ToCivil (t, err);
+    if (err->exc) goto L_ret;
+    c = m9v;
+  }
+  { __typeof__(total) m9v = m9_add_i64 (m9_add_i64 (m9_mul_i64 (c.year, INT64_C(12), err), (m9_sub_i64 (c.month, INT64_C(1), err)), err), months, err);
+    if (err->exc) goto L_ret;
+    total = m9v;
+  }
+  { __typeof__(c.year) m9v = Time_FloorDivI (total, INT64_C(12), err);
+    if (err->exc) goto L_ret;
+    c.year = m9v;
+  }
+  { __typeof__(c.month) m9v = m9_add_i64 (m9_sub_i64 (total, m9_mul_i64 (c.year, INT64_C(12), err), err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    c.month = m9v;
+  }
+  { __typeof__(dim) m9v = Time_DaysInMonth (c.year, c.month, err);
+    if (err->exc) goto L_ret;
+    dim = m9v;
+  }
   if ((c.day > dim)) {
     c.day = dim;
   }
@@ -614,8 +732,10 @@ static int64_t Time_FloorDivI (int64_t a, int64_t b, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   int64_t q = 0; (void) q;
-  q = m9_div_i64 (a, b, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(q) m9v = m9_div_i64 (a, b, err);
+    if (err->exc) goto L_ret;
+    q = m9v;
+  }
   bool m9t1 = (m9_mod_i64 (a, b, err) != INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -656,8 +776,10 @@ static int64_t Time_Digits2 (m9_sl_CHAR s, int64_t at, m9_state *err)
       m9_raise (err, &m9_exc_ValueRange);
       goto L_ret;
     }
-    v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+      if (err->exc) goto L_ret;
+      v = m9v;
+    }
   } }
   err->res = m9res;
   m9ret = v;

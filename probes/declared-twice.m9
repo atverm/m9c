@@ -1,0 +1,38 @@
+(* EXPECT: Ink is declared twice in module m: the first is at line 10 *)
+(* A name is declared once in its scope (par 3, rule 6).  Until
+   2026-10-03 neither checker had a word for a second declaration: a
+   CONST, VAR or TYPE written twice was the C compiler's to refuse, and
+   a PROCEDURE declared twice lost its first body in the generator and
+   RAN.  Every form below is refused, at the second, naming the first;
+   a forward heading closed by its one body (Later) is the legal form
+   and stays so. *)
+MODULE m ;
+CONST Ink = '#000' ;
+TYPE R = RECORD a : I64 END ;
+VAR v : I64 ;
+EXCEPTION Oops ;
+PROCEDURE Later (n: I64) : I64 ;
+CONST Ink = '#0b0b0b' ;
+VAR v : F64 ;
+TYPE R = RECORD b : F64 END ;
+EXCEPTION Oops ;
+PROCEDURE P (x: I64) =
+VAR x : F64 ;
+BEGIN
+  v := 1
+END P ;
+PROCEDURE P () =
+BEGIN
+  v := 2
+END P ;
+PROCEDURE Later (n: I64) : I64 =
+BEGIN
+  RETURN n
+END Later ;
+PROCEDURE Later (n: I64) : I64 =
+BEGIN
+  RETURN n + 1
+END Later ;
+BEGIN
+  v := Later (1)
+END m.

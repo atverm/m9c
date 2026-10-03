@@ -1,0 +1,36 @@
+REVIEW M9fmt -- 8 procedures with a body, 2 of them functions; 0 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path               2
+  assignments                                    77   passed over, a type unknown: 1
+  arguments                                     128
+  RETURN values                                   2
+  operands of a comparison or an operator        88
+  CASE labels                                     0
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    1   pool
+  local pools                                     0
+  pool parameters                                 0
+  KEPT parameters                                 4   LexAll, SplitLines, EmitComment, Format
+  HEAP named                                      3   ErrPos, (body), (body)
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                                8   path, src, out, bp, write, check, +2 more
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                 0
+  RAISE statements                                0
+  handlers                                        2
+  NEW in the frame                                0
+  NEW in a named pool                            12

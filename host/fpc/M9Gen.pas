@@ -34,6 +34,9 @@ type
     excDef : array of Boolean;
     modVarN : array of string;  { STATEFUL module state -> statics }
     modVarT : array of TNode;
+    aggN : array of string;     { constant tables (par 2.2.4): name, }
+    aggT : array of TNode;      { the ARRAY n OF T made for it,      }
+    aggV : array of TNode;      { and the aggregate itself           }
     procs : array of TGProc;
     consts : TStringList;       { name -> expr node in Objects }
     hdr, src, tdefs, pbuf, sprotos, arrSeen, litBuf : TStringList;
@@ -95,6 +98,7 @@ type
     function CRNode (const tn: string): TNode;
     function TagOfType (t: TNode): string;
     function TagOfExpr (e: TNode): string;
+    function ScopeFind (const n: string): Integer;
     function ScopeNode (const n: string): TNode;
     function ScopeMode (const n: string): string;
     function FieldType (rec: TNode; const f: string): TNode;
@@ -110,6 +114,9 @@ type
     procedure Err (n: TNode; const msg: string);
     function CharVal (const lit: string): Int64;
     function StrCodes (const s: string; n: TNode): string;
+    procedure AddAgg (const nm: string; ag: TNode);
+    procedure PushAggs;
+    procedure EmitAggs (tgt: TStringList);
     function DES (d: TNode; out tag: string): string;
     function EX (e: TNode; const want: string): string;
     function EnumConvCount (n: TNode): Integer;
@@ -359,7 +366,11 @@ begin
         end;
       nkConstSection :
         for j := 0 to High (d.kids) do
-          consts.AddObject (d.kids[j].a, TObject (d.kids[j].kids[0]));
+          if (d.kids[j].kids[0] <> nil) and
+             (d.kids[j].kids[0].kind = nkAggregate) then
+            AddAgg (d.kids[j].a, d.kids[j].kids[0])
+          else
+            consts.AddObject (d.kids[j].a, TObject (d.kids[j].kids[0]));
       nkExcSection :
         for j := 0 to High (d.kids) do
         begin
@@ -841,10 +852,30 @@ begin
   end;
 end;
 
+{ a name in the scope table, by the language's order: parameters and
+  locals, then the binders pushed on top of the module block (innermost
+  first), then module state and the constant tables.  corpus/Gen.m9's
+  ScopeFind says why (2026-10-03). }
+function TGen.ScopeFind (const n: string): Integer;
+var i, lo, hi : Integer;
+begin
+  lo := mvBase;
+  if lo > scope.Count then lo := scope.Count;
+  hi := mvBase + Length (modVarN) + Length (aggN);
+  if hi > scope.Count then hi := scope.Count;
+  for i := 0 to lo - 1 do
+    if scope.Names[i] = n then Exit (i);
+  for i := scope.Count - 1 downto hi do
+    if scope.Names[i] = n then Exit (i);
+  for i := lo to hi - 1 do
+    if scope.Names[i] = n then Exit (i);
+  Result := -1;
+end;
+
 function TGen.ScopeNode (const n: string): TNode;
 var ix : Integer;
 begin
-  ix := scope.IndexOfName (n);
+  ix := ScopeFind (n);
   if ix < 0 then Exit (nil);
   Result := TNode (scope.Objects[ix]);
 end;
@@ -852,7 +883,7 @@ end;
 function TGen.ScopeMode (const n: string): string;
 var ix : Integer;
 begin
-  ix := scope.IndexOfName (n);
+  ix := ScopeFind (n);
   if ix < 0 then Exit ('');
   Result := scope.ValueFromIndex[ix];
 end;
@@ -1101,7 +1132,7 @@ begin
     r := Resolve (t);
     if (r <> nil) and (r.kind = nkPtrType) and (r.kids[1] <> nil) then
       Exit (PoolAddrC (r.kids[1]));
-    ix := scope.IndexOfName (a.a);
+    ix := ScopeFind (a.a);
     if (ix >= mvBase) and (ix < mvBase + Length (modVarN)) then
       Exit ('&m9mframe');
     Exit ('err->res');
@@ -1230,6 +1261,103 @@ function TGen.CharVal (const lit: string): Int64;
 begin
   { hex digits + trailing C: 0AC = U+000A }
   Result := StrToInt64 ('$' + Copy (lit, 1, Length (lit) - 1));
+end;
+
+{ a constant table (par 2.2.4): CONST X = [ e1, ..., en ] is kept as
+  an ARRAY n OF T built here, T read off the first element -- the
+  checker has held every element to it }
+procedure TGen.AddAgg (const nm: string; ag: TNode);
+var
+  cnt, at, el, q : TNode;
+begin
+  cnt := TNode.Create (nkInt);
+  cnt.a := IntToStr (Length (ag.kids));
+  el := ag.kids[0];
+  if (el <> nil) and (el.kind = nkUn) then el := el.kids[0];
+  q := TNode.Create (nkQualident);
+  q.a := 'I64';
+  if el <> nil then
+    case el.kind of
+      nkReal : q.a := 'F64';
+      nkChar : q.a := 'CHAR';
+      nkTrue, nkFalse : q.a := 'BOOL';
+      nkString : q := strNode;
+    end;
+  at := TNode.Create (nkArrayType);
+  at.Add (cnt);
+  at.Add (q);
+  SetLength (aggN, Length (aggN) + 1);
+  SetLength (aggT, Length (aggT) + 1);
+  SetLength (aggV, Length (aggV) + 1);
+  aggN[High (aggN)] := nm;
+  aggT[High (aggT)] := at;
+  aggV[High (aggV)] := ag;
+end;
+
+{ ... visible in every body after the module variables, in the mode
+  of a VAR parameter: the name is a POINTER to the table, so index,
+  LEN and lending take the paths a VAR array parameter takes }
+procedure TGen.PushAggs;
+var i : Integer;
+begin
+  for i := 0 to High (aggN) do
+    scope.AddObject (aggN[i] + '=v', TObject (aggT[i]));
+end;
+
+{ ... and emitted as const data -- read-only storage, so a write the
+  checker missed is a fault and not a changed constant -- with the
+  name a pointer to it.  One element per line: a table is read. }
+procedure TGen.EmitAggs (tgt: TStringList);
+var
+  i, k : Integer;
+  ty, nm, cs : string;
+  e : TNode;
+begin
+  for i := 0 to High (aggN) do
+  begin
+    ty := TyC (aggT[i]);
+    nm := CN (aggN[i]);
+    for k := 0 to High (aggV[i].kids) do
+    begin
+      e := aggV[i].kids[k];
+      if (e <> nil) and (e.kind = nkString) and (Length (e.a) > 0) then
+        tgt.Add ('static const uint32_t ' + nm + '_s' + IntToStr (k) +
+          '[' + IntToStr (Length (e.a)) + '] = { ' + StrCodes (e.a, e) +
+          ' };');
+    end;
+    tgt.Add ('static const ' + ty + ' ' + nm + '_k = { {');
+    for k := 0 to High (aggV[i].kids) do
+    begin
+      e := aggV[i].kids[k];
+      cs := '0';
+      if e <> nil then
+        case e.kind of
+          nkInt : cs := 'INT64_C(' + e.a + ')';
+          nkReal : cs := '(' + e.a + ')';
+          nkChar : cs := IntToStr (CharVal (e.a)) + 'u';
+          nkTrue : cs := 'true';
+          nkFalse : cs := 'false';
+          nkString :
+            if Length (e.a) > 0 then
+              cs := '{ (uint32_t *) ' + nm + '_s' + IntToStr (k) + ', ' +
+                IntToStr (Length (e.a)) + ' }'
+            else
+              cs := '{ 0, 0 }';
+          nkUn :
+            if (e.kids[0] <> nil) and (e.kids[0].kind = nkInt) then
+              cs := 'INT64_C(-' + e.kids[0].a + ')'
+            else if e.kids[0] <> nil then
+              cs := '(-' + e.kids[0].a + ')';
+        else
+          Err (e, 'aggregate element unsupported yet: ' + aggN[i]);
+        end;
+      if k < High (aggV[i].kids) then cs := cs + ',';
+      tgt.Add ('  ' + cs);
+    end;
+    tgt.Add ('} };');
+    tgt.Add ('static ' + ty + ' * const ' + nm + ' = (' + ty + ' *) &' +
+      nm + '_k;');
+  end;
 end;
 
 function TGen.StrCodes (const s: string; n: TNode): string;
@@ -2534,7 +2662,7 @@ var
   l, l2, r, tg, w, cnd, stp, bname, fldn : string;
   j, i2, j2, k2, savedScope, g2, jj, sv, thrPi : Integer;
   vtN, vd, lbl : TNode;
-  opened, hadElse, thrWants : Boolean;
+  opened, hadElse, thrWants, lRaise, shared : Boolean;
 begin
   DbgLine (st);
   case st.kind of
@@ -2542,13 +2670,37 @@ begin
       begin
         stRaise := False;
         l := DES (st.kids[0], tg);
+        lRaise := stRaise;
+        stRaise := False;
         r := EX (st.kids[1], tg);
         { copying a SHARED handle refcounts it (par 4.2); SHARED(x)
           itself already set rc=1 and is not re-counted }
-        if (tg = 'SHARED') and (TagOfExpr (st.kids[1]) = 'SHARED') then
-          r := '((__typeof__(' + r + ')) m9_share_copy (' + r + '))';
-        Line (pbuf, ind, l + ' = ' + r + ';');
-        if stRaise then Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
+        shared := (tg = 'SHARED') and (TagOfExpr (st.kids[1]) = 'SHARED');
+        if stRaise then
+        begin
+          { a call that raised answered nothing (report par 5,
+            2026-10-03): the right side into a temporary, the error
+            slot read, then the store.  corpus/Gen.m9 says why. }
+          Line (pbuf, ind, '{ __typeof__(' + l + ') m9v = ' + r + ';');
+          Line (pbuf, ind + 1, 'if (err->exc) goto ' + raiseLbl + ';');
+          if shared then
+            r := '((__typeof__(' + l + ')) m9_share_copy (m9v))'
+          else
+            r := 'm9v';
+          Line (pbuf, ind + 1, l + ' = ' + r + ';');
+          if lRaise then
+            Line (pbuf, ind + 1, 'if (err->exc) goto ' + raiseLbl + ';');
+          Line (pbuf, ind, '}');
+          stRaise := False;
+        end
+        else
+        begin
+          if shared then
+            r := '((__typeof__(' + r + ')) m9_share_copy (' + r + '))';
+          Line (pbuf, ind, l + ' = ' + r + ';');
+          if lRaise then
+            Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
+        end;
       end;
     nkCallStmt :
       begin
@@ -3404,6 +3556,7 @@ begin
   mvBase := scope.Count;
   for i := 0 to High (modVarN) do
     scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
+  PushAggs;
 
   { the body's block goes through the statement emitter so a
     proc-level EXCEPT/FINALLY gets the full treatment }
@@ -3474,6 +3627,7 @@ begin
   mvBase := scope.Count;
   for i := 0 to High (modVarN) do
     scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
+  PushAggs;
   pbuf.Add ('');
   pbuf.Add ('int main (int argc, char **argv)');
   pbuf.Add ('{');
@@ -3512,6 +3666,7 @@ begin
   mvBase := scope.Count;
   for i := 0 to High (modVarN) do
     scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
+  PushAggs;
   pbuf.Add ('');
   pbuf.Add ('void ' + forModule + '_m9init (m9_state *err)');
   pbuf.Add ('{');
@@ -3800,6 +3955,7 @@ begin
     their array typedefs register before tdefs is spliced. }
   for i := 0 to High (modVarN) do
     rec2.Add ('static ' + TyC (modVarT[i]) + ' ' + CN (modVarN[i]) + ';');
+  EmitAggs (rec2);
   { the MODULE FRAME, static and at file scope, so that a module
     variable declared without a pool has one to be grown in (rule 2
     of docs/pool-elision-plan.md; mirrors Gen.Emit) }

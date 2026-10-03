@@ -163,3 +163,81 @@ of rows of k and reads every row of H, so nothing is written
 twice; the per-cell sums run over the rows of H ascending in
 every band, as the serial loop did, so the result does not depend
 on the thread count.
+
+### EXCEPTION Singular
+
+no pivot at this column.  In Solve, Inverse and Det that is a
+pivot EXACTLY zero, LAPACK's own test: the matrix has no
+inverse.  A matrix that is merely close to singular raises
+nothing there and answers with few digits, as it does
+everywhere -- its condition number is the caller's to know.  In
+LstSq it is a column that adds nothing to the columns before it
+beyond rounding: the problem has no unique answer.
+
+### EXCEPTION NoConverge
+
+the Jacobi iteration of Svd or EigSym did not settle in this
+many sweeps.  Not seen on a finite matrix; an infinity inside
+one does it.
+
+### Solve (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError, Singular
+
+the X with A X = B, A square, by LU with partial pivoting
+(numpy.linalg.solve); B may carry many columns
+
+### Det (a: PTR Matrix) : F64 RAISES Faults.SizeError
+
+the determinant, from the same factorisation: the product of the
+pivots, negated once for every row exchange.  0.0 for a matrix
+whose elimination meets a zero pivot.
+
+### Inverse (VAR pool: POOL ; a: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError, Singular
+
+Solve against the identity (numpy.linalg.inv).  To solve a
+system, Solve it: an inverse multiplied in costs three times
+the work and loses digits.
+
+### Qr (VAR pool: POOL ; a: PTR Matrix ; VAR q, r: PTR Matrix) RAISES Faults.SizeError, ValueRange
+
+a = q r by Householder reflections, in the reduced form: for a
+of m x n and k the smaller of the two, q is m x k with
+orthonormal columns and r is k x n, zero below its diagonal
+(numpy.linalg.qr, mode 'reduced').  THE DIAGONAL OF r IS NEVER
+NEGATIVE: a factorisation is unique only up to the sign of each
+column of q, and this is the one that is said.  ValueRange is a
+NaN in a: it cannot travel through a square root.
+
+### LstSq (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool RAISES Faults.SizeError, Singular, ValueRange
+
+the X that makes A X - B smallest, column by column, in the
+least-squares sense: A of m x n with m >= n and full column
+rank, B of m rows, X of n rows (numpy.linalg.lstsq).  Through
+QR, never through the normal equations, which square the
+condition number.  Fewer equations than unknowns is
+Faults.SizeError, and a column that is a combination of earlier
+ones is Singular: neither has ONE answer, and the smallest of
+the many is Svd's to find.
+
+### Svd (VAR pool: POOL ; a: PTR Matrix ; VAR u: PTR Matrix ; VAR s: SLICE OF F64 ; VAR vt: PTR Matrix) RAISES Faults.SizeError, NoConverge, ValueRange
+
+a = u diag (s) vt, the singular value decomposition without the
+full matrices: for a of m x n and k the smaller, u is m x k, s
+has k values, vt is k x n (numpy.linalg.svd, full_matrices
+False).  LEN (s) must be k.  The values DESCEND and are never
+negative.  A pair of singular vectors is unique only up to one
+sign, and this is the one that is said: the component of
+largest magnitude of each row of vt is positive.
+
+By one-sided Jacobi rotations, which find small singular values
+to their own precision.  Where a value is exactly zero the
+matrix does not determine its vector on the side that was
+iterated, and that vector is answered as zeros.
+
+### EigSym (VAR pool: POOL ; a: PTR Matrix ; VAR w: SLICE OF F64 ; VAR v: PTR Matrix) RAISES Faults.SizeError, NoConverge, ValueRange
+
+the eigenvalues w, ASCENDING, and the eigenvectors, the COLUMNS
+of v, of a symmetric matrix: a v = v diag (w) (numpy.linalg.eigh).
+Only the lower triangle of a is read, as Cholesky reads it.
+LEN (w) must be the matrix's order.  Each vector's component of
+largest magnitude is positive.  By Jacobi rotations.  A general
+matrix has complex eigenvalues and is not this procedure's.

@@ -1,0 +1,684 @@
+MODULE FrameTest ;
+
+(* Frame's verbs against polars: Take, Filter, OrderBy, SortBy,
+   GroupBy, Join, JoinLeft, Describe.  (The reader, the netCDF round
+   trip and Average stay with runtime/test/frame_driver.c.)  Goldens:
+   runtime/test/gold/Frame.gold from tools/framegoldm9.py.
+
+   The frame has a column `t` that numbers its rows, so what a verb
+   did to the rows is read off as a list of row numbers and compared
+   with polars' list.  A missing value is a null to polars and the
+   column's sentinel here -- and the one NaN in `x` is missing too,
+   which is Frame's rule, so polars was given a null for it.
+   Everything but Describe is exact. *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Frame ;
+IMPORT Io ;
+IMPORT Math ;
+IMPORT Stats ;
+IMPORT Text ;
+
+CONST
+  Keys = ['x', 'k', 's', 'b', 'w'] ;
+  Numeric = ['t', 'x', 'k', 'w'] ;
+  Statistics = ['count', 'missing', 'mean', 'std', 'min', '25%', '50%',
+                '75%', 'max'] ;
+  GroupKeys = ['k', 's'] ;
+  BlendOf = ['x', 'k'] ;
+  WithText = ['x', 's'] ;
+  One = [1.0] ;              (* Above's threshold *)
+  Two = [2.0] ;              (* Blend's factor *)
+  Bounds = [0.0, 3.0] ;      (* Wanted's two *)
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+  pool : POOL ;
+
+PROCEDURE F64s (RO name: STR) : SLICE OF F64 =
+BEGIN
+  RETURN Check.GoldF64s (t, gold, name)
+END F64s ;
+
+PROCEDURE I64s (RO name: STR) : SLICE OF I64 =
+BEGIN
+  RETURN Check.GoldI64s (t, gold, name)
+END I64s ;
+
+PROCEDURE Strs (RO name: STR) : SLICE OF STR =
+BEGIN
+  RETURN Check.GoldStrs (t, gold, name)
+END Strs ;
+
+PROCEDURE Bools (RO name: STR) : SLICE OF BOOL =
+BEGIN
+  RETURN Check.GoldBools (t, gold, name)
+END Bools ;
+
+(* a frame takes its columns and does not copy them, so a golden
+   vector is put in the pool the frame lives in *)
+PROCEDURE KeptF64 (RO v: SLICE OF F64) : SLICE OF F64 =
+VAR
+  a : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  a := NEW (pool, F64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO a[i] := v[i] END ;
+  RETURN a
+END KeptF64 ;
+
+PROCEDURE KeptI64 (RO v: SLICE OF I64) : SLICE OF I64 =
+VAR
+  a : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  a := NEW (pool, I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO a[i] := v[i] END ;
+  RETURN a
+END KeptI64 ;
+
+PROCEDURE KeptStrs (RO v: SLICE OF STR) : SLICE OF STR =
+VAR
+  a : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  a := NEW (pool, STR, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO a[i] := Text.Keep (pool, v[i]) END ;
+  RETURN a
+END KeptStrs ;
+
+PROCEDURE KeptBools (RO v: SLICE OF BOOL) : SLICE OF BOOL =
+VAR
+  a : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  a := NEW (pool, BOOL, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO a[i] := v[i] END ;
+  RETURN a
+END KeptBools ;
+
+PROCEDURE Numbered (n: I64) : SLICE OF I64 =
+VAR
+  a : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  a := NEW (pool, I64, n) ;
+  FOR i := 0 TO n - 1 DO a[i] := i END ;
+  RETURN a
+END Numbered ;
+
+(* the frame of the golden file: one column of each key the sort
+   knows, and the missing values as the columns' own sentinels *)
+PROCEDURE Build () : PTR Frame.Fr
+  RAISES Faults.SizeError, Frame.Duplicate, Frame.Unknown =
+VAR
+  f : PTR Frame.Fr IN pool ;
+  x : SLICE OF F64 ;
+  w : SLICE OF F32 ;
+  missF : F64 ;
+  missI, i, n : I64 ;
+BEGIN
+  x := KeptF64 (F64s ('in.x')) ;
+  n := LEN (x) ;
+  missF := Check.GoldF64 (t, gold, 'in.miss') ;
+  missI := Check.GoldI64 (t, gold, 'in.missi') ;
+  w := NEW (pool, F32, n) ;
+  FOR i := 0 TO n - 1 DO w[i] := F32 (x[i]) END ;
+  f := Frame.New (pool, n) ;
+  Frame.AddI64 (pool, f, 't', KeptI64 (I64s ('in.t')), missI) ;
+  Frame.AddF64 (pool, f, 'x', x, missF) ;
+  Frame.AddI64 (pool, f, 'k', KeptI64 (I64s ('in.k')), missI) ;
+  Frame.AddStrs (pool, f, 's', KeptStrs (Strs ('in.s'))) ;
+  Frame.AddBools (pool, f, 'b', KeptBools (Bools ('in.b'))) ;
+  Frame.AddF32 (pool, f, 'w', w, F32 (missF)) ;
+  Frame.SetMeta (pool, f, 'x', 'a measured thing', '', 'ppm') ;
+  RETURN f
+END Build ;
+
+(* the right side of the join on k: a key twice, a key on neither
+   side, a missing key; `rt` numbers its rows *)
+PROCEDURE BuildRight () : PTR Frame.Fr
+  RAISES Faults.SizeError, Frame.Duplicate =
+VAR
+  r : PTR Frame.Fr IN pool ;
+  k : SLICE OF I64 ;
+BEGIN
+  k := KeptI64 (I64s ('in.r.k')) ;
+  r := Frame.New (pool, LEN (k)) ;
+  Frame.AddI64 (pool, r, 'k', k, Check.GoldI64 (t, gold, 'in.missi')) ;
+  Frame.AddI64 (pool, r, 'rt', Numbered (LEN (k)),
+                Check.GoldI64 (t, gold, 'in.missi')) ;
+  Frame.AddF64 (pool, r, 'v', KeptF64 (F64s ('in.r.v')),
+                Check.GoldF64 (t, gold, 'in.miss')) ;
+  Frame.AddStrs (pool, r, 'name', KeptStrs (Strs ('in.r.name'))) ;
+  RETURN r
+END BuildRight ;
+
+PROCEDURE BuildPrices () : PTR Frame.Fr
+  RAISES Faults.SizeError, Frame.Duplicate =
+VAR
+  p : PTR Frame.Fr IN pool ;
+  s : SLICE OF STR ;
+BEGIN
+  s := KeptStrs (Strs ('in.p.s')) ;
+  p := Frame.New (pool, LEN (s)) ;
+  Frame.AddStrs (pool, p, 's', s) ;
+  Frame.AddI64 (pool, p, 'price', KeptI64 (I64s ('in.p.price')),
+                Check.GoldI64 (t, gold, 'in.missi')) ;
+  RETURN p
+END BuildPrices ;
+
+PROCEDURE Orders (f: PTR Frame.Fr) RAISES Frame.Unknown, IndexError =
+VAR
+  o : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (Keys) - 1 DO
+    o := Frame.OrderBy (f, Keys[i], FALSE) ;
+    Check.EqI64s (t, 'OrderBy ' + Keys[i] + ' ascending: missing first, stable',
+                  o, I64s ('want.sort.' + Keys[i] + '.asc')) ;
+    o := Frame.OrderBy (f, Keys[i], TRUE) ;
+    Check.EqI64s (t, 'OrderBy ' + Keys[i] + ' descending: missing first, stable',
+                  o, I64s ('want.sort.' + Keys[i] + '.desc'))
+  END
+END Orders ;
+
+PROCEDURE Verbs (f: PTR Frame.Fr)
+  RAISES Frame.Unknown, Frame.WrongType, Frame.Duplicate, Faults.SizeError,
+         IndexError =
+VAR
+  g : PTR Frame.Fr IN pool ;
+  c : Frame.Col ;
+BEGIN
+  g := Frame.SortBy (pool, f, 'x', FALSE) ;
+  Check.EqI64 (t, 'SortBy keeps every row', Frame.Rows (g), Frame.Rows (f)) ;
+  Check.EqI64 (t, 'and every column', Frame.Cols (g), Frame.Cols (f)) ;
+  Check.EqI64s (t, 'SortBy x: the row numbers', Frame.ColI64 (g, 't'),
+                I64s ('want.sort.x.asc')) ;
+  Check.NearF64s (t, 'SortBy x: x itself, sentinel and NaN as they were',
+                  Frame.ColF64 (g, 'x'), F64s ('want.sortx.x'), 0.0, 0.0) ;
+  Check.EqI64s (t, 'SortBy x: k rides along', Frame.ColI64 (g, 'k'),
+                I64s ('want.sortx.k')) ;
+  Check.EqStrs (t, 'SortBy x: s rides along', Frame.ColStrs (g, 's'),
+                Strs ('want.sortx.s')) ;
+  Check.EqBools (t, 'SortBy x: b rides along', Frame.ColBools (g, 'b'),
+                 Bools ('want.sortx.b')) ;
+  c := Frame.GetCol (g, 'x') ;
+  Check.EqStr (t, 'a column keeps its unit', c.unit, 'ppm') ;
+  Check.EqStr (t, 'and its long name', c.long, 'a measured thing') ;
+  Check.EqF64 (t, 'and its missing value', Frame.MissF64 (g, 'x'),
+               Check.GoldF64 (t, gold, 'in.miss')) ;
+  Check.EqI64 (t, 'and its kind', Frame.KindOf (g, 'w'), Frame.KindOf (f, 'w')) ;
+
+  g := Frame.Filter (pool, f, Bools ('in.mask')) ;
+  Check.EqI64s (t, 'Filter: the rows where the mask is TRUE',
+                Frame.ColI64 (g, 't'), I64s ('want.filter.t')) ;
+  Check.EqStrs (t, 'Filter: s of those rows', Frame.ColStrs (g, 's'),
+                Strs ('want.filter.s')) ;
+
+  g := Frame.Take (pool, f, I64s ('in.rows')) ;
+  Check.EqI64s (t, 'Take: rows by number, one twice, out of order',
+                Frame.ColI64 (g, 't'), I64s ('want.take.t')) ;
+  Check.NearF64s (t, 'Take: x', Frame.ColF64 (g, 'x'), F64s ('want.take.x'),
+                  0.0, 0.0) ;
+  Check.EqStrs (t, 'Take: s', Frame.ColStrs (g, 's'), Strs ('want.take.s')) ;
+  g := Frame.Take (pool, f, NEW (I64, 0)) ;
+  Check.EqI64 (t, 'Take of no rows is a frame of none', Frame.Rows (g), 0) ;
+  Check.EqI64 (t, 'with all its columns', Frame.Cols (g), Frame.Cols (f))
+END Verbs ;
+
+(* ---- group by: the columns are t x k s b w, one reducer each ---- *)
+
+PROCEDURE GroupsByK (f: PTR Frame.Fr)
+  RAISES Frame.Unknown, Frame.WrongType, Faults.SizeError, ValueRange,
+         IndexError =
+VAR
+  g : PTR Frame.Fr IN pool ;
+  how : SLICE OF Frame.How ;
+BEGIN
+  how := NEW (Frame.How, 6) ;
+  how[0] := Frame.How.Sum ;
+  how[1] := Frame.How.Mean ;
+  how[2] := Frame.How.Last ;       (* the key's: ignored *)
+  how[3] := Frame.How.First ;
+  how[4] := Frame.How.Hi ;
+  how[5] := Frame.How.Hi ;
+  g := Frame.GroupBy (pool, f, 'k', how, 1) ;
+  Check.EqI64s (t, 'GroupBy k: the keys ascending, the missing key first',
+                Frame.ColI64 (g, 'k'), I64s ('want.groupk.k')) ;
+  Check.EqI64s (t, 'GroupSizes k', Frame.GroupSizes (f, 'k'),
+                I64s ('want.groupk.n')) ;
+  Check.EqI64s (t, 'GroupBy k: sum of t', Frame.ColI64 (g, 't'),
+                I64s ('want.groupk.t.sum')) ;
+  Check.NearF64s (t, 'GroupBy k: mean of x, missing where a group has none',
+                  Frame.ColF64 (g, 'x'), F64s ('want.groupk.x.mean'),
+                  0.0, 0.0) ;
+  Check.EqStrs (t, 'GroupBy k: first of s, in row order',
+                Frame.ColStrs (g, 's'), Strs ('want.groupk.s.first')) ;
+  Check.EqBools (t, 'GroupBy k: any of b', Frame.ColBools (g, 'b'),
+                 Bools ('want.groupk.b.hi')) ;
+  Check.NearF64s (t, 'GroupBy k: max of w, an F32 column answered as F64',
+                  Frame.ColF64 (g, 'w'), F64s ('want.groupk.w.hi'), 0.0, 0.0)
+EXCEPT
+| Overflow : Check.That (t, 'GroupBy k: no sum overflows', FALSE)
+END GroupsByK ;
+
+PROCEDURE GroupsByS (f: PTR Frame.Fr)
+  RAISES Frame.Unknown, Frame.WrongType, Faults.SizeError, ValueRange,
+         IndexError =
+VAR
+  g : PTR Frame.Fr IN pool ;
+  how : SLICE OF Frame.How ;
+BEGIN
+  how := NEW (Frame.How, 6) ;
+  how[0] := Frame.How.Last ;
+  how[1] := Frame.How.Lo ;
+  how[2] := Frame.How.Hi ;
+  how[3] := Frame.How.Mean ;       (* the key's: ignored, or refused *)
+  how[4] := Frame.How.Lo ;
+  how[5] := Frame.How.Mean ;
+  g := Frame.GroupBy (pool, f, 's', how, 1) ;
+  Check.EqStrs (t, 'GroupBy s: the keys by code point',
+                Frame.ColStrs (g, 's'), Strs ('want.groups.s')) ;
+  Check.EqI64s (t, 'GroupSizes s', Frame.GroupSizes (f, 's'),
+                I64s ('want.groups.n')) ;
+  Check.EqI64s (t, 'GroupBy s: last of t', Frame.ColI64 (g, 't'),
+                I64s ('want.groups.t.last')) ;
+  Check.NearF64s (t, 'GroupBy s: min of x', Frame.ColF64 (g, 'x'),
+                  F64s ('want.groups.x.lo'), 0.0, 0.0) ;
+  Check.EqI64s (t, 'GroupBy s: max of k, missing where a group has none',
+                Frame.ColI64 (g, 'k'), I64s ('want.groups.k.hi')) ;
+  Check.EqBools (t, 'GroupBy s: all of b', Frame.ColBools (g, 'b'),
+                 Bools ('want.groups.b.lo')) ;
+  Check.NearF64s (t, 'GroupBy s: mean of w', Frame.ColF64 (g, 'w'),
+                  F64s ('want.groups.w.mean'), 0.0, 0.0)
+EXCEPT
+| Overflow : Check.That (t, 'GroupBy s: no sum overflows', FALSE)
+END GroupsByS ;
+
+(* ---- join ---- *)
+
+PROCEDURE JoinChecked (j: PTR Frame.Fr ; RO how: STR)
+  RAISES Frame.Unknown, Frame.WrongType, IndexError =
+BEGIN
+  Check.EqI64 (t, how + " join on k: a's columns and b's but its key",
+               Frame.Cols (j), 9) ;
+  Check.EqStr (t, how + " join on k: b's first column after a's last",
+               Frame.NameAt (j, 6), 'rt') ;
+  Check.EqI64s (t, how + ' join on k: the rows of a',
+                Frame.ColI64 (j, 't'), I64s ('want.join.' + how + '.t')) ;
+  Check.EqI64s (t, how + ' join on k: the rows of b',
+                Frame.ColI64 (j, 'rt'), I64s ('want.join.' + how + '.rt')) ;
+  Check.EqI64s (t, how + ' join on k: the key', Frame.ColI64 (j, 'k'),
+                I64s ('want.join.' + how + '.k')) ;
+  Check.NearF64s (t, how + ' join on k: v of b', Frame.ColF64 (j, 'v'),
+                  F64s ('want.join.' + how + '.v'), 0.0, 0.0) ;
+  Check.EqStrs (t, how + ' join on k: name of b', Frame.ColStrs (j, 'name'),
+                Strs ('want.join.' + how + '.name')) ;
+  Check.EqStrs (t, how + ' join on k: s of a', Frame.ColStrs (j, 's'),
+                Strs ('want.join.' + how + '.s'))
+END JoinChecked ;
+
+PROCEDURE Joins (f: PTR Frame.Fr)
+  RAISES Frame.Unknown, Frame.WrongType, Frame.Duplicate, Faults.SizeError,
+         IndexError =
+VAR
+  r, p, j : PTR Frame.Fr IN pool ;
+BEGIN
+  r := BuildRight () ;
+  JoinChecked (Frame.Join (pool, f, r, 'k'), 'inner') ;
+  JoinChecked (Frame.JoinLeft (pool, f, r, 'k'), 'left') ;
+  p := BuildPrices () ;
+  j := Frame.Join (pool, f, p, 's') ;
+  Check.EqI64s (t, 'inner join on s: the rows of a', Frame.ColI64 (j, 't'),
+                I64s ('want.joins.inner.t')) ;
+  Check.EqI64s (t, 'inner join on s: price', Frame.ColI64 (j, 'price'),
+                I64s ('want.joins.inner.price')) ;
+  j := Frame.JoinLeft (pool, f, p, 's') ;
+  Check.EqI64s (t, 'left join on s: the rows of a', Frame.ColI64 (j, 't'),
+                I64s ('want.joins.left.t')) ;
+  Check.EqI64s (t, 'left join on s: price, missing where nothing matched',
+                Frame.ColI64 (j, 'price'), I64s ('want.joins.left.price'))
+END Joins ;
+
+(* ---- describe ---- *)
+
+PROCEDURE Describes (f: PTR Frame.Fr)
+  RAISES Frame.Unknown, Frame.WrongType, Frame.Duplicate, Faults.SizeError,
+         IndexError =
+VAR
+  d, e : PTR Frame.Fr IN pool ;
+  gaps, want : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  d := Frame.Describe (pool, f) ;
+  Check.EqI64 (t, 'Describe: statistic and the four numeric columns',
+               Frame.Cols (d), 5) ;
+  Check.EqStrs (t, 'Describe: the rows by name', Frame.ColStrs (d, 'statistic'),
+                Statistics) ;
+  FOR i := 0 TO LEN (Numeric) - 1 DO
+    Check.NearF64s (t, 'Describe ' + Numeric[i],
+                    Frame.ColF64 (d, Numeric[i]),
+                    F64s ('want.describe.' + Numeric[i]), 0.0, 1.0e-13)
+  END ;
+
+  (* a column of nothing but gaps: counted, and no statistic exists *)
+  gaps := NEW (pool, F64, 2) ;
+  gaps[0] := Check.GoldF64 (t, gold, 'in.miss') ;
+  gaps[1] := 0.0 / 0.0 ;
+  e := Frame.New (pool, 2) ;
+  Frame.AddF64 (pool, e, 'gaps', gaps, gaps[0]) ;
+  want := NEW (F64, 9) ;
+  FOR i := 2 TO 8 DO want[i] := 0.0 / 0.0 END ;
+  want[1] := 2.0 ;
+  d := Frame.Describe (pool, e) ;
+  Check.NearF64s (t, 'Describe of nothing but gaps: 0 values, 2 missing, NaN',
+                  Frame.ColF64 (d, 'gaps'), want, 0.0, 0.0)
+END Describes ;
+
+(* ---- the verbs that take a procedure: what polars is asked for as
+   an expression is written here as a procedure ---- *)
+
+PROCEDURE Median (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  RETURN Stats.Median (v)
+EXCEPT
+| Stats.TooFew (got, need) : RETURN 0.0 / 0.0    (* a group of nothing *)
+END Median ;
+
+PROCEDURE Range (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
+VAR
+  lo, hi : F64 ;
+  i : I64 ;
+BEGIN
+  IF LEN (v) = 0 THEN RETURN 0.0 / 0.0 END ;
+  lo := v[0] ;
+  hi := v[0] ;
+  FOR i := 1 TO LEN (v) - 1 DO
+    IF v[i] < lo THEN lo := v[i] END ;
+    IF v[i] > hi THEN hi := v[i] END
+  END ;
+  RETURN hi - lo
+END Range ;
+
+(* how many are above p[0]: the caller's own number, through p *)
+PROCEDURE Above (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    IF v[i] > p[0] THEN n := n + 1 END
+  END ;
+  RETURN F64 (n)
+END Above ;
+
+PROCEDURE HowMany (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  RETURN F64 (LEN (v))
+END HowMany ;
+
+(* the last value less the first: the one here that depends on the
+   ORDER the values are handed over in *)
+PROCEDURE Drift (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  IF LEN (v) = 0 THEN RETURN 0.0 / 0.0 END ;
+  RETURN v[LEN (v) - 1] - v[0]
+END Drift ;
+
+PROCEDURE RootOfFirst (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64
+  RAISES ValueRange =
+BEGIN
+  IF LEN (v) = 0 THEN RETURN 0.0 END ;
+  RETURN Math.Sqrt (v[0])
+END RootOfFirst ;
+
+PROCEDURE Blend (RO row: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  RETURN row[0] * p[0] + row[1]
+END Blend ;
+
+PROCEDURE Wanted (RO row: SLICE OF F64 ; RO p: SLICE OF F64) : BOOL =
+BEGIN
+  RETURN row[0] > p[0] AND row[1] >= p[1]
+END Wanted ;
+
+PROCEDURE AggCase (f: PTR Frame.Fr ; RO key, what: STR ; agg: Frame.Agg ;
+                   tol: F64)
+  RAISES Frame.Unknown, Frame.WrongType, Frame.Duplicate, Faults.SizeError,
+         ValueRange, IndexError =
+VAR g : PTR Frame.Fr IN pool ;
+BEGIN
+  g := Frame.Aggregate (pool, f, key, 'x', agg, One) ;
+  Check.NearF64s (t, 'Aggregate by ' + key + ': ' + what + ' of x',
+                  Frame.ColF64 (g, 'x'),
+                  F64s ('want.agg.' + key + '.' + what), 0.0, tol)
+END AggCase ;
+
+PROCEDURE Callbacks (f: PTR Frame.Fr)
+  RAISES Frame.Unknown, Frame.WrongType, Frame.Duplicate, Faults.SizeError,
+         ValueRange, IndexError =
+VAR
+  g, h : PTR Frame.Fr IN pool ;
+  i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (GroupKeys) - 1 DO
+    (* a median of two is their mean, formed here as lo + (hi - lo) / 2
+       and by polars as (lo + hi) / 2: one rounding apart *)
+    AggCase (f, GroupKeys[i], 'median', Median, 1.0e-15) ;
+    AggCase (f, GroupKeys[i], 'range', Range, 0.0) ;
+    AggCase (f, GroupKeys[i], 'above', Above, 0.0) ;
+    AggCase (f, GroupKeys[i], 'count', HowMany, 0.0) ;
+    AggCase (f, GroupKeys[i], 'drift', Drift, 0.0)
+  END ;
+  g := Frame.Aggregate (pool, f, 'k', 'x', Range, One) ;
+  Check.EqI64 (t, 'Aggregate answers the key and the one column',
+               Frame.Cols (g), 2) ;
+  Check.EqI64s (t, 'Aggregate: the keys as GroupBy orders them',
+                Frame.ColI64 (g, 'k'), I64s ('want.groupk.k')) ;
+  g := Frame.Aggregate (pool, f, 's', 'x', Range, One) ;
+  Check.EqStrs (t, 'Aggregate by s: the keys', Frame.ColStrs (g, 's'),
+                Strs ('want.groups.s')) ;
+
+  (* Compute adds a column, so it is given a frame of its own *)
+  h := Build () ;
+  Frame.Compute (pool, h, BlendOf, 'z', Blend, Two) ;
+  Check.EqI64 (t, 'Compute adds one column', Frame.Cols (h), Frame.Cols (f) + 1) ;
+  Check.NearF64s (t, 'Compute z = 2 x + k: NaN where either is missing',
+                  Frame.ColF64 (h, 'z'), F64s ('want.compute.z'), 0.0, 0.0) ;
+
+  g := Frame.FilterBy (pool, f, BlendOf, Wanted, Bounds) ;
+  Check.EqI64s (t, 'FilterBy x > 0 and k >= 3: a row with a gap is not a yes',
+                Frame.ColI64 (g, 't'), I64s ('want.filterby.t'))
+END Callbacks ;
+
+(* what a verb with a procedure is refused as: '' when it is not *)
+PROCEDURE AggRefusal (f: PTR Frame.Fr ; RO key, name: STR ; agg: Frame.Agg)
+  : STR =
+VAR g : PTR Frame.Fr IN pool ;
+BEGIN
+  g := Frame.Aggregate (pool, f, key, name, agg, One) ;
+  RETURN ''
+EXCEPT
+| Frame.Unknown (n) : RETURN 'Unknown'
+| Frame.WrongType (n) : RETURN 'WrongType'
+| Frame.Duplicate (n) : RETURN 'Duplicate'
+| Faults.SizeError (got, want) : RETURN 'SizeError'
+| ValueRange : RETURN 'ValueRange'
+| IndexError : RETURN 'IndexError'
+END AggRefusal ;
+
+PROCEDURE ComputeRefusal (RO cols: SLICE OF STR ; RO name: STR) : STR =
+VAR h : PTR Frame.Fr IN pool ;
+BEGIN
+  h := Build () ;
+  Frame.Compute (pool, h, cols, name, Blend, Two) ;
+  RETURN ''
+EXCEPT
+| Frame.Unknown (n) : RETURN 'Unknown'
+| Frame.WrongType (n) : RETURN 'WrongType'
+| Frame.Duplicate (n) : RETURN 'Duplicate'
+| Faults.SizeError (got, want) : RETURN 'SizeError'
+| ValueRange : RETURN 'ValueRange'
+| IndexError : RETURN 'IndexError'
+END ComputeRefusal ;
+
+(* ---- the refusals ---- *)
+
+PROCEDURE RowRefused (f: PTR Frame.Fr) : BOOL =
+VAR
+  g : PTR Frame.Fr IN pool ;
+  rows : SLICE OF I64 ;
+BEGIN
+  rows := NEW (I64, 1) ;
+  rows[0] := Frame.Rows (f) ;
+  g := Frame.Take (pool, f, rows) ;
+  RETURN FALSE
+EXCEPT
+| IndexError : RETURN TRUE
+| Faults.SizeError : RETURN FALSE
+| Frame.Duplicate : RETURN FALSE
+END RowRefused ;
+
+PROCEDURE MaskRefused (f: PTR Frame.Fr) : BOOL =
+VAR g : PTR Frame.Fr IN pool ;
+BEGIN
+  g := Frame.Filter (pool, f, NEW (BOOL, 3)) ;
+  RETURN FALSE
+EXCEPT
+| Faults.SizeError : RETURN TRUE
+| IndexError : RETURN FALSE
+| Frame.Duplicate : RETURN FALSE
+END MaskRefused ;
+
+PROCEDURE ColumnRefused (f: PTR Frame.Fr) : BOOL =
+VAR o : SLICE OF I64 ;
+BEGIN
+  o := Frame.OrderBy (f, 'nosuch', FALSE) ;
+  RETURN FALSE
+EXCEPT
+| Frame.Unknown : RETURN TRUE
+| IndexError : RETURN FALSE
+END ColumnRefused ;
+
+(* what a join of a with b on key is refused as: '' when it is not *)
+PROCEDURE JoinRefusal (a, b: PTR Frame.Fr ; RO key: STR ; left: BOOL) : STR =
+VAR j : PTR Frame.Fr IN pool ;
+BEGIN
+  IF left THEN
+    j := Frame.JoinLeft (pool, a, b, key)
+  ELSE
+    j := Frame.Join (pool, a, b, key)
+  END ;
+  RETURN ''
+EXCEPT
+| Frame.Unknown : RETURN 'Unknown'
+| Frame.WrongType : RETURN 'WrongType'
+| Frame.Duplicate : RETURN 'Duplicate'
+| Faults.SizeError : RETURN 'SizeError'
+| IndexError : RETURN 'IndexError'
+END JoinRefusal ;
+
+PROCEDURE MeanOfStrings (f: PTR Frame.Fr) : BOOL =
+VAR
+  g : PTR Frame.Fr IN pool ;
+  how : SLICE OF Frame.How ;
+  i : I64 ;
+BEGIN
+  how := NEW (Frame.How, 6) ;
+  FOR i := 0 TO 5 DO how[i] := Frame.How.First END ;
+  how[3] := Frame.How.Mean ;
+  g := Frame.GroupBy (pool, f, 'k', how, 1) ;
+  RETURN FALSE
+EXCEPT
+| Frame.WrongType : RETURN TRUE
+| Frame.Unknown : RETURN FALSE
+| Faults.SizeError : RETURN FALSE
+| ValueRange : RETURN FALSE
+| Overflow : RETURN FALSE
+| IndexError : RETURN FALSE
+END MeanOfStrings ;
+
+PROCEDURE Refusals (f: PTR Frame.Fr)
+  RAISES Frame.Duplicate, Faults.SizeError =
+VAR
+  r, q, flags : PTR Frame.Fr IN pool ;
+  one : SLICE OF I64 ;
+  yes : SLICE OF BOOL ;
+BEGIN
+  Check.That (t, 'Take refuses a row that is not there', RowRefused (f)) ;
+  Check.That (t, 'Filter refuses a mask of another length', MaskRefused (f)) ;
+  Check.That (t, 'OrderBy refuses a column that is not there',
+              ColumnRefused (f)) ;
+  Check.That (t, 'GroupBy refuses the mean of a Strs column',
+              MeanOfStrings (f)) ;
+
+  r := BuildRight () ;
+  Check.EqStr (t, 'Join refuses a key the right side has not',
+               JoinRefusal (f, r, 's', FALSE), 'Unknown') ;
+  Check.EqStr (t, 'Join refuses a real key',
+               JoinRefusal (f, f, 'x', FALSE), 'WrongType') ;
+  Check.EqStr (t, 'Join refuses a column both sides have',
+               JoinRefusal (f, f, 'k', FALSE), 'Duplicate') ;
+  (* k as strings on the right: another family *)
+  q := Frame.New (pool, LEN (Statistics)) ;
+  Frame.AddStrs (pool, q, 'k', KeptStrs (Statistics)) ;
+  Check.EqStr (t, 'Join refuses an integer key against a string key',
+               JoinRefusal (f, q, 'k', FALSE), 'WrongType') ;
+  (* a Bools column on the right: the inner join takes it, the left
+     join has no missing value to give the rows that match nothing *)
+  one := NEW (pool, I64, 1) ;
+  one[0] := 5 ;
+  yes := NEW (pool, BOOL, 1) ;
+  yes[0] := TRUE ;
+  flags := Frame.New (pool, 1) ;
+  Frame.AddI64 (pool, flags, 'k', one, Check.GoldI64 (t, gold, 'in.missi')) ;
+  Frame.AddBools (pool, flags, 'flag', yes) ;
+  Check.EqStr (t, 'Join takes a Bools column on the right',
+               JoinRefusal (f, flags, 'k', FALSE), '') ;
+  Check.EqStr (t, 'JoinLeft refuses it, having no missing boolean',
+               JoinRefusal (f, flags, 'k', TRUE), 'WrongType') ;
+
+  Check.EqStr (t, 'Aggregate refuses a key that is not there',
+               AggRefusal (f, 'nosuch', 'x', Range), 'Unknown') ;
+  Check.EqStr (t, 'Aggregate refuses to hand strings to a procedure over reals',
+               AggRefusal (f, 'k', 's', Range), 'WrongType') ;
+  Check.EqStr (t, 'Aggregate refuses the key reduced under its own name',
+               AggRefusal (f, 'k', 'k', Range), 'Duplicate') ;
+  Check.EqStr (t, 'Aggregate passes on what the procedure raises',
+               AggRefusal (f, 'k', 'x', RootOfFirst), 'ValueRange') ;
+  Check.EqStr (t, 'Compute refuses a Strs column among its inputs',
+               ComputeRefusal (WithText, 'z'), 'WrongType') ;
+  Check.EqStr (t, 'Compute refuses a name the frame has',
+               ComputeRefusal (BlendOf, 'x'), 'Duplicate')
+END Refusals ;
+
+PROCEDURE Fail (RO what: STR) =
+BEGIN
+  Check.That (t, what, FALSE) ;
+  Io.Halt (Check.Done (t, 'Frame'))
+END Fail ;
+
+VAR f : PTR Frame.Fr IN pool ;
+
+BEGIN
+  gold := Check.GoldPath ('Frame.gold') ;
+  f := Build () ;
+  Orders (f) ;
+  Verbs (f) ;
+  GroupsByK (f) ;
+  GroupsByS (f) ;
+  Joins (f) ;
+  Describes (f) ;
+  Callbacks (f) ;
+  Refusals (f) ;
+  Io.Halt (Check.Done (t, 'Frame'))
+EXCEPT
+| Faults.SizeError : Fail ('no SizeError escapes')
+| Frame.Duplicate : Fail ('no Duplicate escapes')
+| Frame.Unknown : Fail ('no Unknown escapes')
+| Frame.WrongType : Fail ('no WrongType escapes')
+| ValueRange : Fail ('no ValueRange escapes')
+| IndexError : Fail ('no IndexError escapes')
+END FrameTest.

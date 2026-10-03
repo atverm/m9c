@@ -906,12 +906,6 @@ BEGIN
   RETURN t.dcols[c]
 END ColF64 ;
 
-PROCEDURE ColF64 (t: PTR Table ; c: I64) : SLICE OF F64
-  RAISES IndexError =
-BEGIN
-  RETURN t.dcols[c]
-END ColF64 ;
-
 PROCEDURE ColF32 (t: PTR Table ; c: I64) : SLICE OF F32
   RAISES IndexError =
 BEGIN

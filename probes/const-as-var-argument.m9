@@ -1,0 +1,12 @@
+(* EXPECT: argument 1 of Bump: the CONST Pi cannot be passed to a VAR or OWN parameter *)
+MODULE m ;
+CONST Pi = 3.14 ;
+PROCEDURE Bump (VAR x: F64) =
+BEGIN
+  x := x + 1.0
+END Bump ;
+PROCEDURE F () =
+BEGIN
+  Bump (Pi)
+END F ;
+END m.

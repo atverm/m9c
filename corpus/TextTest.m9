@@ -1,0 +1,161 @@
+MODULE TextTest ;
+
+(* Text, tested in M9 (runtime/test/m9test.sh runs every *Test.m9
+   beside its module).  The same ground as runtime/test/text_driver.c
+   covers from C, and it stays while that driver does: the point of
+   this file is that a change to Text's headings is a compile error
+   HERE, where the C driver would have to be told.
+
+   It found one before it ran: Join took its pieces by value, so a
+   constant table could not be joined (read-only storage is lent only
+   to an RO parameter, par 2.4).  Join's parts are RO since. *)
+
+IMPORT Check ;
+IMPORT Io ;
+IMPORT Text ;
+
+CONST
+  Units = ['ppm', 'ppb', '', 'ppm'] ;
+  Abc = ['a', 'b', 'c'] ;
+  AEmptyB = ['a', '', 'b', ''] ;
+  AB = ['a', 'b'] ;
+  One = ['only'] ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  kept, joined : STR ;
+  src : ARRAY 3 OF CHAR ;
+
+(* Replace against Python's str.replace, Match against its
+   fnmatch.fnmatchcase: runtime/test/gold/Text.gold, written by
+   tools/textgold.py.  A string there is a word and '' the empty one. *)
+
+PROCEDURE Replaces () =
+VAR
+  gold : STR ;
+  s, old, by : SLICE OF STR ;
+  got : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Text.gold') ;
+  s := Check.GoldStrs (t, gold, 'replace.s') ;
+  old := Check.GoldStrs (t, gold, 'replace.old') ;
+  by := Check.GoldStrs (t, gold, 'replace.by') ;
+  got := NEW (pool, STR, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    got[i] := Text.Keep (pool, Text.Replace (s[i], old[i], by[i]))
+  END ;
+  Check.EqStrs (t, 'Replace: every occurrence, left to right, never overlapping',
+                got, Check.GoldStrs (t, gold, 'replace.want')) ;
+  Check.EqStr (t, 'Replace: an empty old occurs nowhere',
+               Text.Replace ('abc', '', '-'), 'abc') ;
+  Check.EqStr (t, 'Replace: a string with spaces in it',
+               Text.Replace ('to be or not to be', 'be', 'see'),
+               'to see or not to see')
+END Replaces ;
+
+PROCEDURE Matches () =
+VAR
+  gold : STR ;
+  pat, name : SLICE OF STR ;
+  want, got : SLICE OF BOOL ;
+  kinds : SLICE OF I64 ;
+  i, a : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Text.gold') ;
+  pat := Check.GoldStrs (t, gold, 'match.pattern') ;
+  name := Check.GoldStrs (t, gold, 'match.name') ;
+  want := Check.GoldBools (t, gold, 'match.want') ;
+  kinds := Check.GoldI64s (t, gold, 'match.kinds') ;
+  got := NEW (BOOL, LEN (pat)) ;
+  FOR i := 0 TO LEN (pat) - 1 DO got[i] := Text.Match (pat[i], name[i]) END ;
+  a := 0 ;
+  Check.EqBools (t, 'Match: the cases the definition names',
+                 SLICE (got, a, kinds[0]), SLICE (want, a, kinds[0])) ;
+  a := a + kinds[0] ;
+  Check.EqBools (t, 'Match: patterns as people write them, from a grammar',
+                 SLICE (got, a, kinds[1]), SLICE (want, a, kinds[1])) ;
+  a := a + kinds[1] ;
+  Check.EqBools (t, 'Match: patterns nobody writes, brackets and bangs at random',
+                 SLICE (got, a, kinds[2]), SLICE (want, a, kinds[2])) ;
+  Check.EqI64 (t, 'Match: every case was one of the three',
+               a + kinds[2], LEN (pat)) ;
+  Check.That (t, 'Match: a real name', Text.Match ('co2_*_[0-9][0-9].nc',
+                                                   'co2_htm_07.nc')) ;
+  Check.That (t, 'Match: and one a digit short',
+              NOT Text.Match ('co2_*_[0-9][0-9].nc', 'co2_htm_7.nc'))
+END Matches ;
+
+BEGIN
+  (* search *)
+  Check.That (t, 'Eq', Text.Eq ('abc', 'abc')) ;
+  Check.That (t, 'Eq, a letter apart', NOT Text.Eq ('abc', 'abd')) ;
+  Check.That (t, 'Eq, a prefix is not equal', NOT Text.Eq ('ab', 'abc')) ;
+  Check.EqI64 (t, 'Find', Text.Find ('abcdef', 'cde'), 2) ;
+  Check.EqI64 (t, 'Find absent', Text.Find ('abcdef', 'xyz'), -1) ;
+  Check.EqI64 (t, 'Find the empty needle', Text.Find ('abc', ''), 0) ;
+  Check.EqI64 (t, 'Find a needle longer than the hay',
+               Text.Find ('ab', 'abc'), -1) ;
+  Check.EqI64 (t, 'FindChar', Text.FindChar ('a/b/c', '/'), 1) ;
+  Check.EqI64 (t, 'FindChar absent', Text.FindChar ('abc', '/'), -1) ;
+  Check.EqI64 (t, 'LastChar', Text.LastChar ('a/b/c', '/'), 3) ;
+  Check.EqI64 (t, 'LastChar absent', Text.LastChar ('abc', '/'), -1) ;
+  Check.That (t, 'Contains', Text.Contains ('abcdef', 'cde')) ;
+  Check.That (t, 'Contains at the very start', Text.Contains ('abcdef', 'abc')) ;
+  Check.That (t, 'Contains, absent', NOT Text.Contains ('abcdef', 'xyz')) ;
+  Check.That (t, 'StartsWith', Text.StartsWith ('prefix-rest', 'prefix')) ;
+  Check.That (t, 'StartsWith, longer than the string',
+              NOT Text.StartsWith ('ab', 'abc')) ;
+  Check.That (t, 'EndsWith', Text.EndsWith ('name.m9', '.m9')) ;
+  Check.That (t, 'EndsWith the empty suffix', Text.EndsWith ('x', '')) ;
+  Check.EqI64 (t, 'CountChar', Text.CountChar ('a,b,,c', ','), 3) ;
+
+  (* membership in a list *)
+  Check.EqI64 (t, 'IndexOf, the first of two', Text.IndexOf (Units, 'ppm'), 0) ;
+  Check.EqI64 (t, 'IndexOf', Text.IndexOf (Units, 'ppb'), 1) ;
+  Check.EqI64 (t, 'IndexOf the empty string', Text.IndexOf (Units, ''), 2) ;
+  Check.EqI64 (t, 'IndexOf absent, shorter', Text.IndexOf (Units, 'pp'), -1) ;
+  Check.EqI64 (t, 'IndexOf absent, longer', Text.IndexOf (Units, 'ppmv'), -1) ;
+  Check.That (t, 'OneOf', Text.OneOf ('ppb', Units)) ;
+  Check.That (t, 'OneOf, absent', NOT Text.OneOf ('ppt', Units)) ;
+
+  (* trimming answers a view *)
+  Check.EqStr (t, 'Trim', Text.Trim ('  a b  '), 'a b') ;
+  Check.EqStr (t, 'TrimLeft', Text.TrimLeft ('  a b  '), 'a b  ') ;
+  Check.EqStr (t, 'TrimRight', Text.TrimRight ('  a b  '), '  a b') ;
+  Check.EqStr (t, 'Trim of blanks', Text.Trim ('   '), '') ;
+  Check.EqStr (t, 'Trim of nothing', Text.Trim (''), '') ;
+
+  (* splitting keeps its empties; Fields drops them *)
+  Check.EqStrs (t, 'Split', Text.Split ('a,b,c', ','), Abc) ;
+  Check.EqStrs (t, 'Split keeps empties', Text.Split ('a,,b,', ','), AEmptyB) ;
+  Check.EqI64 (t, 'Split of the empty string is one empty piece',
+               LEN (Text.Split ('', ',')), 1) ;
+  Check.EqStrs (t, 'Fields drops them', Text.Fields ('a,,b,', ','), AB) ;
+  Check.EqI64 (t, 'Fields of separators alone is nothing',
+               LEN (Text.Fields (',,', ',')), 0) ;
+
+  (* joining is the inverse of Split *)
+  Check.EqStr (t, 'Join', Text.Join (Abc, ', '), 'a, b, c') ;
+  Check.EqStr (t, 'Join of one piece has no separator',
+               Text.Join (One, ','), 'only') ;
+  joined := Text.Join (Text.Split ('a,,b,', ','), ',') ;
+  Check.EqStr (t, 'Join (Split (s)) is s', joined, 'a,,b,') ;
+
+  (* case: ASCII only *)
+  Check.EqStr (t, 'Lower', Text.Lower ('MiXed 9'), 'mixed 9') ;
+  Check.EqStr (t, 'Upper', Text.Upper ('MiXed 9'), 'MIXED 9') ;
+
+  (* a copy that outlives what it was copied from *)
+  src[0] := 'x' ; src[1] := 'y' ; src[2] := 'z' ;
+  kept := Text.Keep (pool, src) ;
+  src[0] := '?' ;
+  Check.EqStr (t, 'Keep is a copy', kept, 'xyz') ;
+  Check.EqStr (t, 'Cat', Text.Cat (pool, 'ab', 'cd'), 'abcd') ;
+
+  Replaces () ;
+  Matches () ;
+
+  Io.Halt (Check.Done (t, 'Text'))
+END TextTest.

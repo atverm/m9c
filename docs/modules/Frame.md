@@ -103,7 +103,7 @@ _(undocumented)_
 
 _(undocumented)_
 
-### AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; KEPT v: SLICE OF STR) RAISES Faults.SizeError, Duplicate
+### AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO KEPT v: SLICE OF STR) RAISES Faults.SizeError, Duplicate
 
 the slice is TAKEN, not copied: the frame views the caller's
 storage, the AddRoute/Json.Parse retention contract.  Length
@@ -378,3 +378,124 @@ row of missing values (Strs: '').  The time axis comes out
 exactly first..last by res.  A frame with a Bools column
 REFUSES (WrongType, the column named): no missing value exists
 for a boolean.
+
+### Take (VAR pool: POOL ; f: PTR Fr ; RO rows: SLICE OF I64) : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate
+
+f's columns, in f's order, with their metadata, and the rows
+named, in the order named; a row may be named more than once,
+or not at all.  A number outside 0 .. Rows (f) - 1 is
+IndexError.
+
+### Filter (VAR pool: POOL ; f: PTR Fr ; RO mask: SLICE OF BOOL) : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate
+
+the rows where mask is TRUE, in their order: polars' filter.
+LEN (mask) must be Rows (f), or it is Faults.SizeError.
+
+### OrderBy (f: PTR Fr ; RO name: STR ; descending: BOOL) : SLICE OF I64 RAISES Unknown, IndexError
+
+_(documented with the group below)_
+
+### SortBy (VAR pool: POOL ; f: PTR Fr ; RO name: STR ; descending: BOOL) : PTR Fr IN pool RAISES Unknown, IndexError, Faults.SizeError, Duplicate
+
+the rows in the order of one column: OrderBy answers the row
+numbers and SortBy the frame, which is Take of them.  STABLE
+both ways: rows equal in the column keep the order they had.
+The rules are polars' sort with its defaults, a missing value
+being its null:
+
+  a missing value comes FIRST, ascending and descending, the
+    missing among themselves in the order they had;
+  strings by code point, the shorter first, and the empty
+    string is a value; FALSE before TRUE.
+
+### GroupBy (VAR pool: POOL ; f: PTR Fr ; RO key: STR ; RO how: SLICE OF How ; minCount: I64) : PTR Fr IN pool RAISES Unknown, WrongType, Faults.SizeError, ValueRange, Overflow, IndexError
+
+one row for every distinct value of the column `key`, the rows
+in ASCENDING ORDER OF THE KEY, and the rows whose key is missing
+as one group, first (OrderBy's order; polars' group_by, sorted
+by the key).  Every other column is reduced over the rows of its
+group by its entry of how, which has one entry per column of f,
+the key's being ignored: Average's reducers and Average's rules.
+Missing values are left out of Mean/Sum/Lo/Hi, a group with
+fewer than minCount values left answers the column's missing
+value, First and Last are the first and the last ROW of the
+group in f's order.  As from Average, an F32 column comes back
+F64.
+
+### GroupSizes (f: PTR Fr ; RO key: STR) : SLICE OF I64 RAISES Unknown, IndexError
+
+how many rows each group of GroupBy (f, key) has, in the same
+order
+
+### Join (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError
+
+_(documented with the group below)_
+
+### JoinLeft (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError
+
+the rows of a and b that hold the same value in the column
+`key`, which both have: a's columns, then b's but its key.  One
+row for every PAIR that matches, so a key held twice on each
+side gives four; a's rows in a's order and, for each, its
+matches in b's order.  Join is the inner join: a row of a that
+matches nothing is left out.  JoinLeft keeps it, with the
+missing value in every column of b ('' in a Strs column) and
+WrongType for a Bools column of b, which has none.
+
+A MISSING KEY MATCHES NOTHING, another missing key included
+(polars' rule, and SQL's).  The two key columns must be of one
+family: integers of any width with integers, strings with
+strings, booleans with booleans.  A REAL key is refused, and a
+mismatch is, as WrongType naming the key: equality of two
+computed reals is not something to build a table on.  A column
+name that a and b share, other than the key, is Duplicate: no
+suffix is invented, rename before joining.
+
+### Describe (VAR pool: POOL ; f: PTR Fr) : PTR Fr IN pool RAISES Duplicate, Faults.SizeError, IndexError
+
+nine rows about every NUMERIC column of f: a Strs column
+`statistic` naming the rows -- count, missing, mean, std, min,
+25%, 50%, 75%, max -- and one F64 column for each numeric column
+of f, under its name.  count is of the values that are not
+missing; std is the sample one (ddof 1); the percentiles are
+Stats.Percentile's, numpy's linear rule (polars' describe with
+interpolation = 'linear').  A statistic that has too few values
+to exist is NaN.  Strs and Bools columns are left out, and an
+I64 beyond 2^53 is rounded on its way to F64.
+
+### TYPE Agg
+
+one number for the values of a group.  v holds the values THAT
+ARE THERE, in row order: a missing value is not among them, so
+v may be empty, and what a group of nothing answers is the
+procedure's to say -- NaN, which is Frame's missing value, is
+the honest one.
+
+### TYPE RowFn
+
+one number for a row.  row[j] is the row's value in the j-th
+column asked for, and NaN where that is missing -- so plain
+arithmetic answers NaN for a row with a gap, which is right.
+
+### TYPE RowTest
+
+yes or no for a row; a comparison with a NaN is FALSE
+
+### Aggregate (VAR pool: POOL ; f: PTR Fr ; RO key, name: STR ; agg: Agg ; RO p: SLICE OF F64) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange, IndexError
+
+GroupBy's groups, in GroupBy's order, and two columns: the key,
+and the column `name' reduced by agg, as F64 with NaN for its
+missing value.  polars' group_by (key).agg (an expression over
+name), sorted by the key.
+
+### Compute (VAR pool: POOL ; VAR f: PTR Fr ; RO cols: SLICE OF STR ; RO name: STR ; fn: RowFn ; RO p: SLICE OF F64) RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange, IndexError
+
+a new F64 column `name' ADDED to f, each value fn of that row's
+values in the columns cols; its missing value is NaN.  polars'
+with_columns.
+
+### FilterBy (VAR pool: POOL ; f: PTR Fr ; RO cols: SLICE OF STR ; test: RowTest ; RO p: SLICE OF F64) : PTR Fr IN pool RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange, IndexError
+
+the rows for which test is TRUE of their values in the columns
+cols, in their order: Filter, with the mask computed here.
+polars' filter over an expression, where a null is not a yes.

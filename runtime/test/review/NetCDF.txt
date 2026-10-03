@@ -1,0 +1,36 @@
+REVIEW NetCDF -- 63 procedures with a body, 34 of them functions; 55 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path              34
+  assignments                                   152
+  arguments                                     382   passed over, a type unknown: 106
+  RETURN values                                  35
+  operands of a comparison or an operator        68
+  CASE labels                                     0
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    0
+  local pools                                    42   Fail.scratch, Open.scratch, OpenRW.scratch, Create.scratch, Create4.scratch, VarId.scratch, +36 more
+  pool parameters                                12   Message, CStr, Open, OpenRW, Create, Create4, +6 more
+  KEPT parameters                                 4   Open, OpenRW, Create, Create4
+  HEAP named                                      0
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                                0
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    2   cnc, NetCDF
+  foreign procedures                             47
+    of them [SERIAL]                             44
+    of them [REENTRANT]                           3
+
+COUNTED -- how much there was to check
+  CASE statements                                 0
+  RAISE statements                               11
+  handlers                                        1
+  NEW in the frame                                6
+  NEW in a named pool                            27

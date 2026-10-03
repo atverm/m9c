@@ -420,12 +420,17 @@ BEGIN
     ELSIF Cur (c) = '-' OR (Cur (c) >= '0' AND Cur (c) <= '9') THEN
       RETURN ParseNumber (c)
     ELSE
-      Fail (c, 'value expected')
+      (* the RAISE is written here, not reached through Fail: a call
+         is never an ending to the checker, whatever its callee does *)
+      RAISE ParseError ('value expected', c.line, c.col)
     END
   END
   (* no fall-through returns exist: every path RETURNs or RAISEs,
      and the compiler proves it -- the uninitialized-Result class,
-     closed at the language level.                                    *)
+     closed at the language level.  (True since 2026-10-01.  For
+     five weeks before that this comment was the only thing saying
+     so: with `Fail (c, ...)` as the last branch the function could
+     reach its END, and both checkers accepted it.)                   *)
 END ParseValue ;
 
 PROCEDURE Field (obj: PTR Node ; RO name: STR)

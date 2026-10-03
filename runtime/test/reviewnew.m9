@@ -1,0 +1,56 @@
+MODULE reviewnew ;
+
+(* The three NEW rows of `m9c --review', held to a program whose
+   sites are counted by hand: who frees the storage is what a reviewer
+   reads those rows for, and the first argument that says so is a
+   pool or a type by NAME, which the page once got wrong -- every NEW
+   with two arguments was counted as a pool's (2026-10-02; Frame's
+   page said 0 in the frame where there were nine).  Each comment
+   says which row its line adds to; reviewdiff.sh compares the three
+   rows with reviewnew.want.
+
+     NEW (OWN, T)            1
+     NEW in the frame        6
+     NEW in a named pool     5                                        *)
+
+IMPORT Check ;
+
+TYPE
+  Cell = RECORD v : I64 END ;
+  Store = RECORD cache : POOL END ;
+
+VAR pool : POOL ;
+
+PROCEDURE Sites () =
+VAR
+  p : PTR Cell ;
+  xs : SLICE OF I64 ;
+  cs : SLICE OF Cell ;
+  ts : SLICE OF Check.T ;
+  g : GRID 2 OF F64 ;
+  ss : SLICE OF STR ;
+  q : PTR Cell IN pool ;
+  ys : SLICE OF I64 ;
+  st : PTR Store IN pool ;
+  z : PTR Cell IN st.cache ;
+  h : PTR Cell IN HEAP ;
+  o : PTR Cell ;
+BEGIN
+  p := NEW (Cell) ;            (* frame 1: one argument *)
+  xs := NEW (I64, 4) ;         (* frame 2: a predeclared type and an extent *)
+  cs := NEW (Cell, 2) ;        (* frame 3: a type of this module *)
+  ts := NEW (Check.T, 2) ;     (* frame 4: a type of an imported module *)
+  g := NEW (F64, 2, 3) ;       (* frame 5: a grid *)
+  ss := NEW (STR, 2) ;         (* frame 6: STR is a name, not a keyword *)
+  q := NEW (pool, Cell) ;      (* pool 1 *)
+  ys := NEW (pool, I64, 4) ;   (* pool 2: a pool and an extent *)
+  st := NEW (pool, Store) ;    (* pool 3 *)
+  z := NEW (st.cache, Cell) ;  (* pool 4: a pool that is a field *)
+  h := NEW (HEAP, Cell) ;      (* pool 5: HEAP, counted under its own row too *)
+  o := NEW (OWN, Cell) ;       (* own 1 *)
+  DISPOSE (o)
+END Sites ;
+
+BEGIN
+  Sites ()
+END reviewnew.

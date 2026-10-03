@@ -206,6 +206,15 @@ BEGIN
         Qual (d, n)
     | Ast.NIdent :
         DynStr.Append (d, n.a)
+    | Ast.NAggregate :
+        (* on one line: this is the form a diagnostic quotes.  A
+           declaration prints it one element to a line, EDecl *)
+        DynStr.AppendChar (d, '[') ;
+        FOR j := 0 TO n.nkids - 1 DO
+          IF j > 0 THEN DynStr.Append (d, ', ') END ;
+          E (d, n.kids[j])
+        END ;
+        DynStr.AppendChar (d, ']')
     ELSE
       DynStr.Append (d, '?expr?')
     END
@@ -703,6 +712,38 @@ BEGIN
   END
 END EProc ;
 
+PROCEDURE IsAggregate (k: Ast.Kid) : BOOL =
+BEGIN
+  IF k IS SOME n THEN RETURN n.kind = Ast.NAggregate END ;
+  RETURN FALSE
+END IsAggregate ;
+
+(* a CONST's aggregate, ONE ELEMENT TO A LINE, always: a table is
+   read down and diffed by row, and a rule with no width in it prints
+   the same on both sides without either measuring anything.
+
+     Name = [
+       e1,
+       e2
+     ] ;                                                            *)
+PROCEDURE EAggregate (VAR d: PTR DynStr.DString ; k: Ast.Kid ;
+                      ind: I64) =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    DynStr.AppendChar (d, '[') ;
+    DynStr.AppendChar (d, 0AC) ;
+    FOR i := 0 TO n.nkids - 1 DO
+      Sp (d, ind + 1) ;
+      E (d, n.kids[i]) ;
+      IF i < n.nkids - 1 THEN DynStr.AppendChar (d, ',') END ;
+      DynStr.AppendChar (d, 0AC)
+    END ;
+    Sp (d, ind) ;
+    DynStr.AppendChar (d, ']')
+  END
+END EAggregate ;
+
 PROCEDURE EDecl (VAR d: PTR DynStr.DString ;
                  n: PTR Ast.Node ; ind: I64) =
 VAR i : I64 ;
@@ -717,7 +758,11 @@ BEGIN
           Sp (d, ind + 1) ;
           DynStr.Append (d, c.a) ;
           DynStr.Append (d, ' = ') ;
-          E (d, c.kids[0]) ;
+          IF IsAggregate (c.kids[0]) THEN
+            EAggregate (d, c.kids[0], ind + 1)
+          ELSE
+            E (d, c.kids[0])
+          END ;
           DynStr.Append (d, ' ;') ;
           DynStr.AppendChar (d, 0AC)
         END

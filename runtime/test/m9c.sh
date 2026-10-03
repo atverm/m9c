@@ -26,7 +26,7 @@ OUT=/tmp/m9c-out
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c ../gen/Lex.c \
     ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
-    ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/M9c.c -o m9c
+    ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/Review.c ../gen/M9c.c -o m9c
 
 M9C=$(pwd)/m9c
 GEN=$(cd "$G" && pwd)
@@ -47,10 +47,10 @@ check Dict
 check Json DynStr
 check Lex DynStr
 check Parse Ast Lex DynStr
-check Gen Ast DynStr
+check Gen Ast DynStr Text
 check Sem Ast DynStr Print Text
 check Io DynStr
-check M9c Io Ast Parse Gen Sem DynStr Doc Lex System
+check M9c Io Ast Parse Gen Sem DynStr Doc Review Lex System
 
 # usage and exit status are part of the tool, so they are checked too.
 # Asking for help SUCCEEDS; getting the usage because you gave no
@@ -364,11 +364,11 @@ rm -rf "$LIB"; mkdir -p "$LIB"; cd "$LIB"
 export M9RUNTIME="$RT"
 export M9LIBRARY="$SRC"
 
-for m in DynStr Text Io System Lex Ast Parse Print Sem Gen Doc; do "$M9C" -c $m; done
+for m in DynStr Text Io System Lex Ast Parse Print Sem Gen Doc Review; do "$M9C" -c $m; done
 "$M9C" -v --ar libm9.a M9c 2>ar.txt
 [ -f libm9.a ] || { echo "FAIL: --ar produced no archive"; exit 1; }
 # the members are the closure m9c just resolved, and its own object
-for o in M9c.o DynStr.o Io.o System.o Lex.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o; do
+for o in M9c.o DynStr.o Io.o System.o Lex.o Ast.o Parse.o Print.o Sem.o Gen.o Doc.o Review.o; do
   ar t libm9.a | grep -qx "$o" ||
     { echo "FAIL: $o is not in the archive"; exit 1; }
 done

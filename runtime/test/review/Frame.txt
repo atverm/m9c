@@ -1,0 +1,36 @@
+REVIEW Frame -- 112 procedures with a body, 74 of them functions; 66 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path              74
+  assignments                                   617
+  arguments                                    1183
+  RETURN values                                 101
+  operands of a comparison or an operator       430
+  CASE labels                                     0
+  THREAD arguments                                0
+  CASE over variants, proved total               37
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    0
+  local pools                                     5   WriteCsv.pool, Filter.scratch, OrderBy.scratch, Groups.scratch, JoinOn.scratch
+  pool parameters                                49   New, Blank, Copy, AddF64, AddF32, AddI64, +43 more
+  KEPT parameters                                11   AddStrs, NewTs, NewTs, Average, MakeContiguous, WriteNc, +4 more
+  HEAP named                                      0
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                                0
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                37
+  RAISE statements                              155
+  handlers                                       24
+  NEW in the frame                               20
+  NEW in a named pool                           110

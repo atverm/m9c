@@ -1,0 +1,10 @@
+(* EXPECT: cannot assign I64 to F64 (no implicit conversions, par 2.1) *)
+MODULE m ;
+VAR
+  i : I64 ;
+  y : F64 ;
+BEGIN
+  FOR i := 1 TO 3 DO
+    y := i
+  END
+END m.

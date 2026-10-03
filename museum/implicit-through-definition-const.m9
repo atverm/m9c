@@ -1,0 +1,31 @@
+(* EXPECT-ERROR: cannot assign a real literal to I64 *)
+(* "There are no implicit conversions" -- and there was one more, for
+   a constant on its way from a DEFINITION to its own IMPLEMENTATION.
+   The checker entered a unit's constants unit by unit, and an
+   implementation was given only the ones it declared itself: a
+   constant of its definition was a name of unknown type there, and
+   unknown never diagnoses.  So this compiled, in the released 0.13.0
+   too, and Wait answered 1 for a constant of 1.5 -- while a CLIENT
+   writing `n := m.Half` was refused, and so was the same assignment
+   from a constant declared in the implementation.
+
+   Observed 2026-10-02 through `m9c --review`: the page for Http listed
+   MaxWait, a constant of Http's definition, as "passed over, a type
+   unknown" at each of the three places its implementation used it.
+   Measured before it was closed: of 430 M9 files in this repository
+   and four applications, 274 of which the compiler accepts, none
+   leaned on it. *)
+DEFINITION MODULE m ;
+CONST
+  Half = 1.5 ;
+PROCEDURE Wait () : I64 ;
+END m.
+
+IMPLEMENTATION MODULE m ;
+PROCEDURE Wait () : I64 =
+VAR n : I64 ;
+BEGIN
+  n := Half ;
+  RETURN n
+END Wait ;
+END m.

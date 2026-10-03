@@ -66,6 +66,36 @@ What is checked, each rule stated with the reason it is the rule:
      imported either (2026-09-11) -- dead under LTO, but a module
      MISSING from one of them is a link error only that gate sees.
 
+  9. Every battery in runtime/test/build.sh links a set of generated
+     modules that is CLOSED under direct imports.  The driver lines
+     name their `../gen/M.c` by hand -- the script's own comment
+     counts three times one of them missed Json -- and a missing one
+     is a link error in one battery of thirty-eight; here it is one
+     line naming the module and the import.
+
+ 10. Every module gentest.pas generates is linked by at least one
+     battery of build.sh, or is named in NO_BATTERY with what holds
+     it instead.  A library module that lands without a driver is a
+     module nothing runs (2026-10-01, written before the library
+     backlog adds six or more).
+
+ 11. The tutorial's hand link lines (runtime/test/lib/tutcommon.sh,
+     the examples that need a C library) are closed the same way:
+     the objects they name cover the example's imports and each
+     other's.  When Stats gained Bits on 2026-09-27 only tutgen
+     failing to link C14Flux said so.
+
+ 12. The link lines of every OTHER gate over runtime/gen, and
+     bootstrap.sh's TOOLC, are closed under direct imports as rule 9
+     holds build.sh's.  When Gen gained Text on 2026-10-01 the first
+     three rules named gentest, gendiff's run line and deps_of; the
+     helper both gendiff and bootstrap LINK was left to the linker,
+     once in each gate, the second after a ten-minute run.
+
+ 13. corpus/NAMETest.m9 is the test of corpus/NAME.m9 (m9test.sh
+     builds and runs it): excused from gentest and from LIBRARY by
+     its name, so the name must have a module behind it.
+
 Exit status 1 with every disagreement named; 0 when all agree.
 """
 import glob
@@ -99,7 +129,27 @@ NOT_INSTALLED = {
     'Concat':   'demo program (the executable half of the + decision)',
     'Narrow':   'test program (every integer width traps on overflow)',
     'ProcUse':  'test program (procedure types, par 2.2.3)',
+    'AggUse':   'test program (constant tables, par 2.2.4)',
+    'ShareUse': 'test program (a call that raised answered nothing, par 5)',
     'M9c':      'the compiler itself, installed as a binary',
+}
+# a generated module no battery of runtime/test/build.sh links, and
+# the gate that holds it instead
+NO_BATTERY = {
+    'Lex':   'lexdiff, comdiff and the token-count golden',
+    'Ast':   'parsediff (every node kind printed back)',
+    'Parse': 'parsediff and the parse probes',
+    'Print': 'parsediff (print (parse ()) is the fixpoint)',
+    'Sem':   'semdiff and probediff',
+    'Gen':   'gendiff and bootstrap',
+    'Doc':   'docdiff',
+    'Diag':  'diagdiff and the tutor gate',
+    'M9c':   'm9c.sh, the compiler as a program',
+    'Review': 'reviewdiff (one recorded page per corpus module)',
+    'Check': 'm9test (CheckTest holds it to its own recorded output)',
+    'Arrays': 'm9test (ArraysTest, against numpy goldens)',
+    'Numeric': 'm9test (NumericTest, against scipy goldens)',
+    'Png': 'm9test (PngTest, read back through Zip.Decompress) and deflate.sh (Python reads the files)',
 }
 
 
@@ -113,11 +163,30 @@ def corpus_modules():
                   for p in glob.glob(os.path.join(ROOT, 'corpus', '*.m9')))
 
 
+def no_comments(text):
+    """the source with every (* ... *) blanked, nesting honoured and
+    the line breaks kept.  Check.m9's documentation shows a test,
+    IMPORT line and all, and was read as importing itself."""
+    out, depth, i = [], 0, 0
+    while i < len(text):
+        if text.startswith('(*', i):
+            depth += 1
+            i += 2
+        elif depth and text.startswith('*)', i):
+            depth -= 1
+            i += 2
+        else:
+            if depth == 0 or text[i] == '\n':
+                out.append(text[i])
+            i += 1
+    return ''.join(out)
+
+
 def direct_imports(m):
     """IMPORT A, B ; lines of both halves.  FROM u IMPORT names a
     foreign C unit, never an .m9, and is not an import here."""
     s = set()
-    for line in rd(f'corpus/{m}.m9').splitlines():
+    for line in no_comments(rd(f'corpus/{m}.m9')).splitlines():
         mm = re.match(r'\s*IMPORT\s+(.*?)\s*;', line)
         if mm:
             s |= {x.strip() for x in mm.group(1).split(',') if x.strip()}
@@ -166,6 +235,17 @@ def main():
 
     corpus = corpus_modules()
     gt, gd, bs = gentest(), gendiff(), bootstrap()
+
+    # 13. corpus/NAMETest.m9 is the test of corpus/NAME.m9, a program
+    # m9test.sh builds and runs: excused from the generated and the
+    # installed lists as a CLASS, by its name -- which is why the
+    # name must be honest
+    for m in corpus:
+        if m.endswith('Test') and len(m) > 4:
+            if m[:-4] not in corpus:
+                fail(f'corpus/{m}.m9 is named as a test and there is no corpus/{m[:-4]}.m9')
+            NOT_GENERATED[m] = 'a test in M9, built and run by m9test.sh'
+            NOT_INSTALLED[m] = 'a test in M9, built and run by m9test.sh'
 
     # 1. the three generator lists are one list
     for name, other in (('gendiff.sh', gd), ('bootstrap.sh', bs)):
@@ -261,6 +341,87 @@ def main():
                          f'{" -- extra " + str(extra) if extra else ""}'
                          f'{" -- missing " + str(missing) if missing else ""}')
 
+    # 9. every battery's link line is closed under direct imports
+    drivers = rd('runtime/test/build.sh').replace('\\\n', ' ')
+    battery_mods = set()
+    nlines = 0
+    for line in drivers.splitlines():
+        if not (line.lstrip().startswith('gcc') and 'gen/' in line):
+            continue
+        nlines += 1
+        mods = set(re.findall(r'gen/(\w+)\.c', line))
+        battery_mods |= mods
+        out = re.search(r'-o\s+(\S+)', line)
+        what = out.group(1) if out else '?'
+        for m in sorted(mods):
+            for d in sorted(direct_imports(m) - mods) if m in corpus else []:
+                fail(f'runtime/test/build.sh: {what} links {m} and not {d}, which {m} imports')
+
+    # 10. every generated module has a battery, or is held elsewhere by name
+    for m in sorted(gt):
+        if m not in battery_mods and m not in NO_BATTERY:
+            fail(f'runtime/test/build.sh: no battery links {m} '
+                 f'(give it a driver, or name it in runtime/test/listdiff.py NO_BATTERY with the gate that holds it)')
+    for m in NO_BATTERY:
+        if m in battery_mods:
+            fail(f'listdiff.py: {m} is excused from build.sh but a battery links it')
+        if m not in gt:
+            fail(f'listdiff.py: {m} is excused from build.sh but gentest.pas does not generate it')
+
+    # 12. every OTHER gate's link line over runtime/gen is closed too,
+    # and bootstrap's TOOLC, which is a list of names and not a line
+    ngate = 0
+    for path in sorted(glob.glob(os.path.join(ROOT, 'runtime', 'test', '*.sh'))):
+        base = os.path.basename(path)
+        if base == 'build.sh':
+            continue
+        text = rd('runtime/test/' + base).replace('\\\n', ' ')
+        for line in text.splitlines():
+            if not (line.lstrip().startswith('gcc') and 'gen/' in line):
+                continue
+            ngate += 1
+            mods = set(re.findall(r'gen/(\w+)\.c', line))
+            out = re.search(r'-o\s+(\S+)', line)
+            what = out.group(1) if out else '?'
+            for m in sorted(mods):
+                for d in sorted(direct_imports(m) - mods) if m in corpus else []:
+                    fail(f'runtime/test/{base}: {what} links {m} and not {d}, which {m} imports')
+    tc = re.search(r'^TOOLC="([^"]*)"', rd('runtime/test/bootstrap.sh'), re.M)
+    if not tc:
+        fail('runtime/test/bootstrap.sh: no TOOLC line to read')
+    else:
+        mods = set(tc.group(1).split())
+        for m in sorted(mods):
+            for d in sorted(direct_imports(m) - mods) if m in corpus else []:
+                fail(f'runtime/test/bootstrap.sh: TOOLC has {m} and not {d}, which {m} imports')
+
+    # 11. the tutorial's hand link lines are closed too
+    tutc = rd('runtime/test/lib/tutcommon.sh').replace('\\\n', ' ')
+    ntut = 0
+    for mm in re.finditer(r'^\s*(\w+)\)\n(.*?);;', tutc, re.M | re.S):
+        name, body = mm.group(1), mm.group(2)
+        g = re.search(r'gcc[^\n]*', body)
+        if not g:
+            continue
+        ntut += 1
+        objs = set(re.findall(r'\b(\w+)\.o\b', g.group(0)))
+        src = os.path.join(ROOT, 'docs', 'tutorial', 'examples', name + '.m9')
+        if not os.path.exists(src):
+            fail(f'tutcommon.sh: {name} has a link line and no docs/tutorial/examples/{name}.m9')
+            continue
+        need = set()
+        with open(src, encoding='utf-8') as f:
+            for line in f:
+                im = re.match(r'\s*IMPORT\s+(.*?)\s*;', line)
+                if im:
+                    need |= {x.strip() for x in im.group(1).split(',') if x.strip()}
+        for d in sorted(need - objs):
+            if d in corpus:
+                fail(f'tutcommon.sh: {name} imports {d} and its link line has no {d}.o')
+        for o in sorted(objs):
+            for d in sorted(direct_imports(o) - objs) if o in corpus else []:
+                fail(f'tutcommon.sh: {name} links {o}.o and not {d}.o, which {o} imports')
+
     if bad:
         for b in bad:
             print('listdiff: ' + b)
@@ -268,7 +429,10 @@ def main():
         return 1
     print(f'listdiff: {len(corpus)} corpus modules; gentest.pas, gendiff.sh, '
           f'bootstrap.sh ({len(gt)} entries), build.sh LIBRARY ({len(lib)}), '
-          f'COMPILER ({len(comp)}) and the tutor LIB ({len(tut)}) agree')
+          f'COMPILER ({len(comp)}) and the tutor LIB ({len(tut)}) agree; '
+          f'{nlines} driver link lines, {ngate} gate ones and {ntut} '
+          f'tutorial ones are closed, '
+          f'{len(gt) - len(NO_BATTERY)} modules have a battery')
     return 0
 
 

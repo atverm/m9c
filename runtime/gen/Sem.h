@@ -15,6 +15,15 @@ typedef struct Sem_Binding Sem_Binding;
 typedef struct Sem_VariantInfo Sem_VariantInfo;
 typedef struct Sem_ModuleInfo Sem_ModuleInfo;
 
+#define Sem_StatKinds INT64_C(7)
+#define Sem_StatSites INT64_C(6)
+#define Sem_StAssign INT64_C(0)
+#define Sem_StArg INT64_C(1)
+#define Sem_StReturn INT64_C(2)
+#define Sem_StOperand INT64_C(3)
+#define Sem_StLabel INT64_C(4)
+#define Sem_StThread INT64_C(5)
+#define Sem_StCase INT64_C(6)
 #define Sem_MaxDepth INT64_C(8)
 static const uint32_t Sem_ModeVal_d[1] = { 112u };
 #define Sem_ModeVal ((m9_sl_CHAR){ (uint32_t *) Sem_ModeVal_d, 1 })
@@ -30,6 +39,9 @@ static const uint32_t Sem_ModeModule_d[1] = { 109u };
 #define Sem_ModeModule ((m9_sl_CHAR){ (uint32_t *) Sem_ModeModule_d, 1 })
 static const uint32_t Sem_ModeBinder_d[1] = { 98u };
 #define Sem_ModeBinder ((m9_sl_CHAR){ (uint32_t *) Sem_ModeBinder_d, 1 })
+#define Sem_DeclPlain INT64_C(0)
+#define Sem_DeclForward INT64_C(1)
+#define Sem_DeclBody INT64_C(2)
 
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
@@ -51,6 +63,14 @@ typedef struct { Sem_VariantInfo *p; int64_t len; } m9_sl_Sem_VariantInfo;
 #define M9SL_m9_sl_Sem_ModuleInfo
 typedef struct { Sem_ModuleInfo *p; int64_t len; } m9_sl_Sem_ModuleInfo;
 #endif
+#ifndef M9SL_m9_arr_7_int64_t
+#define M9SL_m9_arr_7_int64_t
+typedef struct { int64_t v[7]; } m9_arr_7_int64_t;
+#endif
+#ifndef M9SL_m9_arr_42_int64_t
+#define M9SL_m9_arr_42_int64_t
+typedef struct { int64_t v[42]; } m9_arr_42_int64_t;
+#endif
 #ifndef M9SL_m9_sl_Sem_Binding
 #define M9SL_m9_sl_Sem_Binding
 typedef struct { Sem_Binding *p; int64_t len; } m9_sl_Sem_Binding;
@@ -58,6 +78,18 @@ typedef struct { Sem_Binding *p; int64_t len; } m9_sl_Sem_Binding;
 #ifndef M9SL_m9_sl_Sem_Edge
 #define M9SL_m9_sl_Sem_Edge
 typedef struct { Sem_Edge *p; int64_t len; } m9_sl_Sem_Edge;
+#endif
+#ifndef M9SL_m9_arr_13_m9_sl_CHAR
+#define M9SL_m9_arr_13_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[13]; } m9_arr_13_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_10_m9_sl_CHAR
+#define M9SL_m9_arr_10_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[10]; } m9_arr_10_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_9_m9_sl_CHAR
+#define M9SL_m9_arr_9_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[9]; } m9_arr_9_m9_sl_CHAR;
 #endif
 #ifndef M9SL_m9_arr_256_m9_sl_CHAR
 #define M9SL_m9_arr_256_m9_sl_CHAR
@@ -70,5 +102,10 @@ int64_t Sem_ErrCount (m9_state *err);
 m9_sl_CHAR Sem_ErrAt (int64_t i, m9_state *err);
 int64_t Sem_LedgerCount (m9_state *err);
 m9_sl_CHAR Sem_LedgerAt (int64_t i, m9_state *err);
+m9_sl_CHAR Sem_StatName (int64_t i, m9_state *err);
+int64_t Sem_StatChecked (int64_t i, m9_state *err);
+int64_t Sem_StatSkipped (int64_t i, m9_state *err);
+int64_t Sem_StatLines (int64_t i, m9_state *err);
+int64_t Sem_StatLine (int64_t i, int64_t j, m9_state *err);
 
 #endif

@@ -1,0 +1,17 @@
+(* EXPECT: argument 1 of Fill: the RO variable view can be lent only to an RO parameter *)
+(* decision 21 for a `VAR RO' variable: what it views is lent only to
+   an RO parameter.  Lending it to one is held legal first. *)
+MODULE m ;
+VAR n : I64 ;
+PROCEDURE Count (RO s: STR) : I64 = BEGIN RETURN LEN (s) END Count ;
+PROCEDURE Fill (s: STR) = BEGIN s[0] := 'x' END Fill ;
+PROCEDURE F (RO src: STR) =
+VAR RO view : STR ;
+BEGIN
+  view := src ;
+  n := Count (view) ;
+  Fill (view)
+END F ;
+BEGIN
+  F ('abc')
+END m.

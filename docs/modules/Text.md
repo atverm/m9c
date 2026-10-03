@@ -70,6 +70,25 @@ separator terminate.  Contains is Find (...) >= 0 and says so
 rather than making every caller write it; Gen and M9c had both
 grown a private StartsW before this module existed.
 
+### IndexOf (RO among: SLICE OF STR ; RO s: STR) : I64
+
+_(documented with the group below)_
+
+### OneOf (RO s: STR ; RO among: SLICE OF STR) : BOOL
+
+membership in a list of strings: the index of the first element
+equal to s, or -1; and the yes/no form.  A linear search, which
+is what the chain of comparisons it replaces was.
+
+  among -- usually a constant table (report par 2.2.4):
+             CONST Units = ['ppm', 'ppb', 'ppt'] ;
+             ... IF Text.OneOf (u, Units) THEN ...
+           A table is lent whole to an RO parameter and to
+           nothing else, which is why this one is RO.  The
+           compiler held 29 such lists as `Eq (n, 'a') OR Eq
+           (n, 'b') OR ...`, one of them 96 names long, when
+           these two were written (2026-10-01).
+
 ### Trim (RO s: STR) : STR
 
 _(documented with the group below)_
@@ -115,7 +134,7 @@ were the forgotten ones (par 2.3).
 a + b, in pool rather than in the frame: for the result that is
 stored, where `+` is for the result that is used
 
-### Join (parts: SLICE OF STR ; RO sep: STR) : STR
+### Join (RO parts: SLICE OF STR ; RO sep: STR) : STR
 
 the inverse of Split, and exact: Join (Split (s, c), c) is s
 again, because Split keeps its empties.
@@ -136,3 +155,29 @@ _(documented with the group below)_
 ### Upper (RO s: STR) : STR
 
 ASCII A..Z only; every other scalar passes through untouched
+
+### Replace (RO s: STR ; RO old: STR ; RO by: STR) : STR
+
+s with every occurrence of `old' replaced by `by': found left to
+right, and never overlapping, so 'aaaa' with 'aa' replaced is
+two replacements and not three.  Python's str.replace.  An
+EMPTY old occurs nowhere here and s comes back as it was;
+Python finds it between every two characters, which is nobody's
+meaning.  A copy either way: the answer shares nothing with s.
+
+### Match (RO pattern: STR ; RO s: STR) : BOOL
+
+does the WHOLE of s fit the shell pattern?  Python's
+fnmatch.fnmatchcase, case-sensitive:
+
+  *        any run of characters, none included
+  ?        any one character
+  [abc]    one of those; [a-c] one in that range; [!abc] one
+           that is not; a ] straight after the [ or the [! is a
+           member, and so is a - at either end
+  a [ that no ] closes, and every other character, stand for
+  themselves.  There is no escape character.
+
+A range written backwards, [c-a], holds nothing.  The / is a
+character like any other here; System.Glob is what knows about
+directories.

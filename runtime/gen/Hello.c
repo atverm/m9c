@@ -44,16 +44,20 @@ static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   DynStr_DString * d = NULL; (void) d;
-  d = DynStr_New (pool, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (pool, err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s0, 7 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &((*pool)), who, err);
   if (err->exc) goto L_ret;
   Io_WriteLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
-  greeted = m9_add_i64 (greeted, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(greeted) m9v = m9_add_i64 (greeted, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    greeted = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);

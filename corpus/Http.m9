@@ -252,6 +252,77 @@ PROCEDURE CookieValue (cl: PTR Client ; RO name: STR) : STR
   (* the value of the first live cookie named `name`, whatever its
      domain and path; '' when there is none *)
 
+(* ---- trying again: retry with backoff (2026-10-02) -----------------
+
+   A repository answers 503 for a minute while it restarts, or 429
+   because forty jobs asked at once, and a program that fetches four
+   hundred files should not die at file 212 for it.  RequestRetry is
+   Request made again while that is worth doing, with a wait that
+   doubles.
+
+   The rules are urllib3's `Retry` -- what Python's requests does when
+   it is given `Retry (total = n, backoff_factor = f, status_forcelist
+   = [429, 500, 502, 503, 504])` -- and the three procedures a rule
+   is made of are exported, so that the rules are held to urllib3 by
+   a test and a caller with a loop of its own can use them:
+
+   * WHAT is tried again: a request whose method is idempotent (GET,
+     HEAD, PUT, DELETE, OPTIONS, TRACE) and whose answer is 429, 500,
+     502, 503 or 504, or 413 with a Retry-After.  A POST is never
+     sent twice on a status.
+   * HOW LONG is waited: nothing before the first retry, then
+     factor * 2, factor * 4, ... seconds, never more than MaxWait.
+     When the answer carries a Retry-After that says more than zero,
+     that is waited instead.
+   * a TRANSPORT failure is tried again when the connection was never
+     made, whatever the method -- nothing was sent -- and, for an
+     idempotent method, when it was made and no byte of an answer
+     came back.
+
+   Stated differences from urllib3: a Retry-After LONGER than MaxWait
+   is not waited for and not defied -- the answer goes back to the
+   caller as it is (urllib3 sleeps however long it is told); a
+   Retry-After that is neither a count nor a date is no Retry-After
+   (urllib3 raises); and a failure after part of an answer has
+   arrived is not tried again (urllib3 retries a read error), because
+   from here it cannot be told from an answer that will fail the same
+   way every time -- one larger than `cap`, say. *)
+
+CONST
+  MaxWait = 120.0 ;               (* seconds; urllib3's backoff_max *)
+
+PROCEDURE Backoff (failures: I64 ; factor: F64) : F64 ;
+  (* the seconds to wait after `failures` failures in a row: 0.0
+     after the first, then factor * 2 ^ (failures - 1), at most
+     MaxWait.  0.0 for a factor that is not positive. *)
+
+PROCEDURE Retryable (RO method: STR ; status: I64 ;
+                     hasRetryAfter: BOOL) : BOOL
+  RAISES ValueRange ;
+  (* whether a request by this method, answered with this status, is
+     worth making again; the method is read without regard to case *)
+
+PROCEDURE RetryAfter (RO headers: STR ; now: F64) : F64
+  RAISES ValueRange ;
+  (* the seconds a response asks to be left alone: its Retry-After
+     header as a count of seconds, or as an HTTP date measured from
+     `now` (seconds since the epoch) and 0.0 when that date is past.
+     -1.0 when there is no such header or it is neither.  A count of
+     more than fifteen digits answers 1.0e15, which is more than
+     MaxWait like every count that long. *)
+
+PROCEDURE RequestRetry (VAR pool: POOL ; RO method: STR ; RO url: STR ;
+                        RO headers: STR ; RO body: SLICE OF BYTE ;
+                        cap: I64 ; retries: I64 ; factor: F64 ;
+                        VAR status: I64 ; VAR respHeaders: STR ;
+                        VAR tries: I64) : SLICE OF BYTE
+  RAISES TransportError, ValueRange ;
+  (* Request, made at most 1 + retries times; `tries` says how many
+     it took.  The answer is the LAST one's, whatever its status: a
+     503 that outlived the retries comes back as a 503, and a
+     transport failure that did is raised as it would have been the
+     first time.  Each try is a connection of its own. *)
+
 END Http.
 
 
@@ -310,6 +381,10 @@ PROCEDURE TlsClose = "tls_close" (h: C.Int) : C.Int  [REENTRANT] ;
    comparison against now *)
 PROCEDURE NowSec = "m9_now" () : C.Double  [REENTRANT] ;
 
+(* the wait between two tries of RequestRetry: the same m9_sleep_ms
+   Time binds, here for the reason NowSec is *)
+PROCEDURE SleepMs = "m9_sleep_ms" (ms: C.SSizeT)  [REENTRANT] ;
+
 END csock.
 
 
@@ -319,7 +394,7 @@ UNSAFE IMPLEMENTATION MODULE Http ;
    else is checked code; the audit surface is this file, grep ADR.   *)
 
 FROM csock IMPORT Connect, Read, Write, Close ;
-FROM csock IMPORT TlsConnect, TlsRead, TlsWrite, TlsClose, NowSec ;
+FROM csock IMPORT TlsConnect, TlsRead, TlsWrite, TlsClose, NowSec, SleepMs ;
 IMPORT DynStr ;
 IMPORT Io ;
 
@@ -787,6 +862,17 @@ BEGIN
         END ;
         held := 0
       END
+    END ;
+    (* a body that stopped short of what its framing promised is not
+       the body: the connection was lost, and the bytes that did come
+       are a prefix nobody asked for.  Until 2026-10-02 they were
+       answered as a 200 of ten bytes where a hundred were stated --
+       measured; Python raises IncompleteRead. *)
+    IF chunked AND NOT ended THEN
+      RAISE TransportError ('the body ended before its last chunk')
+    END ;
+    IF NOT chunked AND clen >= 0 AND want > 0 THEN
+      RAISE TransportError ('the body ended before its Content-Length')
     END ;
     IF rq.toFile THEN
       IF opened THEN
@@ -1543,5 +1629,151 @@ BEGIN
   END ;
   RETURN ''
 END CookieValue ;
+
+(* ---- trying again -------------------------------------------------- *)
+
+PROCEDURE Backoff (failures: I64 ; factor: F64) : F64 =
+VAR
+  w : F64 ;
+  k : I64 ;
+BEGIN
+  IF failures <= 1 OR NOT (factor > 0.0) THEN RETURN 0.0 END ;
+  (* doubled, which is exact, and no further than the ceiling: two to
+     the power of some hundreds is not a number to compute first *)
+  w := factor ;
+  k := 1 ;
+  WHILE k < failures AND w < MaxWait DO
+    w := w * 2.0 ;
+    k := k + 1
+  END ;
+  IF w > MaxWait THEN RETURN MaxWait END ;
+  RETURN w
+END Backoff ;
+
+(* the methods RFC 9110 calls idempotent: asking twice is asking once *)
+PROCEDURE Idempotent (RO method: STR) : BOOL
+  RAISES ValueRange =
+BEGIN
+  RETURN EqNoCase (method, 'GET') OR EqNoCase (method, 'HEAD') OR
+         EqNoCase (method, 'PUT') OR EqNoCase (method, 'DELETE') OR
+         EqNoCase (method, 'OPTIONS') OR EqNoCase (method, 'TRACE')
+END Idempotent ;
+
+PROCEDURE Retryable (RO method: STR ; status: I64 ;
+                     hasRetryAfter: BOOL) : BOOL
+  RAISES ValueRange =
+BEGIN
+  IF NOT Idempotent (method) THEN RETURN FALSE END ;
+  IF status = 429 OR status = 500 OR status = 502 OR status = 503 OR
+     status = 504 THEN
+    RETURN TRUE
+  END ;
+  (* too large NOW, the server says, and when to come back *)
+  RETURN hasRetryAfter AND status = 413
+END Retryable ;
+
+PROCEDURE RetryAfter (RO headers: STR ; now: F64) : F64
+  RAISES ValueRange =
+VAR
+  v : STR ;
+  at : F64 ;
+  n : I64 ;
+BEGIN
+  v := Header (headers, 'retry-after') ;
+  IF LEN (v) = 0 THEN RETURN -1.0 END ;
+  IF AllDigits (v) THEN
+    IF LEN (v) > 15 THEN RETURN 1.0e15 END ;
+    n := Digits (v) ;
+    RETURN F64 (n)
+  END ;
+  at := HttpDate (v) ;
+  IF at < 0.0 THEN RETURN -1.0 END ;
+  IF at <= now THEN RETURN 0.0 END ;
+  RETURN at - now
+END RetryAfter ;
+
+(* one try, on a connection of its own.  FALSE when the transport
+   failed, with the reason: `made` says whether the connection was
+   made -- so the request may have gone out -- and `answered` whether
+   a byte of an answer came back. *)
+PROCEDURE Shot (VAR pool: POOL ; RO rq: Req ; secure: BOOL ; port: I64 ;
+                VAR rs: Resp ; VAR made: BOOL ; VAR answered: BOOL ;
+                VAR why: STR) : BOOL
+  RAISES Io.IOError, ValueRange, IndexError =
+VAR
+  scratch : POOL ;
+  c : Conn ;
+  none : SLICE OF BYTE ;
+BEGIN
+  made := FALSE ;
+  answered := FALSE ;
+  OpenConn (scratch, c, secure, rq.host, port) ;
+  made := TRUE ;
+  Once (pool, c, rq, none, rs) ;
+  RETURN TRUE
+EXCEPT
+| TransportError (m) :
+    why := m ;
+    answered := c.gotAny ;
+    RETURN FALSE
+END Shot ;
+
+PROCEDURE RequestRetry (VAR pool: POOL ; RO method: STR ; RO url: STR ;
+                        RO headers: STR ; RO body: SLICE OF BYTE ;
+                        cap: I64 ; retries: I64 ; factor: F64 ;
+                        VAR status: I64 ; VAR respHeaders: STR ;
+                        VAR tries: I64) : SLICE OF BYTE
+  RAISES TransportError, ValueRange =
+VAR
+  rq : Req ;
+  rs : Resp ;
+  secure, ok, made, answered, again, has : BOOL ;
+  host, path, why, ra : STR ;
+  port, failures, ms : I64 ;
+  wait, after : F64 ;
+BEGIN
+  tries := 0 ;
+  IF LEN (method) = 0 THEN RAISE TransportError ('no method') END ;
+  SplitUrl (pool, url, secure, host, port, path) ;
+  rq.method := method ; rq.host := host ; rq.path := path ;
+  rq.extra := headers ; rq.body := body ;
+  rq.accept := '' ; rq.cookie := '' ; rq.dest := '' ;
+  rq.toFile := FALSE ; rq.toSink := FALSE ; rq.keepHdrs := TRUE ;
+  rq.keep := FALSE ; rq.cap := cap ;
+  failures := 0 ;
+  why := '' ;
+  LOOP
+    tries := tries + 1 ;
+    ok := Shot (pool, rq, secure, port, rs, made, answered, why) ;
+    IF ok THEN
+      ra := Header (rs.hdrs, 'retry-after') ;
+      has := LEN (ra) > 0 ;
+      again := Retryable (method, rs.status, has) ;
+      after := RetryAfter (rs.hdrs, F64 (NowSec ())) ;
+      (* the last answer is the answer: not worth asking again, no
+         tries left, or told to stay away for longer than this waits *)
+      IF NOT again OR tries > retries OR after > MaxWait THEN EXIT END ;
+      failures := failures + 1 ;
+      wait := Backoff (failures, factor) ;
+      IF after > 0.0 THEN wait := after END
+    ELSE
+      again := NOT made ;
+      IF made AND NOT answered THEN again := Idempotent (method) END ;
+      IF NOT again OR tries > retries THEN RAISE TransportError (why) END ;
+      failures := failures + 1 ;
+      wait := Backoff (failures, factor)
+    END ;
+    IF wait > 0.0 THEN
+      ms := I64 (wait * 1000.0 + 0.5) ;
+      SleepMs (C.SSizeT (ms))
+    END
+  END ;
+  status := rs.status ; respHeaders := rs.hdrs ;
+  (* the accumulator holds octets, one per scalar *)
+  RETURN DynStr.Bytes (pool, rs.text, FALSE)
+EXCEPT
+| IndexError : RAISE TransportError ('a malformed response')
+| Io.IOError (p) : RAISE TransportError ('unexpected file error')
+END RequestRetry ;
 
 END Http.

@@ -50,11 +50,21 @@ static const uint32_t m9s5[1] = { 61u };
 static const uint32_t m9s6[2] = { 45u, 45u };
 static const uint32_t m9s7[2] = { 45u, 45u };
 static const uint32_t m9s8[2] = { 45u, 45u };
+static const uint32_t m9s9[1] = { 47u };
+static const uint32_t m9s10[1] = { 47u };
+static const uint32_t m9s11[1] = { 46u };
 
 static void System_Put (m9_pool *scratch, m9_sl_BYTE *block, int64_t *k, m9_sl_CHAR s, m9_state *err);
 static m9_sl_CHAR System_Stream (m9_pool *pool, int64_t h, int64_t which, m9_state *err);
 static bool System_IsOption (m9_sl_CHAR a, m9_state *err);
 static m9_sl_CHAR System_Dup (m9_sl_CHAR s, m9_state *err);
+static bool System_HasMagic (m9_sl_CHAR s, m9_state *err);
+static m9_sl_CHAR System_Joined (m9_sl_CHAR dir, m9_sl_CHAR name, m9_state *err);
+static m9_sl_m9_sl_CHAR System_Entries (m9_pool *pool, m9_sl_CHAR dir, m9_state *err);
+static bool System_IsDir (m9_sl_CHAR path, m9_state *err);
+static bool System_Fits (m9_sl_CHAR piece, m9_sl_CHAR name, m9_state *err);
+static m9_sl_m9_sl_CHAR System_Expand (m9_sl_m9_sl_CHAR dirs, m9_sl_CHAR piece, m9_state *err);
+static bool System_Before (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
 
 
 m9_sl_CHAR System_Os (m9_state *err)
@@ -107,8 +117,10 @@ m9_sl_CHAR System_Executable (m9_pool *pool, m9_state *err)
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE buf = {0}; (void) buf;
   int64_t n = 0; (void) n;
-  buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), System_MaxPath, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), System_MaxPath, err);
+    if (err->exc) goto L_ret;
+    buf = m9v;
+  }
   n = (int64_t)(m9_exe_path (((void *)(buf).p), ((int)(System_MaxPath))));
   if ((n < INT64_C(0))) {
     err->res = m9res;
@@ -154,14 +166,22 @@ System_Memory System_Mem (m9_state *err)
   m9_arr_4_int64_t m = {0}; (void) m;
   System_Memory r = {0}; (void) r;
   m9_meminfo (((void *)(m).v));
-  r.resident = (*(int64_t *) m9_at (m.v, INT64_C(0), INT64_C(4), sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
-  r.peak = (*(int64_t *) m9_at (m.v, INT64_C(1), INT64_C(4), sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
-  r.total = (*(int64_t *) m9_at (m.v, INT64_C(2), INT64_C(4), sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
-  r.available = (*(int64_t *) m9_at (m.v, INT64_C(3), INT64_C(4), sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  { __typeof__(r.resident) m9v = (*(int64_t *) m9_at (m.v, INT64_C(0), INT64_C(4), sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    r.resident = m9v;
+  }
+  { __typeof__(r.peak) m9v = (*(int64_t *) m9_at (m.v, INT64_C(1), INT64_C(4), sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    r.peak = m9v;
+  }
+  { __typeof__(r.total) m9v = (*(int64_t *) m9_at (m.v, INT64_C(2), INT64_C(4), sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    r.total = m9v;
+  }
+  { __typeof__(r.available) m9v = (*(int64_t *) m9_at (m.v, INT64_C(3), INT64_C(4), sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    r.available = m9v;
+  }
   err->res = m9res;
   m9ret = r;
   goto L_ret;
@@ -202,12 +222,18 @@ System_PoolInfo System_PoolAt (int64_t i, m9_state *err)
     m9_raise (err, &System_NoPool);
     goto L_ret;
   }
-  r.used = (*(int64_t *) m9_at (m.v, INT64_C(0), INT64_C(3), sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
-  r.capacity = (*(int64_t *) m9_at (m.v, INT64_C(1), INT64_C(3), sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
-  r.blocks = (*(int64_t *) m9_at (m.v, INT64_C(2), INT64_C(3), sizeof (int64_t), err));
-  if (err->exc) goto L_ret;
+  { __typeof__(r.used) m9v = (*(int64_t *) m9_at (m.v, INT64_C(0), INT64_C(3), sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    r.used = m9v;
+  }
+  { __typeof__(r.capacity) m9v = (*(int64_t *) m9_at (m.v, INT64_C(1), INT64_C(3), sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    r.capacity = m9v;
+  }
+  { __typeof__(r.blocks) m9v = (*(int64_t *) m9_at (m.v, INT64_C(2), INT64_C(3), sizeof (int64_t), err));
+    if (err->exc) goto L_ret;
+    r.blocks = m9v;
+  }
   err->res = m9res;
   m9ret = r;
   goto L_ret;
@@ -231,10 +257,14 @@ int64_t System_PoolBytes (m9_state *err)
   i = INT64_C(0);
   for (;;) {
     if (!(((int64_t)(m9_pool_info (((int64_t)(i)), ((void *)(m).v))) != INT64_C(0)))) break;
-    total = m9_add_i64 (total, (*(int64_t *) m9_at (m.v, INT64_C(1), INT64_C(3), sizeof (int64_t), err)), err);
-    if (err->exc) goto L_ret;
-    i = m9_add_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(total) m9v = m9_add_i64 (total, (*(int64_t *) m9_at (m.v, INT64_C(1), INT64_C(3), sizeof (int64_t), err)), err);
+      if (err->exc) goto L_ret;
+      total = m9v;
+    }
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
   }
   err->res = m9res;
   m9ret = total;
@@ -285,28 +315,40 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
   System_Result r = {0}; (void) r;
   ms = INT64_C(0);
   if ((seconds > 0.0)) {
-    ms = m9_i64_f64 ((double)((seconds * 1000.0)), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(ms) m9v = m9_i64_f64 ((double)((seconds * 1000.0)), err);
+      if (err->exc) goto L_ret;
+      ms = m9v;
+    }
     if ((ms < INT64_C(1))) {
       ms = INT64_C(1);
     }
   }
-  b = DynStr_Utf8 (&(scratch), prog, err);
-  if (err->exc) goto L_ret;
-  total = m9_add_i64 ((b).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(b) m9v = DynStr_Utf8 (&(scratch), prog, err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
+  { __typeof__(total) m9v = m9_add_i64 ((b).len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    total = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((args).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    b = DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (args.p, i, args.len, sizeof (m9_sl_CHAR), err)), err);
-    if (err->exc) goto L_ret;
-    total = m9_add_i64 (m9_add_i64 (total, (b).len, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(b) m9v = DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (args.p, i, args.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      b = m9v;
+    }
+    { __typeof__(total) m9v = m9_add_i64 (m9_add_i64 (total, (b).len, err), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      total = m9v;
+    }
   } }
-  block = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), total, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(block) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), total, err);
+    if (err->exc) goto L_ret;
+    block = m9v;
+  }
   k = INT64_C(0);
   System_Put (&(scratch), &(block), &(k), prog, err);
   if (err->exc) goto L_ret;
@@ -318,21 +360,29 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
     System_Put (&(scratch), &(block), &(k), (*(m9_sl_CHAR *) m9_at (args.p, i, args.len, sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
   } }
-  inb = DynStr_Utf8 (&(scratch), input, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(inb) m9v = DynStr_Utf8 (&(scratch), input, err);
+    if (err->exc) goto L_ret;
+    inb = m9v;
+  }
   etotal = INT64_C(0);
   { int64_t m9t3to;
   i = INT64_C(0);
   m9t3to = m9_sub_i64 ((env).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t3to; i += 1) {
-    b = DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (env.p, i, env.len, sizeof (m9_sl_CHAR), err)), err);
-    if (err->exc) goto L_ret;
-    etotal = m9_add_i64 (m9_add_i64 (etotal, (b).len, err), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(b) m9v = DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (env.p, i, env.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      b = m9v;
+    }
+    { __typeof__(etotal) m9v = m9_add_i64 (m9_add_i64 (etotal, (b).len, err), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      etotal = m9v;
+    }
   } }
-  eblock = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), etotal, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(eblock) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), etotal, err);
+    if (err->exc) goto L_ret;
+    eblock = m9v;
+  }
   k = INT64_C(0);
   { int64_t m9t4to;
   i = INT64_C(0);
@@ -342,8 +392,10 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
     System_Put (&(scratch), &(eblock), &(k), (*(m9_sl_CHAR *) m9_at (env.p, i, env.len, sizeof (m9_sl_CHAR), err)), err);
     if (err->exc) goto L_ret;
   } }
-  h = (int64_t)(m9_exec (((void *)(block).p), ((int)(m9_add_i64 ((args).len, INT64_C(1), err))), ((void *)(inb).p), ((int64_t)((inb).len)), ((void *)(eblock).p), ((int)((env).len)), ((int64_t)(ms))));
-  if (err->exc) goto L_ret;
+  { __typeof__(h) m9v = (int64_t)(m9_exec (((void *)(block).p), ((int)(m9_add_i64 ((args).len, INT64_C(1), err))), ((void *)(inb).p), ((int64_t)((inb).len)), ((void *)(eblock).p), ((int)((env).len)), ((int64_t)(ms))));
+    if (err->exc) goto L_ret;
+    h = m9v;
+  }
   if ((h < INT64_C(0))) {
     { __typeof__(prog) m9t5 = prog; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
     m9_raise (err, &Io_IOError);
@@ -351,10 +403,14 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
   }
   r.status = (int64_t)(m9_exec_status (((int)(h))));
   r.stopped = ((int64_t)(m9_exec_stopped (((int)(h)))) != INT64_C(0));
-  r.out = System_Stream (pool, h, System_Out, err);
-  if (err->exc) goto L_ret;
-  r.err_ = System_Stream (pool, h, System_Err, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(r.out) m9v = System_Stream (pool, h, System_Out, err);
+    if (err->exc) goto L_ret;
+    r.out = m9v;
+  }
+  { __typeof__(r.err_) m9v = System_Stream (pool, h, System_Err, err);
+    if (err->exc) goto L_ret;
+    r.err_ = m9v;
+  }
   m9_exec_release (((int)(h)));
   err->res = m9res;
   m9ret = r;
@@ -396,20 +452,27 @@ m9_sl_m9_sl_CHAR System_Args (m9_pool *pool, m9_state *err)
   m9_sl_m9_sl_CHAR a = {0}; (void) a;
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
-  n = Io_ArgCount (err);
-  if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = Io_ArgCount (err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   if ((n < INT64_C(1))) {
     n = INT64_C(1);
   }
-  a = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_sub_i64 (n, INT64_C(1), err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(a) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), m9_sub_i64 (n, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    a = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(1);
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(m9_sl_CHAR *) m9_at (a.p, m9_sub_i64 (i, INT64_C(1), err), a.len, sizeof (m9_sl_CHAR), err)) = Io_Arg (pool, i, err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*(m9_sl_CHAR *) m9_at (a.p, m9_sub_i64 (i, INT64_C(1), err), a.len, sizeof (m9_sl_CHAR), err))) m9v = Io_Arg (pool, i, err);
+      if (err->exc) goto L_ret;
+      (*(m9_sl_CHAR *) m9_at (a.p, m9_sub_i64 (i, INT64_C(1), err), a.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   err->res = m9res;
   m9ret = a;
@@ -431,8 +494,10 @@ bool System_Flag (m9_sl_CHAR name, m9_state *err)
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_m9_sl_CHAR a = {0}; (void) a;
   int64_t i = 0; (void) i;
-  a = System_Args (&(scratch), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(a) m9v = System_Args (&(scratch), err);
+    if (err->exc) goto L_ret;
+    a = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
@@ -474,10 +539,14 @@ m9_sl_CHAR System_Value (m9_sl_CHAR name, m9_sl_CHAR dflt, m9_state *err)
   m9_sl_m9_sl_CHAR a = {0}; (void) a;
   m9_sl_CHAR prefix = {0}; (void) prefix;
   int64_t i = 0; (void) i;
-  prefix = m9_cat (err->res, name, ((m9_sl_CHAR){ (uint32_t *) m9s5, 1 }), err);
-  if (err->exc) goto L_ret;
-  a = System_Args (&(scratch), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(prefix) m9v = m9_cat (err->res, name, ((m9_sl_CHAR){ (uint32_t *) m9s5, 1 }), err);
+    if (err->exc) goto L_ret;
+    prefix = m9v;
+  }
+  { __typeof__(a) m9v = System_Args (&(scratch), err);
+    if (err->exc) goto L_ret;
+    a = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
@@ -525,8 +594,10 @@ m9_sl_m9_sl_CHAR System_Positional (m9_pool *pool, m9_state *err)
   int64_t i = 0; (void) i;
   int64_t n = 0; (void) n;
   bool rest = false; (void) rest;
-  a = System_Args (pool, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(a) m9v = System_Args (pool, err);
+    if (err->exc) goto L_ret;
+    a = m9v;
+  }
   n = INT64_C(0);
   rest = false;
   { int64_t m9t1to;
@@ -535,8 +606,10 @@ m9_sl_m9_sl_CHAR System_Positional (m9_pool *pool, m9_state *err)
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
     if (rest) {
-      n = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
     } else {
       bool m9t2 = Text_Eq ((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s7, 2 }), err);
       if (err->exc) goto L_ret;
@@ -546,12 +619,16 @@ m9_sl_m9_sl_CHAR System_Positional (m9_pool *pool, m9_state *err)
       bool m9t3 = (!System_IsOption ((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err)), err));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        n = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
     } } }
   } }
-  p = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), n, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(p) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), n, err);
+    if (err->exc) goto L_ret;
+    p = m9v;
+  }
   n = INT64_C(0);
   rest = false;
   { int64_t m9t4to;
@@ -560,10 +637,15 @@ m9_sl_m9_sl_CHAR System_Positional (m9_pool *pool, m9_state *err)
   if (err->exc) goto L_ret;
   for (; i <= m9t4to; i += 1) {
     if (rest) {
-      (*(m9_sl_CHAR *) m9_at (p.p, n, p.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err));
-      if (err->exc) goto L_ret;
-      n = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (p.p, n, p.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (p.p, n, p.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
     } else {
       bool m9t5 = Text_Eq ((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s8, 2 }), err);
       if (err->exc) goto L_ret;
@@ -573,14 +655,171 @@ m9_sl_m9_sl_CHAR System_Positional (m9_pool *pool, m9_state *err)
       bool m9t6 = (!System_IsOption ((*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err)), err));
       if (err->exc) goto L_ret;
       if (m9t6) {
-        (*(m9_sl_CHAR *) m9_at (p.p, n, p.len, sizeof (m9_sl_CHAR), err)) = (*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err));
-        if (err->exc) goto L_ret;
-        n = m9_add_i64 (n, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__((*(m9_sl_CHAR *) m9_at (p.p, n, p.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (a.p, i, a.len, sizeof (m9_sl_CHAR), err));
+          if (err->exc) goto L_ret;
+          (*(m9_sl_CHAR *) m9_at (p.p, n, p.len, sizeof (m9_sl_CHAR), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
     } } }
   } }
   err->res = m9res;
   m9ret = p;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_m9_sl_CHAR System_Glob (m9_sl_CHAR pattern, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_m9_sl_CHAR m9ret = {0};
+  m9_sl_m9_sl_CHAR pieces = {0}; (void) pieces;
+  m9_sl_m9_sl_CHAR found = {0}; (void) found;
+  m9_sl_m9_sl_CHAR out = {0}; (void) out;
+  m9_sl_CHAR held = {0}; (void) held;
+  int64_t i = 0; (void) i;
+  int64_t k = 0; (void) k;
+  int64_t n = 0; (void) n;
+  bool any = false; (void) any;
+  bool spelled = false; (void) spelled;
+  bool there = false; (void) there;
+  bool dirsOnly = false; (void) dirsOnly;
+  { __typeof__(pieces) m9v = Text_Split (pattern, 47u, err);
+    if (err->exc) goto L_ret;
+    pieces = m9v;
+  }
+  { __typeof__(found) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    found = m9v;
+  }
+  bool m9t1 = (((pattern).len > INT64_C(0)) && ((*(uint32_t *) m9_at (pattern.p, INT64_C(0), pattern.len, sizeof (uint32_t), err)) == 47u));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    (*(m9_sl_CHAR *) m9_at (found.p, INT64_C(0), found.len, sizeof (m9_sl_CHAR), err)) = ((m9_sl_CHAR){ (uint32_t *) m9s9, 1 });
+    if (err->exc) goto L_ret;
+  } else {
+    (*(m9_sl_CHAR *) m9_at (found.p, INT64_C(0), found.len, sizeof (m9_sl_CHAR), err)) = (m9_sl_CHAR){ NULL, 0 };
+    if (err->exc) goto L_ret;
+  }
+  any = false;
+  spelled = false;
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 ((pieces).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    bool m9t3 = (((*(m9_sl_CHAR *) m9_at (pieces.p, i, pieces.len, sizeof (m9_sl_CHAR), err))).len > INT64_C(0));
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      { __typeof__(found) m9v = System_Expand (found, (*(m9_sl_CHAR *) m9_at (pieces.p, i, pieces.len, sizeof (m9_sl_CHAR), err)), err);
+        if (err->exc) goto L_ret;
+        found = m9v;
+      }
+      { __typeof__(spelled) m9v = (!System_HasMagic ((*(m9_sl_CHAR *) m9_at (pieces.p, i, pieces.len, sizeof (m9_sl_CHAR), err)), err));
+        if (err->exc) goto L_ret;
+        spelled = m9v;
+      }
+      any = true;
+    }
+  } }
+  bool m9t4 = ((!any) && (((*(m9_sl_CHAR *) m9_at (found.p, INT64_C(0), found.len, sizeof (m9_sl_CHAR), err))).len == INT64_C(0)));
+  if (err->exc) goto L_ret;
+  if (m9t4) {
+    err->res = m9res;
+    m9ret = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  n = (found).len;
+  { __typeof__(dirsOnly) m9v = (any && ((*(uint32_t *) m9_at (pattern.p, m9_sub_i64 ((pattern).len, INT64_C(1), err), pattern.len, sizeof (uint32_t), err)) == 47u));
+    if (err->exc) goto L_ret;
+    dirsOnly = m9v;
+  }
+  if ((spelled || dirsOnly)) {
+    n = INT64_C(0);
+    { int64_t m9t5to;
+    k = INT64_C(0);
+    m9t5to = m9_sub_i64 ((found).len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; k <= m9t5to; k += 1) {
+      if (dirsOnly) {
+        { __typeof__(there) m9v = System_IsDir ((*(m9_sl_CHAR *) m9_at (found.p, k, found.len, sizeof (m9_sl_CHAR), err)), err);
+          if (err->exc) goto L_ret;
+          there = m9v;
+        }
+      } else {
+        { __typeof__(there) m9v = Io_Exists ((*(m9_sl_CHAR *) m9_at (found.p, k, found.len, sizeof (m9_sl_CHAR), err)), err);
+          if (err->exc) goto L_ret;
+          there = m9v;
+        }
+      }
+      if (there) {
+        { __typeof__((*(m9_sl_CHAR *) m9_at (found.p, n, found.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (found.p, k, found.len, sizeof (m9_sl_CHAR), err));
+          if (err->exc) goto L_ret;
+          (*(m9_sl_CHAR *) m9_at (found.p, n, found.len, sizeof (m9_sl_CHAR), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
+      }
+    } }
+  }
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, n, err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  { int64_t m9t6to;
+  k = INT64_C(0);
+  m9t6to = m9_sub_i64 (n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; k <= m9t6to; k += 1) {
+    { __typeof__((*(m9_sl_CHAR *) m9_at (out.p, k, out.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (found.p, k, found.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+      (*(m9_sl_CHAR *) m9_at (out.p, k, out.len, sizeof (m9_sl_CHAR), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+  } }
+  { int64_t m9t7to;
+  i = INT64_C(1);
+  m9t7to = m9_sub_i64 (n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t7to; i += 1) {
+    { __typeof__(held) m9v = (*(m9_sl_CHAR *) m9_at (out.p, i, out.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+      held = m9v;
+    }
+    k = i;
+    for (;;) {
+      bool m9t8 = ((k > INT64_C(0)) && System_Before (held, (*(m9_sl_CHAR *) m9_at (out.p, m9_sub_i64 (k, INT64_C(1), err), out.len, sizeof (m9_sl_CHAR), err)), err));
+      if (err->exc) goto L_ret;
+      if (!(m9t8)) break;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (out.p, k, out.len, sizeof (m9_sl_CHAR), err))) m9v = (*(m9_sl_CHAR *) m9_at (out.p, m9_sub_i64 (k, INT64_C(1), err), out.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (out.p, k, out.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__(k) m9v = m9_sub_i64 (k, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        k = m9v;
+      }
+    }
+    (*(m9_sl_CHAR *) m9_at (out.p, k, out.len, sizeof (m9_sl_CHAR), err)) = held;
+    if (err->exc) goto L_ret;
+  } }
+  err->res = m9res;
+  m9ret = out;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -597,20 +836,29 @@ static void System_Put (m9_pool *scratch, m9_sl_BYTE *block, int64_t *k, m9_sl_C
   err->res = &m9frame;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t j = 0; (void) j;
-  b = DynStr_Utf8 (scratch, s, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(b) m9v = DynStr_Utf8 (scratch, s, err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
   { int64_t m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; j <= m9t1to; j += 1) {
-    (*(uint8_t *) m9_at ((*block).p, (*k), (*block).len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (b.p, j, b.len, sizeof (uint8_t), err));
-    if (err->exc) goto L_ret;
-    (*k) = m9_add_i64 ((*k), INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint8_t *) m9_at ((*block).p, (*k), (*block).len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (b.p, j, b.len, sizeof (uint8_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at ((*block).p, (*k), (*block).len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+    { __typeof__((*k)) m9v = m9_add_i64 ((*k), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      (*k) = m9v;
+    }
   } }
-  (*k) = m9_add_i64 ((*k), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*k)) m9v = m9_add_i64 ((*k), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*k) = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, m9res, (*block).p);
@@ -629,8 +877,10 @@ static m9_sl_CHAR System_Stream (m9_pool *pool, int64_t h, int64_t which, m9_sta
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
   n = (int64_t)(m9_exec_len (((int)(h)), ((int)(which))));
-  b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 (n, INT64_C(1), err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 (n, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
   n = (int64_t)(m9_exec_copy (((int)(h)), ((int)(which)), ((void *)(b).p), ((int64_t)(n))));
   err->res = m9res;
   m9ret = DynStr_FromUtf8 (pool, ({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
@@ -671,15 +921,20 @@ static m9_sl_CHAR System_Dup (m9_sl_CHAR s, m9_state *err)
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR r = {0}; (void) r;
   int64_t j = 0; (void) j;
-  r = M9_POOL_SL (m9_sl_CHAR, uint32_t, err->res, (s).len, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(r) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, err->res, (s).len, err);
+    if (err->exc) goto L_ret;
+    r = m9v;
+  }
   { int64_t m9t1to;
   j = INT64_C(0);
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; j <= m9t1to; j += 1) {
-    (*(uint32_t *) m9_at (r.p, j, r.len, sizeof (uint32_t), err)) = (*(uint32_t *) m9_at (s.p, j, s.len, sizeof (uint32_t), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint32_t *) m9_at (r.p, j, r.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (s.p, j, s.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint32_t *) m9_at (r.p, j, r.len, sizeof (uint32_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   err->res = m9res;
   m9ret = r;
@@ -687,6 +942,328 @@ static m9_sl_CHAR System_Dup (m9_sl_CHAR s, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool System_HasMagic (m9_sl_CHAR s, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = ((((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 42u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 63u)) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 91u));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      err->res = m9res;
+      m9ret = true;
+      goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static m9_sl_CHAR System_Joined (m9_sl_CHAR dir, m9_sl_CHAR name, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  if (((dir).len == INT64_C(0))) {
+    err->res = m9res;
+    m9ret = m9_cat (err->res, name, (m9_sl_CHAR){ NULL, 0 }, err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  bool m9t1 = ((*(uint32_t *) m9_at (dir.p, m9_sub_i64 ((dir).len, INT64_C(1), err), dir.len, sizeof (uint32_t), err)) == 47u);
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = m9_cat (err->res, dir, name, err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = m9_cat (err->res, m9_cat (err->res, dir, ((m9_sl_CHAR){ (uint32_t *) m9s10, 1 }), err), name, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static m9_sl_m9_sl_CHAR System_Entries (m9_pool *pool, m9_sl_CHAR dir, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_m9_sl_CHAR m9ret = {0};
+  if (((dir).len == INT64_C(0))) {
+    err->res = m9res;
+    m9ret = Io_ListDir (pool, ((m9_sl_CHAR){ (uint32_t *) m9s11, 1 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Io_ListDir (pool, dir, err);
+  if (err->exc) goto L_hdl_m9t1;
+  goto L_ret;
+  goto L_dn_m9t2;
+L_hdl_m9t1: ;
+  if (err->exc == &Io_IOError) {
+    err->exc = NULL;
+    err->res = m9res;
+    m9ret = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  if (err->exc == &m9_exc_ValueRange) {
+    err->exc = NULL;
+    err->res = m9res;
+    m9ret = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  goto L_ret;
+L_dn_m9t2: ;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool System_IsDir (m9_sl_CHAR path, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  m9_pool scratch = {0}; (void) scratch;
+  m9_sl_m9_sl_CHAR names = {0}; (void) names;
+  { __typeof__(names) m9v = Io_ListDir (&(scratch), path, err);
+    if (err->exc) goto L_hdl_m9t1;
+    names = m9v;
+  }
+  err->res = m9res;
+  m9ret = true;
+  goto L_ret;
+  goto L_dn_m9t2;
+L_hdl_m9t1: ;
+  if (err->exc == &Io_IOError) {
+    err->exc = NULL;
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  if (err->exc == &m9_exc_ValueRange) {
+    err->exc = NULL;
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  goto L_ret;
+L_dn_m9t2: ;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return m9ret;
+}
+
+static bool System_Fits (m9_sl_CHAR piece, m9_sl_CHAR name, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  bool m9t1 = (((name).len > INT64_C(0)) && ((*(uint32_t *) m9_at (name.p, INT64_C(0), name.len, sizeof (uint32_t), err)) == 46u));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    bool m9t2 = (((piece).len == INT64_C(0)) || ((*(uint32_t *) m9_at (piece.p, INT64_C(0), piece.len, sizeof (uint32_t), err)) != 46u));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+  }
+  err->res = m9res;
+  m9ret = Text_Match (piece, name, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static m9_sl_m9_sl_CHAR System_Expand (m9_sl_m9_sl_CHAR dirs, m9_sl_CHAR piece, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
+  m9_sl_m9_sl_CHAR names = {0}; (void) names;
+  m9_sl_m9_sl_CHAR out = {0}; (void) out;
+  int64_t d = 0; (void) d;
+  int64_t k = 0; (void) k;
+  int64_t n = 0; (void) n;
+  bool m9t1 = (!System_HasMagic (piece, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, (dirs).len, err);
+      if (err->exc) goto L_ret;
+      out = m9v;
+    }
+    { int64_t m9t2to;
+    d = INT64_C(0);
+    m9t2to = m9_sub_i64 ((dirs).len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; d <= m9t2to; d += 1) {
+      { __typeof__((*(m9_sl_CHAR *) m9_at (out.p, d, out.len, sizeof (m9_sl_CHAR), err))) m9v = System_Joined ((*(m9_sl_CHAR *) m9_at (dirs.p, d, dirs.len, sizeof (m9_sl_CHAR), err)), piece, err);
+        if (err->exc) goto L_ret;
+        (*(m9_sl_CHAR *) m9_at (out.p, d, out.len, sizeof (m9_sl_CHAR), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+    } }
+    err->res = m9res;
+    m9ret = out;
+    goto L_ret;
+  }
+  n = INT64_C(0);
+  { int64_t m9t3to;
+  d = INT64_C(0);
+  m9t3to = m9_sub_i64 ((dirs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; d <= m9t3to; d += 1) {
+    { __typeof__(names) m9v = System_Entries (&(scratch), (*(m9_sl_CHAR *) m9_at (dirs.p, d, dirs.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      names = m9v;
+    }
+    { int64_t m9t4to;
+    k = INT64_C(0);
+    m9t4to = m9_sub_i64 ((names).len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; k <= m9t4to; k += 1) {
+      bool m9t5 = System_Fits (piece, (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      if (m9t5) {
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
+      }
+    } }
+  } }
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, err->res, n, err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  n = INT64_C(0);
+  { int64_t m9t6to;
+  d = INT64_C(0);
+  m9t6to = m9_sub_i64 ((dirs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; d <= m9t6to; d += 1) {
+    { __typeof__(names) m9v = System_Entries (&(scratch), (*(m9_sl_CHAR *) m9_at (dirs.p, d, dirs.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      names = m9v;
+    }
+    { int64_t m9t7to;
+    k = INT64_C(0);
+    m9t7to = m9_sub_i64 ((names).len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; k <= m9t7to; k += 1) {
+      bool m9t8 = (System_Fits (piece, (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), err) && (n < (out).len));
+      if (err->exc) goto L_ret;
+      if (m9t8) {
+        { __typeof__((*(m9_sl_CHAR *) m9_at (out.p, n, out.len, sizeof (m9_sl_CHAR), err))) m9v = System_Joined ((*(m9_sl_CHAR *) m9_at (dirs.p, d, dirs.len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), err);
+          if (err->exc) goto L_ret;
+          (*(m9_sl_CHAR *) m9_at (out.p, n, out.len, sizeof (m9_sl_CHAR), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return m9ret;
+}
+
+static bool System_Before (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
+  n = (a).len;
+  if (((b).len < n)) {
+    n = (b).len;
+  }
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = ((*(uint32_t *) m9_at (a.p, i, a.len, sizeof (uint32_t), err)) < (*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      err->res = m9res;
+      m9ret = true;
+      goto L_ret;
+    }
+    bool m9t3 = ((*(uint32_t *) m9_at (a.p, i, a.len, sizeof (uint32_t), err)) > (*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)));
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      err->res = m9res;
+      m9ret = false;
+      goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = ((a).len < (b).len);
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
   m9_pool_free (&m9frame);
   return m9ret;
 }

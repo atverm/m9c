@@ -58,3 +58,48 @@ the par 4.1 contortion ledger: measured, not rejected.  The
 kill-gate reads this, so it is output and not a debug aside --
 a ledger that silently stops seeing a borrow understates the
 rate the gate is judged on, which has happened once already.
+
+### CONST StatKinds
+
+_(documented with the group below)_
+
+### CONST StatSites
+
+_(documented with the group below)_
+
+### StatName (i: I64) : STR
+
+_(documented with the group below)_
+
+### StatChecked (i: I64) : I64
+
+_(documented with the group below)_
+
+### StatSkipped (i: I64) : I64
+
+_(documented with the group below)_
+
+### StatLines (i: I64) : I64
+
+_(documented with the group below)_
+
+### StatLine (i, j: I64) : I64
+
+what the checker EXAMINED and what it PASSED OVER, for `m9c
+--review`.  This checker never diagnoses an unknown type -- that
+softness is its contract -- so a site where one side had no type
+was accepted without being looked at, and "it compiled" does not
+say how many of those there were.  These do.
+
+  i -- 0 .. StatKinds - 1: assignments, arguments, RETURN values,
+       operands, CASE labels, THREAD arguments (each a place two
+       types are held to each other: checked when both are
+       known, skipped when either is not), and CASE over
+       variants (checked when it was held to be total, skipped
+       when the selector's type could not be resolved).
+  j -- 0 .. StatLines (i) - 1: StatLine (i, j) is the source
+       line of a site of kind i that was passed over, the first
+       StatSites different lines in the order they were met.
+
+Module state like the diagnostics, and for the same reason: they
+accumulate over every CheckFile of the process.

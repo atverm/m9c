@@ -96,6 +96,10 @@ type
                                          are being canonicalized;
                                          '' = the current module }
     constMap : TStringList;            { module-level CONST name=type }
+    roScope : TStringList;             { scope indices of `VAR RO' variables }
+    nAgg : Integer;                    { aggregate CONSTs in this unit:
+                                         the walk that guards them is
+                                         skipped at zero }
     tyI64 : TNode;                     { synthetic 'I64' for FOR vars }
     strNode : TNode;                   { the SLICE OF CHAR that STR names }
     tyCHAR : TNode;                    { its element }
@@ -126,6 +130,8 @@ type
     procedure CollectUnit (u: TNode);
     procedure CheckForeignDef (u: TNode);
     procedure CheckConformance (u: TNode);
+    procedure CheckAggregate (cd: TNode; const ctx: string;
+                              where: Integer);
     procedure CheckBody (body: TNode; const ctx: string;
                          const declared: array of string;
                          scope: TStringList; const retTy: string);
@@ -307,6 +313,172 @@ begin
   Result := (v < lo) or (v > hi);
 end;
 
+{ par 3 rule 4: a function answers on every path.  Can control pass
+  this statement?  Structural and conservative -- a WHILE or FOR can
+  be passed, a LOOP only by an EXIT of its own, an IF when a branch
+  can be or there is no ELSE, a CASE when an arm can be, a block when
+  its statements or a handler can be, and a call is never an ending.
+  Mirrors Sem.EndsStmt / EndsSeq / HasExit, where the rule and its
+  measurement are written down. }
+function EndsSeq (k: TNode): Boolean; forward;
+
+function HasExit (k: TNode): Boolean;
+var i : Integer;
+begin
+  if k = nil then Exit (False);
+  if k.kind = nkExit then Exit (True);
+  if k.kind = nkLoop then Exit (False);
+  for i := 0 to High (k.kids) do
+    if HasExit (k.kids[i]) then Exit (True);
+  Result := False;
+end;
+
+function EndsStmt (n: TNode): Boolean;
+var
+  i : Integer;
+  e : TNode;
+  hasElse : Boolean;
+begin
+  case n.kind of
+    nkReturn, nkRaiseStmt :
+      Exit (True);
+    nkIf :
+      begin
+        if not EndsSeq (n.kids[1]) then Exit (False);
+        hasElse := False;
+        for i := 2 to High (n.kids) do
+        begin
+          e := n.kids[i];
+          if e = nil then Continue;
+          if e.kind = nkElsif then
+          begin
+            if not EndsSeq (e.kids[1]) then Exit (False);
+          end
+          else if e.kind = nkElse then
+          begin
+            hasElse := True;
+            if not EndsSeq (e.kids[0]) then Exit (False);
+          end;
+        end;
+        Exit (hasElse);
+      end;
+    nkCase :
+      begin
+        for i := 1 to High (n.kids) do
+        begin
+          e := n.kids[i];
+          if e = nil then Continue;
+          if e.kind = nkCaseArm then
+          begin
+            if not EndsSeq (e.kids[1]) then Exit (False);
+          end
+          else if e.kind = nkElse then
+          begin
+            if not EndsSeq (e.kids[0]) then Exit (False);
+          end;
+        end;
+        Exit (Length (n.kids) > 1);
+      end;
+    nkLoop :
+      Exit (not HasExit (n.kids[0]));
+    nkBlock :
+      begin
+        if not EndsSeq (n.kids[0]) then Exit (False);
+        for i := 1 to High (n.kids) do
+        begin
+          e := n.kids[i];
+          if (e <> nil) and (e.kind = nkHandler) then
+            if not EndsSeq (e.kids[2]) then Exit (False);
+        end;
+        Exit (True);
+      end;
+  else
+    Exit (False);
+  end;
+end;
+
+function EndsSeq (k: TNode): Boolean;
+var i : Integer;
+begin
+  if k = nil then Exit (False);
+  for i := 0 to High (k.kids) do
+    if (k.kids[i] <> nil) and EndsStmt (k.kids[i]) then Exit (True);
+  Result := False;
+end;
+
+{ ---- a procedure fits a procedure type that lets it raise MORE than
+  it does (par 2.2.3, relaxed 2026-10-02).  corpus/Sem.m9's ProcFits
+  says why; these are the same three, on 1-based strings. ---- }
+
+{ how many characters of a procedure type's canonical text come before
+  its own RAISES clause: all of them when it has none, -1 when s is
+  not a procedure type }
+function ProcHead (const s: string): Integer;
+var i, depth, shut : Integer;
+begin
+  if not StartsWithS (s, 'PROCEDURE (') then Exit (-1);
+  depth := 0;
+  shut := -1;
+  i := 11;
+  while (i <= Length (s)) and (shut < 0) do
+  begin
+    if s[i] = '(' then Inc (depth)
+    else if s[i] = ')' then
+    begin
+      Dec (depth);
+      if depth = 0 then shut := i;
+    end;
+    Inc (i);
+  end;
+  if shut < 0 then Exit (-1);
+  i := shut;
+  while i + 7 <= Length (s) do
+  begin
+    if Copy (s, i, 8) = ' RAISES ' then Exit (i - 1);
+    Inc (i);
+  end;
+  Result := Length (s);
+end;
+
+{ two lists as they stand after RAISES, 'A, B': is every name of src
+  one of dst's? }
+function RaisesWithin (const src, dst: string): Boolean;
+var
+  a, b, ea, eb : Integer;
+  found : Boolean;
+begin
+  a := 1;
+  while a <= Length (src) do
+  begin
+    ea := a;
+    while (ea <= Length (src)) and (src[ea] <> ',') do Inc (ea);
+    found := False;
+    b := 1;
+    while (b <= Length (dst)) and not found do
+    begin
+      eb := b;
+      while (eb <= Length (dst)) and (dst[eb] <> ',') do Inc (eb);
+      found := Copy (src, a, ea - a) = Copy (dst, b, eb - b);
+      b := eb + 2;
+    end;
+    if not found then Exit (False);
+    a := ea + 2;
+  end;
+  Result := True;
+end;
+
+function ProcFits (const dst, src: string): Boolean;
+var hd, hs : Integer;
+begin
+  hd := ProcHead (dst);
+  hs := ProcHead (src);
+  if (hd < 0) or (hs < 0) then Exit (False);
+  if Copy (dst, 1, hd) <> Copy (src, 1, hs) then Exit (False);
+  if hs = Length (src) then Exit (True);         { src raises nothing }
+  if hd = Length (dst) then Exit (False);        { and dst allows nothing }
+  Result := RaisesWithin (Copy (src, hs + 9, MaxInt), Copy (dst, hd + 9, MaxInt));
+end;
+
 function Compat (const dst, src: string): Boolean;
 begin
   if (dst = '<void>') or (src = '<void>') then Exit (False);
@@ -330,17 +502,64 @@ begin
   { a shared handle lends like a plain borrow (par 4.1) }
   if StartsWithS (dst, 'PTR ') and (src = 'SHARED ' + dst) then
     Exit (True);
+  { a procedure that raises no more than the type allows, bare or as
+    the OPT a variable of procedure type must be }
+  if ProcFits (dst, src) then Exit (True);
+  if StartsWithS (dst, 'OPT ') and StartsWithS (src, 'OPT ') then
+    Exit (ProcFits (Copy (dst, 5, MaxInt), Copy (src, 5, MaxInt)));
   Result := False;
 end;
 
+{ the type one element of an aggregate has (par 2.2.4): a literal, or
+  a negated numeric literal.  An integer is an I64, a real an F64, a
+  string a STR whatever its length -- a table has one element type
+  and nothing in it adapts.  '' for anything else. }
+function AggElemType (e: TNode): string;
+begin
+  Result := '';
+  if e = nil then Exit;
+  case e.kind of
+    nkInt  : Result := 'I64';
+    nkReal : Result := 'F64';
+    nkChar : Result := 'CHAR';
+    nkString : Result := 'SLICE OF CHAR';
+    nkTrue, nkFalse : Result := 'BOOL';
+    nkUn :
+      if (e.a = '-') and (e.kids[0] <> nil) then
+      begin
+        if e.kids[0].kind = nkInt then Result := 'I64'
+        else if e.kids[0].kind = nkReal then Result := 'F64';
+      end;
+  end;
+end;
+
+{ [ e1, ..., en ] is an ARRAY n OF T, T being what every element is;
+  unknown ('') when the elements do not agree, which CheckAggregate
+  says by name }
+function AggType (e: TNode): string;
+var
+  i : Integer;
+  t : string;
+begin
+  Result := '';
+  if Length (e.kids) = 0 then Exit;
+  t := AggElemType (e.kids[0]);
+  if t = '' then Exit;
+  for i := 1 to High (e.kids) do
+    if AggElemType (e.kids[i]) <> t then Exit;
+  Result := 'ARRAY ' + IntToStr (Length (e.kids)) + ' OF ' + t;
+end;
+
 { type of a module-level CONST expression: literals and literal
-  arithmetic; anything fancier stays unknown }
+  arithmetic, an aggregate of literals; anything fancier stays
+  unknown }
 function LitType (e: TNode): string;
 var l, r : string;
 begin
   Result := '';
   if e = nil then Exit;
   case e.kind of
+    nkAggregate : Result := AggType (e);
     nkInt  : Result := '<int>';
     nkReal : Result := '<real>';
     nkChar : Result := 'CHAR';
@@ -399,6 +618,7 @@ begin
   Ledger := TStringList.Create; Ledger.CaseSensitive := True;
   fromMap := TStringList.Create; fromMap.CaseSensitive := True;
   constMap := TStringList.Create; constMap.CaseSensitive := True;
+  roScope := TStringList.Create;
   callGraph := TStringList.Create; callGraph.CaseSensitive := True;
   RoCand := TStringList.Create; RoCand.CaseSensitive := True;
   varParams := TStringList.Create; varParams.CaseSensitive := True;
@@ -632,6 +852,43 @@ begin
     end;
   end;
   if ref then Result := name;
+end;
+
+{ par 2.2.4: what an aggregate CONST must be -- literals of one type,
+  at module level, in a module's own part.
+    where -- 0 a module's own, 1 exported by a DEFINITION, 2 local to
+             a procedure }
+procedure TSem.CheckAggregate (cd: TNode; const ctx: string;
+                               where: Integer);
+var
+  i : Integer;
+  ag : TNode;
+  t0, t : string;
+begin
+  ag := cd.kids[0];
+  if (ag = nil) or (ag.kind <> nkAggregate) then Exit;
+  Inc (nAgg);
+  if where = 1 then
+    ErrN (cd, ctx, 'an aggregate CONST is not exported yet: ' + cd.a +
+      ' (par 2.2.4)')
+  else if where = 2 then
+    ErrN (cd, ctx, 'an aggregate CONST belongs at module level: ' + cd.a +
+      ' (par 2.2.4)');
+  t0 := AggElemType (ag.kids[0]);
+  for i := 0 to High (ag.kids) do
+    if ag.kids[i] <> nil then
+    begin
+      t := AggElemType (ag.kids[i]);
+      if t = '' then
+        ErrN (ag.kids[i], ctx, Format (
+          'element %d of %s is not a literal: an aggregate holds' +
+          ' literals (par 2.2.4)', [i + 1, cd.a]))
+      else if (t0 <> '') and (t <> t0) then
+        ErrN (ag.kids[i], ctx, Format (
+          'element %d of %s is %s where the first is %s: an aggregate' +
+          ' has one element type (par 2.2.4)',
+          [i + 1, cd.a, TyName (t), TyName (t0)]));
+    end;
 end;
 
 procedure TSem.ErrN (n: TNode; const ctx, msg: string);
@@ -1273,9 +1530,10 @@ end;
 { the canonical text of a procedure type, or of a procedure's head
   (par 2.2.3): the parameter modes and types with no names, the result
   with its RO, and the RAISES names bare and sorted.  Two procedure
-  types are the same type exactly when this text is the same, and a
-  procedure fits a procedure type exactly when its head renders the
-  same -- RAISES included, to the letter.  Mirrors Sem.ProcSig. }
+  types are the same type exactly when this text is the same; a
+  procedure FITS a procedure type when its head renders the same up
+  to RAISES and it raises no more than the type allows (ProcFits).
+  Mirrors Sem.ProcSig. }
 function TSem.ProcSig (pl, rt: TNode; ro: Boolean; rs: TNode;
                        depth: Integer): string;
 var
@@ -1370,6 +1628,12 @@ begin
         { predeclared alias, par 2.2: identical to what it abbreviates,
           so conformance and assignment see no difference at all }
         Result := 'SLICE OF CHAR'
+      else if t.a = 'POOL' then
+        { a type like any other to the comparison of an argument with
+          its parameter; until 2026-10-01 it had no canonical form and
+          both sides of every pool argument were unknown.  Mirrors
+          Sem.CanonT, where the measurement is written down. }
+        Result := 'POOL'
       else
         Result := CanonQual ('', t.a, depth);
     nkPtrType :
@@ -1617,6 +1881,53 @@ var
     Result := scope.ValueFromIndex[ix];
   end;
 
+  { was the name, as it is seen here, declared `VAR RO'? }
+  function ScopeRo (const nm: string): Boolean;
+  var ix : Integer;
+  begin
+    ix := scope.IndexOfName (nm);
+    Result := (ix >= 0) and (roScope.IndexOf (IntToStr (ix)) >= 0);
+  end;
+
+  { is this name, HERE, a constant?  A parameter, a local or a module
+    variable of the same name shadows it, as it does in the generated
+    C -- the lookup that forgot that typed a parameter named like a
+    module CONST as the constant (found 2026-10-01). }
+  function IsConstHere (const nm: string): Boolean;
+  begin
+    Result := (ScopeMode (nm) = '') and (constMap.IndexOfName (nm) >= 0);
+  end;
+
+  { ... and a constant TABLE, the value of an aggregate (par 2.2.4) }
+  function IsAggConst (const nm: string): Boolean;
+  begin
+    Result := IsConstHere (nm) and
+      StartsWithS (constMap.Values[nm], 'ARRAY ');
+  end;
+
+  { par 2.2.4: a constant table is read-only DATA, so its whole value
+    goes only where nothing can write through it -- indexed, under
+    LEN, or lent to an RO parameter (the call check holds that last
+    one, argument by argument).  Anything else that names it bare
+    would make an alias: s := Primes, SLICE (Primes, 0, 2), RETURN
+    Primes. }
+  procedure AggWalk (n: TNode; parent: TNodeKind);
+  var i, first : Integer;
+  begin
+    if (n.kind = nkDesignator) and (Length (n.kids) = 0) and
+       (parent <> nkArgList) and IsAggConst (n.a) then
+      ErrN (n, ctx, 'the CONST table ' + n.a +
+        ' can only be indexed, measured with LEN, or lent to an RO' +
+        ' parameter (par 2.2.4)');
+    first := 0;
+    { the left side of an assignment is CheckWrite's to refuse }
+    if (n.kind = nkAssign) and (n.kids[0] <> nil) and
+       (Length (n.kids[0].kids) = 0) then
+      first := 1;
+    for i := first to High (n.kids) do
+      if n.kids[i] <> nil then AggWalk (n.kids[i], n.kind);
+  end;
+
   { name NM's storage is reachable from outside the frame via TGT.
     Append-if-absent, so target order is first-encounter order --
     the M9 checker must reproduce it, and semdiff holds both to it }
@@ -1792,6 +2103,21 @@ var
   function DeclPool (t: TNode): TNode; forward;
   function FrameWhat (e: TNode; const u: string): string; forward;
 
+  { the designator's component path for the taint table: the root,
+    `.field' per field selector, `[]' per index (corpus/Sem.m9's
+    DesigPath) }
+  function DesigPath (d: TNode): string;
+  var a : Integer;
+  begin
+    Result := d.a;
+    for a := 0 to High (d.kids) do
+      if d.kids[a] <> nil then
+        if d.kids[a].kind = nkSelField then
+          Result := Result + '.' + d.kids[a].a
+        else
+          Result := Result + '[]';
+  end;
+
   { the LOCAL pool an expression's storage lives in, by its shape: the
     pool a NEW names or a call's `IN r` promise names (AllocPoolOf),
     or the IN clause of a bare name -- when that pool is a local of
@@ -1860,6 +2186,13 @@ var
     if (e.kind = nkDesignator) and (Length (e.kids) = 0) then
     begin
       nm := FvalKindOf (e.a);
+      if nm <> '' then Exit (nm);
+    end;
+    { a component that was itself given frame storage carries it, by
+      its path (corpus/Sem.m9 says why, 2026-10-03) }
+    if (e.kind = nkDesignator) and (Length (e.kids) > 0) then
+    begin
+      nm := FvalKindOf (DesigPath (e));
       if nm <> '' then Exit (nm);
     end;
     p := LocalPoolOf (e);
@@ -2310,6 +2643,41 @@ var
     Result := (s = '') or (s = '<int>') or IsIntStr (s);
   end;
 
+  { THE LOOP VARIABLE IS A VARIABLE: declared, of a type its bounds
+    can count in, and of that type inside the loop.  Until 2026-10-02
+    FOR bound the name afresh -- as an I64 here, with no type at all
+    in Sem.m9 -- over whatever had been declared, so both checkers
+    accepted a loop variable nobody declared, or one declared F64,
+    and Sem.m9 passed over every use of every loop variable.
+      bound -- the bounds' type when they are an enumeration's
+      enum  -- whether they are }
+  procedure CheckForVar (st: TNode; const bound: string; enum: Boolean);
+  var vt : string;
+  begin
+    if ScopeMode (st.a) = '' then
+    begin
+      ErrN (st, ctx, 'FOR variable ' + st.a + ' is not declared');
+      { bound without a type, so that its uses say nothing more }
+      BindName (st.a, nil);
+    end
+    else
+    begin
+      vt := CT (ScopeType (st.a));
+      if vt <> '' then
+      begin
+        if enum then
+        begin
+          if (bound <> '') and (vt <> bound) then
+            ErrN (st, ctx, 'FOR variable ' + st.a + ' is ' + TyName (vt) +
+              ', and its bounds are ' + TyName (bound));
+        end
+        else if not IsIntStr (vt) then
+          ErrN (st, ctx, 'FOR variable ' + st.a + ' is ' + TyName (vt) +
+            ': a loop over integers counts in an integer variable');
+      end;
+    end;
+  end;
+
   { the canonical enumeration (or case-record) type an ARRAY bound
     names, or '' when the bound is an integer.  ARRAY Colour OF T is
     indexed by the type: its subscript is a member, not an ordinal, so
@@ -2496,7 +2864,7 @@ var
         program that must not grow can grep for it (par 4.3). }
       if (d.a = 'HEAP') and (Length (d.kids) = 0) then Exit ('POOL');
       ci := constMap.IndexOfName (d.a);
-      if ci >= 0 then
+      if (ci >= 0) and (ScopeMode (d.a) = '') then
       begin
         s := constMap.ValueFromIndex[ci];
         for j := 0 to High (d.kids) do
@@ -2556,6 +2924,8 @@ var
     mode : string;
   begin
     Result := False;
+    if IsConstHere (d.a) then
+      ErrN (d, ctx, 'cannot write the CONST ' + d.a);
     { RO measurement: a VAR parameter written through is a real
       mutator; one never written (nor re-lent, see the call check)
       is a read-only borrow wearing VAR because M9 has no other
@@ -2566,6 +2936,10 @@ var
     if ScopeMode (d.a) = 'r' then
       ErrN (d, ctx, 'cannot write through the RO parameter ' + d.a +
         ' (par 4.1)');
+    { a `VAR RO' variable: a new view yes, a write through it no }
+    if (Length (d.kids) > 0) and ScopeRo (d.a) then
+      ErrN (d, ctx, 'cannot write through the RO variable ' + d.a +
+        ' (par 2.4)');
     { par 3.2: a PURE procedure has no observable effect, so the two
       ways a body can be observed from outside its own frame are
       refused -- writing through a caller's binding, and writing the
@@ -2686,7 +3060,7 @@ var
     that returns nothing; '' is a call whose result is unknown.      }
   function CallType (dnode, argl, site: TNode): string;
   var
-    name, om, pTy, amode, aliasTo, t, what, why : string;
+    name, om, pTy, amode, aliasTo, t, what, why, roWhat : string;
     nargs, j, g, k, kept, dot, nFrameKept : Integer;
     aTy : array of string;
     aNode : array of TNode;
@@ -2979,6 +3353,55 @@ var
           begin
             if k < nargs then
             begin
+              { an argument that names a constant: it cannot be a VAR
+                or OWN argument (there is nothing to write), and a
+                constant table goes only to an RO parameter
+                (par 2.2.4) }
+              if (aNode[k] <> nil) and (aNode[k].kind = nkDesignator) and
+                 IsConstHere (aNode[k].a) then
+              begin
+                if isVar then
+                  ErrN (site, ctx, Format (
+                    'argument %d of %s: the CONST %s cannot be passed' +
+                    ' to a VAR or OWN parameter',
+                    [k + 1, name, aNode[k].a]))
+                else if (Length (aNode[k].kids) = 0) and not grp.f3 and
+                        IsAggConst (aNode[k].a) then
+                  ErrN (site, ctx, Format (
+                    'argument %d of %s: the CONST table %s can be lent' +
+                    ' only to an RO parameter (par 2.2.4)',
+                    [k + 1, name, aNode[k].a]));
+              end;
+              { par 2.4: read-only storage -- a string literal, what
+                an RO parameter views, a CONST -- is lent only to an
+                RO parameter.  A by-value SLICE or GRID parameter can
+                be written through, and `Up ('abc')` with `s[0] :=
+                'X'` inside was accepted and died with SIGSEGV until
+                2026-10-01 (museum/write-through-literal.m9). }
+              if (not isVar) and (not grp.f3) and (aNode[k] <> nil) and
+                 (StartsWithS (pTy, 'SLICE OF') or
+                  StartsWithS (pTy, 'GRID ')) then
+              begin
+                roWhat := '';
+                if aNode[k].kind = nkString then
+                  roWhat := 'a string literal'
+                else if (aNode[k].kind = nkDesignator) and
+                        (StartsWithS (aTy[k], 'SLICE OF') or
+                         StartsWithS (aTy[k], 'GRID ') or
+                         (aTy[k] = '<str1>')) then
+                begin
+                  if ScopeMode (aNode[k].a) = 'r' then
+                    roWhat := 'the RO parameter ' + aNode[k].a
+                  else if ScopeRo (aNode[k].a) then
+                    roWhat := 'the RO variable ' + aNode[k].a
+                  else if IsConstHere (aNode[k].a) then
+                    roWhat := 'the CONST ' + aNode[k].a;
+                end;
+                if roWhat <> '' then
+                  ErrN (site, ctx, Format (
+                    'argument %d of %s: %s can be lent only to an RO' +
+                    ' parameter (par 2.4)', [k + 1, name, roWhat]));
+              end;
               if aTy[k] = '<void>' then
                 ErrN (site, ctx, Format (
                   'argument %d of %s returns no value', [k + 1, name]))
@@ -3177,6 +3600,36 @@ var
       Result := (s = 'SLICE OF CHAR') or (s = '<str1>');
     end;
 
+    { a value two of which no single operator compares: a slice, an
+      array, a grid, a record, a monitor, a case record that carries
+      a payload -- what the C has no == for }
+    function IsComposite (const t: string): Boolean;
+    var
+      dot : Integer;
+      md, ty : string;
+      n : TNode;
+    begin
+      if StartsWithS (t, 'SLICE OF ') or StartsWithS (t, 'ARRAY ') or
+         StartsWithS (t, 'GRID ') then
+        Exit (True);
+      Result := False;
+      dot := Pos ('.', t);
+      if dot > 0 then
+      begin
+        md := Copy (t, 1, dot - 1);
+        ty := Copy (t, dot + 1, MaxInt);
+      end
+      else
+      begin
+        md := '';
+        ty := t;
+      end;
+      n := LookupTypeName (md, ty);
+      if n = nil then Exit;
+      if n.kind in [nkRecordType, nkMonitorType] then Exit (True);
+      if n.kind = nkCaseRecordType then Result := not AllPayloadless (n);
+    end;
+
   begin
     op := e.a;
     lt := ExprType (e.kids[0]);
@@ -3197,7 +3650,24 @@ var
         ErrN (e, ctx, 'comparing a call that returns no value')
       else if not (Compat (lt, rt) or Compat (rt, lt)) then
         ErrN (e, ctx, Format ('cannot compare %s with %s',
-          [TyName (lt), TyName (rt)]));
+          [TyName (lt), TyName (rt)]))
+      { an operator compares SCALARS.  Two strings, two arrays, two
+        records agree in type and were let through to a C that has no
+        == for a struct: `IF name = 'cancel'` was the C compiler's to
+        refuse until 2026-10-02 (par 2.3). }
+      else if StrSide (lt) and StrSide (rt) and
+              ((lt = 'SLICE OF CHAR') or (rt = 'SLICE OF CHAR')) then
+        ErrN (e, ctx, 'no ''' + op + ''' between two strings: Text.Eq' +
+          ' (a, b) answers equality, and no operator orders them' +
+          ' (par 2.3)')
+      else if IsComposite (lt) then
+        ErrN (e, ctx, 'no ''' + op + ''' between two values of type ' +
+          TyName (lt) + ': an operator compares numbers, characters,' +
+          ' booleans, enumeration values and pointers (par 2.3)')
+      else if IsComposite (rt) then
+        ErrN (e, ctx, 'no ''' + op + ''' between two values of type ' +
+          TyName (rt) + ': an operator compares numbers, characters,' +
+          ' booleans, enumeration values and pointers (par 2.3)');
       Exit ('BOOL');
     end;
     { string concatenation, before the arithmetic rules: `+` on two
@@ -3635,7 +4105,11 @@ var
                     ', which is declared IN a pool (par 4.3)');
               end
               else
+              begin
                 FvalAdd (st.kids[0].a, what);
+                { and the component itself, by its path }
+                FvalAdd (DesigPath (st.kids[0]), what);
+              end;
             end;
           end
           else if (Length (st.kids[0].kids) = 0) and
@@ -3643,6 +4117,13 @@ var
           begin
             fvalKind.Delete (fval.IndexOf (st.kids[0].a));
             fval.Delete (fval.IndexOf (st.kids[0].a));
+          end
+          else if (Length (st.kids[0].kids) > 0) and
+                  (ScopeMode (st.kids[0].a) = 'l') and
+                  (fval.IndexOf (DesigPath (st.kids[0])) >= 0) then
+          begin
+            fvalKind.Delete (fval.IndexOf (DesigPath (st.kids[0])));
+            fval.Delete (fval.IndexOf (DesigPath (st.kids[0])));
           end;
           { a bare name given a pool allocation holds nobody's object }
           if Length (st.kids[0].kids) = 0 then
@@ -3803,10 +4284,8 @@ var
                 TyName (t) + ' and ' + TyName (u));
             if st.kids[2] <> nil then
               ErrN (st, ctx, 'FOR over an enumeration takes no BY step');
-            { the loop variable keeps its declared enumeration type --
-              bind nil so ExprType reads the declaration, not tyI64,
-              or NAME (c) inside the body sees an integer }
-            BindName (st.a, nil);
+            { the loop variable keeps its declared enumeration type }
+            CheckForVar (st, t, True);
             pre := OwnSnap;
             WalkSeq (st.kids[3]);
             hpre := OwnSnap;
@@ -3824,7 +4303,7 @@ var
             if not IsIntish (u) then
               ErrN (st, ctx, 'FOR step must be an integer, not ' + TyName (u));
           end;
-          BindName (st.a, tyI64);
+          CheckForVar (st, '', False);
           pre := OwnSnap;
           WalkSeq (st.kids[3]);
           hpre := OwnSnap;
@@ -4160,6 +4639,7 @@ begin
   pendN := 0;
   SetLength (pendLn, 0); SetLength (pendCl, 0);
   SetLength (pendSrc, 0); SetLength (pendDst, 0);
+  if nAgg > 0 then AggWalk (body, nkProcBody);
   if body.kind = nkStmtSeq then
     WalkSeq (body)
   else
@@ -4321,6 +4801,7 @@ var
   u, d, p, sec : TNode;
   fmi : TModuleInfo;
   scope : TStringList;
+  seenImp : TStringList;
   declared : TStringArray;
   ctx, rt : string;
 
@@ -4339,6 +4820,8 @@ var
             scope.AddObject (
               holder.kids[a].kids[b].kids[0].kids[c].a + '=' + mode,
               TObject (holder.kids[a].kids[b].kids[1]));
+            if holder.kids[a].kids[b].f3 then
+              roScope.Add (IntToStr (scope.Count - 1));
           end;
   end;
 
@@ -4358,6 +4841,195 @@ var
       rt := ResolveType (rt.kids[0]);
     if (rt <> nil) and (rt.kind = nkMonitorType) then
       Result := grp.kids[0].kids[0].a;
+  end;
+
+  { ---- a module is named only where it is imported (report par 3,
+    rule 5).  corpus/Sem.m9's CheckImports says why; this is the same
+    walk, in the same order, with the same words. ---- }
+  function ModImports (const me, name: string): Boolean;
+  var
+    a, b, c : Integer;
+    uu, imp : TNode;
+  begin
+    if me = name then Exit (True);
+    for a := 0 to High (root.kids) do
+    begin
+      uu := root.kids[a];
+      if (uu = nil) or (uu.a <> me) then Continue;
+      for b := 0 to High (uu.kids) do
+      begin
+        imp := uu.kids[b];
+        if imp = nil then Continue;
+        if imp.kind = nkFromImport then
+        begin
+          if imp.a = name then Exit (True);
+        end
+        else if (imp.kind = nkImportList) and (imp.kids[0] <> nil) then
+          for c := 0 to High (imp.kids[0].kids) do
+            if (imp.kids[0].kids[c] <> nil) and
+               (imp.kids[0].kids[c].a = name) then Exit (True);
+      end;
+    end;
+    Result := False;
+  end;
+
+  function DeclaresName (n: TNode; const name: string): Boolean;
+  var a : Integer;
+  begin
+    Result := False;
+    if n = nil then Exit;
+    if (n.kind in [nkIdent, nkIsSome, nkTypeDecl, nkConstDecl, nkExcDecl])
+       and (n.a = name) then Exit (True);
+    for a := 0 to High (n.kids) do
+      if DeclaresName (n.kids[a], name) then Exit (True);
+  end;
+
+  function NameShadowed (const me: string; sc: TNode;
+                         const name: string): Boolean;
+  var
+    a, b : Integer;
+    uu, dd : TNode;
+  begin
+    if DeclaresName (sc, name) then Exit (True);
+    for a := 0 to High (root.kids) do
+    begin
+      uu := root.kids[a];
+      if (uu = nil) or (uu.a <> me) then Continue;
+      for b := 0 to High (uu.kids) do
+      begin
+        dd := uu.kids[b];
+        if dd = nil then Continue;
+        if not (dd.kind in [nkProcDecl, nkModBody, nkImportList,
+                            nkFromImport]) then
+          if DeclaresName (dd, name) then Exit (True);
+      end;
+    end;
+    Result := False;
+  end;
+
+  procedure ImportWalk (uu, sc, n: TNode; seen: TStringList);
+  var
+    a : Integer;
+    qualified : Boolean;
+  begin
+    if n = nil then Exit;
+    qualified := False;
+    if n.kind = nkQualident then
+      qualified := n.b <> ''
+    else if (n.kind = nkDesignator) and (Length (n.kids) > 0) and
+            (n.kids[0] <> nil) then
+      qualified := n.kids[0].kind = nkSelField;
+    if qualified and (FindMod (n.a) <> nil) and (seen.IndexOf (n.a) < 0) then
+      if not ModImports (uu.a, n.a) then
+        if not NameShadowed (uu.a, sc, n.a) then
+        begin
+          seen.Add (n.a);
+          ErrN (n, uu.a, 'module ' + n.a +
+                ' is named and not imported: write IMPORT ' + n.a +
+                ' (par 3)');
+        end;
+    for a := 0 to High (n.kids) do
+      if n.kind in [nkProcDecl, nkModBody] then
+        ImportWalk (uu, n, n.kids[a], seen)
+      else
+        ImportWalk (uu, sc, n.kids[a], seen);
+  end;
+
+  { ---- a name is declared once in its scope (report par 3, rule 6).
+    corpus/Sem.m9's CheckDeclaredOnce says why; the same walk, the
+    same words.  `once' holds the scope's names, each with its line
+    and, for a forward heading, whether it is still open: the entry
+    is 'name=line' for a closed one and 'name=line!' for an open
+    forward heading. ---- }
+  procedure DeclOnce (id: TNode; what: Integer; const me, where: string;
+                      once: TStringList);
+  var
+    a : Integer;
+    first : string;
+  begin
+    for a := 0 to once.Count - 1 do
+      if once.Names[a] = id.a then
+      begin
+        first := once.ValueFromIndex[a];
+        if (first <> '') and (first[Length (first)] = '!') and (what = 2) then
+          once[a] := id.a + '=' + Copy (first, 1, Length (first) - 1)
+        else
+          ErrN (id, me, id.a + ' is declared twice in ' + where +
+                ': the first is at line ' +
+                IntToStr (StrToIntDef (StringReplace (first, '!', '',
+                                                      []), 0)) +
+                ' (par 3)');
+        Exit;
+      end;
+    if what = 1 then
+      once.Add (id.a + '=' + IntToStr (id.line) + '!')
+    else
+      once.Add (id.a + '=' + IntToStr (id.line));
+  end;
+
+  procedure SectionNames (sec: TNode; const me, where: string;
+                          once: TStringList);
+  var a, b : Integer;
+  begin
+    if sec = nil then Exit;
+    if sec.kind in [nkConstSection, nkTypeSection, nkExcSection] then
+    begin
+      for a := 0 to High (sec.kids) do
+        if sec.kids[a] <> nil then
+          DeclOnce (sec.kids[a], 0, me, where, once);
+    end
+    else if sec.kind = nkVarSection then
+      for a := 0 to High (sec.kids) do
+        if (sec.kids[a] <> nil) and (sec.kids[a].kids[0] <> nil) then
+          for b := 0 to High (sec.kids[a].kids[0].kids) do
+            if sec.kids[a].kids[0].kids[b] <> nil then
+              DeclOnce (sec.kids[a].kids[0].kids[b], 0, me, where, once);
+  end;
+
+  procedure CheckDeclaredOnce (uu: TNode);
+  var
+    once : TStringList;
+    a, b, c, what : Integer;
+    where : string;
+    dd, prm : TNode;
+  begin
+    once := TStringList.Create;
+    once.CaseSensitive := True;
+    where := 'module ' + uu.a;
+    for a := 0 to High (uu.kids) do
+    begin
+      dd := uu.kids[a];
+      if dd = nil then Continue;
+      if dd.kind = nkProcDecl then
+      begin
+        what := 1;
+        if (Length (dd.kids) > 4) and (dd.kids[4] <> nil) then what := 2;
+        DeclOnce (dd, what, uu.a, where, once);
+      end
+      else
+        SectionNames (dd, uu.a, where, once);
+    end;
+    { each procedure: its parameters, then its locals, one scope }
+    for a := 0 to High (uu.kids) do
+    begin
+      dd := uu.kids[a];
+      if (dd = nil) or (dd.kind <> nkProcDecl) then Continue;
+      once.Clear;
+      where := 'procedure ' + dd.a;
+      if dd.kids[0] <> nil then
+        for b := 0 to High (dd.kids[0].kids) do
+        begin
+          prm := dd.kids[0].kids[b];
+          if (prm = nil) or (prm.kids[0] = nil) then Continue;
+          for c := 0 to High (prm.kids[0].kids) do
+            if prm.kids[0].kids[c] <> nil then
+              DeclOnce (prm.kids[0].kids[c], 0, uu.a, where, once);
+        end;
+      if (Length (dd.kids) > 4) and (dd.kids[4] <> nil) then
+        for b := 0 to High (dd.kids[4].kids) do
+          SectionNames (dd.kids[4].kids[b], uu.a, where, once);
+    end;
+    once.Free;
   end;
 
   procedure AddParamsOf (procNode: TNode);
@@ -4420,12 +5092,43 @@ begin
           for j := 0 to High (u.kids[i].kids[0].kids) do
             fromMap.Values[u.kids[i].kids[0].kids[j].a] := u.kids[i].a;
         end;
+    seenImp := TStringList.Create; seenImp.CaseSensitive := True;
+    for i := 0 to High (u.kids) do
+      ImportWalk (u, nil, u.kids[i], seenImp);
+    seenImp.Free;
+    CheckDeclaredOnce (u);
     constMap.Clear;
+    nAgg := 0;
+    { an IMPLEMENTATION sees the constants of its DEFINITION, the unit
+      of the same name in this file.  It saw only its own until
+      2026-10-02, so `n := K' -- K a real constant of the definition,
+      n an I64 -- passed here, built, and answered 1 for 1.5, while a
+      client's `n := Mod.K' was refused.  Entered FIRST: a constant
+      the implementation declares under the same name is the
+      implementation's. }
+    if u.kind = nkImplementation then
+      for i := 0 to High (root.kids) do
+      begin
+        d := root.kids[i];
+        if (d <> nil) and (d.kind = nkDefinition) and (d.b = '') and
+           (d.a = u.a) then
+          for j := 0 to High (d.kids) do
+            if (d.kids[j] <> nil) and (d.kids[j].kind = nkConstSection) then
+              for k2 := 0 to High (d.kids[j].kids) do
+                constMap.Values[d.kids[j].kids[k2].a] :=
+                  LitType (d.kids[j].kids[k2].kids[0]);
+      end;
     for i := 0 to High (u.kids) do
       if (u.kids[i] <> nil) and (u.kids[i].kind = nkConstSection) then
         for j := 0 to High (u.kids[i].kids) do
+        begin
+          if u.kind = nkDefinition then
+            CheckAggregate (u.kids[i].kids[j], u.a, 1)
+          else
+            CheckAggregate (u.kids[i].kids[j], u.a, 0);
           constMap.Values[u.kids[i].kids[j].a] :=
             LitType (u.kids[i].kids[j].kids[0]);
+        end;
 
     if (u.kind = nkDefinition) and (u.b <> '') then
     begin
@@ -4446,7 +5149,7 @@ begin
       if d.kids[4] = nil then Continue;
       p := d.kids[4];
       ctx := u.a + '.' + d.a;
-      scope := TStringList.Create; scope.CaseSensitive := True;
+      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear;
       varParams.Clear;
       keptParams.Clear;
       keptUsed.Clear;
@@ -4472,6 +5175,7 @@ begin
               ErrN (p.kids[j].kids[k2], ctx,
                 'a local CONST may not shadow a module CONST: ' +
                 p.kids[j].kids[k2].a);
+            CheckAggregate (p.kids[j].kids[k2], ctx, 2);
             constMap.Values[p.kids[j].kids[k2].a] :=
               LitType (p.kids[j].kids[k2].kids[0]);
             localConsts.Add (p.kids[j].kids[k2].a);
@@ -4489,6 +5193,12 @@ begin
         rt := CanonT (d.kids[1], 0)
       else
         rt := '<void>';
+      { par 3 rule 4, before the walk so that it is the procedure's
+        first diagnostic on both sides }
+      if (d.kids[1] <> nil) and (p.kids[High (p.kids)] <> nil) and
+         not EndsStmt (p.kids[High (p.kids)]) then
+        ErrN (d, ctx, 'a function must RETURN or RAISE on every path: ' +
+                      d.a + ' can reach its END (par 3)');
       CheckBody (p.kids[High (p.kids)], ctx, declared, scope, rt);
       { RO evidence: VAR parameters this procedure never writes
         through and never lends onward.  Each is a read-only borrow
@@ -4511,7 +5221,7 @@ begin
       sec := u.kids[i];
       if (sec = nil) or (sec.kind <> nkModBody) then Continue;
       ctx := u.a + ' body';
-      scope := TStringList.Create; scope.CaseSensitive := True;
+      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear;
       { a module body declares no parameters, so the KEPT lists must
         not carry the last procedure's into this frame's flush }
       keptParams.Clear;

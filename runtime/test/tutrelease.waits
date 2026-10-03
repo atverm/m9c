@@ -1,0 +1,15 @@
+# Tutorial examples that need a compiler NEWER than the released one,
+# by name, with the version they wait for and why.  tutrelease.sh
+# excuses exactly these, while that version is the one this tree is
+# building and is not yet published -- and never on main.
+#
+#   NAME  VERSION   why
+#
+# A line here is a promise with a date on it: the release that
+# carries the version removes it (the pointer commit), and
+# tutrelease fails on a line whose version is out, whose example
+# agrees with the release after all, or whose example is gone.
+
+X13Fall  0.14.0   a function that can reach its END is refused from 0.14.0 (report par 3 rule 4); 0.13.0 compiles it
+C6Nan    0.14.0   Stats takes a NaN as a missing value and reports the count from 0.14.0 (Stats.Count); 0.13.0 raises ValueRange and has no Count
+C14Flux  0.14.0   Stats imports Sort from 0.14.0 (interpolation searches with it), so this example's hand link line names Sort.o; 0.13.0's Stats does not and makes none

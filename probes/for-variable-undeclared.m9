@@ -1,0 +1,6 @@
+(* EXPECT: FOR variable j is not declared *)
+MODULE m ;
+VAR n : I64 ;
+BEGIN
+  FOR j := 0 TO 3 DO n := n + 1 END
+END m.

@@ -1,0 +1,23 @@
+(* EXPECT-ERROR: a string literal can be lent only to an RO parameter *)
+(* A checked language that segfaults.  Observed 2026-10-01, in the
+   released 0.13.0, while constant tables were being built: a
+   by-value STR parameter can be written through, a string literal is
+   read-only data, and nothing connected the two -- this program
+   passed the checker and died with SIGSEGV at the assignment, exit
+   139, no IndexError and no message.  The same through an RO
+   parameter lent onward to a writable one.  Counted before the rule
+   was chosen: three calls in four trees handed read-only storage to
+   a by-value slice and none of the callees wrote, so nothing that
+   ran had met it; the 164 procedures that DO write through a
+   by-value slice were all given real arrays.  The rule is at the
+   call (par 2.4): read-only storage goes only to an RO parameter. *)
+MODULE m ;
+PROCEDURE Up (s: STR) RAISES IndexError =
+BEGIN
+  s[0] := 'X'
+END Up ;
+PROCEDURE F () RAISES IndexError =
+BEGIN
+  Up ('abc')
+END F ;
+END m.

@@ -1,0 +1,36 @@
+REVIEW Arrow -- 38 procedures with a body, 19 of them functions; 8 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path              19
+  assignments                                   172
+  arguments                                     338
+  RETURN values                                  29
+  operands of a comparison or an operator       171
+  CASE labels                                     0
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    0
+  local pools                                     0
+  pool parameters                                11   Str, FieldTable, KvTable, SchemaMsg, New, Add, +5 more
+  KEPT parameters                                11   Meta, Meta, Add, AddInt, AddInt, AddF32, +5 more
+  HEAP named                                      0
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                                0
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                 0
+  RAISE statements                                4
+  handlers                                        0
+  NEW in the frame                                0
+  NEW in a named pool                            11

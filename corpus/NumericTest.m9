@@ -1,0 +1,854 @@
+MODULE NumericTest ;
+
+(* Numeric against scipy: Root, Minimum, Integral, OdeStep, OdeSolve.
+   Goldens: runtime/test/gold/Numeric.gold from tools/numericgold.py,
+   which first holds Numeric's algorithms, transcribed into Python,
+   to scipy itself.
+
+   The functions below are the generator's, operation for operation.
+   Root and Minimum are compared TO THE BIT, and with the number of
+   times they called the function: the same answer by the same path.
+   Those functions are algebraic on purpose -- + - * / and sqrt give
+   the same bits on every machine, cos and exp need not -- and the
+   comparison assumes what this compiler's C does on x86-64, that a
+   product and a sum are rounded separately.  Integral is held to
+   scipy's value within the error it reports itself; OdeSolve to
+   scipy's RK45 at 1e-9, at a LOOSE tolerance too, where the two are
+   both a thousandth off the truth and agree with each other to nine
+   digits because they are the same method. *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Io ;
+IMPORT Math ;
+IMPORT Numeric ;
+
+CONST
+  None = [0.0] ;
+  P07 = [0.7] ;
+  P1 = [1.0] ;
+  P13 = [1.3] ;
+  P2 = [2.0] ;
+  P4 = [4.0] ;
+  P5 = [5.0] ;
+  Peak = [0.3, 0.01] ;
+  Lotka = [1.1, 0.4, 0.1, 0.4] ;
+  AtRest = [1.0, 0.0] ;      (* the spring: displaced, not moving *)
+  Herd = [10.0, 5.0] ;       (* prey and predators *)
+  Half = [0.5] ;
+  P3 = [3.0] ;
+  Sharp = [1.0, 0.001] ;     (* the pulse: where, and how narrow *)
+  (* where the fits start *)
+  Origin = [0.0, 0.0] ;
+  Origin3 = [0.0, 0.0, 0.0] ;
+  Ones = [1.0, 1.0] ;
+  PeakStart = [1.0, 0.0, 1.0] ;
+  FarStart = [10.0, 0.01] ;
+  TwoT = [1.0, 3.0] ;
+  TwoY = [2.0, 8.0] ;
+  RosenStart = [-1.2, 1.0] ;
+  FreudStart = [0.5, -2.0] ;
+  PowellStart = [3.0, -1.0, 0.0, 1.0] ;
+  Ones3 = [1.0, 1.0, 1.0] ;
+  KoStart = [0.25, 0.39, 0.415, 0.39] ;
+  KoFar = [2.5, 3.9, 4.15, 3.9] ;
+  (* the measurements of Bard's problem and of Kowalik and Osborne's *)
+  BardY = [0.14, 0.18, 0.22, 0.25, 0.29, 0.32, 0.35, 0.39, 0.37, 0.58,
+           0.73, 0.96, 1.34, 2.10, 4.39] ;
+  KoY = [0.1957, 0.1947, 0.1735, 0.1600, 0.0844, 0.0627, 0.0456, 0.0342,
+         0.0323, 0.0235, 0.0246] ;
+  KoU = [4.0, 2.0, 1.0, 0.5, 0.25, 0.167, 0.125, 0.1, 0.0833, 0.0714, 0.0625] ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+  calls : I64 ;              (* how often a function below was asked *)
+
+(* ---- the functions, as tools/numericgold.py writes them ---- *)
+
+PROCEDURE FA (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  calls := calls + 1 ;
+  RETURN x * x - p[0]
+END FA ;
+
+PROCEDURE FB (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  calls := calls + 1 ;
+  RETURN x * x * x - 2.0 * x - p[0]
+END FB ;
+
+PROCEDURE FC (x: F64 ; RO p: SLICE OF F64) : F64 =
+VAR d : F64 ;
+BEGIN
+  calls := calls + 1 ;
+  d := x - p[0] ;
+  RETURN d * d * d
+END FC ;
+
+PROCEDURE FD (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  calls := calls + 1 ;
+  RETURN 1.0 / x - p[0]
+END FD ;
+
+PROCEDURE FE (x: F64 ; RO p: SLICE OF F64) : F64 RAISES ValueRange =
+VAR r : F64 ;
+BEGIN
+  calls := calls + 1 ;
+  r := Math.Sqrt (x) ;
+  RETURN r - p[0]
+END FE ;
+
+PROCEDURE FT (x: F64 ; RO p: SLICE OF F64) : F64 RAISES ValueRange =
+VAR c : F64 ;
+BEGIN
+  calls := calls + 1 ;
+  c := Math.Cos (x) ;
+  RETURN c - p[0] * x
+END FT ;
+
+PROCEDURE GA (x: F64 ; RO p: SLICE OF F64) : F64 =
+VAR d : F64 ;
+BEGIN
+  calls := calls + 1 ;
+  d := x - p[0] ;
+  RETURN d * d + 1.0
+END GA ;
+
+PROCEDURE GB (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  calls := calls + 1 ;
+  RETURN x * x * x * x - 3.0 * x * x + x
+END GB ;
+
+PROCEDURE GC (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  calls := calls + 1 ;
+  RETURN Math.Fabs (x - p[0])
+END GC ;
+
+PROCEDURE GFlat (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  calls := calls + 1 ;
+  RETURN p[0]
+END GFlat ;
+
+PROCEDURE QA (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  calls := calls + 1 ;
+  RETURN x * x * x - 2.0 * x
+END QA ;
+
+PROCEDURE QB (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  calls := calls + 1 ;
+  RETURN 1.0 / (1.0 + x * x)
+END QB ;
+
+PROCEDURE QC (x: F64 ; RO p: SLICE OF F64) : F64 RAISES ValueRange =
+BEGIN
+  calls := calls + 1 ;
+  RETURN Math.Sqrt (x)
+END QC ;
+
+PROCEDURE QD (x: F64 ; RO p: SLICE OF F64) : F64 RAISES ValueRange =
+BEGIN
+  calls := calls + 1 ;
+  RETURN Math.Exp (-x * x)
+END QD ;
+
+PROCEDURE QE (x: F64 ; RO p: SLICE OF F64) : F64 =
+VAR d : F64 ;
+BEGIN
+  calls := calls + 1 ;
+  d := x - p[0] ;
+  RETURN 1.0 / (d * d + p[1])
+END QE ;
+
+PROCEDURE QS (x: F64 ; RO p: SLICE OF F64) : F64 RAISES ValueRange =
+VAR r : F64 ;
+BEGIN
+  calls := calls + 1 ;
+  r := Math.Sqrt (x) ;
+  RETURN 1.0 / r
+END QS ;
+
+PROCEDURE Decay (tt: F64 ; RO y: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                 VAR dy: SLICE OF F64) =
+BEGIN
+  dy[0] := -p[0] * y[0]
+END Decay ;
+
+PROCEDURE Spring (tt: F64 ; RO y: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                  VAR dy: SLICE OF F64) =
+BEGIN
+  dy[0] := y[1] ;
+  dy[1] := -p[0] * y[0]
+END Spring ;
+
+PROCEDURE Prey (tt: F64 ; RO y: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                VAR dy: SLICE OF F64) =
+BEGIN
+  dy[0] := p[0] * y[0] - p[1] * y[0] * y[1] ;
+  dy[1] := p[2] * y[0] * y[1] - p[3] * y[1]
+END Prey ;
+
+PROCEDURE Driven (tt: F64 ; RO y: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                  VAR dy: SLICE OF F64) =
+BEGIN
+  dy[0] := p[0] * tt - y[0]
+END Driven ;
+
+PROCEDURE Pulse (tt: F64 ; RO y: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                 VAR dy: SLICE OF F64) =
+VAR d : F64 ;
+BEGIN
+  d := tt - p[0] ;
+  dy[0] := 1.0 / (d * d + p[1])
+END Pulse ;
+
+(* ---- Root ---- *)
+
+PROCEDURE RootCase (RO name: STR ; f: Numeric.Fn ; RO p: SLICE OF F64 ;
+                    a, b, xtol: F64)
+  RAISES Numeric.NoBracket, Numeric.NoConverge, ValueRange =
+VAR x : F64 ;
+BEGIN
+  calls := 0 ;
+  x := Numeric.Root (f, p, a, b, xtol) ;
+  Check.EqF64 (t, 'Root ' + name + ": scipy's root, to the bit", x,
+               Check.GoldF64 (t, gold, 'root.' + name + '.x')) ;
+  Check.EqI64 (t, 'Root ' + name + ": in scipy's number of calls", calls,
+               Check.GoldI64 (t, gold, 'root.' + name + '.calls'))
+END RootCase ;
+
+PROCEDURE Roots ()
+  RAISES Numeric.NoBracket, Numeric.NoConverge, ValueRange =
+VAR x : F64 ;
+BEGIN
+  RootCase ('a.fine', FA, P2, 0.0, 2.0, 2.0e-12) ;
+  RootCase ('a.coarse', FA, P2, 0.0, 2.0, 1.0e-6) ;
+  RootCase ('b.fine', FB, P5, 2.0, 3.0, 2.0e-12) ;
+  RootCase ('b.coarse', FB, P5, 2.0, 3.0, 1.0e-6) ;
+  RootCase ('d.fine', FD, P07, 0.1, 5.0, 2.0e-12) ;
+  RootCase ('d.coarse', FD, P07, 0.1, 5.0, 1.0e-6) ;
+  RootCase ('e.fine', FE, P2, 0.0, 9.0, 2.0e-12) ;
+  RootCase ('e.coarse', FE, P2, 0.0, 9.0, 1.0e-6) ;
+  (* a step between two and three bisections long is taken on this
+     one, and on none of those above: without it the 3 in Brent's
+     test for a short step could be a 2 and nothing here said so *)
+  RootCase ('f.fine', FA, P5, 0.1, 4.0, 2.0e-12) ;
+  RootCase ('f.coarse', FA, P5, 0.1, 4.0, 1.0e-6) ;
+  (* a root AT an end is that end, after the two calls that look *)
+  RootCase ('end.fine', FA, P4, 2.0, 5.0, 2.0e-12) ;
+  RootCase ('end.coarse', FA, P4, 2.0, 5.0, 1.0e-6) ;
+  (* a triple root, found when asked for three digits *)
+  RootCase ('c', FC, P1, 0.0, 3.0, 1.0e-3) ;
+  (* cos is the machine's own: within the tolerance asked, twice over *)
+  x := Numeric.Root (FT, P1, 0.0, 1.0, 2.0e-12) ;
+  Check.Near (t, 'Root of cos x - x', x, Check.GoldF64 (t, gold, 'root.t.x'),
+              4.0e-12, 0.0)
+END Roots ;
+
+(* ---- Minimum ---- *)
+
+PROCEDURE MinCase (RO name: STR ; f: Numeric.Fn ; RO p: SLICE OF F64 ;
+                   a, b, xatol: F64)
+  RAISES Faults.BadArg, Numeric.NoConverge, ValueRange =
+VAR x : F64 ;
+BEGIN
+  calls := 0 ;
+  x := Numeric.Minimum (f, p, a, b, xatol) ;
+  Check.EqF64 (t, 'Minimum ' + name + ": scipy's minimum, to the bit", x,
+               Check.GoldF64 (t, gold, 'min.' + name + '.x')) ;
+  Check.EqI64 (t, 'Minimum ' + name + ": in scipy's number of calls", calls,
+               Check.GoldI64 (t, gold, 'min.' + name + '.calls'))
+END MinCase ;
+
+PROCEDURE Minima ()
+  RAISES Faults.BadArg, Numeric.NoConverge, ValueRange =
+BEGIN
+  MinCase ('a.fine', GA, P2, 0.0, 5.0, 1.0e-8) ;
+  MinCase ('a.coarse', GA, P2, 0.0, 5.0, 1.0e-3) ;
+  MinCase ('b.fine', GB, None, -2.0, 0.0, 1.0e-8) ;
+  MinCase ('b.coarse', GB, None, -2.0, 0.0, 1.0e-3) ;
+  (* a corner, where no parabola fits *)
+  MinCase ('c.fine', GC, P13, 0.0, 4.0, 1.0e-8) ;
+  MinCase ('c.coarse', GC, P13, 0.0, 4.0, 1.0e-3) ;
+  MinCase ('d.fine', FB, P5, 0.0, 2.0, 1.0e-8) ;
+  MinCase ('d.coarse', FB, P5, 0.0, 2.0, 1.0e-3) ;
+  (* a constant: every comparison is a tie, and scipy moves on a tie *)
+  MinCase ('flat.fine', GFlat, P3, 0.0, 3.0, 1.0e-8) ;
+  MinCase ('flat.coarse', GFlat, P3, 0.0, 3.0, 1.0e-3)
+END Minima ;
+
+(* ---- Integral ---- *)
+
+PROCEDURE QuadCase (RO name: STR ; f: Numeric.Fn ; RO p: SLICE OF F64 ;
+                    a, b: F64)
+  RAISES Numeric.NoConverge, ValueRange =
+VAR v, err, want : F64 ;
+BEGIN
+  calls := 0 ;
+  v := Numeric.Integral (f, p, a, b, 1.0e-10, 1.0e-10, err) ;
+  want := Check.GoldF64 (t, gold, 'quad.' + name) ;
+  Check.Near (t, 'Integral ' + name + ": scipy's value, as closely as asked",
+              v, want, 1.0e-10, 1.0e-10) ;
+  (* the estimate is an account of the answer: it must cover the miss,
+     with the rounding of the sum itself allowed for *)
+  Check.That (t, 'Integral ' + name + ': the error it reports covers its miss',
+              Math.Fabs (v - want) <= err + 1.0e-15 * Math.Fabs (want)) ;
+  Check.EqI64 (t, 'Integral ' + name + ': the evaluations of the same halvings',
+               calls, Check.GoldI64 (t, gold, 'quad.' + name + '.evals'))
+END QuadCase ;
+
+PROCEDURE Integrals () RAISES Numeric.NoConverge, ValueRange =
+VAR v, err : F64 ;
+BEGIN
+  QuadCase ('a', QA, None, 0.0, 3.0) ;
+  QuadCase ('b', QB, None, 0.0, 4.0) ;
+  QuadCase ('c', QC, None, 0.0, 1.0) ;
+  QuadCase ('d', QD, None, -3.0, 3.0) ;
+  QuadCase ('e', QE, Peak, 0.0, 1.0) ;
+  QuadCase ('back', QA, None, 3.0, 0.0) ;
+  v := Numeric.Integral (QA, None, 2.0, 2.0, 1.0e-10, 1.0e-10, err) ;
+  Check.EqF64 (t, 'Integral over nothing is 0.0', v, 0.0) ;
+  (* the rule is exact for a polynomial of degree 22, so a cubic is
+     integrated to rounding whatever was asked -- which holds the
+     tables of nodes and weights to more digits than 1e-10 does *)
+  v := Numeric.Integral (QA, None, 0.0, 3.0, 1.0e-3, 1.0e-3, err) ;
+  Check.Near (t, 'Integral of a cubic is exact to rounding', v, 11.25,
+              0.0, 1.0e-14) ;
+  v := Numeric.Integral (GB, None, -2.0, 1.0, 1.0e-3, 1.0e-3, err) ;
+  Check.Near (t, 'and of a quartic', v, -3.9, 0.0, 1.0e-14)
+END Integrals ;
+
+(* ---- differential equations ---- *)
+
+PROCEDURE Start (RO y0: SLICE OF F64) : SLICE OF F64 =
+VAR
+  y : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  y := NEW (F64, LEN (y0)) ;
+  FOR i := 0 TO LEN (y0) - 1 DO y[i] := y0[i] END ;
+  RETURN y
+END Start ;
+
+PROCEDURE OdeCase (RO name: STR ; f: Numeric.Rhs ; RO p: SLICE OF F64 ;
+                   RO y0: SLICE OF F64 ; t1: F64)
+  RAISES Numeric.NoConverge, ValueRange =
+VAR
+  y : SLICE OF F64 ;
+  steps, i : I64 ;
+  tt, h : F64 ;
+BEGIN
+  y := Start (y0) ;
+  steps := Numeric.OdeSolve (f, p, 0.0, t1, y, 1.0e-3, 1.0e-12) ;
+  Check.NearF64s (t, 'OdeSolve ' + name + ", loosely: scipy's answer, not the truth",
+                  y, Check.GoldF64s (t, gold, 'ode.' + name + '.loose'),
+                  1.0e-9, 1.0e-9) ;
+  Check.EqI64 (t, 'OdeSolve ' + name + ", loosely: in scipy's number of steps",
+               steps, Check.GoldI64 (t, gold, 'ode.' + name + '.loose.steps')) ;
+  y := Start (y0) ;
+  steps := Numeric.OdeSolve (f, p, 0.0, t1, y, 1.0e-10, 1.0e-12) ;
+  Check.NearF64s (t, 'OdeSolve ' + name + ', tightly', y,
+                  Check.GoldF64s (t, gold, 'ode.' + name + '.tight'),
+                  1.0e-9, 1.0e-9) ;
+  Check.EqI64 (t, 'OdeSolve ' + name + ", tightly: in scipy's number of steps",
+               steps, Check.GoldI64 (t, gold, 'ode.' + name + '.tight.steps')) ;
+  (* a hundred classical steps, t advanced as the generator advances it *)
+  y := Start (y0) ;
+  h := t1 / 100.0 ;
+  tt := 0.0 ;
+  FOR i := 1 TO 100 DO
+    Numeric.OdeStep (f, p, tt, h, y) ;
+    tt := tt + h
+  END ;
+  Check.NearF64s (t, 'OdeStep ' + name + ': a hundred steps', y,
+                  Check.GoldF64s (t, gold, 'ode.' + name + '.rk4'),
+                  0.0, 1.0e-14)
+END OdeCase ;
+
+PROCEDURE Odes () RAISES Numeric.NoConverge, ValueRange =
+VAR
+  y : SLICE OF F64 ;
+  one, two, steps : I64 ;
+BEGIN
+  OdeCase ('decay', Decay, P07, P1, 3.0) ;
+  OdeCase ('spring', Spring, P4, AtRest, 5.0) ;
+  OdeCase ('lotka', Prey, Lotka, Herd, 6.0) ;
+  OdeCase ('back', Driven, P2, Half, -2.0) ;
+  (* a sharp pulse: steps are rejected on the way in, and a step may
+     not grow straight after a rejection -- which the four above,
+     having no such step at this tolerance, did not hold *)
+  OdeCase ('pulse', Pulse, Sharp, None, 2.0) ;
+
+  (* and the truth, where there is a formula for it *)
+  y := Start (P1) ;
+  steps := Numeric.OdeSolve (Decay, P07, 0.0, 3.0, y, 1.0e-10, 1.0e-12) ;
+  Check.NearF64s (t, 'OdeSolve decay against exp (-0.7 * 3)', y,
+                  Check.GoldF64s (t, gold, 'ode.decay.truth'), 0.0, 1.0e-8) ;
+  y := Start (AtRest) ;
+  steps := Numeric.OdeSolve (Spring, P4, 0.0, 5.0, y, 1.0e-10, 1.0e-12) ;
+  Check.NearF64s (t, 'OdeSolve spring against cos and sin', y,
+                  Check.GoldF64s (t, gold, 'ode.spring.truth'), 1.0e-8, 1.0e-8) ;
+
+  (* in two legs it is the same journey, to the tolerance *)
+  y := Start (P1) ;
+  one := Numeric.OdeSolve (Decay, P07, 0.0, 1.0, y, 1.0e-10, 1.0e-12) ;
+  two := Numeric.OdeSolve (Decay, P07, 1.0, 3.0, y, 1.0e-10, 1.0e-12) ;
+  Check.NearF64s (t, 'OdeSolve in two legs', y,
+                  Check.GoldF64s (t, gold, 'ode.decay.truth'), 0.0, 1.0e-8) ;
+  Check.That (t, 'and each leg took steps', one > 0 AND two > 0) ;
+  steps := Numeric.OdeSolve (Decay, P07, 2.0, 2.0, y, 1.0e-10, 1.0e-12) ;
+  Check.EqI64 (t, 'OdeSolve from t to t takes no step', steps, 0)
+END Odes ;
+
+(* ---- least squares ---- *)
+
+PROCEDURE MLine (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  RETURN p[0] + p[1] * x
+END MLine ;
+
+PROCEDURE MMm (x: F64 ; RO p: SLICE OF F64) : F64 =
+BEGIN
+  RETURN p[0] * x / (p[1] + x)
+END MMm ;
+
+PROCEDURE MPeak (x: F64 ; RO p: SLICE OF F64) : F64 =
+VAR d : F64 ;
+BEGIN
+  d := (x - p[1]) / p[2] ;
+  RETURN p[0] / (1.0 + d * d)
+END MPeak ;
+
+PROCEDURE MDecay (x: F64 ; RO p: SLICE OF F64) : F64 RAISES ValueRange =
+VAR e : F64 ;
+BEGIN
+  e := Math.Exp (-p[1] * x) ;
+  RETURN p[0] * e
+END MDecay ;
+
+PROCEDURE RRosen (RO x: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                  VAR r: SLICE OF F64) =
+BEGIN
+  r[0] := 10.0 * (x[1] - x[0] * x[0]) ;
+  r[1] := 1.0 - x[0]
+END RRosen ;
+
+PROCEDURE RFreud (RO x: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                  VAR r: SLICE OF F64) =
+BEGIN
+  r[0] := -13.0 + x[0] + ((5.0 - x[1]) * x[1] - 2.0) * x[1] ;
+  r[1] := -29.0 + x[0] + ((x[1] + 1.0) * x[1] - 14.0) * x[1]
+END RFreud ;
+
+PROCEDURE RPowell (RO x: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                   VAR r: SLICE OF F64) RAISES ValueRange =
+VAR d, e, root : F64 ;
+BEGIN
+  d := x[1] - 2.0 * x[2] ;
+  e := x[0] - x[3] ;
+  r[0] := x[0] + 10.0 * x[1] ;
+  root := Math.Sqrt (5.0) ;
+  r[1] := root * (x[2] - x[3]) ;
+  r[2] := d * d ;
+  root := Math.Sqrt (10.0) ;
+  r[3] := root * (e * e)
+END RPowell ;
+
+(* three of MINPACK's own test problems.  Bard's reads its fifteen
+   measurements from p: that is what p is for. *)
+PROCEDURE RBard (RO x: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                 VAR r: SLICE OF F64) =
+VAR
+  i : I64 ;
+  u, v, w : F64 ;
+BEGIN
+  FOR i := 0 TO 14 DO
+    u := F64 (i + 1) ;
+    v := 16.0 - u ;
+    w := u ;
+    IF v < w THEN w := v END ;
+    r[i] := p[i] - (x[0] + u / (v * x[1] + w * x[2]))
+  END
+END RBard ;
+
+PROCEDURE RKo (RO x: SLICE OF F64 ; RO p: SLICE OF F64 ;
+               VAR r: SLICE OF F64) =
+VAR
+  i : I64 ;
+  u : F64 ;
+BEGIN
+  FOR i := 0 TO 10 DO
+    u := KoU[i] ;
+    r[i] := p[i] - x[0] * (u * u + u * x[1]) / (u * u + u * x[2] + x[3])
+  END
+END RKo ;
+
+PROCEDURE RBrown (RO x: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                  VAR r: SLICE OF F64) =
+BEGIN
+  r[0] := x[0] - 1.0e6 ;
+  r[1] := x[1] - 2.0e-6 ;
+  r[2] := x[0] * x[1] - 2.0
+END RBrown ;
+
+(* exact: the parameters to the bit, in scipy's number of evaluations;
+   the covariance to nine digits, being a product scipy forms through
+   LAPACK and this forms in three loops *)
+PROCEDURE FitCase (RO name: STR ; f: Numeric.Fn ; RO p0: SLICE OF F64 ;
+                   exact: BOOL)
+  RAISES Faults.SizeError, Faults.BadArg, Numeric.NoConverge, ValueRange =
+VAR
+  p, cov, want : SLICE OF F64 ;
+  r : Numeric.Fitted ;
+  n, i : I64 ;
+  scale : F64 ;
+BEGIN
+  n := LEN (p0) ;
+  p := Start (p0) ;
+  cov := NEW (F64, n * n) ;
+  r := Numeric.CurveFit (f, Check.GoldF64s (t, gold, 'fit.' + name + '.t'),
+                         Check.GoldF64s (t, gold, 'fit.' + name + '.y'),
+                         p, cov) ;
+  want := Check.GoldF64s (t, gold, 'fit.' + name + '.popt') ;
+  IF exact THEN
+    Check.NearF64s (t, 'CurveFit ' + name + ": scipy's parameters, to the bit",
+                    p, want, 0.0, 0.0) ;
+    Check.EqI64 (t, 'CurveFit ' + name + ": in scipy's number of evaluations",
+                 r.nfev, Check.GoldI64 (t, gold, 'fit.' + name + '.nfev'))
+  ELSE
+    Check.NearF64s (t, 'CurveFit ' + name + ": scipy's parameters",
+                    p, want, 0.0, 1.0e-7)
+  END ;
+  Check.EqI64 (t, 'CurveFit ' + name + ': stopped for the reason scipy did',
+               r.info, Check.GoldI64 (t, gold, 'fit.' + name + '.info')) ;
+  Check.Near (t, 'CurveFit ' + name + ': the sum of squares', r.cost,
+              Check.GoldF64 (t, gold, 'fit.' + name + '.cost'), 0.0, 1.0e-9) ;
+  Check.That (t, 'CurveFit ' + name + ': a covariance was estimated',
+              r.covariance) ;
+  (* held relative to the matrix's own size: an off-diagonal entry may
+     be small beside the diagonal, and is rounded at the diagonal's size *)
+  want := Check.GoldF64s (t, gold, 'fit.' + name + '.pcov') ;
+  scale := 0.0 ;
+  FOR i := 0 TO LEN (want) - 1 DO
+    IF Math.Fabs (want[i]) > scale THEN scale := Math.Fabs (want[i]) END
+  END ;
+  IF exact THEN
+    Check.NearF64s (t, 'CurveFit ' + name + ": scipy's covariance", cov, want,
+                    1.0e-9 * scale, 0.0)
+  ELSE
+    Check.NearF64s (t, 'CurveFit ' + name + ": scipy's covariance", cov, want,
+                    1.0e-6 * scale, 0.0)
+  END
+END FitCase ;
+
+PROCEDURE LsqCase (RO name: STR ; f: Numeric.Residuals ; RO p: SLICE OF F64 ;
+                   RO x0: SLICE OF F64 ; m: I64 ; tol: F64)
+  RAISES Faults.BadArg, Numeric.NoConverge, ValueRange =
+VAR
+  x : SLICE OF F64 ;
+  r : Numeric.Fitted ;
+BEGIN
+  x := Start (x0) ;
+  r := Numeric.LeastSq (f, p, x, m, tol) ;
+  Check.NearF64s (t, 'LeastSq ' + name + ": scipy's x, to the bit", x,
+                  Check.GoldF64s (t, gold, 'lsq.' + name + '.x'), 0.0, 0.0) ;
+  Check.EqI64 (t, 'LeastSq ' + name + ": in scipy's number of evaluations",
+               r.nfev, Check.GoldI64 (t, gold, 'lsq.' + name + '.nfev')) ;
+  Check.EqI64 (t, 'LeastSq ' + name + ': stopped for the reason scipy did',
+               r.info, Check.GoldI64 (t, gold, 'lsq.' + name + '.info')) ;
+  Check.Near (t, 'LeastSq ' + name + ': the sum of squares', r.cost,
+              Check.GoldF64 (t, gold, 'lsq.' + name + '.cost'), 1.0e-25, 1.0e-9)
+END LsqCase ;
+
+(* Powell's singular function: the evaluations run out, and x is left
+   where the search had got to -- which is where scipy's had *)
+PROCEDURE PowellGivesUp () : I64 =
+VAR
+  x : SLICE OF F64 ;
+  r : Numeric.Fitted ;
+BEGIN
+  x := Start (PowellStart) ;
+  r := Numeric.LeastSq (RPowell, None, x, 4, 1.49012e-8) ;
+  RETURN -1
+EXCEPT
+| Numeric.NoConverge (n) :
+    Check.NearF64s (t, 'LeastSq powell: x where scipy had got to, to the bit',
+                    x, Check.GoldF64s (t, gold, 'lsq.powell.x'), 0.0, 0.0) ;
+    RETURN n
+| Faults.BadArg (what) : RETURN -2
+| ValueRange : RETURN -3
+END PowellGivesUp ;
+
+PROCEDURE FitRefusal (RO tt, y: SLICE OF F64 ; n, ncov: I64) : STR =
+VAR
+  p, cov : SLICE OF F64 ;
+  r : Numeric.Fitted ;
+BEGIN
+  p := NEW (F64, n) ;
+  cov := NEW (F64, ncov) ;
+  r := Numeric.CurveFit (MLine, tt, y, p, cov) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError (got, want) : RETURN 'SizeError'
+| Faults.BadArg (what) : RETURN 'BadArg'
+| Numeric.NoConverge (k) : RETURN 'NoConverge'
+| ValueRange : RETURN 'ValueRange'
+END FitRefusal ;
+
+PROCEDURE Fits ()
+  RAISES Faults.SizeError, Faults.BadArg, Numeric.NoConverge, ValueRange =
+VAR
+  p, cov : SLICE OF F64 ;
+  r : Numeric.Fitted ;
+BEGIN
+  FitCase ('line', MLine, Origin, TRUE) ;
+  FitCase ('mm', MMm, Ones, TRUE) ;
+  FitCase ('peak', MPeak, PeakStart, TRUE) ;
+  FitCase ('mmfar', MMm, FarStart, TRUE) ;
+  (* exp is the machine's *)
+  FitCase ('decay', MDecay, Ones, FALSE) ;
+
+  (* two points and two parameters: the line through them, and nothing
+     to estimate a variance from *)
+  p := Start (Origin) ;
+  cov := NEW (F64, 4) ;
+  r := Numeric.CurveFit (MLine, TwoT, TwoY, p, cov) ;
+  Check.NearF64s (t, 'CurveFit through two points', p,
+                  Check.GoldF64s (t, gold, 'fit.exact.popt'), 1.0e-9, 1.0e-9) ;
+  Check.That (t, 'and no covariance: it says so', NOT r.covariance) ;
+  Check.That (t, 'and fills it with NaN', Math.IsNaN (cov[0]) AND Math.IsNaN (cov[3])) ;
+
+  LsqCase ('rosen.default', RRosen, None, RosenStart, 2, 1.49012e-8) ;
+  LsqCase ('rosen.tight', RRosen, None, RosenStart, 2, 1.0e-12) ;
+  LsqCase ('freud.default', RFreud, None, FreudStart, 2, 1.49012e-8) ;
+  (* asked for more than the arithmetic has: MINPACK says so, as 6 *)
+  LsqCase ('freud.zero', RFreud, None, FreudStart, 2, 0.0) ;
+  LsqCase ('bard', RBard, BardY, Ones3, 15, 1.49012e-8) ;
+  LsqCase ('ko', RKo, KoY, KoStart, 11, 1.49012e-8) ;
+  (* from ten times the usual start the parameter search inside one
+     step runs past five rounds: this case holds its cap of ten *)
+  LsqCase ('kofar', RKo, KoY, KoFar, 11, 1.49012e-8) ;
+  (* badly scaled on purpose, and the first step wants to be between
+     10 and 100 scaled units long: this case holds the 100 *)
+  LsqCase ('brown', RBrown, None, Ones, 3, 1.49012e-8) ;
+  Check.EqI64 (t, 'LeastSq powell: gives up after scipy gives up',
+               PowellGivesUp (), Check.GoldI64 (t, gold, 'lsq.powell.nfev')) ;
+
+  Check.EqStr (t, 'CurveFit refuses t and y of different lengths',
+               FitRefusal (TwoT, Origin3, 2, 4), 'SizeError') ;
+  Check.EqStr (t, 'CurveFit refuses a covariance of the wrong size',
+               FitRefusal (TwoT, TwoY, 2, 3), 'SizeError') ;
+  Check.EqStr (t, 'CurveFit refuses more parameters than points',
+               FitRefusal (TwoT, TwoY, 3, 9), 'BadArg')
+END Fits ;
+
+(* ---- the refusals: what each is refused as, '' when it is not ---- *)
+
+PROCEDURE RootRefusal (f: Numeric.Fn ; RO p: SLICE OF F64 ; a, b, xtol: F64)
+  : STR =
+VAR x : F64 ;
+BEGIN
+  x := Numeric.Root (f, p, a, b, xtol) ;
+  RETURN ''
+EXCEPT
+| Numeric.NoBracket (fa, fb) : RETURN 'NoBracket'
+| Numeric.NoConverge (n) : RETURN 'NoConverge'
+| ValueRange : RETURN 'ValueRange'
+END RootRefusal ;
+
+PROCEDURE MinRefusal (a, b: F64) : STR =
+VAR x : F64 ;
+BEGIN
+  x := Numeric.Minimum (GA, P2, a, b, 1.0e-8) ;
+  RETURN ''
+EXCEPT
+| Faults.BadArg (what) : RETURN 'BadArg'
+| Numeric.NoConverge (n) : RETURN 'NoConverge'
+| ValueRange : RETURN 'ValueRange'
+END MinRefusal ;
+
+PROCEDURE QuadRefusal (f: Numeric.Fn ; a, b: F64) : STR =
+VAR v, err : F64 ;
+BEGIN
+  v := Numeric.Integral (f, None, a, b, 1.0e-12, 1.0e-12, err) ;
+  RETURN ''
+EXCEPT
+| Numeric.NoConverge (n) : RETURN 'NoConverge'
+| ValueRange : RETURN 'ValueRange'
+END QuadRefusal ;
+
+PROCEDURE Refusals () =
+BEGIN
+  Check.EqStr (t, 'Root refuses two ends of one sign',
+               RootRefusal (FA, P2, 2.0, 3.0, 2.0e-12), 'NoBracket') ;
+  Check.EqStr (t, 'Root gives up on a triple root asked for twelve digits, as scipy does',
+               RootRefusal (FC, P1, 0.0, 3.0, 2.0e-12), 'NoConverge') ;
+  Check.EqStr (t, 'Root passes on what the function raises',
+               RootRefusal (FE, P2, -1.0, 9.0, 2.0e-12), 'ValueRange') ;
+  Check.EqStr (t, 'Minimum refuses a lower bound above the upper',
+               MinRefusal (5.0, 0.0), 'BadArg') ;
+  Check.EqStr (t, 'Integral gives up on 1 / sqrt (x) from 0',
+               QuadRefusal (QS, 0.0, 1.0), 'NoConverge') ;
+  Check.EqStr (t, 'and takes it away from 0',
+               QuadRefusal (QS, 1.0, 4.0), '')
+END Refusals ;
+
+(* ---- Fft and CcgFilter: runtime/test/gold/Ccg.gold, written by
+   tools/ccggold.py from numpy.fft and from NOAA's ccg_filter.py ---- *)
+
+CONST
+  FftLengths = ['1', '2', '8', '64', '1024'] ;
+  FftTol = 1.0e-11 ;         (* absolute, on sums of up to 1024 terms
+                                of size 5 *)
+  CcgTol = 1.0e-11 ;         (* of the value, which is near 400; the
+                                three records agree at 1e-13 here *)
+
+PROCEDURE C (RO name: STR) : SLICE OF F64 =
+BEGIN
+  RETURN Check.GoldF64s (t, Check.GoldPath ('Ccg.gold'), name)
+END C ;
+
+PROCEDURE Spectra () RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  re, im, re0, im0 : SLICE OF F64 ;
+  i : I64 ;
+  n : STR ;
+BEGIN
+  FOR i := 0 TO LEN (FftLengths) - 1 DO
+    n := FftLengths[i] ;
+    re := C ('in.fft.' + n + '.re') ;
+    im := C ('in.fft.' + n + '.im') ;
+    Numeric.Fft (re, im, FALSE) ;
+    Check.NearF64s (t, 'Fft of ' + n + ' is numpy.fft.fft: the real parts',
+                    re, C ('want.fft.' + n + '.re'), FftTol, 0.0) ;
+    Check.NearF64s (t, 'Fft of ' + n + ': the imaginary parts',
+                    im, C ('want.fft.' + n + '.im'), FftTol, 0.0) ;
+    (* and back: the inverse of the transform is the series *)
+    re0 := C ('in.fft.' + n + '.re') ;
+    im0 := C ('in.fft.' + n + '.im') ;
+    Numeric.Fft (re, im, TRUE) ;
+    Check.NearF64s (t, 'Fft of ' + n + ', and its inverse, is the series again',
+                    re, re0, FftTol, 0.0) ;
+    Numeric.Fft (re0, im0, TRUE) ;
+    Check.NearF64s (t, 'the inverse Fft of ' + n + ' is numpy.fft.ifft: the real parts',
+                    re0, C ('want.ifft.' + n + '.re'), FftTol, 0.0) ;
+    Check.NearF64s (t, 'the inverse Fft of ' + n + ': the imaginary parts',
+                    im0, C ('want.ifft.' + n + '.im'), FftTol, 0.0)
+  END
+END Spectra ;
+
+(* one record through CcgFilter against the reference: its times with
+   NaN where a day is missing, the curves at xq -- NaN outside the
+   record, in the golden file as in the answer *)
+PROCEDURE Curve (RO name: STR)
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  xp, yp, xq, par, smooth, trend : SLICE OF F64 ;
+  numpoly, numharm : I64 ;
+BEGIN
+  xp := C ('in.ccg.' + name + '.xp') ;
+  yp := C ('in.ccg.' + name + '.yp') ;
+  xq := C ('in.ccg.' + name + '.xq') ;
+  par := C ('in.ccg.' + name + '.par') ;
+  Check.EqI64 (t, 'CcgFilter ' + name + ': five settings in the golden file',
+               LEN (par), 5) ;
+  numpoly := I64 (par[3]) ;
+  numharm := I64 (par[4]) ;
+  smooth := NEW (F64, LEN (xq)) ;
+  trend := NEW (F64, LEN (xq)) ;
+  Numeric.CcgFilter (xp, yp, xq, par[0], par[1], par[2], numpoly, numharm,
+                     smooth, trend) ;
+  Check.NearF64s (t, 'CcgFilter ' + name + ': the smooth curve is that of ccg_filter.py',
+                  smooth, C ('want.ccg.' + name + '.smooth'), 0.0, CcgTol) ;
+  Check.NearF64s (t, 'CcgFilter ' + name + ': and the trend',
+                  trend, C ('want.ccg.' + name + '.trend'), 0.0, CcgTol)
+END Curve ;
+
+(* what a call that must be refused is refused as *)
+PROCEDURE FftRefusal (n, m: I64) : STR =
+VAR re, im : SLICE OF F64 ;
+BEGIN
+  re := NEW (F64, n) ;
+  im := NEW (F64, m) ;
+  Numeric.Fft (re, im, FALSE) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError (got, want) : RETURN 'SizeError'
+| Faults.BadArg (what) : RETURN 'BadArg'
+| ValueRange : RETURN 'ValueRange'
+END FftRefusal ;
+
+CONST
+  Up5 = [2020.0, 2020.1, 2020.2, 2020.3, 2020.4] ;
+  Down5 = [2020.0, 2020.1, 2020.3, 2020.2, 2020.4] ;
+  Y5 = [1.0, 2.0, 1.5, 2.5, 2.0] ;
+
+(* CcgFilter over five points: `out` answers wanted, numpoly terms *)
+PROCEDURE CcgRefusal (RO x: SLICE OF F64 ; out, numpoly: I64 ;
+                      interval: F64) : STR =
+VAR smooth, trend, xq : SLICE OF F64 ;
+BEGIN
+  xq := NEW (F64, 3) ;
+  smooth := NEW (F64, out) ;
+  trend := NEW (F64, 3) ;
+  Numeric.CcgFilter (x, Y5, xq, interval, 80.0, 667.0, numpoly, 0, smooth,
+                     trend) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError (got, want) : RETURN 'SizeError'
+| Faults.BadArg (what) : RETURN 'BadArg'
+| ValueRange : RETURN 'ValueRange'
+END CcgRefusal ;
+
+PROCEDURE Curves () RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+BEGIN
+  Curve ('daily') ;
+  Curve ('short') ;
+  Curve ('weekly') ;
+  Check.EqStr (t, 'Fft: a length that is not a power of two',
+               FftRefusal (12, 12), 'BadArg') ;
+  Check.EqStr (t, 'Fft: real and imaginary parts of two lengths',
+               FftRefusal (8, 4), 'SizeError') ;
+  Check.EqStr (t, 'Fft: a power of two is taken', FftRefusal (16, 16), '') ;
+  Check.EqStr (t, 'CcgFilter: a line through five points is fitted',
+               CcgRefusal (Up5, 3, 2, 30.0), '') ;
+  Check.EqStr (t, 'CcgFilter: times that are not ascending',
+               CcgRefusal (Down5, 3, 2, 30.0), 'BadArg') ;
+  Check.EqStr (t, 'CcgFilter: five points for five terms',
+               CcgRefusal (Up5, 3, 5, 30.0), 'BadArg') ;
+  Check.EqStr (t, 'CcgFilter: an interval of no days',
+               CcgRefusal (Up5, 3, 2, 0.0), 'BadArg') ;
+  Check.EqStr (t, 'CcgFilter: a smooth of another length than xq',
+               CcgRefusal (Up5, 4, 2, 30.0), 'SizeError')
+END Curves ;
+
+PROCEDURE Fail (RO what: STR) =
+BEGIN
+  Check.That (t, what, FALSE) ;
+  Io.Halt (Check.Done (t, 'Numeric'))
+END Fail ;
+
+BEGIN
+  gold := Check.GoldPath ('Numeric.gold') ;
+  Roots () ;
+  Minima () ;
+  Integrals () ;
+  Odes () ;
+  Fits () ;
+  Refusals () ;
+  Spectra () ;
+  Curves () ;
+  Io.Halt (Check.Done (t, 'Numeric'))
+EXCEPT
+| Faults.SizeError (got, want) : Fail ('no SizeError escapes')
+| Numeric.NoBracket (fa, fb) : Fail ('no NoBracket escapes')
+| Numeric.NoConverge (n) : Fail ('no NoConverge escapes')
+| Faults.BadArg (what) : Fail ('no BadArg escapes')
+| ValueRange : Fail ('no ValueRange escapes')
+END NumericTest.

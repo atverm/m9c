@@ -9,13 +9,14 @@
 #include "Sem.h"
 #include "DynStr.h"
 #include "Doc.h"
+#include "Review.h"
 #include "Lex.h"
 #include "System.h"
 
 
 static const uint32_t M9c_StdLib_d[11] = { 47u, 117u, 115u, 114u, 47u, 108u, 105u, 98u, 47u, 109u, 57u };
 #define M9c_StdLib ((m9_sl_CHAR){ (uint32_t *) M9c_StdLib_d, 11 })
-static const uint32_t M9c_Version_d[6] = { 48u, 46u, 49u, 51u, 46u, 48u };
+static const uint32_t M9c_Version_d[6] = { 48u, 46u, 49u, 52u, 46u, 48u };
 #define M9c_Version ((m9_sl_CHAR){ (uint32_t *) M9c_Version_d, 6 })
 static const uint32_t M9c_StdInclude_d[15] = { 47u, 117u, 115u, 114u, 47u, 105u, 110u, 99u, 108u, 117u, 100u, 101u, 47u, 109u, 57u };
 #define M9c_StdInclude ((m9_sl_CHAR){ (uint32_t *) M9c_StdInclude_d, 15 })
@@ -29,6 +30,10 @@ typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
 #ifndef M9SL_m9_sl_Ast_Nodep
 #define M9SL_m9_sl_Ast_Nodep
 typedef struct { Ast_Node * *p; int64_t len; } m9_sl_Ast_Nodep;
+#endif
+#ifndef M9SL_m9_sl_Review_Stat
+#define M9SL_m9_sl_Review_Stat
+typedef struct { Review_Stat *p; int64_t len; } m9_sl_Review_Stat;
 #endif
 
 

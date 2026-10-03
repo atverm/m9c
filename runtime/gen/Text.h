@@ -24,6 +24,8 @@ int64_t Text_LastChar (m9_sl_CHAR s, uint32_t c, m9_state *err);
 bool Text_Contains (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_state *err);
 bool Text_StartsWith (m9_sl_CHAR s, m9_sl_CHAR prefix, m9_state *err);
 bool Text_EndsWith (m9_sl_CHAR s, m9_sl_CHAR suffix, m9_state *err);
+int64_t Text_IndexOf (m9_sl_m9_sl_CHAR among, m9_sl_CHAR s, m9_state *err);
+bool Text_OneOf (m9_sl_CHAR s, m9_sl_m9_sl_CHAR among, m9_state *err);
 m9_sl_CHAR Text_Trim (m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_TrimLeft (m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_TrimRight (m9_sl_CHAR s, m9_state *err);
@@ -35,5 +37,7 @@ m9_sl_CHAR Text_Cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
 m9_sl_CHAR Text_Join (m9_sl_m9_sl_CHAR parts, m9_sl_CHAR sep, m9_state *err);
 m9_sl_CHAR Text_Lower (m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_Upper (m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Text_Replace (m9_sl_CHAR s, m9_sl_CHAR old, m9_sl_CHAR by, m9_state *err);
+bool Text_Match (m9_sl_CHAR pattern, m9_sl_CHAR s, m9_state *err);
 
 #endif

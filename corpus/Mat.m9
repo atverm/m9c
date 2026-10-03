@@ -167,6 +167,101 @@ PROCEDURE AddNormal (h: PTR Matrix ; RO w: SLICE OF F64 ;
      every band, as the serial loop did, so the result does not depend
      on the thread count.                                           *)
 
+(* ---- general linear algebra (2026-10-02) ----
+
+   What the paragraph above left out "until something needs it": the
+   data science backlog does.  Here, and not in a module of its own,
+   by decision: one matrix type, one module.  The oracle is
+   numpy.linalg, in corpus/MatTest.m9.
+
+   As above, everything answers NEW storage in the pool and writes
+   none of its inputs.  A factorisation that has two or three parts
+   hands them back through VAR parameters; a vector of values goes
+   into a slice the caller made, and a slice of the wrong length is
+   Faults.SizeError.
+
+   These are the textbook algorithms, unblocked and single-threaded:
+   right, and fast enough for the hundreds of unknowns a regression
+   or a small inversion has.  The Cholesky family above is the one
+   that was made fast, because 16 629 unknowns needed it. *)
+
+EXCEPTION
+  Singular (col: I64) ;
+  (* no pivot at this column.  In Solve, Inverse and Det that is a
+     pivot EXACTLY zero, LAPACK's own test: the matrix has no
+     inverse.  A matrix that is merely close to singular raises
+     nothing there and answers with few digits, as it does
+     everywhere -- its condition number is the caller's to know.  In
+     LstSq it is a column that adds nothing to the columns before it
+     beyond rounding: the problem has no unique answer. *)
+  NoConverge (sweeps: I64) ;
+  (* the Jacobi iteration of Svd or EigSym did not settle in this
+     many sweeps.  Not seen on a finite matrix; an infinity inside
+     one does it. *)
+
+PROCEDURE Solve (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES Faults.SizeError, Singular ;
+  (* the X with A X = B, A square, by LU with partial pivoting
+     (numpy.linalg.solve); B may carry many columns *)
+
+PROCEDURE Det (a: PTR Matrix) : F64 RAISES Faults.SizeError ;
+  (* the determinant, from the same factorisation: the product of the
+     pivots, negated once for every row exchange.  0.0 for a matrix
+     whose elimination meets a zero pivot. *)
+
+PROCEDURE Inverse (VAR pool: POOL ; a: PTR Matrix) : PTR Matrix IN pool
+  RAISES Faults.SizeError, Singular ;
+  (* Solve against the identity (numpy.linalg.inv).  To solve a
+     system, Solve it: an inverse multiplied in costs three times
+     the work and loses digits. *)
+
+PROCEDURE Qr (VAR pool: POOL ; a: PTR Matrix ; VAR q, r: PTR Matrix)
+  RAISES Faults.SizeError, ValueRange ;
+  (* a = q r by Householder reflections, in the reduced form: for a
+     of m x n and k the smaller of the two, q is m x k with
+     orthonormal columns and r is k x n, zero below its diagonal
+     (numpy.linalg.qr, mode 'reduced').  THE DIAGONAL OF r IS NEVER
+     NEGATIVE: a factorisation is unique only up to the sign of each
+     column of q, and this is the one that is said.  ValueRange is a
+     NaN in a: it cannot travel through a square root. *)
+
+PROCEDURE LstSq (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES Faults.SizeError, Singular, ValueRange ;
+  (* the X that makes A X - B smallest, column by column, in the
+     least-squares sense: A of m x n with m >= n and full column
+     rank, B of m rows, X of n rows (numpy.linalg.lstsq).  Through
+     QR, never through the normal equations, which square the
+     condition number.  Fewer equations than unknowns is
+     Faults.SizeError, and a column that is a combination of earlier
+     ones is Singular: neither has ONE answer, and the smallest of
+     the many is Svd's to find. *)
+
+PROCEDURE Svd (VAR pool: POOL ; a: PTR Matrix ; VAR u: PTR Matrix ;
+               VAR s: SLICE OF F64 ; VAR vt: PTR Matrix)
+  RAISES Faults.SizeError, NoConverge, ValueRange ;
+  (* a = u diag (s) vt, the singular value decomposition without the
+     full matrices: for a of m x n and k the smaller, u is m x k, s
+     has k values, vt is k x n (numpy.linalg.svd, full_matrices
+     False).  LEN (s) must be k.  The values DESCEND and are never
+     negative.  A pair of singular vectors is unique only up to one
+     sign, and this is the one that is said: the component of
+     largest magnitude of each row of vt is positive.
+
+     By one-sided Jacobi rotations, which find small singular values
+     to their own precision.  Where a value is exactly zero the
+     matrix does not determine its vector on the side that was
+     iterated, and that vector is answered as zeros. *)
+
+PROCEDURE EigSym (VAR pool: POOL ; a: PTR Matrix ; VAR w: SLICE OF F64 ;
+                  VAR v: PTR Matrix)
+  RAISES Faults.SizeError, NoConverge, ValueRange ;
+  (* the eigenvalues w, ASCENDING, and the eigenvectors, the COLUMNS
+     of v, of a symmetric matrix: a v = v diag (w) (numpy.linalg.eigh).
+     Only the lower triangle of a is read, as Cholesky reads it.
+     LEN (w) must be the matrix's order.  Each vector's component of
+     largest magnitude is positive.  By Jacobi rotations.  A general
+     matrix has complex eigenvalues and is not this procedure's. *)
+
 END Mat.
 
 
@@ -846,5 +941,500 @@ BEGIN
     END
   END
 END AddNormal ;
+
+(* ---- general linear algebra ---- *)
+
+CONST
+  Eps = 2.220446049250313e-16 ;      (* the spacing of F64 at 1.0 *)
+  MaxSweeps = 60 ;
+
+(* Doolittle with partial pivoting, in place: the multipliers of L
+   below the diagonal (its unit diagonal implied), U on and above.
+   perm[i] is the row of the original now at i; sign is +1 or -1 by
+   the parity of the exchanges.  Answers -1, or the column whose
+   pivot is exactly zero. *)
+PROCEDURE Factor (VAR lu: PTR Matrix ; VAR perm: SLICE OF I64 ;
+                  VAR sign: F64) : I64 =
+VAR
+  n, i, j, k, p, held : I64 ;
+  big, v, t, f : F64 ;
+BEGIN
+  n := Rows (lu) ;
+  sign := 1.0 ;
+  FOR i := 0 TO n - 1 DO perm[i] := i END ;
+  FOR k := 0 TO n - 1 DO
+    p := k ;
+    big := Math.Fabs (lu.d[k, k]) ;
+    FOR i := k + 1 TO n - 1 DO
+      v := Math.Fabs (lu.d[i, k]) ;
+      IF v > big THEN
+        big := v ;
+        p := i
+      END
+    END ;
+    IF big = 0.0 THEN RETURN k END ;
+    IF p # k THEN
+      FOR j := 0 TO n - 1 DO
+        t := lu.d[k, j] ;
+        lu.d[k, j] := lu.d[p, j] ;
+        lu.d[p, j] := t
+      END ;
+      held := perm[k] ;
+      perm[k] := perm[p] ;
+      perm[p] := held ;
+      sign := -sign
+    END ;
+    FOR i := k + 1 TO n - 1 DO
+      f := lu.d[i, k] / lu.d[k, k] ;
+      lu.d[i, k] := f ;
+      FOR j := k + 1 TO n - 1 DO
+        lu.d[i, j] := lu.d[i, j] - f * lu.d[k, j]
+      END
+    END
+  END ;
+  RETURN -1
+END Factor ;
+
+PROCEDURE Solve (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES Faults.SizeError, Singular =
+VAR
+  scratch : POOL ;
+  lu : PTR Matrix IN scratch ;
+  x : PTR Matrix IN pool ;
+  perm : SLICE OF I64 ;
+  n, i, k, c, bad : I64 ;
+  acc, sign : F64 ;
+BEGIN
+  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
+  IF Rows (b) # Rows (a) THEN RAISE Faults.SizeError (Rows (b), Rows (a)) END ;
+  n := Rows (a) ;
+  lu := CopyM (scratch, a) ;
+  perm := NEW (scratch, I64, n) ;
+  bad := Factor (lu, perm, sign) ;
+  IF bad >= 0 THEN RAISE Singular (bad) END ;
+  x := New (pool, n, Cols (b)) ;
+  FOR c := 0 TO Cols (b) - 1 DO
+    (* forward: L y = P b *)
+    FOR i := 0 TO n - 1 DO
+      acc := b.d[perm[i], c] ;
+      FOR k := 0 TO i - 1 DO
+        acc := acc - lu.d[i, k] * x.d[k, c]
+      END ;
+      x.d[i, c] := acc
+    END ;
+    (* back: U x = y *)
+    FOR i := n - 1 TO 0 BY -1 DO
+      acc := x.d[i, c] ;
+      FOR k := i + 1 TO n - 1 DO
+        acc := acc - lu.d[i, k] * x.d[k, c]
+      END ;
+      x.d[i, c] := acc / lu.d[i, i]
+    END
+  END ;
+  RETURN x
+END Solve ;
+
+PROCEDURE Det (a: PTR Matrix) : F64 RAISES Faults.SizeError =
+VAR
+  scratch : POOL ;
+  lu : PTR Matrix IN scratch ;
+  perm : SLICE OF I64 ;
+  n, i : I64 ;
+  d : F64 ;
+BEGIN
+  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
+  n := Rows (a) ;
+  lu := CopyM (scratch, a) ;
+  perm := NEW (scratch, I64, n) ;
+  IF Factor (lu, perm, d) >= 0 THEN RETURN 0.0 END ;
+  FOR i := 0 TO n - 1 DO d := d * lu.d[i, i] END ;
+  RETURN d
+END Det ;
+
+PROCEDURE Inverse (VAR pool: POOL ; a: PTR Matrix) : PTR Matrix IN pool
+  RAISES Faults.SizeError, Singular =
+VAR
+  scratch : POOL ;
+  eye : PTR Matrix IN scratch ;
+BEGIN
+  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
+  eye := Identity (scratch, Rows (a)) ;
+  RETURN Solve (pool, a, eye)
+END Inverse ;
+
+(* the reflector that turns column j of w, from row j down, into a
+   multiple of the first unit vector, left in column j of h from row
+   j down; answers v.v, or 0.0 when the column is already zero there
+   and nothing is to be done *)
+PROCEDURE Reflector (VAR w, h: PTR Matrix ; j: I64) : F64
+  RAISES ValueRange =
+VAR
+  m, i : I64 ;
+  acc, norm : F64 ;
+BEGIN
+  m := Rows (w) ;
+  acc := 0.0 ;
+  FOR i := j TO m - 1 DO acc := acc + w.d[i, j] * w.d[i, j] END ;
+  IF acc = 0.0 THEN RETURN 0.0 END ;
+  norm := Math.Sqrt (acc) ;
+  FOR i := j TO m - 1 DO h.d[i, j] := w.d[i, j] END ;
+  (* away from the entry's own sign, so nothing cancels *)
+  IF w.d[j, j] < 0.0 THEN
+    h.d[j, j] := h.d[j, j] - norm
+  ELSE
+    h.d[j, j] := h.d[j, j] + norm
+  END ;
+  acc := 0.0 ;
+  FOR i := j TO m - 1 DO acc := acc + h.d[i, j] * h.d[i, j] END ;
+  RETURN acc
+END Reflector ;
+
+(* t := (I - 2 v v^T / v.v) t over the columns of t from `from' on,
+   v being column j of h from row j down *)
+PROCEDURE Reflect (VAR t: PTR Matrix ; h: PTR Matrix ; j: I64 ; vv: F64 ;
+                   from: I64) =
+VAR
+  m, i, c : I64 ;
+  acc, f : F64 ;
+BEGIN
+  IF vv = 0.0 THEN RETURN END ;
+  m := Rows (t) ;
+  FOR c := from TO Cols (t) - 1 DO
+    acc := 0.0 ;
+    FOR i := j TO m - 1 DO acc := acc + h.d[i, j] * t.d[i, c] END ;
+    f := 2.0 * acc / vv ;
+    FOR i := j TO m - 1 DO t.d[i, c] := t.d[i, c] - f * h.d[i, j] END
+  END
+END Reflect ;
+
+PROCEDURE Qr (VAR pool: POOL ; a: PTR Matrix ; VAR q, r: PTR Matrix)
+  RAISES Faults.SizeError, ValueRange =
+VAR
+  scratch : POOL ;
+  w, h : PTR Matrix IN scratch ;
+  vv : SLICE OF F64 ;
+  m, n, k, i, j : I64 ;
+BEGIN
+  m := Rows (a) ;
+  n := Cols (a) ;
+  k := m ;
+  IF n < m THEN k := n END ;
+  w := CopyM (scratch, a) ;
+  h := New (scratch, m, k) ;
+  vv := NEW (scratch, F64, k) ;
+  FOR j := 0 TO k - 1 DO
+    vv[j] := Reflector (w, h, j) ;
+    Reflect (w, h, j, vv[j], j)
+  END ;
+  (* r is what is left on and above the diagonal *)
+  r := New (pool, k, n) ;
+  FOR i := 0 TO k - 1 DO
+    FOR j := i TO n - 1 DO r.d[i, j] := w.d[i, j] END
+  END ;
+  (* q is the reflectors applied, last first, to the first k columns
+     of the identity *)
+  q := New (pool, m, k) ;
+  FOR j := 0 TO k - 1 DO q.d[j, j] := 1.0 END ;
+  FOR j := k - 1 TO 0 BY -1 DO
+    Reflect (q, h, j, vv[j], 0)
+  END ;
+  (* the sign that is said: no negative on r's diagonal *)
+  FOR i := 0 TO k - 1 DO
+    IF r.d[i, i] < 0.0 THEN
+      FOR j := i TO n - 1 DO r.d[i, j] := -r.d[i, j] END ;
+      FOR j := 0 TO m - 1 DO q.d[j, i] := -q.d[j, i] END
+    END
+  END
+END Qr ;
+
+PROCEDURE LstSq (VAR pool: POOL ; a, b: PTR Matrix) : PTR Matrix IN pool
+  RAISES Faults.SizeError, Singular, ValueRange =
+VAR
+  scratch : POOL ;
+  q, r : PTR Matrix IN scratch ;
+  x : PTR Matrix IN pool ;
+  m, n, i, k, c : I64 ;
+  acc, big : F64 ;
+BEGIN
+  m := Rows (a) ;
+  n := Cols (a) ;
+  IF m < n THEN RAISE Faults.SizeError (m, n) END ;
+  IF Rows (b) # m THEN RAISE Faults.SizeError (Rows (b), m) END ;
+  Qr (scratch, a, q, r) ;
+  (* a column that adds nothing to those before it leaves a diagonal
+     entry that is rounding and no more: never exactly zero, so held
+     to the largest entry instead, as numpy's rcond holds a singular
+     value (machine epsilon times the larger dimension) *)
+  big := 0.0 ;
+  FOR i := 0 TO n - 1 DO
+    IF r.d[i, i] > big THEN big := r.d[i, i] END
+  END ;
+  FOR i := 0 TO n - 1 DO
+    IF r.d[i, i] <= Eps * F64 (m) * big THEN RAISE Singular (i) END
+  END ;
+  x := New (pool, n, Cols (b)) ;
+  FOR c := 0 TO Cols (b) - 1 DO
+    (* q^T b, then back through r *)
+    FOR i := 0 TO n - 1 DO
+      acc := 0.0 ;
+      FOR k := 0 TO m - 1 DO acc := acc + q.d[k, i] * b.d[k, c] END ;
+      x.d[i, c] := acc
+    END ;
+    FOR i := n - 1 TO 0 BY -1 DO
+      acc := x.d[i, c] ;
+      FOR k := i + 1 TO n - 1 DO
+        acc := acc - r.d[i, k] * x.d[k, c]
+      END ;
+      x.d[i, c] := acc / r.d[i, i]
+    END
+  END ;
+  RETURN x
+END LstSq ;
+
+(* the Jacobi rotation that annihilates an off-diagonal g between two
+   diagonals whose difference is `gap' (second minus first): its
+   cosine and sine, the smaller of the two angles *)
+PROCEDURE Rotation (gap, g: F64 ; VAR c, s: F64) RAISES ValueRange =
+VAR zeta, t, root : F64 ;
+BEGIN
+  zeta := gap / (2.0 * g) ;
+  root := Math.Sqrt (1.0 + zeta * zeta) ;
+  IF zeta < 0.0 THEN
+    t := -1.0 / (root - zeta)
+  ELSE
+    t := 1.0 / (root + zeta)
+  END ;
+  root := Math.Sqrt (1.0 + t * t) ;
+  c := 1.0 / root ;
+  s := c * t
+END Rotation ;
+
+(* columns p and q of m turned by the rotation *)
+PROCEDURE Turn (VAR m: PTR Matrix ; p, q: I64 ; c, s: F64) =
+VAR
+  i : I64 ;
+  a, b : F64 ;
+BEGIN
+  FOR i := 0 TO Rows (m) - 1 DO
+    a := m.d[i, p] ;
+    b := m.d[i, q] ;
+    m.d[i, p] := c * a - s * b ;
+    m.d[i, q] := s * a + c * b
+  END
+END Turn ;
+
+(* one-sided Jacobi on a matrix with no more columns than rows: w's
+   columns are turned until they are orthogonal to one another, the
+   same turns gathered in v, which starts as the identity.  What is
+   left is w = U diag (s), and a = w v^T throughout. *)
+PROCEDURE Orthogonalise (VAR w, v: PTR Matrix)
+  RAISES NoConverge, ValueRange =
+VAR
+  n, p, q, i, sweep, turned : I64 ;
+  alpha, beta, gamma, limit, c, s : F64 ;
+BEGIN
+  n := Cols (w) ;
+  FOR sweep := 1 TO MaxSweeps DO
+    turned := 0 ;
+    FOR p := 0 TO n - 2 DO
+      FOR q := p + 1 TO n - 1 DO
+        alpha := 0.0 ;
+        beta := 0.0 ;
+        gamma := 0.0 ;
+        FOR i := 0 TO Rows (w) - 1 DO
+          alpha := alpha + w.d[i, p] * w.d[i, p] ;
+          beta := beta + w.d[i, q] * w.d[i, q] ;
+          gamma := gamma + w.d[i, p] * w.d[i, q]
+        END ;
+        limit := Math.Sqrt (alpha * beta) ;
+        IF Math.Fabs (gamma) > Eps * limit THEN
+          Rotation (beta - alpha, gamma, c, s) ;
+          Turn (w, p, q, c, s) ;
+          Turn (v, p, q, c, s) ;
+          turned := turned + 1
+        END
+      END
+    END ;
+    IF turned = 0 THEN RETURN END
+  END ;
+  RAISE NoConverge (MaxSweeps)
+END Orthogonalise ;
+
+(* +1.0 or -1.0: what makes the component of largest magnitude of
+   row r of m positive (the first such, among equals) *)
+PROCEDURE RowSign (m: PTR Matrix ; r: I64) : F64 =
+VAR
+  j : I64 ;
+  big, pick : F64 ;
+BEGIN
+  big := -1.0 ;
+  pick := 1.0 ;
+  FOR j := 0 TO Cols (m) - 1 DO
+    IF Math.Fabs (m.d[r, j]) > big THEN
+      big := Math.Fabs (m.d[r, j]) ;
+      IF m.d[r, j] < 0.0 THEN pick := -1.0 ELSE pick := 1.0 END
+    END
+  END ;
+  RETURN pick
+END RowSign ;
+
+(* the svd of a matrix with no more columns than rows: u is m x n,
+   vt is n x n *)
+PROCEDURE SvdTall (VAR pool: POOL ; a: PTR Matrix ; VAR u: PTR Matrix ;
+                   VAR s: SLICE OF F64 ; VAR vt: PTR Matrix)
+  RAISES Faults.SizeError, NoConverge, ValueRange =
+VAR
+  scratch : POOL ;
+  w, v : PTR Matrix IN scratch ;
+  norm : SLICE OF F64 ;
+  order : SLICE OF I64 ;
+  m, n, i, j, k, best, held : I64 ;
+  acc, f : F64 ;
+BEGIN
+  m := Rows (a) ;
+  n := Cols (a) ;
+  w := CopyM (scratch, a) ;
+  v := Identity (scratch, n) ;
+  Orthogonalise (w, v) ;
+  norm := NEW (scratch, F64, n) ;
+  order := NEW (scratch, I64, n) ;
+  FOR j := 0 TO n - 1 DO
+    acc := 0.0 ;
+    FOR i := 0 TO m - 1 DO acc := acc + w.d[i, j] * w.d[i, j] END ;
+    norm[j] := Math.Sqrt (acc) ;
+    order[j] := j
+  END ;
+  (* the largest first; equal values keep the order they had *)
+  FOR k := 0 TO n - 2 DO
+    best := k ;
+    FOR j := k + 1 TO n - 1 DO
+      IF norm[order[j]] > norm[order[best]] THEN best := j END
+    END ;
+    held := order[best] ;
+    FOR j := best TO k + 1 BY -1 DO order[j] := order[j - 1] END ;
+    order[k] := held
+  END ;
+  u := New (pool, m, n) ;
+  vt := New (pool, n, n) ;
+  FOR k := 0 TO n - 1 DO
+    j := order[k] ;
+    s[k] := norm[j] ;
+    FOR i := 0 TO n - 1 DO vt.d[k, i] := v.d[i, j] END ;
+    f := RowSign (vt, k) ;
+    FOR i := 0 TO n - 1 DO vt.d[k, i] := f * vt.d[k, i] END ;
+    IF norm[j] > 0.0 THEN
+      FOR i := 0 TO m - 1 DO u.d[i, k] := f * w.d[i, j] / norm[j] END
+    END
+  END
+END SvdTall ;
+
+PROCEDURE Svd (VAR pool: POOL ; a: PTR Matrix ; VAR u: PTR Matrix ;
+               VAR s: SLICE OF F64 ; VAR vt: PTR Matrix)
+  RAISES Faults.SizeError, NoConverge, ValueRange =
+VAR
+  scratch : POOL ;
+  at, ut, vtt : PTR Matrix IN scratch ;
+  m, n, i, k : I64 ;
+  f : F64 ;
+BEGIN
+  m := Rows (a) ;
+  n := Cols (a) ;
+  IF m >= n THEN
+    IF LEN (s) # n THEN RAISE Faults.SizeError (LEN (s), n) END ;
+    SvdTall (pool, a, u, s, vt) ;
+    RETURN
+  END ;
+  (* wide: the transpose is tall, and a = (u' s v'^T)^T = v' s u'^T *)
+  IF LEN (s) # m THEN RAISE Faults.SizeError (LEN (s), m) END ;
+  at := Transpose (scratch, a) ;
+  SvdTall (scratch, at, ut, s, vtt) ;
+  u := Transpose (pool, vtt) ;
+  vt := Transpose (pool, ut) ;
+  (* the sign is said on vt, which here was the other side's u *)
+  FOR k := 0 TO m - 1 DO
+    f := RowSign (vt, k) ;
+    IF f < 0.0 THEN
+      FOR i := 0 TO n - 1 DO vt.d[k, i] := -vt.d[k, i] END ;
+      FOR i := 0 TO m - 1 DO u.d[i, k] := -u.d[i, k] END
+    END
+  END
+END Svd ;
+
+PROCEDURE EigSym (VAR pool: POOL ; a: PTR Matrix ; VAR w: SLICE OF F64 ;
+                  VAR v: PTR Matrix)
+  RAISES Faults.SizeError, NoConverge, ValueRange =
+VAR
+  scratch : POOL ;
+  d, e, et : PTR Matrix IN scratch ;
+  order : SLICE OF I64 ;
+  n, p, q, i, j, k, sweep, turned, best, held : I64 ;
+  apq, c, s, x, y, f, limit : F64 ;
+  settled : BOOL ;
+BEGIN
+  IF Rows (a) # Cols (a) THEN RAISE Faults.SizeError (Rows (a), Cols (a)) END ;
+  n := Rows (a) ;
+  IF LEN (w) # n THEN RAISE Faults.SizeError (LEN (w), n) END ;
+  (* the lower triangle, mirrored: symmetric whatever was above *)
+  d := New (scratch, n, n) ;
+  FOR i := 0 TO n - 1 DO
+    FOR j := 0 TO i DO
+      d.d[i, j] := a.d[i, j] ;
+      d.d[j, i] := a.d[i, j]
+    END
+  END ;
+  e := Identity (scratch, n) ;
+  settled := n < 2 ;
+  sweep := 0 ;
+  WHILE NOT settled DO
+    sweep := sweep + 1 ;
+    IF sweep > MaxSweeps THEN RAISE NoConverge (MaxSweeps) END ;
+    turned := 0 ;
+    FOR p := 0 TO n - 2 DO
+      FOR q := p + 1 TO n - 1 DO
+        apq := d.d[p, q] ;
+        limit := Math.Sqrt (Math.Fabs (d.d[p, p] * d.d[q, q])) ;
+        IF Math.Fabs (apq) > Eps * limit THEN
+          Rotation (d.d[q, q] - d.d[p, p], apq, c, s) ;
+          (* d := J^T d J: the columns, then the rows *)
+          Turn (d, p, q, c, s) ;
+          FOR k := 0 TO n - 1 DO
+            x := d.d[p, k] ;
+            y := d.d[q, k] ;
+            d.d[p, k] := c * x - s * y ;
+            d.d[q, k] := s * x + c * y
+          END ;
+          d.d[p, q] := 0.0 ;
+          d.d[q, p] := 0.0 ;
+          Turn (e, p, q, c, s) ;
+          turned := turned + 1
+        END
+      END
+    END ;
+    settled := turned = 0
+  END ;
+  order := NEW (scratch, I64, n) ;
+  FOR j := 0 TO n - 1 DO order[j] := j END ;
+  (* the smallest first; equal values keep the order they had *)
+  FOR k := 0 TO n - 2 DO
+    best := k ;
+    FOR j := k + 1 TO n - 1 DO
+      IF d.d[order[j], order[j]] < d.d[order[best], order[best]] THEN
+        best := j
+      END
+    END ;
+    held := order[best] ;
+    FOR j := best TO k + 1 BY -1 DO order[j] := order[j - 1] END ;
+    order[k] := held
+  END ;
+  (* RowSign reads a row, so the vectors are laid out as rows first *)
+  et := Transpose (scratch, e) ;
+  v := New (pool, n, n) ;
+  FOR k := 0 TO n - 1 DO
+    j := order[k] ;
+    w[k] := d.d[j, j] ;
+    f := RowSign (et, j) ;
+    FOR i := 0 TO n - 1 DO v.d[i, k] := f * e.d[i, j] END
+  END
+END EigSym ;
 
 END Mat.

@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.13.0, 2026-10-01
+## Report — revision 0.14.0, 2026-10-03
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -31,11 +31,11 @@ to reduce, so the list is meant to shrink.
 |---|---|
 | **Compiler** | `m9c`, self-hosted. Lexer, parser and code generator are written in M9; the three-stage bootstrap is byte-identical at the fixpoint (§9.5) |
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
-| **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
+| **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01; not through a copy into a local), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
 | **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); `F32 (F64)` narrowing (§2.1); flow-sensitive `OPT`; a loop-carried use after move, an owned field, a pool value stored beyond a direct `RETURN` or in a module variable (§4) |
 | **Accepted by the checker, refused by the generator** — so `m9c --check` and the editor do not show them | `OPT T` for a non-pointer `T`; `CASE` over a call; `CONST` over an expression or a record; an array bound from an imported `CONST`; `EXCEPT` and `FINALLY` on one block; `ELSIF` after `IS SOME`; `EXIT` inside a `CASE` arm or across `FINALLY`; a scalar `CASE` without `ELSE` (semantics undecided); a string literal beyond ASCII; a `THREAD` target in another module (a link error) |
 | **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` (§6); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.10.0 on six distributions and a Windows zip; this revision describes the development tree after it |
+| **Release** | 0.14.0 on six distributions and a Windows zip; this revision describes it |
 
 ### Contents
 
@@ -170,6 +170,22 @@ checked: it is a narrowing between floating formats, where IEEE 754
 already defines the result — rounding, or an infinity — rather than
 leaving it undefined. It is on the checker's remaining-softness list
 because a silent infinity is still a surprise.)*
+
+**A loop variable is a variable like any other**: declared, of an
+integer type when the bounds are integers and of the enumeration when
+they are its members, and of that type inside the loop — `x := x +
+F64 (i)`, never `x := x + i`. *(Observed failure, 2026-10-02, in the
+released 0.13.0: the self-hosted checker bound a `FOR` variable
+afresh with no type, and what has no type is never diagnosed, so
+`x := x + i` with `x` an `F64` compiled and printed 6.50 — the one
+implicit conversion in the language, through the one name every loop
+has. The Pascal oracle typed it `I64` whatever its declaration, so
+the two checkers had disagreed since the second was written and no
+probe had asked. Both also accepted a loop variable nobody declared,
+and one declared `F64`. Found by `m9c --review`: the page for a
+module written that day listed a dozen sites "passed over, a type
+unknown" with nothing in common but `i`.
+`museum/implicit-through-loop-variable.m9`.)*
 `TRUNC(f: F64): I64 RAISES ValueRange` — *(Observed failure:
 `Trunc(NaN)` in the fill-value path was a crash in FPC and silent
 INT64_MIN fabrication in numpy; in M9 it is a declared, catchable,
@@ -271,8 +287,9 @@ was silently dropped) and they are fixed and probed.
 
 Not in the language: explicit ordinals, subranges, `SUCC`/`PRED`
 (write `Colour (ORD (c) + 1)` and take the `ValueRange`), and an
-array CONSTANT indexed by an enumeration, which waits on the
-aggregate constructor (§9.6).
+array CONSTANT indexed by an enumeration: the constant table of
+§2.2.4 is indexed 0..n-1, and one indexed by its members needs the
+index type said, which is the typed CONST's business (§9.6).
 
 ### 2.2.3 Procedure types — a value that is a top-level procedure
 
@@ -294,9 +311,21 @@ END Pick ;
 A procedure type is declared with `TYPE` and used by name.  It is
 **structural**: two procedure types are the same type when their
 canonical text is the same — the parameter modes and types with no
-names, the result with its `RO`, the `RAISES` names sorted — and a
-procedure **fits** the type when its head renders that same text,
-`RAISES` included, to the letter.  Its values are **top-level M9
+names, the result with its `RO`, the `RAISES` names sorted.  A
+procedure, or a value of another procedure type, **fits** the type
+when its head renders that same text up to `RAISES`, to the letter,
+and it **raises no more than the type allows**: every exception it
+declares is one the type declares.  So a procedure that raises
+nothing fits `Kernel` above, and one that raises `ValueRange` and
+something else does not.  *(Relaxed 2026-10-02.  Until then `RAISES`
+had to match to the letter too, and a callback that could not raise
+had to declare `RAISES ValueRange` to be handed to a numerical
+method — a clause it could not use, written to satisfy a type.
+Raising less is sound: a call through a value is checked against the
+TYPE's `RAISES`, which the caller therefore handles in full, and a
+procedure that raises less than that surprises nobody.  Nothing
+changes in the C, where every procedure takes the error slot whatever
+it declares.)*  Its values are **top-level M9
 procedures**, `Up` or `Mod.Up`; there is no capture and no closure, so
 nothing observable is implicit and the C is a function pointer.  A
 foreign procedure is not a value (another ABI, no error slot), and a
@@ -317,6 +346,77 @@ Not in the language: a slice or array of procedure values (refused
 §9.6), a procedure answering a procedure value, comparing two values,
 an anonymous procedure type in a parameter list (name it).
 
+### 2.2.4 Constant tables — the aggregate
+
+```
+CONST
+  Primes = [2, 3, 5, 7, 11] ;
+  Names  = ['alpha', 'beta', 'gamma'] ;
+```
+
+A `CONST` whose value is `[ e1, ..., en ]` is a **constant table**:
+an `ARRAY n OF T` that nothing can write.  `n` is the count and `T`
+is read off the elements — an integer literal is an `I64`, a real an
+`F64`, a string a `STR` whatever its length, a character literal a
+`CHAR`, `TRUE` and `FALSE` a `BOOL` — and nothing adapts: every
+element has the first one's type or the table is refused, element by
+element and by number.  The elements are literals (a minus sign in
+front of a number is one); an expression is refused as it is in any
+other `CONST`.
+
+A table is indexed (`Primes[i]`, checked like every index), measured
+(`LEN (Primes)`), and lent whole to an `RO` parameter of slice or
+array type.  **Nothing else may name it bare**: `s := Primes`,
+`SLICE (Primes, 0, 2)`, `RETURN Primes` and an argument to a
+parameter that is not `RO` would each make an alias through which
+the constant could be written, so each is refused.  A write is
+refused by name (`cannot write the CONST Primes`), which no `CONST`
+had: `Pi := 3.0` passed the checker until 2026-10-01 and was left to
+the C compiler to refuse.
+
+In the generated C the table is `static const` data — it lands in
+read-only storage, so a write the checker did not see is a fault and
+not a changed constant — and the name is a pointer to it, the shape
+a `VAR` array parameter has, so indexing, `LEN` and lending are the
+paths that already existed (§11).
+
+*(Observed need: a table could only be a module variable filled
+element by element at run time, which makes the module STATEFUL for
+the sake of a constant — 13 such lines in this repository, 62 and 65
+in two of the applications — or a chain of comparisons, as the 96
+libm names in `Gen.IsLibM` are.)*
+
+**What it did not retire, measured the day it was built.** The
+adoption plan named six code-to-name `CASE` statements in the
+compiler as what a constant table would replace, and set four of six
+as the bar. Three are keyed by sparse NAMED codes (`Parse.OpText`,
+`Parse.Spell`, `Gen.TagOfType`): a positional table of literals
+cannot say `TkEq` beside `'='`, so they cannot be written at all.
+The other three are dense (`Lex.KwName`, `Lex.KindName`,
+`Logger.LevelName`) and would convert, at the price of the code no
+longer standing beside its name — and `Lex` says in a comment why
+that is the point of the `CASE`: a kind code is an identifier, not a
+position. None was converted. A mapping from named codes to values
+is a `CASE`, and stays one; what would change that is an element
+that is a named constant and a row that is a record, which is the
+half §9.6 keeps open.
+
+**What it did retire** is the list of names. Eight chains of the form
+`Eq (n, 'a') OR Eq (n, 'b') OR ...` in the compiler — 201 names in
+all, the longest the 96 libm functions — are constant tables searched
+by `Text.OneOf` since the same day: the names stand together as data
+and the procedure that asked is one line. The compiler's output is
+byte for byte what it was, and generating its two largest modules
+takes 5% less time than with the chains (it took 4.5% more until
+`Text.IndexOf` compared lengths before calling the comparison).
+
+Not in the language yet, each refused by name: a table local to a
+procedure (declare it at module level), a table exported by a
+DEFINITION, and the record value `Row (200, 'OK')` as an element or
+as a `CONST` of its own (§9.6 keeps that half open).  A parameter or
+a local named like a `CONST` is the parameter or the local; the
+checker used to read it as the constant.
+
 ### 2.3 `+` concatenates strings, into the procedure's frame
 
 ```
@@ -330,6 +430,24 @@ A `CHAR` converts to nothing implicitly, so there is nothing for
 on the Pascal/C worry that `c` might mean its number, a worry M9
 does not have.  Anything else must be formatted first: `'rows ' +
 Fmt.I64Str (n)`, never `'rows ' + n`.
+
+**`+` is the only operator a string has.** `=`, `#`, `<` and their
+kin compare *scalars* — numbers, characters, booleans, enumeration
+values, pointers — and a string is none of those: it is a slice, a
+pointer and a length. Two strings are compared with `Text.Eq (a, b)`,
+and no operator orders them. The same holds for every value that is
+more than one scalar: two arrays, two records, two slices, two grids
+are compared part by part, by the program, which is where "equal" for
+an array of reals has to be decided anyway. A `CHAR` against a
+one-character literal (`c = 'x'`) is a comparison of two characters
+and stays one.
+
+*(Observed failure, 2026-10-02: `IF name = 'cancel' THEN` in the
+first test written with `Check` passed the checker — the two sides
+agree in type — and was refused by the C compiler, which has no `==`
+for a struct. Probed the same day: arrays, records, slices and grids
+went the same way, six forms in all. They are refused by the checker
+now, the string forms naming `Text.Eq`.)*
 
 **The answer is the procedure's own frame.** Concatenation allocates,
 and in M9 an allocation names its pool, so this operator needs an
@@ -476,7 +594,41 @@ VAR RO view : STR ;                    (* and locals         *)
 read-only binding whose representation the compiler chooses — by value
 for slices and scalars, which are already borrows, by reference for
 records and arrays, where copying is what the mode exists to avoid.
-Writing through an `RO` binding is an error whatever its type.
+Writing through an `RO` binding is an error whatever its type. A
+variable declared `RO`, like an `RO` field, may be given a new view
+— `view := s` — and nothing may be written through it; what it
+views is lent only to an `RO` parameter, as below. *(Checked since
+2026-10-03; until then `VAR RO` was parsed and never read. No site
+in 428 files here and in two applications wrote through one.)*
+
+**Read-only storage is lent only to an `RO` parameter.** A string
+literal, a `CONST`, and whatever an `RO` parameter views are
+read-only; a by-value `SLICE` or `GRID` parameter is a borrow the
+callee may write through (`s[0] := 'X'`), which is how a procedure
+fills a caller's array. So at a call, an argument that is a literal,
+a constant, or a designator rooted at an `RO` parameter may go to a
+slice or grid parameter only if that parameter is `RO` — the heading
+is where the callee promises not to write, and the checker does not
+read the body to find out whether it keeps a promise it never made.
+Writing through a by-value slice stays legal, and so does everything
+writable: a variable, an allocation, the frame string a `+` builds.
+
+*(Observed failure, 2026-10-01, in the released 0.13.0:
+`PROCEDURE Up (s: STR)` with `s[0] := 'X'` in its body, called as
+`Up ('abc')`, passed the checker and died with SIGSEGV — the literal
+is `static const` — and so did an `RO` slice lent onward to a
+writable parameter. `museum/write-through-literal.m9`. Counted
+before the rule was placed: 164 writes through a by-value slice in
+this repository and two applications, every one into a real array,
+which is why none had crashed; and three calls handing read-only
+storage to a by-value slice, none into a callee that wrote. The rule
+at the call costs those three; a rule at the write would have cost
+the 164.)*
+
+What this does not yet follow: read-only storage copied into a local
+and written from there (`t := s ; t[0] := 'X'` with `s` an `RO`
+parameter), an `RO` field or an `RO` result lent onward, and `RO` on
+a variable declaration, which the checker does not read at all.
 
 On a **field** it annotates the view, not the slot. A field declared
 `RO s : STR` holds a slice of storage someone else owns, so writing
@@ -702,6 +854,69 @@ Rules:
    list, and it is longer than one.)* *(Observed
    failure: `blosc_decompress` versus `blosc_decompress_ctx` — global
    hidden state, thread-safety documented only in prose.)*
+4. **A function answers on every path.** A procedure with a result
+   type must reach a `RETURN` or a `RAISE` whichever way control goes;
+   one that can reach its `END` is refused, by both checkers, at the
+   procedure's heading. The rule is structural, so that a reader
+   applies it exactly as the checker does: a `WHILE` or a `FOR` can
+   be passed; a `LOOP` only through an `EXIT` of its own; an `IF`
+   when a branch can be or it has no `ELSE`; a `CASE` when an arm can
+   be (a `CASE` without `ELSE` is total, §2.2); a block when its
+   statements or one of its handlers can be. A call is never an
+   ending, whatever its callee does — a function whose last act is to
+   fail says `RAISE`. *(Built 2026-10-01. Until then nothing in this
+   report stated the rule, the tutorial told readers the checker
+   enforced it, and neither checker did: a function that fell off
+   its `END` answered the zero its result was initialised to — the
+   uninitialised-`Result` failure of 2026-08-20, closed for `CASE`
+   and left open for every other statement. Measured before it was
+   built: of 1,167 functions in this repository and 1,711 in the
+   three applications written on it, the rule refused one,
+   `Json.ParseValue`, whose last branch called a helper that always
+   raises. `museum/fall-off-end.m9` is the piece.)*
+5. **A module is named only where it is imported.** A qualified name
+   — `Text.Keep`, `Frame.Fr`, `Faults.SizeError` — may be written
+   only in a module that says `IMPORT` of its first part, so that the
+   `IMPORT` lines of a module are the whole list of what it depends
+   on. The definition and the implementation of a module are one
+   module here: an import in either serves both. A module names
+   itself freely, and a variable, parameter, binder, type or constant
+   declared in the procedure, or at the module's own level, is that
+   name and not a module's. Refused by both checkers, once a module,
+   at the first place it is named. *(Built 2026-10-02. The compiler
+   is handed the transitive closure of the imports — it must be, to
+   check a signature that mentions a type from a third module — and
+   every lookup found any module in it. Observed: the test of
+   `Frame` called `Text.Keep` without importing `Text` and compiled,
+   because the test library it did import imports `Text`. Measured
+   before it was built: 5 sites in 386 files of this repository and
+   two applications, one of them a tutorial example; read per unit
+   instead of per module the rule would have refused 2,302 sites in
+   55 files, every one an implementation leaning on its definition's
+   imports, which is why it is not read that way.
+   `museum/named-not-imported.m9` is the piece.)*
+
+6. **A name is declared once in its scope.** At a module's own level
+   every `CONST`, `TYPE`, `VAR`, `EXCEPTION` and `PROCEDURE` name is
+   declared once, across its sections; in a procedure, its
+   parameters and its locals together are one scope. A second
+   declaration is refused where it is written, naming the line of
+   the first, by both checkers. A forward declaration — a heading
+   without a body — is closed by the one declaration with a body
+   that follows it, and nothing else may close it. A local named
+   like a module-level name is a shadow and stays legal (§2.2.4);
+   the definition and the implementation of a module are two
+   scopes, since the implementation declares again what the
+   definition heads. Not covered: an enumeration's members, a
+   binder. *(Built 2026-10-03. Observed: `Csv.ColF64` had been
+   declared twice, heading and body identical, since 2026-09-10 and
+   had shipped in five releases; a CONST in `NetCDF` likewise. The
+   checkers had no word for it, and the C compiler never saw the
+   procedure: the generator keeps procedures by name, emitted the
+   second body and dropped the first, and the program ran. Measured
+   before the rule stood: 425 files here and in two applications,
+   46 forward declarations in the toolchain and those two.
+   `museum/declared-twice.m9` is the piece.)*
 
 ---
 
@@ -927,7 +1142,17 @@ No other allocation exists. `malloc` is visible or absent.
 
 `RAISE FormatError('dtype is not <f8')` unwinds to the nearest
 matching `EXCEPT` clause; `FINALLY` blocks on the way run
-unconditionally. Handlers name what they catch:
+unconditionally. **A call that raised answered nothing**: in
+`store := Open (url)` the target is written only when `Open` has
+answered, so a handler — and every line after it — finds `store` as
+it was, never the zero a failed call left in its result. *(Stated
+2026-10-03 when a fixture showed the generator storing first: a
+non-`OPT` `SHARED` pointer held NULL after a refused call, and the
+program died two lines after the handler. Both generators now
+evaluate the right side into a temporary, read the error slot, and
+store; measured on the benchmarks, fannkuch is 9% faster for it,
+mandelbrot and binary-trees unchanged.)* Handlers name what they
+catch:
 
 ```
 BEGIN
@@ -1218,10 +1443,10 @@ features:
    | candidate | shape | trigger |
    |---|---|---|
    | ~~Enumerations~~ | **built 2026-09-15, released in 0.10.0** (§2.2.2): `TYPE Colour = (Red, Green, Blue)`, `ORD`, the checked conversion `Colour (i)`, `NAME`, `FOR` over the members, `ARRAY Colour OF T`, a total `CASE` with no `ELSE`.  The trigger had been met three times over when it was measured (`Lex.KwName`, `Lex.KindName`, `HttpServer.Reason`; `docs/enum-plan.md`).  The array CONSTANT indexed by an enumeration — `ARRAY Colour OF I64 = [...]` — is NOT built: it is the aggregate constructor below wearing an index type | *was:* a second hand-rolled code-to-name table |
-   | `SET` and `IN` | a word-set over a small enumeration | a **second** hand-rolled membership table. Count today: one. The place that wanted it had 89 members and so would not have fitted a machine word — evidence *against* the word-set type, recorded rather than ignored |
+   | `SET` and `IN` | a word-set over a small enumeration | a membership test over an **enumeration** with more alternatives than an `OR` chain carries comfortably. *Counted 2026-10-01, and the count is zero:* of 72 membership tests of three or more alternatives in 208 files (this repository and two applications), 29 are over strings, 19 over characters, 18 over named integer codes (median 4 alternatives, at most 7), 6 over integer literals, and **none over an enumeration** -- there are four enumeration types in those trees and no program asks which of several members a value is. The string lists, the largest class and the only long ones (one of 96), are a constant table and `Text.OneOf` (§2.2.4), and the compiler's own eight went that way the same day. *Was:* "a second hand-rolled membership table", which counted tables of any kind and so read as met eleven times over; the 89-member one would not have fitted a machine word in any case |
    | ~~`Bits.And/Or/Xor/Shl/Shr`~~ | **built 2026-09-27** as `corpus/Bits.m9`, a library module and not a language change: And, Or, Xor, Not, Shl, Shr (logical), Test, Count, bound to `static inline` C operators in the runtime header so the generator needed nothing. Two things moved from the pre-registration. It is on **I64** read as its two's-complement pattern, not unsigned: every caller in the corpus held its bits in an I64 (a generator state, a flag column, the bytes of a little-endian integer), and U64 is the type the generator serves worst, so an unsigned-only module would have cost two checked conversions per call for no safety. And the trigger was not a hash map but bit work in the applications built on the corpus, which is the demand the table exists to record. Shift counts are checked: outside 0..63 is `ValueRange` by name, where C says undefined | *was:* the first program that needs bit manipulation |
    | ~~Procedure types~~ | **built 2026-09-27** (§2.2.3): named, structural, top-level procedures as values, `OPT` for a variable or field, calls through a value checked against the type and raising its `RAISES`.  The trigger -- "a second program whose operations cannot be enumerated; defunctionalisation has produced something better twice" -- had been met four times over when the review of that day counted: a route table, a push interface, a record the loop drives, a reverse-communication MINPACK, each recorded by its author as the absence of this feature | *was:* CLAUDE.md's pre-registration; this table never carried the row |
-   | An **aggregate constructor** | `[a, b, c]`, and a record value `Row (200, 'OK')`, usable as a CONST | something needs to **enumerate** a mapping the program also uses -- the routes-as-data precedent, where `OpenApi` derives the document from the router rather than being maintained beside it |
+   | An **aggregate constructor** | `[a, b, c]`, and a record value `Row (200, 'OK')`, usable as a CONST | **the array half BUILT 2026-10-01** (§2.2.4): a `CONST` whose value is `[ e1, ..., en ]` of literals is a constant table -- indexed, measured, lent to `RO`, const data in the C.  **The record half stays open**: `Row (200, 'OK')` as an element or a `CONST` of its own is refused by name. *Trigger, unchanged for that half:* something needs to **enumerate** a mapping the program also uses -- the routes-as-data precedent, where `OpenApi` derives the document from the router rather than being maintained beside it |
    | A typed `CONST` | `CONST Pi : F32 = 3.14159...` | a program must reproduce a foreign constant bit for bit and cannot |
    | **Pool elision** | `NEW (T)` with no pool lands in the frame and its arena is ADOPTED by the caller's at exit when the result points into it; a `VAR` pointer parameter carries its object's pool implicitly; `HEAP`, a program's pool and an object-held cache stay named (`docs/pool-elision-plan.md`) | *met 2026-09-30; rules 1 and 2 BUILT the same day (stages 1 to 3 of the plan), the corpus moving module by module -- Text, Json, Dict, ApiSpec so far:* the parameter carried no signal -- 98% of allocating corpus procedures take one, and across the four trees (corpus, zarr proxy, FLEXPART, flexinv) between 1% and 10% of the 18,600 pool mentions name a lifetime that is not a frame |
 
@@ -1261,8 +1486,10 @@ features:
 
 ## 10. Grammar (complete, in Wirth's own EBNF)
 
-Seventy-two productions; the ceiling is one hundred, and past it a
-feature dies.  Sixty-one keywords: the fifty-eight the language was
+Seventy-three productions; the ceiling is one hundred, and past it a
+feature dies.  (The seventy-third is `Aggregate`, 2026-10-01: a
+bracketed list is the value of a `CONST` and of nothing else, so `[`
+in an expression is still only a subscript.)  Sixty-one keywords: the fifty-eight the language was
 designed with, plus RO, GRID and KEPT, each appended to the table
 rather than inserted into it, because a token code that moves is a
 code no one can rely on. Terminals are quoted; ident, number (IntLit, RealLit,
@@ -1286,7 +1513,8 @@ Import      = "FROM" ident "IMPORT" IdentList ";"
 
 Declaration = "CONST" { ConstDecl } | "TYPE" { TypeDecl }
             | "VAR" { VarDecl } | "EXCEPTION" { ExcDecl } | ProcDecl .
-ConstDecl   = ident "=" ConstExpr ";" .
+ConstDecl   = ident "=" ( ConstExpr | Aggregate ) ";" .
+Aggregate   = "[" ConstExpr { "," ConstExpr } "]" .
 TypeDecl    = ident [ "=" Type ] ";" .
 ExcDecl     = ident [ "(" FieldSeq ")" ] ";" .
 VarDecl     = IdentList ":" Type ";" .
@@ -1433,6 +1661,7 @@ that tree is what the M9 sources in the same commit produce.
 | `CHAR` | `uint32_t` (a Unicode scalar is not a byte) |
 | `RECORD` | `struct`, declaration order, natural alignment |
 | `ARRAY N OF T` | `struct { T v[N]; }` (value semantics survive `=`) |
+| `CONST X = [ ... ]` | `static const struct { T v[N]; } X_k = { { ... } };` and `static T_arr * const X = (T_arr *) &X_k;` -- read-only data, the name a pointer to it as a `VAR` array parameter is; a string element is `{ (uint32_t *) X_sK, len }` over its own `static const uint32_t X_sK[]` (§2.2.4) |
 | `SLICE OF T` | `struct { T *p; int64_t len; }` |
 | `GRID R OF T` | `struct { T *p; int64_t n[R]; int64_t s[R]; }` |
 | `PTR T` | `T *` |

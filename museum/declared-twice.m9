@@ -1,0 +1,35 @@
+(* EXPECT-ERROR: Column is declared twice in module Table *)
+(* Half a program, silently.  Observed 2026-10-03: corpus/Csv.m9 had
+   `ColF64' declared twice -- the same heading, the same body, a
+   paste nobody saw, since 2026-09-10 -- and it had shipped in five
+   releases, 0.9.0 to 0.13.0.  Neither
+   checker had a word for a second declaration; the C compiler would
+   have refused two definitions, but the generator keeps procedures
+   by name, so it emitted the SECOND body and dropped the first, and
+   the program built and ran.  With identical bodies nothing showed.
+   Had the two differed, the one a reader saw first -- the one above
+   the fold, the one the documentation page is made from -- would be
+   the one that did not run.  The same day a constant in NetCDF was
+   found declared twice, and a second `Ink' in Plot was what led
+   there.
+
+   Here the first Column answers the column, the second answers its
+   first element: a reader sees the first and the program runs the
+   second. *)
+MODULE Table ;
+VAR
+  data, col : SLICE OF F64 ;
+  total : F64 ;
+PROCEDURE Column (c: I64) : SLICE OF F64 RAISES IndexError =
+BEGIN
+  RETURN SLICE (data, c * 10, 10)
+END Column ;
+PROCEDURE Column (c: I64) : SLICE OF F64 RAISES IndexError =
+BEGIN
+  RETURN SLICE (data, c * 10, 1)
+END Column ;
+BEGIN
+  data := NEW (F64, 100) ;
+  col := Column (3) ;
+  total := col[9]                      (* the first Column has it; the second raises *)
+END Table.

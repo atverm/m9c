@@ -170,6 +170,14 @@ process holding the port and nothing else.
     scalar CASE (CHAR, I64) needs one.  The payload is reached ONLY
     through the arm: `CASE v OF | Json.Value.Str (s) : ...`.  Par 8;
     probe `totality-uses-selector-type`; exemplar `corpus/Json.m9`.
+    **And a function answers on every path** (checked since
+    2026-10-01, par 3 rule 4): one that can reach its END without a
+    RETURN or a RAISE is refused at its heading -- an IF with no
+    ELSE as the last statement, a WHILE or FOR with nothing after
+    it, a CASE arm or a handler that does not answer.  A call is
+    never an ending: `Fail (c, msg)` that always raises still needs
+    a `RAISE` (or a RETURN) after it.  Probe `function-falls-off-end`;
+    tutorial 13, `X13Fall`.
 
 12. **Slices and grids.**  `SLICE (s, start, LEN)` -- start and
     length, never an end.  `LEN (s)`.  `GRID R OF T`: `NEW (pool, T,
@@ -188,7 +196,13 @@ process holding the port and nothing else.
 14. **Module VARs need `[STATEFUL]` on the definition.**  Prefer a
     record the caller owns: a 43-module port has none.  Probe
     `module-state-without-stateful`; exemplar `corpus/Plot.m9` for
-    when state is right.
+    when state is right.  **A table of literals is a CONST, not a
+    module VAR** (from 0.14, par 2.2.4): `CONST Primes = [2, 3, 5]`,
+    at module level in the implementation part, literals of ONE type
+    (`[1, 2.5]` is refused), then `Primes[i]`, `LEN (Primes)` or the
+    whole table to an `RO` parameter -- nothing else may name it
+    bare.  A map from NAMED codes to values stays a `CASE`.  Probes
+    `aggregate-*`, `const-table-*`; exemplar `corpus/AggUse.m9`.
 
 15. **Concurrency is `THREAD (proc, arg)` with ONE pointer-shaped
     argument, `MONITOR RECORD` with bound procedures, `WAIT`/`SIGNAL`
@@ -218,7 +232,14 @@ process holding the port and nothing else.
     objects.  The one place it DOES complain is `+`: "cannot
     concatenate a string with an unknown type" means the operand is a
     CASE-arm binder, and copying it into a declared local first is
-    the workaround.
+    the workaround.  **And a write through a COPY of read-only
+    storage**: from 0.14 a string literal, a `CONST` or an `RO`
+    parameter is lent only to an `RO` parameter (par 2.4; probe
+    `literal-to-writable-slice`), so write `RO` on every slice or
+    STR parameter the procedure does not write -- a by-value one
+    handed a literal is refused at the call.  What is NOT followed
+    is the copy: `t := s ; t[0] := 'X'` with `s` read-only is
+    accepted and, for a literal, dies with SIGSEGV.
 
 ## Where to read
 
@@ -230,6 +251,7 @@ process holding the port and nothing else.
 | the rule and why | `docs/M9-report.md` par 1-11 (par 10 is the grammar) |
 | why a rule exists | `museum/*.m9`, one founding failure each |
 | how to build and gate | `m9c --help`, `man m9c`, README.md's Quick start; `runtime/test/*.sh` are the gates |
+| how to test what you wrote | a program `NameTest.m9` beside `Name.m9` (from 0.14): `docs/modules/Check.md`; exemplar `corpus/TextTest.m9`; `m9c --make -o t NameTest.m9 && ./t` exits 0 or 1 |
 
 Exemplars by construct: CASE RECORD / EXCEPT / IS SOME `corpus/Json.m9`;
 FOR "C" `corpus/Grib.m9`; GRID `corpus/Mat.m9`; STATEFUL `corpus/Plot.m9`;

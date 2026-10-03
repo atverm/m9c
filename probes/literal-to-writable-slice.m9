@@ -1,0 +1,11 @@
+(* EXPECT: argument 1 of Up: a string literal can be lent only to an RO parameter *)
+MODULE m ;
+PROCEDURE Up (s: STR) RAISES IndexError =
+BEGIN
+  s[0] := 'X'
+END Up ;
+PROCEDURE F () RAISES IndexError =
+BEGIN
+  Up ('abc')
+END F ;
+END m.

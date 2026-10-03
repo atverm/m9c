@@ -17,6 +17,7 @@ extern const m9_exc Http_TransportError;
 
 #define Http_MaxHop INT64_C(5)
 #define Http_JarMax INT64_C(256)
+#define Http_MaxWait (120.0)
 #define Http_IoBlock INT64_C(65536)
 #define Http_HdrMax INT64_C(16384)
 
@@ -76,5 +77,9 @@ m9_sl_CHAR Http_SendText (m9_pool *pool, Http_Client * *cl, m9_pool *cl_pool, m9
 void Http_CloseClient (Http_Client * *cl, m9_pool *cl_pool, m9_state *err);
 int64_t Http_Kept (Http_Client * cl, m9_state *err);
 m9_sl_CHAR Http_CookieValue (Http_Client * cl, m9_sl_CHAR name, m9_state *err);
+double Http_Backoff (int64_t failures, double factor, m9_state *err);
+bool Http_Retryable (m9_sl_CHAR method, int64_t status, bool hasRetryAfter, m9_state *err);
+double Http_RetryAfter (m9_sl_CHAR headers, double now, m9_state *err);
+m9_sl_BYTE Http_RequestRetry (m9_pool *pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_BYTE body, int64_t cap, int64_t retries, double factor, int64_t *status, m9_sl_CHAR *respHeaders, int64_t *tries, m9_state *err);
 
 #endif

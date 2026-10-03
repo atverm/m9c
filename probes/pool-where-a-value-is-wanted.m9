@@ -1,0 +1,9 @@
+(* EXPECT: cannot pass POOL where I64 is expected *)
+MODULE m ;
+PROCEDURE TakesInt (n: I64) = BEGIN END TakesInt ;
+PROCEDURE F () =
+VAR scratch : POOL ;
+BEGIN
+  TakesInt (scratch)
+END F ;
+END m.

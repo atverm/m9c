@@ -21,11 +21,21 @@ DEFINITION MODULE Zip ;
    `Read` continues from where the last one stopped, and that is the
    whole contract.  It is also all a row cursor needs.
 
-   `Close` MATTERS.  The z_stream struct lives in this module's pool,
-   but zlib allocates its own window behind it, and that window is
-   freed by Close and by nothing else -- not by the pool going away.
-   A builder that opens one member per run can be forgiven; a loop
-   that opens thousands cannot.                                    *)
+   THE INFLATE IS WRITTEN HERE, IN M9 (2026-10-02; Alex's decision).
+   Until then the stream went to zlib through a shim, and so a
+   program that read a member needed zlib on its own link line: the
+   compiler supplies the runtime and no other library.  Now a
+   program that imports Zip links as any program does, on every
+   platform.  The decoder is RFC 1951's, table-driven.  It is SLOWER
+   than zlib, measured on a 92 MB table that deflate takes to a
+   fifth: a member read as a stream at 235 MB/s where zlib gave 500
+   (0.46), a gzip file with its CRC at 215 MB/s where zlib gave 305
+   (0.7).  What is left is the price of an index checked at every
+   byte copied; zlib copies a run with one memcpy.
+
+   `Close` frees nothing any more -- the decoder's window is in the
+   pool the member lives in and goes with it -- and is kept because
+   callers call it: it marks the member finished.                  *)
 
 IMPORT Io ;
 
@@ -77,26 +87,89 @@ PROCEDURE Read (VAR m: PTR Member ; VAR dst: SLICE OF BYTE) : I64
 
 PROCEDURE Close (VAR m: PTR Member) ;
 
+(* ---- gzip (2026-10-02): the other container of a deflate stream ----
+
+   A .gz file is not an archive: it is one stream of bytes, compressed,
+   between a header and a trailer that holds the CRC-32 and the length
+   of what was compressed.  These answer the WHOLE of it, in memory --
+   which is right for the .csv.gz and .json.gz a scientist is handed
+   and wrong for nine gigabytes, where the member reader above is the
+   shape to copy.
+
+   Python's gzip.decompress.  Several members one after another -- what
+   `cat a.gz b.gz' makes, and what bgzip writes -- are one stream, as
+   they are to Python and to gunzip.  Every optional field of the
+   header is skipped by its flag.  REFUSED as Error, by name: what
+   does not begin as gzip, a method other than deflate, a stream that
+   stops early or is damaged, a CRC or a length that the bytes do not
+   bear out -- and bytes after the last member, where gunzip only
+   warns. *)
+
+PROCEDURE Gunzip (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE
+  RAISES Error, Io.IOError, ValueRange ;
+  (* the uncompressed bytes of the file at path *)
+
+PROCEDURE GunzipBytes (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES Error, ValueRange ;
+  (* the same of bytes already held, an HTTP body sent with
+     Content-Encoding: gzip for one *)
+
+(* ---- the other way: compressing (2026-10-02) -----------------------
+
+   One compressor and its three wrappings.  It is a plain one: the
+   longest earlier occurrence of the next bytes is looked for among a
+   few candidates, and literals and matches are written in deflate's
+   FIXED code -- no code is built for the data.  That is what a
+   picture with flat areas and a table of numbers compress well with;
+   zlib at its default level makes smaller files, by a code of the
+   data's own.  Bytes that do not compress are STORED, so the answer
+   is never more than a few bytes longer than what went in.
+
+   Whatever any inflate reads back is what went in: held by Python's
+   zlib and gzip reading what these wrote (runtime/test/deflate.sh),
+   and by Gunzip above. *)
+
+PROCEDURE Deflate (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES ValueRange ;
+  (* the bare deflate stream (RFC 1951), no header and no checksum *)
+
+PROCEDURE Compress (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES ValueRange ;
+  (* the zlib wrapping (RFC 1950): two bytes of header, the stream,
+     its Adler-32.  Python's zlib.decompress reads it; a PNG's image
+     data is this. *)
+
+PROCEDURE Decompress (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES Error, ValueRange ;
+  (* what Compress, or any zlib, wrapped: Python's zlib.decompress.
+     Error by name for what does not begin as zlib, asks for a preset
+     dictionary, is damaged or stops early, has an Adler-32 its bytes
+     do not bear out, or goes on after it. *)
+
+PROCEDURE Gzip (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES ValueRange ;
+  (* a gzip file's bytes (RFC 1952): one member, no name, no time --
+     so the same bytes in give the same bytes out -- with its CRC-32
+     and length.  GunzipBytes undoes it. *)
+
+PROCEDURE Crc32 (RO b: SLICE OF BYTE) : I64 RAISES ValueRange ;
+  (* the CRC-32 of gzip, zip and PNG (zlib.crc32), 0 .. 4294967295 *)
+
+PROCEDURE Adler32 (RO b: SLICE OF BYTE) : I64 ;
+  (* the checksum of the zlib wrapping (zlib.adler32) *)
+
 END Zip.
 
 
-UNSAFE DEFINITION MODULE FOR "C" czip ;
+IMPLEMENTATION MODULE Zip ;
 
-PROCEDURE InflSize = "m9_inflate_size" () : C.SSizeT  [REENTRANT] ;
-PROCEDURE InflInit = "m9_inflate_init" (zs: C.MutPtr) : C.Int  [REENTRANT] ;
-PROCEDURE InflStep = "m9_inflate_step"
-  (zs: C.MutPtr ; src: C.ConstPtr ; nsrc: C.SSizeT ;
-   dst: C.MutPtr ; ndst: C.SSizeT ; out: C.MutPtr) : C.Int
-  [REENTRANT] ;
-PROCEDURE InflEnd = "m9_inflate_end" (zs: C.MutPtr)  [REENTRANT] ;
-
-END czip.
-
-
-UNSAFE IMPLEMENTATION MODULE Zip ;
-
+IMPORT Bits ;
 IMPORT DynStr ;
-FROM czip IMPORT InflSize, InflInit, InflStep, InflEnd ;
 
 CONST
   MaxComment = 65557 ;           (* 0xFFFF + the 22-byte record *)
@@ -112,6 +185,7 @@ TYPE
     method : I64 ;
     csize : I64 ;
     usize : I64 ;
+    crc : I64 ;                  (* the CRC-32 the directory states *)
     hdrOff : I64 ;               (* the LOCAL header, not the data *)
   END ;
 
@@ -121,20 +195,39 @@ TYPE
     e : SLICE OF Entry ;
   END ;
 
+  (* the state of one deflate stream being decoded: enough to stop
+     wherever the output is full and go on from there *)
+  Infl = RECORD
+    inb : SLICE OF BYTE ;        (* the compressed bytes at hand *)
+    inPos, inLen : I64 ;
+    last : BOOL ;                (* nothing comes after inLen *)
+    hold, bits : I64 ;           (* bits taken from inb and not yet used *)
+    win : SLICE OF BYTE ;        (* the last 32768 bytes made *)
+    wpos, made : I64 ;
+    lfast, lcount, lsym : SLICE OF I64 ;   (* the literal/length code *)
+    dfast, dcount, dsym : SLICE OF I64 ;   (* the distance code *)
+    lens, work : SLICE OF I64 ;
+    state : I64 ;
+    final : BOOL ;               (* this block is the last *)
+    storedLeft, copyLeft, copyDist : I64 ;
+    bad, short : BOOL ;          (* not deflate; or it stops too soon *)
+    whole : BOOL ;               (* the caller keeps all the output in
+                                    the buffer it hands to Step, so no
+                                    window is kept beside it *)
+  END ;
+
   Member = RECORD
     RO path : STR ;
+    RO name : STR ;              (* the member, for a refusal *)
     stored : BOOL ;
     dataOff : I64 ;              (* file offset of the first data byte *)
     cLeft : I64 ;                (* compressed bytes not yet read *)
-    inb : SLICE OF BYTE ;
-    inLen : I64 ;
-    inPos : I64 ;
-    zs : SLICE OF BYTE ;
-    io2 : SLICE OF I64 ;         (* [used, made]: the shim's two answers.
-                                    A SLICE and not two scalars because
-                                    ADR of a scalar is a generator gap. *)
-    open : BOOL ;
+    z : Infl ;                   (* the decoder, the input buffer in it *)
     done : BOOL ;
+    crc : I64 ;                  (* the CRC-32 so far, raw state *)
+    want : I64 ;                 (* the directory's CRC-32 *)
+    made : I64 ;                 (* bytes answered so far *)
+    usize : I64 ;                (* the directory's length *)
   END ;
 
 (* little-endian unsigned integer of `n` bytes.
@@ -236,6 +329,7 @@ BEGIN
       RAISE Error ('an encrypted member is not supported in ' + path)
     END ;
     a.e[i].method := U (cd, p + 10, 2) ;
+    a.e[i].crc := U (cd, p + 16, 4) ;
     a.e[i].csize := U (cd, p + 20, 4) ;
     a.e[i].usize := U (cd, p + 24, 4) ;
     nameLen := U (cd, p + 28, 2) ;
@@ -312,6 +406,787 @@ BEGIN
   RETURN -1
 END Find ;
 
+(* ---- inflate (RFC 1951) ----
+
+   The decoder is a loop over one question -- what comes next? -- and
+   it can be left wherever the caller's buffer is full: in the middle
+   of a copy, of a stored block, between two symbols.  That is all a
+   forward-only reader needs, and it is why this is not the forty
+   lines that inflate a whole buffer into another.
+
+   INPUT IS PULLED, NOT PUSHED BACK.  Step does not begin with fewer
+   than LowWater bytes of input unless they are the last there are,
+   and LowWater is more than any one step can use (a dynamic block's
+   header is under 300 bytes, a length and distance pair under 7).
+   So running out of bits means the stream is cut short, and no
+   state has to remember half a symbol.
+
+   A HUFFMAN CODE IS READ THROUGH A TABLE: the next FastBits bits
+   index it, and it answers the symbol and how many of those bits
+   were its code.  A code longer than that -- rare, by the nature of
+   a Huffman code -- is read a bit at a time, as the canonical code
+   is defined: codes of one length are consecutive, in symbol order.
+
+   Bits come out of the stream lowest first, but a Huffman code is
+   written top bit first, so the table is indexed by the code
+   REVERSED. *)
+
+CONST
+  WinSize = 32768 ;
+  WinMask = 32767 ;
+  FastBits = 10 ;
+  FastSize = 1024 ;
+  LowWater = 512 ;
+  StHeader = 0 ;
+  StStored = 1 ;
+  StCodes = 2 ;
+  StDone = 3 ;
+
+  Mask = [0, 1, 3, 7, 15, 31, 63, 127, 255, 511, 1023, 2047, 4095, 8191,
+          16383, 32767, 65535] ;
+  (* a length symbol's base and how many more bits follow; a
+     distance symbol's; the order a dynamic block lists its lengths in *)
+  LBase = [3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31, 35, 43,
+           51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258] ;
+  LExt = [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4,
+          4, 4, 5, 5, 5, 5, 0] ;
+  DBase = [1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193, 257,
+           385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289,
+           16385, 24577] ;
+  DExt = [0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9,
+          10, 10, 11, 11, 12, 12, 13, 13] ;
+  Order = [16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15] ;
+
+PROCEDURE InflReset (VAR z: Infl) =
+BEGIN
+  z.hold := 0 ;
+  z.bits := 0 ;
+  z.wpos := 0 ;
+  z.made := 0 ;
+  z.state := StHeader ;
+  z.final := FALSE ;
+  z.storedLeft := 0 ;
+  z.copyLeft := 0 ;
+  z.copyDist := 0 ;
+  z.bad := FALSE ;
+  z.short := FALSE
+END InflReset ;
+
+PROCEDURE InflInit (VAR pool: POOL ; VAR z: Infl) =
+BEGIN
+  z.win := NEW (pool, BYTE, WinSize) ;
+  z.lfast := NEW (pool, I64, FastSize) ;
+  z.lcount := NEW (pool, I64, 16) ;
+  z.lsym := NEW (pool, I64, 288) ;
+  z.dfast := NEW (pool, I64, FastSize) ;
+  z.dcount := NEW (pool, I64, 16) ;
+  z.dsym := NEW (pool, I64, 32) ;
+  z.lens := NEW (pool, I64, 320) ;
+  z.work := NEW (pool, I64, 32) ;
+  z.inPos := 0 ;
+  z.inLen := 0 ;
+  z.last := FALSE ;
+  z.whole := FALSE ;
+  InflReset (z)
+END InflInit ;
+
+(* bytes into the bit buffer while there is room for one and one to take *)
+PROCEDURE Refill (VAR z: Infl) RAISES ValueRange =
+BEGIN
+  WHILE z.bits <= 48 AND z.inPos < z.inLen DO
+    z.hold := Bits.Or (z.hold, Bits.Shl (I64 (z.inb[z.inPos]), z.bits)) ;
+    z.inPos := z.inPos + 1 ;
+    z.bits := z.bits + 8
+  END
+END Refill ;
+
+(* the next n bits, n <= 16; the stream is SHORT when it has not got them *)
+PROCEDURE Take (VAR z: Infl ; n: I64) : I64 RAISES ValueRange =
+VAR v : I64 ;
+BEGIN
+  IF z.bits < n THEN
+    Refill (z) ;
+    IF z.bits < n THEN
+      z.short := TRUE ;
+      RETURN 0
+    END
+  END ;
+  v := Bits.And (z.hold, Mask[n]) ;
+  z.hold := Bits.Shr (z.hold, n) ;
+  z.bits := z.bits - n ;
+  RETURN v
+END Take ;
+
+(* the next symbol of a Huffman code; -1 with z.short or z.bad set *)
+PROCEDURE Sym (VAR z: Infl ; RO fast, count, symbol: SLICE OF I64) : I64
+  RAISES ValueRange =
+VAR e, len, code, first, index, n, k : I64 ;
+BEGIN
+  e := fast[Bits.And (z.hold, FastSize - 1)] ;
+  IF e > 0 THEN
+    len := Bits.And (e, 15) ;
+    IF len <= z.bits THEN
+      z.hold := Bits.Shr (z.hold, len) ;
+      z.bits := z.bits - len ;
+      RETURN Bits.Shr (e, 4)
+    END
+  END ;
+  code := 0 ;
+  first := 0 ;
+  index := 0 ;
+  FOR k := 1 TO 15 DO
+    IF k > z.bits THEN
+      z.short := TRUE ;
+      RETURN -1
+    END ;
+    code := code + Bits.And (Bits.Shr (z.hold, k - 1), 1) ;
+    n := count[k] ;
+    IF code - n < first THEN
+      z.hold := Bits.Shr (z.hold, k) ;
+      z.bits := z.bits - k ;
+      RETURN symbol[index + (code - first)]
+    END ;
+    index := index + n ;
+    first := (first + n) * 2 ;
+    code := code * 2
+  END ;
+  z.bad := TRUE ;
+  RETURN -1
+END Sym ;
+
+(* the tables of a canonical Huffman code, from the lengths of its n
+   symbols at lens[from ..].  Answers how many codes are left unused:
+   0 for a complete code, below 0 for one that claims more than
+   there are. *)
+PROCEDURE Build (VAR fast, count, symbol, work: SLICE OF I64 ;
+                 RO lens: SLICE OF I64 ; from, n: I64) : I64
+  RAISES ValueRange =
+VAR s, len, left, code, r, k, step, b : I64 ;
+BEGIN
+  FOR len := 0 TO 15 DO count[len] := 0 END ;
+  FOR s := 0 TO n - 1 DO count[lens[from + s]] := count[lens[from + s]] + 1 END ;
+  FOR k := 0 TO FastSize - 1 DO fast[k] := 0 END ;
+  IF count[0] = n THEN RETURN 0 END ;
+  left := 1 ;
+  FOR len := 1 TO 15 DO
+    left := left * 2 - count[len] ;
+    IF left < 0 THEN RETURN left END
+  END ;
+  (* where each length's symbols begin, then the symbols in order *)
+  work[1] := 0 ;
+  FOR len := 1 TO 14 DO work[len + 1] := work[len] + count[len] END ;
+  FOR s := 0 TO n - 1 DO
+    len := lens[from + s] ;
+    IF len # 0 THEN
+      symbol[work[len]] := s ;
+      work[len] := work[len] + 1
+    END
+  END ;
+  (* the first code of each length; then every code short enough goes
+     into the table at each index whose low bits are the code reversed *)
+  code := 0 ;
+  FOR len := 1 TO 15 DO
+    IF len > 1 THEN code := (code + count[len - 1]) * 2 END ;
+    work[16 + len] := code
+  END ;
+  FOR s := 0 TO n - 1 DO
+    len := lens[from + s] ;
+    IF len # 0 THEN
+      code := work[16 + len] ;
+      work[16 + len] := code + 1 ;
+      IF len <= FastBits THEN
+        r := 0 ;
+        FOR b := 0 TO len - 1 DO
+          r := r * 2 + Bits.And (Bits.Shr (code, b), 1)
+        END ;
+        step := Bits.Shl (1, len) ;
+        k := r ;
+        WHILE k < FastSize DO
+          fast[k] := s * 16 + len ;
+          k := k + step
+        END
+      END
+    END
+  END ;
+  RETURN left
+END Build ;
+
+(* the code every fixed block uses *)
+PROCEDURE Fixed (VAR z: Infl) RAISES ValueRange =
+VAR s, left : I64 ;
+BEGIN
+  FOR s := 0 TO 143 DO z.lens[s] := 8 END ;
+  FOR s := 144 TO 255 DO z.lens[s] := 9 END ;
+  FOR s := 256 TO 279 DO z.lens[s] := 7 END ;
+  FOR s := 280 TO 287 DO z.lens[s] := 8 END ;
+  left := Build (z.lfast, z.lcount, z.lsym, z.work, z.lens, 0, 288) ;
+  FOR s := 0 TO 29 DO z.lens[s] := 5 END ;
+  left := Build (z.dfast, z.dcount, z.dsym, z.work, z.lens, 0, 30)
+END Fixed ;
+
+(* the code a dynamic block brings with it: the lengths of its two
+   codes, themselves written in a third *)
+PROCEDURE Dynamic (VAR z: Infl) RAISES ValueRange =
+VAR nlen, ndist, ncode, i, s, prev, rep, left : I64 ;
+BEGIN
+  nlen := Take (z, 5) + 257 ;
+  ndist := Take (z, 5) + 1 ;
+  ncode := Take (z, 4) + 4 ;
+  IF z.short THEN RETURN END ;
+  IF nlen > 286 OR ndist > 30 THEN
+    z.bad := TRUE ;
+    RETURN
+  END ;
+  FOR i := 0 TO 18 DO z.lens[i] := 0 END ;
+  FOR i := 0 TO ncode - 1 DO z.lens[Order[i]] := Take (z, 3) END ;
+  IF z.short THEN RETURN END ;
+  left := Build (z.lfast, z.lcount, z.lsym, z.work, z.lens, 0, 19) ;
+  IF left # 0 THEN
+    z.bad := TRUE ;
+    RETURN
+  END ;
+  i := 0 ;
+  WHILE i < nlen + ndist DO
+    Refill (z) ;
+    s := Sym (z, z.lfast, z.lcount, z.lsym) ;
+    IF s < 0 THEN RETURN END ;
+    IF s < 16 THEN
+      z.lens[i] := s ;
+      i := i + 1
+    ELSE
+      prev := 0 ;
+      IF s = 16 THEN
+        IF i = 0 THEN
+          z.bad := TRUE ;
+          RETURN
+        END ;
+        prev := z.lens[i - 1] ;
+        rep := 3 + Take (z, 2)
+      ELSIF s = 17 THEN
+        rep := 3 + Take (z, 3)
+      ELSE
+        rep := 11 + Take (z, 7)
+      END ;
+      IF z.short THEN RETURN END ;
+      IF i + rep > nlen + ndist THEN
+        z.bad := TRUE ;
+        RETURN
+      END ;
+      WHILE rep > 0 DO
+        z.lens[i] := prev ;
+        i := i + 1 ;
+        rep := rep - 1
+      END
+    END
+  END ;
+  IF z.lens[256] = 0 THEN
+    z.bad := TRUE ;                     (* no end-of-block code *)
+    RETURN
+  END ;
+  (* an incomplete code is allowed only when it is a single code of
+     one bit, which is how a block with one distance is written *)
+  left := Build (z.dfast, z.dcount, z.dsym, z.work, z.lens, nlen, ndist) ;
+  IF left < 0 OR (left > 0 AND ndist # z.dcount[0] + z.dcount[1]) THEN
+    z.bad := TRUE ;
+    RETURN
+  END ;
+  left := Build (z.lfast, z.lcount, z.lsym, z.work, z.lens, 0, nlen) ;
+  IF left < 0 OR (left > 0 AND nlen # z.lcount[0] + z.lcount[1]) THEN
+    z.bad := TRUE
+  END
+END Dynamic ;
+
+PROCEDURE BlockHeader (VAR z: Infl) RAISES ValueRange =
+VAR kind, len, nlen : I64 ;
+BEGIN
+  z.final := Take (z, 1) = 1 ;
+  kind := Take (z, 2) ;
+  IF z.short THEN RETURN END ;
+  IF kind = 0 THEN
+    (* stored: to the byte boundary, a length and its complement *)
+    len := Take (z, Bits.And (z.bits, 7)) ;
+    len := Take (z, 16) ;
+    nlen := Take (z, 16) ;
+    IF z.short THEN RETURN END ;
+    IF len + nlen # 65535 THEN
+      z.bad := TRUE ;
+      RETURN
+    END ;
+    z.storedLeft := len ;
+    z.state := StStored
+  ELSIF kind = 1 THEN
+    Fixed (z) ;
+    z.state := StCodes
+  ELSIF kind = 2 THEN
+    Dynamic (z) ;
+    z.state := StCodes
+  ELSE
+    z.bad := TRUE                       (* the type deflate reserves *)
+  END
+END BlockHeader ;
+
+PROCEDURE EndBlock (VAR z: Infl) =
+BEGIN
+  IF z.final THEN z.state := StDone ELSE z.state := StHeader END
+END EndBlock ;
+
+(* THE COMMON RUN of a block, with the decoder's state in locals: a
+   literal, or a length and a distance whose codes are both in the
+   tables, while there is room in dst for the longest copy (258) and
+   input for the most a step can take.  It stops, having taken
+   NOTHING of the symbol it stops at, for anything else -- a code too
+   long for the table, the end of the block, a symbol that is not
+   deflate -- and Step, below, deals with that one symbol by the
+   careful path and comes back here.
+
+   What it buys, measured (a 92 MB table, 2026-10-02, this loop
+   switched off and on): a member stream in 0.50 s without it and
+   0.40 s with, a gzip file in 0.49 s and 0.42 s -- a fifth and a
+   sixth.  The
+   careful path calls a helper for every symbol and reads the state
+   back from the record after every byte written: a byte store may
+   alias anything, so the C compiler cannot keep a field in a
+   register across one.  Two thirds of what is left of a stream's
+   time is the copy through the ring, three checked indexes a byte. *)
+PROCEDURE Fast (VAR z: Infl ; VAR dst: SLICE OF BYTE ; at: I64) : I64
+  RAISES ValueRange =
+VAR
+  inb, win : SLICE OF BYTE ;
+  lf, df : SLICE OF I64 ;
+  hold, bits, ip, stop, wp, made, out, room : I64 ;
+  h2, b2, e, s, k, x, len, d, dist, i : I64 ;
+  b : BYTE ;
+  ring : BOOL ;
+BEGIN
+  inb := z.inb ;
+  win := z.win ;
+  lf := z.lfast ;
+  df := z.dfast ;
+  hold := z.hold ;
+  bits := z.bits ;
+  ip := z.inPos ;
+  wp := z.wpos ;
+  made := z.made ;
+  out := at ;
+  room := LEN (dst) - 258 ;
+  stop := z.inLen - 16 ;
+  ring := NOT z.whole ;
+  WHILE out <= room AND ip <= stop DO
+    WHILE bits <= 48 DO
+      hold := Bits.Or (hold, Bits.Shl (I64 (inb[ip]), bits)) ;
+      ip := ip + 1 ;
+      bits := bits + 8
+    END ;
+    e := lf[Bits.And (hold, FastSize - 1)] ;
+    IF e = 0 THEN EXIT END ;
+    k := Bits.And (e, 15) ;
+    s := Bits.Shr (e, 4) ;
+    IF s < 256 THEN
+      hold := Bits.Shr (hold, k) ;
+      bits := bits - k ;
+      b := BYTE (s) ;
+      dst[out] := b ;
+      IF ring THEN
+        win[wp] := b ;
+        wp := Bits.And (wp + 1, WinMask)
+      END ;
+      out := out + 1 ;
+      made := made + 1
+    ELSE
+      IF s = 256 OR s >= 286 THEN EXIT END ;
+      (* a length and its distance, worked out on a copy of the bits:
+         taken only when the whole pair can be *)
+      h2 := Bits.Shr (hold, k) ;
+      b2 := bits - k ;
+      s := s - 257 ;
+      x := LExt[s] ;
+      len := LBase[s] + Bits.And (h2, Mask[x]) ;
+      h2 := Bits.Shr (h2, x) ;
+      b2 := b2 - x ;
+      e := df[Bits.And (h2, FastSize - 1)] ;
+      IF e = 0 THEN EXIT END ;
+      k := Bits.And (e, 15) ;
+      d := Bits.Shr (e, 4) ;
+      h2 := Bits.Shr (h2, k) ;
+      b2 := b2 - k ;
+      x := DExt[d] ;
+      dist := DBase[d] + Bits.And (h2, Mask[x]) ;
+      h2 := Bits.Shr (h2, x) ;
+      b2 := b2 - x ;
+      IF dist > made THEN EXIT END ;
+      hold := h2 ;
+      bits := b2 ;
+      IF ring THEN
+        FOR i := 1 TO len DO
+          b := win[Bits.And (wp - dist, WinMask)] ;
+          dst[out] := b ;
+          win[wp] := b ;
+          wp := Bits.And (wp + 1, WinMask) ;
+          out := out + 1
+        END
+      ELSE
+        FOR i := 1 TO len DO
+          dst[out] := dst[out - dist] ;
+          out := out + 1
+        END
+      END ;
+      made := made + len
+    END
+  END ;
+  z.hold := hold ;
+  z.bits := bits ;
+  z.inPos := ip ;
+  z.wpos := wp ;
+  z.made := made ;
+  RETURN out
+END Fast ;
+
+(* decode into dst from `at' on, as far as the room in dst and the
+   input at hand allow; answers where it stopped.  It stopped for
+   good when z.state is StDone, and for a reason when z.bad or
+   z.short is set.
+
+   WHERE A COPY READS FROM.  A distance reaches back into what was
+   already made.  A reader of a stream hands over a fresh buffer each
+   time, so the last 32768 bytes are kept in a ring of the decoder's
+   own.  A caller that keeps ALL of the output in dst (z.whole) needs
+   no ring: what was made is in dst, just behind. *)
+PROCEDURE Step (VAR z: Infl ; VAR dst: SLICE OF BYTE ; at: I64) : I64
+  RAISES ValueRange =
+VAR
+  out, n, s, len, d, wp, left, dist : I64 ;
+  b : BYTE ;
+BEGIN
+  out := at ;
+  n := LEN (dst) ;
+  LOOP
+    IF z.bad OR z.short OR z.state = StDone THEN RETURN out END ;
+    IF NOT z.last AND z.inLen - z.inPos < LowWater THEN RETURN out END ;
+    IF z.copyLeft > 0 THEN
+      (* a run copied from `dist' bytes back, which may reach into
+         the bytes it is itself writing *)
+      wp := z.wpos ;
+      left := z.copyLeft ;
+      dist := z.copyDist ;
+      WHILE left > 0 AND out < n DO
+        IF z.whole THEN
+          b := dst[out - dist]
+        ELSE
+          b := z.win[Bits.And (wp - dist, WinMask)] ;
+          z.win[wp] := b ;
+          wp := Bits.And (wp + 1, WinMask)
+        END ;
+        dst[out] := b ;
+        out := out + 1 ;
+        left := left - 1
+      END ;
+      z.made := z.made + (z.copyLeft - left) ;
+      z.wpos := wp ;
+      z.copyLeft := left ;
+      IF left > 0 THEN RETURN out END
+    ELSIF z.state = StHeader THEN
+      BlockHeader (z)
+    ELSIF z.state = StStored THEN
+      WHILE z.storedLeft > 0 AND out < n AND (z.bits >= 8 OR z.inPos < z.inLen) DO
+        IF z.bits >= 8 THEN
+          b := BYTE (Take (z, 8))
+        ELSE
+          b := z.inb[z.inPos] ;
+          z.inPos := z.inPos + 1
+        END ;
+        dst[out] := b ;
+        IF NOT z.whole THEN
+          z.win[z.wpos] := b ;
+          z.wpos := Bits.And (z.wpos + 1, WinMask)
+        END ;
+        z.made := z.made + 1 ;
+        out := out + 1 ;
+        z.storedLeft := z.storedLeft - 1
+      END ;
+      IF z.storedLeft = 0 THEN
+        EndBlock (z)
+      ELSIF out >= n THEN
+        RETURN out
+      ELSE
+        IF z.last THEN z.short := TRUE END ;
+        RETURN out
+      END
+    ELSE
+      IF n - out > 258 AND z.inLen - z.inPos > 16 THEN
+        out := Fast (z, dst, out)
+      END ;
+      (* one symbol by the careful path: what the common run stopped
+         at, or all there is near the end of the buffer or the input *)
+      IF out >= n THEN RETURN out END ;
+      Refill (z) ;
+      s := Sym (z, z.lfast, z.lcount, z.lsym) ;
+      IF s < 0 THEN RETURN out END ;
+      IF s < 256 THEN
+        b := BYTE (s) ;
+        dst[out] := b ;
+        IF NOT z.whole THEN
+          z.win[z.wpos] := b ;
+          z.wpos := Bits.And (z.wpos + 1, WinMask)
+        END ;
+        z.made := z.made + 1 ;
+        out := out + 1
+      ELSIF s = 256 THEN
+        EndBlock (z)
+      ELSE
+        s := s - 257 ;
+        IF s >= 29 THEN
+          z.bad := TRUE ;
+          RETURN out
+        END ;
+        len := LBase[s] + Take (z, LExt[s]) ;
+        d := Sym (z, z.dfast, z.dcount, z.dsym) ;
+        IF d < 0 THEN RETURN out END ;
+        (* d is below 30 and needs no test here: the fixed code is
+           built with 30 distances and Dynamic refuses a block that
+           declares more, so no table holds a 30 or a 31.  (A test
+           stood here and in Fast, and no stream could reach either.) *)
+        dist := DBase[d] + Take (z, DExt[d]) ;
+        IF z.short THEN RETURN out END ;
+        IF dist > z.made THEN
+          z.bad := TRUE ;               (* further back than anything made *)
+          RETURN out
+        END ;
+        z.copyLeft := len ;
+        z.copyDist := dist
+      END
+    END
+  END
+END Step ;
+
+(* after the last block: the bits left of its last byte are dropped,
+   and the whole bytes the bit buffer took and did not use are given
+   back to the input, where a gzip trailer begins *)
+PROCEDURE InflFinish (VAR z: Infl) =
+BEGIN
+  z.inPos := z.inPos - z.bits DIV 8 ;
+  z.hold := 0 ;
+  z.bits := 0
+END InflFinish ;
+
+(* ---- CRC-32 ----
+
+   Four bytes at a time: the table of a byte's CRC, and three more
+   that carry it one, two and three bytes further (polynomial
+   EDB88320, reflected).  Constant tables, written by a script that
+   held the method to zlib's crc32.  Measured on 92 MB: 1300 MB/s,
+   and 524 MB/s with one table and a byte at a time.  (zlib's own
+   does 4800 on this machine, by carry-less multiplication.) *)
+
+CONST
+  Crc0 = [
+    0, 1996959894, 3993919788, 2567524794, 124634137, 1886057615,
+    3915621685, 2657392035, 249268274, 2044508324, 3772115230, 2547177864,
+    162941995, 2125561021, 3887607047, 2428444049, 498536548, 1789927666,
+    4089016648, 2227061214, 450548861, 1843258603, 4107580753, 2211677639,
+    325883990, 1684777152, 4251122042, 2321926636, 335633487, 1661365465,
+    4195302755, 2366115317, 997073096, 1281953886, 3579855332, 2724688242,
+    1006888145, 1258607687, 3524101629, 2768942443, 901097722, 1119000684,
+    3686517206, 2898065728, 853044451, 1172266101, 3705015759, 2882616665,
+    651767980, 1373503546, 3369554304, 3218104598, 565507253, 1454621731,
+    3485111705, 3099436303, 671266974, 1594198024, 3322730930, 2970347812,
+    795835527, 1483230225, 3244367275, 3060149565, 1994146192, 31158534,
+    2563907772, 4023717930, 1907459465, 112637215, 2680153253, 3904427059,
+    2013776290, 251722036, 2517215374, 3775830040, 2137656763, 141376813,
+    2439277719, 3865271297, 1802195444, 476864866, 2238001368, 4066508878,
+    1812370925, 453092731, 2181625025, 4111451223, 1706088902, 314042704,
+    2344532202, 4240017532, 1658658271, 366619977, 2362670323, 4224994405,
+    1303535960, 984961486, 2747007092, 3569037538, 1256170817, 1037604311,
+    2765210733, 3554079995, 1131014506, 879679996, 2909243462, 3663771856,
+    1141124467, 855842277, 2852801631, 3708648649, 1342533948, 654459306,
+    3188396048, 3373015174, 1466479909, 544179635, 3110523913, 3462522015,
+    1591671054, 702138776, 2966460450, 3352799412, 1504918807, 783551873,
+    3082640443, 3233442989, 3988292384, 2596254646, 62317068, 1957810842,
+    3939845945, 2647816111, 81470997, 1943803523, 3814918930, 2489596804,
+    225274430, 2053790376, 3826175755, 2466906013, 167816743, 2097651377,
+    4027552580, 2265490386, 503444072, 1762050814, 4150417245, 2154129355,
+    426522225, 1852507879, 4275313526, 2312317920, 282753626, 1742555852,
+    4189708143, 2394877945, 397917763, 1622183637, 3604390888, 2714866558,
+    953729732, 1340076626, 3518719985, 2797360999, 1068828381, 1219638859,
+    3624741850, 2936675148, 906185462, 1090812512, 3747672003, 2825379669,
+    829329135, 1181335161, 3412177804, 3160834842, 628085408, 1382605366,
+    3423369109, 3138078467, 570562233, 1426400815, 3317316542, 2998733608,
+    733239954, 1555261956, 3268935591, 3050360625, 752459403, 1541320221,
+    2607071920, 3965973030, 1969922972, 40735498, 2617837225, 3943577151,
+    1913087877, 83908371, 2512341634, 3803740692, 2075208622, 213261112,
+    2463272603, 3855990285, 2094854071, 198958881, 2262029012, 4057260610,
+    1759359992, 534414190, 2176718541, 4139329115, 1873836001, 414664567,
+    2282248934, 4279200368, 1711684554, 285281116, 2405801727, 4167216745,
+    1634467795, 376229701, 2685067896, 3608007406, 1308918612, 956543938,
+    2808555105, 3495958263, 1231636301, 1047427035, 2932959818, 3654703836,
+    1088359270, 936918000, 2847714899, 3736837829, 1202900863, 817233897,
+    3183342108, 3401237130, 1404277552, 615818150, 3134207493, 3453421203,
+    1423857449, 601450431, 3009837614, 3294710456, 1567103746, 711928724,
+    3020668471, 3272380065, 1510334235, 755167117] ;
+  Crc1 = [
+    0, 421212481, 842424962, 724390851, 1684849924, 2105013317,
+    1448781702, 1329698503, 3369699848, 3519200073, 4210026634, 3824474571,
+    2897563404, 3048111693, 2659397006, 2274893007, 1254232657, 1406739216,
+    2029285587, 1643069842, 783210325, 934667796, 479770071, 92505238,
+    2182846553, 2600511768, 2955803355, 2838940570, 3866582365, 4285295644,
+    3561045983, 3445231262, 2508465314, 2359236067, 2813478432, 3198777185,
+    4058571174, 3908292839, 3286139684, 3670389349, 1566420650, 1145479147,
+    1869335592, 1987116393, 959540142, 539646703, 185010476, 303839341,
+    3745920755, 3327985586, 3983561841, 4100678960, 3140154359, 2721170102,
+    2300350837, 2416418868, 396344571, 243568058, 631889529, 1018359608,
+    1945336319, 1793607870, 1103436669, 1490954812, 4034481925, 3915546180,
+    3259968903, 3679722694, 2484439553, 2366552896, 2787371139, 3208174018,
+    950060301, 565965900, 177645455, 328046286, 1556873225, 1171730760,
+    1861902987, 2011255754, 3132841300, 2745199637, 2290958294, 2442530455,
+    3738671184, 3352078609, 3974232786, 4126854035, 1919080284, 1803150877,
+    1079293406, 1498383519, 370020952, 253043481, 607678682, 1025720731,
+    1711106983, 2095471334, 1472923941, 1322268772, 26324643, 411738082,
+    866634785, 717028704, 2904875439, 3024081134, 2668790573, 2248782444,
+    3376948395, 3495106026, 4219356713, 3798300520, 792689142, 908347575,
+    487136116, 68299317, 1263779058, 1380486579, 2036719216, 1618931505,
+    3890672638, 4278043327, 3587215740, 3435896893, 2206873338, 2593195963,
+    2981909624, 2829542713, 998479947, 580430090, 162921161, 279890824,
+    1609522511, 1190423566, 1842954189, 1958874764, 4082766403, 3930137346,
+    3245109441, 3631694208, 2536953671, 2385372678, 2768287173, 3155920004,
+    1900120602, 1750776667, 1131931800, 1517083097, 355290910, 204897887,
+    656092572, 1040194781, 3113746450, 2692952403, 2343461520, 2461357009,
+    3723805974, 3304059991, 4022511508, 4141455061, 2919742697, 3072101800,
+    2620513899, 2234183466, 3396041197, 3547351212, 4166851439, 3779471918,
+    1725839073, 2143618976, 1424512099, 1307796770, 45282277, 464110244,
+    813994343, 698327078, 3838160568, 4259225593, 3606301754, 3488152955,
+    2158586812, 2578602749, 2996767038, 2877569151, 740041904, 889656817,
+    506086962, 120682355, 1215357364, 1366020341, 2051441462, 1667084919,
+    3422213966, 3538019855, 4190942668, 3772220557, 2945847882, 3062702859,
+    2644537544, 2226864521, 52649286, 439905287, 823476164, 672009861,
+    1733269570, 2119477507, 1434057408, 1281543041, 2167981343, 2552493150,
+    3004082077, 2853541596, 3847487515, 4233048410, 3613549209, 3464057816,
+    1239502615, 1358593622, 2077699477, 1657543892, 764250643, 882293586,
+    532408465, 111204816, 1585378284, 1197851309, 1816695150, 1968414767,
+    974272232, 587794345, 136598634, 289367339, 2527558116, 2411481253,
+    2760973158, 3179948583, 4073438432, 3956313505, 3237863010, 3655790371,
+    347922877, 229101820, 646611775, 1066513022, 1892689081, 1774917112,
+    1122387515, 1543337850, 3697634229, 3313392372, 3998419255, 4148705398,
+    3087642289, 2702352368, 2319436851, 2468674930] ;
+  Crc2 = [
+    0, 29518391, 59036782, 38190681, 118073564, 114017003,
+    76381362, 89069189, 236147128, 265370511, 228034006, 206958561,
+    152762724, 148411219, 178138378, 190596925, 472294256, 501532999,
+    530741022, 509615401, 456068012, 451764635, 413917122, 426358261,
+    305525448, 334993663, 296822438, 275991697, 356276756, 352202787,
+    381193850, 393929805, 944588512, 965684439, 1003065998, 973863097,
+    1061482044, 1049003019, 1019230802, 1023561829, 912136024, 933002607,
+    903529270, 874031361, 827834244, 815125939, 852716522, 856752605,
+    611050896, 631869351, 669987326, 640506825, 593644876, 580921211,
+    551983394, 556069653, 712553512, 733666847, 704405574, 675154545,
+    762387700, 749958851, 787859610, 792175277, 1889177024, 1901651959,
+    1931368878, 1927033753, 2006131996, 1985040171, 1947726194, 1976933189,
+    2122964088, 2135668303, 2098006038, 2093965857, 2038461604, 2017599123,
+    2047123658, 2076625661, 1824272048, 1836991623, 1866005214, 1861914857,
+    1807058540, 1786244187, 1748062722, 1777547317, 1655668488, 1668093247,
+    1630251878, 1625932113, 1705433044, 1684323811, 1713505210, 1742760333,
+    1222101792, 1226154263, 1263738702, 1251046777, 1339974652, 1310460363,
+    1281013650, 1301863845, 1187289752, 1191637167, 1161842422, 1149379777,
+    1103966788, 1074747507, 1112139306, 1133218845, 1425107024, 1429406311,
+    1467333694, 1454888457, 1408811148, 1379576507, 1350309090, 1371438805,
+    1524775400, 1528845279, 1499917702, 1487177649, 1575719220, 1546255107,
+    1584350554, 1605185389, 3778354048, 3774312887, 3803303918, 3816007129,
+    3862737756, 3892238699, 3854067506, 3833203973, 4012263992, 4007927823,
+    3970080342, 3982554209, 3895452388, 3924658387, 3953866378, 3932773565,
+    4245928176, 4241609415, 4271336606, 4283762345, 4196012076, 4225268251,
+    4187931714, 4166823541, 4076923208, 4072833919, 4035198246, 4047918865,
+    4094247316, 4123732899, 4153251322, 4132437965, 3648544096, 3636082519,
+    3673983246, 3678331705, 3732010428, 3753090955, 3723829714, 3694611429,
+    3614117080, 3601426159, 3572488374, 3576541825, 3496125444, 3516976691,
+    3555094634, 3525581405, 3311336976, 3298595879, 3336186494, 3340255305,
+    3260503756, 3281337595, 3251864226, 3222399125, 3410866088, 3398419871,
+    3368647622, 3372945905, 3427010420, 3448139075, 3485520666, 3456284973,
+    2444203584, 2423127159, 2452308526, 2481530905, 2527477404, 2539934891,
+    2502093554, 2497740997, 2679949304, 2659102159, 2620920726, 2650438049,
+    2562027300, 2574714131, 2603727690, 2599670141, 2374579504, 2353749767,
+    2383274334, 2412743529, 2323684844, 2336421851, 2298759554, 2294686645,
+    2207933576, 2186809023, 2149495014, 2178734801, 2224278612, 2236720739,
+    2266437690, 2262135309, 2850214048, 2820717207, 2858812622, 2879680249,
+    2934667388, 2938704459, 2909776914, 2897069605, 2817622296, 2788420399,
+    2759153014, 2780249921, 2700618180, 2704950259, 2742877610, 2730399645,
+    3049550800, 3020298727, 3057690558, 3078802825, 2999835404, 3004150075,
+    2974355298, 2961925461, 3151438440, 3121956959, 3092510214, 3113327665,
+    3168701108, 3172786307, 3210370778, 3197646061] ;
+  Crc3 = [
+    0, 3099354981, 2852767883, 313896942, 2405603159, 937357362,
+    627793884, 2648127673, 3316918511, 2097696650, 1874714724, 3607201537,
+    1255587768, 4067088605, 3772741427, 1482887254, 1343838111, 3903140090,
+    4195393300, 1118632049, 3749429448, 1741137837, 1970407491, 3452858150,
+    2511175536, 756094997, 1067759611, 2266550430, 449832999, 2725482306,
+    2965774508, 142231497, 2687676222, 412010587, 171665333, 2995192016,
+    793786473, 2548850444, 2237264098, 1038456711, 1703315409, 3711623348,
+    3482275674, 1999841343, 3940814982, 1381529571, 1089329165, 4166106984,
+    4029413537, 1217896388, 1512189994, 3802027855, 2135519222, 3354724499,
+    3577784189, 1845280792, 899665998, 2367928107, 2677414085, 657096608,
+    3137160985, 37822588, 284462994, 2823350519, 2601801789, 598228824,
+    824021174, 2309093331, 343330666, 2898962447, 3195996129, 113467524,
+    1587572946, 3860600759, 4104763481, 1276501820, 3519211397, 1769898208,
+    2076913422, 3279374443, 3406630818, 1941006535, 1627703081, 3652755532,
+    1148164341, 4241751952, 3999682686, 1457141531, 247015245, 3053797416,
+    2763059142, 470583459, 2178658330, 963106687, 735213713, 2473467892,
+    992409347, 2207944806, 2435792776, 697522413, 3024379988, 217581361,
+    508405983, 2800865210, 4271038444, 1177467017, 1419450215, 3962007554,
+    1911572667, 3377213406, 3690561584, 1665525589, 1799331996, 3548628985,
+    3241568279, 2039091058, 3831314379, 1558270126, 1314193216, 4142438437,
+    2928380019, 372764438, 75645176, 3158189981, 568925988, 2572515393,
+    2346768303, 861712586, 3982079547, 1441124702, 1196457648, 4293663189,
+    1648042348, 3666298377, 3358779879, 1888390786, 686661332, 2421291441,
+    2196002399, 978858298, 2811169155, 523464422, 226935048, 3040519789,
+    3175145892, 100435649, 390670639, 2952089162, 841119475, 2325614998,
+    2553003640, 546822429, 2029308235, 3225988654, 3539796416, 1782671013,
+    4153826844, 1328167289, 1570739863, 3844338162, 1298864389, 4124540512,
+    3882013070, 1608431339, 3255406162, 2058742071, 1744848601, 3501990332,
+    2296328682, 811816591, 584513889, 2590678532, 129869501, 3204563416,
+    2914283062, 352848211, 494030490, 2781751807, 3078325777, 264757620,
+    2450577869, 715964072, 941166918, 2158327331, 3636881013, 1618608400,
+    1926213374, 3396585883, 1470427426, 4011365959, 4255988137, 1158766284,
+    1984818694, 3471935843, 3695453837, 1693991400, 4180638033, 1100160564,
+    1395044826, 3952793279, 3019491049, 189112716, 435162722, 2706139399,
+    1016811966, 2217162459, 2526189877, 774831696, 643086745, 2666061564,
+    2354934034, 887166583, 2838900430, 294275499, 54519365, 3145957664,
+    3823145334, 1532818963, 1240029693, 4048895640, 1820460577, 3560857924,
+    3331051178, 2117577167, 3598663992, 1858283101, 2088143283, 3301633750,
+    1495127663, 3785470218, 4078182116, 1269332353, 332098007, 2876706482,
+    3116540252, 25085497, 2628386432, 605395429, 916469259, 2384220526,
+    2254837415, 1054503362, 745528876, 2496903497, 151290352, 2981684885,
+    2735556987, 464596510, 1137851976, 4218313005, 3923506883, 1365741990,
+    3434129695, 1946996346, 1723425172, 3724871409] ;
+PROCEDURE CrcRun (c: I64 ; RO b: SLICE OF BYTE) : I64 RAISES ValueRange ;
+
+PROCEDURE Crc32 (RO b: SLICE OF BYTE) : I64 RAISES ValueRange =
+BEGIN
+  RETURN Bits.Xor (CrcRun (4294967295, b), 4294967295)
+END Crc32 ;
+
+(* the raw state carried over `b': begun at all ones, finished by the
+   same, so that a member read in pieces is summed as a whole *)
+PROCEDURE CrcRun (c: I64 ; RO b: SLICE OF BYTE) : I64 RAISES ValueRange =
+VAR i, n : I64 ;
+BEGIN
+  n := LEN (b) ;
+  i := 0 ;
+  WHILE i + 4 <= n DO
+    c := Bits.Xor (c, I64 (b[i]) + 256 * I64 (b[i + 1]) + 65536 * I64 (b[i + 2])
+                      + 16777216 * I64 (b[i + 3])) ;
+    c := Bits.Xor (Bits.Xor (Crc3[Bits.And (c, 255)],
+                             Crc2[Bits.And (Bits.Shr (c, 8), 255)]),
+                   Bits.Xor (Crc1[Bits.And (Bits.Shr (c, 16), 255)],
+                             Crc0[Bits.Shr (c, 24)])) ;
+    i := i + 4
+  END ;
+  WHILE i < n DO
+    c := Bits.Xor (Crc0[Bits.And (Bits.Xor (c, I64 (b[i])), 255)],
+                   Bits.Shr (c, 8)) ;
+    i := i + 1
+  END ;
+  RETURN c
+END CrcRun ;
+
+(* ---- a member of an archive ---- *)
+
 PROCEDURE OpenMember (VAR pool: POOL ; KEPT a: PTR Archive ; i: I64 ;
                       block: I64) : PTR Member IN pool
   RAISES Error, Io.IOError, ValueRange, IndexError =
@@ -325,6 +1200,9 @@ BEGIN
     RAISE Error ('compression method not supported: ' + a.e[i].name)
   END ;
   IF block <= 0 THEN block := DefaultBlock END ;
+  (* the decoder is not begun with less than LowWater at hand, and the
+     buffer must hold that beside a read *)
+  IF block < 4 * LowWater THEN block := 4 * LowWater END ;
 
   (* the DATA offset comes from the LOCAL header, whose name and extra
      lengths differ from the central directory's -- a classic way to
@@ -335,93 +1213,568 @@ BEGIN
   END ;
   m := NEW (pool, Member) ;
   m.path := a.path ;
+  m.name := a.e[i].name ;
   m.stored := a.e[i].method = Stored ;
   m.dataOff := a.e[i].hdrOff + 30 + U (lh, 26, 2) + U (lh, 28, 2) ;
   m.cLeft := a.e[i].csize ;
-  m.inb := NEW (pool, BYTE, block) ;
-  m.inLen := 0 ;
-  m.inPos := 0 ;
   m.done := FALSE ;
-  m.open := FALSE ;
+  m.crc := 4294967295 ;
+  m.want := a.e[i].crc ;
+  m.made := 0 ;
+  m.usize := a.e[i].usize ;
   IF NOT m.stored THEN
-    m.zs := NEW (pool, BYTE, I64 (InflSize ())) ;
-    m.io2 := NEW (pool, I64, 2) ;
-    IF I64 (InflInit (ADR (m.zs))) # 0 THEN
-      RAISE Error ('zlib refused to start: ' + a.e[i].name)
-    END ;
-    m.open := TRUE
+    InflInit (pool, m.z) ;
+    m.z.inb := NEW (pool, BYTE, block)
   END ;
   RETURN m
 END OpenMember ;
 
+(* more compressed bytes into the decoder's buffer when it is running
+   low: what is left unread moves to the front and the file fills the
+   rest *)
 PROCEDURE Fill (VAR m: PTR Member)
   RAISES Io.IOError, ValueRange =
 VAR
   scratch : POOL ;
   got : SLICE OF BYTE ;
-  want, k : I64 ;
+  want, k, keep : I64 ;
 BEGIN
-  IF m.inPos < m.inLen OR m.cLeft = 0 THEN RETURN END ;
-  want := LEN (m.inb) ;
+  keep := m.z.inLen - m.z.inPos ;
+  IF keep >= LowWater OR m.cLeft = 0 THEN
+    m.z.last := m.cLeft = 0 ;
+    RETURN
+  END ;
+  FOR k := 0 TO keep - 1 DO m.z.inb[k] := m.z.inb[m.z.inPos + k] END ;
+  want := LEN (m.z.inb) - keep ;
   IF want > m.cLeft THEN want := m.cLeft END ;
   got := Io.ReadFileAt (scratch, m.path, m.dataOff, want) ;
-  FOR k := 0 TO LEN (got) - 1 DO m.inb[k] := got[k] END ;
-  m.inLen := LEN (got) ;
-  m.inPos := 0 ;
+  FOR k := 0 TO LEN (got) - 1 DO m.z.inb[keep + k] := got[k] END ;
+  m.z.inPos := 0 ;
+  m.z.inLen := keep + LEN (got) ;
   m.dataOff := m.dataOff + LEN (got) ;
-  m.cLeft := m.cLeft - LEN (got)
+  m.cLeft := m.cLeft - LEN (got) ;
+  (* a file shorter than its directory says is the end all the same *)
+  IF LEN (got) = 0 THEN m.cLeft := 0 END ;
+  m.z.last := m.cLeft = 0
 END Fill ;
+
+(* the member's end: what was read is held to the CRC-32 and the
+   length its directory states, as zipfile holds it (2026-10-03; until
+   then only gzip's trailer was checked).  A bit turned mid-stream
+   usually still DECODES, to other bytes; this is what says so. *)
+PROCEDURE Finished (VAR m: PTR Member) RAISES Error, ValueRange =
+BEGIN
+  m.done := TRUE ;
+  IF m.made # m.usize THEN
+    RAISE Error ('the length of ' + m.name + ' is not what its directory states')
+  END ;
+  IF Bits.Xor (m.crc, 4294967295) # m.want THEN
+    RAISE Error ('the CRC of ' + m.name + ' does not match its bytes')
+  END
+END Finished ;
 
 PROCEDURE Read (VAR m: PTR Member ; VAR dst: SLICE OF BYTE) : I64
   RAISES Error, Io.IOError, ValueRange =
 VAR
   scratch : POOL ;
   got : SLICE OF BYTE ;
-  want, k, rc : I64 ;
+  want, k, out, prev : I64 ;
 BEGIN
   IF m.done OR LEN (dst) = 0 THEN RETURN 0 END ;
 
   IF m.stored THEN
     want := LEN (dst) ;
     IF want > m.cLeft THEN want := m.cLeft END ;
-    IF want = 0 THEN m.done := TRUE ; RETURN 0 END ;
+    IF want = 0 THEN Finished (m) ; RETURN 0 END ;
     got := Io.ReadFileAt (scratch, m.path, m.dataOff, want) ;
     FOR k := 0 TO LEN (got) - 1 DO dst[k] := got[k] END ;
     m.dataOff := m.dataOff + LEN (got) ;
     m.cLeft := m.cLeft - LEN (got) ;
-    IF LEN (got) = 0 THEN m.done := TRUE END ;
+    m.crc := CrcRun (m.crc, got) ;
+    m.made := m.made + LEN (got) ;
+    IF LEN (got) = 0 THEN Finished (m) END ;
     RETURN LEN (got)
   END ;
 
+  out := 0 ;
   LOOP
     Fill (m) ;
-    m.io2[0] := 0 ;
-    m.io2[1] := 0 ;
-    rc := I64 (InflStep (ADR (m.zs),
-                         ADR (SLICE (m.inb, m.inPos, m.inLen - m.inPos)),
-                         C.SSizeT (m.inLen - m.inPos),
-                         ADR (dst), C.SSizeT (LEN (dst)),
-                         ADR (m.io2))) ;
-    IF rc < 0 THEN RAISE Error ('the deflate stream is corrupt') END ;
-    m.inPos := m.inPos + m.io2[0] ;
-    IF rc = 1 THEN m.done := TRUE END ;
-    IF m.io2[1] > 0 THEN RETURN m.io2[1] END ;
-    IF m.done THEN RETURN 0 END ;
-    (* no output and no end: only legitimate if there is more input
-       to give it.  Otherwise the member is truncated. *)
-    IF m.io2[0] = 0 AND m.inPos >= m.inLen AND m.cLeft = 0 THEN
-      RAISE Error ('the member ends mid-stream')
-    END
+    prev := out ;
+    out := Step (m.z, dst, out) ;
+    IF m.z.bad THEN RAISE Error ('the deflate stream is corrupt') END ;
+    IF m.z.short THEN RAISE Error ('the member ends mid-stream') END ;
+    m.crc := CrcRun (m.crc, SLICE (dst, prev, out - prev)) ;
+    m.made := m.made + out - prev ;
+    IF m.z.state = StDone THEN
+      Finished (m) ;
+      RETURN out
+    END ;
+    IF out = LEN (dst) THEN RETURN out END
   END
 END Read ;
 
 PROCEDURE Close (VAR m: PTR Member) =
 BEGIN
-  IF m.open THEN
-    InflEnd (ADR (m.zs)) ;
-    m.open := FALSE
-  END ;
   m.done := TRUE
 END Close ;
 
-END Zip .
+(* ---- gzip ---- *)
+
+(* where the header of the member at `at' ends and its deflate stream
+   begins (RFC 1952): ten fixed bytes, then whatever the flags say *)
+PROCEDURE GzHeader (RO data: SLICE OF BYTE ; at: I64) : I64
+  RAISES Error, IndexError =
+VAR
+  n, flags, p : I64 ;
+BEGIN
+  n := LEN (data) ;
+  IF n - at < 18 THEN RAISE Error ('the gzip stream stops inside a header') END ;
+  IF I64 (data[at]) # 31 OR I64 (data[at + 1]) # 139 THEN
+    IF at = 0 THEN RAISE Error ('not gzip: it does not begin 1F 8B') END ;
+    RAISE Error ('bytes after the last gzip member')
+  END ;
+  IF I64 (data[at + 2]) # 8 THEN
+    RAISE Error ('a gzip method other than deflate')
+  END ;
+  flags := I64 (data[at + 3]) ;
+  p := at + 10 ;
+  IF (flags DIV 4) MOD 2 = 1 THEN              (* FEXTRA: a length, and that many *)
+    p := p + 2 + U (data, p, 2)
+  END ;
+  IF (flags DIV 8) MOD 2 = 1 THEN              (* FNAME: to a zero byte *)
+    WHILE p < n AND I64 (data[p]) # 0 DO p := p + 1 END ;
+    p := p + 1
+  END ;
+  IF (flags DIV 16) MOD 2 = 1 THEN             (* FCOMMENT: likewise *)
+    WHILE p < n AND I64 (data[p]) # 0 DO p := p + 1 END ;
+    p := p + 1
+  END ;
+  IF (flags DIV 2) MOD 2 = 1 THEN p := p + 2 END ;   (* FHCRC *)
+  IF p > n THEN RAISE Error ('the gzip stream stops inside a header') END ;
+  RETURN p
+END GzHeader ;
+
+PROCEDURE GunzipBytes (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  z : Infl ;
+  first, buf, grown, out : SLICE OF BYTE ;
+  n, at, total, start, room, k, crc, size : I64 ;
+  direct : BOOL ;
+BEGIN
+  n := LEN (data) ;
+  (* the last four bytes are the length of the last member: exact for
+     a file of one, which is nearly every file, and then the buffer
+     this begins with IS the answer -- so it is made in the caller's
+     pool.  Deflate cannot expand by more than 1032, and a length
+     that claims more is not believed.
+
+     ONE BYTE MORE than the length: the decoder stops at a full
+     buffer before it has read the symbol that ends the block, and a
+     buffer of exactly the length was therefore full and not done --
+     it grew, and the answer was copied twice (seen in a profile,
+     2026-10-02: two byte loops, a quarter of the run). *)
+  room := 4096 ;
+  IF n >= 18 THEN
+    size := U (data, n - 4, 4) ;
+    IF size >= room AND size <= 1032 * n THEN room := size + 1 END
+  END ;
+  first := NEW (pool, BYTE, room) ;
+  buf := first ;
+  direct := TRUE ;
+  InflInit (scratch, z) ;
+  z.inb := data ;
+  z.inLen := n ;
+  z.last := TRUE ;
+  z.whole := TRUE ;
+  at := 0 ;
+  total := 0 ;
+  WHILE at < n DO
+    at := GzHeader (data, at) ;
+    start := total ;
+    InflReset (z) ;
+    z.inPos := at ;
+    LOOP
+      total := Step (z, buf, total) ;
+      IF z.bad THEN RAISE Error ('the gzip stream is corrupt') END ;
+      IF z.short THEN RAISE Error ('the gzip stream stops inside a member') END ;
+      IF z.state = StDone THEN EXIT END ;
+      (* neither done nor wrong: the buffer is full, and grows *)
+      IF total < LEN (buf) THEN RAISE Error ('the gzip stream is corrupt') END ;
+      grown := NEW (scratch, BYTE, 2 * LEN (buf)) ;
+      FOR k := 0 TO total - 1 DO grown[k] := buf[k] END ;
+      buf := grown ;
+      direct := FALSE
+    END ;
+    InflFinish (z) ;
+    at := z.inPos ;
+    IF n - at < 8 THEN RAISE Error ('the gzip stream stops before its trailer') END ;
+    crc := U (data, at, 4) ;
+    size := U (data, at + 4, 4) ;
+    at := at + 8 ;
+    IF Crc32 (SLICE (buf, start, total - start)) # crc THEN
+      RAISE Error ('the gzip CRC does not match the bytes')
+    END ;
+    IF (total - start) MOD 4294967296 # size THEN
+      RAISE Error ('the gzip length does not match the bytes')
+    END
+  END ;
+  IF direct THEN RETURN SLICE (first, 0, total) END ;
+  (* several members, so that the last one's length was not the
+     whole: a copy of the right size *)
+  out := NEW (pool, BYTE, total) ;
+  FOR k := 0 TO total - 1 DO out[k] := buf[k] END ;
+  RETURN out
+END GunzipBytes ;
+
+PROCEDURE Gunzip (VAR pool: POOL ; RO path: STR) : SLICE OF BYTE
+  RAISES Error, Io.IOError, ValueRange =
+VAR scratch : POOL ;
+BEGIN
+  RETURN GunzipBytes (pool, Io.ReadFileBytes (scratch, path))
+END Gunzip ;
+
+(* ---- compressing ----------------------------------------------------
+
+   The stream is ONE block in the fixed code.  Earlier occurrences are
+   found through a table of the last place each three-byte beginning
+   was seen and a chain from each place to the one before it with the
+   same beginning; MaxChain of them are tried, nearest first, and the
+   longest match wins.  Fixed code only, no lazy matching: a third of
+   what zlib does, for the data this is for. *)
+
+CONST
+  HashSize = 32768 ;
+  MaxChain = 24 ;
+  MinMatch = 3 ;
+  MaxMatch = 258 ;
+
+TYPE
+  (* the bytes written and the bits not yet a byte *)
+  Sink = RECORD
+    buf : SLICE OF BYTE ;
+    n : I64 ;
+    hold, bits : I64 ;
+  END ;
+
+(* the low n bits of v, the lowest first *)
+PROCEDURE PutBits (VAR o: Sink ; v, n: I64) RAISES ValueRange =
+BEGIN
+  o.hold := Bits.Or (o.hold, Bits.Shl (v, o.bits)) ;
+  o.bits := o.bits + n ;
+  WHILE o.bits >= 8 DO
+    o.buf[o.n] := BYTE (Bits.And (o.hold, 255)) ;
+    o.n := o.n + 1 ;
+    o.hold := Bits.Shr (o.hold, 8) ;
+    o.bits := o.bits - 8
+  END
+END PutBits ;
+
+(* a Huffman code of n bits: its HIGHEST bit goes out first *)
+PROCEDURE PutCode (VAR o: Sink ; code, n: I64) RAISES ValueRange =
+VAR r, i : I64 ;
+BEGIN
+  r := 0 ;
+  FOR i := 0 TO n - 1 DO
+    r := r * 2 + Bits.And (Bits.Shr (code, i), 1)
+  END ;
+  PutBits (o, r, n)
+END PutCode ;
+
+(* a literal, the end of the block, or a length symbol, in the fixed
+   code *)
+PROCEDURE PutSym (VAR o: Sink ; sym: I64) RAISES ValueRange =
+BEGIN
+  IF sym < 144 THEN PutCode (o, 48 + sym, 8)
+  ELSIF sym < 256 THEN PutCode (o, 400 + sym - 144, 9)
+  ELSIF sym < 280 THEN PutCode (o, sym - 256, 7)
+  ELSE PutCode (o, 192 + sym - 280, 8)
+  END
+END PutSym ;
+
+(* a copy of len bytes from dist back: the length's symbol and extra
+   bits, then the distance's *)
+PROCEDURE PutMatch (VAR o: Sink ; len, dist: I64) RAISES ValueRange =
+VAR s, d : I64 ;
+BEGIN
+  s := 28 ;
+  WHILE LBase[s] > len DO s := s - 1 END ;
+  PutSym (o, 257 + s) ;
+  PutBits (o, len - LBase[s], LExt[s]) ;
+  d := 29 ;
+  WHILE DBase[d] > dist DO d := d - 1 END ;
+  PutCode (o, d, 5) ;
+  PutBits (o, dist - DBase[d], DExt[d])
+END PutMatch ;
+
+PROCEDURE Hash3 (RO b: SLICE OF BYTE ; i: I64) : I64 RAISES ValueRange =
+BEGIN
+  RETURN Bits.And (Bits.Xor (Bits.Xor (Bits.Shl (I64 (b[i]), 10),
+                                        Bits.Shl (I64 (b[i + 1]), 5)),
+                             I64 (b[i + 2])),
+                   HashSize - 1)
+END Hash3 ;
+
+(* the stream in the fixed code, into scratch storage of the size it
+   can at most need: nine bits a byte and the block's two ends *)
+PROCEDURE FixedBlock (VAR pool: POOL ; RO data: SLICE OF BYTE ;
+                      VAR o: Sink)
+  RAISES ValueRange =
+VAR
+  head, prev : SLICE OF I64 ;
+  n, i, h, cand, tries, len, best, bestAt, limit, k, stop : I64 ;
+BEGIN
+  n := LEN (data) ;
+  o.buf := NEW (pool, BYTE, n + n DIV 8 + 16) ;
+  o.n := 0 ;
+  o.hold := 0 ;
+  o.bits := 0 ;
+  (* a place is kept as itself plus one, so that zero is "none" *)
+  head := NEW (pool, I64, HashSize) ;
+  prev := NEW (pool, I64, WinSize) ;
+  PutBits (o, 1, 1) ;                   (* the last block *)
+  PutBits (o, 1, 2) ;                   (* in the fixed code *)
+  i := 0 ;
+  WHILE i < n DO
+    best := 0 ;
+    bestAt := 0 ;
+    IF i + MinMatch <= n THEN
+      h := Hash3 (data, i) ;
+      limit := n - i ;
+      IF limit > MaxMatch THEN limit := MaxMatch END ;
+      cand := head[h] - 1 ;
+      tries := 0 ;
+      WHILE cand >= 0 AND i - cand <= WinSize AND tries < MaxChain DO
+        len := 0 ;
+        WHILE len < limit AND data[cand + len] = data[i + len] DO
+          len := len + 1
+        END ;
+        IF len > best THEN
+          best := len ;
+          bestAt := cand
+        END ;
+        IF best >= limit THEN
+          tries := MaxChain
+        ELSE
+          tries := tries + 1 ;
+          k := prev[Bits.And (cand, WinMask)] - 1 ;
+          (* a chain runs backwards; an entry that does not is one the
+             ring has since given to a later place *)
+          IF k >= cand THEN cand := -1 ELSE cand := k END
+        END
+      END
+    END ;
+    IF best >= MinMatch THEN
+      PutMatch (o, best, i - bestAt) ;
+      stop := i + best
+    ELSE
+      PutSym (o, I64 (data[i])) ;
+      stop := i + 1
+    END ;
+    (* every place passed is entered, so that later bytes find it *)
+    WHILE i < stop DO
+      IF i + MinMatch <= n THEN
+        h := Hash3 (data, i) ;
+        prev[Bits.And (i, WinMask)] := head[h] ;
+        head[h] := i + 1
+      END ;
+      i := i + 1
+    END
+  END ;
+  PutSym (o, 256) ;
+  IF o.bits > 0 THEN PutBits (o, 0, 8 - o.bits) END
+END FixedBlock ;
+
+(* the same bytes as stored blocks of at most 65535: five bytes of
+   header each *)
+PROCEDURE StoredBlocks (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES ValueRange =
+VAR
+  out : SLICE OF BYTE ;
+  n, at, len, w, k, last : I64 ;
+BEGIN
+  n := LEN (data) ;
+  out := NEW (pool, BYTE, n + 5 * (n DIV 65535 + 1)) ;
+  at := 0 ;
+  w := 0 ;
+  LOOP
+    len := n - at ;
+    IF len > 65535 THEN len := 65535 END ;
+    IF at + len = n THEN last := 1 ELSE last := 0 END ;
+    out[w] := BYTE (last) ;
+    out[w + 1] := BYTE (len MOD 256) ;
+    out[w + 2] := BYTE (len DIV 256) ;
+    out[w + 3] := BYTE (255 - len MOD 256) ;
+    out[w + 4] := BYTE (255 - len DIV 256) ;
+    w := w + 5 ;
+    FOR k := 0 TO len - 1 DO out[w + k] := data[at + k] END ;
+    w := w + len ;
+    at := at + len ;
+    IF last = 1 THEN EXIT END
+  END ;
+  RETURN SLICE (out, 0, w)
+END StoredBlocks ;
+
+(* the stream with `front` bytes of room before it and `back` after,
+   for a wrapping to fill; the stream begins at out[front] *)
+PROCEDURE Packed (VAR pool: POOL ; RO data: SLICE OF BYTE ;
+                  front, back: I64) : SLICE OF BYTE
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  o : Sink ;
+  body, out : SLICE OF BYTE ;
+  k : I64 ;
+BEGIN
+  FixedBlock (scratch, data, o) ;
+  body := SLICE (o.buf, 0, o.n) ;
+  IF o.n > LEN (data) + 5 * (LEN (data) DIV 65535 + 1) THEN
+    body := StoredBlocks (scratch, data)
+  END ;
+  out := NEW (pool, BYTE, front + LEN (body) + back) ;
+  FOR k := 0 TO LEN (body) - 1 DO out[front + k] := body[k] END ;
+  RETURN out
+END Packed ;
+
+PROCEDURE Deflate (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES ValueRange =
+BEGIN
+  RETURN Packed (pool, data, 0, 0)
+END Deflate ;
+
+PROCEDURE Adler32 (RO b: SLICE OF BYTE) : I64 =
+VAR a, s, i, stop, n : I64 ;
+BEGIN
+  a := 1 ;
+  s := 0 ;
+  n := LEN (b) ;
+  i := 0 ;
+  WHILE i < n DO
+    (* the sums are brought back under 65521 every 5552 bytes: zlib's
+       number, the most a 32-bit sum can take.  These are 64 bits and
+       could take far more; it is only how often the remainder is
+       taken *)
+    stop := i + 5552 ;
+    IF stop > n THEN stop := n END ;
+    WHILE i < stop DO
+      a := a + I64 (b[i]) ;
+      s := s + a ;
+      i := i + 1
+    END ;
+    a := a MOD 65521 ;
+    s := s MOD 65521
+  END ;
+  RETURN s * 65536 + a
+END Adler32 ;
+
+(* v as n bytes at out[at], the lowest first or the highest first *)
+PROCEDURE PutLow (VAR out: SLICE OF BYTE ; at, v, n: I64) RAISES ValueRange =
+VAR k : I64 ;
+BEGIN
+  FOR k := 0 TO n - 1 DO
+    out[at + k] := BYTE (v MOD 256) ;
+    v := v DIV 256
+  END
+END PutLow ;
+
+PROCEDURE PutHigh (VAR out: SLICE OF BYTE ; at, v, n: I64) RAISES ValueRange =
+VAR k : I64 ;
+BEGIN
+  FOR k := n - 1 TO 0 BY -1 DO
+    out[at + k] := BYTE (v MOD 256) ;
+    v := v DIV 256
+  END
+END PutHigh ;
+
+PROCEDURE Compress (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES ValueRange =
+VAR out : SLICE OF BYTE ;
+BEGIN
+  out := Packed (pool, data, 2, 4) ;
+  (* deflate with a 32 K window; the second byte makes the two a
+     multiple of 31, and says "fastest" of the level *)
+  out[0] := BYTE (120) ;
+  out[1] := BYTE (1) ;
+  PutHigh (out, LEN (out) - 4, Adler32 (data), 4) ;
+  RETURN out
+END Compress ;
+
+PROCEDURE Decompress (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  z : Infl ;
+  buf, grown, out : SLICE OF BYTE ;
+  n, total, k, at : I64 ;
+BEGIN
+  n := LEN (data) ;
+  IF n < 6 THEN RAISE Error ('the zlib stream stops inside its header') END ;
+  IF I64 (data[0]) MOD 16 # 8 OR
+     (I64 (data[0]) * 256 + I64 (data[1])) MOD 31 # 0 THEN
+    RAISE Error ('not zlib: its first two bytes are not a zlib header')
+  END ;
+  IF (I64 (data[1]) DIV 32) MOD 2 = 1 THEN
+    RAISE Error ('the zlib stream asks for a preset dictionary')
+  END ;
+  (* the whole of the answer stays in one buffer, as in GunzipBytes,
+     and the buffer grows when it is full *)
+  buf := NEW (scratch, BYTE, 4 * n + 4096) ;
+  InflInit (scratch, z) ;
+  z.inb := data ;
+  z.inLen := n ;
+  z.last := TRUE ;
+  z.whole := TRUE ;
+  InflReset (z) ;
+  z.inPos := 2 ;
+  total := 0 ;
+  LOOP
+    total := Step (z, buf, total) ;
+    IF z.bad THEN RAISE Error ('the zlib stream is corrupt') END ;
+    IF z.short THEN RAISE Error ('the zlib stream stops inside its data') END ;
+    IF z.state = StDone THEN EXIT END ;
+    IF total < LEN (buf) THEN RAISE Error ('the zlib stream is corrupt') END ;
+    grown := NEW (scratch, BYTE, 2 * LEN (buf)) ;
+    FOR k := 0 TO total - 1 DO grown[k] := buf[k] END ;
+    buf := grown
+  END ;
+  InflFinish (z) ;
+  at := z.inPos ;
+  IF n - at < 4 THEN
+    RAISE Error ('the zlib stream stops before its checksum')
+  END ;
+  out := NEW (pool, BYTE, total) ;
+  FOR k := 0 TO total - 1 DO out[k] := buf[k] END ;
+  IF Adler32 (out) # ((I64 (data[at]) * 256 + I64 (data[at + 1])) * 256
+                      + I64 (data[at + 2])) * 256 + I64 (data[at + 3]) THEN
+    RAISE Error ('the zlib checksum does not match the bytes')
+  END ;
+  IF at + 4 # n THEN RAISE Error ('bytes after the zlib stream') END ;
+  RETURN out
+END Decompress ;
+
+PROCEDURE Gzip (VAR pool: POOL ; RO data: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES ValueRange =
+VAR
+  out : SLICE OF BYTE ;
+  crc : I64 ;
+BEGIN
+  out := Packed (pool, data, 10, 8) ;
+  out[0] := BYTE (31) ;
+  out[1] := BYTE (139) ;
+  out[2] := BYTE (8) ;                  (* deflate *)
+  (* no flags, no time, no extra flags: bytes 3 to 8 stay zero *)
+  out[9] := BYTE (255) ;                (* written on no system in particular *)
+  crc := Crc32 (data) ;
+  PutLow (out, LEN (out) - 8, crc, 4) ;
+  PutLow (out, LEN (out) - 4, LEN (data) MOD 4294967296, 4) ;
+  RETURN out
+END Gzip ;
+
+END Zip.

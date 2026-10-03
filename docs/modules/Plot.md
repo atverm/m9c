@@ -173,6 +173,67 @@ pin the next RenderHeat's colour range to [lo, hi], overriding
 both the data min/max and symmetric; ClearFigure clears it.  For
 a rounded, stable scale that a caller controls.
 
+### CONST TaylorMax
+
+the outer arc: a larger ratio is not on
+the diagram
+
+### TaylorXY (ratio, corr: F64 ; VAR x, y: F64) : BOOL RAISES ValueRange
+
+where RenderTaylor puts a point, in the units of its 720 by 720
+drawing (y downwards, as SVG counts).  FALSE, and x and y left
+alone, for a point that is not on the diagram: a NaN, a
+correlation outside 0 .. 1, a ratio below 0 or above TaylorMax.
+Exported so that the geometry can be held to a number: the
+distance to TaylorXY (1, 1), divided by the distance from
+TaylorXY (0, 1) to it, is the RMS difference.
+
+### RenderTaylor (RO title: STR ; RO ratio: GRID 2 OF F64 ; RO corr: GRID 2 OF F64 ; RO cases: SLICE OF STR ; RO names: SLICE OF STR) : STR RAISES ValueRange, Faults.SizeError
+
+the diagram as SVG.
+
+  ratio, corr -- one ROW a case, one COLUMN a variable
+  cases       -- a name per row, for the legend; each case has
+                 a colour (red, blue, then four more, then round
+                 again)
+  names       -- a name per column, listed at the left as
+                 `3 - Prc_GPCP`; the point carries the number
+
+A point TaylorXY refuses is not drawn, and the figure says how
+many were not.  SizeError (got, want) when the two grids differ
+in shape or the names do not count their rows and columns.
+
+### CONST ChartSlots
+
+station slots s1 .. s6
+
+### TYPE Trace
+
+the legend's text
+
+### TYPE ChartSpec
+
+pixels
+
+### Chart (RO s: ChartSpec) : STR RAISES ValueRange
+
+the document.  A spec with nothing in its window still answers
+a figure: the axes, and a line saying there is no data.
+
+### MonthName (m: I64) : STR
+
+'Jan' .. 'Dec' for 1 .. 12
+
+### Panels (cols, rows: I64 ; RO figures: SLICE OF STR ; RO title: STR ; width, height: I64) : STR RAISES Faults.SizeError, Faults.BadArg, ValueRange
+
+the document, width by height points, `title` across the top
+when it is not empty.  The figures fill the cells row by row,
+from the top left; fewer than cols * rows leaves the last cells
+empty, more is Faults.SizeError (got, want).  A figure must
+begin with <svg and say its size in a viewBox (every figure
+of this module does); Faults.BadArg otherwise, and for a grid
+or a size that is not positive.
+
 ### FmtG (dst: C.MutPtr ; v: C.Double) : C.Int [REENTRANT]
 
 sprintf "%.4g" -- the oracle's exact formatter, shared

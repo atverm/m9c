@@ -1,0 +1,18 @@
+MODULE FailTest ;
+
+(* The gate's own control: a test that must FAIL.  m9test.sh builds
+   and runs it and requires exit status 1 and the line `FAILED 1 of
+   2`; a gate that reads PASS off everything would read it off this
+   too.  Not in corpus/, so it is not one of the tests the gate
+   counts. *)
+
+IMPORT Check ;
+IMPORT Io ;
+
+VAR t : Check.T ;
+
+BEGIN
+  Check.EqI64 (t, 'two and two', 2 + 2, 4) ;
+  Check.EqI64 (t, 'two and two, wanted wrong', 2 + 2, 5) ;
+  Io.Halt (Check.Done (t, 'Fail'))
+END FailTest.

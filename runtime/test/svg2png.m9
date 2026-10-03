@@ -1,0 +1,49 @@
+MODULE svg2png ;
+
+(* svg2png IN.svg OUT.png [DPI]
+     -> the figure rasterised by Png.FromSvg at DPI dots an inch (72
+        when not given) and written to OUT.png
+
+   A program for runtime/test/deflate.sh and for anybody with an SVG
+   from Plot: `svg2png figure.svg figure.png 300'. *)
+
+IMPORT Faults ;
+IMPORT Io ;
+IMPORT Png ;
+
+VAR
+  pool : POOL ;
+  svg, arg : STR ;
+  dpi : F64 ;
+  i, v : I64 ;
+  png : SLICE OF BYTE ;
+
+BEGIN
+  IF Io.ArgCount () < 3 THEN
+    Io.ErrLine ('usage: svg2png IN.svg OUT.png [DPI]') ;
+    Io.Halt (2)
+  END ;
+  dpi := 72.0 ;
+  IF Io.ArgCount () > 3 THEN
+    arg := Io.Arg (pool, 3) ;
+    v := 0 ;
+    FOR i := 0 TO LEN (arg) - 1 DO
+      IF arg[i] >= '0' AND arg[i] <= '9' THEN v := v * 10 + (I64 (arg[i]) - 48) END
+    END ;
+    dpi := F64 (v)
+  END ;
+  svg := Io.ReadFile (pool, Io.Arg (pool, 1)) ;
+  png := Png.FromSvg (pool, svg, dpi) ;
+  Io.WriteFileBytes (Io.Arg (pool, 2), png)
+EXCEPT
+| Io.IOError (p) :
+    arg := p ;
+    Io.ErrLine ('io: ' + arg) ;
+    Io.Halt (1)
+| Faults.SizeError (got, want) : Io.ErrLine ('size') ; Io.Halt (1)
+| Faults.BadArg (what) :
+    arg := what ;
+    Io.ErrLine (arg) ;
+    Io.Halt (1)
+| ValueRange : Io.ErrLine ('value range') ; Io.Halt (1)
+END svg2png.

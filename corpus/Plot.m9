@@ -10,6 +10,8 @@ STATEFUL DEFINITION MODULE Plot ;
    business (M9 has no file module yet, and the OpenApi precedent
    says a document is a value).                                      *)
 
+IMPORT Faults ;
+  (* for Faults.SizeError, which RenderTaylor raises *)
 IMPORT Mat ;
 
 TYPE
@@ -160,6 +162,165 @@ PROCEDURE SetHeatRange (lo: F64 ; hi: F64) ;
      both the data min/max and symmetric; ClearFigure clears it.  For
      a rounded, stable scale that a caller controls.                 *)
 
+(* ---- the Taylor diagram (2026-10-02; Alex: "we will also need
+   taylor plots") ----------------------------------------------------
+
+   One figure for how well several fields match their references
+   (Taylor 2001, as NCL and the model-evaluation literature draw it).
+   A point is one variable of one case, placed by two numbers:
+
+     ratio -- the standard deviation of the model's field divided by
+              that of the reference: the distance from the origin
+     corr  -- their correlation: the angle, 1 on the horizontal axis
+              and 0 on the vertical
+
+   so the reference itself is the point REF at (1, 0), and the
+   DISTANCE from a point to REF is the centred root-mean-square
+   difference between the two fields, in units of the reference's
+   standard deviation -- which is why the figure works, and what the
+   solid arcs around REF measure at 0.25, 0.50 and 0.75.  The dashed
+   arcs are ratios of 0.5, 1 and 1.5.
+
+   The statistics are the caller's, two lines with Stats: the figure
+   draws what it is given.  This part of Plot keeps NO state:
+   ClearFigure and the Set procedures do not touch it.              *)
+
+CONST
+  TaylorMax = 1.65 ;      (* the outer arc: a larger ratio is not on
+                             the diagram *)
+
+PROCEDURE TaylorXY (ratio, corr: F64 ; VAR x, y: F64) : BOOL
+  RAISES ValueRange ;
+  (* where RenderTaylor puts a point, in the units of its 720 by 720
+     drawing (y downwards, as SVG counts).  FALSE, and x and y left
+     alone, for a point that is not on the diagram: a NaN, a
+     correlation outside 0 .. 1, a ratio below 0 or above TaylorMax.
+     Exported so that the geometry can be held to a number: the
+     distance to TaylorXY (1, 1), divided by the distance from
+     TaylorXY (0, 1) to it, is the RMS difference. *)
+
+PROCEDURE RenderTaylor (RO title: STR ;
+                        RO ratio: GRID 2 OF F64 ;
+                        RO corr: GRID 2 OF F64 ;
+                        RO cases: SLICE OF STR ;
+                        RO names: SLICE OF STR) : STR
+  RAISES ValueRange, Faults.SizeError ;
+  (* the diagram as SVG.
+
+       ratio, corr -- one ROW a case, one COLUMN a variable
+       cases       -- a name per row, for the legend; each case has
+                      a colour (red, blue, then four more, then round
+                      again)
+       names       -- a name per column, listed at the left as
+                      `3 - Prc_GPCP`; the point carries the number
+
+     A point TaylorXY refuses is not drawn, and the figure says how
+     many were not.  SizeError (got, want) when the two grids differ
+     in shape or the names do not count their rows and columns. *)
+
+(* ---- a time-series chart (2026-10-03; Alex: "lift chart into
+   plot" -- m9curve's Chart.m9, which drew the ICOS Curve) ----------
+
+   One figure: a time axis in years, months or days as the window
+   asks, a value axis with a hairline grid, a shaded band in two
+   depths, lines, a cloud of small dots, a legend that wraps, a label
+   at the end of a line when there is room for every one, and an
+   invisible hover layer a page's script can read.  Everything about
+   the DATA is in the ChartSpec; everything about the LOOK is here.
+
+   WHAT CHANGED IN THE LIFT.  m9curve's figure styled itself by a
+   stylesheet in the document, with CSS variables for a light and a
+   dark surface; this one writes the light surface's colours as
+   attributes, so that Png.FromSvg draws it and a reader without a
+   browser sees the same picture.  The class names stay on the
+   elements (a page's script finds the hover layer by them) and do
+   nothing by themselves.  Times are DAYS since 1970-01-01
+   (Time.DaysFromCivil), as there.
+
+   COLOUR IS A KEY.  A series names a slot -- 'net', 's1' .. 's6',
+   'ref', 'gray' -- chosen in m9curve by measurement: ICOS's cyan for
+   the network, six hues for stations whose neighbours stay apart for
+   a reader with a colour-vision deficiency, ink for references.  A
+   key this does not know is drawn in ink.                           *)
+
+CONST
+  ChartSlots = 6 ;             (* station slots s1 .. s6 *)
+
+TYPE
+  Trace = RECORD
+    label : STR ;              (* the legend's text *)
+    short : STR ;              (* the label at the line's end; empty
+                                  for none *)
+    key   : STR ;              (* the colour slot *)
+    x, y  : SLICE OF F64 ;     (* days since the epoch, and values;
+                                  NaN lifts the pen *)
+    width : F64 ;              (* pixels; 0 draws the markers alone *)
+    dash  : STR ;              (* an SVG dash pattern, empty = solid *)
+    marks : BOOL ;             (* a marker on every point *)
+  END ;
+
+  ChartSpec = RECORD
+    width, height : I64 ;      (* pixels *)
+    title  : STR ;
+    ylabel : STR ;
+    x0, x1 : F64 ;             (* the window, days since the epoch *)
+
+    band   : BOOL ;
+    bandKey : STR ;
+    bandX  : SLICE OF F64 ;
+    outerLo, outerHi : SLICE OF F64 ;
+    innerLo, innerHi : SLICE OF F64 ;
+    outerLabel, innerLabel : STR ;
+
+    lines  : SLICE OF Trace ;   (* drawn in order: the last is on top *)
+
+    dots   : BOOL ;
+    dotsKey : STR ;
+    dotsLabel : STR ;
+    dotsX, dotsY : SLICE OF F64 ;
+
+    (* the hover table: for each position a heading and one cell
+       for each name, already formatted; an empty cell is left out
+       of the readout.  Leave hoverX empty for no layer. *)
+    hoverX : SLICE OF F64 ;
+    hoverHead : SLICE OF STR ;
+    hoverNames : SLICE OF STR ;
+    hoverKeys : SLICE OF STR ;
+    hoverVals : SLICE OF STR ;
+    unit : STR ;
+  END ;
+
+PROCEDURE Chart (RO s: ChartSpec) : STR
+  RAISES ValueRange ;
+  (* the document.  A spec with nothing in its window still answers
+     a figure: the axes, and a line saying there is no data. *)
+
+PROCEDURE MonthName (m: I64) : STR ;
+  (* 'Jan' .. 'Dec' for 1 .. 12 *)
+
+(* ---- several figures in one document: subplots (2026-10-03) ----
+
+   Figures are composed AFTER they are drawn: each is the document
+   Render, RenderHeat, RenderTaylor or Chart answered, and Panels
+   puts them in a grid of cells, each scaled to its cell -- its own
+   proportions kept, centred -- inside a group with a translate and
+   a scale, which browsers and Png.FromSvg both apply.  So a panel is
+   any figure, and a figure needs to know nothing about panels.
+
+   The ids inside a figure (a chart's clip path) would collide
+   between panels; each panel's are given a prefix of their own. *)
+
+PROCEDURE Panels (cols, rows: I64 ; RO figures: SLICE OF STR ;
+                  RO title: STR ; width, height: I64) : STR
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange ;
+  (* the document, width by height points, `title` across the top
+     when it is not empty.  The figures fill the cells row by row,
+     from the top left; fewer than cols * rows leaves the last cells
+     empty, more is Faults.SizeError (got, want).  A figure must
+     begin with <svg and say its size in a viewBox (every figure
+     of this module does); Faults.BadArg otherwise, and for a grid
+     or a size that is not positive. *)
+
 END Plot.
 
 
@@ -178,7 +339,11 @@ UNSAFE IMPLEMENTATION MODULE Plot ;
 
 FROM cfmt IMPORT FmtG ;
 IMPORT Mat ;
+IMPORT Math ;
 IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Text ;
+IMPORT Time ;
 
 VAR
   heatLo, heatHi : F64 ;
@@ -1166,5 +1331,1258 @@ BEGIN
   DynStr.Append (d, '</svg>') ;
   RETURN DynStr.View (d)
 END RenderHeat ;
+
+(* ---- the Taylor diagram -------------------------------------------
+
+   A quarter circle with its centre at (TOx, TOy) and TScale pixels to
+   one unit of ratio.  No trigonometry is computed: a correlation c
+   is the direction (c, sqrt (1 - c * c)), an arc is named by its two
+   ends, and the angles the labels are turned by are a table --
+   square roots are the same on every machine, cosines are the
+   machine's, and tools/plotgoldm9.py holds this figure to its own
+   drawing of it byte for byte. *)
+
+CONST
+  TOx = 95.0 ;
+  TOy = 650.0 ;
+  TScale = 340.0 ;
+  StdTick = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5] ;
+  XLabel = ['0.25', '0.50', '0.75', 'REF', '1.25', '1.50'] ;
+  YLabel = ['0.25', '0.50', '0.75', '1.00', '1.25', '1.50'] ;
+  CorrMajor = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95,
+               0.99, 1.0] ;
+  (* the angle of each, in degrees: arccos, to a hundredth *)
+  CorrAngle = [90.0, 84.26, 78.46, 72.54, 66.42, 60.0, 53.13, 45.57,
+               36.87, 25.84, 18.19, 8.11, 0.0] ;
+  CorrLabel = ['0.0', '0.1', '0.2', '0.3', '0.4', '0.5', '0.6', '0.7',
+               '0.8', '0.9', '0.95', '0.99', '1.0'] ;
+  CorrMinor = [0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85,
+               0.91, 0.92, 0.93, 0.94, 0.96, 0.97, 0.98] ;
+  (* the correlations a dotted ray is drawn at, and the RMS
+     differences an arc around REF is *)
+  RayAt = [0.6, 0.9] ;
+  RmsAt = [0.25, 0.5, 0.75] ;
+  CaseColor = ['#ff0000', '#0000ff', '#2ca02c', '#ff7f0e', '#9467bd',
+               '#8c564b'] ;
+  Thin = 'stroke="#555" stroke-width="0.8"' ;
+  Ink = 'stroke="#000" stroke-width="1.2"' ;
+
+PROCEDURE TaylorXY (ratio, corr: F64 ; VAR x, y: F64) : BOOL
+  RAISES ValueRange =
+VAR up : F64 ;
+BEGIN
+  (* written so that a NaN, which is in no order with anything, is
+     refused with the rest *)
+  IF NOT (ratio >= 0.0 AND ratio <= TaylorMax AND corr >= 0.0 AND
+          corr <= 1.0) THEN
+    RETURN FALSE
+  END ;
+  up := Math.Sqrt (1.0 - corr * corr) ;
+  x := TOx + TScale * ratio * corr ;
+  y := TOy - TScale * ratio * up ;
+  RETURN TRUE
+END TaylorXY ;
+
+(* text as SVG takes it: the three characters that are markup *)
+PROCEDURE Esc (VAR d: PTR DynStr.DString ; RO t: STR) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (t) - 1 DO
+    IF t[i] = '&' THEN DynStr.Append (d, '&amp;')
+    ELSIF t[i] = '<' THEN DynStr.Append (d, '&lt;')
+    ELSIF t[i] = '>' THEN DynStr.Append (d, '&gt;')
+    ELSE DynStr.AppendChar (d, t[i])
+    END
+  END
+END Esc ;
+
+PROCEDURE TLine (VAR d: PTR DynStr.DString ; x1, y1, x2, y2: F64 ;
+                 RO style: STR)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (d, '<line x1="') ; EmitR (d, x1) ;
+  DynStr.Append (d, '" y1="') ; EmitR (d, y1) ;
+  DynStr.Append (d, '" x2="') ; EmitR (d, x2) ;
+  DynStr.Append (d, '" y2="') ; EmitR (d, y2) ;
+  DynStr.Append (d, '" ') ;
+  DynStr.Append (d, style) ;
+  DynStr.Append (d, '/>')
+END TLine ;
+
+(* the arc of radius r from one point to another, the short way and
+   anticlockwise as the page shows it *)
+PROCEDURE TArc (VAR d: PTR DynStr.DString ; x1, y1, r, x2, y2: F64 ;
+                RO style: STR)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (d, '<path d="M ') ; EmitR (d, x1) ;
+  DynStr.Append (d, ' ') ; EmitR (d, y1) ;
+  DynStr.Append (d, ' A ') ; EmitR (d, r) ;
+  DynStr.Append (d, ' ') ; EmitR (d, r) ;
+  DynStr.Append (d, ' 0 0 0 ') ; EmitR (d, x2) ;
+  DynStr.Append (d, ' ') ; EmitR (d, y2) ;
+  DynStr.Append (d, '" fill="none" ') ;
+  DynStr.Append (d, style) ;
+  DynStr.Append (d, '/>')
+END TArc ;
+
+(* the opening of a text element at (x, y), turned by deg degrees
+   about that point when deg is not zero; the caller writes the text
+   and closes it *)
+PROCEDURE TOpen (VAR d: PTR DynStr.DString ; x, y, deg: F64 ;
+                 RO style: STR)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (d, '<text x="') ; EmitR (d, x) ;
+  DynStr.Append (d, '" y="') ; EmitR (d, y) ;
+  DynStr.Append (d, '" ') ;
+  IF deg # 0.0 THEN
+    DynStr.Append (d, 'transform="rotate(') ; EmitR (d, deg) ;
+    DynStr.Append (d, ' ') ; EmitR (d, x) ;
+    DynStr.Append (d, ' ') ; EmitR (d, y) ;
+    DynStr.Append (d, ')" ')
+  END ;
+  DynStr.Append (d, style) ;
+  DynStr.Append (d, '>')
+END TOpen ;
+
+PROCEDURE TText (VAR d: PTR DynStr.DString ; x, y, deg: F64 ;
+                 RO style: STR ; RO text: STR)
+  RAISES ValueRange =
+BEGIN
+  TOpen (d, x, y, deg, style) ;
+  Esc (d, text) ;
+  DynStr.Append (d, '</text>')
+END TText ;
+
+PROCEDURE RenderTaylor (RO title: STR ;
+                        RO ratio: GRID 2 OF F64 ;
+                        RO corr: GRID 2 OF F64 ;
+                        RO cases: SLICE OF STR ;
+                        RO names: SLICE OF STR) : STR
+  RAISES ValueRange, Faults.SizeError =
+VAR
+  pool : POOL ;
+  d : PTR DynStr.DString IN pool ;
+  i, j, nc, nv, off : I64 ;
+  big, c, ux, uy, v, q, xi, yi, x, y, half : F64 ;
+  on : BOOL ;
+  color : STR ;
+BEGIN
+  nc := LEN (ratio, 0) ;
+  nv := LEN (ratio, 1) ;
+  IF LEN (corr, 0) # nc THEN RAISE Faults.SizeError (LEN (corr, 0), nc) END ;
+  IF LEN (corr, 1) # nv THEN RAISE Faults.SizeError (LEN (corr, 1), nv) END ;
+  IF LEN (cases) # nc THEN RAISE Faults.SizeError (LEN (cases), nc) END ;
+  IF LEN (names) # nv THEN RAISE Faults.SizeError (LEN (names), nv) END ;
+  big := TScale * TaylorMax ;            (* the outer arc, in pixels *)
+
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720" ') ;
+  DynStr.Append (d, 'font-family="DejaVu Sans, Helvetica, sans-serif">') ;
+  DynStr.Append (d, '<rect width="720" height="720" fill="white"/>') ;
+
+  (* the dotted rays of two correlations *)
+  FOR i := 0 TO LEN (RayAt) - 1 DO
+    c := RayAt[i] ;
+    uy := Math.Sqrt (1.0 - c * c) ;
+    TLine (d, TOx, TOy, TOx + big * c, TOy - big * uy,
+           'stroke="#555" stroke-width="0.8" stroke-dasharray="2 4"')
+  END ;
+
+  (* the arcs of equal ratio: 0.5 and 1.5 thin, 1 -- the reference's
+     own -- heavier *)
+  TArc (d, TOx + 0.5 * TScale, TOy, 0.5 * TScale, TOx, TOy - 0.5 * TScale,
+        'stroke="#555" stroke-width="0.8" stroke-dasharray="10 6"') ;
+  TArc (d, TOx + TScale, TOy, TScale, TOx, TOy - TScale,
+        'stroke="#000" stroke-width="1.3" stroke-dasharray="8 5"') ;
+  TArc (d, TOx + 1.5 * TScale, TOy, 1.5 * TScale, TOx, TOy - 1.5 * TScale,
+        'stroke="#555" stroke-width="0.8" stroke-dasharray="10 6"') ;
+
+  (* the arcs of equal RMS difference, around REF.  One that would
+     pass the outer arc begins where the two circles meet. *)
+  FOR i := 0 TO LEN (RmsAt) - 1 DO
+    q := RmsAt[i] ;
+    IF 1.0 + q <= TaylorMax THEN
+      xi := 1.0 + q ;
+      yi := 0.0
+    ELSE
+      xi := (TaylorMax * TaylorMax + 1.0 - q * q) / 2.0 ;
+      yi := Math.Sqrt (TaylorMax * TaylorMax - xi * xi)
+    END ;
+    TArc (d, TOx + xi * TScale, TOy - yi * TScale, q * TScale,
+          TOx + (1.0 - q) * TScale, TOy, Thin)
+  END ;
+
+  (* the frame: the outer arc and the two axes *)
+  TArc (d, TOx + big, TOy, big, TOx, TOy - big, Ink) ;
+  TLine (d, TOx, TOy, TOx + big, TOy, Ink) ;
+  TLine (d, TOx, TOy, TOx, TOy - big, Ink) ;
+
+  (* the ratio along both axes; the reference's own is REF below *)
+  FOR i := 0 TO LEN (StdTick) - 1 DO
+    v := StdTick[i] * TScale ;
+    TLine (d, TOx + v, TOy, TOx + v, TOy - 6.0, Ink) ;
+    TText (d, TOx + v, TOy + 20.0, 0.0,
+           'font-size="13" fill="#111" text-anchor="middle"', XLabel[i]) ;
+    TLine (d, TOx, TOy - v, TOx + 6.0, TOy - v, Ink) ;
+    TText (d, TOx - 9.0, TOy - v + 4.5, 0.0,
+           'font-size="13" fill="#111" text-anchor="end"', YLabel[i])
+  END ;
+  TText (d, TOx - 9.0, TOy + 4.5, 0.0,
+         'font-size="13" fill="#111" text-anchor="end"', '0.00') ;
+
+  (* the correlation around the outer arc: a tick inwards and the
+     number outside it, written along its own ray *)
+  FOR i := 0 TO LEN (CorrMajor) - 1 DO
+    ux := CorrMajor[i] ;
+    uy := Math.Sqrt (1.0 - ux * ux) ;
+    TLine (d, TOx + big * ux, TOy - big * uy,
+           TOx + (big - 9.0) * ux, TOy - (big - 9.0) * uy, Ink) ;
+    TOpen (d, TOx + (big + 8.0) * ux, TOy - (big + 8.0) * uy,
+           -CorrAngle[i], 'dy="4.5" font-size="13" fill="#111"') ;
+    DynStr.Append (d, CorrLabel[i]) ;
+    DynStr.Append (d, '</text>')
+  END ;
+  FOR i := 0 TO LEN (CorrMinor) - 1 DO
+    ux := CorrMinor[i] ;
+    uy := Math.Sqrt (1.0 - ux * ux) ;
+    TLine (d, TOx + big * ux, TOy - big * uy,
+           TOx + (big - 5.0) * ux, TOy - (big - 5.0) * uy, Thin)
+  END ;
+  half := Math.Sqrt (0.5) ;
+  TText (d, TOx + (big + 70.0) * half, TOy - (big + 70.0) * half, 45.0,
+         'font-size="15" fill="#111" text-anchor="middle"', 'Correlation') ;
+  TText (d, 32.0, TOy - 0.75 * TScale, -90.0,
+         'font-size="15" fill="#111" text-anchor="middle"',
+         'Standardized Deviations (Normalized)') ;
+  TText (d, 360.0, 30.0, 0.0,
+         'font-size="18" fill="#111" text-anchor="middle"', title) ;
+
+  (* the variables by number *)
+  FOR j := 0 TO nv - 1 DO
+    TOpen (d, TOx + 28.0, 142.0 + 17.0 * F64 (j), 0.0,
+           'font-size="11" fill="#333"') ;
+    DynStr.AppendI64 (d, j + 1) ;
+    DynStr.Append (d, ' - ') ;
+    Esc (d, names[j]) ;
+    DynStr.Append (d, '</text>')
+  END ;
+
+  (* the points: a dot in its case's colour and its variable's number
+     above it *)
+  off := 0 ;
+  x := 0.0 ;
+  y := 0.0 ;
+  FOR i := 0 TO nc - 1 DO
+    color := CaseColor[i MOD LEN (CaseColor)] ;
+    FOR j := 0 TO nv - 1 DO
+      on := TaylorXY (ratio[i, j], corr[i, j], x, y) ;
+      IF on THEN
+        DynStr.Append (d, '<circle cx="') ; EmitR (d, x) ;
+        DynStr.Append (d, '" cy="') ; EmitR (d, y) ;
+        DynStr.Append (d, '" r="4" fill="') ;
+        DynStr.Append (d, color) ;
+        DynStr.Append (d, '"/>') ;
+        DynStr.Append (d, '<text x="') ; EmitR (d, x) ;
+        DynStr.Append (d, '" y="') ; EmitR (d, y - 7.0) ;
+        DynStr.Append (d, '" font-size="11" text-anchor="middle" fill="') ;
+        DynStr.Append (d, color) ;
+        DynStr.Append (d, '">') ;
+        DynStr.AppendI64 (d, j + 1) ;
+        DynStr.Append (d, '</text>')
+      ELSE
+        off := off + 1
+      END
+    END
+  END ;
+
+  (* the cases, top right, outside the arc *)
+  FOR i := 0 TO nc - 1 DO
+    color := CaseColor[i MOD LEN (CaseColor)] ;
+    DynStr.Append (d, '<circle cx="590" cy="') ;
+    EmitR (d, 118.0 + 26.0 * F64 (i)) ;
+    DynStr.Append (d, '" r="5" fill="') ;
+    DynStr.Append (d, color) ;
+    DynStr.Append (d, '"/>') ;
+    DynStr.Append (d, '<text x="603" y="') ;
+    EmitR (d, 124.0 + 26.0 * F64 (i)) ;
+    DynStr.Append (d, '" font-size="17" fill="') ;
+    DynStr.Append (d, color) ;
+    DynStr.Append (d, '">') ;
+    Esc (d, cases[i]) ;
+    DynStr.Append (d, '</text>')
+  END ;
+
+  (* what is not drawn is said *)
+  IF off > 0 THEN
+    TOpen (d, TOx + big, TOy + 48.0, 0.0,
+           'font-size="11" fill="#333" text-anchor="end"') ;
+    DynStr.AppendI64 (d, off) ;
+    DynStr.Append (d, ' not shown: outside the diagram') ;
+    DynStr.Append (d, '</text>')
+  END ;
+
+  DynStr.Append (d, '</svg>') ;
+  RETURN DynStr.View (d)
+END RenderTaylor ;
+
+
+(* ---- the time-series chart ------------------------------------------
+
+   Lifted from m9curve's Chart.m9 (2026-10-03).  Kept as it was
+   there, except that the stylesheet is gone and every element says
+   its own colour, size and opacity -- the light surface's -- so that
+   Png.FromSvg draws it.  The names below are m9curve's. *)
+
+CONST
+  CharW = 6.4 ;                (* the width of a character of legend
+                                  text, estimated: an SVG cannot be
+                                  asked, and a legend that wraps one
+                                  item early is the cheap mistake *)
+  RowH = 20.0 ;
+  MaxMarks = 40 ;              (* past this many points a marker on
+                                  each is a second line, not a mark *)
+  (* the light surface, as m9curve's stylesheet had it *)
+  CSurface = '#fcfcfb' ;
+  CInk = '#0b0b0b' ;
+  CInk2 = '#52514e' ;
+  CMuted = '#898781' ;
+  CGrid = '#e1e0d9' ;
+  CAxis = '#c3c2b7' ;
+  SlotKeys = ['net', 's1', 's2', 's3', 's4', 's5', 's6', 'ref', 'gray'] ;
+  SlotHex = ['#00abc9', '#eb6834', '#4a3aa7', '#eda100', '#e87ba4',
+             '#008300', '#e34948', '#52514e', '#898781'] ;
+
+TYPE
+  Geo = RECORD
+    left, top, right, bottom : F64 ;       (* the plot, pixels *)
+    x0, x1, y0, y1 : F64 ;                 (* the data it shows *)
+    width : F64 ;                          (* the whole document's *)
+  END ;
+
+PROCEDURE MonthName (m: I64) : STR =
+BEGIN
+  CASE m OF
+  | 1 : RETURN 'Jan'
+  | 2 : RETURN 'Feb'
+  | 3 : RETURN 'Mar'
+  | 4 : RETURN 'Apr'
+  | 5 : RETURN 'May'
+  | 6 : RETURN 'Jun'
+  | 7 : RETURN 'Jul'
+  | 8 : RETURN 'Aug'
+  | 9 : RETURN 'Sep'
+  | 10 : RETURN 'Oct'
+  | 11 : RETURN 'Nov'
+  ELSE RETURN 'Dec'
+  END
+END MonthName ;
+
+(* the colour of a slot; ink for a key this does not know *)
+PROCEDURE Slot (RO key: STR) : STR =
+VAR k : I64 ;
+BEGIN
+  k := Text.IndexOf (SlotKeys, key) ;
+  IF k < 0 THEN RETURN CInk2 END ;
+  RETURN SlotHex[k]
+END Slot ;
+
+(* text into the document: the five characters XML reserves are
+   named, and a control character becomes a space *)
+PROCEDURE EscC (VAR d: PTR DynStr.DString ; RO t: STR) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (t) - 1 DO
+    IF t[i] = '&' THEN DynStr.Append (d, '&amp;')
+    ELSIF t[i] = '<' THEN DynStr.Append (d, '&lt;')
+    ELSIF t[i] = '>' THEN DynStr.Append (d, '&gt;')
+    ELSIF t[i] = '"' THEN DynStr.Append (d, '&quot;')
+    ELSIF t[i] = "'" THEN DynStr.Append (d, '&#39;')
+    ELSIF ORD (t[i]) < 32 THEN DynStr.AppendChar (d, ' ')
+    ELSE DynStr.AppendChar (d, t[i])
+    END
+  END
+END EscC ;
+
+(* a coordinate: one decimal is a tenth of a pixel *)
+PROCEDURE NumC (VAR d: PTR DynStr.DString ; v: F64)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (d, Fmt.Fixed (v, 1))
+END NumC ;
+
+PROCEDURE Px (RO g: Geo ; x: F64) : F64 =
+BEGIN
+  RETURN g.left + (x - g.x0) / (g.x1 - g.x0) * (g.right - g.left)
+END Px ;
+
+PROCEDURE Py (RO g: Geo ; y: F64) : F64 =
+BEGIN
+  RETURN g.bottom - (y - g.y0) / (g.y1 - g.y0) * (g.bottom - g.top)
+END Py ;
+
+(* widen [mn, mx] to hold every y whose x is in the window *)
+PROCEDURE Span (RO x, y: SLICE OF F64 ; lo, hi: F64 ;
+                VAR mn, mx: F64 ; VAR seen: BOOL) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (x) - 1 DO
+    IF y[i] = y[i] AND x[i] >= lo AND x[i] <= hi THEN
+      IF NOT seen THEN
+        mn := y[i] ;
+        mx := y[i] ;
+        seen := TRUE
+      ELSE
+        IF y[i] < mn THEN mn := y[i] END ;
+        IF y[i] > mx THEN mx := y[i] END
+      END
+    END
+  END
+END Span ;
+
+(* 1, 2 or 5 times a power of ten: the step that gives about
+   `target` ticks over `range` *)
+PROCEDURE NiceStepC (range: F64 ; target: I64) : F64
+  RAISES ValueRange =
+VAR raw, mag, f : F64 ;
+BEGIN
+  raw := range / F64 (target) ;
+  mag := Math.Pow (10.0, Math.Floor (Math.Log10 (raw))) ;
+  f := raw / mag ;
+  IF f < 1.5 THEN RETURN mag END ;
+  IF f < 3.0 THEN RETURN 2.0 * mag END ;
+  IF f < 7.0 THEN RETURN 5.0 * mag END ;
+  RETURN 10.0 * mag
+END NiceStepC ;
+
+PROCEDURE Decimals (step: F64) : I64 =
+BEGIN
+  IF step >= 1.0 THEN RETURN 0 END ;
+  IF step >= 0.1 THEN RETURN 1 END ;
+  IF step >= 0.01 THEN RETURN 2 END ;
+  RETURN 3
+END Decimals ;
+
+(* ---- the pieces ---- *)
+
+(* <text x= y= class= fill= font-size= anchor=>t</text>: the class
+   names the role (a script may read it), the attributes draw it *)
+PROCEDURE LabelC (VAR d: PTR DynStr.DString ; x, y: F64 ; RO class: STR ;
+                  RO anchor: STR ; RO t: STR)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (d, '<text x="') ;
+  NumC (d, x) ;
+  DynStr.Append (d, '" y="') ;
+  NumC (d, y) ;
+  DynStr.AppendChar (d, '"') ;
+  IF LEN (class) > 0 THEN
+    DynStr.Append (d, ' class="' + class + '"')
+  END ;
+  IF Text.Eq (class, 'cv-title') THEN
+    DynStr.Append (d, ' fill="' + CInk + '" font-size="15" font-weight="600"')
+  ELSIF Text.Eq (class, 'cv-tick') THEN
+    DynStr.Append (d, ' fill="' + CMuted + '" font-size="12"')
+  ELSIF Text.Eq (class, 'cv-empty') THEN
+    DynStr.Append (d, ' fill="' + CMuted + '" font-size="13"')
+  ELSE
+    DynStr.Append (d, ' fill="' + CInk2 + '" font-size="12"')
+  END ;
+  IF LEN (anchor) > 0 THEN
+    DynStr.Append (d, ' text-anchor="' + anchor + '"')
+  END ;
+  DynStr.AppendChar (d, '>') ;
+  EscC (d, t) ;
+  DynStr.Append (d, '</text>')
+END LabelC ;
+
+(* a gridline or an axis tick, in its colour *)
+PROCEDURE Rule (VAR d: PTR DynStr.DString ; x1, y1, x2, y2: F64 ;
+                RO class: STR)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (d, '<line class="' + class + '" stroke="') ;
+  IF Text.Eq (class, 'cv-grid') THEN
+    DynStr.Append (d, CGrid)
+  ELSE
+    DynStr.Append (d, CAxis)
+  END ;
+  DynStr.Append (d, '" stroke-width="1" x1="') ;
+  NumC (d, x1) ;
+  DynStr.Append (d, '" y1="') ;
+  NumC (d, y1) ;
+  DynStr.Append (d, '" x2="') ;
+  NumC (d, x2) ;
+  DynStr.Append (d, '" y2="') ;
+  NumC (d, y2) ;
+  DynStr.Append (d, '"/>')
+END Rule ;
+
+(* a marker: a dot in the series' colour with a hairline of the
+   surface around it, so that it stands off the line *)
+PROCEDURE Mark (VAR d: PTR DynStr.DString ; x, y, r: F64 ; RO key: STR ;
+                RO class: STR)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (d, '<circle class="' + class + ' cv-k-' + key + '" fill="' + Slot (key)
+                    + '" stroke="' + CSurface + '" stroke-width="') ;
+  IF Text.Eq (class, 'cv-end') THEN NumC (d, 2.0) ELSE NumC (d, 1.5) END ;
+  DynStr.Append (d, '" cx="') ;
+  NumC (d, x) ;
+  DynStr.Append (d, '" cy="') ;
+  NumC (d, y) ;
+  DynStr.Append (d, '" r="') ;
+  NumC (d, r) ;
+  DynStr.Append (d, '"/>')
+END Mark ;
+
+(* the legend: items flow left to right and wrap.  With draw FALSE
+   nothing is written and the answer is how many rows it takes. *)
+PROCEDURE Legend (VAR d: PTR DynStr.DString ; RO s: ChartSpec ;
+                  left, right, top: F64 ; draw: BOOL) : I64
+  RAISES ValueRange =
+VAR
+  x, y, w : F64 ;
+  rows, i, kind, n, k : I64 ;
+  label, key : STR ;
+BEGIN
+  x := left ;
+  y := top ;
+  rows := 1 ;
+  n := LEN (s.lines) + 3 ;
+  FOR i := 0 TO n - 1 DO
+    (* the order a reader meets them in: the network's line, its two
+       bands, the dots, then every other line *)
+    label := '' ;
+    key := '' ;
+    kind := 0 ;                          (* 0 line, 1 inner, 2 outer, 3 dots *)
+    IF i = 0 THEN
+      IF LEN (s.lines) > 0 THEN
+        label := s.lines[0].label ;
+        key := s.lines[0].key
+      END
+    ELSIF i = 1 THEN
+      IF s.band THEN label := s.innerLabel ; key := s.bandKey ; kind := 1 END
+    ELSIF i = 2 THEN
+      IF s.band THEN label := s.outerLabel ; key := s.bandKey ; kind := 2 END
+    ELSIF i = 3 THEN
+      IF s.dots THEN label := s.dotsLabel ; key := s.dotsKey ; kind := 3 END
+    ELSIF i - 3 < LEN (s.lines) THEN
+      label := s.lines[i - 3].label ;
+      key := s.lines[i - 3].key
+    END ;
+    IF LEN (label) > 0 THEN
+      w := 30.0 + CharW * F64 (LEN (label)) + 14.0 ;
+      IF x > left AND x + w > right THEN
+        x := left ;
+        y := y + RowH ;
+        rows := rows + 1
+      END ;
+      IF draw THEN
+        IF kind = 0 AND i >= 4 AND NOT (s.lines[i - 3].width > 0.0) THEN
+          (* a line drawn as its markers alone has a marker for a key *)
+          Mark (d, x + 11.0, y - 4.0, 2.8, key, 'cv-mark')
+        ELSIF kind = 0 THEN
+          DynStr.Append (d, '<path class="cv-line cv-k-' + key + '" fill="none" stroke="'
+                            + Slot (key) + '" stroke-linecap="round" stroke-width="') ;
+          IF i = 0 THEN NumC (d, 3.0) ELSE NumC (d, 2.0) END ;
+          DynStr.AppendChar (d, '"') ;
+          IF i >= 4 AND LEN (s.lines[i - 3].dash) > 0 THEN
+            DynStr.Append (d, ' stroke-dasharray="' + s.lines[i - 3].dash + '"')
+          END ;
+          DynStr.Append (d, ' d="M') ;
+          NumC (d, x) ;
+          DynStr.AppendChar (d, ' ') ;
+          NumC (d, y - 4.0) ;
+          DynStr.Append (d, 'h22"/>')
+        ELSIF kind = 3 THEN
+          (* three dots, as the cloud is drawn *)
+          FOR k := 0 TO 2 DO
+            DynStr.Append (d, '<circle class="cv-dots cv-k-' + key + '" fill="' + Slot (key)
+                              + '" opacity="0.5" cx="') ;
+            NumC (d, x + 4.0 + 7.0 * F64 (k)) ;
+            DynStr.Append (d, '" cy="') ;
+            IF k = 1 THEN NumC (d, y - 7.0) ELSE NumC (d, y - 2.0 - 2.0 * F64 (k)) END ;
+            DynStr.Append (d, '" r="1.5"/>')
+          END
+        ELSE
+          IF kind = 1 THEN
+            (* the inner band lies ON the outer one, so its key is
+               the two washes together, as the plot shows it *)
+            DynStr.Append (d, '<rect class="cv-outer cv-k-' + key + '" fill="' + Slot (key)
+                              + '" opacity="0.2" x="') ;
+            NumC (d, x) ;
+            DynStr.Append (d, '" y="') ;
+            NumC (d, y - 10.0) ;
+            DynStr.Append (d, '" width="22" height="12" rx="2"/><rect class="cv-inner cv-k-'
+                              + key + '" fill="' + Slot (key) + '" opacity="0.26" x="')
+          ELSE
+            DynStr.Append (d, '<rect class="cv-outer cv-k-' + key + '" fill="' + Slot (key)
+                              + '" opacity="0.2" x="')
+          END ;
+          NumC (d, x) ;
+          DynStr.Append (d, '" y="') ;
+          NumC (d, y - 10.0) ;
+          DynStr.Append (d, '" width="22" height="12" rx="2"/>')
+        END ;
+        LabelC (d, x + 30.0, y, '', '', label)
+      END ;
+      x := x + w
+    END
+  END ;
+  RETURN rows
+END Legend ;
+
+(* the value axis: gridlines and their numbers *)
+PROCEDURE YAxis (VAR d: PTR DynStr.DString ; RO g: Geo ; step: F64)
+  RAISES ValueRange =
+VAR
+  v, y : F64 ;
+  dec, guard : I64 ;
+BEGIN
+  dec := Decimals (step) ;
+  v := Math.Ceil (g.y0 / step) * step ;
+  guard := 0 ;
+  WHILE v <= g.y1 AND guard < 64 DO
+    y := Py (g, v) ;
+    Rule (d, g.left, y, g.right, y, 'cv-grid') ;
+    LabelC (d, g.left - 8.0, y + 4.0, 'cv-tick', 'end', Fmt.Fixed (v, dec)) ;
+    v := v + step ;
+    guard := guard + 1
+  END
+END YAxis ;
+
+PROCEDURE Tick (VAR d: PTR DynStr.DString ; RO g: Geo ; day: F64 ;
+                RO text: STR)
+  RAISES ValueRange =
+VAR x, half : F64 ;
+BEGIN
+  IF day < g.x0 OR day > g.x1 THEN RETURN END ;
+  x := Px (g, day) ;
+  (* a gridline up the plot, the twin of the value axis's, and the
+     tick mark below the frame *)
+  Rule (d, x, g.top, x, g.bottom, 'cv-grid') ;
+  Rule (d, x, g.bottom, x, g.bottom + 5.0, 'cv-axis') ;
+  (* a label centred on a tick at the edge would run off the
+     document: it is pinned to the edge instead *)
+  half := CharW * F64 (LEN (text)) / 2.0 ;
+  IF x + half > g.width - 2.0 THEN
+    LabelC (d, g.width - 2.0, g.bottom + 19.0, 'cv-tick', 'end', text)
+  ELSE
+    LabelC (d, x, g.bottom + 19.0, 'cv-tick', 'middle', text)
+  END
+END Tick ;
+
+(* the time axis.  Years when the window is long, months when it is
+   a few years, days when it is weeks -- and never more ticks than
+   the width can label. *)
+PROCEDURE XAxis (VAR d: PTR DynStr.DString ; RO g: Geo)
+  RAISES ValueRange =
+VAR
+  span, room : F64 ;
+  y, m, dd, y1, m1, d1, step, k, first, last, day, guard : I64 ;
+BEGIN
+  span := g.x1 - g.x0 ;
+  y := 0 ; m := 0 ; dd := 0 ; y1 := 0 ; m1 := 0 ; d1 := 0 ;
+  Time.CivilFromDays (I64 (Math.Floor (g.x0)), y, m, dd) ;
+  Time.CivilFromDays (I64 (Math.Ceil (g.x1)), y1, m1, d1) ;
+  IF span > 1170.0 THEN
+    room := (g.right - g.left) / 56.0 ;
+    step := 1 ;
+    WHILE F64 (y1 - y) / F64 (step) > room DO
+      IF step = 1 THEN step := 2
+      ELSIF step = 2 THEN step := 5
+      ELSIF step = 5 THEN step := 10
+      ELSE step := step * 2
+      END
+    END ;
+    k := y ;
+    WHILE k MOD step # 0 DO k := k + 1 END ;
+    WHILE k <= y1 DO
+      Tick (d, g, F64 (Time.DaysFromCivil (k, 1, 1)), Fmt.I64Str (k)) ;
+      k := k + step
+    END
+  ELSIF span > 62.0 THEN
+    room := (g.right - g.left) / 76.0 ;
+    first := y * 12 + m - 1 ;
+    last := y1 * 12 + m1 - 1 ;
+    step := 1 ;
+    WHILE F64 (last - first) / F64 (step) > room DO
+      IF step = 1 THEN step := 2
+      ELSIF step = 2 THEN step := 3
+      ELSIF step = 3 THEN step := 6
+      ELSE step := step * 2
+      END
+    END ;
+    k := first ;
+    WHILE k MOD step # 0 DO k := k + 1 END ;
+    WHILE k <= last DO
+      Tick (d, g, F64 (Time.DaysFromCivil (k DIV 12, k MOD 12 + 1, 1)),
+            MonthName (k MOD 12 + 1) + ' ' + Fmt.I64Str (k DIV 12)) ;
+      k := k + step
+    END
+  ELSE
+    room := (g.right - g.left) / 60.0 ;
+    step := 1 ;
+    WHILE span / F64 (step) > room DO
+      IF step = 1 THEN step := 2
+      ELSIF step = 2 THEN step := 7
+      ELSE step := step * 2
+      END
+    END ;
+    day := I64 (Math.Ceil (g.x0)) ;
+    WHILE day MOD step # 0 DO day := day + 1 END ;
+    guard := 0 ;
+    WHILE F64 (day) <= g.x1 AND guard < 64 DO
+      Time.CivilFromDays (day, y, m, dd) ;
+      Tick (d, g, F64 (day), Fmt.I64Str (dd) + ' ' + MonthName (m)) ;
+      day := day + step ;
+      guard := guard + 1
+    END
+  END
+END XAxis ;
+
+(* one depth of the band: a closed shape for every run of months
+   that has both its edges *)
+PROCEDURE Band (VAR d: PTR DynStr.DString ; RO g: Geo ;
+                RO x, lo, hi: SLICE OF F64 ; RO class: STR ; RO key: STR ;
+                RO opacity: STR)
+  RAISES ValueRange =
+VAR i, a, k, n : I64 ;
+BEGIN
+  n := LEN (x) ;
+  i := 0 ;
+  WHILE i < n DO
+    IF lo[i] = lo[i] AND hi[i] = hi[i] THEN
+      a := i ;
+      WHILE i < n AND lo[i] = lo[i] AND hi[i] = hi[i] DO i := i + 1 END ;
+      DynStr.Append (d, '<path class="' + class + ' cv-k-' + key + '" fill="' + Slot (key)
+                        + '" opacity="' + opacity + '" d="') ;
+      FOR k := a TO i - 1 DO
+        IF k = a THEN DynStr.AppendChar (d, 'M') ELSE DynStr.AppendChar (d, 'L') END ;
+        NumC (d, Px (g, x[k])) ;
+        DynStr.AppendChar (d, ' ') ;
+        NumC (d, Py (g, hi[k]))
+      END ;
+      FOR k := i - 1 TO a BY -1 DO
+        DynStr.AppendChar (d, 'L') ;
+        NumC (d, Px (g, x[k])) ;
+        DynStr.AppendChar (d, ' ') ;
+        NumC (d, Py (g, lo[k]))
+      END ;
+      DynStr.Append (d, 'Z"/>')
+    ELSE
+      i := i + 1
+    END
+  END
+END Band ;
+
+(* the dots, as runs: every pixel column gets one stroke for each
+   stretch of occupied rows, so seventy thousand hours cost a few
+   thousand path pieces instead of seventy thousand circles.  A run
+   is drawn from the top of its first pixel to the bottom of its
+   last, so a run of one is one pixel long and not nothing. *)
+PROCEDURE Dots (VAR d: PTR DynStr.DString ; RO g: Geo ;
+                RO x, y: SLICE OF F64 ; RO key: STR)
+  RAISES ValueRange =
+VAR
+  w, h, i, cx, cy, a : I64 ;
+  hit : SLICE OF BOOL ;
+BEGIN
+  w := I64 (g.right - g.left) + 1 ;
+  h := I64 (g.bottom - g.top) + 1 ;
+  IF w < 1 OR h < 1 THEN RETURN END ;
+  hit := NEW (BOOL, w * h) ;
+  FOR i := 0 TO LEN (x) - 1 DO
+    IF y[i] = y[i] AND x[i] >= g.x0 AND x[i] <= g.x1
+       AND y[i] >= g.y0 AND y[i] <= g.y1 THEN
+      cx := I64 (Px (g, x[i]) - g.left) ;
+      cy := I64 (Py (g, y[i]) - g.top) ;
+      IF cx >= 0 AND cx < w AND cy >= 0 AND cy < h THEN
+        hit[cx * h + cy] := TRUE
+      END
+    END
+  END ;
+  DynStr.Append (d, '<path class="cv-dots cv-k-' + key + '" fill="none" stroke="' + Slot (key)
+                    + '" stroke-width="1.5" opacity="0.3" d="') ;
+  FOR cx := 0 TO w - 1 DO
+    cy := 0 ;
+    WHILE cy < h DO
+      IF hit[cx * h + cy] THEN
+        a := cy ;
+        WHILE cy < h AND hit[cx * h + cy] DO cy := cy + 1 END ;
+        DynStr.AppendChar (d, 'M') ;
+        NumC (d, g.left + F64 (cx) + 0.5) ;
+        DynStr.AppendChar (d, ' ') ;
+        DynStr.AppendI64 (d, I64 (g.top) + a) ;
+        DynStr.AppendChar (d, 'v') ;
+        DynStr.AppendI64 (d, cy - a)
+      ELSE
+        cy := cy + 1
+      END
+    END
+  END ;
+  DynStr.Append (d, '"/>')
+END Dots ;
+
+(* how many of a line's points are in the window *)
+PROCEDURE Visible (RO g: Geo ; RO l: Trace) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (l.x) - 1 DO
+    IF l.y[i] = l.y[i] AND l.x[i] >= g.x0 AND l.x[i] <= g.x1 THEN
+      n := n + 1
+    END
+  END ;
+  RETURN n
+END Visible ;
+
+(* a line: the pen lifts at a NaN, and a point with no neighbour on
+   either side is drawn as a marker so it is not lost *)
+PROCEDURE Curve (VAR d: PTR DynStr.DString ; RO g: Geo ; RO l: Trace ;
+                 width: F64)
+  RAISES ValueRange =
+VAR
+  i, n : I64 ;
+  pen, marks, alone : BOOL ;
+BEGIN
+  n := LEN (l.x) ;
+  marks := l.marks AND Visible (g, l) <= MaxMarks ;
+  IF width > 0.0 THEN
+    DynStr.Append (d, '<path class="cv-line cv-k-' + l.key + '" fill="none" stroke="'
+                      + Slot (l.key) + '" stroke-linejoin="round" stroke-linecap="round" stroke-width="') ;
+    NumC (d, width) ;
+    DynStr.AppendChar (d, '"') ;
+    IF LEN (l.dash) > 0 THEN
+      DynStr.Append (d, ' stroke-dasharray="' + l.dash + '"')
+    END ;
+    DynStr.Append (d, ' d="') ;
+    pen := FALSE ;
+    FOR i := 0 TO n - 1 DO
+      IF l.y[i] = l.y[i] THEN
+        IF pen THEN DynStr.AppendChar (d, 'L') ELSE DynStr.AppendChar (d, 'M') END ;
+        NumC (d, Px (g, l.x[i])) ;
+        DynStr.AppendChar (d, ' ') ;
+        NumC (d, Py (g, l.y[i])) ;
+        pen := TRUE
+      ELSE
+        pen := FALSE
+      END
+    END ;
+    DynStr.Append (d, '"/>')
+  END ;
+  FOR i := 0 TO n - 1 DO
+    IF l.y[i] = l.y[i] AND l.x[i] >= g.x0 AND l.x[i] <= g.x1 THEN
+      alone := (i = 0 OR l.y[i - 1] # l.y[i - 1])
+               AND (i = n - 1 OR l.y[i + 1] # l.y[i + 1]) ;
+      IF marks OR alone OR NOT (width > 0.0) THEN
+        Mark (d, Px (g, l.x[i]), Py (g, l.y[i]), 2.8, l.key, 'cv-mark')
+      END
+    END
+  END
+END Curve ;
+
+(* the last point of a line inside the window; FALSE when it has
+   none *)
+PROCEDURE EndOf (RO g: Geo ; RO l: Trace ; VAR x, y: F64) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := LEN (l.x) - 1 TO 0 BY -1 DO
+    IF l.y[i] = l.y[i] AND l.x[i] >= g.x0 AND l.x[i] <= g.x1 THEN
+      x := Px (g, l.x[i]) ;
+      y := Py (g, l.y[i]) ;
+      RETURN TRUE
+    END
+  END ;
+  RETURN FALSE
+END EndOf ;
+
+(* do the short labels fit at the line ends without touching?  They
+   are used only when every one of them does: a label nudged away
+   from its line says less than no label *)
+PROCEDURE EndsFit (RO g: Geo ; RO s: ChartSpec) : BOOL =
+VAR
+  i, j, n : I64 ;
+  xi, yi, xj, yj : F64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (s.lines) - 1 DO
+    IF LEN (s.lines[i].short) > 0 THEN
+      n := n + 1 ;
+      xi := 0.0 ;
+      yi := 0.0 ;
+      IF NOT EndOf (g, s.lines[i], xi, yi) THEN RETURN FALSE END ;
+      (* a line that stops well short of the edge has its label
+         inside the plot, across the others: not there *)
+      IF xi < g.right - 40.0 THEN RETURN FALSE END ;
+      FOR j := 0 TO i - 1 DO
+        IF LEN (s.lines[j].short) > 0 THEN
+          xj := 0.0 ;
+          yj := 0.0 ;
+          IF EndOf (g, s.lines[j], xj, yj)
+             AND Math.Fabs (yi - yj) < 14.0 THEN
+            RETURN FALSE
+          END
+        END
+      END
+    END
+  END ;
+  RETURN n > 0 AND n <= 4
+END EndsFit ;
+
+(* the hover layer: a transparent column around each position, with
+   its heading and its values as attributes.  Invisible by itself. *)
+PROCEDURE Hover (VAR d: PTR DynStr.DString ; RO g: Geo ; RO s: ChartSpec)
+  RAISES ValueRange =
+VAR
+  i, j, n, cols : I64 ;
+  a, b : F64 ;
+BEGIN
+  n := LEN (s.hoverX) ;
+  cols := LEN (s.hoverNames) ;
+  IF n = 0 OR cols = 0 THEN RETURN END ;
+  DynStr.Append (d, '<line class="cv-cross" stroke="' + CMuted + '" stroke-width="1" visibility="hidden" y1="') ;
+  NumC (d, g.top) ;
+  DynStr.Append (d, '" y2="') ;
+  NumC (d, g.bottom) ;
+  DynStr.Append (d, '"/><g class="cv-hits">') ;
+  FOR i := 0 TO n - 1 DO
+    IF s.hoverX[i] >= g.x0 AND s.hoverX[i] <= g.x1 THEN
+      IF i > 0 THEN a := (s.hoverX[i - 1] + s.hoverX[i]) / 2.0 ELSE a := g.x0 END ;
+      IF i < n - 1 THEN b := (s.hoverX[i] + s.hoverX[i + 1]) / 2.0 ELSE b := g.x1 END ;
+      IF a < g.x0 THEN a := g.x0 END ;
+      IF b > g.x1 THEN b := g.x1 END ;
+      DynStr.Append (d, '<rect class="cv-hit" fill="transparent" x="') ;
+      NumC (d, Px (g, a)) ;
+      DynStr.Append (d, '" y="') ;
+      NumC (d, g.top) ;
+      DynStr.Append (d, '" width="') ;
+      NumC (d, Px (g, b) - Px (g, a)) ;
+      DynStr.Append (d, '" height="') ;
+      NumC (d, g.bottom - g.top) ;
+      DynStr.Append (d, '" data-x="') ;
+      NumC (d, Px (g, s.hoverX[i])) ;
+      DynStr.Append (d, '" data-h="') ;
+      EscC (d, s.hoverHead[i]) ;
+      DynStr.Append (d, '" data-v="') ;
+      FOR j := 0 TO cols - 1 DO
+        IF j > 0 THEN DynStr.AppendChar (d, '|') END ;
+        EscC (d, s.hoverVals[i * cols + j])
+      END ;
+      DynStr.Append (d, '"/>')
+    END
+  END ;
+  DynStr.Append (d, '</g>')
+END Hover ;
+
+(* names for the root's attribute: '|' separates them, so a name
+   may not carry one *)
+PROCEDURE Joined (VAR d: PTR DynStr.DString ; RO names: SLICE OF STR) =
+VAR i, k : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (names) - 1 DO
+    IF i > 0 THEN DynStr.AppendChar (d, '|') END ;
+    FOR k := 0 TO LEN (names[i]) - 1 DO
+      IF names[i][k] = '|' THEN
+        DynStr.AppendChar (d, '/')
+      ELSE
+        EscC (d, SLICE (names[i], k, 1))
+      END
+    END
+  END
+END Joined ;
+
+PROCEDURE Chart (RO s: ChartSpec) : STR
+  RAISES ValueRange =
+VAR
+  pool : POOL ;
+  d : PTR DynStr.DString IN pool ;
+  g : Geo ;
+  w, h, mn, mx, pad, step, ex, ey, mid : F64 ;
+  i, rows : I64 ;
+  seen, ends : BOOL ;
+BEGIN
+  d := DynStr.New (pool) ;
+  w := F64 (s.width) ;
+  h := F64 (s.height) ;
+  g.width := w ;
+  g.x0 := s.x0 ;
+  g.x1 := s.x1 ;
+  IF NOT (g.x1 > g.x0) THEN g.x1 := g.x0 + 1.0 END ;
+
+  (* the values in the window decide the value axis *)
+  seen := FALSE ;
+  mn := 0.0 ;
+  mx := 1.0 ;
+  IF s.band THEN
+    Span (s.bandX, s.outerLo, g.x0, g.x1, mn, mx, seen) ;
+    Span (s.bandX, s.outerHi, g.x0, g.x1, mn, mx, seen) ;
+    Span (s.bandX, s.innerLo, g.x0, g.x1, mn, mx, seen) ;
+    Span (s.bandX, s.innerHi, g.x0, g.x1, mn, mx, seen)
+  END ;
+  FOR i := 0 TO LEN (s.lines) - 1 DO
+    Span (s.lines[i].x, s.lines[i].y, g.x0, g.x1, mn, mx, seen)
+  END ;
+  IF s.dots THEN Span (s.dotsX, s.dotsY, g.x0, g.x1, mn, mx, seen) END ;
+  IF NOT (mx > mn) THEN
+    mn := mn - 1.0 ;
+    mx := mx + 1.0
+  END ;
+  pad := (mx - mn) * 0.05 ;
+  g.y0 := mn - pad ;
+  g.y1 := mx + pad ;
+  step := NiceStepC (g.y1 - g.y0, 6) ;
+
+  (* the plot's box: the legend's height is known only once its
+     width is, and the end labels need room only if they are used *)
+  g.left := 64.0 ;
+  g.right := w - 18.0 ;
+  rows := Legend (d, s, g.left, w - 18.0, 0.0, FALSE) ;
+  g.top := 40.0 + F64 (rows) * RowH + 4.0 ;
+  g.bottom := h - 34.0 ;
+  IF g.bottom < g.top + 40.0 THEN g.bottom := g.top + 40.0 END ;
+  ends := EndsFit (g, s) ;
+  IF ends THEN
+    g.right := w - 52.0 ;
+    ends := EndsFit (g, s)
+  END ;
+  IF NOT ends THEN g.right := w - 18.0 END ;
+
+  DynStr.Append (d, '<svg xmlns="http://www.w3.org/2000/svg" class="cv" role="img" viewBox="0 0 ') ;
+  DynStr.AppendI64 (d, s.width) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.AppendI64 (d, s.height) ;
+  DynStr.Append (d, '" width="') ;
+  DynStr.AppendI64 (d, s.width) ;
+  DynStr.Append (d, '" height="') ;
+  DynStr.AppendI64 (d, s.height) ;
+  DynStr.Append (d, '" font-family="DejaVu Sans, Helvetica, sans-serif" data-unit="') ;
+  EscC (d, s.unit) ;
+  DynStr.Append (d, '" data-names="') ;
+  Joined (d, s.hoverNames) ;
+  DynStr.Append (d, '" data-keys="') ;
+  Joined (d, s.hoverKeys) ;
+  DynStr.Append (d, '"><title>') ;
+  EscC (d, s.title) ;
+  DynStr.Append (d, '</title>') ;
+  DynStr.Append (d, '<rect class="cv-bg" fill="' + CSurface + '" width="') ;
+  DynStr.AppendI64 (d, s.width) ;
+  DynStr.Append (d, '" height="') ;
+  DynStr.AppendI64 (d, s.height) ;
+  DynStr.Append (d, '"/>') ;
+  LabelC (d, g.left, 24.0, 'cv-title', '', s.title) ;
+  rows := Legend (d, s, g.left, w - 18.0, 50.0, TRUE) ;
+
+  YAxis (d, g, step) ;
+  XAxis (d, g) ;
+  mid := (g.top + g.bottom) / 2.0 ;
+  DynStr.Append (d, '<text class="cv-ylabel" fill="' + CInk2 + '" font-size="12" text-anchor="middle" x="16" y="') ;
+  NumC (d, mid) ;
+  DynStr.Append (d, '" transform="rotate(-90 16 ') ;
+  NumC (d, mid) ;
+  DynStr.Append (d, ')">') ;
+  EscC (d, s.ylabel) ;
+  DynStr.Append (d, '</text>') ;
+
+  DynStr.Append (d, '<clipPath id="cv-clip"><rect x="') ;
+  NumC (d, g.left) ;
+  DynStr.Append (d, '" y="') ;
+  NumC (d, g.top) ;
+  DynStr.Append (d, '" width="') ;
+  NumC (d, g.right - g.left) ;
+  DynStr.Append (d, '" height="') ;
+  NumC (d, g.bottom - g.top) ;
+  DynStr.Append (d, '"/></clipPath><g clip-path="url(#cv-clip)">') ;
+  (* the dots lie under everything: they are the noise the monthly
+     values were made from, and the band has to read through them *)
+  IF s.dots THEN Dots (d, g, s.dotsX, s.dotsY, s.dotsKey) END ;
+  IF s.band THEN
+    Band (d, g, s.bandX, s.outerLo, s.outerHi, 'cv-outer', s.bandKey, '0.2') ;
+    Band (d, g, s.bandX, s.innerLo, s.innerHi, 'cv-inner', s.bandKey, '0.26')
+  END ;
+  FOR i := 0 TO LEN (s.lines) - 1 DO
+    Curve (d, g, s.lines[i], s.lines[i].width)
+  END ;
+  DynStr.Append (d, '</g>') ;
+
+  (* the frame around the plot, over the data so that a line running
+     along an edge does not break it *)
+  DynStr.Append (d, '<rect class="cv-frame" fill="none" stroke="' + CAxis + '" stroke-width="1" x="') ;
+  NumC (d, g.left) ;
+  DynStr.Append (d, '" y="') ;
+  NumC (d, g.top) ;
+  DynStr.Append (d, '" width="') ;
+  NumC (d, g.right - g.left) ;
+  DynStr.Append (d, '" height="') ;
+  NumC (d, g.bottom - g.top) ;
+  DynStr.Append (d, '"/>') ;
+
+  IF ends THEN
+    FOR i := 0 TO LEN (s.lines) - 1 DO
+      ex := 0.0 ;
+      ey := 0.0 ;
+      IF LEN (s.lines[i].short) > 0 AND EndOf (g, s.lines[i], ex, ey) THEN
+        Mark (d, ex, ey, 4.0, s.lines[i].key, 'cv-end') ;
+        LabelC (d, ex + 8.0, ey + 4.0, '', '', s.lines[i].short)
+      END
+    END
+  END ;
+  IF NOT seen THEN
+    LabelC (d, (g.left + g.right) / 2.0, (g.top + g.bottom) / 2.0,
+            'cv-empty', 'middle', 'No data in this period')
+  END ;
+  Hover (d, g, s) ;
+  DynStr.Append (d, '</svg>') ;
+  RETURN DynStr.View (d)
+END Chart ;
+
+(* ---- panels ----------------------------------------------------------- *)
+
+(* a number in an attribute: as many decimals as it needs, few *)
+PROCEDURE NumP (VAR d: PTR DynStr.DString ; v: F64 ; decimals: I64)
+  RAISES ValueRange =
+BEGIN
+  DynStr.Append (d, Fmt.Fixed (v, decimals))
+END NumP ;
+
+(* the four numbers of a figure's viewBox, and where its root tag
+   ends and its closing tag begins; BadArg for a document that is
+   not a figure of this kind *)
+PROCEDURE Frame (RO svg: STR ; VAR vw, vh: F64 ; VAR bodyAt, bodyEnd: I64)
+  RAISES Faults.BadArg, ValueRange =
+VAR
+  i, j, k : I64 ;
+  vb : STR ;
+  x0, y0 : F64 ;
+BEGIN
+  i := Text.Find (svg, '<svg') ;
+  IF i < 0 THEN RAISE Faults.BadArg ('Plot.Panels: a figure that does not begin with <svg') END ;
+  j := i ;
+  WHILE j < LEN (svg) AND svg[j] # '>' DO j := j + 1 END ;
+  IF j >= LEN (svg) THEN RAISE Faults.BadArg ('Plot.Panels: a figure whose <svg> tag does not close') END ;
+  bodyAt := j + 1 ;
+  bodyEnd := LEN (svg) ;
+  k := LEN (svg) - 6 ;
+  WHILE k >= bodyAt AND NOT Text.Eq (SLICE (svg, k, 6), '</svg>') DO k := k - 1 END ;
+  IF k < bodyAt THEN RAISE Faults.BadArg ('Plot.Panels: a figure without its </svg>') END ;
+  bodyEnd := k ;
+  k := Text.Find (SLICE (svg, i, j - i), 'viewBox="') ;
+  IF k < 0 THEN RAISE Faults.BadArg ('Plot.Panels: a figure without a viewBox') END ;
+  vb := SLICE (svg, i + k + 9, j - (i + k + 9)) ;
+  k := Text.FindChar (vb, '"') ;
+  IF k < 0 THEN RAISE Faults.BadArg ('Plot.Panels: a figure without a viewBox') END ;
+  vb := SLICE (vb, 0, k) ;
+  k := 0 ;
+  x0 := 0.0 ; y0 := 0.0 ; vw := 0.0 ; vh := 0.0 ;
+  IF NOT (NumAt (vb, k, x0) AND NumAt (vb, k, y0) AND NumAt (vb, k, vw) AND NumAt (vb, k, vh))
+     OR NOT (vw > 0.0 AND vh > 0.0) THEN
+    RAISE Faults.BadArg ('Plot.Panels: a viewBox that is not four numbers')
+  END
+END Frame ;
+
+(* a number at s[i], after blanks: what a viewBox holds *)
+PROCEDURE NumAt (RO s: STR ; VAR i: I64 ; VAR v: F64) : BOOL RAISES ValueRange =
+VAR
+  n, digits : I64 ;
+  neg : BOOL ;
+  f, frac : F64 ;
+BEGIN
+  n := LEN (s) ;
+  WHILE i < n AND (s[i] = ' ' OR s[i] = ',') DO i := i + 1 END ;
+  IF i >= n THEN RETURN FALSE END ;
+  neg := FALSE ;
+  IF s[i] = '-' THEN neg := TRUE ; i := i + 1 END ;
+  f := 0.0 ;
+  digits := 0 ;
+  WHILE i < n AND s[i] >= '0' AND s[i] <= '9' DO
+    f := f * 10.0 + F64 (ORD (s[i]) - 48) ;
+    i := i + 1 ;
+    digits := digits + 1
+  END ;
+  IF i < n AND s[i] = '.' THEN
+    i := i + 1 ;
+    frac := 0.1 ;
+    WHILE i < n AND s[i] >= '0' AND s[i] <= '9' DO
+      f := f + frac * F64 (ORD (s[i]) - 48) ;
+      frac := frac / 10.0 ;
+      i := i + 1 ;
+      digits := digits + 1
+    END
+  END ;
+  IF digits = 0 THEN RETURN FALSE END ;
+  IF neg THEN f := -f END ;
+  v := f ;
+  RETURN TRUE
+END NumAt ;
+
+PROCEDURE Panels (cols, rows: I64 ; RO figures: SLICE OF STR ;
+                  RO title: STR ; width, height: I64) : STR
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  pool : POOL ;
+  d : PTR DynStr.DString IN pool ;
+  i, bodyAt, bodyEnd, top : I64 ;
+  vw, vh, cw, ch, k, x, y : F64 ;
+  body, prefix : STR ;
+BEGIN
+  IF cols < 1 OR rows < 1 OR width < 1 OR height < 1 THEN
+    RAISE Faults.BadArg ('Plot.Panels: a grid and a size of at least one')
+  END ;
+  IF LEN (figures) > cols * rows THEN
+    RAISE Faults.SizeError (LEN (figures), cols * rows)
+  END ;
+  top := 0 ;
+  IF LEN (title) > 0 THEN top := 36 END ;
+  cw := F64 (width) / F64 (cols) ;
+  ch := F64 (height - top) / F64 (rows) ;
+  IF NOT (ch > 0.0) THEN RAISE Faults.BadArg ('Plot.Panels: no room below the title') END ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ') ;
+  DynStr.AppendI64 (d, width) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.AppendI64 (d, height) ;
+  DynStr.Append (d, '" font-family="DejaVu Sans, Helvetica, sans-serif">') ;
+  DynStr.Append (d, '<rect width="') ;
+  DynStr.AppendI64 (d, width) ;
+  DynStr.Append (d, '" height="') ;
+  DynStr.AppendI64 (d, height) ;
+  DynStr.Append (d, '" fill="white"/>') ;
+  IF LEN (title) > 0 THEN
+    DynStr.Append (d, '<text x="') ;
+    NumP (d, F64 (width) / 2.0, 1) ;
+    DynStr.Append (d, '" y="24" font-size="16" fill="#111" text-anchor="middle">') ;
+    Esc (d, title) ;
+    DynStr.Append (d, '</text>')
+  END ;
+  FOR i := 0 TO LEN (figures) - 1 DO
+    bodyAt := 0 ; bodyEnd := 0 ; vw := 0.0 ; vh := 0.0 ;
+    Frame (figures[i], vw, vh, bodyAt, bodyEnd) ;
+    (* the cell, and the figure in it at the largest scale that keeps
+       its proportions, centred *)
+    k := cw / vw ;
+    IF ch / vh < k THEN k := ch / vh END ;
+    x := F64 (i MOD cols) * cw + (cw - k * vw) / 2.0 ;
+    y := F64 (top) + F64 (i DIV cols) * ch + (ch - k * vh) / 2.0 ;
+    DynStr.Append (d, '<g class="panel" transform="translate(') ;
+    NumP (d, x, 2) ;
+    DynStr.AppendChar (d, ' ') ;
+    NumP (d, y, 2) ;
+    DynStr.Append (d, ') scale(') ;
+    NumP (d, k, 6) ;
+    DynStr.Append (d, ')">') ;
+    (* the figure's ids made its own: a chart's clip path is cv-clip
+       in every chart *)
+    prefix := 'p' + Fmt.I64Str (i) + '-' ;
+    body := SLICE (figures[i], bodyAt, bodyEnd - bodyAt) ;
+    body := Text.Replace (body, 'id="', 'id="' + prefix) ;
+    body := Text.Replace (body, 'url(#', 'url(#' + prefix) ;
+    DynStr.Append (d, body) ;
+    DynStr.Append (d, '</g>')
+  END ;
+  DynStr.Append (d, '</svg>') ;
+  RETURN DynStr.View (d)
+END Panels ;
 
 END Plot.

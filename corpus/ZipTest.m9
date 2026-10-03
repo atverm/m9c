@@ -1,0 +1,513 @@
+MODULE ZipTest ;
+
+(* Zip.Gunzip against Python's gzip, and the member reader as a stream
+   against Python's zipfile.  (The archive FORMAT -- ZIP64, names,
+   methods -- stays with runtime/test/zip_driver.c.)  The files are
+   under runtime/test/gold/gz/, written with their goldens by
+   tools/zipgoldm9.py: nine .gz that decompress -- one of each kind
+   of deflate block, every optional header field, files of two and
+   three members, one written by hand -- and twenty-three that must be
+   refused, each of which Python refuses too; an archive of eight
+   members read three ways, and one of four members whose streams
+   are wrong.
+
+   What a file decompresses to is held by its length and a checksum
+   that depends on where each byte is.
+
+   The inflate under test is Zip's own, written in M9.  Beside the
+   files of the first list, runtime/test/gold/gz/many.gzs holds
+   several hundred deflate streams written every way zlib can write
+   one -- every level and strategy, six kinds of data, lengths around
+   the window and the block sizes -- and each must come out byte for
+   byte. *)
+
+IMPORT Check ;
+IMPORT Io ;
+IMPORT Zip ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+  pool : POOL ;
+
+(* the sum over the bytes of (i mod 251 + 1) * byte, modulo 1000000007 *)
+PROCEDURE Sum (RO b: SLICE OF BYTE) : I64 =
+VAR s, i : I64 ;
+BEGIN
+  s := 0 ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    s := (s + (i MOD 251 + 1) * I64 (b[i])) MOD 1000000007
+  END ;
+  RETURN s
+END Sum ;
+
+PROCEDURE Good () RAISES Zip.Error, Io.IOError, ValueRange =
+VAR
+  names : SLICE OF STR ;
+  length, check : SLICE OF I64 ;
+  b : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  names := Check.GoldStrs (t, gold, 'good.names') ;
+  length := Check.GoldI64s (t, gold, 'good.length') ;
+  check := Check.GoldI64s (t, gold, 'good.check') ;
+  Check.That (t, 'the golden file names its files', LEN (names) > 0) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    b := Zip.Gunzip (pool, Check.GoldPath ('gz/' + names[i])) ;
+    Check.EqI64 (t, 'Gunzip ' + names[i] + ': the length', LEN (b), length[i]) ;
+    Check.EqI64 (t, 'Gunzip ' + names[i] + ': every byte in its place',
+                 Sum (b), check[i])
+  END ;
+  b := Zip.GunzipBytes (pool, Io.ReadFileBytes (pool, Check.GoldPath ('gz/hello.gz'))) ;
+  Check.EqI64 (t, 'GunzipBytes of bytes already held', LEN (b), length[0]) ;
+  b := Zip.GunzipBytes (pool, NEW (BYTE, 0)) ;
+  Check.EqI64 (t, 'GunzipBytes of nothing is nothing', LEN (b), 0)
+END Good ;
+
+(* gz/many.gzs: several hundred members in one file, each read on its
+   own.  One check for the lot, and it names the first that is wrong:
+   a check a member would be a page of PASS that nobody reads. *)
+PROCEDURE Many () RAISES Io.IOError, ValueRange =
+VAR
+  data, b : SLICE OF BYTE ;
+  off, length, check : SLICE OF I64 ;
+  i, right, firstWrong : I64 ;
+BEGIN
+  data := Io.ReadFileBytes (pool, Check.GoldPath ('gz/many.gzs')) ;
+  off := Check.GoldI64s (t, gold, 'many.offset') ;
+  length := Check.GoldI64s (t, gold, 'many.length') ;
+  check := Check.GoldI64s (t, gold, 'many.check') ;
+  Check.That (t, 'many: the golden file lists more than three hundred members',
+              LEN (length) > 300 AND LEN (off) = LEN (length) + 1) ;
+  right := 0 ;
+  firstWrong := -1 ;
+  FOR i := 0 TO LEN (length) - 1 DO
+    b := OneOf (SLICE (data, off[i], off[i + 1] - off[i])) ;
+    IF LEN (b) = length[i] AND Sum (b) = check[i] THEN
+      right := right + 1
+    ELSIF firstWrong < 0 THEN
+      firstWrong := i
+    END
+  END ;
+  Check.EqI64 (t, 'many: every member decodes to what zlib compressed',
+               right, LEN (length)) ;
+  Check.EqI64 (t, 'many: the first member that does not (-1: none)',
+               firstWrong, -1)
+END Many ;
+
+(* one member's bytes, or a slice no member has the length of when it
+   is refused *)
+PROCEDURE OneOf (RO member: SLICE OF BYTE) : SLICE OF BYTE =
+BEGIN
+  RETURN Zip.GunzipBytes (pool, member)
+EXCEPT
+| Zip.Error (msg) : RETURN NEW (BYTE, 999999)
+| ValueRange : RETURN NEW (BYTE, 999998)
+END OneOf ;
+
+(* what the file is refused as: '' when it is not *)
+PROCEDURE Refusal (RO name: STR) : STR =
+VAR
+  b : SLICE OF BYTE ;
+  why : STR ;
+BEGIN
+  b := Zip.Gunzip (pool, Check.GoldPath ('gz/' + name)) ;
+  RETURN ''
+EXCEPT
+| Zip.Error (msg) :
+    (* a handler's binder has no type to the checker yet, so it is
+       given one by a variable before it is used as a string *)
+    why := msg ;
+    RETURN why + ''
+| Io.IOError (path) : RETURN 'IOError'
+| ValueRange : RETURN 'ValueRange'
+END Refusal ;
+
+PROCEDURE Bad () =
+VAR
+  names : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  names := Check.GoldStrs (t, gold, 'bad.names') ;
+  Check.EqStrs (t, 'the twenty-three that must be refused', names, Refused) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    Check.EqStr (t, 'Gunzip refuses ' + names[i], Refusal (names[i]), Why[i])
+  END ;
+  Check.EqStr (t, 'Gunzip of a file that is not there', Refusal ('nosuch.gz'),
+               'IOError')
+END Bad ;
+
+(* ---- the other way: Gzip, Compress, Deflate ----
+
+   A compressor's bytes are not unique, so nothing here compares them
+   to zlib's: what Gzip wrote must come back through GunzipBytes --
+   the decoder the rest of this test holds to zlib -- for each of the
+   several hundred members of many.gzs.  (Python's own gzip and zlib
+   read what these write in runtime/test/deflate.sh.) *)
+PROCEDURE Packs () RAISES Zip.Error, Io.IOError, ValueRange =
+VAR
+  data, b, g, back, z, raw : SLICE OF BYTE ;
+  off, length : SLICE OF I64 ;
+  i, k, right, firstWrong, grown, sumIn, sumOut : I64 ;
+  same : BOOL ;
+BEGIN
+  data := Io.ReadFileBytes (pool, Check.GoldPath ('gz/many.gzs')) ;
+  off := Check.GoldI64s (t, gold, 'many.offset') ;
+  length := Check.GoldI64s (t, gold, 'many.length') ;
+  right := 0 ;
+  firstWrong := -1 ;
+  grown := 0 ;
+  sumIn := 0 ;
+  sumOut := 0 ;
+  FOR i := 0 TO LEN (length) - 1 DO
+    b := OneOf (SLICE (data, off[i], off[i + 1] - off[i])) ;
+    g := Zip.Gzip (pool, b) ;
+    back := Zip.GunzipBytes (pool, g) ;
+    same := LEN (back) = LEN (b) AND LEN (b) = length[i] ;
+    IF same THEN
+      FOR k := 0 TO LEN (b) - 1 DO
+        IF back[k] # b[k] THEN same := FALSE END
+      END
+    END ;
+    IF same THEN
+      right := right + 1
+    ELSIF firstWrong < 0 THEN
+      firstWrong := i
+    END ;
+    (* never much longer than what went in: stored blocks at worst *)
+    IF LEN (g) > LEN (b) + 18 + 5 * (LEN (b) DIV 65535 + 1) THEN
+      grown := grown + 1
+    END ;
+    sumIn := sumIn + LEN (b) ;
+    sumOut := sumOut + LEN (g)
+  END ;
+  Check.EqI64 (t, 'Gzip: every member of many.gzs comes back through Gunzip',
+               right, LEN (length)) ;
+  Check.EqI64 (t, 'Gzip: the first that does not (-1: none)', firstWrong, -1) ;
+  Check.EqI64 (t, 'Gzip: none grew by more than its wrapping and stored blocks',
+               grown, 0) ;
+  Check.That (t, 'Gzip: and together they are less than half of what went in',
+              2 * sumOut < sumIn) ;
+
+  (* the three wrappings of one stream *)
+  b := Io.ReadFileBytes (pool, Check.GoldPath ('gz/hello.gz')) ;
+  raw := Zip.Deflate (pool, b) ;
+  g := Zip.Gzip (pool, b) ;
+  z := Zip.Compress (pool, b) ;
+  Check.That (t, 'Gzip begins 1F 8B 08 and has no time in it',
+              I64 (g[0]) = 31 AND I64 (g[1]) = 139 AND I64 (g[2]) = 8
+              AND I64 (g[4]) = 0 AND I64 (g[5]) = 0 AND I64 (g[6]) = 0
+              AND I64 (g[7]) = 0) ;
+  Check.EqI64 (t, 'Gzip is the bare stream and eighteen bytes',
+               LEN (g), LEN (raw) + 18) ;
+  Check.EqI64 (t, 'Compress is the bare stream and six bytes',
+               LEN (z), LEN (raw) + 6) ;
+  Check.That (t, 'Compress begins as zlib does: 78 01, a multiple of 31',
+              I64 (z[0]) = 120 AND I64 (z[1]) = 1
+              AND (I64 (z[0]) * 256 + I64 (z[1])) MOD 31 = 0) ;
+  same := TRUE ;
+  FOR k := 0 TO LEN (raw) - 1 DO
+    IF g[10 + k] # raw[k] OR z[2 + k] # raw[k] THEN same := FALSE END
+  END ;
+  Check.That (t, 'the stream inside both is the one Deflate answers', same) ;
+  Check.EqI64 (t, 'Compress ends with the Adler-32 of what went in, high byte first',
+               ((I64 (z[LEN (z) - 4]) * 256 + I64 (z[LEN (z) - 3])) * 256
+                + I64 (z[LEN (z) - 2])) * 256 + I64 (z[LEN (z) - 1]),
+               Zip.Adler32 (b)) ;
+  Check.EqI64 (t, 'Deflate of nothing is one empty block', LEN (Zip.Deflate (pool, SLICE (b, 0, 0))), 2)
+END Packs ;
+
+(* what Decompress refuses a file as: '' when it does not *)
+PROCEDURE ZlibRefusal (RO name: STR) : STR =
+VAR
+  b : SLICE OF BYTE ;
+  why : STR ;
+BEGIN
+  b := Zip.Decompress (pool, Io.ReadFileBytes (pool, Check.GoldPath ('gz/' + name))) ;
+  RETURN ''
+EXCEPT
+| Zip.Error (msg) :
+    why := msg ;
+    RETURN why + ''
+| Io.IOError (path) : RETURN 'IOError'
+| ValueRange : RETURN 'ValueRange'
+END ZlibRefusal ;
+
+CONST
+  ZlRefused = ['zl-not.zz', 'zl-dict.zz', 'zl-adler.zz', 'zl-cut.zz',
+               'zl-noadler.zz', 'zl-tail.zz', 'zl-short.zz'] ;
+  ZlWhy = ['not zlib: its first two bytes are not a zlib header',
+           'the zlib stream asks for a preset dictionary',
+           'the zlib checksum does not match the bytes',
+           'the zlib stream stops inside its data',
+           'the zlib stream stops before its checksum',
+           'bytes after the zlib stream',
+           'the zlib stream stops inside its header'] ;
+
+(* Decompress: streams zlib wrote, streams Compress wrote, and seven
+   that are not sound *)
+PROCEDURE Zlibs () RAISES Zip.Error, Io.IOError, ValueRange =
+VAR
+  names : SLICE OF STR ;
+  length, check, off : SLICE OF I64 ;
+  data, b, back : SLICE OF BYTE ;
+  i, k, right : I64 ;
+  same : BOOL ;
+BEGIN
+  names := Check.GoldStrs (t, gold, 'zl.names') ;
+  length := Check.GoldI64s (t, gold, 'zl.length') ;
+  check := Check.GoldI64s (t, gold, 'zl.check') ;
+  Check.That (t, 'the golden file names zlib streams', LEN (names) > 3) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    b := Zip.Decompress (pool, Io.ReadFileBytes (pool, Check.GoldPath ('gz/' + names[i]))) ;
+    Check.EqI64 (t, 'Decompress ' + names[i] + ': the length', LEN (b), length[i]) ;
+    Check.EqI64 (t, 'Decompress ' + names[i] + ': every byte in its place',
+                 Sum (b), check[i])
+  END ;
+  (* what Compress wrote comes back *)
+  data := Io.ReadFileBytes (pool, Check.GoldPath ('gz/many.gzs')) ;
+  off := Check.GoldI64s (t, gold, 'many.offset') ;
+  right := 0 ;
+  FOR i := 0 TO LEN (off) - 2 DO
+    b := OneOf (SLICE (data, off[i], off[i + 1] - off[i])) ;
+    back := Zip.Decompress (pool, Zip.Compress (pool, b)) ;
+    same := LEN (back) = LEN (b) ;
+    IF same THEN
+      FOR k := 0 TO LEN (b) - 1 DO
+        IF back[k] # b[k] THEN same := FALSE END
+      END
+    END ;
+    IF same THEN right := right + 1 END
+  END ;
+  Check.EqI64 (t, 'Decompress undoes Compress for every member of many.gzs',
+               right, LEN (off) - 1) ;
+  names := Check.GoldStrs (t, gold, 'zlbad.names') ;
+  Check.EqStrs (t, 'the seven zlib streams that must be refused', names, ZlRefused) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    Check.EqStr (t, 'Decompress refuses ' + names[i], ZlibRefusal (names[i]),
+                 ZlWhy[i])
+  END
+END Zlibs ;
+
+(* Crc32 and Adler32 against zlib's, over bytes made here *)
+PROCEDURE Sums () RAISES ValueRange =
+VAR
+  length, crc, adler, ff : SLICE OF I64 ;
+  b, ones : SLICE OF BYTE ;
+  i, k, okCrc, okAdler, okFf : I64 ;
+BEGIN
+  length := Check.GoldI64s (t, gold, 'sum.length') ;
+  crc := Check.GoldI64s (t, gold, 'sum.crc') ;
+  adler := Check.GoldI64s (t, gold, 'sum.adler') ;
+  ff := Check.GoldI64s (t, gold, 'sum.adler.ff') ;
+  Check.That (t, 'the golden file has checksums', LEN (length) > 5) ;
+  okCrc := 0 ;
+  okAdler := 0 ;
+  okFf := 0 ;
+  FOR i := 0 TO LEN (length) - 1 DO
+    b := NEW (pool, BYTE, length[i]) ;
+    ones := NEW (pool, BYTE, length[i]) ;
+    FOR k := 0 TO length[i] - 1 DO
+      b[k] := BYTE ((k * 7 + 11) MOD 251) ;
+      ones[k] := BYTE (255)
+    END ;
+    IF Zip.Crc32 (b) = crc[i] THEN okCrc := okCrc + 1 END ;
+    IF Zip.Adler32 (b) = adler[i] THEN okAdler := okAdler + 1 END ;
+    IF Zip.Adler32 (ones) = ff[i] THEN okFf := okFf + 1 END
+  END ;
+  Check.EqI64 (t, 'Crc32 is zlib.crc32 at every length', okCrc, LEN (length)) ;
+  Check.EqI64 (t, 'Adler32 is zlib.adler32 at every length', okAdler,
+               LEN (length)) ;
+  Check.EqI64 (t, 'Adler32 of nothing but ones, where its sums are largest',
+               okFf, LEN (length))
+END Sums ;
+
+(* ---- the decoder as a stream: a member of an archive ----
+
+   Gunzip decodes straight into its answer, and a copy reads from the
+   answer itself.  A member is read a buffer at a time, and a copy
+   reads from a ring of the last 32768 bytes -- other code, which no
+   .gz file reaches.  gz/many.zip is Python's zipfile's: matches near,
+   30 kB back and of distance one, noise, nothing, and a stored
+   member.  Each is read three times: 97 bytes at a time (less than
+   one copy can be long, with the smallest compressed-side block),
+   4096, and 100000 (more than the window). *)
+
+CONST
+  ManyZip = 'runtime/test/gold/gz/many.zip' ;
+  BadZip = 'runtime/test/gold/gz/bad.zip' ;
+  Buffers = [97, 4096, 100000] ;
+  Blocks = [1, 0, 0] ;
+  Sizes = ['97', '4096', '100000'] ;
+
+(* member i whole, read `size` bytes at a time; a slice of a length no
+   member has when the reader fails or answers another length than the
+   directory states *)
+PROCEDURE Whole (KEPT a: PTR Zip.Archive ; i, size, block: I64) : SLICE OF BYTE =
+VAR
+  m : PTR Zip.Member ;
+  all, chunk : SLICE OF BYTE ;
+  n, at, got, k : I64 ;
+BEGIN
+  n := Zip.SizeAt (a, i) ;
+  all := NEW (pool, BYTE, n) ;
+  chunk := NEW (pool, BYTE, size) ;
+  m := Zip.OpenMember (pool, a, i, block) ;
+  at := 0 ;
+  LOOP
+    got := Zip.Read (m, chunk) ;
+    IF got = 0 THEN EXIT END ;
+    IF at + got > n THEN RETURN NEW (BYTE, 999997) END ;
+    FOR k := 0 TO got - 1 DO all[at + k] := chunk[k] END ;
+    at := at + got
+  END ;
+  Zip.Close (m) ;
+  IF at # n THEN RETURN NEW (BYTE, 999996) END ;
+  RETURN all
+EXCEPT
+| Zip.Error (msg) : RETURN NEW (BYTE, 999999)
+| Io.IOError (path) : RETURN NEW (BYTE, 999998)
+| ValueRange : RETURN NEW (BYTE, 999995)
+| IndexError : RETURN NEW (BYTE, 999994)
+END Whole ;
+
+PROCEDURE Members () RAISES Zip.Error, Io.IOError, ValueRange =
+VAR
+  a : PTR Zip.Archive ;
+  names : SLICE OF STR ;
+  length, check : SLICE OF I64 ;
+  b : SLICE OF BYTE ;
+  i, j, right : I64 ;
+BEGIN
+  names := Check.GoldStrs (t, gold, 'zip.names') ;
+  length := Check.GoldI64s (t, gold, 'zip.length') ;
+  check := Check.GoldI64s (t, gold, 'zip.check') ;
+  a := Zip.Open (pool, ManyZip) ;
+  Check.EqI64 (t, 'many.zip: as many members as the golden file names',
+               Zip.Count (a), LEN (names)) ;
+  FOR j := 0 TO LEN (Buffers) - 1 DO
+    right := 0 ;
+    FOR i := 0 TO LEN (names) - 1 DO
+      b := Whole (a, Zip.Find (a, names[i]), Buffers[j], Blocks[j]) ;
+      IF LEN (b) = length[i] AND Sum (b) = check[i] THEN right := right + 1 END
+    END ;
+    Check.EqI64 (t, 'many.zip read ' + Sizes[j]
+                    + ' bytes at a time: every member byte for byte',
+                 right, LEN (names))
+  END
+END Members ;
+
+(* what reading member i to its end, `size` bytes at a time, is
+   refused as: '' when it is not *)
+PROCEDURE StreamRefusal (KEPT a: PTR Zip.Archive ; i, size: I64) : STR =
+VAR
+  m : PTR Zip.Member ;
+  chunk : SLICE OF BYTE ;
+  why : STR ;
+BEGIN
+  chunk := NEW (pool, BYTE, size) ;
+  m := Zip.OpenMember (pool, a, i, 0) ;
+  WHILE Zip.Read (m, chunk) > 0 DO END ;
+  RETURN ''
+EXCEPT
+| Zip.Error (msg) :
+    why := msg ;
+    RETURN why + ''
+| Io.IOError (path) : RETURN 'IOError'
+| ValueRange : RETURN 'ValueRange'
+| IndexError : RETURN 'IndexError'
+END StreamRefusal ;
+
+(* gz/bad.zip: a directory that is right over streams that are not --
+   each met by the decoder twenty letters in, in its common run -- and
+   two streams that are right under a directory that lies: the CRC
+   (zipfile refuses it too) and the length (zipfile reads the stream
+   whole and never looks).  A member read in pieces of 7 is summed
+   as one. *)
+PROCEDURE BadMembers () RAISES Zip.Error, Io.IOError, ValueRange =
+VAR
+  a : PTR Zip.Archive ;
+  names : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  names := Check.GoldStrs (t, gold, 'zipbad.names') ;
+  Check.EqStrs (t, 'the six members that must be refused', names, BadNames) ;
+  a := Zip.Open (pool, BadZip) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    Check.EqStr (t, 'bad.zip: reading ' + names[i] + ' is refused',
+                 StreamRefusal (a, Zip.Find (a, names[i]), 4096), BadWhy[i])
+  END ;
+  Check.EqStr (t, 'bad.zip: badcrc read seven bytes at a time is refused the same',
+               StreamRefusal (a, Zip.Find (a, 'badcrc'), 7), BadWhy[4]) ;
+  Check.EqStr (t, 'bad.zip: badsize read seven bytes at a time is refused the same',
+               StreamRefusal (a, Zip.Find (a, 'badsize'), 7), BadWhy[5])
+END BadMembers ;
+
+CONST
+  BadNames = ['toofar', 'baddist', 'badlength', 'cut', 'badcrc', 'badsize'] ;
+  BadWhy = ['the deflate stream is corrupt',
+            'the deflate stream is corrupt',
+            'the deflate stream is corrupt',
+            'the member ends mid-stream',
+            'the CRC of badcrc does not match its bytes',
+            'the length of badsize is not what its directory states'] ;
+
+CONST
+  Refused = ['notgz.gz', 'method.gz', 'badcrc.gz', 'badlen.gz', 'cut.gz',
+             'cuttrailer.gz', 'damaged.gz', 'badblock.gz', 'toofar.gz',
+             'badlength.gz', 'badstored.gz', 'shortheader.gz', 'tail.gz',
+             'baddist.gz', 'toofarlong.gz', 'baddistlong.gz',
+             'badlengthlong.gz', 'manylen.gz', 'manydist.gz', 'gaplen.gz',
+             'gapdist.gz', 'overlen.gz', 'overdist.gz'] ;
+  Why = ['not gzip: it does not begin 1F 8B',
+         'a gzip method other than deflate',
+         'the gzip CRC does not match the bytes',
+         'the gzip length does not match the bytes',
+         'the gzip stream stops inside a member',
+         'the gzip stream stops before its trailer',
+         (* one bit turned mid-stream still decodes, to other bytes:
+            it is the CRC that catches it, which is what a CRC is for *)
+         'the gzip CRC does not match the bytes',
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt',
+         'the gzip stream stops inside a header',
+         'bytes after the last gzip member',
+         'the gzip stream is corrupt',
+         (* the same three, met by the decoder's common run *)
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt',
+         (* handmade.gz, which decodes, with one thing the format
+            forbids: one length code, one distance code more than
+            there are; a code set with a gap; one with too many codes *)
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt',
+         'the gzip stream is corrupt'] ;
+
+BEGIN
+  gold := Check.GoldPath ('Zip.gold') ;
+  Good () ;
+  Many () ;
+  Bad () ;
+  Members () ;
+  BadMembers () ;
+  Packs () ;
+  Zlibs () ;
+  Sums () ;
+  Io.Halt (Check.Done (t, 'Zip'))
+EXCEPT
+| Zip.Error (msg) :
+    Check.That (t, 'no Zip.Error escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Zip'))
+| Io.IOError (path) :
+    Check.That (t, 'no IOError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Zip'))
+| ValueRange :
+    Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Zip'))
+END ZipTest.

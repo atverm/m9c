@@ -19,11 +19,15 @@ DynStr_DString * DynStr_New (m9_pool *pool, m9_state *err)
   err->res = m9res;
   DynStr_DString * m9ret = NULL;
   DynStr_DString * d = NULL; (void) d;
-  d = (DynStr_DString *) m9_pool_alloc (&((*pool)), sizeof (DynStr_DString), 1, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = (DynStr_DString *) m9_pool_alloc (&((*pool)), sizeof (DynStr_DString), 1, err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   d->len = INT64_C(0);
-  d->buf = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), INT64_C(16), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d->buf) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), INT64_C(16), err);
+    if (err->exc) goto L_ret;
+    d->buf = m9v;
+  }
   err->res = m9res;
   m9ret = d;
   goto L_ret;
@@ -46,8 +50,10 @@ void DynStr_AppendChar (DynStr_DString * *d, m9_pool *d_pool, uint32_t ch, m9_st
   }
   (*(uint32_t *) m9_at ((*d)->buf.p, (*d)->len, (*d)->buf.len, sizeof (uint32_t), err)) = ch;
   if (err->exc) goto L_ret;
-  (*d)->len = m9_add_i64 ((*d)->len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*d)->len) m9v = m9_add_i64 ((*d)->len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*d)->len = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, d_pool, (*d));
@@ -200,23 +206,34 @@ void DynStr_AppendI64 (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state
     if (err->exc) goto L_ret;
     x = v;
   } else {
-    x = m9_sub_i64 (INT64_C(0), v, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(x) m9v = m9_sub_i64 (INT64_C(0), v, err);
+      if (err->exc) goto L_ret;
+      x = m9v;
+    }
   }
   n = INT64_C(0);
   for (;;) {
     if (!((x != INT64_C(0)))) break;
-    (*(uint32_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (uint32_t), err)) = (*(uint32_t *) m9_at (DynStr_DigitChars.p, m9_sub_i64 (INT64_C(0), (m9_mod_i64 (x, INT64_C(10), err)), err), DynStr_DigitChars.len, sizeof (uint32_t), err));
-    if (err->exc) goto L_ret;
-    x = m9_div_i64 (x, INT64_C(10), err);
-    if (err->exc) goto L_ret;
-    n = m9_add_i64 (n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint32_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (DynStr_DigitChars.p, m9_sub_i64 (INT64_C(0), (m9_mod_i64 (x, INT64_C(10), err)), err), DynStr_DigitChars.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint32_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (uint32_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+    { __typeof__(x) m9v = m9_div_i64 (x, INT64_C(10), err);
+      if (err->exc) goto L_ret;
+      x = m9v;
+    }
+    { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      n = m9v;
+    }
   }
   for (;;) {
     if (!((n > INT64_C(0)))) break;
-    n = m9_sub_i64 (n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(n) m9v = m9_sub_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      n = m9v;
+    }
     DynStr_AppendChar (d, d_pool, (*(uint32_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (uint32_t), err)), err);
     if (err->exc) goto L_ret;
   }
@@ -239,18 +256,25 @@ m9_sl_BYTE DynStr_Bytes (m9_pool *pool, m9_sl_CHAR s, bool zeroTerm, m9_state *e
   int64_t i = 0; (void) i;
   n = (s).len;
   if (zeroTerm) {
-    n = m9_add_i64 (n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      n = m9v;
+    }
   }
-  b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), n, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), n, err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9_byte ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))) m9v = m9_byte ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), err);
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   err->res = m9res;
   m9ret = b;
@@ -279,68 +303,120 @@ m9_sl_BYTE DynStr_Utf8 (m9_pool *pool, m9_sl_CHAR s, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    v = (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)));
-    if (err->exc) goto L_ret;
-    if ((v < INT64_C(128))) {
-      n = m9_add_i64 (n, INT64_C(1), err);
+    { __typeof__(v) m9v = (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)));
       if (err->exc) goto L_ret;
+      v = m9v;
+    }
+    if ((v < INT64_C(128))) {
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
     } else {
       if ((v < INT64_C(2048))) {
-        n = m9_add_i64 (n, INT64_C(2), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(2), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
     } else {
       if ((v < INT64_C(65536))) {
-        n = m9_add_i64 (n, INT64_C(3), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(3), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
     } else {
-      n = m9_add_i64 (n, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(4), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
     } } }
   } }
-  b = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), n, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), n, err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
   n = INT64_C(0);
   { int64_t m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    v = (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)));
-    if (err->exc) goto L_ret;
+    { __typeof__(v) m9v = (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)));
+      if (err->exc) goto L_ret;
+      v = m9v;
+    }
     if ((v < INT64_C(128))) {
-      (*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err)) = m9_byte (v, err);
-      if (err->exc) goto L_ret;
-      n = m9_add_i64 (n, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err))) m9v = m9_byte (v, err);
+        if (err->exc) goto L_ret;
+        (*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
     } else {
       if ((v < INT64_C(2048))) {
-        (*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (INT64_C(192), m9_div_i64 (v, INT64_C(64), err), err), err);
-        if (err->exc) goto L_ret;
-        (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err), err);
-        if (err->exc) goto L_ret;
-        n = m9_add_i64 (n, INT64_C(2), err);
-        if (err->exc) goto L_ret;
+        { __typeof__((*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(192), m9_div_i64 (v, INT64_C(64), err), err), err);
+          if (err->exc) goto L_ret;
+          (*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+        { __typeof__((*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err), err);
+          if (err->exc) goto L_ret;
+          (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(2), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
     } else {
       if ((v < INT64_C(65536))) {
-        (*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (INT64_C(224), m9_div_i64 (v, INT64_C(4096), err), err), err);
-        if (err->exc) goto L_ret;
-        (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err), err);
-        if (err->exc) goto L_ret;
-        (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(2), err), b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err), err);
-        if (err->exc) goto L_ret;
-        n = m9_add_i64 (n, INT64_C(3), err);
-        if (err->exc) goto L_ret;
+        { __typeof__((*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(224), m9_div_i64 (v, INT64_C(4096), err), err), err);
+          if (err->exc) goto L_ret;
+          (*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+        { __typeof__((*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err), err);
+          if (err->exc) goto L_ret;
+          (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+        { __typeof__((*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(2), err), b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err), err);
+          if (err->exc) goto L_ret;
+          (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(2), err), b.len, sizeof (uint8_t), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+        { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(3), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
     } else {
-      (*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (INT64_C(240), m9_div_i64 (v, INT64_C(262144), err), err), err);
-      if (err->exc) goto L_ret;
-      (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), err), err);
-      if (err->exc) goto L_ret;
-      (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(2), err), b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err), err);
-      if (err->exc) goto L_ret;
-      (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(3), err), b.len, sizeof (uint8_t), err)) = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err), err);
-      if (err->exc) goto L_ret;
-      n = m9_add_i64 (n, INT64_C(4), err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(240), m9_div_i64 (v, INT64_C(262144), err), err), err);
+        if (err->exc) goto L_ret;
+        (*(uint8_t *) m9_at (b.p, n, b.len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), err), err);
+        if (err->exc) goto L_ret;
+        (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(2), err), b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), err), err);
+        if (err->exc) goto L_ret;
+        (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(2), err), b.len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(3), err), b.len, sizeof (uint8_t), err))) m9v = m9_byte (m9_add_i64 (INT64_C(128), m9_mod_i64 (v, INT64_C(64), err), err), err);
+        if (err->exc) goto L_ret;
+        (*(uint8_t *) m9_at (b.p, m9_add_i64 (n, INT64_C(3), err), b.len, sizeof (uint8_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(4), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
     } } }
   } }
   err->res = m9res;
@@ -362,15 +438,20 @@ m9_sl_CHAR DynStr_Chars (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR c = {0}; (void) c;
   int64_t i = 0; (void) i;
-  c = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), (b).len, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(c) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), (b).len, err);
+    if (err->exc) goto L_ret;
+    c = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((b).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(uint32_t *) m9_at (c.p, i, c.len, sizeof (uint32_t), err)) = m9_chr ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint32_t *) m9_at (c.p, i, c.len, sizeof (uint32_t), err))) m9v = m9_chr ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), err);
+      if (err->exc) goto L_ret;
+      (*(uint32_t *) m9_at (c.p, i, c.len, sizeof (uint32_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   err->res = m9res;
   m9ret = c;
@@ -401,74 +482,102 @@ m9_sl_CHAR DynStr_FromUtf8 (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
   i = INT64_C(0);
   for (;;) {
     if (!((i < (b).len))) break;
-    v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
-    if (err->exc) goto L_ret;
-    if ((v < INT64_C(128))) {
-      i = m9_add_i64 (i, INT64_C(1), err);
+    { __typeof__(v) m9v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
       if (err->exc) goto L_ret;
+      v = m9v;
+    }
+    if ((v < INT64_C(128))) {
+      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        i = m9v;
+      }
     } else {
       if (((v >= INT64_C(194)) && (v <= INT64_C(223)))) {
-        i = m9_add_i64 (i, INT64_C(2), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(2), err);
+          if (err->exc) goto L_ret;
+          i = m9v;
+        }
     } else {
       if (((v >= INT64_C(224)) && (v <= INT64_C(239)))) {
-        i = m9_add_i64 (i, INT64_C(3), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(3), err);
+          if (err->exc) goto L_ret;
+          i = m9v;
+        }
     } else {
       if (((v >= INT64_C(240)) && (v <= INT64_C(244)))) {
-        i = m9_add_i64 (i, INT64_C(4), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(4), err);
+          if (err->exc) goto L_ret;
+          i = m9v;
+        }
     } else {
       m9_raise (err, &m9_exc_ValueRange);
       goto L_ret;
     } } } }
-    n = m9_add_i64 (n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      n = m9v;
+    }
   }
   if ((i > (b).len)) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  s = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), n, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(s) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, &((*pool)), n, err);
+    if (err->exc) goto L_ret;
+    s = m9v;
+  }
   n = INT64_C(0);
   i = INT64_C(0);
   for (;;) {
     if (!((i < (b).len))) break;
-    v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
-    if (err->exc) goto L_ret;
+    { __typeof__(v) m9v = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
+      if (err->exc) goto L_ret;
+      v = m9v;
+    }
     if ((v < INT64_C(128))) {
       need = INT64_C(0);
     } else {
       if ((v <= INT64_C(223))) {
-        v = m9_sub_i64 (v, INT64_C(192), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(v) m9v = m9_sub_i64 (v, INT64_C(192), err);
+          if (err->exc) goto L_ret;
+          v = m9v;
+        }
         need = INT64_C(1);
     } else {
       if ((v <= INT64_C(239))) {
-        v = m9_sub_i64 (v, INT64_C(224), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(v) m9v = m9_sub_i64 (v, INT64_C(224), err);
+          if (err->exc) goto L_ret;
+          v = m9v;
+        }
         need = INT64_C(2);
     } else {
-      v = m9_sub_i64 (v, INT64_C(240), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(v) m9v = m9_sub_i64 (v, INT64_C(240), err);
+        if (err->exc) goto L_ret;
+        v = m9v;
+      }
       need = INT64_C(3);
     } } }
     { int64_t m9t1to;
     k = INT64_C(1);
     m9t1to = need;
     for (; k <= m9t1to; k += 1) {
-      hi = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, k, err), b.len, sizeof (uint8_t), err)));
-      if (err->exc) goto L_ret;
+      { __typeof__(hi) m9v = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, k, err), b.len, sizeof (uint8_t), err)));
+        if (err->exc) goto L_ret;
+        hi = m9v;
+      }
       if (((hi < INT64_C(128)) || (hi > INT64_C(191)))) {
         m9_raise (err, &m9_exc_ValueRange);
         goto L_ret;
       }
-      v = m9_add_i64 (m9_mul_i64 (v, INT64_C(64), err), (m9_sub_i64 (hi, INT64_C(128), err)), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(64), err), (m9_sub_i64 (hi, INT64_C(128), err)), err);
+        if (err->exc) goto L_ret;
+        v = m9v;
+      }
     } }
-    i = m9_add_i64 (m9_add_i64 (i, INT64_C(1), err), need, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(i) m9v = m9_add_i64 (m9_add_i64 (i, INT64_C(1), err), need, err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
     if ((need == INT64_C(1))) {
       lo = INT64_C(128);
     } else {
@@ -492,10 +601,15 @@ m9_sl_CHAR DynStr_FromUtf8 (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
       m9_raise (err, &m9_exc_ValueRange);
       goto L_ret;
     }
-    (*(uint32_t *) m9_at (s.p, n, s.len, sizeof (uint32_t), err)) = m9_chr (v, err);
-    if (err->exc) goto L_ret;
-    n = m9_add_i64 (n, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint32_t *) m9_at (s.p, n, s.len, sizeof (uint32_t), err))) m9v = m9_chr (v, err);
+      if (err->exc) goto L_ret;
+      (*(uint32_t *) m9_at (s.p, n, s.len, sizeof (uint32_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+    { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      n = m9v;
+    }
   }
   err->res = m9res;
   m9ret = s;
@@ -515,15 +629,20 @@ static void DynStr_Grow (DynStr_DString * *d, m9_pool *d_pool, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR nb = {0}; (void) nb;
   int64_t i = 0; (void) i;
-  nb = M9_POOL_SL (m9_sl_CHAR, uint32_t, d_pool, m9_mul_i64 (INT64_C(2), ((*d)->buf).len, err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(nb) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, d_pool, m9_mul_i64 (INT64_C(2), ((*d)->buf).len, err), err);
+    if (err->exc) goto L_ret;
+    nb = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((*d)->len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(uint32_t *) m9_at (nb.p, i, nb.len, sizeof (uint32_t), err)) = (*(uint32_t *) m9_at ((*d)->buf.p, i, (*d)->buf.len, sizeof (uint32_t), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint32_t *) m9_at (nb.p, i, nb.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at ((*d)->buf.p, i, (*d)->buf.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint32_t *) m9_at (nb.p, i, nb.len, sizeof (uint32_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   (*d)->buf = nb;
 L_ret: ;

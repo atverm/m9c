@@ -1,0 +1,12 @@
+(* EXPECT: argument 1 of Fill: the CONST table Primes can be lent only to an RO parameter *)
+MODULE m ;
+CONST Primes = [2, 3, 5] ;
+PROCEDURE Fill (xs: SLICE OF I64) RAISES IndexError =
+BEGIN
+  xs[0] := 9
+END Fill ;
+PROCEDURE F () RAISES IndexError =
+BEGIN
+  Fill (Primes)
+END F ;
+END m.

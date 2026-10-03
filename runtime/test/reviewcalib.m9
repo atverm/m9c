@@ -1,0 +1,70 @@
+MODULE reviewcalib ;
+
+(* The review counters, held to a program whose sites are counted by
+   hand.  Each comment says which row of `m9c --review' the line adds
+   to; reviewdiff.sh carries the numbers and compares.
+
+     assignments                 3   passed over, a type unknown: 1
+     arguments                   5
+     RETURN values               3
+     operands                    3
+     CASE labels                 2
+     THREAD arguments            0
+     CASE over variants, total   1
+
+   The one PASSED OVER is the point of the page: `last := code' takes
+   a handler's binder, which the checker does not type, so that
+   assignment was accepted without its two sides being compared.  It
+   happens to be right here.  The same line with a STR on its left is
+   accepted too (measured 2026-10-01), and the page is the only place
+   that says so before the C compiler does.                          *)
+
+IMPORT Io ;
+
+EXCEPTION Oops (code: I64) ;
+
+TYPE
+  Shape = CASE RECORD
+    | Dot
+    | Circle : r: F64
+  END ;
+
+PROCEDURE Twice (n: I64) : I64 =
+BEGIN
+  RETURN n + n                 (* RETURN 1 ; operands 1 *)
+END Twice ;
+
+PROCEDURE Area (s: Shape) : F64 =
+BEGIN
+  CASE s OF                    (* CASE over variants 1 *)
+  | Dot : RETURN 0.0           (* RETURN 2 *)
+  | Circle (r) : RETURN r      (* RETURN 3: a CASE-arm binder IS typed *)
+  END
+END Area ;
+
+PROCEDURE Raiser (k: I64) RAISES Oops =
+BEGIN
+  IF k > 0 THEN RAISE Oops (k) END      (* operands 2 *)
+END Raiser ;
+
+VAR
+  a, b, last : I64 ;
+  c : CHAR ;
+
+BEGIN
+  a := 2 ;                     (* assignments 1 *)
+  b := Twice (a) ;             (* assignments 2 ; arguments 1 *)
+  c := 'x' ;                   (* assignments 3 *)
+  IF a < b THEN                (* operands 3 *)
+    Io.WriteLine ('less')      (* arguments 2 *)
+  END ;
+  CASE c OF
+  | 'x' : Io.WriteLine ('x')   (* CASE labels 1 ; arguments 3 *)
+  | 'y' : Io.WriteLine ('y')   (* CASE labels 2 ; arguments 4 *)
+  ELSE
+  END ;
+  Raiser (b)                   (* arguments 5 *)
+EXCEPT
+| Oops (code) :
+    last := code               (* assignment PASSED OVER: code has no type *)
+END reviewcalib.

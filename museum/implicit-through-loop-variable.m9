@@ -1,0 +1,24 @@
+(* EXPECT-ERROR: no implicit conversions: F64 + I64 *)
+(* "There are no implicit conversions, including widenings" -- and
+   there was one, through the one name every loop has.  FOR bound its
+   variable afresh with NO type in the self-hosted checker, so every
+   use of a loop variable was an operand of unknown type, and unknown
+   never diagnoses: this program compiled, in the released 0.13.0
+   too, and printed 6.50 -- an integer added to a real with nothing
+   written to say so.  Observed 2026-10-02 through `m9c --review`,
+   whose page for Stats listed a dozen sites "passed over, a type
+   unknown" that had only `i` in common; the Pascal oracle typed the
+   variable as an I64 whatever its declaration, so the two checkers
+   had disagreed for as long as both existed and no probe had asked.
+   The loop variable is a variable now: declared, of a type its
+   bounds can count in, and of that type inside the loop. *)
+MODULE m ;
+VAR
+  i : I64 ;
+  x : F64 ;
+BEGIN
+  x := 0.5 ;
+  FOR i := 1 TO 3 DO
+    x := x + i
+  END
+END m.

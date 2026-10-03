@@ -1,0 +1,648 @@
+MODULE StatsTest ;
+
+(* Stats against numpy, scipy and pandas.
+
+   Two things are held here.  What was added on 2026-10-02 --
+   histogram and binning, rolling windows, linear interpolation,
+   covariance and correlation -- and the rule the whole module took
+   the same day: A NaN IS A MISSING VALUE, every statistic is over
+   the values that are there, and every count it answers is the count
+   of those.  (The older half without gaps -- moments, percentiles,
+   regression, t-tests, the random stream -- stays with
+   runtime/test/stats_driver.c.)
+
+   Goldens: runtime/test/gold/Stats.gold from tools/statsgoldm9.py,
+   which says how closely each is held and why.  Exact: histogram,
+   rolling extremes and counts, rolling sums (against math.fsum of
+   each window), interpolation, the median.  Within 1e-12: what
+   numpy and scipy themselves compute by a route whose last digits
+   are not anyone's to reproduce -- a pairwise mean, a BLAS product,
+   a p-value. *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Io ;
+IMPORT Stats ;
+
+CONST
+  Windows = [1, 4, 60] ;
+  Suffix = ['1', '4', '60'] ;
+  GapWindows = [1, 4, 9] ;
+  GapSuffix = ['1', '4', '9'] ;
+  Up = [1.0, 2.0, 3.0] ;
+  Down = [3.0, 2.0, 1.0] ;
+  Flat3 = [5.0, 5.0, 5.0] ;
+  Tol = 1.0e-12 ;
+  TolD = 1.0e-12 ;             (* densities and cumulatives *)
+  TolQ = 1.0e-10 ;             (* inverses *)
+  Digit = ['0', '1', '2', '3', '4', '5', '6'] ;
+  DofName = ['1', '2', '2.5', '5', '12', '30', '200'] ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+
+PROCEDURE F64s (RO name: STR) : SLICE OF F64 =
+BEGIN
+  RETURN Check.GoldF64s (t, gold, name)
+END F64s ;
+
+PROCEDURE I64s (RO name: STR) : SLICE OF I64 =
+BEGIN
+  RETURN Check.GoldI64s (t, gold, name)
+END I64s ;
+
+PROCEDURE NaN () : F64 =
+VAR z : F64 ;
+BEGIN
+  z := 0.0 ;
+  RETURN z / z
+END NaN ;
+
+(* a grid from its row-major values and its shape, and back *)
+PROCEDURE Grid (RO flat: SLICE OF F64 ; rows, cols: I64) : GRID 2 OF F64 =
+VAR
+  g : GRID 2 OF F64 ;
+  r, c : I64 ;
+BEGIN
+  g := NEW (F64, rows, cols) ;
+  FOR r := 0 TO rows - 1 DO
+    FOR c := 0 TO cols - 1 DO g[r, c] := flat[r * cols + c] END
+  END ;
+  RETURN g
+END Grid ;
+
+PROCEDURE Flat (RO g: GRID 2 OF F64) : SLICE OF F64 =
+VAR
+  out : SLICE OF F64 ;
+  r, c : I64 ;
+BEGIN
+  out := NEW (F64, LEN (g, 0) * LEN (g, 1)) ;
+  FOR r := 0 TO LEN (g, 0) - 1 DO
+    FOR c := 0 TO LEN (g, 1) - 1 DO out[r * LEN (g, 1) + c] := g[r, c] END
+  END ;
+  RETURN out
+END Flat ;
+
+(* ---- the moments and the tests over a sample with gaps ---- *)
+
+PROCEDURE Gaps ()
+  RAISES Stats.TooFew, Faults.SizeError, Faults.BadArg, ValueRange,
+         Overflow =
+VAR
+  x, y, z, want, range : SLICE OF F64 ;
+  hist : SLICE OF I64 ;
+  v : F64 ;
+  n : I64 ;
+  fit : Stats.Fit ;
+  reg : Stats.Reg ;
+  tst : Stats.Test ;
+BEGIN
+  x := F64s ('in.m.x') ;
+  y := F64s ('in.m.y') ;
+  z := F64s ('in.m.z') ;
+  n := Check.GoldI64 (t, gold, 'want.m.count') ;
+  Check.EqI64 (t, 'Count is the values that are not NaN', Stats.Count (x), n) ;
+  Check.That (t, 'and the sample has gaps', n < LEN (x)) ;
+  v := Stats.Mean (x) ;
+  Check.Near (t, 'Mean is numpy.nanmean', v,
+              Check.GoldF64 (t, gold, 'want.m.mean'), 0.0, Tol) ;
+  v := Stats.Var (x) ;
+  Check.Near (t, 'Var divides by the count less one', v,
+              Check.GoldF64 (t, gold, 'want.m.var'), 0.0, Tol) ;
+  v := Stats.VarP (x) ;
+  Check.Near (t, 'VarP by the count', v,
+              Check.GoldF64 (t, gold, 'want.m.varp'), 0.0, Tol) ;
+  v := Stats.Std (x) ;
+  Check.Near (t, 'Std', v, Check.GoldF64 (t, gold, 'want.m.std'), 0.0, Tol) ;
+  v := Stats.Median (x) ;
+  Check.EqF64 (t, 'Median is numpy.nanmedian', v,
+               Check.GoldF64 (t, gold, 'want.m.median')) ;
+  v := Stats.Percentile (x, 90.0) ;
+  Check.Near (t, 'Percentile 90 is numpy.nanpercentile', v,
+              Check.GoldF64 (t, gold, 'want.m.p90'), 0.0, Tol) ;
+  v := Stats.Percentile (x, 0.0) ;
+  Check.EqF64 (t, 'Percentile 0 is the smallest value there',
+               v, Check.GoldF64 (t, gold, 'want.m.p0')) ;
+  v := Stats.Percentile (x, 100.0) ;
+  Check.EqF64 (t, 'Percentile 100 the largest', v,
+               Check.GoldF64 (t, gold, 'want.m.p100')) ;
+
+  fit := Stats.NormFit (x) ;
+  want := F64s ('want.m.fit') ;
+  Check.Near (t, 'NormFit mu', fit.mu, want[0], 0.0, Tol) ;
+  Check.Near (t, 'NormFit sigma', fit.sigma, want[1], 0.0, Tol) ;
+  Check.EqI64 (t, 'NormFit says how many it was fitted to', fit.n, n) ;
+
+  reg := Stats.LinReg (x, y) ;
+  want := F64s ('want.m.linreg') ;
+  Check.Near (t, 'LinReg slope, over the pairs with both values',
+              reg.slope, want[0], 0.0, Tol) ;
+  Check.Near (t, 'LinReg intercept', reg.intercept, want[1], 1.0e-12, Tol) ;
+  Check.Near (t, 'LinReg r', reg.r, want[2], 0.0, Tol) ;
+  Check.Near (t, 'LinReg p', reg.p, want[3], 0.0, 1.0e-9) ;
+  Check.Near (t, 'LinReg stderr', reg.stderr, want[4], 0.0, Tol) ;
+  n := Check.GoldI64 (t, gold, 'want.m.pairs') ;
+  Check.EqI64 (t, 'LinReg says how many pairs', reg.n, n) ;
+  Check.EqI64 (t, 'Pairs counts the same', Stats.Pairs (x, y), n) ;
+  v := Stats.Cov (x, y) ;
+  Check.Near (t, 'Cov over the pairs', v,
+              Check.GoldF64 (t, gold, 'want.m.cov'), 0.0, Tol) ;
+  v := Stats.Corr (x, y) ;
+  Check.Near (t, 'Corr over the pairs', v,
+              Check.GoldF64 (t, gold, 'want.m.corr'), 0.0, Tol) ;
+
+  tst := Stats.TTest1 (x, 2.0) ;
+  want := F64s ('want.m.ttest1') ;
+  Check.Near (t, 'TTest1 t (scipy, nan_policy omit)', tst.t, want[0], 0.0, Tol) ;
+  Check.Near (t, 'TTest1 p', tst.p, want[1], 0.0, 1.0e-9) ;
+  Check.EqF64 (t, 'TTest1 dof is the count less one', tst.dof, want[2]) ;
+  Check.EqI64 (t, 'TTest1 n', tst.n, Stats.Count (x)) ;
+  tst := Stats.TTest2 (x, z) ;
+  want := F64s ('want.m.ttest2') ;
+  Check.Near (t, 'TTest2 t: each sample loses its own NaN', tst.t, want[0],
+              0.0, Tol) ;
+  Check.Near (t, 'TTest2 p', tst.p, want[1], 0.0, 1.0e-9) ;
+  Check.Near (t, 'TTest2 dof', tst.dof, want[2], 0.0, Tol) ;
+  Check.EqI64 (t, 'TTest2 n is both samples', tst.n,
+               Check.GoldI64 (t, gold, 'want.m.ttest2.n')) ;
+
+  range := F64s ('in.m.hrange') ;
+  hist := Stats.Histogram (x, 5, range[0], range[1]) ;
+  Check.EqI64s (t, 'Histogram does not count a NaN', hist,
+                I64s ('want.m.hist')) ;
+  Check.EqI64 (t, 'BinOf a NaN is -1',
+               Stats.BinOf (NaN (), 5, range[0], range[1]), -1)
+END Gaps ;
+
+PROCEDURE Histograms () RAISES Faults.BadArg =
+VAR
+  xs, range, edges : SLICE OF F64 ;
+  counts, binof : SLICE OF I64 ;
+  bins, i : I64 ;
+BEGIN
+  xs := F64s ('in.h') ;
+  range := F64s ('in.h.range') ;
+  bins := Check.GoldI64 (t, gold, 'in.h.bins') ;
+  edges := Stats.BinEdges (bins, range[0], range[1]) ;
+  Check.NearF64s (t, 'BinEdges is numpy.linspace', edges,
+                  F64s ('want.h.edges'), 0.0, 0.0) ;
+  counts := Stats.Histogram (xs, bins, range[0], range[1]) ;
+  Check.EqI64s (t, 'Histogram, values on every edge and a hair off it',
+                counts, I64s ('want.h.counts')) ;
+  binof := NEW (I64, LEN (xs)) ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    binof[i] := Stats.BinOf (xs[i], bins, range[0], range[1])
+  END ;
+  Check.EqI64s (t, 'BinOf, one value at a time, -1 outside', binof,
+                I64s ('want.h.binof'))
+END Histograms ;
+
+PROCEDURE Rolling () RAISES Stats.TooFew, Faults.BadArg =
+VAR
+  xs, r : SLICE OF F64 ;
+  c : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  xs := F64s ('in.r') ;
+  FOR i := 0 TO LEN (Windows) - 1 DO
+    r := Stats.RollingSum (xs, Windows[i]) ;
+    Check.NearF64s (t, 'RollingSum ' + Suffix[i] +
+                    ': the correctly rounded sum of each window', r,
+                    F64s ('want.r.sum.' + Suffix[i]), 0.0, 0.0) ;
+    r := Stats.RollingMean (xs, Windows[i]) ;
+    Check.NearF64s (t, 'RollingMean ' + Suffix[i], r,
+                    F64s ('want.r.mean.' + Suffix[i]), 0.0, 0.0) ;
+    r := Stats.RollingMin (xs, Windows[i]) ;
+    Check.NearF64s (t, 'RollingMin ' + Suffix[i], r,
+                    F64s ('want.r.min.' + Suffix[i]), 0.0, 0.0) ;
+    r := Stats.RollingMax (xs, Windows[i]) ;
+    Check.NearF64s (t, 'RollingMax ' + Suffix[i], r,
+                    F64s ('want.r.max.' + Suffix[i]), 0.0, 0.0)
+  END ;
+  xs := F64s ('in.rq') ;
+  r := Stats.RollingMin (xs, 3) ;
+  Check.NearF64s (t, 'RollingMin over runs of equals and a slope', r,
+                  F64s ('want.rq.min.3'), 0.0, 0.0) ;
+  r := Stats.RollingMax (xs, 3) ;
+  Check.NearF64s (t, 'RollingMax over runs of equals and a slope', r,
+                  F64s ('want.rq.max.3'), 0.0, 0.0) ;
+
+  (* with gaps: a stretch of NaN longer than the window, and both
+     infinities, apart and then together *)
+  xs := F64s ('in.rn') ;
+  FOR i := 0 TO LEN (GapWindows) - 1 DO
+    r := Stats.RollingSum (xs, GapWindows[i]) ;
+    Check.NearF64s (t, 'RollingSum with gaps ' + GapSuffix[i] +
+                    ': over the values there, 0.0 of none', r,
+                    F64s ('want.rn.sum.' + GapSuffix[i]), 0.0, 0.0) ;
+    r := Stats.RollingMean (xs, GapWindows[i]) ;
+    Check.NearF64s (t, 'RollingMean with gaps ' + GapSuffix[i] +
+                    ': divided by how many there are', r,
+                    F64s ('want.rn.mean.' + GapSuffix[i]), 0.0, 0.0) ;
+    r := Stats.RollingMin (xs, GapWindows[i]) ;
+    Check.NearF64s (t, 'RollingMin with gaps ' + GapSuffix[i], r,
+                    F64s ('want.rn.min.' + GapSuffix[i]), 0.0, 0.0) ;
+    r := Stats.RollingMax (xs, GapWindows[i]) ;
+    Check.NearF64s (t, 'RollingMax with gaps ' + GapSuffix[i], r,
+                    F64s ('want.rn.max.' + GapSuffix[i]), 0.0, 0.0) ;
+    c := Stats.RollingCount (xs, GapWindows[i]) ;
+    Check.EqI64s (t, 'RollingCount ' + GapSuffix[i] +
+                  ': the n of each window', c,
+                  I64s ('want.rn.count.' + GapSuffix[i]))
+  END ;
+  (* seven values that leave -1e-25 behind in a compensated sliding
+     sum, then nothing: the sum of nothing is 0.0, not the residue *)
+  xs := F64s ('in.rz') ;
+  r := Stats.RollingSum (xs, 7) ;
+  Check.NearF64s (t, 'RollingSum of a window gone empty is exactly 0.0',
+                  r, F64s ('want.rz.sum.7'), 0.0, 0.0)
+END Rolling ;
+
+PROCEDURE Interpolation ()
+  RAISES Stats.TooFew, Faults.SizeError, Faults.BadArg =
+VAR
+  xp, fp, xs, r, one, onef, probes : SLICE OF F64 ;
+  i : I64 ;
+  v : F64 ;
+BEGIN
+  xp := F64s ('in.i.xp') ;
+  fp := F64s ('in.i.fp') ;
+  xs := F64s ('in.i.xs') ;
+  r := Stats.Interp (xs, xp, fp) ;
+  Check.NearF64s (t, 'Interp: at the knots, between them, held outside', r,
+                  F64s ('want.i'), 0.0, 0.0) ;
+  r := NEW (F64, LEN (xs)) ;
+  FOR i := 0 TO LEN (xs) - 1 DO r[i] := Stats.Interp1 (xs[i], xp, fp) END ;
+  Check.NearF64s (t, 'Interp1, one point at a time', r, F64s ('want.i'),
+                  0.0, 0.0) ;
+  one := NEW (F64, 1) ;
+  onef := NEW (F64, 1) ;
+  one[0] := 5.0 ;
+  onef[0] := 7.5 ;
+  probes := NEW (F64, 3) ;
+  probes[0] := -1.0 ; probes[1] := 5.0 ; probes[2] := 9.0 ;
+  r := Stats.Interp (probes, one, onef) ;
+  Check.NearF64s (t, 'Interp through one point is that value', r,
+                  F64s ('want.i.onepoint'), 0.0, 0.0) ;
+  v := Stats.Interp1 (NaN (), xp, fp) ;
+  Check.EqF64 (t, 'Interp1 at a NaN is NaN: no abscissa, no value', v, NaN ()) ;
+  probes[1] := NaN () ;
+  r := Stats.Interp (probes, one, onef) ;
+  Check.EqF64 (t, 'Interp answers NaN for a NaN among xs', r[1], NaN ()) ;
+  Check.EqF64 (t, 'and the others as before', r[2], 7.5)
+END Interpolation ;
+
+PROCEDURE Covariance ()
+  RAISES Stats.TooFew, Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  x, y, neg : SLICE OF F64 ;
+  shape : SLICE OF I64 ;
+  g, m : GRID 2 OF F64 ;
+  v : F64 ;
+  i : I64 ;
+BEGIN
+  x := F64s ('in.c.x') ;
+  y := F64s ('in.c.y') ;
+  v := Stats.Cov (x, y) ;
+  Check.Near (t, 'Cov', v, Check.GoldF64 (t, gold, 'want.c.cov'), 0.0, Tol) ;
+  v := Stats.Cov (x, x) ;
+  Check.Near (t, 'Cov (x, x) is the variance', v,
+              Check.GoldF64 (t, gold, 'want.c.var'), 0.0, Tol) ;
+  v := Stats.Corr (x, y) ;
+  Check.Near (t, 'Corr', v, Check.GoldF64 (t, gold, 'want.c.corr'), 0.0, Tol) ;
+  neg := NEW (F64, LEN (x)) ;
+  FOR i := 0 TO LEN (x) - 1 DO neg[i] := -x[i] END ;
+  v := Stats.Corr (x, neg) ;
+  Check.EqF64 (t, 'Corr (x, -x) is -1, clipped as numpy clips it', v,
+               Check.GoldF64 (t, gold, 'want.c.anticorr')) ;
+  shape := I64s ('in.c.g.shape') ;
+  g := Grid (F64s ('in.c.g'), shape[0], shape[1]) ;
+  m := Stats.CovMatrix (g) ;
+  Check.NearF64s (t, 'CovMatrix: columns are the variables', Flat (m),
+                  F64s ('want.c.covmatrix'), 0.0, Tol) ;
+  m := Stats.CorrMatrix (g) ;
+  Check.NearF64s (t, 'CorrMatrix', Flat (m), F64s ('want.c.corrmatrix'),
+                  0.0, Tol) ;
+  Check.EqF64 (t, 'CorrMatrix has 1.0 on its diagonal, exactly', m[2, 2], 1.0) ;
+
+  (* with gaps: each entry over the rows where both its columns are
+     present, which is what pandas' cov and corr do *)
+  shape := I64s ('in.c.gn.shape') ;
+  g := Grid (F64s ('in.c.gn'), shape[0], shape[1]) ;
+  (* an absolute tolerance beside the relative one: the covariance of
+     two columns that have nothing to do with each other is a sum that
+     cancels to nearly nothing, and what is left of it agrees with
+     pandas to 1e-15 of the columns' scale, not to twelve digits of
+     itself.  The first run of this test said so: 4.42904998118e-5
+     here, 4.42904998130e-5 there. *)
+  m := Stats.CovMatrix (g) ;
+  Check.NearF64s (t, 'CovMatrix with gaps is pairwise, as pandas',
+                  Flat (m), F64s ('want.c.gn.covmatrix'), 1.0e-10, Tol) ;
+  m := Stats.CorrMatrix (g) ;
+  Check.NearF64s (t, 'CorrMatrix with gaps', Flat (m),
+                  F64s ('want.c.gn.corrmatrix'), 1.0e-13, Tol)
+END Covariance ;
+
+(* ---- the distributions, against scipy.stats over a grid ----
+
+   Densities and cumulatives within 1e-12 of the value, inverses
+   within 1e-10: series and continued fractions stopped at double
+   precision, a log-gamma good to fifteen digits, a root found inside
+   a bracket.  1e-300 absolute beside it, for the one grid point
+   (38 standard deviations out) whose answer is a denormal number and
+   has no twelve digits to agree on.  And 1e-15 absolute for the
+   inverses, for one point: the median of Student's t is zero, Stats
+   answers 0.0, and scipy answers 8e-17. *)
+PROCEDURE Distributions () RAISES Faults.BadArg, ValueRange, Overflow =
+VAR
+  x, p, dofs, cx, rx, rp, rc : SLICE OF F64 ;
+  i, k : I64 ;
+BEGIN
+  x := F64s ('in.d.x') ;
+  p := F64s ('in.d.p') ;
+  dofs := F64s ('in.d.dofs') ;
+  cx := F64s ('in.d.cx') ;
+  rx := NEW (F64, LEN (x)) ;
+  rp := NEW (F64, LEN (p)) ;
+  rc := NEW (F64, LEN (cx)) ;
+  FOR i := 0 TO LEN (x) - 1 DO rx[i] := Stats.NormalPdf (x[i]) END ;
+  Check.NearF64s (t, 'NormalPdf', rx, F64s ('want.d.normal.pdf'),
+                  1.0e-300, TolD) ;
+  FOR i := 0 TO LEN (x) - 1 DO rx[i] := Stats.NormalCdf (x[i]) END ;
+  Check.NearF64s (t, 'NormalCdf', rx, F64s ('want.d.normal.cdf'),
+                  1.0e-300, TolD) ;
+  FOR i := 0 TO LEN (p) - 1 DO rp[i] := Stats.NormalPpf (p[i]) END ;
+  Check.NearF64s (t, 'NormalPpf, from 1e-12 to 1 - 1e-12', rp,
+                  F64s ('want.d.normal.ppf'), 0.0, TolQ) ;
+  FOR k := 0 TO LEN (dofs) - 1 DO
+    FOR i := 0 TO LEN (x) - 1 DO rx[i] := Stats.TPdf (x[i], dofs[k]) END ;
+    Check.NearF64s (t, 'TPdf, dof ' + DofName[k], rx,
+                    F64s ('want.d.t.pdf.' + Digit[k]), 1.0e-300, TolD) ;
+    FOR i := 0 TO LEN (x) - 1 DO rx[i] := Stats.TCdf (x[i], dofs[k]) END ;
+    Check.NearF64s (t, 'TCdf, dof ' + DofName[k], rx,
+                    F64s ('want.d.t.cdf.' + Digit[k]), 1.0e-300, TolD) ;
+    FOR i := 0 TO LEN (p) - 1 DO rp[i] := Stats.TPpf (p[i], dofs[k]) END ;
+    Check.NearF64s (t, 'TPpf, dof ' + DofName[k], rp,
+                    F64s ('want.d.t.ppf.' + Digit[k]), 1.0e-15, TolQ) ;
+    FOR i := 0 TO LEN (cx) - 1 DO rc[i] := Stats.Chi2Pdf (cx[i], dofs[k]) END ;
+    Check.NearF64s (t, 'Chi2Pdf, dof ' + DofName[k], rc,
+                    F64s ('want.d.chi2.pdf.' + Digit[k]), 1.0e-300, TolD) ;
+    FOR i := 0 TO LEN (cx) - 1 DO rc[i] := Stats.Chi2Cdf (cx[i], dofs[k]) END ;
+    Check.NearF64s (t, 'Chi2Cdf, dof ' + DofName[k], rc,
+                    F64s ('want.d.chi2.cdf.' + Digit[k]), 1.0e-300, TolD) ;
+    FOR i := 0 TO LEN (p) - 1 DO rp[i] := Stats.Chi2Ppf (p[i], dofs[k]) END ;
+    Check.NearF64s (t, 'Chi2Ppf, dof ' + DofName[k], rp,
+                    F64s ('want.d.chi2.ppf.' + Digit[k]), 0.0, TolQ)
+  END
+END Distributions ;
+
+(* ---- shuffling and choosing, against the second transcription ---- *)
+PROCEDURE Streams () RAISES Faults.BadArg, ValueRange =
+VAR
+  st : Stats.Stream ;
+  a, vals, c, counts, three : SLICE OF I64 ;
+  i, k : I64 ;
+BEGIN
+  st := Stats.Seed (42) ;
+  a := Stats.Permutation (st, 10) ;
+  Check.EqI64s (t, 'Permutation of 10 from seed 42, to the element', a,
+                I64s ('want.s.permutation.10')) ;
+  vals := I64s ('in.s.values') ;
+  Stats.Shuffle (st, vals) ;
+  Check.EqI64s (t, 'Shuffle, the same stream carried on', vals,
+                I64s ('want.s.shuffle')) ;
+  c := Stats.Choice (st, 20, 5) ;
+  Check.EqI64s (t, 'Choice of 5 out of 20', c, I64s ('want.s.choice.20.5')) ;
+  c := Stats.Choice (st, 5, 5) ;
+  Check.EqI64s (t, 'Choice of all 5 is a permutation', c,
+                I64s ('want.s.choice.5.5')) ;
+  c := Stats.Choice (st, 7, 0) ;
+  Check.EqI64s (t, 'Choice of none', c, I64s ('want.s.choice.7.0')) ;
+  (* 6000 shuffles of three from seed 7, counted by the order that
+     came out: (0,1,2) is 0 ... (2,1,0) is 5 *)
+  st := Stats.Seed (7) ;
+  counts := NEW (I64, 6) ;
+  three := NEW (I64, 3) ;
+  FOR i := 1 TO 6000 DO
+    three[0] := 0 ; three[1] := 1 ; three[2] := 2 ;
+    Stats.Shuffle (st, three) ;
+    k := three[0] * 2 ;
+    IF three[1] > three[2] THEN k := k + 1 END ;
+    counts[k] := counts[k] + 1
+  END ;
+  Check.EqI64s (t, '6000 shuffles of three: each order near 1000, and exactly these',
+                counts, I64s ('want.s.orders'))
+END Streams ;
+
+(* ---- the refusals, each by name ---- *)
+
+PROCEDURE TooManyRefused () : BOOL =
+VAR
+  st : Stats.Stream ;
+  c : SLICE OF I64 ;
+BEGIN
+  st := Stats.Seed (1) ;
+  c := Stats.Choice (st, 3, 4) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg : RETURN TRUE
+| ValueRange : RETURN FALSE
+END TooManyRefused ;
+
+PROCEDURE ProbabilityRefused () : BOOL =
+VAR v : F64 ;
+BEGIN
+  v := Stats.NormalPpf (1.5) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg : RETURN TRUE
+| ValueRange : RETURN FALSE
+| Overflow : RETURN FALSE
+END ProbabilityRefused ;
+
+PROCEDURE DofRefused () : BOOL =
+VAR v : F64 ;
+BEGIN
+  v := Stats.Chi2Cdf (1.0, 0.0) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg : RETURN TRUE
+| ValueRange : RETURN FALSE
+| Overflow : RETURN FALSE
+END DofRefused ;
+
+(* a sample of nothing but NaN is TooFew, and `got` is the count of
+   values, not the length: answers got, or -1 if nothing was raised *)
+PROCEDURE AllNaNGot () : I64 =
+VAR
+  xs : SLICE OF F64 ;
+  v : F64 ;
+BEGIN
+  xs := NEW (F64, 3) ;
+  xs[0] := NaN () ;
+  xs[1] := NaN () ;
+  xs[2] := NaN () ;
+  v := Stats.Mean (xs) ;
+  RETURN -1
+EXCEPT
+| Stats.TooFew (got, need) : RETURN got
+END AllNaNGot ;
+
+(* a variance needs two VALUES: three long with one value is TooFew 1 *)
+PROCEDURE OneValueGot () : I64 =
+VAR
+  xs : SLICE OF F64 ;
+  v : F64 ;
+BEGIN
+  xs := NEW (F64, 3) ;
+  xs[0] := NaN () ;
+  xs[1] := 4.0 ;
+  xs[2] := NaN () ;
+  v := Stats.Var (xs) ;
+  RETURN -1
+EXCEPT
+| Stats.TooFew (got, need) : RETURN got
+END OneValueGot ;
+
+PROCEDURE EmptyRangeRefused () : BOOL =
+VAR c : SLICE OF I64 ;
+BEGIN
+  c := Stats.Histogram (Up, 4, 1.0, 1.0) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg : RETURN TRUE
+END EmptyRangeRefused ;
+
+PROCEDURE WideWindowRefused () : BOOL =
+VAR r : SLICE OF F64 ;
+BEGIN
+  r := Stats.RollingMean (Up, 4) ;
+  RETURN FALSE
+EXCEPT
+| Stats.TooFew : RETURN TRUE
+| Faults.BadArg : RETURN FALSE
+END WideWindowRefused ;
+
+PROCEDURE UnsortedRefused () : BOOL =
+VAR r : SLICE OF F64 ;
+BEGIN
+  r := Stats.Interp (Up, Down, Up) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg : RETURN TRUE
+| Stats.TooFew : RETURN FALSE
+| Faults.SizeError : RETURN FALSE
+END UnsortedRefused ;
+
+(* Stats.Taylor: the three numbers of a Taylor diagram against
+   numpy's, from the data -- complete, with gaps, and for a model so
+   close to its reference that the difference is the eighth digit *)
+PROCEDURE Taylors ()
+  RAISES Stats.TooFew, Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  x, y, want, got : SLICE OF F64 ;
+  ratio, corr, rms : F64 ;
+BEGIN
+  ratio := 0.0 ; corr := 0.0 ; rms := 0.0 ;
+  got := NEW (F64, 3) ;
+  x := F64s ('in.c.x') ;
+  y := F64s ('in.c.y') ;
+  Stats.Taylor (y, x, ratio, corr, rms) ;
+  got[0] := ratio ; got[1] := corr ; got[2] := rms ;
+  Check.NearF64s (t, 'Taylor: ratio, correlation and RMS difference as numpy measures them',
+                  got, F64s ('want.t.c'), 0.0, Tol) ;
+  Check.Near (t, 'Taylor: the three are one triangle, rms^2 = ratio^2 + 1 - 2 ratio corr',
+              rms * rms, ratio * ratio + 1.0 - 2.0 * ratio * corr, 1.0e-12, 0.0) ;
+  Stats.Taylor (x, x, ratio, corr, rms) ;
+  Check.That (t, 'Taylor: a field against itself is REF -- 1, 1 and no difference',
+              ratio = 1.0 AND corr = 1.0 AND rms = 0.0) ;
+  x := F64s ('in.m.x') ;
+  y := F64s ('in.m.y') ;
+  Stats.Taylor (y, x, ratio, corr, rms) ;
+  got[0] := ratio ; got[1] := corr ; got[2] := rms ;
+  Check.NearF64s (t, 'Taylor with gaps: over the pairs that are both there',
+                  got, F64s ('want.t.m'), 0.0, Tol) ;
+  (* the difference is 1e-7 of fields near 400: what numpy and this
+     both keep of it is about seven digits, and the triangle would
+     keep none *)
+  x := F64s ('in.c.x') ;
+  y := F64s ('in.t.near') ;
+  want := F64s ('want.t.near') ;
+  Stats.Taylor (y, x, ratio, corr, rms) ;
+  Check.Near (t, 'Taylor: a model a part in ten million from its reference keeps its RMS difference',
+              rms, want[2], 0.0, 1.0e-5) ;
+  Check.Near (t, 'Taylor: and its ratio', ratio, want[0], 0.0, Tol)
+END Taylors ;
+
+PROCEDURE FlatFieldRefused () : BOOL =
+VAR ratio, corr, rms : F64 ;
+BEGIN
+  ratio := 0.0 ; corr := 0.0 ; rms := 0.0 ;
+  Stats.Taylor (Up, Flat3, ratio, corr, rms) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg : RETURN TRUE
+| Stats.TooFew : RETURN FALSE
+| Faults.SizeError : RETURN FALSE
+| ValueRange : RETURN FALSE
+END FlatFieldRefused ;
+
+PROCEDURE ConstantRefused () : BOOL =
+VAR v : F64 ;
+BEGIN
+  v := Stats.Corr (Up, Flat3) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg : RETURN TRUE
+| Stats.TooFew : RETURN FALSE
+| Faults.SizeError : RETURN FALSE
+| ValueRange : RETURN FALSE
+END ConstantRefused ;
+
+BEGIN
+  gold := Check.GoldPath ('Stats.gold') ;
+  Gaps () ;
+  Histograms () ;
+  Rolling () ;
+  Interpolation () ;
+  Covariance () ;
+  Taylors () ;
+  Distributions () ;
+  Streams () ;
+  Check.That (t, 'Choice refuses more than there are', TooManyRefused ()) ;
+  Check.That (t, 'an inverse refuses a probability outside [0, 1]',
+              ProbabilityRefused ()) ;
+  Check.That (t, 'no degrees of freedom is refused', DofRefused ()) ;
+  Check.EqI64 (t, 'a sample of nothing but NaN is TooFew, got 0',
+               AllNaNGot (), 0) ;
+  Check.EqI64 (t, 'Var of one value among NaN is TooFew, got 1',
+               OneValueGot (), 1) ;
+  Check.That (t, 'Histogram refuses a range with lo = hi',
+              EmptyRangeRefused ()) ;
+  Check.That (t, 'a window wider than the sample is TooFew',
+              WideWindowRefused ()) ;
+  Check.That (t, 'Interp refuses abscissae that are not ascending',
+              UnsortedRefused ()) ;
+  Check.That (t, 'Taylor refuses a reference that does not vary',
+              FlatFieldRefused ()) ;
+  Check.That (t, 'Corr refuses a sample that does not vary',
+              ConstantRefused ()) ;
+  Io.Halt (Check.Done (t, 'Stats'))
+EXCEPT
+| Stats.TooFew :
+    Check.That (t, 'no TooFew escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Stats'))
+| Faults.SizeError :
+    Check.That (t, 'no SizeError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Stats'))
+| Faults.BadArg :
+    Check.That (t, 'no BadArg escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Stats'))
+| ValueRange :
+    Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Stats'))
+| Overflow :
+    Check.That (t, 'no Overflow escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Stats'))
+END StatsTest.

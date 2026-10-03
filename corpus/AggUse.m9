@@ -1,0 +1,88 @@
+MODULE AggUse ;
+
+(* The aggregate constructor, held to its own output (gendiff and the
+   driver suite): a CONST whose value is [ e1, ..., en ] is a constant
+   table -- an array whose element type is read off its elements and
+   whose length is their count.  Indexed (every index checked),
+   measured with LEN, lent to an RO parameter; nothing else.
+
+   The fixture for report par 2.2.4, 2026-10-01.  Not installed;
+   gendiff and build.sh run it.                                    *)
+
+IMPORT Io ;
+
+CONST
+  Primes = [2, 3, 5, 7, 11] ;
+  Offsets = [-1, 0, 0x10] ;
+  Halves = [0.5, -1.5, 2.5] ;
+  Names = ['alpha', 'b', '', 'gamma'] ;
+  Marks = [02AC, 02BC] ;
+  Flags = [TRUE, FALSE, TRUE] ;
+  Codes = [200, 404, 500] ;
+  Texts = [
+    'OK',
+    'Not Found',
+    'Internal Server Error'
+  ] ;
+
+PROCEDURE Sum (RO xs: SLICE OF I64) : I64 =
+VAR i, t : I64 ;
+BEGIN
+  t := 0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO t := t + xs[i] END ;
+  RETURN t
+END Sum ;
+
+PROCEDURE Reason (code: I64) : STR =
+  (* the table the CASE used to be: searched, not switched *)
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (Codes) - 1 DO
+    IF Codes[i] = code THEN RETURN Texts[i] END
+  END ;
+  RETURN '?'
+END Reason ;
+
+PROCEDURE Shadow (RO Primes: SLICE OF F64) : F64 =
+  (* a parameter named like a table is the parameter *)
+BEGIN
+  RETURN Primes[0]
+END Shadow ;
+
+PROCEDURE Past (i: I64) : I64 RAISES IndexError =
+BEGIN
+  RETURN Primes[i]
+END Past ;
+
+VAR
+  i, n : I64 ;
+
+BEGIN
+  Io.WriteI64 (LEN (Primes)) ;
+  Io.WriteLine ('') ;
+  Io.WriteI64 (Primes[4]) ;
+  Io.WriteLine ('') ;
+  Io.WriteI64 (Sum (Primes)) ;
+  Io.WriteLine ('') ;
+  Io.WriteI64 (Sum (Offsets)) ;
+  Io.WriteLine ('') ;
+  IF Halves[1] = -1.5 THEN Io.WriteLine ('halves') END ;
+  IF Shadow (Halves) = 0.5 THEN Io.WriteLine ('shadow') END ;
+  FOR i := 0 TO LEN (Names) - 1 DO
+    Io.WriteI64 (LEN (Names[i])) ;
+    Io.WriteLine (' [' + Names[i] + ']')
+  END ;
+  IF Marks[1] = 02BC THEN Io.WriteLine ('marks') END ;
+  n := 0 ;
+  FOR i := 0 TO LEN (Flags) - 1 DO
+    IF Flags[i] THEN n := n + 1 END
+  END ;
+  Io.WriteI64 (n) ;
+  Io.WriteLine ('') ;
+  Io.WriteLine (Reason (404)) ;
+  Io.WriteLine (Reason (999)) ;
+  n := Past (5) ;
+  Io.WriteLine ('not reached')
+EXCEPT
+| IndexError : Io.WriteLine ('IndexError')
+END AggUse.

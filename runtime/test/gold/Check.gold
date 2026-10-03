@@ -1,0 +1,15 @@
+# written by hand: what corpus/CheckTest.m9 reads to hold Check's
+# golden readers to themselves -- three vectors that are right, two
+# scalars, and one line for each way a golden file can be wrong
+reals f64 3 000000000000F03F 0000000000000040 0000000000001040
+ints i64 3 1 2 3
+flags bool 2 1 0
+words str 3 a b ''
+nan f64 1 000000000000F87F
+answer i64 1 -42
+ends i64 2 -9223372036854775808 9223372036854775807
+toobig i64 1 9223372036854775808
+short f64 3 000000000000F03F 0000000000000040
+nothex f64 1 12345
+notbool bool 2 1 2
+notint i64 2 7 seven

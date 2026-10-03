@@ -1,0 +1,1907 @@
+DEFINITION MODULE Numeric ;
+
+(* Numerical methods over a function the caller writes: the root of
+   it, its minimum, its integral, and the solution of a differential
+   equation whose right-hand side it is.  The oracle is scipy, in
+   corpus/NumericTest.m9.
+
+   THE FUNCTION IS A PROCEDURE VALUE (report par 2.2.3): a top-level
+   procedure, with no capture.  So whatever else it needs -- the
+   coefficients of the curve, the rate constants -- travels beside
+   it as `p', a slice of reals that Numeric hands to every call and
+   never reads.  That is scipy's `args', made the only way.
+
+   The types here say RAISES ValueRange because that is what Math's
+   functions raise.  A procedure fits when it raises no more than
+   that: one that calls Math.Sqrt says RAISES ValueRange, one that
+   only multiplies says nothing, and both are taken.
+
+   Root, Minimum and OdeSolve are TRANSCRIPTIONS of scipy's brentq,
+   its bounded scalar minimiser and its RK45, held to scipy in
+   tools/numericgold.py before a golden is written: the first two to
+   the bit and the count of calls over thousands of problems.  What
+   they answer for a given function and tolerance is what scipy
+   answers.  Integral is not scipy's QUADPACK; it is held to scipy's
+   value, within the error it reports. *)
+
+IMPORT Faults ;
+
+TYPE
+  Fn = PROCEDURE (x: F64 ; RO p: SLICE OF F64) : F64 RAISES ValueRange ;
+  (* a function of one real *)
+
+  Rhs = PROCEDURE (t: F64 ; RO y: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                   VAR dy: SLICE OF F64) RAISES ValueRange ;
+  (* the right-hand side of y' = f (t, y): it writes dy, which has
+     y's length *)
+
+EXCEPTION
+  NoBracket (fa, fb: F64) ;
+  (* the function has the same sign at both ends, these two values:
+     nothing says a root lies between *)
+  NoConverge (evals: I64) ;
+  (* the method gave up after this many evaluations (Root, Minimum,
+     Integral) or steps (OdeSolve), with the tolerance not met *)
+
+PROCEDURE Root (f: Fn ; RO p: SLICE OF F64 ; a, b, xtol: F64) : F64
+  RAISES NoBracket, NoConverge, ValueRange ;
+  (* an x between a and b where f changes sign, by Brent's method
+     (scipy.optimize.brentq with its default rtol): f (a) and f (b)
+     must differ in sign, and the answer is within xtol + 4 epsilon
+     |x| of a crossing.  At most 100 iterations: a function that is
+     flat where it crosses (a triple root) may need more than that
+     for a small xtol, and is NoConverge. *)
+
+PROCEDURE Minimum (f: Fn ; RO p: SLICE OF F64 ; a, b, xatol: F64) : F64
+  RAISES Faults.BadArg, NoConverge, ValueRange ;
+  (* an x between a and b where f is smallest NEARBY, by Brent's
+     golden-section and parabola method (scipy.optimize
+     .minimize_scalar, method 'bounded'), to within about xatol.  A
+     local minimum: a function with several is searched from the
+     golden point of the interval, and which one is found is the
+     method's affair.  a > b is Faults.BadArg; 500 evaluations at
+     most. *)
+
+PROCEDURE Integral (f: Fn ; RO p: SLICE OF F64 ; a, b, epsabs, epsrel: F64 ;
+                    VAR abserr: F64) : F64
+  RAISES NoConverge, ValueRange ;
+  (* the integral of f from a to b, by the 15-point Gauss-Kronrod
+     rule on intervals halved where the error is largest, until the
+     estimated error is under the larger of epsabs and epsrel times
+     the value.  abserr receives that estimate, which a caller should
+     read: it is the method's own account of its answer.  b below a
+     is the integral negated.
+
+     The ends are never evaluated, so a function that is infinite
+     there can be asked -- but one whose integral converges slowly,
+     like 1 / sqrt (x) at 0, is not finished in the 50 intervals
+     allowed and is NoConverge.  No infinite range, no
+     extrapolation: this is QUADPACK's QAG, not its QAGS. *)
+
+PROCEDURE OdeStep (f: Rhs ; RO p: SLICE OF F64 ; t, h: F64 ;
+                   VAR y: SLICE OF F64)
+  RAISES ValueRange ;
+  (* y at t becomes y at t + h by ONE step of the classical
+     fourth-order Runge-Kutta method.  No error control: the step is
+     the caller's, and so is advancing t. *)
+
+PROCEDURE OdeSolve (f: Rhs ; RO p: SLICE OF F64 ; t0, t1: F64 ;
+                    VAR y: SLICE OF F64 ; rtol, atol: F64) : I64
+  RAISES NoConverge, ValueRange ;
+  (* y at t0 becomes y at t1, by the Dormand-Prince 5(4) pair with
+     the step chosen so that the estimated local error of each
+     component stays under atol + rtol |y| (scipy.integrate
+     .solve_ivp, method 'RK45', its initial step and its controller).
+     Answers the number of steps taken.  t1 below t0 integrates
+     backwards.  For values along the way, solve from one to the
+     next.  An explicit method: a stiff system takes it a very long
+     time, and after a million steps, or a step too small to move t,
+     it is NoConverge. *)
+
+(* ---- least squares: the parameters that make a model fit ---- *)
+
+TYPE
+  Residuals = PROCEDURE (RO x: SLICE OF F64 ; RO p: SLICE OF F64 ;
+                         VAR r: SLICE OF F64) RAISES ValueRange ;
+  (* what is to be made small: for the parameters x it writes the m
+     residuals r.  p is the caller's own, as for Fn -- here usually
+     the data. *)
+
+  Fitted = RECORD
+    info : I64 ;
+    (* why the search stopped, in MINPACK's numbering.  1: the sum of
+       squares no longer falls by more than the tolerance; 2: the
+       parameters no longer move by more than it; 3: both; 4: the
+       residuals are orthogonal to the model's slopes, a minimum
+       exactly.  6, 7, 8: the same three, at the limit of the
+       arithmetic -- the tolerance asked was smaller than F64 has. *)
+    nfev : I64 ;               (* how often the function was asked *)
+    cost : F64 ;               (* the sum of the squared residuals *)
+    covariance : BOOL ;        (* CurveFit only: cov could be estimated *)
+  END ;
+
+PROCEDURE LeastSq (f: Residuals ; RO p: SLICE OF F64 ; VAR x: SLICE OF F64 ;
+                   m: I64 ; tol: F64) : Fitted
+  RAISES Faults.BadArg, NoConverge, ValueRange ;
+  (* the x that makes the sum of the squares of f's m residuals
+     smallest NEARBY, from the x given, by Levenberg-Marquardt with
+     slopes taken by differences: MINPACK's lmdif, which is
+     scipy.optimize.leastsq, with ftol and xtol both tol and the rest
+     at scipy's defaults.  A LOCAL minimum, the one the start leads
+     to.  m below LEN (x), or tol below zero, is Faults.BadArg.
+     After 200 (LEN (x) + 1) evaluations without stopping it is
+     NoConverge, and x holds where it had got to. *)
+
+PROCEDURE CurveFit (f: Fn ; RO t, y: SLICE OF F64 ; VAR params: SLICE OF F64 ;
+                    VAR cov: SLICE OF F64) : Fitted
+  RAISES Faults.SizeError, Faults.BadArg, NoConverge, ValueRange ;
+  (* the params for which f (t[i], params) comes closest to y[i] in
+     the least-squares sense, from the params given
+     (scipy.optimize.curve_fit, with its default tolerance of
+     1.49012e-8).  The model is an Fn whose x is t and whose p is the
+     parameters being fitted.
+
+     cov, of LEN (params) squared, receives their covariance matrix,
+     row after row, scaled by the residuals' own variance: the
+     square roots of its diagonal are the standard errors.  Where it
+     cannot be estimated -- no more points than parameters, or a
+     parameter the data do not determine -- it is filled with NaN and
+     the answer's `covariance' is FALSE; scipy fills it with
+     infinity. *)
+
+(* ---- a spectrum, and a curve through a record with a season ----
+   (2026-10-02; lifted from m9curve's Ccg.m9, where it was held to
+   NOAA's own program) *)
+
+PROCEDURE Fft (VAR re, im: SLICE OF F64 ; inverse: BOOL)
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange ;
+  (* the discrete Fourier transform of the complex series re + i im,
+     in place: numpy.fft.fft, and with `inverse` numpy.fft.ifft,
+     which divides by the length -- so the one undoes the other.
+     Radix two: the length must be a power of two (Faults.BadArg; a
+     caller pads with zeros, as CcgFilter does), and re and im of one
+     length (Faults.SizeError). *)
+
+PROCEDURE CcgFilter (RO xp, yp: SLICE OF F64 ; RO xq: SLICE OF F64 ;
+                     interval, shortterm, longterm: F64 ;
+                     numpoly, numharm: I64 ;
+                     VAR smooth, trend: SLICE OF F64)
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange ;
+  (* the curve fit and filter of Thoning, Tans and Komhyr (1989), as
+     NOAA GML's ccg_filter.py computes it -- what the CO2 records of
+     Mauna Loa and of ICOS are smoothed with.  Four steps: a
+     polynomial plus yearly harmonics is fitted to the data by least
+     squares; the residuals are interpolated to an even spacing and
+     padded with zeros; their spectrum is cut by a low-pass filter,
+     once at each cutoff; the function is added back.
+
+       xp, yp    -- the data: times in DECIMAL YEARS, ascending, and
+                    the values.  A NaN in either is an observation
+                    that is not there, and is left out; values at
+                    one and the same time are averaged.
+       xq        -- where the curves are wanted, decimal years.
+       interval  -- days between the evenly spaced points the filter
+                    works on; 1 for daily data.
+       shortterm -- cutoff in days for the smooth curve (NOAA: 80).
+       longterm  -- cutoff in days for the trend (NOAA: 667).
+       numpoly   -- polynomial terms, 3 = quadratic.
+       numharm   -- yearly harmonics, 4 at NOAA.
+       smooth    -- function + short-term residuals, for every xq
+       trend     -- polynomial + long-term residuals, for every xq;
+                    both NaN where xq lies outside the span of xp, as
+                    the reference answers.
+
+     Faults.SizeError when yp is not as long as xp, or smooth or
+     trend not as long as xq.  Faults.BadArg for times that are not
+     ascending, for fewer observations than the fit has terms plus
+     one, for terms the times cannot tell apart (a record of a few
+     days and four harmonics), and for an interval or a cutoff that
+     is not positive.
+
+     Stated differences from the reference, none of which the test
+     can see: the fit is SOLVED (it is linear in its coefficients;
+     the reference iterates towards the same answer and stops within
+     2e-8 of it); the padded length is the smallest power of two that
+     holds the series, by counting; and the number of harmonics is
+     the caller's, where the reference lowers it for a sampling
+     interval longer than half a year divided by it. *)
+
+END Numeric.
+
+
+IMPLEMENTATION MODULE Numeric ;
+
+IMPORT Math ;
+
+CONST
+  Eps = 2.220446049250313e-16 ;      (* the spacing of F64 at 1.0 *)
+  Tiny = 2.2250738585072014e-308 ;   (* the smallest normal F64 *)
+  RootIter = 100 ;
+  MinEvals = 500 ;
+  Limit = 50 ;                       (* intervals of Integral *)
+  MaxSteps = 1000000 ;
+  FitTol = 1.49012e-8 ;              (* scipy's default ftol and xtol *)
+
+(* ---- Root: scipy/optimize/Zeros/brentq.c, statement for statement.
+   The names are the C's.  signbit (x) is x < 0.0 here: the two
+   differ only for a zero and a NaN, and no zero reaches the tests
+   that use it. ---- *)
+
+PROCEDURE Root (f: Fn ; RO p: SLICE OF F64 ; a, b, xtol: F64) : F64
+  RAISES NoBracket, NoConverge, ValueRange =
+VAR
+  xpre, xcur, xblk, fpre, fcur, fblk : F64 ;
+  spre, scur, sbis, delta, stry, dpre, dblk, lim : F64 ;
+  i : I64 ;
+BEGIN
+  xpre := a ;
+  xcur := b ;
+  xblk := 0.0 ;
+  fblk := 0.0 ;
+  spre := 0.0 ;
+  scur := 0.0 ;
+  fpre := f (xpre, p) ;
+  fcur := f (xcur, p) ;
+  IF fpre = 0.0 THEN RETURN xpre END ;
+  IF fcur = 0.0 THEN RETURN xcur END ;
+  IF (fpre < 0.0) = (fcur < 0.0) THEN RAISE NoBracket (fpre, fcur) END ;
+  FOR i := 1 TO RootIter DO
+    IF fpre # 0.0 AND fcur # 0.0 AND (fpre < 0.0) # (fcur < 0.0) THEN
+      xblk := xpre ;
+      fblk := fpre ;
+      spre := xcur - xpre ;
+      scur := spre
+    END ;
+    IF Math.Fabs (fblk) < Math.Fabs (fcur) THEN
+      xpre := xcur ;
+      xcur := xblk ;
+      xblk := xpre ;
+      fpre := fcur ;
+      fcur := fblk ;
+      fblk := fpre
+    END ;
+    delta := (xtol + 4.0 * Eps * Math.Fabs (xcur)) / 2.0 ;
+    sbis := (xblk - xcur) / 2.0 ;
+    IF fcur = 0.0 OR Math.Fabs (sbis) < delta THEN RETURN xcur END ;
+    IF Math.Fabs (spre) > delta AND Math.Fabs (fcur) < Math.Fabs (fpre) THEN
+      IF xpre = xblk THEN
+        (* interpolate *)
+        stry := -fcur * (xcur - xpre) / (fcur - fpre)
+      ELSE
+        (* extrapolate *)
+        dpre := (fpre - fcur) / (xpre - xcur) ;
+        dblk := (fblk - fcur) / (xblk - xcur) ;
+        stry := -fcur * (fblk * dblk - fpre * dpre)
+                / (dblk * dpre * (fblk - fpre))
+      END ;
+      lim := 3.0 * Math.Fabs (sbis) - delta ;
+      IF Math.Fabs (spre) < lim THEN lim := Math.Fabs (spre) END ;
+      IF 2.0 * Math.Fabs (stry) < lim THEN
+        (* a good short step *)
+        spre := scur ;
+        scur := stry
+      ELSE
+        spre := sbis ;
+        scur := sbis
+      END
+    ELSE
+      spre := sbis ;
+      scur := sbis
+    END ;
+    xpre := xcur ;
+    fpre := fcur ;
+    IF Math.Fabs (scur) > delta THEN
+      xcur := xcur + scur
+    ELSIF sbis > 0.0 THEN
+      xcur := xcur + delta
+    ELSE
+      xcur := xcur - delta
+    END ;
+    fcur := f (xcur, p)
+  END ;
+  RAISE NoConverge (RootIter + 2)
+END Root ;
+
+(* ---- Minimum: scipy/optimize/_optimize.py, _minimize_scalar_bounded,
+   statement for statement, its 2.2e-16 included (which is not the
+   machine epsilon, and is what scipy takes the root of) ---- *)
+
+PROCEDURE Minimum (f: Fn ; RO p: SLICE OF F64 ; a, b, xatol: F64) : F64
+  RAISES Faults.BadArg, NoConverge, ValueRange =
+VAR
+  sqrtEps, goldenMean, lo, hi, fulc, nfc, xf, rat, e, x : F64 ;
+  fx, fu, ffulc, fnfc, xm, tol1, tol2, r, q, pp, si, mag : F64 ;
+  num : I64 ;
+  golden : BOOL ;
+BEGIN
+  IF a > b THEN RAISE Faults.BadArg ('the lower bound exceeds the upper') END ;
+  sqrtEps := Math.Sqrt (2.2e-16) ;
+  goldenMean := Math.Sqrt (5.0) ;
+  goldenMean := 0.5 * (3.0 - goldenMean) ;
+  lo := a ;
+  hi := b ;
+  fulc := lo + goldenMean * (hi - lo) ;
+  nfc := fulc ;
+  xf := fulc ;
+  rat := 0.0 ;
+  e := 0.0 ;
+  x := xf ;
+  fx := f (x, p) ;
+  num := 1 ;
+  ffulc := fx ;
+  fnfc := fx ;
+  xm := 0.5 * (lo + hi) ;
+  tol1 := sqrtEps * Math.Fabs (xf) + xatol / 3.0 ;
+  tol2 := 2.0 * tol1 ;
+  WHILE Math.Fabs (xf - xm) > tol2 - 0.5 * (hi - lo) DO
+    golden := TRUE ;
+    IF Math.Fabs (e) > tol1 THEN
+      golden := FALSE ;
+      r := (xf - nfc) * (fx - ffulc) ;
+      q := (xf - fulc) * (fx - fnfc) ;
+      pp := (xf - fulc) * q - (xf - nfc) * r ;
+      q := 2.0 * (q - r) ;
+      IF q > 0.0 THEN pp := -pp END ;
+      q := Math.Fabs (q) ;
+      r := e ;
+      e := rat ;
+      IF Math.Fabs (pp) < Math.Fabs (0.5 * q * r) AND pp > q * (lo - xf)
+         AND pp < q * (hi - xf) THEN
+        (* a parabolic step *)
+        rat := pp / q ;
+        x := xf + rat ;
+        IF x - lo < tol2 OR hi - x < tol2 THEN
+          IF xm - xf >= 0.0 THEN si := 1.0 ELSE si := -1.0 END ;
+          rat := tol1 * si
+        END
+      ELSE
+        golden := TRUE
+      END
+    END ;
+    IF golden THEN
+      IF xf >= xm THEN e := lo - xf ELSE e := hi - xf END ;
+      rat := goldenMean * e
+    END ;
+    IF rat >= 0.0 THEN si := 1.0 ELSE si := -1.0 END ;
+    mag := Math.Fabs (rat) ;
+    IF tol1 > mag THEN mag := tol1 END ;
+    x := xf + si * mag ;
+    fu := f (x, p) ;
+    num := num + 1 ;
+    IF fu <= fx THEN
+      IF x >= xf THEN lo := xf ELSE hi := xf END ;
+      fulc := nfc ;
+      ffulc := fnfc ;
+      nfc := xf ;
+      fnfc := fx ;
+      xf := x ;
+      fx := fu
+    ELSE
+      IF x < xf THEN lo := x ELSE hi := x END ;
+      IF fu <= fnfc OR nfc = xf THEN
+        fulc := nfc ;
+        ffulc := fnfc ;
+        nfc := x ;
+        fnfc := fu
+      ELSIF fu <= ffulc OR fulc = xf OR fulc = nfc THEN
+        fulc := x ;
+        ffulc := fu
+      END
+    END ;
+    xm := 0.5 * (lo + hi) ;
+    tol1 := sqrtEps * Math.Fabs (xf) + xatol / 3.0 ;
+    tol2 := 2.0 * tol1 ;
+    IF num >= MinEvals THEN RAISE NoConverge (num) END
+  END ;
+  RETURN xf
+END Minimum ;
+
+(* ---- Integral ---- *)
+
+CONST
+  (* QUADPACK's qk15: the seven positive nodes of the 15-point Kronrod
+     rule and its centre, their weights, and the weights of the
+     7-point Gauss rule, whose nodes are the Kronrod rule's 2nd, 4th,
+     6th and centre *)
+  Xgk = [0.991455371120812639206854697526329,
+         0.949107912342758524526189684047851,
+         0.864864423359769072789712788640926,
+         0.741531185599394439863864773280788,
+         0.586087235467691130294144838258730,
+         0.405845151377397166906606412076961,
+         0.207784955007898467600689403773245,
+         0.0] ;
+  Wgk = [0.022935322010529224963732008058970,
+         0.063092092629978553290700663189204,
+         0.104790010322250183839876322541518,
+         0.140653259715525918745189590510238,
+         0.169004726639267902826583426598550,
+         0.190350578064785409913256402421014,
+         0.204432940075298892414161999234649,
+         0.209482141084727828012999174891714] ;
+  Wg = [0.129484966168869693270611432679082,
+        0.279705391489276667901467771423780,
+        0.381830050505118944950369775488975,
+        0.417959183673469387755102040816327] ;
+
+(* the Kronrod estimate of the integral over one interval, and in
+   abserr how far the Gauss estimate is from it, scaled as QUADPACK
+   scales it: a difference that is small beside the function's own
+   variation is believed to be smaller still *)
+PROCEDURE Qk15 (f: Fn ; RO p: SLICE OF F64 ; a, b: F64 ; VAR abserr: F64) : F64
+  RAISES ValueRange =
+VAR
+  centr, hlgth, fc, resg, resk, resabs, absc, fsum, reskh, resasc : F64 ;
+  v, t, root, floor : F64 ;
+  j : I64 ;
+  fv1, fv2 : ARRAY 7 OF F64 ;
+BEGIN
+  centr := 0.5 * (a + b) ;
+  hlgth := 0.5 * (b - a) ;
+  fc := f (centr, p) ;
+  resg := fc * Wg[3] ;
+  resk := fc * Wgk[7] ;
+  resabs := Math.Fabs (resk) ;
+  FOR j := 0 TO 6 DO
+    absc := hlgth * Xgk[j] ;
+    v := f (centr - absc, p) ;
+    fv1[j] := v ;
+    v := f (centr + absc, p) ;
+    fv2[j] := v ;
+    fsum := fv1[j] + fv2[j] ;
+    IF j MOD 2 = 1 THEN resg := resg + Wg[j DIV 2] * fsum END ;
+    resk := resk + Wgk[j] * fsum ;
+    resabs := resabs + Wgk[j] * (Math.Fabs (fv1[j]) + Math.Fabs (fv2[j]))
+  END ;
+  reskh := resk * 0.5 ;
+  resasc := Wgk[7] * Math.Fabs (fc - reskh) ;
+  FOR j := 0 TO 6 DO
+    resasc := resasc + Wgk[j] * (Math.Fabs (fv1[j] - reskh)
+                                 + Math.Fabs (fv2[j] - reskh))
+  END ;
+  resabs := resabs * Math.Fabs (hlgth) ;
+  resasc := resasc * Math.Fabs (hlgth) ;
+  abserr := Math.Fabs ((resk - resg) * hlgth) ;
+  IF resasc # 0.0 AND abserr # 0.0 THEN
+    t := 200.0 * abserr / resasc ;
+    IF t < 1.0 THEN
+      root := Math.Sqrt (t) ;
+      abserr := resasc * (t * root)
+    ELSE
+      abserr := resasc
+    END
+  END ;
+  IF resabs > Tiny / (50.0 * Eps) THEN
+    (* no estimate is believed below the rounding of the sum itself *)
+    floor := 50.0 * Eps * resabs ;
+    IF floor > abserr THEN abserr := floor END
+  END ;
+  RETURN resk * hlgth
+END Qk15 ;
+
+PROCEDURE Integral (f: Fn ; RO p: SLICE OF F64 ; a, b, epsabs, epsrel: F64 ;
+                    VAR abserr: F64) : F64
+  RAISES NoConverge, ValueRange =
+VAR
+  lo, hi, val, err : ARRAY 50 OF F64 ;
+  n, k, worst : I64 ;
+  area, errsum, bound, mid, r1, r2, e1, e2 : F64 ;
+BEGIN
+  lo[0] := a ;
+  hi[0] := b ;
+  r1 := Qk15 (f, p, a, b, e1) ;
+  val[0] := r1 ;
+  err[0] := e1 ;
+  n := 1 ;
+  LOOP
+    area := 0.0 ;
+    errsum := 0.0 ;
+    FOR k := 0 TO n - 1 DO
+      area := area + val[k] ;
+      errsum := errsum + err[k]
+    END ;
+    bound := epsrel * Math.Fabs (area) ;
+    IF epsabs > bound THEN bound := epsabs END ;
+    IF errsum <= bound THEN
+      abserr := errsum ;
+      RETURN area
+    END ;
+    IF n >= Limit THEN RAISE NoConverge (15 + 30 * (n - 1)) END ;
+    (* halve the interval that owes the most *)
+    worst := 0 ;
+    FOR k := 1 TO n - 1 DO
+      IF err[k] > err[worst] THEN worst := k END
+    END ;
+    mid := 0.5 * (lo[worst] + hi[worst]) ;
+    r1 := Qk15 (f, p, lo[worst], mid, e1) ;
+    r2 := Qk15 (f, p, mid, hi[worst], e2) ;
+    lo[n] := mid ;
+    hi[n] := hi[worst] ;
+    val[n] := r2 ;
+    err[n] := e2 ;
+    hi[worst] := mid ;
+    val[worst] := r1 ;
+    err[worst] := e1 ;
+    n := n + 1
+  END
+END Integral ;
+
+(* ---- differential equations ---- *)
+
+PROCEDURE OdeStep (f: Rhs ; RO p: SLICE OF F64 ; t, h: F64 ;
+                   VAR y: SLICE OF F64)
+  RAISES ValueRange =
+VAR
+  k1, k2, k3, k4, at : SLICE OF F64 ;
+  n, i : I64 ;
+  h2, h6 : F64 ;
+BEGIN
+  n := LEN (y) ;
+  k1 := NEW (F64, n) ;
+  k2 := NEW (F64, n) ;
+  k3 := NEW (F64, n) ;
+  k4 := NEW (F64, n) ;
+  at := NEW (F64, n) ;
+  h2 := 0.5 * h ;
+  h6 := h / 6.0 ;
+  f (t, y, p, k1) ;
+  FOR i := 0 TO n - 1 DO at[i] := y[i] + h2 * k1[i] END ;
+  f (t + h2, at, p, k2) ;
+  FOR i := 0 TO n - 1 DO at[i] := y[i] + h2 * k2[i] END ;
+  f (t + h2, at, p, k3) ;
+  FOR i := 0 TO n - 1 DO at[i] := y[i] + h * k3[i] END ;
+  f (t + h, at, p, k4) ;
+  FOR i := 0 TO n - 1 DO
+    y[i] := y[i] + h6 * (k1[i] + 2.0 * k2[i] + 2.0 * k3[i] + k4[i])
+  END
+END OdeStep ;
+
+(* the root mean square of v, scipy's norm *)
+PROCEDURE Rms (RO v: SLICE OF F64) : F64 RAISES ValueRange =
+VAR
+  i : I64 ;
+  acc : F64 ;
+BEGIN
+  acc := 0.0 ;
+  FOR i := 0 TO LEN (v) - 1 DO acc := acc + v[i] * v[i] END ;
+  RETURN Math.Sqrt (acc / F64 (LEN (v)))
+END Rms ;
+
+(* the Dormand-Prince tableau as scipy writes it: quotients of
+   integers, each rounded once.  ta is 6 rows of 5, row s the
+   weights of the stages before stage s. *)
+PROCEDURE Tableau (VAR ta, tb, tc, te: SLICE OF F64) =
+BEGIN
+  tc[1] := 1.0 / 5.0 ;
+  tc[2] := 3.0 / 10.0 ;
+  tc[3] := 4.0 / 5.0 ;
+  tc[4] := 8.0 / 9.0 ;
+  tc[5] := 1.0 ;
+  ta[5] := 1.0 / 5.0 ;
+  ta[10] := 3.0 / 40.0 ;
+  ta[11] := 9.0 / 40.0 ;
+  ta[15] := 44.0 / 45.0 ;
+  ta[16] := -56.0 / 15.0 ;
+  ta[17] := 32.0 / 9.0 ;
+  ta[20] := 19372.0 / 6561.0 ;
+  ta[21] := -25360.0 / 2187.0 ;
+  ta[22] := 64448.0 / 6561.0 ;
+  ta[23] := -212.0 / 729.0 ;
+  ta[25] := 9017.0 / 3168.0 ;
+  ta[26] := -355.0 / 33.0 ;
+  ta[27] := 46732.0 / 5247.0 ;
+  ta[28] := 49.0 / 176.0 ;
+  ta[29] := -5103.0 / 18656.0 ;
+  tb[0] := 35.0 / 384.0 ;
+  tb[2] := 500.0 / 1113.0 ;
+  tb[3] := 125.0 / 192.0 ;
+  tb[4] := -2187.0 / 6784.0 ;
+  tb[5] := 11.0 / 84.0 ;
+  te[0] := -71.0 / 57600.0 ;
+  te[2] := 71.0 / 16695.0 ;
+  te[3] := -71.0 / 1920.0 ;
+  te[4] := 17253.0 / 339200.0 ;
+  te[5] := -22.0 / 525.0 ;
+  te[6] := 1.0 / 40.0
+END Tableau ;
+
+(* scipy/integrate/_ivp/common.py, select_initial_step: the size of
+   the first step, from how fast y and y' change at t0.  fcur is
+   f (t0, y); order is the error estimator's, 4. *)
+PROCEDURE FirstStep (f: Rhs ; RO p: SLICE OF F64 ; t0: F64 ;
+                     RO y, fcur: SLICE OF F64 ; span, direction: F64 ;
+                     rtol, atol: F64) : F64
+  RAISES ValueRange =
+VAR
+  scale, w, y1, f1 : SLICE OF F64 ;
+  n, i : I64 ;
+  d0, d1, d2, h0, h1, big : F64 ;
+BEGIN
+  n := LEN (y) ;
+  scale := NEW (F64, n) ;
+  w := NEW (F64, n) ;
+  y1 := NEW (F64, n) ;
+  f1 := NEW (F64, n) ;
+  FOR i := 0 TO n - 1 DO
+    scale[i] := atol + Math.Fabs (y[i]) * rtol ;
+    w[i] := y[i] / scale[i]
+  END ;
+  d0 := Rms (w) ;
+  FOR i := 0 TO n - 1 DO w[i] := fcur[i] / scale[i] END ;
+  d1 := Rms (w) ;
+  IF d0 < 1.0e-5 OR d1 < 1.0e-5 THEN
+    h0 := 1.0e-6
+  ELSE
+    h0 := 0.01 * d0 / d1
+  END ;
+  IF span < h0 THEN h0 := span END ;
+  FOR i := 0 TO n - 1 DO y1[i] := y[i] + h0 * direction * fcur[i] END ;
+  f (t0 + h0 * direction, y1, p, f1) ;
+  FOR i := 0 TO n - 1 DO w[i] := (f1[i] - fcur[i]) / scale[i] END ;
+  d2 := Rms (w) ;
+  d2 := d2 / h0 ;
+  IF d1 <= 1.0e-15 AND d2 <= 1.0e-15 THEN
+    h1 := h0 * 1.0e-3 ;
+    IF h1 < 1.0e-6 THEN h1 := 1.0e-6 END
+  ELSE
+    big := d1 ;
+    IF d2 > big THEN big := d2 END ;
+    h1 := Math.Pow (0.01 / big, 0.2)
+  END ;
+  IF 100.0 * h0 < h1 THEN h1 := 100.0 * h0 END ;
+  IF span < h1 THEN h1 := span END ;
+  RETURN h1
+END FirstStep ;
+
+(* ---- OdeSolve: scipy/integrate/_ivp/rk.py, RK45 stepped to t1.
+   The sums run over the stages in order, where scipy hands them to
+   a dot product; the two agree to rounding, and the steps taken are
+   the same (held in tools/numericgold.py).  The smallest step is 16
+   spacings of t here, 10 in scipy: it matters only to when a
+   failing integration is given up. ---- *)
+
+PROCEDURE OdeSolve (f: Rhs ; RO p: SLICE OF F64 ; t0, t1: F64 ;
+                    VAR y: SLICE OF F64 ; rtol, atol: F64) : I64
+  RAISES NoConverge, ValueRange =
+VAR
+  ta, tb, tc, te, k, fcur, ys, ynew, fnew, w : SLICE OF F64 ;
+  n, i, j, s, steps : I64 ;
+  t, tnew, h, habs, direction, minStep, acc, sc, big, norm, factor, pw : F64 ;
+  rejected, accepted : BOOL ;
+BEGIN
+  n := LEN (y) ;
+  IF n = 0 OR t0 = t1 THEN RETURN 0 END ;
+  ta := NEW (F64, 30) ;
+  tb := NEW (F64, 6) ;
+  tc := NEW (F64, 6) ;
+  te := NEW (F64, 7) ;
+  Tableau (ta, tb, tc, te) ;
+  k := NEW (F64, 7 * n) ;          (* stage j is k[j * n .. j * n + n - 1] *)
+  fcur := NEW (F64, n) ;
+  ys := NEW (F64, n) ;
+  ynew := NEW (F64, n) ;
+  fnew := NEW (F64, n) ;
+  w := NEW (F64, n) ;
+  t := t0 ;
+  direction := 1.0 ;
+  IF t1 < t0 THEN direction := -1.0 END ;
+  f (t, y, p, fcur) ;
+  habs := FirstStep (f, p, t0, y, fcur, Math.Fabs (t1 - t0), direction,
+                     rtol, atol) ;
+  steps := 0 ;
+  WHILE direction * (t - t1) < 0.0 DO
+    IF steps >= MaxSteps THEN RAISE NoConverge (steps) END ;
+    minStep := 16.0 * Eps * Math.Fabs (t) ;
+    IF habs < minStep THEN habs := minStep END ;
+    rejected := FALSE ;
+    accepted := FALSE ;
+    WHILE NOT accepted DO
+      IF habs < minStep THEN RAISE NoConverge (steps) END ;
+      h := habs * direction ;
+      tnew := t + h ;
+      IF direction * (tnew - t1) > 0.0 THEN tnew := t1 END ;
+      h := tnew - t ;
+      habs := Math.Fabs (h) ;
+      FOR i := 0 TO n - 1 DO k[i] := fcur[i] END ;
+      FOR s := 1 TO 5 DO
+        FOR i := 0 TO n - 1 DO
+          acc := 0.0 ;
+          FOR j := 0 TO s - 1 DO
+            acc := acc + k[j * n + i] * ta[s * 5 + j]
+          END ;
+          ys[i] := y[i] + acc * h
+        END ;
+        f (t + tc[s] * h, ys, p, fnew) ;
+        FOR i := 0 TO n - 1 DO k[s * n + i] := fnew[i] END
+      END ;
+      FOR i := 0 TO n - 1 DO
+        acc := 0.0 ;
+        FOR j := 0 TO 5 DO
+          acc := acc + k[j * n + i] * tb[j]
+        END ;
+        ynew[i] := y[i] + h * acc
+      END ;
+      f (t + h, ynew, p, fnew) ;
+      FOR i := 0 TO n - 1 DO k[6 * n + i] := fnew[i] END ;
+      FOR i := 0 TO n - 1 DO
+        acc := 0.0 ;
+        FOR j := 0 TO 6 DO
+          acc := acc + k[j * n + i] * te[j]
+        END ;
+        big := Math.Fabs (y[i]) ;
+        IF Math.Fabs (ynew[i]) > big THEN big := Math.Fabs (ynew[i]) END ;
+        sc := atol + big * rtol ;
+        w[i] := acc * h / sc
+      END ;
+      norm := Rms (w) ;
+      IF norm < 1.0 THEN
+        IF norm = 0.0 THEN
+          factor := 10.0
+        ELSE
+          pw := Math.Pow (norm, -0.2) ;
+          factor := 0.9 * pw ;
+          IF factor > 10.0 THEN factor := 10.0 END
+        END ;
+        IF rejected AND factor > 1.0 THEN factor := 1.0 END ;
+        habs := habs * factor ;
+        accepted := TRUE
+      ELSE
+        pw := Math.Pow (norm, -0.2) ;
+        factor := 0.9 * pw ;
+        IF factor < 0.2 THEN factor := 0.2 END ;
+        habs := habs * factor ;
+        rejected := TRUE
+      END
+    END ;
+    t := tnew ;
+    FOR i := 0 TO n - 1 DO
+      y[i] := ynew[i] ;
+      fcur[i] := fnew[i]
+    END ;
+    steps := steps + 1
+  END ;
+  RETURN steps
+END OdeSolve ;
+
+(* ---- least squares: MINPACK's lmdif ----
+
+   Lifted from the ONEFlux port (OneFlux/src/Lmdif.m9), where it was
+   transcribed operation for operation from scipy's own copy of
+   MINPACK -- lmdif, fdjac2, qrfac, lmpar, qrsolv, enorm -- and held
+   to scipy there fit by fit.  With the constants of scipy >= 1.13's
+   C translation (epsmch = 2^-52, rgiant = 2^63.5), which is the scipy
+   the gate here runs.
+
+   It is a STATE MACHINE, as it was written when M9 had no procedure
+   values: LmNext answers TRUE when it wants the residuals at
+   s.xeval put into s.feval, and FALSE when it is done.  The two
+   procedures a caller sees drive it with a callback; the machine is
+   kept because it is the transcription that was verified, and
+   turning it inside out would be a second one. *)
+
+TYPE
+  Lm = RECORD
+    m, n : I64 ;
+    x, diag, qtf, wa1, wa2, wa3 : SLICE OF F64 ;   (* n *)
+    fvec, wa4, feval : SLICE OF F64 ;              (* m *)
+    xeval : SLICE OF F64 ;                         (* n: where f is wanted *)
+    fjac : SLICE OF F64 ;                          (* m x n, column j at j*m *)
+    ipvt : SLICE OF I64 ;                          (* 1-based, as the Fortran *)
+    ftol, xtol, gtol, epsfcn, factor : F64 ;
+    rdwarf, rgiant : F64 ;
+    maxfev, nfev, info, iter : I64 ;
+    fnorm, fnorm1, par, delta, xnorm, gnorm, actred, prered, dirder, ratio, pnorm : F64 ;
+    stage, jcol : I64 ;                            (* the cursor *)
+    h, temp : F64 ;
+  END ;
+
+CONST
+  Rgiant = 13043817825332782212.349571806252 ;     (* 2^63.5 *)
+  (* the stages of LmNext *)
+  StBegin = 0 ;
+  StInitial = 1 ;
+  StOuter = 2 ;
+  StJacobian = 3 ;
+  StJacobianGot = 4 ;
+  StFactor = 5 ;
+  StInner = 6 ;
+  StTrialGot = 7 ;
+  StDone = 8 ;
+
+(* the Fortran's sqrt: NaN for NaN and for a negative, no trap.  The
+   iteration meets both once a trial step overflows the model (a
+   residual of inf, then inf - inf); MINPACK rejects that step on
+   comparisons a NaN fails, where Math.Sqrt would have raised first. *)
+PROCEDURE Fsqrt (x: F64) : F64 RAISES ValueRange =
+VAR zero : F64 ;
+BEGIN
+  IF Math.IsNaN (x) THEN RETURN x END ;
+  IF x < 0.0 THEN
+    zero := 0.0 ;
+    RETURN zero / zero
+  END ;
+  RETURN Math.Sqrt (x)
+END Fsqrt ;
+
+PROCEDURE Fmax (a, b: F64) : F64 =
+BEGIN
+  IF a >= b THEN RETURN a END ;
+  RETURN b
+END Fmax ;
+
+PROCEDURE Fmin (a, b: F64) : F64 =
+BEGIN
+  IF a <= b THEN RETURN a END ;
+  RETURN b
+END Fmin ;
+
+(* enorm: the euclidean norm of x[from .. from + n - 1], summed in
+   three ranges so that neither the squares of the large overflow nor
+   those of the small vanish *)
+PROCEDURE Enorm (RO x: SLICE OF F64 ; from, n: I64 ; rdwarf, rgiant: F64) : F64
+  RAISES ValueRange =
+VAR
+  s1, s2, s3, x1max, x3max, floatn, agiant, xabs, r : F64 ;
+  i : I64 ;
+BEGIN
+  s1 := 0.0 ;
+  s2 := 0.0 ;
+  s3 := 0.0 ;
+  x1max := 0.0 ;
+  x3max := 0.0 ;
+  floatn := F64 (n) ;
+  agiant := rgiant / floatn ;
+  FOR i := 0 TO n - 1 DO
+    xabs := Math.Fabs (x[from + i]) ;
+    IF xabs > rdwarf AND xabs < agiant THEN
+      s2 := s2 + xabs * xabs
+    ELSIF xabs <= rdwarf THEN
+      IF xabs > x3max THEN
+        s3 := 1.0 + s3 * ((x3max / xabs) * (x3max / xabs)) ;
+        x3max := xabs
+      ELSIF xabs # 0.0 THEN
+        s3 := s3 + (xabs / x3max) * (xabs / x3max)
+      END
+    ELSE
+      IF xabs > x1max THEN
+        s1 := 1.0 + s1 * ((x1max / xabs) * (x1max / xabs)) ;
+        x1max := xabs
+      ELSE
+        s1 := s1 + (xabs / x1max) * (xabs / x1max)
+      END
+    END
+  END ;
+  IF s1 # 0.0 THEN
+    r := Fsqrt (s1 + (s2 / x1max) / x1max) ;
+    r := x1max * r
+  ELSIF s2 # 0.0 THEN
+    IF s2 >= x3max THEN
+      r := Fsqrt (s2 * (1.0 + (x3max / s2) * (x3max * s3)))
+    ELSE
+      r := Fsqrt (x3max * ((s2 / x3max) + (x3max * s3)))
+    END
+  ELSE
+    r := Fsqrt (s3) ;
+    r := x3max * r
+  END ;
+  RETURN r
+END Enorm ;
+
+(* qrfac with pivoting over the m x n column-major a *)
+PROCEDURE Qrfac (m, n: I64 ; VAR a: SLICE OF F64 ; VAR ipvt: SLICE OF I64 ;
+                 VAR rdiag, acnorm, wa: SLICE OF F64 ; rdwarf, rgiant: F64)
+  RAISES ValueRange =
+VAR
+  i, j, k, kmax, minmn, jp1 : I64 ;
+  ajnorm, sum, temp, root : F64 ;
+BEGIN
+  FOR j := 0 TO n - 1 DO
+    acnorm[j] := Enorm (a, j * m, m, rdwarf, rgiant) ;
+    rdiag[j] := acnorm[j] ;
+    wa[j] := rdiag[j] ;
+    ipvt[j] := j + 1
+  END ;
+  IF m < n THEN minmn := m ELSE minmn := n END ;
+  FOR j := 0 TO minmn - 1 DO
+    (* bring the column of largest norm into the pivot position *)
+    kmax := j ;
+    FOR k := j TO n - 1 DO
+      IF rdiag[k] > rdiag[kmax] THEN kmax := k END
+    END ;
+    IF kmax # j THEN
+      FOR i := 0 TO m - 1 DO
+        temp := a[i + j * m] ;
+        a[i + j * m] := a[i + kmax * m] ;
+        a[i + kmax * m] := temp
+      END ;
+      rdiag[kmax] := rdiag[j] ;
+      wa[kmax] := wa[j] ;
+      k := ipvt[j] ;
+      ipvt[j] := ipvt[kmax] ;
+      ipvt[kmax] := k
+    END ;
+    (* the householder transformation of column j *)
+    ajnorm := Enorm (a, j + j * m, m - j, rdwarf, rgiant) ;
+    IF ajnorm # 0.0 THEN
+      IF a[j + j * m] < 0.0 THEN ajnorm := -ajnorm END ;
+      FOR i := j TO m - 1 DO a[i + j * m] := a[i + j * m] / ajnorm END ;
+      a[j + j * m] := a[j + j * m] + 1.0 ;
+      jp1 := j + 1 ;
+      IF n >= jp1 + 1 THEN
+        FOR k := jp1 TO n - 1 DO
+          sum := 0.0 ;
+          FOR i := j TO m - 1 DO sum := sum + a[i + j * m] * a[i + k * m] END ;
+          temp := sum / a[j + j * m] ;
+          FOR i := j TO m - 1 DO a[i + k * m] := a[i + k * m] - temp * a[i + j * m] END ;
+          IF rdiag[k] # 0.0 THEN
+            temp := a[j + k * m] / rdiag[k] ;
+            root := Fsqrt (Fmax (0.0, 1.0 - temp * temp)) ;
+            rdiag[k] := rdiag[k] * root ;
+            IF 0.05 * ((rdiag[k] / wa[k]) * (rdiag[k] / wa[k])) <= Eps THEN
+              rdiag[k] := Enorm (a, jp1 + k * m, m - j - 1, rdwarf, rgiant) ;
+              wa[k] := rdiag[k]
+            END
+          END
+        END
+      END
+    END ;
+    rdiag[j] := -ajnorm
+  END
+END Qrfac ;
+
+(* qrsolv: r is n x n in the m x n column-major fjac (ldr = m) *)
+PROCEDURE Qrsolv (n, ldr: I64 ; VAR r: SLICE OF F64 ; RO ipvt: SLICE OF I64 ;
+                  RO diag, qtb: SLICE OF F64 ; VAR x, sdiag, wa: SLICE OF F64)
+  RAISES ValueRange =
+VAR
+  i, j, k, l, jp1, kp1, nsing : I64 ;
+  cos, cotan, qtbpj, sin, sum, tan, temp, root : F64 ;
+BEGIN
+  FOR j := 0 TO n - 1 DO
+    FOR i := j TO n - 1 DO r[i + j * ldr] := r[j + i * ldr] END ;
+    x[j] := r[j + j * ldr] ;
+    wa[j] := qtb[j]
+  END ;
+  FOR j := 0 TO n - 1 DO
+    l := ipvt[j] - 1 ;
+    IF diag[l] # 0.0 THEN
+      FOR k := j TO n - 1 DO sdiag[k] := 0.0 END ;
+      sdiag[j] := diag[l] ;
+      qtbpj := 0.0 ;
+      FOR k := j TO n - 1 DO
+        IF sdiag[k] # 0.0 THEN
+          IF Math.Fabs (r[k + k * ldr]) >= Math.Fabs (sdiag[k]) THEN
+            tan := sdiag[k] / r[k + k * ldr] ;
+            root := Fsqrt (0.25 + 0.25 * (tan * tan)) ;
+            cos := 0.5 / root ;
+            sin := cos * tan
+          ELSE
+            cotan := r[k + k * ldr] / sdiag[k] ;
+            root := Fsqrt (0.25 + 0.25 * (cotan * cotan)) ;
+            sin := 0.5 / root ;
+            cos := sin * cotan
+          END ;
+          r[k + k * ldr] := cos * r[k + k * ldr] + sin * sdiag[k] ;
+          temp := cos * wa[k] + sin * qtbpj ;
+          qtbpj := -sin * wa[k] + cos * qtbpj ;
+          wa[k] := temp ;
+          kp1 := k + 1 ;
+          IF n >= kp1 + 1 THEN
+            FOR i := kp1 TO n - 1 DO
+              temp := cos * r[i + k * ldr] + sin * sdiag[i] ;
+              sdiag[i] := -sin * r[i + k * ldr] + cos * sdiag[i] ;
+              r[i + k * ldr] := temp
+            END
+          END
+        END
+      END
+    END ;
+    sdiag[j] := r[j + j * ldr] ;
+    r[j + j * ldr] := x[j]
+  END ;
+  nsing := n ;
+  FOR j := 0 TO n - 1 DO
+    IF sdiag[j] = 0.0 AND nsing = n THEN nsing := j END ;
+    IF nsing < n THEN wa[j] := 0.0 END
+  END ;
+  IF nsing >= 1 THEN
+    FOR k := 1 TO nsing DO
+      j := nsing - k ;
+      sum := 0.0 ;
+      jp1 := j + 1 ;
+      IF nsing >= jp1 + 1 THEN
+        FOR i := jp1 TO nsing - 1 DO sum := sum + r[i + j * ldr] * wa[i] END
+      END ;
+      wa[j] := (wa[j] - sum) / sdiag[j]
+    END
+  END ;
+  FOR j := 0 TO n - 1 DO
+    l := ipvt[j] - 1 ;
+    x[l] := wa[j]
+  END
+END Qrsolv ;
+
+(* lmpar: the Levenberg-Marquardt parameter for a step of length delta *)
+PROCEDURE Lmpar (n, ldr: I64 ; VAR r: SLICE OF F64 ; RO ipvt: SLICE OF I64 ;
+                 RO diag, qtb: SLICE OF F64 ; delta: F64 ; VAR par: F64 ;
+                 VAR x, sdiag, wa1, wa2: SLICE OF F64 ; rdwarf, rgiant: F64)
+  RAISES ValueRange =
+VAR
+  i, j, k, l, jm1, jp1, nsing, iter : I64 ;
+  dxnorm, fp, gnorm, parc, parl, paru, sum, temp : F64 ;
+BEGIN
+  nsing := n ;
+  FOR j := 0 TO n - 1 DO
+    wa1[j] := qtb[j] ;
+    IF r[j + j * ldr] = 0.0 AND nsing = n THEN nsing := j END ;
+    IF nsing < n THEN wa1[j] := 0.0 END
+  END ;
+  IF nsing >= 1 THEN
+    FOR k := 1 TO nsing DO
+      j := nsing - k ;
+      wa1[j] := wa1[j] / r[j + j * ldr] ;
+      temp := wa1[j] ;
+      jm1 := j - 1 ;
+      IF jm1 >= 0 THEN
+        FOR i := 0 TO jm1 DO wa1[i] := wa1[i] - r[i + j * ldr] * temp END
+      END
+    END
+  END ;
+  FOR j := 0 TO n - 1 DO
+    l := ipvt[j] - 1 ;
+    x[l] := wa1[j]
+  END ;
+  iter := 0 ;
+  FOR j := 0 TO n - 1 DO wa2[j] := diag[j] * x[j] END ;
+  dxnorm := Enorm (wa2, 0, n, rdwarf, rgiant) ;
+  fp := dxnorm - delta ;
+  IF fp <= 0.1 * delta THEN
+    IF iter = 0 THEN par := 0.0 END ;
+    RETURN
+  END ;
+  parl := 0.0 ;
+  IF nsing >= n THEN
+    FOR j := 0 TO n - 1 DO
+      l := ipvt[j] - 1 ;
+      wa1[j] := diag[l] * (wa2[l] / dxnorm)
+    END ;
+    FOR j := 0 TO n - 1 DO
+      sum := 0.0 ;
+      jm1 := j - 1 ;
+      IF jm1 >= 0 THEN
+        FOR i := 0 TO jm1 DO sum := sum + r[i + j * ldr] * wa1[i] END
+      END ;
+      wa1[j] := (wa1[j] - sum) / r[j + j * ldr]
+    END ;
+    temp := Enorm (wa1, 0, n, rdwarf, rgiant) ;
+    parl := ((fp / delta) / temp) / temp
+  END ;
+  FOR j := 0 TO n - 1 DO
+    sum := 0.0 ;
+    FOR i := 0 TO j DO sum := sum + r[i + j * ldr] * qtb[i] END ;
+    l := ipvt[j] - 1 ;
+    wa1[j] := sum / diag[l]
+  END ;
+  gnorm := Enorm (wa1, 0, n, rdwarf, rgiant) ;
+  paru := gnorm / delta ;
+  IF paru = 0.0 THEN paru := Tiny / Fmin (delta, 0.1) END ;
+  par := Fmax (par, parl) ;
+  par := Fmin (par, paru) ;
+  IF par = 0.0 THEN par := gnorm / dxnorm END ;
+  LOOP
+    iter := iter + 1 ;
+    IF par = 0.0 THEN par := Fmax (Tiny, 0.001 * paru) END ;
+    temp := Fsqrt (par) ;
+    FOR j := 0 TO n - 1 DO wa1[j] := temp * diag[j] END ;
+    Qrsolv (n, ldr, r, ipvt, wa1, qtb, x, sdiag, wa2) ;
+    FOR j := 0 TO n - 1 DO wa2[j] := diag[j] * x[j] END ;
+    dxnorm := Enorm (wa2, 0, n, rdwarf, rgiant) ;
+    temp := fp ;
+    fp := dxnorm - delta ;
+    IF Math.Fabs (fp) <= 0.1 * delta
+       OR (parl = 0.0 AND fp <= temp AND temp < 0.0)
+       OR iter = 10 THEN
+      EXIT
+    END ;
+    FOR j := 0 TO n - 1 DO
+      l := ipvt[j] - 1 ;
+      wa1[j] := diag[l] * (wa2[l] / dxnorm)
+    END ;
+    FOR j := 0 TO n - 1 DO
+      wa1[j] := wa1[j] / sdiag[j] ;
+      temp := wa1[j] ;
+      jp1 := j + 1 ;
+      IF n >= jp1 + 1 THEN
+        FOR i := jp1 TO n - 1 DO wa1[i] := wa1[i] - r[i + j * ldr] * temp END
+      END
+    END ;
+    temp := Enorm (wa1, 0, n, rdwarf, rgiant) ;
+    parc := ((fp / delta) / temp) / temp ;
+    IF fp > 0.0 THEN parl := Fmax (parl, par) END ;
+    IF fp < 0.0 THEN paru := Fmin (paru, par) END ;
+    par := Fmax (parl, par + parc)
+  END ;
+  IF iter = 0 THEN par := 0.0 END
+END Lmpar ;
+
+PROCEDURE LmStart (VAR pool: POOL ; VAR s: Lm ; RO x0: SLICE OF F64 ; m: I64 ;
+                   ftol, xtol, gtol: F64 ; maxfev: I64 ; epsfcn, factor: F64) =
+VAR j : I64 ;
+BEGIN
+  s.n := LEN (x0) ;
+  s.m := m ;
+  IF m < 0 THEN s.m := 0 END ;
+  s.x := NEW (pool, F64, s.n) ;
+  s.diag := NEW (pool, F64, s.n) ;
+  s.qtf := NEW (pool, F64, s.n) ;
+  s.wa1 := NEW (pool, F64, s.n) ;
+  s.wa2 := NEW (pool, F64, s.n) ;
+  s.wa3 := NEW (pool, F64, s.n) ;
+  s.xeval := NEW (pool, F64, s.n) ;
+  s.fvec := NEW (pool, F64, s.m) ;
+  s.wa4 := NEW (pool, F64, s.m) ;
+  s.feval := NEW (pool, F64, s.m) ;
+  s.fjac := NEW (pool, F64, s.m * s.n) ;
+  s.ipvt := NEW (pool, I64, s.n) ;
+  FOR j := 0 TO s.n - 1 DO
+    s.x[j] := x0[j] ;
+    s.diag[j] := 0.0
+  END ;
+  s.ftol := ftol ;
+  s.xtol := xtol ;
+  s.gtol := gtol ;
+  s.maxfev := maxfev ;
+  s.epsfcn := epsfcn ;
+  s.factor := factor ;
+  s.nfev := 0 ;
+  s.info := 0 ;
+  s.iter := 0 ;
+  s.stage := StBegin ;
+  s.jcol := 0 ;
+  s.rgiant := Rgiant ;
+  s.rdwarf := 0.5 / Rgiant
+END LmStart ;
+
+PROCEDURE LmNext (VAR s: Lm) : BOOL RAISES ValueRange =
+VAR
+  i, j, l : I64 ;
+  m, n : I64 ;
+  eps, sum, temp, temp1, temp2, root : F64 ;
+BEGIN
+  m := s.m ;
+  n := s.n ;
+  LOOP
+    CASE s.stage OF
+    | StBegin :
+        (* the input checks; the initial evaluation *)
+        IF n <= 0 OR m < n OR s.ftol < 0.0 OR s.xtol < 0.0 OR s.gtol < 0.0
+           OR s.maxfev <= 0 OR s.factor <= 0.0 THEN
+          s.info := 0 ;
+          s.stage := StDone ;
+          RETURN FALSE
+        END ;
+        FOR j := 0 TO n - 1 DO s.xeval[j] := s.x[j] END ;
+        s.stage := StInitial ;
+        RETURN TRUE
+    | StInitial :
+        FOR i := 0 TO m - 1 DO s.fvec[i] := s.feval[i] END ;
+        s.nfev := 1 ;
+        s.fnorm := Enorm (s.fvec, 0, m, s.rdwarf, s.rgiant) ;
+        s.par := 0.0 ;
+        s.iter := 1 ;
+        s.stage := StOuter
+    | StOuter :
+        (* fdjac2, column by column *)
+        s.jcol := 0 ;
+        s.stage := StJacobian
+    | StJacobian :
+        IF s.jcol < n THEN
+          eps := Fsqrt (Fmax (s.epsfcn, Eps)) ;
+          s.temp := s.x[s.jcol] ;
+          s.h := eps * Math.Fabs (s.temp) ;
+          IF s.h = 0.0 THEN s.h := eps END ;
+          s.x[s.jcol] := s.temp + s.h ;
+          FOR j := 0 TO n - 1 DO s.xeval[j] := s.x[j] END ;
+          s.stage := StJacobianGot ;
+          RETURN TRUE
+        END ;
+        s.nfev := s.nfev + n ;
+        s.stage := StFactor
+    | StJacobianGot :
+        s.x[s.jcol] := s.temp ;
+        FOR i := 0 TO m - 1 DO
+          s.fjac[i + s.jcol * m] := (s.feval[i] - s.fvec[i]) / s.h
+        END ;
+        s.jcol := s.jcol + 1 ;
+        s.stage := StJacobian
+    | StFactor :
+        Qrfac (m, n, s.fjac, s.ipvt, s.wa1, s.wa2, s.wa3, s.rdwarf, s.rgiant) ;
+        IF s.iter = 1 THEN
+          FOR j := 0 TO n - 1 DO
+            s.diag[j] := s.wa2[j] ;
+            IF s.wa2[j] = 0.0 THEN s.diag[j] := 1.0 END
+          END ;
+          FOR j := 0 TO n - 1 DO s.wa3[j] := s.diag[j] * s.x[j] END ;
+          s.xnorm := Enorm (s.wa3, 0, n, s.rdwarf, s.rgiant) ;
+          s.delta := s.factor * s.xnorm ;
+          IF s.delta = 0.0 THEN s.delta := s.factor END
+        END ;
+        (* q^T fvec in wa4, the first n in qtf; R's diagonal into fjac *)
+        FOR i := 0 TO m - 1 DO s.wa4[i] := s.fvec[i] END ;
+        FOR j := 0 TO n - 1 DO
+          IF s.fjac[j + j * m] # 0.0 THEN
+            sum := 0.0 ;
+            FOR i := j TO m - 1 DO sum := sum + s.fjac[i + j * m] * s.wa4[i] END ;
+            temp := -sum / s.fjac[j + j * m] ;
+            FOR i := j TO m - 1 DO s.wa4[i] := s.wa4[i] + s.fjac[i + j * m] * temp END
+          END ;
+          s.fjac[j + j * m] := s.wa1[j] ;
+          s.qtf[j] := s.wa4[j]
+        END ;
+        (* the norm of the scaled gradient *)
+        s.gnorm := 0.0 ;
+        IF s.fnorm # 0.0 THEN
+          FOR j := 0 TO n - 1 DO
+            l := s.ipvt[j] - 1 ;
+            IF s.wa2[l] # 0.0 THEN
+              sum := 0.0 ;
+              FOR i := 0 TO j DO sum := sum + s.fjac[i + j * m] * (s.qtf[i] / s.fnorm) END ;
+              s.gnorm := Fmax (s.gnorm, Math.Fabs (sum / s.wa2[l]))
+            END
+          END
+        END ;
+        IF s.gnorm <= s.gtol THEN s.info := 4 END ;
+        IF s.info # 0 THEN
+          s.stage := StDone ;
+          RETURN FALSE
+        END ;
+        FOR j := 0 TO n - 1 DO s.diag[j] := Fmax (s.diag[j], s.wa2[j]) END ;
+        s.stage := StInner
+    | StInner :
+        Lmpar (n, m, s.fjac, s.ipvt, s.diag, s.qtf, s.delta, s.par, s.wa1,
+               s.wa2, s.wa3, s.wa4, s.rdwarf, s.rgiant) ;
+        FOR j := 0 TO n - 1 DO
+          s.wa1[j] := -s.wa1[j] ;
+          s.wa2[j] := s.x[j] + s.wa1[j] ;
+          s.wa3[j] := s.diag[j] * s.wa1[j]
+        END ;
+        s.pnorm := Enorm (s.wa3, 0, n, s.rdwarf, s.rgiant) ;
+        IF s.iter = 1 THEN s.delta := Fmin (s.delta, s.pnorm) END ;
+        FOR j := 0 TO n - 1 DO s.xeval[j] := s.wa2[j] END ;
+        s.stage := StTrialGot ;
+        RETURN TRUE
+    | StTrialGot :
+        FOR i := 0 TO m - 1 DO s.wa4[i] := s.feval[i] END ;
+        s.nfev := s.nfev + 1 ;
+        s.fnorm1 := Enorm (s.wa4, 0, m, s.rdwarf, s.rgiant) ;
+        s.actred := -1.0 ;
+        IF 0.1 * s.fnorm1 < s.fnorm THEN
+          s.actred := 1.0 - (s.fnorm1 / s.fnorm) * (s.fnorm1 / s.fnorm)
+        END ;
+        FOR j := 0 TO n - 1 DO
+          s.wa3[j] := 0.0 ;
+          l := s.ipvt[j] - 1 ;
+          temp := s.wa1[l] ;
+          FOR i := 0 TO j DO s.wa3[i] := s.wa3[i] + s.fjac[i + j * m] * temp END
+        END ;
+        temp1 := Enorm (s.wa3, 0, n, s.rdwarf, s.rgiant) ;
+        temp1 := temp1 / s.fnorm ;
+        root := Fsqrt (s.par) ;
+        temp2 := (root * s.pnorm) / s.fnorm ;
+        s.prered := temp1 * temp1 + (temp2 * temp2) / 0.5 ;
+        s.dirder := -(temp1 * temp1 + temp2 * temp2) ;
+        s.ratio := 0.0 ;
+        IF s.prered # 0.0 THEN s.ratio := s.actred / s.prered END ;
+        IF s.ratio <= 0.25 THEN
+          IF s.actred >= 0.0 THEN temp := 0.5 END ;
+          IF s.actred < 0.0 THEN
+            temp := 0.5 * s.dirder / (s.dirder + 0.5 * s.actred)
+          END ;
+          IF 0.1 * s.fnorm1 >= s.fnorm OR temp < 0.1 THEN temp := 0.1 END ;
+          s.delta := temp * Fmin (s.delta, s.pnorm / 0.1) ;
+          s.par := s.par / temp
+        ELSIF s.par = 0.0 OR s.ratio >= 0.75 THEN
+          s.delta := s.pnorm / 0.5 ;
+          s.par := 0.5 * s.par
+        END ;
+        IF s.ratio >= 0.0001 THEN
+          FOR j := 0 TO n - 1 DO
+            s.x[j] := s.wa2[j] ;
+            s.wa2[j] := s.diag[j] * s.x[j]
+          END ;
+          FOR i := 0 TO m - 1 DO s.fvec[i] := s.wa4[i] END ;
+          s.xnorm := Enorm (s.wa2, 0, n, s.rdwarf, s.rgiant) ;
+          s.fnorm := s.fnorm1 ;
+          s.iter := s.iter + 1
+        END ;
+        IF Math.Fabs (s.actred) <= s.ftol AND s.prered <= s.ftol
+           AND 0.5 * s.ratio <= 1.0 THEN
+          s.info := 1
+        END ;
+        IF s.delta <= s.xtol * s.xnorm THEN s.info := 2 END ;
+        IF Math.Fabs (s.actred) <= s.ftol AND s.prered <= s.ftol
+           AND 0.5 * s.ratio <= 1.0 AND s.info = 2 THEN
+          s.info := 3
+        END ;
+        IF s.info # 0 THEN
+          s.stage := StDone ;
+          RETURN FALSE
+        END ;
+        IF s.nfev >= s.maxfev THEN s.info := 5 END ;
+        IF Math.Fabs (s.actred) <= Eps AND s.prered <= Eps
+           AND 0.5 * s.ratio <= 1.0 THEN
+          s.info := 6
+        END ;
+        IF s.delta <= Eps * s.xnorm THEN s.info := 7 END ;
+        IF s.gnorm <= Eps THEN s.info := 8 END ;
+        IF s.info # 0 THEN
+          s.stage := StDone ;
+          RETURN FALSE
+        END ;
+        IF s.ratio < 0.0001 THEN s.stage := StInner ELSE s.stage := StOuter END
+    ELSE
+        RETURN FALSE
+    END
+  END
+END LmNext ;
+
+(* what the machine found, as the caller is told it *)
+PROCEDURE LmReport (RO s: Lm ; VAR x: SLICE OF F64) : Fitted
+  RAISES Faults.BadArg, NoConverge =
+VAR
+  r : Fitted ;
+  i : I64 ;
+BEGIN
+  IF s.info = 0 THEN
+    RAISE Faults.BadArg ('fewer residuals than parameters, no parameter, or a tolerance below zero')
+  END ;
+  FOR i := 0 TO s.n - 1 DO x[i] := s.x[i] END ;
+  IF s.info = 5 THEN RAISE NoConverge (s.nfev) END ;
+  r.info := s.info ;
+  r.nfev := s.nfev ;
+  r.cost := 0.0 ;
+  FOR i := 0 TO s.m - 1 DO r.cost := r.cost + s.fvec[i] * s.fvec[i] END ;
+  r.covariance := FALSE ;
+  RETURN r
+END LmReport ;
+
+PROCEDURE LeastSq (f: Residuals ; RO p: SLICE OF F64 ; VAR x: SLICE OF F64 ;
+                   m: I64 ; tol: F64) : Fitted
+  RAISES Faults.BadArg, NoConverge, ValueRange =
+VAR
+  scratch : POOL ;
+  s : Lm ;
+BEGIN
+  LmStart (scratch, s, x, m, tol, tol, 0.0, 200 * (LEN (x) + 1), 0.0, 100.0) ;
+  WHILE LmNext (s) DO
+    f (s.xeval, p, s.feval)
+  END ;
+  RETURN LmReport (s, x)
+END LeastSq ;
+
+(* scipy's cov_x: with R the triangle the last factorisation left in
+   fjac and P its column permutation, the inverse of R, its rows
+   carried to where P sends them, times its own transpose.  FALSE
+   when R has a zero on its diagonal. *)
+PROCEDURE LmCov (RO s: Lm ; VAR cov: SLICE OF F64) : BOOL =
+VAR
+  inv, moved : SLICE OF F64 ;       (* n x n, row after row *)
+  n, m, i, j, k, row : I64 ;
+  acc : F64 ;
+BEGIN
+  n := s.n ;
+  m := s.m ;
+  FOR j := 0 TO n - 1 DO
+    IF s.fjac[j + j * m] = 0.0 THEN RETURN FALSE END
+  END ;
+  inv := NEW (F64, n * n) ;
+  FOR j := 0 TO n - 1 DO
+    inv[j * n + j] := 1.0 / s.fjac[j + j * m] ;
+    FOR i := j - 1 TO 0 BY -1 DO
+      acc := 0.0 ;
+      FOR k := i + 1 TO j DO
+        acc := acc + s.fjac[i + k * m] * inv[k * n + j]
+      END ;
+      inv[i * n + j] := -acc / s.fjac[i + i * m]
+    END
+  END ;
+  moved := NEW (F64, n * n) ;
+  FOR i := 0 TO n - 1 DO
+    row := s.ipvt[i] - 1 ;
+    FOR j := 0 TO n - 1 DO moved[row * n + j] := inv[i * n + j] END
+  END ;
+  FOR i := 0 TO n - 1 DO
+    FOR j := 0 TO n - 1 DO
+      acc := 0.0 ;
+      FOR k := 0 TO n - 1 DO
+        acc := acc + moved[i * n + k] * moved[j * n + k]
+      END ;
+      cov[i * n + j] := acc
+    END
+  END ;
+  RETURN TRUE
+END LmCov ;
+
+PROCEDURE CurveFit (f: Fn ; RO t, y: SLICE OF F64 ; VAR params: SLICE OF F64 ;
+                    VAR cov: SLICE OF F64) : Fitted
+  RAISES Faults.SizeError, Faults.BadArg, NoConverge, ValueRange =
+VAR
+  scratch : POOL ;
+  s : Lm ;
+  r : Fitted ;
+  m, n, i : I64 ;
+  v, scale, nan : F64 ;
+BEGIN
+  m := LEN (t) ;
+  n := LEN (params) ;
+  IF LEN (y) # m THEN RAISE Faults.SizeError (LEN (y), m) END ;
+  IF LEN (cov) # n * n THEN RAISE Faults.SizeError (LEN (cov), n * n) END ;
+  LmStart (scratch, s, params, m, FitTol, FitTol, 0.0, 200 * (n + 1), 0.0, 100.0) ;
+  WHILE LmNext (s) DO
+    FOR i := 0 TO m - 1 DO
+      v := f (t[i], s.xeval) ;
+      s.feval[i] := v - y[i]
+    END
+  END ;
+  r := LmReport (s, params) ;
+  IF m > n THEN r.covariance := LmCov (s, cov) END ;
+  IF r.covariance THEN
+    (* the residuals' own variance, on m - n degrees of freedom *)
+    scale := r.cost / F64 (m - n) ;
+    FOR i := 0 TO n * n - 1 DO cov[i] := cov[i] * scale END
+  ELSE
+    nan := 0.0 ;
+    nan := nan / nan ;
+    FOR i := 0 TO n * n - 1 DO cov[i] := nan END
+  END ;
+  RETURN r
+END CurveFit ;
+
+
+(* ---- a spectrum, and the curve fit of Thoning et al. ----------------
+
+   Lifted from m9curve's Ccg.m9 (2026-10-02), where the whole of it
+   was held to NOAA's ccg_filter.py over seven real records.  Kept as
+   it was verified: its own least squares and its own interpolation,
+   private, rather than Mat's and Stats's -- and so Numeric still
+   imports Math and Faults and nothing else. *)
+
+PROCEDURE Fft (VAR re, im: SLICE OF F64 ; inverse: BOOL)
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  n, i, j, k, bit, len, half, step : I64 ;
+  cw, sw : SLICE OF F64 ;
+  ang, t, ur, ui, vr, vi : F64 ;
+BEGIN
+  n := LEN (re) ;
+  IF LEN (im) # n THEN RAISE Faults.SizeError (LEN (im), n) END ;
+  IF n < 2 THEN RETURN END ;
+  bit := 1 ;
+  WHILE bit < n DO bit := bit * 2 END ;
+  IF bit # n THEN
+    RAISE Faults.BadArg ('Fft takes a length that is a power of two')
+  END ;
+  (* each element to the place its index read backwards names *)
+  j := 0 ;
+  FOR i := 1 TO n - 1 DO
+    bit := n DIV 2 ;
+    WHILE bit > 0 AND (j DIV bit) MOD 2 = 1 DO
+      j := j - bit ;
+      bit := bit DIV 2
+    END ;
+    j := j + bit ;
+    IF i < j THEN
+      t := re[i] ; re[i] := re[j] ; re[j] := t ;
+      t := im[i] ; im[i] := im[j] ; im[j] := t
+    END
+  END ;
+  (* every twiddle from sin and cos directly: a rotation multiplied
+     up through 2^15 steps would carry its own rounding into the
+     top bins *)
+  half := n DIV 2 ;
+  cw := NEW (F64, half) ;
+  sw := NEW (F64, half) ;
+  FOR k := 0 TO half - 1 DO
+    ang := 2.0 * Math.Pi * F64 (k) / F64 (n) ;
+    cw[k] := Math.Cos (ang) ;
+    t := Math.Sin (ang) ;
+    IF inverse THEN sw[k] := t ELSE sw[k] := -t END
+  END ;
+  len := 2 ;
+  WHILE len <= n DO
+    half := len DIV 2 ;
+    step := n DIV len ;
+    i := 0 ;
+    WHILE i < n DO
+      FOR k := 0 TO half - 1 DO
+        ur := re[i + k] ;
+        ui := im[i + k] ;
+        vr := re[i + k + half] * cw[k * step] - im[i + k + half] * sw[k * step] ;
+        vi := re[i + k + half] * sw[k * step] + im[i + k + half] * cw[k * step] ;
+        re[i + k] := ur + vr ;
+        im[i + k] := ui + vi ;
+        re[i + k + half] := ur - vr ;
+        im[i + k + half] := ui - vi
+      END ;
+      i := i + len
+    END ;
+    len := len * 2
+  END ;
+  IF inverse THEN
+    FOR i := 0 TO n - 1 DO
+      re[i] := re[i] / F64 (n) ;
+      im[i] := im[i] / F64 (n)
+    END
+  END
+END Fft ;
+
+(* term k of the fitted function at x: the polynomial terms first,
+   then sine and cosine of each harmonic *)
+PROCEDURE CcgBasis (k: I64 ; x: F64 ; numpoly: I64) : F64
+  RAISES ValueRange =
+VAR
+  p : F64 ;
+  i, h : I64 ;
+BEGIN
+  IF k < numpoly THEN
+    p := 1.0 ;
+    FOR i := 1 TO k DO p := p * x END ;
+    RETURN p
+  END ;
+  h := (k - numpoly) DIV 2 + 1 ;
+  IF (k - numpoly) MOD 2 = 0 THEN
+    RETURN Math.Sin (F64 (h) * (2.0 * Math.Pi * x))
+  END ;
+  RETURN Math.Cos (F64 (h) * (2.0 * Math.Pi * x))
+END CcgBasis ;
+
+PROCEDURE CcgPoly (RO params: SLICE OF F64 ; x: F64 ; numpoly: I64) : F64 =
+VAR
+  p : F64 ;
+  j : I64 ;
+BEGIN
+  p := 0.0 ;
+  FOR j := numpoly - 1 TO 0 BY -1 DO
+    p := p * x + params[j]
+  END ;
+  RETURN p
+END CcgPoly ;
+
+PROCEDURE CcgFunc (RO params: SLICE OF F64 ; x: F64 ;
+                   numpoly, numharm: I64) : F64
+  RAISES ValueRange =
+VAR
+  s, pi2, sn, cs : F64 ;
+  h, ix : I64 ;
+BEGIN
+  s := 0.0 ;
+  pi2 := 2.0 * Math.Pi * x ;
+  FOR h := 1 TO numharm DO
+    ix := numpoly + 2 * (h - 1) ;
+    sn := Math.Sin (F64 (h) * pi2) ;
+    cs := Math.Cos (F64 (h) * pi2) ;
+    s := s + params[ix] * sn + params[ix + 1] * cs
+  END ;
+  RETURN CcgPoly (params, x, numpoly) + s
+END CcgFunc ;
+
+(* least squares by Householder QR: a is n rows of m, row-major, and
+   is destroyed; b is the n right-hand sides, destroyed; x receives
+   the m coefficients.  FALSE when a column is zero or explained by
+   the ones before it. *)
+PROCEDURE CcgSolve (a, b: SLICE OF F64 ; n, m: I64 ; x: SLICE OF F64) : BOOL
+  RAISES ValueRange =
+VAR
+  diag : SLICE OF F64 ;
+  i, j, k : I64 ;
+  s, norm, alpha, vv, dot, f, big : F64 ;
+BEGIN
+  diag := NEW (F64, m) ;
+  big := 0.0 ;
+  FOR k := 0 TO m - 1 DO
+    s := 0.0 ;
+    FOR i := k TO n - 1 DO
+      s := s + a[i * m + k] * a[i * m + k]
+    END ;
+    norm := Math.Sqrt (s) ;
+    IF norm > big THEN big := norm END ;
+    (* a column with nothing left below the diagonal is one the
+       earlier columns already explain *)
+    IF NOT (norm > big * 1.0E-13) THEN RETURN FALSE END ;
+    IF a[k * m + k] > 0.0 THEN alpha := -norm ELSE alpha := norm END ;
+    a[k * m + k] := a[k * m + k] - alpha ;
+    vv := 0.0 ;
+    FOR i := k TO n - 1 DO
+      vv := vv + a[i * m + k] * a[i * m + k]
+    END ;
+    FOR j := k + 1 TO m - 1 DO
+      dot := 0.0 ;
+      FOR i := k TO n - 1 DO
+        dot := dot + a[i * m + k] * a[i * m + j]
+      END ;
+      f := 2.0 * dot / vv ;
+      FOR i := k TO n - 1 DO
+        a[i * m + j] := a[i * m + j] - f * a[i * m + k]
+      END
+    END ;
+    dot := 0.0 ;
+    FOR i := k TO n - 1 DO
+      dot := dot + a[i * m + k] * b[i]
+    END ;
+    f := 2.0 * dot / vv ;
+    FOR i := k TO n - 1 DO
+      b[i] := b[i] - f * a[i * m + k]
+    END ;
+    diag[k] := alpha
+  END ;
+  FOR k := m - 1 TO 0 BY -1 DO
+    s := b[k] ;
+    FOR j := k + 1 TO m - 1 DO
+      s := s - a[k * m + j] * x[j]
+    END ;
+    x[k] := s / diag[k]
+  END ;
+  RETURN TRUE
+END CcgSolve ;
+
+(* the low-pass weight at frequency k of an n-point series sampled
+   every dint years: 1 / 2^((f/fc)^6), the exponent clipped at 20 *)
+PROCEDURE CcgWeight (k, n: I64 ; dint, cutoff: F64) : F64
+  RAISES ValueRange =
+VAR f, z : F64 ;
+BEGIN
+  f := F64 (k) / (F64 (n) * dint) ;
+  z := Math.Pow (f / (365.0 / cutoff), 6.0) ;
+  IF z > 20.0 THEN z := 20.0 END ;
+  RETURN 1.0 / Math.Pow (2.0, z)
+END CcgWeight ;
+
+(* the padded series filtered at one cutoff: fr, fi is its spectrum
+   and stays untouched; the answer is the real part back in time *)
+PROCEDURE CcgLowPass (RO fr, fi: SLICE OF F64 ; dint, cutoff: F64)
+  : SLICE OF F64
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  re, im : SLICE OF F64 ;
+  n, k : I64 ;
+  w : F64 ;
+BEGIN
+  n := LEN (fr) ;
+  re := NEW (F64, n) ;
+  im := NEW (F64, n) ;
+  FOR k := 0 TO n DIV 2 DO
+    w := CcgWeight (k, n, dint, cutoff) ;
+    re[k] := fr[k] * w ;
+    im[k] := fi[k] * w ;
+    IF k > 0 AND k < n - k THEN
+      re[n - k] := fr[n - k] * w ;
+      im[n - k] := fi[n - k] * w
+    END
+  END ;
+  Fft (re, im, TRUE) ;
+  RETURN re
+END CcgLowPass ;
+
+(* scipy's interp1d, linear: the segment is the one ENDING at the
+   first x not below xq, and outside the span the answer is NaN *)
+PROCEDURE CcgInterp (RO x, y: SLICE OF F64 ; xq: F64) : F64 =
+VAR
+  lo, hi, mid, n : I64 ;
+  slope, nan : F64 ;
+BEGIN
+  n := LEN (x) ;
+  IF NOT (xq >= x[0] AND xq <= x[n - 1]) THEN
+    nan := 0.0 ;
+    nan := nan / nan ;
+    RETURN nan
+  END ;
+  lo := 0 ;
+  hi := n ;
+  WHILE lo < hi DO
+    mid := (lo + hi) DIV 2 ;
+    IF x[mid] < xq THEN lo := mid + 1 ELSE hi := mid END
+  END ;
+  IF lo < 1 THEN lo := 1 END ;
+  IF lo > n - 1 THEN lo := n - 1 END ;
+  slope := (y[lo] - y[lo - 1]) / (x[lo] - x[lo - 1]) ;
+  RETURN slope * (xq - x[lo - 1]) + y[lo - 1]
+END CcgInterp ;
+
+(* the line a + b x through points by least squares:
+   scipy.stats.linregress's intercept and slope *)
+PROCEDURE CcgLine (RO x, y: SLICE OF F64 ; VAR a, b: F64) =
+VAR
+  mx, my, sxx, sxy : F64 ;
+  i, n : I64 ;
+BEGIN
+  n := LEN (x) ;
+  mx := 0.0 ;
+  my := 0.0 ;
+  FOR i := 0 TO n - 1 DO
+    mx := mx + x[i] ;
+    my := my + y[i]
+  END ;
+  mx := mx / F64 (n) ;
+  my := my / F64 (n) ;
+  sxx := 0.0 ;
+  sxy := 0.0 ;
+  FOR i := 0 TO n - 1 DO
+    sxx := sxx + (x[i] - mx) * (x[i] - mx) ;
+    sxy := sxy + (x[i] - mx) * (y[i] - my)
+  END ;
+  b := 0.0 ;
+  IF sxx > 0.0 THEN b := sxy / sxx END ;
+  a := my - b * mx
+END CcgLine ;
+
+PROCEDURE CcgFilter (RO xp, yp: SLICE OF F64 ; RO xq: SLICE OF F64 ;
+                     interval, shortterm, longterm: F64 ;
+                     numpoly, numharm: I64 ;
+                     VAR smooth, trend: SLICE OF F64)
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  n, m, i, k, ne, nx, ni, n2, nstart, ns : I64 ;
+  tz, c, ca, cb, dint, ys, xt : F64 ;
+  solved : BOOL ;
+  work, val, design, rhs, params, resid : SLICE OF F64 ;
+  ex, ey, xx, yy, xi, yi : SLICE OF F64 ;
+  fr, fi, sm, tr, ysm, ytr, xabs : SLICE OF F64 ;
+BEGIN
+  IF LEN (yp) # LEN (xp) THEN RAISE Faults.SizeError (LEN (yp), LEN (xp)) END ;
+  IF LEN (smooth) # LEN (xq) THEN
+    RAISE Faults.SizeError (LEN (smooth), LEN (xq))
+  END ;
+  IF LEN (trend) # LEN (xq) THEN
+    RAISE Faults.SizeError (LEN (trend), LEN (xq))
+  END ;
+  IF NOT (interval > 0.0 AND shortterm > 0.0 AND longterm > 0.0) THEN
+    RAISE Faults.BadArg ('CcgFilter: the interval and both cutoffs are days, more than none')
+  END ;
+  IF numpoly < 1 OR numharm < 0 THEN
+    RAISE Faults.BadArg ('CcgFilter: one polynomial term at least, and no negative number of harmonics')
+  END ;
+
+  (* the observations that are there, their times in order *)
+  work := NEW (F64, LEN (xp)) ;
+  val := NEW (F64, LEN (xp)) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (xp) - 1 DO
+    IF xp[i] = xp[i] AND yp[i] = yp[i] THEN
+      IF n > 0 AND xp[i] < work[n - 1] THEN
+        RAISE Faults.BadArg ('CcgFilter: the times are not ascending')
+      END ;
+      work[n] := xp[i] ;
+      val[n] := yp[i] ;
+      n := n + 1
+    END
+  END ;
+  m := numpoly + 2 * numharm ;
+  IF n < m + 1 THEN
+    RAISE Faults.BadArg ('CcgFilter: fewer observations than the fit has terms, plus one')
+  END ;
+
+  (* coefficients are relative to the first whole year *)
+  tz := Math.Floor (work[0]) ;
+  FOR i := 0 TO n - 1 DO work[i] := work[i] - tz END ;
+
+  (* 1: the function fit *)
+  design := NEW (F64, n * m) ;
+  rhs := NEW (F64, n) ;
+  FOR i := 0 TO n - 1 DO
+    FOR k := 0 TO m - 1 DO
+      design[i * m + k] := CcgBasis (k, work[i], numpoly)
+    END ;
+    rhs[i] := val[i]
+  END ;
+  params := NEW (F64, m) ;
+  solved := CcgSolve (design, rhs, n, m, params) ;
+  IF NOT solved THEN
+    RAISE Faults.BadArg ('CcgFilter: the times do not tell the terms of the fit apart')
+  END ;
+  resid := NEW (F64, n) ;
+  FOR i := 0 TO n - 1 DO
+    ys := CcgFunc (params, work[i], numpoly, numharm) ;
+    resid[i] := val[i] - ys
+  END ;
+
+  (* 2: a line through the two ends of the residuals -- a quarter of
+     the long cutoff at each -- is removed so the padded series
+     starts and stops near zero; too short a record keeps its ends *)
+  ca := 0.0 ;
+  cb := 0.0 ;
+  IF NOT (work[n - 1] - work[0] < longterm / 365.0) THEN
+    c := longterm / 365.0 / 4.0 ;
+    ne := 0 ;
+    FOR i := 0 TO n - 1 DO
+      IF work[i] <= work[0] + c OR work[i] >= work[n - 1] - c THEN
+        ne := ne + 1
+      END
+    END ;
+    ex := NEW (F64, ne) ;
+    ey := NEW (F64, ne) ;
+    ne := 0 ;
+    FOR i := 0 TO n - 1 DO
+      IF work[i] <= work[0] + c OR work[i] >= work[n - 1] - c THEN
+        ex[ne] := work[i] ;
+        ey[ne] := resid[i] ;
+        ne := ne + 1
+      END
+    END ;
+    CcgLine (ex, ey, ca, cb)
+  END ;
+  FOR i := 0 TO n - 1 DO
+    resid[i] := resid[i] - (ca + cb * work[i])
+  END ;
+
+  (* values sharing one time are averaged, so the interpolation has
+     one y for each x *)
+  xx := NEW (F64, n) ;
+  yy := NEW (F64, n) ;
+  nx := 0 ;
+  xt := work[0] ;
+  ys := resid[0] ;
+  ns := 1 ;
+  FOR i := 1 TO n - 1 DO
+    IF work[i] = xt THEN
+      ys := ys + resid[i] ;
+      ns := ns + 1
+    ELSE
+      xx[nx] := xt ;
+      yy[nx] := ys / F64 (ns) ;
+      nx := nx + 1 ;
+      ys := resid[i] ;
+      ns := 1
+    END ;
+    xt := work[i]
+  END ;
+  xx[nx] := xt ;
+  yy[nx] := ys / F64 (ns) ;
+  nx := nx + 1 ;
+  IF nx < 2 THEN
+    RAISE Faults.BadArg ('CcgFilter: every observation is at one time')
+  END ;
+
+  (* evenly spaced, numpy.arange's count, the last point pinned to
+     the last datum *)
+  dint := interval / 365.0 ;
+  ni := I64 (Math.Ceil ((work[n - 1] + dint / 2.0 - work[0]) / dint)) ;
+  IF ni < 2 THEN
+    RAISE Faults.BadArg ('CcgFilter: the record is shorter than one interval')
+  END ;
+  xi := NEW (F64, ni) ;
+  yi := NEW (F64, ni) ;
+  FOR i := 0 TO ni - 1 DO xi[i] := work[0] + F64 (i) * dint END ;
+  xi[ni - 1] := work[n - 1] ;
+  FOR i := 0 TO ni - 1 DO
+    yi[i] := CcgInterp (SLICE (xx, 0, nx), SLICE (yy, 0, nx), xi[i])
+  END ;
+
+  (* 3: the spectrum of the series, centred in zeros *)
+  n2 := 1 ;
+  WHILE n2 < ni DO n2 := n2 * 2 END ;
+  nstart := (n2 - ni) DIV 2 ;
+  fr := NEW (F64, n2) ;
+  fi := NEW (F64, n2) ;
+  FOR i := 0 TO ni - 1 DO fr[nstart + i] := yi[i] END ;
+  Fft (fr, fi, FALSE) ;
+  sm := CcgLowPass (fr, fi, dint, shortterm) ;
+  tr := CcgLowPass (fr, fi, dint, longterm) ;
+
+  (* 4: the function and the end line go back on *)
+  ysm := NEW (F64, ni) ;
+  ytr := NEW (F64, ni) ;
+  xabs := NEW (F64, ni) ;
+  FOR i := 0 TO ni - 1 DO
+    ys := CcgFunc (params, xi[i], numpoly, numharm) ;
+    ysm[i] := ys + sm[nstart + i] + ca + cb * xi[i] ;
+    ytr[i] := CcgPoly (params, xi[i], numpoly)
+              + tr[nstart + i] + ca + cb * xi[i] ;
+    xabs[i] := xi[i] + tz
+  END ;
+  FOR i := 0 TO LEN (xq) - 1 DO
+    smooth[i] := CcgInterp (xabs, ysm, xq[i]) ;
+    trend[i] := CcgInterp (xabs, ytr, xq[i])
+  END
+END CcgFilter ;
+
+END Numeric.

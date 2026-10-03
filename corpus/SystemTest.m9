@@ -1,0 +1,67 @@
+MODULE SystemTest ;
+
+(* System.Glob against Python's glob.glob, sorted.  (The rest of
+   System -- Exec, the arguments, the pools -- stays with its C
+   drivers.)  Goldens: runtime/test/gold/System.gold from
+   tools/systemgold.py; the tree the patterns are matched in is
+   runtime/test/gold/glob/, a dozen empty files, checked in. *)
+
+IMPORT Check ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT System ;
+
+VAR
+  t : Check.T ;
+  gold, tree : STR ;
+  pool : POOL ;
+
+(* what Glob found for a pattern in the tree, each path with the
+   tree's own name taken off the front: the golden file is written
+   relative to it *)
+PROCEDURE Found (RO pattern: STR) : SLICE OF STR RAISES ValueRange =
+VAR
+  got, rel : SLICE OF STR ;
+  i, cut : I64 ;
+BEGIN
+  got := System.Glob (tree + '/' + pattern) ;
+  cut := LEN (tree) + 1 ;
+  rel := NEW (pool, STR, LEN (got)) ;
+  FOR i := 0 TO LEN (got) - 1 DO
+    rel[i] := SLICE (got[i], cut, LEN (got[i]) - cut) + ''
+  END ;
+  RETURN rel
+END Found ;
+
+PROCEDURE Globs () RAISES ValueRange =
+VAR
+  patterns, root : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  patterns := Check.GoldStrs (t, gold, 'glob.patterns') ;
+  Check.That (t, 'the golden file names its patterns', LEN (patterns) > 0) ;
+  FOR i := 0 TO LEN (patterns) - 1 DO
+    Check.EqStrs (t, 'Glob ' + patterns[i], Found (patterns[i]),
+                  Check.GoldStrs (t, gold, 'glob.want.' + Fmt.I64Str (i)))
+  END ;
+  Check.EqI64 (t, 'Glob of the empty pattern finds nothing',
+               LEN (System.Glob ('')), 0) ;
+  root := System.Glob ('/') ;
+  Check.EqI64 (t, 'Glob of / is /', LEN (root), 1) ;
+  root := System.Glob ('/[t]mp') ;
+  Check.EqI64 (t, 'Glob from the root: one /tmp', LEN (root), 1) ;
+  IF LEN (root) = 1 THEN
+    Check.EqStr (t, 'and by that name', root[0], '/tmp')
+  END
+END Globs ;
+
+BEGIN
+  gold := Check.GoldPath ('System.gold') ;
+  tree := Check.GoldPath ('glob') ;
+  Globs () ;
+  Io.Halt (Check.Done (t, 'System'))
+EXCEPT
+| ValueRange :
+    Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'System'))
+END SystemTest.

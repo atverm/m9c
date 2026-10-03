@@ -124,6 +124,22 @@ dflt: Value (pool, '--out', 'a.nc')
 
 every argument that is not an option, in order
 
+### Glob (RO pattern: STR) : SLICE OF STR RAISES ValueRange
+
+the paths that exist and fit the pattern, SORTED by code point:
+Python's glob.glob, which answers them in the order the
+filesystem happens to hold, sorted.  The pattern is cut at its
+slashes and each piece is a Text.Match pattern for one name:
+`data/*/L2_[0-9][0-9].nc'.  A piece with no star, question mark
+or bracket is just a name.
+
+As in every shell, a name that begins with a dot is found only
+by a piece that begins with one.  A pattern that matches nothing
+answers an empty slice, and so does one that looks in a
+directory that is not there: nothing found is not a failure.
+A pattern that ENDS in a slash asks for directories only; they
+are answered without it.  There is no `**'.
+
 ### NCpu () : C.Int [REENTRANT]
 
 _(documented with the group below)_

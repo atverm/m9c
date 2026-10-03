@@ -32,7 +32,7 @@ else
 fi
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Lex.c ../gen/Ast.c \
-    ../gen/Parse.c ../gen/Gen.c gendump_m9.c -o gendump_m9
+    ../gen/Parse.c ../gen/Text.c ../gen/Gen.c gendump_m9.c -o gendump_m9
 ( cd ../../host/fpc && fpc -O2 gendump.pas >/dev/null )
 n=0
 run () {
@@ -46,7 +46,7 @@ run () {
 run DynStr
 run Faults
 run Mat Math Faults
-run Stats Math Bits Faults
+run Stats Math Bits Faults Sort
 run System Io DynStr Text
 run Json DynStr
 run Http DynStr Io
@@ -54,9 +54,9 @@ run HttpServer DynStr Http
 run OpenApi HttpServer DynStr
 run ApiSpec DynStr
 run Arrow DynStr Faults
-run ZarrStore DynStr Json Http
+run ZarrStore DynStr Json Http Io
 run Zarr DynStr Json Io Math
-run Plot DynStr Mat
+run Plot DynStr Mat Math Faults Fmt Text Time
 run Lex DynStr
 run Ast
 run Print Ast DynStr
@@ -69,10 +69,14 @@ run Text DynStr
 run Math
 run Bits
 run Sort Math
+run Check Io Fmt Math Text
+run Arrays Faults Math
+run Numeric Faults Math
 run Csv DynStr Io Time
 run Delim DynStr Io
-run Zip DynStr Io
-run Frame Csv Io Math DynStr Fmt Time NetCDF Faults
+run Zip DynStr Io Bits
+run Png Faults Zip Math DynStr
+run Frame Csv Io Math DynStr Fmt Time NetCDF Faults Sort Stats Text
 run Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults
 run NetCDF DynStr Faults
 run Grib DynStr Faults
@@ -82,10 +86,26 @@ run Hello Io DynStr
 run Concat Io DynStr
 run Narrow Io
 run ProcUse Io
+# AggUse is the constant table (par 2.2.4).  The grep proves the table
+# was EMITTED as const data: two generators refusing the aggregate
+# together would also agree byte for byte.
+run AggUse Io
+grep -q 'static const m9_arr_5_int64_t Primes_k = { {' /tmp/gen_fpc.txt \
+  || { echo "AggUse: the constant table NOT generated -- the aggregate gone from BOTH generators?"; exit 1; }
+# ShareUse is the assignment of a raising call (par 5): the answer
+# into a temporary, the error slot read, THEN the store and the share
+# copy.  The grep holds the order; two generators storing first
+# together would also agree byte for byte.
+run ShareUse Io
+grep -q -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' /tmp/gen_fpc.txt \
+  && grep -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' /tmp/gen_fpc.txt | grep -q 'if (err->exc) goto' \
+  && grep -q 'b = ((__typeof__(b)) m9_share_copy (m9v));' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: a raising call's answer is stored before its error slot is read -- in BOTH generators"; exit 1; }
 run Sem Ast DynStr Print Text
 run Doc Ast DynStr Text Print Lex
-run M9c Io Ast Parse Gen Sem DynStr Doc Lex System
-run Gen Ast DynStr
+run Review Ast DynStr Text
+run M9c Io Ast Parse Gen Sem DynStr Doc Review Lex System
+run Gen Ast DynStr Text
 run Diag DynStr Io Lex
 # LibmGate is a gendiff-only fixture (not in gentest.pas / runtime/gen):
 # 96 locals named after the libm functions CN escapes.  The byte-compare

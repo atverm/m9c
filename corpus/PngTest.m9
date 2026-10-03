@@ -1,0 +1,523 @@
+MODULE PngTest ;
+
+(* Png.Encode, read back here: the file is taken apart chunk by chunk
+   -- each CRC computed again, the header's fields, the resolution --
+   and its image data goes through Zip.Decompress and the filters
+   backwards, to the pixels that went in.
+
+   Zip.Decompress is held to zlib by ZipTest.  That a reader which is
+   NOT this repository's reads these files is runtime/test/deflate.sh:
+   Python takes the same pictures apart there. *)
+
+IMPORT Check ;
+IMPORT DynStr ;
+IMPORT Faults ;
+IMPORT Io ;
+IMPORT Png ;
+IMPORT Zip ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+(* a picture with something in every byte: no two neighbours alike *)
+PROCEDURE Busy (w, h: I64) : SLICE OF BYTE RAISES ValueRange =
+VAR
+  p : SLICE OF BYTE ;
+  x, y, at : I64 ;
+BEGIN
+  p := NEW (pool, BYTE, 3 * w * h) ;
+  FOR y := 0 TO h - 1 DO
+    FOR x := 0 TO w - 1 DO
+      at := 3 * (y * w + x) ;
+      p[at] := BYTE ((x * 5 + y) MOD 256) ;
+      p[at + 1] := BYTE ((y * 9 + x * x) MOD 256) ;
+      p[at + 2] := BYTE (((x + y) MOD 7) * 30)
+    END
+  END ;
+  RETURN p
+END Busy ;
+
+(* a picture as a figure is: white, a blue line across every fortieth
+   row and down every fiftieth column, a ramp of grey along the top *)
+PROCEDURE Figure (w, h: I64) : SLICE OF BYTE RAISES ValueRange =
+VAR
+  p : SLICE OF BYTE ;
+  x, y, at : I64 ;
+BEGIN
+  p := NEW (pool, BYTE, 3 * w * h) ;
+  FOR y := 0 TO h - 1 DO
+    FOR x := 0 TO w - 1 DO
+      at := 3 * (y * w + x) ;
+      IF y MOD 40 = 7 OR x MOD 50 = 9 THEN
+        p[at] := BYTE (31) ; p[at + 1] := BYTE (119) ; p[at + 2] := BYTE (180)
+      ELSIF y < 4 THEN
+        p[at] := BYTE (x MOD 256) ; p[at + 1] := BYTE (x MOD 256) ;
+        p[at + 2] := BYTE (x MOD 256)
+      ELSE
+        p[at] := BYTE (255) ; p[at + 1] := BYTE (255) ; p[at + 2] := BYTE (255)
+      END
+    END
+  END ;
+  RETURN p
+END Figure ;
+
+PROCEDURE U4 (RO b: SLICE OF BYTE ; at: I64) : I64 =
+BEGIN
+  RETURN ((I64 (b[at]) * 256 + I64 (b[at + 1])) * 256 + I64 (b[at + 2])) * 256
+         + I64 (b[at + 3])
+END U4 ;
+
+PROCEDURE Is (RO b: SLICE OF BYTE ; at: I64 ; RO kind: STR) : BOOL =
+VAR k : I64 ;
+BEGIN
+  FOR k := 0 TO 3 DO
+    IF I64 (b[at + k]) # ORD (kind[k]) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Is ;
+
+(* the file taken apart and compared with what went in.  One check
+   for each thing a reader depends on. *)
+PROCEDURE Back (RO what: STR ; RO rgb: SLICE OF BYTE ; w, h: I64 ;
+                dpi: F64 ; perMetre: I64)
+  RAISES Zip.Error, Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  f, rows, got : SLICE OF BYTE ;
+  at, n, crcBad, chunks, row, y, x, v, kind, wrong, seenPhys, idatAt, idatLen : I64 ;
+  sig, order : BOOL ;
+BEGIN
+  f := Png.Encode (pool, rgb, w, h, dpi) ;
+  sig := LEN (f) > 8 AND I64 (f[0]) = 137 AND I64 (f[1]) = 80
+         AND I64 (f[2]) = 78 AND I64 (f[3]) = 71 AND I64 (f[4]) = 13
+         AND I64 (f[5]) = 10 AND I64 (f[6]) = 26 AND I64 (f[7]) = 10 ;
+  Check.That (t, what + ': the eight bytes every PNG begins with', sig) ;
+  at := 8 ;
+  crcBad := 0 ;
+  chunks := 0 ;
+  seenPhys := -1 ;
+  idatAt := -1 ;
+  idatLen := 0 ;
+  order := TRUE ;
+  WHILE at + 12 <= LEN (f) DO
+    n := U4 (f, at) ;
+    IF Zip.Crc32 (SLICE (f, at + 4, 4 + n)) # U4 (f, at + 8 + n) THEN
+      crcBad := crcBad + 1
+    END ;
+    IF chunks = 0 AND NOT Is (f, at + 4, 'IHDR') THEN order := FALSE END ;
+    IF Is (f, at + 4, 'pHYs') THEN
+      seenPhys := U4 (f, at + 8) ;
+      (* before the image data, the same both ways, in metres *)
+      IF idatAt >= 0 OR U4 (f, at + 12) # seenPhys OR I64 (f[at + 16]) # 1 THEN
+        order := FALSE
+      END
+    END ;
+    IF Is (f, at + 4, 'IDAT') THEN
+      idatAt := at + 8 ;
+      idatLen := n
+    END ;
+    chunks := chunks + 1 ;
+    at := at + 12 + n
+  END ;
+  Check.EqI64 (t, what + ': the chunks fill the file to its last byte',
+               at, LEN (f)) ;
+  Check.EqI64 (t, what + ': chunks whose CRC is not that of their bytes', crcBad, 0) ;
+  Check.That (t, what + ': the header first, the resolution before the image, the end last',
+              order AND Is (f, LEN (f) - 8, 'IEND') AND U4 (f, LEN (f) - 12) = 0) ;
+  Check.That (t, what + ': width, height, 8 bits, colour type 2, nothing else',
+              U4 (f, 16) = w AND U4 (f, 20) = h AND I64 (f[24]) = 8
+              AND I64 (f[25]) = 2 AND I64 (f[26]) = 0 AND I64 (f[27]) = 0
+              AND I64 (f[28]) = 0) ;
+  Check.EqI64 (t, what + ': pixels a metre (-1: no pHYs chunk)', seenPhys,
+               perMetre) ;
+
+  (* the image data, the filters taken off again *)
+  rows := Zip.Decompress (pool, SLICE (f, idatAt, idatLen)) ;
+  row := 3 * w ;
+  Check.EqI64 (t, what + ': a filter byte and a row of pixels, height times',
+               LEN (rows), h * (row + 1)) ;
+  got := NEW (pool, BYTE, 3 * w * h) ;
+  wrong := 0 ;
+  FOR y := 0 TO h - 1 DO
+    kind := I64 (rows[y * (row + 1)]) ;
+    IF kind > 2 THEN wrong := wrong + 1 END ;
+    FOR x := 0 TO row - 1 DO
+      v := I64 (rows[y * (row + 1) + 1 + x]) ;
+      IF kind = 1 AND x >= 3 THEN
+        v := (v + I64 (got[y * row + x - 3])) MOD 256
+      ELSIF kind = 2 AND y > 0 THEN
+        v := (v + I64 (got[(y - 1) * row + x])) MOD 256
+      END ;
+      got[y * row + x] := BYTE (v)
+    END
+  END ;
+  FOR x := 0 TO LEN (rgb) - 1 DO
+    IF got[x] # rgb[x] THEN wrong := wrong + 1 END
+  END ;
+  Check.EqI64 (t, what + ': bytes that are not what went in', wrong, 0)
+END Back ;
+
+(* what Encode refuses an image of w by h as, given n bytes *)
+PROCEDURE Refusal (n, w, h: I64 ; dpi: F64) : STR =
+VAR f, p : SLICE OF BYTE ;
+BEGIN
+  p := NEW (pool, BYTE, n) ;
+  f := Png.Encode (pool, p, w, h, dpi) ;
+  RETURN ''
+EXCEPT
+| Faults.SizeError (got, want) : RETURN 'SizeError'
+| Faults.BadArg (what) : RETURN 'BadArg'
+| ValueRange : RETURN 'ValueRange'
+END Refusal ;
+
+(* ---- the rasteriser ----
+
+   Two kinds of witness.  ARITHMETIC: a filled shape covers as many
+   pixels as its area says, so the darkness of a small drawing --
+   the sum of (255 - red) / 255 over its pixels -- is the area of
+   what was drawn, exactly for a rectangle and closely for the rest.
+   CHROME: headless Chrome's own render of three of Plot's figures,
+   checked in under runtime/test/gold/png/ and read back here through
+   Decode, against Raster of the same SVG, pixel by pixel -- the mean
+   difference and the share of pixels far off, with bounds a shift
+   of one pixel breaks (measured: a shift triples both). *)
+
+PROCEDURE Dark (RO pix: SLICE OF BYTE) : F64 =
+VAR i : I64 ; s : F64 ;
+BEGIN
+  s := 0.0 ;
+  i := 0 ;
+  WHILE i < LEN (pix) DO
+    s := s + F64 (255 - I64 (pix[i])) / 255.0 ;
+    i := i + 3
+  END ;
+  RETURN s
+END Dark ;
+
+(* the darkness of a 40 by 40 drawing holding `body`, at 72 dpi *)
+PROCEDURE DarkOf (RO body: STR ; dpi: F64) : F64
+  RAISES Faults.BadArg, ValueRange =
+VAR
+  pix : SLICE OF BYTE ;
+  w, h : I64 ;
+BEGIN
+  w := 0 ; h := 0 ;
+  pix := Png.Raster (pool, '<svg viewBox="0 0 40 40">' + body + '</svg>', dpi, w, h) ;
+  RETURN Dark (pix)
+END DarkOf ;
+
+(* what Raster refuses a drawing as *)
+PROCEDURE SvgRefusal (RO svg: STR) : STR =
+VAR
+  pix : SLICE OF BYTE ;
+  w, h : I64 ;
+  why : STR ;
+BEGIN
+  w := 0 ; h := 0 ;
+  pix := Png.Raster (pool, svg, 72.0, w, h) ;
+  RETURN ''
+EXCEPT
+| Faults.BadArg (what) :
+    why := what ;
+    RETURN why + ''
+| ValueRange : RETURN 'ValueRange'
+END SvgRefusal ;
+
+PROCEDURE Areas () RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  pix : SLICE OF BYTE ;
+  w, h, at : I64 ;
+  a, b : F64 ;
+BEGIN
+  (* a pixel's coverage is kept to 1/255, so the sixty edge pixels
+     may be off by a tenth between them *)
+  Check.Near (t, 'a rectangle of 10.5 by 20.25 covers 212.625 pixels, its edges in fractions',
+              DarkOf ('<rect x="5.5" y="3.25" width="10.5" height="20.25" fill="black"/>', 72.0),
+              212.625, 0.15, 0.0) ;
+  Check.Near (t, 'a disc of radius 15 covers pi times 225',
+              DarkOf ('<circle cx="20" cy="20" r="15" fill="black"/>', 72.0),
+              706.858, 0.0, 0.005) ;
+  Check.Near (t, 'a line of 30 and width 4 covers 120',
+              DarkOf ('<line x1="0" y1="20" x2="30" y2="20" stroke="black" stroke-width="4"/>', 72.0),
+              120.0, 0.0, 0.01) ;
+  Check.Near (t, 'a diagonal of 42.43 and width 2 covers 84.85',
+              DarkOf ('<line x1="5" y1="5" x2="35" y2="35" stroke="black" stroke-width="2"/>', 72.0),
+              84.853, 0.0, 0.02) ;
+  Check.Near (t, 'a triangle of 800',
+              DarkOf ('<polygon points="0,0 40,0 0,40" fill="black"/>', 72.0),
+              800.0, 0.0, 0.005) ;
+  Check.Near (t, 'the same triangle as a path with Z',
+              DarkOf ('<path d="M 0 0 L 40 0 L 0 40 Z" fill="black"/>', 72.0),
+              800.0, 0.0, 0.005) ;
+  Check.Near (t, 'a ring of radii 15 and 10: a stroke of width 5 on a circle of 12.5',
+              DarkOf ('<circle cx="20" cy="20" r="12.5" fill="none" stroke="black" stroke-width="5"/>', 72.0),
+              392.699, 0.0, 0.01) ;
+  Check.Near (t, 'a quarter arc of radius 20 and width 2: 62.83',
+              DarkOf ('<path d="M 30 10 A 20 20 0 0 0 10 30" fill="none" stroke="black" stroke-width="2"/>', 72.0),
+              62.832, 0.0, 0.02) ;
+  Check.Near (t, 'dashes 10 on 10 off along 40 draw half of it',
+              DarkOf ('<line x1="0" y1="20" x2="40" y2="20" stroke="black" stroke-width="2"/>', 72.0) / 2.0,
+              DarkOf ('<line x1="0" y1="20" x2="40" y2="20" stroke="black" stroke-width="2" stroke-dasharray="10 10"/>', 72.0),
+              0.0, 0.03) ;
+  Check.Near (t, 'half opacity is half the darkness',
+              DarkOf ('<rect x="5" y="5" width="10" height="10" fill="black" opacity="0.5"/>', 72.0),
+              50.0, 0.6, 0.0) ;
+  Check.Near (t, 'at 144 dpi a shape covers four times the pixels',
+              DarkOf ('<rect x="5" y="5" width="10" height="10" fill="black"/>', 144.0),
+              400.0, 0.01, 0.0) ;
+  Check.Near (t, 'a line without a stroke-width is one unit wide: 30 covers 30',
+              DarkOf ('<line x1="5" y1="20" x2="35" y2="20" stroke="black"/>', 72.0),
+              30.0, 0.0, 0.02) ;
+  (* the dashes along a path of many short pieces: the phase must
+     carry from piece to piece, or every piece is a dash of its own *)
+  Check.Near (t, 'dashes 10 on 10 off along twenty pieces of 2 draw half of them',
+              DarkOf (Pieces () + ' stroke="black" stroke-width="2" stroke-dasharray="10 10"/>', 72.0),
+              40.0, 0.0, 0.05) ;
+  (* anti-aliasing: a line half a pixel wide is a row of grey, not of
+     black -- Sub rows of coverage, not one *)
+  w := 0 ; h := 0 ;
+  pix := Png.Raster (pool, '<svg viewBox="0 0 40 40"><line x1="0" y1="20.5" x2="40" y2="20.5" stroke="black" stroke-width="0.5"/></svg>', 72.0, w, h) ;
+  at := 3 * (20 * 40 + 20) ;
+  Check.That (t, 'a line half a pixel wide is drawn as grey, about 128',
+              I64 (pix[at]) > 112 AND I64 (pix[at]) < 144) ;
+  Check.EqI64 (t, 'FromSvg writes the resolution it was asked for: 150 dpi is 5906 a metre',
+               PhysOf (Png.FromSvg (pool, '<svg viewBox="0 0 4 4"></svg>', 150.0)), 5906) ;
+  Check.EqF64 (t, 'fill none draws nothing',
+               DarkOf ('<rect x="5" y="5" width="10" height="10" fill="none"/>', 72.0), 0.0) ;
+  a := DarkOf ('<text x="2" y="30" font-size="10" fill="black">Hg</text>', 72.0) ;
+  b := DarkOf ('<text x="2" y="30" font-size="20" fill="black">Hg</text>', 72.0) ;
+  Check.That (t, 'text is drawn, and twice the size covers about four times the pixels',
+              a > 10.0 AND b > 3.3 * a AND b < 4.7 * a) ;
+  Check.EqF64 (t, 'an entity is its character: &#65; and &#x41; draw as A does',
+               DarkOf ('<text x="2" y="30" font-size="20" fill="black">&#65;&#x41;&amp;&lt;</text>', 72.0),
+               DarkOf ('<text x="2" y="30" font-size="20" fill="black">AA&amp;&lt;</text>', 72.0)) ;
+  Check.That (t, 'and &amp; is one character, not four',
+              DarkOf ('<text x="2" y="30" font-size="20" fill="black">&amp;</text>', 72.0)
+              < DarkOf ('<text x="2" y="30" font-size="20" fill="black">amp;</text>', 72.0)) ;
+  (* colours: three spellings of red at the one pixel *)
+  w := 0 ; h := 0 ;
+  pix := Png.Raster (pool, '<svg viewBox="0 0 4 4"><rect width="4" height="4" fill="#f00"/></svg>', 72.0, w, h) ;
+  at := 3 * (2 * 4 + 2) ;
+  Check.That (t, '#f00 is 255 0 0',
+              I64 (pix[at]) = 255 AND I64 (pix[at + 1]) = 0 AND I64 (pix[at + 2]) = 0) ;
+  pix := Png.Raster (pool, '<svg viewBox="0 0 4 4"><rect width="4" height="4" fill="red"/></svg>', 72.0, w, h) ;
+  Check.That (t, 'and so is red',
+              I64 (pix[at]) = 255 AND I64 (pix[at + 1]) = 0 AND I64 (pix[at + 2]) = 0) ;
+  pix := Png.Raster (pool, '<svg viewBox="0 0 4 4"><rect width="4" height="4" fill="#1f77b4"/></svg>', 72.0, w, h) ;
+  Check.That (t, '#1f77b4 is 31 119 180',
+              I64 (pix[at]) = 31 AND I64 (pix[at + 1]) = 119 AND I64 (pix[at + 2]) = 180) ;
+  Check.EqI64 (t, 'a 720 by 440 viewBox at 300 dpi is 3000 by 1833 pixels: the width',
+               Width ('<svg viewBox="0 0 720 440"></svg>', 300.0), 3000) ;
+  (* what is refused, by name *)
+  Check.EqStr (t, 'a curve in a path is refused',
+               SvgRefusal ('<svg viewBox="0 0 4 4"><path d="M 0 0 C 1 1 2 2 3 3" stroke="black"/></svg>'),
+               'Png.FromSvg: a path command this does not draw: C') ;
+  Check.EqStr (t, 'CSS is refused',
+               SvgRefusal ('<svg viewBox="0 0 4 4"><rect width="4" height="4" style="fill:red"/></svg>'),
+               'Png.FromSvg: CSS (a style attribute) is not read; write the attributes themselves') ;
+  Check.EqF64 (t, 'a class name by itself changes nothing',
+               DarkOf ('<rect class="cv-bg" x="5" y="5" width="10" height="10" fill="black"/>', 72.0), 100.0) ;
+  Check.EqF64 (t, 'visibility hidden draws nothing',
+               DarkOf ('<rect x="5" y="5" width="10" height="10" fill="black" visibility="hidden"/><text x="1" y="20" display="none">gone</text>', 72.0), 0.0) ;
+  (* the square loses half; the disc, centred 5 from the clip's edge
+     and 5 from the canvas's, loses two caps of 26.1 *)
+  Check.Near (t, 'a clipPath keeps a shape inside its rectangle: 200 of a square, 148.9 of a disc, and 25 outside the group',
+              DarkOf ('<clipPath id="k"><rect x="0" y="0" width="10" height="40"/></clipPath><g clip-path="url(#k)"><rect x="0" y="0" width="20" height="20" fill="black"/><circle cx="5" cy="30" r="8" fill="black"/></g><rect x="30" y="30" width="5" height="5" fill="black"/>', 72.0),
+              373.861, 0.0, 0.005) ;
+  (* groups: translate and scale, nested, and a clip inside them *)
+  Check.Near (t, 'a 10 by 10 square in translate(10 10) scale(2) covers 400',
+              DarkOf ('<g transform="translate(10 10) scale(2)"><rect width="10" height="10" fill="black"/></g>', 72.0),
+              400.0, 0.01, 0.0) ;
+  w := 0 ; h := 0 ;
+  pix := Png.Raster (pool, '<svg viewBox="0 0 40 40"><g transform="translate(10 10) scale(2)"><rect width="10" height="10" fill="black"/></g></svg>', 72.0, w, h) ;
+  Check.That (t, 'and it lies from 10 to 30: (5, 5) is white, (20, 20) black, (31, 31) white',
+              I64 (pix[3 * (5 * 40 + 5)]) = 255 AND I64 (pix[3 * (20 * 40 + 20)]) = 0
+              AND I64 (pix[3 * (31 * 40 + 31)]) = 255) ;
+  Check.Near (t, 'nested groups compose: scale(2) inside translate(5 5), a 5 by 5 square covers 100 from 5 to 15',
+              DarkOf ('<g transform="translate(5 5)"><g transform="scale(2)"><rect width="5" height="5" fill="black"/></g><rect x="20" y="20" width="2" height="2" fill="black"/></g>', 72.0),
+              104.0, 0.01, 0.0) ;
+  Check.Near (t, 'scale(3) inside scale(2) is scale(6): a 2 by 2 square covers 144',
+              DarkOf ('<g transform="scale(2)"><g transform="scale(3)"><rect width="2" height="2" fill="black"/></g></g>', 72.0),
+              144.0, 0.01, 0.0) ;
+  w := 0 ; h := 0 ;
+  pix := Png.Raster (pool, '<svg viewBox="0 0 40 40"><g transform="scale(2)"><g transform="translate(5 5)"><rect width="5" height="5" fill="black"/></g></g></svg>', 72.0, w, h) ;
+  Check.That (t, 'a translate inside scale(2) is doubled too: the square lies from 10 to 20, (8, 8) white, (15, 15) black, (21, 21) white',
+              I64 (pix[3 * (8 * 40 + 8)]) = 255 AND I64 (pix[3 * (15 * 40 + 15)]) = 0
+              AND I64 (pix[3 * (21 * 40 + 21)]) = 255) ;
+  Check.Near (t, 'a group closed is a group gone: the square after it is at its own place and size',
+              DarkOf ('<g transform="scale(3)"><rect width="2" height="2" fill="black"/></g><rect x="30" y="30" width="2" height="2" fill="black"/>', 72.0),
+              40.0, 0.01, 0.0) ;
+  Check.Near (t, 'a line is as wide as its group is scaled',
+              DarkOf ('<g transform="scale(2)"><line x1="0" y1="10" x2="15" y2="10" stroke="black" stroke-width="1"/></g>', 72.0),
+              60.0, 0.0, 0.02) ;
+  Check.Near (t, 'text in a scaled group is scaled: four times the ink',
+              DarkOf ('<g transform="scale(2)"><text x="1" y="15" font-size="10" fill="black">Hg</text></g>', 72.0)
+              / DarkOf ('<text x="2" y="30" font-size="10" fill="black">Hg</text>', 72.0),
+              4.0, 0.0, 0.1) ;
+  Check.EqStr (t, 'a rotate on a group is refused',
+               SvgRefusal ('<svg viewBox="0 0 4 4"><g transform="rotate(30)"><rect width="2" height="2"/></g></svg>'),
+               'Png.FromSvg: a transform on a group other than translate and scale: rotate(30)') ;
+  Check.EqStr (t, 'a clip-path naming no clipPath is refused',
+               SvgRefusal ('<svg viewBox="0 0 4 4"><g clip-path="url(#nope)"><rect width="2" height="2"/></g></svg>'),
+               'Png.FromSvg: a clip-path naming no clipPath: nope') ;
+  Check.EqStr (t, 'an element this does not draw is refused',
+               SvgRefusal ('<svg viewBox="0 0 4 4"><ellipse cx="2" cy="2" rx="1" ry="1"/></svg>'),
+               'Png.FromSvg: an element this does not draw: <ellipse>') ;
+  Check.EqStr (t, 'a colour it does not know is refused',
+               SvgRefusal ('<svg viewBox="0 0 4 4"><rect width="4" height="4" fill="aquamarine"/></svg>'),
+               'Png.FromSvg: a colour this does not know: aquamarine') ;
+  Check.EqStr (t, 'a transform other than rotate is refused',
+               SvgRefusal ('<svg viewBox="0 0 4 4"><text x="1" y="2" transform="scale(2)">a</text></svg>'),
+               'Png.FromSvg: a transform other than rotate(...): scale(2)') ;
+  Check.EqStr (t, 'a <g> with attributes is refused',
+               SvgRefusal ('<svg viewBox="0 0 4 4"><g opacity="0.5"><rect width="2" height="2"/></g></svg>'),
+               'Png.FromSvg: a <g> with attributes, which this does not apply to what it holds') ;
+  Check.EqStr (t, 'text with no svg around it is refused',
+               SvgRefusal ('<rect width="4" height="4"/>'),
+               'Png.FromSvg: an element before <svg>: rect') ;
+  Check.EqStr (t, 'a bare <g>, a title and a comment are passed over',
+               SvgRefusal ('<svg viewBox="0 0 4 4"><!-- c --><title>t</title><g><rect width="2" height="2"/></g></svg>'),
+               '')
+END Areas ;
+
+(* a path of twenty pieces of two, from (0, 20) to (40, 20) *)
+PROCEDURE Pieces () : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  k : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, '<path fill="none" d="M 0 20') ;
+  FOR k := 1 TO 20 DO
+    DynStr.Append (d, ' L ') ;
+    DynStr.AppendI64 (d, 2 * k) ;
+    DynStr.Append (d, ' 20')
+  END ;
+  DynStr.Append (d, '"') ;
+  RETURN DynStr.View (d)
+END Pieces ;
+
+(* the pixels a metre a PNG file states, -1 when it does not *)
+PROCEDURE PhysOf (RO f: SLICE OF BYTE) : I64 =
+VAR at, n : I64 ;
+BEGIN
+  at := 8 ;
+  WHILE at + 12 <= LEN (f) DO
+    n := U4 (f, at) ;
+    IF Is (f, at + 4, 'pHYs') THEN RETURN U4 (f, at + 8) END ;
+    at := at + 12 + n
+  END ;
+  RETURN -1
+END PhysOf ;
+
+PROCEDURE Width (RO svg: STR ; dpi: F64) : I64 RAISES Faults.BadArg, ValueRange =
+VAR
+  pix : SLICE OF BYTE ;
+  w, h : I64 ;
+BEGIN
+  w := 0 ; h := 0 ;
+  pix := Png.Raster (pool, svg, dpi, w, h) ;
+  RETURN w
+END Width ;
+
+(* one of Plot's figures against Chrome's render of it *)
+PROCEDURE Chrome (RO what: STR ; RO svgFile: STR ; RO pngFile: STR)
+  RAISES Zip.Error, Png.Error, Io.IOError, Faults.BadArg, ValueRange =
+VAR
+  svg : STR ;
+  mine, theirs : SLICE OF BYTE ;
+  w, h, rw, rh, i, k, far, d, big : I64 ;
+  sum : F64 ;
+BEGIN
+  svg := Io.ReadFile (pool, svgFile) ;
+  w := 0 ; h := 0 ; rw := 0 ; rh := 0 ;
+  mine := Png.Raster (pool, svg, 72.0, w, h) ;
+  theirs := Png.Decode (pool, Io.ReadFileBytes (pool, Check.GoldPath (pngFile)), rw, rh) ;
+  Check.That (t, what + ': the same size as Chrome drew it',
+              w = rw AND h = rh AND LEN (mine) = LEN (theirs)) ;
+  IF LEN (mine) = LEN (theirs) THEN
+    sum := 0.0 ;
+    far := 0 ;
+    i := 0 ;
+    WHILE i < LEN (mine) DO
+      big := 0 ;
+      FOR k := 0 TO 2 DO
+        d := I64 (mine[i + k]) - I64 (theirs[i + k]) ;
+        IF d < 0 THEN d := -d END ;
+        sum := sum + F64 (d) ;
+        IF d > big THEN big := d END
+      END ;
+      IF big > 96 THEN far := far + 1 END ;
+      i := i + 3
+    END ;
+    Check.Near (t, what + ': the mean difference from Chrome, of 255 (a shift of one pixel is 3 to 5)',
+                sum / F64 (LEN (mine)), 0.0, 2.5, 0.0) ;
+    Check.Near (t, what + ': the share of pixels far from Chrome (a shift of one pixel is 1.5 to 3%)',
+                F64 (far) / F64 (w * h), 0.0, 0.01, 0.0)
+  END
+END Chrome ;
+
+PROCEDURE Rasters ()
+  RAISES Zip.Error, Png.Error, Io.IOError, Faults.BadArg, ValueRange =
+BEGIN
+  Chrome ('the Taylor diagram', 'runtime/test/gold/taylor/annual.svg', 'png/annual-chrome.png') ;
+  Chrome ('the CO2 column lines', 'reference/m2-stack/co2_columns.svg', 'png/columns-chrome.png') ;
+  Chrome ('the CO2 anomaly heat map', 'reference/m2-stack/co2_anomaly.svg', 'png/anomaly-chrome.png')
+END Rasters ;
+
+PROCEDURE All ()
+  RAISES Zip.Error, Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  fig, f : SLICE OF BYTE ;
+  nan : F64 ;
+BEGIN
+  Back ('one pixel', Busy (1, 1), 1, 1, 0.0, -1) ;
+  Back ('three by two', Busy (3, 2), 3, 2, 72.0, 2835) ;
+  Back ('a row longer than a match', Busy (300, 5), 300, 5, 300.0, 11811) ;
+  Back ('a column', Busy (1, 200), 1, 200, 600.0, 23622) ;
+  Back ('busy, 64 by 64', Busy (64, 64), 64, 64, 96.0, 3780) ;
+  fig := Figure (640, 400) ;
+  Back ('a figure, 640 by 400', fig, 640, 400, 300.0, 11811) ;
+  f := Png.Encode (pool, fig, 640, 400, 300.0) ;
+  Check.That (t, 'a figure of flat colour is a fiftieth of its pixels or less',
+              50 * LEN (f) < LEN (fig)) ;
+  Check.EqStr (t, 'Encode: bytes that are not three a pixel',
+               Refusal (11, 2, 2, 0.0), 'SizeError') ;
+  Check.EqStr (t, 'Encode: no width', Refusal (0, 0, 4, 0.0), 'BadArg') ;
+  Check.EqStr (t, 'Encode: a negative height', Refusal (12, 2, -2, 0.0),
+               'BadArg') ;
+  Check.EqStr (t, 'Encode: a negative resolution', Refusal (12, 2, 2, -72.0),
+               'BadArg') ;
+  nan := 0.0 ;
+  nan := nan / nan ;
+  Check.EqStr (t, 'Encode: a resolution that is not a number',
+               Refusal (12, 2, 2, nan), 'BadArg') ;
+  Check.EqStr (t, 'Encode: two by two of twelve bytes is taken',
+               Refusal (12, 2, 2, 0.0), '')
+END All ;
+
+BEGIN
+  All () ;
+  Areas () ;
+  Rasters () ;
+  Io.Halt (Check.Done (t, 'Png'))
+EXCEPT
+| Png.Error (msg) :
+    Check.That (t, 'no Png.Error escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Png'))
+| Io.IOError (path) :
+    Check.That (t, 'no IOError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Png'))
+| Zip.Error (msg) :
+    Check.That (t, 'no Zip.Error escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Png'))
+| Faults.SizeError (got, want) :
+    Check.That (t, 'no SizeError escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Png'))
+| Faults.BadArg (what) :
+    Check.That (t, 'no BadArg escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Png'))
+| ValueRange :
+    Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Png'))
+END PngTest.

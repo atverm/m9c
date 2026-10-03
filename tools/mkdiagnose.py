@@ -105,8 +105,11 @@ EXPLAIN = {
         "a record field of procedure type starts zeroed like every field, and a zero procedure value cannot be called",
         "declare the field OPT and read it through IS SOME (par 2.2.3)"),
     "proc-value-signature-differs": (
-        "a procedure fits a procedure type only when its head renders the same text: modes, types, result and RAISES, to the letter",
-        "assign a procedure with exactly the declared signature, or change the type (par 2.2.3)"),
+        "a procedure fits a procedure type only when its head renders the same text -- modes, types and result, to the letter -- and it raises no more than the type allows",
+        "assign a procedure with exactly the declared parameters and result, or change the type (par 2.2.3)"),
+    "proc-value-raises-more": (
+        "the procedure may raise an exception the procedure type does not declare; a caller of the value handles what the TYPE says, so this one could arrive unhandled.  The probe holds what must stay LEGAL before it: since 2026-10-02 a procedure that raises LESS than the type allows fits it, a quiet one included",
+        "handle the extra exception inside the procedure, or declare it in the type's RAISES (par 2.2.3)"),
     "proc-value-call-raises": (
         "a call through a procedure value raises what the TYPE declares, since nothing is known about which procedure runs",
         "handle it, or add the exception to the caller's own RAISES (par 2.2.3, par 5)"),
@@ -176,6 +179,93 @@ EXPLAIN = {
     "variant-in-named-module": (
         "a three-part constructor Mod.Type.Variant (args) names a module, a type in it, and a variant that is not there -- reported as `unknown procedure: Mod.Type.Variant', because a name that is neither a procedure nor a known variant is, to the caller, an unknown callee",
         "spell the variant as the type declares it (m9c --json Mod lists them); the three-part form is how an imported variant with a payload is built from another module, Mod.Type.Variant, and it looks nowhere but Mod -- before 2026-09-15 it was refused outright as `unknown procedure: Mod' because the callee was split at its first dot"),
+    "function-falls-off-end": (
+        "the function has a path that reaches its END without a RETURN or a RAISE -- an IF with no ELSE, a WHILE or FOR as its last statement, a LOOP left by EXIT, a CASE arm or a handler that does not answer; the emitted C would hand back the zero the result started as",
+        "answer on every path: add the ELSE, or a RETURN after the loop; a call does not count as an ending whatever the callee does, so write RAISE X (...) rather than a helper that always raises (par 3 rule 4)"),
+    "pool-where-a-value-is-wanted": (
+        "a POOL is passed where the parameter is some other type (or the other way round); POOL is a type like any other to an argument and its parameter -- until 2026-10-01 it had no canonical form and such a call was accepted",
+        "pass what the parameter declares; a pool goes to a VAR pool: POOL parameter and nowhere else (par 4.3)"),
+    "aggregate-mixed-types": (
+        "the elements of a constant table CONST X = [ ... ] do not have one type: the table's element type is read off its FIRST element (an integer literal is an I64, a real an F64, a string a STR, a character a CHAR, TRUE and FALSE a BOOL) and nothing adapts, so [1, 2.5] is refused at the 2.5",
+        "write every element in the first one's type -- [1.0, 2.5] for reals; the refusal names the element by number (par 2.2.4)"),
+    "aggregate-not-a-literal": (
+        "an element of a constant table is an expression or a name, and a table holds literals (a minus sign in front of a number is one); a CONST over an expression is refused everywhere, and a table is no exception",
+        "write the value out; if the element must be computed, the table is not a constant -- make it a module variable filled in the module body (par 2.2.4)"),
+    "aggregate-local": (
+        "a constant table is declared inside a procedure; it is data with one copy, and it belongs to the module",
+        "move the CONST to module level, above the procedure (par 2.2.4)"),
+    "aggregate-exported": (
+        "a constant table is declared in a DEFINITION; exporting one is not built yet (an importer would need the data, not a #define)",
+        "declare it in the IMPLEMENTATION and export a procedure that indexes it (par 2.2.4)"),
+    "const-table-aliased": (
+        "a constant table is named bare where its value would be aliased -- assigned to a slice, cut with SLICE, RETURNed -- and whatever held the alias could write the constant",
+        "index it (X[i]), measure it (LEN (X)), or lend it whole to an RO parameter; those three are everything a table does (par 2.2.4)"),
+    "const-table-lent-writable": (
+        "a constant table is passed to a parameter that is not RO; a slice parameter can be written through, and the table is read-only data",
+        "declare the parameter RO if the callee only reads; if it writes, it needs a variable, not a constant (par 2.2.4)"),
+    "write-to-const": (
+        "an assignment whose left side is a CONST (or an element of a constant table); until 2026-10-01 the checker passed it and the C compiler refused the generated code",
+        "a constant has one value; use a variable for what changes"),
+    "const-as-var-argument": (
+        "a CONST is passed to a VAR or OWN parameter, which exists to be written through; there is nothing to write",
+        "pass a variable holding the value, or make the parameter by-value or RO if the callee only reads"),
+    "literal-to-writable-slice": (
+        "a string literal is passed to a by-value STR (or SLICE) parameter that is not RO; such a parameter can be written through, a literal is read-only data, and until 2026-10-01 this was accepted and a callee that wrote died with SIGSEGV (museum/write-through-literal.m9)",
+        "declare the parameter RO if the procedure only reads it -- every STR parameter that is not written should say so; if it does write, pass a variable (par 2.4)"),
+    "ro-relent-writable": (
+        "an RO parameter, or something reached through one, is passed on to a parameter that is not RO; the callee could write what this procedure promised its own caller not to",
+        "declare the callee's parameter RO if it only reads; otherwise this procedure is a mutator too, and its own parameter is not RO (par 2.4)"),
+    "const-string-to-writable": (
+        "a string CONST, or an element of a constant table, is passed to a by-value slice parameter that is not RO; a constant is read-only data",
+        "declare the parameter RO, or copy the constant into a variable first (par 2.4)"),
+    "ro-lend-allowed-forms": (
+        "the same refusal as const-string-to-writable, at the end of a program whose other calls are everything the rule must leave alone: read-only storage to an RO parameter, a variable to a writable one, a one-character literal to a CHAR, a concatenation (frame storage, writable) and a by-value slice parameter lent onward",
+        "nothing to change in those forms; the probe holds the rule's edge, so that a later change that refuses one of them shows as a second diagnostic here"),
+    "compare-strings": (
+        "two strings are compared with = or #, or ordered with < and its kin; a STR is a slice (a pointer and a length), no operator compares two of them, and until 2026-10-02 the checker passed this on to a C compiler that refused it",
+        "Text.Eq (a, b) for equality (IF Text.Eq (name, 'cancel') THEN ...); a CHAR against a one-character literal is still =; there is no ordering operator for strings -- Sort.Strs sorts, and a comparison of two strings is written out or taken from a library (par 2.3)"),
+    "compare-composite": (
+        "two arrays, records, slices or grids are compared with an operator; an operator compares scalars -- numbers, characters, booleans, enumeration values, pointers -- and the generated C has no == for a struct",
+        "compare what is inside: the fields by name, the elements in a loop; for arrays of reals the question is usually 'near', not 'equal' (Check.NearF64s in a test) (par 2.3)"),
+    "for-variable-keeps-its-type": (
+        "a loop variable is used where another type is wanted -- assigned to an F64, added to one -- and that is an implicit conversion like any other; the refusal is the ordinary one.  Until 2026-10-02 the checker held a loop variable to no type at all inside its loop, so `x := x + i` with x an F64 compiled and ran (museum/implicit-through-loop-variable.m9)",
+        "write the conversion: x := x + F64 (i).  NOT SOURCE COMPATIBLE for a program that leaned on the gap; none was found in this repository or the FLEXPART port"),
+    "for-variable-undeclared": (
+        "the variable of a FOR loop is not declared; a loop does not declare its variable, and until 2026-10-02 the checker passed this and the generator said `unknown name`",
+        "declare it in the procedure's VAR section: VAR i : I64 ;"),
+    "for-variable-not-integer": (
+        "the variable of a FOR loop over integer bounds is declared with a type that is not an integer -- an F64, a STR; a loop counts in an integer",
+        "declare the loop variable I64 (or another integer width), and convert inside the body where a real is wanted: F64 (i)"),
+    "for-variable-enum-mismatch": (
+        "a FOR loop over an enumeration (FOR c := Colour.Red TO Colour.Blue) has a variable of another type; the variable takes each member in turn, so it is that enumeration",
+        "declare it of the enumeration: VAR c : Colour ;"),
+    "module-named-not-imported": (
+        "a qualified name's module is known to the compiler -- something imported imports it -- and this module does not import it; until 2026-10-02 any module in the import closure could be named, so a program's IMPORT lines did not say what it depended on (museum/named-not-imported.m9)",
+        "add the line: IMPORT Lib ;  An implementation may lean on its definition's IMPORT and the other way round.  NOT SOURCE COMPATIBLE for a program that leaned on the gap: 5 sites in 386 files (par 3)"),
+    "write-through-ro-variable": (
+        "an element or field is written through a variable declared VAR RO; until 2026-10-03 the RO on a variable was parsed and never read",
+        "give the variable a new view instead (view := s), or drop RO from its declaration if it is meant to write (par 2.4)"),
+    "ro-variable-lent-writable": (
+        "a VAR RO variable is handed to a SLICE or GRID parameter that is not RO, where the callee could write through it",
+        "make the parameter RO, or hand over a writable copy (par 2.4)"),
+    "pool-escape-by-component": (
+        "a component of a local record was itself given storage from a local pool (c.pix := NEW (scratch, BYTE, n)) and is answered or stored where it outlives the frame; until 2026-10-03 only the whole record was refused and the field passed (museum/escape-by-component.m9, Png.Raster's crash)",
+        "allocate the component in the caller's pool, or build the answer in the frame (NEW (BYTE, n)) so that it is re-homed; a value READ out of a slice that merely lives in a local pool is not this case and stays legal (par 4.3)"),
+    "declared-twice": (
+        "a CONST, TYPE, VAR, EXCEPTION or PROCEDURE name is declared a second time at the module's level, or a local beside a parameter of its name; until 2026-10-03 the C compiler refused most of these and a PROCEDURE declared twice it never saw -- the generator emitted the second body and dropped the first, and the program ran (museum/declared-twice.m9: Csv.ColF64 had shipped twice for five releases)",
+        "delete or rename the second declaration; the message names the line of the first.  A forward heading -- a heading without a body, its body later -- is legal and stays so (par 3)"),
+    "definition-const-in-implementation": (
+        "a real constant declared in a module's DEFINITION is assigned to an integer in its IMPLEMENTATION; the refusal is the ordinary one, and the probe holds what must stay legal before it -- the constant used as the integer, real or string it is.  Until 2026-10-02 an implementation was given no type for a constant of its own definition, so this compiled and 1.5 became 1 (museum/implicit-through-definition-const.m9)",
+        "write the conversion the assignment means: n := I64 (Math.Round (K)), or declare the variable F64.  NOT SOURCE COMPATIBLE for a program that leaned on the gap; none was found in 430 files here and in four applications"),
+    "definition-const-string-in-implementation": (
+        "the same gap for a string constant of the definition: assigned to an I64 in the implementation, it passed the checker until 2026-10-02 and failed in the C compiler",
+        "assign it to a STR; a number written in a string is read with a parser, not by assignment"),
+    "module-import-allowed-forms": (
+        "the same refusal; the probe holds what must stay LEGAL before it -- an implementation naming a module only its definition imports, a module naming itself, a local variable that has a module's name",
+        "IMPORT the module the last procedure names"),
+    "param-shadows-const": (
+        "a parameter (or a local) has the name of a module CONST and is used as the parameter it is; the refusal shown is an ordinary type error, and the point is that the checker now reads the name as the PARAMETER -- until 2026-10-01 it read it as the constant, so the type error went unseen and the generated C used the parameter",
+        "nothing to change in a correct program; give the parameter another name if the shadowing confuses the reader"),
     "from-m9-module": (
         "FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way)",
         "use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later"),

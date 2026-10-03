@@ -57,6 +57,7 @@ IMPLEMENTATION MODULE Gen ;
 
 IMPORT Ast ;
 IMPORT DynStr ;
+IMPORT Text ;
 
 CONST
   (* output buffers, selected by number: DynStr.Append takes VAR d and
@@ -125,6 +126,9 @@ VAR
   mvN : SLICE OF STR ;
   mvT : SLICE OF AKid ;
   nmv : I64 ;
+  aggT : Map ;             (* constant tables (par 2.2.4): name ->
+                              the ARRAY n OF T made for it, *)
+  aggV : Map ;             (* and name -> the aggregate itself *)
   lpools : SLICE OF STR ;
   nlp : I64 ;
   outStr : SLICE OF STR ;  (* the VAR/OWN STR parameters, whose
@@ -455,6 +459,8 @@ BEGIN
   MInit (arrSeen) ;
   MInit (thrSeen) ;
   MInit (gateSeen) ;
+  MInit (aggT) ;
+  MInit (aggV) ;
   MInit (scope) ;
   gps := NEW (gpool, GP, 8) ;
   tys := NEW (gpool, TY, 8) ;
@@ -525,87 +531,67 @@ END NewTmp ;
 
 (* ---- name and type tables ---- *)
 
+(* Four lists of names, each a constant table (report par 2.2.4) and
+   a search.  Until 2026-10-01 each was a chain of `DynStr.Eq (n,
+   'a') OR DynStr.Eq (n, 'b') OR ...`, the longest 96 terms: the same
+   list, with the names buried in the code that compared them. *)
+CONST
+  Builtins = [
+    'I8', 'I16', 'I32', 'I64', 'U8', 'U16', 'U32', 'U64', 'F32', 'F64',
+    'BYTE', 'BOOL', 'CHAR'
+  ] ;
+  (* the conversions that narrow, each with its own checked helper *)
+  WidthConvs = ['I8', 'I16', 'I32', 'U8', 'U16', 'U32', 'U64'] ;
+
+  (* libm functions a FOR-C unit may bind (C99 math.h, double + float):
+     a LOCAL named like one shadows the extern -- `float cosf;` beside
+     `extern float cosf (float);` makes a call to cosf resolve to the
+     variable.  Escaped like the C keywords in CN.  No corpus identifier
+     matches one; float-heavy modules with their own math bindings are
+     the beneficiaries. *)
+  LibM = [
+    'acos', 'acosf', 'acosh', 'acoshf', 'asin', 'asinf', 'asinh', 'asinhf',
+    'atan', 'atanf', 'atan2', 'atan2f', 'atanh', 'atanhf', 'cbrt', 'cbrtf',
+    'ceil', 'ceilf', 'copysign', 'copysignf', 'cos', 'cosf', 'cosh', 'coshf',
+    'erf', 'erff', 'erfc', 'erfcf', 'exp', 'expf', 'exp2', 'exp2f', 'expm1',
+    'expm1f', 'fabs', 'fabsf', 'fdim', 'fdimf', 'floor', 'floorf', 'fma',
+    'fmaf', 'fmax', 'fmaxf', 'fmin', 'fminf', 'fmod', 'fmodf', 'frexp',
+    'frexpf', 'hypot', 'hypotf', 'ldexp', 'ldexpf', 'lgamma', 'lgammaf',
+    'log', 'logf', 'log10', 'log10f', 'log1p', 'log1pf', 'log2', 'log2f',
+    'modf', 'modff', 'nan', 'nanf', 'nearbyint', 'nearbyintf', 'nextafter',
+    'nextafterf', 'pow', 'powf', 'remainder', 'remainderf', 'rint', 'rintf',
+    'round', 'roundf', 'scalbn', 'scalbnf', 'sin', 'sinf', 'sinh', 'sinhf',
+    'sqrt', 'sqrtf', 'tan', 'tanf', 'tanh', 'tanhf', 'tgamma', 'tgammaf',
+    'trunc', 'truncf'
+  ] ;
+
+  (* what CN escapes besides: the C keywords, the three stdbool names,
+     `err` (the state parameter of every generated procedure) and
+     `main` -- not a keyword but reserved at file scope in a hosted
+     environment: the gm2 collision in the ledger, met again by M9's
+     own compiler *)
+  CWords = [
+    'signed', 'unsigned', 'int', 'char', 'long', 'short', 'float',
+    'double', 'void', 'return', 'if', 'else', 'while', 'for', 'do',
+    'switch', 'case', 'default', 'break', 'continue', 'goto', 'struct',
+    'union', 'enum', 'typedef', 'static', 'extern', 'const', 'volatile',
+    'register', 'auto', 'sizeof', 'inline', 'restrict', 'bool', 'true',
+    'false', 'err', 'main'
+  ] ;
+
 PROCEDURE IsBuiltin (RO n: STR) : BOOL =
 BEGIN
-  RETURN DynStr.Eq (n, 'I8') OR DynStr.Eq (n, 'I16') OR
-         DynStr.Eq (n, 'I32') OR DynStr.Eq (n, 'I64') OR
-         DynStr.Eq (n, 'U8') OR DynStr.Eq (n, 'U16') OR
-         DynStr.Eq (n, 'U32') OR DynStr.Eq (n, 'U64') OR
-         DynStr.Eq (n, 'F32') OR DynStr.Eq (n, 'F64') OR
-         DynStr.Eq (n, 'BYTE') OR DynStr.Eq (n, 'BOOL') OR
-         DynStr.Eq (n, 'CHAR')
+  RETURN Text.OneOf (n, Builtins)
 END IsBuiltin ;
 
-(* libm functions a FOR-C unit may bind (C99 math.h, double + float):
-   a LOCAL named like one shadows the extern -- `float cosf;` beside
-   `extern float cosf (float);` makes a call to cosf resolve to the
-   variable.  Escaped like the C keywords in CN.  No corpus identifier
-   matches one; float-heavy modules with their own math bindings are
-   the beneficiaries. *)
 PROCEDURE IsLibM (RO n: STR) : BOOL =
 BEGIN
-  RETURN
-    DynStr.Eq (n, 'acos') OR DynStr.Eq (n, 'acosf') OR DynStr.Eq (n, 'acosh') OR
-    DynStr.Eq (n, 'acoshf') OR DynStr.Eq (n, 'asin') OR DynStr.Eq (n, 'asinf') OR
-    DynStr.Eq (n, 'asinh') OR DynStr.Eq (n, 'asinhf') OR DynStr.Eq (n, 'atan') OR
-    DynStr.Eq (n, 'atanf') OR DynStr.Eq (n, 'atan2') OR DynStr.Eq (n, 'atan2f') OR
-    DynStr.Eq (n, 'atanh') OR DynStr.Eq (n, 'atanhf') OR DynStr.Eq (n, 'cbrt') OR
-    DynStr.Eq (n, 'cbrtf') OR DynStr.Eq (n, 'ceil') OR DynStr.Eq (n, 'ceilf') OR
-    DynStr.Eq (n, 'copysign') OR DynStr.Eq (n, 'copysignf') OR DynStr.Eq (n, 'cos') OR
-    DynStr.Eq (n, 'cosf') OR DynStr.Eq (n, 'cosh') OR DynStr.Eq (n, 'coshf') OR
-    DynStr.Eq (n, 'erf') OR DynStr.Eq (n, 'erff') OR DynStr.Eq (n, 'erfc') OR
-    DynStr.Eq (n, 'erfcf') OR DynStr.Eq (n, 'exp') OR DynStr.Eq (n, 'expf') OR
-    DynStr.Eq (n, 'exp2') OR DynStr.Eq (n, 'exp2f') OR DynStr.Eq (n, 'expm1') OR
-    DynStr.Eq (n, 'expm1f') OR DynStr.Eq (n, 'fabs') OR DynStr.Eq (n, 'fabsf') OR
-    DynStr.Eq (n, 'fdim') OR DynStr.Eq (n, 'fdimf') OR DynStr.Eq (n, 'floor') OR
-    DynStr.Eq (n, 'floorf') OR DynStr.Eq (n, 'fma') OR DynStr.Eq (n, 'fmaf') OR
-    DynStr.Eq (n, 'fmax') OR DynStr.Eq (n, 'fmaxf') OR DynStr.Eq (n, 'fmin') OR
-    DynStr.Eq (n, 'fminf') OR DynStr.Eq (n, 'fmod') OR DynStr.Eq (n, 'fmodf') OR
-    DynStr.Eq (n, 'frexp') OR DynStr.Eq (n, 'frexpf') OR DynStr.Eq (n, 'hypot') OR
-    DynStr.Eq (n, 'hypotf') OR DynStr.Eq (n, 'ldexp') OR DynStr.Eq (n, 'ldexpf') OR
-    DynStr.Eq (n, 'lgamma') OR DynStr.Eq (n, 'lgammaf') OR DynStr.Eq (n, 'log') OR
-    DynStr.Eq (n, 'logf') OR DynStr.Eq (n, 'log10') OR DynStr.Eq (n, 'log10f') OR
-    DynStr.Eq (n, 'log1p') OR DynStr.Eq (n, 'log1pf') OR DynStr.Eq (n, 'log2') OR
-    DynStr.Eq (n, 'log2f') OR DynStr.Eq (n, 'modf') OR DynStr.Eq (n, 'modff') OR
-    DynStr.Eq (n, 'nan') OR DynStr.Eq (n, 'nanf') OR DynStr.Eq (n, 'nearbyint') OR
-    DynStr.Eq (n, 'nearbyintf') OR DynStr.Eq (n, 'nextafter') OR DynStr.Eq (n, 'nextafterf') OR
-    DynStr.Eq (n, 'pow') OR DynStr.Eq (n, 'powf') OR DynStr.Eq (n, 'remainder') OR
-    DynStr.Eq (n, 'remainderf') OR DynStr.Eq (n, 'rint') OR DynStr.Eq (n, 'rintf') OR
-    DynStr.Eq (n, 'round') OR DynStr.Eq (n, 'roundf') OR DynStr.Eq (n, 'scalbn') OR
-    DynStr.Eq (n, 'scalbnf') OR DynStr.Eq (n, 'sin') OR DynStr.Eq (n, 'sinf') OR
-    DynStr.Eq (n, 'sinh') OR DynStr.Eq (n, 'sinhf') OR DynStr.Eq (n, 'sqrt') OR
-    DynStr.Eq (n, 'sqrtf') OR DynStr.Eq (n, 'tan') OR DynStr.Eq (n, 'tanf') OR
-    DynStr.Eq (n, 'tanh') OR DynStr.Eq (n, 'tanhf') OR DynStr.Eq (n, 'tgamma') OR
-    DynStr.Eq (n, 'tgammaf') OR DynStr.Eq (n, 'trunc') OR DynStr.Eq (n, 'truncf')
+  RETURN Text.OneOf (n, LibM)
 END IsLibM ;
 
 PROCEDURE CN (RO n: STR) : STR =
 BEGIN
-  IF DynStr.Eq (n, 'signed') OR DynStr.Eq (n, 'unsigned') OR
-     DynStr.Eq (n, 'int') OR DynStr.Eq (n, 'char') OR
-     DynStr.Eq (n, 'long') OR DynStr.Eq (n, 'short') OR
-     DynStr.Eq (n, 'float') OR DynStr.Eq (n, 'double') OR
-     DynStr.Eq (n, 'void') OR DynStr.Eq (n, 'return') OR
-     DynStr.Eq (n, 'if') OR DynStr.Eq (n, 'else') OR
-     DynStr.Eq (n, 'while') OR DynStr.Eq (n, 'for') OR
-     DynStr.Eq (n, 'do') OR DynStr.Eq (n, 'switch') OR
-     DynStr.Eq (n, 'case') OR DynStr.Eq (n, 'default') OR
-     DynStr.Eq (n, 'break') OR DynStr.Eq (n, 'continue') OR
-     DynStr.Eq (n, 'goto') OR DynStr.Eq (n, 'struct') OR
-     DynStr.Eq (n, 'union') OR DynStr.Eq (n, 'enum') OR
-     DynStr.Eq (n, 'typedef') OR DynStr.Eq (n, 'static') OR
-     DynStr.Eq (n, 'extern') OR DynStr.Eq (n, 'const') OR
-     DynStr.Eq (n, 'volatile') OR DynStr.Eq (n, 'register') OR
-     DynStr.Eq (n, 'auto') OR DynStr.Eq (n, 'sizeof') OR
-     DynStr.Eq (n, 'inline') OR DynStr.Eq (n, 'restrict') OR
-     DynStr.Eq (n, 'bool') OR DynStr.Eq (n, 'true') OR
-     DynStr.Eq (n, 'false') OR DynStr.Eq (n, 'err') OR
-     DynStr.Eq (n, 'main') THEN
-    (* main is not a C keyword but is reserved at file scope in a
-       hosted environment: the gm2 collision in the ledger, met
-       again by M9's own compiler *)
-    RETURN S2 (n, '_')
-  END ;
+  IF Text.OneOf (n, CWords) THEN RETURN S2 (n, '_') END ;
   IF IsLibM (n) THEN RETURN S2 (n, '_') END ;
   RETURN n
 END CN ;
@@ -1090,10 +1076,7 @@ END ISuf ;
 
 PROCEDURE IsWidthConv (RO n: STR) : BOOL =
 BEGIN
-  IF DynStr.Eq (n, 'I8') OR DynStr.Eq (n, 'I16') THEN RETURN TRUE END ;
-  IF DynStr.Eq (n, 'I32') OR DynStr.Eq (n, 'U8') THEN RETURN TRUE END ;
-  IF DynStr.Eq (n, 'U16') OR DynStr.Eq (n, 'U32') THEN RETURN TRUE END ;
-  RETURN DynStr.Eq (n, 'U64')
+  RETURN Text.OneOf (n, WidthConvs)
 END IsWidthConv ;
 
 (* the runtime's name for each checked narrowing.  A table rather
@@ -1204,10 +1187,38 @@ BEGIN
   RETURN '?'
 END TagOfType ;
 
+(* a name in the scope table, by the language's order and not the
+   table's: the parameters and locals first (they come before the
+   module block); then the BINDERS, pushed on top of the block by the
+   statements and popped with them, innermost first; the module
+   variables and constant tables last.  Until 2026-10-03 the table
+   was searched from its start, so `IF k IS SOME a THEN a.line' in a
+   module with `VAR a : STR' found the module variable and failed with
+   `selection through a non-record' while the checker accepted it
+   (owed ledger, found writing M9elide). *)
+PROCEDURE ScopeFind (RO n: STR) : I64 =
+VAR i, lo, hi : I64 ;
+BEGIN
+  lo := mvBase ;
+  IF lo > scope.n THEN lo := scope.n END ;
+  hi := mvBase + nmv + aggT.n ;
+  IF hi > scope.n THEN hi := scope.n END ;
+  FOR i := 0 TO lo - 1 DO
+    IF DynStr.Eq (scope.es[i].k, n) THEN RETURN i END
+  END ;
+  FOR i := scope.n - 1 TO hi BY -1 DO
+    IF DynStr.Eq (scope.es[i].k, n) THEN RETURN i END
+  END ;
+  FOR i := lo TO hi - 1 DO
+    IF DynStr.Eq (scope.es[i].k, n) THEN RETURN i END
+  END ;
+  RETURN -1
+END ScopeFind ;
+
 PROCEDURE ScopeNode (RO n: STR) : Ast.Kid =
 VAR ix : I64 ;
 BEGIN
-  ix := MFind (scope, n) ;
+  ix := ScopeFind (n) ;
   IF ix < 0 THEN RETURN NONE END ;
   RETURN scope.es[ix].v
 END ScopeNode ;
@@ -1215,7 +1226,7 @@ END ScopeNode ;
 PROCEDURE ScopeMode (RO n: STR) : STR =
 VAR ix : I64 ;
 BEGIN
-  ix := MFind (scope, n) ;
+  ix := ScopeFind (n) ;
   IF ix < 0 THEN RETURN '' END ;
   RETURN scope.es[ix].t
 END ScopeMode ;
@@ -1541,6 +1552,119 @@ BEGIN
   RETURN DynStr.View (d)
 END StrCodes ;
 
+PROCEDURE IsAggregate (k: Ast.Kid) : BOOL =
+BEGIN
+  IF k IS SOME e THEN RETURN e.kind = Ast.NAggregate END ;
+  RETURN FALSE
+END IsAggregate ;
+
+(* a constant table (par 2.2.4): CONST X = [ e1, ..., en ] is kept as
+   an ARRAY n OF T built here, T read off the first element -- the
+   checker has held every element to it *)
+PROCEDURE AddAgg (RO KEPT nm: STR ; KEPT agk: Ast.Kid) =
+VAR
+  cnt, at, q : PTR Ast.Node IN gpool ;
+  ek : I64 ;
+  elt : Ast.Kid ;
+BEGIN
+  IF agk IS SOME ag THEN
+    cnt := Ast.NewNode (gpool, Ast.NInt, 0, 0) ;
+    cnt.a := ItoA (ag.nkids) ;
+    ek := Ast.NInt ;
+    IF ag.kids[0] IS SOME el THEN
+      ek := el.kind ;
+      IF el.kind = Ast.NUn THEN
+        IF el.kids[0] IS SOME o THEN ek := o.kind END
+      END
+    END ;
+    q := Ast.NewNode (gpool, Ast.NQualident, 0, 0) ;
+    q.a := 'I64' ;
+    IF ek = Ast.NReal THEN q.a := 'F64'
+    ELSIF ek = Ast.NChar THEN q.a := 'CHAR'
+    ELSIF ek = Ast.NTrue OR ek = Ast.NFalse THEN q.a := 'BOOL'
+    END ;
+    elt := SOME (q) ;
+    IF ek = Ast.NString THEN elt := strNode END ;
+    at := Ast.NewNode (gpool, Ast.NArrayType, 0, 0) ;
+    Ast.Add (gpool, at, SOME (cnt)) ;
+    Ast.Add (gpool, at, elt) ;
+    MAdd (aggT, nm, SOME (at), '') ;
+    MAdd (aggV, nm, agk, '')
+  END
+END AddAgg ;
+
+(* ... visible in every body after the module variables, in the mode
+   of a VAR parameter: the name is a POINTER to the table, so index,
+   LEN and lending take the paths a VAR array parameter takes *)
+PROCEDURE PushAggs () =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO aggT.n - 1 DO
+    MAdd (scope, aggT.es[i].k, aggT.es[i].v, 'v')
+  END
+END PushAggs ;
+
+(* ... and emitted as const data -- read-only storage, so a write the
+   checker missed is a fault and not a changed constant -- with the
+   name a pointer to it.  One element per line: a table is read. *)
+PROCEDURE EmitAggs () =
+VAR
+  i, k : I64 ;
+  ty, nm, cs : STR ;
+BEGIN
+  FOR i := 0 TO aggT.n - 1 DO
+    ty := TyC (aggT.es[i].v) ;
+    nm := CN (aggT.es[i].k) ;
+    IF aggV.es[i].v IS SOME ag THEN
+      FOR k := 0 TO ag.nkids - 1 DO
+        IF ag.kids[k] IS SOME se THEN
+          IF se.kind = Ast.NString AND LEN (se.a) > 0 THEN
+            Line (KRec2, 0, S9 ('static const uint32_t ', nm, '_s',
+              ItoA (k), '[', ItoA (LEN (se.a)), '] = { ',
+              StrCodes (se.a), ' };'))
+          END
+        END
+      END ;
+      Line (KRec2, 0, S5 ('static const ', ty, ' ', nm, '_k = { {')) ;
+      FOR k := 0 TO ag.nkids - 1 DO
+        cs := '0' ;
+        IF ag.kids[k] IS SOME e THEN
+          IF e.kind = Ast.NInt THEN
+            cs := S3 ('INT64_C(', e.a, ')')
+          ELSIF e.kind = Ast.NReal THEN
+            cs := S3 ('(', e.a, ')')
+          ELSIF e.kind = Ast.NChar THEN
+            cs := S2 (ItoA (CharVal (e.a)), 'u')
+          ELSIF e.kind = Ast.NTrue THEN
+            cs := 'true'
+          ELSIF e.kind = Ast.NFalse THEN
+            cs := 'false'
+          ELSIF e.kind = Ast.NString THEN
+            IF LEN (e.a) > 0 THEN
+              cs := S7 ('{ (uint32_t *) ', nm, '_s', ItoA (k), ', ',
+                ItoA (LEN (e.a)), ' }')
+            ELSE
+              cs := '{ 0, 0 }'
+            END
+          ELSIF IsNegLit (e, Ast.NInt) THEN
+            cs := S3 ('INT64_C(-', NegLitText (e), ')')
+          ELSIF IsNegLit (e, Ast.NReal) THEN
+            cs := S3 ('(-', NegLitText (e), ')')
+          ELSE
+            Err2 (e.line, S2 ('aggregate element unsupported yet: ',
+              aggT.es[i].k))
+          END
+        END ;
+        IF k < ag.nkids - 1 THEN cs := S2 (cs, ',') END ;
+        Line (KRec2, 1, cs)
+      END ;
+      Line (KRec2, 0, '} };') ;
+      Line (KRec2, 0, S9 ('static ', ty, ' * const ', nm, ' = (', ty,
+        ' *) &', nm, '_k;'))
+    END
+  END
+END EmitAggs ;
+
 (* ---- registry loading ---- *)
 
 PROCEDURE LoadUnit (KEPT u: PTR Ast.Node) =
@@ -1612,7 +1736,11 @@ BEGIN
       ELSIF d.kind = Ast.NConstSection THEN
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME cd THEN
-            MAdd (consts, cd.a, cd.kids[0], '')
+            IF IsAggregate (cd.kids[0]) THEN
+              AddAgg (cd.a, cd.kids[0])
+            ELSE
+              MAdd (consts, cd.a, cd.kids[0], '')
+            END
           END
         END
       ELSIF d.kind = Ast.NExcSection THEN
@@ -2038,7 +2166,7 @@ BEGIN
         IF r.kids[1] IS SOME pn THEN RETURN PoolAddrC (pn) END
       END
     END ;
-    ix := MFind (scope, a.a) ;
+    ix := ScopeFind (a.a) ;
     IF ix >= mvBase AND ix < mvBase + nmv THEN RETURN '&m9mframe' END ;
     RETURN 'err->res'
   END ;
@@ -3450,7 +3578,7 @@ VAR
   l, r, tg, w, cnd, stp, bname, thrPool : STR ;
   j, j2, savedScope, sv, sf, thrPi : I64 ;
   vtN, vd : Ast.Kid ;
-  thrWants : BOOL ;
+  thrWants, lRaise, shared : BOOL ;
 BEGIN
   IF k IS SOME st THEN
     DbgLine (st) ;
@@ -3459,16 +3587,45 @@ BEGIN
         stRaise := FALSE ;
         tg := '?' ;
         IF st.kids[0] IS SOME lhs THEN l := DES (lhs, tg) ELSE l := '0' END ;
+        lRaise := stRaise ;
+        stRaise := FALSE ;
         r := EX (st.kids[1], tg) ;
         (* copying a SHARED handle refcounts it (par 4.2); SHARED(x)
            itself already set rc=1 and is not re-counted *)
-        IF DynStr.Eq (tg, 'SHARED') AND
-           DynStr.Eq (TagOfExpr (st.kids[1]), 'SHARED') THEN
-          r := S5 ('((__typeof__(', r, ')) m9_share_copy (', r, '))')
-        END ;
-        Line (KPbuf, ind, S4 (l, ' = ', r, ';')) ;
+        shared := DynStr.Eq (tg, 'SHARED') AND
+                  DynStr.Eq (TagOfExpr (st.kids[1]), 'SHARED') ;
         IF stRaise THEN
-          Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+          (* A CALL THAT RAISED ANSWERED NOTHING (report par 5,
+             2026-10-03): the right side goes into a temporary, the
+             error slot is read, and only then is the target written.
+             Until then `b := Make (0)' stored Make's zero -- NULL
+             into a pointer that is not OPT -- and went to the
+             handler, which read the pointer a later line died on
+             (ShareUse); a SHARED answer was share-copied before the
+             test as well (ZarrStoreTest).  __typeof__ of the target
+             evaluates nothing, so an indexed target is checked once,
+             at the store. *)
+          Line (KPbuf, ind, S5 ('{ __typeof__(', l, ') m9v = ', r, ';')) ;
+          Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+          IF shared THEN
+            r := S3 ('((__typeof__(', l, ')) m9_share_copy (m9v))')
+          ELSE
+            r := 'm9v'
+          END ;
+          Line (KPbuf, ind + 1, S4 (l, ' = ', r, ';')) ;
+          IF lRaise THEN
+            Line (KPbuf, ind + 1, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+          END ;
+          Line (KPbuf, ind, '}') ;
+          stRaise := FALSE
+        ELSE
+          IF shared THEN
+            r := S5 ('((__typeof__(', r, ')) m9_share_copy (', r, '))')
+          END ;
+          Line (KPbuf, ind, S4 (l, ' = ', r, ';')) ;
+          IF lRaise THEN
+            Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
+          END
         END
     | Ast.NCallStmt :
         stRaise := FALSE ;
@@ -4480,6 +4637,7 @@ BEGIN
       FOR i := 0 TO nmv - 1 DO
         MAdd (scope, mvN[i], mvT[i], 'l')
       END ;
+      PushAggs () ;
 
       (* the body's block goes through the statement emitter so a
          proc-level EXCEPT/FINALLY gets the full treatment *)
@@ -4570,6 +4728,7 @@ BEGIN
   FOR i := 0 TO nmv - 1 DO
     MAdd (scope, mvN[i], mvT[i], 'l')
   END ;
+  PushAggs () ;
   Line (KPbuf, 0, '') ;
   Line (KPbuf, 0, 'int main (int argc, char **argv)') ;
   Line (KPbuf, 0, '{') ;
@@ -4620,6 +4779,7 @@ BEGIN
   FOR i := 0 TO nmv - 1 DO
     MAdd (scope, mvN[i], mvT[i], 'l')
   END ;
+  PushAggs () ;
   Line (KPbuf, 0, '') ;
   Line (KPbuf, 0, S3 ('void ', forModule, '_m9init (m9_state *err)')) ;
   Line (KPbuf, 0, '{') ;
@@ -4952,6 +5112,7 @@ BEGIN
   FOR i := 0 TO nmv - 1 DO
     Line (KRec2, 0, S5 ('static ', TyC (mvT[i]), ' ', CN (mvN[i]), ';'))
   END ;
+  EmitAggs () ;
   (* the MODULE FRAME: the arena of the init body (a program's main),
      static and at file scope since 2026-09-30 so that a module
      variable declared without a pool has one to be grown in (rule 2

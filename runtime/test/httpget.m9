@@ -11,6 +11,10 @@ MODULE httpget ;
      -> one Http.Client for every URL in turn: `status <n> <body>` per
         URL on one line, then `kept <n>` -- how many of them were
         answered over a connection kept from the request before
+   httpget retry METHOD URL RETRIES FACTORMS
+     -> Http.RequestRetry with a backoff factor of FACTORMS
+        milliseconds: `status <n> tries <n> <body>` on one line, or
+        `transport: <why> tries <n>` when the last try failed
 
    The program the fetch gate drives.  It prints what a checker can
    compare and nothing else; the assertions live in httpget.sh.  The
@@ -27,18 +31,65 @@ VAR
   mode, url, accept, cookie, dest, body, method, hdrs, resp, rh : STR ;
   hd : PTR DynStr.DString IN pool ;
   cl : PTR Http.Client IN pool ;
-  status, bytes, i : I64 ;
+  status, bytes, i, tries : I64 ;
+
+(* a count written in digits; anything else in it is skipped *)
+PROCEDURE Num (RO s: STR) : I64 RAISES ValueRange =
+VAR i, v : I64 ;
+BEGIN
+  v := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] >= '0' AND s[i] <= '9' THEN v := v * 10 + (I64 (s[i]) - 48) END
+  END ;
+  RETURN v
+END Num ;
+
+(* the retry mode, with a handler of its own: how many tries a
+   FAILURE took is half of what the gate asks *)
+PROCEDURE Retry () RAISES ValueRange =
+VAR
+  none : SLICE OF BYTE ;
+  got : SLICE OF BYTE ;
+  why, count, millis : STR ;
+BEGIN
+  tries := 0 ;
+  (* each on a statement of its own: a raising call is not made an
+     argument of another call *)
+  method := Io.Arg (pool, 2) ;
+  url := Io.Arg (pool, 3) ;
+  count := Io.Arg (pool, 4) ;
+  millis := Io.Arg (pool, 5) ;
+  got := Http.RequestRetry (pool, method, url, '', none, 4194304,
+                            Num (count), F64 (Num (millis)) / 1000.0,
+                            status, rh, tries) ;
+  Io.Write ('status ') ; Io.WriteI64 (status) ;
+  Io.Write (' tries ') ; Io.WriteI64 (tries) ; Io.Write (' ') ;
+  Io.WriteLine (DynStr.FromUtf8 (pool, got))
+EXCEPT
+| Http.TransportError (m) :
+    why := m ;
+    Io.Write ('transport: ') ; Io.Write (why) ;
+    Io.Write (' tries ') ; Io.WriteI64 (tries) ; Io.WriteLine ('') ;
+    Io.Halt (1)
+END Retry ;
 
 BEGIN
   IF Io.ArgCount () < 3 THEN
     Io.ErrLine ('usage: httpget text|file URL [ACCEPT [COOKIE [DEST]]]') ;
     Io.ErrLine ('       httpget req METHOD URL [BODY [HEADER ...]]') ;
     Io.ErrLine ('       httpget session URL [URL ...]') ;
+    Io.ErrLine ('       httpget retry METHOD URL RETRIES FACTORMS') ;
     Io.Halt (2)
   END ;
   mode := Io.Arg (pool, 1) ;
 
-  IF DynStr.Eq (mode, 'session') THEN
+  IF DynStr.Eq (mode, 'retry') THEN
+    IF Io.ArgCount () < 6 THEN
+      Io.ErrLine ('usage: httpget retry METHOD URL RETRIES FACTORMS') ;
+      Io.Halt (2)
+    END ;
+    Retry ()
+  ELSIF DynStr.Eq (mode, 'session') THEN
     cl := Http.NewClient (pool) ;
     i := 2 ;
     WHILE i < Io.ArgCount () DO

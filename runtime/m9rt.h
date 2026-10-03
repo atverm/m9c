@@ -695,6 +695,23 @@ typedef struct m9_pool {
 void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err);
 void  m9_pool_free  (m9_pool *pool);
 
+/* AN EMPTY POOL IS FREED WITHOUT A CALL.  Every procedure has a frame
+   and frees it on every exit, and most frames were never used: a
+   procedure that only computes allocates nothing.  The free was a
+   call into m9rt.c all the same, which the compiler could not see
+   through, and in a profile of the inflate written in M9 (2026-10-02)
+   it was 17% of the run -- paid by procedures as small as Bits.Shr
+   wherever they were not inlined.  The test for "nothing to free" is
+   one comparison, so it is made here, in the caller.
+
+   A macro over the function of the same name, so that objects
+   compiled against the header as it was still find their symbol. */
+static inline void m9_pool_free_used (m9_pool *pool)
+{
+  if (pool->head != NULL) m9_pool_free (pool);
+}
+#define m9_pool_free(pool) m9_pool_free_used (pool)
+
 /* HEAP: the one pool that outlives everything, and is never freed.
 
    Every string composition has to put its answer somewhere, and in M9

@@ -1,0 +1,8 @@
+(* EXPECT: cannot write the CONST Primes *)
+MODULE m ;
+CONST Primes = [2, 3, 5] ;
+PROCEDURE F () RAISES IndexError =
+BEGIN
+  Primes[0] := 1
+END F ;
+END m.

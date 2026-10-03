@@ -1,0 +1,14 @@
+(* EXPECT: cannot assign SLICE OF CHAR to I64 *)
+DEFINITION MODULE m ;
+CONST
+  Name = 'abc' ;
+PROCEDURE F () : I64 ;
+END m.
+IMPLEMENTATION MODULE m ;
+PROCEDURE F () : I64 =
+VAR n : I64 ;
+BEGIN
+  n := Name ;
+  RETURN n
+END F ;
+END m.

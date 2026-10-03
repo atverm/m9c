@@ -4,6 +4,7 @@
 #include "m9rt.h"
 #include "Ast.h"
 #include "DynStr.h"
+#include "Text.h"
 
 void Gen_m9init (m9_state *err);
 
@@ -58,6 +59,22 @@ typedef struct { int64_t v[8]; } m9_arr_8_int64_t;
 #ifndef M9SL_m9_arr_8_m9_sl_CHAR
 #define M9SL_m9_arr_8_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[8]; } m9_arr_8_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_13_m9_sl_CHAR
+#define M9SL_m9_arr_13_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[13]; } m9_arr_13_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_7_m9_sl_CHAR
+#define M9SL_m9_arr_7_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[7]; } m9_arr_7_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_96_m9_sl_CHAR
+#define M9SL_m9_arr_96_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[96]; } m9_arr_96_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_39_m9_sl_CHAR
+#define M9SL_m9_arr_39_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[39]; } m9_arr_39_m9_sl_CHAR;
 #endif
 
 void Gen_LoadUnit (Ast_Node * u, m9_state *err);

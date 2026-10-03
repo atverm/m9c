@@ -36,6 +36,7 @@ IMPORT Parse ;
 IMPORT Gen ;
 IMPORT Sem ;
 IMPORT Doc ;
+IMPORT Review ;
 IMPORT Lex ;
 IMPORT DynStr ;
 IMPORT System ;
@@ -94,6 +95,12 @@ VAR
                              beside the file it is editing -- the
                              generated-header-shadows trap, armed by
                              every keystroke *)
+  doReview  : BOOL ;      (* --review : --check, and then the page of
+                             what was proved and what a person
+                             decided, on stdout.  Only for a program
+                             the checker and the generator accept: a
+                             review of what does not exist is the
+                             same lie --doc refuses to tell *)
   doDoc     : BOOL ;      (* --doc : write NAME.md and nothing else *)
   doJson    : BOOL ;      (* --json : with --doc, NAME.json as well *)
   debug     : BOOL ;      (* -g : debug info, and keep the C it names *)
@@ -166,7 +173,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.13.0' ;
+  Version = '0.14.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -1517,6 +1524,9 @@ BEGIN
   Io.WriteLine ('                   it names, and changes nothing') ;
   Io.WriteLine ('                   else -- still -O2, still -flto') ;
   Io.WriteLine ('  --check          check only, the generator included; write nothing') ;
+  Io.WriteLine ('  --review         --check, then print the review page:') ;
+  Io.WriteLine ('                   what was proved, what a person') ;
+  Io.WriteLine ('                   decided, what is trusted') ;
   Io.WriteLine ('  --doc            write NAME.md, the DEFINITION') ;
   Io.WriteLine ('                   module as documentation, and') ;
   Io.WriteLine ('                   nothing else') ;
@@ -1692,6 +1702,11 @@ BEGIN
       doPic := TRUE
     ELSIF DynStr.Eq (a, '--check') THEN
       doCheck := TRUE
+    ELSIF DynStr.Eq (a, '--review') THEN
+      (* implies --check: the page is printed for a program that
+         exists, and nothing is written beside it *)
+      doReview := TRUE ;
+      doCheck := TRUE
     ELSIF DynStr.Eq (a, '--doc') THEN
       doDoc := TRUE
     ELSIF DynStr.Eq (a, '--json') THEN
@@ -1771,6 +1786,7 @@ BEGIN
           DynStr.Eq (a, '--verbose') OR DynStr.Eq (a, '--pic') OR
           DynStr.Eq (a, '--doc') OR DynStr.Eq (a, '-g') OR
           DynStr.Eq (a, '--json') OR DynStr.Eq (a, '--check') OR
+          DynStr.Eq (a, '--review') OR
           DynStr.Eq (a, '--make') OR
           DynStr.Eq (a, '--no-unsafe') OR
           IsDashI (a) THEN
@@ -1862,6 +1878,36 @@ BEGIN
   st.banners := 0 ; st.unattached := 0 ; st.unknownParam := 0 ;
   RETURN Doc.Json (pool, root, name, st)
 END JsonText ;
+
+(* the review page, with the checker's own counts handed to it.  The
+   page module is a client of the tree and does not import Sem; this
+   is where the two meet, as a driver is where Delim meets Zip. *)
+PROCEDURE ReviewText (root: PTR Ast.Node ; RO name: STR) : STR =
+VAR
+  st : SLICE OF Review.Stat ;
+  d : PTR DynStr.DString IN pool ;
+  i, j, n : I64 ;
+BEGIN
+  n := Sem.StatKinds ;
+  st := NEW (pool, Review.Stat, n) ;
+  FOR i := 0 TO n - 1 DO
+    st[i].name := Sem.StatName (i) ;
+    st[i].checked := Sem.StatChecked (i) ;
+    st[i].skipped := Sem.StatSkipped (i) ;
+    (* the lines of the first sites passed over, as the page prints
+       them; `...' when the checker met more than it kept *)
+    d := DynStr.New (pool) ;
+    FOR j := 0 TO Sem.StatLines (i) - 1 DO
+      IF j > 0 THEN DynStr.Append (d, ', ') END ;
+      DynStr.AppendI64 (d, Sem.StatLine (i, j))
+    END ;
+    IF Sem.StatSkipped (i) > Sem.StatLines (i) THEN
+      DynStr.Append (d, ', ...')
+    END ;
+    st[i].lines := DynStr.View (d)
+  END ;
+  RETURN Review.Page (root, name, TRUE, st)
+END ReviewText ;
 
 PROCEDURE ParseText (RO KEPT src: STR ; RO path: STR) : Ast.Kid
   RAISES ValueRange =
@@ -2181,6 +2227,12 @@ BEGIN
       failed := TRUE ;
       Io.Halt (1)
     END ;
+    IF doReview AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc) THEN
+      Io.ErrLine ('m9c: --review checks and prints a page, and writes nothing;') ;
+      Io.ErrLine ('  it cannot be combined with -c, -o, --ar, --so or --doc') ;
+      failed := TRUE ;
+      Io.Halt (1)
+    END ;
     IF doCheck AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc) THEN
       Io.ErrLine ('m9c: --check writes nothing at all;') ;
       Io.ErrLine ('  it cannot be combined with -c, -o, --ar, --so or --doc') ;
@@ -2335,6 +2387,12 @@ BEGIN
            print has been printed, the exit code says whether the
            program exists, and nothing appears on disk.  What an
            editor asks. *)
+        IF doReview THEN
+          (* and what a REVIEWER asks: the checker and the generator
+             have both accepted the program, so the page may say
+             `proved' *)
+          Io.Write (ReviewText (root, name))
+        END ;
         RETURN
       ELSE
         Io.WriteFile (Suffix (name, '.h'), Gen.HText ()) ;

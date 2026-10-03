@@ -168,8 +168,17 @@ int main (void)
     double nanv[3] = {1.0, 0.0 / 0.0, 2.0};
     /* the NaN is built at runtime so -Werror cannot fold it */
     nanv[1] = nan ("");
+    /* a NaN is a missing value since 2026-10-02 (it raised
+       ValueRange until then): the mean is over the two that are
+       there, and a sample of nothing but NaN is TooFew by its count */
+    ok ("a NaN in the sample is skipped: mean of 1, NaN, 2",
+        Stats_Mean (S (nanv, 3), &e2) == 1.5 && e2.exc == NULL);
+    ok ("and counted out: Count is 2", Stats_Count (S (nanv, 3), &e2) == 2);
+    nanv[0] = nan ("");
+    nanv[2] = nan ("");
     Stats_Mean (S (nanv, 3), &e2);
-    ok ("a NaN in the sample refuses", e2.exc == &m9_exc_ValueRange);
+    ok ("a sample of nothing but NaN refuses, TooFew",
+        e2.exc == &Stats_TooFew);
     e2.exc = NULL;
     Stats_Percentile (S (X, NX), 101.0, &e2);
     ok ("percentile 101 refuses", e2.exc == &Faults_BadArg);

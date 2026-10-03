@@ -129,8 +129,10 @@ void Logger_Start (int64_t level, m9_sl_CHAR text, m9_state *err)
   if (m9t1) {
     goto L_ret;
   }
-  line = DynStr_New (&(pool), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(line) m9v = DynStr_New (&(pool), err);
+    if (err->exc) goto L_ret;
+    line = m9v;
+  }
   DynStr_Append (&(line), &(pool), Logger_Stamp (err), err);
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(line), &(pool), 32u, err);
@@ -139,8 +141,10 @@ void Logger_Start (int64_t level, m9_sl_CHAR text, m9_state *err)
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(line), &(pool), 32u, err);
   if (err->exc) goto L_ret;
-  bodyAt = DynStr_Len (line, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(bodyAt) m9v = DynStr_Len (line, err);
+    if (err->exc) goto L_ret;
+    bodyAt = m9v;
+  }
   curLevelOfLine = level;
   DynStr_Append (&(line), &(pool), text, err);
   if (err->exc) goto L_ret;
@@ -252,8 +256,10 @@ void Logger_Done (m9_state *err)
   if ((!building)) {
     goto L_ret;
   }
-  v = DynStr_View (line, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(v) m9v = DynStr_View (line, err);
+    if (err->exc) goto L_ret;
+    v = m9v;
+  }
   if (toSyslog) {
     Syslog_Send (Syslog_Pri (curFacility, Syslog_FromLoggerLevel (curLevelOfLine, err), err), ({ __typeof__(v) m9t1 = v; int64_t m9t1a = bodyAt, m9t1n = m9_sub_i64 ((v).len, bodyAt, err); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
     if (err->exc) goto L_ret;

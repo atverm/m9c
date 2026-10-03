@@ -334,7 +334,7 @@ end;
 
 function TParser.PDeclaration: TNode;
 var
-  d : TNode;
+  d, ag : TNode;
 begin
   case cur.kind of
     tkCONST :
@@ -346,7 +346,24 @@ begin
           d := NewNode (nkConstDecl);
           d.a := TakeIdent ('constant name');
           Expect (tkEq, '=');
-          d.Add (PExpr);
+          if cur.kind = tkLBrack then
+          begin
+            { Aggregate = "[" ConstExpr { "," ConstExpr } "]" -- the
+              value of a CONST and nothing else (report par 10).
+              Mirrors Parse.PAggregate. }
+            ag := NewNode (nkAggregate);
+            Bump;
+            ag.Add (PExpr);
+            while cur.kind = tkComma do
+            begin
+              Bump;
+              ag.Add (PExpr);
+            end;
+            Expect (tkRBrack, ']');
+            d.Add (ag);
+          end
+          else
+            d.Add (PExpr);
           Expect (tkSemi, ';');
           Result.Add (d);
         end;

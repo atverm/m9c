@@ -1,0 +1,6 @@
+(* EXPECT: element 2 of Sums is not a literal: an aggregate holds literals *)
+MODULE m ;
+CONST
+  N = 3 ;
+  Sums = [1, N + 1] ;
+END m.

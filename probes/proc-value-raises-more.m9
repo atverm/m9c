@@ -1,0 +1,42 @@
+(* EXPECT: argument 1 of At: cannot pass PROCEDURE (F64) : F64 RAISES Odd, ValueRange where PROCEDURE (F64) : F64 RAISES ValueRange is expected *)
+(* the one refusal here is the last call; everything before it is what
+   the rule must NOT refuse since 2026-10-02: a procedure that raises
+   nothing, handed where the type allows ValueRange -- bare, and into
+   the OPT a variable of procedure type must be -- and one that raises
+   exactly what the type allows.  Raising MORE lets a caller handle
+   less than can arrive, and stays refused. *)
+MODULE m ;
+EXCEPTION Odd ;
+TYPE Kernel = PROCEDURE (x: F64) : F64 RAISES ValueRange ;
+VAR
+  v : F64 ;
+  held : OPT Kernel ;
+PROCEDURE Quiet (x: F64) : F64 =
+BEGIN
+  RETURN x + 1.0
+END Quiet ;
+PROCEDURE Loud (x: F64) : F64 RAISES ValueRange =
+BEGIN
+  IF x < 0.0 THEN RAISE ValueRange END ;
+  RETURN x
+END Loud ;
+PROCEDURE Louder (x: F64) : F64 RAISES ValueRange, Odd =
+BEGIN
+  IF x < 0.0 THEN RAISE ValueRange END ;
+  IF x > 9.0 THEN RAISE Odd END ;
+  RETURN x
+END Louder ;
+PROCEDURE At (k: Kernel ; x: F64) : F64 RAISES ValueRange =
+VAR r : F64 ;
+BEGIN
+  r := k (x) ;
+  RETURN r
+END At ;
+BEGIN
+  v := At (Quiet, 1.0) ;
+  v := At (Loud, 1.0) ;
+  held := SOME (Quiet) ;
+  v := At (Louder, 1.0)
+EXCEPT
+| ValueRange : v := 0.0
+END m.

@@ -1,0 +1,154 @@
+MODULE HttpTest ;
+
+(* The RULES of Http.RequestRetry against urllib3's Retry, which is
+   what Python's requests retries by: how long is waited after so many
+   failures, which method and status are worth a second request, and
+   what a Retry-After header says.  The goldens are
+   runtime/test/gold/Http.gold, written by tools/httpgoldm9.py.
+
+   Nothing here touches the network.  The requests themselves -- a
+   server that is busy for a while, one that hangs up, a port nobody
+   listens on, and the time each takes -- are runtime/test/httpget.sh's,
+   which starts a server of its own. *)
+
+IMPORT Check ;
+IMPORT Http ;
+IMPORT Io ;
+IMPORT Text ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+  pool : POOL ;
+
+(* the wait after so many failures, for every factor: urllib3's
+   get_backoff_time to the bit *)
+PROCEDURE Backoffs () =
+VAR
+  factors, want, got : SLICE OF F64 ;
+  failures : SLICE OF I64 ;
+  i, j : I64 ;
+BEGIN
+  factors := Check.GoldF64s (t, gold, 'backoff.factors') ;
+  failures := Check.GoldI64s (t, gold, 'backoff.failures') ;
+  want := Check.GoldF64s (t, gold, 'backoff.want') ;
+  Check.That (t, 'Backoff: the golden file has factors and counts',
+              LEN (factors) > 5 AND LEN (failures) > 5) ;
+  got := NEW (pool, F64, LEN (factors) * LEN (failures)) ;
+  FOR i := 0 TO LEN (factors) - 1 DO
+    FOR j := 0 TO LEN (failures) - 1 DO
+      got[i * LEN (failures) + j] := Http.Backoff (failures[j], factors[i])
+    END
+  END ;
+  Check.NearF64s (t, 'Backoff is urllib3 get_backoff_time, every factor and count',
+                  got, want, 0.0, 0.0) ;
+  (* the same, said so that a reader sees the schedule *)
+  Check.EqF64 (t, 'Backoff: nothing after the first failure',
+               Http.Backoff (1, 0.5), 0.0) ;
+  Check.EqF64 (t, 'Backoff: the factor doubled after the second',
+               Http.Backoff (2, 0.5), 1.0) ;
+  Check.EqF64 (t, 'Backoff: and doubled again after the third',
+               Http.Backoff (3, 0.5), 2.0) ;
+  Check.EqF64 (t, 'Backoff: never more than MaxWait',
+               Http.Backoff (30, 0.5), Http.MaxWait) ;
+  Check.EqF64 (t, 'Backoff: nor after more failures than a number has bits',
+               Http.Backoff (5000, 0.001), Http.MaxWait)
+END Backoffs ;
+
+(* every method by every status, without and with a Retry-After:
+   urllib3's is_retry.  One check for the table, and the first cell
+   that differs named by its place. *)
+PROCEDURE Retryables () RAISES ValueRange =
+VAR
+  methods : SLICE OF STR ;
+  statuses : SLICE OF I64 ;
+  want : SLICE OF BOOL ;
+  i, j, k, at, right, firstWrong : I64 ;
+  got : BOOL ;
+BEGIN
+  methods := Check.GoldStrs (t, gold, 'retry.methods') ;
+  statuses := Check.GoldI64s (t, gold, 'retry.statuses') ;
+  want := Check.GoldBools (t, gold, 'retry.want') ;
+  Check.EqI64 (t, 'Retryable: a golden value for every method, status and header',
+               LEN (want), LEN (methods) * LEN (statuses) * 2) ;
+  right := 0 ;
+  firstWrong := -1 ;
+  FOR i := 0 TO LEN (methods) - 1 DO
+    FOR j := 0 TO LEN (statuses) - 1 DO
+      FOR k := 0 TO 1 DO
+        at := (i * LEN (statuses) + j) * 2 + k ;
+        got := Http.Retryable (methods[i], statuses[j], k = 1) ;
+        IF at < LEN (want) AND got = want[at] THEN
+          right := right + 1
+        ELSIF firstWrong < 0 THEN
+          firstWrong := at
+        END
+      END
+    END
+  END ;
+  Check.EqI64 (t, 'Retryable is urllib3 is_retry over the whole table',
+               right, LEN (want)) ;
+  Check.EqI64 (t, 'Retryable: the first cell that differs (-1: none)',
+               firstWrong, -1) ;
+  Check.EqBool (t, 'Retryable: a GET answered 503 goes again',
+                Http.Retryable ('GET', 503, FALSE), TRUE) ;
+  Check.EqBool (t, 'Retryable: a POST answered 503 does not',
+                Http.Retryable ('POST', 503, FALSE), FALSE) ;
+  Check.EqBool (t, 'Retryable: a 413 only when it says when',
+                Http.Retryable ('GET', 413, FALSE), FALSE) ;
+  Check.EqBool (t, 'Retryable: and then it does',
+                Http.Retryable ('GET', 413, TRUE), TRUE)
+END Retryables ;
+
+(* a response's header lines, with this Retry-After among them *)
+PROCEDURE With (RO value: STR) : STR =
+BEGIN
+  RETURN 'Content-Type: text/plain' + 0AC + 'Retry-After: ' + value + 0AC
+         + 'Content-Length: 4' + 0AC
+END With ;
+
+PROCEDURE RetryAfters () RAISES ValueRange =
+VAR
+  values : SLICE OF STR ;
+  want, got : SLICE OF F64 ;
+  now : F64 ;
+  i : I64 ;
+  value : STR ;
+BEGIN
+  values := Check.GoldStrs (t, gold, 'after.values') ;
+  want := Check.GoldF64s (t, gold, 'after.want') ;
+  now := F64 (Check.GoldI64 (t, gold, 'after.now')) ;
+  Check.That (t, 'RetryAfter: the golden file has values', LEN (values) > 10) ;
+  got := NEW (pool, F64, LEN (values)) ;
+  FOR i := 0 TO LEN (values) - 1 DO
+    (* the golden file writes a blank as an underscore *)
+    value := Text.Replace (values[i], '_', ' ') ;
+    got[i] := Http.RetryAfter (With (value), now)
+  END ;
+  Check.NearF64s (t, 'RetryAfter is urllib3 parse_retry_after: counts, three forms of date, and what is neither',
+                  got, want, 0.0, 0.0) ;
+  Check.EqF64 (t, 'RetryAfter: no such header',
+               Http.RetryAfter ('Content-Type: text/plain' + 0AC, now), -1.0) ;
+  Check.EqF64 (t, 'RetryAfter: no headers at all',
+               Http.RetryAfter ('', now), -1.0) ;
+  Check.EqF64 (t, 'RetryAfter: the name in any case',
+               Http.RetryAfter ('retry-AFTER: 7' + 0AC, now), 7.0) ;
+  Check.EqF64 (t, 'RetryAfter: blanks around the count',
+               Http.RetryAfter ('Retry-After:    42   ' + 0AC, now), 42.0) ;
+  Check.EqF64 (t, 'RetryAfter: an empty value is no header',
+               Http.RetryAfter ('Retry-After:' + 0AC, now), -1.0) ;
+  Check.That (t, 'RetryAfter: a count of twenty digits is more than MaxWait, not an overflow',
+              Http.RetryAfter (With ('99999999999999999999'), now) > Http.MaxWait)
+END RetryAfters ;
+
+BEGIN
+  gold := Check.GoldPath ('Http.gold') ;
+  Backoffs () ;
+  Retryables () ;
+  RetryAfters () ;
+  Io.Halt (Check.Done (t, 'Http'))
+EXCEPT
+| ValueRange :
+    Check.That (t, 'no ValueRange escapes', FALSE) ;
+    Io.Halt (Check.Done (t, 'Http'))
+END HttpTest.

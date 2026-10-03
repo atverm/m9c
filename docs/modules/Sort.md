@@ -70,6 +70,74 @@ the indices 0 .. LEN (v) - 1 in the order that sorts v, stable:
 equal values keep index order.  LEN (idx) must be LEN (v)
 (IndexError otherwise); v is not moved
 
+### ArgI64 (RO v: SLICE OF I64 ; VAR idx: SLICE OF I64) RAISES IndexError
+
+_(documented with the group below)_
+
+### ArgStr (RO v: SLICE OF STR ; VAR idx: SLICE OF I64) RAISES IndexError
+
+ArgF64 for integers and for strings (in Strs's order): the
+indices that sort v, stable, v not moved; LEN (idx) must be
+LEN (v)
+
 ### By (VAR keys: SLICE OF I64 ; less: Less)
 
 the keys in the caller's order, stable
+
+### UniqueF64 (RO v: SLICE OF F64) : SLICE OF F64 RAISES NotANumber
+
+_(documented with the group below)_
+
+### UniqueI64 (RO v: SLICE OF I64) : SLICE OF I64
+
+_(documented with the group below)_
+
+### UniqueStrs (RO v: SLICE OF STR) : SLICE OF STR
+
+the distinct values of v, ascending: numpy.unique.  The answer
+is new storage in the caller's frame and v is not moved; the
+strings of UniqueStrs are copies, so the answer does not hold
+on to v.  -0.0 and 0.0 are
+one value (the first met stays); a NaN is NotANumber, as it is
+for the sort this stands on.
+
+### LowerF64 (RO a: SLICE OF F64 ; x: F64) : I64
+
+_(documented with the group below)_
+
+### UpperF64 (RO a: SLICE OF F64 ; x: F64) : I64
+
+_(documented with the group below)_
+
+### FindF64 (RO a: SLICE OF F64 ; x: F64) : I64
+
+_(documented with the group below)_
+
+### LowerI64 (RO a: SLICE OF I64 ; x: I64) : I64
+
+_(documented with the group below)_
+
+### UpperI64 (RO a: SLICE OF I64 ; x: I64) : I64
+
+_(documented with the group below)_
+
+### FindI64 (RO a: SLICE OF I64 ; x: I64) : I64
+
+_(documented with the group below)_
+
+### FindStr (RO a: SLICE OF STR ; RO s: STR) : I64
+
+BINARY SEARCH in a slice that is ASCENDING -- which is the
+caller's to ensure: these read about log2 (LEN (a)) elements and
+cannot notice a slice that is not sorted.
+
+  Lower:  the first index whose element is not less than x,
+          0 .. LEN (a): where x would be inserted to stay
+          before its equals (numpy.searchsorted, side='left')
+  Upper:  the first index whose element is greater than x:
+          after its equals (side='right').  Upper - Lower is
+          how many elements equal x.
+  Find:   the index of the FIRST element equal to x, or -1
+
+A NaN x is after everything, as numpy has it: Lower and Upper
+answer LEN (a), and Find -1.

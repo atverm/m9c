@@ -1,0 +1,16 @@
+(* EXPECT: no '=' between two values of type ARRAY 3 OF I64 *)
+(* and what must stay legal, after it: a CHAR against a one-character
+   literal, two enumeration values, two numbers *)
+MODULE m ;
+TYPE Colour = (Red, Green) ;
+VAR
+  x, y : ARRAY 3 OF I64 ;
+  hit : BOOL ;
+PROCEDURE F (c: CHAR ; k: Colour ; n: I64) =
+BEGIN
+  IF x = y THEN hit := TRUE END ;
+  IF c = 'a' THEN hit := TRUE END ;
+  IF k = Colour.Red THEN hit := TRUE END ;
+  IF n >= 3 THEN hit := TRUE END
+END F ;
+END m.

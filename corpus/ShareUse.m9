@@ -1,0 +1,61 @@
+MODULE ShareUse ;
+
+(* A SHARED answer of a call that can raise, held to its own output
+   (gendiff and the driver suite): `b := Make (n)' where Make answers
+   SHARED PTR Box and may RAISE.  The generator stores the answer and
+   reads the error slot BEFORE the share copy; until 2026-10-03 it
+   emitted m9_share_copy (Make (n, err)) with the test after, so a
+   refused Make handed NULL to the copy, and a program whose handler
+   should have run died with SIGSEGV (found by ZarrStoreTest).  The
+   runtime tolerates a NULL since, so what gendiff greps is the ORDER
+   in the C; what build.sh runs is the handler.
+
+   The fixture for the owed-ledger item, 2026-10-03.  Not installed;
+   gendiff and build.sh run it.                                     *)
+
+IMPORT Io ;
+
+TYPE
+  Box = RECORD n : I64 END ;
+
+EXCEPTION Empty ;
+
+VAR
+  b : SHARED PTR Box ;
+  c : SHARED PTR Box ;
+  p : STR ;                        (* a module variable named like a binder below *)
+
+PROCEDURE Make (n: I64) : SHARED PTR Box RAISES Empty =
+VAR p : PTR Box ;
+BEGIN
+  IF n = 0 THEN RAISE Empty END ;
+  p := NEW (OWN, Box) ;
+  p.n := n ;
+  RETURN SHARED (p)
+END Make ;
+
+PROCEDURE Try (n: I64) =
+BEGIN
+  b := Make (n) ;
+  Io.Write ('made ') ; Io.WriteI64 (b.n) ; Io.WriteLine ('')
+EXCEPT
+| Empty : Io.WriteLine ('Empty raised, handled')
+END Try ;
+
+(* a binder named like a module variable is the binder (the generator
+   looked the module variable up first until 2026-10-03 and refused
+   `p.n' as a selection through a non-record) *)
+PROCEDURE Peek (o: OPT SHARED PTR Box) : I64 =
+BEGIN
+  IF o IS SOME p THEN RETURN p.n END ;
+  RETURN -1
+END Peek ;
+
+BEGIN
+  p := 'module' ;
+  Try (3) ;
+  Try (0) ;
+  c := b ;
+  Io.Write ('copied ') ; Io.WriteI64 (c.n) ; Io.WriteLine ('') ;
+  Io.Write ('peeked ') ; Io.WriteI64 (Peek (SOME (b))) ; Io.WriteLine ('')
+END ShareUse.

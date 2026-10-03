@@ -1,0 +1,13 @@
+(* EXPECT: FOR variable k is I64, and its bounds are m.Colour *)
+(* and the loop that is right, after it: the variable is the
+   enumeration, and NAME reads it as one *)
+MODULE m ;
+IMPORT Io ;
+TYPE Colour = (Red, Green, Blue) ;
+VAR
+  k : I64 ;
+  c : Colour ;
+BEGIN
+  FOR k := Colour.Red TO Colour.Blue DO Io.WriteI64 (7) END ;
+  FOR c := Colour.Red TO Colour.Blue DO Io.WriteLine (NAME (c)) END
+END m.

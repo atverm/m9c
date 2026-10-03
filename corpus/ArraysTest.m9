@@ -1,0 +1,253 @@
+MODULE ArraysTest ;
+
+(* Arrays against numpy.  The inputs and the answers are in
+   runtime/test/gold/Arrays.gold, written by tools/arraysgold.py and
+   checked in; nothing here computes what it compares with.
+
+   EXACT everywhere but one place.  Minimum, maximum, count, index,
+   running sum, arithmetic, masks, where, select and concatenation
+   are held to numpy to the bit.  A SUM is held to math.fsum -- the
+   correctly rounded sum -- to the bit, because Arrays compensates
+   and numpy's pairwise nansum does not: on `cancel` numpy answers
+   0.0 where the sum is 2.0, on `wide` it is right to seven digits,
+   and the test says so rather than widening a tolerance until two
+   different answers agree.  On the other vectors numpy's nansum is
+   held within 1e-12 of the value, which is room for numpy's error,
+   not this module's.  (That Arrays meets fsum to the bit is a fact
+   about THESE vectors: its bound is in Arrays.m9.) *)
+
+IMPORT Arrays ;
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Io ;
+IMPORT Text ;
+
+CONST
+  Vectors = ['a', 'b', 'allnan', 'one', 'long', 'wide', 'cancel'] ;
+  (* where numpy's own nansum is not the sum: the generator refuses
+     to write a file in which `wide` is summed exactly by numpy *)
+  NumpyOff = ['wide', 'cancel'] ;
+  Short = [1.0, 2.0] ;
+  Flags = [TRUE, FALSE] ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+  i : I64 ;
+
+PROCEDURE F64s (RO name: STR) : SLICE OF F64 =
+BEGIN
+  RETURN Check.GoldF64s (t, gold, name)
+END F64s ;
+
+PROCEDURE Bools (RO name: STR) : SLICE OF BOOL =
+BEGIN
+  RETURN Check.GoldBools (t, gold, name)
+END Bools ;
+
+(* the reductions over one named vector *)
+PROCEDURE Vector (RO name: STR) =
+VAR
+  a : SLICE OF F64 ;
+  sum, exact, numpy, mean : F64 ;
+  n : I64 ;
+BEGIN
+  a := F64s ('in.' + name) ;
+  exact := Check.GoldF64 (t, gold, 'want.fsum.' + name) ;
+  numpy := Check.GoldF64 (t, gold, 'want.nansum.' + name) ;
+  n := Check.GoldI64 (t, gold, 'want.count.' + name) ;
+  sum := Arrays.NanSum (a) ;
+  Check.EqF64 (t, name + ': NanSum is the correctly rounded sum', sum, exact) ;
+  IF Text.OneOf (name, NumpyOff) THEN
+    Check.That (t, name + ': numpy nansum is NOT the rounded sum here',
+                numpy # exact)
+  ELSE
+    Check.Near (t, name + ': NanSum against numpy nansum', sum, numpy,
+                0.0, 1.0e-12)
+  END ;
+  mean := Arrays.NanMean (a) ;
+  IF n = 0 THEN
+    Check.EqF64 (t, name + ': NanMean of nothing is NaN', mean,
+                 Check.GoldF64 (t, gold, 'want.nanmean.' + name))
+  ELSE
+    Check.EqF64 (t, name + ': NanMean is that sum over the count', mean,
+                 exact / F64 (n)) ;
+    IF NOT Text.OneOf (name, NumpyOff) THEN
+      Check.Near (t, name + ': NanMean against numpy nanmean', mean,
+                  Check.GoldF64 (t, gold, 'want.nanmean.' + name),
+                  0.0, 1.0e-12)
+    END
+  END ;
+  Check.EqF64 (t, name + ': NanMin', Arrays.NanMin (a),
+               Check.GoldF64 (t, gold, 'want.nanmin.' + name)) ;
+  Check.EqF64 (t, name + ': NanMax', Arrays.NanMax (a),
+               Check.GoldF64 (t, gold, 'want.nanmax.' + name)) ;
+  Check.EqI64 (t, name + ': Count', Arrays.Count (a), n) ;
+  Check.EqI64 (t, name + ': NanArgMin', Arrays.NanArgMin (a),
+               Check.GoldI64 (t, gold, 'want.nanargmin.' + name)) ;
+  Check.EqI64 (t, name + ': NanArgMax', Arrays.NanArgMax (a),
+               Check.GoldI64 (t, gold, 'want.nanargmax.' + name)) ;
+  Check.NearF64s (t, name + ': CumSum', Arrays.CumSum (a),
+                  F64s ('want.cumsum.' + name), 0.0, 0.0)
+END Vector ;
+
+(* arithmetic, masks, where, select, concatenation: on a and b.  Each
+   raising call on a statement of its own. *)
+PROCEDURE Elementwise () RAISES Faults.SizeError =
+VAR
+  a, b, r, none : SLICE OF F64 ;
+  m, n, q : SLICE OF BOOL ;
+  k, th : F64 ;
+BEGIN
+  a := F64s ('in.a') ;
+  b := F64s ('in.b') ;
+  k := Check.GoldF64 (t, gold, 'in.k') ;
+  th := Check.GoldF64 (t, gold, 'in.t') ;
+  r := Arrays.Add (a, b) ;
+  Check.NearF64s (t, 'Add', r, F64s ('want.add'), 0.0, 0.0) ;
+  r := Arrays.Sub (a, b) ;
+  Check.NearF64s (t, 'Sub', r, F64s ('want.sub'), 0.0, 0.0) ;
+  r := Arrays.Mul (a, b) ;
+  Check.NearF64s (t, 'Mul', r, F64s ('want.mul'), 0.0, 0.0) ;
+  r := Arrays.Div (a, b) ;
+  Check.NearF64s (t, 'Div, by zero and by NaN as IEEE has it', r,
+                  F64s ('want.div'), 0.0, 0.0) ;
+  Check.NearF64s (t, 'AddScalar', Arrays.AddScalar (a, k),
+                  F64s ('want.addscalar'), 0.0, 0.0) ;
+  Check.NearF64s (t, 'MulScalar', Arrays.MulScalar (a, k),
+                  F64s ('want.mulscalar'), 0.0, 0.0) ;
+  Check.NearF64s (t, 'DivScalar', Arrays.DivScalar (a, k),
+                  F64s ('want.divscalar'), 0.0, 0.0) ;
+
+  Check.EqBools (t, 'Less', Arrays.Less (a, th), Bools ('want.less')) ;
+  Check.EqBools (t, 'LessEq', Arrays.LessEq (a, th), Bools ('want.lesseq')) ;
+  Check.EqBools (t, 'Greater', Arrays.Greater (a, th),
+                 Bools ('want.greater')) ;
+  Check.EqBools (t, 'GreaterEq', Arrays.GreaterEq (a, th),
+                 Bools ('want.greatereq')) ;
+  Check.EqBools (t, 'IsNaN', Arrays.IsNaN (a), Bools ('want.isnan')) ;
+  m := Arrays.Greater (a, th) ;
+  n := Arrays.IsNaN (b) ;
+  Check.EqBools (t, 'Not', Arrays.Not (m), Bools ('want.not')) ;
+  q := Arrays.And (m, Arrays.Not (n)) ;
+  Check.EqBools (t, 'And', q, Bools ('want.and')) ;
+  q := Arrays.Or (m, n) ;
+  Check.EqBools (t, 'Or', q, Bools ('want.or')) ;
+  Check.EqI64 (t, 'CountTrue', Arrays.CountTrue (m),
+               Check.GoldI64 (t, gold, 'want.counttrue')) ;
+  r := Arrays.Where (m, a, b) ;
+  Check.NearF64s (t, 'Where', r, F64s ('want.where'), 0.0, 0.0) ;
+  r := Arrays.WhereScalar (m, a, k) ;
+  Check.NearF64s (t, 'WhereScalar', r, F64s ('want.wherescalar'), 0.0, 0.0) ;
+  r := Arrays.Select (a, m) ;
+  Check.NearF64s (t, 'Select', r, F64s ('want.select'), 0.0, 0.0) ;
+  Check.NearF64s (t, 'Concat', Arrays.Concat (a, b), F64s ('want.concat'),
+                  0.0, 0.0) ;
+  none := NEW (F64, 0) ;
+  Check.NearF64s (t, 'Concat with nothing', Arrays.Concat (a, none),
+                  F64s ('want.concat.empty'), 0.0, 0.0) ;
+
+  (* a constant table is an array like any other *)
+  Check.EqF64 (t, 'NanSum of a constant table', Arrays.NanSum (Short), 3.0) ;
+  Check.EqI64 (t, 'CountTrue of a constant table', Arrays.CountTrue (Flags), 1)
+END Elementwise ;
+
+(* the grid: row-major in the file, built here to its shape *)
+PROCEDURE Grid () RAISES Faults.BadArg =
+VAR
+  flat, r : SLICE OF F64 ;
+  shape, c : SLICE OF I64 ;
+  g : GRID 2 OF F64 ;
+  row, col : I64 ;
+BEGIN
+  flat := F64s ('in.g') ;
+  shape := Check.GoldI64s (t, gold, 'in.g.shape') ;
+  g := NEW (F64, shape[0], shape[1]) ;
+  FOR row := 0 TO shape[0] - 1 DO
+    FOR col := 0 TO shape[1] - 1 DO
+      g[row, col] := flat[row * shape[1] + col]
+    END
+  END ;
+  r := Arrays.NanSumAxis (g, 0) ;
+  Check.NearF64s (t, 'NanSumAxis 0: one for each column', r,
+                  F64s ('want.g.nansum.0'), 0.0, 0.0) ;
+  r := Arrays.NanSumAxis (g, 1) ;
+  Check.NearF64s (t, 'NanSumAxis 1: one for each row', r,
+                  F64s ('want.g.nansum.1'), 0.0, 0.0) ;
+  r := Arrays.NanMeanAxis (g, 0) ;
+  Check.NearF64s (t, 'NanMeanAxis 0', r, F64s ('want.g.nanmean.0'), 0.0, 0.0) ;
+  r := Arrays.NanMeanAxis (g, 1) ;
+  Check.NearF64s (t, 'NanMeanAxis 1', r, F64s ('want.g.nanmean.1'), 0.0, 0.0) ;
+  r := Arrays.NanMinAxis (g, 0) ;
+  Check.NearF64s (t, 'NanMinAxis 0', r, F64s ('want.g.nanmin.0'), 0.0, 0.0) ;
+  r := Arrays.NanMinAxis (g, 1) ;
+  Check.NearF64s (t, 'NanMinAxis 1', r, F64s ('want.g.nanmin.1'), 0.0, 0.0) ;
+  r := Arrays.NanMaxAxis (g, 0) ;
+  Check.NearF64s (t, 'NanMaxAxis 0', r, F64s ('want.g.nanmax.0'), 0.0, 0.0) ;
+  r := Arrays.NanMaxAxis (g, 1) ;
+  Check.NearF64s (t, 'NanMaxAxis 1', r, F64s ('want.g.nanmax.1'), 0.0, 0.0) ;
+  c := Arrays.CountAxis (g, 0) ;
+  Check.EqI64s (t, 'CountAxis 0', c, Check.GoldI64s (t, gold, 'want.g.count.0')) ;
+  c := Arrays.CountAxis (g, 1) ;
+  Check.EqI64s (t, 'CountAxis 1', c, Check.GoldI64s (t, gold, 'want.g.count.1')) ;
+  Check.EqF64 (t, 'NanSumGrid', Arrays.NanSumGrid (g),
+               Check.GoldF64 (t, gold, 'want.g.nansum')) ;
+  Check.EqF64 (t, 'NanMeanGrid', Arrays.NanMeanGrid (g),
+               Check.GoldF64 (t, gold, 'want.g.nanmean')) ;
+  Check.EqF64 (t, 'NanMinGrid', Arrays.NanMinGrid (g),
+               Check.GoldF64 (t, gold, 'want.g.nanmin')) ;
+  Check.EqF64 (t, 'NanMaxGrid', Arrays.NanMaxGrid (g),
+               Check.GoldF64 (t, gold, 'want.g.nanmax')) ;
+  Check.EqI64 (t, 'CountGrid', Arrays.CountGrid (g),
+               Check.GoldI64 (t, gold, 'want.g.count'))
+END Grid ;
+
+(* the refusals, each a function that answers whether it was refused *)
+PROCEDURE AddRefusesLengths () : BOOL =
+VAR r : SLICE OF F64 ;
+BEGIN
+  r := Arrays.Add (F64s ('in.a'), Short) ;
+  RETURN FALSE
+EXCEPT
+| Faults.SizeError : RETURN TRUE
+END AddRefusesLengths ;
+
+PROCEDURE SelectRefusesLengths () : BOOL =
+VAR r : SLICE OF F64 ;
+BEGIN
+  r := Arrays.Select (Short, Bools ('want.less')) ;
+  RETURN FALSE
+EXCEPT
+| Faults.SizeError : RETURN TRUE
+END SelectRefusesLengths ;
+
+PROCEDURE AxisTwoRefused () : BOOL =
+VAR
+  g : GRID 2 OF F64 ;
+  r : SLICE OF F64 ;
+BEGIN
+  g := NEW (F64, 2, 2) ;
+  r := Arrays.NanSumAxis (g, 2) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg : RETURN TRUE
+END AxisTwoRefused ;
+
+BEGIN
+  gold := Check.GoldPath ('Arrays.gold') ;
+  FOR i := 0 TO LEN (Vectors) - 1 DO Vector (Vectors[i]) END ;
+  Elementwise () ;
+  Grid () ;
+  Check.That (t, 'Add refuses two lengths', AddRefusesLengths ()) ;
+  Check.That (t, 'Select refuses a mask of another length',
+              SelectRefusesLengths ()) ;
+  Check.That (t, 'an axis of 2 is refused', AxisTwoRefused ()) ;
+  Io.Halt (Check.Done (t, 'Arrays'))
+EXCEPT
+| Faults.SizeError :
+    Check.That (t, 'no SizeError escapes the elementwise checks', FALSE) ;
+    Io.Halt (Check.Done (t, 'Arrays'))
+| Faults.BadArg :
+    Check.That (t, 'no BadArg escapes the grid checks', FALSE) ;
+    Io.Halt (Check.Done (t, 'Arrays'))
+END ArraysTest.

@@ -1,0 +1,84 @@
+MODULE pngout ;
+
+(* pngout DIR
+     -> writes DIR/busy.png (64 by 48, no resolution), DIR/thin.png
+        (300 by 5 at 72 dpi) and DIR/figure.png (640 by 400 at 300
+        dpi) with Png.Encode
+
+   The second program runtime/test/deflate.sh drives.  The pictures
+   are formulas, the same ones deflatecheck.py computes: Python takes
+   the files apart and compares every pixel. *)
+
+IMPORT Io ;
+IMPORT Faults ;
+IMPORT Png ;
+
+VAR
+  pool : POOL ;
+  dir : STR ;
+
+(* something in every byte: (5x + y, 9y + x*x, 30 ((x + y) mod 7)) *)
+PROCEDURE Busy (w, h: I64) : SLICE OF BYTE RAISES ValueRange =
+VAR
+  p : SLICE OF BYTE ;
+  x, y, at : I64 ;
+BEGIN
+  p := NEW (pool, BYTE, 3 * w * h) ;
+  FOR y := 0 TO h - 1 DO
+    FOR x := 0 TO w - 1 DO
+      at := 3 * (y * w + x) ;
+      p[at] := BYTE ((x * 5 + y) MOD 256) ;
+      p[at + 1] := BYTE ((y * 9 + x * x) MOD 256) ;
+      p[at + 2] := BYTE (((x + y) MOD 7) * 30)
+    END
+  END ;
+  RETURN p
+END Busy ;
+
+(* white, a blue line across every fortieth row and down every
+   fiftieth column, a ramp of grey along the top *)
+PROCEDURE Figure (w, h: I64) : SLICE OF BYTE RAISES ValueRange =
+VAR
+  p : SLICE OF BYTE ;
+  x, y, at : I64 ;
+BEGIN
+  p := NEW (pool, BYTE, 3 * w * h) ;
+  FOR y := 0 TO h - 1 DO
+    FOR x := 0 TO w - 1 DO
+      at := 3 * (y * w + x) ;
+      IF y MOD 40 = 7 OR x MOD 50 = 9 THEN
+        p[at] := BYTE (31) ; p[at + 1] := BYTE (119) ; p[at + 2] := BYTE (180)
+      ELSIF y < 4 THEN
+        p[at] := BYTE (x MOD 256) ; p[at + 1] := BYTE (x MOD 256) ;
+        p[at + 2] := BYTE (x MOD 256)
+      ELSE
+        p[at] := BYTE (255) ; p[at + 1] := BYTE (255) ; p[at + 2] := BYTE (255)
+      END
+    END
+  END ;
+  RETURN p
+END Figure ;
+
+PROCEDURE Write (RO name: STR ; RO rgb: SLICE OF BYTE ; w, h: I64 ; dpi: F64)
+  RAISES Io.IOError, Faults.SizeError, Faults.BadArg, ValueRange =
+VAR f : SLICE OF BYTE ;
+BEGIN
+  f := Png.Encode (pool, rgb, w, h, dpi) ;
+  Io.WriteFileBytes (dir + '/' + name, f)
+END Write ;
+
+BEGIN
+  IF Io.ArgCount () < 2 THEN
+    Io.ErrLine ('usage: pngout DIR') ;
+    Io.Halt (2)
+  END ;
+  dir := Io.Arg (pool, 1) ;
+  Write ('busy.png', Busy (64, 48), 64, 48, 0.0) ;
+  Write ('thin.png', Busy (300, 5), 300, 5, 72.0) ;
+  Write ('figure.png', Figure (640, 400), 640, 400, 300.0)
+EXCEPT
+| Io.IOError (p) : Io.ErrLine ('io') ; Io.Halt (1)
+| Faults.SizeError (got, want) : Io.ErrLine ('size') ; Io.Halt (1)
+| Faults.BadArg (what) : Io.ErrLine ('bad argument') ; Io.Halt (1)
+| ValueRange : Io.ErrLine ('value range') ; Io.Halt (1)
+END pngout.

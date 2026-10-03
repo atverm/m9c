@@ -74,8 +74,10 @@ int main (int argc, char **argv)
   n = INT64_C(1);
   m9t1to = INT64_C(3);
   for (; n <= m9t1to; n += 1) {
-    s = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err);
+      if (err->exc) goto L_ret;
+      s = m9v;
+    }
   } }
   Io_WriteLine (s, err);
   if (err->exc) goto L_ret;
@@ -83,8 +85,10 @@ int main (int argc, char **argv)
   if (err->exc) goto L_ret;
   Io_WriteLine ((m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
-  d = DynStr_New (&(m9_heap), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(d) m9v = DynStr_New (&(m9_heap), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
   DynStr_Append (&(d), &m9mframe, ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err);
   if (err->exc) goto L_ret;
   Io_WriteLine (DynStr_View (d, err), err);

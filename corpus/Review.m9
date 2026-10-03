@@ -1,0 +1,607 @@
+DEFINITION MODULE Review ;
+
+(* What a reviewer still has to read, as one page.
+
+   The checker's work is invisible when it succeeds: a module that
+   compiles says nothing about what was proved and nothing about what
+   was merely written down.  This is the printing pass that says it
+   (docs/wishlist.md item 1, docs/plan-0.14.md stage 1), and its rule
+   is that it adds NO OPINION: every line is a count of something in
+   the tree, with the lines where it stands.
+
+   An ordinary client, as Doc is: it reads Ast through its published
+   surface and nothing else.  What the CHECKER examined, and what it
+   passed over because a type was unknown, is the checker's to count:
+   the caller hands those counts in (Stat below) and this module
+   prints them without importing the checker.  The one rule it can
+   speak for by itself is the one that needs no type: a function
+   answers on every path (report par 3 rule 4), which this page's
+   first cut found unenforced on 2026-10-01 by counting it from the
+   tree.                                                             *)
+
+IMPORT Ast ;
+
+TYPE
+  (* one line of the checker's own account: how many sites of a kind
+     it EXAMINED, and how many it PASSED OVER because a type was
+     unknown.  The caller fills these from the checker; this module
+     does not import it, and stays a client of the tree alone. *)
+  Stat = RECORD
+    name : STR ;
+    checked, skipped : I64 ;
+    lines : STR ;                (* where the first passed-over sites
+                                    stand, as text: `12, 40, 41, ...';
+                                    empty when nothing was passed over *)
+  END ;
+
+PROCEDURE Page (root: PTR Ast.Node ; RO modName: STR ;
+                checked: BOOL ; RO stats: SLICE OF Stat) : STR ;
+  (* the review page for one parsed file.
+
+       root    -- the NFile node Parse.File answered.
+       modName -- what to call it in the heading.
+       checked -- TRUE when the caller ran the checker over this
+                  file and it accepted it, which is what `m9c
+                  --review` does before it prints.  It decides what
+                  the first section may CLAIM: with it, that every
+                  function answers on every path was proved; without
+                  it the same count is only what the tree shows, and
+                  the section says so.
+       stats   -- the checker's counts, printed under PROVED when
+                  `checked`: one row each, the examined count and,
+                  beside it, what was passed over for an unknown
+                  type.  Empty from a caller that ran no checker.
+
+     Four sections: PROVED (or, unchecked, the functions that can
+     reach their END without answering, named from the tree alone),
+     what a person DECIDED (each named pool, pool parameter, KEPT,
+     HEAP, owned allocation, THREAD and module variable), what is
+     TRUSTED (UNSAFE units, foreign procedures), and what there was
+     to check.  A section with nothing in it still prints its
+     zeroes: an absent line and a zero are different claims.         *)
+
+END Review.
+
+
+IMPLEMENTATION MODULE Review ;
+
+IMPORT DynStr ;
+IMPORT Text ;
+
+CONST
+  LabelWidth = 44 ;
+  MaxSites = 6 ;
+
+TYPE
+  Counts = RECORD
+    procs, funcs, exported : I64 ;
+    fallOff : I64 ;
+    modPools, localPools, poolParams : I64 ;
+    kept, heap, newOwn, newPool, newFrame : I64 ;
+    dispose, shared, thread : I64 ;
+    modVars : I64 ;
+    unsafeUnits, statefulUnits : I64 ;
+    foreign, serial, reentrant : I64 ;
+    cases, raises, handlers : I64 ;
+    defs, impls, progs : I64 ;
+  END ;
+
+(* ---- the site log: one line per place, tagged by what it is ---- *)
+
+PROCEDURE Site (VAR log: PTR DynStr.DString ; tag: CHAR ; line: I64 ;
+                RO what: STR) =
+BEGIN
+  DynStr.AppendChar (log, tag) ;
+  DynStr.AppendChar (log, ' ') ;
+  DynStr.AppendI64 (log, line) ;
+  IF LEN (what) > 0 THEN
+    DynStr.AppendChar (log, ' ') ;
+    DynStr.Append (log, what)
+  END ;
+  DynStr.AppendChar (log, 0AC)
+END Site ;
+
+PROCEDURE IsPool (k: Ast.Kid) : BOOL =
+BEGIN
+  IF k IS SOME t THEN
+    RETURN t.kind = Ast.NQualident AND DynStr.Eq (t.a, 'POOL')
+           AND LEN (t.b) = 0
+  END ;
+  RETURN FALSE
+END IsPool ;
+
+(* ---- is this the name of a TYPE?  NEW's first argument says who
+   frees the storage, and a pool and a type are both spelled as a
+   designator: the parser cannot tell `NEW (pool, T)' from `NEW (T,
+   n)', so it is decided by NAME, as the checkers and the generators
+   decide it (report par 10, item 6).  This page has the tree and no
+   scopes, so the tree is asked: a predeclared type, a type one of
+   the file's units declares, or a name qualified by a module the
+   file imports.  Like Sem.NewIsFrameIn it does not know a
+   procedure's own names, so a local that shadows a type of its
+   module reads as the type.  Until 2026-10-02 every NEW with two
+   arguments was counted as a pool's, and Frame's page said 0 in the
+   frame where there were nine. ---- *)
+
+CONST
+  Predeclared = ['I8', 'I16', 'I32', 'I64', 'U8', 'U16', 'U32', 'U64',
+                 'F32', 'F64', 'BYTE', 'BOOL', 'CHAR', 'STR'] ;
+
+(* does a unit of the file declare the type `name' -- or, when
+   module, import the module `name'? *)
+PROCEDURE Declares (root: PTR Ast.Node ; RO name: STR ; module: BOOL) : BOOL =
+VAR i, j, k : I64 ;
+BEGIN
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME u THEN
+      FOR j := 0 TO u.nkids - 1 DO
+        IF u.kids[j] IS SOME sec THEN
+          IF module AND sec.kind = Ast.NImportList THEN
+            IF sec.kids[0] IS SOME ids THEN
+              FOR k := 0 TO ids.nkids - 1 DO
+                IF ids.kids[k] IS SOME id THEN
+                  IF DynStr.Eq (id.a, name) THEN RETURN TRUE END
+                END
+              END
+            END
+          ELSIF NOT module AND sec.kind = Ast.NTypeSection THEN
+            FOR k := 0 TO sec.nkids - 1 DO
+              IF sec.kids[k] IS SOME td THEN
+                IF DynStr.Eq (td.a, name) THEN RETURN TRUE END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END Declares ;
+
+PROCEDURE NamesType (root: PTR Ast.Node ; d: PTR Ast.Node) : BOOL =
+BEGIN
+  IF d.nkids = 0 THEN
+    RETURN Text.OneOf (d.a, Predeclared) OR Declares (root, d.a, FALSE)
+  END ;
+  IF d.nkids = 1 THEN
+    IF d.kids[0] IS SOME sel THEN
+      IF sel.kind = Ast.NSelField THEN
+        RETURN DynStr.Eq (d.a, 'C') OR Declares (root, d.a, TRUE)
+      END
+    END
+  END ;
+  RETURN FALSE
+END NamesType ;
+
+(* ---- can control pass this statement?  A function whose body can
+   be passed reaches its END without answering.  Conservative on
+   purpose: a WHILE or a FOR may always be passed, a LOOP only
+   through an EXIT of its own, an IF only when a branch can be or
+   there is no ELSE, a CASE when an arm can be (a CASE without ELSE
+   is total over its variants or its enumeration, which the checker
+   holds), a block when its statements or a handler can be. ---- *)
+
+PROCEDURE EndsSeq (k: Ast.Kid) : BOOL ;
+
+PROCEDURE HasExit (k: Ast.Kid) : BOOL =
+  (* an EXIT that belongs to the LOOP whose body this is: nested
+     LOOPs own theirs *)
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NExit THEN RETURN TRUE END ;
+    IF n.kind = Ast.NLoop THEN RETURN FALSE END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF HasExit (n.kids[i]) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END HasExit ;
+
+PROCEDURE EndsStmt (n: PTR Ast.Node) : BOOL =
+VAR
+  i : I64 ;
+  hasElse : BOOL ;
+BEGIN
+  CASE n.kind OF
+  | Ast.NReturn, Ast.NRaiseStmt :
+      RETURN TRUE
+  | Ast.NIf :
+      IF NOT EndsSeq (n.kids[1]) THEN RETURN FALSE END ;
+      hasElse := FALSE ;
+      FOR i := 2 TO n.nkids - 1 DO
+        IF n.kids[i] IS SOME e THEN
+          IF e.kind = Ast.NElsif THEN
+            IF NOT EndsSeq (e.kids[1]) THEN RETURN FALSE END
+          ELSIF e.kind = Ast.NElse THEN
+            hasElse := TRUE ;
+            IF NOT EndsSeq (e.kids[0]) THEN RETURN FALSE END
+          END
+        END
+      END ;
+      RETURN hasElse
+  | Ast.NCase :
+      FOR i := 1 TO n.nkids - 1 DO
+        IF n.kids[i] IS SOME arm THEN
+          IF arm.kind = Ast.NCaseArm THEN
+            IF NOT EndsSeq (arm.kids[1]) THEN RETURN FALSE END
+          ELSIF arm.kind = Ast.NElse THEN
+            IF NOT EndsSeq (arm.kids[0]) THEN RETURN FALSE END
+          END
+        END
+      END ;
+      RETURN n.nkids > 1
+  | Ast.NLoop :
+      RETURN NOT HasExit (n.kids[0])
+  | Ast.NBlock :
+      IF NOT EndsSeq (n.kids[0]) THEN RETURN FALSE END ;
+      FOR i := 1 TO n.nkids - 1 DO
+        IF n.kids[i] IS SOME h THEN
+          IF h.kind = Ast.NHandler THEN
+            IF NOT EndsSeq (h.kids[2]) THEN RETURN FALSE END
+          END
+        END
+      END ;
+      RETURN TRUE
+  ELSE
+    RETURN FALSE
+  END
+END EndsStmt ;
+
+PROCEDURE EndsSeq (k: Ast.Kid) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    FOR i := 0 TO n.nkids - 1 DO
+      IF n.kids[i] IS SOME st THEN
+        IF EndsStmt (st) THEN RETURN TRUE END
+      END
+    END
+  END ;
+  RETURN FALSE
+END EndsSeq ;
+
+(* ---- the walk over statements and expressions ---- *)
+
+PROCEDURE Walk (VAR c: Counts ; VAR log: PTR DynStr.DString ;
+                root: PTR Ast.Node ; k: Ast.Kid ; RO proc: STR) =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    CASE n.kind OF
+    | Ast.NCase :
+        c.cases := c.cases + 1
+    | Ast.NRaiseStmt :
+        c.raises := c.raises + 1
+    | Ast.NHandler :
+        c.handlers := c.handlers + 1
+    | Ast.NDispose :
+        c.dispose := c.dispose + 1 ;
+        Site (log, 'D', n.line, proc)
+    | Ast.NSharedExpr :
+        c.shared := c.shared + 1 ;
+        Site (log, 'S', n.line, proc)
+    | Ast.NThread :
+        c.thread := c.thread + 1 ;
+        Site (log, 'T', n.line, proc)
+    | Ast.NNewExpr :
+        IF n.kids[0] IS SOME p THEN
+          IF DynStr.Eq (p.a, 'OWN') THEN
+            c.newOwn := c.newOwn + 1 ;
+            Site (log, 'O', n.line, proc)
+          ELSIF NamesType (root, p) THEN
+            c.newFrame := c.newFrame + 1       (* NEW (T, n...) *)
+          ELSE
+            c.newPool := c.newPool + 1
+          END
+        ELSE
+          c.newFrame := c.newFrame + 1
+        END
+    | Ast.NDesignator :
+        IF DynStr.Eq (n.a, 'HEAP') THEN
+          c.heap := c.heap + 1 ;
+          Site (log, 'H', n.line, proc)
+        END
+    ELSE
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO Walk (c, log, root, n.kids[i], proc) END
+  END
+END Walk ;
+
+(* ---- declarations ---- *)
+
+PROCEDURE Vars (VAR c: Counts ; VAR log: PTR DynStr.DString ;
+                sec: PTR Ast.Node ; RO proc: STR ; atModule: BOOL) =
+VAR i, j : I64 ;
+BEGIN
+  FOR i := 0 TO sec.nkids - 1 DO
+    IF sec.kids[i] IS SOME vd THEN
+      IF vd.kids[0] IS SOME ids THEN
+        FOR j := 0 TO ids.nkids - 1 DO
+          IF ids.kids[j] IS SOME id THEN
+            IF IsPool (vd.kids[1]) THEN
+              IF atModule THEN
+                c.modPools := c.modPools + 1 ;
+                Site (log, 'M', vd.line, id.a)
+              ELSE
+                c.localPools := c.localPools + 1 ;
+                Site (log, 'L', vd.line, proc + '.' + id.a)
+              END
+            ELSIF atModule THEN
+              c.modVars := c.modVars + 1 ;
+              Site (log, 'V', vd.line, id.a)
+            END
+          END
+        END
+      END
+    END
+  END
+END Vars ;
+
+PROCEDURE Params (VAR c: Counts ; VAR log: PTR DynStr.DString ;
+                  k: Ast.Kid ; RO proc: STR) =
+VAR
+  i, n : I64 ;
+BEGIN
+  IF k IS SOME pl THEN
+    FOR i := 0 TO pl.nkids - 1 DO
+      IF pl.kids[i] IS SOME p THEN
+        n := 1 ;
+        IF p.kids[0] IS SOME ids THEN n := ids.nkids END ;
+        IF IsPool (p.kids[1]) THEN
+          c.poolParams := c.poolParams + n ;
+          Site (log, 'P', p.line, proc)
+        END ;
+        IF p.f4 THEN
+          c.kept := c.kept + n ;
+          Site (log, 'K', p.line, proc)
+        END
+      END
+    END
+  END
+END Params ;
+
+PROCEDURE Proc (VAR c: Counts ; VAR log: PTR DynStr.DString ;
+                root: PTR Ast.Node ; p: PTR Ast.Node ; foreignUnit: BOOL) =
+VAR
+  i : I64 ;
+  isFunc, hasBody : BOOL ;
+BEGIN
+  isFunc := FALSE ;
+  IF p.kids[1] IS SOME rt THEN isFunc := TRUE END ;
+  hasBody := FALSE ;
+  IF p.kids[4] IS SOME b0 THEN hasBody := TRUE END ;
+  IF foreignUnit THEN
+    c.foreign := c.foreign + 1 ;
+    IF p.kids[3] IS SOME at THEN
+      IF DynStr.Eq (at.a, 'SERIAL') THEN c.serial := c.serial + 1
+      ELSIF DynStr.Eq (at.a, 'REENTRANT') THEN c.reentrant := c.reentrant + 1
+      END
+    END ;
+    RETURN
+  END ;
+  IF NOT hasBody THEN
+    (* a heading in a DEFINITION: the contract, counted once where
+       its body is *)
+    c.exported := c.exported + 1 ;
+    RETURN
+  END ;
+  c.procs := c.procs + 1 ;
+  IF isFunc THEN c.funcs := c.funcs + 1 END ;
+  Params (c, log, p.kids[0], p.a) ;
+  IF p.kids[4] IS SOME body THEN
+    FOR i := 0 TO body.nkids - 2 DO
+      IF body.kids[i] IS SOME dc THEN
+        IF dc.kind = Ast.NVarSection THEN Vars (c, log, dc, p.a, FALSE) END
+      END
+    END ;
+    IF body.nkids > 0 THEN
+      Walk (c, log, root, body.kids[body.nkids - 1], p.a) ;
+      IF isFunc THEN
+        IF body.kids[body.nkids - 1] IS SOME blk THEN
+          IF NOT EndsStmt (blk) THEN
+            c.fallOff := c.fallOff + 1 ;
+            Site (log, 'F', p.line, p.a)
+          END
+        END
+      END
+    END
+  END
+END Proc ;
+
+PROCEDURE Unit (VAR c: Counts ; VAR log: PTR DynStr.DString ;
+                root: PTR Ast.Node ; u: PTR Ast.Node) =
+VAR
+  i : I64 ;
+  foreignUnit : BOOL ;
+BEGIN
+  foreignUnit := u.kind = Ast.NDefinition AND LEN (u.b) > 0 ;
+  IF u.kind = Ast.NDefinition THEN c.defs := c.defs + 1
+  ELSIF u.kind = Ast.NImplementation THEN c.impls := c.impls + 1
+  ELSE c.progs := c.progs + 1 END ;
+  IF u.f1 THEN
+    c.unsafeUnits := c.unsafeUnits + 1 ;
+    Site (log, 'U', u.line, u.a)
+  END ;
+  IF u.f2 THEN c.statefulUnits := c.statefulUnits + 1 END ;
+  FOR i := 0 TO u.nkids - 1 DO
+    IF u.kids[i] IS SOME kd THEN
+      IF kd.kind = Ast.NVarSection THEN
+        Vars (c, log, kd, u.a, TRUE)
+      ELSIF kd.kind = Ast.NProcDecl THEN
+        Proc (c, log, root, kd, foreignUnit)
+      ELSIF kd.kind = Ast.NModBody THEN
+        Walk (c, log, root, u.kids[i], '(body)')
+      END
+    END
+  END
+END Unit ;
+
+(* ---- the page ---- *)
+
+PROCEDURE Spaces (VAR d: PTR DynStr.DString ; n: I64) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 1 TO n DO DynStr.AppendChar (d, ' ') END
+END Spaces ;
+
+PROCEDURE Digits (n: I64) : I64 =
+VAR k, v : I64 ;
+BEGIN
+  k := 1 ;
+  v := n ;
+  WHILE v >= 10 DO
+    v := v DIV 10 ;
+    k := k + 1
+  END ;
+  RETURN k
+END Digits ;
+
+PROCEDURE Row (VAR d: PTR DynStr.DString ; RO lines: SLICE OF STR ;
+               RO label: STR ; n: I64 ; tag: CHAR) =
+  (* `  label ......... n   line what, line what, +k more` -- the
+     sites are the lines of the log that carry this row's tag; a tag
+     of ' ' is a row with no sites *)
+VAR
+  i, shown, total : I64 ;
+  ln : STR ;
+BEGIN
+  Spaces (d, 2) ;
+  DynStr.Append (d, label) ;
+  Spaces (d, LabelWidth - LEN (label) + 5 - Digits (n)) ;
+  DynStr.AppendI64 (d, n) ;
+  IF tag # ' ' THEN
+    shown := 0 ;
+    total := 0 ;
+    FOR i := 0 TO LEN (lines) - 1 DO
+      ln := lines[i] ;
+      IF LEN (ln) > 2 THEN
+        IF ln[0] = tag THEN
+          total := total + 1 ;
+          IF shown < MaxSites THEN
+            IF shown = 0 THEN Spaces (d, 3) ELSE DynStr.Append (d, ', ') END ;
+            DynStr.Append (d, SLICE (ln, 2, LEN (ln) - 2)) ;
+            shown := shown + 1
+          END
+        END
+      END
+    END ;
+    IF total > shown THEN
+      DynStr.Append (d, ', +') ;
+      DynStr.AppendI64 (d, total - shown) ;
+      DynStr.Append (d, ' more')
+    END
+  END ;
+  DynStr.AppendChar (d, 0AC)
+END Row ;
+
+PROCEDURE Head (VAR d: PTR DynStr.DString ; RO s: STR) =
+BEGIN
+  DynStr.AppendChar (d, 0AC) ;
+  DynStr.Append (d, s) ;
+  DynStr.AppendChar (d, 0AC)
+END Head ;
+
+PROCEDURE StatRow (VAR d: PTR DynStr.DString ; RO label: STR ;
+                   checked, skipped: I64 ; RO lines: STR) =
+  (* `  label ......... n   passed over, a type unknown: k -- line 12, 40`
+     -- the second number and its lines are printed only when it is
+     not zero, so that the eye lands on the rows that have one *)
+BEGIN
+  Spaces (d, 2) ;
+  DynStr.Append (d, label) ;
+  Spaces (d, LabelWidth - LEN (label) + 5 - Digits (checked)) ;
+  DynStr.AppendI64 (d, checked) ;
+  IF skipped > 0 THEN
+    DynStr.Append (d, '   passed over, a type unknown: ') ;
+    DynStr.AppendI64 (d, skipped) ;
+    IF LEN (lines) > 0 THEN
+      DynStr.Append (d, ' -- line ') ;
+      DynStr.Append (d, lines)
+    END
+  END ;
+  DynStr.AppendChar (d, 0AC)
+END StatRow ;
+
+PROCEDURE Page (root: PTR Ast.Node ; RO modName: STR ;
+                checked: BOOL ; RO stats: SLICE OF Stat) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  log : PTR DynStr.DString IN scratch ;
+  c : Counts ;
+  lines : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  c.procs := 0 ; c.funcs := 0 ; c.exported := 0 ; c.fallOff := 0 ;
+  c.modPools := 0 ; c.localPools := 0 ; c.poolParams := 0 ;
+  c.kept := 0 ; c.heap := 0 ; c.newOwn := 0 ; c.newPool := 0 ;
+  c.newFrame := 0 ; c.dispose := 0 ; c.shared := 0 ; c.thread := 0 ;
+  c.modVars := 0 ; c.unsafeUnits := 0 ; c.statefulUnits := 0 ;
+  c.foreign := 0 ; c.serial := 0 ; c.reentrant := 0 ;
+  c.cases := 0 ; c.raises := 0 ; c.handlers := 0 ;
+  c.defs := 0 ; c.impls := 0 ; c.progs := 0 ;
+  d := DynStr.New (scratch) ;
+  log := DynStr.New (scratch) ;
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME u THEN Unit (c, log, root, u) END
+  END ;
+  lines := Text.Split (DynStr.View (log), 0AC) ;
+
+  DynStr.Append (d, 'REVIEW ') ;
+  DynStr.Append (d, modName) ;
+  DynStr.Append (d, ' -- ') ;
+  DynStr.AppendI64 (d, c.procs) ;
+  DynStr.Append (d, ' procedures with a body, ') ;
+  DynStr.AppendI64 (d, c.funcs) ;
+  DynStr.Append (d, ' of them functions; ') ;
+  DynStr.AppendI64 (d, c.exported) ;
+  DynStr.Append (d, ' headings in a DEFINITION') ;
+  DynStr.AppendChar (d, 0AC) ;
+
+  IF checked THEN
+    (* the checker accepted the file, and this rule needs no type,
+       so there is no site it could have passed over: every function
+       is a function it proved *)
+    Head (d, 'PROVED BY THE CHECKER -- examined, and nothing refused') ;
+    Row (d, lines, 'functions answering on every path', c.funcs - c.fallOff, ' ') ;
+    (* and the sites where two types were held to each other: the
+       checker never diagnoses an unknown type, so each row carries
+       what it passed over as well as what it examined *)
+    FOR i := 0 TO LEN (stats) - 1 DO
+      StatRow (d, stats[i].name, stats[i].checked, stats[i].skipped,
+               stats[i].lines)
+    END
+  ELSE
+    Head (d, 'NOT CHECKED HERE -- the tree alone; the checker refuses these') ;
+    Row (d, lines, 'functions that can reach END unanswered', c.fallOff, 'F')
+  END ;
+
+  Head (d, 'DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each') ;
+  Row (d, lines, 'module pools', c.modPools, 'M') ;
+  Row (d, lines, 'local pools', c.localPools, 'L') ;
+  Row (d, lines, 'pool parameters', c.poolParams, 'P') ;
+  Row (d, lines, 'KEPT parameters', c.kept, 'K') ;
+  Row (d, lines, 'HEAP named', c.heap, 'H') ;
+  Row (d, lines, 'NEW (OWN, T)', c.newOwn, 'O') ;
+  Row (d, lines, 'DISPOSE', c.dispose, 'D') ;
+  Row (d, lines, 'SHARED (x)', c.shared, 'S') ;
+  Row (d, lines, 'THREAD', c.thread, 'T') ;
+  Row (d, lines, 'module variables', c.modVars, 'V') ;
+
+  Head (d, 'TRUSTED -- outside what the checker can see') ;
+  Row (d, lines, 'UNSAFE units', c.unsafeUnits, 'U') ;
+  Row (d, lines, 'foreign procedures', c.foreign, ' ') ;
+  Row (d, lines, '  of them [SERIAL]', c.serial, ' ') ;
+  Row (d, lines, '  of them [REENTRANT]', c.reentrant, ' ') ;
+
+  Head (d, 'COUNTED -- how much there was to check') ;
+  Row (d, lines, 'CASE statements', c.cases, ' ') ;
+  Row (d, lines, 'RAISE statements', c.raises, ' ') ;
+  Row (d, lines, 'handlers', c.handlers, ' ') ;
+  Row (d, lines, 'NEW in the frame', c.newFrame, ' ') ;
+  Row (d, lines, 'NEW in a named pool', c.newPool, ' ') ;
+  RETURN DynStr.View (d)
+END Page ;
+
+END Review.

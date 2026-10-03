@@ -1,0 +1,39 @@
+MODULE deflateout ;
+
+(* deflateout IN OUT
+     -> writes OUT.gz (Zip.Gzip of the bytes of IN), OUT.zz
+        (Zip.Compress) and OUT.raw (Zip.Deflate), and prints
+        `IN-LENGTH GZ-LENGTH` on one line
+
+   The program runtime/test/deflate.sh drives: what it writes is read
+   back by Python's gzip and zlib there, which is the whole check --
+   a compressor is right when somebody else's inflate says so. *)
+
+IMPORT Io ;
+IMPORT Zip ;
+
+VAR
+  pool : POOL ;
+  src, dst : STR ;
+  data, gz : SLICE OF BYTE ;
+
+BEGIN
+  IF Io.ArgCount () < 3 THEN
+    Io.ErrLine ('usage: deflateout IN OUT') ;
+    Io.Halt (2)
+  END ;
+  src := Io.Arg (pool, 1) ;
+  dst := Io.Arg (pool, 2) ;
+  data := Io.ReadFileBytes (pool, src) ;
+  gz := Zip.Gzip (pool, data) ;
+  Io.WriteFileBytes (dst + '.gz', gz) ;
+  Io.WriteFileBytes (dst + '.zz', Zip.Compress (pool, data)) ;
+  Io.WriteFileBytes (dst + '.raw', Zip.Deflate (pool, data)) ;
+  Io.WriteI64 (LEN (data)) ;
+  Io.Write (' ') ;
+  Io.WriteI64 (LEN (gz)) ;
+  Io.WriteLine ('')
+EXCEPT
+| Io.IOError (p) : Io.ErrLine ('io') ; Io.Halt (1)
+| ValueRange : Io.ErrLine ('value range') ; Io.Halt (1)
+END deflateout.

@@ -1,0 +1,4 @@
+(* EXPECT: an aggregate CONST is not exported yet: Primes *)
+DEFINITION MODULE m ;
+CONST Primes = [2, 3, 5] ;
+END m.

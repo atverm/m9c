@@ -87,9 +87,13 @@ type
     nkSelIndex,                   { kids[0]=index expr }
     nkArgList,
     nkEnumType,                   { kids: nkIdent per member, in order }
-    nkProcType                    { PROCEDURE (...) [: T] [RAISES] as a
+    nkProcType,                   { PROCEDURE (...) [: T] [RAISES] as a
                                     type; kids as a ProcDecl's head:
                                     paramlist, result|nil, raises|nil }
+    nkAggregate                   { [ e1, ..., en ] as the value of a
+                                    CONST: the kids are the elements.
+                                    Only a ConstDecl's kid is ever one.
+                                    Ast.NAggregate, 2026-10-01 }
   );
 
   TNode = class

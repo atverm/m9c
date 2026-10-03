@@ -1,0 +1,4 @@
+(* EXPECT: element 2 of Mixed is F64 where the first is I64: an aggregate has one element type *)
+MODULE m ;
+CONST Mixed = [1, 2.5, 3] ;
+END m.

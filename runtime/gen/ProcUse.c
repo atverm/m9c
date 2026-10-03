@@ -115,8 +115,10 @@ static void ProcUse_AddLen (int64_t *acc, m9_sl_CHAR s, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  (*acc) = m9_add_i64 ((*acc), (s).len, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*acc)) m9v = m9_add_i64 ((*acc), (s).len, err);
+    if (err->exc) goto L_ret;
+    (*acc) = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -229,8 +231,10 @@ static void ProcUse_Run (m9_state *err)
   if (err->exc) goto L_ret;
   ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s8, 14 }), total, err);
   if (err->exc) goto L_ret;
-  v = m9_i64_f64 ((double)(ProcUse_Apply (ProcUse_Twice, (- 1.0), err)), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(v) m9v = m9_i64_f64 ((double)(ProcUse_Apply (ProcUse_Twice, (- 1.0), err)), err);
+    if (err->exc) goto L_ret;
+    v = m9v;
+  }
   ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s9, 17 }), v, err);
   if (err->exc) goto L_ret;
 L_ret: ;

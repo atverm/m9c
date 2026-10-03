@@ -1,0 +1,27 @@
+(* EXPECT-ERROR: module Words is named and not imported *)
+(* A dependency nobody wrote down.  Observed 2026-10-02: the test of
+   Frame called Text.Keep and had no IMPORT Text.  It compiled, and it
+   ran -- the test library it did import, Check, imports Text, so the
+   checker had Text loaded and every lookup found it.  The program's
+   IMPORT lines said it depended on five modules; it depended on six,
+   and the sixth would have gone the day Check stopped needing Text,
+   as a failure in a file nobody had touched.  The report had the
+   grammar of IMPORT and no rule; 5 sites in 386 files leaned on the
+   gap, one of them an example in the tutorial.
+
+   Here `Report' stands for the test, `Tally' for Check and `Words'
+   for Text. *)
+DEFINITION MODULE Words ;
+PROCEDURE Count (RO s: STR) : I64 ;
+END Words.
+DEFINITION MODULE Tally ;
+IMPORT Words ;
+PROCEDURE Add (RO s: STR) : I64 ;
+END Tally.
+MODULE Report ;
+IMPORT Tally ;
+VAR n : I64 ;
+BEGIN
+  n := Tally.Add ('one two') ;
+  n := n + Words.Count ('three')      (* through Tally's import, not ours *)
+END Report.

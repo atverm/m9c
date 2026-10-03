@@ -3,6 +3,7 @@
 #include "Math.h"
 #include "Bits.h"
 #include "Faults.h"
+#include "Sort.h"
 
 const m9_exc Stats_TooFew = { "TooFew" };
 
@@ -54,6 +55,55 @@ extern int64_t m9_bits_shl (int64_t, int64_t);
 extern int64_t m9_bits_shr (int64_t, int64_t);
 extern int64_t m9_bits_count (int64_t);
 
+typedef struct Stats_Comp Stats_Comp;
+struct Stats_Comp {
+  double sum;
+  double comp;
+};
+
+typedef struct Stats_Win Stats_Win;
+struct Stats_Win {
+  Stats_Comp s;
+  int64_t finite;
+  int64_t pinf;
+  int64_t ninf;
+};
+
+static const m9_arr_6_double PA_k = { {
+  (-39.69683028665376),
+  (220.9460984245205),
+  (-275.9285104469687),
+  (138.3577518672690),
+  (-30.66479806614716),
+  (2.506628277459239)
+} };
+static m9_arr_6_double * const PA = (m9_arr_6_double *) &PA_k;
+static const m9_arr_6_double PB_k = { {
+  (-54.47609879822406),
+  (161.5858368580409),
+  (-155.6989798598866),
+  (66.80131188771972),
+  (-13.28068155288572),
+  (1.0)
+} };
+static m9_arr_6_double * const PB = (m9_arr_6_double *) &PB_k;
+static const m9_arr_6_double PC_k = { {
+  (-0.007784894002430293),
+  (-0.3223964580411365),
+  (-2.400758277161838),
+  (-2.549732539343734),
+  (4.374664141464968),
+  (2.938163982698783)
+} };
+static m9_arr_6_double * const PC = (m9_arr_6_double *) &PC_k;
+static const m9_arr_5_double PD_k = { {
+  (0.007784695709041462),
+  (0.3224671290700398),
+  (2.445134137142996),
+  (3.754408661907416),
+  (1.0)
+} };
+static m9_arr_5_double * const PD = (m9_arr_5_double *) &PD_k;
 static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[27] = { 112u, 101u, 114u, 99u, 101u, 110u, 116u, 105u, 108u, 101u, 32u, 111u, 117u, 116u, 115u, 105u, 100u, 101u, 32u, 91u, 48u, 44u, 32u, 49u, 48u, 48u, 93u };
@@ -63,20 +113,96 @@ static const uint32_t m9s3[36] = { 114u, 97u, 110u, 103u, 101u, 32u, 119u, 105u,
 static const uint32_t m9s4[36] = { 114u, 97u, 110u, 103u, 101u, 32u, 119u, 105u, 100u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 116u, 104u, 101u, 32u, 103u, 101u, 110u, 101u, 114u, 97u, 116u, 111u, 114u, 32u, 100u, 114u, 97u, 119u, 115u };
 static const uint32_t m9s5[23] = { 108u, 97u, 109u, 98u, 100u, 97u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
 static const uint32_t m9s6[22] = { 115u, 105u, 103u, 109u, 97u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
+static const uint32_t m9s7[41] = { 120u, 112u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 114u, 105u, 99u, 116u, 108u, 121u, 32u, 97u, 115u, 99u, 101u, 110u, 100u, 105u, 110u, 103u, 44u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 78u, 97u, 78u };
+static const uint32_t m9s8[41] = { 120u, 112u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 115u, 116u, 114u, 105u, 99u, 116u, 108u, 121u, 32u, 97u, 115u, 99u, 101u, 110u, 100u, 105u, 110u, 103u, 44u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 78u, 97u, 78u };
+static const uint32_t m9s9[46] = { 97u, 32u, 115u, 97u, 109u, 112u, 108u, 101u, 32u, 116u, 104u, 97u, 116u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 118u, 97u, 114u, 121u, 32u, 104u, 97u, 115u, 32u, 110u, 111u, 32u, 99u, 111u, 114u, 114u, 101u, 108u, 97u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s10[46] = { 97u, 32u, 99u, 111u, 108u, 117u, 109u, 110u, 32u, 116u, 104u, 97u, 116u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 118u, 97u, 114u, 121u, 32u, 104u, 97u, 115u, 32u, 110u, 111u, 32u, 99u, 111u, 114u, 114u, 101u, 108u, 97u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s11[59] = { 97u, 32u, 102u, 105u, 101u, 108u, 100u, 32u, 116u, 104u, 97u, 116u, 32u, 100u, 111u, 101u, 115u, 32u, 110u, 111u, 116u, 32u, 118u, 97u, 114u, 121u, 32u, 104u, 97u, 115u, 32u, 110u, 111u, 32u, 112u, 108u, 97u, 99u, 101u, 32u, 111u, 110u, 32u, 97u, 32u, 84u, 97u, 121u, 108u, 111u, 114u, 32u, 100u, 105u, 97u, 103u, 114u, 97u, 109u };
+static const uint32_t m9s12[32] = { 97u, 32u, 112u, 101u, 114u, 109u, 117u, 116u, 97u, 116u, 105u, 111u, 110u, 32u, 111u, 102u, 32u, 102u, 101u, 119u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 110u, 111u, 110u, 101u };
+static const uint32_t m9s13[40] = { 97u, 32u, 99u, 104u, 111u, 105u, 99u, 101u, 32u, 111u, 102u, 32u, 107u, 32u, 111u, 117u, 116u, 32u, 111u, 102u, 32u, 110u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 48u, 32u, 60u, 61u, 32u, 107u, 32u, 60u, 61u, 32u, 110u };
+static const uint32_t m9s14[32] = { 97u, 32u, 104u, 105u, 115u, 116u, 111u, 103u, 114u, 97u, 109u, 32u, 104u, 97u, 115u, 32u, 111u, 110u, 101u, 32u, 98u, 105u, 110u, 32u, 97u, 116u, 32u, 108u, 101u, 97u, 115u, 116u };
+static const uint32_t m9s15[48] = { 116u, 104u, 101u, 32u, 114u, 97u, 110u, 103u, 101u, 32u, 111u, 102u, 32u, 97u, 32u, 104u, 105u, 115u, 116u, 111u, 103u, 114u, 97u, 109u, 32u, 105u, 115u, 32u, 108u, 111u, 32u, 60u, 32u, 104u, 105u, 44u, 32u, 98u, 111u, 116u, 104u, 32u, 102u, 105u, 110u, 105u, 116u, 101u };
+static const uint32_t m9s16[33] = { 97u, 32u, 119u, 105u, 110u, 100u, 111u, 119u, 32u, 104u, 111u, 108u, 100u, 115u, 32u, 111u, 110u, 101u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 97u, 116u, 32u, 108u, 101u, 97u, 115u, 116u };
+static const uint32_t m9s17[35] = { 100u, 101u, 103u, 114u, 101u, 101u, 115u, 32u, 111u, 102u, 32u, 102u, 114u, 101u, 101u, 100u, 111u, 109u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 115u, 105u, 116u, 105u, 118u, 101u };
+static const uint32_t m9s18[26] = { 97u, 32u, 112u, 114u, 111u, 98u, 97u, 98u, 105u, 108u, 105u, 116u, 121u, 32u, 105u, 115u, 32u, 105u, 110u, 32u, 91u, 48u, 44u, 32u, 49u, 93u };
 
-static void Stats_Need (m9_sl_F64 xs, int64_t n, m9_state *err);
+static int64_t Stats_Need (m9_sl_F64 xs, int64_t need, m9_state *err);
+static double Stats_NaN (m9_state *err);
+static double Stats_Total (m9_sl_F64 xs, m9_state *err);
 static double Stats_SumSq (m9_sl_F64 xs, double m, m9_state *err);
 static void Stats_Sort (m9_sl_F64 *a, m9_state *err);
 static m9_sl_F64 Stats_Sorted (m9_sl_F64 xs, m9_state *err);
 static double Stats_LnGamma (double x, m9_state *err);
 static double Stats_BetaCf (double a, double b, double x, m9_state *err);
-static double Stats_BetaI (double a, double b, double x, m9_state *err);
+static double Stats_Ln1m (double y, m9_state *err);
+static double Stats_LnOf (double v, double other, m9_state *err);
+static double Stats_BetaXY (double a, double b, double x, double y, m9_state *err);
 static double Stats_TwoSided (double t, double dof, m9_state *err);
+static bool Stats_Both (double x, double y, m9_state *err);
+static int64_t Stats_NPairs (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err);
+static double Stats_PairMean (m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, m9_state *err);
 static int64_t Stats_Rotl (int64_t x, int64_t k, m9_state *err);
 static int64_t Stats_SplitMix (int64_t *x, m9_state *err);
 static int64_t Stats_Next (Stats_Stream *st, m9_state *err);
 static int64_t Stats_Top53 (int64_t x, m9_state *err);
+static void Stats_BinsOk (int64_t bins, double lo, double hi, m9_state *err);
+static double Stats_Edge (int64_t k, int64_t bins, double lo, double hi, m9_state *err);
+static int64_t Stats_Bin (double x, int64_t bins, double lo, double hi, m9_state *err);
+static double Stats_Inf (m9_state *err);
+static void Stats_Plus (Stats_Comp *s, double v, m9_state *err);
+static void Stats_Shift (Stats_Win *w, double v, int64_t by, m9_state *err);
+static double Stats_SumNow (Stats_Win w, m9_state *err);
+static void Stats_RollOk (m9_sl_F64 xs, int64_t window, m9_state *err);
+static m9_sl_F64 Stats_Slide (m9_sl_F64 xs, int64_t window, bool mean, m9_state *err);
+static m9_sl_F64 Stats_Extreme (m9_sl_F64 xs, int64_t window, bool wantMax, m9_state *err);
+static double Stats_Lerp (double x, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err);
+static void Stats_PairSums (m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, double *sxx, double *syy, double *sxy, m9_state *err);
+static double Stats_Clip1 (double r, m9_state *err);
+static void Stats_ColSums (m9_gd2_double g, int64_t a, int64_t b, int64_t *n, double *sxx, double *syy, double *sxy, m9_state *err);
+static double Stats_Horner (m9_sl_F64 c, double x, m9_state *err);
+static void Stats_DofOk (double dof, m9_state *err);
+static void Stats_ProbOk (double p, m9_state *err);
+static double Stats_ExpDown (double x, m9_state *err);
+static double Stats_GammaSeries (double a, double x, m9_state *err);
+static double Stats_GammaFraction (double a, double x, m9_state *err);
+static void Stats_GammaPQ (double a, double x, double *p, double *q, m9_state *err);
+static void Stats_Eval (int64_t kind, double x, double dof, double target, double *f, double *slope, m9_state *err);
+static double Stats_Root (int64_t kind, double dof, double target, double lo, double hi, double x0, bool rising, m9_state *err);
+static int64_t Stats_Below (Stats_Stream *st, int64_t m, m9_state *err);
 
+
+int64_t Stats_Count (m9_sl_F64 xs, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
+  n = INT64_C(0);
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
+    }
+  } }
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
 
 double Stats_Mean (m9_sl_F64 xs, m9_state *err)
 {
@@ -85,21 +211,14 @@ double Stats_Mean (m9_sl_F64 xs, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  double acc = 0; (void) acc;
-  int64_t i = 0; (void) i;
-  Stats_Need (xs, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  acc = 0.0;
-  { int64_t m9t1to;
-  i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    acc = (acc + (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
+  int64_t n = 0; (void) n;
+  { __typeof__(n) m9v = Stats_Need (xs, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  } }
+    n = m9v;
+  }
   err->res = m9res;
-  m9ret = (acc / (double)((xs).len));
+  m9ret = (Stats_Total (xs, err) / (double)(n));
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -114,10 +233,13 @@ double Stats_Var (m9_sl_F64 xs, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  Stats_Need (xs, INT64_C(2), err);
-  if (err->exc) goto L_ret;
+  int64_t n = 0; (void) n;
+  { __typeof__(n) m9v = Stats_Need (xs, INT64_C(2), err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   err->res = m9res;
-  m9ret = (Stats_SumSq (xs, Stats_Mean (xs, err), err) / (double)(m9_sub_i64 ((xs).len, INT64_C(1), err)));
+  m9ret = (Stats_SumSq (xs, Stats_Mean (xs, err), err) / (double)(m9_sub_i64 (n, INT64_C(1), err)));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -133,10 +255,13 @@ double Stats_VarP (m9_sl_F64 xs, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  Stats_Need (xs, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  int64_t n = 0; (void) n;
+  { __typeof__(n) m9v = Stats_Need (xs, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   err->res = m9res;
-  m9ret = (Stats_SumSq (xs, Stats_Mean (xs, err), err) / (double)((xs).len));
+  m9ret = (Stats_SumSq (xs, Stats_Mean (xs, err), err) / (double)(n));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -186,14 +311,16 @@ double Stats_Median (m9_sl_F64 xs, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  m9_pool scratch = {0}; (void) scratch;
   m9_sl_F64 a = {0}; (void) a;
   int64_t n = 0; (void) n;
-  Stats_Need (xs, INT64_C(1), err);
-  if (err->exc) goto L_ret;
-  a = Stats_Sorted (xs, err);
-  if (err->exc) goto L_ret;
-  n = (xs).len;
+  { __typeof__(n) m9v = Stats_Need (xs, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
+  { __typeof__(a) m9v = Stats_Sorted (xs, err);
+    if (err->exc) goto L_ret;
+    a = m9v;
+  }
   bool m9t1 = (m9_mod_i64 (n, INT64_C(2), err) == INT64_C(1));
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -209,7 +336,6 @@ double Stats_Median (m9_sl_F64 xs, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
-  m9_pool_free (&scratch);
   return m9ret;
 }
 
@@ -220,31 +346,41 @@ double Stats_Percentile (m9_sl_F64 xs, double p, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   double m9ret = 0;
-  m9_pool scratch = {0}; (void) scratch;
   m9_sl_F64 a = {0}; (void) a;
   int64_t lo = 0; (void) lo;
+  int64_t n = 0; (void) n;
   double h = 0; (void) h;
   double frac = 0; (void) frac;
-  Stats_Need (xs, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = Stats_Need (xs, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   if ((!(((p >= 0.0) && (p <= 100.0))))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 27 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 27 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  a = Stats_Sorted (xs, err);
-  if (err->exc) goto L_ret;
-  h = (((double)(m9_sub_i64 ((xs).len, INT64_C(1), err)) * p) / 100.0);
-  if (err->exc) goto L_ret;
-  lo = m9_i64_f64 ((double)(Math_Floor (h, err)), err);
-  if (err->exc) goto L_ret;
-  frac = (h - Math_Floor (h, err));
-  if (err->exc) goto L_ret;
-  bool m9t2 = (lo >= m9_sub_i64 ((xs).len, INT64_C(1), err));
+  { __typeof__(a) m9v = Stats_Sorted (xs, err);
+    if (err->exc) goto L_ret;
+    a = m9v;
+  }
+  { __typeof__(h) m9v = (((double)(m9_sub_i64 (n, INT64_C(1), err)) * p) / 100.0);
+    if (err->exc) goto L_ret;
+    h = m9v;
+  }
+  { __typeof__(lo) m9v = m9_i64_f64 ((double)(Math_Floor (h, err)), err);
+    if (err->exc) goto L_ret;
+    lo = m9v;
+  }
+  { __typeof__(frac) m9v = (h - Math_Floor (h, err));
+    if (err->exc) goto L_ret;
+    frac = m9v;
+  }
+  bool m9t2 = (lo >= m9_sub_i64 (n, INT64_C(1), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    m9ret = (*(double *) m9_at (a.p, m9_sub_i64 ((xs).len, INT64_C(1), err), a.len, sizeof (double), err));
+    m9ret = (*(double *) m9_at (a.p, m9_sub_i64 (n, INT64_C(1), err), a.len, sizeof (double), err));
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -255,7 +391,6 @@ double Stats_Percentile (m9_sl_F64 xs, double p, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
-  m9_pool_free (&scratch);
   return m9ret;
 }
 
@@ -267,12 +402,18 @@ Stats_Fit Stats_NormFit (m9_sl_F64 xs, m9_state *err)
   err->res = &m9frame;
   Stats_Fit m9ret = {0};
   Stats_Fit f = {0}; (void) f;
-  Stats_Need (xs, INT64_C(2), err);
-  if (err->exc) goto L_ret;
-  f.mu = Stats_Mean (xs, err);
-  if (err->exc) goto L_ret;
-  f.sigma = Stats_StdP (xs, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(f.n) m9v = Stats_Need (xs, INT64_C(2), err);
+    if (err->exc) goto L_ret;
+    f.n = m9v;
+  }
+  { __typeof__(f.mu) m9v = Stats_Mean (xs, err);
+    if (err->exc) goto L_ret;
+    f.mu = m9v;
+  }
+  { __typeof__(f.sigma) m9v = Stats_StdP (xs, err);
+    if (err->exc) goto L_ret;
+    f.sigma = m9v;
+  }
   err->res = m9res;
   m9ret = f;
   goto L_ret;
@@ -299,20 +440,32 @@ Stats_Reg Stats_LinReg (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
   double dy = 0; (void) dy;
   double df = 0; (void) df;
   int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
   if (((xs).len != (ys).len)) {
     err->i[0] = (ys).len;
     err->i[1] = (xs).len;
     m9_raise (err, &Stats_TooFew);
     goto L_ret;
   }
-  Stats_Need (xs, INT64_C(3), err);
-  if (err->exc) goto L_ret;
-  Stats_Need (ys, INT64_C(3), err);
-  if (err->exc) goto L_ret;
-  mx = Stats_Mean (xs, err);
-  if (err->exc) goto L_ret;
-  my = Stats_Mean (ys, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(n) m9v = Stats_NPairs (xs, ys, err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
+  if ((n < INT64_C(3))) {
+    err->i[0] = n;
+    err->i[1] = INT64_C(3);
+    m9_raise (err, &Stats_TooFew);
+    goto L_ret;
+  }
+  g.n = n;
+  { __typeof__(mx) m9v = Stats_PairMean (xs, ys, n, err);
+    if (err->exc) goto L_ret;
+    mx = m9v;
+  }
+  { __typeof__(my) m9v = Stats_PairMean (ys, xs, n, err);
+    if (err->exc) goto L_ret;
+    my = m9v;
+  }
   sxx = 0.0;
   syy = 0.0;
   sxy = 0.0;
@@ -321,13 +474,21 @@ Stats_Reg Stats_LinReg (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
   m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    dx = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) - mx);
+    bool m9t2 = Stats_Both ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)), (*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err)), err);
     if (err->exc) goto L_ret;
-    dy = ((*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err)) - my);
-    if (err->exc) goto L_ret;
-    sxx = (sxx + (dx * dx));
-    syy = (syy + (dy * dy));
-    sxy = (sxy + (dx * dy));
+    if (m9t2) {
+      { __typeof__(dx) m9v = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) - mx);
+        if (err->exc) goto L_ret;
+        dx = m9v;
+      }
+      { __typeof__(dy) m9v = ((*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err)) - my);
+        if (err->exc) goto L_ret;
+        dy = m9v;
+      }
+      sxx = (sxx + (dx * dx));
+      syy = (syy + (dy * dy));
+      sxy = (sxy + (dx * dy));
+    }
   } }
   if ((sxx == 0.0)) {
     m9_raise (err, &m9_exc_ValueRange);
@@ -338,13 +499,19 @@ Stats_Reg Stats_LinReg (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
   if ((syy == 0.0)) {
     g.r = 0.0;
   } else {
-    g.r = (sxy / Math_Sqrt ((sxx * syy), err));
-    if (err->exc) goto L_ret;
+    { __typeof__(g.r) m9v = (sxy / Math_Sqrt ((sxx * syy), err));
+      if (err->exc) goto L_ret;
+      g.r = m9v;
+    }
   }
-  df = (double)(m9_sub_i64 ((xs).len, INT64_C(2), err));
-  if (err->exc) goto L_ret;
-  g.stderr = Math_Sqrt (((((syy - (g.slope * sxy))) / df) / sxx), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(df) m9v = (double)(m9_sub_i64 (n, INT64_C(2), err));
+    if (err->exc) goto L_ret;
+    df = m9v;
+  }
+  { __typeof__(g.stderr) m9v = Math_Sqrt (((((syy - (g.slope * sxy))) / df) / sxx), err);
+    if (err->exc) goto L_ret;
+    g.stderr = m9v;
+  }
   if ((g.stderr == 0.0)) {
     if ((g.slope == 0.0)) {
       g.p = 1.0;
@@ -352,8 +519,10 @@ Stats_Reg Stats_LinReg (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
       g.p = 0.0;
     }
   } else {
-    g.p = Stats_TwoSided ((g.slope / g.stderr), df, err);
-    if (err->exc) goto L_ret;
+    { __typeof__(g.p) m9v = Stats_TwoSided ((g.slope / g.stderr), df, err);
+      if (err->exc) goto L_ret;
+      g.p = m9v;
+    }
   }
   err->res = m9res;
   m9ret = g;
@@ -373,20 +542,30 @@ Stats_Test Stats_TTest1 (m9_sl_F64 xs, double mu, m9_state *err)
   Stats_Test m9ret = {0};
   Stats_Test w = {0}; (void) w;
   double se = 0; (void) se;
-  Stats_Need (xs, INT64_C(2), err);
-  if (err->exc) goto L_ret;
-  w.dof = (double)(m9_sub_i64 ((xs).len, INT64_C(1), err));
-  if (err->exc) goto L_ret;
-  se = (Stats_Std (xs, err) / Math_Sqrt ((double)((xs).len), err));
-  if (err->exc) goto L_ret;
+  { __typeof__(w.n) m9v = Stats_Need (xs, INT64_C(2), err);
+    if (err->exc) goto L_ret;
+    w.n = m9v;
+  }
+  { __typeof__(w.dof) m9v = (double)(m9_sub_i64 (w.n, INT64_C(1), err));
+    if (err->exc) goto L_ret;
+    w.dof = m9v;
+  }
+  { __typeof__(se) m9v = (Stats_Std (xs, err) / Math_Sqrt ((double)(w.n), err));
+    if (err->exc) goto L_ret;
+    se = m9v;
+  }
   if ((se == 0.0)) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  w.t = (((Stats_Mean (xs, err) - mu)) / se);
-  if (err->exc) goto L_ret;
-  w.p = Stats_TwoSided (w.t, w.dof, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(w.t) m9v = (((Stats_Mean (xs, err) - mu)) / se);
+    if (err->exc) goto L_ret;
+    w.t = m9v;
+  }
+  { __typeof__(w.p) m9v = Stats_TwoSided (w.t, w.dof, err);
+    if (err->exc) goto L_ret;
+    w.p = m9v;
+  }
   err->res = m9res;
   m9ret = w;
   goto L_ret;
@@ -409,27 +588,47 @@ Stats_Test Stats_TTest2 (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
   double ax = 0; (void) ax;
   double ay = 0; (void) ay;
   double s = 0; (void) s;
-  Stats_Need (xs, INT64_C(2), err);
-  if (err->exc) goto L_ret;
-  Stats_Need (ys, INT64_C(2), err);
-  if (err->exc) goto L_ret;
-  vx = Stats_Var (xs, err);
-  if (err->exc) goto L_ret;
-  vy = Stats_Var (ys, err);
-  if (err->exc) goto L_ret;
-  ax = (vx / (double)((xs).len));
-  ay = (vy / (double)((ys).len));
+  int64_t nx = 0; (void) nx;
+  int64_t ny = 0; (void) ny;
+  { __typeof__(nx) m9v = Stats_Need (xs, INT64_C(2), err);
+    if (err->exc) goto L_ret;
+    nx = m9v;
+  }
+  { __typeof__(ny) m9v = Stats_Need (ys, INT64_C(2), err);
+    if (err->exc) goto L_ret;
+    ny = m9v;
+  }
+  { __typeof__(w.n) m9v = m9_add_i64 (nx, ny, err);
+    if (err->exc) goto L_ret;
+    w.n = m9v;
+  }
+  { __typeof__(vx) m9v = Stats_Var (xs, err);
+    if (err->exc) goto L_ret;
+    vx = m9v;
+  }
+  { __typeof__(vy) m9v = Stats_Var (ys, err);
+    if (err->exc) goto L_ret;
+    vy = m9v;
+  }
+  ax = (vx / (double)(nx));
+  ay = (vy / (double)(ny));
   s = (ax + ay);
   if ((s == 0.0)) {
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   }
-  w.t = (((Stats_Mean (xs, err) - Stats_Mean (ys, err))) / Math_Sqrt (s, err));
-  if (err->exc) goto L_ret;
-  w.dof = ((s * s) / ((((ax * ax) / (double)(m9_sub_i64 ((xs).len, INT64_C(1), err))) + ((ay * ay) / (double)(m9_sub_i64 ((ys).len, INT64_C(1), err))))));
-  if (err->exc) goto L_ret;
-  w.p = Stats_TwoSided (w.t, w.dof, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(w.t) m9v = (((Stats_Mean (xs, err) - Stats_Mean (ys, err))) / Math_Sqrt (s, err));
+    if (err->exc) goto L_ret;
+    w.t = m9v;
+  }
+  { __typeof__(w.dof) m9v = ((s * s) / ((((ax * ax) / (double)(m9_sub_i64 (nx, INT64_C(1), err))) + ((ay * ay) / (double)(m9_sub_i64 (ny, INT64_C(1), err))))));
+    if (err->exc) goto L_ret;
+    w.dof = m9v;
+  }
+  { __typeof__(w.p) m9v = Stats_TwoSided (w.t, w.dof, err);
+    if (err->exc) goto L_ret;
+    w.p = m9v;
+  }
   err->res = m9res;
   m9ret = w;
   goto L_ret;
@@ -469,8 +668,22 @@ double Stats_TTail (double t, double dof, m9_state *err)
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  p = (0.5 * Stats_BetaI ((dof / 2.0), 0.5, (dof / ((dof + (t * t)))), err));
+  bool m9t2 = (!Math_IsFinite (t, err));
   if (err->exc) goto L_ret;
+  if (m9t2) {
+    if ((t > 0.0)) {
+      err->res = m9res;
+      m9ret = 0.0;
+      goto L_ret;
+    }
+    err->res = m9res;
+    m9ret = 1.0;
+    goto L_ret;
+  }
+  { __typeof__(p) m9v = (0.5 * Stats_BetaXY ((dof / 2.0), 0.5, (dof / ((dof + (t * t)))), ((t * t) / ((dof + (t * t)))), err));
+    if (err->exc) goto L_ret;
+    p = m9v;
+  }
   if ((t < 0.0)) {
     err->res = m9res;
     m9ret = (1.0 - p);
@@ -495,14 +708,22 @@ Stats_Stream Stats_Seed (int64_t s, m9_state *err)
   Stats_Stream st = {0}; (void) st;
   int64_t x = 0; (void) x;
   x = s;
-  st.s0 = Stats_SplitMix (&(x), err);
-  if (err->exc) goto L_ret;
-  st.s1 = Stats_SplitMix (&(x), err);
-  if (err->exc) goto L_ret;
-  st.s2 = Stats_SplitMix (&(x), err);
-  if (err->exc) goto L_ret;
-  st.s3 = Stats_SplitMix (&(x), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(st.s0) m9v = Stats_SplitMix (&(x), err);
+    if (err->exc) goto L_ret;
+    st.s0 = m9v;
+  }
+  { __typeof__(st.s1) m9v = Stats_SplitMix (&(x), err);
+    if (err->exc) goto L_ret;
+    st.s1 = m9v;
+  }
+  { __typeof__(st.s2) m9v = Stats_SplitMix (&(x), err);
+    if (err->exc) goto L_ret;
+    st.s2 = m9v;
+  }
+  { __typeof__(st.s3) m9v = Stats_SplitMix (&(x), err);
+    if (err->exc) goto L_ret;
+    st.s3 = m9v;
+  }
   st.have = false;
   st.spare = 0.0;
   err->res = m9res;
@@ -553,21 +774,29 @@ int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_state *err)
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  m = m9_add_i64 (m9_sub_i64 (hi, lo, err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = m9_add_i64 (m9_sub_i64 (hi, lo, err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    m = m9v;
+  }
   if ((m > Stats_TwoP53i)) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 36 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 36 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  limit = m9_mul_i64 ((m9_div_i64 (Stats_TwoP53i, m, err)), m, err);
-  if (err->exc) goto L_ret;
-  k = Stats_Top53 (Stats_Next (st, err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(limit) m9v = m9_mul_i64 ((m9_div_i64 (Stats_TwoP53i, m, err)), m, err);
+    if (err->exc) goto L_ret;
+    limit = m9v;
+  }
+  { __typeof__(k) m9v = Stats_Top53 (Stats_Next (st, err), err);
+    if (err->exc) goto L_ret;
+    k = m9v;
+  }
   for (;;) {
     if (!((k >= limit))) break;
-    k = Stats_Top53 (Stats_Next (st, err), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(k) m9v = Stats_Top53 (Stats_Next (st, err), err);
+      if (err->exc) goto L_ret;
+      k = m9v;
+    }
   }
   err->res = m9res;
   m9ret = m9_add_i64 (lo, m9_mod_i64 (k, m, err), err);
@@ -601,14 +830,20 @@ double Stats_Normal (Stats_Stream *st, m9_state *err)
   v = 0.0;
   for (;;) {
     if (!(((s >= 1.0) || (s == 0.0)))) break;
-    u = ((2.0 * Stats_Uniform (st, err)) - 1.0);
-    if (err->exc) goto L_ret;
-    v = ((2.0 * Stats_Uniform (st, err)) - 1.0);
-    if (err->exc) goto L_ret;
+    { __typeof__(u) m9v = ((2.0 * Stats_Uniform (st, err)) - 1.0);
+      if (err->exc) goto L_ret;
+      u = m9v;
+    }
+    { __typeof__(v) m9v = ((2.0 * Stats_Uniform (st, err)) - 1.0);
+      if (err->exc) goto L_ret;
+      v = m9v;
+    }
     s = ((u * u) + (v * v));
   }
-  f = Math_Sqrt ((- ((2.0 * Math_Log (s, err)) / s)), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(f) m9v = Math_Sqrt ((- ((2.0 * Math_Log (s, err)) / s)), err);
+    if (err->exc) goto L_ret;
+    f = m9v;
+  }
   (*st).spare = (v * f);
   (*st).have = true;
   err->res = m9res;
@@ -633,8 +868,10 @@ double Stats_Exponential (Stats_Stream *st, double lambda, m9_state *err)
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  u = Stats_Uniform (st, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(u) m9v = Stats_Uniform (st, err);
+    if (err->exc) goto L_ret;
+    u = m9v;
+  }
   err->res = m9res;
   m9ret = (- (Math_Log ((1.0 - u), err) / lambda));
   if (err->exc) goto L_ret;
@@ -667,35 +904,1266 @@ L_ret: ;
   return m9ret;
 }
 
-static void Stats_Need (m9_sl_F64 xs, int64_t n, m9_state *err)
+m9_sl_F64 Stats_BinEdges (int64_t bins, double lo, double hi, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_F64 m9ret = {0};
+  m9_sl_F64 out = {0}; (void) out;
+  int64_t k = 0; (void) k;
+  Stats_BinsOk (bins, lo, hi, err);
+  if (err->exc) goto L_ret;
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, m9_add_i64 (bins, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  { int64_t m9t1to;
+  k = INT64_C(0);
+  m9t1to = bins;
+  for (; k <= m9t1to; k += 1) {
+    { __typeof__((*(double *) m9_at (out.p, k, out.len, sizeof (double), err))) m9v = Stats_Edge (k, bins, lo, hi, err);
+      if (err->exc) goto L_ret;
+      (*(double *) m9_at (out.p, k, out.len, sizeof (double), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Stats_BinOf (double x, int64_t bins, double lo, double hi, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
+  int64_t m9ret = 0;
+  Stats_BinsOk (bins, lo, hi, err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = Stats_Bin (x, bins, lo, hi, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_I64 Stats_Histogram (m9_sl_F64 xs, int64_t bins, double lo, double hi, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_I64 m9ret = {0};
+  m9_sl_I64 out = {0}; (void) out;
   int64_t i = 0; (void) i;
-  if (((xs).len < n)) {
-    err->i[0] = (xs).len;
-    err->i[1] = n;
-    m9_raise (err, &Stats_TooFew);
-    goto L_ret;
+  int64_t k = 0; (void) k;
+  Stats_BinsOk (bins, lo, hi, err);
+  if (err->exc) goto L_ret;
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, bins, err);
+    if (err->exc) goto L_ret;
+    out = m9v;
   }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    bool m9t2 = (!(((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)))));
+    { __typeof__(k) m9v = Stats_Bin ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)), bins, lo, hi, err);
+      if (err->exc) goto L_ret;
+      k = m9v;
+    }
+    if ((k >= INT64_C(0))) {
+      { __typeof__((*(int64_t *) m9_at (out.p, k, out.len, sizeof (int64_t), err))) m9v = m9_add_i64 ((*(int64_t *) m9_at (out.p, k, out.len, sizeof (int64_t), err)), INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        (*(int64_t *) m9_at (out.p, k, out.len, sizeof (int64_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+    }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_F64 Stats_RollingSum (m9_sl_F64 xs, int64_t window, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_F64 m9ret = {0};
+  err->res = m9res;
+  m9ret = Stats_Slide (xs, window, false, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_F64 Stats_RollingMean (m9_sl_F64 xs, int64_t window, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_F64 m9ret = {0};
+  err->res = m9res;
+  m9ret = Stats_Slide (xs, window, true, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_F64 Stats_RollingMin (m9_sl_F64 xs, int64_t window, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_F64 m9ret = {0};
+  err->res = m9res;
+  m9ret = Stats_Extreme (xs, window, false, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_F64 Stats_RollingMax (m9_sl_F64 xs, int64_t window, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_F64 m9ret = {0};
+  err->res = m9res;
+  m9ret = Stats_Extreme (xs, window, true, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_I64 Stats_RollingCount (m9_sl_F64 xs, int64_t window, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_I64 m9ret = {0};
+  m9_sl_I64 out = {0}; (void) out;
+  int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
+  Stats_RollOk (xs, window, err);
+  if (err->exc) goto L_ret;
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, m9_add_i64 (m9_sub_i64 ((xs).len, window, err), INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  n = INT64_C(0);
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      m9_raise (err, &m9_exc_ValueRange);
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
+    }
+    if ((i >= window)) {
+      bool m9t3 = ((*(double *) m9_at (xs.p, m9_sub_i64 (i, window, err), xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, m9_sub_i64 (i, window, err), xs.len, sizeof (double), err)));
+      if (err->exc) goto L_ret;
+      if (m9t3) {
+        { __typeof__(n) m9v = m9_sub_i64 (n, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
+      }
+    }
+    bool m9t4 = (i >= m9_sub_i64 (window, INT64_C(1), err));
+    if (err->exc) goto L_ret;
+    if (m9t4) {
+      (*(int64_t *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (i, window, err), INT64_C(1), err), out.len, sizeof (int64_t), err)) = n;
+      if (err->exc) goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_F64 Stats_Interp (m9_sl_F64 xs, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_F64 m9ret = {0};
+  m9_sl_F64 out = {0}; (void) out;
+  int64_t i = 0; (void) i;
+  if (((xp).len < INT64_C(1))) {
+    err->i[0] = (xp).len;
+    err->i[1] = INT64_C(1);
+    m9_raise (err, &Stats_TooFew);
+    goto L_ret;
+  }
+  if (((fp).len != (xp).len)) {
+    err->i[0] = (fp).len;
+    err->i[1] = (xp).len;
+    m9_raise (err, &Faults_SizeError);
+    goto L_ret;
+  }
+  bool m9t1 = (!(((*(double *) m9_at (xp.p, INT64_C(0), xp.len, sizeof (double), err)) == (*(double *) m9_at (xp.p, INT64_C(0), xp.len, sizeof (double), err)))));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 41 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 41 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+  { int64_t m9t3to;
+  i = INT64_C(1);
+  m9t3to = m9_sub_i64 ((xp).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t3to; i += 1) {
+    bool m9t4 = (!(((*(double *) m9_at (xp.p, m9_sub_i64 (i, INT64_C(1), err), xp.len, sizeof (double), err)) < (*(double *) m9_at (xp.p, i, xp.len, sizeof (double), err)))));
+    if (err->exc) goto L_ret;
+    if (m9t4) {
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s8, 41 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s8, 41 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+      m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
   } }
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, (xs).len, err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  { int64_t m9t6to;
+  i = INT64_C(0);
+  m9t6to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t6to; i += 1) {
+    bool m9t7 = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
+    if (err->exc) goto L_ret;
+    if (m9t7) {
+      { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Stats_Lerp ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)), xp, fp, err);
+        if (err->exc) goto L_ret;
+        (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+    } else {
+      { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err));
+        if (err->exc) goto L_ret;
+        (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+    }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_Interp1 (double x, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  if (((xp).len < INT64_C(1))) {
+    err->i[0] = (xp).len;
+    err->i[1] = INT64_C(1);
+    m9_raise (err, &Stats_TooFew);
+    goto L_ret;
+  }
+  if (((fp).len != (xp).len)) {
+    err->i[0] = (fp).len;
+    err->i[1] = (xp).len;
+    m9_raise (err, &Faults_SizeError);
+    goto L_ret;
+  }
+  if ((!((x == x)))) {
+    err->res = m9res;
+    m9ret = x;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Stats_Lerp (x, xp, fp, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_Cov (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  int64_t n = 0; (void) n;
+  double sxx = 0; (void) sxx;
+  double syy = 0; (void) syy;
+  double sxy = 0; (void) sxy;
+  { __typeof__(n) m9v = Stats_Pairs (xs, ys, err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
+  if ((n < INT64_C(2))) {
+    err->i[0] = n;
+    err->i[1] = INT64_C(2);
+    m9_raise (err, &Stats_TooFew);
+    goto L_ret;
+  }
+  Stats_PairSums (xs, ys, n, &(sxx), &(syy), &(sxy), err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = (sxy / (double)(m9_sub_i64 (n, INT64_C(1), err)));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_Corr (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  int64_t n = 0; (void) n;
+  double sxx = 0; (void) sxx;
+  double syy = 0; (void) syy;
+  double sxy = 0; (void) sxy;
+  { __typeof__(n) m9v = Stats_Pairs (xs, ys, err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
+  if ((n < INT64_C(2))) {
+    err->i[0] = n;
+    err->i[1] = INT64_C(2);
+    m9_raise (err, &Stats_TooFew);
+    goto L_ret;
+  }
+  Stats_PairSums (xs, ys, n, &(sxx), &(syy), &(sxy), err);
+  if (err->exc) goto L_ret;
+  if (((sxx == 0.0) || (syy == 0.0))) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 46 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 46 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Stats_Clip1 (((sxy / Math_Sqrt (sxx, err)) / Math_Sqrt (syy, err)), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+int64_t Stats_Pairs (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  if (((ys).len != (xs).len)) {
+    err->i[0] = (ys).len;
+    err->i[1] = (xs).len;
+    m9_raise (err, &Faults_SizeError);
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Stats_NPairs (xs, ys, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_gd2_double Stats_CovMatrix (m9_gd2_double g, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_gd2_double m9ret = {0};
+  m9_gd2_double out = {0}; (void) out;
+  int64_t k = 0; (void) k;
+  int64_t a = 0; (void) a;
+  int64_t b = 0; (void) b;
+  int64_t n = 0; (void) n;
+  double sxx = 0; (void) sxx;
+  double syy = 0; (void) syy;
+  double sxy = 0; (void) sxy;
+  k = (g).n[INT64_C(1)];
+  { __typeof__(out) m9v = ({ m9_gd2_double m9t1; m9t1.n[0] = k; m9t1.n[1] = k; m9t1.s[1] = 1; m9t1.s[0] = m9t1.s[1] * m9t1.n[1]; m9t1.p = (double *) m9_pool_alloc (err->res, sizeof (double), m9_gcount (m9t1.n, 2, err), err); m9t1; });
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  { int64_t m9t2to;
+  a = INT64_C(0);
+  m9t2to = m9_sub_i64 (k, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; a <= m9t2to; a += 1) {
+    { int64_t m9t3to;
+    b = a;
+    m9t3to = m9_sub_i64 (k, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; b <= m9t3to; b += 1) {
+      Stats_ColSums (g, a, b, &(n), &(sxx), &(syy), &(sxy), err);
+      if (err->exc) goto L_ret;
+      if ((n < INT64_C(2))) {
+        err->i[0] = n;
+        err->i[1] = INT64_C(2);
+        m9_raise (err, &Stats_TooFew);
+        goto L_ret;
+      }
+      { __typeof__((*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], a, b, err))) m9v = (sxy / (double)(m9_sub_i64 (n, INT64_C(1), err)));
+        if (err->exc) goto L_ret;
+        (*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], a, b, err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], b, a, err))) m9v = (*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], a, b, err));
+        if (err->exc) goto L_ret;
+        (*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], b, a, err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_gd2_double Stats_CorrMatrix (m9_gd2_double g, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_gd2_double m9ret = {0};
+  m9_gd2_double out = {0}; (void) out;
+  int64_t k = 0; (void) k;
+  int64_t a = 0; (void) a;
+  int64_t b = 0; (void) b;
+  int64_t n = 0; (void) n;
+  double sxx = 0; (void) sxx;
+  double syy = 0; (void) syy;
+  double sxy = 0; (void) sxy;
+  k = (g).n[INT64_C(1)];
+  { __typeof__(out) m9v = ({ m9_gd2_double m9t1; m9t1.n[0] = k; m9t1.n[1] = k; m9t1.s[1] = 1; m9t1.s[0] = m9t1.s[1] * m9t1.n[1]; m9t1.p = (double *) m9_pool_alloc (err->res, sizeof (double), m9_gcount (m9t1.n, 2, err), err); m9t1; });
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  { int64_t m9t2to;
+  a = INT64_C(0);
+  m9t2to = m9_sub_i64 (k, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; a <= m9t2to; a += 1) {
+    { int64_t m9t3to;
+    b = a;
+    m9t3to = m9_sub_i64 (k, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; b <= m9t3to; b += 1) {
+      Stats_ColSums (g, a, b, &(n), &(sxx), &(syy), &(sxy), err);
+      if (err->exc) goto L_ret;
+      if ((n < INT64_C(2))) {
+        err->i[0] = n;
+        err->i[1] = INT64_C(2);
+        m9_raise (err, &Stats_TooFew);
+        goto L_ret;
+      }
+      if (((sxx == 0.0) || (syy == 0.0))) {
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s10, 46 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s10, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+        m9_raise (err, &Faults_BadArg);
+        goto L_ret;
+      }
+      if ((a == b)) {
+        (*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], a, a, err)) = 1.0;
+        if (err->exc) goto L_ret;
+      } else {
+        { __typeof__((*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], a, b, err))) m9v = Stats_Clip1 (((sxy / Math_Sqrt (sxx, err)) / Math_Sqrt (syy, err)), err);
+          if (err->exc) goto L_ret;
+          (*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], a, b, err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+        { __typeof__((*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], b, a, err))) m9v = (*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], a, b, err));
+          if (err->exc) goto L_ret;
+          (*(double *) m9_gat2 (out.p, sizeof (double), out.n[0], out.n[1], out.s[0], out.s[1], b, a, err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+void Stats_Taylor (m9_sl_F64 model, m9_sl_F64 ref, double *ratio, double *corr, double *rms, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t n = 0; (void) n;
+  int64_t i = 0; (void) i;
+  double smm = 0; (void) smm;
+  double srr = 0; (void) srr;
+  double smr = 0; (void) smr;
+  double mm = 0; (void) mm;
+  double mr = 0; (void) mr;
+  double dd = 0; (void) dd;
+  double e = 0; (void) e;
+  double rm = 0; (void) rm;
+  double rr = 0; (void) rr;
+  { __typeof__(n) m9v = Stats_Pairs (model, ref, err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
+  if ((n < INT64_C(2))) {
+    err->i[0] = n;
+    err->i[1] = INT64_C(2);
+    m9_raise (err, &Stats_TooFew);
+    goto L_ret;
+  }
+  Stats_PairSums (model, ref, n, &(smm), &(srr), &(smr), err);
+  if (err->exc) goto L_ret;
+  if (((smm == 0.0) || (srr == 0.0))) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s11, 59 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s11, 59 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+  { __typeof__(mm) m9v = Stats_PairMean (model, ref, n, err);
+    if (err->exc) goto L_ret;
+    mm = m9v;
+  }
+  { __typeof__(mr) m9v = Stats_PairMean (ref, model, n, err);
+    if (err->exc) goto L_ret;
+    mr = m9v;
+  }
+  dd = 0.0;
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 ((model).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    bool m9t3 = Stats_Both ((*(double *) m9_at (model.p, i, model.len, sizeof (double), err)), (*(double *) m9_at (ref.p, i, ref.len, sizeof (double), err)), err);
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      { __typeof__(e) m9v = ((((*(double *) m9_at (model.p, i, model.len, sizeof (double), err)) - mm)) - (((*(double *) m9_at (ref.p, i, ref.len, sizeof (double), err)) - mr)));
+        if (err->exc) goto L_ret;
+        e = m9v;
+      }
+      dd = (dd + (e * e));
+    }
+  } }
+  { __typeof__(rm) m9v = Math_Sqrt (smm, err);
+    if (err->exc) goto L_ret;
+    rm = m9v;
+  }
+  { __typeof__(rr) m9v = Math_Sqrt (srr, err);
+    if (err->exc) goto L_ret;
+    rr = m9v;
+  }
+  (*ratio) = (rm / rr);
+  { __typeof__((*corr)) m9v = Stats_Clip1 (((smr / rm) / rr), err);
+    if (err->exc) goto L_ret;
+    (*corr) = m9v;
+  }
+  { __typeof__((*rms)) m9v = (Math_Sqrt (dd, err) / rr);
+    if (err->exc) goto L_ret;
+    (*rms) = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
+}
+
+double Stats_NormalPdf (double x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  if ((!((x == x)))) {
+    m9_raise (err, &m9_exc_ValueRange);
+    goto L_ret;
+  }
+  bool m9t1 = (!Math_IsFinite (x, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = 0.0;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = (Stats_ExpDown ((- ((0.5 * x) * x)), err) / Stats_Sqrt2Pi);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_NormalPpf (double p, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double q = 0; (void) q;
+  double r = 0; (void) r;
+  double x = 0; (void) x;
+  double e = 0; (void) e;
+  double u = 0; (void) u;
+  int64_t i = 0; (void) i;
+  Stats_ProbOk (p, err);
+  if (err->exc) goto L_ret;
+  if ((p == 0.0)) {
+    err->res = m9res;
+    m9ret = (- Stats_Inf (err));
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  if ((p == 1.0)) {
+    err->res = m9res;
+    m9ret = Stats_Inf (err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  if ((p < Stats_PLow)) {
+    { __typeof__(q) m9v = Math_Sqrt ((- (2.0 * Math_Log (p, err))), err);
+      if (err->exc) goto L_ret;
+      q = m9v;
+    }
+    { __typeof__(x) m9v = (Stats_Horner (((m9_sl_F64){ ((*PC)).v, INT64_C(6) }), q, err) / Stats_Horner (((m9_sl_F64){ ((*PD)).v, INT64_C(5) }), q, err));
+      if (err->exc) goto L_ret;
+      x = m9v;
+    }
+  } else {
+    if ((p <= (1.0 - Stats_PLow))) {
+      q = (p - 0.5);
+      r = (q * q);
+      { __typeof__(x) m9v = ((Stats_Horner (((m9_sl_F64){ ((*PA)).v, INT64_C(6) }), r, err) * q) / Stats_Horner (((m9_sl_F64){ ((*PB)).v, INT64_C(6) }), r, err));
+        if (err->exc) goto L_ret;
+        x = m9v;
+      }
+  } else {
+    { __typeof__(q) m9v = Math_Sqrt ((- (2.0 * Math_Log ((1.0 - p), err))), err);
+      if (err->exc) goto L_ret;
+      q = m9v;
+    }
+    { __typeof__(x) m9v = (- (Stats_Horner (((m9_sl_F64){ ((*PC)).v, INT64_C(6) }), q, err) / Stats_Horner (((m9_sl_F64){ ((*PD)).v, INT64_C(5) }), q, err)));
+      if (err->exc) goto L_ret;
+      x = m9v;
+    }
+  } }
+  { int64_t m9t1to;
+  i = INT64_C(1);
+  m9t1to = INT64_C(2);
+  for (; i <= m9t1to; i += 1) {
+    if ((p <= 0.5)) {
+      { __typeof__(e) m9v = ((0.5 * Math_Erfc ((- (x / 1.4142135623730951)), err)) - p);
+        if (err->exc) goto L_ret;
+        e = m9v;
+      }
+    } else {
+      { __typeof__(e) m9v = (((1.0 - p)) - (0.5 * Math_Erfc ((x / 1.4142135623730951), err)));
+        if (err->exc) goto L_ret;
+        e = m9v;
+      }
+    }
+    { __typeof__(u) m9v = ((e * Stats_Sqrt2Pi) * Math_Exp (((0.5 * x) * x), err));
+      if (err->exc) goto L_ret;
+      u = m9v;
+    }
+    x = (x - (u / ((1.0 + ((0.5 * x) * u)))));
+  } }
+  err->res = m9res;
+  m9ret = x;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_TPdf (double t, double dof, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  Stats_DofOk (dof, err);
+  if (err->exc) goto L_ret;
+  if ((!((t == t)))) {
+    m9_raise (err, &m9_exc_ValueRange);
+    goto L_ret;
+  }
+  bool m9t1 = (!Math_IsFinite (t, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = 0.0;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Stats_ExpDown ((((Stats_LnGamma ((((dof + 1.0)) / 2.0), err) - Stats_LnGamma ((dof / 2.0), err)) - (0.5 * Math_Log ((dof * Math_Pi), err))) - ((((dof + 1.0)) / 2.0) * Math_Log ((1.0 + ((t * t) / dof)), err))), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_TCdf (double t, double dof, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  Stats_DofOk (dof, err);
+  if (err->exc) goto L_ret;
+  if ((!((t == t)))) {
+    m9_raise (err, &m9_exc_ValueRange);
+    goto L_ret;
+  }
+  if ((t < 0.0)) {
+    err->res = m9res;
+    m9ret = Stats_TTail ((- t), dof, err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = (1.0 - Stats_TTail (t, dof, err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_TPpf (double p, double dof, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double q = 0; (void) q;
+  double z = 0; (void) z;
+  double t = 0; (void) t;
+  double hi = 0; (void) hi;
+  Stats_ProbOk (p, err);
+  if (err->exc) goto L_ret;
+  Stats_DofOk (dof, err);
+  if (err->exc) goto L_ret;
+  if ((p == 0.0)) {
+    err->res = m9res;
+    m9ret = (- Stats_Inf (err));
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  if ((p == 1.0)) {
+    err->res = m9res;
+    m9ret = Stats_Inf (err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  if ((p == 0.5)) {
+    err->res = m9res;
+    m9ret = 0.0;
+    goto L_ret;
+  }
+  q = p;
+  if ((p > 0.5)) {
+    q = (1.0 - p);
+  }
+  { __typeof__(z) m9v = (- Stats_NormalPpf (q, err));
+    if (err->exc) goto L_ret;
+    z = m9v;
+  }
+  t = (z + (((((z * z) * z) + z)) / ((4.0 * dof))));
+  hi = 1.0;
+  if ((t > hi)) {
+    hi = (2.0 * t);
+  }
+  for (;;) {
+    bool m9t1 = (Stats_TTail (hi, dof, err) > q);
+    if (err->exc) goto L_ret;
+    if (!(m9t1)) break;
+    hi = (2.0 * hi);
+  }
+  if ((!(((t > 0.0) && (t < hi))))) {
+    t = (0.5 * hi);
+  }
+  { __typeof__(t) m9v = Stats_Root (INT64_C(0), dof, q, 0.0, hi, t, false, err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
+  if ((p < 0.5)) {
+    err->res = m9res;
+    m9ret = (- t);
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = t;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_Chi2Pdf (double x, double dof, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  Stats_DofOk (dof, err);
+  if (err->exc) goto L_ret;
+  if ((!((x == x)))) {
+    m9_raise (err, &m9_exc_ValueRange);
+    goto L_ret;
+  }
+  bool m9t1 = ((x < 0.0) || (!Math_IsFinite (x, err)));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = 0.0;
+    goto L_ret;
+  }
+  if ((x == 0.0)) {
+    if ((dof < 2.0)) {
+      err->res = m9res;
+      m9ret = Stats_Inf (err);
+      if (err->exc) goto L_ret;
+      goto L_ret;
+    }
+    if ((dof == 2.0)) {
+      err->res = m9res;
+      m9ret = 0.5;
+      goto L_ret;
+    }
+    err->res = m9res;
+    m9ret = 0.0;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Stats_ExpDown ((((((((dof / 2.0) - 1.0)) * Math_Log (x, err)) - (x / 2.0)) - ((dof / 2.0) * Stats_Ln2)) - Stats_LnGamma ((dof / 2.0), err)), err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_Chi2Cdf (double x, double dof, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double p = 0; (void) p;
+  double q = 0; (void) q;
+  Stats_DofOk (dof, err);
+  if (err->exc) goto L_ret;
+  if ((!((x == x)))) {
+    m9_raise (err, &m9_exc_ValueRange);
+    goto L_ret;
+  }
+  if ((x <= 0.0)) {
+    err->res = m9res;
+    m9ret = 0.0;
+    goto L_ret;
+  }
+  bool m9t1 = (!Math_IsFinite (x, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = 1.0;
+    goto L_ret;
+  }
+  Stats_GammaPQ ((dof / 2.0), (x / 2.0), &(p), &(q), err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = p;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+double Stats_Chi2Ppf (double p, double dof, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double z = 0; (void) z;
+  double w = 0; (void) w;
+  double x = 0; (void) x;
+  double hi = 0; (void) hi;
+  Stats_ProbOk (p, err);
+  if (err->exc) goto L_ret;
+  Stats_DofOk (dof, err);
+  if (err->exc) goto L_ret;
+  if ((p == 0.0)) {
+    err->res = m9res;
+    m9ret = 0.0;
+    goto L_ret;
+  }
+  if ((p == 1.0)) {
+    err->res = m9res;
+    m9ret = Stats_Inf (err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  { __typeof__(z) m9v = Stats_NormalPpf (p, err);
+    if (err->exc) goto L_ret;
+    z = m9v;
+  }
+  w = (2.0 / ((9.0 * dof)));
+  { __typeof__(x) m9v = ((1.0 - w) + (z * Math_Sqrt (w, err)));
+    if (err->exc) goto L_ret;
+    x = m9v;
+  }
+  x = (((dof * x) * x) * x);
+  hi = dof;
+  if ((x > hi)) {
+    hi = (2.0 * x);
+  }
+  for (;;) {
+    bool m9t1 = (Stats_Chi2Cdf (hi, dof, err) < p);
+    if (err->exc) goto L_ret;
+    if (!(m9t1)) break;
+    hi = (2.0 * hi);
+  }
+  if ((!(((x > 0.0) && (x < hi))))) {
+    x = (0.5 * hi);
+  }
+  if ((p <= 0.5)) {
+    err->res = m9res;
+    m9ret = Stats_Root (INT64_C(1), dof, p, 0.0, hi, x, true, err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Stats_Root (INT64_C(2), dof, (1.0 - p), 0.0, hi, x, false, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+void Stats_Shuffle (Stats_Stream *st, m9_sl_I64 *a, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  int64_t j = 0; (void) j;
+  int64_t t = 0; (void) t;
+  { __typeof__(i) m9v = m9_sub_i64 (((*a)).len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
+  for (;;) {
+    if (!((i >= INT64_C(1)))) break;
+    { __typeof__(j) m9v = Stats_Below (st, m9_add_i64 (i, INT64_C(1), err), err);
+      if (err->exc) goto L_ret;
+      j = m9v;
+    }
+    { __typeof__(t) m9v = (*(int64_t *) m9_at ((*a).p, i, (*a).len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
+    { __typeof__((*(int64_t *) m9_at ((*a).p, i, (*a).len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at ((*a).p, j, (*a).len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at ((*a).p, i, (*a).len, sizeof (int64_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+    (*(int64_t *) m9_at ((*a).p, j, (*a).len, sizeof (int64_t), err)) = t;
+    if (err->exc) goto L_ret;
+    { __typeof__(i) m9v = m9_sub_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, (*a).p);
+  m9_pool_free (&m9frame);
+  return;
+}
+
+m9_sl_I64 Stats_Permutation (Stats_Stream *st, int64_t n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_I64 m9ret = {0};
+  m9_sl_I64 a = {0}; (void) a;
+  int64_t i = 0; (void) i;
+  if ((n < INT64_C(0))) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s12, 32 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s12, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+  { __typeof__(a) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, n, err);
+    if (err->exc) goto L_ret;
+    a = m9v;
+  }
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 (n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    (*(int64_t *) m9_at (a.p, i, a.len, sizeof (int64_t), err)) = i;
+    if (err->exc) goto L_ret;
+  } }
+  Stats_Shuffle (st, &(a), err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = a;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_I64 Stats_Choice (Stats_Stream *st, int64_t n, int64_t k, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_I64 m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
+  m9_sl_I64 idx = {0}; (void) idx;
+  m9_sl_I64 out = {0}; (void) out;
+  int64_t i = 0; (void) i;
+  int64_t j = 0; (void) j;
+  int64_t t = 0; (void) t;
+  if ((((n < INT64_C(0)) || (k < INT64_C(0))) || (k > n))) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 40 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 40 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+  { __typeof__(idx) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), n, err);
+    if (err->exc) goto L_ret;
+    idx = m9v;
+  }
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 (n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)) = i;
+    if (err->exc) goto L_ret;
+  } }
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_I64, int64_t, err->res, k, err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  { int64_t m9t3to;
+  i = INT64_C(0);
+  m9t3to = m9_sub_i64 (k, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t3to; i += 1) {
+    { __typeof__(j) m9v = m9_add_i64 (i, Stats_Below (st, m9_sub_i64 (n, i, err), err), err);
+      if (err->exc) goto L_ret;
+      j = m9v;
+    }
+    { __typeof__(t) m9v = (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
+    { __typeof__((*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (idx.p, j, idx.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+    (*(int64_t *) m9_at (idx.p, j, idx.len, sizeof (int64_t), err)) = t;
+    if (err->exc) goto L_ret;
+    { __typeof__((*(int64_t *) m9_at (out.p, i, out.len, sizeof (int64_t), err))) m9v = (*(int64_t *) m9_at (idx.p, i, idx.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+      (*(int64_t *) m9_at (out.p, i, out.len, sizeof (int64_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return m9ret;
+}
+
+static int64_t Stats_Need (m9_sl_F64 xs, int64_t need, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t n = 0; (void) n;
+  { __typeof__(n) m9v = Stats_Count (xs, err);
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
+  if ((n < need)) {
+    err->i[0] = n;
+    err->i[1] = need;
+    m9_raise (err, &Stats_TooFew);
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static double Stats_NaN (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double z = 0; (void) z;
+  z = 0.0;
+  err->res = m9res;
+  m9ret = (z / z);
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static double Stats_Total (m9_sl_F64 xs, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double acc = 0; (void) acc;
+  int64_t i = 0; (void) i;
+  acc = 0.0;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__(acc) m9v = (acc + (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
+        if (err->exc) goto L_ret;
+        acc = m9v;
+      }
+    }
+  } }
+  err->res = m9res;
+  m9ret = acc;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
 }
 
 static double Stats_SumSq (m9_sl_F64 xs, double m, m9_state *err)
@@ -714,9 +2182,15 @@ static double Stats_SumSq (m9_sl_F64 xs, double m, m9_state *err)
   m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    d = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) - m);
+    bool m9t2 = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
     if (err->exc) goto L_ret;
-    acc = (acc + (d * d));
+    if (m9t2) {
+      { __typeof__(d) m9v = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) - m);
+        if (err->exc) goto L_ret;
+        d = m9v;
+      }
+      acc = (acc + (d * d));
+    }
   } }
   err->res = m9res;
   m9ret = acc;
@@ -739,8 +2213,10 @@ static void Stats_Sort (m9_sl_F64 *a, m9_state *err)
   int64_t c = 0; (void) c;
   double t = 0; (void) t;
   n = ((*a)).len;
-  i = m9_sub_i64 (m9_div_i64 (n, INT64_C(2), err), INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = m9_sub_i64 (m9_div_i64 (n, INT64_C(2), err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   for (;;) {
     if (!((i >= INT64_C(0)))) break;
     j = i;
@@ -748,39 +2224,57 @@ static void Stats_Sort (m9_sl_F64 *a, m9_state *err)
       bool m9t1 = (m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err) < n);
       if (err->exc) goto L_ret;
       if (!(m9t1)) break;
-      c = m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(c) m9v = m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        c = m9v;
+      }
       bool m9t2 = ((m9_add_i64 (c, INT64_C(1), err) < n) && ((*(double *) m9_at ((*a).p, m9_add_i64 (c, INT64_C(1), err), (*a).len, sizeof (double), err)) > (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err))));
       if (err->exc) goto L_ret;
       if (m9t2) {
-        c = m9_add_i64 (c, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(c) m9v = m9_add_i64 (c, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          c = m9v;
+        }
       }
       bool m9t3 = ((*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err)) >= (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err)));
       if (err->exc) goto L_ret;
       if (m9t3) {
         j = n;
       } else {
-        t = (*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err));
-        if (err->exc) goto L_ret;
-        (*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err)) = (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err));
-        if (err->exc) goto L_ret;
+        { __typeof__(t) m9v = (*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err));
+          if (err->exc) goto L_ret;
+          t = m9v;
+        }
+        { __typeof__((*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err))) m9v = (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err));
+          if (err->exc) goto L_ret;
+          (*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
         (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err)) = t;
         if (err->exc) goto L_ret;
         j = c;
       }
     }
-    i = m9_sub_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(i) m9v = m9_sub_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
   }
-  i = m9_sub_i64 (n, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(i) m9v = m9_sub_i64 (n, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
   for (;;) {
     if (!((i > INT64_C(0)))) break;
-    t = (*(double *) m9_at ((*a).p, INT64_C(0), (*a).len, sizeof (double), err));
-    if (err->exc) goto L_ret;
-    (*(double *) m9_at ((*a).p, INT64_C(0), (*a).len, sizeof (double), err)) = (*(double *) m9_at ((*a).p, i, (*a).len, sizeof (double), err));
-    if (err->exc) goto L_ret;
+    { __typeof__(t) m9v = (*(double *) m9_at ((*a).p, INT64_C(0), (*a).len, sizeof (double), err));
+      if (err->exc) goto L_ret;
+      t = m9v;
+    }
+    { __typeof__((*(double *) m9_at ((*a).p, INT64_C(0), (*a).len, sizeof (double), err))) m9v = (*(double *) m9_at ((*a).p, i, (*a).len, sizeof (double), err));
+      if (err->exc) goto L_ret;
+      (*(double *) m9_at ((*a).p, INT64_C(0), (*a).len, sizeof (double), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
     (*(double *) m9_at ((*a).p, i, (*a).len, sizeof (double), err)) = t;
     if (err->exc) goto L_ret;
     j = INT64_C(0);
@@ -788,30 +2282,41 @@ static void Stats_Sort (m9_sl_F64 *a, m9_state *err)
       bool m9t4 = (m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err) < i);
       if (err->exc) goto L_ret;
       if (!(m9t4)) break;
-      c = m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(c) m9v = m9_add_i64 (m9_mul_i64 (INT64_C(2), j, err), INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        c = m9v;
+      }
       bool m9t5 = ((m9_add_i64 (c, INT64_C(1), err) < i) && ((*(double *) m9_at ((*a).p, m9_add_i64 (c, INT64_C(1), err), (*a).len, sizeof (double), err)) > (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err))));
       if (err->exc) goto L_ret;
       if (m9t5) {
-        c = m9_add_i64 (c, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(c) m9v = m9_add_i64 (c, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          c = m9v;
+        }
       }
       bool m9t6 = ((*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err)) >= (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err)));
       if (err->exc) goto L_ret;
       if (m9t6) {
         j = i;
       } else {
-        t = (*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err));
-        if (err->exc) goto L_ret;
-        (*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err)) = (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err));
-        if (err->exc) goto L_ret;
+        { __typeof__(t) m9v = (*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err));
+          if (err->exc) goto L_ret;
+          t = m9v;
+        }
+        { __typeof__((*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err))) m9v = (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err));
+          if (err->exc) goto L_ret;
+          (*(double *) m9_at ((*a).p, j, (*a).len, sizeof (double), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
         (*(double *) m9_at ((*a).p, c, (*a).len, sizeof (double), err)) = t;
         if (err->exc) goto L_ret;
         j = c;
       }
     }
-    i = m9_sub_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(i) m9v = m9_sub_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
   }
 L_ret: ;
   err->res = m9res;
@@ -829,15 +2334,30 @@ static m9_sl_F64 Stats_Sorted (m9_sl_F64 xs, m9_state *err)
   m9_sl_F64 m9ret = {0};
   m9_sl_F64 a = {0}; (void) a;
   int64_t i = 0; (void) i;
-  a = M9_POOL_SL (m9_sl_F64, double, err->res, (xs).len, err);
-  if (err->exc) goto L_ret;
+  int64_t n = 0; (void) n;
+  { __typeof__(a) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, Stats_Count (xs, err), err);
+    if (err->exc) goto L_ret;
+    a = m9v;
+  }
+  n = INT64_C(0);
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(double *) m9_at (a.p, i, a.len, sizeof (double), err)) = (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err));
+    bool m9t2 = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
     if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__((*(double *) m9_at (a.p, n, a.len, sizeof (double), err))) m9v = (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err));
+        if (err->exc) goto L_ret;
+        (*(double *) m9_at (a.p, n, a.len, sizeof (double), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
+    }
   } }
   Stats_Sort (&(a), err);
   if (err->exc) goto L_ret;
@@ -968,7 +2488,54 @@ L_ret: ;
   return m9ret;
 }
 
-static double Stats_BetaI (double a, double b, double x, m9_state *err)
+static double Stats_Ln1m (double y, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double u = 0; (void) u;
+  u = (1.0 - y);
+  if ((u == 1.0)) {
+    err->res = m9res;
+    m9ret = (- y);
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = ((Math_Log (u, err) * ((- y))) / ((u - 1.0)));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static double Stats_LnOf (double v, double other, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  if ((v < 0.5)) {
+    err->res = m9res;
+    m9ret = Math_Log (v, err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Stats_Ln1m (other, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static double Stats_BetaXY (double a, double b, double x, double y, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -976,18 +2543,28 @@ static double Stats_BetaI (double a, double b, double x, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   double bt = 0; (void) bt;
+  double lg = 0; (void) lg;
   if ((x <= 0.0)) {
     err->res = m9res;
     m9ret = 0.0;
     goto L_ret;
   }
-  if ((x >= 1.0)) {
+  if ((y <= 0.0)) {
     err->res = m9res;
     m9ret = 1.0;
     goto L_ret;
   }
-  bt = Math_Exp (((((Stats_LnGamma ((a + b), err) - Stats_LnGamma (a, err)) - Stats_LnGamma (b, err)) + (a * Math_Log (x, err))) + (b * Math_Log ((1.0 - x), err))), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(lg) m9v = ((((Stats_LnGamma ((a + b), err) - Stats_LnGamma (a, err)) - Stats_LnGamma (b, err)) + (a * Stats_LnOf (x, y, err))) + (b * Stats_LnOf (y, x, err)));
+    if (err->exc) goto L_ret;
+    lg = m9v;
+  }
+  bt = 0.0;
+  if ((lg > (- 745.0))) {
+    { __typeof__(bt) m9v = Math_Exp (lg, err);
+      if (err->exc) goto L_ret;
+      bt = m9v;
+    }
+  }
   if ((x < (((a + 1.0)) / (((a + b) + 2.0))))) {
     err->res = m9res;
     m9ret = ((bt * Stats_BetaCf (a, b, x, err)) / a);
@@ -995,7 +2572,7 @@ static double Stats_BetaI (double a, double b, double x, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = (1.0 - ((bt * Stats_BetaCf (b, a, (1.0 - x), err)) / b));
+  m9ret = (1.0 - ((bt * Stats_BetaCf (b, a, y, err)) / b));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -1012,8 +2589,90 @@ static double Stats_TwoSided (double t, double dof, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Stats_BetaI ((dof / 2.0), 0.5, (dof / ((dof + (t * t)))), err);
+  m9ret = Stats_BetaXY ((dof / 2.0), 0.5, (dof / ((dof + (t * t)))), ((t * t) / ((dof + (t * t)))), err);
   if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Stats_Both (double x, double y, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  err->res = m9res;
+  m9ret = (((x == x)) && ((y == y)));
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static int64_t Stats_NPairs (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
+  n = INT64_C(0);
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = Stats_Both ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)), (*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err)), err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__(n) m9v = m9_add_i64 (n, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        n = m9v;
+      }
+    }
+  } }
+  err->res = m9res;
+  m9ret = n;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static double Stats_PairMean (m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double acc = 0; (void) acc;
+  int64_t i = 0; (void) i;
+  acc = 0.0;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = Stats_Both ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)), (*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err)), err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__(acc) m9v = (acc + (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
+        if (err->exc) goto L_ret;
+        acc = m9v;
+      }
+    }
+  } }
+  err->res = m9res;
+  m9ret = (acc / (double)(n));
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1048,10 +2707,14 @@ static int64_t Stats_SplitMix (int64_t *x, m9_state *err)
   int64_t z = 0; (void) z;
   (*x) = m9_addw_i64 ((*x), Stats_SmGamma);
   z = (*x);
-  z = m9_mulw_i64 (Bits_Xor (z, Bits_Shr (z, INT64_C(30), err), err), Stats_SmMul1);
-  if (err->exc) goto L_ret;
-  z = m9_mulw_i64 (Bits_Xor (z, Bits_Shr (z, INT64_C(27), err), err), Stats_SmMul2);
-  if (err->exc) goto L_ret;
+  { __typeof__(z) m9v = m9_mulw_i64 (Bits_Xor (z, Bits_Shr (z, INT64_C(30), err), err), Stats_SmMul1);
+    if (err->exc) goto L_ret;
+    z = m9v;
+  }
+  { __typeof__(z) m9v = m9_mulw_i64 (Bits_Xor (z, Bits_Shr (z, INT64_C(27), err), err), Stats_SmMul2);
+    if (err->exc) goto L_ret;
+    z = m9v;
+  }
   err->res = m9res;
   m9ret = Bits_Xor (z, Bits_Shr (z, INT64_C(31), err), err);
   if (err->exc) goto L_ret;
@@ -1071,22 +2734,38 @@ static int64_t Stats_Next (Stats_Stream *st, m9_state *err)
   int64_t m9ret = 0;
   int64_t r = 0; (void) r;
   int64_t t = 0; (void) t;
-  r = m9_mulw_i64 (Stats_Rotl (m9_mulw_i64 ((*st).s1, INT64_C(5)), INT64_C(7), err), INT64_C(9));
-  if (err->exc) goto L_ret;
-  t = Bits_Shl ((*st).s1, INT64_C(17), err);
-  if (err->exc) goto L_ret;
-  (*st).s2 = Bits_Xor ((*st).s2, (*st).s0, err);
-  if (err->exc) goto L_ret;
-  (*st).s3 = Bits_Xor ((*st).s3, (*st).s1, err);
-  if (err->exc) goto L_ret;
-  (*st).s1 = Bits_Xor ((*st).s1, (*st).s2, err);
-  if (err->exc) goto L_ret;
-  (*st).s0 = Bits_Xor ((*st).s0, (*st).s3, err);
-  if (err->exc) goto L_ret;
-  (*st).s2 = Bits_Xor ((*st).s2, t, err);
-  if (err->exc) goto L_ret;
-  (*st).s3 = Stats_Rotl ((*st).s3, INT64_C(45), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(r) m9v = m9_mulw_i64 (Stats_Rotl (m9_mulw_i64 ((*st).s1, INT64_C(5)), INT64_C(7), err), INT64_C(9));
+    if (err->exc) goto L_ret;
+    r = m9v;
+  }
+  { __typeof__(t) m9v = Bits_Shl ((*st).s1, INT64_C(17), err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
+  { __typeof__((*st).s2) m9v = Bits_Xor ((*st).s2, (*st).s0, err);
+    if (err->exc) goto L_ret;
+    (*st).s2 = m9v;
+  }
+  { __typeof__((*st).s3) m9v = Bits_Xor ((*st).s3, (*st).s1, err);
+    if (err->exc) goto L_ret;
+    (*st).s3 = m9v;
+  }
+  { __typeof__((*st).s1) m9v = Bits_Xor ((*st).s1, (*st).s2, err);
+    if (err->exc) goto L_ret;
+    (*st).s1 = m9v;
+  }
+  { __typeof__((*st).s0) m9v = Bits_Xor ((*st).s0, (*st).s3, err);
+    if (err->exc) goto L_ret;
+    (*st).s0 = m9v;
+  }
+  { __typeof__((*st).s2) m9v = Bits_Xor ((*st).s2, t, err);
+    if (err->exc) goto L_ret;
+    (*st).s2 = m9v;
+  }
+  { __typeof__((*st).s3) m9v = Stats_Rotl ((*st).s3, INT64_C(45), err);
+    if (err->exc) goto L_ret;
+    (*st).s3 = m9v;
+  }
   err->res = m9res;
   m9ret = r;
   goto L_ret;
@@ -1113,6 +2792,1000 @@ L_ret: ;
   return m9ret;
 }
 
+static void Stats_BinsOk (int64_t bins, double lo, double hi, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  if ((bins < INT64_C(1))) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s14, 32 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s14, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+  bool m9t2 = (((!Math_IsFinite (lo, err)) || (!Math_IsFinite (hi, err))) || (!((lo < hi))));
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s15, 48 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s15, 48 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static double Stats_Edge (int64_t k, int64_t bins, double lo, double hi, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  if ((k >= bins)) {
+    err->res = m9res;
+    m9ret = hi;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = (((double)(k) * ((((hi - lo)) / (double)(bins)))) + lo);
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static int64_t Stats_Bin (double x, int64_t bins, double lo, double hi, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t k = 0; (void) k;
+  if ((!(((x >= lo) && (x <= hi))))) {
+    err->res = m9res;
+    m9ret = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+    goto L_ret;
+  }
+  { __typeof__(k) m9v = m9_i64_f64 ((double)(Math_Floor ((((((x - lo)) / ((hi - lo)))) * (double)(bins)), err)), err);
+    if (err->exc) goto L_hdl_m9t1;
+    k = m9v;
+  }
+  if ((k == bins)) {
+    { __typeof__(k) m9v = m9_sub_i64 (bins, INT64_C(1), err);
+      if (err->exc) goto L_hdl_m9t1;
+      k = m9v;
+    }
+  }
+  bool m9t3 = (x < Stats_Edge (k, bins, lo, hi, err));
+  if (err->exc) goto L_hdl_m9t1;
+  if (m9t3) {
+    { __typeof__(k) m9v = m9_sub_i64 (k, INT64_C(1), err);
+      if (err->exc) goto L_hdl_m9t1;
+      k = m9v;
+    }
+  }
+  bool m9t4 = (k != m9_sub_i64 (bins, INT64_C(1), err));
+  if (err->exc) goto L_hdl_m9t1;
+  if (m9t4) {
+    bool m9t5 = (x >= Stats_Edge (m9_add_i64 (k, INT64_C(1), err), bins, lo, hi, err));
+    if (err->exc) goto L_hdl_m9t1;
+    if (m9t5) {
+      { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+        if (err->exc) goto L_hdl_m9t1;
+        k = m9v;
+      }
+    }
+  }
+  err->res = m9res;
+  m9ret = k;
+  goto L_ret;
+  goto L_dn_m9t2;
+L_hdl_m9t1: ;
+  if (err->exc == &m9_exc_ValueRange) {
+    err->exc = NULL;
+    err->res = m9res;
+    m9ret = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  goto L_ret;
+L_dn_m9t2: ;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static double Stats_Inf (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double z = 0; (void) z;
+  z = 0.0;
+  err->res = m9res;
+  m9ret = (1.0 / z);
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Stats_Plus (Stats_Comp *s, double v, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double t = 0; (void) t;
+  t = ((*s).sum + v);
+  bool m9t1 = (Math_Fabs ((*s).sum, err) >= Math_Fabs (v, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    (*s).comp = ((*s).comp + (((((*s).sum - t)) + v)));
+  } else {
+    (*s).comp = ((*s).comp + ((((v - t)) + (*s).sum)));
+  }
+  (*s).sum = t;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Stats_Shift (Stats_Win *w, double v, int64_t by, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  if ((v == v)) {
+    bool m9t1 = Math_IsFinite (v, err);
+    if (err->exc) goto L_ret;
+    if (m9t1) {
+      if ((by > INT64_C(0))) {
+        Stats_Plus (&((*w).s), v, err);
+        if (err->exc) goto L_ret;
+      } else {
+        Stats_Plus (&((*w).s), (- v), err);
+        if (err->exc) goto L_ret;
+      }
+      { __typeof__((*w).finite) m9v = m9_add_i64 ((*w).finite, by, err);
+        if (err->exc) goto L_ret;
+        (*w).finite = m9v;
+      }
+      if (((*w).finite == INT64_C(0))) {
+        (*w).s.sum = 0.0;
+        (*w).s.comp = 0.0;
+      }
+    } else {
+      if ((v > 0.0)) {
+        { __typeof__((*w).pinf) m9v = m9_add_i64 ((*w).pinf, by, err);
+          if (err->exc) goto L_ret;
+          (*w).pinf = m9v;
+        }
+    } else {
+      { __typeof__((*w).ninf) m9v = m9_add_i64 ((*w).ninf, by, err);
+        if (err->exc) goto L_ret;
+        (*w).ninf = m9v;
+      }
+    } }
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static double Stats_SumNow (Stats_Win w, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  if ((w.pinf > INT64_C(0))) {
+    if ((w.ninf > INT64_C(0))) {
+      err->res = m9res;
+      m9ret = Stats_NaN (err);
+      if (err->exc) goto L_ret;
+      goto L_ret;
+    }
+    err->res = m9res;
+    m9ret = Stats_Inf (err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  if ((w.ninf > INT64_C(0))) {
+    err->res = m9res;
+    m9ret = (- Stats_Inf (err));
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = (w.s.sum + w.s.comp);
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Stats_RollOk (m9_sl_F64 xs, int64_t window, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  if ((window < INT64_C(1))) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 33 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+  if (((xs).len < window)) {
+    err->i[0] = (xs).len;
+    err->i[1] = window;
+    m9_raise (err, &Stats_TooFew);
+    goto L_ret;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static m9_sl_F64 Stats_Slide (m9_sl_F64 xs, int64_t window, bool mean, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_F64 m9ret = {0};
+  m9_sl_F64 out = {0}; (void) out;
+  Stats_Win w = {0}; (void) w;
+  int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
+  double v = 0; (void) v;
+  Stats_RollOk (xs, window, err);
+  if (err->exc) goto L_ret;
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, m9_add_i64 (m9_sub_i64 ((xs).len, window, err), INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  w.s.sum = 0.0;
+  w.s.comp = 0.0;
+  w.finite = INT64_C(0);
+  w.pinf = INT64_C(0);
+  w.ninf = INT64_C(0);
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    Stats_Shift (&(w), (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    if ((i >= window)) {
+      Stats_Shift (&(w), (*(double *) m9_at (xs.p, m9_sub_i64 (i, window, err), xs.len, sizeof (double), err)), m9_neg_i64 (INT64_C(1), err), err);
+      if (err->exc) goto L_ret;
+    }
+    bool m9t2 = (i >= m9_sub_i64 (window, INT64_C(1), err));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__(v) m9v = Stats_SumNow (w, err);
+        if (err->exc) goto L_ret;
+        v = m9v;
+      }
+      if (mean) {
+        { __typeof__(n) m9v = m9_add_i64 (m9_add_i64 (w.finite, w.pinf, err), w.ninf, err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
+        if ((n == INT64_C(0))) {
+          { __typeof__(v) m9v = Stats_NaN (err);
+            if (err->exc) goto L_ret;
+            v = m9v;
+          }
+        } else {
+          v = (v / (double)(n));
+        }
+      }
+      (*(double *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (i, window, err), INT64_C(1), err), out.len, sizeof (double), err)) = v;
+      if (err->exc) goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static m9_sl_F64 Stats_Extreme (m9_sl_F64 xs, int64_t window, bool wantMax, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_F64 m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
+  m9_sl_F64 out = {0}; (void) out;
+  m9_sl_I64 q = {0}; (void) q;
+  int64_t head = 0; (void) head;
+  int64_t tail = 0; (void) tail;
+  int64_t i = 0; (void) i;
+  bool worse = false; (void) worse;
+  Stats_RollOk (xs, window, err);
+  if (err->exc) goto L_ret;
+  { __typeof__(out) m9v = M9_POOL_SL (m9_sl_F64, double, err->res, m9_add_i64 (m9_sub_i64 ((xs).len, window, err), INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  { __typeof__(q) m9v = M9_POOL_SL (m9_sl_I64, int64_t, &(scratch), (xs).len, err);
+    if (err->exc) goto L_ret;
+    q = m9v;
+  }
+  head = INT64_C(0);
+  tail = INT64_C(0);
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) == (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      for (;;) {
+        if ((tail == head)) {
+          break;
+        }
+        if (wantMax) {
+          { __typeof__(worse) m9v = ((*(double *) m9_at (xs.p, (*(int64_t *) m9_at (q.p, m9_sub_i64 (tail, INT64_C(1), err), q.len, sizeof (int64_t), err)), xs.len, sizeof (double), err)) <= (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
+            if (err->exc) goto L_ret;
+            worse = m9v;
+          }
+        } else {
+          { __typeof__(worse) m9v = ((*(double *) m9_at (xs.p, (*(int64_t *) m9_at (q.p, m9_sub_i64 (tail, INT64_C(1), err), q.len, sizeof (int64_t), err)), xs.len, sizeof (double), err)) >= (*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)));
+            if (err->exc) goto L_ret;
+            worse = m9v;
+          }
+        }
+        if ((!worse)) {
+          break;
+        }
+        { __typeof__(tail) m9v = m9_sub_i64 (tail, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          tail = m9v;
+        }
+      }
+      (*(int64_t *) m9_at (q.p, tail, q.len, sizeof (int64_t), err)) = i;
+      if (err->exc) goto L_ret;
+      { __typeof__(tail) m9v = m9_add_i64 (tail, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        tail = m9v;
+      }
+    }
+    if ((tail > head)) {
+      bool m9t3 = ((*(int64_t *) m9_at (q.p, head, q.len, sizeof (int64_t), err)) <= m9_sub_i64 (i, window, err));
+      if (err->exc) goto L_ret;
+      if (m9t3) {
+        { __typeof__(head) m9v = m9_add_i64 (head, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          head = m9v;
+        }
+      }
+    }
+    bool m9t4 = (i >= m9_sub_i64 (window, INT64_C(1), err));
+    if (err->exc) goto L_ret;
+    if (m9t4) {
+      if ((tail > head)) {
+        { __typeof__((*(double *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (i, window, err), INT64_C(1), err), out.len, sizeof (double), err))) m9v = (*(double *) m9_at (xs.p, (*(int64_t *) m9_at (q.p, head, q.len, sizeof (int64_t), err)), xs.len, sizeof (double), err));
+          if (err->exc) goto L_ret;
+          (*(double *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (i, window, err), INT64_C(1), err), out.len, sizeof (double), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+      } else {
+        { __typeof__((*(double *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (i, window, err), INT64_C(1), err), out.len, sizeof (double), err))) m9v = Stats_NaN (err);
+          if (err->exc) goto L_ret;
+          (*(double *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (i, window, err), INT64_C(1), err), out.len, sizeof (double), err)) = m9v;
+          if (err->exc) goto L_ret;
+        }
+      }
+    }
+  } }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return m9ret;
+}
+
+static double Stats_Lerp (double x, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  int64_t j = 0; (void) j;
+  int64_t n = 0; (void) n;
+  double slope = 0; (void) slope;
+  double r = 0; (void) r;
+  n = (xp).len;
+  bool m9t1 = (x < (*(double *) m9_at (xp.p, INT64_C(0), xp.len, sizeof (double), err)));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = (*(double *) m9_at (fp.p, INT64_C(0), fp.len, sizeof (double), err));
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  bool m9t2 = (x > (*(double *) m9_at (xp.p, m9_sub_i64 (n, INT64_C(1), err), xp.len, sizeof (double), err)));
+  if (err->exc) goto L_ret;
+  if (m9t2) {
+    err->res = m9res;
+    m9ret = (*(double *) m9_at (fp.p, m9_sub_i64 (n, INT64_C(1), err), fp.len, sizeof (double), err));
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  { __typeof__(j) m9v = m9_sub_i64 (Sort_UpperF64 (xp, x, err), INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    j = m9v;
+  }
+  bool m9t3 = (j >= m9_sub_i64 (n, INT64_C(1), err));
+  if (err->exc) goto L_ret;
+  if (m9t3) {
+    err->res = m9res;
+    m9ret = (*(double *) m9_at (fp.p, m9_sub_i64 (n, INT64_C(1), err), fp.len, sizeof (double), err));
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  bool m9t4 = ((*(double *) m9_at (xp.p, j, xp.len, sizeof (double), err)) == x);
+  if (err->exc) goto L_ret;
+  if (m9t4) {
+    err->res = m9res;
+    m9ret = (*(double *) m9_at (fp.p, j, fp.len, sizeof (double), err));
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  { __typeof__(slope) m9v = ((((*(double *) m9_at (fp.p, m9_add_i64 (j, INT64_C(1), err), fp.len, sizeof (double), err)) - (*(double *) m9_at (fp.p, j, fp.len, sizeof (double), err)))) / (((*(double *) m9_at (xp.p, m9_add_i64 (j, INT64_C(1), err), xp.len, sizeof (double), err)) - (*(double *) m9_at (xp.p, j, xp.len, sizeof (double), err)))));
+    if (err->exc) goto L_ret;
+    slope = m9v;
+  }
+  { __typeof__(r) m9v = ((slope * ((x - (*(double *) m9_at (xp.p, j, xp.len, sizeof (double), err))))) + (*(double *) m9_at (fp.p, j, fp.len, sizeof (double), err)));
+    if (err->exc) goto L_ret;
+    r = m9v;
+  }
+  if ((!((r == r)))) {
+    { __typeof__(r) m9v = ((slope * ((x - (*(double *) m9_at (xp.p, m9_add_i64 (j, INT64_C(1), err), xp.len, sizeof (double), err))))) + (*(double *) m9_at (fp.p, m9_add_i64 (j, INT64_C(1), err), fp.len, sizeof (double), err)));
+      if (err->exc) goto L_ret;
+      r = m9v;
+    }
+    if ((!((r == r)))) {
+      bool m9t5 = ((*(double *) m9_at (fp.p, j, fp.len, sizeof (double), err)) == (*(double *) m9_at (fp.p, m9_add_i64 (j, INT64_C(1), err), fp.len, sizeof (double), err)));
+      if (err->exc) goto L_ret;
+      if (m9t5) {
+        { __typeof__(r) m9v = (*(double *) m9_at (fp.p, j, fp.len, sizeof (double), err));
+          if (err->exc) goto L_ret;
+          r = m9v;
+        }
+      }
+    }
+  }
+  err->res = m9res;
+  m9ret = r;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Stats_PairSums (m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, double *sxx, double *syy, double *sxy, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double mx = 0; (void) mx;
+  double my = 0; (void) my;
+  double dx = 0; (void) dx;
+  double dy = 0; (void) dy;
+  int64_t i = 0; (void) i;
+  { __typeof__(mx) m9v = Stats_PairMean (xs, ys, n, err);
+    if (err->exc) goto L_ret;
+    mx = m9v;
+  }
+  { __typeof__(my) m9v = Stats_PairMean (ys, xs, n, err);
+    if (err->exc) goto L_ret;
+    my = m9v;
+  }
+  (*sxx) = 0.0;
+  (*syy) = 0.0;
+  (*sxy) = 0.0;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((xs).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = Stats_Both ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)), (*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err)), err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__(dx) m9v = ((*(double *) m9_at (xs.p, i, xs.len, sizeof (double), err)) - mx);
+        if (err->exc) goto L_ret;
+        dx = m9v;
+      }
+      { __typeof__(dy) m9v = ((*(double *) m9_at (ys.p, i, ys.len, sizeof (double), err)) - my);
+        if (err->exc) goto L_ret;
+        dy = m9v;
+      }
+      (*sxx) = ((*sxx) + (dx * dx));
+      (*syy) = ((*syy) + (dy * dy));
+      (*sxy) = ((*sxy) + (dx * dy));
+    }
+  } }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static double Stats_Clip1 (double r, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  if ((r > 1.0)) {
+    err->res = m9res;
+    m9ret = 1.0;
+    goto L_ret;
+  }
+  if ((r < (- 1.0))) {
+    err->res = m9res;
+    m9ret = (- 1.0);
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = r;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Stats_ColSums (m9_gd2_double g, int64_t a, int64_t b, int64_t *n, double *sxx, double *syy, double *sxy, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double ma = 0; (void) ma;
+  double mb = 0; (void) mb;
+  double da = 0; (void) da;
+  double db = 0; (void) db;
+  int64_t r = 0; (void) r;
+  (*n) = INT64_C(0);
+  ma = 0.0;
+  mb = 0.0;
+  (*sxx) = 0.0;
+  (*syy) = 0.0;
+  (*sxy) = 0.0;
+  { int64_t m9t1to;
+  r = INT64_C(0);
+  m9t1to = m9_sub_i64 ((g).n[INT64_C(0)], INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; r <= m9t1to; r += 1) {
+    bool m9t2 = Stats_Both ((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, a, err)), (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, b, err)), err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        (*n) = m9v;
+      }
+      { __typeof__(ma) m9v = (ma + (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, a, err)));
+        if (err->exc) goto L_ret;
+        ma = m9v;
+      }
+      { __typeof__(mb) m9v = (mb + (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, b, err)));
+        if (err->exc) goto L_ret;
+        mb = m9v;
+      }
+    }
+  } }
+  if (((*n) > INT64_C(0))) {
+    ma = (ma / (double)((*n)));
+    mb = (mb / (double)((*n)));
+    { int64_t m9t3to;
+    r = INT64_C(0);
+    m9t3to = m9_sub_i64 ((g).n[INT64_C(0)], INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; r <= m9t3to; r += 1) {
+      bool m9t4 = Stats_Both ((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, a, err)), (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, b, err)), err);
+      if (err->exc) goto L_ret;
+      if (m9t4) {
+        { __typeof__(da) m9v = ((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, a, err)) - ma);
+          if (err->exc) goto L_ret;
+          da = m9v;
+        }
+        { __typeof__(db) m9v = ((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, b, err)) - mb);
+          if (err->exc) goto L_ret;
+          db = m9v;
+        }
+        (*sxx) = ((*sxx) + (da * da));
+        (*syy) = ((*syy) + (db * db));
+        (*sxy) = ((*sxy) + (da * db));
+      }
+    } }
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static double Stats_Horner (m9_sl_F64 c, double x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double acc = 0; (void) acc;
+  int64_t i = 0; (void) i;
+  acc = 0.0;
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((c).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { __typeof__(acc) m9v = ((acc * x) + (*(double *) m9_at (c.p, i, c.len, sizeof (double), err)));
+      if (err->exc) goto L_ret;
+      acc = m9v;
+    }
+  } }
+  err->res = m9res;
+  m9ret = acc;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Stats_DofOk (double dof, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9t1 = ((!((dof > 0.0))) || (!Math_IsFinite (dof, err)));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s17, 35 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s17, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Stats_ProbOk (double p, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  if ((!((p == p)))) {
+    m9_raise (err, &m9_exc_ValueRange);
+    goto L_ret;
+  }
+  if (((p < 0.0) || (p > 1.0))) {
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s18, 26 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s18, 26 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    m9_raise (err, &Faults_BadArg);
+    goto L_ret;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static double Stats_ExpDown (double x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  if ((x < (- 745.0))) {
+    err->res = m9res;
+    m9ret = 0.0;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Math_Exp (x, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static double Stats_GammaSeries (double a, double x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double ap = 0; (void) ap;
+  double del = 0; (void) del;
+  double sum = 0; (void) sum;
+  int64_t n = 0; (void) n;
+  ap = a;
+  del = (1.0 / a);
+  sum = del;
+  { int64_t m9t1to;
+  n = INT64_C(1);
+  m9t1to = INT64_C(2000);
+  for (; n <= m9t1to; n += 1) {
+    ap = (ap + 1.0);
+    del = ((del * x) / ap);
+    sum = (sum + del);
+    bool m9t2 = (Math_Fabs (del, err) < (Math_Fabs (sum, err) * 1.0E-17));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      err->res = m9res;
+      m9ret = (sum * Stats_ExpDown ((((a * Math_Log (x, err)) - x) - Stats_LnGamma (a, err)), err));
+      if (err->exc) goto L_ret;
+      goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = (sum * Stats_ExpDown ((((a * Math_Log (x, err)) - x) - Stats_LnGamma (a, err)), err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static double Stats_GammaFraction (double a, double x, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double b = 0; (void) b;
+  double c = 0; (void) c;
+  double d = 0; (void) d;
+  double h = 0; (void) h;
+  double an = 0; (void) an;
+  double del = 0; (void) del;
+  int64_t i = 0; (void) i;
+  b = ((x + 1.0) - a);
+  c = (1.0 / Stats_Tiny);
+  d = (1.0 / b);
+  h = d;
+  { int64_t m9t1to;
+  i = INT64_C(1);
+  m9t1to = INT64_C(2000);
+  for (; i <= m9t1to; i += 1) {
+    an = (- ((double)(i) * (((double)(i) - a))));
+    b = (b + 2.0);
+    d = ((an * d) + b);
+    bool m9t2 = (Math_Fabs (d, err) < Stats_Tiny);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      d = Stats_Tiny;
+    }
+    c = (b + (an / c));
+    bool m9t3 = (Math_Fabs (c, err) < Stats_Tiny);
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      c = Stats_Tiny;
+    }
+    d = (1.0 / d);
+    del = (d * c);
+    h = (h * del);
+    bool m9t4 = (Math_Fabs ((del - 1.0), err) < 1.0E-16);
+    if (err->exc) goto L_ret;
+    if (m9t4) {
+      err->res = m9res;
+      m9ret = (h * Stats_ExpDown ((((a * Math_Log (x, err)) - x) - Stats_LnGamma (a, err)), err));
+      if (err->exc) goto L_ret;
+      goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = (h * Stats_ExpDown ((((a * Math_Log (x, err)) - x) - Stats_LnGamma (a, err)), err));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Stats_GammaPQ (double a, double x, double *p, double *q, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  if ((x < (a + 1.0))) {
+    { __typeof__((*p)) m9v = Stats_GammaSeries (a, x, err);
+      if (err->exc) goto L_ret;
+      (*p) = m9v;
+    }
+    (*q) = (1.0 - (*p));
+  } else {
+    { __typeof__((*q)) m9v = Stats_GammaFraction (a, x, err);
+      if (err->exc) goto L_ret;
+      (*q) = m9v;
+    }
+    (*p) = (1.0 - (*q));
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static void Stats_Eval (int64_t kind, double x, double dof, double target, double *f, double *slope, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double p = 0; (void) p;
+  double q = 0; (void) q;
+  if ((kind == INT64_C(0))) {
+    { __typeof__((*f)) m9v = (Stats_TTail (x, dof, err) - target);
+      if (err->exc) goto L_ret;
+      (*f) = m9v;
+    }
+    { __typeof__((*slope)) m9v = (- Stats_TPdf (x, dof, err));
+      if (err->exc) goto L_ret;
+      (*slope) = m9v;
+    }
+  } else {
+    Stats_GammaPQ ((dof / 2.0), (x / 2.0), &(p), &(q), err);
+    if (err->exc) goto L_ret;
+    { __typeof__((*slope)) m9v = Stats_Chi2Pdf (x, dof, err);
+      if (err->exc) goto L_ret;
+      (*slope) = m9v;
+    }
+    if ((kind == INT64_C(1))) {
+      (*f) = (p - target);
+    } else {
+      (*f) = (q - target);
+      (*slope) = (- (*slope));
+    }
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static double Stats_Root (int64_t kind, double dof, double target, double lo, double hi, double x0, bool rising, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  double m9ret = 0;
+  double x = 0; (void) x;
+  double xn = 0; (void) xn;
+  double f = 0; (void) f;
+  double slope = 0; (void) slope;
+  double a = 0; (void) a;
+  double b = 0; (void) b;
+  int64_t i = 0; (void) i;
+  a = lo;
+  b = hi;
+  x = x0;
+  { int64_t m9t1to;
+  i = INT64_C(1);
+  m9t1to = INT64_C(200);
+  for (; i <= m9t1to; i += 1) {
+    Stats_Eval (kind, x, dof, target, &(f), &(slope), err);
+    if (err->exc) goto L_ret;
+    if ((f == 0.0)) {
+      err->res = m9res;
+      m9ret = x;
+      goto L_ret;
+    }
+    if ((((f < 0.0)) == rising)) {
+      a = x;
+    } else {
+      b = x;
+    }
+    xn = x;
+    bool m9t2 = ((slope != 0.0) && Math_IsFinite (slope, err));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      xn = (x - (f / slope));
+    }
+    if ((!(((xn > a) && (xn < b))))) {
+      xn = (0.5 * ((a + b)));
+    }
+    bool m9t3 = (Math_Fabs ((xn - x), err) <= (1.0E-15 * Math_Fabs (xn, err)));
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      err->res = m9res;
+      m9ret = xn;
+      goto L_ret;
+    }
+    x = xn;
+  } }
+  err->res = m9res;
+  m9ret = x;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static int64_t Stats_Below (Stats_Stream *st, int64_t m, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t limit = 0; (void) limit;
+  int64_t k = 0; (void) k;
+  { __typeof__(limit) m9v = m9_mul_i64 ((m9_div_i64 (Stats_TwoP53i, m, err)), m, err);
+    if (err->exc) goto L_ret;
+    limit = m9v;
+  }
+  { __typeof__(k) m9v = Stats_Top53 (Stats_Next (st, err), err);
+    if (err->exc) goto L_ret;
+    k = m9v;
+  }
+  for (;;) {
+    if (!((k >= limit))) break;
+    { __typeof__(k) m9v = Stats_Top53 (Stats_Next (st, err), err);
+      if (err->exc) goto L_ret;
+      k = m9v;
+    }
+  }
+  err->res = m9res;
+  m9ret = m9_mod_i64 (k, m, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 void Stats_m9init (m9_state *err)
 {
   static int m9done = 0;
@@ -1123,6 +3796,7 @@ void Stats_m9init (m9_state *err)
   Math_m9init (err); if (err->exc) goto L_ret;
   Bits_m9init (err); if (err->exc) goto L_ret;
   Faults_m9init (err); if (err->exc) goto L_ret;
+  Sort_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9prev;
 }

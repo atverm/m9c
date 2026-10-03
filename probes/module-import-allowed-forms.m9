@@ -1,0 +1,38 @@
+(* EXPECT: module Other is named and not imported: write IMPORT Other *)
+(* the one refusal here is the last procedure; everything before it is
+   what the rule must NOT refuse: an implementation naming a module
+   only its definition imports (2,302 sites lean on that), a module
+   naming itself, and a local that happens to be called what a module
+   is called *)
+DEFINITION MODULE Lib ;
+TYPE Rec = RECORD n : I64 END ;
+PROCEDURE Zero () : I64 ;
+END Lib.
+DEFINITION MODULE Other ;
+PROCEDURE One () : I64 ;
+END Other.
+DEFINITION MODULE User ;
+IMPORT Lib ;
+EXCEPTION Refused ;
+PROCEDURE Use (r: Lib.Rec) : I64 ;
+END User.
+IMPLEMENTATION MODULE User ;
+PROCEDURE Use (r: Lib.Rec) : I64 =
+BEGIN
+  RETURN r.n + Lib.Zero ()
+END Use ;
+PROCEDURE Self () RAISES User.Refused =
+BEGIN
+  RAISE User.Refused
+END Self ;
+PROCEDURE Local () : I64 =
+VAR Other : Lib.Rec ;
+BEGIN
+  Other.n := 2 ;
+  RETURN Other.n
+END Local ;
+PROCEDURE Bad () : I64 =
+BEGIN
+  RETURN Other.One ()
+END Bad ;
+END User.

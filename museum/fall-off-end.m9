@@ -1,0 +1,17 @@
+(* EXPECT-ERROR: a function must RETURN or RAISE on every path *)
+(* The uninitialized-Result garbage again, by the door partial-case
+   left open: a function whose IF has no ELSE.  Observed 2026-10-01 --
+   five weeks after the language said it had closed the class -- when
+   the tutorial's own Sign, with the ELSE removed as its chapter
+   invites, compiled and answered 0, and this Weight answered 0.0 for
+   every value at or under 1.0: a weight nobody wrote, with digits.  *)
+MODULE m ;
+PROCEDURE Weight (v: F64) : F64 =
+BEGIN
+  IF v > 10.0 THEN
+    RETURN 3.0
+  ELSIF v > 1.0 THEN
+    RETURN 2.0
+  END
+END Weight ;
+END m.

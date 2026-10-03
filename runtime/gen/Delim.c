@@ -69,8 +69,10 @@ Delim_Reader * Delim_Open (m9_pool *pool, m9_sl_CHAR path, uint8_t delim, int64_
   err->res = m9res;
   Delim_Reader * m9ret = NULL;
   Delim_Reader * r = NULL; (void) r;
-  r = Delim_New (pool, delim, block, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(r) m9v = Delim_New (pool, delim, block, err);
+    if (err->exc) goto L_ret;
+    r = m9v;
+  }
   r->path = path;
   err->res = m9res;
   m9ret = r;
@@ -90,8 +92,10 @@ Delim_Reader * Delim_OpenPush (m9_pool *pool, uint8_t delim, int64_t block, m9_s
   err->res = m9res;
   Delim_Reader * m9ret = NULL;
   Delim_Reader * r = NULL; (void) r;
-  r = Delim_New (pool, delim, block, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(r) m9v = Delim_New (pool, delim, block, err);
+    if (err->exc) goto L_ret;
+    r = m9v;
+  }
   r->push = true;
   r->hungry = true;
   err->res = m9res;
@@ -121,8 +125,10 @@ int64_t Delim_Feed (Delim_Reader * *r, m9_pool *r_pool, m9_sl_BYTE src, m9_state
   }
   Delim_Compact (r, r_pool, err);
   if (err->exc) goto L_ret;
-  room = m9_sub_i64 (((*r)->buf).len, (*r)->len, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(room) m9v = m9_sub_i64 (((*r)->buf).len, (*r)->len, err);
+    if (err->exc) goto L_ret;
+    room = m9v;
+  }
   take = (src).len;
   if ((take > room)) {
     take = room;
@@ -132,11 +138,16 @@ int64_t Delim_Feed (Delim_Reader * *r, m9_pool *r_pool, m9_sl_BYTE src, m9_state
   m9t2to = m9_sub_i64 (take, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    (*(uint8_t *) m9_at ((*r)->buf.p, m9_add_i64 ((*r)->len, i, err), (*r)->buf.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (src.p, i, src.len, sizeof (uint8_t), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint8_t *) m9_at ((*r)->buf.p, m9_add_i64 ((*r)->len, i, err), (*r)->buf.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (src.p, i, src.len, sizeof (uint8_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at ((*r)->buf.p, m9_add_i64 ((*r)->len, i, err), (*r)->buf.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
-  (*r)->len = m9_add_i64 ((*r)->len, take, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*r)->len) m9v = m9_add_i64 ((*r)->len, take, err);
+    if (err->exc) goto L_ret;
+    (*r)->len = m9v;
+  }
   if ((take > INT64_C(0))) {
     (*r)->hungry = false;
   }
@@ -204,16 +215,20 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
         found = true;
         s = i;
       }
-      i = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        i = m9v;
+      }
     }
     if (found) {
       e = s;
       bool m9t2 = ((e > (*r)->pos) && ((int64_t)((*(uint8_t *) m9_at ((*r)->buf.p, m9_sub_i64 (e, INT64_C(1), err), (*r)->buf.len, sizeof (uint8_t), err))) == INT64_C(13)));
       if (err->exc) goto L_ret;
       if (m9t2) {
-        e = m9_sub_i64 (e, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__(e) m9v = m9_sub_i64 (e, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          e = m9v;
+        }
       }
       (*r)->fsBase = (*r)->pos;
       (*r)->endl = e;
@@ -224,10 +239,14 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
         m9_raise (err, &Delim_Error);
         goto L_ret;
       }
-      (*r)->lineNo = m9_add_i64 ((*r)->lineNo, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      (*r)->pos = m9_add_i64 (s, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*r)->lineNo) m9v = m9_add_i64 ((*r)->lineNo, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        (*r)->lineNo = m9v;
+      }
+      { __typeof__((*r)->pos) m9v = m9_add_i64 (s, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        (*r)->pos = m9v;
+      }
       err->res = m9res;
       m9ret = true;
       goto L_ret;
@@ -238,8 +257,10 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
         bool m9t5 = ((e > (*r)->pos) && ((int64_t)((*(uint8_t *) m9_at ((*r)->buf.p, m9_sub_i64 (e, INT64_C(1), err), (*r)->buf.len, sizeof (uint8_t), err))) == INT64_C(13)));
         if (err->exc) goto L_ret;
         if (m9t5) {
-          e = m9_sub_i64 (e, INT64_C(1), err);
-          if (err->exc) goto L_ret;
+          { __typeof__(e) m9v = m9_sub_i64 (e, INT64_C(1), err);
+            if (err->exc) goto L_ret;
+            e = m9v;
+          }
         }
         (*r)->fsBase = (*r)->pos;
         (*r)->endl = e;
@@ -250,8 +271,10 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
           m9_raise (err, &Delim_Error);
           goto L_ret;
         }
-        (*r)->lineNo = m9_add_i64 ((*r)->lineNo, INT64_C(1), err);
-        if (err->exc) goto L_ret;
+        { __typeof__((*r)->lineNo) m9v = m9_add_i64 ((*r)->lineNo, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          (*r)->lineNo = m9v;
+        }
         (*r)->pos = (*r)->len;
         err->res = m9res;
         m9ret = true;
@@ -382,8 +405,10 @@ bool Delim_Is (Delim_Reader * r, int64_t i, m9_sl_CHAR s, m9_state *err)
   bool m9ret = false;
   m9_sl_BYTE f = {0}; (void) f;
   int64_t k = 0; (void) k;
-  f = Delim_Field (r, i, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(f) m9v = Delim_Field (r, i, err);
+    if (err->exc) goto L_ret;
+    f = m9v;
+  }
   if (((f).len != (s).len)) {
     err->res = m9res;
     m9ret = false;
@@ -447,23 +472,30 @@ float Delim_F32At (Delim_Reader * r, int64_t i, bool *ok, m9_state *err)
   m9_sl_BYTE f = {0}; (void) f;
   m9_sl_BYTE z = {0}; (void) z;
   int64_t k = 0; (void) k;
-  f = Delim_Field (r, i, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(f) m9v = Delim_Field (r, i, err);
+    if (err->exc) goto L_ret;
+    f = m9v;
+  }
   (*ok) = false;
   if (((f).len == INT64_C(0))) {
     err->res = m9res;
     m9ret = (float)(0.0);
     goto L_ret;
   }
-  z = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 ((f).len, INT64_C(1), err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(z) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 ((f).len, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    z = m9v;
+  }
   { int64_t m9t1to;
   k = INT64_C(0);
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; k <= m9t1to; k += 1) {
-    (*(uint8_t *) m9_at (z.p, k, z.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (f.p, k, f.len, sizeof (uint8_t), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint8_t *) m9_at (z.p, k, z.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (f.p, k, f.len, sizeof (uint8_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at (z.p, k, z.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   (*ok) = true;
   err->res = m9res;
@@ -487,23 +519,30 @@ double Delim_F64At (Delim_Reader * r, int64_t i, bool *ok, m9_state *err)
   m9_sl_BYTE f = {0}; (void) f;
   m9_sl_BYTE z = {0}; (void) z;
   int64_t k = 0; (void) k;
-  f = Delim_Field (r, i, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(f) m9v = Delim_Field (r, i, err);
+    if (err->exc) goto L_ret;
+    f = m9v;
+  }
   (*ok) = false;
   if (((f).len == INT64_C(0))) {
     err->res = m9res;
     m9ret = 0.0;
     goto L_ret;
   }
-  z = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 ((f).len, INT64_C(1), err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(z) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 ((f).len, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    z = m9v;
+  }
   { int64_t m9t1to;
   k = INT64_C(0);
   m9t1to = m9_sub_i64 ((f).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; k <= m9t1to; k += 1) {
-    (*(uint8_t *) m9_at (z.p, k, z.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (f.p, k, f.len, sizeof (uint8_t), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint8_t *) m9_at (z.p, k, z.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (f.p, k, f.len, sizeof (uint8_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at (z.p, k, z.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
   (*ok) = true;
   err->res = m9res;
@@ -527,8 +566,10 @@ int64_t Delim_I64At (Delim_Reader * r, int64_t i, bool *ok, m9_state *err)
   int64_t k = 0; (void) k;
   int64_t v = 0; (void) v;
   int64_t sign = 0; (void) sign;
-  f = Delim_Field (r, i, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(f) m9v = Delim_Field (r, i, err);
+    if (err->exc) goto L_ret;
+    f = m9v;
+  }
   (*ok) = false;
   v = INT64_C(0);
   sign = INT64_C(1);
@@ -541,8 +582,10 @@ int64_t Delim_I64At (Delim_Reader * r, int64_t i, bool *ok, m9_state *err)
   bool m9t1 = ((int64_t)((*(uint8_t *) m9_at (f.p, INT64_C(0), f.len, sizeof (uint8_t), err))) == INT64_C(45));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    sign = m9_neg_i64 (INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(sign) m9v = m9_neg_i64 (INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      sign = m9v;
+    }
     k = INT64_C(1);
   } else {
     bool m9t2 = ((int64_t)((*(uint8_t *) m9_at (f.p, INT64_C(0), f.len, sizeof (uint8_t), err))) == INT64_C(43));
@@ -564,10 +607,14 @@ int64_t Delim_I64At (Delim_Reader * r, int64_t i, bool *ok, m9_state *err)
       m9ret = INT64_C(0);
       goto L_ret;
     }
-    v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint8_t *) m9_at (f.p, k, f.len, sizeof (uint8_t), err))), INT64_C(48), err)), err);
-    if (err->exc) goto L_ret;
-    k = m9_add_i64 (k, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint8_t *) m9_at (f.p, k, f.len, sizeof (uint8_t), err))), INT64_C(48), err)), err);
+      if (err->exc) goto L_ret;
+      v = m9v;
+    }
+    { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      k = m9v;
+    }
   }
   (*ok) = true;
   err->res = m9res;
@@ -596,13 +643,17 @@ static Delim_Reader * Delim_New (m9_pool *pool, uint8_t delim, int64_t block, m9
     m9_raise (err, &Delim_Error);
     goto L_ret;
   }
-  r = (Delim_Reader *) m9_pool_alloc (&((*pool)), sizeof (Delim_Reader), 1, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(r) m9v = (Delim_Reader *) m9_pool_alloc (&((*pool)), sizeof (Delim_Reader), 1, err);
+    if (err->exc) goto L_ret;
+    r = m9v;
+  }
   r->path = (m9_sl_CHAR){ NULL, 0 };
   r->delim = delim;
   r->block = block;
-  r->buf = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_mul_i64 (block, INT64_C(2), err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(r->buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*pool)), m9_mul_i64 (block, INT64_C(2), err), err);
+    if (err->exc) goto L_ret;
+    r->buf = m9v;
+  }
   r->len = INT64_C(0);
   r->pos = INT64_C(0);
   r->endl = INT64_C(0);
@@ -630,18 +681,25 @@ static void Delim_Compact (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
   err->res = &m9frame;
   int64_t keep = 0; (void) keep;
   int64_t i = 0; (void) i;
-  keep = m9_sub_i64 ((*r)->len, (*r)->pos, err);
-  if (err->exc) goto L_ret;
+  { __typeof__(keep) m9v = m9_sub_i64 ((*r)->len, (*r)->pos, err);
+    if (err->exc) goto L_ret;
+    keep = m9v;
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (keep, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(uint8_t *) m9_at ((*r)->buf.p, i, (*r)->buf.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at ((*r)->buf.p, m9_add_i64 ((*r)->pos, i, err), (*r)->buf.len, sizeof (uint8_t), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint8_t *) m9_at ((*r)->buf.p, i, (*r)->buf.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at ((*r)->buf.p, m9_add_i64 ((*r)->pos, i, err), (*r)->buf.len, sizeof (uint8_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at ((*r)->buf.p, i, (*r)->buf.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
-  (*r)->off = m9_add_i64 ((*r)->off, (*r)->pos, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*r)->off) m9v = m9_add_i64 ((*r)->off, (*r)->pos, err);
+    if (err->exc) goto L_ret;
+    (*r)->off = m9v;
+  }
   (*r)->len = keep;
   (*r)->pos = INT64_C(0);
 L_ret: ;
@@ -665,8 +723,10 @@ static void Delim_Refill (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
   if ((*r)->eof) {
     goto L_ret;
   }
-  got = Io_ReadFileAt (&(scratch), (*r)->path, m9_add_i64 ((*r)->off, (*r)->len, err), m9_sub_i64 (((*r)->buf).len, (*r)->len, err), err);
-  if (err->exc) goto L_ret;
+  { __typeof__(got) m9v = Io_ReadFileAt (&(scratch), (*r)->path, m9_add_i64 ((*r)->off, (*r)->len, err), m9_sub_i64 (((*r)->buf).len, (*r)->len, err), err);
+    if (err->exc) goto L_ret;
+    got = m9v;
+  }
   if (((got).len == INT64_C(0))) {
     (*r)->eof = true;
     goto L_ret;
@@ -676,11 +736,16 @@ static void Delim_Refill (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
   m9t1to = m9_sub_i64 ((got).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    (*(uint8_t *) m9_at ((*r)->buf.p, m9_add_i64 ((*r)->len, i, err), (*r)->buf.len, sizeof (uint8_t), err)) = (*(uint8_t *) m9_at (got.p, i, got.len, sizeof (uint8_t), err));
-    if (err->exc) goto L_ret;
+    { __typeof__((*(uint8_t *) m9_at ((*r)->buf.p, m9_add_i64 ((*r)->len, i, err), (*r)->buf.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (got.p, i, got.len, sizeof (uint8_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at ((*r)->buf.p, m9_add_i64 ((*r)->len, i, err), (*r)->buf.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
   } }
-  (*r)->len = m9_add_i64 ((*r)->len, (got).len, err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*r)->len) m9v = m9_add_i64 ((*r)->len, (got).len, err);
+    if (err->exc) goto L_ret;
+    (*r)->len = m9v;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, r_pool, (*r));
@@ -715,13 +780,19 @@ static bool Delim_SplitLine (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
       if (err->exc) goto L_ret;
       (*(int64_t *) m9_at ((*r)->fe.v, (*r)->nf, INT64_C(1024), sizeof (int64_t), err)) = i;
       if (err->exc) goto L_ret;
-      (*r)->nf = m9_add_i64 ((*r)->nf, INT64_C(1), err);
-      if (err->exc) goto L_ret;
-      a = m9_add_i64 (i, INT64_C(1), err);
-      if (err->exc) goto L_ret;
+      { __typeof__((*r)->nf) m9v = m9_add_i64 ((*r)->nf, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        (*r)->nf = m9v;
+      }
+      { __typeof__(a) m9v = m9_add_i64 (i, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        a = m9v;
+      }
     }
-    i = m9_add_i64 (i, INT64_C(1), err);
-    if (err->exc) goto L_ret;
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
   }
   if (((*r)->nf >= Delim_MaxFields)) {
     err->res = m9res;
@@ -732,8 +803,10 @@ static bool Delim_SplitLine (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
   if (err->exc) goto L_ret;
   (*(int64_t *) m9_at ((*r)->fe.v, (*r)->nf, INT64_C(1024), sizeof (int64_t), err)) = (*r)->endl;
   if (err->exc) goto L_ret;
-  (*r)->nf = m9_add_i64 ((*r)->nf, INT64_C(1), err);
-  if (err->exc) goto L_ret;
+  { __typeof__((*r)->nf) m9v = m9_add_i64 ((*r)->nf, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    (*r)->nf = m9v;
+  }
   err->res = m9res;
   m9ret = true;
   goto L_ret;

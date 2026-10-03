@@ -121,7 +121,7 @@ PROCEDURE AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
                     RO v: SLICE OF BOOL)
   RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                   KEPT v: SLICE OF STR)
+                   RO KEPT v: SLICE OF STR)
   RAISES Faults.SizeError, Duplicate ;
   (* the slice is TAKEN, not copied: the frame views the caller's
      storage, the AddRoute/Json.Parse retention contract.  Length
@@ -324,6 +324,156 @@ PROCEDURE MakeContiguous (VAR pool: POOL ; KEPT ts: PTR Ts) : PTR Ts IN pool
      REFUSES (WrongType, the column named): no missing value exists
      for a boolean. *)
 
+(* ---- the verbs: rows chosen, rows ordered, rows grouped and joined ----
+
+   Each answers a NEW frame in pool.  The values are copied; the
+   strings of a Strs column are the source frame's own, which the
+   new frame views (the AddStrs contract), so it lives no longer
+   than its source does.  A missing value stays the column's missing
+   value, and in a real column a NaN is one too, as everywhere in
+   this module.  The oracle is polars, in corpus/FrameTest.m9. *)
+
+PROCEDURE Take (VAR pool: POOL ; f: PTR Fr ; RO rows: SLICE OF I64)
+  : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate ;
+  (* f's columns, in f's order, with their metadata, and the rows
+     named, in the order named; a row may be named more than once,
+     or not at all.  A number outside 0 .. Rows (f) - 1 is
+     IndexError. *)
+
+PROCEDURE Filter (VAR pool: POOL ; f: PTR Fr ; RO mask: SLICE OF BOOL)
+  : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate ;
+  (* the rows where mask is TRUE, in their order: polars' filter.
+     LEN (mask) must be Rows (f), or it is Faults.SizeError. *)
+
+PROCEDURE OrderBy (f: PTR Fr ; RO name: STR ; descending: BOOL)
+  : SLICE OF I64 RAISES Unknown, IndexError ;
+PROCEDURE SortBy (VAR pool: POOL ; f: PTR Fr ; RO name: STR ;
+                  descending: BOOL) : PTR Fr IN pool
+  RAISES Unknown, IndexError, Faults.SizeError, Duplicate ;
+  (* the rows in the order of one column: OrderBy answers the row
+     numbers and SortBy the frame, which is Take of them.  STABLE
+     both ways: rows equal in the column keep the order they had.
+     The rules are polars' sort with its defaults, a missing value
+     being its null:
+
+       a missing value comes FIRST, ascending and descending, the
+         missing among themselves in the order they had;
+       strings by code point, the shorter first, and the empty
+         string is a value; FALSE before TRUE. *)
+
+PROCEDURE GroupBy (VAR pool: POOL ; f: PTR Fr ; RO key: STR ;
+                   RO how: SLICE OF How ; minCount: I64) : PTR Fr IN pool
+  RAISES Unknown, WrongType, Faults.SizeError, ValueRange, Overflow,
+         IndexError ;
+  (* one row for every distinct value of the column `key`, the rows
+     in ASCENDING ORDER OF THE KEY, and the rows whose key is missing
+     as one group, first (OrderBy's order; polars' group_by, sorted
+     by the key).  Every other column is reduced over the rows of its
+     group by its entry of how, which has one entry per column of f,
+     the key's being ignored: Average's reducers and Average's rules.
+     Missing values are left out of Mean/Sum/Lo/Hi, a group with
+     fewer than minCount values left answers the column's missing
+     value, First and Last are the first and the last ROW of the
+     group in f's order.  As from Average, an F32 column comes back
+     F64. *)
+
+PROCEDURE GroupSizes (f: PTR Fr ; RO key: STR) : SLICE OF I64
+  RAISES Unknown, IndexError ;
+  (* how many rows each group of GroupBy (f, key) has, in the same
+     order *)
+
+PROCEDURE Join (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError ;
+PROCEDURE JoinLeft (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR)
+  : PTR Fr IN pool
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError ;
+  (* the rows of a and b that hold the same value in the column
+     `key`, which both have: a's columns, then b's but its key.  One
+     row for every PAIR that matches, so a key held twice on each
+     side gives four; a's rows in a's order and, for each, its
+     matches in b's order.  Join is the inner join: a row of a that
+     matches nothing is left out.  JoinLeft keeps it, with the
+     missing value in every column of b ('' in a Strs column) and
+     WrongType for a Bools column of b, which has none.
+
+     A MISSING KEY MATCHES NOTHING, another missing key included
+     (polars' rule, and SQL's).  The two key columns must be of one
+     family: integers of any width with integers, strings with
+     strings, booleans with booleans.  A REAL key is refused, and a
+     mismatch is, as WrongType naming the key: equality of two
+     computed reals is not something to build a table on.  A column
+     name that a and b share, other than the key, is Duplicate: no
+     suffix is invented, rename before joining. *)
+
+PROCEDURE Describe (VAR pool: POOL ; f: PTR Fr) : PTR Fr IN pool
+  RAISES Duplicate, Faults.SizeError, IndexError ;
+  (* nine rows about every NUMERIC column of f: a Strs column
+     `statistic` naming the rows -- count, missing, mean, std, min,
+     25%, 50%, 75%, max -- and one F64 column for each numeric column
+     of f, under its name.  count is of the values that are not
+     missing; std is the sample one (ddof 1); the percentiles are
+     Stats.Percentile's, numpy's linear rule (polars' describe with
+     interpolation = 'linear').  A statistic that has too few values
+     to exist is NaN.  Strs and Bools columns are left out, and an
+     I64 beyond 2^53 is rounded on its way to F64. *)
+
+(* ---- verbs that take a procedure (2026-10-02) ----
+
+   Where the six reducers of How, or a mask made elsewhere, are not
+   what is wanted, the caller writes the arithmetic as a procedure
+   and hands it over (report par 2.2.3).  A procedure value captures
+   nothing, so, as in Numeric, whatever else it needs travels beside
+   it as `p', a slice of reals these verbs pass on and never read.
+
+   The procedure sees REALS: a numeric column of any kind is handed
+   to it as F64, and a Strs or a Bools column is refused as WrongType.
+   It may raise ValueRange, which is what Math's functions raise, and
+   need not say so if it cannot. *)
+
+TYPE
+  Agg = PROCEDURE (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64
+        RAISES ValueRange ;
+  (* one number for the values of a group.  v holds the values THAT
+     ARE THERE, in row order: a missing value is not among them, so
+     v may be empty, and what a group of nothing answers is the
+     procedure's to say -- NaN, which is Frame's missing value, is
+     the honest one. *)
+
+  RowFn = PROCEDURE (RO row: SLICE OF F64 ; RO p: SLICE OF F64) : F64
+          RAISES ValueRange ;
+  (* one number for a row.  row[j] is the row's value in the j-th
+     column asked for, and NaN where that is missing -- so plain
+     arithmetic answers NaN for a row with a gap, which is right. *)
+
+  RowTest = PROCEDURE (RO row: SLICE OF F64 ; RO p: SLICE OF F64) : BOOL
+            RAISES ValueRange ;
+  (* yes or no for a row; a comparison with a NaN is FALSE *)
+
+PROCEDURE Aggregate (VAR pool: POOL ; f: PTR Fr ; RO key, name: STR ;
+                     agg: Agg ; RO p: SLICE OF F64) : PTR Fr IN pool
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
+         IndexError ;
+  (* GroupBy's groups, in GroupBy's order, and two columns: the key,
+     and the column `name' reduced by agg, as F64 with NaN for its
+     missing value.  polars' group_by (key).agg (an expression over
+     name), sorted by the key. *)
+
+PROCEDURE Compute (VAR pool: POOL ; VAR f: PTR Fr ; RO cols: SLICE OF STR ;
+                   RO name: STR ; fn: RowFn ; RO p: SLICE OF F64)
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
+         IndexError ;
+  (* a new F64 column `name' ADDED to f, each value fn of that row's
+     values in the columns cols; its missing value is NaN.  polars'
+     with_columns. *)
+
+PROCEDURE FilterBy (VAR pool: POOL ; f: PTR Fr ; RO cols: SLICE OF STR ;
+                    test: RowTest ; RO p: SLICE OF F64) : PTR Fr IN pool
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
+         IndexError ;
+  (* the rows for which test is TRUE of their values in the columns
+     cols, in their order: Filter, with the mask computed here.
+     polars' filter over an expression, where a null is not a yes. *)
+
 END Frame.
 
 
@@ -335,6 +485,9 @@ IMPORT Math ;
 IMPORT DynStr ;
 IMPORT Fmt ;
 IMPORT Time ;
+IMPORT Sort ;
+IMPORT Stats ;
+IMPORT Text ;
 
 TYPE
   Fr = RECORD
@@ -511,7 +664,7 @@ BEGIN
 END AddBools ;
 
 PROCEDURE AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                   KEPT v: SLICE OF STR)
+                   RO KEPT v: SLICE OF STR)
   RAISES Faults.SizeError, Duplicate =
 VAR
   c : Col ;
@@ -2130,5 +2283,764 @@ BEGIN
   | Strs : RAISE WrongType (name)
   END
 END MissByte ;
+
+(* ---- the verbs: rows chosen, rows ordered, rows grouped and joined ---- *)
+
+(* the columns of f, but `skip`, appended to out, row i of each taken
+   from rows[i] of f -- and a row number of -1 is a row that is not
+   there, which answers the column's missing value ('' in a Strs
+   column) and is REFUSED by a Bools column, which has none *)
+PROCEDURE Gather (VAR pool: POOL ; VAR out: PTR Fr ; f: PTR Fr ;
+                  RO rows: SLICE OF I64 ; RO skip: STR)
+  RAISES IndexError, WrongType, Faults.SizeError, Duplicate =
+VAR
+  c : Col ;
+  n, i, k : I64 ;
+  a64 : SLICE OF F64 ;
+  a32 : SLICE OF F32 ;
+  ai64 : SLICE OF I64 ;
+  ai32 : SLICE OF I32 ;
+  ai16 : SLICE OF I16 ;
+  ab : SLICE OF BYTE ;
+  abo : SLICE OF BOOL ;
+  astr, src : SLICE OF STR ;
+BEGIN
+  n := LEN (rows) ;
+  FOR k := 0 TO f.ncols - 1 DO
+    c := f.cols[k] ;
+    IF NOT Text.Eq (c.name, skip) THEN
+      (* one arm a kind, each the same lines: no generics *)
+      CASE c.data OF
+      | F64s (v, m) :
+          a64 := NEW (pool, F64, n) ;
+          FOR i := 0 TO n - 1 DO
+            IF rows[i] < 0 THEN a64[i] := m ELSE a64[i] := v[rows[i]] END
+          END ;
+          AddF64 (pool, out, c.name, a64, m)
+      | F32s (v, m) :
+          a32 := NEW (pool, F32, n) ;
+          FOR i := 0 TO n - 1 DO
+            IF rows[i] < 0 THEN a32[i] := m ELSE a32[i] := v[rows[i]] END
+          END ;
+          AddF32 (pool, out, c.name, a32, m)
+      | I64s (v, m) :
+          ai64 := NEW (pool, I64, n) ;
+          FOR i := 0 TO n - 1 DO
+            IF rows[i] < 0 THEN ai64[i] := m ELSE ai64[i] := v[rows[i]] END
+          END ;
+          AddI64 (pool, out, c.name, ai64, m)
+      | I32s (v, m) :
+          ai32 := NEW (pool, I32, n) ;
+          FOR i := 0 TO n - 1 DO
+            IF rows[i] < 0 THEN ai32[i] := m ELSE ai32[i] := v[rows[i]] END
+          END ;
+          AddI32 (pool, out, c.name, ai32, m)
+      | I16s (v, m) :
+          ai16 := NEW (pool, I16, n) ;
+          FOR i := 0 TO n - 1 DO
+            IF rows[i] < 0 THEN ai16[i] := m ELSE ai16[i] := v[rows[i]] END
+          END ;
+          AddI16 (pool, out, c.name, ai16, m)
+      | Bytes (v, m) :
+          ab := NEW (pool, BYTE, n) ;
+          FOR i := 0 TO n - 1 DO
+            IF rows[i] < 0 THEN ab[i] := m ELSE ab[i] := v[rows[i]] END
+          END ;
+          AddBytes (pool, out, c.name, ab, m)
+      | Bools (v) :
+          abo := NEW (pool, BOOL, n) ;
+          FOR i := 0 TO n - 1 DO
+            IF rows[i] < 0 THEN RAISE WrongType (c.name) END ;
+            abo[i] := v[rows[i]]
+          END ;
+          AddBools (pool, out, c.name, abo)
+      | Strs (si) :
+          src := f.strs[si].v ;
+          astr := NEW (pool, STR, n) ;
+          FOR i := 0 TO n - 1 DO
+            IF rows[i] < 0 THEN astr[i] := '' ELSE astr[i] := src[rows[i]] END
+          END ;
+          AddStrs (pool, out, c.name, astr)
+      END ;
+      SetMeta2 (pool, out, c.name, c.long, c.cf, c.unit)
+    END
+  END
+END Gather ;
+
+PROCEDURE Take (VAR pool: POOL ; f: PTR Fr ; RO rows: SLICE OF I64)
+  : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate =
+VAR
+  out : PTR Fr IN pool ;
+  i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (rows) - 1 DO
+    IF rows[i] < 0 OR rows[i] >= f.rows THEN RAISE IndexError END
+  END ;
+  out := New (pool, LEN (rows)) ;
+  Gather (pool, out, f, rows, '') ;
+  RETURN out
+EXCEPT
+| WrongType : RAISE IndexError    (* only a row of -1 asks for it *)
+END Take ;
+
+PROCEDURE Filter (VAR pool: POOL ; f: PTR Fr ; RO mask: SLICE OF BOOL)
+  : PTR Fr IN pool RAISES IndexError, Faults.SizeError, Duplicate =
+VAR
+  scratch : POOL ;
+  rows : SLICE OF I64 ;
+  i, n : I64 ;
+BEGIN
+  IF LEN (mask) # f.rows THEN RAISE Faults.SizeError (LEN (mask), f.rows) END ;
+  n := 0 ;
+  FOR i := 0 TO f.rows - 1 DO
+    IF mask[i] THEN n := n + 1 END
+  END ;
+  rows := NEW (scratch, I64, n) ;
+  n := 0 ;
+  FOR i := 0 TO f.rows - 1 DO
+    IF mask[i] THEN
+      rows[n] := i ;
+      n := n + 1
+    END
+  END ;
+  RETURN Take (pool, f, rows)
+END Filter ;
+
+(* ---- a column as a KEY: what a sort, a grouping and a join compare ----
+
+   Every kind becomes one of three representations -- a real, an
+   integer, a string -- and a flag saying whether the row holds a
+   value at all.  F32 widens to F64 and the narrow integers and the
+   booleans to I64 without loss, so three sorts serve eight kinds.
+   The FAMILY says what the column was, for a join, which may not
+   hold an integer key to a boolean one. *)
+
+CONST
+  KeyReal = 0 ;
+  KeyInt = 1 ;
+  KeyStr = 2 ;
+  KeyBool = 3 ;                (* sorts and compares as KeyInt *)
+
+TYPE
+  Keys = RECORD
+    family : I64 ;
+    live : SLICE OF BOOL ;     (* the row holds a value *)
+    f : SLICE OF F64 ;
+    i : SLICE OF I64 ;
+    s : SLICE OF STR ;
+  END ;
+
+PROCEDURE KeysOf (VAR pool: POOL ; f: PTR Fr ; RO name: STR) : Keys
+  RAISES Unknown, IndexError =
+VAR
+  c : Col ;
+  k : Keys ;
+  n, i : I64 ;
+BEGIN
+  c := GetCol (f, name) ;
+  n := f.rows ;
+  k.family := KeyInt ;
+  k.live := NEW (pool, BOOL, n) ;
+  k.f := NEW (pool, F64, 0) ;
+  k.i := NEW (pool, I64, 0) ;
+  k.s := NEW (pool, STR, 0) ;
+  CASE c.data OF
+  | F64s (v, m) :
+      k.family := KeyReal ;
+      k.f := NEW (pool, F64, n) ;
+      FOR i := 0 TO n - 1 DO
+        k.live[i] := NOT (IsNaN64 (v[i]) OR v[i] = m) ;
+        k.f[i] := v[i]
+      END
+  | F32s (v, m) :
+      k.family := KeyReal ;
+      k.f := NEW (pool, F64, n) ;
+      FOR i := 0 TO n - 1 DO
+        k.live[i] := NOT (IsNaN32 (v[i]) OR v[i] = m) ;
+        k.f[i] := F64 (v[i])
+      END
+  | I64s (v, m) :
+      k.i := NEW (pool, I64, n) ;
+      FOR i := 0 TO n - 1 DO
+        k.live[i] := v[i] # m ;
+        k.i[i] := v[i]
+      END
+  | I32s (v, m) :
+      k.i := NEW (pool, I64, n) ;
+      FOR i := 0 TO n - 1 DO
+        k.live[i] := v[i] # m ;
+        k.i[i] := I64 (v[i])
+      END
+  | I16s (v, m) :
+      k.i := NEW (pool, I64, n) ;
+      FOR i := 0 TO n - 1 DO
+        k.live[i] := v[i] # m ;
+        k.i[i] := I64 (v[i])
+      END
+  | Bytes (v, m) :
+      k.i := NEW (pool, I64, n) ;
+      FOR i := 0 TO n - 1 DO
+        k.live[i] := v[i] # m ;
+        k.i[i] := I64 (v[i])
+      END
+  | Bools (v) :
+      k.family := KeyBool ;
+      k.i := NEW (pool, I64, n) ;
+      FOR i := 0 TO n - 1 DO
+        k.live[i] := TRUE ;
+        IF v[i] THEN k.i[i] := 1 END
+      END
+  | Strs (si) :
+      (* the empty string is a value here, as it is to polars: only a
+         number has a missing value a sort must set aside *)
+      k.family := KeyStr ;
+      k.s := f.strs[si].v ;
+      FOR i := 0 TO n - 1 DO k.live[i] := TRUE END
+  END ;
+  RETURN k
+END KeysOf ;
+
+(* no NaN reaches the sort: a NaN is a missing value, and the rows
+   that hold none are not among those sorted *)
+PROCEDURE ArgNoNaN (RO v: SLICE OF F64 ; VAR idx: SLICE OF I64)
+  RAISES IndexError =
+BEGIN
+  Sort.ArgF64 (v, idx)
+EXCEPT
+| Sort.NotANumber : RAISE IndexError
+END ArgNoNaN ;
+
+(* the keys of the rows named, sorted: rows[idx[j]] holds the j-th
+   smallest, and rows with equal keys stay in the order `rows` names
+   them *)
+PROCEDURE ArgKeys (RO k: Keys ; RO rows: SLICE OF I64 ; VAR idx: SLICE OF I64)
+  RAISES IndexError =
+VAR
+  cf : SLICE OF F64 ;
+  ci : SLICE OF I64 ;
+  cs : SLICE OF STR ;
+  j, nv : I64 ;
+BEGIN
+  nv := LEN (rows) ;
+  IF k.family = KeyReal THEN
+    cf := NEW (F64, nv) ;
+    FOR j := 0 TO nv - 1 DO cf[j] := k.f[rows[j]] END ;
+    ArgNoNaN (cf, idx)
+  ELSIF k.family = KeyStr THEN
+    cs := NEW (STR, nv) ;
+    FOR j := 0 TO nv - 1 DO cs[j] := k.s[rows[j]] END ;
+    Sort.ArgStr (cs, idx)
+  ELSE
+    ci := NEW (I64, nv) ;
+    FOR j := 0 TO nv - 1 DO ci[j] := k.i[rows[j]] END ;
+    Sort.ArgI64 (ci, idx)
+  END
+END ArgKeys ;
+
+PROCEDURE SameKey (RO k: Keys ; a, b: I64) : BOOL =
+BEGIN
+  IF k.family = KeyReal THEN RETURN k.f[a] = k.f[b] END ;
+  IF k.family = KeyStr THEN RETURN Text.Eq (k.s[a], k.s[b]) END ;
+  RETURN k.i[a] = k.i[b]
+END SameKey ;
+
+(* every row that holds a key gets the NUMBER of its key, the keys
+   numbered from 0 in ascending order; a row that holds none gets -1.
+   Answers how many keys there are. *)
+PROCEDURE Ids (RO k: Keys ; VAR id: SLICE OF I64) : I64 RAISES IndexError =
+VAR
+  rows, idx : SLICE OF I64 ;
+  n, nv, j, g : I64 ;
+BEGIN
+  n := LEN (k.live) ;
+  nv := 0 ;
+  FOR j := 0 TO n - 1 DO
+    id[j] := -1 ;
+    IF k.live[j] THEN nv := nv + 1 END
+  END ;
+  rows := NEW (I64, nv) ;
+  nv := 0 ;
+  FOR j := 0 TO n - 1 DO
+    IF k.live[j] THEN
+      rows[nv] := j ;
+      nv := nv + 1
+    END
+  END ;
+  idx := NEW (I64, nv) ;
+  ArgKeys (k, rows, idx) ;
+  g := -1 ;
+  FOR j := 0 TO nv - 1 DO
+    IF j = 0 THEN
+      g := 0
+    ELSIF NOT SameKey (k, rows[idx[j]], rows[idx[j - 1]]) THEN
+      g := g + 1
+    END ;
+    id[rows[idx[j]]] := g
+  END ;
+  RETURN g + 1
+END Ids ;
+
+PROCEDURE OrderBy (f: PTR Fr ; RO name: STR ; descending: BOOL)
+  : SLICE OF I64 RAISES Unknown, IndexError =
+VAR
+  scratch : POOL ;
+  k : Keys ;
+  n, i, j, nv, at : I64 ;
+  rows, idx : SLICE OF I64 ;
+  out : SLICE OF I64 ;
+BEGIN
+  k := KeysOf (scratch, f, name) ;
+  n := f.rows ;
+  (* the rows that hold a value, in the order the sort is to be
+     stable in: as they come when ascending, BACKWARDS when
+     descending -- a stable ascending sort of the reversed rows, read
+     back to front, is a stable descending sort of the rows *)
+  nv := 0 ;
+  FOR i := 0 TO n - 1 DO
+    IF k.live[i] THEN nv := nv + 1 END
+  END ;
+  rows := NEW (scratch, I64, nv) ;
+  j := 0 ;
+  FOR i := 0 TO n - 1 DO
+    IF descending THEN at := n - 1 - i ELSE at := i END ;
+    IF k.live[at] THEN
+      rows[j] := at ;
+      j := j + 1
+    END
+  END ;
+  idx := NEW (scratch, I64, nv) ;
+  ArgKeys (k, rows, idx) ;
+
+  (* the missing first, in their own order, both ways; then the
+     values, back to front when descending *)
+  out := NEW (I64, n) ;
+  at := 0 ;
+  FOR i := 0 TO n - 1 DO
+    IF NOT k.live[i] THEN
+      out[at] := i ;
+      at := at + 1
+    END
+  END ;
+  FOR j := 0 TO nv - 1 DO
+    IF descending THEN
+      out[at] := rows[idx[nv - 1 - j]]
+    ELSE
+      out[at] := rows[idx[j]]
+    END ;
+    at := at + 1
+  END ;
+  RETURN out
+END OrderBy ;
+
+PROCEDURE SortBy (VAR pool: POOL ; f: PTR Fr ; RO name: STR ;
+                  descending: BOOL) : PTR Fr IN pool
+  RAISES Unknown, IndexError, Faults.SizeError, Duplicate =
+BEGIN
+  RETURN Take (pool, f, OrderBy (f, name, descending))
+END SortBy ;
+
+(* ---- group by ---- *)
+
+(* the group of every row, the groups numbered in the order of their
+   keys and the rows without a key in group 0 when there are any;
+   answers how many groups *)
+PROCEDURE Groups (f: PTR Fr ; RO key: STR ; VAR win: SLICE OF I64) : I64
+  RAISES Unknown, IndexError =
+VAR
+  scratch : POOL ;
+  k : Keys ;
+  r, ng, gap : I64 ;
+BEGIN
+  k := KeysOf (scratch, f, key) ;
+  ng := Ids (k, win) ;
+  gap := 0 ;
+  FOR r := 0 TO f.rows - 1 DO
+    IF win[r] < 0 THEN gap := 1 END
+  END ;
+  FOR r := 0 TO f.rows - 1 DO win[r] := win[r] + gap END ;
+  RETURN ng + gap
+END Groups ;
+
+PROCEDURE GroupBy (VAR pool: POOL ; f: PTR Fr ; RO key: STR ;
+                   RO how: SLICE OF How ; minCount: I64) : PTR Fr IN pool
+  RAISES Unknown, WrongType, Faults.SizeError, ValueRange, Overflow,
+         IndexError =
+VAR
+  out : PTR Fr IN pool ;
+  win : SLICE OF I64 ;
+  ng, c, kc : I64 ;
+  h : How ;
+BEGIN
+  IF LEN (how) # f.ncols THEN
+    RAISE Faults.SizeError (LEN (how), f.ncols)
+  END ;
+  kc := Find (f, key) ;
+  IF kc < 0 THEN RAISE Unknown (key) END ;
+  win := NEW (I64, f.rows) ;
+  ng := Groups (f, key, win) ;
+  out := New (pool, ng) ;
+  FOR c := 0 TO f.ncols - 1 DO
+    (* the key answers itself: every row of a group holds the same *)
+    IF c = kc THEN h := How.First ELSE h := how[c] END ;
+    Reduce (pool, f, out, f.cols[c], h, win, ng, minCount)
+  END ;
+  RETURN out
+END GroupBy ;
+
+PROCEDURE GroupSizes (f: PTR Fr ; RO key: STR) : SLICE OF I64
+  RAISES Unknown, IndexError =
+VAR
+  win, n : SLICE OF I64 ;
+  ng, r : I64 ;
+BEGIN
+  win := NEW (I64, f.rows) ;
+  ng := Groups (f, key, win) ;
+  n := NEW (I64, ng) ;
+  FOR r := 0 TO f.rows - 1 DO n[win[r]] := n[win[r]] + 1 END ;
+  RETURN n
+END GroupSizes ;
+
+(* ---- join ---- *)
+
+(* the keys of a and then the keys of b, as one column *)
+PROCEDURE Glue (VAR pool: POOL ; RO KEPT a, b: Keys) : Keys
+  RAISES IndexError =
+VAR
+  k : Keys ;
+  na, nb, i : I64 ;
+BEGIN
+  na := LEN (a.live) ;
+  nb := LEN (b.live) ;
+  k.family := a.family ;
+  k.live := NEW (pool, BOOL, na + nb) ;
+  k.f := NEW (pool, F64, 0) ;
+  k.i := NEW (pool, I64, 0) ;
+  k.s := NEW (pool, STR, 0) ;
+  FOR i := 0 TO na - 1 DO k.live[i] := a.live[i] END ;
+  FOR i := 0 TO nb - 1 DO k.live[na + i] := b.live[i] END ;
+  IF a.family = KeyStr THEN
+    k.s := NEW (pool, STR, na + nb) ;
+    FOR i := 0 TO na - 1 DO k.s[i] := a.s[i] END ;
+    FOR i := 0 TO nb - 1 DO k.s[na + i] := b.s[i] END
+  ELSE
+    k.i := NEW (pool, I64, na + nb) ;
+    FOR i := 0 TO na - 1 DO k.i[i] := a.i[i] END ;
+    FOR i := 0 TO nb - 1 DO k.i[na + i] := b.i[i] END
+  END ;
+  RETURN k
+END Glue ;
+
+PROCEDURE JoinOn (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR ;
+                  keepAll: BOOL) : PTR Fr IN pool
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError =
+VAR
+  scratch : POOL ;
+  out : PTR Fr IN pool ;
+  ka, kb, both : Keys ;
+  id, start, fill, brows, ra, rb : SLICE OF I64 ;
+  na, nb, ng, i, j, g, m, n, at : I64 ;
+BEGIN
+  ka := KeysOf (scratch, a, key) ;
+  kb := KeysOf (scratch, b, key) ;
+  IF ka.family # kb.family OR ka.family = KeyReal THEN
+    RAISE WrongType (key)
+  END ;
+  na := a.rows ;
+  nb := b.rows ;
+  (* one numbering of the keys of both sides: two rows match exactly
+     when their numbers are equal, and a row without a key has none *)
+  both := Glue (scratch, ka, kb) ;
+  id := NEW (scratch, I64, na + nb) ;
+  ng := Ids (both, id) ;
+
+  (* b's rows by key number, each key's rows in b's own order *)
+  start := NEW (scratch, I64, ng + 1) ;
+  FOR j := 0 TO nb - 1 DO
+    g := id[na + j] ;
+    IF g >= 0 THEN start[g + 1] := start[g + 1] + 1 END
+  END ;
+  FOR g := 0 TO ng - 1 DO start[g + 1] := start[g + 1] + start[g] END ;
+  fill := NEW (scratch, I64, ng + 1) ;
+  brows := NEW (scratch, I64, nb) ;
+  FOR j := 0 TO nb - 1 DO
+    g := id[na + j] ;
+    IF g >= 0 THEN
+      brows[start[g] + fill[g]] := j ;
+      fill[g] := fill[g] + 1
+    END
+  END ;
+
+  (* the pairs: counted, then written -- a's rows in a's order, and
+     for each the rows of b that match it, in b's *)
+  n := 0 ;
+  FOR i := 0 TO na - 1 DO
+    g := id[i] ;
+    m := 0 ;
+    IF g >= 0 THEN m := start[g + 1] - start[g] END ;
+    IF m = 0 AND keepAll THEN m := 1 END ;
+    n := n + m
+  END ;
+  ra := NEW (scratch, I64, n) ;
+  rb := NEW (scratch, I64, n) ;
+  at := 0 ;
+  FOR i := 0 TO na - 1 DO
+    g := id[i] ;
+    m := 0 ;
+    IF g >= 0 THEN m := start[g + 1] - start[g] END ;
+    IF m = 0 THEN
+      IF keepAll THEN
+        ra[at] := i ;
+        rb[at] := -1 ;
+        at := at + 1
+      END
+    ELSE
+      FOR j := 0 TO m - 1 DO
+        ra[at] := i ;
+        rb[at] := brows[start[g] + j] ;
+        at := at + 1
+      END
+    END
+  END ;
+  out := New (pool, n) ;
+  Gather (pool, out, a, ra, '') ;
+  Gather (pool, out, b, rb, key) ;
+  RETURN out
+END JoinOn ;
+
+PROCEDURE Join (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR) : PTR Fr IN pool
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError =
+BEGIN
+  RETURN JoinOn (pool, a, b, key, FALSE)
+END Join ;
+
+PROCEDURE JoinLeft (VAR pool: POOL ; a, b: PTR Fr ; RO key: STR)
+  : PTR Fr IN pool
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, IndexError =
+BEGIN
+  RETURN JoinOn (pool, a, b, key, TRUE)
+END JoinLeft ;
+
+(* ---- describe ---- *)
+
+CONST
+  Statistics = ['count', 'missing', 'mean', 'std', 'min', '25%', '50%',
+                '75%', 'max'] ;
+
+(* a statistic that needs more values than there are is not a number *)
+PROCEDURE MeanOr (RO x: SLICE OF F64) : F64 =
+BEGIN
+  RETURN Stats.Mean (x)
+EXCEPT
+| Stats.TooFew : RETURN 0.0 / 0.0
+END MeanOr ;
+
+PROCEDURE StdOr (RO x: SLICE OF F64) : F64 =
+BEGIN
+  RETURN Stats.Std (x)
+EXCEPT
+| Stats.TooFew : RETURN 0.0 / 0.0
+| ValueRange : RETURN 0.0 / 0.0
+END StdOr ;
+
+PROCEDURE PctOr (RO x: SLICE OF F64 ; p: F64) : F64 =
+BEGIN
+  RETURN Stats.Percentile (x, p)
+EXCEPT
+| Stats.TooFew : RETURN 0.0 / 0.0
+| Faults.BadArg : RETURN 0.0 / 0.0
+| ValueRange : RETURN 0.0 / 0.0
+END PctOr ;
+
+(* a numeric column as reals, a NaN where the value is missing: what
+   Stats takes.  FALSE for a column that is not numeric. *)
+PROCEDURE AsReals (f: PTR Fr ; RO c: Col ; VAR x: SLICE OF F64) : BOOL
+  RAISES IndexError =
+VAR
+  i, n : I64 ;
+  nan : F64 ;
+BEGIN
+  n := f.rows ;
+  nan := 0.0 / 0.0 ;
+  CASE c.data OF
+  | F64s (v, m) :
+      FOR i := 0 TO n - 1 DO
+        IF v[i] = m THEN x[i] := nan ELSE x[i] := v[i] END
+      END
+  | F32s (v, m) :
+      FOR i := 0 TO n - 1 DO
+        IF v[i] = m THEN x[i] := nan ELSE x[i] := F64 (v[i]) END
+      END
+  | I64s (v, m) :
+      FOR i := 0 TO n - 1 DO
+        IF v[i] = m THEN x[i] := nan ELSE x[i] := F64 (v[i]) END
+      END
+  | I32s (v, m) :
+      FOR i := 0 TO n - 1 DO
+        IF v[i] = m THEN x[i] := nan ELSE x[i] := F64 (v[i]) END
+      END
+  | I16s (v, m) :
+      FOR i := 0 TO n - 1 DO
+        IF v[i] = m THEN x[i] := nan ELSE x[i] := F64 (v[i]) END
+      END
+  | Bytes (v, m) :
+      FOR i := 0 TO n - 1 DO
+        IF v[i] = m THEN x[i] := nan ELSE x[i] := F64 (v[i]) END
+      END
+  | Bools (v) : RETURN FALSE
+  | Strs (si) : RETURN FALSE
+  END ;
+  RETURN TRUE
+END AsReals ;
+
+PROCEDURE Describe (VAR pool: POOL ; f: PTR Fr) : PTR Fr IN pool
+  RAISES Duplicate, Faults.SizeError, IndexError =
+VAR
+  out : PTR Fr IN pool ;
+  labels : SLICE OF STR ;
+  x, o : SLICE OF F64 ;
+  c : Col ;
+  k, i, live : I64 ;
+BEGIN
+  out := New (pool, LEN (Statistics)) ;
+  labels := NEW (pool, STR, LEN (Statistics)) ;
+  FOR i := 0 TO LEN (Statistics) - 1 DO labels[i] := Statistics[i] END ;
+  AddStrs (pool, out, 'statistic', labels) ;
+  x := NEW (F64, f.rows) ;
+  FOR k := 0 TO f.ncols - 1 DO
+    c := f.cols[k] ;
+    IF AsReals (f, c, x) THEN
+      live := Stats.Count (x) ;
+      o := NEW (pool, F64, LEN (Statistics)) ;
+      o[0] := F64 (live) ;
+      o[1] := F64 (f.rows - live) ;
+      o[2] := MeanOr (x) ;
+      o[3] := StdOr (x) ;
+      o[4] := PctOr (x, 0.0) ;
+      o[5] := PctOr (x, 25.0) ;
+      o[6] := PctOr (x, 50.0) ;
+      o[7] := PctOr (x, 75.0) ;
+      o[8] := PctOr (x, 100.0) ;
+      AddF64 (pool, out, c.name, o, 0.0 / 0.0)
+    END
+  END ;
+  RETURN out
+END Describe ;
+
+(* ---- verbs that take a procedure ---- *)
+
+PROCEDURE Aggregate (VAR pool: POOL ; f: PTR Fr ; RO key, name: STR ;
+                     agg: Agg ; RO p: SLICE OF F64) : PTR Fr IN pool
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
+         IndexError =
+VAR
+  out : PTR Fr IN pool ;
+  win, start, fill : SLICE OF I64 ;
+  x, vals, o : SLICE OF F64 ;
+  c : Col ;
+  n, ng, r, g, kc : I64 ;
+  v : F64 ;
+BEGIN
+  kc := Find (f, key) ;
+  IF kc < 0 THEN RAISE Unknown (key) END ;
+  c := GetCol (f, name) ;
+  n := f.rows ;
+  x := NEW (F64, n) ;
+  IF NOT AsReals (f, c, x) THEN RAISE WrongType (name) END ;
+  win := NEW (I64, n) ;
+  ng := Groups (f, key, win) ;
+  (* the values that are there, group after group, each group's in
+     the order of its rows *)
+  start := NEW (I64, ng + 1) ;
+  FOR r := 0 TO n - 1 DO
+    IF NOT IsNaN64 (x[r]) THEN
+      start[win[r] + 1] := start[win[r] + 1] + 1
+    END
+  END ;
+  FOR g := 0 TO ng - 1 DO start[g + 1] := start[g + 1] + start[g] END ;
+  fill := NEW (I64, ng) ;
+  vals := NEW (F64, start[ng]) ;
+  FOR r := 0 TO n - 1 DO
+    IF NOT IsNaN64 (x[r]) THEN
+      g := win[r] ;
+      vals[start[g] + fill[g]] := x[r] ;
+      fill[g] := fill[g] + 1
+    END
+  END ;
+  o := NEW (pool, F64, ng) ;
+  FOR g := 0 TO ng - 1 DO
+    v := agg (SLICE (vals, start[g], start[g + 1] - start[g]), p) ;
+    o[g] := v
+  END ;
+  out := New (pool, ng) ;
+  Reduce (pool, f, out, f.cols[kc], How.First, win, ng, 1) ;
+  AddF64 (pool, out, name, o, 0.0 / 0.0) ;
+  RETURN out
+END Aggregate ;
+
+(* the columns named, as reals, one whole column after another:
+   value r of column j is at j * Rows (f) + r, NaN where it is
+   missing.  WrongType for a column that is not numeric. *)
+PROCEDURE Reals (f: PTR Fr ; RO cols: SLICE OF STR) : SLICE OF F64
+  RAISES Unknown, WrongType, IndexError =
+VAR
+  all, x : SLICE OF F64 ;
+  c : Col ;
+  j, r, n : I64 ;
+BEGIN
+  n := f.rows ;
+  all := NEW (F64, LEN (cols) * n) ;
+  x := NEW (F64, n) ;
+  FOR j := 0 TO LEN (cols) - 1 DO
+    c := GetCol (f, cols[j]) ;
+    IF NOT AsReals (f, c, x) THEN RAISE WrongType (cols[j]) END ;
+    FOR r := 0 TO n - 1 DO all[j * n + r] := x[r] END
+  END ;
+  RETURN all
+END Reals ;
+
+PROCEDURE Compute (VAR pool: POOL ; VAR f: PTR Fr ; RO cols: SLICE OF STR ;
+                   RO name: STR ; fn: RowFn ; RO p: SLICE OF F64)
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
+         IndexError =
+VAR
+  all, row, o : SLICE OF F64 ;
+  n, k, r, j : I64 ;
+  v : F64 ;
+BEGIN
+  n := f.rows ;
+  k := LEN (cols) ;
+  all := Reals (f, cols) ;
+  row := NEW (F64, k) ;
+  o := NEW (pool, F64, n) ;
+  FOR r := 0 TO n - 1 DO
+    FOR j := 0 TO k - 1 DO row[j] := all[j * n + r] END ;
+    v := fn (row, p) ;
+    o[r] := v
+  END ;
+  AddF64 (pool, f, name, o, 0.0 / 0.0)
+END Compute ;
+
+PROCEDURE FilterBy (VAR pool: POOL ; f: PTR Fr ; RO cols: SLICE OF STR ;
+                    test: RowTest ; RO p: SLICE OF F64) : PTR Fr IN pool
+  RAISES Unknown, WrongType, Duplicate, Faults.SizeError, ValueRange,
+         IndexError =
+VAR
+  all, row : SLICE OF F64 ;
+  mask : SLICE OF BOOL ;
+  n, k, r, j : I64 ;
+  yes : BOOL ;
+BEGIN
+  n := f.rows ;
+  k := LEN (cols) ;
+  all := Reals (f, cols) ;
+  row := NEW (F64, k) ;
+  mask := NEW (BOOL, n) ;
+  FOR r := 0 TO n - 1 DO
+    FOR j := 0 TO k - 1 DO row[j] := all[j * n + r] END ;
+    yes := test (row, p) ;
+    mask[r] := yes
+  END ;
+  RETURN Filter (pool, f, mask)
+END FilterBy ;
 
 END Frame.

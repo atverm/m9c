@@ -1,0 +1,15 @@
+(* EXPECT: module Lib is named and not imported: write IMPORT Lib *)
+(* The checker knows every module in the import closure, and until
+   2026-10-02 any of them could be named: corpus/FrameTest.m9 called
+   Text.Keep with no IMPORT Text and compiled, because Check imports
+   Text.  Said once a module, at its first use -- here the type in the
+   declaration, not again at the call. *)
+DEFINITION MODULE Lib ;
+TYPE Rec = RECORD n : I64 END ;
+PROCEDURE Zero () : I64 ;
+END Lib.
+MODULE m ;
+VAR r : Lib.Rec ;
+BEGIN
+  r.n := Lib.Zero ()
+END m.
