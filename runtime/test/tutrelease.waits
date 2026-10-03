@@ -9,7 +9,3 @@
 # carries the version removes it (the pointer commit), and
 # tutrelease fails on a line whose version is out, whose example
 # agrees with the release after all, or whose example is gone.
-
-X13Fall  0.14.0   a function that can reach its END is refused from 0.14.0 (report par 3 rule 4); 0.13.0 compiles it
-C6Nan    0.14.0   Stats takes a NaN as a missing value and reports the count from 0.14.0 (Stats.Count); 0.13.0 raises ValueRange and has no Count
-C14Flux  0.14.0   Stats imports Sort from 0.14.0 (interpolation searches with it), so this example's hand link line names Sort.o; 0.13.0's Stats does not and makes none
