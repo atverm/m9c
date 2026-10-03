@@ -180,6 +180,10 @@ for f in "$EXA"/C*.m9; do
     printf 'exit 0\n' > "$B/$m.want"
     cat "$EXA/expect/$m.out" >> "$B/$m.want"
     printf 'files: /out/sehtm.nc\n' >> "$B/$m.want"
+  elif [ "$m" = C18Taylor ]; then
+    printf 'exit 0\n' > "$B/$m.want"
+    cat "$EXA/expect/$m.out" >> "$B/$m.want"
+    printf 'files: /out/taylor.svg\n' >> "$B/$m.want"
   else
     printf 'exit 0\n' > "$B/$m.want"
     cat "$EXA/expect/$m.out" >> "$B/$m.want"

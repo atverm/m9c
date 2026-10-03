@@ -79,6 +79,8 @@ for f in "$EXA"/C*.m9; do
 done
 cmp -s /tmp/damped.svg "$EXA/expect/damped.svg" \
   || { echo "FAIL: C9Plot's SVG differs from expect/damped.svg"; exit 1; }
+cmp -s /tmp/taylor.svg "$EXA/expect/taylor.svg" \
+  || { echo "FAIL: C18Taylor's SVG differs from expect/taylor.svg"; exit 1; }
 [ "$ZARR_OK" != 1 ] || cmp -s /tmp/htm.svg "$EXA/expect/htm.svg" \
   || { echo "FAIL: C10Icos's SVG differs from expect/htm.svg"; exit 1; }
 
