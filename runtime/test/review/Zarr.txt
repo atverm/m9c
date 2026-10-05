@@ -1,11 +1,11 @@
-REVIEW Zarr -- 64 procedures with a body, 25 of them functions; 31 headings in a DEFINITION
+REVIEW Zarr -- 63 procedures with a body, 24 of them functions; 31 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              25
-  assignments                                   230
+  functions answering on every path              24
+  assignments                                   229
   arguments                                     852   passed over, a type unknown: 3
-  RETURN values                                  39
-  operands of a comparison or an operator       305
+  RETURN values                                  38
+  operands of a comparison or an operator       304
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0

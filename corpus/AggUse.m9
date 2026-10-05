@@ -7,9 +7,22 @@ MODULE AggUse ;
    measured with LEN, lent to an RO parameter; nothing else.
 
    The fixture for report par 2.2.4, 2026-10-01.  Not installed;
-   gendiff and build.sh run it.                                    *)
+   gendiff and build.sh run it.
+
+   Since 2026-10-05 the RECORD half too (Alex: positional, in a CONST
+   and in statements): Status (200, 'OK', FALSE) is a record value,
+   a CONST of literals is read-only data like a table, and a table of
+   them is a table whose array typedef follows the record's struct --
+   an array of records had not compiled before. *)
 
 IMPORT Io ;
+
+TYPE
+  Status = RECORD
+    code : I64 ;
+    text : STR ;
+    fatal : BOOL ;
+  END ;
 
 CONST
   Primes = [2, 3, 5, 7, 11] ;
@@ -23,6 +36,12 @@ CONST
     'OK',
     'Not Found',
     'Internal Server Error'
+  ] ;
+  Ok = Status (200, 'OK', FALSE) ;
+  Statuses = [
+    Status (200, 'OK', FALSE),
+    Status (404, 'Not Found', FALSE),
+    Status (500, 'Internal Server Error', TRUE)
   ] ;
 
 PROCEDURE Sum (RO xs: SLICE OF I64) : I64 =
@@ -43,6 +62,23 @@ BEGIN
   RETURN '?'
 END Reason ;
 
+PROCEDURE Lookup (code: I64) : STR =
+  (* the same mapping as one table of records: the data a document
+     could be derived from -- the routes-as-data trigger *)
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (Statuses) - 1 DO
+    IF Statuses[i].code = code THEN RETURN Statuses[i].text END
+  END ;
+  RETURN '?'
+END Lookup ;
+
+PROCEDURE Line (RO s: Status) : STR =
+BEGIN
+  IF s.fatal THEN RETURN Ok.text + ' is not ' + s.text END ;
+  RETURN s.text
+END Line ;
+
 PROCEDURE Shadow (RO Primes: SLICE OF F64) : F64 =
   (* a parameter named like a table is the parameter *)
 BEGIN
@@ -56,6 +92,7 @@ END Past ;
 
 VAR
   i, n : I64 ;
+  made : Status ;
 
 BEGIN
   Io.WriteI64 (LEN (Primes)) ;
@@ -81,6 +118,16 @@ BEGIN
   Io.WriteLine ('') ;
   Io.WriteLine (Reason (404)) ;
   Io.WriteLine (Reason (999)) ;
+  Io.WriteLine (Lookup (404) + ' / ' + Lookup (1)) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (Statuses) - 1 DO
+    IF Statuses[i].fatal THEN n := n + 1 END
+  END ;
+  Io.WriteI64 (n) ;
+  Io.WriteLine ('') ;
+  made := Status (Statuses[2].code + 3, 'made', TRUE) ;
+  Io.WriteI64 (made.code) ;
+  Io.WriteLine (' ' + Line (made) + ' / ' + Line (Ok)) ;
   n := Past (5) ;
   Io.WriteLine ('not reached')
 EXCEPT

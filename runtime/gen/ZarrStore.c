@@ -465,7 +465,7 @@ ZarrStore_Array * ZarrStore_OpenArray (ZarrStore_Store * s, m9_sl_CHAR path, m9_
       goto L_hdl_m9t1;
     }
   } }
-  a->meta.fillF = (0.0 / 0.0);
+  a->meta.fillF = NAN;
   a->meta.fillI = INT64_C(0);
   a->meta.hasFill = false;
   { Json_Node * fv = Json_Field (root, ((m9_sl_CHAR){ (uint32_t *) m9s34, 10 }), err);
@@ -479,7 +479,7 @@ ZarrStore_Array * ZarrStore_OpenArray (ZarrStore_Store * s, m9_sl_CHAR path, m9_
       if (err->exc) goto L_hdl_m9t1;
       if (m9t27) {
         a->meta.hasFill = true;
-        a->meta.fillF = (0.0 / 0.0);
+        a->meta.fillF = NAN;
     } else {
       bool m9t28 = Json_StrIs (fv, ((m9_sl_CHAR){ (uint32_t *) m9s36, 8 }), err);
       if (err->exc) goto L_hdl_m9t1;

@@ -1,0 +1,26 @@
+(* EXPECT: a frame allocation dies with this frame; it cannot be stored in module variable Lib.box *)
+(* another module's variable is a module variable: a FRAME value from
+   a procedure may not reach it (decision 18) -- it would dangle in Lib
+   once the procedure returned.  What must NOT be refused comes first:
+   a write into the exporter's own storage, and a frame NEW stored by
+   the module BODY, whose frame lives as long as the program.  Then
+   the same NEW inside a procedure. *)
+STATEFUL DEFINITION MODULE Lib ;
+TYPE Box = RECORD n : I64 END ;
+VAR
+  count : I64 ;
+  xs : SLICE OF F64 ;
+  box : PTR Box ;
+  RO limits : SLICE OF F64 ;
+END Lib.
+MODULE p ;
+IMPORT Lib ;
+PROCEDURE Replace () =
+BEGIN
+  Lib.box := NEW (Lib.Box)
+END Replace ;
+BEGIN
+  Lib.box.n := 5 ;
+  Lib.box := NEW (Lib.Box) ;
+  Replace ()
+END p.

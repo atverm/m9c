@@ -64,6 +64,9 @@ type
     cnNames : array of string;         { exported CONSTs ... }
     cnTypes : array of string;         { ... and their LitType }
     exNames : array of string;         { EXCEPTION declarations }
+    vrNames : array of string;         { the definition's VARs (decision 28) ... }
+    vrTypes : array of TNode;          { ... their types, QualifiedIn this module ... }
+    vrRo : array of Boolean;           { ... and VAR RO }
     function HasExc (const n: string): Boolean;
     function FindProc (const n: string): Integer;
     procedure AddProc (const p: TProcInfo);
@@ -132,6 +135,11 @@ type
     procedure CheckConformance (u: TNode);
     procedure CheckAggregate (cd: TNode; const ctx: string;
                               where: Integer);
+    function RecordNamed (const name: string; out om, canon: string): TNode;
+    function RecordConstType (e: TNode): string;
+    function IsRecordCall (e: TNode): Boolean;
+    function ConstFieldType (const rec, f: string): string;
+    procedure CheckRecordConst (el: TNode; const ctx, what: string);
     procedure CheckBody (body: TNode; const ctx: string;
                          const declared: array of string;
                          scope: TStringList; const retTy: string);
@@ -514,10 +522,20 @@ end;
   a negated numeric literal.  An integer is an I64, a real an F64, a
   string a STR whatever its length -- a table has one element type
   and nothing in it adapts.  '' for anything else. }
+{ the checker a record aggregate in a CONST is asked of: AggElemType
+  and LitType are plain functions and a record's type is the module
+  tables' (Sem.RecordConstType) }
+var recSem : TSem = nil;
+
 function AggElemType (e: TNode): string;
 begin
   Result := '';
   if e = nil then Exit;
+  if e.kind = nkCallExpr then
+  begin
+    if recSem <> nil then Result := recSem.RecordConstType (e);
+    Exit;
+  end;
   case e.kind of
     nkInt  : Result := 'I64';
     nkReal : Result := 'F64';
@@ -558,6 +576,11 @@ var l, r : string;
 begin
   Result := '';
   if e = nil then Exit;
+  if e.kind = nkCallExpr then
+  begin
+    if recSem <> nil then Result := recSem.RecordConstType (e);
+    Exit;
+  end;
   case e.kind of
     nkAggregate : Result := AggType (e);
     nkInt  : Result := '<int>';
@@ -866,6 +889,16 @@ var
   t0, t : string;
 begin
   ag := cd.kids[0];
+  if (ag <> nil) and IsRecordCall (ag) then
+  begin
+    if where = 1 then
+      ErrN (cd, ctx, 'a record CONST is not exported yet: ' + cd.a +
+        ' (par 2.2.4)')
+    else if where = 2 then
+      ErrN (cd, ctx, 'a record CONST belongs at module level: ' + cd.a +
+        ' (par 2.2.4)');
+    CheckRecordConst (ag, ctx, cd.a);
+  end;
   if (ag = nil) or (ag.kind <> nkAggregate) then Exit;
   Inc (nAgg);
   if where = 1 then
@@ -879,7 +912,12 @@ begin
     if ag.kids[i] <> nil then
     begin
       t := AggElemType (ag.kids[i]);
-      if t = '' then
+      if IsRecordCall (ag.kids[i]) then
+        CheckRecordConst (ag.kids[i], ctx,
+          Format ('element %d of %s', [i + 1, cd.a]));
+      if (t = '') and IsRecordCall (ag.kids[i]) then
+        { said by CheckRecordConst }
+      else if t = '' then
         ErrN (ag.kids[i], ctx, Format (
           'element %d of %s is not a literal: an aggregate holds' +
           ' literals (par 2.2.4)', [i + 1, cd.a]))
@@ -888,6 +926,145 @@ begin
           'element %d of %s is %s where the first is %s: an aggregate' +
           ' has one element type (par 2.2.4)',
           [i + 1, cd.a, TyName (t), TyName (t0)]));
+    end;
+end;
+
+function FieldTypeOf (rec: TNode; const fname: string): TNode; forward;
+
+{ the dotted name a call names: `Row', `Mod.Row' }
+function CalleeOf (e: TNode): string;
+var i : Integer;
+begin
+  Result := '';
+  if (e = nil) or (Length (e.kids) = 0) or (e.kids[0] = nil) then Exit;
+  Result := e.kids[0].a;
+  for i := 0 to High (e.kids[0].kids) do
+    if e.kids[0].kids[i].kind = nkSelField then
+      Result := Result + '.' + e.kids[0].kids[i].a
+    else
+      Exit (e.kids[0].a);
+end;
+
+{ Sem.RecordNamed: the RECORD a callee names, through aliases; om the
+  module that wrote it, canon its canonical type name }
+function TSem.RecordNamed (const name: string; out om, canon: string): TNode;
+var
+  dot : Integer;
+  dcl : TNode;
+begin
+  Result := nil;
+  canon := '';
+  dcl := nil;
+  dot := Pos ('.', name);
+  if dot > 0 then
+  begin
+    om := Copy (name, 1, dot - 1);
+    if FindMod (om) <> nil then
+      dcl := FindMod (om).FindType (Copy (name, dot + 1, MaxInt));
+  end
+  else
+  begin
+    om := curMod;
+    if FindMod (curMod) <> nil then dcl := FindMod (curMod).FindType (name);
+  end;
+  Result := ResolveType (dcl);
+  if (Result = nil) or (Result.kind <> nkRecordType) then Exit (nil);
+  canon := om + '.' + Copy (name, dot + 1, MaxInt);
+  if dcl.kind = nkQualident then
+  begin
+    canonCtx := om;
+    canon := CanonT (dcl, 0);
+    canonCtx := '';
+  end;
+end;
+
+function TSem.IsRecordCall (e: TNode): Boolean;
+var om, canon : string;
+begin
+  Result := (e <> nil) and (e.kind = nkCallExpr) and
+            (RecordNamed (CalleeOf (e), om, canon) <> nil);
+end;
+
+{ Sem.RecordConstType: a record aggregate whose fields are all
+  literals is an element of its record's type }
+function TSem.RecordConstType (e: TNode): string;
+var
+  i : Integer;
+  om, canon : string;
+begin
+  Result := '';
+  if (e = nil) or (e.kind <> nkCallExpr) then Exit;
+  if RecordNamed (CalleeOf (e), om, canon) = nil then Exit;
+  if e.kids[1] <> nil then
+    for i := 0 to High (e.kids[1].kids) do
+      if AggElemType (e.kids[1].kids[i]) = '' then Exit;
+  Result := canon;
+end;
+
+{ Sem.ConstFieldType: field f of the record named rec, canonically }
+function TSem.ConstFieldType (const rec, f: string): string;
+var
+  om, canon : string;
+  rn, ft : TNode;
+begin
+  Result := '';
+  rn := RecordNamed (rec, om, canon);
+  if rn = nil then Exit;
+  ft := FieldTypeOf (rn, f);
+  if ft = nil then Exit;
+  canonCtx := om;
+  Result := CanonT (ft, 0);
+  canonCtx := '';
+end;
+
+{ Sem.CheckRecordConst: every field a literal of its field's type, as
+  many as the record has }
+procedure TSem.CheckRecordConst (el: TNode; const ctx, what: string);
+var
+  name, om, canon, pTy, aTy : string;
+  rn : TNode;
+  flat : array of TNode;
+  g, j, k, nargs : Integer;
+begin
+  name := CalleeOf (el);
+  rn := RecordNamed (name, om, canon);
+  if rn = nil then Exit;
+  if rn.kids[0] <> nil then
+  begin
+    ErrN (el, ctx, name + ': an aggregate of an extended record is' +
+      ' not built; give its fields one by one (par 2.2.4)');
+    Exit;
+  end;
+  SetLength (flat, 0);
+  if rn.kids[1] <> nil then
+    for g := 0 to High (rn.kids[1].kids) do
+      for j := 0 to High (rn.kids[1].kids[g].kids[0].kids) do
+      begin
+        SetLength (flat, Length (flat) + 1);
+        flat[High (flat)] := rn.kids[1].kids[g].kids[1];
+      end;
+  if el.kids[1] = nil then Exit;
+  nargs := Length (el.kids[1].kids);
+  if nargs <> Length (flat) then
+    ErrN (el, ctx, Format ('%s expects %d argument(s), got %d',
+      [name, Length (flat), nargs]));
+  for k := 0 to nargs - 1 do
+    if el.kids[1].kids[k] <> nil then
+    begin
+      if AggElemType (el.kids[1].kids[k]) = '' then
+        ErrN (el.kids[1].kids[k], ctx, Format ('field %d of %s is not a' +
+          ' literal: a CONST holds literals (par 2.2.4)', [k + 1, what]))
+      else if k <= High (flat) then
+      begin
+        canonCtx := om;
+        pTy := CanonT (flat[k], 0);
+        canonCtx := '';
+        aTy := LitType (el.kids[1].kids[k]);
+        if not Compat (pTy, aTy) then
+          ErrN (el.kids[1].kids[k], ctx, Format (
+            'field %d of %s: cannot give %s where %s is expected',
+            [k + 1, what, TyName (aTy), TyName (pTy)]));
+      end;
     end;
 end;
 
@@ -1108,6 +1285,40 @@ end;
 
 { ---- registry ---- }
 
+{ QualifiedIn at unit level, for CollectUnit's exported variables
+  (decision 28); the same rules as the nested one CheckFile uses }
+function QualifyTypeIn (t: TNode; const modName: string): TNode;
+var n : TNode;
+begin
+  Result := t;
+  if t = nil then Exit;
+  case t.kind of
+    nkQualident :
+      if (t.b = '') and not InList (t.a, BuiltinTypes) and (t.a <> 'STR') then
+      begin
+        n := TNode.Create (nkQualident);
+        n.a := modName;
+        n.b := t.a;
+        Result := n;
+      end;
+    nkPtrType, nkOptType, nkSharedType, nkSliceType :
+      begin
+        n := TNode.Create (t.kind);
+        if Length (t.kids) > 0 then n.Add (QualifyTypeIn (t.kids[0], modName));
+        n.Add (nil);
+        Result := n;
+      end;
+    nkArrayType, nkGridType :
+      if Length (t.kids) >= 2 then
+      begin
+        n := TNode.Create (t.kind);
+        n.Add (t.kids[0]);
+        n.Add (QualifyTypeIn (t.kids[1], modName));
+        Result := n;
+      end;
+  end;
+end;
+
 procedure TSem.CollectUnit (u: TNode);
 var
   m : TModuleInfo;
@@ -1169,6 +1380,20 @@ begin
           SetLength (m.exNames, Length (m.exNames) + 1);
           m.exNames[High (m.exNames)] := d.kids[j].a;
         end;
+      nkVarSection :
+        { the definition's variables are the module's exports: an
+          importer reads and writes them as Mod.v (decision 28) }
+        if u.kind = nkDefinition then
+          for j := 0 to High (d.kids) do
+            for k := 0 to High (d.kids[j].kids[0].kids) do
+            begin
+              SetLength (m.vrNames, Length (m.vrNames) + 1);
+              SetLength (m.vrTypes, Length (m.vrTypes) + 1);
+              SetLength (m.vrRo, Length (m.vrRo) + 1);
+              m.vrNames[High (m.vrNames)] := d.kids[j].kids[0].kids[k].a;
+              m.vrTypes[High (m.vrTypes)] := QualifyTypeIn (d.kids[j].kids[1], m.name);
+              m.vrRo[High (m.vrRo)] := d.kids[j].f3;
+            end;
       nkConstSection :
         { a CONST is an untyped literal, so what is remembered is its
           LitType and not a type: `Par.Pi180` must adapt in another
@@ -1226,9 +1451,31 @@ begin
   end;
 end;
 
+{ Sem.NanWalk: a bare designator NaN becomes the real literal NAN
+  (report par 2.1), once per file, as Gen.NanWalk does }
+procedure NanWalk (n: TNode);
+var i : Integer;
+begin
+  if n = nil then Exit;
+  if (n.kind = nkDesignator) and (Length (n.kids) = 0) and (n.a = 'NaN') then
+  begin
+    n.kind := nkReal;
+    n.a := 'NAN';
+  end;
+  for i := 0 to High (n.kids) do NanWalk (n.kids[i]);
+end;
+
+function IsNanLit (n: TNode): Boolean;
+begin
+  Result := (n <> nil) and (n.kind = nkReal) and (n.a = 'NAN');
+end;
+
 procedure TSem.LoadFile (root: TNode);
 var i : Integer;
 begin
+  recSem := Self;
+  for i := 0 to High (root.kids) do
+    NanWalk (root.kids[i]);
   for i := 0 to High (root.kids) do
     CollectUnit (root.kids[i]);
 end;
@@ -1868,6 +2115,16 @@ var
           if Length (t.kids) > 0 then
             n.Add (QualifiedIn (t.kids[0], modName));
           n.Add (nil);
+          Result := n;
+        end;
+      { the bound or the rank as written, the element qualified: an
+        exported ARRAY 3 OF Fr (decision 28) }
+      nkArrayType, nkGridType :
+        if Length (t.kids) >= 2 then
+        begin
+          n := TNode.Create (t.kind);
+          n.Add (t.kids[0]);
+          n.Add (QualifiedIn (t.kids[1], modName));
           Result := n;
         end;
     end;
@@ -2880,6 +3137,9 @@ var
             else if StartsWithS (s, 'ARRAY ') then s := ElemOfArray (s)
             else s := '';
           end
+          else if sel.kind = nkSelField then
+            { a field of a record CONST, or of a table's record element }
+            s := ConstFieldType (s, sel.a)
           else
             s := '';
         end;
@@ -3065,7 +3325,7 @@ var
     aTy : array of string;
     aNode : array of TNode;
     pr : TProcInfo;
-    pl, grp, vfields, ares, dcl : TNode;
+    pl, grp, vfields, ares, dcl, rec : TNode;
     isVar : Boolean;
     flat : array of TNode;
     ptn, sty : TNode;                { a call through a procedure value }
@@ -3583,6 +3843,64 @@ var
         raised.Values['ValueRange'] := name + ' conversion';
       Exit (t);
     end;
+    { a RECORD AGGREGATE: Row (200, 'OK'), or Mod.Row (...) for an
+      imported type -- every field, in declaration order, each held
+      to its field's type (Sem.RecordNamed) }
+    rec := nil;
+    dcl := nil;
+    dot := Pos ('.', name);
+    if dot > 0 then
+    begin
+      om := Copy (name, 1, dot - 1);
+      if FindMod (om) <> nil then
+        dcl := FindMod (om).FindType (Copy (name, dot + 1, MaxInt));
+    end
+    else
+    begin
+      om := curMod;
+      if FindMod (curMod) <> nil then
+        dcl := FindMod (curMod).FindType (name);
+    end;
+    rec := ResolveType (dcl);
+    if (rec <> nil) and (rec.kind = nkRecordType) then
+    begin
+      { the type's canonical name: its own, or through an alias the
+        record's (Sem.RecordNamed) }
+      t := om + '.' + Copy (name, dot + 1, MaxInt);
+      if dcl.kind = nkQualident then
+      begin
+        canonCtx := om;
+        t := CT (dcl);
+        canonCtx := '';
+      end;
+      if rec.kids[0] <> nil then
+      begin
+        ErrN (site, ctx, name + ': an aggregate of an extended record is' +
+          ' not built; give its fields one by one (par 2.2.4)');
+        Exit (t);
+      end;
+      SetLength (flat, 0);
+      if rec.kids[1] <> nil then
+        for g := 0 to High (rec.kids[1].kids) do
+          for j := 0 to High (rec.kids[1].kids[g].kids[0].kids) do
+          begin
+            SetLength (flat, Length (flat) + 1);
+            flat[High (flat)] := rec.kids[1].kids[g].kids[1];
+          end;
+      Arity (Length (flat));
+      canonCtx := om;
+      for k := 0 to nargs - 1 do
+        if k <= High (flat) then
+        begin
+          pTy := CT (flat[k]);
+          if not Compat (pTy, aTy[k]) then
+            ErrN (site, ctx, Format (
+              'field %d of %s: cannot give %s where %s is expected',
+              [k + 1, name, TyName (aTy[k]), TyName (pTy)]));
+        end;
+      canonCtx := '';
+      Exit (t);
+    end;
     ErrN (site, ctx, 'unknown procedure: ' + name);
   end;
 
@@ -3648,6 +3966,10 @@ var
     begin
       if (lt = '<void>') or (rt = '<void>') then
         ErrN (e, ctx, 'comparing a call that returns no value')
+      else if IsNanLit (e.kids[0]) or IsNanLit (e.kids[1]) then
+        ErrN (e, ctx, 'no ''' + op + ''' with NaN: no comparison with NaN is' +
+          ' ever TRUE, except ''#'', which always is; Math.IsNaN (x) asks' +
+          ' (par 2.1)')
       else if not (Compat (lt, rt) or Compat (rt, lt)) then
         ErrN (e, ctx, Format ('cannot compare %s with %s',
           [TyName (lt), TyName (rt)]))
@@ -4907,6 +5229,62 @@ var
     Result := False;
   end;
 
+  { Sem.ExportWalk: the designator Mod.v... of an imported, unshadowed
+    module's exported variable becomes the designator rooted at the one
+    name Mod.v (decision 28) }
+  procedure ExportWalk (uu, sc, n: TNode);
+  var
+    a : Integer;
+    s : TNode;
+    mi : TModuleInfo;
+    hit : Boolean;
+  begin
+    if n = nil then Exit;
+    if (n.kind = nkDesignator) and (Length (n.kids) > 0) and
+       (n.kids[0] <> nil) and (n.kids[0].kind = nkSelField) and
+       (n.a <> uu.a) then
+    begin
+      s := n.kids[0];
+      mi := FindMod (n.a);
+      hit := False;
+      if mi <> nil then
+        for a := 0 to High (mi.vrNames) do
+          if mi.vrNames[a] = s.a then hit := True;
+      if hit and ModImports (uu.a, n.a) and not NameShadowed (uu.a, sc, n.a) then
+      begin
+        n.a := n.a + '.' + s.a;
+        for a := 0 to High (n.kids) - 1 do n.kids[a] := n.kids[a + 1];
+        SetLength (n.kids, Length (n.kids) - 1);
+      end;
+    end;
+    for a := 0 to High (n.kids) do
+      if n.kind in [nkProcDecl, nkModBody] then
+        ExportWalk (uu, n, n.kids[a])
+      else
+        ExportWalk (uu, sc, n.kids[a]);
+  end;
+
+  { Sem.AddModuleVars, after AddVarsOf (u, 'm'): an implementation's
+    definition's variables, and every other module's exports as Mod.v }
+  procedure AddModuleExtra (u: TNode);
+  var
+    i, k : Integer;
+  begin
+    if u.kind = nkImplementation then
+      for i := 0 to High (root.kids) do
+        if (root.kids[i] <> nil) and (root.kids[i].kind = nkDefinition) and
+           (root.kids[i].a = u.a) then
+          AddVarsOf (root.kids[i], 'm');
+    for i := 0 to High (mods) do
+      if mods[i].name <> u.a then
+        for k := 0 to High (mods[i].vrNames) do
+        begin
+          scope.AddObject (mods[i].name + '.' + mods[i].vrNames[k] + '=m',
+            TObject (mods[i].vrTypes[k]));
+          if mods[i].vrRo[k] then roScope.Add (IntToStr (scope.Count - 1));
+        end;
+  end;
+
   procedure ImportWalk (uu, sc, n: TNode; seen: TStringList);
   var
     a : Integer;
@@ -4961,6 +5339,11 @@ var
                 ' (par 3)');
         Exit;
       end;
+    { a name entered for the first time -- not the body that closes a
+      FORWARD, which exited above }
+    if id.a = 'NaN' then
+      ErrN (id, me, 'NaN is predeclared, the quiet NaN: a declaration may' +
+            ' not take its name (par 2.1)');
     if what = 1 then
       once.Add (id.a + '=' + IntToStr (id.line) + '!')
     else
@@ -5096,6 +5479,8 @@ begin
     for i := 0 to High (u.kids) do
       ImportWalk (u, nil, u.kids[i], seenImp);
     seenImp.Free;
+    for i := 0 to High (u.kids) do
+      ExportWalk (u, nil, u.kids[i]);
     CheckDeclaredOnce (u);
     constMap.Clear;
     nAgg := 0;
@@ -5159,6 +5544,7 @@ begin
       AddParamsOf (d);
       AddVarsOf (p, 'l');
       AddVarsOf (u, 'm');
+      AddModuleExtra (u);
       { PROCEDURE-LOCAL CONSTs.  The grammar always allowed them and
         neither end implemented them: the generator said `unknown
         name` and this said NOTHING, because an unregistered name
@@ -5227,6 +5613,7 @@ begin
       keptParams.Clear;
       keptUsed.Clear;
       AddVarsOf (u, 'm');
+      AddModuleExtra (u);
       { the program body is the one frame with no caller to declare
         RAISES to, and that makes it the frame where a program must
         SAY what it does about failure -- not the frame excused from

@@ -1,0 +1,36 @@
+REVIEW NbCells -- 17 procedures with a body, 11 of them functions; 10 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path              11
+  assignments                                    22
+  arguments                                     132
+  RETURN values                                  17
+  operands of a comparison or an operator        22
+  CASE labels                                     3
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    0
+  local pools                                     7   KindAt.scratch, Fetch.scratch, PutFrame.scratch, PutF64s.scratch, PutI64s.scratch, PutGrid.scratch, +1 more
+  pool parameters                                 9   Dir, File, Store, Fetch, GetFrame, GetF64s, +3 more
+  KEPT parameters                                 0
+  HEAP named                                      0
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                                0
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                 1
+  RAISE statements                               15
+  handlers                                        9
+  NEW in the frame                                0
+  NEW in a named pool                             2

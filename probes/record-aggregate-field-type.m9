@@ -1,0 +1,11 @@
+(* EXPECT: field 1 of Row: cannot give SLICE OF CHAR where I64 is expected *)
+MODULE m ;
+TYPE
+  Row = RECORD
+    code : I64 ;
+    text : STR ;
+  END ;
+VAR r : Row ;
+BEGIN
+  r := Row ('OK', 200)
+END m.

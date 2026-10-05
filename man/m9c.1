@@ -17,6 +17,12 @@ m9c \- compile an M9 module to C11, and optionally to an object, a program or a 
 .IR ccflags ]
 .br
 .B m9c
+.RI [ options ]
+.B \-\-run
+.IR FILE .m9
+.RI [ arg ...]
+.br
+.B m9c
 .BR \-\-help
 .
 .SH DESCRIPTION
@@ -187,6 +193,111 @@ The staleness test is one second's resolution, which is the
 resolution the filesystem records. A build that rewrites a source and
 recompiles it inside the same second is a build whose inputs nobody
 could have read either.
+.TP
+.BI \-\-run " FILE.m9 \fR[\fIarg\fR ...]"
+Build
+.I FILE.m9
+into the cache and run it with the
+.IR arg s;
+this process becomes the program, so its standard streams, terminal,
+signals and exit status are the program's own, and it is told
+.I FILE.m9
+as its name (argv[0]). The last option: every word after
+.I FILE.m9
+is the program's, whatever it looks like. Only
+.BR \-I ,
+.B \-v
+and
+.B \-\-no\-unsafe
+may come before it.
+.IP
+Each module of the closure is compiled once, with the optimisation
+and inliner budget of the supplied flags but without link-time
+optimisation (see SUPPLIED FLAGS), into the cache, keyed by a hash of
+its source text and the text of
+everything it imports, of this compiler (version and binary), the C
+compiler and the runtime; the runtime is compiled once the same way.
+A program whose key already has a binary is started straight away,
+without being checked again: the same text through the same compiler
+has the same verdict, and the binary exists only because that verdict
+was yes. A program that changed is checked and compiled alone.
+Measured on a tutorial program with a ten-module closure: 5.0 s the
+first time, 0.30 s after an edit, 0.02 s unchanged.
+.IP
+On POSIX systems a file whose first line is
+.B #!/usr/bin/m9c \-\-run
+is a script; the lexer skips a first line that begins
+.BR #! .
+On Windows the program is started and waited for, and its status is
+returned. Every file reaches its place in the cache by rename, so
+concurrent runs are safe. Nothing is ever evicted, and removing the
+cache directory is always safe.
+.TP
+.BI \-\-cell " FILE.m9"
+Build
+.I FILE.m9
+for the notebook session (the Jupyter kernel's in-memory state):
+every module of its closure, the runtime and the cell itself as
+position-independent shared objects in the cache, and the session host
+.IR m9session ,
+then print, one line each with fields separated by tabs, what the
+session loads: the host, the runtime, each module in dependency order,
+and the cell \(em STATE with its module initialiser for a library
+module, whose body runs once in the session, or PROGRAM with its main
+renamed, run in a fork of the session. Only
+.BR \-I ,
+.B \-v
+and
+.B \-\-no\-unsafe
+may come before it. Linux and macOS only.
+.TP
+.B \-\-show
+Before
+.B \-\-run
+or
+.BR \-\-cell :
+.I FILE.m9
+holds an expression, not a module. It is shown by the procedure of the
+.B NbShow
+module made for its type, which the checker answers: integers, reals
+(the shortest decimal that reads back), booleans, characters, strings,
+slices of those, a
+.BR "GRID 2 OF F64" ,
+a frame and a time series; a grid and a frame are also printed as HTML
+between two marker lines. Every module the expression names is
+imported, and an exception it can raise is reported by name. A type
+with no procedure is refused by name. Diagnostics carry the
+expression's own lines. The notebook kernel uses it for a cell that
+holds only an expression.
+.TP
+.BI \-\-prefix " MOD=NAME"
+Emit module
+.IR MOD 's
+C names \(em its procedures, initialiser, exceptions, exported variables
+and types \(em under
+.I NAME
+instead of the module's own name, in this compilation, in every module
+it builds for the closure, and in the cache keys of every module whose
+closure holds
+.IR MOD .
+The notebook kernel uses it for a state cell run again: the new
+generation and the old live in one process under different names.
+Repeatable.
+.TP
+.BI \-\-out\-dir " DIR"
+Write
+.I NAME.h
+and
+.I NAME.c
+into
+.I DIR
+instead of the working directory. Not with
+.BR \-c ,
+.BR \-o ,
+.BR \-\-ar ,
+.B \-\-so
+or
+.BR \-\-doc .
 .TP
 .B \-g
 Add
@@ -586,6 +697,15 @@ measured, gcc 15. The quiet and faster spelling there is
 m9c does not yet supply it, and that is owed work rather than a
 decision;
 .IP \(bu 3
+.B \-ffp\-contract=off
+(since 0.15.0), so that
+.I a * b + c
+is rounded twice, as written, on every machine. The C compiler's
+default may fuse it into one rounding where the processor has the
+instruction (every arm64, not baseline x86\-64), and the same program
+then printed other digits on an Apple machine than on a PC. On
+baseline x86\-64 the flag changes no instruction.
+.IP \(bu 3
 and, when linking, one object per module in the import closure it has
 just resolved \(em these are not guessed, they are the modules it read
 and checked a moment ago \(em together with the runtime, then
@@ -729,6 +849,18 @@ from
 supplies it there itself.
 .
 .SH ENVIRONMENT
+.TP
+.B M9CACHE
+The cache
+.B \-\-run
+builds into. Unset, it is
+.I m9
+under
+.B $XDG_CACHE_HOME
+or
+.I ~/.cache/m9
+(on Windows, under
+.BR %LOCALAPPDATA% ).
 .TP
 .B M9LIBRARY
 List of directories to search for imported modules, after any

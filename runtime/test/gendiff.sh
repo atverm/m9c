@@ -78,6 +78,8 @@ run Zip DynStr Io Bits
 run Png Faults Zip Math DynStr
 run Frame Csv Io Math DynStr Fmt Time NetCDF Faults Sort Stats Text
 run Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults
+run NbCells Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults
+run NbShow Frame Io DynStr Fmt Text Time
 run NetCDF DynStr Faults
 run Grib DynStr Faults
 run Syslog DynStr
@@ -92,6 +94,18 @@ run ProcUse Io
 run AggUse Io
 grep -q 'static const m9_arr_5_int64_t Primes_k = { {' /tmp/gen_fpc.txt \
   || { echo "AggUse: the constant table NOT generated -- the aggregate gone from BOTH generators?"; exit 1; }
+grep -q 'static const m9_arr_3_AggUse_Status Statuses_k = { {' /tmp/gen_fpc.txt \
+  || { echo "AggUse: the record table NOT generated -- the record aggregate gone from BOTH generators?"; exit 1; }
+# ExportDef and ExportUse are exported module variables (decision 28).
+# The greps prove the export and its use were EMITTED: the exporter's
+# constant pointer, the importer's write through it -- two generators
+# that both dropped the feature would also agree byte for byte.
+run ExportDef Io Fmt
+grep -q '^int64_t \* const ExportDef_count = &count;$' /tmp/gen_fpc.txt \
+  || { echo "ExportDef: the exported pointer NOT generated"; exit 1; }
+run ExportUse ExportDef Io Fmt
+grep -q '(\*ExportDef_count)' /tmp/gen_fpc.txt \
+  || { echo "ExportUse: the write through ExportDef_count NOT generated"; exit 1; }
 # ShareUse is the assignment of a raising call (par 5): the answer
 # into a temporary, the error slot read, THEN the store and the share
 # copy.  The grep holds the order; two generators storing first

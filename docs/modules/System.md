@@ -103,6 +103,23 @@ that it can be killed whole, and a group of its own no longer
 receives the terminal's Ctrl-C: that is the price of the bound,
 and it is why an unbounded run is not given one.
 
+### Become (RO prog: STR ; RO name: STR ; RO args: SLICE OF STR) RAISES ValueRange, Io.IOError
+
+THIS PROCESS BECOMES prog, told `name` as its argv[0] and args
+after it.  It keeps this process's stdin, stdout, stderr,
+environment and terminal, its exit status is the exit status, and
+a Ctrl-C reaches it as if it had been started by hand -- which is
+what Exec, collecting both streams, is not.  Nothing after a
+successful Become runs; IOError when prog could not be started,
+and then this process is still here to say so.  POSIX replaces
+the process (execv); Windows, which cannot, starts prog with this
+process's handles, waits, and exits with its status.
+
+### ProcessId () : I64
+
+this process's id: a name no other process running at the same
+moment holds
+
 ### Program (VAR pool: POOL) : STR RAISES ValueRange, IndexError
 
 argv[0]: how this program was invoked
@@ -194,5 +211,14 @@ _(undocumented)_
 _(undocumented)_
 
 ### ExecRelease (h: C.Int) [REENTRANT]
+
+_(documented with the group below)_
+
+### BecomeC (prog: C.ConstPtr ; argv: C.ConstPtr ; n: C.Int) : C.Int [REENTRANT]
+
+prog NUL-terminated; n strings back to back, argv[0] first.
+Answers only when prog could not be started: -1
+
+### Pid () : C.SSizeT [REENTRANT]
 
 _(undocumented)_

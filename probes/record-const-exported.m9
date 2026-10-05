@@ -1,0 +1,9 @@
+(* EXPECT: a record CONST is not exported yet: Ok *)
+DEFINITION MODULE m ;
+TYPE
+  Row = RECORD
+    code : I64 ;
+  END ;
+CONST
+  Ok = Row (200) ;
+END m.

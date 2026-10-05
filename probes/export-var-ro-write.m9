@@ -1,0 +1,19 @@
+(* EXPECT: cannot write through the RO variable Lib.limits *)
+(* an RO export is written through by no one, its importer included
+   (decision 28 with par 2.4): Lib.limits is a VAR RO SLICE OF F64,
+   read here and then written through *)
+STATEFUL DEFINITION MODULE Lib ;
+TYPE Box = RECORD n : I64 END ;
+VAR
+  count : I64 ;
+  xs : SLICE OF F64 ;
+  box : PTR Box ;
+  RO limits : SLICE OF F64 ;
+END Lib.
+MODULE p ;
+IMPORT Lib ;
+VAR x : F64 ;
+BEGIN
+  x := Lib.limits[0] ;
+  Lib.limits[0] := 1.0
+END p.

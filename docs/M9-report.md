@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.14.0, 2026-10-03
+## Report — revision 0.15.0, 2026-10-05
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -33,9 +33,9 @@ to reduce, so the list is meant to shrink.
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
 | **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01; not through a copy into a local), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
 | **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); `F32 (F64)` narrowing (§2.1); flow-sensitive `OPT`; a loop-carried use after move, an owned field, a pool value stored beyond a direct `RETURN` or in a module variable (§4) |
-| **Accepted by the checker, refused by the generator** — so `m9c --check` and the editor do not show them | `OPT T` for a non-pointer `T`; `CASE` over a call; `CONST` over an expression or a record; an array bound from an imported `CONST`; `EXCEPT` and `FINALLY` on one block; `ELSIF` after `IS SOME`; `EXIT` inside a `CASE` arm or across `FINALLY`; a scalar `CASE` without `ELSE` (semantics undecided); a string literal beyond ASCII; a `THREAD` target in another module (a link error) |
+| **Accepted by the checker, refused by the generator** — so `m9c --check` and the editor do not show them | `OPT T` for a non-pointer `T`; `CASE` over a call; `CONST` over an expression; an array bound from an imported `CONST`; `EXCEPT` and `FINALLY` on one block; `ELSIF` after `IS SOME`; `EXIT` inside a `CASE` arm or across `FINALLY`; a scalar `CASE` without `ELSE` (semantics undecided); a string literal beyond ASCII; a `THREAD` target in another module (a link error) |
 | **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` (§6); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.14.0 on six distributions and a Windows zip; this revision describes it |
+| **Release** | 0.15.0 on six distributions and a Windows zip; this revision describes it |
 
 ### Contents
 
@@ -94,6 +94,13 @@ to reduce, so the list is meant to shrink.
 Keywords are uppercase. Identifiers are case-sensitive, letters then
 letters and digits, no underscores. `(* *)` comments nest. The bank
 statement stays a bank statement.
+
+A file whose first two characters are `#!` begins with a line that
+belongs to the operating system, not to M9: it names the program that
+runs the file as a script (`#!/usr/bin/m9c --run`). The lexer skips
+it to its end, so every line keeps its number, and `m9fmt` writes it
+back first and verbatim. Nowhere else is `#!` anything but `#`
+(not-equal) and an error. *(2026-10-04, with `m9c --run`.)*
 
 Comments are not tokens. The lexer records each one -- text, start
 line and column, end line -- beside the token stream, and the parser
@@ -186,6 +193,20 @@ and one declared `F64`. Found by `m9c --review`: the page for a
 module written that day listed a dozen sites "passed over, a type
 unknown" with nothing in common but `i`.
 `museum/implicit-through-loop-variable.m9`.)*
+**`NaN` is predeclared**: the quiet NaN, an identifier and not a
+keyword (the `STR` precedent), typed as a real literal so it is an F64
+or an F32 where one is wanted, with the bits `7ff8000000000000` that C's
+`NAN`, Python and numpy give it. Two rules come with it. **No operator
+compares with `NaN`**: `x = NaN` is never TRUE and `x # NaN` always
+is, so both are refused, and `Math.IsNaN (x)` asks the question (as
+does `x # x`). **No declaration takes the name**, so a `NaN` is always
+this one. *(Decided 2026-10-05. Until then the library spelled NaN
+`0.0 / 0.0`, 45 times, and four modules had a private `NaN ()`. On
+x86-64 the division answers `fff8000000000000`, the sign bit set, so
+every NaN M9 wrote differed in its bits from the NaN of every oracle
+it was held to. Those spellings are now `NaN`. `0.0 / 0.0` is still
+legal and still answers what the machine says.)*
+
 `TRUNC(f: F64): I64 RAISES ValueRange` — *(Observed failure:
 `Trunc(NaN)` in the fill-value path was a crash in FPC and silent
 INT64_MIN fabrication in numpy; in M9 it is a declared, catchable,
@@ -410,12 +431,39 @@ byte for byte what it was, and generating its two largest modules
 takes 5% less time than with the chains (it took 4.5% more until
 `Text.IndexOf` compared lengths before calling the comparison).
 
+**A record value is written `Row (200, 'OK')`** (2026-10-05, Alex:
+positional, in a `CONST` and in statements) — the record type's name,
+then every field in declaration order, each held to its field's type
+and named by position when it is not (`field 1 of Row: cannot give
+SLICE OF CHAR where I64 is expected`). `Mod.Row (...)` builds an
+imported record, and an alias builds the record it stands for. In a
+statement the fields are any expressions: `r := Row (n + 1, Name
+(k))`, or an argument `Show (Row (404, 'Not Found'))`. As a `CONST`, or
+as the elements of a table, the fields are literals, and the value is
+read-only data as a table is:
+
+```
+CONST
+  Ok = Status (200, 'OK', FALSE) ;
+  Statuses = [Status (200, 'OK', FALSE), Status (404, 'Not Found', FALSE)] ;
+```
+
+`Ok.text` and `Statuses[i].code` are read like any field. A write is
+refused (`cannot write the CONST Ok`), and `r := Ok` copies.
+Positional means two fields of one type can be given in the wrong order
+without a word, which is the price of the short form that was
+pre-registered. *(Observed need: routes-as-data — a mapping a program
+uses and a document enumerates, as `OpenApi` derives its document from
+the router. Built with it: an array of a record had never compiled,
+because its C typedef was emitted ahead of the struct it contains, and
+both generators now place it after the struct.)*
+
 Not in the language yet, each refused by name: a table local to a
-procedure (declare it at module level), a table exported by a
-DEFINITION, and the record value `Row (200, 'OK')` as an element or
-as a `CONST` of its own (§9.6 keeps that half open).  A parameter or
-a local named like a `CONST` is the parameter or the local; the
-checker used to read it as the constant.
+procedure (declare it at module level), a table or record `CONST`
+exported by a DEFINITION, and an aggregate of an EXTENDED record
+(`RECORD (Base) ...`: give its fields one by one). A parameter or a
+local named like a `CONST` is the parameter or the local; the checker
+used to read it as the constant.
 
 ### 2.3 `+` concatenates strings, into the procedure's frame
 
@@ -854,6 +902,21 @@ Rules:
    list, and it is longer than one.)* *(Observed
    failure: `blosc_decompress` versus `blosc_decompress_ctx` — global
    hidden state, thread-safety documented only in prose.)*
+
+   **A definition's variables are exported, read and written.** A
+   `VAR` in a `STATEFUL` definition is the module's own variable and
+   an importer names it `Mod.v`, for reading and for writing, as in
+   Modula-2 — not Oberon's read-only export (decided 2026-10-04). The
+   importer's `Mod.v` is typed as declared, an implementation sees its
+   own definition's variables, and every rule about a module variable
+   applies to another module's: a frame value from a procedure may not
+   be stored in it (§4.3), and a `VAR RO` export is written through by
+   no one (§2.4) — which, for a scalar, restricts nothing. The C is a
+   constant pointer the exporter publishes (`Mod_v`), with the
+   variable's pool beside it when it holds pointers. *(2026-10-04,
+   decision 28: until then an importer's `Mod.v` passed the checker
+   untyped and was refused by the generator, and an implementation's
+   `xs := 5` for its definition's `SLICE OF F64 xs` was passed over.)*
 4. **A function answers on every path.** A procedure with a result
    type must reach a `RETURN` or a `RAISE` whichever way control goes;
    one that can reach its `END` is refused, by both checkers, at the
@@ -1446,7 +1509,7 @@ features:
    | `SET` and `IN` | a word-set over a small enumeration | a membership test over an **enumeration** with more alternatives than an `OR` chain carries comfortably. *Counted 2026-10-01, and the count is zero:* of 72 membership tests of three or more alternatives in 208 files (this repository and two applications), 29 are over strings, 19 over characters, 18 over named integer codes (median 4 alternatives, at most 7), 6 over integer literals, and **none over an enumeration** -- there are four enumeration types in those trees and no program asks which of several members a value is. The string lists, the largest class and the only long ones (one of 96), are a constant table and `Text.OneOf` (§2.2.4), and the compiler's own eight went that way the same day. *Was:* "a second hand-rolled membership table", which counted tables of any kind and so read as met eleven times over; the 89-member one would not have fitted a machine word in any case |
    | ~~`Bits.And/Or/Xor/Shl/Shr`~~ | **built 2026-09-27** as `corpus/Bits.m9`, a library module and not a language change: And, Or, Xor, Not, Shl, Shr (logical), Test, Count, bound to `static inline` C operators in the runtime header so the generator needed nothing. Two things moved from the pre-registration. It is on **I64** read as its two's-complement pattern, not unsigned: every caller in the corpus held its bits in an I64 (a generator state, a flag column, the bytes of a little-endian integer), and U64 is the type the generator serves worst, so an unsigned-only module would have cost two checked conversions per call for no safety. And the trigger was not a hash map but bit work in the applications built on the corpus, which is the demand the table exists to record. Shift counts are checked: outside 0..63 is `ValueRange` by name, where C says undefined | *was:* the first program that needs bit manipulation |
    | ~~Procedure types~~ | **built 2026-09-27** (§2.2.3): named, structural, top-level procedures as values, `OPT` for a variable or field, calls through a value checked against the type and raising its `RAISES`.  The trigger -- "a second program whose operations cannot be enumerated; defunctionalisation has produced something better twice" -- had been met four times over when the review of that day counted: a route table, a push interface, a record the loop drives, a reverse-communication MINPACK, each recorded by its author as the absence of this feature | *was:* CLAUDE.md's pre-registration; this table never carried the row |
-   | An **aggregate constructor** | `[a, b, c]`, and a record value `Row (200, 'OK')`, usable as a CONST | **the array half BUILT 2026-10-01** (§2.2.4): a `CONST` whose value is `[ e1, ..., en ]` of literals is a constant table -- indexed, measured, lent to `RO`, const data in the C.  **The record half stays open**: `Row (200, 'OK')` as an element or a `CONST` of its own is refused by name. *Trigger, unchanged for that half:* something needs to **enumerate** a mapping the program also uses -- the routes-as-data precedent, where `OpenApi` derives the document from the router rather than being maintained beside it |
+   | An **aggregate constructor** | `[a, b, c]`, and a record value `Row (200, 'OK')`, usable as a CONST | **BUILT** (§2.2.4): the array half 2026-10-01 -- a `CONST` whose value is `[ e1, ..., en ]` of literals is a constant table -- and the record half 2026-10-05, decided by Alex without waiting for the trigger: `Row (200, 'OK')`, positional, as a `CONST`, a table element and a value in statements. *Trigger, as it was:* something needs to **enumerate** a mapping the program also uses -- the routes-as-data precedent, where `OpenApi` derives the document from the router rather than being maintained beside it |
    | A typed `CONST` | `CONST Pi : F32 = 3.14159...` | a program must reproduce a foreign constant bit for bit and cannot |
    | **Pool elision** | `NEW (T)` with no pool lands in the frame and its arena is ADOPTED by the caller's at exit when the result points into it; a `VAR` pointer parameter carries its object's pool implicitly; `HEAP`, a program's pool and an object-held cache stay named (`docs/pool-elision-plan.md`) | *met 2026-09-30; rules 1 and 2 BUILT the same day (stages 1 to 3 of the plan), the corpus moving module by module -- Text, Json, Dict, ApiSpec so far:* the parameter carried no signal -- 98% of allocating corpus procedures take one, and across the four trees (corpus, zarr proxy, FLEXPART, flexinv) between 1% and 10% of the 18,600 pool mentions name a lifetime that is not a frame |
 

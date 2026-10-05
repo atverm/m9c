@@ -1,11 +1,11 @@
-REVIEW Stats -- 90 procedures with a body, 77 of them functions; 47 headings in a DEFINITION
+REVIEW Stats -- 89 procedures with a body, 76 of them functions; 47 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              77
-  assignments                                   356
+  functions answering on every path              76
+  assignments                                   355
   arguments                                     428
-  RETURN values                                 125
-  operands of a comparison or an operator       684
+  RETURN values                                 124
+  operands of a comparison or an operator       683
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0

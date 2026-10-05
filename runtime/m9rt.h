@@ -681,6 +681,12 @@ static inline void m9_f32_to_le (float f, m9_sl_BYTE b, m9_state *err)
 typedef struct m9_pool_block {
   struct m9_pool_block *next;
   size_t used, cap;
+  /* the EXACT end of the top allocation, where used is rounded up to
+     the alignment: m9_cat may extend a string in place only if it
+     ends here (2026-10-05: a prefix view ending within the padding
+     of the whole string passed a test against used, and `SLICE (s,
+     0, 3) + '.'` wrote the point over s[3]) */
+  size_t last;
   /* the block registry (System.PoolAt): every live block is on one
      global list, tagged with the pool that carved it */
   struct m9_pool_block *rprev, *rnext;
@@ -874,6 +880,11 @@ int     m9_exec_stopped (int h);               /* 1 = the limit ran out */
 int64_t m9_exec_len (int h, int which);        /* which: 1 stdout, 2 stderr */
 int64_t m9_exec_copy (int h, int which, void *buf, int64_t cap);
 void    m9_exec_release (int h);
+/* this process becomes prog, with argblock (nargs NUL-terminated
+   strings, argv[0] first) as its argv; answers -1 only when prog
+   could not be started (see m9rt.c) */
+int     m9_become (const void *prog, const void *argblock, int nargs);
+int64_t m9_pid (void);
 int  m9_getenv (const void *name, void *buf, int cap);
 int  m9_remove (const void *path);
 int  m9_exists (const void *path);          /* readable? */

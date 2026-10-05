@@ -4,6 +4,7 @@
 #include "m9rt.h"
 #include "Io.h"
 
+typedef struct AggUse_Status AggUse_Status;
 
 #ifndef M9SL_m9_arr_5_int64_t
 #define M9SL_m9_arr_5_int64_t

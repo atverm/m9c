@@ -63,7 +63,7 @@ COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc Review M9c"
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
          Json Dict Faults Mat Math Bits Sort Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc Review \
-         NetCDF Grib Csv Delim Zip Stats System Frame Parquet \
+         NetCDF Grib Csv Delim Zip Stats System Frame Parquet NbCells NbShow \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
 
 mkdir -p "$OUT"
@@ -103,6 +103,14 @@ install -d "$DESTDIR/usr/bin" "$DESTDIR/usr/lib/m9" \
 install -m 755 "$OUT/m9c"        "$DESTDIR/usr/bin/m9c"
 install -m 644 "$OUT/libm9rt.a"  "$DESTDIR/usr/lib/libm9rt.a"
 install -m 644 runtime/m9rt.h    "$DESTDIR/usr/include/m9/m9rt.h"
+# the runtime as SOURCES too, for `m9c --cell' (the notebook session),
+# which compiles it position-independent and builds the session host:
+# its own tree, NOT beside the header in include/m9, where sources would
+# win over the archive and every flagless link would compile them
+install -d "$DESTDIR/usr/share/m9/runtime"
+for f in m9rt.h m9rt.c tcpshim.c fmtshim.c tlsshim.c m9session.c; do
+  install -m 644 "runtime/$f" "$DESTDIR/usr/share/m9/runtime/$f"
+done
 
 # The standard library, as M9 SOURCE.  m9c searches /usr/lib/m9 last,
 # so an installed compiler finds these without anyone setting a
@@ -153,6 +161,25 @@ printf '%s\n' \
   > "$DESTDIR/usr/share/m9/vscode-m9/README.deb"
 else
   echo "note: no tools/vscode-m9 in this tree; the extension is not installed"
+fi
+# The Jupyter kernel (since 0.15.0): a Python wrapper around m9c,
+# per-user like the editor extension -- the package ships the files,
+# the user registers the kernel once with
+#   /usr/share/m9/jupyter/install.sh        (or install.sh --uv)
+# Its highlighting extension installs with pip from highlight/.
+if [ -d tools/jupyter ]; then
+  ( cd tools/jupyter &&
+    find . -type f ! -name '.gitignore' ! -path '*/node_modules/*' \
+         ! -path '*/__pycache__/*' ! -path '*/.ipynb_checkpoints/*' \
+         ! -path './highlight/src/*' \
+         ! -name 'package-lock.json' ! -name 'tsconfig.json' ) |
+  while read -r f; do
+    install -d "$DESTDIR/usr/share/m9/jupyter/$(dirname "$f")"
+    install -m 644 "tools/jupyter/$f" "$DESTDIR/usr/share/m9/jupyter/$f"
+  done
+  chmod 755 "$DESTDIR/usr/share/m9/jupyter/install.sh"
+else
+  echo "note: no tools/jupyter in this tree; the Jupyter kernel is not installed"
 fi
 
 echo "installed"

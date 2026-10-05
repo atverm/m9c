@@ -1,0 +1,7 @@
+(* EXPECT: NaN is predeclared, the quiet NaN: a declaration may not take its name *)
+MODULE m ;
+VAR
+  NaN : F64 ;
+BEGIN
+  NaN := 0.0
+END m.

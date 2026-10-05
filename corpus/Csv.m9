@@ -848,21 +848,21 @@ BEGIN
         CASE t.kinds[c] OF
         | Real64 :
           IF len = 0 OR NOT IsNumber (t.buf, ofs, len) THEN
-            t.dcols[c][row] := 0.0 / 0.0
+            t.dcols[c][row] := NaN
           ELSE
             d := FieldF64 (t.buf, ofs, len) ;
             IF t.opt.hasMissing THEN
-              IF d = F64 (t.opt.missing) THEN d := 0.0 / 0.0 END
+              IF d = F64 (t.opt.missing) THEN d := NaN END
             END ;
             t.dcols[c][row] := d
           END
         | Real :
           IF len = 0 OR NOT IsNumber (t.buf, ofs, len) THEN
-            t.fcols[c][row] := 0.0 / 0.0
+            t.fcols[c][row] := NaN
           ELSE
             f := FieldF32 (t.buf, ofs, len) ;
             IF t.opt.hasMissing THEN
-              IF f = t.opt.missing THEN f := 0.0 / 0.0 END
+              IF f = t.opt.missing THEN f := NaN END
             END ;
             t.fcols[c][row] := f
           END

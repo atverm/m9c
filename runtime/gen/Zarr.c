@@ -255,7 +255,6 @@ static const uint32_t m9s158[7] = { 46u, 122u, 103u, 114u, 111u, 117u, 112u };
 static const uint32_t m9s159[1] = { 47u };
 static const uint32_t m9s160[1] = { 47u };
 
-static double Zarr_NaN64 (m9_state *err);
 static void Zarr_WriteText (m9_pool *pool, m9_sl_CHAR path, m9_sl_CHAR text, m9_state *err);
 static m9_sl_CHAR Zarr_ReadText (m9_pool *pool, m9_sl_CHAR path, m9_state *err);
 static m9_sl_CHAR Zarr_Cat (m9_pool *pool, m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
@@ -891,10 +890,7 @@ void Zarr_WriteF32Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F32 data, bool has
     m9_f32_to_le ((*(float *) m9_at (data.p, i, data.len, sizeof (float), err)), ({ __typeof__(raw) m9t2 = raw; int64_t m9t2a = m9_mul_i64 (i, INT64_C(4), err), m9t2n = INT64_C(4); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
     if (err->exc) goto L_ret;
   } }
-  { __typeof__(fv) m9v = (float)(Zarr_NaN64 (err));
-    if (err->exc) goto L_ret;
-    fv = m9v;
-  }
+  fv = (float)(NAN);
   { __typeof__(txt) m9v = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s26, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
     txt = m9v;
@@ -945,10 +941,7 @@ void Zarr_WriteF64Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F64 data, bool has
     m9_f64_to_le ((*(double *) m9_at (data.p, i, data.len, sizeof (double), err)), ({ __typeof__(raw) m9t2 = raw; int64_t m9t2a = m9_mul_i64 (i, INT64_C(8), err), m9t2n = INT64_C(8); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
     if (err->exc) goto L_ret;
   } }
-  { __typeof__(fv) m9v = Zarr_NaN64 (err);
-    if (err->exc) goto L_ret;
-    fv = m9v;
-  }
+  fv = NAN;
   { __typeof__(txt) m9v = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s28, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
     txt = m9v;
@@ -1475,7 +1468,7 @@ Zarr_Sink * Zarr_SinkF32 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
     s = m9v;
   }
   s->isFloat = true;
-  m9_f32_to_le ((float)(Zarr_NaN64 (err)), s->fillB, err);
+  m9_f32_to_le ((float)(NAN), s->fillB, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = s;
@@ -1500,7 +1493,7 @@ Zarr_Sink * Zarr_SinkF64 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
     s = m9v;
   }
   s->isFloat = true;
-  m9_f64_to_le (Zarr_NaN64 (err), s->fillB, err);
+  m9_f64_to_le (NAN, s->fillB, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = s;
@@ -1888,24 +1881,6 @@ L_ret: ;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
-}
-
-static double Zarr_NaN64 (m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  double m9ret = 0;
-  double z = 0; (void) z;
-  z = 0.0;
-  err->res = m9res;
-  m9ret = (z / z);
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9_pool_free (&m9frame);
-  return m9ret;
 }
 
 static void Zarr_WriteText (m9_pool *pool, m9_sl_CHAR path, m9_sl_CHAR text, m9_state *err)

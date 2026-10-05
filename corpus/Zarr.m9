@@ -425,15 +425,6 @@ CONST
   ChunkMin = 131072 ;
   ChunkMax = 67108864 ;
 
-(* 0/0 is the quiet NaN in IEEE, and '/' on floats does not raise on
-   it; spelled as a procedure so the intent is greppable, as the
-   proxy's Zread spells the same thing *)
-PROCEDURE NaN64 () : F64 =
-VAR z : F64 ;
-BEGIN
-  z := 0.0 ;
-  RETURN z / z
-END NaN64 ;
 
 (* EVERY DOCUMENT THIS MODULE WRITES IS UTF-8, and that is not a
    preference.  `Io.WriteFile` encodes through DynStr.Bytes, the
@@ -935,7 +926,7 @@ BEGIN
   FOR i := 0 TO LEN (data) - 1 DO
     F32.ToBytesLE (data[i], SLICE (raw, i * 4, 4))
   END ;
-  fv := F32 (NaN64 ()) ;
+  fv := F32 (NaN) ;
   txt := Cat (pool, '"NaN"', '') ;
   (* `fill # fill` is the NaN test without importing Math: a declared
      NaN fill IS the default, so the two spellings agree *)
@@ -974,7 +965,7 @@ BEGIN
   FOR i := 0 TO LEN (data) - 1 DO
     F64.ToBytesLE (data[i], SLICE (raw, i * 8, 8))
   END ;
-  fv := NaN64 () ;
+  fv := NaN ;
   txt := Cat (pool, '"NaN"', '') ;
   IF hasFill AND fill = fill THEN
     fv := fill ;
@@ -1514,7 +1505,7 @@ VAR s : PTR Sink IN pool ;
 BEGIN
   s := NewSink (pool, adir, '<f4', '"NaN"', 4, chunk, dims, comp) ;
   s.isFloat := TRUE ;
-  F32.ToBytesLE (F32 (NaN64 ()), s.fillB) ;
+  F32.ToBytesLE (F32 (NaN), s.fillB) ;
   RETURN s
 END SinkF32 ;
 
@@ -1526,7 +1517,7 @@ VAR s : PTR Sink IN pool ;
 BEGIN
   s := NewSink (pool, adir, '<f8', '"NaN"', 8, chunk, dims, comp) ;
   s.isFloat := TRUE ;
-  F64.ToBytesLE (NaN64 (), s.fillB) ;
+  F64.ToBytesLE (NaN, s.fillB) ;
   RETURN s
 END SinkF64 ;
 

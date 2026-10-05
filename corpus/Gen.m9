@@ -29,6 +29,14 @@ PROCEDURE LoadExternDeep (KEPT u: PTR Ast.Node) ;
      was a hole: a direct dependency's signature may name a type from
      a module this one does not import.  It resolved to nothing and,
      until the guard went in, became integer arithmetic. *)
+PROCEDURE SetPrefix (RO KEPT module: STR ; RO KEPT prefix: STR) ;
+  (* emit module MODULE's C names -- its procedures, initialiser,
+     exceptions, exported variables and types -- under PREFIX instead
+     of the module's name: one generation of a notebook state cell,
+     run again, beside the generation before it in one process
+     (docs/notebook-state-plan.md phase 2).  Without a call, every
+     name is the module's own and the C is what it always was. *)
+
 PROCEDURE SetDebugSource (RO KEPT file: STR) ;
   (* Emit `#line` directives naming FILE, so a debugger and a
      backtrace report the M9 source rather than the generated C.
@@ -67,6 +75,13 @@ CONST
   KLit = 5 ;   KHdrRecs = 6 ; KHdrProtos = 7 ; KHdrConsts = 8 ;
   KRec2 = 9 ; KThr = 10 ;   (* THREAD trampolines *)
   KGate = 11 ;              (* one m9_mon per [SERIAL] FOR-C unit *)
+  (* an ARRAY OF a record of this module is typedef'd AFTER the struct
+     it contains -- in the C file for a private record, the header for
+     a transparent one -- and the statics, constant data and exported
+     pointers that may use it after that (2026-10-05; until then the
+     typedef went to tdefs, ahead of every struct, and an array of
+     records did not compile: "incomplete element type") *)
+  KArrRec = 12 ; KHdrArrRec = 13 ; KRec3 = 14 ;
 
 TYPE
   AKid = Ast.Kid ;                   (* named so NEW can say it *)
@@ -103,6 +118,8 @@ VAR
   gpool : POOL ;
   modName : STR ;
   dbgSrc : STR ;           (* SetDebugSource; empty = no #line *)
+  pfxMod, pfxC : SLICE OF STR ;  (* SetPrefix: module -> C prefix *)
+  npfx : I64 ;
   constsBase : I64 ;       (* consts below this are the module's; at
                               or above it, the procedure's own *)
   inited : BOOL ;
@@ -116,6 +133,8 @@ VAR
   hOut, cOut : STR ;
 
   consts, extProcs, extTypes, extConsts, extMods, extExcs : Map ;
+  extVars : Map ;          (* Mod.v -> its type, qualified in Mod: the
+                              imported module variables (decision 28) *)
   foreignProcs, arrSeen, thrSeen, gateSeen, scope : Map ;
   gps : SLICE OF GP ;
   ngps : I64 ;
@@ -125,6 +144,7 @@ VAR
   nxcs : I64 ;
   mvN : SLICE OF STR ;
   mvT : SLICE OF AKid ;
+  mvDef : SLICE OF BOOL ;  (* declared in the definition: exported *)
   nmv : I64 ;
   aggT : Map ;             (* constant tables (par 2.2.4): name ->
                               the ARRAY n OF T made for it, *)
@@ -155,6 +175,7 @@ VAR
 
   bHdr, bSrc, bTdefs, bPbuf, bSprotos, bLit : PTR DynStr.DString IN gpool ;
   bHdrRecs, bHdrProtos, bHdrConsts, bRec2 : PTR DynStr.DString IN gpool ;
+  bArrRec, bHdrArrRec, bRec3 : PTR DynStr.DString IN gpool ;
   bThr, bGate : PTR DynStr.DString IN gpool ;
 
 (* ---- small strings ---- *)
@@ -323,6 +344,33 @@ BEGIN
   nadopt := nadopt + 1
 END AdoptReg ;
 
+PROCEDURE SetPrefix (RO KEPT module: STR ; RO KEPT prefix: STR) =
+VAR
+  nm, nc : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF npfx = LEN (pfxMod) THEN
+    nm := NEW (gpool, STR, 2 * npfx + 4) ;
+    nc := NEW (gpool, STR, 2 * npfx + 4) ;
+    FOR i := 0 TO npfx - 1 DO nm[i] := pfxMod[i] ; nc[i] := pfxC[i] END ;
+    pfxMod := nm ;
+    pfxC := nc
+  END ;
+  pfxMod[npfx] := module ;
+  pfxC[npfx] := prefix ;
+  npfx := npfx + 1
+END SetPrefix ;
+
+(* a module's C prefix: its name, or what SetPrefix gave it *)
+PROCEDURE CP (RO m: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO npfx - 1 DO
+    IF DynStr.Eq (pfxMod[i], m) THEN RETURN pfxC[i] END
+  END ;
+  RETURN m
+END CP ;
+
 PROCEDURE SetDebugSource (RO KEPT file: STR) =
 BEGIN
   dbgSrc := file
@@ -452,6 +500,7 @@ BEGIN
   MInit (extProcs) ;
   MInit (extTypes) ;
   MInit (extConsts) ;
+  MInit (extVars) ;
   MInit (extMods) ;
   MInit (extExcs) ;
   MInit (foreignProcs) ;
@@ -467,6 +516,7 @@ BEGIN
   xcs := NEW (gpool, XC, 8) ;
   mvN := NEW (gpool, STR, 8) ;
   mvT := NEW (gpool, AKid, 8) ;
+  mvDef := NEW (gpool, BOOL, 8) ;
   lpools := NEW (gpool, STR, 8) ;
   outStr := NEW (gpool, STR, 8) ;
   adoptC := NEW (gpool, STR, 8) ;
@@ -482,6 +532,9 @@ BEGIN
   bHdrProtos := DynStr.New (gpool) ;
   bHdrConsts := DynStr.New (gpool) ;
   bRec2 := DynStr.New (gpool) ;
+  bArrRec := DynStr.New (gpool) ;
+  bHdrArrRec := DynStr.New (gpool) ;
+  bRec3 := DynStr.New (gpool) ;
   bThr := DynStr.New (gpool) ;
   bGate := DynStr.New (gpool)
 END Setup ;
@@ -516,6 +569,9 @@ BEGIN
       DynStr.Append (bHdrConsts, t) ;
       hdrConstN := hdrConstN + 1
   | KRec2 : DynStr.Append (bRec2, t)
+  | KArrRec : DynStr.Append (bArrRec, t)
+  | KHdrArrRec : DynStr.Append (bHdrArrRec, t)
+  | KRec3 : DynStr.Append (bRec3, t)
   | KThr : DynStr.Append (bThr, t)
   | KGate : DynStr.Append (bGate, t)
   ELSE
@@ -589,8 +645,20 @@ BEGIN
   RETURN Text.OneOf (n, LibM)
 END IsLibM ;
 
+(* Mod.v as the C name Mod_v, in the generator's pool: CN's answers
+   are kept *)
+PROCEDURE Undot (RO n: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  i := Text.FindChar (n, '.') ;
+  RETURN S3 (CP (SLICE (n, 0, i)), '_', SLICE (n, i + 1, LEN (n) - i - 1))
+END Undot ;
+
 PROCEDURE CN (RO n: STR) : STR =
 BEGIN
+  (* an imported variable is in scope as Mod.v (decision 28); its C
+     name is the pointer the exporter defines, Mod_v *)
+  IF Text.FindChar (n, '.') >= 0 THEN RETURN Undot (n) END ;
   IF Text.OneOf (n, CWords) THEN RETURN S2 (n, '_') END ;
   IF IsLibM (n) THEN RETURN S2 (n, '_') END ;
   RETURN n
@@ -870,6 +938,33 @@ END HasSub ;
 PROCEDURE SliceTy (elem: Ast.Kid) : STR ;
 PROCEDURE TagOfType (t: Ast.Kid) : STR ;
 
+(* where an ARRAY OF elem's typedef goes: after the struct of a record
+   of this module -- its C file for a private one, its header for a
+   transparent one (KArrRec, KHdrArrRec) -- and with the other
+   typedefs otherwise.  A nested array follows its innermost element. *)
+PROCEDURE ArrBucket (elem: Ast.Kid) : I64 =
+VAR i : I64 ;
+BEGIN
+  IF elem IS SOME e THEN
+    IF e.kind = Ast.NArrayType THEN RETURN ArrBucket (e.kids[1]) END ;
+    IF e.kind = Ast.NQualident AND LEN (e.b) = 0 THEN
+      FOR i := 0 TO ntys - 1 DO
+        IF DynStr.Eq (tys[i].name, e.a) THEN
+          IF tys[i].node IS SOME d THEN
+            IF d.kind = Ast.NRecordType OR d.kind = Ast.NMonitorType THEN
+              IF tys[i].fdef AND NOT IsOpaque (tys[i].name) THEN
+                RETURN KHdrArrRec
+              END ;
+              RETURN KArrRec
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN KTdefs
+END ArrBucket ;
+
 PROCEDURE TyC (t: Ast.Kid) : STR =
 VAR
   s, nm, ec2 : STR ;
@@ -891,13 +986,13 @@ BEGIN
           IF ei >= 0 THEN
             IF extTypes.es[ei].v IS SOME r2 THEN
               IF IsRecK (r2.kind) OR r2.kind = Ast.NProcType THEN
-                RETURN S3 (n.a, '_', n.b)
+                RETURN S3 (CP (n.a), '_', n.b)
               END ;
               RETURN TyC (extTypes.es[ei].v)
             END
           END ;
           IF MFind (extMods, n.a) >= 0 THEN
-            RETURN S3 (n.a, '_', n.b)
+            RETURN S3 (CP (n.a), '_', n.b)
           END ;
           Err2 (n.line, S2 ('unknown name: ', S3 (n.a, '.', n.b))) ;
           RETURN 'void'
@@ -913,7 +1008,7 @@ BEGIN
              emitted into the header beside the slice typedefs
              (par 2.2.3) *)
           IF IsRecK (r3.kind) OR r3.kind = Ast.NProcType THEN
-            RETURN S3 (modName, '_', n.a)
+            RETURN S3 (CP (modName), '_', n.a)
           END ;
           RETURN TyC (SOME (r3))
         END ;
@@ -921,13 +1016,13 @@ BEGIN
         IF ei >= 0 THEN
           IF extTypes.es[ei].v IS SOME r4 THEN
             IF IsRecK (r4.kind) OR r4.kind = Ast.NProcType THEN
-              RETURN S3 (SLICE (extTypes.es[ei].k, 0,
-                LEN (extTypes.es[ei].k) - LEN (n.a) - 1), '_', n.a)
+              RETURN S3 (CP (SLICE (extTypes.es[ei].k, 0,
+                LEN (extTypes.es[ei].k) - LEN (n.a) - 1)), '_', n.a)
             END ;
             RETURN TyC (extTypes.es[ei].v)
           END
         END ;
-        RETURN S3 (modName, '_', n.a)
+        RETURN S3 (CP (modName), '_', n.a)
     | Ast.NPtrType :
         RETURN S2 (TyC (n.kids[0]), ' *')
     | Ast.NSharedType :
@@ -975,11 +1070,12 @@ BEGIN
             (* each typedef defines a fresh anonymous struct, so two
                modules emitting the same name are conflicting types,
                not a legal C11 redefinition: guard every one *)
-            Line (KTdefs, 0, S2 ('#ifndef M9SL_', s)) ;
-            Line (KTdefs, 0, S2 ('#define M9SL_', s)) ;
-            Line (KTdefs, 0, S7 ('typedef struct { ', ec2,
+            ai := ArrBucket (n.kids[1]) ;
+            Line (ai, 0, S2 ('#ifndef M9SL_', s)) ;
+            Line (ai, 0, S2 ('#define M9SL_', s)) ;
+            Line (ai, 0, S7 ('typedef struct { ', ec2,
               ' v[', ArrCount (cnt), ']; } ', s, ';')) ;
-            Line (KTdefs, 0, '#endif')
+            Line (ai, 0, '#endif')
           END ;
           RETURN s
         END ;
@@ -1124,10 +1220,10 @@ VAR i : I64 ;
 BEGIN
   FOR i := 0 TO LEN (tn) - 1 DO
     IF tn[i] = '.' THEN
-      RETURN S3 (SLICE (tn, 0, i), '_', SLICE (tn, i + 1, LEN (tn) - i - 1))
+      RETURN S3 (CP (SLICE (tn, 0, i)), '_', SLICE (tn, i + 1, LEN (tn) - i - 1))
     END
   END ;
-  RETURN S3 (modName, '_', tn)
+  RETURN S3 (CP (modName), '_', tn)
 END CRPrefix ;
 
 PROCEDURE CRNode (RO tn: STR) : Ast.Kid =
@@ -1201,7 +1297,7 @@ VAR i, lo, hi : I64 ;
 BEGIN
   lo := mvBase ;
   IF lo > scope.n THEN lo := scope.n END ;
-  hi := mvBase + nmv + aggT.n ;
+  hi := mvBase + nmv + extVars.n + aggT.n ;
   IF hi > scope.n THEN hi := scope.n END ;
   FOR i := 0 TO lo - 1 DO
     IF DynStr.Eq (scope.es[i].k, n) THEN RETURN i END
@@ -1230,6 +1326,57 @@ BEGIN
   IF ix < 0 THEN RETURN '' END ;
   RETURN scope.es[ix].t
 END ScopeMode ;
+
+(* the module block of the scope: this module's variables, then every
+   imported module's exports as Mod.v in VAR-parameter mode -- the C is
+   a pointer to the exporter's storage, so index, LEN, lending and
+   assignment take the VAR paths unchanged, as the constant tables'
+   do (decision 28).  The constant tables follow (PushAggs). *)
+PROCEDURE ModuleScope () =
+VAR i : I64 ;
+BEGIN
+  mvBase := scope.n ;
+  FOR i := 0 TO nmv - 1 DO
+    MAdd (scope, mvN[i], mvT[i], 'l')
+  END ;
+  FOR i := 0 TO extVars.n - 1 DO
+    MAdd (scope, extVars.es[i].k, extVars.es[i].v, 'v')
+  END
+END ModuleScope ;
+
+(* a type node from module MODNAME made self-contained: its bare type
+   names qualified, as Sem.QualifiedIn does it, so that an importer
+   reads an exported variable's type where it was declared *)
+PROCEDURE QualIn (KEPT t: Ast.Kid ; RO KEPT modName: STR) : Ast.Kid =
+VAR n : PTR Ast.Node IN gpool ;
+BEGIN
+  IF t IS SOME tn THEN
+    IF tn.kind = Ast.NQualident THEN
+      IF LEN (tn.b) = 0 AND NOT IsBuiltin (tn.a) AND
+         NOT DynStr.Eq (tn.a, 'STR') AND NOT DynStr.Eq (tn.a, 'POOL') THEN
+        n := Ast.NewNode (gpool, Ast.NQualident, tn.line, tn.col) ;
+        n.a := modName ;
+        n.b := tn.a ;
+        RETURN SOME (n)
+      END
+    ELSIF tn.kind = Ast.NPtrType OR tn.kind = Ast.NOptType OR
+          tn.kind = Ast.NSharedType OR tn.kind = Ast.NSliceType THEN
+      n := Ast.NewNode (gpool, tn.kind, tn.line, tn.col) ;
+      IF tn.nkids > 0 THEN
+        Ast.Add (gpool, n, QualIn (tn.kids[0], modName))
+      END ;
+      Ast.Add (gpool, n, NONE) ;
+      RETURN SOME (n)
+    ELSIF (tn.kind = Ast.NArrayType OR tn.kind = Ast.NGridType) AND
+          tn.nkids >= 2 THEN
+      n := Ast.NewNode (gpool, tn.kind, tn.line, tn.col) ;
+      Ast.Add (gpool, n, tn.kids[0]) ;
+      Ast.Add (gpool, n, QualIn (tn.kids[1], modName)) ;
+      RETURN SOME (n)
+    END
+  END ;
+  RETURN t
+END QualIn ;
 
 PROCEDURE FieldType (rec: PTR Ast.Node ;
                      RO f: STR) : Ast.Kid =
@@ -1552,9 +1699,45 @@ BEGIN
   RETURN DynStr.View (d)
 END StrCodes ;
 
+(* the record a CONST's call names, as a type node -- Row (...) or
+   Mod.Row (...), an alias followed -- or NONE *)
+PROCEDURE RecordConstQual (k: Ast.Kid) : Ast.Kid =
+VAR
+  name, ct, m, tn : STR ;
+  j : I64 ;
+  q : PTR Ast.Node IN gpool ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME dn THEN
+        name := dn.a ;
+        FOR j := 0 TO dn.nkids - 1 DO
+          IF dn.kids[j] IS SOME sf THEN
+            IF sf.kind = Ast.NSelField THEN name := S3 (name, '.', sf.a) END
+          END
+        END ;
+        IF RecordAt (name, ct, m, tn) IS SOME rn THEN
+          q := Ast.NewNode (gpool, Ast.NQualident, 0, 0) ;
+          IF DynStr.Eq (m, modName) THEN
+            q.a := tn
+          ELSE
+            q.a := m ;
+            q.b := tn
+          END ;
+          RETURN SOME (q)
+        END
+      END
+    END
+  END ;
+  RETURN NONE
+END RecordConstQual ;
+
 PROCEDURE IsAggregate (k: Ast.Kid) : BOOL =
 BEGIN
-  IF k IS SOME e THEN RETURN e.kind = Ast.NAggregate END ;
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NAggregate THEN RETURN TRUE END ;
+    IF RecordConstQual (k) IS SOME rq THEN RETURN TRUE END
+  END ;
   RETURN FALSE
 END IsAggregate ;
 
@@ -1567,6 +1750,12 @@ VAR
   ek : I64 ;
   elt : Ast.Kid ;
 BEGIN
+  (* a record CONST: its type is the record (par 2.2.4) *)
+  IF RecordConstQual (agk) IS SOME rq THEN
+    MAdd (aggT, nm, SOME (rq), '') ;
+    MAdd (aggV, nm, agk, '') ;
+    RETURN
+  END ;
   IF agk IS SOME ag THEN
     cnt := Ast.NewNode (gpool, Ast.NInt, 0, 0) ;
     cnt.a := ItoA (ag.nkids) ;
@@ -1585,6 +1774,7 @@ BEGIN
     END ;
     elt := SOME (q) ;
     IF ek = Ast.NString THEN elt := strNode END ;
+    IF RecordConstQual (ag.kids[0]) IS SOME req THEN elt := SOME (req) END ;
     at := Ast.NewNode (gpool, Ast.NArrayType, 0, 0) ;
     Ast.Add (gpool, at, SOME (cnt)) ;
     Ast.Add (gpool, at, elt) ;
@@ -1607,6 +1797,65 @@ END PushAggs ;
 (* ... and emitted as const data -- read-only storage, so a write the
    checker missed is a fault and not a changed constant -- with the
    name a pointer to it.  One element per line: a table is read. *)
+(* a literal of a constant table or record CONST as C; a string's
+   characters are the static array sname, emitted before by StrsC *)
+PROCEDURE LitC (e: PTR Ast.Node ; RO sname: STR ; RO what: STR) : STR =
+BEGIN
+  IF e.kind = Ast.NInt THEN RETURN S3 ('INT64_C(', e.a, ')') END ;
+  IF e.kind = Ast.NReal THEN RETURN S3 ('(', e.a, ')') END ;
+  IF e.kind = Ast.NChar THEN RETURN S2 (ItoA (CharVal (e.a)), 'u') END ;
+  IF e.kind = Ast.NTrue THEN RETURN 'true' END ;
+  IF e.kind = Ast.NFalse THEN RETURN 'false' END ;
+  IF e.kind = Ast.NString THEN
+    IF LEN (e.a) > 0 THEN
+      RETURN S5 ('{ (uint32_t *) ', sname, ', ', ItoA (LEN (e.a)), ' }')
+    END ;
+    RETURN '{ 0, 0 }'
+  END ;
+  IF IsNegLit (e, Ast.NInt) THEN RETURN S3 ('INT64_C(-', NegLitText (e), ')') END ;
+  IF IsNegLit (e, Ast.NReal) THEN RETURN S3 ('(-', NegLitText (e), ')') END ;
+  Err2 (e.line, S2 ('aggregate element unsupported yet: ', what)) ;
+  RETURN '0'
+END LitC ;
+
+(* the static array a string literal's characters live in *)
+PROCEDURE StrC (e: PTR Ast.Node ; RO sname: STR) =
+BEGIN
+  IF e.kind = Ast.NString AND LEN (e.a) > 0 THEN
+    Line (KRec3, 0, S9 ('static const uint32_t ', sname, '[',
+      ItoA (LEN (e.a)), '] = { ', StrCodes (e.a), ' };', '', ''))
+  END
+END StrC ;
+
+(* a record aggregate of literals as a brace initializer, its strings
+   emitted first as <base>_<field> *)
+PROCEDURE RecStrs (e: PTR Ast.Node ; RO base: STR) =
+VAR f : I64 ;
+BEGIN
+  IF e.kids[1] IS SOME al THEN
+    FOR f := 0 TO al.nkids - 1 DO
+      IF al.kids[f] IS SOME a THEN StrC (a, S3 (base, '_', ItoA (f))) END
+    END
+  END
+END RecStrs ;
+
+PROCEDURE RecC (e: PTR Ast.Node ; RO base: STR ; RO what: STR) : STR =
+VAR
+  f : I64 ;
+  cs : STR ;
+BEGIN
+  cs := '{ ' ;
+  IF e.kids[1] IS SOME al THEN
+    FOR f := 0 TO al.nkids - 1 DO
+      IF al.kids[f] IS SOME a THEN
+        IF f > 0 THEN cs := S2 (cs, ', ') END ;
+        cs := S2 (cs, LitC (a, S3 (base, '_', ItoA (f)), what))
+      END
+    END
+  END ;
+  RETURN S2 (cs, ' }')
+END RecC ;
+
 PROCEDURE EmitAggs () =
 VAR
   i, k : I64 ;
@@ -1616,56 +1865,60 @@ BEGIN
     ty := TyC (aggT.es[i].v) ;
     nm := CN (aggT.es[i].k) ;
     IF aggV.es[i].v IS SOME ag THEN
-      FOR k := 0 TO ag.nkids - 1 DO
-        IF ag.kids[k] IS SOME se THEN
-          IF se.kind = Ast.NString AND LEN (se.a) > 0 THEN
-            Line (KRec2, 0, S9 ('static const uint32_t ', nm, '_s',
-              ItoA (k), '[', ItoA (LEN (se.a)), '] = { ',
-              StrCodes (se.a), ' };'))
-          END
-        END
-      END ;
-      Line (KRec2, 0, S5 ('static const ', ty, ' ', nm, '_k = { {')) ;
-      FOR k := 0 TO ag.nkids - 1 DO
-        cs := '0' ;
-        IF ag.kids[k] IS SOME e THEN
-          IF e.kind = Ast.NInt THEN
-            cs := S3 ('INT64_C(', e.a, ')')
-          ELSIF e.kind = Ast.NReal THEN
-            cs := S3 ('(', e.a, ')')
-          ELSIF e.kind = Ast.NChar THEN
-            cs := S2 (ItoA (CharVal (e.a)), 'u')
-          ELSIF e.kind = Ast.NTrue THEN
-            cs := 'true'
-          ELSIF e.kind = Ast.NFalse THEN
-            cs := 'false'
-          ELSIF e.kind = Ast.NString THEN
-            IF LEN (e.a) > 0 THEN
-              cs := S7 ('{ (uint32_t *) ', nm, '_s', ItoA (k), ', ',
-                ItoA (LEN (e.a)), ' }')
+      IF ag.kind = Ast.NCallExpr THEN
+        (* a record CONST: one record of const data *)
+        RecStrs (ag, S2 (nm, '_s0')) ;
+        Line (KRec3, 0, S7 ('static const ', ty, ' ', nm, '_k = ',
+          RecC (ag, S2 (nm, '_s0'), aggT.es[i].k), ';')) ;
+        Line (KRec3, 0, S9 ('static ', ty, ' * const ', nm, ' = (', ty,
+          ' *) &', nm, '_k;'))
+      ELSE
+        FOR k := 0 TO ag.nkids - 1 DO
+          IF ag.kids[k] IS SOME se THEN
+            IF se.kind = Ast.NCallExpr THEN
+              RecStrs (se, S3 (nm, '_s', ItoA (k)))
             ELSE
-              cs := '{ 0, 0 }'
+              StrC (se, S3 (nm, '_s', ItoA (k)))
             END
-          ELSIF IsNegLit (e, Ast.NInt) THEN
-            cs := S3 ('INT64_C(-', NegLitText (e), ')')
-          ELSIF IsNegLit (e, Ast.NReal) THEN
-            cs := S3 ('(-', NegLitText (e), ')')
-          ELSE
-            Err2 (e.line, S2 ('aggregate element unsupported yet: ',
-              aggT.es[i].k))
           END
         END ;
-        IF k < ag.nkids - 1 THEN cs := S2 (cs, ',') END ;
-        Line (KRec2, 1, cs)
-      END ;
-      Line (KRec2, 0, '} };') ;
-      Line (KRec2, 0, S9 ('static ', ty, ' * const ', nm, ' = (', ty,
-        ' *) &', nm, '_k;'))
+        Line (KRec3, 0, S5 ('static const ', ty, ' ', nm, '_k = { {')) ;
+        FOR k := 0 TO ag.nkids - 1 DO
+          cs := '0' ;
+          IF ag.kids[k] IS SOME e THEN
+            IF e.kind = Ast.NCallExpr THEN
+              cs := RecC (e, S3 (nm, '_s', ItoA (k)), aggT.es[i].k)
+            ELSE
+              cs := LitC (e, S3 (nm, '_s', ItoA (k)), aggT.es[i].k)
+            END
+          END ;
+          IF k < ag.nkids - 1 THEN cs := S2 (cs, ',') END ;
+          Line (KRec3, 1, cs)
+        END ;
+        Line (KRec3, 0, '} };') ;
+        Line (KRec3, 0, S9 ('static ', ty, ' * const ', nm, ' = (', ty,
+          ' *) &', nm, '_k;'))
+      END
     END
   END
 END EmitAggs ;
 
 (* ---- registry loading ---- *)
+
+(* Sem.NanWalk's twin: a bare designator NaN becomes the real literal
+   NAN (report par 2.1), here too because the generator also runs
+   without the checker *)
+PROCEDURE NanWalk (VAR n: PTR Ast.Node) =
+VAR i : I64 ;
+BEGIN
+  IF n.kind = Ast.NDesignator AND n.nkids = 0 AND DynStr.Eq (n.a, 'NaN') THEN
+    n.kind := Ast.NReal ;
+    n.a := 'NAN'
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN NanWalk (c) END
+  END
+END NanWalk ;
 
 PROCEDURE LoadUnit (KEPT u: PTR Ast.Node) =
 VAR
@@ -1675,9 +1928,13 @@ VAR
   xb : SLICE OF XC ;
   sb : SLICE OF STR ;
   kb : SLICE OF AKid ;
+  db : SLICE OF BOOL ;
   hasBody : BOOL ;
 BEGIN
   Setup () ;
+  FOR i := 0 TO u.nkids - 1 DO
+    IF u.kids[i] IS SOME w THEN NanWalk (w) END
+  END ;
   IF u.kind = Ast.NDefinition AND LEN (u.b) > 0 THEN
     FOR i := 0 TO u.nkids - 1 DO
       IF u.kids[i] IS SOME d THEN
@@ -1766,15 +2023,19 @@ BEGIN
                   IF nmv = LEN (mvN) THEN
                     sb := NEW (gpool, STR, 2 * LEN (mvN)) ;
                     kb := NEW (gpool, AKid, 2 * LEN (mvT)) ;
+                    db := NEW (gpool, BOOL, 2 * LEN (mvT)) ;
                     FOR pi := 0 TO nmv - 1 DO
                       sb[pi] := mvN[pi] ;
-                      kb[pi] := mvT[pi]
+                      kb[pi] := mvT[pi] ;
+                      db[pi] := mvDef[pi]
                     END ;
                     mvN := sb ;
-                    mvT := kb
+                    mvT := kb ;
+                    mvDef := db
                   END ;
                   mvN[nmv] := id.a ;
                   mvT[nmv] := vd.kids[1] ;
+                  mvDef[nmv] := u.kind = Ast.NDefinition ;
                   nmv := nmv + 1
                 END
               END
@@ -1789,7 +2050,7 @@ BEGIN
 END LoadUnit ;
 
 PROCEDURE RegisterExtern (KEPT u: PTR Ast.Node ; addInclude: BOOL) =
-VAR i, j : I64 ;
+VAR i, j, k : I64 ;
 BEGIN
   Setup () ;
   IF u.kind # Ast.NDefinition THEN RETURN END ;
@@ -1832,6 +2093,21 @@ BEGIN
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME cd THEN
             MAdd (extConsts, S3 (u.a, '.', cd.a), cd.kids[0], '')
+          END
+        END
+      ELSIF d.kind = Ast.NVarSection THEN
+        (* the definition's variables: an importer's Mod.v, a pointer
+           to the exporter's storage in VAR-parameter mode, whose C
+           name is Mod_v (decision 28) *)
+        FOR j := 0 TO d.nkids - 1 DO
+          IF d.kids[j] IS SOME vd THEN
+            IF vd.kids[0] IS SOME vids THEN
+              FOR k := 0 TO vids.nkids - 1 DO
+                IF vids.kids[k] IS SOME vid THEN
+                  MAdd (extVars, S3 (u.a, '.', vid.a), QualIn (vd.kids[1], u.a), '')
+                END
+              END
+            END
           END
         END
       END
@@ -1945,7 +2221,7 @@ BEGIN
       IF DynStr.Eq (extExcs.es[i].k, nm) AND
          DynStr.Eq (extExcs.es[i].t, qual) THEN
         fields := extExcs.es[i].v ;
-        RETURN S3 (qual, '_', nm)
+        RETURN S3 (CP (qual), '_', nm)
       END
     END ;
     RETURN ''
@@ -1953,7 +2229,7 @@ BEGIN
   FOR i := 0 TO nxcs - 1 DO
     IF DynStr.Eq (xcs[i].name, nm) THEN
       fields := xcs[i].fields ;
-      RETURN S3 (modName, '_', nm)
+      RETURN S3 (CP (modName), '_', nm)
     END
   END ;
   IF DynStr.Eq (nm, 'Overflow') OR DynStr.Eq (nm, 'IndexError') OR
@@ -1963,7 +2239,7 @@ BEGIN
   i := MFind (extExcs, nm) ;
   IF i >= 0 THEN
     fields := extExcs.es[i].v ;
-    RETURN S3 (extExcs.es[i].t, '_', nm)
+    RETURN S3 (CP (extExcs.es[i].t), '_', nm)
   END ;
   RETURN ''
 END ExcRef ;
@@ -2204,7 +2480,7 @@ BEGIN
       IF ci >= constsBase THEN
         res := EX (consts.es[ci].v, '')
       ELSE
-        res := S3 (modName, '_', d.a)
+        res := S3 (CP (modName), '_', d.a)
       END ;
       tag := TagOfExpr (consts.es[ci].v) ;
       (* const slice indexing *)
@@ -2231,7 +2507,7 @@ BEGIN
           ci := MFind (extConsts, S3 (d.a, '.', sf1.a)) ;
           IF ci >= 0 THEN
             tag := TagOfExpr (extConsts.es[ci].v) ;
-            RETURN S3 (d.a, '_', sf1.a)
+            RETURN S3 (CP (d.a), '_', sf1.a)
           END
         END
       END
@@ -2242,14 +2518,14 @@ BEGIN
     IF d.nkids = 0 THEN
       IF FindProcN (d.a) >= 0 THEN
         tag := 'PROC' ;
-        RETURN S3 (modName, '_', d.a)
+        RETURN S3 (CP (modName), '_', d.a)
       END
     ELSIF d.nkids = 1 THEN
       IF d.kids[0] IS SOME sfp THEN
         IF sfp.kind = Ast.NSelField THEN
           IF MFind (extProcs, S3 (d.a, '.', sfp.a)) >= 0 THEN
             tag := 'PROC' ;
-            RETURN S3 (d.a, '_', sfp.a)
+            RETURN S3 (CP (d.a), '_', sfp.a)
           END
         END
       END
@@ -2260,8 +2536,8 @@ BEGIN
         IF d.kids[0] IS SOME sf2 THEN
           IF sf2.kind = Ast.NSelField THEN
             tag := S2 ('CR:', d.a) ;
-            RETURN S7 ('((', modName, '_', d.a, '){ .tag = ',
-              S5 (modName, '_', d.a, '_', sf2.a), ' })')
+            RETURN S7 ('((', CP (modName), '_', d.a, '){ .tag = ',
+              S5 (CP (modName), '_', d.a, '_', sf2.a), ' })')
           END
         END
       END
@@ -2277,8 +2553,8 @@ BEGIN
               IF extTypes.es[ci].v IS SOME xvt THEN
                 IF xvt.kind = Ast.NCaseRecordType OR xvt.kind = Ast.NEnumType THEN
                   tag := S4 ('CR:', d.a, '.', sfT.a) ;
-                  RETURN S7 ('((', d.a, '_', sfT.a, '){ .tag = ',
-                    S5 (d.a, '_', sfT.a, '_', sfV.a), ' })')
+                  RETURN S7 ('((', CP (d.a), '_', sfT.a, '){ .tag = ',
+                    S5 (CP (d.a), '_', sfT.a, '_', sfV.a), ' })')
                 END
               END
             END
@@ -2456,7 +2732,10 @@ BEGIN
     CASE e.kind OF
     | Ast.NInt : RETURN S3 ('INT64_C(', e.a, ')')
     | Ast.NReal :
-        IF DynStr.Eq (want, 'F32') THEN RETURN S2 (e.a, 'f') END ;
+        (* NaN's NAN is a float already, and the same NaN as a double *)
+        IF DynStr.Eq (want, 'F32') AND NOT DynStr.Eq (e.a, 'NAN') THEN
+          RETURN S2 (e.a, 'f')
+        END ;
         RETURN e.a
     | Ast.NChar : RETURN S2 (ItoA (CharVal (e.a)), 'u')
     | Ast.NString :
@@ -2811,6 +3090,56 @@ BEGIN
   RETURN NONE
 END Arg0 ;
 
+(* the RECORD a callee names -- this module's `Row' or an imported
+   `Mod.Row' -- and its C type name, or NONE (Sem.RecordNamed) *)
+PROCEDURE RecordAt (RO name: STR ; VAR ctype: STR ; VAR m: STR ; VAR tn: STR) : Ast.Kid =
+VAR
+  dot, ei, depth : I64 ;
+  t : Ast.Kid ;
+BEGIN
+  dot := 0 - 1 ;
+  FOR ei := 0 TO LEN (name) - 1 DO
+    IF name[ei] = '.' AND dot < 0 THEN dot := ei END
+  END ;
+  IF dot < 0 THEN
+    m := modName ;
+    tn := name
+  ELSE
+    m := SLICE (name, 0, dot) ;
+    tn := SLICE (name, dot + 1, LEN (name) - dot - 1)
+  END ;
+  (* follow an alias BY NAME to the record it stands for: an alias has
+     no C type of its own, and the record's is Mod_Name where it was
+     declared *)
+  FOR depth := 0 TO 7 DO
+    IF DynStr.Eq (m, modName) THEN
+      t := FindTypeN (tn)
+    ELSE
+      ei := MFind (extTypes, S3 (m, '.', tn)) ;
+      IF ei < 0 THEN RETURN NONE END ;
+      t := extTypes.es[ei].v
+    END ;
+    IF t IS SOME n THEN
+      IF n.kind = Ast.NRecordType THEN
+        ctype := S3 (CP (m), '_', tn) ;
+        RETURN SOME (n)
+      ELSIF n.kind = Ast.NQualident THEN
+        IF LEN (n.b) > 0 THEN
+          m := n.a ;
+          tn := n.b
+        ELSE
+          tn := n.a
+        END
+      ELSE
+        RETURN NONE
+      END
+    ELSE
+      RETURN NONE
+    END
+  END ;
+  RETURN NONE
+END RecordAt ;
+
 PROCEDURE CallC (dn: Ast.Kid ; argl: Ast.Kid ; VAR tag: STR) : STR =
 VAR
   name, args, at, want2, tn, vn, cfunc, e1, e2, res, cnt : STR ;
@@ -2841,6 +3170,35 @@ BEGIN
     RETURN '0'
   END ;
   IF argl IS SOME al0 THEN nargs := al0.nkids END ;
+
+  (* A RECORD AGGREGATE: Row (a, b), or Mod.Row (a, b) -- a compound
+     literal of the record's C type, the fields in declaration order,
+     which is the struct's order (report par 2.2.4) *)
+  IF RecordAt (name, cfunc, gname, xtn) IS SOME rn THEN
+    tag := 'REC' ;
+    args := '' ;
+    k2 := 0 ;
+    IF rn.kids[1] IS SOME rfs THEN
+      FOR g := 0 TO rfs.nkids - 1 DO
+        IF rfs.kids[g] IS SOME rg THEN
+          IF rg.kids[0] IS SOME rids THEN
+            FOR j := 0 TO rids.nkids - 1 DO
+              IF k2 < nargs THEN
+                IF argl IS SOME ral THEN
+                  IF LEN (args) > 0 THEN args := S2 (args, ', ') END ;
+                  want2 := TagOfType (rg.kids[1]) ;
+                  args := S2 (args, EX (ral.kids[k2], want2))
+                END
+              END ;
+              k2 := k2 + 1
+            END
+          END
+        END
+      END
+    END ;
+    IF k2 # nargs THEN Err2 (eln, 'record aggregate arity wrong') END ;
+    RETURN S5 ('((', cfunc, '){ ', args, ' })')
+  END ;
 
   (* AN INTEGER TO AN ENUMERATION: Colour (i), or Palette.Hue (i),
      the checked inverse of ORD.  The callee is a type -- an enum or a
@@ -3047,7 +3405,7 @@ BEGIN
             RETURN S3 ('((int64_t) sizeof (', BuiltinC (s0.a), '))')
           END ;
           IF FindTypeN (s0.a) IS SOME ft THEN
-            RETURN S5 ('((int64_t) sizeof (', modName, '_', s0.a, '))')
+            RETURN S5 ('((int64_t) sizeof (', CP (modName), '_', s0.a, '))')
           END
         END
       END ;
@@ -3204,7 +3562,7 @@ BEGIN
     g := MFind (extProcs, name) ;
     IF g >= 0 THEN
       pnodeK := extProcs.es[g].v ;
-      cfunc := S3 (tn, '_', vn)
+      cfunc := S3 (CP (tn), '_', vn)
     END
   ELSE
     (* a call THROUGH A PROCEDURE VALUE (par 2.2.3): a parameter or
@@ -3224,7 +3582,7 @@ BEGIN
     pi := FindProcN (name) ;
     IF pi >= 0 THEN
       pnodeK := gps[pi].node ;
-      cfunc := S3 (modName, '_', name)
+      cfunc := S3 (CP (modName), '_', name)
     ELSE
       (* foreign procedure: direct extern call, no err slot (par 11) *)
       pi := MFind (foreignProcs, name) ;
@@ -3937,11 +4295,11 @@ BEGIN
                   Line (KThr, 0, '{') ;
                   Line (KThr, 0, '  m9_state e = { 0 };') ;
                   IF thrWants THEN
-                    Line (KThr, 0, S6 ('  ', modName, '_', bname, ' ((',
+                    Line (KThr, 0, S6 ('  ', CP (modName), '_', bname, ' ((',
                       S3 (w, ') p, pool, &e);', '')))
                   ELSE
                     Line (KThr, 0, '  (void) pool;') ;
-                    Line (KThr, 0, S6 ('  ', modName, '_', bname, ' ((',
+                    Line (KThr, 0, S6 ('  ', CP (modName), '_', bname, ' ((',
                       S3 (w, ') p, &e);', '')))
                   END ;
                   Line (KThr, 0,
@@ -3951,7 +4309,7 @@ BEGIN
                   Line (KThr, 0, '')
                 END ;
                 Line (KPbuf, ind, S6 ('m9_thread_start2 (m9_thr_',
-                  modName, '_', bname, ', (void *) ',
+                  CP (modName), '_', bname, ', (void *) ',
                   S5 (l, ', ', thrPool, ', err);', ''))) ;
                 Line (KPbuf, ind,
                   S3 ('if (err->exc) goto ', raiseLbl, ';'))
@@ -4397,7 +4755,7 @@ BEGIN
       END
     END
   END ;
-  RETURN S7 ('typedef ', retC, ' (*', modName, '_', name,
+  RETURN S7 ('typedef ', retC, ' (*', CP (modName), '_', name,
              S3 (') (', ps, 'm9_state *err);'))
 END ProcTypedefC ;
 
@@ -4430,7 +4788,7 @@ BEGIN
       retC := 'void' ;
       curRetTag := ''
     END ;
-    sig := S6 (retC, ' ', modName, '_', gps[gi].name, ' (') ;
+    sig := S6 (retC, ' ', CP (modName), '_', gps[gi].name, ' (') ;
     monPar := '' ;
     pl := d.kids[0] ;
     IF pl IS SOME pln THEN
@@ -4633,10 +4991,7 @@ BEGIN
       END ;
 
       (* module state, visible after params and locals (first hit wins) *)
-      mvBase := scope.n ;
-      FOR i := 0 TO nmv - 1 DO
-        MAdd (scope, mvN[i], mvT[i], 'l')
-      END ;
+      ModuleScope () ;
       PushAggs () ;
 
       (* the body's block goes through the statement emitter so a
@@ -4724,10 +5079,7 @@ BEGIN
   curRetTag := '' ;
   finDepth := 0 ;
   inSwitch := 0 ;
-  mvBase := scope.n ;
-  FOR i := 0 TO nmv - 1 DO
-    MAdd (scope, mvN[i], mvT[i], 'l')
-  END ;
+  ModuleScope () ;
   PushAggs () ;
   Line (KPbuf, 0, '') ;
   Line (KPbuf, 0, 'int main (int argc, char **argv)') ;
@@ -4741,7 +5093,7 @@ BEGIN
   END ;
   Line (KPbuf, 1, 'm9_args (argc, argv);') ;
   FOR i := 0 TO extMods.n - 1 DO
-    Line (KPbuf, 1, S3 (extMods.es[i].k, '_m9init (err);',
+    Line (KPbuf, 1, S3 (CP (extMods.es[i].k), '_m9init (err);',
       ' if (err->exc) goto L_ret;'))
   END ;
   EmitStmt (mainBody, 1) ;
@@ -4775,13 +5127,10 @@ BEGIN
   curRetTag := '' ;
   finDepth := 0 ;
   inSwitch := 0 ;
-  mvBase := scope.n ;
-  FOR i := 0 TO nmv - 1 DO
-    MAdd (scope, mvN[i], mvT[i], 'l')
-  END ;
+  ModuleScope () ;
   PushAggs () ;
   Line (KPbuf, 0, '') ;
-  Line (KPbuf, 0, S3 ('void ', forModule, '_m9init (m9_state *err)')) ;
+  Line (KPbuf, 0, S3 ('void ', CP (forModule), '_m9init (m9_state *err)')) ;
   Line (KPbuf, 0, '{') ;
   Line (KPbuf, 1, 'static int m9done = 0;') ;
   Line (KPbuf, 1, 'if (m9done) return;') ;
@@ -4795,7 +5144,7 @@ BEGIN
   Line (KPbuf, 1, 'err->res = &m9mframe;') ;
   (* direct imports first, so their state is ready *)
   FOR i := 0 TO extMods.n - 1 DO
-    Line (KPbuf, 1, S3 (extMods.es[i].k, '_m9init (err);',
+    Line (KPbuf, 1, S3 (CP (extMods.es[i].k), '_m9init (err);',
       ' if (err->exc) goto L_ret;'))
   END ;
   EmitStmt (mainBody, 1) ;
@@ -4807,6 +5156,141 @@ BEGIN
   ;
   Line (KPbuf, 0, '}')
 END GenInit ;
+
+(* ---- EXPORTED MODULE VARIABLES (decision 28, 2026-10-04) ----
+
+   The exporter keeps its variable a file-local static, as every
+   module variable is, and publishes a constant POINTER to it,
+   Mod_v, declared extern in its header -- the constant table's
+   shape (decision 20).  An importer has Mod.v in scope in
+   VAR-parameter mode (ModuleScope), so every read, write, index,
+   LEN and lending goes through the paths a VAR parameter takes.  A
+   pointer-bearing variable publishes its pool as well, Mod_v_pool --
+   the pool rule 2 says a VAR root carries: its IN clause, else the
+   module frame. *)
+PROCEDURE ExportVars () =
+VAR
+  i : I64 ;
+  ty, cn, pl : STR ;
+  t : Ast.Kid ;
+  any : BOOL ;
+BEGIN
+  any := FALSE ;
+  FOR i := 0 TO nmv - 1 DO
+    IF mvDef[i] THEN
+      any := TRUE ;
+      ty := TyC (mvT[i]) ;
+      cn := S3 (CP (modName), '_', mvN[i]) ;
+      Line (KRec3, 0, S6 (ty, ' * const ', cn, ' = &', CN (mvN[i]), ';')) ;
+      Line (KHdrProtos, 0, S5 ('extern ', ty, ' * const ', cn, ';')) ;
+      IF PoolParamTy (mvT[i]) THEN
+        pl := '&m9mframe' ;
+        t := mvT[i] ;
+        IF t IS SOME tn THEN
+          IF tn.kind = Ast.NOptType THEN t := tn.kids[0] END
+        END ;
+        IF Resolve (t) IS SOME r THEN
+          IF r.kind = Ast.NPtrType THEN
+            IF r.kids[1] IS SOME pn THEN
+              IF pn.nkids = 0 THEN pl := S2 ('&', CN (pn.a)) END
+            END
+          END
+        END ;
+        Line (KRec3, 0, S4 ('m9_pool * const ', cn, '_pool = ', S2 (pl, ';'))) ;
+        Line (KHdrProtos, 0, S3 ('extern m9_pool * const ', cn, '_pool;'))
+      END
+    END
+  END ;
+  IF any THEN Line (KRec3, 0, '') END
+END ExportVars ;
+
+(* is `name' declared under k: a variable, parameter, binder, type,
+   constant or exception -- Sem.DeclaresName, for the shadow test *)
+PROCEDURE DeclaresName (k: Ast.Kid ; RO name: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF k IS SOME n THEN
+    IF n.kind = Ast.NIdent OR n.kind = Ast.NIsSome OR n.kind = Ast.NTypeDecl
+       OR n.kind = Ast.NConstDecl OR n.kind = Ast.NExcDecl THEN
+      IF DynStr.Eq (n.a, name) THEN RETURN TRUE END
+    END ;
+    FOR i := 0 TO n.nkids - 1 DO
+      IF DeclaresName (n.kids[i], name) THEN RETURN TRUE END
+    END
+  END ;
+  RETURN FALSE
+END DeclaresName ;
+
+(* a name this module declares at its own level, or the procedure
+   `scope' declares: the module of the same spelling is shadowed *)
+PROCEDURE NameShadowed (scope: Ast.Kid ; RO name: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF DeclaresName (scope, name) THEN RETURN TRUE END ;
+  IF FindProcN (name) >= 0 OR MFind (consts, name) >= 0 THEN RETURN TRUE END ;
+  IF FindTypeN (name) IS SOME tn THEN RETURN TRUE END ;
+  FOR i := 0 TO nmv - 1 DO
+    IF DynStr.Eq (mvN[i], name) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END NameShadowed ;
+
+(* `a.b', in the module's own pool and not the node's: the node's
+   pool, named through a binder on a module table, was the walk's own
+   frame in the generator, and the name dangled once the walk returned
+   (`unknown name: const vo', 2026-10-04) *)
+PROCEDURE DotJoin (RO a, b: STR) : STR =
+VAR
+  s : SLICE OF CHAR ;
+  i : I64 ;
+BEGIN
+  s := NEW (gpool, CHAR, LEN (a) + 1 + LEN (b)) ;
+  FOR i := 0 TO LEN (a) - 1 DO s[i] := a[i] END ;
+  s[LEN (a)] := '.' ;
+  FOR i := 0 TO LEN (b) - 1 DO s[LEN (a) + 1 + i] := b[i] END ;
+  RETURN s
+END DotJoin ;
+
+(* Sem.ExportWalk's twin: the designator Mod.v... of a directly
+   imported module's exported variable becomes the designator rooted
+   at the one name Mod.v.  Here, and not only in the checker, because
+   the generator is also run without it (gendump_m9, the oracle's
+   gentest) and both ends must emit the same C. *)
+PROCEDURE ExportWalk (VAR n: PTR Ast.Node ; scope: Ast.Kid) =
+VAR i : I64 ;
+BEGIN
+  IF n.kind = Ast.NDesignator AND n.nkids > 0 THEN
+    IF n.kids[0] IS SOME s THEN
+      IF s.kind = Ast.NSelField AND MFind (extMods, n.a) >= 0 THEN
+        IF MFind (extVars, S3 (n.a, '.', s.a)) >= 0 AND
+           NOT NameShadowed (scope, n.a) THEN
+          n.a := DotJoin (n.a, s.a) ;
+          FOR i := 0 TO n.nkids - 2 DO n.kids[i] := n.kids[i + 1] END ;
+          n.nkids := n.nkids - 1
+        END
+      END
+    END
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN
+      IF n.kind = Ast.NProcDecl THEN
+        ExportWalk (c, SOME (n))
+      ELSE
+        ExportWalk (c, scope)
+      END
+    END
+  END
+END ExportWalk ;
+
+PROCEDURE ExportWalks () =
+VAR i : I64 ;
+BEGIN
+  IF extVars.n = 0 THEN RETURN END ;
+  FOR i := 0 TO ngps - 1 DO
+    IF gps[i].node IS SOME pn THEN ExportWalk (pn, NONE) END
+  END ;
+  IF mainBody IS SOME mb THEN ExportWalk (mb, NONE) END
+END ExportWalks ;
 
 PROCEDURE Emit (RO forModule: STR) =
 VAR
@@ -4828,10 +5312,14 @@ BEGIN
   bHdrProtos := DynStr.New (gpool) ;
   bHdrConsts := DynStr.New (gpool) ;
   bRec2 := DynStr.New (gpool) ;
+  bArrRec := DynStr.New (gpool) ;
+  bHdrArrRec := DynStr.New (gpool) ;
+  bRec3 := DynStr.New (gpool) ;
   bThr := DynStr.New (gpool) ;
   bGate := DynStr.New (gpool) ;
   tdefN := 0 ; sprotoN := 0 ; litN := 0 ; hdrConstN := 0 ;
   MInit (arrSeen) ;
+  ExportWalks () ;
   Line (KHdr, 0, S3 ('/* generated by M9Gen from ', forModule,
     '.m9 -- do not edit */')) ;
   Line (KHdr, 0, S2 ('#ifndef M9G_', S2 (forModule, '_H'))) ;
@@ -4844,7 +5332,7 @@ BEGIN
   (* every library module declares its initialiser, so an importer can
      run it before the module's state is used (docs/enum-plan.md) *)
   IF NOT isProgram THEN
-    Line (KHdr, 0, S3 ('void ', forModule, '_m9init (m9_state *err);')) ;
+    Line (KHdr, 0, S3 ('void ', CP (forModule), '_m9init (m9_state *err);')) ;
     Line (KHdr, 0, '')
   END ;
   Line (KSrc, 0, S3 ('/* generated by M9Gen from ', forModule,
@@ -4868,8 +5356,8 @@ BEGIN
          tn.kind = Ast.NEnumType THEN anyPay := TRUE END
     END ;
     IF anyPay THEN
-      Line (KHdr, 0, S6 ('typedef struct ', modName, '_', tys[i].name,
-        ' ', S4 (modName, '_', tys[i].name, ';')))
+      Line (KHdr, 0, S6 ('typedef struct ', CP (modName), '_', tys[i].name,
+        ' ', S4 (CP (modName), '_', tys[i].name, ';')))
     END
   END ;
   Line (KHdr, 0, '') ;
@@ -4904,11 +5392,11 @@ BEGIN
            be forward-declared, so a SLICE OF this variant put an
            undeclared name in the header (SliceVar.m9) *)
         IF NOT IsOpaque (tys[i].name) THEN
-          Line (buf, 0, S6 ('typedef struct ', modName, '_', tys[i].name,
-            ' ', S4 (modName, '_', tys[i].name, ';')))
+          Line (buf, 0, S6 ('typedef struct ', CP (modName), '_', tys[i].name,
+            ' ', S4 (CP (modName), '_', tys[i].name, ';')))
         END ;
         IF anyPay THEN
-          Line (buf, 0, S5 ('struct ', modName, '_', tys[i].name, ' {')) ;
+          Line (buf, 0, S5 ('struct ', CP (modName), '_', tys[i].name, ' {')) ;
           Line (buf, 0, '  int32_t tag;') ;
           Line (buf, 0, '  union {') ;
           FOR ci := 0 TO d.nkids - 1 DO
@@ -4934,15 +5422,15 @@ BEGIN
           Line (buf, 0, '  } u;') ;
           Line (buf, 0, '};')
         ELSE
-          Line (buf, 0, S4 ('struct ', modName, '_',
+          Line (buf, 0, S4 ('struct ', CP (modName), '_',
             S2 (tys[i].name, ' { int32_t tag; };')))
         END ;
         FOR ci := 0 TO d.nkids - 1 DO
           IF d.kids[ci] IS SOME v THEN
-            Line (buf, 0, S7 ('#define ', modName, '_', tys[i].name,
+            Line (buf, 0, S7 ('#define ', CP (modName), '_', tys[i].name,
               '_', v.a, S2 (' ', ItoA (ci)))) ;
             (* NAME's food: one code-point array per member *)
-            Line (buf, 0, S9 ('static const uint32_t ', modName, '_',
+            Line (buf, 0, S9 ('static const uint32_t ', CP (modName), '_',
               tys[i].name, '_nm', ItoA (ci), '[] = { ',
               StrCodes (v.a), ' };'))
           END
@@ -4952,10 +5440,10 @@ BEGIN
            this type, and -Werror=unused-const-variable would reject
            it; the linker strips it either way *)
         Line (buf, 0, S6 ('static const m9_sl_CHAR __attribute__((__unused__)) ',
-          modName, '_', tys[i].name, '_names[] = {', '')) ;
+          CP (modName), '_', tys[i].name, '_names[] = {', '')) ;
         FOR ci := 0 TO d.nkids - 1 DO
           IF d.kids[ci] IS SOME v THEN
-            Line (buf, 0, S9 ('  { (uint32_t *) ', modName, '_',
+            Line (buf, 0, S9 ('  { (uint32_t *) ', CP (modName), '_',
               tys[i].name, '_nm', ItoA (ci), ', ',
               ItoA (LEN (v.a)), ' },'))
           END
@@ -4969,12 +5457,12 @@ BEGIN
   (* exceptions: static descriptors, identity by address (par 11) *)
   FOR i := 0 TO nxcs - 1 DO
     IF xcs[i].fdef THEN
-      Line (KHdr, 0, S4 ('extern const m9_exc ', modName, '_',
+      Line (KHdr, 0, S4 ('extern const m9_exc ', CP (modName), '_',
         S2 (xcs[i].name, ';'))) ;
-      Line (KSrc, 0, S7 ('const m9_exc ', modName, '_', xcs[i].name,
+      Line (KSrc, 0, S7 ('const m9_exc ', CP (modName), '_', xcs[i].name,
         ' = { "', xcs[i].name, '" };'))
     ELSE
-      Line (KSrc, 0, S7 ('static const m9_exc ', modName, '_',
+      Line (KSrc, 0, S7 ('static const m9_exc ', CP (modName), '_',
         xcs[i].name, ' = { "', xcs[i].name, '" };'))
     END
   END ;
@@ -4996,10 +5484,10 @@ BEGIN
           buf := KRec2
         END ;
         IF NOT IsOpaque (tys[i].name) THEN
-          Line (buf, 0, S6 ('typedef struct ', modName, '_',
-            tys[i].name, ' ', S4 (modName, '_', tys[i].name, ';')))
+          Line (buf, 0, S6 ('typedef struct ', CP (modName), '_',
+            tys[i].name, ' ', S4 (CP (modName), '_', tys[i].name, ';')))
         END ;
-        Line (buf, 0, S5 ('struct ', modName, '_', tys[i].name, ' {')) ;
+        Line (buf, 0, S5 ('struct ', CP (modName), '_', tys[i].name, ' {')) ;
         (* A MONITOR IS A RECORD WITH A LOCK AS ITS FIRST FIELD, so it
            is layout-compatible with the record it is and the lock
            needs no offset arithmetic.  No constructor: M9 records
@@ -5041,40 +5529,40 @@ BEGIN
   FOR ci := 0 TO consts.n - 1 DO
     IF consts.es[ci].v IS SOME e THEN
       IF e.kind = Ast.NInt THEN
-        Line (KHdrConsts, 0, S6 ('#define ', modName, '_',
+        Line (KHdrConsts, 0, S6 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' INT64_C(', S2 (e.a, ')')))
       (* a negated literal is a unary node, not a literal: Dict's
          Empty = -1 is the first const the corpus wrote that way *)
       ELSIF IsNegLit (e, Ast.NInt) THEN
-        Line (KHdrConsts, 0, S6 ('#define ', modName, '_',
+        Line (KHdrConsts, 0, S6 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' INT64_C(-', S2 (NegLitText (e), ')')))
       ELSIF IsNegLit (e, Ast.NReal) THEN
-        Line (KHdrConsts, 0, S7 ('#define ', modName, '_',
+        Line (KHdrConsts, 0, S7 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' (-', NegLitText (e), ')'))
       ELSIF e.kind = Ast.NReal THEN
-        Line (KHdrConsts, 0, S7 ('#define ', modName, '_',
+        Line (KHdrConsts, 0, S7 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' (', e.a, ')'))
       (* a BOOLEAN constant.  the ported model's parameter module has four of them and
          Fortran calls them parameters, which is what they are: a
          switch a program cannot flip at run time *)
       ELSIF e.kind = Ast.NTrue THEN
-        Line (KHdrConsts, 0, S5 ('#define ', modName, '_',
+        Line (KHdrConsts, 0, S5 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' true'))
       ELSIF e.kind = Ast.NFalse THEN
-        Line (KHdrConsts, 0, S5 ('#define ', modName, '_',
+        Line (KHdrConsts, 0, S5 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' false'))
       ELSIF e.kind = Ast.NString AND LEN (e.a) > 0 THEN
-        Line (KHdrConsts, 0, S9 ('static const uint32_t ', modName, '_',
+        Line (KHdrConsts, 0, S9 ('static const uint32_t ', CP (modName), '_',
           consts.es[ci].k, '_d[', ItoA (LEN (e.a)), '] = { ',
           StrCodes (e.a), ' };')) ;
-        Line (KHdrConsts, 0, S9 ('#define ', modName, '_',
+        Line (KHdrConsts, 0, S9 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' ((m9_sl_CHAR){ (uint32_t *) ', modName,
           '_', consts.es[ci].k, S4 ('_d, ', ItoA (LEN (e.a)), ' })', '')))
       (* a CHAR constant: one code point, emitted like the char
          literal it names -- <cp>u -- so `s + NL` joins it as a code
          point the way `s + 0AC` does (par 2.2) *)
       ELSIF e.kind = Ast.NChar THEN
-        Line (KHdrConsts, 0, S7 ('#define ', modName, '_',
+        Line (KHdrConsts, 0, S7 ('#define ', CP (modName), '_',
           consts.es[ci].k, ' (', S2 (ItoA (CharVal (e.a)), 'u'), ')'))
       ELSE
         Err2 (e.line, 'const form unsupported yet')
@@ -5110,7 +5598,7 @@ BEGIN
      which is also M9's defined-zero story.  Emitted into rec2 now so
      their array typedefs register before tdefs is spliced. *)
   FOR i := 0 TO nmv - 1 DO
-    Line (KRec2, 0, S5 ('static ', TyC (mvT[i]), ' ', CN (mvN[i]), ';'))
+    Line (KRec3, 0, S5 ('static ', TyC (mvT[i]), ' ', CN (mvN[i]), ';'))
   END ;
   EmitAggs () ;
   (* the MODULE FRAME: the arena of the init body (a program's main),
@@ -5118,8 +5606,9 @@ BEGIN
      variable declared without a pool has one to be grown in (rule 2
      of docs/pool-elision-plan.md) -- a module variable lives as long
      as the module, and so does this *)
-  Line (KRec2, 0, 'static m9_pool m9mframe = {0};') ;
-  Line (KRec2, 0, '') ;
+  Line (KRec3, 0, 'static m9_pool m9mframe = {0};') ;
+  Line (KRec3, 0, '') ;
+  ExportVars () ;
 
   (* procedures emit into pbuf; typedefs, string literals, and static
      prototypes they discover along the way land before them *)
@@ -5139,11 +5628,14 @@ BEGIN
   DynStr.Append (bHdr, DynStr.View (bTdefs)) ;
   IF tdefN > 0 THEN Line (KHdr, 0, '') END ;
   DynStr.Append (bHdr, DynStr.View (bHdrRecs)) ;
+  DynStr.Append (bHdr, DynStr.View (bHdrArrRec)) ;
   DynStr.Append (bHdr, DynStr.View (bHdrProtos)) ;
   Line (KHdr, 0, '') ;
   Line (KHdr, 0, '#endif') ;
 
   DynStr.Append (bSrc, DynStr.View (bRec2)) ;
+  DynStr.Append (bSrc, DynStr.View (bArrRec)) ;
+  DynStr.Append (bSrc, DynStr.View (bRec3)) ;
   DynStr.Append (bSrc, DynStr.View (bLit)) ;
   IF litN > 0 THEN Line (KSrc, 0, '') END ;
   DynStr.Append (bSrc, DynStr.View (bGate)) ;

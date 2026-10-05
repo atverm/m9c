@@ -820,7 +820,7 @@ BEGIN
     CASE k OF
     | Real :
       AddF32 (pool, f, Csv.Name (pool, t, c), Csv.ColF32 (t, c),
-              0.0 / 0.0)
+              NaN)
     | Int :
       AddI64 (pool, f, Csv.Name (pool, t, c), Csv.ColI64 (t, c),
               MissI ())
@@ -1805,7 +1805,7 @@ BEGIN
     IF hasFill THEN
       AddF64 (pool, f, name, v64, fill)
     ELSE
-      AddF64 (pool, f, name, v64, 0.0 / 0.0)
+      AddF64 (pool, f, name, v64, NaN)
     END
   ELSIF t = NetCDF.TypeFloat THEN
     v32 := NEW (pool, F32, n) ;
@@ -1813,7 +1813,7 @@ BEGIN
     IF hasFill THEN
       AddF32 (pool, f, name, v32, F32 (fill))
     ELSE
-      AddF32 (pool, f, name, v32, F32 (0.0 / 0.0))
+      AddF32 (pool, f, name, v32, NaN)
     END
   ELSIF t = NetCDF.TypeInt64 THEN
     vi64 := NEW (pool, I64, n) ;
@@ -2831,24 +2831,24 @@ PROCEDURE MeanOr (RO x: SLICE OF F64) : F64 =
 BEGIN
   RETURN Stats.Mean (x)
 EXCEPT
-| Stats.TooFew : RETURN 0.0 / 0.0
+| Stats.TooFew : RETURN NaN
 END MeanOr ;
 
 PROCEDURE StdOr (RO x: SLICE OF F64) : F64 =
 BEGIN
   RETURN Stats.Std (x)
 EXCEPT
-| Stats.TooFew : RETURN 0.0 / 0.0
-| ValueRange : RETURN 0.0 / 0.0
+| Stats.TooFew : RETURN NaN
+| ValueRange : RETURN NaN
 END StdOr ;
 
 PROCEDURE PctOr (RO x: SLICE OF F64 ; p: F64) : F64 =
 BEGIN
   RETURN Stats.Percentile (x, p)
 EXCEPT
-| Stats.TooFew : RETURN 0.0 / 0.0
-| Faults.BadArg : RETURN 0.0 / 0.0
-| ValueRange : RETURN 0.0 / 0.0
+| Stats.TooFew : RETURN NaN
+| Faults.BadArg : RETURN NaN
+| ValueRange : RETURN NaN
 END PctOr ;
 
 (* a numeric column as reals, a NaN where the value is missing: what
@@ -2860,7 +2860,7 @@ VAR
   nan : F64 ;
 BEGIN
   n := f.rows ;
-  nan := 0.0 / 0.0 ;
+  nan := NaN ;
   CASE c.data OF
   | F64s (v, m) :
       FOR i := 0 TO n - 1 DO
@@ -2920,7 +2920,7 @@ BEGIN
       o[6] := PctOr (x, 50.0) ;
       o[7] := PctOr (x, 75.0) ;
       o[8] := PctOr (x, 100.0) ;
-      AddF64 (pool, out, c.name, o, 0.0 / 0.0)
+      AddF64 (pool, out, c.name, o, NaN)
     END
   END ;
   RETURN out
@@ -2973,7 +2973,7 @@ BEGIN
   END ;
   out := New (pool, ng) ;
   Reduce (pool, f, out, f.cols[kc], How.First, win, ng, 1) ;
-  AddF64 (pool, out, name, o, 0.0 / 0.0) ;
+  AddF64 (pool, out, name, o, NaN) ;
   RETURN out
 END Aggregate ;
 
@@ -3017,7 +3017,7 @@ BEGIN
     v := fn (row, p) ;
     o[r] := v
   END ;
-  AddF64 (pool, f, name, o, 0.0 / 0.0)
+  AddF64 (pool, f, name, o, NaN)
 END Compute ;
 
 PROCEDURE FilterBy (VAR pool: POOL ; f: PTR Fr ; RO cols: SLICE OF STR ;

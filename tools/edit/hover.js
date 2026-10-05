@@ -1,7 +1,7 @@
 /* M9Hover -- docstring hovers over an M9 cell.
 
    The page invents no documentation: keyword paragraphs come from
-   GET /kw (tools/mkkeywords.py's output, gated in both directions
+   GET /kw (tools/MkKeywords.m9's output, gated in both directions
    against the lexer's own table) and module entries from
    GET /doc/NAME (the m9c --json gather, cached server-side).  Only
    qualified names (Module.Proc) resolve to an entry; a bare

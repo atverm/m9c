@@ -1,0 +1,4 @@
+# what the example notebook writes when it is run where it lives
+*.svg
+*.png
+__pycache__/

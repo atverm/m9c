@@ -429,8 +429,9 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 ababab
 6
 via heap
-a|b|c" ] || { echo "FAIL: string concatenation"; exit 1; }
-echo "PASS (1 check) -- + on strings, across a frame, and HEAP by name"
+a|b|c
+276.7" ] || { echo "FAIL: string concatenation"; exit 1; }
+echo "PASS (1 check) -- + on strings, across a frame, HEAP by name, a view not grown over"
 }
 
 # every integer width traps on overflow (par 2.1): until 2026-09-27
@@ -497,10 +498,20 @@ marks
 2
 Not Found
 ?
+Not Found / ?
+1
+503 OK is not made / OK
 IndexError" ] || { echo "FAIL: constant tables"; ./agguse_test; exit 1; }
 nm agguse_test | grep -q ' [rR] Primes_k$' \
   || { echo "FAIL: the constant table Primes is not in read-only data"; nm agguse_test | grep Primes; exit 1; }
-echo "PASS (16 checks) -- constant tables: five element types, LEN, lending, shadowing, IndexError, read-only data"
+# a table that holds STRINGS holds pointers, which a position-independent
+# executable relocates at load: such data is .data.rel.ro, read-only
+# once relocated (RELRO), and nm calls it `d' -- so by section here
+for k in Names_k Ok_k Statuses_k; do
+  objdump -t agguse_test | grep -qE " O \.(rodata|data\.rel\.ro)[[:space:]].* $k\$" \
+    || { echo "FAIL: the constant $k is not in read-only data"; objdump -t agguse_test | grep "$k"; exit 1; }
+done
+echo "PASS (22 checks) -- constant tables: five element types, LEN, lending, shadowing, IndexError, read-only data; record aggregates in a CONST, a table and a statement"
 }
 # a call that raised answered nothing (par 5): `b := Make (0)' raises
 # and b keeps the box Make (3) answered, so the line after the handler

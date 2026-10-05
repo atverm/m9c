@@ -1129,7 +1129,7 @@ Frame_Fr * Frame_FromCsv (m9_pool *pool, Csv_Table * t, m9_state *err)
     switch (m9t2.tag) {
     case Csv_Kind_Real:
     {
-      Frame_AddF32 (pool, &(f), &((*pool)), Csv_Name (pool, t, c, err), Csv_ColF32 (t, c, err), (0.0f / 0.0f), err);
+      Frame_AddF32 (pool, &(f), &((*pool)), Csv_Name (pool, t, c, err), Csv_ColF32 (t, c, err), NAN, err);
       if (err->exc) goto L_ret;
     } break;
     case Csv_Kind_Int:
@@ -3535,7 +3535,7 @@ Frame_Fr * Frame_Describe (m9_pool *pool, Frame_Fr * f, m9_state *err)
         (*(double *) m9_at (o.p, INT64_C(8), o.len, sizeof (double), err)) = m9v;
         if (err->exc) goto L_ret;
       }
-      Frame_AddF64 (pool, &(out), &((*pool)), c.name, o, (0.0 / 0.0), err);
+      Frame_AddF64 (pool, &(out), &((*pool)), c.name, o, NAN, err);
       if (err->exc) goto L_ret;
     }
   } }
@@ -3687,7 +3687,7 @@ Frame_Fr * Frame_Aggregate (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR key, m9_sl_C
   }
   Frame_Reduce (pool, f, &(out), &((*pool)), (*(Frame_Col *) m9_at (f->cols.p, kc, f->cols.len, sizeof (Frame_Col), err)), ((Frame_How){ .tag = Frame_How_First }), win, ng, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  Frame_AddF64 (pool, &(out), &((*pool)), name, o, (0.0 / 0.0), err);
+  Frame_AddF64 (pool, &(out), &((*pool)), name, o, NAN, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = out;
@@ -3750,7 +3750,7 @@ void Frame_Compute (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_m9_sl_C
     (*(double *) m9_at (o.p, r, o.len, sizeof (double), err)) = v;
     if (err->exc) goto L_ret;
   } }
-  Frame_AddF64 (pool, f, f_pool, name, o, (0.0 / 0.0), err);
+  Frame_AddF64 (pool, f, f_pool, name, o, NAN, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -5925,7 +5925,7 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, NetCDF
       Frame_AddF64 (pool, f, f_pool, name, v64, fill, err);
       if (err->exc) goto L_ret;
     } else {
-      Frame_AddF64 (pool, f, f_pool, name, v64, (0.0 / 0.0), err);
+      Frame_AddF64 (pool, f, f_pool, name, v64, NAN, err);
       if (err->exc) goto L_ret;
     }
   } else {
@@ -5940,7 +5940,7 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, NetCDF
         Frame_AddF32 (pool, f, f_pool, name, v32, (float)(fill), err);
         if (err->exc) goto L_ret;
       } else {
-        Frame_AddF32 (pool, f, f_pool, name, v32, (float)((0.0 / 0.0)), err);
+        Frame_AddF32 (pool, f, f_pool, name, v32, NAN, err);
         if (err->exc) goto L_ret;
       }
   } else {
@@ -7444,7 +7444,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Stats_TooFew) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = (0.0 / 0.0);
+    m9ret = NAN;
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -7472,14 +7472,14 @@ L_hdl_m9t1: ;
   if (err->exc == &Stats_TooFew) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = (0.0 / 0.0);
+    m9ret = NAN;
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = (0.0 / 0.0);
+    m9ret = NAN;
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -7507,21 +7507,21 @@ L_hdl_m9t1: ;
   if (err->exc == &Stats_TooFew) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = (0.0 / 0.0);
+    m9ret = NAN;
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Faults_BadArg) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = (0.0 / 0.0);
+    m9ret = NAN;
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = (0.0 / 0.0);
+    m9ret = NAN;
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -7544,7 +7544,7 @@ static bool Frame_AsReals (Frame_Fr * f, Frame_Col c, m9_sl_F64 *x, m9_state *er
   int64_t n = 0; (void) n;
   double nan_ = 0; (void) nan_;
   n = f->rows;
-  nan_ = (0.0 / 0.0);
+  nan_ = NAN;
   { __typeof__(c.data) m9t1 = c.data;
   switch (m9t1.tag) {
   case Frame_Data_F64s: {

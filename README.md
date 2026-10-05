@@ -158,6 +158,18 @@ decision, and `m9c --check` afterwards names the rest
 (`runtime/test/elide.sh`).  Chapter 0 of the tutorial carries editor
 configuration.
 
+## Jupyter
+
+`tools/jupyter/` is a Jupyter kernel for M9 (Linux and macOS keep
+state between cells; Windows runs each cell alone). A cell is a whole
+module, or a single expression whose value is shown. A library cell's
+module stays loaded in a session process, and later cells read its
+variables in memory. Run it again and the cells that import it run
+again too, and the program cells that read the old values are named.
+Register it once with `tools/jupyter/install.sh` (or `--uv`), from a
+package `/usr/share/m9/jupyter/install.sh`. `tools/jupyter/README.md`
+says the rest; `runtime/test/jupyter.sh` is its gate.
+
 ## Claude Code skills
 
 `skills/` holds two skills for [Claude Code](https://claude.com/claude-code):

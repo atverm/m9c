@@ -1,0 +1,59 @@
+MODULE FmtTest ;
+
+(* Fmt, tested in M9 (runtime/test/m9test.sh runs every *Test.m9
+   beside its module).  Short only, the part written in 2026-10-05:
+   the older half -- Fixed and Sci measured against printf -- stays in
+   runtime/test/fmt_driver.c until Fmt is next touched there.
+
+   Short against Python's repr: runtime/test/gold/Fmt.gold, written by
+   tools/fmtgold.py, inputs as Fmt.Bits so no decimal parser stands
+   between the oracle and the test. *)
+
+IMPORT Check ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Text ;
+
+CONST
+  Parts = ['hand', 'pow2', 'pow10', 'ints', 'ties', 'data', 'random'] ;
+  Says = ['the cases a shortest printer gets wrong first',
+          'every power of two, and neighbours every eighth exponent',
+          'every power of ten and its neighbours, both signs',
+          'integers, up to 2^63 and 10^17',
+          'ties in the 17th digit: the even one',
+          'values a data file holds',
+          'random bit patterns'] ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  i : I64 ;
+
+PROCEDURE Part (RO name, says: STR) =
+VAR
+  gold : STR ;
+  xs : SLICE OF F64 ;
+  got : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Fmt.gold') ;
+  xs := Check.GoldF64s (t, gold, name + '.x') ;
+  got := NEW (pool, STR, LEN (xs)) ;
+  FOR i := 0 TO LEN (xs) - 1 DO got[i] := Text.Keep (pool, Fmt.Short (xs[i])) END ;
+  Check.EqStrs (t, 'Short = repr: ' + says, got, Check.GoldStrs (t, gold, name + '.want'))
+END Part ;
+
+BEGIN
+  (* by hand, so that a reader sees the layout without the golden *)
+  Check.EqStr (t, 'Short 0.1', Fmt.Short (0.1), '0.1') ;
+  Check.EqStr (t, 'Short 0.1 + 0.2', Fmt.Short (0.1 + 0.2), '0.30000000000000004') ;
+  Check.EqStr (t, 'Short 1.0 keeps its point', Fmt.Short (1.0), '1.0') ;
+  Check.EqStr (t, 'Short -0.0 keeps its sign', Fmt.Short (-0.0), '-0.0') ;
+  Check.EqStr (t, 'Short 1e16 goes scientific', Fmt.Short (1.0E16), '1e+16') ;
+  Check.EqStr (t, 'Short 1e15 does not', Fmt.Short (1.0E15), '1000000000000000.0') ;
+  Check.EqStr (t, 'Short 0.0001 stays positional', Fmt.Short (0.0001), '0.0001') ;
+  Check.EqStr (t, 'Short 0.00001 does not', Fmt.Short (0.00001), '1e-05') ;
+  Check.EqStr (t, 'Short NaN', Fmt.Short (NaN), 'nan') ;
+  FOR i := 0 TO LEN (Parts) - 1 DO Part (Parts[i], Says[i]) END ;
+  Io.Halt (Check.Done (t, 'Fmt'))
+END FmtTest.

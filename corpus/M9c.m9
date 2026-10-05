@@ -105,6 +105,40 @@ VAR
   doJson    : BOOL ;      (* --json : with --doc, NAME.json as well *)
   debug     : BOOL ;      (* -g : debug info, and keep the C it names *)
   doMake    : BOOL ;      (* --make : rebuild stale dependencies first *)
+  doRun     : BOOL ;      (* --run FILE.m9 ARG... : build into the
+                             cache, then BECOME the program *)
+  runAt     : I64 ;       (* argv index of FILE.m9 after --run; its
+                             arguments are everything after it *)
+  outDir    : STR ;       (* --out-dir : where NAME.h and NAME.c go *)
+  doCell    : BOOL ;      (* --cell FILE.m9 : build for the notebook
+                             session (runtime/m9session.c) and print
+                             what to load; docs/notebook-state-plan.md *)
+  cellProgram : BOOL ;    (* the cell is a MODULE (a program), not a
+                             library module (a state cell) *)
+  cellPath  : STR ;       (* the cell's own shared object *)
+  pfxSpec   : SLICE OF STR ;  (* --prefix MOD=NAME: a state cell's
+                                 generation (Gen.SetPrefix) *)
+  npfxSpec  : I64 ;
+  doShow    : BOOL ;      (* --show: FILE holds an EXPRESSION, shown by
+                             the NbShow procedure for its type;
+                             docs/kernel-show-plan.md *)
+  doTypeOf  : BOOL ;      (* --type-of: what --show asks a child m9c --
+                             the expression's type, on stdout *)
+  lineShift : I64 ;       (* lines the wrapper puts before the
+                             expression; taken off every diagnostic *)
+  shiftPath : STR ;       (* the file whose parse errors it applies to *)
+
+  (* --run's cache.  Every module's source is hashed as it is parsed,
+     so the key of an object is what it was compiled FROM -- its own
+     text and the text of everything it imports, however far down --
+     and never a modification time.  See RunKeys. *)
+  srcNames, srcHashes : SLICE OF STR ;
+  nsrc      : I64 ;
+  keys      : SLICE OF STR ;  (* parallel to order[]: each module's key *)
+  ident     : STR ;       (* this compiler, its C compiler and runtime *)
+  cacheRoot : STR ;
+  work      : STR ;       (* cacheRoot/tmp/PID: this run's scratch *)
+  binPath   : STR ;       (* cacheRoot/bin/NAME-KEY *)
 
   (* where to look for an imported module's source *)
   dirs   : SLICE OF STR ;
@@ -173,7 +207,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.14.0' ;
+  Version = '0.15.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -816,7 +850,7 @@ END ArName ;
    place by its constant, else a source tree from the working
    directory.  Probed rather than assumed, because this compiler runs
    from /usr/bin and from a build directory on the same afternoon. *)
-PROCEDURE RtDir () : STR RAISES ValueRange =
+PROCEDURE RtBase () : STR RAISES ValueRange =
 VAR v : STR ;
 BEGIN
   v := Io.Env (pool, 'M9RUNTIME') ;
@@ -839,6 +873,28 @@ BEGIN
   IF Io.Exists ('runtime/m9rt.h') THEN RETURN 'runtime' END ;
   IF Io.Exists ('../runtime/m9rt.h') THEN RETURN '../runtime' END ;
   RETURN ''
+END RtBase ;
+
+(* the runtime directory -- and for --cell, which compiles the runtime
+   as a shared object and needs its SOURCES, a package's source tree
+   when the headers' directory holds none: <prefix>/share/m9/runtime,
+   else /usr/share/m9/runtime (build.sh installs it).  Only --cell: an
+   ordinary link takes the archive, and sources beside the header
+   would have it compile m9rt.c on every link.  Until 2026-10-05 an
+   installed m9c answered every --cell with `needs the runtime sources
+   beside m9rt.h' -- the notebook session did not work from a package. *)
+PROCEDURE RtDir () : STR RAISES ValueRange =
+VAR base, v : STR ;
+BEGIN
+  base := RtBase () ;
+  IF doCell AND NOT Io.Exists (Cat (base, '/m9rt.c')) THEN
+    IF LEN (prefix) > 0 THEN
+      v := Cat (prefix, '/share/m9/runtime') ;
+      IF Io.Exists (Cat (v, '/m9rt.h')) AND Io.Exists (Cat (v, '/m9rt.c')) THEN RETURN v END
+    END ;
+    IF Io.Exists ('/usr/share/m9/runtime/m9rt.c') THEN RETURN '/usr/share/m9/runtime' END
+  END ;
+  RETURN base
 END RtDir ;
 
 (* two strings, joined -- the one composition this module needs often
@@ -948,6 +1004,19 @@ BEGIN
   o := OsslDir () ;
   IF LEN (o) > 0 THEN Word (Cat ('-I', Cat (o, '/include'))) END
 END MacFlags ;
+
+(* -ffp-contract=off: a * b + c is two roundings, as the source says,
+   on every machine.  gcc's default lets it FUSE the two into one
+   rounding where the target has the instruction -- not baseline
+   x86-64, always arm64 -- so the same program printed other digits on
+   the MacBook: Plot.RenderTaylor's tick coordinates differed in the
+   fourth digit (51 fmadd in C18Taylor) and tutdiff failed there.
+   Alex, 2026-10-05: the flag, not a stated difference.  On baseline
+   x86-64 it changes no instruction (measured: identical objects). *)
+PROCEDURE FpWords () =
+BEGIN
+  Word ('-ffp-contract=off')
+END FpWords ;
 
 (* The system libraries the runtime needs, after it on the line: libm,
    which Fmt and Time need and which is never wrong to name; on POSIX
@@ -1186,6 +1255,7 @@ BEGIN
        A program built by m9c should not be slower than the same
        program built by the same compiler by somebody who knew. *)
     Word ('-O2') ;
+    FpWords () ;
     (* -flto, for the same reason and with a bigger number.  An M9
        program is MANY translation units by construction -- one per
        module, plus the runtime -- and every checked call that costs
@@ -1364,6 +1434,7 @@ BEGIN
          out of a temporary object nobody named.  Measured, not
          guessed: that is exactly what the first --so run said. *)
       Word ('-O2') ;
+      FpWords () ;
       IF macos THEN Word ('-flto=auto') ELSE Word ('-flto') END ;
       IF windows THEN Word ('-flto-partition=one') END ;
       MacFlags () ;
@@ -1520,6 +1591,22 @@ BEGIN
   Io.WriteLine ('                   import closure, deepest first:') ;
   Io.WriteLine ('                   older than its source, or') ;
   Io.WriteLine ('                   downstream of something rebuilt') ;
+  Io.WriteLine ('  --run FILE.m9 [ARG ...]') ;
+  Io.WriteLine ('                   build FILE.m9 into the cache and') ;
+  Io.WriteLine ('                   run it with the ARGs; the last') ;
+  Io.WriteLine ('                   option, only -I, -v and --no-unsafe') ;
+  Io.WriteLine ('                   before it') ;
+  Io.WriteLine ('  --cell FILE.m9   build FILE.m9 and its closure as shared') ;
+  Io.WriteLine ('                   objects for the notebook session and') ;
+  Io.WriteLine ('                   print what it loads; Linux and macOS') ;
+  Io.WriteLine ('  --show           before --run or --cell: FILE holds an') ;
+  Io.WriteLine ('                   expression, shown by the procedure') ;
+  Io.WriteLine ('                   for its type (a notebook cell)') ;
+  Io.WriteLine ('  --prefix MOD=NAME') ;
+  Io.WriteLine ('                   emit module MOD under the C name NAME:') ;
+  Io.WriteLine ('                   a notebook state cell run again') ;
+  Io.WriteLine ('  --out-dir DIR    write NAME.h and NAME.c into DIR;') ;
+  Io.WriteLine ('                   not with -c, -o, --ar, --so, --doc') ;
   Io.WriteLine ('  -g               debug information; keeps the C') ;
   Io.WriteLine ('                   it names, and changes nothing') ;
   Io.WriteLine ('                   else -- still -O2, still -flto') ;
@@ -1599,6 +1686,18 @@ BEGIN
   Io.WriteLine ('data -- so "does M.P exist and what does it take"') ;
   Io.WriteLine ('is a lookup and not a guess.') ;
   Io.WriteLine ('') ;
+  Io.WriteLine ('--run is for programs run often and edited often.') ;
+  Io.WriteLine ('Each module is compiled once, at -O2 without -flto,') ;
+  Io.WriteLine ('into $M9CACHE (else ~/.cache/m9, %LOCALAPPDATA%\m9') ;
+  Io.WriteLine ('on Windows), keyed by its source text and its') ;
+  Io.WriteLine ("imports'; a program whose text has not changed is") ;
+  Io.WriteLine ('run straight from the cache, and one that has is') ;
+  Io.WriteLine ('checked and compiled alone.  The program replaces') ;
+  Io.WriteLine ('m9c: its exit status is the status, and it is told') ;
+  Io.WriteLine ('FILE.m9 as its own name.  On Linux and macOS a file') ;
+  Io.WriteLine ('beginning  #!/usr/bin/m9c --run  is a script.  The') ;
+  Io.WriteLine ('cache is never cleaned; removing it is always safe.') ;
+  Io.WriteLine ('') ;
   Io.WriteLine ('--ar and --so take that same closure and make a') ;
   Io.WriteLine ('LIBRARY of it instead of a program.  The archive') ;
   Io.WriteLine ('holds M9 modules only -- the runtime is its own') ;
@@ -1667,6 +1766,45 @@ BEGIN
   RETURN a[0] = '-' AND a[1] = 'I'
 END IsDashI ;
 
+(* where `=' is in s, or -1 *)
+PROCEDURE EqAt (RO s: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = '=' THEN RETURN i END
+  END ;
+  RETURN -1
+END EqAt ;
+
+(* --prefix MOD=NAME, kept as written: it goes to the generator, to
+   every child build, and into the keys *)
+PROCEDURE AddPrefix (RO KEPT spec: STR) =
+VAR
+  nb : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF npfxSpec = LEN (pfxSpec) THEN
+    nb := NEW (pool, STR, 2 * npfxSpec + 4) ;
+    FOR i := 0 TO npfxSpec - 1 DO nb[i] := pfxSpec[i] END ;
+    pfxSpec := nb
+  END ;
+  pfxSpec[npfxSpec] := spec ;
+  npfxSpec := npfxSpec + 1
+END AddPrefix ;
+
+(* the C prefix --prefix gave module m, or empty *)
+PROCEDURE PrefixOf (RO m: STR) : STR =
+VAR i, e : I64 ;
+BEGIN
+  FOR i := 0 TO npfxSpec - 1 DO
+    e := EqAt (pfxSpec[i]) ;
+    IF DynStr.Eq (SLICE (pfxSpec[i], 0, e), m) THEN
+      RETURN SLICE (pfxSpec[i], e + 1, LEN (pfxSpec[i]) - e - 1)
+    END
+  END ;
+  RETURN ''
+END PrefixOf ;
+
 PROCEDURE ScanArgs () RAISES ValueRange, IndexError =
 VAR
   i : I64 ;
@@ -1717,6 +1855,48 @@ BEGIN
       doDoc := TRUE
     ELSIF DynStr.Eq (a, '--make') THEN
       doMake := TRUE
+    ELSIF DynStr.Eq (a, '--show') THEN
+      doShow := TRUE
+    ELSIF DynStr.Eq (a, '--type-of') THEN
+      doTypeOf := TRUE
+    ELSIF DynStr.Eq (a, '--cell') THEN
+      (* --run's twin for the notebook session: the file follows *)
+      IF i + 1 >= Io.ArgCount () THEN
+        Io.ErrLine ('m9c: --cell wants a file') ;
+        failed := TRUE ;
+        RETURN
+      END ;
+      doCell := TRUE ;
+      runAt := i + 1 ;
+      RETURN
+    ELSIF DynStr.Eq (a, '--run') THEN
+      (* the LAST option: the file follows, and every word after the
+         file is the program's, whatever it looks like -- a script's
+         `-v` is not this compiler's *)
+      IF i + 1 >= Io.ArgCount () THEN
+        Io.ErrLine ('m9c: --run wants a file') ;
+        failed := TRUE ;
+        RETURN
+      END ;
+      doRun := TRUE ;
+      runAt := i + 1 ;
+      RETURN
+    ELSIF DynStr.Eq (a, '--prefix') THEN
+      IF i + 1 >= Io.ArgCount () OR EqAt (Io.Arg (pool, i + 1)) < 1 THEN
+        Io.ErrLine ('m9c: --prefix wants MODULE=NAME') ;
+        failed := TRUE ;
+        RETURN
+      END ;
+      AddPrefix (Io.Arg (pool, i + 1)) ;
+      i := i + 1
+    ELSIF DynStr.Eq (a, '--out-dir') THEN
+      IF i + 1 >= Io.ArgCount () THEN
+        Io.ErrLine ('m9c: --out-dir wants a directory') ;
+        failed := TRUE ;
+        RETURN
+      END ;
+      outDir := Io.Arg (pool, i + 1) ;
+      i := i + 1
     ELSIF DynStr.Eq (a, '-g') THEN
       (* -g IMPLIES --keep-c, and it has to.  The debug information
          names NAME.c, so dropping NAME.c leaves a debugger pointing
@@ -1778,8 +1958,16 @@ BEGIN
   WHILE i < Io.ArgCount () DO
     a := Io.Arg (pool, i) ;
     IF DynStr.Eq (a, '--') THEN RETURN '' END ;
+    IF DynStr.Eq (a, '--run') OR DynStr.Eq (a, '--cell') THEN
+      (* the one source, and nothing after it is another *)
+      IF n = seen AND i + 1 < Io.ArgCount () THEN
+        RETURN Io.Arg (pool, i + 1)
+      END ;
+      RETURN ''
+    END ;
     IF DynStr.Eq (a, '-o') OR DynStr.Eq (a, '-I') OR
-       DynStr.Eq (a, '--ar') OR DynStr.Eq (a, '--so') THEN
+       DynStr.Eq (a, '--ar') OR DynStr.Eq (a, '--so') OR
+       DynStr.Eq (a, '--out-dir') OR DynStr.Eq (a, '--prefix') THEN
       i := i + 1
     ELSIF DynStr.Eq (a, '-c') OR DynStr.Eq (a, '-k') OR
           DynStr.Eq (a, '--keep-c') OR DynStr.Eq (a, '-v') OR
@@ -1788,6 +1976,7 @@ BEGIN
           DynStr.Eq (a, '--json') OR DynStr.Eq (a, '--check') OR
           DynStr.Eq (a, '--review') OR
           DynStr.Eq (a, '--make') OR
+          DynStr.Eq (a, '--show') OR DynStr.Eq (a, '--type-of') OR
           DynStr.Eq (a, '--no-unsafe') OR
           IsDashI (a) THEN
       i := i
@@ -1815,6 +2004,736 @@ BEGIN
   Diag ('m9c: ', DynStr.View (d), path) ;
   failed := TRUE
 END Complain ;
+
+(* ---- --run: the cache ----
+
+   `m9c --run Prog.m9 ARG...` is what a script interpreter is from the
+   outside and is not one inside: the program is checked and compiled
+   exactly as -o would, then this process BECOMES it.  What makes it
+   fast enough to be typed is that nothing is compiled twice.  Measured
+   before it was built (2026-10-04): checking costs 0.01 s, a flagless
+   link 1.0 to 1.5 s, almost all of it -flto -- and compiling only the
+   program at -O2 against objects compiled once, 0.15 s.
+
+   Everything lives under one directory (CacheRoot):
+     mod/NAME-KEY/NAME.h, NAME.o   a module, compiled once
+     rt-KEY/*.o                    the runtime, compiled once
+     bin/NAME-KEY                  a program, linked once
+     tmp/PID/                      this run's scratch
+   A KEY is a hash of the TEXT a thing was compiled from -- the
+   module's source and the source of everything it imports, however
+   far down, since a header includes its imports' headers -- and of
+   this compiler, its C compiler and its runtime (Ident).  Never a
+   modification time: an edit that is undone is the old key again, and
+   a copied file is not a changed one.  A program whose key has a
+   binary is run without being checked again, because the same text
+   through the same compiler has the same verdict and the binary exists
+   only because that verdict was yes.
+
+   No -flto here, deliberately: LTO is what made the flagless link take
+   a second, and an object compiled once for every program cannot be
+   LTO IR without paying it again at every link.  -O2 and the inliner
+   budget stay.  Concurrent runs are safe because every file reaches
+   its place by Rename, which is atomic, and two runs that build the
+   same key build the same bytes.  Nothing is ever evicted: removing
+   the directory is always safe. *)
+
+(* a hash of text: two polynomial residues and the length, written out
+   as digits.  Not cryptographic -- a cache key has to tell an edit
+   from the original, not resist an attacker who can already write
+   the source.  The moduli keep every product inside I64: 131 times
+   2^55 and 257 times 2^54 are both under 2^63. *)
+PROCEDURE Hash (RO s: STR) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, a, b : I64 ;
+BEGIN
+  a := 7 ;
+  b := 11 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    a := (a * 131 + ORD (s[i])) MOD 36028797018963913 ;
+    b := (b * 257 + ORD (s[i])) MOD 18014398509481951
+  END ;
+  d := DynStr.New (pool) ;
+  DynStr.AppendI64 (d, a) ;
+  DynStr.AppendChar (d, 'x') ;
+  DynStr.AppendI64 (d, b) ;
+  DynStr.AppendChar (d, 'n') ;
+  DynStr.AppendI64 (d, LEN (s)) ;
+  RETURN DynStr.View (d)
+END Hash ;
+
+(* a module's source, hashed as it is parsed: ParseText calls this for
+   every file the closure reads, the main one included *)
+PROCEDURE Remember (RO name: STR ; RO src: STR) =
+VAR
+  nn, nh : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF nsrc = LEN (srcNames) THEN
+    nn := NEW (pool, STR, 2 * LEN (srcNames) + 16) ;
+    nh := NEW (pool, STR, 2 * LEN (srcNames) + 16) ;
+    FOR i := 0 TO nsrc - 1 DO nn[i] := srcNames[i] ; nh[i] := srcHashes[i] END ;
+    srcNames := nn ;
+    srcHashes := nh
+  END ;
+  srcNames[nsrc] := Suffix (name, '') ;
+  srcHashes[nsrc] := Hash (src) ;
+  nsrc := nsrc + 1
+END Remember ;
+
+PROCEDURE SrcHash (RO name: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nsrc - 1 DO
+    IF DynStr.Eq (srcNames[i], name) THEN RETURN srcHashes[i] END
+  END ;
+  RETURN '?'
+END SrcHash ;
+
+(* the key of a module: Ident, then every module reachable from it by
+   import, each with its source's hash, in the order a depth-first
+   walk meets them -- which the import lists fix, so the same sources
+   give the same string *)
+PROCEDURE ClosureKey (RO top: STR) : STR =
+VAR
+  seen, stack : SLICE OF STR ;
+  nseen, nstack, i, j : I64 ;
+  cur : STR ;
+  dup : BOOL ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  seen := NEW (pool, STR, nedge + 2) ;
+  stack := NEW (pool, STR, nedge + 2) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, ident) ;
+  seen[0] := Suffix (top, '') ;
+  stack[0] := seen[0] ;
+  nseen := 1 ;
+  nstack := 1 ;
+  WHILE nstack > 0 DO
+    nstack := nstack - 1 ;
+    cur := stack[nstack] ;
+    DynStr.AppendChar (d, ';') ;
+    DynStr.Append (d, cur) ;
+    DynStr.AppendChar (d, '=') ;
+    DynStr.Append (d, SrcHash (cur)) ;
+    IF LEN (PrefixOf (cur)) > 0 THEN
+      DynStr.AppendChar (d, '@') ;
+      DynStr.Append (d, PrefixOf (cur))
+    END ;
+    FOR i := 0 TO nedge - 1 DO
+      IF DynStr.Eq (edgeFrom[i], cur) THEN
+        dup := FALSE ;
+        FOR j := 0 TO nseen - 1 DO
+          IF DynStr.Eq (seen[j], edgeTo[i]) THEN dup := TRUE END
+        END ;
+        IF NOT dup THEN
+          seen[nseen] := edgeTo[i] ;
+          nseen := nseen + 1 ;
+          stack[nstack] := edgeTo[i] ;
+          nstack := nstack + 1
+        END
+      END
+    END
+  END ;
+  RETURN Hash (DynStr.View (d))
+END ClosureKey ;
+
+(* where the cache is: $M9CACHE, else the platform's cache directory
+   -- %LOCALAPPDATA% on Windows, $XDG_CACHE_HOME, ~/.cache -- each
+   with m9 under it; empty when none of them is set *)
+PROCEDURE CacheRoot () : STR RAISES ValueRange =
+VAR v : STR ;
+BEGIN
+  v := Io.Env (pool, 'M9CACHE') ;
+  IF LEN (v) > 0 THEN RETURN v END ;
+  IF windows THEN
+    v := Io.Env (pool, 'LOCALAPPDATA') ;
+    IF LEN (v) > 0 THEN RETURN Join (v, 'm9') END
+  END ;
+  v := Io.Env (pool, 'XDG_CACHE_HOME') ;
+  IF LEN (v) > 0 THEN RETURN Join (v, 'm9') END ;
+  v := Io.Env (pool, 'HOME') ;
+  IF LEN (v) > 0 THEN RETURN Join (v, '.cache/m9') END ;
+  RETURN ''
+END CacheRoot ;
+
+(* a directory and every directory above it that is missing.  The
+   levels above may refuse (a drive letter, a root this user cannot
+   write and that exists anyway); only the last one has to succeed. *)
+PROCEDURE TryMkDir (RO path: STR) =
+BEGIN
+  Io.MkDir (path)
+EXCEPT
+| Io.IOError (p) :
+    RETURN
+| ValueRange :
+    RETURN
+END TryMkDir ;
+
+PROCEDURE MkDirs (RO path: STR) RAISES ValueRange, Io.IOError =
+VAR i : I64 ;
+BEGIN
+  FOR i := 1 TO LEN (path) - 1 DO
+    IF path[i] = '/' OR path[i] = 05CC THEN TryMkDir (SLICE (path, 0, i)) END
+  END ;
+  Io.MkDir (path)
+END MkDirs ;
+
+(* this compiler as a cache key: its version and its binary's time,
+   so a rebuilt m9c in a source tree is a new key without a version
+   bump, and the C compiler and runtime it would use *)
+PROCEDURE Ident () : STR RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  self : STR ;
+BEGIN
+  self := System.Executable (pool) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, Version) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.AppendI64 (d, Io.ModTime (self)) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.Append (d, CcName ()) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.Append (d, RtDir ()) ;
+  (* and the shape of what RunFlags makes, so an object compiled
+     without its own sections is never linked by --gc-sections *)
+  DynStr.Append (d, ' sections') ;
+  RETURN DynStr.View (d)
+END Ident ;
+
+(* where module order[i] is cached *)
+PROCEDURE ModDir (i: I64) : STR RAISES IndexError =
+BEGIN
+  (* --cell's objects are position independent and live apart *)
+  IF doCell THEN
+    RETURN Join (Join (cacheRoot, 'modpic'), Cat (order[i], Cat ('-', keys[i])))
+  END ;
+  RETURN Join (Join (cacheRoot, 'mod'), Cat (order[i], Cat ('-', keys[i])))
+END ModDir ;
+
+(* the C compiler's flags for everything --run compiles: m9c's own
+   defaults without -flto (see the section's comment) *)
+PROCEDURE RunFlags () RAISES ValueRange =
+BEGIN
+  Word ('-O2') ;
+  FpWords () ;
+  IF NOT (macos AND DynStr.Eq (CcName (), 'cc')) THEN
+    Word ('--param') ;
+    Word ('max-inline-insns-auto=200')
+  END ;
+  (* EACH FUNCTION IN A SECTION OF ITS OWN, so that the link can drop
+     what nothing calls -- RunGcWords.  Without -flto nothing else
+     removes the code a program never reaches, and a module that binds
+     a C library the program does not use still names its symbols:
+     every program importing Frame failed to link under --run on
+     NetCDF's nc_* (measured 2026-10-04, C7Series), where the flagless
+     -flto link drops them.  Not on macOS: ld64's -dead_strip, which
+     SystemLibs already gives that link, works on atoms and needs no
+     sections. *)
+  IF NOT macos THEN
+    Word ('-ffunction-sections') ;
+    Word ('-fdata-sections')
+  END ;
+  IF doCell THEN Word ('-fPIC') END ;
+  MacFlags ()
+END RunFlags ;
+
+(* a shared object of the objects on the line so far, its symbols left
+   to the session to resolve: on macOS ld64 must be told so *)
+PROCEDURE SharedWords () =
+BEGIN
+  Word ('-shared') ;
+  IF macos THEN
+    Word ('-undefined') ;
+    Word ('dynamic_lookup')
+  END
+END SharedWords ;
+
+(* the link's half of the above: drop the sections nothing reaches,
+   and with them their references into libraries nobody linked *)
+PROCEDURE RunGcWords () =
+BEGIN
+  IF NOT macos THEN Word ('-Wl,--gc-sections') END
+END RunGcWords ;
+
+(* every cached module's directory on the include path, then the
+   scratch directory, where this run's fresh headers are *)
+PROCEDURE RunIncludes (RO KEPT rt: STR) RAISES IndexError =
+VAR i : I64 ;
+BEGIN
+  Word ('-iquote') ;
+  Word (rt) ;
+  FOR i := 0 TO norder - 1 DO
+    IF NOT DynStr.Eq (order[i], modName) THEN
+      Word ('-iquote') ;
+      Word (ModDir (i))
+    END
+  END ;
+  Word ('-iquote') ;
+  Word (work)
+END RunIncludes ;
+
+(* hand over to the binary: argv[0] is the source as it was named,
+   the way a script is told its own path, and the rest are the words
+   after it on this command line *)
+PROCEDURE Launch () RAISES ValueRange, IndexError =
+VAR
+  args : SLICE OF STR ;
+  i, n : I64 ;
+BEGIN
+  n := Io.ArgCount () - runAt - 1 ;
+  args := NEW (pool, STR, n) ;
+  FOR i := 0 TO n - 1 DO args[i] := Io.Arg (pool, runAt + 1 + i) END ;
+  System.Become (binPath, Io.Arg (pool, runAt), args) ;
+  Diag ('m9c: could not start ', binPath, '') ;
+  failed := TRUE ;
+  Io.Halt (1)
+EXCEPT
+| Io.IOError (p) :
+    Diag ('m9c: could not start ', p, '') ;
+    failed := TRUE ;
+    Io.Halt (1)
+END Launch ;
+
+(* the keys, the scratch directory and the binary's name; when the
+   binary is already there, nothing else is needed and Launch does not
+   come back *)
+PROCEDURE RunKeys () RAISES ValueRange, IndexError, Io.IOError =
+VAR
+  i : I64 ;
+  d : PTR DynStr.DString IN pool ;
+BEGIN
+  cacheRoot := CacheRoot () ;
+  IF LEN (cacheRoot) = 0 THEN
+    Io.ErrLine ('m9c: --run has no cache directory: set $M9CACHE') ;
+    failed := TRUE ;
+    Io.Halt (1)
+  END ;
+  ident := Ident () ;
+  keys := NEW (pool, STR, norder + 1) ;
+  FOR i := 0 TO norder - 1 DO keys[i] := ClosureKey (order[i]) END ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'tmp/') ;
+  DynStr.AppendI64 (d, System.ProcessId ()) ;
+  work := Join (cacheRoot, DynStr.View (d)) ;
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'bin/') ;
+  DynStr.Append (d, modName) ;
+  DynStr.AppendChar (d, '-') ;
+  DynStr.Append (d, ClosureKey (modName)) ;
+  IF windows THEN DynStr.Append (d, '.exe') END ;
+  binPath := Join (cacheRoot, DynStr.View (d)) ;
+  IF doCell THEN
+    d := DynStr.New (pool) ;
+    IF cellProgram THEN DynStr.Append (d, 'cells/') ELSE DynStr.Append (d, 'modpic/') END ;
+    DynStr.Append (d, modName) ;
+    DynStr.AppendChar (d, '-') ;
+    DynStr.Append (d, ClosureKey (modName)) ;
+    DynStr.Append (d, '/lib') ;
+    DynStr.Append (d, modName) ;
+    DynStr.Append (d, '.so') ;
+    cellPath := Join (cacheRoot, DynStr.View (d)) ;
+    (* warm only when the runtime and the host of THIS key are there
+       too: a changed m9session.c is a new runtime key, and a cell
+       built before it named a host nobody had built (2026-10-04) *)
+    IF Io.Exists (cellPath) AND
+       Io.Exists (Join (RtCacheDir (RtDir ()), 'm9session')) AND
+       Io.Exists (Join (RtCacheDir (RtDir ()), 'libm9rt.so')) THEN
+      CellReport () ;
+      Io.Halt (0)
+    END ;
+    RETURN
+  END ;
+  IF Io.Exists (binPath) THEN Launch () END
+END RunKeys ;
+
+(* one module of the closure, into the cache: its C by THIS compiler
+   run again (one module per process, as --make does it), into the
+   scratch directory; compiled there; and then its header and its
+   object renamed into its own directory, the object last, because
+   the object's presence is what says the directory is complete *)
+PROCEDURE CacheModule (i: I64 ; RO KEPT rt: STR) : BOOL
+  RAISES ValueRange, IndexError, Io.IOError =
+VAR
+  self, path, src, dir, nm : STR ;
+  found, trusted : BOOL ;
+  j, rc : I64 ;
+BEGIN
+  nm := order[i] ;
+  dir := ModDir (i) ;
+  IF doCell THEN
+    IF Io.Exists (Join (dir, Cat ('lib', Suffix (nm, '.so')))) THEN RETURN TRUE END
+  ELSIF Io.Exists (Join (dir, Suffix (nm, '.o'))) THEN
+    RETURN TRUE
+  END ;
+  src := FindModule (nm, path, found, trusted) ;
+  IF NOT found OR LEN (src) < 0 THEN
+    Diag ('m9c: cannot find ', nm, ' again') ;
+    RETURN FALSE
+  END ;
+  self := System.Executable (pool) ;
+  IF LEN (self) = 0 THEN self := Io.Arg (pool, 0) END ;
+  NewCommand () ;
+  Word ('--out-dir') ;
+  Word (work) ;
+  IF noUnsafe THEN Word ('--no-unsafe') END ;
+  FOR j := 0 TO npfxSpec - 1 DO
+    Word ('--prefix') ;
+    Word (pfxSpec[j])
+  END ;
+  FOR j := 0 TO ndirs - 1 DO Word (Cat ('-I', dirs[j])) END ;
+  Word (path) ;
+  rc := Run (self) ;
+  IF rc # 0 THEN
+    Diag ('m9c: could not generate ', nm, '') ;
+    RETURN FALSE
+  END ;
+  NewCommand () ;
+  RunFlags () ;
+  Word ('-c') ;
+  RunIncludes (rt) ;
+  Word (Join (work, Suffix (nm, '.c'))) ;
+  Word ('-o') ;
+  Word (Join (work, Suffix (nm, '.o'))) ;
+  rc := Run (CcName ()) ;
+  IF rc # 0 THEN
+    Diag ('m9c: the C compiler reported errors in ', nm, '') ;
+    RETURN FALSE
+  END ;
+  IF doCell THEN
+    NewCommand () ;
+    SharedWords () ;
+    Word (Join (work, Suffix (nm, '.o'))) ;
+    Word ('-o') ;
+    Word (Join (work, Cat ('lib', Suffix (nm, '.so')))) ;
+    rc := Run (CcName ()) ;
+    IF rc # 0 THEN
+      Diag ('m9c: could not make a shared object of ', nm, '') ;
+      RETURN FALSE
+    END
+  END ;
+  MkDirs (dir) ;
+  Io.Rename (Join (work, Suffix (nm, '.h')), Join (dir, Suffix (nm, '.h'))) ;
+  Io.Rename (Join (work, Suffix (nm, '.o')), Join (dir, Suffix (nm, '.o'))) ;
+  IF doCell THEN
+    Io.Rename (Join (work, Cat ('lib', Suffix (nm, '.so'))),
+               Join (dir, Cat ('lib', Suffix (nm, '.so'))))
+  END ;
+  Drop (Join (work, Suffix (nm, '.c'))) ;
+  RETURN TRUE
+END CacheModule ;
+
+(* THE RUNTIME, compiled once per key into rt-KEY/.  Its four sources
+   (m9rt and the three shims the flagless link carries, AddRuntime);
+   the TLS shim is OpenSSL and does not build under mingw, so not on
+   Windows, as there.  Answers the directory, or empty when there are
+   no runtime sources to compile -- an installed compiler, whose
+   archive the link names as the flagless link does. *)
+PROCEDURE RtSource (i: I64) : STR =
+BEGIN
+  CASE i OF
+  | 0 : RETURN 'm9rt'
+  | 1 : RETURN 'tcpshim'
+  | 2 : RETURN 'fmtshim'
+  ELSE  RETURN 'tlsshim'
+  END
+END RtSource ;
+
+PROCEDURE RtWanted (RO rt: STR ; i: I64) : BOOL RAISES ValueRange =
+BEGIN
+  IF windows AND i = 3 THEN RETURN FALSE END ;
+  RETURN Io.Exists (Cat (rt, Cat ('/', Suffix (RtSource (i), '.c'))))
+END RtWanted ;
+
+(* where the runtime of this key is cached: rt-KEY, or rtpic-KEY for
+   --cell, whose key also covers the session host's source *)
+PROCEDURE RtCacheDir (RO rt: STR) : STR RAISES ValueRange =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  found : BOOL ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, ident) ;
+  DynStr.Append (d, TryRead (Cat (rt, '/m9rt.h'), found)) ;
+  FOR i := 0 TO 3 DO
+    IF RtWanted (rt, i) THEN
+      DynStr.Append (d, TryRead (Cat (rt, Cat ('/', Suffix (RtSource (i), '.c'))), found))
+    END
+  END ;
+  IF doCell THEN
+    DynStr.Append (d, TryRead (Cat (rt, '/m9session.c'), found)) ;
+    RETURN Join (cacheRoot, Cat ('rtpic-', Hash (DynStr.View (d))))
+  END ;
+  RETURN Join (cacheRoot, Cat ('rt-', Hash (DynStr.View (d))))
+END RtCacheDir ;
+
+PROCEDURE CacheRuntime (RO KEPT rt: STR ; VAR ok: BOOL) : STR
+  RAISES ValueRange, Io.IOError =
+VAR
+  dir, c, o, tmp : STR ;
+  i, rc : I64 ;
+BEGIN
+  ok := TRUE ;
+  IF NOT Io.Exists (Cat (rt, '/m9rt.c')) THEN RETURN '' END ;
+  dir := RtCacheDir (rt) ;
+  FOR i := 0 TO 3 DO
+    IF RtWanted (rt, i) THEN
+      c := Cat (rt, Cat ('/', Suffix (RtSource (i), '.c'))) ;
+      o := Join (dir, Suffix (RtSource (i), '.o')) ;
+      IF NOT Io.Exists (o) THEN
+        tmp := Join (work, Suffix (RtSource (i), '.o')) ;
+        NewCommand () ;
+        RunFlags () ;
+        Word ('-c') ;
+        Word ('-iquote') ;
+        Word (rt) ;
+        Word (c) ;
+        Word ('-o') ;
+        Word (tmp) ;
+        rc := Run (CcName ()) ;
+        IF rc # 0 THEN
+          Diag ('m9c: the C compiler reported errors in ', c, '') ;
+          ok := FALSE ;
+          RETURN ''
+        END ;
+        MkDirs (dir) ;
+        Io.Rename (tmp, o)
+      END
+    END
+  END ;
+  IF doCell THEN
+    IF NOT CacheSession (rt, dir) THEN ok := FALSE ; RETURN '' END
+  END ;
+  RETURN dir
+END CacheRuntime ;
+
+(* --cell's runtime: one shared object of the runtime's objects and the
+   system libraries they need, loaded first; and the session host, a
+   plain C program that loads the rest (runtime/m9session.c) *)
+PROCEDURE CacheSession (RO KEPT rt: STR ; RO KEPT dir: STR) : BOOL
+  RAISES ValueRange, Io.IOError =
+VAR
+  i, rc : I64 ;
+  tmp : STR ;
+BEGIN
+  IF NOT Io.Exists (Join (dir, 'libm9rt.so')) THEN
+    tmp := Join (work, 'libm9rt.so') ;
+    NewCommand () ;
+    SharedWords () ;
+    FOR i := 0 TO 3 DO
+      IF RtWanted (rt, i) THEN Word (Join (dir, Suffix (RtSource (i), '.o'))) END
+    END ;
+    SystemLibs () ;
+    (* AND libm KEPT: SystemLibs links it --as-needed, the runtime calls
+       nothing in it, and so the session never loaded it -- libMath.so
+       then failed on `undefined symbol: exp' (2026-10-04).  Loaded with
+       the runtime, globally, it answers every module after. *)
+    IF NOT macos THEN
+      Word ('-Wl,--no-as-needed') ;
+      Word ('-lm')
+    END ;
+    Word ('-o') ;
+    Word (tmp) ;
+    rc := Run (CcName ()) ;
+    IF rc # 0 THEN
+      Io.ErrLine ('m9c: could not make the runtime a shared object') ;
+      RETURN FALSE
+    END ;
+    Io.Rename (tmp, Join (dir, 'libm9rt.so'))
+  END ;
+  IF NOT Io.Exists (Join (dir, 'm9session')) THEN
+    IF NOT Io.Exists (Cat (rt, '/m9session.c')) THEN
+      Diag ('m9c: no session host beside the runtime: ', rt, '/m9session.c') ;
+      RETURN FALSE
+    END ;
+    tmp := Join (work, 'm9session') ;
+    NewCommand () ;
+    Word ('-O2') ;
+    Word ('-iquote') ;
+    Word (rt) ;
+    Word (Cat (rt, '/m9session.c')) ;
+    IF NOT macos THEN Word ('-ldl') END ;
+    Word ('-o') ;
+    Word (tmp) ;
+    rc := Run (CcName ()) ;
+    IF rc # 0 THEN
+      Io.ErrLine ('m9c: the C compiler reported errors in m9session.c') ;
+      RETURN FALSE
+    END ;
+    Io.Rename (tmp, Join (dir, 'm9session'))
+  END ;
+  RETURN TRUE
+END CacheSession ;
+
+(* WHAT THE SESSION LOADS, one line each, fields by tab: the host; the
+   runtime; every module of the closure in dependency order; and the
+   cell -- STATE with its init symbol, or PROGRAM with the renamed main.
+   The kernel sends LOAD for what is not loaded yet, then INIT or RUN. *)
+PROCEDURE CellLine (RO a, b, c: STR) =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, a) ;
+  DynStr.AppendChar (d, 09C) ;
+  DynStr.Append (d, b) ;
+  IF LEN (c) > 0 THEN
+    DynStr.AppendChar (d, 09C) ;
+    DynStr.Append (d, c)
+  END ;
+  Io.WriteLine (DynStr.View (d))
+END CellLine ;
+
+PROCEDURE CellReport () RAISES ValueRange, IndexError =
+VAR
+  rt, rdir : STR ;
+  i : I64 ;
+BEGIN
+  rt := RtDir () ;
+  rdir := RtCacheDir (rt) ;
+  CellLine ('HOST', Join (rdir, 'm9session'), '') ;
+  CellLine ('LIB', Join (rdir, 'libm9rt.so'), '') ;
+  FOR i := 0 TO norder - 1 DO
+    IF NOT DynStr.Eq (order[i], modName) THEN
+      CellLine ('LIB', Join (ModDir (i), Cat ('lib', Suffix (order[i], '.so'))), '')
+    END
+  END ;
+  IF cellProgram THEN
+    CellLine ('PROGRAM', cellPath, 'm9_cell_main')
+  ELSE
+    (* the initialiser under the generation's prefix, when it has one *)
+    IF LEN (PrefixOf (modName)) > 0 THEN
+      CellLine ('STATE', cellPath, Suffix (PrefixOf (modName), '_m9init'))
+    ELSE
+      CellLine ('STATE', cellPath, Suffix (modName, '_m9init'))
+    END
+  END
+END CellReport ;
+
+(* the cell: every module of its closure as a shared object, the runtime
+   and the host, then the cell itself -- a state cell where a module of
+   its key would be (modpic/NAME-KEY/, header beside it), so that a later
+   cell importing it loads THIS object and not a second copy; a program
+   cell into cells/NAME-KEY/, its main renamed m9_cell_main *)
+PROCEDURE CellBuild (RO name: STR) : BOOL
+  RAISES ValueRange, IndexError, Io.IOError =
+VAR
+  rt, rtObjs, so : STR ;
+  ok : BOOL ;
+  i, rc : I64 ;
+BEGIN
+  rt := RtDir () ;
+  IF LEN (rt) = 0 THEN
+    Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
+    RETURN FALSE
+  END ;
+  FOR i := 0 TO norder - 1 DO
+    IF NOT DynStr.Eq (order[i], modName) THEN
+      IF NOT CacheModule (i, rt) THEN RETURN FALSE END
+    END
+  END ;
+  rtObjs := CacheRuntime (rt, ok) ;
+  IF NOT ok OR LEN (rtObjs) = 0 THEN
+    Io.ErrLine ('m9c: --cell needs the runtime sources beside m9rt.h') ;
+    RETURN FALSE
+  END ;
+  NewCommand () ;
+  RunFlags () ;
+  IF cellProgram THEN Word ('-Dmain=m9_cell_main') END ;
+  Word ('-c') ;
+  RunIncludes (rt) ;
+  Word (Join (work, Suffix (name, '.c'))) ;
+  Word ('-o') ;
+  Word (Join (work, Suffix (name, '.o'))) ;
+  rc := Run (CcName ()) ;
+  IF rc # 0 THEN
+    Io.ErrLine ('m9c: the C compiler reported errors') ;
+    RETURN FALSE
+  END ;
+  so := Join (work, Cat ('lib', Suffix (name, '.so'))) ;
+  NewCommand () ;
+  SharedWords () ;
+  Word (Join (work, Suffix (name, '.o'))) ;
+  Word ('-o') ;
+  Word (so) ;
+  rc := Run (CcName ()) ;
+  IF rc # 0 THEN
+    Io.ErrLine ('m9c: could not make the cell a shared object') ;
+    RETURN FALSE
+  END ;
+  MkDirs (DirOf (cellPath)) ;
+  IF NOT cellProgram THEN
+    Io.Rename (Join (work, Suffix (name, '.h')), Join (DirOf (cellPath), Suffix (name, '.h'))) ;
+    Io.Rename (Join (work, Suffix (name, '.o')), Join (DirOf (cellPath), Suffix (name, '.o')))
+  ELSE
+    Drop (Join (work, Suffix (name, '.h'))) ;
+    Drop (Join (work, Suffix (name, '.o')))
+  END ;
+  Io.Rename (so, cellPath) ;
+  Drop (Join (work, Suffix (name, '.c'))) ;
+  RETURN TRUE
+END CellBuild ;
+
+(* the program: every module of the closure into the cache, then the
+   program's own C -- which the caller has just written into the
+   scratch directory -- compiled and linked against them, and renamed
+   to its key *)
+PROCEDURE RunBuild (RO name: STR) : BOOL
+  RAISES ValueRange, IndexError, Io.IOError =
+VAR
+  rt, rtObjs, tmp : STR ;
+  ok : BOOL ;
+  i, rc : I64 ;
+BEGIN
+  rt := RtDir () ;
+  IF LEN (rt) = 0 THEN
+    Io.ErrLine ('m9c: cannot find the M9 runtime headers.') ;
+    RETURN FALSE
+  END ;
+  FOR i := 0 TO norder - 1 DO
+    IF NOT DynStr.Eq (order[i], modName) THEN
+      IF NOT CacheModule (i, rt) THEN RETURN FALSE END
+    END
+  END ;
+  rtObjs := CacheRuntime (rt, ok) ;
+  IF NOT ok THEN RETURN FALSE END ;
+  tmp := Join (work, name) ;
+  IF windows THEN tmp := Cat (tmp, '.exe') END ;
+  NewCommand () ;
+  RunFlags () ;
+  RunIncludes (rt) ;
+  Word (Join (work, Suffix (name, '.c'))) ;
+  FOR i := 0 TO norder - 1 DO
+    IF NOT DynStr.Eq (order[i], modName) THEN
+      Word (Join (ModDir (i), Suffix (order[i], '.o')))
+    END
+  END ;
+  IF LEN (rtObjs) = 0 THEN
+    IF NOT AddRuntime (rt) THEN RETURN FALSE END
+  ELSE
+    FOR i := 0 TO 3 DO
+      IF RtWanted (rt, i) THEN
+        Word (Join (rtObjs, Suffix (RtSource (i), '.o')))
+      END
+    END
+  END ;
+  RunGcWords () ;
+  SystemLibs () ;
+  Word ('-o') ;
+  Word (tmp) ;
+  rc := Run (CcName ()) ;
+  Drop (Join (work, Suffix (name, '.c'))) ;
+  Drop (Join (work, Suffix (name, '.h'))) ;
+  IF rc # 0 THEN
+    Io.ErrLine ('m9c: the C compiler reported errors') ;
+    RETURN FALSE
+  END ;
+  Io.Rename (tmp, binPath) ;
+  RETURN TRUE
+END RunBuild ;
 
 (* parse text that has already been read; NONE when it did not parse,
    having said why.  Split from ParseFile because the search path
@@ -1930,14 +2849,20 @@ BEGIN
        one `<>` in a file gave `981 parse errors` and no line. *)
     i := 0 ;
     WHILE i < p.nkept AND i < 8 DO
-      Diag2 (Cat (path, ':'), p.errLine[i], p.errCol[i],
-             ': parse: ', p.errMsg[i]) ;
+      IF lineShift > 0 AND DynStr.Eq (path, shiftPath) AND p.errLine[i] > lineShift THEN
+        Diag2 (Cat (path, ':'), p.errLine[i] - lineShift, p.errCol[i],
+               ': parse: ', p.errMsg[i])
+      ELSE
+        Diag2 (Cat (path, ':'), p.errLine[i], p.errCol[i],
+               ': parse: ', p.errMsg[i])
+      END ;
       i := i + 1
     END ;
     DiagN ('m9c: ', p.nerr, ' parse errors in ', path) ;
     failed := TRUE ;
     RETURN NONE
   END ;
+  Remember (BaseName (path), src) ;
   RETURN SOME (root)
 END ParseText ;
 
@@ -2188,19 +3113,233 @@ END FillGaps ;
 (* the diagnostics, then a refusal.  A compiler that translates what
    it knows to be wrong is a translator; this is the line between the
    two, and until now m9c was on the wrong side of it. *)
+(* a checker message, `LINE:COL ctx: msg`, with lineShift taken off
+   its line: an expression cell's wrapper is not the reader's text *)
+PROCEDURE Unshift (RO m: STR) : STR =
+VAR
+  i, n : I64 ;
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  IF lineShift = 0 THEN RETURN m END ;
+  i := 0 ;
+  n := 0 ;
+  WHILE i < LEN (m) AND m[i] >= '0' AND m[i] <= '9' DO
+    n := n * 10 + (ORD (m[i]) - 48) ;
+    i := i + 1
+  END ;
+  IF i = 0 OR i >= LEN (m) OR m[i] # ':' THEN RETURN m END ;
+  d := DynStr.New (scratch) ;
+  IF n > lineShift THEN
+    DynStr.AppendI64 (d, n - lineShift) ;
+    DynStr.Append (d, SLICE (m, i, LEN (m) - i))
+  ELSE
+    (* on the wrapper's own line: a message about the statement as a
+       whole, which is the cell's expression from its start *)
+    i := i + 1 ;
+    WHILE i < LEN (m) AND m[i] >= '0' AND m[i] <= '9' DO i := i + 1 END ;
+    DynStr.Append (d, '1:1') ;
+    DynStr.Append (d, SLICE (m, i, LEN (m) - i))
+  END ;
+  RETURN DynStr.View (d)
+END Unshift ;
+
+(* does hay hold needle?  Small strings, a naive scan *)
+PROCEDURE Holds (RO hay, needle: STR) : BOOL =
+VAR i, j : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (hay) - LEN (needle) DO
+    j := 0 ;
+    WHILE j < LEN (needle) AND hay[i + j] = needle[j] DO j := j + 1 END ;
+    IF j = LEN (needle) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END Holds ;
+
 PROCEDURE Report () : BOOL RAISES IndexError =
 VAR i : I64 ;
 BEGIN
   FOR i := 0 TO Sem.ErrCount () - 1 DO
-    Io.ErrLine (Sem.ErrAt (i))
+    Io.ErrLine (Unshift (Sem.ErrAt (i)))
   END ;
   RETURN Sem.ErrCount () > 0
 END Report ;
 
+(* ---- --show: an expression cell (docs/kernel-show-plan.md) ----
+
+   The expression is wrapped in a program whose heading takes line 1
+   and whose expression starts line 2, column 1.  Its imports are the
+   first names of its dotted names that are modules the import path
+   finds -- read from TOKENS, so nothing in a string or a comment
+   counts -- because decision 24 wants every module named imported
+   and a cell of one expression has nowhere to say so. *)
+PROCEDURE ShowImports (RO KEPT expr: STR ; withShow: BOOL) : STR RAISES ValueRange =
+VAR
+  lx : Lex.Lexer ;
+  tk, prev, cur : Lex.Token ;
+  out, path, k : STR ;
+  ok, trusted, afterDot : BOOL ;
+  seen : PTR DynStr.DString IN pool ;
+BEGIN
+  out := '' ;
+  seen := DynStr.New (pool) ;
+  DynStr.Append (seen, ' ') ;
+  IF withShow THEN
+    out := 'IMPORT NbShow ; ' ;
+    DynStr.Append (seen, 'NbShow ')
+  END ;
+  Lex.Init (lx, expr) ;
+  afterDot := FALSE ;
+  Lex.Next (lx, cur) ;
+  LOOP
+    k := Lex.KindName (cur.kind) ;
+    IF DynStr.Eq (k, 'EOF') OR DynStr.Eq (k, 'Error') THEN EXIT END ;
+    prev := cur ;
+    Lex.Next (lx, cur) ;
+    IF DynStr.Eq (Lex.KindName (prev.kind), 'Ident') AND NOT afterDot AND
+       DynStr.Eq (Lex.KindName (cur.kind), 'Dot') THEN
+      IF NOT Holds (DynStr.View (seen), ' ' + prev.text + ' ') THEN
+        DynStr.Append (seen, prev.text + ' ') ;
+        tk := prev ;
+        k := FindModule (tk.text, path, ok, trusted) ;
+        IF ok THEN out := out + 'IMPORT ' + tk.text + ' ; ' END
+      END
+    END ;
+    afterDot := DynStr.Eq (Lex.KindName (prev.kind), 'Dot')
+  END ;
+  RETURN out
+END ShowImports ;
+
+(* the NbShow call for a type, as the text before and after the
+   expression; FALSE for a type nothing shows *)
+PROCEDURE ShowCall (RO ty: STR ; VAR pre, post: STR) : BOOL =
+BEGIN
+  post := ')' ;
+  IF DynStr.Eq (ty, 'I64') OR DynStr.Eq (ty, 'an integer literal') THEN
+    pre := 'NbShow.Int ('
+  ELSIF DynStr.Eq (ty, 'I32') OR DynStr.Eq (ty, 'I16') OR DynStr.Eq (ty, 'BYTE') THEN
+    pre := 'NbShow.Int (I64 (' ;
+    post := '))'
+  ELSIF DynStr.Eq (ty, 'F64') OR DynStr.Eq (ty, 'a real literal') THEN
+    pre := 'NbShow.Real ('
+  ELSIF DynStr.Eq (ty, 'F32') THEN
+    pre := 'NbShow.Real (F64 (' ;
+    post := '))'
+  ELSIF DynStr.Eq (ty, 'BOOL') THEN
+    pre := 'NbShow.Bool ('
+  ELSIF DynStr.Eq (ty, 'CHAR') THEN
+    pre := 'NbShow.Char ('
+  ELSIF DynStr.Eq (ty, 'SLICE OF CHAR') OR DynStr.Eq (ty, 'STR') THEN
+    pre := 'NbShow.Str ('
+  ELSIF DynStr.Eq (ty, 'SLICE OF I64') THEN
+    pre := 'NbShow.Ints ('
+  ELSIF DynStr.Eq (ty, 'SLICE OF F64') THEN
+    pre := 'NbShow.Reals ('
+  ELSIF DynStr.Eq (ty, 'SLICE OF BOOL') THEN
+    pre := 'NbShow.Bools ('
+  ELSIF DynStr.Eq (ty, 'SLICE OF SLICE OF CHAR') OR DynStr.Eq (ty, 'SLICE OF STR') THEN
+    pre := 'NbShow.Strs ('
+  ELSIF DynStr.Eq (ty, 'GRID 2 OF F64') THEN
+    pre := 'NbShow.Grid ('
+  ELSIF DynStr.Eq (ty, 'PTR Frame.Fr') THEN
+    pre := 'NbShow.Table ('
+  ELSIF DynStr.Eq (ty, 'PTR Frame.Ts') THEN
+    pre := 'NbShow.Series ('
+  ELSE
+    RETURN FALSE
+  END ;
+  RETURN TRUE
+END ShowCall ;
+
+(* the program's handlers and the imports their names need: one arm
+   for each exception the expression raises, each saying so.  A
+   program body must handle what it raises, and M9 has no catch-all
+   (report par 5), so the checker's list is the only honest one. *)
+PROCEDURE ShowHandlers (RO raises: STR ; VAR imports: STR) : STR =
+VAR
+  out, nm, q : STR ;
+  i, j, k : I64 ;
+BEGIN
+  out := '' ;
+  i := 0 ;
+  WHILE i < LEN (raises) DO
+    WHILE i < LEN (raises) AND raises[i] = ' ' DO i := i + 1 END ;
+    j := i ;
+    WHILE j < LEN (raises) AND raises[j] # ' ' DO j := j + 1 END ;
+    IF j > i THEN
+      nm := SLICE (raises, i, j - i) ;
+      IF LEN (out) = 0 THEN out := ' EXCEPT' END ;
+      out := out + ' | ' + nm + " : NbShow.Raised ('" + nm + "')" ;
+      k := 0 ;
+      WHILE k < LEN (nm) AND nm[k] # '.' DO k := k + 1 END ;
+      IF k < LEN (nm) THEN
+        q := SLICE (nm, 0, k) ;
+        IF NOT Holds (imports, 'IMPORT ' + q + ' ;') THEN
+          imports := imports + 'IMPORT ' + q + ' ; '
+        END
+      END
+    END ;
+    i := j
+  END ;
+  RETURN out
+END ShowHandlers ;
+
+(* the expression's type, from a child m9c run with this command
+   line and --type-of in place of --show ... --run/--cell: the checker
+   keeps module state and checks one file a process *)
+PROCEDURE ShowProbe (VAR raises: STR) : STR RAISES ValueRange =
+VAR
+  self, a, ty : STR ;
+  i, nl : I64 ;
+  r : System.Result ;
+BEGIN
+  self := System.Executable (pool) ;
+  IF LEN (self) = 0 THEN self := Io.Arg (pool, 0) END ;
+  nwords := 0 ;
+  i := 1 ;
+  WHILE i < Io.ArgCount () DO
+    a := Io.Arg (pool, i) ;
+    IF DynStr.Eq (a, '--run') OR DynStr.Eq (a, '--cell') THEN
+      Word ('--type-of') ;
+      Word (Io.Arg (pool, i + 1)) ;
+      i := Io.ArgCount ()
+    ELSIF NOT DynStr.Eq (a, '--show') THEN
+      Word (a)
+    END ;
+    i := i + 1
+  END ;
+  r := System.Exec (pool, self, SLICE (words, 0, nwords), '', ChildEnv (self)) ;
+  IF LEN (r.err) > 0 THEN Io.Err (r.err) END ;
+  IF r.status # 0 THEN
+    failed := TRUE ;
+    Io.Halt (1)
+  END ;
+  (* two lines: the type, then the exceptions it raises *)
+  ty := r.out ;
+  WHILE LEN (ty) > 0 AND (ty[LEN (ty) - 1] = 0AC OR ty[LEN (ty) - 1] = 0DC) DO
+    ty := SLICE (ty, 0, LEN (ty) - 1)
+  END ;
+  raises := '' ;
+  nl := 0 ;
+  WHILE nl < LEN (ty) AND ty[nl] # 0AC DO nl := nl + 1 END ;
+  IF nl < LEN (ty) THEN
+    raises := SLICE (ty, nl + 1, LEN (ty) - nl - 1) ;
+    ty := SLICE (ty, 0, nl)
+  END ;
+  RETURN ty
+EXCEPT
+| Io.IOError (p) :
+    Diag ('m9c: cannot run ', p, '') ;
+    failed := TRUE ;
+    Io.Halt (1) ;
+    RETURN ''
+END ShowProbe ;
+
 VAR
   i : I64 ;
   main, name, mainSrc : STR ;
-  found, mainTrust : BOOL ;
+  found, mainTrust, built : BOOL ;
+  showExpr, showType, showPre, showPost, showRaises, showImps, showArms : STR ;
 
 BEGIN
   (* first, because --help and every default below ask where this
@@ -2235,6 +3374,23 @@ BEGIN
     END ;
     IF doCheck AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc) THEN
       Io.ErrLine ('m9c: --check writes nothing at all;') ;
+      Io.ErrLine ('  it cannot be combined with -c, -o, --ar, --so or --doc') ;
+      failed := TRUE ;
+      Io.Halt (1)
+    END ;
+    (* --run builds where its cache says and runs what it built: an
+       object, a library, a document or a kept C file named on the
+       same line would be a second answer to "what is the output" *)
+    IF (doRun OR doCell) AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc OR
+                  doCheck OR doMake OR debug OR keepC OR ccFrom > 0 OR
+                  LEN (outDir) > 0) THEN
+      Io.ErrLine ('m9c: --run builds into its cache and runs the program;') ;
+      Io.ErrLine ('  only -I, -v and --no-unsafe may come before it') ;
+      failed := TRUE ;
+      Io.Halt (1)
+    END ;
+    IF LEN (outDir) > 0 AND (doCompile OR doLink OR LEN (lib) > 0 OR doDoc) THEN
+      Io.ErrLine ('m9c: --out-dir places the generated C;') ;
       Io.ErrLine ('  it cannot be combined with -c, -o, --ar, --so or --doc') ;
       failed := TRUE ;
       Io.Halt (1)
@@ -2292,6 +3448,53 @@ BEGIN
       END
     END ;
 
+    (* --show / --type-of: the file holds an expression, and what is
+       compiled is the program around it (see ShowImports) *)
+    IF doShow AND NOT (doRun OR doCell) THEN
+      Io.ErrLine ('m9c: --show runs what it shows: --show --run FILE or --show --cell FILE') ;
+      failed := TRUE ;
+      Io.Halt (1)
+    END ;
+    IF doShow OR doTypeOf THEN
+      showExpr := mainSrc ;
+      lineShift := 1 ;
+      shiftPath := main ;
+      IF doTypeOf THEN
+        Sem.ShowType ('ShowValue') ;
+        mainSrc := 'MODULE ' + name + ' ; ' + ShowImports (showExpr, FALSE) +
+                   'VAR ShowValue : BOOL ; BEGIN ShowValue :=' + 0AC + showExpr + 0AC +
+                   'END ' + name + '.' + 0AC
+      ELSE
+        showType := ShowProbe (showRaises) ;
+        IF DynStr.Eq (showType, '<void>') THEN
+          Io.ErrLine ('m9c: this has no value: a call of a procedure that answers') ;
+          Io.ErrLine ('  nothing, so it cannot be shown; write it in a program cell') ;
+          failed := TRUE ;
+          Io.Halt (1)
+        END ;
+        IF LEN (showType) = 0 THEN
+          (* the checker's softness: a name it cannot resolve has no
+             type and no diagnostic -- `Math.Nosuch` passes --check
+             and only the generator refuses it (the owed list) *)
+          Io.ErrLine ('m9c: the checker could not type this expression -- is every') ;
+          Io.ErrLine ('  name in it declared? -- so it cannot be shown') ;
+          failed := TRUE ;
+          Io.Halt (1)
+        END ;
+        IF NOT ShowCall (showType, showPre, showPost) THEN
+          Io.ErrLine ('m9c: cannot show a value of type ' + showType +
+                      '; write a program cell that prints it') ;
+          failed := TRUE ;
+          Io.Halt (1)
+        END ;
+        showImps := ShowImports (showExpr, TRUE) ;
+        showArms := ShowHandlers (showRaises, showImps) ;
+        mainSrc := 'MODULE ' + name + ' ; ' + showImps +
+                   'BEGIN ' + showPre + 0AC + showExpr + 0AC + showPost +
+                   showArms + ' END ' + name + '.' + 0AC
+      END
+    END ;
+
     (* the main module is loaded by name too, so that a cyclic or
        self-naming import stops here rather than recurring *)
     MarkLoaded (name) ;
@@ -2321,6 +3524,26 @@ BEGIN
       (* --no-unsafe refusals stop here too, all of them named
          first, and nothing generated after *)
       IF nunsafe > 0 THEN Io.Halt (1) END ;
+      (* --run: an unchanged program is run from here, unchecked
+         because unchanged (see the cache's comment); a changed one is
+         checked as any other and its C written to the scratch *)
+      IF doRun OR doCell THEN
+        IF doCell THEN
+          cellProgram := FALSE ;
+          FOR i := 0 TO root.nkids - 1 DO
+            IF root.kids[i] IS SOME cu THEN
+              IF cu.kind = Ast.NProgram THEN cellProgram := TRUE END
+            END
+          END ;
+          IF windows THEN
+            Io.ErrLine ('m9c: --cell needs fork and dlopen: Linux and macOS only') ;
+            failed := TRUE ;
+            Io.Halt (1)
+          END
+        END ;
+        RunKeys () ;
+        outDir := work
+      END ;
       (* THE CLOSURE IS REBUILT BEFORE ANYTHING IS CHECKED AGAINST
          IT.  m9c has always known which modules it needs -- it
          resolved, read and parsed them a moment ago -- and has
@@ -2342,6 +3565,11 @@ BEGIN
         DiagN ('m9c: ', Sem.ErrCount (), ' errors in ', main) ;
         failed := TRUE ;
         Io.Halt (1)
+      END ;
+      IF doTypeOf THEN
+        Io.WriteLine (Sem.ShownType ()) ;
+        Io.WriteLine (Sem.ShownRaises ()) ;
+        Io.Halt (0)
       END ;
       FOR i := 0 TO root.nkids - 1 DO
         IF root.kids[i] IS SOME u THEN Gen.LoadUnit (u) END
@@ -2369,6 +3597,11 @@ BEGIN
          emitted only under -g, so without it the generated C is the
          byte-for-byte article gendiff and the bootstrap compare. *)
       IF debug THEN Gen.SetDebugSource (main) END ;
+      FOR i := 0 TO npfxSpec - 1 DO
+        Gen.SetPrefix (SLICE (pfxSpec[i], 0, EqAt (pfxSpec[i])),
+                       SLICE (pfxSpec[i], EqAt (pfxSpec[i]) + 1,
+                              LEN (pfxSpec[i]) - EqAt (pfxSpec[i]) - 1))
+      END ;
       Gen.Emit (name) ;
       IF Gen.Errs () > 0 THEN
         (* each error with its line, the way g1 always did on the
@@ -2395,9 +3628,31 @@ BEGIN
         END ;
         RETURN
       ELSE
-        Io.WriteFile (Suffix (name, '.h'), Gen.HText ()) ;
-        Io.WriteFile (Suffix (name, '.c'), Gen.CText ()) ;
-        IF doCompile THEN
+        (* the scratch is made only for a program that will be built,
+           and goes again before the program starts: empty, which is
+           what every file in it leaving by Rename or Drop makes it *)
+        IF doRun OR doCell THEN
+          MkDirs (work) ;
+          MkDirs (Join (cacheRoot, 'mod')) ;
+          MkDirs (Join (cacheRoot, 'bin'))
+        END ;
+        Io.WriteFile (Join (outDir, Suffix (name, '.h')), Gen.HText ()) ;
+        Io.WriteFile (Join (outDir, Suffix (name, '.c')), Gen.CText ()) ;
+        IF doRun THEN
+          built := RunBuild (name) ;
+          (* a failed build may leave what it was working on, for
+             whoever reads the diagnostics; a good one leaves nothing *)
+          IF NOT Io.Remove (work) AND built THEN
+            Diag ('m9c: could not remove ', work, '')
+          END ;
+          IF built THEN Launch () ELSE failed := TRUE END
+        ELSIF doCell THEN
+          built := CellBuild (name) ;
+          IF NOT Io.Remove (work) AND built THEN
+            Diag ('m9c: could not remove ', work, '')
+          END ;
+          IF built THEN CellReport () ELSE failed := TRUE END
+        ELSIF doCompile THEN
           IF Compile (name) THEN
             (* the C was a by-product and the object exists, so it
                goes -- but the HEADER only goes when linking, because

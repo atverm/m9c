@@ -20,7 +20,7 @@ tut_build () {                  # tut_build MODULE -> $W/MODULE
   case $m in
   C8Zarr)
     ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
-    ( cd "$W" && gcc -O2 -flto "$m.o" ZarrStore.o Json.o Http.o \
+    ( cd "$W" && gcc -O2 -ffp-contract=off -flto "$m.o" ZarrStore.o Json.o Http.o \
         DynStr.o Io.o Fmt.o "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/tlsshim.c" \
         -iquote "$RT" -l:libblosc.so.1 -lssl -lcrypto -lm -o "$m" \
         2>/dev/null ) || return 1 ;;
@@ -29,10 +29,10 @@ tut_build () {                  # tut_build MODULE -> $W/MODULE
     # so the link line does -- chapter 11 says why TLS cannot be
     # concurrent yet
     ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
-    ( cd "$W" && gcc -O2 -flto "$m.o" Http.o DynStr.o Io.o         "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/tlsshim.c"         -iquote "$RT" -lssl -lcrypto -lm -o "$m"         2>/dev/null ) || return 1 ;;
+    ( cd "$W" && gcc -O2 -ffp-contract=off -flto "$m.o" Http.o DynStr.o Io.o         "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/tlsshim.c"         -iquote "$RT" -lssl -lcrypto -lm -o "$m"         2>/dev/null ) || return 1 ;;
   C10Icos)
     ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
-    ( cd "$W" && gcc -O2 -flto "$m.o" ZarrStore.o Json.o Http.o \
+    ( cd "$W" && gcc -O2 -ffp-contract=off -flto "$m.o" ZarrStore.o Json.o Http.o \
         Faults.o Mat.o Math.o Plot.o DynStr.o Io.o Fmt.o Text.o Time.o \
         "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/tlsshim.c" "$RT/fmtshim.c" \
         -iquote "$RT" -l:libblosc.so.1 -lssl -lcrypto -lm -o "$m" \
@@ -42,14 +42,14 @@ tut_build () {                  # tut_build MODULE -> $W/MODULE
     # -lnetcdf only because it never reaches a NetCDF procedure and
     # -flto drops the dead ones.  Writing a file leaves nc_* live.
     ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
-    ( cd "$W" && gcc -O2 -flto "$m.o" Faults.o Csv.o Frame.o NetCDF.o Stats.o \
+    ( cd "$W" && gcc -O2 -ffp-contract=off -flto "$m.o" Faults.o Csv.o Frame.o NetCDF.o Stats.o \
         Sort.o Math.o Bits.o Time.o Fmt.o DynStr.o Io.o Text.o \
         "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/fmtshim.c" \
         -iquote "$RT" -lnetcdf -lm -o "$m" \
         2>/dev/null ) || return 1 ;;
   C9Plot)
     ( cd "$W" && tut_make -c -k "$EXA/$m.m9" ) || return 1
-    ( cd "$W" && gcc -O2 -flto "$m.o" Plot.o Faults.o Mat.o Math.o DynStr.o Io.o Fmt.o Text.o Time.o \
+    ( cd "$W" && gcc -O2 -ffp-contract=off -flto "$m.o" Plot.o Faults.o Mat.o Math.o DynStr.o Io.o Fmt.o Text.o Time.o \
         "$RT/m9rt.c" "$RT/fmtshim.c" -iquote "$RT" -lm -o "$m" \
         2>/dev/null ) || return 1 ;;
   *)

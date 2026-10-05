@@ -76,7 +76,21 @@ cp -r "$R/tools/vscode-m9/." "$Z/tools/vscode-m9/" ; rm -f "$Z/tools/vscode-m9/t
 cp "$R/tools/release/win/Setup.m9" "$R/tools/release/win/WinTutor.m9" \
    "$R/tools/release/win/M9Tutor.m9" "$Z/setup/"
 cp "$R/tools/release/win/install.bat" "$Z/"
-python3 "$R/tools/tutor/mktutor.py" "$R/docs/tutorial" "$Z/doc/tutorial" >/dev/null 2>&1 \
+# the tutorial pages, by tools/tutor/MkTutor.m9 under `m9c --run`: the
+# tree's own compiler, built here from runtime/gen when no gate has
+# left one (an installed m9c may predate --run)
+M9C=${M9C:-$R/runtime/test/m9c}
+if [ ! -x "$M9C" ]; then
+  ( cd "$R/runtime/test" && . ./lib/gen.sh >/dev/null &&
+    gcc -std=c11 -O2 -Wall -Wextra -Werror -Wno-unused-label \
+        -Wno-unused-parameter -Wno-unused-function \
+        -iquote .. -iquote ../gen ../m9rt.c ../gen/DynStr.c ../gen/Io.c \
+        ../gen/Lex.c ../gen/Ast.c ../gen/Parse.c ../gen/Print.c ../gen/Text.c ../gen/System.c \
+        ../gen/Sem.c ../gen/Gen.c ../gen/Doc.c ../gen/Review.c ../gen/M9c.c -o "$W/m9c" )
+  M9C=$W/m9c
+fi
+M9RUNTIME="$R/runtime" M9LIBRARY="$R/corpus" "$M9C" --run "$R/tools/tutor/MkTutor.m9" \
+    "$R/docs/tutorial" "$Z/doc/tutorial" >/dev/null 2>&1 \
   && cp -r "$R/docs/tutorial/examples/data" "$Z/build/data"
 cp -r "$TC" "$Z/ucrt64"
 

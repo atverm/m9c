@@ -2,10 +2,10 @@ REVIEW Doc -- 26 procedures with a body, 22 of them functions; 2 headings in a D
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              22
-  assignments                                   120
-  arguments                                     347
+  assignments                                   136
+  arguments                                     359
   RETURN values                                  39
-  operands of a comparison or an operator       167
+  operands of a comparison or an operator       182
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0

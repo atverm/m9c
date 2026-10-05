@@ -272,6 +272,17 @@ BEGIN
     END
   END ;
   d := DynStr.New (pool) ;
+  (* a #! first line is the operating system's (report par 2): the
+     lexer skipped it, so the printer never saw it, and it goes back
+     first and verbatim *)
+  IF LEN (src) >= 2 THEN
+    IF src[0] = '#' AND src[1] = '!' THEN
+      a := Text.FindChar (src, 0AC) ;
+      IF a < 0 THEN a := LEN (src) END ;
+      DynStr.Append (d, SLICE (src, 0, a)) ;
+      DynStr.AppendChar (d, 0AC)
+    END
+  END ;
   (* the printer emits its own blank lines between sections, so an
      inserted one is guarded by what was ACTUALLY last emitted --
      without this, printer blank plus mapped blank doubled, and the

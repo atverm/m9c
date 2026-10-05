@@ -103,3 +103,25 @@ say how many of those there were.  These do.
 
 Module state like the diagnostics, and for the same reason: they
 accumulate over every CheckFile of the process.
+
+### ShowType (RO KEPT name: STR)
+
+_(documented with the group below)_
+
+### ShownType () : STR
+
+for `m9c --show`, which asks the type of an expression
+(docs/kernel-show-plan.md): armed with a name, the checker
+records the type it computes for the right side of an
+assignment to that bare name and does not hold the two sides to
+each other -- the left side is a placeholder.  ShownType answers
+the last such type, in the checker's canonical spelling (`SLICE
+OF F64`, `PTR Frame.Fr`, `a real literal`), '' if none was
+met or a side was unknown.  M9 side only, like the counters
+above: nothing in the Pascal twin calls it.
+
+### ShownRaises () : STR
+
+while armed, the checked exceptions a body raises and does not
+handle are recorded here instead of refused: the names, each
+followed by a blank, after a leading blank (' ValueRange ')

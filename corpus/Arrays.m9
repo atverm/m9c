@@ -175,12 +175,6 @@ CONST
   OpAdd = 0 ; OpSub = 1 ; OpMul = 2 ; OpDiv = 3 ;
   OpLess = 0 ; OpLessEq = 1 ; OpGreater = 2 ; OpGreaterEq = 3 ;
 
-PROCEDURE NaN () : F64 =
-VAR z : F64 ;
-BEGIN
-  z := 0.0 ;
-  RETURN z / z
-END NaN ;
 
 PROCEDURE Take (VAR s: Acc ; v: F64) =
 VAR t : F64 ;
@@ -216,19 +210,19 @@ END SumOf ;
 
 PROCEDURE MeanOf (RO s: Acc) : F64 =
 BEGIN
-  IF s.n = 0 THEN RETURN NaN () END ;
+  IF s.n = 0 THEN RETURN NaN END ;
   RETURN SumOf (s) / F64 (s.n)
 END MeanOf ;
 
 PROCEDURE MinOf (RO s: Acc) : F64 =
 BEGIN
-  IF s.n = 0 THEN RETURN NaN () END ;
+  IF s.n = 0 THEN RETURN NaN END ;
   RETURN s.mn
 END MinOf ;
 
 PROCEDURE MaxOf (RO s: Acc) : F64 =
 BEGIN
-  IF s.n = 0 THEN RETURN NaN () END ;
+  IF s.n = 0 THEN RETURN NaN END ;
   RETURN s.mx
 END MaxOf ;
 

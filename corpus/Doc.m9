@@ -390,6 +390,40 @@ PROCEDURE Collect (VAR pool: POOL ; KEPT n: PTR Ast.Node ;
   RAISES IndexError =
 VAR i : I64 ;
 BEGIN
+  IF n.kind = Ast.NVarDecl THEN
+    (* `VAR a, b : T` is ONE declaration of several names, kept in
+       its identlist: an anchor for each, its type as resultText.
+       n.a is empty here, and every exported variable read as a
+       nameless entry until decision 28 made one worth completing *)
+    IF n.nkids > 1 THEN
+      IF n.kids[0] IS SOME ids THEN
+        FOR i := 0 TO ids.nkids - 1 DO
+          IF ids.kids[i] IS SOME id THEN
+            IF nanch < LEN (anch) THEN
+              anch[nanch].line := n.line ;
+              anch[nanch].kind := n.kind ;
+              anch[nanch].name := id.a ;
+              anch[nanch].sig := '' ;
+              anch[nanch].params := ' ' ;
+              anch[nanch].doc := '' ;
+              anch[nanch].hasDoc := FALSE ;
+              anch[nanch].shared := FALSE ;
+              anch[nanch].paramsJson := '[]' ;
+              anch[nanch].resultText := Print.TypeText (pool, n.kids[1]) ;
+              anch[nanch].raisesJson := '[]' ;
+              IF n.f3 THEN                        (* VAR RO *)
+                anch[nanch].attribText := 'RO'
+              ELSE
+                anch[nanch].attribText := ''
+              END ;
+              nanch := nanch + 1
+            END
+          END
+        END
+      END
+    END ;
+    RETURN
+  END ;
   IF IsDecl (n.kind) AND nanch < LEN (anch) THEN
     anch[nanch].line := n.line ;
     anch[nanch].kind := n.kind ;
@@ -755,6 +789,16 @@ BEGIN
      trigonometric block.  Adjacent means the declarations sit
      within two lines of each other, which is what a group looks
      like and what a separated declaration does not. *)
+  (* the names of one VAR declaration share its comment, which
+     Owner gave to the last of them *)
+  FOR i := nanch - 2 TO 0 BY -1 DO
+    IF anch[i].kind = Ast.NVarDecl AND anch[i + 1].kind = Ast.NVarDecl AND
+       anch[i].line = anch[i + 1].line AND anch[i + 1].hasDoc AND
+       NOT anch[i].hasDoc THEN
+      anch[i].doc := anch[i + 1].doc ;
+      anch[i].hasDoc := TRUE
+    END
+  END ;
   FOR i := nanch - 2 TO 0 BY -1 DO
     IF NOT anch[i].hasDoc AND NOT anch[i].shared THEN
       IF anch[i + 1].hasDoc OR anch[i + 1].shared THEN
@@ -840,6 +884,16 @@ BEGIN
               JsonStr (d, anch[i].attribText)
             ELSE
               DynStr.Append (d, 'null')
+            END
+          END ;
+          IF anch[i].kind = Ast.NVarDecl THEN
+            DynStr.Append (d, ',"type":') ;
+            JsonStr (d, anch[i].resultText) ;
+            DynStr.Append (d, ',"ro":') ;
+            IF LEN (anch[i].attribText) > 0 THEN
+              DynStr.Append (d, 'true')
+            ELSE
+              DynStr.Append (d, 'false')
             END
           END ;
           DynStr.Append (d, ',"doc":') ;

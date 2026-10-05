@@ -167,6 +167,21 @@ void Lex_Init (Lex_Lexer *lx, m9_pool *lx_pool, m9_sl_CHAR src, m9_state *err)
   (*lx).pos = INT64_C(0);
   (*lx).line = INT64_C(1);
   (*lx).col = INT64_C(1);
+  if (((src).len >= INT64_C(2))) {
+    bool m9t1 = (((*(uint32_t *) m9_at (src.p, INT64_C(0), src.len, sizeof (uint32_t), err)) == 35u) && ((*(uint32_t *) m9_at (src.p, INT64_C(1), src.len, sizeof (uint32_t), err)) == 33u));
+    if (err->exc) goto L_ret;
+    if (m9t1) {
+      for (;;) {
+        bool m9t2 = (((*lx).pos < (src).len) && ((*(uint32_t *) m9_at (src.p, (*lx).pos, src.len, sizeof (uint32_t), err)) != 10u));
+        if (err->exc) goto L_ret;
+        if (!(m9t2)) break;
+        { __typeof__((*lx).pos) m9v = m9_add_i64 ((*lx).pos, INT64_C(1), err);
+          if (err->exc) goto L_ret;
+          (*lx).pos = m9v;
+        }
+      }
+    }
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, lx_pool, (*lx).src.p);

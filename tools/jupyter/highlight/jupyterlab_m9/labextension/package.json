@@ -1,0 +1,37 @@
+{
+  "name": "jupyterlab-m9",
+  "version": "0.1.0",
+  "description": "M9 syntax highlighting for JupyterLab",
+  "license": "GPL-3.0-or-later",
+  "main": "lib/jupyter/highlight/src/index.js",
+  "files": [
+    "lib/**/*",
+    "src/**/*"
+  ],
+  "scripts": {
+    "build": "tsc && jupyter labextension build ."
+  },
+  "dependencies": {
+    "@codemirror/language": "^6.10.0",
+    "@jupyterlab/application": "^4.2.0",
+    "@jupyterlab/codemirror": "^4.2.0"
+  },
+  "devDependencies": {
+    "@jupyterlab/builder": "^4.2.0",
+    "typescript": "~5.5.4"
+  },
+  "jupyterlab": {
+    "extension": true,
+    "outputDir": "jupyterlab_m9/labextension",
+    "sharedPackages": {
+      "@codemirror/language": {
+        "bundled": false,
+        "singleton": true
+      }
+    },
+    "_build": {
+      "load": "static/remoteEntry.344c0a539f6c4f75c57d.js",
+      "extension": "./extension"
+    }
+  }
+}

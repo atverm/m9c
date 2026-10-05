@@ -316,7 +316,7 @@ void Mat_ColReduce (Mat_Matrix * m, Mat_ReduceOp op, m9_sl_F64 out, m9_state *er
       }
     } }
     if ((n == INT64_C(0))) {
-      (*(double *) m9_at (out.p, c, out.len, sizeof (double), err)) = (0.0 / 0.0);
+      (*(double *) m9_at (out.p, c, out.len, sizeof (double), err)) = NAN;
       if (err->exc) goto L_ret;
     } else {
       { __typeof__(op) m9t5 = op;
@@ -413,8 +413,8 @@ void Mat_MinMax (Mat_Matrix * m, double *mn, double *mx, m9_state *err)
   int64_t c = 0; (void) c;
   double v = 0; (void) v;
   bool seen = false; (void) seen;
-  (*mn) = (0.0 / 0.0);
-  (*mx) = (0.0 / 0.0);
+  (*mn) = NAN;
+  (*mx) = NAN;
   seen = false;
   { int64_t m9t1to;
   r = INT64_C(0);

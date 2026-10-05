@@ -460,7 +460,7 @@ BEGIN
     END
   END ;
 
-  a.meta.fillF := 0.0 / 0.0 ;
+  a.meta.fillF := NaN ;
   a.meta.fillI := 0 ;
   a.meta.hasFill := FALSE ;
   IF Json.Field (root, 'fill_value') IS SOME fv THEN
@@ -471,7 +471,7 @@ BEGIN
          apart -- the store's time coordinate is exactly this case. *)
     ELSIF Json.StrIs (fv, 'NaN') THEN
       a.meta.hasFill := TRUE ;
-      a.meta.fillF := 0.0 / 0.0
+      a.meta.fillF := NaN
     ELSIF Json.StrIs (fv, 'Infinity') THEN
       a.meta.hasFill := TRUE ;
       a.meta.fillF := 1.0 / 0.0

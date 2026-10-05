@@ -1,11 +1,11 @@
-REVIEW Arrays -- 50 procedures with a body, 49 of them functions; 38 headings in a DEFINITION
+REVIEW Arrays -- 49 procedures with a body, 48 of them functions; 38 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              49
-  assignments                                    86
+  functions answering on every path              48
+  assignments                                    85
   arguments                                      83
-  RETURN values                                  53
-  operands of a comparison or an operator        75
+  RETURN values                                  52
+  operands of a comparison or an operator        74
   CASE labels                                     8
   THREAD arguments                                0
   CASE over variants, proved total                0

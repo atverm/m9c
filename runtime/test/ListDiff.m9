@@ -1,0 +1,1165 @@
+#!/usr/bin/env -S m9c --run
+MODULE ListDiff ;
+
+(* listdiff -- the hand-maintained module lists must agree.
+
+       runtime/test/ListDiff.m9
+
+   A corpus module is named in several places by hand, and until this
+   gate nothing checked that they said the same thing.  Every drift so
+   far was found by something else failing later:
+
+     2026-08-24  gentest.pas, gendiff.sh, bootstrap.sh, build.sh
+                 LIBRARY, m9c.sh -- "every one was found by something
+                 failing"
+     2026-08-29  Mat gained a Math import; bootstrap.sh's deps_of did
+                 not, and stage2 broke
+     2026-09-11  ApiSpec, Arrow, Delim, Zip and Zarr joined
+                 gentest.pas and not gendiff.sh or bootstrap.sh; Http
+                 gained an Io import in gentest alone.  CI never saw it
+                 because the lexer golden was stale too and every later
+                 job waits on that one.
+
+   What is checked, each rule stated with the reason it is the rule:
+
+     1. gentest.pas, gendiff.sh and bootstrap.sh name the SAME modules
+        with the SAME dependency lists, in the same order.  gendiff.sh's
+        own header says "the dep lists must match gentest.pas exactly";
+        bootstrap.sh emits every module from every stage with those
+        deps.  (LibmGate and the other gendiff fixtures are excluded.)
+
+     2. Every module in corpus/ is in gentest.pas, except the ones in
+        NotGenerated with a reason each.  A module the FPC generator
+        never sees is a module runtime/gen does not hold and the
+        bootstrap cannot build.
+
+     3. A module's DIRECT imports are a subset of its gentest deps, and
+        every dep is inside the module's import CLOSURE.  The deps are
+        what LoadExtern registers and what the generator #includes: an
+        import missing from them is an unknown callee (the 2026-09-11
+        failure), and a dep the module can never reach is a dead
+        include (Sem carried Fmt, Fmt carried DynStr, neither used --
+        removed the same day).  Not equality with either the direct
+        set or the closure: some lists carry the closure and some the
+        direct imports, and changing one moves the emitted #includes.
+        A dep outside the closure is excused BY NAME in ExtraDeps with
+        the reason: HttpServer names Http because `FROM csock IMPORT`
+        needs the foreign unit declared in Http.m9.
+
+     4. build.sh's LIBRARY is every corpus module except those named in
+        NotInstalled with a reason each.  That list is what docgen and
+        docdiff iterate and what the package installs to /usr/lib/m9.
+
+     5. tools/tutor/setup.sh's LIB is a subset of LIBRARY and is closed
+        under direct imports: a cell that compiles against a hermetic
+        copy of the library cannot reach a module that is not in it.
+
+     6. build.sh's COMPILER is closed under direct imports, for the
+        same reason at link time.
+
+     7. m9c.sh's `check M deps...` lines carry gentest.pas's deps for
+        M.  They compile M with NAMED deps and compare the bytes with
+        the oracle's, and named deps win, so a stale line there emits
+        an #include the oracle does not and the gate diverges for a
+        reason that is not the compiler's.
+
+     8. Every gate that links an m9c of its own (`... -o m9c` or
+        `-o "$W/m9c"` in runtime/test/*.sh) links exactly build.sh's
+        COMPILER modules.  Twelve scripts carry that line by hand; ten
+        still linked Fmt.c and three Time.c after nothing in the
+        compiler imported either (2026-09-11) -- dead under LTO, but a
+        module MISSING from one of them is a link error only that gate
+        sees.
+
+     9. Every battery in runtime/test/build.sh links a set of generated
+        modules that is CLOSED under direct imports.  The driver lines
+        name their `../gen/M.c` by hand -- the script's own comment
+        counts three times one of them missed Json -- and a missing one
+        is a link error in one battery of thirty-eight; here it is one
+        line naming the module and the import.
+
+    10. Every module gentest.pas generates is linked by at least one
+        battery of build.sh, or is named in NoBattery with what holds
+        it instead.  A library module that lands without a driver is a
+        module nothing runs.
+
+    11. The tutorial's hand link lines (runtime/test/lib/tutcommon.sh,
+        the examples that need a C library) are closed the same way:
+        the objects they name cover the example's imports and each
+        other's.  When Stats gained Bits on 2026-09-27 only tutgen
+        failing to link C14Flux said so.
+
+    12. The link lines of every OTHER gate over runtime/gen, and
+        bootstrap.sh's TOOLC, are closed under direct imports as rule
+        9 holds build.sh's.  When Gen gained Text on 2026-10-01 the
+        first three rules named gentest, gendiff's run line and
+        deps_of; the helper both gendiff and bootstrap LINK was left to
+        the linker, once in each gate, the second after a ten-minute
+        run.
+
+    13. corpus/NAMETest.m9 is the test of corpus/NAME.m9 (m9test.sh
+        builds and runs it): excused from gentest and from LIBRARY by
+        its name, so the name must have a module behind it.
+
+   Exit status 1 with every disagreement named; 0 when all agree.
+
+   It replaced runtime/test/listdiff.py on 2026-10-04, after the two
+   printed the same lines over the tree and over every sabotage the
+   gate's history names.  The messages are the Python's, list syntax
+   and all, so a reader of old logs reads the new ones the same way.
+   Each regular expression the Python used is here as a few lines of
+   scanning, with the rule it kept: an IMPORT line is matched at its
+   start and read to its FIRST semicolon; a word is [A-Za-z0-9_]; a
+   backslash at a line's end joins the next line; files are octets. *)
+
+IMPORT Io ;
+IMPORT Text ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Sort ;
+
+CONST
+  Room = 256 ;                 (* the most names one set holds *)
+
+  (* a corpus module gentest.pas deliberately does not generate *)
+  NotGenerated = ['LibmGate', 'KindUse', 'EnumUse', 'Palette', 'Lsp',
+                  'M9fmt', 'M9elide'] ;
+  NotGeneratedWhy = ['gendiff-only fixture (96 libm-named locals)',
+                     'gendiff-only fixture (a case record used across a module)',
+                     'gendiff-only fixture (an enumeration used across a module)',
+                     'gendiff-only fixture (an enumeration declaration)',
+                     'program module built by m9c --make from the library',
+                     'program module built by m9c --make from the library',
+                     'program module built by m9c --make from the library'] ;
+  (* a gentest dep outside the module's import closure, and why *)
+  ExtraFrom = ['HttpServer'] ;
+  ExtraTo = ['Http'] ;
+  ExtraWhy = ['FROM csock IMPORT: the foreign unit is declared in Http.m9'] ;
+  (* a corpus module build.sh deliberately does not install *)
+  NotInstalled = ['LibmGate', 'KindUse', 'EnumUse', 'Palette', 'Hello',
+                  'Concat', 'Narrow', 'ProcUse', 'AggUse', 'ShareUse',
+                  'ExportDef', 'ExportUse', 'M9c'] ;
+  NotInstalledWhy = ['gendiff-only fixture', 'gendiff-only fixture',
+                     'gendiff-only fixture', 'gendiff-only fixture',
+                     'demo program',
+                     'demo program (the executable half of the + decision)',
+                     'test program (every integer width traps on overflow)',
+                     'test program (procedure types, par 2.2.3)',
+                     'test program (constant tables, par 2.2.4)',
+                     'test program (a call that raised answered nothing, par 5)',
+                     'test fixture (exported module variables, decision 28)',
+                     'test program (exported module variables, decision 28)',
+                     'the compiler itself, installed as a binary'] ;
+  (* a generated module no battery of runtime/test/build.sh links, and
+     the gate that holds it instead *)
+  NoBattery = ['Lex', 'Ast', 'Parse', 'Print', 'Sem', 'Gen', 'Doc', 'Diag',
+               'M9c', 'Review', 'Check', 'Arrays', 'Numeric', 'Png', 'NbCells',
+               'NbShow', 'ExportDef', 'ExportUse'] ;
+  NoBatteryWhy = ['lexdiff, comdiff and the token-count golden',
+                  'parsediff (every node kind printed back)',
+                  'parsediff and the parse probes',
+                  'parsediff (print (parse ()) is the fixpoint)',
+                  'semdiff and probediff',
+                  'gendiff and bootstrap',
+                  'docdiff',
+                  'diagdiff and the tutor gate',
+                  'm9c.sh, the compiler as a program',
+                  'reviewdiff (one recorded page per corpus module)',
+                  'm9test (CheckTest holds it to its own recorded output)',
+                  'm9test (ArraysTest, against numpy goldens)',
+                  'm9test (NumericTest, against scipy goldens)',
+                  'm9test (PngTest, read back through Zip.Decompress) and deflate.sh (Python reads the files)',
+                  'm9test (NbCellsTest, every kind back to the bit) and jupyter.sh (the kernel hands a value between cells)',
+                  'm9test (NbShowTest, every form to its text) and jupyter.sh (an expression cell shows its value)',
+                  'gendiff and run.sh (ExportUse writes, ExportDef reads the same storage)',
+                  'gendiff and run.sh (ExportUse writes, ExportDef reads the same storage)'] ;
+  GendiffFixtures = ['LibmGate', 'KindUse', 'EnumUse', 'Palette'] ;
+
+TYPE
+  (* a set of names, kept in insertion order: Python's dicts and the
+     lists it printed were ordered, and the messages follow that order *)
+  Names = RECORD
+    n : I64 ;
+    v : SLICE OF STR ;
+  END ;
+  Entry = RECORD
+    name : STR ;
+    deps : Names ;
+  END ;
+
+VAR
+  pool : POOL ;
+  root : STR ;
+  bad : Names ;                (* the disagreements, in order *)
+  corpus : Names ;
+  impName : SLICE OF STR ;     (* corpus module i ... *)
+  impSet : SLICE OF Names ;    (* ... and its direct imports *)
+  gt, gd, bs : SLICE OF Entry ;
+  notGen, notInst : Names ;    (* the excuses, rule 13's added *)
+
+(* ---- sets of names ---- *)
+
+PROCEDURE Fresh () : Names =
+VAR s : Names ;
+BEGIN
+  s.n := 0 ;
+  s.v := NEW (pool, STR, Room) ;
+  RETURN s
+END Fresh ;
+
+PROCEDURE Has (RO s: Names ; RO x: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO s.n - 1 DO
+    IF DynStr.Eq (s.v[i], x) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END Has ;
+
+PROCEDURE HasIn (RO a: SLICE OF STR ; RO x: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF DynStr.Eq (a[i], x) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END HasIn ;
+
+(* x at the end, a copy in the program's pool; a set keeps one of each *)
+PROCEDURE Add (VAR s: Names ; RO x: STR) =
+BEGIN
+  IF NOT Has (s, x) THEN
+    s.v[s.n] := Text.Keep (pool, x) ;
+    s.n := s.n + 1
+  END
+END Add ;
+
+(* the same, duplicates kept: a list, as gentest's deps are *)
+PROCEDURE Push (VAR s: Names ; RO x: STR) =
+BEGIN
+  s.v[s.n] := Text.Keep (pool, x) ;
+  s.n := s.n + 1
+END Push ;
+
+PROCEDURE FromTable (RO a: SLICE OF STR) : Names =
+VAR
+  s : Names ;
+  i : I64 ;
+BEGIN
+  s := Fresh () ;
+  FOR i := 0 TO LEN (a) - 1 DO Push (s, a[i]) END ;
+  RETURN s
+END FromTable ;
+
+(* a's names that are not in b, sorted -- Python's sorted (a - b) *)
+PROCEDURE Minus (RO a, b: Names) : Names =
+VAR
+  s : Names ;
+  i : I64 ;
+BEGIN
+  s := Fresh () ;
+  FOR i := 0 TO a.n - 1 DO
+    IF NOT Has (b, a.v[i]) THEN Add (s, a.v[i]) END
+  END ;
+  Sorted (s) ;
+  RETURN s
+END Minus ;
+
+PROCEDURE Sorted (VAR s: Names) =
+VAR
+  w : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  w := NEW (pool, STR, s.n) ;
+  FOR i := 0 TO s.n - 1 DO w[i] := s.v[i] END ;
+  Sort.Strs (w) ;
+  FOR i := 0 TO s.n - 1 DO s.v[i] := w[i] END
+END Sorted ;
+
+PROCEDURE SameSet (RO a, b: Names) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO a.n - 1 DO
+    IF NOT Has (b, a.v[i]) THEN RETURN FALSE END
+  END ;
+  FOR i := 0 TO b.n - 1 DO
+    IF NOT Has (a, b.v[i]) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END SameSet ;
+
+PROCEDURE SameList (RO a, b: Names) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF a.n # b.n THEN RETURN FALSE END ;
+  FOR i := 0 TO a.n - 1 DO
+    IF NOT DynStr.Eq (a.v[i], b.v[i]) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END SameList ;
+
+(* a list as Python's str () prints one: ['A', 'B'] *)
+PROCEDURE Repr (RO s: Names) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (d, '[') ;
+  FOR i := 0 TO s.n - 1 DO
+    IF i > 0 THEN DynStr.Append (d, ', ') END ;
+    DynStr.Append (d, "'") ;
+    DynStr.Append (d, s.v[i]) ;
+    DynStr.Append (d, "'")
+  END ;
+  DynStr.AppendChar (d, ']') ;
+  RETURN DynStr.View (d)
+END Repr ;
+
+PROCEDURE Fail (RO msg: STR) =
+BEGIN
+  Push (bad, msg)
+END Fail ;
+
+(* ---- reading ---- *)
+
+PROCEDURE Rd (RO path: STR) : STR RAISES Io.IOError, ValueRange =
+BEGIN
+  RETURN DynStr.Chars (pool, Io.ReadFileBytes (pool, root + '/' + path))
+END Rd ;
+
+(* the text with every backslash-newline replaced by a blank *)
+PROCEDURE Joined (RO s: STR) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  i := 0 ;
+  WHILE i < LEN (s) DO
+    IF (s[i] = 05CC) AND (i + 1 < LEN (s)) AND (s[i + 1] = 0AC) THEN
+      DynStr.AppendChar (d, ' ') ;
+      i := i + 2
+    ELSE
+      DynStr.AppendChar (d, s[i]) ;
+      i := i + 1
+    END
+  END ;
+  RETURN DynStr.View (d)
+END Joined ;
+
+PROCEDURE IsWord (c: CHAR) : BOOL =
+BEGIN
+  RETURN ((c >= 'a') AND (c <= 'z')) OR ((c >= 'A') AND (c <= 'Z')) OR
+         ((c >= '0') AND (c <= '9')) OR (c = '_')
+END IsWord ;
+
+PROCEDURE IsBlank (c: CHAR) : BOOL =
+BEGIN
+  RETURN (c = ' ') OR (c = 09C) OR (c = 0AC) OR (c = 0DC) OR
+         (c = 0BC) OR (c = 0CC)
+END IsBlank ;
+
+(* the blank-separated words of s, Python's split () *)
+PROCEDURE Words (RO s: STR) : Names =
+VAR
+  w : Names ;
+  i, j : I64 ;
+BEGIN
+  w := Fresh () ;
+  i := 0 ;
+  WHILE i < LEN (s) DO
+    WHILE (i < LEN (s)) AND IsBlank (s[i]) DO i := i + 1 END ;
+    j := i ;
+    WHILE (j < LEN (s)) AND NOT IsBlank (s[j]) DO j := j + 1 END ;
+    IF j > i THEN Push (w, SLICE (s, i, j - i)) END ;
+    i := j
+  END ;
+  RETURN w
+END Words ;
+
+(* s without blanks at either end *)
+PROCEDURE Strip (RO s: STR) : STR =
+VAR a, b : I64 ;
+BEGIN
+  a := 0 ;
+  b := LEN (s) ;
+  WHILE (a < b) AND IsBlank (s[a]) DO a := a + 1 END ;
+  WHILE (b > a) AND IsBlank (s[b - 1]) DO b := b - 1 END ;
+  RETURN SLICE (s, a, b - a)
+END Strip ;
+
+(* the source with every comment blanked, nesting honoured and the
+   line breaks kept.  Check.m9's documentation shows a test, IMPORT
+   line and all, and was read as importing itself. *)
+PROCEDURE NoComments (RO s: STR) : STR =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, depth : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  depth := 0 ;
+  i := 0 ;
+  WHILE i < LEN (s) DO
+    IF (s[i] = '(') AND (i + 1 < LEN (s)) AND (s[i + 1] = '*') THEN
+      depth := depth + 1 ;
+      i := i + 2
+    ELSIF (depth > 0) AND (s[i] = '*') AND (i + 1 < LEN (s)) AND (s[i + 1] = ')') THEN
+      depth := depth - 1 ;
+      i := i + 2
+    ELSE
+      IF (depth = 0) OR (s[i] = 0AC) THEN DynStr.AppendChar (d, s[i]) END ;
+      i := i + 1
+    END
+  END ;
+  RETURN DynStr.View (d)
+END NoComments ;
+
+(* the names of an IMPORT line, added to s: the line's start, blanks,
+   IMPORT, at least one blank, then everything to the FIRST semicolon,
+   split at commas.  FROM u IMPORT is a foreign unit and does not
+   match. *)
+PROCEDURE ImportLine (RO line: STR ; VAR s: Names) =
+VAR
+  i, j, k : I64 ;
+  part : SLICE OF STR ;
+BEGIN
+  i := 0 ;
+  WHILE (i < LEN (line)) AND IsBlank (line[i]) DO i := i + 1 END ;
+  IF (LEN (line) - i < 7) OR NOT Text.Eq (SLICE (line, i, 6), 'IMPORT') THEN RETURN END ;
+  IF NOT IsBlank (line[i + 6]) THEN RETURN END ;
+  j := i + 6 ;
+  k := Text.FindChar (SLICE (line, j, LEN (line) - j), ';') ;
+  IF k < 0 THEN RETURN END ;
+  part := Text.Split (SLICE (line, j, k), ',') ;
+  FOR k := 0 TO LEN (part) - 1 DO
+    IF LEN (Strip (part[k])) > 0 THEN Add (s, Strip (part[k])) END
+  END
+END ImportLine ;
+
+(* the direct imports of corpus module m; the empty set for a name
+   that is not one *)
+PROCEDURE Direct (RO m: STR) : Names =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (impName) - 1 DO
+    IF DynStr.Eq (impName[i], m) THEN RETURN impSet[i] END
+  END ;
+  RETURN Fresh ()
+END Direct ;
+
+PROCEDURE ReadImports () RAISES Io.IOError, ValueRange =
+VAR
+  i, k : I64 ;
+  lines : SLICE OF STR ;
+  s : Names ;
+BEGIN
+  impName := NEW (pool, STR, corpus.n) ;
+  impSet := NEW (pool, Names, corpus.n) ;
+  FOR i := 0 TO corpus.n - 1 DO
+    s := Fresh () ;
+    lines := Text.Split (NoComments (Rd ('corpus/' + corpus.v[i] + '.m9')), 0AC) ;
+    FOR k := 0 TO LEN (lines) - 1 DO ImportLine (lines[k], s) END ;
+    impName[i] := corpus.v[i] ;
+    impSet[i] := s
+  END
+END ReadImports ;
+
+(* every name m imports, directly or through another corpus module *)
+PROCEDURE Close (RO m: STR ; VAR seen: Names) =
+VAR
+  d : Names ;
+  i : I64 ;
+BEGIN
+  IF NOT Has (corpus, m) THEN RETURN END ;
+  d := Direct (m) ;
+  FOR i := 0 TO d.n - 1 DO
+    IF NOT Has (seen, d.v[i]) THEN
+      Add (seen, d.v[i]) ;
+      Close (d.v[i], seen)
+    END
+  END
+END Close ;
+
+PROCEDURE Closure (RO m: STR) : Names =
+VAR s : Names ;
+BEGIN
+  s := Fresh () ;
+  Close (m, s) ;
+  RETURN s
+END Closure ;
+
+(* ---- the three generator lists ---- *)
+
+PROCEDURE Find (RO t: SLICE OF Entry ; n: I64 ; RO m: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO n - 1 DO
+    IF DynStr.Eq (t[i].name, m) THEN RETURN i END
+  END ;
+  RETURN -1
+END Find ;
+
+PROCEDURE Shrink (RO t: SLICE OF Entry ; n: I64) : SLICE OF Entry =
+VAR
+  r : SLICE OF Entry ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, Entry, n) ;
+  FOR i := 0 TO n - 1 DO r[i] := t[i] END ;
+  RETURN r
+END Shrink ;
+
+(* GenModule ('M', ['A', 'B']) lines of gentest.pas; a name seen twice
+   keeps its first place and its last list, as a dict did *)
+PROCEDURE Gentest () : SLICE OF Entry RAISES Io.IOError, ValueRange =
+VAR
+  s, body : STR ;
+  t : SLICE OF Entry ;
+  n, p, i, j, k, at : I64 ;
+  part : SLICE OF STR ;
+  deps : Names ;
+  x : STR ;
+BEGIN
+  s := Rd ('host/fpc/gentest.pas') ;
+  t := NEW (pool, Entry, Room) ;
+  n := 0 ;
+  p := 0 ;
+  LOOP
+    k := Text.Find (SLICE (s, p, LEN (s) - p), "GenModule ('") ;
+    IF k < 0 THEN EXIT END ;
+    i := p + k + 12 ;
+    j := i ;
+    WHILE (j < LEN (s)) AND IsWord (s[j]) DO j := j + 1 END ;
+    IF (j > i) AND (j + 4 <= LEN (s)) AND Text.Eq (SLICE (s, j, 4), "', [") THEN
+      k := Text.FindChar (SLICE (s, j + 4, LEN (s) - j - 4), ']') ;
+      IF k >= 0 THEN
+        body := SLICE (s, j + 4, k) ;
+        deps := Fresh () ;
+        part := Text.Split (body, ',') ;
+        FOR k := 0 TO LEN (part) - 1 DO
+          IF LEN (Strip (part[k])) > 0 THEN
+            x := part[k] ;
+            WHILE (LEN (x) > 0) AND ((x[0] = "'") OR (x[0] = ' ')) DO
+              x := SLICE (x, 1, LEN (x) - 1)
+            END ;
+            WHILE (LEN (x) > 0) AND ((x[LEN (x) - 1] = "'") OR (x[LEN (x) - 1] = ' ')) DO
+              x := SLICE (x, 0, LEN (x) - 1)
+            END ;
+            Push (deps, x)
+          END
+        END ;
+        at := Find (t, n, SLICE (s, i, j - i)) ;
+        IF at < 0 THEN
+          t[n].name := Text.Keep (pool, SLICE (s, i, j - i)) ;
+          t[n].deps := deps ;
+          n := n + 1
+        ELSE
+          t[at].deps := deps
+        END
+      END
+    END ;
+    p := i
+  END ;
+  RETURN Shrink (t, n)
+END Gentest ;
+
+(* a line of the form `KEYWORD M dep dep ...`, blanks between, nothing
+   else on it: gendiff.sh's run lines and m9c.sh's check lines *)
+PROCEDURE ListLine (RO line, keyword: STR ; VAR m: STR ; VAR deps: Names) : BOOL =
+VAR
+  w : Names ;
+  i, k : I64 ;
+BEGIN
+  IF (LEN (line) <= LEN (keyword)) OR NOT Text.StartsWith (line, keyword) THEN
+    RETURN FALSE
+  END ;
+  IF NOT IsBlank (line[LEN (keyword)]) THEN RETURN FALSE END ;
+  w := Words (SLICE (line, LEN (keyword), LEN (line) - LEN (keyword))) ;
+  IF w.n = 0 THEN RETURN FALSE END ;
+  FOR i := 0 TO w.n - 1 DO
+    FOR k := 0 TO LEN (w.v[i]) - 1 DO
+      IF NOT IsWord (w.v[i][k]) THEN RETURN FALSE END
+    END
+  END ;
+  m := w.v[0] ;
+  deps := Fresh () ;
+  FOR i := 1 TO w.n - 1 DO Push (deps, w.v[i]) END ;
+  RETURN TRUE
+END ListLine ;
+
+PROCEDURE Gendiff () : SLICE OF Entry RAISES Io.IOError, ValueRange =
+VAR
+  lines : SLICE OF STR ;
+  t : SLICE OF Entry ;
+  n, i, at : I64 ;
+  m : STR ;
+  deps : Names ;
+BEGIN
+  lines := Text.Split (Rd ('runtime/test/gendiff.sh'), 0AC) ;
+  t := NEW (pool, Entry, Room) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF ListLine (lines[i], 'run', m, deps) THEN
+      IF NOT HasIn (GendiffFixtures, m) THEN
+        at := Find (t, n, m) ;
+        IF at < 0 THEN
+          t[n].name := m ; t[n].deps := deps ; n := n + 1
+        ELSE
+          t[at].deps := deps
+        END
+      END
+    END
+  END ;
+  RETURN Shrink (t, n)
+END Gendiff ;
+
+(* NAME="..." at the start of a line, the value to the next quote,
+   its backslash-newlines read as blanks, split at blanks *)
+PROCEDURE ShellList (RO text, name: STR) : Names =
+VAR
+  lines : SLICE OF STR ;
+  i, k, start : I64 ;
+  head : STR ;
+BEGIN
+  head := Text.Keep (pool, name + '="') ;
+  start := -1 ;
+  IF Text.StartsWith (text, head) THEN start := LEN (head) END ;
+  IF start < 0 THEN
+    k := Text.Find (text, '' + 0AC + head) ;
+    IF k >= 0 THEN start := k + 1 + LEN (head) END
+  END ;
+  IF start < 0 THEN RETURN Fresh () END ;
+  k := Text.FindChar (SLICE (text, start, LEN (text) - start), '"') ;
+  IF k < 0 THEN RETURN Fresh () END ;
+  RETURN Words (Joined (SLICE (text, start, k)))
+END ShellList ;
+
+PROCEDURE Bootstrap () : SLICE OF Entry RAISES Io.IOError, ValueRange =
+VAR
+  text, body, line, names, rest : STR ;
+  mods, dw : Names ;
+  lines, alts : SLICE OF STR ;
+  t, deps : SLICE OF Entry ;
+  nd, i, k, a, b, at : I64 ;
+BEGIN
+  text := Rd ('runtime/test/bootstrap.sh') ;
+  mods := ShellList (text, 'MODS') ;
+  deps := NEW (pool, Entry, Room) ;
+  nd := 0 ;
+  a := Text.Find (text, 'deps_of () {' + 0AC) ;
+  IF a >= 0 THEN
+    a := a + 13 ;
+    b := Text.Find (SLICE (text, a, LEN (text) - a), '' + 0AC + '}') ;
+    IF b >= 0 THEN
+      body := SLICE (text, a, b + 1) ;
+      lines := Text.Split (body, 0AC) ;
+      FOR i := 0 TO LEN (lines) - 1 DO
+        line := Strip (lines[i]) ;
+        k := Text.FindChar (line, ')') ;
+        IF (k > 0) AND LabelChars (SLICE (line, 0, k)) THEN
+          names := SLICE (line, 0, k) ;
+          rest := Strip (SLICE (line, k + 1, LEN (line) - k - 1)) ;
+          IF Text.StartsWith (rest, 'echo') AND (Text.Find (rest, ';;') > 0) THEN
+            rest := SLICE (rest, 4, Text.Find (rest, ';;') - 4) ;
+            IF Text.FindChar (rest, ';') < 0 THEN
+              dw := Words (rest) ;
+              alts := Text.Split (names, '|') ;
+              FOR k := 0 TO LEN (alts) - 1 DO
+                IF NOT Text.Eq (alts[k], '*') THEN
+                  at := Find (deps, nd, alts[k]) ;
+                  IF at < 0 THEN
+                    deps[nd].name := alts[k] ; deps[nd].deps := dw ; nd := nd + 1
+                  ELSE
+                    deps[at].deps := dw
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  t := NEW (pool, Entry, mods.n) ;
+  FOR i := 0 TO mods.n - 1 DO
+    t[i].name := mods.v[i] ;
+    at := Find (deps, nd, mods.v[i]) ;
+    IF at >= 0 THEN t[i].deps := deps[at].deps ELSE t[i].deps := Fresh () END
+  END ;
+  RETURN t
+END Bootstrap ;
+
+(* a case label of deps_of: word characters and bars, as [\w|]+ *)
+PROCEDURE LabelChars (RO s: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF NOT (IsWord (s[i]) OR (s[i] = '|')) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END LabelChars ;
+
+(* the names of the generated modules a line links: every gen/NAME.c *)
+PROCEDURE GenModules (RO line: STR) : Names =
+VAR
+  s : Names ;
+  i, j : I64 ;
+BEGIN
+  s := Fresh () ;
+  i := 0 ;
+  WHILE i + 4 <= LEN (line) DO
+    IF Text.Eq (SLICE (line, i, 4), 'gen/') THEN
+      j := i + 4 ;
+      WHILE (j < LEN (line)) AND IsWord (line[j]) DO j := j + 1 END ;
+      IF (j > i + 4) AND (j + 2 <= LEN (line)) AND (line[j] = '.') AND (line[j + 1] = 'c') THEN
+        Add (s, SLICE (line, i + 4, j - i - 4))
+      END ;
+      i := j
+    ELSE
+      i := i + 1
+    END
+  END ;
+  RETURN s
+END GenModules ;
+
+(* what -o names on a line: the first `-o`, blanks, then the word *)
+PROCEDURE OutName (RO line: STR) : STR =
+VAR i, j, k : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i + 2 < LEN (line) DO
+    IF (line[i] = '-') AND (line[i + 1] = 'o') AND IsBlank (line[i + 2]) THEN
+      j := i + 2 ;
+      WHILE (j < LEN (line)) AND IsBlank (line[j]) DO j := j + 1 END ;
+      k := j ;
+      WHILE (k < LEN (line)) AND NOT IsBlank (line[k]) DO k := k + 1 END ;
+      IF k > j THEN RETURN SLICE (line, j, k - j) END
+    END ;
+    i := i + 1
+  END ;
+  RETURN '?'
+END OutName ;
+
+(* the line links an m9c of its own: -o, blanks, an optional quote, an
+   optional $NAME/, m9c, an optional quote, then a blank or the end *)
+PROCEDURE LinksM9c (RO line: STR) : BOOL =
+VAR i, j : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i + 2 < LEN (line) DO
+    IF (line[i] = '-') AND (line[i + 1] = 'o') AND IsBlank (line[i + 2]) THEN
+      j := i + 2 ;
+      WHILE (j < LEN (line)) AND IsBlank (line[j]) DO j := j + 1 END ;
+      IF (j < LEN (line)) AND (line[j] = '"') THEN j := j + 1 END ;
+      IF (j < LEN (line)) AND (line[j] = '$') AND (j + 1 < LEN (line)) AND IsWord (line[j + 1]) THEN
+        j := j + 1 ;
+        WHILE (j < LEN (line)) AND IsWord (line[j]) DO j := j + 1 END ;
+        IF (j < LEN (line)) AND (line[j] = '/') THEN j := j + 1 ELSE j := LEN (line) END
+      END ;
+      IF (j + 3 <= LEN (line)) AND Text.Eq (SLICE (line, j, 3), 'm9c') THEN
+        j := j + 3 ;
+        IF (j < LEN (line)) AND (line[j] = '"') THEN j := j + 1 END ;
+        IF (j = LEN (line)) OR IsBlank (line[j]) THEN RETURN TRUE END
+      END
+    END ;
+    i := i + 1
+  END ;
+  RETURN FALSE
+END LinksM9c ;
+
+(* every closure failure of one link line: each module it links whose
+   direct imports it does not *)
+PROCEDURE Closed (RO mods: Names ; RO where, what, verb, art: STR) =
+VAR
+  sm, miss : Names ;
+  i, k : I64 ;
+BEGIN
+  sm := mods ;
+  Sorted (sm) ;
+  FOR i := 0 TO sm.n - 1 DO
+    IF Has (corpus, sm.v[i]) THEN
+      miss := Minus (Direct (sm.v[i]), mods) ;
+      FOR k := 0 TO miss.n - 1 DO
+        Fail (where + ': ' + what + ' ' + verb + ' ' + sm.v[i] + art + ' and not '
+              + miss.v[k] + art + ', which ' + sm.v[i] + ' imports')
+      END
+    END
+  END
+END Closed ;
+
+(* the *.sh files of runtime/test, in name order *)
+PROCEDURE Gates () : SLICE OF STR RAISES Io.IOError, ValueRange =
+VAR
+  all, out : SLICE OF STR ;
+  i, n : I64 ;
+BEGIN
+  all := Io.ListDir (pool, root + '/runtime/test') ;
+  n := 0 ;
+  FOR i := 0 TO LEN (all) - 1 DO
+    IF Text.EndsWith (all[i], '.sh') AND NOT Text.StartsWith (all[i], '.') THEN n := n + 1 END
+  END ;
+  out := NEW (pool, STR, n) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (all) - 1 DO
+    IF Text.EndsWith (all[i], '.sh') AND NOT Text.StartsWith (all[i], '.') THEN
+      out[n] := all[i] ;
+      n := n + 1
+    END
+  END ;
+  Sort.Strs (out) ;
+  RETURN out
+END Gates ;
+
+(* s is one or more word characters *)
+PROCEDURE Word (RO s: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (s) = 0 THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF NOT IsWord (s[i]) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Word ;
+
+(* the object names of a link line: every word directly before `.o`
+   that is not followed by another word character *)
+PROCEDURE Objects (RO line: STR) : Names =
+VAR
+  s : Names ;
+  i, j : I64 ;
+BEGIN
+  s := Fresh () ;
+  i := 0 ;
+  WHILE i < LEN (line) DO
+    IF IsWord (line[i]) AND ((i = 0) OR NOT IsWord (line[i - 1])) THEN
+      j := i ;
+      WHILE (j < LEN (line)) AND IsWord (line[j]) DO j := j + 1 END ;
+      IF (j + 1 < LEN (line)) AND (line[j] = '.') AND (line[j + 1] = 'o') AND
+         ((j + 2 = LEN (line)) OR NOT IsWord (line[j + 2])) THEN
+        Add (s, SLICE (line, i, j - i))
+      END ;
+      i := j
+    ELSE
+      i := i + 1
+    END
+  END ;
+  RETURN s
+END Objects ;
+
+VAR
+  i, j, k, at, nlines, ngate, ntut : I64 ;
+  m, msg, name, line, text, other, what, base, first : STR ;
+  files, lines, ex, src : SLICE OF STR ;
+  lib, comp, tut, deps, linked, mods, battery, need, objs, miss, dead, cl,
+  extra, missing, all : Names ;
+  orders : SLICE OF Entry ;
+  pass : I64 ;
+
+BEGIN
+  root := Text.Keep (pool, Io.Arg (pool, 0)) ;
+  k := Text.LastChar (root, '/') ;
+  IF k < 0 THEN root := '../..' ELSE root := Text.Keep (pool, SLICE (root, 0, k) + '/../..') END ;
+  bad := Fresh () ;
+  notGen := FromTable (NotGenerated) ;
+  notInst := FromTable (NotInstalled) ;
+
+  (* the corpus, in name order *)
+  corpus := Fresh () ;
+  files := Io.ListDir (pool, root + '/corpus') ;
+  Sort.Strs (files) ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    IF Text.EndsWith (files[i], '.m9') AND NOT Text.StartsWith (files[i], '.') THEN
+      Push (corpus, SLICE (files[i], 0, LEN (files[i]) - 3))
+    END
+  END ;
+  ReadImports () ;
+  gt := Gentest () ;
+  gd := Gendiff () ;
+  bs := Bootstrap () ;
+
+  (* 13. corpus/NAMETest.m9 is the test of corpus/NAME.m9 *)
+  FOR i := 0 TO corpus.n - 1 DO
+    m := corpus.v[i] ;
+    IF Text.EndsWith (m, 'Test') AND (LEN (m) > 4) THEN
+      IF NOT Has (corpus, SLICE (m, 0, LEN (m) - 4)) THEN
+        Fail ('corpus/' + m + '.m9 is named as a test and there is no corpus/'
+              + SLICE (m, 0, LEN (m) - 4) + '.m9')
+      END ;
+      Add (notGen, m) ;
+      Add (notInst, m)
+    END
+  END ;
+
+  (* 1. the three generator lists are one list *)
+  FOR pass := 0 TO 1 DO
+    IF pass = 0 THEN orders := gd ; other := 'gendiff.sh' ELSE orders := bs ; other := 'bootstrap.sh' END ;
+    all := Fresh () ;
+    FOR i := 0 TO LEN (gt) - 1 DO Add (all, gt[i].name) END ;
+    FOR i := 0 TO LEN (orders) - 1 DO Add (all, orders[i].name) END ;
+    Sorted (all) ;
+    FOR i := 0 TO all.n - 1 DO
+      m := all.v[i] ;
+      at := Find (orders, LEN (orders), m) ;
+      j := Find (gt, LEN (gt), m) ;
+      IF at < 0 THEN
+        Fail (other + ': ' + m + ' is in gentest.pas and not here')
+      ELSIF j < 0 THEN
+        Fail (other + ': ' + m + ' is here and not in gentest.pas')
+      ELSIF NOT SameList (gt[j].deps, orders[at].deps) THEN
+        Fail (other + ': ' + m + ' deps ' + Repr (orders[at].deps) + ' != gentest.pas '
+              + Repr (gt[j].deps))
+      END
+    END
+  END ;
+
+  (* 2. every corpus module is generated, or excused by name *)
+  FOR i := 0 TO corpus.n - 1 DO
+    m := corpus.v[i] ;
+    IF (Find (gt, LEN (gt), m) < 0) AND NOT Has (notGen, m) THEN
+      Fail ('gentest.pas: corpus/' + m + '.m9 is not generated '
+            + '(add it, or name it in runtime/test/ListDiff.m9 NotGenerated with a reason)')
+    END
+  END ;
+  FOR i := 0 TO notGen.n - 1 DO
+    m := notGen.v[i] ;
+    IF Find (gt, LEN (gt), m) >= 0 THEN
+      Fail ('ListDiff.m9: ' + m + ' is excused from gentest.pas but is in it')
+    END ;
+    IF NOT Has (corpus, m) THEN
+      Fail ('ListDiff.m9: ' + m + ' is excused from gentest.pas but is not in corpus/')
+    END
+  END ;
+
+  (* 3. deps cover the direct imports, and reach no further than the
+     closure *)
+  FOR i := 0 TO LEN (gt) - 1 DO
+    m := gt[i].name ;
+    miss := Minus (Direct (m), gt[i].deps) ;
+    IF miss.n > 0 THEN
+      Fail ('gentest.pas: ' + m + ' imports ' + Repr (miss) + ' but its deps are '
+            + Repr (gt[i].deps))
+    END ;
+    cl := Closure (m) ;
+    FOR k := 0 TO LEN (ExtraFrom) - 1 DO
+      IF Text.Eq (ExtraFrom[k], m) THEN Add (cl, ExtraTo[k]) END
+    END ;
+    dead := Minus (gt[i].deps, cl) ;
+    IF dead.n > 0 THEN
+      IF dead.n = 1 THEN what := 'it' ELSE what := 'them' END ;
+      Fail ('gentest.pas: ' + m + ' names ' + Repr (dead) + ' in its deps but never imports '
+            + what + ', directly or through another module '
+            + '(remove, or excuse in ExtraDeps with a reason)')
+    END
+  END ;
+  FOR k := 0 TO LEN (ExtraFrom) - 1 DO
+    j := Find (gt, LEN (gt), ExtraFrom[k]) ;
+    IF (j < 0) OR NOT Has (gt[j].deps, ExtraTo[k]) THEN
+      Fail ('ListDiff.m9: ExtraDeps excuses ' + ExtraFrom[k] + ' -> ' + ExtraTo[k]
+            + ', which gentest.pas does not list')
+    ELSIF Has (Closure (ExtraFrom[k]), ExtraTo[k]) THEN
+      Fail ('ListDiff.m9: ExtraDeps excuses ' + ExtraFrom[k] + ' -> ' + ExtraTo[k]
+            + ', but ' + ExtraFrom[k] + ' does import it')
+    END
+  END ;
+
+  (* 4. LIBRARY is the corpus minus the excused *)
+  text := Rd ('build.sh') ;
+  lib := ShellList (text, 'LIBRARY') ;
+  FOR i := 0 TO corpus.n - 1 DO
+    m := corpus.v[i] ;
+    IF NOT Has (lib, m) AND NOT Has (notInst, m) THEN
+      Fail ('build.sh LIBRARY: corpus/' + m + '.m9 is not installed '
+            + '(add it, or name it in runtime/test/ListDiff.m9 NotInstalled with a reason)')
+    END
+  END ;
+  FOR i := 0 TO lib.n - 1 DO
+    m := lib.v[i] ;
+    IF NOT Has (corpus, m) THEN Fail ('build.sh LIBRARY: ' + m + ' has no corpus/' + m + '.m9') END ;
+    IF Has (notInst, m) THEN Fail ('ListDiff.m9: ' + m + ' is excused from LIBRARY but is in it') END
+  END ;
+
+  (* 5. the tutor's library is a closed subset of LIBRARY *)
+  tut := ShellList (Rd ('tools/tutor/setup.sh'), 'LIB') ;
+  FOR i := 0 TO tut.n - 1 DO
+    m := tut.v[i] ;
+    IF NOT Has (lib, m) THEN Fail ('tools/tutor/setup.sh LIB: ' + m + ' is not in build.sh LIBRARY') END ;
+    IF Has (corpus, m) THEN
+      miss := Minus (Direct (m), tut) ;
+      FOR k := 0 TO miss.n - 1 DO
+        Fail ('tools/tutor/setup.sh LIB: ' + m + ' imports ' + miss.v[k] + ', which is not in LIB')
+      END
+    END
+  END ;
+
+  (* 6. the compiler's closure is closed *)
+  comp := ShellList (text, 'COMPILER') ;
+  FOR i := 0 TO comp.n - 1 DO
+    m := comp.v[i] ;
+    miss := Minus (Direct (m), comp) ;
+    FOR k := 0 TO miss.n - 1 DO
+      Fail ('build.sh COMPILER: ' + m + ' imports ' + miss.v[k] + ', which is not in COMPILER')
+    END
+  END ;
+
+  (* 7. m9c.sh's named-dep checks are gentest's entries *)
+  lines := Text.Split (Rd ('runtime/test/m9c.sh'), 0AC) ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF ListLine (lines[i], 'check', m, deps) THEN
+      j := Find (gt, LEN (gt), m) ;
+      IF j < 0 THEN
+        Fail ('m9c.sh: check ' + m + ' names a module gentest.pas does not generate')
+      ELSIF NOT SameList (deps, gt[j].deps) THEN
+        Fail ('m9c.sh: check ' + m + ' ' + Repr (deps) + ' != gentest.pas ' + Repr (gt[j].deps))
+      END
+    END
+  END ;
+
+  (* 8. every hand-linked m9c is the COMPILER set *)
+  ex := Gates () ;
+  FOR i := 0 TO LEN (ex) - 1 DO
+    lines := Text.Split (Joined (Rd ('runtime/test/' + ex[i])), 0AC) ;
+    FOR j := 0 TO LEN (lines) - 1 DO
+      line := lines[j] ;
+      IF LinksM9c (line) AND Text.Contains (line, 'gen/') THEN
+        linked := GenModules (line) ;
+        IF NOT SameSet (linked, comp) THEN
+          extra := Minus (linked, comp) ;
+          missing := Minus (comp, linked) ;
+          msg := Text.Keep (pool, ex[i] + ': the m9c it links differs from build.sh COMPILER') ;
+          IF extra.n > 0 THEN msg := Text.Keep (pool, msg + ' -- extra ' + Repr (extra)) END ;
+          IF missing.n > 0 THEN msg := Text.Keep (pool, msg + ' -- missing ' + Repr (missing)) END ;
+          Fail (msg)
+        END
+      END
+    END
+  END ;
+
+  (* 9. every battery's link line is closed under direct imports *)
+  lines := Text.Split (Joined (Rd ('runtime/test/build.sh')), 0AC) ;
+  battery := Fresh () ;
+  nlines := 0 ;
+  FOR j := 0 TO LEN (lines) - 1 DO
+    line := lines[j] ;
+    IF Text.StartsWith (Text.TrimLeft (line), 'gcc') AND Text.Contains (line, 'gen/') THEN
+      nlines := nlines + 1 ;
+      mods := GenModules (line) ;
+      FOR k := 0 TO mods.n - 1 DO Add (battery, mods.v[k]) END ;
+      Closed (mods, 'runtime/test/build.sh', OutName (line), 'links', '')
+    END
+  END ;
+
+  (* 10. every generated module has a battery, or is held elsewhere *)
+  all := Fresh () ;
+  FOR i := 0 TO LEN (gt) - 1 DO Add (all, gt[i].name) END ;
+  Sorted (all) ;
+  FOR i := 0 TO all.n - 1 DO
+    m := all.v[i] ;
+    IF NOT Has (battery, m) AND NOT HasIn (NoBattery, m) THEN
+      Fail ('runtime/test/build.sh: no battery links ' + m
+            + ' (give it a driver, or name it in runtime/test/ListDiff.m9 NoBattery with the gate that holds it)')
+    END
+  END ;
+  FOR i := 0 TO LEN (NoBattery) - 1 DO
+    m := NoBattery[i] ;
+    IF Has (battery, m) THEN Fail ('ListDiff.m9: ' + m + ' is excused from build.sh but a battery links it') END ;
+    IF Find (gt, LEN (gt), m) < 0 THEN
+      Fail ('ListDiff.m9: ' + m + ' is excused from build.sh but gentest.pas does not generate it')
+    END
+  END ;
+
+  (* 12. every OTHER gate's link line over runtime/gen is closed too,
+     and bootstrap's TOOLC *)
+  ngate := 0 ;
+  FOR i := 0 TO LEN (ex) - 1 DO
+    IF NOT Text.Eq (ex[i], 'build.sh') THEN
+      lines := Text.Split (Joined (Rd ('runtime/test/' + ex[i])), 0AC) ;
+      FOR j := 0 TO LEN (lines) - 1 DO
+        line := lines[j] ;
+        IF Text.StartsWith (Text.TrimLeft (line), 'gcc') AND Text.Contains (line, 'gen/') THEN
+          ngate := ngate + 1 ;
+          base := Text.Keep (pool, 'runtime/test/' + ex[i]) ;
+          Closed (GenModules (line), base, OutName (line), 'links', '')
+        END
+      END
+    END
+  END ;
+  text := Rd ('runtime/test/bootstrap.sh') ;
+  IF NOT (Text.StartsWith (text, 'TOOLC="') OR Text.Contains (text, '' + 0AC + 'TOOLC="')) THEN
+    Fail ('runtime/test/bootstrap.sh: no TOOLC line to read')
+  ELSE
+    Closed (ShellList (text, 'TOOLC'), 'runtime/test/bootstrap.sh', 'TOOLC', 'has', '')
+  END ;
+
+  (* 11. the tutorial's hand link lines are closed too: a line that
+     is only blanks, a NAME and `)`; its body to the first `;;`; the
+     first gcc in that body, to the end of its line *)
+  lines := Text.Split (Joined (Rd ('runtime/test/lib/tutcommon.sh')), 0AC) ;
+  ntut := 0 ;
+  j := 0 ;
+  WHILE j < LEN (lines) DO
+    line := Text.TrimLeft (lines[j]) ;
+    IF (LEN (line) > 1) AND (line[LEN (line) - 1] = ')') AND
+       Word (SLICE (line, 0, LEN (line) - 1)) THEN
+      name := SLICE (line, 0, LEN (line) - 1) ;
+      first := '' ;
+      k := j + 1 ;
+      LOOP
+        IF k >= LEN (lines) THEN EXIT END ;
+        line := lines[k] ;
+        at := Text.Find (line, ';;') ;
+        IF at >= 0 THEN line := SLICE (line, 0, at) END ;
+        IF (LEN (first) = 0) AND Text.Contains (line, 'gcc') THEN
+          first := SLICE (line, Text.Find (line, 'gcc'), LEN (line) - Text.Find (line, 'gcc'))
+        END ;
+        IF at >= 0 THEN EXIT END ;
+        k := k + 1
+      END ;
+      IF k < LEN (lines) THEN
+        IF LEN (first) > 0 THEN
+          ntut := ntut + 1 ;
+          objs := Objects (first) ;
+          IF NOT Io.Exists (root + '/docs/tutorial/examples/' + name + '.m9') THEN
+            Fail ('tutcommon.sh: ' + name + ' has a link line and no docs/tutorial/examples/'
+                  + name + '.m9')
+          ELSE
+            need := Fresh () ;
+            src := Text.Split (Rd ('docs/tutorial/examples/' + name + '.m9'), 0AC) ;
+            FOR i := 0 TO LEN (src) - 1 DO ImportLine (src[i], need) END ;
+            miss := Minus (need, objs) ;
+            FOR i := 0 TO miss.n - 1 DO
+              IF Has (corpus, miss.v[i]) THEN
+                Fail ('tutcommon.sh: ' + name + ' imports ' + miss.v[i]
+                      + ' and its link line has no ' + miss.v[i] + '.o')
+              END
+            END ;
+            Closed (objs, 'tutcommon.sh', name, 'links', '.o')
+          END
+        END ;
+        j := k
+      END
+    END ;
+    j := j + 1
+  END ;
+
+  IF bad.n > 0 THEN
+    FOR i := 0 TO bad.n - 1 DO Io.WriteLine ('listdiff: ' + bad.v[i]) END ;
+    Io.WriteLine ('listdiff: ' + Fmt.I64Str (bad.n) + ' disagreement(s)') ;
+    Io.Halt (1)
+  END ;
+  Io.WriteLine ('listdiff: ' + Fmt.I64Str (corpus.n) + ' corpus modules; gentest.pas, gendiff.sh, '
+                + 'bootstrap.sh (' + Fmt.I64Str (LEN (gt)) + ' entries), build.sh LIBRARY ('
+                + Fmt.I64Str (lib.n) + '), COMPILER (' + Fmt.I64Str (comp.n)
+                + ') and the tutor LIB (' + Fmt.I64Str (tut.n) + ') agree; '
+                + Fmt.I64Str (nlines) + ' driver link lines, ' + Fmt.I64Str (ngate)
+                + ' gate ones and ' + Fmt.I64Str (ntut) + ' tutorial ones are closed, '
+                + Fmt.I64Str (LEN (gt) - LEN (NoBattery)) + ' modules have a battery')
+EXCEPT
+| Io.IOError (p) :
+    msg := p ;
+    Io.WriteLine ('listdiff: cannot read ' + msg) ; Io.Halt (1)
+| IndexError :
+    Io.WriteLine ('listdiff: a list ran past its room') ; Io.Halt (1)
+| ValueRange :
+    Io.WriteLine ('listdiff: a path past one byte') ; Io.Halt (1)
+END ListDiff.

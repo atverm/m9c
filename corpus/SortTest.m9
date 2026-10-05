@@ -66,8 +66,8 @@ BEGIN
   Check.EqI64s (t, 'FindF64: the first equal, or -1', find,
                 I64s ('want.find.f')) ;
   Check.EqI64 (t, 'LowerF64 of a NaN is past the end',
-               Sort.LowerF64 (sorted, 0.0 / 0.0), LEN (sorted)) ;
-  Check.EqI64 (t, 'FindF64 of a NaN is -1', Sort.FindF64 (sorted, 0.0 / 0.0),
+               Sort.LowerF64 (sorted, NaN), LEN (sorted)) ;
+  Check.EqI64 (t, 'FindF64 of a NaN is -1', Sort.FindF64 (sorted, NaN),
                -1) ;
 
   (* nothing *)

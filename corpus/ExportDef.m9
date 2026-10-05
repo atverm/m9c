@@ -1,0 +1,54 @@
+STATEFUL DEFINITION MODULE ExportDef ;
+
+(* An exporter of module variables (decision 28): an importer reads
+   and writes them as ExportDef.count, ExportDef.xs, ExportDef.box.
+   version is RO, which forbids writing THROUGH it and so restricts a
+   scalar not at all -- it is here to be read like any other export.
+   Show prints what THIS module sees, so the importer's writes are
+   seen to land in the same storage.  A gendiff fixture with
+   ExportUse; runtime/test/run.sh runs ExportUse. *)
+
+TYPE
+  Box = RECORD
+    n : I64 ;
+  END ;
+
+VAR
+  count : I64 ;
+  xs : SLICE OF F64 ;
+  box : PTR Box ;
+  RO version : I64 ;
+  RO limits : SLICE OF F64 ;   (* nothing writes through it *)
+
+PROCEDURE Show () RAISES ValueRange ;
+
+END ExportDef.
+
+IMPLEMENTATION MODULE ExportDef ;
+
+IMPORT Io ;
+IMPORT Fmt ;
+
+VAR
+  i : I64 ;
+
+PROCEDURE Show () RAISES ValueRange =
+BEGIN
+  Io.WriteLine ('ExportDef sees count ' + Fmt.I64Str (count) +
+                ', xs[1] ' + Fmt.Fixed (xs[1], 2) +
+                ', box.n ' + Fmt.I64Str (box.n) +
+                ', version ' + Fmt.I64Str (version))
+EXCEPT
+| IndexError :
+    Io.WriteLine ('ExportDef: xs has no element 1')
+END Show ;
+
+BEGIN
+  count := 40 ;
+  xs := NEW (F64, 3) ;
+  FOR i := 0 TO 2 DO xs[i] := F64 (i) END ;
+  box := NEW (Box) ;
+  box.n := 1 ;
+  version := 2 ;
+  limits := NEW (F64, 2)
+END ExportDef.

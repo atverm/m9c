@@ -367,11 +367,11 @@ BEGIN
   (* a column of nothing but gaps: counted, and no statistic exists *)
   gaps := NEW (pool, F64, 2) ;
   gaps[0] := Check.GoldF64 (t, gold, 'in.miss') ;
-  gaps[1] := 0.0 / 0.0 ;
+  gaps[1] := NaN ;
   e := Frame.New (pool, 2) ;
   Frame.AddF64 (pool, e, 'gaps', gaps, gaps[0]) ;
   want := NEW (F64, 9) ;
-  FOR i := 2 TO 8 DO want[i] := 0.0 / 0.0 END ;
+  FOR i := 2 TO 8 DO want[i] := NaN END ;
   want[1] := 2.0 ;
   d := Frame.Describe (pool, e) ;
   Check.NearF64s (t, 'Describe of nothing but gaps: 0 values, 2 missing, NaN',
@@ -385,7 +385,7 @@ PROCEDURE Median (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
 BEGIN
   RETURN Stats.Median (v)
 EXCEPT
-| Stats.TooFew (got, need) : RETURN 0.0 / 0.0    (* a group of nothing *)
+| Stats.TooFew (got, need) : RETURN NaN    (* a group of nothing *)
 END Median ;
 
 PROCEDURE Range (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
@@ -393,7 +393,7 @@ VAR
   lo, hi : F64 ;
   i : I64 ;
 BEGIN
-  IF LEN (v) = 0 THEN RETURN 0.0 / 0.0 END ;
+  IF LEN (v) = 0 THEN RETURN NaN END ;
   lo := v[0] ;
   hi := v[0] ;
   FOR i := 1 TO LEN (v) - 1 DO
@@ -423,7 +423,7 @@ END HowMany ;
    ORDER the values are handed over in *)
 PROCEDURE Drift (RO v: SLICE OF F64 ; RO p: SLICE OF F64) : F64 =
 BEGIN
-  IF LEN (v) = 0 THEN RETURN 0.0 / 0.0 END ;
+  IF LEN (v) = 0 THEN RETURN NaN END ;
   RETURN v[LEN (v) - 1] - v[0]
 END Drift ;
 

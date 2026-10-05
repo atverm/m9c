@@ -1,0 +1,33 @@
+(* EXPECT: cannot assign a real literal to I64 *)
+(* an exported module variable is TYPED in its importer (decision 28;
+   until 2026-10-04 the client's Lib.count passed the checker untyped
+   and the generator refused it).  Everything before the last
+   assignment is what must NOT be refused: a read, a write of the
+   scalar, of an element, of a field through the exported pointer, an
+   RO export lent to an RO parameter.  The last assigns a real to the
+   I64 export. *)
+STATEFUL DEFINITION MODULE Lib ;
+TYPE Box = RECORD n : I64 END ;
+VAR
+  count : I64 ;
+  xs : SLICE OF F64 ;
+  box : PTR Box ;
+  RO limits : SLICE OF F64 ;
+END Lib.
+MODULE p ;
+IMPORT Lib ;
+VAR
+  n : I64 ;
+  x : F64 ;
+PROCEDURE First (RO v: SLICE OF F64) : F64 =
+BEGIN
+  RETURN v[0]
+END First ;
+BEGIN
+  n := Lib.count ;
+  Lib.count := n + 1 ;
+  Lib.xs[0] := 2.5 ;
+  Lib.box.n := 3 ;
+  x := First (Lib.limits) ;
+  Lib.count := 1.5
+END p.

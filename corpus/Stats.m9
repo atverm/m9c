@@ -396,12 +396,6 @@ BEGIN
   RETURN n
 END Need ;
 
-PROCEDURE NaN () : F64 =
-VAR z : F64 ;
-BEGIN
-  z := 0.0 ;
-  RETURN z / z
-END NaN ;
 
 (* ---- moments ---- *)
 
@@ -1116,7 +1110,7 @@ END Shift ;
 PROCEDURE SumNow (RO w: Win) : F64 =
 BEGIN
   IF w.pinf > 0 THEN
-    IF w.ninf > 0 THEN RETURN NaN () END ;
+    IF w.ninf > 0 THEN RETURN NaN END ;
     RETURN Inf ()
   END ;
   IF w.ninf > 0 THEN RETURN -Inf () END ;
@@ -1154,7 +1148,7 @@ BEGIN
       v := SumNow (w) ;
       IF mean THEN
         n := w.finite + w.pinf + w.ninf ;
-        IF n = 0 THEN v := NaN () ELSE v := v / F64 (n) END
+        IF n = 0 THEN v := NaN ELSE v := v / F64 (n) END
       END ;
       out[i - window + 1] := v
     END
@@ -1231,7 +1225,7 @@ BEGIN
       IF tail > head THEN
         out[i - window + 1] := xs[q[head]]
       ELSE
-        out[i - window + 1] := NaN ()
+        out[i - window + 1] := NaN
       END
     END
   END ;

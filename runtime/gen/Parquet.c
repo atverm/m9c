@@ -2975,7 +2975,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
           r.at = m9v;
         }
       } else {
-        (*(double *) m9_at (v64.p, i, v64.len, sizeof (double), err)) = (0.0 / 0.0);
+        (*(double *) m9_at (v64.p, i, v64.len, sizeof (double), err)) = NAN;
         if (err->exc) goto L_ret;
       }
     } }
@@ -3012,7 +3012,7 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
             r.at = m9v;
           }
         } else {
-          (*(float *) m9_at (v32.p, i, v32.len, sizeof (float), err)) = (float)((0.0 / 0.0));
+          (*(float *) m9_at (v32.p, i, v32.len, sizeof (float), err)) = NAN;
           if (err->exc) goto L_ret;
         }
       } }
@@ -3307,7 +3307,7 @@ static void Parquet_AddF64Q (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Frame_AddF64 (pool, f, f_pool, name, v, (0.0 / 0.0), err);
+  Frame_AddF64 (pool, f, f_pool, name, v, NAN, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -3340,7 +3340,7 @@ static void Parquet_AddF32Q (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Frame_AddF32 (pool, f, f_pool, name, v, (float)((0.0 / 0.0)), err);
+  Frame_AddF32 (pool, f, f_pool, name, v, NAN, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;

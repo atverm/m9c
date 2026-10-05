@@ -33,6 +33,15 @@ was a hole: a direct dependency's signature may name a type from
 a module this one does not import.  It resolved to nothing and,
 until the guard went in, became integer arithmetic.
 
+### SetPrefix (RO KEPT module: STR ; RO KEPT prefix: STR)
+
+emit module MODULE's C names -- its procedures, initialiser,
+exceptions, exported variables and types -- under PREFIX instead
+of the module's name: one generation of a notebook state cell,
+run again, beside the generation before it in one process
+(docs/notebook-state-plan.md phase 2).  Without a call, every
+name is the module's own and the C is what it always was.
+
 ### SetDebugSource (RO KEPT file: STR)
 
 Emit `#line` directives naming FILE, so a debugger and a

@@ -31,7 +31,12 @@ DEFINITION MODULE Fmt ;
            quietly rot.
 
    Use Bits when a value must survive the round trip; use Fixed when
-   a person is going to read it.  Saying which is which is the point. *)
+   a person is going to read it.  Saying which is which is the point.
+
+   Short is BOTH, since 2026-10-05: the shortest decimal that reads
+   back to the same double, exact by construction (Burger and Dybvig's
+   free-format digits over integers, no scaling in F64), and held to
+   Python's repr on 9,148 values by FmtTest. *)
 
 CONST
   MaxDecimals = 17 ;
@@ -100,6 +105,16 @@ PROCEDURE SciPad (v: F64 ; width, decimals: I64) : STR
   (* Sci, right-aligned in width with blanks -- the `:x:y` of the
      scientific form.  A short exponent makes the field ragged on the
      right, which is what the width is for.                         *)
+
+PROCEDURE Short (v: F64) : STR ;
+  (* the SHORTEST decimal that reads back to exactly v -- the closest
+     such when there are several, the even last digit on a tie -- in
+     Python's repr layout: positional for 1e-4 <= |v| < 1e16 (1.0,
+     0.0001, 1234.5), else one digit, a point if more follow, and a
+     signed two-digit-or-more exponent (1e+16, 2.5e-05).  -0.0 keeps
+     its sign; NaN is 'nan', the infinities 'inf' and '-inf'.  Total:
+     no RAISES, every double has an answer.  What a person reads and
+     what a machine reads back are the same number.                 *)
 
 PROCEDURE Bits (v: F64) : STR ;
 PROCEDURE ParseBits (RO s: STR) : F64 RAISES ValueRange ;
@@ -455,5 +470,320 @@ BEGIN
   IF neg THEN RETURN -mant END ;
   RETURN mant
 END ParseF64 ;
+
+(* ---- Short: Burger and Dybvig's free-format digits ----
+
+   The value is f * 2^e exactly.  r / s is the value scaled so that
+   its digits come out one at a time, mp and mm are the distances to
+   the halfway points between v and its neighbours, scaled alike: any
+   decimal strictly inside (v - mm, v + mp) reads back as v, and on
+   the boundary too when f is even, because a reader rounds a tie to
+   the even mantissa.  All four are integers, so nothing is rounded
+   on the way -- the reason it is exact where Fixed is measured.
+
+   Integers of up to 48 limbs of 32 bits: the largest is s for the
+   smallest subnormal, 2^1075 times ten, 36 limbs.                    *)
+
+CONST
+  Limbs = 48 ;
+  Base  = 4294967296 ;          (* 2^32: a limb times 2^31 fits an I64 *)
+
+TYPE
+  Big = RECORD
+    n : I64 ;                   (* limbs in use, the top one non-zero *)
+    d : ARRAY Limbs OF I64      (* least significant first *)
+  END ;
+
+PROCEDURE BigSmall (VAR a: Big ; v: I64) =
+BEGIN
+  a.n := 0 ;
+  WHILE v > 0 DO
+    a.d[a.n] := v MOD Base ;
+    v := v DIV Base ;
+    a.n := a.n + 1
+  END
+END BigSmall ;
+
+(* a := a * m, 0 < m < 2^31 *)
+PROCEDURE BigMul (VAR a: Big ; m: I64) =
+VAR i, x, carry : I64 ;
+BEGIN
+  carry := 0 ;
+  FOR i := 0 TO a.n - 1 DO
+    x := a.d[i] * m + carry ;
+    a.d[i] := x MOD Base ;
+    carry := x DIV Base
+  END ;
+  WHILE carry > 0 DO
+    a.d[a.n] := carry MOD Base ;
+    carry := carry DIV Base ;
+    a.n := a.n + 1
+  END
+END BigMul ;
+
+PROCEDURE BigShl (VAR a: Big ; k: I64) =
+VAR m : I64 ;
+BEGIN
+  WHILE k >= 30 DO
+    BigMul (a, 1073741824) ;
+    k := k - 30
+  END ;
+  m := 1 ;
+  WHILE k > 0 DO
+    m := m * 2 ;
+    k := k - 1
+  END ;
+  IF m > 1 THEN BigMul (a, m) END
+END BigShl ;
+
+PROCEDURE BigTen (VAR a: Big ; k: I64) =
+VAR m : I64 ;
+BEGIN
+  WHILE k >= 9 DO
+    BigMul (a, 1000000000) ;
+    k := k - 9
+  END ;
+  m := 1 ;
+  WHILE k > 0 DO
+    m := m * 10 ;
+    k := k - 1
+  END ;
+  IF m > 1 THEN BigMul (a, m) END
+END BigTen ;
+
+PROCEDURE BigCmp (RO a, b: Big) : I64 =
+VAR i : I64 ;
+BEGIN
+  IF a.n # b.n THEN
+    IF a.n < b.n THEN RETURN -1 END ;
+    RETURN 1
+  END ;
+  FOR i := a.n - 1 TO 0 BY -1 DO
+    IF a.d[i] # b.d[i] THEN
+      IF a.d[i] < b.d[i] THEN RETURN -1 END ;
+      RETURN 1
+    END
+  END ;
+  RETURN 0
+END BigCmp ;
+
+PROCEDURE BigAdd (RO a, b: Big ; VAR c: Big) =
+VAR i, x, carry, n : I64 ;
+BEGIN
+  n := a.n ;
+  IF b.n > n THEN n := b.n END ;
+  carry := 0 ;
+  FOR i := 0 TO n - 1 DO
+    x := carry ;
+    IF i < a.n THEN x := x + a.d[i] END ;
+    IF i < b.n THEN x := x + b.d[i] END ;
+    c.d[i] := x MOD Base ;
+    carry := x DIV Base
+  END ;
+  c.n := n ;
+  IF carry > 0 THEN
+    c.d[n] := carry ;
+    c.n := n + 1
+  END
+END BigAdd ;
+
+(* a := a - b, a >= b *)
+PROCEDURE BigSub (VAR a: Big ; RO b: Big) =
+VAR i, x, borrow : I64 ;
+BEGIN
+  borrow := 0 ;
+  FOR i := 0 TO a.n - 1 DO
+    x := a.d[i] - borrow ;
+    IF i < b.n THEN x := x - b.d[i] END ;
+    IF x < 0 THEN
+      x := x + Base ;
+      borrow := 1
+    ELSE
+      borrow := 0
+    END ;
+    a.d[i] := x
+  END ;
+  WHILE a.n > 0 AND a.d[a.n - 1] = 0 DO a.n := a.n - 1 END
+END BigSub ;
+
+(* r + mp reaches s: past it, or onto it when the boundary is in *)
+PROCEDURE High (RO r, mp, s: Big ; even: BOOL) : BOOL =
+VAR
+  t : Big ;
+  c : I64 ;
+BEGIN
+  BigAdd (r, mp, t) ;
+  c := BigCmp (t, s) ;
+  RETURN c > 0 OR (even AND c = 0)
+END High ;
+
+PROCEDURE Zeros (n: I64) : STR =
+VAR s : STR ;
+BEGIN
+  s := '' ;
+  WHILE n > 0 DO
+    s := s + '0' ;
+    n := n - 1
+  END ;
+  RETURN s
+END Zeros ;
+
+PROCEDURE Short (v: F64) : STR =
+VAR
+  b : SLICE OF BYTE ;
+  scratch : POOL ;
+  r, s, mp, mm, t : Big ;
+  dig : ARRAY 20 OF I64 ;
+  sign, ds, out : STR ;
+  be, fr, f, e, bl, x, k, d, last, nd, c, i : I64 ;
+  even, tc1, tc2 : BOOL ;
+BEGIN
+  IF v # v THEN RETURN 'nan' END ;
+  IF v > MaxF64 THEN RETURN 'inf' END ;
+  IF v < -MaxF64 THEN RETURN '-inf' END ;
+
+  b := NEW (scratch, BYTE, 8) ;
+  F64.ToBytesLE (v, b) ;
+  sign := '' ;
+  IF I64 (b[7]) >= 128 THEN sign := '-' END ;
+  be := (I64 (b[7]) MOD 128) * 16 + I64 (b[6]) DIV 16 ;
+  fr := I64 (b[6]) MOD 16 ;
+  FOR i := 5 TO 0 BY -1 DO fr := fr * 256 + I64 (b[i]) END ;
+  IF be = 0 AND fr = 0 THEN RETURN sign + '0.0' END ;
+  IF be = 0 THEN
+    f := fr ;                                  (* subnormal *)
+    e := -1074
+  ELSE
+    f := fr + 4503599627370496 ;               (* the hidden 2^52 *)
+    e := be - 1075
+  END ;
+  even := f MOD 2 = 0 ;
+
+  (* v's neighbours are one unit of f either side, except below a
+     power of two, where the lower one is half as far *)
+  IF e >= 0 THEN
+    IF f # 4503599627370496 THEN
+      BigSmall (r, f) ; BigShl (r, e + 1) ;
+      BigSmall (s, 2) ;
+      BigSmall (mp, 1) ; BigShl (mp, e) ;
+      BigSmall (mm, 1) ; BigShl (mm, e)
+    ELSE
+      BigSmall (r, f) ; BigShl (r, e + 2) ;
+      BigSmall (s, 4) ;
+      BigSmall (mp, 1) ; BigShl (mp, e + 1) ;
+      BigSmall (mm, 1) ; BigShl (mm, e)
+    END
+  ELSIF be <= 1 OR f # 4503599627370496 THEN
+    BigSmall (r, f * 2) ;
+    BigSmall (s, 1) ; BigShl (s, 1 - e) ;
+    BigSmall (mp, 1) ;
+    BigSmall (mm, 1)
+  ELSE
+    BigSmall (r, f * 4) ;
+    BigSmall (s, 1) ; BigShl (s, 2 - e) ;
+    BigSmall (mp, 2) ;
+    BigSmall (mm, 1)
+  END ;
+
+  (* k, the decimal exponent, from the binary one: ceil (x log10 2)
+     in integers, 0.30103 for log10 2.  Checked over every exponent a
+     double has: never above ceil (x log10 2), at most one below it.
+     It is one below only when 2^x lies just above a power of ten, and
+     then the whole binade lies below twice that power, so the true k
+     is the estimate or ONE more and the paper's single step is
+     enough -- counted at both ends of every binade (a loop here was
+     written first; its second turn never came, and FmtTest could not
+     tell it from this). *)
+  bl := 0 ;
+  x := f ;
+  WHILE x > 0 DO
+    bl := bl + 1 ;
+    x := x DIV 2
+  END ;
+  x := e + bl - 1 ;
+  IF x >= 0 THEN
+    k := (x * 30103 + 99999) DIV 100000
+  ELSE
+    k := -((-x * 30103) DIV 100000)
+  END ;
+  IF k >= 0 THEN
+    BigTen (s, k)
+  ELSE
+    BigTen (r, -k) ;
+    BigTen (mp, -k) ;
+    BigTen (mm, -k)
+  END ;
+  IF High (r, mp, s, even) THEN
+    BigMul (s, 10) ;
+    k := k + 1
+  END ;
+  BigMul (r, 10) ;
+  BigMul (mp, 10) ;
+  BigMul (mm, 10) ;
+
+  (* digits, until one more would leave the interval; the last one is
+     the closer of d and d + 1, the even one on a tie (repr does so:
+     2^-25 is 2.98023223876953125e-08, exactly between ...12 and
+     ...13, and reads ...12) *)
+  nd := 0 ;
+  LOOP
+    d := 0 ;
+    WHILE BigCmp (r, s) >= 0 DO
+      BigSub (r, s) ;
+      d := d + 1
+    END ;
+    c := BigCmp (r, mm) ;
+    tc1 := c < 0 OR (even AND c = 0) ;
+    tc2 := High (r, mp, s, even) ;
+    IF NOT tc1 AND NOT tc2 THEN
+      dig[nd] := d ;
+      nd := nd + 1 ;
+      BigMul (r, 10) ;
+      BigMul (mp, 10) ;
+      BigMul (mm, 10)
+    ELSE
+      IF tc1 AND NOT tc2 THEN
+        last := d
+      ELSIF tc2 AND NOT tc1 THEN
+        last := d + 1
+      ELSE
+        t := r ;
+        BigMul (t, 2) ;
+        c := BigCmp (t, s) ;
+        IF c < 0 OR (c = 0 AND d MOD 2 = 0) THEN
+          last := d
+        ELSE
+          last := d + 1
+        END
+      END ;
+      dig[nd] := last ;
+      nd := nd + 1 ;
+      EXIT
+    END
+  END ;
+
+  (* the value is 0.dig * 10^k; repr's layout *)
+  ds := '' ;
+  FOR i := 0 TO nd - 1 DO ds := ds + SLICE (HexDigits, dig[i], 1) END ;
+  x := k - 1 ;                                 (* exponent of the first digit *)
+  IF x >= -4 AND x < 16 THEN
+    IF k <= 0 THEN
+      out := '0.' + Zeros (-k) + ds
+    ELSIF k >= nd THEN
+      out := ds + Zeros (k - nd) + '.0'
+    ELSE
+      out := SLICE (ds, 0, k) + '.' + SLICE (ds, k, nd - k)
+    END
+  ELSE
+    out := SLICE (ds, 0, 1) ;
+    IF nd > 1 THEN out := out + '.' + SLICE (ds, 1, nd - 1) END ;
+    IF x < 0 THEN
+      out := out + 'e-' + I64Pad (-x, 2, TRUE)
+    ELSE
+      out := out + 'e+' + I64Pad (x, 2, TRUE)
+    END
+  END ;
+  RETURN sign + out
+END Short ;
 
 END Fmt.

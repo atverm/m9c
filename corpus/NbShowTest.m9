@@ -1,0 +1,164 @@
+MODULE NbShowTest ;
+
+(* NbShow, tested in M9 (runtime/test/m9test.sh).  A display has no
+   outside oracle -- its format is this module's own -- so the test
+   holds every form to its text, byte for byte: the lists at 20 and
+   21 values (the cut), a quote inside a string, the grid, a frame's
+   table with each kind and a missing value of each, the HTML escaped,
+   a frame of 61 rows (5 + 5), and a series' time column. *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Frame ;
+IMPORT Io ;
+IMPORT NbShow ;
+IMPORT Text ;
+
+CONST
+  NL = 0AC ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+PROCEDURE Lists () =
+VAR
+  r : SLICE OF F64 ;
+  n20, n21 : SLICE OF I64 ;
+  b : SLICE OF BOOL ;
+  s : SLICE OF STR ;
+  long : STR ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, F64, 3) ;
+  r[0] := 0.0 ; r[1] := 1.0 ; r[2] := 0.1 + 0.2 ;
+  Check.EqStr (t, 'reals, each the shortest that reads back',
+               NbShow.RealsText (r), '[0.0, 1.0, 0.30000000000000004]') ;
+  n20 := NEW (pool, I64, 20) ;
+  FOR i := 0 TO 19 DO n20[i] := i END ;
+  Check.EqStr (t, 'twenty values are all shown', NbShow.IntsText (n20),
+               '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]') ;
+  n21 := NEW (pool, I64, 21) ;
+  FOR i := 0 TO 20 DO n21[i] := i END ;
+  Check.EqStr (t, 'twenty-one: the first and last ten, what is left out, the count',
+               NbShow.IntsText (n21),
+               '[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ... 1 more ..., ' +
+               '11, 12, 13, 14, 15, 16, 17, 18, 19, 20]  (21 values)') ;
+  Check.EqStr (t, 'an empty list', NbShow.IntsText (NEW (pool, I64, 0)), '[]') ;
+  b := NEW (pool, BOOL, 2) ;
+  b[0] := TRUE ;
+  Check.EqStr (t, 'booleans in M9 spelling', NbShow.BoolsText (b), '[TRUE, FALSE]') ;
+  s := NEW (pool, STR, 2) ;
+  s[0] := 'co2' ;
+  s[1] := "it's" ;
+  Check.EqStr (t, 'strings quoted, double quotes when one holds a single',
+               NbShow.StrsText (s), "['co2', " + '"it' + "'" + 's"]') ;
+  long := '' ;
+  FOR i := 1 TO 1001 DO long := long + 'x' END ;
+  Check.EqI64 (t, 'a long string: 1000 characters, then its length',
+               LEN (NbShow.StrText (long)), 1002 + LEN (' ... (1001 characters)'))
+END Lists ;
+
+PROCEDURE Grids () =
+VAR
+  g, tall : GRID 2 OF F64 ;
+  i : I64 ;
+BEGIN
+  g := NEW (pool, F64, 2, 2) ;
+  g[0, 0] := 1.0 ; g[0, 1] := 2.0 ; g[1, 0] := 3.0 ; g[1, 1] := 0.5 ;
+  Check.EqStr (t, 'a grid: rows, and its shape',
+               NbShow.GridText (g), '[[1.0, 2.0],' + NL + ' [3.0, 0.5]]  (2 x 2)') ;
+  Check.EqStr (t, 'a grid as HTML', NbShow.GridHtml (g),
+               '<table class="m9grid"><thead><tr><th></th><th>0</th><th>1</th></tr>' +
+               '</thead><tbody><tr><th>0</th><td>1.0</td><td>2.0</td></tr><tr><th>1</th>' +
+               '<td>3.0</td><td>0.5</td></tr></tbody></table><p>2 x 2</p>') ;
+  tall := NEW (pool, F64, 21, 1) ;
+  FOR i := 0 TO 20 DO tall[i, 0] := F64 (i) END ;
+  Check.That (t, 'a tall grid says how many rows it left out',
+              Text.Contains (NbShow.GridText (tall), '... 1 more rows ...'))
+END Grids ;
+
+PROCEDURE Small () : PTR Frame.Fr
+  RAISES Frame.Duplicate, Faults.SizeError =
+VAR
+  f : PTR Frame.Fr ;
+  x : SLICE OF F64 ;
+  n : SLICE OF I64 ;
+  s : SLICE OF STR ;
+  b : SLICE OF BOOL ;
+BEGIN
+  f := Frame.New (pool, 3) ;
+  x := NEW (pool, F64, 3) ;
+  x[0] := 1.5 ; x[1] := NaN ; x[2] := -2.0 ;
+  Frame.AddF64 (pool, f, 'x', x, NaN) ;
+  n := NEW (pool, I64, 3) ;
+  n[0] := 1 ; n[1] := -1 ; n[2] := 30 ;
+  Frame.AddI64 (pool, f, 'n', n, -1) ;
+  s := NEW (pool, STR, 3) ;
+  s[0] := 'a<b' ; s[1] := 'c' ; s[2] := 'dd' ;
+  Frame.AddStrs (pool, f, 'site', s) ;
+  b := NEW (pool, BOOL, 3) ;
+  b[0] := TRUE ; b[2] := TRUE ;
+  Frame.AddBools (pool, f, 'ok', b) ;
+  RETURN f
+END Small ;
+
+PROCEDURE Tables () =
+VAR
+  f, big : PTR Frame.Fr ;
+  ts : PTR Frame.Ts ;
+  v : SLICE OF F64 ;
+  tm : SLICE OF I64 ;
+  lines : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  f := Small () ;
+  Check.EqStr (t, 'a frame: names, kinds, rows, null for missing, the shape',
+               NbShow.TableText (f),
+               '        x     n  site     ok' + NL +
+               '      F64   I64  STR    BOOL' + NL +
+               '  0   1.5     1  a<b    TRUE' + NL +
+               '  1  null  null  c     FALSE' + NL +
+               '  2  -2.0    30  dd     TRUE' + NL +
+               '3 rows x 4 columns') ;
+  Check.That (t, 'the HTML escapes a cell',
+              Text.Contains (NbShow.TableHtml (f), '<td>a&lt;b</td>')) ;
+  Check.That (t, 'the HTML says null too',
+              Text.Contains (NbShow.TableHtml (f), '<td>null</td>')) ;
+
+  big := Frame.New (pool, 61) ;
+  v := NEW (pool, F64, 61) ;
+  FOR i := 0 TO 60 DO v[i] := F64 (i) END ;
+  Frame.AddF64 (pool, big, 'v', v, -1.0) ;
+  lines := Text.Split (NbShow.TableText (big), NL) ;
+  Check.EqI64 (t, '61 rows: two header lines, 5, the gap, 5, the shape', LEN (lines), 14) ;
+  Check.EqStr (t, 'the last of the first five', lines[6], '  4   4.0') ;
+  Check.EqStr (t, 'the gap', lines[7], '...') ;
+  Check.EqStr (t, 'the first of the last five', lines[8], ' 56  56.0') ;
+  Check.EqStr (t, 'the shape', lines[13], '61 rows x 1 columns') ;
+
+  tm := NEW (pool, I64, 3) ;
+  tm[0] := 0 ; tm[1] := 3600 ; tm[2] := 7200 ;
+  ts := Frame.NewTs (pool, Small (), tm, 3600, Frame.ConvStart (), 'test') ;
+  lines := Text.Split (NbShow.SeriesText (ts), NL) ;
+  Check.EqStr (t, 'a series: its time column first, in UTC', lines[0],
+               '                     time     x     n  site     ok') ;
+  Check.EqStr (t, 'a time as RFC 3339', lines[3],
+               '  1  1970-01-01T01:00:00Z  null  null  c     FALSE')
+EXCEPT
+| Frame.Duplicate :
+    Check.That (t, 'the frames build', FALSE)
+| Faults.SizeError :
+    Check.That (t, 'the frames build', FALSE)
+| Frame.Disorder :
+    Check.That (t, 'the series builds', FALSE)
+| Faults.BadArg :
+    Check.That (t, 'the series builds', FALSE)
+END Tables ;
+
+BEGIN
+  Lists () ;
+  Grids () ;
+  Tables () ;
+  Io.Halt (Check.Done (t, 'NbShow'))
+END NbShowTest.

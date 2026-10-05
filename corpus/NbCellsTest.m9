@@ -1,0 +1,239 @@
+MODULE NbCellsTest ;
+
+(* NbCells, tested in M9 (runtime/test/m9test.sh).  What it holds:
+   every kind comes back as it went -- reals to the BIT, NaN and -0.0
+   included, integers to the extremes, a grid by shape and place, a
+   frame by rows, columns and strings; a name holds one kind at a
+   time and a Put of another kind replaces it; a Get of the wrong kind
+   is WrongType naming both, of nothing Missing; a name that is no
+   identifier is refused before any file is touched.
+
+   It writes into m9data in the working directory (no $M9CELLS is
+   set by the gate) and removes what it wrote, the directory last. *)
+
+IMPORT Check ;
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Text ;
+IMPORT Faults ;
+IMPORT Frame ;
+IMPORT NbCells ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+PROCEDURE BitsOf (RO v: SLICE OF F64) : SLICE OF STR =
+VAR
+  r : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, STR, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO r[i] := Fmt.Bits (v[i]) END ;
+  RETURN r
+END BitsOf ;
+
+PROCEDURE Reals () RAISES Faults.BadArg, Faults.SizeError, Io.IOError,
+                          ValueRange, NbCells.Missing, NbCells.WrongType =
+VAR
+  v, got : SLICE OF F64 ;
+BEGIN
+  v := NEW (pool, F64, 7) ;
+  v[0] := 1.5 ;
+  v[1] := NaN ;
+  v[2] := 0.0 - 0.0 ;
+  v[3] := 1.0E308 ;
+  v[4] := 4.9E-324 ;
+  v[5] := 0.0 - 2.25 ;
+  v[6] := 1.0 / 3.0 ;
+  NbCells.PutF64s ('reals', v) ;
+  got := NbCells.GetF64s (pool, 'reals') ;
+  Check.EqI64 (t, 'F64s: the length comes back', LEN (got), 7) ;
+  Check.EqStrs (t, 'F64s: every value to the bit, NaN and -0.0 included',
+                BitsOf (got), BitsOf (v)) ;
+  Check.EqStr (t, 'F64s: the name holds f64s', NbCells.Kind ('reals'), 'f64s') ;
+  v := NEW (pool, F64, 0) ;
+  NbCells.PutF64s ('empty', v) ;
+  got := NbCells.GetF64s (pool, 'empty') ;
+  Check.EqI64 (t, 'F64s: an empty slice comes back empty', LEN (got), 0)
+END Reals ;
+
+PROCEDURE Integers () RAISES Faults.BadArg, Faults.SizeError, Io.IOError,
+                             ValueRange, NbCells.Missing, NbCells.WrongType =
+VAR
+  v, got : SLICE OF I64 ;
+BEGIN
+  v := NEW (pool, I64, 4) ;
+  v[0] := -9223372036854775807 - 1 ;
+  v[1] := 9223372036854775807 ;
+  v[2] := 0 ;
+  v[3] := -42 ;
+  NbCells.PutI64s ('counts', v) ;
+  got := NbCells.GetI64s (pool, 'counts') ;
+  Check.EqI64s (t, 'I64s: the extremes and the rest, exactly', got, v) ;
+  Check.EqStr (t, 'I64s: the name holds i64s', NbCells.Kind ('counts'), 'i64s')
+END Integers ;
+
+PROCEDURE Grids () RAISES Faults.BadArg, Faults.SizeError, Io.IOError,
+                          ValueRange, NbCells.Missing, NbCells.WrongType =
+VAR
+  g, got : GRID 2 OF F64 ;
+  i, j, wrong : I64 ;
+BEGIN
+  g := NEW (pool, F64, 3, 2) ;
+  FOR i := 0 TO 2 DO
+    FOR j := 0 TO 1 DO g[i, j] := F64 (10 * i + j) + 0.5 END
+  END ;
+  NbCells.PutGrid ('field', g) ;
+  got := NbCells.GetGrid (pool, 'field') ;
+  Check.EqI64 (t, 'grid: rows', LEN (got, 0), 3) ;
+  Check.EqI64 (t, 'grid: columns', LEN (got, 1), 2) ;
+  wrong := 0 ;
+  FOR i := 0 TO 2 DO
+    FOR j := 0 TO 1 DO
+      IF NOT Text.Eq (Fmt.Bits (got[i, j]), Fmt.Bits (g[i, j])) THEN wrong := wrong + 1 END
+    END
+  END ;
+  Check.EqI64 (t, 'grid: every cell in its place, to the bit', wrong, 0) ;
+  g := NEW (pool, F64, 0, 2) ;
+  NbCells.PutGrid ('nothing', g) ;
+  got := NbCells.GetGrid (pool, 'nothing') ;
+  Check.That (t, 'grid: no rows and two columns comes back so',
+              LEN (got, 0) = 0 AND LEN (got, 1) = 2)
+END Grids ;
+
+PROCEDURE Frames () RAISES Faults.BadArg, Faults.SizeError, Io.IOError,
+                           ValueRange, NbCells.Missing, NbCells.WrongType,
+                           Frame.Duplicate, Frame.Unknown, Frame.WrongType =
+VAR
+  f, got : PTR Frame.Fr IN pool ;
+  x : SLICE OF F64 ;
+  s : SLICE OF STR ;
+BEGIN
+  x := NEW (pool, F64, 2) ;
+  x[0] := 395.5 ;
+  x[1] := 401.25 ;
+  s := NEW (pool, STR, 2) ;
+  s[0] := 'HTM' ;
+  s[1] := 'SMR' ;
+  f := Frame.New (pool, 2) ;
+  Frame.AddF64 (pool, f, 'co2', x, NaN) ;
+  Frame.AddStrs (pool, f, 'site', s) ;
+  NbCells.PutFrame (f, 'obs') ;
+  got := NbCells.GetFrame (pool, 'obs') ;
+  Check.EqI64 (t, 'frame: rows', Frame.Rows (got), 2) ;
+  Check.EqI64 (t, 'frame: columns', Frame.Cols (got), 2) ;
+  Check.EqStrs (t, 'frame: the strings', Frame.ColStrs (got, 'site'), s) ;
+  x := Frame.ColF64 (got, 'co2') ;
+  Check.EqF64 (t, 'frame: a real', x[1], 401.25) ;
+  Check.EqStr (t, 'frame: the name holds frame', NbCells.Kind ('obs'), 'frame')
+END Frames ;
+
+(* a module's own exception is tested by a function that handles it
+   by name and answers TRUE (Check's convention) *)
+PROCEDURE MissingRaised () : BOOL
+  RAISES NbCells.WrongType, Faults.BadArg, Io.IOError, ValueRange =
+VAR v : SLICE OF F64 ;
+BEGIN
+  v := NbCells.GetF64s (pool, 'neverStored') ;
+  RETURN FALSE
+EXCEPT
+| NbCells.Missing (name) :
+    RETURN TRUE
+END MissingRaised ;
+
+(* the stored kind and the wanted one, as the exception named them *)
+PROCEDURE WrongTypeSaid () : STR
+  RAISES NbCells.Missing, Faults.BadArg, Io.IOError, ValueRange =
+VAR
+  g : GRID 2 OF F64 ;
+  have, want : STR ;   (* a handler's binders have no type yet: copied *)
+BEGIN
+  g := NbCells.GetGrid (pool, 'reals') ;
+  RETURN 'no exception'
+EXCEPT
+| NbCells.WrongType (name, stored, wanted) :
+    have := stored ;
+    want := wanted ;
+    RETURN have + '/' + want
+END WrongTypeSaid ;
+
+PROCEDURE NameRefused (RO name: STR) : BOOL
+  RAISES Faults.SizeError, Io.IOError, ValueRange =
+VAR v : SLICE OF F64 ;
+BEGIN
+  v := NEW (pool, F64, 1) ;
+  NbCells.PutF64s (name, v) ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg (what) :
+    RETURN TRUE
+END NameRefused ;
+
+PROCEDURE Refusals () RAISES Faults.BadArg, Faults.SizeError, Io.IOError,
+                             ValueRange, NbCells.Missing, NbCells.WrongType =
+VAR v : SLICE OF I64 ;
+BEGIN
+  Check.That (t, 'Get of a name nothing stored: Missing', MissingRaised ()) ;
+  Check.EqStr (t, 'Get of the wrong kind: WrongType, stored/wanted',
+               WrongTypeSaid (), 'f64s/grid') ;
+  Check.That (t, 'a name with a slash is refused', NameRefused ('a/b')) ;
+  Check.That (t, 'a name beginning with a digit is refused', NameRefused ('9a')) ;
+  Check.That (t, 'an empty name is refused', NameRefused ('')) ;
+  (* one kind per name: an I64s Put replaces the reals *)
+  v := NEW (pool, I64, 1) ;
+  v[0] := 7 ;
+  NbCells.PutI64s ('reals', v) ;
+  Check.EqStr (t, 'a Put of another kind replaces the name',
+               NbCells.Kind ('reals'), 'i64s') ;
+  Check.EqStr (t, 'a name nothing stored holds nothing',
+               NbCells.Kind ('neverStored'), '')
+END Refusals ;
+
+(* what this test wrote, and then the directory *)
+PROCEDURE Tidy () RAISES ValueRange =
+VAR
+  names : SLICE OF STR ;
+  dir : STR ;
+  i : I64 ;
+  gone : BOOL ;
+BEGIN
+  dir := NbCells.Dir (pool) ;
+  names := Io.ListDir (pool, dir) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    gone := Io.Remove (dir + '/' + names[i])
+  END ;
+  gone := Io.Remove (dir)
+EXCEPT
+| Io.IOError (p) :
+    RETURN
+END Tidy ;
+
+BEGIN
+  Reals () ;
+  Integers () ;
+  Grids () ;
+  Frames () ;
+  Refusals () ;
+  Tidy () ;
+  Io.Halt (Check.Done (t, 'NbCells'))
+EXCEPT
+| Faults.BadArg (what) :
+    Io.ErrLine ('FAIL: BadArg') ; Io.Halt (1)
+| Faults.SizeError (got, want) :
+    Io.ErrLine ('FAIL: SizeError') ; Io.Halt (1)
+| Io.IOError (p) :
+    Io.ErrLine ('FAIL: IOError') ; Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('FAIL: ValueRange') ; Io.Halt (1)
+| NbCells.Missing (name) :
+    Io.ErrLine ('FAIL: Missing') ; Io.Halt (1)
+| NbCells.WrongType (name, stored, wanted) :
+    Io.ErrLine ('FAIL: WrongType') ; Io.Halt (1)
+| Frame.Duplicate (name) :
+    Io.ErrLine ('FAIL: Duplicate') ; Io.Halt (1)
+| Frame.Unknown (name) :
+    Io.ErrLine ('FAIL: Unknown') ; Io.Halt (1)
+| Frame.WrongType (name) :
+    Io.ErrLine ('FAIL: Frame.WrongType') ; Io.Halt (1)
+END NbCellsTest.

@@ -13,7 +13,7 @@
 set -e
 cd "$(dirname "$0")"
 
-MODS="DynStr Faults Mat Stats System Frame Parquet Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Check Arrays Numeric Csv Delim Zip Png NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse Gen Sem Doc Review M9c Diag"
+MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Check Arrays Numeric Csv Delim Zip Png NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review M9c Diag"
 deps_of () {
   case $1 in
     Json|Lex)      echo DynStr ;;
@@ -43,11 +43,15 @@ deps_of () {
     Csv)           echo DynStr Io Time ;;
     Frame)         echo Csv Io Math DynStr Fmt Time NetCDF Faults Sort Stats Text ;;
     Parquet)       echo Frame Io DynStr Csv Math Fmt Time NetCDF Faults ;;
+    NbCells)       echo Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults ;;
+    NbShow)        echo Frame Io DynStr Fmt Text Time ;;
     NetCDF|Grib)   echo DynStr Faults ;;
     Syslog)        echo DynStr ;;
     Logger)        echo DynStr Fmt Io Syslog Time ;;
     Hello|Concat)  echo Io DynStr ;;
     Narrow|ProcUse|AggUse|ShareUse) echo Io ;;
+    ExportDef)     echo Io Fmt ;;
+    ExportUse)     echo ExportDef Io Fmt ;;
     M9c)           echo Io Ast Parse Gen Sem DynStr Doc Review Lex System ;;
     Review)        echo Ast DynStr Text ;;
     Sem)           echo Ast DynStr Print Text ;;

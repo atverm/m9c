@@ -309,7 +309,18 @@ BEGIN
   lx.src := src ;
   lx.pos := 0 ;
   lx.line := 1 ;
-  lx.col := 1
+  lx.col := 1 ;
+  (* a first line beginning #! is the operating system's, naming the
+     program that runs this file as a script (`#!/usr/bin/m9c --run`),
+     and is not M9 (report par 2).  Skipped to its line end, not past
+     it, so the newline is counted and every line keeps its number. *)
+  IF LEN (src) >= 2 THEN
+    IF src[0] = '#' AND src[1] = '!' THEN
+      WHILE lx.pos < LEN (src) AND src[lx.pos] # 0AC DO
+        lx.pos := lx.pos + 1
+      END
+    END
+  END
 END Init ;
 
 PROCEDURE Peek (VAR lx: Lexer ; ahead: I64) : CHAR =

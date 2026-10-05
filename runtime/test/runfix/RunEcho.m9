@@ -1,0 +1,32 @@
+MODULE RunEcho ;
+
+(* m9c --run's contract, seen from the program it runs: the name it
+   is told, its arguments, its stdin and its exit status -- and one
+   imported module, so that an edit below the program is seen.
+   runtime/test/m9c.sh runs it.                                     *)
+
+IMPORT Io ;
+IMPORT RunHelper ;
+
+VAR
+  pool : POOL ;
+  i : I64 ;
+  b : SLICE OF BYTE ;
+
+BEGIN
+  Io.WriteLine ('name ' + Io.Arg (pool, 0)) ;
+  FOR i := 1 TO Io.ArgCount () - 1 DO
+    Io.WriteLine ('arg ' + Io.Arg (pool, i))
+  END ;
+  b := Io.ReadStdin (100) ;
+  Io.Write ('stdin ') ;
+  Io.WriteI64 (LEN (b)) ;
+  Io.WriteLine ('') ;
+  Io.WriteLine (RunHelper.Greeting ()) ;
+  Io.Halt (Io.ArgCount () - 1)
+EXCEPT
+| ValueRange :
+    Io.Halt (99)
+| IndexError :
+    Io.Halt (98)
+END RunEcho.

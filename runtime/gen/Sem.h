@@ -107,5 +107,8 @@ int64_t Sem_StatChecked (int64_t i, m9_state *err);
 int64_t Sem_StatSkipped (int64_t i, m9_state *err);
 int64_t Sem_StatLines (int64_t i, m9_state *err);
 int64_t Sem_StatLine (int64_t i, int64_t j, m9_state *err);
+void Sem_ShowType (m9_sl_CHAR name, m9_state *err);
+m9_sl_CHAR Sem_ShownType (m9_state *err);
+m9_sl_CHAR Sem_ShownRaises (m9_state *err);
 
 #endif

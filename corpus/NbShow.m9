@@ -1,0 +1,629 @@
+DEFINITION MODULE NbShow ;
+
+(* A value shown in a notebook cell.
+
+   A cell holding only an expression shows its value
+   (docs/kernel-show-plan.md): `m9c --show` asks the checker for the
+   expression's type and writes a one-line program that calls the
+   procedure below made for that type.  So nothing here guesses a
+   type, and a type with no procedure is refused by m9c, by name.
+
+   Every procedure prints a plain-text form.  A table (a GRID, a
+   Frame) also prints an HTML form, between two marker lines the
+   kernel takes out and shows as the cell's rich output; outside a
+   notebook they are two lines of control characters around a table.
+
+   Three promises.  A real is printed by Fmt.Short, so what is shown
+   reads back to the same double.  A cut-down display says what it
+   left out: a list over 20 values shows the first and last 10 and
+   how many more, a grid likewise by rows and columns, a frame over
+   60 rows its first and last 5 (pandas' rule, Alex 2026-10-05).  And
+   a missing value in a frame is `null`, never a number. *)
+
+IMPORT Frame ;
+
+CONST
+  MaxList = 20 ;            (* a list or grid side longer than this is cut *)
+  MaxRows = 60 ;            (* a frame longer than this shows 5 + 5 rows *)
+
+PROCEDURE Int (v: I64) ;
+PROCEDURE Real (v: F64) ;
+PROCEDURE Bool (v: BOOL) ;
+PROCEDURE Char (c: CHAR) ;
+PROCEDURE Str (RO s: STR) ;
+PROCEDURE Ints (RO v: SLICE OF I64) ;
+PROCEDURE Reals (RO v: SLICE OF F64) ;
+PROCEDURE Bools (RO v: SLICE OF BOOL) ;
+PROCEDURE Strs (RO v: SLICE OF STR) ;
+PROCEDURE Grid (RO g: GRID 2 OF F64) ;
+PROCEDURE Table (f: PTR Frame.Fr) ;
+PROCEDURE Series (ts: PTR Frame.Ts) ;
+  (* each prints its value; Grid, Table and Series the HTML form too *)
+
+PROCEDURE Raised (RO what: STR) ;
+  (* the expression raised `what` instead of answering: said on the
+     error stream, and the program exits 1 *)
+
+PROCEDURE StrText (RO s: STR) : STR ;
+  (* in quotes, ' unless the string holds one; over 1000 characters
+     the first 1000, then ` ... (n characters)' *)
+PROCEDURE IntsText (RO v: SLICE OF I64) : STR ;
+PROCEDURE RealsText (RO v: SLICE OF F64) : STR ;
+PROCEDURE BoolsText (RO v: SLICE OF BOOL) : STR ;
+PROCEDURE StrsText (RO v: SLICE OF STR) : STR ;
+  (* [a, b, c]; over MaxList values the first and last 10 with
+     `... n more ...` between them and the count after *)
+PROCEDURE GridText (RO g: GRID 2 OF F64) : STR ;
+PROCEDURE GridHtml (RO g: GRID 2 OF F64) : STR ;
+PROCEDURE TableText (f: PTR Frame.Fr) : STR ;
+PROCEDURE TableHtml (f: PTR Frame.Fr) : STR ;
+PROCEDURE SeriesText (ts: PTR Frame.Ts) : STR ;
+PROCEDURE SeriesHtml (ts: PTR Frame.Ts) : STR ;
+  (* the texts the procedures above print, for a test to hold *)
+
+END NbShow.
+
+IMPLEMENTATION MODULE NbShow ;
+
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Frame ;
+IMPORT Io ;
+IMPORT Text ;
+IMPORT Time ;
+
+TYPE
+  Column = SLICE OF STR ;     (* one column's cells, as text *)
+
+CONST
+  MaxChars = 1000 ;
+  Head = 10 ;                (* a cut list keeps this many at each end *)
+  Edge = 5 ;                 (* a cut frame keeps this many rows at each end *)
+  Mark = 01C ;               (* the HTML part's fence, U+0001 *)
+
+(* ---- pieces ---- *)
+
+PROCEDURE BoolWord (b: BOOL) : STR =
+BEGIN
+  IF b THEN RETURN 'TRUE' END ;
+  RETURN 'FALSE'
+END BoolWord ;
+
+PROCEDURE StrText (RO s: STR) : STR =
+VAR
+  body, more, q : STR ;
+BEGIN
+  body := s ;
+  more := '' ;
+  IF LEN (s) > MaxChars THEN
+    body := SLICE (s, 0, MaxChars) ;
+    more := ' ... (' + Fmt.I64Str (LEN (s)) + ' characters)'
+  END ;
+  q := "'" ;
+  IF Text.FindChar (body, "'") >= 0 THEN q := '"' END ;
+  RETURN q + body + q + more
+END StrText ;
+
+(* is element i of n shown, and is it the first one after the gap? *)
+PROCEDURE Shown (i, n: I64) : BOOL =
+BEGIN
+  RETURN n <= MaxList OR i < Head OR i >= n - Head
+END Shown ;
+
+PROCEDURE Gap (i, n: I64) : BOOL =
+BEGIN
+  RETURN n > MaxList AND i = n - Head
+END Gap ;
+
+(* before item i of n: the comma, and after the first ten of a long
+   list what is left out *)
+PROCEDURE OpenItem (VAR d: PTR DynStr.DString ; i, n: I64) =
+BEGIN
+  IF i > 0 THEN DynStr.Append (d, ', ') END ;
+  IF Gap (i, n) THEN
+    DynStr.Append (d, '... ' + Fmt.I64Str (n - 2 * Head) + ' more ..., ')
+  END
+END OpenItem ;
+
+PROCEDURE CloseList (VAR d: PTR DynStr.DString ; n: I64) =
+BEGIN
+  DynStr.AppendChar (d, ']') ;
+  IF n > MaxList THEN
+    DynStr.Append (d, '  (' + Fmt.I64Str (n) + ' values)')
+  END
+END CloseList ;
+
+PROCEDURE IntsText (RO v: SLICE OF I64) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i, n : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  n := LEN (v) ;
+  DynStr.AppendChar (d, '[') ;
+  FOR i := 0 TO n - 1 DO
+    IF Shown (i, n) THEN
+      OpenItem (d, i, n) ;
+      DynStr.Append (d, Fmt.I64Str (v[i])) ;
+    END
+  END ;
+  CloseList (d, n) ;
+  RETURN DynStr.View (d)
+END IntsText ;
+
+PROCEDURE RealsText (RO v: SLICE OF F64) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i, n : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  n := LEN (v) ;
+  DynStr.AppendChar (d, '[') ;
+  FOR i := 0 TO n - 1 DO
+    IF Shown (i, n) THEN
+      OpenItem (d, i, n) ;
+      DynStr.Append (d, Fmt.Short (v[i])) ;
+    END
+  END ;
+  CloseList (d, n) ;
+  RETURN DynStr.View (d)
+END RealsText ;
+
+PROCEDURE BoolsText (RO v: SLICE OF BOOL) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i, n : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  n := LEN (v) ;
+  DynStr.AppendChar (d, '[') ;
+  FOR i := 0 TO n - 1 DO
+    IF Shown (i, n) THEN
+      OpenItem (d, i, n) ;
+      DynStr.Append (d, BoolWord (v[i])) ;
+    END
+  END ;
+  CloseList (d, n) ;
+  RETURN DynStr.View (d)
+END BoolsText ;
+
+PROCEDURE StrsText (RO v: SLICE OF STR) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i, n : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  n := LEN (v) ;
+  DynStr.AppendChar (d, '[') ;
+  FOR i := 0 TO n - 1 DO
+    IF Shown (i, n) THEN
+      OpenItem (d, i, n) ;
+      DynStr.Append (d, StrText (v[i])) ;
+    END
+  END ;
+  CloseList (d, n) ;
+  RETURN DynStr.View (d)
+END StrsText ;
+
+PROCEDURE Esc (RO s: STR) : STR =
+BEGIN
+  RETURN Text.Replace (Text.Replace (Text.Replace (Text.Replace (s, '&', '&amp;'),
+                       '<', '&lt;'), '>', '&gt;'), '"', '&quot;')
+END Esc ;
+
+PROCEDURE PadLeft (RO s: STR ; w: I64) : STR =
+VAR p : STR ;
+BEGIN
+  p := '' ;
+  WHILE LEN (p) + LEN (s) < w DO p := p + ' ' END ;
+  RETURN p + s
+END PadLeft ;
+
+PROCEDURE PadRight (RO s: STR ; w: I64) : STR =
+VAR p : STR ;
+BEGIN
+  p := '' ;
+  WHILE LEN (p) + LEN (s) < w DO p := p + ' ' END ;
+  RETURN s + p
+END PadRight ;
+
+(* ---- the grid ---- *)
+
+PROCEDURE GridText (RO g: GRID 2 OF F64) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i, j, nr, nc : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  nr := LEN (g, 0) ;
+  nc := LEN (g, 1) ;
+  DynStr.AppendChar (d, '[') ;
+  FOR i := 0 TO nr - 1 DO
+    IF Shown (i, nr) THEN
+      IF i > 0 THEN DynStr.Append (d, ',' + 0AC + ' ') END ;
+      IF Gap (i, nr) THEN
+        DynStr.Append (d, '... ' + Fmt.I64Str (nr - 2 * Head) + ' more rows ...,' + 0AC + ' ')
+      END ;
+      DynStr.AppendChar (d, '[') ;
+      FOR j := 0 TO nc - 1 DO
+        IF Shown (j, nc) THEN
+          IF j > 0 THEN DynStr.Append (d, ', ') END ;
+          IF Gap (j, nc) THEN
+            DynStr.Append (d, '... ' + Fmt.I64Str (nc - 2 * Head) + ' more ..., ')
+          END ;
+          DynStr.Append (d, Fmt.Short (g[i, j]))
+        END
+      END ;
+      DynStr.AppendChar (d, ']')
+    END
+  END ;
+  DynStr.AppendChar (d, ']') ;
+  DynStr.Append (d, '  (' + Fmt.I64Str (nr) + ' x ' + Fmt.I64Str (nc) + ')') ;
+  RETURN DynStr.View (d)
+END GridText ;
+
+PROCEDURE GridHtml (RO g: GRID 2 OF F64) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i, j, nr, nc : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  nr := LEN (g, 0) ;
+  nc := LEN (g, 1) ;
+  DynStr.Append (d, '<table class="m9grid"><thead><tr><th></th>') ;
+  FOR j := 0 TO nc - 1 DO
+    IF Shown (j, nc) THEN
+      IF Gap (j, nc) THEN DynStr.Append (d, '<th>...</th>') END ;
+      DynStr.Append (d, '<th>' + Fmt.I64Str (j) + '</th>')
+    END
+  END ;
+  DynStr.Append (d, '</tr></thead><tbody>') ;
+  FOR i := 0 TO nr - 1 DO
+    IF Shown (i, nr) THEN
+      IF Gap (i, nr) THEN DynStr.Append (d, '<tr><th>...</th></tr>') END ;
+      DynStr.Append (d, '<tr><th>' + Fmt.I64Str (i) + '</th>') ;
+      FOR j := 0 TO nc - 1 DO
+        IF Shown (j, nc) THEN
+          IF Gap (j, nc) THEN DynStr.Append (d, '<td>...</td>') END ;
+          DynStr.Append (d, '<td>' + Fmt.Short (g[i, j]) + '</td>')
+        END
+      END ;
+      DynStr.Append (d, '</tr>')
+    END
+  END ;
+  DynStr.Append (d, '</tbody></table><p>' + Fmt.I64Str (nr) + ' x ' +
+                 Fmt.I64Str (nc) + '</p>') ;
+  RETURN DynStr.View (d)
+END GridHtml ;
+
+(* ---- the frame ---- *)
+
+PROCEDURE RowShown (r, n: I64) : BOOL =
+BEGIN
+  RETURN n <= MaxRows OR r < Edge OR r >= n - Edge
+END RowShown ;
+
+PROCEDURE RowGap (r, n: I64) : BOOL =
+BEGIN
+  RETURN n > MaxRows AND r = n - Edge
+END RowGap ;
+
+PROCEDURE KindName (k: I64) : STR =
+BEGIN
+  IF k = Frame.KindF64 THEN RETURN 'F64' END ;
+  IF k = Frame.KindF32 THEN RETURN 'F32' END ;
+  IF k = Frame.KindI64 THEN RETURN 'I64' END ;
+  IF k = Frame.KindI32 THEN RETURN 'I32' END ;
+  IF k = Frame.KindI16 THEN RETURN 'I16' END ;
+  IF k = Frame.KindByte THEN RETURN 'BYTE' END ;
+  IF k = Frame.KindStr THEN RETURN 'STR' END ;
+  RETURN 'BOOL'
+END KindName ;
+
+(* one column's cells, as text, for the rows shown; a missing value
+   is `null` -- a NaN in a real column IS missing (Frame's rule) *)
+PROCEDURE Cells (VAR pool: POOL ; f: PTR Frame.Fr ; RO name: STR ;
+                 RO rows: SLICE OF I64) : SLICE OF STR
+  RAISES Frame.Unknown, Frame.WrongType =
+VAR
+  out : SLICE OF STR ;
+  k, i, r : I64 ;
+  rf : SLICE OF F64 ;
+  rs : SLICE OF F32 ;
+  ri : SLICE OF I64 ;
+  ri32 : SLICE OF I32 ;
+  ri16 : SLICE OF I16 ;
+  rb : SLICE OF BYTE ;
+  rstr : SLICE OF STR ;
+  rbool : SLICE OF BOOL ;
+BEGIN
+  out := NEW (pool, STR, LEN (rows)) ;
+  k := Frame.KindOf (f, name) ;
+  FOR i := 0 TO LEN (rows) - 1 DO out[i] := Text.Keep (pool, 'null') END ;
+  IF k = Frame.KindF64 THEN
+    rf := Frame.ColF64 (f, name) ;
+    FOR i := 0 TO LEN (rows) - 1 DO
+      r := rows[i] ;
+      IF rf[r] = rf[r] THEN out[i] := Text.Keep (pool, Fmt.Short (rf[r])) END
+    END
+  ELSIF k = Frame.KindF32 THEN
+    rs := Frame.ColF32 (f, name) ;
+    FOR i := 0 TO LEN (rows) - 1 DO
+      r := rows[i] ;
+      IF rs[r] = rs[r] THEN out[i] := Text.Keep (pool, Fmt.Short (F64 (rs[r]))) END
+    END
+  ELSIF k = Frame.KindI64 THEN
+    ri := Frame.ColI64 (f, name) ;
+    FOR i := 0 TO LEN (rows) - 1 DO
+      r := rows[i] ;
+      IF ri[r] # Frame.MissI64 (f, name) THEN out[i] := Text.Keep (pool, Fmt.I64Str (ri[r])) END
+    END
+  ELSIF k = Frame.KindI32 THEN
+    ri32 := Frame.ColI32 (f, name) ;
+    FOR i := 0 TO LEN (rows) - 1 DO
+      r := rows[i] ;
+      IF ri32[r] # Frame.MissI32 (f, name) THEN
+        out[i] := Text.Keep (pool, Fmt.I64Str (I64 (ri32[r])))
+      END
+    END
+  ELSIF k = Frame.KindI16 THEN
+    ri16 := Frame.ColI16 (f, name) ;
+    FOR i := 0 TO LEN (rows) - 1 DO
+      r := rows[i] ;
+      IF ri16[r] # Frame.MissI16 (f, name) THEN
+        out[i] := Text.Keep (pool, Fmt.I64Str (I64 (ri16[r])))
+      END
+    END
+  ELSIF k = Frame.KindByte THEN
+    rb := Frame.ColBytes (f, name) ;
+    FOR i := 0 TO LEN (rows) - 1 DO
+      r := rows[i] ;
+      IF rb[r] # Frame.MissByte (f, name) THEN
+        out[i] := Text.Keep (pool, Fmt.I64Str (I64 (rb[r])))
+      END
+    END
+  ELSIF k = Frame.KindStr THEN
+    rstr := Frame.ColStrs (f, name) ;
+    FOR i := 0 TO LEN (rows) - 1 DO out[i] := Text.Keep (pool, rstr[rows[i]]) END
+  ELSE
+    rbool := Frame.ColBools (f, name) ;
+    FOR i := 0 TO LEN (rows) - 1 DO out[i] := Text.Keep (pool, BoolWord (rbool[rows[i]])) END
+  END ;
+  RETURN out
+END Cells ;
+
+(* the rows a frame of n rows shows *)
+PROCEDURE RowsShown (VAR pool: POOL ; n: I64) : SLICE OF I64 =
+VAR
+  rows : SLICE OF I64 ;
+  r, k : I64 ;
+BEGIN
+  k := 0 ;
+  FOR r := 0 TO n - 1 DO
+    IF RowShown (r, n) THEN k := k + 1 END
+  END ;
+  rows := NEW (pool, I64, k) ;
+  k := 0 ;
+  FOR r := 0 TO n - 1 DO
+    IF RowShown (r, n) THEN
+      rows[k] := r ;
+      k := k + 1
+    END
+  END ;
+  RETURN rows
+END RowsShown ;
+
+(* a table as text or HTML.  Columns are the frame's, after the
+   optional time column of a series; each has a name, a kind and its
+   cells for the rows shown. *)
+PROCEDURE Render (f: PTR Frame.Fr ; RO times: SLICE OF I64 ; html: BOOL) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  rows : SLICE OF I64 ;
+  names, kinds : SLICE OF STR ;
+  cells : SLICE OF Column ;
+  left : SLICE OF BOOL ;
+  width : SLICE OF I64 ;
+  n, nc, c, c0, i, iw : I64 ;
+  tm : Time.Instant ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  n := Frame.Rows (f) ;
+  c0 := 0 ;
+  IF LEN (times) > 0 THEN c0 := 1 END ;
+  nc := Frame.Cols (f) + c0 ;
+  rows := RowsShown (scratch, n) ;
+  names := NEW (scratch, STR, nc) ;
+  kinds := NEW (scratch, STR, nc) ;
+  cells := NEW (scratch, Column, nc) ;
+  left := NEW (scratch, BOOL, nc) ;
+  width := NEW (scratch, I64, nc) ;
+  IF c0 = 1 THEN
+    names[0] := 'time' ;
+    kinds[0] := 'UTC' ;
+    cells[0] := NEW (scratch, STR, LEN (rows)) ;
+    FOR i := 0 TO LEN (rows) - 1 DO
+      tm.t := F64 (times[rows[i]]) ;
+      cells[0][i] := Text.Keep (scratch, Time.Iso (tm, 0))
+    END
+  END ;
+  FOR c := c0 TO nc - 1 DO
+    names[c] := Frame.NameAt (f, c - c0) ;
+    kinds[c] := KindName (Frame.KindOf (f, names[c])) ;
+    left[c] := Frame.KindOf (f, names[c]) = Frame.KindStr ;
+    cells[c] := Cells (scratch, f, names[c], rows)
+  END ;
+
+  IF html THEN
+    DynStr.Append (d, '<table class="m9frame"><thead><tr><th></th>') ;
+    FOR c := 0 TO nc - 1 DO DynStr.Append (d, '<th>' + Esc (names[c]) + '</th>') END ;
+    DynStr.Append (d, '</tr><tr><th></th>') ;
+    FOR c := 0 TO nc - 1 DO DynStr.Append (d, '<td><i>' + kinds[c] + '</i></td>') END ;
+    DynStr.Append (d, '</tr></thead><tbody>') ;
+    FOR i := 0 TO LEN (rows) - 1 DO
+      IF RowGap (rows[i], n) THEN
+        DynStr.Append (d, '<tr><th>...</th>') ;
+        FOR c := 0 TO nc - 1 DO DynStr.Append (d, '<td>...</td>') END ;
+        DynStr.Append (d, '</tr>')
+      END ;
+      DynStr.Append (d, '<tr><th>' + Fmt.I64Str (rows[i]) + '</th>') ;
+      FOR c := 0 TO nc - 1 DO DynStr.Append (d, '<td>' + Esc (cells[c][i]) + '</td>') END ;
+      DynStr.Append (d, '</tr>')
+    END ;
+    DynStr.Append (d, '</tbody></table><p>' + Fmt.I64Str (n) + ' rows x ' +
+                   Fmt.I64Str (nc) + ' columns</p>') ;
+    RETURN DynStr.View (d)
+  END ;
+
+  (* text: the row numbers, then each column as wide as its widest
+     entry, a numeric one right-aligned and a string one left *)
+  iw := LEN (Fmt.I64Str (n - 1)) ;
+  IF iw < 3 THEN iw := 3 END ;
+  FOR c := 0 TO nc - 1 DO
+    width[c] := LEN (names[c]) ;
+    IF LEN (kinds[c]) > width[c] THEN width[c] := LEN (kinds[c]) END ;
+    FOR i := 0 TO LEN (rows) - 1 DO
+      IF LEN (cells[c][i]) > width[c] THEN width[c] := LEN (cells[c][i]) END
+    END
+  END ;
+  DynStr.Append (d, PadLeft ('', iw)) ;
+  FOR c := 0 TO nc - 1 DO
+    IF left[c] THEN DynStr.Append (d, '  ' + PadRight (names[c], width[c]))
+    ELSE DynStr.Append (d, '  ' + PadLeft (names[c], width[c])) END
+  END ;
+  DynStr.AppendChar (d, 0AC) ;
+  DynStr.Append (d, PadLeft ('', iw)) ;
+  FOR c := 0 TO nc - 1 DO
+    IF left[c] THEN DynStr.Append (d, '  ' + PadRight (kinds[c], width[c]))
+    ELSE DynStr.Append (d, '  ' + PadLeft (kinds[c], width[c])) END
+  END ;
+  DynStr.AppendChar (d, 0AC) ;
+  FOR i := 0 TO LEN (rows) - 1 DO
+    IF RowGap (rows[i], n) THEN
+      DynStr.Append (d, PadLeft ('...', iw)) ;
+      DynStr.AppendChar (d, 0AC)
+    END ;
+    DynStr.Append (d, PadLeft (Fmt.I64Str (rows[i]), iw)) ;
+    FOR c := 0 TO nc - 1 DO
+      IF left[c] THEN DynStr.Append (d, '  ' + PadRight (cells[c][i], width[c]))
+      ELSE DynStr.Append (d, '  ' + PadLeft (cells[c][i], width[c])) END
+    END ;
+    DynStr.AppendChar (d, 0AC)
+  END ;
+  DynStr.Append (d, Fmt.I64Str (n) + ' rows x ' + Fmt.I64Str (nc) + ' columns') ;
+  RETURN DynStr.View (d)
+EXCEPT
+| Frame.Unknown :
+    RETURN '(the frame could not be read)'
+| Frame.WrongType :
+    RETURN '(the frame could not be read)'
+| ValueRange :
+    RETURN '(the frame could not be read)'
+END Render ;
+
+PROCEDURE TableText (f: PTR Frame.Fr) : STR =
+VAR none : SLICE OF I64 ;
+BEGIN
+  RETURN Render (f, none, FALSE)
+END TableText ;
+
+PROCEDURE TableHtml (f: PTR Frame.Fr) : STR =
+VAR none : SLICE OF I64 ;
+BEGIN
+  RETURN Render (f, none, TRUE)
+END TableHtml ;
+
+PROCEDURE SeriesText (ts: PTR Frame.Ts) : STR =
+BEGIN
+  RETURN Render (Frame.TsFrame (ts), Frame.TsTime (ts), FALSE)
+END SeriesText ;
+
+PROCEDURE SeriesHtml (ts: PTR Frame.Ts) : STR =
+BEGIN
+  RETURN Render (Frame.TsFrame (ts), Frame.TsTime (ts), TRUE)
+END SeriesHtml ;
+
+(* ---- what m9c --show calls ---- *)
+
+PROCEDURE Rich (RO text, html: STR) =
+BEGIN
+  Io.WriteLine (text) ;
+  Io.WriteLine ('' + Mark + 'M9 HTML' + Mark) ;
+  Io.WriteLine (html) ;
+  Io.WriteLine ('' + Mark + 'M9 /HTML' + Mark)
+END Rich ;
+
+PROCEDURE Raised (RO what: STR) =
+BEGIN
+  Io.ErrLine ('the expression raised ' + what) ;
+  Io.Halt (1)
+END Raised ;
+
+PROCEDURE Int (v: I64) =
+BEGIN
+  Io.WriteLine (Fmt.I64Str (v))
+END Int ;
+
+PROCEDURE Real (v: F64) =
+BEGIN
+  Io.WriteLine (Fmt.Short (v))
+END Real ;
+
+PROCEDURE Bool (v: BOOL) =
+BEGIN
+  Io.WriteLine (BoolWord (v))
+END Bool ;
+
+PROCEDURE Char (c: CHAR) =
+BEGIN
+  Io.WriteLine (StrText ('' + c))
+END Char ;
+
+PROCEDURE Str (RO s: STR) =
+BEGIN
+  Io.WriteLine (StrText (s))
+END Str ;
+
+PROCEDURE Ints (RO v: SLICE OF I64) =
+BEGIN
+  Io.WriteLine (IntsText (v))
+END Ints ;
+
+PROCEDURE Reals (RO v: SLICE OF F64) =
+BEGIN
+  Io.WriteLine (RealsText (v))
+END Reals ;
+
+PROCEDURE Bools (RO v: SLICE OF BOOL) =
+BEGIN
+  Io.WriteLine (BoolsText (v))
+END Bools ;
+
+PROCEDURE Strs (RO v: SLICE OF STR) =
+BEGIN
+  Io.WriteLine (StrsText (v))
+END Strs ;
+
+PROCEDURE Grid (RO g: GRID 2 OF F64) =
+BEGIN
+  Rich (GridText (g), GridHtml (g))
+END Grid ;
+
+PROCEDURE Table (f: PTR Frame.Fr) =
+BEGIN
+  Rich (TableText (f), TableHtml (f))
+END Table ;
+
+PROCEDURE Series (ts: PTR Frame.Ts) =
+BEGIN
+  Rich (SeriesText (ts), SeriesHtml (ts))
+END Series ;
+
+END NbShow.

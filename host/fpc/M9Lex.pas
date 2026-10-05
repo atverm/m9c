@@ -168,6 +168,12 @@ begin
   FPos := 1;
   FLine := 1;
   FCol := 1;
+  { a first line beginning #! names the program that runs this file
+    as a script and is not M9 (report par 2); skipped to its line
+    end, so the newline is counted and every line keeps its number }
+  if (Length (FSrc) >= 2) and (FSrc[1] = '#') and (FSrc[2] = '!') then
+    while (FPos <= Length (FSrc)) and (FSrc[FPos] <> #10) do
+      Inc (FPos);
 end;
 
 function TLexer.Peek (ahead: Integer): Char;

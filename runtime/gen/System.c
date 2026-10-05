@@ -38,6 +38,8 @@ extern int m9_exec_stopped (int);
 extern int64_t m9_exec_len (int, int);
 extern int64_t m9_exec_copy (int, int, void *, int64_t);
 extern void m9_exec_release (int);
+extern int m9_become (const void *, const void *, int);
+extern int64_t m9_pid (void);
 
 static m9_pool m9mframe = {0};
 
@@ -421,6 +423,97 @@ L_ret: ;
   m9_adopt_if (&m9frame, m9res, m9ret.err_.p);
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
+  return m9ret;
+}
+
+void System_Become (m9_sl_CHAR prog, m9_sl_CHAR name, m9_sl_m9_sl_CHAR args, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_pool scratch = {0}; (void) scratch;
+  m9_sl_BYTE pb = {0}; (void) pb;
+  m9_sl_BYTE block = {0}; (void) block;
+  m9_sl_BYTE b = {0}; (void) b;
+  int64_t total = 0; (void) total;
+  int64_t i = 0; (void) i;
+  int64_t k = 0; (void) k;
+  { __typeof__(b) m9v = DynStr_Utf8 (&(scratch), prog, err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
+  { __typeof__(pb) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 ((b).len, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    pb = m9v;
+  }
+  k = INT64_C(0);
+  System_Put (&(scratch), &(pb), &(k), prog, err);
+  if (err->exc) goto L_ret;
+  { __typeof__(b) m9v = DynStr_Utf8 (&(scratch), name, err);
+    if (err->exc) goto L_ret;
+    b = m9v;
+  }
+  { __typeof__(total) m9v = m9_add_i64 ((b).len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    total = m9v;
+  }
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((args).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { __typeof__(b) m9v = DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (args.p, i, args.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+      b = m9v;
+    }
+    { __typeof__(total) m9v = m9_add_i64 (m9_add_i64 (total, (b).len, err), INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      total = m9v;
+    }
+  } }
+  { __typeof__(block) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), total, err);
+    if (err->exc) goto L_ret;
+    block = m9v;
+  }
+  k = INT64_C(0);
+  System_Put (&(scratch), &(block), &(k), name, err);
+  if (err->exc) goto L_ret;
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 ((args).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    System_Put (&(scratch), &(block), &(k), (*(m9_sl_CHAR *) m9_at (args.p, i, args.len, sizeof (m9_sl_CHAR), err)), err);
+    if (err->exc) goto L_ret;
+  } }
+  bool m9t3 = ((int64_t)(m9_become (((void *)(pb).p), ((void *)(block).p), ((int)(m9_add_i64 ((args).len, INT64_C(1), err))))) < INT64_C(0));
+  if (err->exc) goto L_ret;
+  if (m9t3) {
+    { __typeof__(prog) m9t4 = prog; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    m9_raise (err, &Io_IOError);
+    goto L_ret;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return;
+}
+
+int64_t System_ProcessId (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  err->res = m9res;
+  m9ret = (int64_t)(m9_pid ());
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return m9ret;
 }
 

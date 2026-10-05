@@ -1,13 +1,14 @@
-(* EXPECT: unknown procedure: Pair *)
+(* EXPECT: Pair expects 2 argument(s), got 1 *)
 MODULE m ;
 TYPE Pair = RECORD a, b : I64 END ;
 VAR x : I64 ;
 PROCEDURE F () =
 VAR p : Pair ;
 BEGIN
-  (* an alias for a SCALAR converts under its own name; an alias for
-     anything else chases to something that is not a builtin and is
-     the unknown procedure it looks like *)
+  (* an alias for a SCALAR converts under its own name; a RECORD named
+     like a call is its aggregate (report par 2.2.4, since 2026-10-05:
+     until then `unknown procedure: Pair'), which one value does not
+     fill -- there is no conversion to a record *)
   p := Pair (x)
 END F ;
 END m.

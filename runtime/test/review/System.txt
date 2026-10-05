@@ -1,18 +1,18 @@
-REVIEW System -- 26 procedures with a body, 25 of them functions; 15 headings in a DEFINITION
+REVIEW System -- 28 procedures with a body, 26 of them functions; 17 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              25
-  assignments                                    99
-  arguments                                     107   passed over, a type unknown: 8
-  RETURN values                                  46
-  operands of a comparison or an operator        80
+  functions answering on every path              26
+  assignments                                   108
+  arguments                                     126   passed over, a type unknown: 10
+  RETURN values                                  47
+  operands of a comparison or an operator        88
   CASE labels                                     3
   THREAD arguments                                0
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                     7   Executable.scratch, Stream.scratch, ExecWithin.scratch, Flag.scratch, Value.scratch, IsDir.scratch, +1 more
+  local pools                                     8   Executable.scratch, Stream.scratch, ExecWithin.scratch, Become.scratch, Flag.scratch, Value.scratch, +2 more
   pool parameters                                 9   Executable, Put, Stream, ExecWithin, Exec, Program, +3 more
   KEPT parameters                                 0
   HEAP named                                      0
@@ -24,13 +24,13 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    2   csys, System
-  foreign procedures                             12
+  foreign procedures                             14
     of them [SERIAL]                              0
-    of them [REENTRANT]                          12
+    of them [REENTRANT]                          14
 
 COUNTED -- how much there was to check
   CASE statements                                 1
-  RAISE statements                                2
+  RAISE statements                                3
   handlers                                        4
   NEW in the frame                                6
-  NEW in a named pool                             8
+  NEW in a named pool                            10

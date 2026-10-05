@@ -1,0 +1,156 @@
+#!/usr/bin/env -S m9c --run
+MODULE TutBlocks ;
+
+(* tutdiff's last check: every fenced block a chapter QUOTES is the
+   gated file it names.
+
+       TutBlocks.m9 TUTORIAL-DIR EXAMPLES-DIR WORK-DIR
+
+     ```m9 NAME.m9       the block is examples/NAME.m9, byte for byte
+     ```output NAME      the block is examples/expect/NAME.out
+     ```refusal NAME     the block, less its trailing line feeds, is
+                         somewhere in WORK/NAME.err -- the refusal the
+                         gate just provoked
+
+   A block opens at three backquotes, the kind, one blank, a name that
+   runs to the end of its line; it closes at the next three
+   backquotes.  The chapters are read in name order and as octets, so
+   UTF-8 in the prose compares as what it is.  Fewer than fifteen
+   blocks means the reader is broken, not that the tutorial is short.
+
+   It replaced the Python heredoc tutdiff.sh carried (2026-10-04),
+   after both read the same 71 blocks and agreed.                     *)
+
+IMPORT Io ;
+IMPORT Text ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Sort ;
+
+CONST
+  Fence = '```' ;
+  Fewest = 15 ;
+
+(* the file's octets, one CHAR each; the empty string when it is not
+   there, as a missing gated file must count as a drift, not a crash *)
+PROCEDURE Octets (VAR pool: POOL ; RO path: STR) : STR
+  RAISES ValueRange =
+BEGIN
+  IF NOT Io.Exists (path) THEN RETURN '' END ;
+  RETURN DynStr.Chars (pool, Io.ReadFileBytes (pool, path))
+EXCEPT
+| Io.IOError : RETURN ''
+END Octets ;
+
+(* the position of needle in s at or after from, or -1 *)
+PROCEDURE FindFrom (RO s, needle: STR ; from: I64) : I64 =
+VAR k : I64 ;
+BEGIN
+  IF from > LEN (s) THEN RETURN -1 END ;
+  k := Text.Find (SLICE (s, from, LEN (s) - from), needle) ;
+  IF k < 0 THEN RETURN -1 END ;
+  RETURN from + k
+END FindFrom ;
+
+(* a blank as Python's \S does not match it *)
+PROCEDURE Blank (c: CHAR) : BOOL =
+BEGIN
+  RETURN (c = ' ') OR (c = 09C) OR (c = 0AC) OR (c = 0DC) OR
+         (c = 0BC) OR (c = 0CC)
+END Blank ;
+
+(* s without the line feeds at its end *)
+PROCEDURE NoTrailingLf (RO s: STR) : STR =
+VAR n : I64 ;
+BEGIN
+  n := LEN (s) ;
+  WHILE (n > 0) AND (s[n - 1] = 0AC) DO n := n - 1 END ;
+  RETURN SLICE (s, 0, n)
+END NoTrailingLf ;
+
+VAR
+  pool : POOL ;
+  tut, exa, work, md, text, kind, name, body, want, what : STR ;
+  files : SLICE OF STR ;
+  i, p, q, k, e, n, bad, nmd : I64 ;
+  ok : BOOL ;
+
+BEGIN
+  IF Io.ArgCount () < 4 THEN
+    Io.WriteLine ('usage: TutBlocks.m9 TUTORIAL-DIR EXAMPLES-DIR WORK-DIR') ;
+    Io.Halt (2)
+  END ;
+  tut := Io.Arg (pool, 1) ;
+  exa := Io.Arg (pool, 2) ;
+  work := Io.Arg (pool, 3) ;
+  files := Io.ListDir (pool, tut) ;
+  Sort.Strs (files) ;
+  n := 0 ;
+  bad := 0 ;
+  nmd := 0 ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    md := files[i] ;
+    IF Text.EndsWith (md, '.md') AND NOT Text.StartsWith (md, '.') THEN
+      nmd := nmd + 1 ;
+      text := Octets (pool, tut + '/' + md) ;
+      p := FindFrom (text, Fence, 0) ;
+      WHILE p >= 0 DO
+        (* the opening: the kind, one blank, the name to the line's end *)
+        q := p + 3 ;
+        k := q ;
+        WHILE (k < LEN (text)) AND
+              (((text[k] >= 'a') AND (text[k] <= 'z')) OR
+               ((text[k] >= '0') AND (text[k] <= '9'))) DO
+          k := k + 1
+        END ;
+        kind := SLICE (text, q, k - q) ;
+        ok := (Text.Eq (kind, 'm9') OR Text.Eq (kind, 'output') OR
+               Text.Eq (kind, 'refusal')) AND (k < LEN (text)) AND (text[k] = ' ') ;
+        IF ok THEN
+          q := k + 1 ;
+          k := q ;
+          WHILE (k < LEN (text)) AND NOT Blank (text[k]) DO k := k + 1 END ;
+          ok := (k > q) AND (k < LEN (text)) AND (text[k] = 0AC)
+        END ;
+        IF ok THEN
+          name := SLICE (text, q, k - q) ;
+          e := FindFrom (text, Fence, k + 1) ;
+          ok := e >= 0
+        END ;
+        IF ok THEN
+          body := SLICE (text, k + 1, e - (k + 1)) ;
+          n := n + 1 ;
+          IF Text.Eq (kind, 'm9') THEN
+            ok := DynStr.Eq (body, Octets (pool, exa + '/' + name))
+          ELSIF Text.Eq (kind, 'output') THEN
+            ok := DynStr.Eq (body, Octets (pool, exa + '/expect/' + name + '.out'))
+          ELSE
+            want := NoTrailingLf (body) ;
+            ok := Text.Contains (Octets (pool, work + '/' + name + '.err'), want)
+          END ;
+          IF NOT ok THEN
+            what := Text.Keep (pool, kind) ;
+            Io.WriteLine ('DRIFT: ' + md + ' quotes ' + what + ' ' + name + ' wrongly') ;
+            bad := bad + 1
+          END ;
+          p := FindFrom (text, Fence, e + 3)
+        ELSE
+          p := FindFrom (text, Fence, p + 1)
+        END
+      END
+    END
+  END ;
+  IF n < Fewest THEN
+    Io.WriteLine ('only ' + Fmt.I64Str (n) + ' embedded blocks found -- the extractor is broken') ;
+    bad := bad + 1
+  END ;
+  Io.WriteLine ('tutdiff: ' + Fmt.I64Str (n) + ' embedded blocks match their gated sources') ;
+  IF bad > 0 THEN Io.Halt (1) END
+EXCEPT
+| Io.IOError :
+    Io.WriteLine ('tutdiff: cannot list ' + tut) ; Io.Halt (1)
+| IndexError :
+    Io.WriteLine ('tutdiff: the block reader ran off a chapter') ; Io.Halt (1)
+| ValueRange :
+    Io.WriteLine ('tutdiff: a path past one byte') ; Io.Halt (1)
+END TutBlocks.

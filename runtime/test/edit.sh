@@ -159,11 +159,11 @@ echo "$J" | grep -q '"name": *"WriteLine"' || \
   { echo "edit: /doc traversal escaped"; exit 1; }
 echo "         /doc answers the m9c --json gather, gated both ways"
 
-# the keyword table: served, and gated against the lexer's own list
-if command -v python3 >/dev/null 2>&1; then
-  python3 ../../tools/mkkeywords.py --check || \
-    { echo "edit: the keyword table is adrift"; exit 1; }
-fi
+# the keyword table: served, and gated against the lexer's own list --
+# by an M9 script the gate's own compiler runs (an installed m9c may
+# predate --run), so this check no longer needs python3 to happen
+M9RUNTIME="$RT" M9LIBRARY="$SRC" "$W/m9c" --run ../../tools/MkKeywords.m9 --check || \
+  { echo "edit: the keyword table is adrift"; exit 1; }
 J=$(curl -s http://127.0.0.1:$PORT/kw)
 echo "$J" | grep -q '"KEPT":' || { echo "edit: /kw lacks KEPT"; exit 1; }
 echo "$J" | grep -q '"GRID":' || { echo "edit: /kw lacks GRID"; exit 1; }

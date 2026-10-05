@@ -48,6 +48,15 @@ for f in ../../corpus/*.m9 ../../bench/*.m9 ../../museum/*.m9; do
 done
 echo "         $files files: idempotent, comments kept ($div diverge from hand layout, measured not gated)"
 
+# a #! first line is the operating system's: the lexer skips it, so
+# the printer never sees it, and m9fmt must give it back -- first,
+# verbatim -- or formatting a script would stop it being one
+"$FMT" runfix/Shebang.m9 > "$W/sb" || { echo "fmt: REFUSED runfix/Shebang.m9"; exit 1; }
+[ "$(head -1 "$W/sb")" = "$(head -1 runfix/Shebang.m9)" ] ||
+  { echo "fmt: the #! line was not kept:"; head -2 "$W/sb"; exit 1; }
+"$FMT" "$W/sb" > "$W/sb2" && cmp -s "$W/sb" "$W/sb2" ||
+  { echo "fmt: NOT IDEMPOTENT on a script"; exit 1; }
+
 # ---- probes ---------------------------------------------------------
 cat > "$W/P.m9" <<'P'
 (* the module's own banner *)

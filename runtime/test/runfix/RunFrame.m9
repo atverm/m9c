@@ -1,0 +1,33 @@
+MODULE RunFrame ;
+
+(* --run over a module that binds a C library the program never
+   calls: Frame imports NetCDF, so its object names nc_* symbols, and
+   --run links without -flto.  Until the objects had sections of
+   their own and the link dropped the unused ones, this failed to
+   link on "undefined reference to nc_strerror" (2026-10-04).
+   run.sh runs it.                                                  *)
+
+IMPORT Io ;
+IMPORT Faults ;
+IMPORT Frame ;
+
+VAR
+  pool : POOL ;
+  f : PTR Frame.Fr IN pool ;
+  v : ARRAY 3 OF F64 ;
+
+BEGIN
+  v[0] := 1.0 ;
+  v[1] := 2.0 ;
+  v[2] := 3.0 ;
+  f := Frame.New (pool, 3) ;
+  Frame.AddF64 (pool, f, 'x', v, -9999.0) ;
+  Io.Write ('rows ') ;
+  Io.WriteI64 (Frame.Rows (f)) ;
+  Io.WriteLine ('')
+EXCEPT
+| Faults.SizeError (got, want) :
+    Io.Halt (2)
+| Frame.Duplicate (name) :
+    Io.Halt (3)
+END RunFrame.

@@ -35,6 +35,24 @@ server).  Record the `$!` of every background process you start and
 kill that; for a server, `fuser -k <port>/tcp` kills exactly the
 process holding the port and nothing else.
 
+**A helper script is an M9 script, not a Python one** (Alex,
+2026-10-04).  When a project needs a tool -- cut a fixture, convert a
+file, regenerate a table -- write it as an M9 program whose first
+line is `#!/usr/bin/env -S m9c --run`, mark it executable, and run it
+by name: `m9c --run` (0.15 on) compiles it into a cache the first
+time, about two seconds, and runs the cached program after that, in
+milliseconds (`m9c --help`, report par 2 for the `#!` line, gate
+`runtime/test/run.sh`).  Name the file like its module, letters and
+digits only: `--run` names its generated C after the FILE, and a
+hyphen in it made an invalid header guard (m9c 0.15.0-dev).  Before
+deleting the Python a script replaces, run both on the same input
+and compare the outputs byte for byte (the first port, a fixture
+cutter, wrote the same eight files as its Python before the Python
+went).  **Keep the Python that IS an
+oracle** -- numpy, scipy, a reference implementation's own code: a
+reference rewritten in M9 holds M9 to itself, and a test that cannot
+disagree is not evidence.
+
 ## The list
 
 1. **An IMPLEMENTATION MODULE has its own IMPORT list.**  The

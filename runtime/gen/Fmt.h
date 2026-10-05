@@ -5,11 +5,23 @@
 
 void Fmt_m9init (m9_state *err);
 
+typedef struct Fmt_Big Fmt_Big;
 
 #define Fmt_MaxDecimals INT64_C(17)
 static const uint32_t Fmt_HexDigits_d[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 65u, 66u, 67u, 68u, 69u, 70u };
 #define Fmt_HexDigits ((m9_sl_CHAR){ (uint32_t *) Fmt_HexDigits_d, 16 })
 #define Fmt_MaxF64 (1.7976931348623157E308)
+#define Fmt_Limbs INT64_C(48)
+#define Fmt_Base INT64_C(4294967296)
+
+#ifndef M9SL_m9_arr_48_int64_t
+#define M9SL_m9_arr_48_int64_t
+typedef struct { int64_t v[48]; } m9_arr_48_int64_t;
+#endif
+#ifndef M9SL_m9_arr_20_int64_t
+#define M9SL_m9_arr_20_int64_t
+typedef struct { int64_t v[20]; } m9_arr_20_int64_t;
+#endif
 
 m9_sl_CHAR Fmt_I64Str (int64_t v, m9_state *err);
 m9_sl_CHAR Fmt_I64Pad (int64_t v, int64_t width, bool zero, m9_state *err);
@@ -17,6 +29,7 @@ m9_sl_CHAR Fmt_Fixed (double v, int64_t decimals, m9_state *err);
 m9_sl_CHAR Fmt_FixedPad (double v, int64_t width, int64_t decimals, m9_state *err);
 m9_sl_CHAR Fmt_Sci (double v, int64_t decimals, m9_state *err);
 m9_sl_CHAR Fmt_SciPad (double v, int64_t width, int64_t decimals, m9_state *err);
+m9_sl_CHAR Fmt_Short (double v, m9_state *err);
 m9_sl_CHAR Fmt_Bits (double v, m9_state *err);
 double Fmt_ParseBits (m9_sl_CHAR s, m9_state *err);
 double Fmt_ParseF64 (m9_sl_CHAR s, m9_state *err);

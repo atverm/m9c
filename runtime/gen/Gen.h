@@ -26,11 +26,18 @@ typedef struct Gen_XC Gen_XC;
 #define Gen_KRec2 INT64_C(9)
 #define Gen_KThr INT64_C(10)
 #define Gen_KGate INT64_C(11)
+#define Gen_KArrRec INT64_C(12)
+#define Gen_KHdrArrRec INT64_C(13)
+#define Gen_KRec3 INT64_C(14)
 #define Gen_MaxErrs INT64_C(8)
 
 #ifndef M9SL_m9_sl_Gen_MEnt
 #define M9SL_m9_sl_Gen_MEnt
 typedef struct { Gen_MEnt *p; int64_t len; } m9_sl_Gen_MEnt;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_CHAR
+#define M9SL_m9_sl_m9_sl_CHAR
+typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
 #endif
 #ifndef M9SL_m9_sl_Gen_GP
 #define M9SL_m9_sl_Gen_GP
@@ -43,10 +50,6 @@ typedef struct { Gen_TY *p; int64_t len; } m9_sl_Gen_TY;
 #ifndef M9SL_m9_sl_Gen_XC
 #define M9SL_m9_sl_Gen_XC
 typedef struct { Gen_XC *p; int64_t len; } m9_sl_Gen_XC;
-#endif
-#ifndef M9SL_m9_sl_m9_sl_CHAR
-#define M9SL_m9_sl_m9_sl_CHAR
-typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
 #endif
 #ifndef M9SL_m9_sl_Ast_Nodep
 #define M9SL_m9_sl_Ast_Nodep
@@ -80,6 +83,7 @@ typedef struct { m9_sl_CHAR v[39]; } m9_arr_39_m9_sl_CHAR;
 void Gen_LoadUnit (Ast_Node * u, m9_state *err);
 void Gen_LoadExtern (Ast_Node * u, m9_state *err);
 void Gen_LoadExternDeep (Ast_Node * u, m9_state *err);
+void Gen_SetPrefix (m9_sl_CHAR module, m9_sl_CHAR prefix, m9_state *err);
 void Gen_SetDebugSource (m9_sl_CHAR file, m9_state *err);
 void Gen_Emit (m9_sl_CHAR forModule, m9_state *err);
 m9_sl_CHAR Gen_HText (m9_state *err);

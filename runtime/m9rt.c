@@ -27,7 +27,19 @@
 #endif
 #include "m9rt.h"
 
-unsigned char m9_poison[65536];   /* sized for record elements: see m9rt.h */
+/* sized for record elements: see m9rt.h.  Aligned to 16 BY NAME, the
+   most any element needs on x86-64 and arm64: left to itself,
+   Homebrew's GCC on macOS gives a 64 KB zero-filled array 32 KB
+   alignment, and Apple's ld said on EVERY link of every M9 program
+   "reducing alignment of section __DATA,__common from 0x8000 to
+   0x4000" -- cosmetic, and measured on the MacBook 2026-10-04: plain
+   gcc and gcc -flto warned, Apple's cc did not, and this attribute,
+   a __DATA,__bss section or -fno-common each silenced it. */
+#if defined(__GNUC__)
+unsigned char m9_poison[65536] __attribute__((aligned(16)));
+#else
+unsigned char m9_poison[65536];
+#endif
 
 const m9_exc m9_exc_Overflow    = { "Overflow" };
 const m9_exc m9_exc_IndexError  = { "IndexError" };
@@ -167,6 +179,7 @@ void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
     m9_reg_add (b, pool);
   }
   at = (unsigned char *) (b + 1) + b->used;
+  b->last = b->used + elem * (size_t) n;
   b->used += need;
   memset (at, 0, need);                       /* defined-zero, par 4.3 */
   return at;
@@ -196,11 +209,16 @@ void (m9_pool_free) (m9_pool *pool)
 /* never freed, and that is the whole point -- see m9rt.h */
 m9_pool m9_heap = { NULL };
 
-/* Is `a` the arena's top allocation, with room to grow in place?
-   Then `a + b` need not copy the prefix: the bytes after it are fresh
-   arena nobody can be holding, and every existing holder of `a` keeps
-   its own {p,len} and sees exactly what it saw.  That is what makes
-   `s := s + x` in a loop linear rather than quadratic. */
+/* Does `a` end exactly where the arena's top allocation ends, with
+   room to grow in place?  Then `a + b` need not copy the prefix: the
+   bytes after it are fresh arena nobody can be holding, and every
+   existing holder of `a` keeps its own {p,len} and sees exactly what
+   it saw.  That is what makes `s := s + x` in a loop linear rather
+   than quadratic.  EXACTLY: until 2026-10-05 the end was compared
+   rounded up to the alignment, so a view of all but the last few
+   characters of the top string passed, and the append overwrote
+   them -- `SLICE (s, 0, 3) + '.' + SLICE (s, 3, 1)` with s = '2767'
+   answered '276..' (corpus/Concat.m9's Point, battery concat). */
 static uint32_t *m9_cat_extend (m9_pool *pool, m9_sl_CHAR a, int64_t n)
 {
   m9_pool_block *blk = pool->head;
@@ -220,9 +238,11 @@ static uint32_t *m9_cat_extend (m9_pool *pool, m9_sl_CHAR a, int64_t n)
   off  = (size_t) (ap - base);
   alen = M9_ALIGN ((size_t) a.len * sizeof (uint32_t));
   top  = blk->used;
+  if (off + (size_t) a.len * sizeof (uint32_t) != blk->last) return NULL;
   if (off + alen != top) return NULL;
   want = off + M9_ALIGN ((size_t) n * sizeof (uint32_t));
   if (want > blk->cap) return NULL;
+  blk->last = off + (size_t) n * sizeof (uint32_t);
   /* Answer the address FROM THE BLOCK -- its top less a's aligned
      length -- and not a.p.  They are equal once the guard has passed,
      but a pointer derived from a.p carries a.p's provenance, and when
@@ -2008,6 +2028,74 @@ fail:
 }
 
 #endif  /* _WIN32 / POSIX */
+
+/* THIS PROCESS BECOMES ANOTHER PROGRAM: `m9c --run` hands over to the
+   binary it built or found cached, so that the program owns the
+   terminal, stdin, the exit status and Ctrl-C exactly as if it had
+   been started by hand -- Exec collects the streams, which is right
+   for cc and wrong for an interactive program.  argblock is argv
+   itself, argv[0] included (a script is told its own path, not the
+   cache's), and prog is the file run.
+   POSIX: execv, after flushing what this process has written and
+   giving SIGPIPE back its default, which m9_args set to ignored and
+   an exec would otherwise pass on.  Windows has no exec: the program
+   is started with this process's handles, waited for, and its status
+   is this process's.  Answers -1 only when the program could not be
+   started; on success it does not answer at all. */
+int m9_become (const void *prog, const void *argblock, int nargs)
+{
+  const char *p = (const char *) argblock;
+  int k;
+#ifdef _WIN32
+  char *cmd = NULL;
+  size_t cn = 0, ccap = 0;
+  STARTUPINFOA si;
+  PROCESS_INFORMATION pi;
+  DWORD code = 1;
+  for (k = 0; k < nargs; k++) {
+    if (!m9_win_quote (&cmd, &cn, &ccap, p)) { free (cmd); return -1; }
+    p += strlen (p) + 1;
+  }
+  if (cmd == NULL) return -1;
+  fflush (NULL);
+  ZeroMemory (&si, sizeof si);
+  si.cb = sizeof si;
+  if (!CreateProcessA ((const char *) prog, cmd, NULL, NULL, TRUE, 0,
+                       NULL, NULL, &si, &pi)) {
+    free (cmd);
+    return -1;
+  }
+  free (cmd);
+  WaitForSingleObject (pi.hProcess, INFINITE);
+  GetExitCodeProcess (pi.hProcess, &code);
+  CloseHandle (pi.hThread);
+  CloseHandle (pi.hProcess);
+  ExitProcess (code);
+  return -1;
+#else
+  char **argv = calloc ((size_t) nargs + 1, sizeof (char *));
+  if (argv == NULL) return -1;
+  for (k = 0; k < nargs; k++) { argv[k] = (char *) p; p += strlen (p) + 1; }
+  argv[nargs] = NULL;
+  fflush (NULL);
+  signal (SIGPIPE, SIG_DFL);
+  execv ((const char *) prog, argv);
+  signal (SIGPIPE, SIG_IGN);
+  free (argv);
+  return -1;
+#endif
+}
+
+/* the process id, for names no other process running at the same
+   moment will choose */
+int64_t m9_pid (void)
+{
+#ifdef _WIN32
+  return (int64_t) GetCurrentProcessId ();
+#else
+  return (int64_t) getpid ();
+#endif
+}
 
 int m9_exec_status (int h)
 {

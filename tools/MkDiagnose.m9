@@ -1,0 +1,656 @@
+#!/usr/bin/env -S m9c --run
+MODULE MkDiagnose ;
+
+(* The M9 diagnostics table, GENERATED from probes/.
+
+   Each file in probes/ is the smallest program that earns one checker
+   refusal, with the expected message on its first line -- and
+   probediff.sh holds both checkers to that message.  So the message
+   column of docs/diagnose.md cannot drift: it is read from the probe,
+   never typed here.
+
+   What IS typed here is the cause and the fix, one line each, keyed by
+   probe name.  A probe without an entry makes this script FAIL, so a
+   new refusal cannot be added to the checker without also being
+   explained -- the same shape as docdiff's drift gate, applied to the
+   explanation instead of the signature.
+
+       tools/MkDiagnose.m9            regenerate docs/diagnose.md
+       tools/MkDiagnose.m9 --check    exit 1 if it would change
+
+   runtime/test/diagdiff.sh is the gate and calls --check.  This
+   replaced tools/mkdiagnose.py on 2026-10-04: the two wrote the same
+   page but for the line naming its generator, and refused the same
+   drifts.  Probes are read as octets and written back as octets.
+
+   Report sections are cited as "par N.M".  Probe, Cause and Fix are
+   three tables in step, in the order the explanations were written;
+   the page lists the probes in name order.                            *)
+
+IMPORT Io ;
+IMPORT Text ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Sort ;
+
+CONST
+  Probe = [
+    'adr-outside-unsafe',
+    'alias-nonscalar-conversion',
+    'all-outside-a-view',
+    'arity-mismatch',
+    'byte-arithmetic',
+    'case-label-mismatch',
+    'case-record-selected',
+    'compare-mismatch',
+    'concat-non-string',
+    'is-some-call-binder',
+    'cond-not-bool',
+    'conditional-move',
+    'def-not-implemented',
+    'dispose-a-borrow',
+    'dispose-pool-interior',
+    'div-on-float',
+    'grid-len-axis-exists',
+    'grid-len-needs-an-axis',
+    'grid-rank-is-part-of-the-type',
+    'grid-subscript-arity',
+    'implicit-widening',
+    'int-literal-to-float',
+    'int-slash-division',
+    'proc-var-must-be-opt',
+    'proc-field-must-be-opt',
+    'proc-value-signature-differs',
+    'proc-value-raises-more',
+    'proc-value-call-raises',
+    'proc-value-call-in-pure',
+    'thread-argument-type',
+    'thread-moves-its-argument',
+    'literal-does-not-fit',
+    'is-some-on-non-opt',
+    'lend-value-ptr-as-var',
+    'module-state-without-stateful',
+    'move-borrow-into-own',
+    'kept-borrow-arg',
+    'kept-concat-arg',
+    'kept-via-local',
+    'kept-undeclared',
+    'local-const-shadow',
+    'undefined-name',
+    'unknown-exception',
+    'unknown-type-in-known-module',
+    'name-needs-enum',
+    'array-enum-index-int',
+    'for-enum-bounds-differ',
+    'for-enum-takes-no-step',
+    'enum-conversion-no-raises',
+    'variant-in-named-module',
+    'function-falls-off-end',
+    'pool-where-a-value-is-wanted',
+    'aggregate-mixed-types',
+    'aggregate-not-a-literal',
+    'aggregate-local',
+    'aggregate-exported',
+    'const-table-aliased',
+    'const-table-lent-writable',
+    'write-to-const',
+    'const-as-var-argument',
+    'literal-to-writable-slice',
+    'ro-relent-writable',
+    'const-string-to-writable',
+    'ro-lend-allowed-forms',
+    'compare-strings',
+    'compare-composite',
+    'for-variable-keeps-its-type',
+    'for-variable-undeclared',
+    'for-variable-not-integer',
+    'for-variable-enum-mismatch',
+    'module-named-not-imported',
+    'write-through-ro-variable',
+    'ro-variable-lent-writable',
+    'pool-escape-by-component',
+    'declared-twice',
+    'definition-const-in-implementation',
+    'definition-const-string-in-implementation',
+    'module-import-allowed-forms',
+    'param-shadows-const',
+    'from-m9-module',
+    'concat-escapes-modvar',
+    'concat-escapes-param',
+    'bytesize-not-slice',
+    'new-reversed',
+    'frame-ptr-to-modvar',
+    'frame-ptr-via-var-component',
+    'frame-ptr-in-pooled-local',
+    'frame-ptr-record-copy',
+    'frame-ptr-pooled-component',
+    'pool-clause-disagrees',
+    'pool-view-via-var',
+    'pool-ptr-via-var',
+    'pool-escape-by-shape',
+    'pool-root-own',
+    'pool-root-value',
+    'frame-ptr-to-thread',
+    'frame-ptr-dispose',
+    'frame-ptr-kept-arg',
+    'frame-answer-to-modvar',
+    'frame-answer-kept-arg',
+    'frame-ptr-shared',
+    'no-such-field',
+    'opaque-not-defined',
+    'opt-through-field',
+    'pool-escape-on-return',
+    'result-discarded',
+    'retention-ledgered',
+    'return-mismatch',
+    'return-value-in-proper-proc',
+    'signature-differs-from-definition',
+    'totality-uses-selector-type',
+    'unknown-callee',
+    'use-after-dispose',
+    'use-after-move-assign',
+    'use-after-shared',
+    'var-arg-not-designator',
+    'view-axis-count',
+    'view-keeps-nothing',
+    'view-of-a-slice',
+    'write-through-readonly-field',
+    'write-through-readonly-record',
+    'case-label-twice',
+    'monitor-outside',
+    'pure-allocates',
+    'pure-writes-var',
+    'pure-calls-impure',
+    'write-through-readonly-slice',
+    'write-through-readonly-str',
+    'write-through-value-ptr',
+    'wrong-arg-type',
+    'export-var-typed',
+    'export-var-ro-write',
+    'export-var-frame-ptr',
+    'nan-compared',
+    'nan-declared',
+    'record-aggregate-arity',
+    'record-aggregate-field-type',
+    'record-const-not-literal',
+    'record-const-written',
+    'record-aggregate-extended',
+    'record-const-exported'
+  ] ;
+  Cause = [
+    'ADR takes the address of a value, which is the one thing the memory rules cannot check',
+    'a record type named like a call with one value: since 2026-10-05 Pair (...) is the record AGGREGATE, every field in order, and one value does not fill a record of two -- there is no conversion to a record',
+    'ALL is the axis-keeping marker for VIEW and has no value outside one',
+    'the call passes a different number of arguments from the declaration',
+    'BYTE is a raw octet, not a number: no +, -, comparison as magnitude',
+    "the CASE label's type is not the selector's type",
+    'the variant payload of a CASE RECORD is reached only through a CASE arm that binds it',
+    'the two sides of a comparison have different types and nothing converts implicitly',
+    '+ on strings takes strings on both sides (a CHAR joins as one code point); an integer literal is not one',
+    "the binder of IS SOME over a CALL result carries the callee's declared payload type (PTR Point here), and the parameter wants something else",
+    'IF/WHILE/ELSIF take a BOOL; an integer is not implicitly a truth value',
+    'SHARED (s) consumed s on one arm, so after the join s may be gone (moved in ANY arm = moved after)',
+    'the DEFINITION declares a procedure the IMPLEMENTATION never defines',
+    'the value came in as a value/VAR/RO parameter -- a borrow -- and a borrow is not yours to free',
+    'PTR T IN pool is carved from a pool and the pool frees it as a whole',
+    'DIV and MOD are integer operators',
+    "LEN (g, k) names an axis the grid's rank does not have (axes are 0-based)",
+    'a GRID has one extent per axis, so LEN needs to be told which',
+    'GRID 3 OF F64 and GRID 2 OF F64 are different types; rank is in the type, shape in the value',
+    'every axis must be subscripted; a GRID is not a nested array',
+    'there is no implicit conversion between any two numeric types, widening included',
+    'an integer literal fits any integer type but not a float',
+    '/ is float division',
+    'a procedure value has no zero: a zeroed variable of procedure type would be a call into nothing',
+    'a record field of procedure type starts zeroed like every field, and a zero procedure value cannot be called',
+    'a procedure fits a procedure type only when its head renders the same text -- modes, types and result, to the letter -- and it raises no more than the type allows',
+    'the procedure may raise an exception the procedure type does not declare; a caller of the value handles what the TYPE says, so this one could arrive unhandled.  The probe holds what must stay LEGAL before it: since 2026-10-02 a procedure that raises LESS than the type allows fits it, a quiet one included',
+    'a call through a procedure value raises what the TYPE declares, since nothing is known about which procedure runs',
+    'a PURE body may call only PURE procedures, and a procedure value names no procedure the checker could look at',
+    "THREAD hands its argument to the target's first parameter, and this one is not of that type -- until 2026-09-27 neither checker looked at the argument (only the generator refused a non-pointer shape)",
+    'a bare owned pointer handed to a THREAD is MOVED: the thread owns it now, and reading or writing it in the caller is a race the language refuses by construction',
+    "an integer literal adapts to the width it is stored into, and this one is outside that width's range -- until 2026-09-27 it compiled and the C conversion wrapped it (I16 := 40000 stored -25536)",
+    'IS SOME is the guard for OPT; the operand is not OPT (a cross-module PTR T IN pool may type as unknown and NOT be diagnosed -- check the declaration)',
+    'a value PTR parameter is a shared borrow; passing it on as VAR would launder it into a mutable one',
+    'a module-level VAR is state, and a module with state must say so',
+    'an OWN parameter takes ownership, and a borrow has none to give',
+    'a borrowed parameter is passed to a parameter the callee declares KEPT, so the caller is retaining it too',
+    "a + result lives in the frame's arena and dies at RETURN, but the callee declares it will keep the argument",
+    'a borrowed parameter was copied into a local (or bound by IS SOME or a CASE pattern) and the copy was stored somewhere that outlives the call -- the local carried the borrow',
+    "a borrowed parameter is stored somewhere that outlives the call -- module state, the caller's storage, or the answer -- and the signature does not say so",
+    'a procedure declares a CONST with the same name as one the module already declares',
+    'a bare name used as a value is declared nowhere -- not a local, parameter, IS SOME binder, CONST, type, or module',
+    'a RAISE, a RAISES clause or a handler cites an exception name found nowhere -- not declared locally, not predeclared (Overflow/IndexError/OutOfMemory/ValueRange), and not declared in any loaded module',
+    'a declaration names a type as Module.Name, the module is imported and loaded, and it declares no type or opaque of that name -- a typo, most often in case (DynStr.Dstring for DynStr.DString), since names are case-sensitive',
+    'NAME turns an enumeration member -- or a case-record variant -- into its identifier text; applied to anything else (a number, a record, a slice) it has nothing to name',
+    'an ARRAY indexed by an enumeration is indexed BY THE TYPE -- its subscript is a member of that enumeration, and its length is the member count -- so an integer subscript (or a value of some other type) is refused; the compiler proves a[Colour.Red] is in range precisely because a Colour is always one of the members',
+    'a FOR loop over an enumeration walks the members of ONE enumeration in declaration order, so its two bounds must name that same type; giving Colour.Red as the low bound and a member of a different enumeration as the high bound has no meaning, since members of unrelated enumerations are not comparable',
+    "BY names an integer stride and an enumeration's members are not numbers to step over -- the loop already visits every member from the low bound to the high one, with nothing between them to skip -- so BY on an enumeration bound is refused",
+    'an integer-to-enumeration conversion, Colour (i) or Mod.Type (i), can turn an integer that names no member into a value, so it RAISES ValueRange -- and a procedure that converts without declaring or handling that failure is refused, the same as I64 (x) on a value that might not fit',
+    "a three-part constructor Mod.Type.Variant (args) names a module, a type in it, and a variant that is not there -- reported as `unknown procedure: Mod.Type.Variant', because a name that is neither a procedure nor a known variant is, to the caller, an unknown callee",
+    'the function has a path that reaches its END without a RETURN or a RAISE -- an IF with no ELSE, a WHILE or FOR as its last statement, a LOOP left by EXIT, a CASE arm or a handler that does not answer; the emitted C would hand back the zero the result started as',
+    'a POOL is passed where the parameter is some other type (or the other way round); POOL is a type like any other to an argument and its parameter -- until 2026-10-01 it had no canonical form and such a call was accepted',
+    "the elements of a constant table CONST X = [ ... ] do not have one type: the table's element type is read off its FIRST element (an integer literal is an I64, a real an F64, a string a STR, a character a CHAR, TRUE and FALSE a BOOL) and nothing adapts, so [1, 2.5] is refused at the 2.5",
+    'an element of a constant table is an expression or a name, and a table holds literals (a minus sign in front of a number is one); a CONST over an expression is refused everywhere, and a table is no exception',
+    'a constant table is declared inside a procedure; it is data with one copy, and it belongs to the module',
+    'a constant table is declared in a DEFINITION; exporting one is not built yet (an importer would need the data, not a #define)',
+    'a constant table is named bare where its value would be aliased -- assigned to a slice, cut with SLICE, RETURNed -- and whatever held the alias could write the constant',
+    'a constant table is passed to a parameter that is not RO; a slice parameter can be written through, and the table is read-only data',
+    'an assignment whose left side is a CONST (or an element of a constant table); until 2026-10-01 the checker passed it and the C compiler refused the generated code',
+    'a CONST is passed to a VAR or OWN parameter, which exists to be written through; there is nothing to write',
+    'a string literal is passed to a by-value STR (or SLICE) parameter that is not RO; such a parameter can be written through, a literal is read-only data, and until 2026-10-01 this was accepted and a callee that wrote died with SIGSEGV (museum/write-through-literal.m9)',
+    'an RO parameter, or something reached through one, is passed on to a parameter that is not RO; the callee could write what this procedure promised its own caller not to',
+    'a string CONST, or an element of a constant table, is passed to a by-value slice parameter that is not RO; a constant is read-only data',
+    'the same refusal as const-string-to-writable, at the end of a program whose other calls are everything the rule must leave alone: read-only storage to an RO parameter, a variable to a writable one, a one-character literal to a CHAR, a concatenation (frame storage, writable) and a by-value slice parameter lent onward',
+    'two strings are compared with = or #, or ordered with < and its kin; a STR is a slice (a pointer and a length), no operator compares two of them, and until 2026-10-02 the checker passed this on to a C compiler that refused it',
+    'two arrays, records, slices or grids are compared with an operator; an operator compares scalars -- numbers, characters, booleans, enumeration values, pointers -- and the generated C has no == for a struct',
+    'a loop variable is used where another type is wanted -- assigned to an F64, added to one -- and that is an implicit conversion like any other; the refusal is the ordinary one.  Until 2026-10-02 the checker held a loop variable to no type at all inside its loop, so `x := x + i` with x an F64 compiled and ran (museum/implicit-through-loop-variable.m9)',
+    'the variable of a FOR loop is not declared; a loop does not declare its variable, and until 2026-10-02 the checker passed this and the generator said `unknown name`',
+    'the variable of a FOR loop over integer bounds is declared with a type that is not an integer -- an F64, a STR; a loop counts in an integer',
+    'a FOR loop over an enumeration (FOR c := Colour.Red TO Colour.Blue) has a variable of another type; the variable takes each member in turn, so it is that enumeration',
+    "a qualified name's module is known to the compiler -- something imported imports it -- and this module does not import it; until 2026-10-02 any module in the import closure could be named, so a program's IMPORT lines did not say what it depended on (museum/named-not-imported.m9)",
+    'an element or field is written through a variable declared VAR RO; until 2026-10-03 the RO on a variable was parsed and never read',
+    'a VAR RO variable is handed to a SLICE or GRID parameter that is not RO, where the callee could write through it',
+    "a component of a local record was itself given storage from a local pool (c.pix := NEW (scratch, BYTE, n)) and is answered or stored where it outlives the frame; until 2026-10-03 only the whole record was refused and the field passed (museum/escape-by-component.m9, Png.Raster's crash)",
+    "a CONST, TYPE, VAR, EXCEPTION or PROCEDURE name is declared a second time at the module's level, or a local beside a parameter of its name; until 2026-10-03 the C compiler refused most of these and a PROCEDURE declared twice it never saw -- the generator emitted the second body and dropped the first, and the program ran (museum/declared-twice.m9: Csv.ColF64 had shipped twice for five releases)",
+    "a real constant declared in a module's DEFINITION is assigned to an integer in its IMPLEMENTATION; the refusal is the ordinary one, and the probe holds what must stay legal before it -- the constant used as the integer, real or string it is.  Until 2026-10-02 an implementation was given no type for a constant of its own definition, so this compiled and 1.5 became 1 (museum/implicit-through-definition-const.m9)",
+    'the same gap for a string constant of the definition: assigned to an I64 in the implementation, it passed the checker until 2026-10-02 and failed in the C compiler',
+    "the same refusal; the probe holds what must stay LEGAL before it -- an implementation naming a module only its definition imports, a module naming itself, a local variable that has a module's name",
+    'a parameter (or a local) has the name of a module CONST and is used as the parameter it is; the refusal shown is an ordinary type error, and the point is that the checker now reads the name as the PARAMETER -- until 2026-10-01 it read it as the constant, so the type error went unseen and the generated C used the parameter',
+    'FROM ... IMPORT names an M9 module; FROM is for foreign FOR-C units only (there is no Module.m9 the generator can honour that way)',
+    "a string concatenation (+) is built in the procedure's frame arena and dies when the frame returns; storing it in a module variable, which outlives the frame, leaves the variable pointing at freed storage (par 2.3)",
+    "a string concatenation is frame-scoped; a bare VAR/OWN STR parameter is re-homed into the caller's arena at exit, but a COMPONENT reached through a reference parameter (a record field, an element, a value pointer's target) is not, so the caller would hold freed storage (par 2.3)",
+    "ByteSize answers the bytes a slice's elements occupy, so its argument must be a slice",
+    "NEW's arguments are the wrong way round: the pool comes first, then the type",
+    "NEW (T) with no pool allocates from the procedure's frame, which dies when the frame returns; a module variable outlives it and would point at freed storage (par 4.3, docs/pool-elision-plan.md)",
+    "a frame allocation stored into a COMPONENT reached through a reference parameter (a field, an element, a pointer's target) is not seen by the exit adoption, which looks at the parameter itself, so the caller would hold freed storage (par 4.3)",
+    "a local declared IN a pool claims that pool's lifetime, and rule 2 of the pool elision plan hands that pool to every callee that grows the object -- a frame value held there would have its growth outlive its head (par 4.3)",
+    "a frame value stored into a COMPONENT of a local (a record field, a pointer's target) taints the local as a whole, so copying that local into a module variable would hand the module storage that dies with the frame (par 2.3)",
+    'a local declared IN a pool has a target that outlives the frame, so a component of it may not hold a frame value (par 4.3)',
+    'the IN clause of a declaration is the pool rule 2 hands to every callee that grows the object, so it must be the pool the object was allocated in; a buffer grown in the declared pool while the head lives in another dies at the wrong time (par 4.3)',
+    'a view answered by a procedure that takes no pool and answers RO (DynStr.View) lives where its argument does; an argument in a LOCAL pool makes the view die with the frame, neither re-homed nor adopted at exit, so it may not be stored through a reference parameter, in a module variable, or through KEPT -- the zarr proxy read freed memory back as variable ids once a scratch pool had replaced a pool parameter (par 4.3)',
+    'an allocation in a LOCAL pool, or a name declared IN one, dies with the frame and is neither re-homed nor adopted at exit, so it may not be stored through a reference parameter, in a module variable, through KEPT, or in a name declared IN a pool that outlives the frame (par 4.3)',
+    'the RETURN rule for a name declared IN a local pool, applied by SHAPE: a pool-less name holding an allocation made in a local pool, or a view of one, answers storage that is freed when the frame exits; a STR alone is re-homed at exit (par 4.3)',
+    "a VAR parameter of a pointer-bearing type carries the pool its object lives in, named from the ROOT of the argument (rule 2 of the pool elision plan); an OWN parameter's object is heap storage with no pool to name (par 4.3)",
+    'the same hidden pool cannot be named for a component reached through a value parameter: the object is a borrow whose pool nobody stated (par 4.1, 4.3)',
+    'a frame allocation dies when this frame returns, and a thread does not wait for that',
+    'the frame owns its allocations and frees them as a unit at exit; there is nothing for DISPOSE to free',
+    'a KEPT parameter is retained past the call, and a frame allocation dies with the frame that made it (par 4.1)',
+    "a function that takes no pool and answers a pointer built in its body (a NEW with no pool, a `+`, a local POOL for a string) answers storage that lives in ITS CALLER's frame (par 4.3, rule 1); a module variable outlives that frame",
+    "a string a function built with `+` is re-homed into its caller's frame and dies with it; a KEPT parameter would retain it past that frame (par 2.3, 4.1)",
+    'SHARED needs the rc header only NEW (OWN, T) carries; a frame allocation has none and dies with the frame (par 4.2)',
+    'the record has no field of that name',
+    'the DEFINITION declares an opaque TYPE the IMPLEMENTATION never completes',
+    'an OPT field was read without IS SOME; OPT is traced through fields, not only names',
+    'PTR T IN pool cannot outlive its pool, and this pool dies with the frame',
+    "a function's result was not used; M9 does not let a value fall on the floor",
+    'NOT an error: the P3 ledger noting that a borrowed parameter was stored beyond the frame',
+    "the RETURN's type is not the function's declared result type",
+    "a proper procedure (no ': T') cannot RETURN a value",
+    "the IMPLEMENTATION's procedure heading is not the DEFINITION's, printed canonically (modes, types, RAISES all count)",
+    "CASE over a CASE RECORD must name every variant of the selector's own type",
+    'no procedure of that name is visible -- MOST OFTEN a real name whose module is not IMPORTed in THIS module (an IMPLEMENTATION has its own IMPORT list), otherwise a guessed name',
+    'the name was DISPOSEd on an earlier line and is dead',
+    'assigning a bare owned pointer to another name MOVES it; the source is dead',
+    'SHARED (s) consumed s; the handle is what lives on',
+    'a VAR or OWN argument must be something that can be written to -- a variable, field or element',
+    'VIEW takes exactly one argument per axis of the grid: an index (drops it) or ALL (keeps it)',
+    'a VIEW with an index on every axis is a single element, not a view',
+    'VIEW is a GRID operation; a slice has no strides to keep',
+    'the record came in RO, so its fields are read-only too',
+    'RO is a read-only borrow',
+    'the same scalar label appears in two arms; the second is dead and one of the two is a typo -- decided at compile time',
+    'a monitor serialises access by letting only its BOUND procedures reach its fields, and the binding is the FIRST parameter (par 6)',
+    "NEW from a pool the CALLER owns consumes the caller's storage and answers a slice into the caller's arena -- an effect (par 3.2)",
+    "a PURE procedure has no observable effect (par 3.2), and writing through a caller's VAR binding is precisely what the caller observes",
+    "a PURE procedure may call only PURE procedures -- which is what makes 'no I/O' true without the checker knowing what I/O is, since a foreign procedure is [SERIAL] or [REENTRANT] and never [PURE]",
+    'the slice came in RO ([READONLY]); its elements cannot be assigned',
+    'STR is SLICE OF CHAR and an RO one is read-only like any slice',
+    'a value PTR parameter is a SHARED borrow: readable, not writable (par 4.1)',
+    "the argument's type is not the parameter's, and nothing converts implicitly",
+    "another module's exported variable Mod.v has the type its definition declares, and nothing converts implicitly (decision 28, par 3)",
+    'a VAR RO export is read-only storage to every module, its importers included (par 2.4, decision 28)',
+    "another module's variable outlives this procedure as the module's own do: a frame value stored there would dangle (par 4.3, decision 28)",
+    'a comparison operator has NaN on one side; NaN compares unequal to everything, itself included, so = < <= > >= are never TRUE and # always is -- the test a reader takes for one and the machine does not',
+    'a CONST, TYPE, VAR, EXCEPTION, PROCEDURE, parameter or local is named NaN, the predeclared quiet NaN; until 2026-10-05 the library had four private procedures of that name, because there was no constant',
+    'a record aggregate Row (...) gives fewer or more values than the record has fields; it is positional and every field must be given (report par 2.2.4, 2026-10-05)',
+    'a value of a record aggregate does not have its field type -- often two fields given in the wrong order, which is what a positional aggregate cannot otherwise notice when the types differ',
+    'a field of a record CONST is not a literal: a CONST record is read-only data in the program, so its fields are literals (or NaN), as the elements of a constant table are',
+    'a field of a record CONST, or the whole of it, is assigned: it is read-only data',
+    'a record aggregate names an extended record (RECORD (Base) ...): its base fields would have to come first, which the first cut of the aggregate does not do',
+    'a record CONST is declared in a DEFINITION: like a constant table it is not exported yet'
+  ] ;
+  Fix = [
+    'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
+    'give every field (Pair (x, y)); conversions are for numeric widths and CHAR',
+    'use ALL only as a VIEW argument; a whole-axis loop is FOR i := 0 TO LEN (g, k) - 1',
+    'read the signature in docs/modules/<M>.md; every parameter is positional and required',
+    'convert with U8 (b) or I64 (b) first, and back with BYTE (x), each of which RAISES ValueRange',
+    "labels must be literals or CONSTs of the selector's type; a CHAR selector takes 'x' or 41C",
+    'write CASE v OF | Kind.Str (s) : ... END; never v.field on the variant part',
+    'convert one side explicitly; for strings use DynStr.Eq / Text.Eq, not = (par 2.1)',
+    'format first: Fmt.I64Str (n) or DynStr.AppendI64',
+    'pass what the parameter asks for: read p.x for a record parameter, or declare the parameter as the pointer',
+    'write the comparison out: IF n # 0 THEN',
+    'share on every path, or share before the branch; see par 4.2',
+    'implement it, or remove it from the definition; the signature is the contract (par 3)',
+    'only OWN parameters and locals holding owned PTRs may be DISPOSEd; move ownership with OWN',
+    'never DISPOSE a pool-interior pointer; free the pool (par 4.3, docs/pools.md)',
+    'use / for floats; Math.Fmod for a float remainder',
+    'a GRID 2 has axes 0 and 1',
+    'LEN (g, 0); LEN (s) without an axis is for slices',
+    'declare the matching rank, or take a VIEW that drops an axis',
+    'g[i, j, k] for a GRID 3; VIEW (g, i, ALL, ALL) to select a plane',
+    'I64 (x) explicitly; the conversion RAISES ValueRange, which your RAISES set must carry (par 2.1)',
+    'write 0.0, 1.0E-6; a <real> literal adapts to F32 or F64',
+    'DIV for integers',
+    'declare it OPT Less and take the value through IS SOME; a PARAMETER of procedure type needs no OPT (par 2.2.3)',
+    'declare the field OPT and read it through IS SOME (par 2.2.3)',
+    'assign a procedure with exactly the declared parameters and result, or change the type (par 2.2.3)',
+    "handle the extra exception inside the procedure, or declare it in the type's RAISES (par 2.2.3)",
+    "handle it, or add the exception to the caller's own RAISES (par 2.2.3, par 5)",
+    'take the value out of the PURE procedure, or make the computation a named PURE procedure (par 3.2)',
+    'pass what the target declares: a PTR T or SHARED PTR T for a `VAR r: T` or `p: PTR T` parameter, or a monitor by name (par 6)',
+    'hand the thread a record it may share -- a MONITOR, or a pool value both sides may read -- or do not touch the owned value again after the THREAD (par 6, par 4.2)',
+    'use a wider type, or the value you meant; a computed value that may not fit converts explicitly with I16 (x) RAISES ValueRange (par 2.1)',
+    'declare the type OPT PTR T, or drop the guard if it cannot be absent',
+    'take the parameter as VAR yourself if you need to pass it as VAR (par 4.1)',
+    'add [STATEFUL] to the DEFINITION MODULE, or move the state into a record the caller owns (par 6)',
+    'pass something you own -- a local, an OWN parameter -- or take the argument as VAR instead',
+    "declare the caller's own parameter KEPT as well -- the declaration composes upward, exactly as RAISES does (par 4.1, docs/retention.md)",
+    'build the string in a pool that outlives the retention (DynStr into a caller-supplied pool, or HEAP) and pass that (par 2.3, par 4.1)',
+    'the retention is real even though indirect: declare the parameter KEPT, or copy the bytes instead of the reference (par 4.1, docs/retention.md)',
+    'declare the parameter KEPT so every caller can see the retention, or copy the bytes instead of keeping the borrow (par 4.1, docs/retention.md)',
+    'rename one of them.  Which would win depends on lookup order, and the map answers the first hit, so the shadow is refused rather than resolved (docs/frame-pools.md)',
+    'declare it, import the module it comes from, or fix the typo; the checker now names it rather than leaving it to the generator (par: the checker refuses what the generator cannot see)',
+    'declare the EXCEPTION, or qualify it into the module that owns it (Json.ParseError); an imported exception is reached as Module.Name, never bare -- the checker now refuses what the generator could not emit',
+    "spell it as the module declares it (m9c --json Module lists every name); an unknown type is otherwise SOFT and never diagnosed, because a bare name found nowhere may only be a missing IMPORT -- but a known module lacking the name is not softness, and until 2026-09-15 this rode through --check to surface as cc's `unknown type name Module_Name', the M9 line gone",
+    "pass an enumeration or case-record value; NAME (Colour.Red) is 'Red', and it reads the identifier from a table the generator emits per type, so it retires a hand-written code-to-name CASE",
+    'write the member: a[Colour.Red], not a[0]; that is what makes the array bounds-checked at compile time, with no runtime check and no ordinal to keep in step with the type',
+    'make both bounds members of the one type -- FOR c := Colour.Red TO Colour.Blue; a loop that must cross two enumerations is two loops, or a conversion through ORD if the ordinals really are meant to line up',
+    'drop the BY: FOR c := Colour.Red TO Colour.Blue visits Red, Green, Blue in order; if you need to skip members, guard the body with an IF or CASE rather than striding the loop',
+    'add RAISES ValueRange to the signature, or handle it with EXCEPT; the conversion is the checked inverse of ORD, and the exhaustive RAISES accounting reaches it like every other narrowing',
+    "spell the variant as the type declares it (m9c --json Mod lists them); the three-part form is how an imported variant with a payload is built from another module, Mod.Type.Variant, and it looks nowhere but Mod -- before 2026-09-15 it was refused outright as `unknown procedure: Mod' because the callee was split at its first dot",
+    'answer on every path: add the ELSE, or a RETURN after the loop; a call does not count as an ending whatever the callee does, so write RAISE X (...) rather than a helper that always raises (par 3 rule 4)',
+    'pass what the parameter declares; a pool goes to a VAR pool: POOL parameter and nowhere else (par 4.3)',
+    "write every element in the first one's type -- [1.0, 2.5] for reals; the refusal names the element by number (par 2.2.4)",
+    'write the value out; if the element must be computed, the table is not a constant -- make it a module variable filled in the module body (par 2.2.4)',
+    'move the CONST to module level, above the procedure (par 2.2.4)',
+    'declare it in the IMPLEMENTATION and export a procedure that indexes it (par 2.2.4)',
+    'index it (X[i]), measure it (LEN (X)), or lend it whole to an RO parameter; those three are everything a table does (par 2.2.4)',
+    'declare the parameter RO if the callee only reads; if it writes, it needs a variable, not a constant (par 2.2.4)',
+    'a constant has one value; use a variable for what changes',
+    'pass a variable holding the value, or make the parameter by-value or RO if the callee only reads',
+    'declare the parameter RO if the procedure only reads it -- every STR parameter that is not written should say so; if it does write, pass a variable (par 2.4)',
+    "declare the callee's parameter RO if it only reads; otherwise this procedure is a mutator too, and its own parameter is not RO (par 2.4)",
+    'declare the parameter RO, or copy the constant into a variable first (par 2.4)',
+    "nothing to change in those forms; the probe holds the rule's edge, so that a later change that refuses one of them shows as a second diagnostic here",
+    "Text.Eq (a, b) for equality (IF Text.Eq (name, 'cancel') THEN ...); a CHAR against a one-character literal is still =; there is no ordering operator for strings -- Sort.Strs sorts, and a comparison of two strings is written out or taken from a library (par 2.3)",
+    "compare what is inside: the fields by name, the elements in a loop; for arrays of reals the question is usually 'near', not 'equal' (Check.NearF64s in a test) (par 2.3)",
+    'write the conversion: x := x + F64 (i).  NOT SOURCE COMPATIBLE for a program that leaned on the gap; none was found in this repository or the FLEXPART port',
+    "declare it in the procedure's VAR section: VAR i : I64 ;",
+    'declare the loop variable I64 (or another integer width), and convert inside the body where a real is wanted: F64 (i)',
+    'declare it of the enumeration: VAR c : Colour ;',
+    "add the line: IMPORT Lib ;  An implementation may lean on its definition's IMPORT and the other way round.  NOT SOURCE COMPATIBLE for a program that leaned on the gap: 5 sites in 386 files (par 3)",
+    'give the variable a new view instead (view := s), or drop RO from its declaration if it is meant to write (par 2.4)',
+    'make the parameter RO, or hand over a writable copy (par 2.4)',
+    "allocate the component in the caller's pool, or build the answer in the frame (NEW (BYTE, n)) so that it is re-homed; a value READ out of a slice that merely lives in a local pool is not this case and stays legal (par 4.3)",
+    'delete or rename the second declaration; the message names the line of the first.  A forward heading -- a heading without a body, its body later -- is legal and stays so (par 3)',
+    'write the conversion the assignment means: n := I64 (Math.Round (K)), or declare the variable F64.  NOT SOURCE COMPATIBLE for a program that leaned on the gap; none was found in 430 files here and in four applications',
+    'assign it to a STR; a number written in a string is read with a parser, not by assignment',
+    'IMPORT the module the last procedure names',
+    'nothing to change in a correct program; give the parameter another name if the shadowing confuses the reader',
+    'use IMPORT Module and write Module.Name; a Modula-2 unqualified FROM of an M9 module is caught here, at the import, instead of as a generator error later',
+    'copy it into a durable pool -- DynStr.Append (HEAP, ...), or a pool the caller owns; the module init body is exempt, because there frame and module variable share a lifetime',
+    "assign the whole VAR STR parameter, or build the field's string in a pool the caller can see (pass a POOL, or DynStr.Append into the caller's)",
+    'for a scalar or record use SizeOf (x); for the data behind a slice, ByteSize (s) = LEN (s) * SizeOf (element)',
+    'NEW (pool, T) for a pointer, NEW (pool, T, n) for a slice, NEW (pool, T, n1, n2) for a grid (par 4.3)',
+    "allocate it where the reader lives: NEW (HEAP, T) for the process's lifetime, NEW (pool, T) in a pool the caller owns, or return it -- a returned frame pointer keeps its storage",
+    'assign the whole VAR parameter (its target is adopted at exit), or allocate in the pool the object lives in: NEW (pool, T)',
+    'drop the IN clause when the object dies with the frame, or allocate it in the pool it is declared in: NEW (pool, T)',
+    'keep the record in the frame, or build the component in the pool the module variable owns: NEW (pool, T), or a callee that takes the pool',
+    'allocate the component in the pool the local is declared in: NEW (pool, T), or a callee that takes the pool',
+    'declare the variable IN the pool it is allocated in, or allocate it in the pool it is declared in',
+    'build the string in the pool the record lives in -- take the pool as a parameter, or NEW (v, T) under rule 2 -- or copy it there with Text.Keep (pool, s)',
+    'allocate in the pool the destination lives in, or in the frame (NEW (T)) so that the store adopts it',
+    'answer frame storage (NEW (T), rule 1) or allocate in a pool the caller hands in',
+    'grow an owned object through a procedure that takes it OWN, or hold it in a pool and hand the pooled variable on',
+    'take the object as VAR, so its pool comes in with it',
+    'allocate what a thread receives with NEW (OWN, T): the thread owns it and DISPOSEs it (par 4.2, 6)',
+    'drop the DISPOSE, or allocate with NEW (OWN, T) if one binding must own and free it (par 4.2)',
+    "allocate it in a pool the keeper can see -- NEW (pool, T) with the caller's pool, or NEW (HEAP, T)",
+    "give the callee a pool to build in -- NEW (pool, T) with the caller's pool, or NEW (HEAP, T) -- or copy the answer into a durable pool before storing it",
+    'Text.Keep (pool, s) into a pool the keeper can see, or build the string in that pool',
+    's := NEW (OWN, T) ; g := SHARED (s)',
+    "read the record in docs/modules/<M>.md; a variant's payload is reached through CASE",
+    'TYPE T = RECORD ... END in the implementation',
+    'IF r.f IS SOME p THEN ... END, and use p inside (par 2.2)',
+    'take the pool as a VAR parameter so the caller owns it, or return by value (docs/pools.md)',
+    'assign it, or make the procedure proper if the result is not wanted',
+    'nothing to fix; it is measured against the kill-gate (docs/p3-ledger.md)',
+    'convert explicitly, or change the declaration',
+    'declare a result type, or RETURN without a value',
+    "copy the definition's heading exactly; the IMPLEMENTATION adds only '='",
+    'add the missing arm; there is no ELSE for variants (par 8)',
+    'add IMPORT M to the implementation; then confirm the name in docs/modules/M.md or with m9c --doc',
+    'do not read it; re-assign to bring it back to life (par 4.2)',
+    'use the destination; if both must live, that is a SHARED handle',
+    'use the SHARED result; s is gone',
+    'store the expression in a local first',
+    'VIEW (g, i, ALL, ALL) for a GRID 3',
+    'subscript instead: g[i, j]',
+    'SLICE (s, start, len) for a sub-slice',
+    'take it as VAR if it must be written',
+    'VAR',
+    'remove the duplicate, or widen it to a range if that was meant',
+    'add a short bound procedure -- PROCEDURE Count (VAR g: Gate) : I64 -- and call that instead',
+    'use a local VAR scratch: POOL, or drop [PURE]',
+    'answer a value instead of writing through a parameter, or drop [PURE]',
+    'declare the callee [PURE] too if it really is, or drop [PURE] from the caller',
+    'VAR, or copy into a slice you own',
+    'VAR, or build a new string with DynStr',
+    'declare the parameter VAR p: PTR T -- the mutable-handle idiom',
+    'convert explicitly, or read the signature: docs/modules/<M>.md',
+    'convert explicitly to the declared type, or read the definition: m9c --json Mod',
+    'write through a writable export, or have the module that owns it change it',
+    'allocate where the exporter lives: NEW (HEAP, T), a pool the exporter owns, or assign from the module body',
+    'compare with Math.IsNaN (x), or x # x, which is TRUE exactly when x is a NaN',
+    "choose another name; NaN is the language's",
+    'give every field, in declaration order: Row (code, text)',
+    'give each field a value of its type, in declaration order; the message names the field by position',
+    'write the literal itself, or build the value in a statement (r := Row (N, ...)), where any expression of the field type goes',
+    'copy it to a variable (r := E) and change the copy',
+    'declare a variable of the extended type and set its fields one by one',
+    'declare the record CONST in the implementation, or export a procedure that answers it'
+  ] ;
+
+VAR
+  pool : POOL ;
+  root : STR ;
+
+(* the file's octets, one CHAR each *)
+PROCEDURE Octets (RO path: STR) : STR RAISES Io.IOError, ValueRange =
+BEGIN
+  RETURN DynStr.Chars (pool, Io.ReadFileBytes (pool, path))
+END Octets ;
+
+(* the index of probe n in the tables, or -1 *)
+PROCEDURE Entry (RO n: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (Probe) - 1 DO
+    IF DynStr.Eq (Probe[i], n) THEN RETURN i END
+  END ;
+  RETURN -1
+END Entry ;
+
+(* the probe's first line: `(* EXPECT: msg *)` or `(* LEDGER: msg *)`;
+   kind and msg answered, FALSE for anything else *)
+PROCEDURE Expect (RO text: STR ; VAR kind, msg: STR) : BOOL =
+VAR
+  k : I64 ;
+  first : STR ;
+BEGIN
+  k := Text.FindChar (text, 0AC) ;
+  IF k < 0 THEN first := text ELSE first := SLICE (text, 0, k) END ;
+  IF NOT Text.EndsWith (first, ' *)') THEN RETURN FALSE END ;
+  IF Text.StartsWith (first, '(* EXPECT: ') THEN
+    kind := 'EXPECT'
+  ELSIF Text.StartsWith (first, '(* LEDGER: ') THEN
+    kind := 'LEDGER'
+  ELSE
+    RETURN FALSE
+  END ;
+  IF LEN (first) < 14 THEN RETURN FALSE END ;
+  msg := SLICE (first, 11, LEN (first) - 14) ;
+  RETURN TRUE
+END Expect ;
+
+(* everything after the first line, less the line feeds at its end *)
+PROCEDURE Body (RO text: STR) : STR =
+VAR k, n : I64 ;
+BEGIN
+  k := Text.FindChar (text, 0AC) ;
+  IF k < 0 THEN RETURN '' END ;
+  n := LEN (text) ;
+  WHILE (n > k + 1) AND (text[n - 1] = 0AC) DO n := n - 1 END ;
+  RETURN SLICE (text, k + 1, n - k - 1)
+END Body ;
+
+(* the message as a table cell: a bar escaped *)
+PROCEDURE Cell (VAR d: PTR DynStr.DString ; RO s: STR) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = '|' THEN DynStr.AppendChar (d, 05CC) END ;
+    DynStr.AppendChar (d, s[i])
+  END
+END Cell ;
+
+PROCEDURE Line (VAR d: PTR DynStr.DString ; RO s: STR) =
+BEGIN
+  DynStr.Append (d, s) ;
+  DynStr.AppendChar (d, 0AC)
+END Line ;
+
+VAR
+  names, files : SLICE OF STR ;
+  i, k, n, bad : I64 ;
+  d : PTR DynStr.DString IN pool ;
+  kind, msg, text, page, cur, path, out : STR ;
+  check : BOOL ;
+
+BEGIN
+  check := (Io.ArgCount () > 1) AND DynStr.Eq (Io.Arg (pool, 1), '--check') ;
+  root := Text.Keep (pool, Io.Arg (pool, 0)) ;
+  k := Text.LastChar (root, '/') ;
+  IF k < 0 THEN
+    root := '..'
+  ELSE
+    root := SLICE (root, 0, k) ;
+    k := Text.LastChar (root, '/') ;
+    IF k < 0 THEN root := '.' ELSE root := SLICE (root, 0, k) END
+  END ;
+  out := Text.Keep (pool, root + '/docs/diagnose.md') ;
+
+  (* the probes, in name order *)
+  files := Io.ListDir (pool, root + '/probes') ;
+  n := 0 ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    IF Text.EndsWith (files[i], '.m9') THEN n := n + 1 END
+  END ;
+  names := NEW (pool, STR, n) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    IF Text.EndsWith (files[i], '.m9') THEN
+      names[n] := SLICE (files[i], 0, LEN (files[i]) - 3) ;
+      n := n + 1
+    END
+  END ;
+  Sort.Strs (names) ;
+
+  (* every probe explained, every explanation a probe *)
+  bad := 0 ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    IF Entry (names[i]) < 0 THEN
+      Io.ErrLine ('mkdiagnose: probe ' + names[i] + ' has no explanation') ;
+      bad := bad + 1
+    END
+  END ;
+  FOR i := 0 TO LEN (Probe) - 1 DO
+    k := 0 ;
+    WHILE (k < LEN (names)) AND NOT DynStr.Eq (names[k], Probe[i]) DO k := k + 1 END ;
+    IF k = LEN (names) THEN
+      Io.ErrLine ('mkdiagnose: explanation ' + Probe[i] + ' has no probe') ;
+      bad := bad + 1
+    END
+  END ;
+  IF bad > 0 THEN Io.Halt (1) END ;
+
+  (* the page *)
+  d := DynStr.New (pool) ;
+  Line (d, '# M9 diagnostics: message, cause, fix' + 0AC) ;
+  Line (d, '*GENERATED by `tools/MkDiagnose.m9` from `probes/` -- do not edit.*' + 0AC) ;
+  Line (d, 'Every entry is one checker refusal.  The **message** is read from the') ;
+  Line (d, "probe's first line, and `probediff.sh` holds both checkers to it, so") ;
+  Line (d, 'this column cannot drift from what `m9c` prints.  The cause and the') ;
+  Line (d, 'fix are curated in the generator, keyed by probe name; a probe without') ;
+  Line (d, 'an entry fails the build.  `runtime/test/diagdiff.sh` is the gate.' + 0AC) ;
+  Line (d, 'A checker message is printed as `LINE:COL Module.Proc: MESSAGE`, then') ;
+  Line (d, '`m9c: N errors in FILE`.  A PARSE error is still a bare count with no') ;
+  Line (d, 'line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for') ;
+  Line (d, '`LINE:COL message`.  A GENERATOR error is `FILE:LINE: gen: MESSAGE`.' + 0AC) ;
+  Line (d, '| message | cause | fix | probe |') ;
+  Line (d, '|---|---|---|---|') ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    path := Text.Keep (pool, root + '/probes/' + names[i] + '.m9') ;
+    text := Octets (path) ;
+    IF NOT Expect (text, kind, msg) THEN
+      Io.ErrLine (path + ': first line is not an EXPECT/LEDGER comment') ;
+      Io.Halt (1)
+    END ;
+    k := Entry (names[i]) ;
+    DynStr.Append (d, '| `') ;
+    Cell (d, msg) ;
+    DynStr.Append (d, '`') ;
+    IF NOT Text.Eq (kind, 'EXPECT') THEN DynStr.Append (d, ' *(ledger, not an error)*') END ;
+    Line (d, ' | ' + Cause[k] + ' | ' + Fix[k] + ' | `' + names[i] + '` |')
+  END ;
+  Line (d, '') ;
+  Line (d, '## The programs' + 0AC) ;
+  Line (d, 'Each is the smallest program that earns its message.  Reading one is') ;
+  Line (d, 'faster than reading the rule.' + 0AC) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    text := Octets (root + '/probes/' + names[i] + '.m9') ;
+    IF Expect (text, kind, msg) THEN END ;
+    Line (d, '### ' + names[i] + 0AC) ;
+    Line (d, '`' + msg + '`' + 0AC) ;
+    Line (d, '```') ;
+    Line (d, Body (text)) ;
+    DynStr.Append (d, '```' + 0AC) ;
+    IF i < LEN (names) - 1 THEN DynStr.AppendChar (d, 0AC) END
+  END ;
+  page := DynStr.View (d) ;
+
+  IF check THEN
+    cur := '' ;
+    IF Io.Exists (out) THEN cur := Octets (out) END ;
+    IF NOT DynStr.Eq (cur, page) THEN
+      Io.ErrLine ('diagdiff: docs/diagnose.md is stale; run tools/MkDiagnose.m9') ;
+      Io.Halt (1)
+    END ;
+    Io.WriteLine ('diagdiff: docs/diagnose.md matches probes/ ('
+                  + Fmt.I64Str (LEN (Probe)) + ' entries)')
+  ELSE
+    Io.WriteFile (out, page) ;
+    Io.WriteLine ('docs/diagnose.md: ' + Fmt.I64Str (LEN (Probe)) + ' entries from probes/')
+  END
+EXCEPT
+| Io.IOError (p) :
+    msg := p ;
+    Io.ErrLine ('mkdiagnose: cannot read or write ' + msg) ; Io.Halt (1)
+| IndexError :
+    Io.ErrLine ('mkdiagnose: no program name to find the repository by') ; Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('mkdiagnose: a character past one byte') ; Io.Halt (1)
+END MkDiagnose.

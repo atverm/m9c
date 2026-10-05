@@ -34,6 +34,7 @@ type
     excDef : array of Boolean;
     modVarN : array of string;  { STATEFUL module state -> statics }
     modVarT : array of TNode;
+    modVarDef : array of Boolean; { declared in the definition: exported }
     aggN : array of string;     { constant tables (par 2.2.4): name, }
     aggT : array of TNode;      { the ARRAY n OF T made for it,      }
     aggV : array of TNode;      { and the aggregate itself           }
@@ -48,7 +49,12 @@ type
     extExcs : TStringList;      { 'Exc=Mod' -> fieldseq node }
     extTypes : TStringList;     { 'Mod.T' -> type node }
     extConsts : TStringList;    { 'Mod.C' -> expr node }
+    extVars : TStringList;      { 'Mod.v' -> its type, qualified in Mod:
+                                  the imported module variables (decision 28) }
     hdrRecs, hdrProtos, hdrConsts : TStringList;
+    { Gen.KArrRec / KHdrArrRec: an ARRAY OF a record of this module,
+      typedef'd after the struct it contains }
+    arrRec, hdrArrRec : TStringList;
     foreignProcs : TStringList; { bare name -> foreign head node }
     foreignUnit : TStringList;  { bare name -> its FOR-C unit }
     gateSeen : TStringList;     { units that got a [SERIAL] gate }
@@ -89,6 +95,7 @@ type
     function ISuf (const t: string): string;
     function ProcTypedefC (const name: string; ptn: TNode): string;
     function TyC (t: TNode): string;
+    function ArrBucket (elem: TNode): TStringList;
     function SliceTy (elem: TNode): string;
     function GridTy (elem: TNode; const rank: string): string;
     function IsAllArg (e: TNode): Boolean;
@@ -99,6 +106,11 @@ type
     function TagOfType (t: TNode): string;
     function TagOfExpr (e: TNode): string;
     function ScopeFind (const n: string): Integer;
+    procedure ModuleScope;
+    function QualIn (t: TNode; const inMod: string): TNode;
+    procedure ExportVars (rec2: TStringList);
+    function NameShadowed (sc: TNode; const name: string): Boolean;
+    procedure ExportWalk (n, sc: TNode);
     function ScopeNode (const n: string): TNode;
     function ScopeMode (const n: string): string;
     function FieldType (rec: TNode; const f: string): TNode;
@@ -115,11 +127,17 @@ type
     function CharVal (const lit: string): Int64;
     function StrCodes (const s: string; n: TNode): string;
     procedure AddAgg (const nm: string; ag: TNode);
+    function RecordConstQual (e: TNode): TNode;
+    function LitC (e: TNode; const sname, what: string): string;
+    procedure StrC (tgt: TStringList; e: TNode; const sname: string);
+    procedure RecStrs (tgt: TStringList; e: TNode; const base: string);
+    function RecC (e: TNode; const base, what: string): string;
     procedure PushAggs;
     procedure EmitAggs (tgt: TStringList);
     function DES (d: TNode; out tag: string): string;
     function EX (e: TNode; const want: string): string;
     function EnumConvCount (n: TNode): Integer;
+    function RecordAt (const name: string; out ctype: string): TNode;
     function CallC (dnode, argl, site: TNode; out tag: string): string;
     function ConstLbl (d: TNode): string;
     function DesigDecl (d: TNode): TNode;
@@ -200,6 +218,9 @@ end;
 
 function CN (const n: string): string;
 begin
+  { an imported variable is in scope as Mod.v (decision 28); its C name
+    is the pointer the exporter defines, Mod_v }
+  if Pos ('.', n) > 0 then Exit (StringReplace (n, '.', '_', [rfReplaceAll]));
   if (n = 'signed') or (n = 'unsigned') or (n = 'int') or (n = 'char')
      or (n = 'long') or (n = 'short') or (n = 'float') or (n = 'double')
      or (n = 'void') or (n = 'return') or (n = 'if') or (n = 'else')
@@ -263,9 +284,12 @@ begin
   extExcs := TStringList.Create; extExcs.CaseSensitive := True;
   extTypes := TStringList.Create; extTypes.CaseSensitive := True;
   extConsts := TStringList.Create; extConsts.CaseSensitive := True;
+  extVars := TStringList.Create; extVars.CaseSensitive := True;
   hdrRecs := TStringList.Create; hdrRecs.CaseSensitive := True;
   hdrProtos := TStringList.Create; hdrProtos.CaseSensitive := True;
   hdrConsts := TStringList.Create; hdrConsts.CaseSensitive := True;
+  arrRec := TStringList.Create; arrRec.CaseSensitive := True;
+  hdrArrRec := TStringList.Create; hdrArrRec.CaseSensitive := True;
 end;
 
 destructor TGen.Destroy;
@@ -275,8 +299,8 @@ begin
   thrBuf.Free; thrSeen.Free; rec2Gates.Free; bpool.Free;
   extProcs.Free; extMods.Free; foreignProcs.Free; litBuf.Free;
   foreignUnit.Free; gateSeen.Free;
-  extExcs.Free; extTypes.Free; extConsts.Free;
-  hdrRecs.Free; hdrProtos.Free; hdrConsts.Free;
+  extExcs.Free; extTypes.Free; extConsts.Free; extVars.Free;
+  hdrRecs.Free; hdrProtos.Free; hdrConsts.Free; arrRec.Free; hdrArrRec.Free;
   inherited;
 end;
 
@@ -301,6 +325,20 @@ end;
 
 { ---- registry ---- }
 
+{ Gen.NanWalk: a bare designator NaN becomes the real literal NAN
+  (report par 2.1) }
+procedure NanWalk (n: TNode);
+var i : Integer;
+begin
+  if n = nil then Exit;
+  if (n.kind = nkDesignator) and (Length (n.kids) = 0) and (n.a = 'NaN') then
+  begin
+    n.kind := nkReal;
+    n.a := 'NAN';
+  end;
+  for i := 0 to High (n.kids) do NanWalk (n.kids[i]);
+end;
+
 procedure TGen.LoadUnit (u: TNode);
 var
   i, j : Integer;
@@ -308,6 +346,7 @@ var
   gp : TGProc;
   pi : Integer;
 begin
+  for i := 0 to High (u.kids) do NanWalk (u.kids[i]);
   { a FOR "C" unit contributes foreign procedures, nothing else }
   if (u.kind = nkDefinition) and (u.b <> '') then
   begin
@@ -367,7 +406,8 @@ begin
       nkConstSection :
         for j := 0 to High (d.kids) do
           if (d.kids[j].kids[0] <> nil) and
-             (d.kids[j].kids[0].kind = nkAggregate) then
+             ((d.kids[j].kids[0].kind = nkAggregate) or
+              (RecordConstQual (d.kids[j].kids[0]) <> nil)) then
             AddAgg (d.kids[j].a, d.kids[j].kids[0])
           else
             consts.AddObject (d.kids[j].a, TObject (d.kids[j].kids[0]));
@@ -387,8 +427,10 @@ begin
           begin
             SetLength (modVarN, Length (modVarN) + 1);
             SetLength (modVarT, Length (modVarT) + 1);
+            SetLength (modVarDef, Length (modVarDef) + 1);
             modVarN[High (modVarN)] := d.kids[j].kids[0].kids[pi].a;
             modVarT[High (modVarT)] := d.kids[j].kids[1];
+            modVarDef[High (modVarDef)] := u.kind = nkDefinition;
           end;
       nkModBody :
         mainBody := d.kids[0];
@@ -397,7 +439,7 @@ begin
 end;
 
 procedure TGen.RegisterExtern (u: TNode; addInclude: Boolean);
-var i, j : Integer;
+var i, j, k : Integer;
 begin
   if u.kind <> nkDefinition then Exit;
   { a dependency's FOR-C unit contributes foreign procs by bare
@@ -433,6 +475,14 @@ begin
         for j := 0 to High (u.kids[i].kids) do
           extConsts.AddObject (u.a + '.' + u.kids[i].kids[j].a,
             TObject (u.kids[i].kids[j].kids[0]));
+      { the definition's variables: an importer's Mod.v, a pointer to the
+        exporter's storage in VAR-parameter mode, C name Mod_v (decision 28;
+        Gen.RegisterExtern) }
+      if u.kids[i].kind = nkVarSection then
+        for j := 0 to High (u.kids[i].kids) do
+          for k := 0 to High (u.kids[i].kids[j].kids[0].kids) do
+            extVars.AddObject (u.a + '.' + u.kids[i].kids[j].kids[0].kids[k].a,
+              TObject (QualIn (u.kids[i].kids[j].kids[1], u.a)));
     end;
 end;
 
@@ -567,11 +617,33 @@ begin
   Result := '';
 end;
 
+{ Gen.ArrBucket: where an ARRAY OF elem's typedef goes -- after the
+  struct of a record of this module (arrRec for a private one,
+  hdrArrRec for a transparent one), with the other typedefs
+  otherwise; a nested array follows its innermost element }
+function TGen.ArrBucket (elem: TNode): TStringList;
+var i : Integer;
+begin
+  Result := tdefs;
+  if elem = nil then Exit;
+  if elem.kind = nkArrayType then Exit (ArrBucket (elem.kids[1]));
+  if (elem.kind = nkQualident) and (elem.b = '') then
+    for i := 0 to High (tyNames) do
+      if (tyNames[i] = elem.a) and (tyNodes[i] <> nil) and
+         (tyNodes[i].kind in [nkRecordType, nkMonitorType]) then
+      begin
+        if tyFromDef[i] and not IsOpaque (tyNames[i]) then
+          Exit (hdrArrRec);
+        Exit (arrRec);
+      end;
+end;
+
 function TGen.TyC (t: TNode): string;
 var
   s, nested : string;
   ei, i : Integer;
   r2 : TNode;
+  ab : TStringList;
 begin
   Result := 'void';
   if t = nil then Exit;
@@ -660,11 +732,12 @@ begin
           { each typedef defines a fresh anonymous struct, so two
             modules emitting the same name are conflicting types, not
             a legal C11 redefinition: guard every one }
-          tdefs.Add ('#ifndef M9SL_' + s);
-          tdefs.Add ('#define M9SL_' + s);
-          tdefs.Add ('typedef struct { ' + nested + ' v[' +
+          ab := ArrBucket (t.kids[1]);
+          ab.Add ('#ifndef M9SL_' + s);
+          ab.Add ('#define M9SL_' + s);
+          ab.Add ('typedef struct { ' + nested + ' v[' +
             ArrCount (t.kids[0]) + ']; } ' + s + ';');
-          tdefs.Add ('#endif');
+          ab.Add ('#endif');
         end;
         Exit (s);
       end;
@@ -861,7 +934,7 @@ var i, lo, hi : Integer;
 begin
   lo := mvBase;
   if lo > scope.Count then lo := scope.Count;
-  hi := mvBase + Length (modVarN) + Length (aggN);
+  hi := mvBase + Length (modVarN) + extVars.Count + Length (aggN);
   if hi > scope.Count then hi := scope.Count;
   for i := 0 to lo - 1 do
     if scope.Names[i] = n then Exit (i);
@@ -870,6 +943,134 @@ begin
   for i := lo to hi - 1 do
     if scope.Names[i] = n then Exit (i);
   Result := -1;
+end;
+
+{ the module block: this module's variables, then every imported
+  module's exports as Mod.v in VAR-parameter mode (Gen.ModuleScope) }
+procedure TGen.ModuleScope;
+var i : Integer;
+begin
+  mvBase := scope.Count;
+  for i := 0 to High (modVarN) do
+    scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
+  for i := 0 to extVars.Count - 1 do
+    scope.AddObject (extVars[i] + '=v', extVars.Objects[i]);
+end;
+
+{ Gen.QualIn: a type node from module modName with its bare type names
+  qualified, so an importer reads it where it was declared }
+function TGen.QualIn (t: TNode; const inMod: string): TNode;
+var n : TNode;
+begin
+  Result := t;
+  if t = nil then Exit;
+  if t.kind = nkQualident then
+  begin
+    if (t.b = '') and not InL (t.a, Builtins) and (t.a <> 'STR') and
+       (t.a <> 'POOL') then
+    begin
+      n := TNode.Create (nkQualident);
+      n.line := t.line; n.col := t.col;
+      n.a := inMod; n.b := t.a;
+      Result := n;
+    end;
+  end
+  else if t.kind in [nkPtrType, nkOptType, nkSharedType, nkSliceType] then
+  begin
+    n := TNode.Create (t.kind);
+    n.line := t.line; n.col := t.col;
+    if Length (t.kids) > 0 then n.Add (QualIn (t.kids[0], inMod));
+    n.Add (nil);
+    Result := n;
+  end
+  else if (t.kind in [nkArrayType, nkGridType]) and (Length (t.kids) >= 2) then
+  begin
+    n := TNode.Create (t.kind);
+    n.line := t.line; n.col := t.col;
+    n.Add (t.kids[0]);
+    n.Add (QualIn (t.kids[1], inMod));
+    Result := n;
+  end;
+end;
+
+{ Gen.ExportVars: the exporter publishes a constant pointer to each
+  variable its definition declares, and a pointer-bearing one's pool }
+procedure TGen.ExportVars (rec2: TStringList);
+var
+  i : Integer;
+  ty, cname, pl : string;
+  t, r : TNode;
+  any : Boolean;
+begin
+  any := False;
+  for i := 0 to High (modVarN) do
+    if modVarDef[i] then
+    begin
+      any := True;
+      ty := TyC (modVarT[i]);
+      cname := modName + '_' + modVarN[i];
+      rec2.Add (ty + ' * const ' + cname + ' = &' + CN (modVarN[i]) + ';');
+      hdrProtos.Add ('extern ' + ty + ' * const ' + cname + ';');
+      if PoolParamTy (modVarT[i]) then
+      begin
+        pl := '&m9mframe';
+        t := modVarT[i];
+        if (t <> nil) and (t.kind = nkOptType) then t := t.kids[0];
+        r := Resolve (t);
+        if (r <> nil) and (r.kind = nkPtrType) and (Length (r.kids) > 1) and
+           (r.kids[1] <> nil) and (Length (r.kids[1].kids) = 0) then
+          pl := '&' + CN (r.kids[1].a);
+        rec2.Add ('m9_pool * const ' + cname + '_pool = ' + pl + ';');
+        hdrProtos.Add ('extern m9_pool * const ' + cname + '_pool;');
+      end;
+    end;
+  if any then rec2.Add ('');
+end;
+
+function GDeclaresName (k: TNode; const name: string): Boolean;
+var i : Integer;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if (k.kind in [nkIdent, nkIsSome, nkTypeDecl, nkConstDecl, nkExcDecl]) and
+     (k.a = name) then Exit (True);
+  for i := 0 to High (k.kids) do
+    if GDeclaresName (k.kids[i], name) then Exit (True);
+end;
+
+function TGen.NameShadowed (sc: TNode; const name: string): Boolean;
+var i : Integer;
+begin
+  if GDeclaresName (sc, name) then Exit (True);
+  if (FindProc (name) >= 0) or (consts.IndexOf (name) >= 0) then Exit (True);
+  if FindType (name) <> nil then Exit (True);
+  for i := 0 to High (modVarN) do
+    if modVarN[i] = name then Exit (True);
+  Result := False;
+end;
+
+{ Gen.ExportWalk: the designator Mod.v... of a directly imported module's
+  exported variable becomes the designator rooted at the one name Mod.v }
+procedure TGen.ExportWalk (n, sc: TNode);
+var
+  i : Integer;
+  s : TNode;
+begin
+  if n = nil then Exit;
+  if (n.kind = nkDesignator) and (Length (n.kids) > 0) and (n.kids[0] <> nil) then
+  begin
+    s := n.kids[0];
+    if (s.kind = nkSelField) and (extMods.IndexOf (n.a) >= 0) and
+       (extVars.IndexOf (n.a + '.' + s.a) >= 0) and not NameShadowed (sc, n.a) then
+    begin
+      n.a := n.a + '.' + s.a;
+      for i := 0 to High (n.kids) - 1 do n.kids[i] := n.kids[i + 1];
+      SetLength (n.kids, Length (n.kids) - 1);
+    end;
+  end;
+  for i := 0 to High (n.kids) do
+    if n.kind = nkProcDecl then ExportWalk (n.kids[i], n)
+    else ExportWalk (n.kids[i], sc);
 end;
 
 function TGen.ScopeNode (const n: string): TNode;
@@ -1266,10 +1467,59 @@ end;
 { a constant table (par 2.2.4): CONST X = [ e1, ..., en ] is kept as
   an ARRAY n OF T built here, T read off the first element -- the
   checker has held every element to it }
+{ Gen.RecordConstQual: the record a CONST's call names, as a type
+  node, an alias followed -- or nil }
+function TGen.RecordConstQual (e: TNode): TNode;
+var
+  name, ct, m, tn : string;
+  j, dot, depth, ei : Integer;
+  t : TNode;
+begin
+  Result := nil;
+  if (e = nil) or (e.kind <> nkCallExpr) or (e.kids[0] = nil) then Exit;
+  name := e.kids[0].a;
+  for j := 0 to High (e.kids[0].kids) do
+    if e.kids[0].kids[j].kind = nkSelField then
+      name := name + '.' + e.kids[0].kids[j].a;
+  if RecordAt (name, ct) = nil then Exit;
+  { the same walk RecordAt makes, for the name it ends on }
+  dot := Pos ('.', name);
+  if dot = 0 then begin m := modName; tn := name; end
+  else begin m := Copy (name, 1, dot - 1); tn := Copy (name, dot + 1, MaxInt); end;
+  for depth := 0 to 7 do
+  begin
+    if m = modName then t := FindType (tn)
+    else
+    begin
+      ei := extTypes.IndexOf (m + '.' + tn);
+      if ei < 0 then Exit;
+      t := TNode (extTypes.Objects[ei]);
+    end;
+    if t = nil then Exit;
+    if t.kind = nkRecordType then Break;
+    if t.b <> '' then begin m := t.a; tn := t.b; end else tn := t.a;
+  end;
+  Result := TNode.Create (nkQualident);
+  if m = modName then Result.a := tn
+  else begin Result.a := m; Result.b := tn; end;
+end;
+
 procedure TGen.AddAgg (const nm: string; ag: TNode);
 var
   cnt, at, el, q : TNode;
 begin
+  { a record CONST: its type is the record (par 2.2.4) }
+  q := RecordConstQual (ag);
+  if q <> nil then
+  begin
+    SetLength (aggN, Length (aggN) + 1);
+    SetLength (aggT, Length (aggT) + 1);
+    SetLength (aggV, Length (aggV) + 1);
+    aggN[High (aggN)] := nm;
+    aggT[High (aggT)] := q;
+    aggV[High (aggV)] := ag;
+    Exit;
+  end;
   cnt := TNode.Create (nkInt);
   cnt.a := IntToStr (Length (ag.kids));
   el := ag.kids[0];
@@ -1283,6 +1533,7 @@ begin
       nkTrue, nkFalse : q.a := 'BOOL';
       nkString : q := strNode;
     end;
+  if RecordConstQual (ag.kids[0]) <> nil then q := RecordConstQual (ag.kids[0]);
   at := TNode.Create (nkArrayType);
   at.Add (cnt);
   at.Add (q);
@@ -1307,6 +1558,60 @@ end;
 { ... and emitted as const data -- read-only storage, so a write the
   checker missed is a fault and not a changed constant -- with the
   name a pointer to it.  One element per line: a table is read. }
+{ Gen.LitC: a literal of a constant table or record CONST as C }
+function TGen.LitC (e: TNode; const sname, what: string): string;
+begin
+  Result := '0';
+  case e.kind of
+    nkInt : Result := 'INT64_C(' + e.a + ')';
+    nkReal : Result := '(' + e.a + ')';
+    nkChar : Result := IntToStr (CharVal (e.a)) + 'u';
+    nkTrue : Result := 'true';
+    nkFalse : Result := 'false';
+    nkString :
+      if Length (e.a) > 0 then
+        Result := '{ (uint32_t *) ' + sname + ', ' +
+          IntToStr (Length (e.a)) + ' }'
+      else
+        Result := '{ 0, 0 }';
+    nkUn :
+      if (e.kids[0] <> nil) and (e.kids[0].kind = nkInt) then
+        Result := 'INT64_C(-' + e.kids[0].a + ')'
+      else if e.kids[0] <> nil then
+        Result := '(-' + e.kids[0].a + ')';
+  else
+    Err (e, 'aggregate element unsupported yet: ' + what);
+  end;
+end;
+
+procedure TGen.StrC (tgt: TStringList; e: TNode; const sname: string);
+begin
+  if (e <> nil) and (e.kind = nkString) and (Length (e.a) > 0) then
+    tgt.Add ('static const uint32_t ' + sname + '[' +
+      IntToStr (Length (e.a)) + '] = { ' + StrCodes (e.a, e) + ' };');
+end;
+
+procedure TGen.RecStrs (tgt: TStringList; e: TNode; const base: string);
+var f : Integer;
+begin
+  if e.kids[1] <> nil then
+    for f := 0 to High (e.kids[1].kids) do
+      StrC (tgt, e.kids[1].kids[f], base + '_' + IntToStr (f));
+end;
+
+function TGen.RecC (e: TNode; const base, what: string): string;
+var f : Integer;
+begin
+  Result := '{ ';
+  if e.kids[1] <> nil then
+    for f := 0 to High (e.kids[1].kids) do
+    begin
+      if f > 0 then Result := Result + ', ';
+      Result := Result + LitC (e.kids[1].kids[f], base + '_' + IntToStr (f), what);
+    end;
+  Result := Result + ' }';
+end;
+
 procedure TGen.EmitAggs (tgt: TStringList);
 var
   i, k : Integer;
@@ -1317,13 +1622,23 @@ begin
   begin
     ty := TyC (aggT[i]);
     nm := CN (aggN[i]);
+    if aggV[i].kind = nkCallExpr then
+    begin
+      { a record CONST: one record of const data }
+      RecStrs (tgt, aggV[i], nm + '_s0');
+      tgt.Add ('static const ' + ty + ' ' + nm + '_k = ' +
+        RecC (aggV[i], nm + '_s0', aggN[i]) + ';');
+      tgt.Add ('static ' + ty + ' * const ' + nm + ' = (' + ty + ' *) &' +
+        nm + '_k;');
+      Continue;
+    end;
     for k := 0 to High (aggV[i].kids) do
     begin
       e := aggV[i].kids[k];
-      if (e <> nil) and (e.kind = nkString) and (Length (e.a) > 0) then
-        tgt.Add ('static const uint32_t ' + nm + '_s' + IntToStr (k) +
-          '[' + IntToStr (Length (e.a)) + '] = { ' + StrCodes (e.a, e) +
-          ' };');
+      if (e <> nil) and (e.kind = nkCallExpr) then
+        RecStrs (tgt, e, nm + '_s' + IntToStr (k))
+      else
+        StrC (tgt, e, nm + '_s' + IntToStr (k));
     end;
     tgt.Add ('static const ' + ty + ' ' + nm + '_k = { {');
     for k := 0 to High (aggV[i].kids) do
@@ -1331,26 +1646,12 @@ begin
       e := aggV[i].kids[k];
       cs := '0';
       if e <> nil then
-        case e.kind of
-          nkInt : cs := 'INT64_C(' + e.a + ')';
-          nkReal : cs := '(' + e.a + ')';
-          nkChar : cs := IntToStr (CharVal (e.a)) + 'u';
-          nkTrue : cs := 'true';
-          nkFalse : cs := 'false';
-          nkString :
-            if Length (e.a) > 0 then
-              cs := '{ (uint32_t *) ' + nm + '_s' + IntToStr (k) + ', ' +
-                IntToStr (Length (e.a)) + ' }'
-            else
-              cs := '{ 0, 0 }';
-          nkUn :
-            if (e.kids[0] <> nil) and (e.kids[0].kind = nkInt) then
-              cs := 'INT64_C(-' + e.kids[0].a + ')'
-            else if e.kids[0] <> nil then
-              cs := '(-' + e.kids[0].a + ')';
+      begin
+        if e.kind = nkCallExpr then
+          cs := RecC (e, nm + '_s' + IntToStr (k), aggN[i])
         else
-          Err (e, 'aggregate element unsupported yet: ' + aggN[i]);
-        end;
+          cs := LitC (e, nm + '_s' + IntToStr (k), aggN[i]);
+      end;
       if k < High (aggV[i].kids) then cs := cs + ',';
       tgt.Add ('  ' + cs);
     end;
@@ -1597,15 +1898,50 @@ begin
   end;
 end;
 
+{ Gen.RecordAt: the RECORD a callee names and its C type name,
+  following an alias by name to the record it stands for }
+function TGen.RecordAt (const name: string; out ctype: string): TNode;
+var
+  dot, depth, ei : Integer;
+  m, tn : string;
+  t : TNode;
+begin
+  Result := nil;
+  dot := Pos ('.', name);
+  if dot = 0 then begin m := modName; tn := name; end
+  else begin m := Copy (name, 1, dot - 1); tn := Copy (name, dot + 1, MaxInt); end;
+  for depth := 0 to 7 do
+  begin
+    if m = modName then
+      t := FindType (tn)
+    else
+    begin
+      ei := extTypes.IndexOf (m + '.' + tn);
+      if ei < 0 then Exit;
+      t := TNode (extTypes.Objects[ei]);
+    end;
+    if t = nil then Exit;
+    if t.kind = nkRecordType then
+    begin
+      ctype := m + '_' + tn;
+      Exit (t);
+    end;
+    if t.kind <> nkQualident then Exit;
+    if t.b <> '' then begin m := t.a; tn := t.b; end
+    else tn := t.a;
+  end;
+end;
+
 function TGen.CallC (dnode, argl, site: TNode; out tag: string): string;
 var
   name, args, at, want, tn, vn, cfunc, gname : string;
   pv : Boolean;                     { a call through a procedure value }
   svt : TNode;
   pi, g, j, k, nargs, dot : Integer;
-  pl, grp, arg, vt, vd, pnode, xvt, enode : TNode;
-  ec : Integer;
+  pl, grp, arg, vt, vd, pnode, xvt, enode, rec : TNode;
+  ec, rk : Integer;
   isref : Boolean;
+  ctype : string;
 begin
   tag := '?';
   name := dnode.a;
@@ -1618,6 +1954,33 @@ begin
       name := name + '.' + dnode.kids[k].a;
   nargs := 0;
   if argl <> nil then nargs := Length (argl.kids);
+
+  { A RECORD AGGREGATE: Row (a, b), or Mod.Row (a, b) -- a compound
+    literal of the record's C type, the fields in declaration order,
+    which is the struct's order (Gen.RecordAt) }
+  rec := RecordAt (name, ctype);
+  if rec <> nil then
+  begin
+    tag := 'REC';
+    args := '';
+    rk := 0;
+    if rec.kids[1] <> nil then
+      for g := 0 to High (rec.kids[1].kids) do
+      begin
+        grp := rec.kids[1].kids[g];
+        for j := 0 to High (grp.kids[0].kids) do
+        begin
+          if (rk < nargs) and (argl <> nil) then
+          begin
+            if args <> '' then args := args + ', ';
+            args := args + EX (argl.kids[rk], TagOfType (grp.kids[1]));
+          end;
+          Inc (rk);
+        end;
+      end;
+    if rk <> nargs then Err (site, 'record aggregate arity wrong');
+    Exit ('((' + ctype + '){ ' + args + ' })');
+  end;
 
   { AN INTEGER TO AN ENUMERATION: Colour (i), or Palette.Hue (i), the
     checked inverse of ORD.  The callee is a type -- an enum or a
@@ -2150,7 +2513,8 @@ begin
   case e.kind of
     nkInt : Result := 'INT64_C(' + e.a + ')';
     nkReal :
-      if want = 'F32' then Result := e.a + 'f' else Result := e.a;
+      { NaN's NAN is a float already, and the same NaN as a double }
+      if (want = 'F32') and (e.a <> 'NAN') then Result := e.a + 'f' else Result := e.a;
     nkChar : Result := IntToStr (CharVal (e.a)) + 'u';
     nkString :
       if (want = 'CHAR') and (Length (e.a) = 1) then
@@ -3553,9 +3917,7 @@ begin
       end;
 
   { module state, visible after params and locals (first hit wins) }
-  mvBase := scope.Count;
-  for i := 0 to High (modVarN) do
-    scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
+  ModuleScope;
   PushAggs;
 
   { the body's block goes through the statement emitter so a
@@ -3624,9 +3986,7 @@ begin
   curRetTag := '';
   finDepth := 0;
   inSwitch := 0;
-  mvBase := scope.Count;
-  for i := 0 to High (modVarN) do
-    scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
+  ModuleScope;
   PushAggs;
   pbuf.Add ('');
   pbuf.Add ('int main (int argc, char **argv)');
@@ -3663,9 +4023,7 @@ begin
   curRetTag := '';
   finDepth := 0;
   inSwitch := 0;
-  mvBase := scope.Count;
-  for i := 0 to High (modVarN) do
-    scope.AddObject (modVarN[i] + '=l', TObject (modVarT[i]));
+  ModuleScope;
   PushAggs;
   pbuf.Add ('');
   pbuf.Add ('void ' + forModule + '_m9init (m9_state *err)');
@@ -3724,7 +4082,7 @@ var
   i, ci, j2, i2 : Integer;
   d, e : TNode;
   cs, s : string;
-  tgt, rec2 : TStringList;
+  tgt, rec2, rec3 : TStringList;
   fseq : TNode;
 begin
   hdr.Clear; src.Clear; tdefs.Clear; pbuf.Clear; sprotos.Clear;
@@ -3732,6 +4090,14 @@ begin
   bpool.Clear;
   arrSeen.Clear; litBuf.Clear; hdrRecs.Clear; hdrProtos.Clear;
   hdrConsts.Clear; rec2 := TStringList.Create;
+  arrRec.Clear; hdrArrRec.Clear; rec3 := TStringList.Create;
+  { Gen.ExportWalks: Mod.v... to the one name Mod.v, before anything
+    is emitted }
+  if extVars.Count > 0 then
+  begin
+    for i := 0 to High (procs) do ExportWalk (procs[i].node, nil);
+    ExportWalk (mainBody, nil);
+  end;
   hdr.Add ('/* generated by M9Gen from ' + forModule + '.m9 -- do not edit */');
   hdr.Add ('#ifndef M9G_' + forModule + '_H');
   hdr.Add ('#define M9G_' + forModule + '_H');
@@ -3954,13 +4320,14 @@ begin
     which is also M9's defined-zero story.  Emitted into rec2 now so
     their array typedefs register before tdefs is spliced. }
   for i := 0 to High (modVarN) do
-    rec2.Add ('static ' + TyC (modVarT[i]) + ' ' + CN (modVarN[i]) + ';');
-  EmitAggs (rec2);
+    rec3.Add ('static ' + TyC (modVarT[i]) + ' ' + CN (modVarN[i]) + ';');
+  EmitAggs (rec3);
   { the MODULE FRAME, static and at file scope, so that a module
     variable declared without a pool has one to be grown in (rule 2
     of docs/pool-elision-plan.md; mirrors Gen.Emit) }
-  rec2.Add ('static m9_pool m9mframe = {0};');
-  rec2.Add ('');
+  rec3.Add ('static m9_pool m9mframe = {0};');
+  rec3.Add ('');
+  ExportVars (rec3);
 
   { procedures emit into pbuf; typedefs, string literals, and static
     prototypes they discover along the way land before them }
@@ -3976,11 +4343,14 @@ begin
   hdr.AddStrings (tdefs);
   if tdefs.Count > 0 then hdr.Add ('');
   hdr.AddStrings (hdrRecs);
+  hdr.AddStrings (hdrArrRec);
   hdr.AddStrings (hdrProtos);
   hdr.Add ('');
   hdr.Add ('#endif');
 
   src.AddStrings (rec2);
+  src.AddStrings (arrRec);
+  src.AddStrings (rec3);
   src.AddStrings (litBuf);
   if litBuf.Count > 0 then src.Add ('');
   src.AddStrings (rec2Gates);
@@ -3993,6 +4363,7 @@ begin
   if thrBuf.Count > 0 then src.Add ('');
   src.AddStrings (pbuf);
   rec2.Free;
+  rec3.Free;
 
   HText := hdr.Text;
   CText := src.Text;

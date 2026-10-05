@@ -1,0 +1,20 @@
+[build-system]
+requires = ["hatchling>=1.5"]
+build-backend = "hatchling.build"
+
+[project]
+name = "jupyterlab-m9"
+version = "0.1.0"
+description = "M9 syntax highlighting for JupyterLab (prebuilt; no node to install it)"
+license = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.9"
+
+# The extension under jupyterlab_m9/labextension is BUILT and checked in
+# (npm install && npx tsc && jupyter labextension build .), as
+# runtime/gen is: installing it needs Python only.  Its tokenizer is
+# held to the lexer by runtime/test/highlight.sh.
+[tool.hatch.build.targets.wheel]
+packages = ["jupyterlab_m9"]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"jupyterlab_m9/labextension" = "share/jupyter/labextensions/jupyterlab-m9"

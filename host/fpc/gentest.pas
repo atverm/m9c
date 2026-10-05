@@ -105,6 +105,8 @@ begin
   GenModule ('Png', ['Faults', 'Zip', 'Math', 'DynStr']);
   GenModule ('Frame', ['Csv', 'Io', 'Math', 'DynStr', 'Fmt', 'Time', 'NetCDF', 'Faults', 'Sort', 'Stats', 'Text']);
   GenModule ('Parquet', ['Frame', 'Io', 'DynStr', 'Csv', 'Math', 'Fmt', 'Time', 'NetCDF', 'Faults']);
+  GenModule ('NbCells', ['Parquet', 'Frame', 'Io', 'DynStr', 'Csv', 'Math', 'Fmt', 'Time', 'NetCDF', 'Faults']);
+  GenModule ('NbShow', ['Frame', 'Io', 'DynStr', 'Fmt', 'Text', 'Time']);
   GenModule ('NetCDF', ['DynStr', 'Faults']);
   GenModule ('Grib', ['DynStr', 'Faults']);
   GenModule ('Syslog', ['DynStr']);
@@ -114,6 +116,8 @@ begin
   GenModule ('Narrow', ['Io']);
   GenModule ('ProcUse', ['Io']);
   GenModule ('AggUse', ['Io']);
+  GenModule ('ExportDef', ['Io', 'Fmt']);
+  GenModule ('ExportUse', ['ExportDef', 'Io', 'Fmt']);
   GenModule ('ShareUse', ['Io']);
   GenModule ('Sem', ['Ast', 'DynStr', 'Print', 'Text']);
   GenModule ('Doc', ['Ast', 'DynStr', 'Text', 'Print', 'Lex']);

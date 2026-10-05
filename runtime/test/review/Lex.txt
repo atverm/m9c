@@ -2,10 +2,10 @@ REVIEW Lex -- 19 procedures with a body, 11 of them functions; 6 headings in a D
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              11
-  assignments                                    57
+  assignments                                    58
   arguments                                     399
   RETURN values                                 125
-  operands of a comparison or an operator       104
+  operands of a comparison or an operator       110
   CASE labels                                    93
   THREAD arguments                                0
   CASE over variants, proved total                0

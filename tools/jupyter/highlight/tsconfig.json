@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "outDir": "lib",
+    "rootDir": "../..",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2020",
+    "declaration": false
+  },
+  "include": ["src/*", "../../edit/keywords.json"]
+}

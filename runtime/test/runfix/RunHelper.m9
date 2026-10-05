@@ -1,0 +1,17 @@
+DEFINITION MODULE RunHelper ;
+
+(* RunEcho's import: m9c.sh edits the greeting and expects the next
+   --run of RunEcho to say so, though RunEcho itself did not change *)
+
+PROCEDURE Greeting () : STR ;
+
+END RunHelper.
+
+IMPLEMENTATION MODULE RunHelper ;
+
+PROCEDURE Greeting () : STR =
+BEGIN
+  RETURN 'greeting 1'
+END Greeting ;
+
+END RunHelper.

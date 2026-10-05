@@ -599,7 +599,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
           bool m9t7 = ((len == INT64_C(0)) || (!Csv_IsNumber ((*t)->buf, ofs, len, err)));
           if (err->exc) goto L_ret;
           if (m9t7) {
-            (*(double *) m9_at ((*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).p, row, (*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).len, sizeof (double), err)) = (0.0 / 0.0);
+            (*(double *) m9_at ((*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).p, row, (*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).len, sizeof (double), err)) = NAN;
             if (err->exc) goto L_ret;
           } else {
             { __typeof__(d) m9v = Csv_FieldF64 ((*t)->buf, ofs, len, err);
@@ -608,7 +608,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
             }
             if ((*t)->opt.hasMissing) {
               if ((d == (double)((*t)->opt.missing))) {
-                d = (0.0 / 0.0);
+                d = NAN;
               }
             }
             (*(double *) m9_at ((*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).p, row, (*(m9_sl_F64 *) m9_at ((*t)->dcols.p, c, (*t)->dcols.len, sizeof (m9_sl_F64), err)).len, sizeof (double), err)) = d;
@@ -620,7 +620,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
           bool m9t8 = ((len == INT64_C(0)) || (!Csv_IsNumber ((*t)->buf, ofs, len, err)));
           if (err->exc) goto L_ret;
           if (m9t8) {
-            (*(float *) m9_at ((*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).p, row, (*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).len, sizeof (float), err)) = (0.0f / 0.0f);
+            (*(float *) m9_at ((*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).p, row, (*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).len, sizeof (float), err)) = NAN;
             if (err->exc) goto L_ret;
           } else {
             { __typeof__(f) m9v = Csv_FieldF32 ((*t)->buf, ofs, len, err);
@@ -629,7 +629,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
             }
             if ((*t)->opt.hasMissing) {
               if ((f == (*t)->opt.missing)) {
-                f = (0.0f / 0.0f);
+                f = NAN;
               }
             }
             (*(float *) m9_at ((*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).p, row, (*(m9_sl_F32 *) m9_at ((*t)->fcols.p, c, (*t)->fcols.len, sizeof (m9_sl_F32), err)).len, sizeof (float), err)) = f;

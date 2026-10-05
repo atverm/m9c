@@ -1,0 +1,13 @@
+#!/usr/bin/m9c --run
+MODULE Shebang ;
+
+(* a script: the first line is the operating system's and is skipped
+   by both lexers, so MODULE is the first token and it is on line 2;
+   lexdiff.sh holds both lexers to that, fmt.sh holds m9fmt to giving
+   the line back, run.sh runs a copy of this as an executable file.  *)
+
+IMPORT Io ;
+
+BEGIN
+  Io.WriteLine ('a script')
+END Shebang.

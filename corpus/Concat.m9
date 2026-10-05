@@ -49,6 +49,24 @@ BEGIN
   RETURN 'hello, ' + who + '!'
 END Greeting ;
 
+(* `+` may grow its left operand IN PLACE when that operand ends at
+   the top of the arena -- what makes `s := s + x` linear.  A VIEW of
+   the top string that stops short of its end must not be grown: the
+   rest of the string is still there and still read.  Until 2026-10-05
+   the runtime compared the ends rounded up to the arena's alignment,
+   took SLICE (ds, 0, 3) of a four-character ds for all of it, and
+   wrote the point over ds[3]: this answered '276..'.  Found by
+   Fmt.Short, whose layout is exactly this expression. *)
+PROCEDURE Point (RO a, b: STR) : STR =
+VAR ds, out : STR ;
+BEGIN
+  ds := a + b ;
+  (* in THIS frame, where ds is the top: a RETURN expression is built
+     in the caller's arena and would not show it *)
+  out := SLICE (ds, 0, 3) + '.' + SLICE (ds, 3, 1) ;
+  RETURN out
+END Point ;
+
 VAR
   s : STR ;
   d : PTR DynStr.DString ;
@@ -68,5 +86,6 @@ BEGIN
   DynStr.Append (d, 'via heap') ;
   Io.WriteLine (DynStr.View (d)) ;
   (* a CHAR joins as one code point, from a literal or a CONST *)
-  Io.WriteLine ('a' + Bar + 'b' + Bar + 'c')
+  Io.WriteLine ('a' + Bar + 'b' + Bar + 'c') ;
+  Io.WriteLine (Point ('27', '67'))
 END Concat.

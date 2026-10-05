@@ -1149,7 +1149,7 @@ BEGIN
         v64[i] := F64.FromBytesLE (SLICE (r.b, r.at, 8)) ;
         r.at := r.at + 8
       ELSE
-        v64[i] := 0.0 / 0.0
+        v64[i] := NaN
       END
     END ;
     AddF64Q (pool, f, ci.name, v64) ;
@@ -1161,7 +1161,7 @@ BEGIN
         v32[i] := F32.FromBytesLE (SLICE (r.b, r.at, 4)) ;
         r.at := r.at + 4
       ELSE
-        v32[i] := F32 (0.0 / 0.0)
+        v32[i] := NaN
       END
     END ;
     AddF32Q (pool, f, ci.name, v32) ;
@@ -1275,7 +1275,7 @@ PROCEDURE AddF64Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                    RO name: STR ; v: SLICE OF F64)
   RAISES Faults.BadArg =
 BEGIN
-  Frame.AddF64 (pool, f, name, v, 0.0 / 0.0)
+  Frame.AddF64 (pool, f, name, v, NaN)
 EXCEPT
 | Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
 | Frame.Duplicate : RAISE Faults.BadArg (name)
@@ -1285,7 +1285,7 @@ PROCEDURE AddF32Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
                    RO name: STR ; v: SLICE OF F32)
   RAISES Faults.BadArg =
 BEGIN
-  Frame.AddF32 (pool, f, name, v, F32 (0.0 / 0.0))
+  Frame.AddF32 (pool, f, name, v, NaN)
 EXCEPT
 | Faults.SizeError : RAISE Faults.BadArg ('column length mismatch')
 | Frame.Duplicate : RAISE Faults.BadArg (name)

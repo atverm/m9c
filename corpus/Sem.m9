@@ -79,6 +79,23 @@ PROCEDURE StatLine (i, j: I64) : I64 ;
      Module state like the diagnostics, and for the same reason: they
      accumulate over every CheckFile of the process.                *)
 
+PROCEDURE ShowType (RO KEPT name: STR) ;
+PROCEDURE ShownType () : STR ;
+  (* for `m9c --show`, which asks the type of an expression
+     (docs/kernel-show-plan.md): armed with a name, the checker
+     records the type it computes for the right side of an
+     assignment to that bare name and does not hold the two sides to
+     each other -- the left side is a placeholder.  ShownType answers
+     the last such type, in the checker's canonical spelling (`SLICE
+     OF F64`, `PTR Frame.Fr`, `a real literal`), '' if none was
+     met or a side was unknown.  M9 side only, like the counters
+     above: nothing in the Pascal twin calls it.                    *)
+
+PROCEDURE ShownRaises () : STR ;
+  (* while armed, the checked exceptions a body raises and does not
+     handle are recorded here instead of refused: the names, each
+     followed by a blank, after a leading blank (' ValueRange ') *)
+
 END Sem.
 
 
@@ -151,9 +168,18 @@ TYPE
     ncns : I64 ;
     exNames : SLICE OF STR ;      (* EXCEPTION declarations *)
     nexc : I64 ;
+    vrNames : SLICE OF STR ;      (* the definition's VARs, which an
+                                     importer reads and writes as
+                                     Mod.v (decision 28) ... *)
+    vrTypes : SLICE OF AKid ;     (* ... their types, qualified in this
+                                     module (QualifiedIn) ... *)
+    vrRo : SLICE OF BOOL ;        (* ... and VAR RO, written by no one *)
+    nvrs : I64 ;
   END ;
 
 VAR
+  showName, shown : STR ;     (* ShowType / ShownType *)
+  shownRaises : STR ;         (* ShownRaises: ' A B ' *)
   pool : POOL ;
   mods : SLICE OF ModuleInfo ;
   nmods : I64 ;
@@ -173,6 +199,7 @@ VAR
   statL : ARRAY 42 OF I64 ;               (* StatKinds * StatSites lines
                                              of sites passed over *)
   curMod, canonCtx : STR ;
+  curRoot : PTR Ast.Node ;     (* the file CheckFile is checking *)
   scope : SLICE OF Binding ;
   nscope : I64 ;
   fromMap : SLICE OF Binding ;
@@ -725,6 +752,45 @@ BEGIN
   mods[m].ncns := mods[m].ncns + 1
 END AddConst ;
 
+(* an exported variable: declared in the definition, so an importer
+   names it Mod.v (decision 28) *)
+PROCEDURE AddExportVar (m: I64 ; RO KEPT n: STR ; KEPT ty: AKid ; ro: BOOL) =
+VAR
+  ns : SLICE OF STR ;
+  ts : SLICE OF AKid ;
+  rs : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  IF mods[m].nvrs = LEN (mods[m].vrNames) THEN
+    ns := NEW (pool, STR, 2 * LEN (mods[m].vrNames) + 8) ;
+    ts := NEW (pool, AKid, 2 * LEN (mods[m].vrNames) + 8) ;
+    rs := NEW (pool, BOOL, 2 * LEN (mods[m].vrNames) + 8) ;
+    FOR i := 0 TO mods[m].nvrs - 1 DO
+      ns[i] := mods[m].vrNames[i] ;
+      ts[i] := mods[m].vrTypes[i] ;
+      rs[i] := mods[m].vrRo[i]
+    END ;
+    mods[m].vrNames := ns ;
+    mods[m].vrTypes := ts ;
+    mods[m].vrRo := rs
+  END ;
+  mods[m].vrNames[mods[m].nvrs] := n ;
+  mods[m].vrTypes[mods[m].nvrs] := ty ;
+  mods[m].vrRo[mods[m].nvrs] := ro ;
+  mods[m].nvrs := mods[m].nvrs + 1
+END AddExportVar ;
+
+(* is v a variable module m's definition exports? *)
+PROCEDURE ExportsVar (m: I64 ; RO v: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF m < 0 THEN RETURN FALSE END ;
+  FOR i := 0 TO mods[m].nvrs - 1 DO
+    IF Text.Eq (mods[m].vrNames[i], v) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END ExportsVar ;
+
 PROCEDURE AddExc (m: I64 ; RO KEPT n: STR) =
 VAR
   ns : SLICE OF STR ;
@@ -850,6 +916,21 @@ BEGIN
         FOR j := 0 TO d.nkids - 1 DO
           IF d.kids[j] IS SOME xd THEN AddExc (m, xd.a) END
         END
+      ELSIF d.kind = Ast.NVarSection AND u.kind = Ast.NDefinition THEN
+        (* the definition's variables are the module's exports: an
+           importer reads and writes them as Mod.v (decision 28) *)
+        FOR j := 0 TO d.nkids - 1 DO
+          IF d.kids[j] IS SOME vd THEN
+            IF vd.kids[0] IS SOME vids THEN
+              FOR pi := 0 TO vids.nkids - 1 DO
+                IF vids.kids[pi] IS SOME vid THEN
+                  AddExportVar (m, vid.a, QualifiedIn (vd.kids[1], mods[m].name),
+                                vd.f3)
+                END
+              END
+            END
+          END
+        END
       ELSIF d.kind = Ast.NConstSection THEN
         (* a CONST is an untyped literal; what is kept is its
            LitType, so an importer sees it adapt as its own module
@@ -891,10 +972,40 @@ BEGIN
   END
 END CollectUnit ;
 
+(* NaN, the predeclared quiet NaN (report par 2.1; Alex 2026-10-05):
+   a bare designator NaN becomes the real literal whose text is C's
+   NAN, so it is typed, adapts to F32 and is emitted as a literal is.
+   Once per file, before anything reads it, here and in both
+   generators (Gen.NanWalk): the generator also runs without the
+   checker.  A declaration may not take the name (DeclOnce), so a
+   NaN is always this one. *)
+PROCEDURE NanWalk (VAR n: PTR Ast.Node) =
+VAR i : I64 ;
+BEGIN
+  IF n.kind = Ast.NDesignator AND n.nkids = 0 AND Text.Eq (n.a, 'NaN') THEN
+    n.kind := Ast.NReal ;
+    n.a := 'NAN'
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN NanWalk (c) END
+  END
+END NanWalk ;
+
+PROCEDURE IsNanLit (k: Ast.Kid) : BOOL =
+BEGIN
+  IF k IS SOME n THEN
+    RETURN n.kind = Ast.NReal AND Text.Eq (n.a, 'NAN')
+  END ;
+  RETURN FALSE
+END IsNanLit ;
+
 PROCEDURE LoadFile (root: PTR Ast.Node) =
 VAR i : I64 ;
 BEGIN
   Setup () ;
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME w THEN NanWalk (w) END
+  END ;
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN CollectUnit (u) END
   END
@@ -3107,10 +3218,63 @@ END StatLine ;
 (* the type one element of an aggregate has (par 2.2.4): a literal,
    or a negated numeric literal.  An integer is an I64, a real an
    F64, a string a STR whatever its length -- a table has one element
-   type and nothing in it adapts.  '' for anything else. *)
+   type and nothing in it adapts.  '' for anything else.  A record
+   aggregate whose fields are all literals is an element of its
+   record's type (Row (200, 'OK'); the fields' types are
+   CheckRecordConst's to hold). *)
+PROCEDURE RecordNamed (RO name: STR ; VAR om: STR ; VAR canon: STR) : Ast.Kid ;
+
+PROCEDURE RecordConstType (e: PTR Ast.Node) : STR =
+VAR
+  i : I64 ;
+  om, canon : STR ;
+BEGIN
+  IF e.kind # Ast.NCallExpr THEN RETURN '' END ;
+  IF e.kids[0] IS SOME dn THEN
+    IF RecordNamed (DesigName (dn), om, canon) IS SOME rn THEN
+      IF e.kids[1] IS SOME al THEN
+        FOR i := 0 TO al.nkids - 1 DO
+          IF LEN (AggElemType (al.kids[i])) = 0 THEN RETURN '' END
+        END
+      END ;
+      RETURN canon
+    END
+  END ;
+  RETURN ''
+END RecordConstType ;
+
+(* is e Row (...) for a record type Row? *)
+PROCEDURE IsRecordCall (e: PTR Ast.Node) : BOOL =
+VAR om, canon : STR ;
+BEGIN
+  IF e.kind # Ast.NCallExpr THEN RETURN FALSE END ;
+  IF e.kids[0] IS SOME dn THEN
+    IF RecordNamed (DesigName (dn), om, canon) IS SOME rn THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END IsRecordCall ;
+
+(* the type of field f of the record whose canonical name is rec --
+   a record CONST read as Ok.code *)
+PROCEDURE ConstFieldType (RO rec: STR ; RO f: STR) : STR =
+VAR
+  om, canon, s : STR ;
+BEGIN
+  IF RecordNamed (rec, om, canon) IS SOME rn THEN
+    IF FieldTypeOf (rn, f) IS SOME ft THEN
+      canonCtx := Text.Keep (pool, om) ;
+      s := CanonT (SOME (ft), 0) ;
+      canonCtx := '' ;
+      RETURN s
+    END
+  END ;
+  RETURN ''
+END ConstFieldType ;
+
 PROCEDURE AggElemType (k: Ast.Kid) : STR =
 BEGIN
   IF k IS SOME e THEN
+    IF e.kind = Ast.NCallExpr THEN RETURN RecordConstType (e) END ;
     CASE e.kind OF
     | Ast.NInt : RETURN 'I64'
     | Ast.NReal : RETURN 'F64'
@@ -3156,6 +3320,7 @@ PROCEDURE LitType (k: Ast.Kid) : STR =
 VAR l, r : STR ;
 BEGIN
   IF k IS SOME e THEN
+    IF e.kind = Ast.NCallExpr THEN RETURN RecordConstType (e) END ;
     CASE e.kind OF
     | Ast.NAggregate : RETURN AggType (e)
     | Ast.NInt : RETURN '<int>'
@@ -3249,11 +3414,69 @@ END IsAggConst ;
    type, at module level, in a module's own part.
      where -- 0 a module's own, 1 exported by a DEFINITION, 2 local
               to a procedure *)
+(* a record aggregate in a CONST, alone or as a table's element: every
+   field a literal of its field's type, as many as the record has *)
+PROCEDURE CheckRecordConst (el: PTR Ast.Node ; RO ctx: STR ; RO what: STR) =
+VAR
+  k, nflat : I64 ;
+  om, canon, name, pTy, aTy : STR ;
+  flat : SLICE OF AKid ;
+BEGIN
+  IF el.kids[0] IS SOME dn THEN
+    name := DesigName (dn) ;
+    IF RecordNamed (name, om, canon) IS SOME rn THEN
+      IF rn.kids[0] IS SOME rbase THEN
+        ErrN (el, ctx, Cat (name, ': an aggregate of an extended record is'
+          + ' not built; give its fields one by one (par 2.2.4)')) ;
+        RETURN
+      END ;
+      flat := FlatFields (rn.kids[1], nflat) ;
+      IF el.kids[1] IS SOME al THEN
+        Arity (el, ctx, name, nflat, al.nkids) ;
+        FOR k := 0 TO al.nkids - 1 DO
+          IF al.kids[k] IS SOME a THEN
+            IF LEN (AggElemType (al.kids[k])) = 0 THEN
+              ErrN (a, ctx, S5 ('field ', ItoA (k + 1), ' of ', what,
+                ' is not a literal: a CONST holds literals (par 2.2.4)'))
+            ELSIF k < nflat THEN
+              canonCtx := Text.Keep (pool, om) ;
+              pTy := CanonT (flat[k], 0) ;
+              canonCtx := '' ;
+              aTy := LitType (al.kids[k]) ;
+              IF NOT Compat (pTy, aTy) THEN
+                ErrN (a, ctx, S5 ('field ', ItoA (k + 1), ' of ', what,
+                  S4 (': cannot give ', TyName (aTy), ' where ',
+                      Cat (TyName (pTy), ' is expected'))))
+              END
+            END
+          END
+        END
+      END
+    END
+  END
+END CheckRecordConst ;
+
 PROCEDURE CheckAggregate (cd: PTR Ast.Node ; RO ctx: STR ; where: I64) =
 VAR
   i : I64 ;
   t0, t : STR ;
 BEGIN
+  IF cd.kids[0] IS SOME rc THEN
+    IF IsRecordCall (rc) THEN
+      IF rc.kids[0] IS SOME rdn THEN
+        IF RecordNamed (DesigName (rdn), t0, t) IS SOME rr THEN
+          IF where = 1 THEN
+            ErrN (cd, ctx, S3 ('a record CONST is not exported yet: ',
+              cd.a, ' (par 2.2.4)'))
+          ELSIF where = 2 THEN
+            ErrN (cd, ctx, S3 ('a record CONST belongs at module level: ',
+              cd.a, ' (par 2.2.4)'))
+          END ;
+          CheckRecordConst (rc, ctx, cd.a)
+        END
+      END
+    END
+  END ;
   IF cd.kids[0] IS SOME ag THEN
     IF ag.kind = Ast.NAggregate THEN
       nAgg := nAgg + 1 ;
@@ -3268,7 +3491,12 @@ BEGIN
       FOR i := 0 TO ag.nkids - 1 DO
         IF ag.kids[i] IS SOME el THEN
           t := AggElemType (ag.kids[i]) ;
-          IF LEN (t) = 0 THEN
+          IF IsRecordCall (el) THEN
+            CheckRecordConst (el, ctx, S4 ('element ', ItoA (i + 1), ' of ', cd.a))
+          END ;
+          IF LEN (t) = 0 AND IsRecordCall (el) THEN
+            t := ''                      (* said by CheckRecordConst *)
+          ELSIF LEN (t) = 0 THEN
             ErrN (el, ctx, S5 ('element ', ItoA (i + 1), ' of ', cd.a,
               ' is not a literal: an aggregate holds literals (par 2.2.4)'))
           ELSIF LEN (t0) > 0 AND NOT Text.Eq (t, t0) THEN
@@ -3407,6 +3635,9 @@ BEGIN
           IF Text.Eq (s, 'SLICE OF CHAR') THEN s := 'CHAR'
           ELSIF Text.StartsWith (s, 'ARRAY ') THEN s := AfterOf (s)
           ELSE s := '' END
+        ELSIF sel.kind = Ast.NSelField THEN
+          (* a field of a record CONST, or of a table's record element *)
+          s := ConstFieldType (s, sel.a)
         ELSE
           s := ''
         END
@@ -3478,6 +3709,13 @@ BEGIN
      Text.Eq (op, '<=') OR Text.Eq (op, '>') OR Text.Eq (op, '>=') THEN
     IF Text.Eq (lt, '<void>') OR Text.Eq (rt, '<void>') THEN
       ErrN (e, ctx, 'comparing a call that returns no value')
+    ELSIF IsNanLit (e.kids[0]) OR IsNanLit (e.kids[1]) THEN
+      (* NaN compares unequal to everything, itself included: `x =
+         NaN' is never TRUE and `x # NaN' always is -- the comparison
+         a reader takes for a test and the machine does not *)
+      ErrN (e, ctx, S3 ("no '", op, "' with NaN: no comparison with NaN is"
+        + " ever TRUE, except '#', which always is; Math.IsNaN (x) asks"
+        + ' (par 2.1)'))
     ELSE
       Agree (StOperand, lt, rt, e.line) ;
       IF NOT (Compat (lt, rt) OR Compat (rt, lt)) THEN
@@ -4023,6 +4261,14 @@ BEGIN
       END ;
       Ast.Add (pool, n, NONE) ;
       RETURN SOME (n)
+    ELSIF (tn.kind = Ast.NArrayType OR tn.kind = Ast.NGridType) AND
+          tn.nkids >= 2 THEN
+      (* the bound or the rank as written, the element qualified: an
+         exported ARRAY 3 OF Fr (decision 28) *)
+      n := Ast.NewNode (pool, tn.kind, tn.line, tn.col) ;
+      Ast.Add (pool, n, tn.kids[0]) ;
+      Ast.Add (pool, n, QualifiedIn (tn.kids[1], modName)) ;
+      RETURN SOME (n)
     END
   END ;
   RETURN t
@@ -4228,8 +4474,18 @@ VAR
   out : SLICE OF AKid ;
   g, j : I64 ;
 BEGIN
+  (* counted first: a record aggregate has as many fields as its
+     record, where a variant's payload had never exceeded 16 *)
   n := 0 ;
-  out := NEW (pool, AKid, 16) ;
+  IF fields IS SOME fc THEN
+    FOR g := 0 TO fc.nkids - 1 DO
+      IF fc.kids[g] IS SOME gc THEN
+        IF gc.kids[0] IS SOME idc THEN n := n + idc.nkids END
+      END
+    END
+  END ;
+  out := NEW (pool, AKid, n + 1) ;
+  n := 0 ;
   IF fields IS SOME fs THEN
     FOR g := 0 TO fs.nkids - 1 DO
       IF fs.kids[g] IS SOME grp THEN
@@ -4380,6 +4636,54 @@ BEGIN
   END ;
   RETURN ''
 END EnumConvType ;
+
+(* what follows a name's first dot, or the name *)
+PROCEDURE LastPart (RO name: STR) : STR =
+VAR dot : I64 ;
+BEGIN
+  dot := Text.FindChar (name, '.') ;
+  IF dot < 0 THEN RETURN name END ;
+  RETURN SLICE (name, dot + 1, LEN (name) - dot - 1)
+END LastPart ;
+
+(* the RECORD a callee names -- `Row' declared in this module, or
+   `Mod.Row' in an imported one -- through aliases, or NONE; om the
+   module that WROTE it (canonCtx) *)
+PROCEDURE RecordNamed (RO name: STR ; VAR om: STR ; VAR canon: STR) : Ast.Kid =
+VAR
+  dot, m : I64 ;
+  t : Ast.Kid ;
+BEGIN
+  canon := '' ;
+  dot := Text.FindChar (name, '.') ;
+  IF dot > 0 THEN
+    om := SLICE (name, 0, dot) ;
+    m := FindMod (om) ;
+    IF m < 0 THEN RETURN NONE END ;
+    t := FindTypeIn (m, SLICE (name, dot + 1, LEN (name) - dot - 1))
+  ELSE
+    om := curMod ;
+    m := FindMod (curMod) ;
+    IF m < 0 THEN RETURN NONE END ;
+    t := FindTypeIn (m, name)
+  END ;
+  IF ResolveType (t) IS SOME r THEN
+    IF r.kind = Ast.NRecordType THEN
+      (* the type's canonical name: its own, or through an alias the
+         record's -- what a variable declared with it is typed *)
+      canon := Qualify (om, LastPart (name)) ;
+      IF t IS SOME tn THEN
+        IF tn.kind = Ast.NQualident THEN
+          canonCtx := Text.Keep (pool, om) ;
+          canon := CanonT (t, 0) ;
+          canonCtx := ''
+        END
+      END ;
+      RETURN SOME (r)
+    END
+  END ;
+  RETURN NONE
+END RecordNamed ;
 
 PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR =
@@ -4706,6 +5010,33 @@ BEGIN
         ': cannot convert ', Cat (TyName (aTy[0]),
           ' to an enumeration; an integer position is expected')))
     END ;
+    RETURN t
+  END ;
+  (* a RECORD AGGREGATE: Row (200, 'OK'), or Mod.Row (...) for an
+     imported type -- every field, in declaration order, each held to
+     its field's type (report par 2.2.4, Alex 2026-10-05: positional,
+     in a CONST and in statements) *)
+  IF RecordNamed (name, om, t) IS SOME rn THEN
+    IF rn.kids[0] IS SOME rbase THEN
+      ErrN (site, ctx, Cat (name, ': an aggregate of an extended record is'
+        + ' not built; give its fields one by one (par 2.2.4)')) ;
+      RETURN t
+    END ;
+    flat := FlatFields (rn.kids[1], nflat) ;
+    Arity (site, ctx, name, nflat, nargs) ;
+    canonCtx := om ;
+    FOR k := 0 TO nargs - 1 DO
+      IF k < nflat THEN
+        pTy := CanonT (flat[k], 0) ;
+        Agree (StArg, pTy, aTy[k], site.line) ;
+        IF NOT Compat (pTy, aTy[k]) THEN
+          ErrN (site, ctx, S5 ('field ', ItoA (k + 1), ' of ', name,
+            S4 (': cannot give ', TyName (aTy[k]), ' where ',
+                Cat (TyName (pTy), ' is expected'))))
+        END
+      END
+    END ;
+    canonCtx := '' ;
     RETURN t
   END ;
   ErrN (site, ctx, Cat ('unknown procedure: ', name)) ;
@@ -5705,6 +6036,10 @@ BEGIN
        right side, then whether one may become the other *)
     t := DesigStrType (lhs, FALSE, ctx) ;
     u := ExprType (st.kids[1], ctx) ;
+    IF LEN (showName) > 0 AND lhs.nkids = 0 AND Text.Eq (lhs.a, showName) THEN
+      shown := u ;
+      RETURN
+    END ;
     (* par 2.3: a FRAME-SCOPED string (a concatenation, or a name
        already holding one) may not be stored where it will be read
        after this frame is freed -- a module variable, or a
@@ -6373,7 +6708,7 @@ BEGIN
        they shadow module state of the same name *)
     AddParamsOf (d) ;
     AddVarsOf (body, ModeLocal) ;
-    AddVarsOf (u, ModeModule) ;
+    AddModuleVars (curRoot, u) ;
     svConsts := nconsts ;
     AddConstsOf (body, ctx) ;
     curRetTy := '<void>' ;
@@ -6674,7 +7009,14 @@ BEGIN
         FOR j := 0 TO LEN (declared) - 1 DO
           IF Text.Eq (declared[j], raised[i].name) THEN ok := TRUE END
         END ;
-        IF NOT ok THEN
+        IF NOT ok AND LEN (showName) > 0 THEN
+          (* m9c --show's probe: its body is the one shown statement,
+             and what it raises is what the program around it must
+             handle -- recorded, not refused *)
+          IF NOT Text.Contains (shownRaises, ' ' + raised[i].name + ' ') THEN
+            shownRaises := Text.Keep (pool, shownRaises + raised[i].name + ' ')
+          END
+        ELSIF NOT ok THEN
           ErrN (body, ctx, Cat (Cat (Cat ('unhandled RAISES ',
             raised[i].name), ' from '), raised[i].mode))
         END
@@ -6971,6 +7313,99 @@ BEGIN
   END
 END ImportWalk ;
 
+(* ---- AN IMPORTED VARIABLE IS ONE NAME (decision 28, 2026-10-04).
+   A definition's VARs are the module's exports, read and written by
+   an importer as Mod.v (Modula-2's rule; Alex: "rw").  Rather than
+   teach every procedure that walks a designator from its root --
+   typing, RO, the frame and escape rules, the pool root -- that a
+   root can be two names, the designator Mod.v... is REWRITTEN, once,
+   to the designator rooted at the single name `Mod.v', which no
+   identifier can spell, and that name is in scope as a module
+   variable of the definition's type (AddModuleVars).  Every rule
+   then applies to it as to any module variable.  After CheckImports,
+   so that a module named and not imported is still said so; only
+   for a module this one imports, and not where a local or module
+   name of the same spelling shadows it (NameShadowed, decision 24's
+   test).  The generator makes the same rewrite (Gen.ExportWalk), so
+   both ends agree without the generator depending on the checker. *)
+
+(* `a.b', in the module's own pool and not the node's: the node's
+   pool, named through a binder on a module table, was the walk's own
+   frame in the generator, and the name dangled once the walk returned
+   (`unknown name: const vo', 2026-10-04) *)
+PROCEDURE DotJoin (RO a, b: STR) : STR =
+VAR
+  s : SLICE OF CHAR ;
+  i : I64 ;
+BEGIN
+  s := NEW (pool, CHAR, LEN (a) + 1 + LEN (b)) ;
+  FOR i := 0 TO LEN (a) - 1 DO s[i] := a[i] END ;
+  s[LEN (a)] := '.' ;
+  FOR i := 0 TO LEN (b) - 1 DO s[LEN (a) + 1 + i] := b[i] END ;
+  RETURN s
+END DotJoin ;
+
+PROCEDURE ExportWalk (VAR n: PTR Ast.Node ; root: PTR Ast.Node ; RO me: STR ;
+                      scope: Ast.Kid) =
+VAR
+  i, m : I64 ;
+BEGIN
+  IF n.kind = Ast.NDesignator AND n.nkids > 0 THEN
+    IF n.kids[0] IS SOME s THEN
+      IF s.kind = Ast.NSelField AND NOT Text.Eq (n.a, me) THEN
+        m := FindMod (n.a) ;
+        IF ExportsVar (m, s.a) THEN
+          IF ModImports (root, me, n.a) AND
+             NOT NameShadowed (root, me, scope, n.a) THEN
+            n.a := DotJoin (n.a, s.a) ;
+            FOR i := 0 TO n.nkids - 2 DO n.kids[i] := n.kids[i + 1] END ;
+            n.nkids := n.nkids - 1
+          END
+        END
+      END
+    END
+  END ;
+  FOR i := 0 TO n.nkids - 1 DO
+    IF n.kids[i] IS SOME c THEN
+      IF n.kind = Ast.NProcDecl OR n.kind = Ast.NModBody THEN
+        ExportWalk (c, root, me, SOME (n))
+      ELSE
+        ExportWalk (c, root, me, scope)
+      END
+    END
+  END
+END ExportWalk ;
+
+(* the module variables a body of unit u sees, after its parameters
+   and locals: u's own; its definition's, when u is an implementation
+   (until 2026-10-04 an implementation did not see them, and `xs :=
+   5' for a SLICE OF F64 xs was passed over as untyped); and every
+   other module's exports by their qualified names *)
+PROCEDURE AddModuleVars (root: PTR Ast.Node ; u: PTR Ast.Node) =
+VAR
+  i, m, k : I64 ;
+BEGIN
+  AddVarsOf (u, ModeModule) ;
+  IF u.kind = Ast.NImplementation THEN
+    FOR i := 0 TO root.nkids - 1 DO
+      IF root.kids[i] IS SOME du THEN
+        IF du.kind = Ast.NDefinition AND Text.Eq (du.a, u.a) THEN
+          AddVarsOf (du, ModeModule)
+        END
+      END
+    END
+  END ;
+  FOR m := 0 TO nmods - 1 DO
+    IF NOT Text.Eq (mods[m].name, u.a) THEN
+      FOR k := 0 TO mods[m].nvrs - 1 DO
+        ScopeAdd (Qualify (mods[m].name, mods[m].vrNames[k]),
+                  mods[m].vrTypes[k], ModeModule) ;
+        scope[nscope - 1].ro := mods[m].vrRo[k]
+      END
+    END
+  END
+END AddModuleVars ;
+
 PROCEDURE CheckImports (root: PTR Ast.Node ; u: PTR Ast.Node) =
 VAR
   seen : SLICE OF BOOL ;
@@ -7033,6 +7468,12 @@ BEGIN
       END ;
       RETURN
     END
+  END ;
+  (* a name entered for the first time -- not the body that closes a
+     FORWARD, which returned above *)
+  IF Text.Eq (id.a, 'NaN') THEN
+    ErrN (id, me, 'NaN is predeclared, the quiet NaN: a declaration may'
+          + ' not take its name (par 2.1)')
   END ;
   IF n = LEN (names) THEN
     ns := NEW (pool, STR, 2 * n + 16) ;
@@ -7183,6 +7624,7 @@ VAR i, j, k, fm : I64 ;
 BEGIN
   Setup () ;
   GraphClear () ;
+  curRoot := root ;
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN
       curMod := u.a ;
@@ -7216,6 +7658,7 @@ BEGIN
         END
       END ;
       CheckImports (root, u) ;
+      ExportWalk (u, root, u.a, NONE) ;
       CheckDeclaredOnce (u) ;
       (* module CONSTs, so a designator naming one has a type *)
       ConstClear () ;
@@ -7253,7 +7696,7 @@ BEGIN
                  caller: its ctx is 'Mod body', as the oracle says *)
               ScopeClear () ;
               CallsClear () ;
-              AddVarsOf (u, ModeModule) ;
+              AddModuleVars (curRoot, u) ;
               curRetTy := '<void>' ;
               RaisedClear () ;
               (* never PURE, and the flag must be CLEARED rather than
@@ -7284,5 +7727,21 @@ BEGIN
   END ;
   CheckThreadChains ()
 END CheckFile ;
+
+PROCEDURE ShowType (RO KEPT name: STR) =
+BEGIN
+  showName := name ;
+  shownRaises := ' '
+END ShowType ;
+
+PROCEDURE ShownRaises () : STR =
+BEGIN
+  RETURN shownRaises
+END ShownRaises ;
+
+PROCEDURE ShownType () : STR =
+BEGIN
+  RETURN shown
+END ShownType ;
 
 END Sem.

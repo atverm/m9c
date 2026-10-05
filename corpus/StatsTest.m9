@@ -52,12 +52,6 @@ BEGIN
   RETURN Check.GoldI64s (t, gold, name)
 END I64s ;
 
-PROCEDURE NaN () : F64 =
-VAR z : F64 ;
-BEGIN
-  z := 0.0 ;
-  RETURN z / z
-END NaN ;
 
 (* a grid from its row-major values and its shape, and back *)
 PROCEDURE Grid (RO flat: SLICE OF F64 ; rows, cols: I64) : GRID 2 OF F64 =
@@ -172,7 +166,7 @@ BEGIN
   Check.EqI64s (t, 'Histogram does not count a NaN', hist,
                 I64s ('want.m.hist')) ;
   Check.EqI64 (t, 'BinOf a NaN is -1',
-               Stats.BinOf (NaN (), 5, range[0], range[1]), -1)
+               Stats.BinOf (NaN, 5, range[0], range[1]), -1)
 END Gaps ;
 
 PROCEDURE Histograms () RAISES Faults.BadArg =
@@ -285,11 +279,11 @@ BEGIN
   r := Stats.Interp (probes, one, onef) ;
   Check.NearF64s (t, 'Interp through one point is that value', r,
                   F64s ('want.i.onepoint'), 0.0, 0.0) ;
-  v := Stats.Interp1 (NaN (), xp, fp) ;
-  Check.EqF64 (t, 'Interp1 at a NaN is NaN: no abscissa, no value', v, NaN ()) ;
-  probes[1] := NaN () ;
+  v := Stats.Interp1 (NaN, xp, fp) ;
+  Check.EqF64 (t, 'Interp1 at a NaN is NaN: no abscissa, no value', v, NaN) ;
+  probes[1] := NaN ;
   r := Stats.Interp (probes, one, onef) ;
-  Check.EqF64 (t, 'Interp answers NaN for a NaN among xs', r[1], NaN ()) ;
+  Check.EqF64 (t, 'Interp answers NaN for a NaN among xs', r[1], NaN) ;
   Check.EqF64 (t, 'and the others as before', r[2], 7.5)
 END Interpolation ;
 
@@ -480,9 +474,9 @@ VAR
   v : F64 ;
 BEGIN
   xs := NEW (F64, 3) ;
-  xs[0] := NaN () ;
-  xs[1] := NaN () ;
-  xs[2] := NaN () ;
+  xs[0] := NaN ;
+  xs[1] := NaN ;
+  xs[2] := NaN ;
   v := Stats.Mean (xs) ;
   RETURN -1
 EXCEPT
@@ -496,9 +490,9 @@ VAR
   v : F64 ;
 BEGIN
   xs := NEW (F64, 3) ;
-  xs[0] := NaN () ;
+  xs[0] := NaN ;
   xs[1] := 4.0 ;
-  xs[2] := NaN () ;
+  xs[2] := NaN ;
   v := Stats.Var (xs) ;
   RETURN -1
 EXCEPT

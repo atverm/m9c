@@ -976,7 +976,38 @@ cp "$SRC/Hello.m9" w3/
   P=$(cd ../zip && pwd)
   grep -q "^ *$P/lib/m9\$" h.txt || { echo "FAIL: --help does not name the zip's library:"; cat h.txt; exit 1; }
   grep -q "^ *$P/runtime\$" h.txt || { echo "FAIL: --help does not name the zip's runtime:"; cat h.txt; exit 1; } ) || exit 1
+# (c) the notebook session from an installed tree.  --cell compiles
+#     the runtime position-independent and builds the session host,
+#     so it needs the runtime as SOURCES; build.sh installs them as
+#     share/m9/runtime, apart from include/m9, where sources would win
+#     over the archive for every link.  Without them it says so; with
+#     them it builds; and an ordinary link still takes the archive.
+#     (Until 2026-10-05 an installed m9c refused every --cell.)
+rm -rf w4 && mkdir -p w4 && cp "$SRC/Hello.m9" w4/
+( cd w4 && env -u M9LIBRARY -u M9RUNTIME M9CACHE="$PWD/cache" \
+    ../inst/usr/bin/m9c --cell Hello.m9 >c0.txt 2>&1 ) &&
+  { echo "FAIL: --cell built from an install with no runtime sources"; exit 1; }
+grep -q "needs the runtime sources" w4/c0.txt ||
+  { echo "FAIL: --cell without runtime sources did not say why:"; cat w4/c0.txt; exit 1; }
+mkdir -p inst/usr/share/m9/runtime
+cp "$RT/m9rt.h" "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/fmtshim.c" "$RT/tlsshim.c" \
+   "$RT/m9session.c" inst/usr/share/m9/runtime/
+( cd w4 &&
+  env -u M9LIBRARY -u M9RUNTIME M9CACHE="$PWD/cache" \
+    ../inst/usr/bin/m9c --cell Hello.m9 >c1.txt 2>&1 ||
+    { echo "FAIL: --cell from the install with share/m9/runtime:"; head -8 c1.txt; exit 1; }
+  grep -q "^HOST	.*/m9session$" c1.txt ||
+    { echo "FAIL: --cell named no session host:"; cat c1.txt; exit 1; }
+  grep -q "^LIB	.*/rtpic-[^/]*/libm9rt.so$" c1.txt ||
+    { echo "FAIL: --cell built no runtime shared object:"; cat c1.txt; exit 1; }
+  grep -q "^PROGRAM	" c1.txt ||
+    { echo "FAIL: --cell named no program:"; cat c1.txt; exit 1; }
+  env -u M9LIBRARY -u M9RUNTIME ../inst/usr/bin/m9c --make -v -o hello Hello.m9 >r.txt 2>&1 ||
+    { echo "FAIL: the install with share/m9/runtime could not build Hello:"; head -8 r.txt; exit 1; }
+  grep -q -- "-lm9rt " r.txt ||
+    { echo "FAIL: share/m9/runtime turned an ordinary link away from the archive:"; grep -- '-iquote' r.txt; exit 1; } ) || exit 1
 echo "m9c: a relocated install and the zip layout find their own"
-echo "     library, headers and runtime with no variable set"
+echo "     library, headers and runtime with no variable set; an install"
+echo "     with share/m9/runtime runs --cell, and links with its archive"
 
 echo "m9c: --make builds a diamond in dependency order, first run"

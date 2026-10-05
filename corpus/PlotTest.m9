@@ -241,8 +241,8 @@ BEGIN
     s.innerLo[k] := v - 1.0 ; s.innerHi[k] := v + 1.0 ;
     IF k >= 30 AND k < 33 THEN
       (* three months without a band *)
-      s.outerLo[k] := 0.0 / 0.0 ; s.outerHi[k] := 0.0 / 0.0 ;
-      s.innerLo[k] := 0.0 / 0.0 ; s.innerHi[k] := 0.0 / 0.0
+      s.outerLo[k] := NaN ; s.outerHi[k] := NaN ;
+      s.innerLo[k] := NaN ; s.innerHi[k] := NaN
     END ;
     IF k >= Months - 24 THEN
       lines[1].x[k - Months + 24] := F64 (day0) ;
@@ -258,7 +258,7 @@ BEGIN
     END
   END ;
   (* a month without a value lifts the pen *)
-  lines[0].y[40] := 0.0 / 0.0 ;
+  lines[0].y[40] := NaN ;
   lines[0].label := 'Network' ; lines[0].key := 'net' ; lines[0].width := 3.0 ;
   lines[0].short := '' ; lines[0].dash := '' ; lines[0].marks := FALSE ;
   lines[1].label := 'Cabauw 207 m' ; lines[1].key := 's1' ; lines[1].width := 2.0 ;

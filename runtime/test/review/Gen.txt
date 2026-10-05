@@ -1,12 +1,12 @@
-REVIEW Gen -- 107 procedures with a body, 77 of them functions; 23 headings in a DEFINITION
+REVIEW Gen -- 126 procedures with a body, 88 of them functions; 24 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              77
-  assignments                                   879   passed over, a type unknown: 7
-  arguments                                    4198   passed over, a type unknown: 31
-  RETURN values                                 359   passed over, a type unknown: 2
-  operands of a comparison or an operator       675   passed over, a type unknown: 35
-  CASE labels                                    64   passed over, a type unknown: 26
+  functions answering on every path              88
+  assignments                                   943   passed over, a type unknown: 8
+  arguments                                    4535   passed over, a type unknown: 34
+  RETURN values                                 400   passed over, a type unknown: 2
+  operands of a comparison or an operator       766   passed over, a type unknown: 39
+  CASE labels                                    67   passed over, a type unknown: 26
   THREAD arguments                                0
   CASE over variants, proved total                0
 
@@ -14,13 +14,13 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    1   gpool
   local pools                                     0
   pool parameters                                 0
-  KEPT parameters                                16   PoolReg, OutReg, AdoptReg, AdoptReg, AdoptReg, SetDebugSource, +10 more
+  KEPT parameters                                20   PoolReg, OutReg, AdoptReg, AdoptReg, AdoptReg, SetPrefix, +14 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
-  module variables                               69   modName, dbgSrc, constsBase, inited, nerrV, tmpN, +63 more
+  module variables                               77   modName, dbgSrc, pfxMod, pfxC, npfx, constsBase, +71 more
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    0
@@ -33,4 +33,4 @@ COUNTED -- how much there was to check
   RAISE statements                                0
   handlers                                        0
   NEW in the frame                                0
-  NEW in a named pool                            25
+  NEW in a named pool                            30

@@ -102,6 +102,22 @@ PROCEDURE ExecWithin (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
      receives the terminal's Ctrl-C: that is the price of the bound,
      and it is why an unbounded run is not given one. *)
 
+PROCEDURE Become (RO prog: STR ; RO name: STR ; RO args: SLICE OF STR)
+  RAISES ValueRange, Io.IOError ;
+  (* THIS PROCESS BECOMES prog, told `name` as its argv[0] and args
+     after it.  It keeps this process's stdin, stdout, stderr,
+     environment and terminal, its exit status is the exit status, and
+     a Ctrl-C reaches it as if it had been started by hand -- which is
+     what Exec, collecting both streams, is not.  Nothing after a
+     successful Become runs; IOError when prog could not be started,
+     and then this process is still here to say so.  POSIX replaces
+     the process (execv); Windows, which cannot, starts prog with this
+     process's handles, waits, and exits with its status. *)
+
+PROCEDURE ProcessId () : I64 ;
+  (* this process's id: a name no other process running at the same
+     moment holds *)
+
 PROCEDURE Program (VAR pool: POOL) : STR RAISES ValueRange, IndexError ;
   (* argv[0]: how this program was invoked *)
 PROCEDURE Args (VAR pool: POOL) : SLICE OF STR RAISES ValueRange, IndexError ;
@@ -179,6 +195,11 @@ PROCEDURE ExecCopy = "m9_exec_copy" (h: C.Int ; which: C.Int ;
                                      buf: C.MutPtr ; cap: C.SSizeT)
   : C.SSizeT  [REENTRANT] ;
 PROCEDURE ExecRelease = "m9_exec_release" (h: C.Int)  [REENTRANT] ;
+PROCEDURE BecomeC = "m9_become" (prog: C.ConstPtr ; argv: C.ConstPtr ;
+                                 n: C.Int) : C.Int  [REENTRANT] ;
+  (* prog NUL-terminated; n strings back to back, argv[0] first.
+     Answers only when prog could not be started: -1 *)
+PROCEDURE Pid = "m9_pid" () : C.SSizeT  [REENTRANT] ;
 
 END csys.
 
@@ -188,7 +209,8 @@ IMPORT Io ;
 IMPORT DynStr ;
 IMPORT Text ;
 FROM csys IMPORT NCpu, OsCode, ExePath, MemInfo, PoolN, PoolI, ExecStart,
-                 ExecStatus, ExecStopped, ExecLen, ExecCopy, ExecRelease ;
+                 ExecStatus, ExecStopped, ExecLen, ExecCopy, ExecRelease,
+                 BecomeC, Pid ;
 
 CONST
   Out = 1 ;
@@ -356,6 +378,37 @@ PROCEDURE Exec (VAR pool: POOL ; RO prog: STR ; RO args: SLICE OF STR ;
 BEGIN
   RETURN ExecWithin (pool, prog, args, input, env, 0.0)
 END Exec ;
+
+PROCEDURE Become (RO prog: STR ; RO name: STR ; RO args: SLICE OF STR)
+  RAISES ValueRange, Io.IOError =
+VAR
+  scratch : POOL ;
+  pb, block, b : SLICE OF BYTE ;
+  total, i, k : I64 ;
+BEGIN
+  b := DynStr.Utf8 (scratch, prog) ;
+  pb := NEW (scratch, BYTE, LEN (b) + 1) ;
+  k := 0 ;
+  Put (scratch, pb, k, prog) ;
+  b := DynStr.Utf8 (scratch, name) ;
+  total := LEN (b) + 1 ;
+  FOR i := 0 TO LEN (args) - 1 DO
+    b := DynStr.Utf8 (scratch, args[i]) ;
+    total := total + LEN (b) + 1
+  END ;
+  block := NEW (scratch, BYTE, total) ;
+  k := 0 ;
+  Put (scratch, block, k, name) ;
+  FOR i := 0 TO LEN (args) - 1 DO Put (scratch, block, k, args[i]) END ;
+  IF I64 (BecomeC (ADR (pb), ADR (block), C.Int (LEN (args) + 1))) < 0 THEN
+    RAISE Io.IOError (prog)
+  END
+END Become ;
+
+PROCEDURE ProcessId () : I64 =
+BEGIN
+  RETURN I64 (Pid ())
+END ProcessId ;
 
 PROCEDURE Program (VAR pool: POOL) : STR RAISES ValueRange, IndexError =
 BEGIN

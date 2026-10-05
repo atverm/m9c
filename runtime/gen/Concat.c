@@ -31,14 +31,18 @@ static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[7] = { 104u, 101u, 108u, 108u, 111u, 44u, 32u };
 static const uint32_t m9s1[1] = { 33u };
-static const uint32_t m9s2[5] = { 119u, 111u, 114u, 108u, 100u };
-static const uint32_t m9s3[2] = { 97u, 98u };
-static const uint32_t m9s4[8] = { 118u, 105u, 97u, 32u, 104u, 101u, 97u, 112u };
-static const uint32_t m9s5[1] = { 97u };
-static const uint32_t m9s6[1] = { 98u };
-static const uint32_t m9s7[1] = { 99u };
+static const uint32_t m9s2[1] = { 46u };
+static const uint32_t m9s3[5] = { 119u, 111u, 114u, 108u, 100u };
+static const uint32_t m9s4[2] = { 97u, 98u };
+static const uint32_t m9s5[8] = { 118u, 105u, 97u, 32u, 104u, 101u, 97u, 112u };
+static const uint32_t m9s6[1] = { 97u };
+static const uint32_t m9s7[1] = { 98u };
+static const uint32_t m9s8[1] = { 99u };
+static const uint32_t m9s9[2] = { 50u, 55u };
+static const uint32_t m9s10[2] = { 54u, 55u };
 
 static m9_sl_CHAR Concat_Greeting (m9_sl_CHAR who, m9_state *err);
+static m9_sl_CHAR Concat_Point (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
 
 
 static m9_sl_CHAR Concat_Greeting (m9_sl_CHAR who, m9_state *err)
@@ -59,6 +63,33 @@ L_ret: ;
   return m9ret;
 }
 
+static m9_sl_CHAR Concat_Point (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  m9_sl_CHAR ds = {0}; (void) ds;
+  m9_sl_CHAR out = {0}; (void) out;
+  { __typeof__(ds) m9v = m9_cat (err->res, a, b, err);
+    if (err->exc) goto L_ret;
+    ds = m9v;
+  }
+  { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, ({ __typeof__(ds) m9t1 = ds; int64_t m9t1a = INT64_C(0), m9t1n = INT64_C(3); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s2, 1 }), err), ({ __typeof__(ds) m9t2 = ds; int64_t m9t2a = INT64_C(3), m9t2n = INT64_C(1); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
+    if (err->exc) goto L_ret;
+    out = m9v;
+  }
+  err->res = m9res;
+  m9ret = out;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 int main (int argc, char **argv)
 {
   m9_state errv = {0};
@@ -67,14 +98,14 @@ int main (int argc, char **argv)
   m9_args (argc, argv);
   Io_m9init (err); if (err->exc) goto L_ret;
   DynStr_m9init (err); if (err->exc) goto L_ret;
-  Io_WriteLine (Concat_Greeting (((m9_sl_CHAR){ (uint32_t *) m9s2, 5 }), err), err);
+  Io_WriteLine (Concat_Greeting (((m9_sl_CHAR){ (uint32_t *) m9s3, 5 }), err), err);
   if (err->exc) goto L_ret;
   s = (m9_sl_CHAR){ NULL, 0 };
   { int64_t m9t1to;
   n = INT64_C(1);
   m9t1to = INT64_C(3);
   for (; n <= m9t1to; n += 1) {
-    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err);
+    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s4, 2 }), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -89,11 +120,13 @@ int main (int argc, char **argv)
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &m9mframe, ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err);
+  DynStr_Append (&(d), &m9mframe, ((m9_sl_CHAR){ (uint32_t *) m9s5, 8 }), err);
   if (err->exc) goto L_ret;
   Io_WriteLine (DynStr_View (d, err), err);
   if (err->exc) goto L_ret;
-  Io_WriteLine (m9_cat (err->res, m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 1 }), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), err), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 }), err), err);
+  Io_WriteLine (m9_cat (err->res, m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 }), err), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s8, 1 }), err), err);
+  if (err->exc) goto L_ret;
+  Io_WriteLine (Concat_Point (((m9_sl_CHAR){ (uint32_t *) m9s9, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s10, 2 }), err), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   m9_pool_free (&m9mframe);

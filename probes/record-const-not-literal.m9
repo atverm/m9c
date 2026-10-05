@@ -1,0 +1,11 @@
+(* EXPECT: field 1 of C is not a literal: a CONST holds literals *)
+MODULE m ;
+TYPE
+  Row = RECORD
+    code : I64 ;
+    text : STR ;
+  END ;
+CONST
+  N = 3 ;
+  C = Row (N, 'x') ;
+END m.

@@ -127,7 +127,6 @@ static const uint32_t m9s17[35] = { 100u, 101u, 103u, 114u, 101u, 101u, 115u, 32
 static const uint32_t m9s18[26] = { 97u, 32u, 112u, 114u, 111u, 98u, 97u, 98u, 105u, 108u, 105u, 116u, 121u, 32u, 105u, 115u, 32u, 105u, 110u, 32u, 91u, 48u, 44u, 32u, 49u, 93u };
 
 static int64_t Stats_Need (m9_sl_F64 xs, int64_t need, m9_state *err);
-static double Stats_NaN (m9_state *err);
 static double Stats_Total (m9_sl_F64 xs, m9_state *err);
 static double Stats_SumSq (m9_sl_F64 xs, double m, m9_state *err);
 static void Stats_Sort (m9_sl_F64 *a, m9_state *err);
@@ -2115,24 +2114,6 @@ L_ret: ;
   return m9ret;
 }
 
-static double Stats_NaN (m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  double m9ret = 0;
-  double z = 0; (void) z;
-  z = 0.0;
-  err->res = m9res;
-  m9ret = (z / z);
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
 static double Stats_Total (m9_sl_F64 xs, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -2996,8 +2977,7 @@ static double Stats_SumNow (Stats_Win w, m9_state *err)
   if ((w.pinf > INT64_C(0))) {
     if ((w.ninf > INT64_C(0))) {
       err->res = m9res;
-      m9ret = Stats_NaN (err);
-      if (err->exc) goto L_ret;
+      m9ret = NAN;
       goto L_ret;
     }
     err->res = m9res;
@@ -3090,10 +3070,7 @@ static m9_sl_F64 Stats_Slide (m9_sl_F64 xs, int64_t window, bool mean, m9_state 
           n = m9v;
         }
         if ((n == INT64_C(0))) {
-          { __typeof__(v) m9v = Stats_NaN (err);
-            if (err->exc) goto L_ret;
-            v = m9v;
-          }
+          v = NAN;
         } else {
           v = (v / (double)(n));
         }
@@ -3196,11 +3173,8 @@ static m9_sl_F64 Stats_Extreme (m9_sl_F64 xs, int64_t window, bool wantMax, m9_s
           if (err->exc) goto L_ret;
         }
       } else {
-        { __typeof__((*(double *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (i, window, err), INT64_C(1), err), out.len, sizeof (double), err))) m9v = Stats_NaN (err);
-          if (err->exc) goto L_ret;
-          (*(double *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (i, window, err), INT64_C(1), err), out.len, sizeof (double), err)) = m9v;
-          if (err->exc) goto L_ret;
-        }
+        (*(double *) m9_at (out.p, m9_add_i64 (m9_sub_i64 (i, window, err), INT64_C(1), err), out.len, sizeof (double), err)) = NAN;
+        if (err->exc) goto L_ret;
       }
     }
   } }

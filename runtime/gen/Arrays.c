@@ -57,7 +57,6 @@ static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[26] = { 97u, 120u, 105u, 115u, 32u, 111u, 102u, 32u, 97u, 32u, 71u, 82u, 73u, 68u, 32u, 50u, 32u, 105u, 115u, 32u, 48u, 32u, 111u, 114u, 32u, 49u };
 
-static double Arrays_NaN (m9_state *err);
 static void Arrays_Take (Arrays_Acc *s, double v, m9_state *err);
 static double Arrays_SumOf (Arrays_Acc s, m9_state *err);
 static double Arrays_MeanOf (Arrays_Acc s, m9_state *err);
@@ -1138,24 +1137,6 @@ L_ret: ;
   return m9ret;
 }
 
-static double Arrays_NaN (m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  double m9ret = 0;
-  double z = 0; (void) z;
-  z = 0.0;
-  err->res = m9res;
-  m9ret = (z / z);
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
 static void Arrays_Take (Arrays_Acc *s, double v, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -1233,8 +1214,7 @@ static double Arrays_MeanOf (Arrays_Acc s, m9_state *err)
   double m9ret = 0;
   if ((s.n == INT64_C(0))) {
     err->res = m9res;
-    m9ret = Arrays_NaN (err);
-    if (err->exc) goto L_ret;
+    m9ret = NAN;
     goto L_ret;
   }
   err->res = m9res;
@@ -1256,8 +1236,7 @@ static double Arrays_MinOf (Arrays_Acc s, m9_state *err)
   double m9ret = 0;
   if ((s.n == INT64_C(0))) {
     err->res = m9res;
-    m9ret = Arrays_NaN (err);
-    if (err->exc) goto L_ret;
+    m9ret = NAN;
     goto L_ret;
   }
   err->res = m9res;
@@ -1278,8 +1257,7 @@ static double Arrays_MaxOf (Arrays_Acc s, m9_state *err)
   double m9ret = 0;
   if ((s.n == INT64_C(0))) {
     err->res = m9res;
-    m9ret = Arrays_NaN (err);
-    if (err->exc) goto L_ret;
+    m9ret = NAN;
     goto L_ret;
   }
   err->res = m9res;

@@ -1,0 +1,36 @@
+REVIEW NbShow -- 39 procedures with a body, 23 of them functions; 24 headings in a DEFINITION
+
+PROVED BY THE CHECKER -- examined, and nothing refused
+  functions answering on every path              23
+  assignments                                    80
+  arguments                                     373
+  RETURN values                                  35
+  operands of a comparison or an operator        94
+  CASE labels                                     0
+  THREAD arguments                                0
+  CASE over variants, proved total                0
+
+DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
+  module pools                                    0
+  local pools                                     7   IntsText.scratch, RealsText.scratch, BoolsText.scratch, StrsText.scratch, GridText.scratch, GridHtml.scratch, +1 more
+  pool parameters                                 2   Cells, RowsShown
+  KEPT parameters                                 0
+  HEAP named                                      0
+  NEW (OWN, T)                                    0
+  DISPOSE                                         0
+  SHARED (x)                                      0
+  THREAD                                          0
+  module variables                                0
+
+TRUSTED -- outside what the checker can see
+  UNSAFE units                                    0
+  foreign procedures                              0
+    of them [SERIAL]                              0
+    of them [REENTRANT]                           0
+
+COUNTED -- how much there was to check
+  CASE statements                                 0
+  RAISE statements                                0
+  handlers                                        3
+  NEW in the frame                                0
+  NEW in a named pool                             8

@@ -33,6 +33,11 @@ Two float paths, with different promises, both stated:
 Use Bits when a value must survive the round trip; use Fixed when
 a person is going to read it.  Saying which is which is the point.
 
+Short is BOTH, since 2026-10-05: the shortest decimal that reads
+back to the same double, exact by construction (Burger and Dybvig's
+free-format digits over integers, no scaling in F64), and held to
+Python's repr on 9,148 values by FmtTest.
+
 ### CONST MaxDecimals
 
 _(documented with the group below)_
@@ -105,6 +110,17 @@ and prints the disagreement rate.
 Sci, right-aligned in width with blanks -- the `:x:y` of the
 scientific form.  A short exponent makes the field ragged on the
 right, which is what the width is for.
+
+### Short (v: F64) : STR
+
+the SHORTEST decimal that reads back to exactly v -- the closest
+such when there are several, the even last digit on a tie -- in
+Python's repr layout: positional for 1e-4 <= |v| < 1e16 (1.0,
+0.0001, 1234.5), else one digit, a point if more follow, and a
+signed two-digit-or-more exponent (1e+16, 2.5e-05).  -0.0 keeps
+its sign; NaN is 'nan', the infinities 'inf' and '-inf'.  Total:
+no RAISES, every double has an answer.  What a person reads and
+what a machine reads back are the same number.
 
 ### Bits (v: F64) : STR
 

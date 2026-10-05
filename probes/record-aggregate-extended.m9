@@ -1,0 +1,13 @@
+(* EXPECT: Ext: an aggregate of an extended record is not built *)
+MODULE m ;
+TYPE
+  Base = RECORD
+    a : I64 ;
+  END ;
+  Ext = RECORD (Base)
+    b : I64 ;
+  END ;
+VAR x : Ext ;
+BEGIN
+  x := Ext (1, 2)
+END m.

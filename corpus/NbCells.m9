@@ -1,0 +1,338 @@
+DEFINITION MODULE NbCells ;
+
+(* Values handed from one program to the next BY NAME, through files:
+   what the cells of an M9 notebook share -- each cell is a whole
+   program (tools/jupyter) and nothing it computed outlives it -- and
+   what the steps of any pipeline share.  NbCells.PutF64s ('temps',
+   xs) in one cell, xs := NbCells.GetF64s (pool, 'temps') in a later
+   one.
+
+   WHERE: the directory $M9CELLS names -- the Jupyter kernel sets it
+   to NOTEBOOK.m9data beside the notebook -- else m9data in the
+   working directory.
+
+   HOW: one Parquet file per name, its kind in the file's name --
+   NAME.frame.parquet (a Frame), NAME.f64s.parquet and
+   NAME.i64s.parquet (one column, `value`), NAME.grid.parquet (a GRID
+   2 OF F64, one column per grid column, c0, c1, ..., a row of the
+   grid a row of the file).  Values are stored as their bits, NaN
+   included.  pandas reads every one of them -- read_parquet -- and a
+   grid's DataFrame .to_numpy () is the matrix.
+
+   THE KIND IS CHECKED WHEN A VALUE IS READ BACK, because the
+   compiler checking one cell cannot see what an earlier cell
+   stored: a Get of another kind raises WrongType naming both, a name
+   nothing stored raises Missing.  A name is letters and digits,
+   beginning with a letter, as an M9 identifier is -- it becomes a
+   file name, and nothing else may.  A Put replaces whatever the name
+   held, of any kind; the file is written beside and renamed, so a
+   reader never sees half of one. *)
+
+IMPORT Faults ;
+IMPORT Frame ;
+IMPORT Io ;
+
+EXCEPTION
+  Missing (RO name: STR) ;
+  (* nothing is stored under that name *)
+  WrongType (RO name, stored, wanted: STR) ;
+  (* the name holds another kind: `stored` is what it is, `wanted`
+     what the Get asked for -- 'frame', 'f64s', 'i64s' or 'grid' *)
+
+PROCEDURE Dir (VAR pool: POOL) : STR RAISES ValueRange ;
+  (* the directory the values live in: $M9CELLS, else m9data *)
+
+PROCEDURE Kind (RO name: STR) : STR RAISES ValueRange, Faults.BadArg ;
+  (* what the name holds -- 'frame', 'f64s', 'i64s' or 'grid' -- or
+     the empty string when it holds nothing *)
+
+PROCEDURE PutFrame (f: PTR Frame.Fr ; RO name: STR)
+  RAISES Faults.BadArg, Io.IOError, ValueRange, Overflow, IndexError ;
+PROCEDURE GetFrame (VAR pool: POOL ; RO name: STR) : PTR Frame.Fr
+  RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
+         Overflow, IndexError ;
+
+PROCEDURE PutF64s (RO name: STR ; RO v: SLICE OF F64)
+  RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
+         Overflow, IndexError ;
+PROCEDURE GetF64s (VAR pool: POOL ; RO name: STR) : SLICE OF F64
+  RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
+         Overflow, IndexError ;
+
+PROCEDURE PutI64s (RO name: STR ; RO v: SLICE OF I64)
+  RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
+         Overflow, IndexError ;
+PROCEDURE GetI64s (VAR pool: POOL ; RO name: STR) : SLICE OF I64
+  RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
+         Overflow, IndexError ;
+
+PROCEDURE PutGrid (RO name: STR ; RO g: GRID 2 OF F64)
+  RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
+         Overflow, IndexError ;
+  (* a grid with no columns is refused: its file would have no rows
+     either, and the grid's first extent would be lost *)
+PROCEDURE GetGrid (VAR pool: POOL ; RO name: STR) : GRID 2 OF F64
+  RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
+         Overflow, IndexError ;
+
+END NbCells.
+
+IMPLEMENTATION MODULE NbCells ;
+
+IMPORT Faults ;
+IMPORT Frame ;
+IMPORT Io ;
+IMPORT Parquet ;
+IMPORT DynStr ;
+
+CONST
+  Kinds = ['frame', 'f64s', 'i64s', 'grid'] ;
+
+PROCEDURE Dir (VAR pool: POOL) : STR RAISES ValueRange =
+VAR v : STR ;
+BEGIN
+  v := Io.Env (pool, 'M9CELLS') ;
+  IF LEN (v) > 0 THEN RETURN v END ;
+  RETURN 'm9data'
+END Dir ;
+
+(* letters and digits, a letter first: it becomes a file name, and a
+   slash or a dot in it would put the file somewhere else *)
+PROCEDURE CheckName (RO name: STR) RAISES Faults.BadArg =
+VAR
+  i : I64 ;
+  c : CHAR ;
+BEGIN
+  IF LEN (name) = 0 THEN RAISE Faults.BadArg ('an empty name') END ;
+  FOR i := 0 TO LEN (name) - 1 DO
+    c := name[i] ;
+    IF NOT ((c >= 'A' AND c <= 'Z') OR (c >= 'a' AND c <= 'z') OR
+            (i > 0 AND c >= '0' AND c <= '9')) THEN
+      RAISE Faults.BadArg (name)
+    END
+  END
+END CheckName ;
+
+(* DIR/NAME.KIND.parquet, and the same with .tmp for writing beside *)
+PROCEDURE File (VAR pool: POOL ; RO name: STR ; RO kind: STR ; tmp: BOOL)
+  : STR RAISES ValueRange =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, Dir (pool)) ;
+  DynStr.AppendChar (d, '/') ;
+  DynStr.Append (d, name) ;
+  DynStr.AppendChar (d, '.') ;
+  DynStr.Append (d, kind) ;
+  DynStr.Append (d, '.parquet') ;
+  IF tmp THEN DynStr.Append (d, '.tmp') END ;
+  RETURN DynStr.View (d)
+END File ;
+
+PROCEDURE KindAt (RO name: STR) : I64 RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (Kinds) - 1 DO
+    IF Io.Exists (File (scratch, name, Kinds[i], FALSE)) THEN RETURN i END
+  END ;
+  RETURN -1
+END KindAt ;
+
+PROCEDURE Kind (RO name: STR) : STR RAISES ValueRange, Faults.BadArg =
+VAR k : I64 ;
+BEGIN
+  CheckName (name) ;
+  k := KindAt (name) ;
+  IF k < 0 THEN RETURN '' END ;
+  RETURN KindName (k)
+END Kind ;
+
+(* the frame under the name, as kind k: written beside, every other
+   kind of the name removed, then renamed into place *)
+PROCEDURE Store (VAR scratch: POOL ; f: PTR Frame.Fr ; RO name: STR ; k: I64)
+  RAISES Faults.BadArg, Io.IOError, ValueRange, Overflow, IndexError =
+VAR
+  i : I64 ;
+  gone : BOOL ;
+BEGIN
+  CheckName (name) ;
+  Io.MkDir (Dir (scratch)) ;
+  Parquet.Write (scratch, f, File (scratch, name, Kinds[k], TRUE)) ;
+  FOR i := 0 TO LEN (Kinds) - 1 DO
+    IF i # k THEN
+      IF Io.Exists (File (scratch, name, Kinds[i], FALSE)) THEN
+        gone := Io.Remove (File (scratch, name, Kinds[i], FALSE)) ;
+        IF NOT gone THEN RAISE Io.IOError (File (scratch, name, Kinds[i], FALSE)) END
+      END
+    END
+  END ;
+  Io.Rename (File (scratch, name, Kinds[k], TRUE),
+             File (scratch, name, Kinds[k], FALSE))
+END Store ;
+
+(* the file under the name, read as kind k, or why not *)
+PROCEDURE Fetch (VAR pool: POOL ; RO name: STR ; k: I64) : PTR Frame.Fr
+  RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
+         Overflow, IndexError =
+VAR
+  scratch : POOL ;
+  have : I64 ;
+BEGIN
+  CheckName (name) ;
+  have := KindAt (name) ;
+  IF have < 0 THEN RAISE Missing (name) END ;
+  IF have # k THEN RAISE WrongType (name, Kind (name), KindName (k)) END ;
+  RETURN Parquet.Read (pool, File (scratch, name, Kinds[k], FALSE))
+END Fetch ;
+
+PROCEDURE KindName (k: I64) : STR =
+BEGIN
+  CASE k OF
+  | 0 : RETURN 'frame'
+  | 1 : RETURN 'f64s'
+  | 2 : RETURN 'i64s'
+  ELSE  RETURN 'grid'
+  END
+END KindName ;
+
+PROCEDURE PutFrame (f: PTR Frame.Fr ; RO name: STR)
+  RAISES Faults.BadArg, Io.IOError, ValueRange, Overflow, IndexError =
+VAR scratch : POOL ;
+BEGIN
+  Store (scratch, f, name, 0)
+END PutFrame ;
+
+PROCEDURE GetFrame (VAR pool: POOL ; RO name: STR) : PTR Frame.Fr
+  RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
+         Overflow, IndexError =
+BEGIN
+  RETURN Fetch (pool, name, 0)
+END GetFrame ;
+
+PROCEDURE PutF64s (RO name: STR ; RO v: SLICE OF F64)
+  RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
+         Overflow, IndexError =
+VAR
+  scratch : POOL ;
+  f : PTR Frame.Fr IN scratch ;
+BEGIN
+  f := Frame.New (scratch, LEN (v)) ;
+  Frame.AddF64 (scratch, f, 'value', v, NaN) ;
+  Store (scratch, f, name, 1)
+EXCEPT
+| Frame.Duplicate (col) :
+    RAISE Faults.BadArg (name)
+END PutF64s ;
+
+PROCEDURE GetF64s (VAR pool: POOL ; RO name: STR) : SLICE OF F64
+  RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
+         Overflow, IndexError =
+VAR f : PTR Frame.Fr IN pool ;
+BEGIN
+  f := Fetch (pool, name, 1) ;
+  RETURN Frame.ColF64 (f, 'value')
+EXCEPT
+| Frame.Unknown (col) :
+    RAISE Faults.BadArg (name)
+| Frame.WrongType (col) :
+    RAISE Faults.BadArg (name)
+END GetF64s ;
+
+PROCEDURE PutI64s (RO name: STR ; RO v: SLICE OF I64)
+  RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
+         Overflow, IndexError =
+VAR
+  scratch : POOL ;
+  f : PTR Frame.Fr IN scratch ;
+BEGIN
+  f := Frame.New (scratch, LEN (v)) ;
+  (* the missing-value sentinel is the frame's business, not this
+     file's: every value goes as it is *)
+  Frame.AddI64 (scratch, f, 'value', v, -9223372036854775807 - 1) ;
+  Store (scratch, f, name, 2)
+EXCEPT
+| Frame.Duplicate (col) :
+    RAISE Faults.BadArg (name)
+END PutI64s ;
+
+PROCEDURE GetI64s (VAR pool: POOL ; RO name: STR) : SLICE OF I64
+  RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
+         Overflow, IndexError =
+VAR f : PTR Frame.Fr IN pool ;
+BEGIN
+  f := Fetch (pool, name, 2) ;
+  RETURN Frame.ColI64 (f, 'value')
+EXCEPT
+| Frame.Unknown (col) :
+    RAISE Faults.BadArg (name)
+| Frame.WrongType (col) :
+    RAISE Faults.BadArg (name)
+END GetI64s ;
+
+(* c0, c1, ...: the name of grid column j in the file *)
+PROCEDURE ColName (VAR pool: POOL ; j: I64) : STR =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (d, 'c') ;
+  DynStr.AppendI64 (d, j) ;
+  RETURN DynStr.View (d)
+END ColName ;
+
+PROCEDURE PutGrid (RO name: STR ; RO g: GRID 2 OF F64)
+  RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
+         Overflow, IndexError =
+VAR
+  scratch : POOL ;
+  f : PTR Frame.Fr IN scratch ;
+  col : SLICE OF F64 ;
+  i, j, nr, nc : I64 ;
+BEGIN
+  nr := LEN (g, 0) ;
+  nc := LEN (g, 1) ;
+  IF nc = 0 THEN RAISE Faults.BadArg ('a grid with no columns') END ;
+  f := Frame.New (scratch, nr) ;
+  FOR j := 0 TO nc - 1 DO
+    (* a slice of its own per column: Frame.AddF64 KEEPS the slice it
+       is handed (a view, not a copy) though its heading says only RO
+       -- one buffer reused for every column wrote the last column
+       everywhere, found by NbCellsTest, 2026-10-04 *)
+    col := NEW (scratch, F64, nr) ;
+    FOR i := 0 TO nr - 1 DO col[i] := g[i, j] END ;
+    Frame.AddF64 (scratch, f, ColName (scratch, j), col, NaN)
+  END ;
+  Store (scratch, f, name, 3)
+EXCEPT
+| Frame.Duplicate (c) :
+    RAISE Faults.BadArg (name)
+END PutGrid ;
+
+PROCEDURE GetGrid (VAR pool: POOL ; RO name: STR) : GRID 2 OF F64
+  RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
+         Overflow, IndexError =
+VAR
+  scratch : POOL ;
+  f : PTR Frame.Fr IN scratch ;
+  g : GRID 2 OF F64 ;
+  col : SLICE OF F64 ;
+  i, j, nr, nc : I64 ;
+BEGIN
+  f := Fetch (scratch, name, 3) ;
+  nr := Frame.Rows (f) ;
+  nc := Frame.Cols (f) ;
+  g := NEW (pool, F64, nr, nc) ;
+  FOR j := 0 TO nc - 1 DO
+    col := Frame.ColF64 (f, ColName (scratch, j)) ;
+    FOR i := 0 TO nr - 1 DO g[i, j] := col[i] END
+  END ;
+  RETURN g
+EXCEPT
+| Frame.Unknown (c) :
+    RAISE Faults.BadArg (name)
+| Frame.WrongType (c) :
+    RAISE Faults.BadArg (name)
+END GetGrid ;
+
+END NbCells.

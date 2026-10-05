@@ -1,0 +1,12 @@
+(* EXPECT: cannot write the CONST E *)
+MODULE m ;
+TYPE
+  Row = RECORD
+    code : I64 ;
+    text : STR ;
+  END ;
+CONST
+  E = Row (1, 'a') ;
+BEGIN
+  E.code := 2
+END m.

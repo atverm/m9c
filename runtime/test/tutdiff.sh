@@ -104,26 +104,9 @@ done
 # the recorded expectation, or the refusal's actual stderr.  A
 # chapter quoting code or diagnostics it does not gate is the rot
 # this whole script exists to prevent.
-TUT=$(cd ../../docs/tutorial && pwd) EXA="$EXA" W="$W" python3 - <<'PYCHK' || exit 1
-import os, re, pathlib, sys
-tut = pathlib.Path(os.environ['TUT']); ex = pathlib.Path(os.environ['EXA'])
-w = pathlib.Path(os.environ['W']); bad = n = 0
-for md in sorted(tut.glob('*.md')):
-    for kind, name, body in re.findall(
-            r'```(m9|output|refusal) (\S+)\n(.*?)```', md.read_text(), re.S):
-        n += 1
-        if kind == 'm9':
-            ok = body == (ex / name).read_text()
-        elif kind == 'output':
-            ok = body == (ex / 'expect' / (name + '.out')).read_text()
-        else:
-            ok = body.rstrip('\n') in (w / (name + '.err')).read_text()
-        if not ok:
-            print(f'DRIFT: {md.name} quotes {kind} {name} wrongly'); bad += 1
-if n < 15:
-    print(f'only {n} embedded blocks found -- the extractor is broken'); bad += 1
-print(f'tutdiff: {n} embedded blocks match their gated sources')
-sys.exit(1 if bad else 0)
-PYCHK
+# The reader is an M9 script (TutBlocks.m9), run by this gate's own
+# compiler; it replaced a Python heredoc that read the same blocks.
+M9RUNTIME="$RT" M9LIBRARY="$LIB" "$M9C" --run TutBlocks.m9 \
+    "$(cd ../../docs/tutorial && pwd)" "$EXA" "$W" || exit 1
 
 echo "tutdiff: $ran examples green ($(ls "$EXA"/C*.m9 | wc -l) run, $(ls "$EXA"/X*.m9 | wc -l) refused as annotated)"
