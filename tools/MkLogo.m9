@@ -1,0 +1,177 @@
+#!/usr/bin/env -S m9c --run
+MODULE MkLogo ;
+
+(* The Modula-9 mark, and every copy of it the tools show -- written,
+   and rasterised, by M9.
+
+       tools/MkLogo.m9            write them
+       tools/MkLogo.m9 --check    exit 1 if any written file differs
+
+   (M9LIBRARY must reach corpus/: the PNGs are drawn by Png.)
+
+   The mark (chosen 2026-10-05, "Exponent"): a square-shouldered M with
+   the 9 set as an exponent -- M to the ninth -- in amber on a deep
+   petrol tile.  It is drawn on a 128-unit grid once, here, from what
+   both an SVG viewer and Png.Raster draw the same way: the M a filled
+   polygon whose diagonals are as thick as its stems (15 units), the 9
+   a ring and a tail of one straight run and one arc.  No curve
+   command, no join or cap setting: Png refuses the first and does not
+   read the second.
+
+   Where it goes, relative to the repository root:
+
+     tools/jupyter/logo/logo-svg.svg      what JupyterLab draws
+     tools/jupyter/logo/logo-32x32.png    what older front ends draw;
+     tools/jupyter/logo/logo-64x64.png    install.py copies all three
+     tools/vscode-m9/images/m9-icon.png   the extension's icon (128 px)
+     tools/vscode-m9/images/m9.svg        the icon of a .m9 file
+     tools/tutor/favicon.svg              every tutorial page's tab icon,
+                                          inlined by MkTutor.m9
+
+   The SVGs keep the tile's rounded corners and their transparency.
+   The PNGs fill the square: Png writes RGB without transparency, so a
+   rounded tile would come out with white corners, which show on a dark
+   theme, and a square of the tile's own colour has nothing to show.
+
+   Moved here from tools/jupyter on 2026-10-05, when the mark gained
+   its second and third home.                                          *)
+
+IMPORT Io ;
+IMPORT Png ;
+IMPORT Text ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Faults ;
+
+CONST
+  Tile = '#0f2b3d' ;           (* deep petrol *)
+  Letter = '#f4f6f2' ;         (* the M *)
+  Signal = '#ffb000' ;         (* the 9, the one accent *)
+  Grid = 128 ;                 (* the units the mark is drawn in *)
+  Radius = 28 ;                (* the tile's corner, in the SVGs only *)
+
+  (* the targets: a path from the root, and what it holds -- 0 the
+     rounded SVG, else a square PNG of that many pixels *)
+  Paths = ['tools/jupyter/logo/logo-svg.svg',
+           'tools/jupyter/logo/logo-32x32.png',
+           'tools/jupyter/logo/logo-64x64.png',
+           'tools/vscode-m9/images/m9-icon.png',
+           'tools/vscode-m9/images/m9.svg',
+           'tools/tutor/favicon.svg'] ;
+  Sizes = [0, 32, 64, 128, 0, 0] ;
+
+VAR
+  pool : POOL ;
+
+(* the mark as an SVG document; rounded asks for the tile's rounded
+   corners, otherwise it fills the square *)
+PROCEDURE Svg (rounded: BOOL) : STR =
+VAR corner : STR ;
+BEGIN
+  corner := '' ;
+  IF rounded THEN corner := ' rx="' + Fmt.I64Str (Radius) + '"' END ;
+  RETURN '<svg xmlns="http://www.w3.org/2000/svg" width="' + Fmt.I64Str (Grid)
+         + '" height="' + Fmt.I64Str (Grid) + '" viewBox="0 0 '
+         + Fmt.I64Str (Grid) + ' ' + Fmt.I64Str (Grid) + '">' + 0AC
+         + '<rect width="' + Fmt.I64Str (Grid) + '" height="' + Fmt.I64Str (Grid)
+         + '"' + corner + ' fill="' + Tile + '"/>' + 0AC
+         + '<polygon points="15,100 15,30 30,30 50,58 70,30 85,30 85,100 70,100 70,56 50,84 30,56 30,100" fill="'
+         + Letter + '"/>' + 0AC
+         + '<circle cx="101" cy="38" r="10" fill="none" stroke="' + Signal
+         + '" stroke-width="7"/>' + 0AC
+         + '<path d="M111 38 V52 A13 12 0 0 1 98 64" fill="none" stroke="' + Signal
+         + '" stroke-width="7"/>' + 0AC
+         + '</svg>' + 0AC
+END Svg ;
+
+(* the square mark at size by size pixels, as a PNG file.  A unit of
+   the SVG is a point, so size pixels from Grid units is a resolution
+   of 72 * size / Grid; none is written into the file *)
+PROCEDURE Raster (size: I64) : SLICE OF BYTE
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+VAR
+  rgb : SLICE OF BYTE ;
+  w, h : I64 ;
+BEGIN
+  rgb := Png.Raster (pool, Svg (FALSE), 72.0 * F64 (size) / F64 (Grid), w, h) ;
+  IF (w # size) OR (h # size) THEN RAISE Faults.SizeError (w, size) END ;
+  RETURN Png.Encode (pool, rgb, w, h, 0.0)
+END Raster ;
+
+(* the bytes target k holds *)
+PROCEDURE Bytes (k: I64) : SLICE OF BYTE
+  RAISES Faults.SizeError, Faults.BadArg, ValueRange =
+BEGIN
+  IF Sizes[k] = 0 THEN RETURN DynStr.Bytes (pool, Svg (TRUE), FALSE) END ;
+  RETURN Raster (Sizes[k])
+END Bytes ;
+
+PROCEDURE Same (RO a, b: SLICE OF BYTE) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF a[i] # b[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Same ;
+
+(* the repository root: this file is ROOT/tools/MkLogo.m9, and --run
+   tells it its own name *)
+PROCEDURE Root (RO self: STR) : STR =
+VAR k : I64 ;
+BEGIN
+  k := Text.LastChar (self, '/') ;
+  IF k < 0 THEN RETURN '..' END ;
+  k := Text.LastChar (SLICE (self, 0, k), '/') ;
+  IF k < 0 THEN RETURN '.' END ;
+  RETURN SLICE (self, 0, k)
+END Root ;
+
+VAR
+  root, path, dir, msg : STR ;
+  want, have : SLICE OF BYTE ;
+  k, bad : I64 ;
+  check : BOOL ;
+
+BEGIN
+  check := (Io.ArgCount () > 1) AND DynStr.Eq (Io.Arg (pool, 1), '--check') ;
+  root := Text.Keep (pool, Root (Io.Arg (pool, 0))) ;
+  bad := 0 ;
+  FOR k := 0 TO LEN (Paths) - 1 DO
+    path := Text.Keep (pool, root + '/' + Paths[k]) ;
+    want := Bytes (k) ;
+    IF check THEN
+      have := NEW (pool, BYTE, 0) ;
+      IF Io.Exists (path) THEN have := Io.ReadFileBytes (pool, path) END ;
+      IF NOT Same (SLICE (have, 0, LEN (have)), want) THEN
+        Io.WriteLine ('mklogo: ' + Paths[k] + ' is not the mark this draws; run tools/MkLogo.m9') ;
+        bad := bad + 1
+      END
+    ELSE
+      dir := SLICE (path, 0, Text.LastChar (path, '/')) ;
+      Io.MkDir (dir) ;
+      Io.WriteFileBytes (path, want)
+    END
+  END ;
+  IF bad > 0 THEN Io.Halt (1) END ;
+  IF check THEN
+    Io.WriteLine ('mklogo: ' + Fmt.I64Str (LEN (Paths)) + ' copies of the mark, none adrift')
+  ELSE
+    Io.WriteLine ('mklogo: ' + Fmt.I64Str (LEN (Paths)) + ' copies of the mark written under ' + root)
+  END
+EXCEPT
+| Faults.SizeError (got, want) :
+    Io.ErrLine ('mklogo: the raster came out ' + Fmt.I64Str (got) + ' pixels wide, not '
+                + Fmt.I64Str (want)) ;
+    Io.Halt (1)
+| Faults.BadArg :
+    Io.ErrLine ('mklogo: the rasteriser refused the mark') ; Io.Halt (1)
+| Io.IOError (p) :
+    msg := p ;
+    Io.ErrLine ('mklogo: cannot read or write ' + msg) ; Io.Halt (1)
+| IndexError :
+    Io.ErrLine ('mklogo: no program name to find the repository by') ; Io.Halt (1)
+| ValueRange :
+    Io.ErrLine ('mklogo: a value out of range') ; Io.Halt (1)
+END MkLogo.

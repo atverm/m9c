@@ -1,0 +1,6 @@
+# fetched and built by build.sh / build-windows.sh
+libui-ng/
+build/
+build-windows/
+guimean
+guimean.exe

@@ -175,7 +175,8 @@ CONST
     'record-const-not-literal',
     'record-const-written',
     'record-aggregate-extended',
-    'record-const-exported'
+    'record-const-exported',
+    'unknown-procedure-case'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -318,7 +319,8 @@ CONST
     'a field of a record CONST is not a literal: a CONST record is read-only data in the program, so its fields are literals (or NaN), as the elements of a constant table are',
     'a field of a record CONST, or the whole of it, is assigned: it is read-only data',
     'a record aggregate names an extended record (RECORD (Base) ...): its base fields would have to come first, which the first cut of the aggregate does not do',
-    'a record CONST is declared in a DEFINITION: like a constant table it is not exported yet'
+    'a record CONST is declared in a DEFINITION: like a constant table it is not exported yet',
+    'a procedure is called by a name that differs from a declared one only in CASE (Writeline for WriteLine); names are case-sensitive, and since 2026-10-05 the refusal names the procedure that was meant'
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -461,7 +463,8 @@ CONST
     'write the literal itself, or build the value in a statement (r := Row (N, ...)), where any expression of the field type goes',
     'copy it to a variable (r := E) and change the copy',
     'declare a variable of the extended type and set its fields one by one',
-    'declare the record CONST in the implementation, or export a procedure that answers it'
+    'declare the record CONST in the implementation, or export a procedure that answers it',
+    'write the name as declared -- the message says which: names are case-sensitive'
   ] ;
 
 VAR

@@ -3326,6 +3326,8 @@ var
     aNode : array of TNode;
     pr : TProcInfo;
     pl, grp, vfields, ares, dcl, rec : TNode;
+    mi : TModuleInfo;
+    hint : string;
     isVar : Boolean;
     flat : array of TNode;
     ptn, sty : TNode;                { a call through a procedure value }
@@ -3901,7 +3903,23 @@ var
       canonCtx := '';
       Exit (t);
     end;
-    ErrN (site, ctx, 'unknown procedure: ' + name);
+    { Sem.CaseTwin: the procedure meant when only its CASE differs }
+    hint := '';
+    dot := Pos ('.', name);
+    if dot > 0 then mi := FindMod (Copy (name, 1, dot - 1))
+    else mi := FindMod (curMod);
+    if mi <> nil then
+      for k := 0 to High (mi.procs) do
+        if (hint = '') and
+           (LowerCase (mi.procs[k].name) = LowerCase (Copy (name, dot + 1, MaxInt))) then
+        begin
+          if dot > 0 then hint := Copy (name, 1, dot - 1) + '.' + mi.procs[k].name
+          else hint := mi.procs[k].name;
+        end;
+    if hint <> '' then
+      ErrN (site, ctx, 'unknown procedure: ' + name + ' -- did you mean ' + hint + '?')
+    else
+      ErrN (site, ctx, 'unknown procedure: ' + name);
   end;
 
   function BinType (e: TNode): string;

@@ -4,6 +4,7 @@
   "description": "Syntax highlighting, hover documentation and completion for the M9 language (grammar kept in sync with host/fpc/M9Lex.pas; docstrings come from `m9c --doc`, never from a second scanner)",
   "version": "0.2.0",
   "publisher": "atverm",
+  "icon": "images/m9-icon.png",
   "license": "SEE LICENSE IN ../../LICENSE",
   "engines": {
     "vscode": "^1.75.0"
@@ -22,7 +23,11 @@
         "extensions": [
           ".m9"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./images/m9.svg",
+          "dark": "./images/m9.svg"
+        }
       }
     ],
     "grammars": [

@@ -4637,6 +4637,37 @@ BEGIN
   RETURN ''
 END EnumConvType ;
 
+(* the procedure a misspelt callee meant when only its CASE differs --
+   Io.Writeline for Io.WriteLine, the first thing a newcomer writes
+   wrong (a notebook cell on the MacBook, 2026-10-05) -- qualified as
+   the callee was; '' when there is none.  Case-sensitive names are a
+   rule (CLAUDE.md, symbol tables); saying which name was meant costs
+   nothing. *)
+PROCEDURE CaseTwin (RO callee: STR) : STR =
+VAR
+  dot, m, i : I64 ;
+  modName, procName, want : STR ;
+BEGIN
+  dot := Text.FindChar (callee, '.') ;
+  IF dot >= 0 THEN
+    modName := SLICE (callee, 0, dot) ;
+    procName := SLICE (callee, dot + 1, LEN (callee) - dot - 1)
+  ELSE
+    modName := curMod ;
+    procName := callee
+  END ;
+  m := FindMod (modName) ;
+  IF m < 0 THEN RETURN '' END ;
+  want := Text.Lower (procName) ;
+  FOR i := 0 TO mods[m].nprocs - 1 DO
+    IF Text.Eq (Text.Lower (mods[m].procs[i].name), want) THEN
+      IF dot >= 0 THEN RETURN S3 (modName, '.', mods[m].procs[i].name) END ;
+      RETURN mods[m].procs[i].name
+    END
+  END ;
+  RETURN ''
+END CaseTwin ;
+
 (* what follows a name's first dot, or the name *)
 PROCEDURE LastPart (RO name: STR) : STR =
 VAR dot : I64 ;
@@ -4688,7 +4719,7 @@ END RecordNamed ;
 PROCEDURE CallType (dn: Ast.Kid ; KEPT argl: Ast.Kid ; site: PTR Ast.Node ;
                     RO ctx: STR) : STR =
 VAR
-  name, pTy, amode, om, t : STR ;
+  name, pTy, amode, om, t, hint : STR ;
   nargs, j, g, k, kept, rank, dot, nflat, si, nFrameKept : I64 ;
   aTy : SLICE OF STR ;
   aNode : SLICE OF AKid ;
@@ -5039,7 +5070,12 @@ BEGIN
     canonCtx := '' ;
     RETURN t
   END ;
-  ErrN (site, ctx, Cat ('unknown procedure: ', name)) ;
+  hint := CaseTwin (name) ;
+  IF LEN (hint) > 0 THEN
+    ErrN (site, ctx, S4 ('unknown procedure: ', name, ' -- did you mean ', Cat (hint, '?')))
+  ELSE
+    ErrN (site, ctx, Cat ('unknown procedure: ', name))
+  END ;
   RETURN ''
 END CallType ;
 

@@ -14,6 +14,10 @@ it will register it -- asks, and installs. `--check` then runs one
 cell through the new kernel to prove it, `--uninstall` removes it, and
 `--help` lists the rest. From a package the files are in
 `/usr/share/m9/jupyter`, from the Windows zip in its `tools\jupyter`.
+The kernel shows the M9 mark in the launcher and the notebook: the
+files in `logo/`, which `tools/MkLogo.m9` writes (an M9 script, run
+with `m9c --run`, the PNGs drawn by M9's own rasteriser) and the
+installer copies beside `kernel.json`.
 
 With [uv](https://docs.astral.sh/uv/) on `PATH` there is no Python
 environment to prepare: the kernel runs under `uv run --with

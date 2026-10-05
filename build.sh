@@ -146,12 +146,14 @@ if [ -d tools/vscode-m9 ]; then
 #   ln -s /usr/share/m9/vscode-m9 ~/.vscode/extensions/atverm.m9-lang-0.2.0
 # (or ~/.vscode-server/extensions for VS Code Remote).  README.deb
 # in the directory says the same thing.
-install -d "$DESTDIR/usr/share/m9/vscode-m9/syntaxes"
+install -d "$DESTDIR/usr/share/m9/vscode-m9/syntaxes" "$DESTDIR/usr/share/m9/vscode-m9/images"
 for f in package.json extension.js language-configuration.json; do
   install -m 644 "tools/vscode-m9/$f" "$DESTDIR/usr/share/m9/vscode-m9/$f"
 done
 install -m 644 tools/vscode-m9/syntaxes/*.json \
     "$DESTDIR/usr/share/m9/vscode-m9/syntaxes/"
+# the M9 mark: the extension's icon and a .m9 file's (tools/MkLogo.m9)
+install -m 644 tools/vscode-m9/images/* "$DESTDIR/usr/share/m9/vscode-m9/images/"
 printf '%s\n' \
   "To use the M9 VS Code extension from this package:" \
   "  ln -s /usr/share/m9/vscode-m9 ~/.vscode/extensions/atverm.m9-lang-0.2.0" \

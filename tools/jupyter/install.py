@@ -21,8 +21,10 @@
 Why Python and not M9: Jupyter and the kernel are Python, so whoever
 installs a Jupyter kernel already has it, on every platform the same
 way.  What it writes is one directory, <data dir>/kernels/m9, holding
-kernel.json; removing that directory uninstalls, and so does
---uninstall.  The kernel itself stays where this file is.
+kernel.json and the M9 logo (logo/, written by tools/MkLogo.m9: the SVG
+JupyterLab draws and the 32 and 64 pixel PNGs older front ends draw);
+removing that directory uninstalls, and so does --uninstall.  The
+kernel itself stays where this file is.
 
 On Linux and macOS a library cell keeps its state in a session
 (m9c --cell); on Windows every cell runs as its own program -- the
@@ -39,6 +41,7 @@ import tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 KERNEL = os.path.join(HERE, "m9kernel.py")
+LOGOS = ("logo-svg.svg", "logo-32x32.png", "logo-64x64.png")
 WINDOWS = os.name == "nt"
 MAC = sys.platform == "darwin"
 EXE = ".exe" if WINDOWS else ""
@@ -316,6 +319,12 @@ def main():
         json.dump(kernel_json(runner, m9c), f, indent=2)
         f.write("\n")
     say("  installed: %s" % os.path.join(target, "kernel.json"))
+    # the logo Jupyter shows for the kernel: the files beside kernel.json
+    # by their fixed names, or Jupyter draws the first letter on grey
+    logos = [n for n in LOGOS if os.path.isfile(os.path.join(HERE, "logo", n))]
+    for n in logos:
+        shutil.copyfile(os.path.join(HERE, "logo", n), os.path.join(target, n))
+    say("  logo: %s" % (", ".join(logos) if logos else "none beside the kernel (Jupyter draws an M)"))
 
     if args.highlight:
         ok, why = install_highlight()

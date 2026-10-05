@@ -46,6 +46,16 @@ M9KERNEL_STATELESS=1 "$PY" jupytercomplete.py "$(cd ../../docs/modules && pwd)" 
 # it records the compiler it found, and --uninstall takes it away again
 grep -q "\"M9C\": \"$M9C\"" "$W/data/kernels/m9/kernel.json" ||
   { echo "jupyter: FAIL: kernel.json does not record $M9C"; cat "$W/data/kernels/m9/kernel.json"; exit 1; }
+# ... and the logo beside it, byte for byte the committed files, or
+# Jupyter draws an M on grey
+for f in logo-svg.svg logo-32x32.png logo-64x64.png; do
+  cmp -s "$W/data/kernels/m9/$f" "../../tools/jupyter/logo/$f" ||
+    { echo "jupyter: FAIL: the kernel was registered without $f"; exit 1; }
+done
+# and every committed copy of the mark (Jupyter's, VS Code's, the
+# tutorial's favicon) is what tools/MkLogo.m9 draws today
+"$M9C" --run ../../tools/MkLogo.m9 --check ||
+  { echo "jupyter: FAIL: a copy of the M9 mark has drifted; run tools/MkLogo.m9"; exit 1; }
 "$PY" ../../tools/jupyter/install.py --uninstall --data-dir "$W/data" > /dev/null
 [ ! -e "$W/data/kernels/m9" ] ||
   { echo "jupyter: FAIL: install.py --uninstall left $W/data/kernels/m9"; exit 1; }

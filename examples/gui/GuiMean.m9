@@ -1,0 +1,150 @@
+MODULE GuiMean ;
+
+(* A native desktop window in M9 -- the same program on macOS, Windows
+   and Linux, drawn by each platform's own widgets (Cocoa, Win32,
+   GTK 3) through libui-ng.
+
+   Type numbers, blank- or comma-separated, `nan` for a gap; press
+   Mean; the window shows the mean and the standard deviation and how
+   many values they used.  A sample with nothing in it is not a mean of
+   zero: the window says why, the way chapter 6 of the tutorial does.
+
+   The program is safe code: no UNSAFE, no ADR.  Everything foreign is
+   in gui.c, under a hundred and eighty lines, and in the unit declared
+   at the end of this file -- a widget is a number, text crosses a byte
+   at a time, and a click is an event the program asks for.  Nothing
+   in C calls back into M9.
+
+   Build: build.sh (macOS, Linux) or build-windows.sh (from Linux, with
+   mingw); README.md says what each needs.                            *)
+
+IMPORT Io ;
+IMPORT Text ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Stats ;
+
+FROM cgui IMPORT Put, Open, Label, Entry, Button, SetText, GetText, Byte, Show, Next ;
+
+CONST
+  Closed = -1 ;                (* the event of a closed window *)
+
+(* s, handed to the next widget call that takes text *)
+PROCEDURE Say (RO s: STR) RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  b : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  b := DynStr.Utf8 (scratch, s) ;
+  FOR i := 0 TO LEN (b) - 1 DO Put (C.Int (ORD (b[i]))) END
+END Say ;
+
+(* widget w's text *)
+PROCEDURE TextOf (VAR pool: POOL ; w: I64) : STR RAISES ValueRange =
+VAR
+  b : SLICE OF BYTE ;
+  n, i : I64 ;
+BEGIN
+  n := I64 (GetText (C.Int (w))) ;
+  IF n < 0 THEN RETURN '' END ;
+  b := NEW (pool, BYTE, n) ;
+  FOR i := 0 TO n - 1 DO b[i] := BYTE (Byte (C.Int (i))) END ;
+  RETURN DynStr.FromUtf8 (pool, b)
+END TextOf ;
+
+PROCEDURE SetLabel (w: I64 ; RO s: STR) RAISES ValueRange =
+BEGIN
+  Say (s) ;
+  IF I64 (SetText (C.Int (w))) # 0 THEN
+    Io.ErrLine ('guimean: widget ' + Fmt.I64Str (w) + ' takes no text')
+  END
+END SetLabel ;
+
+(* the line the window shows for one sample *)
+PROCEDURE Summary (RO line: STR) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  parts : SLICE OF STR ;
+  xs : SLICE OF F64 ;
+  i, n : I64 ;
+  m, s : F64 ;
+  word : STR ;
+BEGIN
+  parts := Text.Fields (Text.Replace (line, ',', ' '), ' ') ;
+  xs := NEW (scratch, F64, LEN (parts)) ;
+  FOR i := 0 TO LEN (parts) - 1 DO
+    IF Text.Eq (Text.Lower (parts[i]), 'nan') THEN
+      xs[i] := 0.0 / 0.0
+    ELSE
+      BEGIN
+        xs[i] := Fmt.ParseF64 (parts[i])
+      EXCEPT
+      | ValueRange :
+          word := Text.Keep (scratch, parts[i]) ;
+          RETURN 'not a number: ' + word
+      END
+    END
+  END ;
+  n := Stats.Count (xs) ;
+  m := Stats.Mean (xs) ;
+  IF n < 2 THEN
+    RETURN 'mean ' + Fmt.Fixed (m, 3) + ' over 1 of ' + Fmt.I64Str (LEN (xs))
+           + ' values (a standard deviation needs 2)'
+  END ;
+  s := Stats.Std (xs) ;
+  RETURN 'mean ' + Fmt.Fixed (m, 3) + ', standard deviation ' + Fmt.Fixed (s, 3)
+         + ', over ' + Fmt.I64Str (n) + ' of ' + Fmt.I64Str (LEN (xs)) + ' values'
+EXCEPT
+| Stats.TooFew (got, need) :
+    RETURN 'nothing but gaps: ' + Fmt.I64Str (got) + ' values, and a mean needs '
+           + Fmt.I64Str (need)
+END Summary ;
+
+VAR
+  pool : POOL ;
+  input, mean, result, ev : I64 ;
+
+BEGIN
+  Say ('M9: mean of a sample') ;
+  IF I64 (Open (C.Int (420), C.Int (170))) # 0 THEN
+    Io.ErrLine ('guimean: no window could be opened (is there a display?)') ;
+    Io.Halt (1)
+  END ;
+  Say ('Numbers, blank or comma separated (nan for a gap):') ;
+  ev := I64 (Label ()) ;
+  Say ('394.98, 403.89, nan, 404.61') ;
+  input := I64 (Entry ()) ;
+  Say ('Mean') ;
+  mean := I64 (Button ()) ;
+  Say ('') ;
+  result := I64 (Label ()) ;
+  Show () ;
+  LOOP
+    ev := I64 (Next ()) ;
+    IF ev = Closed THEN EXIT END ;
+    IF ev = mean THEN SetLabel (result, Summary (TextOf (pool, input))) END
+  END
+EXCEPT
+| ValueRange :
+    Io.ErrLine ('guimean: text that is not UTF-8') ; Io.Halt (1)
+END GuiMean.
+
+
+UNSAFE DEFINITION MODULE FOR "C" cgui ;
+
+(* gui.c: native widgets through libui-ng, as plain ints.  [SERIAL]
+   because the file has state and a GUI has one thread. *)
+
+PROCEDURE Put     = "gui_put"      (byte: C.Int)  [SERIAL] ;
+PROCEDURE Open    = "gui_open"     (width, height: C.Int) : C.Int  [SERIAL] ;
+PROCEDURE Label   = "gui_label"    () : C.Int  [SERIAL] ;
+PROCEDURE Entry   = "gui_entry"    () : C.Int  [SERIAL] ;
+PROCEDURE Button  = "gui_button"   () : C.Int  [SERIAL] ;
+PROCEDURE SetText = "gui_set_text" (w: C.Int) : C.Int  [SERIAL] ;
+PROCEDURE GetText = "gui_get_text" (w: C.Int) : C.Int  [SERIAL] ;
+PROCEDURE Byte    = "gui_byte"     (i: C.Int) : C.Int  [SERIAL] ;
+PROCEDURE Show    = "gui_show"     ()  [SERIAL] ;
+PROCEDURE Next    = "gui_next"     () : C.Int  [SERIAL] ;
+
+END cgui.

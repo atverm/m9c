@@ -1,4 +1,7 @@
 # what the example notebook writes when it is run where it lives
 *.svg
 *.png
+# ... but not the kernel's logo, which tools/MkLogo.m9 writes and install.py copies
+!logo/*.svg
+!logo/*.png
 __pycache__/

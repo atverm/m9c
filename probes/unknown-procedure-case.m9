@@ -1,0 +1,11 @@
+(* EXPECT: unknown procedure: Writeline -- did you mean WriteLine? *)
+MODULE m ;
+VAR n : I64 ;
+PROCEDURE WriteLine (k: I64) =
+BEGIN
+  n := k
+END WriteLine ;
+BEGIN
+  (* names are case-sensitive; the refusal says which name was meant *)
+  Writeline (1)
+END m.

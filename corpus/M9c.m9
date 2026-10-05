@@ -207,7 +207,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.15.0' ;
+  Version = '0.16.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -876,23 +876,25 @@ BEGIN
 END RtBase ;
 
 (* the runtime directory -- and for --cell, which compiles the runtime
-   as a shared object and needs its SOURCES, a package's source tree
-   when the headers' directory holds none: <prefix>/share/m9/runtime,
-   else /usr/share/m9/runtime (build.sh installs it).  Only --cell: an
-   ordinary link takes the archive, and sources beside the header
-   would have it compile m9rt.c on every link.  Until 2026-10-05 an
-   installed m9c answered every --cell with `needs the runtime sources
-   beside m9rt.h' -- the notebook session did not work from a package. *)
+   as a shared object and needs its SOURCES, its own package's source
+   tree when the headers' directory holds none: <prefix>/share/m9/
+   runtime (build.sh installs it), the prefix being this compiler's --
+   /usr for /usr/bin/m9c.  NOT a system path besides: a relocated m9c
+   reaching /usr/share/m9/runtime would compile ANOTHER install's
+   runtime under its own header (the m9c gate's case (c) built so on
+   zoefii once the 0.15.0 package was installed, 2026-10-05).  Only
+   --cell: an ordinary link takes the archive, and sources beside the
+   header would have it compile m9rt.c on every link.  Until
+   2026-10-05 an installed m9c answered every --cell with `needs the
+   runtime sources beside m9rt.h' -- the notebook session did not work
+   from a package. *)
 PROCEDURE RtDir () : STR RAISES ValueRange =
 VAR base, v : STR ;
 BEGIN
   base := RtBase () ;
-  IF doCell AND NOT Io.Exists (Cat (base, '/m9rt.c')) THEN
-    IF LEN (prefix) > 0 THEN
-      v := Cat (prefix, '/share/m9/runtime') ;
-      IF Io.Exists (Cat (v, '/m9rt.h')) AND Io.Exists (Cat (v, '/m9rt.c')) THEN RETURN v END
-    END ;
-    IF Io.Exists ('/usr/share/m9/runtime/m9rt.c') THEN RETURN '/usr/share/m9/runtime' END
+  IF doCell AND NOT Io.Exists (Cat (base, '/m9rt.c')) AND LEN (prefix) > 0 THEN
+    v := Cat (prefix, '/share/m9/runtime') ;
+    IF Io.Exists (Cat (v, '/m9rt.h')) AND Io.Exists (Cat (v, '/m9rt.c')) THEN RETURN v END
   END ;
   RETURN base
 END RtDir ;
