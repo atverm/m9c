@@ -9,5 +9,3 @@
 # carries the version removes it (the pointer commit), and
 # tutrelease fails on a line whose version is out, whose example
 # agrees with the release after all, or whose example is gone.
-C6Nan    0.15.0   writes NaN, predeclared since 0.15.0
-X6NanEq  0.15.0   refused for comparing with NaN, a rule of 0.15.0
