@@ -1378,6 +1378,22 @@ BEGIN
   RETURN t
 END QualIn ;
 
+(* the module a qualified type name points into, noted while a
+   designator walks a foreign aggregate, so that its component types
+   are read where they were declared (canonCtx; Sem's NoteMod) *)
+PROCEDURE NoteMod (t: Ast.Kid ; VAR m: STR) =
+BEGIN
+  IF t IS SOME tn THEN
+    IF tn.kind = Ast.NQualident AND LEN (tn.b) > 0 THEN m := tn.a END
+  END
+END NoteMod ;
+
+PROCEDURE InMod (KEPT t: Ast.Kid ; RO KEPT m: STR) : Ast.Kid =
+BEGIN
+  IF LEN (m) = 0 OR DynStr.Eq (m, modName) THEN RETURN t END ;
+  RETURN QualIn (t, m)
+END InMod ;
+
 PROCEDURE FieldType (rec: PTR Ast.Node ;
                      RO f: STR) : Ast.Kid =
 VAR i, j : I64  ;
@@ -2169,13 +2185,16 @@ PROCEDURE DesigDecl (d: PTR Ast.Node) : Ast.Kid =
 VAR
   j : I64 ;
   cur, rk : Ast.Kid ;
+  tmod : STR ;
 BEGIN
+  tmod := '' ;
   cur := ScopeNode (d.a) ;
   FOR j := 0 TO d.nkids - 1 DO
+    NoteMod (cur, tmod) ;
     rk := Resolve (cur) ;
     LOOP
       IF rk IS SOME rr THEN
-        IF IsPtrK (rr.kind) THEN rk := Resolve (rr.kids[0]) ELSE EXIT END
+        IF IsPtrK (rr.kind) THEN rk := Resolve (InMod (rr.kids[0], tmod)) ELSE EXIT END
       ELSE
         EXIT
       END
@@ -2185,13 +2204,13 @@ BEGIN
         IF sel.kind = Ast.NSelField THEN
           IF r2.kind = Ast.NRecordType OR
              r2.kind = Ast.NMonitorType THEN
-            cur := FieldType (r2, sel.a)
+            cur := InMod (FieldType (r2, sel.a), tmod)
           ELSE
             RETURN NONE
           END
         ELSIF sel.kind = Ast.NSelIndex THEN
-          IF r2.kind = Ast.NSliceType THEN cur := r2.kids[0]
-          ELSIF r2.kind = Ast.NArrayType THEN cur := r2.kids[1]
+          IF r2.kind = Ast.NSliceType THEN cur := InMod (r2.kids[0], tmod)
+          ELSIF r2.kind = Ast.NArrayType THEN cur := InMod (r2.kids[1], tmod)
           ELSE RETURN NONE END
         END
       END
@@ -2466,8 +2485,10 @@ VAR
   res, base, ix, ec, cnt : STR ;
   dg, dns : PTR DynStr.DString IN gpool ;
   known, fldOk, enumIx : BOOL ;
+  tmod : STR ;
 BEGIN
   tag := '?' ;
+  tmod := '' ;
   tnd := ScopeNode (d.a) ;
   known := FALSE ;
   IF tnd IS SOME t0 THEN known := TRUE END ;
@@ -2578,12 +2599,13 @@ BEGIN
     res := S3 ('(*', CN (d.a), ')')
   END ;
   FOR j := 0 TO d.nkids - 1 DO
+    NoteMod (tnd, tmod) ;
     r2 := Resolve (tnd) ;
     IF r2 IS SOME r THEN
       IF d.kids[j] IS SOME sel THEN
         IF sel.kind = Ast.NSelField THEN
           IF IsPtrK (r.kind) THEN
-            IF Resolve (r.kids[0]) IS SOME inner THEN
+            IF Resolve (InMod (r.kids[0], tmod)) IS SOME inner THEN
               IF inner.kind # Ast.NRecordType AND
                  inner.kind # Ast.NMonitorType THEN
                 Err2 (d.line,
@@ -2591,7 +2613,7 @@ BEGIN
                 RETURN '0'
               END ;
               res := S3 (res, '->', CN (sel.a)) ;
-              tnd := FieldType (inner, sel.a)
+              tnd := InMod (FieldType (inner, sel.a), tmod)
             ELSE
               Err2 (d.line, 'field base type unresolvable') ;
               RETURN '0'
@@ -2599,7 +2621,7 @@ BEGIN
           ELSIF r.kind = Ast.NRecordType OR
                 r.kind = Ast.NMonitorType THEN
             res := S3 (res, '.', CN (sel.a)) ;
-            tnd := FieldType (r, sel.a)
+            tnd := InMod (FieldType (r, sel.a), tmod)
           ELSE
             Err2 (d.line,
               'selection through a non-record unsupported yet') ;
@@ -2662,7 +2684,7 @@ BEGIN
                     '}, ', cnt, ', err))', '', ''))
             END ;
             stRaise := TRUE ;
-            tnd := r.kids[1]
+            tnd := InMod (r.kids[1], tmod)
           ELSE
           ix := EX (sel.kids[0], '') ;
           IF r.kind = Ast.NSliceType THEN
@@ -2671,7 +2693,7 @@ BEGIN
             res := S9 ('(*(', ec, ' *) m9_at (', base, '.p, ', ix,
               ', ', base, S5 ('.len, sizeof (', ec, '), err))', '', '')) ;
             stRaise := TRUE ;
-            tnd := r.kids[0]
+            tnd := InMod (r.kids[0], tmod)
           ELSIF r.kind = Ast.NArrayType THEN
             base := res ;
             ec := TyC (r.kids[1]) ;
@@ -2693,14 +2715,14 @@ BEGIN
             END ;
             IF enumIx THEN
               res := S5 ('(', base, '.v[(', ix, ').tag])') ;
-              tnd := r.kids[1]
+              tnd := InMod (r.kids[1], tmod)
             ELSE
               cnt := ArrCount2 (r.kids[0]) ;
               res := S9 ('(*(', ec, ' *) m9_at (', base, '.v, ', ix,
                 ', INT64_C(', cnt, S5 ('), sizeof (', ec, '), err))',
                 '', '')) ;
               stRaise := TRUE ;
-              tnd := r.kids[1]
+              tnd := InMod (r.kids[1], tmod)
             END
           ELSE
             Err2 (d.line, 'index into a non-array unsupported yet') ;
@@ -3851,10 +3873,14 @@ BEGIN
                         IF Resolve (fg.kids[1]) IS SOME sr THEN
                           ec := TyC (sr.kids[0])
                         END ;
+                        (* a copy in this procedure's frame: the
+                           in-flight one is overwritten by the next
+                           raise (m9rt.h, m9_pay_take) *)
                         blines[nbl] := S9 (TyC (fg.kids[1]), ' ', bn,
-                          ' = { (', ec, ' *) err->s[', ItoA (si - 1),
-                          '].p, ', S7 ('err->s[', ItoA (si - 1),
-                          '].len }; (void) ', bn, ';', '', ''))
+                          ' = { (', ec, ' *) m9_pay_take (err, ',
+                          ItoA (si - 1), ', sizeof (',
+                          S9 (ec, ')), err->s[', ItoA (si - 1),
+                          '].len }; (void) ', bn, ';', '', '', ''))
                       ELSE
                         blines[nbl] := S7 (TyC (fg.kids[1]), ' ', bn,
                           ' = ', slot, '; (void) ',
@@ -4691,9 +4717,12 @@ BEGIN
           RETURN
         END ;
         w := NewTmp () ;
+        (* m9_pay_keep copies the octets out of the frame that built
+           them, which the raise is about to leave (m9rt.h) *)
         Line (KPbuf, ind, S9 ('{ __typeof__(', cnd, ') ', w, ' = ', cnd,
           '; err->s[', ItoA (k2), S9 ('].p = ', w, '.p; err->s[',
-          ItoA (k2), '].len = ', w, '.len; }', '', ''))) ;
+          ItoA (k2), '].len = ', w, '.len; m9_pay_keep (err, ',
+          ItoA (k2), S3 (', sizeof (*', w, '.p)); }')))) ;
         k2 := k2 + 1
       ELSE
         IF i2 >= 4 THEN

@@ -79,6 +79,22 @@ regard to case, the colon not part of the name -- with the
 surrounding blanks removed; '' when there is no such line, which
 an absent header and an empty one share.
 
+### UrlEncode (RO s: STR) : STR RAISES ValueRange
+
+s as a URL component: its UTF-8 octets, each one outside A-Z
+a-z 0-9 - . _ ~ written %XX in upper-case hex.  Python's
+urllib.parse.quote (s, safe=''), held to it by HttpTest: a blank
+is %20, a slash %2F, so the answer can stand anywhere in a URL.
+
+### UrlDecode (RO s: STR) : STR RAISES ValueRange
+
+the inverse: every %XX an octet, the octets of a run decoded as
+UTF-8, STRICTLY -- an invalid sequence RAISES ValueRange, as
+Python's unquote (s, errors='strict') raises.  A % that is not
+followed by two hex digits is kept as it stands, and so is a +:
+this is a URL's decoding, not a form's, and Python's unquote
+does the same.
+
 ### CONST JarMax
 
 _(undocumented)_

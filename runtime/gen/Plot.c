@@ -2861,7 +2861,7 @@ m9_sl_CHAR Plot_Panels (int64_t cols, int64_t rows, m9_sl_m9_sl_CHAR figures, m9
   m9_sl_CHAR body = {0}; (void) body;
   m9_sl_CHAR prefix = {0}; (void) prefix;
   if (((((cols < INT64_C(1)) || (rows < INT64_C(1))) || (width < INT64_C(1))) || (height < INT64_C(1)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s213, 46 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s213, 46 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s213, 46 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s213, 46 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -2883,7 +2883,7 @@ m9_sl_CHAR Plot_Panels (int64_t cols, int64_t rows, m9_sl_m9_sl_CHAR figures, m9
     ch = m9v;
   }
   if ((!((ch > 0.0)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s214, 36 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s214, 36 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s214, 36 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s214, 36 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -5401,7 +5401,7 @@ static void Plot_Frame (m9_sl_CHAR svg, double *vw, double *vh, int64_t *bodyAt,
     i = m9v;
   }
   if ((i < INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s385, 51 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s385, 51 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s385, 51 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s385, 51 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -5416,7 +5416,7 @@ static void Plot_Frame (m9_sl_CHAR svg, double *vw, double *vh, int64_t *bodyAt,
     }
   }
   if ((j >= (svg).len)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s386, 52 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s386, 52 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s386, 52 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s386, 52 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -5439,7 +5439,7 @@ static void Plot_Frame (m9_sl_CHAR svg, double *vw, double *vh, int64_t *bodyAt,
     }
   }
   if ((k < (*bodyAt))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s388, 40 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s388, 40 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s388, 40 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s388, 40 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -5449,7 +5449,7 @@ static void Plot_Frame (m9_sl_CHAR svg, double *vw, double *vh, int64_t *bodyAt,
     k = m9v;
   }
   if ((k < INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s390, 39 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s390, 39 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s390, 39 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s390, 39 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -5462,7 +5462,7 @@ static void Plot_Frame (m9_sl_CHAR svg, double *vw, double *vh, int64_t *bodyAt,
     k = m9v;
   }
   if ((k < INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s391, 39 })) m9t10 = ((m9_sl_CHAR){ (uint32_t *) m9s391, 39 }); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s391, 39 })) m9t10 = ((m9_sl_CHAR){ (uint32_t *) m9s391, 39 }); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; m9_pay_keep (err, 0, sizeof (*m9t10.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -5478,7 +5478,7 @@ static void Plot_Frame (m9_sl_CHAR svg, double *vw, double *vh, int64_t *bodyAt,
   bool m9t12 = ((!((((Plot_NumAt (vb, &(k), &(x0), err) && Plot_NumAt (vb, &(k), &(y0), err)) && Plot_NumAt (vb, &(k), vw, err)) && Plot_NumAt (vb, &(k), vh, err)))) || (!((((*vw) > 0.0) && ((*vh) > 0.0)))));
   if (err->exc) goto L_ret;
   if (m9t12) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s392, 47 })) m9t13 = ((m9_sl_CHAR){ (uint32_t *) m9s392, 47 }); err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s392, 47 })) m9t13 = ((m9_sl_CHAR){ (uint32_t *) m9s392, 47 }); err->s[0].p = m9t13.p; err->s[0].len = m9t13.len; m9_pay_keep (err, 0, sizeof (*m9t13.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }

@@ -1,0 +1,1218 @@
+DEFINITION MODULE Rdf ;
+
+(* RDF 1.1 graphs read from N-Triples and Turtle and written as
+   N-Triples (docs/datalib-plan.md par 2).  What Sparql.Construct
+   answers is read here.
+
+   READING follows the W3C grammars production by production: IRIs
+   resolved against a base by RFC 3986 par 5.2; prefixed names,
+   `a', blank-node property lists, collections, the numeric and
+   boolean short forms and all four string forms of Turtle; UCHAR and
+   ECHAR escapes; blank-node labels scoped to the document.  A
+   document that is not in the language is a SyntaxError naming the
+   line and column where it stops being one -- nothing is guessed,
+   and nothing is half-read: the graph is answered whole or not at
+   all.  Held to the W3C's own suites, every positive document read
+   and every negative one refused (RdfTest), and every evaluation
+   document's graph isomorphic to the W3C's expected one, judged by
+   rdflib (runtime/test/rdf.sh).
+
+   WRITING is N-Triples, one triple a line in the order read, blank
+   nodes labelled _:b0, _:b1 ... in the order they were first seen;
+   a literal's quote, backslash and control characters escaped, every
+   other character as itself (UTF-8 when written to a file).
+
+   Out: JSON-LD, TriG and named graphs, Turtle as an OUTPUT, and any
+   inference.  Language tags are kept as written.                  *)
+
+TYPE
+  Kind = (Iri, Blank, Literal) ;
+
+  Term = RECORD
+    kind : Kind ;
+    value : STR ;              (* the IRI, a blank node's label, a
+                                  literal's lexical form *)
+    lang : STR ;               (* a literal's language tag, else '' *)
+    datatype : STR ;           (* a literal's datatype IRI; '' for a
+                                  language-tagged one; xsd:string for
+                                  a simple literal, as RDF 1.1 says *)
+  END ;
+
+  Triple = RECORD
+    s, p, o : Term ;
+  END ;
+
+  Graph ;                      (* opaque; lives in a POOL *)
+
+EXCEPTION
+  SyntaxError (RO msg: STR ; line, col: I64) ;
+
+CONST
+  XsdString = 'http://www.w3.org/2001/XMLSchema#string' ;
+
+PROCEDURE ParseNTriples (VAR pool: POOL ; RO text: STR) : PTR Graph IN pool
+  RAISES SyntaxError, ValueRange ;
+  (* an N-Triples document: every IRI absolute, no base *)
+
+PROCEDURE ParseTurtle (VAR pool: POOL ; RO text: STR ; RO base: STR)
+  : PTR Graph IN pool RAISES SyntaxError, ValueRange ;
+  (* a Turtle document; base is the IRI relative references resolve
+     against until the document says @base or BASE ('' for none, and
+     then a relative reference is a SyntaxError) *)
+
+PROCEDURE Count (g: PTR Graph) : I64 ;
+  (* how many triples were read; a triple stated twice is there twice *)
+
+PROCEDURE Get (g: PTR Graph ; i: I64) : Triple RAISES IndexError ;
+
+PROCEDURE NTriples (g: PTR Graph) : STR RAISES ValueRange ;
+  (* the graph as N-Triples text, a line feed after every triple;
+     characters, so written to a file as UTF-8 (DynStr.Utf8 and
+     Io.WriteFileBytes) -- Io.WriteFile's Latin-1 refuses most of
+     the world's scripts *)
+
+END Rdf.
+
+
+IMPLEMENTATION MODULE Rdf ;
+
+IMPORT DynStr ;
+IMPORT Text ;
+
+CONST
+  RdfNs = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#' ;
+  Xsd = 'http://www.w3.org/2001/XMLSchema#' ;
+
+TYPE
+  Graph = RECORD
+    n : I64 ;
+    t : SLICE OF Triple ;
+  END ;
+
+  (* the reader's state: the text, where it is, and what the document
+     has declared so far *)
+  Reader = RECORD
+    src : STR ;
+    pos, line, lineStart : I64 ;
+    base : STR ;
+    turtle : BOOL ;
+    pfx, pfxIri : SLICE OF STR ;    (* prefix names and their IRIs *)
+    npfx : I64 ;
+    blab, bid : SLICE OF STR ;      (* document labels and their ids *)
+    nblab : I64 ;
+    fresh : I64 ;                   (* blank nodes made so far *)
+  END ;
+
+(* ---- the graph ------------------------------------------------------ *)
+
+PROCEDURE NewGraph (VAR pool: POOL) : PTR Graph IN pool =
+VAR g : PTR Graph IN pool ;
+BEGIN
+  g := NEW (pool, Graph) ;
+  g.n := 0 ;
+  g.t := NEW (pool, Triple, 16) ;
+  RETURN g
+END NewGraph ;
+
+PROCEDURE Hold (VAR pool: POOL ; RO tm: Term) : Term =
+  (* a term whose strings live in pool *)
+VAR c : Term ;
+BEGIN
+  c.kind := tm.kind ;
+  c.value := Text.Keep (pool, tm.value) ;
+  c.lang := Text.Keep (pool, tm.lang) ;
+  c.datatype := Text.Keep (pool, tm.datatype) ;
+  RETURN c
+END Hold ;
+
+PROCEDURE Add (VAR pool: POOL ; VAR g: PTR Graph ; RO s, p, o: Term) =
+VAR
+  nt : SLICE OF Triple ;
+  i : I64 ;
+BEGIN
+  IF g.n = LEN (g.t) THEN
+    nt := NEW (pool, Triple, 2 * LEN (g.t)) ;
+    FOR i := 0 TO g.n - 1 DO nt[i] := g.t[i] END ;
+    g.t := nt
+  END ;
+  g.t[g.n].s := Hold (pool, s) ;
+  g.t[g.n].p := Hold (pool, p) ;
+  g.t[g.n].o := Hold (pool, o) ;
+  g.n := g.n + 1
+END Add ;
+
+PROCEDURE Count (g: PTR Graph) : I64 =
+BEGIN
+  RETURN g.n
+END Count ;
+
+PROCEDURE Get (g: PTR Graph ; i: I64) : Triple RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= g.n THEN RAISE IndexError (i, g.n) END ;
+  RETURN g.t[i]
+END Get ;
+
+(* ---- terms ---------------------------------------------------------- *)
+
+PROCEDURE IriT (RO v: STR) : Term =
+VAR t : Term ;
+BEGIN
+  t.kind := Kind.Iri ; t.value := v ; t.lang := '' ; t.datatype := '' ;
+  RETURN t
+END IriT ;
+
+PROCEDURE BlankT (RO v: STR) : Term =
+VAR t : Term ;
+BEGIN
+  t.kind := Kind.Blank ; t.value := v ; t.lang := '' ; t.datatype := '' ;
+  RETURN t
+END BlankT ;
+
+PROCEDURE LitT (RO v: STR ; RO lang: STR ; RO dt: STR) : Term =
+VAR t : Term ;
+BEGIN
+  t.kind := Kind.Literal ; t.value := v ; t.lang := lang ; t.datatype := dt ;
+  RETURN t
+END LitT ;
+
+(* ---- the reader's position and its errors ---------------------------- *)
+
+PROCEDURE Fail (VAR r: Reader ; RO msg: STR) RAISES SyntaxError =
+BEGIN
+  RAISE SyntaxError (msg, r.line, r.pos - r.lineStart + 1)
+END Fail ;
+
+PROCEDURE AtEnd (VAR r: Reader) : BOOL =
+BEGIN
+  RETURN r.pos >= LEN (r.src)
+END AtEnd ;
+
+PROCEDURE Peek (VAR r: Reader) : CHAR RAISES IndexError =
+BEGIN
+  RETURN r.src[r.pos]
+END Peek ;
+
+PROCEDURE PeekAt (VAR r: Reader ; k: I64) : CHAR =
+  (* the character k ahead, or a NUL past the end *)
+BEGIN
+  IF r.pos + k >= LEN (r.src) THEN RETURN 00C END ;
+  RETURN r.src[r.pos + k]
+END PeekAt ;
+
+PROCEDURE Advance (VAR r: Reader) =
+BEGIN
+  IF r.pos < LEN (r.src) THEN
+    IF r.src[r.pos] = 0AC THEN
+      r.line := r.line + 1 ;
+      r.lineStart := r.pos + 1
+    END ;
+    r.pos := r.pos + 1
+  END
+END Advance ;
+
+PROCEDURE SkipWs (VAR r: Reader) =
+  (* blanks, line ends and comments; in N-Triples a line end is a
+     separator too, and skipped here because the grammar's EOL is
+     only ever optional where this is called *)
+VAR c : CHAR ;
+BEGIN
+  WHILE r.pos < LEN (r.src) DO
+    c := r.src[r.pos] ;
+    IF c = ' ' OR c = 09C OR c = 0AC OR c = 0DC THEN
+      Advance (r)
+    ELSIF c = '#' THEN
+      WHILE r.pos < LEN (r.src) AND r.src[r.pos] # 0AC DO Advance (r) END
+    ELSE
+      RETURN
+    END
+  END
+END SkipWs ;
+
+PROCEDURE Expect (VAR r: Reader ; c: CHAR ; RO what: STR)
+  RAISES SyntaxError =
+BEGIN
+  IF PeekAt (r, 0) # c THEN Fail (r, what + ' expected') END ;
+  Advance (r)
+END Expect ;
+
+(* ---- character classes (Turtle par 6.5) ---------------------------- *)
+
+PROCEDURE IsHex (c: CHAR) : BOOL =
+BEGIN
+  RETURN (c >= '0' AND c <= '9') OR (c >= 'a' AND c <= 'f') OR
+         (c >= 'A' AND c <= 'F')
+END IsHex ;
+
+PROCEDURE HexVal (c: CHAR) : I64 =
+BEGIN
+  IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - 48 END ;
+  IF c >= 'a' AND c <= 'f' THEN RETURN ORD (c) - 87 END ;
+  RETURN ORD (c) - 55
+END HexVal ;
+
+PROCEDURE IsPnCharsBase (c: CHAR) : BOOL =
+VAR v : I64 ;
+BEGIN
+  v := ORD (c) ;
+  RETURN (v >= 65 AND v <= 90) OR (v >= 97 AND v <= 122) OR
+         (v >= 0xC0 AND v <= 0xD6) OR (v >= 0xD8 AND v <= 0xF6) OR
+         (v >= 0xF8 AND v <= 0x2FF) OR (v >= 0x370 AND v <= 0x37D) OR
+         (v >= 0x37F AND v <= 0x1FFF) OR (v >= 0x200C AND v <= 0x200D) OR
+         (v >= 0x2070 AND v <= 0x218F) OR (v >= 0x2C00 AND v <= 0x2FEF) OR
+         (v >= 0x3001 AND v <= 0xD7FF) OR (v >= 0xF900 AND v <= 0xFDCF) OR
+         (v >= 0xFDF0 AND v <= 0xFFFD) OR (v >= 0x10000 AND v <= 0xEFFFF)
+END IsPnCharsBase ;
+
+PROCEDURE IsPnCharsU (c: CHAR) : BOOL =
+BEGIN
+  RETURN IsPnCharsBase (c) OR c = '_'
+END IsPnCharsU ;
+
+PROCEDURE IsPnChars (c: CHAR) : BOOL =
+VAR v : I64 ;
+BEGIN
+  v := ORD (c) ;
+  RETURN IsPnCharsU (c) OR c = '-' OR (c >= '0' AND c <= '9') OR
+         v = 0xB7 OR (v >= 0x300 AND v <= 0x36F) OR (v >= 0x203F AND v <= 0x2040)
+END IsPnChars ;
+
+PROCEDURE IsLocalEsc (c: CHAR) : BOOL =
+VAR esc : STR ; i : I64 ;
+BEGIN
+  esc := "_~.-!$&'()*+,;=/?#@%" ;
+  FOR i := 0 TO LEN (esc) - 1 DO
+    IF c = esc[i] THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END IsLocalEsc ;
+
+(* ---- escapes ---------------------------------------------------------- *)
+
+PROCEDURE Uchar (VAR r: Reader) : CHAR RAISES SyntaxError, ValueRange =
+  (* at the backslash of \uXXXX or \UXXXXXXXX: the code point *)
+VAR n, i, v : I64 ;
+BEGIN
+  IF PeekAt (r, 1) = 'u' THEN n := 4
+  ELSIF PeekAt (r, 1) = 'U' THEN n := 8
+  ELSE Fail (r, 'an escape other than \u or \U') ; RETURN 00C
+  END ;
+  Advance (r) ; Advance (r) ;
+  v := 0 ;
+  FOR i := 1 TO n DO
+    IF NOT IsHex (PeekAt (r, 0)) THEN Fail (r, 'a hex digit expected in a \u escape') END ;
+    v := v * 16 + HexVal (PeekAt (r, 0)) ;
+    Advance (r)
+  END ;
+  IF v > 0x10FFFF OR (v >= 0xD800 AND v <= 0xDFFF) THEN
+    Fail (r, 'an escape naming no character')
+  END ;
+  RETURN CHR (v)
+END Uchar ;
+
+(* ---- IRIs ----------------------------------------------------------- *)
+
+PROCEDURE IriRef (VAR r: Reader) : STR RAISES SyntaxError, ValueRange =
+  (* <...>, escapes decoded, NOT yet resolved *)
+VAR
+  s : STR ;
+  c : CHAR ;
+BEGIN
+  Expect (r, '<', '<') ;
+  s := '' ;
+  LOOP
+    IF AtEnd (r) THEN Fail (r, 'an IRI not closed') END ;
+    c := PeekAt (r, 0) ;
+    IF c = '>' THEN Advance (r) ; EXIT END ;
+    IF c = '\' THEN
+      c := Uchar (r)
+    ELSE
+      Advance (r)
+    END ;
+    (* what IRIREF excludes, escaped or not *)
+    IF ORD (c) <= 0x20 OR c = '<' OR c = '>' OR c = '"' OR c = '{' OR
+       c = '}' OR c = '|' OR c = '^' OR c = '`' OR c = '\' THEN
+      Fail (r, 'a character an IRI may not hold')
+    END ;
+    s := s + c
+  END ;
+  RETURN s
+END IriRef ;
+
+PROCEDURE SchemeEnd (RO s: STR) : I64 =
+  (* the index of the colon ending a scheme, or -1 (RFC 3986 par 3.1) *)
+VAR i : I64 ; c : CHAR ;
+BEGIN
+  IF LEN (s) = 0 THEN RETURN -1 END ;
+  c := s[0] ;
+  IF NOT ((c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z')) THEN RETURN -1 END ;
+  FOR i := 1 TO LEN (s) - 1 DO
+    c := s[i] ;
+    IF c = ':' THEN RETURN i END ;
+    IF NOT ((c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z') OR
+            (c >= '0' AND c <= '9') OR c = '+' OR c = '-' OR c = '.') THEN
+      RETURN -1
+    END
+  END ;
+  RETURN -1
+END SchemeEnd ;
+
+PROCEDURE RemoveDots (RO path: STR) : STR =
+  (* RFC 3986 par 5.2.4, remove_dot_segments *)
+VAR
+  input, output : STR ;
+  i : I64 ;
+BEGIN
+  input := path ;
+  output := '' ;
+  WHILE LEN (input) > 0 DO
+    IF Text.StartsWith (input, '../') THEN
+      input := SLICE (input, 3, LEN (input) - 3)
+    ELSIF Text.StartsWith (input, './') THEN
+      input := SLICE (input, 2, LEN (input) - 2)
+    ELSIF Text.StartsWith (input, '/./') THEN
+      input := SLICE (input, 2, LEN (input) - 2)
+    ELSIF Text.Eq (input, '/.') THEN
+      input := '/'
+    ELSIF Text.StartsWith (input, '/../') OR Text.Eq (input, '/..') THEN
+      IF Text.Eq (input, '/..') THEN input := '/'
+      ELSE input := SLICE (input, 3, LEN (input) - 3)
+      END ;
+      i := Text.LastChar (output, '/') ;
+      IF i >= 0 THEN output := SLICE (output, 0, i) ELSE output := '' END
+    ELSIF Text.Eq (input, '.') OR Text.Eq (input, '..') THEN
+      input := ''
+    ELSE
+      (* the first segment, with its leading slash *)
+      i := 1 ;
+      IF input[0] # '/' THEN i := 0 END ;
+      WHILE i < LEN (input) AND input[i] # '/' DO i := i + 1 END ;
+      IF input[0] = '/' AND i = 0 THEN i := 1 END ;
+      output := output + SLICE (input, 0, i) ;
+      input := SLICE (input, i, LEN (input) - i)
+    END
+  END ;
+  RETURN output
+END RemoveDots ;
+
+PROCEDURE Split (RO s: STR ; VAR scheme, auth, path, query, frag: STR ;
+                 VAR hasAuth, hasQuery, hasFrag: BOOL) =
+  (* RFC 3986 appendix B's five parts *)
+VAR i, j, e : I64 ;
+BEGIN
+  scheme := '' ; auth := '' ; path := '' ; query := '' ; frag := '' ;
+  hasAuth := FALSE ; hasQuery := FALSE ; hasFrag := FALSE ;
+  i := 0 ;
+  e := SchemeEnd (s) ;
+  IF e >= 0 THEN
+    scheme := SLICE (s, 0, e) ;
+    i := e + 1
+  END ;
+  IF i + 1 < LEN (s) AND s[i] = '/' AND s[i + 1] = '/' THEN
+    hasAuth := TRUE ;
+    j := i + 2 ;
+    WHILE j < LEN (s) AND s[j] # '/' AND s[j] # '?' AND s[j] # '#' DO j := j + 1 END ;
+    auth := SLICE (s, i + 2, j - i - 2) ;
+    i := j
+  END ;
+  j := i ;
+  WHILE j < LEN (s) AND s[j] # '?' AND s[j] # '#' DO j := j + 1 END ;
+  path := SLICE (s, i, j - i) ;
+  i := j ;
+  IF i < LEN (s) AND s[i] = '?' THEN
+    hasQuery := TRUE ;
+    j := i + 1 ;
+    WHILE j < LEN (s) AND s[j] # '#' DO j := j + 1 END ;
+    query := SLICE (s, i + 1, j - i - 1) ;
+    i := j
+  END ;
+  IF i < LEN (s) AND s[i] = '#' THEN
+    hasFrag := TRUE ;
+    frag := SLICE (s, i + 1, LEN (s) - i - 1)
+  END
+END Split ;
+
+PROCEDURE Resolve (RO base: STR ; RO ref: STR) : STR =
+  (* RFC 3986 par 5.2.2, strict *)
+VAR
+  rs, ra, rp, rq, rf, bs, ba, bp, bq, bf, ts, ta, tp, tq, out : STR ;
+  rha, rhq, rhf, bha, bhq, bhf, tha, thq : BOOL ;
+  k : I64 ;
+BEGIN
+  Split (ref, rs, ra, rp, rq, rf, rha, rhq, rhf) ;
+  IF LEN (rs) > 0 THEN
+    ts := rs ; ta := ra ; tha := rha ; tp := RemoveDots (rp) ; tq := rq ; thq := rhq
+  ELSE
+    Split (base, bs, ba, bp, bq, bf, bha, bhq, bhf) ;
+    ts := bs ;
+    IF rha THEN
+      ta := ra ; tha := TRUE ; tp := RemoveDots (rp) ; tq := rq ; thq := rhq
+    ELSE
+      ta := ba ; tha := bha ;
+      IF LEN (rp) = 0 THEN
+        tp := bp ;
+        IF rhq THEN tq := rq ; thq := TRUE ELSE tq := bq ; thq := bhq END
+      ELSE
+        IF rp[0] = '/' THEN
+          tp := RemoveDots (rp)
+        ELSE
+          (* merge (par 5.2.3) *)
+          IF bha AND LEN (bp) = 0 THEN
+            tp := RemoveDots ('/' + rp)
+          ELSE
+            k := Text.LastChar (bp, '/') ;
+            IF k >= 0 THEN tp := RemoveDots (SLICE (bp, 0, k + 1) + rp)
+            ELSE tp := RemoveDots (rp)
+            END
+          END
+        END ;
+        tq := rq ; thq := rhq
+      END
+    END
+  END ;
+  out := '' ;
+  IF LEN (ts) > 0 THEN out := ts + ':' END ;
+  IF tha THEN out := out + '//' + ta END ;
+  out := out + tp ;
+  IF thq THEN out := out + '?' + tq END ;
+  IF rhf THEN out := out + '#' + rf END ;
+  RETURN out
+END Resolve ;
+
+PROCEDURE Absolute (VAR r: Reader ; RO iri: STR) : STR RAISES SyntaxError =
+  (* an IRI as a term: resolved in Turtle, required absolute in
+     N-Triples *)
+BEGIN
+  IF SchemeEnd (iri) >= 0 THEN RETURN iri END ;
+  IF NOT r.turtle THEN Fail (r, 'a relative IRI in N-Triples') END ;
+  IF LEN (r.base) = 0 THEN Fail (r, 'a relative IRI and no base to resolve it') END ;
+  RETURN Resolve (r.base, iri)
+END Absolute ;
+
+(* ---- prefixed names ------------------------------------------------- *)
+
+PROCEDURE PrefixOf (VAR r: Reader ; RO name: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  (* the LAST declaration of a name wins: a document may redeclare *)
+  i := r.npfx - 1 ;
+  WHILE i >= 0 DO
+    IF Text.Eq (r.pfx[i], name) THEN RETURN i END ;
+    i := i - 1
+  END ;
+  RETURN -1
+END PrefixOf ;
+
+PROCEDURE PnPrefix (VAR r: Reader) : STR RAISES SyntaxError =
+  (* PN_PREFIX? up to the colon, which is consumed *)
+VAR
+  s : STR ;
+  c : CHAR ;
+BEGIN
+  s := '' ;
+  IF PeekAt (r, 0) # ':' THEN
+    c := PeekAt (r, 0) ;
+    IF NOT IsPnCharsBase (c) THEN Fail (r, 'a prefix name expected') END ;
+    s := s + c ;
+    Advance (r) ;
+    LOOP
+      c := PeekAt (r, 0) ;
+      IF IsPnChars (c) THEN
+        s := s + c ; Advance (r)
+      ELSIF c = '.' AND (IsPnChars (PeekAt (r, 1)) OR PeekAt (r, 1) = '.') THEN
+        s := s + c ; Advance (r)
+      ELSE
+        EXIT
+      END
+    END ;
+    IF s[LEN (s) - 1] = '.' THEN Fail (r, 'a prefix name ends with a dot') END
+  END ;
+  Expect (r, ':', 'a colon') ;
+  RETURN s
+END PnPrefix ;
+
+PROCEDURE PnLocal (VAR r: Reader) : STR RAISES SyntaxError =
+  (* PN_LOCAL, possibly empty: %HH kept as written, \x unescaped; a
+     dot is part of the name only when a name character follows *)
+VAR
+  s : STR ;
+  c : CHAR ;
+  first : BOOL ;
+BEGIN
+  s := '' ;
+  first := TRUE ;
+  LOOP
+    c := PeekAt (r, 0) ;
+    IF c = '%' THEN
+      IF NOT (IsHex (PeekAt (r, 1)) AND IsHex (PeekAt (r, 2))) THEN
+        Fail (r, 'a % not followed by two hex digits')
+      END ;
+      s := s + c + PeekAt (r, 1) + PeekAt (r, 2) ;
+      Advance (r) ; Advance (r) ; Advance (r)
+    ELSIF c = '\' THEN
+      IF NOT IsLocalEsc (PeekAt (r, 1)) THEN Fail (r, 'an escape a local name may not hold') END ;
+      s := s + PeekAt (r, 1) ;
+      Advance (r) ; Advance (r)
+    ELSIF IsPnCharsU (c) OR c = ':' OR (c >= '0' AND c <= '9') OR
+          (NOT first AND IsPnChars (c)) THEN
+      s := s + c ; Advance (r)
+    ELSIF c = '.' AND NOT first THEN
+      (* only inside the name: what follows must continue it *)
+      IF IsPnChars (PeekAt (r, 1)) OR PeekAt (r, 1) = ':' OR
+         PeekAt (r, 1) = '%' OR PeekAt (r, 1) = '\' OR PeekAt (r, 1) = '.' THEN
+        s := s + c ; Advance (r)
+      ELSE
+        EXIT
+      END
+    ELSE
+      EXIT
+    END ;
+    first := FALSE
+  END ;
+  RETURN s
+END PnLocal ;
+
+PROCEDURE PrefixedName (VAR r: Reader) : STR RAISES SyntaxError =
+VAR
+  name, local : STR ;
+  k : I64 ;
+BEGIN
+  name := PnPrefix (r) ;
+  k := PrefixOf (r, name) ;
+  IF k < 0 THEN Fail (r, 'the prefix ' + name + ': is not declared') END ;
+  local := PnLocal (r) ;
+  RETURN r.pfxIri[k] + local
+END PrefixedName ;
+
+(* ---- blank nodes ---------------------------------------------------- *)
+
+PROCEDURE Fresh (VAR pool: POOL ; VAR r: Reader) : STR RAISES ValueRange =
+  (* a blank node no label in the document can name *)
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'b') ;
+  DynStr.AppendI64 (d, r.fresh) ;
+  r.fresh := r.fresh + 1 ;
+  RETURN DynStr.View (d)
+END Fresh ;
+
+PROCEDURE Labelled (VAR pool: POOL ; VAR r: Reader ; RO lab: STR) : STR
+  RAISES ValueRange =
+  (* the blank node a document label names: the same label, the same
+     node, throughout the document *)
+VAR
+  i : I64 ;
+  nl, ni : SLICE OF STR ;
+BEGIN
+  FOR i := 0 TO r.nblab - 1 DO
+    IF Text.Eq (r.blab[i], lab) THEN RETURN r.bid[i] END
+  END ;
+  IF r.nblab = LEN (r.blab) THEN
+    nl := NEW (pool, STR, 2 * LEN (r.blab)) ;
+    ni := NEW (pool, STR, 2 * LEN (r.blab)) ;
+    FOR i := 0 TO r.nblab - 1 DO nl[i] := r.blab[i] ; ni[i] := r.bid[i] END ;
+    r.blab := nl ;
+    r.bid := ni
+  END ;
+  r.blab[r.nblab] := Text.Keep (pool, lab) ;
+  r.bid[r.nblab] := Fresh (pool, r) ;
+  r.nblab := r.nblab + 1 ;
+  RETURN r.bid[r.nblab - 1]
+END Labelled ;
+
+PROCEDURE BlankLabel (VAR pool: POOL ; VAR r: Reader) : STR
+  RAISES SyntaxError, ValueRange =
+  (* at `_:' *)
+VAR
+  s : STR ;
+  c : CHAR ;
+BEGIN
+  Advance (r) ; Advance (r) ;
+  c := PeekAt (r, 0) ;
+  IF NOT (IsPnCharsU (c) OR (c >= '0' AND c <= '9')) THEN
+    Fail (r, 'a blank node label expected')
+  END ;
+  s := '' + c ;
+  Advance (r) ;
+  LOOP
+    c := PeekAt (r, 0) ;
+    IF IsPnChars (c) THEN
+      s := s + c ; Advance (r)
+    ELSIF c = '.' AND (IsPnChars (PeekAt (r, 1)) OR PeekAt (r, 1) = '.') THEN
+      s := s + c ; Advance (r)
+    ELSE
+      EXIT
+    END
+  END ;
+  IF s[LEN (s) - 1] = '.' THEN Fail (r, 'a blank node label ends with a dot') END ;
+  RETURN Labelled (pool, r, s)
+END BlankLabel ;
+
+(* ---- literals ------------------------------------------------------- *)
+
+PROCEDURE Echar (VAR r: Reader) : CHAR RAISES SyntaxError, ValueRange =
+  (* at a backslash in a string: ECHAR or UCHAR *)
+VAR c : CHAR ;
+BEGIN
+  c := PeekAt (r, 1) ;
+  IF c = 'u' OR c = 'U' THEN RETURN Uchar (r) END ;
+  Advance (r) ; Advance (r) ;
+  IF c = 't' THEN RETURN 09C END ;
+  IF c = 'b' THEN RETURN 08C END ;
+  IF c = 'n' THEN RETURN 0AC END ;
+  IF c = 'r' THEN RETURN 0DC END ;
+  IF c = 'f' THEN RETURN 0CC END ;
+  IF c = '"' OR c = "'" OR c = '\' THEN RETURN c END ;
+  Fail (r, 'an escape a string may not hold') ;
+  RETURN 00C
+END Echar ;
+
+PROCEDURE StringLit (VAR r: Reader) : STR RAISES SyntaxError, ValueRange =
+  (* at a quote: the four forms of Turtle, the first of N-Triples *)
+VAR
+  s : STR ;
+  q, c : CHAR ;
+  long : BOOL ;
+BEGIN
+  q := PeekAt (r, 0) ;
+  IF q = "'" AND NOT r.turtle THEN Fail (r, 'a single quote in N-Triples') END ;
+  long := r.turtle AND PeekAt (r, 1) = q AND PeekAt (r, 2) = q ;
+  IF long THEN Advance (r) ; Advance (r) ; Advance (r) ELSE Advance (r) END ;
+  s := '' ;
+  LOOP
+    IF AtEnd (r) THEN Fail (r, 'a string not closed') END ;
+    c := PeekAt (r, 0) ;
+    IF long THEN
+      IF c = q AND PeekAt (r, 1) = q AND PeekAt (r, 2) = q THEN
+        Advance (r) ; Advance (r) ; Advance (r) ;
+        (* a closing triple followed by more quotes: the extra ones
+           belong to the string *)
+        EXIT
+      END
+    ELSE
+      IF c = q THEN Advance (r) ; EXIT END ;
+      IF c = 0AC OR c = 0DC THEN Fail (r, 'a line end in a short string') END
+    END ;
+    IF c = '\' THEN
+      s := s + Echar (r)
+    ELSE
+      s := s + c ;
+      Advance (r)
+    END
+  END ;
+  RETURN s
+END StringLit ;
+
+PROCEDURE LangTag (VAR r: Reader) : STR RAISES SyntaxError =
+  (* at `@': [a-zA-Z]+ ('-' [a-zA-Z0-9]+)* *)
+VAR
+  s : STR ;
+  c : CHAR ;
+  n : I64 ;
+BEGIN
+  Advance (r) ;
+  s := '' ;
+  n := 0 ;
+  LOOP
+    c := PeekAt (r, 0) ;
+    IF (c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z') THEN
+      s := s + c ; Advance (r) ; n := n + 1
+    ELSE
+      EXIT
+    END
+  END ;
+  IF n = 0 THEN Fail (r, 'a language tag expected') END ;
+  WHILE PeekAt (r, 0) = '-' DO
+    s := s + '-' ;
+    Advance (r) ;
+    n := 0 ;
+    LOOP
+      c := PeekAt (r, 0) ;
+      IF (c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z') OR (c >= '0' AND c <= '9') THEN
+        s := s + c ; Advance (r) ; n := n + 1
+      ELSE
+        EXIT
+      END
+    END ;
+    IF n = 0 THEN Fail (r, 'a language subtag expected') END
+  END ;
+  RETURN s
+END LangTag ;
+
+(* ---- Turtle --------------------------------------------------------- *)
+
+PROCEDURE Iri (VAR r: Reader) : STR RAISES SyntaxError, ValueRange =
+  (* iri ::= IRIREF | PrefixedName *)
+BEGIN
+  IF PeekAt (r, 0) = '<' THEN RETURN Absolute (r, IriRef (r)) END ;
+  RETURN PrefixedName (r)
+END Iri ;
+
+PROCEDURE StartsIri (VAR r: Reader) : BOOL =
+VAR c : CHAR ;
+BEGIN
+  c := PeekAt (r, 0) ;
+  RETURN c = '<' OR c = ':' OR IsPnCharsBase (c)
+END StartsIri ;
+
+PROCEDURE Word (VAR r: Reader ; RO w: STR) : BOOL =
+  (* the keyword w at the reader, not followed by a name character *)
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (w) - 1 DO
+    IF PeekAt (r, i) # w[i] THEN RETURN FALSE END
+  END ;
+  RETURN NOT (IsPnChars (PeekAt (r, LEN (w))) OR PeekAt (r, LEN (w)) = ':' OR
+              PeekAt (r, LEN (w)) = '.' AND IsPnChars (PeekAt (r, LEN (w) + 1)))
+END Word ;
+
+PROCEDURE WordCi (VAR r: Reader ; RO w: STR) : BOOL RAISES ValueRange =
+  (* the same, in any case: BASE and PREFIX *)
+VAR i : I64 ; c : CHAR ;
+BEGIN
+  FOR i := 0 TO LEN (w) - 1 DO
+    c := PeekAt (r, i) ;
+    IF c >= 'a' AND c <= 'z' THEN c := CHR (ORD (c) - 32) END ;
+    IF c # w[i] THEN RETURN FALSE END
+  END ;
+  RETURN NOT IsPnChars (PeekAt (r, LEN (w)))
+END WordCi ;
+
+PROCEDURE Skip (VAR r: Reader ; n: I64) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 1 TO n DO Advance (r) END
+END Skip ;
+
+PROCEDURE Numeric (VAR r: Reader ; VAR dt: STR) : STR RAISES SyntaxError =
+  (* INTEGER, DECIMAL or DOUBLE, its lexical form as written *)
+VAR
+  s : STR ;
+  c : CHAR ;
+  digits, frac : I64 ;
+  dot, ex : BOOL ;
+BEGIN
+  s := '' ;
+  c := PeekAt (r, 0) ;
+  IF c = '+' OR c = '-' THEN s := s + c ; Advance (r) END ;
+  digits := 0 ;
+  WHILE PeekAt (r, 0) >= '0' AND PeekAt (r, 0) <= '9' DO
+    s := s + PeekAt (r, 0) ; Advance (r) ; digits := digits + 1
+  END ;
+  dot := FALSE ;
+  frac := 0 ;
+  (* a dot is a decimal point only when a digit or an exponent follows *)
+  IF PeekAt (r, 0) = '.' AND
+     ((PeekAt (r, 1) >= '0' AND PeekAt (r, 1) <= '9') OR
+      ((PeekAt (r, 1) = 'e' OR PeekAt (r, 1) = 'E') AND digits > 0)) THEN
+    dot := TRUE ;
+    s := s + '.' ; Advance (r) ;
+    WHILE PeekAt (r, 0) >= '0' AND PeekAt (r, 0) <= '9' DO
+      s := s + PeekAt (r, 0) ; Advance (r) ; frac := frac + 1
+    END
+  END ;
+  ex := FALSE ;
+  IF (PeekAt (r, 0) = 'e' OR PeekAt (r, 0) = 'E') AND (digits > 0 OR frac > 0) THEN
+    ex := TRUE ;
+    s := s + PeekAt (r, 0) ; Advance (r) ;
+    IF PeekAt (r, 0) = '+' OR PeekAt (r, 0) = '-' THEN s := s + PeekAt (r, 0) ; Advance (r) END ;
+    IF NOT (PeekAt (r, 0) >= '0' AND PeekAt (r, 0) <= '9') THEN Fail (r, 'an exponent without digits') END ;
+    WHILE PeekAt (r, 0) >= '0' AND PeekAt (r, 0) <= '9' DO
+      s := s + PeekAt (r, 0) ; Advance (r)
+    END
+  END ;
+  IF digits = 0 AND frac = 0 THEN Fail (r, 'a number expected') END ;
+  IF ex THEN dt := Xsd + 'double'
+  ELSIF dot THEN dt := Xsd + 'decimal'
+  ELSE dt := Xsd + 'integer'
+  END ;
+  RETURN s
+END Numeric ;
+
+PROCEDURE Literal (VAR pool: POOL ; VAR r: Reader) : Term
+  RAISES SyntaxError, ValueRange =
+VAR
+  v, dt : STR ;
+  c : CHAR ;
+BEGIN
+  c := PeekAt (r, 0) ;
+  IF c = '"' OR c = "'" THEN
+    v := StringLit (r) ;
+    IF PeekAt (r, 0) = '@' THEN RETURN LitT (v, LangTag (r), '') END ;
+    IF PeekAt (r, 0) = '^' AND PeekAt (r, 1) = '^' THEN
+      Advance (r) ; Advance (r) ;
+      IF r.turtle THEN RETURN LitT (v, '', Iri (r)) END ;
+      RETURN LitT (v, '', Absolute (r, IriRef (r)))
+    END ;
+    RETURN LitT (v, '', XsdString)
+  END ;
+  IF r.turtle AND Word (r, 'true') THEN Skip (r, 4) ; RETURN LitT ('true', '', Xsd + 'boolean') END ;
+  IF r.turtle AND Word (r, 'false') THEN Skip (r, 5) ; RETURN LitT ('false', '', Xsd + 'boolean') END ;
+  IF r.turtle THEN
+    dt := '' ;
+    v := Numeric (r, dt) ;
+    RETURN LitT (v, '', dt)
+  END ;
+  Fail (r, 'a term expected') ;
+  RETURN LitT ('', '', '')
+END Literal ;
+
+PROCEDURE Collection (VAR pool: POOL ; VAR r: Reader ; VAR g: PTR Graph)
+  : Term RAISES SyntaxError, ValueRange, IndexError =
+  (* ( o1 o2 ... ): rdf:first/rdf:rest cells ending in rdf:nil *)
+VAR
+  head, prev, cell, o : Term ;
+  any : BOOL ;
+BEGIN
+  Expect (r, '(', '(') ;
+  any := FALSE ;
+  head := IriT (RdfNs + 'nil') ;
+  prev := head ;
+  LOOP
+    SkipWs (r) ;
+    IF PeekAt (r, 0) = ')' THEN Advance (r) ; EXIT END ;
+    IF AtEnd (r) THEN Fail (r, 'a collection not closed') END ;
+    cell := BlankT (Fresh (pool, r)) ;
+    IF any THEN
+      Add (pool, g, prev, IriT (RdfNs + 'rest'), cell)
+    ELSE
+      head := cell ;
+      any := TRUE
+    END ;
+    o := ObjectTerm (pool, r, g) ;
+    Add (pool, g, cell, IriT (RdfNs + 'first'), o) ;
+    prev := cell
+  END ;
+  IF any THEN Add (pool, g, prev, IriT (RdfNs + 'rest'), IriT (RdfNs + 'nil')) END ;
+  RETURN head
+END Collection ;
+
+PROCEDURE PropertyList (VAR pool: POOL ; VAR r: Reader ; VAR g: PTR Graph)
+  : Term RAISES SyntaxError, ValueRange, IndexError =
+  (* [ ... ] -- the empty one is ANON *)
+VAR b : Term ;
+BEGIN
+  Expect (r, '[', '[') ;
+  b := BlankT (Fresh (pool, r)) ;
+  SkipWs (r) ;
+  IF PeekAt (r, 0) = ']' THEN Advance (r) ; RETURN b END ;
+  PredObjList (pool, r, g, b) ;
+  SkipWs (r) ;
+  Expect (r, ']', 'a ] closing a blank node property list') ;
+  RETURN b
+END PropertyList ;
+
+PROCEDURE ObjectTerm (VAR pool: POOL ; VAR r: Reader ; VAR g: PTR Graph)
+  : Term RAISES SyntaxError, ValueRange, IndexError =
+VAR c : CHAR ;
+BEGIN
+  SkipWs (r) ;
+  c := PeekAt (r, 0) ;
+  IF c = '_' AND PeekAt (r, 1) = ':' THEN RETURN BlankT (BlankLabel (pool, r)) END ;
+  IF c = '(' THEN RETURN Collection (pool, r, g) END ;
+  IF c = '[' THEN RETURN PropertyList (pool, r, g) END ;
+  IF c = '<' THEN RETURN IriT (Iri (r)) END ;
+  IF c = '"' OR c = "'" OR c = '+' OR c = '-' OR c = '.' OR (c >= '0' AND c <= '9') THEN
+    RETURN Literal (pool, r)
+  END ;
+  IF Word (r, 'true') OR Word (r, 'false') THEN RETURN Literal (pool, r) END ;
+  IF StartsIri (r) THEN RETURN IriT (PrefixedName (r)) END ;
+  Fail (r, 'an object expected') ;
+  RETURN IriT ('')
+END ObjectTerm ;
+
+PROCEDURE Verb (VAR r: Reader) : Term RAISES SyntaxError, ValueRange =
+BEGIN
+  SkipWs (r) ;
+  IF PeekAt (r, 0) = 'a' AND NOT (IsPnChars (PeekAt (r, 1)) OR PeekAt (r, 1) = ':' OR PeekAt (r, 1) = '.' AND IsPnChars (PeekAt (r, 2))) THEN
+    Advance (r) ;
+    RETURN IriT (RdfNs + 'type')
+  END ;
+  IF NOT StartsIri (r) THEN Fail (r, 'a predicate expected') END ;
+  RETURN IriT (Iri (r))
+END Verb ;
+
+PROCEDURE PredObjList (VAR pool: POOL ; VAR r: Reader ; VAR g: PTR Graph ;
+                       RO s: Term) RAISES SyntaxError, ValueRange, IndexError =
+  (* verb objectList (';' (verb objectList)?)* *)
+VAR
+  p, o : Term ;
+BEGIN
+  LOOP
+    p := Verb (r) ;
+    LOOP
+      o := ObjectTerm (pool, r, g) ;
+      Add (pool, g, s, p, o) ;
+      SkipWs (r) ;
+      IF PeekAt (r, 0) # ',' THEN EXIT END ;
+      Advance (r)
+    END ;
+    SkipWs (r) ;
+    IF PeekAt (r, 0) # ';' THEN EXIT END ;
+    WHILE PeekAt (r, 0) = ';' DO Advance (r) ; SkipWs (r) END ;
+    (* a list may end with semicolons *)
+    IF PeekAt (r, 0) = '.' OR PeekAt (r, 0) = ']' OR AtEnd (r) THEN EXIT END
+  END
+END PredObjList ;
+
+PROCEDURE Directive (VAR pool: POOL ; VAR r: Reader) : BOOL
+  RAISES SyntaxError, ValueRange =
+  (* @prefix, @base, PREFIX or BASE; FALSE when there is none here *)
+VAR
+  name, iri : STR ;
+  sparql : BOOL ;
+  i : I64 ;
+  np, ni : SLICE OF STR ;
+BEGIN
+  IF PeekAt (r, 0) = '@' AND Word (r, '@prefix') THEN
+    Skip (r, 7) ; sparql := FALSE
+  ELSIF WordCi (r, 'PREFIX') THEN
+    Skip (r, 6) ; sparql := TRUE
+  ELSIF PeekAt (r, 0) = '@' AND Word (r, '@base') THEN
+    Skip (r, 5) ;
+    SkipWs (r) ;
+    r.base := Text.Keep (pool, Absolute (r, IriRef (r))) ;
+    SkipWs (r) ;
+    Expect (r, '.', 'a dot after @base') ;
+    RETURN TRUE
+  ELSIF WordCi (r, 'BASE') THEN
+    Skip (r, 4) ;
+    SkipWs (r) ;
+    r.base := Text.Keep (pool, Absolute (r, IriRef (r))) ;
+    RETURN TRUE
+  ELSE
+    RETURN FALSE
+  END ;
+  SkipWs (r) ;
+  name := PnPrefix (r) ;
+  SkipWs (r) ;
+  iri := Absolute (r, IriRef (r)) ;
+  IF r.npfx = LEN (r.pfx) THEN
+    np := NEW (pool, STR, 2 * LEN (r.pfx)) ;
+    ni := NEW (pool, STR, 2 * LEN (r.pfx)) ;
+    FOR i := 0 TO r.npfx - 1 DO np[i] := r.pfx[i] ; ni[i] := r.pfxIri[i] END ;
+    r.pfx := np ;
+    r.pfxIri := ni
+  END ;
+  r.pfx[r.npfx] := Text.Keep (pool, name) ;
+  r.pfxIri[r.npfx] := Text.Keep (pool, iri) ;
+  r.npfx := r.npfx + 1 ;
+  IF NOT sparql THEN
+    SkipWs (r) ;
+    Expect (r, '.', 'a dot after @prefix')
+  END ;
+  RETURN TRUE
+END Directive ;
+
+PROCEDURE Triples (VAR pool: POOL ; VAR r: Reader ; VAR g: PTR Graph)
+  RAISES SyntaxError, ValueRange, IndexError =
+  (* subject predicateObjectList | blankNodePropertyList predicateObjectList? *)
+VAR
+  s : Term ;
+  c : CHAR ;
+BEGIN
+  c := PeekAt (r, 0) ;
+  IF c = '[' THEN
+    s := PropertyList (pool, r, g) ;
+    SkipWs (r) ;
+    IF PeekAt (r, 0) # '.' THEN PredObjList (pool, r, g, s) END ;
+    RETURN
+  END ;
+  IF c = '_' AND PeekAt (r, 1) = ':' THEN
+    s := BlankT (BlankLabel (pool, r))
+  ELSIF c = '(' THEN
+    s := Collection (pool, r, g)
+  ELSIF StartsIri (r) THEN
+    s := IriT (Iri (r))
+  ELSE
+    Fail (r, 'a subject expected')
+  END ;
+  PredObjList (pool, r, g, s)
+END Triples ;
+
+PROCEDURE NewReader (VAR pool: POOL ; VAR r: Reader ; RO text: STR ; RO base: STR ;
+                     turtle: BOOL) =
+BEGIN
+  (* copied into the reader's pool: a borrow kept in the reader would
+     be a retention the caller's heading has to declare, and the
+     reader dies with the parse anyway *)
+  r.src := Text.Keep (pool, text) ;
+  r.pos := 0 ;
+  r.line := 1 ;
+  r.lineStart := 0 ;
+  r.base := Text.Keep (pool, base) ;
+  r.turtle := turtle ;
+  r.pfx := NEW (pool, STR, 8) ;
+  r.pfxIri := NEW (pool, STR, 8) ;
+  r.npfx := 0 ;
+  r.blab := NEW (pool, STR, 8) ;
+  r.bid := NEW (pool, STR, 8) ;
+  r.nblab := 0 ;
+  r.fresh := 0
+END NewReader ;
+
+PROCEDURE ParseTurtle (VAR pool: POOL ; RO text: STR ; RO base: STR)
+  : PTR Graph IN pool RAISES SyntaxError, ValueRange =
+VAR
+  scratch : POOL ;
+  r : Reader ;
+  g : PTR Graph IN pool ;
+BEGIN
+  g := NewGraph (pool) ;
+  NewReader (scratch, r, text, base, TRUE) ;
+  BEGIN
+    LOOP
+      SkipWs (r) ;
+      IF AtEnd (r) THEN EXIT END ;
+      IF NOT Directive (scratch, r) THEN
+        Triples (pool, r, g) ;
+        SkipWs (r) ;
+        Expect (r, '.', 'a dot ending the statement')
+      END
+    END
+  EXCEPT
+  | IndexError :
+      Fail (r, 'the document ends inside a statement')
+  END ;
+  RETURN g
+END ParseTurtle ;
+
+(* ---- N-Triples ------------------------------------------------------ *)
+
+PROCEDURE NtTerm (VAR pool: POOL ; VAR r: Reader ; obj: BOOL) : Term
+  RAISES SyntaxError, ValueRange =
+VAR c : CHAR ;
+BEGIN
+  c := PeekAt (r, 0) ;
+  IF c = '<' THEN RETURN IriT (Absolute (r, IriRef (r))) END ;
+  IF c = '_' AND PeekAt (r, 1) = ':' THEN RETURN BlankT (BlankLabel (pool, r)) END ;
+  IF obj AND c = '"' THEN RETURN Literal (pool, r) END ;
+  Fail (r, 'a term expected') ;
+  RETURN IriT ('')
+END NtTerm ;
+
+PROCEDURE SkipBlanks (VAR r: Reader) =
+  (* blanks and tabs only: an N-Triples statement is one line *)
+BEGIN
+  WHILE PeekAt (r, 0) = ' ' OR PeekAt (r, 0) = 09C DO Advance (r) END
+END SkipBlanks ;
+
+PROCEDURE ParseNTriples (VAR pool: POOL ; RO text: STR) : PTR Graph IN pool
+  RAISES SyntaxError, ValueRange =
+VAR
+  scratch : POOL ;
+  r : Reader ;
+  g : PTR Graph IN pool ;
+  s, p, o : Term ;
+BEGIN
+  g := NewGraph (pool) ;
+  NewReader (scratch, r, text, '', FALSE) ;
+  LOOP
+    SkipWs (r) ;
+    IF AtEnd (r) THEN EXIT END ;
+    (* NtTerm answers no literal unless asked for an object *)
+    s := NtTerm (pool, r, FALSE) ;
+    SkipBlanks (r) ;
+    p := NtTerm (pool, r, FALSE) ;
+    IF p.kind # Kind.Iri THEN Fail (r, 'a predicate that is not an IRI') END ;
+    SkipBlanks (r) ;
+    o := NtTerm (pool, r, TRUE) ;
+    SkipBlanks (r) ;
+    Expect (r, '.', 'a dot ending the triple') ;
+    SkipBlanks (r) ;
+    IF PeekAt (r, 0) = '#' THEN
+      WHILE NOT AtEnd (r) AND PeekAt (r, 0) # 0AC DO Advance (r) END
+    END ;
+    IF NOT AtEnd (r) AND PeekAt (r, 0) # 0AC AND PeekAt (r, 0) # 0DC THEN
+      Fail (r, 'more after the dot ending the triple')
+    END ;
+    Add (pool, g, s, p, o)
+  END ;
+  RETURN g
+END ParseNTriples ;
+
+(* ---- writing N-Triples ---------------------------------------------- *)
+
+PROCEDURE Hex2 (VAR d: PTR DynStr.DString ; v: I64) RAISES ValueRange =
+VAR h : STR ;
+BEGIN
+  h := '0123456789ABCDEF' ;
+  DynStr.AppendChar (d, h[v DIV 16]) ;
+  DynStr.AppendChar (d, h[v MOD 16])
+EXCEPT
+| IndexError :
+    RETURN
+END Hex2 ;
+
+PROCEDURE PutIri (VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange =
+VAR i : I64 ; c : CHAR ;
+BEGIN
+  DynStr.AppendChar (d, '<') ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := s[i] ;
+    IF ORD (c) <= 0x20 OR c = '<' OR c = '>' OR c = '"' OR c = '{' OR
+       c = '}' OR c = '|' OR c = '^' OR c = '`' OR c = '\' THEN
+      DynStr.Append (d, '\u00') ;
+      Hex2 (d, ORD (c))
+    ELSE
+      DynStr.AppendChar (d, c)
+    END
+  END ;
+  DynStr.AppendChar (d, '>')
+END PutIri ;
+
+PROCEDURE PutTerm (VAR d: PTR DynStr.DString ; RO t: Term) RAISES ValueRange =
+VAR i : I64 ; c : CHAR ;
+BEGIN
+  CASE t.kind OF
+  | Iri : PutIri (d, t.value)
+  | Blank :
+      DynStr.Append (d, '_:') ;
+      DynStr.Append (d, t.value)
+  | Literal :
+      DynStr.AppendChar (d, '"') ;
+      FOR i := 0 TO LEN (t.value) - 1 DO
+        c := t.value[i] ;
+        IF c = '"' THEN DynStr.Append (d, '\"')
+        ELSIF c = '\' THEN DynStr.Append (d, '\\')
+        ELSIF c = 0AC THEN DynStr.Append (d, '\n')
+        ELSIF c = 0DC THEN DynStr.Append (d, '\r')
+        ELSIF c = 09C THEN DynStr.Append (d, '\t')
+        ELSIF ORD (c) < 0x20 OR ORD (c) = 0x7F THEN
+          DynStr.Append (d, '\u00') ;
+          Hex2 (d, ORD (c))
+        ELSE
+          DynStr.AppendChar (d, c)
+        END
+      END ;
+      DynStr.AppendChar (d, '"') ;
+      IF LEN (t.lang) > 0 THEN
+        DynStr.AppendChar (d, '@') ;
+        DynStr.Append (d, t.lang)
+      ELSIF LEN (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
+        DynStr.Append (d, '^^') ;
+        PutIri (d, t.datatype)
+      END
+  END
+END PutTerm ;
+
+PROCEDURE NTriples (g: PTR Graph) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  FOR i := 0 TO g.n - 1 DO
+    PutTerm (d, g.t[i].s) ;
+    DynStr.AppendChar (d, ' ') ;
+    PutTerm (d, g.t[i].p) ;
+    DynStr.AppendChar (d, ' ') ;
+    PutTerm (d, g.t[i].o) ;
+    DynStr.Append (d, ' .') ;
+    DynStr.AppendChar (d, 0AC)
+  END ;
+  RETURN DynStr.View (d)
+END NTriples ;
+
+END Rdf.

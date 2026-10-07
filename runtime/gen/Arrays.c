@@ -1537,7 +1537,7 @@ static m9_sl_Arrays_Acc Arrays_Along (m9_gd2_double g, int64_t axis, m9_state *e
         } }
       } }
   } else {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 26 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 26 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 26 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 26 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   } }

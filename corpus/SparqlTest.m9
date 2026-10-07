@@ -1,0 +1,271 @@
+MODULE SparqlTest ;
+
+(* Sparql, held to rdflib (docs/datalib-plan.md par 2).  tools/
+   sparqlgold.py ran each query of runtime/test/gold/Sparql.gold
+   against runtime/test/gold/sparql-fixture.ttl and wrote the answer
+   twice: as the JSON results document rdflib serializes
+   (runtime/test/gold/sparql/*.json) and as rdflib's own terms, row by
+   row.  OFFLINE, here and in m9test: every document read by
+   Sparql.Parse and ParseAsk and compared, term by term, with rdflib's
+   answer.
+
+   LIVE, when SPARQL_ENDPOINT names an endpoint (runtime/test/sparql.sh
+   starts runtime/test/sparqlfix.py, rdflib serving the same graph):
+   the same queries through Select and Ask, and one padded past
+   GetMax so that it goes by POST.  Blank-node labels are rdflib's
+   choice per parse, so live they are compared by kind only.        *)
+
+IMPORT Check ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Http ;
+IMPORT Io ;
+IMPORT Rdf ;
+IMPORT Sparql ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  gold, endpoint : STR ;
+
+PROCEDURE FromCps (RO v: SLICE OF I64) : STR RAISES ValueRange =
+VAR
+  r : STR ;
+  i : I64 ;
+BEGIN
+  r := '' ;
+  FOR i := 0 TO LEN (v) - 1 DO r := r + CHR (v[i]) END ;
+  RETURN r
+END FromCps ;
+
+PROCEDURE G (RO name: STR) : STR RAISES ValueRange =
+  (* a golden string, carried as code points *)
+BEGIN
+  RETURN FromCps (Check.GoldI64s (t, gold, name))
+END G ;
+
+PROCEDURE GoldBool (RO name: STR) : BOOL =
+  (* a golden boolean; FALSE, and a failed check, when there is none
+     (`F (x)[0]' does not parse: the owed `F (x).field' item) *)
+VAR v : SLICE OF BOOL ;
+BEGIN
+  v := Check.GoldBools (t, gold, name) ;
+  IF LEN (v) = 0 THEN
+    Check.That (t, 'a golden boolean ' + name, FALSE) ;
+    RETURN FALSE
+  END ;
+  RETURN v[0]
+END GoldBool ;
+
+PROCEDURE Doc (VAR p: POOL ; RO file: STR) : STR RAISES ValueRange =
+  (* a results document as rdflib wrote it: UTF-8 *)
+BEGIN
+  RETURN DynStr.FromUtf8 (p, Io.ReadFileBytes (p, Check.GoldPath ('sparql/' + file)))
+EXCEPT
+| Io.IOError (e) :
+    Check.That (t, 'the document ' + file + ' can be read', FALSE) ;
+    RETURN ''
+END Doc ;
+
+PROCEDURE KindOf (k: Sparql.Kind) : I64 =
+BEGIN
+  CASE k OF
+  | Unbound : RETURN 0
+  | Iri : RETURN 1
+  | Literal : RETURN 2
+  | Blank : RETURN 3
+  END
+END KindOf ;
+
+PROCEDURE Compare (RO what: STR ; r: PTR Sparql.Results ; k: I64 ;
+                   labels: BOOL) RAISES ValueRange =
+  (* the results of SELECT k against rdflib's terms; blank-node labels
+     only when labels says the document is rdflib's own *)
+VAR
+  vars : SLICE OF STR ;
+  pre, label : STR ;
+  rows, row, col, c, kind : I64 ;
+  tm : Sparql.Term ;
+BEGIN
+  pre := 'sel' + Fmt.I64Str (k) ;
+  vars := Check.GoldStrs (t, gold, pre + '.vars') ;
+  rows := Check.GoldI64 (t, gold, pre + '.rows') ;
+  Check.EqI64 (t, what + ' ' + pre + ' variables', Sparql.Vars (r), LEN (vars)) ;
+  Check.EqI64 (t, what + ' ' + pre + ' rows', Sparql.Rows (r), rows) ;
+  IF Sparql.Vars (r) # LEN (vars) OR Sparql.Rows (r) # rows THEN RETURN END ;
+  FOR col := 0 TO LEN (vars) - 1 DO
+    BEGIN
+      Check.EqStr (t, what + ' ' + pre + ' variable ' + Fmt.I64Str (col),
+                   Sparql.Var (r, col), vars[col]) ;
+      Check.EqI64 (t, what + ' ' + pre + ' Column ' + vars[col],
+                   Sparql.Column (r, vars[col]), col)
+    EXCEPT
+    | IndexError :
+        Check.That (t, what + ' ' + pre + ' Var in range', FALSE)
+    END
+  END ;
+  c := 0 ;
+  FOR row := 0 TO rows - 1 DO
+    FOR col := 0 TO LEN (vars) - 1 DO
+      label := what + ' ' + pre + ' row ' + Fmt.I64Str (row) + ' ' + vars[col] ;
+      BEGIN
+        tm := Sparql.Get (r, row, col)
+      EXCEPT
+      | IndexError :
+          Check.That (t, label + ' in range', FALSE) ;
+          RETURN
+      END ;
+      kind := Check.GoldI64 (t, gold, pre + '.c' + Fmt.I64Str (c) + '.kind') ;
+      Check.EqI64 (t, label + ' kind', KindOf (tm.kind), kind) ;
+      IF kind # 3 OR labels THEN
+        Check.EqStr (t, label + ' value', tm.value, G (pre + '.c' + Fmt.I64Str (c) + '.value'))
+      END ;
+      Check.EqStr (t, label + ' language', tm.lang, G (pre + '.c' + Fmt.I64Str (c) + '.lang')) ;
+      Check.EqStr (t, label + ' datatype', tm.datatype,
+                   G (pre + '.c' + Fmt.I64Str (c) + '.datatype')) ;
+      c := c + 1
+    END
+  END
+END Compare ;
+
+PROCEDURE Offline () RAISES ValueRange =
+VAR
+  p : POOL ;
+  r : PTR Sparql.Results IN p ;
+  n, k : I64 ;
+BEGIN
+  n := Check.GoldI64 (t, gold, 'sel.count') ;
+  Check.That (t, 'the golden has SELECTs', n >= 4) ;
+  FOR k := 0 TO n - 1 DO
+    BEGIN
+      r := Sparql.Parse (p, Doc (p, 'sel' + Fmt.I64Str (k) + '.json')) ;
+      Compare ('Parse', r, k, TRUE)
+    EXCEPT
+    | Sparql.FormatError (m) :
+        Check.That (t, 'Parse sel' + Fmt.I64Str (k) + ' raised FormatError', FALSE)
+    END
+  END ;
+  n := Check.GoldI64 (t, gold, 'ask.count') ;
+  FOR k := 0 TO n - 1 DO
+    BEGIN
+      Check.EqBool (t, 'ParseAsk ask' + Fmt.I64Str (k),
+                    Sparql.ParseAsk (Doc (p, 'ask' + Fmt.I64Str (k) + '.json')),
+                    GoldBool ('ask' + Fmt.I64Str (k) + '.want'))
+    EXCEPT
+    | Sparql.FormatError (m) :
+        Check.That (t, 'ParseAsk ask' + Fmt.I64Str (k) + ' raised FormatError', FALSE)
+    | IndexError :
+        Check.That (t, 'ParseAsk ask' + Fmt.I64Str (k) + ': a golden boolean', FALSE)
+    END
+  END
+END Offline ;
+
+PROCEDURE Refuses (RO what: STR ; RO doc: STR) RAISES ValueRange =
+  (* a document that is not the format: FormatError, nothing else *)
+VAR
+  p : POOL ;
+  r : PTR Sparql.Results IN p ;
+  raised : BOOL ;
+BEGIN
+  raised := FALSE ;
+  BEGIN
+    r := Sparql.Parse (p, doc)
+  EXCEPT
+  | Sparql.FormatError (m) :
+      raised := TRUE
+  END ;
+  Check.That (t, 'Parse refuses ' + what, raised)
+END Refuses ;
+
+PROCEDURE Refusals () RAISES ValueRange =
+BEGIN
+  Refuses ('text that is not JSON', 'nonsense') ;
+  Refuses ('a document with no head', '{"results": {"bindings": []}}') ;
+  Refuses ('an ASK answer', '{"head": {}, "boolean": true}') ;
+  Refuses ('a term of an unknown type',
+           '{"head": {"vars": ["x"]}, "results": {"bindings": [{"x": {"type": "quad", "value": "q"}}]}}') ;
+  Refuses ('vars that are not strings', '{"head": {"vars": [1]}, "results": {"bindings": []}}')
+END Refusals ;
+
+PROCEDURE Live () RAISES ValueRange =
+VAR
+  p : POOL ;
+  r : PTR Sparql.Results IN p ;
+  n, k : I64 ;
+  q, nt, pad : STR ;
+BEGIN
+  BEGIN
+    n := Check.GoldI64 (t, gold, 'sel.count') ;
+    FOR k := 0 TO n - 1 DO
+      r := Sparql.Select (p, endpoint, G ('sel' + Fmt.I64Str (k) + '.query')) ;
+      Compare ('Select', r, k, FALSE)
+    END ;
+    (* past GetMax: the query goes by POST, and answers the same *)
+    pad := '#' ;
+    FOR k := 1 TO 2100 DO pad := pad + 'x' END ;
+    q := pad + 0AC + G ('sel1.query') ;
+    Check.That (t, 'the padded query is longer than GetMax', LEN (q) > Sparql.GetMax) ;
+    r := Sparql.Select (p, endpoint, q) ;
+    Compare ('Select by POST', r, 1, FALSE) ;
+    n := Check.GoldI64 (t, gold, 'ask.count') ;
+    FOR k := 0 TO n - 1 DO
+      Check.EqBool (t, 'Ask ask' + Fmt.I64Str (k),
+                    Sparql.Ask (endpoint, G ('ask' + Fmt.I64Str (k) + '.query')),
+                    GoldBool ('ask' + Fmt.I64Str (k) + '.want'))
+    END ;
+    nt := Sparql.Construct (p, endpoint,
+            'PREFIX foaf: <http://xmlns.com/foaf/0.1/> CONSTRUCT { ?x foaf:name ?n } WHERE { ?x foaf:name ?n }') ;
+    (* sel1 selects exactly the foaf:name statements: rdflib's count of
+       them, not a hand count (which said six, and there are five).  The
+       answer READ by Rdf, not its line feeds counted: the rdflib of
+       Ubuntu 24.04 ends N-Triples with an empty line, and CI counted
+       six where zoefii's 7.6.0 gives five *)
+    Check.EqI64 (t, 'Construct: one triple a name, read by Rdf',
+                 Rdf.Count (Rdf.ParseNTriples (p, nt)),
+                 Check.GoldI64 (t, gold, 'sel1.rows'))
+  EXCEPT
+  | Rdf.SyntaxError (m, line, col) :
+      Check.That (t, 'Construct answers N-Triples that Rdf reads', FALSE)
+  | ValueRange :
+      Check.That (t, 'Construct answers characters Rdf reads', FALSE)
+  | Sparql.QueryError (m, status) :
+      Check.That (t, 'the endpoint answered 200 to every query', FALSE)
+  | Sparql.FormatError (m) :
+      Check.That (t, 'every live answer was the format', FALSE)
+  | Http.TransportError (m) :
+      Check.That (t, 'the endpoint could be reached', FALSE)
+  | IndexError :
+      Check.That (t, 'a golden boolean', FALSE)
+  END ;
+  (* a query the endpoint refuses: QueryError with its status *)
+  BEGIN
+    r := Sparql.Select (p, endpoint, 'SELECT WHERE nonsense') ;
+    Check.That (t, 'a malformed query raises QueryError', FALSE)
+  EXCEPT
+  | Sparql.QueryError (m, status) :
+      Check.That (t, 'a malformed query raises QueryError with a 4xx',
+                  status >= 400 AND status < 500)
+  | Sparql.FormatError (m) :
+      Check.That (t, 'a malformed query raises QueryError, not FormatError', FALSE)
+  | Http.TransportError (m) :
+      Check.That (t, 'a malformed query raises QueryError, not TransportError', FALSE)
+  END
+END Live ;
+
+BEGIN
+  BEGIN
+    gold := Check.GoldPath ('Sparql.gold') ;
+    Offline () ;
+    Refusals () ;
+    endpoint := Io.Env (pool, 'SPARQL_ENDPOINT') ;
+    IF LEN (endpoint) > 0 THEN
+      Live ()
+    ELSE
+      Io.WriteLine ('SparqlTest: offline only (SPARQL_ENDPOINT unset)')
+    END
+  EXCEPT
+  | ValueRange :
+      Check.That (t, 'no ValueRange escapes', FALSE)
+  END ;
+  Io.Halt (Check.Done (t, 'Sparql'))
+END SparqlTest.

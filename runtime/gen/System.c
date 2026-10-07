@@ -399,7 +399,7 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
     h = m9v;
   }
   if ((h < INT64_C(0))) {
-    { __typeof__(prog) m9t5 = prog; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(prog) m9t5 = prog; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -490,7 +490,7 @@ void System_Become (m9_sl_CHAR prog, m9_sl_CHAR name, m9_sl_m9_sl_CHAR args, m9_
   bool m9t3 = ((int64_t)(m9_become (((void *)(pb).p), ((void *)(block).p), ((int)(m9_add_i64 ((args).len, INT64_C(1), err))))) < INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t3) {
-    { __typeof__(prog) m9t4 = prog; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(prog) m9t4 = prog; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }

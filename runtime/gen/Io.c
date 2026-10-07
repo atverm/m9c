@@ -378,7 +378,7 @@ m9_sl_m9_sl_CHAR Io_ListDir (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     need = m9v;
   }
   if ((need < INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -400,7 +400,7 @@ m9_sl_m9_sl_CHAR Io_ListDir (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     got = m9v;
   }
   if ((got != need)) {
-    { __typeof__(path) m9t2 = path; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(path) m9t2 = path; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -508,7 +508,7 @@ m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   }
   n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0)))));
   if ((n < INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -523,7 +523,7 @@ m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   }
   n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(n))));
   if ((n < INT64_C(0))) {
-    { __typeof__(path) m9t2 = path; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(path) m9t2 = path; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -557,7 +557,7 @@ m9_sl_BYTE Io_ReadFileBytes (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   }
   n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0)))));
   if ((n < INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -573,7 +573,7 @@ m9_sl_BYTE Io_ReadFileBytes (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   }
   n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(n))));
   if ((n < INT64_C(0))) {
-    { __typeof__(path) m9t3 = path; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(path) m9t3 = path; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -609,7 +609,7 @@ void Io_WriteFile (m9_sl_CHAR path, m9_sl_CHAR content, m9_state *err)
   }
   rc = m9_write_file (((void *)(pb).p), ((void *)(cb).p), ((size_t)((cb).len)));
   if (((int64_t)(rc) != INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -687,7 +687,7 @@ int64_t Io_FileSize (m9_sl_CHAR path, m9_state *err)
   }
   n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(INT64_C(0)))));
   if ((n < INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -728,7 +728,7 @@ m9_sl_BYTE Io_ReadFileHead (m9_pool *pool, m9_sl_CHAR path, int64_t cap, m9_stat
   }
   n = (int64_t)(m9_read_file (((void *)(pb).p), ((void *)(b).p), ((int64_t)(cap))));
   if ((n < INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -771,7 +771,7 @@ m9_sl_BYTE Io_ReadFileAt (m9_pool *pool, m9_sl_CHAR path, int64_t off, int64_t c
   }
   n = (int64_t)(m9_read_at (((void *)(pb).p), ((void *)(b).p), ((int64_t)(cap)), ((int64_t)(off))));
   if ((n < INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -802,7 +802,7 @@ void Io_MkDir (m9_sl_CHAR path, m9_state *err)
   }
   rc = m9_mkdir (((void *)(pb).p));
   if (((int64_t)(rc) != INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -833,7 +833,7 @@ void Io_Rename (m9_sl_CHAR from, m9_sl_CHAR to, m9_state *err)
   }
   rc = m9_rename (((void *)(fb).p), ((void *)(tb).p));
   if (((int64_t)(rc) != INT64_C(0))) {
-    { __typeof__(to) m9t1 = to; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(to) m9t1 = to; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -859,7 +859,7 @@ void Io_WriteFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_state *err)
   }
   rc = m9_write_file (((void *)(pb).p), ((void *)(content).p), ((size_t)((content).len)));
   if (((int64_t)(rc) != INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
@@ -885,7 +885,7 @@ void Io_AppendFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_state *err)
   }
   rc = m9_append_file (((void *)(pb).p), ((void *)(content).p), ((size_t)((content).len)));
   if (((int64_t)(rc) != INT64_C(0))) {
-    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }

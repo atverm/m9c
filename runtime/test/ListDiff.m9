@@ -42,9 +42,12 @@ MODULE ListDiff ;
         removed the same day).  Not equality with either the direct
         set or the closure: some lists carry the closure and some the
         direct imports, and changing one moves the emitted #includes.
-        A dep outside the closure is excused BY NAME in ExtraDeps with
-        the reason: HttpServer names Http because `FROM csock IMPORT`
-        needs the foreign unit declared in Http.m9.
+        A dep outside the closure is refused.  There was one excuse,
+        by name with its reason: HttpServer named Http because `FROM
+        csock IMPORT` needs the foreign unit declared in Http.m9.  It
+        ended on 2026-10-06, when HttpServer began importing Http for
+        Http.Header; the excuse was then refused as stale, and the
+        mechanism went with it (an empty constant table has no type).
 
      4. build.sh's LIBRARY is every corpus module except those named in
         NotInstalled with a reason each.  That list is what docgen and
@@ -131,10 +134,6 @@ CONST
                      'program module built by m9c --make from the library',
                      'program module built by m9c --make from the library',
                      'program module built by m9c --make from the library'] ;
-  (* a gentest dep outside the module's import closure, and why *)
-  ExtraFrom = ['HttpServer'] ;
-  ExtraTo = ['Http'] ;
-  ExtraWhy = ['FROM csock IMPORT: the foreign unit is declared in Http.m9'] ;
   (* a corpus module build.sh deliberately does not install *)
   NotInstalled = ['LibmGate', 'KindUse', 'EnumUse', 'Palette', 'Hello',
                   'Concat', 'Narrow', 'ProcUse', 'AggUse', 'ShareUse',
@@ -154,7 +153,7 @@ CONST
      the gate that holds it instead *)
   NoBattery = ['Lex', 'Ast', 'Parse', 'Print', 'Sem', 'Gen', 'Doc', 'Diag',
                'M9c', 'Review', 'Check', 'Arrays', 'Numeric', 'Png', 'NbCells',
-               'NbShow', 'ExportDef', 'ExportUse'] ;
+               'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml'] ;
   NoBatteryWhy = ['lexdiff, comdiff and the token-count golden',
                   'parsediff (every node kind printed back)',
                   'parsediff and the parse probes',
@@ -172,7 +171,12 @@ CONST
                   'm9test (NbCellsTest, every kind back to the bit) and jupyter.sh (the kernel hands a value between cells)',
                   'm9test (NbShowTest, every form to its text) and jupyter.sh (an expression cell shows its value)',
                   'gendiff and run.sh (ExportUse writes, ExportDef reads the same storage)',
-                  'gendiff and run.sh (ExportUse writes, ExportDef reads the same storage)'] ;
+                  'gendiff and run.sh (ExportUse writes, ExportDef reads the same storage)',
+                  'm9test (PgTest against a Postgres server, psycopg goldens; CI runs one)',
+                  'm9test (SparqlTest offline, rdflib goldens) and sparql.sh (live, rdflib serving)',
+                  'm9test (RdfTest over the W3C suites) and rdf.sh (rdflib judges the graphs)',
+                  'm9test (RegexTest, against Python re goldens)',
+                  'xml.sh (XmlTest over the W3C conformance suite, fetched) and m9test (the cases by hand)'] ;
   GendiffFixtures = ['LibmGate', 'KindUse', 'EnumUse', 'Palette'] ;
 
 TYPE
@@ -941,25 +945,12 @@ BEGIN
             + Repr (gt[i].deps))
     END ;
     cl := Closure (m) ;
-    FOR k := 0 TO LEN (ExtraFrom) - 1 DO
-      IF Text.Eq (ExtraFrom[k], m) THEN Add (cl, ExtraTo[k]) END
-    END ;
     dead := Minus (gt[i].deps, cl) ;
     IF dead.n > 0 THEN
       IF dead.n = 1 THEN what := 'it' ELSE what := 'them' END ;
       Fail ('gentest.pas: ' + m + ' names ' + Repr (dead) + ' in its deps but never imports '
             + what + ', directly or through another module '
-            + '(remove, or excuse in ExtraDeps with a reason)')
-    END
-  END ;
-  FOR k := 0 TO LEN (ExtraFrom) - 1 DO
-    j := Find (gt, LEN (gt), ExtraFrom[k]) ;
-    IF (j < 0) OR NOT Has (gt[j].deps, ExtraTo[k]) THEN
-      Fail ('ListDiff.m9: ExtraDeps excuses ' + ExtraFrom[k] + ' -> ' + ExtraTo[k]
-            + ', which gentest.pas does not list')
-    ELSIF Has (Closure (ExtraFrom[k]), ExtraTo[k]) THEN
-      Fail ('ListDiff.m9: ExtraDeps excuses ' + ExtraFrom[k] + ' -> ' + ExtraTo[k]
-            + ', but ' + ExtraFrom[k] + ' does import it')
+            + '(remove it)')
     END
   END ;
 

@@ -119,7 +119,7 @@ int64_t Delim_Feed (Delim_Reader * *r, m9_pool *r_pool, m9_sl_BYTE src, m9_state
   int64_t take = 0; (void) take;
   int64_t i = 0; (void) i;
   if ((!(*r)->push)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 28 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 28 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 28 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 28 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Delim_Error);
     goto L_ret;
   }
@@ -235,7 +235,7 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
       bool m9t3 = (!Delim_SplitLine (r, r_pool, err));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 46 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 46 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
         m9_raise (err, &Delim_Error);
         goto L_ret;
       }
@@ -267,7 +267,7 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
         bool m9t6 = (!Delim_SplitLine (r, r_pool, err));
         if (err->exc) goto L_ret;
         if (m9t6) {
-          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 46 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 46 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 46 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 46 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
           m9_raise (err, &Delim_Error);
           goto L_ret;
         }
@@ -285,7 +285,7 @@ bool Delim_Next (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
       goto L_ret;
     }
     if ((((*r)->pos == INT64_C(0)) && ((*r)->len == ((*r)->buf).len))) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s3, 33 }), (*r)->path, err)) m9t8 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s3, 33 }), (*r)->path, err); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s3, 33 }), (*r)->path, err)) m9t8 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s3, 33 }), (*r)->path, err); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
       m9_raise (err, &Delim_Error);
       goto L_ret;
     }
@@ -639,7 +639,7 @@ static Delim_Reader * Delim_New (m9_pool *pool, uint8_t delim, int64_t block, m9
     block = Delim_DefaultBlock;
   }
   if ((block < INT64_C(4096))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 47 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 47 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 47 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 47 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Delim_Error);
     goto L_ret;
   }

@@ -273,9 +273,9 @@ void NbCells_PutF64s (m9_sl_CHAR name, m9_sl_F64 v, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Duplicate) {
-    m9_sl_CHAR col = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) col;
+    m9_sl_CHAR col = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) col;
     err->exc = NULL;
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
@@ -308,17 +308,17 @@ m9_sl_F64 NbCells_GetF64s (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
-    m9_sl_CHAR col = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) col;
+    m9_sl_CHAR col = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) col;
     err->exc = NULL;
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_WrongType) {
-    m9_sl_CHAR col = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) col;
+    m9_sl_CHAR col = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) col;
     err->exc = NULL;
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
@@ -351,9 +351,9 @@ void NbCells_PutI64s (m9_sl_CHAR name, m9_sl_I64 v, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Duplicate) {
-    m9_sl_CHAR col = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) col;
+    m9_sl_CHAR col = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) col;
     err->exc = NULL;
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
@@ -386,17 +386,17 @@ m9_sl_I64 NbCells_GetI64s (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
-    m9_sl_CHAR col = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) col;
+    m9_sl_CHAR col = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) col;
     err->exc = NULL;
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_WrongType) {
-    m9_sl_CHAR col = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) col;
+    m9_sl_CHAR col = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) col;
     err->exc = NULL;
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
@@ -426,7 +426,7 @@ void NbCells_PutGrid (m9_sl_CHAR name, m9_gd2_double g, m9_state *err)
   nr = (g).n[INT64_C(0)];
   nc = (g).n[INT64_C(1)];
   if ((nc == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 22 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 22 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_hdl_m9t1;
   }
@@ -462,9 +462,9 @@ void NbCells_PutGrid (m9_sl_CHAR name, m9_gd2_double g, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Duplicate) {
-    m9_sl_CHAR c = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) c;
+    m9_sl_CHAR c = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) c;
     err->exc = NULL;
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
@@ -536,17 +536,17 @@ m9_gd2_double NbCells_GetGrid (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Frame_Unknown) {
-    m9_sl_CHAR c = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) c;
+    m9_sl_CHAR c = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) c;
     err->exc = NULL;
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
   }
   if (err->exc == &Frame_WrongType) {
-    m9_sl_CHAR c = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) c;
+    m9_sl_CHAR c = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) c;
     err->exc = NULL;
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
     goto L_dn_m9t2;
@@ -570,7 +570,7 @@ static void NbCells_CheckName (m9_sl_CHAR name, m9_state *err)
   int64_t i = 0; (void) i;
   uint32_t c = 0; (void) c;
   if (((name).len == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 13 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 13 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 13 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 13 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -584,7 +584,7 @@ static void NbCells_CheckName (m9_sl_CHAR name, m9_state *err)
       c = m9v;
     }
     if ((!((((((c >= 65u) && (c <= 90u))) || (((c >= 97u) && (c <= 122u)))) || ((((i > INT64_C(0)) && (c >= 48u)) && (c <= 57u))))))) {
-      { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+      { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
@@ -695,7 +695,7 @@ static void NbCells_Store (m9_pool *scratch, Frame_Fr * f, m9_sl_CHAR name, int6
           gone = m9v;
         }
         if ((!gone)) {
-          { __typeof__(NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err)) m9t3 = NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+          { __typeof__(NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err)) m9t3 = NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
           m9_raise (err, &Io_IOError);
           goto L_ret;
         }
@@ -726,14 +726,14 @@ static Frame_Fr * NbCells_Fetch (m9_pool *pool, m9_sl_CHAR name, int64_t k, m9_s
     have = m9v;
   }
   if ((have < INT64_C(0))) {
-    { __typeof__(name) m9t1 = name; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(name) m9t1 = name; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &NbCells_Missing);
     goto L_ret;
   }
   if ((have != k)) {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
-    { __typeof__(NbCells_Kind (name, err)) m9t3 = NbCells_Kind (name, err); err->s[1].p = m9t3.p; err->s[1].len = m9t3.len; }
-    { __typeof__(NbCells_KindName (k, err)) m9t4 = NbCells_KindName (k, err); err->s[2].p = m9t4.p; err->s[2].len = m9t4.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+    { __typeof__(NbCells_Kind (name, err)) m9t3 = NbCells_Kind (name, err); err->s[1].p = m9t3.p; err->s[1].len = m9t3.len; m9_pay_keep (err, 1, sizeof (*m9t3.p)); }
+    { __typeof__(NbCells_KindName (k, err)) m9t4 = NbCells_KindName (k, err); err->s[2].p = m9t4.p; err->s[2].len = m9t4.len; m9_pay_keep (err, 2, sizeof (*m9t4.p)); }
     m9_raise (err, &NbCells_WrongType);
     goto L_ret;
   }

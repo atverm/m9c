@@ -360,14 +360,25 @@ BEGIN
     Usage () ;
     Io.Halt (2)
   END ;
-  src := Io.ReadFile (HEAP, path) ;
+  (* UTF-8 in and out.  The source was read a byte a character and
+     standard output writes UTF-8, so every pass to standard output
+     encoded a non-ASCII character once more -- an e acute in a comment
+     of Regex.m9, the corpus's first, became two characters, then four;
+     the fmt gate's idempotence check said so *)
+  BEGIN
+    src := DynStr.FromUtf8 (HEAP, Io.ReadFileBytes (HEAP, path))
+  EXCEPT
+  | ValueRange :
+      Io.ErrLine ('m9fmt: ' + path + ' is not UTF-8; nothing written') ;
+      Io.Halt (1)
+  END ;
   out := Format (src, path) ;
   IF check THEN
     IF DynStr.Eq (out, src) THEN Io.Halt (0) END ;
     Io.ErrLine ('m9fmt: would reformat ' + path) ;
     Io.Halt (1)
   ELSIF write THEN
-    IF NOT DynStr.Eq (out, src) THEN Io.WriteFile (path, out) END
+    IF NOT DynStr.Eq (out, src) THEN Io.WriteFileBytes (path, DynStr.Utf8 (HEAP, out)) END
   ELSE
     Io.Write (out)
   END

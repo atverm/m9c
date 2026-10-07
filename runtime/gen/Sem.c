@@ -1120,6 +1120,8 @@ static Ast_Node * Sem_AsQual (Ast_Node * k, m9_state *err);
 static m9_sl_CHAR Sem_NewForm (Ast_Node * e, m9_sl_CHAR ctx, Ast_Node * *ty, m9_pool *ty_pool, int64_t *ext0, m9_state *err);
 static void Sem_BindName (m9_sl_CHAR nm, Ast_Node * t, m9_state *err);
 static Ast_Node * Sem_QualifiedIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *err);
+static void Sem_NoteMod (Ast_Node * t, m9_sl_CHAR *m, m9_state *err);
+static Ast_Node * Sem_InMod (Ast_Node * t, m9_sl_CHAR m, m9_state *err);
 static bool Sem_TryVariantMod (int64_t m, m9_sl_CHAR tyName, m9_sl_CHAR vName, m9_sl_CHAR *owner, Ast_Node * *fields, m9_pool *fields_pool, m9_state *err);
 static bool Sem_FindVariant (m9_sl_CHAR tyName, m9_sl_CHAR vName, m9_sl_CHAR *owner, Ast_Node * *fields, m9_pool *fields_pool, m9_state *err);
 static m9_sl_CHAR Sem_VariantOwnerOf (m9_sl_CHAR tyName, m9_sl_CHAR vName, bool *found, m9_state *err);
@@ -4793,10 +4795,12 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
   Ast_Node * declN = NULL; (void) declN;
   Ast_Node * res = NULL; (void) res;
   m9_sl_CHAR mode = {0}; (void) mode;
+  m9_sl_CHAR tmod = {0}; (void) tmod;
   bool beyond = false; (void) beyond;
   bool deref = false; (void) deref;
   bool known = false; (void) known;
   beyond = false;
+  tmod = (m9_sl_CHAR){ NULL, 0 };
   bool m9t1 = Sem_IsConstHere (d->a, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
@@ -4857,6 +4861,8 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
       m9ret = beyond;
       goto L_ret;
     }
+    Sem_NoteMod (declN, &(tmod), err);
+    if (err->exc) goto L_ret;
     { __typeof__(res) m9v = Sem_ResolveType (declN, err);
       if (err->exc) goto L_ret;
       res = m9v;
@@ -4876,10 +4882,12 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
               if (err->exc) goto L_ret;
             }
           }
-          { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__(declN) m9v = Sem_InMod ((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err)), tmod, err);
             if (err->exc) goto L_ret;
             declN = m9v;
           }
+          Sem_NoteMod (declN, &(tmod), err);
+          if (err->exc) goto L_ret;
           { __typeof__(res) m9v = Sem_ResolveType (declN, err);
             if (err->exc) goto L_ret;
             res = m9v;
@@ -4903,7 +4911,7 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
               Sem_ErrN (d, ctx, Sem_Cat (Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s86, 34 }), sel->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s87, 10 }), err), err);
               if (err->exc) goto L_ret;
             }
-            { __typeof__(declN) m9v = Sem_FieldTypeOf (r, sel->a, err);
+            { __typeof__(declN) m9v = Sem_InMod (Sem_FieldTypeOf (r, sel->a, err), tmod, err);
               if (err->exc) goto L_ret;
               declN = m9v;
             }
@@ -4922,7 +4930,7 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
                 if (err->exc) goto L_ret;
               }
               beyond = true;
-              { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__(declN) m9v = Sem_InMod ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err)), tmod, err);
                 if (err->exc) goto L_ret;
                 declN = m9v;
               }
@@ -4935,13 +4943,13 @@ static bool Sem_CheckWrite (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err)
                   if (err->exc) goto L_ret;
                 }
                 beyond = true;
-                { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__(declN) m9v = Sem_InMod ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), tmod, err);
                   if (err->exc) goto L_ret;
                   declN = m9v;
                 }
             } else {
               if ((r->kind == Ast_NArrayType)) {
-                { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__(declN) m9v = Sem_InMod ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err)), tmod, err);
                   if (err->exc) goto L_ret;
                   declN = m9v;
                 }
@@ -7621,10 +7629,12 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
   int64_t q = 0; (void) q;
   m9_sl_CHAR it = {0}; (void) it;
   m9_sl_CHAR eb = {0}; (void) eb;
+  m9_sl_CHAR tmod = {0}; (void) tmod;
   Ast_Node * declN = NULL; (void) declN;
   Ast_Node * res = NULL; (void) res;
   bool deref = false; (void) deref;
   bool known = false; (void) known;
+  tmod = (m9_sl_CHAR){ NULL, 0 };
   { __typeof__(declN) m9v = Sem_ScopeType (d->a, err);
     if (err->exc) goto L_ret;
     declN = m9v;
@@ -7685,6 +7695,8 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
       m9ret = NULL;
       goto L_ret;
     }
+    Sem_NoteMod (declN, &(tmod), err);
+    if (err->exc) goto L_ret;
     { __typeof__(res) m9v = Sem_ResolveType (declN, err);
       if (err->exc) goto L_ret;
       res = m9v;
@@ -7695,10 +7707,12 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
       if (r0 != NULL) {
         if (((r0->kind == Ast_NPtrType) || (r0->kind == Ast_NSharedType))) {
           deref = true;
-          { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__(declN) m9v = Sem_InMod ((*(Ast_Node * *) m9_at (r0->kids.p, INT64_C(0), r0->kids.len, sizeof (Ast_Node *), err)), tmod, err);
             if (err->exc) goto L_ret;
             declN = m9v;
           }
+          Sem_NoteMod (declN, &(tmod), err);
+          if (err->exc) goto L_ret;
           { __typeof__(res) m9v = Sem_ResolveType (declN, err);
             if (err->exc) goto L_ret;
             res = m9v;
@@ -7730,7 +7744,7 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
       if (sel != NULL) {
         if ((sel->kind == Ast_NSelField)) {
           if ((r->kind == Ast_NRecordType)) {
-            { __typeof__(declN) m9v = Sem_FieldTypeOf (r, sel->a, err);
+            { __typeof__(declN) m9v = Sem_InMod (Sem_FieldTypeOf (r, sel->a, err), tmod, err);
               if (err->exc) goto L_ret;
               declN = m9v;
             }
@@ -7755,7 +7769,7 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
                 Sem_ErrN (d, ctx, Sem_S3 (((m9_sl_CHAR){ (uint32_t *) m9s164, 14 }), sel->a, ((m9_sl_CHAR){ (uint32_t *) m9s165, 65 }), err), err);
                 if (err->exc) goto L_ret;
               }
-              { __typeof__(declN) m9v = Sem_MonFieldType (r, sel->a, err);
+              { __typeof__(declN) m9v = Sem_InMod (Sem_MonFieldType (r, sel->a, err), tmod, err);
                 if (err->exc) goto L_ret;
                 declN = m9v;
               }
@@ -7773,7 +7787,7 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
                 Sem_ErrN (d, ctx, Sem_S5 (((m9_sl_CHAR){ (uint32_t *) m9s166, 7 }), Print_ExprText ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s167, 7 }), Print_ExprText ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), err), Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s168, 17 }), Sem_ItoA (sel->nkids, err), err), err), err);
                 if (err->exc) goto L_ret;
               }
-              { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__(declN) m9v = Sem_InMod ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err)), tmod, err);
                 if (err->exc) goto L_ret;
                 declN = m9v;
               }
@@ -7783,7 +7797,7 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
                   Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s169, 33 }), Sem_ItoA (sel->nkids, err), err), err);
                   if (err->exc) goto L_ret;
                 }
-                { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__(declN) m9v = Sem_InMod ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), tmod, err);
                   if (err->exc) goto L_ret;
                   declN = m9v;
                 }
@@ -7793,7 +7807,7 @@ static Ast_Node * Sem_DesigDeclType (Ast_Node * d, m9_sl_CHAR ctx, m9_state *err
                   Sem_ErrN (d, ctx, Sem_Cat (((m9_sl_CHAR){ (uint32_t *) m9s170, 34 }), Sem_ItoA (sel->nkids, err), err), err);
                   if (err->exc) goto L_ret;
                 }
-                { __typeof__(declN) m9v = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__(declN) m9v = Sem_InMod ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err)), tmod, err);
                   if (err->exc) goto L_ret;
                   declN = m9v;
                 }
@@ -11830,6 +11844,50 @@ static Ast_Node * Sem_QualifiedIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *e
   } }
   err->res = m9res;
   m9ret = t;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static void Sem_NoteMod (Ast_Node * t, m9_sl_CHAR *m, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  { Ast_Node * tn = t;
+  if (tn != NULL) {
+    if (((tn->kind == Ast_NQualident) && ((tn->b).len > INT64_C(0)))) {
+      (*m) = tn->a;
+    }
+  } }
+L_ret: ;
+  err->res = m9res;
+  *m = m9_rehome (&m9frame, m9res, *m, err);
+  m9_pool_free (&m9frame);
+  return;
+}
+
+static Ast_Node * Sem_InMod (Ast_Node * t, m9_sl_CHAR m, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Ast_Node * m9ret = NULL;
+  bool m9t1 = (((m).len == INT64_C(0)) || Text_Eq (m, curMod, err));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    err->res = m9res;
+    m9ret = t;
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = Sem_QualifiedIn (t, m, err);
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;

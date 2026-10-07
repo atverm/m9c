@@ -1,0 +1,474 @@
+MODULE RegexTest ;
+
+(* Regex against Python's re (tools/regexgold.py, runtime/test/gold/
+   Regex.gold; docs/datalib-plan.md par 3).
+
+   Every question the golden holds is asked here and answered the way
+   re answered it: thousands of generated patterns over a small
+   alphabet -- searches from a position, anchored matches and full
+   matches with every group's span, find-alls, substitutions with
+   group references, splits with groups -- and patterns written as
+   people write them.  Each refused pattern in the golden must be
+   refused.
+
+   By hand: the refusals of what needs backtracking, by name and
+   position; the API around a Found; a named group; and TIME LINEAR
+   IN THE SUBJECT -- patterns that take a backtracking engine
+   exponential time -- a starred group of a starred a before a b
+   that never comes, among them -- over 20,000 characters, each
+   within one second.  Measured on the MacBook: 2 to 3 ms each, and
+   0.7, 2.5 and 3.5 ms at 5,000, 20,000 and 35,000 characters.
+   Python's re, a backtracking engine, takes 0.53 s on 25 characters
+   of the third, doubling with each one more.  *)
+
+IMPORT Check ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Regex ;
+IMPORT Text ;
+IMPORT Time ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  gold : STR ;
+
+PROCEDURE Hex (c: CHAR) : I64 =
+BEGIN
+  IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - 48 END ;
+  IF c >= 'a' AND c <= 'f' THEN RETURN ORD (c) - 87 END ;
+  IF c >= 'A' AND c <= 'F' THEN RETURN ORD (c) - 55 END ;
+  RETURN 0
+END Hex ;
+
+PROCEDURE Dec (VAR p: POOL ; RO w: STR) : STR RAISES ValueRange =
+  (* a golden word: percent-encoded UTF-8, '' the empty string *)
+VAR
+  b : SLICE OF BYTE ;
+  i, n : I64 ;
+BEGIN
+  IF Text.Eq (w, "''") THEN RETURN '' END ;
+  b := NEW (p, BYTE, LEN (w)) ;
+  n := 0 ;
+  i := 0 ;
+  WHILE i < LEN (w) DO
+    IF w[i] = '%' AND i + 2 < LEN (w) THEN
+      b[n] := BYTE (Hex (w[i + 1]) * 16 + Hex (w[i + 2])) ;
+      i := i + 3
+    ELSE
+      b[n] := BYTE (ORD (w[i])) ;
+      i := i + 1
+    END ;
+    n := n + 1
+  END ;
+  RETURN DynStr.FromUtf8 (p, SLICE (b, 0, n))
+END Dec ;
+
+PROCEDURE Some (r: OPT PTR Regex.Found) : BOOL =
+BEGIN
+  IF r IS SOME m THEN RETURN TRUE END ;
+  RETURN FALSE
+END Some ;
+
+PROCEDURE Show (RO pat: STR ; RO flags: STR ; RO s: STR) : STR =
+  (* a case, for a failure's line *)
+BEGIN
+  RETURN '/' + pat + '/' + flags + ' on "' + s + '"'
+END Show ;
+
+PROCEDURE Spans (m: PTR Regex.Found) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  FOR i := 0 TO LEN (m.span) - 1 DO
+    IF i > 0 THEN DynStr.AppendChar (d, ' ') END ;
+    DynStr.Append (d, Fmt.I64Str (m.span[i]))
+  END ;
+  RETURN DynStr.View (d)
+END Spans ;
+
+PROCEDURE Want (RO v: SLICE OF I64 ; at, n: I64) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  FOR i := 0 TO n - 1 DO
+    IF i > 0 THEN DynStr.AppendChar (d, ' ') END ;
+    DynStr.Append (d, Fmt.I64Str (v[at + i]))
+  END ;
+  RETURN DynStr.View (d)
+END Want ;
+
+PROCEDURE Searches () RAISES ValueRange =
+VAR
+  p : POOL ;
+  pat, flags, text : SLICE OF STR ;
+  how, from, groups, spans : SLICE OF I64 ;
+  found : SLICE OF BOOL ;
+  i, at, n, agree : I64 ;
+  re : PTR Regex.Re IN p ;
+  r : OPT PTR Regex.Found ;
+  pa, fl, s, got, want, what : STR ;
+BEGIN
+  pat := Check.GoldStrs (t, gold, 's.pat') ;
+  flags := Check.GoldStrs (t, gold, 's.flags') ;
+  text := Check.GoldStrs (t, gold, 's.text') ;
+  how := Check.GoldI64s (t, gold, 's.how') ;
+  from := Check.GoldI64s (t, gold, 's.from') ;
+  groups := Check.GoldI64s (t, gold, 's.groups') ;
+  found := Check.GoldBools (t, gold, 's.found') ;
+  spans := Check.GoldI64s (t, gold, 's.spans') ;
+  at := 0 ;
+  agree := 0 ;
+  FOR i := 0 TO LEN (pat) - 1 DO
+    pa := Dec (p, pat[i]) ;
+    fl := Dec (p, flags[i]) ;
+    s := Dec (p, text[i]) ;
+    what := 'search' ;
+    IF how[i] = 1 THEN what := 'match' ELSIF how[i] = 2 THEN what := 'fullmatch' END ;
+    what := what + ' ' + Show (pa, fl, s) + ' from ' + Fmt.I64Str (from[i]) ;
+    BEGIN
+      re := Regex.Compile (p, pa, fl) ;
+      IF Regex.Groups (re) # groups[i] THEN
+        Check.EqI64 (t, what + ': groups', Regex.Groups (re), groups[i])
+      ELSE
+        IF how[i] = 0 THEN r := Regex.Search (re, s, from[i])
+        ELSIF how[i] = 1 THEN r := Regex.Match (re, s, from[i])
+        ELSE r := Regex.FullMatch (re, s)
+        END ;
+        n := 2 * (groups[i] + 1) ;
+        got := 'none' ;
+        IF r IS SOME m THEN got := Spans (m) END ;
+        want := 'none' ;
+        IF found[i] THEN
+          want := Want (spans, at, n) ;
+          at := at + n
+        END ;
+        IF Text.Eq (got, want) THEN agree := agree + 1
+        ELSE Check.EqStr (t, what, got, want)
+        END
+      END
+    EXCEPT
+    | Regex.BadPattern (msg, pos) :
+        Check.That (t, what + ': refused, and re reads it', FALSE) ;
+        IF found[i] THEN at := at + 2 * (groups[i] + 1) END
+    END
+  END ;
+  Check.EqI64 (t, 'searches agreeing with re', agree, LEN (pat))
+END Searches ;
+
+PROCEDURE FindAlls () RAISES ValueRange =
+VAR
+  p : POOL ;
+  pat, flags, text : SLICE OF STR ;
+  count, spans : SLICE OF I64 ;
+  all : SLICE OF PTR Regex.Found ;
+  i, j, at, agree : I64 ;
+  re : PTR Regex.Re IN p ;
+  pa, fl, s, got, want, what : STR ;
+  d : PTR DynStr.DString IN p ;
+BEGIN
+  pat := Check.GoldStrs (t, gold, 'f.pat') ;
+  flags := Check.GoldStrs (t, gold, 'f.flags') ;
+  text := Check.GoldStrs (t, gold, 'f.text') ;
+  count := Check.GoldI64s (t, gold, 'f.count') ;
+  spans := Check.GoldI64s (t, gold, 'f.spans') ;
+  at := 0 ;
+  agree := 0 ;
+  FOR i := 0 TO LEN (pat) - 1 DO
+    pa := Dec (p, pat[i]) ;
+    fl := Dec (p, flags[i]) ;
+    s := Dec (p, text[i]) ;
+    what := 'find-all ' + Show (pa, fl, s) ;
+    want := Want (spans, at, 2 * count[i]) ;
+    at := at + 2 * count[i] ;
+    BEGIN
+      re := Regex.Compile (p, pa, fl) ;
+      all := Regex.FindAll (re, s) ;
+      d := DynStr.New (p) ;
+      FOR j := 0 TO LEN (all) - 1 DO
+        IF j > 0 THEN DynStr.AppendChar (d, ' ') END ;
+        DynStr.Append (d, Fmt.I64Str (Regex.Start (all[j], 0)) + ' ' +
+                          Fmt.I64Str (Regex.End (all[j], 0)))
+      END ;
+      got := DynStr.View (d) ;
+      IF Text.Eq (got, want) THEN agree := agree + 1
+      ELSE Check.EqStr (t, what, got, want)
+      END
+    EXCEPT
+    | Regex.BadPattern (msg, pos) :
+        Check.That (t, what + ': refused, and re reads it', FALSE)
+    END
+  END ;
+  Check.EqI64 (t, 'find-alls agreeing with re', agree, LEN (pat))
+END FindAlls ;
+
+PROCEDURE Subs () RAISES ValueRange =
+VAR
+  p : POOL ;
+  pat, flags, text, repl, want : SLICE OF STR ;
+  count : SLICE OF I64 ;
+  i, agree : I64 ;
+  re : PTR Regex.Re IN p ;
+  pa, fl, s, rp, w, got, what : STR ;
+BEGIN
+  pat := Check.GoldStrs (t, gold, 'u.pat') ;
+  flags := Check.GoldStrs (t, gold, 'u.flags') ;
+  text := Check.GoldStrs (t, gold, 'u.text') ;
+  repl := Check.GoldStrs (t, gold, 'u.repl') ;
+  count := Check.GoldI64s (t, gold, 'u.count') ;
+  want := Check.GoldStrs (t, gold, 'u.want') ;
+  agree := 0 ;
+  FOR i := 0 TO LEN (pat) - 1 DO
+    pa := Dec (p, pat[i]) ;
+    fl := Dec (p, flags[i]) ;
+    s := Dec (p, text[i]) ;
+    rp := Dec (p, repl[i]) ;
+    w := Dec (p, want[i]) ;
+    what := 'sub ' + Show (pa, fl, s) + ' by "' + rp + '" count ' + Fmt.I64Str (count[i]) ;
+    BEGIN
+      re := Regex.Compile (p, pa, fl) ;
+      got := Regex.Sub (re, s, rp, count[i]) ;
+      IF Text.Eq (got, w) THEN agree := agree + 1
+      ELSE Check.EqStr (t, what, got, w)
+      END
+    EXCEPT
+    | Regex.BadPattern (msg, pos) :
+        Check.That (t, what + ': refused, and re reads it', FALSE)
+    END
+  END ;
+  Check.EqI64 (t, 'substitutions agreeing with re', agree, LEN (pat))
+END Subs ;
+
+PROCEDURE Splits () RAISES ValueRange =
+VAR
+  p : POOL ;
+  pat, flags, text, pieces, got : SLICE OF STR ;
+  max, n : SLICE OF I64 ;
+  i, j, at, agree : I64 ;
+  re : PTR Regex.Re IN p ;
+  pa, fl, s, what : STR ;
+  same : BOOL ;
+BEGIN
+  pat := Check.GoldStrs (t, gold, 'p.pat') ;
+  flags := Check.GoldStrs (t, gold, 'p.flags') ;
+  text := Check.GoldStrs (t, gold, 'p.text') ;
+  max := Check.GoldI64s (t, gold, 'p.max') ;
+  n := Check.GoldI64s (t, gold, 'p.n') ;
+  pieces := Check.GoldStrs (t, gold, 'p.pieces') ;
+  at := 0 ;
+  agree := 0 ;
+  FOR i := 0 TO LEN (pat) - 1 DO
+    pa := Dec (p, pat[i]) ;
+    fl := Dec (p, flags[i]) ;
+    s := Dec (p, text[i]) ;
+    what := 'split ' + Show (pa, fl, s) + ' max ' + Fmt.I64Str (max[i]) ;
+    BEGIN
+      re := Regex.Compile (p, pa, fl) ;
+      got := Regex.Split (re, s, max[i]) ;
+      same := LEN (got) = n[i] ;
+      IF same THEN
+        FOR j := 0 TO n[i] - 1 DO
+          IF NOT Text.Eq (got[j], Dec (p, pieces[at + j])) THEN same := FALSE END
+        END
+      END ;
+      IF same THEN agree := agree + 1
+      ELSE
+        Check.EqI64 (t, what + ': pieces', LEN (got), n[i]) ;
+        Check.That (t, what + ': each piece', FALSE)
+      END
+    EXCEPT
+    | Regex.BadPattern (msg, pos) :
+        Check.That (t, what + ': refused, and re reads it', FALSE)
+    END ;
+    at := at + n[i]
+  END ;
+  Check.EqI64 (t, 'splits agreeing with re', agree, LEN (pat))
+END Splits ;
+
+PROCEDURE Refusals () RAISES ValueRange =
+VAR
+  p : POOL ;
+  pat, flags : SLICE OF STR ;
+  i, refused : I64 ;
+  re : PTR Regex.Re IN p ;
+  pa, fl : STR ;
+BEGIN
+  pat := Check.GoldStrs (t, gold, 'b.pat') ;
+  flags := Check.GoldStrs (t, gold, 'b.flags') ;
+  refused := 0 ;
+  FOR i := 0 TO LEN (pat) - 1 DO
+    pa := Dec (p, pat[i]) ;
+    fl := Dec (p, flags[i]) ;
+    BEGIN
+      re := Regex.Compile (p, pa, fl) ;
+      Check.That (t, 'refuses /' + pa + '/' + fl, FALSE)
+    EXCEPT
+    | Regex.BadPattern (msg, pos) :
+        refused := refused + 1
+    END
+  END ;
+  Check.EqI64 (t, 'every pattern in the refusal list refused', refused, LEN (pat))
+END Refusals ;
+
+PROCEDURE Refused (RO pat: STR ; RO wantMsg: STR ; wantPos: I64) =
+  (* refused, its message beginning so, at that position *)
+VAR
+  p : POOL ;
+  re : PTR Regex.Re IN p ;
+  em : STR ;
+  ep : I64 ;
+  raised : BOOL ;
+BEGIN
+  raised := FALSE ;
+  em := '' ;
+  ep := -2 ;
+  BEGIN
+    re := Regex.Compile (p, pat, '')
+  EXCEPT
+  | Regex.BadPattern (msg, pos) :
+      (* a handler's binders have no type in the checker yet: copied *)
+      raised := TRUE ;
+      em := msg ;
+      ep := pos
+  END ;
+  Check.That (t, '/' + pat + '/ refused', raised) ;
+  Check.That (t, '/' + pat + '/ refused as "' + wantMsg + '": "' + em + '"',
+              Text.StartsWith (em, wantMsg)) ;
+  Check.EqI64 (t, '/' + pat + '/ refused at', ep, wantPos)
+END Refused ;
+
+PROCEDURE ByName () =
+BEGIN
+  Refused ('(a)\1', 'a backreference', 3) ;
+  Refused ('(?P<n>a)(?P=n)', 'a backreference', 8) ;
+  Refused ('x(?=a)', 'a lookahead', 1) ;
+  Refused ('(?<!a)b', 'a lookbehind', 0) ;
+  Refused ('(?>a)', 'an atomic group', 0) ;
+  Refused ('ab*+', 'a possessive quantifier', 2) ;
+  Refused ('(a)(?(1)a|b)', 'a conditional group', 3) ;
+  Refused ('(?x)a b', 'a verbose pattern', 0) ;
+  Refused ('a{1001}', 'a repetition count above 1000', 2) ;
+  Refused ('a**', 'multiple repeat', 2) ;
+  Refused ('ab(', 'missing ), unterminated subpattern', 2) ;
+  Refused ('[a', 'unterminated character set', 0) ;
+  Refused ('*a', 'nothing to repeat', 0)
+END ByName ;
+
+PROCEDURE Api () RAISES ValueRange =
+VAR
+  p : POOL ;
+  re : PTR Regex.Re IN p ;
+  r : OPT PTR Regex.Found ;
+  s : STR ;
+  parts : SLICE OF STR ;
+BEGIN
+  BEGIN
+    re := Regex.Compile (p, '(?P<year>\d{4})-(?P<month>\d\d)(-(\d\d))?', '') ;
+    Check.EqI64 (t, 'four groups', Regex.Groups (re), 4) ;
+    Check.EqI64 (t, 'a group by name', Regex.GroupIndex (re, 'month'), 2) ;
+    Check.EqI64 (t, 'no group by that name', Regex.GroupIndex (re, 'day'), -1) ;
+    s := 'from 2026-10 on' ;
+    r := Regex.Search (re, s, 0) ;
+    IF r IS SOME m THEN
+      Check.EqStr (t, 'the year', Regex.Group (s, m, 1), '2026') ;
+      Check.EqStr (t, 'the month', Regex.Group (s, m, Regex.GroupIndex (re, 'month')), '10') ;
+      Check.That (t, 'the day took no part', NOT Regex.Took (m, 4)) ;
+      Check.EqI64 (t, 'and has no start', Regex.Start (m, 4), -1) ;
+      Check.EqStr (t, 'and no text', Regex.Group (s, m, 4), '') ;
+      Check.EqI64 (t, 'the whole match starts', Regex.Start (m, 0), 5) ;
+      Check.EqI64 (t, 'and ends', Regex.End (m, 0), 12)
+    ELSE
+      Check.That (t, 'the date is found', FALSE)
+    END ;
+    r := Regex.Match (re, s, 0) ;
+    Check.That (t, 'Match is anchored', NOT Some (r)) ;
+    r := Regex.Match (re, s, 5) ;
+    Check.That (t, 'from where the date starts', Some (r)) ;
+    Check.EqStr (t, 'Sub by name and number', Regex.Sub (re, s, '\g<month>/\1', 0), 'from 10/2026 on') ;
+    re := Regex.Compile (p, '\s*,\s*', '') ;
+    parts := Regex.Split (re, 'a , b,c ,d', 2) ;
+    Check.EqI64 (t, 'Split at two commas', LEN (parts), 3) ;
+    Check.EqStr (t, 'the rest kept whole', parts[2], 'c ,d') ;
+    (* u: Python's classes *)
+    re := Regex.Compile (p, '\w+', 'u') ;
+    r := Regex.Search (re, 'caf' + 0E9C + ' ok', 0) ;
+    IF r IS SOME m4 THEN Check.EqI64 (t, 'u: \w takes the e acute', Regex.End (m4, 0), 4)
+    ELSE Check.That (t, 'u: a word', FALSE)
+    END ;
+    re := Regex.Compile (p, '\w+', '') ;
+    r := Regex.Search (re, 'caf' + 0E9C + ' ok', 0) ;
+    IF r IS SOME m5 THEN Check.EqI64 (t, 'ASCII: \w stops before it', Regex.End (m5, 0), 3)
+    ELSE Check.That (t, 'ASCII: a word', FALSE)
+    END
+  EXCEPT
+  | Regex.BadPattern (msg, pos) :
+      Check.That (t, 'the API cases compile', FALSE)
+  | IndexError :
+      Check.That (t, 'the API cases have their groups', FALSE)
+  END
+END Api ;
+
+PROCEDURE Linear (RO pat: STR ; RO what: STR ; n: I64 ; tail: CHAR ; found: BOOL)
+  RAISES ValueRange =
+  (* the pattern over n a's and tail, in well under a second *)
+VAR
+  p : POOL ;
+  re : PTR Regex.Re IN p ;
+  r : OPT PTR Regex.Found ;
+  s : STR ;
+  i : I64 ;
+  t0 : Time.Instant ;
+  secs : F64 ;
+BEGIN
+  s := NEW (p, CHAR, n + 1) ;
+  FOR i := 0 TO n - 1 DO s[i] := 'a' END ;
+  s[n] := tail ;
+  BEGIN
+    re := Regex.Compile (p, pat, '') ;
+    t0 := Time.Now () ;
+    r := Regex.Search (re, s, 0) ;
+    secs := Time.Elapsed (t0, Time.Now ()) ;
+    Check.EqBool (t, what + ': the answer', Some (r), found) ;
+    Check.That (t, what + ' over ' + Fmt.I64Str (n + 1) + ' characters in under 1 s: ' +
+                Fmt.Fixed (secs, 3) + ' s', secs < 1.0)
+  EXCEPT
+  | Regex.BadPattern (msg, pos) :
+      Check.That (t, what + ' compiles', FALSE)
+  END
+END Linear ;
+
+PROCEDURE Linears () RAISES ValueRange =
+BEGIN
+  Linear ('(a*)*b', '(a*)*b, no b', 20000, 'c', FALSE) ;
+  Linear ('(a|a)*c', '(a|a)*c, no c', 20000, 'b', FALSE) ;
+  Linear ('(a+)+$', '(a+)+$ before a b', 20000, 'b', FALSE) ;
+  Linear ('^(a|aa)*$', '^(a|aa)*$ before a c', 20000, 'c', FALSE) ;
+  Linear ('(?:a?){30}a{30}', '(?:a?){30}a{30}', 20000, 'c', TRUE)
+END Linears ;
+
+BEGIN
+  BEGIN
+    gold := Check.GoldPath ('Regex.gold') ;
+    Searches () ;
+    FindAlls () ;
+    Subs () ;
+    Splits () ;
+    Refusals () ;
+    ByName () ;
+    Api () ;
+    Linears ()
+  EXCEPT
+  | ValueRange :
+      Check.That (t, 'no ValueRange escapes', FALSE)
+  | IndexError :
+      Check.That (t, 'no IndexError escapes', FALSE)
+  END ;
+  Io.Halt (Check.Done (t, 'Regex'))
+END RegexTest.

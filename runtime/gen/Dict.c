@@ -179,7 +179,7 @@ Dict_Value Dict_Get (Dict_Dict * d, m9_sl_CHAR key, m9_state *err)
     e = m9v;
   }
   if ((e == Dict_Empty)) {
-    { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Dict_NotFound);
     goto L_ret;
   }

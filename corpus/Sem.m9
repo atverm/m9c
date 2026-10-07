@@ -1558,10 +1558,11 @@ PROCEDURE CheckWrite (d: PTR Ast.Node ; RO ctx: STR) : BOOL =
 VAR
   j : I64 ;
   declN, res : Ast.Kid ;
-  mode : STR ;
+  mode, tmod : STR ;
   beyond, deref, known : BOOL ;
 BEGIN
   beyond := FALSE ;
+  tmod := '' ;
   IF IsConstHere (d.a) THEN
     ErrN (d, ctx, Cat ('cannot write the CONST ', d.a))
   END ;
@@ -1598,6 +1599,7 @@ BEGIN
     known := FALSE ;
     IF declN IS SOME dn0 THEN known := TRUE END ;
     IF NOT known THEN RETURN beyond END ;
+    NoteMod (declN, tmod) ;
     res := ResolveType (declN) ;
     LOOP
       deref := FALSE ;
@@ -1612,7 +1614,8 @@ BEGIN
                 ' is a shared borrow (take VAR, par 4.1)'))
             END
           END ;
-          declN := r0.kids[0] ;
+          declN := InMod (r0.kids[0], tmod) ;
+          NoteMod (declN, tmod) ;
           res := ResolveType (declN)
         END
       END ;
@@ -1627,7 +1630,7 @@ BEGIN
                 'cannot write through the RO field ', sel.a),
                 ' (par 4.1)'))
             END ;
-            declN := FieldTypeOf (r, sel.a)
+            declN := InMod (FieldTypeOf (r, sel.a), tmod)
           ELSE
             RETURN beyond
           END
@@ -1638,16 +1641,16 @@ BEGIN
                 'cannot write through a read-only grid: ', d.a))
             END ;
             beyond := TRUE ;
-            declN := r.kids[1]
+            declN := InMod (r.kids[1], tmod)
           ELSIF r.kind = Ast.NSliceType THEN
             IF IsReadonlyT (declN, r) THEN
               ErrN (d, ctx, Cat (
                 'cannot write through a read-only slice: ', d.a))
             END ;
             beyond := TRUE ;      (* slice storage outlives the frame *)
-            declN := r.kids[0]
+            declN := InMod (r.kids[0], tmod)
           ELSIF r.kind = Ast.NArrayType THEN
-            declN := r.kids[1]
+            declN := InMod (r.kids[1], tmod)
           ELSE
             RETURN beyond
           END
@@ -2703,10 +2706,11 @@ END FlushPend ;
 PROCEDURE DesigDeclType (d: PTR Ast.Node ; RO ctx: STR) : Ast.Kid =
 VAR
   j, q : I64 ;
-  it, eb : STR ;
+  it, eb, tmod : STR ;
   declN, res : Ast.Kid ;
   deref, known : BOOL ;
 BEGIN
+  tmod := '' ;
   declN := ScopeType (d.a) ;
   FOR j := 0 TO d.nkids - 1 DO
     (* every axis of every subscript is an index *)
@@ -2737,13 +2741,15 @@ BEGIN
     known := FALSE ;
     IF declN IS SOME dn1 THEN known := TRUE END ;
     IF NOT known THEN RETURN NONE END ;
+    NoteMod (declN, tmod) ;
     res := ResolveType (declN) ;
     LOOP
       deref := FALSE ;
       IF res IS SOME r0 THEN
         IF r0.kind = Ast.NPtrType OR r0.kind = Ast.NSharedType THEN
           deref := TRUE ;
-          declN := r0.kids[0] ;
+          declN := InMod (r0.kids[0], tmod) ;
+          NoteMod (declN, tmod) ;
           res := ResolveType (declN)
         END
       END ;
@@ -2767,7 +2773,7 @@ BEGIN
       IF d.kids[j] IS SOME sel THEN
         IF sel.kind = Ast.NSelField THEN
           IF r.kind = Ast.NRecordType THEN
-            declN := FieldTypeOf (r, sel.a) ;
+            declN := InMod (FieldTypeOf (r, sel.a), tmod) ;
             IF declN IS SOME fk THEN
               q := 0                     (* found; nothing to say *)
             ELSE
@@ -2792,7 +2798,7 @@ BEGIN
               ErrN (d, ctx, S3 ('monitor field ', sel.a,
                 ' is reached from outside a procedure bound to the monitor (par 6)'))
             END ;
-            declN := MonFieldType (r, sel.a)
+            declN := InMod (MonFieldType (r, sel.a), tmod)
           ELSE
             RETURN NONE
           END
@@ -2807,19 +2813,19 @@ BEGIN
                 Print.ExprText (r.kids[0]),
                 Cat (' subscripts, not ', ItoA (sel.nkids))))
             END ;
-            declN := r.kids[1]
+            declN := InMod (r.kids[1], tmod)
           ELSIF r.kind = Ast.NSliceType THEN
             IF sel.nkids # 1 THEN
               ErrN (d, ctx, Cat ('a slice takes one subscript, not ',
                 ItoA (sel.nkids)))
             END ;
-            declN := r.kids[0]
+            declN := InMod (r.kids[0], tmod)
           ELSIF r.kind = Ast.NArrayType THEN
             IF sel.nkids # 1 THEN
               ErrN (d, ctx, Cat ('an array takes one subscript, not ',
                 ItoA (sel.nkids)))
             END ;
-            declN := r.kids[1]
+            declN := InMod (r.kids[1], tmod)
           ELSE RETURN NONE END
         END
       END
@@ -4273,6 +4279,33 @@ BEGIN
   END ;
   RETURN t
 END QualifiedIn ;
+
+(* ---- the module a designator's type was written in ----
+
+   A component type -- a record's field, a pointer's target, a slice's
+   or an array's element -- is written in the module that declared the
+   aggregate, and a bare name in it means that module's type.
+   CheckWrite and DesigDeclType resolved such a node in the CURRENT
+   module, so `tm.kind' with tm a Sparql.Term and its field a bare
+   `Kind' resolved to Csv.Kind where every corpus module was loaded
+   (semtest and semdiff; m9c loads only the closure and never met
+   it): the canonCtx class, the fourth of its kind, in both checkers
+   (2026-10-07).  NoteMod remembers the module of the last QUALIFIED
+   type the walk passed; InMod qualifies a component in it, unless it
+   is the current module. *)
+
+PROCEDURE NoteMod (t: Ast.Kid ; VAR m: STR) =
+BEGIN
+  IF t IS SOME tn THEN
+    IF tn.kind = Ast.NQualident AND LEN (tn.b) > 0 THEN m := tn.a END
+  END
+END NoteMod ;
+
+PROCEDURE InMod (KEPT t: Ast.Kid ; RO KEPT m: STR) : Ast.Kid =
+BEGIN
+  IF LEN (m) = 0 OR Text.Eq (m, curMod) THEN RETURN t END ;
+  RETURN QualifiedIn (t, m)
+END InMod ;
 
 (* which module owns variant V of CASE RECORD type T, and the field
    sequence that variant carries *)

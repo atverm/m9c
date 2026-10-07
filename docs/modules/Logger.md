@@ -72,7 +72,9 @@ rather than being one hidden variable.
 
 ### Msg (level: I64 ; RO text: STR)
 
-the whole line in one call, for the common case
+the whole line in one call, for the common case.  Threads may
+call it at once and each line comes out whole; the builder below
+is NOT for threads -- its line is module state
 
 ### Start (level: I64 ; RO text: STR)
 

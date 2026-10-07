@@ -1,0 +1,1406 @@
+DEFINITION MODULE Xml ;
+
+(* XML 1.0 (fifth edition) with Namespaces 1.0: a pull reader, a small
+   tree on it, and a writer (docs/datalib-plan.md par 4).
+
+   READING is well-formedness, all of it, and nothing guessed: every
+   character checked against the Char and Name productions, line ends
+   normalised, attribute values normalised, the five predefined
+   entities and character references replaced, CDATA read as text,
+   comments and processing instructions reported, namespace prefixes
+   resolved and every namespace constraint held.  A document that is
+   not well-formed is a SyntaxError at its line and column.
+
+   REFUSED BY NAME, as Unsupported, what a reader that takes documents
+   off the network must not do or cannot do without a DTD: an ENTITY
+   declaration (the billion-laughs and external-entity class), an
+   ATTLIST declaration (its defaults and normalisation would change the
+   data a reader without the DTD reports), a parameter entity, an
+   entity reference that only an external DTD could declare, any
+   encoding but UTF-8, and XML 1.1.  The rest of a DOCTYPE is read for
+   well-formedness and skipped.
+
+   Held to the W3C XML conformance suite (xmlconf): every
+   not-well-formed document refused, every well-formed one read the way
+   expat reads it -- to the W3C's own canonical outputs, where it gives
+   them -- or refused by name (XmlTest).
+
+   WRITING escapes what it must and refuses a name that is not one.
+
+   Strings are characters (code points); a document arrives as the
+   bytes of its file or HTTP body.                                   *)
+
+TYPE
+  Kind = (Start, End, Text, Comment, Pi, Eof) ;
+
+  Attr = RECORD
+    name : STR ;               (* as written, prefix:local *)
+    ns : STR ;                 (* its namespace, '' for none; a
+                                  declaration xmlns or xmlns:p has
+                                  http://www.w3.org/2000/xmlns/ *)
+    local : STR ;
+    value : STR ;              (* references replaced, white space
+                                  normalised *)
+  END ;
+
+  Event = RECORD
+    kind : Kind ;
+    name : STR ;               (* Start, End: as written; Pi: target *)
+    ns, local : STR ;          (* Start, End: the element's namespace *)
+    attrs : SLICE OF Attr ;    (* Start: in document order *)
+    text : STR ;               (* Text: character data, CDATA sections
+                                  joined in; Comment; Pi: its data *)
+    line, col : I64 ;          (* where the event begins *)
+  END ;
+
+  Reader ;                     (* opaque; lives in a POOL *)
+
+  Element = RECORD
+    name, ns, local : STR ;
+    attrs : SLICE OF Attr ;
+    text : STR ;               (* character data before the first child *)
+    tail : STR ;               (* after the end tag, before the next
+                                  sibling: ElementTree's model *)
+    kids : SLICE OF PTR Element ;
+  END ;
+
+  Writer ;                     (* opaque; lives in a POOL *)
+
+EXCEPTION
+  SyntaxError (RO msg: STR ; line, col: I64) ;
+    (* not well-formed *)
+  Unsupported (RO msg: STR ; line, col: I64) ;
+    (* well-formed, perhaps, but refused by name *)
+  WriteError (RO msg: STR) ;
+
+PROCEDURE Open (VAR pool: POOL ; RO doc: SLICE OF BYTE) : PTR Reader IN pool
+  RAISES SyntaxError, Unsupported ;
+  (* a reader on doc: UTF-8, with or without a byte order mark *)
+
+PROCEDURE Next (VAR KEPT r: PTR Reader) : Event RAISES SyntaxError, Unsupported ;
+  (* the next event; Eof once the root element and what follows it are
+     read, and again after that.  The event's strings live in the
+     reader's pool *)
+
+PROCEDURE Parse (VAR pool: POOL ; RO doc: SLICE OF BYTE) : PTR Element IN pool
+  RAISES SyntaxError, Unsupported ;
+  (* the root element; comments and processing instructions dropped *)
+
+PROCEDURE Child (e: PTR Element ; RO ns: STR ; RO local: STR) : OPT PTR Element ;
+  (* the first child of that name *)
+
+PROCEDURE HasAttr (e: PTR Element ; RO ns: STR ; RO local: STR) : BOOL ;
+PROCEDURE AttrValue (e: PTR Element ; RO ns: STR ; RO local: STR) : STR ;
+  (* an attribute's value, '' when there is none (HasAttr says) *)
+
+PROCEDURE AllText (e: PTR Element) : STR ;
+  (* the element's character data and its descendants', in order *)
+
+PROCEDURE NewWriter (VAR pool: POOL) : PTR Writer IN pool ;
+PROCEDURE StartTag (VAR w: PTR Writer ; RO name: STR) RAISES WriteError ;
+PROCEDURE Attribute (VAR w: PTR Writer ; RO name: STR ; RO value: STR)
+  RAISES WriteError ;
+  (* only straight after StartTag or another Attribute *)
+PROCEDURE Chars (VAR w: PTR Writer ; RO s: STR) RAISES WriteError ;
+PROCEDURE EndTag (VAR w: PTR Writer) RAISES WriteError ;
+PROCEDURE Document (w: PTR Writer) : STR RAISES WriteError ;
+  (* the document so far, which must be one element, closed: an XML
+     declaration, then the element; a character no XML document may
+     hold is refused where it is written *)
+
+END Xml.
+
+IMPLEMENTATION MODULE Xml ;
+
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Text ;
+
+CONST
+  XmlNs = 'http://www.w3.org/XML/1998/namespace' ;
+  XmlnsNs = 'http://www.w3.org/2000/xmlns/' ;
+
+  (* where the reader is *)
+  SProlog = 0 ;
+  SContent = 1 ;
+  SEpilog = 2 ;
+  SDone = 3 ;
+  SSubset = 4 ;                (* inside a DOCTYPE's internal subset *)
+
+TYPE
+  Reader = RECORD
+    src : STR ;                (* the characters, line ends normalised *)
+    pos : I64 ;
+    atPos, atLine, atCol : I64 ;   (* the last position counted *)
+    state : I64 ;
+    stack : SLICE OF STR ;     (* the open elements' names *)
+    stackNs, stackLocal : SLICE OF STR ;
+    depth : I64 ;
+    pfx, uri : SLICE OF STR ;  (* the namespace bindings in force *)
+    nns : I64 ;
+    mark : SLICE OF I64 ;      (* nns at each depth's start tag *)
+    pending : BOOL ;           (* an empty element's End is owed *)
+    pendName, pendNs, pendLocal : STR ;
+    pendLine, pendCol : I64 ;
+    doctype : BOOL ;           (* a DOCTYPE was read *)
+    external : BOOL ;          (* ... naming an external DTD *)
+    standalone : BOOL ;
+  END ;
+
+  Writer = RECORD
+    d : PTR DynStr.DString ;
+    stack : SLICE OF STR ;
+    depth : I64 ;
+    open : BOOL ;              (* a start tag waits for its > *)
+    roots : I64 ;
+  END ;
+
+  ElementP = PTR Element ;
+  KidsP = SLICE OF PTR Element ;
+
+(* ---- characters ----------------------------------------------------- *)
+
+PROCEDURE IsChar (c: I64) : BOOL =
+  (* the Char production *)
+BEGIN
+  RETURN c = 9 OR c = 10 OR c = 13 OR (c >= 32 AND c <= 0xD7FF) OR
+         (c >= 0xE000 AND c <= 0xFFFD) OR (c >= 0x10000 AND c <= 0x10FFFF)
+END IsChar ;
+
+PROCEDURE IsSpace (c: CHAR) : BOOL =
+BEGIN
+  RETURN c = ' ' OR c = 09C OR c = 0AC OR c = 0DC
+END IsSpace ;
+
+PROCEDURE IsNameStart (c: I64) : BOOL =
+BEGIN
+  RETURN c = 58 OR (c >= 65 AND c <= 90) OR c = 95 OR (c >= 97 AND c <= 122) OR
+         (c >= 0xC0 AND c <= 0xD6) OR (c >= 0xD8 AND c <= 0xF6) OR
+         (c >= 0xF8 AND c <= 0x2FF) OR (c >= 0x370 AND c <= 0x37D) OR
+         (c >= 0x37F AND c <= 0x1FFF) OR (c >= 0x200C AND c <= 0x200D) OR
+         (c >= 0x2070 AND c <= 0x218F) OR (c >= 0x2C00 AND c <= 0x2FEF) OR
+         (c >= 0x3001 AND c <= 0xD7FF) OR (c >= 0xF900 AND c <= 0xFDCF) OR
+         (c >= 0xFDF0 AND c <= 0xFFFD) OR (c >= 0x10000 AND c <= 0xEFFFF)
+END IsNameStart ;
+
+PROCEDURE IsNameChar (c: I64) : BOOL =
+BEGIN
+  RETURN IsNameStart (c) OR c = 45 OR c = 46 OR (c >= 48 AND c <= 57) OR
+         c = 0xB7 OR (c >= 0x300 AND c <= 0x36F) OR (c >= 0x203F AND c <= 0x2040)
+END IsNameChar ;
+
+PROCEDURE IsName (RO s: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (s) = 0 OR NOT IsNameStart (ORD (s[0])) THEN RETURN FALSE END ;
+  FOR i := 1 TO LEN (s) - 1 DO
+    IF NOT IsNameChar (ORD (s[i])) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END IsName ;
+
+(* ---- the reader's position ---------------------------------------- *)
+
+PROCEDURE Where (VAR r: PTR Reader ; at: I64 ; VAR line, col: I64) =
+  (* the line and column of at, counted on from the last one asked
+     for; from the start when at is before it *)
+VAR i : I64 ;
+BEGIN
+  IF at < r.atPos THEN
+    r.atPos := 0 ;
+    r.atLine := 1 ;
+    r.atCol := 1
+  END ;
+  i := r.atPos ;
+  WHILE i < at AND i < LEN (r.src) DO
+    IF r.src[i] = 0AC THEN
+      r.atLine := r.atLine + 1 ;
+      r.atCol := 1
+    ELSE
+      r.atCol := r.atCol + 1
+    END ;
+    i := i + 1
+  END ;
+  r.atPos := at ;
+  line := r.atLine ;
+  col := r.atCol
+END Where ;
+
+PROCEDURE Fail (VAR r: PTR Reader ; RO msg: STR) RAISES SyntaxError =
+VAR line, col : I64 ;
+BEGIN
+  Where (r, r.pos, line, col) ;
+  RAISE SyntaxError (msg, line, col)
+END Fail ;
+
+PROCEDURE Refuse (VAR r: PTR Reader ; RO msg: STR) RAISES Unsupported =
+VAR line, col : I64 ;
+BEGIN
+  Where (r, r.pos, line, col) ;
+  RAISE Unsupported (msg, line, col)
+END Refuse ;
+
+PROCEDURE AtEnd (VAR r: PTR Reader) : BOOL =
+BEGIN
+  RETURN r.pos >= LEN (r.src)
+END AtEnd ;
+
+PROCEDURE Cur (VAR r: PTR Reader) : CHAR =
+BEGIN
+  IF r.pos >= LEN (r.src) THEN RETURN 00C END ;
+  RETURN r.src[r.pos]
+END Cur ;
+
+PROCEDURE Ahead (VAR r: PTR Reader ; RO w: STR) : BOOL =
+  (* the text at pos begins with w *)
+VAR i : I64 ;
+BEGIN
+  IF r.pos + LEN (w) > LEN (r.src) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (w) - 1 DO
+    IF r.src[r.pos + i] # w[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Ahead ;
+
+PROCEDURE Skip (VAR r: PTR Reader ; RO w: STR ; RO what: STR) RAISES SyntaxError =
+BEGIN
+  IF NOT Ahead (r, w) THEN Fail (r, what + ' expected') END ;
+  r.pos := r.pos + LEN (w)
+END Skip ;
+
+PROCEDURE SkipSpace (VAR r: PTR Reader) : BOOL =
+  (* white space skipped; whether there was any *)
+VAR any : BOOL ;
+BEGIN
+  any := FALSE ;
+  WHILE r.pos < LEN (r.src) AND IsSpace (r.src[r.pos]) DO
+    r.pos := r.pos + 1 ;
+    any := TRUE
+  END ;
+  RETURN any
+END SkipSpace ;
+
+PROCEDURE NeedSpace (VAR r: PTR Reader ; RO what: STR) RAISES SyntaxError =
+BEGIN
+  IF NOT SkipSpace (r) THEN Fail (r, 'white space expected ' + what) END
+END NeedSpace ;
+
+PROCEDURE Name (VAR r: PTR Reader ; RO what: STR) : STR RAISES SyntaxError =
+  (* a Name at pos, as a view of the source *)
+VAR at : I64 ;
+BEGIN
+  at := r.pos ;
+  IF AtEnd (r) OR NOT IsNameStart (ORD (Cur (r))) THEN Fail (r, what + ' expected') END ;
+  r.pos := r.pos + 1 ;
+  WHILE NOT AtEnd (r) AND IsNameChar (ORD (Cur (r))) DO r.pos := r.pos + 1 END ;
+  RETURN SLICE (r.src, at, r.pos - at)
+END Name ;
+
+PROCEDURE Keep (VAR r: PTR Reader ; RO s: STR) : STR =
+  (* a copy in the reader's pool *)
+VAR
+  c : STR ;
+  i : I64 ;
+BEGIN
+  c := NEW (r, CHAR, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO c[i] := s[i] END ;
+  RETURN c
+END Keep ;
+
+(* ---- references and character data ------------------------------ *)
+
+PROCEDURE CharRef (VAR r: PTR Reader) : I64 RAISES SyntaxError =
+  (* at &#: the character's code *)
+VAR
+  v, d : I64 ;
+  hex, any : BOOL ;
+  c : CHAR ;
+BEGIN
+  r.pos := r.pos + 2 ;
+  hex := FALSE ;
+  IF Cur (r) = 'x' THEN hex := TRUE ; r.pos := r.pos + 1 END ;
+  v := 0 ;
+  any := FALSE ;
+  LOOP
+    IF AtEnd (r) THEN Fail (r, 'a character reference not closed') END ;
+    c := Cur (r) ;
+    IF c = ';' THEN EXIT END ;
+    d := -1 ;
+    IF c >= '0' AND c <= '9' THEN d := ORD (c) - 48
+    ELSIF hex AND c >= 'a' AND c <= 'f' THEN d := ORD (c) - 87
+    ELSIF hex AND c >= 'A' AND c <= 'F' THEN d := ORD (c) - 55
+    END ;
+    IF d < 0 THEN Fail (r, 'a digit expected in a character reference') END ;
+    IF v <= 0x10FFFF THEN
+      IF hex THEN v := v * 16 + d ELSE v := v * 10 + d END
+    END ;
+    any := TRUE ;
+    r.pos := r.pos + 1
+  END ;
+  IF NOT any THEN Fail (r, 'a digit expected in a character reference') END ;
+  IF NOT IsChar (v) THEN Fail (r, 'a character reference to no XML character') END ;
+  r.pos := r.pos + 1 ;
+  RETURN v
+END CharRef ;
+
+PROCEDURE EntityRef (VAR r: PTR Reader) : CHAR RAISES SyntaxError, Unsupported =
+  (* at &: one of the five, else not here *)
+VAR n : STR ;
+BEGIN
+  r.pos := r.pos + 1 ;
+  n := Name (r, 'an entity name') ;
+  IF Cur (r) # ';' THEN Fail (r, '; expected after an entity name') END ;
+  r.pos := r.pos + 1 ;
+  IF Text.Eq (n, 'lt') THEN RETURN '<' END ;
+  IF Text.Eq (n, 'gt') THEN RETURN '>' END ;
+  IF Text.Eq (n, 'amp') THEN RETURN '&' END ;
+  IF Text.Eq (n, 'apos') THEN RETURN "'" END ;
+  IF Text.Eq (n, 'quot') THEN RETURN '"' END ;
+  r.pos := r.pos - LEN (n) - 2 ;
+  IF r.external AND NOT r.standalone THEN
+    Refuse (r, 'an entity reference the external DTD may declare: entities are not expanded')
+  END ;
+  Fail (r, 'an undeclared entity: ' + n) ;
+  RETURN ' '
+END EntityRef ;
+
+PROCEDURE Grow (VAR r: PTR Reader ; VAR buf: STR ; n: I64) =
+  (* room for one more character after n *)
+VAR
+  nb : STR ;
+  i : I64 ;
+BEGIN
+  IF n < LEN (buf) THEN RETURN END ;
+  nb := NEW (r, CHAR, 2 * LEN (buf) + 16) ;
+  FOR i := 0 TO n - 1 DO nb[i] := buf[i] END ;
+  buf := nb
+END Grow ;
+
+PROCEDURE Put (VAR r: PTR Reader ; VAR buf: STR ; VAR n: I64 ; c: CHAR) =
+BEGIN
+  Grow (r, buf, n) ;
+  buf[n] := c ;
+  n := n + 1
+END Put ;
+
+PROCEDURE CharData (VAR r: PTR Reader) : STR RAISES SyntaxError, Unsupported =
+  (* text, references and CDATA sections up to the next other markup *)
+VAR
+  buf : STR ;
+  n, start, v : I64 ;
+  c : CHAR ;
+  plain : BOOL ;
+BEGIN
+  start := r.pos ;
+  plain := TRUE ;
+  buf := '' ;
+  n := 0 ;
+  LOOP
+    IF AtEnd (r) THEN EXIT END ;
+    c := Cur (r) ;
+    IF c = '<' THEN
+      IF NOT Ahead (r, '<![CDATA[') THEN EXIT END ;
+      IF plain THEN
+        buf := NEW (r, CHAR, 2 * (r.pos - start) + 16) ;
+        FOR v := start TO r.pos - 1 DO buf[v - start] := r.src[v] END ;
+        n := r.pos - start ;
+        plain := FALSE
+      END ;
+      r.pos := r.pos + 9 ;
+      LOOP
+        IF AtEnd (r) THEN Fail (r, 'a CDATA section not closed') END ;
+        IF Ahead (r, ']]>') THEN r.pos := r.pos + 3 ; EXIT END ;
+        Put (r, buf, n, Cur (r)) ;
+        r.pos := r.pos + 1
+      END
+    ELSIF c = '&' THEN
+      IF plain THEN
+        buf := NEW (r, CHAR, 2 * (r.pos - start) + 16) ;
+        FOR v := start TO r.pos - 1 DO buf[v - start] := r.src[v] END ;
+        n := r.pos - start ;
+        plain := FALSE
+      END ;
+      IF Ahead (r, '&#') THEN
+        v := CharRef (r) ;
+        BEGIN
+          Put (r, buf, n, CHR (v))
+        EXCEPT
+        | ValueRange :
+            Fail (r, 'a character reference to no character')
+        END
+      ELSE
+        Put (r, buf, n, EntityRef (r))
+      END
+    ELSE
+      IF c = ']' AND Ahead (r, ']]>') THEN Fail (r, ']]> in character data') END ;
+      IF NOT plain THEN Put (r, buf, n, c) END ;
+      r.pos := r.pos + 1
+    END
+  END ;
+  IF plain THEN RETURN SLICE (r.src, start, r.pos - start) END ;
+  RETURN SLICE (buf, 0, n)
+END CharData ;
+
+PROCEDURE AttValue (VAR r: PTR Reader) : STR RAISES SyntaxError, Unsupported =
+  (* a quoted attribute value: references replaced, each white space
+     character a space *)
+VAR
+  buf : STR ;
+  n, v : I64 ;
+  q, c : CHAR ;
+BEGIN
+  q := Cur (r) ;
+  IF q # '"' AND q # "'" THEN Fail (r, 'a quoted attribute value expected') END ;
+  r.pos := r.pos + 1 ;
+  buf := NEW (r, CHAR, 16) ;
+  n := 0 ;
+  LOOP
+    IF AtEnd (r) THEN Fail (r, 'an attribute value not closed') END ;
+    c := Cur (r) ;
+    IF c = q THEN r.pos := r.pos + 1 ; EXIT END ;
+    IF c = '<' THEN Fail (r, '< in an attribute value') END ;
+    IF c = '&' THEN
+      IF Ahead (r, '&#') THEN
+        v := CharRef (r) ;
+        BEGIN
+          Put (r, buf, n, CHR (v))
+        EXCEPT
+        | ValueRange :
+            Fail (r, 'a character reference to no character')
+        END
+      ELSE
+        Put (r, buf, n, EntityRef (r))
+      END
+    ELSE
+      IF IsSpace (c) THEN c := ' ' END ;
+      Put (r, buf, n, c) ;
+      r.pos := r.pos + 1
+    END
+  END ;
+  RETURN SLICE (buf, 0, n)
+END AttValue ;
+
+(* ---- comments, PIs, the XML declaration --------------------------- *)
+
+PROCEDURE CommentBody (VAR r: PTR Reader) : STR RAISES SyntaxError =
+  (* at <!-- *)
+VAR start : I64 ;
+BEGIN
+  r.pos := r.pos + 4 ;
+  start := r.pos ;
+  LOOP
+    IF AtEnd (r) THEN Fail (r, 'a comment not closed') END ;
+    IF Ahead (r, '--') THEN
+      IF NOT Ahead (r, '-->') THEN Fail (r, '-- inside a comment') END ;
+      r.pos := r.pos + 3 ;
+      EXIT
+    END ;
+    r.pos := r.pos + 1
+  END ;
+  RETURN SLICE (r.src, start, r.pos - 3 - start)
+END CommentBody ;
+
+PROCEDURE PiBody (VAR r: PTR Reader ; VAR target: STR) : STR RAISES SyntaxError =
+  (* at <?: the target, and the data answered *)
+VAR start : I64 ;
+BEGIN
+  r.pos := r.pos + 2 ;
+  target := Name (r, 'a processing instruction target') ;
+  IF LEN (target) = 3 AND (target[0] = 'x' OR target[0] = 'X') AND
+     (target[1] = 'm' OR target[1] = 'M') AND (target[2] = 'l' OR target[2] = 'L') THEN
+    Fail (r, 'the target xml is reserved: an XML declaration belongs at the very start')
+  END ;
+  IF Text.FindChar (target, ':') >= 0 THEN
+    Fail (r, 'a colon in a processing instruction target, which namespaces forbid')
+  END ;
+  IF Ahead (r, '?>') THEN r.pos := r.pos + 2 ; RETURN '' END ;
+  NeedSpace (r, 'after a processing instruction target') ;
+  start := r.pos ;
+  LOOP
+    IF AtEnd (r) THEN Fail (r, 'a processing instruction not closed') END ;
+    IF Ahead (r, '?>') THEN EXIT END ;
+    r.pos := r.pos + 1
+  END ;
+  r.pos := r.pos + 2 ;
+  RETURN SLICE (r.src, start, r.pos - 2 - start)
+END PiBody ;
+
+PROCEDURE Quoted (VAR r: PTR Reader ; RO what: STR) : STR RAISES SyntaxError =
+  (* a literal in ' or " *)
+VAR
+  q : CHAR ;
+  start : I64 ;
+BEGIN
+  q := Cur (r) ;
+  IF q # '"' AND q # "'" THEN Fail (r, what + ' in quotes expected') END ;
+  r.pos := r.pos + 1 ;
+  start := r.pos ;
+  WHILE NOT AtEnd (r) AND Cur (r) # q DO r.pos := r.pos + 1 END ;
+  IF AtEnd (r) THEN Fail (r, what + ' not closed') END ;
+  r.pos := r.pos + 1 ;
+  RETURN SLICE (r.src, start, r.pos - 1 - start)
+END Quoted ;
+
+PROCEDURE DeclAttr (VAR r: PTR Reader ; RO name: STR) : BOOL RAISES SyntaxError =
+  (* S name Eq at pos, consumed up to the value; FALSE (pos kept) if
+     the name is not next *)
+VAR save : I64 ;
+BEGIN
+  save := r.pos ;
+  IF NOT SkipSpace (r) OR NOT Ahead (r, name) THEN r.pos := save ; RETURN FALSE END ;
+  r.pos := r.pos + LEN (name) ;
+  IF SkipSpace (r) THEN END ;
+  IF Cur (r) # '=' THEN Fail (r, '= expected after ' + name) END ;
+  r.pos := r.pos + 1 ;
+  IF SkipSpace (r) THEN END ;
+  RETURN TRUE
+END DeclAttr ;
+
+PROCEDURE XmlDecl (VAR r: PTR Reader) RAISES SyntaxError, Unsupported =
+  (* at <?xml followed by white space *)
+VAR
+  v, e : STR ;
+  i : I64 ;
+  ok : BOOL ;
+BEGIN
+  r.pos := r.pos + 5 ;
+  IF NOT DeclAttr (r, 'version') THEN Fail (r, 'version expected in the XML declaration') END ;
+  v := Quoted (r, 'the version') ;
+  ok := LEN (v) >= 3 AND v[0] = '1' AND v[1] = '.' ;
+  FOR i := 2 TO LEN (v) - 1 DO
+    IF NOT (v[i] >= '0' AND v[i] <= '9') THEN ok := FALSE END
+  END ;
+  IF NOT ok THEN Fail (r, 'a version is 1. and digits') END ;
+  IF Text.Eq (v, '1.1') THEN Refuse (r, 'XML 1.1: only 1.0 is read') END ;
+  IF DeclAttr (r, 'encoding') THEN
+    e := Quoted (r, 'the encoding') ;
+    ok := LEN (e) > 0 AND ((e[0] >= 'a' AND e[0] <= 'z') OR (e[0] >= 'A' AND e[0] <= 'Z')) ;
+    FOR i := 1 TO LEN (e) - 1 DO
+      IF NOT ((e[i] >= 'a' AND e[i] <= 'z') OR (e[i] >= 'A' AND e[i] <= 'Z') OR
+              (e[i] >= '0' AND e[i] <= '9') OR e[i] = '.' OR e[i] = '_' OR e[i] = '-') THEN
+        ok := FALSE
+      END
+    END ;
+    IF NOT ok THEN Fail (r, 'not an encoding name') END ;
+    IF NOT (Text.Eq (Text.Upper (e), 'UTF-8') OR Text.Eq (Text.Upper (e), 'UTF8')) THEN
+      Refuse (r, 'an encoding other than UTF-8: ' + e)
+    END
+  END ;
+  IF DeclAttr (r, 'standalone') THEN
+    e := Quoted (r, 'standalone') ;
+    IF Text.Eq (e, 'yes') THEN r.standalone := TRUE
+    ELSIF NOT Text.Eq (e, 'no') THEN Fail (r, 'standalone is yes or no')
+    END
+  END ;
+  IF SkipSpace (r) THEN END ;
+  Skip (r, '?>', '?> closing the XML declaration')
+END XmlDecl ;
+
+(* ---- the DOCTYPE ---------------------------------------------------- *)
+
+PROCEDURE PubidOk (RO s: STR) : BOOL =
+VAR
+  i : I64 ;
+  c : CHAR ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := s[i] ;
+    IF NOT ((c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z') OR (c >= '0' AND c <= '9') OR
+            c = ' ' OR c = 0DC OR c = 0AC OR Text.OneOf ('' + c, PubidMarks)) THEN
+      RETURN FALSE
+    END
+  END ;
+  RETURN TRUE
+END PubidOk ;
+
+CONST
+  PubidMarks = [ '-', "'", '(', ')', '+', ',', '.', '/', ':', '=', '?', ';', '!',
+                 '*', '#', '@', '$', '_', '%' ] ;
+
+PROCEDURE ExternalId (VAR r: PTR Reader ; publicOnly: BOOL) : BOOL RAISES SyntaxError =
+  (* SYSTEM "..." or PUBLIC "..." "..." at pos, if there; publicOnly
+     lets the system literal go (a NOTATION) *)
+VAR p : STR ;
+BEGIN
+  IF Ahead (r, 'SYSTEM') THEN
+    r.pos := r.pos + 6 ;
+    NeedSpace (r, 'after SYSTEM') ;
+    p := Quoted (r, 'a system literal') ;
+    RETURN TRUE
+  END ;
+  IF Ahead (r, 'PUBLIC') THEN
+    r.pos := r.pos + 6 ;
+    NeedSpace (r, 'after PUBLIC') ;
+    p := Quoted (r, 'a public identifier') ;
+    IF NOT PubidOk (p) THEN Fail (r, 'a character a public identifier may not hold') END ;
+    IF publicOnly THEN
+      IF SkipSpace (r) AND (Cur (r) = '"' OR Cur (r) = "'") THEN
+        p := Quoted (r, 'a system literal')
+      END
+    ELSE
+      NeedSpace (r, 'after the public identifier') ;
+      p := Quoted (r, 'a system literal')
+    END ;
+    RETURN TRUE
+  END ;
+  RETURN FALSE
+END ExternalId ;
+
+PROCEDURE ContentParticle (VAR r: PTR Reader) RAISES SyntaxError =
+  (* a Name or a parenthesised choice or sequence, then ? * or + *)
+VAR
+  n : STR ;
+  sep : CHAR ;
+BEGIN
+  IF Cur (r) = '(' THEN
+    r.pos := r.pos + 1 ;
+    IF SkipSpace (r) THEN END ;
+    ContentParticle (r) ;
+    IF SkipSpace (r) THEN END ;
+    sep := Cur (r) ;
+    IF sep = '|' OR sep = ',' THEN
+      WHILE Cur (r) = sep DO
+        r.pos := r.pos + 1 ;
+        IF SkipSpace (r) THEN END ;
+        ContentParticle (r) ;
+        IF SkipSpace (r) THEN END
+      END
+    END ;
+    Skip (r, ')', ') closing a content particle')
+  ELSE
+    n := Name (r, 'an element name in a content model')
+  END ;
+  IF Cur (r) = '?' OR Cur (r) = '*' OR Cur (r) = '+' THEN r.pos := r.pos + 1 END
+END ContentParticle ;
+
+PROCEDURE ElementDecl (VAR r: PTR Reader) RAISES SyntaxError =
+  (* at <!ELEMENT *)
+VAR
+  n : STR ;
+  open : I64 ;
+  more : BOOL ;
+BEGIN
+  r.pos := r.pos + 9 ;
+  NeedSpace (r, 'after <!ELEMENT') ;
+  n := Name (r, 'an element name') ;
+  NeedSpace (r, 'after the element name') ;
+  IF Ahead (r, 'EMPTY') THEN r.pos := r.pos + 5
+  ELSIF Ahead (r, 'ANY') THEN r.pos := r.pos + 3
+  ELSIF Cur (r) = '(' THEN
+    open := r.pos ;
+    r.pos := r.pos + 1 ;
+    IF SkipSpace (r) THEN END ;
+    IF Ahead (r, '#PCDATA') THEN
+      (* Mixed: names after |, and )* when there are any *)
+      r.pos := r.pos + 7 ;
+      more := FALSE ;
+      LOOP
+        IF SkipSpace (r) THEN END ;
+        IF Cur (r) # '|' THEN EXIT END ;
+        r.pos := r.pos + 1 ;
+        IF SkipSpace (r) THEN END ;
+        n := Name (r, 'an element name in a mixed content model') ;
+        more := TRUE
+      END ;
+      Skip (r, ')', ') closing a mixed content model') ;
+      IF more THEN Skip (r, '*', '* after a mixed content model with names')
+      ELSIF Cur (r) = '*' THEN r.pos := r.pos + 1
+      END
+    ELSE
+      r.pos := open ;
+      ContentParticle (r)
+    END
+  ELSE
+    Fail (r, 'a content specification expected')
+  END ;
+  IF SkipSpace (r) THEN END ;
+  Skip (r, '>', '> closing <!ELEMENT')
+END ElementDecl ;
+
+PROCEDURE Doctype (VAR r: PTR Reader) RAISES SyntaxError =
+  (* at <!DOCTYPE: the name and external id; the internal subset, if
+     there is one, is read declaration by declaration in Next, whose
+     comments and PIs are events like the prolog's *)
+VAR n : STR ;
+BEGIN
+  r.pos := r.pos + 9 ;
+  NeedSpace (r, 'after <!DOCTYPE') ;
+  n := Name (r, 'the document element name') ;
+  IF SkipSpace (r) THEN
+    IF ExternalId (r, FALSE) THEN
+      r.external := TRUE ;
+      IF SkipSpace (r) THEN END
+    END
+  END ;
+  IF Cur (r) = '[' THEN
+    r.pos := r.pos + 1 ;
+    r.state := SSubset
+  ELSE
+    Skip (r, '>', '> closing the DOCTYPE')
+  END
+END Doctype ;
+
+PROCEDURE SubsetDecl (VAR r: PTR Reader) RAISES SyntaxError, Unsupported =
+  (* one markup declaration of the internal subset at pos, not a
+     comment or PI; or its closing ]> *)
+VAR n : STR ;
+BEGIN
+  IF Cur (r) = ']' THEN
+    r.pos := r.pos + 1 ;
+    IF SkipSpace (r) THEN END ;
+    Skip (r, '>', '> closing the DOCTYPE') ;
+    r.state := SProlog
+  ELSIF Ahead (r, '<!ELEMENT') THEN ElementDecl (r)
+  ELSIF Ahead (r, '<!ATTLIST') THEN
+    Refuse (r, 'an ATTLIST declaration: its defaults and value types would change the data, and they are not applied')
+  ELSIF Ahead (r, '<!ENTITY') THEN
+    Refuse (r, 'an ENTITY declaration: entities are not expanded')
+  ELSIF Ahead (r, '<!NOTATION') THEN
+    r.pos := r.pos + 10 ;
+    NeedSpace (r, 'after <!NOTATION') ;
+    n := Name (r, 'a notation name') ;
+    IF Text.FindChar (n, ':') >= 0 THEN Fail (r, 'a colon in a notation name, which namespaces forbid') END ;
+    NeedSpace (r, 'after the notation name') ;
+    IF NOT ExternalId (r, TRUE) THEN Fail (r, 'SYSTEM or PUBLIC expected') END ;
+    IF SkipSpace (r) THEN END ;
+    Skip (r, '>', '> closing <!NOTATION')
+  ELSIF Cur (r) = '%' THEN
+    Refuse (r, 'a parameter entity reference: entities are not expanded')
+  ELSE
+    Fail (r, 'a markup declaration expected in the internal subset')
+  END
+END SubsetDecl ;
+
+(* ---- namespaces ------------------------------------------------------ *)
+
+PROCEDURE Bind (VAR r: PTR Reader ; RO KEPT p: STR ; RO KEPT u: STR) =
+VAR
+  np, nu : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF r.nns = LEN (r.pfx) THEN
+    np := NEW (r, STR, 2 * r.nns + 8) ;
+    nu := NEW (r, STR, 2 * r.nns + 8) ;
+    FOR i := 0 TO r.nns - 1 DO np[i] := r.pfx[i] ; nu[i] := r.uri[i] END ;
+    r.pfx := np ;
+    r.uri := nu
+  END ;
+  r.pfx[r.nns] := p ;
+  r.uri[r.nns] := u ;
+  r.nns := r.nns + 1
+END Bind ;
+
+PROCEDURE Lookup (VAR r: PTR Reader ; RO p: STR ; VAR u: STR) : BOOL =
+  (* the namespace prefix p is bound to; '' the default *)
+VAR i : I64 ;
+BEGIN
+  IF Text.Eq (p, 'xml') THEN u := XmlNs ; RETURN TRUE END ;
+  i := r.nns - 1 ;
+  WHILE i >= 0 DO
+    IF Text.Eq (r.pfx[i], p) THEN u := r.uri[i] ; RETURN TRUE END ;
+    i := i - 1
+  END ;
+  u := '' ;
+  RETURN LEN (p) = 0
+END Lookup ;
+
+PROCEDURE Split (VAR r: PTR Reader ; RO q: STR ; VAR p, l: STR) RAISES SyntaxError =
+  (* a QName's prefix and local part: one colon at most, inside *)
+VAR i, at : I64 ;
+BEGIN
+  at := -1 ;
+  FOR i := 0 TO LEN (q) - 1 DO
+    IF q[i] = ':' THEN
+      IF at >= 0 THEN Fail (r, 'a name with two colons: ' + q) END ;
+      at := i
+    END
+  END ;
+  IF at < 0 THEN p := '' ; l := q ; RETURN END ;
+  IF at = 0 OR at = LEN (q) - 1 THEN Fail (r, 'a name with nothing on one side of its colon: ' + q) END ;
+  p := SLICE (q, 0, at) ;
+  l := SLICE (q, at + 1, LEN (q) - at - 1) ;
+  IF NOT IsNameStart (ORD (l[0])) THEN Fail (r, 'a local name that cannot begin a name: ' + q) END
+END Split ;
+
+(* ---- tags ------------------------------------------------------------ *)
+
+PROCEDURE Push (VAR r: PTR Reader ; RO KEPT n, ns, l: STR) =
+VAR
+  a, b, c : SLICE OF STR ;
+  m : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF r.depth = LEN (r.stack) THEN
+    a := NEW (r, STR, 2 * r.depth + 8) ;
+    b := NEW (r, STR, 2 * r.depth + 8) ;
+    c := NEW (r, STR, 2 * r.depth + 8) ;
+    m := NEW (r, I64, 2 * r.depth + 8) ;
+    FOR i := 0 TO r.depth - 1 DO
+      a[i] := r.stack[i] ; b[i] := r.stackNs[i] ; c[i] := r.stackLocal[i] ; m[i] := r.mark[i]
+    END ;
+    r.stack := a ;
+    r.stackNs := b ;
+    r.stackLocal := c ;
+    r.mark := m
+  END ;
+  r.stack[r.depth] := n ;
+  r.stackNs[r.depth] := ns ;
+  r.stackLocal[r.depth] := l ;
+  r.depth := r.depth + 1
+END Push ;
+
+PROCEDURE StartTagEv (VAR r: PTR Reader ; VAR ev: Event) RAISES SyntaxError, Unsupported =
+  (* at < and a name *)
+VAR
+  n, an, av, p, l, u : STR ;
+  attrs, more : SLICE OF Attr ;
+  na, i, j, nsMark, tagAt, endAt : I64 ;
+BEGIN
+  tagAt := r.pos ;
+  r.pos := r.pos + 1 ;
+  n := Name (r, 'an element name') ;
+  attrs := NEW (r, Attr, 4) ;
+  na := 0 ;
+  nsMark := r.nns ;
+  LOOP
+    IF Ahead (r, '>') OR Ahead (r, '/>') THEN EXIT END ;
+    NeedSpace (r, 'before an attribute') ;
+    IF Ahead (r, '>') OR Ahead (r, '/>') THEN EXIT END ;
+    IF AtEnd (r) THEN Fail (r, 'a start tag not closed') END ;
+    an := Name (r, 'an attribute name') ;
+    IF SkipSpace (r) THEN END ;
+    Skip (r, '=', '= after an attribute name') ;
+    IF SkipSpace (r) THEN END ;
+    av := AttValue (r) ;
+    FOR i := 0 TO na - 1 DO
+      IF Text.Eq (attrs[i].name, an) THEN Fail (r, 'an attribute given twice: ' + an) END
+    END ;
+    IF na = LEN (attrs) THEN
+      more := NEW (r, Attr, 2 * na) ;
+      FOR i := 0 TO na - 1 DO more[i] := attrs[i] END ;
+      attrs := more
+    END ;
+    attrs[na].name := an ;
+    attrs[na].value := av ;
+    attrs[na].ns := '' ;
+    attrs[na].local := an ;
+    na := na + 1
+  END ;
+  (* the declarations first, then every name resolved; a namespace
+     error is reported where the tag begins *)
+  endAt := r.pos ;
+  r.pos := tagAt ;
+  FOR i := 0 TO na - 1 DO
+    an := attrs[i].name ;
+    IF Text.Eq (an, 'xmlns') THEN
+      av := attrs[i].value ;
+      IF Text.Eq (av, XmlNs) OR Text.Eq (av, XmlnsNs) THEN
+        Fail (r, 'a reserved namespace as the default: ' + av)
+      END ;
+      Bind (r, '', av) ;
+      attrs[i].ns := XmlnsNs ;
+      attrs[i].local := 'xmlns'
+    ELSIF Text.StartsWith (an, 'xmlns:') THEN
+      Split (r, an, p, l) ;
+      av := attrs[i].value ;
+      IF LEN (av) = 0 THEN Fail (r, 'a prefix bound to no namespace: ' + l) END ;
+      IF Text.Eq (l, 'xmlns') THEN Fail (r, 'the prefix xmlns declared') END ;
+      IF Text.Eq (l, 'xml') # Text.Eq (av, XmlNs) THEN
+        Fail (r, 'the prefix xml and its namespace belong together: ' + l)
+      END ;
+      IF Text.Eq (av, XmlnsNs) THEN Fail (r, 'the xmlns namespace bound to a prefix') END ;
+      Bind (r, l, av) ;
+      attrs[i].ns := XmlnsNs ;
+      attrs[i].local := l
+    END
+  END ;
+  FOR i := 0 TO na - 1 DO
+    IF NOT Text.Eq (attrs[i].ns, XmlnsNs) THEN
+      Split (r, attrs[i].name, p, l) ;
+      attrs[i].local := l ;
+      IF LEN (p) > 0 THEN
+        IF NOT Lookup (r, p, u) THEN Fail (r, 'an unbound prefix: ' + p) END ;
+        attrs[i].ns := u
+      END ;
+      FOR j := 0 TO i - 1 DO
+        IF LEN (attrs[i].ns) > 0 AND Text.Eq (attrs[j].ns, attrs[i].ns) AND
+           Text.Eq (attrs[j].local, attrs[i].local) THEN
+          Fail (r, 'an attribute given twice in one namespace: ' + attrs[i].name)
+        END
+      END
+    END
+  END ;
+  Split (r, n, p, l) ;
+  IF NOT Lookup (r, p, u) THEN Fail (r, 'an unbound prefix: ' + p) END ;
+  IF Text.Eq (p, 'xmlns') THEN Fail (r, 'an element with the prefix xmlns') END ;
+  r.pos := endAt ;
+  ev.kind := Kind.Start ;
+  ev.name := n ;
+  ev.ns := u ;
+  ev.local := l ;
+  ev.attrs := SLICE (attrs, 0, na) ;
+  ev.text := '' ;
+  IF Ahead (r, '/>') THEN
+    r.pos := r.pos + 2 ;
+    r.pending := TRUE ;
+    r.pendName := n ;
+    r.pendNs := u ;
+    r.pendLocal := l ;
+    r.nns := nsMark
+  ELSE
+    r.pos := r.pos + 1 ;
+    Push (r, n, u, l) ;
+    r.mark[r.depth - 1] := nsMark
+  END
+END StartTagEv ;
+
+PROCEDURE EndTagEv (VAR KEPT r: PTR Reader ; VAR ev: Event) RAISES SyntaxError =
+  (* at </ *)
+VAR n : STR ;
+BEGIN
+  r.pos := r.pos + 2 ;
+  n := Name (r, 'an element name') ;
+  IF SkipSpace (r) THEN END ;
+  Skip (r, '>', '> closing an end tag') ;
+  IF r.depth = 0 THEN Fail (r, 'an end tag with no element open') END ;
+  IF NOT Text.Eq (n, r.stack[r.depth - 1]) THEN
+    Fail (r, 'the end tag ' + n + ' closes ' + r.stack[r.depth - 1])
+  END ;
+  r.depth := r.depth - 1 ;
+  ev.kind := Kind.End ;
+  ev.name := n ;
+  ev.ns := r.stackNs[r.depth] ;
+  ev.local := r.stackLocal[r.depth] ;
+  r.nns := r.mark[r.depth]
+END EndTagEv ;
+
+(* ---- the reader ----------------------------------------------------- *)
+
+PROCEDURE CheckChars (VAR r: PTR Reader) RAISES SyntaxError =
+  (* every character an XML Char *)
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (r.src) - 1 DO
+    IF NOT IsChar (ORD (r.src[i])) THEN
+      r.pos := i ;
+      Fail (r, 'a character no XML document may hold')
+    END
+  END
+END CheckChars ;
+
+PROCEDURE RawValue (RO head: STR ; RO name: STR) : STR =
+  (* name="value" or name='value' in the declaration's text, '' if not *)
+VAR
+  i, j : I64 ;
+  q : CHAR ;
+BEGIN
+  i := Text.Find (head, name) ;
+  IF i < 0 THEN RETURN '' END ;
+  i := i + LEN (name) ;
+  WHILE i < LEN (head) AND (IsSpace (head[i]) OR head[i] = '=') DO i := i + 1 END ;
+  IF i >= LEN (head) OR (head[i] # '"' AND head[i] # "'") THEN RETURN '' END ;
+  q := head[i] ;
+  j := i + 1 ;
+  WHILE j < LEN (head) AND head[j] # q DO j := j + 1 END ;
+  RETURN SLICE (head, i + 1, j - i - 1)
+END RawValue ;
+
+PROCEDURE RawDecl (VAR pool: POOL ; RO b: SLICE OF BYTE) RAISES Unsupported =
+  (* XML 1.1 or an encoding other than UTF-8, refused by name *)
+VAR
+  head, e : STR ;
+  n : I64 ;
+BEGIN
+  IF LEN (b) < 6 OR b[0] # 60 OR b[1] # 63 OR b[2] # 120 OR b[3] # 109 OR b[4] # 108 THEN
+    RETURN
+  END ;
+  n := 0 ;
+  WHILE n < LEN (b) AND n < 400 AND b[n] # 62 DO n := n + 1 END ;
+  BEGIN
+    head := DynStr.Chars (pool, SLICE (b, 0, n))
+  EXCEPT
+  | ValueRange :
+      RETURN
+  END ;
+  IF Text.Eq (RawValue (head, 'version'), '1.1') THEN
+    RAISE Unsupported ('XML 1.1: only 1.0 is read', 1, 1)
+  END ;
+  e := Text.Upper (RawValue (head, 'encoding')) ;
+  IF LEN (e) > 0 AND NOT Text.Eq (e, 'UTF-8') AND NOT Text.Eq (e, 'UTF8') THEN
+    RAISE Unsupported ('an encoding other than UTF-8: ' + RawValue (head, 'encoding'), 1, 1)
+  END
+END RawDecl ;
+
+PROCEDURE Open (VAR pool: POOL ; RO doc: SLICE OF BYTE) : PTR Reader IN pool
+  RAISES SyntaxError, Unsupported =
+VAR
+  r : PTR Reader IN pool ;
+  raw, s : STR ;
+  i, n, start : I64 ;
+BEGIN
+  r := NEW (pool, Reader) ;
+  r.src := '' ;
+  r.pos := 0 ;
+  r.atPos := 0 ;
+  r.atLine := 1 ;
+  r.atCol := 1 ;
+  r.state := SProlog ;
+  r.stack := NEW (pool, STR, 8) ;
+  r.stackNs := NEW (pool, STR, 8) ;
+  r.stackLocal := NEW (pool, STR, 8) ;
+  r.mark := NEW (pool, I64, 8) ;
+  r.depth := 0 ;
+  r.pfx := NEW (pool, STR, 8) ;
+  r.uri := NEW (pool, STR, 8) ;
+  r.nns := 0 ;
+  r.pending := FALSE ;
+  r.doctype := FALSE ;
+  r.external := FALSE ;
+  r.standalone := FALSE ;
+  start := 0 ;
+  IF LEN (doc) >= 2 AND ((doc[0] = 0xFE AND doc[1] = 0xFF) OR (doc[0] = 0xFF AND doc[1] = 0xFE)) THEN
+    RAISE Unsupported ('UTF-16: only UTF-8 is read', 1, 1)
+  END ;
+  IF LEN (doc) >= 3 AND doc[0] = 0xEF AND doc[1] = 0xBB AND doc[2] = 0xBF THEN start := 3 END ;
+  (* the declaration's version and encoding read from the bytes, so
+     that a document in another encoding is refused by name, not as
+     bytes that are not UTF-8; XmlDecl holds its syntax below *)
+  RawDecl (pool, SLICE (doc, start, LEN (doc) - start)) ;
+  BEGIN
+    raw := DynStr.FromUtf8 (pool, SLICE (doc, start, LEN (doc) - start))
+  EXCEPT
+  | ValueRange :
+      RAISE SyntaxError ('not UTF-8, the one encoding read', 1, 1)
+  END ;
+  (* line ends: CR LF and a lone CR are LF *)
+  s := NEW (pool, CHAR, LEN (raw)) ;
+  n := 0 ;
+  i := 0 ;
+  WHILE i < LEN (raw) DO
+    IF raw[i] = 0DC THEN
+      s[n] := 0AC ;
+      IF i + 1 < LEN (raw) AND raw[i + 1] = 0AC THEN i := i + 1 END
+    ELSE
+      s[n] := raw[i]
+    END ;
+    n := n + 1 ;
+    i := i + 1
+  END ;
+  r.src := SLICE (s, 0, n) ;
+  CheckChars (r) ;
+  IF Ahead (r, '<?xml') AND LEN (r.src) > 5 AND IsSpace (r.src[5]) THEN XmlDecl (r) END ;
+  RETURN r
+END Open ;
+
+PROCEDURE Next (VAR KEPT r: PTR Reader) : Event RAISES SyntaxError, Unsupported =
+VAR
+  ev : Event ;
+  line, col : I64 ;
+  target : STR ;
+BEGIN
+  ev.kind := Kind.Eof ;
+  ev.name := '' ;
+  ev.ns := '' ;
+  ev.local := '' ;
+  ev.attrs := NEW (r, Attr, 0) ;
+  ev.text := '' ;
+  IF r.pending THEN
+    r.pending := FALSE ;
+    ev.kind := Kind.End ;
+    ev.name := r.pendName ;
+    ev.ns := r.pendNs ;
+    ev.local := r.pendLocal ;
+    Where (r, r.pos, line, col) ;
+    ev.line := line ;
+    ev.col := col ;
+    IF r.depth = 0 THEN r.state := SEpilog END ;
+    RETURN ev
+  END ;
+  LOOP
+    IF r.state = SDone THEN
+      Where (r, r.pos, line, col) ;
+      ev.line := line ;
+      ev.col := col ;
+      RETURN ev
+    END ;
+    IF r.state # SContent THEN
+      IF SkipSpace (r) THEN END
+    END ;
+    Where (r, r.pos, line, col) ;
+    ev.line := line ;
+    ev.col := col ;
+    IF AtEnd (r) THEN
+      IF r.state = SSubset THEN Fail (r, 'the internal subset not closed') END ;
+      IF r.state = SProlog THEN Fail (r, 'no root element') END ;
+      IF r.state = SContent THEN Fail (r, 'the document ends inside ' + r.stack[r.depth - 1]) END ;
+      r.state := SDone
+    ELSIF Ahead (r, '<!--') THEN
+      ev.kind := Kind.Comment ;
+      ev.text := CommentBody (r) ;
+      RETURN ev
+    ELSIF Ahead (r, '<?') THEN
+      ev.kind := Kind.Pi ;
+      ev.text := PiBody (r, target) ;
+      ev.name := target ;
+      RETURN ev
+    ELSIF r.state = SSubset THEN
+      SubsetDecl (r)
+    ELSIF r.state = SContent THEN
+      IF Ahead (r, '</') THEN
+        EndTagEv (r, ev) ;
+        IF r.depth = 0 THEN r.state := SEpilog END ;
+        RETURN ev
+      ELSIF Ahead (r, '<![CDATA[') OR Cur (r) # '<' THEN
+        ev.kind := Kind.Text ;
+        ev.text := CharData (r) ;
+        RETURN ev
+      ELSIF Ahead (r, '<!') THEN
+        Fail (r, 'a declaration inside an element')
+      ELSE
+        StartTagEv (r, ev) ;
+        RETURN ev
+      END
+    ELSIF Ahead (r, '<!DOCTYPE') THEN
+      IF r.state # SProlog OR r.doctype THEN Fail (r, 'a DOCTYPE here') END ;
+      r.doctype := TRUE ;
+      Doctype (r)
+    ELSIF Cur (r) = '<' AND r.pos + 1 < LEN (r.src) AND IsNameStart (ORD (r.src[r.pos + 1])) THEN
+      IF r.state = SEpilog THEN Fail (r, 'a second root element') END ;
+      r.state := SContent ;
+      StartTagEv (r, ev) ;
+      RETURN ev
+    ELSE
+      Fail (r, 'markup or the root element expected')
+    END
+  END
+END Next ;
+
+(* ---- the tree --------------------------------------------------------- *)
+
+PROCEDURE Parse (VAR pool: POOL ; RO doc: SLICE OF BYTE) : PTR Element IN pool
+  RAISES SyntaxError, Unsupported =
+VAR
+  r : PTR Reader IN pool ;
+  ev : Event ;
+  stack : SLICE OF PTR Element ;
+  kids : SLICE OF SLICE OF PTR Element ;
+  nk : SLICE OF I64 ;
+  root, e, last : PTR Element IN pool ;
+  depth, i : I64 ;
+  more : SLICE OF PTR Element ;
+  haveRoot, haveLast : BOOL ;
+BEGIN
+  r := Open (pool, doc) ;
+  stack := NEW (pool, ElementP, 64) ;
+  kids := NEW (pool, KidsP, 64) ;
+  nk := NEW (pool, I64, 64) ;
+  depth := 0 ;
+  haveRoot := FALSE ;
+  haveLast := FALSE ;
+  root := NEW (pool, Element) ;
+  last := root ;
+  LOOP
+    ev := Next (r) ;
+    IF ev.kind = Kind.Eof THEN EXIT END ;
+    IF ev.kind = Kind.Start THEN
+      e := NEW (pool, Element) ;
+      e.name := ev.name ;
+      e.ns := ev.ns ;
+      e.local := ev.local ;
+      e.attrs := ev.attrs ;
+      e.text := '' ;
+      e.tail := '' ;
+      e.kids := NEW (pool, ElementP, 0) ;
+      IF depth = 0 THEN
+        root := e ;
+        haveRoot := TRUE
+      ELSE
+        IF nk[depth - 1] = LEN (kids[depth - 1]) THEN
+          more := NEW (pool, ElementP, 2 * nk[depth - 1] + 4) ;
+          FOR i := 0 TO nk[depth - 1] - 1 DO more[i] := kids[depth - 1][i] END ;
+          kids[depth - 1] := more
+        END ;
+        kids[depth - 1][nk[depth - 1]] := e ;
+        nk[depth - 1] := nk[depth - 1] + 1
+      END ;
+      IF depth = LEN (stack) THEN Fail (r, 'more than 64 elements deep in a tree') END ;
+      stack[depth] := e ;
+      kids[depth] := NEW (pool, ElementP, 4) ;
+      nk[depth] := 0 ;
+      depth := depth + 1 ;
+      haveLast := FALSE
+    ELSIF ev.kind = Kind.End THEN
+      depth := depth - 1 ;
+      stack[depth].kids := SLICE (kids[depth], 0, nk[depth]) ;
+      last := stack[depth] ;
+      haveLast := TRUE
+    ELSIF ev.kind = Kind.Text AND depth > 0 THEN
+      (* a comment or PI between two runs of text: the two joined,
+         and kept in the pool *)
+      IF haveLast THEN last.tail := Text.Keep (pool, last.tail + ev.text)
+      ELSE stack[depth - 1].text := Text.Keep (pool, stack[depth - 1].text + ev.text)
+      END
+    END
+  END ;
+  RETURN root
+END Parse ;
+
+PROCEDURE Child (e: PTR Element ; RO ns: STR ; RO local: STR) : OPT PTR Element =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (e.kids) - 1 DO
+    IF Text.Eq (e.kids[i].ns, ns) AND Text.Eq (e.kids[i].local, local) THEN
+      RETURN SOME (e.kids[i])
+    END
+  END ;
+  RETURN NONE
+END Child ;
+
+PROCEDURE HasAttr (e: PTR Element ; RO ns: STR ; RO local: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (e.attrs) - 1 DO
+    IF Text.Eq (e.attrs[i].ns, ns) AND Text.Eq (e.attrs[i].local, local) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END HasAttr ;
+
+PROCEDURE AttrValue (e: PTR Element ; RO ns: STR ; RO local: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (e.attrs) - 1 DO
+    IF Text.Eq (e.attrs[i].ns, ns) AND Text.Eq (e.attrs[i].local, local) THEN
+      RETURN e.attrs[i].value
+    END
+  END ;
+  RETURN ''
+END AttrValue ;
+
+PROCEDURE AddText (e: PTR Element ; VAR d: PTR DynStr.DString) =
+VAR i : I64 ;
+BEGIN
+  DynStr.Append (d, e.text) ;
+  FOR i := 0 TO LEN (e.kids) - 1 DO
+    AddText (e.kids[i], d) ;
+    DynStr.Append (d, e.kids[i].tail)
+  END
+END AddText ;
+
+PROCEDURE AllText (e: PTR Element) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  AddText (e, d) ;
+  RETURN DynStr.View (d)
+END AllText ;
+
+(* ---- the writer ------------------------------------------------------ *)
+
+PROCEDURE NewWriter (VAR pool: POOL) : PTR Writer IN pool =
+VAR w : PTR Writer IN pool ;
+BEGIN
+  w := NEW (pool, Writer) ;
+  w.d := DynStr.New (pool) ;
+  w.stack := NEW (pool, STR, 8) ;
+  w.depth := 0 ;
+  w.open := FALSE ;
+  w.roots := 0 ;
+  RETURN w
+END NewWriter ;
+
+PROCEDURE CloseOpen (VAR w: PTR Writer) =
+BEGIN
+  IF w.open THEN
+    DynStr.AppendChar (w.d, '>') ;
+    w.open := FALSE
+  END
+END CloseOpen ;
+
+PROCEDURE Escaped (VAR w: PTR Writer ; RO s: STR ; attr: BOOL) RAISES WriteError =
+VAR
+  i : I64 ;
+  c : CHAR ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := s[i] ;
+    IF NOT IsChar (ORD (c)) THEN
+      RAISE WriteError ('a character no XML document may hold, at ' + Fmt.I64Str (i))
+    END ;
+    IF c = '&' THEN DynStr.Append (w.d, '&amp;')
+    ELSIF c = '<' THEN DynStr.Append (w.d, '&lt;')
+    ELSIF c = '>' THEN DynStr.Append (w.d, '&gt;')
+    ELSIF c = 0DC THEN DynStr.Append (w.d, '&#13;')
+    ELSIF attr AND c = '"' THEN DynStr.Append (w.d, '&quot;')
+    ELSIF attr AND c = 09C THEN DynStr.Append (w.d, '&#9;')
+    ELSIF attr AND c = 0AC THEN DynStr.Append (w.d, '&#10;')
+    ELSE DynStr.AppendChar (w.d, c)
+    END
+  END
+END Escaped ;
+
+PROCEDURE StartTag (VAR w: PTR Writer ; RO name: STR) RAISES WriteError =
+VAR
+  ns : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF NOT IsName (name) THEN RAISE WriteError ('not an element name: ' + name) END ;
+  IF w.depth = 0 THEN
+    IF w.roots > 0 THEN RAISE WriteError ('a second root element: ' + name) END ;
+    w.roots := 1
+  END ;
+  CloseOpen (w) ;
+  DynStr.AppendChar (w.d, '<') ;
+  DynStr.Append (w.d, name) ;
+  IF w.depth = LEN (w.stack) THEN
+    ns := NEW (w, STR, 2 * w.depth) ;
+    FOR i := 0 TO w.depth - 1 DO ns[i] := w.stack[i] END ;
+    w.stack := ns
+  END ;
+  w.stack[w.depth] := NEW (w, CHAR, LEN (name)) ;
+  FOR i := 0 TO LEN (name) - 1 DO w.stack[w.depth][i] := name[i] END ;
+  w.depth := w.depth + 1 ;
+  w.open := TRUE
+END StartTag ;
+
+PROCEDURE Attribute (VAR w: PTR Writer ; RO name: STR ; RO value: STR) RAISES WriteError =
+BEGIN
+  IF NOT w.open THEN RAISE WriteError ('an attribute after the start tag was closed: ' + name) END ;
+  IF NOT IsName (name) THEN RAISE WriteError ('not an attribute name: ' + name) END ;
+  DynStr.AppendChar (w.d, ' ') ;
+  DynStr.Append (w.d, name) ;
+  DynStr.Append (w.d, '="') ;
+  Escaped (w, value, TRUE) ;
+  DynStr.AppendChar (w.d, '"')
+END Attribute ;
+
+PROCEDURE Chars (VAR w: PTR Writer ; RO s: STR) RAISES WriteError =
+BEGIN
+  IF w.depth = 0 THEN RAISE WriteError ('character data outside the root element') END ;
+  CloseOpen (w) ;
+  Escaped (w, s, FALSE)
+END Chars ;
+
+PROCEDURE EndTag (VAR w: PTR Writer) RAISES WriteError =
+BEGIN
+  IF w.depth = 0 THEN RAISE WriteError ('an end tag with no element open') END ;
+  w.depth := w.depth - 1 ;
+  IF w.open THEN
+    DynStr.Append (w.d, '/>') ;
+    w.open := FALSE
+  ELSE
+    DynStr.Append (w.d, '</') ;
+    DynStr.Append (w.d, w.stack[w.depth]) ;
+    DynStr.AppendChar (w.d, '>')
+  END
+END EndTag ;
+
+PROCEDURE Document (w: PTR Writer) : STR RAISES WriteError =
+BEGIN
+  IF w.roots = 0 THEN RAISE WriteError ('no root element') END ;
+  IF w.depth > 0 THEN RAISE WriteError ('an element left open: ' + w.stack[w.depth - 1]) END ;
+  RETURN '<?xml version="1.0" encoding="UTF-8"?>' + 0AC + DynStr.View (w.d) + 0AC
+END Document ;
+
+END Xml.

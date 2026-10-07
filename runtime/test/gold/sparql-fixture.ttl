@@ -1,0 +1,26 @@
+# The graph tools/sparqlgold.py queries and runtime/test/sparqlfix.py
+# serves (docs/datalib-plan.md par 2).  Each statement is there for a
+# term the reader must get right: IRIs, a blank node, plain, language
+# tagged and typed literals, a literal holding quotes, a line feed and
+# characters past Latin-1, and people without a mailbox, so an
+# OPTIONAL leaves a cell unbound.
+@prefix ex: <http://example.org/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ex:alice foaf:name "Alice" ;
+    foaf:mbox <mailto:alice@example.org> ;
+    foaf:age "42"^^xsd:integer ;
+    ex:height "1.68"^^xsd:decimal ;
+    ex:born "1984-02-29"^^xsd:date ;
+    ex:likes [ foaf:name "a blank node" ] .
+
+ex:bob foaf:name "Bob"@en, "Bóbr"@pl ;
+    ex:active true ;
+    ex:note "says \"hi\"\nand leaves" .
+
+ex:zoe foaf:name "Zoë ✓ 𝄞" ;
+    foaf:mbox <mailto:zoe@example.org> .
+
+ex:station ex:label "Cabauw"@nl ;
+    ex:height "207"^^xsd:integer .

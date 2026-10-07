@@ -149,6 +149,20 @@ PROCEDURE Header (RO headers: STR ; RO name: STR) : STR
      surrounding blanks removed; '' when there is no such line, which
      an absent header and an empty one share. *)
 
+PROCEDURE UrlEncode (RO s: STR) : STR RAISES ValueRange ;
+  (* s as a URL component: its UTF-8 octets, each one outside A-Z
+     a-z 0-9 - . _ ~ written %XX in upper-case hex.  Python's
+     urllib.parse.quote (s, safe=''), held to it by HttpTest: a blank
+     is %20, a slash %2F, so the answer can stand anywhere in a URL. *)
+
+PROCEDURE UrlDecode (RO s: STR) : STR RAISES ValueRange ;
+  (* the inverse: every %XX an octet, the octets of a run decoded as
+     UTF-8, STRICTLY -- an invalid sequence RAISES ValueRange, as
+     Python's unquote (s, errors='strict') raises.  A % that is not
+     followed by two hex digits is kept as it stands, and so is a +:
+     this is a URL's decoding, not a form's, and Python's unquote
+     does the same. *)
+
 (* ---- a Client: one kept connection and a cookie jar ----------------
 
    Request opens a connection per call and says so (Connection:
@@ -1775,5 +1789,87 @@ EXCEPT
 | IndexError : RAISE TransportError ('a malformed response')
 | Io.IOError (p) : RAISE TransportError ('unexpected file error')
 END RequestRetry ;
+
+(* ---- URL components -------------------------------------------------- *)
+
+PROCEDURE Unreserved (b: I64) : BOOL =
+  (* RFC 3986 par 2.3, which is quote's `always safe' set *)
+BEGIN
+  RETURN (b >= 65 AND b <= 90) OR (b >= 97 AND b <= 122) OR
+         (b >= 48 AND b <= 57) OR b = 45 OR b = 46 OR b = 95 OR b = 126
+END Unreserved ;
+
+PROCEDURE HexDigit (v: I64) : CHAR RAISES ValueRange =
+BEGIN
+  IF v < 10 THEN RETURN CHR (48 + v) END ;
+  RETURN CHR (55 + v)                     (* 'A' .. 'F' *)
+END HexDigit ;
+
+PROCEDURE HexOf (c: CHAR) : I64 =
+  (* a hex digit's value, -1 for anything else *)
+BEGIN
+  IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - 48 END ;
+  IF c >= 'A' AND c <= 'F' THEN RETURN ORD (c) - 55 END ;
+  IF c >= 'a' AND c <= 'f' THEN RETURN ORD (c) - 87 END ;
+  RETURN -1
+END HexOf ;
+
+PROCEDURE UrlEncode (RO s: STR) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  u : SLICE OF BYTE ;
+  r : STR ;
+  i, b : I64 ;
+BEGIN
+  u := DynStr.Utf8 (scratch, s) ;
+  r := '' ;
+  FOR i := 0 TO LEN (u) - 1 DO
+    b := I64 (u[i]) ;
+    IF Unreserved (b) THEN
+      r := r + CHR (b)
+    ELSE
+      r := r + '%' + HexDigit (b DIV 16) + HexDigit (b MOD 16)
+    END
+  END ;
+  RETURN r
+END UrlEncode ;
+
+PROCEDURE UrlDecode (RO s: STR) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  run : SLICE OF BYTE ;
+  r : STR ;
+  i, n, hi, lo : I64 ;
+BEGIN
+  run := NEW (scratch, BYTE, LEN (s) + 1) ;
+  n := 0 ;
+  r := '' ;
+  i := 0 ;
+  WHILE i < LEN (s) DO
+    hi := -1 ;
+    lo := -1 ;
+    IF s[i] = '%' AND i + 2 < LEN (s) THEN
+      hi := HexOf (s[i + 1]) ;
+      lo := HexOf (s[i + 2])
+    END ;
+    IF hi >= 0 AND lo >= 0 THEN
+      run[n] := BYTE (hi * 16 + lo) ;
+      n := n + 1 ;
+      i := i + 3
+    ELSE
+      (* a run of octets ends: decoded whole, strictly *)
+      IF n > 0 THEN
+        r := r + DynStr.FromUtf8 (scratch, SLICE (run, 0, n)) ;
+        n := 0
+      END ;
+      r := r + s[i] ;
+      i := i + 1
+    END
+  END ;
+  IF n > 0 THEN
+    r := r + DynStr.FromUtf8 (scratch, SLICE (run, 0, n))
+  END ;
+  RETURN r
+END UrlDecode ;
 
 END Http.

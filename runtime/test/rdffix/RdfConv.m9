@@ -1,0 +1,71 @@
+MODULE RdfConv ;
+
+(* rdf.sh's converter: each document read by Rdf and written back as
+   N-Triples, for rdflib to judge (runtime/test/rdfjudge.py).
+
+       RdfConv KIND DIR BASE OUT FILE...
+
+   KIND is ttl or nt; FILE is read from DIR, a Turtle document against
+   BASE + FILE.  OUT/FILE.nt receives the N-Triples, or OUT/FILE.err
+   the refusal, one line: LINE:COL MESSAGE, or ValueRange. *)
+
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Rdf ;
+IMPORT Text ;
+
+PROCEDURE Convert (RO kind: STR ; RO dir: STR ; RO base: STR ;
+                   RO out: STR ; RO file: STR) RAISES ValueRange, Io.IOError =
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  src, em : STR ;
+  el, ec : I64 ;
+BEGIN
+  BEGIN
+    src := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, dir + '/' + file)) ;
+    IF Text.Eq (kind, 'nt') THEN
+      g := Rdf.ParseNTriples (p, src)
+    ELSE
+      g := Rdf.ParseTurtle (p, src, base + file)
+    END ;
+    (* UTF-8: Io.WriteFile writes Latin-1 and refuses past U+00FF *)
+    Io.WriteFileBytes (out + '/' + file + '.nt', DynStr.Utf8 (p, Rdf.NTriples (g)))
+  EXCEPT
+  | Rdf.SyntaxError (m, line, col) :
+      (* a handler's binders have no type in the checker yet: copied *)
+      em := m ; el := line ; ec := col ;
+      Io.WriteFile (out + '/' + file + '.err',
+                    Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em + 0AC)
+  | ValueRange :
+      Io.WriteFile (out + '/' + file + '.err', 'ValueRange' + 0AC)
+  END
+END Convert ;
+
+VAR
+  pool : POOL ;
+  i : I64 ;
+
+BEGIN
+  BEGIN
+    IF Io.ArgCount () < 5 THEN
+      Io.WriteLine ('usage: RdfConv ttl|nt DIR BASE OUT FILE...') ;
+      Io.Halt (2)
+    END ;
+    FOR i := 5 TO Io.ArgCount () - 1 DO
+      Convert (Io.Arg (pool, 1), Io.Arg (pool, 2), Io.Arg (pool, 3),
+               Io.Arg (pool, 4), Io.Arg (pool, i))
+    END
+  EXCEPT
+  | ValueRange :
+      Io.WriteLine ('RdfConv: ValueRange') ;
+      Io.Halt (1)
+  | IndexError :
+      Io.WriteLine ('RdfConv: IndexError') ;
+      Io.Halt (1)
+  | Io.IOError (e) :
+      Io.WriteLine ('RdfConv: cannot read or write a file') ;
+      Io.Halt (1)
+  END
+END RdfConv.

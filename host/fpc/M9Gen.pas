@@ -108,6 +108,8 @@ type
     function ScopeFind (const n: string): Integer;
     procedure ModuleScope;
     function QualIn (t: TNode; const inMod: string): TNode;
+    procedure NoteMod (t: TNode; var m: string);
+    function InMod (t: TNode; const m: string): TNode;
     procedure ExportVars (rec2: TStringList);
     function NameShadowed (sc: TNode; const name: string): Boolean;
     procedure ExportWalk (n, sc: TNode);
@@ -993,6 +995,20 @@ begin
   end;
 end;
 
+{ Gen.NoteMod/InMod: the module a qualified type name points into,
+  so a foreign aggregate's component types are read where they were
+  declared (canonCtx) }
+procedure TGen.NoteMod (t: TNode; var m: string);
+begin
+  if (t <> nil) and (t.kind = nkQualident) and (t.b <> '') then m := t.a;
+end;
+
+function TGen.InMod (t: TNode; const m: string): TNode;
+begin
+  if (m = '') or (m = modName) then Exit (t);
+  Result := QualIn (t, m);
+end;
+
 { Gen.ExportVars: the exporter publishes a constant pointer to each
   variable its definition declares, and a pointer-bearing one's pool }
 procedure TGen.ExportVars (rec2: TStringList);
@@ -1686,8 +1702,10 @@ var
   sel : TNode;
   base, ix, ec, nsx : string;
   enumIx : Boolean;
+  tmod : string;
 begin
   tag := '?';
+  tmod := '';
   tnd := ScopeNode (d.a);
   if tnd = nil then
   begin
@@ -1775,6 +1793,7 @@ begin
   for j := 0 to High (d.kids) do
   begin
     sel := d.kids[j];
+    NoteMod (tnd, tmod);
     r := Resolve (tnd);
     if r = nil then begin Err (d, 'cannot type ' + d.a); Exit ('0'); end;
     case sel.kind of
@@ -1782,17 +1801,17 @@ begin
         begin
           if r.kind in [nkPtrType, nkSharedType] then
           begin
-            inner := Resolve (r.kids[0]);
+            inner := Resolve (InMod (r.kids[0], tmod));
             if (inner = nil) or
                not (inner.kind in [nkRecordType, nkMonitorType]) then
               begin Err (d, 'field on non-record'); Exit ('0'); end;
             Result := Result + '->' + CN (sel.a);
-            tnd := FieldType (inner, sel.a);
+            tnd := InMod (FieldType (inner, sel.a), tmod);
           end
           else if r.kind in [nkRecordType, nkMonitorType] then
           begin
             Result := Result + '.' + CN (sel.a);
-            tnd := FieldType (r, sel.a);
+            tnd := InMod (FieldType (r, sel.a), tmod);
           end
           else
             begin Err (d, 'field on non-record'); Exit ('0'); end;
@@ -1834,7 +1853,7 @@ begin
                 ec + '), ' + base + '.n, ' + base + '.s, (int64_t[]){' + ix +
                 '}, ' + ArrCount (r.kids[0]) + ', err))';
             stRaise := True;
-            tnd := r.kids[1];
+            tnd := InMod (r.kids[1], tmod);
             Continue;
           end;
           ix := EX (sel.kids[0], '');
@@ -1845,7 +1864,7 @@ begin
             Result := '(*(' + ec + ' *) m9_at (' + base + '.p, ' + ix +
               ', ' + base + '.len, sizeof (' + ec + '), err))';
             stRaise := True;
-            tnd := r.kids[0];
+            tnd := InMod (r.kids[0], tmod);
           end
           else if r.kind = nkArrayType then
           begin
@@ -1869,7 +1888,7 @@ begin
                 '), err))';
               stRaise := True;
             end;
-            tnd := r.kids[1];
+            tnd := InMod (r.kids[1], tmod);
           end
           else
             begin Err (d, 'index on non-slice'); Exit ('0'); end;
@@ -2787,24 +2806,27 @@ function TGen.DesigDecl (d: TNode): TNode;
 var
   j : Integer;
   r : TNode;
+  tmod : string;
 begin
+  tmod := '';
   Result := ScopeNode (d.a);
   for j := 0 to High (d.kids) do
   begin
     if Result = nil then Exit;
+    NoteMod (Result, tmod);
     r := Resolve (Result);
     while (r <> nil) and (r.kind in [nkPtrType, nkSharedType]) do
-      r := Resolve (r.kids[0]);
+      r := Resolve (InMod (r.kids[0], tmod));
     if r = nil then Exit (nil);
     case d.kids[j].kind of
       nkSelField :
         if r.kind in [nkRecordType, nkMonitorType] then
-          Result := FieldType (r, d.kids[j].a)
+          Result := InMod (FieldType (r, d.kids[j].a), tmod)
         else
           Exit (nil);
       nkSelIndex :
-        if r.kind = nkSliceType then Result := r.kids[0]
-        else if r.kind = nkArrayType then Result := r.kids[1]
+        if r.kind = nkSliceType then Result := InMod (r.kids[0], tmod)
+        else if r.kind = nkArrayType then Result := InMod (r.kids[1], tmod)
         else Exit (nil);
     end;
   end;
@@ -2955,10 +2977,13 @@ begin
           if arg.kind = nkIdent then
           begin
             if ety = 'SLICE' then
+              { a copy in this procedure's frame: the in-flight one is
+                overwritten by the next raise (m9rt.h, m9_pay_take) }
               binderLines.Add (TyC (fld) + ' ' + CN (arg.a) + ' = { (' +
-                TyC (Resolve (fld).kids[0]) + ' *) err->s[' +
-                IntToStr (si - 1) + '].p, err->s[' + IntToStr (si - 1) +
-                '].len }; (void) ' + CN (arg.a) + ';')
+                TyC (Resolve (fld).kids[0]) + ' *) m9_pay_take (err, ' +
+                IntToStr (si - 1) + ', sizeof (' +
+                TyC (Resolve (fld).kids[0]) + ')), err->s[' +
+                IntToStr (si - 1) + '].len }; (void) ' + CN (arg.a) + ';')
             else
               binderLines.Add (TyC (fld) + ' ' + CN (arg.a) + ' = ' +
                 slot + '; (void) ' + CN (arg.a) + ';');
@@ -3647,9 +3672,13 @@ begin
                 Exit;
               end;
               w := NewTmp;
+              { m9_pay_keep copies the octets out of the frame that built
+                them, which the raise is about to leave (m9rt.h) }
               Line (pbuf, ind, '{ __typeof__(' + cnd + ') ' + w + ' = ' +
                 cnd + '; err->s[' + IntToStr (k2) + '].p = ' + w +
-                '.p; err->s[' + IntToStr (k2) + '].len = ' + w + '.len; }');
+                '.p; err->s[' + IntToStr (k2) + '].len = ' + w +
+                '.len; m9_pay_keep (err, ' + IntToStr (k2) + ', sizeof (*' +
+                w + '.p)); }');
               Inc (k2);
             end
             else

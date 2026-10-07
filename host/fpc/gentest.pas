@@ -77,11 +77,15 @@ begin
   GenModule ('System', ['Io', 'DynStr', 'Text']);
   GenModule ('Json', ['DynStr']);
   GenModule ('Http', ['DynStr', 'Io']);
-  GenModule ('HttpServer', ['DynStr', 'Http']);
+  GenModule ('HttpServer', ['DynStr', 'Http', 'Io', 'Logger', 'Zip']);
   GenModule ('OpenApi', ['HttpServer', 'DynStr']);
   GenModule ('ApiSpec', ['DynStr']);
   GenModule ('Arrow', ['DynStr', 'Faults']);
   GenModule ('ZarrStore', ['DynStr', 'Json', 'Http', 'Io']);
+  GenModule ('Sparql', ['DynStr', 'Io', 'Http', 'Json', 'Text']);
+  GenModule ('Rdf', ['DynStr', 'Text']);
+  GenModule ('Regex', ['DynStr', 'Text']);
+  GenModule ('Xml', ['DynStr', 'Fmt', 'Text']);
   GenModule ('Zarr', ['DynStr', 'Json', 'Io', 'Math']);
   GenModule ('Plot', ['DynStr', 'Mat', 'Math', 'Faults', 'Fmt', 'Text', 'Time']);
   GenModule ('Lex', ['DynStr']);
@@ -92,6 +96,7 @@ begin
   GenModule ('Fmt', []);
   GenModule ('Io', ['DynStr']);
   GenModule ('Time', ['DynStr', 'Fmt']);
+  GenModule ('Pg', ['DynStr', 'Fmt', 'Time']);
   GenModule ('Text', ['DynStr']);
   GenModule ('Math', []);
   GenModule ('Bits', []);

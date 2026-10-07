@@ -42,7 +42,7 @@ export M9LIBRARY=$SRC
 # u.m9 would invent one.  gendiff names it for the same reason.
 deps_of () {
   case $1 in
-    HttpServer) echo Http DynStr ;;
+    HttpServer) echo Http DynStr Io Zip Bits Logger Syslog Time Fmt ;;
     *)          echo ;;
   esac
 }

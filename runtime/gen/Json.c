@@ -217,7 +217,7 @@ Json_Node * Json_Item (Json_Node * arr, int64_t i, m9_state *err)
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 14 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 14 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 14 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 14 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -246,7 +246,7 @@ int64_t Json_Count (Json_Node * arr, m9_state *err)
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 14 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 14 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 14 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 14 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -273,7 +273,7 @@ int64_t Json_MemberCount (Json_Node * obj, m9_state *err)
     c = first;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -361,7 +361,7 @@ int64_t Json_AsI64 (Json_Node * n, m9_state *err)
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -395,7 +395,7 @@ double Json_AsF64 (Json_Node * n, m9_state *err)
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -422,7 +422,7 @@ bool Json_AsBool (Json_Node * n, m9_state *err)
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 22 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 22 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 22 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 22 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -449,7 +449,7 @@ m9_sl_CHAR Json_AsStr (Json_Node * n, m9_state *err)
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 17 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 17 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 17 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 17 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -515,7 +515,7 @@ m9_sl_CHAR Json_Text (Json_Node * n, m9_state *err)
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 17 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 17 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 17 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 17 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -738,7 +738,7 @@ m9_sl_CHAR Json_NumText (Json_Node * n, m9_state *err)
     goto L_ret;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -1138,7 +1138,7 @@ void Json_Set (Json_Node * *obj, m9_pool *obj_pool, m9_sl_CHAR name, Json_Node *
     cur = first;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s14, 35 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s14, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s14, 35 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s14, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -1198,7 +1198,7 @@ void Json_Add (Json_Node * *arr, m9_pool *arr_pool, Json_Node * *v, m9_pool *v_p
     k = count;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s15, 34 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s15, 34 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s15, 34 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s15, 34 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -1417,7 +1417,7 @@ static void Json_Fail (Json_Cursor * *c, m9_pool *c_pool, m9_sl_CHAR msg, m9_sta
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(msg) m9t1 = msg; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+  { __typeof__(msg) m9t1 = msg; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
   err->i[0] = (*c)->line;
   err->i[1] = (*c)->col;
   m9_raise (err, &Json_ParseError);
@@ -1515,7 +1515,7 @@ static Json_Node * Json_ParseValue (Json_Cursor * *c, m9_pool *c_pool, m9_state 
         if (err->exc) goto L_ret;
         goto L_ret;
     } else {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s19, 14 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s19, 14 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s19, 14 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s19, 14 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
       err->i[0] = (*c)->line;
       err->i[1] = (*c)->col;
       m9_raise (err, &Json_ParseError);
@@ -2011,7 +2011,7 @@ static Json_Node * Json_MemberNode (Json_Node * obj, int64_t i, m9_state *err)
     c = first;
   } break;
   default: {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s29, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s29, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s29, 15 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s29, 15 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   } break;
@@ -2247,7 +2247,7 @@ static int64_t Json_Hex4 (m9_sl_CHAR t, int64_t at, m9_state *err)
   bool m9t1 = (m9_add_i64 (at, INT64_C(3), err) >= (t).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s30, 24 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s30, 24 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s30, 24 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s30, 24 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Json_TypeMismatch);
     goto L_ret;
   }
@@ -2261,7 +2261,7 @@ static int64_t Json_Hex4 (m9_sl_CHAR t, int64_t at, m9_state *err)
       h = m9v;
     }
     if ((h < INT64_C(0))) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s31, 25 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s31, 25 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s31, 25 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s31, 25 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
       m9_raise (err, &Json_TypeMismatch);
       goto L_ret;
     }
@@ -2314,7 +2314,7 @@ static m9_sl_CHAR Json_DecodeStr (m9_sl_CHAR t, m9_state *err)
       bool m9t2 = (m9_add_i64 (i, INT64_C(1), err) >= (t).len);
       if (err->exc) goto L_ret;
       if (m9t2) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s32, 23 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s32, 23 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s32, 23 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s32, 23 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
         m9_raise (err, &Json_TypeMismatch);
         goto L_ret;
       }
@@ -2368,7 +2368,7 @@ static m9_sl_CHAR Json_DecodeStr (m9_sl_CHAR t, m9_state *err)
                 lo = m9v;
               }
               if (((lo < INT64_C(56320)) || (lo > INT64_C(57343)))) {
-                { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s33, 32 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s33, 32 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+                { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s33, 32 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s33, 32 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
                 m9_raise (err, &Json_TypeMismatch);
                 goto L_ret;
               }
@@ -2381,20 +2381,20 @@ static m9_sl_CHAR Json_DecodeStr (m9_sl_CHAR t, m9_state *err)
                 i = m9v;
               }
             } else {
-              { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s34, 32 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s34, 32 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+              { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s34, 32 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s34, 32 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
               m9_raise (err, &Json_TypeMismatch);
               goto L_ret;
             }
           } else {
             if (((v >= INT64_C(56320)) && (v <= INT64_C(57343)))) {
-              { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s35, 32 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s35, 32 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+              { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s35, 32 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s35, 32 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
               m9_raise (err, &Json_TypeMismatch);
               goto L_ret;
           } }
           DynStr_AppendChar (&(d), &(scratch), m9_chr (v, err), err);
           if (err->exc) goto L_ret;
       } else {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s36, 24 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s36, 24 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s36, 24 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s36, 24 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
         m9_raise (err, &Json_TypeMismatch);
         goto L_ret;
       } } } } } } }

@@ -108,13 +108,43 @@ void Logger_Msg (int64_t level, m9_sl_CHAR text, m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Logger_Start (level, text, err);
+  m9_pool scratch = {0}; (void) scratch;
+  DynStr_DString * d = NULL; (void) d;
+  m9_sl_CHAR v = {0}; (void) v;
+  bool m9t1 = (!Logger_Enabled (level, err));
   if (err->exc) goto L_ret;
-  Logger_Done (err);
+  if (m9t1) {
+    goto L_ret;
+  }
+  if (toSyslog) {
+    Syslog_Send (Syslog_Pri (curFacility, Syslog_FromLoggerLevel (level, err), err), text, err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  { __typeof__(d) m9v = DynStr_New (&(scratch), err);
+    if (err->exc) goto L_ret;
+    d = m9v;
+  }
+  DynStr_Append (&(d), &(scratch), Logger_Stamp (err), err);
+  if (err->exc) goto L_ret;
+  DynStr_AppendChar (&(d), &(scratch), 32u, err);
+  if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &(scratch), Logger_LevelName (level, err), err);
+  if (err->exc) goto L_ret;
+  DynStr_AppendChar (&(d), &(scratch), 32u, err);
+  if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &(scratch), text, err);
+  if (err->exc) goto L_ret;
+  { __typeof__(v) m9v = DynStr_View (d, err);
+    if (err->exc) goto L_ret;
+    v = m9v;
+  }
+  Io_ErrLine (v, err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
   return;
 }
 

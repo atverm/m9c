@@ -1,36 +1,36 @@
-REVIEW HttpServer -- 14 procedures with a body, 9 of them functions; 9 headings in a DEFINITION
+REVIEW HttpServer -- 93 procedures with a body, 64 of them functions; 23 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path               9
-  assignments                                    48
-  arguments                                      71   passed over, a type unknown: 2
-  RETURN values                                  13
-  operands of a comparison or an operator        24
-  CASE labels                                     4
-  THREAD arguments                                0
+  functions answering on every path              64
+  assignments                                   482
+  arguments                                     895   passed over, a type unknown: 8
+  RETURN values                                 245
+  operands of a comparison or an operator       573
+  CASE labels                                    52
+  THREAD arguments                                1
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                     2   Respond.scratch, Answer.scratch
+  local pools                                    17   Head.scratch, NotFound.scratch, FilePiece.scratch, SendFile.scratch, Itoa.scratch, IsDir.scratch, +11 more
   pool parameters                                 1   NewRouter
-  KEPT parameters                                 5   AddRoute, AddRoute, AddRoute, AddRoute, AddRoute
+  KEPT parameters                                22   Link, AddRoute, AddRoute, AddRoute, AddRoute, AddRoute, +16 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0
   SHARED (x)                                      0
-  THREAD                                          0
+  THREAD                                          1   Run
   module variables                                0
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    2   csrv, HttpServer
-  foreign procedures                              2
-    of them [SERIAL]                              2
-    of them [REENTRANT]                           0
+  foreign procedures                             12
+    of them [SERIAL]                              5
+    of them [REENTRANT]                           7
 
 COUNTED -- how much there was to check
-  CASE statements                                 1
-  RAISE statements                                4
-  handlers                                        0
+  CASE statements                                 3
+  RAISE statements                                7
+  handlers                                       16
   NEW in the frame                                0
-  NEW in a named pool                             3
+  NEW in a named pool                            10

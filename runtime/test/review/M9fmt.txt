@@ -3,7 +3,7 @@ REVIEW M9fmt -- 8 procedures with a body, 2 of them functions; 0 headings in a D
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               2
   assignments                                    79   passed over, a type unknown: 1
-  arguments                                     134
+  arguments                                     140
   RETURN values                                   2
   operands of a comparison or an operator        92
   CASE labels                                     0
@@ -15,7 +15,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   local pools                                     0
   pool parameters                                 0
   KEPT parameters                                 4   LexAll, SplitLines, EmitComment, Format
-  HEAP named                                      3   ErrPos, (body), (body)
+  HEAP named                                      5   ErrPos, (body), (body), (body), (body)
   NEW (OWN, T)                                    0
   DISPOSE                                         0
   SHARED (x)                                      0
@@ -31,6 +31,6 @@ TRUSTED -- outside what the checker can see
 COUNTED -- how much there was to check
   CASE statements                                 0
   RAISE statements                                0
-  handlers                                        2
+  handlers                                        3
   NEW in the frame                                0
   NEW in a named pool                            12

@@ -154,7 +154,7 @@ void Arrow_AddInt (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR 
   int64_t w = 0; (void) w;
   int64_t lim = 0; (void) lim;
   if ((((ty == Arrow_TyF32) || (ty == Arrow_TyF64)) || (ty == Arrow_TyStr))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 38 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 38 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 38 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 38 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -175,7 +175,7 @@ void Arrow_AddInt (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, m9_sl_CHAR 
       bool m9t3 = (((*(int64_t *) m9_at (v.p, i, v.len, sizeof (int64_t), err)) >= lim) || ((*(int64_t *) m9_at (v.p, i, v.len, sizeof (int64_t), err)) < m9_neg_i64 (lim, err)));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 44 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 44 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 44 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 44 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
@@ -802,7 +802,7 @@ static void Arrow_Room (Arrow_Fb *f, m9_pool *f_pool, int64_t n, m9_state *err)
   bool m9t1 = (m9_sub_i64 ((*f).head, n, err) < INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 40 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 40 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 40 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 40 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1609,7 +1609,7 @@ static Arrow_Col * Arrow_Add (m9_pool *pool, Arrow_Table * *t, m9_pool *t_pool, 
   Arrow_Col * m9ret = NULL;
   Arrow_Col * c = NULL; (void) c;
   if ((n != (*t)->rows)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 45 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 45 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 45 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 45 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }

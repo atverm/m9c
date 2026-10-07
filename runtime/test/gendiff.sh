@@ -50,7 +50,11 @@ run Stats Math Bits Faults Sort
 run System Io DynStr Text
 run Json DynStr
 run Http DynStr Io
-run HttpServer DynStr Http
+run Sparql DynStr Io Http Json Text
+run Rdf DynStr Text
+run Regex DynStr Text
+run Xml DynStr Fmt Text
+run HttpServer DynStr Http Io Logger Zip
 run OpenApi HttpServer DynStr
 run ApiSpec DynStr
 run Arrow DynStr Faults
@@ -65,6 +69,7 @@ run Dict
 run Fmt
 run Io DynStr
 run Time DynStr Fmt
+run Pg DynStr Fmt Time
 run Text DynStr
 run Math
 run Bits

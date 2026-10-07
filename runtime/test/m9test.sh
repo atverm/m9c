@@ -52,6 +52,7 @@ bad () { echo "m9test: FAIL $1"; fail=$((fail+1)); }
 foreign_of () {
   case "$1" in
     ZarrStoreTest) echo "-l:libblosc.so.1" ;;
+    PgTest)        echo "$RT/pgshim.c -l:libpq.so.5" ;;
   esac
 }
 build_test () {
@@ -95,6 +96,16 @@ for f in "$SRC"/*Test.m9; do
   mod=${name%Test}
   n=$((n+1))
   [ -f "$SRC/$mod.m9" ] || bad "$name tests no module: there is no corpus/$mod.m9"
+  # PgTest needs a server (libpq's PG* variables name it): skipped out
+  # loud without one, and never on CI, whose drivers job runs one
+  if [ "$name" = PgTest ] && [ -z "$PGHOST" ]; then
+    if [ -n "$GITHUB_ACTIONS" ]; then
+      bad "PgTest: no PGHOST on CI (the drivers job's postgres service)"
+    else
+      echo "  PgTest: SKIP -- PGHOST unset (a Postgres server is needed)"
+    fi
+    continue
+  fi
   run_test "$f"; rc=$?
   [ "$rc" = 99 ] && { fail=$((fail+1)); continue; }
   out="$W/$name/out"

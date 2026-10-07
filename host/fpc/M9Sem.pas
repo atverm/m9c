@@ -155,6 +155,8 @@ type
     function VariantIn (const mn, tn, vn: string; out ownerMod: string;
       out fields: TNode): Boolean;
     function ResolveType (t: TNode): TNode;
+    function InMod (t: TNode; const m: string): TNode;
+    procedure NoteMod (t: TNode; var m: string);
     function LookupTypeName (const modName, typeName: string): TNode;
     function CanonQual (const modName, typeName: string;
                         depth: Integer): string;
@@ -1317,6 +1319,31 @@ begin
         Result := n;
       end;
   end;
+end;
+
+{ ---- the module a designator's type was written in ----
+
+  A component type -- a record's field, a pointer's target, a slice's
+  or an array's element -- is written in the module that declared the
+  aggregate, and a bare name in it means that module's type.  The two
+  designator walks (DesigDeclType, CheckWrite) took such a node and
+  resolved it in the CURRENT module, so `tm.kind' with tm a
+  Sparql.Term and kind a bare `Kind' resolved to Csv.Kind, the first
+  Kind on the search path; the M9 checker qualifies through
+  QualifiedIn and accepted it (semtest, 2026-10-07: the canonCtx
+  class, the fourth of its kind).  NoteMod remembers the module of
+  the last QUALIFIED type the walk passed; InMod qualifies a component
+  in it, unless it is the current module. }
+
+procedure TSem.NoteMod (t: TNode; var m: string);
+begin
+  if (t <> nil) and (t.kind = nkQualident) and (t.b <> '') then m := t.a;
+end;
+
+function TSem.InMod (t: TNode; const m: string): TNode;
+begin
+  if (m = '') or (m = curMod) then Exit (t);
+  Result := QualifyTypeIn (t, m);
 end;
 
 procedure TSem.CollectUnit (u: TNode);
@@ -2964,8 +2991,9 @@ var
     j, k : Integer;
     declN, res, f : TNode;
     sel : TNode;
-    it, eb : string;
+    it, eb, tmod : string;
   begin
+    tmod := '';
     declN := ScopeType (d.a);
     for j := 0 to High (d.kids) do
     begin
@@ -2995,11 +3023,13 @@ var
           end;
       end;
       if declN = nil then Continue;
+      NoteMod (declN, tmod);
       res := ResolveType (declN);
       { auto-deref before applying the selector }
       while (res <> nil) and (res.kind in [nkPtrType, nkSharedType]) do
       begin
-        declN := res.kids[0];
+        declN := InMod (res.kids[0], tmod);
+        NoteMod (declN, tmod);
         res := ResolveType (declN);
       end;
       if res = nil then begin declN := nil; Continue; end;
@@ -3021,7 +3051,7 @@ var
         nkSelField :
           if res.kind = nkRecordType then
           begin
-            f := FieldTypeOf (res, sel.a);
+            f := InMod (FieldTypeOf (res, sel.a), tmod);
             if (f = nil) and (res.kids[0] = nil) then
               ErrN (d, ctx,
                 'no field ' + sel.a + ' in the record type of ' + d.a);
@@ -3039,7 +3069,7 @@ var
             if (boundMon = '') or (d.a <> boundMon) or (j <> 0) then
               ErrN (d, ctx, 'monitor field ' + sel.a + ' is reached ' +
                 'from outside a procedure bound to the monitor (par 6)');
-            declN := FieldSeqType (res.kids[0], sel.a);
+            declN := InMod (FieldSeqType (res.kids[0], sel.a), tmod);
           end
           else
             declN := nil;
@@ -3052,21 +3082,21 @@ var
               ErrN (d, ctx, 'a GRID ' + ExprText (res.kids[0]) +
                 ' needs ' + ExprText (res.kids[0]) + ' subscripts, not ' +
                 IntToStr (Length (sel.kids)));
-            declN := res.kids[1];
+            declN := InMod (res.kids[1], tmod);
           end
           else if res.kind = nkSliceType then
           begin
             if Length (sel.kids) <> 1 then
               ErrN (d, ctx, 'a slice takes one subscript, not ' +
                 IntToStr (Length (sel.kids)));
-            declN := res.kids[0];
+            declN := InMod (res.kids[0], tmod);
           end
           else if res.kind = nkArrayType then
           begin
             if Length (sel.kids) <> 1 then
               ErrN (d, ctx, 'an array takes one subscript, not ' +
                 IntToStr (Length (sel.kids)));
-            declN := res.kids[1];
+            declN := InMod (res.kids[1], tmod);
           end
           else
             declN := nil;
@@ -3181,7 +3211,7 @@ var
     j : Integer;
     declN, res : TNode;
     sel : TNode;
-    mode : string;
+    mode, tmod : string;
   begin
     Result := False;
     if IsConstHere (d.a) then
@@ -3216,11 +3246,13 @@ var
     end;
     if Length (d.kids) = 0 then Exit;
     mode := ScopeMode (d.a);
+    tmod := '';
     declN := ScopeType (d.a);
     for j := 0 to High (d.kids) do
     begin
       sel := d.kids[j];
       if declN = nil then Exit;
+      NoteMod (declN, tmod);
       res := ResolveType (declN);
       while (res <> nil) and (res.kind in [nkPtrType, nkSharedType]) do
       begin
@@ -3231,7 +3263,8 @@ var
             ErrN (d, ctx, 'cannot write through a value parameter: ' +
               d.a + ' is a shared borrow (take VAR, par 4.1)');
         end;
-        declN := res.kids[0];
+        declN := InMod (res.kids[0], tmod);
+        NoteMod (declN, tmod);
         res := ResolveType (declN);
       end;
       if res = nil then Exit;
@@ -3249,14 +3282,14 @@ var
             if (j < High (d.kids)) and FieldROOf (res, sel.a) then
               ErrN (d, ctx, 'cannot write through the RO field ' +
                 sel.a + ' (par 4.1)');
-            declN := FieldTypeOf (res, sel.a);
+            declN := InMod (FieldTypeOf (res, sel.a), tmod);
           end
           else if res.kind = nkMonitorType then
           begin
             if (j < High (d.kids)) and FieldSeqRO (res.kids[0], sel.a) then
               ErrN (d, ctx, 'cannot write through the RO field ' +
                 sel.a + ' (par 4.1)');
-            declN := FieldSeqType (res.kids[0], sel.a);
+            declN := InMod (FieldSeqType (res.kids[0], sel.a), tmod);
           end
           else
             Exit;
@@ -3269,7 +3302,7 @@ var
               ErrN (d, ctx,
                 'cannot write through a read-only slice: ' + d.a);
             Result := True;      { slice storage outlives the frame }
-            declN := res.kids[0];
+            declN := InMod (res.kids[0], tmod);
           end
           else if res.kind = nkGridType then
           begin
@@ -3277,10 +3310,10 @@ var
               ErrN (d, ctx,
                 'cannot write through a read-only grid: ' + d.a);
             Result := True;      { grid storage outlives the frame }
-            declN := res.kids[1];
+            declN := InMod (res.kids[1], tmod);
           end
           else if res.kind = nkArrayType then
-            declN := res.kids[1]
+            declN := InMod (res.kids[1], tmod)
           else
             Exit;
       end;

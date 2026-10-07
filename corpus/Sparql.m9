@@ -1,0 +1,325 @@
+DEFINITION MODULE Sparql ;
+
+(* A SPARQL 1.1 client: SELECT and ASK answered in the W3C JSON
+   results format and read into typed terms, CONSTRUCT answered as
+   N-Triples text for Rdf to read (docs/datalib-plan.md par 2).
+
+   The HTTP side is the protocol's (SPARQL 1.1 Protocol par 2.1): the
+   query goes as `query=` in the URL when the URL stays within GetMax
+   characters, and as a form-encoded POST body otherwise -- the
+   download statistics found an endpoint that refuses a GET of a
+   hundred URIs and takes it by POST.  An answer other than 200 is a
+   QueryError carrying the status and the start of what the endpoint
+   said.
+
+   Parse and ParseAsk read a results document without the network,
+   so a document read from a file is a Results too, and the test
+   holds the reading to rdflib's own answers offline.  Every string a
+   Results holds is copied into its pool: nothing points back into the
+   document.                                                          *)
+
+IMPORT Http ;
+
+TYPE
+  Kind = (Unbound, Iri, Literal, Blank) ;
+
+  Term = RECORD
+    kind : Kind ;
+    value : STR ;              (* the IRI, a literal's lexical form, a
+                                  blank node's label; '' when unbound *)
+    lang : STR ;               (* a literal's language tag, else '' *)
+    datatype : STR ;           (* a literal's datatype IRI; '' for a
+                                  plain or a language-tagged literal *)
+  END ;
+
+  Results ;                    (* opaque; lives in a POOL *)
+
+EXCEPTION
+  QueryError (RO msg: STR ; status: I64) ;
+    (* the endpoint answered, but not 200: msg is the start of what it
+       said, status the HTTP status *)
+  FormatError (RO msg: STR) ;
+    (* a document that is not the W3C SPARQL JSON results format *)
+
+CONST
+  GetMax = 2000 ;              (* a longer URL goes by POST *)
+  ResultCap = 67108864 ;       (* 64 MB of answer, refused past it *)
+
+PROCEDURE Select (VAR pool: POOL ; RO endpoint: STR ; RO query: STR)
+  : PTR Results IN pool
+  RAISES Http.TransportError, QueryError, FormatError, ValueRange ;
+  (* a SELECT, its rows read into pool *)
+
+PROCEDURE Ask (RO endpoint: STR ; RO query: STR) : BOOL
+  RAISES Http.TransportError, QueryError, FormatError, ValueRange ;
+
+PROCEDURE Construct (VAR pool: POOL ; RO endpoint: STR ; RO query: STR)
+  : STR RAISES Http.TransportError, QueryError, ValueRange ;
+  (* a CONSTRUCT or DESCRIBE, the graph as N-Triples text in pool
+     (Accept: application/n-triples) *)
+
+PROCEDURE Parse (VAR pool: POOL ; RO doc: STR) : PTR Results IN pool
+  RAISES FormatError, ValueRange ;
+  (* a SELECT's JSON results document *)
+
+PROCEDURE ParseAsk (RO doc: STR) : BOOL RAISES FormatError ;
+  (* an ASK's: its `boolean` *)
+
+PROCEDURE Vars (r: PTR Results) : I64 ;
+  (* how many variables the head names *)
+
+PROCEDURE Var (r: PTR Results ; i: I64) : STR RAISES IndexError ;
+  (* the name of variable i, without its `?` *)
+
+PROCEDURE Rows (r: PTR Results) : I64 ;
+
+PROCEDURE Column (r: PTR Results ; RO name: STR) : I64 ;
+  (* the index of the variable named name, or -1 *)
+
+PROCEDURE Get (r: PTR Results ; row, col: I64) : Term RAISES IndexError ;
+  (* the term bound to variable col in row, kind Unbound when the row
+     leaves it unbound (an OPTIONAL that did not match).  row and col
+     are each checked against their own extent. *)
+
+PROCEDURE Value (r: PTR Results ; row, col: I64) : STR RAISES IndexError ;
+  (* Get's value: '' when unbound *)
+
+END Sparql.
+
+
+IMPLEMENTATION MODULE Sparql ;
+
+IMPORT Http ;
+IMPORT Json ;
+IMPORT Text ;
+
+TYPE
+  Results = RECORD
+    nvars, nrows : I64 ;
+    vars : SLICE OF STR ;
+    cells : SLICE OF Term ;       (* row-major, nrows * nvars *)
+  END ;
+
+(* ---- reading a document -------------------------------------------- *)
+
+PROCEDURE FieldText (VAR pool: POOL ; n: PTR Json.Node ; RO name: STR) : STR
+  RAISES FormatError, ValueRange =
+  (* the decoded text of member name, copied into pool; '' when there
+     is none *)
+BEGIN
+  IF Json.Field (n, name) IS SOME v THEN
+    RETURN Text.Keep (pool, Json.Text (v))
+  END ;
+  RETURN ''
+EXCEPT
+| Json.TypeMismatch (m) :
+    RAISE FormatError ('member ' + name + ' is not a string')
+END FieldText ;
+
+PROCEDURE ReadTerm (VAR pool: POOL ; b: PTR Json.Node ; VAR tm: Term)
+  RAISES FormatError, ValueRange =
+  (* one RDF term of the format: {"type": ..., "value": ...} with
+     xml:lang or datatype on a literal *)
+VAR ty : STR ;
+BEGIN
+  ty := FieldText (pool, b, 'type') ;
+  tm.value := FieldText (pool, b, 'value') ;
+  tm.lang := FieldText (pool, b, 'xml:lang') ;
+  tm.datatype := FieldText (pool, b, 'datatype') ;
+  IF Text.Eq (ty, 'uri') THEN
+    tm.kind := Kind.Iri
+  ELSIF Text.Eq (ty, 'literal') OR Text.Eq (ty, 'typed-literal') THEN
+    (* typed-literal is SPARQL 1.0's spelling, still sent *)
+    tm.kind := Kind.Literal
+  ELSIF Text.Eq (ty, 'bnode') THEN
+    tm.kind := Kind.Blank
+  ELSE
+    RAISE FormatError ('a term of type ' + ty)
+  END
+END ReadTerm ;
+
+PROCEDURE Unbind (VAR tm: Term) =
+BEGIN
+  tm.kind := Kind.Unbound ;
+  tm.value := '' ;
+  tm.lang := '' ;
+  tm.datatype := ''
+END Unbind ;
+
+PROCEDURE Parse (VAR pool: POOL ; RO doc: STR) : PTR Results IN pool
+  RAISES FormatError, ValueRange =
+VAR
+  scratch : POOL ;
+  root, head, vars, bindings, row : PTR Json.Node IN scratch ;
+  r : PTR Results IN pool ;
+  i, j, total : I64 ;
+BEGIN
+  BEGIN
+    root := Json.ParseIn (scratch, doc)
+  EXCEPT
+  | Json.ParseError (msg, line, col) :
+      RAISE FormatError ('not JSON')
+  END ;
+  r := NEW (pool, Results) ;
+  BEGIN
+    IF Json.Field (root, 'head') IS SOME h THEN head := h
+    ELSE RAISE FormatError ('no head')
+    END ;
+    IF Json.Field (head, 'vars') IS SOME v THEN vars := v
+    ELSE RAISE FormatError ('no head.vars')
+    END ;
+    IF Json.Field (root, 'results') IS SOME res THEN
+      IF Json.Field (res, 'bindings') IS SOME bs THEN bindings := bs
+      ELSE RAISE FormatError ('no results.bindings')
+      END
+    ELSE
+      RAISE FormatError ('no results: an ASK answer is read by ParseAsk')
+    END ;
+    r.nvars := Json.Count (vars) ;
+    r.nrows := Json.Count (bindings) ;
+    r.vars := NEW (pool, STR, r.nvars) ;
+    FOR j := 0 TO r.nvars - 1 DO
+      r.vars[j] := Text.Keep (pool, Json.Text (Json.Item (vars, j)))
+    END ;
+    total := r.nrows * r.nvars ;
+    r.cells := NEW (pool, Term, total) ;
+    FOR i := 0 TO r.nrows - 1 DO
+      row := Json.Item (bindings, i) ;
+      FOR j := 0 TO r.nvars - 1 DO
+        IF Json.Field (row, r.vars[j]) IS SOME b THEN
+          ReadTerm (pool, b, r.cells[i * r.nvars + j])
+        ELSE
+          Unbind (r.cells[i * r.nvars + j])
+        END
+      END
+    END
+  EXCEPT
+  | Json.TypeMismatch (m) :
+      RAISE FormatError ('a member of the wrong JSON type')
+  | IndexError :
+      RAISE FormatError ('an index past an array')
+  END ;
+  RETURN r
+END Parse ;
+
+PROCEDURE ParseAsk (RO doc: STR) : BOOL RAISES FormatError =
+VAR
+  scratch : POOL ;
+  root : PTR Json.Node IN scratch ;
+BEGIN
+  BEGIN
+    root := Json.ParseIn (scratch, doc)
+  EXCEPT
+  | Json.ParseError (msg, line, col) :
+      RAISE FormatError ('not JSON')
+  END ;
+  IF Json.Field (root, 'boolean') IS SOME b THEN
+    BEGIN
+      RETURN Json.AsBool (b)
+    EXCEPT
+    | Json.TypeMismatch (m) :
+        RAISE FormatError ('boolean is not a boolean')
+    END
+  END ;
+  RAISE FormatError ('no boolean: a SELECT answer is read by Parse')
+END ParseAsk ;
+
+(* ---- the protocol --------------------------------------------------- *)
+
+PROCEDURE Fetch (VAR pool: POOL ; RO endpoint: STR ; RO query: STR ;
+                 RO accept: STR) : STR
+  RAISES Http.TransportError, QueryError, ValueRange =
+  (* the answer's text, by GET when the URL stays within GetMax and by
+     POST otherwise *)
+VAR
+  url, enc, sep, body, respHeaders : STR ;
+  status : I64 ;
+BEGIN
+  enc := Http.UrlEncode (query) ;
+  IF Text.FindChar (endpoint, '?') >= 0 THEN sep := '&' ELSE sep := '?' END ;
+  url := endpoint + sep + 'query=' + enc ;
+  IF LEN (url) <= GetMax THEN
+    body := Http.GetText (pool, url, accept, '', ResultCap, status)
+  ELSE
+    respHeaders := '' ;
+    body := Http.RequestText (pool, 'POST', endpoint,
+              'Content-Type: application/x-www-form-urlencoded' + 0AC +
+              'Accept: ' + accept,
+              'query=' + enc, ResultCap, status, respHeaders)
+  END ;
+  IF status # 200 THEN
+    IF LEN (body) > 200 THEN body := SLICE (body, 0, 200) END ;
+    RAISE QueryError (body, status)
+  END ;
+  RETURN body
+END Fetch ;
+
+PROCEDURE Select (VAR pool: POOL ; RO endpoint: STR ; RO query: STR)
+  : PTR Results IN pool
+  RAISES Http.TransportError, QueryError, FormatError, ValueRange =
+VAR
+  scratch : POOL ;
+  doc : STR ;
+BEGIN
+  doc := Fetch (scratch, endpoint, query, 'application/sparql-results+json') ;
+  RETURN Parse (pool, doc)
+END Select ;
+
+PROCEDURE Ask (RO endpoint: STR ; RO query: STR) : BOOL
+  RAISES Http.TransportError, QueryError, FormatError, ValueRange =
+VAR
+  scratch : POOL ;
+  doc : STR ;
+BEGIN
+  doc := Fetch (scratch, endpoint, query, 'application/sparql-results+json') ;
+  RETURN ParseAsk (doc)
+END Ask ;
+
+PROCEDURE Construct (VAR pool: POOL ; RO endpoint: STR ; RO query: STR)
+  : STR RAISES Http.TransportError, QueryError, ValueRange =
+BEGIN
+  RETURN Fetch (pool, endpoint, query, 'application/n-triples')
+END Construct ;
+
+(* ---- reading a Results ---------------------------------------------- *)
+
+PROCEDURE Vars (r: PTR Results) : I64 =
+BEGIN
+  RETURN r.nvars
+END Vars ;
+
+PROCEDURE Var (r: PTR Results ; i: I64) : STR RAISES IndexError =
+BEGIN
+  IF i < 0 OR i >= r.nvars THEN RAISE IndexError (i, r.nvars) END ;
+  RETURN r.vars[i]
+END Var ;
+
+PROCEDURE Rows (r: PTR Results) : I64 =
+BEGIN
+  RETURN r.nrows
+END Rows ;
+
+PROCEDURE Column (r: PTR Results ; RO name: STR) : I64 =
+VAR j : I64 ;
+BEGIN
+  FOR j := 0 TO r.nvars - 1 DO
+    IF Text.Eq (r.vars[j], name) THEN RETURN j END
+  END ;
+  RETURN -1
+END Column ;
+
+PROCEDURE Get (r: PTR Results ; row, col: I64) : Term RAISES IndexError =
+BEGIN
+  IF row < 0 OR row >= r.nrows THEN RAISE IndexError (row, r.nrows) END ;
+  IF col < 0 OR col >= r.nvars THEN RAISE IndexError (col, r.nvars) END ;
+  RETURN r.cells[row * r.nvars + col]
+END Get ;
+
+PROCEDURE Value (r: PTR Results ; row, col: I64) : STR RAISES IndexError =
+VAR tm : Term ;
+BEGIN
+  tm := Get (r, row, col) ;
+  RETURN tm.value
+END Value ;
+
+END Sparql.

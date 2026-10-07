@@ -2,8 +2,8 @@ REVIEW Logger -- 15 procedures with a body, 4 of them functions; 12 headings in 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               4
-  assignments                                    10
-  arguments                                      52
+  assignments                                    12
+  arguments                                      70
   RETURN values                                   9
   operands of a comparison or an operator         3
   CASE labels                                     4
@@ -12,7 +12,7 @@ PROVED BY THE CHECKER -- examined, and nothing refused
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    1   pool
-  local pools                                     0
+  local pools                                     1   Msg.scratch
   pool parameters                                 0
   KEPT parameters                                 0
   HEAP named                                      0

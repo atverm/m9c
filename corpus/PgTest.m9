@@ -1,0 +1,356 @@
+MODULE PgTest ;
+
+(* Pg, held to psycopg (docs/datalib-plan.md par 1): the same fixture
+   (runtime/test/gold/pg-fixture.sql, a TEMP table) and the same
+   statements, run by tools/pggold.py through psycopg into
+   runtime/test/gold/Pg.gold and here through Pg.
+
+   Text cells are compared with Postgres's own text, each cell's code
+   points a vector in the golden.  The typed reads are compared with
+   psycopg's conversions: I64Cell with its int, F64Cell with its
+   float (to the bit), BoolCell with its bool, TimeCell with its aware
+   datetime's seconds -- in the server's zone and again in
+   Asia/Kolkata, whose offsets for 1900 carry seconds.
+
+   Needs a server: libpq reads PGHOST, PGPORT, PGUSER, PGPASSWORD and
+   PGDATABASE.  runtime/test/m9test.sh runs this only where PGHOST
+   is set, and on CI, where the drivers job has a Postgres service,
+   always.  Linked with runtime/pgshim.c and -l:libpq.so.5.          *)
+
+IMPORT Check ;
+IMPORT Io ;
+IMPORT Pg ;
+IMPORT Time ;
+IMPORT Text ;
+IMPORT Fmt ;
+IMPORT DynStr ;
+
+CONST
+  Q1 = 'SELECT id, txt, num, f8, b, ts, arr FROM m9t ORDER BY id' ;
+  Q2 = 'SELECT txt FROM m9t WHERE id = $1::int8' ;
+  Q3 = "SELECT $1::text || '!' AS s, length($1::text) AS n" ;
+  Q4 = 'UPDATE m9t SET b = NOT b WHERE id BETWEEN $1::int8 AND $2::int8' ;
+  TSQ = 'SELECT ts FROM m9t ORDER BY id' ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  c : PTR Pg.Conn IN pool ;
+  r1 : PTR Pg.Result IN pool ;
+  gold : STR ;
+
+PROCEDURE Cps (RO s: STR) : SLICE OF I64 =
+  (* a string's code points, as the golden carries them *)
+VAR
+  v : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  v := NEW (I64, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO v[i] := ORD (s[i]) END ;
+  RETURN v
+END Cps ;
+
+PROCEDURE Params1 (RO KEPT a: STR) : SLICE OF STR =
+VAR p : SLICE OF STR ;
+BEGIN
+  p := NEW (STR, 1) ;
+  p[0] := a ;
+  RETURN p
+END Params1 ;
+
+PROCEDURE Params2 (RO KEPT a: STR ; RO KEPT b: STR) : SLICE OF STR =
+VAR p : SLICE OF STR ;
+BEGIN
+  p := NEW (STR, 2) ;
+  p[0] := a ;
+  p[1] := b ;
+  RETURN p
+END Params2 ;
+
+PROCEDURE NoParams () : SLICE OF STR =
+BEGIN
+  RETURN NEW (STR, 0)
+END NoParams ;
+
+(* ---- what must raise ---- *)
+
+PROCEDURE CellPastLastColumn () =
+  (* the lifted module answered row 1's first cell here *)
+VAR s : STR ;
+BEGIN
+  s := Pg.Cell (r1, 0, Pg.Cols (r1))
+END CellPastLastColumn ;
+
+PROCEDURE CellPastLastRow () =
+VAR s : STR ;
+BEGIN
+  s := Pg.Cell (r1, Pg.Rows (r1), 0)
+END CellPastLastRow ;
+
+PROCEDURE NullAsNumber () RAISES ValueRange =
+VAR v : I64 ;
+BEGIN
+  v := Pg.I64Cell (r1, 3, 2)            (* row 3 is all NULL *)
+END NullAsNumber ;
+
+PROCEDURE TextAsNumber () RAISES ValueRange =
+VAR v : I64 ;
+BEGIN
+  v := Pg.I64Cell (r1, 1, 1)            (* 'plain' *)
+END TextAsNumber ;
+
+PROCEDURE FractionAsInteger () RAISES ValueRange =
+VAR v : I64 ;
+BEGIN
+  v := Pg.I64Cell (r1, 1, 2)            (* 1.5 *)
+END FractionAsInteger ;
+
+PROCEDURE NotABool () RAISES ValueRange =
+VAR b : BOOL ;
+BEGIN
+  b := Pg.BoolCell (r1, 1, 0)           (* an int8 *)
+END NotABool ;
+
+PROCEDURE TimestampWithoutZone () RAISES ValueRange =
+VAR
+  p : POOL ;
+  r : PTR Pg.Result IN p ;
+  ti : Time.Instant ;
+BEGIN
+  BEGIN
+    r := Pg.Query (p, c, "SELECT '2026-01-01 00:00'::timestamp", NoParams ()) ;
+    ti := Pg.TimeCell (r, 0, 0)
+  EXCEPT
+  | Pg.PgError (m) :
+      Io.WriteLine ('unexpected PgError') ;
+      RETURN
+  | IndexError :
+      RETURN
+  END
+END TimestampWithoutZone ;
+
+(* ---- the checks ---- *)
+
+PROCEDURE Cells () RAISES ValueRange =
+  (* the fixture's rows: shape, names, NULLs, every cell's text, and
+     the typed reads of the columns that have one *)
+VAR
+  names, label : STR ;
+  gnames : SLICE OF STR ;
+  gnull, gb : SLICE OF BOOL ;
+  gid : SLICE OF I64 ;
+  gf8, gts : SLICE OF F64 ;
+  row, col, k : I64 ;
+  ti : Time.Instant ;
+BEGIN
+  Check.EqI64 (t, 'rows', Pg.Rows (r1), Check.GoldI64 (t, gold, 'q1.rows')) ;
+  Check.EqI64 (t, 'cols', Pg.Cols (r1), Check.GoldI64 (t, gold, 'q1.cols')) ;
+  gnames := Check.GoldStrs (t, gold, 'q1.names') ;
+  gnull := Check.GoldBools (t, gold, 'q1.null') ;
+  gid := Check.GoldI64s (t, gold, 'q1.id') ;
+  gf8 := Check.GoldF64s (t, gold, 'q1.f8') ;
+  gb := Check.GoldBools (t, gold, 'q1.b') ;
+  gts := Check.GoldF64s (t, gold, 'q1.ts') ;
+  IF LEN (gnames) # Pg.Cols (r1) OR LEN (gnull) # Pg.Rows (r1) * Pg.Cols (r1) OR
+     LEN (gid) # Pg.Rows (r1) THEN
+    Check.That (t, 'the golden has the shape of the result', FALSE) ;
+    RETURN
+  END ;
+  FOR col := 0 TO Pg.Cols (r1) - 1 DO
+    Check.EqStr (t, 'name ' + Fmt.I64Str (col), Pg.Name (r1, col), gnames[col]) ;
+    Check.EqI64 (t, 'Column ' + gnames[col], Pg.Column (r1, gnames[col]), col)
+  END ;
+  Check.EqI64 (t, 'Column of nothing', Pg.Column (r1, 'nosuch'), -1) ;
+  k := 0 ;
+  FOR row := 0 TO Pg.Rows (r1) - 1 DO
+    FOR col := 0 TO Pg.Cols (r1) - 1 DO
+      label := 'cell ' + Fmt.I64Str (row) + ',' + Fmt.I64Str (col) ;
+      Check.EqBool (t, label + ' null', Pg.IsNull (r1, row, col), gnull[k]) ;
+      Check.EqI64s (t, label + ' text', Cps (Pg.Cell (r1, row, col)),
+                    Check.GoldI64s (t, gold, 'q1.text.' + Fmt.I64Str (k))) ;
+      k := k + 1
+    END ;
+    label := 'row ' + Fmt.I64Str (row) ;
+    Check.EqI64 (t, label + ' I64Cell id', Pg.I64Cell (r1, row, 0), gid[row]) ;
+    IF NOT gnull[row * Pg.Cols (r1) + 3] THEN
+      Check.EqF64 (t, label + ' F64Cell f8', Pg.F64Cell (r1, row, 3), gf8[row])
+    END ;
+    IF NOT gnull[row * Pg.Cols (r1) + 4] THEN
+      Check.EqBool (t, label + ' BoolCell b', Pg.BoolCell (r1, row, 4), gb[row])
+    END ;
+    IF NOT gnull[row * Pg.Cols (r1) + 5] THEN
+      ti := Pg.TimeCell (r1, row, 5) ;
+      Check.EqF64 (t, label + ' TimeCell ts', ti.t, gts[row])
+    END
+  END
+END Cells ;
+
+PROCEDURE Statements () RAISES ValueRange =
+VAR
+  p : POOL ;
+  r : PTR Pg.Result IN p ;
+  one : SLICE OF STR ;
+  n : I64 ;
+BEGIN
+  one := NEW (STR, 1) ;
+  BEGIN
+    r := Pg.Query (p, c, Q2, Params1 ('5')) ;
+    Check.EqI64s (t, 'a parameter, text past Latin-1 back', Cps (Pg.Cell (r, 0, 0)),
+                  Check.GoldI64s (t, gold, 'q2.text')) ;
+    (* e-acute, a 4-octet G clef, a 3-octet check mark: spelled as
+       code points, a string literal past ASCII being one the
+       generator does not take yet *)
+    one[0] := '' + CHR (233) + CHR (119070) + CHR (10003) ;
+    r := Pg.Query (p, c, Q3, one) ;
+    Check.EqI64s (t, 'a parameter out as UTF-8 and back', Cps (Pg.Cell (r, 0, 0)),
+                  Check.GoldI64s (t, gold, 'q3.s')) ;
+    Check.EqI64 (t, 'its length in code points', Pg.I64Cell (r, 0, 1),
+                 Check.GoldI64 (t, gold, 'q3.n')) ;
+    n := Pg.Exec (c, Q4, Params2 ('1', '4')) ;
+    Check.EqI64 (t, 'Exec: rows affected', n, Check.GoldI64 (t, gold, 'q4.affected')) ;
+    Pg.Begin (c) ;
+    n := Pg.Exec (c, 'DELETE FROM m9t', NoParams ()) ;
+    Check.EqI64 (t, 'Exec: DELETE inside a transaction', n, 8) ;
+    Pg.Rollback (c) ;
+    r := Pg.Query (p, c, 'SELECT count(*) FROM m9t', NoParams ()) ;
+    Check.EqI64 (t, 'Rollback: every row back', Pg.I64Cell (r, 0, 0),
+                 Check.GoldI64 (t, gold, 'q7.count'))
+  EXCEPT
+  | Pg.PgError (m) :
+      Check.That (t, 'a statement raised PgError', FALSE)
+  | IndexError :
+      Check.That (t, 'a statement raised IndexError', FALSE)
+  END
+END Statements ;
+
+PROCEDURE Errors () RAISES ValueRange =
+VAR
+  p : POOL ;
+  r : PTR Pg.Result IN p ;
+  msg : STR ;
+  raised : BOOL ;
+BEGIN
+  raised := FALSE ;
+  msg := '' ;
+  BEGIN
+    r := Pg.Query (p, c, 'SELECT * FROM nosuch', NoParams ())
+  EXCEPT
+  | Pg.PgError (m) :
+      raised := TRUE ;
+      msg := m
+  | IndexError :
+      raised := FALSE
+  END ;
+  Check.That (t, 'a missing relation raises PgError', raised) ;
+  Check.That (t, "and the message is the server's: " + msg, Text.Contains (msg, 'nosuch')) ;
+  BEGIN
+    r := Pg.Query (p, c, 'SELECT 1', NoParams ()) ;
+    Check.EqI64 (t, 'the connection works after the error', Pg.I64Cell (r, 0, 0), 1)
+  EXCEPT
+  | Pg.PgError (m) :
+      Check.That (t, 'the connection works after the error', FALSE)
+  | IndexError :
+      Check.That (t, 'the connection works after the error', FALSE)
+  END ;
+  raised := FALSE ;
+  BEGIN
+    Pg.Script (c, 'SELECT 1; SELECT * FROM nosuch; SELECT 2')
+  EXCEPT
+  | Pg.PgError (m) :
+      raised := TRUE
+  END ;
+  Check.That (t, 'Script stops at the failing statement', raised) ;
+  Check.That (t, 'Alive', Pg.Alive (c))
+END Errors ;
+
+PROCEDURE Zone (z: I64 ; RO zone: STR) RAISES ValueRange =
+  (* the same instants printed with another zone's offsets: the text
+     is Postgres's, the instant must not move *)
+VAR
+  p : POOL ;
+  r : PTR Pg.Result IN p ;
+  gts : SLICE OF F64 ;
+  ti : Time.Instant ;
+  row : I64 ;
+  label : STR ;
+BEGIN
+  BEGIN
+    Pg.Script (c, "SET TimeZone TO '" + zone + "'") ;
+    r := Pg.Query (p, c, TSQ, NoParams ()) ;
+    gts := Check.GoldF64s (t, gold, 'q1.ts') ;
+    FOR row := 0 TO Pg.Rows (r) - 1 DO
+      label := zone + ' row ' + Fmt.I64Str (row) ;
+      Check.EqI64s (t, label + ' text', Cps (Pg.Cell (r, row, 0)),
+                    Check.GoldI64s (t, gold, 'zone' + Fmt.I64Str (z) + '.text.' + Fmt.I64Str (row))) ;
+      IF NOT Pg.IsNull (r, row, 0) THEN
+        ti := Pg.TimeCell (r, row, 0) ;
+        Check.EqF64 (t, label + ' instant', ti.t, gts[row])
+      END
+    END
+  EXCEPT
+  | Pg.PgError (m) :
+      Check.That (t, 'the zone statements raised PgError', FALSE)
+  | IndexError :
+      Check.That (t, 'the zone statements raised IndexError', FALSE)
+  END
+END Zone ;
+
+PROCEDURE Zones () RAISES ValueRange =
+  (* Kolkata's offsets are positive, 1900's with seconds; St John's
+     are NEGATIVE, without which a TimeCell that dropped the sign of
+     an offset passed (runtime/test/pgsabotage.py found it) *)
+BEGIN
+  Zone (0, 'Asia/Kolkata') ;
+  Zone (1, 'America/St_Johns')
+END Zones ;
+
+PROCEDURE Fixture () : BOOL RAISES ValueRange =
+VAR
+  p : POOL ;
+  sql, why : STR ;
+BEGIN
+  BEGIN
+    (* bytes, decoded as UTF-8: ReadFile reads Latin-1, and the
+       fixture's Zurich went in double-encoded the first time *)
+    sql := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, Check.GoldPath ('pg-fixture.sql'))) ;
+    c := Pg.Connect (pool, '') ;
+    Pg.Script (c, sql) ;
+    r1 := Pg.Query (pool, c, Q1, NoParams ()) ;
+    RETURN TRUE
+  EXCEPT
+  | Pg.PgError (m) :
+      why := m ;                   (* a handler binder is untyped yet *)
+      Io.WriteLine ('PgTest: no server to test against: ' + why)
+  | Io.IOError (e) :
+      Io.WriteLine ('PgTest: the fixture could not be read')
+  | IndexError :
+      Io.WriteLine ('PgTest: IndexError setting up')
+  END ;
+  RETURN FALSE
+END Fixture ;
+
+BEGIN
+  BEGIN
+    gold := Check.GoldPath ('Pg.gold') ;
+    IF Fixture () THEN
+      Cells () ;
+      Check.Raises (t, 'Cell past the last column', CellPastLastColumn, 'IndexError') ;
+      Check.Raises (t, 'Cell past the last row', CellPastLastRow, 'IndexError') ;
+      Check.RaisesValueRange (t, 'a NULL read as a number', NullAsNumber) ;
+      Check.RaisesValueRange (t, 'text read as a number', TextAsNumber) ;
+      Check.RaisesValueRange (t, 'a fraction read as an integer', FractionAsInteger) ;
+      Check.RaisesValueRange (t, 'an int8 read as a boolean', NotABool) ;
+      Check.RaisesValueRange (t, 'a timestamp without a zone', TimestampWithoutZone) ;
+      Statements () ;
+      Errors () ;
+      Zones () ;
+      Pg.Close (c)
+    ELSE
+      Check.That (t, 'a server to test against', FALSE)
+    END
+  EXCEPT
+  | ValueRange :
+      Check.That (t, 'no ValueRange outside the cases that expect one', FALSE)
+  END ;
+  Io.Halt (Check.Done (t, 'Pg'))
+END PgTest.

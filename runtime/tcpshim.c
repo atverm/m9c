@@ -34,6 +34,8 @@
 #include <time.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <poll.h>
+#include <signal.h>
 #endif
 #include <stdint.h>
 #include <string.h>
@@ -102,6 +104,150 @@ int tcp_listen (int port, int backlog)
     return -1;
   }
   return fd_of (fd);
+}
+
+/* tcp_listen at a NUMERIC address: 127.0.0.1, 0.0.0.0, ::1, :: or any
+   other, never a name -- a name could resolve to several addresses or
+   none, and a server that binds what a resolver answered today is not
+   configured, it is guessed.  :: takes v4 clients as well (IPV6_V6ONLY
+   off), as a server bound to "all addresses" is expected to.  -1 when
+   the address is not one or the port cannot be bound.               */
+int tcp_listen_at (const char *addr, int port, int backlog)
+{
+  char ps[16];
+  struct addrinfo hints, *res;
+  sock_t fd;
+  int one = 1, zero = 0;
+
+  if (!wsa ()) return -1;
+  memset (&hints, 0, sizeof hints);
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = AI_PASSIVE | AI_NUMERICHOST | AI_NUMERICSERV;
+  snprintf (ps, sizeof ps, "%d", port);
+  if (getaddrinfo (addr, ps, &hints, &res) != 0) return -1;
+  fd = socket (res->ai_family, res->ai_socktype, res->ai_protocol);
+  if (fd == BAD_SOCK) { freeaddrinfo (res); return -1; }
+#ifdef _WIN32
+  setsockopt (fd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, OPTP (&one), sizeof one);
+#else
+  setsockopt (fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof one);
+#endif
+  if (res->ai_family == AF_INET6)
+    setsockopt (fd, IPPROTO_IPV6, IPV6_V6ONLY, OPTP (&zero), sizeof zero);
+  if (bind (fd, res->ai_addr, (socklen_t) res->ai_addrlen) != 0 ||
+      listen (fd, backlog) != 0) {
+    sock_close (fd);
+    freeaddrinfo (res);
+    return -1;
+  }
+  freeaddrinfo (res);
+  return fd_of (fd);
+}
+
+int tcp_accept (int fd);
+
+/* ---- stopping: a flag a signal, a console event or Stop sets ----
+
+   Process-wide, as a signal is.  The accepting thread asks it between
+   waits of at most a quarter of a second (tcp_accept_wait), so a stop
+   is seen within that; workers ask it between requests and while a
+   kept connection is idle.  Installed by HttpServer.Run for SIGTERM
+   and SIGINT (Ctrl-C and the console's close on Windows) and put back
+   as it was when Run returns.                                       */
+/* Windows needs no <signal.h> for it -- and the toolchain subset the
+   release's zip bundles has none: a console handler runs on a thread
+   of its own, and a LONG written whole is what it may set */
+#ifdef _WIN32
+static volatile LONG m9_stopping = 0;
+#else
+static volatile sig_atomic_t m9_stopping = 0;
+#endif
+
+int m9_srv_stopping (void) { return m9_stopping != 0; }
+void m9_srv_stop (void) { m9_stopping = 1; }
+void m9_srv_unstop (void) { m9_stopping = 0; }
+
+#ifdef _WIN32
+static BOOL WINAPI on_console (DWORD ev)
+{
+  if (ev == CTRL_C_EVENT || ev == CTRL_BREAK_EVENT || ev == CTRL_CLOSE_EVENT) {
+    m9_stopping = 1;
+    return TRUE;
+  }
+  return FALSE;
+}
+void m9_srv_signals (int on)
+{
+  SetConsoleCtrlHandler (on_console, on ? TRUE : FALSE);
+}
+#else
+static struct sigaction old_term, old_int;
+static void on_signal (int sig) { (void) sig; m9_stopping = 1; }
+void m9_srv_signals (int on)
+{
+  if (on) {
+    struct sigaction sa;
+    memset (&sa, 0, sizeof sa);
+    sa.sa_handler = on_signal;
+    sigemptyset (&sa.sa_mask);
+    sigaction (SIGTERM, &sa, &old_term);
+    sigaction (SIGINT, &sa, &old_int);
+  } else {
+    sigaction (SIGTERM, &old_term, NULL);
+    sigaction (SIGINT, &old_int, NULL);
+  }
+}
+#endif
+
+/* accept, waiting at most ms: the descriptor, -2 when nothing came in
+   that time, -1 when the listener is dead.  The accepting thread
+   waits in slices so that it sees a stop.                           */
+int tcp_accept_wait (int fd, int64_t ms)
+{
+#ifdef _WIN32
+  WSAPOLLFD p;
+  int r;
+  p.fd = sock_of (fd);
+  p.events = POLLRDNORM;
+  p.revents = 0;
+  r = WSAPoll (&p, 1, (INT) ms);
+#else
+  struct pollfd p;
+  int r;
+  p.fd = fd;
+  p.events = POLLIN;
+  p.revents = 0;
+  r = poll (&p, 1, (int) ms);
+#endif
+  if (r == 0) return -2;
+  if (r < 0) {
+#ifdef _WIN32
+    return -2;
+#else
+    return errno == EINTR ? -2 : -1;
+#endif
+  }
+  return tcp_accept (fd);
+}
+
+/* 1 when fd has something to read -- or its peer closed, which a read
+   then reports -- within ms; 0 when not.  A worker waits for a kept
+   connection's next request in slices of this, to see a stop.      */
+int tcp_readable (int fd, int64_t ms)
+{
+#ifdef _WIN32
+  WSAPOLLFD p;
+  p.fd = sock_of (fd);
+  p.events = POLLRDNORM;
+  p.revents = 0;
+  return WSAPoll (&p, 1, (INT) ms) > 0 ? 1 : 0;
+#else
+  struct pollfd p;
+  p.fd = fd;
+  p.events = POLLIN;
+  p.revents = 0;
+  return poll (&p, 1, (int) ms) > 0 ? 1 : 0;
+#endif
 }
 
 /* accept(2) fails for two kinds of reason, and a server must tell

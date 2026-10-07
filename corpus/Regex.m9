@@ -1,0 +1,1756 @@
+DEFINITION MODULE Regex ;
+
+(* Regular expressions: the subset Python's re and RE2 share, matched
+   by a Pike VM -- the NFA simulation RE2 uses -- in time linear in
+   the subject whatever the pattern, so that no pattern can hang the
+   program that runs it (docs/datalib-plan.md par 3).
+
+   THE LANGUAGE is Python's, and a match is the one Python's re finds:
+   literals and escapes (\n \t \x41 é ...), . and classes with
+   ranges and negation, \d \w \s and their negations, \b \B ^ $ \A
+   \Z, groups capturing, non-capturing (?:...) and named (?P<n>...),
+   alternation, * + ? {m} {m,} {,n} {m,n} each greedy or lazy, and
+   the flags i m s and u -- as letters to Compile, inline at the
+   start (?ims), or scoped (?i:...) (?-i:...).  Leftmost-first, with
+   Python's rule for a loop whose body matched nothing: the loop ends
+   there.  Held to re on 3,135 searches, 845 find-alls, 645
+   substitutions and 445 splits, of generated patterns and written
+   ones (RegexTest).
+
+   REFUSED BY NAME, because each needs backtracking, which is exactly
+   what this engine exists not to do: backreferences, lookahead and
+   lookbehind, atomic groups, possessive quantifiers, conditional
+   groups.  Also refused: verbose patterns, \N{...}, a repetition
+   count above 1000, and case-insensitive matching under u.
+
+   ASCII BY DEFAULT: \d \w \s \b and the i flag know ASCII only, RE2's
+   choice and Python's re.ASCII.  The flag u gives Python's Unicode
+   classes (from tables in this module, tools/regexucd.py); every
+   other character matches as itself in either mode, since a CHAR is
+   a code point.
+
+   A match is a Found: the span of each group, start and end, in
+   characters of the subject; -1 for a group that took no part.  The
+   procedures answering text answer VIEWS of the subject.          *)
+
+TYPE
+  Re ;                         (* a compiled pattern; lives in a POOL *)
+
+  Found = RECORD
+    span : SLICE OF I64 ;      (* start and end of group 0, 1, ...;
+                                  -1 and -1 for one that took no part *)
+  END ;
+
+EXCEPTION
+  BadPattern (RO msg: STR ; pos: I64) ;
+    (* msg says what; pos is the index in the pattern where it was
+       seen, or -1 for the flags or a replacement template *)
+
+PROCEDURE Compile (VAR pool: POOL ; RO pattern: STR ; RO flags: STR)
+  : PTR Re IN pool RAISES BadPattern ;
+  (* pattern compiled; flags is letters from imsu, '' for none:
+     i caseless, m ^ and $ at every line, s . matches a line feed
+     too, u Unicode classes *)
+
+PROCEDURE Groups (re: PTR Re) : I64 ;
+  (* how many capturing groups the pattern has *)
+
+PROCEDURE GroupIndex (re: PTR Re ; RO name: STR) : I64 ;
+  (* the number of the group named so, or -1 *)
+
+PROCEDURE Search (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found ;
+  (* the first match at or after from (clamped to 0 .. LEN (s)) *)
+
+PROCEDURE Match (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found ;
+  (* a match that starts at from *)
+
+PROCEDURE FullMatch (re: PTR Re ; RO s: STR) : OPT PTR Found ;
+  (* a match of the whole of s *)
+
+PROCEDURE Start (m: PTR Found ; k: I64) : I64 RAISES IndexError ;
+PROCEDURE End (m: PTR Found ; k: I64) : I64 RAISES IndexError ;
+PROCEDURE Took (m: PTR Found ; k: I64) : BOOL RAISES IndexError ;
+  (* group k's start, end, and whether it took part *)
+
+PROCEDURE Group (RO s: STR ; m: PTR Found ; k: I64) : STR
+  RAISES IndexError ;
+  (* the text group k matched in s, the subject m was found in; '' for
+     a group that took no part (Took says which) *)
+
+PROCEDURE FindAll (re: PTR Re ; RO s: STR) : SLICE OF PTR Found ;
+  (* every match, left to right, as Python's finditer: an empty match
+     may follow a non-empty one where it ends, never another empty one *)
+
+PROCEDURE Sub (re: PTR Re ; RO s: STR ; RO repl: STR ; count: I64) : STR
+  RAISES BadPattern ;
+  (* s with the first count matches (0 for all) replaced by repl, in
+     which \g<0> \g<name> \g<n> and \1 .. \99 name a group's text ('' if
+     it took no part), and \n \t \r \\ are escapes *)
+
+PROCEDURE Split (re: PTR Re ; RO s: STR ; maxsplit: I64) : SLICE OF STR ;
+  (* s cut at the first maxsplit matches (0 for all), each match's
+     groups between the pieces -- '' for one that took no part, where
+     Python says None *)
+
+END Regex.
+
+IMPLEMENTATION MODULE Regex ;
+
+IMPORT DynStr ;
+IMPORT Text ;
+
+CONST
+  MaxInst = 100000 ;           (* instructions in one program *)
+  MaxRepeat = 1000 ;           (* RE2's bound on {m,n} *)
+  MaxCode = 0x10FFFF ;
+
+  (* the program's instructions *)
+  OChar = 1 ;                  (* x the code point *)
+  OAny = 2 ;                   (* any but a line feed *)
+  OAnyNl = 3 ;                 (* any *)
+  OClass = 4 ;                 (* x the class *)
+  OMatch = 5 ;
+  OJmp = 6 ;                   (* to x *)
+  OSplit = 7 ;                 (* to x, then to y *)
+  OSave = 8 ;                  (* slot x := position *)
+  OAssert = 9 ;                (* x the assertion *)
+  OMark = 11 ;                 (* slot x := position: a loop pass begins *)
+  OCheck = 12 ;                (* the pass matched nothing: to y *)
+
+  (* assertions *)
+  ABot = 1 ;                   (* \A, ^ *)
+  ABol = 2 ;                   (* ^ under m *)
+  AEot = 3 ;                   (* \Z *)
+  AEotNl = 4 ;                 (* $: the end, or a final line feed *)
+  AEol = 5 ;                   (* $ under m *)
+  AWord = 6 ;                  (* \b *)
+  ANotWord = 7 ;               (* \B *)
+
+  (* the parse tree *)
+  NEmpty = 1 ;
+  NChar = 2 ;
+  NAny = 3 ;                   (* v 1 under s *)
+  NClass = 4 ;
+  NAssert = 5 ;
+  NCat = 6 ;
+  NAlt = 7 ;
+  NGroup = 8 ;                 (* v the group, -1 for none *)
+  NRep = 9 ;
+
+TYPE
+  Re = RECORD
+    op, x, y : SLICE OF I64 ;  (* the program *)
+    n : I64 ;
+    lo, hi : SLICE OF I64 ;    (* every class's ranges, sorted, merged *)
+    nr : I64 ;
+    clsAt, clsLen : SLICE OF I64 ;
+    nc : I64 ;
+    ngroups : I64 ;
+    nslots : I64 ;             (* group slots, then the loops' marks *)
+    names : SLICE OF STR ;
+    nameGroup : SLICE OF I64 ;
+    nnames : I64 ;
+    uni : BOOL ;
+  END ;
+
+  Node = RECORD
+    kind : I64 ;
+    v : I64 ;
+    min, max : I64 ;           (* NRep; max -1 for no bound *)
+    greedy : BOOL ;
+    kids : SLICE OF PTR Node ;
+    nk : I64 ;
+  END ;
+
+  Parser = RECORD
+    p : STR ;
+    pos : I64 ;
+    ci, ml, da, uni : BOOL ;   (* i, m, s, u in force *)
+  END ;
+
+  NodeP = PTR Node ;
+  FoundP = PTR Found ;
+
+  (* a set of code points under construction: ranges, not yet sorted *)
+  Set = RECORD
+    lo, hi : SLICE OF I64 ;
+    n : I64 ;
+  END ;
+
+(* ---- Unicode tables: written by tools/regexucd.py, not by hand ---- *)
+
+(* Unicode 16.0.0, Python 3.14.4: Digit 71 ranges, Word 771 ranges, Space 10 ranges *)
+
+CONST
+  UDigitLo = [
+  0x30, 0x660, 0x6F0, 0x7C0, 0x966, 0x9E6, 0xA66, 0xAE6, 0xB66, 0xBE6,
+  0xC66, 0xCE6, 0xD66, 0xDE6, 0xE50, 0xED0, 0xF20, 0x1040, 0x1090, 0x17E0,
+  0x1810, 0x1946, 0x19D0, 0x1A80, 0x1A90, 0x1B50, 0x1BB0, 0x1C40, 0x1C50, 0xA620,
+  0xA8D0, 0xA900, 0xA9D0, 0xA9F0, 0xAA50, 0xABF0, 0xFF10, 0x104A0, 0x10D30, 0x10D40,
+  0x11066, 0x110F0, 0x11136, 0x111D0, 0x112F0, 0x11450, 0x114D0, 0x11650, 0x116C0, 0x116D0,
+  0x11730, 0x118E0, 0x11950, 0x11BF0, 0x11C50, 0x11D50, 0x11DA0, 0x11F50, 0x16130, 0x16A60,
+  0x16AC0, 0x16B50, 0x16D70, 0x1CCF0, 0x1D7CE, 0x1E140, 0x1E2F0, 0x1E4F0, 0x1E5F1, 0x1E950,
+  0x1FBF0 ] ;
+  UDigitHi = [
+  0x39, 0x669, 0x6F9, 0x7C9, 0x96F, 0x9EF, 0xA6F, 0xAEF, 0xB6F, 0xBEF,
+  0xC6F, 0xCEF, 0xD6F, 0xDEF, 0xE59, 0xED9, 0xF29, 0x1049, 0x1099, 0x17E9,
+  0x1819, 0x194F, 0x19D9, 0x1A89, 0x1A99, 0x1B59, 0x1BB9, 0x1C49, 0x1C59, 0xA629,
+  0xA8D9, 0xA909, 0xA9D9, 0xA9F9, 0xAA59, 0xABF9, 0xFF19, 0x104A9, 0x10D39, 0x10D49,
+  0x1106F, 0x110F9, 0x1113F, 0x111D9, 0x112F9, 0x11459, 0x114D9, 0x11659, 0x116C9, 0x116E3,
+  0x11739, 0x118E9, 0x11959, 0x11BF9, 0x11C59, 0x11D59, 0x11DA9, 0x11F59, 0x16139, 0x16A69,
+  0x16AC9, 0x16B59, 0x16D79, 0x1CCF9, 0x1D7FF, 0x1E149, 0x1E2F9, 0x1E4F9, 0x1E5FA, 0x1E959,
+  0x1FBF9 ] ;
+  UWordLo = [
+  0x30, 0x41, 0x5F, 0x61, 0xAA, 0xB2, 0xB5, 0xB9, 0xBC, 0xC0,
+  0xD8, 0xF8, 0x2C6, 0x2E0, 0x2EC, 0x2EE, 0x370, 0x376, 0x37A, 0x37F,
+  0x386, 0x388, 0x38C, 0x38E, 0x3A3, 0x3F7, 0x48A, 0x531, 0x559, 0x560,
+  0x5D0, 0x5EF, 0x620, 0x660, 0x66E, 0x671, 0x6D5, 0x6E5, 0x6EE, 0x6FF,
+  0x710, 0x712, 0x74D, 0x7B1, 0x7C0, 0x7F4, 0x7FA, 0x800, 0x81A, 0x824,
+  0x828, 0x840, 0x860, 0x870, 0x889, 0x8A0, 0x904, 0x93D, 0x950, 0x958,
+  0x966, 0x971, 0x985, 0x98F, 0x993, 0x9AA, 0x9B2, 0x9B6, 0x9BD, 0x9CE,
+  0x9DC, 0x9DF, 0x9E6, 0x9F4, 0x9FC, 0xA05, 0xA0F, 0xA13, 0xA2A, 0xA32,
+  0xA35, 0xA38, 0xA59, 0xA5E, 0xA66, 0xA72, 0xA85, 0xA8F, 0xA93, 0xAAA,
+  0xAB2, 0xAB5, 0xABD, 0xAD0, 0xAE0, 0xAE6, 0xAF9, 0xB05, 0xB0F, 0xB13,
+  0xB2A, 0xB32, 0xB35, 0xB3D, 0xB5C, 0xB5F, 0xB66, 0xB71, 0xB83, 0xB85,
+  0xB8E, 0xB92, 0xB99, 0xB9C, 0xB9E, 0xBA3, 0xBA8, 0xBAE, 0xBD0, 0xBE6,
+  0xC05, 0xC0E, 0xC12, 0xC2A, 0xC3D, 0xC58, 0xC5D, 0xC60, 0xC66, 0xC78,
+  0xC80, 0xC85, 0xC8E, 0xC92, 0xCAA, 0xCB5, 0xCBD, 0xCDD, 0xCE0, 0xCE6,
+  0xCF1, 0xD04, 0xD0E, 0xD12, 0xD3D, 0xD4E, 0xD54, 0xD58, 0xD66, 0xD7A,
+  0xD85, 0xD9A, 0xDB3, 0xDBD, 0xDC0, 0xDE6, 0xE01, 0xE32, 0xE40, 0xE50,
+  0xE81, 0xE84, 0xE86, 0xE8C, 0xEA5, 0xEA7, 0xEB2, 0xEBD, 0xEC0, 0xEC6,
+  0xED0, 0xEDC, 0xF00, 0xF20, 0xF40, 0xF49, 0xF88, 0x1000, 0x103F, 0x1050,
+  0x105A, 0x1061, 0x1065, 0x106E, 0x1075, 0x108E, 0x1090, 0x10A0, 0x10C7, 0x10CD,
+  0x10D0, 0x10FC, 0x124A, 0x1250, 0x1258, 0x125A, 0x1260, 0x128A, 0x1290, 0x12B2,
+  0x12B8, 0x12C0, 0x12C2, 0x12C8, 0x12D8, 0x1312, 0x1318, 0x1369, 0x1380, 0x13A0,
+  0x13F8, 0x1401, 0x166F, 0x1681, 0x16A0, 0x16EE, 0x1700, 0x171F, 0x1740, 0x1760,
+  0x176E, 0x1780, 0x17D7, 0x17DC, 0x17E0, 0x17F0, 0x1810, 0x1820, 0x1880, 0x1887,
+  0x18AA, 0x18B0, 0x1900, 0x1946, 0x1970, 0x1980, 0x19B0, 0x19D0, 0x1A00, 0x1A20,
+  0x1A80, 0x1A90, 0x1AA7, 0x1B05, 0x1B45, 0x1B50, 0x1B83, 0x1BAE, 0x1C00, 0x1C40,
+  0x1C4D, 0x1C80, 0x1C90, 0x1CBD, 0x1CE9, 0x1CEE, 0x1CF5, 0x1CFA, 0x1D00, 0x1E00,
+  0x1F18, 0x1F20, 0x1F48, 0x1F50, 0x1F59, 0x1F5B, 0x1F5D, 0x1F5F, 0x1F80, 0x1FB6,
+  0x1FBE, 0x1FC2, 0x1FC6, 0x1FD0, 0x1FD6, 0x1FE0, 0x1FF2, 0x1FF6, 0x2070, 0x2074,
+  0x207F, 0x2090, 0x2102, 0x2107, 0x210A, 0x2115, 0x2119, 0x2124, 0x2126, 0x2128,
+  0x212A, 0x212F, 0x213C, 0x2145, 0x214E, 0x2150, 0x2460, 0x24EA, 0x2776, 0x2C00,
+  0x2CEB, 0x2CF2, 0x2CFD, 0x2D00, 0x2D27, 0x2D2D, 0x2D30, 0x2D6F, 0x2D80, 0x2DA0,
+  0x2DA8, 0x2DB0, 0x2DB8, 0x2DC0, 0x2DC8, 0x2DD0, 0x2DD8, 0x2E2F, 0x3005, 0x3021,
+  0x3031, 0x3038, 0x3041, 0x309D, 0x30A1, 0x30FC, 0x3105, 0x3131, 0x3192, 0x31A0,
+  0x31F0, 0x3220, 0x3248, 0x3251, 0x3280, 0x32B1, 0x3400, 0x4E00, 0xA4D0, 0xA500,
+  0xA610, 0xA640, 0xA67F, 0xA6A0, 0xA717, 0xA722, 0xA78B, 0xA7D0, 0xA7D3, 0xA7D5,
+  0xA7F2, 0xA803, 0xA807, 0xA80C, 0xA830, 0xA840, 0xA882, 0xA8D0, 0xA8F2, 0xA8FB,
+  0xA8FD, 0xA900, 0xA930, 0xA960, 0xA984, 0xA9CF, 0xA9E0, 0xA9E6, 0xAA00, 0xAA40,
+  0xAA44, 0xAA50, 0xAA60, 0xAA7A, 0xAA7E, 0xAAB1, 0xAAB5, 0xAAB9, 0xAAC0, 0xAAC2,
+  0xAADB, 0xAAE0, 0xAAF2, 0xAB01, 0xAB09, 0xAB11, 0xAB20, 0xAB28, 0xAB30, 0xAB5C,
+  0xAB70, 0xABF0, 0xAC00, 0xD7B0, 0xD7CB, 0xF900, 0xFA70, 0xFB00, 0xFB13, 0xFB1D,
+  0xFB1F, 0xFB2A, 0xFB38, 0xFB3E, 0xFB40, 0xFB43, 0xFB46, 0xFBD3, 0xFD50, 0xFD92,
+  0xFDF0, 0xFE70, 0xFE76, 0xFF10, 0xFF21, 0xFF41, 0xFF66, 0xFFC2, 0xFFCA, 0xFFD2,
+  0xFFDA, 0x10000, 0x1000D, 0x10028, 0x1003C, 0x1003F, 0x10050, 0x10080, 0x10107, 0x10140,
+  0x1018A, 0x10280, 0x102A0, 0x102E1, 0x10300, 0x1032D, 0x10350, 0x10380, 0x103A0, 0x103C8,
+  0x103D1, 0x10400, 0x104A0, 0x104B0, 0x104D8, 0x10500, 0x10530, 0x10570, 0x1057C, 0x1058C,
+  0x10594, 0x10597, 0x105A3, 0x105B3, 0x105BB, 0x105C0, 0x10600, 0x10740, 0x10760, 0x10780,
+  0x10787, 0x107B2, 0x10800, 0x10808, 0x1080A, 0x10837, 0x1083C, 0x1083F, 0x10858, 0x10879,
+  0x108A7, 0x108E0, 0x108F4, 0x108FB, 0x10920, 0x10980, 0x109BC, 0x109D2, 0x10A10, 0x10A15,
+  0x10A19, 0x10A40, 0x10A60, 0x10A80, 0x10AC0, 0x10AC9, 0x10AEB, 0x10B00, 0x10B40, 0x10B58,
+  0x10B78, 0x10BA9, 0x10C00, 0x10C80, 0x10CC0, 0x10CFA, 0x10D30, 0x10D40, 0x10D6F, 0x10E60,
+  0x10E80, 0x10EB0, 0x10EC2, 0x10F00, 0x10F30, 0x10F51, 0x10F70, 0x10FB0, 0x10FE0, 0x11003,
+  0x11052, 0x11071, 0x11075, 0x11083, 0x110D0, 0x110F0, 0x11103, 0x11136, 0x11144, 0x11147,
+  0x11150, 0x11176, 0x11183, 0x111C1, 0x111D0, 0x111DC, 0x111E1, 0x11200, 0x11213, 0x1123F,
+  0x11280, 0x11288, 0x1128A, 0x1128F, 0x1129F, 0x112B0, 0x112F0, 0x11305, 0x1130F, 0x11313,
+  0x1132A, 0x11332, 0x11335, 0x1133D, 0x11350, 0x1135D, 0x11380, 0x1138B, 0x1138E, 0x11390,
+  0x113B7, 0x113D1, 0x113D3, 0x11400, 0x11447, 0x11450, 0x1145F, 0x11480, 0x114C4, 0x114C7,
+  0x114D0, 0x11580, 0x115D8, 0x11600, 0x11644, 0x11650, 0x11680, 0x116B8, 0x116C0, 0x116D0,
+  0x11700, 0x11730, 0x11740, 0x11800, 0x118A0, 0x118FF, 0x11909, 0x1190C, 0x11915, 0x11918,
+  0x1193F, 0x11941, 0x11950, 0x119A0, 0x119AA, 0x119E1, 0x119E3, 0x11A00, 0x11A0B, 0x11A3A,
+  0x11A50, 0x11A5C, 0x11A9D, 0x11AB0, 0x11BC0, 0x11BF0, 0x11C00, 0x11C0A, 0x11C40, 0x11C50,
+  0x11C72, 0x11D00, 0x11D08, 0x11D0B, 0x11D46, 0x11D50, 0x11D60, 0x11D67, 0x11D6A, 0x11D98,
+  0x11DA0, 0x11EE0, 0x11F02, 0x11F04, 0x11F12, 0x11F50, 0x11FB0, 0x11FC0, 0x12000, 0x12400,
+  0x12480, 0x12F90, 0x13000, 0x13441, 0x13460, 0x14400, 0x16100, 0x16130, 0x16800, 0x16A40,
+  0x16A60, 0x16A70, 0x16AC0, 0x16AD0, 0x16B00, 0x16B40, 0x16B50, 0x16B5B, 0x16B63, 0x16B7D,
+  0x16D40, 0x16D70, 0x16E40, 0x16F00, 0x16F50, 0x16F93, 0x16FE0, 0x16FE3, 0x17000, 0x18800,
+  0x18CFF, 0x1AFF0, 0x1AFF5, 0x1AFFD, 0x1B000, 0x1B132, 0x1B150, 0x1B155, 0x1B164, 0x1B170,
+  0x1BC00, 0x1BC70, 0x1BC80, 0x1BC90, 0x1CCF0, 0x1D2C0, 0x1D2E0, 0x1D360, 0x1D400, 0x1D456,
+  0x1D49E, 0x1D4A2, 0x1D4A5, 0x1D4A9, 0x1D4AE, 0x1D4BB, 0x1D4BD, 0x1D4C5, 0x1D507, 0x1D50D,
+  0x1D516, 0x1D51E, 0x1D53B, 0x1D540, 0x1D546, 0x1D54A, 0x1D552, 0x1D6A8, 0x1D6C2, 0x1D6DC,
+  0x1D6FC, 0x1D716, 0x1D736, 0x1D750, 0x1D770, 0x1D78A, 0x1D7AA, 0x1D7C4, 0x1D7CE, 0x1DF00,
+  0x1DF25, 0x1E030, 0x1E100, 0x1E137, 0x1E140, 0x1E14E, 0x1E290, 0x1E2C0, 0x1E2F0, 0x1E4D0,
+  0x1E4F0, 0x1E5D0, 0x1E5F0, 0x1E7E0, 0x1E7E8, 0x1E7ED, 0x1E7F0, 0x1E800, 0x1E8C7, 0x1E900,
+  0x1E94B, 0x1E950, 0x1EC71, 0x1ECAD, 0x1ECB1, 0x1ED01, 0x1ED2F, 0x1EE00, 0x1EE05, 0x1EE21,
+  0x1EE24, 0x1EE27, 0x1EE29, 0x1EE34, 0x1EE39, 0x1EE3B, 0x1EE42, 0x1EE47, 0x1EE49, 0x1EE4B,
+  0x1EE4D, 0x1EE51, 0x1EE54, 0x1EE57, 0x1EE59, 0x1EE5B, 0x1EE5D, 0x1EE5F, 0x1EE61, 0x1EE64,
+  0x1EE67, 0x1EE6C, 0x1EE74, 0x1EE79, 0x1EE7E, 0x1EE80, 0x1EE8B, 0x1EEA1, 0x1EEA5, 0x1EEAB,
+  0x1F100, 0x1FBF0, 0x20000, 0x2A700, 0x2B740, 0x2B820, 0x2CEB0, 0x2EBF0, 0x2F800, 0x30000,
+  0x31350 ] ;
+  UWordHi = [
+  0x39, 0x5A, 0x5F, 0x7A, 0xAA, 0xB3, 0xB5, 0xBA, 0xBE, 0xD6,
+  0xF6, 0x2C1, 0x2D1, 0x2E4, 0x2EC, 0x2EE, 0x374, 0x377, 0x37D, 0x37F,
+  0x386, 0x38A, 0x38C, 0x3A1, 0x3F5, 0x481, 0x52F, 0x556, 0x559, 0x588,
+  0x5EA, 0x5F2, 0x64A, 0x669, 0x66F, 0x6D3, 0x6D5, 0x6E6, 0x6FC, 0x6FF,
+  0x710, 0x72F, 0x7A5, 0x7B1, 0x7EA, 0x7F5, 0x7FA, 0x815, 0x81A, 0x824,
+  0x828, 0x858, 0x86A, 0x887, 0x88E, 0x8C9, 0x939, 0x93D, 0x950, 0x961,
+  0x96F, 0x980, 0x98C, 0x990, 0x9A8, 0x9B0, 0x9B2, 0x9B9, 0x9BD, 0x9CE,
+  0x9DD, 0x9E1, 0x9F1, 0x9F9, 0x9FC, 0xA0A, 0xA10, 0xA28, 0xA30, 0xA33,
+  0xA36, 0xA39, 0xA5C, 0xA5E, 0xA6F, 0xA74, 0xA8D, 0xA91, 0xAA8, 0xAB0,
+  0xAB3, 0xAB9, 0xABD, 0xAD0, 0xAE1, 0xAEF, 0xAF9, 0xB0C, 0xB10, 0xB28,
+  0xB30, 0xB33, 0xB39, 0xB3D, 0xB5D, 0xB61, 0xB6F, 0xB77, 0xB83, 0xB8A,
+  0xB90, 0xB95, 0xB9A, 0xB9C, 0xB9F, 0xBA4, 0xBAA, 0xBB9, 0xBD0, 0xBF2,
+  0xC0C, 0xC10, 0xC28, 0xC39, 0xC3D, 0xC5A, 0xC5D, 0xC61, 0xC6F, 0xC7E,
+  0xC80, 0xC8C, 0xC90, 0xCA8, 0xCB3, 0xCB9, 0xCBD, 0xCDE, 0xCE1, 0xCEF,
+  0xCF2, 0xD0C, 0xD10, 0xD3A, 0xD3D, 0xD4E, 0xD56, 0xD61, 0xD78, 0xD7F,
+  0xD96, 0xDB1, 0xDBB, 0xDBD, 0xDC6, 0xDEF, 0xE30, 0xE33, 0xE46, 0xE59,
+  0xE82, 0xE84, 0xE8A, 0xEA3, 0xEA5, 0xEB0, 0xEB3, 0xEBD, 0xEC4, 0xEC6,
+  0xED9, 0xEDF, 0xF00, 0xF33, 0xF47, 0xF6C, 0xF8C, 0x102A, 0x1049, 0x1055,
+  0x105D, 0x1061, 0x1066, 0x1070, 0x1081, 0x108E, 0x1099, 0x10C5, 0x10C7, 0x10CD,
+  0x10FA, 0x1248, 0x124D, 0x1256, 0x1258, 0x125D, 0x1288, 0x128D, 0x12B0, 0x12B5,
+  0x12BE, 0x12C0, 0x12C5, 0x12D6, 0x1310, 0x1315, 0x135A, 0x137C, 0x138F, 0x13F5,
+  0x13FD, 0x166C, 0x167F, 0x169A, 0x16EA, 0x16F8, 0x1711, 0x1731, 0x1751, 0x176C,
+  0x1770, 0x17B3, 0x17D7, 0x17DC, 0x17E9, 0x17F9, 0x1819, 0x1878, 0x1884, 0x18A8,
+  0x18AA, 0x18F5, 0x191E, 0x196D, 0x1974, 0x19AB, 0x19C9, 0x19DA, 0x1A16, 0x1A54,
+  0x1A89, 0x1A99, 0x1AA7, 0x1B33, 0x1B4C, 0x1B59, 0x1BA0, 0x1BE5, 0x1C23, 0x1C49,
+  0x1C7D, 0x1C8A, 0x1CBA, 0x1CBF, 0x1CEC, 0x1CF3, 0x1CF6, 0x1CFA, 0x1DBF, 0x1F15,
+  0x1F1D, 0x1F45, 0x1F4D, 0x1F57, 0x1F59, 0x1F5B, 0x1F5D, 0x1F7D, 0x1FB4, 0x1FBC,
+  0x1FBE, 0x1FC4, 0x1FCC, 0x1FD3, 0x1FDB, 0x1FEC, 0x1FF4, 0x1FFC, 0x2071, 0x2079,
+  0x2089, 0x209C, 0x2102, 0x2107, 0x2113, 0x2115, 0x211D, 0x2124, 0x2126, 0x2128,
+  0x212D, 0x2139, 0x213F, 0x2149, 0x214E, 0x2189, 0x249B, 0x24FF, 0x2793, 0x2CE4,
+  0x2CEE, 0x2CF3, 0x2CFD, 0x2D25, 0x2D27, 0x2D2D, 0x2D67, 0x2D6F, 0x2D96, 0x2DA6,
+  0x2DAE, 0x2DB6, 0x2DBE, 0x2DC6, 0x2DCE, 0x2DD6, 0x2DDE, 0x2E2F, 0x3007, 0x3029,
+  0x3035, 0x303C, 0x3096, 0x309F, 0x30FA, 0x30FF, 0x312F, 0x318E, 0x3195, 0x31BF,
+  0x31FF, 0x3229, 0x324F, 0x325F, 0x3289, 0x32BF, 0x4DBF, 0xA48C, 0xA4FD, 0xA60C,
+  0xA62B, 0xA66E, 0xA69D, 0xA6EF, 0xA71F, 0xA788, 0xA7CD, 0xA7D1, 0xA7D3, 0xA7DC,
+  0xA801, 0xA805, 0xA80A, 0xA822, 0xA835, 0xA873, 0xA8B3, 0xA8D9, 0xA8F7, 0xA8FB,
+  0xA8FE, 0xA925, 0xA946, 0xA97C, 0xA9B2, 0xA9D9, 0xA9E4, 0xA9FE, 0xAA28, 0xAA42,
+  0xAA4B, 0xAA59, 0xAA76, 0xAA7A, 0xAAAF, 0xAAB1, 0xAAB6, 0xAABD, 0xAAC0, 0xAAC2,
+  0xAADD, 0xAAEA, 0xAAF4, 0xAB06, 0xAB0E, 0xAB16, 0xAB26, 0xAB2E, 0xAB5A, 0xAB69,
+  0xABE2, 0xABF9, 0xD7A3, 0xD7C6, 0xD7FB, 0xFA6D, 0xFAD9, 0xFB06, 0xFB17, 0xFB1D,
+  0xFB28, 0xFB36, 0xFB3C, 0xFB3E, 0xFB41, 0xFB44, 0xFBB1, 0xFD3D, 0xFD8F, 0xFDC7,
+  0xFDFB, 0xFE74, 0xFEFC, 0xFF19, 0xFF3A, 0xFF5A, 0xFFBE, 0xFFC7, 0xFFCF, 0xFFD7,
+  0xFFDC, 0x1000B, 0x10026, 0x1003A, 0x1003D, 0x1004D, 0x1005D, 0x100FA, 0x10133, 0x10178,
+  0x1018B, 0x1029C, 0x102D0, 0x102FB, 0x10323, 0x1034A, 0x10375, 0x1039D, 0x103C3, 0x103CF,
+  0x103D5, 0x1049D, 0x104A9, 0x104D3, 0x104FB, 0x10527, 0x10563, 0x1057A, 0x1058A, 0x10592,
+  0x10595, 0x105A1, 0x105B1, 0x105B9, 0x105BC, 0x105F3, 0x10736, 0x10755, 0x10767, 0x10785,
+  0x107B0, 0x107BA, 0x10805, 0x10808, 0x10835, 0x10838, 0x1083C, 0x10855, 0x10876, 0x1089E,
+  0x108AF, 0x108F2, 0x108F5, 0x1091B, 0x10939, 0x109B7, 0x109CF, 0x10A00, 0x10A13, 0x10A17,
+  0x10A35, 0x10A48, 0x10A7E, 0x10A9F, 0x10AC7, 0x10AE4, 0x10AEF, 0x10B35, 0x10B55, 0x10B72,
+  0x10B91, 0x10BAF, 0x10C48, 0x10CB2, 0x10CF2, 0x10D23, 0x10D39, 0x10D65, 0x10D85, 0x10E7E,
+  0x10EA9, 0x10EB1, 0x10EC4, 0x10F27, 0x10F45, 0x10F54, 0x10F81, 0x10FCB, 0x10FF6, 0x11037,
+  0x1106F, 0x11072, 0x11075, 0x110AF, 0x110E8, 0x110F9, 0x11126, 0x1113F, 0x11144, 0x11147,
+  0x11172, 0x11176, 0x111B2, 0x111C4, 0x111DA, 0x111DC, 0x111F4, 0x11211, 0x1122B, 0x11240,
+  0x11286, 0x11288, 0x1128D, 0x1129D, 0x112A8, 0x112DE, 0x112F9, 0x1130C, 0x11310, 0x11328,
+  0x11330, 0x11333, 0x11339, 0x1133D, 0x11350, 0x11361, 0x11389, 0x1138B, 0x1138E, 0x113B5,
+  0x113B7, 0x113D1, 0x113D3, 0x11434, 0x1144A, 0x11459, 0x11461, 0x114AF, 0x114C5, 0x114C7,
+  0x114D9, 0x115AE, 0x115DB, 0x1162F, 0x11644, 0x11659, 0x116AA, 0x116B8, 0x116C9, 0x116E3,
+  0x1171A, 0x1173B, 0x11746, 0x1182B, 0x118F2, 0x11906, 0x11909, 0x11913, 0x11916, 0x1192F,
+  0x1193F, 0x11941, 0x11959, 0x119A7, 0x119D0, 0x119E1, 0x119E3, 0x11A00, 0x11A32, 0x11A3A,
+  0x11A50, 0x11A89, 0x11A9D, 0x11AF8, 0x11BE0, 0x11BF9, 0x11C08, 0x11C2E, 0x11C40, 0x11C6C,
+  0x11C8F, 0x11D06, 0x11D09, 0x11D30, 0x11D46, 0x11D59, 0x11D65, 0x11D68, 0x11D89, 0x11D98,
+  0x11DA9, 0x11EF2, 0x11F02, 0x11F10, 0x11F33, 0x11F59, 0x11FB0, 0x11FD4, 0x12399, 0x1246E,
+  0x12543, 0x12FF0, 0x1342F, 0x13446, 0x143FA, 0x14646, 0x1611D, 0x16139, 0x16A38, 0x16A5E,
+  0x16A69, 0x16ABE, 0x16AC9, 0x16AED, 0x16B2F, 0x16B43, 0x16B59, 0x16B61, 0x16B77, 0x16B8F,
+  0x16D6C, 0x16D79, 0x16E96, 0x16F4A, 0x16F50, 0x16F9F, 0x16FE1, 0x16FE3, 0x187F7, 0x18CD5,
+  0x18D08, 0x1AFF3, 0x1AFFB, 0x1AFFE, 0x1B122, 0x1B132, 0x1B152, 0x1B155, 0x1B167, 0x1B2FB,
+  0x1BC6A, 0x1BC7C, 0x1BC88, 0x1BC99, 0x1CCF9, 0x1D2D3, 0x1D2F3, 0x1D378, 0x1D454, 0x1D49C,
+  0x1D49F, 0x1D4A2, 0x1D4A6, 0x1D4AC, 0x1D4B9, 0x1D4BB, 0x1D4C3, 0x1D505, 0x1D50A, 0x1D514,
+  0x1D51C, 0x1D539, 0x1D53E, 0x1D544, 0x1D546, 0x1D550, 0x1D6A5, 0x1D6C0, 0x1D6DA, 0x1D6FA,
+  0x1D714, 0x1D734, 0x1D74E, 0x1D76E, 0x1D788, 0x1D7A8, 0x1D7C2, 0x1D7CB, 0x1D7FF, 0x1DF1E,
+  0x1DF2A, 0x1E06D, 0x1E12C, 0x1E13D, 0x1E149, 0x1E14E, 0x1E2AD, 0x1E2EB, 0x1E2F9, 0x1E4EB,
+  0x1E4F9, 0x1E5ED, 0x1E5FA, 0x1E7E6, 0x1E7EB, 0x1E7EE, 0x1E7FE, 0x1E8C4, 0x1E8CF, 0x1E943,
+  0x1E94B, 0x1E959, 0x1ECAB, 0x1ECAF, 0x1ECB4, 0x1ED2D, 0x1ED3D, 0x1EE03, 0x1EE1F, 0x1EE22,
+  0x1EE24, 0x1EE27, 0x1EE32, 0x1EE37, 0x1EE39, 0x1EE3B, 0x1EE42, 0x1EE47, 0x1EE49, 0x1EE4B,
+  0x1EE4F, 0x1EE52, 0x1EE54, 0x1EE57, 0x1EE59, 0x1EE5B, 0x1EE5D, 0x1EE5F, 0x1EE62, 0x1EE64,
+  0x1EE6A, 0x1EE72, 0x1EE77, 0x1EE7C, 0x1EE7E, 0x1EE89, 0x1EE9B, 0x1EEA3, 0x1EEA9, 0x1EEBB,
+  0x1F10C, 0x1FBF9, 0x2A6DF, 0x2B739, 0x2B81D, 0x2CEA1, 0x2EBE0, 0x2EE5D, 0x2FA1D, 0x3134A,
+  0x323AF ] ;
+  USpaceLo = [
+  0x9, 0x1C, 0x85, 0xA0, 0x1680, 0x2000, 0x2028, 0x202F, 0x205F, 0x3000 ] ;
+  USpaceHi = [
+  0xD, 0x20, 0x85, 0xA0, 0x1680, 0x200A, 0x2029, 0x202F, 0x205F, 0x3000 ] ;
+
+(* ---- end of the Unicode tables ---- *)
+
+(* ---- sets of code points ------------------------------------------- *)
+
+PROCEDURE SetNew (VAR sp: POOL ; VAR st: Set) =
+BEGIN
+  st.lo := NEW (sp, I64, 8) ;
+  st.hi := NEW (sp, I64, 8) ;
+  st.n := 0
+END SetNew ;
+
+PROCEDURE SetAdd (VAR sp: POOL ; VAR st: Set ; lo, hi: I64) =
+VAR
+  nl, nh : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF st.n = LEN (st.lo) THEN
+    nl := NEW (sp, I64, 2 * LEN (st.lo)) ;
+    nh := NEW (sp, I64, 2 * LEN (st.lo)) ;
+    FOR i := 0 TO st.n - 1 DO nl[i] := st.lo[i] ; nh[i] := st.hi[i] END ;
+    st.lo := nl ;
+    st.hi := nh
+  END ;
+  st.lo[st.n] := lo ;
+  st.hi[st.n] := hi ;
+  st.n := st.n + 1
+END SetAdd ;
+
+PROCEDURE SetAddTable (VAR sp: POOL ; VAR st: Set ; RO lo: SLICE OF I64 ;
+                       RO hi: SLICE OF I64) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (lo) - 1 DO SetAdd (sp, st, lo[i], hi[i]) END
+END SetAddTable ;
+
+PROCEDURE SetNormal (VAR st: Set) =
+  (* sorted by start, overlapping and adjacent ranges merged *)
+VAR i, j, k, a, b : I64 ;
+BEGIN
+  FOR i := 1 TO st.n - 1 DO
+    a := st.lo[i] ;
+    b := st.hi[i] ;
+    j := i - 1 ;
+    WHILE j >= 0 AND st.lo[j] > a DO
+      st.lo[j + 1] := st.lo[j] ;
+      st.hi[j + 1] := st.hi[j] ;
+      j := j - 1
+    END ;
+    st.lo[j + 1] := a ;
+    st.hi[j + 1] := b
+  END ;
+  k := 0 ;
+  FOR i := 0 TO st.n - 1 DO
+    IF k > 0 AND st.lo[i] <= st.hi[k - 1] + 1 THEN
+      IF st.hi[i] > st.hi[k - 1] THEN st.hi[k - 1] := st.hi[i] END
+    ELSE
+      st.lo[k] := st.lo[i] ;
+      st.hi[k] := st.hi[i] ;
+      k := k + 1
+    END
+  END ;
+  st.n := k
+END SetNormal ;
+
+PROCEDURE SetNegate (VAR sp: POOL ; VAR st: Set) =
+  (* every code point the normal set does not hold *)
+VAR
+  out : Set ;
+  i, next : I64 ;
+BEGIN
+  SetNew (sp, out) ;
+  next := 0 ;
+  FOR i := 0 TO st.n - 1 DO
+    IF st.lo[i] > next THEN SetAdd (sp, out, next, st.lo[i] - 1) END ;
+    next := st.hi[i] + 1
+  END ;
+  IF next <= MaxCode THEN SetAdd (sp, out, next, MaxCode) END ;
+  st := out
+END SetNegate ;
+
+PROCEDURE SetCaseless (VAR sp: POOL ; VAR st: Set) =
+  (* the ASCII letters' other case added *)
+VAR i, n, a, b : I64 ;
+BEGIN
+  n := st.n ;
+  FOR i := 0 TO n - 1 DO
+    a := st.lo[i] ;
+    b := st.hi[i] ;
+    IF a < 97 THEN a := 97 END ;
+    IF b > 122 THEN b := 122 END ;
+    IF a <= b THEN SetAdd (sp, st, a - 32, b - 32) END ;
+    a := st.lo[i] ;
+    b := st.hi[i] ;
+    IF a < 65 THEN a := 65 END ;
+    IF b > 90 THEN b := 90 END ;
+    IF a <= b THEN SetAdd (sp, st, a + 32, b + 32) END
+  END
+END SetCaseless ;
+
+PROCEDURE InTable (RO lo: SLICE OF I64 ; RO hi: SLICE OF I64 ;
+                   at, n, c: I64) : BOOL =
+  (* c in one of the n sorted ranges from index at: a binary search *)
+VAR a, b, m : I64 ;
+BEGIN
+  a := at ;
+  b := at + n - 1 ;
+  WHILE a <= b DO
+    m := (a + b) DIV 2 ;
+    IF c < lo[m] THEN b := m - 1
+    ELSIF c > hi[m] THEN a := m + 1
+    ELSE RETURN TRUE
+    END
+  END ;
+  RETURN FALSE
+END InTable ;
+
+PROCEDURE IsWord (c: I64 ; uni: BOOL) : BOOL =
+BEGIN
+  IF c < 128 THEN
+    RETURN (c >= 97 AND c <= 122) OR (c >= 65 AND c <= 90) OR
+           (c >= 48 AND c <= 57) OR c = 95
+  END ;
+  IF NOT uni THEN RETURN FALSE END ;
+  RETURN InTable (UWordLo, UWordHi, 0, LEN (UWordLo), c)
+END IsWord ;
+
+PROCEDURE SetAddEscape (VAR sp: POOL ; VAR st: Set ; e: CHAR ; uni: BOOL) =
+  (* \d \D \s \S \w \W *)
+VAR one : Set ;
+BEGIN
+  SetNew (sp, one) ;
+  IF e = 'd' OR e = 'D' THEN
+    IF uni THEN SetAddTable (sp, one, UDigitLo, UDigitHi)
+    ELSE SetAdd (sp, one, 48, 57)
+    END
+  ELSIF e = 's' OR e = 'S' THEN
+    IF uni THEN SetAddTable (sp, one, USpaceLo, USpaceHi)
+    ELSE
+      SetAdd (sp, one, 9, 13) ;
+      SetAdd (sp, one, 32, 32)
+    END
+  ELSE
+    IF uni THEN SetAddTable (sp, one, UWordLo, UWordHi)
+    ELSE
+      SetAdd (sp, one, 48, 57) ;
+      SetAdd (sp, one, 65, 90) ;
+      SetAdd (sp, one, 95, 95) ;
+      SetAdd (sp, one, 97, 122)
+    END
+  END ;
+  SetNormal (one) ;
+  IF e = 'D' OR e = 'S' OR e = 'W' THEN SetNegate (sp, one) END ;
+  SetAddTable (sp, st, SLICE (one.lo, 0, one.n), SLICE (one.hi, 0, one.n))
+END SetAddEscape ;
+
+(* ---- the compiled pattern ------------------------------------------ *)
+
+PROCEDURE NewRe (VAR pool: POOL) : PTR Re IN pool =
+VAR re : PTR Re IN pool ;
+BEGIN
+  re := NEW (pool, Re) ;
+  re.op := NEW (pool, I64, 64) ;
+  re.x := NEW (pool, I64, 64) ;
+  re.y := NEW (pool, I64, 64) ;
+  re.n := 0 ;
+  re.lo := NEW (pool, I64, 16) ;
+  re.hi := NEW (pool, I64, 16) ;
+  re.nr := 0 ;
+  re.clsAt := NEW (pool, I64, 8) ;
+  re.clsLen := NEW (pool, I64, 8) ;
+  re.nc := 0 ;
+  re.ngroups := 0 ;
+  re.nslots := 0 ;
+  re.names := NEW (pool, STR, 4) ;
+  re.nameGroup := NEW (pool, I64, 4) ;
+  re.nnames := 0 ;
+  re.uni := FALSE ;
+  RETURN re
+END NewRe ;
+
+PROCEDURE AddClass (VAR re: PTR Re ; RO st: Set) : I64 =
+  (* a normal set kept as the pattern's next class *)
+VAR
+  nl, nh : SLICE OF I64 ;
+  na, nn : SLICE OF I64 ;
+  i, cap : I64 ;
+BEGIN
+  IF re.nr + st.n > LEN (re.lo) THEN
+    cap := 2 * LEN (re.lo) ;
+    WHILE cap < re.nr + st.n DO cap := 2 * cap END ;
+    nl := NEW (re, I64, cap) ;
+    nh := NEW (re, I64, cap) ;
+    FOR i := 0 TO re.nr - 1 DO nl[i] := re.lo[i] ; nh[i] := re.hi[i] END ;
+    re.lo := nl ;
+    re.hi := nh
+  END ;
+  IF re.nc = LEN (re.clsAt) THEN
+    na := NEW (re, I64, 2 * re.nc) ;
+    nn := NEW (re, I64, 2 * re.nc) ;
+    FOR i := 0 TO re.nc - 1 DO na[i] := re.clsAt[i] ; nn[i] := re.clsLen[i] END ;
+    re.clsAt := na ;
+    re.clsLen := nn
+  END ;
+  re.clsAt[re.nc] := re.nr ;
+  re.clsLen[re.nc] := st.n ;
+  FOR i := 0 TO st.n - 1 DO
+    re.lo[re.nr + i] := st.lo[i] ;
+    re.hi[re.nr + i] := st.hi[i]
+  END ;
+  re.nr := re.nr + st.n ;
+  re.nc := re.nc + 1 ;
+  RETURN re.nc - 1
+END AddClass ;
+
+PROCEDURE AddName (VAR re: PTR Re ; RO name: STR ; group: I64) =
+VAR
+  nn : SLICE OF STR ;
+  ng : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF re.nnames = LEN (re.names) THEN
+    nn := NEW (re, STR, 2 * re.nnames) ;
+    ng := NEW (re, I64, 2 * re.nnames) ;
+    FOR i := 0 TO re.nnames - 1 DO nn[i] := re.names[i] ; ng[i] := re.nameGroup[i] END ;
+    re.names := nn ;
+    re.nameGroup := ng
+  END ;
+  re.names[re.nnames] := NEW (re, CHAR, LEN (name)) ;
+  FOR i := 0 TO LEN (name) - 1 DO re.names[re.nnames][i] := name[i] END ;
+  re.nameGroup[re.nnames] := group ;
+  re.nnames := re.nnames + 1
+END AddName ;
+
+PROCEDURE Emit (VAR re: PTR Re ; op, x, y: I64) : I64 RAISES BadPattern =
+VAR
+  no, nx, ny : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF re.n >= MaxInst THEN
+    RAISE BadPattern ('the pattern is too large: more than 100000 instructions', 0)
+  END ;
+  IF re.n = LEN (re.op) THEN
+    no := NEW (re, I64, 2 * re.n) ;
+    nx := NEW (re, I64, 2 * re.n) ;
+    ny := NEW (re, I64, 2 * re.n) ;
+    FOR i := 0 TO re.n - 1 DO no[i] := re.op[i] ; nx[i] := re.x[i] ; ny[i] := re.y[i] END ;
+    re.op := no ;
+    re.x := nx ;
+    re.y := ny
+  END ;
+  re.op[re.n] := op ;
+  re.x[re.n] := x ;
+  re.y[re.n] := y ;
+  re.n := re.n + 1 ;
+  RETURN re.n - 1
+END Emit ;
+
+(* ---- the parser --------------------------------------------------- *)
+
+PROCEDURE Mk (VAR sp: POOL ; kind, v: I64) : PTR Node IN sp =
+VAR nd : PTR Node IN sp ;
+BEGIN
+  nd := NEW (sp, Node) ;
+  nd.kind := kind ;
+  nd.v := v ;
+  nd.min := 0 ;
+  nd.max := 0 ;
+  nd.greedy := TRUE ;
+  nd.kids := NEW (sp, NodeP, 2) ;
+  nd.nk := 0 ;
+  RETURN nd
+END Mk ;
+
+PROCEDURE AddKid (VAR sp: POOL ; VAR nd: PTR Node ; KEPT kid: PTR Node) =
+VAR
+  nk : SLICE OF PTR Node ;
+  i : I64 ;
+BEGIN
+  IF nd.nk = LEN (nd.kids) THEN
+    nk := NEW (sp, NodeP, 2 * nd.nk) ;
+    FOR i := 0 TO nd.nk - 1 DO nk[i] := nd.kids[i] END ;
+    nd.kids := nk
+  END ;
+  nd.kids[nd.nk] := kid ;
+  nd.nk := nd.nk + 1
+END AddKid ;
+
+PROCEDURE Fail (VAR ps: Parser ; RO msg: STR ; at: I64) RAISES BadPattern =
+BEGIN
+  RAISE BadPattern (msg, at)
+END Fail ;
+
+PROCEDURE AtEnd (VAR ps: Parser) : BOOL =
+BEGIN
+  RETURN ps.pos >= LEN (ps.p)
+END AtEnd ;
+
+PROCEDURE Cur (VAR ps: Parser) : CHAR =
+  (* the character at pos, NUL past the end *)
+BEGIN
+  IF ps.pos >= LEN (ps.p) THEN RETURN 00C END ;
+  RETURN ps.p[ps.pos]
+END Cur ;
+
+PROCEDURE At (VAR ps: Parser ; k: I64) : CHAR =
+BEGIN
+  IF ps.pos + k >= LEN (ps.p) THEN RETURN 00C END ;
+  RETURN ps.p[ps.pos + k]
+END At ;
+
+PROCEDURE IsDigit (c: CHAR) : BOOL =
+BEGIN
+  RETURN c >= '0' AND c <= '9'
+END IsDigit ;
+
+PROCEDURE IsOct (c: CHAR) : BOOL =
+BEGIN
+  RETURN c >= '0' AND c <= '7'
+END IsOct ;
+
+PROCEDURE HexVal (c: CHAR) : I64 =
+  (* the digit's value, -1 for no hex digit *)
+BEGIN
+  IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - 48 END ;
+  IF c >= 'a' AND c <= 'f' THEN RETURN ORD (c) - 87 END ;
+  IF c >= 'A' AND c <= 'F' THEN RETURN ORD (c) - 55 END ;
+  RETURN -1
+END HexVal ;
+
+PROCEDURE IsAsciiLetter (c: CHAR) : BOOL =
+BEGIN
+  RETURN (c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z')
+END IsAsciiLetter ;
+
+PROCEDURE Hex (VAR ps: Parser ; n, at: I64) : I64 RAISES BadPattern =
+  (* exactly n hex digits at pos *)
+VAR i, v, d : I64 ;
+BEGIN
+  v := 0 ;
+  FOR i := 1 TO n DO
+    d := HexVal (Cur (ps)) ;
+    IF d < 0 THEN Fail (ps, 'incomplete escape', at) END ;
+    v := v * 16 + d ;
+    ps.pos := ps.pos + 1
+  END ;
+  IF v > MaxCode THEN Fail (ps, 'bad escape: past U+10FFFF', at) END ;
+  IF v >= 0xD800 AND v <= 0xDFFF THEN
+    Fail (ps, 'a surrogate escape: a CHAR is a code point, never half of one', at)
+  END ;
+  RETURN v
+END Hex ;
+
+PROCEDURE CharEscape (VAR ps: Parser ; c: CHAR ; at: I64 ; VAR code: I64)
+  : BOOL RAISES BadPattern =
+  (* the escapes that name one character, in a class and out of one;
+     pos is past the letter.  FALSE: c is not one of them *)
+VAR v : I64 ;
+BEGIN
+  IF c = 'a' THEN code := 7
+  ELSIF c = 'f' THEN code := 12
+  ELSIF c = 'n' THEN code := 10
+  ELSIF c = 'r' THEN code := 13
+  ELSIF c = 't' THEN code := 9
+  ELSIF c = 'v' THEN code := 11
+  ELSIF c = 'x' THEN code := Hex (ps, 2, at)
+  ELSIF c = 'u' THEN code := Hex (ps, 4, at)
+  ELSIF c = 'U' THEN code := Hex (ps, 8, at)
+  ELSIF c = 'N' THEN
+    Fail (ps, 'a \N{...} name: write the character, or \u with its code', at)
+  ELSIF c = '0' THEN
+    (* \0 and up to two more octal digits *)
+    v := 0 ;
+    IF IsOct (Cur (ps)) THEN
+      v := ORD (Cur (ps)) - 48 ;
+      ps.pos := ps.pos + 1 ;
+      IF IsOct (Cur (ps)) THEN
+        v := v * 8 + ORD (Cur (ps)) - 48 ;
+        ps.pos := ps.pos + 1
+      END
+    END ;
+    code := v
+  ELSE
+    RETURN FALSE
+  END ;
+  RETURN TRUE
+END CharEscape ;
+
+PROCEDURE CharNode (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re ; code: I64)
+  : PTR Node IN sp =
+  (* one character: a class of its two cases under i *)
+VAR st : Set ;
+BEGIN
+  IF ps.ci AND ((code >= 65 AND code <= 90) OR (code >= 97 AND code <= 122)) THEN
+    SetNew (sp, st) ;
+    SetAdd (sp, st, code, code) ;
+    SetCaseless (sp, st) ;
+    SetNormal (st) ;
+    RETURN Mk (sp, NClass, AddClass (re, st))
+  END ;
+  RETURN Mk (sp, NChar, code)
+END CharNode ;
+
+PROCEDURE Escape (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re)
+  : PTR Node IN sp RAISES BadPattern =
+  (* at a backslash outside a class *)
+VAR
+  at, code, v : I64 ;
+  c : CHAR ;
+  st : Set ;
+BEGIN
+  at := ps.pos ;
+  ps.pos := ps.pos + 1 ;
+  IF AtEnd (ps) THEN Fail (ps, 'bad escape (end of pattern)', at) END ;
+  c := Cur (ps) ;
+  ps.pos := ps.pos + 1 ;
+  IF c = 'A' THEN RETURN Mk (sp, NAssert, ABot) END ;
+  IF c = 'Z' THEN RETURN Mk (sp, NAssert, AEot) END ;
+  IF c = 'b' THEN RETURN Mk (sp, NAssert, AWord) END ;
+  IF c = 'B' THEN RETURN Mk (sp, NAssert, ANotWord) END ;
+  IF c = 'd' OR c = 'D' OR c = 's' OR c = 'S' OR c = 'w' OR c = 'W' THEN
+    SetNew (sp, st) ;
+    SetAddEscape (sp, st, c, ps.uni) ;
+    SetNormal (st) ;
+    RETURN Mk (sp, NClass, AddClass (re, st))
+  END ;
+  IF CharEscape (ps, c, at, code) THEN RETURN CharNode (sp, ps, re, code) END ;
+  IF c >= '1' AND c <= '9' THEN
+    (* three octal digits are a character; anything else a group *)
+    IF IsOct (c) AND IsOct (Cur (ps)) AND IsOct (At (ps, 1)) THEN
+      v := (ORD (c) - 48) * 64 + (ORD (Cur (ps)) - 48) * 8 + ORD (At (ps, 1)) - 48 ;
+      ps.pos := ps.pos + 2 ;
+      IF v > 255 THEN Fail (ps, 'octal escape value outside of range 0-0o377', at) END ;
+      RETURN CharNode (sp, ps, re, v)
+    END ;
+    Fail (ps, 'a backreference: it needs backtracking, which this engine does not do', at)
+  END ;
+  IF IsAsciiLetter (c) THEN Fail (ps, 'bad escape \' + c, at) END ;
+  RETURN CharNode (sp, ps, re, ORD (c))
+END Escape ;
+
+PROCEDURE ClassItem (VAR sp: POOL ; VAR ps: Parser ; VAR one: Set ;
+                     VAR code: I64) : BOOL RAISES BadPattern =
+  (* one item of a class at pos: TRUE and its code for one character,
+     FALSE and the set in one for \d \w \s and their negations *)
+VAR
+  at : I64 ;
+  c : CHAR ;
+BEGIN
+  at := ps.pos ;
+  c := Cur (ps) ;
+  ps.pos := ps.pos + 1 ;
+  IF c # '\' THEN code := ORD (c) ; RETURN TRUE END ;
+  IF AtEnd (ps) THEN Fail (ps, 'bad escape (end of pattern)', at) END ;
+  c := Cur (ps) ;
+  ps.pos := ps.pos + 1 ;
+  IF c = 'd' OR c = 'D' OR c = 's' OR c = 'S' OR c = 'w' OR c = 'W' THEN
+    SetNew (sp, one) ;
+    SetAddEscape (sp, one, c, ps.uni) ;
+    RETURN FALSE
+  END ;
+  IF c = 'b' THEN code := 8 ; RETURN TRUE END ;
+  IF c >= '1' AND c <= '7' THEN
+    (* up to three octal digits in all *)
+    code := ORD (c) - 48 ;
+    IF IsOct (Cur (ps)) THEN
+      code := code * 8 + ORD (Cur (ps)) - 48 ;
+      ps.pos := ps.pos + 1 ;
+      IF IsOct (Cur (ps)) THEN
+        code := code * 8 + ORD (Cur (ps)) - 48 ;
+        ps.pos := ps.pos + 1
+      END
+    END ;
+    IF code > 255 THEN Fail (ps, 'octal escape value outside of range 0-0o377', at) END ;
+    RETURN TRUE
+  END ;
+  IF CharEscape (ps, c, at, code) THEN RETURN TRUE END ;
+  IF IsAsciiLetter (c) OR IsDigit (c) THEN Fail (ps, 'bad escape \' + c, at) END ;
+  code := ORD (c) ;
+  RETURN TRUE
+END ClassItem ;
+
+PROCEDURE ParseClass (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re)
+  : PTR Node IN sp RAISES BadPattern =
+  (* at [ -- Python's own loop: a ] first is a character, a - next to
+     ] or after a range is a character *)
+VAR
+  st, one, two : Set ;
+  at, a, b : I64 ;
+  neg, single1, single2 : BOOL ;
+BEGIN
+  at := ps.pos ;
+  ps.pos := ps.pos + 1 ;
+  neg := FALSE ;
+  IF Cur (ps) = '^' THEN neg := TRUE ; ps.pos := ps.pos + 1 END ;
+  SetNew (sp, st) ;
+  LOOP
+    IF AtEnd (ps) THEN Fail (ps, 'unterminated character set', at) END ;
+    (* a ] closes the set once it holds something: every item adds *)
+    IF Cur (ps) = ']' AND st.n > 0 THEN ps.pos := ps.pos + 1 ; EXIT END ;
+    single1 := ClassItem (sp, ps, one, a) ;
+    IF Cur (ps) = '-' THEN
+      ps.pos := ps.pos + 1 ;
+      IF AtEnd (ps) THEN Fail (ps, 'unterminated character set', at) END ;
+      IF Cur (ps) = ']' THEN
+        IF single1 THEN SetAdd (sp, st, a, a)
+        ELSE SetAddTable (sp, st, SLICE (one.lo, 0, one.n), SLICE (one.hi, 0, one.n))
+        END ;
+        SetAdd (sp, st, 45, 45) ;
+        ps.pos := ps.pos + 1 ;
+        EXIT
+      END ;
+      single2 := ClassItem (sp, ps, two, b) ;
+      IF NOT single1 OR NOT single2 THEN Fail (ps, 'bad character range', at) END ;
+      IF b < a THEN Fail (ps, 'bad character range', at) END ;
+      SetAdd (sp, st, a, b)
+    ELSIF single1 THEN
+      SetAdd (sp, st, a, a)
+    ELSE
+      SetAddTable (sp, st, SLICE (one.lo, 0, one.n), SLICE (one.hi, 0, one.n))
+    END
+  END ;
+  IF ps.ci THEN SetCaseless (sp, st) END ;
+  SetNormal (st) ;
+  IF neg THEN SetNegate (sp, st) END ;
+  RETURN Mk (sp, NClass, AddClass (re, st))
+END ParseClass ;
+
+PROCEDURE Flags (VAR ps: Parser ; c: CHAR ; on: BOOL ; at: I64 ; scoped: BOOL)
+  RAISES BadPattern =
+  (* one inline flag letter *)
+BEGIN
+  IF c = 'i' THEN
+    IF on AND ps.uni THEN
+      Fail (ps, 'case-insensitive Unicode matching is not built: drop u, or spell both cases', at)
+    END ;
+    ps.ci := on
+  ELSIF c = 'm' THEN ps.ml := on
+  ELSIF c = 's' THEN ps.da := on
+  ELSIF c = 'a' OR c = 'u' THEN
+    IF scoped OR NOT on THEN Fail (ps, 'a scoped or negated a or u flag: give it to the whole pattern', at) END ;
+    ps.uni := c = 'u' ;
+    IF ps.uni AND ps.ci THEN
+      Fail (ps, 'case-insensitive Unicode matching is not built: drop u, or spell both cases', at)
+    END
+  ELSIF c = 'x' THEN
+    Fail (ps, 'a verbose pattern: write it without the blanks and comments', at)
+  ELSE
+    Fail (ps, 'unknown flag', at)
+  END
+END Flags ;
+
+PROCEDURE GroupName (VAR ps: Parser ; at: I64) : STR RAISES BadPattern =
+  (* at the name's first character; pos past the closing > *)
+VAR
+  s : STR ;
+  c : CHAR ;
+BEGIN
+  s := '' ;
+  LOOP
+    IF AtEnd (ps) THEN Fail (ps, 'missing >, unterminated name', at) END ;
+    c := Cur (ps) ;
+    ps.pos := ps.pos + 1 ;
+    IF c = '>' THEN EXIT END ;
+    IF NOT (IsAsciiLetter (c) OR c = '_' OR (IsDigit (c) AND LEN (s) > 0)) THEN
+      IF ORD (c) > 127 THEN
+        Fail (ps, 'a group name outside ASCII: letters, digits and _ only', at)
+      END ;
+      Fail (ps, 'bad character in group name', at)
+    END ;
+    s := s + c
+  END ;
+  IF LEN (s) = 0 THEN Fail (ps, 'missing group name', at) END ;
+  RETURN s
+END GroupName ;
+
+PROCEDURE ParseGroup (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re ; first: BOOL ;
+                 VAR some: BOOL) : PTR Node IN sp RAISES BadPattern =
+  (* at (; some FALSE for a group that is no item: flags, a comment *)
+VAR
+  at, k, i : I64 ;
+  c : CHAR ;
+  name : STR ;
+  save : Parser ;
+  body, g : PTR Node IN sp ;
+  off : BOOL ;
+BEGIN
+  at := ps.pos ;
+  ps.pos := ps.pos + 1 ;
+  some := TRUE ;
+  k := -1 ;
+  IF Cur (ps) = '?' THEN
+    ps.pos := ps.pos + 1 ;
+    c := Cur (ps) ;
+    IF c = ':' THEN
+      ps.pos := ps.pos + 1
+    ELSIF c = 'P' AND At (ps, 1) = '<' THEN
+      ps.pos := ps.pos + 2 ;
+      name := GroupName (ps, at) ;
+      FOR i := 0 TO re.nnames - 1 DO
+        IF Text.Eq (re.names[i], name) THEN Fail (ps, 'redefinition of group name', at) END
+      END ;
+      re.ngroups := re.ngroups + 1 ;
+      k := re.ngroups ;
+      AddName (re, name, k)
+    ELSIF c = 'P' AND At (ps, 1) = '=' THEN
+      Fail (ps, 'a backreference: it needs backtracking, which this engine does not do', at)
+    ELSIF c = '=' OR c = '!' THEN
+      Fail (ps, 'a lookahead: it needs backtracking, which this engine does not do', at)
+    ELSIF c = '<' AND (At (ps, 1) = '=' OR At (ps, 1) = '!') THEN
+      Fail (ps, 'a lookbehind: it needs backtracking, which this engine does not do', at)
+    ELSIF c = '>' THEN
+      Fail (ps, 'an atomic group: it needs backtracking, which this engine does not do', at)
+    ELSIF c = '(' THEN
+      Fail (ps, 'a conditional group: it needs backtracking, which this engine does not do', at)
+    ELSIF c = '#' THEN
+      WHILE NOT AtEnd (ps) AND Cur (ps) # ')' DO ps.pos := ps.pos + 1 END ;
+      IF AtEnd (ps) THEN Fail (ps, 'missing ), unterminated comment', at) END ;
+      ps.pos := ps.pos + 1 ;
+      some := FALSE ;
+      RETURN Mk (sp, NEmpty, 0)
+    ELSIF IsAsciiLetter (c) OR c = '-' THEN
+      (* flags: global (?ims) at the start, or scoped (?i-s:...) *)
+      (* the letters read first, applied once it is known whether
+         the group is global -- (?u) -- or scoped -- (?i:...) *)
+      save := ps ;
+      off := FALSE ;
+      LOOP
+        IF AtEnd (ps) THEN Fail (ps, 'missing -, : or )', at) END ;
+        c := Cur (ps) ;
+        ps.pos := ps.pos + 1 ;
+        IF c = ')' OR c = ':' THEN EXIT END ;
+        IF c = '-' THEN
+          IF off THEN Fail (ps, 'unknown flag', at) END ;
+          off := TRUE
+        ELSIF NOT IsAsciiLetter (c) THEN
+          Fail (ps, 'unknown flag', at)
+        END
+      END ;
+      IF c = ')' AND off THEN Fail (ps, 'missing :', at) END ;
+      IF c = ')' AND NOT first THEN
+        Fail (ps, 'global flags not at the start of the expression', at)
+      END ;
+      off := FALSE ;
+      FOR i := at + 2 TO ps.pos - 2 DO
+        IF ps.p[i] = '-' THEN off := TRUE
+        ELSE Flags (ps, ps.p[i], NOT off, at, c = ':')
+        END
+      END ;
+      IF c = ')' THEN
+        some := FALSE ;
+        RETURN Mk (sp, NEmpty, 0)
+      END ;
+      body := Alt (sp, ps, re, FALSE) ;
+      IF Cur (ps) # ')' THEN Fail (ps, 'missing ), unterminated subpattern', at) END ;
+      ps.pos := ps.pos + 1 ;
+      ps.ci := save.ci ; ps.ml := save.ml ; ps.da := save.da ; ps.uni := save.uni ;
+      g := Mk (sp, NGroup, -1) ;
+      AddKid (sp, g, body) ;
+      RETURN g
+    ELSE
+      Fail (ps, 'unknown extension ?' + c, at)
+    END
+  ELSE
+    re.ngroups := re.ngroups + 1 ;
+    k := re.ngroups
+  END ;
+  body := Alt (sp, ps, re, FALSE) ;
+  IF Cur (ps) # ')' OR AtEnd (ps) THEN Fail (ps, 'missing ), unterminated subpattern', at) END ;
+  ps.pos := ps.pos + 1 ;
+  g := Mk (sp, NGroup, k) ;
+  AddKid (sp, g, body) ;
+  RETURN g
+END ParseGroup ;
+
+PROCEDURE Quant (VAR ps: Parser ; VAR min, max, width: I64) : BOOL =
+  (* a quantifier at pos, not consumed: * + ? or a {..} Python reads as
+     one (any other { is a character) *)
+VAR
+  c : CHAR ;
+  i, lo, hi : I64 ;
+  hasLo, hasHi, comma : BOOL ;
+BEGIN
+  c := Cur (ps) ;
+  IF AtEnd (ps) THEN RETURN FALSE END ;
+  IF c = '*' THEN min := 0 ; max := -1 ; width := 1 ; RETURN TRUE END ;
+  IF c = '+' THEN min := 1 ; max := -1 ; width := 1 ; RETURN TRUE END ;
+  IF c = '?' THEN min := 0 ; max := 1 ; width := 1 ; RETURN TRUE END ;
+  IF c # '{' THEN RETURN FALSE END ;
+  i := ps.pos + 1 ;
+  lo := 0 ;
+  hi := 0 ;
+  hasLo := FALSE ;
+  hasHi := FALSE ;
+  comma := FALSE ;
+  WHILE i < LEN (ps.p) AND IsDigit (ps.p[i]) DO
+    IF lo < 100000000 THEN lo := lo * 10 + ORD (ps.p[i]) - 48 END ;
+    hasLo := TRUE ;
+    i := i + 1
+  END ;
+  IF i < LEN (ps.p) AND ps.p[i] = ',' THEN
+    comma := TRUE ;
+    i := i + 1 ;
+    WHILE i < LEN (ps.p) AND IsDigit (ps.p[i]) DO
+      IF hi < 100000000 THEN hi := hi * 10 + ORD (ps.p[i]) - 48 END ;
+      hasHi := TRUE ;
+      i := i + 1
+    END
+  END ;
+  IF i >= LEN (ps.p) OR ps.p[i] # '}' THEN RETURN FALSE END ;
+  IF i = ps.pos + 1 THEN RETURN FALSE END ;          (* {} *)
+  min := 0 ;
+  IF hasLo THEN min := lo END ;
+  IF comma THEN
+    max := -1 ;
+    IF hasHi THEN max := hi END
+  ELSE
+    max := min
+  END ;
+  width := i - ps.pos + 1 ;
+  RETURN TRUE
+END Quant ;
+
+PROCEDURE Seq (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re ; top: BOOL)
+  : PTR Node IN sp RAISES BadPattern =
+  (* items up to | or ) or the end; top: the pattern's first branch,
+     where global flags may stand *)
+VAR
+  cat, item, rep : PTR Node IN sp ;
+  at, min, max, width : I64 ;
+  c : CHAR ;
+  some, lazy : BOOL ;
+BEGIN
+  cat := Mk (sp, NCat, 0) ;
+  LOOP
+    IF AtEnd (ps) THEN EXIT END ;
+    c := Cur (ps) ;
+    IF c = '|' OR c = ')' THEN EXIT END ;
+    at := ps.pos ;
+    some := TRUE ;
+    IF c = '(' THEN
+      item := ParseGroup (sp, ps, re, top AND cat.nk = 0, some)
+    ELSIF c = '[' THEN
+      item := ParseClass (sp, ps, re)
+    ELSIF c = '.' THEN
+      ps.pos := ps.pos + 1 ;
+      item := Mk (sp, NAny, 0) ;
+      IF ps.da THEN item.v := 1 END
+    ELSIF c = '^' THEN
+      ps.pos := ps.pos + 1 ;
+      IF ps.ml THEN item := Mk (sp, NAssert, ABol) ELSE item := Mk (sp, NAssert, ABot) END
+    ELSIF c = '$' THEN
+      ps.pos := ps.pos + 1 ;
+      IF ps.ml THEN item := Mk (sp, NAssert, AEol) ELSE item := Mk (sp, NAssert, AEotNl) END
+    ELSIF c = '\' THEN
+      item := Escape (sp, ps, re)
+    ELSIF Quant (ps, min, max, width) THEN
+      Fail (ps, 'nothing to repeat', at)
+    ELSE
+      ps.pos := ps.pos + 1 ;
+      item := CharNode (sp, ps, re, ORD (c))
+    END ;
+    IF Quant (ps, min, max, width) THEN
+      IF NOT some OR item.kind = NAssert THEN Fail (ps, 'nothing to repeat', ps.pos) END ;
+      at := ps.pos ;
+      ps.pos := ps.pos + width ;
+      IF max >= 0 AND max < min THEN Fail (ps, 'min repeat greater than max repeat', at + 1) END ;
+      IF min > MaxRepeat OR max > MaxRepeat THEN
+        Fail (ps, 'a repetition count above 1000', at + 1)
+      END ;
+      lazy := FALSE ;
+      IF Cur (ps) = '?' AND NOT AtEnd (ps) THEN lazy := TRUE ; ps.pos := ps.pos + 1
+      ELSIF Cur (ps) = '+' AND NOT AtEnd (ps) THEN
+        Fail (ps, 'a possessive quantifier: it needs backtracking, which this engine does not do', at)
+      END ;
+      IF Quant (ps, min, max, width) THEN Fail (ps, 'multiple repeat', ps.pos) END ;
+      rep := Mk (sp, NRep, 0) ;
+      rep.min := min ;
+      rep.max := max ;
+      rep.greedy := NOT lazy ;
+      AddKid (sp, rep, item) ;
+      item := rep
+    END ;
+    IF some THEN AddKid (sp, cat, item) END
+  END ;
+  IF cat.nk = 0 THEN RETURN Mk (sp, NEmpty, 0) END ;
+  IF cat.nk = 1 THEN RETURN cat.kids[0] END ;
+  RETURN cat
+END Seq ;
+
+PROCEDURE Alt (VAR sp: POOL ; VAR ps: Parser ; VAR re: PTR Re ; top: BOOL)
+  : PTR Node IN sp RAISES BadPattern =
+VAR
+  first, alt : PTR Node IN sp ;
+BEGIN
+  first := Seq (sp, ps, re, top) ;
+  IF Cur (ps) # '|' OR AtEnd (ps) THEN RETURN first END ;
+  alt := Mk (sp, NAlt, 0) ;
+  AddKid (sp, alt, first) ;
+  WHILE Cur (ps) = '|' AND NOT AtEnd (ps) DO
+    ps.pos := ps.pos + 1 ;
+    AddKid (sp, alt, Seq (sp, ps, re, FALSE))
+  END ;
+  RETURN alt
+END Alt ;
+
+(* ---- the compiler ------------------------------------------------- *)
+
+PROCEDURE Nullable (nd: PTR Node) : BOOL =
+  (* the node can match the empty string *)
+VAR i : I64 ;
+BEGIN
+  IF nd.kind = NEmpty OR nd.kind = NAssert THEN RETURN TRUE END ;
+  IF nd.kind = NChar OR nd.kind = NAny OR nd.kind = NClass THEN RETURN FALSE END ;
+  IF nd.kind = NCat THEN
+    FOR i := 0 TO nd.nk - 1 DO
+      IF NOT Nullable (nd.kids[i]) THEN RETURN FALSE END
+    END ;
+    RETURN TRUE
+  END ;
+  IF nd.kind = NAlt THEN
+    FOR i := 0 TO nd.nk - 1 DO
+      IF Nullable (nd.kids[i]) THEN RETURN TRUE END
+    END ;
+    RETURN FALSE
+  END ;
+  IF nd.kind = NGroup THEN RETURN Nullable (nd.kids[0]) END ;
+  RETURN nd.min = 0 OR Nullable (nd.kids[0])
+END Nullable ;
+
+PROCEDURE Gen (VAR re: PTR Re ; nd: PTR Node) RAISES BadPattern =
+VAR
+  i, j, sp, last : I64 ;
+  jumps : SLICE OF I64 ;
+BEGIN
+  IF nd.kind = NEmpty THEN RETURN END ;
+  IF nd.kind = NChar THEN j := Emit (re, OChar, nd.v, 0) ; RETURN END ;
+  IF nd.kind = NAny THEN
+    IF nd.v = 1 THEN j := Emit (re, OAnyNl, 0, 0) ELSE j := Emit (re, OAny, 0, 0) END ;
+    RETURN
+  END ;
+  IF nd.kind = NClass THEN j := Emit (re, OClass, nd.v, 0) ; RETURN END ;
+  IF nd.kind = NAssert THEN j := Emit (re, OAssert, nd.v, 0) ; RETURN END ;
+  IF nd.kind = NCat THEN
+    FOR i := 0 TO nd.nk - 1 DO Gen (re, nd.kids[i]) END ;
+    RETURN
+  END ;
+  IF nd.kind = NAlt THEN
+    (* split to each branch in order, every branch but the last jumping
+       past the rest *)
+    jumps := NEW (I64, nd.nk) ;
+    FOR i := 0 TO nd.nk - 2 DO
+      sp := Emit (re, OSplit, 0, 0) ;
+      re.x[sp] := re.n ;
+      Gen (re, nd.kids[i]) ;
+      jumps[i] := Emit (re, OJmp, 0, 0) ;
+      re.y[sp] := re.n
+    END ;
+    Gen (re, nd.kids[nd.nk - 1]) ;
+    last := re.n ;
+    FOR i := 0 TO nd.nk - 2 DO re.x[jumps[i]] := last END ;
+    RETURN
+  END ;
+  IF nd.kind = NGroup THEN
+    IF nd.v >= 0 THEN j := Emit (re, OSave, 2 * nd.v, 0) END ;
+    Gen (re, nd.kids[0]) ;
+    IF nd.v >= 0 THEN j := Emit (re, OSave, 2 * nd.v + 1, 0) END ;
+    RETURN
+  END ;
+  GenRep (re, nd)
+END Gen ;
+
+PROCEDURE GenRep (VAR re: PTR Re ; nd: PTR Node) RAISES BadPattern =
+  (* the mandatory passes written out, then the optional ones.  A body
+     that can match nothing gets sre's guard, the way Python's
+     MAX_UNTIL and MIN_UNTIL keep it: a pass that ended where it began
+     is kept, and the loop ends there -- straight to the exit.
+
+     An unbounded loop with such a body is written TWICE, the passes
+     taking the two copies in turn.  Python tries one more pass where a
+     pass ended, and keeps it when it matches nothing: a starred group
+     of a starred a, on aaa, leaves the group at 3..3.  That pass runs through the instructions
+     the ending pass has just visited at the same place, and a Pike VM
+     drops a second visit; in the other copy it is a first one *)
+VAR
+  i, j, slot, sp, body, exit, k, copies : I64 ;
+  splits, checks, tops : SLICE OF I64 ;
+  null : BOOL ;
+BEGIN
+  FOR i := 1 TO nd.min DO Gen (re, nd.kids[0]) END ;
+  IF nd.max = nd.min THEN RETURN END ;
+  null := Nullable (nd.kids[0]) ;
+  slot := -1 ;
+  IF null THEN
+    slot := re.nslots ;
+    re.nslots := re.nslots + 1
+  END ;
+  IF nd.max > 0 THEN k := nd.max - nd.min
+  ELSIF null THEN k := 2
+  ELSE k := 1
+  END ;
+  splits := NEW (I64, k) ;
+  checks := NEW (I64, k) ;
+  tops := NEW (I64, k) ;
+  FOR i := 0 TO k - 1 DO
+    checks[i] := -1 ;
+    tops[i] := re.n ;
+    splits[i] := Emit (re, OSplit, 0, 0) ;
+    body := re.n ;
+    IF null THEN j := Emit (re, OMark, slot, 0) END ;
+    Gen (re, nd.kids[0]) ;
+    IF null THEN checks[i] := Emit (re, OCheck, slot, 0) END ;
+    (* unbounded: on to the other copy's top, the last back to the first *)
+    IF nd.max < 0 AND i = k - 1 THEN j := Emit (re, OJmp, tops[0], 0) END ;
+    (* the split's body arm, until the exit is known *)
+    re.y[splits[i]] := body
+  END ;
+  exit := re.n ;
+  FOR i := 0 TO k - 1 DO
+    body := re.y[splits[i]] ;
+    IF nd.greedy THEN re.x[splits[i]] := body ; re.y[splits[i]] := exit
+    ELSE re.x[splits[i]] := exit ; re.y[splits[i]] := body
+    END ;
+    IF checks[i] >= 0 THEN re.y[checks[i]] := exit END
+  END
+END GenRep ;
+
+PROCEDURE Compile (VAR pool: POOL ; RO pattern: STR ; RO flags: STR)
+  : PTR Re IN pool RAISES BadPattern =
+VAR
+  scratch : POOL ;
+  re : PTR Re IN pool ;
+  ps : Parser ;
+  root : PTR Node IN scratch ;
+  i, j : I64 ;
+  c : CHAR ;
+BEGIN
+  re := NewRe (pool) ;
+  ps.p := pattern ;
+  ps.pos := 0 ;
+  ps.ci := FALSE ;
+  ps.ml := FALSE ;
+  ps.da := FALSE ;
+  ps.uni := FALSE ;
+  FOR i := 0 TO LEN (flags) - 1 DO
+    c := flags[i] ;
+    IF c = 'u' THEN ps.uni := TRUE
+    ELSIF c = 'i' THEN ps.ci := TRUE
+    ELSIF c = 'm' THEN ps.ml := TRUE
+    ELSIF c = 's' THEN ps.da := TRUE
+    ELSE RAISE BadPattern ('an unknown flag: ' + c + ', where imsu are the flags', -1)
+    END
+  END ;
+  IF ps.ci AND ps.uni THEN
+    RAISE BadPattern ('case-insensitive Unicode matching is not built: drop u, or spell both cases', -1)
+  END ;
+  root := Alt (scratch, ps, re, TRUE) ;
+  IF NOT AtEnd (ps) THEN
+    RAISE BadPattern ('unbalanced parenthesis', ps.pos)
+  END ;
+  re.uni := ps.uni ;
+  re.nslots := 2 * (re.ngroups + 1) ;
+  j := Emit (re, OSave, 0, 0) ;
+  Gen (re, root) ;
+  j := Emit (re, OSave, 1, 0) ;
+  j := Emit (re, OMatch, 0, 0) ;
+  RETURN re
+END Compile ;
+
+PROCEDURE Groups (re: PTR Re) : I64 =
+BEGIN
+  RETURN re.ngroups
+END Groups ;
+
+PROCEDURE GroupIndex (re: PTR Re ; RO name: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO re.nnames - 1 DO
+    IF Text.Eq (re.names[i], name) THEN RETURN re.nameGroup[i] END
+  END ;
+  RETURN -1
+END GroupIndex ;
+
+(* ---- the machine -------------------------------------------------- *)
+
+TYPE
+  (* a thread list: the program counters of one position's threads in
+     priority order, and each one's slots *)
+  List = RECORD
+    pc : SLICE OF I64 ;
+    caps : SLICE OF I64 ;      (* n threads times nslots *)
+    n : I64 ;
+    stamp : I64 ;              (* seen[pc] = stamp: pc is on this list *)
+  END ;
+
+  Vm = RECORD
+    seen : SLICE OF I64 ;
+    stamps : I64 ;
+    work : SLICE OF I64 ;      (* the slots of the thread being added *)
+    jobPc, jobSlot, jobVal : SLICE OF I64 ;
+  END ;
+
+PROCEDURE Holds (re: PTR Re ; RO s: STR ; pos, kind: I64) : BOOL =
+VAR
+  n : I64 ;
+  a, b : BOOL ;
+BEGIN
+  n := LEN (s) ;
+  IF kind = ABot THEN RETURN pos = 0 END ;
+  IF kind = ABol THEN RETURN pos = 0 OR s[pos - 1] = 0AC END ;
+  IF kind = AEot THEN RETURN pos = n END ;
+  IF kind = AEotNl THEN RETURN pos = n OR (pos = n - 1 AND s[pos] = 0AC) END ;
+  IF kind = AEol THEN RETURN pos = n OR s[pos] = 0AC END ;
+  a := pos > 0 AND IsWord (ORD (s[pos - 1]), re.uni) ;
+  b := pos < n AND IsWord (ORD (s[pos]), re.uni) ;
+  IF kind = AWord THEN RETURN a # b END ;
+  RETURN a = b
+END Holds ;
+
+PROCEDURE AddThread (re: PTR Re ; RO s: STR ; VAR vm: Vm ; VAR l: List ;
+                     pc0, pos: I64) =
+  (* the threads pc0 leads to without consuming a character, onto l
+     in priority order; vm.work holds the slots on the way.  A job is a
+     program counter, or (pc -1) a slot to put back *)
+VAR
+  sp, pc, slot, k, ns : I64 ;
+BEGIN
+  ns := re.nslots ;
+  sp := 0 ;
+  vm.jobPc[0] := pc0 ;
+  sp := 1 ;
+  WHILE sp > 0 DO
+    sp := sp - 1 ;
+    pc := vm.jobPc[sp] ;
+    IF pc < 0 THEN
+      vm.work[vm.jobSlot[sp]] := vm.jobVal[sp]
+    ELSE
+      LOOP
+        IF vm.seen[pc] = l.stamp THEN EXIT END ;
+        vm.seen[pc] := l.stamp ;
+        k := re.op[pc] ;
+        IF k = OJmp THEN
+          pc := re.x[pc]
+        ELSIF k = OSplit THEN
+          vm.jobPc[sp] := re.y[pc] ;
+          sp := sp + 1 ;
+          pc := re.x[pc]
+        ELSIF k = OSave OR k = OMark THEN
+          slot := re.x[pc] ;
+          vm.jobPc[sp] := -1 ;
+          vm.jobSlot[sp] := slot ;
+          vm.jobVal[sp] := vm.work[slot] ;
+          sp := sp + 1 ;
+          vm.work[slot] := pos ;
+          pc := pc + 1
+        ELSIF k = OCheck THEN
+          IF vm.work[re.x[pc]] = pos THEN pc := re.y[pc] ELSE pc := pc + 1 END
+        ELSIF k = OAssert THEN
+          IF NOT Holds (re, s, pos, re.x[pc]) THEN EXIT END ;
+          pc := pc + 1
+        ELSE
+          l.pc[l.n] := pc ;
+          FOR slot := 0 TO ns - 1 DO l.caps[l.n * ns + slot] := vm.work[slot] END ;
+          l.n := l.n + 1 ;
+          EXIT
+        END
+      END
+    END
+  END
+END AddThread ;
+
+PROCEDURE Step (re: PTR Re ; pc: I64 ; c: I64) : BOOL =
+  (* the thread at pc takes the character c *)
+VAR k, at : I64 ;
+BEGIN
+  k := re.op[pc] ;
+  IF k = OChar THEN RETURN c = re.x[pc] END ;
+  IF k = OAny THEN RETURN c # 10 END ;
+  IF k = OAnyNl THEN RETURN TRUE END ;
+  IF k = OClass THEN
+    at := re.x[pc] ;
+    RETURN InTable (re.lo, re.hi, re.clsAt[at], re.clsLen[at], c)
+  END ;
+  RETURN FALSE
+END Step ;
+
+PROCEDURE Run (re: PTR Re ; RO s: STR ; from: I64 ; anchored, full, advance: BOOL)
+  : OPT PTR Found =
+  (* the leftmost-first match from from, as sre finds it: anchored, a
+     match must start there; full, it must end at the end of s;
+     advance, it must not end where it started (finditer after an empty
+     match) *)
+VAR
+  scratch : POOL ;
+  vm : Vm ;
+  cl, nl, tl : List ;
+  pos, i, j, ns, n, c, pc, f : I64 ;
+  best : SLICE OF I64 ;
+  matched : BOOL ;
+  m : PTR Found ;
+BEGIN
+  n := LEN (s) ;
+  f := from ;
+  IF f < 0 THEN f := 0 END ;
+  IF f > n THEN f := n END ;
+  ns := re.nslots ;
+  vm.seen := NEW (scratch, I64, re.n) ;
+  vm.stamps := 0 ;
+  vm.work := NEW (scratch, I64, ns) ;
+  vm.jobPc := NEW (scratch, I64, 2 * re.n + 2) ;
+  vm.jobSlot := NEW (scratch, I64, 2 * re.n + 2) ;
+  vm.jobVal := NEW (scratch, I64, 2 * re.n + 2) ;
+  cl.pc := NEW (scratch, I64, re.n) ;
+  cl.caps := NEW (scratch, I64, re.n * ns) ;
+  nl.pc := NEW (scratch, I64, re.n) ;
+  nl.caps := NEW (scratch, I64, re.n * ns) ;
+  best := NEW (scratch, I64, ns) ;
+  FOR i := 0 TO re.n - 1 DO vm.seen[i] := 0 END ;
+  cl.n := 0 ;
+  vm.stamps := 1 ;
+  cl.stamp := 1 ;
+  matched := FALSE ;
+  pos := f ;
+  LOOP
+    IF NOT matched AND (pos = f OR NOT anchored) THEN
+      FOR j := 0 TO ns - 1 DO vm.work[j] := -1 END ;
+      AddThread (re, s, vm, cl, 0, pos)
+    END ;
+    (* no thread here: an unanchored search goes on to the next place *)
+    IF cl.n = 0 AND (matched OR anchored) THEN EXIT END ;
+    vm.stamps := vm.stamps + 1 ;
+    nl.n := 0 ;
+    nl.stamp := vm.stamps ;
+    c := -1 ;
+    IF pos < n THEN c := ORD (s[pos]) END ;
+    i := 0 ;
+    WHILE i < cl.n DO
+      pc := cl.pc[i] ;
+      IF re.op[pc] = OMatch THEN
+        IF (full AND pos # n) OR (advance AND pos = f) THEN
+          (* not this one; lower threads may still do *)
+        ELSE
+          matched := TRUE ;
+          FOR j := 0 TO ns - 1 DO best[j] := cl.caps[i * ns + j] END ;
+          i := cl.n               (* the threads below this one are cut *)
+        END
+      ELSIF c >= 0 AND Step (re, pc, c) THEN
+        FOR j := 0 TO ns - 1 DO vm.work[j] := cl.caps[i * ns + j] END ;
+        AddThread (re, s, vm, nl, pc + 1, pos + 1)
+      END ;
+      i := i + 1
+    END ;
+    IF pos >= n THEN EXIT END ;
+    tl := cl ;
+    cl := nl ;
+    nl := tl ;
+    pos := pos + 1
+  END ;
+  IF NOT matched THEN RETURN NONE END ;
+  m := NEW (Found) ;
+  m.span := NEW (I64, 2 * (re.ngroups + 1)) ;
+  FOR j := 0 TO 2 * re.ngroups + 1 DO m.span[j] := best[j] END ;
+  FOR j := 0 TO re.ngroups DO
+    (* a group whose end was never written took no part *)
+    IF m.span[2 * j] < 0 OR m.span[2 * j + 1] < 0 THEN
+      m.span[2 * j] := -1 ;
+      m.span[2 * j + 1] := -1
+    END
+  END ;
+  RETURN SOME (m)
+END Run ;
+
+PROCEDURE Search (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found =
+BEGIN
+  RETURN Run (re, s, from, FALSE, FALSE, FALSE)
+END Search ;
+
+PROCEDURE Match (re: PTR Re ; RO s: STR ; from: I64) : OPT PTR Found =
+BEGIN
+  RETURN Run (re, s, from, TRUE, FALSE, FALSE)
+END Match ;
+
+PROCEDURE FullMatch (re: PTR Re ; RO s: STR) : OPT PTR Found =
+BEGIN
+  RETURN Run (re, s, 0, TRUE, TRUE, FALSE)
+END FullMatch ;
+
+PROCEDURE Start (m: PTR Found ; k: I64) : I64 RAISES IndexError =
+BEGIN
+  RETURN m.span[2 * k]
+END Start ;
+
+PROCEDURE End (m: PTR Found ; k: I64) : I64 RAISES IndexError =
+BEGIN
+  RETURN m.span[2 * k + 1]
+END End ;
+
+PROCEDURE Took (m: PTR Found ; k: I64) : BOOL RAISES IndexError =
+BEGIN
+  RETURN m.span[2 * k] >= 0
+END Took ;
+
+PROCEDURE Group (RO s: STR ; m: PTR Found ; k: I64) : STR RAISES IndexError =
+VAR a, b : I64 ;
+BEGIN
+  a := m.span[2 * k] ;
+  b := m.span[2 * k + 1] ;
+  IF a < 0 THEN RETURN '' END ;
+  RETURN SLICE (s, a, b - a)
+END Group ;
+
+PROCEDURE FindAll (re: PTR Re ; RO s: STR) : SLICE OF PTR Found =
+VAR
+  all, more : SLICE OF PTR Found ;
+  n, i, pos : I64 ;
+  advance : BOOL ;
+  r : OPT PTR Found ;
+BEGIN
+  all := NEW (FoundP, 4) ;
+  n := 0 ;
+  pos := 0 ;
+  advance := FALSE ;
+  LOOP
+    r := Run (re, s, pos, FALSE, FALSE, advance) ;
+    IF r IS SOME m THEN
+      IF n = LEN (all) THEN
+        more := NEW (FoundP, 2 * n) ;
+        FOR i := 0 TO n - 1 DO more[i] := all[i] END ;
+        all := more
+      END ;
+      all[n] := m ;
+      n := n + 1 ;
+      advance := m.span[1] = m.span[0] ;
+      pos := m.span[1]
+    ELSE
+      EXIT
+    END
+  END ;
+  RETURN SLICE (all, 0, n)
+END FindAll ;
+
+(* ---- replacement templates ------------------------------------------ *)
+
+PROCEDURE Expand (re: PTR Re ; RO s: STR ; RO repl: STR ; m: PTR Found ;
+                  VAR d: PTR DynStr.DString) RAISES BadPattern =
+  (* repl with its group references filled in from m, onto d *)
+VAR
+  i, k, g : I64 ;
+  c : CHAR ;
+  name : STR ;
+BEGIN
+  i := 0 ;
+  WHILE i < LEN (repl) DO
+    c := repl[i] ;
+    i := i + 1 ;
+    IF c # '\' THEN
+      DynStr.AppendChar (d, c)
+    ELSIF i >= LEN (repl) THEN
+      RAISE BadPattern ('bad escape (end of pattern) in the replacement', -1)
+    ELSE
+      c := repl[i] ;
+      i := i + 1 ;
+      g := -1 ;
+      IF c = 'g' THEN
+        IF i >= LEN (repl) OR repl[i] # '<' THEN
+          RAISE BadPattern ('missing < in the replacement', -1)
+        END ;
+        i := i + 1 ;
+        name := '' ;
+        WHILE i < LEN (repl) AND repl[i] # '>' DO name := name + repl[i] ; i := i + 1 END ;
+        IF i >= LEN (repl) THEN RAISE BadPattern ('missing > in the replacement', -1) END ;
+        i := i + 1 ;
+        IF LEN (name) = 0 THEN RAISE BadPattern ('missing group name in the replacement', -1) END ;
+        IF IsDigit (name[0]) THEN
+          g := 0 ;
+          FOR k := 0 TO LEN (name) - 1 DO
+            IF NOT IsDigit (name[k]) THEN
+              RAISE BadPattern ('bad character in group name ' + name, -1)
+            END ;
+            IF g < 100000 THEN g := g * 10 + ORD (name[k]) - 48 END
+          END
+        ELSE
+          g := GroupIndex (re, name) ;
+          IF g < 0 THEN RAISE BadPattern ('unknown group name ' + name, -1) END
+        END
+      ELSIF IsDigit (c) AND c # '0' THEN
+        g := ORD (c) - 48 ;
+        IF i < LEN (repl) AND IsDigit (repl[i]) THEN
+          g := g * 10 + ORD (repl[i]) - 48 ;
+          i := i + 1
+        END
+      ELSIF c = 'n' THEN DynStr.AppendChar (d, 0AC)
+      ELSIF c = 't' THEN DynStr.AppendChar (d, 09C)
+      ELSIF c = 'r' THEN DynStr.AppendChar (d, 0DC)
+      ELSIF c = '\' THEN DynStr.AppendChar (d, '\')
+      ELSIF IsAsciiLetter (c) OR c = '0' THEN
+        RAISE BadPattern ('bad escape \' + c + ' in the replacement', -1)
+      ELSE
+        DynStr.AppendChar (d, '\') ;
+        DynStr.AppendChar (d, c)
+      END ;
+      IF g >= 0 THEN
+        IF g > re.ngroups THEN RAISE BadPattern ('invalid group reference in the replacement', -1) END ;
+        IF m.span[2 * g] >= 0 THEN
+          DynStr.Append (d, SLICE (s, m.span[2 * g], m.span[2 * g + 1] - m.span[2 * g]))
+        END
+      END
+    END
+  END
+END Expand ;
+
+PROCEDURE Sub (re: PTR Re ; RO s: STR ; RO repl: STR ; count: I64) : STR
+  RAISES BadPattern =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  pos, last, done : I64 ;
+  advance : BOOL ;
+  r : OPT PTR Found ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  pos := 0 ;
+  last := 0 ;
+  done := 0 ;
+  advance := FALSE ;
+  LOOP
+    IF count > 0 AND done >= count THEN EXIT END ;
+    r := Run (re, s, pos, FALSE, FALSE, advance) ;
+    IF r IS SOME m THEN
+      DynStr.Append (d, SLICE (s, last, m.span[0] - last)) ;
+      Expand (re, s, repl, m, d) ;
+      last := m.span[1] ;
+      done := done + 1 ;
+      advance := m.span[1] = m.span[0] ;
+      pos := m.span[1]
+    ELSE
+      EXIT
+    END
+  END ;
+  DynStr.Append (d, SLICE (s, last, LEN (s) - last)) ;
+  RETURN DynStr.View (d)
+END Sub ;
+
+PROCEDURE Split (re: PTR Re ; RO s: STR ; maxsplit: I64) : SLICE OF STR =
+VAR
+  out, more : SLICE OF STR ;
+  n, i, g, pos, last, done : I64 ;
+  advance : BOOL ;
+  r : OPT PTR Found ;
+BEGIN
+  out := NEW (STR, 8) ;
+  n := 0 ;
+  pos := 0 ;
+  last := 0 ;
+  done := 0 ;
+  advance := FALSE ;
+  LOOP
+    IF maxsplit > 0 AND done >= maxsplit THEN EXIT END ;
+    r := Run (re, s, pos, FALSE, FALSE, advance) ;
+    IF r IS SOME m THEN
+      IF n + re.ngroups + 2 > LEN (out) THEN
+        more := NEW (STR, 2 * (n + re.ngroups + 2)) ;
+        FOR i := 0 TO n - 1 DO more[i] := out[i] END ;
+        out := more
+      END ;
+      out[n] := SLICE (s, last, m.span[0] - last) ;
+      n := n + 1 ;
+      FOR g := 1 TO re.ngroups DO
+        out[n] := '' ;
+        IF m.span[2 * g] >= 0 THEN
+          out[n] := SLICE (s, m.span[2 * g], m.span[2 * g + 1] - m.span[2 * g])
+        END ;
+        n := n + 1
+      END ;
+      last := m.span[1] ;
+      done := done + 1 ;
+      advance := m.span[1] = m.span[0] ;
+      pos := m.span[1]
+    ELSE
+      EXIT
+    END
+  END ;
+  IF n + 1 > LEN (out) THEN
+    more := NEW (STR, n + 1) ;
+    FOR i := 0 TO n - 1 DO more[i] := out[i] END ;
+    out := more
+  END ;
+  out[n] := SLICE (s, last, LEN (s) - last) ;
+  RETURN SLICE (out, 0, n + 1)
+END Split ;
+
+END Regex.

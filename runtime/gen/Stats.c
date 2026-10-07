@@ -355,7 +355,7 @@ double Stats_Percentile (m9_sl_F64 xs, double p, m9_state *err)
     n = m9v;
   }
   if ((!(((p >= 0.0) && (p <= 100.0))))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 27 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 27 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 27 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 27 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -663,7 +663,7 @@ double Stats_TTail (double t, double dof, m9_state *err)
   double m9ret = 0;
   double p = 0; (void) p;
   if ((!((dof > 0.0)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 35 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 35 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 35 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 35 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -762,14 +762,14 @@ int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_state *err)
   int64_t limit = 0; (void) limit;
   int64_t k = 0; (void) k;
   if ((hi < lo)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 11 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 11 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 11 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 11 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   bool m9t2 = ((lo < m9_neg_i64 (Stats_TwoP62, err)) || (hi > m9_sub_i64 (Stats_TwoP62, INT64_C(1), err)));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 36 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 36 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 36 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 36 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -778,7 +778,7 @@ int64_t Stats_UniformI (Stats_Stream *st, int64_t lo, int64_t hi, m9_state *err)
     m = m9v;
   }
   if ((m > Stats_TwoP53i)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 36 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 36 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 36 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 36 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -863,7 +863,7 @@ double Stats_Exponential (Stats_Stream *st, double lambda, m9_state *err)
   double m9ret = 0;
   double u = 0; (void) u;
   if ((!((lambda > 0.0)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 23 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 23 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 23 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 23 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -889,7 +889,7 @@ double Stats_LogNormal (Stats_Stream *st, double mu, double sigma, m9_state *err
   err->res = &m9frame;
   double m9ret = 0;
   if ((!((sigma > 0.0)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 22 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 22 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 22 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 22 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1153,7 +1153,7 @@ m9_sl_F64 Stats_Interp (m9_sl_F64 xs, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err)
   bool m9t1 = (!(((*(double *) m9_at (xp.p, INT64_C(0), xp.len, sizeof (double), err)) == (*(double *) m9_at (xp.p, INT64_C(0), xp.len, sizeof (double), err)))));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 41 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 41 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 41 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 41 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1165,7 +1165,7 @@ m9_sl_F64 Stats_Interp (m9_sl_F64 xs, m9_sl_F64 xp, m9_sl_F64 fp, m9_state *err)
     bool m9t4 = (!(((*(double *) m9_at (xp.p, m9_sub_i64 (i, INT64_C(1), err), xp.len, sizeof (double), err)) < (*(double *) m9_at (xp.p, i, xp.len, sizeof (double), err)))));
     if (err->exc) goto L_ret;
     if (m9t4) {
-      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s8, 41 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s8, 41 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+      { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s8, 41 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s8, 41 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
@@ -1296,7 +1296,7 @@ double Stats_Corr (m9_sl_F64 xs, m9_sl_F64 ys, m9_state *err)
   Stats_PairSums (xs, ys, n, &(sxx), &(syy), &(sxy), err);
   if (err->exc) goto L_ret;
   if (((sxx == 0.0) || (syy == 0.0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 46 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 46 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 46 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 46 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1432,7 +1432,7 @@ m9_gd2_double Stats_CorrMatrix (m9_gd2_double g, m9_state *err)
         goto L_ret;
       }
       if (((sxx == 0.0) || (syy == 0.0))) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s10, 46 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s10, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s10, 46 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s10, 46 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
@@ -1493,7 +1493,7 @@ void Stats_Taylor (m9_sl_F64 model, m9_sl_F64 ref, double *ratio, double *corr, 
   Stats_PairSums (model, ref, n, &(smm), &(srr), &(smr), err);
   if (err->exc) goto L_ret;
   if (((smm == 0.0) || (srr == 0.0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s11, 59 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s11, 59 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s11, 59 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s11, 59 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1988,7 +1988,7 @@ m9_sl_I64 Stats_Permutation (Stats_Stream *st, int64_t n, m9_state *err)
   m9_sl_I64 a = {0}; (void) a;
   int64_t i = 0; (void) i;
   if ((n < INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s12, 32 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s12, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s12, 32 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s12, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -2030,7 +2030,7 @@ m9_sl_I64 Stats_Choice (Stats_Stream *st, int64_t n, int64_t k, m9_state *err)
   int64_t j = 0; (void) j;
   int64_t t = 0; (void) t;
   if ((((n < INT64_C(0)) || (k < INT64_C(0))) || (k > n))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 40 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 40 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s13, 40 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s13, 40 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -2780,14 +2780,14 @@ static void Stats_BinsOk (int64_t bins, double lo, double hi, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   if ((bins < INT64_C(1))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s14, 32 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s14, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s14, 32 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s14, 32 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   bool m9t2 = (((!Math_IsFinite (lo, err)) || (!Math_IsFinite (hi, err))) || (!((lo < hi))));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s15, 48 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s15, 48 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s15, 48 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s15, 48 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -3007,7 +3007,7 @@ static void Stats_RollOk (m9_sl_F64 xs, int64_t window, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   if ((window < INT64_C(1))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 33 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 33 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -3453,7 +3453,7 @@ static void Stats_DofOk (double dof, m9_state *err)
   bool m9t1 = ((!((dof > 0.0))) || (!Math_IsFinite (dof, err)));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s17, 35 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s17, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s17, 35 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s17, 35 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -3474,7 +3474,7 @@ static void Stats_ProbOk (double p, m9_state *err)
     goto L_ret;
   }
   if (((p < 0.0) || (p > 1.0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s18, 26 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s18, 26 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s18, 26 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s18, 26 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }

@@ -134,6 +134,46 @@ void m9_trap_tag (void)
 static _Thread_local m9_pool_block *m9_block_cache = NULL;
 static _Thread_local int m9_block_cached = 0;
 
+/* the RAISE payload copies: m9rt.h says why */
+static _Thread_local struct { unsigned char *p; size_t cap; } m9_inflight[3];
+
+void m9_pay_keep (m9_state *err, int k, size_t elem)
+{
+  size_t n;
+  if (k < 0 || k > 2 || err->s[k].len <= 0 || err->s[k].p == NULL) return;
+  n = (size_t) err->s[k].len * elem;
+  if (n > m9_inflight[k].cap) {
+    /* a new buffer, filled from the old place before the old buffer
+       goes: the payload may be a view INTO it (a handler raising
+       part of what it caught) */
+    size_t cap = n < 256 ? 256 : n;
+    unsigned char *q = malloc (cap);
+    if (q == NULL) return;              /* left where it was: no worse than before */
+    memcpy (q, err->s[k].p, n);
+    free (m9_inflight[k].p);
+    m9_inflight[k].p = q;
+    m9_inflight[k].cap = cap;
+  } else {
+    memmove (m9_inflight[k].p, err->s[k].p, n);
+  }
+  err->s[k].p = m9_inflight[k].p;
+}
+
+void *m9_pay_take (m9_state *err, int k, size_t elem)
+{
+  m9_state own;
+  void *dst;
+  int64_t n = err->s[k].len;
+  if (n <= 0 || err->s[k].p == NULL) return (void *) err->s[k].p;
+  /* a private state: running out of memory here must not replace the
+     exception being handled */
+  memset (&own, 0, sizeof own);
+  dst = m9_pool_alloc (err->res ? err->res : &m9_heap, elem, n, &own);
+  if (own.exc != NULL || dst == NULL) return (void *) err->s[k].p;
+  memcpy (dst, err->s[k].p, (size_t) n * elem);
+  return dst;
+}
+
 void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err)
 {
   size_t need, cap;
@@ -518,6 +558,20 @@ void m9_flush (void)
   fflush (stdout);
 }
 
+/* One call's characters go out WHOLE: the stream is locked for the
+   call, so a line two threads write at once cannot come out with the
+   other's bytes inside it.  Each putc locked the stream on its own
+   until 2026-10-07, and HttpServer's access log, one line from each
+   worker, came out interleaved byte by byte.  FILE locks are
+   recursive, so the putc calls inside still take them.            */
+#ifdef _WIN32
+#define M9_LOCK(f) _lock_file (f)
+#define M9_UNLOCK(f) _unlock_file (f)
+#else
+#define M9_LOCK(f) flockfile (f)
+#define M9_UNLOCK(f) funlockfile (f)
+#endif
+
 /* CHARs out as UTF-8.  Total by construction: every Unicode scalar
    has an encoding, which is why Io.Write declares no RAISES while
    DynStr.Bytes -- narrowing to octets for the wire -- must.  */
@@ -525,6 +579,7 @@ void m9_put_chars (const void *buf, size_t n)
 {
   const uint32_t *p = (const uint32_t *) buf;
   size_t i;
+  M9_LOCK (stdout);
   for (i = 0; i < n; i++)
     {
       uint32_t c = p[i];
@@ -542,6 +597,7 @@ void m9_put_chars (const void *buf, size_t n)
           putchar ((int) (0x80 | ((c >> 6) & 0x3F)));
           putchar ((int) (0x80 | (c & 0x3F))); }
     }
+  M9_UNLOCK (stdout);
 }
 
 int64_t m9_read_file (const void *path, void *buf, int64_t cap)
@@ -881,6 +937,7 @@ void m9_put_chars_err (const void *buf, size_t n)
 {
   const uint32_t *p = (const uint32_t *) buf;
   size_t i;
+  M9_LOCK (stderr);
   for (i = 0; i < n; i++)
     {
       uint32_t c = p[i];
@@ -899,6 +956,7 @@ void m9_put_chars_err (const void *buf, size_t n)
           fputc ((int) (0x80 | (c & 0x3F)), stderr); }
     }
   fflush (stderr);
+  M9_UNLOCK (stderr);
 }
 
 /* ---- running the C compiler -------------------------------------

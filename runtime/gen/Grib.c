@@ -239,9 +239,9 @@ Grib_Index Grib_BuildIndex (m9_sl_BYTE data, m9_state *err)
     }
   }
   if ((n == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 10 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 10 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-    { __typeof__((m9_sl_CHAR){ NULL, 0 }) m9t4 = (m9_sl_CHAR){ NULL, 0 }; err->s[1].p = m9t4.p; err->s[1].len = m9t4.len; }
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 28 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 28 }); err->s[2].p = m9t5.p; err->s[2].len = m9t5.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 10 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 10 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+    { __typeof__((m9_sl_CHAR){ NULL, 0 }) m9t4 = (m9_sl_CHAR){ NULL, 0 }; err->s[1].p = m9t4.p; err->s[1].len = m9t4.len; m9_pay_keep (err, 1, sizeof (*m9t4.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 28 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 28 }); err->s[2].p = m9t5.p; err->s[2].len = m9t5.len; m9_pay_keep (err, 2, sizeof (*m9t5.p)); }
     err->i[0] = INT64_C(0);
     m9_raise (err, &Grib_Error);
     goto L_ret;
@@ -775,9 +775,9 @@ L_hdl_m9t1: ;
   }
   goto L_ret;
 L_dn_m9t2: ;
-  { __typeof__(op) m9t3 = op; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
-  { __typeof__(key) m9t4 = key; err->s[1].p = m9t4.p; err->s[1].len = m9t4.len; }
-  { __typeof__(detail) m9t5 = detail; err->s[2].p = m9t5.p; err->s[2].len = m9t5.len; }
+  { __typeof__(op) m9t3 = op; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+  { __typeof__(key) m9t4 = key; err->s[1].p = m9t4.p; err->s[1].len = m9t4.len; m9_pay_keep (err, 1, sizeof (*m9t4.p)); }
+  { __typeof__(detail) m9t5 = detail; err->s[2].p = m9t5.p; err->s[2].len = m9t5.len; m9_pay_keep (err, 2, sizeof (*m9t5.p)); }
   err->i[0] = code;
   m9_raise (err, &Grib_Error);
   goto L_ret;

@@ -684,7 +684,7 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
       if (err->exc) goto L_ret;
       if (m9t9) {
         if ((c != (*t)->ncols)) {
-          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 22 })) m9t10 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 22 }); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; }
+          { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 22 })) m9t10 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 22 }); err->s[0].p = m9t10.p; err->s[0].len = m9t10.len; m9_pay_keep (err, 0, sizeof (*m9t10.p)); }
           err->i[0] = m9_add_i64 (row, INT64_C(2), err);
           err->i[1] = c;
           m9_raise (err, &Csv_ParseError);
@@ -1055,7 +1055,7 @@ static Csv_Table * Csv_Build (m9_pool *pool, m9_sl_BYTE buf, Csv_Options opt, m9
     }
   }
   if ((i >= (t->buf).len)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 13 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 13 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 13 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 13 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     err->i[0] = m9_add_i64 (opt.skipLines, INT64_C(1), err);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Csv_ParseError);

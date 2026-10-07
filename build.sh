@@ -63,7 +63,7 @@ COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc Review M9c"
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
          Json Dict Faults Mat Math Bits Sort Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc Review \
-         NetCDF Grib Csv Delim Zip Stats System Frame Parquet NbCells NbShow \
+         NetCDF Grib Csv Delim Zip Pg Sparql Rdf Regex Xml Stats System Frame Parquet NbCells NbShow \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
 
 mkdir -p "$OUT"
@@ -108,7 +108,7 @@ install -m 644 runtime/m9rt.h    "$DESTDIR/usr/include/m9/m9rt.h"
 # its own tree, NOT beside the header in include/m9, where sources would
 # win over the archive and every flagless link would compile them
 install -d "$DESTDIR/usr/share/m9/runtime"
-for f in m9rt.h m9rt.c tcpshim.c fmtshim.c tlsshim.c m9session.c; do
+for f in m9rt.h m9rt.c tcpshim.c fmtshim.c tlsshim.c m9session.c pgshim.c; do
   install -m 644 "runtime/$f" "$DESTDIR/usr/share/m9/runtime/$f"
 done
 

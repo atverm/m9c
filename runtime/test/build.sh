@@ -287,6 +287,7 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 b_httpserver () {
 gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
     -iquote .. -iquote ../gen ../m9rt.c ../tcpshim.c ../tlsshim.c ../gen/DynStr.c ../gen/Io.c ../gen/Http.c \
+    ../gen/Bits.c ../gen/Zip.c ../gen/Fmt.c ../gen/Time.c ../gen/Syslog.c ../gen/Logger.c \
     ../gen/HttpServer.c ../gen/OpenApi.c httpserver_driver.c -lssl -lcrypto \
     -o httpserver_test
 ./httpserver_test

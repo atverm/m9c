@@ -701,6 +701,32 @@ typedef struct m9_pool {
 void *m9_pool_alloc (m9_pool *pool, size_t elem, int64_t n, m9_state *err);
 void  m9_pool_free  (m9_pool *pool);
 
+/* A RAISE'S STRINGS OUTLIVE THE FRAME THAT BUILT THEM (2026-10-06).
+   A payload slot holds a pointer and a length, not a copy, and the
+   payload is usually built where the failure is: `'no such column '
+   + name` in the raising procedure's frame, or a library's message
+   in a local pool.  Both are freed as the raise leaves that
+   procedure, before any handler runs, and a handler that did any
+   allocating work read its own text back where the message had been
+   (PayloadProbe: 1000 of 1000).  So the generator copies twice:
+
+     m9_pay_keep  at the RAISE, after the slot is filled: the octets
+                  into a per-thread in-flight buffer for that slot,
+                  which nothing frees while the raise unwinds;
+     m9_pay_take  where a handler BINDS the payload: from there into
+                  the handler's own frame (err->res), so the binding
+                  lives as long as the procedure that handles it and
+                  no later raise can overwrite it.
+
+   Errors are rare and payloads short; the copies cost nothing that a
+   measurement of the error-free path can see.  A binding that cannot
+   be allocated keeps the in-flight copy, valid until this thread's
+   next raise with a string in that slot.  The in-flight buffers grow
+   to the largest payload a thread has raised and are not freed when
+   the thread ends.                                                   */
+void  m9_pay_keep (m9_state *err, int k, size_t elem);
+void *m9_pay_take (m9_state *err, int k, size_t elem);
+
 /* AN EMPTY POOL IS FREED WITHOUT A CALL.  Every procedure has a frame
    and frees it on every exit, and most frames were never used: a
    procedure that only computes allocates nothing.  The free was a

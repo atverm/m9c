@@ -1,0 +1,328 @@
+MODULE SrvFix ;
+
+(* The server the httpserver gate talks to: HttpServer.Run with one
+   route per behaviour the gate holds (runtime/test/httpserver.sh,
+   docs/httpserver-plan.md stage 1).  Every answer is a function of
+   the request alone, never of the worker that served it, so a load
+   test can compare each body with one fetched serially.
+
+     SrvFix --port=P [--workers=N] [--queue=N] [--max=N]
+            [--perconn=N] [--bodymax=N] [--idle=MS] [--dir=D]
+            [--bind=ADDR] [--trusted=A,B] [--log]
+
+   With --dir, stage 2's routes too: D's files under /pub/, one file
+   by ReplyFile, bodies for gzip, and streams.
+
+   Prints `listening` once the routes are frozen (the gate waits for
+   the port, not for this line) and, after Run returns, the counts
+   as `stats key=value ...` and the reason Run returned.            *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT Time ;
+IMPORT System ;
+IMPORT HttpServer ;
+
+CONST
+  BigLen = 1048576 ;
+
+VAR
+  pool : POOL ;
+  r : PTR HttpServer.Router IN pool ;
+  cfg : HttpServer.Config ;
+  st : HttpServer.Stats ;
+  big : ARRAY 1048576 OF BYTE ;
+  i, why : I64 ;
+  late, dir : STR ;
+
+PROCEDURE Int (RO s: STR ; dflt: I64) : I64 =
+  (* a decimal count, or dflt when s is empty or not one *)
+VAR i, v : I64 ;
+BEGIN
+  IF LEN (s) = 0 OR LEN (s) > 12 THEN RETURN dflt END ;
+  v := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] < '0' OR s[i] > '9' THEN RETURN dflt END ;
+    v := v * 10 + ORD (s[i]) - ORD ('0')
+  END ;
+  RETURN v
+END Int ;
+
+PROCEDURE Hello (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.Reply (200, 'text/plain; charset=utf-8', 'hello')
+END Hello ;
+
+PROCEDURE Concat (RO q: HttpServer.Request) : HttpServer.Response =
+  (* `+` in the frame on every request: the query, forty times, with
+     the path between -- what a frame shared between workers would
+     show as another request's text *)
+VAR
+  s : STR ;
+  k : I64 ;
+BEGIN
+  s := '' ;
+  FOR k := 1 TO 40 DO
+    s := s + q.query + '@' + q.path + ';'
+  END ;
+  RETURN HttpServer.Reply (200, 'text/plain; charset=utf-8', s)
+END Concat ;
+
+PROCEDURE Echo (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.ReplyBytes (200, 'application/octet-stream', q.body)
+END Echo ;
+
+PROCEDURE Big (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.ReplyBytes (200, 'application/octet-stream', big)
+END Big ;
+
+PROCEDURE Raises (RO q: HttpServer.Request) : HttpServer.Response
+  RAISES ValueRange =
+BEGIN
+  RAISE ValueRange
+END Raises ;
+
+PROCEDURE OutOfRange (RO q: HttpServer.Request) : HttpServer.Response =
+  (* an IndexError the checker does not account for: the worker must
+     still catch it *)
+VAR a : ARRAY 4 OF I64 ;
+BEGIN
+  a[LEN (q.path)] := 1 ;
+  RETURN HttpServer.Reply (200, 'text/plain', 'unreachable')
+END OutOfRange ;
+
+PROCEDURE Slow (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  Time.Sleep (300) ;
+  RETURN HttpServer.Reply (200, 'text/plain', 'slow')
+END Slow ;
+
+PROCEDURE Files (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.Reply (200, 'text/plain', 'file ' + q.path)
+END Files ;
+
+PROCEDURE Probe (RO q: HttpServer.Request) : HttpServer.Response
+  RAISES ValueRange =
+BEGIN
+  RETURN HttpServer.Reply (200, 'text/plain',
+                           'x-probe=' + HttpServer.Header (q, 'X-Probe')
+                           + ' method=' + q.method + ' peer=' + q.peer
+                           + ' client=' + q.client)
+END Probe ;
+
+PROCEDURE BadHeader (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.WithHeader (HttpServer.Reply (200, 'text/plain', 'x'),
+                                'X-Bad', 'a' + 0DC + 0AC + 'Injected: 1')
+END BadHeader ;
+
+PROCEDURE GoodHeader (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.WithHeader (HttpServer.Reply (201, 'text/plain', 'made'),
+                                'Location', '/made/1')
+END GoodHeader ;
+
+PROCEDURE Closing (RO q: HttpServer.Request) : HttpServer.Response =
+VAR resp : HttpServer.Response ;
+BEGIN
+  resp := HttpServer.Reply (200, 'text/plain', 'bye') ;
+  resp.close := TRUE ;
+  RETURN resp
+END Closing ;
+
+(* ---- stage 2: files, gzip, streams ---------------------------------- *)
+
+PROCEDURE Param (RO query: STR ; RO name: STR ; dflt: I64) : I64 =
+  (* name=digits in the query, else dflt *)
+VAR i, j : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i + LEN (name) < LEN (query) DO
+    IF (i = 0 OR query[i - 1] = '&') AND query[i + LEN (name)] = '=' AND
+       Same (SLICE (query, i, LEN (name)), name) THEN
+      j := i + LEN (name) + 1 ;
+      WHILE j < LEN (query) AND query[j] # '&' DO j := j + 1 END ;
+      RETURN Int (SLICE (query, i + LEN (name) + 1, j - i - LEN (name) - 1), dflt)
+    END ;
+    i := i + 1
+  END ;
+  RETURN dflt
+END Param ;
+
+PROCEDURE Same (RO a: STR ; RO b: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF a[i] # b[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Same ;
+
+PROCEDURE OneFile (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.ReplyFile (dir + '/data.bin', 'application/octet-stream')
+END OneFile ;
+
+PROCEDURE Gone (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.ReplyFile (dir + '/no-such-file', 'text/plain')
+END Gone ;
+
+PROCEDURE Lines (n: I64) : STR RAISES ValueRange =
+  (* n numbered lines: what gzip should shrink *)
+VAR
+  s : STR ;
+  k : I64 ;
+BEGIN
+  s := '' ;
+  FOR k := 0 TO n - 1 DO
+    s := s + 'line ' + Fmt.I64Str (k) + ' of the text body' + 0AC
+  END ;
+  RETURN s
+END Lines ;
+
+PROCEDURE TextBody (RO q: HttpServer.Request) : HttpServer.Response RAISES ValueRange =
+BEGIN
+  RETURN HttpServer.Reply (200, 'text/plain; charset=utf-8', Lines (100))
+END TextBody ;
+
+PROCEDURE JsonBody (RO q: HttpServer.Request) : HttpServer.Response RAISES ValueRange =
+BEGIN
+  RETURN HttpServer.Reply (200, 'application/json', '{"text": "' + Lines (60) + '"}')
+END JsonBody ;
+
+PROCEDURE PngBody (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.ReplyBytes (200, 'image/png', SLICE (big, 0, 4096))
+END PngBody ;
+
+PROCEDURE PreEncoded (RO q: HttpServer.Request) : HttpServer.Response RAISES ValueRange =
+BEGIN
+  RETURN HttpServer.WithHeader (HttpServer.Reply (200, 'text/plain', Lines (100)),
+                                'Content-Encoding', 'br')
+END PreEncoded ;
+
+PROCEDURE StreamLines (RO q: HttpServer.Request ; part: I64) : STR RAISES ValueRange =
+  (* part k of n (the query's n, default 100), padded with pad x's *)
+VAR
+  s : STR ;
+  k : I64 ;
+BEGIN
+  IF part >= Param (q.query, 'n', 100) THEN RETURN '' END ;
+  s := 'part ' + Fmt.I64Str (part) + ' ' ;
+  FOR k := 1 TO Param (q.query, 'pad', 0) DO s := s + 'x' END ;
+  RETURN s + 0AC
+END StreamLines ;
+
+PROCEDURE StreamFails (RO q: HttpServer.Request ; part: I64) : STR RAISES ValueRange =
+BEGIN
+  IF part = 3 THEN RAISE ValueRange END ;
+  RETURN 'part ' + Fmt.I64Str (part) + 0AC
+END StreamFails ;
+
+PROCEDURE Stream (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.ReplyStream (200, 'text/plain; charset=utf-8', StreamLines)
+END Stream ;
+
+PROCEDURE StreamFail (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  RETURN HttpServer.ReplyStream (200, 'text/plain; charset=utf-8', StreamFails)
+END StreamFail ;
+
+PROCEDURE StopNow (RO q: HttpServer.Request) : HttpServer.Response =
+BEGIN
+  HttpServer.Stop () ;
+  RETURN HttpServer.Reply (200, 'text/plain', 'stopping')
+END StopNow ;
+
+PROCEDURE Setup () RAISES HttpServer.Frozen =
+BEGIN
+  r := HttpServer.NewRouter (pool) ;
+  HttpServer.AddHandler (r, 'GET', '/hello', Hello, 'text/plain', 'a greeting') ;
+  HttpServer.AddHandler (r, 'GET', '/concat', Concat, 'text/plain', 'composed with +') ;
+  HttpServer.AddHandler (r, 'POST', '/echo', Echo, 'application/octet-stream', 'the body back') ;
+  HttpServer.AddHandler (r, 'PUT', '/echo', Echo, 'application/octet-stream', 'the body back') ;
+  HttpServer.AddHandler (r, 'GET', '/big', Big, 'application/octet-stream', 'one megabyte') ;
+  HttpServer.AddHandler (r, 'GET', '/raise', Raises, 'text/plain', 'raises ValueRange') ;
+  HttpServer.AddHandler (r, 'GET', '/index', OutOfRange, 'text/plain', 'raises IndexError') ;
+  HttpServer.AddHandler (r, 'GET', '/slow', Slow, 'text/plain', 'sleeps 300 ms') ;
+  HttpServer.AddHandler (r, 'GET', '/probe', Probe, 'text/plain', 'echoes X-Probe') ;
+  HttpServer.AddHandler (r, 'GET', '/badheader', BadHeader, 'text/plain', 'a header with CR LF') ;
+  HttpServer.AddHandler (r, 'POST', '/made', GoodHeader, 'text/plain', '201 with Location') ;
+  HttpServer.AddHandler (r, 'GET', '/close', Closing, 'text/plain', 'asks to close') ;
+  HttpServer.AddHandler (r, 'POST', '/stop', StopNow, 'text/plain', 'HttpServer.Stop from a handler') ;
+  HttpServer.AddPrefix (r, 'GET', '/files/', Files, 'text/plain', 'anything under /files/') ;
+  HttpServer.AddRoute (r, 'GET', '/static', 200, 'text/plain', 'static body', 'a data route') ;
+  IF LEN (dir) > 0 THEN
+    HttpServer.AddFiles (r, '/pub/', dir, 'the files of --dir') ;
+    HttpServer.AddHandler (r, 'GET', '/onefile', OneFile, 'application/octet-stream', 'ReplyFile') ;
+    HttpServer.AddHandler (r, 'GET', '/gone', Gone, 'text/plain', 'a file that is not there') ;
+    HttpServer.AddHandler (r, 'GET', '/text', TextBody, 'text/plain', 'a body to gzip') ;
+    HttpServer.AddHandler (r, 'GET', '/json', JsonBody, 'application/json', 'JSON to gzip') ;
+    HttpServer.AddHandler (r, 'GET', '/png', PngBody, 'image/png', 'not to gzip') ;
+    HttpServer.AddHandler (r, 'GET', '/preenc', PreEncoded, 'text/plain', 'encoded already') ;
+    HttpServer.AddHandler (r, 'GET', '/stream', Stream, 'text/plain', 'parts as they come') ;
+    HttpServer.AddHandler (r, 'GET', '/streamfail', StreamFail, 'text/plain', 'a producer that raises')
+  END ;
+  HttpServer.Freeze (r) ;
+  HttpServer.AddRoute (r, 'GET', '/late', 200, 'text/plain', 'too late', 'after Freeze')
+END Setup ;
+
+PROCEDURE Show (RO key: STR ; v: I64) RAISES ValueRange =
+BEGIN
+  Io.Write (' ' + key + '=' + Fmt.I64Str (v))
+END Show ;
+
+BEGIN
+  BEGIN
+    FOR i := 0 TO BigLen - 1 DO
+      big[i] := BYTE ((i * 7 + 3) MOD 251)
+    END
+  EXCEPT
+  | ValueRange :
+      Io.WriteLine ('FAIL: the big body') ;
+      Io.Halt (1)
+  END ;
+  dir := System.Value ('--dir', '') ;
+  BEGIN
+    Setup () ;
+    Io.WriteLine ('FAIL: AddRoute after Freeze did not raise Frozen') ;
+    Io.Halt (1)
+  EXCEPT
+  | HttpServer.Frozen (p) :
+      late := p ;                  (* a handler binder has no type in
+                                      the checker yet: copied first *)
+      Io.WriteLine ('frozen: ' + late)
+  END ;
+  cfg := HttpServer.Defaults () ;
+  cfg.port := Int (System.Value ('--port', ''), 18300) ;
+  cfg.workers := Int (System.Value ('--workers', ''), 4) ;
+  cfg.queue := Int (System.Value ('--queue', ''), 64) ;
+  cfg.maxConn := Int (System.Value ('--max', ''), 0) ;
+  cfg.perConn := Int (System.Value ('--perconn', ''), 1000) ;
+  cfg.bodyMax := Int (System.Value ('--bodymax', ''), 1048576) ;
+  cfg.idleMs := Int (System.Value ('--idle', ''), 2000) ;
+  cfg.headerMs := Int (System.Value ('--headerms', ''), 3000) ;
+  IF LEN (System.Value ('--bind', '')) > 0 THEN cfg.bind := System.Value ('--bind', '') END ;
+  cfg.trusted := System.Value ('--trusted', '') ;
+  cfg.accessLog := System.Flag ('--log') ;
+  Io.WriteLine ('listening on ' + Fmt.I64Str (cfg.port)) ;
+  Io.Flush () ;
+  why := HttpServer.Run (cfg, r, st) ;
+  Io.Write ('stats') ;
+  Show ('why', why) ;
+  Show ('connections', st.connections) ;
+  Show ('busy', st.busy) ;
+  Show ('requests', st.requests) ;
+  Show ('faults', st.faults) ;
+  Show ('s2xx', st.s2xx) ;
+  Show ('s4xx', st.s4xx) ;
+  Show ('s5xx', st.s5xx) ;
+  Io.WriteLine ('') ;
+  IF why # HttpServer.Drained AND why # HttpServer.Stopped THEN Io.Halt (2) END
+END SrvFix.

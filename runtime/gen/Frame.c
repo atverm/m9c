@@ -584,7 +584,7 @@ void Frame_SetMeta (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR na
     i = m9v;
   }
   if ((i < INT64_C(0))) {
-    { __typeof__(name) m9t1 = name; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(name) m9t1 = name; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Frame_Unknown);
     goto L_ret;
   }
@@ -714,7 +714,7 @@ Frame_Col Frame_GetCol (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
     i = m9v;
   }
   if ((i < INT64_C(0))) {
-    { __typeof__(name) m9t1 = name; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(name) m9t1 = name; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Frame_Unknown);
     goto L_ret;
   }
@@ -762,43 +762,43 @@ m9_sl_F64 Frame_ColF64 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -834,43 +834,43 @@ m9_sl_F32 Frame_ColF32 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -906,43 +906,43 @@ m9_sl_I64 Frame_ColI64 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -978,43 +978,43 @@ m9_sl_m9_sl_CHAR Frame_ColStrs (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1049,43 +1049,43 @@ m9_sl_BOOL Frame_ColBools (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1422,43 +1422,43 @@ m9_sl_I32 Frame_ColI32 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1494,43 +1494,43 @@ m9_sl_I16 Frame_ColI16 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1566,43 +1566,43 @@ m9_sl_BYTE Frame_ColBytes (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1638,43 +1638,43 @@ double Frame_MissF64 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1709,43 +1709,43 @@ float Frame_MissF32 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1780,43 +1780,43 @@ int64_t Frame_MissI64 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1851,43 +1851,43 @@ int32_t Frame_MissI32 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1922,43 +1922,43 @@ int16_t Frame_MissI16 (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Bytes:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -1993,43 +1993,43 @@ uint8_t Frame_MissByte (Frame_Fr * f, m9_sl_CHAR name, m9_state *err)
   } break;
   case Frame_Data_Bools:
   {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F64s:
   {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_F32s:
   {
-    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(name) m9t4 = name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I64s:
   {
-    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I32s:
   {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_I16s:
   {
-    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(name) m9t7 = name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
   case Frame_Data_Strs:
   {
-    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(name) m9t8 = name; err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   } break;
@@ -2550,7 +2550,7 @@ Frame_Ts * Frame_NewTs (m9_pool *pool, Frame_Fr * f, m9_sl_I64 time, int64_t res
   Frame_Ts * ts = NULL; (void) ts;
   int64_t i = 0; (void) i;
   if ((res <= INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s32, 27 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s32, 27 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s32, 27 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s32, 27 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -2850,7 +2850,7 @@ Frame_Ts * Frame_Average (m9_pool *pool, Frame_Ts * ts, int64_t toRes, m9_sl_Fra
   bool m9t1 = ((toRes <= INT64_C(0)) || (m9_mod_i64 (toRes, ts->res, err) != INT64_C(0)));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s33, 51 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s33, 51 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s33, 51 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s33, 51 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -2959,7 +2959,7 @@ Frame_Ts * Frame_MakeContiguous (m9_pool *pool, Frame_Ts * ts, m9_state *err)
   int64_t c = 0; (void) c;
   n = ts->f->rows;
   if ((n == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s34, 34 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s34, 34 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s34, 34 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s34, 34 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -3311,7 +3311,7 @@ Frame_Fr * Frame_GroupBy (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR key, m9_sl_Fra
     kc = m9v;
   }
   if ((kc < INT64_C(0))) {
-    { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Frame_Unknown);
     goto L_ret;
   }
@@ -3575,7 +3575,7 @@ Frame_Fr * Frame_Aggregate (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR key, m9_sl_C
     kc = m9v;
   }
   if ((kc < INT64_C(0))) {
-    { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Frame_Unknown);
     goto L_ret;
   }
@@ -3591,7 +3591,7 @@ Frame_Fr * Frame_Aggregate (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR key, m9_sl_C
   bool m9t2 = (!Frame_AsReals (f, c, &(x), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+    { __typeof__(name) m9t3 = name; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   }
@@ -3888,7 +3888,7 @@ static void Frame_Admit (Frame_Fr * *f, m9_pool *f_pool, m9_sl_CHAR name, int64_
   bool m9t1 = (Frame_Find ((*f), name, err) >= INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(name) m9t2 = name; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Frame_Duplicate);
     goto L_ret;
   }
@@ -4561,7 +4561,7 @@ static void Frame_ReduceI64 (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, 
   switch (m9t3.tag) {
   case Frame_How_Mean:
   {
-    { __typeof__(c.name) m9t4 = c.name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(c.name) m9t4 = c.name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
@@ -4924,13 +4924,13 @@ static void Frame_ReduceBytes (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool
   switch (m9t3.tag) {
   case Frame_How_Mean:
   {
-    { __typeof__(c.name) m9t4 = c.name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(c.name) m9t4 = c.name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
   case Frame_How_Sum:
   {
-    { __typeof__(c.name) m9t5 = c.name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(c.name) m9t5 = c.name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
@@ -5029,13 +5029,13 @@ static void Frame_ReduceBools (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool
   switch (m9t3.tag) {
   case Frame_How_Mean:
   {
-    { __typeof__(c.name) m9t4 = c.name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(c.name) m9t4 = c.name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
   case Frame_How_Sum:
   {
-    { __typeof__(c.name) m9t5 = c.name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(c.name) m9t5 = c.name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
@@ -5194,25 +5194,25 @@ static void Frame_ReduceStrs (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool,
   switch (m9t3.tag) {
   case Frame_How_Mean:
   {
-    { __typeof__(c.name) m9t4 = c.name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; }
+    { __typeof__(c.name) m9t4 = c.name; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
   case Frame_How_Sum:
   {
-    { __typeof__(c.name) m9t5 = c.name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(c.name) m9t5 = c.name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
   case Frame_How_Lo:
   {
-    { __typeof__(c.name) m9t6 = c.name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(c.name) m9t6 = c.name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
   case Frame_How_Hi:
   {
-    { __typeof__(c.name) m9t7 = c.name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; }
+    { __typeof__(c.name) m9t7 = c.name; err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
@@ -5501,7 +5501,7 @@ static void Frame_Fill (m9_pool *pool, Frame_Fr * src, Frame_Fr * *out, m9_pool 
   } break;
   case Frame_Data_Bools: {
     m9_sl_BOOL v = m9t3.u.Bools.vbo; (void) v;
-    { __typeof__(c.name) m9t16 = c.name; err->s[0].p = m9t16.p; err->s[0].len = m9t16.len; }
+    { __typeof__(c.name) m9t16 = c.name; err->s[0].p = m9t16.p; err->s[0].len = m9t16.len; m9_pay_keep (err, 0, sizeof (*m9t16.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_hdl_m9t1;
   } break;
@@ -6020,7 +6020,7 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, NetCDF
               (*(bool *) m9_at (vbo.p, i, vbo.len, sizeof (bool), err)) = false;
               if (err->exc) goto L_ret;
           } else {
-            { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+            { __typeof__(name) m9t5 = name; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
             m9_raise (err, &Faults_BadArg);
             goto L_ret;
           } }
@@ -6052,7 +6052,7 @@ static void Frame_ReadCol (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, NetCDF
       Frame_AddStrs (pool, f, f_pool, name, vs, err);
       if (err->exc) goto L_ret;
   } else {
-    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+    { __typeof__(name) m9t6 = name; err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   } } } } } } }
@@ -6147,7 +6147,7 @@ static void Frame_ParseSince (m9_sl_CHAR units, int64_t *mult, int64_t *base, m9
       (*mult) = INT64_C(86400);
       i = INT64_C(11);
   } else {
-    { __typeof__(units) m9t5 = units; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+    { __typeof__(units) m9t5 = units; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   } } } }
@@ -6203,7 +6203,7 @@ static void Frame_ParseSince (m9_sl_CHAR units, int64_t *mult, int64_t *base, m9
     bool m9t14 = (!(((((DynStr_Eq (({ __typeof__(units) m9t9 = units; int64_t m9t9a = k, m9t9n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s55, 1 }), err) || DynStr_Eq (({ __typeof__(units) m9t10 = units; int64_t m9t10a = k, m9t10n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s56, 3 }), err)) || DynStr_Eq (({ __typeof__(units) m9t11 = units; int64_t m9t11a = k, m9t11n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t11)){ m9t11.p + m9_chk_slice (m9t11a, m9t11n, m9t11.len, err), m9t11n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s57, 6 }), err)) || DynStr_Eq (({ __typeof__(units) m9t12 = units; int64_t m9t12a = k, m9t12n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t12)){ m9t12.p + m9_chk_slice (m9t12a, m9t12n, m9t12.len, err), m9t12n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s58, 5 }), err)) || DynStr_Eq (({ __typeof__(units) m9t13 = units; int64_t m9t13a = k, m9t13n = m9_sub_i64 ((units).len, k, err); (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s59, 5 }), err))));
     if (err->exc) goto L_ret;
     if (m9t14) {
-      { __typeof__(units) m9t15 = units; err->s[0].p = m9t15.p; err->s[0].len = m9t15.len; }
+      { __typeof__(units) m9t15 = units; err->s[0].p = m9t15.p; err->s[0].len = m9t15.len; m9_pay_keep (err, 0, sizeof (*m9t15.p)); }
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
@@ -6275,7 +6275,7 @@ static int64_t Frame_Num (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err)
   bool m9t1 = (m9_add_i64 (at, n, err) > (s).len);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(s) m9t2 = s; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(s) m9t2 = s; err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -6288,7 +6288,7 @@ static int64_t Frame_Num (m9_sl_CHAR s, int64_t at, int64_t n, m9_state *err)
     bool m9t4 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) < 48u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) > 57u));
     if (err->exc) goto L_ret;
     if (m9t4) {
-      { __typeof__(s) m9t5 = s; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; }
+      { __typeof__(s) m9t5 = s; err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
@@ -6522,7 +6522,7 @@ static void Frame_Gather (m9_pool *pool, Frame_Fr * *out, m9_pool *out_pool, Fra
           bool m9t17 = ((*(int64_t *) m9_at (rows.p, i, rows.len, sizeof (int64_t), err)) < INT64_C(0));
           if (err->exc) goto L_ret;
           if (m9t17) {
-            { __typeof__(c.name) m9t18 = c.name; err->s[0].p = m9t18.p; err->s[0].len = m9t18.len; }
+            { __typeof__(c.name) m9t18 = c.name; err->s[0].p = m9t18.p; err->s[0].len = m9t18.len; m9_pay_keep (err, 0, sizeof (*m9t18.p)); }
             m9_raise (err, &Frame_WrongType);
             goto L_ret;
           }
@@ -7248,7 +7248,7 @@ static Frame_Fr * Frame_JoinOn (m9_pool *pool, Frame_Fr * a, Frame_Fr * b, m9_sl
     kb = m9v;
   }
   if (((ka.family != kb.family) || (ka.family == Frame_KeyReal))) {
-    { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(key) m9t1 = key; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Frame_WrongType);
     goto L_ret;
   }
@@ -7737,7 +7737,7 @@ static m9_sl_F64 Frame_Reals (Frame_Fr * f, m9_sl_m9_sl_CHAR cols, m9_state *err
     bool m9t2 = (!Frame_AsReals (f, c, &(x), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (cols.p, j, cols.len, sizeof (m9_sl_CHAR), err))) m9t3 = (*(m9_sl_CHAR *) m9_at (cols.p, j, cols.len, sizeof (m9_sl_CHAR), err)); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; }
+      { __typeof__((*(m9_sl_CHAR *) m9_at (cols.p, j, cols.len, sizeof (m9_sl_CHAR), err))) m9t3 = (*(m9_sl_CHAR *) m9_at (cols.p, j, cols.len, sizeof (m9_sl_CHAR), err)); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
       m9_raise (err, &Frame_WrongType);
       goto L_ret;
     }

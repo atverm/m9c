@@ -335,7 +335,7 @@ double Numeric_Minimum (Numeric_Fn f, m9_sl_F64 p, double a, double b, double xa
   int64_t num = 0; (void) num;
   bool golden = false; (void) golden;
   if ((a > b)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 33 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s0, 33 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s0, 33 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1193,7 +1193,7 @@ void Numeric_Fft (m9_sl_F64 *re, m9_sl_F64 *im, bool inverse, m9_state *err)
     }
   }
   if ((bit != n)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 41 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 41 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s1, 41 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s1, 41 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1426,12 +1426,12 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
     goto L_ret;
   }
   if ((!((((interval > 0.0) && (shortterm > 0.0)) && (longterm > 0.0))))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 65 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 65 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s2, 65 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s2, 65 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
   if (((numpoly < INT64_C(1)) || (numharm < INT64_C(0)))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 76 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 76 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s3, 76 })) m9t2 = ((m9_sl_CHAR){ (uint32_t *) m9s3, 76 }); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1455,7 +1455,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
       bool m9t5 = ((n > INT64_C(0)) && ((*(double *) m9_at (xp.p, i, xp.len, sizeof (double), err)) < (*(double *) m9_at (work.p, m9_sub_i64 (n, INT64_C(1), err), work.len, sizeof (double), err))));
       if (err->exc) goto L_ret;
       if (m9t5) {
-        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 38 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 38 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; }
+        { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s4, 38 })) m9t6 = ((m9_sl_CHAR){ (uint32_t *) m9s4, 38 }); err->s[0].p = m9t6.p; err->s[0].len = m9t6.len; m9_pay_keep (err, 0, sizeof (*m9t6.p)); }
         m9_raise (err, &Faults_BadArg);
         goto L_ret;
       }
@@ -1482,7 +1482,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
   bool m9t7 = (n < m9_add_i64 (m, INT64_C(1), err));
   if (err->exc) goto L_ret;
   if (m9t7) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 62 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 62 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 62 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 62 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1540,7 +1540,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
     solved = m9v;
   }
   if ((!solved)) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 59 })) m9t12 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 59 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s6, 59 })) m9t12 = ((m9_sl_CHAR){ (uint32_t *) m9s6, 59 }); err->s[0].p = m9t12.p; err->s[0].len = m9t12.len; m9_pay_keep (err, 0, sizeof (*m9t12.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1694,7 +1694,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
     nx = m9v;
   }
   if ((nx < INT64_C(2))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 43 })) m9t22 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 43 }); err->s[0].p = m9t22.p; err->s[0].len = m9t22.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s7, 43 })) m9t22 = ((m9_sl_CHAR){ (uint32_t *) m9s7, 43 }); err->s[0].p = m9t22.p; err->s[0].len = m9t22.len; m9_pay_keep (err, 0, sizeof (*m9t22.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -1704,7 +1704,7 @@ void Numeric_CcgFilter (m9_sl_F64 xp, m9_sl_F64 yp, m9_sl_F64 xq, double interva
     ni = m9v;
   }
   if ((ni < INT64_C(2))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s8, 50 })) m9t23 = ((m9_sl_CHAR){ (uint32_t *) m9s8, 50 }); err->s[0].p = m9t23.p; err->s[0].len = m9t23.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s8, 50 })) m9t23 = ((m9_sl_CHAR){ (uint32_t *) m9s8, 50 }); err->s[0].p = m9t23.p; err->s[0].len = m9t23.len; m9_pay_keep (err, 0, sizeof (*m9t23.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
@@ -3840,7 +3840,7 @@ static Numeric_Fitted Numeric_LmReport (Numeric_Lm s, m9_sl_F64 *x, m9_state *er
   Numeric_Fitted r = {0}; (void) r;
   int64_t i = 0; (void) i;
   if ((s.info == INT64_C(0))) {
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 72 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 72 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s9, 72 })) m9t1 = ((m9_sl_CHAR){ (uint32_t *) m9s9, 72 }); err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }

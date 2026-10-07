@@ -57,6 +57,17 @@ echo "         $files files: idempotent, comments kept ($div diverge from hand l
 "$FMT" "$W/sb" > "$W/sb2" && cmp -s "$W/sb" "$W/sb2" ||
   { echo "fmt: NOT IDEMPOTENT on a script"; exit 1; }
 
+# text that is not ASCII comes back as written: m9fmt read a byte a
+# character and wrote UTF-8 to standard output, so every pass encoded
+# an e acute once more (Regex.m9's comment, 2026-10-07)
+printf 'MODULE U ;\n\n(* caf\303\251 *)\n\nVAR\n  s : STR ;\n\nBEGIN\n  s := %s\nEND U.\n' \
+  "'na$(printf '\303\257')ve'" > "$W/U.m9"
+"$FMT" "$W/U.m9" > "$W/U.fmt" || { echo "fmt: REFUSED a UTF-8 source"; exit 1; }
+grep -q "caf$(printf '\303\251') " "$W/U.fmt" && grep -q "na$(printf '\303\257')ve" "$W/U.fmt" ||
+  { echo "fmt: text that is not ASCII not kept as written:"; cat "$W/U.fmt"; exit 1; }
+"$FMT" "$W/U.fmt" > "$W/U2.fmt" && cmp -s "$W/U.fmt" "$W/U2.fmt" ||
+  { echo "fmt: NOT IDEMPOTENT on UTF-8 text"; exit 1; }
+
 # ---- probes ---------------------------------------------------------
 cat > "$W/P.m9" <<'P'
 (* the module's own banner *)

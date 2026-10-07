@@ -1,0 +1,315 @@
+MODULE RdfTest ;
+
+(* Rdf against the W3C RDF 1.1 test suites, checked in under
+   runtime/test/rdf-tests and listed by tools/rdfgold.py from their
+   manifests (runtime/test/gold/Rdf.gold; docs/datalib-plan.md par 2).
+
+   Here, offline: every positive N-Triples and Turtle document is
+   read, every negative one REFUSED -- a SyntaxError, or ValueRange
+   when the file is not even UTF-8 -- and every evaluation document
+   and its expected N-Triples are read.  Whether the graph read is the
+   graph expected is runtime/test/rdf.sh's question: rdflib judges
+   M9's N-Triples output there, isomorphism and all, which needs
+   blank nodes matched and so is left to code M9 did not write.
+
+   A negative document must be refused by a SyntaxError: ValueRange
+   would be an escape or a conversion the reader did not check itself,
+   with no line to show.
+
+   And a few exact cases by hand: a collection, a blank-node property
+   list, the writer's escapes, and where a refusal says it stopped and
+   why -- four of them for rules a later one would also refuse, with a
+   worse place or reason (runtime/test/rdfsabotage.py found them).  *)
+
+IMPORT Check ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Rdf ;
+IMPORT Text ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  gold, base : STR ;
+  bases : SLICE OF STR ;
+
+PROCEDURE Read (VAR p: POOL ; RO path: STR ; VAR ok: BOOL) : STR =
+  (* a test file as UTF-8; ok FALSE when it is not UTF-8 or cannot be
+     read *)
+VAR s : STR ;
+BEGIN
+  ok := TRUE ;
+  s := '' ;
+  BEGIN
+    s := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, path))
+  EXCEPT
+  | ValueRange :
+      ok := FALSE
+  | Io.IOError (e) :
+      ok := FALSE
+  END ;
+  RETURN s
+END Read ;
+
+PROCEDURE Path (RO suite: STR ; RO file: STR) : STR =
+BEGIN
+  RETURN 'runtime/test/rdf-tests/' + suite + '/' + file
+END Path ;
+
+PROCEDURE ParsesNt (RO file: STR ; VAR msg: STR) : BOOL =
+  (* the N-Triples document reads; msg says why when it does not *)
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  src, em : STR ;
+  el, ec : I64 ;
+  ok : BOOL ;
+BEGIN
+  src := Read (p, Path ('rdf-n-triples', file), ok) ;
+  IF NOT ok THEN msg := 'not UTF-8' ; RETURN FALSE END ;
+  BEGIN
+    g := Rdf.ParseNTriples (p, src) ;
+    RETURN TRUE
+  EXCEPT
+  | Rdf.SyntaxError (m, line, col) :
+      (* a handler's binders have no type in the checker yet: copied *)
+      em := m ; el := line ; ec := col ;
+      msg := Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em
+  | ValueRange :
+      msg := 'ValueRange'
+  END ;
+  RETURN FALSE
+END ParsesNt ;
+
+PROCEDURE ParsesTtl (RO suite: STR ; RO file: STR ; VAR msg: STR) : BOOL =
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  src, em : STR ;
+  el, ec : I64 ;
+  ok : BOOL ;
+BEGIN
+  src := Read (p, Path (suite, file), ok) ;
+  IF NOT ok THEN msg := 'not UTF-8' ; RETURN FALSE END ;
+  BEGIN
+    g := Rdf.ParseTurtle (p, src, base + file) ;
+    RETURN TRUE
+  EXCEPT
+  | Rdf.SyntaxError (m, line, col) :
+      (* a handler's binders have no type in the checker yet: copied *)
+      em := m ; el := line ; ec := col ;
+      msg := Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em
+  | ValueRange :
+      msg := 'ValueRange'
+  END ;
+  RETURN FALSE
+END ParsesTtl ;
+
+PROCEDURE Suites () =
+VAR
+  files, results : SLICE OF STR ;
+  i, refused : I64 ;
+  msg : STR ;
+  ok : BOOL ;
+BEGIN
+  files := Check.GoldStrs (t, gold, 'nt.pos') ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    ok := ParsesNt (files[i], msg) ;
+    Check.That (t, 'N-Triples reads ' + files[i] + ' ' + msg, ok)
+  END ;
+  files := Check.GoldStrs (t, gold, 'nt.neg') ;
+  refused := 0 ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    IF ParsesNt (files[i], msg) THEN
+      Check.That (t, 'N-Triples refuses ' + files[i], FALSE)
+    ELSIF Text.Eq (msg, 'ValueRange') THEN
+      Check.That (t, 'N-Triples refuses ' + files[i] + ' by a SyntaxError, not ValueRange', FALSE)
+    ELSE
+      refused := refused + 1
+    END
+  END ;
+  Check.EqI64 (t, 'N-Triples: every negative test refused', refused, LEN (files)) ;
+  files := Check.GoldStrs (t, gold, 'ttl.pos') ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    ok := ParsesTtl ('rdf-turtle', files[i], msg) ;
+    Check.That (t, 'Turtle reads ' + files[i] + ' ' + msg, ok)
+  END ;
+  files := Check.GoldStrs (t, gold, 'ttl.neg') ;
+  refused := 0 ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    IF ParsesTtl ('rdf-turtle', files[i], msg) THEN
+      Check.That (t, 'Turtle refuses ' + files[i], FALSE)
+    ELSIF Text.Eq (msg, 'ValueRange') THEN
+      Check.That (t, 'Turtle refuses ' + files[i] + ' by a SyntaxError, not ValueRange', FALSE)
+    ELSE
+      refused := refused + 1
+    END
+  END ;
+  Check.EqI64 (t, 'Turtle: every negative test refused', refused, LEN (files)) ;
+  files := Check.GoldStrs (t, gold, 'ttl.eval.action') ;
+  results := Check.GoldStrs (t, gold, 'ttl.eval.result') ;
+  Check.EqI64 (t, 'an expected result for every evaluation test', LEN (results), LEN (files)) ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    ok := ParsesTtl ('rdf-turtle', files[i], msg) ;
+    Check.That (t, 'Turtle reads ' + files[i] + ' ' + msg, ok) ;
+    IF i < LEN (results) THEN
+      msg := '' ;
+      ok := ParsesNtIn ('rdf-turtle', results[i], msg) ;
+      Check.That (t, 'N-Triples reads the expected ' + results[i] + ' ' + msg, ok)
+    END
+  END
+END Suites ;
+
+PROCEDURE ParsesNtIn (RO suite: STR ; RO file: STR ; VAR msg: STR) : BOOL =
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  src, em : STR ;
+  el, ec : I64 ;
+  ok : BOOL ;
+BEGIN
+  src := Read (p, Path (suite, file), ok) ;
+  IF NOT ok THEN msg := 'not UTF-8' ; RETURN FALSE END ;
+  BEGIN
+    g := Rdf.ParseNTriples (p, src) ;
+    RETURN TRUE
+  EXCEPT
+  | Rdf.SyntaxError (m, line, col) :
+      (* a handler's binders have no type in the checker yet: copied *)
+      em := m ; el := line ; ec := col ;
+      msg := Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em
+  | ValueRange :
+      msg := 'ValueRange'
+  END ;
+  RETURN FALSE
+END ParsesNtIn ;
+
+PROCEDURE ByHand () RAISES ValueRange =
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  tr : Rdf.Triple ;
+  nt : STR ;
+  line, col : I64 ;
+  raised : BOOL ;
+BEGIN
+  BEGIN
+    (* a collection: two cells and the closing rdf:nil, then the
+       triple that names the list *)
+    g := Rdf.ParseTurtle (p, '@prefix ex: <http://e/> . ex:a ex:b ( 1 "x" ) .', '') ;
+    Check.EqI64 (t, 'a two-member collection is five triples', Rdf.Count (g), 5) ;
+    tr := Rdf.Get (g, 4) ;
+    Check.EqStr (t, 'the list is the object of the stated triple', tr.p.value, 'http://e/b') ;
+    Check.That (t, 'and it is a blank node', tr.o.kind = Rdf.Kind.Blank) ;
+    tr := Rdf.Get (g, 0) ;
+    Check.EqStr (t, 'its first member', tr.o.value, '1') ;
+    Check.EqStr (t, 'typed xsd:integer', tr.o.datatype, 'http://www.w3.org/2001/XMLSchema#integer') ;
+    (* Turtle's escapes read, and the writer's written back: an M9
+       string has no escapes, so the Turtle text is as it stands *)
+    g := Rdf.ParseTurtle (p, '<http://e/s> <http://e/p> "a\nb\tc\"d\\e\u00e9" .', '') ;
+    tr := Rdf.Get (g, 0) ;
+    Check.EqStr (t, 'the escapes read', tr.o.value,
+                 'a' + 0AC + 'b' + 09C + 'c' + 22C + 'd' + 5CC + 'e' + 0E9C) ;
+    nt := Rdf.NTriples (g) ;
+    Check.EqStr (t, 'the writer escapes a quote, a backslash, a line feed and a tab, and no more',
+                 nt, '<http://e/s> <http://e/p> "a\nb\tc\"d\\e' + 0E9C + '" .' + 0AC) ;
+    (* a relative IRI resolved against the base given *)
+    g := Rdf.ParseTurtle (p, '<s> <../p> <o#f> .', 'http://a/b/c/d') ;
+    tr := Rdf.Get (g, 0) ;
+    Check.EqStr (t, 'a relative subject resolved', tr.s.value, 'http://a/b/c/s') ;
+    Check.EqStr (t, 'a dotted predicate resolved', tr.p.value, 'http://a/b/p') ;
+    Check.EqStr (t, 'a fragment kept', tr.o.value, 'http://a/b/c/o#f')
+  EXCEPT
+  | Rdf.SyntaxError (m, l, c) :
+      Check.That (t, 'the hand cases read', FALSE)
+  | IndexError :
+      Check.That (t, 'the hand cases have their triples', FALSE)
+  END ;
+  (* where a refusal says it stopped: line 2, the undeclared prefix *)
+  raised := FALSE ;
+  line := 0 ;
+  col := 0 ;
+  BEGIN
+    g := Rdf.ParseTurtle (p, '<http://e/a> <http://e/b> <http://e/c> .' + 0AC + '  nope:x <http://e/b> 1 .', '')
+  EXCEPT
+  | Rdf.SyntaxError (m, l, c) :
+      raised := TRUE ;
+      line := l ;
+      col := c
+  END ;
+  Check.That (t, 'an undeclared prefix is refused', raised) ;
+  Check.EqI64 (t, 'on the line it is on', line, 2) ;
+  Check.EqI64 (t, 'past the name it could not resolve', col, 8) ;
+  (* a relative IRI with no base: refused, not guessed *)
+  raised := FALSE ;
+  BEGIN
+    g := Rdf.ParseTurtle (p, '<s> <p> <o> .', '')
+  EXCEPT
+  | Rdf.SyntaxError (m, l, c) :
+      raised := TRUE
+  END ;
+  Check.That (t, 'a relative IRI with no base is refused', raised) ;
+  Refused ('N-Triples: a relative IRI', TRUE,
+           '<s> <http://e/p> <http://e/o> .', 1, 'a relative IRI in N-Triples') ;
+  Refused ('N-Triples: a line end in a short string', TRUE,
+           '<http://e/s> <http://e/p> "a' + 0AC + 'b" .', 1, 'a line end in a short string') ;
+  Refused ('Turtle: a blank node label ending in a dot', FALSE,
+           '_:a.. <http://e/p> <http://e/o> .', 1, 'a blank node label ends with a dot') ;
+  Refused ('Turtle: a surrogate escape', FALSE,
+           '<http://e/s> <http://e/p> "\uD800" .', 1, 'an escape naming no character') ;
+  Refused ('N-Triples: a blank node as a predicate', TRUE,
+           '_:a _:b <http://e/o> .', 1, 'a predicate that is not an IRI')
+END ByHand ;
+
+PROCEDURE Refused (RO what: STR ; nt: BOOL ; RO text: STR ;
+                   wantLine: I64 ; RO wantMsg: STR) =
+  (* the document refused by a SyntaxError, on that line, saying that *)
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  em, how : STR ;
+  el : I64 ;
+BEGIN
+  how := 'read' ;
+  em := '' ;
+  el := 0 ;
+  BEGIN
+    IF nt THEN g := Rdf.ParseNTriples (p, text)
+    ELSE g := Rdf.ParseTurtle (p, text, '')
+    END
+  EXCEPT
+  | Rdf.SyntaxError (m, line, col) :
+      (* a handler's binders have no type in the checker yet: copied *)
+      how := 'SyntaxError' ;
+      em := m ;
+      el := line
+  | ValueRange :
+      how := 'ValueRange'
+  END ;
+  Check.EqStr (t, what + ': refused by', how, 'SyntaxError') ;
+  Check.EqStr (t, what + ': the reason', em, wantMsg) ;
+  Check.EqI64 (t, what + ': the line', el, wantLine)
+END Refused ;
+
+BEGIN
+  BEGIN
+    gold := Check.GoldPath ('Rdf.gold') ;
+    base := '' ;
+    bases := Check.GoldStrs (t, gold, 'ttl.base') ;
+    IF LEN (bases) = 1 THEN base := bases[0] END ;
+    Suites () ;
+    ByHand ()
+  EXCEPT
+  | ValueRange :
+      Check.That (t, 'no ValueRange escapes', FALSE)
+  | IndexError :
+      Check.That (t, 'no IndexError escapes', FALSE)
+  END ;
+  Io.Halt (Check.Done (t, 'Rdf'))
+END RdfTest.

@@ -478,7 +478,7 @@ m9_sl_CHAR Diag_DocJson (m9_pool *pool, m9_sl_CHAR m9c, m9_sl_CHAR flags, m9_sl_
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
-    m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
+    m9_sl_CHAR p = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) p;
     err->exc = NULL;
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -820,7 +820,7 @@ static m9_sl_CHAR Diag_OutText (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
-    m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
+    m9_sl_CHAR p = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) p;
     err->exc = NULL;
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };

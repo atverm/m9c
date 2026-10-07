@@ -90,9 +90,18 @@ export M9CACHE="$RW/cache"
     { echo "FAIL: ExportUse did not run:"; tail -3 o8.txt; exit 1; }
   printf 'ExportUse reads count 40, LEN xs 3, version 2\nExportDef sees count 42, xs[1] 9.50, box.n 7, version 2\n' > want8.txt
   cmp -s o8.txt want8.txt || { echo "FAIL: ExportUse said:"; cat o8.txt; exit 1; }
+  # a RAISE's strings outlive the frame that built them (report par 5,
+  # 2026-10-06): four ways, a thousand raises each, every message read
+  # back after the handler allocated; 0.16.0 got all four wrong
+  cp "$FIX/RaisePayload.m9" src/
+  "$M9C" --run src/RaisePayload.m9 < /dev/null > o9.txt 2>&1 ||
+    { echo "FAIL: RAISE payloads were read back wrong:"; cat o9.txt; exit 1; }
+  printf 'pool wrong 0 of 1000\nplus wrong 0 of 1000\nrethrow wrong 0 of 1000\nnested wrong 0 of 2000\n' > want9.txt
+  cmp -s o9.txt want9.txt || { echo "FAIL: RaisePayload said:"; cat o9.txt; exit 1; }
   # --out-dir: the C goes where it is told, and nowhere else
   mkdir -p gen && "$M9C" --out-dir gen src/RunHelper.m9
   [ -f gen/RunHelper.c ] && [ -f gen/RunHelper.h ] && [ ! -f RunHelper.c ] ||
     { echo "FAIL: --out-dir wrote:"; ls . gen; exit 1; } ) || exit 1
 echo "run: --run builds into its cache once, runs unchanged programs without"
-echo "     a C compiler, sees an edited import, refuses what the checker refuses"
+echo "     a C compiler, sees an edited import, refuses what the checker refuses,"
+echo "     and RAISE payloads survive the frame that built them"

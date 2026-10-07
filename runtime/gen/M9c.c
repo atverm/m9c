@@ -1643,7 +1643,7 @@ static m9_sl_CHAR M9c_TryRead (m9_sl_CHAR path, bool *ok, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
-    m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
+    m9_sl_CHAR p = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) p;
     err->exc = NULL;
     (*ok) = false;
     err->res = m9res;
@@ -2169,7 +2169,7 @@ static int64_t M9c_Run (m9_sl_CHAR prog, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
-    m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
+    m9_sl_CHAR p = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) p;
     err->exc = NULL;
     M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s15, 16 }), p, (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
@@ -4501,7 +4501,7 @@ static void M9c_TryMkDir (m9_sl_CHAR path, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
-    m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
+    m9_sl_CHAR p = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) p;
     err->exc = NULL;
     goto L_ret;
     goto L_dn_m9t2;
@@ -4759,7 +4759,7 @@ static void M9c_Launch (m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
-    m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
+    m9_sl_CHAR p = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) p;
     err->exc = NULL;
     M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s445, 21 }), p, (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
@@ -6880,7 +6880,7 @@ static m9_sl_CHAR M9c_ShowProbe (m9_sl_CHAR *raises, m9_state *err)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
-    m9_sl_CHAR p = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) p;
+    m9_sl_CHAR p = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) p;
     err->exc = NULL;
     M9c_Diag (((m9_sl_CHAR){ (uint32_t *) m9s652, 16 }), p, (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
@@ -7332,7 +7332,7 @@ int main (int argc, char **argv)
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
-    m9_sl_CHAR path = { (uint32_t *) err->s[0].p, err->s[0].len }; (void) path;
+    m9_sl_CHAR path = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) path;
     err->exc = NULL;
     M9c_Complain (((m9_sl_CHAR){ (uint32_t *) m9s706, 20 }), path, err);
     if (err->exc) goto L_ret;

@@ -26,7 +26,7 @@ n=0
 for m in $(sed -n '/^LIBRARY=/,/"$/p' ../../build.sh |
            sed 's/LIBRARY="//; s/"$//; s/\\$//' | tr -s ' \n' ' '); do
   d=""
-  [ "$m" = HttpServer ] && d="$SRC/Http.m9 $SRC/DynStr.m9"
+  [ "$m" = HttpServer ] && d="$SRC/Http.m9 $SRC/DynStr.m9 $SRC/Io.m9 $SRC/Zip.m9 $SRC/Bits.m9 $SRC/Logger.m9 $SRC/Syslog.m9 $SRC/Time.m9 $SRC/Fmt.m9"
   # shellcheck disable=SC2086
   ( cd "$GOLD" && "$M9C" --doc "$SRC/$m.m9" $d )
   n=$((n + 1))

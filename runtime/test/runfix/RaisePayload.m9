@@ -1,0 +1,149 @@
+MODULE RaisePayload ;
+
+(* A RAISE's strings outlive the frame that built them (report par 5,
+   2026-10-06).  Four ways a payload was lost before m9_pay_keep and
+   m9_pay_take, each run a thousand times with a handler that
+   allocates before it reads:
+
+     pool     the message built in the raising procedure's LOCAL pool,
+              as Grib.Fail and NetCDF.Fail build the library's own;
+     plus     the message composed with `+` in the raising frame, as
+              25 RAISE sites in the library compose theirs;
+     rethrow  a handler raising its own binding onward, read by the
+              handler above it;
+     nested   a binding read AFTER another raise was made and handled
+              inside the same handler -- the in-flight copy is
+              overwritten by then, so only the handler's own copy
+              (m9_pay_take) can still say the first message.
+
+   Prints `NAME wrong K of N` per way (N is 2000 for nested, which
+   checks the inner message too) and exits 1 if any K is not 0.
+   The compiler of 0.16.0 gets every way wrong; a runtime whose
+   m9_pay_take hands back the in-flight copy instead of its own gets
+   nested wrong (runtime/test/run.sh runs this).                     *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT DynStr ;
+IMPORT Text ;
+
+EXCEPTION
+  Broken (RO msg: STR) ;
+
+PROCEDURE Message (VAR pool: POOL ; n: I64) : STR RAISES ValueRange =
+VAR d : PTR DynStr.DString IN pool ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.Append (d, 'library message number ') ;
+  DynStr.AppendI64 (d, n) ;
+  RETURN DynStr.View (d)
+END Message ;
+
+PROCEDURE FromPool (n: I64) RAISES Broken, ValueRange =
+VAR
+  scratch : POOL ;
+  detail : STR ;
+BEGIN
+  detail := Message (scratch, n) ;
+  RAISE Broken (detail)
+END FromPool ;
+
+PROCEDURE FromPlus (n: I64) RAISES Broken, ValueRange =
+BEGIN
+  RAISE Broken ('library message number ' + Fmt.I64Str (n))
+END FromPlus ;
+
+PROCEDURE Rethrow (n: I64) RAISES Broken, ValueRange =
+VAR kept : STR ;
+BEGIN
+  BEGIN
+    FromPlus (n)
+  EXCEPT
+  | Broken (m) :
+      kept := m ;
+      Churn () ;
+      RAISE Broken (kept)
+  END
+END Rethrow ;
+
+PROCEDURE Churn () RAISES ValueRange =
+  (* allocate and fill as a handler doing real work would *)
+VAR
+  p : POOL ;
+  d : PTR DynStr.DString IN p ;
+  k : I64 ;
+BEGIN
+  d := DynStr.New (p) ;
+  FOR k := 1 TO 200 DO
+    DynStr.Append (d, 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+  END
+END Churn ;
+
+PROCEDURE Want (n: I64) : STR RAISES ValueRange =
+BEGIN
+  RETURN 'library message number ' + Fmt.I64Str (n)
+END Want ;
+
+PROCEDURE Way (k: I64) : I64 RAISES ValueRange =
+  (* how many of a thousand raises of way k were read back wrong *)
+VAR
+  i, bad : I64 ;
+  got, inner : STR ;
+BEGIN
+  bad := 0 ;
+  FOR i := 1 TO 1000 DO
+    BEGIN
+      CASE k OF
+      | 0 : FromPool (i)
+      | 1 : FromPlus (i)
+      | 2 : Rethrow (i)
+      ELSE FromPlus (i)
+      END
+    EXCEPT
+    | Broken (m) :
+        got := m ;
+        IF k = 3 THEN
+          (* another raise, made and handled while m is still held *)
+          BEGIN
+            FromPlus (i + 5000)
+          EXCEPT
+          | Broken (m2) :
+              inner := m2 ;
+              IF NOT Text.Eq (inner, Want (i + 5000)) THEN bad := bad + 1 END
+          END
+        END ;
+        Churn () ;
+        IF NOT Text.Eq (got, Want (i)) THEN bad := bad + 1 END
+    END
+  END ;
+  RETURN bad
+END Way ;
+
+VAR
+  k, bad, total : I64 ;
+
+BEGIN
+  total := 0 ;
+  BEGIN
+    FOR k := 0 TO 3 DO
+      bad := Way (k) ;
+      CASE k OF
+      | 0 : Io.Write ('pool')
+      | 1 : Io.Write ('plus')
+      | 2 : Io.Write ('rethrow')
+      ELSE Io.Write ('nested')
+      END ;
+      IF k = 3 THEN
+        Io.WriteLine (' wrong ' + Fmt.I64Str (bad) + ' of 2000')   (* two checks a raise *)
+      ELSE
+        Io.WriteLine (' wrong ' + Fmt.I64Str (bad) + ' of 1000')
+      END ;
+      total := total + bad
+    END
+  EXCEPT
+  | ValueRange :
+      Io.WriteLine ('FAIL: ValueRange') ;
+      total := total + 1
+  END ;
+  IF total # 0 THEN Io.Halt (1) END
+END RaisePayload.

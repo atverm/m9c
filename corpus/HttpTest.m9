@@ -12,6 +12,7 @@ MODULE HttpTest ;
    which starts a server of its own. *)
 
 IMPORT Check ;
+IMPORT Fmt ;
 IMPORT Http ;
 IMPORT Io ;
 IMPORT Text ;
@@ -141,11 +142,72 @@ BEGIN
               Http.RetryAfter (With ('99999999999999999999'), now) > Http.MaxWait)
 END RetryAfters ;
 
+(* UrlEncode and UrlDecode against urllib.parse.quote (s, safe='') and
+   unquote (s, errors='strict'): every string a vector of code points
+   in the golden, since they carry blanks and characters past Latin-1 *)
+
+PROCEDURE FromCps (RO v: SLICE OF I64) : STR RAISES ValueRange =
+VAR
+  r : STR ;
+  i : I64 ;
+BEGIN
+  r := '' ;
+  FOR i := 0 TO LEN (v) - 1 DO r := r + CHR (v[i]) END ;
+  RETURN r
+END FromCps ;
+
+PROCEDURE Cps (RO s: STR) : SLICE OF I64 =
+VAR
+  v : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  v := NEW (I64, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO v[i] := ORD (s[i]) END ;
+  RETURN v
+END Cps ;
+
+PROCEDURE Urls () RAISES ValueRange =
+VAR
+  k, n : I64 ;
+  input, got : STR ;
+  errs : SLICE OF BOOL ;
+  raised : BOOL ;
+BEGIN
+  n := Check.GoldI64 (t, gold, 'url.enc.count') ;
+  Check.That (t, 'UrlEncode: the golden has cases', n > 40) ;
+  FOR k := 0 TO n - 1 DO
+    input := FromCps (Check.GoldI64s (t, gold, 'url.enc.in.' + Fmt.I64Str (k))) ;
+    Check.EqI64s (t, 'UrlEncode ' + Fmt.I64Str (k), Cps (Http.UrlEncode (input)),
+                  Check.GoldI64s (t, gold, 'url.enc.out.' + Fmt.I64Str (k)))
+  END ;
+  n := Check.GoldI64 (t, gold, 'url.dec.count') ;
+  errs := Check.GoldBools (t, gold, 'url.dec.err') ;
+  Check.That (t, 'UrlDecode: a verdict for every case', LEN (errs) = n) ;
+  FOR k := 0 TO n - 1 DO
+    input := FromCps (Check.GoldI64s (t, gold, 'url.dec.in.' + Fmt.I64Str (k))) ;
+    raised := FALSE ;
+    got := '' ;
+    BEGIN
+      got := Http.UrlDecode (input)
+    EXCEPT
+    | ValueRange :
+        raised := TRUE
+    END ;
+    Check.EqBool (t, 'UrlDecode ' + Fmt.I64Str (k) + ' refuses as unquote does',
+                  raised, errs[k]) ;
+    IF NOT raised THEN
+      Check.EqI64s (t, 'UrlDecode ' + Fmt.I64Str (k), Cps (got),
+                    Check.GoldI64s (t, gold, 'url.dec.out.' + Fmt.I64Str (k)))
+    END
+  END
+END Urls ;
+
 BEGIN
   gold := Check.GoldPath ('Http.gold') ;
   Backoffs () ;
   Retryables () ;
   RetryAfters () ;
+  Urls () ;
   Io.Halt (Check.Done (t, 'Http'))
 EXCEPT
 | ValueRange :

@@ -47,7 +47,9 @@ PROCEDURE Enabled (level: I64) : BOOL ;
      rather than being one hidden variable.                        *)
 
 PROCEDURE Msg (level: I64 ; RO text: STR) ;
-  (* the whole line in one call, for the common case *)
+  (* the whole line in one call, for the common case.  Threads may
+     call it at once and each line comes out whole; the builder below
+     is NOT for threads -- its line is module state *)
 
 PROCEDURE Start (level: I64 ; RO text: STR) ;
 PROCEDURE Str (RO key: STR ; RO val: STR) ;
@@ -215,9 +217,28 @@ BEGIN
 END Done ;
 
 PROCEDURE Msg (level: I64 ; RO text: STR) =
+  (* in this frame, not the builder: Msg touches no module state but
+     the threshold and the sink, set at startup, so threads may call
+     it at once and each line comes out whole (the runtime locks the
+     stream for the one write) -- HttpServer's access log does *)
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  v : STR ;
 BEGIN
-  Start (level, text) ;
-  Done ()
+  IF NOT Enabled (level) THEN RETURN END ;
+  IF toSyslog THEN
+    Syslog.Send (Syslog.Pri (curFacility, Syslog.FromLoggerLevel (level)), text) ;
+    RETURN
+  END ;
+  d := DynStr.New (scratch) ;
+  DynStr.Append (d, Stamp ()) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.Append (d, LevelName (level)) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.Append (d, text) ;
+  v := DynStr.View (d) ;
+  Io.ErrLine (v)
 END Msg ;
 
 PROCEDURE ToSyslog (RO ident: STR ; options: I64 ; facility: I64) =

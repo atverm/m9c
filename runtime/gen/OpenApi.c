@@ -5,6 +5,16 @@
 
 extern int tcp_listen (int, int);
 extern int tcp_accept (int);
+extern int64_t tcp_peer (int, void *, int64_t);
+extern int tcp_rcvtimeo (int, int64_t);
+extern int tcp_nodelay (int);
+extern int tcp_listen_at (const void *, int, int);
+extern int tcp_accept_wait (int, int64_t);
+extern int tcp_readable (int, int64_t);
+extern int m9_srv_stopping (void);
+extern void m9_srv_stop (void);
+extern void m9_srv_unstop (void);
+extern void m9_srv_signals (int);
 
 static m9_pool m9mframe = {0};
 
