@@ -295,8 +295,11 @@ void Parquet_Write (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err)
     if (err->exc) goto L_ret;
     none = m9v;
   }
-  Parquet_WriteAny (pool, f, path, false, Parquet_NIL9 (pool, err), none, none, none, err);
+  { __typeof__(Parquet_NIL9 (pool, err)) m9a1 = Parquet_NIL9 (pool, err);
+    if (err->exc) goto L_ret;
+  Parquet_WriteAny (pool, f, path, false, m9a1, none, none, none, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -312,19 +315,40 @@ void Parquet_WriteTs (m9_pool *pool, Frame_Ts * ts, m9_sl_CHAR path, m9_state *e
   Frame_Fr * f2 = NULL; (void) f2;
   m9_sl_m9_sl_CHAR none = {0}; (void) none;
   int64_t c = 0; (void) c;
-  { __typeof__(f2) m9v = Frame_New (pool, Frame_Rows (Frame_TsFrame (ts, err), err), err);
+  { __typeof__(Frame_TsFrame (ts, err)) m9a2 = Frame_TsFrame (ts, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(Frame_Rows (m9a2, err)) m9a3 = Frame_Rows (m9a2, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(f2) m9v = Frame_New (pool, m9a3, err);
     if (err->exc) goto L_hdl_m9t1;
     f2 = m9v;
   }
-  Frame_AddI64 (pool, &(f2), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s0, 4 }), Frame_TsTime (ts, err), m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err), err);
+  }
+  }
+  { __typeof__(Frame_TsTime (ts, err)) m9a4 = Frame_TsTime (ts, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err)) m9a5 = m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Frame_AddI64 (pool, &(f2), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s0, 4 }), m9a4, m9a5, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
+  }
   { int64_t m9t3to;
   c = INT64_C(0);
   m9t3to = m9_sub_i64 (Frame_Cols (Frame_TsFrame (ts, err), err), INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   for (; c <= m9t3to; c += 1) {
-    Parquet_AddCopy (pool, &(f2), &((*pool)), Frame_TsFrame (ts, err), Frame_NameAt (Frame_TsFrame (ts, err), c, err), err);
+    { __typeof__(Frame_TsFrame (ts, err)) m9a6 = Frame_TsFrame (ts, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(Frame_TsFrame (ts, err)) m9a7 = Frame_TsFrame (ts, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(Frame_NameAt (m9a7, c, err)) m9a8 = Frame_NameAt (m9a7, c, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Parquet_AddCopy (pool, &(f2), &((*pool)), m9a6, m9a8, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
+    }
+    }
   } }
   { __typeof__(none) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(0), err);
     if (err->exc) goto L_hdl_m9t1;
@@ -362,8 +386,11 @@ void Parquet_WriteX (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_sl_m9_sl_C
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Parquet_WriteAny (pool, f, path, false, Parquet_NIL9 (pool, err), kvK, kvV, nsCols, err);
+  { __typeof__(Parquet_NIL9 (pool, err)) m9a9 = Parquet_NIL9 (pool, err);
+    if (err->exc) goto L_ret;
+  Parquet_WriteAny (pool, f, path, false, m9a9, kvK, kvV, nsCols, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -378,8 +405,11 @@ m9_sl_BYTE Parquet_BytesX (m9_pool *pool, Frame_Fr * f, m9_sl_m9_sl_CHAR kvK, m9
   err->res = m9res;
   m9_sl_BYTE m9ret = {0};
   err->res = m9res;
-  m9ret = Parquet_AnyBytes (pool, f, false, Parquet_NIL9 (pool, err), kvK, kvV, nsCols, err);
+  { __typeof__(Parquet_NIL9 (pool, err)) m9a10 = Parquet_NIL9 (pool, err);
+    if (err->exc) goto L_ret;
+  m9ret = Parquet_AnyBytes (pool, f, false, m9a10, kvK, kvV, nsCols, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -416,8 +446,11 @@ Frame_Fr * Parquet_Read (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   m9t1to = m9_sub_i64 (m.ncols, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; c <= m9t1to; c += 1) {
-    Parquet_ReadColumn (pool, &(f), &((*pool)), whole, (*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err)), m.rows, err);
+    { __typeof__((*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err))) m9a11 = (*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err));
+      if (err->exc) goto L_ret;
+    Parquet_ReadColumn (pool, &(f), &((*pool)), whole, m9a11, m.rows, err);
     if (err->exc) goto L_ret;
+    }
   } }
   err->res = m9res;
   m9ret = f;
@@ -476,15 +509,21 @@ Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     bool m9t2 = Parquet_EqS ((*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err)).name, ((m9_sl_CHAR){ (uint32_t *) m9s3, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Parquet_ReadColumn (pool, &(ft), &((*pool)), whole, (*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err)), m.rows, err);
+      { __typeof__((*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err))) m9a12 = (*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err));
+        if (err->exc) goto L_ret;
+      Parquet_ReadColumn (pool, &(ft), &((*pool)), whole, m9a12, m.rows, err);
       if (err->exc) goto L_ret;
+      }
       { __typeof__(tsec) m9v = Parquet_ColI64Q (ft, ((m9_sl_CHAR){ (uint32_t *) m9s4, 4 }), err);
         if (err->exc) goto L_ret;
         tsec = m9v;
       }
     } else {
-      Parquet_ReadColumn (pool, &(f), &((*pool)), whole, (*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err)), m.rows, err);
+      { __typeof__((*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err))) m9a13 = (*(Parquet_ColInfo *) m9_at (m.cols.p, c, m.cols.len, sizeof (Parquet_ColInfo), err));
+        if (err->exc) goto L_ret;
+      Parquet_ReadColumn (pool, &(f), &((*pool)), whole, m9a13, m.rows, err);
       if (err->exc) goto L_ret;
+      }
     }
   } }
   if (((tsec).len == INT64_C(0))) {
@@ -506,9 +545,12 @@ Frame_Ts * Parquet_TsRead (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     bool m9t5 = Parquet_EqS ((*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s6, 24 }), err);
     if (err->exc) goto L_ret;
     if (m9t5) {
-      { __typeof__(res) m9v = Parquet_TextI64 ((*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err)), err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err))) m9a14 = (*(m9_sl_CHAR *) m9_at (m.kvVals.p, i, m.kvVals.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(res) m9v = Parquet_TextI64 (m9a14, err);
         if (err->exc) goto L_ret;
         res = m9v;
+      }
       }
     } else {
       bool m9t6 = Parquet_EqS ((*(m9_sl_CHAR *) m9_at (m.kvKeys.p, i, m.kvKeys.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s7, 21 }), err);
@@ -680,8 +722,11 @@ static void Parquet_PLE (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int64_t
   i = INT64_C(1);
   m9t1to = k;
   for (; i <= m9t1to; i += 1) {
-    Parquet_P8 (pool, u, u_pool, m9_mod_i64 (x, INT64_C(256), err), err);
+    { __typeof__(m9_mod_i64 (x, INT64_C(256), err)) m9a15 = m9_mod_i64 (x, INT64_C(256), err);
+      if (err->exc) goto L_ret;
+    Parquet_P8 (pool, u, u_pool, m9a15, err);
     if (err->exc) goto L_ret;
+    }
     { __typeof__(x) m9v = m9_div_i64 (x, INT64_C(256), err);
       if (err->exc) goto L_ret;
       x = m9v;
@@ -735,8 +780,11 @@ static void Parquet_PVar (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int64_
   x = v;
   for (;;) {
     if (!((x >= INT64_C(128)))) break;
-    Parquet_P8 (pool, u, u_pool, m9_add_i64 (m9_mod_i64 (x, INT64_C(128), err), INT64_C(128), err), err);
+    { __typeof__(m9_add_i64 (m9_mod_i64 (x, INT64_C(128), err), INT64_C(128), err)) m9a16 = m9_add_i64 (m9_mod_i64 (x, INT64_C(128), err), INT64_C(128), err);
+      if (err->exc) goto L_ret;
+    Parquet_P8 (pool, u, u_pool, m9a16, err);
     if (err->exc) goto L_ret;
+    }
     { __typeof__(x) m9v = m9_div_i64 (x, INT64_C(128), err);
       if (err->exc) goto L_ret;
       x = m9v;
@@ -780,8 +828,11 @@ static void Parquet_PField (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int6
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Parquet_P8 (pool, u, u_pool, m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (id, (*last), err)), INT64_C(16), err), ct, err), err);
+  { __typeof__(m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (id, (*last), err)), INT64_C(16), err), ct, err)) m9a17 = m9_add_i64 (m9_mul_i64 ((m9_sub_i64 (id, (*last), err)), INT64_C(16), err), ct, err);
+    if (err->exc) goto L_ret;
+  Parquet_P8 (pool, u, u_pool, m9a17, err);
   if (err->exc) goto L_ret;
+  }
   (*last) = id;
 L_ret: ;
   err->res = m9res;
@@ -798,8 +849,11 @@ static void Parquet_PI32F (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int64
   err->res = &m9frame;
   Parquet_PField (pool, u, u_pool, last, id, Parquet_CtI32, err);
   if (err->exc) goto L_ret;
-  Parquet_PVar (pool, u, u_pool, Parquet_Zig (v, err), err);
+  { __typeof__(Parquet_Zig (v, err)) m9a18 = Parquet_Zig (v, err);
+    if (err->exc) goto L_ret;
+  Parquet_PVar (pool, u, u_pool, m9a18, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, u_pool, (*u).b.p);
@@ -815,8 +869,11 @@ static void Parquet_PI64F (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int64
   err->res = &m9frame;
   Parquet_PField (pool, u, u_pool, last, id, Parquet_CtI64, err);
   if (err->exc) goto L_ret;
-  Parquet_PVar (pool, u, u_pool, Parquet_Zig (v, err), err);
+  { __typeof__(Parquet_Zig (v, err)) m9a19 = Parquet_Zig (v, err);
+    if (err->exc) goto L_ret;
+  Parquet_PVar (pool, u, u_pool, m9a19, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, u_pool, (*u).b.p);
@@ -888,11 +945,17 @@ static void Parquet_PListF (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, int6
   Parquet_PField (pool, u, u_pool, last, id, Parquet_CtList, err);
   if (err->exc) goto L_ret;
   if ((count < INT64_C(15))) {
-    Parquet_P8 (pool, u, u_pool, m9_add_i64 (m9_mul_i64 (count, INT64_C(16), err), elemCt, err), err);
+    { __typeof__(m9_add_i64 (m9_mul_i64 (count, INT64_C(16), err), elemCt, err)) m9a20 = m9_add_i64 (m9_mul_i64 (count, INT64_C(16), err), elemCt, err);
+      if (err->exc) goto L_ret;
+    Parquet_P8 (pool, u, u_pool, m9a20, err);
     if (err->exc) goto L_ret;
+    }
   } else {
-    Parquet_P8 (pool, u, u_pool, m9_add_i64 (m9_mul_i64 (INT64_C(15), INT64_C(16), err), elemCt, err), err);
+    { __typeof__(m9_add_i64 (m9_mul_i64 (INT64_C(15), INT64_C(16), err), elemCt, err)) m9a21 = m9_add_i64 (m9_mul_i64 (INT64_C(15), INT64_C(16), err), elemCt, err);
+      if (err->exc) goto L_ret;
+    Parquet_P8 (pool, u, u_pool, m9a21, err);
     if (err->exc) goto L_ret;
+    }
     Parquet_PVar (pool, u, u_pool, count, err);
     if (err->exc) goto L_ret;
   }
@@ -998,8 +1061,11 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
       if (err->exc) goto L_hdl_m9t1;
       v64 = m9v;
     }
-    Parquet_Room (u, u_pool, m9_mul_i64 (INT64_C(8), (v64).len, err), err);
+    { __typeof__(m9_mul_i64 (INT64_C(8), (v64).len, err)) m9a22 = m9_mul_i64 (INT64_C(8), (v64).len, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Parquet_Room (u, u_pool, m9a22, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
     { int64_t m9t3to;
     r = INT64_C(0);
     m9t3to = m9_sub_i64 ((v64).len, INT64_C(1), err);
@@ -1018,8 +1084,11 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
         if (err->exc) goto L_hdl_m9t1;
         v32 = m9v;
       }
-      Parquet_Room (u, u_pool, m9_mul_i64 (INT64_C(4), (v32).len, err), err);
+      { __typeof__(m9_mul_i64 (INT64_C(4), (v32).len, err)) m9a23 = m9_mul_i64 (INT64_C(4), (v32).len, err);
+        if (err->exc) goto L_hdl_m9t1;
+      Parquet_Room (u, u_pool, m9a23, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
       { int64_t m9t5to;
       r = INT64_C(0);
       m9t5to = m9_sub_i64 ((v32).len, INT64_C(1), err);
@@ -1048,19 +1117,31 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
           x = m9v;
         }
         if ((x >= INT64_C(0))) {
-          Parquet_PLE (pool, u, u_pool, m9_mod_i64 (x, INT64_C(4294967296), err), INT64_C(4), err);
+          { __typeof__(m9_mod_i64 (x, INT64_C(4294967296), err)) m9a24 = m9_mod_i64 (x, INT64_C(4294967296), err);
+            if (err->exc) goto L_hdl_m9t1;
+          Parquet_PLE (pool, u, u_pool, m9a24, INT64_C(4), err);
           if (err->exc) goto L_hdl_m9t1;
-          Parquet_PLE (pool, u, u_pool, m9_div_i64 (x, INT64_C(4294967296), err), INT64_C(4), err);
+          }
+          { __typeof__(m9_div_i64 (x, INT64_C(4294967296), err)) m9a25 = m9_div_i64 (x, INT64_C(4294967296), err);
+            if (err->exc) goto L_hdl_m9t1;
+          Parquet_PLE (pool, u, u_pool, m9a25, INT64_C(4), err);
           if (err->exc) goto L_hdl_m9t1;
+          }
         } else {
           { __typeof__(x) m9v = m9_add_i64 (m9_add_i64 (x, INT64_C(1), err), INT64_C(9223372036854775807), err);
             if (err->exc) goto L_hdl_m9t1;
             x = m9v;
           }
-          Parquet_PLE (pool, u, u_pool, m9_mod_i64 (x, INT64_C(4294967296), err), INT64_C(4), err);
+          { __typeof__(m9_mod_i64 (x, INT64_C(4294967296), err)) m9a26 = m9_mod_i64 (x, INT64_C(4294967296), err);
+            if (err->exc) goto L_hdl_m9t1;
+          Parquet_PLE (pool, u, u_pool, m9a26, INT64_C(4), err);
           if (err->exc) goto L_hdl_m9t1;
-          Parquet_PLE (pool, u, u_pool, m9_add_i64 (m9_div_i64 (x, INT64_C(4294967296), err), INT64_C(2147483648), err), INT64_C(4), err);
+          }
+          { __typeof__(m9_add_i64 (m9_div_i64 (x, INT64_C(4294967296), err), INT64_C(2147483648), err)) m9a27 = m9_add_i64 (m9_div_i64 (x, INT64_C(4294967296), err), INT64_C(2147483648), err);
+            if (err->exc) goto L_hdl_m9t1;
+          Parquet_PLE (pool, u, u_pool, m9a27, INT64_C(4), err);
           if (err->exc) goto L_hdl_m9t1;
+          }
         }
       } }
   } else {
@@ -1122,8 +1203,11 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
       m9t10to = m9_sub_i64 ((vb).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
       for (; r <= m9t10to; r += 1) {
-        Parquet_PLE (pool, u, u_pool, (int64_t)((*(uint8_t *) m9_at (vb.p, r, vb.len, sizeof (uint8_t), err))), INT64_C(4), err);
+        { __typeof__((int64_t)((*(uint8_t *) m9_at (vb.p, r, vb.len, sizeof (uint8_t), err)))) m9a28 = (int64_t)((*(uint8_t *) m9_at (vb.p, r, vb.len, sizeof (uint8_t), err)));
+          if (err->exc) goto L_hdl_m9t1;
+        Parquet_PLE (pool, u, u_pool, m9a28, INT64_C(4), err);
         if (err->exc) goto L_hdl_m9t1;
+        }
       } }
   } else {
     if ((k == Frame_KindBool)) {
@@ -1171,8 +1255,11 @@ static void Parquet_PutValues (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, F
     m9t13to = m9_sub_i64 ((vs).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     for (; r <= m9t13to; r += 1) {
-      Parquet_PStrVal (pool, u, u_pool, (*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err)), err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err))) m9a29 = (*(m9_sl_CHAR *) m9_at (vs.p, r, vs.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_hdl_m9t1;
+      Parquet_PStrVal (pool, u, u_pool, m9a29, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
     } }
   } } } } } } }
   goto L_dn_m9t2;
@@ -1255,9 +1342,12 @@ static Parquet_Buf Parquet_PageFor (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name
   }
   Parquet_PutValues (pool, &(vals), err->res, f, name, k, err);
   if (err->exc) goto L_ret;
-  { __typeof__(page) m9v = Parquet_NewBuf (pool, m9_add_i64 (vals.n, INT64_C(64), err), err);
+  { __typeof__(m9_add_i64 (vals.n, INT64_C(64), err)) m9a30 = m9_add_i64 (vals.n, INT64_C(64), err);
+    if (err->exc) goto L_ret;
+  { __typeof__(page) m9v = Parquet_NewBuf (pool, m9a30, err);
     if (err->exc) goto L_ret;
     page = m9v;
+  }
   }
   last = INT64_C(0);
   Parquet_PI32F (pool, &(page), err->res, &(last), INT64_C(1), INT64_C(0), err);
@@ -1269,8 +1359,11 @@ static Parquet_Buf Parquet_PageFor (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name
   Parquet_PField (pool, &(page), err->res, &(last), INT64_C(5), Parquet_CtStruct, err);
   if (err->exc) goto L_ret;
   last2 = INT64_C(0);
-  Parquet_PI32F (pool, &(page), err->res, &(last2), INT64_C(1), Frame_Rows (f, err), err);
+  { __typeof__(Frame_Rows (f, err)) m9a31 = Frame_Rows (f, err);
+    if (err->exc) goto L_ret;
+  Parquet_PI32F (pool, &(page), err->res, &(last2), INT64_C(1), m9a31, err);
   if (err->exc) goto L_ret;
+  }
   Parquet_PI32F (pool, &(page), err->res, &(last2), INT64_C(2), Parquet_EncPlain, err);
   if (err->exc) goto L_ret;
   Parquet_PI32F (pool, &(page), err->res, &(last2), INT64_C(3), Parquet_EncRle, err);
@@ -1281,8 +1374,11 @@ static Parquet_Buf Parquet_PageFor (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR name
   if (err->exc) goto L_ret;
   Parquet_P8 (pool, &(page), err->res, Parquet_CtStop, err);
   if (err->exc) goto L_ret;
-  Parquet_PBytes (pool, &(page), err->res, ({ __typeof__(vals.b) m9t1 = vals.b; int64_t m9t1a = INT64_C(0), m9t1n = vals.n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
+  { __typeof__(({ __typeof__(vals.b) m9t1 = vals.b; int64_t m9t1a = INT64_C(0), m9t1n = vals.n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a32 = ({ __typeof__(vals.b) m9t1 = vals.b; int64_t m9t1a = INT64_C(0), m9t1n = vals.n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    if (err->exc) goto L_ret;
+  Parquet_PBytes (pool, &(page), err->res, m9a32, err);
   if (err->exc) goto L_ret;
+  }
   err->res = m9res;
   m9ret = page;
   goto L_ret;
@@ -1304,8 +1400,11 @@ static void Parquet_SchemaElem (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, 
   int64_t l3 = 0; (void) l3;
   int64_t l4 = 0; (void) l4;
   last = INT64_C(0);
-  Parquet_PI32F (pool, u, u_pool, &(last), INT64_C(1), Parquet_ColPhys (k, err), err);
+  { __typeof__(Parquet_ColPhys (k, err)) m9a33 = Parquet_ColPhys (k, err);
+    if (err->exc) goto L_ret;
+  Parquet_PI32F (pool, u, u_pool, &(last), INT64_C(1), m9a33, err);
   if (err->exc) goto L_ret;
+  }
   Parquet_PI32F (pool, u, u_pool, &(last), INT64_C(3), INT64_C(0), err);
   if (err->exc) goto L_ret;
   Parquet_PStrF (pool, u, u_pool, &(last), INT64_C(4), name, err);
@@ -1313,8 +1412,11 @@ static void Parquet_SchemaElem (m9_pool *pool, Parquet_Buf *u, m9_pool *u_pool, 
   bool m9t1 = (Parquet_ColConv (k, err) >= INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Parquet_PI32F (pool, u, u_pool, &(last), INT64_C(6), Parquet_ColConv (k, err), err);
+    { __typeof__(Parquet_ColConv (k, err)) m9a34 = Parquet_ColConv (k, err);
+      if (err->exc) goto L_ret;
+    Parquet_PI32F (pool, u, u_pool, &(last), INT64_C(6), m9a34, err);
     if (err->exc) goto L_ret;
+    }
   }
   if (ns) {
     Parquet_PField (pool, u, u_pool, &(last), INT64_C(10), Parquet_CtStruct, err);
@@ -1433,8 +1535,11 @@ static void Parquet_WriteAny (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, bool
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Io_WriteFileBytes (path, Parquet_AnyBytes (pool, f, withTs, ts, kvK, kvV, nsCols, err), err);
+  { __typeof__(Parquet_AnyBytes (pool, f, withTs, ts, kvK, kvV, nsCols, err)) m9a35 = Parquet_AnyBytes (pool, f, withTs, ts, kvK, kvV, nsCols, err);
+    if (err->exc) goto L_ret;
+  Io_WriteFileBytes (path, m9a35, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -1472,8 +1577,11 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
     if (err->exc) goto L_ret;
     out = m9v;
   }
-  Parquet_PBytes (pool, &(out), err->res, Parquet_MagicBytes (err), err);
+  { __typeof__(Parquet_MagicBytes (err)) m9a36 = Parquet_MagicBytes (err);
+    if (err->exc) goto L_ret;
+  Parquet_PBytes (pool, &(out), err->res, m9a36, err);
   if (err->exc) goto L_ret;
+  }
   { __typeof__(pages) m9v = M9_POOL_SL (m9_sl_Parquet_Buf, Parquet_Buf, &((*pool)), nc, err);
     if (err->exc) goto L_ret;
     pages = m9v;
@@ -1500,21 +1608,33 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
       (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)) = m9v;
       if (err->exc) goto L_ret;
     }
-    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9v = Parquet_KindQ (f, (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)), err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a37 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9v = Parquet_KindQ (f, m9a37, err);
       if (err->exc) goto L_ret;
       (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err)) = m9v;
       if (err->exc) goto L_ret;
     }
+    }
     (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err)) = out.n;
     if (err->exc) goto L_ret;
-    { __typeof__(page) m9v = Parquet_PageFor (pool, f, (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)), (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err)), err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a38 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a39 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+    { __typeof__(page) m9v = Parquet_PageFor (pool, f, m9a38, m9a39, err);
       if (err->exc) goto L_ret;
       page = m9v;
     }
+    }
+    }
     (*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)) = page;
     if (err->exc) goto L_ret;
-    Parquet_PBytes (pool, &(out), err->res, ({ __typeof__(page.b) m9t2 = page.b; int64_t m9t2a = INT64_C(0), m9t2n = page.n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
+    { __typeof__(({ __typeof__(page.b) m9t2 = page.b; int64_t m9t2a = INT64_C(0), m9t2n = page.n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a40 = ({ __typeof__(page.b) m9t2 = page.b; int64_t m9t2a = INT64_C(0), m9t2n = page.n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+      if (err->exc) goto L_ret;
+    Parquet_PBytes (pool, &(out), err->res, m9a40, err);
     if (err->exc) goto L_ret;
+    }
   } }
   { __typeof__(meta) m9v = Parquet_NewBuf (pool, INT64_C(1024), err);
     if (err->exc) goto L_ret;
@@ -1523,8 +1643,11 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   last = INT64_C(0);
   Parquet_PI32F (pool, &(meta), err->res, &(last), INT64_C(1), INT64_C(1), err);
   if (err->exc) goto L_ret;
-  Parquet_PListF (pool, &(meta), err->res, &(last), INT64_C(2), Parquet_CtStruct, m9_add_i64 (nc, INT64_C(1), err), err);
+  { __typeof__(m9_add_i64 (nc, INT64_C(1), err)) m9a41 = m9_add_i64 (nc, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  Parquet_PListF (pool, &(meta), err->res, &(last), INT64_C(2), Parquet_CtStruct, m9a41, err);
   if (err->exc) goto L_ret;
+  }
   lastRg = INT64_C(0);
   Parquet_PStrF (pool, &(meta), err->res, &(lastRg), INT64_C(4), ((m9_sl_CHAR){ (uint32_t *) m9s13, 6 }), err);
   if (err->exc) goto L_ret;
@@ -1537,11 +1660,26 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   m9t3to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; c <= m9t3to; c += 1) {
-    Parquet_SchemaElem (pool, &(meta), err->res, (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)), (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err)), Parquet_InList ((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)), nsCols, err), err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a42 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a43 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a44 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    { __typeof__(Parquet_InList (m9a44, nsCols, err)) m9a45 = Parquet_InList (m9a44, nsCols, err);
+      if (err->exc) goto L_ret;
+    Parquet_SchemaElem (pool, &(meta), err->res, m9a42, m9a43, m9a45, err);
     if (err->exc) goto L_ret;
+    }
+    }
+    }
+    }
   } }
-  Parquet_PI64F (pool, &(meta), err->res, &(last), INT64_C(3), Frame_Rows (f, err), err);
+  { __typeof__(Frame_Rows (f, err)) m9a46 = Frame_Rows (f, err);
+    if (err->exc) goto L_ret;
+  Parquet_PI64F (pool, &(meta), err->res, &(last), INT64_C(3), m9a46, err);
   if (err->exc) goto L_ret;
+  }
   Parquet_PListF (pool, &(meta), err->res, &(last), INT64_C(4), Parquet_CtStruct, INT64_C(1), err);
   if (err->exc) goto L_ret;
   lastRg = INT64_C(0);
@@ -1553,42 +1691,78 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
   if (err->exc) goto L_ret;
   for (; c <= m9t4to; c += 1) {
     lastCc = INT64_C(0);
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCc), INT64_C(2), (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err)), err);
+    { __typeof__((*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err))) m9a47 = (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCc), INT64_C(2), m9a47, err);
     if (err->exc) goto L_ret;
+    }
     Parquet_PField (pool, &(meta), err->res, &(lastCc), INT64_C(3), Parquet_CtStruct, err);
     if (err->exc) goto L_ret;
     lastCm = INT64_C(0);
-    Parquet_PI32F (pool, &(meta), err->res, &(lastCm), INT64_C(1), Parquet_ColPhys ((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err)), err), err);
+    { __typeof__((*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err))) m9a48 = (*(int64_t *) m9_at (kinds.p, c, kinds.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+    { __typeof__(Parquet_ColPhys (m9a48, err)) m9a49 = Parquet_ColPhys (m9a48, err);
+      if (err->exc) goto L_ret;
+    Parquet_PI32F (pool, &(meta), err->res, &(lastCm), INT64_C(1), m9a49, err);
     if (err->exc) goto L_ret;
+    }
+    }
     Parquet_PListF (pool, &(meta), err->res, &(lastCm), INT64_C(2), Parquet_CtI32, INT64_C(2), err);
     if (err->exc) goto L_ret;
-    Parquet_PVar (pool, &(meta), err->res, Parquet_Zig (Parquet_EncPlain, err), err);
+    { __typeof__(Parquet_Zig (Parquet_EncPlain, err)) m9a50 = Parquet_Zig (Parquet_EncPlain, err);
+      if (err->exc) goto L_ret;
+    Parquet_PVar (pool, &(meta), err->res, m9a50, err);
     if (err->exc) goto L_ret;
-    Parquet_PVar (pool, &(meta), err->res, Parquet_Zig (Parquet_EncRle, err), err);
+    }
+    { __typeof__(Parquet_Zig (Parquet_EncRle, err)) m9a51 = Parquet_Zig (Parquet_EncRle, err);
+      if (err->exc) goto L_ret;
+    Parquet_PVar (pool, &(meta), err->res, m9a51, err);
     if (err->exc) goto L_ret;
+    }
     Parquet_PListF (pool, &(meta), err->res, &(lastCm), INT64_C(3), Parquet_CtBinary, INT64_C(1), err);
     if (err->exc) goto L_ret;
-    Parquet_PStrRaw (pool, &(meta), err->res, (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err)), err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err))) m9a52 = (*(m9_sl_CHAR *) m9_at (names.p, c, names.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    Parquet_PStrRaw (pool, &(meta), err->res, m9a52, err);
     if (err->exc) goto L_ret;
+    }
     Parquet_PI32F (pool, &(meta), err->res, &(lastCm), INT64_C(4), Parquet_CodecNone, err);
     if (err->exc) goto L_ret;
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(5), Frame_Rows (f, err), err);
+    { __typeof__(Frame_Rows (f, err)) m9a53 = Frame_Rows (f, err);
+      if (err->exc) goto L_ret;
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(5), m9a53, err);
     if (err->exc) goto L_ret;
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(6), (*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n, err);
+    }
+    { __typeof__((*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n) m9a54 = (*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n;
+      if (err->exc) goto L_ret;
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(6), m9a54, err);
     if (err->exc) goto L_ret;
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(7), (*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n, err);
+    }
+    { __typeof__((*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n) m9a55 = (*(Parquet_Buf *) m9_at (pages.p, c, pages.len, sizeof (Parquet_Buf), err)).n;
+      if (err->exc) goto L_ret;
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(7), m9a55, err);
     if (err->exc) goto L_ret;
-    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(9), (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err)), err);
+    }
+    { __typeof__((*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err))) m9a56 = (*(int64_t *) m9_at (offs.p, c, offs.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+    Parquet_PI64F (pool, &(meta), err->res, &(lastCm), INT64_C(9), m9a56, err);
     if (err->exc) goto L_ret;
+    }
     Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
     if (err->exc) goto L_ret;
     Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
     if (err->exc) goto L_ret;
   } }
-  Parquet_PI64F (pool, &(meta), err->res, &(lastRg), INT64_C(2), m9_sub_i64 (out.n, INT64_C(4), err), err);
+  { __typeof__(m9_sub_i64 (out.n, INT64_C(4), err)) m9a57 = m9_sub_i64 (out.n, INT64_C(4), err);
+    if (err->exc) goto L_ret;
+  Parquet_PI64F (pool, &(meta), err->res, &(lastRg), INT64_C(2), m9a57, err);
   if (err->exc) goto L_ret;
-  Parquet_PI64F (pool, &(meta), err->res, &(lastRg), INT64_C(3), Frame_Rows (f, err), err);
+  }
+  { __typeof__(Frame_Rows (f, err)) m9a58 = Frame_Rows (f, err);
+    if (err->exc) goto L_ret;
+  Parquet_PI64F (pool, &(meta), err->res, &(lastRg), INT64_C(3), m9a58, err);
   if (err->exc) goto L_ret;
+  }
   Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
   if (err->exc) goto L_ret;
   kvn = (kvK).len;
@@ -1606,30 +1780,54 @@ static m9_sl_BYTE Parquet_AnyBytes (m9_pool *pool, Frame_Fr * f, bool withTs, Fr
         if (err->exc) goto L_ret;
         conv = m9v;
       }
-      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s14, 24 }), Parquet_I64Text (Frame_TsRes (ts, err), err), err);
+      { __typeof__(Frame_TsRes (ts, err)) m9a59 = Frame_TsRes (ts, err);
+        if (err->exc) goto L_ret;
+      { __typeof__(Parquet_I64Text (m9a59, err)) m9a60 = Parquet_I64Text (m9a59, err);
+        if (err->exc) goto L_ret;
+      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s14, 24 }), m9a60, err);
       if (err->exc) goto L_ret;
-      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s15, 21 }), Frame_ConvName (conv, err), err);
+      }
+      }
+      { __typeof__(Frame_ConvName (conv, err)) m9a61 = Frame_ConvName (conv, err);
+        if (err->exc) goto L_ret;
+      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s15, 21 }), m9a61, err);
       if (err->exc) goto L_ret;
-      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s16, 11 }), Frame_TsDescr (ts, err), err);
+      }
+      { __typeof__(Frame_TsDescr (ts, err)) m9a62 = Frame_TsDescr (ts, err);
+        if (err->exc) goto L_ret;
+      Parquet_MetaKV (pool, &(meta), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s16, 11 }), m9a62, err);
       if (err->exc) goto L_ret;
+      }
     }
     { int64_t m9t5to;
     i = INT64_C(0);
     m9t5to = m9_sub_i64 ((kvK).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t5to; i += 1) {
-      Parquet_MetaKV (pool, &(meta), err->res, (*(m9_sl_CHAR *) m9_at (kvK.p, i, kvK.len, sizeof (m9_sl_CHAR), err)), (*(m9_sl_CHAR *) m9_at (kvV.p, i, kvV.len, sizeof (m9_sl_CHAR), err)), err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (kvK.p, i, kvK.len, sizeof (m9_sl_CHAR), err))) m9a63 = (*(m9_sl_CHAR *) m9_at (kvK.p, i, kvK.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (kvV.p, i, kvV.len, sizeof (m9_sl_CHAR), err))) m9a64 = (*(m9_sl_CHAR *) m9_at (kvV.p, i, kvV.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_ret;
+      Parquet_MetaKV (pool, &(meta), err->res, m9a63, m9a64, err);
       if (err->exc) goto L_ret;
+      }
+      }
     } }
   }
   Parquet_P8 (pool, &(meta), err->res, Parquet_CtStop, err);
   if (err->exc) goto L_ret;
-  Parquet_PBytes (pool, &(out), err->res, ({ __typeof__(meta.b) m9t6 = meta.b; int64_t m9t6a = INT64_C(0), m9t6n = meta.n; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err);
+  { __typeof__(({ __typeof__(meta.b) m9t6 = meta.b; int64_t m9t6a = INT64_C(0), m9t6n = meta.n; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; })) m9a65 = ({ __typeof__(meta.b) m9t6 = meta.b; int64_t m9t6a = INT64_C(0), m9t6n = meta.n; (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
+    if (err->exc) goto L_ret;
+  Parquet_PBytes (pool, &(out), err->res, m9a65, err);
   if (err->exc) goto L_ret;
+  }
   Parquet_PLE (pool, &(out), err->res, meta.n, INT64_C(4), err);
   if (err->exc) goto L_ret;
-  Parquet_PBytes (pool, &(out), err->res, Parquet_MagicBytes (err), err);
+  { __typeof__(Parquet_MagicBytes (err)) m9a66 = Parquet_MagicBytes (err);
+    if (err->exc) goto L_ret;
+  Parquet_PBytes (pool, &(out), err->res, m9a66, err);
   if (err->exc) goto L_ret;
+  }
   err->res = m9res;
   m9ret = ({ __typeof__(out.b) m9t7 = out.b; int64_t m9t7a = INT64_C(0), m9t7n = out.n; (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
   if (err->exc) goto L_ret;
@@ -1689,8 +1887,11 @@ static Frame_Ts * Parquet_NIL9 (m9_pool *pool, m9_state *err)
     t = m9v;
   }
   err->res = m9res;
-  m9ret = Frame_NewTs (pool, f, t, INT64_C(1), Frame_ConvStart (err), (m9_sl_CHAR){ NULL, 0 }, err);
+  { __typeof__(Frame_ConvStart (err)) m9a67 = Frame_ConvStart (err);
+    if (err->exc) goto L_hdl_m9t1;
+  m9ret = Frame_NewTs (pool, f, t, INT64_C(1), m9a67, (m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_ret;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -1733,35 +1934,77 @@ static void Parquet_AddCopy (m9_pool *pool, Frame_Fr * *dst, m9_pool *dst_pool, 
     k = m9v;
   }
   if ((k == Frame_KindF64)) {
-    Frame_AddF64 (pool, dst, dst_pool, name, Frame_ColF64 (src, name, err), Frame_MissF64 (src, name, err), err);
+    { __typeof__(Frame_ColF64 (src, name, err)) m9a68 = Frame_ColF64 (src, name, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(Frame_MissF64 (src, name, err)) m9a69 = Frame_MissF64 (src, name, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Frame_AddF64 (pool, dst, dst_pool, name, m9a68, m9a69, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
+    }
   } else {
     if ((k == Frame_KindF32)) {
-      Frame_AddF32 (pool, dst, dst_pool, name, Frame_ColF32 (src, name, err), Frame_MissF32 (src, name, err), err);
+      { __typeof__(Frame_ColF32 (src, name, err)) m9a70 = Frame_ColF32 (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(Frame_MissF32 (src, name, err)) m9a71 = Frame_MissF32 (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      Frame_AddF32 (pool, dst, dst_pool, name, m9a70, m9a71, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
+      }
   } else {
     if ((k == Frame_KindI64)) {
-      Frame_AddI64 (pool, dst, dst_pool, name, Frame_ColI64 (src, name, err), Frame_MissI64 (src, name, err), err);
+      { __typeof__(Frame_ColI64 (src, name, err)) m9a72 = Frame_ColI64 (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(Frame_MissI64 (src, name, err)) m9a73 = Frame_MissI64 (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      Frame_AddI64 (pool, dst, dst_pool, name, m9a72, m9a73, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
+      }
   } else {
     if ((k == Frame_KindI32)) {
-      Frame_AddI32 (pool, dst, dst_pool, name, Frame_ColI32 (src, name, err), Frame_MissI32 (src, name, err), err);
+      { __typeof__(Frame_ColI32 (src, name, err)) m9a74 = Frame_ColI32 (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(Frame_MissI32 (src, name, err)) m9a75 = Frame_MissI32 (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      Frame_AddI32 (pool, dst, dst_pool, name, m9a74, m9a75, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
+      }
   } else {
     if ((k == Frame_KindI16)) {
-      Frame_AddI16 (pool, dst, dst_pool, name, Frame_ColI16 (src, name, err), Frame_MissI16 (src, name, err), err);
+      { __typeof__(Frame_ColI16 (src, name, err)) m9a76 = Frame_ColI16 (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(Frame_MissI16 (src, name, err)) m9a77 = Frame_MissI16 (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      Frame_AddI16 (pool, dst, dst_pool, name, m9a76, m9a77, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
+      }
   } else {
     if ((k == Frame_KindByte)) {
-      Frame_AddBytes (pool, dst, dst_pool, name, Frame_ColBytes (src, name, err), Frame_MissByte (src, name, err), err);
+      { __typeof__(Frame_ColBytes (src, name, err)) m9a78 = Frame_ColBytes (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(Frame_MissByte (src, name, err)) m9a79 = Frame_MissByte (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      Frame_AddBytes (pool, dst, dst_pool, name, m9a78, m9a79, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
+      }
   } else {
     if ((k == Frame_KindBool)) {
-      Frame_AddBools (pool, dst, dst_pool, name, Frame_ColBools (src, name, err), err);
+      { __typeof__(Frame_ColBools (src, name, err)) m9a80 = Frame_ColBools (src, name, err);
+        if (err->exc) goto L_hdl_m9t1;
+      Frame_AddBools (pool, dst, dst_pool, name, m9a80, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
   } else {
-    Frame_AddStrs (pool, dst, dst_pool, name, Frame_ColStrs (src, name, err), err);
+    { __typeof__(Frame_ColStrs (src, name, err)) m9a81 = Frame_ColStrs (src, name, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Frame_AddStrs (pool, dst, dst_pool, name, m9a81, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
   } } } } } } }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -2130,9 +2373,12 @@ static m9_sl_CHAR Parquet_RStr (m9_pool *pool, Parquet_Rd *r, m9_pool *r_pool, m
     m9_raise (err, &Faults_BadArg);
     goto L_ret;
   }
-  { __typeof__(s) m9v = DynStr_FromUtf8 (pool, ({ __typeof__((*r).b) m9t3 = (*r).b; int64_t m9t3a = (*r).at, m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
+  { __typeof__(({ __typeof__((*r).b) m9t3 = (*r).b; int64_t m9t3a = (*r).at, m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a82 = ({ __typeof__((*r).b) m9t3 = (*r).b; int64_t m9t3a = (*r).at, m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+    if (err->exc) goto L_ret;
+  { __typeof__(s) m9v = DynStr_FromUtf8 (pool, m9a82, err);
     if (err->exc) goto L_ret;
     s = m9v;
+  }
   }
   { __typeof__((*r).at) m9v = m9_add_i64 ((*r).at, n, err);
     if (err->exc) goto L_ret;
@@ -3236,10 +3482,13 @@ static void Parquet_ReadColumn (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m
             m9_raise (err, &Faults_BadArg);
             goto L_ret;
           }
-          { __typeof__((*(m9_sl_CHAR *) m9_at (vs.p, i, vs.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_FromUtf8 (pool, ({ __typeof__(r.b) m9t36 = r.b; int64_t m9t36a = r.at, m9t36n = n; (__typeof__(m9t36)){ m9t36.p + m9_chk_slice (m9t36a, m9t36n, m9t36.len, err), m9t36n }; }), err);
+          { __typeof__(({ __typeof__(r.b) m9t36 = r.b; int64_t m9t36a = r.at, m9t36n = n; (__typeof__(m9t36)){ m9t36.p + m9_chk_slice (m9t36a, m9t36n, m9t36.len, err), m9t36n }; })) m9a83 = ({ __typeof__(r.b) m9t36 = r.b; int64_t m9t36a = r.at, m9t36n = n; (__typeof__(m9t36)){ m9t36.p + m9_chk_slice (m9t36a, m9t36n, m9t36.len, err), m9t36n }; });
+            if (err->exc) goto L_ret;
+          { __typeof__((*(m9_sl_CHAR *) m9_at (vs.p, i, vs.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_FromUtf8 (pool, m9a83, err);
             if (err->exc) goto L_ret;
             (*(m9_sl_CHAR *) m9_at (vs.p, i, vs.len, sizeof (m9_sl_CHAR), err)) = m9v;
             if (err->exc) goto L_ret;
+          }
           }
           { __typeof__(r.at) m9v = m9_add_i64 (r.at, n, err);
             if (err->exc) goto L_ret;
@@ -3373,8 +3622,11 @@ static void Parquet_AddI64Q (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Frame_AddI64 (pool, f, f_pool, name, v, m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err), err);
+  { __typeof__(m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err)) m9a84 = m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Frame_AddI64 (pool, f, f_pool, name, v, m9a84, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Faults_SizeError) {
@@ -3406,8 +3658,11 @@ static void Parquet_AddI32Q (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Frame_AddI32 (pool, f, f_pool, name, v, m9_sub_i64 (m9_neg_i64 (INT64_C(2147483647), err), INT64_C(1), err), err);
+  { __typeof__(m9_sub_i64 (m9_neg_i64 (INT64_C(2147483647), err), INT64_C(1), err)) m9a85 = m9_sub_i64 (m9_neg_i64 (INT64_C(2147483647), err), INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Frame_AddI32 (pool, f, f_pool, name, v, m9a85, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Faults_SizeError) {
@@ -3439,8 +3694,11 @@ static void Parquet_AddI16Q (m9_pool *pool, Frame_Fr * *f, m9_pool *f_pool, m9_s
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Frame_AddI16 (pool, f, f_pool, name, v, m9_neg_i64 (INT64_C(32768), err), err);
+  { __typeof__(m9_neg_i64 (INT64_C(32768), err)) m9a86 = m9_neg_i64 (INT64_C(32768), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Frame_AddI16 (pool, f, f_pool, name, v, m9a86, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Faults_SizeError) {

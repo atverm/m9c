@@ -38,6 +38,9 @@ export M9CACHE="$W/cache"
 export JUPYTER_DATA_DIR="$W/data" JUPYTER_PATH="$W/data"
 ../../tools/jupyter/install.sh "$PY" > /dev/null
 "$PY" jupytercheck.py ../../tools/jupyter/M9Notebook.ipynb "$W/work"
+# the example notebooks (tools/jupyter/examples), each in its own copy
+# of a directory: every cell as its kind promises
+"$PY" jupyterexamples.py ../../tools/jupyter/examples "$W/examples"
 # completion is tested without the session: it runs a library cell
 # twice, which a session refuses (decision 3 of the state plan)
 M9KERNEL_STATELESS=1 "$PY" jupytercomplete.py "$(cd ../../docs/modules && pwd)" "$W/work"

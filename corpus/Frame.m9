@@ -100,25 +100,25 @@ PROCEDURE New (VAR pool: POOL ; rows: I64) : PTR Fr IN pool
   (* rows < 0 refuses; 0 is a legal empty frame *)
 
 PROCEDURE AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF F64 ; miss: F64)
+                  RO KEPT v: SLICE OF F64 ; miss: F64)
   RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF F32 ; miss: F32)
+                  RO KEPT v: SLICE OF F32 ; miss: F32)
   RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF I64 ; miss: I64)
+                  RO KEPT v: SLICE OF I64 ; miss: I64)
   RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF I32 ; miss: I32)
+                  RO KEPT v: SLICE OF I32 ; miss: I32)
   RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF I16 ; miss: I16)
+                  RO KEPT v: SLICE OF I16 ; miss: I16)
   RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                    RO v: SLICE OF BYTE ; miss: BYTE)
+                    RO KEPT v: SLICE OF BYTE ; miss: BYTE)
   RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                    RO v: SLICE OF BOOL)
+                    RO KEPT v: SLICE OF BOOL)
   RAISES Faults.SizeError, Duplicate ;
 PROCEDURE AddStrs (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
                    RO KEPT v: SLICE OF STR)
@@ -580,7 +580,7 @@ BEGIN
 END Copy ;
 
 PROCEDURE AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF F64 ; miss: F64)
+                  RO KEPT v: SLICE OF F64 ; miss: F64)
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
@@ -592,7 +592,7 @@ BEGIN
 END AddF64 ;
 
 PROCEDURE AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF F32 ; miss: F32)
+                  RO KEPT v: SLICE OF F32 ; miss: F32)
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
@@ -604,7 +604,7 @@ BEGIN
 END AddF32 ;
 
 PROCEDURE AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF I64 ; miss: I64)
+                  RO KEPT v: SLICE OF I64 ; miss: I64)
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
@@ -616,7 +616,7 @@ BEGIN
 END AddI64 ;
 
 PROCEDURE AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF I32 ; miss: I32)
+                  RO KEPT v: SLICE OF I32 ; miss: I32)
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
@@ -628,7 +628,7 @@ BEGIN
 END AddI32 ;
 
 PROCEDURE AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                  RO v: SLICE OF I16 ; miss: I16)
+                  RO KEPT v: SLICE OF I16 ; miss: I16)
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
@@ -640,7 +640,7 @@ BEGIN
 END AddI16 ;
 
 PROCEDURE AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                    RO v: SLICE OF BYTE ; miss: BYTE)
+                    RO KEPT v: SLICE OF BYTE ; miss: BYTE)
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
@@ -652,7 +652,7 @@ BEGIN
 END AddBytes ;
 
 PROCEDURE AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ;
-                    RO v: SLICE OF BOOL)
+                    RO KEPT v: SLICE OF BOOL)
   RAISES Faults.SizeError, Duplicate =
 VAR c : Col ;
 BEGIN
@@ -839,6 +839,12 @@ BEGIN
       AddStrs (pool, f, Csv.Name (pool, t, c), texts)
     | Skip :
     | Real64 :
+      (* this arm was EMPTY until 2026-10-08: a column the caller
+         declared Real64 was parsed by Csv and dropped by the frame
+         without a word -- found by an example notebook whose frame
+         had two columns of three *)
+      AddF64 (pool, f, Csv.Name (pool, t, c), Csv.ColF64 (t, c),
+              NaN)
     END
   END ;
   RETURN f

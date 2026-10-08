@@ -228,6 +228,35 @@ int tls_connect (const char *host, int port)
   return h;
 }
 
+/* TLS over a socket the caller already has and has already talked on
+   -- STARTTLS (SMTP's 587, RFC 3207): the handshake alone, the fd then
+   owned by the handle as after tls_connect, and closed by tls_close.
+   -1 leaves the fd the caller's, still open.                        */
+int tls_wrap (int fd, const char *host)
+{
+  int h;
+  SSL *ssl;
+
+  ctx_init ();
+  if (shared_ctx == NULL || fd < 0) return -1;
+  h = claim ();
+  if (h < 0) return -1;
+  ssl = SSL_new (shared_ctx);
+  if (ssl == NULL) { release (h); return -1; }
+  SSL_set_fd (ssl, fd);
+  SSL_set_tlsext_host_name (ssl, host);
+  SSL_set1_host (ssl, host);
+  if (SSL_connect (ssl) != 1)
+  {
+    SSL_free (ssl);
+    release (h);
+    return -1;
+  }
+  slots[h].ssl = ssl;
+  slots[h].fd = fd;
+  return h;
+}
+
 int64_t tls_read (int h, void *buf, size_t n)
 {
   int got;
@@ -263,4 +292,55 @@ int tls_close (int h)
   if (ssl != NULL) { SSL_shutdown (ssl); SSL_free (ssl); }
   if (fd >= 0) tcp_close (fd);
   return 0;
+}
+
+/* ---- RSA signature verification (2026-10-07; corpus/Rsa.m9) ----------
+   Here and not in a file of its own because this file IS the OpenSSL
+   surface of the runtime: a link line that has tlsshim has libcrypto.
+   One call, no state: the key's DER is parsed per verification
+   (microseconds against OpenSSL's own ~10 us for the modular
+   exponentiation).  Written after an RSA verifier in M9 measured 70x
+   slower than this (docs/library-plan-2.md, section 13).
+
+   der, dlen     SubjectPublicKeyInfo (pkcs1_key 0) or RSAPublicKey
+                 (pkcs1_key 1)
+   digest, hlen  the SHA-256 of the message, 32 octets
+   sig, slen     the signature
+   pss           0 for PKCS#1 v1.5, 1 for PSS with MGF1-SHA-256 and a
+                 32-octet salt
+   answers       1 verified, 0 not (a wrong signature, length or
+                 range), -1 the key could not be read, -2 the digest
+                 length or scheme is not one this takes                 */
+#include <openssl/evp.h>
+#include <openssl/rsa.h>
+#include <openssl/x509.h>
+
+int m9_rsa_verify (const unsigned char *der, size_t dlen, int pkcs1_key,
+                   const unsigned char *digest, size_t hlen,
+                   const unsigned char *sig, size_t slen, int pss)
+{
+  EVP_PKEY *key = NULL;
+  EVP_PKEY_CTX *ctx = NULL;
+  const unsigned char *p = der;
+  int rc = 0;
+
+  if (hlen != 32 || (pss != 0 && pss != 1)) return -2;
+  if (pkcs1_key)
+    key = d2i_PublicKey (EVP_PKEY_RSA, NULL, &p, (long) dlen);
+  else
+    key = d2i_PUBKEY (NULL, &p, (long) dlen);
+  if (key == NULL) return -1;
+  ctx = EVP_PKEY_CTX_new (key, NULL);
+  if (ctx == NULL) { EVP_PKEY_free (key); return -1; }
+  if (EVP_PKEY_verify_init (ctx) <= 0 ||
+      EVP_PKEY_CTX_set_signature_md (ctx, EVP_sha256 ()) <= 0 ||
+      EVP_PKEY_CTX_set_rsa_padding (ctx, pss ? RSA_PKCS1_PSS_PADDING : RSA_PKCS1_PADDING) <= 0 ||
+      (pss && (EVP_PKEY_CTX_set_rsa_mgf1_md (ctx, EVP_sha256 ()) <= 0 ||
+               EVP_PKEY_CTX_set_rsa_pss_saltlen (ctx, 32) <= 0)))
+    rc = -1;
+  else
+    rc = EVP_PKEY_verify (ctx, sig, slen, digest, hlen) == 1 ? 1 : 0;
+  EVP_PKEY_CTX_free (ctx);
+  EVP_PKEY_free (key);
+  return rc;
 }

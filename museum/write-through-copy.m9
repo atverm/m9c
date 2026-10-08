@@ -1,0 +1,25 @@
+(* EXPECT-ERROR: cannot write through t, which holds a string literal *)
+(* The copy of read-only storage.  Par 2.4's rule of 2026-10-01 is
+   built at the CALL -- `Up ('abc')` with `s[0] := 'X'` inside is
+   refused -- and the checker said so itself: "what it does not
+   follow is the copy".  Measured the same day and left standing:
+   `t := 'abc' ; t[0] := 'X'` passed both checkers, compiled, and
+   died with SIGSEGV writing into the program's read-only data.  A
+   checked language that segfaults is the museum's first exhibit
+   (write-through-literal.m9); this is its second door, closed
+   2026-10-08: a name given read-only storage holds it for the whole
+   procedure. *)
+MODULE Copy ;
+IMPORT Io ;
+PROCEDURE Shout () : STR RAISES IndexError =
+VAR t : STR ;
+BEGIN
+  t := 'abc' ;
+  t[0] := 'A' ;
+  RETURN t
+END Shout ;
+BEGIN
+  Io.WriteLine (Shout ())
+EXCEPT
+| IndexError : Io.WriteLine ('index')
+END Copy.

@@ -1,0 +1,18 @@
+(* EXPECT: undeclared retention: borrowed p reaches module state -- declare KEPT p (par 4.1) *)
+(* A pointer-bearing RECORD handed by VALUE and kept: `procs[n] := p'
+   stores the caller's strings (the record's fields view them) in
+   module state, and until 2026-10-08 only a slice or pointer
+   parameter stored so was a retention the checker saw (the owed
+   item named Sem.AddProc).  Write KEPT p. *)
+MODULE m ;
+TYPE Info = RECORD name : STR ; arity : I64 END ;
+VAR
+  procs : SLICE OF Info ;
+  n : I64 ;
+PROCEDURE Add (p: Info) RAISES IndexError =
+BEGIN
+  procs[n] := p ;
+  n := n + 1
+END Add ;
+BEGIN
+END m.

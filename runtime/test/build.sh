@@ -524,8 +524,16 @@ gcc -std=c11 -Wall -Wextra -Werror -Wno-unused-label -Wno-unused-parameter \
 [ "$(./shareuse_test)" = "made 3
 Empty raised, handled
 copied 3
-peeked 3" ] || { echo "FAIL: a raising call's answer was stored, or a binder lost to a module variable"; ./shareuse_test; exit 1; }
-echo "PASS (4 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable"
+peeked 3
+used 10
+Empty raised before Use ran
+narrowed
+ValueRange on narrowing
+big
+grid 2x3 [1,2]=7
+IndexError on GRID
+bessel" ] || { echo "FAIL: a raising call's answer was stored, a binder lost to a module variable, a nested raising call ran its caller, F32 of a huge double did not raise, a U64 literal past 2^63 was wrong, GRID over a slice misread it, or a module variable named y0 collided with libm"; ./shareuse_test; exit 1; }
+echo "PASS (12 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable; a raising argument is guarded before the enclosing call; F32 of a huge double raises; a U64 literal past 2^63 reads; GRID over a slice indexes row-major and refuses a wrong extent; a module variable named like a Bessel function is escaped"
 }
 
 # Http's URL fetcher, against a local fixture server.  IN THE SUITE

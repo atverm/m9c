@@ -360,6 +360,13 @@ reads `[' as an aggregate nowhere else -- so
 subscript.  docs/plan-0.14.md stage 2a,
 2026-10-01
 
+### CONST NGridOf
+
+GRID (s, n0, ..., nR): a grid of rank R laid
+over a slice's storage (par 2.2.1); kids[0]
+the slice, the rest the extents, so the rank
+is nkids - 1.  2026-10-08
+
 ### TYPE Kid
 
 named so NEW can say it;

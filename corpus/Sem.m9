@@ -132,15 +132,12 @@ TYPE
     fromDef, hasBody : BOOL ;
   END ;
 
-  Edge = RECORD
-    caller : STR ;
-    callees : SLICE OF STR ;
-  END ;
-
   Binding = RECORD
     name, mode : STR ;
     ty : Ast.Kid ;
     ro : BOOL ;                (* a variable declared `VAR RO' *)
+    roFrom : STR ;             (* read-only storage it was given, or '' *)
+    roLine : I64 ;             (* by the assignment at this line *)
   END ;
 
   VariantInfo = RECORD
@@ -167,6 +164,8 @@ TYPE
                                      stays one across a module edge *)
     ncns : I64 ;
     exNames : SLICE OF STR ;      (* EXCEPTION declarations *)
+    exDecls : SLICE OF AKid ;     (* ... and their nodes, for a
+                                     handler's binder types *)
     nexc : I64 ;
     vrNames : SLICE OF STR ;      (* the definition's VARs, which an
                                      importer reads and writes as
@@ -183,6 +182,14 @@ VAR
   pool : POOL ;
   mods : SLICE OF ModuleInfo ;
   nmods : I64 ;
+  impB : SLICE OF STR ;      (* CheckImports: the binders in scope *)
+  nimpB : I64 ;
+  roFresh : SLICE OF STR ;   (* RoSeed: `name.field' paths of a marked record
+                                copy given storage that is NOT read-only *)
+  nroFresh : I64 ;
+  mroName, mroFrom : SLICE OF STR ;   (* ModRoSeed: module variables given *)
+  mroLine : SLICE OF I64 ;            (* read-only storage, and where *)
+  nmro : I64 ;
   errs : SLICE OF STR ;
   nerrs : I64 ;
   ledger : SLICE OF STR ;
@@ -202,14 +209,12 @@ VAR
   curRoot : PTR Ast.Node ;     (* the file CheckFile is checking *)
   scope : SLICE OF Binding ;
   nscope : I64 ;
+  resolvedIn : I64 ;   (* the module (index into mods) ResolveType's last
+                          lookup ended in; -1 when the node needed none *)
   fromMap : SLICE OF Binding ;
   nfrom : I64 ;
-  graph : SLICE OF Edge ;
-  ngraph : I64 ;
   calls : SLICE OF STR ;
   ncalls : I64 ;
-  roots : SLICE OF STR ;
-  nroots : I64 ;
   raised : SLICE OF Binding ;
   nraised : I64 ;
   handled : SLICE OF STR ;
@@ -316,9 +321,7 @@ BEGIN
   ledger := NEW (pool, STR, 8) ;
   scope := NEW (pool, Binding, 32) ;
   fromMap := NEW (pool, Binding, 8) ;
-  graph := NEW (pool, Edge, 32) ;
   calls := NEW (pool, STR, 16) ;
-  roots := NEW (pool, STR, 8) ;
   raised := NEW (pool, Binding, 8) ;
   handled := NEW (pool, STR, 8) ;
   escName := NEW (pool, STR, 16) ;
@@ -695,7 +698,7 @@ BEGIN
   RETURN DynStr.View (d)
 END SigOf ;
 
-PROCEDURE AddProc (m: I64 ; p: ProcInfo) =
+PROCEDURE AddProc (m: I64 ; KEPT p: ProcInfo) =
 VAR
   nb : SLICE OF ProcInfo ;
   i : I64 ;
@@ -791,21 +794,80 @@ BEGIN
   RETURN FALSE
 END ExportsVar ;
 
-PROCEDURE AddExc (m: I64 ; RO KEPT n: STR) =
+PROCEDURE AddExc (m: I64 ; RO KEPT n: STR ; KEPT decl: Ast.Kid) =
 VAR
   ns : SLICE OF STR ;
+  nd : SLICE OF AKid ;
   i : I64 ;
 BEGIN
   IF mods[m].nexc = LEN (mods[m].exNames) THEN
     ns := NEW (pool, STR, 2 * LEN (mods[m].exNames) + 16) ;
+    nd := NEW (pool, AKid, 2 * LEN (mods[m].exNames) + 16) ;
     FOR i := 0 TO mods[m].nexc - 1 DO
-      ns[i] := mods[m].exNames[i]
+      ns[i] := mods[m].exNames[i] ;
+      nd[i] := mods[m].exDecls[i]
     END ;
-    mods[m].exNames := ns
+    mods[m].exNames := ns ;
+    mods[m].exDecls := nd
   END ;
   mods[m].exNames[mods[m].nexc] := n ;
+  mods[m].exDecls[mods[m].nexc] := decl ;
   mods[m].nexc := mods[m].nexc + 1
 END AddExc ;
+
+(* the EXCEPTION declaration a handler names, and the module that
+   declares it: qualified, that module; bare, the predeclared ones have
+   none, else the current module first, then any (as ExcKnown finds
+   it) *)
+PROCEDURE ExcDeclOf (RO qual: STR ; RO nm: STR ; VAR owner: STR) : Ast.Kid =
+VAR m, i, first : I64 ;
+BEGIN
+  owner := '' ;
+  IF LEN (qual) > 0 THEN
+    m := FindMod (qual) ;
+    IF m < 0 THEN RETURN NONE END ;
+    FOR i := 0 TO mods[m].nexc - 1 DO
+      IF Text.Eq (mods[m].exNames[i], nm) THEN owner := qual ; RETURN mods[m].exDecls[i] END
+    END ;
+    RETURN NONE
+  END ;
+  first := FindMod (curMod) ;
+  IF first >= 0 THEN
+    FOR i := 0 TO mods[first].nexc - 1 DO
+      IF Text.Eq (mods[first].exNames[i], nm) THEN owner := curMod ; RETURN mods[first].exDecls[i] END
+    END
+  END ;
+  FOR m := 0 TO nmods - 1 DO
+    FOR i := 0 TO mods[m].nexc - 1 DO
+      IF Text.Eq (mods[m].exNames[i], nm) THEN owner := mods[m].name ; RETURN mods[m].exDecls[i] END
+    END
+  END ;
+  RETURN NONE
+END ExcDeclOf ;
+
+(* the type of the k-th payload field of an EXCEPTION declaration,
+   qualified in its module so that it resolves wherever the handler
+   is; NONE past the fields or for a bare declaration *)
+PROCEDURE ExcFieldType (decl: Ast.Kid ; RO KEPT owner: STR ; k: I64) : Ast.Kid =
+VAR g, j, ix : I64 ;
+BEGIN
+  IF decl IS SOME xd THEN
+    IF xd.kids[0] IS SOME fs THEN
+      ix := 0 ;
+      FOR g := 0 TO fs.nkids - 1 DO
+        IF fs.kids[g] IS SOME grp THEN
+          IF grp.kids[0] IS SOME ids THEN
+            FOR j := 0 TO ids.nkids - 1 DO
+              IF ix = k THEN RETURN QualifiedIn (grp.kids[1], owner) END ;
+              ix := ix + 1
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN NONE
+END ExcFieldType ;
 
 PROCEDURE HasExcIn (m: I64 ; RO n: STR) : BOOL =
 VAR i : I64 ;
@@ -914,7 +976,7 @@ BEGIN
         (* the declared exceptions: RAISE/RAISES/handler may only
            cite a name the reader can find *)
         FOR j := 0 TO d.nkids - 1 DO
-          IF d.kids[j] IS SOME xd THEN AddExc (m, xd.a) END
+          IF d.kids[j] IS SOME xd THEN AddExc (m, xd.a, SOME (xd)) END
         END
       ELSIF d.kind = Ast.NVarSection AND u.kind = Ast.NDefinition THEN
         (* the definition's variables are the module's exports: an
@@ -1028,14 +1090,21 @@ BEGIN
   IF LEN (modName) > 0 THEN
     m := FindMod (modName) ;
     IF m < 0 THEN RETURN NONE END ;
+    resolvedIn := m ;
     RETURN FindTypeIn (m, typeName)
   END ;
   m := FindMod (curMod) ;
   IF m >= 0 THEN
-    IF FindTypeIn (m, typeName) IS SOME t THEN RETURN SOME (t) END
+    IF FindTypeIn (m, typeName) IS SOME t THEN
+      resolvedIn := m ;
+      RETURN SOME (t)
+    END
   END ;
   FOR i := 0 TO nmods - 1 DO
-    IF FindTypeIn (i, typeName) IS SOME t2 THEN RETURN SOME (t2) END
+    IF FindTypeIn (i, typeName) IS SOME t2 THEN
+      resolvedIn := i ;
+      RETURN SOME (t2)
+    END
   END ;
   RETURN NONE
 END LookupTypeName ;
@@ -1047,12 +1116,12 @@ VAR
 BEGIN
   cur := t ;
   depth := 0 ;
+  resolvedIn := -1 ;
   LOOP
     IF cur IS SOME n THEN
       IF n.kind # Ast.NQualident THEN RETURN cur END ;
       IF depth >= MaxDepth THEN RETURN NONE END ;
       IF LEN (n.b) = 0 AND Text.Eq (n.a, 'STR') THEN RETURN strNode END ;
-      cur := LookupTypeName (n.b, n.a) ;
       IF LEN (n.b) = 0 THEN cur := LookupTypeName ('', n.a)
       ELSE cur := LookupTypeName (n.a, n.b) END ;
       depth := depth + 1
@@ -1061,6 +1130,14 @@ BEGIN
     END
   END
 END ResolveType ;
+
+(* the name of the module ResolveType's last lookup ended in, '' for
+   none -- a module-pool string, so it may be kept anywhere *)
+PROCEDURE ResolvedMod () : STR =
+BEGIN
+  IF resolvedIn < 0 THEN RETURN '' END ;
+  RETURN mods[resolvedIn].name
+END ResolvedMod ;
 
 (* Three lists of type names, each a constant table (report par
    2.2.4) and a search; chains of Text.Eq until 2026-10-01. *)
@@ -1313,6 +1390,8 @@ BEGIN
   scope[nscope].ty := t ;
   scope[nscope].mode := mode ;
   scope[nscope].ro := FALSE ;
+  scope[nscope].roFrom := '' ;
+  scope[nscope].roLine := 0 ;
   nscope := nscope + 1
 END ScopeAdd ;
 
@@ -1324,6 +1403,17 @@ BEGIN
   IF i < 0 THEN RETURN FALSE END ;
   RETURN scope[i].ro
 END ScopeRo ;
+
+(* the read-only storage the name was given by an assignment in this
+   procedure ('a string literal (line 12)'), or '' *)
+PROCEDURE ScopeRoFrom (RO nm: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  i := ScopeFind (nm) ;
+  IF i < 0 THEN RETURN '' END ;
+  IF LEN (scope[i].roFrom) = 0 THEN RETURN '' END ;
+  RETURN Cat (scope[i].roFrom, Cat (' (line ', Cat (ItoA (scope[i].roLine), ')')))
+END ScopeRoFrom ;
 
 PROCEDURE ScopeFind (RO nm: STR) : I64 =
 VAR i : I64 ;
@@ -1376,7 +1466,7 @@ BEGIN
 END AddParamsOf ;
 
 PROCEDURE AddVarsOf (holder: PTR Ast.Node ; RO KEPT mode: STR) =
-VAR a, b, c : I64 ;
+VAR a, b, c, k : I64 ;
 BEGIN
   FOR a := 0 TO holder.nkids - 1 DO
     IF holder.kids[a] IS SOME sect THEN
@@ -1387,7 +1477,14 @@ BEGIN
               FOR c := 0 TO ids.nkids - 1 DO
                 IF ids.kids[c] IS SOME id THEN
                   ScopeAdd (id.a, vd.kids[1], mode) ;
-                  scope[nscope - 1].ro := vd.f3
+                  scope[nscope - 1].ro := vd.f3 ;
+                  IF Text.Eq (mode, ModeModule) THEN
+                    k := MroFind (id.a) ;
+                    IF k >= 0 THEN
+                      scope[nscope - 1].roFrom := mroFrom[k] ;
+                      scope[nscope - 1].roLine := mroLine[k]
+                    END
+                  END
                 END
               END
             END
@@ -1554,7 +1651,25 @@ END IsReadonlyT ;
    pointer, or into slice storage -- and diagnoses the writes the
    borrow rules refuse on the way.  Both jobs in one walk, because
    they need the same selector chain.                               *)
+PROCEDURE RoRefreshed (d: PTR Ast.Node) : BOOL ;
+
+(* CheckWrite proper, below: whether the write lands beyond the frame
+   -- and a write THROUGH a name given read-only storage (RoSeed) is
+   refused exactly when it does: `t[0] := 'X'' for a slice, `t.s[0]'
+   or `t.p.n' for a record copy, never `t.n := 5', which writes the
+   copy itself (2026-10-08). *)
 PROCEDURE CheckWrite (d: PTR Ast.Node ; RO ctx: STR) : BOOL =
+VAR beyond : BOOL ;
+BEGIN
+  beyond := CheckWrite0 (d, ctx) ;
+  IF beyond AND LEN (ScopeRoFrom (d.a)) > 0 AND NOT RoRefreshed (d) THEN
+    ErrN (d, ctx, Cat (Cat (Cat ('cannot write through ', d.a),
+      ', which holds '), Cat (ScopeRoFrom (d.a), ' (par 2.4)')))
+  END ;
+  RETURN beyond
+END CheckWrite ;
+
+PROCEDURE CheckWrite0 (d: PTR Ast.Node ; RO ctx: STR) : BOOL =
 VAR
   j : I64 ;
   declN, res : Ast.Kid ;
@@ -1661,7 +1776,7 @@ BEGIN
     END
   END ;
   RETURN beyond
-END CheckWrite ;
+END CheckWrite0 ;
 
 (* the base name a stored reference is borrowed from, when the source
    is a plain designator, possibly under SOME or parentheses *)
@@ -3574,6 +3689,407 @@ END ConstArg ;
    SIGSEGV until 2026-10-01 (museum/write-through-literal.m9).  The
    caller has established that the parameter is neither VAR, OWN nor
    RO. *)
+(* the name of the RO FIELD a designator ENDS at (`r.s' with `RO s:
+   STR' in r's record), resolved as CheckWrite resolves a write --
+   through pointers, fields, elements -- and '' when it ends elsewhere
+   or the way is unknown.  An RO field holds a view of storage someone
+   else owns (par 2.4): what it is copied into may not be written
+   through. *)
+PROCEDURE RoFieldOf (d: PTR Ast.Node) : STR =
+VAR
+  j : I64 ;
+  declN, res : Ast.Kid ;
+  tmod : STR ;
+  deref : BOOL ;
+BEGIN
+  IF d.nkids = 0 THEN RETURN '' END ;
+  tmod := '' ;
+  declN := ScopeType (d.a) ;
+  FOR j := 0 TO d.nkids - 1 DO
+    IF declN IS SOME dn0 THEN
+      NoteMod (declN, tmod) ;
+      res := ResolveType (declN) ;
+      LOOP
+        deref := FALSE ;
+        IF res IS SOME r0 THEN
+          IF r0.kind = Ast.NPtrType OR r0.kind = Ast.NSharedType THEN
+            deref := TRUE ;
+            declN := InMod (r0.kids[0], tmod) ;
+            NoteMod (declN, tmod) ;
+            res := ResolveType (declN)
+          END
+        END ;
+        IF NOT deref THEN EXIT END
+      END ;
+      IF res IS SOME r THEN
+        IF d.kids[j] IS SOME sel THEN
+          IF sel.kind = Ast.NSelField THEN
+            IF r.kind = Ast.NRecordType THEN
+              IF j = d.nkids - 1 AND FieldROOf (r, sel.a) THEN RETURN sel.a END ;
+              declN := InMod (FieldTypeOf (r, sel.a), tmod)
+            ELSE
+              RETURN ''
+            END
+          ELSIF sel.kind = Ast.NSelIndex THEN
+            IF r.kind = Ast.NGridType THEN declN := InMod (r.kids[1], tmod)
+            ELSIF r.kind = Ast.NSliceType THEN declN := InMod (r.kids[0], tmod)
+            ELSIF r.kind = Ast.NArrayType THEN declN := InMod (r.kids[1], tmod)
+            ELSE RETURN '' END
+          END
+        END
+      ELSE
+        RETURN ''
+      END
+    ELSE
+      RETURN ''
+    END
+  END ;
+  RETURN ''
+END RoFieldOf ;
+
+(* `the RO answer of F' when call E names a procedure whose result is
+   declared RO, else '' *)
+PROCEDURE RoAnswerOf (e: PTR Ast.Node) : STR =
+VAR
+  name : STR ;
+  found : BOOL ;
+  pr : ProcInfo ;
+BEGIN
+  IF e.kids[0] IS SOME dn THEN
+    IF dn.kind = Ast.NDesignator THEN
+      name := DesigName (dn) ;
+      pr := LookupProc (name, found) ;
+      IF found THEN
+        IF pr.node IS SOME pn THEN
+          IF pn.f3 THEN RETURN Cat ('the RO answer of ', name) END
+        END
+      END
+    END
+  END ;
+  RETURN ''
+END RoAnswerOf ;
+
+(* par 2.4, the copy: is the value of expression K read-only storage
+   -- a string literal, what an RO parameter or an RO variable views,
+   a CONST, or a name that was itself given such storage -- seen
+   through SLICE, VIEW and parentheses?  Answers what it is, or ''. *)
+PROCEDURE RoWhatOf (k: Ast.Kid) : STR =
+VAR
+  r : STR ;
+  i : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    (* the empty literal holds no storage: nothing can be written
+       through a slice of length 0, and `buf := ''' is how a STR is
+       given a known start (Xml.CharData, the one site measured) *)
+    IF e.kind = Ast.NString THEN
+      IF LEN (e.a) = 0 THEN RETURN '' END ;
+      RETURN 'a string literal'
+    END ;
+    IF e.kind = Ast.NSliceOf3 OR e.kind = Ast.NGridOf THEN
+      RETURN RoWhatOf (e.kids[0])
+    END ;
+    (* the answer of a function declared `: RO T' is read-only storage
+       lent onward (the report's `PROCEDURE G () : RO STR') *)
+    IF e.kind = Ast.NCallExpr THEN RETURN RoAnswerOf (e) END ;
+    IF e.kind = Ast.NDesignator AND e.nkids > 0 THEN
+      r := RoFieldOf (e) ;
+      IF LEN (r) > 0 THEN RETURN Cat ('the RO field ', r) END
+    END ;
+    r := EscRootOf (k) ;
+    IF LEN (r) = 0 THEN RETURN '' END ;
+    IF Text.Eq (ScopeMode (r), ModeRo) THEN
+      RETURN Cat ('the RO parameter ', r)
+    END ;
+    IF ScopeRo (r) THEN RETURN Cat ('the RO variable ', r) END ;
+    i := ScopeFind (r) ;
+    IF i >= 0 THEN
+      IF LEN (scope[i].roFrom) > 0 THEN RETURN scope[i].roFrom END
+    END ;
+    IF IsConstHere (r) THEN RETURN Cat ('the CONST ', r) END
+  END ;
+  RETURN ''
+END RoWhatOf ;
+
+(* one pass over the assignments under K: a bare local or parameter
+   of slice or grid type given read-only storage is marked with what
+   it holds and where.  Answers whether a mark was added, so that
+   `t := s ; u := t' settles in a second pass. *)
+PROCEDURE RoSeedWalk (k: Ast.Kid) : BOOL =
+VAR
+  i, j : I64 ;
+  changed : BOOL ;
+  what, m, ty : STR ;
+BEGIN
+  changed := FALSE ;
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NAssign THEN
+      IF e.kids[0] IS SOME lhs THEN
+        IF lhs.kind = Ast.NDesignator AND lhs.nkids = 0 THEN
+          i := ScopeFind (lhs.a) ;
+          IF i >= 0 THEN
+            IF LEN (scope[i].roFrom) = 0 THEN
+              m := scope[i].mode ;
+              IF Text.Eq (m, ModeLocal) OR Text.Eq (m, ModeVal) OR
+                 Text.Eq (m, ModeVar) OR Text.Eq (m, ModeOwn) OR
+                 Text.Eq (m, ModeModule) THEN
+                ty := CanonT (scope[i].ty, 0) ;
+                (* a record or pointer that holds a reference copies
+                   the VIEW: `t := r' with r an RO record parameter,
+                   then `t.s[0] := 'X'' (2026-10-08, the last of
+                   decision 33's named gaps) *)
+                IF Text.StartsWith (ty, 'SLICE OF') OR
+                   Text.StartsWith (ty, 'GRID ') OR
+                   PtrBearing (scope[i].ty, 0) THEN
+                  what := RoWhatOf (e.kids[1]) ;
+                  IF LEN (what) > 0 THEN
+                    scope[i].roFrom := what ;
+                    scope[i].roLine := e.line ;
+                    changed := TRUE
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END ;
+    FOR j := 0 TO e.nkids - 1 DO
+      IF RoSeedWalk (e.kids[j]) THEN changed := TRUE END
+    END
+  END ;
+  RETURN changed
+END RoSeedWalk ;
+
+(* ---- par 2.4, the copy, for MODULE VARIABLES (2026-10-08, the same
+   day's second half).  RoSeed reads one procedure; a module variable
+   given a literal in Init and written through in Up is two
+   procedures.  Before the bodies, every assignment in the unit --
+   each procedure's and the module body's -- whose left side is a bare
+   module variable of slice or grid type, not shadowed by the
+   enclosing procedure's own declarations, and whose right side is a
+   string literal, a CONST, a marked module variable or a SLICE of one
+   is recorded here; AddVarsOf hands the mark to every scope the
+   variable enters.  What an RO parameter views needs that procedure's
+   scope and is marked by RoSeedWalk for that procedure alone. ---- *)
+PROCEDURE MroFind (RO nm: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nmro - 1 DO
+    IF Text.Eq (mroName[i], nm) THEN RETURN i END
+  END ;
+  RETURN -1
+END MroFind ;
+
+PROCEDURE MroAdd (RO KEPT nm: STR ; RO KEPT what: STR ; line: I64) =
+VAR
+  ns, nf : SLICE OF STR ;
+  nl : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF nmro = LEN (mroName) THEN
+    ns := NEW (pool, STR, 2 * LEN (mroName) + 16) ;
+    nf := NEW (pool, STR, 2 * LEN (mroName) + 16) ;
+    nl := NEW (pool, I64, 2 * LEN (mroName) + 16) ;
+    FOR i := 0 TO nmro - 1 DO
+      ns[i] := mroName[i] ; nf[i] := mroFrom[i] ; nl[i] := mroLine[i]
+    END ;
+    mroName := ns ; mroFrom := nf ; mroLine := nl
+  END ;
+  mroName[nmro] := nm ;
+  mroFrom[nmro] := what ;
+  mroLine[nmro] := line ;
+  nmro := nmro + 1
+END MroAdd ;
+
+(* the module variables of unit u (and of its definition): name and
+   declared type *)
+PROCEDURE ModVarType (root: PTR Ast.Node ; u: PTR Ast.Node ; RO nm: STR) : Ast.Kid =
+VAR i, a, b, c : I64 ;
+BEGIN
+  FOR i := 0 TO root.nkids - 1 DO
+    IF root.kids[i] IS SOME un THEN
+      IF Text.Eq (un.a, u.a) THEN
+        FOR a := 0 TO un.nkids - 1 DO
+          IF un.kids[a] IS SOME sect THEN
+            IF sect.kind = Ast.NVarSection THEN
+              FOR b := 0 TO sect.nkids - 1 DO
+                IF sect.kids[b] IS SOME vd THEN
+                  IF vd.kids[0] IS SOME ids THEN
+                    FOR c := 0 TO ids.nkids - 1 DO
+                      IF ids.kids[c] IS SOME id THEN
+                        IF Text.Eq (id.a, nm) THEN RETURN vd.kids[1] END
+                      END
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN NONE
+END ModVarType ;
+
+(* read-only storage with no procedure scope to ask: a literal, a
+   module CONST, a marked module variable, a SLICE of one *)
+PROCEDURE ModRoWhat (k: Ast.Kid ; scope: Ast.Kid) : STR =
+VAR
+  r : STR ;
+  i : I64 ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NString THEN
+      IF LEN (e.a) = 0 THEN RETURN '' END ;
+      RETURN 'a string literal'
+    END ;
+    IF e.kind = Ast.NSliceOf3 OR e.kind = Ast.NGridOf THEN
+      RETURN ModRoWhat (e.kids[0], scope)
+    END ;
+    IF e.kind = Ast.NCallExpr THEN RETURN RoAnswerOf (e) END ;
+    r := EscRootOf (k) ;
+    IF LEN (r) = 0 THEN RETURN '' END ;
+    IF ProcDeclares (scope, r) THEN RETURN '' END ;
+    i := MroFind (r) ;
+    IF i >= 0 THEN RETURN mroFrom[i] END ;
+    IF IsConstHere (r) THEN RETURN Cat ('the CONST ', r) END
+  END ;
+  RETURN ''
+END ModRoWhat ;
+
+PROCEDURE ModRoWalk (root: PTR Ast.Node ; u: PTR Ast.Node ; scope: Ast.Kid ;
+                     k: Ast.Kid) : BOOL =
+VAR
+  j : I64 ;
+  changed : BOOL ;
+  what, ty : STR ;
+BEGIN
+  changed := FALSE ;
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NAssign THEN
+      IF e.kids[0] IS SOME lhs THEN
+        IF lhs.kind = Ast.NDesignator AND lhs.nkids = 0 THEN
+          IF MroFind (lhs.a) < 0 AND NOT ProcDeclares (scope, lhs.a) THEN
+            ty := CanonT (ModVarType (root, u, lhs.a), 0) ;
+            IF Text.StartsWith (ty, 'SLICE OF') OR Text.StartsWith (ty, 'GRID ') THEN
+              what := ModRoWhat (e.kids[1], scope) ;
+              IF LEN (what) > 0 THEN
+                MroAdd (lhs.a, what, e.line) ;
+                changed := TRUE
+              END
+            END
+          END
+        END
+      END
+    END ;
+    FOR j := 0 TO e.nkids - 1 DO
+      IF e.kind = Ast.NProcDecl OR e.kind = Ast.NModBody THEN
+        IF ModRoWalk (root, u, k, e.kids[j]) THEN changed := TRUE END
+      ELSE
+        IF ModRoWalk (root, u, scope, e.kids[j]) THEN changed := TRUE END
+      END
+    END
+  END ;
+  RETURN changed
+END ModRoWalk ;
+
+PROCEDURE ModRoSeed (root: PTR Ast.Node ; u: PTR Ast.Node) =
+VAR n : I64 ;
+BEGIN
+  nmro := 0 ;
+  IF LEN (mroName) = 0 THEN
+    mroName := NEW (pool, STR, 16) ;
+    mroFrom := NEW (pool, STR, 16) ;
+    mroLine := NEW (pool, I64, 16)
+  END ;
+  n := 0 ;
+  WHILE ModRoWalk (root, u, NONE, SOME (u)) AND n < 8 DO n := n + 1 END
+END ModRoSeed ;
+
+(* A FIELD of a record copy given storage that is not read-only --
+   `d := c ; d.defs := NEW (pool, TermDef, n) ; d.defs[i] := ...'
+   (Rdf.CopyCtx) -- is REFRESHED: a write that lands beyond the copy
+   through that field writes the fresh storage, not the view the copy
+   took.  Recorded as the path `d.defs' (every selector a field); like
+   the mark itself, for the whole procedure and not flow-sensitive. *)
+PROCEDURE RoFreshWalk (k: Ast.Kid) =
+VAR
+  i, j : I64 ;
+  p : STR ;
+  nf : SLICE OF STR ;
+  fields : BOOL ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NAssign THEN
+      IF e.kids[0] IS SOME lhs THEN
+        IF lhs.kind = Ast.NDesignator AND lhs.nkids > 0 AND
+           LEN (ScopeRoFrom (lhs.a)) > 0 THEN
+          fields := TRUE ;
+          FOR j := 0 TO lhs.nkids - 1 DO
+            IF lhs.kids[j] IS SOME sel THEN
+              IF sel.kind # Ast.NSelField THEN fields := FALSE END
+            END
+          END ;
+          IF fields AND LEN (RoWhatOf (e.kids[1])) = 0 THEN
+            p := DesigPath (lhs) ;
+            IF nroFresh = LEN (roFresh) THEN
+              nf := NEW (pool, STR, 2 * nroFresh) ;
+              FOR i := 0 TO nroFresh - 1 DO nf[i] := roFresh[i] END ;
+              roFresh := nf
+            END ;
+            roFresh[nroFresh] := Text.Keep (pool, p) ;
+            nroFresh := nroFresh + 1
+          END
+        END
+      END
+    END ;
+    FOR i := 0 TO e.nkids - 1 DO RoFreshWalk (e.kids[i]) END
+  END
+END RoFreshWalk ;
+
+(* does the designator write through a refreshed field (RoFreshWalk)?
+   `d.defs[i]' and `d.defs.x' are, `d.other[i]' is not. *)
+PROCEDURE RoRefreshed (d: PTR Ast.Node) : BOOL =
+VAR
+  i : I64 ;
+  p, f : STR ;
+BEGIN
+  p := DesigPath (d) ;
+  FOR i := 0 TO nroFresh - 1 DO
+    f := roFresh[i] ;
+    IF Text.StartsWith (p, f) THEN
+      IF LEN (p) = LEN (f) OR p[LEN (f)] = '.' OR p[LEN (f)] = '[' THEN
+        RETURN TRUE
+      END
+    END
+  END ;
+  RETURN FALSE
+END RoRefreshed ;
+
+(* par 2.4, the copy (2026-10-08): a local or parameter of slice or
+   grid type that an assignment anywhere in the procedure gives
+   read-only storage holds it for the whole procedure -- a write
+   through the name and a lend of it to a writable parameter are
+   refused by CheckWrite and RoArg, naming the storage and the
+   assignment's line.  Whole-procedure and not flow-sensitive, as RO
+   itself is a property of a declaration: `t := s ; t[0] := 'X'' with
+   s read-only was accepted and, for a literal, died with SIGSEGV
+   until then (museum/write-through-copy.m9).  Not followed: a
+   module variable (its assignments are in other procedures), a
+   record holding a slice, a call that answers a view without RO. *)
+PROCEDURE RoSeed (k: Ast.Kid) =
+VAR n : I64 ;
+BEGIN
+  n := 0 ;
+  nroFresh := 0 ;
+  IF LEN (roFresh) = 0 THEN roFresh := NEW (pool, STR, 32) END ;
+  WHILE RoSeedWalk (k) AND n < 8 DO n := n + 1 END ;
+  RoFreshWalk (k)
+END RoSeed ;
+
+
 PROCEDURE RoArg (site: PTR Ast.Node ; RO ctx: STR ; RO name: STR ;
                  k: I64 ; an: Ast.Kid ; RO pTy: STR ; RO aTy: STR) =
 VAR what : STR ;
@@ -3590,9 +4106,19 @@ BEGIN
           what := Cat ('the RO parameter ', a.a)
         ELSIF ScopeRo (a.a) THEN
           what := Cat ('the RO variable ', a.a)
+        ELSIF LEN (ScopeRoFrom (a.a)) > 0 THEN
+          what := Cat (a.a, Cat (', which holds ', Cat (ScopeRoFrom (a.a), ',')))
         ELSIF IsConstHere (a.a) THEN
           what := Cat ('the CONST ', a.a)
+        ELSIF LEN (RoFieldOf (a)) > 0 THEN
+          (* an RO field lent onward (decision 21's gap, 2026-10-08) *)
+          what := Cat ('the RO field ', RoFieldOf (a))
         END
+      ELSIF a.kind = Ast.NCallExpr AND
+            (Text.StartsWith (aTy, 'SLICE OF') OR
+             Text.StartsWith (aTy, 'GRID ')) THEN
+        (* the answer of a function declared `: RO T', lent onward *)
+        what := RoAnswerOf (a)
       END
     END
   END ;
@@ -3878,6 +4404,63 @@ END AsQual ;
    in scope, HEAP, or a designator with selectors is a pool; a bare
    name that is not a variable, or Module.Name where Module is a
    module, is a type (docs/pool-elision-plan.md, rule 1). *)
+(* ---- a name a KNOWN module does not declare (2026-10-08) ----
+
+   The softness contract stands for the unknown: a bare type found
+   nowhere may be a missing IMPORT, a module the checker never
+   loaded says nothing.  But a type named in NEW that NO module
+   declares, a member that a LOADED module does not have, and a
+   bare name on the left of `:=' declared nowhere are typos, and
+   each rode through --check to surface as the GENERATOR's `unknown
+   name', without the M9 line (Xml's `NEW (pool, AttrsKids, 64)',
+   2026-10-07; `Math.Nosuch` found by --show, 2026-10-05; `x := 1`
+   with no x, 2026-10-04 -- the owed ledger's three).  The same
+   wording as the generator's, so a reader meets one message. *)
+
+PROCEDURE ModHasName (RO modName: STR ; RO nm: STR) : BOOL =
+  (* the module declares nm as a type, a procedure, a constant, an
+     exception or an exported variable; TRUE too where nothing can be
+     said (the module is not loaded, or is a foreign unit) *)
+VAR
+  m : I64 ;
+  found : BOOL ;
+  pr : ProcInfo ;
+  t : STR ;
+BEGIN
+  m := FindMod (modName) ;
+  IF m < 0 THEN RETURN TRUE END ;
+  IF LEN (mods[m].foreignLang) > 0 THEN RETURN TRUE END ;
+  IF TypeKnown (modName, nm) THEN
+    IF FindTypeIn (m, nm) IS SOME tt THEN RETURN TRUE END ;
+    IF IsOpaqueIn (m, nm) THEN RETURN TRUE END
+  END ;
+  pr := LookupProc (Qualify (modName, nm), found) ;
+  IF found THEN RETURN TRUE END ;
+  t := ModConstType (modName, nm, found) ;
+  IF found THEN RETURN TRUE END ;
+  IF ExcKnown (modName, nm) THEN RETURN TRUE END ;
+  RETURN ExportsVar (m, nm)
+END ModHasName ;
+
+PROCEDURE UnknownNewType (ty: Ast.Kid ; e: PTR Ast.Node ; RO ctx: STR) : BOOL =
+  (* the type position of a NEW names nothing: said, as the generator
+     would have said it *)
+BEGIN
+  IF AsQual (ty) IS SOME q THEN
+    IF LEN (q.b) = 0 THEN
+      IF LEN (CanonT (SOME (q), 0)) = 0 AND NOT IsBuiltinTy (q.a) THEN
+        ErrN (e, ctx, Cat ('unknown type: ', q.a)) ;
+        RETURN TRUE
+      END
+    ELSIF NOT TypeKnown (q.a, q.b) THEN
+      ErrN (e, ctx, S3 ('unknown type: ', Cat (q.a, Cat ('.', q.b)),
+                        S3 (' -- ', q.a, ' declares no such type'))) ;
+      RETURN TRUE
+    END
+  END ;
+  RETURN FALSE
+END UnknownNewType ;
+
 PROCEDURE NewForm (e: PTR Ast.Node ; RO ctx: STR ; VAR ty: Ast.Kid ;
                    VAR ext0: I64) : STR =
 VAR
@@ -3893,6 +4476,7 @@ BEGIN
         ErrN (e, ctx, 'NEW (OWN, T) allocates one object; a slice lives in a pool or in the frame') ;
         RETURN ''
       END ;
+      IF UnknownNewType (ty, e, ctx) THEN RETURN '' END ;
       RETURN 'own'
     END ;
     isVar := TRUE ;
@@ -3914,7 +4498,10 @@ BEGIN
         (* `NEW (d, T)`: the pool d's object lives in, carried in by
            rule 2 -- how a VAR pointer parameter grows its object *)
         ty := AsQual (e.kids[1]) ;
-        IF ty IS SOME q0 THEN RETURN 'pool' END ;
+        IF ty IS SOME q0 THEN
+          IF UnknownNewType (ty, e, ctx) THEN RETURN '' END ;
+          RETURN 'pool'
+        END ;
         ErrN (e, ctx, 'NEW needs a type name after the pool') ;
         RETURN ''
       END
@@ -3927,7 +4514,10 @@ BEGIN
         RETURN ''
       END ;
       ty := AsQual (e.kids[1]) ;
-      IF ty IS SOME q THEN RETURN 'pool' END ;
+      IF ty IS SOME q THEN
+        IF UnknownNewType (ty, e, ctx) THEN RETURN '' END ;
+        RETURN 'pool'
+      END ;
       ErrN (e, ctx, 'NEW needs a type name after the pool') ;
       RETURN ''
     END ;
@@ -4072,6 +4662,33 @@ BEGIN
         IF nx > 1 THEN RETURN GridOf (nx, t) END ;
         IF LEN (t) > 0 THEN RETURN Cat ('PTR ', t) END ;
         RETURN ''
+    | Ast.NGridOf :
+        (* GRID (s, n0, ..., nR): GRID R OF T over a SLICE OF T named
+           by a designator; the extents are integers, held to the
+           slice's length at run time (par 2.2.1, 2026-10-08) *)
+        t := ExprType (e.kids[0], ctx) ;
+        FOR j := 1 TO e.nkids - 1 DO
+          u := ExprType (e.kids[j], ctx) ;
+          IF NOT IsIntish (u) THEN
+            ErrN (e, ctx, Cat ('GRID extent must be an integer, not ',
+              TyName (u)))
+          END
+        END ;
+        IF e.nkids - 1 > 4 THEN
+          ErrN (e, ctx, 'GRID takes at most 4 extents (par 2.2.1)')
+        END ;
+        IF e.kids[0] IS SOME g0 THEN
+          IF g0.kind # Ast.NDesignator THEN
+            ErrN (e, ctx, 'GRID lays over a slice NAMED by a designator: SLICE it into a variable first (par 2.2.1)')
+          END
+        END ;
+        IF Text.StartsWith (t, 'SLICE OF ') THEN
+          RETURN GridOf (e.nkids - 1, AfterOf (t))
+        END ;
+        IF LEN (t) > 0 THEN
+          ErrN (e, ctx, Cat ('GRID needs a slice, not ', TyName (t)))
+        END ;
+        RETURN ''
     | Ast.NSliceOf3 :
         t := ExprType (e.kids[0], ctx) ;
         u := ExprType (e.kids[1], ctx) ;
@@ -4105,7 +4722,12 @@ BEGIN
                 res := ResolveType (res) ;
                 IF res IS SOME rr THEN
                   IF rr.kind = Ast.NOptType THEN
-                    BindName (b.a, rr.kids[0])
+                    (* the payload is written in the module that
+                       declared the OPT -- an alias `Ast.Kid' resolves
+                       to `OPT PTR Node' in Ast, and a bare `Node' is
+                       Ast's, not this module's (2026-10-08: it was
+                       found through the all-modules fallback) *)
+                    BindName (b.a, InMod (rr.kids[0], ResolvedMod ()))
                   ELSE
                     IF LEN (t) > 0 AND NOT Text.StartsWith (t, 'OPT ') THEN
                       ErrN (e, ctx, 'IS SOME needs an OPT operand')
@@ -4150,7 +4772,19 @@ BEGIN
                             canonCtx := '' ;
                             IF res IS SOME rr THEN
                               IF rr.kind = Ast.NOptType THEN
-                                res := QualifiedIn (rr.kids[0], pr.modName)
+                                (* in the module the OPT was DECLARED
+                                   in, which an alias in the result
+                                   type may make another than the
+                                   callee's: `Mk () : Ast.Kid' binds
+                                   a `PTR Ast.Node', not a `PTR
+                                   Soft.Node' nobody declares -- the
+                                   cause behind 150 passed-over sites
+                                   on the review pages (2026-10-08) *)
+                                IF resolvedIn >= 0 THEN
+                                  res := QualifiedIn (rr.kids[0], ResolvedMod ())
+                                ELSE
+                                  res := QualifiedIn (rr.kids[0], pr.modName)
+                                END
                               ELSE
                                 res := NONE
                               END
@@ -4215,6 +4849,15 @@ BEGIN
            the signature checks also reach without a scope. *)
         IF e.nkids = 0 AND NOT BareNameKnown (e.a) THEN
           ErrN (e, ctx, Cat ('unknown name: ', e.a))
+        END ;
+        (* a member a LOADED module does not declare: Math.Nosuch *)
+        IF e.nkids >= 1 AND ScopeFind (e.a) < 0 AND FindMod (e.a) >= 0 THEN
+          IF e.kids[0] IS SOME msel THEN
+            IF msel.kind = Ast.NSelField AND NOT ModHasName (e.a, msel.a) THEN
+              ErrN (e, ctx, S3 ('unknown name: ', Cat (e.a, Cat ('.', msel.a)),
+                                S3 (' -- ', e.a, ' declares no such name')))
+            END
+          END
         END ;
         RETURN DesigStrType (e, FALSE, ctx)
     | Ast.NCallExpr : RETURN CallType (e.kids[0], e.kids[1], e, ctx)
@@ -5133,11 +5776,37 @@ END PoolAmong ;
 
 (* one argument against one parameter: type, mode, and the two par 4
    rules that are pure checks rather than flow *)
+(* par 4.1, one root handed to a KEPT parameter: a borrow is a
+   retention the caller must declare in turn (and justifies its own
+   KEPT); a frame-mode root escapes to the callee *)
+PROCEDURE KeptRoot (site: PTR Ast.Node ; RO ctx: STR ; RO name: STR ;
+                    k: I64 ; RO KEPT aroot: STR) =
+VAR amode : STR ;
+BEGIN
+  amode := ScopeMode (aroot) ;
+  IF Text.Eq (amode, ModeVal) OR Text.Eq (amode, ModeVar) OR
+     Text.Eq (amode, ModeRo) THEN
+    KeptUse (aroot) ;
+    IF NOT KeptHas (aroot) THEN
+      ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
+        S5 (': borrowed ', aroot,
+            ' is kept by the callee -- declare KEPT ', aroot,
+            ' (par 4.1)')))
+    END
+  END ;
+  IF IsFrameMode (amode) THEN
+    EscTarget (aroot, '<call>')
+  END
+END KeptRoot ;
+
 PROCEDURE CheckArg (site: PTR Ast.Node ; RO ctx: STR ; RO name: STR ;
                     k: I64 ; RO pTy: STR ; RO aTy: STR ; an: Ast.Kid ;
                     isVar: BOOL ; isOwn: BOOL ; isKept: BOOL ;
                     nFrameKept: I64 ; wantsPool: BOOL ; args: Ast.Kid) =
-VAR amode, aroot, what, why : STR ;
+VAR
+  amode, aroot, what, why, om, fty, sv : STR ;
+  nflat, j : I64 ;
+  flat : SLICE OF AKid ;
 BEGIN
   IF Text.Eq (aTy, '<void>') THEN
     ErrN (site, ctx, S4 ('argument ', ItoA (k + 1), ' of ',
@@ -5230,24 +5899,32 @@ BEGIN
         S4 (name, ': a KEPT parameter cannot take ', what,
             ' -- it dies with this frame (par 4.1)')))
     END ;
+    (* a record value carries what its fields hold (TyBearing,
+       decision 34), and a CONSTRUCTOR wrapping a borrow hands the
+       borrow to the keeper: `Keep (f, Data.F64s (v, 0.0))' is `Keep
+       (f, v)' for par 4.1 (2026-10-08) *)
     aroot := EscRootOf (an) ;
-    IF LEN (aroot) > 0 AND IsRefTy (aTy) THEN
-      amode := ScopeMode (aroot) ;
-      (* handing a borrow onward to a KEPT parameter is what
-         justifies the caller's own KEPT *)
-      IF Text.Eq (amode, ModeVal) OR Text.Eq (amode, ModeVar) OR
-         Text.Eq (amode, ModeRo) THEN
-        KeptUse (aroot)
-      END ;
-      IF (Text.Eq (amode, ModeVal) OR Text.Eq (amode, ModeVar) OR
-          Text.Eq (amode, ModeRo)) AND NOT KeptHas (aroot) THEN
-        ErrN (site, ctx, S5 ('argument ', ItoA (k + 1), ' of ', name,
-          S5 (': borrowed ', aroot,
-              ' is kept by the callee -- declare KEPT ', aroot,
-              ' (par 4.1)')))
-      END ;
-      IF IsFrameMode (amode) THEN
-        EscTarget (aroot, '<call>')
+    IF LEN (aroot) > 0 AND TyBearing (aTy) THEN
+      KeptRoot (site, ctx, name, k, aroot)
+    ELSIF LEN (aroot) = 0 THEN
+      nflat := CtorFields (an, flat, om) ;
+      IF nflat >= 0 THEN
+        IF an IS SOME ce THEN
+          IF ce.kids[1] IS SOME al THEN
+            FOR j := 0 TO al.nkids - 1 DO
+              IF j < nflat THEN
+                sv := canonCtx ;
+                canonCtx := om ;
+                fty := CanonT (flat[j], 0) ;
+                canonCtx := sv ;
+                aroot := EscRootOf (al.kids[j]) ;
+                IF LEN (aroot) > 0 AND TyBearing (fty) THEN
+                  KeptRoot (site, ctx, name, k, aroot)
+                END
+              END
+            END
+          END
+        END
       END
     END
   END
@@ -5845,6 +6522,7 @@ END CheckCaseTotal ;
 PROCEDURE CheckThread (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
   name, pTy, aTy, amode, what : STR ;
+  dot : I64 ;
   pr : ProcInfo ;
   found, pooled : BOOL ;
 BEGIN
@@ -5852,7 +6530,18 @@ BEGIN
   IF st.kids[0] IS SOME tn THEN
     IF tn.kind # Ast.NDesignator THEN RETURN END ;
     name := DesigName (tn) ;
-    RootAdd (name) ;
+    (* the target is a procedure of THIS module: the generator makes
+       the thread's thunk beside the target, in the module that
+       starts it, so `THREAD (Lib.Work, p)' was a link error naming
+       a C symbol until 2026-10-08 (the generator's owed line) *)
+    dot := Text.FindChar (name, '.') ;
+    IF dot > 0 THEN
+      IF NOT Text.Eq (SLICE (name, 0, dot), curMod) THEN
+        ErrN (st, ctx, S5 ('THREAD (', name, '): the target must be a procedure of this module, not ',
+          SLICE (name, 0, dot), "'s -- start it from a procedure declared here (par 6)")) ;
+        RETURN
+      END
+    END ;
     pTy := '' ;
     pr := LookupProc (name, found) ;
     IF found THEN
@@ -6055,9 +6744,10 @@ BEGIN
           IF found THEN
             IF pr.node IS SOME pn THEN
               IF pn.kids[1] IS SOME rt THEN
+                want := -1 ;
                 IF rt.kind = Ast.NPtrType THEN
                   IF rt.kids[1] IS SOME rn THEN
-                    want := -1 ;
+                    (* `: PTR T IN rn': the promise names the pool *)
                     ix := 0 ;
                     IF pn.kids[0] IS SOME pl THEN
                       FOR i := 0 TO pl.nkids - 1 DO
@@ -6072,14 +6762,38 @@ BEGIN
                           END
                         END
                       END
-                    END ;
-                    IF e.kids[1] IS SOME al THEN
-                      IF want >= 0 AND want < al.nkids THEN
-                        IF al.kids[want] IS SOME an THEN
-                          IF an.kind = Ast.NDesignator AND an.nkids = 0 THEN
-                            RETURN an.a
-                          END
+                    END
+                  END
+                END ;
+                (* no promise: a procedure that takes a POOL answers in
+                   it (docs/pools.md), so a pointer-bearing answer lives
+                   in the first POOL argument.  `RETURN DynStr.Utf8 (p,
+                   text)' with p a local pool passed the checker and
+                   came back as freed bytes (RdfTest, 2026-10-07); the
+                   call-summary item of the owed ledger, made concrete *)
+                IF want < 0 AND PtrBearing (SOME (rt), 0) THEN
+                  ix := 0 ;
+                  IF pn.kids[0] IS SOME pl THEN
+                    FOR i := 0 TO pl.nkids - 1 DO
+                      IF pl.kids[i] IS SOME grp THEN
+                        IF grp.kids[0] IS SOME ids THEN
+                          IF grp.kids[1] IS SOME pt THEN
+                            IF pt.kind = Ast.NQualident AND Text.Eq (pt.a, 'POOL') AND
+                               LEN (pt.b) = 0 AND want < 0 THEN
+                              want := ix
+                            END
+                          END ;
+                          ix := ix + ids.nkids
                         END
+                      END
+                    END
+                  END
+                END ;
+                IF e.kids[1] IS SOME al THEN
+                  IF want >= 0 AND want < al.nkids THEN
+                    IF al.kids[want] IS SOME an THEN
+                      IF an.kind = Ast.NDesignator AND an.nkids = 0 THEN
+                        IF IsPoolName (an.a) THEN RETURN an.a END
                       END
                     END
                   END
@@ -6094,16 +6808,112 @@ BEGIN
   RETURN ''
 END AllocPoolOf ;
 
+(* the fields, flattened, of the variant or record a call CONSTRUCTS
+   -- `Data.F64s (v, miss)', `Mod.T.Arm (...)', `Row (a, b)' -- and
+   their module in OM; -1 when the call constructs nothing *)
+PROCEDURE CtorFields (k: Ast.Kid ; VAR flat: SLICE OF AKid ; VAR om: STR) : I64 =
+VAR
+  name, t, canon : STR ;
+  dot, g, n : I64 ;
+  fields : Ast.Kid ;
+  isVar : BOOL ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NCallExpr THEN
+      IF e.kids[0] IS SOME dn THEN
+        IF dn.kind = Ast.NDesignator THEN
+          name := DesigName (dn) ;
+          dot := Text.FindChar (name, '.') ;
+          isVar := FALSE ;
+          IF dot > 0 THEN
+            t := SLICE (name, dot + 1, LEN (name) - dot - 1) ;
+            g := Text.FindChar (t, '.') ;
+            IF g > 0 THEN
+              om := SLICE (name, 0, dot) ;
+              isVar := TryVariantMod (FindMod (om), SLICE (t, 0, g),
+                                      SLICE (t, g + 1, LEN (t) - g - 1),
+                                      om, fields)
+            ELSE
+              isVar := FindVariant (SLICE (name, 0, dot), t, om, fields)
+            END
+          END ;
+          IF isVar THEN
+            flat := FlatFields (fields, n) ;
+            RETURN n
+          END ;
+          IF RecordNamed (name, om, canon) IS SOME rn THEN
+            flat := FlatFields (rn.kids[1], n) ;
+            RETURN n
+          END
+        END
+      END
+    END
+  END ;
+  RETURN -1
+END CtorFields ;
+
+(* does a value of canonical type U carry a reference: a pointer or
+   slice itself (IsRefTy), or a record, case record, array or OPT
+   that holds one by resolution (PtrBearing)?  A record VALUE stored
+   beyond the frame retains whatever its fields view. *)
+PROCEDURE TyBearing (RO u: STR) : BOOL =
+VAR
+  dot, m : I64 ;
+  t : Ast.Kid ;
+BEGIN
+  IF IsRefTy (u) THEN RETURN TRUE END ;
+  dot := Text.FindChar (u, '.') ;
+  IF dot <= 0 THEN RETURN FALSE END ;
+  IF Text.FindChar (u, ' ') >= 0 THEN RETURN FALSE END ;
+  m := FindMod (SLICE (u, 0, dot)) ;
+  IF m < 0 THEN RETURN FALSE END ;
+  t := FindTypeIn (m, SLICE (u, dot + 1, LEN (u) - dot - 1)) ;
+  RETURN PtrBearing (t, 0)
+END TyBearing ;
+
+(* one reference-valued source stored by an assignment: pended when
+   the destination outlives the frame, carried by a bare local or
+   binder, an escape fact when rooted in frame storage -- the three
+   acts CheckAssign did for a bare right-hand side, now shared with
+   each borrow a CONSTRUCTOR wraps (2026-10-08) *)
+PROCEDURE StoreRef (st: PTR Ast.Node ; KEPT lhs: PTR Ast.Node ; RO KEPT vname: STR ;
+                    beyond: BOOL ; RO lhsMode: STR ; RO ctx: STR) =
+VAR m : STR ;
+BEGIN
+  m := ScopeMode (vname) ;
+  IF Text.Eq (m, ModeVal) OR Text.Eq (m, ModeVar) OR Text.Eq (m, ModeRo) OR
+     Text.Eq (m, ModeLocal) OR Text.Eq (m, ModeBinder) THEN
+    IF beyond OR Text.Eq (lhsMode, ModeModule) OR
+       (Text.Eq (lhsMode, ModeVar) AND lhs.nkids > 0) THEN
+      PendPush (st.line, st.col, vname, lhs.a)
+    END
+  END ;
+  IF Text.Eq (lhsMode, ModeLocal) OR Text.Eq (lhsMode, ModeBinder) THEN
+    (* a bare local now holds the reference; a COMPONENT of a local
+       record holds it too, and the record is what gets stored on
+       (`c.data := v ; f.cols[n] := c', Frame's Add*; 2026-10-08) *)
+    CarryFrom (lhs.a, vname)
+  END ;
+  IF IsFrameMode (m) THEN
+    EscStore (lhs.a, lhs.nkids > 0, vname)
+  END
+END StoreRef ;
+
 PROCEDURE CheckAssign (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
   beyond, isShared : BOOL ;
-  vname, t, u, lhsMode, dmode, what, apool, par : STR ;
-  lv : I64 ;
+  vname, t, u, lhsMode, dmode, what, apool, par, om, fty : STR ;
+  lv, nflat, k : I64 ;
+  flat : SLICE OF AKid ;
 BEGIN
   IF st.kids[0] IS SOME lhs THEN
     (* the types first, in the oracle's order: the left side, the
        right side, then whether one may become the other *)
     t := DesigStrType (lhs, FALSE, ctx) ;
+    (* a bare name on the left declared nowhere: `x := 1' with no x *)
+    IF lhs.nkids = 0 AND NOT BareNameKnown (lhs.a) THEN
+      ErrN (lhs, ctx, Cat ('unknown name: ', lhs.a))
+    END ;
     u := ExprType (st.kids[1], ctx) ;
     IF LEN (showName) > 0 AND lhs.nkids = 0 AND Text.Eq (lhs.a, showName) THEN
       shown := u ;
@@ -6255,37 +7065,45 @@ BEGIN
     isShared := Text.StartsWith (u, 'SHARED PTR ') OR
                 Text.StartsWith (u, 'OPT SHARED PTR ') ;
     lhsMode := ScopeMode (lhs.a) ;
-    IF LEN (vname) > 0 AND IsRefTy (u) AND NOT isShared THEN
-      IF Text.Eq (ScopeMode (vname), ModeVal) OR
-         Text.Eq (ScopeMode (vname), ModeVar) OR
-         Text.Eq (ScopeMode (vname), ModeRo) OR
-         (* a local or binder may CARRY a borrow: recorded now,
-            resolved at flush once the carries are closed, and
-            dropped there if it carries none *)
-         Text.Eq (ScopeMode (vname), ModeLocal) OR
-         Text.Eq (ScopeMode (vname), ModeBinder) THEN
-        IF beyond OR Text.Eq (lhsMode, ModeModule) OR
-           (Text.Eq (lhsMode, ModeVar) AND lhs.nkids > 0) THEN
-          (* PENDED, not emitted: the class -- retention, self-store,
-             frame-store -- needs every escape of the destination,
-             so the walk finishes first (FlushPend) *)
-          PendPush (st.line, st.col, vname, lhs.a)
+    (* PENDED, not emitted: the class -- retention, self-store,
+       frame-store -- needs every escape of the destination, so the
+       walk finishes first (FlushPend).  A local or binder may CARRY
+       a borrow: recorded now, resolved at flush once the carries are
+       closed, and dropped there if it carries none.  A RECORD value
+       that holds a reference (TyBearing) is stored as the reference
+       would be: until 2026-10-08 only a bare pointer or slice was,
+       and a record local whose field viewed a borrow went through a
+       VAR parameter's component unseen (Frame.AddF64). *)
+    IF LEN (vname) > 0 AND TyBearing (u) AND NOT isShared THEN
+      StoreRef (st, lhs, vname, beyond, lhsMode, ctx)
+    END ;
+    (* a value CONSTRUCTED around a borrow retains it as the borrow
+       itself would (2026-10-08): `c.data := Data.F64s (v, miss)'
+       stored v and the checker saw a call, not a slice -- Frame's
+       AddF64 and six siblings kept their callers' buffers without
+       KEPT, and a caller reusing one buffer for several columns read
+       the last column everywhere.  Each argument whose FIELD is
+       reference-typed goes the way a bare right-hand side goes. *)
+    IF LEN (vname) = 0 THEN
+      nflat := CtorFields (st.kids[1], flat, om) ;
+      IF nflat >= 0 THEN
+        IF st.kids[1] IS SOME ce THEN
+          IF ce.kids[1] IS SOME al THEN
+            FOR k := 0 TO al.nkids - 1 DO
+              IF k < nflat THEN
+                canonCtx := om ;
+                fty := CanonT (flat[k], 0) ;
+                canonCtx := '' ;
+                vname := EscRootOf (al.kids[k]) ;
+                IF LEN (vname) > 0 AND TyBearing (fty) AND
+                   NOT Text.StartsWith (fty, 'SHARED PTR ') AND
+                   NOT Text.StartsWith (fty, 'OPT SHARED PTR ') THEN
+                  StoreRef (st, lhs, vname, beyond, lhsMode, ctx)
+                END
+              END
+            END
+          END
         END
-      END
-    END ;
-    (* par 4.1 provenance: a bare local or binder now holds this
-       reference -- a borrow is carried, a carrier's cargo is
-       inherited *)
-    IF LEN (vname) > 0 AND IsRefTy (u) AND lhs.nkids = 0 THEN
-      IF Text.Eq (lhsMode, ModeLocal) OR Text.Eq (lhsMode, ModeBinder) THEN
-        CarryFrom (lhs.a, vname)
-      END
-    END ;
-    (* par 4.1 direction: a ref value rooted in frame storage,
-       stored anywhere, is an escape fact for the fixpoint *)
-    IF LEN (vname) > 0 AND IsRefTy (u) THEN
-      IF IsFrameMode (ScopeMode (vname)) THEN
-        EscStore (lhs.a, lhs.nkids > 0, vname)
       END
     END
   END
@@ -6294,6 +7112,8 @@ END CheckAssign ;
 PROCEDURE WalkStmt (k: Ast.Kid ; RO ctx: STR) =
 VAR
   j, hk, npre, nacc, narm2 : I64 ;
+  xowner : STR ;
+  xdecl : Ast.Kid ;
   pre, acc, arm2 : SLICE OF Binding ;
 BEGIN
   IF k IS SOME st THEN
@@ -6373,13 +7193,23 @@ BEGIN
         FOR j := 1 TO st.nkids - 1 DO
           IF st.kids[j] IS SOME part THEN
             IF part.kind = Ast.NHandler THEN
-              (* handler payload binders are names too -- bind them
-                 (nil type) as the FPC checker does, or a use of one
-                 would look like an undefined name *)
+              (* handler payload binders are names, TYPED since
+                 2026-10-08 by the EXCEPTION declaration's fields, in
+                 order, qualified in the declaring module (the IS SOME
+                 binders' way); a predeclared exception has none, and
+                 that binder stays untyped *)
+              xowner := '' ;
+              xdecl := NONE ;
+              IF part.kids[0] IS SOME hq2 THEN
+                IF LEN (hq2.b) > 0 THEN xdecl := ExcDeclOf (hq2.a, hq2.b, xowner)
+                ELSE xdecl := ExcDeclOf ('', hq2.a, xowner) END
+              END ;
               IF part.kids[1] IS SOME hbs THEN
                 FOR hk := 0 TO hbs.nkids - 1 DO
                   IF hbs.kids[hk] IS SOME hb THEN
-                    IF hb.kind = Ast.NIdent THEN BindName (hb.a, NONE) END
+                    IF hb.kind = Ast.NIdent THEN
+                      BindName (hb.a, ExcFieldType (xdecl, xowner, hk))
+                    END
                   END
                 END
               END ;
@@ -6765,6 +7595,19 @@ BEGIN
         IF rsc.kids[rk] IS SOME rxn THEN CheckExcName (rxn, ctx) END
       END
     END ;
+    (* a nested procedure parses (par 10 allows a declaration in a
+       body) and neither checker nor generator supports one: refused
+       by name since 2026-10-08, where it was `unknown procedure' at
+       its first call *)
+    FOR rk := 0 TO body.nkids - 2 DO
+      IF body.kids[rk] IS SOME nd THEN
+        IF nd.kind = Ast.NProcDecl THEN
+          ErrN (nd, ctx, 'a nested procedure is not supported: ' + nd.a +
+                ' is declared inside ' + d.a +
+                '; declare it at module level (par 3)')
+        END
+      END
+    END ;
     ScopeClear () ;
     CallsClear () ;
     (* KEPT declarations are read as the params are added, so the
@@ -6780,6 +7623,7 @@ BEGIN
     AddModuleVars (curRoot, u) ;
     svConsts := nconsts ;
     AddConstsOf (body, ctx) ;
+    RoSeed (body.kids[body.nkids - 1]) ;
     curRetTy := '<void>' ;
     IF d.kids[1] IS SOME rt THEN curRetTy := CanonT (d.kids[1], 0) END ;
     OwnClear () ;
@@ -6819,7 +7663,6 @@ BEGIN
     FlushPend (ctx) ;
     ReportUnhandled (body, ctx, RaisesOf (pool, d)) ;
     ReportImpureCalls (body, ctx) ;
-    GraphSet (ctx) ;
     (* the locals go out of scope with the procedure: truncate rather
        than clear, so the module CONSTs registered before them stay *)
     nconsts := svConsts
@@ -7123,25 +7966,6 @@ BEGIN
   END
 END ReportImpureCalls ;
 
-(* ---- the call graph, and THREAD reachability ----
-
-   A [SERIAL] foreign procedure keeps global state, so calling one
-   from two threads corrupts it.  That is not a hypothetical: the
-   blosc_decompress race is the museum piece this pass exists for,
-   and it is the reason [SERIAL] is mandatory on every foreign
-   declaration -- an unstated contract cannot be checked.
-
-   The rule is REACHABILITY, not adjacency.  A THREAD root reaching a
-   SERIAL procedure through any chain of calls is the bug, so this
-   walks the graph rather than the call site.  Reported at 0:0
-   because the fault is a path and not a line.                      *)
-
-PROCEDURE GraphClear () =
-BEGIN
-  ngraph := 0 ;
-  nroots := 0
-END GraphClear ;
-
 PROCEDURE CallsClear () =
 BEGIN
   ncalls := 0
@@ -7163,99 +7987,6 @@ BEGIN
   calls[ncalls] := nm ;
   ncalls := ncalls + 1
 END CallsAdd ;
-
-PROCEDURE GraphSet (RO KEPT caller: STR) =
-VAR
-  nb : SLICE OF Edge ;
-  cs : SLICE OF STR ;
-  i : I64 ;
-BEGIN
-  IF ngraph = LEN (graph) THEN
-    nb := NEW (pool, Edge, 2 * LEN (graph)) ;
-    FOR i := 0 TO ngraph - 1 DO nb[i] := graph[i] END ;
-    graph := nb
-  END ;
-  cs := NEW (pool, STR, ncalls) ;
-  FOR i := 0 TO ncalls - 1 DO cs[i] := calls[i] END ;
-  graph[ngraph].caller := caller ;
-  graph[ngraph].callees := cs ;
-  ngraph := ngraph + 1
-END GraphSet ;
-
-PROCEDURE GraphFind (RO caller: STR) : I64 =
-VAR i : I64 ;
-BEGIN
-  FOR i := 0 TO ngraph - 1 DO
-    IF Text.Eq (graph[i].caller, caller) THEN RETURN i END
-  END ;
-  RETURN -1
-END GraphFind ;
-
-PROCEDURE RootAdd (RO KEPT nm: STR) =
-VAR
-  nb : SLICE OF STR ;
-  i : I64 ;
-BEGIN
-  IF nroots = LEN (roots) THEN
-    nb := NEW (pool, STR, 2 * LEN (roots)) ;
-    FOR i := 0 TO nroots - 1 DO nb[i] := roots[i] END ;
-    roots := nb
-  END ;
-  roots[nroots] := nm ;
-  nroots := nroots + 1
-END RootAdd ;
-
-PROCEDURE CheckThreadChains () =
-VAR
-  i, j, k, gi, nwork, nseen : I64 ;
-  work, seen : SLICE OF STR ;
-  c : STR ;
-  pr : ProcInfo ;
-  found, already : BOOL ;
-BEGIN
-  FOR i := 0 TO nroots - 1 DO
-    work := NEW (pool, STR, 64) ;
-    seen := NEW (pool, STR, 64) ;
-    nwork := 0 ;
-    nseen := 0 ;
-    work[0] := roots[i] ;
-    nwork := 1 ;
-    WHILE nwork > 0 DO
-      c := work[0] ;
-      FOR j := 0 TO nwork - 2 DO work[j] := work[j + 1] END ;
-      nwork := nwork - 1 ;
-      already := FALSE ;
-      FOR j := 0 TO nseen - 1 DO
-        IF Text.Eq (seen[j], c) THEN already := TRUE END
-      END ;
-      IF NOT already THEN
-        IF nseen < LEN (seen) THEN
-          seen[nseen] := c ;
-          nseen := nseen + 1
-        END ;
-        pr := LookupProc (c, found) ;
-        IF found THEN
-          IF Text.Eq (pr.attrib, 'SERIAL') THEN
-            Diag (errs, nerrs, 0, 0, roots[i],
-              Cat (Cat (Cat (
-                'SERIAL procedure called from THREAD context (',
-                roots[i]), ' reaches '), Cat (c, ')')))
-          END
-        END ;
-        gi := GraphFind (Qualify (curMod, c)) ;
-        IF gi < 0 THEN gi := GraphFind (c) END ;
-        IF gi >= 0 THEN
-          FOR k := 0 TO LEN (graph[gi].callees) - 1 DO
-            IF nwork < LEN (work) THEN
-              work[nwork] := graph[gi].callees[k] ;
-              nwork := nwork + 1
-            END
-          END
-        END
-      END
-    END
-  END
-END CheckThreadChains ;
 
 (* ---- A MODULE IS NAMED ONLY WHERE IT IS IMPORTED (report par 3,
    rule 5; Alex's decision of 2026-10-02).  The checker is handed the
@@ -7320,13 +8051,11 @@ BEGIN
   RETURN FALSE
 END DeclaresName ;
 
-(* in the procedure or module body `scope', or at the level of the
-   module `me' *)
-PROCEDURE NameShadowed (root: PTR Ast.Node ; RO me: STR ; scope: Ast.Kid ;
-                        RO name: STR) : BOOL =
+(* at the level of the module `me': a constant, type, variable or
+   exception of its definition or implementation *)
+PROCEDURE ModuleDeclares (root: PTR Ast.Node ; RO me: STR ; RO name: STR) : BOOL =
 VAR i, j : I64 ;
 BEGIN
-  IF DeclaresName (scope, name) THEN RETURN TRUE END ;
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN
       IF Text.Eq (u.a, me) THEN
@@ -7342,13 +8071,125 @@ BEGIN
     END
   END ;
   RETURN FALSE
+END ModuleDeclares ;
+
+(* in the procedure or module body `scope' -- anywhere under it, a
+   binder in any arm included -- or at the level of the module `me'.
+   ExportWalk's test (decision 28); CheckImports has the scoped one
+   below since 2026-10-08. *)
+PROCEDURE NameShadowed (root: PTR Ast.Node ; RO me: STR ; scope: Ast.Kid ;
+                        RO name: STR) : BOOL =
+BEGIN
+  IF DeclaresName (scope, name) THEN RETURN TRUE END ;
+  RETURN ModuleDeclares (root, me, name)
 END NameShadowed ;
+
+(* the procedure's own declarations -- its parameters and the CONST,
+   TYPE, VAR and EXCEPTION sections of its body -- and NOT the
+   binders in its statements, which are in scope only where they
+   bind (BinderHas) *)
+PROCEDURE ProcDeclares (scope: Ast.Kid ; RO name: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF scope IS SOME s THEN
+    IF s.kind = Ast.NProcDecl THEN
+      IF DeclaresName (s.kids[0], name) THEN RETURN TRUE END ;
+      IF s.kids[4] IS SOME body THEN
+        FOR i := 0 TO body.nkids - 2 DO
+          IF DeclaresName (body.kids[i], name) THEN RETURN TRUE END
+        END
+      END
+    END
+  END ;
+  RETURN FALSE
+END ProcDeclares ;
+
+(* the binders in scope during CheckImports' walk: pushed where a
+   statement binds them, popped when its statements are done *)
+PROCEDURE BinderPush (RO KEPT nm: STR) =
+VAR
+  nb : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF nimpB = LEN (impB) THEN
+    nb := NEW (pool, STR, 2 * LEN (impB) + 16) ;
+    FOR i := 0 TO nimpB - 1 DO nb[i] := impB[i] END ;
+    impB := nb
+  END ;
+  impB[nimpB] := nm ;
+  nimpB := nimpB + 1
+END BinderPush ;
+
+PROCEDURE BinderPop (n: I64) =
+BEGIN
+  nimpB := nimpB - n ;
+  IF nimpB < 0 THEN nimpB := 0 END
+END BinderPop ;
+
+PROCEDURE BinderHas (RO nm: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO nimpB - 1 DO
+    IF Text.Eq (impB[i], nm) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END BinderHas ;
+
+(* the name `IS SOME' binds in a condition, or '' *)
+PROCEDURE CondBinder (c: Ast.Kid) : STR =
+BEGIN
+  IF c IS SOME e THEN
+    IF e.kind = Ast.NIs THEN
+      IF e.kids[1] IS SOME b THEN
+        IF b.kind = Ast.NIsSome THEN RETURN b.a END
+      END
+    END
+  END ;
+  RETURN ''
+END CondBinder ;
+
+(* push the binders of a CASE arm's label patterns, or of a handler's
+   payload list; answer how many *)
+PROCEDURE PushBinders (k: Ast.Kid) : I64 =
+VAR i, j, n : I64 ;
+BEGIN
+  n := 0 ;
+  IF k IS SOME l THEN
+    IF l.kind = Ast.NLabelList THEN
+      FOR i := 0 TO l.nkids - 1 DO
+        IF l.kids[i] IS SOME lp THEN
+          IF lp.kind = Ast.NLabelPattern THEN
+            IF lp.kids[0] IS SOME ids THEN
+              FOR j := 0 TO ids.nkids - 1 DO
+                IF ids.kids[j] IS SOME id THEN
+                  BinderPush (id.a) ;
+                  n := n + 1
+                END
+              END
+            END
+          END
+        END
+      END
+    ELSIF l.kind = Ast.NArgList THEN
+      FOR i := 0 TO l.nkids - 1 DO
+        IF l.kids[i] IS SOME id THEN
+          IF id.kind = Ast.NIdent THEN
+            BinderPush (id.a) ;
+            n := n + 1
+          END
+        END
+      END
+    END
+  END ;
+  RETURN n
+END PushBinders ;
 
 PROCEDURE ImportWalk (root: PTR Ast.Node ; u: PTR Ast.Node ; scope: Ast.Kid ;
                       k: Ast.Kid ; VAR seen: SLICE OF BOOL) =
 VAR
-  i, m : I64 ;
+  i, m, np : I64 ;
   qualified : BOOL ;
+  b : STR ;
 BEGIN
   IF k IS SOME n THEN
     qualified := FALSE ;
@@ -7362,7 +8203,12 @@ BEGIN
       IF m >= 0 AND m < LEN (seen) THEN
         IF NOT seen[m] THEN
           IF NOT ModImports (root, u.a, n.a) THEN
-            IF NOT NameShadowed (root, u.a, scope, n.a) THEN
+            (* shadowed by a declaration of the procedure or the
+               module, or by a binder IN SCOPE HERE -- until
+               2026-10-08 by a binder anywhere in the procedure, so
+               a binder in one arm stood for the module in the next *)
+            IF NOT ProcDeclares (scope, n.a) AND NOT BinderHas (n.a) AND
+               NOT ModuleDeclares (root, u.a, n.a) THEN
               seen[m] := TRUE ;
               ErrN (n, u.a, 'module ' + n.a +
                     ' is named and not imported: write IMPORT ' + n.a +
@@ -7372,11 +8218,35 @@ BEGIN
         END
       END
     END ;
-    FOR i := 0 TO n.nkids - 1 DO
-      IF n.kind = Ast.NProcDecl OR n.kind = Ast.NModBody THEN
-        ImportWalk (root, u, k, n.kids[i], seen)
-      ELSE
+    IF n.kind = Ast.NIf OR n.kind = Ast.NElsif OR n.kind = Ast.NWhile THEN
+      (* the binder of `IS SOME' is in scope for the THEN or DO part
+         and nowhere else: not the ELSIFs, not the ELSE *)
+      ImportWalk (root, u, scope, n.kids[0], seen) ;
+      b := CondBinder (n.kids[0]) ;
+      IF LEN (b) > 0 THEN BinderPush (b) END ;
+      ImportWalk (root, u, scope, n.kids[1], seen) ;
+      IF LEN (b) > 0 THEN BinderPop (1) END ;
+      FOR i := 2 TO n.nkids - 1 DO
         ImportWalk (root, u, scope, n.kids[i], seen)
+      END
+    ELSIF n.kind = Ast.NCaseArm THEN
+      ImportWalk (root, u, scope, n.kids[0], seen) ;
+      np := PushBinders (n.kids[0]) ;
+      ImportWalk (root, u, scope, n.kids[1], seen) ;
+      BinderPop (np)
+    ELSIF n.kind = Ast.NHandler THEN
+      ImportWalk (root, u, scope, n.kids[0], seen) ;
+      ImportWalk (root, u, scope, n.kids[1], seen) ;
+      np := PushBinders (n.kids[1]) ;
+      ImportWalk (root, u, scope, n.kids[2], seen) ;
+      BinderPop (np)
+    ELSE
+      FOR i := 0 TO n.nkids - 1 DO
+        IF n.kind = Ast.NProcDecl OR n.kind = Ast.NModBody THEN
+          ImportWalk (root, u, k, n.kids[i], seen)
+        ELSE
+          ImportWalk (root, u, scope, n.kids[i], seen)
+        END
       END
     END
   END
@@ -7481,6 +8351,8 @@ VAR
   i : I64 ;
 BEGIN
   seen := NEW (BOOL, nmods) ;
+  IF LEN (impB) = 0 THEN impB := NEW (pool, STR, 16) END ;
+  nimpB := 0 ;
   FOR i := 0 TO u.nkids - 1 DO
     ImportWalk (root, u, NONE, u.kids[i], seen)
   END
@@ -7692,7 +8564,6 @@ PROCEDURE CheckFile (KEPT root: PTR Ast.Node) =
 VAR i, j, k, fm : I64 ;
 BEGIN
   Setup () ;
-  GraphClear () ;
   curRoot := root ;
   FOR i := 0 TO root.nkids - 1 DO
     IF root.kids[i] IS SOME u THEN
@@ -7748,6 +8619,7 @@ BEGIN
         END
       END ;
       IF u.kind = Ast.NImplementation THEN AddDefConsts (root, u) END ;
+      ModRoSeed (root, u) ;
       IF u.kind = Ast.NDefinition AND LEN (u.b) > 0 THEN
         CheckForeignDef (u)
       ELSE
@@ -7786,15 +8658,13 @@ BEGIN
                  and so no clause: whatever it can raise, it must
                  handle.  museum/trunc-nan is exactly this. *)
               ReportUnhandled (d, Cat (u.a, ' body'),
-                NEW (pool, STR, 0)) ;
-              GraphSet (Cat (u.a, ' body'))
+                NEW (pool, STR, 0))
             END
           END
         END
       END
     END
-  END ;
-  CheckThreadChains ()
+  END
 END CheckFile ;
 
 PROCEDURE ShowType (RO KEPT name: STR) =

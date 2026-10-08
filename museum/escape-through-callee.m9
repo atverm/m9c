@@ -1,0 +1,27 @@
+(* EXPECT-ERROR: an allocation in pool scratch escapes its pool *)
+(* The storage of a local pool, answered through a CALLEE.  Observed
+   2026-10-07 writing RdfTest: a helper read a document's octets with
+   `RETURN DynStr.Utf8 (p, text)', p its own scratch pool, and the
+   checker accepted it -- it followed a RETURN of a NEW in a local
+   pool and of a view into one, not of a call that answers INTO the
+   pool it is handed.  The test then refused every hand document as
+   "not UTF-8": the octets were freed before the caller read them.
+   A pool parameter is a promise that the answer lives there
+   (docs/pools.md, "the pool parameter appears exactly when the
+   allocation outlives the call"); a checker that does not read the
+   promise lets the frame die under the answer. *)
+MODULE Octets ;
+IMPORT DynStr ;
+PROCEDURE Doc (RO text: STR) : SLICE OF BYTE RAISES ValueRange =
+VAR scratch : POOL ;
+BEGIN
+  RETURN DynStr.Utf8 (scratch, text)
+END Doc ;
+VAR
+  pool : POOL ;
+  b : SLICE OF BYTE ;
+BEGIN
+  b := Doc ('abc')
+EXCEPT
+| ValueRange : b := b
+END Octets.

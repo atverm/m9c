@@ -187,6 +187,13 @@ BEGIN
           END
         END ;
         DynStr.AppendChar (d, ')')
+    | Ast.NGridOf :
+        DynStr.Append (d, 'GRID (') ;
+        FOR j := 0 TO n.nkids - 1 DO
+          IF j > 0 THEN DynStr.Append (d, ', ') END ;
+          E (d, n.kids[j])
+        END ;
+        DynStr.AppendChar (d, ')')
     | Ast.NSliceOf3 :
         DynStr.Append (d, 'SLICE (') ;
         E (d, n.kids[0]) ;

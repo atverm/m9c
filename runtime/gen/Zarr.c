@@ -341,8 +341,11 @@ void Zarr_CreateGroup (m9_pool *pool, m9_sl_CHAR dir, m9_state *err)
   err->res = &m9frame;
   Zarr_MkDirP (pool, dir, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, dir, ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 18 }), err);
+  { __typeof__(Zarr_Cat (pool, dir, ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err)) m9a1 = Zarr_Cat (pool, dir, ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, m9a1, ((m9_sl_CHAR){ (uint32_t *) m9s3, 18 }), err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
@@ -367,8 +370,11 @@ void Zarr_WriteAttrs (m9_pool *pool, m9_sl_CHAR dir, m9_sl_CHAR json, m9_state *
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Zarr_WriteText (pool, Zarr_Cat (pool, dir, ((m9_sl_CHAR){ (uint32_t *) m9s5, 8 }), err), json, err);
+  { __typeof__(Zarr_Cat (pool, dir, ((m9_sl_CHAR){ (uint32_t *) m9s5, 8 }), err)) m9a2 = Zarr_Cat (pool, dir, ((m9_sl_CHAR){ (uint32_t *) m9s5, 8 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, m9a2, json, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
@@ -448,8 +454,14 @@ void Zarr_WriteTimeNs (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, m9_sl_I64
   m9t3to = m9_sub_i64 ((data).len, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   for (; i <= m9t3to; i += 1) {
-    Zarr_PutIntLE (&(raw), m9_mul_i64 (i, INT64_C(8), err), INT64_C(8), (*(int64_t *) m9_at (data.p, i, data.len, sizeof (int64_t), err)), err);
+    { __typeof__(m9_mul_i64 (i, INT64_C(8), err)) m9a3 = m9_mul_i64 (i, INT64_C(8), err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__((*(int64_t *) m9_at (data.p, i, data.len, sizeof (int64_t), err))) m9a4 = (*(int64_t *) m9_at (data.p, i, data.len, sizeof (int64_t), err));
+      if (err->exc) goto L_hdl_m9t1;
+    Zarr_PutIntLE (&(raw), m9a3, INT64_C(8), m9a4, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
+    }
   } }
   { __typeof__(fb) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), INT64_C(8), err);
     if (err->exc) goto L_hdl_m9t1;
@@ -594,9 +606,12 @@ m9_sl_I64 Zarr_GuessChunks (m9_pool *pool, m9_sl_I64 shape, int64_t typesize, m9
     if (err->exc) goto L_hdl_m9t1;
     mb = m9v;
   }
-  { __typeof__(target) m9v = ((double)(Zarr_ChunkBase) * Math_Pow (2.0, Math_Log10 (mb, err), err));
+  { __typeof__(Math_Log10 (mb, err)) m9a5 = Math_Log10 (mb, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(target) m9v = ((double)(Zarr_ChunkBase) * Math_Pow (2.0, m9a5, err));
     if (err->exc) goto L_hdl_m9t1;
     target = m9v;
+  }
   }
   if ((target > (double)(Zarr_ChunkMax))) {
     target = (double)(Zarr_ChunkMax);
@@ -677,10 +692,22 @@ void Zarr_DeclareF32 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 shape, m9_sl_I64
   if (err->exc) goto L_hdl_m9t1;
   Zarr_MkDirP (pool, adir, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s15, 8 }), err), Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), ((m9_sl_CHAR){ (uint32_t *) m9s18, 4 }), shape, chunks, comp, err), err);
+  { __typeof__(Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s15, 8 }), err)) m9a6 = Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s15, 8 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), ((m9_sl_CHAR){ (uint32_t *) m9s18, 4 }), shape, chunks, comp, err)) m9a7 = Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 3 }), ((m9_sl_CHAR){ (uint32_t *) m9s17, 5 }), ((m9_sl_CHAR){ (uint32_t *) m9s18, 4 }), shape, chunks, comp, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, m9a6, m9a7, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s19, 8 }), err), Zarr_DimsJson (dims, err), err);
+  }
+  }
+  { __typeof__(Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s19, 8 }), err)) m9a8 = Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s19, 8 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(Zarr_DimsJson (dims, err)) m9a9 = Zarr_DimsJson (dims, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, m9a8, m9a9, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
@@ -767,11 +794,17 @@ void Zarr_PutChunkF32 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 ci, m9_sl_F32 d
       DynStr_AppendChar (&(nm), &(scratch), 46u, err);
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendI64 (&(nm), &(scratch), (*(int64_t *) m9_at (ci.p, i, ci.len, sizeof (int64_t), err)), err);
+    { __typeof__((*(int64_t *) m9_at (ci.p, i, ci.len, sizeof (int64_t), err))) m9a10 = (*(int64_t *) m9_at (ci.p, i, ci.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendI64 (&(nm), &(scratch), m9a10, err);
     if (err->exc) goto L_ret;
+    }
   } }
-  Zarr_PutChunk (pool, DynStr_View (nm, err), raw, INT64_C(4), comp, err);
+  { __typeof__(DynStr_View (nm, err)) m9a11 = DynStr_View (nm, err);
+    if (err->exc) goto L_ret;
+  Zarr_PutChunk (pool, m9a11, raw, INT64_C(4), comp, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -805,10 +838,19 @@ void Zarr_WriteIntFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, int64_t 
   m9t3to = m9_sub_i64 ((data).len, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   for (; i <= m9t3to; i += 1) {
-    Zarr_FitsInt (pool, (*(int64_t *) m9_at (data.p, i, data.len, sizeof (int64_t), err)), width, signed_, adir, err);
+    { __typeof__((*(int64_t *) m9_at (data.p, i, data.len, sizeof (int64_t), err))) m9a12 = (*(int64_t *) m9_at (data.p, i, data.len, sizeof (int64_t), err));
+      if (err->exc) goto L_hdl_m9t1;
+    Zarr_FitsInt (pool, m9a12, width, signed_, adir, err);
     if (err->exc) goto L_hdl_m9t1;
-    Zarr_PutIntLE (&(raw), m9_mul_i64 (i, width, err), width, (*(int64_t *) m9_at (data.p, i, data.len, sizeof (int64_t), err)), err);
+    }
+    { __typeof__(m9_mul_i64 (i, width, err)) m9a13 = m9_mul_i64 (i, width, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__((*(int64_t *) m9_at (data.p, i, data.len, sizeof (int64_t), err))) m9a14 = (*(int64_t *) m9_at (data.p, i, data.len, sizeof (int64_t), err));
+      if (err->exc) goto L_hdl_m9t1;
+    Zarr_PutIntLE (&(raw), m9a13, width, m9a14, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
+    }
   } }
   { __typeof__(fb) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), width, err);
     if (err->exc) goto L_hdl_m9t1;
@@ -836,9 +878,12 @@ void Zarr_WriteIntFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_I64 data, int64_t 
     }
     DynStr_AppendI64 (&(d), &(scratch), fill, err);
     if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(txt) m9v = Zarr_Cat (pool, DynStr_View (d, err), (m9_sl_CHAR){ NULL, 0 }, err);
+    { __typeof__(DynStr_View (d, err)) m9a15 = DynStr_View (d, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(txt) m9v = Zarr_Cat (pool, m9a15, (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_hdl_m9t1;
       txt = m9v;
+    }
     }
   } else {
     { __typeof__(txt) m9v = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s24, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
@@ -890,13 +935,19 @@ void Zarr_WriteF32Fill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_F32 data, bool has
     m9_f32_to_le ((*(float *) m9_at (data.p, i, data.len, sizeof (float), err)), ({ __typeof__(raw) m9t2 = raw; int64_t m9t2a = m9_mul_i64 (i, INT64_C(4), err), m9t2n = INT64_C(4); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err);
     if (err->exc) goto L_ret;
   } }
-  fv = (float)(NAN);
+  { __typeof__(fv) m9v = m9_f32_f64 (NAN, err);
+    if (err->exc) goto L_ret;
+    fv = m9v;
+  }
   { __typeof__(txt) m9v = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s26, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
     txt = m9v;
   }
   if ((hasFill && (fill == fill))) {
-    fv = (float)(fill);
+    { __typeof__(fv) m9v = m9_f32_f64 (fill, err);
+      if (err->exc) goto L_ret;
+      fv = m9v;
+    }
     { __typeof__(txt) m9v = Json_ReprText ((double)(fv), err);
       if (err->exc) goto L_ret;
       txt = m9v;
@@ -1004,9 +1055,12 @@ void Zarr_WriteStrFixedFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR da
   m9t4to = m9_sub_i64 ((data).len, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   for (; i <= m9t4to; i += 1) {
-    { __typeof__(u) m9v = DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err)), err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err))) m9a16 = (*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(u) m9v = DynStr_Utf8 (&(scratch), m9a16, err);
       if (err->exc) goto L_hdl_m9t1;
       u = m9v;
+    }
     }
     if (((u).len > width)) {
       { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 40 }), adir, err)) m9t5 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 40 }), adir, err); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
@@ -1082,8 +1136,11 @@ void Zarr_WriteStrFixedFill (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR da
       txt = m9v;
     }
   }
-  Zarr_Emit (pool, adir, DynStr_View (d, err), txt, fb, width, raw, shape, chunks, dims, comp, err);
+  { __typeof__(DynStr_View (d, err)) m9a17 = DynStr_View (d, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_Emit (pool, adir, m9a17, txt, fb, width, raw, shape, chunks, dims, comp, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
@@ -1187,8 +1244,11 @@ void Zarr_WriteOctets (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, int64_t w
       txt = m9v;
     }
   }
-  Zarr_Emit (pool, adir, DynStr_View (d, err), txt, fb, width, raw, shape, chunks, dims, comp, err);
+  { __typeof__(DynStr_View (d, err)) m9a18 = DynStr_View (d, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_Emit (pool, adir, m9a18, txt, fb, width, raw, shape, chunks, dims, comp, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
@@ -1306,8 +1366,14 @@ void Zarr_WriteStrUcs4 (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, i
       if (err->exc) goto L_hdl_m9t1;
     }
   } }
-  Zarr_Emit (pool, adir, Zarr_UDtype (width, err), ((m9_sl_CHAR){ (uint32_t *) m9s44, 4 }), fb, m9_mul_i64 (width, INT64_C(4), err), raw, shape, chunks, dims, comp, err);
+  { __typeof__(Zarr_UDtype (width, err)) m9a19 = Zarr_UDtype (width, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(m9_mul_i64 (width, INT64_C(4), err)) m9a20 = m9_mul_i64 (width, INT64_C(4), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_Emit (pool, adir, m9a19, ((m9_sl_CHAR){ (uint32_t *) m9s44, 4 }), fb, m9a20, raw, shape, chunks, dims, comp, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
@@ -1376,9 +1442,12 @@ void Zarr_WriteStrVlen (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, m
   m9t8to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   for (; i <= m9t8to; i += 1) {
-    { __typeof__(total) m9v = m9_add_i64 (m9_add_i64 (total, INT64_C(4), err), (DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err)), err)).len, err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err))) m9a21 = (*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(total) m9v = m9_add_i64 (m9_add_i64 (total, INT64_C(4), err), (DynStr_Utf8 (&(scratch), m9a21, err)).len, err);
       if (err->exc) goto L_hdl_m9t1;
       total = m9v;
+    }
     }
   } }
   { __typeof__(buf) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), total, err);
@@ -1393,9 +1462,12 @@ void Zarr_WriteStrVlen (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, m
   m9t9to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   for (; i <= m9t9to; i += 1) {
-    { __typeof__(u) m9v = DynStr_Utf8 (&(scratch), (*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err)), err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err))) m9a22 = (*(m9_sl_CHAR *) m9_at (data.p, i, data.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(u) m9v = DynStr_Utf8 (&(scratch), m9a22, err);
       if (err->exc) goto L_hdl_m9t1;
       u = m9v;
+    }
     }
     Zarr_PutIntLE (&(buf), at, INT64_C(4), (u).len, err);
     if (err->exc) goto L_hdl_m9t1;
@@ -1421,14 +1493,29 @@ void Zarr_WriteStrVlen (m9_pool *pool, m9_sl_CHAR adir, m9_sl_m9_sl_CHAR data, m
   } }
   Zarr_MkDirP (pool, adir, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s49, 8 }), err), Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s50, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s51, 4 }), ((m9_sl_CHAR){ (uint32_t *) m9s52, 21 }), shape, shape, comp, err), err);
-  if (err->exc) goto L_hdl_m9t1;
-  if (((dims).len > INT64_C(0))) {
-    Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s53, 8 }), err), Zarr_DimsJson (dims, err), err);
+  { __typeof__(Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s49, 8 }), err)) m9a23 = Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s49, 8 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  }
-  Zarr_PutChunk (pool, Zarr_ZeroChunk (adir, r, err), buf, INT64_C(1), comp, err);
+  { __typeof__(Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s50, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s51, 4 }), ((m9_sl_CHAR){ (uint32_t *) m9s52, 21 }), shape, shape, comp, err)) m9a24 = Zarr_Meta (pool, ((m9_sl_CHAR){ (uint32_t *) m9s50, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s51, 4 }), ((m9_sl_CHAR){ (uint32_t *) m9s52, 21 }), shape, shape, comp, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, m9a23, m9a24, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
+  }
+  if (((dims).len > INT64_C(0))) {
+    { __typeof__(Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s53, 8 }), err)) m9a25 = Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s53, 8 }), err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(Zarr_DimsJson (dims, err)) m9a26 = Zarr_DimsJson (dims, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Zarr_WriteText (pool, m9a25, m9a26, err);
+    if (err->exc) goto L_hdl_m9t1;
+    }
+    }
+  }
+  { __typeof__(Zarr_ZeroChunk (adir, r, err)) m9a27 = Zarr_ZeroChunk (adir, r, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_PutChunk (pool, m9a27, buf, INT64_C(1), comp, err);
+  if (err->exc) goto L_hdl_m9t1;
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
@@ -1468,7 +1555,7 @@ Zarr_Sink * Zarr_SinkF32 (m9_pool *pool, m9_sl_CHAR adir, int64_t chunk, m9_sl_m
     s = m9v;
   }
   s->isFloat = true;
-  m9_f32_to_le ((float)(NAN), s->fillB, err);
+  m9_f32_to_le (m9_f32_f64 (NAN, err), s->fillB, err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = s;
@@ -1513,9 +1600,12 @@ Zarr_Sink * Zarr_SinkInt (m9_pool *pool, m9_sl_CHAR adir, int64_t width, bool si
   err->res = m9res;
   Zarr_Sink * m9ret = NULL;
   Zarr_Sink * s = NULL; (void) s;
-  { __typeof__(s) m9v = Zarr_NewSink (pool, adir, Zarr_IntDtype (pool, width, signed_, err), ((m9_sl_CHAR){ (uint32_t *) m9s60, 4 }), width, chunk, dims, comp, err);
+  { __typeof__(Zarr_IntDtype (pool, width, signed_, err)) m9a28 = Zarr_IntDtype (pool, width, signed_, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(s) m9v = Zarr_NewSink (pool, adir, m9a28, ((m9_sl_CHAR){ (uint32_t *) m9s60, 4 }), width, chunk, dims, comp, err);
     if (err->exc) goto L_ret;
     s = m9v;
+  }
   }
   s->signed_ = signed_;
   err->res = m9res;
@@ -1640,8 +1730,11 @@ void Zarr_PutI64 (Zarr_Sink * *s, m9_pool *s_pool, int64_t v, m9_state *err)
     Zarr_FitsInt (&(scratch), v, (*s)->esize, (*s)->signed_, (*s)->adir, err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  Zarr_PutIntLE (&((*s)->buf), m9_mul_i64 ((*s)->n, (*s)->esize, err), (*s)->esize, v, err);
+  { __typeof__(m9_mul_i64 ((*s)->n, (*s)->esize, err)) m9a29 = m9_mul_i64 ((*s)->n, (*s)->esize, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_PutIntLE (&((*s)->buf), m9a29, (*s)->esize, v, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   { __typeof__((*s)->n) m9v = m9_add_i64 ((*s)->n, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     (*s)->n = m9v;
@@ -1711,11 +1804,23 @@ void Zarr_Seal (Zarr_Sink * *s, m9_pool *s_pool, m9_state *err)
   }
   (*(int64_t *) m9_at (chunks.p, INT64_C(0), chunks.len, sizeof (int64_t), err)) = (*s)->chunk;
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (&(scratch), Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s66, 8 }), err), Zarr_Meta (&(scratch), (*s)->dtype, (*s)->fill, ((m9_sl_CHAR){ (uint32_t *) m9s67, 4 }), shape, chunks, (*s)->comp, err), err);
-  if (err->exc) goto L_hdl_m9t1;
-  if ((((*s)->dims).len > INT64_C(0))) {
-    Zarr_WriteText (&(scratch), Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s68, 8 }), err), Zarr_DimsJson ((*s)->dims, err), err);
+  { __typeof__(Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s66, 8 }), err)) m9a30 = Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s66, 8 }), err);
     if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(Zarr_Meta (&(scratch), (*s)->dtype, (*s)->fill, ((m9_sl_CHAR){ (uint32_t *) m9s67, 4 }), shape, chunks, (*s)->comp, err)) m9a31 = Zarr_Meta (&(scratch), (*s)->dtype, (*s)->fill, ((m9_sl_CHAR){ (uint32_t *) m9s67, 4 }), shape, chunks, (*s)->comp, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (&(scratch), m9a30, m9a31, err);
+  if (err->exc) goto L_hdl_m9t1;
+  }
+  }
+  if ((((*s)->dims).len > INT64_C(0))) {
+    { __typeof__(Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s68, 8 }), err)) m9a32 = Zarr_Cat (&(scratch), (*s)->adir, ((m9_sl_CHAR){ (uint32_t *) m9s68, 8 }), err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(Zarr_DimsJson ((*s)->dims, err)) m9a33 = Zarr_DimsJson ((*s)->dims, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Zarr_WriteText (&(scratch), m9a32, m9a33, err);
+    if (err->exc) goto L_hdl_m9t1;
+    }
+    }
   }
   (*s)->sealed = true;
   goto L_dn_m9t2;
@@ -1827,9 +1932,15 @@ void Zarr_ConsolidateSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
     bool m9t4 = (((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).p, INT64_C(0), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err)) != 46u) && ((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).p, INT64_C(0), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err)) != 95u));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
-      { __typeof__(sub) m9v = Zarr_Cat (&(scratch), store, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s77, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err))) m9a34 = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s77, 1 }), m9a34, err)) m9a35 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s77, 1 }), m9a34, err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(sub) m9v = Zarr_Cat (&(scratch), store, m9a35, err);
         if (err->exc) goto L_hdl_m9t1;
         sub = m9v;
+      }
+      }
       }
       bool m9t5 = Zarr_IsDir (&(scratch), sub, err);
       if (err->exc) goto L_hdl_m9t1;
@@ -1837,10 +1948,16 @@ void Zarr_ConsolidateSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
         bool m9t6 = Io_Exists (Zarr_Cat (&(scratch), sub, ((m9_sl_CHAR){ (uint32_t *) m9s78, 8 }), err), err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t6) {
-          Zarr_AddMeta (pool, &(d), &((*pool)), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s79, 7 }), err);
+          { __typeof__((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err))) m9a36 = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
+            if (err->exc) goto L_hdl_m9t1;
+          Zarr_AddMeta (pool, &(d), &((*pool)), &(n), sub, m9a36, ((m9_sl_CHAR){ (uint32_t *) m9s79, 7 }), err);
           if (err->exc) goto L_hdl_m9t1;
-          Zarr_AddMeta (pool, &(d), &((*pool)), &(n), sub, (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s80, 7 }), err);
+          }
+          { __typeof__((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err))) m9a37 = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
+            if (err->exc) goto L_hdl_m9t1;
+          Zarr_AddMeta (pool, &(d), &((*pool)), &(n), sub, m9a37, ((m9_sl_CHAR){ (uint32_t *) m9s80, 7 }), err);
           if (err->exc) goto L_hdl_m9t1;
+          }
         }
       }
     }
@@ -1889,8 +2006,11 @@ static void Zarr_WriteText (m9_pool *pool, m9_sl_CHAR path, m9_sl_CHAR text, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Io_WriteFileBytes (path, DynStr_Utf8 (pool, text, err), err);
+  { __typeof__(DynStr_Utf8 (pool, text, err)) m9a38 = DynStr_Utf8 (pool, text, err);
+    if (err->exc) goto L_ret;
+  Io_WriteFileBytes (path, m9a38, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -1905,8 +2025,11 @@ static m9_sl_CHAR Zarr_ReadText (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  m9ret = DynStr_FromUtf8 (pool, Io_ReadFileBytes (pool, path, err), err);
+  { __typeof__(Io_ReadFileBytes (pool, path, err)) m9a39 = Io_ReadFileBytes (pool, path, err);
+    if (err->exc) goto L_ret;
+  m9ret = DynStr_FromUtf8 (pool, m9a39, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1963,17 +2086,26 @@ static void Zarr_MkDirP (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     bool m9t4 = (((*(uint32_t *) m9_at (path.p, i, path.len, sizeof (uint32_t), err)) == 47u) && (DynStr_Len (d, err) > INT64_C(0)));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
-      Io_MkDir (DynStr_View (d, err), err);
+      { __typeof__(DynStr_View (d, err)) m9a40 = DynStr_View (d, err);
+        if (err->exc) goto L_hdl_m9t1;
+      Io_MkDir (m9a40, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
     }
-    DynStr_AppendChar (&(d), &(scratch), (*(uint32_t *) m9_at (path.p, i, path.len, sizeof (uint32_t), err)), err);
+    { __typeof__((*(uint32_t *) m9_at (path.p, i, path.len, sizeof (uint32_t), err))) m9a41 = (*(uint32_t *) m9_at (path.p, i, path.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_hdl_m9t1;
+    DynStr_AppendChar (&(d), &(scratch), m9a41, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
   } }
   bool m9t5 = (DynStr_Len (d, err) > INT64_C(0));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t5) {
-    Io_MkDir (DynStr_View (d, err), err);
+    { __typeof__(DynStr_View (d, err)) m9a42 = DynStr_View (d, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Io_MkDir (m9a42, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
   }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -2077,12 +2209,18 @@ static m9_sl_CHAR Zarr_CompressorJson (m9_pool *pool, int64_t comp, m9_state *er
   }
   DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s91, 26 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &((*pool)), Zarr_CodecName (comp, err), err);
+  { __typeof__(Zarr_CodecName (comp, err)) m9a43 = Zarr_CodecName (comp, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &((*pool)), m9a43, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s92, 13 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (&(d), &((*pool)), Zarr_Level (comp, err), err);
+  { __typeof__(Zarr_Level (comp, err)) m9a44 = Zarr_Level (comp, err);
+    if (err->exc) goto L_ret;
+  DynStr_AppendI64 (&(d), &((*pool)), m9a44, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s93, 31 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
@@ -2120,8 +2258,11 @@ static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m
       DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s95, 2 }), err);
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendI64 (&(d), &((*pool)), (*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err)), err);
+    { __typeof__((*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err))) m9a45 = (*(int64_t *) m9_at (shape.p, i, shape.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendI64 (&(d), &((*pool)), m9a45, err);
     if (err->exc) goto L_ret;
+    }
   } }
   DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s96, 14 }), err);
   if (err->exc) goto L_ret;
@@ -2134,8 +2275,11 @@ static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m
       DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s97, 2 }), err);
       if (err->exc) goto L_ret;
     }
-    DynStr_AppendI64 (&(d), &((*pool)), (*(int64_t *) m9_at (chunks.p, i, chunks.len, sizeof (int64_t), err)), err);
+    { __typeof__((*(int64_t *) m9_at (chunks.p, i, chunks.len, sizeof (int64_t), err))) m9a46 = (*(int64_t *) m9_at (chunks.p, i, chunks.len, sizeof (int64_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendI64 (&(d), &((*pool)), m9a46, err);
     if (err->exc) goto L_ret;
+    }
   } }
   DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s98, 13 }), err);
   if (err->exc) goto L_ret;
@@ -2151,8 +2295,11 @@ static m9_sl_CHAR Zarr_Meta (m9_pool *pool, m9_sl_CHAR dtype, m9_sl_CHAR fill, m
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s101, 44 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &((*pool)), Zarr_CompressorJson (pool, comp, err), err);
+  { __typeof__(Zarr_CompressorJson (pool, comp, err)) m9a47 = Zarr_CompressorJson (pool, comp, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &((*pool)), m9a47, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s102, 19 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
@@ -2193,8 +2340,11 @@ static m9_sl_CHAR Zarr_DimsJson (m9_sl_m9_sl_CHAR dims, m9_state *err)
     }
     DynStr_AppendChar (&(d), &(pool), 34u, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&(d), &(pool), (*(m9_sl_CHAR *) m9_at (dims.p, i, dims.len, sizeof (m9_sl_CHAR), err)), err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at (dims.p, i, dims.len, sizeof (m9_sl_CHAR), err))) m9a48 = (*(m9_sl_CHAR *) m9_at (dims.p, i, dims.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    DynStr_Append (&(d), &(pool), m9a48, err);
     if (err->exc) goto L_ret;
+    }
     DynStr_AppendChar (&(d), &(pool), 34u, err);
     if (err->exc) goto L_ret;
   } }
@@ -2234,9 +2384,12 @@ static void Zarr_PutChunk (m9_pool *pool, m9_sl_CHAR path, m9_sl_BYTE raw, int64
     if (err->exc) goto L_hdl_m9t1;
     dst = m9v;
   }
-  { __typeof__(name) m9v = DynStr_Bytes (&(scratch), Zarr_CodecName (comp, err), true, err);
+  { __typeof__(Zarr_CodecName (comp, err)) m9a49 = Zarr_CodecName (comp, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(name) m9v = DynStr_Bytes (&(scratch), m9a49, true, err);
     if (err->exc) goto L_hdl_m9t1;
     name = m9v;
+  }
   }
   { __typeof__(got) m9v = (int64_t)(blosc_compress_ctx (((int)(Zarr_Level (comp, err))), ((int)(INT64_C(1))), ((size_t)(typesize)), ((size_t)(n)), ((void *)(raw).p), ((void *)(dst).p), ((size_t)(m9_add_i64 (n, Zarr_Overhead, err))), ((void *)(name).p), ((size_t)(INT64_C(0))), ((int)(INT64_C(1)))));
     if (err->exc) goto L_hdl_m9t1;
@@ -2246,8 +2399,11 @@ static void Zarr_PutChunk (m9_pool *pool, m9_sl_CHAR path, m9_sl_BYTE raw, int64
     Io_WriteFileBytes (path, raw, err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
-    Io_WriteFileBytes (path, ({ __typeof__(dst) m9t3 = dst; int64_t m9t3a = INT64_C(0), m9t3n = got; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
+    { __typeof__(({ __typeof__(dst) m9t3 = dst; int64_t m9t3a = INT64_C(0), m9t3n = got; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a50 = ({ __typeof__(dst) m9t3 = dst; int64_t m9t3a = INT64_C(0), m9t3n = got; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+      if (err->exc) goto L_hdl_m9t1;
+    Io_WriteFileBytes (path, m9a50, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
   }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
@@ -2340,8 +2496,11 @@ static void Zarr_WriteChunks (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, in
   if (err->exc) goto L_hdl_m9t1;
   r = (shape).len;
   if ((r == INT64_C(0))) {
-    Zarr_PutChunk (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s111, 2 }), err), raw, esize, comp, err);
+    { __typeof__(Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s111, 2 }), err)) m9a51 = Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s111, 2 }), err);
+      if (err->exc) goto L_hdl_m9t1;
+    Zarr_PutChunk (pool, m9a51, raw, esize, comp, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
     goto L_ret;
   }
   cn = INT64_C(1);
@@ -2506,11 +2665,17 @@ static void Zarr_WriteChunks (m9_pool *pool, m9_sl_CHAR adir, m9_sl_BYTE raw, in
         DynStr_AppendChar (&(nm), &(scratch), 46u, err);
         if (err->exc) goto L_hdl_m9t1;
       }
-      DynStr_AppendI64 (&(nm), &(scratch), (*(int64_t *) m9_at (ci.v, i, INT64_C(5), sizeof (int64_t), err)), err);
+      { __typeof__((*(int64_t *) m9_at (ci.v, i, INT64_C(5), sizeof (int64_t), err))) m9a52 = (*(int64_t *) m9_at (ci.v, i, INT64_C(5), sizeof (int64_t), err));
+        if (err->exc) goto L_hdl_m9t1;
+      DynStr_AppendI64 (&(nm), &(scratch), m9a52, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
     } }
-    Zarr_PutChunk (pool, DynStr_View (nm, err), buf, esize, comp, err);
+    { __typeof__(DynStr_View (nm, err)) m9a53 = DynStr_View (nm, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Zarr_PutChunk (pool, m9a53, buf, esize, comp, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
     { __typeof__(k) m9v = m9_sub_i64 (r, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
       k = m9v;
@@ -2585,10 +2750,22 @@ static void Zarr_Emit (m9_pool *pool, m9_sl_CHAR adir, m9_sl_CHAR dtype, m9_sl_C
   }
   Zarr_MkDirP (pool, adir, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s114, 8 }), err), Zarr_Meta (pool, dtype, fill, ((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), shape, chunks, comp, err), err);
+  { __typeof__(Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s114, 8 }), err)) m9a54 = Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s114, 8 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(Zarr_Meta (pool, dtype, fill, ((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), shape, chunks, comp, err)) m9a55 = Zarr_Meta (pool, dtype, fill, ((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), shape, chunks, comp, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, m9a54, m9a55, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s116, 8 }), err), Zarr_DimsJson (dims, err), err);
+  }
+  }
+  { __typeof__(Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s116, 8 }), err)) m9a56 = Zarr_Cat (pool, adir, ((m9_sl_CHAR){ (uint32_t *) m9s116, 8 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(Zarr_DimsJson (dims, err)) m9a57 = Zarr_DimsJson (dims, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, m9a56, m9a57, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
+  }
   Zarr_WriteChunks (pool, adir, raw, esize, shape, chunks, fillB, comp, err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -2791,14 +2968,26 @@ static m9_sl_CHAR Zarr_Base64 (m9_sl_BYTE b, m9_state *err)
       if (err->exc) goto L_ret;
       v = m9v;
     }
-    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    { __typeof__((*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err))) m9a58 = (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendChar (&(d), &(pool), m9a58, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    }
+    { __typeof__((*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err))) m9a59 = (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendChar (&(d), &(pool), m9a59, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    }
+    { __typeof__((*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err))) m9a60 = (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendChar (&(d), &(pool), m9a60, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 (v, INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    }
+    { __typeof__((*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 (v, INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err))) m9a61 = (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 (v, INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendChar (&(d), &(pool), m9a61, err);
     if (err->exc) goto L_ret;
+    }
     { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(3), err);
       if (err->exc) goto L_ret;
       i = m9v;
@@ -2813,10 +3002,16 @@ static m9_sl_CHAR Zarr_Base64 (m9_sl_BYTE b, m9_state *err)
       if (err->exc) goto L_ret;
       v = m9v;
     }
-    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    { __typeof__((*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err))) m9a62 = (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendChar (&(d), &(pool), m9a62, err);
     if (err->exc) goto L_ret;
-    DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+    }
+    { __typeof__((*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err))) m9a63 = (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendChar (&(d), &(pool), m9a63, err);
     if (err->exc) goto L_ret;
+    }
     DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), err);
     if (err->exc) goto L_ret;
   } else {
@@ -2825,12 +3020,21 @@ static m9_sl_CHAR Zarr_Base64 (m9_sl_BYTE b, m9_state *err)
         if (err->exc) goto L_ret;
         v = m9v;
       }
-      DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err)), err);
+      { __typeof__((*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err))) m9a64 = (*(uint32_t *) m9_at (Alphabet.p, m9_div_i64 (v, INT64_C(262144), err), Alphabet.len, sizeof (uint32_t), err));
+        if (err->exc) goto L_ret;
+      DynStr_AppendChar (&(d), &(pool), m9a64, err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+      }
+      { __typeof__((*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err))) m9a65 = (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(4096), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err));
+        if (err->exc) goto L_ret;
+      DynStr_AppendChar (&(d), &(pool), m9a65, err);
       if (err->exc) goto L_ret;
-      DynStr_AppendChar (&(d), &(pool), (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err)), err);
+      }
+      { __typeof__((*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err))) m9a66 = (*(uint32_t *) m9_at (Alphabet.p, m9_mod_i64 ((m9_div_i64 (v, INT64_C(64), err)), INT64_C(64), err), Alphabet.len, sizeof (uint32_t), err));
+        if (err->exc) goto L_ret;
+      DynStr_AppendChar (&(d), &(pool), m9a66, err);
       if (err->exc) goto L_ret;
+      }
       DynStr_AppendChar (&(d), &(pool), 61u, err);
       if (err->exc) goto L_ret;
   } }
@@ -3035,8 +3239,11 @@ static void Zarr_Flush (Zarr_Sink * *s, m9_pool *s_pool, bool pad, m9_state *err
   if (err->exc) goto L_hdl_m9t1;
   DynStr_AppendI64 (&(nm), &(scratch), (*s)->ci, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_PutChunk (&(scratch), DynStr_View (nm, err), (*s)->buf, (*s)->esize, (*s)->comp, err);
+  { __typeof__(DynStr_View (nm, err)) m9a67 = DynStr_View (nm, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_PutChunk (&(scratch), m9a67, (*s)->buf, (*s)->esize, (*s)->comp, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   { __typeof__((*s)->ci) m9v = m9_add_i64 ((*s)->ci, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     (*s)->ci = m9v;
@@ -3169,8 +3376,11 @@ static bool Zarr_IsDir (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Io_Exists (Zarr_Cat (pool, path, ((m9_sl_CHAR){ (uint32_t *) m9s136, 8 }), err), err) || Io_Exists (Zarr_Cat (pool, path, ((m9_sl_CHAR){ (uint32_t *) m9s137, 8 }), err), err));
+  { __typeof__(Zarr_Cat (pool, path, ((m9_sl_CHAR){ (uint32_t *) m9s136, 8 }), err)) m9a68 = Zarr_Cat (pool, path, ((m9_sl_CHAR){ (uint32_t *) m9s136, 8 }), err);
+    if (err->exc) goto L_ret;
+  m9ret = (Io_Exists (m9a68, err) || Io_Exists (Zarr_Cat (pool, path, ((m9_sl_CHAR){ (uint32_t *) m9s137, 8 }), err), err));
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -3190,9 +3400,15 @@ static void Zarr_AddMeta (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, i
   if (m9t3) {
     goto L_ret;
   }
-  { __typeof__(body) m9v = Zarr_ReadText (pool, Zarr_Cat (pool, dir, Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), leaf, err), err), err);
+  { __typeof__(Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), leaf, err)) m9a69 = Zarr_Cat (pool, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), leaf, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(Zarr_Cat (pool, dir, m9a69, err)) m9a70 = Zarr_Cat (pool, dir, m9a69, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(body) m9v = Zarr_ReadText (pool, m9a70, err);
     if (err->exc) goto L_hdl_m9t1;
     body = m9v;
+  }
+  }
   }
   if (((*n) > INT64_C(0))) {
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s140, 2 }), err);
@@ -3210,8 +3426,14 @@ static void Zarr_AddMeta (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, i
   if (err->exc) goto L_hdl_m9t1;
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s141, 3 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  DynStr_Append (d, d_pool, Json_Spaced (Json_Parse (body, err), err), err);
+  { __typeof__(Json_Parse (body, err)) m9a71 = Json_Parse (body, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(Json_Spaced (m9a71, err)) m9a72 = Json_Spaced (m9a71, err);
+    if (err->exc) goto L_hdl_m9t1;
+  DynStr_Append (d, d_pool, m9a72, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
+  }
   { __typeof__((*n)) m9v = m9_add_i64 ((*n), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     (*n) = m9v;
@@ -3288,17 +3510,29 @@ static void Zarr_Walk (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, int6
     bool m9t5 = ((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).p, INT64_C(0), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err)) != 46u);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t5) {
-      { __typeof__(sub) m9v = Zarr_Cat (&(scratch), dir, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s147, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err))) m9a73 = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s147, 1 }), m9a73, err)) m9a74 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s147, 1 }), m9a73, err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(sub) m9v = Zarr_Cat (&(scratch), dir, m9a74, err);
         if (err->exc) goto L_hdl_m9t1;
         sub = m9v;
+      }
+      }
       }
       bool m9t6 = Zarr_IsDir (&(scratch), sub, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t6) {
         if (((rel).len > INT64_C(0))) {
-          { __typeof__(subRel) m9v = Zarr_Cat (&(scratch), rel, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s148, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+          { __typeof__((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err))) m9a75 = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
+            if (err->exc) goto L_hdl_m9t1;
+          { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s148, 1 }), m9a75, err)) m9a76 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s148, 1 }), m9a75, err);
+            if (err->exc) goto L_hdl_m9t1;
+          { __typeof__(subRel) m9v = Zarr_Cat (&(scratch), rel, m9a76, err);
             if (err->exc) goto L_hdl_m9t1;
             subRel = m9v;
+          }
+          }
           }
         } else {
           { __typeof__(subRel) m9v = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
@@ -3337,8 +3571,14 @@ static void Zarr_Finish (m9_pool *pool, m9_sl_CHAR store, DynStr_DString * *d, m
   err->res = &m9frame;
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s149, 33 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s150, 11 }), err), DynStr_View ((*d), err), err);
+  { __typeof__(Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s150, 11 }), err)) m9a77 = Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s150, 11 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(DynStr_View ((*d), err)) m9a78 = DynStr_View ((*d), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, m9a77, m9a78, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
@@ -3374,8 +3614,11 @@ static Json_Node * Zarr_RootAttrs (m9_pool *pool, m9_sl_CHAR store, m9_state *er
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
     err->res = m9res;
-    m9ret = Json_Parse (Zarr_ReadText (pool, path, err), err);
+    { __typeof__(Zarr_ReadText (pool, path, err)) m9a79 = Zarr_ReadText (pool, path, err);
+      if (err->exc) goto L_hdl_m9t1;
+    m9ret = Json_Parse (m9a79, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
     goto L_ret;
   }
   err->res = m9res;
@@ -3421,9 +3664,12 @@ static bool Zarr_IsSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   Json_Node * f = NULL; (void) f;
-  { __typeof__(f) m9v = Json_Field (Zarr_RootAttrs (pool, store, err), Zarr_SlimAttr, err);
+  { __typeof__(Zarr_RootAttrs (pool, store, err)) m9a80 = Zarr_RootAttrs (pool, store, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(f) m9v = Json_Field (m9a80, Zarr_SlimAttr, err);
     if (err->exc) goto L_ret;
     f = m9v;
+  }
   }
   { Json_Node * n = f;
   if (n != NULL) {
@@ -3459,8 +3705,14 @@ static void Zarr_MarkSlim (m9_pool *pool, m9_sl_CHAR store, m9_state *err)
   }
   Json_Set (&(a), err->res, Zarr_SlimAttr, &(v), err->res, err);
   if (err->exc) goto L_hdl_m9t1;
-  Zarr_WriteText (pool, Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s153, 8 }), err), Json_Spaced (a, err), err);
+  { __typeof__(Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s153, 8 }), err)) m9a81 = Zarr_Cat (pool, store, ((m9_sl_CHAR){ (uint32_t *) m9s153, 8 }), err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(Json_Spaced (a, err)) m9a82 = Json_Spaced (a, err);
+    if (err->exc) goto L_hdl_m9t1;
+  Zarr_WriteText (pool, m9a81, m9a82, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &Io_IOError) {
@@ -3518,16 +3770,28 @@ static void Zarr_WalkSorted (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool
     bool m9t4 = ((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).p, INT64_C(0), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err)) != 46u);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
-      { __typeof__(sub) m9v = Zarr_Cat (&(scratch), dir, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s159, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+      { __typeof__((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err))) m9a83 = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s159, 1 }), m9a83, err)) m9a84 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s159, 1 }), m9a83, err);
+        if (err->exc) goto L_hdl_m9t1;
+      { __typeof__(sub) m9v = Zarr_Cat (&(scratch), dir, m9a84, err);
         if (err->exc) goto L_hdl_m9t1;
         sub = m9v;
+      }
+      }
       }
       bool m9t5 = Zarr_IsDir (&(scratch), sub, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t5) {
-        { __typeof__(subRel) m9v = Zarr_Cat (&(scratch), rel, Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s160, 1 }), (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err)), err), err);
+        { __typeof__((*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err))) m9a85 = (*(m9_sl_CHAR *) m9_at (kids.p, i, kids.len, sizeof (m9_sl_CHAR), err));
+          if (err->exc) goto L_hdl_m9t1;
+        { __typeof__(Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s160, 1 }), m9a85, err)) m9a86 = Zarr_Cat (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s160, 1 }), m9a85, err);
+          if (err->exc) goto L_hdl_m9t1;
+        { __typeof__(subRel) m9v = Zarr_Cat (&(scratch), rel, m9a86, err);
           if (err->exc) goto L_hdl_m9t1;
           subRel = m9v;
+        }
+        }
         }
         Zarr_WalkSorted (pool, d, d_pool, n, sub, subRel, err);
         if (err->exc) goto L_hdl_m9t1;

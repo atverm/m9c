@@ -158,8 +158,11 @@ int64_t Math_ClampI64 (int64_t v, int64_t lo, int64_t hi, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   err->res = m9res;
-  m9ret = Math_MaxI64 (lo, Math_MinI64 (v, hi, err), err);
+  { __typeof__(Math_MinI64 (v, hi, err)) m9a1 = Math_MinI64 (v, hi, err);
+    if (err->exc) goto L_ret;
+  m9ret = Math_MaxI64 (lo, m9a1, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -225,8 +228,11 @@ double Math_Clamp (double v, double lo, double hi, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Math_Max (lo, Math_Min (v, hi, err), err);
+  { __typeof__(Math_Min (v, hi, err)) m9a2 = Math_Min (v, hi, err);
+    if (err->exc) goto L_ret;
+  m9ret = Math_Max (lo, m9a2, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;

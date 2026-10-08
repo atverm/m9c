@@ -1,5 +1,5 @@
 #!/bin/sh
-# mandelbrot across M9, C, Rust, Object Pascal, Scala and Python.
+# mandelbrot across M9, C, Rust, Object Pascal, Scala, Julia and Python.
 #
 # Three axes, because "fast" is only one of the things a language
 # costs you:
@@ -97,6 +97,7 @@ if have scala-cli; then
 else
   echo "note: no scala-cli, skipping the Scala column"
 fi
+have julia || echo "note: no julia, skipping the Julia column"
 
 # ---------------------------------------------------------------- agree
 echo "checking answers agree (N=$DIFFN) ..."
@@ -115,6 +116,7 @@ check c        "$OUT/m_c"
 [ -x "$OUT/m_fpc" ]  && check fpc  "$OUT/m_fpc"
 [ -x "$OUT/m_fpcu" ] && check fpcu "$OUT/m_fpcu"
 [ -f "$OUT/mandel.jar" ] && check scala java -jar "$OUT/mandel.jar"
+have julia && check julia julia mandel.jl
 check py    python3 mandel.py
 check numpy python3 mandel_np.py
 [ "$agree" = 1 ] || { echo "implementations disagree -- not timing anything"; exit 1; }
@@ -148,6 +150,14 @@ if [ -f "$OUT/mandel.jar" ]; then
   # one is relevant depends on whether the program is a service or a
   # command
   c=$(java -jar "$OUT/mandel.jar" "$N" "$OUT/t.pbm" 2>&1 >/dev/null | tail -1)
+  printf '  %-28s %s\n' '' "$c"
+fi
+if have julia; then
+  # as for Scala: the wall clock holds starting Julia and compiling
+  # the file's methods, and the program says what the loop alone took
+  r_jl=$(best julia mandel.jl)
+  printf '  %-28s %ss  (startup and JIT included)\n' 'Julia' "$r_jl"
+  c=$(julia mandel.jl "$N" "$OUT/t.pbm" 2>&1 >/dev/null | tail -1)
   printf '  %-28s %s\n' '' "$c"
 fi
 r_np=$(best python3 mandel_np.py); printf '  %-28s %ss\n' 'Python + numpy' "$r_np"
@@ -184,3 +194,4 @@ size 'Rust'                "$OUT/m_rs"
 size 'Object Pascal'       "$OUT/m_fpc"
 [ -f "$OUT/mandel.jar" ] && printf '  %-28s %9d bytes  (+ a JVM)\n' 'Scala assembly jar' "$(stat -c %s "$OUT/mandel.jar")"
 printf '  %-28s %9d bytes  (+ CPython)\n' 'Python source' "$(stat -c %s mandel.py)"
+have julia && printf '  %-28s %9d bytes  (+ Julia)\n' 'Julia source' "$(stat -c %s mandel.jl)"

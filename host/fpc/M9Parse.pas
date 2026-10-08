@@ -1207,6 +1207,20 @@ begin
       end;
     tkNEW :
       Result := PNew;
+    tkGRID :
+      begin
+        { GRID (s, n0, ..., nR): a grid laid over a slice (par 2.2.1) }
+        Result := NewNode (nkGridOf);
+        Bump;
+        Expect (tkLParen, '(');
+        Result.Add (PExpr);
+        while cur.kind = tkComma do
+        begin
+          Bump;
+          Result.Add (PExpr);
+        end;
+        Expect (tkRParen, ')');
+      end;
     tkSLICE :
       begin
         Result := NewNode (nkSliceOf3);

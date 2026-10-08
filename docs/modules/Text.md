@@ -181,3 +181,19 @@ fnmatch.fnmatchcase, case-sensitive:
 A range written backwards, [c-a], holds nothing.  The / is a
 character like any other here; System.Glob is what knows about
 directories.
+
+### ToBase64 (RO b: SLICE OF BYTE) : STR
+
+RFC 4648 base64 of the octets, padded with =, no line breaks:
+Python's base64.b64encode.  Octets to TEXT: a key in a header, a
+token in a URL (not URL-safe; that alphabet is not here), a mail
+body line
+
+### FromBase64 (RO s: STR) : SLICE OF BYTE RAISES ValueRange
+
+the octets back, STRICTLY -- Python's base64.b64decode (s,
+validate=True): a character outside the alphabet, a blank, a line
+break, a length that is not a multiple of four, padding that is
+not one or two = at the very end, each RAISES ValueRange.  What
+Python takes is taken: the unused low bits before a = are not
+held to zero

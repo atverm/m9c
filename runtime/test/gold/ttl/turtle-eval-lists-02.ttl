@@ -1,0 +1,9 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+_:b0 rdf:first 1 ;
+    rdf:rest _:b1 .
+_:b1 rdf:first "2" ;
+    rdf:rest _:b2 .
+_:b2 rdf:first <http://www.w3.org/2013/TurtleTests/o> ;
+    rdf:rest rdf:nil .
+<http://www.w3.org/2013/TurtleTests/s> <http://www.w3.org/2013/TurtleTests/p> _:b0 .

@@ -1,0 +1,29 @@
+(* EXPECT: cannot write through t, which holds the RO field s (line 25) (par 2.4) *)
+(* An RO FIELD annotates the view, not the slot (par 2.4): `RO s: STR'
+   in a record holds storage someone else owns, writing through `r.s'
+   is refused -- and until 2026-10-08 copying it into a local and
+   writing there was not, the last of decision 33's named gaps.  The
+   field is resolved as CheckWrite resolves a write, through pointers
+   and elements.  The legal forms first: reading through the copy,
+   lending it RO, assigning the field itself. *)
+MODULE m ;
+TYPE Rec = RECORD RO s : STR ; n : I64 END ;
+VAR
+  r : Rec ;
+  src : STR ;
+PROCEDURE Count (RO s: STR) : I64 = BEGIN RETURN LEN (s) END Count ;
+PROCEDURE Fine (p: PTR Rec) : I64 =
+VAR t : STR ;
+BEGIN
+  r.s := src ;
+  t := p.s ;
+  RETURN Count (t) + LEN (r.s)
+END Fine ;
+PROCEDURE Bad () RAISES IndexError =
+VAR t : STR ;
+BEGIN
+  t := r.s ;
+  t[0] := 'X'
+END Bad ;
+BEGIN
+END m.

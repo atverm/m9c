@@ -51,9 +51,13 @@ run System Io DynStr Text
 run Json DynStr
 run Http DynStr Io
 run Sparql DynStr Io Http Json Text
-run Rdf DynStr Text
+run Rdf DynStr Fmt Json Text Xml
 run Regex DynStr Text
+run Map DynStr Faults Fmt Math Plot Stats
 run Xml DynStr Fmt Text
+run Hash Bits Faults
+run Smtp Time DynStr Fmt Text
+run Rsa Hash Text
 run HttpServer DynStr Http Io Logger Zip
 run OpenApi HttpServer DynStr
 run ApiSpec DynStr
@@ -120,6 +124,22 @@ grep -q -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' /tmp/gen_fpc.txt \
   && grep -A2 '__typeof__(b) m9v = ShareUse_Make (n, err);' /tmp/gen_fpc.txt | grep -q 'if (err->exc) goto' \
   && grep -q 'b = ((__typeof__(b)) m9_share_copy (m9v));' /tmp/gen_fpc.txt \
   || { echo "ShareUse: a raising call's answer is stored before its error slot is read -- in BOTH generators"; exit 1; }
+# ... and a raising call nested as an ARGUMENT is hoisted into a guarded
+# temporary before the enclosing call (par 5, 2026-10-08)
+grep -q -A1 '{ __typeof__(ShareUse_Count (n, err)) m9a[0-9]* = ShareUse_Count (n, err);' /tmp/gen_fpc.txt \
+  && grep -A1 '{ __typeof__(ShareUse_Count (n, err)) m9a[0-9]* = ShareUse_Count (n, err);' /tmp/gen_fpc.txt | grep -q 'if (err->exc) goto' \
+  && grep -q 'ShareUse_Use (m9a[0-9]*, err);' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: a raising call nested as an argument is not guarded before the enclosing call -- in BOTH generators"; exit 1; }
+# F32 of a double is a checked conversion, and a U64 literal past 2^63
+# is spelled UINT64_C (2026-10-08)
+grep -q 'm9_f32_f64 (x, err)' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: F32 of a double is not the checked conversion -- in BOTH generators"; exit 1; }
+grep -q 'm9_gridof (m9t[0-9]*\.len, m9t[0-9]*n, 2, m9t[0-9]*r\.n, m9t[0-9]*r\.s, err);' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: GRID (s, n0, n1) is not laid over the slice through m9_gridof -- in BOTH generators"; exit 1; }
+grep -q 'static double y0_;' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: a module variable named y0 is not escaped from libm's Bessel function -- in BOTH generators"; exit 1; }
+grep -q 'UINT64_C(18446744073709551615)' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: a U64 literal past 2^63 is not UINT64_C -- in BOTH generators"; exit 1; }
 run Sem Ast DynStr Print Text
 run Doc Ast DynStr Text Print Lex
 run Review Ast DynStr Text

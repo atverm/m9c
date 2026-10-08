@@ -22,7 +22,9 @@ MODULE ZipTest ;
    byte. *)
 
 IMPORT Check ;
+IMPORT DynStr ;
 IMPORT Io ;
+IMPORT Text ;
 IMPORT Zip ;
 
 VAR
@@ -489,6 +491,95 @@ CONST
          'the gzip stream is corrupt',
          'the gzip stream is corrupt'] ;
 
+(* the writer: an archive written, read back by Open above and held
+   member by member; the refusals.  Python's zipfile reads the same
+   kind of archive in runtime/test/deflate.sh, the witness that is not
+   ours. *)
+PROCEDURE Writes () RAISES Zip.Error, Io.IOError, ValueRange =
+CONST
+  Path = '/tmp/m9ziptest-written.zip' ;
+VAR
+  w : PTR Zip.Writer IN pool ;
+  a : PTR Zip.Archive IN pool ;
+  table, noise, got, whole : SLICE OF BYTE ;
+  names : SLICE OF STR ;
+  i, x : I64 ;
+  m : STR ;
+BEGIN
+  table := NEW (pool, BYTE, 100000) ;   (* a period of 256: deflate finds it *)
+  FOR i := 0 TO LEN (table) - 1 DO table[i] := BYTE ((i * 7 + 3) MOD 256) END ;
+  noise := NEW (pool, BYTE, 20000) ;    (* a generator: deflate stores it *)
+  x := 12345 ;
+  FOR i := 0 TO LEN (noise) - 1 DO
+    x := (x * 1103515245 + 12345) MOD 2147483648 ;
+    noise[i] := BYTE ((x DIV 65536) MOD 256)
+  END ;
+  w := Zip.NewWriter (pool) ;
+  Zip.AddBytes (w, 'a.txt', DynStr.Bytes (pool, 'hello world', FALSE), FALSE) ;
+  Zip.SetTime (w, 2026, 10, 7, 12, 34, 57) ;
+  Zip.AddBytes (w, 'dir/table.bin', table, TRUE) ;
+  Zip.AddBytes (w, 'noise.bin', noise, TRUE) ;
+  Zip.AddBytes (w, 'empty', SLICE (noise, 0, 0), TRUE) ;
+  Zip.AddBytes (w, '' + 0E9C + 't' + 0E9C + '.txt', SLICE (table, 0, 300), FALSE) ;
+  Zip.AddBytes (w, 'again/table.bin', table, FALSE) ;
+  whole := Zip.Finish (w) ;
+  Zip.WriteTo (w, Path) ;
+  Check.EqI64 (t, 'written: Finish and WriteTo agree', LEN (Io.ReadFileBytes (pool, Path)), LEN (whole)) ;
+  Check.That (t, 'written: the deflated table is small', LEN (whole) < 100000 + 20000 + 300 + 11 + 2000) ;
+  a := Zip.Open (pool, Path) ;
+  Check.EqI64 (t, 'written: six members read back', Zip.Count (a), 6) ;
+  names := NEW (pool, STR, 6) ;
+  names[0] := 'a.txt' ; names[1] := 'dir/table.bin' ; names[2] := 'noise.bin' ;
+  names[3] := 'empty' ; names[4] := '' + 0E9C + 't' + 0E9C + '.txt' ; names[5] := 'again/table.bin' ;
+  FOR i := 0 TO 5 DO
+    Check.EqStr (t, 'written: name ' + names[i], Zip.NameAt (a, i), names[i])
+  END ;
+  Check.EqI64 (t, 'written: a.txt stored', Zip.MethodAt (a, 0), Zip.Stored) ;
+  Check.EqI64 (t, 'written: the table deflated', Zip.MethodAt (a, 1), Zip.Deflated) ;
+  Check.EqI64 (t, "written: the table's size", Zip.SizeAt (a, 1), 100000) ;
+  Check.EqI64 (t, 'written: the empty member', Zip.SizeAt (a, 3), 0) ;
+  got := Whole (a, 0, 11, 0) ;
+  Check.EqStr (t, 'written: a.txt read back', DynStr.Chars (pool, got), 'hello world') ;
+  got := Whole (a, 1, 100000, 0) ;
+  Check.EqI64 (t, 'written: the table read back whole', Sum (got), Sum (table)) ;
+  got := Whole (a, 2, 20000, 1000) ;
+  Check.EqI64 (t, 'written: the noise read back whole', Sum (got), Sum (noise)) ;
+  got := Whole (a, 3, 0, 0) ;
+  Check.EqI64 (t, 'written: the empty member reads nothing', LEN (got), 0) ;
+  got := Whole (a, 5, 100000, 0) ;
+  Check.EqI64 (t, 'written: the stored table read back whole', Sum (got), Sum (table)) ;
+  Check.That (t, 'written: a member read with the CRC checked', Zip.Find (a, 'noise.bin') = 2) ;
+  (* the empty archive: 22 bytes, read as nothing *)
+  w := Zip.NewWriter (pool) ;
+  Check.EqI64 (t, 'written: an empty archive is its end record', LEN (Zip.Finish (w)), 22) ;
+  Zip.WriteTo (w, Path) ;
+  a := Zip.Open (pool, Path) ;
+  Check.EqI64 (t, 'written: an empty archive opens with no member', Zip.Count (a), 0) ;
+  (* the refusals *)
+  Check.EqStr (t, 'written: an empty name refused', WriteRefusal (w, '', 1980), 'a member needs a name') ;
+  Zip.AddBytes (w, 'x', table, FALSE) ;
+  Check.EqStr (t, 'written: a name twice refused', WriteRefusal (w, 'x', 1980), 'a member named twice: x') ;
+  m := WriteRefusal (w, 'y', 1979) ;
+  Check.That (t, 'written: 1979 is not a zip time', Text.StartsWith (m, 'not a time a zip can hold')) ;
+  m := WriteRefusal (w, DynStr.Chars (pool, NEW (BYTE, 65536)), 1980) ;
+  Check.That (t, 'written: a name over 65535 octets refused', Text.StartsWith (m, 'a member name over 65535 octets')) ;
+  Check.That (t, 'written: the file removed', Io.Remove (Path))
+END Writes ;
+
+PROCEDURE WriteRefusal (VAR w: PTR Zip.Writer ; RO name: STR ; year: I64) : STR =
+  (* the Error's text of SetTime at year, then AddBytes of a stored
+     member named name; '' when both are accepted *)
+VAR one : SLICE OF BYTE ;
+BEGIN
+  one := NEW (BYTE, 1) ;
+  Zip.SetTime (w, year, 1, 1, 0, 0, 0) ;
+  Zip.AddBytes (w, name, one, FALSE) ;
+  RETURN ''
+EXCEPT
+| Zip.Error (msg) : RETURN msg
+| ValueRange : RETURN 'ValueRange'
+END WriteRefusal ;
+
 BEGIN
   gold := Check.GoldPath ('Zip.gold') ;
   Good () ;
@@ -499,6 +590,7 @@ BEGIN
   Packs () ;
   Zlibs () ;
   Sums () ;
+  Writes () ;
   Io.Halt (Check.Done (t, 'Zip'))
 EXCEPT
 | Zip.Error (msg) :

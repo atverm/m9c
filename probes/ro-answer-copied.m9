@@ -1,0 +1,24 @@
+(* EXPECT: cannot write through t, which holds the RO answer of View (line 20) (par 2.4) *)
+(* A function declared `: RO STR' answers read-only storage (the
+   report's `PROCEDURE G () : RO STR'), and until 2026-10-08 a local
+   given that answer could be written through: decision 33 followed
+   a literal, a CONST and what an RO parameter views, not a call.  The
+   legal forms first: the answer read, and lent to an RO parameter. *)
+MODULE m ;
+VAR src : STR ;
+PROCEDURE View () : RO STR = BEGIN RETURN src END View ;
+PROCEDURE Count (RO s: STR) : I64 = BEGIN RETURN LEN (s) END Count ;
+PROCEDURE Fine () : I64 =
+VAR t : STR ;
+BEGIN
+  t := View () ;
+  RETURN Count (t)
+END Fine ;
+PROCEDURE Bad () RAISES IndexError =
+VAR t : STR ;
+BEGIN
+  t := View () ;
+  t[0] := 'X'
+END Bad ;
+BEGIN
+END m.

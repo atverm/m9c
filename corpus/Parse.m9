@@ -60,7 +60,7 @@ PROCEDURE Init (VAR p: Parser ; RO KEPT src: STR) ;
               caller's buffer must outlive both, which is the same
               contract Json.Parse has with its document.          *)
 
-PROCEDURE File (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node ;
+PROCEDURE File (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node ;
   (* parses a whole file and answers its NFile node, whose kids are
      the definition and implementation units in source order.
 
@@ -326,15 +326,15 @@ BEGIN
 END Init ;
 
 (* forward heads for the mutual recursion *)
-PROCEDURE PExpr (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node ;
-PROCEDURE PType (VAR pool: POOL ; VAR p: Parser)
+PROCEDURE PExpr (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node ;
+PROCEDURE PType (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node ;
-PROCEDURE PStmtSeq (VAR pool: POOL ; VAR p: Parser ; sid: I64)
+PROCEDURE PStmtSeq (VAR pool: POOL ; VAR KEPT p: Parser ; sid: I64)
   : PTR Ast.Node ;
-PROCEDURE PDeclaration (VAR pool: POOL ; VAR p: Parser)
+PROCEDURE PDeclaration (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node ;
-PROCEDURE PBlock (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node ;
-PROCEDURE PDesignator (VAR pool: POOL ; VAR p: Parser)
+PROCEDURE PBlock (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node ;
+PROCEDURE PDesignator (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node ;
 
 PROCEDURE PQualident (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
@@ -365,7 +365,7 @@ BEGIN
   RETURN n
 END PIdentList ;
 
-PROCEDURE PArgList (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PArgList (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NArgList) ;
@@ -406,7 +406,7 @@ END DesigToQual ;
    in the frame form), kids[2..] the rest, with a NONE in kids[2] when
    there is no third.  The single-argument form keeps kids[1] as a
    qualident, as it always was. *)
-PROCEDURE PNew (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PNew (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, d1, d2 : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NNewExpr) ;
@@ -480,6 +480,17 @@ BEGIN
     Expect (p, TkRParen)
   ELSIF p.cur.kind = TkNEW THEN
     n := PNew (pool, p)
+  ELSIF p.cur.kind = TkGRID THEN
+    (* GRID (s, n0, ..., nR): a grid laid over a slice (par 2.2.1) *)
+    n := Nn (pool, p, Ast.NGridOf) ;
+    Bump (p) ;
+    Expect (p, TkLParen) ;
+    Ast.Add (pool, n, SOME (PExpr (pool, p))) ;
+    WHILE p.cur.kind = TkComma DO
+      Bump (p) ;
+      Ast.Add (pool, n, SOME (PExpr (pool, p)))
+    END ;
+    Expect (p, TkRParen)
   ELSIF p.cur.kind = TkSLICE THEN
     n := Nn (pool, p, Ast.NSliceOf3) ;
     Bump (p) ;
@@ -524,7 +535,7 @@ BEGIN
   RETURN n
 END PFactor ;
 
-PROCEDURE PTerm (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PTerm (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r : PTR Ast.Node ;
 BEGIN
   r := PFactor (pool, p) ;
@@ -539,7 +550,7 @@ BEGIN
   RETURN r
 END PTerm ;
 
-PROCEDURE PSimple (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PSimple (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r, sgn : PTR Ast.Node ;
   neg : BOOL ;
 BEGIN
@@ -566,7 +577,7 @@ BEGIN
   RETURN r
 END PSimple ;
 
-PROCEDURE PRel (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PRel (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r : PTR Ast.Node ;
 BEGIN
   r := PSimple (pool, p) ;
@@ -581,7 +592,7 @@ BEGIN
   RETURN r
 END PRel ;
 
-PROCEDURE PConj (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PConj (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r : PTR Ast.Node ;
 BEGIN
   r := PRel (pool, p) ;
@@ -596,7 +607,7 @@ BEGIN
   RETURN r
 END PConj ;
 
-PROCEDURE PDisj (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PDisj (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, r : PTR Ast.Node ;
 BEGIN
   r := PConj (pool, p) ;
@@ -611,7 +622,7 @@ BEGIN
   RETURN r
 END PDisj ;
 
-PROCEDURE PExpr (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PExpr (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, e, t : PTR Ast.Node ;
 BEGIN
   e := PDisj (pool, p) ;
@@ -632,7 +643,7 @@ BEGIN
   RETURN e
 END PExpr ;
 
-PROCEDURE PDesignator (VAR pool: POOL ; VAR p: Parser)
+PROCEDURE PDesignator (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node =
 VAR n, sel : PTR Ast.Node ;
 BEGIN
@@ -674,7 +685,7 @@ BEGIN
   RETURN NONE
 END PAttribOpt ;
 
-PROCEDURE PFieldSeq (VAR pool: POOL ; VAR p: Parser ; sid: I64)
+PROCEDURE PFieldSeq (VAR pool: POOL ; VAR KEPT p: Parser ; sid: I64)
   : PTR Ast.Node =
 VAR n, g : PTR Ast.Node ;
 BEGIN
@@ -706,7 +717,7 @@ BEGIN
   RETURN n
 END PFieldSeq ;
 
-PROCEDURE PVariant (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PVariant (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NVariant) ;
@@ -721,7 +732,7 @@ BEGIN
   RETURN n
 END PVariant ;
 
-PROCEDURE PType (VAR pool: POOL ; VAR p: Parser)
+PROCEDURE PType (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node =
 VAR n, n2 : PTR Ast.Node ;
 BEGIN
@@ -858,7 +869,7 @@ BEGIN
   RETURN n
 END PType ;
 
-PROCEDURE PCaseLabel (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PCaseLabel (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   IF p.cur.kind = TkIdent THEN
@@ -882,7 +893,7 @@ BEGIN
   RETURN n
 END PCaseLabel ;
 
-PROCEDURE PCaseArm (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PCaseArm (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, lbls : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NCaseArm) ;
@@ -905,7 +916,7 @@ BEGIN
          k = TkEXCEPT OR k = TkFINALLY OR k = TkBar OR k = TkEOF
 END IsStmtEndK ;
 
-PROCEDURE PStatement (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PStatement (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, d, e : PTR Ast.Node ;
 BEGIN
   IF p.cur.kind = TkIdent THEN
@@ -1062,7 +1073,7 @@ BEGIN
   RETURN n
 END PStatement ;
 
-PROCEDURE PStmtSeq (VAR pool: POOL ; VAR p: Parser ; sid: I64)
+PROCEDURE PStmtSeq (VAR pool: POOL ; VAR KEPT p: Parser ; sid: I64)
   : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
@@ -1091,7 +1102,7 @@ BEGIN
   RETURN n
 END PStmtSeq ;
 
-PROCEDURE PHandler (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PHandler (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, args, h : PTR Ast.Node ;
   had : BOOL ;
 BEGIN
@@ -1132,7 +1143,7 @@ BEGIN
   RETURN n
 END PHandler ;
 
-PROCEDURE PBlock (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PBlock (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, fin : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NBlock) ;
@@ -1155,7 +1166,7 @@ BEGIN
   RETURN n
 END PBlock ;
 
-PROCEDURE PParamList (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PParamList (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n, pr : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NParamList) ;
@@ -1202,7 +1213,7 @@ BEGIN
   RETURN n
 END PRaises ;
 
-PROCEDURE PProcBody (VAR pool: POOL ; VAR p: Parser ;
+PROCEDURE PProcBody (VAR pool: POOL ; VAR KEPT p: Parser ;
                      RO name: STR) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
@@ -1270,7 +1281,7 @@ END PProcDecl ;
    as expressions; that they are constants, and of one type, is the
    checker's to say, with a position.  An empty list is a parse
    error: an aggregate with no element has no element type. *)
-PROCEDURE PAggregate (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE PAggregate (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR n : PTR Ast.Node ;
 BEGIN
   n := Nn (pool, p, Ast.NAggregate) ;
@@ -1284,7 +1295,7 @@ BEGIN
   RETURN n
 END PAggregate ;
 
-PROCEDURE PDeclaration (VAR pool: POOL ; VAR p: Parser)
+PROCEDURE PDeclaration (VAR pool: POOL ; VAR KEPT p: Parser)
   : PTR Ast.Node =
 VAR n, d : PTR Ast.Node ;
 BEGIN
@@ -1382,7 +1393,7 @@ BEGIN
   END
 END PImports ;
 
-PROCEDURE PDecls (VAR pool: POOL ; VAR p: Parser ;
+PROCEDURE PDecls (VAR pool: POOL ; VAR KEPT p: Parser ;
                   VAR parent: PTR Ast.Node) =
 BEGIN
   WHILE IsDeclStart (p.cur.kind) DO
@@ -1479,7 +1490,7 @@ BEGIN
   RETURN n
 END PUnit ;
 
-PROCEDURE File (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node =
+PROCEDURE File (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR
   n, u : PTR Ast.Node ;
   before : I64 ;

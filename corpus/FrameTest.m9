@@ -13,6 +13,8 @@ MODULE FrameTest ;
    Everything but Describe is exact. *)
 
 IMPORT Check ;
+IMPORT Csv ;
+IMPORT DynStr ;
 IMPORT Faults ;
 IMPORT Frame ;
 IMPORT Io ;
@@ -660,6 +662,43 @@ BEGIN
   Io.Halt (Check.Done (t, 'Frame'))
 END Fail ;
 
+(* FromCsv carries every kind the caller declared: Text, Int, Real
+   (F32) and Real64 (F64).  The Real64 arm was EMPTY until 2026-10-08
+   -- the column parsed and dropped without a word, found by an
+   example notebook whose frame had two columns of three. *)
+PROCEDURE CsvKinds () =
+CONST Nl = 0AC ;
+VAR
+  opt : Csv.Options ;
+  tb : PTR Csv.Table IN pool ;
+  f : PTR Frame.Fr IN pool ;
+  v : SLICE OF F64 ;
+BEGIN
+  opt := Csv.Defaults () ;
+  tb := Csv.OpenBytes (pool, DynStr.Utf8 (pool,
+          's,n,x,y' + Nl + 'a,1,1.5,2.25' + Nl + 'b,2,2.5,4.5' + Nl), opt) ;
+  Csv.SetText (tb, 0) ;
+  Csv.SetInt (tb, 1) ;
+  Csv.SetReal (tb, 2) ;
+  Csv.SetReal64 (tb, 3) ;
+  Csv.Parse (pool, tb) ;
+  f := Frame.FromCsv (pool, tb) ;
+  Check.EqI64 (t, 'FromCsv keeps every declared column', Frame.Cols (f), 4) ;
+  Check.EqI64 (t, 'a Real64 column is F64', Frame.KindOf (f, 'y'), Frame.KindF64) ;
+  Check.EqI64 (t, 'a Real column is F32', Frame.KindOf (f, 'x'), Frame.KindF32) ;
+  v := Frame.ColF64 (f, 'y') ;
+  Check.EqI64 (t, 'the F64 column has every row', LEN (v), 2) ;
+  Check.EqF64 (t, 'the F64 column reads back exactly', v[1], 4.5)
+EXCEPT
+| Csv.ParseError : Fail ('CsvKinds: the CSV is refused')
+| Csv.RangeError : Fail ('CsvKinds: a value out of range')
+| Frame.Unknown : Fail ('CsvKinds: a column is missing')
+| Frame.WrongType : Fail ('CsvKinds: a column has the wrong kind')
+| Frame.Duplicate : Fail ('CsvKinds: a column twice')
+| Faults.SizeError : Fail ('CsvKinds: the sizes disagree')
+| ValueRange : Fail ('CsvKinds: a value out of range')
+END CsvKinds ;
+
 VAR f : PTR Frame.Fr IN pool ;
 
 BEGIN
@@ -673,6 +712,7 @@ BEGIN
   Describes (f) ;
   Callbacks (f) ;
   Refusals (f) ;
+  CsvKinds () ;
   Io.Halt (Check.Done (t, 'Frame'))
 EXCEPT
 | Faults.SizeError : Fail ('no SizeError escapes')

@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.17.0, 2026-10-07
+## Report — revision 0.18.0, 2026-10-08
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -31,11 +31,11 @@ to reduce, so the list is meant to shrink.
 |---|---|
 | **Compiler** | `m9c`, self-hosted. Lexer, parser and code generator are written in M9; the three-stage bootstrap is byte-identical at the fixpoint (§9.5) |
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
-| **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01; not through a copy into a local), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
-| **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); `F32 (F64)` narrowing (§2.1); flow-sensitive `OPT`; a loop-carried use after move, an owned field, a pool value stored beyond a direct `RETURN` or in a module variable (§4) |
-| **Accepted by the checker, refused by the generator** — so `m9c --check` and the editor do not show them | `OPT T` for a non-pointer `T`; `CASE` over a call; `CONST` over an expression; an array bound from an imported `CONST`; `EXCEPT` and `FINALLY` on one block; `ELSIF` after `IS SOME`; `EXIT` inside a `CASE` arm or across `FINALLY`; a scalar `CASE` without `ELSE` (semantics undecided); a string literal beyond ASCII; a `THREAD` target in another module (a link error) |
+| **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
+| **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); flow-sensitive `OPT`; a loop-carried use after move, an owned field, a pool value stored beyond a direct `RETURN` or in a module variable (§4) |
+| **Accepted by the checker, refused by the generator** — so `m9c --check` and the editor do not show them | `OPT T` for a non-pointer `T`; `CASE` over a call; `CONST` over an expression; `EXCEPT` and `FINALLY` on one block; `ELSIF` after `IS SOME`; `EXIT` inside a `CASE` arm or across `FINALLY`; a scalar `CASE` without `ELSE` (semantics undecided); a string literal beyond ASCII |
 | **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` (§6); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.17.0 on six distributions and a Windows zip; this revision describes it |
+| **Release** | 0.18.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
 ### Contents
 
@@ -172,11 +172,13 @@ build.sh.*
 There are **no implicit conversions**, including widenings.
 `F64(i)`, `I32(x) RAISES ValueRange` — every conversion is written,
 and every narrowing to an integer, and every float-to-int conversion,
-is checked. *(`F32 (F64)` is the stated exception and is not yet
-checked: it is a narrowing between floating formats, where IEEE 754
-already defines the result — rounding, or an infinity — rather than
-leaving it undefined. It is on the checker's remaining-softness list
-because a silent infinity is still a surprise.)*
+is checked.  `F32 (x)` of an F64 is checked too (since 2026-10-08): a
+finite value beyond F32's range raises `ValueRange` instead of
+becoming an infinity -- IEEE 754 defines that infinity, and it is
+still a surprise -- while an infinity or a NaN passes through as
+itself, and a value in range is rounded to nearest as before.  *(It
+was the stated exception until then; the checker's `RAISES` had
+always counted it.)*
 
 **A loop variable is a variable like any other**: declared, of an
 integer type when the bounds are integers and of the enumeration when
@@ -673,10 +675,46 @@ storage to a by-value slice, none into a callee that wrote. The rule
 at the call costs those three; a rule at the write would have cost
 the 164.)*
 
-What this does not yet follow: read-only storage copied into a local
-and written from there (`t := s ; t[0] := 'X'` with `s` an `RO`
-parameter), an `RO` field or an `RO` result lent onward, and `RO` on
-a variable declaration, which the checker does not read at all.
+**The copy is followed too** (since 2026-10-08): a local or parameter
+of slice or grid type that an assignment anywhere in the procedure
+gives read-only storage -- a string literal, a `CONST`, what an `RO`
+parameter or `RO` variable views, a `SLICE` of one, or a name so
+marked -- holds it for the whole procedure.  A write through the name
+and a lend of it to a writable parameter are refused, naming the
+storage and the line of the assignment (`cannot write through t,
+which holds a string literal (line 17)`).  Whole-procedure and not
+flow-sensitive, as `RO` itself is a property of a declaration; the
+empty literal `''` marks nothing, since no write can reach a slice of
+length 0.  *(Observed: `t := 'abc' ; t[0] := 'X'` passed both
+checkers and died with SIGSEGV from 2026-10-01 to 2026-10-08,
+`museum/write-through-copy.m9`.  Measured before building: 0 sites
+refused in the 215 files of this repository once the empty literal was
+exempted -- `Xml.CharData` starts its buffer as `''`.)*
+
+A module variable is followed across the unit (the same day, later):
+before the bodies are checked, every assignment in the unit -- each
+procedure's and the module body's -- that gives a bare module
+variable of slice or grid type a literal, a `CONST` or a marked module
+variable (a `SLICE` of one included) marks it, and the mark enters
+every procedure's scope with the variable; what an `RO` parameter
+views is marked for that procedure alone.  *(0 sites in the tree.)*
+
+The answer of a function declared `: RO T` is followed the same way
+(`t := View () ; t[0] := 'X'` is refused naming the RO answer of
+View), and so is an `RO` field (`t := r.s` with `RO s: STR` in the
+record, the field resolved through pointers and elements as a write
+is).  A **record** copied from read-only storage copies the views its
+fields hold, so the copy carries the mark too (since 2026-10-08): with
+`RO r: Rec` and `t := r`, writing the copy itself -- `t.n := 5`, `t.s
+:= fresh` -- stays legal, and a write that lands beyond it through a
+slice or a pointer a field holds (`t.s[0] := 'X'`) is refused; a field
+given storage that is not read-only is *refreshed*, and writes
+through that field are legal again (`d := c ; d.defs := NEW (pool,
+TermDef, n) ; d.defs[i] := ...`, for the whole procedure, as the mark
+itself is).  An `RO` field and an `RO` answer are held at the CALL
+too (since 2026-10-08): lent to a writable slice or grid parameter
+they are refused as an `RO` parameter is.  What this does not yet
+follow: a call that answers a view without saying `RO`.
 
 On a **field** it annotates the view, not the slot. A field declared
 `RO s : STR` holds a slice of storage someone else owns, so writing
@@ -769,6 +807,20 @@ A rank-1 view is a `GRID 1 OF T` and **not** a `SLICE`: a slice is
 there is — the column at (i, j) of a 3-D field — is strided.
 *(This corrects the design note that preceded the implementation,
 which proposed a slice; the report is edited by the compiler.)*
+
+**`GRID (s, n0, ..., nR)` lays a grid over a slice** (since 2026-10-08):
+a `GRID R OF T` whose storage is the `SLICE OF T` named by `s`,
+row-major, with the extents given -- so a flat buffer read from a
+file, or a column of a frame, is indexed as the matrix it is without
+a copy.  The extents are integers, at most four of them (the ranks
+the runtime writes out), and are held to the slice's length when
+the expression runs: a product that is not `LEN (s)` raises
+`IndexError` and the grid answered is empty, so nothing is read
+through it.  The slice is NAMED by a designator -- a variable, a
+field, an element -- because the element type is read off its
+declaration (`VIEW` has the same rule); a `SLICE (...)` goes into a
+variable first.  A grid laid over read-only storage is a view of it
+and carries its mark (§2.4).
 
 Layout is row-major: the last axis has stride 1. That is what the C
 back end gives for nothing, and it makes a rule a reviewer can check
@@ -943,10 +995,14 @@ Rules:
    `IMPORT` lines of a module are the whole list of what it depends
    on. The definition and the implementation of a module are one
    module here: an import in either serves both. A module names
-   itself freely, and a variable, parameter, binder, type or constant
+   itself freely, and a variable, parameter, type or constant
    declared in the procedure, or at the module's own level, is that
-   name and not a module's. Refused by both checkers, once a module,
-   at the first place it is named. *(Built 2026-10-02. The compiler
+   name and not a module's; a binder is, inside the statements it
+   binds -- the THEN or DO of its `IS SOME`, the CASE arm, the
+   handler -- and nowhere else (since 2026-10-08; until then a binder
+   anywhere in the procedure shadowed the module throughout it).
+   Refused by both checkers, once a module, at the first place it is
+   named. *(Built 2026-10-02. The compiler
    is handed the transitive closure of the imports — it must be, to
    check a signature that mentions a type from a third module — and
    every lookup found any module in it. Observed: the test of
@@ -980,6 +1036,37 @@ Rules:
    before the rule stood: 425 files here and in two applications,
    46 forward declarations in the toolchain and those two.
    `museum/declared-twice.m9` is the piece.)*
+
+7. **A typo in a name is said by the checker, not by the C
+   compiler.** Three shapes that the checker's softness had let
+   through to the generator are refused where they stand, with the
+   generator's own wording: a bare name on the left of `:=` that is
+   declared nowhere (`unknown name: x`); a qualified name whose module
+   the checker has LOADED and which that module does not declare — no
+   procedure, type, constant, exception or exported variable of that
+   name (`unknown name: Math.Nosuch -- Math declares no such name`);
+   and the type position of a `NEW` naming a type nobody declares
+   (`unknown type: Nosuch`, or `unknown type: Mod.T -- Mod declares
+   no such type` for a loaded module). The softness contract stands
+   where it belongs: a module the checker has not loaded says
+   nothing, since that may be a missing import, and a bare type name
+   in a declaration stays soft for the same reason. *(Built
+   2026-10-08, the owed ledger's three. Observed: `NEW (pool,
+   AttrsKids, 64)` with no such type passed `--check` while `Xml` was
+   written and surfaced as the generator's `unknown name` without the
+   M9 line (2026-10-07); `x := Math.Nosuch + 1.0` was accepted by the
+   checker and refused by the generator naming the wrong thing,
+   `unknown name: Math` (found by `m9c --show`, 2026-10-05).
+   Measured over every `.m9` in the tree with both checkers: nothing
+   refused. `museum/undeclared-type-in-new.m9` is the piece.)*
+8. **A procedure is declared at module level.** The grammar lets a
+   declaration section hold a `PROCEDURE` (§10), and no part of the
+   toolchain supports a nested one; it is refused by name at its
+   declaration (`a nested procedure is not supported: Inner is
+   declared inside Outer; declare it at module level`). *(Since
+   2026-10-08; until then the body was skipped and the first call of
+   the inner procedure was `unknown procedure: Inner` -- refused,
+   with the wrong words.)*
 
 ---
 
@@ -1027,7 +1114,29 @@ copied into a local, bound by `IS SOME` or a `CASE` pattern, or
 viewed through `SLICE`, *carries* into the copy, and storing the
 carrier is storing the borrow — refused with the chain named:
 `undeclared retention: borrowed msg (carried by t) reaches module
-state`. A `KEPT` parameter the analysis never sees retained is
+state`. A RECORD carries what its fields hold (since 2026-10-08): a
+value whose type holds a reference by resolution -- a record, case
+record, array or `OPT` of one -- is stored as the reference would be,
+a field of a local record given a borrow makes the local a carrier
+(`c.data := v ; f.cols[n] := c`), and each reference-typed argument
+of a variant or record constructor on the right of a store
+(`f.cell := Data.F64s (v, 0.0)`) is stored as the argument itself
+would be. *(Until then only a bare pointer or slice was followed:
+`Frame.AddF64` and six siblings kept their callers' buffers without
+`KEPT`, and a caller reusing one buffer for several columns read the
+last column everywhere, 2026-10-04; `Sem.AddProc (m, p)` kept a
+record by value unseen.  Measured over the tree before building: 14
+sites in 7 procedures, every one a retention -- the seven `Add*`,
+`Dict.Put`'s value, `Rdf`'s context copies, `Sem.AddProc`, a test
+helper -- and one `ELSE` arm in `Json.CopyInto` rewritten arm by
+arm so that the checker sees scalars copied; the marks propagated to
+nine forwarding callers in `Parquet` and `NbCells`.)*  The call side
+reads the same way: a record argument, or a constructor argument
+wrapping a borrow, handed to a `KEPT` parameter asks the caller for
+its own `KEPT` -- and since a `Parser` record holds the source its
+tree views, the parser's `VAR KEPT p` at `PFactor` composed upward
+through 31 procedures that had forwarded `p` unmarked.
+A `KEPT` parameter the analysis never sees retained is
 reported the other way, as the `kept-unseen` ledger class: an
 overstated contract is a signal, and a false `KEPT` also errors
 every caller through the composition, so signatures are pressed
@@ -1195,7 +1304,14 @@ like `realish.panel.co2\x00\x00lish` -- the one unsound rewrite in
 70 scratch-pool conversions, now refused by both checkers
 (`pool-view-via-var`, `pool-ptr-via-var`, `pool-escape-by-shape`)
 and not made by the tool (a view stored through a parameter or into
-an element keeps the parameter).
+an element keeps the parameter).  Since 2026-10-08 the same holds for
+what a callee ANSWERS into a local pool handed to it: a procedure
+that takes a `POOL` and answers a pointer-bearing value answers into
+that pool -- that is what the parameter says (par 4.3) -- so `RETURN
+DynStr.Utf8 (scratch, text)` is refused as `RETURN NEW (scratch,
+...)` is, while a string answer, re-homed at exit, is not
+(`pool-escape-via-callee`; the museum's `escape-through-callee`, a
+test helper that answered freed octets the day before).
 
 No other allocation exists. `malloc` is visible or absent.
 
@@ -1250,6 +1366,21 @@ generators refuse to exceed — and nothing else; there is no class
 hierarchy and no cause chain. *(This paragraph promised "an optional
 cause chain" until 2026-09-27; nothing implemented one.)*
 
+**A call that raised answered nothing, as an argument too** (since
+2026-10-08): in `F (G (x))` the call `G` is made first, its error slot
+read, and only then `F` -- the generated C hoists a raising argument
+into a temporary with its own guard, `{ __typeof__(G (x)) m9a1 =
+G (x); if (err->exc) goto L; F (m9a1, err); }`, in an assignment, a
+call statement or a RETURN.  Not in the right operand of `AND` or
+`OR`, which is evaluated only when the left decides nothing (§2.3),
+and not in a loop's or an `ELSIF`'s condition, where the statement's
+guard after the fact stands as before.  *(Until then one C expression
+under one guard: `F` ran on whatever `G` had answered when it raised
+-- a zero, a NULL -- before the handler saw `G`'s error; ONEFlux's
+report 18, the generator's owed item.  Measured: 3,805 hoists in the
+library's generated C, 6.7 to 8.2 MB; fannkuch 1.636 to 1.654 s,
+mandelbrot 0.302 s both ways, outputs identical.)*
+
 A payload's strings are COPIED, twice, so they outlive the frame that
 built them.  At the RAISE the octets go into a per-thread in-flight
 buffer, because the raising procedure's frame and local pools are
@@ -1262,6 +1393,15 @@ allocated over them since, 1000 times in 1000
 (`runtime/test/runfix/RaisePayload.m9`).  A string kept past the
 handler that bound it must be copied by the program, as any frame
 value must.
+A handler's binders are typed: `| E (m, n) :` binds `m` and `n` to
+the first and second field of E's declaration, at the field's type,
+qualified in the module that declared E -- so `s := n` with `n` an
+I64 field and `s` a STR is refused as any assignment is, and `'x' +
+m` composes.  *(Since 2026-10-08.  Until then a handler's binder had
+no type in the checker: `s := code` with an I64 payload was accepted
+by checker and generator alike, and library code copied every binder
+into a declared local before using it.)*  A predeclared exception has
+no fields and binds nothing.
 Status-code style remains available and encouraged
 for *expected* conditions (`OPT`, BOOL returns) — RAISES is for
 contract violations and environmental failure, preserving Wirth's
@@ -1278,7 +1418,10 @@ Threads are in the language; data races are not.
   being moved into the thread. A MONITOR is shared *by reference* —
   one lock guarding one record is its whole point — so the compiler
   passes its address, and `THREAD (P, gate)` calls a `P` declared
-  `VAR g: Gate`. Anything else must already be pointer-shaped.  Since
+  `VAR g: Gate`. Anything else must already be pointer-shaped.  The
+  target is a procedure of the module that starts the thread (the
+  thunk is made beside it; an imported target is refused by name
+  since 2026-10-08, where it was a link error).  Since
   rule 2 of the pool elision plan (§4.3) the thread also receives the
   pool `gate` lives in, as `P`'s hidden argument: the pool is exactly
   as shared as the object, and the sharability rule below covers
@@ -1562,7 +1705,7 @@ features:
 
 ## 10. Grammar (complete, in Wirth's own EBNF)
 
-Seventy-three productions; the ceiling is one hundred, and past it a
+Seventy-four productions; the ceiling is one hundred, and past it a
 feature dies.  (The seventy-third is `Aggregate`, 2026-10-01: a
 bracketed list is the value of a `CONST` and of nothing else, so `[`
 in an expression is still only a subscript.)  Sixty-one keywords: the fifty-eight the language was
@@ -1665,11 +1808,12 @@ Term        = Factor { MulOp Factor } .
 MulOp       = "*" | "/" | "*%" | "DIV" | "MOD" .
 Factor      = number | string | "TRUE" | "FALSE" | "NONE"
             | "SOME" "(" Expr ")" | "SHARED" "(" Expr ")"
-            | NewExpr | SliceExpr
+            | NewExpr | SliceExpr | GridExpr
             | Designator [ "(" [ ExprList ] ")" ]
             | "(" Expr ")" | "NOT" Factor .
 NewExpr     = "NEW" "(" ( "OWN" "," Qualident | Designator { "," Expr } ) ")" .
 SliceExpr   = "SLICE" "(" Expr "," Expr "," Expr ")" .
+GridExpr    = "GRID" "(" Expr { "," Expr } ")" .
 Designator  = ident { "." ident | "[" Expr "]" } .
 
 Qualident   = ident [ "." ident ] .

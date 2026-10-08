@@ -9,6 +9,8 @@ void ExportDef_m9init (m9_state *err);
 
 typedef struct ExportDef_Box ExportDef_Box;
 
+#define ExportDef_Width INT64_C(4)
+
 typedef struct ExportDef_Box ExportDef_Box;
 struct ExportDef_Box {
   int64_t n;

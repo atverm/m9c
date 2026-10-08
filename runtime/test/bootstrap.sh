@@ -13,7 +13,7 @@
 set -e
 cd "$(dirname "$0")"
 
-MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Check Arrays Numeric Csv Delim Zip Png Pg Sparql Rdf Regex Xml NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review M9c Diag"
+MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Check Arrays Numeric Csv Delim Zip Png Pg Sparql Regex Xml Rdf Hash Smtp Rsa Map NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review M9c Diag"
 deps_of () {
   case $1 in
     Json|Lex)      echo DynStr ;;
@@ -36,9 +36,13 @@ deps_of () {
     ZarrStore)     echo DynStr Json Http Io ;;
     Pg)            echo DynStr Fmt Time ;;
     Sparql)        echo DynStr Io Http Json Text ;;
-    Rdf)           echo DynStr Text ;;
+    Rdf)           echo DynStr Fmt Json Text Xml ;;
     Regex)         echo DynStr Text ;;
+    Map)           echo DynStr Faults Fmt Math Plot Stats ;;
     Xml)           echo DynStr Fmt Text ;;
+    Hash)          echo Bits Faults ;;
+    Smtp)          echo Time DynStr Fmt Text ;;
+    Rsa)           echo Hash Text ;;
     Plot)          echo DynStr Mat Math Faults Fmt Text Time ;;
     Print)         echo Ast DynStr ;;
     Gen)           echo Ast DynStr Text ;;

@@ -90,10 +90,13 @@ type
     nkProcType,                   { PROCEDURE (...) [: T] [RAISES] as a
                                     type; kids as a ProcDecl's head:
                                     paramlist, result|nil, raises|nil }
-    nkAggregate                   { [ e1, ..., en ] as the value of a
+    nkAggregate,                  { [ e1, ..., en ] as the value of a
                                     CONST: the kids are the elements.
                                     Only a ConstDecl's kid is ever one.
                                     Ast.NAggregate, 2026-10-01 }
+    nkGridOf                      { GRID (s, n0, ..., nR): kids[0] the
+                                    slice, the rest the extents.
+                                    Ast.NGridOf, 2026-10-08 }
   );
 
   TNode = class

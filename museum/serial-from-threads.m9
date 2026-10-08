@@ -1,8 +1,22 @@
-(* EXPECT-ERROR: SERIAL procedure called from THREAD context *)
-(* The blosc trap: global-state C function raced across workers. *)
+(* EXPECT-ERROR: foreign procedure must declare [SERIAL] or [REENTRANT] *)
+(* The blosc trap: a global-state C function raced across worker
+   threads and answered right twelve times.  The language's answer
+   is the ATTRIBUTE: every foreign procedure says [SERIAL] or
+   [REENTRANT] -- an unstated contract cannot be checked -- and the
+   generator brackets every call of a [SERIAL] one with its unit's
+   monitor, so threads wait (decision 8; runtime/test/serialtest.m9
+   shows [REENTRANT] losing 85% of the updates where [SERIAL] is
+   exact).  Until 2026-10-08 this piece expected `SERIAL procedure
+   called from THREAD context', a per-unit chain check from before
+   the emitted monitor, which refused exactly what the monitor makes
+   correct; what must not compile is the declaration that says
+   nothing. *)
 MODULE m ;
-FROM cblosc IMPORT Decompress ;      (* declared [SERIAL] *)
+IMPORT cblosc ;
 PROCEDURE Worker (arg: I64) =
 VAR s : C.ConstPtr ; d : C.MutPtr ; n : C.SizeT ;
-BEGIN Decompress (s, d, n) END Worker ;
+BEGIN cblosc.Decompress (s, d, n) END Worker ;
 BEGIN THREAD (Worker, 0) END m.
+UNSAFE DEFINITION MODULE FOR "C" cblosc ;
+PROCEDURE Decompress = "blosc_decompress" (s: C.ConstPtr ; d: C.MutPtr ; n: C.SizeT) ;
+END cblosc.

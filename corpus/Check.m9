@@ -53,15 +53,16 @@ TYPE
     failed : I64 ;             (* how many of them did not hold *)
   END ;
 
-  Action = PROCEDURE () ;
-  Raiser = PROCEDURE () RAISES ValueRange ;
+  Action = PROCEDURE () RAISES ValueRange ;
+  Raiser = Action ;
     (* what Raises and RaisesValueRange run: a top-level procedure of
-       the test, with no parameters.  TWO types because a procedure
-       fits a procedure type only when its RAISES is the type's, to
-       the letter (par 2.2.3): IndexError and Overflow need no
-       clause, so a procedure that raises one of them is an Action;
-       one that raises ValueRange says so in its heading and is a
-       Raiser. *)
+       the test, with no parameters, raising ValueRange or nothing
+       (IndexError and Overflow need no clause).  ONE type since
+       2026-10-08: a procedure fits a procedure type when it raises
+       no MORE than the type allows (decision 25), so a quiet one
+       fits too.  Raiser is the old name, kept for the tests that
+       wrote it; there were two types while RAISES had to match to
+       the letter. *)
 
 PROCEDURE That (VAR t: T ; RO label: STR ; ok: BOOL) ;
   (* the plain form: ok must be TRUE.  The line it prints on failure
@@ -106,12 +107,12 @@ PROCEDURE NearF64s (VAR t: T ; RO label: STR ;
 PROCEDURE Raises (VAR t: T ; RO label: STR ; act: Action ;
                   RO want: STR) ;
 PROCEDURE RaisesValueRange (VAR t: T ; RO label: STR ; act: Raiser) ;
-  (* act must raise the predeclared exception named: want for an
-     Action, ValueRange for a Raiser.
+  (* act must raise the predeclared exception named; RaisesValueRange
+     is Raises with want = 'ValueRange'.
 
-       want -- 'IndexError' or 'Overflow'; any other name fails the
-               check, and the line says which two an Action can be
-               asked for
+       want -- 'IndexError', 'Overflow' or 'ValueRange'; any other
+               name fails the check, and the line says which three
+               can be asked for
 
      The failure line says what act did instead: raised nothing, or
      raised another of the three. *)
@@ -174,7 +175,7 @@ IMPORT Fmt ;
 IMPORT Math ;
 IMPORT Text ;
 
-CONST Known = ['IndexError', 'Overflow'] ;
+CONST Known = ['IndexError', 'Overflow', 'ValueRange'] ;
 
 PROCEDURE Bad (VAR t: T ; RO label: STR ; RO detail: STR) =
 BEGIN
@@ -401,17 +402,8 @@ BEGIN
 END NearF64s ;
 
 (* what act did: the name of the predeclared exception it raised, or
-   '' when it returned.  One for each type, alike but for the call. *)
+   '' when it returned *)
 PROCEDURE Outcome (act: Action) : STR =
-BEGIN
-  act () ;
-  RETURN ''
-EXCEPT
-| IndexError : RETURN 'IndexError'
-| Overflow : RETURN 'Overflow'
-END Outcome ;
-
-PROCEDURE OutcomeVR (act: Raiser) : STR =
 BEGIN
   act () ;
   RETURN ''
@@ -419,7 +411,7 @@ EXCEPT
 | ValueRange : RETURN 'ValueRange'
 | IndexError : RETURN 'IndexError'
 | Overflow : RETURN 'Overflow'
-END OutcomeVR ;
+END Outcome ;
 
 PROCEDURE Raised (VAR t: T ; RO label: STR ; RO did: STR ; RO want: STR) =
 BEGIN
@@ -438,8 +430,8 @@ VAR did : STR ;
 BEGIN
   t.checks := t.checks + 1 ;
   IF NOT Text.OneOf (want, Known) THEN
-    Bad (t, label, 'Check.Raises asks an Action for IndexError or ' +
-                   'Overflow, not ' + Quote (want))
+    Bad (t, label, 'Check.Raises asks for IndexError, Overflow or ' +
+                   'ValueRange, not ' + Quote (want))
   ELSE
     did := Outcome (act) ;
     Raised (t, label, did, want)
@@ -447,11 +439,8 @@ BEGIN
 END Raises ;
 
 PROCEDURE RaisesValueRange (VAR t: T ; RO label: STR ; act: Raiser) =
-VAR did : STR ;
 BEGIN
-  t.checks := t.checks + 1 ;
-  did := OutcomeVR (act) ;
-  Raised (t, label, did, 'ValueRange')
+  Raises (t, label, act, 'ValueRange')
 END RaisesValueRange ;
 
 (* ---- golden files ---- *)
@@ -480,32 +469,15 @@ END Fault ;
 (* decimal, with a sign; ok FALSE for anything else.  Fmt has no
    integer parser (2026-10-02); when it does, this goes. *)
 PROCEDURE Int (RO s: STR ; VAR ok: BOOL) : I64 =
-VAR
-  i, v, d : I64 ;
-  neg : BOOL ;
+  (* Io.ParseI64, which since 2026-10-08 takes the digits in negative
+     space so that the smallest I64 -- an integer column's missing
+     value, in every Frame golden -- reads; this module carried its
+     own parser for that until then *)
 BEGIN
-  ok := FALSE ;
-  v := 0 ;
-  i := 0 ;
-  neg := FALSE ;
-  IF LEN (s) > 0 THEN
-    IF s[0] = '-' THEN neg := TRUE ; i := 1 END
-  END ;
-  IF i >= LEN (s) THEN RETURN 0 END ;
-  (* the digits are taken in NEGATIVE space, where every I64 fits:
-     the smallest one has no positive twin, and it is the missing
-     value of an integer column -- the first Frame golden could not
-     be read until this was so *)
-  WHILE i < LEN (s) DO
-    d := ORD (s[i]) - ORD ('0') ;
-    IF d < 0 OR d > 9 THEN RETURN 0 END ;
-    v := v * 10 - d ;
-    i := i + 1
-  END ;
   ok := TRUE ;
-  IF neg THEN RETURN v END ;
-  RETURN -v
+  RETURN Io.ParseI64 (s)
 EXCEPT
+| ValueRange : ok := FALSE ; RETURN 0
 | Overflow : ok := FALSE ; RETURN 0
 END Int ;
 

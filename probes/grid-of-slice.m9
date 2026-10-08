@@ -1,0 +1,25 @@
+(* EXPECT: GRID needs a slice, not I64 *)
+(* GRID (s, n0, ..., nR) lays a grid of rank R over a slice's storage
+   (par 2.2.1, 2026-10-08): GRID R OF T for a SLICE OF T, row-major,
+   the extents integers held to the slice's length at run time
+   (IndexError, and an empty grid).  The legal forms first: rank 2
+   and rank 1 over a slice, a grid lent to an RO parameter; the last
+   lays a grid over an integer. *)
+MODULE m ;
+VAR
+  s : SLICE OF F64 ;
+  g : GRID 2 OF F64 ;
+  h : GRID 1 OF F64 ;
+  n : I64 ;
+PROCEDURE Sum (RO m: GRID 2 OF F64) : F64 RAISES IndexError =
+BEGIN RETURN m[0, 0] + m[1, 2] END Sum ;
+BEGIN
+  s := NEW (F64, 6) ;
+  g := GRID (s, 2, 3) ;
+  h := GRID (s, 6) ;
+  n := I64 (Sum (GRID (s, 2, 3))) ;
+  g := GRID (n, 2, 3)
+EXCEPT
+| IndexError : n := -1
+| ValueRange : n := -2
+END m.

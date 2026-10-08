@@ -474,9 +474,15 @@ Mat_Matrix * Mat_MulM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
     m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
-  { __typeof__(m) m9v = Mat_New (pool, Mat_Rows (a, err), Mat_Cols (b, err), err);
+  { __typeof__(Mat_Rows (a, err)) m9a1 = Mat_Rows (a, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Mat_Cols (b, err)) m9a2 = Mat_Cols (b, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Mat_New (pool, m9a1, m9a2, err);
     if (err->exc) goto L_ret;
     m = m9v;
+  }
+  }
   }
   { int64_t m9t2to;
   r = INT64_C(0);
@@ -532,9 +538,12 @@ Mat_Matrix * Mat_MulV (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 x, m9_state *err
     m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
-  { __typeof__(m) m9v = Mat_New (pool, Mat_Rows (a, err), INT64_C(1), err);
+  { __typeof__(Mat_Rows (a, err)) m9a3 = Mat_Rows (a, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Mat_New (pool, m9a3, INT64_C(1), err);
     if (err->exc) goto L_ret;
     m = m9v;
+  }
   }
   { int64_t m9t2to;
   r = INT64_C(0);
@@ -575,9 +584,15 @@ Mat_Matrix * Mat_Transpose (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   Mat_Matrix * t = NULL; (void) t;
   int64_t r = 0; (void) r;
   int64_t c = 0; (void) c;
-  { __typeof__(t) m9v = Mat_New (pool, Mat_Cols (m, err), Mat_Rows (m, err), err);
+  { __typeof__(Mat_Cols (m, err)) m9a4 = Mat_Cols (m, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Mat_Rows (m, err)) m9a5 = Mat_Rows (m, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(t) m9v = Mat_New (pool, m9a4, m9a5, err);
     if (err->exc) goto L_ret;
     t = m9v;
+  }
+  }
   }
   { int64_t m9t1to;
   r = INT64_C(0);
@@ -618,9 +633,15 @@ Mat_Matrix * Mat_AddM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   int64_t c = 0; (void) c;
   Mat_Same (a, b, err);
   if (err->exc) goto L_ret;
-  { __typeof__(m) m9v = Mat_New (pool, Mat_Rows (a, err), Mat_Cols (a, err), err);
+  { __typeof__(Mat_Rows (a, err)) m9a6 = Mat_Rows (a, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Mat_Cols (a, err)) m9a7 = Mat_Cols (a, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Mat_New (pool, m9a6, m9a7, err);
     if (err->exc) goto L_ret;
     m = m9v;
+  }
+  }
   }
   { int64_t m9t1to;
   r = INT64_C(0);
@@ -661,9 +682,15 @@ Mat_Matrix * Mat_SubM (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state *
   int64_t c = 0; (void) c;
   Mat_Same (a, b, err);
   if (err->exc) goto L_ret;
-  { __typeof__(m) m9v = Mat_New (pool, Mat_Rows (a, err), Mat_Cols (a, err), err);
+  { __typeof__(Mat_Rows (a, err)) m9a8 = Mat_Rows (a, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Mat_Cols (a, err)) m9a9 = Mat_Cols (a, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(m) m9v = Mat_New (pool, m9a8, m9a9, err);
     if (err->exc) goto L_ret;
     m = m9v;
+  }
+  }
   }
   { int64_t m9t1to;
   r = INT64_C(0);
@@ -765,9 +792,15 @@ Mat_Matrix * Mat_CopyM (m9_pool *pool, Mat_Matrix * m, m9_state *err)
   Mat_Matrix * t = NULL; (void) t;
   int64_t r = 0; (void) r;
   int64_t c = 0; (void) c;
-  { __typeof__(t) m9v = Mat_New (pool, Mat_Rows (m, err), Mat_Cols (m, err), err);
+  { __typeof__(Mat_Rows (m, err)) m9a10 = Mat_Rows (m, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Mat_Cols (m, err)) m9a11 = Mat_Cols (m, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(t) m9v = Mat_New (pool, m9a10, m9a11, err);
     if (err->exc) goto L_ret;
     t = m9v;
+  }
+  }
   }
   { int64_t m9t1to;
   r = INT64_C(0);
@@ -994,8 +1027,14 @@ Mat_Matrix * Mat_SpdInverse (m9_pool *pool, Mat_Matrix * a, m9_state *err)
     l = m9v;
   }
   err->res = m9res;
-  m9ret = Mat_CholSolve (pool, l, Mat_Identity (pool, Mat_Rows (a, err), err), err);
+  { __typeof__(Mat_Rows (a, err)) m9a12 = Mat_Rows (a, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Mat_Identity (pool, m9a12, err)) m9a13 = Mat_Identity (pool, m9a12, err);
+    if (err->exc) goto L_ret;
+  m9ret = Mat_CholSolve (pool, l, m9a13, err);
   if (err->exc) goto L_ret;
+  }
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1348,9 +1387,12 @@ Mat_Matrix * Mat_Solve (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state 
     m9_raise (err, &Mat_Singular);
     goto L_ret;
   }
-  { __typeof__(x) m9v = Mat_New (pool, n, Mat_Cols (b, err), err);
+  { __typeof__(Mat_Cols (b, err)) m9a14 = Mat_Cols (b, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(x) m9v = Mat_New (pool, n, m9a14, err);
     if (err->exc) goto L_ret;
     x = m9v;
+  }
   }
   { int64_t m9t3to;
   c = INT64_C(0);
@@ -1493,9 +1535,12 @@ Mat_Matrix * Mat_Inverse (m9_pool *pool, Mat_Matrix * a, m9_state *err)
     m9_raise (err, &Faults_SizeError);
     goto L_ret;
   }
-  { __typeof__(eye) m9v = Mat_Identity (&(scratch), Mat_Rows (a, err), err);
+  { __typeof__(Mat_Rows (a, err)) m9a15 = Mat_Rows (a, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(eye) m9v = Mat_Identity (&(scratch), m9a15, err);
     if (err->exc) goto L_ret;
     eye = m9v;
+  }
   }
   err->res = m9res;
   m9ret = Mat_Solve (pool, a, eye, err);
@@ -1558,8 +1603,11 @@ void Mat_Qr (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *q, m9_pool *q_pool, Ma
       (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
     }
-    Mat_Reflect (&(w), &(scratch), h, j, (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err)), j, err);
+    { __typeof__((*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err))) m9a16 = (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err));
+      if (err->exc) goto L_ret;
+    Mat_Reflect (&(w), &(scratch), h, j, m9a16, j, err);
     if (err->exc) goto L_ret;
+    }
   } }
   { __typeof__((*r)) m9v = Mat_New (pool, k, n, err);
     if (err->exc) goto L_ret;
@@ -1599,8 +1647,11 @@ void Mat_Qr (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * *q, m9_pool *q_pool, Ma
   m9t5to = INT64_C(0);
   if (err->exc) goto L_ret;
   for (; j >= m9t5to; j += -1) {
-    Mat_Reflect (q, q_pool, h, j, (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err)), INT64_C(0), err);
+    { __typeof__((*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err))) m9a17 = (*(double *) m9_at (vv.p, j, vv.len, sizeof (double), err));
+      if (err->exc) goto L_ret;
+    Mat_Reflect (q, q_pool, h, j, m9a17, INT64_C(0), err);
     if (err->exc) goto L_ret;
+    }
   } }
   { int64_t m9t6to;
   i = INT64_C(0);
@@ -1713,9 +1764,12 @@ Mat_Matrix * Mat_LstSq (m9_pool *pool, Mat_Matrix * a, Mat_Matrix * b, m9_state 
       goto L_ret;
     }
   } }
-  { __typeof__(x) m9v = Mat_New (pool, n, Mat_Cols (b, err), err);
+  { __typeof__(Mat_Cols (b, err)) m9a18 = Mat_Cols (b, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(x) m9v = Mat_New (pool, n, m9a18, err);
     if (err->exc) goto L_ret;
     x = m9v;
+  }
   }
   { int64_t m9t6to;
   c = INT64_C(0);
@@ -1980,15 +2034,24 @@ void Mat_EigSym (m9_pool *pool, Mat_Matrix * a, m9_sl_F64 *w, Mat_Matrix * *v, m
           if (err->exc) goto L_ret;
           apq = m9v;
         }
-        { __typeof__(limit) m9v = Math_Sqrt (Math_Fabs (((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)) * (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err))), err), err);
+        { __typeof__(((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)) * (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)))) m9a19 = ((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)) * (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)));
+          if (err->exc) goto L_ret;
+        { __typeof__(Math_Fabs (m9a19, err)) m9a20 = Math_Fabs (m9a19, err);
+          if (err->exc) goto L_ret;
+        { __typeof__(limit) m9v = Math_Sqrt (m9a20, err);
           if (err->exc) goto L_ret;
           limit = m9v;
+        }
+        }
         }
         bool m9t6 = (Math_Fabs (apq, err) > (Mat_Eps * limit));
         if (err->exc) goto L_ret;
         if (m9t6) {
-          Mat_Rotation (((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)) - (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err))), apq, &(c), &(s), err);
+          { __typeof__(((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)) - (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)))) m9a21 = ((*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], q, q, err)) - (*(double *) m9_gat2 (d->d.p, sizeof (double), d->d.n[0], d->d.n[1], d->d.s[0], d->d.s[1], p, p, err)));
+            if (err->exc) goto L_ret;
+          Mat_Rotation (m9a21, apq, &(c), &(s), err);
           if (err->exc) goto L_ret;
+          }
           Mat_Turn (&(d), &(scratch), p, q, c, s, err);
           if (err->exc) goto L_ret;
           { int64_t m9t7to;
@@ -2694,18 +2757,24 @@ static int64_t Mat_Factor (Mat_Matrix * *lu, m9_pool *lu_pool, m9_sl_I64 *perm, 
   if (err->exc) goto L_ret;
   for (; k <= m9t2to; k += 1) {
     p = k;
-    { __typeof__(big) m9v = Math_Fabs ((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, k, err)), err);
+    { __typeof__((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, k, err))) m9a22 = (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], k, k, err));
+      if (err->exc) goto L_ret;
+    { __typeof__(big) m9v = Math_Fabs (m9a22, err);
       if (err->exc) goto L_ret;
       big = m9v;
+    }
     }
     { int64_t m9t3to;
     i = m9_add_i64 (k, INT64_C(1), err);
     m9t3to = m9_sub_i64 (n, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t3to; i += 1) {
-      { __typeof__(v) m9v = Math_Fabs ((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, k, err)), err);
+      { __typeof__((*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, k, err))) m9a23 = (*(double *) m9_gat2 ((*lu)->d.p, sizeof (double), (*lu)->d.n[0], (*lu)->d.n[1], (*lu)->d.s[0], (*lu)->d.s[1], i, k, err));
+        if (err->exc) goto L_ret;
+      { __typeof__(v) m9v = Math_Fabs (m9a23, err);
         if (err->exc) goto L_ret;
         v = m9v;
+      }
       }
       if ((v > big)) {
         big = v;
@@ -3099,9 +3168,12 @@ static double Mat_RowSign (Mat_Matrix * m, int64_t r, m9_state *err)
     bool m9t2 = (Math_Fabs ((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err)), err) > big);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(big) m9v = Math_Fabs ((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err)), err);
+      { __typeof__((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err))) m9a24 = (*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err));
+        if (err->exc) goto L_ret;
+      { __typeof__(big) m9v = Math_Fabs (m9a24, err);
         if (err->exc) goto L_ret;
         big = m9v;
+      }
       }
       bool m9t3 = ((*(double *) m9_gat2 (m->d.p, sizeof (double), m->d.n[0], m->d.n[1], m->d.s[0], m->d.s[1], r, j, err)) < 0.0);
       if (err->exc) goto L_ret;

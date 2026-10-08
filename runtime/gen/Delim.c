@@ -451,8 +451,11 @@ m9_sl_CHAR Delim_Text (m9_pool *pool, Delim_Reader * r, int64_t i, m9_state *err
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  m9ret = DynStr_FromUtf8 (pool, Delim_Field (r, i, err), err);
+  { __typeof__(Delim_Field (r, i, err)) m9a1 = Delim_Field (r, i, err);
+    if (err->exc) goto L_ret;
+  m9ret = DynStr_FromUtf8 (pool, m9a1, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -479,7 +482,8 @@ float Delim_F32At (Delim_Reader * r, int64_t i, bool *ok, m9_state *err)
   (*ok) = false;
   if (((f).len == INT64_C(0))) {
     err->res = m9res;
-    m9ret = (float)(0.0);
+    m9ret = m9_f32_f64 (0.0, err);
+    if (err->exc) goto L_ret;
     goto L_ret;
   }
   { __typeof__(z) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 ((f).len, INT64_C(1), err), err);
@@ -499,7 +503,8 @@ float Delim_F32At (Delim_Reader * r, int64_t i, bool *ok, m9_state *err)
   } }
   (*ok) = true;
   err->res = m9res;
-  m9ret = (float)((double)(m9_strtof (((void *)(z).p))));
+  m9ret = m9_f32_f64 ((double)(m9_strtof (((void *)(z).p))), err);
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -723,9 +728,15 @@ static void Delim_Refill (Delim_Reader * *r, m9_pool *r_pool, m9_state *err)
   if ((*r)->eof) {
     goto L_ret;
   }
-  { __typeof__(got) m9v = Io_ReadFileAt (&(scratch), (*r)->path, m9_add_i64 ((*r)->off, (*r)->len, err), m9_sub_i64 (((*r)->buf).len, (*r)->len, err), err);
+  { __typeof__(m9_add_i64 ((*r)->off, (*r)->len, err)) m9a2 = m9_add_i64 ((*r)->off, (*r)->len, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(m9_sub_i64 (((*r)->buf).len, (*r)->len, err)) m9a3 = m9_sub_i64 (((*r)->buf).len, (*r)->len, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(got) m9v = Io_ReadFileAt (&(scratch), (*r)->path, m9a2, m9a3, err);
     if (err->exc) goto L_ret;
     got = m9v;
+  }
+  }
   }
   if (((got).len == INT64_C(0))) {
     (*r)->eof = true;

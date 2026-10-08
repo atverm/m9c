@@ -3,7 +3,10 @@
 #define M9G_Rdf_H
 #include "m9rt.h"
 #include "DynStr.h"
+#include "Fmt.h"
+#include "Json.h"
 #include "Text.h"
+#include "Xml.h"
 
 void Rdf_m9init (m9_state *err);
 
@@ -13,6 +16,13 @@ typedef struct Rdf_Triple Rdf_Triple;
 typedef struct Rdf_Graph Rdf_Graph;
 typedef struct Rdf_Graph Rdf_Graph;
 typedef struct Rdf_Reader Rdf_Reader;
+typedef struct Rdf_Prefixes Rdf_Prefixes;
+typedef struct Rdf_XState Rdf_XState;
+typedef struct Rdf_TermDef Rdf_TermDef;
+typedef struct Rdf_Ctx Rdf_Ctx;
+typedef struct Rdf_Defining Rdf_Defining;
+typedef struct Rdf_JState Rdf_JState;
+typedef struct Rdf_NodeMap Rdf_NodeMap;
 
 typedef struct Rdf_Kind Rdf_Kind;
 struct Rdf_Kind { int32_t tag; };
@@ -36,6 +46,15 @@ static const uint32_t Rdf_RdfNs_d[43] = { 104u, 116u, 116u, 112u, 58u, 47u, 47u,
 #define Rdf_RdfNs ((m9_sl_CHAR){ (uint32_t *) Rdf_RdfNs_d, 43 })
 static const uint32_t Rdf_Xsd_d[33] = { 104u, 116u, 116u, 112u, 58u, 47u, 47u, 119u, 119u, 119u, 46u, 119u, 51u, 46u, 111u, 114u, 103u, 47u, 50u, 48u, 48u, 49u, 47u, 88u, 77u, 76u, 83u, 99u, 104u, 101u, 109u, 97u, 35u };
 #define Rdf_Xsd ((m9_sl_CHAR){ (uint32_t *) Rdf_Xsd_d, 33 })
+static const uint32_t Rdf_Rdfs_d[37] = { 104u, 116u, 116u, 112u, 58u, 47u, 47u, 119u, 119u, 119u, 46u, 119u, 51u, 46u, 111u, 114u, 103u, 47u, 50u, 48u, 48u, 48u, 47u, 48u, 49u, 47u, 114u, 100u, 102u, 45u, 115u, 99u, 104u, 101u, 109u, 97u, 35u };
+#define Rdf_Rdfs ((m9_sl_CHAR){ (uint32_t *) Rdf_Rdfs_d, 37 })
+static const uint32_t Rdf_Owl_d[30] = { 104u, 116u, 116u, 112u, 58u, 47u, 47u, 119u, 119u, 119u, 46u, 119u, 51u, 46u, 111u, 114u, 103u, 47u, 50u, 48u, 48u, 50u, 47u, 48u, 55u, 47u, 111u, 119u, 108u, 35u };
+#define Rdf_Owl ((m9_sl_CHAR){ (uint32_t *) Rdf_Owl_d, 30 })
+static const uint32_t Rdf_XmlNsUri_d[36] = { 104u, 116u, 116u, 112u, 58u, 47u, 47u, 119u, 119u, 119u, 46u, 119u, 51u, 46u, 111u, 114u, 103u, 47u, 88u, 77u, 76u, 47u, 49u, 57u, 57u, 56u, 47u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u };
+#define Rdf_XmlNsUri ((m9_sl_CHAR){ (uint32_t *) Rdf_XmlNsUri_d, 36 })
+static const uint32_t Rdf_XmlnsUri_d[29] = { 104u, 116u, 116u, 112u, 58u, 47u, 47u, 119u, 119u, 119u, 46u, 119u, 51u, 46u, 111u, 114u, 103u, 47u, 50u, 48u, 48u, 48u, 47u, 120u, 109u, 108u, 110u, 115u, 47u };
+#define Rdf_XmlnsUri ((m9_sl_CHAR){ (uint32_t *) Rdf_XmlnsUri_d, 29 })
+#define Rdf_KwIndex INT64_C(0)
 
 #ifndef M9SL_m9_sl_Rdf_Triple
 #define M9SL_m9_sl_Rdf_Triple
@@ -44,6 +63,14 @@ typedef struct { Rdf_Triple *p; int64_t len; } m9_sl_Rdf_Triple;
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
 typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_sl_Rdf_TermDef
+#define M9SL_m9_sl_Rdf_TermDef
+typedef struct { Rdf_TermDef *p; int64_t len; } m9_sl_Rdf_TermDef;
+#endif
+#ifndef M9SL_m9_sl_Json_Nodep
+#define M9SL_m9_sl_Json_Nodep
+typedef struct { Json_Node * *p; int64_t len; } m9_sl_Json_Nodep;
 #endif
 
 typedef struct Rdf_Term Rdf_Term;
@@ -63,8 +90,12 @@ struct Rdf_Triple {
 
 Rdf_Graph * Rdf_ParseNTriples (m9_pool *pool, m9_sl_CHAR text, m9_state *err);
 Rdf_Graph * Rdf_ParseTurtle (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, m9_state *err);
+Rdf_Graph * Rdf_ParseRdfXml (m9_pool *pool, m9_sl_BYTE doc, m9_sl_CHAR base, m9_state *err);
+Rdf_Graph * Rdf_ParseJsonLd (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, Json_Node * context, m9_state *err);
+m9_sl_CHAR Rdf_JsonLd (Rdf_Graph * g, Json_Node * context, m9_state *err);
 int64_t Rdf_Count (Rdf_Graph * g, m9_state *err);
 Rdf_Triple Rdf_Get (Rdf_Graph * g, int64_t i, m9_state *err);
 m9_sl_CHAR Rdf_NTriples (Rdf_Graph * g, m9_state *err);
+m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR iris, m9_state *err);
 
 #endif

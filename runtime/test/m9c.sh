@@ -147,6 +147,21 @@ M9RUNTIME="$RT" "$M9C" --make -o initmain "$RT/test/InitMain.m9" \
 [ "$(./initmain)" = "42" ] \
   || { echo "FAIL: an implementation-module body did not run (init dropped)"; exit 1; }
 
+# AN OBJECT OLDER THAN THE COMPILER IS STALE (2026-10-08): a build
+# directory from before a generator change kept a stale .h/.o and
+# failed on `implicit declaration of Mod_m9init' (2026-09-15).  An
+# unchanged tree makes nothing twice; the same tree under a FRESH
+# COPY of the compiler -- a newer binary, an upgrade -- makes it again.
+rm -rf stale && mkdir stale && ( cd stale &&
+  M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -c -v "$SRC/Hello.m9" > first.txt 2>&1 &&
+  M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -c -v "$SRC/Hello.m9" > second.txt 2>&1 &&
+  sleep 1 && cp "$M9C" ./m9c-newer &&
+  M9LIBRARY="$SRC" M9RUNTIME="$RT" ./m9c-newer --make -c -v "$SRC/Hello.m9" > third.txt 2>&1 ) ||
+  { echo "FAIL: the staleness build did not run"; exit 1; }
+grep -q 'make Io' stale/first.txt || { echo "FAIL: the first --make did not make Io"; exit 1; }
+grep -q 'make Io' stale/second.txt && { echo "FAIL: an unchanged tree was made twice"; exit 1; }
+grep -q 'make Io' stale/third.txt || { echo "FAIL: a newer compiler binary did not make the objects again"; exit 1; }
+
 # a C compiler that fails must fail m9c, and must not be reported as
 # success just because the M9 half went fine
 if "$M9C" -c "$SRC/DynStr.m9" -- -iquote . -DM9_NO_SUCH 2>/dev/null; then

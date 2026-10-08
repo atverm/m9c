@@ -2,10 +2,10 @@ REVIEW Parse -- 50 procedures with a body, 43 of them functions; 8 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              43
-  assignments                                   211
-  arguments                                    1551
+  assignments                                   212
+  arguments                                    1570
   RETURN values                                 128
-  operands of a comparison or an operator       205
+  operands of a comparison or an operator       207
   CASE labels                                    37
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     0
   pool parameters                                34   Nn, PQualident, PIdentList, PArgList, DesigToQual, PNew, +28 more
-  KEPT parameters                                 5   Init, DesigToQual, PFactor, PProcDecl, PUnit
+  KEPT parameters                                29   Init, PArgList, DesigToQual, PNew, PFactor, PTerm, +23 more
   HEAP named                                      1   Keep
   NEW (OWN, T)                                    0
   DISPOSE                                         0

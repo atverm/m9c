@@ -191,6 +191,7 @@ void Plot_SetBarErrors (int64_t series, m9_sl_F64 err_, m9_state *err);
 void Plot_SetBarColor (int64_t series, m9_sl_CHAR hex, m9_state *err);
 Plot_Cmap Plot_Viridis (m9_state *err);
 Plot_Cmap Plot_Coolwarm (m9_state *err);
+m9_sl_CHAR Plot_CmapHex (Plot_Cmap cmap, double t, m9_state *err);
 void Plot_SetLineColor (int64_t series, m9_sl_CHAR hex, m9_state *err);
 void Plot_SetLogX (bool on, m9_state *err);
 void Plot_SetLogY (bool on, m9_state *err);

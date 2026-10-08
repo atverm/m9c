@@ -192,9 +192,12 @@ m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl
       if (err->exc) goto L_ret;
     } }
   } }
-  { __typeof__(lines) m9v = Text_Split (DynStr_View (log_, err), 10u, err);
+  { __typeof__(DynStr_View (log_, err)) m9a1 = DynStr_View (log_, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(lines) m9v = Text_Split (m9a1, 10u, err);
     if (err->exc) goto L_ret;
     lines = m9v;
+  }
   }
   DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s0, 7 }), err);
   if (err->exc) goto L_ret;
@@ -219,15 +222,30 @@ m9_sl_CHAR Review_Page (Ast_Node * root, m9_sl_CHAR modName, bool checked, m9_sl
   if (checked) {
     Review_Head (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s5, 54 }), err);
     if (err->exc) goto L_ret;
-    Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s6, 33 }), m9_sub_i64 (c.funcs, c.fallOff, err), 32u, err);
+    { __typeof__(m9_sub_i64 (c.funcs, c.fallOff, err)) m9a2 = m9_sub_i64 (c.funcs, c.fallOff, err);
+      if (err->exc) goto L_ret;
+    Review_Row (&(d), &(scratch), lines, ((m9_sl_CHAR){ (uint32_t *) m9s6, 33 }), m9a2, 32u, err);
     if (err->exc) goto L_ret;
+    }
     { int64_t m9t2to;
     i = INT64_C(0);
     m9t2to = m9_sub_i64 ((stats).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t2to; i += 1) {
-      Review_StatRow (&(d), &(scratch), (*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).name, (*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).checked, (*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).skipped, (*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).lines, err);
+      { __typeof__((*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).name) m9a3 = (*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).name;
+        if (err->exc) goto L_ret;
+      { __typeof__((*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).checked) m9a4 = (*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).checked;
+        if (err->exc) goto L_ret;
+      { __typeof__((*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).skipped) m9a5 = (*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).skipped;
+        if (err->exc) goto L_ret;
+      { __typeof__((*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).lines) m9a6 = (*(Review_Stat *) m9_at (stats.p, i, stats.len, sizeof (Review_Stat), err)).lines;
+        if (err->exc) goto L_ret;
+      Review_StatRow (&(d), &(scratch), m9a3, m9a4, m9a5, m9a6, err);
       if (err->exc) goto L_ret;
+      }
+      }
+      }
+      }
     } }
   } else {
     Review_Head (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s7, 61 }), err);
@@ -635,8 +653,11 @@ static bool Review_EndsStmt (Ast_Node * n, m9_state *err)
   case INT64_C(46):
   {
     err->res = m9res;
-    m9ret = (!Review_HasExit ((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err)), err));
+    { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a7 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+    m9ret = (!Review_HasExit (m9a7, err));
     if (err->exc) goto L_ret;
+    }
     goto L_ret;
   } break;
   case INT64_C(21):
@@ -798,8 +819,11 @@ static void Review_Walk (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
     m9t5to = m9_sub_i64 (n->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t5to; i += 1) {
-      Review_Walk (c, log_, log__pool, root, (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err)), proc, err);
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err))) m9a8 = (*(Ast_Node * *) m9_at (n->kids.p, i, n->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      Review_Walk (c, log_, log__pool, root, m9a8, proc, err);
       if (err->exc) goto L_ret;
+      }
     } }
   } }
 L_ret: ;
@@ -851,8 +875,11 @@ static void Review_Vars (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
                   if (err->exc) goto L_ret;
                   (*c).localPools = m9v;
                 }
-                Review_Site (log_, log__pool, 76u, vd->line, m9_cat (err->res, m9_cat (err->res, proc, ((m9_sl_CHAR){ (uint32_t *) m9s35, 1 }), err), id->a, err), err);
+                { __typeof__(m9_cat (err->res, m9_cat (err->res, proc, ((m9_sl_CHAR){ (uint32_t *) m9s35, 1 }), err), id->a, err)) m9a9 = m9_cat (err->res, m9_cat (err->res, proc, ((m9_sl_CHAR){ (uint32_t *) m9s35, 1 }), err), id->a, err);
+                  if (err->exc) goto L_ret;
+                Review_Site (log_, log__pool, 76u, vd->line, m9a9, err);
                 if (err->exc) goto L_ret;
+                }
               }
             } else {
               if (atModule) {
@@ -992,8 +1019,11 @@ static void Review_Proc (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
       (*c).funcs = m9v;
     }
   }
-  Review_Params (c, log_, log__pool, (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(0), p->kids.len, sizeof (Ast_Node *), err)), p->a, err);
+  { __typeof__((*(Ast_Node * *) m9_at (p->kids.p, INT64_C(0), p->kids.len, sizeof (Ast_Node *), err))) m9a10 = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(0), p->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+  Review_Params (c, log_, log__pool, m9a10, p->a, err);
   if (err->exc) goto L_ret;
+  }
   { Ast_Node * body = (*(Ast_Node * *) m9_at (p->kids.p, INT64_C(4), p->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (body != NULL) {
@@ -1012,8 +1042,11 @@ static void Review_Proc (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
       } }
     } }
     if ((body->nkids > INT64_C(0))) {
-      Review_Walk (c, log_, log__pool, root, (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err)), p->a, err);
+      { __typeof__((*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err))) m9a11 = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      Review_Walk (c, log_, log__pool, root, m9a11, p->a, err);
       if (err->exc) goto L_ret;
+      }
       if (isFunc) {
         { Ast_Node * blk = (*(Ast_Node * *) m9_at (body->kids.p, m9_sub_i64 (body->nkids, INT64_C(1), err), body->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
@@ -1096,8 +1129,11 @@ static void Review_Unit (Review_Counts *c, DynStr_DString * *log_, m9_pool *log_
           if (err->exc) goto L_ret;
       } else {
         if ((kd->kind == Ast_NModBody)) {
-          Review_Walk (c, log_, log__pool, root, (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err)), ((m9_sl_CHAR){ (uint32_t *) m9s38, 6 }), err);
+          { __typeof__((*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err))) m9a12 = (*(Ast_Node * *) m9_at (u->kids.p, i, u->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+          Review_Walk (c, log_, log__pool, root, m9a12, ((m9_sl_CHAR){ (uint32_t *) m9s38, 6 }), err);
           if (err->exc) goto L_ret;
+          }
       } } }
     } }
   } }
@@ -1174,8 +1210,11 @@ static void Review_Row (DynStr_DString * *d, m9_pool *d_pool, m9_sl_m9_sl_CHAR l
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, label, err);
   if (err->exc) goto L_ret;
-  Review_Spaces (d, d_pool, m9_sub_i64 (m9_add_i64 (m9_sub_i64 (Review_LabelWidth, (label).len, err), INT64_C(5), err), Review_Digits (n, err), err), err);
+  { __typeof__(m9_sub_i64 (m9_add_i64 (m9_sub_i64 (Review_LabelWidth, (label).len, err), INT64_C(5), err), Review_Digits (n, err), err)) m9a13 = m9_sub_i64 (m9_add_i64 (m9_sub_i64 (Review_LabelWidth, (label).len, err), INT64_C(5), err), Review_Digits (n, err), err);
+    if (err->exc) goto L_ret;
+  Review_Spaces (d, d_pool, m9a13, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_AppendI64 (d, d_pool, n, err);
   if (err->exc) goto L_ret;
   if ((tag != 32u)) {
@@ -1206,8 +1245,11 @@ static void Review_Row (DynStr_DString * *d, m9_pool *d_pool, m9_sl_m9_sl_CHAR l
               DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s39, 2 }), err);
               if (err->exc) goto L_ret;
             }
-            DynStr_Append (d, d_pool, ({ __typeof__(ln) m9t3 = ln; int64_t m9t3a = INT64_C(2), m9t3n = m9_sub_i64 ((ln).len, INT64_C(2), err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
+            { __typeof__(({ __typeof__(ln) m9t3 = ln; int64_t m9t3a = INT64_C(2), m9t3n = m9_sub_i64 ((ln).len, INT64_C(2), err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a14 = ({ __typeof__(ln) m9t3 = ln; int64_t m9t3a = INT64_C(2), m9t3n = m9_sub_i64 ((ln).len, INT64_C(2), err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+              if (err->exc) goto L_ret;
+            DynStr_Append (d, d_pool, m9a14, err);
             if (err->exc) goto L_ret;
+            }
             { __typeof__(shown) m9v = m9_add_i64 (shown, INT64_C(1), err);
               if (err->exc) goto L_ret;
               shown = m9v;
@@ -1219,8 +1261,11 @@ static void Review_Row (DynStr_DString * *d, m9_pool *d_pool, m9_sl_m9_sl_CHAR l
     if ((total > shown)) {
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s40, 3 }), err);
       if (err->exc) goto L_ret;
-      DynStr_AppendI64 (d, d_pool, m9_sub_i64 (total, shown, err), err);
+      { __typeof__(m9_sub_i64 (total, shown, err)) m9a15 = m9_sub_i64 (total, shown, err);
+        if (err->exc) goto L_ret;
+      DynStr_AppendI64 (d, d_pool, m9a15, err);
       if (err->exc) goto L_ret;
+      }
       DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s41, 5 }), err);
       if (err->exc) goto L_ret;
     }
@@ -1263,8 +1308,11 @@ static void Review_StatRow (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR lab
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, label, err);
   if (err->exc) goto L_ret;
-  Review_Spaces (d, d_pool, m9_sub_i64 (m9_add_i64 (m9_sub_i64 (Review_LabelWidth, (label).len, err), INT64_C(5), err), Review_Digits (checked, err), err), err);
+  { __typeof__(m9_sub_i64 (m9_add_i64 (m9_sub_i64 (Review_LabelWidth, (label).len, err), INT64_C(5), err), Review_Digits (checked, err), err)) m9a16 = m9_sub_i64 (m9_add_i64 (m9_sub_i64 (Review_LabelWidth, (label).len, err), INT64_C(5), err), Review_Digits (checked, err), err);
+    if (err->exc) goto L_ret;
+  Review_Spaces (d, d_pool, m9a16, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_AppendI64 (d, d_pool, checked, err);
   if (err->exc) goto L_ret;
   if ((skipped > INT64_C(0))) {

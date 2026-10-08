@@ -7,5 +7,10 @@
 #include "Fmt.h"
 
 
+#ifndef M9SL_m9_arr_4_double
+#define M9SL_m9_arr_4_double
+typedef struct { double v[4]; } m9_arr_4_double;
+#endif
+
 
 #endif

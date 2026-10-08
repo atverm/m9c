@@ -1272,7 +1272,7 @@ END ReadDph ;
 (* Add* with Frame's refusals converted: the caller of Read wants
    Parquet's exceptions, not Frame's internals *)
 PROCEDURE AddF64Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
-                   RO name: STR ; v: SLICE OF F64)
+                   RO name: STR ; KEPT v: SLICE OF F64)
   RAISES Faults.BadArg =
 BEGIN
   Frame.AddF64 (pool, f, name, v, NaN)
@@ -1282,7 +1282,7 @@ EXCEPT
 END AddF64Q ;
 
 PROCEDURE AddF32Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
-                   RO name: STR ; v: SLICE OF F32)
+                   RO name: STR ; KEPT v: SLICE OF F32)
   RAISES Faults.BadArg =
 BEGIN
   Frame.AddF32 (pool, f, name, v, NaN)
@@ -1292,7 +1292,7 @@ EXCEPT
 END AddF32Q ;
 
 PROCEDURE AddI64Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
-                   RO name: STR ; v: SLICE OF I64)
+                   RO name: STR ; KEPT v: SLICE OF I64)
   RAISES Faults.BadArg =
 BEGIN
   Frame.AddI64 (pool, f, name, v, -9223372036854775807 - 1)
@@ -1302,7 +1302,7 @@ EXCEPT
 END AddI64Q ;
 
 PROCEDURE AddI32Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
-                   RO name: STR ; v: SLICE OF I32)
+                   RO name: STR ; KEPT v: SLICE OF I32)
   RAISES Faults.BadArg =
 BEGIN
   Frame.AddI32 (pool, f, name, v, -2147483647 - 1)
@@ -1312,7 +1312,7 @@ EXCEPT
 END AddI32Q ;
 
 PROCEDURE AddI16Q (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
-                   RO name: STR ; v: SLICE OF I16)
+                   RO name: STR ; KEPT v: SLICE OF I16)
   RAISES Faults.BadArg =
 BEGIN
   Frame.AddI16 (pool, f, name, v, -32768)
@@ -1322,7 +1322,7 @@ EXCEPT
 END AddI16Q ;
 
 PROCEDURE AddBytesQ (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
-                     RO name: STR ; v: SLICE OF BYTE)
+                     RO name: STR ; KEPT v: SLICE OF BYTE)
   RAISES Faults.BadArg =
 BEGIN
   Frame.AddBytes (pool, f, name, v, 255)
@@ -1332,7 +1332,7 @@ EXCEPT
 END AddBytesQ ;
 
 PROCEDURE AddBoolsQ (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
-                     RO name: STR ; v: SLICE OF BOOL)
+                     RO name: STR ; KEPT v: SLICE OF BOOL)
   RAISES Faults.BadArg =
 BEGIN
   Frame.AddBools (pool, f, name, v)

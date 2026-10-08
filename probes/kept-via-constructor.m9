@@ -1,0 +1,24 @@
+(* EXPECT: undeclared retention: borrowed v reaches the caller through f -- declare KEPT v (par 4.1) *)
+(* A borrow wrapped by a CONSTRUCTOR: `f.cell := Data.F64s (v, 0.0)'
+   stores the caller's slice through a VAR parameter inside a variant,
+   and until 2026-10-08 the checker saw a call on the right, not a
+   slice.  Each argument of a variant or record constructor whose
+   field is reference-typed is stored as the argument itself would
+   be; a scalar field is not (the legal form first). *)
+MODULE m ;
+TYPE
+  Data = CASE RECORD
+  | F64s : xs: SLICE OF F64 ; miss: F64
+  | Count : n: I64
+  END ;
+  Fr = RECORD cell : Data ; m : I64 END ;
+PROCEDURE SetCount (VAR f: PTR Fr ; RO v: SLICE OF F64) =
+BEGIN
+  f.cell := Data.Count (LEN (v))
+END SetCount ;
+PROCEDURE Add (VAR f: PTR Fr ; RO v: SLICE OF F64) =
+BEGIN
+  f.cell := Data.F64s (v, 0.0)
+END Add ;
+BEGIN
+END m.

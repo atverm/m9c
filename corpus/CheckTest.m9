@@ -126,6 +126,7 @@ BEGIN
   Check.Raises (bad, 'Raises nothing', Quiet, 'IndexError') ;
   Check.Raises (bad, 'Raises another', RaisesIx, 'Overflow') ;
   Check.Raises (bad, 'Raises asked for ValueRange', Quiet, 'ValueRange') ;
+  Check.Raises (bad, 'Raises asked for Nosuch', Quiet, 'Nosuch') ;
   Check.RaisesValueRange (bad, 'RaisesValueRange nothing', QuietVR) ;
   Check.EqBools (bad, 'EqBools', Flags, Flips) ;
 
@@ -144,8 +145,8 @@ BEGIN
   (* the counters, by Check itself *)
   Check.EqI64 (t, 'every good check counted', good.checks, 27) ;
   Check.EqI64 (t, 'no good check failed', good.failed, 0) ;
-  Check.EqI64 (t, 'every bad check counted', bad.checks, 28) ;
-  Check.EqI64 (t, 'every bad check failed', bad.failed, 28) ;
+  Check.EqI64 (t, 'every bad check counted', bad.checks, 29) ;
+  Check.EqI64 (t, 'every bad check failed', bad.failed, 29) ;
   Check.EqI64 (t, 'Done answers 0 for a pass', Check.Done (good, 'good'), 0) ;
   Check.EqI64 (t, 'Done answers 1 for a failure', Check.Done (bad, 'bad'), 1) ;
   Io.Halt (Check.Done (t, 'Check'))

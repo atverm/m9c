@@ -36,7 +36,7 @@ src -- BORROWED for as long as p is used, and for as long as
        caller's buffer must outlive both, which is the same
        contract Json.Parse has with its document.
 
-### File (VAR pool: POOL ; VAR p: Parser) : PTR Ast.Node
+### File (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node
 
 parses a whole file and answers its NFile node, whose kids are
 the definition and implementation units in source order.

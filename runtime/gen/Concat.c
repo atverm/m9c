@@ -98,8 +98,11 @@ int main (int argc, char **argv)
   m9_args (argc, argv);
   Io_m9init (err); if (err->exc) goto L_ret;
   DynStr_m9init (err); if (err->exc) goto L_ret;
-  Io_WriteLine (Concat_Greeting (((m9_sl_CHAR){ (uint32_t *) m9s3, 5 }), err), err);
+  { __typeof__(Concat_Greeting (((m9_sl_CHAR){ (uint32_t *) m9s3, 5 }), err)) m9a1 = Concat_Greeting (((m9_sl_CHAR){ (uint32_t *) m9s3, 5 }), err);
+    if (err->exc) goto L_ret;
+  Io_WriteLine (m9a1, err);
   if (err->exc) goto L_ret;
+  }
   s = (m9_sl_CHAR){ NULL, 0 };
   { int64_t m9t1to;
   n = INT64_C(1);
@@ -122,12 +125,21 @@ int main (int argc, char **argv)
   }
   DynStr_Append (&(d), &m9mframe, ((m9_sl_CHAR){ (uint32_t *) m9s5, 8 }), err);
   if (err->exc) goto L_ret;
-  Io_WriteLine (DynStr_View (d, err), err);
+  { __typeof__(DynStr_View (d, err)) m9a2 = DynStr_View (d, err);
+    if (err->exc) goto L_ret;
+  Io_WriteLine (m9a2, err);
   if (err->exc) goto L_ret;
-  Io_WriteLine (m9_cat (err->res, m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 }), err), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s8, 1 }), err), err);
+  }
+  { __typeof__(m9_cat (err->res, m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 }), err), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s8, 1 }), err)) m9a3 = m9_cat (err->res, m9_cat_ch (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s6, 1 }), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s7, 1 }), err), Concat_Bar, err), ((m9_sl_CHAR){ (uint32_t *) m9s8, 1 }), err);
+    if (err->exc) goto L_ret;
+  Io_WriteLine (m9a3, err);
   if (err->exc) goto L_ret;
-  Io_WriteLine (Concat_Point (((m9_sl_CHAR){ (uint32_t *) m9s9, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s10, 2 }), err), err);
+  }
+  { __typeof__(Concat_Point (((m9_sl_CHAR){ (uint32_t *) m9s9, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s10, 2 }), err)) m9a4 = Concat_Point (((m9_sl_CHAR){ (uint32_t *) m9s9, 2 }), ((m9_sl_CHAR){ (uint32_t *) m9s10, 2 }), err);
+    if (err->exc) goto L_ret;
+  Io_WriteLine (m9a4, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   m9_pool_free (&m9mframe);
   return m9_exit (err);

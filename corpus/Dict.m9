@@ -62,7 +62,7 @@ PROCEDURE NewIn (VAR pool: POOL) : PTR Dict IN pool ;
   (* the same table with its head and entries in pool: for a variable
      declared `PTR Dict IN pool`, whose growth Put then places there *)
 
-PROCEDURE Put (VAR d: PTR Dict ; RO KEPT key: STR ; val: Value) ;
+PROCEDURE Put (VAR d: PTR Dict ; RO KEPT key: STR ; KEPT val: Value) ;
   (* inserts, or replaces the value of an existing key.  Replacing
      keeps the key's original position in the iteration order.       *)
 
@@ -210,7 +210,7 @@ BEGIN
   END
 END Regrow ;
 
-PROCEDURE Put (VAR d: PTR Dict ; RO KEPT key: STR ; val: Value) =
+PROCEDURE Put (VAR d: PTR Dict ; RO KEPT key: STR ; KEPT val: Value) =
 VAR
   s, e, i : I64 ;
   ne : SLICE OF Ent ;

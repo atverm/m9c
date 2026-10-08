@@ -154,8 +154,17 @@ disagree is not evidence.
    VAR.  `VAR` is the mutable handle.  `OWN` moves ownership in.
    `RO` is a read-only borrow -- and on a RECORD it currently COPIES
    (a 160-byte record cost one copy per call in a port; ledgered).
-   Par 4.1; probes `write-through-value-ptr`,
-   `lend-value-ptr-as-var`.
+   A borrow STORED where it outlives the call needs `KEPT` on the
+   parameter, and KEPT composes upward: a caller forwarding its own
+   borrowed parameter to a KEPT one must say KEPT too.  Since
+   2026-10-08 a RECORD carries what its fields hold -- `c.data := v ;
+   f.cols[n] := c`, `f.cell := Data.F64s (v, 0.0)` and a record
+   handed by value and stored are retentions of `v` and the record
+   -- so `Frame.Add*` take `RO KEPT v`; and `Keep (f, Data.F64s (v,
+   0.0))` with `Keep` keeping its argument asks for `KEPT v` as
+   `Keep (f, v)` would.  Par 4.1; probes
+   `write-through-value-ptr`, `lend-value-ptr-as-var`,
+   `kept-via-record`, `kept-via-constructor`.
 
 10. **NEW's first argument says who frees the storage.**  `NEW (pool,
     T, n)` a pool (pool FIRST; a reversed NEW is refused by name);
@@ -200,7 +209,9 @@ disagree is not evidence.
 12. **Slices and grids.**  `SLICE (s, start, LEN)` -- start and
     length, never an end.  `LEN (s)`.  `GRID R OF T`: `NEW (pool, T,
     n1, n2, ...)`, `g[i, j]` (every axis, every access checked),
-    `LEN (g, axis)`, `VIEW (g, i, ALL)` drops an axis and keeps one.
+    `LEN (g, axis)`, `VIEW (g, i, ALL)` drops an axis and keeps one;
+    `GRID (s, n0, n1)` lays a grid over a slice NAMED by a variable
+    (from 0.18; the extents must multiply to `LEN (s)`).
     Rank is in the TYPE.  Row-major: the innermost loop indexes the
     RIGHTMOST axis, or you pay 5x in cache misses (measured).
     Par 2.2.1; exemplar `corpus/Mat.m9`.
@@ -244,20 +255,28 @@ disagree is not evidence.
     will: an EXCEPT handler's payload order (`Json.ParseError` takes
     msg FIRST), arithmetic in a transcribed expression whose
     association differs from the original (`a*b**2` is `a*(b*b)`), a
-    branch no test enters, and **a CASE-arm binder used at the wrong
-    type** -- the binder has no type in the checker, so `k := t` for
-    `I64 k` and a STR binder is silent and only the C compiler
-    objects.  The one place it DOES complain is `+`: "cannot
-    concatenate a string with an unknown type" means the operand is a
-    CASE-arm binder, and copying it into a declared local first is
-    the workaround.  **And a write through a COPY of read-only
+    branch no test enters, and **a cross-module CASE-arm binder used
+    at the wrong type** -- such a binder has no type in the checker,
+    so `k := t` for `I64 k` and a STR binder is silent and only the C
+    compiler objects.  The one place it DOES complain is `+`: "cannot
+    concatenate a string with an unknown type" means the operand is
+    such a binder, and copying it into a declared local first is the
+    workaround.  (A HANDLER's binders -- `| Err (msg, code) :` -- are
+    typed by the EXCEPTION declaration's fields since 2026-10-08, so
+    `'x' + msg` just works and `s := code` is refused; the copies
+    older code makes are no longer needed.)  **And a write through a COPY of read-only
     storage**: from 0.14 a string literal, a `CONST` or an `RO`
     parameter is lent only to an `RO` parameter (par 2.4; probe
     `literal-to-writable-slice`), so write `RO` on every slice or
     STR parameter the procedure does not write -- a by-value one
-    handed a literal is refused at the call.  What is NOT followed
-    is the copy: `t := s ; t[0] := 'X'` with `s` read-only is
-    accepted and, for a literal, dies with SIGSEGV.
+    handed a literal is refused at the call.  Since 2026-10-08 the
+    COPY is followed too: a local given read-only storage by any
+    assignment in the procedure (`t := s`, `t := 'abc'`, `t := SLICE
+    (s, 1, 2)`) holds it for the whole procedure, so `t[0] := 'X'`
+    and `Up (t)` are refused naming the storage and the line -- give
+    a name that must be written fresh storage only (`''` is fine as
+    a start).  Still not followed: a module variable, a record
+    holding a slice, an `RO` result or field lent onward.
 
 ## Where to read
 

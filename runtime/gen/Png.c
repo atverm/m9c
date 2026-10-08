@@ -24467,8 +24467,8 @@ static void Png_CloseContour (Png_Canvas *c, m9_pool *c_pool, m9_state *err);
 static void Png_Span (Png_Canvas *c, m9_pool *c_pool, double xa, double xb, double w, m9_state *err);
 static void Png_Flush (Png_Canvas *c, m9_pool *c_pool, m9_state *err);
 static void Png_Paint (Png_Canvas *c, m9_pool *c_pool, int64_t r, int64_t g, int64_t b, double alpha, m9_state *err);
-static void Png_RectFill (Png_Canvas *c, m9_pool *c_pool, double x0, double y0, double x1, double y1, int64_t r, int64_t g, int64_t b, double alpha, m9_state *err);
-static void Png_Quad (Png_Canvas *c, m9_pool *c_pool, double x1, double y1, double x2, double y2, double wid, m9_state *err);
+static void Png_RectFill (Png_Canvas *c, m9_pool *c_pool, double x0, double y0_, double x1, double y1_, int64_t r, int64_t g, int64_t b, double alpha, m9_state *err);
+static void Png_Quad (Png_Canvas *c, m9_pool *c_pool, double x1, double y1_, double x2, double y2, double wid, m9_state *err);
 static void Png_Disc (Png_Canvas *c, m9_pool *c_pool, double cx, double cy, double r, m9_state *err);
 static void Png_Outline (Png_Canvas *c, m9_pool *c_pool, m9_sl_F64 xs, m9_sl_F64 ys, int64_t n, double hw, bool closed, m9_state *err);
 static void Png_StrokeLine (Png_Canvas *c, m9_pool *c_pool, double wid, m9_sl_F64 dash, bool closed, m9_state *err);
@@ -24494,7 +24494,7 @@ static m9_sl_CHAR Png_Content (m9_pool *pool, m9_sl_CHAR s, int64_t from, int64_
 static bool Png_Hidden (Png_Tag tg, m9_state *err);
 static void Png_ReadStyle (m9_pool *pool, Png_Tag tg, double sc, bool fillByDefault, Png_Style *st, m9_pool *st_pool, m9_state *err);
 static void Png_PaintFill (Png_Canvas *c, m9_pool *c_pool, Png_Style st, m9_state *err);
-static void Png_Rotation (m9_sl_CHAR s, double x0, double y0, double *deg, double *rx, double *ry, m9_state *err);
+static void Png_Rotation (m9_sl_CHAR s, double x0, double y0_, double *deg, double *rx, double *ry, m9_state *err);
 static void Png_DrawPath (Png_Canvas *c, m9_pool *c_pool, m9_sl_CHAR d, Png_Style st, m9_state *err);
 static void Png_DrawPoints (Png_Canvas *c, m9_pool *c_pool, m9_sl_CHAR pts, Png_Style st, bool closed, m9_state *err);
 static void Png_PaintStroke (Png_Canvas *c, m9_pool *c_pool, Png_Style st, m9_state *err);
@@ -24810,25 +24810,37 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_CHAR svg, double dpi, int64_t *width
           }
           (*(m9_sl_CHAR *) m9_at (clipIds.v, nclip, INT64_C(8), sizeof (m9_sl_CHAR), err)) = clipId;
           if (err->exc) goto L_ret;
-          { __typeof__((*(double *) m9_at (clipBox.v, m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(32), sizeof (double), err))) m9v = Png_PX (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s11, 1 }), 0.0, err), err);
+          { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s11, 1 }), 0.0, err)) m9a1 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s11, 1 }), 0.0, err);
+            if (err->exc) goto L_ret;
+          { __typeof__((*(double *) m9_at (clipBox.v, m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(32), sizeof (double), err))) m9v = Png_PX (c, m9a1, err);
             if (err->exc) goto L_ret;
             (*(double *) m9_at (clipBox.v, m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(32), sizeof (double), err)) = m9v;
             if (err->exc) goto L_ret;
           }
-          { __typeof__((*(double *) m9_at (clipBox.v, m9_add_i64 (m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(1), err), INT64_C(32), sizeof (double), err))) m9v = Png_PY (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s12, 1 }), 0.0, err), err);
+          }
+          { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s12, 1 }), 0.0, err)) m9a2 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s12, 1 }), 0.0, err);
+            if (err->exc) goto L_ret;
+          { __typeof__((*(double *) m9_at (clipBox.v, m9_add_i64 (m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(1), err), INT64_C(32), sizeof (double), err))) m9v = Png_PY (c, m9a2, err);
             if (err->exc) goto L_ret;
             (*(double *) m9_at (clipBox.v, m9_add_i64 (m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(1), err), INT64_C(32), sizeof (double), err)) = m9v;
             if (err->exc) goto L_ret;
           }
-          { __typeof__((*(double *) m9_at (clipBox.v, m9_add_i64 (m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(2), err), INT64_C(32), sizeof (double), err))) m9v = Png_PX (c, (Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s13, 1 }), 0.0, err) + Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s14, 5 }), 0.0, err)), err);
+          }
+          { __typeof__((Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s13, 1 }), 0.0, err) + Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s14, 5 }), 0.0, err))) m9a3 = (Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s13, 1 }), 0.0, err) + Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s14, 5 }), 0.0, err));
+            if (err->exc) goto L_ret;
+          { __typeof__((*(double *) m9_at (clipBox.v, m9_add_i64 (m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(2), err), INT64_C(32), sizeof (double), err))) m9v = Png_PX (c, m9a3, err);
             if (err->exc) goto L_ret;
             (*(double *) m9_at (clipBox.v, m9_add_i64 (m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(2), err), INT64_C(32), sizeof (double), err)) = m9v;
             if (err->exc) goto L_ret;
           }
-          { __typeof__((*(double *) m9_at (clipBox.v, m9_add_i64 (m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(3), err), INT64_C(32), sizeof (double), err))) m9v = Png_PY (c, (Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s15, 1 }), 0.0, err) + Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s16, 6 }), 0.0, err)), err);
+          }
+          { __typeof__((Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s15, 1 }), 0.0, err) + Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s16, 6 }), 0.0, err))) m9a4 = (Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s15, 1 }), 0.0, err) + Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s16, 6 }), 0.0, err));
+            if (err->exc) goto L_ret;
+          { __typeof__((*(double *) m9_at (clipBox.v, m9_add_i64 (m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(3), err), INT64_C(32), sizeof (double), err))) m9v = Png_PY (c, m9a4, err);
             if (err->exc) goto L_ret;
             (*(double *) m9_at (clipBox.v, m9_add_i64 (m9_mul_i64 (INT64_C(4), nclip, err), INT64_C(3), err), INT64_C(32), sizeof (double), err)) = m9v;
             if (err->exc) goto L_ret;
+          }
           }
           { __typeof__(nclip) m9v = m9_add_i64 (nclip, INT64_C(1), err);
             if (err->exc) goto L_ret;
@@ -24943,13 +24955,19 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_CHAR svg, double dpi, int64_t *width
       if (m9t20) {
         Png_ReadStyle (&(scratch), tg, c.sc, true, &(st), err->res, err);
         if (err->exc) goto L_ret;
-        { __typeof__(x) m9v = Png_PX (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s32, 1 }), 0.0, err), err);
+        { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s32, 1 }), 0.0, err)) m9a5 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s32, 1 }), 0.0, err);
+          if (err->exc) goto L_ret;
+        { __typeof__(x) m9v = Png_PX (c, m9a5, err);
           if (err->exc) goto L_ret;
           x = m9v;
         }
-        { __typeof__(y) m9v = Png_PY (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s33, 1 }), 0.0, err), err);
+        }
+        { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s33, 1 }), 0.0, err)) m9a6 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s33, 1 }), 0.0, err);
+          if (err->exc) goto L_ret;
+        { __typeof__(y) m9v = Png_PY (c, m9a6, err);
           if (err->exc) goto L_ret;
           y = m9v;
+        }
         }
         { __typeof__(w) m9v = (Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s34, 5 }), 0.0, err) * c.sc);
           if (err->exc) goto L_ret;
@@ -24987,10 +25005,34 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_CHAR svg, double dpi, int64_t *width
         if (err->exc) goto L_ret;
         if (st.stroke) {
           c.nl = INT64_C(0);
-          Png_LinePt (&(c), err->res, Png_PX (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), 0.0, err), err), Png_PY (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s38, 2 }), 0.0, err), err), err);
+          { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), 0.0, err)) m9a7 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s37, 2 }), 0.0, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PX (c, m9a7, err)) m9a8 = Png_PX (c, m9a7, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s38, 2 }), 0.0, err)) m9a9 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s38, 2 }), 0.0, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PY (c, m9a9, err)) m9a10 = Png_PY (c, m9a9, err);
+            if (err->exc) goto L_ret;
+          Png_LinePt (&(c), err->res, m9a8, m9a10, err);
           if (err->exc) goto L_ret;
-          Png_LinePt (&(c), err->res, Png_PX (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s39, 2 }), 0.0, err), err), Png_PY (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s40, 2 }), 0.0, err), err), err);
+          }
+          }
+          }
+          }
+          { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s39, 2 }), 0.0, err)) m9a11 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s39, 2 }), 0.0, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PX (c, m9a11, err)) m9a12 = Png_PX (c, m9a11, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s40, 2 }), 0.0, err)) m9a13 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s40, 2 }), 0.0, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PY (c, m9a13, err)) m9a14 = Png_PY (c, m9a13, err);
+            if (err->exc) goto L_ret;
+          Png_LinePt (&(c), err->res, m9a12, m9a14, err);
           if (err->exc) goto L_ret;
+          }
+          }
+          }
+          }
           Png_StrokeLine (&(c), err->res, st.width, st.dash, false, err);
           if (err->exc) goto L_ret;
           c.nl = INT64_C(0);
@@ -25003,13 +25045,19 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_CHAR svg, double dpi, int64_t *width
       if (m9t22) {
         Png_ReadStyle (&(scratch), tg, c.sc, true, &(st), err->res, err);
         if (err->exc) goto L_ret;
-        { __typeof__(x) m9v = Png_PX (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s42, 2 }), 0.0, err), err);
+        { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s42, 2 }), 0.0, err)) m9a15 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s42, 2 }), 0.0, err);
+          if (err->exc) goto L_ret;
+        { __typeof__(x) m9v = Png_PX (c, m9a15, err);
           if (err->exc) goto L_ret;
           x = m9v;
         }
-        { __typeof__(y) m9v = Png_PY (c, Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s43, 2 }), 0.0, err), err);
+        }
+        { __typeof__(Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s43, 2 }), 0.0, err)) m9a16 = Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s43, 2 }), 0.0, err);
+          if (err->exc) goto L_ret;
+        { __typeof__(y) m9v = Png_PY (c, m9a16, err);
           if (err->exc) goto L_ret;
           y = m9v;
+        }
         }
         { __typeof__(r) m9v = (Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s44, 1 }), 0.0, err) * c.sc);
           if (err->exc) goto L_ret;
@@ -25038,20 +25086,29 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_CHAR svg, double dpi, int64_t *width
         Png_ReadStyle (&(scratch), tg, c.sc, true, &(st), err->res, err);
         if (err->exc) goto L_ret;
         if (st.fill) {
-          Png_DrawPath (&(c), err->res, Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s46, 1 }), err), st, err);
+          { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s46, 1 }), err)) m9a17 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s46, 1 }), err);
+            if (err->exc) goto L_ret;
+          Png_DrawPath (&(c), err->res, m9a17, st, err);
           if (err->exc) goto L_ret;
+          }
           Png_PaintFill (&(c), err->res, st, err);
           if (err->exc) goto L_ret;
           if (st.stroke) {
             st.fill = false;
-            Png_DrawPath (&(c), err->res, Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s47, 1 }), err), st, err);
+            { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s47, 1 }), err)) m9a18 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s47, 1 }), err);
+              if (err->exc) goto L_ret;
+            Png_DrawPath (&(c), err->res, m9a18, st, err);
             if (err->exc) goto L_ret;
+            }
             Png_PaintStroke (&(c), err->res, st, err);
             if (err->exc) goto L_ret;
           }
         } else {
-          Png_DrawPath (&(c), err->res, Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s48, 1 }), err), st, err);
+          { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s48, 1 }), err)) m9a19 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s48, 1 }), err);
+            if (err->exc) goto L_ret;
+          Png_DrawPath (&(c), err->res, m9a19, st, err);
           if (err->exc) goto L_ret;
+          }
           Png_PaintStroke (&(c), err->res, st, err);
           if (err->exc) goto L_ret;
         }
@@ -25059,23 +25116,44 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_CHAR svg, double dpi, int64_t *width
       bool m9t24 = (Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s49, 8 }), err) || Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s50, 7 }), err));
       if (err->exc) goto L_ret;
       if (m9t24) {
-        Png_ReadStyle (&(scratch), tg, c.sc, Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s51, 7 }), err), &(st), err->res, err);
-        if (err->exc) goto L_ret;
-        if (st.fill) {
-          Png_DrawPoints (&(c), err->res, Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s52, 6 }), err), st, Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s53, 7 }), err), err);
+        { __typeof__(Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s51, 7 }), err)) m9a20 = Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s51, 7 }), err);
           if (err->exc) goto L_ret;
+        Png_ReadStyle (&(scratch), tg, c.sc, m9a20, &(st), err->res, err);
+        if (err->exc) goto L_ret;
+        }
+        if (st.fill) {
+          { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s52, 6 }), err)) m9a21 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s52, 6 }), err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s53, 7 }), err)) m9a22 = Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s53, 7 }), err);
+            if (err->exc) goto L_ret;
+          Png_DrawPoints (&(c), err->res, m9a21, st, m9a22, err);
+          if (err->exc) goto L_ret;
+          }
+          }
           Png_PaintFill (&(c), err->res, st, err);
           if (err->exc) goto L_ret;
           if (st.stroke) {
             st.fill = false;
-            Png_DrawPoints (&(c), err->res, Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s54, 6 }), err), st, Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s55, 7 }), err), err);
+            { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s54, 6 }), err)) m9a23 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s54, 6 }), err);
+              if (err->exc) goto L_ret;
+            { __typeof__(Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s55, 7 }), err)) m9a24 = Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s55, 7 }), err);
+              if (err->exc) goto L_ret;
+            Png_DrawPoints (&(c), err->res, m9a23, st, m9a24, err);
             if (err->exc) goto L_ret;
+            }
+            }
             Png_PaintStroke (&(c), err->res, st, err);
             if (err->exc) goto L_ret;
           }
         } else {
-          Png_DrawPoints (&(c), err->res, Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s56, 6 }), err), st, Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s57, 7 }), err), err);
+          { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s56, 6 }), err)) m9a25 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s56, 6 }), err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s57, 7 }), err)) m9a26 = Png_Same (tg.name, ((m9_sl_CHAR){ (uint32_t *) m9s57, 7 }), err);
+            if (err->exc) goto L_ret;
+          Png_DrawPoints (&(c), err->res, m9a25, st, m9a26, err);
           if (err->exc) goto L_ret;
+          }
+          }
           Png_PaintStroke (&(c), err->res, st, err);
           if (err->exc) goto L_ret;
         }
@@ -25122,11 +25200,26 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_CHAR svg, double dpi, int64_t *width
           if (m9t27) {
             anchor = 1.0;
         } }
-        Png_Rotation (Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s67, 9 }), err), x, y, &(deg), &(rx), &(ry), err);
-        if (err->exc) goto L_ret;
-        if ((st.fill && ((txt).len > INT64_C(0)))) {
-          Png_DrawText (&(c), err->res, txt, Png_PX (c, x, err), Png_PY (c, (y + dy), err), (size * c.sc), anchor, deg, Png_PX (c, rx, err), Png_PY (c, ry, err), err);
+        { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s67, 9 }), err)) m9a27 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s67, 9 }), err);
           if (err->exc) goto L_ret;
+        Png_Rotation (m9a27, x, y, &(deg), &(rx), &(ry), err);
+        if (err->exc) goto L_ret;
+        }
+        if ((st.fill && ((txt).len > INT64_C(0)))) {
+          { __typeof__(Png_PX (c, x, err)) m9a28 = Png_PX (c, x, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PY (c, (y + dy), err)) m9a29 = Png_PY (c, (y + dy), err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PX (c, rx, err)) m9a30 = Png_PX (c, rx, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PY (c, ry, err)) m9a31 = Png_PY (c, ry, err);
+            if (err->exc) goto L_ret;
+          Png_DrawText (&(c), err->res, txt, m9a28, m9a29, (size * c.sc), anchor, deg, m9a30, m9a31, err);
+          if (err->exc) goto L_ret;
+          }
+          }
+          }
+          }
           Png_PaintFill (&(c), err->res, st, err);
           if (err->exc) goto L_ret;
         }
@@ -25168,8 +25261,11 @@ m9_sl_BYTE Png_Raster (m9_pool *pool, m9_sl_CHAR svg, double dpi, int64_t *width
             if (err->exc) goto L_ret;
             c.gdepth = m9v;
           }
-          Png_Transform (Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s74, 9 }), err), &(c), err->res, err);
+          { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s74, 9 }), err)) m9a32 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s74, 9 }), err);
+            if (err->exc) goto L_ret;
+          Png_Transform (m9a32, &(c), err->res, err);
           if (err->exc) goto L_ret;
+          }
         }
         { __typeof__(want) m9v = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s75, 9 }), err);
           if (err->exc) goto L_ret;
@@ -25321,13 +25417,19 @@ m9_sl_BYTE Png_Decode (m9_pool *pool, m9_sl_BYTE file, int64_t *width, int64_t *
     bool m9t10 = Png_IsKind (file, m9_add_i64 (at, INT64_C(4), err), ((m9_sl_CHAR){ (uint32_t *) m9s88, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t10) {
-      { __typeof__((*width)) m9v = Png_Get4 (file, m9_add_i64 (at, INT64_C(8), err), err);
+      { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a33 = m9_add_i64 (at, INT64_C(8), err);
+        if (err->exc) goto L_ret;
+      { __typeof__((*width)) m9v = Png_Get4 (file, m9a33, err);
         if (err->exc) goto L_ret;
         (*width) = m9v;
       }
-      { __typeof__((*height)) m9v = Png_Get4 (file, m9_add_i64 (at, INT64_C(12), err), err);
+      }
+      { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a34 = m9_add_i64 (at, INT64_C(12), err);
+        if (err->exc) goto L_ret;
+      { __typeof__((*height)) m9v = Png_Get4 (file, m9a34, err);
         if (err->exc) goto L_ret;
         (*height) = m9v;
+      }
       }
       { __typeof__(depth) m9v = (int64_t)((*(uint8_t *) m9_at (file.p, m9_add_i64 (at, INT64_C(16), err), file.len, sizeof (uint8_t), err)));
         if (err->exc) goto L_ret;
@@ -25615,12 +25717,18 @@ static int64_t Png_Chunk (m9_sl_BYTE *out, int64_t at, m9_sl_CHAR kind, m9_sl_BY
       if (err->exc) goto L_ret;
     }
   } }
-  { __typeof__(crc) m9v = Zip_Crc32 (({ __typeof__((*out)) m9t3 = (*out); int64_t m9t3a = m9_add_i64 (at, INT64_C(4), err), m9t3n = m9_add_i64 (INT64_C(4), n, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
+  { __typeof__(({ __typeof__((*out)) m9t3 = (*out); int64_t m9t3a = m9_add_i64 (at, INT64_C(4), err), m9t3n = m9_add_i64 (INT64_C(4), n, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a35 = ({ __typeof__((*out)) m9t3 = (*out); int64_t m9t3a = m9_add_i64 (at, INT64_C(4), err), m9t3n = m9_add_i64 (INT64_C(4), n, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+    if (err->exc) goto L_ret;
+  { __typeof__(crc) m9v = Zip_Crc32 (m9a35, err);
     if (err->exc) goto L_ret;
     crc = m9v;
   }
-  Png_Put4 (out, m9_add_i64 (m9_add_i64 (at, INT64_C(8), err), n, err), crc, err);
+  }
+  { __typeof__(m9_add_i64 (m9_add_i64 (at, INT64_C(8), err), n, err)) m9a36 = m9_add_i64 (m9_add_i64 (at, INT64_C(8), err), n, err);
+    if (err->exc) goto L_ret;
+  Png_Put4 (out, m9a36, crc, err);
   if (err->exc) goto L_ret;
+  }
   err->res = m9res;
   m9ret = m9_add_i64 (m9_add_i64 (at, INT64_C(12), err), n, err);
   if (err->exc) goto L_ret;
@@ -25721,13 +25829,19 @@ static m9_sl_BYTE Png_Filtered (m9_pool *pool, m9_sl_BYTE rgb, int64_t width, in
         if (err->exc) goto L_ret;
         s0 = m9v;
       }
-      { __typeof__(s1) m9v = m9_add_i64 (s1, Png_Weight (m9_mod_i64 ((m9_add_i64 (m9_sub_i64 (v, left, err), INT64_C(256), err)), INT64_C(256), err), err), err);
+      { __typeof__(m9_mod_i64 ((m9_add_i64 (m9_sub_i64 (v, left, err), INT64_C(256), err)), INT64_C(256), err)) m9a37 = m9_mod_i64 ((m9_add_i64 (m9_sub_i64 (v, left, err), INT64_C(256), err)), INT64_C(256), err);
+        if (err->exc) goto L_ret;
+      { __typeof__(s1) m9v = m9_add_i64 (s1, Png_Weight (m9a37, err), err);
         if (err->exc) goto L_ret;
         s1 = m9v;
       }
-      { __typeof__(s2) m9v = m9_add_i64 (s2, Png_Weight (m9_mod_i64 ((m9_add_i64 (m9_sub_i64 (v, up, err), INT64_C(256), err)), INT64_C(256), err), err), err);
+      }
+      { __typeof__(m9_mod_i64 ((m9_add_i64 (m9_sub_i64 (v, up, err), INT64_C(256), err)), INT64_C(256), err)) m9a38 = m9_mod_i64 ((m9_add_i64 (m9_sub_i64 (v, up, err), INT64_C(256), err)), INT64_C(256), err);
+        if (err->exc) goto L_ret;
+      { __typeof__(s2) m9v = m9_add_i64 (s2, Png_Weight (m9a38, err), err);
         if (err->exc) goto L_ret;
         s2 = m9v;
+      }
       }
     } }
     pick = INT64_C(0);
@@ -26318,7 +26432,7 @@ static void Png_Flush (Png_Canvas *c, m9_pool *c_pool, m9_state *err)
   double maxx = 0; (void) maxx;
   double ys = 0; (void) ys;
   double x1 = 0; (void) x1;
-  double y1 = 0; (void) y1;
+  double y1_ = 0; (void) y1_;
   double x2 = 0; (void) x2;
   double y2 = 0; (void) y2;
   double xc = 0; (void) xc;
@@ -26588,9 +26702,9 @@ static void Png_Flush (Png_Canvas *c, m9_pool *c_pool, m9_state *err)
               if (err->exc) goto L_ret;
               x1 = m9v;
             }
-            { __typeof__(y1) m9v = (*(double *) m9_at ((*c).py.p, k, (*c).py.len, sizeof (double), err));
+            { __typeof__(y1_) m9v = (*(double *) m9_at ((*c).py.p, k, (*c).py.len, sizeof (double), err));
               if (err->exc) goto L_ret;
-              y1 = m9v;
+              y1_ = m9v;
             }
             if ((k == last)) {
               j = first;
@@ -26608,10 +26722,10 @@ static void Png_Flush (Png_Canvas *c, m9_pool *c_pool, m9_state *err)
               if (err->exc) goto L_ret;
               y2 = m9v;
             }
-            if (((((y1 <= ys) && (ys < y2))) || (((y2 <= ys) && (ys < y1))))) {
-              t = (((ys - y1)) / ((y2 - y1)));
+            if (((((y1_ <= ys) && (ys < y2))) || (((y2 <= ys) && (ys < y1_))))) {
+              t = (((ys - y1_)) / ((y2 - y1_)));
               xc = (x1 + (t * ((x2 - x1))));
-              if ((y2 > y1)) {
+              if ((y2 > y1_)) {
                 d = INT64_C(1);
               } else {
                 { __typeof__(d) m9v = m9_neg_i64 (INT64_C(1), err);
@@ -26658,8 +26772,14 @@ static void Png_Flush (Png_Canvas *c, m9_pool *c_pool, m9_state *err)
         if (err->exc) goto L_ret;
         for (; e <= m9t18to; e += 1) {
           if ((wind != INT64_C(0))) {
-            Png_Span (c, c_pool, (*(double *) m9_at ((*c).cx.p, from, (*c).cx.len, sizeof (double), err)), (*(double *) m9_at ((*c).cx.p, e, (*c).cx.len, sizeof (double), err)), (1.0 / (double)(Png_Sub)), err);
+            { __typeof__((*(double *) m9_at ((*c).cx.p, from, (*c).cx.len, sizeof (double), err))) m9a39 = (*(double *) m9_at ((*c).cx.p, from, (*c).cx.len, sizeof (double), err));
+              if (err->exc) goto L_ret;
+            { __typeof__((*(double *) m9_at ((*c).cx.p, e, (*c).cx.len, sizeof (double), err))) m9a40 = (*(double *) m9_at ((*c).cx.p, e, (*c).cx.len, sizeof (double), err));
+              if (err->exc) goto L_ret;
+            Png_Span (c, c_pool, m9a39, m9a40, (1.0 / (double)(Png_Sub)), err);
             if (err->exc) goto L_ret;
+            }
+            }
           }
           { __typeof__(wind) m9v = m9_add_i64 (wind, (*(int64_t *) m9_at ((*c).cd.p, e, (*c).cd.len, sizeof (int64_t), err)), err);
             if (err->exc) goto L_ret;
@@ -26854,7 +26974,7 @@ L_ret: ;
   return;
 }
 
-static void Png_RectFill (Png_Canvas *c, m9_pool *c_pool, double x0, double y0, double x1, double y1, int64_t r, int64_t g, int64_t b, double alpha, m9_state *err)
+static void Png_RectFill (Png_Canvas *c, m9_pool *c_pool, double x0, double y0_, double x1, double y1_, int64_t r, int64_t g, int64_t b, double alpha, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -26872,47 +26992,47 @@ static void Png_RectFill (Png_Canvas *c, m9_pool *c_pool, double x0, double y0, 
     x0 = x1;
     x1 = ox;
   }
-  if ((y1 < y0)) {
-    oy = y0;
-    y0 = y1;
-    y1 = oy;
+  if ((y1_ < y0_)) {
+    oy = y0_;
+    y0_ = y1_;
+    y1_ = oy;
   }
   if ((x0 < 0.0)) {
     x0 = 0.0;
   }
-  if ((y0 < 0.0)) {
-    y0 = 0.0;
+  if ((y0_ < 0.0)) {
+    y0_ = 0.0;
   }
   if ((x1 > (double)((*c).w))) {
     x1 = (double)((*c).w);
   }
-  if ((y1 > (double)((*c).h))) {
-    y1 = (double)((*c).h);
+  if ((y1_ > (double)((*c).h))) {
+    y1_ = (double)((*c).h);
   }
   if ((*c).clipped) {
     if ((x0 < (*c).kx0)) {
       x0 = (*c).kx0;
     }
-    if ((y0 < (*c).ky0)) {
-      y0 = (*c).ky0;
+    if ((y0_ < (*c).ky0)) {
+      y0_ = (*c).ky0;
     }
     if ((x1 > (*c).kx1)) {
       x1 = (*c).kx1;
     }
-    if ((y1 > (*c).ky1)) {
-      y1 = (*c).ky1;
+    if ((y1_ > (*c).ky1)) {
+      y1_ = (*c).ky1;
     }
   }
-  if (((x1 <= x0) || (y1 <= y0))) {
+  if (((x1 <= x0) || (y1_ <= y0_))) {
     goto L_ret;
   }
   { int64_t m9t1to;
-  y = m9_i64_f64 ((double)(y0), err);
-  m9t1to = m9_i64_f64 ((double)(y1), err);
+  y = m9_i64_f64 ((double)(y0_), err);
+  m9t1to = m9_i64_f64 ((double)(y1_), err);
   if (err->exc) goto L_ret;
   for (; y <= m9t1to; y += 1) {
     if ((y < (*c).h)) {
-      oy = y1;
+      oy = y1_;
       bool m9t2 = ((double)(m9_add_i64 (y, INT64_C(1), err)) < oy);
       if (err->exc) goto L_ret;
       if (m9t2) {
@@ -26921,10 +27041,10 @@ static void Png_RectFill (Png_Canvas *c, m9_pool *c_pool, double x0, double y0, 
           oy = m9v;
         }
       }
-      if (((double)(y) > y0)) {
+      if (((double)(y) > y0_)) {
         oy = (oy - (double)(y));
       } else {
-        oy = (oy - y0);
+        oy = (oy - y0_);
       }
       if ((oy > 0.0)) {
         { int64_t m9t3to;
@@ -27014,7 +27134,7 @@ L_ret: ;
   return;
 }
 
-static void Png_Quad (Png_Canvas *c, m9_pool *c_pool, double x1, double y1, double x2, double y2, double wid, m9_state *err)
+static void Png_Quad (Png_Canvas *c, m9_pool *c_pool, double x1, double y1_, double x2, double y2, double wid, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -27026,7 +27146,7 @@ static void Png_Quad (Png_Canvas *c, m9_pool *c_pool, double x1, double y1, doub
   double nx = 0; (void) nx;
   double ny = 0; (void) ny;
   dx = (x2 - x1);
-  dy = (y2 - y1);
+  dy = (y2 - y1_);
   { __typeof__(len) m9v = Math_Sqrt (((dx * dx) + (dy * dy)), err);
     if (err->exc) goto L_ret;
     len = m9v;
@@ -27036,13 +27156,13 @@ static void Png_Quad (Png_Canvas *c, m9_pool *c_pool, double x1, double y1, doub
   }
   nx = (- (((dy / len) * wid) / 2.0));
   ny = (((dx / len) * wid) / 2.0);
-  Png_Pt (c, c_pool, (x1 + nx), (y1 + ny), err);
+  Png_Pt (c, c_pool, (x1 + nx), (y1_ + ny), err);
   if (err->exc) goto L_ret;
   Png_Pt (c, c_pool, (x2 + nx), (y2 + ny), err);
   if (err->exc) goto L_ret;
   Png_Pt (c, c_pool, (x2 - nx), (y2 - ny), err);
   if (err->exc) goto L_ret;
-  Png_Pt (c, c_pool, (x1 - nx), (y1 - ny), err);
+  Png_Pt (c, c_pool, (x1 - nx), (y1_ - ny), err);
   if (err->exc) goto L_ret;
   Png_CloseContour (c, c_pool, err);
   if (err->exc) goto L_ret;
@@ -27104,8 +27224,14 @@ static void Png_Disc (Png_Canvas *c, m9_pool *c_pool, double cx, double cy, doub
     if ((r < 0.0)) {
       ang = (- ang);
     }
-    Png_Pt (c, c_pool, (cx + (rr * Math_Cos (ang, err))), (cy + (rr * Math_Sin (ang, err))), err);
+    { __typeof__((cx + (rr * Math_Cos (ang, err)))) m9a41 = (cx + (rr * Math_Cos (ang, err)));
+      if (err->exc) goto L_ret;
+    { __typeof__((cy + (rr * Math_Sin (ang, err)))) m9a42 = (cy + (rr * Math_Sin (ang, err)));
+      if (err->exc) goto L_ret;
+    Png_Pt (c, c_pool, m9a41, m9a42, err);
     if (err->exc) goto L_ret;
+    }
+    }
   } }
   Png_CloseContour (c, c_pool, err);
   if (err->exc) goto L_ret;
@@ -27271,29 +27397,71 @@ static void Png_Outline (Png_Canvas *c, m9_pool *c_pool, m9_sl_F64 xs, m9_sl_F64
         noy = (vx / len);
       }
       if ((prev < INT64_C(0))) {
-        Png_Pt (c, c_pool, ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + ((side * hw) * nox)), ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + ((side * hw) * noy)), err);
+        { __typeof__(((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + ((side * hw) * nox))) m9a43 = ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + ((side * hw) * nox));
+          if (err->exc) goto L_ret;
+        { __typeof__(((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + ((side * hw) * noy))) m9a44 = ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + ((side * hw) * noy));
+          if (err->exc) goto L_ret;
+        Png_Pt (c, c_pool, m9a43, m9a44, err);
         if (err->exc) goto L_ret;
+        }
+        }
       } else {
         if ((next >= m)) {
-          Png_Pt (c, c_pool, ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + ((side * hw) * nix)), ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + ((side * hw) * niy)), err);
+          { __typeof__(((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + ((side * hw) * nix))) m9a45 = ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + ((side * hw) * nix));
+            if (err->exc) goto L_ret;
+          { __typeof__(((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + ((side * hw) * niy))) m9a46 = ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + ((side * hw) * niy));
+            if (err->exc) goto L_ret;
+          Png_Pt (c, c_pool, m9a45, m9a46, err);
           if (err->exc) goto L_ret;
+          }
+          }
       } else {
         dot = ((nix * nox) + (niy * noy));
         if ((dot > (- 0.9))) {
           f = (hw / ((1.0 + dot)));
-          Png_Pt (c, c_pool, ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + ((side * f) * ((nix + nox)))), ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + ((side * f) * ((niy + noy)))), err);
+          { __typeof__(((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + ((side * f) * ((nix + nox))))) m9a47 = ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + ((side * f) * ((nix + nox))));
+            if (err->exc) goto L_ret;
+          { __typeof__(((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + ((side * f) * ((niy + noy))))) m9a48 = ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + ((side * f) * ((niy + noy))));
+            if (err->exc) goto L_ret;
+          Png_Pt (c, c_pool, m9a47, m9a48, err);
           if (err->exc) goto L_ret;
+          }
+          }
         } else {
           if ((side > 0.0)) {
-            Png_Pt (c, c_pool, ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + (hw * nix)), ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + (hw * niy)), err);
+            { __typeof__(((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + (hw * nix))) m9a49 = ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + (hw * nix));
+              if (err->exc) goto L_ret;
+            { __typeof__(((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + (hw * niy))) m9a50 = ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + (hw * niy));
+              if (err->exc) goto L_ret;
+            Png_Pt (c, c_pool, m9a49, m9a50, err);
             if (err->exc) goto L_ret;
-            Png_Pt (c, c_pool, ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + (hw * nox)), ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + (hw * noy)), err);
+            }
+            }
+            { __typeof__(((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + (hw * nox))) m9a51 = ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) + (hw * nox));
+              if (err->exc) goto L_ret;
+            { __typeof__(((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + (hw * noy))) m9a52 = ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) + (hw * noy));
+              if (err->exc) goto L_ret;
+            Png_Pt (c, c_pool, m9a51, m9a52, err);
             if (err->exc) goto L_ret;
+            }
+            }
           } else {
-            Png_Pt (c, c_pool, ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) - (hw * nox)), ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) - (hw * noy)), err);
+            { __typeof__(((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) - (hw * nox))) m9a53 = ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) - (hw * nox));
+              if (err->exc) goto L_ret;
+            { __typeof__(((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) - (hw * noy))) m9a54 = ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) - (hw * noy));
+              if (err->exc) goto L_ret;
+            Png_Pt (c, c_pool, m9a53, m9a54, err);
             if (err->exc) goto L_ret;
-            Png_Pt (c, c_pool, ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) - (hw * nix)), ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) - (hw * niy)), err);
+            }
+            }
+            { __typeof__(((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) - (hw * nix))) m9a55 = ((*(double *) m9_at ((*c).tx.p, i, (*c).tx.len, sizeof (double), err)) - (hw * nix));
+              if (err->exc) goto L_ret;
+            { __typeof__(((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) - (hw * niy))) m9a56 = ((*(double *) m9_at ((*c).ty.p, i, (*c).ty.len, sizeof (double), err)) - (hw * niy));
+              if (err->exc) goto L_ret;
+            Png_Pt (c, c_pool, m9a55, m9a56, err);
             if (err->exc) goto L_ret;
+            }
+            }
           }
         }
       } }
@@ -27347,7 +27515,7 @@ static void Png_StrokeLine (Png_Canvas *c, m9_pool *c_pool, double wid, m9_sl_F6
   int64_t di = 0; (void) di;
   int64_t nr = 0; (void) nr;
   double x1 = 0; (void) x1;
-  double y1 = 0; (void) y1;
+  double y1_ = 0; (void) y1_;
   double x2 = 0; (void) x2;
   double y2 = 0; (void) y2;
   double len = 0; (void) len;
@@ -27390,9 +27558,9 @@ static void Png_StrokeLine (Png_Canvas *c, m9_pool *c_pool, double wid, m9_sl_F6
       if (err->exc) goto L_ret;
       x1 = m9v;
     }
-    { __typeof__(y1) m9v = (*(double *) m9_at ((*c).ly.p, i, (*c).ly.len, sizeof (double), err));
+    { __typeof__(y1_) m9v = (*(double *) m9_at ((*c).ly.p, i, (*c).ly.len, sizeof (double), err));
       if (err->exc) goto L_ret;
-      y1 = m9v;
+      y1_ = m9v;
     }
     bool m9t2 = (m9_add_i64 (i, INT64_C(1), err) < n);
     if (err->exc) goto L_ret;
@@ -27415,17 +27583,17 @@ static void Png_StrokeLine (Png_Canvas *c, m9_pool *c_pool, double wid, m9_sl_F6
         y2 = m9v;
       }
     }
-    { __typeof__(len) m9v = Math_Sqrt (((((x2 - x1)) * ((x2 - x1))) + (((y2 - y1)) * ((y2 - y1)))), err);
+    { __typeof__(len) m9v = Math_Sqrt (((((x2 - x1)) * ((x2 - x1))) + (((y2 - y1_)) * ((y2 - y1_)))), err);
       if (err->exc) goto L_ret;
       len = m9v;
     }
     if ((len > 0.0)) {
       ux = (((x2 - x1)) / len);
-      uy = (((y2 - y1)) / len);
+      uy = (((y2 - y1_)) / len);
       if ((on && (nr == INT64_C(0)))) {
         (*(double *) m9_at ((*c).rx.p, INT64_C(0), (*c).rx.len, sizeof (double), err)) = x1;
         if (err->exc) goto L_ret;
-        (*(double *) m9_at ((*c).ry.p, INT64_C(0), (*c).ry.len, sizeof (double), err)) = y1;
+        (*(double *) m9_at ((*c).ry.p, INT64_C(0), (*c).ry.len, sizeof (double), err)) = y1_;
         if (err->exc) goto L_ret;
         nr = INT64_C(1);
       }
@@ -27440,7 +27608,7 @@ static void Png_StrokeLine (Png_Canvas *c, m9_pool *c_pool, double wid, m9_sl_F6
         if (on) {
           (*(double *) m9_at ((*c).rx.p, nr, (*c).rx.len, sizeof (double), err)) = (x1 + (ux * t1));
           if (err->exc) goto L_ret;
-          (*(double *) m9_at ((*c).ry.p, nr, (*c).ry.len, sizeof (double), err)) = (y1 + (uy * t1));
+          (*(double *) m9_at ((*c).ry.p, nr, (*c).ry.len, sizeof (double), err)) = (y1_ + (uy * t1));
           if (err->exc) goto L_ret;
           { __typeof__(nr) m9v = m9_add_i64 (nr, INT64_C(1), err);
             if (err->exc) goto L_ret;
@@ -27468,7 +27636,7 @@ static void Png_StrokeLine (Png_Canvas *c, m9_pool *c_pool, double wid, m9_sl_F6
             if ((t1 < len)) {
               (*(double *) m9_at ((*c).rx.p, INT64_C(0), (*c).rx.len, sizeof (double), err)) = (x1 + (ux * t1));
               if (err->exc) goto L_ret;
-              (*(double *) m9_at ((*c).ry.p, INT64_C(0), (*c).ry.len, sizeof (double), err)) = (y1 + (uy * t1));
+              (*(double *) m9_at ((*c).ry.p, INT64_C(0), (*c).ry.len, sizeof (double), err)) = (y1_ + (uy * t1));
               if (err->exc) goto L_ret;
               nr = INT64_C(1);
           } }
@@ -27525,8 +27693,14 @@ static void Png_FillLine (Png_Canvas *c, m9_pool *c_pool, m9_state *err)
   m9t1to = m9_sub_i64 ((*c).nl, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    Png_Pt (c, c_pool, (*(double *) m9_at ((*c).lx.p, i, (*c).lx.len, sizeof (double), err)), (*(double *) m9_at ((*c).ly.p, i, (*c).ly.len, sizeof (double), err)), err);
+    { __typeof__((*(double *) m9_at ((*c).lx.p, i, (*c).lx.len, sizeof (double), err))) m9a57 = (*(double *) m9_at ((*c).lx.p, i, (*c).lx.len, sizeof (double), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(double *) m9_at ((*c).ly.p, i, (*c).ly.len, sizeof (double), err))) m9a58 = (*(double *) m9_at ((*c).ly.p, i, (*c).ly.len, sizeof (double), err));
+      if (err->exc) goto L_ret;
+    Png_Pt (c, c_pool, m9a57, m9a58, err);
     if (err->exc) goto L_ret;
+    }
+    }
   } }
   Png_CloseContour (c, c_pool, err);
   if (err->exc) goto L_ret;
@@ -27612,7 +27786,7 @@ static void Png_ArcTo (Png_Canvas *c, m9_pool *c_pool, double rx, double ry, dou
   (void) m9res;
   err->res = &m9frame;
   double x1 = 0; (void) x1;
-  double y1 = 0; (void) y1;
+  double y1_ = 0; (void) y1_;
   double phi = 0; (void) phi;
   double cp = 0; (void) cp;
   double sp = 0; (void) sp;
@@ -27650,9 +27824,9 @@ static void Png_ArcTo (Png_Canvas *c, m9_pool *c_pool, double rx, double ry, dou
     if (err->exc) goto L_ret;
     x1 = m9v;
   }
-  { __typeof__(y1) m9v = ((((*(double *) m9_at ((*c).ly.p, m9_sub_i64 ((*c).nl, INT64_C(1), err), (*c).ly.len, sizeof (double), err)) - (*c).oy)) / (*c).sc);
+  { __typeof__(y1_) m9v = ((((*(double *) m9_at ((*c).ly.p, m9_sub_i64 ((*c).nl, INT64_C(1), err), (*c).ly.len, sizeof (double), err)) - (*c).oy)) / (*c).sc);
     if (err->exc) goto L_ret;
-    y1 = m9v;
+    y1_ = m9v;
   }
   if ((rx < 0.0)) {
     rx = (- rx);
@@ -27660,9 +27834,15 @@ static void Png_ArcTo (Png_Canvas *c, m9_pool *c_pool, double rx, double ry, dou
   if ((ry < 0.0)) {
     ry = (- ry);
   }
-  if ((((rx == 0.0) || (ry == 0.0)) || (((x1 == x2) && (y1 == y2))))) {
-    Png_LinePt (c, c_pool, Png_PX ((*c), x2, err), Png_PY ((*c), y2, err), err);
+  if ((((rx == 0.0) || (ry == 0.0)) || (((x1 == x2) && (y1_ == y2))))) {
+    { __typeof__(Png_PX ((*c), x2, err)) m9a59 = Png_PX ((*c), x2, err);
+      if (err->exc) goto L_ret;
+    { __typeof__(Png_PY ((*c), y2, err)) m9a60 = Png_PY ((*c), y2, err);
+      if (err->exc) goto L_ret;
+    Png_LinePt (c, c_pool, m9a59, m9a60, err);
     if (err->exc) goto L_ret;
+    }
+    }
     goto L_ret;
   }
   phi = ((rotDeg * Math_Pi) / 180.0);
@@ -27675,7 +27855,7 @@ static void Png_ArcTo (Png_Canvas *c, m9_pool *c_pool, double rx, double ry, dou
     sp = m9v;
   }
   dx = (((x1 - x2)) / 2.0);
-  dy = (((y1 - y2)) / 2.0);
+  dy = (((y1_ - y2)) / 2.0);
   x1p = ((cp * dx) + (sp * dy));
   y1p = ((- (sp * dx)) + (cp * dy));
   lam = ((((x1p * x1p)) / ((rx * rx))) + (((y1p * y1p)) / ((ry * ry))));
@@ -27702,7 +27882,7 @@ static void Png_ArcTo (Png_Canvas *c, m9_pool *c_pool, double rx, double ry, dou
   cxp = (((root * rx) * y1p) / ry);
   cyp = (- (((root * ry) * x1p) / rx));
   cx = (((cp * cxp) - (sp * cyp)) + (((x1 + x2)) / 2.0));
-  cy = (((sp * cxp) + (cp * cyp)) + (((y1 + y2)) / 2.0));
+  cy = (((sp * cxp) + (cp * cyp)) + (((y1_ + y2)) / 2.0));
   ux = (((x1p - cxp)) / rx);
   uy = (((y1p - cyp)) / ry);
   vx = ((((- x1p) - cxp)) / rx);
@@ -27768,8 +27948,14 @@ static void Png_ArcTo (Png_Canvas *c, m9_pool *c_pool, double rx, double ry, dou
       if (err->exc) goto L_ret;
       ey = m9v;
     }
-    Png_LinePt (c, c_pool, Png_PX ((*c), ((cx + (cp * ex)) - (sp * ey)), err), Png_PY ((*c), ((cy + (sp * ex)) + (cp * ey)), err), err);
+    { __typeof__(Png_PX ((*c), ((cx + (cp * ex)) - (sp * ey)), err)) m9a61 = Png_PX ((*c), ((cx + (cp * ex)) - (sp * ey)), err);
+      if (err->exc) goto L_ret;
+    { __typeof__(Png_PY ((*c), ((cy + (sp * ex)) + (cp * ey)), err)) m9a62 = Png_PY ((*c), ((cy + (sp * ex)) + (cp * ey)), err);
+      if (err->exc) goto L_ret;
+    Png_LinePt (c, c_pool, m9a61, m9a62, err);
     if (err->exc) goto L_ret;
+    }
+    }
   } }
 L_ret: ;
   err->res = m9res;
@@ -27896,9 +28082,12 @@ static int64_t Png_TextWidth (m9_sl_CHAR s, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__(w) m9v = m9_add_i64 (w, (*(int64_t *) m9_at ((*FontData).v, Png_GlyphOrAsk ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), err), INT64_C(23664), sizeof (int64_t), err)), err);
+    { __typeof__((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)))) m9a63 = (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)));
+      if (err->exc) goto L_ret;
+    { __typeof__(w) m9v = m9_add_i64 (w, (*(int64_t *) m9_at ((*FontData).v, Png_GlyphOrAsk (m9a63, err), INT64_C(23664), sizeof (int64_t), err)), err);
       if (err->exc) goto L_ret;
       w = m9v;
+    }
     }
   } }
   err->res = m9res;
@@ -27951,9 +28140,12 @@ static void Png_DrawText (Png_Canvas *c, m9_pool *c_pool, m9_sl_CHAR s, double x
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__(g) m9v = Png_GlyphOrAsk ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), err);
+    { __typeof__((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)))) m9a64 = (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)));
+      if (err->exc) goto L_ret;
+    { __typeof__(g) m9v = Png_GlyphOrAsk (m9a64, err);
       if (err->exc) goto L_ret;
       g = m9v;
+    }
     }
     { __typeof__(nc) m9v = (*(int64_t *) m9_at ((*FontData).v, m9_add_i64 (g, INT64_C(1), err), INT64_C(23664), sizeof (int64_t), err));
       if (err->exc) goto L_ret;
@@ -28687,9 +28879,12 @@ static bool Png_Colour (m9_sl_CHAR s, int64_t *r, int64_t *g, int64_t *b, m9_sta
     m9t3to = m9_sub_i64 ((s).len, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; k <= m9t3to; k += 1) {
-      { __typeof__(d) m9v = Png_HexDigit ((*(uint32_t *) m9_at (s.p, k, s.len, sizeof (uint32_t), err)), err);
+      { __typeof__((*(uint32_t *) m9_at (s.p, k, s.len, sizeof (uint32_t), err))) m9a65 = (*(uint32_t *) m9_at (s.p, k, s.len, sizeof (uint32_t), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(d) m9v = Png_HexDigit (m9a65, err);
         if (err->exc) goto L_ret;
         d = m9v;
+      }
       }
       if ((d < INT64_C(0))) {
         { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s108, 40 }), s, err)) m9t4 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s108, 40 }), s, err); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
@@ -28944,9 +29139,12 @@ static m9_sl_CHAR Png_Content (m9_pool *pool, m9_sl_CHAR s, int64_t from, int64_
             m9t14to = m9_sub_i64 ((ent).len, INT64_C(1), err);
             if (err->exc) goto L_ret;
             for (; k <= m9t14to; k += 1) {
-              { __typeof__(code) m9v = m9_add_i64 (m9_mul_i64 (code, INT64_C(16), err), Png_HexDigit ((*(uint32_t *) m9_at (ent.p, k, ent.len, sizeof (uint32_t), err)), err), err);
+              { __typeof__((*(uint32_t *) m9_at (ent.p, k, ent.len, sizeof (uint32_t), err))) m9a66 = (*(uint32_t *) m9_at (ent.p, k, ent.len, sizeof (uint32_t), err));
+                if (err->exc) goto L_ret;
+              { __typeof__(code) m9v = m9_add_i64 (m9_mul_i64 (code, INT64_C(16), err), Png_HexDigit (m9a66, err), err);
                 if (err->exc) goto L_ret;
                 code = m9v;
+              }
               }
             } }
           } else {
@@ -28966,8 +29164,11 @@ static m9_sl_CHAR Png_Content (m9_pool *pool, m9_sl_CHAR s, int64_t from, int64_
             m9_raise (err, &Faults_BadArg);
             goto L_ret;
           }
-          DynStr_AppendChar (&(d), &((*pool)), m9_chr (code, err), err);
+          { __typeof__(m9_chr (code, err)) m9a67 = m9_chr (code, err);
+            if (err->exc) goto L_ret;
+          DynStr_AppendChar (&(d), &((*pool)), m9a67, err);
           if (err->exc) goto L_ret;
+          }
       } else {
         { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s119, 44 }), ent, err), ((m9_sl_CHAR){ (uint32_t *) m9s120, 1 }), err)) m9t17 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s119, 44 }), ent, err), ((m9_sl_CHAR){ (uint32_t *) m9s120, 1 }), err); err->s[0].p = m9t17.p; err->s[0].len = m9t17.len; m9_pay_keep (err, 0, sizeof (*m9t17.p)); }
         m9_raise (err, &Faults_BadArg);
@@ -28978,8 +29179,11 @@ static m9_sl_CHAR Png_Content (m9_pool *pool, m9_sl_CHAR s, int64_t from, int64_
         i = m9v;
       }
     } else {
-      DynStr_AppendChar (&(d), &((*pool)), (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
+      { __typeof__((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))) m9a68 = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
+        if (err->exc) goto L_ret;
+      DynStr_AppendChar (&(d), &((*pool)), m9a68, err);
       if (err->exc) goto L_ret;
+      }
       { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
         if (err->exc) goto L_ret;
         i = m9v;
@@ -29006,8 +29210,11 @@ static bool Png_Hidden (Png_Tag tg, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Png_Same (Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s121, 10 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s122, 6 }), err) || Png_Same (Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s123, 7 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s124, 4 }), err));
+  { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s121, 10 }), err)) m9a69 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s121, 10 }), err);
+    if (err->exc) goto L_ret;
+  m9ret = (Png_Same (m9a69, ((m9_sl_CHAR){ (uint32_t *) m9s122, 6 }), err) || Png_Same (Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s123, 7 }), err), ((m9_sl_CHAR){ (uint32_t *) m9s124, 4 }), err));
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -29044,16 +29251,22 @@ static void Png_ReadStyle (m9_pool *pool, Png_Tag tg, double sc, bool fillByDefa
   bool m9t4 = Png_Has (tg, ((m9_sl_CHAR){ (uint32_t *) m9s127, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
-    { __typeof__((*st).fill) m9v = Png_Colour (Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s128, 4 }), err), &((*st).fr), &((*st).fg), &((*st).fb), err);
+    { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s128, 4 }), err)) m9a70 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s128, 4 }), err);
+      if (err->exc) goto L_ret;
+    { __typeof__((*st).fill) m9v = Png_Colour (m9a70, &((*st).fr), &((*st).fg), &((*st).fb), err);
       if (err->exc) goto L_ret;
       (*st).fill = m9v;
+    }
     }
   } else {
     (*st).fill = fillByDefault;
   }
-  { __typeof__((*st).stroke) m9v = Png_Colour (Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s129, 6 }), err), &((*st).sr), &((*st).sg), &((*st).sb), err);
+  { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s129, 6 }), err)) m9a71 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s129, 6 }), err);
+    if (err->exc) goto L_ret;
+  { __typeof__((*st).stroke) m9v = Png_Colour (m9a71, &((*st).sr), &((*st).sg), &((*st).sb), err);
     if (err->exc) goto L_ret;
     (*st).stroke = m9v;
+  }
   }
   { __typeof__((*st).width) m9v = (Png_NumAttr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s130, 12 }), 1.0, err) * sc);
     if (err->exc) goto L_ret;
@@ -29071,9 +29284,12 @@ static void Png_ReadStyle (m9_pool *pool, Png_Tag tg, double sc, bool fillByDefa
     if (err->exc) goto L_ret;
     (*st).strokeOpacity = m9v;
   }
-  { __typeof__((*st).dash) m9v = Png_Dashes (pool, Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s134, 16 }), err), sc, err);
+  { __typeof__(Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s134, 16 }), err)) m9a72 = Png_Attr (tg, ((m9_sl_CHAR){ (uint32_t *) m9s134, 16 }), err);
+    if (err->exc) goto L_ret;
+  { __typeof__((*st).dash) m9v = Png_Dashes (pool, m9a72, sc, err);
     if (err->exc) goto L_ret;
     (*st).dash = m9v;
+  }
   }
 L_ret: ;
   err->res = m9res;
@@ -29135,7 +29351,7 @@ L_ret: ;
   return;
 }
 
-static void Png_Rotation (m9_sl_CHAR s, double x0, double y0, double *deg, double *rx, double *ry, m9_state *err)
+static void Png_Rotation (m9_sl_CHAR s, double x0, double y0_, double *deg, double *rx, double *ry, m9_state *err)
 {
   m9_pool m9frame = {0};
   m9_pool *m9res = err->res ? err->res : &m9_heap;
@@ -29144,7 +29360,7 @@ static void Png_Rotation (m9_sl_CHAR s, double x0, double y0, double *deg, doubl
   int64_t i = 0; (void) i;
   (*deg) = 0.0;
   (*rx) = x0;
-  (*ry) = y0;
+  (*ry) = y0_;
   if (((s).len == INT64_C(0))) {
     goto L_ret;
   }
@@ -29287,8 +29503,14 @@ static void Png_DrawPath (Png_Canvas *c, m9_pool *c_pool, m9_sl_CHAR d, Png_Styl
           (*c).nl = INT64_C(0);
           x = sx;
           y = sy;
-          Png_LinePt (c, c_pool, Png_PX ((*c), x, err), Png_PY ((*c), y, err), err);
+          { __typeof__(Png_PX ((*c), x, err)) m9a73 = Png_PX ((*c), x, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PY ((*c), y, err)) m9a74 = Png_PY ((*c), y, err);
+            if (err->exc) goto L_ret;
+          Png_LinePt (c, c_pool, m9a73, m9a74, err);
           if (err->exc) goto L_ret;
+          }
+          }
         }
         closed = true;
       }
@@ -29325,8 +29547,14 @@ static void Png_DrawPath (Png_Canvas *c, m9_pool *c_pool, m9_sl_CHAR d, Png_Styl
         y = b;
         sx = a;
         sy = b;
-        Png_LinePt (c, c_pool, Png_PX ((*c), x, err), Png_PY ((*c), y, err), err);
+        { __typeof__(Png_PX ((*c), x, err)) m9a75 = Png_PX ((*c), x, err);
+          if (err->exc) goto L_ret;
+        { __typeof__(Png_PY ((*c), y, err)) m9a76 = Png_PY ((*c), y, err);
+          if (err->exc) goto L_ret;
+        Png_LinePt (c, c_pool, m9a75, m9a76, err);
         if (err->exc) goto L_ret;
+        }
+        }
         cmd = 76u;
       } else {
         if ((cmd == 76u)) {
@@ -29343,8 +29571,14 @@ static void Png_DrawPath (Png_Canvas *c, m9_pool *c_pool, m9_sl_CHAR d, Png_Styl
           }
           x = a;
           y = b;
-          Png_LinePt (c, c_pool, Png_PX ((*c), x, err), Png_PY ((*c), y, err), err);
+          { __typeof__(Png_PX ((*c), x, err)) m9a77 = Png_PX ((*c), x, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PY ((*c), y, err)) m9a78 = Png_PY ((*c), y, err);
+            if (err->exc) goto L_ret;
+          Png_LinePt (c, c_pool, m9a77, m9a78, err);
           if (err->exc) goto L_ret;
+          }
+          }
       } else {
         if ((cmd == 72u)) {
           bool m9t10 = (!Png_Num (d, &(i), &(a), err));
@@ -29358,8 +29592,14 @@ static void Png_DrawPath (Png_Canvas *c, m9_pool *c_pool, m9_sl_CHAR d, Png_Styl
             a = (a + x);
           }
           x = a;
-          Png_LinePt (c, c_pool, Png_PX ((*c), x, err), Png_PY ((*c), y, err), err);
+          { __typeof__(Png_PX ((*c), x, err)) m9a79 = Png_PX ((*c), x, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PY ((*c), y, err)) m9a80 = Png_PY ((*c), y, err);
+            if (err->exc) goto L_ret;
+          Png_LinePt (c, c_pool, m9a79, m9a80, err);
           if (err->exc) goto L_ret;
+          }
+          }
       } else {
         if ((cmd == 86u)) {
           bool m9t12 = (!Png_Num (d, &(i), &(b), err));
@@ -29373,8 +29613,14 @@ static void Png_DrawPath (Png_Canvas *c, m9_pool *c_pool, m9_sl_CHAR d, Png_Styl
             b = (b + y);
           }
           y = b;
-          Png_LinePt (c, c_pool, Png_PX ((*c), x, err), Png_PY ((*c), y, err), err);
+          { __typeof__(Png_PX ((*c), x, err)) m9a81 = Png_PX ((*c), x, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(Png_PY ((*c), y, err)) m9a82 = Png_PY ((*c), y, err);
+            if (err->exc) goto L_ret;
+          Png_LinePt (c, c_pool, m9a81, m9a82, err);
           if (err->exc) goto L_ret;
+          }
+          }
       } else {
         if ((cmd == 65u)) {
           bool m9t14 = (!(((((((Png_Num (d, &(i), &(rx), err) && Png_Num (d, &(i), &(ry), err)) && Png_Num (d, &(i), &(rot), err)) && Png_Num (d, &(i), &(fa), err)) && Png_Num (d, &(i), &(fs), err)) && Png_Num (d, &(i), &(a), err)) && Png_Num (d, &(i), &(b), err))));
@@ -29458,8 +29704,14 @@ static void Png_DrawPoints (Png_Canvas *c, m9_pool *c_pool, m9_sl_CHAR pts, Png_
       m9_raise (err, &Faults_BadArg);
       goto L_ret;
     }
-    Png_LinePt (c, c_pool, Png_PX ((*c), a, err), Png_PY ((*c), b, err), err);
+    { __typeof__(Png_PX ((*c), a, err)) m9a83 = Png_PX ((*c), a, err);
+      if (err->exc) goto L_ret;
+    { __typeof__(Png_PY ((*c), b, err)) m9a84 = Png_PY ((*c), b, err);
+      if (err->exc) goto L_ret;
+    Png_LinePt (c, c_pool, m9a83, m9a84, err);
     if (err->exc) goto L_ret;
+    }
+    }
   }
   if (st.fill) {
     Png_FillLine (c, c_pool, err);

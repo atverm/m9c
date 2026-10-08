@@ -63,7 +63,7 @@ COMPILER="DynStr Io Lex Ast Parse Print Text System Sem Gen Doc Review M9c"
 LIBRARY="DynStr Io Lex Ast Parse Print Text Fmt Sem Gen \
          Json Dict Faults Mat Math Bits Sort Check Arrays Numeric Png Time Logger Syslog Http HttpServer OpenApi ApiSpec \
          Arrow Doc Review \
-         NetCDF Grib Csv Delim Zip Pg Sparql Rdf Regex Xml Stats System Frame Parquet NbCells NbShow \
+         NetCDF Grib Csv Delim Zip Pg Sparql Rdf Regex Xml Hash Smtp Rsa Map Stats System Frame Parquet NbCells NbShow \
          Plot ZarrStore Zarr Diag Lsp M9fmt M9elide"
 
 mkdir -p "$OUT"

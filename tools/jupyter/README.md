@@ -41,6 +41,24 @@ later; run the installer again after moving or upgrading the compiler.
 A cell runs in the notebook's directory, so the figures and files it
 writes land beside the notebook.
 
+## Examples
+
+`examples/` holds five notebooks, each a short tour that runs on its
+own (the data is made in the notebook):
+
+| notebook | what it shows |
+|---|---|
+| `01-first-steps` | the three kinds of cell: a state cell, expression cells, programs, a figure, and a refusal with its line and column |
+| `02-random-walk` | a seeded stream, `Arrays`, a histogram and a rolling mean with `Plot`, values handed on through `NbCells` |
+| `03-curve-fit` | `Numeric.CurveFit` on a noisy sine, the model a procedure of the notebook; `Root` and `Integral` on the fit |
+| `04-dataframes` | a CSV read by `Csv` into a `Frame`: the table shown, `GroupBy`, `Describe`, `Filter`, a bar chart, pandas reading the result |
+| `05-linear-algebra` | `Mat`: a library cell that prints matrices, `Solve`, `Det`, `Inverse`, `Qr`, `Svd`, `EigSym`, a least-squares parabola |
+
+They are run by the gate (`runtime/test/jupyterexamples.py`, from
+`jupyter.sh`): every program and state cell ends clean, every
+expression cell shows a value, every figure is shown, and the one
+cell meant to be refused is.
+
 ## How a notebook of M9 works
 
 **Every cell is a whole module.**

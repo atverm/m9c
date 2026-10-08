@@ -1,0 +1,329 @@
+DEFINITION MODULE Rsa ;
+
+(* RSA signature VERIFICATION (docs/library-plan-2.md, item 5): a
+   public key read from PEM or DER -- SubjectPublicKeyInfo (BEGIN
+   PUBLIC KEY) or PKCS#1 (BEGIN RSA PUBLIC KEY) -- and a signature
+   over SHA-256 checked under PKCS#1 v1.5 or PSS (MGF1 with SHA-256, a
+   32-octet salt).  What for: a signed data passport or a signed
+   release receipt can be checked by a program, not only by a person
+   with openssl on the command line.
+
+   NO signing, NO key generation, NO decryption: those need a private
+   key in the process; verification handles only what is public.
+
+   THE ARITHMETIC IS OPENSSL'S (m9_rsa_verify in runtime/tlsshim.c,
+   the runtime's OpenSSL surface, which every M9 program links): a
+   verifier written in M9 first, on 24-bit limbs with Montgomery
+   multiplication, passed the same test and measured 70 times slower
+   -- 0.55 ms against 8 us at 2048 bits -- and bought nothing, since
+   the runtime links libcrypto anyway; Alex: "why not call openssl?"
+   What stays in M9 is the key's reading (PEM, the DER walk to the
+   modulus and exponent, so Bits/ModulusHex/ExponentHex answer from
+   what was read) and the refusals by name.
+
+   Held by RsaTest against Python's cryptography: three key sizes, 240
+   signatures under both schemes, every signature verifying and every
+   tampering refused, nine of Bleichenbacher's 2006 forgeries against
+   an e = 3 key refused (tools/rsagold.py).  *)
+
+EXCEPTION
+  Error (RO msg: STR) ;
+    (* a key that cannot be read, a digest that is not 32 octets, a
+       scheme that is not one of the two *)
+
+CONST
+  Pkcs1 = 0 ;                  (* PKCS#1 v1.5, RFC 8017 par 8.2 *)
+  Pss = 1 ;                    (* PSS, par 8.1: MGF1-SHA-256, salt 32 *)
+
+TYPE
+  Key ;                        (* opaque; lives in a POOL *)
+
+PROCEDURE PublicKey (VAR pool: POOL ; RO pem: STR) : PTR Key IN pool
+  RAISES Error, ValueRange ;
+  (* a PEM text: the first BEGIN ... END block whose label holds
+     PUBLIC KEY, base64 between them (line breaks ignored) *)
+
+PROCEDURE PublicKeyDer (VAR pool: POOL ; RO der: SLICE OF BYTE) : PTR Key IN pool
+  RAISES Error, ValueRange ;
+  (* the DER: SubjectPublicKeyInfo with the rsaEncryption OID, or a
+     bare PKCS#1 RSAPublicKey (SEQUENCE of two INTEGERs) *)
+
+PROCEDURE Bits (k: PTR Key) : I64 ;
+  (* the modulus's length in bits *)
+
+PROCEDURE ModulusHex (k: PTR Key) : STR RAISES ValueRange ;
+PROCEDURE ExponentHex (k: PTR Key) : STR RAISES ValueRange ;
+  (* lowercase, no leading zeros: Python's %x *)
+
+PROCEDURE Verify (k: PTR Key ; RO digest: SLICE OF BYTE ;
+                  RO signature: SLICE OF BYTE ; scheme: I64) : BOOL
+  RAISES Error, ValueRange ;
+  (* digest is the SHA-256 of the message (32 octets); TRUE when the
+     signature is that digest's under the key and scheme.  FALSE,
+     not an Error, for a signature of the wrong length, out of the
+     modulus's range, or wrong *)
+
+PROCEDURE VerifyMessage (k: PTR Key ; RO message: SLICE OF BYTE ;
+                         RO signature: SLICE OF BYTE ; scheme: I64) : BOOL
+  RAISES Error, ValueRange ;
+  (* Verify of the message's SHA-256 *)
+
+END Rsa.
+
+
+UNSAFE DEFINITION MODULE FOR "C" crsa ;
+
+(* runtime/tlsshim.c: m9_rsa_verify, OpenSSL's EVP_PKEY_verify over
+   a key parsed from DER per call; no state, so reentrant *)
+
+PROCEDURE VerifyC = "m9_rsa_verify" (der: C.ConstPtr ; dlen: C.SizeT ;
+                                     pkcs1Key: C.Int ;
+                                     digest: C.ConstPtr ; hlen: C.SizeT ;
+                                     sig: C.ConstPtr ; slen: C.SizeT ;
+                                     pss: C.Int) : C.Int  [REENTRANT] ;
+
+END crsa.
+
+
+UNSAFE IMPLEMENTATION MODULE Rsa ;
+
+(* UNSAFE for the ADR at the foreign boundary only *)
+
+FROM crsa IMPORT VerifyC ;
+IMPORT Hash ;
+IMPORT Text ;
+
+CONST
+  HLen = 32 ;
+  MinOctets = 128 ;            (* 1024 bits *)
+  MaxOctets = 1024 ;           (* 8192 bits *)
+  Oid = [ 42, 134, 72, 134, 247, 13, 1, 1, 1 ] ;   (* rsaEncryption, 1.2.840.113549.1.1.1 *)
+
+TYPE
+  Key = RECORD
+    der : SLICE OF BYTE ;      (* as given, what OpenSSL reads *)
+    pkcs1 : BOOL ;             (* der is a bare RSAPublicKey *)
+    n, e : SLICE OF BYTE ;     (* the modulus and exponent, big-endian,
+                                  no leading zero *)
+    bits : I64 ;
+  END ;
+
+(* ---- DER ------------------------------------------------------------- *)
+
+PROCEDURE Tlv (RO d: SLICE OF BYTE ; at: I64 ; VAR tag, len, start: I64)
+  RAISES Error =
+  (* the tag, length and content start of the element at `at' *)
+VAR i, nlen : I64 ;
+BEGIN
+  IF at + 2 > LEN (d) THEN RAISE Error ('the DER ends inside an element') END ;
+  tag := I64 (d[at]) ;
+  len := I64 (d[at + 1]) ;
+  start := at + 2 ;
+  IF len >= 128 THEN
+    nlen := len - 128 ;
+    IF nlen = 0 OR nlen > 4 OR start + nlen > LEN (d) THEN
+      RAISE Error ('a DER length the reader does not take')
+    END ;
+    len := 0 ;
+    FOR i := 0 TO nlen - 1 DO len := len * 256 + I64 (d[start + i]) END ;
+    start := start + nlen
+  END ;
+  IF start + len > LEN (d) THEN RAISE Error ('a DER element runs past the end') END
+EXCEPT
+| IndexError : RAISE Error ('the DER ends inside an element')
+END Tlv ;
+
+PROCEDURE Integer (RO d: SLICE OF BYTE ; at: I64 ; VAR next: I64) : SLICE OF BYTE
+  RAISES Error =
+  (* an INTEGER's magnitude, leading zero octets stripped *)
+VAR tag, len, start, i : I64 ;
+BEGIN
+  Tlv (d, at, tag, len, start) ;
+  IF tag # 2 THEN RAISE Error ('an INTEGER expected in the key') END ;
+  next := start + len ;
+  IF len = 0 THEN RAISE Error ('an empty INTEGER in the key') END ;
+  (* the sign is the FIRST octet's top bit, before the zero that
+     DER puts in front of a positive number whose top bit is set *)
+  IF I64 (d[start]) >= 128 THEN RAISE Error ('a negative INTEGER in the key') END ;
+  i := 0 ;
+  WHILE i < len - 1 AND I64 (d[start + i]) = 0 DO i := i + 1 END ;
+  RETURN SLICE (d, start + i, len - i)
+EXCEPT
+| IndexError : RAISE Error ('the DER ends inside an INTEGER')
+END Integer ;
+
+PROCEDURE RsaOid (RO d: SLICE OF BYTE ; at: I64) : BOOL RAISES Error =
+  (* the AlgorithmIdentifier at `at' names rsaEncryption *)
+VAR tag, len, start, i : I64 ;
+BEGIN
+  Tlv (d, at, tag, len, start) ;
+  IF tag # 48 THEN RETURN FALSE END ;
+  Tlv (d, start, tag, len, start) ;
+  IF tag # 6 OR len # LEN (Oid) THEN RETURN FALSE END ;
+  FOR i := 0 TO len - 1 DO
+    IF I64 (d[start + i]) # Oid[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+EXCEPT
+| IndexError : RETURN FALSE
+END RsaOid ;
+
+PROCEDURE Build (VAR pool: POOL ; RO der: SLICE OF BYTE ; pkcs1: BOOL ;
+                 RO n: SLICE OF BYTE ; RO e: SLICE OF BYTE)
+  : PTR Key IN pool RAISES Error, ValueRange =
+VAR
+  k : PTR Key IN pool ;
+  i, top : I64 ;
+BEGIN
+  IF LEN (n) < MinOctets OR LEN (n) > MaxOctets THEN
+    RAISE Error ('a modulus of 1024 to 8192 bits is taken')
+  END ;
+  IF I64 (n[LEN (n) - 1]) MOD 2 = 0 THEN RAISE Error ('an even modulus') END ;
+  IF LEN (e) = 0 OR (LEN (e) = 1 AND I64 (e[0]) < 2) THEN RAISE Error ('an exponent below 2') END ;
+  k := NEW (pool, Key) ;
+  k.der := NEW (pool, BYTE, LEN (der)) ;
+  FOR i := 0 TO LEN (der) - 1 DO k.der[i] := der[i] END ;
+  k.pkcs1 := pkcs1 ;
+  k.n := NEW (pool, BYTE, LEN (n)) ;
+  FOR i := 0 TO LEN (n) - 1 DO k.n[i] := n[i] END ;
+  k.e := NEW (pool, BYTE, LEN (e)) ;
+  FOR i := 0 TO LEN (e) - 1 DO k.e[i] := e[i] END ;
+  top := I64 (n[0]) ;
+  (* Integer stripped the leading zeros, so top is not 0 -- said here
+     too, because the loop below would never end on a 0 *)
+  IF top = 0 THEN RAISE Error ('a modulus beginning with a zero octet') END ;
+  k.bits := LEN (n) * 8 ;
+  WHILE top < 128 DO top := top * 2 ; k.bits := k.bits - 1 END ;
+  RETURN k
+END Build ;
+
+PROCEDURE PublicKeyDer (VAR pool: POOL ; RO der: SLICE OF BYTE) : PTR Key IN pool
+  RAISES Error, ValueRange =
+VAR
+  tag, len, start, at, next, outerEnd : I64 ;
+  n, e : SLICE OF BYTE ;
+  pkcs1 : BOOL ;
+BEGIN
+  Tlv (der, 0, tag, len, start) ;
+  IF tag # 48 THEN RAISE Error ('a key begins with a SEQUENCE') END ;
+  outerEnd := start + len ;
+  at := start ;
+  Tlv (der, at, tag, len, start) ;
+  pkcs1 := FALSE ;
+  IF tag = 48 THEN
+    (* SubjectPublicKeyInfo: the algorithm, then the key in a BIT STRING *)
+    IF NOT RsaOid (der, at) THEN RAISE Error ('not an rsaEncryption key') END ;
+    at := start + len ;
+    Tlv (der, at, tag, len, start) ;
+    IF tag # 3 OR len < 2 OR I64 (der[start]) # 0 THEN
+      RAISE Error ('the key is not in a BIT STRING of whole octets')
+    END ;
+    at := start + 1 ;
+    Tlv (der, at, tag, len, start) ;
+    IF tag # 48 THEN RAISE Error ('an RSAPublicKey SEQUENCE expected') END ;
+    at := start
+  ELSIF tag = 2 THEN
+    pkcs1 := TRUE
+  ELSE
+    RAISE Error ('neither a SubjectPublicKeyInfo nor an RSAPublicKey')
+  END ;
+  n := Integer (der, at, next) ;
+  e := Integer (der, next, next) ;
+  (* what OpenSSL gets is the outer element alone, trailing octets off *)
+  RETURN Build (pool, SLICE (der, 0, outerEnd), pkcs1, n, e)
+EXCEPT
+| IndexError : RAISE Error ('the DER ends inside the key')
+END PublicKeyDer ;
+
+PROCEDURE PublicKey (VAR pool: POOL ; RO pem: STR) : PTR Key IN pool
+  RAISES Error, ValueRange =
+VAR
+  b, e, i, n : I64 ;
+  body : STR ;
+BEGIN
+  b := Text.Find (pem, '-----BEGIN ') ;
+  IF b < 0 THEN RAISE Error ('no PEM BEGIN line') END ;
+  e := Text.Find (SLICE (pem, b, LEN (pem) - b), '-----END ') ;
+  IF e < 0 THEN RAISE Error ('no PEM END line') END ;
+  e := b + e ;
+  i := Text.FindChar (SLICE (pem, b, e - b), 0AC) ;
+  IF i < 0 THEN RAISE Error ('the PEM BEGIN line never ends') END ;
+  IF NOT Text.Contains (SLICE (pem, b, i), 'PUBLIC KEY') THEN
+    RAISE Error ('the PEM block is not a PUBLIC KEY: ' + SLICE (pem, b + 11, i - b - 11))
+  END ;
+  (* the base64, line breaks and blanks out *)
+  body := NEW (CHAR, e - b - i) ;
+  n := 0 ;
+  FOR i := b + i + 1 TO e - 1 DO
+    IF pem[i] # 0AC AND pem[i] # 0DC AND pem[i] # ' ' AND pem[i] # 09C THEN
+      body[n] := pem[i] ;
+      n := n + 1
+    END
+  END ;
+  BEGIN
+    RETURN PublicKeyDer (pool, Text.FromBase64 (SLICE (body, 0, n)))
+  EXCEPT
+  | ValueRange : RAISE Error ('the PEM body is not base64')
+  END
+END PublicKey ;
+
+PROCEDURE Bits (k: PTR Key) : I64 =
+BEGIN
+  RETURN k.bits
+END Bits ;
+
+PROCEDURE HexOf (RO b: SLICE OF BYTE) : STR RAISES ValueRange =
+VAR
+  digits, s : STR ;
+  i, n, v : I64 ;
+BEGIN
+  digits := '0123456789abcdef' ;
+  s := NEW (CHAR, 2 * LEN (b)) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    v := I64 (b[i]) ;
+    IF n > 0 OR v >= 16 THEN s[n] := digits[v DIV 16] ; n := n + 1 END ;
+    IF n > 0 OR v > 0 OR i = LEN (b) - 1 THEN s[n] := digits[v MOD 16] ; n := n + 1 END
+  END ;
+  RETURN SLICE (s, 0, n)
+END HexOf ;
+
+PROCEDURE ModulusHex (k: PTR Key) : STR RAISES ValueRange =
+BEGIN
+  RETURN HexOf (k.n)
+END ModulusHex ;
+
+PROCEDURE ExponentHex (k: PTR Key) : STR RAISES ValueRange =
+BEGIN
+  RETURN HexOf (k.e)
+END ExponentHex ;
+
+(* ---- verification -------------------------------------------------------- *)
+
+PROCEDURE Verify (k: PTR Key ; RO digest: SLICE OF BYTE ;
+                  RO signature: SLICE OF BYTE ; scheme: I64) : BOOL
+  RAISES Error, ValueRange =
+VAR rc, pk, pss : I64 ;
+BEGIN
+  IF LEN (digest) # HLen THEN RAISE Error ('a digest of 32 octets (SHA-256) is expected') END ;
+  IF scheme # Pkcs1 AND scheme # Pss THEN RAISE Error ('the scheme is Pkcs1 or Pss') END ;
+  (* the length is ours to refuse: OpenSSL says 0 for it too, but
+     silently, and a signature one octet short is a shape, not a value *)
+  IF LEN (signature) # LEN (k.n) THEN RETURN FALSE END ;
+  IF k.pkcs1 THEN pk := 1 ELSE pk := 0 END ;
+  IF scheme = Pss THEN pss := 1 ELSE pss := 0 END ;
+  rc := I64 (VerifyC (ADR (k.der), C.SizeT (LEN (k.der)), C.Int (pk),
+                      ADR (digest), C.SizeT (LEN (digest)),
+                      ADR (signature), C.SizeT (LEN (signature)), C.Int (pss))) ;
+  IF rc < 0 THEN RAISE Error ('OpenSSL could not take the key or the scheme') END ;
+  RETURN rc = 1
+END Verify ;
+
+PROCEDURE VerifyMessage (k: PTR Key ; RO message: SLICE OF BYTE ;
+                         RO signature: SLICE OF BYTE ; scheme: I64) : BOOL
+  RAISES Error, ValueRange =
+BEGIN
+  RETURN Verify (k, Hash.Sha256Of (message), signature, scheme)
+END VerifyMessage ;
+
+END Rsa.

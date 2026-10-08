@@ -52,14 +52,14 @@ PROCEDURE GetFrame (VAR pool: POOL ; RO name: STR) : PTR Frame.Fr
   RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
          Overflow, IndexError ;
 
-PROCEDURE PutF64s (RO name: STR ; RO v: SLICE OF F64)
+PROCEDURE PutF64s (RO name: STR ; RO KEPT v: SLICE OF F64)
   RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
          Overflow, IndexError ;
 PROCEDURE GetF64s (VAR pool: POOL ; RO name: STR) : SLICE OF F64
   RAISES Missing, WrongType, Faults.BadArg, Io.IOError, ValueRange,
          Overflow, IndexError ;
 
-PROCEDURE PutI64s (RO name: STR ; RO v: SLICE OF I64)
+PROCEDURE PutI64s (RO name: STR ; RO KEPT v: SLICE OF I64)
   RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
          Overflow, IndexError ;
 PROCEDURE GetI64s (VAR pool: POOL ; RO name: STR) : SLICE OF I64
@@ -211,7 +211,7 @@ BEGIN
   RETURN Fetch (pool, name, 0)
 END GetFrame ;
 
-PROCEDURE PutF64s (RO name: STR ; RO v: SLICE OF F64)
+PROCEDURE PutF64s (RO name: STR ; RO KEPT v: SLICE OF F64)
   RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
          Overflow, IndexError =
 VAR
@@ -240,7 +240,7 @@ EXCEPT
     RAISE Faults.BadArg (name)
 END GetF64s ;
 
-PROCEDURE PutI64s (RO name: STR ; RO v: SLICE OF I64)
+PROCEDURE PutI64s (RO name: STR ; RO KEPT v: SLICE OF I64)
   RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange,
          Overflow, IndexError =
 VAR

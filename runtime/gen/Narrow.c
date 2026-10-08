@@ -429,8 +429,8 @@ static void Narrow_SubU64 (m9_state *err)
   err->res = &m9frame;
   uint64_t a = 0; (void) a;
   uint64_t b = 0; (void) b;
-  a = INT64_C(0);
-  { __typeof__(b) m9v = m9_sub_u64 (a, INT64_C(1), err);
+  a = UINT64_C(0);
+  { __typeof__(b) m9v = m9_sub_u64 (a, UINT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
@@ -466,8 +466,8 @@ static void Narrow_MulU64 (m9_state *err)
   err->res = &m9frame;
   uint64_t a = 0; (void) a;
   uint64_t b = 0; (void) b;
-  a = INT64_C(4611686018427387904);
-  { __typeof__(b) m9v = m9_mul_u64 (a, INT64_C(4), err);
+  a = UINT64_C(4611686018427387904);
+  { __typeof__(b) m9v = m9_mul_u64 (a, UINT64_C(4), err);
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
@@ -533,12 +533,12 @@ static void Narrow_InRange (m9_state *err)
   }
   Narrow_Say (((m9_sl_CHAR){ (uint32_t *) m9s30, 9 }), false, (int64_t)(v), err);
   if (err->exc) goto L_hdl_m9t1;
-  w = INT64_C(4611686018427387904);
-  { __typeof__(x) m9v = m9_mul_u64 (w, INT64_C(3), err);
+  w = UINT64_C(4611686018427387904);
+  { __typeof__(x) m9v = m9_mul_u64 (w, UINT64_C(3), err);
     if (err->exc) goto L_hdl_m9t1;
     x = m9v;
   }
-  { __typeof__(x) m9v = m9_div_u64 (x, INT64_C(3), err);
+  { __typeof__(x) m9v = m9_div_u64 (x, UINT64_C(3), err);
     if (err->exc) goto L_hdl_m9t1;
     x = m9v;
   }

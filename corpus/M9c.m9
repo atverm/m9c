@@ -43,6 +43,7 @@ IMPORT System ;
 
 VAR
   pool : POOL ;
+  selfTime : I64 ;          (* Older: this binary's mtime, read once *)
   failed : BOOL ;
   (* THE COMMAND BEING COMPOSED, AS A LIST OF WORDS -- never as one
      string.  Until 2026-09-06 m9c composed a shell line for Io.Run
@@ -207,7 +208,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.17.0' ;
+  Version = '0.18.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -1076,6 +1077,13 @@ VAR to, ts : I64 ;
 BEGIN
   to := Io.ModTime (obj) ;
   IF to < 0 THEN RETURN TRUE END ;        (* no object at all *)
+  (* an object older than THIS COMPILER is stale whatever its source
+     says: a generator change moves the ABI, and a build directory
+     from before it kept a stale .h/.o and failed on `implicit
+     declaration of Mod_m9init' (2026-09-15) until 2026-10-08.  The
+     binary's mtime is what --run's key uses too. *)
+  IF selfTime = 0 THEN selfTime := Io.ModTime (System.Executable (pool)) END ;
+  IF to < selfTime THEN RETURN TRUE END ;
   ts := Io.ModTime (src) ;
   IF ts < 0 THEN RETURN FALSE END ;       (* no source to be older than *)
   RETURN to < ts
@@ -3640,6 +3648,13 @@ BEGIN
         END ;
         Io.WriteFile (Join (outDir, Suffix (name, '.h')), Gen.HText ()) ;
         Io.WriteFile (Join (outDir, Suffix (name, '.c')), Gen.CText ()) ;
+        (* said under -v: a stale NAME.h beside a driver beats the fresh
+           one (a quoted include searches the including directory first),
+           and where the fresh one went is the first thing to know *)
+        IF verbose THEN
+          Diag ('m9c: wrote ', Join (outDir, Suffix (name, '.h')),
+                Cat (' and ', Join (outDir, Suffix (name, '.c'))))
+        END ;
         IF doRun THEN
           built := RunBuild (name) ;
           (* a failed build may leave what it was working on, for

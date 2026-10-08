@@ -1,0 +1,16 @@
+(* EXPECT: unknown name: Lib.Nosuch -- Lib declares no such name *)
+DEFINITION MODULE Lib ;
+CONST Pi = 3.0 ;
+VAR v : I64 ;
+EXCEPTION Oops (code: I64) ;
+PROCEDURE Zero () : I64 ;
+END Lib.
+MODULE m ;
+IMPORT Lib ;
+VAR x : F64 ; n : I64 ;
+BEGIN
+  x := Lib.Pi ;
+  n := Lib.Zero () ;
+  n := Lib.v ;
+  x := Lib.Nosuch + 1.0
+END m.

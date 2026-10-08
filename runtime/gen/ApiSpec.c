@@ -368,10 +368,22 @@ static void ApiSpec_Str (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_
       if ((v < INT64_C(32))) {
         DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s5, 4 }), err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (d, d_pool, ApiSpec_HexD (m9_div_i64 (v, INT64_C(16), err), err), err);
+        { __typeof__(m9_div_i64 (v, INT64_C(16), err)) m9a1 = m9_div_i64 (v, INT64_C(16), err);
+          if (err->exc) goto L_ret;
+        { __typeof__(ApiSpec_HexD (m9a1, err)) m9a2 = ApiSpec_HexD (m9a1, err);
+          if (err->exc) goto L_ret;
+        DynStr_AppendChar (d, d_pool, m9a2, err);
         if (err->exc) goto L_ret;
-        DynStr_AppendChar (d, d_pool, ApiSpec_HexD (m9_mod_i64 (v, INT64_C(16), err), err), err);
+        }
+        }
+        { __typeof__(m9_mod_i64 (v, INT64_C(16), err)) m9a3 = m9_mod_i64 (v, INT64_C(16), err);
+          if (err->exc) goto L_ret;
+        { __typeof__(ApiSpec_HexD (m9a3, err)) m9a4 = ApiSpec_HexD (m9a3, err);
+          if (err->exc) goto L_ret;
+        DynStr_AppendChar (d, d_pool, m9a4, err);
         if (err->exc) goto L_ret;
+        }
+        }
     } else {
       DynStr_AppendChar (d, d_pool, ch, err);
       if (err->exc) goto L_ret;
@@ -493,15 +505,21 @@ static void ApiSpec_EmitParam (DynStr_DString * *d, m9_pool *d_pool, ApiSpec_Par
   if (q->nullable) {
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s26, 17 }), err);
     if (err->exc) goto L_ret;
-    ApiSpec_Str (d, d_pool, ApiSpec_TypeName (q->ty, err), err);
+    { __typeof__(ApiSpec_TypeName (q->ty, err)) m9a5 = ApiSpec_TypeName (q->ty, err);
+      if (err->exc) goto L_ret;
+    ApiSpec_Str (d, d_pool, m9a5, err);
     if (err->exc) goto L_ret;
+    }
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s27, 18 }), err);
     if (err->exc) goto L_ret;
   } else {
     DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s28, 7 }), err);
     if (err->exc) goto L_ret;
-    ApiSpec_Str (d, d_pool, ApiSpec_TypeName (q->ty, err), err);
+    { __typeof__(ApiSpec_TypeName (q->ty, err)) m9a6 = ApiSpec_TypeName (q->ty, err);
+      if (err->exc) goto L_ret;
+    ApiSpec_Str (d, d_pool, m9a6, err);
     if (err->exc) goto L_ret;
+    }
   }
   DynStr_AppendChar (d, d_pool, 125u, err);
   if (err->exc) goto L_ret;

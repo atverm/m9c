@@ -1,0 +1,37 @@
+(* EXPECT: cannot write through t, which holds a string literal (line 33) (par 2.4) *)
+(* Par 2.4 held the CALL since 2026-10-01 -- read-only storage is
+   lent only to an RO parameter -- and not the COPY: `t := 'abc' ;
+   t[0] := 'X'` passed both checkers and died with SIGSEGV
+   (museum/write-through-copy.m9).  Since 2026-10-08 a local or
+   parameter of slice or grid type that any assignment in the
+   procedure gives read-only storage -- a literal, a CONST, what an
+   RO parameter or RO variable views, a SLICE of one, or a name so
+   marked -- holds it for the whole procedure: a write through it and
+   a lend of it to a writable parameter are refused, naming the
+   storage and the line.  The legal forms first: reading through the
+   copy, lending it RO, the empty literal as a known start, and a
+   name that only ever holds fresh storage. *)
+MODULE m ;
+PROCEDURE Count (RO s: STR) : I64 = BEGIN RETURN LEN (s) END Count ;
+PROCEDURE Up (s: STR) RAISES IndexError = BEGIN s[0] := 'X' END Up ;
+PROCEDURE Fine (RO s: STR) : I64 RAISES IndexError =
+VAR t, u, buf : STR ; n : I64 ;
+BEGIN
+  t := s ;
+  u := SLICE (t, 0, 1) ;
+  buf := '' ;
+  n := Count (u) ;
+  IF t[0] = 'a' THEN n := n + 1 END ;
+  buf := NEW (CHAR, 4) ;
+  buf[0] := 'x' ;
+  Up (buf) ;
+  RETURN n
+END Fine ;
+PROCEDURE Bad () RAISES IndexError =
+VAR t : STR ;
+BEGIN
+  t := 'abc' ;
+  t[0] := 'X'
+END Bad ;
+BEGIN
+END m.

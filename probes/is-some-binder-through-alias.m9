@@ -1,0 +1,35 @@
+(* EXPECT: cannot assign PTR Lib.Node to I64 (no implicit conversions, par 2.1) *)
+(* An IS SOME binder on a CALL whose result type is an ALIAS of another
+   module -- `Mk () : Lib.Kid' with `Kid = OPT PTR Node' in Lib -- is
+   typed `PTR Lib.Node': the payload is written in the module that
+   declared the OPT.  Until 2026-10-08 it was qualified in the
+   CALLEE's module (`PTR Client.Node', which nobody declares) and the
+   binder had no type: `x := r' passed, `r.kind' was passed over --
+   the cause behind 150 passed-over sites on the library's review
+   pages (Gen, Sem, M9elide: every `IF Resolve (t) IS SOME r').  The
+   legal forms first: a field read, a comparison with the module's
+   CONST; the last line assigns the pointer to an integer. *)
+DEFINITION MODULE Lib ;
+CONST KPtr = 35 ;
+TYPE
+  Node = RECORD kind : I64 END ;
+  Kid = OPT PTR Node ;
+PROCEDURE Mk () : Kid ;
+END Lib.
+IMPLEMENTATION MODULE Lib ;
+PROCEDURE Mk () : Kid = BEGIN RETURN NONE END Mk ;
+END Lib.
+MODULE Client ;
+IMPORT Lib ;
+PROCEDURE A () : I64 =
+VAR x : I64 ;
+BEGIN
+  IF Lib.Mk () IS SOME r THEN
+    x := r.kind ;
+    IF r.kind = Lib.KPtr THEN RETURN x END ;
+    x := r
+  END ;
+  RETURN 0
+END A ;
+BEGIN
+END Client.

@@ -1,0 +1,781 @@
+DEFINITION MODULE Smtp ;
+
+(* Mail submission: a message built by calls and sent by SMTP (RFC
+   5321) over a plain socket, implicit TLS (465) or STARTTLS (587,
+   RFC 3207), with AUTH PLAIN or LOGIN (docs/library-plan-2.md,
+   item 6).
+
+   LIFTED from the zarr proxy's Smtp.m9 (in production since
+   2026-09-13: implicit TLS, AUTH LOGIN, one text message to N
+   recipients) and widened: STARTTLS through one new shim call,
+   tls_wrap, a handshake on the socket already talked on; a Message
+   with From, To, Cc, Bcc (envelope only), Subject, Date, Message-ID,
+   a text body and attachments as multipart/mixed; a subject beyond
+   ASCII as an RFC 2047 encoded word; AUTH PLAIN where EHLO offers
+   it, LOGIN else.  Every body part goes base64, so nothing depends on
+   8BITMIME, on line endings or on a line that begins with a dot --
+   the one place dot-stuffing matters, the message text itself, is
+   stuffed anyway (RFC 5321 par 4.5.2).
+
+   HELD by SmtpTest (m9test: the message as written -- the Date line,
+   the encoded word, the multipart -- against Python's email, and the
+   refusals) and by runtime/test/smtp.sh: an aiosmtpd server records
+   what arrives plain, over TLS, over STARTTLS and with each AUTH, and
+   Python's email parses every message back to what was sent.
+
+   Nothing is retried: a submission failure is a fact the caller
+   reports.  The reply code is in the Error (0 for the transport).  *)
+
+IMPORT Time ;
+
+EXCEPTION
+  Error (RO msg: STR ; code: I64) ;
+    (* the stage and what the server said; code is its reply code, or
+       0 when the connection failed or closed *)
+
+CONST
+  Plain = 0 ;                  (* no TLS: a relay on localhost, a test *)
+  Tls = 1 ;                    (* implicit TLS from the first octet, 465 *)
+  StartTls = 2 ;               (* plain, then STARTTLS before anything
+                                  else is said, 587; refused if the
+                                  server does not offer it *)
+
+TYPE
+  Message ;                    (* opaque; lives in a POOL *)
+
+PROCEDURE New (VAR pool: POOL ; RO from: STR ; RO subject: STR) : PTR Message IN pool ;
+  (* from is a bare address (user@host); subject any text, encoded on
+     the wire when it is not ASCII.  Date is now, Message-ID is made
+     from the time and the sender's host, both until Set *)
+
+PROCEDURE AddTo (VAR m: PTR Message ; RO addr: STR) ;
+PROCEDURE AddCc (VAR m: PTR Message ; RO addr: STR) ;
+PROCEDURE AddBcc (VAR m: PTR Message ; RO addr: STR) ;
+  (* recipients: To and Cc appear in the headers, Bcc only in the
+     envelope; every one is a RCPT TO *)
+
+PROCEDURE SetText (VAR m: PTR Message ; RO body: STR) ;
+  (* the text/plain; charset=utf-8 part *)
+
+PROCEDURE SetDate (VAR m: PTR Message ; t: Time.Instant) ;
+PROCEDURE SetId (VAR m: PTR Message ; RO id: STR) ;
+  (* the Message-ID without its angle brackets *)
+
+PROCEDURE Attach (VAR m: PTR Message ; RO name: STR ; RO ctype: STR ;
+                  RO data: SLICE OF BYTE) ;
+  (* a part: Content-Type ctype, Content-Disposition attachment with
+     the file name, base64 *)
+
+PROCEDURE Wire (m: PTR Message) : STR RAISES ValueRange ;
+  (* the RFC 5322 message as the server receives it: CR LF line ends,
+     the headers, the body or the multipart -- NOT dot-stuffed, that is
+     the transport's.  What SmtpTest holds, and what Send writes *)
+
+PROCEDURE Send (RO host: STR ; port: I64 ; security: I64 ;
+                RO user: STR ; RO pass: STR ; m: PTR Message)
+  RAISES Error, ValueRange ;
+  (* the dialogue: EHLO, STARTTLS and EHLO again under StartTls, AUTH
+     when user is not empty (PLAIN if offered, else LOGIN), MAIL FROM,
+     one RCPT TO a recipient, DATA, the message dot-stuffed, QUIT.  A
+     message with no recipient is an Error before any connection *)
+
+PROCEDURE SendText (RO host: STR ; port: I64 ; security: I64 ;
+                    RO user: STR ; RO pass: STR ; RO from: STR ;
+                    RO to: SLICE OF STR ; RO subject: STR ; RO body: STR)
+  RAISES Error, ValueRange ;
+  (* the proxy's shape: one text message to every address in to *)
+
+PROCEDURE Stuffed (RO text: STR) : STR ;
+  (* text with a dot put before every line that begins with one:
+     exported so that the test holds it *)
+
+END Smtp.
+
+
+UNSAFE DEFINITION MODULE FOR "C" csmtp ;
+
+(* runtime/tcpshim.c and tlsshim.c, as Http's csock binds them, plus
+   tls_wrap: TLS over a socket already in use (STARTTLS) *)
+
+PROCEDURE Connect = "tcp_connect" (host: C.ConstPtr ; port: C.Int)
+  : C.Int  [SERIAL] ;
+PROCEDURE Read = "tcp_read" (fd: C.Int ; buf: C.MutPtr ; n: C.SizeT)
+  : C.SSizeT  [REENTRANT] ;
+PROCEDURE Write = "tcp_write" (fd: C.Int ; buf: C.ConstPtr ; n: C.SizeT)
+  : C.SSizeT  [REENTRANT] ;
+PROCEDURE Close = "tcp_close" (fd: C.Int) : C.Int  [REENTRANT] ;
+
+PROCEDURE TlsConnect = "tls_connect" (host: C.ConstPtr ; port: C.Int)
+  : C.Int  [REENTRANT] ;
+PROCEDURE TlsWrap = "tls_wrap" (fd: C.Int ; host: C.ConstPtr)
+  : C.Int  [REENTRANT] ;
+PROCEDURE TlsRead = "tls_read" (h: C.Int ; buf: C.MutPtr ; n: C.SizeT)
+  : C.SSizeT  [REENTRANT] ;
+PROCEDURE TlsWrite = "tls_write" (h: C.Int ; buf: C.ConstPtr ; n: C.SizeT)
+  : C.SSizeT  [REENTRANT] ;
+PROCEDURE TlsClose = "tls_close" (h: C.Int) : C.Int  [REENTRANT] ;
+
+END csmtp.
+
+
+UNSAFE IMPLEMENTATION MODULE Smtp ;
+
+(* UNSAFE for the ADR at the foreign boundary only, as in Http *)
+
+FROM csmtp IMPORT Connect, Read, Write, Close, TlsConnect, TlsWrap, TlsRead,
+                  TlsWrite, TlsClose ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Text ;
+IMPORT Time ;
+
+CONST
+  ReplyMax = 65536 ;
+  LineWrap = 76 ;              (* base64 lines in a body part *)
+  Ehlo = 'EHLO m9' ;
+
+TYPE
+  Part = RECORD
+    name, ctype : STR ;
+    data : SLICE OF BYTE ;
+  END ;
+
+  Message = RECORD
+    from, subject, id, text : STR ;
+    to, cc, bcc : SLICE OF STR ;
+    nto, ncc, nbcc : I64 ;
+    parts : SLICE OF Part ;
+    nparts : I64 ;
+    date : Time.Instant ;
+    hasText : BOOL ;
+  END ;
+
+  Conn = RECORD
+    secure : BOOL ;
+    fd : I64 ;                 (* the socket, or the TLS handle *)
+  END ;
+
+(* ---- the message --------------------------------------------------- *)
+
+PROCEDURE New (VAR pool: POOL ; RO from: STR ; RO subject: STR) : PTR Message IN pool =
+VAR
+  m : PTR Message IN pool ;
+  at : I64 ;
+BEGIN
+  m := NEW (pool, Message) ;
+  m.from := Text.Keep (pool, from) ;
+  m.subject := Text.Keep (pool, subject) ;
+  m.text := '' ;
+  m.hasText := FALSE ;
+  m.to := NEW (pool, STR, 4) ;
+  m.cc := NEW (pool, STR, 4) ;
+  m.bcc := NEW (pool, STR, 4) ;
+  m.nto := 0 ; m.ncc := 0 ; m.nbcc := 0 ;
+  m.parts := NEW (pool, Part, 2) ;
+  m.nparts := 0 ;
+  m.date := Time.Now () ;
+  (* the id: seconds and nanoseconds of now, at the sender's host *)
+  at := Text.FindChar (from, '@') ;
+  IF at >= 0 THEN
+    m.id := Text.Keep (pool, IdNow () + SLICE (from, at, LEN (from) - at))
+  ELSE
+    m.id := Text.Keep (pool, IdNow () + '@m9')
+  END ;
+  RETURN m
+END New ;
+
+PROCEDURE IdNow () : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  s : F64 ;
+  now : Time.Instant ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  now := Time.Now () ;
+  s := now.t ;
+  DynStr.AppendI64 (d, I64 (s)) ;
+  DynStr.AppendChar (d, '.') ;
+  DynStr.AppendI64 (d, I64 ((s - F64 (I64 (s))) * 1000000.0)) ;
+  DynStr.Append (d, '.m9') ;
+  RETURN DynStr.View (d)
+EXCEPT
+| ValueRange :
+    RETURN 'm9'
+END IdNow ;
+
+PROCEDURE Keep (VAR m: PTR Message ; RO s: STR) : STR =
+  (* a copy of s in the message's pool, rule 2's spelling *)
+VAR
+  c : STR ;
+  i : I64 ;
+BEGIN
+  c := NEW (m, CHAR, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO c[i] := s[i] END ;
+  RETURN c
+END Keep ;
+
+PROCEDURE Grow (VAR m: PTR Message ; VAR list: SLICE OF STR ; VAR n: I64 ; RO addr: STR) =
+VAR
+  more : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF n = LEN (list) THEN
+    more := NEW (m, STR, 2 * n) ;
+    FOR i := 0 TO n - 1 DO more[i] := list[i] END ;
+    list := more
+  END ;
+  list[n] := Keep (m, addr) ;
+  n := n + 1
+END Grow ;
+
+PROCEDURE AddTo (VAR m: PTR Message ; RO addr: STR) =
+BEGIN
+  Grow (m, m.to, m.nto, addr)
+END AddTo ;
+
+PROCEDURE AddCc (VAR m: PTR Message ; RO addr: STR) =
+BEGIN
+  Grow (m, m.cc, m.ncc, addr)
+END AddCc ;
+
+PROCEDURE AddBcc (VAR m: PTR Message ; RO addr: STR) =
+BEGIN
+  Grow (m, m.bcc, m.nbcc, addr)
+END AddBcc ;
+
+PROCEDURE SetText (VAR m: PTR Message ; RO body: STR) =
+BEGIN
+  m.text := Keep (m, body) ;
+  m.hasText := TRUE
+END SetText ;
+
+PROCEDURE SetDate (VAR m: PTR Message ; t: Time.Instant) =
+BEGIN
+  m.date := t
+END SetDate ;
+
+PROCEDURE SetId (VAR m: PTR Message ; RO id: STR) =
+BEGIN
+  m.id := Keep (m, id)
+END SetId ;
+
+PROCEDURE Attach (VAR m: PTR Message ; RO name: STR ; RO ctype: STR ;
+                  RO data: SLICE OF BYTE) =
+VAR
+  more : SLICE OF Part ;
+  copy : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  IF m.nparts = LEN (m.parts) THEN
+    more := NEW (m, Part, 2 * m.nparts) ;
+    FOR i := 0 TO m.nparts - 1 DO more[i] := m.parts[i] END ;
+    m.parts := more
+  END ;
+  copy := NEW (m, BYTE, LEN (data)) ;
+  FOR i := 0 TO LEN (data) - 1 DO copy[i] := data[i] END ;
+  m.parts[m.nparts].name := Keep (m, name) ;
+  m.parts[m.nparts].ctype := Keep (m, ctype) ;
+  m.parts[m.nparts].data := copy ;
+  m.nparts := m.nparts + 1
+END Attach ;
+
+(* ---- the message on the wire ------------------------------------------ *)
+
+PROCEDURE CrLf (VAR d: PTR DynStr.DString) =
+BEGIN
+  DynStr.AppendChar (d, 0DC) ;
+  DynStr.AppendChar (d, 0AC)
+END CrLf ;
+
+PROCEDURE Mon (m: I64) : STR =
+BEGIN
+  CASE m OF
+  | 1 : RETURN 'Jan' | 2 : RETURN 'Feb' | 3 : RETURN 'Mar' | 4 : RETURN 'Apr'
+  | 5 : RETURN 'May' | 6 : RETURN 'Jun' | 7 : RETURN 'Jul' | 8 : RETURN 'Aug'
+  | 9 : RETURN 'Sep' | 10 : RETURN 'Oct' | 11 : RETURN 'Nov'
+  ELSE RETURN 'Dec'
+  END
+END Mon ;
+
+PROCEDURE Dow (i: I64) : STR =
+BEGIN
+  CASE i OF
+  | 0 : RETURN 'Sun' | 1 : RETURN 'Mon' | 2 : RETURN 'Tue' | 3 : RETURN 'Wed'
+  | 4 : RETURN 'Thu' | 5 : RETURN 'Fri'
+  ELSE RETURN 'Sat'
+  END
+END Dow ;
+
+PROCEDURE Two (VAR d: PTR DynStr.DString ; v: I64) =
+BEGIN
+  IF v < 10 THEN DynStr.AppendChar (d, '0') END ;
+  DynStr.AppendI64 (d, v)
+END Two ;
+
+PROCEDURE DateLine (t: Time.Instant) : STR RAISES ValueRange =
+  (* RFC 5322 par 3.3, in UTC: Wed, 07 Oct 2026 12:04:07 +0000 *)
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  cv : Time.Civil ;
+  days : I64 ;
+BEGIN
+  cv := Time.ToCivil (t) ;
+  days := Time.DaysFromCivil (cv.year, cv.month, cv.day) ;
+  d := DynStr.New (scratch) ;
+  DynStr.Append (d, Dow (((days MOD 7) + 11) MOD 7)) ;   (* day 0 was a Thursday *)
+  DynStr.Append (d, ', ') ;
+  Two (d, cv.day) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.Append (d, Mon (cv.month)) ;
+  DynStr.AppendChar (d, ' ') ;
+  DynStr.AppendI64 (d, cv.year) ;
+  DynStr.AppendChar (d, ' ') ;
+  Two (d, cv.hour) ;
+  DynStr.AppendChar (d, ':') ;
+  Two (d, cv.minute) ;
+  DynStr.AppendChar (d, ':') ;
+  Two (d, I64 (cv.second)) ;
+  DynStr.Append (d, ' +0000') ;
+  RETURN DynStr.View (d)
+END DateLine ;
+
+PROCEDURE IsAscii (RO s: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF ORD (s[i]) > 126 OR ORD (s[i]) < 32 THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END IsAscii ;
+
+PROCEDURE QpLen (RO b: SLICE OF BYTE) : I64 =
+  (* the length of b as RFC 2047's Q encoding: a letter, a digit, one
+     of -!*+/ and a blank (written _) are one character, the rest =XX
+     -- Python's quoprimime.header_length *)
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    IF QpSafe (b[i]) THEN n := n + 1 ELSE n := n + 3 END
+  END ;
+  RETURN n
+END QpLen ;
+
+PROCEDURE QpSafe (b: BYTE) : BOOL =
+VAR v : I64 ;
+BEGIN
+  v := I64 (b) ;
+  RETURN (v >= 48 AND v <= 57) OR (v >= 65 AND v <= 90) OR (v >= 97 AND v <= 122) OR
+         v = 32 OR v = 45 OR v = 33 OR v = 42 OR v = 43 OR v = 47
+END QpSafe ;
+
+PROCEDURE QpWord (RO b: SLICE OF BYTE) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  hex : STR ;
+  i, v : I64 ;
+BEGIN
+  hex := '0123456789ABCDEF' ;
+  d := DynStr.New (scratch) ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    v := I64 (b[i]) ;
+    IF v = 32 THEN DynStr.AppendChar (d, '_')
+    ELSIF QpSafe (b[i]) THEN DynStr.AppendChar (d, CHR (v))
+    ELSE
+      DynStr.AppendChar (d, '=') ;
+      DynStr.AppendChar (d, hex[v DIV 16]) ;
+      DynStr.AppendChar (d, hex[v MOD 16])
+    END
+  END ;
+  RETURN DynStr.View (d)
+END QpWord ;
+
+PROCEDURE B64Len (n: I64) : I64 =
+BEGIN
+  RETURN ((n + 2) DIV 3) * 4
+END B64Len ;
+
+PROCEDURE OneWord (RO b: SLICE OF BYTE ; useB: BOOL) : STR RAISES ValueRange =
+BEGIN
+  IF useB THEN RETURN '=?utf-8?b?' + Text.ToBase64 (b) + '?='
+  ELSE RETURN '=?utf-8?q?' + QpWord (b) + '?='
+  END
+END OneWord ;
+
+PROCEDURE EncodedWord (RO s: STR) : STR RAISES ValueRange =
+  (* RFC 2047 encoded words of the UTF-8 of s: B or Q as Python's
+     email.header chooses for utf-8 (SHORTEST: B only when strictly
+     shorter), one word when it fits the line (76 less the header
+     name's room), else as many as needed, each over whole code
+     points, folded with CR LF SP, a continuation's word within 75.
+     The one-word case is held to Python; the folding is structural *)
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  all, b : SLICE OF BYTE ;
+  useB : BOOL ;
+  i, start, cost, more, nb, room : I64 ;
+BEGIN
+  room := 63 - LEN ('Subject: ') + 1 ;   (* the payload the first line takes *)
+  all := DynStr.Utf8 (scratch, s) ;
+  useB := B64Len (LEN (all)) < QpLen (all) ;
+  d := DynStr.New (scratch) ;
+  start := 0 ;
+  cost := 0 ;                  (* bytes (B) or Q characters so far *)
+  nb := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    b := DynStr.Utf8 (scratch, SLICE (s, i, 1)) ;
+    IF useB THEN more := LEN (b) ELSE more := QpLen (b) END ;
+    IF i > start AND ((useB AND B64Len (cost + more) > room) OR (NOT useB AND cost + more > room)) THEN
+      IF start > 0 THEN DynStr.Append (d, '' + 0DC + 0AC + ' ') END ;
+      DynStr.Append (d, OneWord (SLICE (all, nb, cost), useB)) ;
+      nb := nb + cost ;
+      cost := 0 ;
+      start := i ;
+      room := 63
+    END ;
+    cost := cost + more
+  END ;
+  IF start > 0 THEN DynStr.Append (d, '' + 0DC + 0AC + ' ') END ;
+  DynStr.Append (d, OneWord (SLICE (all, nb, LEN (all) - nb), useB)) ;
+  RETURN DynStr.View (d)
+END EncodedWord ;
+
+PROCEDURE Lines (VAR d: PTR DynStr.DString ; RO b64: STR) =
+  (* base64 in lines of LineWrap, each ended CR LF *)
+VAR i, n : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i < LEN (b64) DO
+    n := LEN (b64) - i ;
+    IF n > LineWrap THEN n := LineWrap END ;
+    DynStr.Append (d, SLICE (b64, i, n)) ;
+    CrLf (d) ;
+    i := i + n
+  END
+END Lines ;
+
+PROCEDURE Addresses (VAR d: PTR DynStr.DString ; RO name: STR ;
+                     RO list: SLICE OF STR ; n: I64) =
+VAR i : I64 ;
+BEGIN
+  IF n = 0 THEN RETURN END ;
+  DynStr.Append (d, name) ;
+  DynStr.Append (d, ': ') ;
+  FOR i := 0 TO n - 1 DO
+    IF i > 0 THEN DynStr.Append (d, ', ') END ;
+    DynStr.Append (d, list[i])
+  END ;
+  CrLf (d)
+END Addresses ;
+
+PROCEDURE TextPart (VAR d: PTR DynStr.DString ; RO text: STR) RAISES ValueRange =
+VAR scratch : POOL ;
+BEGIN
+  DynStr.Append (d, 'Content-Type: text/plain; charset=utf-8') ;
+  CrLf (d) ;
+  DynStr.Append (d, 'Content-Transfer-Encoding: base64') ;
+  CrLf (d) ;
+  CrLf (d) ;
+  Lines (d, Text.ToBase64 (DynStr.Utf8 (scratch, text)))
+END TextPart ;
+
+PROCEDURE Wire (m: PTR Message) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  boundary : STR ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  DynStr.Append (d, 'From: ') ;
+  DynStr.Append (d, m.from) ;
+  CrLf (d) ;
+  Addresses (d, 'To', m.to, m.nto) ;
+  Addresses (d, 'Cc', m.cc, m.ncc) ;
+  DynStr.Append (d, 'Subject: ') ;
+  IF IsAscii (m.subject) THEN DynStr.Append (d, m.subject)
+  ELSE DynStr.Append (d, EncodedWord (m.subject))
+  END ;
+  CrLf (d) ;
+  DynStr.Append (d, 'Date: ') ;
+  DynStr.Append (d, DateLine (m.date)) ;
+  CrLf (d) ;
+  DynStr.Append (d, 'Message-ID: <') ;
+  DynStr.Append (d, m.id) ;
+  DynStr.Append (d, '>') ;
+  CrLf (d) ;
+  DynStr.Append (d, 'MIME-Version: 1.0') ;
+  CrLf (d) ;
+  IF m.nparts = 0 THEN
+    TextPart (d, m.text)
+  ELSE
+    boundary := '=-m9-' + m.id ;
+    DynStr.Append (d, 'Content-Type: multipart/mixed; boundary="') ;
+    DynStr.Append (d, boundary) ;
+    DynStr.Append (d, '"') ;
+    CrLf (d) ;
+    CrLf (d) ;
+    DynStr.Append (d, '--') ;
+    DynStr.Append (d, boundary) ;
+    CrLf (d) ;
+    TextPart (d, m.text) ;
+    FOR i := 0 TO m.nparts - 1 DO
+      DynStr.Append (d, '--') ;
+      DynStr.Append (d, boundary) ;
+      CrLf (d) ;
+      DynStr.Append (d, 'Content-Type: ') ;
+      DynStr.Append (d, m.parts[i].ctype) ;
+      CrLf (d) ;
+      DynStr.Append (d, 'Content-Disposition: attachment; filename="') ;
+      DynStr.Append (d, m.parts[i].name) ;
+      DynStr.Append (d, '"') ;
+      CrLf (d) ;
+      DynStr.Append (d, 'Content-Transfer-Encoding: base64') ;
+      CrLf (d) ;
+      CrLf (d) ;
+      Lines (d, Text.ToBase64 (m.parts[i].data))
+    END ;
+    DynStr.Append (d, '--') ;
+    DynStr.Append (d, boundary) ;
+    DynStr.Append (d, '--') ;
+    CrLf (d)
+  END ;
+  RETURN DynStr.View (d)
+END Wire ;
+
+PROCEDURE Stuffed (RO text: STR) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  FOR i := 0 TO LEN (text) - 1 DO
+    IF text[i] = '.' AND (i = 0 OR text[i - 1] = 0AC) THEN DynStr.AppendChar (d, '.') END ;
+    DynStr.AppendChar (d, text[i])
+  END ;
+  RETURN DynStr.View (d)
+END Stuffed ;
+
+(* ---- the dialogue ------------------------------------------------------ *)
+
+PROCEDURE WrAll (VAR c: Conn ; RO b: SLICE OF BYTE) RAISES Error =
+VAR off, n, want : I64 ;
+BEGIN
+  off := 0 ;
+  WHILE off < LEN (b) DO
+    want := LEN (b) - off ;
+    IF c.secure THEN
+      n := I64 (TlsWrite (C.Int (c.fd), ADR (SLICE (b, off, want)), C.SizeT (want)))
+    ELSE
+      n := I64 (Write (C.Int (c.fd), ADR (SLICE (b, off, want)), C.SizeT (want)))
+    END ;
+    IF n <= 0 THEN RAISE Error ('smtp: the connection closed while writing', 0) END ;
+    off := off + n
+  END
+END WrAll ;
+
+PROCEDURE Cmd (VAR c: Conn ; RO s: STR) RAISES Error, ValueRange =
+  (* a command line: ASCII, so the octets are the characters *)
+VAR scratch : POOL ;
+BEGIN
+  WrAll (c, DynStr.Bytes (scratch, s + 0DC + 0AC, FALSE))
+END Cmd ;
+
+PROCEDURE Reply (VAR c: Conn ; VAR text: STR) : I64 RAISES Error, ValueRange =
+  (* one reply, every line of it, in text; the code of its last line,
+     whose fourth character is a blank where a continuation's is - *)
+VAR
+  scratch : POOL ;
+  buf : SLICE OF BYTE ;
+  total, n, i, ls, code, want : I64 ;
+  done : BOOL ;
+BEGIN
+  buf := NEW (scratch, BYTE, ReplyMax) ;
+  total := 0 ;
+  done := FALSE ;
+  code := 0 ;
+  WHILE NOT done DO
+    IF total >= ReplyMax THEN RAISE Error ('smtp: a reply longer than 64 KB', 0) END ;
+    want := ReplyMax - total ;
+    IF c.secure THEN
+      n := I64 (TlsRead (C.Int (c.fd), ADR (SLICE (buf, total, want)), C.SizeT (want)))
+    ELSE
+      n := I64 (Read (C.Int (c.fd), ADR (SLICE (buf, total, want)), C.SizeT (want)))
+    END ;
+    IF n <= 0 THEN RAISE Error ('smtp: the connection closed while reading a reply', 0) END ;
+    total := total + n ;
+    ls := 0 ;
+    i := 0 ;
+    WHILE i + 1 < total AND NOT done DO
+      IF I64 (buf[i]) = 13 AND I64 (buf[i + 1]) = 10 THEN
+        IF i - ls >= 4 AND IsDigit (buf[ls]) AND IsDigit (buf[ls + 1]) AND
+           IsDigit (buf[ls + 2]) AND I64 (buf[ls + 3]) = 32 THEN
+          code := (I64 (buf[ls]) - 48) * 100 + (I64 (buf[ls + 1]) - 48) * 10 + I64 (buf[ls + 2]) - 48 ;
+          done := TRUE
+        END ;
+        ls := i + 2 ;
+        i := i + 2
+      ELSE
+        i := i + 1
+      END
+    END
+  END ;
+  text := DynStr.Chars (scratch, SLICE (buf, 0, total)) ;
+  RETURN code
+END Reply ;
+
+PROCEDURE IsDigit (b: BYTE) : BOOL =
+BEGIN
+  RETURN I64 (b) >= 48 AND I64 (b) <= 57
+END IsDigit ;
+
+PROCEDURE Need (VAR c: Conn ; want: I64 ; RO stage: STR ; VAR text: STR)
+  RAISES Error, ValueRange =
+  (* the reply's code is want (a 2xx when want is 2); the text answered *)
+VAR code : I64 ;
+BEGIN
+  code := Reply (c, text) ;
+  IF (want = 2 AND code DIV 100 # 2) OR (want # 2 AND code # want) THEN
+    RAISE Error ('smtp: ' + stage + ': ' + Text.Trim (text), code)
+  END
+END Need ;
+
+PROCEDURE Offers (RO ehlo: STR ; RO word: STR) : BOOL RAISES ValueRange =
+  (* the EHLO reply names the capability (a line 250-WORD or 250 WORD,
+     or AUTH's mechanisms after it) *)
+VAR
+  lines : SLICE OF STR ;
+  i : I64 ;
+  l : STR ;
+BEGIN
+  lines := Text.Split (ehlo, 0AC) ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    l := Text.Upper (Text.Trim (lines[i])) ;
+    IF LEN (l) > 4 THEN
+      l := SLICE (l, 4, LEN (l) - 4) ;
+      IF Text.Eq (l, word) OR Text.StartsWith (l, word + ' ') OR
+         (Text.StartsWith (l, 'AUTH ') AND Text.OneOf (word, Text.Fields (l, ' '))) THEN
+        RETURN TRUE
+      END
+    END
+  END ;
+  RETURN FALSE
+END Offers ;
+
+PROCEDURE Auth (VAR c: Conn ; RO ehlo: STR ; RO user: STR ; RO pass: STR)
+  RAISES Error, ValueRange =
+  (* PLAIN where offered: one line, the NUL-separated identity in
+     base64 (RFC 4616); else LOGIN, two prompts *)
+VAR
+  scratch : POOL ;
+  text : STR ;
+  ident : SLICE OF BYTE ;
+  u, p : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  u := DynStr.Utf8 (scratch, user) ;
+  p := DynStr.Utf8 (scratch, pass) ;
+  IF Offers (ehlo, 'PLAIN') THEN
+    ident := NEW (scratch, BYTE, LEN (u) + LEN (p) + 2) ;
+    ident[0] := 0 ;
+    FOR i := 0 TO LEN (u) - 1 DO ident[1 + i] := u[i] END ;
+    ident[1 + LEN (u)] := 0 ;
+    FOR i := 0 TO LEN (p) - 1 DO ident[2 + LEN (u) + i] := p[i] END ;
+    Cmd (c, 'AUTH PLAIN ' + Text.ToBase64 (ident)) ;
+    Need (c, 235, 'AUTH PLAIN', text)
+  ELSE
+    Cmd (c, 'AUTH LOGIN') ;
+    Need (c, 334, 'AUTH LOGIN', text) ;
+    Cmd (c, Text.ToBase64 (u)) ;
+    Need (c, 334, 'AUTH LOGIN, the user', text) ;
+    Cmd (c, Text.ToBase64 (p)) ;
+    Need (c, 235, 'AUTH LOGIN, the password', text)
+  END
+END Auth ;
+
+PROCEDURE Send (RO host: STR ; port: I64 ; security: I64 ;
+                RO user: STR ; RO pass: STR ; m: PTR Message)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  c : Conn ;
+  hz, wire : SLICE OF BYTE ;
+  text, ehlo : STR ;
+  i, h : I64 ;
+BEGIN
+  IF m.nto + m.ncc + m.nbcc = 0 THEN RAISE Error ('smtp: a message with no recipient', 0) END ;
+  IF security # Plain AND security # Tls AND security # StartTls THEN
+    RAISE Error ('smtp: security is Plain, Tls or StartTls', 0)
+  END ;
+  hz := DynStr.Bytes (scratch, host, TRUE) ;
+  c.secure := security = Tls ;
+  IF c.secure THEN c.fd := I64 (TlsConnect (ADR (hz), C.Int (port)))
+  ELSE c.fd := I64 (Connect (ADR (hz), C.Int (port)))
+  END ;
+  IF c.fd < 0 THEN RAISE Error ('smtp: cannot connect to ' + host + ':' + Fmt.I64Str (port), 0) END ;
+  BEGIN
+    Need (c, 220, 'the greeting', text) ;
+    Cmd (c, Ehlo) ;
+    Need (c, 250, 'EHLO', ehlo) ;
+    IF security = StartTls THEN
+      IF NOT Offers (ehlo, 'STARTTLS') THEN
+        RAISE Error ('smtp: the server does not offer STARTTLS', 250)
+      END ;
+      Cmd (c, 'STARTTLS') ;
+      Need (c, 220, 'STARTTLS', text) ;
+      h := I64 (TlsWrap (C.Int (c.fd), ADR (hz))) ;
+      IF h < 0 THEN RAISE Error ('smtp: the TLS handshake failed after STARTTLS', 0) END ;
+      c.fd := h ;
+      c.secure := TRUE ;
+      Cmd (c, Ehlo) ;
+      Need (c, 250, 'EHLO after STARTTLS', ehlo)
+    END ;
+    IF LEN (user) > 0 THEN Auth (c, ehlo, user, pass) END ;
+    Cmd (c, 'MAIL FROM:<' + m.from + '>') ;
+    Need (c, 2, 'MAIL FROM', text) ;
+    FOR i := 0 TO m.nto - 1 DO
+      Cmd (c, 'RCPT TO:<' + m.to[i] + '>') ;
+      Need (c, 2, 'RCPT TO ' + m.to[i], text)
+    END ;
+    FOR i := 0 TO m.ncc - 1 DO
+      Cmd (c, 'RCPT TO:<' + m.cc[i] + '>') ;
+      Need (c, 2, 'RCPT TO ' + m.cc[i], text)
+    END ;
+    FOR i := 0 TO m.nbcc - 1 DO
+      Cmd (c, 'RCPT TO:<' + m.bcc[i] + '>') ;
+      Need (c, 2, 'RCPT TO ' + m.bcc[i], text)
+    END ;
+    Cmd (c, 'DATA') ;
+    Need (c, 354, 'DATA', text) ;
+    wire := DynStr.Bytes (scratch, Stuffed (Wire (m)) + '.' + 0DC + 0AC, FALSE) ;
+    WrAll (c, wire) ;
+    Need (c, 2, 'the end of DATA', text) ;
+    Cmd (c, 'QUIT')
+  FINALLY
+    IF c.secure THEN i := I64 (TlsClose (C.Int (c.fd)))
+    ELSE i := I64 (Close (C.Int (c.fd)))
+    END
+  END
+END Send ;
+
+PROCEDURE SendText (RO host: STR ; port: I64 ; security: I64 ;
+                    RO user: STR ; RO pass: STR ; RO from: STR ;
+                    RO to: SLICE OF STR ; RO subject: STR ; RO body: STR)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  m : PTR Message IN scratch ;
+  i : I64 ;
+BEGIN
+  m := New (scratch, from, subject) ;
+  FOR i := 0 TO LEN (to) - 1 DO AddTo (m, to[i]) END ;
+  SetText (m, body) ;
+  Send (host, port, security, user, pass, m)
+END SendText ;
+
+END Smtp.

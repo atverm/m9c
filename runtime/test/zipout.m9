@@ -1,0 +1,45 @@
+MODULE zipout ;
+
+(* zipout OUT.zip deflate|store [NAME PATH]...
+     -> writes OUT.zip with the file at each PATH as the member NAME,
+        every member deflated or every member stored, each stamped
+        2026-10-07 12:34:56; prints the archive's length
+
+   The program runtime/test/deflate.sh drives for the zip writer:
+   Python's zipfile reads what it writes there, which is the whole
+   check.  NAME is UTF-8 on the command line, as Python passes it. *)
+
+IMPORT DynStr ;
+IMPORT Io ;
+IMPORT Zip ;
+
+VAR
+  pool : POOL ;
+  w : PTR Zip.Writer IN pool ;
+  mode, name, why : STR ;
+  i : I64 ;
+  deflate : BOOL ;
+
+BEGIN
+  IF Io.ArgCount () < 3 OR Io.ArgCount () MOD 2 # 1 THEN
+    Io.ErrLine ('usage: zipout OUT.zip deflate|store [NAME PATH]...') ;
+    Io.Halt (2)
+  END ;
+  mode := Io.Arg (pool, 2) ;
+  deflate := LEN (mode) = 7 ;
+  w := Zip.NewWriter (pool) ;
+  Zip.SetTime (w, 2026, 10, 7, 12, 34, 56) ;
+  i := 3 ;
+  WHILE i + 1 < Io.ArgCount () DO
+    name := DynStr.FromUtf8 (pool, DynStr.Bytes (pool, Io.Arg (pool, i), FALSE)) ;
+    Zip.AddFile (w, name, Io.Arg (pool, i + 1), deflate) ;
+    i := i + 2
+  END ;
+  Zip.WriteTo (w, Io.Arg (pool, 1)) ;
+  Io.WriteI64 (LEN (Zip.Finish (w))) ;
+  Io.WriteLine ('')
+EXCEPT
+| Zip.Error (msg) : why := msg ; Io.ErrLine ('zip: ' + why) ; Io.Halt (1)
+| Io.IOError (p) : why := p ; Io.ErrLine ('io: ' + why) ; Io.Halt (1)
+| ValueRange : Io.ErrLine ('value range') ; Io.Halt (1)
+END zipout.

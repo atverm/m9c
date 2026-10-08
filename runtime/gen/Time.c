@@ -64,8 +64,11 @@ Time_Civil Time_ToCivil (Time_Instant t, m9_state *err)
     days = m9v;
   }
   sod = (t.t - (days * Time_SecPerDay));
-  Time_CivilFromDays (m9_i64_f64 ((double)(days), err), &(c.year), &(c.month), &(c.day), err);
+  { __typeof__(m9_i64_f64 ((double)(days), err)) m9a1 = m9_i64_f64 ((double)(days), err);
+    if (err->exc) goto L_ret;
+  Time_CivilFromDays (m9a1, &(c.year), &(c.month), &(c.day), err);
   if (err->exc) goto L_ret;
+  }
   { __typeof__(isod) m9v = m9_i64_f64 ((double)(sod), err);
     if (err->exc) goto L_ret;
     isod = m9v;
@@ -260,9 +263,12 @@ Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_state *err)
   err->res = &m9frame;
   Time_Instant m9ret = {0};
   Time_Instant r = {0}; (void) r;
-  { __typeof__(r) m9v = Time_AddMonthsOnly (t, m9_add_i64 (m9_mul_i64 (s.years, INT64_C(12), err), s.months, err), err);
+  { __typeof__(m9_add_i64 (m9_mul_i64 (s.years, INT64_C(12), err), s.months, err)) m9a2 = m9_add_i64 (m9_mul_i64 (s.years, INT64_C(12), err), s.months, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(r) m9v = Time_AddMonthsOnly (t, m9a2, err);
     if (err->exc) goto L_ret;
     r = m9v;
+  }
   }
   { __typeof__(r.t) m9v = (((r.t + ((double)(s.days) * Time_SecPerDay)) + (double)(m9_add_i64 (m9_mul_i64 (s.hours, INT64_C(3600), err), m9_mul_i64 (s.minutes, INT64_C(60), err), err))) + s.seconds);
     if (err->exc) goto L_ret;
@@ -295,36 +301,60 @@ m9_sl_CHAR Time_Iso (Time_Instant t, int64_t decimals, m9_state *err)
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.year, INT64_C(4), true, err), err);
+  { __typeof__(Fmt_I64Pad (c.year, INT64_C(4), true, err)) m9a3 = Fmt_I64Pad (c.year, INT64_C(4), true, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &(pool), m9a3, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_AppendChar (&(d), &(pool), 45u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.month, INT64_C(2), true, err), err);
+  { __typeof__(Fmt_I64Pad (c.month, INT64_C(2), true, err)) m9a4 = Fmt_I64Pad (c.month, INT64_C(2), true, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &(pool), m9a4, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_AppendChar (&(d), &(pool), 45u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.day, INT64_C(2), true, err), err);
+  { __typeof__(Fmt_I64Pad (c.day, INT64_C(2), true, err)) m9a5 = Fmt_I64Pad (c.day, INT64_C(2), true, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &(pool), m9a5, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_AppendChar (&(d), &(pool), 84u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.hour, INT64_C(2), true, err), err);
+  { __typeof__(Fmt_I64Pad (c.hour, INT64_C(2), true, err)) m9a6 = Fmt_I64Pad (c.hour, INT64_C(2), true, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &(pool), m9a6, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_AppendChar (&(d), &(pool), 58u, err);
   if (err->exc) goto L_ret;
-  DynStr_Append (&(d), &(pool), Fmt_I64Pad (c.minute, INT64_C(2), true, err), err);
+  { __typeof__(Fmt_I64Pad (c.minute, INT64_C(2), true, err)) m9a7 = Fmt_I64Pad (c.minute, INT64_C(2), true, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &(pool), m9a7, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_AppendChar (&(d), &(pool), 58u, err);
   if (err->exc) goto L_ret;
   if ((decimals == INT64_C(0))) {
-    DynStr_Append (&(d), &(pool), Fmt_I64Pad (m9_i64_f64 ((double)(c.second), err), INT64_C(2), true, err), err);
+    { __typeof__(m9_i64_f64 ((double)(c.second), err)) m9a8 = m9_i64_f64 ((double)(c.second), err);
+      if (err->exc) goto L_ret;
+    { __typeof__(Fmt_I64Pad (m9a8, INT64_C(2), true, err)) m9a9 = Fmt_I64Pad (m9a8, INT64_C(2), true, err);
+      if (err->exc) goto L_ret;
+    DynStr_Append (&(d), &(pool), m9a9, err);
     if (err->exc) goto L_ret;
+    }
+    }
   } else {
     if ((c.second < 10.0)) {
       DynStr_AppendChar (&(d), &(pool), 48u, err);
       if (err->exc) goto L_ret;
     }
-    DynStr_Append (&(d), &(pool), Fmt_Fixed (c.second, decimals, err), err);
+    { __typeof__(Fmt_Fixed (c.second, decimals, err)) m9a10 = Fmt_Fixed (c.second, decimals, err);
+      if (err->exc) goto L_ret;
+    DynStr_Append (&(d), &(pool), m9a10, err);
     if (err->exc) goto L_ret;
+    }
   }
   DynStr_AppendChar (&(d), &(pool), 90u, err);
   if (err->exc) goto L_ret;
@@ -406,9 +436,12 @@ Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
     c.minute = m9v;
   }
-  { __typeof__(c.second) m9v = Fmt_ParseF64 (({ __typeof__(s) m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err);
+  { __typeof__(({ __typeof__(s) m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; })) m9a11 = ({ __typeof__(s) m9t6 = s; int64_t m9t6a = INT64_C(17), m9t6n = m9_sub_i64 ((s).len, INT64_C(18), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
+    if (err->exc) goto L_ret;
+  { __typeof__(c.second) m9v = Fmt_ParseF64 (m9a11, err);
     if (err->exc) goto L_ret;
     c.second = m9v;
+  }
   }
   err->res = m9res;
   m9ret = Time_FromCivil (c, err);

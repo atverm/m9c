@@ -215,9 +215,12 @@ ZarrStore_Store * ZarrStore_Open (m9_sl_CHAR url, m9_state *err)
     s->secure = false;
     s->host = (m9_sl_CHAR){ NULL, 0 };
     s->port = INT64_C(0);
-    { __typeof__(s->root) m9v = ZarrStore_CopyChars (&(s->pool), ({ __typeof__(url) m9t4 = url; int64_t m9t4a = start, m9t4n = m9_sub_i64 (j, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err);
+    { __typeof__(({ __typeof__(url) m9t4 = url; int64_t m9t4a = start, m9t4n = m9_sub_i64 (j, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a1 = ({ __typeof__(url) m9t4 = url; int64_t m9t4a = start, m9t4n = m9_sub_i64 (j, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+      if (err->exc) goto L_ret;
+    { __typeof__(s->root) m9v = ZarrStore_CopyChars (&(s->pool), m9a1, err);
       if (err->exc) goto L_ret;
       s->root = m9v;
+    }
     }
   } else {
     { __typeof__(s->secure) m9v = ZarrStore_StartsWith (url, ((m9_sl_CHAR){ (uint32_t *) m9s4, 8 }), err);
@@ -239,9 +242,12 @@ ZarrStore_Store * ZarrStore_Open (m9_sl_CHAR url, m9_state *err)
         j = m9v;
       }
     }
-    { __typeof__(s->host) m9v = ZarrStore_CopyChars (&(s->pool), ({ __typeof__(url) m9t6 = url; int64_t m9t6a = start, m9t6n = m9_sub_i64 (j, start, err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; }), err);
+    { __typeof__(({ __typeof__(url) m9t6 = url; int64_t m9t6a = start, m9t6n = m9_sub_i64 (j, start, err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; })) m9a2 = ({ __typeof__(url) m9t6 = url; int64_t m9t6a = start, m9t6n = m9_sub_i64 (j, start, err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
+      if (err->exc) goto L_ret;
+    { __typeof__(s->host) m9v = ZarrStore_CopyChars (&(s->pool), m9a2, err);
       if (err->exc) goto L_ret;
       s->host = m9v;
+    }
     }
     if (((s->host).len == INT64_C(0))) {
       { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s5, 15 })) m9t7 = ((m9_sl_CHAR){ (uint32_t *) m9s5, 15 }); err->s[0].p = m9t7.p; err->s[0].len = m9t7.len; m9_pay_keep (err, 0, sizeof (*m9t7.p)); }
@@ -277,9 +283,12 @@ ZarrStore_Store * ZarrStore_Open (m9_sl_CHAR url, m9_state *err)
         }
       }
     }
-    { __typeof__(s->root) m9v = ZarrStore_CopyChars (&(s->pool), ({ __typeof__(url) m9t10 = url; int64_t m9t10a = j, m9t10n = m9_sub_i64 ((url).len, j, err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; }), err);
+    { __typeof__(({ __typeof__(url) m9t10 = url; int64_t m9t10a = j, m9t10n = m9_sub_i64 ((url).len, j, err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; })) m9a3 = ({ __typeof__(url) m9t10 = url; int64_t m9t10a = j, m9t10n = m9_sub_i64 ((url).len, j, err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; });
+      if (err->exc) goto L_ret;
+    { __typeof__(s->root) m9v = ZarrStore_CopyChars (&(s->pool), m9a3, err);
       if (err->exc) goto L_ret;
       s->root = m9v;
+    }
     }
   }
   err->res = m9res;
@@ -323,13 +332,19 @@ ZarrStore_Array * ZarrStore_OpenArray (ZarrStore_Store * s, m9_sl_CHAR path, m9_
   if (err->exc) goto L_hdl_m9t1;
   DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s6, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(raw) m9v = ZarrStore_Fetch (s, &(scratch), DynStr_View (d, err), ZarrStore_MetaMax, err);
+  { __typeof__(DynStr_View (d, err)) m9a4 = DynStr_View (d, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(raw) m9v = ZarrStore_Fetch (s, &(scratch), m9a4, ZarrStore_MetaMax, err);
     if (err->exc) goto L_hdl_m9t1;
     raw = m9v;
   }
-  { __typeof__(root) m9v = Json_Parse (DynStr_Chars (&(scratch), raw, err), err);
+  }
+  { __typeof__(DynStr_Chars (&(scratch), raw, err)) m9a5 = DynStr_Chars (&(scratch), raw, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(root) m9v = Json_Parse (m9a5, err);
     if (err->exc) goto L_hdl_m9t1;
     root = m9v;
+  }
   }
   { Json_Node * zf = Json_Field (root, ((m9_sl_CHAR){ (uint32_t *) m9s7, 11 }), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -924,9 +939,12 @@ static m9_sl_BYTE ZarrStore_Fetch (ZarrStore_Store * st, m9_pool *pool, m9_sl_CH
       m9_raise (err, &ZarrStore_HttpStatus);
       goto L_hdl_m9t1;
     }
-    { __typeof__(buf) m9v = Io_ReadFileBytes (pool, DynStr_View (d, err), err);
+    { __typeof__(DynStr_View (d, err)) m9a6 = DynStr_View (d, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(buf) m9v = Io_ReadFileBytes (pool, m9a6, err);
       if (err->exc) goto L_hdl_m9t1;
       buf = m9v;
+    }
     }
     if (((buf).len > maxLen)) {
       { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s51, 41 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s51, 41 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
@@ -943,14 +961,20 @@ static m9_sl_BYTE ZarrStore_Fetch (ZarrStore_Store * st, m9_pool *pool, m9_sl_CH
   }
   n = INT64_C(0);
   if (st->secure) {
-    { __typeof__(status) m9v = Http_GetTls (st->host, st->port, DynStr_View (d, err), buf, &(n), err);
+    { __typeof__(DynStr_View (d, err)) m9a7 = DynStr_View (d, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(status) m9v = Http_GetTls (st->host, st->port, m9a7, buf, &(n), err);
       if (err->exc) goto L_hdl_m9t1;
       status = m9v;
     }
+    }
   } else {
-    { __typeof__(status) m9v = Http_Get (st->host, st->port, DynStr_View (d, err), buf, &(n), err);
+    { __typeof__(DynStr_View (d, err)) m9a8 = DynStr_View (d, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(status) m9v = Http_Get (st->host, st->port, m9a8, buf, &(n), err);
       if (err->exc) goto L_hdl_m9t1;
       status = m9v;
+    }
     }
   }
   if ((status != INT64_C(200))) {
@@ -1082,10 +1106,13 @@ static int64_t ZarrStore_ReadDims (Json_Node * sh, m9_arr_8_int64_t *out, m9_sta
   m9t2to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    { __typeof__((*(int64_t *) m9_at ((*out).v, i, INT64_C(8), sizeof (int64_t), err))) m9v = Json_AsI64 (Json_Item (sh, i, err), err);
+    { __typeof__(Json_Item (sh, i, err)) m9a9 = Json_Item (sh, i, err);
+      if (err->exc) goto L_ret;
+    { __typeof__((*(int64_t *) m9_at ((*out).v, i, INT64_C(8), sizeof (int64_t), err))) m9v = Json_AsI64 (m9a9, err);
       if (err->exc) goto L_ret;
       (*(int64_t *) m9_at ((*out).v, i, INT64_C(8), sizeof (int64_t), err)) = m9v;
       if (err->exc) goto L_ret;
+    }
     }
   } }
   err->res = m9res;
@@ -1242,13 +1269,19 @@ static bool ZarrStore_S1Fill (Json_Node * fv, int64_t *b, m9_state *err)
     m9ret = false;
     goto L_ret;
   }
-  { __typeof__(hi) m9v = ZarrStore_Sextet ((*(uint32_t *) m9_at (t.p, INT64_C(0), t.len, sizeof (uint32_t), err)), err);
+  { __typeof__((*(uint32_t *) m9_at (t.p, INT64_C(0), t.len, sizeof (uint32_t), err))) m9a10 = (*(uint32_t *) m9_at (t.p, INT64_C(0), t.len, sizeof (uint32_t), err));
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(hi) m9v = ZarrStore_Sextet (m9a10, err);
     if (err->exc) goto L_hdl_m9t1;
     hi = m9v;
   }
-  { __typeof__(lo) m9v = ZarrStore_Sextet ((*(uint32_t *) m9_at (t.p, INT64_C(1), t.len, sizeof (uint32_t), err)), err);
+  }
+  { __typeof__((*(uint32_t *) m9_at (t.p, INT64_C(1), t.len, sizeof (uint32_t), err))) m9a11 = (*(uint32_t *) m9_at (t.p, INT64_C(1), t.len, sizeof (uint32_t), err));
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(lo) m9v = ZarrStore_Sextet (m9a11, err);
     if (err->exc) goto L_hdl_m9t1;
     lo = m9v;
+  }
   }
   if (((hi < INT64_C(0)) || (lo < INT64_C(0)))) {
     err->res = m9res;
@@ -1394,7 +1427,7 @@ static ZarrStore_ChunkBuf * ZarrStore_FillChunk (ZarrStore_Array * *a, m9_pool *
         m9_f64_to_le ((*a)->meta.fillF, ({ __typeof__(p->buf) m9t3 = p->buf; int64_t m9t3a = m9_mul_i64 (i, INT64_C(8), err), m9t3n = INT64_C(8); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
         if (err->exc) goto L_ret;
       } else {
-        m9_f32_to_le ((float)((*a)->meta.fillF), ({ __typeof__(p->buf) m9t4 = p->buf; int64_t m9t4a = m9_mul_i64 (i, INT64_C(4), err), m9t4n = INT64_C(4); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err);
+        m9_f32_to_le (m9_f32_f64 ((*a)->meta.fillF, err), ({ __typeof__(p->buf) m9t4 = p->buf; int64_t m9t4a = m9_mul_i64 (i, INT64_C(4), err), m9t4n = INT64_C(4); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err);
         if (err->exc) goto L_ret;
       }
     } }
@@ -1479,12 +1512,21 @@ static ZarrStore_ChunkBuf * ZarrStore_GetChunk (ZarrStore_Array * *a, m9_pool *a
       DynStr_AppendChar (&(d), &(scratch), (*a)->meta.sep, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    DynStr_AppendI64 (&(d), &(scratch), (*(int64_t *) m9_at (coords.p, i, coords.len, sizeof (int64_t), err)), err);
+    { __typeof__((*(int64_t *) m9_at (coords.p, i, coords.len, sizeof (int64_t), err))) m9a12 = (*(int64_t *) m9_at (coords.p, i, coords.len, sizeof (int64_t), err));
+      if (err->exc) goto L_hdl_m9t1;
+    DynStr_AppendI64 (&(d), &(scratch), m9a12, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
   } }
-  { __typeof__(raw) m9v = ZarrStore_Fetch ((*a)->st, &(scratch), DynStr_View (d, err), m9_add_i64 (ZarrStore_ChunkBytes (a, a_pool, err), INT64_C(1024), err), err);
+  { __typeof__(DynStr_View (d, err)) m9a13 = DynStr_View (d, err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(m9_add_i64 (ZarrStore_ChunkBytes (a, a_pool, err), INT64_C(1024), err)) m9a14 = m9_add_i64 (ZarrStore_ChunkBytes (a, a_pool, err), INT64_C(1024), err);
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(raw) m9v = ZarrStore_Fetch ((*a)->st, &(scratch), m9a13, m9a14, err);
     if (err->exc) goto L_hdl_m9t1;
     raw = m9v;
+  }
+  }
   }
   { __typeof__(p) m9v = (ZarrStore_ChunkBuf *) m9_pool_alloc (&((*a)->cache), sizeof (ZarrStore_ChunkBuf), 1, err);
     if (err->exc) goto L_hdl_m9t1;

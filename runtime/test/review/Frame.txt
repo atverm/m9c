@@ -3,7 +3,7 @@ REVIEW Frame -- 112 procedures with a body, 74 of them functions; 66 headings in
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              74
   assignments                                   617
-  arguments                                    1183
+  arguments                                    1193
   RETURN values                                 101
   operands of a comparison or an operator       417
   CASE labels                                     0
@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     5   WriteCsv.pool, Filter.scratch, OrderBy.scratch, Groups.scratch, JoinOn.scratch
   pool parameters                                49   New, Blank, Copy, AddF64, AddF32, AddI64, +43 more
-  KEPT parameters                                11   AddStrs, NewTs, NewTs, Average, MakeContiguous, WriteNc, +4 more
+  KEPT parameters                                18   AddF64, AddF32, AddI64, AddI32, AddI16, AddBytes, +11 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0

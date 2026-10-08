@@ -58,12 +58,13 @@ _(documented with the group below)_
 ### TYPE Raiser
 
 what Raises and RaisesValueRange run: a top-level procedure of
-the test, with no parameters.  TWO types because a procedure
-fits a procedure type only when its RAISES is the type's, to
-the letter (par 2.2.3): IndexError and Overflow need no
-clause, so a procedure that raises one of them is an Action;
-one that raises ValueRange says so in its heading and is a
-Raiser.
+the test, with no parameters, raising ValueRange or nothing
+(IndexError and Overflow need no clause).  ONE type since
+2026-10-08: a procedure fits a procedure type when it raises
+no MORE than the type allows (decision 25), so a quiet one
+fits too.  Raiser is the old name, kept for the tests that
+wrote it; there were two types while RAISES had to match to
+the letter.
 
 ### That (VAR t: T ; RO label: STR ; ok: BOOL)
 
@@ -126,12 +127,12 @@ _(documented with the group below)_
 
 ### RaisesValueRange (VAR t: T ; RO label: STR ; act: Raiser)
 
-act must raise the predeclared exception named: want for an
-Action, ValueRange for a Raiser.
+act must raise the predeclared exception named; RaisesValueRange
+is Raises with want = 'ValueRange'.
 
-  want -- 'IndexError' or 'Overflow'; any other name fails the
-          check, and the line says which two an Action can be
-          asked for
+  want -- 'IndexError', 'Overflow' or 'ValueRange'; any other
+          name fails the check, and the line says which three
+          can be asked for
 
 The failure line says what act did instead: raised nothing, or
 raised another of the three.

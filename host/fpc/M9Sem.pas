@@ -33,6 +33,8 @@ interface
 uses SysUtils, Classes, M9AST, M9Print;
 
 type
+  TNodeArr = array of TNode;
+
   TProcInfo = record
     name, foreign, attrib : string;
     modName : string;
@@ -64,6 +66,7 @@ type
     cnNames : array of string;         { exported CONSTs ... }
     cnTypes : array of string;         { ... and their LitType }
     exNames : array of string;         { EXCEPTION declarations }
+    exDecls : array of TNode;          { ... and their nodes, for a handler's binder types }
     vrNames : array of string;         { the definition's VARs (decision 28) ... }
     vrTypes : array of TNode;          { ... their types, QualifiedIn this module ... }
     vrRo : array of Boolean;           { ... and VAR RO }
@@ -100,14 +103,16 @@ type
                                          '' = the current module }
     constMap : TStringList;            { module-level CONST name=type }
     roScope : TStringList;             { scope indices of `VAR RO' variables }
+    roFrom : TStringList;              { scope index=what|line: read-only storage a name was given }
+    roFresh : TStringList;             { RoFreshWalk: `name.field' paths of a marked copy given fresh storage }
+    resolvedIn : string;               { the module ResolveType's last lookup ended in, '' when none }
+    mro : TStringList;                 { ModRoSeed: module variable=what|line, per unit }
     nAgg : Integer;                    { aggregate CONSTs in this unit:
                                          the walk that guards them is
                                          skipped at zero }
     tyI64 : TNode;                     { synthetic 'I64' for FOR vars }
     strNode : TNode;                   { the SLICE OF CHAR that STR names }
     tyCHAR : TNode;                    { its element }
-    threadRoots : array of string;
-    callGraph : TStringList;
     ansMemo : TStringList;             { AnswersFrame: Module.Proc=yes|no|busy }
     function FindMod (const n: string): TModuleInfo;
     function ProcNamed (const modn, callee: string; out pr: TProcInfo): Boolean;
@@ -124,6 +129,8 @@ type
     function SigOf (p: TNode): string;
     function RaisesOf (p: TNode): TStringArray;
     function ExcKnown (const qual, nm: string): Boolean;
+    function ExcDeclOf (const qual, nm: string; out owner: string): TNode;
+    function ExcFieldType (decl: TNode; const owner: string; k: Integer): TNode;
     procedure CheckExcName (n: TNode; const ctx: string);
     function TypeKnown (const qual, nm: string): Boolean;
     procedure CheckTypeNode (t: TNode; const ctx: string);
@@ -168,7 +175,6 @@ type
                       depth: Integer): string;
     function IsBareProc (t: TNode): Boolean;
     function IsReadonlyT (declN, res: TNode): Boolean;
-    procedure CheckThreadChains;
   public
     Errors : TStringList;
     RoCand : TStringList;              { VAR params never written }
@@ -201,6 +207,20 @@ begin
   for i := 0 to High (a) do
     if a[i] = s then Exit (True);
   Result := False;
+end;
+
+{ the dotted callee name of a call's designator -- the nested
+  DesigName of CheckBody, for the helpers outside it (RoAnswerOf,
+  MroAnswer); a leading index or deref stops it the same way }
+function CallName (d: TNode): string;
+var i : Integer;
+begin
+  Result := d.a;
+  for i := 0 to High (d.kids) do
+    if d.kids[i].kind = nkSelField then
+      Result := Result + '.' + d.kids[i].a
+    else
+      Break;
 end;
 
 function StartsWithS (const s, p: string): Boolean;
@@ -644,7 +664,9 @@ begin
   fromMap := TStringList.Create; fromMap.CaseSensitive := True;
   constMap := TStringList.Create; constMap.CaseSensitive := True;
   roScope := TStringList.Create;
-  callGraph := TStringList.Create; callGraph.CaseSensitive := True;
+  roFrom := TStringList.Create;
+  roFresh := TStringList.Create;
+  mro := TStringList.Create; mro.CaseSensitive := True;
   RoCand := TStringList.Create; RoCand.CaseSensitive := True;
   varParams := TStringList.Create; varParams.CaseSensitive := True;
   ansMemo := TStringList.Create; ansMemo.CaseSensitive := True;
@@ -668,7 +690,6 @@ begin
   Ledger.Free;
   fromMap.Free;
   constMap.Free;
-  callGraph.Free;
   tyI64.Free;
   inherited;
 end;
@@ -1108,6 +1129,58 @@ end;
   names, a bare name locally, predeclared, or declared in some loaded
   module (both direct and transitive deps register their exceptions).
   A name found nowhere is accepted by neither -- catch it HERE. }
+function QualifyTypeIn (t: TNode; const modName: string): TNode; forward;
+
+{ the EXCEPTION declaration a handler names and the module that
+  declares it: qualified, that module; bare, the current module first,
+  then any (as ExcKnown finds it); nil for a predeclared one }
+function TSem.ExcDeclOf (const qual, nm: string; out owner: string): TNode;
+var
+  m : TModuleInfo;
+  i, j : Integer;
+begin
+  Result := nil;
+  owner := '';
+  if qual <> '' then
+  begin
+    m := FindMod (qual);
+    if m = nil then Exit;
+    for i := 0 to High (m.exNames) do
+      if m.exNames[i] = nm then begin owner := qual; Exit (m.exDecls[i]); end;
+    Exit;
+  end;
+  m := FindMod (curMod);
+  if m <> nil then
+    for i := 0 to High (m.exNames) do
+      if m.exNames[i] = nm then begin owner := curMod; Exit (m.exDecls[i]); end;
+  for j := 0 to High (mods) do
+    for i := 0 to High (mods[j].exNames) do
+      if mods[j].exNames[i] = nm then begin owner := mods[j].name; Exit (mods[j].exDecls[i]); end;
+end;
+
+{ the type of the k-th payload field, qualified in its module; nil past
+  the fields or for a bare declaration }
+function TSem.ExcFieldType (decl: TNode; const owner: string; k: Integer): TNode;
+var
+  fs, grp : TNode;
+  g, j, ix : Integer;
+begin
+  Result := nil;
+  if (decl = nil) or (decl.kids[0] = nil) then Exit;
+  fs := decl.kids[0];
+  ix := 0;
+  for g := 0 to High (fs.kids) do
+  begin
+    grp := fs.kids[g];
+    if (grp <> nil) and (grp.kids[0] <> nil) then
+      for j := 0 to High (grp.kids[0].kids) do
+      begin
+        if ix = k then Exit (QualifyTypeIn (grp.kids[1], owner));
+        Inc (ix);
+      end;
+  end;
+end;
+
 function TSem.ExcKnown (const qual, nm: string): Boolean;
 var
   m : TModuleInfo;
@@ -1406,6 +1479,8 @@ begin
         begin
           SetLength (m.exNames, Length (m.exNames) + 1);
           m.exNames[High (m.exNames)] := d.kids[j].a;
+          SetLength (m.exDecls, Length (m.exDecls) + 1);
+          m.exDecls[High (m.exDecls)] := d.kids[j];
         end;
       nkVarSection :
         { the definition's variables are the module's exports: an
@@ -1603,18 +1678,19 @@ begin
   begin
     m := FindMod (modName);
     if m = nil then Exit (nil);
+    resolvedIn := modName;
     Exit (m.FindType (typeName));
   end;
   m := FindMod (curMod);
   if m <> nil then
   begin
     Result := m.FindType (typeName);
-    if Result <> nil then Exit;
+    if Result <> nil then begin resolvedIn := curMod; Exit; end;
   end;
   for i := 0 to High (mods) do
   begin
     Result := mods[i].FindType (typeName);
-    if Result <> nil then Exit;
+    if Result <> nil then begin resolvedIn := mods[i].name; Exit; end;
   end;
   Result := nil;
 end;
@@ -1638,6 +1714,7 @@ var depth : Integer;
 begin
   Result := t;
   depth := 0;
+  resolvedIn := '';
   while (Result <> nil) and (Result.kind = nkQualident) and (depth < 10) do
   begin
     { STR expands to the slice it abbreviates (par 2.2) }
@@ -2173,6 +2250,19 @@ var
     Result := (ix >= 0) and (roScope.IndexOf (IntToStr (ix)) >= 0);
   end;
 
+  { the read-only storage the name was given by an assignment in this
+    procedure ('a string literal (line 12)'), or '' -- Sem.ScopeRoFrom }
+  function ScopeRoFrom (const nm: string): string;
+  var ix : Integer; v : string;
+  begin
+    ix := scope.IndexOfName (nm);
+    if ix < 0 then Exit ('');
+    v := roFrom.Values[IntToStr (ix)];
+    if v = '' then Exit ('');
+    Result := Copy (v, 1, Pos ('|', v) - 1) + ' (line ' +
+              Copy (v, Pos ('|', v) + 1, Length (v)) + ')';
+  end;
+
   { is this name, HERE, a constant?  A parameter, a local or a module
     variable of the same name shadows it, as it does in the generated
     C -- the lookup that forgot that typed a parameter named like a
@@ -2248,6 +2338,203 @@ var
          (e.kids[1] <> nil) and (Length (e.kids[1].kids) > 0) then
         Exit (EscRootOf (e.kids[1].kids[0]));
     end;
+  end;
+
+  { the name of the RO FIELD a designator ends at, resolved as
+    CheckWrite resolves a write, or '' (Sem.RoFieldOf) }
+  function RoFieldOf (d: TNode): string;
+  var
+    j : Integer;
+    declN, res, sel : TNode;
+    tmod : string;
+  begin
+    Result := '';
+    if Length (d.kids) = 0 then Exit;
+    tmod := '';
+    declN := ScopeType (d.a);
+    for j := 0 to High (d.kids) do
+    begin
+      sel := d.kids[j];
+      if declN = nil then Exit;
+      NoteMod (declN, tmod);
+      res := ResolveType (declN);
+      while (res <> nil) and (res.kind in [nkPtrType, nkSharedType]) do
+      begin
+        declN := InMod (res.kids[0], tmod);
+        NoteMod (declN, tmod);
+        res := ResolveType (declN);
+      end;
+      if res = nil then Exit;
+      case sel.kind of
+        nkSelField :
+          if res.kind = nkRecordType then
+          begin
+            if (j = High (d.kids)) and FieldROOf (res, sel.a) then Exit (sel.a);
+            declN := InMod (FieldTypeOf (res, sel.a), tmod);
+          end
+          else
+            Exit;
+        nkSelIndex :
+          if res.kind = nkGridType then declN := InMod (res.kids[1], tmod)
+          else if res.kind = nkSliceType then declN := InMod (res.kids[0], tmod)
+          else if res.kind = nkArrayType then declN := InMod (res.kids[1], tmod)
+          else Exit;
+      end;
+    end;
+  end;
+
+  { `the RO answer of F' when call E names a procedure whose result is
+    declared RO, else '' (Sem.RoAnswerOf) }
+  function RoAnswerOf (e: TNode): string;
+  var pr : TProcInfo; name : string;
+  begin
+    Result := '';
+    if (e.kids[0] = nil) or (e.kids[0].kind <> nkDesignator) then Exit;
+    name := CallName (e.kids[0]);
+    if not LookupProcInfo (name, pr) then Exit;
+    if (pr.node <> nil) and pr.node.f3 then Result := 'the RO answer of ' + name;
+  end;
+
+  function PtrBearing (t: TNode; depth: Integer): Boolean; forward;
+  function DesigPath (d: TNode): string; forward;
+
+  { par 2.4, the copy: is the value of expression K read-only storage
+    -- a string literal, what an RO parameter or an RO variable views,
+    a CONST, or a name that was itself given such storage -- seen
+    through SLICE, VIEW and parentheses?  Mirrors Sem.RoWhatOf. }
+  function RoWhatOf (k: TNode): string;
+  var r, v : string; ix : Integer;
+  begin
+    Result := '';
+    if k = nil then Exit;
+    { the empty literal holds no storage: nothing can be written
+      through a slice of length 0 }
+    if k.kind = nkString then
+    begin
+      if Length (k.a) = 0 then Exit;
+      Exit ('a string literal');
+    end;
+    if (k.kind = nkSliceOf3) or (k.kind = nkGridOf) then
+      Exit (RoWhatOf (k.kids[0]));
+    if k.kind = nkCallExpr then Exit (RoAnswerOf (k));
+    if (k.kind = nkDesignator) and (Length (k.kids) > 0) then
+    begin
+      r := RoFieldOf (k);
+      if r <> '' then Exit ('the RO field ' + r);
+    end;
+    r := EscRootOf (k);
+    if r = '' then Exit;
+    if ScopeMode (r) = 'r' then Exit ('the RO parameter ' + r);
+    if ScopeRo (r) then Exit ('the RO variable ' + r);
+    ix := scope.IndexOfName (r);
+    if ix >= 0 then
+    begin
+      v := roFrom.Values[IntToStr (ix)];
+      if v <> '' then Exit (Copy (v, 1, Pos ('|', v) - 1));
+    end;
+    if IsConstHere (r) then Exit ('the CONST ' + r);
+  end;
+
+  { one pass over the assignments under K: a bare local or parameter
+    of slice or grid type given read-only storage is marked with what
+    it holds and where.  Mirrors Sem.RoSeedWalk. }
+  function RoSeedWalk (k: TNode): Boolean;
+  var
+    ix, j : Integer;
+    what, m, ty : string;
+    lhs : TNode;
+  begin
+    Result := False;
+    if k = nil then Exit;
+    if (k.kind = nkAssign) and (k.kids[0] <> nil) then
+    begin
+      lhs := k.kids[0];
+      if (lhs.kind = nkDesignator) and (Length (lhs.kids) = 0) then
+      begin
+        ix := scope.IndexOfName (lhs.a);
+        if (ix >= 0) and (roFrom.Values[IntToStr (ix)] = '') then
+        begin
+          m := scope.ValueFromIndex[ix];
+          if (m = 'l') or (m = 'p') or (m = 'v') or (m = 'o') or (m = 'm') then
+          begin
+            ty := CanonT (TNode (scope.Objects[ix]), 0);
+            if StartsWithS (ty, 'SLICE OF') or StartsWithS (ty, 'GRID ') or
+               PtrBearing (TNode (scope.Objects[ix]), 0) then
+            begin
+              what := RoWhatOf (k.kids[1]);
+              if what <> '' then
+              begin
+                roFrom.Values[IntToStr (ix)] := what + '|' + IntToStr (k.line);
+                Result := True;
+              end;
+            end;
+          end;
+        end;
+      end;
+    end;
+    for j := 0 to High (k.kids) do
+      if RoSeedWalk (k.kids[j]) then Result := True;
+  end;
+
+  { par 2.4, the copy (2026-10-08): a local or parameter of slice or
+    grid type that an assignment anywhere in the procedure gives
+    read-only storage holds it for the whole procedure -- a write
+    through the name and a lend of it to a writable parameter are
+    refused by CheckWrite and the call check.  Mirrors Sem.RoSeed. }
+  { a FIELD of a record copy given storage that is not read-only
+    (`d := c ; d.defs := NEW (...) ; d.defs[i] := ...', Rdf.CopyCtx)
+    is REFRESHED: recorded as the path `d.defs'.  Mirrors
+    Sem.RoFreshWalk. }
+  procedure RoFreshWalk (k: TNode);
+  var
+    j : Integer;
+    fields : Boolean;
+    lhs : TNode;
+  begin
+    if k = nil then Exit;
+    if (k.kind = nkAssign) and (k.kids[0] <> nil) then
+    begin
+      lhs := k.kids[0];
+      if (lhs.kind = nkDesignator) and (Length (lhs.kids) > 0) and
+         (ScopeRoFrom (lhs.a) <> '') then
+      begin
+        fields := True;
+        for j := 0 to High (lhs.kids) do
+          if (lhs.kids[j] = nil) or (lhs.kids[j].kind <> nkSelField) then
+            fields := False;
+        if fields and (RoWhatOf (k.kids[1]) = '') then
+          roFresh.Add (DesigPath (lhs));
+      end;
+    end;
+    for j := 0 to High (k.kids) do RoFreshWalk (k.kids[j]);
+  end;
+
+  { does the designator write through a refreshed field?  Mirrors
+    Sem.RoRefreshed. }
+  function RoRefreshed (d: TNode): Boolean;
+  var
+    i : Integer;
+    p, f : string;
+  begin
+    p := DesigPath (d);
+    for i := 0 to roFresh.Count - 1 do
+    begin
+      f := roFresh[i];
+      if (Copy (p, 1, Length (f)) = f) and
+         ((Length (p) = Length (f)) or (p[Length (f) + 1] = '.') or
+          (p[Length (f) + 1] = '[')) then
+        Exit (True);
+    end;
+    Result := False;
+  end;
+
+  procedure RoSeed (k: TNode);
+  var n : Integer;
+  begin
+    n := 0;
+    roFresh.Clear;
+    while RoSeedWalk (k) and (n < 8) do Inc (n);
+    RoFreshWalk (k);
   end;
 
   function IsFrameMode (const m: string): Boolean;
@@ -2352,24 +2639,45 @@ var
     pn := pr.node;
     if pn = nil then Exit;
     rt := pn.kids[1];
-    if (rt = nil) or (rt.kind <> nkPtrType) then Exit;
-    rn := rt.kids[1];
-    if rn = nil then Exit;
+    if rt = nil then Exit;
     want := -1; ix := 0;
     pl := pn.kids[0];
-    if pl <> nil then
-      for i := 0 to High (pl.kids) do
-        if (pl.kids[i] <> nil) and (pl.kids[i].kids[0] <> nil) then
-          for j := 0 to High (pl.kids[i].kids[0].kids) do
+    if (rt.kind = nkPtrType) and (rt.kids[1] <> nil) then
+    begin
+      { `: PTR T IN rn': the promise names the pool }
+      rn := rt.kids[1];
+      if pl <> nil then
+        for i := 0 to High (pl.kids) do
+          if (pl.kids[i] <> nil) and (pl.kids[i].kids[0] <> nil) then
+            for j := 0 to High (pl.kids[i].kids[0].kids) do
+            begin
+              if (pl.kids[i].kids[0].kids[j] <> nil) and
+                 (pl.kids[i].kids[0].kids[j].a = rn.a) then want := ix;
+              Inc (ix);
+            end;
+    end;
+    { no promise: a procedure that takes a POOL answers in it, so a
+      pointer-bearing answer lives in the first POOL argument
+      (corpus/Sem.m9 says what found it, 2026-10-07) }
+    if (want < 0) and PtrBearing (rt, 0) then
+    begin
+      ix := 0;
+      if pl <> nil then
+        for i := 0 to High (pl.kids) do
+          if (pl.kids[i] <> nil) and (pl.kids[i].kids[0] <> nil) then
           begin
-            if (pl.kids[i].kids[0].kids[j] <> nil) and
-               (pl.kids[i].kids[0].kids[j].a = rn.a) then want := ix;
-            Inc (ix);
+            if (want < 0) and (pl.kids[i].kids[1] <> nil) and
+               (pl.kids[i].kids[1].kind = nkQualident) and
+               (pl.kids[i].kids[1].a = 'POOL') and (pl.kids[i].kids[1].b = '') then
+              want := ix;
+            Inc (ix, Length (pl.kids[i].kids[0].kids));
           end;
+    end;
     al := e.kids[1];
     if (al = nil) or (want < 0) or (want > High (al.kids)) then Exit;
     an := al.kids[want];
-    if (an <> nil) and (an.kind = nkDesignator) and (Length (an.kids) = 0) then
+    if (an <> nil) and (an.kind = nkDesignator) and (Length (an.kids) = 0) and
+       IsPoolName (an.a) then
       Result := an.a;
   end;
 
@@ -2847,6 +3155,53 @@ var
     Result := '';
   end;
 
+  { a name a KNOWN module does not declare, a type nobody declares in
+    a NEW, a bare name on the left of `:=' declared nowhere: typos,
+    said with the generator's wording (corpus/Sem.m9 says what found
+    each, 2026-10-08) }
+  function ModHasName (const modName, nm: string): Boolean;
+  var
+    m : TModuleInfo;
+    pr : TProcInfo;
+    j : Integer;
+  begin
+    Result := True;
+    m := FindMod (modName);
+    if m = nil then Exit;
+    if m.foreignLang <> '' then Exit;
+    if m.FindType (nm) <> nil then Exit;
+    if InList (nm, m.opaque) then Exit;
+    if LookupProcInfo (modName + '.' + nm, pr) then Exit;
+    for j := 0 to High (m.cnNames) do
+      if m.cnNames[j] = nm then Exit;
+    if ExcKnown (modName, nm) then Exit;
+    for j := 0 to High (m.vrNames) do
+      if m.vrNames[j] = nm then Exit;
+    Result := False;
+  end;
+
+  function UnknownNewType (ty, e: TNode): Boolean;
+  var q : TNode;
+  begin
+    Result := False;
+    q := AsQual (ty);
+    if q = nil then Exit;
+    if q.b = '' then
+    begin
+      if CanonT (q, 0) = '' then
+      begin
+        ErrN (e, ctx, 'unknown type: ' + q.a);
+        Result := True;
+      end;
+    end
+    else if not TypeKnown (q.a, q.b) then
+    begin
+      ErrN (e, ctx, 'unknown type: ' + q.a + '.' + q.b + ' -- ' + q.a +
+        ' declares no such type');
+      Result := True;
+    end;
+  end;
+
   function NewForm (e: TNode; out ty: TNode; out ext0: Integer): string;
   var
     t : string;
@@ -2867,6 +3222,7 @@ var
           ErrN (e, ctx, 'NEW (OWN, T) allocates one object; a slice lives in a pool or in the frame');
           Exit ('');
         end;
+        if UnknownNewType (ty, e) then Exit ('');
         Exit ('own');
       end;
       isVar := True;
@@ -2885,7 +3241,11 @@ var
         { `NEW (d, T)`: the pool d's object lives in, carried in by
           rule 2 -- how a VAR pointer parameter grows its object }
         ty := AsQual (e.kids[1]);
-        if ty <> nil then Exit ('pool');
+        if ty <> nil then
+        begin
+          if UnknownNewType (ty, e) then Exit ('');
+          Exit ('pool');
+        end;
         ErrN (e, ctx, 'NEW needs a type name after the pool');
         Exit ('');
       end;
@@ -2899,7 +3259,11 @@ var
           Exit ('');
         end;
         ty := AsQual (e.kids[1]);
-        if ty <> nil then Exit ('pool');
+        if ty <> nil then
+        begin
+          if UnknownNewType (ty, e) then Exit ('');
+          Exit ('pool');
+        end;
         ErrN (e, ctx, 'NEW needs a type name after the pool');
         Exit ('');
       end;
@@ -3206,7 +3570,19 @@ var
     through it is an error.  A [RO] slice never accepts a
     write.  Returns True when the write dereferences a pointer or
     lands in slice storage -- i.e. outlives the frame.               }
+  function CheckWrite0 (d: TNode): Boolean; forward;
+
+  { a write THROUGH a name given read-only storage (RoSeed) is refused
+    exactly when it lands beyond the frame (Sem.CheckWrite) }
   function CheckWrite (d: TNode): Boolean;
+  begin
+    Result := CheckWrite0 (d);
+    if Result and (ScopeRoFrom (d.a) <> '') and not RoRefreshed (d) then
+      ErrN (d, ctx, 'cannot write through ' + d.a + ', which holds ' +
+        ScopeRoFrom (d.a) + ' (par 2.4)');
+  end;
+
+  function CheckWrite0 (d: TNode): Boolean;
   var
     j : Integer;
     declN, res : TNode;
@@ -3331,6 +3707,143 @@ var
               StartsWithS (s, 'SLICE OF ');
   end;
 
+  { does a value of canonical type U carry a reference: a pointer or
+    slice itself (IsRefTy), or a record, case record, array or OPT
+    that holds one by resolution (PtrBearing)?  Mirrors Sem.TyBearing. }
+  function TyBearing (const u: string): Boolean;
+  var dot : Integer; t : TNode;
+  begin
+    if IsRefTy (u) then Exit (True);
+    Result := False;
+    dot := Pos ('.', u);
+    if dot = 0 then Exit;
+    if Pos (' ', u) > 0 then Exit;
+    if FindMod (Copy (u, 1, dot - 1)) = nil then Exit;
+    t := LookupTypeName (Copy (u, 1, dot - 1), Copy (u, dot + 1, MaxInt));
+    if t = nil then Exit;
+    Result := PtrBearing (t, 0);
+  end;
+
+  { one reference-valued source stored by an assignment: pended when
+    the destination outlives the frame, carried by a local or binder,
+    an escape fact when rooted in frame storage.  Mirrors Sem.StoreRef. }
+  procedure StoreRef (st, lhs: TNode; const vname: string; beyond: Boolean;
+                      const lhsMode: string);
+  var m : string;
+  begin
+    m := ScopeMode (vname);
+    if ((m = 'p') or (m = 'v') or (m = 'r') or (m = 'l') or (m = 'b')) and
+       (beyond or (lhsMode = 'm') or
+        ((lhsMode = 'v') and (Length (lhs.kids) > 0))) then
+    begin
+      SetLength (pendLn, pendN + 1); SetLength (pendCl, pendN + 1);
+      SetLength (pendSrc, pendN + 1); SetLength (pendDst, pendN + 1);
+      pendLn[pendN] := st.line; pendCl[pendN] := st.col;
+      pendSrc[pendN] := vname; pendDst[pendN] := lhs.a;
+      Inc (pendN);
+    end;
+    if (lhsMode = 'l') or (lhsMode = 'b') then CarryFrom (lhs.a, vname);
+    if IsFrameMode (m) then EscStore (lhs.a, Length (lhs.kids) > 0, vname);
+  end;
+
+  { the fields, flattened, of the variant or record a call CONSTRUCTS
+    -- `Data.F64s (v, miss)', `Mod.T.Arm (...)', `Row (a, b)' -- and
+    their module in OM; False when the call constructs nothing.
+    Mirrors Sem.CtorFields. }
+  function CtorFlat (e: TNode; out om: string; out flat: TNodeArr): Boolean;
+  var
+    dn, fields, rn : TNode;
+    name, t, canon : string;
+    dot, g, j : Integer;
+    isVar : Boolean;
+  begin
+    Result := False;
+    SetLength (flat, 0);
+    om := '';
+    if (e = nil) or (e.kind <> nkCallExpr) then Exit;
+    dn := e.kids[0];
+    if (dn = nil) or (dn.kind <> nkDesignator) then Exit;
+    name := DesigName (dn);
+    dot := Pos ('.', name);
+    isVar := False;
+    fields := nil;
+    if dot > 0 then
+    begin
+      t := Copy (name, dot + 1, MaxInt);
+      g := Pos ('.', t);
+      if g > 0 then
+      begin
+        om := Copy (name, 1, dot - 1);
+        isVar := VariantIn (om, Copy (t, 1, g - 1), Copy (t, g + 1, MaxInt),
+                            om, fields);
+      end
+      else
+        isVar := FindVariant (Copy (name, 1, dot - 1), t, om, fields);
+    end;
+    if not isVar then
+    begin
+      rn := RecordNamed (name, om, canon);
+      if rn = nil then Exit;
+      fields := rn.kids[1];
+    end;
+    if fields <> nil then
+      for g := 0 to High (fields.kids) do
+        for j := 0 to High (fields.kids[g].kids[0].kids) do
+        begin
+          SetLength (flat, Length (flat) + 1);
+          flat[High (flat)] := fields.kids[g].kids[1];
+        end;
+    Result := True;
+  end;
+
+  { the borrows a CONSTRUCTOR on the right-hand side wraps, each
+    stored as the borrow itself would be.  Mirrors the loop in
+    Sem.CheckAssign. }
+  procedure CtorStores (st: TNode; beyond: Boolean; const lhsMode: string);
+  var
+    e, al : TNode;
+    om, fty, vname, sv : string;
+    k : Integer;
+    flat : TNodeArr;
+  begin
+    e := st.kids[1];
+    if not CtorFlat (e, om, flat) then Exit;
+    al := e.kids[1];
+    if al = nil then Exit;
+    for k := 0 to High (al.kids) do
+      if k <= High (flat) then
+      begin
+        sv := canonCtx;
+        canonCtx := om;
+        fty := CanonT (flat[k], 0);
+        canonCtx := sv;
+        vname := EscRootOf (al.kids[k]);
+        if (vname <> '') and TyBearing (fty) and
+           not StartsWithS (fty, 'SHARED PTR ') and
+           not StartsWithS (fty, 'OPT SHARED PTR ') then
+          StoreRef (st, st.kids[0], vname, beyond, lhsMode);
+      end;
+  end;
+
+  { par 4.1, one root handed to a KEPT parameter -- Sem.KeptRoot }
+  procedure KeptRoot (site: TNode; const ctx, name: string; k: Integer;
+                      const aroot: string);
+  var amode : string;
+  begin
+    amode := ScopeMode (aroot);
+    if (amode = 'p') or (amode = 'v') or (amode = 'r') then
+    begin
+      keptUsed.Add (aroot);
+      if keptParams.IndexOfName (aroot) < 0 then
+        ErrN (site, ctx, Format (
+          'argument %d of %s: borrowed %s is kept by the' +
+          ' callee -- declare KEPT %s (par 4.1)',
+          [k + 1, name, aroot, aroot]));
+    end;
+    if IsFrameMode (amode) then
+      EscTarget (aroot, '<call>');
+  end;
+
   { does this designator's declared base type resolve to a pointer? }
   function BaseIsPtr (d: TNode): Boolean;
   var res : TNode;
@@ -3354,6 +3867,9 @@ var
   function CallType (dnode, argl, site: TNode): string;
   var
     name, om, pTy, amode, aliasTo, t, what, why, roWhat : string;
+    cOm, cFty, cSv : string;
+    cFlat : TNodeArr;
+    cj : Integer;
     nargs, j, g, k, kept, dot, nFrameKept : Integer;
     aTy : array of string;
     aNode : array of TNode;
@@ -3689,9 +4205,18 @@ var
                     roWhat := 'the RO parameter ' + aNode[k].a
                   else if ScopeRo (aNode[k].a) then
                     roWhat := 'the RO variable ' + aNode[k].a
+                  else if ScopeRoFrom (aNode[k].a) <> '' then
+                    roWhat := aNode[k].a + ', which holds ' +
+                              ScopeRoFrom (aNode[k].a) + ','
                   else if IsConstHere (aNode[k].a) then
-                    roWhat := 'the CONST ' + aNode[k].a;
-                end;
+                    roWhat := 'the CONST ' + aNode[k].a
+                  else if RoFieldOf (aNode[k]) <> '' then
+                    roWhat := 'the RO field ' + RoFieldOf (aNode[k]);
+                end
+                else if (aNode[k].kind = nkCallExpr) and
+                        (StartsWithS (aTy[k], 'SLICE OF') or
+                         StartsWithS (aTy[k], 'GRID ')) then
+                  roWhat := RoAnswerOf (aNode[k]);
                 if roWhat <> '' then
                   ErrN (site, ctx, Format (
                     'argument %d of %s: %s can be lent only to an RO' +
@@ -3786,23 +4311,25 @@ var
                     'argument %d of %s: a KEPT parameter cannot take' +
                     ' %s -- it dies with this frame' +
                     ' (par 4.1)', [k + 1, name, what]));
+                { a record value carries what its fields hold
+                  (TyBearing, decision 34), and a CONSTRUCTOR wrapping
+                  a borrow hands the borrow to the keeper (2026-10-08) }
                 aliasTo := EscRootOf (aNode[k]);
-                if (aliasTo <> '') and IsRefTy (aTy[k]) then
-                begin
-                  amode := ScopeMode (aliasTo);
-                  { handing a borrow onward to a KEPT parameter is
-                    what justifies the caller's own KEPT }
-                  if (amode = 'p') or (amode = 'v') or (amode = 'r') then
-                    keptUsed.Add (aliasTo);
-                  if ((amode = 'p') or (amode = 'v') or (amode = 'r'))
-                     and (keptParams.IndexOfName (aliasTo) < 0) then
-                    ErrN (site, ctx, Format (
-                      'argument %d of %s: borrowed %s is kept by the' +
-                      ' callee -- declare KEPT %s (par 4.1)',
-                      [k + 1, name, aliasTo, aliasTo]));
-                  if IsFrameMode (amode) then
-                    EscTarget (aliasTo, '<call>');
-                end;
+                if (aliasTo <> '') and TyBearing (aTy[k]) then
+                  KeptRoot (site, ctx, name, k, aliasTo)
+                else if (aliasTo = '') and CtorFlat (aNode[k], cOm, cFlat) and
+                        (aNode[k].kids[1] <> nil) then
+                  for cj := 0 to High (aNode[k].kids[1].kids) do
+                    if cj <= High (cFlat) then
+                    begin
+                      cSv := canonCtx;
+                      canonCtx := cOm;
+                      cFty := CanonT (cFlat[cj], 0);
+                      canonCtx := cSv;
+                      aliasTo := EscRootOf (aNode[k].kids[1].kids[cj]);
+                      if (aliasTo <> '') and TyBearing (cFty) then
+                        KeptRoot (site, ctx, name, k, aliasTo);
+                    end;
               end;
             end;
             Inc (k);
@@ -4212,6 +4739,26 @@ var
           else if t <> '' then
             Result := 'PTR ' + t;
         end;
+      nkGridOf :
+        begin
+          { GRID (s, n0, ..., nR): mirrors Sem (par 2.2.1) }
+          t := ExprType (e.kids[0]);
+          for j := 1 to High (e.kids) do
+          begin
+            u := ExprType (e.kids[j]);
+            if not IsIntish (u) then
+              ErrN (e, ctx,
+                'GRID extent must be an integer, not ' + TyName (u));
+          end;
+          if High (e.kids) > 4 then
+            ErrN (e, ctx, 'GRID takes at most 4 extents (par 2.2.1)');
+          if (e.kids[0] <> nil) and (e.kids[0].kind <> nkDesignator) then
+            ErrN (e, ctx, 'GRID lays over a slice NAMED by a designator: SLICE it into a variable first (par 2.2.1)');
+          if StartsWithS (t, 'SLICE OF ') then
+            Result := GridOf (High (e.kids), Copy (t, Length ('SLICE OF ') + 1, Length (t)))
+          else if t <> '' then
+            ErrN (e, ctx, 'GRID needs a slice, not ' + TyName (t));
+        end;
       nkSliceOf3 :
         begin
           t := ExprType (e.kids[0]);
@@ -4243,7 +4790,9 @@ var
               t := CT (res);
               res := ResolveType (res);
               if (res <> nil) and (res.kind = nkOptType) then
-                BindName (e.kids[1].a, res.kids[0])
+                { the payload in the module that DECLARED the OPT
+                  (mirrors Sem: an alias such as Ast.Kid) }
+                BindName (e.kids[1].a, InMod (res.kids[0], resolvedIn))
               else
               begin
                 if (t <> '') and not StartsWithS (t, 'OPT ') then
@@ -4278,7 +4827,12 @@ var
                 res := ResolveType (pr.node.kids[1]);
                 canonCtx := '';
                 if (res <> nil) and (res.kind = nkOptType) then
-                  res := QualifiedIn (res.kids[0], pr.modName)
+                begin
+                  if resolvedIn <> '' then
+                    res := QualifiedIn (res.kids[0], resolvedIn)
+                  else
+                    res := QualifiedIn (res.kids[0], pr.modName);
+                end
                 else
                   res := nil;
               end;
@@ -4339,6 +4893,13 @@ var
             which the signature checks also call without a scope. }
           if (Length (e.kids) = 0) and not BareNameKnown (e.a) then
             ErrN (e, ctx, 'unknown name: ' + e.a);
+          { a member a LOADED module does not declare: Math.Nosuch }
+          if (Length (e.kids) >= 1) and (ScopeType (e.a) = nil) and
+             (FindMod (e.a) <> nil) and (e.kids[0] <> nil) and
+             (e.kids[0].kind = nkSelField) and
+             not ModHasName (e.a, e.kids[0].a) then
+            ErrN (e, ctx, 'unknown name: ' + e.a + '.' + e.kids[0].a +
+              ' -- ' + e.a + ' declares no such name');
           Result := DesigStrType (e, False);
         end;
       nkCallExpr : Result := CallType (e.kids[0], e.kids[1], e);
@@ -4391,6 +4952,8 @@ var
 
   procedure WalkStmt (st: TNode);
   var
+    xowner : string;
+    xdecl : TNode;
     j, k : Integer;
     lv : Int64;                      { an out-of-range literal's value }
     tname, tpTy, taTy, tamode : string;   { THREAD's target and argument }
@@ -4412,6 +4975,9 @@ var
       nkAssign :
         begin
           t := DesigStrType (st.kids[0], False);
+          { a bare name on the left declared nowhere: `x := 1' with no x }
+          if (Length (st.kids[0].kids) = 0) and not BareNameKnown (st.kids[0].a) then
+            ErrN (st.kids[0], ctx, 'unknown name: ' + st.kids[0].a);
           u := ExprType (st.kids[1]);
           { par 2.3: a FRAME-SCOPED string (a concatenation, or a name
             already holding one) may not be stored where it will be
@@ -4543,43 +5109,23 @@ var
             whole of it would }
           vname := EscRootOf (st.kids[1]);
           { SHARED handles are excluded: copying one IS the sanctioned
-            retention -- refcounted, created explicitly (par 4.2) }
-          if (vname <> '') and IsRefTy (u) and
+            retention -- refcounted, created explicitly (par 4.2).
+            PENDED, not emitted: the class -- retention, self-store,
+            frame-store -- needs every escape of the destination, so
+            the walk finishes first; a local or binder may CARRY a
+            borrow, resolved at flush.  A RECORD value that holds a
+            reference (TyBearing) is stored as the reference would be
+            -- until 2026-10-08 only a bare pointer or slice was, and
+            a record local whose field viewed a borrow went through a
+            VAR parameter's component unseen (Frame.AddF64). }
+          if (vname <> '') and TyBearing (u) and
              not StartsWithS (u, 'SHARED PTR ') and
-             not StartsWithS (u, 'OPT SHARED PTR ') and
-             ((ScopeMode (vname) = 'p') or (ScopeMode (vname) = 'v') or
-              (ScopeMode (vname) = 'r') or   { RO is a borrow, and
-                             the most borrow-like mode there is }
-              { a local or binder may CARRY a borrow: recorded now,
-                resolved at flush once the carries are closed, and
-                dropped there if it carries none }
-              (ScopeMode (vname) = 'l') or (ScopeMode (vname) = 'b')) and
-             (beyond or (ScopeMode (st.kids[0].a) = 'm') or
-              ((ScopeMode (st.kids[0].a) = 'v') and
-               (Length (st.kids[0].kids) > 0))) then
-          begin
-            { PENDED, not emitted: the class -- retention, self-store,
-              frame-store -- needs every escape of the destination,
-              so the walk finishes first }
-            SetLength (pendLn, pendN + 1); SetLength (pendCl, pendN + 1);
-            SetLength (pendSrc, pendN + 1); SetLength (pendDst, pendN + 1);
-            pendLn[pendN] := st.line; pendCl[pendN] := st.col;
-            pendSrc[pendN] := vname; pendDst[pendN] := st.kids[0].a;
-            Inc (pendN);
-          end;
-          { par 4.1 provenance: a bare local or binder now holds this
-            reference -- a borrow is carried, a carrier's cargo is
-            inherited }
-          if (vname <> '') and IsRefTy (u) and
-             (Length (st.kids[0].kids) = 0) and
-             ((ScopeMode (st.kids[0].a) = 'l') or
-              (ScopeMode (st.kids[0].a) = 'b')) then
-            CarryFrom (st.kids[0].a, vname);
-          { par 4.1 direction: a ref value rooted in frame storage,
-            stored anywhere, is an escape fact for the fixpoint }
-          if (vname <> '') and IsRefTy (u) and
-             IsFrameMode (ScopeMode (vname)) then
-            EscStore (st.kids[0].a, Length (st.kids[0].kids) > 0, vname);
+             not StartsWithS (u, 'OPT SHARED PTR ') then
+            StoreRef (st, st.kids[0], vname, beyond, ScopeMode (st.kids[0].a));
+          { a value CONSTRUCTED around a borrow retains it as the
+            borrow itself would (2026-10-08) }
+          if vname = '' then
+            CtorStores (st, beyond, ScopeMode (st.kids[0].a));
           { moves: a bare owned pointer on the right moves out; a
             bare name on the left is (re)initialized }
           dcl := StripParens (st.kids[1]);
@@ -4897,6 +5443,14 @@ var
           if st.kids[0].kind = nkDesignator then
           begin
             tname := DesigName (st.kids[0]);
+            { the target is a procedure of THIS module (Sem.CheckThread) }
+            if (Pos ('.', tname) > 0) and
+               (Copy (tname, 1, Pos ('.', tname) - 1) <> curMod) then
+            begin
+              ErrN (st, ctx, 'THREAD (' + tname + '): the target must be a procedure of this module, not ' +
+                Copy (tname, 1, Pos ('.', tname) - 1) + '''s -- start it from a procedure declared here (par 6)');
+              Exit;
+            end;
             { a frame allocation, or a name holding one, dies when
               this frame exits, which a thread does not wait for:
               storage handed to a thread is allocated with OWN }
@@ -4907,8 +5461,6 @@ var
               ErrN (st, ctx, 'THREAD (' + tname + '): cannot hand ' + what +
                 ' to a thread -- it dies with this frame; allocate it' +
                 ' with OWN (par 4.3)');
-            SetLength (threadRoots, Length (threadRoots) + 1);
-            threadRoots[High (threadRoots)] := tname;
             tpTy := '';
             if LookupProcInfo (tname, tpr) then
             begin
@@ -4959,11 +5511,19 @@ var
                 handled.Add (st.kids[j].kids[0].b)
               else
                 handled.Add (st.kids[j].kids[0].a);
-              { handler binders are names too }
+              { handler binders are names, TYPED since 2026-10-08 by
+                the EXCEPTION declaration's fields in order, qualified
+                in the declaring module (corpus/Sem.m9 says why) }
+              xowner := '';
+              if st.kids[j].kids[0].b <> '' then
+                xdecl := ExcDeclOf (st.kids[j].kids[0].a, st.kids[j].kids[0].b, xowner)
+              else
+                xdecl := ExcDeclOf ('', st.kids[j].kids[0].a, xowner);
               if st.kids[j].kids[1] <> nil then
                 for k := 0 to High (st.kids[j].kids[1].kids) do
                   if st.kids[j].kids[1].kids[k].kind = nkIdent then
-                    BindName (st.kids[j].kids[1].kids[k].a, nil);
+                    BindName (st.kids[j].kids[1].kids[k].a,
+                              ExcFieldType (xdecl, xowner, k));
               WalkSeq (st.kids[j].kids[2]);
               SetLength (snaps, Length (snaps) + 1);
               snaps[High (snaps)] := OwnSnap;
@@ -4991,7 +5551,7 @@ var
   end;
 
 var
-  nm, origin, callerKey : string;
+  nm, origin : string;
   prc : TProcInfo;
   changed, selfHit : Boolean;
   a2, b2, msg2, msgE, dmode : string;
@@ -5012,6 +5572,9 @@ begin
   pendN := 0;
   SetLength (pendLn, 0); SetLength (pendCl, 0);
   SetLength (pendSrc, 0); SetLength (pendDst, 0);
+  { par 2.4, the copy: the marks before the walk, since a write may
+    precede the assignment that marks the name (Sem.CheckProcBody) }
+  RoSeed (body);
   if nAgg > 0 then AggWalk (body, nkProcBody);
   if body.kind = nkStmtSeq then
     WalkSeq (body)
@@ -5114,8 +5677,6 @@ begin
         if prc.attrib <> 'PURE' then
           ErrN (body, ctx, 'PURE procedure calls ' + calls[i] +
             ', which is not PURE (par 3.2)');
-  callerKey := ctx;
-  callGraph.Values[callerKey] := string.Join (',', calls.ToStringArray);
   raised.Free;
   handled.Free;
   calls.Free;
@@ -5129,45 +5690,6 @@ begin
   pval.Free;
 end;
 
-procedure TSem.CheckThreadChains;
-var
-  i, j : Integer;
-  work, seen : TStringList;
-  c, callees : string;
-  parts : TStringArray;
-  pr : TProcInfo;
-begin
-  for i := 0 to High (threadRoots) do
-  begin
-    work := TStringList.Create; work.CaseSensitive := True;
-    seen := TStringList.Create; seen.CaseSensitive := True;
-    work.Add (threadRoots[i]);
-    while work.Count > 0 do
-    begin
-      c := work[0];
-      work.Delete (0);
-      if seen.IndexOf (c) >= 0 then Continue;
-      seen.Add (c);
-      if LookupProcInfo (c, pr) then
-        if pr.attrib = 'SERIAL' then
-          Errors.Add (Format ('0:0 %s: SERIAL procedure called from ' +
-            'THREAD context (%s reaches %s)',
-            [threadRoots[i], threadRoots[i], c]));
-      callees := callGraph.Values[curMod + '.' + c];
-      if callees = '' then
-        callees := callGraph.Values[c];
-      if callees <> '' then
-      begin
-        parts := callees.Split (',');
-        for j := 0 to High (parts) do
-          if parts[j] <> '' then work.Add (parts[j]);
-      end;
-    end;
-    work.Free;
-    seen.Free;
-  end;
-end;
-
 procedure TSem.CheckFile (root: TNode);
 var
   ui, i, j, k2 : Integer;
@@ -5175,6 +5697,7 @@ var
   fmi : TModuleInfo;
   scope : TStringList;
   seenImp : TStringList;
+  impB : TStringList;                { CheckImports: the binders in scope }
   declared : TStringArray;
   ctx, rt : string;
 
@@ -5195,7 +5718,139 @@ var
               TObject (holder.kids[a].kids[b].kids[1]));
             if holder.kids[a].kids[b].f3 then
               roScope.Add (IntToStr (scope.Count - 1));
+            { a module variable carries the unit-wide mark ModRoSeed
+              gave it into every scope it enters (Sem.AddVarsOf) }
+            if (mode = 'm') and
+               (mro.Values[holder.kids[a].kids[b].kids[0].kids[c].a] <> '') then
+              roFrom.Values[IntToStr (scope.Count - 1)] :=
+                mro.Values[holder.kids[a].kids[b].kids[0].kids[c].a];
           end;
+  end;
+
+  { ---- par 2.4, the copy, for MODULE VARIABLES (Sem.ModRoSeed):
+    before the bodies, every assignment in the unit whose left side is
+    a bare module variable of slice or grid type, not shadowed by the
+    enclosing procedure's declarations, and whose right side is a
+    string literal, a CONST, a marked module variable or a SLICE of
+    one, is recorded in `mro' as name=what|line. ---- }
+  function ProcDeclares (sc: TNode; const name: string): Boolean; forward;
+
+  function ModVarType (uu: TNode; const nm: string): TNode;
+  var i, a, b, c : Integer; un, sect, vd : TNode;
+  begin
+    Result := nil;
+    for i := 0 to High (root.kids) do
+    begin
+      un := root.kids[i];
+      if (un = nil) or (un.a <> uu.a) then Continue;
+      for a := 0 to High (un.kids) do
+      begin
+        sect := un.kids[a];
+        if (sect = nil) or (sect.kind <> nkVarSection) then Continue;
+        for b := 0 to High (sect.kids) do
+        begin
+          vd := sect.kids[b];
+          if (vd = nil) or (vd.kids[0] = nil) then Continue;
+          for c := 0 to High (vd.kids[0].kids) do
+            if vd.kids[0].kids[c].a = nm then Exit (vd.kids[1]);
+        end;
+      end;
+    end;
+  end;
+
+  { the designator at the root of K, through SLICE/VIEW/SHARED,
+    parentheses and SOME -- Sem.EscRootOf, which lives in CheckBody }
+  function MroRoot (e: TNode): string;
+  var nm : string;
+  begin
+    Result := '';
+    if e = nil then Exit;
+    if e.kind = nkDesignator then Exit (e.a);
+    if (e.kind = nkSomeExpr) or (e.kind = nkParen) then
+      Exit (MroRoot (e.kids[0]));
+    if (e.kind = nkCallExpr) and (e.kids[0] <> nil) and
+       (e.kids[0].kind = nkDesignator) and
+       (Length (e.kids[0].kids) = 0) then
+    begin
+      nm := e.kids[0].a;
+      if ((nm = 'SLICE') or (nm = 'VIEW') or (nm = 'SHARED')) and
+         (e.kids[1] <> nil) and (Length (e.kids[1].kids) > 0) then
+        Exit (MroRoot (e.kids[1].kids[0]));
+    end;
+  end;
+
+  { Sem.RoAnswerOf, for the unit-wide prepass (RoAnswerOf lives in
+    CheckBody) }
+  function MroAnswer (e: TNode): string;
+  var pr : TProcInfo; name : string;
+  begin
+    Result := '';
+    if (e.kids[0] = nil) or (e.kids[0].kind <> nkDesignator) then Exit;
+    name := CallName (e.kids[0]);
+    if not LookupProcInfo (name, pr) then Exit;
+    if (pr.node <> nil) and pr.node.f3 then Result := 'the RO answer of ' + name;
+  end;
+
+  function ModRoWhat (k, sc: TNode): string;
+  var r, v : string;
+  begin
+    Result := '';
+    if k = nil then Exit;
+    if k.kind = nkString then
+    begin
+      if Length (k.a) = 0 then Exit;
+      Exit ('a string literal');
+    end;
+    if (k.kind = nkSliceOf3) or (k.kind = nkGridOf) then
+      Exit (ModRoWhat (k.kids[0], sc));
+    if k.kind = nkCallExpr then Exit (MroAnswer (k));
+    r := MroRoot (k);
+    if r = '' then Exit;
+    if ProcDeclares (sc, r) then Exit;
+    v := mro.Values[r];
+    if v <> '' then Exit (Copy (v, 1, Pos ('|', v) - 1));
+    if constMap.IndexOfName (r) >= 0 then Exit ('the CONST ' + r);
+  end;
+
+  function ModRoWalk (uu, sc, k: TNode): Boolean;
+  var j : Integer; what, ty : string; lhs : TNode;
+  begin
+    Result := False;
+    if k = nil then Exit;
+    if (k.kind = nkAssign) and (k.kids[0] <> nil) then
+    begin
+      lhs := k.kids[0];
+      if (lhs.kind = nkDesignator) and (Length (lhs.kids) = 0) and
+         (mro.Values[lhs.a] = '') and not ProcDeclares (sc, lhs.a) then
+      begin
+        if ModVarType (uu, lhs.a) = nil then ty := ''
+        else ty := CanonT (ModVarType (uu, lhs.a), 0);
+        if StartsWithS (ty, 'SLICE OF') or StartsWithS (ty, 'GRID ') then
+        begin
+          what := ModRoWhat (k.kids[1], sc);
+          if what <> '' then
+          begin
+            mro.Values[lhs.a] := what + '|' + IntToStr (k.line);
+            Result := True;
+          end;
+        end;
+      end;
+    end;
+    for j := 0 to High (k.kids) do
+      if k.kind in [nkProcDecl, nkModBody] then
+      begin
+        if ModRoWalk (uu, k, k.kids[j]) then Result := True;
+      end
+      else
+        if ModRoWalk (uu, sc, k.kids[j]) then Result := True;
+  end;
+
+  procedure ModRoSeed (uu: TNode);
+  var n : Integer;
+  begin
+    mro.Clear;
+    n := 0;
+    while ModRoWalk (uu, nil, uu) and (n < 8) do Inc (n);
   end;
 
   { par 6: the name of the first parameter when its type is a
@@ -5257,13 +5912,12 @@ var
       if DeclaresName (n.kids[a], name) then Exit (True);
   end;
 
-  function NameShadowed (const me: string; sc: TNode;
-                         const name: string): Boolean;
+  { at the level of the module `me' -- Sem.ModuleDeclares }
+  function ModuleDeclares (const me, name: string): Boolean;
   var
     a, b : Integer;
     uu, dd : TNode;
   begin
-    if DeclaresName (sc, name) then Exit (True);
     for a := 0 to High (root.kids) do
     begin
       uu := root.kids[a];
@@ -5278,6 +5932,74 @@ var
       end;
     end;
     Result := False;
+  end;
+
+  { anywhere under the procedure or module body `sc', a binder in any
+    arm included, or at the module's level: ExportWalk's test
+    (decision 28); ImportWalk has the scoped one since 2026-10-08 }
+  function NameShadowed (const me: string; sc: TNode;
+                         const name: string): Boolean;
+  begin
+    if DeclaresName (sc, name) then Exit (True);
+    Result := ModuleDeclares (me, name);
+  end;
+
+  { the procedure's own declarations -- parameters and the sections
+    of its body -- and not the binders in its statements (Sem.ProcDeclares) }
+  function ProcDeclares (sc: TNode; const name: string): Boolean;
+  var a : Integer;
+  begin
+    Result := False;
+    if (sc = nil) or (sc.kind <> nkProcDecl) then Exit;
+    if DeclaresName (sc.kids[0], name) then Exit (True);
+    if sc.kids[4] <> nil then
+      for a := 0 to High (sc.kids[4].kids) - 1 do
+        if DeclaresName (sc.kids[4].kids[a], name) then Exit (True);
+  end;
+
+  { the name `IS SOME' binds in a condition, or '' (Sem.CondBinder) }
+  function CondBinder (c: TNode): string;
+  begin
+    Result := '';
+    if (c <> nil) and (c.kind = nkIs) and (Length (c.kids) > 1) and
+       (c.kids[1] <> nil) and (c.kids[1].kind = nkIsSome) then
+      Result := c.kids[1].a;
+  end;
+
+  { push the binders of a CASE arm's label patterns, or of a handler's
+    payload list; answer how many (Sem.PushBinders) }
+  function PushBinders (l: TNode): Integer;
+  var a, b : Integer;
+  begin
+    Result := 0;
+    if l = nil then Exit;
+    if l.kind = nkLabelList then
+    begin
+      for a := 0 to High (l.kids) do
+        if (l.kids[a] <> nil) and (l.kids[a].kind = nkLabelPattern) and
+           (l.kids[a].kids[0] <> nil) then
+          for b := 0 to High (l.kids[a].kids[0].kids) do
+          begin
+            impB.Add (l.kids[a].kids[0].kids[b].a);
+            Inc (Result);
+          end;
+    end
+    else if l.kind = nkArgList then
+      for a := 0 to High (l.kids) do
+        if (l.kids[a] <> nil) and (l.kids[a].kind = nkIdent) then
+        begin
+          impB.Add (l.kids[a].a);
+          Inc (Result);
+        end;
+  end;
+
+  procedure BinderPop (n: Integer);
+  begin
+    while (n > 0) and (impB.Count > 0) do
+    begin
+      impB.Delete (impB.Count - 1);
+      Dec (n);
+    end;
   end;
 
   { Sem.ExportWalk: the designator Mod.v... of an imported, unshadowed
@@ -5338,8 +6060,9 @@ var
 
   procedure ImportWalk (uu, sc, n: TNode; seen: TStringList);
   var
-    a : Integer;
+    a, np : Integer;
     qualified : Boolean;
+    b : string;
   begin
     if n = nil then Exit;
     qualified := False;
@@ -5348,20 +6071,52 @@ var
     else if (n.kind = nkDesignator) and (Length (n.kids) > 0) and
             (n.kids[0] <> nil) then
       qualified := n.kids[0].kind = nkSelField;
+    { shadowed by a declaration of the procedure or the module, or by
+      a binder IN SCOPE HERE -- until 2026-10-08 by a binder anywhere
+      in the procedure, so a binder in one arm stood for the module in
+      the next }
     if qualified and (FindMod (n.a) <> nil) and (seen.IndexOf (n.a) < 0) then
       if not ModImports (uu.a, n.a) then
-        if not NameShadowed (uu.a, sc, n.a) then
+        if not ProcDeclares (sc, n.a) and (impB.IndexOf (n.a) < 0) and
+           not ModuleDeclares (uu.a, n.a) then
         begin
           seen.Add (n.a);
           ErrN (n, uu.a, 'module ' + n.a +
                 ' is named and not imported: write IMPORT ' + n.a +
                 ' (par 3)');
         end;
-    for a := 0 to High (n.kids) do
-      if n.kind in [nkProcDecl, nkModBody] then
-        ImportWalk (uu, n, n.kids[a], seen)
-      else
-        ImportWalk (uu, sc, n.kids[a], seen);
+    if n.kind in [nkIf, nkElsif, nkWhile] then
+    begin
+      { the binder of `IS SOME' is in scope for the THEN or DO part
+        and nowhere else: not the ELSIFs, not the ELSE }
+      ImportWalk (uu, sc, n.kids[0], seen);
+      b := CondBinder (n.kids[0]);
+      if b <> '' then impB.Add (b);
+      if Length (n.kids) > 1 then ImportWalk (uu, sc, n.kids[1], seen);
+      if b <> '' then BinderPop (1);
+      for a := 2 to High (n.kids) do ImportWalk (uu, sc, n.kids[a], seen);
+    end
+    else if n.kind = nkCaseArm then
+    begin
+      ImportWalk (uu, sc, n.kids[0], seen);
+      np := PushBinders (n.kids[0]);
+      if Length (n.kids) > 1 then ImportWalk (uu, sc, n.kids[1], seen);
+      BinderPop (np);
+    end
+    else if n.kind = nkHandler then
+    begin
+      ImportWalk (uu, sc, n.kids[0], seen);
+      if Length (n.kids) > 1 then ImportWalk (uu, sc, n.kids[1], seen);
+      np := PushBinders (n.kids[1]);
+      if Length (n.kids) > 2 then ImportWalk (uu, sc, n.kids[2], seen);
+      BinderPop (np);
+    end
+    else
+      for a := 0 to High (n.kids) do
+        if n.kind in [nkProcDecl, nkModBody] then
+          ImportWalk (uu, n, n.kids[a], seen)
+        else
+          ImportWalk (uu, sc, n.kids[a], seen);
   end;
 
   { ---- a name is declared once in its scope (report par 3, rule 6).
@@ -5507,8 +6262,6 @@ begin
     curMod := u.a;
     curUnsafe := u.f1;
     fromMap.Clear;
-    SetLength (threadRoots, 0);
-    callGraph.Clear;
     for i := 0 to High (u.kids) do
       if u.kids[i] <> nil then
         if u.kids[i].kind = nkFromImport then
@@ -5527,8 +6280,10 @@ begin
             fromMap.Values[u.kids[i].kids[0].kids[j].a] := u.kids[i].a;
         end;
     seenImp := TStringList.Create; seenImp.CaseSensitive := True;
+    impB := TStringList.Create; impB.CaseSensitive := True;
     for i := 0 to High (u.kids) do
       ImportWalk (u, nil, u.kids[i], seenImp);
+    impB.Free;
     seenImp.Free;
     for i := 0 to High (u.kids) do
       ExportWalk (u, nil, u.kids[i]);
@@ -5565,6 +6320,7 @@ begin
           constMap.Values[u.kids[i].kids[j].a] :=
             LitType (u.kids[i].kids[j].kids[0]);
         end;
+    ModRoSeed (u);
 
     if (u.kind = nkDefinition) and (u.b <> '') then
     begin
@@ -5585,7 +6341,14 @@ begin
       if d.kids[4] = nil then Continue;
       p := d.kids[4];
       ctx := u.a + '.' + d.a;
-      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear;
+      { a nested procedure parses and neither end supports one:
+        refused by name (Sem.CheckProcBody) }
+      for j := 0 to High (p.kids) - 1 do
+        if (p.kids[j] <> nil) and (p.kids[j].kind = nkProcDecl) then
+          ErrN (p.kids[j], ctx, 'a nested procedure is not supported: ' +
+            p.kids[j].a + ' is declared inside ' + d.a +
+            '; declare it at module level (par 3)');
+      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear; roFrom.Clear;
       varParams.Clear;
       keptParams.Clear;
       keptUsed.Clear;
@@ -5658,7 +6421,7 @@ begin
       sec := u.kids[i];
       if (sec = nil) or (sec.kind <> nkModBody) then Continue;
       ctx := u.a + ' body';
-      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear;
+      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear; roFrom.Clear;
       { a module body declares no parameters, so the KEPT lists must
         not carry the last procedure's into this frame's flush }
       keptParams.Clear;
@@ -5683,7 +6446,6 @@ begin
       scope.Free;
     end;
 
-    CheckThreadChains;
   end;
 end;
 

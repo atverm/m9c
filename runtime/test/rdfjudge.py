@@ -3,8 +3,9 @@
 
     rdfjudge.py GOLD TESTS OUT
 
-OUT/ttl and OUT/nt hold RdfConv's answers, FILE.nt or FILE.err per
-test document.
+OUT/ttl, OUT/nt, OUT/xml and OUT/jld hold RdfConv's answers, FILE.nt and FILE.ttl or
+FILE.err per test document; the .ttl is held to the .nt, read by
+rdflib's Turtle reader.
 For a Turtle evaluation test the graph M9 wrote must be ISOMORPHIC to the
 expected N-Triples the W3C suite gives; for a positive syntax test, to
 rdflib's own reading of the same document; a negative test must have
@@ -20,10 +21,15 @@ Turtle reader, N-Triples being a subset of Turtle, and one it can read
 neither way is NAMED in the output and held only to the suite's verdict
 -- M9 must have read it.
 """
+import logging
 import os
 import sys
 
 import rdflib
+
+# rdflib warns, with a traceback, about an ill-typed literal it reads
+# (the RDF/XML suite has "flargh"^^xsd:integer); that is not a verdict
+logging.getLogger("rdflib").setLevel(logging.ERROR)
 from rdflib.compare import isomorphic
 
 rdflib.NORMALIZE_LITERALS = False
@@ -100,6 +106,26 @@ def judge(name, expect, numbers):
         return
     if not isomorphic(canon(got, numbers), canon(expect, numbers)):
         fails.append(f"{name}: not the graph expected ({len(got)} triples, {len(expect)} expected)")
+    # the Turtle M9 wrote of the same graph, read by rdflib's Turtle
+    # reader (which respells numbers: compared by value)
+    ttl = rdflib.Graph()
+    try:
+        ttl.parse(os.path.join(out, name + ".ttl"), format="turtle")
+    except Exception as e:  # noqa: BLE001
+        fails.append(f"{name}: rdflib cannot read the Turtle M9 wrote: {e}")
+        return
+    if not isomorphic(canon(ttl, True), canon(got, True)):
+        fails.append(f"{name}: the Turtle M9 wrote is not the graph it read ({len(ttl)} triples, {len(got)} read)")
+    # and the JSON-LD M9 wrote, read by rdflib's json-ld parser (lexical
+    # forms kept: the writer types every literal as it was)
+    jld = rdflib.Graph()
+    try:
+        jld.parse(os.path.join(out, name + ".jsonld"), format="json-ld")
+    except Exception as e:  # noqa: BLE001
+        fails.append(f"{name}: rdflib cannot read the JSON-LD M9 wrote: {e}")
+        return
+    if not isomorphic(canon(jld, False), canon(got, False)):
+        fails.append(f"{name}: the JSON-LD M9 wrote is not the graph it read ({len(jld)} triples, {len(got)} read)")
 
 
 def refused(name):
@@ -144,6 +170,36 @@ def syntax(name, path, formats, public):
         fails.append(f"{name}: a positive test was refused")
 
 
+xt = os.path.join(tests, "rdf-xml")
+for act, res in zip(lists["xml.eval.action"], lists["xml.eval.result"]):
+    e = rdflib.Graph()
+    e.parse(os.path.join(xt, res), format="nt")
+    judge("xml/" + act, e, False)
+for act in lists["xml.neg"]:
+    refused("xml/" + act)
+# JSON-LD: the expected N-Quads' DEFAULT graph (the reader keeps that
+# one), lexical forms as written
+jt = os.path.join(os.path.dirname(os.path.abspath(tests)), "jsonld-tests")   # beside rdf-tests
+for act, res in zip(lists["jld.pos.action"], lists["jld.pos.result"]):
+    ds = rdflib.Dataset()
+    ds.parse(os.path.join(jt, res), format="nquads")
+    e = rdflib.Graph()
+    # rdflib 7 names the default graph `default_graph`; 6.1.1 (Ubuntu
+    # 24.04's python3-rdflib, the CI image's) only `default_context`.
+    # CI was red on this line for three pushes while the suite's 7.6
+    # venv passed it (2026-10-08).
+    dg = getattr(ds, "default_graph", None)
+    if dg is None:
+        dg = ds.default_context
+    for s, p, o in dg:
+        e.add((s, p, o))
+    judge("jld/" + act, e, False)
+for act in lists["jld.neg"]:
+    refused("jld/" + act)
+for act in lists["jld.syntax"]:
+    judged += 1
+    if not os.path.exists(os.path.join(out, "jld/" + act + ".nt")):
+        fails.append(f"jld/{act}: a positive syntax test was refused")
 for act in lists["ttl.pos"]:
     syntax("ttl/" + act, os.path.join(tt, act), ["turtle"], base + act)
 for act in lists["nt.pos"]:

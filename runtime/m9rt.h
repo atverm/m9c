@@ -295,6 +295,33 @@ static inline int64_t m9_chk_slice (int64_t start, int64_t len,
   return start;
 }
 
+/* GRID (s, n0, ..., nR): the extents laid over a slice's storage,
+   row-major -- every extent >= 0 and their product the slice's
+   length, else IndexError and an EMPTY grid (every extent 0), so a
+   later access raises and touches nothing (par 2.2.1) */
+static inline void m9_gridof (int64_t len, const int64_t *ext, int rank,
+                              int64_t *n, int64_t *s, m9_state *err)
+{
+  int64_t prod = 1;
+  int k;
+  for (k = 0; k < rank; k++) {
+    if (ext[k] < 0 || (ext[k] != 0 && prod > INT64_MAX / ext[k])) {
+      prod = -1;
+      break;
+    }
+    prod *= ext[k];
+  }
+  if (prod != len) {
+    for (k = 0; k < rank; k++) { n[k] = 0; s[k] = 0; }
+    err->i[0] = prod; err->i[1] = len;
+    m9_raise (err, &m9_exc_IndexError);
+    return;
+  }
+  for (k = 0; k < rank; k++) n[k] = ext[k];
+  s[rank - 1] = 1;
+  for (k = rank - 2; k >= 0; k--) s[k] = s[k + 1] * n[k + 1];
+}
+
 /* ---- checked integer arithmetic (Overflow, par 2.1) ---- */
 
 static inline int64_t m9_add_i64 (int64_t a, int64_t b, m9_state *err)
@@ -489,6 +516,17 @@ static inline int64_t m9_i64_f64 (double v, m9_state *err)
     err->d[0] = v; m9_raise (err, &m9_exc_ValueRange); return 0;
   }
   return (int64_t) v;
+}
+
+/* F32 (x) of a finite double beyond F32's range is ValueRange, never
+   a silent infinity: `(float) v' in C rounds 3.5e38 to inf (2026-10-08;
+   NaN and the infinities are F32 values and pass) */
+static inline float m9_f32_f64 (double v, m9_state *err)
+{
+  if (isfinite (v) && (v > 3.4028234663852886e38 || v < -3.4028234663852886e38)) {
+    err->d[0] = v; m9_raise (err, &m9_exc_ValueRange); return 0.0f;
+  }
+  return (float) v;
 }
 
 #define M9_CHK_INT(NAME, T, LO, HI) \

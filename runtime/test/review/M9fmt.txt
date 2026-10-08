@@ -2,7 +2,7 @@ REVIEW M9fmt -- 8 procedures with a body, 2 of them functions; 0 headings in a D
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               2
-  assignments                                    79   passed over, a type unknown: 1
+  assignments                                    80
   arguments                                     140
   RETURN values                                   2
   operands of a comparison or an operator        92

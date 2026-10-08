@@ -1,0 +1,21 @@
+(* EXPECT: argument 1 of Fill: the RO field s can be lent only to an RO parameter (par 2.4) *)
+(* An RO FIELD holds a view of storage someone else owns (par 2.4), so
+   it is lent only to an RO parameter -- as an RO parameter is
+   (decision 21) and as a copy of one is (decision 33).  Until
+   2026-10-08 only the write through the field and the copy were
+   refused; lent onward to a writable parameter it passed, and the
+   callee wrote the caller's string.  The legal forms first: the field
+   lent to an RO parameter, its own storage to the writable one. *)
+MODULE m ;
+TYPE Rec = RECORD RO s : STR ; own : STR END ;
+PROCEDURE Count (RO v: STR) : I64 = BEGIN RETURN LEN (v) END Count ;
+PROCEDURE Fill (v: STR) RAISES IndexError = BEGIN v[0] := 'X' END Fill ;
+PROCEDURE Use (VAR r: Rec) RAISES IndexError =
+VAR n : I64 ;
+BEGIN
+  n := Count (r.s) ;
+  Fill (r.own) ;
+  Fill (r.s)
+END Use ;
+BEGIN
+END m.

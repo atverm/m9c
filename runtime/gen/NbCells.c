@@ -344,8 +344,11 @@ void NbCells_PutI64s (m9_sl_CHAR name, m9_sl_I64 v, m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     f = m9v;
   }
-  Frame_AddI64 (&(scratch), &(f), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s4, 5 }), v, m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err), err);
+  { __typeof__(m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err)) m9a1 = m9_sub_i64 (m9_neg_i64 (INT64_C(9223372036854775807), err), INT64_C(1), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Frame_AddI64 (&(scratch), &(f), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s4, 5 }), v, m9a1, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   NbCells_Store (&(scratch), f, name, INT64_C(2), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
@@ -454,8 +457,11 @@ void NbCells_PutGrid (m9_sl_CHAR name, m9_gd2_double g, m9_state *err)
         if (err->exc) goto L_hdl_m9t1;
       }
     } }
-    Frame_AddF64 (&(scratch), &(f), &(scratch), NbCells_ColName (&(scratch), j, err), col, NAN, err);
+    { __typeof__(NbCells_ColName (&(scratch), j, err)) m9a2 = NbCells_ColName (&(scratch), j, err);
+      if (err->exc) goto L_hdl_m9t1;
+    Frame_AddF64 (&(scratch), &(f), &(scratch), m9a2, col, NAN, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
   } }
   NbCells_Store (&(scratch), f, name, INT64_C(3), err);
   if (err->exc) goto L_hdl_m9t1;
@@ -514,9 +520,12 @@ m9_gd2_double NbCells_GetGrid (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
   m9t4to = m9_sub_i64 (nc, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t1;
   for (; j <= m9t4to; j += 1) {
-    { __typeof__(col) m9v = Frame_ColF64 (f, NbCells_ColName (&(scratch), j, err), err);
+    { __typeof__(NbCells_ColName (&(scratch), j, err)) m9a3 = NbCells_ColName (&(scratch), j, err);
+      if (err->exc) goto L_hdl_m9t1;
+    { __typeof__(col) m9v = Frame_ColF64 (f, m9a3, err);
       if (err->exc) goto L_hdl_m9t1;
       col = m9v;
+    }
     }
     { int64_t m9t5to;
     i = INT64_C(0);
@@ -607,8 +616,11 @@ static m9_sl_CHAR NbCells_File (m9_pool *pool, m9_sl_CHAR name, m9_sl_CHAR kind,
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &((*pool)), NbCells_Dir (pool, err), err);
+  { __typeof__(NbCells_Dir (pool, err)) m9a4 = NbCells_Dir (pool, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(d), &((*pool)), m9a4, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_AppendChar (&(d), &((*pool)), 47u, err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &((*pool)), name, err);
@@ -677,10 +689,19 @@ static void NbCells_Store (m9_pool *scratch, Frame_Fr * f, m9_sl_CHAR name, int6
   bool gone = false; (void) gone;
   NbCells_CheckName (name, err);
   if (err->exc) goto L_ret;
-  Io_MkDir (NbCells_Dir (scratch, err), err);
+  { __typeof__(NbCells_Dir (scratch, err)) m9a5 = NbCells_Dir (scratch, err);
+    if (err->exc) goto L_ret;
+  Io_MkDir (m9a5, err);
   if (err->exc) goto L_ret;
-  Parquet_Write (scratch, f, NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err)), true, err), err);
+  }
+  { __typeof__((*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err))) m9a6 = (*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err));
+    if (err->exc) goto L_ret;
+  { __typeof__(NbCells_File (scratch, name, m9a6, true, err)) m9a7 = NbCells_File (scratch, name, m9a6, true, err);
+    if (err->exc) goto L_ret;
+  Parquet_Write (scratch, f, m9a7, err);
   if (err->exc) goto L_ret;
+  }
+  }
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (INT64_C(4), INT64_C(1), err);
@@ -690,9 +711,15 @@ static void NbCells_Store (m9_pool *scratch, Frame_Fr * f, m9_sl_CHAR name, int6
       bool m9t2 = Io_Exists (NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err), err);
       if (err->exc) goto L_ret;
       if (m9t2) {
-        { __typeof__(gone) m9v = Io_Remove (NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err), err);
+        { __typeof__((*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err))) m9a8 = (*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err));
+          if (err->exc) goto L_ret;
+        { __typeof__(NbCells_File (scratch, name, m9a8, false, err)) m9a9 = NbCells_File (scratch, name, m9a8, false, err);
+          if (err->exc) goto L_ret;
+        { __typeof__(gone) m9v = Io_Remove (m9a9, err);
           if (err->exc) goto L_ret;
           gone = m9v;
+        }
+        }
         }
         if ((!gone)) {
           { __typeof__(NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err)) m9t3 = NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, i, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
@@ -702,8 +729,20 @@ static void NbCells_Store (m9_pool *scratch, Frame_Fr * f, m9_sl_CHAR name, int6
       }
     }
   } }
-  Io_Rename (NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err)), true, err), NbCells_File (scratch, name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err), err);
+  { __typeof__((*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err))) m9a10 = (*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err));
+    if (err->exc) goto L_ret;
+  { __typeof__(NbCells_File (scratch, name, m9a10, true, err)) m9a11 = NbCells_File (scratch, name, m9a10, true, err);
+    if (err->exc) goto L_ret;
+  { __typeof__((*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err))) m9a12 = (*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err));
+    if (err->exc) goto L_ret;
+  { __typeof__(NbCells_File (scratch, name, m9a12, false, err)) m9a13 = NbCells_File (scratch, name, m9a12, false, err);
+    if (err->exc) goto L_ret;
+  Io_Rename (m9a11, m9a13, err);
   if (err->exc) goto L_ret;
+  }
+  }
+  }
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -738,8 +777,14 @@ static Frame_Fr * NbCells_Fetch (m9_pool *pool, m9_sl_CHAR name, int64_t k, m9_s
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = Parquet_Read (pool, NbCells_File (&(scratch), name, (*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err)), false, err), err);
+  { __typeof__((*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err))) m9a14 = (*(m9_sl_CHAR *) m9_at ((*Kinds).v, k, INT64_C(4), sizeof (m9_sl_CHAR), err));
+    if (err->exc) goto L_ret;
+  { __typeof__(NbCells_File (&(scratch), name, m9a14, false, err)) m9a15 = NbCells_File (&(scratch), name, m9a14, false, err);
+    if (err->exc) goto L_ret;
+  m9ret = Parquet_Read (pool, m9a15, err);
   if (err->exc) goto L_ret;
+  }
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;

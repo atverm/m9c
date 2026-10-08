@@ -78,8 +78,11 @@ double Arrays_NanSum (m9_sl_F64 a, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Arrays_SumOf (Arrays_Over (a, err), err);
+  { __typeof__(Arrays_Over (a, err)) m9a1 = Arrays_Over (a, err);
+    if (err->exc) goto L_ret;
+  m9ret = Arrays_SumOf (m9a1, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -95,8 +98,11 @@ double Arrays_NanMean (m9_sl_F64 a, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Arrays_MeanOf (Arrays_Over (a, err), err);
+  { __typeof__(Arrays_Over (a, err)) m9a2 = Arrays_Over (a, err);
+    if (err->exc) goto L_ret;
+  m9ret = Arrays_MeanOf (m9a2, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -112,8 +118,11 @@ double Arrays_NanMin (m9_sl_F64 a, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Arrays_MinOf (Arrays_Over (a, err), err);
+  { __typeof__(Arrays_Over (a, err)) m9a3 = Arrays_Over (a, err);
+    if (err->exc) goto L_ret;
+  m9ret = Arrays_MinOf (m9a3, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -129,8 +138,11 @@ double Arrays_NanMax (m9_sl_F64 a, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Arrays_MaxOf (Arrays_Over (a, err), err);
+  { __typeof__(Arrays_Over (a, err)) m9a4 = Arrays_Over (a, err);
+    if (err->exc) goto L_ret;
+  m9ret = Arrays_MaxOf (m9a4, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -492,10 +504,13 @@ m9_sl_BOOL Arrays_IsNaN (m9_sl_F64 a, m9_state *err)
   m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(bool *) m9_at (out.p, i, out.len, sizeof (bool), err))) m9v = Math_IsNaN ((*(double *) m9_at (a.p, i, a.len, sizeof (double), err)), err);
+    { __typeof__((*(double *) m9_at (a.p, i, a.len, sizeof (double), err))) m9a5 = (*(double *) m9_at (a.p, i, a.len, sizeof (double), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(bool *) m9_at (out.p, i, out.len, sizeof (bool), err))) m9v = Math_IsNaN (m9a5, err);
       if (err->exc) goto L_ret;
       (*(bool *) m9_at (out.p, i, out.len, sizeof (bool), err)) = m9v;
       if (err->exc) goto L_ret;
+    }
     }
   } }
   err->res = m9res;
@@ -876,10 +891,13 @@ m9_sl_F64 Arrays_NanSumAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_SumOf ((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)), err);
+    { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a6 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_SumOf (m9a6, err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
+    }
     }
   } }
   err->res = m9res;
@@ -915,10 +933,13 @@ m9_sl_F64 Arrays_NanMeanAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MeanOf ((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)), err);
+    { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a7 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MeanOf (m9a7, err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
+    }
     }
   } }
   err->res = m9res;
@@ -954,10 +975,13 @@ m9_sl_F64 Arrays_NanMinAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MinOf ((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)), err);
+    { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a8 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MinOf (m9a8, err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
+    }
     }
   } }
   err->res = m9res;
@@ -993,10 +1017,13 @@ m9_sl_F64 Arrays_NanMaxAxis (m9_gd2_double g, int64_t axis, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MaxOf ((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err)), err);
+    { __typeof__((*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err))) m9a9 = (*(Arrays_Acc *) m9_at (s.p, i, s.len, sizeof (Arrays_Acc), err));
+      if (err->exc) goto L_ret;
+    { __typeof__((*(double *) m9_at (out.p, i, out.len, sizeof (double), err))) m9v = Arrays_MaxOf (m9a9, err);
       if (err->exc) goto L_ret;
       (*(double *) m9_at (out.p, i, out.len, sizeof (double), err)) = m9v;
       if (err->exc) goto L_ret;
+    }
     }
   } }
   err->res = m9res;
@@ -1056,8 +1083,11 @@ double Arrays_NanSumGrid (m9_gd2_double g, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Arrays_SumOf (Arrays_Whole (g, err), err);
+  { __typeof__(Arrays_Whole (g, err)) m9a10 = Arrays_Whole (g, err);
+    if (err->exc) goto L_ret;
+  m9ret = Arrays_SumOf (m9a10, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1073,8 +1103,11 @@ double Arrays_NanMeanGrid (m9_gd2_double g, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Arrays_MeanOf (Arrays_Whole (g, err), err);
+  { __typeof__(Arrays_Whole (g, err)) m9a11 = Arrays_Whole (g, err);
+    if (err->exc) goto L_ret;
+  m9ret = Arrays_MeanOf (m9a11, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1090,8 +1123,11 @@ double Arrays_NanMinGrid (m9_gd2_double g, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Arrays_MinOf (Arrays_Whole (g, err), err);
+  { __typeof__(Arrays_Whole (g, err)) m9a12 = Arrays_Whole (g, err);
+    if (err->exc) goto L_ret;
+  m9ret = Arrays_MinOf (m9a12, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1107,8 +1143,11 @@ double Arrays_NanMaxGrid (m9_gd2_double g, m9_state *err)
   err->res = &m9frame;
   double m9ret = 0;
   err->res = m9res;
-  m9ret = Arrays_MaxOf (Arrays_Whole (g, err), err);
+  { __typeof__(Arrays_Whole (g, err)) m9a13 = Arrays_Whole (g, err);
+    if (err->exc) goto L_ret;
+  m9ret = Arrays_MaxOf (m9a13, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -1288,8 +1327,11 @@ static Arrays_Acc Arrays_Over (m9_sl_F64 a, m9_state *err)
   m9t1to = m9_sub_i64 ((a).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    Arrays_Take (&(s), (*(double *) m9_at (a.p, i, a.len, sizeof (double), err)), err);
+    { __typeof__((*(double *) m9_at (a.p, i, a.len, sizeof (double), err))) m9a14 = (*(double *) m9_at (a.p, i, a.len, sizeof (double), err));
+      if (err->exc) goto L_ret;
+    Arrays_Take (&(s), m9a14, err);
     if (err->exc) goto L_ret;
+    }
   } }
   err->res = m9res;
   m9ret = s;
@@ -1512,8 +1554,11 @@ static m9_sl_Arrays_Acc Arrays_Along (m9_gd2_double g, int64_t axis, m9_state *e
       m9t2to = m9_sub_i64 ((g).n[INT64_C(1)], INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; c <= m9t2to; c += 1) {
-        Arrays_Take (&((*(Arrays_Acc *) m9_at (s.p, c, s.len, sizeof (Arrays_Acc), err))), (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, c, err)), err);
+        { __typeof__((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, c, err))) m9a15 = (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, c, err));
+          if (err->exc) goto L_ret;
+        Arrays_Take (&((*(Arrays_Acc *) m9_at (s.p, c, s.len, sizeof (Arrays_Acc), err))), m9a15, err);
         if (err->exc) goto L_ret;
+        }
       } }
     } }
   } else {
@@ -1532,8 +1577,11 @@ static m9_sl_Arrays_Acc Arrays_Along (m9_gd2_double g, int64_t axis, m9_state *e
         m9t4to = m9_sub_i64 ((g).n[INT64_C(1)], INT64_C(1), err);
         if (err->exc) goto L_ret;
         for (; c <= m9t4to; c += 1) {
-          Arrays_Take (&((*(Arrays_Acc *) m9_at (s.p, r, s.len, sizeof (Arrays_Acc), err))), (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, c, err)), err);
+          { __typeof__((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, c, err))) m9a16 = (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, c, err));
+            if (err->exc) goto L_ret;
+          Arrays_Take (&((*(Arrays_Acc *) m9_at (s.p, r, s.len, sizeof (Arrays_Acc), err))), m9a16, err);
           if (err->exc) goto L_ret;
+          }
         } }
       } }
   } else {
@@ -1576,8 +1624,11 @@ static Arrays_Acc Arrays_Whole (m9_gd2_double g, m9_state *err)
     m9t2to = m9_sub_i64 ((g).n[INT64_C(1)], INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; c <= m9t2to; c += 1) {
-      Arrays_Take (&(s), (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, c, err)), err);
+      { __typeof__((*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, c, err))) m9a17 = (*(double *) m9_gat2 (g.p, sizeof (double), g.n[0], g.n[1], g.s[0], g.s[1], r, c, err));
+        if (err->exc) goto L_ret;
+      Arrays_Take (&(s), m9a17, err);
       if (err->exc) goto L_ret;
+      }
     } }
   } }
   err->res = m9res;

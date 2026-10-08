@@ -113,6 +113,10 @@ PROCEDURE SetBarColor (series: I64 ; RO KEPT hex: STR) ;
 
 PROCEDURE Viridis () : Cmap ;
 PROCEDURE Coolwarm () : Cmap ;
+PROCEDURE CmapHex (cmap: Cmap ; t: F64) : STR RAISES ValueRange ;
+  (* the colour at t in 0 .. 1 of a colour map, as '#rrggbb' -- what
+     RenderHeat fills a cell with, for a figure drawn elsewhere
+     (Map's colour grid, 2026-10-08); t is clamped to 0 .. 1 *)
   (* the colour maps as PROCEDURES, written when a payload-less
      variant constructor from ANOTHER module type-checked and the
      generator refused it (met by RenderHeat's first caller outside
@@ -468,6 +472,16 @@ BEGIN
   EmitHexByte (d, I64 (F64 (g0) + f * (F64 (g1) - F64 (g0)))) ;
   EmitHexByte (d, I64 (F64 (b0) + f * (F64 (b1) - F64 (b0))))
 END EmitCmap ;
+
+PROCEDURE CmapHex (cmap: Cmap ; t: F64) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  EmitCmap (d, cmap, t) ;
+  RETURN DynStr.View (d)
+END CmapHex ;
 
 (* Heckbert's nice tick spacing, transcribed *)
 PROCEDURE NiceStep (span: F64) : F64 =

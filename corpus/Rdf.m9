@@ -1,7 +1,8 @@
 DEFINITION MODULE Rdf ;
 
-(* RDF 1.1 graphs read from N-Triples and Turtle and written as
-   N-Triples (docs/datalib-plan.md par 2).  What Sparql.Construct
+(* RDF 1.1 graphs read from N-Triples, Turtle and RDF/XML and written
+   as N-Triples or Turtle (docs/datalib-plan.md par 2; RDF/XML and the
+   Turtle writer from docs/library-plan-2.md).  What Sparql.Construct
    answers is read here.
 
    READING follows the W3C grammars production by production: IRIs
@@ -18,12 +19,14 @@ DEFINITION MODULE Rdf ;
    rdflib (runtime/test/rdf.sh).
 
    WRITING is N-Triples, one triple a line in the order read, blank
-   nodes labelled _:b0, _:b1 ... in the order they were first seen;
+   nodes labelled _:b0, _:b1 ... in the order they were first seen,
+   or Turtle (Turtle below: grouped, prefixed, the short forms);
    a literal's quote, backslash and control characters escaped, every
    other character as itself (UTF-8 when written to a file).
 
-   Out: JSON-LD, TriG and named graphs, Turtle as an OUTPUT, and any
-   inference.  Language tags are kept as written.                  *)
+   Out: JSON-LD, TriG and named graphs, and any inference.  Language tags are kept as written.                  *)
+
+IMPORT Json ;
 
 TYPE
   Kind = (Iri, Blank, Literal) ;
@@ -60,6 +63,34 @@ PROCEDURE ParseTurtle (VAR pool: POOL ; RO text: STR ; RO base: STR)
      against until the document says @base or BASE ('' for none, and
      then a relative reference is a SyntaxError) *)
 
+PROCEDURE ParseRdfXml (VAR pool: POOL ; RO doc: SLICE OF BYTE ; RO base: STR)
+  : PTR Graph IN pool RAISES SyntaxError, ValueRange ;
+  (* an RDF/XML document (octets: the XML says its encoding); base is
+     the document's IRI, which rdf:ID and a relative rdf:about resolve
+     against until the document says xml:base ('' for none).  A
+     document that is not well-formed XML, or not in the RDF/XML
+     grammar, is a SyntaxError -- the XML's with its line and column,
+     the grammar's without (the tree has no positions) *)
+
+PROCEDURE ParseJsonLd (VAR pool: POOL ; RO text: STR ; RO base: STR ;
+                       context: OPT PTR Json.Node) : PTR Graph IN pool
+  RAISES SyntaxError, ValueRange ;
+  (* a JSON-LD document (JSON-LD 1.0's expansion and conversion to
+     RDF; its default graph; named graphs read and dropped); base is
+     the document's IRI; context a context the caller hands in, as
+     Json.Parse read it, applied before the document's own -- NONE
+     for none.  A context given as a URL is refused by name: nothing
+     is fetched.  A refusal carries the JSON-LD API's error code *)
+
+PROCEDURE JsonLd (g: PTR Graph ; context: OPT PTR Json.Node) : STR RAISES ValueRange ;
+  (* the graph as JSON-LD: the flattened form -- every node once, in
+     first-seen order, "@id", "@type", properties as arrays --
+     compacted against the context handed in (its terms, prefixes,
+     @vocab, @language and coercions), which is written as "@context";
+     "@graph" holds the nodes; a chain of rdf:first/rest cells nothing
+     else refers to is "@list".  Deterministic; ParseJsonLd reads it
+     back.  Characters, as NTriples *)
+
 PROCEDURE Count (g: PTR Graph) : I64 ;
   (* how many triples were read; a triple stated twice is there twice *)
 
@@ -71,13 +102,34 @@ PROCEDURE NTriples (g: PTR Graph) : STR RAISES ValueRange ;
      Io.WriteFileBytes) -- Io.WriteFile's Latin-1 refuses most of
      the world's scripts *)
 
+PROCEDURE Turtle (g: PTR Graph ; RO names: SLICE OF STR ;
+                  RO iris: SLICE OF STR) : STR RAISES ValueRange ;
+  (* the graph as Turtle (2026-10-07, docs/library-plan-2.md item 2):
+     triples grouped by subject in the order subjects were first seen,
+     a subject's predicates in the order first seen with `;', a
+     predicate's objects in insertion order with `,'; `a' for
+     rdf:type as a predicate; a prefixed name wherever one of the
+     prefixes applies -- names[i] abbreviates iris[i], and rdf, rdfs,
+     xsd and owl are known without being given -- and only the
+     prefixes USED are declared, in that order; the short forms for
+     an xsd:integer, decimal, double or boolean whose lexical form is
+     one Turtle reads back unchanged (a sign and digits; digits, a
+     dot, digits; a double with its exponent; true/false -- 01 and +1
+     included, since the grammar takes them and keeps the lexical
+     form), every other literal quoted with its type; a literal holding a line end as a long string.  Blank
+     nodes keep their labels.  Deterministic: the same graph is the
+     same text.  Characters, as NTriples. *)
+
 END Rdf.
 
 
 IMPLEMENTATION MODULE Rdf ;
 
 IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Json ;
 IMPORT Text ;
+IMPORT Xml ;
 
 CONST
   RdfNs = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#' ;
@@ -1214,5 +1266,2498 @@ BEGIN
   END ;
   RETURN DynStr.View (d)
 END NTriples ;
+
+
+(* ---- Turtle out (2026-10-07) ----------------------------------------- *)
+
+CONST
+  Rdfs = 'http://www.w3.org/2000/01/rdf-schema#' ;
+  Owl = 'http://www.w3.org/2002/07/owl#' ;
+
+TYPE
+  (* the prefixes offered and which of them the body used *)
+  Prefixes = RECORD
+    names, iris : SLICE OF STR ;
+    used : SLICE OF BOOL ;
+    n : I64 ;
+  END ;
+
+PROCEDURE LocalOk (RO s: STR) : BOOL =
+  (* a PN_LOCAL Turtle reads back as itself with no escape: first a
+     name character, a digit or a colon; then name characters, dots
+     and colons; not ending in a dot *)
+VAR i : I64 ; c : CHAR ;
+BEGIN
+  IF LEN (s) = 0 THEN RETURN TRUE END ;
+  c := s[0] ;
+  IF NOT (IsPnCharsU (c) OR c = ':' OR (c >= '0' AND c <= '9')) THEN RETURN FALSE END ;
+  FOR i := 1 TO LEN (s) - 1 DO
+    c := s[i] ;
+    IF NOT (IsPnChars (c) OR c = '.' OR c = ':') THEN RETURN FALSE END
+  END ;
+  RETURN s[LEN (s) - 1] # '.'
+END LocalOk ;
+
+PROCEDURE PrefixFor (VAR p: Prefixes ; RO iri: STR) : I64 =
+  (* the longest prefix IRI that begins iri and leaves a local name
+     Turtle can spell, or -1 *)
+VAR i, best, bestLen : I64 ;
+BEGIN
+  best := -1 ;
+  bestLen := -1 ;
+  FOR i := 0 TO p.n - 1 DO
+    IF LEN (p.iris[i]) > bestLen AND LEN (p.iris[i]) <= LEN (iri) AND
+       Text.StartsWith (iri, p.iris[i]) AND
+       LocalOk (SLICE (iri, LEN (p.iris[i]), LEN (iri) - LEN (p.iris[i]))) THEN
+      best := i ;
+      bestLen := LEN (p.iris[i])
+    END
+  END ;
+  RETURN best
+END PrefixFor ;
+
+PROCEDURE TtlIri (VAR d: PTR DynStr.DString ; VAR p: Prefixes ; RO iri: STR)
+  RAISES ValueRange =
+VAR k : I64 ;
+BEGIN
+  k := PrefixFor (p, iri) ;
+  IF k >= 0 THEN
+    p.used[k] := TRUE ;
+    DynStr.Append (d, p.names[k]) ;
+    DynStr.AppendChar (d, ':') ;
+    DynStr.Append (d, SLICE (iri, LEN (p.iris[k]), LEN (iri) - LEN (p.iris[k])))
+  ELSE
+    PutIri (d, iri)
+  END
+END TtlIri ;
+
+PROCEDURE Digits (RO s: STR ; from, to: I64) : BOOL =
+  (* s[from .. to - 1] is one or more digits *)
+VAR i : I64 ;
+BEGIN
+  IF to <= from THEN RETURN FALSE END ;
+  FOR i := from TO to - 1 DO
+    IF s[i] < '0' OR s[i] > '9' THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END Digits ;
+
+PROCEDURE ShortForm (RO t: Term) : BOOL RAISES ValueRange =
+  (* a typed literal Turtle may write bare: the forms the grammar's
+     INTEGER, DECIMAL, DOUBLE and BooleanLiteral read back to the
+     same lexical form -- a double without an exponent, a decimal
+     without a digit after its dot, are written quoted *)
+VAR
+  s : STR ;
+  i, dot, e : I64 ;
+BEGIN
+  IF LEN (t.lang) > 0 OR LEN (t.value) = 0 THEN RETURN FALSE END ;
+  s := t.value ;
+  i := 0 ;
+  IF s[0] = '-' OR s[0] = '+' THEN i := 1 END ;
+  IF Text.Eq (t.datatype, Xsd + 'integer') THEN
+    RETURN Digits (s, i, LEN (s))
+  ELSIF Text.Eq (t.datatype, Xsd + 'decimal') THEN
+    dot := Text.FindChar (s, '.') ;
+    RETURN dot >= i AND (dot = i OR Digits (s, i, dot)) AND Digits (s, dot + 1, LEN (s))
+  ELSIF Text.Eq (t.datatype, Xsd + 'double') THEN
+    e := Text.FindChar (s, 'e') ;
+    IF e < 0 THEN e := Text.FindChar (s, 'E') END ;
+    IF e < 0 THEN RETURN FALSE END ;
+    dot := Text.FindChar (SLICE (s, 0, e), '.') ;
+    IF dot < 0 THEN
+      IF NOT Digits (s, i, e) THEN RETURN FALSE END
+    ELSIF dot = i THEN
+      IF NOT Digits (s, dot + 1, e) THEN RETURN FALSE END
+    ELSE
+      IF NOT Digits (s, i, dot) THEN RETURN FALSE END ;
+      IF dot + 1 < e AND NOT Digits (s, dot + 1, e) THEN RETURN FALSE END
+    END ;
+    i := e + 1 ;
+    IF i < LEN (s) AND (s[i] = '+' OR s[i] = '-') THEN i := i + 1 END ;
+    RETURN Digits (s, i, LEN (s))
+  ELSIF Text.Eq (t.datatype, Xsd + 'boolean') THEN
+    RETURN Text.Eq (s, 'true') OR Text.Eq (s, 'false')
+  END ;
+  RETURN FALSE
+END ShortForm ;
+
+PROCEDURE TtlLiteral (VAR d: PTR DynStr.DString ; VAR p: Prefixes ; RO t: Term)
+  RAISES ValueRange =
+VAR
+  i : I64 ;
+  c : CHAR ;
+  long : BOOL ;
+BEGIN
+  IF ShortForm (t) THEN
+    DynStr.Append (d, t.value) ;
+    RETURN
+  END ;
+  (* a line end makes it a long string, where it is written raw; so
+     a short string never holds one and needs no \n or \r *)
+  long := Text.FindChar (t.value, 0AC) >= 0 OR Text.FindChar (t.value, 0DC) >= 0 ;
+  IF long THEN DynStr.Append (d, '"""') ELSE DynStr.AppendChar (d, '"') END ;
+  FOR i := 0 TO LEN (t.value) - 1 DO
+    c := t.value[i] ;
+    IF c = '"' THEN DynStr.Append (d, '\"')
+    ELSIF c = '\' THEN DynStr.Append (d, '\\')
+    ELSIF c = 09C THEN DynStr.Append (d, '\t')
+    ELSIF (ORD (c) < 0x20 AND c # 0AC AND c # 0DC) OR ORD (c) = 0x7F THEN
+      DynStr.Append (d, '\u00') ;
+      Hex2 (d, ORD (c))
+    ELSE
+      DynStr.AppendChar (d, c)
+    END
+  END ;
+  IF long THEN DynStr.Append (d, '"""') ELSE DynStr.AppendChar (d, '"') END ;
+  IF LEN (t.lang) > 0 THEN
+    DynStr.AppendChar (d, '@') ;
+    DynStr.Append (d, t.lang)
+  ELSIF LEN (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
+    DynStr.Append (d, '^^') ;
+    TtlIri (d, p, t.datatype)
+  END
+END TtlLiteral ;
+
+PROCEDURE TtlTerm (VAR d: PTR DynStr.DString ; VAR p: Prefixes ; RO t: Term ;
+                   predicate: BOOL) RAISES ValueRange =
+BEGIN
+  CASE t.kind OF
+  | Iri :
+      IF predicate AND Text.Eq (t.value, RdfNs + 'type') THEN DynStr.AppendChar (d, 'a')
+      ELSE TtlIri (d, p, t.value)
+      END
+  | Blank :
+      DynStr.Append (d, '_:') ;
+      DynStr.Append (d, t.value)
+  | Literal :
+      TtlLiteral (d, p, t)
+  END
+END TtlTerm ;
+
+PROCEDURE SameTerm (RO a, b: Term) : BOOL =
+BEGIN
+  RETURN a.kind = b.kind AND Text.Eq (a.value, b.value) AND
+         Text.Eq (a.lang, b.lang) AND Text.Eq (a.datatype, b.datatype)
+END SameTerm ;
+
+PROCEDURE Turtle (g: PTR Graph ; RO names: SLICE OF STR ;
+                  RO iris: SLICE OF STR) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  body, out : PTR DynStr.DString IN scratch ;
+  p : Prefixes ;
+  done : SLICE OF BOOL ;
+  i, j, k, n : I64 ;
+  firstPred : BOOL ;
+BEGIN
+  (* the caller's prefixes, then the four everybody knows *)
+  n := LEN (names) ;
+  IF LEN (iris) < n THEN n := LEN (iris) END ;
+  p.names := NEW (scratch, STR, n + 4) ;
+  p.iris := NEW (scratch, STR, n + 4) ;
+  p.used := NEW (scratch, BOOL, n + 4) ;
+  FOR i := 0 TO n - 1 DO
+    p.names[i] := names[i] ;
+    p.iris[i] := iris[i]
+  END ;
+  p.n := n ;
+  AddDefault (p, 'rdf', RdfNs) ;
+  AddDefault (p, 'rdfs', Rdfs) ;
+  AddDefault (p, 'xsd', Xsd) ;
+  AddDefault (p, 'owl', Owl) ;
+  body := DynStr.New (scratch) ;
+  done := NEW (scratch, BOOL, g.n) ;
+  FOR i := 0 TO g.n - 1 DO
+    IF NOT done[i] THEN
+      (* the subject's block: every triple of it, by predicate *)
+      TtlTerm (body, p, g.t[i].s, FALSE) ;
+      firstPred := TRUE ;
+      FOR j := i TO g.n - 1 DO
+        IF NOT done[j] AND SameTerm (g.t[j].s, g.t[i].s) THEN
+          IF firstPred THEN DynStr.AppendChar (body, ' ') ELSE DynStr.Append (body, ' ;' + 0AC + '    ') END ;
+          firstPred := FALSE ;
+          TtlTerm (body, p, g.t[j].p, TRUE) ;
+          DynStr.AppendChar (body, ' ') ;
+          TtlTerm (body, p, g.t[j].o, FALSE) ;
+          done[j] := TRUE ;
+          FOR k := j + 1 TO g.n - 1 DO
+            IF NOT done[k] AND SameTerm (g.t[k].s, g.t[i].s) AND SameTerm (g.t[k].p, g.t[j].p) THEN
+              DynStr.Append (body, ' , ') ;
+              TtlTerm (body, p, g.t[k].o, FALSE) ;
+              done[k] := TRUE
+            END
+          END
+        END
+      END ;
+      DynStr.Append (body, ' .' + 0AC)
+    END
+  END ;
+  out := DynStr.New (scratch) ;
+  FOR i := 0 TO p.n - 1 DO
+    IF p.used[i] THEN
+      DynStr.Append (out, '@prefix ') ;
+      DynStr.Append (out, p.names[i]) ;
+      DynStr.Append (out, ': ') ;
+      PutIri (out, p.iris[i]) ;
+      DynStr.Append (out, ' .' + 0AC)
+    END
+  END ;
+  IF DynStr.Len (out) > 0 AND g.n > 0 THEN DynStr.AppendChar (out, 0AC) END ;
+  DynStr.Append (out, DynStr.View (body)) ;
+  RETURN DynStr.View (out)
+END Turtle ;
+
+PROCEDURE AddDefault (VAR p: Prefixes ; RO KEPT name: STR ; RO KEPT iri: STR) =
+  (* a default prefix, unless the caller gave the name *)
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO p.n - 1 DO
+    IF Text.Eq (p.names[i], name) THEN RETURN END
+  END ;
+  p.names[p.n] := name ;
+  p.iris[p.n] := iri ;
+  p.used[p.n] := FALSE ;
+  p.n := p.n + 1
+END AddDefault ;
+
+
+(* ---- RDF/XML in (2026-10-07; docs/library-plan-2.md item 3) -----------
+
+   RDF 1.1 XML Syntax par 7, walked over the tree Xml.Parse answers:
+   rdf:RDF or a bare node element; node elements with rdf:ID,
+   rdf:nodeID or rdf:about and property attributes; property elements
+   holding a literal, one node element, nothing, or parseType
+   Resource, Collection or Literal (anything else is Literal); rdf:li
+   numbered per parent; rdf:ID on a property element reifying it;
+   xml:base and xml:lang scoped; the core syntax terms and the old
+   ones refused where the grammar refuses them.  An XML literal is the
+   EXCLUSIVE canonical form of the content: the namespaces an element
+   visibly uses declared on it unless an ancestor inside the literal
+   already did, attributes sorted, an empty element as a start and an
+   end tag -- what the W3C's expected results hold.                   *)
+
+CONST
+  XmlNsUri = 'http://www.w3.org/XML/1998/namespace' ;
+  XmlnsUri = 'http://www.w3.org/2000/xmlns/' ;
+
+TYPE
+  XState = RECORD
+    r : Reader ;                 (* blank nodes: Fresh and Labelled; base *)
+    ids : SLICE OF STR ;         (* the rdf:ID IRIs seen, each once *)
+    nids : I64 ;
+  END ;
+
+PROCEDURE XFail (RO msg: STR) RAISES SyntaxError =
+BEGIN
+  RAISE SyntaxError (msg, 0, 0)
+END XFail ;
+
+PROCEDURE IsWs (RO s: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] # ' ' AND s[i] # 09C AND s[i] # 0AC AND s[i] # 0DC THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END IsWs ;
+
+PROCEDURE NcName (RO s: STR) : BOOL =
+  (* an XML NCName: a letter or _ first, then name characters, no colon *)
+VAR i : I64 ;
+BEGIN
+  IF LEN (s) = 0 THEN RETURN FALSE END ;
+  IF NOT IsPnCharsU (s[0]) THEN RETURN FALSE END ;
+  FOR i := 1 TO LEN (s) - 1 DO
+    IF NOT (IsPnChars (s[i]) OR s[i] = '.') THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END NcName ;
+
+PROCEDURE IsCoreSyntax (RO local: STR) : BOOL =
+BEGIN
+  RETURN Text.Eq (local, 'RDF') OR Text.Eq (local, 'ID') OR Text.Eq (local, 'about') OR
+         Text.Eq (local, 'parseType') OR Text.Eq (local, 'resource') OR
+         Text.Eq (local, 'nodeID') OR Text.Eq (local, 'datatype')
+END IsCoreSyntax ;
+
+PROCEDURE IsOldTerm (RO local: STR) : BOOL =
+BEGIN
+  RETURN Text.Eq (local, 'aboutEach') OR Text.Eq (local, 'aboutEachPrefix') OR
+         Text.Eq (local, 'bagID')
+END IsOldTerm ;
+
+PROCEDURE Scoped (e: PTR Xml.Element ; VAR st: XState ; VAR base: STR ; VAR lang: STR)
+  RAISES SyntaxError, ValueRange =
+  (* xml:base and xml:lang on e, into the scope *)
+VAR v : STR ;
+BEGIN
+  IF Xml.HasAttr (e, XmlNsUri, 'base') THEN
+    v := Xml.AttrValue (e, XmlNsUri, 'base') ;
+    IF LEN (base) > 0 THEN base := Resolve (base, v)
+    ELSIF SchemeEnd (v) > 0 THEN base := v
+    ELSE XFail ('a relative xml:base and no base to resolve it')
+    END
+  END ;
+  IF Xml.HasAttr (e, XmlNsUri, 'lang') THEN lang := Xml.AttrValue (e, XmlNsUri, 'lang') END
+END Scoped ;
+
+PROCEDURE XIri (VAR st: XState ; RO base: STR ; RO ref: STR) : STR RAISES SyntaxError =
+  (* ref resolved against base *)
+BEGIN
+  IF SchemeEnd (ref) >= 0 THEN RETURN ref END ;
+  IF LEN (base) = 0 THEN XFail ('a relative IRI and no base to resolve it: ' + ref) END ;
+  RETURN Resolve (base, ref)
+END XIri ;
+
+PROCEDURE NoFragment (RO iri: STR) : STR =
+VAR i : I64 ;
+BEGIN
+  i := Text.FindChar (iri, '#') ;
+  IF i < 0 THEN RETURN iri END ;
+  RETURN SLICE (iri, 0, i)
+END NoFragment ;
+
+PROCEDURE IdIri (VAR pool: POOL ; VAR st: XState ; RO base: STR ; RO id: STR) : STR
+  RAISES SyntaxError, ValueRange =
+  (* rdf:ID="id": base#id, an NCName, once in the document *)
+VAR
+  iri : STR ;
+  i : I64 ;
+  more : SLICE OF STR ;
+BEGIN
+  IF NOT NcName (id) THEN XFail ('rdf:ID is not an XML name: ' + id) END ;
+  IF LEN (base) = 0 THEN XFail ('rdf:ID and no base to resolve it against') END ;
+  iri := NoFragment (base) + '#' + id ;
+  FOR i := 0 TO st.nids - 1 DO
+    IF Text.Eq (st.ids[i], iri) THEN XFail ('rdf:ID used twice: ' + id) END
+  END ;
+  IF st.nids = LEN (st.ids) THEN
+    more := NEW (pool, STR, 2 * LEN (st.ids) + 8) ;
+    FOR i := 0 TO st.nids - 1 DO more[i] := st.ids[i] END ;
+    st.ids := more
+  END ;
+  st.ids[st.nids] := Text.Keep (pool, iri) ;
+  st.nids := st.nids + 1 ;
+  RETURN iri
+END IdIri ;
+
+PROCEDURE IsRdf (e: PTR Xml.Element) : BOOL =
+BEGIN
+  RETURN Text.Eq (e.ns, RdfNs)
+END IsRdf ;
+
+PROCEDURE ContentIsElements (e: PTR Xml.Element) : BOOL =
+  (* no character data but white space around the children *)
+VAR i : I64 ;
+BEGIN
+  IF NOT IsWs (e.text) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (e.kids) - 1 DO
+    IF NOT IsWs (e.kids[i].tail) THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END ContentIsElements ;
+
+PROCEDURE PropertyAttr (VAR pool: POOL ; VAR st: XState ; VAR g: PTR Graph ;
+                        RO subj: Term ; RO ns: STR ; RO local: STR ;
+                        RO value: STR ; RO base: STR ; RO lang: STR)
+  RAISES SyntaxError, ValueRange =
+  (* an attribute that states a property: rdf:type an IRI, the rest a
+     literal in the language in scope *)
+BEGIN
+  IF Text.Eq (ns, RdfNs) THEN
+    IF Text.Eq (local, 'type') THEN
+      Add (pool, g, subj, IriT (RdfNs + 'type'), IriT (XIri (st, base, value))) ;
+      RETURN
+    END ;
+    IF IsCoreSyntax (local) OR IsOldTerm (local) OR Text.Eq (local, 'li') OR
+       Text.Eq (local, 'Description') THEN
+      XFail ('rdf:' + local + ' is not a property attribute')
+    END
+  END ;
+  Add (pool, g, subj, IriT (ns + local), LitT (value, lang, ''))
+END PropertyAttr ;
+
+PROCEDURE NodeElement (VAR pool: POOL ; VAR st: XState ; e: PTR Xml.Element ;
+                       VAR g: PTR Graph ; RO base0: STR ; RO lang0: STR) : Term
+  RAISES SyntaxError, ValueRange =
+VAR
+  base, lang, v : STR ;
+  subj : Term ;
+  i, named : I64 ;
+BEGIN
+  base := base0 ;
+  lang := lang0 ;
+  Scoped (e, st, base, lang) ;
+  IF IsRdf (e) THEN
+    IF IsCoreSyntax (e.local) OR IsOldTerm (e.local) OR Text.Eq (e.local, 'li') THEN
+      XFail ('rdf:' + e.local + ' is not a node element')
+    END
+  END ;
+  IF LEN (e.ns) = 0 THEN XFail ('an element without a namespace: ' + e.name) END ;
+  (* the subject: at most one of rdf:ID, rdf:nodeID, rdf:about *)
+  named := 0 ;
+  IF Xml.HasAttr (e, RdfNs, 'ID') THEN
+    named := named + 1 ;
+    subj := IriT (IdIri (pool, st, base, Xml.AttrValue (e, RdfNs, 'ID')))
+  END ;
+  IF Xml.HasAttr (e, RdfNs, 'nodeID') THEN
+    named := named + 1 ;
+    v := Xml.AttrValue (e, RdfNs, 'nodeID') ;
+    IF NOT NcName (v) THEN XFail ('rdf:nodeID is not an XML name: ' + v) END ;
+    subj := BlankT (Labelled (pool, st.r, v))
+  END ;
+  IF Xml.HasAttr (e, RdfNs, 'about') THEN
+    named := named + 1 ;
+    subj := IriT (XIri (st, base, Xml.AttrValue (e, RdfNs, 'about')))
+  END ;
+  IF named > 1 THEN XFail ('more than one of rdf:ID, rdf:nodeID and rdf:about on ' + e.name) END ;
+  IF named = 0 THEN subj := BlankT (Fresh (pool, st.r)) END ;
+  IF NOT (IsRdf (e) AND Text.Eq (e.local, 'Description')) THEN
+    Add (pool, g, subj, IriT (RdfNs + 'type'), IriT (e.ns + e.local))
+  END ;
+  (* property attributes *)
+  FOR i := 0 TO LEN (e.attrs) - 1 DO
+    IF Text.Eq (e.attrs[i].ns, XmlnsUri) OR Text.Eq (e.attrs[i].ns, XmlNsUri) THEN
+      (* a declaration, or xml:base, xml:lang, xml:space, xml:anything *)
+    ELSIF LEN (e.attrs[i].ns) = 0 THEN
+      (* an unprefixed name beginning with xml is XML's own, ignored *)
+      IF NOT Text.StartsWith (e.attrs[i].name, 'xml') THEN
+        XFail ('an attribute without a namespace: ' + e.attrs[i].name)
+      END
+    ELSIF Text.Eq (e.attrs[i].ns, RdfNs) AND
+          (Text.Eq (e.attrs[i].local, 'ID') OR Text.Eq (e.attrs[i].local, 'nodeID') OR
+           Text.Eq (e.attrs[i].local, 'about')) THEN
+      (* the subject, taken above *)
+    ELSE
+      PropertyAttr (pool, st, g, subj, e.attrs[i].ns, e.attrs[i].local, e.attrs[i].value, base, lang)
+    END
+  END ;
+  PropertyElts (pool, st, e, g, subj, base, lang) ;
+  RETURN subj
+END NodeElement ;
+
+PROCEDURE PropertyElts (VAR pool: POOL ; VAR st: XState ; e: PTR Xml.Element ;
+                        VAR g: PTR Graph ; RO subj: Term ; RO base: STR ; RO lang: STR)
+  RAISES SyntaxError, ValueRange =
+  (* e's children as the property elements of subj *)
+VAR i, li : I64 ;
+BEGIN
+  IF NOT ContentIsElements (e) THEN XFail ('character data among the property elements of ' + e.name) END ;
+  li := 0 ;
+  FOR i := 0 TO LEN (e.kids) - 1 DO
+    PropertyElt (pool, st, e.kids[i], g, subj, base, lang, li)
+  END
+END PropertyElts ;
+
+PROCEDURE Reify (VAR pool: POOL ; VAR st: XState ; VAR g: PTR Graph ; RO base: STR ;
+                 RO id: STR ; RO s, p, o: Term) RAISES SyntaxError, ValueRange =
+  (* rdf:ID on a property element: the statement, named *)
+VAR r : Term ;
+BEGIN
+  r := IriT (IdIri (pool, st, base, id)) ;
+  Add (pool, g, r, IriT (RdfNs + 'type'), IriT (RdfNs + 'Statement')) ;
+  Add (pool, g, r, IriT (RdfNs + 'subject'), s) ;
+  Add (pool, g, r, IriT (RdfNs + 'predicate'), p) ;
+  Add (pool, g, r, IriT (RdfNs + 'object'), o)
+END Reify ;
+
+PROCEDURE PropertyElt (VAR pool: POOL ; VAR st: XState ; pe: PTR Xml.Element ;
+                       VAR g: PTR Graph ; RO subj: Term ; RO base0: STR ; RO lang0: STR ;
+                       VAR li: I64) RAISES SyntaxError, ValueRange =
+VAR
+  base, lang, id, parseType, datatype, v : STR ;
+  pred, obj, cell, prev : Term ;
+  hasId, hasResource, hasNodeId, hasDatatype, hasParse, props : BOOL ;
+  i, n : I64 ;
+BEGIN
+  base := base0 ;
+  lang := lang0 ;
+  Scoped (pe, st, base, lang) ;
+  IF LEN (pe.ns) = 0 THEN XFail ('an element without a namespace: ' + pe.name) END ;
+  IF IsRdf (pe) THEN
+    IF IsCoreSyntax (pe.local) OR IsOldTerm (pe.local) OR Text.Eq (pe.local, 'Description') THEN
+      XFail ('rdf:' + pe.local + ' is not a property element')
+    END ;
+    IF Text.Eq (pe.local, 'li') THEN
+      li := li + 1 ;
+      pred := IriT (RdfNs + '_' + Fmt.I64Str (li))
+    ELSE
+      pred := IriT (pe.ns + pe.local)
+    END
+  ELSE
+    pred := IriT (pe.ns + pe.local)
+  END ;
+  (* the attributes: the syntax ones taken, property attributes counted *)
+  hasId := FALSE ; hasResource := FALSE ; hasNodeId := FALSE ;
+  hasDatatype := FALSE ; hasParse := FALSE ; props := FALSE ;
+  id := '' ; parseType := '' ; datatype := '' ;
+  FOR i := 0 TO LEN (pe.attrs) - 1 DO
+    IF Text.Eq (pe.attrs[i].ns, XmlnsUri) OR Text.Eq (pe.attrs[i].ns, XmlNsUri) THEN
+    ELSIF LEN (pe.attrs[i].ns) = 0 THEN
+      IF NOT Text.StartsWith (pe.attrs[i].name, 'xml') THEN
+        XFail ('an attribute without a namespace: ' + pe.attrs[i].name)
+      END
+    ELSIF Text.Eq (pe.attrs[i].ns, RdfNs) THEN
+      v := pe.attrs[i].local ;
+      IF Text.Eq (v, 'ID') THEN hasId := TRUE ; id := pe.attrs[i].value
+      ELSIF Text.Eq (v, 'resource') THEN hasResource := TRUE
+      ELSIF Text.Eq (v, 'nodeID') THEN hasNodeId := TRUE
+      ELSIF Text.Eq (v, 'datatype') THEN hasDatatype := TRUE ; datatype := pe.attrs[i].value
+      ELSIF Text.Eq (v, 'parseType') THEN hasParse := TRUE ; parseType := pe.attrs[i].value
+      ELSIF Text.Eq (v, 'about') OR IsOldTerm (v) OR Text.Eq (v, 'li') OR
+            Text.Eq (v, 'Description') OR Text.Eq (v, 'RDF') THEN
+        XFail ('rdf:' + v + ' on a property element')
+      ELSE props := TRUE
+      END
+    ELSE
+      props := TRUE
+    END
+  END ;
+  IF hasResource AND hasNodeId THEN XFail ('both rdf:resource and rdf:nodeID on ' + pe.name) END ;
+  n := LEN (pe.kids) ;
+  IF hasParse THEN
+    IF hasResource OR hasNodeId OR hasDatatype OR props THEN
+      XFail ('rdf:parseType beside other attributes on ' + pe.name)
+    END ;
+    IF Text.Eq (parseType, 'Resource') THEN
+      obj := BlankT (Fresh (pool, st.r)) ;
+      Add (pool, g, subj, pred, obj) ;
+      IF hasId THEN Reify (pool, st, g, base, id, subj, pred, obj) END ;
+      PropertyElts (pool, st, pe, g, obj, base, lang)
+    ELSIF Text.Eq (parseType, 'Collection') THEN
+      IF NOT ContentIsElements (pe) THEN XFail ('character data in a collection') END ;
+      IF n = 0 THEN
+        obj := IriT (RdfNs + 'nil')
+      ELSE
+        obj := BlankT (Fresh (pool, st.r)) ;
+        prev := obj ;
+        FOR i := 0 TO n - 1 DO
+          IF i > 0 THEN
+            cell := BlankT (Fresh (pool, st.r)) ;
+            Add (pool, g, prev, IriT (RdfNs + 'rest'), cell) ;
+            prev := cell
+          END ;
+          Add (pool, g, prev, IriT (RdfNs + 'first'), NodeElement (pool, st, pe.kids[i], g, base, lang))
+        END ;
+        Add (pool, g, prev, IriT (RdfNs + 'rest'), IriT (RdfNs + 'nil'))
+      END ;
+      Add (pool, g, subj, pred, obj) ;
+      IF hasId THEN Reify (pool, st, g, base, id, subj, pred, obj) END
+    ELSE
+      (* Literal, and anything else the grammar reads as Literal *)
+      obj := LitT (XmlLiteral (pe), '', RdfNs + 'XMLLiteral') ;
+      Add (pool, g, subj, pred, obj) ;
+      IF hasId THEN Reify (pool, st, g, base, id, subj, pred, obj) END
+    END
+  ELSIF n > 0 THEN
+    IF NOT ContentIsElements (pe) THEN XFail ('character data beside an element in ' + pe.name) END ;
+    IF n > 1 THEN XFail ('more than one node element in the property element ' + pe.name) END ;
+    IF hasResource OR hasNodeId OR hasDatatype OR props THEN
+      XFail ('attributes beside a node element on ' + pe.name)
+    END ;
+    obj := NodeElement (pool, st, pe.kids[0], g, base, lang) ;
+    Add (pool, g, subj, pred, obj) ;
+    IF hasId THEN Reify (pool, st, g, base, id, subj, pred, obj) END
+  ELSIF LEN (pe.text) > 0 THEN
+    IF hasResource OR hasNodeId OR props THEN
+      XFail ('attributes beside a literal on ' + pe.name)
+    END ;
+    IF hasDatatype THEN obj := LitT (pe.text, '', XIri (st, base, datatype))
+    ELSE obj := LitT (pe.text, lang, '')
+    END ;
+    Add (pool, g, subj, pred, obj) ;
+    IF hasId THEN Reify (pool, st, g, base, id, subj, pred, obj) END
+  ELSE
+    (* empty: an IRI, a blank node, a fresh node carrying property
+       attributes, or the empty literal *)
+    IF hasResource THEN
+      IF hasDatatype THEN XFail ('rdf:datatype beside rdf:resource') END ;
+      obj := IriT (XIri (st, base, Xml.AttrValue (pe, RdfNs, 'resource')))
+    ELSIF hasNodeId THEN
+      IF hasDatatype THEN XFail ('rdf:datatype beside rdf:nodeID') END ;
+      v := Xml.AttrValue (pe, RdfNs, 'nodeID') ;
+      IF NOT NcName (v) THEN XFail ('rdf:nodeID is not an XML name: ' + v) END ;
+      obj := BlankT (Labelled (pool, st.r, v))
+    ELSIF props THEN
+      IF hasDatatype THEN XFail ('rdf:datatype beside property attributes') END ;
+      obj := BlankT (Fresh (pool, st.r))
+    ELSIF hasDatatype THEN
+      obj := LitT ('', '', XIri (st, base, datatype))
+    ELSE
+      obj := LitT ('', lang, '')
+    END ;
+    Add (pool, g, subj, pred, obj) ;
+    IF hasId THEN Reify (pool, st, g, base, id, subj, pred, obj) END ;
+    IF props THEN
+      FOR i := 0 TO LEN (pe.attrs) - 1 DO
+        IF Text.Eq (pe.attrs[i].ns, XmlnsUri) OR Text.Eq (pe.attrs[i].ns, XmlNsUri) OR
+           LEN (pe.attrs[i].ns) = 0 THEN
+        ELSIF Text.Eq (pe.attrs[i].ns, RdfNs) AND
+              (Text.Eq (pe.attrs[i].local, 'ID') OR Text.Eq (pe.attrs[i].local, 'resource') OR
+               Text.Eq (pe.attrs[i].local, 'nodeID')) THEN
+        ELSE
+          PropertyAttr (pool, st, g, obj, pe.attrs[i].ns, pe.attrs[i].local, pe.attrs[i].value, base, lang)
+        END
+      END
+    END
+  END
+END PropertyElt ;
+
+(* ---- XML literals: exclusive canonical XML of the content ------------ *)
+
+PROCEDURE EscText (VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange =
+VAR i : I64 ; c : CHAR ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := s[i] ;
+    IF c = '&' THEN DynStr.Append (d, '&amp;')
+    ELSIF c = '<' THEN DynStr.Append (d, '&lt;')
+    ELSIF c = '>' THEN DynStr.Append (d, '&gt;')
+    ELSIF c = 0DC THEN DynStr.Append (d, '&#xD;')
+    ELSE DynStr.AppendChar (d, c)
+    END
+  END
+END EscText ;
+
+PROCEDURE EscAttr (VAR d: PTR DynStr.DString ; RO s: STR) RAISES ValueRange =
+VAR i : I64 ; c : CHAR ;
+BEGIN
+  FOR i := 0 TO LEN (s) - 1 DO
+    c := s[i] ;
+    IF c = '&' THEN DynStr.Append (d, '&amp;')
+    ELSIF c = '<' THEN DynStr.Append (d, '&lt;')
+    ELSIF c = '"' THEN DynStr.Append (d, '&quot;')
+    ELSIF c = 09C THEN DynStr.Append (d, '&#x9;')
+    ELSIF c = 0AC THEN DynStr.Append (d, '&#xA;')
+    ELSIF c = 0DC THEN DynStr.Append (d, '&#xD;')
+    ELSE DynStr.AppendChar (d, c)
+    END
+  END
+END EscAttr ;
+
+PROCEDURE Prefix (RO name: STR) : STR =
+  (* the prefix of a qualified name, '' for none *)
+VAR i : I64 ;
+BEGIN
+  i := Text.FindChar (name, ':') ;
+  IF i < 0 THEN RETURN '' END ;
+  RETURN SLICE (name, 0, i)
+END Prefix ;
+
+PROCEDURE StrLess (RO a, b: STR) : BOOL =
+  (* code-point order, as canonical XML sorts *)
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i < LEN (a) AND i < LEN (b) DO
+    IF a[i] < b[i] THEN RETURN TRUE END ;
+    IF a[i] > b[i] THEN RETURN FALSE END ;
+    i := i + 1
+  END ;
+  RETURN LEN (a) < LEN (b)
+END StrLess ;
+
+PROCEDURE Declared (RO dn, du: SLICE OF STR ; n: I64 ; RO prefix: STR ; RO uri: STR) : BOOL =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO n - 1 DO
+    IF Text.Eq (dn[i], prefix) AND Text.Eq (du[i], uri) THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END Declared ;
+
+PROCEDURE Serialize (VAR pool: POOL ; VAR d: PTR DynStr.DString ; e: PTR Xml.Element ;
+                     VAR dn, du: SLICE OF STR ; n: I64) RAISES ValueRange =
+  (* e in exclusive canonical form; dn[0 .. n) and du are the prefixes
+     and namespaces an ancestor in the literal has declared *)
+VAR
+  i, j, m : I64 ;
+  px, uri : STR ;
+  names, uris : SLICE OF STR ;
+  ai : SLICE OF I64 ;
+  t : I64 ;
+BEGIN
+  DynStr.AppendChar (d, '<') ;
+  DynStr.Append (d, e.name) ;
+  (* the namespaces this element visibly uses and nobody declared *)
+  names := NEW (STR, LEN (e.attrs) + 1) ;
+  uris := NEW (STR, LEN (e.attrs) + 1) ;
+  m := 0 ;
+  IF LEN (e.ns) > 0 THEN
+    names[0] := Prefix (e.name) ; uris[0] := e.ns ; m := 1
+  END ;
+  FOR i := 0 TO LEN (e.attrs) - 1 DO
+    IF LEN (e.attrs[i].ns) > 0 AND NOT Text.Eq (e.attrs[i].ns, XmlnsUri) AND
+       NOT Text.Eq (e.attrs[i].ns, XmlNsUri) THEN
+      px := Prefix (e.attrs[i].name) ;
+      j := 0 ;
+      WHILE j < m AND NOT Text.Eq (names[j], px) DO j := j + 1 END ;
+      IF j = m THEN names[m] := px ; uris[m] := e.attrs[i].ns ; m := m + 1 END
+    END
+  END ;
+  (* sorted by prefix, the default (empty) first *)
+  FOR i := 0 TO m - 1 DO
+    FOR j := i + 1 TO m - 1 DO
+      IF StrLess (names[j], names[i]) THEN
+        px := names[i] ; names[i] := names[j] ; names[j] := px ;
+        uri := uris[i] ; uris[i] := uris[j] ; uris[j] := uri
+      END
+    END
+  END ;
+  FOR i := 0 TO m - 1 DO
+    IF NOT Declared (dn, du, n, names[i], uris[i]) THEN
+      IF LEN (names[i]) = 0 THEN DynStr.Append (d, ' xmlns="')
+      ELSE DynStr.Append (d, ' xmlns:') ; DynStr.Append (d, names[i]) ; DynStr.Append (d, '="')
+      END ;
+      EscAttr (d, uris[i]) ;
+      DynStr.AppendChar (d, '"') ;
+      IF n < LEN (dn) THEN
+        dn[n] := Text.Keep (pool, names[i]) ; du[n] := Text.Keep (pool, uris[i]) ; n := n + 1
+      END
+    END
+  END ;
+  (* attributes sorted by namespace then local name, declarations out *)
+  ai := NEW (I64, LEN (e.attrs)) ;
+  m := 0 ;
+  FOR i := 0 TO LEN (e.attrs) - 1 DO
+    IF NOT Text.Eq (e.attrs[i].ns, XmlnsUri) THEN ai[m] := i ; m := m + 1 END
+  END ;
+  FOR i := 0 TO m - 1 DO
+    FOR j := i + 1 TO m - 1 DO
+      IF StrLess (e.attrs[ai[j]].ns, e.attrs[ai[i]].ns) OR
+         (Text.Eq (e.attrs[ai[j]].ns, e.attrs[ai[i]].ns) AND
+          StrLess (e.attrs[ai[j]].local, e.attrs[ai[i]].local)) THEN
+        t := ai[i] ; ai[i] := ai[j] ; ai[j] := t
+      END
+    END
+  END ;
+  FOR i := 0 TO m - 1 DO
+    DynStr.AppendChar (d, ' ') ;
+    DynStr.Append (d, e.attrs[ai[i]].name) ;
+    DynStr.Append (d, '="') ;
+    EscAttr (d, e.attrs[ai[i]].value) ;
+    DynStr.AppendChar (d, '"')
+  END ;
+  DynStr.AppendChar (d, '>') ;
+  EscText (d, e.text) ;
+  FOR i := 0 TO LEN (e.kids) - 1 DO
+    Serialize (pool, d, e.kids[i], dn, du, n) ;
+    EscText (d, e.kids[i].tail)
+  END ;
+  DynStr.Append (d, '</') ;
+  DynStr.Append (d, e.name) ;
+  DynStr.AppendChar (d, '>')
+END Serialize ;
+
+PROCEDURE XmlLiteral (pe: PTR Xml.Element) : STR RAISES ValueRange =
+  (* the content of pe: its text and its children serialized *)
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  dn, du : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  dn := NEW (scratch, STR, 64) ;
+  du := NEW (scratch, STR, 64) ;
+  EscText (d, pe.text) ;
+  FOR i := 0 TO LEN (pe.kids) - 1 DO
+    Serialize (scratch, d, pe.kids[i], dn, du, 0) ;
+    EscText (d, pe.kids[i].tail)
+  END ;
+  RETURN DynStr.View (d)
+END XmlLiteral ;
+
+(* ---- the document ---------------------------------------------------- *)
+
+PROCEDURE ParseRdfXml (VAR pool: POOL ; RO doc: SLICE OF BYTE ; RO base: STR)
+  : PTR Graph IN pool RAISES SyntaxError, ValueRange =
+VAR
+  scratch : POOL ;
+  root : PTR Xml.Element IN scratch ;
+  g : PTR Graph IN pool ;
+  st : XState ;
+  b, lang, m : STR ;
+  i, l, c : I64 ;
+  t : Term ;
+BEGIN
+  BEGIN
+    root := Xml.Parse (scratch, doc)
+  EXCEPT
+  | Xml.SyntaxError (msg, line, col) :
+      m := msg ; l := line ; c := col ;
+      RAISE SyntaxError ('XML: ' + m, l, c)
+  | Xml.Unsupported (msg, line, col) :
+      m := msg ; l := line ; c := col ;
+      RAISE SyntaxError ('XML: ' + m, l, c)
+  END ;
+  g := NewGraph (pool) ;
+  NewReader (pool, st.r, '', base, TRUE) ;
+  st.ids := NEW (pool, STR, 8) ;
+  st.nids := 0 ;
+  b := base ;
+  lang := '' ;
+  IF IsRdf (root) AND Text.Eq (root.local, 'RDF') THEN
+    Scoped (root, st, b, lang) ;
+    FOR i := 0 TO LEN (root.attrs) - 1 DO
+      IF NOT (Text.Eq (root.attrs[i].ns, XmlnsUri) OR Text.Eq (root.attrs[i].ns, XmlNsUri)) THEN
+        XFail ('an attribute on rdf:RDF: ' + root.attrs[i].name)
+      END
+    END ;
+    IF NOT ContentIsElements (root) THEN XFail ('character data in rdf:RDF') END ;
+    FOR i := 0 TO LEN (root.kids) - 1 DO
+      t := NodeElement (pool, st, root.kids[i], g, b, lang)
+    END
+  ELSE
+    t := NodeElement (pool, st, root, g, b, lang)
+  END ;
+  RETURN g
+END ParseRdfXml ;
+
+
+(* ---- JSON-LD in (2026-10-07; docs/library-plan-2.md item 3) -----------
+
+   JSON-LD 1.0's algorithms over Json's tree: context processing (the
+   terms, @base, @vocab, @language; @id, @type, @language, @container
+   list/set/index/language, @reverse in a definition; compact IRIs;
+   a context given inline or handed in by the caller), expansion
+   (values, lists, sets, language and index maps, @reverse, @graph,
+   keyword aliases), then node-map generation and the RDF
+   conversion of the DEFAULT graph: lists as rdf:first/rest, numbers
+   as xsd:integer or a canonical xsd:double, booleans, typed and
+   language-tagged strings, blank nodes relabelled.  NO remote
+   contexts: a context that is a string is refused by name, since a
+   reader that fetches on the way to a graph fails at 03:00.  Named
+   graphs are read and dropped: the Graph has one graph.  JSON-LD 1.1's
+   additions (scoped contexts, @nest, @included, @json, @direction,
+   @protected, @propagate) are not read; a document leaning on one is
+   refused as 1.0 refuses it, or read as 1.0 reads it.  Every refusal
+   carries the error code of the API spec ("invalid IRI mapping" and
+   the rest) so that a test suite can name it.                        *)
+
+CONST
+  KwIndex = 0 ;                  (* a term's language mapping states *)
+
+TYPE
+  TermDef = RECORD
+    term, iri, typeMap, lang, container : STR ;
+    hasLang : BOOL ;             (* a language mapping; lang '' is null *)
+    reverse : BOOL ;
+    isNull : BOOL ;              (* the term is defined as null *)
+  END ;
+
+  Ctx = RECORD
+    defs : SLICE OF TermDef ;
+    n : I64 ;
+    base, vocab, lang : STR ;    (* base '' is null *)
+    hasVocab, hasLang : BOOL ;
+  END ;
+
+  (* terms being defined: 0 in progress, 1 done *)
+  Defining = RECORD
+    terms : SLICE OF STR ;
+    state : SLICE OF I64 ;
+    n : I64 ;
+  END ;
+
+  JState = RECORD
+    r : Reader ;                 (* blank node ids: Fresh, Labelled *)
+    docBase : STR ;
+  END ;
+
+PROCEDURE JFail (RO code: STR ; RO what: STR) RAISES SyntaxError =
+  (* the API's error code, and what was found *)
+BEGIN
+  IF LEN (what) = 0 THEN RAISE SyntaxError (code, 0, 0) END ;
+  RAISE SyntaxError (code + ': ' + what, 0, 0)
+END JFail ;
+
+PROCEDURE IsKeyword (RO s: STR) : BOOL =
+BEGIN
+  RETURN Text.Eq (s, '@context') OR Text.Eq (s, '@id') OR Text.Eq (s, '@value') OR
+         Text.Eq (s, '@language') OR Text.Eq (s, '@type') OR Text.Eq (s, '@container') OR
+         Text.Eq (s, '@list') OR Text.Eq (s, '@set') OR Text.Eq (s, '@reverse') OR
+         Text.Eq (s, '@index') OR Text.Eq (s, '@base') OR Text.Eq (s, '@vocab') OR
+         Text.Eq (s, '@graph') OR Text.Eq (s, '@default') OR Text.Eq (s, '@embed') OR
+         Text.Eq (s, '@explicit') OR Text.Eq (s, '@omitDefault')
+END IsKeyword ;
+
+PROCEDURE IsAbsolute (RO s: STR) : BOOL =
+  (* a scheme before the first colon: an absolute IRI *)
+BEGIN
+  RETURN SchemeEnd (s) > 0
+END IsAbsolute ;
+
+PROCEDURE IsBlankId (RO s: STR) : BOOL =
+BEGIN
+  RETURN Text.StartsWith (s, '_:')
+END IsBlankId ;
+
+(* ---- the active context ------------------------------------------------- *)
+
+PROCEDURE NewCtx (VAR pool: POOL ; RO base: STR) : Ctx =
+VAR c : Ctx ;
+BEGIN
+  c.defs := NEW (pool, TermDef, 8) ;
+  c.n := 0 ;
+  c.base := Text.Keep (pool, base) ;
+  c.vocab := '' ;
+  c.lang := '' ;
+  c.hasVocab := FALSE ;
+  c.hasLang := FALSE ;
+  RETURN c
+END NewCtx ;
+
+PROCEDURE CopyCtx (VAR pool: POOL ; RO KEPT c: Ctx) : Ctx =
+VAR
+  d : Ctx ;
+  i : I64 ;
+BEGIN
+  d := c ;
+  d.defs := NEW (pool, TermDef, LEN (c.defs)) ;
+  FOR i := 0 TO c.n - 1 DO d.defs[i] := c.defs[i] END ;
+  RETURN d
+END CopyCtx ;
+
+PROCEDURE FindTerm (RO c: Ctx ; RO term: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO c.n - 1 DO
+    IF Text.Eq (c.defs[i].term, term) THEN RETURN i END
+  END ;
+  RETURN -1
+END FindTerm ;
+
+PROCEDURE RemoveTerm (VAR c: Ctx ; RO term: STR) =
+VAR i, k : I64 ;
+BEGIN
+  k := FindTerm (c, term) ;
+  IF k < 0 THEN RETURN END ;
+  FOR i := k TO c.n - 2 DO c.defs[i] := c.defs[i + 1] END ;
+  c.n := c.n - 1
+END RemoveTerm ;
+
+PROCEDURE DefineTerm (VAR pool: POOL ; VAR c: Ctx ; RO KEPT d: TermDef) =
+VAR
+  more : SLICE OF TermDef ;
+  i : I64 ;
+BEGIN
+  RemoveTerm (c, d.term) ;
+  IF c.n = LEN (c.defs) THEN
+    more := NEW (pool, TermDef, 2 * LEN (c.defs)) ;
+    FOR i := 0 TO c.n - 1 DO more[i] := c.defs[i] END ;
+    c.defs := more
+  END ;
+  c.defs[c.n] := d ;
+  c.n := c.n + 1
+END DefineTerm ;
+
+PROCEDURE DefState (RO df: Defining ; RO term: STR) : I64 =
+  (* -1 unknown, 0 in progress, 1 done *)
+VAR i : I64 ;
+BEGIN
+  FOR i := 0 TO df.n - 1 DO
+    IF Text.Eq (df.terms[i], term) THEN RETURN df.state[i] END
+  END ;
+  RETURN -1
+END DefState ;
+
+PROCEDURE SetDefState (VAR pool: POOL ; VAR df: Defining ; RO term: STR ; st: I64) =
+VAR
+  i : I64 ;
+  mt : SLICE OF STR ;
+  ms : SLICE OF I64 ;
+BEGIN
+  FOR i := 0 TO df.n - 1 DO
+    IF Text.Eq (df.terms[i], term) THEN df.state[i] := st ; RETURN END
+  END ;
+  IF df.n = LEN (df.terms) THEN
+    mt := NEW (pool, STR, 2 * LEN (df.terms) + 8) ;
+    ms := NEW (pool, I64, 2 * LEN (df.terms) + 8) ;
+    FOR i := 0 TO df.n - 1 DO mt[i] := df.terms[i] ; ms[i] := df.state[i] END ;
+    df.terms := mt ;
+    df.state := ms
+  END ;
+  df.terms[df.n] := Text.Keep (pool, term) ;
+  df.state[df.n] := st ;
+  df.n := df.n + 1
+END SetDefState ;
+
+PROCEDURE JStr (n: PTR Json.Node) : STR RAISES ValueRange =
+  (* the decoded text of a string node *)
+BEGIN
+  RETURN Json.Text (n)
+EXCEPT
+| Json.TypeMismatch (m) : RETURN ''
+END JStr ;
+
+PROCEDURE IsStr (n: PTR Json.Node) : BOOL =
+  (* Json's Node is opaque: a kind is asked through its accessors *)
+VAR s : STR ;
+BEGIN
+  s := Json.AsStr (n) ;
+  RETURN TRUE
+EXCEPT
+| Json.TypeMismatch (m) : RETURN FALSE
+END IsStr ;
+
+PROCEDURE IsObj (n: PTR Json.Node) : BOOL =
+VAR k : I64 ;
+BEGIN
+  k := Json.MemberCount (n) ;
+  RETURN TRUE
+EXCEPT
+| Json.TypeMismatch (m) : RETURN FALSE
+END IsObj ;
+
+PROCEDURE IsArr (n: PTR Json.Node) : BOOL =
+VAR k : I64 ;
+BEGIN
+  k := Json.Count (n) ;
+  RETURN TRUE
+EXCEPT
+| Json.TypeMismatch (m) : RETURN FALSE
+END IsArr ;
+
+PROCEDURE IsNum (n: PTR Json.Node) : BOOL =
+VAR r : F64 ;
+BEGIN
+  r := Json.AsF64 (n) ;
+  RETURN TRUE
+EXCEPT
+| Json.TypeMismatch (m) : RETURN FALSE
+END IsNum ;
+
+PROCEDURE IsBool (n: PTR Json.Node) : BOOL =
+VAR b : BOOL ;
+BEGIN
+  b := Json.AsBool (n) ;
+  RETURN TRUE
+EXCEPT
+| Json.TypeMismatch (m) : RETURN FALSE
+END IsBool ;
+
+PROCEDURE IsScalar (n: PTR Json.Node) : BOOL =
+BEGIN
+  RETURN IsStr (n) OR IsNum (n) OR IsBool (n)
+END IsScalar ;
+
+PROCEDURE Has (obj: PTR Json.Node ; RO key: STR) : BOOL =
+BEGIN
+  IF Json.Field (obj, key) IS SOME f THEN RETURN TRUE END ;
+  RETURN FALSE
+END Has ;
+
+PROCEDURE JGet (obj: PTR Json.Node ; RO key: STR) : PTR Json.Node =
+  (* the member, which the caller has checked is there (the object
+     itself otherwise: an answer that lives where the tree lives) *)
+BEGIN
+  IF Json.Field (obj, key) IS SOME f THEN RETURN f END ;
+  RETURN obj
+END JGet ;
+
+PROCEDURE Members (obj: PTR Json.Node) : I64 =
+BEGIN
+  RETURN Json.MemberCount (obj)
+EXCEPT
+| Json.TypeMismatch (m) : RETURN 0
+END Members ;
+
+PROCEDURE Items (arr: PTR Json.Node) : I64 =
+BEGIN
+  RETURN Json.Count (arr)
+EXCEPT
+| Json.TypeMismatch (m) : RETURN 0
+END Items ;
+
+PROCEDURE SortedNames (obj: PTR Json.Node) : SLICE OF STR RAISES ValueRange =
+  (* the member names in code-point order, as the algorithms walk them *)
+VAR
+  names : SLICE OF STR ;
+  i, j : I64 ;
+  t : STR ;
+BEGIN
+  names := NEW (STR, Members (obj)) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    BEGIN
+      names[i] := Json.NameAt (obj, i)
+    EXCEPT
+    | Json.TypeMismatch (m) : names[i] := ''
+    | IndexError : names[i] := ''
+    END
+  END ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    FOR j := i + 1 TO LEN (names) - 1 DO
+      IF StrLess (names[j], names[i]) THEN
+        t := names[i] ; names[i] := names[j] ; names[j] := t
+      END
+    END
+  END ;
+  RETURN names
+END SortedNames ;
+
+(* ---- IRI expansion and term definitions -------------------------------- *)
+
+PROCEDURE ExpandIri (VAR pool: POOL ; VAR c: Ctx ; RO value: STR ; docRel, vocab: BOOL ;
+                     local: OPT PTR Json.Node ; VAR df: Defining ; VAR nul: BOOL) : STR
+  RAISES SyntaxError, ValueRange =
+  (* JSON-LD 1.0 par 6.2: a term, a compact IRI, a keyword, a
+     relative IRI; nul when the term is defined as null *)
+VAR
+  k, colon : I64 ;
+  prefix, suffix : STR ;
+BEGIN
+  nul := FALSE ;
+  IF IsKeyword (value) THEN RETURN value END ;
+  IF local IS SOME lc THEN
+    IF Has (lc, value) AND DefState (df, value) # 1 THEN
+      CreateTerm (pool, c, lc, value, df)
+    END
+  END ;
+  (* a term only where vocabulary-relative: an @id is not a term *)
+  k := FindTerm (c, value) ;
+  IF vocab AND k >= 0 THEN
+    IF c.defs[k].isNull THEN nul := TRUE ; RETURN '' END ;
+    RETURN c.defs[k].iri
+  END ;
+  colon := Text.FindChar (value, ':') ;
+  IF colon >= 0 THEN
+    prefix := SLICE (value, 0, colon) ;
+    suffix := SLICE (value, colon + 1, LEN (value) - colon - 1) ;
+    IF Text.Eq (prefix, '_') OR Text.StartsWith (suffix, '//') THEN RETURN value END ;
+    IF local IS SOME lc THEN
+      IF Has (lc, prefix) AND DefState (df, prefix) # 1 THEN
+        CreateTerm (pool, c, lc, prefix, df)
+      END
+    END ;
+    k := FindTerm (c, prefix) ;
+    IF k >= 0 AND NOT c.defs[k].isNull THEN RETURN c.defs[k].iri + suffix END ;
+    (* no such prefix: an absolute IRI stays, #Test:2 is relative *)
+    IF IsAbsolute (value) THEN RETURN value END
+  END ;
+  IF vocab AND c.hasVocab THEN RETURN c.vocab + value END ;
+  IF docRel THEN
+    IF LEN (c.base) > 0 THEN RETURN Resolve (c.base, value) END ;
+    RETURN value
+  END ;
+  RETURN value
+END ExpandIri ;
+
+PROCEDURE CreateTerm (VAR pool: POOL ; VAR c: Ctx ; local: PTR Json.Node ; RO term: STR ;
+                      VAR df: Defining) RAISES SyntaxError, ValueRange =
+  (* JSON-LD 1.0 par 6.2 Create Term Definition *)
+VAR
+  st, colon, k : I64 ;
+  value, tv, idv : PTR Json.Node ;
+  d : TermDef ;
+  s, prefix : STR ;
+  nul : BOOL ;
+BEGIN
+  st := DefState (df, term) ;
+  IF st = 1 THEN RETURN END ;
+  IF st = 0 THEN JFail ('cyclic IRI mapping', term) END ;
+  SetDefState (pool, df, term, 0) ;
+  IF IsKeyword (term) THEN JFail ('keyword redefinition', term) END ;
+  IF LEN (term) = 0 THEN JFail ('invalid term definition', 'an empty term') END ;
+  RemoveTerm (c, term) ;
+  value := JGet (local, term) ;
+  d.term := Text.Keep (pool, term) ;
+  d.iri := '' ; d.typeMap := '' ; d.lang := '' ; d.container := '' ;
+  d.hasLang := FALSE ; d.reverse := FALSE ; d.isNull := FALSE ;
+  IF Json.IsNull (value) OR (IsObj (value) AND Has (value, '@id') AND Json.IsNull (JGet (value, '@id'))) THEN
+    d.isNull := TRUE ;
+    DefineTerm (pool, c, d) ;
+    SetDefState (pool, df, term, 1) ;
+    RETURN
+  END ;
+  IF IsStr (value) THEN
+    s := JStr (value) ;
+    value := Json.NewObjIn (pool) ;
+    idv := Json.NewStrIn (pool, s) ;
+    Json.Set (value, '@id', idv)
+  END ;
+  IF NOT IsObj (value) THEN JFail ('invalid term definition', term) END ;
+  IF Has (value, '@type') THEN
+    tv := JGet (value, '@type') ;
+    IF NOT IsStr (tv) THEN JFail ('invalid type mapping', term) END ;
+    s := ExpandIri (pool, c, JStr (tv), FALSE, TRUE, SOME (local), df, nul) ;
+    IF nul OR NOT (Text.Eq (s, '@id') OR Text.Eq (s, '@vocab') OR IsAbsolute (s)) THEN
+      JFail ('invalid type mapping', term)
+    END ;
+    d.typeMap := Text.Keep (pool, s)
+  END ;
+  IF Has (value, '@reverse') THEN
+    IF Has (value, '@id') THEN JFail ('invalid reverse property', term) END ;
+    tv := JGet (value, '@reverse') ;
+    IF NOT IsStr (tv) THEN JFail ('invalid IRI mapping', term) END ;
+    s := ExpandIri (pool, c, JStr (tv), FALSE, TRUE, SOME (local), df, nul) ;
+    IF nul OR NOT (IsAbsolute (s) OR IsBlankId (s)) THEN JFail ('invalid IRI mapping', term) END ;
+    d.iri := Text.Keep (pool, s) ;
+    IF Has (value, '@container') THEN
+      tv := JGet (value, '@container') ;
+      IF Json.IsNull (tv) THEN
+      ELSIF IsStr (tv) AND (Json.StrIs (tv, '@set') OR Json.StrIs (tv, '@index')) THEN
+        d.container := Text.Keep (pool, JStr (tv))
+      ELSE JFail ('invalid reverse property', term)
+      END
+    END ;
+    d.reverse := TRUE ;
+    DefineTerm (pool, c, d) ;
+    SetDefState (pool, df, term, 1) ;
+    RETURN
+  END ;
+  IF Has (value, '@id') AND NOT Json.StrIs (JGet (value, '@id'), term) THEN
+    tv := JGet (value, '@id') ;
+    IF NOT IsStr (tv) THEN JFail ('invalid IRI mapping', term) END ;
+    s := ExpandIri (pool, c, JStr (tv), FALSE, TRUE, SOME (local), df, nul) ;
+    IF nul THEN JFail ('invalid IRI mapping', term) END ;
+    IF Text.Eq (s, '@context') THEN JFail ('invalid keyword alias', term) END ;
+    IF NOT (IsKeyword (s) OR IsAbsolute (s) OR IsBlankId (s)) THEN JFail ('invalid IRI mapping', term) END ;
+    d.iri := Text.Keep (pool, s)
+  ELSE
+    colon := Text.FindChar (term, ':') ;
+    IF colon >= 0 THEN
+      prefix := SLICE (term, 0, colon) ;
+      IF Has (local, prefix) THEN CreateTerm (pool, c, local, prefix, df) END ;
+      k := FindTerm (c, prefix) ;
+      IF k >= 0 AND NOT c.defs[k].isNull THEN
+        d.iri := Text.Keep (pool, c.defs[k].iri + SLICE (term, colon + 1, LEN (term) - colon - 1))
+      ELSE
+        d.iri := d.term
+      END
+    ELSIF c.hasVocab THEN
+      d.iri := Text.Keep (pool, c.vocab + term)
+    ELSE
+      JFail ('invalid IRI mapping', term)
+    END
+  END ;
+  IF Has (value, '@container') THEN
+    tv := JGet (value, '@container') ;
+    IF NOT IsStr (tv) THEN JFail ('invalid container mapping', term) END ;
+    s := JStr (tv) ;
+    IF NOT (Text.Eq (s, '@list') OR Text.Eq (s, '@set') OR Text.Eq (s, '@index') OR
+            Text.Eq (s, '@language')) THEN
+      JFail ('invalid container mapping', term)
+    END ;
+    d.container := Text.Keep (pool, s)
+  END ;
+  IF Has (value, '@language') AND NOT Has (value, '@type') THEN
+    tv := JGet (value, '@language') ;
+    IF Json.IsNull (tv) THEN
+      d.hasLang := TRUE ; d.lang := ''
+    ELSIF IsStr (tv) THEN
+      d.hasLang := TRUE ; d.lang := Text.Keep (pool, Text.Lower (JStr (tv)))
+    ELSE
+      JFail ('invalid language mapping', term)
+    END
+  END ;
+  DefineTerm (pool, c, d) ;
+  SetDefState (pool, df, term, 1)
+EXCEPT
+| Json.TypeMismatch (m) : RAISE SyntaxError ('invalid term definition: ' + term, 0, 0)
+END CreateTerm ;
+
+PROCEDURE ProcessContext (VAR pool: POOL ; VAR st: JState ; RO KEPT active: Ctx ;
+                          local: PTR Json.Node) : Ctx RAISES SyntaxError, ValueRange =
+  (* JSON-LD 1.0 par 6.1: the local context, an object, a string
+     (refused: remote), null, or an array of those *)
+VAR
+  result : Ctx ;
+  i, k, n : I64 ;
+  item, v : PTR Json.Node ;
+  df : Defining ;
+  names : SLICE OF STR ;
+  s : STR ;
+BEGIN
+  result := CopyCtx (pool, active) ;
+  IF IsArr (local) THEN n := Items (local) ELSE n := 1 END ;
+  FOR i := 0 TO n - 1 DO
+    IF IsArr (local) THEN item := Json.Item (local, i) ELSE item := local END ;
+    IF Json.IsNull (item) THEN
+      result := NewCtx (pool, st.docBase)
+    ELSIF IsStr (item) THEN
+      JFail ('a remote context is refused', JStr (item))
+    ELSIF NOT IsObj (item) THEN
+      JFail ('invalid local context', '')
+    ELSE
+      IF Has (item, '@base') THEN
+        v := JGet (item, '@base') ;
+        IF Json.IsNull (v) THEN result.base := ''
+        ELSIF IsStr (v) THEN
+          s := JStr (v) ;
+          IF IsAbsolute (s) THEN result.base := Text.Keep (pool, s)
+          ELSIF LEN (result.base) > 0 THEN result.base := Text.Keep (pool, Resolve (result.base, s))
+          ELSE JFail ('invalid base IRI', s)
+          END
+        ELSE JFail ('invalid base IRI', '')
+        END
+      END ;
+      IF Has (item, '@vocab') THEN
+        v := JGet (item, '@vocab') ;
+        IF Json.IsNull (v) THEN result.hasVocab := FALSE
+        ELSIF IsStr (v) AND (IsAbsolute (JStr (v)) OR IsBlankId (JStr (v))) THEN
+          result.hasVocab := TRUE ; result.vocab := Text.Keep (pool, JStr (v))
+        ELSE JFail ('invalid vocab mapping', '')
+        END
+      END ;
+      IF Has (item, '@language') THEN
+        v := JGet (item, '@language') ;
+        IF Json.IsNull (v) THEN result.hasLang := FALSE
+        ELSIF IsStr (v) THEN result.hasLang := TRUE ; result.lang := Text.Keep (pool, Text.Lower (JStr (v)))
+        ELSE JFail ('invalid default language', '')
+        END
+      END ;
+      df.terms := NEW (pool, STR, 8) ;
+      df.state := NEW (pool, I64, 8) ;
+      df.n := 0 ;
+      names := SortedNames (item) ;
+      FOR k := 0 TO LEN (names) - 1 DO
+        IF NOT (Text.Eq (names[k], '@base') OR Text.Eq (names[k], '@vocab') OR
+                Text.Eq (names[k], '@language')) THEN
+          CreateTerm (pool, result, item, names[k], df)
+        END
+      END
+    END
+  END ;
+  RETURN result
+EXCEPT
+| Json.TypeMismatch (m) : RAISE SyntaxError ('invalid local context', 0, 0)
+| IndexError : RAISE SyntaxError ('invalid local context', 0, 0)
+END ProcessContext ;
+
+(* ---- expansion ------------------------------------------------------------ *)
+
+PROCEDURE Arrayified (VAR pool: POOL ; v: PTR Json.Node) : PTR Json.Node IN pool
+  RAISES ValueRange =
+  (* v as an array: itself, or [v]; the nodes CLONED into pool so
+     that Add may take them (a node has one parent) *)
+VAR
+  a, c : PTR Json.Node IN pool ;
+  i : I64 ;
+BEGIN
+  a := Json.NewArrIn (pool) ;
+  IF IsArr (v) THEN
+    FOR i := 0 TO Items (v) - 1 DO
+      c := Json.CloneIn (pool, Json.Item (v, i)) ;
+      Json.Add (a, c)
+    END
+  ELSE
+    c := Json.CloneIn (pool, v) ;
+    Json.Add (a, c)
+  END ;
+  RETURN a
+EXCEPT
+| Json.TypeMismatch (m) : RETURN Json.NewArrIn (pool)
+| IndexError : RETURN Json.NewArrIn (pool)
+END Arrayified ;
+
+PROCEDURE AddTo (VAR pool: POOL ; VAR KEPT obj: PTR Json.Node ; RO key: STR ; v: PTR Json.Node)
+  RAISES ValueRange =
+  (* obj[key] as an array, v (or v's items) appended *)
+VAR
+  a, c : PTR Json.Node IN pool ;
+  i : I64 ;
+  k : STR ;
+BEGIN
+  k := Text.Keep (pool, key) ;
+  IF Json.Field (obj, k) IS SOME e THEN
+    a := e
+  ELSE
+    a := Json.NewArrIn (pool) ;
+    Json.Set (obj, k, a)
+  END ;
+  IF IsArr (v) THEN
+    FOR i := 0 TO Items (v) - 1 DO
+      c := Json.CloneIn (pool, Json.Item (v, i)) ;
+      Json.Add (a, c)
+    END
+  ELSE
+    c := Json.CloneIn (pool, v) ;
+    Json.Add (a, c)
+  END
+EXCEPT
+| Json.TypeMismatch (m) : RETURN
+| IndexError : RETURN
+END AddTo ;
+
+PROCEDURE SetKey (VAR pool: POOL ; VAR KEPT obj: PTR Json.Node ; RO key: STR ; v: PTR Json.Node)
+  RAISES ValueRange =
+VAR
+  c : PTR Json.Node IN pool ;
+  k : STR ;
+BEGIN
+  k := Text.Keep (pool, key) ;
+  c := Json.CloneIn (pool, v) ;
+  Json.Set (obj, k, c)
+EXCEPT
+| Json.TypeMismatch (m) : RETURN
+END SetKey ;
+
+PROCEDURE IsListObj (n: PTR Json.Node) : BOOL =
+BEGIN
+  RETURN IsObj (n) AND Has (n, '@list')
+END IsListObj ;
+
+PROCEDURE IsValueObj (n: PTR Json.Node) : BOOL =
+BEGIN
+  RETURN IsObj (n) AND Has (n, '@value')
+END IsValueObj ;
+
+PROCEDURE ExpandValue (VAR pool: POOL ; VAR c: Ctx ; RO activeProp: STR ; value: PTR Json.Node)
+  : PTR Json.Node IN pool RAISES SyntaxError, ValueRange =
+  (* JSON-LD 1.0 par 7.2 Value Expansion *)
+VAR
+  k : I64 ;
+  o, s : PTR Json.Node IN pool ;
+  df : Defining ;
+  nul : BOOL ;
+BEGIN
+  k := FindTerm (c, activeProp) ;
+  o := Json.NewObjIn (pool) ;
+  IF k >= 0 AND (Text.Eq (c.defs[k].typeMap, '@id') OR Text.Eq (c.defs[k].typeMap, '@vocab')) AND
+     IsStr (value) THEN
+    df.terms := NEW (pool, STR, 1) ; df.state := NEW (pool, I64, 1) ; df.n := 0 ;
+    s := Json.NewStrIn (pool, ExpandIri (pool, c, JStr (value), TRUE, Text.Eq (c.defs[k].typeMap, '@vocab'), NONE, df, nul)) ;
+    Json.Set (o, '@id', s) ;
+    RETURN o
+  END ;
+  SetKey (pool, o, '@value', value) ;
+  IF k >= 0 AND LEN (c.defs[k].typeMap) > 0 AND NOT Text.Eq (c.defs[k].typeMap, '@id') AND
+     NOT Text.Eq (c.defs[k].typeMap, '@vocab') THEN
+    s := Json.NewStrIn (pool, c.defs[k].typeMap) ;
+    Json.Set (o, '@type', s)
+  ELSIF IsStr (value) THEN
+    IF k >= 0 AND c.defs[k].hasLang THEN
+      IF LEN (c.defs[k].lang) > 0 THEN
+        s := Json.NewStrIn (pool, c.defs[k].lang) ;
+        Json.Set (o, '@language', s)
+      END
+    ELSIF c.hasLang THEN
+      s := Json.NewStrIn (pool, c.lang) ;
+      Json.Set (o, '@language', s)
+    END
+  END ;
+  RETURN o
+EXCEPT
+| Json.TypeMismatch (m) : RAISE SyntaxError ('invalid value object', 0, 0)
+END ExpandValue ;
+
+PROCEDURE Expand (VAR pool: POOL ; VAR st: JState ; RO c0: Ctx ; RO activeProp: STR ;
+                  hasProp: BOOL ; element: PTR Json.Node) : OPT PTR Json.Node
+  RAISES SyntaxError, ValueRange =
+  (* JSON-LD 1.0 par 7.1 Expansion; NONE for null *)
+VAR
+  c : Ctx ;
+  result, arr, item, value, ev, inner, langObj, s, rev : PTR Json.Node IN pool ;
+  i, j, k, n : I64 ;
+  names, inames : SLICE OF STR ;
+  key, prop, cont, lang : STR ;
+  nul, listCtx : BOOL ;
+  df : Defining ;
+BEGIN
+  c := c0 ;
+  IF Json.IsNull (element) THEN RETURN NONE END ;
+  IF IsScalar (element) THEN
+    IF NOT hasProp OR Text.Eq (activeProp, '@graph') THEN RETURN NONE END ;
+    RETURN SOME (ExpandValue (pool, c, activeProp, element))
+  END ;
+  IF IsArr (element) THEN
+    result := Json.NewArrIn (pool) ;
+    k := -1 ;
+    IF hasProp THEN k := FindTerm (c, activeProp) END ;
+    listCtx := (hasProp AND Text.Eq (activeProp, '@list')) OR (k >= 0 AND Text.Eq (c.defs[k].container, '@list')) ;
+    FOR i := 0 TO Items (element) - 1 DO
+      IF Expand (pool, st, c, activeProp, hasProp, Json.Item (element, i)) IS SOME x THEN
+        IF listCtx AND (IsArr (x) OR IsListObj (x)) THEN JFail ('list of lists', '') END ;
+        IF IsArr (x) THEN
+          FOR j := 0 TO Items (x) - 1 DO
+            item := Json.CloneIn (pool, Json.Item (x, j)) ;
+            Json.Add (result, item)
+          END
+        ELSE
+          item := x ;
+          Json.Add (result, item)
+        END
+      END
+    END ;
+    RETURN SOME (result)
+  END ;
+  (* an object *)
+  IF Has (element, '@context') THEN c := ProcessContext (pool, st, c, JGet (element, '@context')) END ;
+  result := Json.NewObjIn (pool) ;
+  df.terms := NEW (pool, STR, 1) ; df.state := NEW (pool, I64, 1) ; df.n := 0 ;
+  names := SortedNames (element) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    key := names[i] ;
+    value := JGet (element, key) ;
+    IF Text.Eq (key, '@context') THEN
+    ELSE
+      prop := ExpandIri (pool, c, key, FALSE, TRUE, NONE, df, nul) ;
+      IF nul OR LEN (prop) = 0 OR NOT (Text.FindChar (prop, ':') >= 0 OR IsKeyword (prop)) THEN
+        (* a key that expands to nothing is dropped *)
+      ELSIF IsKeyword (prop) THEN
+        IF hasProp AND Text.Eq (activeProp, '@reverse') THEN JFail ('invalid reverse property map', '') END ;
+        IF Has (result, prop) THEN JFail ('colliding keywords', prop) END ;
+        IF Text.Eq (prop, '@id') THEN
+          IF NOT IsStr (value) THEN JFail ('invalid @id value', '') END ;
+          s := Json.NewStrIn (pool, ExpandIri (pool, c, JStr (value), TRUE, FALSE, NONE, df, nul)) ;
+          Json.Set (result, '@id', s)
+        ELSIF Text.Eq (prop, '@type') THEN
+          IF IsStr (value) THEN
+            s := Json.NewStrIn (pool, ExpandIri (pool, c, JStr (value), TRUE, TRUE, NONE, df, nul)) ;
+            Json.Set (result, '@type', s)
+          ELSIF IsArr (value) THEN
+            arr := Json.NewArrIn (pool) ;
+            FOR j := 0 TO Items (value) - 1 DO
+              IF NOT IsStr (Json.Item (value, j)) THEN JFail ('invalid type value', '') END ;
+              s := Json.NewStrIn (pool, ExpandIri (pool, c, JStr (Json.Item (value, j)), TRUE, TRUE, NONE, df, nul)) ;
+              Json.Add (arr, s)
+            END ;
+            Json.Set (result, '@type', arr)
+          ELSE
+            JFail ('invalid type value', '')
+          END
+        ELSIF Text.Eq (prop, '@graph') THEN
+          IF Expand (pool, st, c, '@graph', TRUE, value) IS SOME x THEN
+            ev := Arrayified (pool, x) ;
+            Json.Set (result, '@graph', ev)
+          ELSE
+            ev := Json.NewArrIn (pool) ;
+            Json.Set (result, '@graph', ev)
+          END
+        ELSIF Text.Eq (prop, '@value') THEN
+          IF NOT (IsScalar (value) OR Json.IsNull (value)) THEN JFail ('invalid value object value', '') END ;
+          SetKey (pool, result, '@value', value)
+        ELSIF Text.Eq (prop, '@language') THEN
+          IF NOT IsStr (value) THEN JFail ('invalid language-tagged string', '') END ;
+          s := Json.NewStrIn (pool, Text.Lower (JStr (value))) ;
+          Json.Set (result, '@language', s)
+        ELSIF Text.Eq (prop, '@index') THEN
+          IF NOT IsStr (value) THEN JFail ('invalid @index value', '') END ;
+          SetKey (pool, result, '@index', value)
+        ELSIF Text.Eq (prop, '@list') THEN
+          IF hasProp AND NOT Text.Eq (activeProp, '@graph') THEN
+            IF Expand (pool, st, c, activeProp, hasProp, value) IS SOME x THEN
+              IF IsListObj (x) THEN JFail ('list of lists', '') END ;
+              IF IsArr (x) THEN
+                FOR j := 0 TO Items (x) - 1 DO
+                  IF IsListObj (Json.Item (x, j)) THEN JFail ('list of lists', '') END
+                END
+              END ;
+              ev := Arrayified (pool, x) ;
+              Json.Set (result, '@list', ev)
+            ELSE
+              ev := Json.NewArrIn (pool) ;
+              Json.Set (result, '@list', ev)
+            END
+          END
+        ELSIF Text.Eq (prop, '@set') THEN
+          IF Expand (pool, st, c, activeProp, hasProp, value) IS SOME x THEN
+            ev := x ;
+            Json.Set (result, '@set', ev)
+          END
+        ELSIF Text.Eq (prop, '@reverse') THEN
+          IF NOT IsObj (value) THEN JFail ('invalid @reverse value', '') END ;
+          IF Expand (pool, st, c, '@reverse', TRUE, value) IS SOME x THEN
+            IF Has (x, '@reverse') THEN
+              inner := JGet (x, '@reverse') ;
+              inames := SortedNames (inner) ;
+              FOR j := 0 TO LEN (inames) - 1 DO
+                AddTo (pool, result, inames[j], JGet (inner, inames[j]))
+              END
+            END ;
+            inames := SortedNames (x) ;
+            FOR j := 0 TO LEN (inames) - 1 DO
+              IF NOT Text.Eq (inames[j], '@reverse') THEN
+                IF Json.Field (result, '@reverse') IS SOME rm THEN rev := rm
+                ELSE
+                  rev := Json.NewObjIn (pool) ;
+                  Json.Set (result, '@reverse', rev)
+                END ;
+                ev := JGet (x, inames[j]) ;
+                FOR k := 0 TO Items (ev) - 1 DO
+                  item := Json.Item (ev, k) ;
+                  IF IsValueObj (item) OR IsListObj (item) THEN JFail ('invalid reverse property value', '') END ;
+                  AddTo (pool, rev, inames[j], item)
+                END
+              END
+            END
+          END
+        ELSE
+          (* @base, @vocab, @container in a body: dropped as 1.0 does *)
+        END
+      ELSE
+        k := FindTerm (c, key) ;
+        cont := '' ;
+        IF k >= 0 THEN cont := c.defs[k].container END ;
+        IF Text.Eq (cont, '@language') AND IsObj (value) THEN
+          ev := Json.NewArrIn (pool) ;
+          inames := SortedNames (value) ;
+          FOR j := 0 TO LEN (inames) - 1 DO
+            arr := Arrayified (pool, JGet (value, inames[j])) ;
+            FOR n := 0 TO Items (arr) - 1 DO
+              item := Json.Item (arr, n) ;
+              IF NOT IsStr (item) THEN JFail ('invalid language map value', '') END ;
+              langObj := Json.NewObjIn (pool) ;
+              SetKey (pool, langObj, '@value', item) ;
+              s := Json.NewStrIn (pool, Text.Lower (inames[j])) ;
+              Json.Set (langObj, '@language', s) ;
+              Json.Add (ev, langObj)
+            END
+          END
+        ELSIF Text.Eq (cont, '@index') AND IsObj (value) THEN
+          ev := Json.NewArrIn (pool) ;
+          inames := SortedNames (value) ;
+          FOR j := 0 TO LEN (inames) - 1 DO
+            IF Expand (pool, st, c, key, TRUE, Arrayified (pool, JGet (value, inames[j]))) IS SOME x THEN
+              arr := Arrayified (pool, x) ;
+              FOR n := 0 TO Items (arr) - 1 DO
+                item := Json.CloneIn (pool, Json.Item (arr, n)) ;
+                IF NOT Has (item, '@index') THEN
+                  s := Json.NewStrIn (pool, inames[j]) ;
+                  Json.Set (item, '@index', s)
+                END ;
+                Json.Add (ev, item)
+              END
+            END
+          END
+        ELSE
+          IF Expand (pool, st, c, key, TRUE, value) IS SOME x THEN ev := x
+          ELSE ev := Json.NewNullIn (pool)
+          END
+        END ;
+        IF Json.IsNull (ev) THEN
+        ELSE
+          IF Text.Eq (cont, '@list') AND NOT IsListObj (ev) THEN
+            arr := Arrayified (pool, ev) ;
+            ev := Json.NewObjIn (pool) ;
+            Json.Set (ev, '@list', arr)
+          END ;
+          IF k >= 0 AND c.defs[k].reverse THEN
+            IF Json.Field (result, '@reverse') IS SOME rm THEN rev := rm
+            ELSE
+              rev := Json.NewObjIn (pool) ;
+              Json.Set (result, '@reverse', rev)
+            END ;
+            arr := Arrayified (pool, ev) ;
+            FOR n := 0 TO Items (arr) - 1 DO
+              item := Json.Item (arr, n) ;
+              IF IsValueObj (item) OR IsListObj (item) THEN JFail ('invalid reverse property value', '') END ;
+              AddTo (pool, rev, prop, item)
+            END
+          ELSE
+            AddTo (pool, result, prop, ev)
+          END
+        END
+      END
+    END
+  END ;
+  (* the shape of what came out *)
+  IF Has (result, '@value') THEN
+    n := Members (result) ;
+    FOR i := 0 TO n - 1 DO
+      key := Json.NameAt (result, i) ;
+      IF NOT (Text.Eq (key, '@value') OR Text.Eq (key, '@language') OR Text.Eq (key, '@type') OR
+              Text.Eq (key, '@index')) THEN
+        JFail ('invalid value object', key)
+      END
+    END ;
+    IF Has (result, '@language') AND Has (result, '@type') THEN JFail ('invalid value object', '') END ;
+    IF Json.IsNull (JGet (result, '@value')) THEN RETURN NONE END ;
+    IF NOT IsStr (JGet (result, '@value')) AND Has (result, '@language') THEN
+      JFail ('invalid language-tagged value', '')
+    END ;
+    IF Has (result, '@type') THEN
+      IF NOT IsStr (JGet (result, '@type')) OR NOT IsAbsolute (JStr (JGet (result, '@type'))) THEN
+        JFail ('invalid typed value', '')
+      END
+    END
+  ELSIF Has (result, '@type') AND NOT IsArr (JGet (result, '@type')) THEN
+    arr := Arrayified (pool, JGet (result, '@type')) ;
+    Json.Set (result, '@type', arr)
+  ELSIF Has (result, '@set') OR Has (result, '@list') THEN
+    n := Members (result) ;
+    IF n > 2 OR (n = 2 AND NOT Has (result, '@index')) THEN JFail ('invalid set or list object', '') END ;
+    IF Has (result, '@set') THEN RETURN SOME (JGet (result, '@set')) END
+  END ;
+  IF Members (result) = 1 AND Has (result, '@language') THEN RETURN NONE END ;
+  IF NOT hasProp OR Text.Eq (activeProp, '@graph') THEN
+    n := Members (result) ;
+    IF n = 0 OR Has (result, '@value') OR Has (result, '@list') THEN RETURN NONE END ;
+    IF n = 1 AND Has (result, '@id') THEN RETURN NONE END ;
+    (* a document that is only its @graph is that graph, the default one *)
+    IF NOT hasProp AND n = 1 AND Has (result, '@graph') THEN RETURN SOME (JGet (result, '@graph')) END
+  END ;
+  RETURN SOME (result)
+EXCEPT
+| Json.TypeMismatch (m) : RAISE SyntaxError ('invalid document', 0, 0)
+| IndexError : RAISE SyntaxError ('invalid document', 0, 0)
+END Expand ;
+
+(* ---- the node map and the triples ------------------------------------- *)
+
+TYPE
+  (* a graph's nodes, each an expanded node object with @id and its
+     properties as arrays, built in insertion order *)
+  NodeP = PTR Json.Node ;      (* NEW takes a type's name *)
+
+  NodeMap = RECORD
+    ids : SLICE OF STR ;
+    nodes : SLICE OF NodeP ;
+    n : I64 ;
+  END ;
+
+PROCEDURE BlankFor (VAR pool: POOL ; VAR st: JState ; RO id: STR) : STR RAISES ValueRange =
+  (* an input blank node id relabelled, the same label the same node *)
+BEGIN
+  RETURN '_:' + Labelled (pool, st.r, SLICE (id, 2, LEN (id) - 2))
+END BlankFor ;
+
+PROCEDURE FreshBlank (VAR pool: POOL ; VAR st: JState) : STR RAISES ValueRange =
+BEGIN
+  RETURN '_:' + Fresh (pool, st.r)
+END FreshBlank ;
+
+PROCEDURE NodeFor (VAR pool: POOL ; VAR nm: NodeMap ; RO id: STR) : PTR Json.Node =
+  (* the node of that id, made if new *)
+VAR
+  i : I64 ;
+  o, s : PTR Json.Node IN pool ;
+  mi : SLICE OF STR ;
+  mn : SLICE OF NodeP ;
+BEGIN
+  FOR i := 0 TO nm.n - 1 DO
+    IF Text.Eq (nm.ids[i], id) THEN RETURN nm.nodes[i] END
+  END ;
+  IF nm.n = LEN (nm.ids) THEN
+    mi := NEW (pool, STR, 2 * LEN (nm.ids) + 8) ;
+    mn := NEW (pool, NodeP, 2 * LEN (nm.ids) + 8) ;
+    FOR i := 0 TO nm.n - 1 DO mi[i] := nm.ids[i] ; mn[i] := nm.nodes[i] END ;
+    nm.ids := mi ;
+    nm.nodes := mn
+  END ;
+  o := Json.NewObjIn (pool) ;
+  BEGIN
+    s := Json.NewStrIn (pool, id) ;
+    Json.Set (o, '@id', s)
+  EXCEPT
+  | Json.TypeMismatch (m) :
+  | ValueRange :
+  END ;
+  nm.ids[nm.n] := Text.Keep (pool, id) ;
+  nm.nodes[nm.n] := o ;
+  nm.n := nm.n + 1 ;
+  RETURN o
+END NodeFor ;
+
+PROCEDURE SameNode (a, b: PTR Json.Node) : BOOL =
+  (* two expanded values the same, as the node map deduplicates *)
+BEGIN
+  RETURN Text.Eq (Json.CompactSorted (a), Json.CompactSorted (b))
+EXCEPT
+| Json.TypeMismatch (m) : RETURN FALSE
+| ValueRange : RETURN FALSE
+| IndexError : RETURN FALSE
+END SameNode ;
+
+PROCEDURE AddUnique (VAR pool: POOL ; VAR KEPT node: PTR Json.Node ; RO prop: STR ; v: PTR Json.Node)
+  RAISES ValueRange =
+  (* v appended to node[prop] unless an equal value is there *)
+VAR
+  a, c : PTR Json.Node IN pool ;
+  i : I64 ;
+  k : STR ;
+BEGIN
+  k := Text.Keep (pool, prop) ;
+  IF Json.Field (node, k) IS SOME e THEN
+    a := e
+  ELSE
+    a := Json.NewArrIn (pool) ;
+    Json.Set (node, k, a)
+  END ;
+  FOR i := 0 TO Items (a) - 1 DO
+    IF SameNode (Json.Item (a, i), v) THEN RETURN END
+  END ;
+  c := Json.CloneIn (pool, v) ;
+  Json.Add (a, c)
+EXCEPT
+| Json.TypeMismatch (m) : RETURN
+| IndexError : RETURN
+END AddUnique ;
+
+PROCEDURE RefTo (VAR pool: POOL ; RO id: STR) : PTR Json.Node IN pool RAISES ValueRange =
+VAR o, s : PTR Json.Node IN pool ;
+BEGIN
+  o := Json.NewObjIn (pool) ;
+  s := Json.NewStrIn (pool, id) ;
+  Json.Set (o, '@id', s) ;
+  RETURN o
+EXCEPT
+| Json.TypeMismatch (m) : RETURN Json.NewObjIn (pool)
+END RefTo ;
+
+PROCEDURE MapElement (VAR pool: POOL ; VAR st: JState ; VAR dflt: NodeMap ; inDefault: BOOL ;
+                      element: PTR Json.Node ; RO subject: STR ; RO prop: STR ;
+                      reverse: BOOL ; list: OPT PTR Json.Node)
+  RAISES SyntaxError, ValueRange =
+  (* JSON-LD 1.0 par 8.1 Node Map Generation, for the default graph;
+     subject '' is none; inDefault FALSE is a named graph, whose nodes
+     are walked (for their ids) but kept nowhere *)
+VAR
+  i, j : I64 ;
+  id, s, k : STR ;
+  node, ref, item, listObj, arr, types, tv, inner, g : PTR Json.Node IN pool ;
+  names, inames : SLICE OF STR ;
+BEGIN
+  IF IsArr (element) THEN
+    FOR i := 0 TO Items (element) - 1 DO
+      MapElement (pool, st, dflt, inDefault, Json.Item (element, i), subject, prop, reverse, list)
+    END ;
+    RETURN
+  END ;
+  IF NOT IsObj (element) THEN RETURN END ;
+  (* (a @type that is a blank node is relabelled where the triples
+     are written, through the same map as the ids) *)
+  IF Has (element, '@value') THEN
+    IF list IS SOME l THEN
+      item := Json.CloneIn (pool, element) ;
+      AddTo (pool, l, '@list', item)
+    ELSE
+      IF LEN (subject) > 0 AND inDefault THEN
+        node := NodeFor (pool, dflt, subject) ;
+        AddUnique (pool, node, prop, element)
+      END
+    END ;
+    RETURN
+  END ;
+  IF Has (element, '@list') THEN
+    listObj := Json.NewObjIn (pool) ;
+    arr := Json.NewArrIn (pool) ;
+    Json.Set (listObj, '@list', arr) ;
+    MapElement (pool, st, dflt, inDefault, JGet (element, '@list'), subject, prop, reverse, SOME (listObj)) ;
+    IF list IS SOME l THEN
+      AddTo (pool, l, '@list', listObj)
+    ELSE
+      IF LEN (subject) > 0 AND inDefault THEN
+        node := NodeFor (pool, dflt, subject) ;
+        AddUnique (pool, node, prop, listObj)
+      END
+    END ;
+    RETURN
+  END ;
+  (* a node object *)
+  IF Has (element, '@id') THEN
+    id := JStr (JGet (element, '@id')) ;
+    IF IsBlankId (id) THEN id := BlankFor (pool, st, id) END
+  ELSE
+    id := FreshBlank (pool, st)
+  END ;
+  IF inDefault THEN node := NodeFor (pool, dflt, id) END ;
+  IF LEN (subject) > 0 THEN
+    IF reverse THEN
+      (* the element says: element prop subject *)
+      IF inDefault THEN
+        ref := RefTo (pool, subject) ;
+        AddUnique (pool, node, prop, ref)
+      END
+    ELSE
+      ref := RefTo (pool, id) ;
+      IF list IS SOME l THEN
+        AddTo (pool, l, '@list', ref)
+      ELSE
+        IF inDefault THEN
+          inner := NodeFor (pool, dflt, subject) ;
+          AddUnique (pool, inner, prop, ref)
+        END
+      END
+    END
+  ELSE
+    IF list IS SOME l THEN
+      ref := RefTo (pool, id) ;
+      AddTo (pool, l, '@list', ref)
+    END
+  END ;
+  IF Has (element, '@type') AND inDefault THEN
+    types := JGet (element, '@type') ;
+    FOR i := 0 TO Items (types) - 1 DO
+      AddUnique (pool, node, '@type', Json.Item (types, i))
+    END
+  END ;
+  IF Has (element, '@reverse') THEN
+    inner := JGet (element, '@reverse') ;
+    inames := SortedNames (inner) ;
+    FOR i := 0 TO LEN (inames) - 1 DO
+      arr := JGet (inner, inames[i]) ;
+      FOR j := 0 TO Items (arr) - 1 DO
+        MapElement (pool, st, dflt, inDefault, Json.Item (arr, j), id, inames[i], TRUE, NONE)
+      END
+    END
+  END ;
+  IF Has (element, '@graph') THEN
+    (* a named graph: walked, not kept *)
+    g := JGet (element, '@graph') ;
+    MapElement (pool, st, dflt, FALSE, g, '', '', FALSE, NONE)
+  END ;
+  names := SortedNames (element) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    k := names[i] ;
+    IF NOT (Text.Eq (k, '@id') OR Text.Eq (k, '@type') OR Text.Eq (k, '@reverse') OR
+            Text.Eq (k, '@graph') OR Text.Eq (k, '@index')) THEN
+      IF IsKeyword (k) THEN
+      ELSE
+        arr := JGet (element, k) ;
+        FOR j := 0 TO Items (arr) - 1 DO
+          MapElement (pool, st, dflt, inDefault, Json.Item (arr, j), id, k, FALSE, NONE)
+        END
+      END
+    END
+  END
+EXCEPT
+| Json.TypeMismatch (m) : RAISE SyntaxError ('invalid document', 0, 0)
+| IndexError : RAISE SyntaxError ('invalid document', 0, 0)
+END MapElement ;
+
+PROCEDURE IntOf (RO s: STR) : I64 =
+  (* a signed decimal, as Fmt.Short writes an exponent *)
+VAR i, v, sign : I64 ;
+BEGIN
+  v := 0 ; sign := 1 ; i := 0 ;
+  IF LEN (s) > 0 AND (s[0] = '-' OR s[0] = '+') THEN
+    IF s[0] = '-' THEN sign := -1 END ;
+    i := 1
+  END ;
+  WHILE i < LEN (s) DO
+    IF s[i] >= '0' AND s[i] <= '9' THEN v := v * 10 + ORD (s[i]) - 48 END ;
+    i := i + 1
+  END ;
+  RETURN sign * v
+END IntOf ;
+
+PROCEDURE CanonDouble (r: F64) : STR RAISES ValueRange =
+  (* xsd:double's canonical form, from the shortest decimal that reads
+     back (Fmt.Short): 1.0E0, 1.2345E2, 1.0E21, 1.0E-3 *)
+VAR
+  s, digits, mant : STR ;
+  i, e, exp, dot, lead : I64 ;
+  neg : BOOL ;
+BEGIN
+  s := Fmt.Short (r) ;
+  neg := LEN (s) > 0 AND s[0] = '-' ;
+  IF neg THEN s := SLICE (s, 1, LEN (s) - 1) END ;
+  e := Text.FindChar (s, 'e') ;
+  exp := 0 ;
+  IF e >= 0 THEN
+    exp := IntOf (SLICE (s, e + 1, LEN (s) - e - 1)) ;
+    s := SLICE (s, 0, e)
+  END ;
+  dot := Text.FindChar (s, '.') ;
+  IF dot < 0 THEN dot := LEN (s) END ;
+  digits := '' ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] # '.' THEN digits := digits + s[i] END
+  END ;
+  exp := exp + dot - 1 ;
+  lead := 0 ;
+  WHILE lead < LEN (digits) - 1 AND digits[lead] = '0' DO lead := lead + 1 END ;
+  digits := SLICE (digits, lead, LEN (digits) - lead) ;
+  exp := exp - lead ;
+  WHILE LEN (digits) > 1 AND digits[LEN (digits) - 1] = '0' DO digits := SLICE (digits, 0, LEN (digits) - 1) END ;
+  IF Text.Eq (digits, '0') THEN RETURN '0.0E0' END ;
+  mant := SLICE (digits, 0, 1) + '.' ;
+  IF LEN (digits) > 1 THEN mant := mant + SLICE (digits, 1, LEN (digits) - 1) ELSE mant := mant + '0' END ;
+  IF neg THEN mant := '-' + mant END ;
+  RETURN mant + 'E' + Fmt.I64Str (exp)
+EXCEPT
+| IndexError : RETURN '0.0E0'
+END CanonDouble ;
+
+PROCEDURE ObjectToTerm (VAR pool: POOL ; VAR st: JState ; item: PTR Json.Node ; VAR ok: BOOL) : Term
+  RAISES SyntaxError, ValueRange =
+  (* JSON-LD 1.0 par 8.6 Object to RDF: a node reference, or a value
+     object as a literal; ok FALSE for what makes no term *)
+VAR
+  v, tv : PTR Json.Node ;
+  s, dt : STR ;
+  t : Term ;
+BEGIN
+  ok := TRUE ;
+  IF Has (item, '@id') AND NOT Has (item, '@value') THEN
+    s := JStr (JGet (item, '@id')) ;
+    IF IsBlankId (s) THEN RETURN BlankT (SLICE (s, 2, LEN (s) - 2)) END ;
+    IF NOT IsAbsolute (s) THEN ok := FALSE ; RETURN IriT (s) END ;
+    RETURN IriT (s)
+  END ;
+  v := JGet (item, '@value') ;
+  dt := '' ;
+  IF Has (item, '@type') THEN dt := JStr (JGet (item, '@type')) END ;
+  IF IsBool (v) THEN
+    IF LEN (dt) = 0 THEN dt := Xsd + 'boolean' END ;
+    IF Json.AsBool (v) THEN RETURN LitT ('true', '', dt) ELSE RETURN LitT ('false', '', dt) END
+  ELSIF IsNum (v) THEN
+    s := Json.NumText (v) ;
+    IF Text.FindChar (s, '.') >= 0 OR Text.FindChar (s, 'e') >= 0 OR Text.FindChar (s, 'E') >= 0 OR
+       Text.Eq (dt, Xsd + 'double') THEN
+      IF LEN (dt) = 0 THEN dt := Xsd + 'double' END ;
+      RETURN LitT (CanonDouble (Json.AsF64 (v)), '', dt)
+    END ;
+    IF LEN (dt) = 0 THEN dt := Xsd + 'integer' END ;
+    RETURN LitT (Fmt.I64Str (Json.AsI64 (v)), '', dt)
+  ELSIF IsStr (v) THEN
+    s := JStr (v) ;
+    IF Has (item, '@language') THEN RETURN LitT (s, JStr (JGet (item, '@language')), '') END ;
+    IF LEN (dt) = 0 THEN dt := XsdString END ;
+    RETURN LitT (s, '', dt)
+  END ;
+  ok := FALSE ;
+  RETURN IriT ('')
+EXCEPT
+| Json.TypeMismatch (m) : RAISE SyntaxError ('invalid document', 0, 0)
+END ObjectToTerm ;
+
+PROCEDURE ListToTerm (VAR pool: POOL ; VAR st: JState ; VAR g: PTR Graph ; items: PTR Json.Node) : Term
+  RAISES SyntaxError, ValueRange =
+  (* JSON-LD 1.0 par 8.5 List to RDF: the head *)
+VAR
+  i, n : I64 ;
+  head, prev, cell, o : Term ;
+  ok : BOOL ;
+BEGIN
+  n := Items (items) ;
+  IF n = 0 THEN RETURN IriT (RdfNs + 'nil') END ;
+  head := BlankT (Fresh (pool, st.r)) ;
+  prev := head ;
+  FOR i := 0 TO n - 1 DO
+    IF i > 0 THEN
+      cell := BlankT (Fresh (pool, st.r)) ;
+      Add (pool, g, prev, IriT (RdfNs + 'rest'), cell) ;
+      prev := cell
+    END ;
+    o := ObjectToTerm (pool, st, Json.Item (items, i), ok) ;
+    IF ok THEN Add (pool, g, prev, IriT (RdfNs + 'first'), o) END
+  END ;
+  Add (pool, g, prev, IriT (RdfNs + 'rest'), IriT (RdfNs + 'nil')) ;
+  RETURN head
+EXCEPT
+| Json.TypeMismatch (m) : RAISE SyntaxError ('invalid document', 0, 0)
+| IndexError : RAISE SyntaxError ('invalid document', 0, 0)
+END ListToTerm ;
+
+PROCEDURE ParseJsonLd (VAR pool: POOL ; RO text: STR ; RO base: STR ;
+                       context: OPT PTR Json.Node) : PTR Graph IN pool
+  RAISES SyntaxError, ValueRange =
+VAR
+  scratch : POOL ;
+  doc : PTR Json.Node IN scratch ;
+  st : JState ;
+  c : Ctx ;
+  g : PTR Graph IN pool ;
+  nm : NodeMap ;
+  i, j, k : I64 ;
+  names : SLICE OF STR ;
+  subj, o : Term ;
+  arr : PTR Json.Node ;
+  ok : BOOL ;
+  m : STR ;
+  l, cc : I64 ;
+BEGIN
+  BEGIN
+    doc := Json.ParseIn (scratch, text)
+  EXCEPT
+  | Json.ParseError (msg, line, col) :
+      m := msg ; l := line ; cc := col ;
+      RAISE SyntaxError ('JSON: ' + m, l, cc)
+  END ;
+  g := NewGraph (pool) ;
+  NewReader (scratch, st.r, '', base, TRUE) ;
+  st.docBase := Text.Keep (scratch, base) ;
+  c := NewCtx (scratch, base) ;
+  IF context IS SOME ctx THEN c := ProcessContext (scratch, st, c, ctx) END ;
+  nm.ids := NEW (scratch, STR, 16) ;
+  nm.nodes := NEW (scratch, NodeP, 16) ;
+  nm.n := 0 ;
+  IF Expand (scratch, st, c, '', FALSE, doc) IS SOME x THEN
+    MapElement (scratch, st, nm, TRUE, x, '', '', FALSE, NONE)
+  END ;
+  (* the triples of the default graph, nodes in first-seen order *)
+  FOR i := 0 TO nm.n - 1 DO
+    IF IsBlankId (nm.ids[i]) THEN subj := BlankT (SLICE (nm.ids[i], 2, LEN (nm.ids[i]) - 2))
+    ELSE subj := IriT (nm.ids[i])
+    END ;
+    IF IsAbsolute (nm.ids[i]) OR IsBlankId (nm.ids[i]) THEN
+      names := SortedNames (nm.nodes[i]) ;
+      FOR j := 0 TO LEN (names) - 1 DO
+        IF Text.Eq (names[j], '@type') THEN
+          arr := JGet (nm.nodes[i], '@type') ;
+          FOR k := 0 TO Items (arr) - 1 DO
+            m := JStr (Json.Item (arr, k)) ;
+            IF IsBlankId (m) THEN m := BlankFor (scratch, st, m) END ;
+            o := ObjectToTerm (scratch, st, RefTo (scratch, m), ok) ;
+            IF ok THEN Add (pool, g, subj, IriT (RdfNs + 'type'), o) END
+          END
+        ELSIF IsKeyword (names[j]) OR IsBlankId (names[j]) OR NOT IsAbsolute (names[j]) THEN
+          (* @id; a blank node as a property or a relative one is dropped *)
+        ELSE
+          arr := JGet (nm.nodes[i], names[j]) ;
+          FOR k := 0 TO Items (arr) - 1 DO
+            IF IsListObj (Json.Item (arr, k)) THEN
+              (* the graph's pool, not scratch: the list's triples are held in g *)
+              o := ListToTerm (pool, st, g, JGet (Json.Item (arr, k), '@list')) ;
+              Add (pool, g, subj, IriT (names[j]), o)
+            ELSE
+              o := ObjectToTerm (scratch, st, Json.Item (arr, k), ok) ;
+              IF ok THEN Add (pool, g, subj, IriT (names[j]), o) END
+            END
+          END
+        END
+      END
+    END
+  END ;
+  RETURN g
+EXCEPT
+| Json.TypeMismatch (m) : RAISE SyntaxError ('invalid document', 0, 0)
+| IndexError : RAISE SyntaxError ('invalid document', 0, 0)
+END ParseJsonLd ;
+
+
+(* ---- JSON-LD out (2026-10-07; docs/library-plan-2.md item 3) ----------
+
+   The FLATTENED form -- every node once, in first-seen order, with
+   "@id", "@type" and its properties as arrays of node references,
+   value objects and lists -- compacted against the context the caller
+   hands in: its terms for properties and types, its prefixes for
+   compact IRIs, @vocab, and the coercions a term states (@type @id
+   or a datatype, @language, @container @list) so that a value the
+   term already describes is written bare.  A chain of rdf:first/rest
+   cells that nothing else refers to comes back as "@list".  The
+   document is {"@context": ..., "@graph": [...]}, Json.Pretty's
+   layout.  Deterministic, and read back by ParseJsonLd.              *)
+
+PROCEDURE RefCount (g: PTR Graph ; RO id: STR) : I64 =
+  (* how many objects name the blank node id *)
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  FOR i := 0 TO g.n - 1 DO
+    IF g.t[i].o.kind = Kind.Blank AND Text.Eq (g.t[i].o.value, id) THEN n := n + 1 END
+  END ;
+  RETURN n
+END RefCount ;
+
+PROCEDURE IsCell (g: PTR Graph ; RO id: STR ; VAR first: I64 ; VAR rest: I64) : BOOL =
+  (* the blank node id is a list cell: exactly one rdf:first, one
+     rdf:rest, at most rdf:type rdf:List beside them, referenced once;
+     first and rest are the triples' indices *)
+VAR i, nf, nr, other : I64 ;
+BEGIN
+  nf := 0 ; nr := 0 ; other := 0 ;
+  first := -1 ; rest := -1 ;
+  FOR i := 0 TO g.n - 1 DO
+    IF g.t[i].s.kind = Kind.Blank AND Text.Eq (g.t[i].s.value, id) THEN
+      IF Text.Eq (g.t[i].p.value, RdfNs + 'first') THEN nf := nf + 1 ; first := i
+      ELSIF Text.Eq (g.t[i].p.value, RdfNs + 'rest') THEN nr := nr + 1 ; rest := i
+      ELSIF Text.Eq (g.t[i].p.value, RdfNs + 'type') AND g.t[i].o.kind = Kind.Iri AND
+            Text.Eq (g.t[i].o.value, RdfNs + 'List') THEN
+      ELSE other := other + 1
+      END
+    END
+  END ;
+  RETURN nf = 1 AND nr = 1 AND other = 0 AND RefCount (g, id) = 1
+END IsCell ;
+
+PROCEDURE TermObj (VAR pool: POOL ; RO t: Term) : PTR Json.Node IN pool RAISES ValueRange =
+  (* a term as an expanded value: a node reference or a value object *)
+VAR o, s : PTR Json.Node IN pool ;
+BEGIN
+  o := Json.NewObjIn (pool) ;
+  CASE t.kind OF
+  | Iri :
+      s := Json.NewStrIn (pool, t.value) ;
+      Json.Set (o, '@id', s)
+  | Blank :
+      s := Json.NewStrIn (pool, '_:' + t.value) ;
+      Json.Set (o, '@id', s)
+  | Literal :
+      s := Json.NewStrIn (pool, t.value) ;
+      Json.Set (o, '@value', s) ;
+      IF LEN (t.lang) > 0 THEN
+        s := Json.NewStrIn (pool, t.lang) ;
+        Json.Set (o, '@language', s)
+      ELSIF LEN (t.datatype) > 0 AND NOT Text.Eq (t.datatype, XsdString) THEN
+        s := Json.NewStrIn (pool, t.datatype) ;
+        Json.Set (o, '@type', s)
+      END
+  END ;
+  RETURN o
+EXCEPT
+| Json.TypeMismatch (m) : RETURN Json.NewObjIn (pool)
+END TermObj ;
+
+PROCEDURE ListObj (VAR pool: POOL ; g: PTR Graph ; RO head: STR ; VAR consumed: SLICE OF BOOL)
+  : OPT PTR Json.Node RAISES ValueRange =
+  (* the chain from the blank node head as {"@list": [...]}, its cells
+     marked consumed; NONE when it is not a well-formed list *)
+VAR
+  o, arr, item : PTR Json.Node IN pool ;
+  id : STR ;
+  first, rest, n : I64 ;
+  cells : SLICE OF I64 ;
+BEGIN
+  cells := NEW (I64, g.n + 1) ;
+  n := 0 ;
+  id := head ;
+  arr := Json.NewArrIn (pool) ;
+  LOOP
+    IF NOT IsCell (g, id, first, rest) THEN RETURN NONE END ;
+    cells[n] := first ; cells[n + 1] := rest ; n := n + 2 ;
+    item := TermObj (pool, g.t[first].o) ;
+    Json.Add (arr, item) ;
+    IF g.t[rest].o.kind = Kind.Iri AND Text.Eq (g.t[rest].o.value, RdfNs + 'nil') THEN EXIT END ;
+    IF g.t[rest].o.kind # Kind.Blank THEN RETURN NONE END ;
+    id := g.t[rest].o.value ;
+    IF n + 2 > LEN (cells) THEN RETURN NONE END
+  END ;
+  FOR first := 0 TO n - 1 DO consumed[cells[first]] := TRUE END ;
+  o := Json.NewObjIn (pool) ;
+  Json.Set (o, '@list', arr) ;
+  RETURN SOME (o)
+EXCEPT
+| Json.TypeMismatch (m) : RETURN NONE
+| IndexError : RETURN NONE
+END ListObj ;
+
+PROCEDURE CompactIri (RO c: Ctx ; RO iri: STR ; vocab: BOOL) : STR =
+  (* a term (when vocabulary-relative), a compact IRI by a prefix, a
+     @vocab-relative name, else the IRI *)
+VAR i, best, bestLen : I64 ;
+BEGIN
+  IF vocab THEN
+    FOR i := 0 TO c.n - 1 DO
+      IF NOT c.defs[i].isNull AND NOT c.defs[i].reverse AND Text.Eq (c.defs[i].iri, iri) THEN
+        RETURN c.defs[i].term
+      END
+    END
+  END ;
+  best := -1 ; bestLen := 0 ;
+  FOR i := 0 TO c.n - 1 DO
+    (* a prefix is a term whose IRI ends in a delimiter (/, #, :, ?):
+       `n' for http://e/n would make http://e/note into n:ote, which
+       expands back but reads as nonsense *)
+    IF NOT c.defs[i].isNull AND NOT c.defs[i].reverse AND LEN (c.defs[i].iri) > bestLen AND
+       LEN (c.defs[i].iri) < LEN (iri) AND Text.StartsWith (iri, c.defs[i].iri) AND
+       Text.FindChar (c.defs[i].term, ':') < 0 AND
+       Text.FindChar ('/#:?@[]', c.defs[i].iri[LEN (c.defs[i].iri) - 1]) >= 0 THEN
+      best := i ; bestLen := LEN (c.defs[i].iri)
+    END
+  END ;
+  IF best >= 0 THEN RETURN c.defs[best].term + ':' + SLICE (iri, bestLen, LEN (iri) - bestLen) END ;
+  IF vocab AND c.hasVocab AND LEN (c.vocab) < LEN (iri) AND Text.StartsWith (iri, c.vocab) THEN
+    RETURN SLICE (iri, LEN (c.vocab), LEN (iri) - LEN (c.vocab))
+  END ;
+  RETURN iri
+END CompactIri ;
+
+PROCEDURE CompactValue (VAR pool: POOL ; RO c: Ctx ; k: I64 ; v: PTR Json.Node)
+  : PTR Json.Node IN pool RAISES ValueRange =
+  (* an expanded value under the term k (-1 for none): bare where the
+     term's coercion says what it is, an object else *)
+VAR
+  o, s, arr, item : PTR Json.Node IN pool ;
+  i : I64 ;
+  tm, lg, dt, id : STR ;
+BEGIN
+  tm := '' ; lg := '' ;
+  IF k >= 0 THEN tm := c.defs[k].typeMap END ;
+  IF Has (v, '@list') THEN
+    arr := Json.NewArrIn (pool) ;
+    FOR i := 0 TO Items (JGet (v, '@list')) - 1 DO
+      item := CompactValue (pool, c, k, Json.Item (JGet (v, '@list'), i)) ;
+      Json.Add (arr, item)
+    END ;
+    IF k >= 0 AND Text.Eq (c.defs[k].container, '@list') THEN RETURN arr END ;
+    o := Json.NewObjIn (pool) ;
+    Json.Set (o, '@list', arr) ;
+    RETURN o
+  END ;
+  IF Has (v, '@id') THEN
+    id := JStr (JGet (v, '@id')) ;
+    IF Text.Eq (tm, '@id') THEN RETURN Json.NewStrIn (pool, CompactIri (c, id, FALSE)) END ;
+    IF Text.Eq (tm, '@vocab') THEN RETURN Json.NewStrIn (pool, CompactIri (c, id, TRUE)) END ;
+    o := Json.NewObjIn (pool) ;
+    s := Json.NewStrIn (pool, CompactIri (c, id, FALSE)) ;
+    Json.Set (o, '@id', s) ;
+    RETURN o
+  END ;
+  (* a value object *)
+  IF Has (v, '@language') THEN
+    lg := JStr (JGet (v, '@language')) ;
+    IF k >= 0 AND c.defs[k].hasLang AND Text.Eq (c.defs[k].lang, lg) THEN
+      RETURN Json.NewStrIn (pool, JStr (JGet (v, '@value')))
+    END ;
+    IF k >= 0 AND NOT c.defs[k].hasLang AND c.hasLang AND Text.Eq (c.lang, lg) AND LEN (tm) = 0 THEN
+      RETURN Json.NewStrIn (pool, JStr (JGet (v, '@value')))
+    END ;
+    o := Json.NewObjIn (pool) ;
+    SetKey (pool, o, '@value', JGet (v, '@value')) ;
+    s := Json.NewStrIn (pool, lg) ;
+    Json.Set (o, '@language', s) ;
+    RETURN o
+  END ;
+  IF Has (v, '@type') THEN
+    dt := JStr (JGet (v, '@type')) ;
+    IF Text.Eq (tm, dt) THEN RETURN Json.NewStrIn (pool, JStr (JGet (v, '@value'))) END ;
+    o := Json.NewObjIn (pool) ;
+    SetKey (pool, o, '@value', JGet (v, '@value')) ;
+    s := Json.NewStrIn (pool, CompactIri (c, dt, TRUE)) ;
+    Json.Set (o, '@type', s) ;
+    RETURN o
+  END ;
+  (* a plain string: bare unless a language would attach to it *)
+  IF LEN (tm) = 0 AND ((k >= 0 AND c.defs[k].hasLang AND LEN (c.defs[k].lang) = 0) OR
+                       NOT c.hasLang) THEN
+    RETURN Json.NewStrIn (pool, JStr (JGet (v, '@value')))
+  END ;
+  o := Json.NewObjIn (pool) ;
+  SetKey (pool, o, '@value', JGet (v, '@value')) ;
+  RETURN o
+EXCEPT
+| Json.TypeMismatch (m) : RETURN Json.NewNullIn (pool)
+| IndexError : RETURN Json.NewNullIn (pool)
+END CompactValue ;
+
+PROCEDURE PropTerm (RO c: Ctx ; RO iri: STR ; isList: BOOL) : I64 =
+  (* the term for a property, a list container preferred for a list *)
+VAR i, any : I64 ;
+BEGIN
+  any := -1 ;
+  FOR i := 0 TO c.n - 1 DO
+    IF NOT c.defs[i].isNull AND NOT c.defs[i].reverse AND Text.Eq (c.defs[i].iri, iri) THEN
+      IF isList = Text.Eq (c.defs[i].container, '@list') THEN RETURN i END ;
+      IF any < 0 THEN any := i END
+    END
+  END ;
+  RETURN any
+END PropTerm ;
+
+PROCEDURE JsonLd (g: PTR Graph ; context: OPT PTR Json.Node) : STR RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  st : JState ;
+  c : Ctx ;
+  nm : NodeMap ;
+  consumed, hasList : SLICE OF BOOL ;
+  listAt : SLICE OF NodeP ;
+  i, j, k, n : I64 ;
+  node, val, out, graph, cnode, arr, item, types, ctxCopy, tv : PTR Json.Node IN scratch ;
+  sid, key, pname, tm : STR ;
+  names : SLICE OF STR ;
+  isList : BOOL ;
+BEGIN
+  NewReader (scratch, st.r, '', '', TRUE) ;
+  st.docBase := '' ;
+  c := NewCtx (scratch, '') ;
+  BEGIN
+    IF context IS SOME ctx THEN c := ProcessContext (scratch, st, c, ctx) END
+  EXCEPT
+  | SyntaxError (m, l, cc) : c := NewCtx (scratch, '')
+  END ;
+  nm.ids := NEW (scratch, STR, 16) ;
+  nm.nodes := NEW (scratch, NodeP, 16) ;
+  nm.n := 0 ;
+  consumed := NEW (scratch, BOOL, g.n + 1) ;
+  listAt := NEW (scratch, NodeP, g.n + 1) ;
+  hasList := NEW (scratch, BOOL, g.n + 1) ;
+  (* first the lists: a cell's triples may come before the triple that
+     names the chain's head, so they are found before nodes are made *)
+  FOR i := 0 TO g.n - 1 DO
+    (* not through rdf:first: a list inside a list has no JSON-LD 1.0
+       form, so an inner chain stays as the nodes it is *)
+    IF g.t[i].o.kind = Kind.Blank AND NOT consumed[i] AND NOT Text.Eq (g.t[i].p.value, RdfNs + 'first') THEN
+      IF ListObj (scratch, g, g.t[i].o.value, consumed) IS SOME lo THEN
+        listAt[i] := lo ;
+        hasList[i] := TRUE
+      END
+    END
+  END ;
+  (* the node map: subjects in first-seen order, each object as an
+     expanded value *)
+  FOR i := 0 TO g.n - 1 DO
+    IF NOT consumed[i] THEN
+      IF g.t[i].s.kind = Kind.Blank THEN sid := '_:' + g.t[i].s.value ELSE sid := g.t[i].s.value END ;
+      node := NodeFor (scratch, nm, sid) ;
+      IF Text.Eq (g.t[i].p.value, RdfNs + 'type') AND g.t[i].o.kind # Kind.Literal THEN
+        IF g.t[i].o.kind = Kind.Blank THEN tv := Json.NewStrIn (scratch, '_:' + g.t[i].o.value)
+        ELSE tv := Json.NewStrIn (scratch, g.t[i].o.value)
+        END ;
+        AddUnique (scratch, node, '@type', tv)
+      ELSE
+        IF hasList[i] THEN
+          val := listAt[i]
+        ELSIF g.t[i].o.kind = Kind.Iri AND Text.Eq (g.t[i].o.value, RdfNs + 'nil') THEN
+          val := Json.NewObjIn (scratch) ;
+          arr := Json.NewArrIn (scratch) ;
+          Json.Set (val, '@list', arr)
+        ELSE
+          val := TermObj (scratch, g.t[i].o)
+        END ;
+        AddUnique (scratch, node, g.t[i].p.value, val)
+      END
+    END
+  END ;
+  (* compacted, written *)
+  graph := Json.NewArrIn (scratch) ;
+  FOR i := 0 TO nm.n - 1 DO
+    IF TRUE THEN
+      cnode := Json.NewObjIn (scratch) ;
+      tv := Json.NewStrIn (scratch, CompactIri (c, nm.ids[i], FALSE)) ;
+      Json.Set (cnode, '@id', tv) ;
+      names := SortedNames (nm.nodes[i]) ;
+      FOR j := 0 TO LEN (names) - 1 DO
+        key := names[j] ;
+        IF Text.Eq (key, '@id') THEN
+        ELSIF Text.Eq (key, '@type') THEN
+          types := JGet (nm.nodes[i], '@type') ;
+          arr := Json.NewArrIn (scratch) ;
+          FOR k := 0 TO Items (types) - 1 DO
+            tv := Json.NewStrIn (scratch, CompactIri (c, JStr (Json.Item (types, k)), TRUE)) ;
+            Json.Add (arr, tv)
+          END ;
+          IF Items (arr) = 1 THEN
+            tv := Json.CloneIn (scratch, Json.Item (arr, 0)) ;
+            Json.Set (cnode, '@type', tv)
+          ELSE
+            Json.Set (cnode, '@type', arr)
+          END
+        ELSE
+          arr := JGet (nm.nodes[i], key) ;
+          isList := Items (arr) = 1 AND Has (Json.Item (arr, 0), '@list') ;
+          k := PropTerm (c, key, isList) ;
+          IF k >= 0 THEN pname := c.defs[k].term ELSE pname := CompactIri (c, key, TRUE) END ;
+          IF Items (arr) = 1 AND NOT (k >= 0 AND Text.Eq (c.defs[k].container, '@set')) THEN
+            val := CompactValue (scratch, c, k, Json.Item (arr, 0))
+          ELSE
+            val := Json.NewArrIn (scratch) ;
+            FOR n := 0 TO Items (arr) - 1 DO
+              item := CompactValue (scratch, c, k, Json.Item (arr, n)) ;
+              Json.Add (val, item)
+            END
+          END ;
+          SetKey (scratch, cnode, Text.Keep (scratch, Json.Name (pname)), val)
+        END
+      END ;
+      Json.Add (graph, cnode)
+    END
+  END ;
+  out := Json.NewObjIn (scratch) ;
+  IF context IS SOME ctx THEN
+    ctxCopy := Json.CloneIn (scratch, ctx) ;
+    Json.Set (out, '@context', ctxCopy)
+  END ;
+  Json.Set (out, '@graph', graph) ;
+  RETURN Json.Pretty (out)
+EXCEPT
+| Json.TypeMismatch (m) : RETURN ''
+| IndexError : RETURN ''
+END JsonLd ;
 
 END Rdf.

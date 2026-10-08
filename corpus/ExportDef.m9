@@ -8,6 +8,7 @@ STATEFUL DEFINITION MODULE ExportDef ;
    seen to land in the same storage.  A gendiff fixture with
    ExportUse; runtime/test/run.sh runs ExportUse. *)
 
+CONST Width = 4 ;      (* an importer's ARRAY ExportDef.Width OF F64 *)
 TYPE
   Box = RECORD
     n : I64 ;

@@ -5,6 +5,7 @@
     deflatecheck.py check DIR    read what deflateout wrote beside them
     deflatecheck.py png DIR      take apart the pictures pngout wrote
     deflatecheck.py svg DIR GOLD svg2png's figures against Chrome's in GOLD
+    deflatecheck.py zip DIR ZIPOUT  archives zipout writes of DIR's inputs, read by zipfile
 
 A compressor is right when somebody else's inflate reads back what went
 in.  The somebody else is zlib, through Python: gzip.decompress for
@@ -14,7 +15,10 @@ level 6, and exits 1 if anything is not read back whole."""
 import gzip
 import os
 import random
+import struct
+import subprocess
 import sys
+import zipfile
 import zlib
 
 
@@ -193,8 +197,80 @@ def check_svg(where, gold):
     return 1 if bad else 0
 
 
+def check_zip(where, zipout):
+    """Zip's writer: zipout packs every input of `where` twice, deflated
+    and stored, under names with a directory and one beyond ASCII; zipfile
+    reads each archive back -- testzip (every CRC), the names in order,
+    method, the time stamped, the flag that says UTF-8, size, CRC, and
+    the bytes -- and an empty archive opens with no member."""
+    names = sorted(n[:-3] for n in os.listdir(where) if n.endswith(".in"))
+    bad = 0
+    members = []
+    for i, name in enumerate(names):
+        member = ("sub/dir/" if i % 3 == 0 else "") + name + (".\u00e9t\u00e9" if i % 4 == 1 else ".in")
+        members.append((member, os.path.join(where, name + ".in")))
+    for mode in ("deflate", "store", "none"):
+        path = os.path.join(where, "zipout-%s.zip" % mode)
+        args = [zipout, path, "deflate" if mode == "none" else mode]
+        for member, src in ([] if mode == "none" else members):
+            args += [member, src]
+        r = subprocess.run(args, capture_output=True, text=True)
+        if r.returncode != 0:
+            print("FAIL zipout %s: %s" % (mode, r.stderr.strip()))
+            bad += 1
+            continue
+        try:
+            zf = zipfile.ZipFile(path)
+            first = zf.testzip()
+        except zipfile.BadZipFile as e:
+            print("FAIL %s: zipfile refuses it: %s" % (path, e))
+            bad += 1
+            continue
+        if first is not None:
+            print("FAIL %s: testzip: %s" % (path, first))
+            bad += 1
+        raw = open(path, "rb").read()
+        want_names = [m for m, _ in members] if mode != "none" else []
+        if zf.namelist() != want_names:
+            print("FAIL %s: names %r" % (path, zf.namelist()))
+            bad += 1
+        for member, src in ([] if mode == "none" else members):
+            want = open(src, "rb").read()
+            info = zf.getinfo(member)
+            got = zf.read(member)
+            problems = []
+            if got != want:
+                problems.append("the bytes differ")
+            if info.compress_type != (zipfile.ZIP_DEFLATED if mode == "deflate" else zipfile.ZIP_STORED):
+                problems.append("method %d" % info.compress_type)
+            if info.date_time != (2026, 10, 7, 12, 34, 56):
+                problems.append("time %r" % (info.date_time,))
+            if not info.flag_bits & 0x800:
+                problems.append("the UTF-8 flag is off")
+            if info.file_size != len(want) or info.CRC != zlib.crc32(want):
+                problems.append("size %d or CRC %08x" % (info.file_size, info.CRC))
+            # the LOCAL header too: zipfile reads sizes from the central
+            # directory only, so a wrong local field is seen by nobody else
+            loc = raw[info.header_offset:info.header_offset + 30]
+            sig, _, flags, method, t, d, crc, csize, usize, nlen, xlen = struct.unpack("<IHHHHHIIIHH", loc)
+            lname = raw[info.header_offset + 30:info.header_offset + 30 + nlen]
+            if (sig != 0x04034b50 or flags != info.flag_bits or method != info.compress_type or
+                    crc != info.CRC or csize != info.compress_size or usize != info.file_size or
+                    lname != member.encode() or xlen != 0):
+                problems.append("the local header disagrees with the directory")
+            if problems:
+                print("FAIL %s %s: %s" % (path, member, ", ".join(problems)))
+                bad += 1
+        size = os.path.getsize(path)
+        print("%s zip %-7s %3d members %9d bytes" % ("FAIL" if bad else "ok  ", mode, len(zf.namelist()), size))
+    print("deflatecheck zip: %d archives, %d problems" % (3, bad))
+    return 1 if bad else 0
+
+
 def main():
     mode, where = sys.argv[1], sys.argv[2]
+    if mode == "zip":
+        return check_zip(where, sys.argv[3])
     if mode == "svg":
         return check_svg(where, sys.argv[3])
     if mode == "png":

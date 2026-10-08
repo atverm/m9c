@@ -122,12 +122,13 @@ _(documented with the group below)_
 
 ### Coolwarm () : Cmap
 
-the colour maps as PROCEDURES, written when a payload-less
-variant constructor from ANOTHER module type-checked and the
-generator refused it (met by RenderHeat's first caller outside
-this file).  Since 2026-09-15 `Plot.Cmap.Viridis` works from
-anywhere; these two remain as the shorter spelling their callers
-use, and answer exactly that constructor.
+_(documented with the group below)_
+
+### CmapHex (cmap: Cmap ; t: F64) : STR RAISES ValueRange
+
+the colour at t in 0 .. 1 of a colour map, as '#rrggbb' -- what
+RenderHeat fills a cell with, for a figure drawn elsewhere
+(Map's colour grid, 2026-10-08); t is clamped to 0 .. 1
 
 ### SetLineColor (series: I64 ; RO KEPT hex: STR)
 

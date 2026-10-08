@@ -163,6 +163,55 @@ PROCEDURE Crc32 (RO b: SLICE OF BYTE) : I64 RAISES ValueRange ;
 PROCEDURE Adler32 (RO b: SLICE OF BYTE) : I64 ;
   (* the checksum of the zlib wrapping (zlib.adler32) *)
 
+(* ---- writing an archive (2026-10-07; docs/library-plan-2.md, item 3)
+
+   A Writer collects members and Finish lays the archive out: a local
+   header and the data for each, the central directory, the end
+   record.  Everything is held in memory until then, which is right
+   for an export of a few megabytes and wrong past 4 GB -- ZIP64 is
+   not WRITTEN: a member, or the archive, that would need it is
+   refused by name.  A deflated member goes through Deflate above
+   (the plain compressor); a stored one is the bytes.  Names are
+   UTF-8 with flag bit 11 set, as python's zipfile writes them.  The
+   time of every member is 1980-01-01 00:00:00 until SetTime, so the
+   same members give the same bytes -- a receipt can hold an archive
+   -- and the time is said by its pieces, in DOS's 2-second steps.
+
+   Python's zipfile reads what this writes (runtime/test/deflate.sh,
+   the witness that is not ours: names, sizes, CRCs, times, the bytes
+   back) and Open above reads it too (ZipTest). *)
+
+TYPE
+  Writer ;                       (* opaque; lives in a POOL *)
+
+PROCEDURE NewWriter (VAR pool: POOL) : PTR Writer IN pool ;
+
+PROCEDURE SetTime (VAR w: PTR Writer ; year, month, day, hour, minute,
+                   second: I64) RAISES Error ;
+  (* the time written for every member added AFTER this: 1980..2107,
+     a second rounded down to an even one; refused outside that *)
+
+PROCEDURE AddBytes (VAR w: PTR Writer ; RO name: STR ;
+                    RO data: SLICE OF BYTE ; deflate: BOOL)
+  RAISES Error, ValueRange ;
+  (* a member: deflated when asked, else stored.  Refused by name: an
+     empty name, one already in the archive, one over 65535 octets of
+     UTF-8, a member or an archive past 4 GB, a 65536th member *)
+
+PROCEDURE AddFile (VAR w: PTR Writer ; RO name: STR ; RO path: STR ;
+                   deflate: BOOL)
+  RAISES Error, Io.IOError, ValueRange ;
+  (* AddBytes of the file at path *)
+
+PROCEDURE Finish (VAR w: PTR Writer) : SLICE OF BYTE
+  RAISES Error, ValueRange ;
+  (* the archive's bytes; the writer may go on adding, and a second
+     Finish lays out what there is then *)
+
+PROCEDURE WriteTo (VAR w: PTR Writer ; RO path: STR)
+  RAISES Error, Io.IOError, ValueRange ;
+  (* Finish, written to path *)
+
 END Zip.
 
 
@@ -1776,5 +1825,203 @@ BEGIN
   PutLow (out, LEN (out) - 4, LEN (data) MOD 4294967296, 4) ;
   RETURN out
 END Gzip ;
+
+
+(* ---- writing an archive (2026-10-07) ------------------------------- *)
+
+CONST
+  Max32 = 4294967295 ;
+  MaxMembers = 65535 ;
+  MaxName = 65535 ;
+  LocHdr = 30 ;
+  CenHdr = 46 ;
+  EocdLen = 22 ;
+
+TYPE
+  WEntry = RECORD
+    name : SLICE OF BYTE ;       (* UTF-8, as written *)
+    data : SLICE OF BYTE ;       (* as stored: deflated or the bytes *)
+    method, crc, usize, dosTime, dosDate : I64 ;
+  END ;
+
+  Writer = RECORD
+    e : SLICE OF WEntry ;
+    n : I64 ;
+    dosTime, dosDate : I64 ;     (* for the members added next *)
+  END ;
+
+PROCEDURE NewWriter (VAR pool: POOL) : PTR Writer IN pool =
+VAR w : PTR Writer IN pool ;
+BEGIN
+  w := NEW (pool, Writer) ;
+  w.e := NEW (pool, WEntry, 8) ;
+  w.n := 0 ;
+  w.dosTime := 0 ;               (* 1980-01-01 00:00:00 *)
+  w.dosDate := 33 ;
+  RETURN w
+END NewWriter ;
+
+PROCEDURE SetTime (VAR w: PTR Writer ; year, month, day, hour, minute,
+                   second: I64) RAISES Error =
+BEGIN
+  IF year < 1980 OR year > 2107 OR month < 1 OR month > 12 OR day < 1 OR
+     day > 31 OR hour < 0 OR hour > 23 OR minute < 0 OR minute > 59 OR
+     second < 0 OR second > 59 THEN
+    RAISE Error ('not a time a zip can hold (1980..2107, a calendar date, a time of day)')
+  END ;
+  w.dosDate := (year - 1980) * 512 + month * 32 + day ;
+  w.dosTime := hour * 2048 + minute * 32 + second DIV 2
+END SetTime ;
+
+PROCEDURE Kept (VAR w: PTR Writer ; RO b: SLICE OF BYTE) : SLICE OF BYTE =
+  (* a copy in the writer's pool *)
+VAR
+  c : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  c := NEW (w, BYTE, LEN (b)) ;
+  FOR i := 0 TO LEN (b) - 1 DO c[i] := b[i] END ;
+  RETURN c
+END Kept ;
+
+PROCEDURE SameBytes (RO a, b: SLICE OF BYTE) : BOOL =
+VAR i : I64 ;
+BEGIN
+  IF LEN (a) # LEN (b) THEN RETURN FALSE END ;
+  FOR i := 0 TO LEN (a) - 1 DO
+    IF a[i] # b[i] THEN RETURN FALSE END
+  END ;
+  RETURN TRUE
+END SameBytes ;
+
+PROCEDURE Laid (w: PTR Writer) : I64 =
+  (* the bytes of the local headers and data so far *)
+VAR i, t : I64 ;
+BEGIN
+  t := 0 ;
+  FOR i := 0 TO w.n - 1 DO
+    t := t + LocHdr + LEN (w.e[i].name) + LEN (w.e[i].data)
+  END ;
+  RETURN t
+END Laid ;
+
+PROCEDURE AddBytes (VAR w: PTR Writer ; RO name: STR ;
+                    RO data: SLICE OF BYTE ; deflate: BOOL)
+  RAISES Error, ValueRange =
+VAR
+  scratch : POOL ;
+  nm, packed : SLICE OF BYTE ;
+  more : SLICE OF WEntry ;
+  i : I64 ;
+BEGIN
+  IF LEN (name) = 0 THEN RAISE Error ('a member needs a name') END ;
+  nm := DynStr.Utf8 (scratch, name) ;
+  IF LEN (nm) > MaxName THEN
+    RAISE Error ('a member name over 65535 octets: ' + SLICE (name, 0, 40) + '...')
+  END ;
+  FOR i := 0 TO w.n - 1 DO
+    IF SameBytes (w.e[i].name, nm) THEN
+      RAISE Error ('a member named twice: ' + name)
+    END
+  END ;
+  IF w.n = MaxMembers THEN RAISE Error ('more than 65535 members') END ;
+  IF LEN (data) > Max32 THEN RAISE Error ('a member past 4 GB (ZIP64 is not written): ' + name) END ;
+  IF deflate THEN packed := Deflate (scratch, data) ELSE packed := data END ;
+  IF LEN (packed) > Max32 THEN RAISE Error ('a member past 4 GB (ZIP64 is not written): ' + name) END ;
+  IF Laid (w) + LocHdr + LEN (nm) + LEN (packed) + (w.n + 1) * CenHdr + EocdLen > Max32 THEN
+    RAISE Error ('an archive past 4 GB (ZIP64 is not written)')
+  END ;
+  IF w.n = LEN (w.e) THEN
+    more := NEW (w, WEntry, 2 * w.n) ;
+    FOR i := 0 TO w.n - 1 DO more[i] := w.e[i] END ;
+    w.e := more
+  END ;
+  w.e[w.n].name := Kept (w, nm) ;
+  w.e[w.n].data := Kept (w, packed) ;
+  IF deflate THEN w.e[w.n].method := Deflated ELSE w.e[w.n].method := Stored END ;
+  w.e[w.n].crc := Crc32 (data) ;
+  w.e[w.n].usize := LEN (data) ;
+  w.e[w.n].dosTime := w.dosTime ;
+  w.e[w.n].dosDate := w.dosDate ;
+  w.n := w.n + 1
+END AddBytes ;
+
+PROCEDURE AddFile (VAR w: PTR Writer ; RO name: STR ; RO path: STR ;
+                   deflate: BOOL)
+  RAISES Error, Io.IOError, ValueRange =
+VAR scratch : POOL ;
+BEGIN
+  AddBytes (w, name, Io.ReadFileBytes (scratch, path), deflate)
+END AddFile ;
+
+PROCEDURE Finish (VAR w: PTR Writer) : SLICE OF BYTE
+  RAISES Error, ValueRange =
+VAR
+  out : SLICE OF BYTE ;
+  i, j, at, cdAt, cdLen, hdrOff : I64 ;
+BEGIN
+  cdLen := 0 ;
+  FOR i := 0 TO w.n - 1 DO cdLen := cdLen + CenHdr + LEN (w.e[i].name) END ;
+  cdAt := Laid (w) ;
+  out := NEW (w, BYTE, cdAt + cdLen + EocdLen) ;
+  at := 0 ;
+  FOR i := 0 TO w.n - 1 DO
+    PutLow (out, at, SigLoc, 4) ;
+    PutLow (out, at + 4, 20, 2) ;                       (* version needed: 2.0 *)
+    PutLow (out, at + 6, 2048, 2) ;                     (* bit 11: UTF-8 names *)
+    PutLow (out, at + 8, w.e[i].method, 2) ;
+    PutLow (out, at + 10, w.e[i].dosTime, 2) ;
+    PutLow (out, at + 12, w.e[i].dosDate, 2) ;
+    PutLow (out, at + 14, w.e[i].crc, 4) ;
+    PutLow (out, at + 18, LEN (w.e[i].data), 4) ;
+    PutLow (out, at + 22, w.e[i].usize, 4) ;
+    PutLow (out, at + 26, LEN (w.e[i].name), 2) ;
+    PutLow (out, at + 28, 0, 2) ;                       (* no extra field *)
+    at := at + LocHdr ;
+    FOR j := 0 TO LEN (w.e[i].name) - 1 DO out[at + j] := w.e[i].name[j] END ;
+    at := at + LEN (w.e[i].name) ;
+    FOR j := 0 TO LEN (w.e[i].data) - 1 DO out[at + j] := w.e[i].data[j] END ;
+    at := at + LEN (w.e[i].data)
+  END ;
+  hdrOff := 0 ;
+  FOR i := 0 TO w.n - 1 DO
+    PutLow (out, at, SigCen, 4) ;
+    PutLow (out, at + 4, 20, 2) ;                       (* made by 2.0, MS-DOS attributes *)
+    PutLow (out, at + 6, 20, 2) ;
+    PutLow (out, at + 8, 2048, 2) ;
+    PutLow (out, at + 10, w.e[i].method, 2) ;
+    PutLow (out, at + 12, w.e[i].dosTime, 2) ;
+    PutLow (out, at + 14, w.e[i].dosDate, 2) ;
+    PutLow (out, at + 16, w.e[i].crc, 4) ;
+    PutLow (out, at + 20, LEN (w.e[i].data), 4) ;
+    PutLow (out, at + 24, w.e[i].usize, 4) ;
+    PutLow (out, at + 28, LEN (w.e[i].name), 2) ;
+    PutLow (out, at + 30, 0, 2) ;                       (* extra *)
+    PutLow (out, at + 32, 0, 2) ;                       (* comment *)
+    PutLow (out, at + 34, 0, 2) ;                       (* disk *)
+    PutLow (out, at + 36, 0, 2) ;                       (* internal attributes *)
+    PutLow (out, at + 38, 0, 4) ;                       (* external attributes *)
+    PutLow (out, at + 42, hdrOff, 4) ;
+    at := at + CenHdr ;
+    FOR j := 0 TO LEN (w.e[i].name) - 1 DO out[at + j] := w.e[i].name[j] END ;
+    at := at + LEN (w.e[i].name) ;
+    hdrOff := hdrOff + LocHdr + LEN (w.e[i].name) + LEN (w.e[i].data)
+  END ;
+  PutLow (out, at, SigEocd, 4) ;
+  PutLow (out, at + 4, 0, 2) ;
+  PutLow (out, at + 6, 0, 2) ;
+  PutLow (out, at + 8, w.n, 2) ;
+  PutLow (out, at + 10, w.n, 2) ;
+  PutLow (out, at + 12, cdLen, 4) ;
+  PutLow (out, at + 16, cdAt, 4) ;
+  PutLow (out, at + 20, 0, 2) ;
+  RETURN out
+END Finish ;
+
+PROCEDURE WriteTo (VAR w: PTR Writer ; RO path: STR)
+  RAISES Error, Io.IOError, ValueRange =
+BEGIN
+  Io.WriteFileBytes (path, Finish (w))
+END WriteTo ;
 
 END Zip.

@@ -305,6 +305,58 @@ what exact-width types are for, and it took a cross-language byte
 comparison rather than a code review to show it — which is the house
 rule about differential testing, demonstrated on itself.
 
+### Julia (added 2026-10-07, measured on the MacBook)
+
+Alex: "do the mandelbrot benchmark in Julia".  `bench/mandel.jl` is
+the same scalar loop (no `@simd`, no threads, no StaticArrays), its
+output diffed against the M9 bitmap at N=200 and N=4000 before the
+clock.  Another machine than the table above, so M9 and C are
+repeated beside it rather than compared across:
+
+    machine   MacBook, Apple M4, macOS 26; gcc 16.2.0 -O2; Julia 1.13.1
+    protocol  as above: one warm-up, best of three, wall clock
+
+| implementation                  |  time | notes |
+|---------------------------------|------:|-------|
+| **M9**, gcc -O2 (all checks)    | **0.53s** | |
+| C, gcc -O2                      | 0.53s | |
+| Julia 1.13.1                    | 0.62s | 0.525s of it the loop, by the program's own clock (0.53s on a second run); `julia -e ''` alone 0.05s, the rest compiling the file's methods; `-O3` 0.63s, `--check-bounds=no` 0.53s compute |
+| Scala 3.9.0 on OpenJDK 27        | 0.53s | 0.472s of it the loop; `java -version` alone 0.02s; scala-cli 1.17.1 `--assembly`, a 9.8 MB jar |
+| C, gcc -O3                      | 0.38s | **and a different bitmap**: see below |
+| Python 3.14.7 + numpy 2.5.3     | 2.50s | Python 3.13.15: 2.51s; both through `uv run --with numpy` |
+| Python 3.14.7, pure             | ~17.6s | 4.41s measured at N=2000 and scaled by N²; 1.11s at N=1000 and 0.19s at N=400 agree with the square within 7%; 3.13.15 the same to the hundredth |
+
+Parity of the loop itself, as for the others: Julia's compute time is
+M9's whole run to within the clock, which is what a JIT handing the
+same six multiplies and three adds to the same CPU should give.  What
+Julia pays is the 0.1s before the loop -- startup and compilation,
+paid once per process, as the JVM's is.  Same reading as for Scala:
+nothing for a service, everything for a command run in a loop.
+
+Alex: "and mandelbrot in python on this machine?  uv has a newer
+python".  The same ratios as on WSL with 3.12: numpy at 4.7x M9 (4.8x
+there), pure CPython at 33x (about 50x there -- the M4 and 3.14 both
+help the interpreter more than they help the compiled loop, which was
+already at the arithmetic's speed).  3.13 and 3.14 are the same
+number; the system 3.9 has no numpy and was not run.
+
+Alex: "and scala?"  Scala's loop at 0.47s is FASTER than gcc -O2's
+0.53s here, and the bitmap is the same byte for byte (the JVM does
+not fuse a multiply and an add on its own).  Found while placing it:
+**gcc 16 at `-O3` on arm64 gives a different bitmap** -- one pixel of
+five thousand at N=200, one byte of two million at N=4000 -- and runs
+the loop in 0.38s; `-O2 -march=native` and `-O2 -ffp-contract=fast`
+give the same other bitmap at the same speed, and `-O3
+-ffp-contract=off` gives M9's bitmap at 0.53s.  So the difference IS
+the fused multiply-add, which the M4 has and baseline x86-64 does
+not, and which gcc contracts at -O3 even under `-std=c11`.  The
+price of `-ffp-contract=off`, which m9c supplies so that a program
+answers the same on every machine (CLAUDE.md, decision of
+2026-10-05; "the speed cost on arm64 is NOT measured" until now): 28%
+on this loop on arm64, 0.53s against 0.38s; nothing on x86-64, where
+the objects were measured identical.  The reproducible answer is the
+one M9 chose; this is what it costs where it costs anything.
+
 ## Reading a CSV: 207 MB of ICOS FLUXNET
 
 The file is real work rather than a benchmark: ICOS half-hourly

@@ -1,0 +1,32 @@
+(* EXPECT: argument 2 of Keep: borrowed v is kept by the callee -- declare KEPT v (par 4.1) *)
+(* A borrow handed to a KEPT parameter inside a CONSTRUCTOR: `Keep (f,
+   Data.F64s (v, 0.0))' is `Keep (f, v)' for par 4.1, and until
+   2026-10-08 the call check saw a call where it looked for a borrow,
+   so the caller's own KEPT was not asked for.  A record value handed
+   to a keeper carries what its fields hold the same way.  The legal
+   forms first: a constructor of scalars, and a caller that says KEPT. *)
+MODULE m ;
+TYPE
+  Data = CASE RECORD
+  | F64s : xs: SLICE OF F64 ; miss: F64
+  | Count : n: I64
+  END ;
+  Fr = RECORD cell : Data END ;
+PROCEDURE Keep (VAR f: PTR Fr ; KEPT d: Data) =
+BEGIN
+  f.cell := d
+END Keep ;
+PROCEDURE Fine (VAR f: PTR Fr ; RO v: SLICE OF F64) =
+BEGIN
+  Keep (f, Data.Count (LEN (v)))
+END Fine ;
+PROCEDURE Declared (VAR f: PTR Fr ; RO KEPT v: SLICE OF F64) =
+BEGIN
+  Keep (f, Data.F64s (v, 0.0))
+END Declared ;
+PROCEDURE Bad (VAR f: PTR Fr ; RO v: SLICE OF F64) =
+BEGIN
+  Keep (f, Data.F64s (v, 0.0))
+END Bad ;
+BEGIN
+END m.

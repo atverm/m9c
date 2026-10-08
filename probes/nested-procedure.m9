@@ -1,0 +1,16 @@
+(* EXPECT: a nested procedure is not supported: Inner is declared inside Outer; declare it at module level (par 3) *)
+(* The grammar lets a declaration section hold a PROCEDURE (par 10),
+   and neither checker nor generator ever supported one: until
+   2026-10-08 the body was skipped and the first CALL of the inner
+   procedure was `unknown procedure: Inner' -- the right refusal with
+   the wrong words, found by a port that hoisted its helpers one by
+   one.  Said at the declaration now. *)
+MODULE m ;
+PROCEDURE Outer (x: I64) : I64 =
+  PROCEDURE Inner (y: I64) : I64 =
+  BEGIN RETURN y + 1 END Inner ;
+BEGIN
+  RETURN Inner (x)
+END Outer ;
+BEGIN
+END m.

@@ -153,7 +153,7 @@ CONST
      the gate that holds it instead *)
   NoBattery = ['Lex', 'Ast', 'Parse', 'Print', 'Sem', 'Gen', 'Doc', 'Diag',
                'M9c', 'Review', 'Check', 'Arrays', 'Numeric', 'Png', 'NbCells',
-               'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml'] ;
+               'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml', 'Hash', 'Smtp', 'Rsa', 'Map'] ;
   NoBatteryWhy = ['lexdiff, comdiff and the token-count golden',
                   'parsediff (every node kind printed back)',
                   'parsediff and the parse probes',
@@ -176,7 +176,11 @@ CONST
                   'm9test (SparqlTest offline, rdflib goldens) and sparql.sh (live, rdflib serving)',
                   'm9test (RdfTest over the W3C suites) and rdf.sh (rdflib judges the graphs)',
                   'm9test (RegexTest, against Python re goldens)',
-                  'xml.sh (XmlTest over the W3C conformance suite, fetched) and m9test (the cases by hand)'] ;
+                  'xml.sh (XmlTest over the W3C conformance suite, fetched) and m9test (the cases by hand)',
+                  'm9test (HashTest, against hashlib goldens)',
+                  'smtp.sh (SmtpFix against aiosmtpd, judged by Python email) and m9test (SmtpTest, the message against goldens)',
+                  'm9test (RsaTest, against signatures and forgeries from Python cryptography)',
+                  'm9test (MapTest, against pyproj, numpy and the Natural Earth file)'] ;
   GendiffFixtures = ['LibmGate', 'KindUse', 'EnumUse', 'Palette'] ;
 
 TYPE
@@ -504,7 +508,7 @@ BEGIN
   RETURN -1
 END Find ;
 
-PROCEDURE Shrink (RO t: SLICE OF Entry ; n: I64) : SLICE OF Entry =
+PROCEDURE Shrink (RO KEPT t: SLICE OF Entry ; n: I64) : SLICE OF Entry =
 VAR
   r : SLICE OF Entry ;
   i : I64 ;

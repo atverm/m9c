@@ -3,7 +3,7 @@ REVIEW Lsp -- 18 procedures with a body, 13 of them functions; 0 headings in a D
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              13
   assignments                                    72
-  arguments                                     182   passed over, a type unknown: 1
+  arguments                                     183
   RETURN values                                  26
   operands of a comparison or an operator        79
   CASE labels                                     0

@@ -7,11 +7,12 @@ MODULE ExportUse ;
 IMPORT Io ;
 IMPORT Fmt ;
 IMPORT ExportDef ;
-
+VAR row : ARRAY ExportDef.Width OF F64 ;   (* an imported CONST as a bound *)
 BEGIN
   Io.WriteLine ('ExportUse reads count ' + Fmt.I64Str (ExportDef.count) +
                 ', LEN xs ' + Fmt.I64Str (LEN (ExportDef.xs)) +
-                ', version ' + Fmt.I64Str (ExportDef.version)) ;
+                ', version ' + Fmt.I64Str (ExportDef.version) +
+                ', LEN row ' + Fmt.I64Str (LEN (row))) ;
   ExportDef.count := ExportDef.count + 2 ;
   ExportDef.xs[1] := 9.5 ;
   ExportDef.box.n := 7 ;

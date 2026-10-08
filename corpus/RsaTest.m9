@@ -1,0 +1,251 @@
+MODULE RsaTest ;
+
+(* Rsa against Python's cryptography (tools/rsagold.py,
+   runtime/test/gold/Rsa.gold and gold/rsa/*.pem): three keys read
+   from PEM (SubjectPublicKeyInfo, PKCS#1) and DER with their modulus
+   and exponent as hex; 40 messages a key signed under PKCS#1 v1.5 and
+   PSS, every signature verifying under its scheme and refused under
+   the other; a bit turned in the signature or the message, a
+   signature of another message, one octet short, the modulus itself
+   and all zeros refused; Bleichenbacher's forgeries against an e = 3
+   key refused while that key's own signature verifies; what cannot
+   be read refused by name.  *)
+
+IMPORT Bits ;
+IMPORT Check ;
+IMPORT Fmt ;
+IMPORT Hash ;
+IMPORT Io ;
+IMPORT Rsa ;
+IMPORT Text ;
+
+VAR
+  t : Check.T ;
+  gold, why : STR ;
+  pool : POOL ;
+
+PROCEDURE HexVal (c: CHAR) : I64 =
+BEGIN
+  IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - 48 END ;
+  IF c >= 'a' AND c <= 'f' THEN RETURN ORD (c) - 87 END ;
+  RETURN ORD (c) - 55
+END HexVal ;
+
+PROCEDURE Octets (RO hex: STR) : SLICE OF BYTE RAISES ValueRange =
+  (* a golden hex word as octets (GoldStrs gives '' for none) *)
+VAR
+  b : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  b := NEW (BYTE, LEN (hex) DIV 2) ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    b[i] := BYTE (HexVal (hex[2 * i]) * 16 + HexVal (hex[2 * i + 1]))
+  END ;
+  RETURN b
+END Octets ;
+
+PROCEDURE Pem (RO name: STR) : STR RAISES ValueRange =
+VAR p : POOL ;
+BEGIN
+  RETURN Io.ReadFile (p, Check.GoldPath ('rsa/' + name))
+EXCEPT
+| Io.IOError (e) : RETURN ''
+END Pem ;
+
+PROCEDURE Flipped (RO b: SLICE OF BYTE ; at: I64 ; bit: I64) : SLICE OF BYTE RAISES ValueRange =
+VAR
+  c : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  c := NEW (BYTE, LEN (b)) ;
+  FOR i := 0 TO LEN (b) - 1 DO c[i] := b[i] END ;
+  c[at] := BYTE (Bits.Xor (I64 (c[at]), Bits.Shl (1, bit))) ;
+  RETURN c
+END Flipped ;
+
+PROCEDURE Refusal (RO pem: STR) : STR =
+  (* the Error's text, or 'read' *)
+VAR
+  p : POOL ;
+  k : PTR Rsa.Key IN p ;
+  why : STR ;
+BEGIN
+  k := Rsa.PublicKey (p, pem) ;
+  RETURN 'read'
+EXCEPT
+| Rsa.Error (msg) : why := msg ; RETURN why
+| ValueRange : RETURN 'ValueRange'
+END Refusal ;
+
+PROCEDURE Keys () RAISES Rsa.Error, ValueRange =
+VAR
+  names, ns, es : SLICE OF STR ;
+  i : I64 ;
+  k, k2 : PTR Rsa.Key IN pool ;
+  der : SLICE OF BYTE ;
+  p : POOL ;
+BEGIN
+  names := Check.GoldStrs (t, gold, 'keys') ;
+  ns := Check.GoldStrs (t, gold, 'key.n') ;
+  es := Check.GoldStrs (t, gold, 'key.e') ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    k := Rsa.PublicKey (pool, Pem (names[i] + '.pem')) ;
+    Check.EqStr (t, names[i] + ': the modulus', Rsa.ModulusHex (k), ns[i]) ;
+    Check.EqStr (t, names[i] + ': the exponent', Rsa.ExponentHex (k), es[i]) ;
+    Check.EqI64 (t, names[i] + ': the bits', Rsa.Bits (k), LEN (ns[i]) * 4)
+  END ;
+  k := Rsa.PublicKey (pool, Pem ('k2048-pkcs1.pem')) ;
+  Check.EqStr (t, 'PKCS#1 PEM: the same modulus', Rsa.ModulusHex (k), ns[0]) ;
+  BEGIN
+    der := Io.ReadFileBytes (p, Check.GoldPath ('rsa/k2048.der')) ;
+    k2 := Rsa.PublicKeyDer (pool, der) ;
+    Check.EqStr (t, 'DER: the same modulus', Rsa.ModulusHex (k2), ns[0]) ;
+    Check.EqStr (t, 'DER: the same exponent', Rsa.ExponentHex (k2), es[0]) ;
+    (* the OID's third octet turned: another algorithm, refused by name *)
+    why := '' ;
+    BEGIN
+      k2 := Rsa.PublicKeyDer (pool, Flipped (der, 10, 0))
+    EXCEPT
+    | Rsa.Error (msg) : why := msg
+    END ;
+    Check.EqStr (t, 'DER of another algorithm refused', why, 'not an rsaEncryption key')
+  EXCEPT
+  | Io.IOError (e) : Check.That (t, 'the DER file is there', FALSE)
+  END ;
+  (* refusals *)
+  Check.EqStr (t, 'not a PEM', Refusal ('hello'), 'no PEM BEGIN line') ;
+  Check.EqStr (t, 'a PEM of something else', Refusal ('-----BEGIN CERTIFICATE-----' + 0AC + 'AAAA' + 0AC + '-----END CERTIFICATE-----' + 0AC),
+               'the PEM block is not a PUBLIC KEY: CERTIFICATE-----') ;
+  Check.EqStr (t, 'a PEM whose body is not base64', Refusal ('-----BEGIN PUBLIC KEY-----' + 0AC + 'A?AA' + 0AC + '-----END PUBLIC KEY-----' + 0AC),
+               'the PEM body is not base64') ;
+  Check.EqStr (t, 'a PEM whose body is not a key', Refusal ('-----BEGIN PUBLIC KEY-----' + 0AC + 'AAAA' + 0AC + '-----END PUBLIC KEY-----' + 0AC),
+               'a key begins with a SEQUENCE') ;
+  Check.EqStr (t, 'a PEM of a short key', Refusal ('-----BEGIN RSA PUBLIC KEY-----' + 0AC + 'MAoCAwEAAQIDAQAB' + 0AC + '-----END RSA PUBLIC KEY-----' + 0AC),
+               'a modulus of 1024 to 8192 bits is taken')
+END Keys ;
+
+PROCEDURE Signatures (RO name: STR) RAISES Rsa.Error, ValueRange =
+VAR
+  k : PTR Rsa.Key IN pool ;
+  msgs, v15, pss : SLICE OF STR ;
+  i, good, cross, bits, other : I64 ;
+  m, s, s2, d : SLICE OF BYTE ;
+BEGIN
+  k := Rsa.PublicKey (pool, Pem (name + '.pem')) ;
+  msgs := Check.GoldStrs (t, gold, name + '.msg') ;
+  v15 := Check.GoldStrs (t, gold, name + '.v15') ;
+  pss := Check.GoldStrs (t, gold, name + '.pss') ;
+  Check.EqI64 (t, name + ': forty messages', LEN (msgs), 40) ;
+  good := 0 ;
+  cross := 0 ;
+  bits := 0 ;
+  other := 0 ;
+  FOR i := 0 TO LEN (msgs) - 1 DO
+    m := Octets (msgs[i]) ;
+    s := Octets (v15[i]) ;
+    s2 := Octets (pss[i]) ;
+    IF Rsa.VerifyMessage (k, m, s, Rsa.Pkcs1) THEN good := good + 1 END ;
+    IF Rsa.VerifyMessage (k, m, s2, Rsa.Pss) THEN good := good + 1 END ;
+    IF NOT Rsa.VerifyMessage (k, m, s, Rsa.Pss) THEN cross := cross + 1 END ;
+    IF NOT Rsa.VerifyMessage (k, m, s2, Rsa.Pkcs1) THEN cross := cross + 1 END ;
+    (* a bit turned: first, middle and last octet of each signature *)
+    IF NOT Rsa.VerifyMessage (k, m, Flipped (s, 0, i MOD 8), Rsa.Pkcs1) THEN bits := bits + 1 END ;
+    IF NOT Rsa.VerifyMessage (k, m, Flipped (s, LEN (s) DIV 2, i MOD 8), Rsa.Pkcs1) THEN bits := bits + 1 END ;
+    IF NOT Rsa.VerifyMessage (k, m, Flipped (s, LEN (s) - 1, i MOD 8), Rsa.Pkcs1) THEN bits := bits + 1 END ;
+    IF NOT Rsa.VerifyMessage (k, m, Flipped (s2, 0, i MOD 8), Rsa.Pss) THEN bits := bits + 1 END ;
+    IF NOT Rsa.VerifyMessage (k, m, Flipped (s2, LEN (s2) DIV 2, i MOD 8), Rsa.Pss) THEN bits := bits + 1 END ;
+    IF NOT Rsa.VerifyMessage (k, m, Flipped (s2, LEN (s2) - 1, i MOD 8), Rsa.Pss) THEN bits := bits + 1 END ;
+    (* a bit turned in the message, where there is one *)
+    IF LEN (m) > 0 THEN
+      IF NOT Rsa.VerifyMessage (k, Flipped (m, LEN (m) - 1, 0), s, Rsa.Pkcs1) THEN bits := bits + 1 END ;
+      IF NOT Rsa.VerifyMessage (k, Flipped (m, 0, 7), s2, Rsa.Pss) THEN bits := bits + 1 END
+    ELSE
+      bits := bits + 2
+    END ;
+    (* the signature of the next message *)
+    IF NOT Rsa.VerifyMessage (k, m, Octets (v15[(i + 1) MOD LEN (msgs)]), Rsa.Pkcs1) THEN other := other + 1 END ;
+    IF NOT Rsa.VerifyMessage (k, m, Octets (pss[(i + 1) MOD LEN (msgs)]), Rsa.Pss) THEN other := other + 1 END
+  END ;
+  Check.EqI64 (t, name + ': every signature verifies under its scheme', good, 2 * LEN (msgs)) ;
+  Check.EqI64 (t, name + ': none under the other scheme', cross, 2 * LEN (msgs)) ;
+  Check.EqI64 (t, name + ': a bit turned is refused', bits, 8 * LEN (msgs)) ;
+  Check.EqI64 (t, name + ': the signature of another message is refused', other, 2 * LEN (msgs)) ;
+  (* the shapes: a short signature, the modulus itself, zeros, the
+     digest given directly *)
+  m := Octets (msgs[0]) ;
+  s := Octets (v15[0]) ;
+  Check.That (t, name + ': one octet short is refused', NOT Rsa.VerifyMessage (k, m, SLICE (s, 1, LEN (s) - 1), Rsa.Pkcs1)) ;
+  Check.That (t, name + ': the modulus as a signature is refused', NOT Rsa.VerifyMessage (k, m, Octets (Rsa.ModulusHex (k)), Rsa.Pkcs1)) ;
+  Check.That (t, name + ': zeros are refused', NOT Rsa.VerifyMessage (k, m, NEW (BYTE, LEN (s)), Rsa.Pss)) ;
+  d := Hash.Sha256Of (m) ;
+  Check.That (t, name + ': Verify of the digest', Rsa.Verify (k, d, s, Rsa.Pkcs1)) ;
+  Check.That (t, name + ': Verify of another digest', NOT Rsa.Verify (k, Hash.Sha256Of (s), s, Rsa.Pkcs1))
+END Signatures ;
+
+PROCEDURE Forgeries () RAISES Rsa.Error, ValueRange =
+VAR
+  k : PTR Rsa.Key IN pool ;
+  what, sigs, msg, own, n : SLICE OF STR ;
+  m : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  k := Rsa.PublicKey (pool, Pem ('k3.pem')) ;
+  n := Check.GoldStrs (t, gold, 'k3.n') ;
+  Check.EqStr (t, 'k3: the modulus', Rsa.ModulusHex (k), n[0]) ;
+  Check.EqStr (t, 'k3: e = 3', Rsa.ExponentHex (k), '3') ;
+  msg := Check.GoldStrs (t, gold, 'forge.msg') ;
+  own := Check.GoldStrs (t, gold, 'k3.v15') ;
+  what := Check.GoldStrs (t, gold, 'forge.what') ;
+  sigs := Check.GoldStrs (t, gold, 'forge.sig') ;
+  m := Octets (msg[0]) ;
+  Check.That (t, 'k3: its own signature verifies', Rsa.VerifyMessage (k, m, Octets (own[0]), Rsa.Pkcs1)) ;
+  FOR i := 0 TO LEN (sigs) - 1 DO
+    Check.That (t, 'forgery refused: ' + Text.Replace (what[i], '%20', ' '),
+                NOT Rsa.VerifyMessage (k, m, Octets (sigs[i]), Rsa.Pkcs1))
+  END
+END Forgeries ;
+
+PROCEDURE Refused () RAISES ValueRange =
+  (* Verify's own refusals *)
+VAR
+  k : PTR Rsa.Key IN pool ;
+  why : STR ;
+  ok : BOOL ;
+BEGIN
+  k := Rsa.PublicKey (pool, Pem ('k2048.pem')) ;
+  why := '' ;
+  BEGIN
+    ok := Rsa.Verify (k, NEW (BYTE, 20), NEW (BYTE, 256), Rsa.Pkcs1)
+  EXCEPT
+  | Rsa.Error (msg) : why := msg
+  END ;
+  Check.EqStr (t, 'a 20-octet digest refused', why, 'a digest of 32 octets (SHA-256) is expected') ;
+  why := '' ;
+  BEGIN
+    ok := Rsa.Verify (k, NEW (BYTE, 32), NEW (BYTE, 256), 7)
+  EXCEPT
+  | Rsa.Error (msg) : why := msg
+  END ;
+  Check.EqStr (t, 'a scheme that is neither refused', why, 'the scheme is Pkcs1 or Pss')
+EXCEPT
+| Rsa.Error (msg) : Check.That (t, 'the key for the refusals reads', FALSE)
+END Refused ;
+
+BEGIN
+  gold := Check.GoldPath ('Rsa.gold') ;
+  BEGIN
+    Keys () ;
+    Signatures ('k2048') ;
+    Signatures ('k3072') ;
+    Signatures ('k4096') ;
+    Forgeries () ;
+    Refused ()
+  EXCEPT
+  | Rsa.Error (msg) :
+      why := msg ;
+      Check.That (t, 'no Rsa.Error escapes: ' + why, FALSE)
+  | ValueRange :
+      Check.That (t, 'no ValueRange escapes', FALSE)
+  END ;
+  Io.Halt (Check.Done (t, 'Rsa'))
+END RsaTest.

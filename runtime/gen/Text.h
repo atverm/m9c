@@ -39,5 +39,7 @@ m9_sl_CHAR Text_Lower (m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_Upper (m9_sl_CHAR s, m9_state *err);
 m9_sl_CHAR Text_Replace (m9_sl_CHAR s, m9_sl_CHAR old, m9_sl_CHAR by, m9_state *err);
 bool Text_Match (m9_sl_CHAR pattern, m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Text_ToBase64 (m9_sl_BYTE b, m9_state *err);
+m9_sl_BYTE Text_FromBase64 (m9_sl_CHAR s, m9_state *err);
 
 #endif

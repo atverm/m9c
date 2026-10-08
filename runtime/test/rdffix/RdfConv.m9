@@ -5,9 +5,11 @@ MODULE RdfConv ;
 
        RdfConv KIND DIR BASE OUT FILE...
 
-   KIND is ttl or nt; FILE is read from DIR, a Turtle document against
-   BASE + FILE.  OUT/FILE.nt receives the N-Triples, or OUT/FILE.err
-   the refusal, one line: LINE:COL MESSAGE, or ValueRange. *)
+   KIND is ttl, nt, xml or jld; FILE is read from DIR, a Turtle or
+   RDF/XML document against BASE + FILE, a JSON-LD one against BASE
+   itself.  OUT/FILE.nt receives the N-Triples, OUT/FILE.ttl and
+   OUT/FILE.jsonld the same graph as Turtle and JSON-LD, or
+   OUT/FILE.err the refusal, one line: LINE:COL MESSAGE, or ValueRange. *)
 
 IMPORT DynStr ;
 IMPORT Fmt ;
@@ -24,20 +26,33 @@ VAR
   el, ec : I64 ;
 BEGIN
   BEGIN
-    src := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, dir + '/' + file)) ;
-    IF Text.Eq (kind, 'nt') THEN
-      g := Rdf.ParseNTriples (p, src)
+    IF Text.Eq (kind, 'xml') THEN
+      g := Rdf.ParseRdfXml (p, Io.ReadFileBytes (p, dir + '/' + file), base + file)
+    ELSIF Text.Eq (kind, 'jld') THEN
+      (* BASE is the document's whole IRI here: a JSON-LD test names its own *)
+      src := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, dir + '/' + file)) ;
+      g := Rdf.ParseJsonLd (p, src, base, NONE)
     ELSE
-      g := Rdf.ParseTurtle (p, src, base + file)
+      src := DynStr.FromUtf8 (p, Io.ReadFileBytes (p, dir + '/' + file)) ;
+      IF Text.Eq (kind, 'nt') THEN
+        g := Rdf.ParseNTriples (p, src)
+      ELSE
+        g := Rdf.ParseTurtle (p, src, base + file)
+      END
     END ;
     (* UTF-8: Io.WriteFile writes Latin-1 and refuses past U+00FF *)
-    Io.WriteFileBytes (out + '/' + file + '.nt', DynStr.Utf8 (p, Rdf.NTriples (g)))
+    Io.WriteFileBytes (out + '/' + file + '.nt', DynStr.Utf8 (p, Rdf.NTriples (g))) ;
+    (* and as Turtle, for rdflib to read back (item 2 of library plan 2) *)
+    Io.WriteFileBytes (out + '/' + file + '.ttl', DynStr.Utf8 (p, Rdf.Turtle (g, NEW (STR, 0), NEW (STR, 0)))) ;
+    (* and as JSON-LD, for rdflib's json-ld reader (item 7) *)
+    Io.WriteFileBytes (out + '/' + file + '.jsonld', DynStr.Utf8 (p, Rdf.JsonLd (g, NONE)))
   EXCEPT
   | Rdf.SyntaxError (m, line, col) :
       (* a handler's binders have no type in the checker yet: copied *)
       em := m ; el := line ; ec := col ;
-      Io.WriteFile (out + '/' + file + '.err',
-                    Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em + 0AC)
+      (* UTF-8 too: a refusal names what it refused, which may be any text *)
+      Io.WriteFileBytes (out + '/' + file + '.err',
+                         DynStr.Utf8 (p, Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em + 0AC))
   | ValueRange :
       Io.WriteFile (out + '/' + file + '.err', 'ValueRange' + 0AC)
   END
@@ -50,7 +65,7 @@ VAR
 BEGIN
   BEGIN
     IF Io.ArgCount () < 5 THEN
-      Io.WriteLine ('usage: RdfConv ttl|nt DIR BASE OUT FILE...') ;
+      Io.WriteLine ('usage: RdfConv ttl|nt|xml|jld DIR BASE OUT FILE...') ;
       Io.Halt (2)
     END ;
     FOR i := 5 TO Io.ArgCount () - 1 DO

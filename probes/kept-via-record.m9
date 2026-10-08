@@ -1,0 +1,41 @@
+(* EXPECT: undeclared retention: borrowed v (carried by c) reaches the caller through f -- declare KEPT v (par 4.1) *)
+(* A borrow kept through a RECORD LOCAL.  `c.data := v' then
+   `f.cols[n] := c' stores the caller's slice where it outlives the
+   call, and until 2026-10-08 the checker followed only a bare pointer
+   or slice on the right of a store -- a record value holding one, and
+   a field of a local record given one, were not carried.  Frame's
+   AddF64 and six siblings kept their callers' buffers without KEPT,
+   and a caller reusing one buffer for several columns read the last
+   column everywhere (NbCellsTest, 2026-10-04).  The legal forms
+   first: a record of scalars stored, and a record carrying a KEPT
+   parameter. *)
+MODULE m ;
+TYPE
+  Col = RECORD name : STR ; data : SLICE OF F64 ; n : I64 END ;
+  Fr = RECORD cols : SLICE OF Col ; n : I64 END ;
+  Pt = RECORD x, y : F64 END ;
+  Pts = RECORD ps : SLICE OF Pt ; n : I64 END ;
+PROCEDURE AddPt (VAR s: PTR Pts ; x, y: F64) RAISES IndexError =
+VAR p : Pt ;
+BEGIN
+  p.x := x ; p.y := y ;
+  s.ps[s.n] := p ;
+  s.n := s.n + 1
+END AddPt ;
+PROCEDURE AddKept (VAR f: PTR Fr ; RO KEPT v: SLICE OF F64) RAISES IndexError =
+VAR c : Col ;
+BEGIN
+  c.data := v ;
+  f.cols[f.n] := c ;
+  f.n := f.n + 1
+END AddKept ;
+PROCEDURE Add (VAR f: PTR Fr ; RO v: SLICE OF F64) RAISES IndexError =
+VAR c : Col ;
+BEGIN
+  c.data := v ;
+  c.n := LEN (v) ;
+  f.cols[f.n] := c ;
+  f.n := f.n + 1
+END Add ;
+BEGIN
+END m.

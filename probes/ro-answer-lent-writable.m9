@@ -1,0 +1,24 @@
+(* EXPECT: argument 1 of Fill: the RO answer of View can be lent only to an RO parameter (par 2.4) *)
+(* The answer of a function declared `: RO T' is read-only storage
+   (par 2.4; decision 33 followed it into a copy), so it is lent only
+   to an RO parameter.  Until 2026-10-08 `Fill (View ())' passed and
+   wrote through the view.  The legal forms first: the answer handed
+   to an RO parameter, and a writable slice of the module's own. *)
+MODULE m ;
+VAR
+  text : STR ;
+  buf : STR ;
+PROCEDURE View () : RO STR = BEGIN RETURN text END View ;
+PROCEDURE Count (RO v: STR) : I64 = BEGIN RETURN LEN (v) END Count ;
+PROCEDURE Fill (v: STR) RAISES IndexError = BEGIN v[0] := 'X' END Fill ;
+PROCEDURE Use () RAISES IndexError =
+VAR n : I64 ;
+BEGIN
+  n := Count (View ()) ;
+  Fill (buf) ;
+  Fill (View ())
+END Use ;
+BEGIN
+  text := NEW (CHAR, 4) ;
+  buf := NEW (CHAR, 4)
+END m.

@@ -25,11 +25,13 @@ extern int m9_rename (const void *, const void *);
 extern int m9_write_file (const void *, const void *, size_t);
 extern int m9_append_file (const void *, const void *, size_t);
 
+static m9_arr_4_double row;
 static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[22] = { 69u, 120u, 112u, 111u, 114u, 116u, 85u, 115u, 101u, 32u, 114u, 101u, 97u, 100u, 115u, 32u, 99u, 111u, 117u, 110u, 116u, 32u };
 static const uint32_t m9s1[9] = { 44u, 32u, 76u, 69u, 78u, 32u, 120u, 115u, 32u };
 static const uint32_t m9s2[10] = { 44u, 32u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 32u };
+static const uint32_t m9s3[10] = { 44u, 32u, 76u, 69u, 78u, 32u, 114u, 111u, 119u, 32u };
 
 
 int main (int argc, char **argv)
@@ -41,8 +43,11 @@ int main (int argc, char **argv)
   ExportDef_m9init (err); if (err->exc) goto L_ret;
   Io_m9init (err); if (err->exc) goto L_ret;
   Fmt_m9init (err); if (err->exc) goto L_ret;
-  Io_WriteLine (m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), err);
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (INT64_C(4), err), err)) m9a1 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 22 }), Fmt_I64Str ((*ExportDef_count), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 9 }), err), Fmt_I64Str (((*ExportDef_xs)).len, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 10 }), err), Fmt_I64Str ((*ExportDef_version), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (INT64_C(4), err), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Io_WriteLine (m9a1, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
   { __typeof__((*ExportDef_count)) m9v = m9_add_i64 ((*ExportDef_count), INT64_C(2), err);
     if (err->exc) goto L_hdl_m9t1;
     (*ExportDef_count) = m9v;

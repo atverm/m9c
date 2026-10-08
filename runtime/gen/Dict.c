@@ -446,9 +446,12 @@ static void Dict_Regrow (Dict_Dict * *d, m9_pool *d_pool, m9_state *err)
   m9t2to = m9_sub_i64 ((*d)->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    { __typeof__(s) m9v = m9_mod_i64 (Dict_Hash ((*(Dict_Ent *) m9_at ((*d)->ents.p, i, (*d)->ents.len, sizeof (Dict_Ent), err)).key, err), cap, err);
+    { __typeof__((*(Dict_Ent *) m9_at ((*d)->ents.p, i, (*d)->ents.len, sizeof (Dict_Ent), err)).key) m9a1 = (*(Dict_Ent *) m9_at ((*d)->ents.p, i, (*d)->ents.len, sizeof (Dict_Ent), err)).key;
+      if (err->exc) goto L_ret;
+    { __typeof__(s) m9v = m9_mod_i64 (Dict_Hash (m9a1, err), cap, err);
       if (err->exc) goto L_ret;
       s = m9v;
+    }
     }
     for (;;) {
       bool m9t3 = ((*(int64_t *) m9_at ((*d)->idx.p, s, (*d)->idx.len, sizeof (int64_t), err)) != Dict_Empty);

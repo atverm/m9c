@@ -52,8 +52,11 @@ static void Hello_Greet (m9_pool *pool, m9_sl_CHAR who, m9_state *err)
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &((*pool)), who, err);
   if (err->exc) goto L_ret;
-  Io_WriteLine (DynStr_View (d, err), err);
+  { __typeof__(DynStr_View (d, err)) m9a1 = DynStr_View (d, err);
+    if (err->exc) goto L_ret;
+  Io_WriteLine (m9a1, err);
   if (err->exc) goto L_ret;
+  }
   { __typeof__(greeted) m9v = m9_add_i64 (greeted, INT64_C(1), err);
     if (err->exc) goto L_ret;
     greeted = m9v;
@@ -83,8 +86,11 @@ int main (int argc, char **argv)
     m9t4to = m9_sub_i64 (Io_ArgCount (err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     for (; i <= m9t4to; i += 1) {
-      Hello_Greet (&(pool), Io_Arg (&(pool), i, err), err);
+      { __typeof__(Io_Arg (&(pool), i, err)) m9a2 = Io_Arg (&(pool), i, err);
+        if (err->exc) goto L_hdl_m9t1;
+      Hello_Greet (&(pool), m9a2, err);
       if (err->exc) goto L_hdl_m9t1;
+      }
     } }
   }
   Io_WriteI64 (greeted, err);

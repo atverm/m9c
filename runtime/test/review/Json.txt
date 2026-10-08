@@ -2,13 +2,13 @@ REVIEW Json -- 67 procedures with a body, 53 of them functions; 42 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              53
-  assignments                                   247
-  arguments                                     408   passed over, a type unknown: 2
+  assignments                                   249
+  arguments                                     412   passed over, a type unknown: 2
   RETURN values                                  78
   operands of a comparison or an operator       185
   CASE labels                                     3
   THREAD arguments                                0
-  CASE over variants, proved total                1
+  CASE over variants, proved total                2
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0

@@ -1,10 +1,10 @@
-REVIEW Plot -- 73 procedures with a body, 32 of them functions; 20 headings in a DEFINITION
+REVIEW Plot -- 74 procedures with a body, 33 of them functions; 21 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              32
-  assignments                                   491
-  arguments                                    1839   passed over, a type unknown: 1
-  RETURN values                                  67
+  functions answering on every path              33
+  assignments                                   492
+  arguments                                    1844   passed over, a type unknown: 1
+  RETURN values                                  68
   operands of a comparison or an operator       875
   CASE labels                                    23
   THREAD arguments                                0
@@ -12,7 +12,7 @@ PROVED BY THE CHECKER -- examined, and nothing refused
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                     5   Render.pool, RenderHeat.pool, RenderTaylor.pool, Chart.pool, Panels.pool
+  local pools                                     6   CmapHex.scratch, Render.pool, RenderHeat.pool, RenderTaylor.pool, Chart.pool, Panels.pool
   pool parameters                                 0
   KEPT parameters                                 7   SetBarErrors, SetBarColor, SetLineColor, AddBars, SetDots, SetDots, +1 more
   HEAP named                                      0

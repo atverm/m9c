@@ -52,8 +52,14 @@ void ExportDef_Show (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  Io_WriteLine (m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 8 }), err), Fmt_Fixed ((*(double *) m9_at (xs.p, INT64_C(1), xs.len, sizeof (double), err)), INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), Fmt_I64Str (box->n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err), err);
+  { __typeof__((*(double *) m9_at (xs.p, INT64_C(1), xs.len, sizeof (double), err))) m9a1 = (*(double *) m9_at (xs.p, INT64_C(1), xs.len, sizeof (double), err));
+    if (err->exc) goto L_hdl_m9t1;
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 8 }), err), Fmt_Fixed (m9a1, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), Fmt_I64Str (box->n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err)) m9a2 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s0, 21 }), Fmt_I64Str (count, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s1, 8 }), err), Fmt_Fixed (m9a1, INT64_C(2), err), err), ((m9_sl_CHAR){ (uint32_t *) m9s2, 8 }), err), Fmt_I64Str (box->n, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s3, 10 }), err), Fmt_I64Str (version, err), err);
+    if (err->exc) goto L_hdl_m9t1;
+  Io_WriteLine (m9a2, err);
   if (err->exc) goto L_hdl_m9t1;
+  }
+  }
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {

@@ -1,0 +1,6 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+<http://example.org/ex#foo> rdf:_1 "1" ;
+    rdf:_2 "2" ;
+    <http://example.org/myprop#_abc> "def" ;
+    <http://example.org/myprop#_345> "678" .

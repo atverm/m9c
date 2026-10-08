@@ -142,3 +142,35 @@ the CRC-32 of gzip, zip and PNG (zlib.crc32), 0 .. 4294967295
 ### Adler32 (RO b: SLICE OF BYTE) : I64
 
 the checksum of the zlib wrapping (zlib.adler32)
+
+### TYPE Writer
+
+opaque; lives in a POOL
+
+### NewWriter (VAR pool: POOL) : PTR Writer IN pool
+
+_(documented with the group below)_
+
+### SetTime (VAR w: PTR Writer ; year, month, day, hour, minute, second: I64) RAISES Error
+
+the time written for every member added AFTER this: 1980..2107,
+a second rounded down to an even one; refused outside that
+
+### AddBytes (VAR w: PTR Writer ; RO name: STR ; RO data: SLICE OF BYTE ; deflate: BOOL) RAISES Error, ValueRange
+
+a member: deflated when asked, else stored.  Refused by name: an
+empty name, one already in the archive, one over 65535 octets of
+UTF-8, a member or an archive past 4 GB, a 65536th member
+
+### AddFile (VAR w: PTR Writer ; RO name: STR ; RO path: STR ; deflate: BOOL) RAISES Error, Io.IOError, ValueRange
+
+AddBytes of the file at path
+
+### Finish (VAR w: PTR Writer) : SLICE OF BYTE RAISES Error, ValueRange
+
+the archive's bytes; the writer may go on adding, and a second
+Finish lays out what there is then
+
+### WriteTo (VAR w: PTR Writer ; RO path: STR) RAISES Error, Io.IOError, ValueRange
+
+Finish, written to path

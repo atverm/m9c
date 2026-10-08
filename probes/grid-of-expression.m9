@@ -1,0 +1,18 @@
+(* EXPECT: GRID lays over a slice NAMED by a designator: SLICE it into a variable first (par 2.2.1) *)
+(* GRID's first argument names the slice -- a variable, a parameter, a
+   field, an element -- because the grid's element type is read off
+   that declaration by the generator too, as VIEW's is.  A SLICE
+   expression or a call goes into a variable first.  The legal forms
+   first; the last lays a grid over a SLICE expression. *)
+MODULE m ;
+TYPE Rec = RECORD data : SLICE OF F64 END ;
+VAR
+  s : SLICE OF F64 ;
+  r : Rec ;
+  g : GRID 2 OF F64 ;
+BEGIN
+  s := NEW (F64, 6) ;
+  r.data := s ;
+  g := GRID (r.data, 2, 3) ;
+  g := GRID (SLICE (s, 0, 4), 2, 2)
+END m.

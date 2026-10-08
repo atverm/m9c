@@ -1,12 +1,12 @@
-REVIEW Sem -- 267 procedures with a body, 162 of them functions; 34 headings in a DEFINITION
+REVIEW Sem -- 293 procedures with a body, 184 of them functions; 35 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             162
-  assignments                                   955   passed over, a type unknown: 4
-  arguments                                    3916   passed over, a type unknown: 31
-  RETURN values                                 607   passed over, a type unknown: 4
-  operands of a comparison or an operator      1117   passed over, a type unknown: 49
-  CASE labels                                    78   passed over, a type unknown: 8
+  functions answering on every path             184
+  assignments                                  1069
+  arguments                                    4347
+  RETURN values                                 693
+  operands of a comparison or an operator      1330
+  CASE labels                                    87
   THREAD arguments                                0
   CASE over variants, proved total                0
 
@@ -14,13 +14,13 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    1   pool
   local pools                                     0
   pool parameters                                 1   RaisesOf
-  KEPT parameters                                78   PushErr, NewMod, RaisesOf, CheckExcName, SigOf, AddType, +72 more
+  KEPT parameters                                85   PushErr, NewMod, RaisesOf, CheckExcName, SigOf, AddProc, +79 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
-  module variables                               74   showName, shown, shownRaises, mods, nmods, errs, +68 more
+  module variables                               79   showName, shown, shownRaises, mods, nmods, impB, +73 more
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    0
@@ -33,4 +33,4 @@ COUNTED -- how much there was to check
   RAISE statements                                2
   handlers                                        0
   NEW in the frame                                1
-  NEW in a named pool                           101
+  NEW in a named pool                           105

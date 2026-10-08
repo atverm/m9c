@@ -92,8 +92,11 @@ m9_sl_CHAR OpenApi_Document (m9_sl_CHAR title, m9_sl_CHAR version, HttpServer_Ro
       firstPath = false;
       DynStr_AppendChar (&(d), &(pool), 34u, err);
       if (err->exc) goto L_ret;
-      DynStr_Append (&(d), &(pool), HttpServer_RoutePath (r, i, err), err);
+      { __typeof__(HttpServer_RoutePath (r, i, err)) m9a1 = HttpServer_RoutePath (r, i, err);
+        if (err->exc) goto L_ret;
+      DynStr_Append (&(d), &(pool), m9a1, err);
       if (err->exc) goto L_ret;
+      }
       DynStr_Append (&(d), &(pool), ((m9_sl_CHAR){ (uint32_t *) m9s3, 3 }), err);
       if (err->exc) goto L_ret;
       firstOp = true;
@@ -217,24 +220,39 @@ static void OpenApi_Operation (DynStr_DString * *d, m9_pool *d_pool, HttpServer_
   err->res = &m9frame;
   DynStr_AppendChar (d, d_pool, 34u, err);
   if (err->exc) goto L_ret;
-  OpenApi_AppendMethod (d, d_pool, HttpServer_RouteMethod (r, j, err), err);
+  { __typeof__(HttpServer_RouteMethod (r, j, err)) m9a2 = HttpServer_RouteMethod (r, j, err);
+    if (err->exc) goto L_ret;
+  OpenApi_AppendMethod (d, d_pool, m9a2, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s15, 14 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, HttpServer_RouteSummary (r, j, err), err);
+  { __typeof__(HttpServer_RouteSummary (r, j, err)) m9a3 = HttpServer_RouteSummary (r, j, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (d, d_pool, m9a3, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s16, 16 }), err);
   if (err->exc) goto L_ret;
-  DynStr_AppendI64 (d, d_pool, HttpServer_RouteStatus (r, j, err), err);
+  { __typeof__(HttpServer_RouteStatus (r, j, err)) m9a4 = HttpServer_RouteStatus (r, j, err);
+    if (err->exc) goto L_ret;
+  DynStr_AppendI64 (d, d_pool, m9a4, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s17, 18 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, HttpServer_RouteSummary (r, j, err), err);
+  { __typeof__(HttpServer_RouteSummary (r, j, err)) m9a5 = HttpServer_RouteSummary (r, j, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (d, d_pool, m9a5, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s18, 14 }), err);
   if (err->exc) goto L_ret;
-  DynStr_Append (d, d_pool, HttpServer_RouteType (r, j, err), err);
+  { __typeof__(HttpServer_RouteType (r, j, err)) m9a6 = HttpServer_RouteType (r, j, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (d, d_pool, m9a6, err);
   if (err->exc) goto L_ret;
+  }
   DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s19, 8 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;

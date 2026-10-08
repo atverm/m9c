@@ -31,6 +31,12 @@ for f in "$OUT"/data/*.in; do
 done
 python3 deflatecheck.py check "$OUT/data"
 
+# ---- and the zip writer: archives of the same inputs, read by zipfile
+cp zipout.m9 "$OUT/"
+( cd "$OUT" && "$M9C" --make -o zipout zipout.m9 >/dev/null 2>&1 ) \
+  || { echo "FAIL: zipout does not build"; exit 1; }
+python3 deflatecheck.py zip "$OUT/data" "$OUT/zipout"
+
 # ---- and a picture: Png.Encode, read by a PNG reader that is not ours
 cp pngout.m9 "$OUT/"
 ( cd "$OUT" && "$M9C" --make -o pngout pngout.m9 >/dev/null 2>&1 ) \

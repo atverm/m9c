@@ -1,0 +1,7 @@
+(* EXPECT: unknown type: Nosuch *)
+MODULE m ;
+VAR pool : POOL ; p : SLICE OF I64 ;
+BEGIN
+  p := NEW (pool, I64, 4) ;
+  p := NEW (pool, Nosuch, 4)
+END m.

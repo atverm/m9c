@@ -1,0 +1,22 @@
+(* EXPECT: cannot write through g, which holds the RO parameter v (line 13) (par 2.4) *)
+(* A grid laid over read-only storage is a VIEW of it: `g := GRID (v,
+   2, 3)' with `RO v' marks g as decision 33 marks a slice copy, and a
+   write through g is refused.  The legal forms first: the grid read,
+   and a grid over the procedure's own storage written. *)
+MODULE m ;
+PROCEDURE Fine (RO v: SLICE OF F64) : F64 RAISES IndexError =
+VAR
+  g : GRID 2 OF F64 ;
+  own : SLICE OF F64 ;
+  h : GRID 2 OF F64 ;
+BEGIN
+  g := GRID (v, 2, 3) ;
+  own := NEW (F64, 6) ;
+  h := GRID (own, 2, 3) ;
+  h[0, 0] := g[1, 2] ;
+  g := GRID (v, 3, 2) ;
+  g[0, 0] := 1.0 ;
+  RETURN h[0, 0]
+END Fine ;
+BEGIN
+END m.

@@ -2,11 +2,11 @@ REVIEW M9elide -- 77 procedures with a body, 52 of them functions; 2 headings in
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              52
-  assignments                                   424   passed over, a type unknown: 2
-  arguments                                     776   passed over, a type unknown: 6
+  assignments                                   426
+  arguments                                     782
   RETURN values                                 188
-  operands of a comparison or an operator       502   passed over, a type unknown: 13
-  CASE labels                                     0   passed over, a type unknown: 10
+  operands of a comparison or an operator       515
+  CASE labels                                    10
   THREAD arguments                                0
   CASE over variants, proved total                0
 

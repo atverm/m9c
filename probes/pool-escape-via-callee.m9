@@ -1,0 +1,19 @@
+(* EXPECT: an allocation in pool scratch escapes its pool, which dies with this frame (par 4.3) *)
+MODULE m ;
+PROCEDURE Octets (VAR pool: POOL ; RO s: STR) : SLICE OF BYTE RAISES ValueRange =
+VAR b : SLICE OF BYTE ; i : I64 ;
+BEGIN
+  b := NEW (pool, BYTE, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO b[i] := BYTE (ORD (s[i])) END ;
+  RETURN b
+END Octets ;
+PROCEDURE Fine (VAR pool: POOL ; RO s: STR) : SLICE OF BYTE RAISES ValueRange =
+BEGIN RETURN Octets (pool, s) END Fine ;
+PROCEDURE AsText (RO s: STR) : STR =
+VAR scratch : POOL ;
+BEGIN RETURN s + '' END AsText ;
+PROCEDURE F (RO s: STR) : SLICE OF BYTE RAISES ValueRange =
+VAR scratch : POOL ;
+BEGIN RETURN Octets (scratch, s) END F ;
+BEGIN
+END m.

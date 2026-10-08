@@ -15,7 +15,8 @@ FAIL EqStrs: 1 of 3 differ, first at [2]: got 'c', want 'd '
 FAIL NearF64s: 1 of 3 differ, first at [1]: got 2.00000000000000e0, want 2.50000000000000e0
 FAIL Raises nothing: raised nothing, want IndexError
 FAIL Raises another: raised IndexError, want Overflow
-FAIL Raises asked for ValueRange: Check.Raises asks an Action for IndexError or Overflow, not 'ValueRange'
+FAIL Raises asked for ValueRange: raised nothing, want ValueRange
+FAIL Raises asked for Nosuch: Check.Raises asks for IndexError, Overflow or ValueRange, not 'Nosuch'
 FAIL RaisesValueRange nothing: raised nothing, want ValueRange
 FAIL EqBools: 1 of 2 differ, first at [0]: got TRUE, want FALSE
 FAIL absent: no such golden in runtime/test/gold/Check.gold
@@ -27,5 +28,5 @@ FAIL notint: a value is not an integer, in runtime/test/gold/Check.gold
 FAIL toobig: a value is not an integer, in runtime/test/gold/Check.gold
 FAIL reals: cannot read runtime/test/gold/Absent.gold
 PASS (27 checks) -- good
-FAILED 28 of 28 -- bad
+FAILED 29 of 29 -- bad
 PASS (7 checks) -- Check

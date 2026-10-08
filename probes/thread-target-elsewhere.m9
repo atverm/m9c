@@ -1,0 +1,26 @@
+(* EXPECT: THREAD (Lib.Work): the target must be a procedure of this module, not Lib's -- start it from a procedure declared here (par 6) *)
+(* A THREAD's target is a procedure of the module that starts it:
+   the generator makes the thread's thunk beside the target, in the
+   starting module, so an imported target was a LINK error naming a C
+   symbol until 2026-10-08.  Said by the checker now.  The legal form
+   first: a procedure of this module that calls the imported one. *)
+DEFINITION MODULE Lib ;
+TYPE Rec = RECORD n : I64 END ;
+PROCEDURE Work (r: PTR Rec) ;
+END Lib.
+MODULE m ;
+IMPORT Lib ;
+VAR p, q : PTR Lib.Rec ;
+PROCEDURE Here (r: PTR Lib.Rec) = BEGIN Lib.Work (r) END Here ;
+PROCEDURE Fine () =
+BEGIN
+  p := NEW (OWN, Lib.Rec) ;
+  THREAD (Here, p)
+END Fine ;
+PROCEDURE Bad () =
+BEGIN
+  q := NEW (OWN, Lib.Rec) ;
+  THREAD (Lib.Work, q)
+END Bad ;
+BEGIN
+END m.

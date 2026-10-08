@@ -910,9 +910,16 @@ BEGIN
          on exactly this, with the member NAMES dangling too.  The
          names are copied above for the same reason. *)
       c.v := Value.Str (CopyStrTo (root, t))
-  ELSE
-      (* Num, Bool, Null: the variant IS the value *)
-      c.v := n.v
+  (* Num, Bool, Null: the variant IS the value -- rebuilt arm by arm,
+     so that the checker sees scalars copied and not n's storage
+     shared (`c.v := n.v' under an ELSE read as a retention of n once
+     a record value counted as one, 2026-10-08) *)
+  | Num (r, i, isInt) :
+      c.v := Value.Num (r, i, isInt)
+  | Bool (b) :
+      c.v := Value.Bool (b)
+  | Null :
+      c.v := Value.Null
   END
 END CopyInto ;
 

@@ -1,0 +1,15 @@
+(* EXPECT: argument 1 of Up: u, which holds the RO parameter s (line 11), can be lent only to an RO parameter (par 2.4) *)
+(* The copy's second exit (see ro-copy-written): a name given what an
+   RO parameter views, through another name and a SLICE, handed to a
+   writable parameter. *)
+MODULE m ;
+PROCEDURE Up (s: STR) RAISES IndexError = BEGIN s[0] := 'X' END Up ;
+PROCEDURE Bad (RO s: STR) RAISES IndexError =
+VAR t, u : STR ;
+BEGIN
+  t := SLICE (s, 1, 2) ;
+  u := t ;
+  Up (u)
+END Bad ;
+BEGIN
+END m.

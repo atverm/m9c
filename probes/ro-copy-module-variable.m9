@@ -1,0 +1,35 @@
+(* EXPECT: cannot write through u, which holds the CONST K (line 18) (par 2.4) *)
+(* Decision 33 across procedures: a MODULE VARIABLE given read-only
+   storage in one place -- a literal in Init, a CONST, a SLICE of a
+   marked one in the module body -- holds it everywhere, so a write
+   through it in another procedure is refused.  RoSeed read one
+   procedure; this is a prepass over the unit before the bodies,
+   with the mark riding on the scope entry every procedure gets.  The
+   legal forms first: a local shadowing the module variable, a module
+   variable given fresh storage, reading through a marked one. *)
+MODULE m ;
+CONST K = 'const' ;
+VAR
+  t, u, w, fresh : STR ;
+  n : I64 ;
+PROCEDURE Init () =
+BEGIN
+  t := 'abc' ;
+  u := K
+END Init ;
+PROCEDURE Fine () RAISES IndexError =
+VAR t : STR ;
+BEGIN
+  t := NEW (CHAR, 3) ;
+  t[0] := 'X' ;
+  n := LEN (w) ;
+  fresh := NEW (HEAP, CHAR, 2) ;
+  fresh[0] := 'q'
+END Fine ;
+PROCEDURE Up () RAISES IndexError =
+BEGIN
+  u[0] := 'Y'
+END Up ;
+BEGIN
+  w := SLICE (t, 1, 2)
+END m.

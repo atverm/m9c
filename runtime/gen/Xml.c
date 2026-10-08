@@ -393,11 +393,17 @@ Xml_Reader * Xml_Open (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
   if (m9t3) {
     start = INT64_C(3);
   }
-  Xml_RawDecl (pool, ({ __typeof__(doc) m9t4 = doc; int64_t m9t4a = start, m9t4n = m9_sub_i64 ((doc).len, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err);
+  { __typeof__(({ __typeof__(doc) m9t4 = doc; int64_t m9t4a = start, m9t4n = m9_sub_i64 ((doc).len, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a1 = ({ __typeof__(doc) m9t4 = doc; int64_t m9t4a = start, m9t4n = m9_sub_i64 ((doc).len, start, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+    if (err->exc) goto L_ret;
+  Xml_RawDecl (pool, m9a1, err);
   if (err->exc) goto L_ret;
-  { __typeof__(raw) m9v = DynStr_FromUtf8 (pool, ({ __typeof__(doc) m9t7 = doc; int64_t m9t7a = start, m9t7n = m9_sub_i64 ((doc).len, start, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), err);
+  }
+  { __typeof__(({ __typeof__(doc) m9t7 = doc; int64_t m9t7a = start, m9t7n = m9_sub_i64 ((doc).len, start, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; })) m9a2 = ({ __typeof__(doc) m9t7 = doc; int64_t m9t7a = start, m9t7n = m9_sub_i64 ((doc).len, start, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
+    if (err->exc) goto L_hdl_m9t5;
+  { __typeof__(raw) m9v = DynStr_FromUtf8 (pool, m9a2, err);
     if (err->exc) goto L_hdl_m9t5;
     raw = m9v;
+  }
   }
   goto L_dn_m9t6;
 L_hdl_m9t5: ;
@@ -540,8 +546,11 @@ Xml_Event Xml_Next (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
         if (err->exc) goto L_ret;
       }
       if (((*r)->state == Xml_SContent)) {
-        Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 25 }), (*(m9_sl_CHAR *) m9_at ((*r)->stack.p, m9_sub_i64 ((*r)->depth, INT64_C(1), err), (*r)->stack.len, sizeof (m9_sl_CHAR), err)), err), err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 25 }), (*(m9_sl_CHAR *) m9_at ((*r)->stack.p, m9_sub_i64 ((*r)->depth, INT64_C(1), err), (*r)->stack.len, sizeof (m9_sl_CHAR), err)), err)) m9a3 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s5, 25 }), (*(m9_sl_CHAR *) m9_at ((*r)->stack.p, m9_sub_i64 ((*r)->depth, INT64_C(1), err), (*r)->stack.len, sizeof (m9_sl_CHAR), err)), err);
+          if (err->exc) goto L_ret;
+        Xml_Fail (r, r_pool, m9a3, err);
         if (err->exc) goto L_ret;
+        }
       }
       (*r)->state = Xml_SDone;
     } else {
@@ -790,15 +799,21 @@ Xml_Element * Xml_Parse (m9_pool *pool, m9_sl_BYTE doc, m9_state *err)
     } else {
       if ((((ev.kind).tag == (((Xml_Kind){ .tag = Xml_Kind_Text })).tag) && (depth > INT64_C(0)))) {
         if (haveLast) {
-          { __typeof__(last->tail) m9v = Text_Keep (pool, m9_cat (err->res, last->tail, ev.text, err), err);
+          { __typeof__(m9_cat (err->res, last->tail, ev.text, err)) m9a4 = m9_cat (err->res, last->tail, ev.text, err);
+            if (err->exc) goto L_ret;
+          { __typeof__(last->tail) m9v = Text_Keep (pool, m9a4, err);
             if (err->exc) goto L_ret;
             last->tail = m9v;
           }
+          }
         } else {
-          { __typeof__((*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))->text) m9v = Text_Keep (pool, m9_cat (err->res, (*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))->text, ev.text, err), err);
+          { __typeof__(m9_cat (err->res, (*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))->text, ev.text, err)) m9a5 = m9_cat (err->res, (*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))->text, ev.text, err);
+            if (err->exc) goto L_ret;
+          { __typeof__((*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))->text) m9v = Text_Keep (pool, m9a5, err);
             if (err->exc) goto L_ret;
             (*(Xml_Element * *) m9_at (stack.p, m9_sub_i64 (depth, INT64_C(1), err), stack.len, sizeof (Xml_Element *), err))->text = m9v;
             if (err->exc) goto L_ret;
+          }
           }
         }
     } } }
@@ -1122,8 +1137,11 @@ void Xml_EndTag (Xml_Writer * *w, m9_pool *w_pool, m9_state *err)
   } else {
     DynStr_Append (&((*w)->d), w_pool, ((m9_sl_CHAR){ (uint32_t *) m9s25, 2 }), err);
     if (err->exc) goto L_ret;
-    DynStr_Append (&((*w)->d), w_pool, (*(m9_sl_CHAR *) m9_at ((*w)->stack.p, (*w)->depth, (*w)->stack.len, sizeof (m9_sl_CHAR), err)), err);
+    { __typeof__((*(m9_sl_CHAR *) m9_at ((*w)->stack.p, (*w)->depth, (*w)->stack.len, sizeof (m9_sl_CHAR), err))) m9a6 = (*(m9_sl_CHAR *) m9_at ((*w)->stack.p, (*w)->depth, (*w)->stack.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    DynStr_Append (&((*w)->d), w_pool, m9a6, err);
     if (err->exc) goto L_ret;
+    }
     DynStr_AppendChar (&((*w)->d), w_pool, 62u, err);
     if (err->exc) goto L_ret;
   }
@@ -1439,8 +1457,11 @@ static void Xml_Skip (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR w, m9_sl_CHAR
   bool m9t1 = (!Xml_Ahead (r, r_pool, w, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s29, 9 }), err), err);
+    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s29, 9 }), err)) m9a7 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s29, 9 }), err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a7, err);
     if (err->exc) goto L_ret;
+    }
   }
   { __typeof__((*r)->pos) m9v = m9_add_i64 ((*r)->pos, (w).len, err);
     if (err->exc) goto L_ret;
@@ -1491,8 +1512,11 @@ static void Xml_NeedSpace (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what, m9
   bool m9t1 = (!Xml_SkipSpace (r, r_pool, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 21 }), what, err), err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 21 }), what, err)) m9a8 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s30, 21 }), what, err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a8, err);
     if (err->exc) goto L_ret;
+    }
   }
 L_ret: ;
   err->res = m9res;
@@ -1513,8 +1537,11 @@ static m9_sl_CHAR Xml_Name (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what, m
   bool m9t1 = (Xml_AtEnd (r, r_pool, err) || (!Xml_IsNameStart ((int64_t)(Xml_Cur (r, r_pool, err)), err)));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s31, 9 }), err), err);
+    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s31, 9 }), err)) m9a9 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s31, 9 }), err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a9, err);
     if (err->exc) goto L_ret;
+    }
   }
   { __typeof__((*r)->pos) m9v = m9_add_i64 ((*r)->pos, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -1756,8 +1783,11 @@ static uint32_t Xml_EntityRef (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     Xml_Refuse (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s43, 75 }), err);
     if (err->exc) goto L_ret;
   }
-  Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s44, 22 }), n, err), err);
+  { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s44, 22 }), n, err)) m9a10 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s44, 22 }), n, err);
+    if (err->exc) goto L_ret;
+  Xml_Fail (r, r_pool, m9a10, err);
   if (err->exc) goto L_ret;
+  }
   err->res = m9res;
   m9ret = 32u;
   goto L_ret;
@@ -1900,8 +1930,11 @@ static m9_sl_CHAR Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
           }
           break;
         }
-        Xml_Put (r, r_pool, &(buf), &(n), Xml_Cur (r, r_pool, err), err);
+        { __typeof__(Xml_Cur (r, r_pool, err)) m9a11 = Xml_Cur (r, r_pool, err);
+          if (err->exc) goto L_ret;
+        Xml_Put (r, r_pool, &(buf), &(n), m9a11, err);
         if (err->exc) goto L_ret;
+        }
         { __typeof__((*r)->pos) m9v = m9_add_i64 ((*r)->pos, INT64_C(1), err);
           if (err->exc) goto L_ret;
           (*r)->pos = m9v;
@@ -1938,8 +1971,11 @@ static m9_sl_CHAR Xml_CharData (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
             if (err->exc) goto L_ret;
             v = m9v;
           }
-          Xml_Put (r, r_pool, &(buf), &(n), m9_chr (v, err), err);
+          { __typeof__(m9_chr (v, err)) m9a12 = m9_chr (v, err);
+            if (err->exc) goto L_hdl_m9t8;
+          Xml_Put (r, r_pool, &(buf), &(n), m9a12, err);
           if (err->exc) goto L_hdl_m9t8;
+          }
           goto L_dn_m9t9;
 L_hdl_m9t8: ;
           if (err->exc == &m9_exc_ValueRange) {
@@ -1951,8 +1987,11 @@ L_hdl_m9t8: ;
           goto L_ret;
 L_dn_m9t9: ;
         } else {
-          Xml_Put (r, r_pool, &(buf), &(n), Xml_EntityRef (r, r_pool, err), err);
+          { __typeof__(Xml_EntityRef (r, r_pool, err)) m9a13 = Xml_EntityRef (r, r_pool, err);
+            if (err->exc) goto L_ret;
+          Xml_Put (r, r_pool, &(buf), &(n), m9a13, err);
           if (err->exc) goto L_ret;
+          }
         }
     } else {
       bool m9t10 = ((c == 93u) && Xml_Ahead (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s50, 3 }), err));
@@ -2048,8 +2087,11 @@ static m9_sl_CHAR Xml_AttValue (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
           if (err->exc) goto L_ret;
           v = m9v;
         }
-        Xml_Put (r, r_pool, &(buf), &(n), m9_chr (v, err), err);
+        { __typeof__(m9_chr (v, err)) m9a14 = m9_chr (v, err);
+          if (err->exc) goto L_hdl_m9t3;
+        Xml_Put (r, r_pool, &(buf), &(n), m9a14, err);
         if (err->exc) goto L_hdl_m9t3;
+        }
         goto L_dn_m9t4;
 L_hdl_m9t3: ;
         if (err->exc == &m9_exc_ValueRange) {
@@ -2061,8 +2103,11 @@ L_hdl_m9t3: ;
         goto L_ret;
 L_dn_m9t4: ;
       } else {
-        Xml_Put (r, r_pool, &(buf), &(n), Xml_EntityRef (r, r_pool, err), err);
+        { __typeof__(Xml_EntityRef (r, r_pool, err)) m9a15 = Xml_EntityRef (r, r_pool, err);
+          if (err->exc) goto L_ret;
+        Xml_Put (r, r_pool, &(buf), &(n), m9a15, err);
         if (err->exc) goto L_ret;
+        }
       }
     } else {
       bool m9t5 = Xml_IsSpace (c, err);
@@ -2232,8 +2277,11 @@ static m9_sl_CHAR Xml_Quoted (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what,
     q = m9v;
   }
   if (((q != 34u) && (q != 39u))) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s68, 19 }), err), err);
+    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s68, 19 }), err)) m9a16 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s68, 19 }), err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a16, err);
     if (err->exc) goto L_ret;
+    }
   }
   { __typeof__((*r)->pos) m9v = m9_add_i64 ((*r)->pos, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -2252,8 +2300,11 @@ static m9_sl_CHAR Xml_Quoted (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR what,
   bool m9t2 = Xml_AtEnd (r, r_pool, err);
   if (err->exc) goto L_ret;
   if (m9t2) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s69, 11 }), err), err);
+    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s69, 11 }), err)) m9a17 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s69, 11 }), err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a17, err);
     if (err->exc) goto L_ret;
+    }
   }
   { __typeof__((*r)->pos) m9v = m9_add_i64 ((*r)->pos, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -2299,8 +2350,11 @@ static bool Xml_DeclAttr (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR name, m9_
   bool m9t3 = (Xml_Cur (r, r_pool, err) != 61u);
   if (err->exc) goto L_ret;
   if (m9t3) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s70, 17 }), name, err), err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s70, 17 }), name, err)) m9a18 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s70, 17 }), name, err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a18, err);
     if (err->exc) goto L_ret;
+    }
   }
   { __typeof__((*r)->pos) m9v = m9_add_i64 ((*r)->pos, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -2398,8 +2452,11 @@ static void Xml_XmlDecl (Xml_Reader * *r, m9_pool *r_pool, m9_state *err)
     bool m9t8 = (!((Text_Eq (Text_Upper (e, err), ((m9_sl_CHAR){ (uint32_t *) m9s80, 5 }), err) || Text_Eq (Text_Upper (e, err), ((m9_sl_CHAR){ (uint32_t *) m9s81, 4 }), err))));
     if (err->exc) goto L_ret;
     if (m9t8) {
-      Xml_Refuse (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s82, 30 }), e, err), err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s82, 30 }), e, err)) m9a19 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s82, 30 }), e, err);
+        if (err->exc) goto L_ret;
+      Xml_Refuse (r, r_pool, m9a19, err);
       if (err->exc) goto L_ret;
+      }
     }
   }
   bool m9t9 = Xml_DeclAttr (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s83, 10 }), err);
@@ -2996,8 +3053,11 @@ static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR q, m9_sl_CHA
     if (err->exc) goto L_ret;
     if (m9t2) {
       if ((at >= INT64_C(0))) {
-        Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s139, 24 }), q, err), err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s139, 24 }), q, err)) m9a20 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s139, 24 }), q, err);
+          if (err->exc) goto L_ret;
+        Xml_Fail (r, r_pool, m9a20, err);
         if (err->exc) goto L_ret;
+        }
       }
       at = i;
     }
@@ -3010,8 +3070,11 @@ static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR q, m9_sl_CHA
   bool m9t3 = ((at == INT64_C(0)) || (at == m9_sub_i64 ((q).len, INT64_C(1), err)));
   if (err->exc) goto L_ret;
   if (m9t3) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s140, 46 }), q, err), err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s140, 46 }), q, err)) m9a21 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s140, 46 }), q, err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a21, err);
     if (err->exc) goto L_ret;
+    }
   }
   { __typeof__((*p)) m9v = ({ __typeof__(q) m9t4 = q; int64_t m9t4a = INT64_C(0), m9t4n = at; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
     if (err->exc) goto L_ret;
@@ -3024,8 +3087,11 @@ static void Xml_Split (Xml_Reader * *r, m9_pool *r_pool, m9_sl_CHAR q, m9_sl_CHA
   bool m9t6 = (!Xml_IsNameStart ((int64_t)((*(uint32_t *) m9_at ((*l).p, INT64_C(0), (*l).len, sizeof (uint32_t), err))), err));
   if (err->exc) goto L_ret;
   if (m9t6) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s141, 39 }), q, err), err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s141, 39 }), q, err)) m9a22 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s141, 39 }), q, err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a22, err);
     if (err->exc) goto L_ret;
+    }
   }
 L_ret: ;
   err->res = m9res;
@@ -3192,8 +3258,11 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
       bool m9t7 = Text_Eq ((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name, an, err);
       if (err->exc) goto L_ret;
       if (m9t7) {
-        Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s152, 26 }), an, err), err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s152, 26 }), an, err)) m9a23 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s152, 26 }), an, err);
+          if (err->exc) goto L_ret;
+        Xml_Fail (r, r_pool, m9a23, err);
         if (err->exc) goto L_ret;
+        }
       }
     } }
     if ((na == (attrs).len)) {
@@ -3248,8 +3317,11 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
       bool m9t11 = (Text_Eq (av, Xml_XmlNs, err) || Text_Eq (av, Xml_XmlnsNs, err));
       if (err->exc) goto L_ret;
       if (m9t11) {
-        Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s154, 37 }), av, err), err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s154, 37 }), av, err)) m9a24 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s154, 37 }), av, err);
+          if (err->exc) goto L_ret;
+        Xml_Fail (r, r_pool, m9a24, err);
         if (err->exc) goto L_ret;
+        }
       }
       Xml_Bind (r, r_pool, (m9_sl_CHAR){ NULL, 0 }, av, err);
       if (err->exc) goto L_ret;
@@ -3268,8 +3340,11 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
           av = m9v;
         }
         if (((av).len == INT64_C(0))) {
-          Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s157, 32 }), l, err), err);
+          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s157, 32 }), l, err)) m9a25 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s157, 32 }), l, err);
+            if (err->exc) goto L_ret;
+          Xml_Fail (r, r_pool, m9a25, err);
           if (err->exc) goto L_ret;
+          }
         }
         bool m9t13 = Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s158, 5 }), err);
         if (err->exc) goto L_ret;
@@ -3280,8 +3355,11 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
         bool m9t14 = (Text_Eq (l, ((m9_sl_CHAR){ (uint32_t *) m9s160, 3 }), err) != Text_Eq (av, Xml_XmlNs, err));
         if (err->exc) goto L_ret;
         if (m9t14) {
-          Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s161, 50 }), l, err), err);
+          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s161, 50 }), l, err)) m9a26 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s161, 50 }), l, err);
+            if (err->exc) goto L_ret;
+          Xml_Fail (r, r_pool, m9a26, err);
           if (err->exc) goto L_ret;
+          }
         }
         bool m9t15 = Text_Eq (av, Xml_XmlnsNs, err);
         if (err->exc) goto L_ret;
@@ -3305,16 +3383,22 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
     bool m9t17 = (!Text_Eq ((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns, Xml_XmlnsNs, err));
     if (err->exc) goto L_ret;
     if (m9t17) {
-      Xml_Split (r, r_pool, (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name, &(p), &(l), err);
+      { __typeof__((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name) m9a27 = (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name;
+        if (err->exc) goto L_ret;
+      Xml_Split (r, r_pool, m9a27, &(p), &(l), err);
       if (err->exc) goto L_ret;
+      }
       (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local = l;
       if (err->exc) goto L_ret;
       if (((p).len > INT64_C(0))) {
         bool m9t18 = (!Xml_Lookup (r, r_pool, p, &(u), err));
         if (err->exc) goto L_ret;
         if (m9t18) {
-          Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s163, 19 }), p, err), err);
+          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s163, 19 }), p, err)) m9a28 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s163, 19 }), p, err);
+            if (err->exc) goto L_ret;
+          Xml_Fail (r, r_pool, m9a28, err);
           if (err->exc) goto L_ret;
+          }
         }
         (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns = u;
         if (err->exc) goto L_ret;
@@ -3327,8 +3411,11 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
         bool m9t20 = (((((*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns).len > INT64_C(0)) && Text_Eq ((*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).ns, (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).ns, err)) && Text_Eq ((*(Xml_Attr *) m9_at (attrs.p, j, attrs.len, sizeof (Xml_Attr), err)).local, (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).local, err));
         if (err->exc) goto L_ret;
         if (m9t20) {
-          Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s164, 43 }), (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name, err), err);
+          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s164, 43 }), (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a29 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s164, 43 }), (*(Xml_Attr *) m9_at (attrs.p, i, attrs.len, sizeof (Xml_Attr), err)).name, err);
+            if (err->exc) goto L_ret;
+          Xml_Fail (r, r_pool, m9a29, err);
           if (err->exc) goto L_ret;
+          }
         }
       } }
     }
@@ -3338,8 +3425,11 @@ static void Xml_StartTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_
   bool m9t21 = (!Xml_Lookup (r, r_pool, p, &(u), err));
   if (err->exc) goto L_ret;
   if (m9t21) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s165, 19 }), p, err), err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s165, 19 }), p, err)) m9a30 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s165, 19 }), p, err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a30, err);
     if (err->exc) goto L_ret;
+    }
   }
   bool m9t22 = Text_Eq (p, ((m9_sl_CHAR){ (uint32_t *) m9s166, 5 }), err);
   if (err->exc) goto L_ret;
@@ -3419,8 +3509,11 @@ static void Xml_EndTagEv (Xml_Reader * *r, m9_pool *r_pool, Xml_Event *ev, m9_po
   bool m9t2 = (!Text_Eq (n, (*(m9_sl_CHAR *) m9_at ((*r)->stack.p, m9_sub_i64 ((*r)->depth, INT64_C(1), err), (*r)->stack.len, sizeof (m9_sl_CHAR), err)), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    Xml_Fail (r, r_pool, m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s173, 12 }), n, err), ((m9_sl_CHAR){ (uint32_t *) m9s174, 8 }), err), (*(m9_sl_CHAR *) m9_at ((*r)->stack.p, m9_sub_i64 ((*r)->depth, INT64_C(1), err), (*r)->stack.len, sizeof (m9_sl_CHAR), err)), err), err);
+    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s173, 12 }), n, err), ((m9_sl_CHAR){ (uint32_t *) m9s174, 8 }), err), (*(m9_sl_CHAR *) m9_at ((*r)->stack.p, m9_sub_i64 ((*r)->depth, INT64_C(1), err), (*r)->stack.len, sizeof (m9_sl_CHAR), err)), err)) m9a31 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s173, 12 }), n, err), ((m9_sl_CHAR){ (uint32_t *) m9s174, 8 }), err), (*(m9_sl_CHAR *) m9_at ((*r)->stack.p, m9_sub_i64 ((*r)->depth, INT64_C(1), err), (*r)->stack.len, sizeof (m9_sl_CHAR), err)), err);
+      if (err->exc) goto L_ret;
+    Xml_Fail (r, r_pool, m9a31, err);
     if (err->exc) goto L_ret;
+    }
   }
   { __typeof__((*r)->depth) m9v = m9_sub_i64 ((*r)->depth, INT64_C(1), err);
     if (err->exc) goto L_ret;
@@ -3570,9 +3663,12 @@ static void Xml_RawDecl (m9_pool *pool, m9_sl_BYTE b, m9_state *err)
       n = m9v;
     }
   }
-  { __typeof__(head) m9v = DynStr_Chars (pool, ({ __typeof__(b) m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), err);
+  { __typeof__(({ __typeof__(b) m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a32 = ({ __typeof__(b) m9t5 = b; int64_t m9t5a = INT64_C(0), m9t5n = n; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
+    if (err->exc) goto L_hdl_m9t3;
+  { __typeof__(head) m9v = DynStr_Chars (pool, m9a32, err);
     if (err->exc) goto L_hdl_m9t3;
     head = m9v;
+  }
   }
   goto L_dn_m9t4;
 L_hdl_m9t3: ;
@@ -3592,9 +3688,12 @@ L_dn_m9t4: ;
     m9_raise (err, &Xml_Unsupported);
     goto L_ret;
   }
-  { __typeof__(e) m9v = Text_Upper (Xml_RawValue (head, ((m9_sl_CHAR){ (uint32_t *) m9s179, 8 }), err), err);
+  { __typeof__(Xml_RawValue (head, ((m9_sl_CHAR){ (uint32_t *) m9s179, 8 }), err)) m9a33 = Xml_RawValue (head, ((m9_sl_CHAR){ (uint32_t *) m9s179, 8 }), err);
+    if (err->exc) goto L_ret;
+  { __typeof__(e) m9v = Text_Upper (m9a33, err);
     if (err->exc) goto L_ret;
     e = m9v;
+  }
   }
   bool m9t8 = ((((e).len > INT64_C(0)) && (!Text_Eq (e, ((m9_sl_CHAR){ (uint32_t *) m9s180, 5 }), err))) && (!Text_Eq (e, ((m9_sl_CHAR){ (uint32_t *) m9s181, 4 }), err)));
   if (err->exc) goto L_ret;
@@ -3625,10 +3724,16 @@ static void Xml_AddText (Xml_Element * e, DynStr_DString * *d, m9_pool *d_pool, 
   m9t1to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    Xml_AddText ((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err)), d, d_pool, err);
+    { __typeof__((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))) m9a34 = (*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err));
+      if (err->exc) goto L_ret;
+    Xml_AddText (m9a34, d, d_pool, err);
     if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, (*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))->tail, err);
+    }
+    { __typeof__((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))->tail) m9a35 = (*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))->tail;
+      if (err->exc) goto L_ret;
+    DynStr_Append (d, d_pool, m9a35, err);
     if (err->exc) goto L_ret;
+    }
   } }
 L_ret: ;
   err->res = m9res;

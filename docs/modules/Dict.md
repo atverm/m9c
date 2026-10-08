@@ -62,7 +62,7 @@ rather than a hash order that changes when the table grows.
 the same table with its head and entries in pool: for a variable
 declared `PTR Dict IN pool`, whose growth Put then places there
 
-### Put (VAR d: PTR Dict ; RO KEPT key: STR ; val: Value)
+### Put (VAR d: PTR Dict ; RO KEPT key: STR ; KEPT val: Value)
 
 inserts, or replaces the value of an existing key.  Replacing
 keeps the key's original position in the iteration order.

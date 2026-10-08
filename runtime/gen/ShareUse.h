@@ -7,5 +7,10 @@
 typedef struct ShareUse_Box ShareUse_Box;
 
 
+#ifndef M9SL_m9_gd2_double
+#define M9SL_m9_gd2_double
+M9_GRID_T (m9_gd2_double, double, 2)
+#endif
+
 
 #endif

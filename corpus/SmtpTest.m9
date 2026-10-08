@@ -1,0 +1,211 @@
+MODULE SmtpTest ;
+
+(* Smtp offline: the message as written, against Python's email
+   (tools/smtpgold.py, runtime/test/gold/Smtp.gold; docs/library-
+   plan-2.md, item 6): the Date line for eight instants, the RFC 2047
+   encoded word of five subjects, a body's base64 lines, the multipart
+   layout, dot-stuffing, and the refusals that need no server.  The
+   dialogue itself is runtime/test/smtp.sh's, against aiosmtpd.  *)
+
+IMPORT Check ;
+IMPORT DynStr ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Smtp ;
+IMPORT Text ;
+IMPORT Time ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  gold : STR ;
+
+PROCEDURE Word (RO w: STR) : STR RAISES ValueRange =
+  (* a golden word: %0D %0A %20 restored, then its UTF-8 decoded --
+     GoldStrs reads the file as octets *)
+VAR scratch : POOL ;
+BEGIN
+  RETURN DynStr.FromUtf8 (scratch, DynStr.Bytes (scratch,
+    Text.Replace (Text.Replace (Text.Replace (w, '%0D', '' + 0DC), '%0A', '' + 0AC), '%20', ' '), FALSE))
+END Word ;
+
+PROCEDURE Count (RO hay: STR ; RO needle: STR) : I64 =
+BEGIN
+  RETURN (LEN (hay) - LEN (Text.Replace (hay, needle, ''))) DIV LEN (needle)
+END Count ;
+
+PROCEDURE Line (RO wire: STR ; RO name: STR) : STR =
+  (* the header line `name: value' of wire, its value; '' if none *)
+VAR
+  lines : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  lines := Text.Split (wire, 0AC) ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF Text.StartsWith (lines[i], name + ': ') THEN
+      RETURN Text.TrimRight (SLICE (lines[i], LEN (name) + 2, LEN (lines[i]) - LEN (name) - 2))
+    END
+  END ;
+  RETURN ''
+END Line ;
+
+PROCEDURE Dates () RAISES ValueRange =
+VAR
+  secs : SLICE OF I64 ;
+  want : SLICE OF STR ;
+  i : I64 ;
+  m : PTR Smtp.Message IN pool ;
+  epoch : Time.Civil ;
+BEGIN
+  secs := Check.GoldI64s (t, gold, 'date.secs') ;
+  want := Check.GoldStrs (t, gold, 'date.want') ;
+  epoch.year := 1970 ; epoch.month := 1 ; epoch.day := 1 ;
+  epoch.hour := 0 ; epoch.minute := 0 ; epoch.second := 0.0 ;
+  FOR i := 0 TO LEN (secs) - 1 DO
+    m := Smtp.New (pool, 'a@b.org', 's') ;
+    Smtp.SetDate (m, Time.AddSeconds (Time.FromCivil (epoch), F64 (secs[i]))) ;
+    Check.EqStr (t, 'Date for ' + Fmt.I64Str (secs[i]), Line (Smtp.Wire (m), 'Date'), Word (want[i]))
+  END
+END Dates ;
+
+PROCEDURE Subjects () RAISES ValueRange =
+VAR
+  text, want, lines : SLICE OF STR ;
+  i, n : I64 ;
+  m : PTR Smtp.Message IN pool ;
+BEGIN
+  text := Check.GoldStrs (t, gold, 'subject.text') ;
+  want := Check.GoldStrs (t, gold, 'subject.want') ;
+  FOR i := 0 TO LEN (text) - 1 DO
+    m := Smtp.New (pool, 'a@b.org', Word (text[i])) ;
+    Check.EqStr (t, 'Subject ' + Fmt.I64Str (i), Line (Smtp.Wire (m), 'Subject'), Word (want[i]))
+  END ;
+  (* a long one is folded: each word within RFC 2047's 75, every
+     continuation line begins with a blank, the number of words as
+     counted -- what the live gate decodes back through Python *)
+  m := Smtp.New (pool, 'a@b.org', Word (text[0]) + ' ' + Word (text[0]) + ' ' + Word (text[0]) + ' ' + Word (text[0])) ;
+  lines := Text.Split (Smtp.Wire (m), 0AC) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    IF Text.StartsWith (lines[i], 'Subject: ') OR Text.StartsWith (lines[i], ' =?') THEN
+      n := n + 1 ;
+      Check.That (t, 'a folded subject line within 76: ' + Fmt.I64Str (LEN (lines[i]) - 1),
+                  LEN (Text.TrimRight (lines[i])) <= 76 AND Text.EndsWith (Text.TrimRight (lines[i]), '?='))
+    END
+  END ;
+  Check.EqI64 (t, 'a 71-character subject in two words', n, 2)
+END Subjects ;
+
+PROCEDURE Bodies () RAISES ValueRange =
+VAR
+  text, want : SLICE OF STR ;
+  m : PTR Smtp.Message IN pool ;
+  wire, body : STR ;
+  at : I64 ;
+BEGIN
+  text := Check.GoldStrs (t, gold, 'body.text') ;
+  want := Check.GoldStrs (t, gold, 'body.b64lines') ;
+  m := Smtp.New (pool, 'a@b.org', 's') ;
+  Smtp.AddTo (m, 'c@d.org') ;
+  Smtp.SetText (m, Word (text[0])) ;
+  wire := Smtp.Wire (m) ;
+  at := Text.Find (wire, '' + 0DC + 0AC + 0DC + 0AC) ;
+  Check.That (t, 'the headers end with an empty line', at > 0) ;
+  body := SLICE (wire, at + 4, LEN (wire) - at - 4) ;
+  Check.EqStr (t, 'the body as base64 lines of 76', body, Word (want[0])) ;
+  Check.EqStr (t, 'Content-Type of a text message', Line (wire, 'Content-Type'), 'text/plain; charset=utf-8') ;
+  Check.EqStr (t, 'To', Line (wire, 'To'), 'c@d.org') ;
+  Check.That (t, "a Message-ID with the sender's host", Text.EndsWith (Line (wire, 'Message-ID'), '@b.org>')) ;
+  (* dot-stuffing: the transport's, held on the text itself *)
+  Check.EqStr (t, 'Stuffed', Smtp.Stuffed ('a' + 0AC + '.b' + 0AC + '..c' + 0AC + '.'),
+               'a' + 0AC + '..b' + 0AC + '...c' + 0AC + '..') ;
+  Check.EqStr (t, 'Stuffed, a dot first', Smtp.Stuffed ('.x'), '..x') ;
+  Check.EqStr (t, 'Stuffed, nothing to stuff', Smtp.Stuffed ('a.b' + 0AC + 'c'), 'a.b' + 0AC + 'c')
+END Bodies ;
+
+PROCEDURE Multipart () RAISES ValueRange =
+VAR
+  m : PTR Smtp.Message IN pool ;
+  wire, ctype, boundary : STR ;
+  data : SLICE OF BYTE ;
+  i, q : I64 ;
+BEGIN
+  m := Smtp.New (pool, 'a@b.org', 'with a file') ;
+  Smtp.AddTo (m, 'c@d.org') ;
+  Smtp.AddCc (m, 'e@f.org') ;
+  Smtp.AddBcc (m, 'g@h.org') ;
+  Smtp.SetId (m, 'fixed.id@b.org') ;
+  Smtp.SetText (m, 'see the file') ;
+  data := NEW (BYTE, 300) ;
+  FOR i := 0 TO 299 DO data[i] := BYTE (i MOD 256) END ;
+  Smtp.Attach (m, 'data.bin', 'application/octet-stream', data) ;
+  wire := Smtp.Wire (m) ;
+  ctype := Line (wire, 'Content-Type') ;
+  Check.That (t, 'multipart/mixed with a boundary', Text.StartsWith (ctype, 'multipart/mixed; boundary="')) ;
+  q := Text.FindChar (SLICE (ctype, 27, LEN (ctype) - 27), '"') ;
+  boundary := SLICE (ctype, 27, q) ;
+  Check.EqI64 (t, 'two parts opened', Count (wire, '--' + boundary + 0DC + 0AC), 2) ;
+  Check.That (t, 'and the multipart closed', Text.Contains (wire, '--' + boundary + '--' + 0DC + 0AC)) ;
+  Check.That (t, 'the attachment named', Text.Contains (wire, 'Content-Disposition: attachment; filename="data.bin"')) ;
+  Check.That (t, 'the attachment typed', Text.Contains (wire, 'Content-Type: application/octet-stream')) ;
+  Check.That (t, 'the attachment base64, in lines', Text.Contains (wire, Text.ToBase64 (SLICE (data, 0, 57)) + 0DC + 0AC)) ;
+  Check.EqStr (t, 'Cc in the headers', Line (wire, 'Cc'), 'e@f.org') ;
+  Check.EqStr (t, 'Bcc not in the headers', Line (wire, 'Bcc'), '') ;
+  Check.EqStr (t, 'the id as set', Line (wire, 'Message-ID'), '<fixed.id@b.org>')
+END Multipart ;
+
+PROCEDURE Refusals () RAISES ValueRange =
+VAR
+  m : PTR Smtp.Message IN pool ;
+  em : STR ;
+  code : I64 ;
+BEGIN
+  m := Smtp.New (pool, 'a@b.org', 's') ;
+  em := '' ;
+  code := -1 ;
+  BEGIN
+    Smtp.Send ('127.0.0.1', 1, Smtp.Plain, '', '', m) ;
+    Check.That (t, 'a message with no recipient is refused', FALSE)
+  EXCEPT
+  | Smtp.Error (msg, c) :
+      em := msg ;
+      code := c
+  END ;
+  Check.That (t, 'no recipient: refused before any connection', Text.Contains (em, 'no recipient')) ;
+  Check.EqI64 (t, 'no recipient: code 0', code, 0) ;
+  Smtp.AddTo (m, 'c@d.org') ;
+  em := '' ;
+  BEGIN
+    Smtp.Send ('127.0.0.1', 1, 7, '', '', m) ;
+    Check.That (t, 'an unknown security is refused', FALSE)
+  EXCEPT
+  | Smtp.Error (msg, c) :
+      em := msg
+  END ;
+  Check.That (t, 'an unknown security: refused by name', Text.Contains (em, 'security')) ;
+  em := '' ;
+  BEGIN
+    (* port 1 on loopback: nothing listens, tcpmux least of all *)
+    Smtp.Send ('127.0.0.1', 1, Smtp.Plain, '', '', m) ;
+    Check.That (t, 'a refused connection is an Error', FALSE)
+  EXCEPT
+  | Smtp.Error (msg, c) :
+      em := msg
+  END ;
+  Check.That (t, 'a refused connection: cannot connect', Text.Contains (em, 'cannot connect'))
+END Refusals ;
+
+BEGIN
+  BEGIN
+    gold := Check.GoldPath ('Smtp.gold') ;
+    Dates () ;
+    Subjects () ;
+    Bodies () ;
+    Multipart () ;
+    Refusals ()
+  EXCEPT
+  | ValueRange :
+      Check.That (t, 'no ValueRange escapes', FALSE)
+  END ;
+  Io.Halt (Check.Done (t, 'Smtp'))
+END SmtpTest.

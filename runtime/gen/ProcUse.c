@@ -210,21 +210,33 @@ static void ProcUse_Run (m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   int64_t v = 0; (void) v;
-  ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s4, 14 }), ProcUse_Pick (ProcUse_Up, INT64_C(3), INT64_C(2), err), err);
+  { __typeof__(ProcUse_Pick (ProcUse_Up, INT64_C(3), INT64_C(2), err)) m9a1 = ProcUse_Pick (ProcUse_Up, INT64_C(3), INT64_C(2), err);
+    if (err->exc) goto L_ret;
+  ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s4, 14 }), m9a1, err);
   if (err->exc) goto L_ret;
-  ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s5, 16 }), ProcUse_Pick (ProcUse_Down, INT64_C(3), INT64_C(2), err), err);
+  }
+  { __typeof__(ProcUse_Pick (ProcUse_Down, INT64_C(3), INT64_C(2), err)) m9a2 = ProcUse_Pick (ProcUse_Down, INT64_C(3), INT64_C(2), err);
+    if (err->exc) goto L_ret;
+  ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s5, 16 }), m9a2, err);
   if (err->exc) goto L_ret;
+  }
   chosen = ProcUse_Down;
   { ProcUse_Less l = chosen;
   if (l != NULL) {
-    ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s6, 18 }), ProcUse_Pick (l, INT64_C(7), INT64_C(9), err), err);
+    { __typeof__(ProcUse_Pick (l, INT64_C(7), INT64_C(9), err)) m9a3 = ProcUse_Pick (l, INT64_C(7), INT64_C(9), err);
+      if (err->exc) goto L_ret;
+    ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s6, 18 }), m9a3, err);
     if (err->exc) goto L_ret;
+    }
   } }
   h.k = ProcUse_Twice;
   { ProcUse_Kernel k = h.k;
   if (k != NULL) {
-    ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s7, 18 }), m9_i64_f64 ((double)(ProcUse_Apply (k, 1.5, err)), err), err);
+    { __typeof__(m9_i64_f64 ((double)(ProcUse_Apply (k, 1.5, err)), err)) m9a4 = m9_i64_f64 ((double)(ProcUse_Apply (k, 1.5, err)), err);
+      if (err->exc) goto L_ret;
+    ProcUse_Show (((m9_sl_CHAR){ (uint32_t *) m9s7, 18 }), m9a4, err);
     if (err->exc) goto L_ret;
+    }
   } }
   total = INT64_C(0);
   ProcUse_Each (ProcUse_AddLen, &(total), err);

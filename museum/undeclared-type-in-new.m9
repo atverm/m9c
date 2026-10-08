@@ -1,0 +1,18 @@
+(* EXPECT-ERROR: unknown type: AttrsKids *)
+(* A type that nobody declares, named in a NEW.  Observed 2026-10-07
+   writing Xml: `NEW (pool, AttrsKids, 64)' -- a name that was never
+   declared, a typo for the slice type meant -- passed the checker,
+   which says nothing about a type it cannot find (softness: a bare
+   name found nowhere might be a missing import), and surfaced only
+   as the GENERATOR's `unknown name', without the M9 line.  Softness
+   is for what the checker cannot know.  A bare type name is not an
+   import: it is declared in this module or nowhere, and nowhere is
+   a typo, said at the NEW. *)
+MODULE Attrs ;
+TYPE Attr = RECORD name, value : STR END ;
+VAR
+  pool : POOL ;
+  kids : SLICE OF Attr ;
+BEGIN
+  kids := NEW (pool, AttrsKids, 64)
+END Attrs.

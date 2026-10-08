@@ -1,0 +1,185 @@
+MODULE SmtpFix ;
+
+(* The driver of runtime/test/smtp.sh: sends what smtpfix.py's four
+   servers should receive and prints a line per message, `sent TAG N
+   FROM RCPTS | SUBJECT | BODY | ATTACH | AUTH`, which the judge holds
+   the arrived .eml files to; and a line `refused NAME CODE` for each
+   dialogue that must fail, which the gate holds to its list.
+
+     smtpfix PLAIN_PORT LOGIN_PORT TLS_PORT STARTTLS_PORT
+
+   The servers are on localhost, the TLS ones with the gate's
+   self-signed certificate, trusted through SSL_CERT_FILE.  *)
+
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Smtp ;
+IMPORT Text ;
+
+CONST
+  Host = 'localhost' ;
+  From = 'a@test.org' ;
+
+VAR
+  pool : POOL ;
+  plain, login, tls, starttls : I64 ;
+  np, nl, nt, ns : I64 ;
+
+PROCEDURE Int (RO s: STR) : I64 =
+VAR i, v : I64 ;
+BEGIN
+  v := 0 ;
+  FOR i := 0 TO LEN (s) - 1 DO v := v * 10 + ORD (s[i]) - 48 END ;
+  RETURN v
+END Int ;
+
+PROCEDURE Pattern (n: I64) : SLICE OF BYTE RAISES ValueRange =
+  (* the octets the judge expects of an attachment of n *)
+VAR
+  b : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  b := NEW (BYTE, n) ;
+  FOR i := 0 TO n - 1 DO b[i] := BYTE ((i * 7 + 3) MOD 256) END ;
+  RETURN b
+END Pattern ;
+
+PROCEDURE Shown (RO body: STR) : STR =
+BEGIN
+  RETURN Text.Replace (body, '' + 0AC, '\n')
+END Shown ;
+
+PROCEDURE Try (RO name: STR ; port: I64 ; security: I64 ; RO user: STR ;
+               RO pass: STR ; m: PTR Smtp.Message) : BOOL =
+  (* TRUE when sent; else the refusal line *)
+VAR
+  why : STR ;
+  c : I64 ;
+BEGIN
+  Smtp.Send (Host, port, security, user, pass, m) ;
+  RETURN TRUE
+EXCEPT
+| Smtp.Error (msg, code) :
+    why := msg ;
+    c := code ;
+    Io.WriteLine ('refused ' + name + ' ' + Fmt.I64Str (c) + ' -- ' + why) ;
+    RETURN FALSE
+| ValueRange :
+    Io.WriteLine ('refused ' + name + ' ValueRange') ;
+    RETURN FALSE
+END Try ;
+
+PROCEDURE Sent (RO tag: STR ; n: I64 ; RO rcpts: STR ; RO subject: STR ;
+                RO body: STR ; RO attach: STR ; auth: BOOL) =
+BEGIN
+  Io.WriteLine ('sent ' + tag + ' ' + Fmt.I64Str (n) + ' ' + From + ' ' + rcpts + ' | ' +
+              subject + ' | ' + Shown (body) + ' | ' + attach + ' | ' + Auth (auth))
+END Sent ;
+
+PROCEDURE Auth (b: BOOL) : STR =
+BEGIN
+  IF b THEN RETURN 'auth' ELSE RETURN 'noauth' END
+END Auth ;
+
+PROCEDURE Ete () : STR =
+  (* the generator takes ASCII literals only: this is 'été' *)
+BEGIN
+  RETURN '' + 0E9C + 't' + 0E9C
+END Ete ;
+
+PROCEDURE Text1 () : STR =
+BEGIN
+  RETURN 'line one' + 0AC + '.a line that begins with a dot' + 0AC + Ete () + 0AC
+END Text1 ;
+
+PROCEDURE Simple (RO subject: STR ; RO to: STR) : PTR Smtp.Message IN pool =
+VAR m : PTR Smtp.Message IN pool ;
+BEGIN
+  m := Smtp.New (pool, From, subject) ;
+  Smtp.AddTo (m, to) ;
+  Smtp.SetText (m, Text1 ()) ;
+  RETURN m
+END Simple ;
+
+PROCEDURE Run () RAISES ValueRange =
+VAR
+  m : PTR Smtp.Message IN pool ;
+  longSubject : STR ;
+BEGIN
+  (* p 1: plain, no AUTH, one recipient, a dot line and UTF-8 *)
+  IF Try ('plain', plain, Smtp.Plain, '', '', Simple ('hello', 'b@test.org')) THEN
+    np := np + 1 ;
+    Sent ('p', np, 'b@test.org', 'hello', Text1 (), '-', FALSE)
+  END ;
+  (* p 2: AUTH PLAIN (the server offers it), To + Cc + Bcc, a folded
+     subject, an attachment *)
+  longSubject := 'Rapport ' + Ete () + ' 2026, rapport ' + Ete () + ' 2027, rapport ' + Ete () + ' 2028' ;
+  m := Smtp.New (pool, From, longSubject) ;
+  Smtp.AddTo (m, 'b@test.org') ;
+  Smtp.AddCc (m, 'c@test.org') ;
+  Smtp.AddBcc (m, 'bcc@test.org') ;
+  Smtp.SetText (m, 'see the file') ;
+  Smtp.Attach (m, 'data.bin', 'application/octet-stream', Pattern (300)) ;
+  IF Try ('plainauth', plain, Smtp.Plain, 'm9', 'secret', m) THEN
+    np := np + 1 ;
+    Sent ('p', np, 'b@test.org,c@test.org,bcc@test.org', longSubject, 'see the file',
+          'data.bin:application/octet-stream:300', TRUE)
+  END ;
+  (* refusals on the plain server: a wrong password, a recipient the
+     server rejects, a sender it defers, STARTTLS it does not offer *)
+  IF Try ('badpass', plain, Smtp.Plain, 'm9', 'wrong', Simple ('x', 'b@test.org')) THEN
+    Io.WriteLine ('FAIL badpass: sent')
+  END ;
+  IF Try ('rcpt', plain, Smtp.Plain, '', '', Simple ('x', 'reject@test.org')) THEN
+    Io.WriteLine ('FAIL rcpt: sent')
+  END ;
+  m := Smtp.New (pool, 'temp@test.org', 'x') ;
+  Smtp.AddTo (m, 'b@test.org') ;
+  Smtp.SetText (m, 'x') ;
+  IF Try ('mail', plain, Smtp.Plain, '', '', m) THEN
+    Io.WriteLine ('FAIL mail: sent')
+  END ;
+  IF Try ('nostarttls', plain, Smtp.StartTls, '', '', Simple ('x', 'b@test.org')) THEN
+    Io.WriteLine ('FAIL nostarttls: sent')
+  END ;
+  IF Try ('tlsplain', plain, Smtp.Tls, '', '', Simple ('x', 'b@test.org')) THEN
+    Io.WriteLine ('FAIL tlsplain: sent')
+  END ;
+  (* l 1: a server offering LOGIN only *)
+  IF Try ('login', login, Smtp.Plain, 'm9', 'secret', Simple ('by LOGIN', 'b@test.org')) THEN
+    nl := nl + 1 ;
+    Sent ('l', nl, 'b@test.org', 'by LOGIN', Text1 (), '-', TRUE)
+  END ;
+  (* t 1: implicit TLS *)
+  IF Try ('tls', tls, Smtp.Tls, 'm9', 'secret', Simple ('over TLS', 'b@test.org')) THEN
+    nt := nt + 1 ;
+    Sent ('t', nt, 'b@test.org', 'over TLS', Text1 (), '-', TRUE)
+  END ;
+  (* s 1: STARTTLS, which that server requires; then plain against it *)
+  IF Try ('starttls', starttls, Smtp.StartTls, 'm9', 'secret', Simple ('after STARTTLS', 'b@test.org')) THEN
+    ns := ns + 1 ;
+    Sent ('s', ns, 'b@test.org', 'after STARTTLS', Text1 (), '-', TRUE)
+  END ;
+  IF Try ('needstarttls', starttls, Smtp.Plain, '', '', Simple ('x', 'b@test.org')) THEN
+    Io.WriteLine ('FAIL needstarttls: sent')
+  END
+END Run ;
+
+BEGIN
+  IF Io.ArgCount () < 5 THEN
+    Io.WriteLine ('usage: smtpfix PLAIN LOGIN TLS STARTTLS') ;
+    Io.Halt (2)
+  END ;
+  plain := Int (Io.Arg (pool, 1)) ;
+  login := Int (Io.Arg (pool, 2)) ;
+  tls := Int (Io.Arg (pool, 3)) ;
+  starttls := Int (Io.Arg (pool, 4)) ;
+  np := 0 ; nl := 0 ; nt := 0 ; ns := 0 ;
+  BEGIN
+    Run ()
+  EXCEPT
+  | ValueRange :
+      Io.WriteLine ('FAIL ValueRange')
+  END ;
+  Io.WriteLine ('done')
+END SmtpFix.

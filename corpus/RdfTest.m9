@@ -25,13 +25,15 @@ IMPORT Check ;
 IMPORT DynStr ;
 IMPORT Fmt ;
 IMPORT Io ;
+IMPORT Json ;
 IMPORT Rdf ;
+IMPORT Sort ;
 IMPORT Text ;
 
 VAR
   t : Check.T ;
   pool : POOL ;
-  gold, base : STR ;
+  gold, base, xmlBase : STR ;
   bases : SLICE OF STR ;
 
 PROCEDURE Read (VAR p: POOL ; RO path: STR ; VAR ok: BOOL) : STR =
@@ -106,6 +108,55 @@ BEGIN
   RETURN FALSE
 END ParsesTtl ;
 
+PROCEDURE ParsesXml (RO file: STR ; VAR msg: STR) : BOOL =
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  doc : SLICE OF BYTE ;
+  em : STR ;
+  el, ec : I64 ;
+BEGIN
+  BEGIN
+    doc := Io.ReadFileBytes (p, Path ('rdf-xml', file))
+  EXCEPT
+  | Io.IOError (e) : msg := 'cannot read' ; RETURN FALSE
+  END ;
+  BEGIN
+    g := Rdf.ParseRdfXml (p, doc, xmlBase + file) ;
+    RETURN TRUE
+  EXCEPT
+  | Rdf.SyntaxError (m, line, col) :
+      em := m ; el := line ; ec := col ;
+      msg := Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em
+  | ValueRange :
+      msg := 'ValueRange'
+  END ;
+  RETURN FALSE
+END ParsesXml ;
+
+PROCEDURE ParsesJsonLd (RO file: STR ; RO docBase: STR ; VAR msg: STR) : BOOL =
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  src, em : STR ;
+  el, ec : I64 ;
+  ok : BOOL ;
+BEGIN
+  src := Read (p, 'runtime/test/jsonld-tests/' + file, ok) ;
+  IF NOT ok THEN msg := 'not UTF-8' ; RETURN FALSE END ;
+  BEGIN
+    g := Rdf.ParseJsonLd (p, src, docBase, NONE) ;
+    RETURN TRUE
+  EXCEPT
+  | Rdf.SyntaxError (m, line, col) :
+      em := m ; el := line ; ec := col ;
+      msg := Fmt.I64Str (el) + ':' + Fmt.I64Str (ec) + ' ' + em
+  | ValueRange :
+      msg := 'ValueRange'
+  END ;
+  RETURN FALSE
+END ParsesJsonLd ;
+
 PROCEDURE Suites () =
 VAR
   files, results : SLICE OF STR ;
@@ -163,7 +214,57 @@ BEGIN
       ok := ParsesNtIn ('rdf-turtle', results[i], msg) ;
       Check.That (t, 'N-Triples reads the expected ' + results[i] + ' ' + msg, ok)
     END
-  END
+  END ;
+  (* RDF/XML: every evaluation document read, every negative refused *)
+  files := Check.GoldStrs (t, gold, 'xml.eval.action') ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    ok := ParsesXml (files[i], msg) ;
+    Check.That (t, 'RDF/XML reads ' + files[i] + ' ' + msg, ok)
+  END ;
+  files := Check.GoldStrs (t, gold, 'xml.neg') ;
+  refused := 0 ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    IF ParsesXml (files[i], msg) THEN
+      Check.That (t, 'RDF/XML refuses ' + files[i], FALSE)
+    ELSIF Text.Eq (msg, 'ValueRange') THEN
+      Check.That (t, 'RDF/XML refuses ' + files[i] + ' by a SyntaxError, not ValueRange', FALSE)
+    ELSE
+      refused := refused + 1
+    END
+  END ;
+  Check.EqI64 (t, 'RDF/XML: every negative test refused', refused, LEN (files)) ;
+  (* JSON-LD: every evaluation and syntax document read, every negative refused *)
+  files := Check.GoldStrs (t, gold, 'jld.pos.action') ;
+  results := Check.GoldStrs (t, gold, 'jld.pos.base') ;
+  Check.EqI64 (t, 'a base for every JSON-LD test', LEN (results), LEN (files)) ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    IF i < LEN (results) THEN
+      ok := ParsesJsonLd (files[i], results[i], msg) ;
+      Check.That (t, 'JSON-LD reads ' + files[i] + ' ' + msg, ok)
+    END
+  END ;
+  files := Check.GoldStrs (t, gold, 'jld.syntax') ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    ok := ParsesJsonLd (files[i], 'https://w3c.github.io/json-ld-api/tests/' + files[i], msg) ;
+    Check.That (t, 'JSON-LD reads ' + files[i] + ' ' + msg, ok)
+  END ;
+  files := Check.GoldStrs (t, gold, 'jld.neg') ;
+  refused := 0 ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    msg := '' ;
+    IF ParsesJsonLd (files[i], 'https://w3c.github.io/json-ld-api/tests/' + files[i], msg) THEN
+      Check.That (t, 'JSON-LD refuses ' + files[i], FALSE)
+    ELSIF Text.Eq (msg, 'ValueRange') THEN
+      Check.That (t, 'JSON-LD refuses ' + files[i] + ' by a SyntaxError, not ValueRange', FALSE)
+    ELSE
+      refused := refused + 1
+    END
+  END ;
+  Check.EqI64 (t, 'JSON-LD: every negative test refused', refused, LEN (files))
 END Suites ;
 
 PROCEDURE ParsesNtIn (RO suite: STR ; RO file: STR ; VAR msg: STR) : BOOL =
@@ -267,6 +368,214 @@ BEGIN
            '_:a _:b <http://e/o> .', 1, 'a predicate that is not an IRI')
 END ByHand ;
 
+PROCEDURE XmlDoc (VAR pool: POOL ; RO text: STR) : SLICE OF BYTE RAISES ValueRange =
+  (* the octets of a document, in the caller's pool.  (Answering
+     DynStr.Utf8 of a LOCAL pool passed the checker and came back as
+     freed bytes -- the escape through a callee's answer is the owed
+     call-summary item, CLAUDE.md.) *)
+BEGIN
+  RETURN DynStr.Utf8 (pool, text)
+END XmlDoc ;
+
+PROCEDURE XmlRefusal (RO text: STR) : STR =
+  (* the SyntaxError's text, or 'read' *)
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  em : STR ;
+BEGIN
+  g := Rdf.ParseRdfXml (p, XmlDoc (p, text), 'http://e/doc') ;
+  RETURN 'read'
+EXCEPT
+| Rdf.SyntaxError (m, l, c) : em := m ; RETURN em
+| ValueRange : RETURN 'ValueRange'
+END XmlRefusal ;
+
+PROCEDURE JsonLdRefusal (RO text: STR) : STR =
+  (* the SyntaxError's text, or 'read' *)
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  em : STR ;
+BEGIN
+  g := Rdf.ParseJsonLd (p, text, 'http://e/doc', NONE) ;
+  RETURN 'read'
+EXCEPT
+| Rdf.SyntaxError (m, l, c) : em := m ; RETURN em
+| ValueRange : RETURN 'ValueRange'
+END JsonLdRefusal ;
+
+PROCEDURE JsonLdByHand () RAISES ValueRange =
+  (* what the suite's subset does not reach: a context given as a URL
+     (the four such tests are left out, since nothing is fetched), and
+     a context handed in by the caller *)
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  ctx : PTR Json.Node IN p ;
+  tr : Rdf.Triple ;
+  em : STR ;
+BEGIN
+  Check.EqStr (t, 'JSON-LD: a context given as a URL is refused by name',
+    JsonLdRefusal ('{"@context": "http://example.org/context.jsonld", "http://e/p": "x"}'),
+    'a remote context is refused: http://example.org/context.jsonld') ;
+  Check.EqStr (t, 'JSON-LD: a URL among several contexts too',
+    JsonLdRefusal ('{"@context": [{"ex": "http://e/"}, "http://example.org/context.jsonld"], "ex:p": "x"}'),
+    'a remote context is refused: http://example.org/context.jsonld') ;
+  BEGIN
+    ctx := Json.ParseIn (p, '{"name": "http://xmlns.com/foaf/0.1/name", "@base": "http://e/"}') ;
+    g := Rdf.ParseJsonLd (p, '{"@id": "me", "name": "Alex"}', 'http://other/', SOME (ctx)) ;
+    Check.EqI64 (t, 'JSON-LD: a context handed in gives one triple', Rdf.Count (g), 1) ;
+    tr := Rdf.Get (g, 0) ;
+    Check.EqStr (t, 'JSON-LD: the term from the context handed in', tr.p.value, 'http://xmlns.com/foaf/0.1/name') ;
+    Check.EqStr (t, 'JSON-LD: the @base from the context handed in', tr.s.value, 'http://e/me') ;
+    Check.EqStr (t, 'JSON-LD: the plain string', tr.o.value, 'Alex')
+  EXCEPT
+  | Rdf.SyntaxError (m, l, c) :
+      em := m ;
+      Check.That (t, 'JSON-LD: the hand document reads: ' + em, FALSE)
+  | Json.ParseError (m, l, c) :
+      Check.That (t, 'JSON-LD: the hand context parses', FALSE)
+  | IndexError :
+      Check.That (t, 'JSON-LD: the hand document has its triple', FALSE)
+  END
+END JsonLdByHand ;
+
+PROCEDURE JsonLdWritten () RAISES ValueRange =
+  (* the writer: a graph to the byte against a context, and read back *)
+VAR
+  p : POOL ;
+  g, g2 : PTR Rdf.Graph IN p ;
+  ctx : PTR Json.Node IN p ;
+  doc : STR ;
+  a, b : SLICE OF STR ;
+BEGIN
+  BEGIN
+    g := Rdf.ParseTurtle (p,
+      '@prefix ex: <http://e/> . @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .' +
+      'ex:a a ex:T ; ex:name "Alex" ; ex:n 3 ; ex:knows ex:b ; ex:tags ( "x" "y" ) ; ex:note "hi"@en . ex:b ex:name "Bo" .', '') ;
+    ctx := Json.ParseIn (p, '{"ex": "http://e/", "name": "http://e/name", "n": {"@id": "http://e/n", "@type": "http://www.w3.org/2001/XMLSchema#integer"}, "knows": {"@id": "http://e/knows", "@type": "@id"}, "tags": {"@id": "http://e/tags", "@container": "@list"}}') ;
+    doc := Rdf.JsonLd (g, SOME (ctx)) ;
+    Check.EqStr (t, 'JSON-LD written: flattened and compacted', doc,
+      '{' + 0AC +
+      '  "@context": {' + 0AC +
+      '    "ex": "http://e/",' + 0AC +
+      '    "name": "http://e/name",' + 0AC +
+      '    "n": {' + 0AC + '      "@id": "http://e/n",' + 0AC + '      "@type": "http://www.w3.org/2001/XMLSchema#integer"' + 0AC + '    },' + 0AC +
+      '    "knows": {' + 0AC + '      "@id": "http://e/knows",' + 0AC + '      "@type": "@id"' + 0AC + '    },' + 0AC +
+      '    "tags": {' + 0AC + '      "@id": "http://e/tags",' + 0AC + '      "@container": "@list"' + 0AC + '    }' + 0AC +
+      '  },' + 0AC +
+      '  "@graph": [' + 0AC +
+      '    {' + 0AC +
+      '      "@id": "ex:a",' + 0AC +
+      '      "@type": "ex:T",' + 0AC +
+      '      "knows": "ex:b",' + 0AC +
+      '      "n": "3",' + 0AC +
+      '      "name": "Alex",' + 0AC +
+      '      "ex:note": {' + 0AC + '        "@value": "hi",' + 0AC + '        "@language": "en"' + 0AC + '      },' + 0AC +
+      '      "tags": [' + 0AC + '        "x",' + 0AC + '        "y"' + 0AC + '      ]' + 0AC +
+      '    },' + 0AC +
+      '    {' + 0AC +
+      '      "@id": "ex:b",' + 0AC +
+      '      "name": "Bo"' + 0AC +
+      '    }' + 0AC +
+      '  ]' + 0AC +
+      '}') ;
+    g2 := Rdf.ParseJsonLd (p, doc, '', NONE) ;
+    a := Blanked (Rdf.NTriples (g)) ;
+    b := Blanked (Rdf.NTriples (g2)) ;
+    Check.EqStrs (t, 'JSON-LD written: read back the same', b, a) ;
+    (* without a context: full IRIs, value objects *)
+    doc := Rdf.JsonLd (g, NONE) ;
+    g2 := Rdf.ParseJsonLd (p, doc, '', NONE) ;
+    b := Blanked (Rdf.NTriples (g2)) ;
+    Check.EqStrs (t, 'JSON-LD written without a context: read back the same', b, a) ;
+    Check.That (t, 'JSON-LD written without a context: no @context', NOT Text.Contains (doc, '@context')) ;
+    (* two prefixes, one inside the other: the longest applies *)
+    g := Rdf.ParseTurtle (p, '<http://e/x/a> <http://e/p> "1" .', '') ;
+    ctx := Json.ParseIn (p, '{"e": "http://e/", "ex": "http://e/x/"}') ;
+    doc := Rdf.JsonLd (g, SOME (ctx)) ;
+    Check.That (t, 'JSON-LD written: the longest prefix for the subject', Text.Contains (doc, '"@id": "ex:a"')) ;
+    Check.That (t, 'JSON-LD written: the shorter where only it applies', Text.Contains (doc, '"e:p": "1"'))
+  EXCEPT
+  | Rdf.SyntaxError (m, l, c) :
+      Check.That (t, 'JSON-LD written: the documents read', FALSE)
+  | Json.ParseError (m, l, c) :
+      Check.That (t, 'JSON-LD written: the hand context parses', FALSE)
+  END
+END JsonLdWritten ;
+
+PROCEDURE JsonLdRoundTrips (RO list: STR) =
+  (* each listed Turtle document: read, written as JSON-LD, read
+     again; the same triples up to blank-node labels *)
+VAR
+  files : SLICE OF STR ;
+  i : I64 ;
+  p : POOL ;
+  g, g2 : PTR Rdf.Graph IN p ;
+  src, doc, why : STR ;
+  ok : BOOL ;
+  a, b : SLICE OF STR ;
+BEGIN
+  files := Check.GoldStrs (t, gold, list) ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    why := '' ;
+    BEGIN
+      src := Read (p, Path ('rdf-turtle', files[i]), ok) ;
+      IF ok THEN
+        g := Rdf.ParseTurtle (p, src, base + files[i]) ;
+        doc := Rdf.JsonLd (g, NONE) ;
+        g2 := Rdf.ParseJsonLd (p, doc, '', NONE) ;
+        a := Blanked (Rdf.NTriples (g)) ;
+        b := Blanked (Rdf.NTriples (g2)) ;
+        Check.EqStrs (t, 'JSON-LD round trip of ' + files[i], b, a)
+      END
+    EXCEPT
+    | Rdf.SyntaxError (m, l, c) :
+        why := m ;
+        Check.That (t, 'JSON-LD round trip of ' + files[i] + ': refused: ' + why, FALSE)
+    | ValueRange :
+        Check.That (t, 'JSON-LD round trip of ' + files[i] + ': ValueRange', FALSE)
+    END
+  END
+END JsonLdRoundTrips ;
+
+PROCEDURE XmlByHand () RAISES ValueRange =
+  (* what rdflib judges by value and the suite does not ask: the text
+     of an XML literal, and the refusal of an attribute no namespace
+     qualifies *)
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  tr : Rdf.Triple ;
+  em : STR ;
+BEGIN
+  BEGIN
+    g := Rdf.ParseRdfXml (p, XmlDoc (p,
+      '<rdf:RDF xmlns="http://www.w3.org/1999/xhtml" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"' +
+      ' xmlns:html="http://NoHTML.example.org" xmlns:my="http://my.example.org/">' +
+      '<rdf:Description rdf:about="http://e/s"><my:Name rdf:parseType="Literal"><html:h1 b="2" a="1"><b>John</b></html:h1><br/></my:Name></rdf:Description></rdf:RDF>'),
+      'http://e/doc') ;
+    Check.EqI64 (t, 'RDF/XML: an XML literal is one triple', Rdf.Count (g), 1) ;
+    tr := Rdf.Get (g, 0) ;
+    Check.EqStr (t, 'RDF/XML: the XML literal in exclusive canonical form', tr.o.value,
+      '<html:h1 xmlns:html="http://NoHTML.example.org" a="1" b="2"><b xmlns="http://www.w3.org/1999/xhtml">John</b></html:h1><br xmlns="http://www.w3.org/1999/xhtml"></br>') ;
+    Check.EqStr (t, 'RDF/XML: typed rdf:XMLLiteral', tr.o.datatype, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral')
+  EXCEPT
+  | Rdf.SyntaxError (m, l, c) :
+      em := m ;
+      Check.That (t, 'RDF/XML: the hand document reads: ' + em, FALSE)
+  | IndexError :
+      Check.That (t, 'RDF/XML: the hand document has its triple', FALSE)
+  END ;
+  Check.EqStr (t, 'RDF/XML: an attribute without a namespace is refused',
+    XmlRefusal ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description about="http://e/s"/></rdf:RDF>'),
+    'an attribute without a namespace: about') ;
+  Check.EqStr (t, 'RDF/XML: one beginning with xml is ignored',
+    XmlRefusal ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"><rdf:Description xmlnewthing="x"/></rdf:RDF>'),
+    'read')
+END XmlByHand ;
+
 PROCEDURE Refused (RO what: STR ; nt: BOOL ; RO text: STR ;
                    wantLine: I64 ; RO wantMsg: STR) =
   (* the document refused by a SyntaxError, on that line, saying that *)
@@ -297,14 +606,182 @@ BEGIN
   Check.EqI64 (t, what + ': the line', el, wantLine)
 END Refused ;
 
+(* the Turtle writer: hand graphs held to the text byte for byte, and
+   every document of the W3C suites written and read back -- the
+   triples the same up to blank-node labels, which grouping by
+   subject renumbers (rdflib judges the graphs isomorphic in rdf.sh) *)
+PROCEDURE Written () RAISES ValueRange =
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  names, iris : SLICE OF STR ;
+  none : SLICE OF STR ;
+BEGIN
+  names := NEW (p, STR, 1) ;
+  iris := NEW (p, STR, 1) ;
+  names[0] := 'ex' ;
+  iris[0] := 'http://e/' ;
+  none := NEW (p, STR, 0) ;
+  BEGIN
+    (* grouping: `;' between predicates, `,' between objects, `a',
+       the prefix used declared, short forms where canonical *)
+    g := Rdf.ParseTurtle (p,
+      '@prefix ex: <http://e/> . ex:a a ex:T ; ex:p 1 , 2 ; ex:q "s" . ex:b ex:p ex:a . ex:a ex:p 3 .', '') ;
+    Check.EqStr (t, 'Turtle: grouped by subject, predicate and object', Rdf.Turtle (g, names, iris),
+      '@prefix ex: <http://e/> .' + 0AC + 0AC +
+      'ex:a a ex:T ;' + 0AC + '    ex:p 1 , 2 , 3 ;' + 0AC + '    ex:q "s" .' + 0AC +
+      'ex:b ex:p ex:a .' + 0AC) ;
+    (* literals: the short forms, and what stays quoted *)
+    g := Rdf.ParseTurtle (p,
+      '<http://e/s> <http://e/p> 1.5 , 1.0E0 , true , 01 , +1 , "1."^^<http://www.w3.org/2001/XMLSchema#decimal> , "1.5"^^<http://www.w3.org/2001/XMLSchema#double> , "abc"^^<http://www.w3.org/2001/XMLSchema#integer> , "2025-01-02"^^<http://www.w3.org/2001/XMLSchema#date> , "x"@en , "a\nb" , "q\"\\" .', '') ;
+    Check.EqStr (t, 'Turtle: literals', Rdf.Turtle (g, names, iris),
+      '@prefix ex: <http://e/> .' + 0AC + '@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .' + 0AC + 0AC +
+      'ex:s ex:p 1.5 , 1.0E0 , true , 01 , +1 , "1."^^xsd:decimal , "1.5"^^xsd:double , "abc"^^xsd:integer , "2025-01-02"^^xsd:date , "x"@en , """a' + 0AC + 'b""" , "q\"\\" .' + 0AC) ;
+    (* no prefix applies: full IRIs, nothing declared; blank nodes
+       keep their labels; a local name a prefix cannot spell *)
+    g := Rdf.ParseTurtle (p, '_:x <http://e/p> <http://e/a#b> , <http://other/o> .', '') ;
+    Check.EqStr (t, 'Turtle: blank subject, an IRI no prefix can spell', Rdf.Turtle (g, names, iris),
+      '@prefix ex: <http://e/> .' + 0AC + 0AC + '_:b0 ex:p <http://e/a#b> , <http://other/o> .' + 0AC) ;
+    Check.EqStr (t, 'Turtle: with no prefixes at all', Rdf.Turtle (g, none, none),
+      '_:b0 <http://e/p> <http://e/a#b> , <http://other/o> .' + 0AC) ;
+    (* the defaults are known: rdf through a collection's rdf:nil *)
+    g := Rdf.ParseTurtle (p, '<http://e/s> <http://e/p> ( 1 ) .', '') ;
+    Check.EqStr (t, 'Turtle: rdf declared because a collection used it', Rdf.Turtle (g, none, none),
+      '@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .' + 0AC + 0AC +
+      '_:b0 rdf:first 1 ;' + 0AC + '    rdf:rest rdf:nil .' + 0AC +
+      '<http://e/s> <http://e/p> _:b0 .' + 0AC) ;
+    (* an empty graph is an empty document *)
+    g := Rdf.ParseTurtle (p, '', '') ;
+    Check.EqStr (t, 'Turtle: an empty graph', Rdf.Turtle (g, names, iris), '')
+  EXCEPT
+  | Rdf.SyntaxError (m, l, c) :
+      Check.That (t, 'Turtle: the hand documents read', FALSE)
+  END
+END Written ;
+
+PROCEDURE Blanked (RO nt: STR) : SLICE OF STR =
+  (* the lines of N-Triples text, sorted, every blank node label
+     replaced by _: -- what grouping may renumber -- and a language
+     tag lowercased, as JSON-LD normalises it and RDF compares it *)
+VAR
+  lines : SLICE OF STR ;
+  i, j : I64 ;
+  o : STR ;
+BEGIN
+  lines := Text.Split (nt, 0AC) ;
+  FOR i := 0 TO LEN (lines) - 1 DO
+    o := '' ;
+    j := 0 ;
+    WHILE j < LEN (lines[i]) DO
+      IF lines[i][j] = '_' AND j + 1 < LEN (lines[i]) AND lines[i][j + 1] = ':' THEN
+        o := o + '_:' ;
+        j := j + 2 ;
+        WHILE j < LEN (lines[i]) AND lines[i][j] # ' ' DO j := j + 1 END
+      ELSIF lines[i][j] = '"' AND j + 1 < LEN (lines[i]) AND lines[i][j + 1] = '@' THEN
+        o := o + '"@' ;
+        j := j + 2 ;
+        WHILE j < LEN (lines[i]) AND lines[i][j] # ' ' DO o := o + Text.Lower ('' + lines[i][j]) ; j := j + 1 END
+      ELSE
+        o := o + lines[i][j] ;
+        j := j + 1
+      END
+    END ;
+    lines[i] := o
+  END ;
+  Sort.Strs (lines) ;
+  RETURN lines
+END Blanked ;
+
+PROCEDURE Recorded () =
+  (* the writer held to its recording: runtime/test/gold/ttl/NAME.ttl,
+     written by tools/TtlGold.m9 for every evaluation document, byte
+     for byte -- M9 held to M9, a regression anchor beside rdflib's
+     verdict in rdf.sh; a wanted change re-records and reads the diff *)
+VAR
+  files : SLICE OF STR ;
+  i : I64 ;
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  src, want, why : STR ;
+  ok : BOOL ;
+BEGIN
+  files := Check.GoldStrs (t, gold, 'ttl.eval.action') ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    BEGIN
+      src := Read (p, Path ('rdf-turtle', files[i]), ok) ;
+      want := Read (p, 'runtime/test/gold/ttl/' + files[i], ok) ;
+      IF ok THEN
+        g := Rdf.ParseTurtle (p, src, base + files[i]) ;
+        Check.EqStr (t, 'Turtle as recorded: ' + files[i], Rdf.Turtle (g, NEW (STR, 0), NEW (STR, 0)), want)
+      ELSE
+        Check.That (t, 'Turtle as recorded: ' + files[i] + ' has its recording', FALSE)
+      END
+    EXCEPT
+    | Rdf.SyntaxError (m, l, c) :
+        why := m ;
+        Check.That (t, 'Turtle as recorded: ' + files[i] + ' reads: ' + why, FALSE)
+    | ValueRange :
+        Check.That (t, 'Turtle as recorded: ' + files[i] + ': ValueRange', FALSE)
+    END
+  END
+END Recorded ;
+
+PROCEDURE RoundTrips (RO list: STR) =
+  (* each listed Turtle document: read, written as Turtle, read
+     again; the same triples up to blank-node labels *)
+VAR
+  files : SLICE OF STR ;
+  i : I64 ;
+  p : POOL ;
+  g, g2 : PTR Rdf.Graph IN p ;
+  src, ttl, why : STR ;
+  ok : BOOL ;
+  a, b : SLICE OF STR ;
+BEGIN
+  files := Check.GoldStrs (t, gold, list) ;
+  FOR i := 0 TO LEN (files) - 1 DO
+    why := '' ;
+    BEGIN
+      src := Read (p, Path ('rdf-turtle', files[i]), ok) ;
+      IF ok THEN
+        g := Rdf.ParseTurtle (p, src, base + files[i]) ;
+        ttl := Rdf.Turtle (g, NEW (STR, 0), NEW (STR, 0)) ;
+        g2 := Rdf.ParseTurtle (p, ttl, '') ;
+        a := Blanked (Rdf.NTriples (g)) ;
+        b := Blanked (Rdf.NTriples (g2)) ;
+        Check.EqStrs (t, 'Turtle round trip of ' + files[i], b, a)
+      ELSE
+        why := 'cannot read the file'
+      END
+    EXCEPT
+    | Rdf.SyntaxError (m, l, c) :
+        why := m ;
+        Check.That (t, 'Turtle round trip of ' + files[i] + ': refused at line ' + Fmt.I64Str (l) + ': ' + why, FALSE)
+    | ValueRange :
+        Check.That (t, 'Turtle round trip of ' + files[i] + ': ValueRange', FALSE)
+    END
+  END
+END RoundTrips ;
+
 BEGIN
   BEGIN
     gold := Check.GoldPath ('Rdf.gold') ;
     base := '' ;
     bases := Check.GoldStrs (t, gold, 'ttl.base') ;
     IF LEN (bases) = 1 THEN base := bases[0] END ;
+    xmlBase := '' ;
+    bases := Check.GoldStrs (t, gold, 'xml.base') ;
+    IF LEN (bases) = 1 THEN xmlBase := bases[0] END ;
     Suites () ;
-    ByHand ()
+    ByHand () ;
+    XmlByHand () ;
+    JsonLdByHand () ;
+    JsonLdWritten () ;
+    JsonLdRoundTrips ('ttl.eval.action') ;
+    Written () ;
+    Recorded () ;
+    RoundTrips ('ttl.pos') ;
+    RoundTrips ('ttl.eval.action')
   EXCEPT
   | ValueRange :
       Check.That (t, 'no ValueRange escapes', FALSE)

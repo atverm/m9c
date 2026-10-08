@@ -107,8 +107,11 @@ Csv_Table * Csv_Open (m9_pool *pool, m9_sl_CHAR path, Csv_Options opt, m9_state 
   err->res = m9res;
   Csv_Table * m9ret = NULL;
   err->res = m9res;
-  m9ret = Csv_Build (pool, Io_ReadFileBytes (pool, path, err), opt, err);
+  { __typeof__(Io_ReadFileBytes (pool, path, err)) m9a1 = Io_ReadFileBytes (pool, path, err);
+    if (err->exc) goto L_ret;
+  m9ret = Csv_Build (pool, m9a1, opt, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -142,8 +145,11 @@ Csv_Table * Csv_OpenBytes (m9_pool *pool, m9_sl_BYTE src, Csv_Options opt, m9_st
     }
   } }
   err->res = m9res;
-  m9ret = Csv_Build (pool, ({ __typeof__(buf) m9t2 = buf; int64_t m9t2a = INT64_C(0), m9t2n = (src).len; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), opt, err);
+  { __typeof__(({ __typeof__(buf) m9t2 = buf; int64_t m9t2a = INT64_C(0), m9t2n = (src).len; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a2 = ({ __typeof__(buf) m9t2 = buf; int64_t m9t2a = INT64_C(0), m9t2n = (src).len; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+    if (err->exc) goto L_ret;
+  m9ret = Csv_Build (pool, m9a2, opt, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -192,8 +198,11 @@ m9_sl_CHAR Csv_Name (m9_pool *pool, Csv_Table * t, int64_t c, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  m9ret = DynStr_Chars (pool, ({ __typeof__(t->buf) m9t1 = t->buf; int64_t m9t1a = (*(int64_t *) m9_at (t->nameOfs.p, c, t->nameOfs.len, sizeof (int64_t), err)), m9t1n = (*(int64_t *) m9_at (t->nameLen.p, c, t->nameLen.len, sizeof (int64_t), err)); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
+  { __typeof__(({ __typeof__(t->buf) m9t1 = t->buf; int64_t m9t1a = (*(int64_t *) m9_at (t->nameOfs.p, c, t->nameOfs.len, sizeof (int64_t), err)), m9t1n = (*(int64_t *) m9_at (t->nameLen.p, c, t->nameLen.len, sizeof (int64_t), err)); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a3 = ({ __typeof__(t->buf) m9t1 = t->buf; int64_t m9t1a = (*(int64_t *) m9_at (t->nameOfs.p, c, t->nameOfs.len, sizeof (int64_t), err)), m9t1n = (*(int64_t *) m9_at (t->nameLen.p, c, t->nameLen.len, sizeof (int64_t), err)); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    if (err->exc) goto L_ret;
+  m9ret = DynStr_Chars (pool, m9a3, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -649,10 +658,13 @@ void Csv_Parse (m9_pool *pool, Csv_Table * *t, m9_pool *t_pool, m9_state *err)
         case Csv_Kind_Stamp:
         {
           if ((len > INT64_C(0))) {
-            { __typeof__((*(Time_Instant *) m9_at ((*(m9_sl_Time_Instant *) m9_at ((*t)->scols.p, c, (*t)->scols.len, sizeof (m9_sl_Time_Instant), err)).p, row, (*(m9_sl_Time_Instant *) m9_at ((*t)->scols.p, c, (*t)->scols.len, sizeof (m9_sl_Time_Instant), err)).len, sizeof (Time_Instant), err))) m9v = Csv_FieldStamp (pool, (*t)->buf, ofs, len, (*(int64_t *) m9_at ((*t)->formats.p, c, (*t)->formats.len, sizeof (int64_t), err)), (*t)->opt.utcOffset, row, c, err);
+            { __typeof__((*(int64_t *) m9_at ((*t)->formats.p, c, (*t)->formats.len, sizeof (int64_t), err))) m9a4 = (*(int64_t *) m9_at ((*t)->formats.p, c, (*t)->formats.len, sizeof (int64_t), err));
+              if (err->exc) goto L_ret;
+            { __typeof__((*(Time_Instant *) m9_at ((*(m9_sl_Time_Instant *) m9_at ((*t)->scols.p, c, (*t)->scols.len, sizeof (m9_sl_Time_Instant), err)).p, row, (*(m9_sl_Time_Instant *) m9_at ((*t)->scols.p, c, (*t)->scols.len, sizeof (m9_sl_Time_Instant), err)).len, sizeof (Time_Instant), err))) m9v = Csv_FieldStamp (pool, (*t)->buf, ofs, len, m9a4, (*t)->opt.utcOffset, row, c, err);
               if (err->exc) goto L_ret;
               (*(Time_Instant *) m9_at ((*(m9_sl_Time_Instant *) m9_at ((*t)->scols.p, c, (*t)->scols.len, sizeof (m9_sl_Time_Instant), err)).p, row, (*(m9_sl_Time_Instant *) m9_at ((*t)->scols.p, c, (*t)->scols.len, sizeof (m9_sl_Time_Instant), err)).len, sizeof (Time_Instant), err)) = m9v;
               if (err->exc) goto L_ret;
+            }
             }
           }
         } break;
@@ -1729,8 +1741,14 @@ static Time_Instant Csv_FieldStamp (m9_pool *pool, m9_sl_BYTE b, int64_t ofs, in
   Time_Instant t = {0}; (void) t;
   if ((format == Csv_StampIso)) {
     err->res = m9res;
-    m9ret = Time_ParseIso (DynStr_Chars (pool, ({ __typeof__(b) m9t2 = b; int64_t m9t2a = ofs, m9t2n = n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), err), err);
+    { __typeof__(({ __typeof__(b) m9t2 = b; int64_t m9t2a = ofs, m9t2n = n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a5 = ({ __typeof__(b) m9t2 = b; int64_t m9t2a = ofs, m9t2n = n; (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+      if (err->exc) goto L_ret;
+    { __typeof__(DynStr_Chars (pool, m9a5, err)) m9a6 = DynStr_Chars (pool, m9a5, err);
+      if (err->exc) goto L_ret;
+    m9ret = Time_ParseIso (m9a6, err);
     if (err->exc) goto L_ret;
+    }
+    }
     goto L_ret;
   }
   if ((format == Csv_StampEpoch)) {
@@ -1750,8 +1768,14 @@ static Time_Instant Csv_FieldStamp (m9_pool *pool, m9_sl_BYTE b, int64_t ofs, in
       goto L_ret;
     }
     err->res = m9res;
-    m9ret = Time_AddSeconds (Csv_CompactStamp (Csv_FieldI64 (b, ofs, n, row, col, err), true, err), (- utcOffset), err);
+    { __typeof__(Csv_FieldI64 (b, ofs, n, row, col, err)) m9a7 = Csv_FieldI64 (b, ofs, n, row, col, err);
+      if (err->exc) goto L_ret;
+    { __typeof__(Csv_CompactStamp (m9a7, true, err)) m9a8 = Csv_CompactStamp (m9a7, true, err);
+      if (err->exc) goto L_ret;
+    m9ret = Time_AddSeconds (m9a8, (- utcOffset), err);
     if (err->exc) goto L_ret;
+    }
+    }
     goto L_ret;
   }
   if ((n != INT64_C(12))) {
@@ -1761,8 +1785,14 @@ static Time_Instant Csv_FieldStamp (m9_pool *pool, m9_sl_BYTE b, int64_t ofs, in
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = Time_AddSeconds (Csv_CompactStamp (Csv_FieldI64 (b, ofs, n, row, col, err), false, err), (- utcOffset), err);
+  { __typeof__(Csv_FieldI64 (b, ofs, n, row, col, err)) m9a9 = Csv_FieldI64 (b, ofs, n, row, col, err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Csv_CompactStamp (m9a9, false, err)) m9a10 = Csv_CompactStamp (m9a9, false, err);
+    if (err->exc) goto L_ret;
+  m9ret = Time_AddSeconds (m9a10, (- utcOffset), err);
   if (err->exc) goto L_ret;
+  }
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;

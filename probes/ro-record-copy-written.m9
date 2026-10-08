@@ -1,0 +1,30 @@
+(* EXPECT: cannot write through t, which holds the RO parameter r (line 26) (par 2.4) *)
+(* A RECORD copied from read-only storage copies the VIEWS its fields
+   hold: `t := r' with `RO r: Rec' and then `t.s[0] := 'X'' writes the
+   caller's string through the copy -- the last of decision 33's named
+   gaps, closed 2026-10-08.  A write INTO the copy stays legal: `t.n :=
+   5' and `t.s := fresh' change the copy, not what it viewed; the
+   refusal is for a write that lands beyond, through a slice or a
+   pointer the copy holds -- unless that field was REFRESHED with
+   storage that is not read-only (`t.s := NEW (CHAR, 2)' before
+   `t.s[0]'), the shape Rdf.CopyCtx has.  The legal forms first. *)
+MODULE m ;
+TYPE Rec = RECORD s : STR ; n : I64 END ;
+PROCEDURE Count (RO s: STR) : I64 = BEGIN RETURN LEN (s) END Count ;
+PROCEDURE Fine (RO r: Rec) : I64 RAISES IndexError =
+VAR t : Rec ;
+BEGIN
+  t := r ;
+  t.n := 5 ;
+  t.s := NEW (CHAR, 2) ;
+  t.s[0] := 'y' ;
+  RETURN Count (t.s) + t.n
+END Fine ;
+PROCEDURE Bad (RO r: Rec) RAISES IndexError =
+VAR t : Rec ;
+BEGIN
+  t := r ;
+  t.s[0] := 'X'
+END Bad ;
+BEGIN
+END m.

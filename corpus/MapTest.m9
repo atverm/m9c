@@ -1,0 +1,399 @@
+MODULE MapTest ;
+
+(* Map against its oracles (tools/mapgold.py): the Natural Earth
+   projection and its inverse against pyproj's natearth on the unit
+   sphere, the coast table against the GeoJSON it was cut from (read
+   by Python's json, summed by math.fsum), the colour scale's ends
+   against numpy's percentiles; the document by what it says -- the
+   markers inside the window, their labels, the colour grid's paths
+   merged along a row where equal, the backdrop placed, the geometry
+   in the plate carree where a latitude is a pixel row; the warp on a
+   picture whose colour says where a pixel came from.  The globe
+   document is written to /tmp/m9maptest-globe.svg for a look. *)
+
+IMPORT Arrays ;
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Map ;
+IMPORT Math ;
+IMPORT Text ;
+
+CONST
+  Rad = 0.017453292519943295 ;
+  Pi = 3.141592653589793 ;
+
+VAR
+  t : Check.T ;
+  gold : STR ;
+
+PROCEDURE Projections () RAISES ValueRange =
+VAR
+  lons, lats, xs, ys, gx, gy, ilon, ilat : SLICE OF F64 ;
+  i, n : I64 ;
+BEGIN
+  lons := Check.GoldF64s (t, gold, 'natearth.lon') ;
+  lats := Check.GoldF64s (t, gold, 'natearth.lat') ;
+  n := LEN (lons) ;
+  xs := NEW (F64, n) ;
+  ys := NEW (F64, n) ;
+  FOR i := 0 TO n - 1 DO Map.NaturalEarth (lons[i], lats[i], xs[i], ys[i]) END ;
+  Check.NearF64s (t, 'Natural Earth x: pyproj natearth, R = 1', xs,
+                  Check.GoldF64s (t, gold, 'natearth.x'), 1.0e-12, 1.0e-12) ;
+  Check.NearF64s (t, 'Natural Earth y', ys,
+                  Check.GoldF64s (t, gold, 'natearth.y'), 1.0e-12, 1.0e-12) ;
+  gx := Check.GoldF64s (t, gold, 'natearth.inv.x') ;
+  gy := Check.GoldF64s (t, gold, 'natearth.inv.y') ;
+  n := LEN (gx) ;
+  ilon := NEW (F64, n) ;
+  ilat := NEW (F64, n) ;
+  FOR i := 0 TO n - 1 DO Map.NaturalEarthInverse (gx[i], gy[i], ilon[i], ilat[i]) END ;
+  Check.NearF64s (t, 'Natural Earth inverse, longitude: pyproj', ilon,
+                  Check.GoldF64s (t, gold, 'natearth.inv.lon'), 1.0e-9, 1.0e-9) ;
+  Check.NearF64s (t, 'Natural Earth inverse, latitude', ilat,
+                  Check.GoldF64s (t, gold, 'natearth.inv.lat'), 1.0e-9, 1.0e-9) ;
+  Map.NaturalEarthInverse (0.0, 2.0, ilon[0], ilat[0]) ;
+  Check.That (t, 'a point beyond the pole unprojects to a latitude beyond 90', ilat[0] > 90.0) ;
+  Map.PlateCarree (45.0, -30.0, xs[0], ys[0]) ;
+  Check.Near (t, 'plate carree x is the longitude in radians', xs[0], 45.0 * Rad, 1.0e-15, 1.0e-15) ;
+  Check.Near (t, 'plate carree y is the latitude in radians', ys[0], -30.0 * Rad, 1.0e-15, 1.0e-15) ;
+  Map.PlateCarreeInverse (xs[0], ys[0], ilon[0], ilat[0]) ;
+  Check.Near (t, 'plate carree inverse, longitude', ilon[0], 45.0, 1.0e-12, 1.0e-12) ;
+  Check.Near (t, 'plate carree inverse, latitude', ilat[0], -30.0, 1.0e-12, 1.0e-12)
+END Projections ;
+
+PROCEDURE Coastline () RAISES ValueRange, IndexError =
+VAR
+  n, i : I64 ;
+  lons, lats, first, last, sums : SLICE OF F64 ;
+BEGIN
+  Check.EqI64 (t, 'coast: as many lines as the GeoJSON has features',
+               Map.CoastLines (), Check.GoldI64 (t, gold, 'coast.lines')) ;
+  n := Map.CoastPoints () ;
+  Check.EqI64 (t, 'coast: as many points', n, Check.GoldI64 (t, gold, 'coast.points')) ;
+  lons := NEW (F64, n) ;
+  lats := NEW (F64, n) ;
+  FOR i := 0 TO n - 1 DO Map.CoastPoint (i, lons[i], lats[i]) END ;
+  first := Check.GoldF64s (t, gold, 'coast.first') ;
+  last := Check.GoldF64s (t, gold, 'coast.last') ;
+  Check.EqF64 (t, 'coast: the first point, longitude', lons[0], first[0]) ;
+  Check.EqF64 (t, 'coast: the first point, latitude', lats[0], first[1]) ;
+  Check.EqF64 (t, 'coast: the last point, longitude', lons[n - 1], last[0]) ;
+  Check.EqF64 (t, 'coast: the last point, latitude', lats[n - 1], last[1]) ;
+  sums := Check.GoldF64s (t, gold, 'coast.sum') ;
+  Check.EqF64 (t, 'coast: the longitudes sum to fsum of the rounded file', Arrays.NanSum (lons), sums[0]) ;
+  Check.EqF64 (t, 'coast: the latitudes too', Arrays.NanSum (lats), sums[1])
+END Coastline ;
+
+(* the synthetic footprint of tools/mapgold.py *)
+PROCEDURE Footprint () : GRID 2 OF F64 RAISES ValueRange =
+VAR
+  v : GRID 2 OF F64 ;
+  r, c : I64 ;
+BEGIN
+  v := NEW (F64, 20, 30) ;
+  FOR r := 0 TO 19 DO
+    FOR c := 0 TO 29 DO
+      v[r, c] := F64 ((r * 7) MOD 11 + 1) * F64 ((c * 5) MOD 13 + 1) * 0.37
+    END
+  END ;
+  v[2, 3] := NaN ;
+  v[5, 5] := NaN ;
+  v[1, 1] := 0.0 ;
+  v[4, 8] := -1.0 ;
+  RETURN v
+END Footprint ;
+
+PROCEDURE RangeRefuses (RO scale: Map.Scale ; RO v: GRID 2 OF F64) : BOOL
+  RAISES ValueRange =
+VAR lo, hi : F64 ;
+BEGIN
+  IF Map.Range (scale, v, lo, hi) THEN RETURN FALSE END ;
+  RETURN FALSE
+EXCEPT
+| Faults.BadArg (what) : RETURN TRUE
+END RangeRefuses ;
+
+PROCEDURE ScaleEnds () RAISES ValueRange, Faults.BadArg =
+VAR
+  v, none : GRID 2 OF F64 ;
+  spec : Map.Spec ;
+  lo, hi : F64 ;
+  g : SLICE OF F64 ;
+BEGIN
+  v := Footprint () ;
+  spec := Map.Default () ;
+  Check.That (t, 'a logarithmic scale has ends', Map.Range (spec.scale, v, lo, hi)) ;
+  g := Check.GoldF64s (t, gold, 'range.log') ;
+  Check.Near (t, 'log scale: the 1st percentile of the positive values, numpy', lo, g[0], 1.0e-12, 1.0e-12) ;
+  Check.Near (t, 'log scale: the 99th', hi, g[1], 1.0e-12, 1.0e-12) ;
+  spec.scale.log := FALSE ;
+  Check.That (t, 'a linear scale has ends', Map.Range (spec.scale, v, lo, hi)) ;
+  g := Check.GoldF64s (t, gold, 'range.lin') ;
+  Check.Near (t, 'linear scale: the 1st percentile of the finite values (zero and negative in)', lo, g[0], 1.0e-12, 1.0e-12) ;
+  Check.Near (t, 'linear scale: the 99th', hi, g[1], 1.0e-12, 1.0e-12) ;
+  spec.scale.low := 10.0 ;
+  spec.scale.high := 90.0 ;
+  Check.That (t, 'other percentiles', Map.Range (spec.scale, v, lo, hi)) ;
+  g := Check.GoldF64s (t, gold, 'range.lin.10.90') ;
+  Check.Near (t, 'the 10th', lo, g[0], 1.0e-12, 1.0e-12) ;
+  Check.Near (t, 'the 90th', hi, g[1], 1.0e-12, 1.0e-12) ;
+  none := NEW (F64, 2, 2) ;
+  none[0, 0] := NaN ; none[0, 1] := NaN ; none[1, 0] := NaN ; none[1, 1] := NaN ;
+  Check.That (t, 'nothing present: no ends, nothing drawn', NOT Map.Range (spec.scale, none, lo, hi)) ;
+  spec.scale.log := TRUE ;
+  none[0, 0] := -3.0 ; none[1, 1] := 0.0 ;
+  Check.That (t, 'nothing positive: no ends for a log scale', NOT Map.Range (spec.scale, none, lo, hi)) ;
+  spec.scale.low := 150.0 ;
+  Check.That (t, 'a percentile past 100 is BadArg', RangeRefuses (spec.scale, v))
+END ScaleEnds ;
+
+(* the text of attribute NAME in the tag at or after FROM *)
+PROCEDURE Attr (RO doc: STR ; from: I64 ; RO name: STR) : STR =
+VAR a, b : I64 ;
+BEGIN
+  a := Text.Find (SLICE (doc, from, LEN (doc) - from), name + '="') ;
+  IF a < 0 THEN RETURN '' END ;
+  a := from + a + LEN (name) + 2 ;
+  b := Text.Find (SLICE (doc, a, LEN (doc) - a), '"') ;
+  IF b < 0 THEN RETURN '' END ;
+  RETURN SLICE (doc, a, b)
+END Attr ;
+
+PROCEDURE Count (RO doc: STR ; RO needle: STR) : I64 =
+VAR n, at, k : I64 ;
+BEGIN
+  n := 0 ;
+  at := 0 ;
+  LOOP
+    k := Text.Find (SLICE (doc, at, LEN (doc) - at), needle) ;
+    IF k < 0 THEN EXIT END ;
+    n := n + 1 ;
+    at := at + k + LEN (needle)
+  END ;
+  RETURN n
+END Count ;
+
+(* the position of the last <circle before AT *)
+PROCEDURE LastCircle (RO doc: STR ; at: I64) : I64 =
+VAR j, k : I64 ;
+BEGIN
+  j := -1 ;
+  LOOP
+    k := Text.Find (SLICE (doc, j + 1, at - j - 1), '<circle ') ;
+    IF k < 0 THEN EXIT END ;
+    j := j + 1 + k
+  END ;
+  RETURN j
+END LastCircle ;
+
+PROCEDURE Markers () : SLICE OF Map.Marker =
+VAR m : SLICE OF Map.Marker ;
+BEGIN
+  m := NEW (Map.Marker, 4) ;
+  m[0].lon := 13.4 ; m[0].lat := 56.1 ; m[0].label := 'Hyltemossa' ; m[0].colour := '' ;
+  m[1].lon := -16.5 ; m[1].lat := 28.3 ; m[1].label := 'Izana' ; m[1].colour := '#e41c63' ;
+  m[2].lon := 151.2 ; m[2].lat := -33.9 ; m[2].label := 'Sydney & co' ; m[2].colour := '' ;
+  m[3].lon := 0.0 ; m[3].lat := 0.0 ; m[3].label := '' ; m[3].colour := '' ;
+  RETURN m
+END Markers ;
+
+PROCEDURE RenderFails (RO spec: Map.Spec ; RO lons, lats: SLICE OF F64 ;
+                       RO v: GRID 2 OF F64) : STR
+  RAISES ValueRange =
+VAR doc : STR ;
+BEGIN
+  doc := Map.Render (spec, lons, lats, v, Markers ()) ;
+  RETURN ''
+EXCEPT
+| Faults.BadArg (what) : RETURN 'BadArg'
+| Faults.SizeError (got, want) : RETURN 'SizeError ' + Fmt.I64Str (got) + ' ' + Fmt.I64Str (want)
+END RenderFails ;
+
+PROCEDURE Document () RAISES ValueRange, Faults.BadArg, Faults.SizeError, Io.IOError =
+VAR
+  spec : Map.Spec ;
+  lons, lats, none : SLICE OF F64 ;
+  v, empty : GRID 2 OF F64 ;
+  doc, cy0, cy1, cx0, cx1 : STR ;
+  k, j : I64 ;
+  x0, x1, y0, y1, tmp : F64 ;
+BEGIN
+  lons := NEW (F64, 4) ;
+  lons[0] := -10.0 ; lons[1] := 0.0 ; lons[2] := 10.0 ; lons[3] := 20.0 ;
+  lats := NEW (F64, 3) ;
+  lats[0] := 40.0 ; lats[1] := 50.0 ; lats[2] := 60.0 ;
+  v := NEW (F64, 3, 4) ;
+  FOR k := 0 TO 2 DO
+    FOR j := 0 TO 3 DO v[k, j] := F64 (1 + k * 4 + j) END
+  END ;
+  v[0, 2] := NaN ;
+  FOR j := 0 TO 3 DO v[2, j] := 7.0 END ;
+  spec := Map.Default () ;
+  spec.title := 'Footprint' ;
+  doc := Map.Render (spec, lons, lats, v, Markers ()) ;
+  Io.WriteFile ('/tmp/m9maptest-globe.svg', doc) ;
+  Check.That (t, 'the document is an svg', Text.StartsWith (doc, '<svg ')) ;
+  Check.That (t, 'it ends as one', Text.EndsWith (doc, '</svg>')) ;
+  Check.That (t, 'the window is a clip path', Text.Find (doc, '<clipPath id="map-clip">') >= 0) ;
+  Check.EqI64 (t, 'the globe shows every marker', Count (doc, '<circle '), 4) ;
+  Check.That (t, 'a label is written', Text.Find (doc, '>Hyltemossa</text>') >= 0) ;
+  Check.That (t, "a label is escaped", Text.Find (doc, '>Sydney &amp; co</text>') >= 0) ;
+  Check.EqI64 (t, 'an empty label writes no text', Count (doc, '<text '), 3 + 2 + 2) ;
+  Check.That (t, "a marker's colour", Text.Find (doc, 'fill="#e41c63"') >= 0) ;
+  Check.EqI64 (t, 'the colour grid: 3 + 4 + 1 paths -- a NaN cell left out, a row of equal values one path',
+               Count (doc, '" fill-opacity="0.65"'), 8) ;
+  Check.That (t, 'the title', Text.Find (doc, '<title>Footprint</title>') >= 0) ;
+  Check.That (t, 'the title band', Text.Find (doc, 'y="17"') >= 0) ;
+  Check.That (t, 'the credit', Text.Find (doc, 'Coastlines: Natural Earth</text>') >= 0) ;
+  Check.That (t, 'the coastline is drawn', Text.Find (doc, 'stroke-width="0.9"') >= 0) ;
+  Check.That (t, 'the legend names its ends', Text.Find (doc, 'font-size="9"') >= 0) ;
+  Check.That (t, 'no backdrop by default', Text.Find (doc, '<image') < 0) ;
+
+  (* a window: Izana and Hyltemossa in, Sydney and the origin out *)
+  spec.window.west := -30.0 ; spec.window.east := 40.0 ;
+  spec.window.south := 25.0 ; spec.window.north := 75.0 ;
+  spec.title := '' ;
+  spec.coast := FALSE ;
+  spec.graticule := 0.0 ;
+  doc := Map.Render (spec, lons, lats, v, Markers ()) ;
+  Check.EqI64 (t, 'the window shows two markers', Count (doc, '<circle '), 2) ;
+  Check.That (t, 'no coastline when not asked', Text.Find (doc, 'stroke-width="0.9"') < 0) ;
+  Check.That (t, 'no graticule when not asked', Text.Find (doc, 'stroke-opacity="0.18"') < 0) ;
+  Check.That (t, 'no title band', Text.Find (doc, 'y="17"') < 0) ;
+
+  (* a backdrop, over the globe's box *)
+  spec := Map.Default () ;
+  Map.NaturalEarth (-180.0, 0.0, x0, tmp) ;
+  Map.NaturalEarth (180.0, 0.0, x1, tmp) ;
+  Map.NaturalEarth (0.0, -90.0, tmp, y0) ;
+  Map.NaturalEarth (0.0, 90.0, tmp, y1) ;
+  spec.backdrop.href := 'bluemarble.png' ;
+  spec.backdrop.x0 := x0 ; spec.backdrop.x1 := x1 ;
+  spec.backdrop.y0 := y0 ; spec.backdrop.y1 := y1 ;
+  none := NEW (F64, 0) ;
+  empty := NEW (F64, 0, 0) ;
+  doc := Map.Render (spec, none, lats, empty, Markers ()) ;
+  k := Text.Find (doc, '<image ') ;
+  Check.That (t, 'the backdrop is an image', k >= 0) ;
+  Check.EqStr (t, 'the backdrop is placed by its box: the globe fills the width', Attr (doc, k, 'width'), '960.0') ;
+  Check.EqStr (t, 'from the left edge', Attr (doc, k, 'x'), '0.0') ;
+  Check.EqStr (t, 'and the top', Attr (doc, k, 'y'), '0.0') ;
+  Check.EqStr (t, 'named by its href', Attr (doc, k, 'href'), 'bluemarble.png') ;
+  Check.That (t, 'no longitudes: no colour grid', Text.Find (doc, '<g id="heat">') < 0) ;
+  Check.That (t, 'and no legend', Text.Find (doc, 'font-size="9"') < 0) ;
+
+  (* the plate carree: a latitude is a pixel row *)
+  spec := Map.Default () ;
+  spec.proj := SOME (Map.PlateCarree) ;
+  spec.credit := '' ;
+  doc := Map.Render (spec, none, lats, empty, Markers ()) ;
+  k := Text.Find (doc, '<circle ') ;
+  Check.That (t, 'markers are drawn', k >= 0) ;
+  cx0 := Attr (doc, k, 'cx') ;
+  cy0 := Attr (doc, k, 'cy') ;
+  j := k + Text.Find (SLICE (doc, k + 1, LEN (doc) - k - 1), '<circle ') + 1 ;
+  cx1 := Attr (doc, j, 'cx') ;
+  cy1 := Attr (doc, j, 'cy') ;
+  Check.Near (t, 'plate carree: Hyltemossa at 13.4 E of a 960-px globe', Fmt.ParseF64 (cx0), (13.4 + 180.0) / 360.0 * 960.0, 0.06, 0.0) ;
+  Check.Near (t, 'plate carree: and at 56.1 N of a 480-px height', Fmt.ParseF64 (cy0), (90.0 - 56.1) / 180.0 * 480.0, 0.06, 0.0) ;
+  Check.Near (t, 'plate carree: Izana at 16.5 W', Fmt.ParseF64 (cx1), (-16.5 + 180.0) / 360.0 * 960.0, 0.06, 0.0) ;
+  Check.Near (t, 'plate carree: at 28.3 N', Fmt.ParseF64 (cy1), (90.0 - 28.3) / 180.0 * 480.0, 0.06, 0.0) ;
+  Check.That (t, 'no credit when empty', Text.Find (doc, 'font-size="10"') < 0) ;
+
+  (* a centre meridian: the globe is bounded by the map's own cut *)
+  spec := Map.Default () ;
+  spec.lon0 := 150.0 ;
+  spec.proj := SOME (Map.PlateCarree) ;
+  doc := Map.Render (spec, none, lats, empty, Markers ()) ;
+  k := Text.Find (doc, 'Sydney') ;
+  Check.That (t, 'about 150 E Sydney is drawn', k >= 0) ;
+  j := LastCircle (doc, k) ;
+  Check.Near (t, 'and lands 1.2 degrees east of the centre', Fmt.ParseF64 (Attr (doc, j, 'cx')), (1.2 + 180.0) / 360.0 * 960.0, 0.06, 0.0) ;
+
+  (* refusals *)
+  spec := Map.Default () ;
+  Check.EqStr (t, 'a grid of the wrong shape is SizeError', RenderFails (spec, lons, lats, Footprint ()), 'SizeError 20 3') ;
+  spec.width := 0 ;
+  Check.EqStr (t, 'a width of nothing is BadArg', RenderFails (spec, lons, lats, v), 'BadArg') ;
+  spec := Map.Default () ;
+  spec.proj := NONE ;
+  Check.EqStr (t, 'no projection is BadArg', RenderFails (spec, lons, lats, v), 'BadArg') ;
+  spec := Map.Default () ;
+  lons[2] := -5.0 ;
+  Check.EqStr (t, 'centres that do not ascend are BadArg', RenderFails (spec, lons, lats, v), 'BadArg')
+END Document ;
+
+PROCEDURE Backdrop () RAISES ValueRange, Faults.SizeError, IndexError =
+VAR
+  pool : POOL ;
+  rgb, out : SLICE OF BYTE ;
+  r, c, k : I64 ;
+  x0, x1, y0, y1, tmp : F64 ;
+BEGIN
+  (* 72 by 36: red east of Greenwich, green north of the equator, blue everywhere *)
+  rgb := NEW (BYTE, 72 * 36 * 3) ;
+  FOR r := 0 TO 35 DO
+    FOR c := 0 TO 71 DO
+      k := (r * 72 + c) * 3 ;
+      IF c >= 36 THEN rgb[k] := 255 ELSE rgb[k] := 0 END ;
+      IF r < 18 THEN rgb[k + 1] := 255 ELSE rgb[k + 1] := 0 END ;
+      rgb[k + 2] := 100
+    END
+  END ;
+  out := Map.Warp (pool, rgb, 72, 36, Map.PlateCarreeInverse, 0.0, -Pi, Pi, -Pi / 2.0, Pi / 2.0, 120, 60) ;
+  Check.EqI64 (t, 'warp: the picture has its pixels', LEN (out), 120 * 60 * 3) ;
+  k := (15 * 120 + 90) * 3 ;
+  Check.EqI64 (t, 'plate carree warp: 91.5 E 43.5 N is red', I64 (out[k]), 255) ;
+  Check.EqI64 (t, 'and green', I64 (out[k + 1]), 255) ;
+  Check.EqI64 (t, 'and blue', I64 (out[k + 2]), 100) ;
+  k := (45 * 120 + 30) * 3 ;
+  Check.EqI64 (t, 'plate carree warp: 88.5 W 46.5 S is not red', I64 (out[k]), 0) ;
+  Check.EqI64 (t, 'nor green', I64 (out[k + 1]), 0) ;
+  Check.EqI64 (t, 'but blue', I64 (out[k + 2]), 100) ;
+  Map.NaturalEarth (-180.0, 0.0, x0, tmp) ;
+  Map.NaturalEarth (180.0, 0.0, x1, tmp) ;
+  Map.NaturalEarth (0.0, -90.0, tmp, y0) ;
+  Map.NaturalEarth (0.0, 90.0, tmp, y1) ;
+  out := Map.Warp (pool, rgb, 72, 36, Map.NaturalEarthInverse, 0.0, x0, x1, y0, y1, 120, 60) ;
+  Check.EqI64 (t, 'Natural Earth warp: the corner is outside the globe, black', I64 (out[0]) + I64 (out[1]) + I64 (out[2]), 0) ;
+  k := (30 * 120 + 60) * 3 ;
+  Check.EqI64 (t, 'Natural Earth warp: the centre is inside, blue', I64 (out[k + 2]), 100) ;
+  k := (30 * 120 + 70) * 3 ;
+  Check.EqI64 (t, 'and a tenth of the width east of it is east of Greenwich, red', I64 (out[k]), 255) ;
+  k := (45 * 120 + 60) * 3 ;
+  Check.EqI64 (t, 'Natural Earth warp: south of the equator, not green', I64 (out[k + 1]), 0) ;
+  out := Map.Warp (pool, rgb, 72, 36, Map.NaturalEarthInverse, 90.0, x0, x1, y0, y1, 120, 60) ;
+  k := (30 * 120 + 50) * 3 ;
+  Check.EqI64 (t, 'about 90 E a tenth of the width west of the centre is east of Greenwich still, red', I64 (out[k]), 255)
+END Backdrop ;
+
+PROCEDURE WarpRefuses () : BOOL RAISES ValueRange =
+VAR
+  pool : POOL ;
+  rgb, out : SLICE OF BYTE ;
+BEGIN
+  rgb := NEW (BYTE, 10) ;
+  out := Map.Warp (pool, rgb, 72, 36, Map.PlateCarreeInverse, 0.0, -1.0, 1.0, -1.0, 1.0, 4, 4) ;
+  RETURN FALSE
+EXCEPT
+| Faults.SizeError (got, want) : RETURN got = 10 AND want = 72 * 36 * 3
+END WarpRefuses ;
+
+BEGIN
+  gold := Check.GoldPath ('Map.gold') ;
+  Projections () ;
+  Coastline () ;
+  ScaleEnds () ;
+  Document () ;
+  Backdrop () ;
+  Check.That (t, 'warp: a picture of the wrong size is SizeError', WarpRefuses ()) ;
+  Io.Halt (Check.Done (t, 'Map'))
+EXCEPT
+| ValueRange : Io.ErrLine ('MapTest: ValueRange') ; Io.Halt (1)
+| Faults.BadArg (what) : Io.ErrLine ('MapTest: BadArg ' + what) ; Io.Halt (1)
+| Faults.SizeError (got, want) : Io.ErrLine ('MapTest: SizeError') ; Io.Halt (1)
+| IndexError : Io.ErrLine ('MapTest: IndexError') ; Io.Halt (1)
+| Io.IOError (path) : Io.ErrLine ('MapTest: cannot write ' + path) ; Io.Halt (1)
+END MapTest.

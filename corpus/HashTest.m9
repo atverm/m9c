@@ -1,0 +1,204 @@
+MODULE HashTest ;
+
+(* Hash against Python's hashlib and hmac (tools/hashgold.py,
+   runtime/test/gold/Hash.gold; docs/library-plan-2.md, item 1).
+
+   SHA-256 on the FIPS vectors and 151 random messages across every
+   block boundary; a million a's; a 64 KB message fed in pieces of
+   every size from 1 to 200, whose digest must not depend on the
+   pieces; HMAC on RFC 4231's cases and 200 random keys and messages;
+   PBKDF2 on the cited vectors, 30 random cases and 100,000 iterations
+   -- timed and printed, never gated; Hex; Equal on equal, unequal and
+   differently long octets; the refusals.  *)
+
+IMPORT Check ;
+IMPORT Faults ;
+IMPORT Fmt ;
+IMPORT Hash ;
+IMPORT Io ;
+IMPORT Text ;
+IMPORT Time ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  gold : STR ;
+
+PROCEDURE HexVal (c: CHAR) : I64 =
+BEGIN
+  IF c >= '0' AND c <= '9' THEN RETURN ORD (c) - 48 END ;
+  IF c >= 'a' AND c <= 'f' THEN RETURN ORD (c) - 87 END ;
+  RETURN 0
+END HexVal ;
+
+PROCEDURE Octets (RO hex: STR) : SLICE OF BYTE RAISES ValueRange =
+  (* a golden hex word as octets (GoldStrs gives '' for none) *)
+VAR
+  b : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  b := NEW (BYTE, LEN (hex) DIV 2) ;
+  FOR i := 0 TO LEN (b) - 1 DO
+    b[i] := BYTE (HexVal (hex[2 * i]) * 16 + HexVal (hex[2 * i + 1]))
+  END ;
+  RETURN b
+END Octets ;
+
+PROCEDURE Sha () RAISES ValueRange =
+VAR
+  msg, want, one : SLICE OF STR ;
+  i, k, agree : I64 ;
+  m, big, stream : SLICE OF BYTE ;
+  h : Hash.Sha256 ;
+  got : STR ;
+BEGIN
+  msg := Check.GoldStrs (t, gold, 'sha.msg') ;
+  want := Check.GoldStrs (t, gold, 'sha.want') ;
+  agree := 0 ;
+  FOR i := 0 TO LEN (msg) - 1 DO
+    m := Octets (msg[i]) ;
+    got := Hash.Hex (Hash.Sha256Of (m)) ;
+    IF Text.Eq (got, want[i]) THEN agree := agree + 1
+    ELSE Check.EqStr (t, 'sha256 of ' + Fmt.I64Str (LEN (m)) + ' octets', got, want[i])
+    END
+  END ;
+  Check.EqI64 (t, 'sha256 agreeing with hashlib', agree, LEN (msg)) ;
+  (* a million a's, fed in 1000 pieces *)
+  one := Check.GoldStrs (t, gold, 'sha.million') ;
+  big := NEW (BYTE, 1000) ;
+  FOR i := 0 TO 999 DO big[i] := 97 END ;
+  Hash.Init (h) ;
+  FOR i := 1 TO 1000 DO Hash.Update (h, big) END ;
+  Check.EqStr (t, "a million a's", Hash.Hex (Hash.Final (h)), one[0]) ;
+  (* the 64 KB message in pieces of every size *)
+  one := Check.GoldStrs (t, gold, 'sha.stream64k') ;
+  stream := NEW (BYTE, 65536) ;
+  FOR i := 0 TO 65535 DO stream[i] := BYTE ((i * 7 + 3) MOD 251) END ;
+  Check.EqStr (t, 'the 64 KB message whole', Hash.Hex (Hash.Sha256Of (stream)), one[0]) ;
+  agree := 0 ;
+  FOR k := 1 TO 200 DO
+    Hash.Init (h) ;
+    i := 0 ;
+    WHILE i < LEN (stream) DO
+      IF i + k <= LEN (stream) THEN Hash.Update (h, SLICE (stream, i, k))
+      ELSE Hash.Update (h, SLICE (stream, i, LEN (stream) - i))
+      END ;
+      i := i + k
+    END ;
+    got := Hash.Hex (Hash.Final (h)) ;
+    IF Text.Eq (got, one[0]) THEN agree := agree + 1
+    ELSE Check.EqStr (t, 'the 64 KB message in pieces of ' + Fmt.I64Str (k), got, one[0])
+    END
+  END ;
+  Check.EqI64 (t, 'the digest does not depend on the pieces: 200 sizes', agree, 200)
+END Sha ;
+
+PROCEDURE Hmacs () RAISES ValueRange =
+VAR
+  key, msg, want : SLICE OF STR ;
+  i, agree : I64 ;
+  got : STR ;
+  m : Hash.Hmac ;
+  k, b : SLICE OF BYTE ;
+BEGIN
+  key := Check.GoldStrs (t, gold, 'hmac.key') ;
+  msg := Check.GoldStrs (t, gold, 'hmac.msg') ;
+  want := Check.GoldStrs (t, gold, 'hmac.want') ;
+  agree := 0 ;
+  FOR i := 0 TO LEN (key) - 1 DO
+    k := Octets (key[i]) ;
+    b := Octets (msg[i]) ;
+    got := Hash.Hex (Hash.HmacOf (k, b)) ;
+    IF Text.Eq (got, want[i]) THEN agree := agree + 1
+    ELSE Check.EqStr (t, 'hmac, key of ' + Fmt.I64Str (LEN (k)) + ' octets', got, want[i])
+    END
+  END ;
+  Check.EqI64 (t, 'hmac agreeing with Python', agree, LEN (key)) ;
+  (* the streamed form: the message in two pieces *)
+  k := Octets (key[1]) ;
+  b := Octets (msg[1]) ;
+  Hash.HmacInit (m, k) ;
+  Hash.HmacUpdate (m, SLICE (b, 0, 5)) ;
+  Hash.HmacUpdate (m, SLICE (b, 5, LEN (b) - 5)) ;
+  Check.EqStr (t, 'hmac fed in two pieces', Hash.Hex (Hash.HmacFinal (m)), want[1])
+END Hmacs ;
+
+PROCEDURE Pbkdf2s () RAISES ValueRange =
+VAR
+  pw, salt, want : SLICE OF STR ;
+  iter, len : SLICE OF I64 ;
+  i, agree : I64 ;
+  got : STR ;
+  t0 : Time.Instant ;
+  secs : F64 ;
+BEGIN
+  pw := Check.GoldStrs (t, gold, 'pbkdf2.pw') ;
+  salt := Check.GoldStrs (t, gold, 'pbkdf2.salt') ;
+  iter := Check.GoldI64s (t, gold, 'pbkdf2.iter') ;
+  len := Check.GoldI64s (t, gold, 'pbkdf2.len') ;
+  want := Check.GoldStrs (t, gold, 'pbkdf2.want') ;
+  agree := 0 ;
+  BEGIN
+    FOR i := 0 TO LEN (pw) - 1 DO
+      t0 := Time.Now () ;
+      got := Hash.Hex (Hash.Pbkdf2 (Octets (pw[i]), Octets (salt[i]), iter[i], len[i])) ;
+      secs := Time.Elapsed (t0, Time.Now ()) ;
+      IF Text.Eq (got, want[i]) THEN agree := agree + 1
+      ELSE Check.EqStr (t, 'pbkdf2, ' + Fmt.I64Str (iter[i]) + ' iterations', got, want[i])
+      END ;
+      IF iter[i] >= 100000 THEN
+        Io.WriteLine ('HashTest: pbkdf2 with ' + Fmt.I64Str (iter[i]) + ' iterations took ' +
+                      Fmt.Fixed (secs, 3) + ' s (printed, not gated)')
+      END
+    END
+  EXCEPT
+  | Faults.BadArg (what) :
+      Check.That (t, 'pbkdf2 refuses none of the golden cases', FALSE)
+  END ;
+  Check.EqI64 (t, 'pbkdf2 agreeing with hashlib', agree, LEN (pw)) ;
+  Check.That (t, 'pbkdf2 refuses 0 iterations', Refused (0, 32)) ;
+  Check.That (t, 'pbkdf2 refuses a length of 0', Refused (1, 0))
+END Pbkdf2s ;
+
+PROCEDURE Refused (iterations, length: I64) : BOOL RAISES ValueRange =
+VAR
+  k : SLICE OF BYTE ;
+BEGIN
+  BEGIN
+    k := Hash.Pbkdf2 (Octets ('70'), Octets ('73'), iterations, length) ;
+    RETURN FALSE
+  EXCEPT
+  | Faults.BadArg (what) :
+      RETURN TRUE
+  END
+END Refused ;
+
+PROCEDURE Equals () RAISES ValueRange =
+VAR a, b, c : SLICE OF BYTE ;
+BEGIN
+  a := Octets ('00112233445566778899aabbccddeeff') ;
+  b := Octets ('00112233445566778899aabbccddeeff') ;
+  c := Octets ('00112233445566778899aabbccddeefe') ;
+  Check.That (t, 'Equal: the same octets', Hash.Equal (a, b)) ;
+  Check.That (t, 'Equal: the last bit apart', NOT Hash.Equal (a, c)) ;
+  Check.That (t, 'Equal: a prefix is not equal', NOT Hash.Equal (a, SLICE (b, 0, 15))) ;
+  Check.That (t, 'Equal: two empty slices', Hash.Equal (SLICE (a, 0, 0), SLICE (c, 0, 0))) ;
+  Check.EqStr (t, 'Hex of nothing', Hash.Hex (SLICE (a, 0, 0)), '') ;
+  Check.EqStr (t, 'Hex', Hash.Hex (SLICE (a, 0, 3)), '001122')
+END Equals ;
+
+BEGIN
+  BEGIN
+    gold := Check.GoldPath ('Hash.gold') ;
+    Sha () ;
+    Hmacs () ;
+    Pbkdf2s () ;
+    Equals ()
+  EXCEPT
+  | ValueRange :
+      Check.That (t, 'no ValueRange escapes', FALSE)
+  | IndexError :
+      Check.That (t, 'no IndexError escapes', FALSE)
+  END ;
+  Io.Halt (Check.Done (t, 'Hash'))
+END HashTest.

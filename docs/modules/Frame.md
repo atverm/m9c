@@ -75,31 +75,31 @@ _(undocumented)_
 
 rows < 0 refuses; 0 is a legal empty frame
 
-### AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF F64 ; miss: F64) RAISES Faults.SizeError, Duplicate
+### AddF64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO KEPT v: SLICE OF F64 ; miss: F64) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF F32 ; miss: F32) RAISES Faults.SizeError, Duplicate
+### AddF32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO KEPT v: SLICE OF F32 ; miss: F32) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF I64 ; miss: I64) RAISES Faults.SizeError, Duplicate
+### AddI64 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO KEPT v: SLICE OF I64 ; miss: I64) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF I32 ; miss: I32) RAISES Faults.SizeError, Duplicate
+### AddI32 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO KEPT v: SLICE OF I32 ; miss: I32) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF I16 ; miss: I16) RAISES Faults.SizeError, Duplicate
+### AddI16 (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO KEPT v: SLICE OF I16 ; miss: I16) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF BYTE ; miss: BYTE) RAISES Faults.SizeError, Duplicate
+### AddBytes (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO KEPT v: SLICE OF BYTE ; miss: BYTE) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 
-### AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO v: SLICE OF BOOL) RAISES Faults.SizeError, Duplicate
+### AddBools (VAR pool: POOL ; VAR f: PTR Fr ; RO name: STR ; RO KEPT v: SLICE OF BOOL) RAISES Faults.SizeError, Duplicate
 
 _(undocumented)_
 

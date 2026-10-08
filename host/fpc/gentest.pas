@@ -83,9 +83,13 @@ begin
   GenModule ('Arrow', ['DynStr', 'Faults']);
   GenModule ('ZarrStore', ['DynStr', 'Json', 'Http', 'Io']);
   GenModule ('Sparql', ['DynStr', 'Io', 'Http', 'Json', 'Text']);
-  GenModule ('Rdf', ['DynStr', 'Text']);
+  GenModule ('Rdf', ['DynStr', 'Fmt', 'Json', 'Text', 'Xml']);
   GenModule ('Regex', ['DynStr', 'Text']);
+  GenModule ('Map', ['DynStr', 'Faults', 'Fmt', 'Math', 'Plot', 'Stats']);
   GenModule ('Xml', ['DynStr', 'Fmt', 'Text']);
+  GenModule ('Hash', ['Bits', 'Faults']);
+  GenModule ('Smtp', ['Time', 'DynStr', 'Fmt', 'Text']);
+  GenModule ('Rsa', ['Hash', 'Text']);
   GenModule ('Zarr', ['DynStr', 'Json', 'Io', 'Math']);
   GenModule ('Plot', ['DynStr', 'Mat', 'Math', 'Faults', 'Fmt', 'Text', 'Time']);
   GenModule ('Lex', ['DynStr']);

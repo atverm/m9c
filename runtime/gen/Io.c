@@ -46,8 +46,11 @@ void Io_WriteLine (m9_sl_CHAR s, m9_state *err)
   if (err->exc) goto L_ret;
   DynStr_AppendChar (&(d), &(scratch), 10u, err);
   if (err->exc) goto L_ret;
-  Io_Write (DynStr_View (d, err), err);
+  { __typeof__(DynStr_View (d, err)) m9a1 = DynStr_View (d, err);
+    if (err->exc) goto L_ret;
+  Io_Write (m9a1, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -82,8 +85,11 @@ void Io_WriteI64 (int64_t v, m9_state *err)
   }
   DynStr_AppendI64 (&(d), &(scratch), v, err);
   if (err->exc) goto L_ret;
-  Io_Write (DynStr_View (d, err), err);
+  { __typeof__(DynStr_View (d, err)) m9a2 = DynStr_View (d, err);
+    if (err->exc) goto L_ret;
+  Io_Write (m9a2, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -201,19 +207,19 @@ int64_t Io_ParseI64 (m9_sl_CHAR s, m9_state *err)
       m9_raise (err, &m9_exc_ValueRange);
       goto L_ret;
     }
-    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
+    { __typeof__(v) m9v = m9_sub_i64 (m9_mul_i64 (v, INT64_C(10), err), (m9_sub_i64 ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))), INT64_C(48), err)), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
   } }
   if (neg) {
     err->res = m9res;
-    m9ret = m9_neg_i64 (v, err);
-    if (err->exc) goto L_ret;
+    m9ret = v;
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = v;
+  m9ret = m9_sub_i64 (INT64_C(0), v, err);
+  if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -280,8 +286,11 @@ m9_sl_CHAR Io_Env (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
     }
   }
   err->res = m9res;
-  m9ret = DynStr_Chars (pool, ({ __typeof__(buf) m9t1 = buf; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
+  { __typeof__(({ __typeof__(buf) m9t1 = buf; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a3 = ({ __typeof__(buf) m9t1 = buf; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    if (err->exc) goto L_ret;
+  m9ret = DynStr_Chars (pool, m9a3, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -433,10 +442,13 @@ m9_sl_m9_sl_CHAR Io_ListDir (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     bool m9t6 = ((*(uint8_t *) m9_at (buf.p, i, buf.len, sizeof (uint8_t), err)) == m9_byte (INT64_C(0), err));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_Chars (pool, ({ __typeof__(buf) m9t7 = buf; int64_t m9t7a = start, m9t7n = m9_sub_i64 (i, start, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; }), err);
+      { __typeof__(({ __typeof__(buf) m9t7 = buf; int64_t m9t7a = start, m9t7n = m9_sub_i64 (i, start, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; })) m9a4 = ({ __typeof__(buf) m9t7 = buf; int64_t m9t7a = start, m9t7n = m9_sub_i64 (i, start, err); (__typeof__(m9t7)){ m9t7.p + m9_chk_slice (m9t7a, m9t7n, m9t7.len, err), m9t7n }; });
+        if (err->exc) goto L_ret;
+      { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_Chars (pool, m9a4, err);
         if (err->exc) goto L_ret;
         (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)) = m9v;
         if (err->exc) goto L_ret;
+      }
       }
       { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
         if (err->exc) goto L_ret;
@@ -481,8 +493,11 @@ m9_sl_CHAR Io_Arg (m9_pool *pool, int64_t i, m9_state *err)
   }
   n = (int64_t)(m9_arg_copy (((int)(i)), ((void *)(b).p), ((int)(n))));
   err->res = m9res;
-  m9ret = DynStr_Chars (pool, ({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; }), err);
+  { __typeof__(({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a5 = ({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    if (err->exc) goto L_ret;
+  m9ret = DynStr_Chars (pool, m9a5, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -528,8 +543,11 @@ m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = DynStr_Chars (pool, ({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), err);
+  { __typeof__(({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a6 = ({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+    if (err->exc) goto L_ret;
+  m9ret = DynStr_Chars (pool, m9a6, err);
   if (err->exc) goto L_ret;
+  }
   goto L_ret;
 L_ret: ;
   err->res = m9res;

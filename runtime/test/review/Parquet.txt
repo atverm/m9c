@@ -14,7 +14,7 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     1   I64Text.pool
   pool parameters                                44   NewBuf, P8, PLE, PBytes, PVar, PField, +38 more
-  KEPT parameters                                 3   AddStrsQ, NewTsQ, NewTsQ
+  KEPT parameters                                10   AddF64Q, AddF32Q, AddI64Q, AddI32Q, AddI16Q, AddBytesQ, +4 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0

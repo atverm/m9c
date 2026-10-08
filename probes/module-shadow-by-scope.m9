@@ -1,0 +1,24 @@
+(* EXPECT: module Lib is named and not imported: write IMPORT Lib *)
+(* Decision 24's shadow test was by SUBTREE: a binder named like a
+   module anywhere in the procedure -- in another arm, in the THEN of
+   an IF already closed -- stood for the module everywhere in it, so a
+   qualified name of the module outside the binder's statements passed
+   as the binder's.  Since 2026-10-08 a binder shadows only inside the
+   statements it binds: the THEN or DO of its IS SOME, the CASE arm, the
+   handler.  The legal form first -- `Lib.n' inside the THEN is the
+   binder's field -- then the module named where no binder is. *)
+DEFINITION MODULE Lib ;
+PROCEDURE Zero () : I64 ;
+END Lib.
+MODULE m ;
+TYPE Rec = RECORD n : I64 END ;
+VAR
+  p : OPT PTR Rec ;
+  n : I64 ;
+PROCEDURE F () =
+BEGIN
+  IF p IS SOME Lib THEN n := Lib.n END ;
+  n := Lib.Zero ()
+END F ;
+BEGIN
+END m.

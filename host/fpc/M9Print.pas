@@ -92,6 +92,17 @@ begin
     end;
 end;
 
+function KidsList (n: TNode): string;
+var j : Integer;
+begin
+  Result := '';
+  for j := 0 to High (n.kids) do
+  begin
+    if j > 0 then Result := Result + ', ';
+    Result := Result + E (n.kids[j]);
+  end;
+end;
+
 function E (n: TNode): string;
 var
   i : Integer;
@@ -131,6 +142,7 @@ begin
                         Result := Result + ', ' + E (n.kids[i]);
                     Result := Result + ')';
                   end;
+    nkGridOf    : Result := 'GRID (' + KidsList (n) + ')';
     nkSliceOf3  : Result := 'SLICE (' + E (n.kids[0]) + ', ' +
                     E (n.kids[1]) + ', ' + E (n.kids[2]) + ')';
     nkCallExpr  : Result := DesigStr (n.kids[0]) + ' (' +

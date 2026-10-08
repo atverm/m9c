@@ -64,6 +64,9 @@ type
     finDepth : Integer;         { EXIT across a FINALLY boundary
                                   would skip the cleanup: refuse }
     stRaise : Boolean;
+    hoistOk : Boolean;                 { HoistArg may emit: an assignment,
+                                         a call statement, a RETURN }
+    hoistInd, nhoist, hoistOpen : Integer;
     dry : Integer;              { >0 inside TagOfExpr's recomputation:
                                   answering a type must not emit code
                                   (dead string literals otherwise) }
@@ -138,6 +141,8 @@ type
     procedure EmitAggs (tgt: TStringList);
     function DES (d: TNode; out tag: string): string;
     function EX (e: TNode; const want: string): string;
+    function HoistArg (const a: string): string;
+    procedure CloseHoists (ind: Integer);
     function EnumConvCount (n: TNode): Integer;
     function RecordAt (const name: string; out ctype: string): TNode;
     function CallC (dnode, argl, site: TNode; out tag: string): string;
@@ -215,7 +220,8 @@ begin
     (n = 'scalbn') or (n = 'scalbnf') or (n = 'sin') or (n = 'sinf') or
     (n = 'sinh') or (n = 'sinhf') or (n = 'sqrt') or (n = 'sqrtf') or
     (n = 'tan') or (n = 'tanf') or (n = 'tanh') or (n = 'tanhf') or
-    (n = 'tgamma') or (n = 'tgammaf') or (n = 'trunc') or (n = 'truncf');
+    (n = 'tgamma') or (n = 'tgammaf') or (n = 'trunc') or (n = 'truncf') or
+    (n = 'j0') or (n = 'j1') or (n = 'jn') or (n = 'y0') or (n = 'y1') or (n = 'yn');
 end;
 
 function CN (const n: string): string;
@@ -848,6 +854,14 @@ begin
     if (ci >= 0) and (TNode (consts.Objects[ci]).kind = nkInt) then
       Exit (TNode (consts.Objects[ci]).a);
   end;
+  { ARRAY Mod.N OF T: an imported CONST (mirrors Gen.ArrCount) }
+  if (e.kind = nkDesignator) and (Length (e.kids) = 1) and
+     (e.kids[0].kind = nkSelField) then
+  begin
+    ci := extConsts.IndexOf (e.a + '.' + e.kids[0].a);
+    if (ci >= 0) and (TNode (extConsts.Objects[ci]).kind = nkInt) then
+      Exit (TNode (extConsts.Objects[ci]).a);
+  end;
   Err (e, 'array bound must be a literal or literal CONST');
   Result := '0';
 end;
@@ -1424,6 +1438,7 @@ begin
         else Result := 'PTR';
       end;
     nkSliceOf3 : Result := 'SLICE';
+    nkGridOf : Result := 'GRID';
     nkNoneLit : Result := 'OPTPTR';
   end;
   if (e.kind = nkDesignator) and (Result = '?') and
@@ -1951,8 +1966,34 @@ begin
   end;
 end;
 
+{ a raising call nested as an argument is guarded before the
+  enclosing call runs -- corpus/Gen.m9's HoistArg says why }
+function TGen.HoistArg (const a: string): string;
+var tmp : string;
+begin
+  if (not hoistOk) or (dry > 0) then Exit (a);
+  Inc (nhoist);
+  tmp := 'm9a' + IntToStr (nhoist);
+  Line (pbuf, hoistInd, '{ __typeof__(' + a + ') ' + tmp + ' = ' + a + ';');
+  Line (pbuf, hoistInd + 1, 'if (err->exc) goto ' + raiseLbl + ';');
+  Inc (hoistOpen);
+  Result := tmp;
+end;
+
+procedure TGen.CloseHoists (ind: Integer);
+begin
+  while hoistOpen > 0 do
+  begin
+    Line (pbuf, ind, '}');
+    Dec (hoistOpen);
+  end;
+  hoistOk := False;
+end;
+
 function TGen.CallC (dnode, argl, site: TNode; out tag: string): string;
 var
+  svRaise : Boolean;
+  e2 : string;
   name, args, at, want, tn, vn, cfunc, gname : string;
   pv : Boolean;                     { a call through a procedure value }
   svt : TNode;
@@ -2175,6 +2216,13 @@ begin
   if name = 'F32' then
   begin
     tag := 'F32';
+    { from a double: checked (mirrors Gen.CallC) }
+    at := TagOfExpr (argl.kids[0]);
+    if at = 'F64' then
+    begin
+      stRaise := True;
+      Exit ('m9_f32_f64 (' + EX (argl.kids[0], '') + ', err)');
+    end;
     Exit ('(float)(' + EX (argl.kids[0], '') + ')');
   end;
   if name = 'MAX' then
@@ -2506,7 +2554,15 @@ begin
                 Err (site, 'array view argument unresolvable');
             end
             else
-              args := args + EX (arg, want);
+            begin
+              { a raising argument is guarded before this call runs }
+              svRaise := stRaise;
+              stRaise := False;
+              e2 := EX (arg, want);
+              if stRaise then e2 := HoistArg (e2);
+              stRaise := svRaise or stRaise;
+              args := args + e2;
+            end;
           end;
         end;
         Inc (k);
@@ -2522,6 +2578,7 @@ end;
 
 function TGen.EX (e: TNode; const want: string): string;
 var
+  svHoist : Boolean;
   l, r, lt, rt, w, tg, sh : string;
   cop : string;
   j, k, ext0, nx : Integer;
@@ -2530,7 +2587,9 @@ begin
   Result := '0';
   if e = nil then Exit;
   case e.kind of
-    nkInt : Result := 'INT64_C(' + e.a + ')';
+    nkInt :
+      if want = 'U64' then Result := 'UINT64_C(' + e.a + ')'
+      else Result := 'INT64_C(' + e.a + ')';
     nkReal :
       { NaN's NAN is a float already, and the same NaN as a double }
       if (want = 'F32') and (e.a <> 'NAN') then Result := e.a + 'f' else Result := e.a;
@@ -2632,6 +2691,35 @@ begin
             ', sizeof (' + l + '), 1, err)';
         end;
       end;
+    nkGridOf :
+      begin
+        { GRID (s, n0, ..., nR): mirrors Sem's NGridOf (par 2.2.1) }
+        stRaise := True;
+        inr := nil;
+        if (e.kids[0] <> nil) and (e.kids[0].kind = nkDesignator) then
+          inr := Resolve (DesigDecl (e.kids[0]));
+        tyk := nil;
+        if (inr <> nil) and (inr.kind = nkSliceType) then tyk := inr.kids[0];
+        if tyk = nil then
+        begin
+          Err (e, 'GRID of an expression that is not a slice designator');
+          Exit ('0');
+        end;
+        k := Length (e.kids) - 1;
+        tg := GridTy (tyk, IntToStr (k));
+        l := EX (e.kids[0], '');
+        w := NewTmp;
+        Result := '({ __typeof__(' + l + ') ' + w + ' = ' + l + '; ' + tg +
+          ' ' + w + 'r; int64_t ' + w + 'n[' + IntToStr (k) + '] = { ';
+        for j := 1 to High (e.kids) do
+        begin
+          if j > 1 then Result := Result + ', ';
+          Result := Result + EX (e.kids[j], '');
+        end;
+        Result := Result + ' }; m9_gridof (' + w + '.len, ' + w + 'n, ' +
+          IntToStr (k) + ', ' + w + 'r.n, ' + w + 'r.s, err); ' + w +
+          'r.p = ' + w + '.p; ' + w + 'r; })';
+      end;
     nkSliceOf3 :
       begin
         stRaise := True;
@@ -2708,12 +2796,23 @@ begin
         { at single precision the literals must be single too, or C
           widens the whole expression and narrows once at the end }
         if lt = 'F32' then w := 'F32';
+        if lt = 'U64' then w := 'U64';
         { and an adaptive node -- `5.02808 * 0.43429`, all literals --
           has no width of its own, so it takes the context's rather
           than recomputing one from operands that have none }
         if (want <> '') and IsAdaptive (e) then w := want;
         l := EX (e.kids[0], w);
-        r := EX (e.kids[1], w);
+        { the right operand of AND and OR is evaluated only when the
+          left decides nothing: no hoist out of it (corpus/Gen.m9) }
+        if (e.a = 'AND') or (e.a = 'OR') then
+        begin
+          svHoist := hoistOk;
+          hoistOk := False;
+          r := EX (e.kids[1], w);
+          hoistOk := svHoist;
+        end
+        else
+          r := EX (e.kids[1], w);
         cop := e.a;
         if cop = '=' then cop := '=='
         else if cop = '#' then cop := '!='
@@ -3058,6 +3157,8 @@ begin
     nkAssign :
       begin
         stRaise := False;
+        hoistOk := True;
+        hoistInd := ind;
         l := DES (st.kids[0], tg);
         lRaise := stRaise;
         stRaise := False;
@@ -3090,12 +3191,16 @@ begin
           if lRaise then
             Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
         end;
+        CloseHoists (ind);
       end;
     nkCallStmt :
       begin
         stRaise := False;
+        hoistOk := True;
+        hoistInd := ind;
         Line (pbuf, ind, CallC (st.kids[0], st.kids[1], st, tg) + ';');
         if stRaise then Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
+        CloseHoists (ind);
       end;
     nkIf :
       begin
@@ -3706,9 +3811,12 @@ begin
             caller's arena.  Intermediates land there too -- generous,
             and the price of not tracking tail position through EX. }
           Line (pbuf, ind, 'err->res = m9res;');
+          hoistOk := True;
+          hoistInd := ind;
           r := EX (st.kids[0], curRetTag);
           Line (pbuf, ind, 'm9ret = ' + r + ';');
           if stRaise then Line (pbuf, ind, 'if (err->exc) goto ' + raiseLbl + ';');
+          CloseHoists (ind);
         end;
         if curRetq <> '' then
           Line (pbuf, ind, curRetq + ' = true;');

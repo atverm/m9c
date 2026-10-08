@@ -129,6 +129,9 @@ VAR
                               (dead string literals otherwise)      *)
   litN, tdefN, sprotoN, hdrConstN : I64 ;
   stRaise : BOOL ;
+  hoistOk : BOOL ;         (* HoistArg may emit: inside an assignment,
+                              a call statement or a RETURN *)
+  hoistInd, nhoist, hoistOpen : I64 ;
   curRetTag, exitLbl, raiseLbl, curRetq : STR ;
   hOut, cOut : STR ;
 
@@ -618,7 +621,11 @@ CONST
     'nextafterf', 'pow', 'powf', 'remainder', 'remainderf', 'rint', 'rintf',
     'round', 'roundf', 'scalbn', 'scalbnf', 'sin', 'sinf', 'sinh', 'sinhf',
     'sqrt', 'sqrtf', 'tan', 'tanf', 'tanh', 'tanhf', 'tgamma', 'tgammaf',
-    'trunc', 'truncf'
+    'trunc', 'truncf',
+    (* POSIX's Bessel functions, in glibc's and macOS's math.h: a
+       module variable named y0 was `redeclared as different kind of
+       symbol' (m9curve's Basemap.m9, 2026-10-08) *)
+    'j0', 'j1', 'jn', 'y0', 'y1', 'yn'
   ] ;
 
   (* what CN escapes besides: the C keywords, the three stdbool names,
@@ -845,6 +852,20 @@ BEGIN
       IF ci >= 0 THEN
         IF consts.es[ci].v IS SOME cv THEN
           IF cv.kind = Ast.NInt THEN RETURN cv.a END
+        END
+      END
+    END ;
+    (* ARRAY Mod.N OF T: an imported CONST, from the extern table --
+       refused as `form unsupported' until 2026-10-08 *)
+    IF e.nkids = 1 THEN
+      IF e.kids[0] IS SOME sf THEN
+        IF sf.kind = Ast.NSelField THEN
+          ci := MFind (extConsts, S3 (e.a, '.', sf.a)) ;
+          IF ci >= 0 THEN
+            IF extConsts.es[ci].v IS SOME xv THEN
+              IF xv.kind = Ast.NInt THEN RETURN xv.a END
+            END
+          END
         END
       END
     END
@@ -2395,6 +2416,7 @@ BEGIN
         ELSIF nx = 1 THEN res := 'SLICE'
         ELSE res := 'PTR' END
     | Ast.NSliceOf3 : res := 'SLICE'
+    | Ast.NGridOf : res := 'GRID'
     | Ast.NNoneLit : res := 'OPTPTR'
     ELSE
       res := '?'
@@ -2744,6 +2766,7 @@ END DES ;
 
 PROCEDURE EX (k: Ast.Kid ; RO want: STR) : STR =
 VAR
+  svHoist : BOOL ;
   l, r, lt, rt, w, tg, cop, a1, a2, cnt, res, sh : STR ;
   d2 : PTR DynStr.DString IN gpool ;
   jj, rk, ext0, nx : I64 ;
@@ -2752,7 +2775,11 @@ VAR
 BEGIN
   IF k IS SOME e THEN
     CASE e.kind OF
-    | Ast.NInt : RETURN S3 ('INT64_C(', e.a, ')')
+    | Ast.NInt :
+        (* an unsigned context spells the literal UINT64_C: INT64_C of
+           a value past 2^63 warned in C (the value was right) *)
+        IF DynStr.Eq (want, 'U64') THEN RETURN S3 ('UINT64_C(', e.a, ')') END ;
+        RETURN S3 ('INT64_C(', e.a, ')')
     | Ast.NReal :
         (* NaN's NAN is a float already, and the same NaN as a double *)
         IF DynStr.Eq (want, 'F32') AND NOT DynStr.Eq (e.a, 'NAN') THEN
@@ -2867,6 +2894,41 @@ BEGIN
           RETURN S7 ('(', l, ' *) m9_pool_alloc (', r,
             ', sizeof (', l, '), 1, err)')
         END
+    | Ast.NGridOf :
+        (* GRID (s, n0, ..., nR): a grid of the slice's element type
+           laid over its storage, row-major; m9_gridof holds the
+           extents to the length and raises IndexError, answering an
+           empty grid (par 2.2.1, 2026-10-08) *)
+        stRaise := TRUE ;
+        inr := NONE ;
+        IF e.kids[0] IS SOME gds THEN
+          IF gds.kind = Ast.NDesignator THEN inr := Resolve (DesigDecl (gds)) END
+        END ;
+        tyk := NONE ;
+        IF inr IS SOME gin THEN
+          IF gin.kind = Ast.NSliceType THEN tyk := gin.kids[0] END
+        END ;
+        IF tyk IS SOME gel THEN
+          rk := e.nkids - 1 ;
+          tg := GridTy (tyk, ItoA (rk)) ;
+          l := EX (e.kids[0], '') ;
+          w := NewTmp () ;
+          d2 := DynStr.New (gpool) ;
+          DynStr.Append (d2, S7 ('({ __typeof__(', l, ') ', w, ' = ', l, '; ')) ;
+          DynStr.Append (d2, S7 (tg, ' ', w, 'r; int64_t ', w, 'n[', ItoA (rk))) ;
+          DynStr.Append (d2, '] = { ') ;
+          FOR jj := 1 TO e.nkids - 1 DO
+            IF jj > 1 THEN DynStr.Append (d2, ', ') END ;
+            a1 := EX (e.kids[jj], '') ;
+            DynStr.Append (d2, a1)
+          END ;
+          DynStr.Append (d2, S9 (' }; m9_gridof (', w, '.len, ', w, 'n, ', ItoA (rk), ', ', w, 'r.n, ')) ;
+          DynStr.Append (d2, S7 (w, 'r.s, err); ', w, 'r.p = ', w, '.p; ', '')) ;
+          DynStr.Append (d2, S2 (w, 'r; })')) ;
+          RETURN DynStr.View (d2)
+        END ;
+        Err2 (e.line, 'GRID of an expression that is not a slice designator') ;
+        RETURN '0'
     | Ast.NSliceOf3 :
         stRaise := TRUE ;
         lt := TagOfExpr (e.kids[0]) ;
@@ -2998,6 +3060,7 @@ BEGIN
         (* at single precision the literals must be single too, or C
            widens the whole expression and narrows once at the end *)
         IF DynStr.Eq (lt, 'F32') THEN w := 'F32' END ;
+        IF DynStr.Eq (lt, 'U64') THEN w := 'U64' END ;
         (* and an adaptive node -- `5.02808 * 0.43429`, all literals
            -- has no width of its own, so it takes the context's
            rather than recomputing one from operands that have none *)
@@ -3005,7 +3068,20 @@ BEGIN
           IF IsAdaptive (k) THEN w := want END
         END ;
         l := EX (e.kids[0], w) ;
-        r := EX (e.kids[1], w) ;
+        (* the right operand of AND and OR is evaluated only when the
+           left decides nothing (short-circuit, par 2.3): a raising
+           argument in it is NOT hoisted ahead of the operator --
+           found by gendiff, when the M9-compiled generator evaluated
+           TagOfExpr eagerly in `tg = 'SHARED' AND TagOfExpr (..)'
+           and numbered its temporaries one ahead of the oracle *)
+        IF DynStr.Eq (e.a, 'AND') OR DynStr.Eq (e.a, 'OR') THEN
+          svHoist := hoistOk ;
+          hoistOk := FALSE ;
+          r := EX (e.kids[1], w) ;
+          hoistOk := svHoist
+        ELSE
+          r := EX (e.kids[1], w)
+        END ;
         cop := e.a ;
         IF DynStr.Eq (cop, '=') THEN cop := '=='
         ELSIF DynStr.Eq (cop, '#') THEN cop := '!='
@@ -3162,9 +3238,45 @@ BEGIN
   RETURN NONE
 END RecordAt ;
 
+(* A RAISING CALL NESTED AS AN ARGUMENT IS GUARDED BEFORE THE
+   ENCLOSING CALL RUNS (report par 5, 2026-10-08; the owed item from
+   ONEFlux's report 18).  `F (G (x))' was one C expression under one
+   guard after the statement, so F ran on whatever G had answered
+   when it raised -- a zero, a NULL -- before the handler saw G's
+   error.  An argument whose rendering set stRaise goes into a
+   temporary with its own guard, in a block the statement closes
+   (CloseHoists): `{ __typeof__(G (x)) m9a1 = G (x); if (err->exc)
+   goto L;' and F gets m9a1.  Only where the statement is evaluated
+   once -- an assignment, a call statement, a RETURN: a hoist out of
+   a WHILE's condition or an ELSIF's would evaluate it once where the
+   program evaluates it each time or never.  Nothing when answering a
+   type (dry). *)
+PROCEDURE HoistArg (RO a: STR) : STR =
+VAR tmp : STR ;
+BEGIN
+  IF NOT hoistOk OR dry > 0 THEN RETURN a END ;
+  nhoist := nhoist + 1 ;
+  tmp := S2 ('m9a', ItoA (nhoist)) ;
+  Line (KPbuf, hoistInd, S6 ('{ __typeof__(', a, ') ', tmp, ' = ', S2 (a, ';'))) ;
+  Line (KPbuf, hoistInd + 1, S3 ('if (err->exc) goto ', raiseLbl, ';')) ;
+  hoistOpen := hoistOpen + 1 ;
+  RETURN tmp
+END HoistArg ;
+
+(* the statement that allowed hoisting closes what HoistArg opened *)
+PROCEDURE CloseHoists (ind: I64) =
+BEGIN
+  WHILE hoistOpen > 0 DO
+    Line (KPbuf, ind, '}') ;
+    hoistOpen := hoistOpen - 1
+  END ;
+  hoistOk := FALSE
+END CloseHoists ;
+
 PROCEDURE CallC (dn: Ast.Kid ; argl: Ast.Kid ; VAR tag: STR) : STR =
 VAR
   name, args, at, want2, tn, vn, cfunc, e1, e2, res, cnt : STR ;
+  svRaise : BOOL ;
   gname, xtn : STR ;
   pi, g, j, k, k2, nargs, dot, dot2, nf32, nf64, eln : I64 ;
   pnodeK, ak, vgrid, aliasK, enode : Ast.Kid ;
@@ -3405,6 +3517,13 @@ BEGIN
     END ;
     IF DynStr.Eq (name, 'F32') THEN
       tag := 'F32' ;
+      (* from a double: checked, a value beyond F32's range raises
+         ValueRange where C's cast gives an infinity (2026-10-08) *)
+      at := TagOfExpr (al.kids[0]) ;
+      IF DynStr.Eq (at, 'F64') THEN
+        stRaise := TRUE ;
+        RETURN S3 ('m9_f32_f64 (', EX (al.kids[0], ''), ', err)')
+      END ;
       RETURN S3 ('(float)(', EX (al.kids[0], ''), ')')
     END ;
     IF DynStr.Eq (name, 'MAX') THEN
@@ -3731,7 +3850,14 @@ BEGIN
                           Err2 (eln, 'argument form unsupported yet')
                         END
                       ELSE
-                        args := S2 (args, EX (ak, want2))
+                        (* a raising argument is guarded before this
+                           call runs (HoistArg) *)
+                        svRaise := stRaise ;
+                        stRaise := FALSE ;
+                        e2 := EX (ak, want2) ;
+                        IF stRaise THEN e2 := HoistArg (e2) END ;
+                        stRaise := svRaise OR stRaise ;
+                        args := S2 (args, e2)
                       END
                     END
                   END
@@ -3969,6 +4095,8 @@ BEGIN
     CASE st.kind OF
     | Ast.NAssign :
         stRaise := FALSE ;
+        hoistOk := TRUE ;
+        hoistInd := ind ;
         tg := '?' ;
         IF st.kids[0] IS SOME lhs THEN l := DES (lhs, tg) ELSE l := '0' END ;
         lRaise := stRaise ;
@@ -4010,14 +4138,18 @@ BEGIN
           IF lRaise THEN
             Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
           END
-        END
+        END ;
+        CloseHoists (ind)
     | Ast.NCallStmt :
         stRaise := FALSE ;
+        hoistOk := TRUE ;
+        hoistInd := ind ;
         tg := '?' ;
         Line (KPbuf, ind, S2 (CallC (st.kids[0], st.kids[1], tg), ';')) ;
         IF stRaise THEN
           Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
-        END
+        END ;
+        CloseHoists (ind)
     | Ast.NIf :
         (* IF x IS SOME p THEN: bind the payload, test for NULL *)
         IF IsSomeCond (st.kids[0]) THEN
@@ -4358,11 +4490,14 @@ BEGIN
              there too -- generous, and the price of not tracking tail
              position through EX. *)
           Line (KPbuf, ind, 'err->res = m9res;') ;
+          hoistOk := TRUE ;
+          hoistInd := ind ;
           r := EX (st.kids[0], curRetTag) ;
           Line (KPbuf, ind, S3 ('m9ret = ', r, ';')) ;
           IF stRaise THEN
             Line (KPbuf, ind, S3 ('if (err->exc) goto ', raiseLbl, ';'))
-          END
+          END ;
+          CloseHoists (ind)
         END ;
         IF LEN (curRetq) > 0 THEN
           Line (KPbuf, ind, S2 (curRetq, ' = true;'))

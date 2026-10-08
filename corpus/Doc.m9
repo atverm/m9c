@@ -940,6 +940,21 @@ BEGIN
   DynStr.Append (d, modName) ;
   DynStr.AppendChar (d, 0AC) ;
 
+  (* a PROGRAM exports nothing: its page said only its name until
+     2026-10-08, and a reader took the bare heading for a page that
+     had failed to render *)
+  FOR u := 0 TO root.nkids - 1 DO
+    IF root.kids[u] IS SOME unit THEN
+      IF unit.kind = Ast.NProgram THEN
+        DynStr.AppendChar (d, 0AC) ;
+        DynStr.Append (d, 'A program (`MODULE ') ;
+        DynStr.Append (d, modName) ;
+        DynStr.Append (d, '`): nothing to import, run it.') ;
+        DynStr.AppendChar (d, 0AC)
+      END
+    END
+  END ;
+
   FOR u := 0 TO root.nkids - 1 DO
     IF root.kids[u] IS SOME unit THEN
       IF unit.kind = Ast.NDefinition THEN

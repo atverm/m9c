@@ -489,12 +489,16 @@ BEGIN
   v := 0 ;
   FOR i := first TO LEN (s) - 1 DO
     IF s[i] < '0' OR s[i] > '9' THEN RAISE ValueRange END ;
-    (* checked multiply and add: a number too long for I64 raises
-       Overflow here rather than wrapping into a plausible lie *)
-    v := v * 10 + (ORD (s[i]) - 48)
+    (* checked multiply and subtract: a number too long for I64 raises
+       Overflow here rather than wrapping into a plausible lie.  The
+       digits are taken in NEGATIVE space, where every I64 fits: the
+       smallest one has no positive twin, and until 2026-10-08
+       -9223372036854775808 -- an integer column's missing value --
+       raised Overflow here (Check carried its own parser for it). *)
+    v := v * 10 - (ORD (s[i]) - 48)
   END ;
-  IF neg THEN RETURN -v END ;
-  RETURN v
+  IF neg THEN RETURN v END ;
+  RETURN 0 - v
 END ParseI64 ;
 
 PROCEDURE Arg (VAR pool: POOL ; i: I64) : STR

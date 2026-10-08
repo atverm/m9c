@@ -1,0 +1,7 @@
+(* EXPECT: unknown name: x *)
+MODULE m ;
+VAR n : I64 ;
+BEGIN
+  n := 1 ;
+  x := n
+END m.

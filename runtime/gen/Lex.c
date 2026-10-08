@@ -232,8 +232,11 @@ void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m
       Lex_Advance (lx, lx_pool, err);
       if (err->exc) goto L_ret;
     }
-    Lex_Mk (t, t_pool, Lex_KIdent, ({ __typeof__((*lx).src) m9t3 = (*lx).src; int64_t m9t3a = start, m9t3n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; }), ln, cl, err);
+    { __typeof__(({ __typeof__((*lx).src) m9t3 = (*lx).src; int64_t m9t3a = start, m9t3n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a1 = ({ __typeof__((*lx).src) m9t3 = (*lx).src; int64_t m9t3a = start, m9t3n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+      if (err->exc) goto L_ret;
+    Lex_Mk (t, t_pool, Lex_KIdent, m9a1, ln, cl, err);
     if (err->exc) goto L_ret;
+    }
     { __typeof__((*t).kind) m9v = Lex_Lookup ((*t).text, err);
       if (err->exc) goto L_ret;
       (*t).kind = m9v;
@@ -272,8 +275,11 @@ void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m
       if (err->exc) goto L_ret;
       goto L_ret;
     }
-    Lex_Mk (t, t_pool, Lex_KStr, ({ __typeof__((*lx).src) m9t8 = (*lx).src; int64_t m9t8a = start, m9t8n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; }), ln, cl, err);
+    { __typeof__(({ __typeof__((*lx).src) m9t8 = (*lx).src; int64_t m9t8a = start, m9t8n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; })) m9a2 = ({ __typeof__((*lx).src) m9t8 = (*lx).src; int64_t m9t8a = start, m9t8n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t8)){ m9t8.p + m9_chk_slice (m9t8a, m9t8n, m9t8.len, err), m9t8n }; });
+      if (err->exc) goto L_ret;
+    Lex_Mk (t, t_pool, Lex_KStr, m9a2, ln, cl, err);
     if (err->exc) goto L_ret;
+    }
     Lex_Advance (lx, lx_pool, err);
     if (err->exc) goto L_ret;
     goto L_ret;
@@ -311,8 +317,11 @@ void Lex_Next (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *t_pool, m
     (*(uint32_t *) m9_at (errBuf.v, INT64_C(24), INT64_C(32), sizeof (uint32_t), err)) = m9v;
     if (err->exc) goto L_ret;
   }
-  Lex_Mk (t, t_pool, Lex_KError, ({ int64_t m9t11a = INT64_C(0), m9t11n = INT64_C(25); (m9_sl_CHAR){ (errBuf).v + m9_chk_slice (m9t11a, m9t11n, INT64_C(32), err), m9t11n }; }), ln, cl, err);
+  { __typeof__(({ int64_t m9t11a = INT64_C(0), m9t11n = INT64_C(25); (m9_sl_CHAR){ (errBuf).v + m9_chk_slice (m9t11a, m9t11n, INT64_C(32), err), m9t11n }; })) m9a3 = ({ int64_t m9t11a = INT64_C(0), m9t11n = INT64_C(25); (m9_sl_CHAR){ (errBuf).v + m9_chk_slice (m9t11a, m9t11n, INT64_C(32), err), m9t11n }; });
+    if (err->exc) goto L_ret;
+  Lex_Mk (t, t_pool, Lex_KError, m9a3, ln, cl, err);
   if (err->exc) goto L_ret;
+  }
 L_ret: ;
   err->res = m9res;
   m9_adopt_if (&m9frame, lx_pool, (*lx).src.p);
@@ -1246,8 +1255,11 @@ static void Lex_Skip (Lex_Lexer *lx, m9_pool *lx_pool, bool *bad, int64_t *eline
             if (err->exc) goto L_ret;
             if ((depth == INT64_C(0))) {
               if (comOn) {
-                Lex_Note ((*eline), (*ecol), (*lx).line, ({ __typeof__((*lx).src) m9t4 = (*lx).src; int64_t m9t4a = cstart, m9t4n = m9_sub_i64 ((*lx).pos, cstart, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; }), err);
+                { __typeof__(({ __typeof__((*lx).src) m9t4 = (*lx).src; int64_t m9t4a = cstart, m9t4n = m9_sub_i64 ((*lx).pos, cstart, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a4 = ({ __typeof__((*lx).src) m9t4 = (*lx).src; int64_t m9t4a = cstart, m9t4n = m9_sub_i64 ((*lx).pos, cstart, err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+                  if (err->exc) goto L_ret;
+                Lex_Note ((*eline), (*ecol), (*lx).line, m9a4, err);
                 if (err->exc) goto L_ret;
+                }
               }
               break;
             }
@@ -1574,8 +1586,11 @@ static void Lex_Number (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *
       if (err->exc) goto L_ret;
       goto L_ret;
     }
-    Lex_Mk (t, t_pool, Lex_KInt, ({ __typeof__((*lx).src) m9t5 = (*lx).src; int64_t m9t5a = start, m9t5n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), ln, cl, err);
+    { __typeof__(({ __typeof__((*lx).src) m9t5 = (*lx).src; int64_t m9t5a = start, m9t5n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a5 = ({ __typeof__((*lx).src) m9t5 = (*lx).src; int64_t m9t5a = start, m9t5n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
+      if (err->exc) goto L_ret;
+    Lex_Mk (t, t_pool, Lex_KInt, m9a5, ln, cl, err);
     if (err->exc) goto L_ret;
+    }
     goto L_ret;
   }
   hasHexLetter = false;
@@ -1718,11 +1733,17 @@ static void Lex_Number (Lex_Lexer *lx, m9_pool *lx_pool, Lex_Token *t, m9_pool *
     goto L_ret;
   }
   if (isReal) {
-    Lex_Mk (t, t_pool, Lex_KReal, ({ __typeof__((*lx).src) m9t21 = (*lx).src; int64_t m9t21a = start, m9t21n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t21)){ m9t21.p + m9_chk_slice (m9t21a, m9t21n, m9t21.len, err), m9t21n }; }), ln, cl, err);
+    { __typeof__(({ __typeof__((*lx).src) m9t21 = (*lx).src; int64_t m9t21a = start, m9t21n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t21)){ m9t21.p + m9_chk_slice (m9t21a, m9t21n, m9t21.len, err), m9t21n }; })) m9a6 = ({ __typeof__((*lx).src) m9t21 = (*lx).src; int64_t m9t21a = start, m9t21n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t21)){ m9t21.p + m9_chk_slice (m9t21a, m9t21n, m9t21.len, err), m9t21n }; });
+      if (err->exc) goto L_ret;
+    Lex_Mk (t, t_pool, Lex_KReal, m9a6, ln, cl, err);
     if (err->exc) goto L_ret;
+    }
   } else {
-    Lex_Mk (t, t_pool, Lex_KInt, ({ __typeof__((*lx).src) m9t22 = (*lx).src; int64_t m9t22a = start, m9t22n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t22)){ m9t22.p + m9_chk_slice (m9t22a, m9t22n, m9t22.len, err), m9t22n }; }), ln, cl, err);
+    { __typeof__(({ __typeof__((*lx).src) m9t22 = (*lx).src; int64_t m9t22a = start, m9t22n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t22)){ m9t22.p + m9_chk_slice (m9t22a, m9t22n, m9t22.len, err), m9t22n }; })) m9a7 = ({ __typeof__((*lx).src) m9t22 = (*lx).src; int64_t m9t22a = start, m9t22n = m9_sub_i64 ((*lx).pos, start, err); (__typeof__(m9t22)){ m9t22.p + m9_chk_slice (m9t22a, m9t22n, m9t22.len, err), m9t22n }; });
+      if (err->exc) goto L_ret;
+    Lex_Mk (t, t_pool, Lex_KInt, m9a7, ln, cl, err);
     if (err->exc) goto L_ret;
+    }
   }
 L_ret: ;
   err->res = m9res;

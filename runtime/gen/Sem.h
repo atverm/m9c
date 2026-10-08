@@ -10,7 +10,6 @@
 void Sem_m9init (m9_state *err);
 
 typedef struct Sem_ProcInfo Sem_ProcInfo;
-typedef struct Sem_Edge Sem_Edge;
 typedef struct Sem_Binding Sem_Binding;
 typedef struct Sem_VariantInfo Sem_VariantInfo;
 typedef struct Sem_ModuleInfo Sem_ModuleInfo;
@@ -74,10 +73,6 @@ typedef struct { int64_t v[42]; } m9_arr_42_int64_t;
 #ifndef M9SL_m9_sl_Sem_Binding
 #define M9SL_m9_sl_Sem_Binding
 typedef struct { Sem_Binding *p; int64_t len; } m9_sl_Sem_Binding;
-#endif
-#ifndef M9SL_m9_sl_Sem_Edge
-#define M9SL_m9_sl_Sem_Edge
-typedef struct { Sem_Edge *p; int64_t len; } m9_sl_Sem_Edge;
 #endif
 #ifndef M9SL_m9_arr_13_m9_sl_CHAR
 #define M9SL_m9_arr_13_m9_sl_CHAR

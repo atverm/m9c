@@ -252,10 +252,16 @@ L_dn_m9t2: ;
   m9t10to = m9_sub_i64 (r->nvars, INT64_C(1), err);
   if (err->exc) goto L_hdl_m9t4;
   for (; j <= m9t10to; j += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, Json_Text (Json_Item (vars, j, err), err), err);
+    { __typeof__(Json_Item (vars, j, err)) m9a1 = Json_Item (vars, j, err);
+      if (err->exc) goto L_hdl_m9t4;
+    { __typeof__(Json_Text (m9a1, err)) m9a2 = Json_Text (m9a1, err);
+      if (err->exc) goto L_hdl_m9t4;
+    { __typeof__((*(m9_sl_CHAR *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a2, err);
       if (err->exc) goto L_hdl_m9t4;
       (*(m9_sl_CHAR *) m9_at (r->vars.p, j, r->vars.len, sizeof (m9_sl_CHAR), err)) = m9v;
       if (err->exc) goto L_hdl_m9t4;
+    }
+    }
     }
   } }
   { __typeof__(total) m9v = m9_mul_i64 (r->nrows, r->nvars, err);
@@ -530,8 +536,11 @@ static m9_sl_CHAR Sparql_FieldText (m9_pool *pool, Json_Node * n, m9_sl_CHAR nam
   if (err->exc) goto L_hdl_m9t1;
   if (v != NULL) {
     err->res = m9res;
-    m9ret = Text_Keep (pool, Json_Text (v, err), err);
+    { __typeof__(Json_Text (v, err)) m9a3 = Json_Text (v, err);
+      if (err->exc) goto L_hdl_m9t1;
+    m9ret = Text_Keep (pool, m9a3, err);
     if (err->exc) goto L_hdl_m9t1;
+    }
     goto L_ret;
   } }
   err->res = m9res;
@@ -661,9 +670,15 @@ static m9_sl_CHAR Sparql_Fetch (m9_pool *pool, m9_sl_CHAR endpoint, m9_sl_CHAR q
     }
   } else {
     respHeaders = (m9_sl_CHAR){ NULL, 0 };
-    { __typeof__(body) m9v = Http_RequestText (pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 4 }), endpoint, m9_cat (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s33, 47 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 8 }), err), accept, err), m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s35, 6 }), enc, err), Sparql_ResultCap, &(status), &(respHeaders), err);
+    { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s33, 47 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 8 }), err), accept, err)) m9a4 = m9_cat (err->res, m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s33, 47 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s34, 8 }), err), accept, err);
+      if (err->exc) goto L_ret;
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s35, 6 }), enc, err)) m9a5 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s35, 6 }), enc, err);
+      if (err->exc) goto L_ret;
+    { __typeof__(body) m9v = Http_RequestText (pool, ((m9_sl_CHAR){ (uint32_t *) m9s32, 4 }), endpoint, m9a4, m9a5, Sparql_ResultCap, &(status), &(respHeaders), err);
       if (err->exc) goto L_ret;
       body = m9v;
+    }
+    }
     }
   }
   if ((status != INT64_C(200))) {

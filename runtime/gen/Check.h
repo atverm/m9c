@@ -15,10 +15,9 @@ static const uint32_t Check_DefaultGold_d[17] = { 114u, 117u, 110u, 116u, 105u, 
 #define Check_DefaultGold ((m9_sl_CHAR){ (uint32_t *) Check_DefaultGold_d, 17 })
 
 typedef void (*Check_Action) (m9_state *err);
-typedef void (*Check_Raiser) (m9_state *err);
-#ifndef M9SL_m9_arr_2_m9_sl_CHAR
-#define M9SL_m9_arr_2_m9_sl_CHAR
-typedef struct { m9_sl_CHAR v[2]; } m9_arr_2_m9_sl_CHAR;
+#ifndef M9SL_m9_arr_3_m9_sl_CHAR
+#define M9SL_m9_arr_3_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[3]; } m9_arr_3_m9_sl_CHAR;
 #endif
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
@@ -42,7 +41,7 @@ void Check_EqStrs (Check_T *t, m9_sl_CHAR label, m9_sl_m9_sl_CHAR got, m9_sl_m9_
 void Check_EqBools (Check_T *t, m9_sl_CHAR label, m9_sl_BOOL got, m9_sl_BOOL want, m9_state *err);
 void Check_NearF64s (Check_T *t, m9_sl_CHAR label, m9_sl_F64 got, m9_sl_F64 want, double absTol, double relTol, m9_state *err);
 void Check_Raises (Check_T *t, m9_sl_CHAR label, Check_Action act, m9_sl_CHAR want, m9_state *err);
-void Check_RaisesValueRange (Check_T *t, m9_sl_CHAR label, Check_Raiser act, m9_state *err);
+void Check_RaisesValueRange (Check_T *t, m9_sl_CHAR label, Check_Action act, m9_state *err);
 m9_sl_CHAR Check_GoldPath (m9_sl_CHAR file, m9_state *err);
 m9_sl_F64 Check_GoldF64s (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_state *err);
 m9_sl_I64 Check_GoldI64s (Check_T *t, m9_sl_CHAR path, m9_sl_CHAR name, m9_state *err);

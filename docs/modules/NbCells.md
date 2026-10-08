@@ -54,7 +54,7 @@ _(undocumented)_
 
 _(undocumented)_
 
-### PutF64s (RO name: STR ; RO v: SLICE OF F64) RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange, Overflow, IndexError
+### PutF64s (RO name: STR ; RO KEPT v: SLICE OF F64) RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange, Overflow, IndexError
 
 _(undocumented)_
 
@@ -62,7 +62,7 @@ _(undocumented)_
 
 _(undocumented)_
 
-### PutI64s (RO name: STR ; RO v: SLICE OF I64) RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange, Overflow, IndexError
+### PutI64s (RO name: STR ; RO KEPT v: SLICE OF I64) RAISES Faults.BadArg, Faults.SizeError, Io.IOError, ValueRange, Overflow, IndexError
 
 _(undocumented)_
 

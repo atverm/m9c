@@ -21,6 +21,7 @@ TYPE
 EXCEPTION Empty ;
 
 VAR
+  y0 : F64 ;                       (* named like POSIX's Bessel function: escaped in the C *)
   b : SHARED PTR Box ;
   c : SHARED PTR Box ;
   p : STR ;                        (* a module variable named like a binder below *)
@@ -33,6 +34,41 @@ BEGIN
   p.n := n ;
   RETURN SHARED (p)
 END Make ;
+
+(* a raising call NESTED AS AN ARGUMENT (par 5, 2026-10-08): Use must
+   not run on what Count answered when it raised.  Until then F (G (x))
+   was one C expression under one guard, and Use printed `used 0'
+   before the handler ran. *)
+PROCEDURE Count (n: I64) : I64 RAISES Empty =
+BEGIN
+  IF n = 0 THEN RAISE Empty END ;
+  RETURN n * 2
+END Count ;
+
+PROCEDURE Use (n: I64) =
+BEGIN
+  Io.Write ('used ') ; Io.WriteI64 (n) ; Io.WriteLine ('')
+END Use ;
+
+PROCEDURE Nest (n: I64) =
+BEGIN
+  Use (Count (n))
+EXCEPT
+| Empty : Io.WriteLine ('Empty raised before Use ran')
+END Nest ;
+
+(* F32 of a double beyond F32's range is ValueRange, not an infinity
+   (2026-10-08): the C cast gave inf and the program went on *)
+PROCEDURE Narrow (x: F64) =
+VAR f : F32 ;
+BEGIN
+  f := F32 (x) ;
+  Io.WriteLine ('narrowed')
+EXCEPT
+| ValueRange : Io.WriteLine ('ValueRange on narrowing')
+END Narrow ;
+
+VAR big : U64 ;      (* a literal past 2^63 is spelled UINT64_C in C *)
 
 PROCEDURE Try (n: I64) =
 BEGIN
@@ -51,11 +87,43 @@ BEGIN
   RETURN -1
 END Peek ;
 
+(* GRID (s, n0, n1) lays a grid over a slice's storage (par 2.2.1,
+   2026-10-08): the extents must multiply to the slice's length, or
+   IndexError -- and the grid answered then is empty, so nothing can
+   be read through it *)
+PROCEDURE GridOf (n0, n1: I64) =
+VAR
+  s : SLICE OF F64 ;
+  g : GRID 2 OF F64 ;
+  i : I64 ;
+BEGIN
+  s := NEW (F64, 6) ;
+  FOR i := 0 TO 5 DO s[i] := 1.0 END ;
+  s[5] := 7.0 ;
+  g := GRID (s, n0, n1) ;
+  Io.Write ('grid ') ; Io.WriteI64 (LEN (g, 0)) ; Io.Write ('x') ;
+  Io.WriteI64 (LEN (g, 1)) ; Io.Write (' [1,2]=') ;
+  Io.WriteI64 (I64 (g[1, 2])) ; Io.WriteLine ('')
+EXCEPT
+| IndexError : Io.WriteLine ('IndexError on GRID')
+| ValueRange : Io.WriteLine ('ValueRange')
+END GridOf ;
+
 BEGIN
   p := 'module' ;
   Try (3) ;
   Try (0) ;
   c := b ;
   Io.Write ('copied ') ; Io.WriteI64 (c.n) ; Io.WriteLine ('') ;
-  Io.Write ('peeked ') ; Io.WriteI64 (Peek (SOME (b))) ; Io.WriteLine ('')
+  Io.Write ('peeked ') ; Io.WriteI64 (Peek (SOME (b))) ; Io.WriteLine ('') ;
+  Nest (5) ;
+  Nest (0) ;
+  Narrow (1.5) ;
+  Narrow (1.0e300) ;
+  big := 18446744073709551615 ;
+  IF big = 18446744073709551615 THEN Io.WriteLine ('big') END ;
+  GridOf (2, 3) ;
+  GridOf (4, 2) ;
+  y0 := 1.0 ;
+  IF y0 > 0.0 THEN Io.WriteLine ('bessel') END
 END ShareUse.

@@ -10,11 +10,14 @@ void Zip_m9init (m9_state *err);
 
 typedef struct Zip_Archive Zip_Archive;
 typedef struct Zip_Member Zip_Member;
+typedef struct Zip_Writer Zip_Writer;
 typedef struct Zip_Entry Zip_Entry;
 typedef struct Zip_Archive Zip_Archive;
 typedef struct Zip_Infl Zip_Infl;
 typedef struct Zip_Member Zip_Member;
 typedef struct Zip_Sink Zip_Sink;
+typedef struct Zip_WEntry Zip_WEntry;
+typedef struct Zip_Writer Zip_Writer;
 
 extern const m9_exc Zip_Error;
 
@@ -40,10 +43,20 @@ extern const m9_exc Zip_Error;
 #define Zip_MaxChain INT64_C(24)
 #define Zip_MinMatch INT64_C(3)
 #define Zip_MaxMatch INT64_C(258)
+#define Zip_Max32 INT64_C(4294967295)
+#define Zip_MaxMembers INT64_C(65535)
+#define Zip_MaxName INT64_C(65535)
+#define Zip_LocHdr INT64_C(30)
+#define Zip_CenHdr INT64_C(46)
+#define Zip_EocdLen INT64_C(22)
 
 #ifndef M9SL_m9_sl_Zip_Entry
 #define M9SL_m9_sl_Zip_Entry
 typedef struct { Zip_Entry *p; int64_t len; } m9_sl_Zip_Entry;
+#endif
+#ifndef M9SL_m9_sl_Zip_WEntry
+#define M9SL_m9_sl_Zip_WEntry
+typedef struct { Zip_WEntry *p; int64_t len; } m9_sl_Zip_WEntry;
 #endif
 #ifndef M9SL_m9_arr_17_int64_t
 #define M9SL_m9_arr_17_int64_t
@@ -83,5 +96,11 @@ m9_sl_BYTE Zip_Decompress (m9_pool *pool, m9_sl_BYTE data, m9_state *err);
 m9_sl_BYTE Zip_Gzip (m9_pool *pool, m9_sl_BYTE data, m9_state *err);
 int64_t Zip_Crc32 (m9_sl_BYTE b, m9_state *err);
 int64_t Zip_Adler32 (m9_sl_BYTE b, m9_state *err);
+Zip_Writer * Zip_NewWriter (m9_pool *pool, m9_state *err);
+void Zip_SetTime (Zip_Writer * *w, m9_pool *w_pool, int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, m9_state *err);
+void Zip_AddBytes (Zip_Writer * *w, m9_pool *w_pool, m9_sl_CHAR name, m9_sl_BYTE data, bool deflate, m9_state *err);
+void Zip_AddFile (Zip_Writer * *w, m9_pool *w_pool, m9_sl_CHAR name, m9_sl_CHAR path, bool deflate, m9_state *err);
+m9_sl_BYTE Zip_Finish (Zip_Writer * *w, m9_pool *w_pool, m9_state *err);
+void Zip_WriteTo (Zip_Writer * *w, m9_pool *w_pool, m9_sl_CHAR path, m9_state *err);
 
 #endif

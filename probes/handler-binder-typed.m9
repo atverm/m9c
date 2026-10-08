@@ -1,0 +1,16 @@
+(* EXPECT: cannot assign I64 to SLICE OF CHAR (no implicit conversions, par 2.1) *)
+MODULE m ;
+EXCEPTION Err (RO msg: STR ; code: I64) ;
+VAR s : STR ; n : I64 ;
+PROCEDURE F () RAISES Err =
+BEGIN RAISE Err ('x', 1) END F ;
+BEGIN
+  BEGIN
+    F ()
+  EXCEPT
+  | Err (m, c) :
+      s := 'got ' + m ;
+      n := c ;
+      s := c
+  END
+END m.

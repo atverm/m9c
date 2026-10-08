@@ -73,8 +73,11 @@ void DynStr_Append (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_state
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    DynStr_AppendChar (d, d_pool, (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)), err);
+    { __typeof__((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))) m9a1 = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendChar (d, d_pool, m9a1, err);
     if (err->exc) goto L_ret;
+    }
   } }
 L_ret: ;
   err->res = m9res;
@@ -234,8 +237,11 @@ void DynStr_AppendI64 (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state
       if (err->exc) goto L_ret;
       n = m9v;
     }
-    DynStr_AppendChar (d, d_pool, (*(uint32_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (uint32_t), err)), err);
+    { __typeof__((*(uint32_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (uint32_t), err))) m9a2 = (*(uint32_t *) m9_at (tmp.v, n, INT64_C(20), sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+    DynStr_AppendChar (d, d_pool, m9a2, err);
     if (err->exc) goto L_ret;
+    }
   }
 L_ret: ;
   err->res = m9res;
