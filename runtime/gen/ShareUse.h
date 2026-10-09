@@ -5,6 +5,7 @@
 #include "Io.h"
 
 typedef struct ShareUse_Box ShareUse_Box;
+typedef struct ShareUse_Store ShareUse_Store;
 
 
 #ifndef M9SL_m9_gd2_double

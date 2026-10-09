@@ -89,7 +89,9 @@ PROCEDURE GetToFile (VAR pool: POOL ; RO url: STR ; RO accept: STR ;
   (* GET `url`, following redirects, writing the body to `dest` in
      blocks -- the peak is one block and not one download.  Answers
      the FINAL status; `bytes` is what was written, which is 0 unless
-     the status is 200.  `accept` and `cookie` are sent when they are
+     the status is 200 -- and on any other status NOTHING is written:
+     `dest` is left as it was (until 2026-10-09 a 404's page landed
+     there and read as the file on the next run).  `accept` and `cookie` are sent when they are
      not empty. *)
 
 PROCEDURE GetText (VAR pool: POOL ; RO url: STR ; RO accept: STR ;
@@ -336,6 +338,42 @@ PROCEDURE RequestRetry (VAR pool: POOL ; RO method: STR ; RO url: STR ;
      503 that outlived the retries comes back as a 503, and a
      transport failure that did is raised as it would have been the
      first time.  Each try is a connection of its own. *)
+
+
+(* ---- a multipart/form-data body (cp-kernel's issue 17, 2026-10-09) ----
+
+   The iRODS HTTP API writes data objects ONLY as multipart/form-data,
+   and a caller composing the boundary, every part's
+   Content-Disposition line and the CRLFs by hand got a 400 with no
+   body for one CRLF wrong.  Parts are COPIED into the form's pool as
+   they are added, so the caller's buffers may be reused at once. *)
+
+TYPE
+  Form ;                          (* opaque; lives in a POOL *)
+
+PROCEDURE NewForm (VAR pool: POOL) : PTR Form IN pool ;
+
+PROCEDURE FormField (VAR f: PTR Form ; RO name: STR ; RO value: STR)
+  RAISES ValueRange ;
+  (* a text field, its value as UTF-8 *)
+
+PROCEDURE FormBytes (VAR f: PTR Form ; RO name: STR ; RO fileName: STR ;
+                     RO contentType: STR ; RO b: SLICE OF BYTE) ;
+  (* a file part: `fileName' in its Content-Disposition, `contentType'
+     as its Content-Type (application/octet-stream when empty) *)
+
+PROCEDURE FormBody (VAR pool: POOL ; f: PTR Form) : SLICE OF BYTE
+  RAISES ValueRange ;
+  (* the body, RFC 7578: every part opened by CRLF `--' boundary CRLF,
+     its headers, a blank line and its octets, the whole closed by
+     `--' boundary `--' CRLF.  A name or file name is written as UTF-8
+     between double quotes, a `"', CR or LF in it percent-encoded as
+     HTML forms do.  The boundary occurs in no part, so the body is
+     the same bytes for the same parts. *)
+
+PROCEDURE FormType (f: PTR Form) : STR RAISES ValueRange ;
+  (* the request's Content-Type: multipart/form-data with that
+     boundary -- one header line's value for Request's `headers' *)
 
 END Http.
 
@@ -848,7 +886,11 @@ BEGIN
       IF got = 0 AND NOT chunked THEN EXIT END ;
       held := held + got ;
       rs.bytes := rs.bytes + got ;
-      IF rq.toFile THEN
+      IF rq.toFile AND rs.status = 200 THEN
+        (* only a 200's body reaches dest: a 404's error page written
+           there read as the fixture on the next run (cp-kernel's
+           issue 7, 2026-10-09) -- any other status drains the body
+           and leaves dest as it was *)
         IF held >= IoBlock THEN
           IF opened THEN
             Io.AppendFileBytes (rq.dest, SLICE (blk, 0, held))
@@ -889,7 +931,9 @@ BEGIN
       RAISE TransportError ('the body ended before its Content-Length')
     END ;
     IF rq.toFile THEN
-      IF opened THEN
+      IF rs.status # 200 THEN
+        rs.bytes := 0
+      ELSIF opened THEN
         Io.AppendFileBytes (rq.dest, SLICE (blk, 0, held))
       ELSE
         Io.WriteFileBytes (rq.dest, SLICE (blk, 0, held))
@@ -1871,5 +1915,202 @@ BEGIN
   END ;
   RETURN r
 END UrlDecode ;
+
+
+(* ---- multipart/form-data (2026-10-09) -------------------------------- *)
+
+TYPE
+  Part = RECORD
+    name, file, ctype : STR ;
+    data : SLICE OF BYTE ;
+    isFile : BOOL ;
+  END ;
+
+  Form = RECORD
+    parts : SLICE OF Part ;
+    n : I64 ;
+  END ;
+
+  Octets = SLICE OF BYTE ;
+
+PROCEDURE NewForm (VAR pool: POOL) : PTR Form IN pool =
+VAR f : PTR Form IN pool ;
+BEGIN
+  f := NEW (pool, Form) ;
+  f.parts := NEW (pool, Part, 4) ;
+  f.n := 0 ;
+  RETURN f
+END NewForm ;
+
+(* the next part, the table grown in the form's own pool *)
+PROCEDURE NextPart (VAR f: PTR Form) : I64 =
+VAR
+  np : SLICE OF Part ;
+  i : I64 ;
+BEGIN
+  IF f.n = LEN (f.parts) THEN
+    np := NEW (f, Part, 2 * LEN (f.parts) + 4) ;
+    FOR i := 0 TO f.n - 1 DO np[i] := f.parts[i] END ;
+    f.parts := np
+  END ;
+  f.n := f.n + 1 ;
+  RETURN f.n - 1
+END NextPart ;
+
+PROCEDURE KeepStr (VAR f: PTR Form ; RO s: STR) : STR =
+VAR
+  c : STR ;
+  i : I64 ;
+BEGIN
+  c := NEW (f, CHAR, LEN (s)) ;
+  FOR i := 0 TO LEN (s) - 1 DO c[i] := s[i] END ;
+  RETURN c
+END KeepStr ;
+
+PROCEDURE KeepBytes (VAR f: PTR Form ; RO b: SLICE OF BYTE) : SLICE OF BYTE =
+VAR
+  c : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  c := NEW (f, BYTE, LEN (b)) ;
+  FOR i := 0 TO LEN (b) - 1 DO c[i] := b[i] END ;
+  RETURN c
+END KeepBytes ;
+
+PROCEDURE FormField (VAR f: PTR Form ; RO name: STR ; RO value: STR)
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  k : I64 ;
+BEGIN
+  k := NextPart (f) ;
+  f.parts[k].name := KeepStr (f, name) ;
+  f.parts[k].file := '' ;
+  f.parts[k].ctype := '' ;
+  f.parts[k].data := KeepBytes (f, DynStr.Utf8 (scratch, value)) ;
+  f.parts[k].isFile := FALSE
+END FormField ;
+
+PROCEDURE FormBytes (VAR f: PTR Form ; RO name: STR ; RO fileName: STR ;
+                     RO contentType: STR ; RO b: SLICE OF BYTE) =
+VAR k : I64 ;
+BEGIN
+  k := NextPart (f) ;
+  f.parts[k].name := KeepStr (f, name) ;
+  f.parts[k].file := KeepStr (f, fileName) ;
+  f.parts[k].ctype := KeepStr (f, contentType) ;
+  f.parts[k].data := KeepBytes (f, b) ;
+  f.parts[k].isFile := TRUE
+END FormBytes ;
+
+(* does the ASCII text `needle' occur in `hay' *)
+PROCEDURE Occurs (RO hay: SLICE OF BYTE ; RO needle: STR) : BOOL =
+VAR i, j : I64 ; same : BOOL ;
+BEGIN
+  FOR i := 0 TO LEN (hay) - LEN (needle) DO
+    same := TRUE ;
+    j := 0 ;
+    WHILE same AND j < LEN (needle) DO
+      IF I64 (hay[i + j]) # ORD (needle[j]) THEN same := FALSE END ;
+      j := j + 1
+    END ;
+    IF same THEN RETURN TRUE END
+  END ;
+  RETURN FALSE
+END Occurs ;
+
+(* the first of m9-form-boundary-0, -1, ... that no part holds *)
+PROCEDURE Boundary (f: PTR Form) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  k, i : I64 ;
+  clean : BOOL ;
+BEGIN
+  k := 0 ;
+  LOOP
+    d := DynStr.New (scratch) ;
+    DynStr.Append (d, 'm9-form-boundary-') ;
+    DynStr.AppendI64 (d, k) ;
+    clean := TRUE ;
+    FOR i := 0 TO f.n - 1 DO
+      IF Occurs (f.parts[i].data, DynStr.View (d)) THEN clean := FALSE END
+    END ;
+    IF clean THEN RETURN DynStr.View (d) END ;
+    k := k + 1
+  END
+END Boundary ;
+
+(* a name between double quotes, as HTML forms write it *)
+PROCEDURE Quoted (VAR d: PTR DynStr.DString ; RO s: STR) =
+VAR i : I64 ;
+BEGIN
+  DynStr.AppendChar (d, '"') ;
+  FOR i := 0 TO LEN (s) - 1 DO
+    IF s[i] = '"' THEN DynStr.Append (d, '%22')
+    ELSIF s[i] = 0DC THEN DynStr.Append (d, '%0D')
+    ELSIF s[i] = 0AC THEN DynStr.Append (d, '%0A')
+    ELSE DynStr.AppendChar (d, s[i])
+    END
+  END ;
+  DynStr.AppendChar (d, '"')
+END Quoted ;
+
+PROCEDURE FormType (f: PTR Form) : STR RAISES ValueRange =
+BEGIN
+  RETURN 'multipart/form-data; boundary=' + Boundary (f)
+END FormType ;
+
+PROCEDURE FormBody (VAR pool: POOL ; f: PTR Form) : SLICE OF BYTE
+  RAISES ValueRange =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  heads : SLICE OF Octets ;
+  tail : SLICE OF BYTE ;
+  out : SLICE OF BYTE ;
+  bnd : STR ;
+  i, j, o, total : I64 ;
+BEGIN
+  bnd := Boundary (f) ;
+  heads := NEW (scratch, Octets, f.n) ;
+  total := 0 ;
+  FOR i := 0 TO f.n - 1 DO
+    d := DynStr.New (scratch) ;
+    DynStr.Append (d, '--') ;
+    DynStr.Append (d, bnd) ;
+    DynStr.Append (d, '' + 0DC + 0AC) ;
+    DynStr.Append (d, 'Content-Disposition: form-data; name=') ;
+    Quoted (d, f.parts[i].name) ;
+    IF f.parts[i].isFile THEN
+      DynStr.Append (d, '; filename=') ;
+      Quoted (d, f.parts[i].file) ;
+      DynStr.Append (d, '' + 0DC + 0AC) ;
+      DynStr.Append (d, 'Content-Type: ') ;
+      IF LEN (f.parts[i].ctype) = 0 THEN
+        DynStr.Append (d, 'application/octet-stream')
+      ELSE
+        DynStr.Append (d, f.parts[i].ctype)
+      END
+    END ;
+    DynStr.Append (d, '' + 0DC + 0AC + 0DC + 0AC) ;
+    heads[i] := DynStr.Utf8 (scratch, DynStr.View (d)) ;
+    (* the part's octets and the CRLF that ends them *)
+    total := total + LEN (heads[i]) + LEN (f.parts[i].data) + 2
+  END ;
+  tail := DynStr.Utf8 (scratch, '--' + bnd + '--' + 0DC + 0AC) ;
+  total := total + LEN (tail) ;
+  out := NEW (pool, BYTE, total) ;
+  o := 0 ;
+  FOR i := 0 TO f.n - 1 DO
+    FOR j := 0 TO LEN (heads[i]) - 1 DO out[o] := heads[i][j] ; o := o + 1 END ;
+    FOR j := 0 TO LEN (f.parts[i].data) - 1 DO out[o] := f.parts[i].data[j] ; o := o + 1 END ;
+    out[o] := 13 ;
+    out[o + 1] := 10 ;
+    o := o + 2
+  END ;
+  FOR j := 0 TO LEN (tail) - 1 DO out[o] := tail[j] ; o := o + 1 END ;
+  RETURN out
+END FormBody ;
 
 END Http.

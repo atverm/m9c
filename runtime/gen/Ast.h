@@ -93,6 +93,7 @@ typedef struct Ast_Node Ast_Node;
 #define Ast_NProcType INT64_C(83)
 #define Ast_NAggregate INT64_C(84)
 #define Ast_NGridOf INT64_C(85)
+#define Ast_NLinkList INT64_C(86)
 
 #ifndef M9SL_m9_sl_Ast_Nodep
 #define M9SL_m9_sl_Ast_Nodep

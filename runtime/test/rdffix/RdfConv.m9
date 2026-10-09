@@ -16,6 +16,7 @@ IMPORT Fmt ;
 IMPORT Io ;
 IMPORT Rdf ;
 IMPORT Text ;
+IMPORT Xml ;
 
 PROCEDURE Convert (RO kind: STR ; RO dir: STR ; RO base: STR ;
                    RO out: STR ; RO file: STR) RAISES ValueRange, Io.IOError =
@@ -45,7 +46,18 @@ BEGIN
     (* and as Turtle, for rdflib to read back (item 2 of library plan 2) *)
     Io.WriteFileBytes (out + '/' + file + '.ttl', DynStr.Utf8 (p, Rdf.Turtle (g, NEW (STR, 0), NEW (STR, 0)))) ;
     (* and as JSON-LD, for rdflib's json-ld reader (item 7) *)
-    Io.WriteFileBytes (out + '/' + file + '.jsonld', DynStr.Utf8 (p, Rdf.JsonLd (g, NONE)))
+    Io.WriteFileBytes (out + '/' + file + '.jsonld', DynStr.Utf8 (p, Rdf.JsonLd (g, NONE))) ;
+    (* and as RDF/XML, for rdflib's xml reader (cp-kernel's issue 10);
+       a predicate no element can carry is said in .rdf.err, which the
+       judge accepts only for that reason *)
+    BEGIN
+      Io.WriteFileBytes (out + '/' + file + '.rdf', DynStr.Utf8 (p, Rdf.RdfXml (g)))
+    EXCEPT
+    | Rdf.NotWritable (iri) :
+        Io.WriteFileBytes (out + '/' + file + '.rdf.err', DynStr.Utf8 (p, 'no local name: ' + iri + 0AC))
+    | Xml.WriteError (m) :
+        Io.WriteFileBytes (out + '/' + file + '.rdf.err', DynStr.Utf8 (p, 'xml: ' + m + 0AC))
+    END
   EXCEPT
   | Rdf.SyntaxError (m, line, col) :
       (* a handler's binders have no type in the checker yet: copied *)

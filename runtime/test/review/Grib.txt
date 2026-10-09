@@ -2,10 +2,10 @@ REVIEW Grib -- 24 procedures with a body, 15 of them functions; 17 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              15
-  assignments                                    73
-  arguments                                     143   passed over, a type unknown: 22
+  assignments                                    75
+  arguments                                     166
   RETURN values                                  29
-  operands of a comparison or an operator        66
+  operands of a comparison or an operator        68
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -33,4 +33,4 @@ COUNTED -- how much there was to check
   RAISE statements                                4
   handlers                                        1
   NEW in the frame                                3
-  NEW in a named pool                             6
+  NEW in a named pool                             7

@@ -30,6 +30,57 @@ L_ret: ;
   return m9ret;
 }
 
+int64_t Text_Compare (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t i = 0; (void) i;
+  i = INT64_C(0);
+  for (;;) {
+    if (!(((i < (a).len) && (i < (b).len)))) break;
+    bool m9t1 = ((*(uint32_t *) m9_at (a.p, i, a.len, sizeof (uint32_t), err)) < (*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)));
+    if (err->exc) goto L_ret;
+    if (m9t1) {
+      err->res = m9res;
+      m9ret = m9_neg_i64 (INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      goto L_ret;
+    }
+    bool m9t2 = ((*(uint32_t *) m9_at (a.p, i, a.len, sizeof (uint32_t), err)) > (*(uint32_t *) m9_at (b.p, i, b.len, sizeof (uint32_t), err)));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      err->res = m9res;
+      m9ret = INT64_C(1);
+      goto L_ret;
+    }
+    { __typeof__(i) m9v = m9_add_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
+  }
+  if (((a).len < (b).len)) {
+    err->res = m9res;
+    m9ret = m9_neg_i64 (INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    goto L_ret;
+  }
+  if (((a).len > (b).len)) {
+    err->res = m9res;
+    m9ret = INT64_C(1);
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = INT64_C(0);
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 int64_t Text_Find (m9_sl_CHAR hay, m9_sl_CHAR needle, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -944,6 +995,156 @@ m9_sl_CHAR Text_ToBase64 (m9_sl_BYTE b, m9_state *err)
 L_ret: ;
   err->res = m9res;
   m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_CHAR Text_ToBase64Url (m9_sl_BYTE b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  m9_sl_CHAR s = {0}; (void) s;
+  m9_sl_CHAR t = {0}; (void) t;
+  int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
+  { __typeof__(s) m9v = Text_ToBase64 (b, err);
+    if (err->exc) goto L_ret;
+    s = m9v;
+  }
+  n = (s).len;
+  for (;;) {
+    bool m9t1 = ((n > INT64_C(0)) && ((*(uint32_t *) m9_at (s.p, m9_sub_i64 (n, INT64_C(1), err), s.len, sizeof (uint32_t), err)) == 61u));
+    if (err->exc) goto L_ret;
+    if (!(m9t1)) break;
+    { __typeof__(n) m9v = m9_sub_i64 (n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      n = m9v;
+    }
+  }
+  { __typeof__(t) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, err->res, n, err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
+  { int64_t m9t2to;
+  i = INT64_C(0);
+  m9t2to = m9_sub_i64 (n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t2to; i += 1) {
+    bool m9t3 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 43u);
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      (*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err)) = 45u;
+      if (err->exc) goto L_ret;
+    } else {
+      bool m9t4 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 47u);
+      if (err->exc) goto L_ret;
+      if (m9t4) {
+        (*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err)) = 95u;
+        if (err->exc) goto L_ret;
+    } else {
+      { __typeof__((*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
+        if (err->exc) goto L_ret;
+        (*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+    } }
+  } }
+  err->res = m9res;
+  m9ret = t;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+m9_sl_BYTE Text_FromBase64Url (m9_sl_CHAR s, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_BYTE m9ret = {0};
+  m9_sl_CHAR t = {0}; (void) t;
+  int64_t i = 0; (void) i;
+  int64_t n = 0; (void) n;
+  int64_t pad = 0; (void) pad;
+  n = (s).len;
+  bool m9t1 = ((n > INT64_C(0)) && ((*(uint32_t *) m9_at (s.p, m9_sub_i64 (n, INT64_C(1), err), s.len, sizeof (uint32_t), err)) == 61u));
+  if (err->exc) goto L_ret;
+  if (m9t1) {
+    bool m9t2 = (m9_mod_i64 (n, INT64_C(4), err) != INT64_C(0));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      m9_raise (err, &m9_exc_ValueRange);
+      goto L_ret;
+    }
+    pad = INT64_C(0);
+  } else {
+    bool m9t3 = (m9_mod_i64 (n, INT64_C(4), err) == INT64_C(1));
+    if (err->exc) goto L_ret;
+    if (m9t3) {
+      m9_raise (err, &m9_exc_ValueRange);
+      goto L_ret;
+    }
+    { __typeof__(pad) m9v = m9_mod_i64 ((m9_sub_i64 (INT64_C(4), m9_mod_i64 (n, INT64_C(4), err), err)), INT64_C(4), err);
+      if (err->exc) goto L_ret;
+      pad = m9v;
+    }
+  }
+  { __typeof__(t) m9v = M9_POOL_SL (m9_sl_CHAR, uint32_t, err->res, m9_add_i64 (n, pad, err), err);
+    if (err->exc) goto L_ret;
+    t = m9v;
+  }
+  { int64_t m9t4to;
+  i = INT64_C(0);
+  m9t4to = m9_sub_i64 (n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t4to; i += 1) {
+    bool m9t5 = (((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 43u) || ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 47u));
+    if (err->exc) goto L_ret;
+    if (m9t5) {
+      m9_raise (err, &m9_exc_ValueRange);
+      goto L_ret;
+    }
+    bool m9t6 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 45u);
+    if (err->exc) goto L_ret;
+    if (m9t6) {
+      (*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err)) = 43u;
+      if (err->exc) goto L_ret;
+    } else {
+      bool m9t7 = ((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)) == 95u);
+      if (err->exc) goto L_ret;
+      if (m9t7) {
+        (*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err)) = 47u;
+        if (err->exc) goto L_ret;
+    } else {
+      { __typeof__((*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err))) m9v = (*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err));
+        if (err->exc) goto L_ret;
+        (*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err)) = m9v;
+        if (err->exc) goto L_ret;
+      }
+    } }
+  } }
+  { int64_t m9t8to;
+  i = n;
+  m9t8to = m9_sub_i64 (m9_add_i64 (n, pad, err), INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t8to; i += 1) {
+    (*(uint32_t *) m9_at (t.p, i, t.len, sizeof (uint32_t), err)) = 61u;
+    if (err->exc) goto L_ret;
+  } }
+  err->res = m9res;
+  m9ret = Text_FromBase64 (t, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
   m9_pool_free (&m9frame);
   return m9ret;
 }

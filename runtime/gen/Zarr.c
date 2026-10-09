@@ -10,6 +10,7 @@ const m9_exc Zarr_Error = { "Error" };
 extern int64_t m9_repr_double (double, void *);
 extern double m9_strtod (const void *);
 extern void m9_put_chars (const void *, size_t);
+extern void m9_put_bytes (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);

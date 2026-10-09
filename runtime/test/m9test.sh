@@ -49,9 +49,18 @@ bad () { echo "m9test: FAIL $1"; fail=$((fail+1)); }
 # not carry: those are compiled by m9c and linked here with it named.
 # (ZipTest was such a one for a day, with zlib, until the inflate was
 # written in M9; ZarrStore decodes its chunks with blosc.)
+# the linker's word for "only what is used": GNU ld's and ld64's differ
+# (m9c supplies the same pair; ZarrStoreTest did not build on macOS
+# until 2026-10-09)
+case $(uname) in
+  Darwin) ASNEEDED=-Wl,-dead_strip_dylibs; BLOSC="-L/opt/homebrew/lib -lblosc" ;;
+  *)      ASNEEDED=-Wl,--as-needed; BLOSC="-l:libblosc.so.1" ;;
+esac
+# (m9c's LINK rule, by hand: `-l:libNAME.so.N' is GNU ld's spelling and
+# ld64 wants -lNAME from Homebrew's lib)
 foreign_of () {
   case "$1" in
-    ZarrStoreTest) echo "-l:libblosc.so.1" ;;
+    ZarrStoreTest) echo "$BLOSC" ;;
     PgTest)        echo "$RT/pgshim.c -l:libpq.so.5" ;;
   esac
 }
@@ -63,7 +72,7 @@ build_test () {
     "$M9C" --make -c -k "$1" &&
     gcc -O2 -flto --param max-inline-insns-auto=200 ./*.o \
         "$RT/m9rt.c" "$RT/tcpshim.c" "$RT/tlsshim.c" "$RT/fmtshim.c" \
-        -iquote "$RT" $extra -Wl,--as-needed -lssl -lcrypto -lm -o "$2"
+        -iquote "$RT" $extra $ASNEEDED -lssl -lcrypto -lm -o "$2"
   fi
 }
 run_test () {

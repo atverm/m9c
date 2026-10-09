@@ -270,6 +270,38 @@ class H(BaseHTTPRequestHandler):
                   b"Connection: close\r\n" % len(got), got)
         self.close_connection = True
 
+    # ---- Http.FormBody (cp-kernel's issue 17): the body read by
+    # Python's own MIME parser, every part answered as one line --
+    # field|NAME|VALUE or file|NAME|FILENAME|TYPE|LENGTH|SHA-256 --
+    # so the gate holds the builder to a reader M9 did not write
+    def _form(self):
+        import email
+        import email.policy
+        import hashlib
+        n = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(n) if n else b""
+        ct = self.headers.get("Content-Type", "")
+        msg = email.message_from_bytes(
+            b"MIME-Version: 1.0\r\nContent-Type: " + ct.encode() + b"\r\n\r\n" + body,
+            policy=email.policy.HTTP)
+        out = ["ct|" + msg.get_content_type()]
+        if msg.is_multipart():
+            for part in msg.iter_parts():
+                name = part.get_param("name", header="content-disposition")
+                fname = part.get_param("filename", header="content-disposition")
+                data = part.get_payload(decode=True) or b""
+                if fname is None:
+                    out.append("field|%s|%s" % (name, data.decode("utf-8")))
+                else:
+                    out.append("file|%s|%s|%s|%d|%s" % (
+                        name, fname, part.get_content_type(), len(data),
+                        hashlib.sha256(data).hexdigest()[:16]))
+        got = ("\n".join(out) + "\n").encode("utf-8")
+        self._raw(b"HTTP/1.1 200 OK\r\n"
+                  b"Content-Type: text/plain; charset=utf-8\r\n"
+                  b"Content-Length: %d\r\n"
+                  b"Connection: close\r\n" % len(got), got)
+
     def _any(self):
         p = self.path
         if self._is_retry():
@@ -277,6 +309,8 @@ class H(BaseHTTPRequestHandler):
             return
         if p == "/reflect":
             self._reflect()
+        elif p == "/form":
+            self._form()
         elif p == "/see-other":
             n = int(self.headers.get("Content-Length", "0"))
             if n:

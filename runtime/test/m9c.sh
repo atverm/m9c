@@ -161,6 +161,14 @@ rm -rf stale && mkdir stale && ( cd stale &&
 grep -q 'make Io' stale/first.txt || { echo "FAIL: the first --make did not make Io"; exit 1; }
 grep -q 'make Io' stale/second.txt && { echo "FAIL: an unchanged tree was made twice"; exit 1; }
 grep -q 'make Io' stale/third.txt || { echo "FAIL: a newer compiler binary did not make the objects again"; exit 1; }
+# A HEADER IS A PRODUCT TOO (2026-10-09): a build directory whose
+# generated headers were deleted but whose objects stayed regenerated
+# only the stale module and failed on a fresh one's missing DynStr.h.
+( cd stale && rm -f Io.h &&
+  M9LIBRARY="$SRC" M9RUNTIME="$RT" ./m9c-newer --make -c -v "$SRC/Hello.m9" > fourth.txt 2>&1 ) ||
+  { echo "FAIL: the missing-header build did not run"; exit 1; }
+grep -q 'make Io' stale/fourth.txt || { echo "FAIL: a missing generated header did not make its module again"; exit 1; }
+[ -f stale/Io.h ] || { echo "FAIL: the header was not written back"; exit 1; }
 
 # a C compiler that fails must fail m9c, and must not be reported as
 # success just because the M9 half went fine
@@ -448,7 +456,10 @@ gcc -std=c11 -O2 -iquote . -iquote "$RT" use.c ./libm9json.so \
 [ -f use ] || { echo "FAIL: the shared object would not link"; exit 1; }
 [ "$(./use)" = "3 true none" ] ||
   { echo "FAIL: calling M9 through the shared object gave the wrong answer"; exit 1; }
-ldd use | grep -q libm9json.so ||
+# ldd on GNU/Linux, otool on macOS (the gate stopped here on the
+# MacBook until 2026-10-09)
+if [ "$(uname)" = Darwin ]; then loaded=$(otool -L use); else loaded=$(ldd use); fi
+echo "$loaded" | grep -q libm9json.so ||
   { echo "FAIL: the program did not actually load the shared object"; exit 1; }
 
 # and the other half: with the caller's own flags after --, LTO goes
@@ -456,6 +467,11 @@ ldd use | grep -q libm9json.so ||
 # and ld refuses it.  m9c must fail and must name the flag that fixes
 # it, rather than leaving the C linker to explain our omission in its
 # own vocabulary.
+# (Not on macOS: there the C compiler emits position-independent code
+# whether asked or not, the link succeeds, and there is nothing for
+# m9c to refuse -- the gate's next Mac-only red once the ldd line was
+# passed, 2026-10-09.)
+if [ "$(uname)" != Darwin ]; then
 NOLTO=/tmp/m9c-nolto
 rm -rf "$NOLTO"; mkdir -p "$NOLTO"; cd "$NOLTO"
 "$M9C" -c DynStr -- -c -O2 -iquote "$RT" -iquote .
@@ -469,6 +485,7 @@ grep -q -- '--pic' so-bad.txt ||
 "$M9C" -c DynStr -- -c -O2 -fPIC -iquote "$RT" -iquote .
 "$M9C" --so libgood.so Json
 [ -f libgood.so ] || { echo "FAIL: --pic did not fix the shared link"; exit 1; }
+fi
 
 echo "m9c: --ar and --so build the closure as a library, and a compiler"
 echo "     linked from the archive alone emits the oracle's bytes"
@@ -527,10 +544,13 @@ END Peek.
 
 UNSAFE IMPLEMENTATION MODULE Peek ;
 PROCEDURE NonZero () : BOOL =
-VAR buf : ARRAY 4 OF BYTE ;
+VAR
+  buf : ARRAY 4 OF BYTE ;
+  p : C.MutPtr ;
 BEGIN
   buf[0] := 1 ;
-  RETURN ADR (buf) # 0
+  p := ADR (buf) ;
+  RETURN buf[0] # 0
 END NonZero ;
 END Peek.
 M9
@@ -958,7 +978,7 @@ cp "$SRC/Hello.m9" w2/
 ( cd w2 &&
   env -u M9LIBRARY -u M9RUNTIME ../inst/usr/bin/m9c --make -v -o hello Hello.m9 >r.txt 2>&1 ||
     { echo "FAIL: the relocated install could not build Hello:"; head -8 r.txt; exit 1; }
-  P=$(cd ../inst/usr && pwd)
+  P=$(cd ../inst/usr && pwd -P)      # physical: m9c prints /private/tmp on macOS
   grep -q -- "-I$P/lib/m9" r.txt ||
     { echo "FAIL: the relocated install did not search its own lib/m9:"; grep -- '-I' r.txt; exit 1; }
   grep -q -- "-iquote $P/include/m9 " r.txt ||
@@ -977,7 +997,7 @@ cp "$SRC/Hello.m9" w3/
 ( cd w3 &&
   env -u M9LIBRARY -u M9RUNTIME ../zip/bin/m9c --make -v -o hello Hello.m9 >r.txt 2>&1 ||
     { echo "FAIL: the zip layout could not build Hello:"; head -8 r.txt; exit 1; }
-  P=$(cd ../zip && pwd)
+  P=$(cd ../zip && pwd -P)
   grep -q -- "-I$P/lib/m9" r.txt ||
     { echo "FAIL: the zip layout did not search its own lib/m9:"; grep -- '-I' r.txt; exit 1; }
   grep -q -- "-iquote $P/runtime .* $P/runtime/m9rt.c " r.txt ||
@@ -988,7 +1008,7 @@ cp "$SRC/Hello.m9" w3/
     { echo "FAIL: built from the zip layout but answered wrong"; ./hello; exit 1; } ) || exit 1
 # and --help names the places it will use, not the package's
 ( cd w3 && env -u M9LIBRARY -u M9RUNTIME ../zip/bin/m9c --help >h.txt 2>&1 || exit 1
-  P=$(cd ../zip && pwd)
+  P=$(cd ../zip && pwd -P)
   grep -q "^ *$P/lib/m9\$" h.txt || { echo "FAIL: --help does not name the zip's library:"; cat h.txt; exit 1; }
   grep -q "^ *$P/runtime\$" h.txt || { echo "FAIL: --help does not name the zip's runtime:"; cat h.txt; exit 1; } ) || exit 1
 # (c) the notebook session from an installed tree.  --cell compiles

@@ -86,11 +86,14 @@ MODULE ListDiff ;
         it instead.  A library module that lands without a driver is a
         module nothing runs.
 
-    11. The tutorial's hand link lines (runtime/test/lib/tutcommon.sh,
-        the examples that need a C library) are closed the same way:
-        the objects they name cover the example's imports and each
-        other's.  When Stats gained Bits on 2026-09-27 only tutgen
-        failing to link C14Flux said so.
+    11. The tutorial has NO hand link line (runtime/test/lib/
+        tutcommon.sh): since 2026-10-09 every example links flagless,
+        the FOR "C" units naming their libraries (LINK, par 7).  Until
+        then five examples had a gcc line each, held closed under
+        imports by this rule -- when Stats gained Bits on 2026-09-27
+        only tutgen failing to link C14Flux said so -- and a line
+        that comes back is a library the compiler does not know to
+        link, which is the compiler's gap, not the gate's.
 
     12. The link lines of every OTHER gate over runtime/gen, and
         bootstrap.sh's TOOLC, are closed under direct imports as rule
@@ -1086,55 +1089,17 @@ BEGIN
     Closed (ShellList (text, 'TOOLC'), 'runtime/test/bootstrap.sh', 'TOOLC', 'has', '')
   END ;
 
-  (* 11. the tutorial's hand link lines are closed too: a line that
-     is only blanks, a NAME and `)`; its body to the first `;;`; the
-     first gcc in that body, to the end of its line *)
+  (* 11. the tutorial has no hand link line: a `gcc' in tutcommon.sh
+     outside a comment is one *)
   lines := Text.Split (Joined (Rd ('runtime/test/lib/tutcommon.sh')), 0AC) ;
   ntut := 0 ;
-  j := 0 ;
-  WHILE j < LEN (lines) DO
+  FOR j := 0 TO LEN (lines) - 1 DO
     line := Text.TrimLeft (lines[j]) ;
-    IF (LEN (line) > 1) AND (line[LEN (line) - 1] = ')') AND
-       Word (SLICE (line, 0, LEN (line) - 1)) THEN
-      name := SLICE (line, 0, LEN (line) - 1) ;
-      first := '' ;
-      k := j + 1 ;
-      LOOP
-        IF k >= LEN (lines) THEN EXIT END ;
-        line := lines[k] ;
-        at := Text.Find (line, ';;') ;
-        IF at >= 0 THEN line := SLICE (line, 0, at) END ;
-        IF (LEN (first) = 0) AND Text.Contains (line, 'gcc') THEN
-          first := SLICE (line, Text.Find (line, 'gcc'), LEN (line) - Text.Find (line, 'gcc'))
-        END ;
-        IF at >= 0 THEN EXIT END ;
-        k := k + 1
-      END ;
-      IF k < LEN (lines) THEN
-        IF LEN (first) > 0 THEN
-          ntut := ntut + 1 ;
-          objs := Objects (first) ;
-          IF NOT Io.Exists (root + '/docs/tutorial/examples/' + name + '.m9') THEN
-            Fail ('tutcommon.sh: ' + name + ' has a link line and no docs/tutorial/examples/'
-                  + name + '.m9')
-          ELSE
-            need := Fresh () ;
-            src := Text.Split (Rd ('docs/tutorial/examples/' + name + '.m9'), 0AC) ;
-            FOR i := 0 TO LEN (src) - 1 DO ImportLine (src[i], need) END ;
-            miss := Minus (need, objs) ;
-            FOR i := 0 TO miss.n - 1 DO
-              IF Has (corpus, miss.v[i]) THEN
-                Fail ('tutcommon.sh: ' + name + ' imports ' + miss.v[i]
-                      + ' and its link line has no ' + miss.v[i] + '.o')
-              END
-            END ;
-            Closed (objs, 'tutcommon.sh', name, 'links', '.o')
-          END
-        END ;
-        j := k
-      END
-    END ;
-    j := j + 1
+    IF LEN (line) > 0 AND line[0] # '#' AND Text.Contains (line, 'gcc ') THEN
+      ntut := ntut + 1 ;
+      Fail ('tutcommon.sh: a hand link line (' + Text.Trim (line)
+            + '): the FOR "C" unit names its library with LINK, and the example links flagless')
+    END
   END ;
 
   IF bad.n > 0 THEN

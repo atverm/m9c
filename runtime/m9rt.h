@@ -898,6 +898,7 @@ int  m9_exit (m9_state *err);                    /* 0, or report and 1 */
    declarations, so the M9 text is the authority and this header
    follows it. */
 void m9_put_chars (const void *buf, size_t n);   /* CHARs as UTF-8 */
+void m9_put_bytes (const void *buf, size_t n);   /* octets as they are */
 void m9_put_chars_err (const void *buf, size_t n);  /* ditto, stderr */
 int64_t m9_read_file (const void *path, void *buf, int64_t cap);
 int64_t m9_read_stdin (void *buf, int64_t cap);  /* one read(2), 0=EOF */

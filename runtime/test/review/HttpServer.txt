@@ -3,7 +3,7 @@ REVIEW HttpServer -- 93 procedures with a body, 64 of them functions; 23 heading
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              64
   assignments                                   482
-  arguments                                     895   passed over, a type unknown: 8
+  arguments                                     899
   RETURN values                                 245
   operands of a comparison or an operator       573
   CASE labels                                    52

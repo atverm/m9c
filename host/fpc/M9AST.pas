@@ -94,9 +94,13 @@ type
                                     CONST: the kids are the elements.
                                     Only a ConstDecl's kid is ever one.
                                     Ast.NAggregate, 2026-10-01 }
-    nkGridOf                      { GRID (s, n0, ..., nR): kids[0] the
+    nkGridOf,                     { GRID (s, n0, ..., nR): kids[0] the
                                     slice, the rest the extents.
                                     Ast.NGridOf, 2026-10-08 }
+    nkLinkList                    { LINK "w1", "w2" on a FOR "C" unit:
+                                    the Definition's LAST kid; kids are
+                                    nkString, a the word.
+                                    Ast.NLinkList, 2026-10-09 }
   );
 
   TNode = class
@@ -112,7 +116,49 @@ type
     procedure Add (n: TNode);          { nil is a legal child }
   end;
 
+function Utf8Next (const s: string; var i: Integer): Cardinal;
+function Utf8Len (const s: string): Integer;
+function Utf8Enc (c: Cardinal): string;
+function LabelName (lv: TNode): string;
+
 implementation
+
+{ A string literal's text is UTF-8 octets on this side (FPC reads the
+  file as bytes; m9c reads it as scalars since 2026-10-09): these two
+  read it as the scalars the M9 side holds.  Lenient: a malformed
+  sequence counts byte by byte, as the lexer never refuses one. }
+function Utf8Next (const s: string; var i: Integer): Cardinal;
+var b : Byte; n, k : Integer;
+begin
+  b := Ord (s[i]);
+  if b < $80 then begin Result := b; Inc (i); Exit; end;
+  if (b and $E0) = $C0 then begin Result := b and $1F; n := 1; end
+  else if (b and $F0) = $E0 then begin Result := b and $0F; n := 2; end
+  else if (b and $F8) = $F0 then begin Result := b and $07; n := 3; end
+  else begin Result := b; Inc (i); Exit; end;
+  if i + n > Length (s) then begin Result := b; Inc (i); Exit; end;
+  for k := 1 to n do
+    if (Ord (s[i + k]) and $C0) <> $80 then begin Result := b; Inc (i); Exit; end;
+  for k := 1 to n do Result := (Result shl 6) or (Ord (s[i + k]) and $3F);
+  Inc (i, n + 1);
+end;
+
+function Utf8Len (const s: string): Integer;
+var i : Integer;
+begin
+  Result := 0;
+  i := 1;
+  while i <= Length (s) do begin Utf8Next (s, i); Inc (Result); end;
+end;
+
+{ a scalar as its UTF-8 bytes (the inverse of Utf8Next) }
+function Utf8Enc (c: Cardinal): string;
+begin
+  if c < $80 then Result := Chr (c)
+  else if c < $800 then Result := Chr ($C0 or (c shr 6)) + Chr ($80 or (c and $3F))
+  else if c < $10000 then Result := Chr ($E0 or (c shr 12)) + Chr ($80 or ((c shr 6) and $3F)) + Chr ($80 or (c and $3F))
+  else Result := Chr ($F0 or (c shr 18)) + Chr ($80 or ((c shr 12) and $3F)) + Chr ($80 or ((c shr 6) and $3F)) + Chr ($80 or (c and $3F));
+end;
 
 constructor TNode.Create (k: TNodeKind);
 begin
@@ -123,6 +169,20 @@ procedure TNode.Add (n: TNode);
 begin
   SetLength (kids, Length (kids) + 1);
   kids[High (kids)] := n;
+end;
+
+{ the member a CASE label names: `Fs', `Kind.Fs', `Mod.Kind.Fs' --
+  the last field of a designator of field selectors only; '' else
+  (mirrors Sem/Gen.LabelName; cp-kernel's issue 13, 2026-10-09) }
+function LabelName (lv: TNode): string;
+var i : Integer;
+begin
+  Result := '';
+  if (lv = nil) or (lv.kind <> nkDesignator) then Exit;
+  if Length (lv.kids) = 0 then Exit (lv.a);
+  for i := 0 to High (lv.kids) do
+    if (lv.kids[i] = nil) or (lv.kids[i].kind <> nkSelField) then Exit;
+  Result := lv.kids[High (lv.kids)].a;
 end;
 
 end.

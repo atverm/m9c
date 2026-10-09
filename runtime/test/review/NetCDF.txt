@@ -3,7 +3,7 @@ REVIEW NetCDF -- 63 procedures with a body, 34 of them functions; 55 headings in
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              34
   assignments                                   152
-  arguments                                     382   passed over, a type unknown: 106
+  arguments                                     488
   RETURN values                                  35
   operands of a comparison or an operator        68
   CASE labels                                     0

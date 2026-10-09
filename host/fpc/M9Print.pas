@@ -115,7 +115,11 @@ begin
     nkIs        : begin
                     Result := E (n.kids[0]) + ' IS ';
                     if n.kids[1].kind = nkIsSome then
-                      Result := Result + 'SOME ' + n.kids[1].a
+                    begin
+                      if n.kids[1].f1 then Result := Result + 'NONE'
+                      else if n.kids[1].a = '' then Result := Result + 'SOME'
+                      else Result := Result + 'SOME ' + n.kids[1].a;
+                    end
                     else
                       Result := Result + QualStr (n.kids[1]);
                   end;
@@ -575,7 +579,7 @@ end;
 
 function UnitLines (u: TNode): string;
 var
-  i : Integer;
+  i, j : Integer;
   hdr : string;
   hasBody : Boolean;
 begin
@@ -587,7 +591,19 @@ begin
         if u.f2 then hdr := hdr + 'STATEFUL ';
         hdr := hdr + 'DEFINITION MODULE ';
         if u.b <> '' then hdr := hdr + 'FOR ' + QuoteStr (u.b) + ' ';
-        hdr := hdr + u.a + ' ;';
+        hdr := hdr + u.a;
+        { the LINK words, kept as the unit's last kid }
+        for i := 0 to High (u.kids) do
+          if u.kids[i].kind = nkLinkList then
+          begin
+            hdr := hdr + ' LINK ';
+            for j := 0 to High (u.kids[i].kids) do
+            begin
+              if j > 0 then hdr := hdr + ', ';
+              hdr := hdr + QuoteStr (u.kids[i].kids[j].a);
+            end;
+          end;
+        hdr := hdr + ' ;';
       end;
     nkImplementation :
       begin
@@ -615,6 +631,7 @@ begin
           Result := Result + BlockLines (u.kids[i].kids[0], 0, False);
           hasBody := True;
         end;
+      nkLinkList : ;                  { printed in the heading }
     else
       Result := Result + DeclLines (u.kids[i], 0) + LF;
     end;

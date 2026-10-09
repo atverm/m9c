@@ -292,6 +292,15 @@ BEGIN
 END Zlibs ;
 
 (* Crc32 and Adler32 against zlib's, over bytes made here *)
+PROCEDURE BadCrcRefused () : BOOL =
+VAR n : I64 ;
+BEGIN
+  n := Zip.Crc32Update (4294967296, NEW (BYTE, 0)) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+END BadCrcRefused ;
+
 PROCEDURE Sums () RAISES ValueRange =
 VAR
   length, crc, adler, ff : SLICE OF I64 ;
@@ -321,7 +330,15 @@ BEGIN
   Check.EqI64 (t, 'Adler32 is zlib.adler32 at every length', okAdler,
                LEN (length)) ;
   Check.EqI64 (t, 'Adler32 of nothing but ones, where its sums are largest',
-               okFf, LEN (length))
+               okFf, LEN (length)) ;
+  (* the check value of the CRC-32 every table of it prints *)
+  b := DynStr.Bytes (pool, '123456789', FALSE) ;
+  Check.EqI64 (t, 'Crc32 of 123456789 is cbf43926', Zip.Crc32 (b), 3421780262) ;
+  Check.EqI64 (t, 'Crc32Update from 0 is Crc32', Zip.Crc32Update (0, b), 3421780262) ;
+  Check.EqI64 (t, 'Crc32Update carried over two pieces, zlib.crc32 (b, crc)',
+               Zip.Crc32Update (Zip.Crc32Update (0, SLICE (b, 0, 5)), SLICE (b, 5, 4)), 3421780262) ;
+  Check.EqI64 (t, 'Crc32Update over nothing changes nothing', Zip.Crc32Update (3421780262, NEW (BYTE, 0)), 3421780262) ;
+  Check.That (t, 'Crc32Update refuses a value no CRC-32 has', BadCrcRefused ())
 END Sums ;
 
 (* ---- the decoder as a stream: a member of an archive ----
@@ -377,16 +394,36 @@ PROCEDURE Members () RAISES Zip.Error, Io.IOError, ValueRange =
 VAR
   a : PTR Zip.Archive ;
   names : SLICE OF STR ;
-  length, check : SLICE OF I64 ;
+  length, check, crc, got : SLICE OF I64 ;
   b : SLICE OF BYTE ;
-  i, j, right : I64 ;
+  i, j, right, run, k, piece : I64 ;
 BEGIN
   names := Check.GoldStrs (t, gold, 'zip.names') ;
   length := Check.GoldI64s (t, gold, 'zip.length') ;
   check := Check.GoldI64s (t, gold, 'zip.check') ;
+  crc := Check.GoldI64s (t, gold, 'zip.crc') ;
   a := Zip.Open (pool, ManyZip) ;
   Check.EqI64 (t, 'many.zip: as many members as the golden file names',
                Zip.Count (a), LEN (names)) ;
+  (* CrcAt: the directory's CRC, zipfile's ZipInfo.CRC, read and not
+     computed; and Crc32Update over each member in pieces of 997
+     bytes, a length that divides nothing, gives the same number *)
+  got := NEW (pool, I64, LEN (names)) ;
+  FOR i := 0 TO LEN (names) - 1 DO got[i] := Zip.CrcAt (a, Zip.Find (a, names[i])) END ;
+  Check.EqI64s (t, 'CrcAt is zipfile ZipInfo.CRC for every member', got, crc) ;
+  FOR i := 0 TO LEN (names) - 1 DO
+    b := Whole (a, Zip.Find (a, names[i]), 4096, 0) ;
+    run := 0 ;
+    k := 0 ;
+    WHILE k < LEN (b) DO
+      piece := 997 ;
+      IF k + piece > LEN (b) THEN piece := LEN (b) - k END ;
+      run := Zip.Crc32Update (run, SLICE (b, k, piece)) ;
+      k := k + piece
+    END ;
+    got[i] := run
+  END ;
+  Check.EqI64s (t, 'Crc32Update over 997-byte pieces is the whole member CRC', got, crc) ;
   FOR j := 0 TO LEN (Buffers) - 1 DO
     right := 0 ;
     FOR i := 0 TO LEN (names) - 1 DO

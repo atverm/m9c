@@ -6,13 +6,14 @@
 #include <string.h>
 #include "Parse.h"
 #include "Sem.h"
+#include "utf8io.h"
 
 static m9_pool pool = {0};
 
 static m9_sl_CHAR read_unit (const char *path)
 {
   FILE *f;
-  long len, i;
+  long len;
   char *bytes;
   uint32_t *chars;
 
@@ -23,7 +24,7 @@ static m9_sl_CHAR read_unit (const char *path)
   if (fread (bytes, 1, (size_t) len, f) != (size_t) len) exit (2);
   fclose (f);
   chars = malloc (sizeof (uint32_t) * (size_t) len);
-  for (i = 0; i < len; i++) chars[i] = (uint32_t) (unsigned char) bytes[i];
+  len = m9t_decode ((const unsigned char *) bytes, len, chars);   /* UTF-8, as m9c reads it */
   free (bytes);
   return (m9_sl_CHAR){ chars, len };
 }
@@ -45,7 +46,7 @@ static Ast_Node *parse_unit (const char *path, m9_state *err)
 static void put (m9_sl_CHAR s)
 {
   int64_t i;
-  for (i = 0; i < s.len; i++) putchar ((int) (s.p[i] & 0xff));
+  for (i = 0; i < s.len; i++) m9t_putc (s.p[i]);
   putchar ('\n');
 }
 

@@ -428,7 +428,7 @@ CONST
 END NetCDF.
 
 
-UNSAFE DEFINITION MODULE FOR "C" cnc ;
+UNSAFE DEFINITION MODULE FOR "C" cnc LINK "netcdf" ;
 
 (* libnetcdf, verbatim.  Every one is [SERIAL]: netCDF-4 goes through
    HDF5's global lock and the classic path keeps per-file state in

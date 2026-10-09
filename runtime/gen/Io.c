@@ -5,6 +5,7 @@
 const m9_exc Io_IOError = { "IOError" };
 
 extern void m9_put_chars (const void *, size_t);
+extern void m9_put_bytes (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -28,6 +29,8 @@ extern int m9_append_file (const void *, const void *, size_t);
 static m9_pool m9mframe = {0};
 
 static m9_mon m9_gate_cio;
+
+static m9_sl_BYTE Io_PathZ (m9_pool *scratch, m9_sl_CHAR path, m9_state *err);
 
 
 void Io_WriteLine (m9_sl_CHAR s, m9_state *err)
@@ -94,6 +97,19 @@ L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
+  return;
+}
+
+void Io_WriteBytes (m9_sl_BYTE b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_put_bytes (((void *)(b).p), ((size_t)((b).len)));
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
   return;
 }
 
@@ -236,7 +252,7 @@ int64_t Io_Run (m9_sl_CHAR cmd, m9_state *err)
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
-  { __typeof__(b) m9v = DynStr_Bytes (&(scratch), cmd, true, err);
+  { __typeof__(b) m9v = Io_PathZ (&(scratch), cmd, err);
     if (err->exc) goto L_ret;
     b = m9v;
   }
@@ -261,7 +277,7 @@ m9_sl_CHAR Io_Env (m9_pool *pool, m9_sl_CHAR name, m9_state *err)
   m9_sl_BYTE nb = {0}; (void) nb;
   m9_sl_BYTE buf = {0}; (void) buf;
   int64_t n = 0; (void) n;
-  { __typeof__(nb) m9v = DynStr_Bytes (&(scratch), name, true, err);
+  { __typeof__(nb) m9v = Io_PathZ (&(scratch), name, err);
     if (err->exc) goto L_ret;
     nb = m9v;
   }
@@ -310,7 +326,7 @@ bool Io_Exists (m9_sl_CHAR path, m9_state *err)
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
-  { __typeof__(b) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(b) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     b = m9v;
   }
@@ -333,7 +349,7 @@ int64_t Io_ModTime (m9_sl_CHAR path, m9_state *err)
   int64_t m9ret = 0;
   m9_pool scratch = {0}; (void) scratch;
   err->res = m9res;
-  m9ret = (int64_t)(m9_mtime (((void *)(DynStr_Bytes (&(scratch), path, true, err)).p)));
+  m9ret = (int64_t)(m9_mtime (((void *)(Io_PathZ (&(scratch), path, err)).p)));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -352,7 +368,7 @@ bool Io_Remove (m9_sl_CHAR path, m9_state *err)
   bool m9ret = false;
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
-  { __typeof__(b) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(b) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     b = m9v;
   }
@@ -382,7 +398,7 @@ m9_sl_m9_sl_CHAR Io_ListDir (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   int64_t start = 0; (void) start;
   int64_t count = 0; (void) count;
   int64_t k = 0; (void) k;
-  { __typeof__(need) m9v = (int64_t)(m9_listdir (((void *)(DynStr_Bytes (&(scratch), path, true, err)).p), ((void *)(buf).p), ((int64_t)(INT64_C(0)))));
+  { __typeof__(need) m9v = (int64_t)(m9_listdir (((void *)(Io_PathZ (&(scratch), path, err)).p), ((void *)(buf).p), ((int64_t)(INT64_C(0)))));
     if (err->exc) goto L_ret;
     need = m9v;
   }
@@ -404,7 +420,7 @@ m9_sl_m9_sl_CHAR Io_ListDir (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
     if (err->exc) goto L_ret;
     buf = m9v;
   }
-  { __typeof__(got) m9v = (int64_t)(m9_listdir (((void *)(DynStr_Bytes (&(scratch), path, true, err)).p), ((void *)(buf).p), ((int64_t)(need))));
+  { __typeof__(got) m9v = (int64_t)(m9_listdir (((void *)(Io_PathZ (&(scratch), path, err)).p), ((void *)(buf).p), ((int64_t)(need))));
     if (err->exc) goto L_ret;
     got = m9v;
   }
@@ -517,7 +533,7 @@ m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   m9_sl_BYTE pb = {0}; (void) pb;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
@@ -545,7 +561,7 @@ m9_sl_CHAR Io_ReadFile (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   err->res = m9res;
   { __typeof__(({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a6 = ({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
     if (err->exc) goto L_ret;
-  m9ret = DynStr_Chars (pool, m9a6, err);
+  m9ret = DynStr_FromUtf8 (pool, m9a6, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -569,7 +585,7 @@ m9_sl_BYTE Io_ReadFileBytes (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   m9_sl_BYTE pb = {0}; (void) pb;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
@@ -617,11 +633,11 @@ void Io_WriteFile (m9_sl_CHAR path, m9_sl_CHAR content, m9_state *err)
   m9_sl_BYTE pb = {0}; (void) pb;
   m9_sl_BYTE cb = {0}; (void) cb;
   int rc = {0}; (void) rc;
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
-  { __typeof__(cb) m9v = DynStr_Bytes (&(scratch), content, false, err);
+  { __typeof__(cb) m9v = DynStr_Utf8 (&(scratch), content, err);
     if (err->exc) goto L_ret;
     cb = m9v;
   }
@@ -630,6 +646,25 @@ void Io_WriteFile (m9_sl_CHAR path, m9_sl_CHAR content, m9_state *err)
     { __typeof__(path) m9t1 = path; err->s[0].p = m9t1.p; err->s[0].len = m9t1.len; m9_pay_keep (err, 0, sizeof (*m9t1.p)); }
     m9_raise (err, &Io_IOError);
     goto L_ret;
+  }
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return;
+}
+
+void Io_AppendFile (m9_sl_CHAR path, m9_sl_CHAR content, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_pool scratch = {0}; (void) scratch;
+  { __typeof__(DynStr_Utf8 (&(scratch), content, err)) m9a7 = DynStr_Utf8 (&(scratch), content, err);
+    if (err->exc) goto L_ret;
+  Io_AppendFileBytes (path, m9a7, err);
+  if (err->exc) goto L_ret;
   }
 L_ret: ;
   err->res = m9res;
@@ -699,7 +734,7 @@ int64_t Io_FileSize (m9_sl_CHAR path, m9_state *err)
   m9_sl_BYTE pb = {0}; (void) pb;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
@@ -730,7 +765,7 @@ m9_sl_BYTE Io_ReadFileHead (m9_pool *pool, m9_sl_CHAR path, int64_t cap, m9_stat
   m9_sl_BYTE pb = {0}; (void) pb;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
@@ -779,7 +814,7 @@ m9_sl_BYTE Io_ReadFileAt (m9_pool *pool, m9_sl_CHAR path, int64_t off, int64_t c
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
@@ -814,7 +849,7 @@ void Io_MkDir (m9_sl_CHAR path, m9_state *err)
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
   int rc = {0}; (void) rc;
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
@@ -831,6 +866,40 @@ L_ret: ;
   return;
 }
 
+void Io_MkDirs (m9_sl_CHAR path, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t i = 0; (void) i;
+  { int64_t m9t1to;
+  i = INT64_C(1);
+  m9t1to = m9_sub_i64 ((path).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    bool m9t2 = (((*(uint32_t *) m9_at (path.p, i, path.len, sizeof (uint32_t), err)) == 47u) || ((*(uint32_t *) m9_at (path.p, i, path.len, sizeof (uint32_t), err)) == 92u));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      bool m9t3 = (((*(uint32_t *) m9_at (path.p, m9_sub_i64 (i, INT64_C(1), err), path.len, sizeof (uint32_t), err)) != 47u) && ((*(uint32_t *) m9_at (path.p, m9_sub_i64 (i, INT64_C(1), err), path.len, sizeof (uint32_t), err)) != 92u));
+      if (err->exc) goto L_ret;
+      if (m9t3) {
+        { __typeof__(({ __typeof__(path) m9t4 = path; int64_t m9t4a = INT64_C(0), m9t4n = i; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a8 = ({ __typeof__(path) m9t4 = path; int64_t m9t4a = INT64_C(0), m9t4n = i; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+          if (err->exc) goto L_ret;
+        Io_MkDir (m9a8, err);
+        if (err->exc) goto L_ret;
+        }
+      }
+    }
+  } }
+  Io_MkDir (path, err);
+  if (err->exc) goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return;
+}
+
 void Io_Rename (m9_sl_CHAR from, m9_sl_CHAR to, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -841,11 +910,11 @@ void Io_Rename (m9_sl_CHAR from, m9_sl_CHAR to, m9_state *err)
   m9_sl_BYTE fb = {0}; (void) fb;
   m9_sl_BYTE tb = {0}; (void) tb;
   int rc = {0}; (void) rc;
-  { __typeof__(fb) m9v = DynStr_Bytes (&(scratch), from, true, err);
+  { __typeof__(fb) m9v = Io_PathZ (&(scratch), from, err);
     if (err->exc) goto L_ret;
     fb = m9v;
   }
-  { __typeof__(tb) m9v = DynStr_Bytes (&(scratch), to, true, err);
+  { __typeof__(tb) m9v = Io_PathZ (&(scratch), to, err);
     if (err->exc) goto L_ret;
     tb = m9v;
   }
@@ -871,7 +940,7 @@ void Io_WriteFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_state *err)
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
   int rc = {0}; (void) rc;
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
@@ -897,7 +966,7 @@ void Io_AppendFileBytes (m9_sl_CHAR path, m9_sl_BYTE content, m9_state *err)
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
   int rc = {0}; (void) rc;
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = Io_PathZ (&(scratch), path, err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
@@ -912,6 +981,45 @@ L_ret: ;
   m9_pool_free (&m9frame);
   m9_pool_free (&scratch);
   return;
+}
+
+static m9_sl_BYTE Io_PathZ (m9_pool *scratch, m9_sl_CHAR path, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  m9_sl_BYTE m9ret = {0};
+  m9_sl_BYTE u = {0}; (void) u;
+  m9_sl_BYTE z = {0}; (void) z;
+  int64_t i = 0; (void) i;
+  { __typeof__(u) m9v = DynStr_Utf8 (scratch, path, err);
+    if (err->exc) goto L_ret;
+    u = m9v;
+  }
+  { __typeof__(z) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &((*scratch)), m9_add_i64 ((u).len, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    z = m9v;
+  }
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((u).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { __typeof__((*(uint8_t *) m9_at (z.p, i, z.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (u.p, i, u.len, sizeof (uint8_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at (z.p, i, z.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+  } }
+  err->res = m9res;
+  m9ret = z;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret.p);
+  m9_pool_free (&m9frame);
+  return m9ret;
 }
 
 void Io_m9init (m9_state *err)

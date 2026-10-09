@@ -176,7 +176,7 @@ PROCEDURE MultiSupport (on: BOOL) ;
 END Grib.
 
 
-UNSAFE DEFINITION MODULE FOR "C" cgrib ;
+UNSAFE DEFINITION MODULE FOR "C" cgrib LINK "eccodes" ;
 
 (* libeccodes, verbatim, plus the two libc calls its file API
    obliges: ecCodes takes a FILE *, so a caller must fopen.
@@ -314,11 +314,16 @@ PROCEDURE Open (VAR pool: POOL ; RO KEPT path: STR) : PTR File IN pool
   RAISES Error, ValueRange =
 VAR
   scratch : POOL ;
-  pb, mb : SLICE OF BYTE ;
+  pb, mb, ub : SLICE OF BYTE ;
+  i : I64 ;
   f : PTR File IN pool ;
   fp : C.MutPtr ;
 BEGIN
-  pb := DynStr.Bytes (scratch, path, TRUE) ;
+  (* the path as UTF-8, zero-terminated (pool storage is zero), as Io
+     passes a path since 2026-10-09 *)
+  pb := NEW (scratch, BYTE, LEN (DynStr.Utf8 (scratch, path)) + 1) ;
+  ub := DynStr.Utf8 (scratch, path) ;
+  FOR i := 0 TO LEN (ub) - 1 DO pb[i] := ub[i] END ;
   mb := DynStr.Bytes (scratch, 'rb', TRUE) ;
   fp := COpen (ADR (pb), ADR (mb)) ;
   IF C.SSizeT (fp) = C.SSizeT (Null ()) THEN

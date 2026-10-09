@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Lex.h"
+#include "utf8io.h"
 
 int main (int argc, char **argv)
 {
@@ -28,7 +29,7 @@ int main (int argc, char **argv)
   if (fread (bytes, 1, (size_t) len, f) != (size_t) len) return 2;
   fclose (f);
   chars = malloc (sizeof (uint32_t) * (size_t) len);
-  for (i = 0; i < len; i++) chars[i] = (uint32_t) (unsigned char) bytes[i];
+  len = m9t_decode ((const unsigned char *) bytes, len, chars);   /* UTF-8, as m9c reads it */
 
   Lex_Collect (true, &err);
   Lex_Init (&lx, &pool, (m9_sl_CHAR){ chars, len }, &err);
@@ -51,7 +52,7 @@ int main (int argc, char **argv)
       if (ch == 10) { putchar ('\\'); putchar ('n'); }
       else if (ch == 13) { putchar ('\\'); putchar ('r'); }
       else if (ch == '\\') { putchar ('\\'); putchar ('\\'); }
-      else putchar ((int) (ch & 0xff));
+      else m9t_putc (ch);
     }
     putchar ('\n');
   }

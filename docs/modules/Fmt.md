@@ -54,6 +54,14 @@ caller's arena.  These took a pool until 2026-09-03, and every
 caller in the corpus passed one only to throw the result at
 Append or WriteLine.
 
+### Hex (v: I64 ; width: I64) : STR
+
+v in lower-case hexadecimal, zero-padded to `width' digits --
+Python's '%0*x' % (width, v) for v >= 0.  A negative v is read as
+the 64-bit pattern it is (its two's complement, sixteen digits),
+as a CRC or a hash word held in an I64 means.  Never truncated:
+a wider value overflows the field (cp-kernel's issue 16).
+
 ### I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR
 
 right-aligned in width; zero selects '0' over ' ' as the fill.
@@ -135,3 +143,8 @@ the exact pair: 16 hex digits, low byte first, round-trip total
 decimal, with optional sign, fraction and exponent.  Rejects
 anything else, because a command line or a data file that says
 it holds a number and does not is the boundary this catches.
+THE INTEGER READER IS Io.ParseI64 (RAISES ValueRange, Overflow):
+an optional minus and decimal digits, every I64 down to the
+smallest.  It lives in Io because Fmt imports nothing and Io is
+where the command line is read; a reader looking here is sent
+there (cp-kernel's issue 6, 2026-10-09).

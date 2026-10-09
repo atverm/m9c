@@ -185,6 +185,42 @@ BEGIN
   END
 END Cells ;
 
+PROCEDURE ArrayParam () RAISES ValueRange =
+  (* Pg.ArrayLiteral, read back by the SERVER element for element:
+     a quote, a backslash, a comma, braces, the empty string and the
+     word NULL, which quoted stays a string *)
+VAR
+  p : POOL ;
+  r : PTR Pg.Result IN p ;
+  items, one : SLICE OF STR ;
+BEGIN
+  items := NEW (STR, 5) ;
+  one := NEW (STR, 1) ;
+  items[0] := 'plain' ;
+  items[1] := 'b"c' + 5CC + 'd' ;
+  items[2] := 'e,f}{' ;
+  items[3] := '' ;
+  items[4] := 'NULL' ;
+  Check.EqStr (t, 'ArrayLiteral: the text', Pg.ArrayLiteral (items),
+               '{"plain","b' + 5CC + '"c' + 5CC + 5CC + 'd","e,f}{","","NULL"}') ;
+  Check.EqStr (t, 'ArrayLiteral: nothing', Pg.ArrayLiteral (NEW (STR, 0)), '{}') ;
+  one[0] := Pg.ArrayLiteral (items) ;
+  BEGIN
+    r := Pg.Query (p, c, 'SELECT array_length ($1::text[], 1), ($1::text[])[2], ($1::text[])[3], ($1::text[])[4], ($1::text[])[5] IS NULL',
+                   one) ;
+    Check.EqStr (t, 'the server counts five elements', Pg.Cell (r, 0, 0), '5') ;
+    Check.EqStr (t, 'a quote and a backslash come back', Pg.Cell (r, 0, 1), items[1]) ;
+    Check.EqStr (t, 'a comma and braces come back', Pg.Cell (r, 0, 2), items[2]) ;
+    Check.EqStr (t, 'the empty string is a string', Pg.Cell (r, 0, 3), '') ;
+    Check.EqStr (t, 'the word NULL quoted is a string, not NULL', Pg.Cell (r, 0, 4), 'f')
+  EXCEPT
+  | Pg.PgError (m) :
+      Check.That (t, 'ArrayLiteral read by the server: ' + m, FALSE)
+  | IndexError :
+      Check.That (t, 'ArrayLiteral read by the server: a cell', FALSE)
+  END
+END ArrayParam ;
+
 PROCEDURE Statements () RAISES ValueRange =
 VAR
   p : POOL ;
@@ -342,6 +378,7 @@ BEGIN
       Check.RaisesValueRange (t, 'an int8 read as a boolean', NotABool) ;
       Check.RaisesValueRange (t, 'a timestamp without a zone', TimestampWithoutZone) ;
       Statements () ;
+      ArrayParam () ;
       Errors () ;
       Zones () ;
       Pg.Close (c)

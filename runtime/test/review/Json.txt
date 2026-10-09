@@ -3,7 +3,7 @@ REVIEW Json -- 67 procedures with a body, 53 of them functions; 42 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              53
   assignments                                   249
-  arguments                                     412   passed over, a type unknown: 2
+  arguments                                     414
   RETURN values                                  78
   operands of a comparison or an operator       185
   CASE labels                                     3

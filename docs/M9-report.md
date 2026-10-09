@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.18.0, 2026-10-08
+## Report — revision 0.19.0, 2026-10-09
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -33,9 +33,9 @@ to reduce, so the list is meant to shrink.
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
 | **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
 | **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); flow-sensitive `OPT`; a loop-carried use after move, an owned field, a pool value stored beyond a direct `RETURN` or in a module variable (§4) |
-| **Accepted by the checker, refused by the generator** — so `m9c --check` and the editor do not show them | `OPT T` for a non-pointer `T`; `CASE` over a call; `CONST` over an expression; `EXCEPT` and `FINALLY` on one block; `ELSIF` after `IS SOME`; `EXIT` inside a `CASE` arm or across `FINALLY`; a scalar `CASE` without `ELSE` (semantics undecided); a string literal beyond ASCII |
+| **Accepted by the checker, refused by the generator** — so `m9c --check` and the editor do not show them | `OPT T` for a non-pointer `T`; `CASE` over a call; `CONST` over an expression; `EXCEPT` and `FINALLY` on one block; `ELSIF` after `IS SOME`; `EXIT` inside a `CASE` arm or across `FINALLY`; a scalar `CASE` without `ELSE` (semantics undecided) |
 | **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` (§6); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.18.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
+| **Release** | 0.19.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
 ### Contents
 
@@ -132,7 +132,11 @@ lex); char literals as hex digits with a `C` suffix — `0AC` is U+000A
 — beginning with a digit (`0D800C`, never `D800C`) and naming a
 Unicode scalar value, so surrogates and values past `10FFFF` are lex
 errors; strings in `'` or `"` with no escapes — a string cannot
-contain its own delimiter, use the other quote. A letter may never
+contain its own delimiter, use the other quote. A source file is
+UTF-8 and a literal holds Unicode scalars: `'déjà'` is four CHARs,
+and a one-character literal of any scalar fits a `CHAR` (since
+2026-10-09; before that a source arrived as octets and the generator
+refused a literal beyond ASCII). A letter may never
 immediately follow a numeric literal. *(Observed failure: the corpus
 wrote `0AC` before the lexer could name it, and the lexer silently
 produced IntLit 0 then Ident AC — zero errors, wrong program. The
@@ -193,7 +197,13 @@ the two checkers had disagreed since the second was written and no
 probe had asked. Both also accepted a loop variable nobody declared,
 and one declared `F64`. Found by `m9c --review`: the page for a
 module written that day listed a dozen sites "passed over, a type
-unknown" with nothing in common but `i`.
+unknown" with nothing in common but `i`.)* **And a `FOR` inside a
+`FOR` over the same control variable is refused** (since 2026-10-09):
+the inner loop assigns the outer count, which Pascal forbids by rule
+and which here is the one assignment the language itself makes.
+*(Observed in a user's program built with 0.18.0: it compiled, ran,
+and the outer loop ran once — the one logic error of that session no
+compiler saw.
 `museum/implicit-through-loop-variable.m9`.)*
 **`NaN` is predeclared**: the quiet NaN, an identifier and not a
 keyword (the `STR` precedent), typed as a real literal so it is an F64
@@ -755,6 +765,9 @@ width, and it is the owner's call, recorded here as such.
 
 There is no nil pointer. `OPT PTR T` expresses absence, and the
 compiler refuses dereference outside an `IF x IS SOME p THEN` guard.
+`x IS SOME` and `x IS NONE` with no binder are `BOOL` expressions
+(since 2026-10-09: a flag was an IF with a binder nobody used); the
+payload is still reached only through a binder, in a condition.
 Slices carry their length; indexing is checked; there is no pointer
 arithmetic outside UNSAFE modules (§7). `SLICE (s, start, len)` is
 the sub-slice, bounds-checked like indexing; start and length, never
@@ -1400,8 +1413,13 @@ I64 field and `s` a STR is refused as any assignment is, and `'x' +
 m` composes.  *(Since 2026-10-08.  Until then a handler's binder had
 no type in the checker: `s := code` with an I64 payload was accepted
 by checker and generator alike, and library code copied every binder
-into a declared local before using it.)*  A predeclared exception has
-no fields and binds nothing.
+into a declared local before using it.)*  Of the predeclared
+exceptions, `IndexError` carries `(index, length : I64)` — the index
+and the length as the check saw them, which for `VIEW`'s dropped axis
+is the extent and the axis, and for `GRID (s, ...)` the extents'
+product and the slice's length — so `| IndexError (i, n) :` binds
+two typed I64s (since 2026-10-09); `Overflow`, `ValueRange` and
+`OutOfMemory` carry nothing and bind nothing.
 Status-code style remains available and encouraged
 for *expected* conditions (`OPT`, BOOL returns) — RAISES is for
 contract violations and environmental failure, preserving Wirth's
@@ -1542,7 +1560,20 @@ END cblosc.
    checked: the checker currently treats `C.*` conversions as
    raise-free, so a narrowing one does not appear in a `RAISES` set
    that ought to carry `ValueRange`.*
-2. Every foreign procedure declares `[SERIAL]` or `[REENTRANT]`.
+2. A foreign unit NAMES WHAT IT LINKS: `UNSAFE DEFINITION MODULE
+   FOR "C" cnc LINK "netcdf" ;` — after the unit's name, `LINK` and
+   one or more strings: a library name (`-lNAME` on the line), a word
+   beginning with `-` as it is (`"-l:libblosc.so.1"`, GNU ld's
+   spelling for a library without its development package; `-lblosc`
+   where ld64 or mingw's ld links), or a shim source beside the
+   runtime (`"pgshim.c"`).  `m9c` puts the closure's words on every
+   link it supplies — the flagless `-o`, `--so`, `--run`, `--cell` —
+   so a program that imports NetCDF, Grib, ZarrStore or Pg links
+   with no flag, and a line taken over after `--` names them itself.
+   (2026-10-09; until then each was a hand link line, and `--run`
+   could not run a program that called blosc or netCDF.)  `LINK` on
+   a unit that is not `FOR "C"` is a parse error.
+3. Every foreign procedure declares `[SERIAL]` or `[REENTRANT]`.
    **`[SERIAL]` is serialised by the compiler, not forbidden by it:**
    the generator emits one monitor per FOR-C unit — the state such
    procedures share is the *library's*, not the procedure's — and
@@ -1559,7 +1590,7 @@ END cblosc.
    Uncontended the lock costs about twenty nanoseconds against a
    foreign call costing microseconds, and it is not measurable in a
    real program's GRIB decoding: one field, 2.05 s before and after.*
-3. UNSAFE modules are the only place pointer arithmetic, unchecked
+4. UNSAFE modules are the only place pointer arithmetic, unchecked
    casts, and NIL exist. They are grep-able, listable, and small —
    the audit surface is enumerated. (Modula-3's best idea, kept
    whole.)
@@ -1708,8 +1739,8 @@ features:
 Seventy-four productions; the ceiling is one hundred, and past it a
 feature dies.  (The seventy-third is `Aggregate`, 2026-10-01: a
 bracketed list is the value of a `CONST` and of nothing else, so `[`
-in an expression is still only a subscript.)  Sixty-one keywords: the fifty-eight the language was
-designed with, plus RO, GRID and KEPT, each appended to the table
+in an expression is still only a subscript.)  Sixty-two keywords: the fifty-eight the language was
+designed with, plus RO, GRID, KEPT and LINK, each appended to the table
 rather than inserted into it, because a token code that moves is a
 code no one can rely on. Terminals are quoted; ident, number (IntLit, RealLit,
 CharLit), and string are lexis (§2). Comments are lexis too, and
@@ -1722,7 +1753,7 @@ Unit        = Definition | Implementation | Program .
 Program     = "MODULE" ident ";" { Import } { Declaration }
               [ "BEGIN" StmtSeq ] "END" ident "." .
 Definition  = ["UNSAFE"] ["STATEFUL"] "DEFINITION" "MODULE"
-              ["FOR" string] ident ";"
+              ["FOR" string] ident ["LINK" string { "," string }] ";"
               { Import } { Declaration } "END" ident "." .
 Implementation = ["UNSAFE"] "IMPLEMENTATION" "MODULE" ident ";"
               { Import } { Declaration }
@@ -1797,7 +1828,7 @@ SignalStmt  = "SIGNAL" "(" Expr ")" .
 TransferStmt = "TRANSFER" "(" Expr "," Expr ")" .
 
 Expr        = Disj [ "IS" IsTarget ] .
-IsTarget    = "SOME" ident | Qualident .
+IsTarget    = "SOME" [ident] | "NONE" | Qualident .
 Disj        = Conj { "OR" Conj } .
 Conj        = Rel { "AND" Rel } .
 Rel         = SimpleExpr [ Relation SimpleExpr ] .

@@ -3,7 +3,7 @@ REVIEW Csv -- 36 procedures with a body, 27 of them functions; 23 headings in a 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              27
   assignments                                   176
-  arguments                                      97   passed over, a type unknown: 2
+  arguments                                      99
   RETURN values                                  61
   operands of a comparison or an operator       198
   CASE labels                                     0

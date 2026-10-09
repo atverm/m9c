@@ -3,7 +3,7 @@ REVIEW Smtp -- 37 procedures with a body, 18 of them functions; 12 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              18
   assignments                                   115
-  arguments                                     401   passed over, a type unknown: 7
+  arguments                                     408
   RETURN values                                  39
   operands of a comparison or an operator       141
   CASE labels                                    17

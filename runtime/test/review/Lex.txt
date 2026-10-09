@@ -4,9 +4,9 @@ PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              11
   assignments                                    58
   arguments                                     399
-  RETURN values                                 125
+  RETURN values                                 126
   operands of a comparison or an operator       110
-  CASE labels                                    93
+  CASE labels                                    94
   THREAD arguments                                0
   CASE over variants, proved total                0
 

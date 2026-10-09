@@ -144,6 +144,7 @@ VAR
   tys : SLICE OF TY ;
   ntys : I64 ;
   xcs : SLICE OF XC ;
+  ixFields : Ast.Kid ;           (* IndexError's (index, length : I64), built once *)
   nxcs : I64 ;
   mvN : SLICE OF STR ;
   mvT : SLICE OF AKid ;
@@ -432,6 +433,46 @@ BEGIN
   m.es := NEW (gpool, MEnt, 8) ;
   m.n := 0
 END MInit ;
+
+PROCEDURE CharVal (RO lit: STR) : I64 ;
+
+(* a CONST built with `+' over string and CHAR literals is FOLDED into
+   one literal where it is registered (2026-10-09, cp-kernel's issue
+   1: `AtSql = 'SELECT ...' + ' JOIN ...'' passed the checker and the
+   emitter said `const form unsupported yet'): 'a' + 'b' + 0AC is the
+   literal of those scalars; any other form keeps its node *)
+PROCEDURE StrLeaf (k: Ast.Kid ; VAR d: PTR DynStr.DString) : BOOL =
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NString THEN DynStr.Append (d, e.a) ; RETURN TRUE END ;
+    IF e.kind = Ast.NChar THEN DynStr.AppendChar (d, CHR (CharVal (e.a))) ; RETURN TRUE END ;
+    IF e.kind = Ast.NParen THEN RETURN StrLeaf (e.kids[0], d) END ;
+    IF e.kind = Ast.NBin AND Text.Eq (e.a, '+') THEN
+      IF StrLeaf (e.kids[0], d) THEN RETURN StrLeaf (e.kids[1], d) END
+    END
+  END ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN FALSE     (* a CHAR literal that is no scalar: not folded, refused later by name *)
+END StrLeaf ;
+
+PROCEDURE FoldStr (k: Ast.Kid) : Ast.Kid =
+VAR
+  d : PTR DynStr.DString IN gpool ;
+  n : PTR Ast.Node IN gpool ;
+BEGIN
+  IF k IS SOME e THEN
+    IF e.kind = Ast.NBin AND Text.Eq (e.a, '+') THEN
+      d := DynStr.New (gpool) ;
+      IF StrLeaf (k, d) THEN
+        n := Ast.NewNode (gpool, Ast.NString, e.line, e.col) ;
+        n.a := DynStr.View (d) ;
+        RETURN SOME (n)
+      END
+    END
+  END ;
+  RETURN k
+END FoldStr ;
 
 PROCEDURE MAdd (VAR m: Map ; RO KEPT k: STR ;
                 KEPT v: Ast.Kid ; RO KEPT t: STR) =
@@ -1724,11 +1765,12 @@ VAR
   d : PTR DynStr.DString IN gpool ;
   i : I64 ;
 BEGIN
+  (* every Unicode scalar, as its code: the source is read as UTF-8
+     (Io.ReadFile since 2026-10-09), so a literal's CHARs are scalars
+     and nothing is left to refuse (it was `non-ASCII string literal
+     unsupported yet' while a source file arrived as octets) *)
   d := DynStr.New (gpool) ;
   FOR i := 0 TO LEN (s) - 1 DO
-    IF ORD (s[i]) > 127 THEN
-      Err2 (0, 'non-ASCII string literal unsupported yet')
-    END ;
     IF i > 0 THEN DynStr.Append (d, ', ') END ;
     DynStr.AppendI64 (d, ORD (s[i])) ;
     DynStr.AppendChar (d, 'u')
@@ -2033,7 +2075,7 @@ BEGIN
             IF IsAggregate (cd.kids[0]) THEN
               AddAgg (cd.a, cd.kids[0])
             ELSE
-              MAdd (consts, cd.a, cd.kids[0], '')
+              MAdd (consts, cd.a, FoldStr (cd.kids[0]), '')
             END
           END
         END
@@ -2251,6 +2293,30 @@ END DesigDecl ;
    compiled to a test against &Io_IOError and matched nothing.
    Found by the tutorial service's no-network zarr cell; the FPC
    twin carried the same defect and both are fixed together.        *)
+(* IndexError (index, length : I64) as the field sequence a declared
+   exception would have parsed to *)
+PROCEDURE IxFields () : Ast.Kid =
+VAR fs, g, il, i1, i2, ty : PTR Ast.Node IN gpool ;
+BEGIN
+  IF ixFields IS SOME have THEN RETURN SOME (have) END ;
+  fs := Ast.NewNode (gpool, Ast.NFieldSeq, 0, 0) ;
+  g := Ast.NewNode (gpool, Ast.NFieldGroup, 0, 0) ;
+  il := Ast.NewNode (gpool, Ast.NIdentList, 0, 0) ;
+  i1 := Ast.NewNode (gpool, Ast.NIdent, 0, 0) ;
+  i1.a := 'index' ;
+  i2 := Ast.NewNode (gpool, Ast.NIdent, 0, 0) ;
+  i2.a := 'length' ;
+  ty := Ast.NewNode (gpool, Ast.NQualident, 0, 0) ;
+  ty.a := 'I64' ;
+  Ast.Add (gpool, il, SOME (i1)) ;
+  Ast.Add (gpool, il, SOME (i2)) ;
+  Ast.Add (gpool, g, SOME (il)) ;
+  Ast.Add (gpool, g, SOME (ty)) ;
+  Ast.Add (gpool, fs, SOME (g)) ;
+  ixFields := SOME (fs) ;
+  RETURN ixFields
+END IxFields ;
+
 PROCEDURE ExcRef (RO qual: STR ; RO nm: STR ;
                   VAR fields: Ast.Kid) : STR =
 VAR i : I64 ;
@@ -2272,7 +2338,14 @@ BEGIN
       RETURN S3 (CP (modName), '_', nm)
     END
   END ;
-  IF DynStr.Eq (nm, 'Overflow') OR DynStr.Eq (nm, 'IndexError') OR
+  IF DynStr.Eq (nm, 'IndexError') THEN
+    (* the predeclared payload every index check writes: err->i[0]
+       and err->i[1], the index and the length as the check saw them
+       (report par 5, 2026-10-09) *)
+    fields := IxFields () ;
+    RETURN 'm9_exc_IndexError'
+  END ;
+  IF DynStr.Eq (nm, 'Overflow') OR
      DynStr.Eq (nm, 'OutOfMemory') OR DynStr.Eq (nm, 'ValueRange') THEN
     RETURN S2 ('m9_exc_', nm)
   END ;
@@ -2772,6 +2845,7 @@ VAR
   jj, rk, ext0, nx : I64 ;
   isCat : BOOL ;
   inr, tyk : Ast.Kid ;
+  isx : STR ;
 BEGIN
   IF k IS SOME e THEN
     CASE e.kind OF
@@ -3011,6 +3085,21 @@ BEGIN
           Err2 (e.line, 'SLICE() argument form unsupported yet') ;
           RETURN '0'
         END
+    | Ast.NIs :
+        (* `x IS SOME' / `x IS NONE' with no binder: an OPT is a
+           nullable pointer in C (par 2.2; issue 4, 2026-10-09) *)
+        IF e.kids[1] IS SOME isr THEN
+          IF isr.kind = Ast.NIsSome AND LEN (isr.a) = 0 THEN
+            isx := EX (e.kids[0], '') ;
+            IF isr.f1 THEN
+              RETURN S3 ('(', isx, ' == NULL)')
+            ELSE
+              RETURN S3 ('(', isx, ' != NULL)')
+            END
+          END
+        END ;
+        Err2 (e.line, 'IS with a binder is the whole condition of an IF, ELSIF or WHILE') ;
+        RETURN '0'
     | Ast.NBin :
         lt := TagOfExpr (e.kids[0]) ;
         IF DynStr.Eq (lt, 'I64') THEN lt := TagOfExpr (e.kids[1]) END ;
@@ -4068,7 +4157,7 @@ BEGIN
   IF k IS SOME c THEN
     IF c.kind = Ast.NIs THEN
       IF c.kids[1] IS SOME rhs THEN
-        RETURN rhs.kind = Ast.NIsSome
+        RETURN rhs.kind = Ast.NIsSome AND LEN (rhs.a) > 0
       END
     END
   END ;
@@ -4576,6 +4665,28 @@ BEGIN
   EmitSeq (st.kids[0], ind)
 END EmitBlock ;
 
+(* the member a CASE label over an enumeration or CASE RECORD names:
+   a bare `Fs', or `Kind.Fs' / `Mod.Kind.Fs' -- the last field of a
+   designator that is nothing but field selectors; '' for any other
+   form.  The qualified spelling was accepted by the checker and
+   refused by the generator until 2026-10-09 (cp-kernel's issue 13),
+   and the totality check skipped it *)
+PROCEDURE LabelName (lv: PTR Ast.Node) : STR =
+VAR i : I64 ;
+BEGIN
+  IF lv.kind # Ast.NDesignator THEN RETURN '' END ;
+  IF lv.nkids = 0 THEN RETURN lv.a END ;
+  FOR i := 0 TO lv.nkids - 1 DO
+    IF lv.kids[i] IS SOME sel THEN
+      IF sel.kind # Ast.NSelField THEN RETURN '' END
+    ELSE
+      RETURN ''
+    END
+  END ;
+  IF lv.kids[lv.nkids - 1] IS SOME last THEN RETURN last.a END ;
+  RETURN ''
+END LabelName ;
+
 PROCEDURE EmitCaseCR (st: PTR Ast.Node ; RO w: STR ;
                       RO tg: STR ; ind: I64) =
 VAR
@@ -4646,9 +4757,8 @@ BEGIN
                 END
               ELSIF lbl.kind = Ast.NLabelRange THEN
                 IF lbl.kids[0] IS SOME lv THEN
-                  IF lv.kind = Ast.NDesignator AND lv.nkids = 0 AND
-                     IsNone (lbl.kids[1]) THEN
-                    Line (KPbuf, ind, S4 ('case ', l, lv.a, ':'))
+                  IF LEN (LabelName (lv)) > 0 AND IsNone (lbl.kids[1]) THEN
+                    Line (KPbuf, ind, S4 ('case ', l, LabelName (lv), ':'))
                   ELSE
                     Err2 (st.line, 'CASE label form unsupported yet')
                   END
@@ -5081,7 +5191,7 @@ BEGIN
           IF csec.kind = Ast.NConstSection THEN
             FOR cj2 := 0 TO csec.nkids - 1 DO
               IF csec.kids[cj2] IS SOME cdl THEN
-                MAdd (consts, cdl.a, cdl.kids[0], '')
+                MAdd (consts, cdl.a, FoldStr (cdl.kids[0]), '')
               END
             END
           END

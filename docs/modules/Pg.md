@@ -23,10 +23,9 @@ LINKING.  The binding is libpq.so.5, which is on every machine
 that has psql, plus runtime/pgshim.c for the one call a FOR "C"
 unit cannot express (PQexecParams takes a table of C pointers;
 pgshim rebuilds it from one NUL-separated block, the System.Exec
-convention).  m9c's flagless link does not carry either -- a
-program that imports Pg names them: `runtime/pgshim.c
--l:libpq.so.5`, as a program using blosc or netCDF names its
-library (the owed link-line item in CLAUDE.md).
+convention).  The foreign unit below NAMES both (LINK, par 7), so
+m9c's flagless link, --run and --cell carry them; a program that
+takes the C line over with -- names them itself.
 
 ### TYPE Conn
 
@@ -84,6 +83,14 @@ the Result owes libpq nothing.
 one statement that answers no rows -- INSERT, UPDATE, DELETE,
 CREATE -- bound as Query binds; answers how many rows it
 affected (PQcmdTuples), 0 for a command that does not say.
+
+### ArrayLiteral (RO items: SLICE OF STR) : STR
+
+the text of a one-dimensional array for a `$n::text[]'
+parameter: every item double-quoted, a backslash or a quote in
+it escaped with a backslash, the empty slice `{}' -- the form the
+server reads back element for element (PgTest asks it).
+cp-kernel's issue 8, 2026-10-09.
 
 ### Script (c: PTR Conn ; RO sql: STR) RAISES PgError, ValueRange
 

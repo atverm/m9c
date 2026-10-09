@@ -172,6 +172,59 @@ BEGIN
   Check.EqI64 (t, 'FromBase64 agreeing with Python, refusals included', agree, LEN (dec))
 END Base64 ;
 
+PROCEDURE Ints (RO b: SLICE OF BYTE) : SLICE OF I64 =
+VAR v : SLICE OF I64 ; i : I64 ;
+BEGIN
+  v := NEW (I64, LEN (b)) ;
+  FOR i := 0 TO LEN (b) - 1 DO v[i] := I64 (b[i]) END ;
+  RETURN v
+END Ints ;
+
+PROCEDURE UrlRefused (RO s: STR) : BOOL =
+VAR b : SLICE OF BYTE ;
+BEGIN
+  b := Text.FromBase64Url (s) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+END UrlRefused ;
+
+PROCEDURE Base64Urls () RAISES ValueRange =
+  (* base64url without padding: Python's urlsafe_b64encode (b).rstrip
+     (b'=') on the four tail lengths and the alphabet's two letters *)
+VAR b : SLICE OF BYTE ;
+BEGIN
+  b := NEW (BYTE, 3) ;
+  b[0] := 251 ; b[1] := 255 ; b[2] := 191 ;
+  Check.EqStr (t, 'ToBase64Url uses - and _', Text.ToBase64Url (b), '-_-_') ;
+  Check.EqStr (t, 'ToBase64Url drops two =', Text.ToBase64Url (SLICE (b, 0, 1)), '-w') ;
+  Check.EqStr (t, 'ToBase64Url drops one =', Text.ToBase64Url (SLICE (b, 0, 2)), '-_8') ;
+  Check.EqStr (t, 'ToBase64Url of nothing', Text.ToBase64Url (SLICE (b, 0, 0)), '') ;
+  Check.EqStr (t, 'ToBase64Url of text', Text.ToBase64Url (DynStr.Bytes (pool, 'any carnal pleas', FALSE)), 'YW55IGNhcm5hbCBwbGVhcw') ;
+  Check.EqI64s (t, 'FromBase64Url unpadded', Ints (Text.FromBase64Url ('-_8')), Ints (SLICE (b, 0, 2))) ;
+  Check.EqI64s (t, 'FromBase64Url padded', Ints (Text.FromBase64Url ('-_8=')), Ints (SLICE (b, 0, 2))) ;
+  Check.EqI64s (t, 'FromBase64Url of three octets', Ints (Text.FromBase64Url ('-_-_')), Ints (b)) ;
+  Check.That (t, 'FromBase64Url refuses the standard alphabet', UrlRefused ('+/8')) ;
+  Check.That (t, 'FromBase64Url refuses a length of 1 mod 4', UrlRefused ('abcde')) ;
+  Check.That (t, 'FromBase64Url refuses padding that does not fill a group', UrlRefused ('-_8=='))
+END Base64Urls ;
+
+PROCEDURE Compares () =
+  (* Text.Compare: Sort.Strs's order, by code point, the shorter
+     first; the values Python's (a > b) - (a < b) gives *)
+BEGIN
+  Check.EqI64 (t, 'Compare equal', Text.Compare ('abc', 'abc'), 0) ;
+  Check.EqI64 (t, 'Compare a < b', Text.Compare ('a', 'b'), -1) ;
+  Check.EqI64 (t, 'Compare b > a', Text.Compare ('b', 'a'), 1) ;
+  Check.EqI64 (t, 'Compare a prefix sorts first', Text.Compare ('ab', 'abc'), -1) ;
+  Check.EqI64 (t, 'Compare the longer sorts last', Text.Compare ('abc', 'ab'), 1) ;
+  Check.EqI64 (t, 'Compare the empty string first', Text.Compare ('', 'a'), -1) ;
+  Check.EqI64 (t, 'Compare two empties', Text.Compare ('', ''), 0) ;
+  Check.EqI64 (t, 'Compare by code point: e-acute (233) after z (122)', Text.Compare ('' + 0E9C, 'z'), 1) ;
+  Check.EqI64 (t, 'Compare ISO timestamps as text', Text.Compare ('2026-10-09T10:00:00Z', '2026-10-09T09:59:59Z'), 1) ;
+  Check.EqI64 (t, 'Compare uppercase before lowercase', Text.Compare ('Z', 'a'), -1)
+END Compares ;
+
 BEGIN
   (* search *)
   Check.That (t, 'Eq', Text.Eq ('abc', 'abc')) ;
@@ -241,8 +294,10 @@ BEGIN
 
   Replaces () ;
   Matches () ;
+  Compares () ;
   BEGIN
-    Base64 ()
+    Base64 () ;
+    Base64Urls ()
   EXCEPT
   | ValueRange :
       Check.That (t, 'base64: no ValueRange escapes', FALSE)

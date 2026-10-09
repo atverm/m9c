@@ -18,7 +18,7 @@ typedef struct Lex_Comment Lex_Comment;
 #define Lex_KChar INT64_C(5)
 #define Lex_KStr INT64_C(6)
 #define Lex_KwFirst INT64_C(7)
-#define Lex_KwLast INT64_C(67)
+#define Lex_KwLast INT64_C(68)
 #define Lex_OpFirst INT64_C(200)
 #define Lex_KAssign INT64_C(200)
 #define Lex_KEq INT64_C(201)

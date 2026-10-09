@@ -88,7 +88,7 @@ PROCEDURE Close (OWN s: SHARED PTR Store) ;
 END ZarrStore.
 
 
-UNSAFE DEFINITION MODULE FOR "C" cblosc ;
+UNSAFE DEFINITION MODULE FOR "C" cblosc LINK "-l:libblosc.so.1" ;
 
 PROCEDURE DecompressCtx = "blosc_decompress_ctx"
   (src: C.ConstPtr ; dest: C.MutPtr ; destsize: C.SizeT ;

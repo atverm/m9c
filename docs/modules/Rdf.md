@@ -45,7 +45,12 @@ opaque; lives in a POOL
 
 ### EXCEPTION SyntaxError
 
-_(undocumented)_
+_(documented with the group below)_
+
+### EXCEPTION NotWritable
+
+RdfXml: a predicate IRI with no local
+name an XML element could carry
 
 ### CONST XsdString
 
@@ -88,6 +93,19 @@ compacted against the context handed in (its terms, prefixes,
 "@graph" holds the nodes; a chain of rdf:first/rest cells nothing
 else refers to is "@list".  Deterministic; ParseJsonLd reads it
 back.  Characters, as NTriples
+
+### RdfXml (g: PTR Graph) : STR RAISES ValueRange, Xml.WriteError, NotWritable
+
+the graph as RDF/XML: one rdf:Description per subject in first-
+seen order (rdf:about an IRI, rdf:nodeID a blank node), a property
+element per triple with the predicate split into a namespace and
+a local name (the longest NCName tail; a predicate that has none
+is NotWritable, as every writer finds), an IRI object as
+rdf:resource, a blank one as rdf:nodeID, a literal as text with
+xml:lang or rdf:datatype (none for xsd:string).  The namespaces
+met are declared on rdf:RDF as rdf and ns1, ns2 ...  Xml's writer
+refuses a character XML 1.0 cannot carry.  ParseRdfXml reads it
+back; rdflib does in rdf.sh.  cp-kernel's issue 10, 2026-10-09.
 
 ### Count (g: PTR Graph) : I64
 

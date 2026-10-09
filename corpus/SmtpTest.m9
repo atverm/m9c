@@ -20,13 +20,14 @@ VAR
   pool : POOL ;
   gold : STR ;
 
-PROCEDURE Word (RO w: STR) : STR RAISES ValueRange =
-  (* a golden word: %0D %0A %20 restored, then its UTF-8 decoded --
-     GoldStrs reads the file as octets *)
-VAR scratch : POOL ;
+PROCEDURE Word (RO w: STR) : STR =
+  (* a golden word: %0D %0A %20 restored.  GoldStrs reads the file
+     as UTF-8 text since 2026-10-09 (Io.ReadFile decodes), so the
+     non-ASCII subjects arrive as scalars; until then this decoded
+     them itself, and the day the flip landed it decoded twice and
+     raised ValueRange on the first scalar past 255 *)
 BEGIN
-  RETURN DynStr.FromUtf8 (scratch, DynStr.Bytes (scratch,
-    Text.Replace (Text.Replace (Text.Replace (w, '%0D', '' + 0DC), '%0A', '' + 0AC), '%20', ' '), FALSE))
+  RETURN Text.Replace (Text.Replace (Text.Replace (w, '%0D', '' + 0DC), '%0A', '' + 0AC), '%20', ' ')
 END Word ;
 
 PROCEDURE Count (RO hay: STR ; RO needle: STR) : I64 =

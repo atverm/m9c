@@ -3,7 +3,7 @@ REVIEW Delim -- 20 procedures with a body, 17 of them functions; 16 headings in 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              17
   assignments                                    89
-  arguments                                      28   passed over, a type unknown: 2
+  arguments                                      30
   RETURN values                                  30
   operands of a comparison or an operator        71
   CASE labels                                     0

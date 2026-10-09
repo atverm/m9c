@@ -209,9 +209,9 @@ end;
 function TParser.PUnit: TNode;
 var
   uns, stf : Boolean;
-  body : TNode;
+  body, links, ws : TNode;
 begin
-  uns := False; stf := False;
+  uns := False; stf := False; links := nil;
   if cur.kind = tkUNSAFE then begin uns := True; Bump; end;
   if cur.kind = tkSTATEFUL then begin stf := True; Bump; end;
 
@@ -228,9 +228,26 @@ begin
       else Err ('foreign language string expected after FOR');
     end;
     Result.a := TakeIdent ('module name');
+    if cur.kind = tkLINK then
+    begin
+      { LINK "w", ...: what the foreign unit links (par 7); the node
+        goes in LAST, after the declarations (mirrors Parse.PUnit) }
+      if Result.b = '' then Err ('LINK belongs to a FOR "C" unit');
+      Bump;
+      links := NewNode (nkLinkList);
+      repeat
+        if cur.kind = tkStrLit then
+        begin
+          ws := NewNode (nkString); ws.a := cur.text; links.Add (ws); Bump;
+        end
+        else Err ('a string expected after LINK');
+        if cur.kind = tkComma then Bump else Break;
+      until False;
+    end;
     Expect (tkSemi, ';');
     PImports (Result);
     PDecls (Result);
+    if links <> nil then Result.Add (links);
     Expect (tkEND, 'END');
     if TakeIdent ('module name after END') <> Result.a then
       Err ('END name does not match MODULE ' + Result.a);
@@ -1067,7 +1084,15 @@ begin
     begin
       t := NewNode (nkIsSome);
       Bump;
-      t.a := TakeIdent ('binding name');
+      { `x IS SOME' with no binder is a BOOL expression (mirrors Parse) }
+      if cur.kind = tkIdent then t.a := TakeIdent ('binding name');
+      Result.Add (t);
+    end
+    else if cur.kind = tkNONE then
+    begin
+      t := NewNode (nkIsSome);
+      t.f1 := True;
+      Bump;
       Result.Add (t);
     end
     else

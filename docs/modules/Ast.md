@@ -367,6 +367,16 @@ over a slice's storage (par 2.2.1); kids[0]
 the slice, the rest the extents, so the rank
 is nkids - 1.  2026-10-08
 
+### CONST NLinkList
+
+LINK "w1", "w2": what a FOR "C" unit links --
+a library name, a linker word, a shim source
+beside the runtime (par 7).  The LAST kid of
+the Definition node, after the declarations,
+so that nothing that walks a unit by position
+moves; kids are NString nodes, a the word.
+2026-10-09
+
 ### TYPE Kid
 
 named so NEW can say it;

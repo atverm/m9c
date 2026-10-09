@@ -30,6 +30,13 @@ PROCEDURE Eq (RO a: STR ; RO b: STR) : BOOL ;
      inventory, and a caller who has Text imported should not have to
      import DynStr as well to compare two slices.                   *)
 
+PROCEDURE Compare (RO a: STR ; RO b: STR) : I64 ;
+  (* -1, 0 or 1: the order Sort.Strs sorts by -- code point by code
+     point from the first, and the shorter first where one is a
+     prefix of the other.  `<' on two strings is refused by design
+     (par 2.3); this is the ordered comparison, for timestamps and
+     names (an ISO 8601 timestamp orders as text).  2026-10-09.      *)
+
 PROCEDURE Find (RO hay: STR ; RO needle: STR) : I64 ;
   (* first index, or -1.  An empty needle is found at 0, which is the
      convention every other language settled on and the one that
@@ -151,6 +158,18 @@ PROCEDURE ToBase64 (RO b: SLICE OF BYTE) : STR ;
      Python's base64.b64encode.  Octets to TEXT: a key in a header, a
      token in a URL (not URL-safe; that alphabet is not here), a mail
      body line *)
+
+PROCEDURE ToBase64Url (RO b: SLICE OF BYTE) : STR ;
+  (* RFC 4648 section 5, base64url WITHOUT padding: `-' and `_' for
+     `+' and `/', no `=' -- what ICOS object ids, JWTs and URL tokens
+     use; Python's base64.urlsafe_b64encode (b).rstrip (b'=')
+     (cp-kernel's issue 19, 2026-10-09). *)
+
+PROCEDURE FromBase64Url (RO s: STR) : SLICE OF BYTE RAISES ValueRange ;
+  (* the octets back from base64url, padding optional: a length of 1
+     mod 4 cannot be, and any character outside the url alphabet (a
+     `+' or `/' included) RAISES ValueRange, as does `=' anywhere but
+     at the end of a padded group. *)
 
 PROCEDURE FromBase64 (RO s: STR) : SLICE OF BYTE RAISES ValueRange ;
   (* the octets back, STRICTLY -- Python's base64.b64decode (s,
@@ -345,6 +364,20 @@ BEGIN
   FOR i := 0 TO LEN (s) - 1 DO r[i] := s[i] END ;
   RETURN r
 END Keep ;
+
+PROCEDURE Compare (RO a: STR ; RO b: STR) : I64 =
+VAR i : I64 ;
+BEGIN
+  i := 0 ;
+  WHILE i < LEN (a) AND i < LEN (b) DO
+    IF a[i] < b[i] THEN RETURN -1 END ;
+    IF a[i] > b[i] THEN RETURN 1 END ;
+    i := i + 1
+  END ;
+  IF LEN (a) < LEN (b) THEN RETURN -1 END ;
+  IF LEN (a) > LEN (b) THEN RETURN 1 END ;
+  RETURN 0
+END Compare ;
 
 PROCEDURE Cat (VAR pool: POOL ; RO a: STR ; RO b: STR) : STR =
 VAR
@@ -557,6 +590,50 @@ BEGIN
   END ;
   RETURN s
 END ToBase64 ;
+
+PROCEDURE ToBase64Url (RO b: SLICE OF BYTE) : STR =
+VAR
+  s, t : STR ;
+  i, n : I64 ;
+BEGIN
+  s := ToBase64 (b) ;
+  n := LEN (s) ;
+  WHILE n > 0 AND s[n - 1] = '=' DO n := n - 1 END ;
+  t := NEW (CHAR, n) ;
+  FOR i := 0 TO n - 1 DO
+    IF s[i] = '+' THEN t[i] := '-'
+    ELSIF s[i] = '/' THEN t[i] := '_'
+    ELSE t[i] := s[i]
+    END
+  END ;
+  RETURN t
+END ToBase64Url ;
+
+PROCEDURE FromBase64Url (RO s: STR) : SLICE OF BYTE RAISES ValueRange =
+VAR
+  t : STR ;
+  i, n, pad : I64 ;
+BEGIN
+  (* into the standard alphabet with its padding, then strictly *)
+  n := LEN (s) ;
+  IF n > 0 AND s[n - 1] = '=' THEN
+    IF n MOD 4 # 0 THEN RAISE ValueRange END ;
+    pad := 0
+  ELSE
+    IF n MOD 4 = 1 THEN RAISE ValueRange END ;
+    pad := (4 - n MOD 4) MOD 4
+  END ;
+  t := NEW (CHAR, n + pad) ;
+  FOR i := 0 TO n - 1 DO
+    IF s[i] = '+' OR s[i] = '/' THEN RAISE ValueRange END ;
+    IF s[i] = '-' THEN t[i] := '+'
+    ELSIF s[i] = '_' THEN t[i] := '/'
+    ELSE t[i] := s[i]
+    END
+  END ;
+  FOR i := n TO n + pad - 1 DO t[i] := '=' END ;
+  RETURN FromBase64 (t)
+END FromBase64Url ;
 
 PROCEDURE B64Val (c: CHAR) : I64 =
   (* the alphabet's value of c, -1 for a character outside it *)

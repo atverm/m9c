@@ -7,6 +7,7 @@
 #include "Time.h"
 
 extern void m9_put_chars (const void *, size_t);
+extern void m9_put_bytes (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);

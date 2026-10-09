@@ -289,6 +289,42 @@ END JsonStr ;
 (* the parameter list as `[{"names":[..],"mode":"VAR","type":".."}]`,
    reading the same nodes Print.EParams prints: f1 is VAR, f2 OWN,
    f3 RO, kids[0] the names, kids[1] the type *)
+(* an EXCEPTION's fields -- kids[0] a field sequence of groups, each
+   an identifier list and a type -- in the shape of ParamsJson's
+   entries, the mode "" (a payload is read through a binder) *)
+PROCEDURE FieldsJson (VAR pool: POOL ; x: PTR Ast.Node) : STR
+  RAISES IndexError =
+VAR
+  d : PTR DynStr.DString IN pool ;
+  i, j : I64 ;
+BEGIN
+  d := DynStr.New (pool) ;
+  DynStr.AppendChar (d, '[') ;
+  IF x.nkids > 0 THEN
+    IF x.kids[0] IS SOME fs THEN
+      FOR i := 0 TO fs.nkids - 1 DO
+        IF fs.kids[i] IS SOME g THEN
+          IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
+          DynStr.Append (d, '{"names":[') ;
+          IF g.kids[0] IS SOME il THEN
+            FOR j := 0 TO il.nkids - 1 DO
+              IF il.kids[j] IS SOME id THEN
+                IF j > 0 THEN DynStr.AppendChar (d, ',') END ;
+                JsonStr (d, id.a)
+              END
+            END
+          END ;
+          DynStr.Append (d, '],"mode":"","type":') ;
+          JsonStr (d, Print.TypeText (pool, g.kids[1])) ;
+          DynStr.AppendChar (d, '}')
+        END
+      END
+    END
+  END ;
+  DynStr.AppendChar (d, ']') ;
+  RETURN DynStr.View (d)
+END FieldsJson ;
+
 PROCEDURE ParamsJson (VAR pool: POOL ; p: PTR Ast.Node) : STR
   RAISES IndexError =
 VAR
@@ -437,6 +473,11 @@ BEGIN
     anch[nanch].resultText := '' ;
     anch[nanch].raisesJson := '[]' ;
     anch[nanch].attribText := '' ;
+    IF n.kind = Ast.NExcDecl THEN
+      (* the payload, as a procedure's params: a handler arm needs
+         the arity and the types (cp-kernel's issue 11, 2026-10-09) *)
+      anch[nanch].paramsJson := FieldsJson (pool, n)
+    END ;
     IF n.kind = Ast.NProcDecl THEN
       anch[nanch].sig := SigText (pool, n) ;
       anch[nanch].params := ParamNames (pool, n) ;
@@ -885,6 +926,10 @@ BEGIN
             ELSE
               DynStr.Append (d, 'null')
             END
+          END ;
+          IF anch[i].kind = Ast.NExcDecl THEN
+            DynStr.Append (d, ',"params":') ;
+            DynStr.Append (d, anch[i].paramsJson)
           END ;
           IF anch[i].kind = Ast.NVarDecl THEN
             DynStr.Append (d, ',"type":') ;

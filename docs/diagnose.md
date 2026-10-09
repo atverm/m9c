@@ -16,6 +16,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | message | cause | fix | probe |
 |---|---|---|---|
 | `ADR exists only inside UNSAFE modules` | ADR takes the address of a value, which is the one thing the memory rules cannot check | put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7) | `adr-outside-unsafe` |
+| `argument 1 of cfoo.Take: cannot pass C.Ptr where C.Int is expected` | ADR (x) is a C pointer (C.Ptr, since 2026-10-09) and was handed where a foreign procedure wants something else -- a C.Int, a C.SizeT: the wrong argument, or the arguments in the wrong order | pass ADR (x) to the C.ConstPtr or C.MutPtr parameter and the size or count to the integer one | `adr-typed` |
 | `an aggregate CONST is not exported yet: Primes` | a constant table is declared in a DEFINITION; exporting one is not built yet (an importer would need the data, not a #define) | declare it in the IMPLEMENTATION and export a procedure that indexes it (par 2.2.4) | `aggregate-exported` |
 | `an aggregate CONST belongs at module level: Local` | a constant table is declared inside a procedure; it is data with one copy, and it belongs to the module | move the CONST to module level, above the procedure (par 2.2.4) | `aggregate-local` |
 | `element 2 of Mixed is F64 where the first is I64: an aggregate has one element type` | the elements of a constant table CONST X = [ ... ] do not have one type: the table's element type is read off its FIRST element (an integer literal is an I64, a real an F64, a string a STR, a character a CHAR, TRUE and FALSE a BOOL) and nothing adapts, so [1, 2.5] is refused at the 2.5 | write every element in the first one's type -- [1.0, 2.5] for reals; the refusal names the element by number (par 2.2.4) | `aggregate-mixed-types` |
@@ -29,6 +30,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `ByteSize needs a slice, not I64` | ByteSize answers the bytes a slice's elements occupy, so its argument must be a slice | for a scalar or record use SizeOf (x); for the data behind a slice, ByteSize (s) = LEN (s) * SizeOf (element) | `bytesize-not-slice` |
 | `CASE label is a CHAR/string literal but the selector is I64` | the CASE label's type is not the selector's type | labels must be literals or CONSTs of the selector's type; a CHAR selector takes 'x' or 41C | `case-label-mismatch` |
 | `CASE label 200 appears twice` | the same scalar label appears in two arms; the second is dead and one of the two is a typo -- decided at compile time | remove the duplicate, or widen it to a range if that was meant | `case-label-twice` |
+| `CASE over CASE RECORD is not total (missing Irods)` | a CASE over an enumeration or CASE RECORD has no arm for a member and no ELSE -- the labels may be bare (Fs) or qualified (Store.Fs), and both are counted | add an arm for the member the message names, or an ELSE that says what the others do | `case-qualified-label-total` |
 | `CASE RECORD is reached by CASE, not by selection` | the variant payload of a CASE RECORD is reached only through a CASE arm that binds it | write CASE v OF | Kind.Str (s) : ... END; never v.field on the variant part | `case-record-selected` |
 | `no '=' between two values of type ARRAY 3 OF I64` | two arrays, records, slices or grids are compared with an operator; an operator compares scalars -- numbers, characters, booleans, enumeration values, pointers -- and the generated C has no == for a struct | compare what is inside: the fields by name, the elements in a loop; for arrays of reals the question is usually 'near', not 'equal' (Check.NearF64s in a test) (par 2.3) | `compare-composite` |
 | `cannot compare I64 with SLICE OF CHAR` | the two sides of a comparison have different types and nothing converts implicitly | convert one side explicitly; for strings use DynStr.Eq / Text.Eq, not = (par 2.1) | `compare-mismatch` |
@@ -55,6 +57,7 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `cannot assign a real literal to I64` | another module's exported variable Mod.v has the type its definition declares, and nothing converts implicitly (decision 28, par 3) | convert explicitly to the declared type, or read the definition: m9c --json Mod | `export-var-typed` |
 | `FOR over an enumeration needs both bounds of one type, not m.Colour and m.Fruit` | a FOR loop over an enumeration walks the members of ONE enumeration in declaration order, so its two bounds must name that same type; giving Colour.Red as the low bound and a member of a different enumeration as the high bound has no meaning, since members of unrelated enumerations are not comparable | make both bounds members of the one type -- FOR c := Colour.Red TO Colour.Blue; a loop that must cross two enumerations is two loops, or a conversion through ORD if the ordinals really are meant to line up | `for-enum-bounds-differ` |
 | `FOR over an enumeration takes no BY step` | BY names an integer stride and an enumeration's members are not numbers to step over -- the loop already visits every member from the low bound to the high one, with nothing between them to skip -- so BY on an enumeration bound is refused | drop the BY: FOR c := Colour.Red TO Colour.Blue visits Red, Green, Blue in order; if you need to skip members, guard the body with an IF or CASE rather than striding the loop | `for-enum-takes-no-step` |
+| `FOR variable j is the control variable of the enclosing FOR at line 12 (par 2.1)` | a FOR inside a FOR over the SAME control variable: the inner loop assigns the outer count (cp-kernel's Shacl.m9 ran its outer loop once, 2026-10-09) | give the inner loop its own variable (declare it); a second FOR over the same variable AFTER the first is fine | `for-nested-same-variable` |
 | `FOR variable k is I64, and its bounds are m.Colour` | a FOR loop over an enumeration (FOR c := Colour.Red TO Colour.Blue) has a variable of another type; the variable takes each member in turn, so it is that enumeration | declare it of the enumeration: VAR c : Colour ; | `for-variable-enum-mismatch` |
 | `cannot assign I64 to F64 (no implicit conversions, par 2.1)` | a loop variable is used where another type is wanted -- assigned to an F64, added to one -- and that is an implicit conversion like any other; the refusal is the ordinary one.  Until 2026-10-02 the checker held a loop variable to no type at all inside its loop, so `x := x + i` with x an F64 compiled and ran (museum/implicit-through-loop-variable.m9) | write the conversion: x := x + F64 (i).  NOT SOURCE COMPATIBLE for a program that leaned on the gap; none was found in this repository or the FLEXPART port | `for-variable-keeps-its-type` |
 | `FOR variable x is F64: a loop over integers counts in an integer variable` | the variable of a FOR loop over integer bounds is declared with a type that is not an integer -- an F64, a STR; a loop counts in an integer | declare the loop variable I64 (or another integer width), and convert inside the body where a real is wanted: F64 (i) | `for-variable-not-integer` |
@@ -81,10 +84,12 @@ line (`m9c: 4 parse errors in FILE`): run `host/fpc/g1 FILE` for
 | `a GRID 3 needs 3 subscripts, not 2` | every axis must be subscripted; a GRID is not a nested array | g[i, j, k] for a GRID 3; VIEW (g, i, ALL, ALL) to select a plane | `grid-subscript-arity` |
 | `cannot assign I64 to SLICE OF CHAR (no implicit conversions, par 2.1)` | a handler's payload binder (the names in `| Err (m, c) :') has the type of the EXCEPTION declaration's field it stands for, in order -- since 2026-10-08; until then a binder had no type and `s := c' with s a STR and c an I64 payload compiled | use the binder at its field's type, or convert it (Fmt.I64Str for a number into text); the declaration names the fields and their types | `handler-binder-typed` |
 | `cannot assign I32 to I64` | there is no implicit conversion between any two numeric types, widening included | I64 (x) explicitly; the conversion RAISES ValueRange, which your RAISES set must carry (par 2.1) | `implicit-widening` |
+| `cannot assign I64 to SLICE OF CHAR (no implicit conversions, par 2.1)` | a handler of the predeclared IndexError binds (index, length : I64) since 2026-10-09, and a binder was used at another type | use the binder as an I64 -- the index and the length as the check saw them -- or convert it | `index-error-binder-typed` |
 | `cannot assign an integer literal to F64` | an integer literal fits any integer type but not a float | write 0.0, 1.0E-6; a <real> literal adapts to F32 or F64 | `int-literal-to-float` |
 | `float division; integers use DIV` | / is float division | DIV for integers | `int-slash-division` |
 | `cannot assign PTR Lib.Node to I64 (no implicit conversions, par 2.1)` | an IS SOME binder on a call whose result type is another module's alias of an OPT (`Mk () : Lib.Kid') is typed in the module that declared the OPT since 2026-10-08, so what was passed over before is examined: here a pointer assigned to an integer | write what the binder is: a pointer to the declared record, read through its fields | `is-some-binder-through-alias` |
 | `argument 1 of Show: cannot pass PTR m.Point where m.Point is expected` | the binder of IS SOME over a CALL result carries the callee's declared payload type (PTR Point here), and the parameter wants something else | pass what the parameter asks for: read p.x for a record parameter, or declare the parameter as the pointer | `is-some-call-binder` |
+| `IS SOME needs an OPT operand` | `x IS SOME` or `x IS NONE` (no binder, a BOOL since 2026-10-09) was asked of a value that is not an OPT -- only an OPT can be absent | ask it of the OPT (the field, the variable, the call answering OPT), or drop the test: a value that is not OPT is always there | `is-some-expression` |
 | `IS SOME needs an OPT operand` | IS SOME is the guard for OPT; the operand is not OPT (a cross-module PTR T IN pool may type as unknown and NOT be diagnosed -- check the declaration) | declare the type OPT PTR T, or drop the guard if it cannot be absent | `is-some-on-non-opt` |
 | `argument 1 of Note: borrowed msg is kept by the callee -- declare KEPT msg (par 4.1)` | a borrowed parameter is passed to a parameter the callee declares KEPT, so the caller is retaining it too | declare the caller's own parameter KEPT as well -- the declaration composes upward, exactly as RAISES does (par 4.1, docs/retention.md) | `kept-borrow-arg` |
 | `argument 1 of Note: a KEPT parameter cannot take a concatenation -- it dies with this frame (par 4.1)` | a + result lives in the frame's arena and dies at RETURN, but the callee declares it will keep the argument | build the string in a pool that outlives the retention (DynStr into a caller-supplied pool, or HEAP) and pass that (par 2.3, par 4.1) | `kept-concat-arg` |
@@ -196,6 +201,40 @@ MODULE m ;
 VAR b : SLICE OF BYTE ; x : I64 ;
 PROCEDURE F () = BEGIN G (ADR (b)) END F ;
 PROCEDURE G (p: I64) = BEGIN x := p END G ;
+END m.
+```
+
+### adr-typed
+
+`argument 1 of cfoo.Take: cannot pass C.Ptr where C.Int is expected`
+
+```
+(* ADR (x) is a C pointer (C.Ptr) since 2026-10-09, fitting a
+   C.ConstPtr or C.MutPtr parameter and nothing else; it answered no
+   type until then, so every ADR argument of every foreign call was
+   passed over by the checker -- 225 across the library, the last
+   class on the review pages.  The legal forms first; the last hands
+   ADR where a C.Int is wanted. *)
+UNSAFE DEFINITION MODULE FOR "C" cfoo ;
+PROCEDURE Fill = "m9_foo_fill" (p: C.MutPtr ; n: C.SizeT) [REENTRANT] ;
+PROCEDURE Peek = "m9_foo_peek" (p: C.ConstPtr) : C.Int [REENTRANT] ;
+PROCEDURE Take = "m9_foo_take" (n: C.Int) [REENTRANT] ;
+END cfoo.
+DEFINITION MODULE m ;
+PROCEDURE Go () ;
+END m.
+UNSAFE IMPLEMENTATION MODULE m ;
+IMPORT cfoo ;
+PROCEDURE Go () =
+VAR
+  b : SLICE OF BYTE ;
+  k : C.Int ;
+BEGIN
+  b := NEW (BYTE, 8) ;
+  cfoo.Fill (ADR (b), C.SizeT (8)) ;
+  k := cfoo.Peek (ADR (b)) ;
+  cfoo.Take (ADR (b))
+END Go ;
 END m.
 ```
 
@@ -384,6 +423,38 @@ VAR n : I64 ;
 BEGIN
   n := Reason (200)
 END CaseLabelTwice.
+```
+
+### case-qualified-label-total
+
+`CASE over CASE RECORD is not total (missing Irods)`
+
+```
+(* A CASE over an enumeration may spell its labels qualified --
+   Store.Fs -- and is then held total like the bare spelling
+   (cp-kernel's issue 13, 2026-10-09: the qualified form was accepted
+   by the checker, refused by the generator, and never held total).
+   The legal forms first; the last CASE forgets a member. *)
+MODULE m ;
+TYPE
+  Store = (Fs, Irods) ;
+VAR
+  s : Store ;
+  n : I64 ;
+BEGIN
+  s := Store.Fs ;
+  CASE s OF
+  | Store.Fs : n := 1
+  | Store.Irods : n := 2
+  END ;
+  CASE s OF
+  | Fs : n := 1
+  | Irods : n := 2
+  END ;
+  CASE s OF
+  | Store.Fs : n := 3
+  END
+END m.
 ```
 
 ### case-record-selected
@@ -895,6 +966,29 @@ BEGIN
 END m.
 ```
 
+### for-nested-same-variable
+
+`FOR variable j is the control variable of the enclosing FOR at line 12 (par 2.1)`
+
+```
+(* A FOR inside a FOR over the same control variable clobbers the
+   outer count: Pascal's rule that a control variable is not assigned
+   inside its loop, applied to the one assignment the language itself
+   makes.  cp-kernel's issue 3 (2026-10-09): it compiled, ran, and was
+   wrong -- the only logic error of that session no compiler saw.
+   A loop over another variable, and a second loop over j AFTER the
+   first, are the legal forms. *)
+MODULE m ;
+VAR i, j, n : I64 ;
+BEGIN
+  FOR j := 0 TO 3 DO
+    FOR i := 0 TO 3 DO n := n + i END ;
+    FOR j := 0 TO 1 DO n := n + j END
+  END ;
+  FOR j := 0 TO 1 DO n := n + j END
+END m.
+```
+
 ### for-variable-enum-mismatch
 
 `FOR variable k is I64, and its bounds are m.Colour`
@@ -1326,6 +1420,31 @@ PROCEDURE F () = BEGIN b := a END F ;
 END m.
 ```
 
+### index-error-binder-typed
+
+`cannot assign I64 to SLICE OF CHAR (no implicit conversions, par 2.1)`
+
+```
+(* IndexError carries (index, length : I64), the payload every index
+   check writes, and a handler's binders are typed by it (par 5,
+   2026-10-09; the predeclared exceptions bound nothing until then).
+   The legal forms first: the index read into an I64; the last binds
+   the index to a STR. *)
+MODULE m ;
+VAR
+  xs : SLICE OF I64 ;
+  at : I64 ;
+  s : STR ;
+BEGIN
+  xs := NEW (I64, 3) ;
+  at := xs[7]
+EXCEPT
+| IndexError (i, n) :
+    at := i + n ;
+    s := i
+END m.
+```
+
 ### int-literal-to-float
 
 `cannot assign an integer literal to F64`
@@ -1411,6 +1530,33 @@ END Find ;
 VAR pool : POOL ;
 BEGIN
   IF Find (pool) IS SOME p THEN Show (p) END
+END m.
+```
+
+### is-some-expression
+
+`IS SOME needs an OPT operand`
+
+```
+(* `x IS SOME' and `x IS NONE' with no binder are BOOL expressions
+   (par 2.2; cp-kernel's issue 4, 2026-10-09): a flag that cost four
+   lines -- an IF with a binder nobody used -- is one.  The payload is
+   still reached only through a binder in a condition.  The legal
+   forms first; the last asks an I64 whether it is SOME. *)
+MODULE m ;
+TYPE
+  Cell = RECORD n : I64 END ;
+VAR
+  o : OPT PTR Cell ;
+  k, n : I64 ;
+  b : BOOL ;
+BEGIN
+  o := NONE ;
+  b := o IS SOME ;
+  b := o IS NONE ;
+  IF o IS NONE THEN k := 1 END ;
+  b := NOT (o IS SOME) AND k = 1 ;
+  b := n IS SOME
 END m.
 ```
 

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "Parse.h"
 #include "Print.h"
+#include "utf8io.h"
 
 int main (int argc, char **argv)
 {
@@ -25,7 +26,7 @@ int main (int argc, char **argv)
   if (fread (bytes, 1, (size_t) len, f) != (size_t) len) return 2;
   fclose (f);
   chars = malloc (sizeof (uint32_t) * (size_t) len);
-  for (i = 0; i < len; i++) chars[i] = (uint32_t) (unsigned char) bytes[i];
+  len = m9t_decode ((const unsigned char *) bytes, len, chars);   /* UTF-8, as m9c reads it */
 
   memset (&p, 0, sizeof p);
   Parse_Init (&p, &pool,(m9_sl_CHAR){ chars, len }, &err);
@@ -33,7 +34,7 @@ int main (int argc, char **argv)
   if (err.exc) { fprintf (stderr, "raised %s\n", err.exc->name); return 3; }
   out = Print_Tree (&pool, root, &err);
   if (err.exc) { fprintf (stderr, "print raised %s\n", err.exc->name); return 3; }
-  for (i = 0; i < out.len; i++) putchar ((int) (out.p[i] & 0xff));
+  for (i = 0; i < out.len; i++) m9t_putc (out.p[i]);
   if (p.nerr > 0) return 1;
   m9_pool_free (&pool);
   return 0;

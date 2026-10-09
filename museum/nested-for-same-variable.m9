@@ -1,0 +1,30 @@
+(* EXPECT-ERROR: FOR variable j is the control variable of the enclosing FOR at line 21 (par 2.1) *)
+(* Observed 2026-10-09, in cp-kernel's Shacl.m9 (Validate), built with
+   m9c 0.18.0: an inner FOR over the outer loop's own control variable.
+   It compiled, it ran, and the outer loop ended early with whatever
+   the inner one left in j -- the only logic error of that session
+   that no compiler saw; a person reading the code found it.  Pascal
+   forbids assigning to a control variable inside its loop, and a
+   nested FOR over the same variable is that assignment made by the
+   language itself.  Refused by both checkers since the same day. *)
+MODULE NestedFor ;
+
+IMPORT Io ;
+
+VAR
+  graph : SLICE OF I64 ;
+  j, seen : I64 ;
+
+BEGIN
+  graph := NEW (I64, 5) ;
+  seen := 0 ;
+  FOR j := 0 TO LEN (graph) - 1 DO
+    seen := seen + 1 ;
+    (* clobbers the outer j: the outer loop runs once *)
+    FOR j := 0 TO LEN (graph) - 1 DO graph[j] := j END
+  END ;
+  Io.WriteI64 (seen) ;
+  Io.WriteLine ('')
+EXCEPT
+| IndexError : Io.WriteLine ('IndexError')
+END NestedFor.

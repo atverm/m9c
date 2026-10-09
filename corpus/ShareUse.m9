@@ -17,6 +17,7 @@ IMPORT Io ;
 
 TYPE
   Box = RECORD n : I64 END ;
+  Store = (Fs, Irods) ;             (* CASE labels spelled Store.Fs (issue 13) *)
 
 EXCEPTION Empty ;
 
@@ -105,9 +106,64 @@ BEGIN
   Io.WriteI64 (LEN (g, 1)) ; Io.Write (' [1,2]=') ;
   Io.WriteI64 (I64 (g[1, 2])) ; Io.WriteLine ('')
 EXCEPT
-| IndexError : Io.WriteLine ('IndexError on GRID')
+| IndexError (i, n) :
+    (* the predeclared payload, typed and bound since 2026-10-09: the
+       index and the length as the check saw them -- here GRID's
+       product of extents and the slice's length *)
+    Io.Write ('IndexError on GRID: ') ; Io.WriteI64 (i) ; Io.Write (' of ') ;
+    Io.WriteI64 (n) ; Io.WriteLine ('')
 | ValueRange : Io.WriteLine ('ValueRange')
 END GridOf ;
+
+(* a CASE over an enumeration with QUALIFIED labels -- cp-kernel's
+   Store.m9 dispatch; the checker accepted it and the generator said
+   `CASE label form unsupported yet' until 2026-10-09 (issue 13) *)
+PROCEDURE Dispatch (s: Store) =
+BEGIN
+  CASE s OF
+  | Store.Fs : Io.Write ('fs ')
+  | Store.Irods : Io.WriteLine ('irods')
+  END
+END Dispatch ;
+
+(* octets on standard output through the buffer Write uses: the line
+   reads in the order it was written (issue 18) *)
+PROCEDURE Octets () =
+VAR b : SLICE OF BYTE ;
+BEGIN
+  b := NEW (BYTE, 2) ;
+  b[0] := 98 ;
+  b[1] := 32 ;
+  Io.Write ('bytes: a ') ;
+  Io.WriteBytes (b) ;
+  Io.WriteLine ('c')
+END Octets ;
+
+(* IS SOME and IS NONE as BOOL expressions, no binder (issue 4) *)
+PROCEDURE Flags () =
+VAR
+  o : OPT PTR Box ;
+  c : PTR Box ;
+  some, none : BOOL ;
+BEGIN
+  o := NONE ;
+  some := o IS SOME ;
+  none := o IS NONE ;
+  IF NOT some AND none THEN Io.WriteLine ('absent: none') END ;
+  c := NEW (Box) ;
+  c.n := 3 ;
+  o := SOME (c) ;
+  IF (o IS SOME) AND NOT (o IS NONE) THEN Io.WriteLine ('present') END
+END Flags ;
+
+(* a string literal beyond ASCII, and a one-character one to a CHAR:
+   the source is UTF-8 and a literal holds scalars (2026-10-09) *)
+PROCEDURE Accents () =
+VAR ch : CHAR ;
+BEGIN
+  ch := 'é' ;
+  Io.WriteLine ('déjà ' + ch + ' ' + 2082C)
+END Accents ;
 
 BEGIN
   p := 'module' ;
@@ -125,5 +181,10 @@ BEGIN
   GridOf (2, 3) ;
   GridOf (4, 2) ;
   y0 := 1.0 ;
-  IF y0 > 0.0 THEN Io.WriteLine ('bessel') END
+  IF y0 > 0.0 THEN Io.WriteLine ('bessel') END ;
+  Accents () ;
+  Flags () ;
+  Dispatch (Store.Fs) ;
+  Dispatch (Store.Irods) ;
+  Octets ()
 END ShareUse.

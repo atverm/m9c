@@ -1,11 +1,11 @@
-REVIEW Zip -- 54 procedures with a body, 32 of them functions; 24 headings in a DEFINITION
+REVIEW Zip -- 56 procedures with a body, 34 of them functions; 26 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              32
+  functions answering on every path              34
   assignments                                   495
-  arguments                                     650
-  RETURN values                                  56
-  operands of a comparison or an operator       643
+  arguments                                     656
+  RETURN values                                  58
+  operands of a comparison or an operator       647
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -30,7 +30,7 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               47
+  RAISE statements                               49
   handlers                                        1
   NEW in the frame                                0
   NEW in a named pool                            29

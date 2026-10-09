@@ -26,6 +26,7 @@
  "IN": "Ties a pointer to its arena: PTR T IN pool names who owns the storage and so who frees it. A pool-interior pointer may not outlive its pool (par 4.3).",
  "IS": "The variant test that binds: IF x IS SOME p THEN ... END makes p the payload inside the arm. Legal only as the whole condition of IF, ELSIF or WHILE.",
  "KEPT": "Declared retention (par 4.1): the callee stores this parameter somewhere that outlives the call -- module state, the caller's storage, the answer. The checker computes where every store's destination escapes to and refuses an undeclared retention; the declaration composes upward the way RAISES does. The sixty-first keyword.",
+ "LINK": "On a foreign (FOR C) unit, after its name: what the unit links -- a library name (NetCDF links netcdf), a linker word as it is (-l:libblosc.so.1), a shim source beside the runtime (pgshim.c). m9c puts them on every flagless link, under --run and --cell; a line taken over with -- names them itself.",
  "LOOP": "The unconditioned loop; EXIT leaves it.",
  "MOD": "Integer remainder, checked like DIV.",
  "MODULE": "A program: MODULE Name ; ... BEGIN ... END Name. Also the second word of DEFINITION MODULE and IMPLEMENTATION MODULE.",

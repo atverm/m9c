@@ -2,10 +2,10 @@ REVIEW Parse -- 50 procedures with a body, 43 of them functions; 8 headings in a
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              43
-  assignments                                   212
-  arguments                                    1570
+  assignments                                   219
+  arguments                                    1596
   RETURN values                                 128
-  operands of a comparison or an operator       207
+  operands of a comparison or an operator       213
   CASE labels                                    37
   THREAD arguments                                0
   CASE over variants, proved total                0

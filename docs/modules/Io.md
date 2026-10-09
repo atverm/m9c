@@ -1,10 +1,13 @@
 # Io
 
 The narrowest useful boundary to the outside: standard output,
-command-line arguments, whole files.  Everything here crosses the
-CHAR/octet line, so everything here can raise ValueRange -- a
-scalar past 255 is caught at the boundary rather than emitted as
-mojibake, the same contract DynStr.Bytes states.
+command-line arguments, whole files.  TEXT crosses the CHAR/octet
+line as UTF-8 (since 2026-10-09, Alex: "flip readfile/writefile
+to utf8"): a file read as text is decoded STRICTLY, one that is
+not UTF-8 raises ValueRange rather than reading as something it
+is not, and a file written as text takes every Unicode scalar --
+the console always did.  A path is text too.  The *Bytes forms
+move octets and decode nothing.
 
 Deliberately not here: streams, seeking, formatted output,
 directories.  A file is read or written whole, because that is
@@ -29,6 +32,15 @@ only way out of a program that has written anything.
        past 255 is the CHAR/octet boundary and belongs to
        DynStr.Bytes, not here.  Nothing in this module raises,
        so these three cannot be the call that fails.
+
+### WriteBytes (RO b: SLICE OF BYTE)
+
+octets to STDOUT as they are -- a stored object, a PNG -- through
+the SAME buffer as Write, so what was written before comes out
+before them and Halt flushes both (cp-kernel's issue 18,
+2026-10-09: writing /dev/stdout with WriteFileBytes overtook the
+buffered text and does not exist on Windows).  Standard output is
+binary on every platform.
 
 ### ErrLine (RO s: STR)
 
@@ -140,6 +152,8 @@ reason the header gives.
           message.  ValueRange is the octet boundary on the
           path itself, not on the contents.
 
+The file is UTF-8 and is decoded as such, strictly: a byte
+sequence that is not UTF-8 raises ValueRange (DynStr.FromUtf8).
 For anything large, or anything that is not text, use
 ReadFileBytes below and read its note first: a CHAR is four
 bytes wide, so this quadruples a file in memory.
@@ -163,7 +177,19 @@ cannot run off the buffer.
 
 ### WriteFile (RO path: STR ; RO content: STR) RAISES ValueRange, IOError
 
-_(undocumented)_
+_(documented with the group below)_
+
+### AppendFile (RO path: STR ; RO content: STR) RAISES ValueRange, IOError
+
+the file's bytes become, or gain, the UTF-8 of content: every
+Unicode scalar encoded (DynStr.Utf8).  Until 2026-10-09 WriteFile
+narrowed one CHAR to one octet and refused a scalar past 255,
+while the console encoded UTF-8 -- so nothing in Io wrote text,
+and a UTF-8 file read with ReadFile printed double-encoded.
+Found by cp-kernel on 0.18.0 (Io.WriteFile of a string holding
+U+2082 raised ValueRange).  A program that holds OCTETS as CHARs
+-- an HTTP body, a request's bytes -- writes them through
+WriteFileBytes (path, DynStr.Bytes (pool, s, FALSE)).
 
 ### ReadStdin (cap: I64) : SLICE OF BYTE
 
@@ -221,6 +247,13 @@ Seekable files only: a plain file is, a pipe is not.
 create the directory, one level, existing is fine -- what an
 output directory needs before the first file goes into it.
 
+### MkDirs (RO path: STR) RAISES ValueRange, IOError
+
+mkdir -p: create the directory and every missing parent; an
+existing one is fine.  `/' separates, and `\' too on Windows.
+IOError names the path where a level could not be made
+(cp-kernel's issue 9, 2026-10-09).
+
 ### Rename (RO from: STR ; RO to: STR) RAISES ValueRange, IOError
 
 rename(2): atomic replace on one filesystem -- write the temp
@@ -231,10 +264,9 @@ written document.
 
 the file's bytes become exactly `content` -- the twin of
 ReadFileBytes, which existed while writing stayed text-only.
-WriteFile narrows CHAR to octet through DynStr.Bytes, one CHAR
-per byte, which is right for text and absurd for a large binary:
-writing a 345 MB field cache through it would build 1.4 GB of
-CHARs first.  That cache is what forced this.
+WriteFile encodes CHARs, which is right for text and absurd for
+a large binary: writing a 345 MB field cache through it would
+build 1.4 GB of CHARs first.  That cache is what forced this.
 
 ### AppendFileBytes (RO path: STR ; RO content: SLICE OF BYTE) RAISES ValueRange, IOError
 
@@ -249,6 +281,10 @@ one 4 MB one.
 _(undocumented)_
 
 ### PutChars (buf: C.ConstPtr ; n: C.SizeT) [REENTRANT]
+
+_(documented with the group below)_
+
+### PutBytes (buf: C.ConstPtr ; n: C.SizeT) [REENTRANT]
 
 CHARs straight out as UTF-8.  Console output is TOTAL: every
 Unicode scalar has a UTF-8 encoding, so unlike DynStr.Bytes --

@@ -7,6 +7,7 @@
 #include "Xml.h"
 
 const m9_exc Rdf_SyntaxError = { "SyntaxError" };
+const m9_exc Rdf_NotWritable = { "NotWritable" };
 
 extern int64_t m9_repr_double (double, void *);
 extern double m9_strtod (const void *);
@@ -127,522 +128,535 @@ static const uint32_t m9s30[5] = { 64u, 108u, 105u, 115u, 116u };
 static const uint32_t m9s31[4] = { 64u, 115u, 101u, 116u };
 static const uint32_t m9s32[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
 static const uint32_t m9s33[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s34[2] = { 32u, 46u };
-static const uint32_t m9s35[3] = { 114u, 100u, 102u };
-static const uint32_t m9s36[4] = { 114u, 100u, 102u, 115u };
-static const uint32_t m9s37[3] = { 120u, 115u, 100u };
-static const uint32_t m9s38[3] = { 111u, 119u, 108u };
-static const uint32_t m9s39[2] = { 32u, 59u };
-static const uint32_t m9s40[4] = { 32u, 32u, 32u, 32u };
-static const uint32_t m9s41[3] = { 32u, 44u, 32u };
-static const uint32_t m9s42[2] = { 32u, 46u };
-static const uint32_t m9s43[8] = { 64u, 112u, 114u, 101u, 102u, 105u, 120u, 32u };
-static const uint32_t m9s44[2] = { 58u, 32u };
-static const uint32_t m9s45[2] = { 32u, 46u };
-static const uint32_t m9s46[9] = { 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s47[20] = { 95u, 126u, 46u, 45u, 33u, 36u, 38u, 39u, 40u, 41u, 42u, 43u, 44u, 59u, 61u, 47u, 63u, 35u, 64u, 37u };
-static const uint32_t m9s48[29] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 111u, 116u, 104u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 92u, 117u, 32u, 111u, 114u, 32u, 92u, 85u };
-static const uint32_t m9s49[35] = { 97u, 32u, 104u, 101u, 120u, 32u, 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 105u, 110u, 32u, 97u, 32u, 92u, 117u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
-static const uint32_t m9s50[29] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 110u, 97u, 109u, 105u, 110u, 103u, 32u, 110u, 111u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u };
-static const uint32_t m9s51[1] = { 60u };
-static const uint32_t m9s52[17] = { 97u, 110u, 32u, 73u, 82u, 73u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s53[31] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 97u, 110u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
-static const uint32_t m9s54[3] = { 46u, 46u, 47u };
-static const uint32_t m9s55[2] = { 46u, 47u };
-static const uint32_t m9s56[3] = { 47u, 46u, 47u };
-static const uint32_t m9s57[2] = { 47u, 46u };
-static const uint32_t m9s58[1] = { 47u };
-static const uint32_t m9s59[4] = { 47u, 46u, 46u, 47u };
-static const uint32_t m9s60[3] = { 47u, 46u, 46u };
-static const uint32_t m9s61[3] = { 47u, 46u, 46u };
-static const uint32_t m9s62[1] = { 47u };
-static const uint32_t m9s63[1] = { 46u };
-static const uint32_t m9s64[2] = { 46u, 46u };
-static const uint32_t m9s65[1] = { 47u };
-static const uint32_t m9s66[1] = { 58u };
-static const uint32_t m9s67[2] = { 47u, 47u };
-static const uint32_t m9s68[1] = { 63u };
-static const uint32_t m9s69[1] = { 35u };
-static const uint32_t m9s70[27] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 73u, 82u, 73u, 32u, 105u, 110u, 32u, 78u, 45u, 84u, 114u, 105u, 112u, 108u, 101u, 115u };
-static const uint32_t m9s71[40] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 73u, 82u, 73u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u };
-static const uint32_t m9s72[22] = { 97u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 110u, 97u, 109u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s73[29] = { 97u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 110u, 97u, 109u, 101u, 32u, 101u, 110u, 100u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 100u, 111u, 116u };
-static const uint32_t m9s74[7] = { 97u, 32u, 99u, 111u, 108u, 111u, 110u };
-static const uint32_t m9s75[34] = { 97u, 32u, 37u, 32u, 110u, 111u, 116u, 32u, 102u, 111u, 108u, 108u, 111u, 119u, 101u, 100u, 32u, 98u, 121u, 32u, 116u, 119u, 111u, 32u, 104u, 101u, 120u, 32u, 100u, 105u, 103u, 105u, 116u, 115u };
-static const uint32_t m9s76[35] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 97u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 110u, 97u, 109u, 101u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
-static const uint32_t m9s77[11] = { 116u, 104u, 101u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u };
-static const uint32_t m9s78[17] = { 58u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u };
-static const uint32_t m9s79[1] = { 98u };
-static const uint32_t m9s80[27] = { 97u, 32u, 98u, 108u, 97u, 110u, 107u, 32u, 110u, 111u, 100u, 101u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s81[34] = { 97u, 32u, 98u, 108u, 97u, 110u, 107u, 32u, 110u, 111u, 100u, 101u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 101u, 110u, 100u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 100u, 111u, 116u };
-static const uint32_t m9s82[31] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
-static const uint32_t m9s83[27] = { 97u, 32u, 115u, 105u, 110u, 103u, 108u, 101u, 32u, 113u, 117u, 111u, 116u, 101u, 32u, 105u, 110u, 32u, 78u, 45u, 84u, 114u, 105u, 112u, 108u, 101u, 115u };
-static const uint32_t m9s84[19] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s85[28] = { 97u, 32u, 108u, 105u, 110u, 101u, 32u, 101u, 110u, 100u, 32u, 105u, 110u, 32u, 97u, 32u, 115u, 104u, 111u, 114u, 116u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s86[23] = { 97u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 116u, 97u, 103u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s87[1] = { 45u };
-static const uint32_t m9s88[26] = { 97u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 115u, 117u, 98u, 116u, 97u, 103u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s89[1] = { 46u };
-static const uint32_t m9s90[26] = { 97u, 110u, 32u, 101u, 120u, 112u, 111u, 110u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 100u, 105u, 103u, 105u, 116u, 115u };
-static const uint32_t m9s91[17] = { 97u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s92[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s93[7] = { 100u, 101u, 99u, 105u, 109u, 97u, 108u };
-static const uint32_t m9s94[7] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u };
-static const uint32_t m9s95[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s96[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s97[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s98[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s99[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s100[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s101[15] = { 97u, 32u, 116u, 101u, 114u, 109u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s102[1] = { 40u };
-static const uint32_t m9s103[3] = { 110u, 105u, 108u };
-static const uint32_t m9s104[23] = { 97u, 32u, 99u, 111u, 108u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
-static const uint32_t m9s105[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s106[5] = { 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s107[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s108[3] = { 110u, 105u, 108u };
-static const uint32_t m9s109[1] = { 91u };
-static const uint32_t m9s110[38] = { 97u, 32u, 93u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 97u, 32u, 98u, 108u, 97u, 110u, 107u, 32u, 110u, 111u, 100u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s111[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s34[7] = { 114u, 100u, 102u, 58u, 82u, 68u, 70u };
+static const uint32_t m9s35[9] = { 120u, 109u, 108u, 110u, 115u, 58u, 114u, 100u, 102u };
+static const uint32_t m9s36[8] = { 120u, 109u, 108u, 110u, 115u, 58u, 110u, 115u };
+static const uint32_t m9s37[15] = { 114u, 100u, 102u, 58u, 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s38[10] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s39[9] = { 114u, 100u, 102u, 58u, 97u, 98u, 111u, 117u, 116u };
+static const uint32_t m9s40[4] = { 114u, 100u, 102u, 58u };
+static const uint32_t m9s41[2] = { 110u, 115u };
+static const uint32_t m9s42[1] = { 58u };
+static const uint32_t m9s43[12] = { 114u, 100u, 102u, 58u, 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
+static const uint32_t m9s44[10] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s45[8] = { 120u, 109u, 108u, 58u, 108u, 97u, 110u, 103u };
+static const uint32_t m9s46[12] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s47[2] = { 32u, 46u };
+static const uint32_t m9s48[3] = { 114u, 100u, 102u };
+static const uint32_t m9s49[4] = { 114u, 100u, 102u, 115u };
+static const uint32_t m9s50[3] = { 120u, 115u, 100u };
+static const uint32_t m9s51[3] = { 111u, 119u, 108u };
+static const uint32_t m9s52[2] = { 32u, 59u };
+static const uint32_t m9s53[4] = { 32u, 32u, 32u, 32u };
+static const uint32_t m9s54[3] = { 32u, 44u, 32u };
+static const uint32_t m9s55[2] = { 32u, 46u };
+static const uint32_t m9s56[8] = { 64u, 112u, 114u, 101u, 102u, 105u, 120u, 32u };
+static const uint32_t m9s57[2] = { 58u, 32u };
+static const uint32_t m9s58[2] = { 32u, 46u };
+static const uint32_t m9s59[9] = { 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s60[20] = { 95u, 126u, 46u, 45u, 33u, 36u, 38u, 39u, 40u, 41u, 42u, 43u, 44u, 59u, 61u, 47u, 63u, 35u, 64u, 37u };
+static const uint32_t m9s61[29] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 111u, 116u, 104u, 101u, 114u, 32u, 116u, 104u, 97u, 110u, 32u, 92u, 117u, 32u, 111u, 114u, 32u, 92u, 85u };
+static const uint32_t m9s62[35] = { 97u, 32u, 104u, 101u, 120u, 32u, 100u, 105u, 103u, 105u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u, 32u, 105u, 110u, 32u, 97u, 32u, 92u, 117u, 32u, 101u, 115u, 99u, 97u, 112u, 101u };
+static const uint32_t m9s63[29] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 110u, 97u, 109u, 105u, 110u, 103u, 32u, 110u, 111u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u };
+static const uint32_t m9s64[1] = { 60u };
+static const uint32_t m9s65[17] = { 97u, 110u, 32u, 73u, 82u, 73u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
+static const uint32_t m9s66[31] = { 97u, 32u, 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 97u, 110u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
+static const uint32_t m9s67[3] = { 46u, 46u, 47u };
+static const uint32_t m9s68[2] = { 46u, 47u };
+static const uint32_t m9s69[3] = { 47u, 46u, 47u };
+static const uint32_t m9s70[2] = { 47u, 46u };
+static const uint32_t m9s71[1] = { 47u };
+static const uint32_t m9s72[4] = { 47u, 46u, 46u, 47u };
+static const uint32_t m9s73[3] = { 47u, 46u, 46u };
+static const uint32_t m9s74[3] = { 47u, 46u, 46u };
+static const uint32_t m9s75[1] = { 47u };
+static const uint32_t m9s76[1] = { 46u };
+static const uint32_t m9s77[2] = { 46u, 46u };
+static const uint32_t m9s78[1] = { 47u };
+static const uint32_t m9s79[1] = { 58u };
+static const uint32_t m9s80[2] = { 47u, 47u };
+static const uint32_t m9s81[1] = { 63u };
+static const uint32_t m9s82[1] = { 35u };
+static const uint32_t m9s83[27] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 73u, 82u, 73u, 32u, 105u, 110u, 32u, 78u, 45u, 84u, 114u, 105u, 112u, 108u, 101u, 115u };
+static const uint32_t m9s84[40] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 73u, 82u, 73u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u };
+static const uint32_t m9s85[22] = { 97u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 110u, 97u, 109u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s86[29] = { 97u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u, 110u, 97u, 109u, 101u, 32u, 101u, 110u, 100u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 100u, 111u, 116u };
+static const uint32_t m9s87[7] = { 97u, 32u, 99u, 111u, 108u, 111u, 110u };
+static const uint32_t m9s88[34] = { 97u, 32u, 37u, 32u, 110u, 111u, 116u, 32u, 102u, 111u, 108u, 108u, 111u, 119u, 101u, 100u, 32u, 98u, 121u, 32u, 116u, 119u, 111u, 32u, 104u, 101u, 120u, 32u, 100u, 105u, 103u, 105u, 116u, 115u };
+static const uint32_t m9s89[35] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 97u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 110u, 97u, 109u, 101u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
+static const uint32_t m9s90[11] = { 116u, 104u, 101u, 32u, 112u, 114u, 101u, 102u, 105u, 120u, 32u };
+static const uint32_t m9s91[17] = { 58u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 100u, 101u, 99u, 108u, 97u, 114u, 101u, 100u };
+static const uint32_t m9s92[1] = { 98u };
+static const uint32_t m9s93[27] = { 97u, 32u, 98u, 108u, 97u, 110u, 107u, 32u, 110u, 111u, 100u, 101u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s94[34] = { 97u, 32u, 98u, 108u, 97u, 110u, 107u, 32u, 110u, 111u, 100u, 101u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 101u, 110u, 100u, 115u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 100u, 111u, 116u };
+static const uint32_t m9s95[31] = { 97u, 110u, 32u, 101u, 115u, 99u, 97u, 112u, 101u, 32u, 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 109u, 97u, 121u, 32u, 110u, 111u, 116u, 32u, 104u, 111u, 108u, 100u };
+static const uint32_t m9s96[27] = { 97u, 32u, 115u, 105u, 110u, 103u, 108u, 101u, 32u, 113u, 117u, 111u, 116u, 101u, 32u, 105u, 110u, 32u, 78u, 45u, 84u, 114u, 105u, 112u, 108u, 101u, 115u };
+static const uint32_t m9s97[19] = { 97u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
+static const uint32_t m9s98[28] = { 97u, 32u, 108u, 105u, 110u, 101u, 32u, 101u, 110u, 100u, 32u, 105u, 110u, 32u, 97u, 32u, 115u, 104u, 111u, 114u, 116u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s99[23] = { 97u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 116u, 97u, 103u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s100[1] = { 45u };
+static const uint32_t m9s101[26] = { 97u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 115u, 117u, 98u, 116u, 97u, 103u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s102[1] = { 46u };
+static const uint32_t m9s103[26] = { 97u, 110u, 32u, 101u, 120u, 112u, 111u, 110u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 100u, 105u, 103u, 105u, 116u, 115u };
+static const uint32_t m9s104[17] = { 97u, 32u, 110u, 117u, 109u, 98u, 101u, 114u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s105[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s106[7] = { 100u, 101u, 99u, 105u, 109u, 97u, 108u };
+static const uint32_t m9s107[7] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u };
+static const uint32_t m9s108[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s109[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s110[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
+static const uint32_t m9s111[5] = { 102u, 97u, 108u, 115u, 101u };
 static const uint32_t m9s112[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s113[18] = { 97u, 110u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s114[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s115[20] = { 97u, 32u, 112u, 114u, 101u, 100u, 105u, 99u, 97u, 116u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s116[7] = { 64u, 112u, 114u, 101u, 102u, 105u, 120u };
-static const uint32_t m9s117[6] = { 80u, 82u, 69u, 70u, 73u, 88u };
-static const uint32_t m9s118[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s119[17] = { 97u, 32u, 100u, 111u, 116u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s120[4] = { 66u, 65u, 83u, 69u };
-static const uint32_t m9s121[19] = { 97u, 32u, 100u, 111u, 116u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 64u, 112u, 114u, 101u, 102u, 105u, 120u };
-static const uint32_t m9s122[18] = { 97u, 32u, 115u, 117u, 98u, 106u, 101u, 99u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s123[15] = { 97u, 32u, 116u, 101u, 114u, 109u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
-static const uint32_t m9s124[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 65u, 66u, 67u, 68u, 69u, 70u };
-static const uint32_t m9s125[4] = { 92u, 117u, 48u, 48u };
-static const uint32_t m9s126[2] = { 95u, 58u };
-static const uint32_t m9s127[2] = { 92u, 34u };
-static const uint32_t m9s128[2] = { 92u, 92u };
-static const uint32_t m9s129[2] = { 92u, 110u };
-static const uint32_t m9s130[2] = { 92u, 114u };
-static const uint32_t m9s131[2] = { 92u, 116u };
-static const uint32_t m9s132[4] = { 92u, 117u, 48u, 48u };
-static const uint32_t m9s133[2] = { 94u, 94u };
-static const uint32_t m9s134[7] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u };
-static const uint32_t m9s135[7] = { 100u, 101u, 99u, 105u, 109u, 97u, 108u };
-static const uint32_t m9s136[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s137[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s138[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s139[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s140[3] = { 34u, 34u, 34u };
-static const uint32_t m9s141[2] = { 92u, 34u };
-static const uint32_t m9s142[2] = { 92u, 92u };
-static const uint32_t m9s143[2] = { 92u, 116u };
-static const uint32_t m9s144[4] = { 92u, 117u, 48u, 48u };
-static const uint32_t m9s145[3] = { 34u, 34u, 34u };
+static const uint32_t m9s113[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
+static const uint32_t m9s114[15] = { 97u, 32u, 116u, 101u, 114u, 109u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s115[1] = { 40u };
+static const uint32_t m9s116[3] = { 110u, 105u, 108u };
+static const uint32_t m9s117[23] = { 97u, 32u, 99u, 111u, 108u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 32u, 110u, 111u, 116u, 32u, 99u, 108u, 111u, 115u, 101u, 100u };
+static const uint32_t m9s118[4] = { 114u, 101u, 115u, 116u };
+static const uint32_t m9s119[5] = { 102u, 105u, 114u, 115u, 116u };
+static const uint32_t m9s120[4] = { 114u, 101u, 115u, 116u };
+static const uint32_t m9s121[3] = { 110u, 105u, 108u };
+static const uint32_t m9s122[1] = { 91u };
+static const uint32_t m9s123[38] = { 97u, 32u, 93u, 32u, 99u, 108u, 111u, 115u, 105u, 110u, 103u, 32u, 97u, 32u, 98u, 108u, 97u, 110u, 107u, 32u, 110u, 111u, 100u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s124[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s125[5] = { 102u, 97u, 108u, 115u, 101u };
+static const uint32_t m9s126[18] = { 97u, 110u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s127[4] = { 116u, 121u, 112u, 101u };
+static const uint32_t m9s128[20] = { 97u, 32u, 112u, 114u, 101u, 100u, 105u, 99u, 97u, 116u, 101u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s129[7] = { 64u, 112u, 114u, 101u, 102u, 105u, 120u };
+static const uint32_t m9s130[6] = { 80u, 82u, 69u, 70u, 73u, 88u };
+static const uint32_t m9s131[5] = { 64u, 98u, 97u, 115u, 101u };
+static const uint32_t m9s132[17] = { 97u, 32u, 100u, 111u, 116u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 64u, 98u, 97u, 115u, 101u };
+static const uint32_t m9s133[4] = { 66u, 65u, 83u, 69u };
+static const uint32_t m9s134[19] = { 97u, 32u, 100u, 111u, 116u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 64u, 112u, 114u, 101u, 102u, 105u, 120u };
+static const uint32_t m9s135[18] = { 97u, 32u, 115u, 117u, 98u, 106u, 101u, 99u, 116u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s136[15] = { 97u, 32u, 116u, 101u, 114u, 109u, 32u, 101u, 120u, 112u, 101u, 99u, 116u, 101u, 100u };
+static const uint32_t m9s137[16] = { 48u, 49u, 50u, 51u, 52u, 53u, 54u, 55u, 56u, 57u, 65u, 66u, 67u, 68u, 69u, 70u };
+static const uint32_t m9s138[4] = { 92u, 117u, 48u, 48u };
+static const uint32_t m9s139[2] = { 95u, 58u };
+static const uint32_t m9s140[2] = { 92u, 34u };
+static const uint32_t m9s141[2] = { 92u, 92u };
+static const uint32_t m9s142[2] = { 92u, 110u };
+static const uint32_t m9s143[2] = { 92u, 114u };
+static const uint32_t m9s144[2] = { 92u, 116u };
+static const uint32_t m9s145[4] = { 92u, 117u, 48u, 48u };
 static const uint32_t m9s146[2] = { 94u, 94u };
-static const uint32_t m9s147[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s148[2] = { 95u, 58u };
-static const uint32_t m9s149[3] = { 82u, 68u, 70u };
-static const uint32_t m9s150[2] = { 73u, 68u };
-static const uint32_t m9s151[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s152[9] = { 112u, 97u, 114u, 115u, 101u, 84u, 121u, 112u, 101u };
-static const uint32_t m9s153[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s154[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s155[8] = { 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s156[9] = { 97u, 98u, 111u, 117u, 116u, 69u, 97u, 99u, 104u };
-static const uint32_t m9s157[15] = { 97u, 98u, 111u, 117u, 116u, 69u, 97u, 99u, 104u, 80u, 114u, 101u, 102u, 105u, 120u };
-static const uint32_t m9s158[5] = { 98u, 97u, 103u, 73u, 68u };
-static const uint32_t m9s159[4] = { 98u, 97u, 115u, 101u };
-static const uint32_t m9s160[4] = { 98u, 97u, 115u, 101u };
-static const uint32_t m9s161[45] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 120u, 109u, 108u, 58u, 98u, 97u, 115u, 101u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u };
-static const uint32_t m9s162[4] = { 108u, 97u, 110u, 103u };
-static const uint32_t m9s163[4] = { 108u, 97u, 110u, 103u };
-static const uint32_t m9s164[42] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 73u, 82u, 73u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u, 58u, 32u };
-static const uint32_t m9s165[27] = { 114u, 100u, 102u, 58u, 73u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s166[40] = { 114u, 100u, 102u, 58u, 73u, 68u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u, 32u, 97u, 103u, 97u, 105u, 110u, 115u, 116u };
-static const uint32_t m9s167[1] = { 35u };
-static const uint32_t m9s168[19] = { 114u, 100u, 102u, 58u, 73u, 68u, 32u, 117u, 115u, 101u, 100u, 32u, 116u, 119u, 105u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s169[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s170[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s171[2] = { 108u, 105u };
-static const uint32_t m9s172[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s173[4] = { 114u, 100u, 102u, 58u };
-static const uint32_t m9s174[28] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u };
-static const uint32_t m9s175[2] = { 108u, 105u };
-static const uint32_t m9s176[4] = { 114u, 100u, 102u, 58u };
-static const uint32_t m9s177[22] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s178[32] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s179[2] = { 73u, 68u };
-static const uint32_t m9s180[2] = { 73u, 68u };
-static const uint32_t m9s181[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s182[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s183[31] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s184[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s185[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s186[53] = { 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 111u, 102u, 32u, 114u, 100u, 102u, 58u, 73u, 68u, 44u, 32u, 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 97u, 110u, 100u, 32u, 114u, 100u, 102u, 58u, 97u, 98u, 111u, 117u, 116u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s187[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s188[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s189[3] = { 120u, 109u, 108u };
-static const uint32_t m9s190[34] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s191[2] = { 73u, 68u };
-static const uint32_t m9s192[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s193[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s194[46] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 97u, 109u, 111u, 110u, 103u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 115u, 32u, 111u, 102u, 32u };
-static const uint32_t m9s195[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s196[9] = { 83u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s197[7] = { 115u, 117u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s198[9] = { 112u, 114u, 101u, 100u, 105u, 99u, 97u, 116u, 101u };
-static const uint32_t m9s199[6] = { 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s200[32] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s201[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s202[4] = { 114u, 100u, 102u, 58u };
-static const uint32_t m9s203[26] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s204[2] = { 108u, 105u };
-static const uint32_t m9s205[1] = { 95u };
-static const uint32_t m9s206[3] = { 120u, 109u, 108u };
-static const uint32_t m9s207[34] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
-static const uint32_t m9s208[2] = { 73u, 68u };
-static const uint32_t m9s209[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s210[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s211[8] = { 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s212[9] = { 112u, 97u, 114u, 115u, 101u, 84u, 121u, 112u, 101u };
-static const uint32_t m9s213[5] = { 97u, 98u, 111u, 117u, 116u };
-static const uint32_t m9s214[2] = { 108u, 105u };
-static const uint32_t m9s215[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s216[3] = { 82u, 68u, 70u };
-static const uint32_t m9s217[4] = { 114u, 100u, 102u, 58u };
-static const uint32_t m9s218[22] = { 32u, 111u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s219[36] = { 98u, 111u, 116u, 104u, 32u, 114u, 100u, 102u, 58u, 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u, 32u, 97u, 110u, 100u, 32u, 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s220[41] = { 114u, 100u, 102u, 58u, 112u, 97u, 114u, 115u, 101u, 84u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 111u, 116u, 104u, 101u, 114u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s221[8] = { 82u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s222[10] = { 67u, 111u, 108u, 108u, 101u, 99u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s223[30] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 105u, 110u, 32u, 97u, 32u, 99u, 111u, 108u, 108u, 101u, 99u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s224[3] = { 110u, 105u, 108u };
-static const uint32_t m9s225[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s226[5] = { 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s227[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s228[3] = { 110u, 105u, 108u };
-static const uint32_t m9s229[10] = { 88u, 77u, 76u, 76u, 105u, 116u, 101u, 114u, 97u, 108u };
-static const uint32_t m9s230[36] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 105u, 110u, 32u };
-static const uint32_t m9s231[51] = { 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 110u, 111u, 100u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
-static const uint32_t m9s232[36] = { 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s233[31] = { 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 32u, 111u, 110u, 32u };
-static const uint32_t m9s234[32] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 114u, 100u, 102u, 58u, 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s235[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s236[30] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s237[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s238[31] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s239[39] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u };
-static const uint32_t m9s240[2] = { 73u, 68u };
-static const uint32_t m9s241[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
-static const uint32_t m9s242[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
-static const uint32_t m9s243[5] = { 38u, 97u, 109u, 112u, 59u };
-static const uint32_t m9s244[4] = { 38u, 108u, 116u, 59u };
-static const uint32_t m9s245[4] = { 38u, 103u, 116u, 59u };
-static const uint32_t m9s246[5] = { 38u, 35u, 120u, 68u, 59u };
-static const uint32_t m9s247[5] = { 38u, 97u, 109u, 112u, 59u };
-static const uint32_t m9s248[4] = { 38u, 108u, 116u, 59u };
-static const uint32_t m9s249[6] = { 38u, 113u, 117u, 111u, 116u, 59u };
-static const uint32_t m9s250[5] = { 38u, 35u, 120u, 57u, 59u };
-static const uint32_t m9s251[5] = { 38u, 35u, 120u, 65u, 59u };
-static const uint32_t m9s252[5] = { 38u, 35u, 120u, 68u, 59u };
-static const uint32_t m9s253[8] = { 32u, 120u, 109u, 108u, 110u, 115u, 61u, 34u };
-static const uint32_t m9s254[7] = { 32u, 120u, 109u, 108u, 110u, 115u, 58u };
-static const uint32_t m9s255[2] = { 61u, 34u };
-static const uint32_t m9s256[2] = { 61u, 34u };
-static const uint32_t m9s257[2] = { 60u, 47u };
-static const uint32_t m9s258[2] = { 58u, 32u };
-static const uint32_t m9s259[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s260[3] = { 64u, 105u, 100u };
-static const uint32_t m9s261[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s262[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s263[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s264[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s265[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s266[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s267[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s268[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s269[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s270[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s271[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s272[8] = { 64u, 100u, 101u, 102u, 97u, 117u, 108u, 116u };
-static const uint32_t m9s273[6] = { 64u, 101u, 109u, 98u, 101u, 100u };
-static const uint32_t m9s274[9] = { 64u, 101u, 120u, 112u, 108u, 105u, 99u, 105u, 116u };
-static const uint32_t m9s275[12] = { 64u, 111u, 109u, 105u, 116u, 68u, 101u, 102u, 97u, 117u, 108u, 116u };
-static const uint32_t m9s276[2] = { 95u, 58u };
-static const uint32_t m9s277[1] = { 95u };
-static const uint32_t m9s278[2] = { 47u, 47u };
-static const uint32_t m9s279[18] = { 99u, 121u, 99u, 108u, 105u, 99u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s280[20] = { 107u, 101u, 121u, 119u, 111u, 114u, 100u, 32u, 114u, 101u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s281[23] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 101u, 114u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s282[13] = { 97u, 110u, 32u, 101u, 109u, 112u, 116u, 121u, 32u, 116u, 101u, 114u, 109u };
-static const uint32_t m9s283[3] = { 64u, 105u, 100u };
-static const uint32_t m9s284[3] = { 64u, 105u, 100u };
-static const uint32_t m9s285[3] = { 64u, 105u, 100u };
-static const uint32_t m9s286[23] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 101u, 114u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
-static const uint32_t m9s287[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s288[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s289[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s290[3] = { 64u, 105u, 100u };
-static const uint32_t m9s291[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s292[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s293[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s294[3] = { 64u, 105u, 100u };
-static const uint32_t m9s295[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u };
-static const uint32_t m9s296[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s297[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s298[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s299[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s300[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s301[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s302[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s303[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u };
-static const uint32_t m9s304[3] = { 64u, 105u, 100u };
-static const uint32_t m9s305[3] = { 64u, 105u, 100u };
-static const uint32_t m9s306[3] = { 64u, 105u, 100u };
-static const uint32_t m9s307[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s308[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s309[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s310[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 107u, 101u, 121u, 119u, 111u, 114u, 100u, 32u, 97u, 108u, 105u, 97u, 115u };
+static const uint32_t m9s147[7] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u };
+static const uint32_t m9s148[7] = { 100u, 101u, 99u, 105u, 109u, 97u, 108u };
+static const uint32_t m9s149[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s150[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
+static const uint32_t m9s151[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s152[5] = { 102u, 97u, 108u, 115u, 101u };
+static const uint32_t m9s153[3] = { 34u, 34u, 34u };
+static const uint32_t m9s154[2] = { 92u, 34u };
+static const uint32_t m9s155[2] = { 92u, 92u };
+static const uint32_t m9s156[2] = { 92u, 116u };
+static const uint32_t m9s157[4] = { 92u, 117u, 48u, 48u };
+static const uint32_t m9s158[3] = { 34u, 34u, 34u };
+static const uint32_t m9s159[2] = { 94u, 94u };
+static const uint32_t m9s160[4] = { 116u, 121u, 112u, 101u };
+static const uint32_t m9s161[2] = { 95u, 58u };
+static const uint32_t m9s162[3] = { 82u, 68u, 70u };
+static const uint32_t m9s163[2] = { 73u, 68u };
+static const uint32_t m9s164[5] = { 97u, 98u, 111u, 117u, 116u };
+static const uint32_t m9s165[9] = { 112u, 97u, 114u, 115u, 101u, 84u, 121u, 112u, 101u };
+static const uint32_t m9s166[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
+static const uint32_t m9s167[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s168[8] = { 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s169[9] = { 97u, 98u, 111u, 117u, 116u, 69u, 97u, 99u, 104u };
+static const uint32_t m9s170[15] = { 97u, 98u, 111u, 117u, 116u, 69u, 97u, 99u, 104u, 80u, 114u, 101u, 102u, 105u, 120u };
+static const uint32_t m9s171[5] = { 98u, 97u, 103u, 73u, 68u };
+static const uint32_t m9s172[4] = { 98u, 97u, 115u, 101u };
+static const uint32_t m9s173[4] = { 98u, 97u, 115u, 101u };
+static const uint32_t m9s174[45] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 120u, 109u, 108u, 58u, 98u, 97u, 115u, 101u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u };
+static const uint32_t m9s175[4] = { 108u, 97u, 110u, 103u };
+static const uint32_t m9s176[4] = { 108u, 97u, 110u, 103u };
+static const uint32_t m9s177[42] = { 97u, 32u, 114u, 101u, 108u, 97u, 116u, 105u, 118u, 101u, 32u, 73u, 82u, 73u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u, 58u, 32u };
+static const uint32_t m9s178[27] = { 114u, 100u, 102u, 58u, 73u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
+static const uint32_t m9s179[40] = { 114u, 100u, 102u, 58u, 73u, 68u, 32u, 97u, 110u, 100u, 32u, 110u, 111u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 111u, 32u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 32u, 105u, 116u, 32u, 97u, 103u, 97u, 105u, 110u, 115u, 116u };
+static const uint32_t m9s180[1] = { 35u };
+static const uint32_t m9s181[19] = { 114u, 100u, 102u, 58u, 73u, 68u, 32u, 117u, 115u, 101u, 100u, 32u, 116u, 119u, 105u, 99u, 101u, 58u, 32u };
+static const uint32_t m9s182[4] = { 116u, 121u, 112u, 101u };
+static const uint32_t m9s183[4] = { 116u, 121u, 112u, 101u };
+static const uint32_t m9s184[2] = { 108u, 105u };
+static const uint32_t m9s185[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s186[4] = { 114u, 100u, 102u, 58u };
+static const uint32_t m9s187[28] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u };
+static const uint32_t m9s188[2] = { 108u, 105u };
+static const uint32_t m9s189[4] = { 114u, 100u, 102u, 58u };
+static const uint32_t m9s190[22] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s191[32] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
+static const uint32_t m9s192[2] = { 73u, 68u };
+static const uint32_t m9s193[2] = { 73u, 68u };
+static const uint32_t m9s194[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s195[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s196[31] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
+static const uint32_t m9s197[5] = { 97u, 98u, 111u, 117u, 116u };
+static const uint32_t m9s198[5] = { 97u, 98u, 111u, 117u, 116u };
+static const uint32_t m9s199[53] = { 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 111u, 102u, 32u, 114u, 100u, 102u, 58u, 73u, 68u, 44u, 32u, 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 97u, 110u, 100u, 32u, 114u, 100u, 102u, 58u, 97u, 98u, 111u, 117u, 116u, 32u, 111u, 110u, 32u };
+static const uint32_t m9s200[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s201[4] = { 116u, 121u, 112u, 101u };
+static const uint32_t m9s202[3] = { 120u, 109u, 108u };
+static const uint32_t m9s203[34] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
+static const uint32_t m9s204[2] = { 73u, 68u };
+static const uint32_t m9s205[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s206[5] = { 97u, 98u, 111u, 117u, 116u };
+static const uint32_t m9s207[46] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 97u, 109u, 111u, 110u, 103u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 115u, 32u, 111u, 102u, 32u };
+static const uint32_t m9s208[4] = { 116u, 121u, 112u, 101u };
+static const uint32_t m9s209[9] = { 83u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s210[7] = { 115u, 117u, 98u, 106u, 101u, 99u, 116u };
+static const uint32_t m9s211[9] = { 112u, 114u, 101u, 100u, 105u, 99u, 97u, 116u, 101u };
+static const uint32_t m9s212[6] = { 111u, 98u, 106u, 101u, 99u, 116u };
+static const uint32_t m9s213[32] = { 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
+static const uint32_t m9s214[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s215[4] = { 114u, 100u, 102u, 58u };
+static const uint32_t m9s216[26] = { 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s217[2] = { 108u, 105u };
+static const uint32_t m9s218[1] = { 95u };
+static const uint32_t m9s219[3] = { 120u, 109u, 108u };
+static const uint32_t m9s220[34] = { 97u, 110u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 97u, 32u, 110u, 97u, 109u, 101u, 115u, 112u, 97u, 99u, 101u, 58u, 32u };
+static const uint32_t m9s221[2] = { 73u, 68u };
+static const uint32_t m9s222[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
+static const uint32_t m9s223[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s224[8] = { 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s225[9] = { 112u, 97u, 114u, 115u, 101u, 84u, 121u, 112u, 101u };
+static const uint32_t m9s226[5] = { 97u, 98u, 111u, 117u, 116u };
+static const uint32_t m9s227[2] = { 108u, 105u };
+static const uint32_t m9s228[11] = { 68u, 101u, 115u, 99u, 114u, 105u, 112u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s229[3] = { 82u, 68u, 70u };
+static const uint32_t m9s230[4] = { 114u, 100u, 102u, 58u };
+static const uint32_t m9s231[22] = { 32u, 111u, 110u, 32u, 97u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s232[36] = { 98u, 111u, 116u, 104u, 32u, 114u, 100u, 102u, 58u, 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u, 32u, 97u, 110u, 100u, 32u, 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 111u, 110u, 32u };
+static const uint32_t m9s233[41] = { 114u, 100u, 102u, 58u, 112u, 97u, 114u, 115u, 101u, 84u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 111u, 116u, 104u, 101u, 114u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u, 32u, 111u, 110u, 32u };
+static const uint32_t m9s234[8] = { 82u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
+static const uint32_t m9s235[10] = { 67u, 111u, 108u, 108u, 101u, 99u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s236[30] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 105u, 110u, 32u, 97u, 32u, 99u, 111u, 108u, 108u, 101u, 99u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s237[3] = { 110u, 105u, 108u };
+static const uint32_t m9s238[4] = { 114u, 101u, 115u, 116u };
+static const uint32_t m9s239[5] = { 102u, 105u, 114u, 115u, 116u };
+static const uint32_t m9s240[4] = { 114u, 101u, 115u, 116u };
+static const uint32_t m9s241[3] = { 110u, 105u, 108u };
+static const uint32_t m9s242[10] = { 88u, 77u, 76u, 76u, 105u, 116u, 101u, 114u, 97u, 108u };
+static const uint32_t m9s243[36] = { 99u, 104u, 97u, 114u, 97u, 99u, 116u, 101u, 114u, 32u, 100u, 97u, 116u, 97u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 97u, 110u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 105u, 110u, 32u };
+static const uint32_t m9s244[51] = { 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 111u, 110u, 101u, 32u, 110u, 111u, 100u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 105u, 110u, 32u, 116u, 104u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u };
+static const uint32_t m9s245[36] = { 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 110u, 111u, 100u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 111u, 110u, 32u };
+static const uint32_t m9s246[31] = { 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 32u, 111u, 110u, 32u };
+static const uint32_t m9s247[32] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 114u, 100u, 102u, 58u, 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
+static const uint32_t m9s248[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
+static const uint32_t m9s249[30] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s250[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s251[31] = { 114u, 100u, 102u, 58u, 110u, 111u, 100u, 101u, 73u, 68u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 110u, 32u, 88u, 77u, 76u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
+static const uint32_t m9s252[39] = { 114u, 100u, 102u, 58u, 100u, 97u, 116u, 97u, 116u, 121u, 112u, 101u, 32u, 98u, 101u, 115u, 105u, 100u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 97u, 116u, 116u, 114u, 105u, 98u, 117u, 116u, 101u, 115u };
+static const uint32_t m9s253[2] = { 73u, 68u };
+static const uint32_t m9s254[8] = { 114u, 101u, 115u, 111u, 117u, 114u, 99u, 101u };
+static const uint32_t m9s255[6] = { 110u, 111u, 100u, 101u, 73u, 68u };
+static const uint32_t m9s256[5] = { 38u, 97u, 109u, 112u, 59u };
+static const uint32_t m9s257[4] = { 38u, 108u, 116u, 59u };
+static const uint32_t m9s258[4] = { 38u, 103u, 116u, 59u };
+static const uint32_t m9s259[5] = { 38u, 35u, 120u, 68u, 59u };
+static const uint32_t m9s260[5] = { 38u, 97u, 109u, 112u, 59u };
+static const uint32_t m9s261[4] = { 38u, 108u, 116u, 59u };
+static const uint32_t m9s262[6] = { 38u, 113u, 117u, 111u, 116u, 59u };
+static const uint32_t m9s263[5] = { 38u, 35u, 120u, 57u, 59u };
+static const uint32_t m9s264[5] = { 38u, 35u, 120u, 65u, 59u };
+static const uint32_t m9s265[5] = { 38u, 35u, 120u, 68u, 59u };
+static const uint32_t m9s266[8] = { 32u, 120u, 109u, 108u, 110u, 115u, 61u, 34u };
+static const uint32_t m9s267[7] = { 32u, 120u, 109u, 108u, 110u, 115u, 58u };
+static const uint32_t m9s268[2] = { 61u, 34u };
+static const uint32_t m9s269[2] = { 61u, 34u };
+static const uint32_t m9s270[2] = { 60u, 47u };
+static const uint32_t m9s271[2] = { 58u, 32u };
+static const uint32_t m9s272[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s273[3] = { 64u, 105u, 100u };
+static const uint32_t m9s274[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s275[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s276[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s277[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
+static const uint32_t m9s278[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s279[4] = { 64u, 115u, 101u, 116u };
+static const uint32_t m9s280[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s281[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s282[5] = { 64u, 98u, 97u, 115u, 101u };
+static const uint32_t m9s283[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
+static const uint32_t m9s284[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s285[8] = { 64u, 100u, 101u, 102u, 97u, 117u, 108u, 116u };
+static const uint32_t m9s286[6] = { 64u, 101u, 109u, 98u, 101u, 100u };
+static const uint32_t m9s287[9] = { 64u, 101u, 120u, 112u, 108u, 105u, 99u, 105u, 116u };
+static const uint32_t m9s288[12] = { 64u, 111u, 109u, 105u, 116u, 68u, 101u, 102u, 97u, 117u, 108u, 116u };
+static const uint32_t m9s289[2] = { 95u, 58u };
+static const uint32_t m9s290[1] = { 95u };
+static const uint32_t m9s291[2] = { 47u, 47u };
+static const uint32_t m9s292[18] = { 99u, 121u, 99u, 108u, 105u, 99u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s293[20] = { 107u, 101u, 121u, 119u, 111u, 114u, 100u, 32u, 114u, 101u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s294[23] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 101u, 114u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s295[13] = { 97u, 110u, 32u, 101u, 109u, 112u, 116u, 121u, 32u, 116u, 101u, 114u, 109u };
+static const uint32_t m9s296[3] = { 64u, 105u, 100u };
+static const uint32_t m9s297[3] = { 64u, 105u, 100u };
+static const uint32_t m9s298[3] = { 64u, 105u, 100u };
+static const uint32_t m9s299[23] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 101u, 114u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u };
+static const uint32_t m9s300[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s301[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s302[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s303[3] = { 64u, 105u, 100u };
+static const uint32_t m9s304[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
+static const uint32_t m9s305[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s306[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s307[3] = { 64u, 105u, 100u };
+static const uint32_t m9s308[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u };
+static const uint32_t m9s309[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s310[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
 static const uint32_t m9s311[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s312[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s312[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
 static const uint32_t m9s313[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s314[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
-static const uint32_t m9s315[25] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s316[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s317[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s318[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s319[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s320[25] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s321[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s322[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s323[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s324[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s325[25] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 101u, 114u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 58u, 32u };
-static const uint32_t m9s326[27] = { 97u, 32u, 114u, 101u, 109u, 111u, 116u, 101u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u, 32u, 105u, 115u, 32u, 114u, 101u, 102u, 117u, 115u, 101u, 100u };
-static const uint32_t m9s327[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s328[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s329[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s330[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 98u, 97u, 115u, 101u, 32u, 73u, 82u, 73u };
-static const uint32_t m9s331[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 98u, 97u, 115u, 101u, 32u, 73u, 82u, 73u };
-static const uint32_t m9s332[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s333[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s334[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 111u, 99u, 97u, 98u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
-static const uint32_t m9s335[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s314[4] = { 64u, 115u, 101u, 116u };
+static const uint32_t m9s315[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s316[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u };
+static const uint32_t m9s317[3] = { 64u, 105u, 100u };
+static const uint32_t m9s318[3] = { 64u, 105u, 100u };
+static const uint32_t m9s319[3] = { 64u, 105u, 100u };
+static const uint32_t m9s320[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s321[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s322[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s323[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 107u, 101u, 121u, 119u, 111u, 114u, 100u, 32u, 97u, 108u, 105u, 97u, 115u };
+static const uint32_t m9s324[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s325[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 73u, 82u, 73u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s326[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
+static const uint32_t m9s327[10] = { 64u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u };
+static const uint32_t m9s328[25] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s329[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s330[4] = { 64u, 115u, 101u, 116u };
+static const uint32_t m9s331[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s332[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s333[25] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 99u, 111u, 110u, 116u, 97u, 105u, 110u, 101u, 114u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s334[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s335[5] = { 64u, 116u, 121u, 112u, 101u };
 static const uint32_t m9s336[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s337[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 101u, 102u, 97u, 117u, 108u, 116u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s338[5] = { 64u, 98u, 97u, 115u, 101u };
-static const uint32_t m9s339[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s340[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s341[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s342[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s343[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s344[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s345[3] = { 64u, 105u, 100u };
+static const uint32_t m9s337[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s338[25] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 101u, 114u, 109u, 32u, 100u, 101u, 102u, 105u, 110u, 105u, 116u, 105u, 111u, 110u, 58u, 32u };
+static const uint32_t m9s339[27] = { 97u, 32u, 114u, 101u, 109u, 111u, 116u, 101u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u, 32u, 105u, 115u, 32u, 114u, 101u, 102u, 117u, 115u, 101u, 100u };
+static const uint32_t m9s340[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s341[5] = { 64u, 98u, 97u, 115u, 101u };
+static const uint32_t m9s342[5] = { 64u, 98u, 97u, 115u, 101u };
+static const uint32_t m9s343[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 98u, 97u, 115u, 101u, 32u, 73u, 82u, 73u };
+static const uint32_t m9s344[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 98u, 97u, 115u, 101u, 32u, 73u, 82u, 73u };
+static const uint32_t m9s345[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
 static const uint32_t m9s346[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s347[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s348[3] = { 64u, 105u, 100u };
-static const uint32_t m9s349[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s350[3] = { 64u, 105u, 100u };
-static const uint32_t m9s351[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s352[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s347[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 111u, 99u, 97u, 98u, 32u, 109u, 97u, 112u, 112u, 105u, 110u, 103u };
+static const uint32_t m9s348[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s349[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s350[24] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 101u, 102u, 97u, 117u, 108u, 116u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s351[5] = { 64u, 98u, 97u, 115u, 101u };
+static const uint32_t m9s352[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
 static const uint32_t m9s353[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s354[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s355[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s356[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s357[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s358[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s359[13] = { 108u, 105u, 115u, 116u, 32u, 111u, 102u, 32u, 108u, 105u, 115u, 116u, 115u };
-static const uint32_t m9s360[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s361[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s362[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
-static const uint32_t m9s363[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s364[28] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 109u, 97u, 112u };
-static const uint32_t m9s365[18] = { 99u, 111u, 108u, 108u, 105u, 100u, 105u, 110u, 103u, 32u, 107u, 101u, 121u, 119u, 111u, 114u, 100u, 115u };
-static const uint32_t m9s366[3] = { 64u, 105u, 100u };
-static const uint32_t m9s367[17] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 64u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s368[3] = { 64u, 105u, 100u };
-static const uint32_t m9s369[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s370[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s371[18] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s372[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s373[18] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s374[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s375[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s376[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s377[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s378[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s379[26] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s380[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s381[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s382[30] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 45u, 116u, 97u, 103u, 103u, 101u, 100u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
-static const uint32_t m9s383[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s384[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s385[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 64u, 105u, 110u, 100u, 101u, 120u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s386[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s387[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s354[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s355[21] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 111u, 99u, 97u, 108u, 32u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s356[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s357[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s358[3] = { 64u, 105u, 100u };
+static const uint32_t m9s359[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
+static const uint32_t m9s360[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
+static const uint32_t m9s361[3] = { 64u, 105u, 100u };
+static const uint32_t m9s362[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s363[3] = { 64u, 105u, 100u };
+static const uint32_t m9s364[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
+static const uint32_t m9s365[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s366[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s367[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s368[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
+static const uint32_t m9s369[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s370[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s371[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s372[13] = { 108u, 105u, 115u, 116u, 32u, 111u, 102u, 32u, 108u, 105u, 115u, 116u, 115u };
+static const uint32_t m9s373[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s374[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s375[8] = { 64u, 99u, 111u, 110u, 116u, 101u, 120u, 116u };
+static const uint32_t m9s376[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s377[28] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 109u, 97u, 112u };
+static const uint32_t m9s378[18] = { 99u, 111u, 108u, 108u, 105u, 100u, 105u, 110u, 103u, 32u, 107u, 101u, 121u, 119u, 111u, 114u, 100u, 115u };
+static const uint32_t m9s379[3] = { 64u, 105u, 100u };
+static const uint32_t m9s380[17] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 64u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s381[3] = { 64u, 105u, 100u };
+static const uint32_t m9s382[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s383[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s384[18] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s385[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s386[18] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s387[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
 static const uint32_t m9s388[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s389[13] = { 108u, 105u, 115u, 116u, 32u, 111u, 102u, 32u, 108u, 105u, 115u, 116u, 115u };
-static const uint32_t m9s390[13] = { 108u, 105u, 115u, 116u, 32u, 111u, 102u, 32u, 108u, 105u, 115u, 116u, 115u };
-static const uint32_t m9s391[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s392[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s393[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s394[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s395[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s396[22] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s397[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s398[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s399[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s400[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s401[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s402[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s403[30] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s404[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s405[26] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 109u, 97u, 112u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s406[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s407[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s408[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s409[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s410[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s411[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s412[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s389[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s390[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s391[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s392[26] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s393[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s394[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s395[30] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 45u, 116u, 97u, 103u, 103u, 101u, 100u, 32u, 115u, 116u, 114u, 105u, 110u, 103u };
+static const uint32_t m9s396[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s397[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s398[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 64u, 105u, 110u, 100u, 101u, 120u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s399[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s400[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s401[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s402[13] = { 108u, 105u, 115u, 116u, 32u, 111u, 102u, 32u, 108u, 105u, 115u, 116u, 115u };
+static const uint32_t m9s403[13] = { 108u, 105u, 115u, 116u, 32u, 111u, 102u, 32u, 108u, 105u, 115u, 116u, 115u };
+static const uint32_t m9s404[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s405[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s406[4] = { 64u, 115u, 101u, 116u };
+static const uint32_t m9s407[4] = { 64u, 115u, 101u, 116u };
+static const uint32_t m9s408[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s409[22] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s410[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s411[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s412[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
 static const uint32_t m9s413[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
 static const uint32_t m9s414[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s415[30] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s416[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s417[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s418[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s419[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s420[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s421[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s422[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s423[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s424[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s425[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s426[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s427[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s428[29] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 45u, 116u, 97u, 103u, 103u, 101u, 100u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s429[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s430[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s431[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s432[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 100u, 32u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s433[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s434[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s435[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s415[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s416[30] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s417[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s418[26] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 32u, 109u, 97u, 112u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s419[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s420[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s421[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s422[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s423[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s424[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s425[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s426[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s427[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s428[30] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 114u, 101u, 118u, 101u, 114u, 115u, 101u, 32u, 112u, 114u, 111u, 112u, 101u, 114u, 116u, 121u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s429[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s430[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s431[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s432[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s433[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s434[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
+static const uint32_t m9s435[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
 static const uint32_t m9s436[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s437[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s438[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s439[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s440[26] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 115u, 101u, 116u, 32u, 111u, 114u, 32u, 108u, 105u, 115u, 116u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
-static const uint32_t m9s441[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s442[4] = { 64u, 115u, 101u, 116u };
-static const uint32_t m9s443[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s444[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s445[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s446[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s447[3] = { 64u, 105u, 100u };
-static const uint32_t m9s448[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s449[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s450[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s451[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s452[2] = { 95u, 58u };
-static const uint32_t m9s453[2] = { 95u, 58u };
-static const uint32_t m9s454[3] = { 64u, 105u, 100u };
-static const uint32_t m9s455[3] = { 64u, 105u, 100u };
-static const uint32_t m9s456[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s457[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s458[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s437[20] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 118u, 97u, 108u, 117u, 101u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
+static const uint32_t m9s438[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s439[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s440[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s441[29] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u, 45u, 116u, 97u, 103u, 103u, 101u, 100u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s442[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s443[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s444[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s445[19] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 116u, 121u, 112u, 101u, 100u, 32u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s446[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s447[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s448[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s449[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s450[4] = { 64u, 115u, 101u, 116u };
+static const uint32_t m9s451[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s452[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s453[26] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 115u, 101u, 116u, 32u, 111u, 114u, 32u, 108u, 105u, 115u, 116u, 32u, 111u, 98u, 106u, 101u, 99u, 116u };
+static const uint32_t m9s454[4] = { 64u, 115u, 101u, 116u };
+static const uint32_t m9s455[4] = { 64u, 115u, 101u, 116u };
+static const uint32_t m9s456[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s457[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s458[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
 static const uint32_t m9s459[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s460[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s461[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s462[3] = { 64u, 105u, 100u };
-static const uint32_t m9s463[3] = { 64u, 105u, 100u };
-static const uint32_t m9s464[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s465[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s466[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s467[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s468[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s469[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s470[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s471[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s472[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s473[3] = { 64u, 105u, 100u };
-static const uint32_t m9s474[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s475[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
-static const uint32_t m9s476[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
-static const uint32_t m9s477[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
-static const uint32_t m9s478[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s479[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s480[1] = { 48u };
-static const uint32_t m9s481[5] = { 48u, 46u, 48u, 69u, 48u };
-static const uint32_t m9s482[1] = { 46u };
-static const uint32_t m9s483[1] = { 48u };
-static const uint32_t m9s484[1] = { 45u };
-static const uint32_t m9s485[1] = { 69u };
-static const uint32_t m9s486[5] = { 48u, 46u, 48u, 69u, 48u };
-static const uint32_t m9s487[3] = { 64u, 105u, 100u };
-static const uint32_t m9s488[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s489[3] = { 64u, 105u, 100u };
-static const uint32_t m9s490[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s491[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s492[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s493[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
-static const uint32_t m9s494[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s495[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s496[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s497[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s498[7] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u };
-static const uint32_t m9s499[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s500[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s501[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s502[3] = { 110u, 105u, 108u };
-static const uint32_t m9s503[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s504[5] = { 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s505[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s506[3] = { 110u, 105u, 108u };
-static const uint32_t m9s507[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s508[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s509[5] = { 102u, 105u, 114u, 115u, 116u };
-static const uint32_t m9s510[4] = { 114u, 101u, 115u, 116u };
-static const uint32_t m9s511[4] = { 116u, 121u, 112u, 101u };
-static const uint32_t m9s512[4] = { 76u, 105u, 115u, 116u };
-static const uint32_t m9s513[3] = { 64u, 105u, 100u };
-static const uint32_t m9s514[2] = { 95u, 58u };
-static const uint32_t m9s515[3] = { 64u, 105u, 100u };
-static const uint32_t m9s516[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s517[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s518[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s460[3] = { 64u, 105u, 100u };
+static const uint32_t m9s461[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s462[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s463[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s464[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s465[2] = { 95u, 58u };
+static const uint32_t m9s466[2] = { 95u, 58u };
+static const uint32_t m9s467[3] = { 64u, 105u, 100u };
+static const uint32_t m9s468[3] = { 64u, 105u, 100u };
+static const uint32_t m9s469[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s470[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s471[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s472[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s473[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s474[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s475[3] = { 64u, 105u, 100u };
+static const uint32_t m9s476[3] = { 64u, 105u, 100u };
+static const uint32_t m9s477[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s478[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s479[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s480[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s481[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s482[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s483[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s484[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s485[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s486[3] = { 64u, 105u, 100u };
+static const uint32_t m9s487[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s488[8] = { 64u, 114u, 101u, 118u, 101u, 114u, 115u, 101u };
+static const uint32_t m9s489[6] = { 64u, 103u, 114u, 97u, 112u, 104u };
+static const uint32_t m9s490[6] = { 64u, 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s491[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s492[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s493[1] = { 48u };
+static const uint32_t m9s494[5] = { 48u, 46u, 48u, 69u, 48u };
+static const uint32_t m9s495[1] = { 46u };
+static const uint32_t m9s496[1] = { 48u };
+static const uint32_t m9s497[1] = { 45u };
+static const uint32_t m9s498[1] = { 69u };
+static const uint32_t m9s499[5] = { 48u, 46u, 48u, 69u, 48u };
+static const uint32_t m9s500[3] = { 64u, 105u, 100u };
+static const uint32_t m9s501[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s502[3] = { 64u, 105u, 100u };
+static const uint32_t m9s503[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s504[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s505[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s506[7] = { 98u, 111u, 111u, 108u, 101u, 97u, 110u };
+static const uint32_t m9s507[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s508[5] = { 102u, 97u, 108u, 115u, 101u };
+static const uint32_t m9s509[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s510[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s511[7] = { 105u, 110u, 116u, 101u, 103u, 101u, 114u };
+static const uint32_t m9s512[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s513[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s514[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s515[3] = { 110u, 105u, 108u };
+static const uint32_t m9s516[4] = { 114u, 101u, 115u, 116u };
+static const uint32_t m9s517[5] = { 102u, 105u, 114u, 115u, 116u };
+static const uint32_t m9s518[4] = { 114u, 101u, 115u, 116u };
 static const uint32_t m9s519[3] = { 110u, 105u, 108u };
-static const uint32_t m9s520[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s521[7] = { 47u, 35u, 58u, 63u, 64u, 91u, 93u };
-static const uint32_t m9s522[1] = { 58u };
-static const uint32_t m9s523[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s524[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s525[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s526[5] = { 64u, 108u, 105u, 115u, 116u };
-static const uint32_t m9s527[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s520[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s521[16] = { 105u, 110u, 118u, 97u, 108u, 105u, 100u, 32u, 100u, 111u, 99u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s522[5] = { 102u, 105u, 114u, 115u, 116u };
+static const uint32_t m9s523[4] = { 114u, 101u, 115u, 116u };
+static const uint32_t m9s524[4] = { 116u, 121u, 112u, 101u };
+static const uint32_t m9s525[4] = { 76u, 105u, 115u, 116u };
+static const uint32_t m9s526[3] = { 64u, 105u, 100u };
+static const uint32_t m9s527[2] = { 95u, 58u };
 static const uint32_t m9s528[3] = { 64u, 105u, 100u };
-static const uint32_t m9s529[3] = { 64u, 105u, 100u };
-static const uint32_t m9s530[3] = { 64u, 105u, 100u };
-static const uint32_t m9s531[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
-static const uint32_t m9s532[3] = { 64u, 105u, 100u };
-static const uint32_t m9s533[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s534[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s535[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s536[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s537[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s538[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s539[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
-static const uint32_t m9s540[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s541[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s542[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s543[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s544[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s545[5] = { 64u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s546[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s547[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s529[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s530[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s531[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s532[3] = { 110u, 105u, 108u };
+static const uint32_t m9s533[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s534[7] = { 47u, 35u, 58u, 63u, 64u, 91u, 93u };
+static const uint32_t m9s535[1] = { 58u };
+static const uint32_t m9s536[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s537[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s538[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s539[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s540[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s541[3] = { 64u, 105u, 100u };
+static const uint32_t m9s542[3] = { 64u, 105u, 100u };
+static const uint32_t m9s543[3] = { 64u, 105u, 100u };
+static const uint32_t m9s544[6] = { 64u, 118u, 111u, 99u, 97u, 98u };
+static const uint32_t m9s545[3] = { 64u, 105u, 100u };
+static const uint32_t m9s546[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s547[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
 static const uint32_t m9s548[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
-static const uint32_t m9s549[5] = { 64u, 108u, 105u, 115u, 116u };
+static const uint32_t m9s549[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s550[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s551[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s552[9] = { 64u, 108u, 97u, 110u, 103u, 117u, 97u, 103u, 101u };
+static const uint32_t m9s553[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s554[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s555[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s556[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s557[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s558[5] = { 64u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s559[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s560[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s561[6] = { 64u, 118u, 97u, 108u, 117u, 101u };
+static const uint32_t m9s562[5] = { 64u, 108u, 105u, 115u, 116u };
 
 static Rdf_Graph * Rdf_NewGraph (m9_pool *pool, m9_state *err);
 static Rdf_Term Rdf_Hold (m9_pool *pool, Rdf_Term tm, m9_state *err);
@@ -783,6 +797,9 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m
 static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx c, m9_sl_CHAR iri, bool vocab, m9_state *err);
 static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_Node * v, m9_state *err);
 static int64_t Rdf_PropTerm (Rdf_Ctx c, m9_sl_CHAR iri, bool isList, m9_state *err);
+static bool Rdf_NcStart (uint32_t c, m9_state *err);
+static bool Rdf_NcChar (uint32_t c, m9_state *err);
+static int64_t Rdf_LocalStart (m9_sl_CHAR iri, m9_state *err);
 
 
 Rdf_Graph * Rdf_ParseNTriples (m9_pool *pool, m9_sl_CHAR text, m9_state *err)
@@ -1725,6 +1742,247 @@ L_ret: ;
   return m9ret;
 }
 
+m9_sl_CHAR Rdf_RdfXml (Rdf_Graph * g, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  m9_pool scratch = {0}; (void) scratch;
+  Xml_Writer * w = NULL; (void) w;
+  m9_sl_m9_sl_CHAR nss = {0}; (void) nss;
+  int64_t nns = 0; (void) nns;
+  int64_t i = 0; (void) i;
+  int64_t j = 0; (void) j;
+  int64_t k = 0; (void) k;
+  int64_t at = 0; (void) at;
+  m9_sl_BOOL done = {0}; (void) done;
+  m9_sl_CHAR ns = {0}; (void) ns;
+  m9_sl_CHAR local = {0}; (void) local;
+  { __typeof__(nss) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &(scratch), m9_add_i64 (g->n, INT64_C(1), err), err);
+    if (err->exc) goto L_ret;
+    nss = m9v;
+  }
+  (*(m9_sl_CHAR *) m9_at (nss.p, INT64_C(0), nss.len, sizeof (m9_sl_CHAR), err)) = Rdf_RdfNs;
+  if (err->exc) goto L_ret;
+  nns = INT64_C(1);
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (g->n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a37 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+      if (err->exc) goto L_ret;
+    { __typeof__(at) m9v = Rdf_LocalStart (m9a37, err);
+      if (err->exc) goto L_ret;
+      at = m9v;
+    }
+    }
+    bool m9t2 = ((at == INT64_C(0)) || (at >= ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value).len));
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9t3 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value; err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
+      m9_raise (err, &Rdf_NotWritable);
+      goto L_ret;
+    }
+    { __typeof__(ns) m9v = ({ __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9t4 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value; int64_t m9t4a = INT64_C(0), m9t4n = at; (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+      if (err->exc) goto L_ret;
+      ns = m9v;
+    }
+    { __typeof__(k) m9v = m9_neg_i64 (INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      k = m9v;
+    }
+    { int64_t m9t5to;
+    j = INT64_C(0);
+    m9t5to = m9_sub_i64 (nns, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    for (; j <= m9t5to; j += 1) {
+      bool m9t6 = Text_Eq ((*(m9_sl_CHAR *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_CHAR), err)), ns, err);
+      if (err->exc) goto L_ret;
+      if (m9t6) {
+        k = j;
+      }
+    } }
+    if ((k < INT64_C(0))) {
+      (*(m9_sl_CHAR *) m9_at (nss.p, nns, nss.len, sizeof (m9_sl_CHAR), err)) = ns;
+      if (err->exc) goto L_ret;
+      { __typeof__(nns) m9v = m9_add_i64 (nns, INT64_C(1), err);
+        if (err->exc) goto L_ret;
+        nns = m9v;
+      }
+    }
+  } }
+  { __typeof__(w) m9v = Xml_NewWriter (&(scratch), err);
+    if (err->exc) goto L_ret;
+    w = m9v;
+  }
+  Xml_StartTag (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s34, 7 }), err);
+  if (err->exc) goto L_ret;
+  Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s35, 9 }), Rdf_RdfNs, err);
+  if (err->exc) goto L_ret;
+  { int64_t m9t7to;
+  j = INT64_C(1);
+  m9t7to = m9_sub_i64 (nns, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; j <= m9t7to; j += 1) {
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s36, 8 }), Fmt_I64Str (j, err), err)) m9a38 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s36, 8 }), Fmt_I64Str (j, err), err);
+      if (err->exc) goto L_ret;
+    { __typeof__((*(m9_sl_CHAR *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_CHAR), err))) m9a39 = (*(m9_sl_CHAR *) m9_at (nss.p, j, nss.len, sizeof (m9_sl_CHAR), err));
+      if (err->exc) goto L_ret;
+    Xml_Attribute (&(w), &(scratch), m9a38, m9a39, err);
+    if (err->exc) goto L_ret;
+    }
+    }
+  } }
+  { __typeof__(done) m9v = M9_POOL_SL (m9_sl_BOOL, bool, &(scratch), g->n, err);
+    if (err->exc) goto L_ret;
+    done = m9v;
+  }
+  { int64_t m9t8to;
+  i = INT64_C(0);
+  m9t8to = m9_sub_i64 (g->n, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t8to; i += 1) {
+    bool m9t9 = (!(*(bool *) m9_at (done.p, i, done.len, sizeof (bool), err)));
+    if (err->exc) goto L_ret;
+    if (m9t9) {
+      Xml_StartTag (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s37, 15 }), err);
+      if (err->exc) goto L_ret;
+      bool m9t10 = (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag);
+      if (err->exc) goto L_ret;
+      if (m9t10) {
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a40 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
+          if (err->exc) goto L_ret;
+        Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s38, 10 }), m9a40, err);
+        if (err->exc) goto L_ret;
+        }
+      } else {
+        { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value) m9a41 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value;
+          if (err->exc) goto L_ret;
+        Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s39, 9 }), m9a41, err);
+        if (err->exc) goto L_ret;
+        }
+      }
+      { int64_t m9t11to;
+      j = i;
+      m9t11to = m9_sub_i64 (g->n, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      for (; j <= m9t11to; j += 1) {
+        bool m9t12 = (((!(*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err))) && (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag)) && Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).s.value, (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value, err));
+        if (err->exc) goto L_ret;
+        if (m9t12) {
+          (*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err)) = true;
+          if (err->exc) goto L_ret;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9a42 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value;
+            if (err->exc) goto L_ret;
+          { __typeof__(at) m9v = Rdf_LocalStart (m9a42, err);
+            if (err->exc) goto L_ret;
+            at = m9v;
+          }
+          }
+          { __typeof__(ns) m9v = ({ __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9t13 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value; int64_t m9t13a = INT64_C(0), m9t13n = at; (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; });
+            if (err->exc) goto L_ret;
+            ns = m9v;
+          }
+          { __typeof__(local) m9v = ({ __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value) m9t14 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value; int64_t m9t14a = at, m9t14n = m9_sub_i64 (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p.value).len, at, err); (__typeof__(m9t14)){ m9t14.p + m9_chk_slice (m9t14a, m9t14n, m9t14.len, err), m9t14n }; });
+            if (err->exc) goto L_ret;
+            local = m9v;
+          }
+          k = INT64_C(0);
+          for (;;) {
+            bool m9t15 = (!Text_Eq ((*(m9_sl_CHAR *) m9_at (nss.p, k, nss.len, sizeof (m9_sl_CHAR), err)), ns, err));
+            if (err->exc) goto L_ret;
+            if (!(m9t15)) break;
+            { __typeof__(k) m9v = m9_add_i64 (k, INT64_C(1), err);
+              if (err->exc) goto L_ret;
+              k = m9v;
+            }
+          }
+          if ((k == INT64_C(0))) {
+            { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s40, 4 }), local, err)) m9a43 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s40, 4 }), local, err);
+              if (err->exc) goto L_ret;
+            Xml_StartTag (&(w), &(scratch), m9a43, err);
+            if (err->exc) goto L_ret;
+            }
+          } else {
+            { __typeof__(m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s41, 2 }), Fmt_I64Str (k, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s42, 1 }), err), local, err)) m9a44 = m9_cat (err->res, m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s41, 2 }), Fmt_I64Str (k, err), err), ((m9_sl_CHAR){ (uint32_t *) m9s42, 1 }), err), local, err);
+              if (err->exc) goto L_ret;
+            Xml_StartTag (&(w), &(scratch), m9a44, err);
+            if (err->exc) goto L_ret;
+            }
+          }
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.kind) m9t16 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.kind;
+          if (err->exc) goto L_ret;
+          switch (m9t16.tag) {
+          case Rdf_Kind_Iri:
+          {
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a45 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+              if (err->exc) goto L_ret;
+            Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s43, 12 }), m9a45, err);
+            if (err->exc) goto L_ret;
+            }
+          } break;
+          case Rdf_Kind_Blank:
+          {
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a46 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+              if (err->exc) goto L_ret;
+            Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s44, 10 }), m9a46, err);
+            if (err->exc) goto L_ret;
+            }
+          } break;
+          case Rdf_Kind_Literal:
+          {
+            bool m9t17 = (((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang).len > INT64_C(0));
+            if (err->exc) goto L_ret;
+            if (m9t17) {
+              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang) m9a47 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.lang;
+                if (err->exc) goto L_ret;
+              Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s45, 8 }), m9a47, err);
+              if (err->exc) goto L_ret;
+              }
+            } else {
+              bool m9t18 = ((((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype).len > INT64_C(0)) && (!Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype, Rdf_XsdString, err)));
+              if (err->exc) goto L_ret;
+              if (m9t18) {
+                { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype) m9a48 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.datatype;
+                  if (err->exc) goto L_ret;
+                Xml_Attribute (&(w), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s46, 12 }), m9a48, err);
+                if (err->exc) goto L_ret;
+                }
+            } }
+            { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value) m9a49 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o.value;
+              if (err->exc) goto L_ret;
+            Xml_Chars (&(w), &(scratch), m9a49, err);
+            if (err->exc) goto L_ret;
+            }
+          } break;
+          default: m9_trap_tag ();
+          } }
+          Xml_EndTag (&(w), &(scratch), err);
+          if (err->exc) goto L_ret;
+        }
+      } }
+      Xml_EndTag (&(w), &(scratch), err);
+      if (err->exc) goto L_ret;
+    }
+  } }
+  Xml_EndTag (&(w), &(scratch), err);
+  if (err->exc) goto L_ret;
+  err->res = m9res;
+  m9ret = Xml_Document (w, err);
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9ret = m9_rehome (&scratch, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  m9_pool_free (&scratch);
+  return m9ret;
+}
+
 int64_t Rdf_Count (Rdf_Graph * g, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -1792,26 +2050,26 @@ m9_sl_CHAR Rdf_NTriples (Rdf_Graph * g, m9_state *err)
   m9t1to = m9_sub_i64 (g->n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a37 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a50 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
       if (err->exc) goto L_ret;
-    Rdf_PutTerm (&(d), &(scratch), m9a37, err);
+    Rdf_PutTerm (&(d), &(scratch), m9a50, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (&(d), &(scratch), 32u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p) m9a38 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p) m9a51 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p;
       if (err->exc) goto L_ret;
-    Rdf_PutTerm (&(d), &(scratch), m9a38, err);
+    Rdf_PutTerm (&(d), &(scratch), m9a51, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (&(d), &(scratch), 32u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a39 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o) m9a52 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o;
       if (err->exc) goto L_ret;
-    Rdf_PutTerm (&(d), &(scratch), m9a39, err);
+    Rdf_PutTerm (&(d), &(scratch), m9a52, err);
     if (err->exc) goto L_ret;
     }
-    DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s34, 2 }), err);
+    DynStr_Append (&(d), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s47, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_AppendChar (&(d), &(scratch), 10u, err);
     if (err->exc) goto L_ret;
@@ -1879,13 +2137,13 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
     }
   } }
   p.n = n;
-  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s35, 3 }), Rdf_RdfNs, err);
+  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s48, 3 }), Rdf_RdfNs, err);
   if (err->exc) goto L_ret;
-  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s36, 4 }), Rdf_Rdfs, err);
+  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s49, 4 }), Rdf_Rdfs, err);
   if (err->exc) goto L_ret;
-  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s37, 3 }), Rdf_Xsd, err);
+  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s50, 3 }), Rdf_Xsd, err);
   if (err->exc) goto L_ret;
-  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s38, 3 }), Rdf_Owl, err);
+  Rdf_AddDefault (&(p), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s51, 3 }), Rdf_Owl, err);
   if (err->exc) goto L_ret;
   { __typeof__(body) m9v = DynStr_New (&(scratch), err);
     if (err->exc) goto L_ret;
@@ -1903,9 +2161,9 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
     bool m9t3 = (!(*(bool *) m9_at (done.p, i, done.len, sizeof (bool), err)));
     if (err->exc) goto L_ret;
     if (m9t3) {
-      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a40 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
+      { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s) m9a53 = (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s;
         if (err->exc) goto L_ret;
-      Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, m9a40, false, err);
+      Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, m9a53, false, err);
       if (err->exc) goto L_ret;
       }
       firstPred = true;
@@ -1921,23 +2179,23 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
             DynStr_AppendChar (&(body), &(scratch), 32u, err);
             if (err->exc) goto L_ret;
           } else {
-            { __typeof__(m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s39, 2 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s40, 4 }), err)) m9a41 = m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s39, 2 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s40, 4 }), err);
+            { __typeof__(m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s52, 2 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 4 }), err)) m9a54 = m9_cat (err->res, m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s52, 2 }), 10u, err), ((m9_sl_CHAR){ (uint32_t *) m9s53, 4 }), err);
               if (err->exc) goto L_ret;
-            DynStr_Append (&(body), &(scratch), m9a41, err);
+            DynStr_Append (&(body), &(scratch), m9a54, err);
             if (err->exc) goto L_ret;
             }
           }
           firstPred = false;
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p) m9a42 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p) m9a55 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p;
             if (err->exc) goto L_ret;
-          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, m9a42, true, err);
+          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, m9a55, true, err);
           if (err->exc) goto L_ret;
           }
           DynStr_AppendChar (&(body), &(scratch), 32u, err);
           if (err->exc) goto L_ret;
-          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o) m9a43 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o;
+          { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o) m9a56 = (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).o;
             if (err->exc) goto L_ret;
-          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, m9a43, false, err);
+          Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, m9a56, false, err);
           if (err->exc) goto L_ret;
           }
           (*(bool *) m9_at (done.p, j, done.len, sizeof (bool), err)) = true;
@@ -1950,11 +2208,11 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
             bool m9t7 = (((!(*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err))) && Rdf_SameTerm ((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).s, (*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s, err)) && Rdf_SameTerm ((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).p, (*(Rdf_Triple *) m9_at (g->t.p, j, g->t.len, sizeof (Rdf_Triple), err)).p, err));
             if (err->exc) goto L_ret;
             if (m9t7) {
-              DynStr_Append (&(body), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s41, 3 }), err);
+              DynStr_Append (&(body), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s54, 3 }), err);
               if (err->exc) goto L_ret;
-              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o) m9a44 = (*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o;
+              { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o) m9a57 = (*(Rdf_Triple *) m9_at (g->t.p, k, g->t.len, sizeof (Rdf_Triple), err)).o;
                 if (err->exc) goto L_ret;
-              Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, m9a44, false, err);
+              Rdf_TtlTerm (&(body), &(scratch), &(p), err->res, m9a57, false, err);
               if (err->exc) goto L_ret;
               }
               (*(bool *) m9_at (done.p, k, done.len, sizeof (bool), err)) = true;
@@ -1963,9 +2221,9 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
           } }
         }
       } }
-      { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s42, 2 }), 10u, err)) m9a45 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s42, 2 }), 10u, err);
+      { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s55, 2 }), 10u, err)) m9a58 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s55, 2 }), 10u, err);
         if (err->exc) goto L_ret;
-      DynStr_Append (&(body), &(scratch), m9a45, err);
+      DynStr_Append (&(body), &(scratch), m9a58, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -1982,23 +2240,23 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
     bool m9t9 = (*(bool *) m9_at (p.used.p, i, p.used.len, sizeof (bool), err));
     if (err->exc) goto L_ret;
     if (m9t9) {
-      DynStr_Append (&(out), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s43, 8 }), err);
+      DynStr_Append (&(out), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s56, 8 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_CHAR), err))) m9a46 = (*(m9_sl_CHAR *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_CHAR), err))) m9a59 = (*(m9_sl_CHAR *) m9_at (p.names.p, i, p.names.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      DynStr_Append (&(out), &(scratch), m9a46, err);
+      DynStr_Append (&(out), &(scratch), m9a59, err);
       if (err->exc) goto L_ret;
       }
-      DynStr_Append (&(out), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s44, 2 }), err);
+      DynStr_Append (&(out), &(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s57, 2 }), err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_CHAR), err))) m9a47 = (*(m9_sl_CHAR *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_CHAR), err))) m9a60 = (*(m9_sl_CHAR *) m9_at (p.iris.p, i, p.iris.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      Rdf_PutIri (&(out), &(scratch), m9a47, err);
+      Rdf_PutIri (&(out), &(scratch), m9a60, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s45, 2 }), 10u, err)) m9a48 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s45, 2 }), 10u, err);
+      { __typeof__(m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s58, 2 }), 10u, err)) m9a61 = m9_cat_ch (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s58, 2 }), 10u, err);
         if (err->exc) goto L_ret;
-      DynStr_Append (&(out), &(scratch), m9a48, err);
+      DynStr_Append (&(out), &(scratch), m9a61, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -2009,9 +2267,9 @@ m9_sl_CHAR Rdf_Turtle (Rdf_Graph * g, m9_sl_m9_sl_CHAR names, m9_sl_m9_sl_CHAR i
     DynStr_AppendChar (&(out), &(scratch), 10u, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (body, err)) m9a49 = DynStr_View (body, err);
+  { __typeof__(DynStr_View (body, err)) m9a62 = DynStr_View (body, err);
     if (err->exc) goto L_ret;
-  DynStr_Append (&(out), &(scratch), m9a49, err);
+  DynStr_Append (&(out), &(scratch), m9a62, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -2395,9 +2653,9 @@ static void Rdf_Expect (Rdf_Reader *r, m9_pool *r_pool, uint32_t c, m9_sl_CHAR w
   bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) != c);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s46, 9 }), err)) m9a50 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s46, 9 }), err);
+    { __typeof__(m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s59, 9 }), err)) m9a63 = m9_cat (err->res, what, ((m9_sl_CHAR){ (uint32_t *) m9s59, 9 }), err);
       if (err->exc) goto L_ret;
-    Rdf_Fail (r, r_pool, m9a50, err);
+    Rdf_Fail (r, r_pool, m9a63, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -2523,7 +2781,7 @@ static bool Rdf_IsLocalEsc (uint32_t c, m9_state *err)
   bool m9ret = false;
   m9_sl_CHAR esc = {0}; (void) esc;
   int64_t i = 0; (void) i;
-  esc = ((m9_sl_CHAR){ (uint32_t *) m9s47, 20 });
+  esc = ((m9_sl_CHAR){ (uint32_t *) m9s60, 20 });
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 ((esc).len, INT64_C(1), err);
@@ -2566,7 +2824,7 @@ static uint32_t Rdf_Uchar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     if (m9t2) {
       n = INT64_C(8);
   } else {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s48, 29 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s61, 29 }), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
     m9ret = 0u;
@@ -2584,12 +2842,12 @@ static uint32_t Rdf_Uchar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     bool m9t4 = (!Rdf_IsHex (Rdf_PeekAt (r, r_pool, INT64_C(0), err), err));
     if (err->exc) goto L_ret;
     if (m9t4) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s49, 35 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s62, 35 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a51 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
+    { __typeof__(Rdf_PeekAt (r, r_pool, INT64_C(0), err)) m9a64 = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
       if (err->exc) goto L_ret;
-    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), Rdf_HexVal (m9a51, err), err);
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), Rdf_HexVal (m9a64, err), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
@@ -2598,7 +2856,7 @@ static uint32_t Rdf_Uchar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     if (err->exc) goto L_ret;
   } }
   if (((v > INT64_C(0x10FFFF)) || (((v >= INT64_C(0xD800)) && (v <= INT64_C(0xDFFF)))))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s50, 29 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s63, 29 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -2626,14 +2884,14 @@ static m9_sl_CHAR Rdf_IriRef (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR s = {0}; (void) s;
   uint32_t c = 0; (void) c;
-  Rdf_Expect (r, r_pool, 60u, ((m9_sl_CHAR){ (uint32_t *) m9s51, 1 }), err);
+  Rdf_Expect (r, r_pool, 60u, ((m9_sl_CHAR){ (uint32_t *) m9s64, 1 }), err);
   if (err->exc) goto L_ret;
   s = (m9_sl_CHAR){ NULL, 0 };
   for (;;) {
     bool m9t1 = Rdf_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s52, 17 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s65, 17 }), err);
       if (err->exc) goto L_ret;
     }
     { __typeof__(c) m9v = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
@@ -2655,7 +2913,7 @@ static m9_sl_CHAR Rdf_IriRef (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       if (err->exc) goto L_ret;
     }
     if ((((((((((((int64_t)(c) <= INT64_C(0x20)) || (c == 60u)) || (c == 62u)) || (c == 34u)) || (c == 123u)) || (c == 125u)) || (c == 124u)) || (c == 94u)) || (c == 96u)) || (c == 92u))) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s53, 31 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s66, 31 }), err);
       if (err->exc) goto L_ret;
     }
     { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
@@ -2749,7 +3007,7 @@ static m9_sl_CHAR Rdf_RemoveDots (m9_sl_CHAR path, m9_state *err)
   output = (m9_sl_CHAR){ NULL, 0 };
   for (;;) {
     if (!(((input).len > INT64_C(0)))) break;
-    bool m9t1 = Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s54, 3 }), err);
+    bool m9t1 = Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s67, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t1) {
       { __typeof__(input) m9v = ({ __typeof__(input) m9t2 = input; int64_t m9t2a = INT64_C(3), m9t2n = m9_sub_i64 ((input).len, INT64_C(3), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
@@ -2757,7 +3015,7 @@ static m9_sl_CHAR Rdf_RemoveDots (m9_sl_CHAR path, m9_state *err)
         input = m9v;
       }
     } else {
-      bool m9t3 = Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s55, 2 }), err);
+      bool m9t3 = Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s68, 2 }), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
         { __typeof__(input) m9v = ({ __typeof__(input) m9t4 = input; int64_t m9t4a = INT64_C(2), m9t4n = m9_sub_i64 ((input).len, INT64_C(2), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
@@ -2765,7 +3023,7 @@ static m9_sl_CHAR Rdf_RemoveDots (m9_sl_CHAR path, m9_state *err)
           input = m9v;
         }
     } else {
-      bool m9t5 = Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s56, 3 }), err);
+      bool m9t5 = Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s69, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t5) {
         { __typeof__(input) m9v = ({ __typeof__(input) m9t6 = input; int64_t m9t6a = INT64_C(2), m9t6n = m9_sub_i64 ((input).len, INT64_C(2), err); (__typeof__(m9t6)){ m9t6.p + m9_chk_slice (m9t6a, m9t6n, m9t6.len, err), m9t6n }; });
@@ -2773,18 +3031,18 @@ static m9_sl_CHAR Rdf_RemoveDots (m9_sl_CHAR path, m9_state *err)
           input = m9v;
         }
     } else {
-      bool m9t7 = Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s57, 2 }), err);
+      bool m9t7 = Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s70, 2 }), err);
       if (err->exc) goto L_ret;
       if (m9t7) {
-        input = ((m9_sl_CHAR){ (uint32_t *) m9s58, 1 });
+        input = ((m9_sl_CHAR){ (uint32_t *) m9s71, 1 });
     } else {
-      bool m9t8 = (Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s59, 4 }), err) || Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s60, 3 }), err));
+      bool m9t8 = (Text_StartsWith (input, ((m9_sl_CHAR){ (uint32_t *) m9s72, 4 }), err) || Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s73, 3 }), err));
       if (err->exc) goto L_ret;
       if (m9t8) {
-        bool m9t9 = Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s61, 3 }), err);
+        bool m9t9 = Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s74, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t9) {
-          input = ((m9_sl_CHAR){ (uint32_t *) m9s62, 1 });
+          input = ((m9_sl_CHAR){ (uint32_t *) m9s75, 1 });
         } else {
           { __typeof__(input) m9v = ({ __typeof__(input) m9t10 = input; int64_t m9t10a = INT64_C(3), m9t10n = m9_sub_i64 ((input).len, INT64_C(3), err); (__typeof__(m9t10)){ m9t10.p + m9_chk_slice (m9t10a, m9t10n, m9t10.len, err), m9t10n }; });
             if (err->exc) goto L_ret;
@@ -2804,7 +3062,7 @@ static m9_sl_CHAR Rdf_RemoveDots (m9_sl_CHAR path, m9_state *err)
           output = (m9_sl_CHAR){ NULL, 0 };
         }
     } else {
-      bool m9t12 = (Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s63, 1 }), err) || Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s64, 2 }), err));
+      bool m9t12 = (Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s76, 1 }), err) || Text_Eq (input, ((m9_sl_CHAR){ (uint32_t *) m9s77, 2 }), err));
       if (err->exc) goto L_ret;
       if (m9t12) {
         input = (m9_sl_CHAR){ NULL, 0 };
@@ -3040,9 +3298,9 @@ static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
           }
         } else {
           if ((bha && ((bp).len == INT64_C(0)))) {
-            { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s65, 1 }), rp, err)) m9a52 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s65, 1 }), rp, err);
+            { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s78, 1 }), rp, err)) m9a65 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s78, 1 }), rp, err);
               if (err->exc) goto L_ret;
-            { __typeof__(tp) m9v = Rdf_RemoveDots (m9a52, err);
+            { __typeof__(tp) m9v = Rdf_RemoveDots (m9a65, err);
               if (err->exc) goto L_ret;
               tp = m9v;
             }
@@ -3053,9 +3311,9 @@ static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
               k = m9v;
             }
             if ((k >= INT64_C(0))) {
-              { __typeof__(m9_cat (err->res, ({ __typeof__(bp) m9t2 = bp; int64_t m9t2a = INT64_C(0), m9t2n = m9_add_i64 (k, INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), rp, err)) m9a53 = m9_cat (err->res, ({ __typeof__(bp) m9t2 = bp; int64_t m9t2a = INT64_C(0), m9t2n = m9_add_i64 (k, INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), rp, err);
+              { __typeof__(m9_cat (err->res, ({ __typeof__(bp) m9t2 = bp; int64_t m9t2a = INT64_C(0), m9t2n = m9_add_i64 (k, INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), rp, err)) m9a66 = m9_cat (err->res, ({ __typeof__(bp) m9t2 = bp; int64_t m9t2a = INT64_C(0), m9t2n = m9_add_i64 (k, INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; }), rp, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(tp) m9v = Rdf_RemoveDots (m9a53, err);
+              { __typeof__(tp) m9v = Rdf_RemoveDots (m9a66, err);
                 if (err->exc) goto L_ret;
                 tp = m9v;
               }
@@ -3075,13 +3333,13 @@ static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
   }
   out = (m9_sl_CHAR){ NULL, 0 };
   if (((ts).len > INT64_C(0))) {
-    { __typeof__(out) m9v = m9_cat (err->res, ts, ((m9_sl_CHAR){ (uint32_t *) m9s66, 1 }), err);
+    { __typeof__(out) m9v = m9_cat (err->res, ts, ((m9_sl_CHAR){ (uint32_t *) m9s79, 1 }), err);
       if (err->exc) goto L_ret;
       out = m9v;
     }
   }
   if (tha) {
-    { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s67, 2 }), err), ta, err);
+    { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), err), ta, err);
       if (err->exc) goto L_ret;
       out = m9v;
     }
@@ -3091,13 +3349,13 @@ static m9_sl_CHAR Rdf_Resolve (m9_sl_CHAR base, m9_sl_CHAR ref, m9_state *err)
     out = m9v;
   }
   if (thq) {
-    { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s68, 1 }), err), tq, err);
+    { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s81, 1 }), err), tq, err);
       if (err->exc) goto L_ret;
       out = m9v;
     }
   }
   if (rhf) {
-    { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s69, 1 }), err), rf, err);
+    { __typeof__(out) m9v = m9_cat (err->res, m9_cat (err->res, out, ((m9_sl_CHAR){ (uint32_t *) m9s82, 1 }), err), rf, err);
       if (err->exc) goto L_ret;
       out = m9v;
     }
@@ -3127,11 +3385,11 @@ static m9_sl_CHAR Rdf_Absolute (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR iri, 
     goto L_ret;
   }
   if ((!(*r).turtle)) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s70, 27 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s83, 27 }), err);
     if (err->exc) goto L_ret;
   }
   if ((((*r).base).len == INT64_C(0))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s71, 40 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s84, 40 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -3213,7 +3471,7 @@ static m9_sl_CHAR Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     bool m9t2 = (!Rdf_IsPnCharsBase (c, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s72, 22 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s85, 22 }), err);
       if (err->exc) goto L_ret;
     }
     { __typeof__(s) m9v = m9_cat_ch (err->res, s, c, err);
@@ -3253,11 +3511,11 @@ static m9_sl_CHAR Rdf_PnPrefix (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     bool m9t5 = ((*(uint32_t *) m9_at (s.p, m9_sub_i64 ((s).len, INT64_C(1), err), s.len, sizeof (uint32_t), err)) == 46u);
     if (err->exc) goto L_ret;
     if (m9t5) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s73, 29 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s86, 29 }), err);
       if (err->exc) goto L_ret;
     }
   }
-  Rdf_Expect (r, r_pool, 58u, ((m9_sl_CHAR){ (uint32_t *) m9s74, 7 }), err);
+  Rdf_Expect (r, r_pool, 58u, ((m9_sl_CHAR){ (uint32_t *) m9s87, 7 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = s;
@@ -3296,7 +3554,7 @@ static m9_sl_CHAR Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       bool m9t1 = (!((Rdf_IsHex (Rdf_PeekAt (r, r_pool, INT64_C(1), err), err) && Rdf_IsHex (Rdf_PeekAt (r, r_pool, INT64_C(2), err), err))));
       if (err->exc) goto L_ret;
       if (m9t1) {
-        Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s75, 34 }), err);
+        Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s88, 34 }), err);
         if (err->exc) goto L_ret;
       }
       { __typeof__(s) m9v = m9_cat_ch (err->res, m9_cat_ch (err->res, m9_cat_ch (err->res, s, c, err), Rdf_PeekAt (r, r_pool, INT64_C(1), err), err), Rdf_PeekAt (r, r_pool, INT64_C(2), err), err);
@@ -3314,7 +3572,7 @@ static m9_sl_CHAR Rdf_PnLocal (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         bool m9t2 = (!Rdf_IsLocalEsc (Rdf_PeekAt (r, r_pool, INT64_C(1), err), err));
         if (err->exc) goto L_ret;
         if (m9t2) {
-          Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s76, 35 }), err);
+          Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s89, 35 }), err);
           if (err->exc) goto L_ret;
         }
         { __typeof__(s) m9v = m9_cat_ch (err->res, s, Rdf_PeekAt (r, r_pool, INT64_C(1), err), err);
@@ -3389,9 +3647,9 @@ static m9_sl_CHAR Rdf_PrefixedName (Rdf_Reader *r, m9_pool *r_pool, m9_state *er
     k = m9v;
   }
   if ((k < INT64_C(0))) {
-    { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s77, 11 }), name, err), ((m9_sl_CHAR){ (uint32_t *) m9s78, 17 }), err)) m9a54 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s77, 11 }), name, err), ((m9_sl_CHAR){ (uint32_t *) m9s78, 17 }), err);
+    { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s90, 11 }), name, err), ((m9_sl_CHAR){ (uint32_t *) m9s91, 17 }), err)) m9a67 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s90, 11 }), name, err), ((m9_sl_CHAR){ (uint32_t *) m9s91, 17 }), err);
       if (err->exc) goto L_ret;
-    Rdf_Fail (r, r_pool, m9a54, err);
+    Rdf_Fail (r, r_pool, m9a67, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -3428,7 +3686,7 @@ static m9_sl_CHAR Rdf_Fresh (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s79, 1 }), err);
+  DynStr_Append (&(d), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s92, 1 }), err);
   if (err->exc) goto L_ret;
   DynStr_AppendI64 (&(d), &((*pool)), (*r).fresh, err);
   if (err->exc) goto L_ret;
@@ -3556,7 +3814,7 @@ static m9_sl_CHAR Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
   bool m9t1 = (!((Rdf_IsPnCharsU (c, err) || (((c >= 48u) && (c <= 57u))))));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s80, 27 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s93, 27 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(s) m9v = m9_cat_ch (err->res, (m9_sl_CHAR){ NULL, 0 }, c, err);
@@ -3596,7 +3854,7 @@ static m9_sl_CHAR Rdf_BlankLabel (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
   bool m9t4 = ((*(uint32_t *) m9_at (s.p, m9_sub_i64 ((s).len, INT64_C(1), err), s.len, sizeof (uint32_t), err)) == 46u);
   if (err->exc) goto L_ret;
   if (m9t4) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s81, 34 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s94, 34 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -3668,7 +3926,7 @@ static uint32_t Rdf_Echar (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     m9ret = c;
     goto L_ret;
   }
-  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s82, 31 }), err);
+  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s95, 31 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = 0u;
@@ -3701,7 +3959,7 @@ static m9_sl_CHAR Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     q = m9v;
   }
   if (((q == 39u) && (!(*r).turtle))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s83, 27 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s96, 27 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(long_) m9v = (((*r).turtle && (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == q)) && (Rdf_PeekAt (r, r_pool, INT64_C(2), err) == q));
@@ -3724,7 +3982,7 @@ static m9_sl_CHAR Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     bool m9t1 = Rdf_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t1) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s84, 19 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s97, 19 }), err);
       if (err->exc) goto L_ret;
     }
     { __typeof__(c) m9v = Rdf_PeekAt (r, r_pool, INT64_C(0), err);
@@ -3750,7 +4008,7 @@ static m9_sl_CHAR Rdf_StringLit (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
         break;
       }
       if (((c == 10u) || (c == 13u))) {
-        Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s85, 28 }), err);
+        Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s98, 28 }), err);
         if (err->exc) goto L_ret;
       }
     }
@@ -3819,14 +4077,14 @@ static m9_sl_CHAR Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     }
   }
   if ((n == INT64_C(0))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s86, 23 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s99, 23 }), err);
     if (err->exc) goto L_ret;
   }
   for (;;) {
     bool m9t1 = (Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 45u);
     if (err->exc) goto L_ret;
     if (!(m9t1)) break;
-    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s87, 1 }), err);
+    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s100, 1 }), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -3854,7 +4112,7 @@ static m9_sl_CHAR Rdf_LangTag (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
       }
     }
     if ((n == INT64_C(0))) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s88, 26 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s101, 26 }), err);
       if (err->exc) goto L_ret;
     }
   }
@@ -3885,9 +4143,9 @@ static m9_sl_CHAR Rdf_Iri (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a55 = Rdf_IriRef (r, r_pool, err);
+    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a68 = Rdf_IriRef (r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_Absolute (r, r_pool, m9a55, err);
+    m9ret = Rdf_Absolute (r, r_pool, m9a68, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -3959,9 +4217,9 @@ static bool Rdf_Word (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *er
     }
   } }
   err->res = m9res;
-  { __typeof__(Rdf_PeekAt (r, r_pool, (w).len, err)) m9a56 = Rdf_PeekAt (r, r_pool, (w).len, err);
+  { __typeof__(Rdf_PeekAt (r, r_pool, (w).len, err)) m9a69 = Rdf_PeekAt (r, r_pool, (w).len, err);
     if (err->exc) goto L_ret;
-  m9ret = (!(((Rdf_IsPnChars (m9a56, err) || (Rdf_PeekAt (r, r_pool, (w).len, err) == 58u)) || ((Rdf_PeekAt (r, r_pool, (w).len, err) == 46u) && Rdf_IsPnChars (Rdf_PeekAt (r, r_pool, m9_add_i64 ((w).len, INT64_C(1), err), err), err)))));
+  m9ret = (!(((Rdf_IsPnChars (m9a69, err) || (Rdf_PeekAt (r, r_pool, (w).len, err) == 58u)) || ((Rdf_PeekAt (r, r_pool, (w).len, err) == 46u) && Rdf_IsPnChars (Rdf_PeekAt (r, r_pool, m9_add_i64 ((w).len, INT64_C(1), err), err), err)))));
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -4010,9 +4268,9 @@ static bool Rdf_WordCi (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR w, m9_state *
     }
   } }
   err->res = m9res;
-  { __typeof__(Rdf_PeekAt (r, r_pool, (w).len, err)) m9a57 = Rdf_PeekAt (r, r_pool, (w).len, err);
+  { __typeof__(Rdf_PeekAt (r, r_pool, (w).len, err)) m9a70 = Rdf_PeekAt (r, r_pool, (w).len, err);
     if (err->exc) goto L_ret;
-  m9ret = (!Rdf_IsPnChars (m9a57, err));
+  m9ret = (!Rdf_IsPnChars (m9a70, err));
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -4102,7 +4360,7 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
   if (err->exc) goto L_ret;
   if (m9t2) {
     dot = true;
-    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s89, 1 }), err);
+    { __typeof__(s) m9v = m9_cat (err->res, s, ((m9_sl_CHAR){ (uint32_t *) m9s102, 1 }), err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -4148,7 +4406,7 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
     bool m9t6 = (!(((Rdf_PeekAt (r, r_pool, INT64_C(0), err) >= 48u) && (Rdf_PeekAt (r, r_pool, INT64_C(0), err) <= 57u))));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s90, 26 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s103, 26 }), err);
       if (err->exc) goto L_ret;
     }
     for (;;) {
@@ -4164,22 +4422,22 @@ static m9_sl_CHAR Rdf_Numeric (Rdf_Reader *r, m9_pool *r_pool, m9_sl_CHAR *dt, m
     }
   }
   if (((digits == INT64_C(0)) && (frac == INT64_C(0)))) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s91, 17 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s104, 17 }), err);
     if (err->exc) goto L_ret;
   }
   if (ex) {
-    { __typeof__((*dt)) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s92, 6 }), err);
+    { __typeof__((*dt)) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s105, 6 }), err);
       if (err->exc) goto L_ret;
       (*dt) = m9v;
     }
   } else {
     if (dot) {
-      { __typeof__((*dt)) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s93, 7 }), err);
+      { __typeof__((*dt)) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s106, 7 }), err);
         if (err->exc) goto L_ret;
         (*dt) = m9v;
       }
   } else {
-    { __typeof__((*dt)) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s94, 7 }), err);
+    { __typeof__((*dt)) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s107, 7 }), err);
       if (err->exc) goto L_ret;
       (*dt) = m9v;
     }
@@ -4224,9 +4482,9 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
-      { __typeof__(Rdf_LangTag (r, r_pool, err)) m9a58 = Rdf_LangTag (r, r_pool, err);
+      { __typeof__(Rdf_LangTag (r, r_pool, err)) m9a71 = Rdf_LangTag (r, r_pool, err);
         if (err->exc) goto L_ret;
-      m9ret = Rdf_LitT (v, m9a58, (m9_sl_CHAR){ NULL, 0 }, err);
+      m9ret = Rdf_LitT (v, m9a71, (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -4240,19 +4498,19 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
       if (err->exc) goto L_ret;
       if ((*r).turtle) {
         err->res = m9res;
-        { __typeof__(Rdf_Iri (r, r_pool, err)) m9a59 = Rdf_Iri (r, r_pool, err);
+        { __typeof__(Rdf_Iri (r, r_pool, err)) m9a72 = Rdf_Iri (r, r_pool, err);
           if (err->exc) goto L_ret;
-        m9ret = Rdf_LitT (v, (m9_sl_CHAR){ NULL, 0 }, m9a59, err);
+        m9ret = Rdf_LitT (v, (m9_sl_CHAR){ NULL, 0 }, m9a72, err);
         if (err->exc) goto L_ret;
         }
         goto L_ret;
       }
       err->res = m9res;
-      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a60 = Rdf_IriRef (r, r_pool, err);
+      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a73 = Rdf_IriRef (r, r_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_Absolute (r, r_pool, m9a60, err)) m9a61 = Rdf_Absolute (r, r_pool, m9a60, err);
+      { __typeof__(Rdf_Absolute (r, r_pool, m9a73, err)) m9a74 = Rdf_Absolute (r, r_pool, m9a73, err);
         if (err->exc) goto L_ret;
-      m9ret = Rdf_LitT (v, (m9_sl_CHAR){ NULL, 0 }, m9a61, err);
+      m9ret = Rdf_LitT (v, (m9_sl_CHAR){ NULL, 0 }, m9a74, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -4263,28 +4521,28 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t3 = ((*r).turtle && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s95, 4 }), err));
+  bool m9t3 = ((*r).turtle && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s108, 4 }), err));
   if (err->exc) goto L_ret;
   if (m9t3) {
     Rdf_Skip (r, r_pool, INT64_C(4), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s97, 7 }), err)) m9a62 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s97, 7 }), err);
+    { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s110, 7 }), err)) m9a75 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s110, 7 }), err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s96, 4 }), (m9_sl_CHAR){ NULL, 0 }, m9a62, err);
+    m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s109, 4 }), (m9_sl_CHAR){ NULL, 0 }, m9a75, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  bool m9t4 = ((*r).turtle && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s98, 5 }), err));
+  bool m9t4 = ((*r).turtle && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s111, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t4) {
     Rdf_Skip (r, r_pool, INT64_C(5), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s100, 7 }), err)) m9a63 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s100, 7 }), err);
+    { __typeof__(m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s113, 7 }), err)) m9a76 = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s113, 7 }), err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s99, 5 }), (m9_sl_CHAR){ NULL, 0 }, m9a63, err);
+    m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s112, 5 }), (m9_sl_CHAR){ NULL, 0 }, m9a76, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -4300,7 +4558,7 @@ static Rdf_Term Rdf_Literal (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_s
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s101, 15 }), err);
+  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s114, 15 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = Rdf_LitT ((m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
@@ -4333,12 +4591,12 @@ static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   Rdf_Term cell = {0}; (void) cell;
   Rdf_Term o = {0}; (void) o;
   bool any = false; (void) any;
-  Rdf_Expect (r, r_pool, 40u, ((m9_sl_CHAR){ (uint32_t *) m9s102, 1 }), err);
+  Rdf_Expect (r, r_pool, 40u, ((m9_sl_CHAR){ (uint32_t *) m9s115, 1 }), err);
   if (err->exc) goto L_ret;
   any = false;
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s103, 3 }), err)) m9a64 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s103, 3 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), err)) m9a77 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(head) m9v = Rdf_IriT (m9a64, err);
+  { __typeof__(head) m9v = Rdf_IriT (m9a77, err);
     if (err->exc) goto L_ret;
     head = m9v;
   }
@@ -4357,22 +4615,22 @@ static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
     bool m9t2 = Rdf_AtEnd (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s104, 23 }), err);
+      Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s117, 23 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a65 = Rdf_Fresh (pool, r, r_pool, err);
+    { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a78 = Rdf_Fresh (pool, r, r_pool, err);
       if (err->exc) goto L_ret;
-    { __typeof__(cell) m9v = Rdf_BlankT (m9a65, err);
+    { __typeof__(cell) m9v = Rdf_BlankT (m9a78, err);
       if (err->exc) goto L_ret;
       cell = m9v;
     }
     }
     if (any) {
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s105, 4 }), err)) m9a66 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s105, 4 }), err);
+      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s118, 4 }), err)) m9a79 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s118, 4 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriT (m9a66, err)) m9a67 = Rdf_IriT (m9a66, err);
+      { __typeof__(Rdf_IriT (m9a79, err)) m9a80 = Rdf_IriT (m9a79, err);
         if (err->exc) goto L_ret;
-      Rdf_Add (pool, g, g_pool, prev, m9a67, cell, err);
+      Rdf_Add (pool, g, g_pool, prev, m9a80, cell, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -4384,26 +4642,26 @@ static Rdf_Term Rdf_Collection (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
       if (err->exc) goto L_ret;
       o = m9v;
     }
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s106, 5 }), err)) m9a68 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s106, 5 }), err);
+    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s119, 5 }), err)) m9a81 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s119, 5 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a68, err)) m9a69 = Rdf_IriT (m9a68, err);
+    { __typeof__(Rdf_IriT (m9a81, err)) m9a82 = Rdf_IriT (m9a81, err);
       if (err->exc) goto L_ret;
-    Rdf_Add (pool, g, g_pool, cell, m9a69, o, err);
+    Rdf_Add (pool, g, g_pool, cell, m9a82, o, err);
     if (err->exc) goto L_ret;
     }
     }
     prev = cell;
   }
   if (any) {
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s107, 4 }), err)) m9a70 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s107, 4 }), err);
+    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s120, 4 }), err)) m9a83 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s120, 4 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a70, err)) m9a71 = Rdf_IriT (m9a70, err);
+    { __typeof__(Rdf_IriT (m9a83, err)) m9a84 = Rdf_IriT (m9a83, err);
       if (err->exc) goto L_ret;
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s108, 3 }), err)) m9a72 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s108, 3 }), err);
+    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s121, 3 }), err)) m9a85 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s121, 3 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a72, err)) m9a73 = Rdf_IriT (m9a72, err);
+    { __typeof__(Rdf_IriT (m9a85, err)) m9a86 = Rdf_IriT (m9a85, err);
       if (err->exc) goto L_ret;
-    Rdf_Add (pool, g, g_pool, prev, m9a71, m9a73, err);
+    Rdf_Add (pool, g, g_pool, prev, m9a84, m9a86, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -4437,11 +4695,11 @@ static Rdf_Term Rdf_PropertyList (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
   err->res = m9res;
   Rdf_Term m9ret = {0};
   Rdf_Term b = {0}; (void) b;
-  Rdf_Expect (r, r_pool, 91u, ((m9_sl_CHAR){ (uint32_t *) m9s109, 1 }), err);
+  Rdf_Expect (r, r_pool, 91u, ((m9_sl_CHAR){ (uint32_t *) m9s122, 1 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a74 = Rdf_Fresh (pool, r, r_pool, err);
+  { __typeof__(Rdf_Fresh (pool, r, r_pool, err)) m9a87 = Rdf_Fresh (pool, r, r_pool, err);
     if (err->exc) goto L_ret;
-  { __typeof__(b) m9v = Rdf_BlankT (m9a74, err);
+  { __typeof__(b) m9v = Rdf_BlankT (m9a87, err);
     if (err->exc) goto L_ret;
     b = m9v;
   }
@@ -4461,7 +4719,7 @@ static Rdf_Term Rdf_PropertyList (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool,
   if (err->exc) goto L_ret;
   Rdf_SkipWs (r, r_pool, err);
   if (err->exc) goto L_ret;
-  Rdf_Expect (r, r_pool, 93u, ((m9_sl_CHAR){ (uint32_t *) m9s110, 38 }), err);
+  Rdf_Expect (r, r_pool, 93u, ((m9_sl_CHAR){ (uint32_t *) m9s123, 38 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = b;
@@ -4500,9 +4758,9 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a75 = Rdf_BlankLabel (pool, r, r_pool, err);
+    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a88 = Rdf_BlankLabel (pool, r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_BlankT (m9a75, err);
+    m9ret = Rdf_BlankT (m9a88, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -4521,9 +4779,9 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   }
   if ((c == 60u)) {
     err->res = m9res;
-    { __typeof__(Rdf_Iri (r, r_pool, err)) m9a76 = Rdf_Iri (r, r_pool, err);
+    { __typeof__(Rdf_Iri (r, r_pool, err)) m9a89 = Rdf_Iri (r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_IriT (m9a76, err);
+    m9ret = Rdf_IriT (m9a89, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -4534,7 +4792,7 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  bool m9t2 = (Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s111, 4 }), err) || Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s112, 5 }), err));
+  bool m9t2 = (Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s124, 4 }), err) || Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s125, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
@@ -4546,14 +4804,14 @@ static Rdf_Term Rdf_ObjectTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, R
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    { __typeof__(Rdf_PrefixedName (r, r_pool, err)) m9a77 = Rdf_PrefixedName (r, r_pool, err);
+    { __typeof__(Rdf_PrefixedName (r, r_pool, err)) m9a90 = Rdf_PrefixedName (r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_IriT (m9a77, err);
+    m9ret = Rdf_IriT (m9a90, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s113, 18 }), err);
+  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s126, 18 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = Rdf_IriT ((m9_sl_CHAR){ NULL, 0 }, err);
@@ -4590,9 +4848,9 @@ static Rdf_Term Rdf_Verb (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
     Rdf_Advance (r, r_pool, err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s114, 4 }), err)) m9a78 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s114, 4 }), err);
+    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s127, 4 }), err)) m9a91 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s127, 4 }), err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_IriT (m9a78, err);
+    m9ret = Rdf_IriT (m9a91, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -4600,13 +4858,13 @@ static Rdf_Term Rdf_Verb (Rdf_Reader *r, m9_pool *r_pool, m9_state *err)
   bool m9t2 = (!Rdf_StartsIri (r, r_pool, err));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s115, 20 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s128, 20 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
-  { __typeof__(Rdf_Iri (r, r_pool, err)) m9a79 = Rdf_Iri (r, r_pool, err);
+  { __typeof__(Rdf_Iri (r, r_pool, err)) m9a92 = Rdf_Iri (r, r_pool, err);
     if (err->exc) goto L_ret;
-  m9ret = Rdf_IriT (m9a79, err);
+  m9ret = Rdf_IriT (m9a92, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -4703,32 +4961,32 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
   int64_t i = 0; (void) i;
   m9_sl_m9_sl_CHAR np = {0}; (void) np;
   m9_sl_m9_sl_CHAR ni = {0}; (void) ni;
-  bool m9t1 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 64u) && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s116, 7 }), err));
+  bool m9t1 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 64u) && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s129, 7 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     Rdf_Skip (r, r_pool, INT64_C(7), err);
     if (err->exc) goto L_ret;
     sparql = false;
   } else {
-    bool m9t2 = Rdf_WordCi (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s117, 6 }), err);
+    bool m9t2 = Rdf_WordCi (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s130, 6 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       Rdf_Skip (r, r_pool, INT64_C(6), err);
       if (err->exc) goto L_ret;
       sparql = true;
   } else {
-    bool m9t3 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 64u) && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s118, 5 }), err));
+    bool m9t3 = ((Rdf_PeekAt (r, r_pool, INT64_C(0), err) == 64u) && Rdf_Word (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s131, 5 }), err));
     if (err->exc) goto L_ret;
     if (m9t3) {
       Rdf_Skip (r, r_pool, INT64_C(5), err);
       if (err->exc) goto L_ret;
       Rdf_SkipWs (r, r_pool, err);
       if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a80 = Rdf_IriRef (r, r_pool, err);
+      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a93 = Rdf_IriRef (r, r_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_Absolute (r, r_pool, m9a80, err)) m9a81 = Rdf_Absolute (r, r_pool, m9a80, err);
+      { __typeof__(Rdf_Absolute (r, r_pool, m9a93, err)) m9a94 = Rdf_Absolute (r, r_pool, m9a93, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*r).base) m9v = Text_Keep (pool, m9a81, err);
+      { __typeof__((*r).base) m9v = Text_Keep (pool, m9a94, err);
         if (err->exc) goto L_ret;
         (*r).base = m9v;
       }
@@ -4736,24 +4994,24 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
       }
       Rdf_SkipWs (r, r_pool, err);
       if (err->exc) goto L_ret;
-      Rdf_Expect (r, r_pool, 46u, ((m9_sl_CHAR){ (uint32_t *) m9s119, 17 }), err);
+      Rdf_Expect (r, r_pool, 46u, ((m9_sl_CHAR){ (uint32_t *) m9s132, 17 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
       m9ret = true;
       goto L_ret;
   } else {
-    bool m9t4 = Rdf_WordCi (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s120, 4 }), err);
+    bool m9t4 = Rdf_WordCi (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s133, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t4) {
       Rdf_Skip (r, r_pool, INT64_C(4), err);
       if (err->exc) goto L_ret;
       Rdf_SkipWs (r, r_pool, err);
       if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a82 = Rdf_IriRef (r, r_pool, err);
+      { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a95 = Rdf_IriRef (r, r_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_Absolute (r, r_pool, m9a82, err)) m9a83 = Rdf_Absolute (r, r_pool, m9a82, err);
+      { __typeof__(Rdf_Absolute (r, r_pool, m9a95, err)) m9a96 = Rdf_Absolute (r, r_pool, m9a95, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*r).base) m9v = Text_Keep (pool, m9a83, err);
+      { __typeof__((*r).base) m9v = Text_Keep (pool, m9a96, err);
         if (err->exc) goto L_ret;
         (*r).base = m9v;
       }
@@ -4775,9 +5033,9 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
   }
   Rdf_SkipWs (r, r_pool, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a84 = Rdf_IriRef (r, r_pool, err);
+  { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a97 = Rdf_IriRef (r, r_pool, err);
     if (err->exc) goto L_ret;
-  { __typeof__(iri) m9v = Rdf_Absolute (r, r_pool, m9a84, err);
+  { __typeof__(iri) m9v = Rdf_Absolute (r, r_pool, m9a97, err);
     if (err->exc) goto L_ret;
     iri = m9v;
   }
@@ -4827,7 +5085,7 @@ static bool Rdf_Directive (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, m9_sta
   if ((!sparql)) {
     Rdf_SkipWs (r, r_pool, err);
     if (err->exc) goto L_ret;
-    Rdf_Expect (r, r_pool, 46u, ((m9_sl_CHAR){ (uint32_t *) m9s121, 19 }), err);
+    Rdf_Expect (r, r_pool, 46u, ((m9_sl_CHAR){ (uint32_t *) m9s134, 19 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -4875,9 +5133,9 @@ static void Rdf_Triples (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Grap
   bool m9t2 = ((c == 95u) && (Rdf_PeekAt (r, r_pool, INT64_C(1), err) == 58u));
   if (err->exc) goto L_ret;
   if (m9t2) {
-    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a85 = Rdf_BlankLabel (pool, r, r_pool, err);
+    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a98 = Rdf_BlankLabel (pool, r, r_pool, err);
       if (err->exc) goto L_ret;
-    { __typeof__(s) m9v = Rdf_BlankT (m9a85, err);
+    { __typeof__(s) m9v = Rdf_BlankT (m9a98, err);
       if (err->exc) goto L_ret;
       s = m9v;
     }
@@ -4892,15 +5150,15 @@ static void Rdf_Triples (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, Rdf_Grap
     bool m9t3 = Rdf_StartsIri (r, r_pool, err);
     if (err->exc) goto L_ret;
     if (m9t3) {
-      { __typeof__(Rdf_Iri (r, r_pool, err)) m9a86 = Rdf_Iri (r, r_pool, err);
+      { __typeof__(Rdf_Iri (r, r_pool, err)) m9a99 = Rdf_Iri (r, r_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(s) m9v = Rdf_IriT (m9a86, err);
+      { __typeof__(s) m9v = Rdf_IriT (m9a99, err);
         if (err->exc) goto L_ret;
         s = m9v;
       }
       }
   } else {
-    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s122, 18 }), err);
+    Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s135, 18 }), err);
     if (err->exc) goto L_ret;
   } } }
   Rdf_PredObjList (pool, r, r_pool, g, g_pool, s, err);
@@ -4981,11 +5239,11 @@ static Rdf_Term Rdf_NtTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, bool 
   }
   if ((c == 60u)) {
     err->res = m9res;
-    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a87 = Rdf_IriRef (r, r_pool, err);
+    { __typeof__(Rdf_IriRef (r, r_pool, err)) m9a100 = Rdf_IriRef (r, r_pool, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_Absolute (r, r_pool, m9a87, err)) m9a88 = Rdf_Absolute (r, r_pool, m9a87, err);
+    { __typeof__(Rdf_Absolute (r, r_pool, m9a100, err)) m9a101 = Rdf_Absolute (r, r_pool, m9a100, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_IriT (m9a88, err);
+    m9ret = Rdf_IriT (m9a101, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -4995,9 +5253,9 @@ static Rdf_Term Rdf_NtTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, bool 
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a89 = Rdf_BlankLabel (pool, r, r_pool, err);
+    { __typeof__(Rdf_BlankLabel (pool, r, r_pool, err)) m9a102 = Rdf_BlankLabel (pool, r, r_pool, err);
       if (err->exc) goto L_ret;
-    m9ret = Rdf_BlankT (m9a89, err);
+    m9ret = Rdf_BlankT (m9a102, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -5008,7 +5266,7 @@ static Rdf_Term Rdf_NtTerm (m9_pool *pool, Rdf_Reader *r, m9_pool *r_pool, bool 
     if (err->exc) goto L_ret;
     goto L_ret;
   }
-  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s123, 15 }), err);
+  Rdf_Fail (r, r_pool, ((m9_sl_CHAR){ (uint32_t *) m9s136, 15 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = Rdf_IriT ((m9_sl_CHAR){ NULL, 0 }, err);
@@ -5061,15 +5319,15 @@ static void Rdf_Hex2 (DynStr_DString * *d, m9_pool *d_pool, int64_t v, m9_state 
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR h = {0}; (void) h;
-  h = ((m9_sl_CHAR){ (uint32_t *) m9s124, 16 });
-  { __typeof__((*(uint32_t *) m9_at (h.p, m9_div_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err))) m9a90 = (*(uint32_t *) m9_at (h.p, m9_div_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err));
+  h = ((m9_sl_CHAR){ (uint32_t *) m9s137, 16 });
+  { __typeof__((*(uint32_t *) m9_at (h.p, m9_div_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err))) m9a103 = (*(uint32_t *) m9_at (h.p, m9_div_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err));
     if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendChar (d, d_pool, m9a90, err);
+  DynStr_AppendChar (d, d_pool, m9a103, err);
   if (err->exc) goto L_hdl_m9t1;
   }
-  { __typeof__((*(uint32_t *) m9_at (h.p, m9_mod_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err))) m9a91 = (*(uint32_t *) m9_at (h.p, m9_mod_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err));
+  { __typeof__((*(uint32_t *) m9_at (h.p, m9_mod_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err))) m9a104 = (*(uint32_t *) m9_at (h.p, m9_mod_i64 (v, INT64_C(16), err), h.len, sizeof (uint32_t), err));
     if (err->exc) goto L_hdl_m9t1;
-  DynStr_AppendChar (d, d_pool, m9a91, err);
+  DynStr_AppendChar (d, d_pool, m9a104, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   goto L_dn_m9t2;
@@ -5108,7 +5366,7 @@ static void Rdf_PutIri (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_s
       c = m9v;
     }
     if ((((((((((((int64_t)(c) <= INT64_C(0x20)) || (c == 60u)) || (c == 62u)) || (c == 34u)) || (c == 123u)) || (c == 125u)) || (c == 124u)) || (c == 94u)) || (c == 96u)) || (c == 92u))) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s125, 4 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s138, 4 }), err);
       if (err->exc) goto L_ret;
       Rdf_Hex2 (d, d_pool, (int64_t)(c), err);
       if (err->exc) goto L_ret;
@@ -5143,7 +5401,7 @@ static void Rdf_PutTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Term t, m9_st
   } break;
   case Rdf_Kind_Blank:
   {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s126, 2 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s139, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, t.value, err);
     if (err->exc) goto L_ret;
@@ -5162,27 +5420,27 @@ static void Rdf_PutTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Term t, m9_st
         c = m9v;
       }
       if ((c == 34u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s127, 2 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s140, 2 }), err);
         if (err->exc) goto L_ret;
       } else {
         if ((c == 92u)) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s141, 2 }), err);
           if (err->exc) goto L_ret;
       } else {
         if ((c == 10u)) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s129, 2 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s142, 2 }), err);
           if (err->exc) goto L_ret;
       } else {
         if ((c == 13u)) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s130, 2 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s143, 2 }), err);
           if (err->exc) goto L_ret;
       } else {
         if ((c == 9u)) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s131, 2 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s144, 2 }), err);
           if (err->exc) goto L_ret;
       } else {
         if ((((int64_t)(c) < INT64_C(0x20)) || ((int64_t)(c) == INT64_C(0x7F)))) {
-          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s132, 4 }), err);
+          DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s145, 4 }), err);
           if (err->exc) goto L_ret;
           Rdf_Hex2 (d, d_pool, (int64_t)(c), err);
           if (err->exc) goto L_ret;
@@ -5202,7 +5460,7 @@ static void Rdf_PutTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Term t, m9_st
       bool m9t3 = (((t.datatype).len > INT64_C(0)) && (!Text_Eq (t.datatype, Rdf_XsdString, err)));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s133, 2 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s146, 2 }), err);
         if (err->exc) goto L_ret;
         Rdf_PutIri (d, d_pool, t.datatype, err);
         if (err->exc) goto L_ret;
@@ -5328,16 +5586,16 @@ static void Rdf_TtlIri (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, m
   if ((k >= INT64_C(0))) {
     (*(bool *) m9_at ((*p).used.p, k, (*p).used.len, sizeof (bool), err)) = true;
     if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_CHAR), err))) m9a92 = (*(m9_sl_CHAR *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_CHAR), err))) m9a105 = (*(m9_sl_CHAR *) m9_at ((*p).names.p, k, (*p).names.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, m9a92, err);
+    DynStr_Append (d, d_pool, m9a105, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (d, d_pool, 58u, err);
     if (err->exc) goto L_ret;
-    { __typeof__(({ __typeof__(iri) m9t1 = iri; int64_t m9t1a = ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, m9t1n = m9_sub_i64 ((iri).len, ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, err); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a93 = ({ __typeof__(iri) m9t1 = iri; int64_t m9t1a = ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, m9t1n = m9_sub_i64 ((iri).len, ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, err); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+    { __typeof__(({ __typeof__(iri) m9t1 = iri; int64_t m9t1a = ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, m9t1n = m9_sub_i64 ((iri).len, ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, err); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a106 = ({ __typeof__(iri) m9t1 = iri; int64_t m9t1a = ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, m9t1n = m9_sub_i64 ((iri).len, ((*(m9_sl_CHAR *) m9_at ((*p).iris.p, k, (*p).iris.len, sizeof (m9_sl_CHAR), err))).len, err); (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
       if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, m9a93, err);
+    DynStr_Append (d, d_pool, m9a106, err);
     if (err->exc) goto L_ret;
     }
   } else {
@@ -5412,7 +5670,7 @@ static bool Rdf_ShortForm (Rdf_Term t, m9_state *err)
   if (m9t1) {
     i = INT64_C(1);
   }
-  bool m9t2 = Text_Eq (t.datatype, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s134, 7 }), err), err);
+  bool m9t2 = Text_Eq (t.datatype, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s147, 7 }), err), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
@@ -5420,7 +5678,7 @@ static bool Rdf_ShortForm (Rdf_Term t, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   } else {
-    bool m9t3 = Text_Eq (t.datatype, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s135, 7 }), err), err);
+    bool m9t3 = Text_Eq (t.datatype, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s148, 7 }), err), err);
     if (err->exc) goto L_ret;
     if (m9t3) {
       { __typeof__(dot) m9v = Text_FindChar (s, 46u, err);
@@ -5432,7 +5690,7 @@ static bool Rdf_ShortForm (Rdf_Term t, m9_state *err)
       if (err->exc) goto L_ret;
       goto L_ret;
   } else {
-    bool m9t4 = Text_Eq (t.datatype, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s136, 6 }), err), err);
+    bool m9t4 = Text_Eq (t.datatype, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s149, 6 }), err), err);
     if (err->exc) goto L_ret;
     if (m9t4) {
       { __typeof__(e) m9v = Text_FindChar (s, 101u, err);
@@ -5450,9 +5708,9 @@ static bool Rdf_ShortForm (Rdf_Term t, m9_state *err)
         m9ret = false;
         goto L_ret;
       }
-      { __typeof__(({ __typeof__(s) m9t5 = s; int64_t m9t5a = INT64_C(0), m9t5n = e; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a94 = ({ __typeof__(s) m9t5 = s; int64_t m9t5a = INT64_C(0), m9t5n = e; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
+      { __typeof__(({ __typeof__(s) m9t5 = s; int64_t m9t5a = INT64_C(0), m9t5n = e; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a107 = ({ __typeof__(s) m9t5 = s; int64_t m9t5a = INT64_C(0), m9t5n = e; (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(dot) m9v = Text_FindChar (m9a94, 46u, err);
+      { __typeof__(dot) m9v = Text_FindChar (m9a107, 46u, err);
         if (err->exc) goto L_ret;
         dot = m9v;
       }
@@ -5507,11 +5765,11 @@ static bool Rdf_ShortForm (Rdf_Term t, m9_state *err)
       if (err->exc) goto L_ret;
       goto L_ret;
   } else {
-    bool m9t11 = Text_Eq (t.datatype, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s137, 7 }), err), err);
+    bool m9t11 = Text_Eq (t.datatype, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s150, 7 }), err), err);
     if (err->exc) goto L_ret;
     if (m9t11) {
       err->res = m9res;
-      m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s138, 4 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s139, 5 }), err));
+      m9ret = (Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s151, 4 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s152, 5 }), err));
       if (err->exc) goto L_ret;
       goto L_ret;
   } } } }
@@ -5545,7 +5803,7 @@ static void Rdf_TtlLiteral (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *
     long_ = m9v;
   }
   if (long_) {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s140, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s153, 3 }), err);
     if (err->exc) goto L_ret;
   } else {
     DynStr_AppendChar (d, d_pool, 34u, err);
@@ -5561,19 +5819,19 @@ static void Rdf_TtlLiteral (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *
       c = m9v;
     }
     if ((c == 34u)) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s141, 2 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s154, 2 }), err);
       if (err->exc) goto L_ret;
     } else {
       if ((c == 92u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s142, 2 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s155, 2 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 9u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s143, 2 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s156, 2 }), err);
         if (err->exc) goto L_ret;
     } else {
       if (((((((int64_t)(c) < INT64_C(0x20)) && (c != 10u)) && (c != 13u))) || ((int64_t)(c) == INT64_C(0x7F)))) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s144, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s157, 4 }), err);
         if (err->exc) goto L_ret;
         Rdf_Hex2 (d, d_pool, (int64_t)(c), err);
         if (err->exc) goto L_ret;
@@ -5583,7 +5841,7 @@ static void Rdf_TtlLiteral (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *
     } } } }
   } }
   if (long_) {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s145, 3 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s158, 3 }), err);
     if (err->exc) goto L_ret;
   } else {
     DynStr_AppendChar (d, d_pool, 34u, err);
@@ -5598,7 +5856,7 @@ static void Rdf_TtlLiteral (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *
     bool m9t3 = (((t.datatype).len > INT64_C(0)) && (!Text_Eq (t.datatype, Rdf_XsdString, err)));
     if (err->exc) goto L_ret;
     if (m9t3) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s146, 2 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s159, 2 }), err);
       if (err->exc) goto L_ret;
       Rdf_TtlIri (d, d_pool, p, p_pool, t.datatype, err);
       if (err->exc) goto L_ret;
@@ -5623,7 +5881,7 @@ static void Rdf_TtlTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, 
   switch (m9t1.tag) {
   case Rdf_Kind_Iri:
   {
-    bool m9t2 = (predicate && Text_Eq (t.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s147, 4 }), err), err));
+    bool m9t2 = (predicate && Text_Eq (t.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s160, 4 }), err), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
       DynStr_AppendChar (d, d_pool, 97u, err);
@@ -5635,7 +5893,7 @@ static void Rdf_TtlTerm (DynStr_DString * *d, m9_pool *d_pool, Rdf_Prefixes *p, 
   } break;
   case Rdf_Kind_Blank:
   {
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s148, 2 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s161, 2 }), err);
     if (err->exc) goto L_ret;
     DynStr_Append (d, d_pool, t.value, err);
     if (err->exc) goto L_ret;
@@ -5808,7 +6066,7 @@ static bool Rdf_IsCoreSyntax (m9_sl_CHAR local, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((((((Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s149, 3 }), err) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s150, 2 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s151, 5 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s152, 9 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s153, 8 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s154, 6 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s155, 8 }), err));
+  m9ret = ((((((Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s162, 3 }), err) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s163, 2 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s164, 5 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s165, 9 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s166, 8 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s167, 6 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s168, 8 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -5825,7 +6083,7 @@ static bool Rdf_IsOldTerm (m9_sl_CHAR local, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s156, 9 }), err) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s157, 15 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s158, 5 }), err));
+  m9ret = ((Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s169, 9 }), err) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s170, 15 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s171, 5 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -5841,10 +6099,10 @@ static void Rdf_Scoped (Xml_Element * e, Rdf_XState *st, m9_pool *st_pool, m9_sl
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR v = {0}; (void) v;
-  bool m9t1 = Xml_HasAttr (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s159, 4 }), err);
+  bool m9t1 = Xml_HasAttr (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s172, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(v) m9v = Xml_AttrValue (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s160, 4 }), err);
+    { __typeof__(v) m9v = Xml_AttrValue (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s173, 4 }), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
@@ -5859,14 +6117,14 @@ static void Rdf_Scoped (Xml_Element * e, Rdf_XState *st, m9_pool *st_pool, m9_sl
       if (m9t2) {
         (*base) = v;
     } else {
-      Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s161, 45 }), err);
+      Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s174, 45 }), err);
       if (err->exc) goto L_ret;
     } }
   }
-  bool m9t3 = Xml_HasAttr (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s162, 4 }), err);
+  bool m9t3 = Xml_HasAttr (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s175, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
-    { __typeof__((*lang)) m9v = Xml_AttrValue (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s163, 4 }), err);
+    { __typeof__((*lang)) m9v = Xml_AttrValue (e, Rdf_XmlNsUri, ((m9_sl_CHAR){ (uint32_t *) m9s176, 4 }), err);
       if (err->exc) goto L_ret;
       (*lang) = m9v;
     }
@@ -5901,9 +6159,9 @@ static m9_sl_CHAR Rdf_XIri (Rdf_XState *st, m9_pool *st_pool, m9_sl_CHAR base, m
     goto L_ret;
   }
   if (((base).len == INT64_C(0))) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s164, 42 }), ref, err)) m9a95 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s164, 42 }), ref, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s177, 42 }), ref, err)) m9a108 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s177, 42 }), ref, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a95, err);
+    Rdf_XFail (m9a108, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -5966,17 +6224,17 @@ static m9_sl_CHAR Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9
   bool m9t1 = (!Rdf_NcName (id, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s165, 27 }), id, err)) m9a96 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s165, 27 }), id, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s178, 27 }), id, err)) m9a109 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s178, 27 }), id, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a96, err);
+    Rdf_XFail (m9a109, err);
     if (err->exc) goto L_ret;
     }
   }
   if (((base).len == INT64_C(0))) {
-    Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s166, 40 }), err);
+    Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s179, 40 }), err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(iri) m9v = m9_cat (err->res, m9_cat (err->res, Rdf_NoFragment (base, err), ((m9_sl_CHAR){ (uint32_t *) m9s167, 1 }), err), id, err);
+  { __typeof__(iri) m9v = m9_cat (err->res, m9_cat (err->res, Rdf_NoFragment (base, err), ((m9_sl_CHAR){ (uint32_t *) m9s180, 1 }), err), id, err);
     if (err->exc) goto L_ret;
     iri = m9v;
   }
@@ -5988,9 +6246,9 @@ static m9_sl_CHAR Rdf_IdIri (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, m9
     bool m9t3 = Text_Eq ((*(m9_sl_CHAR *) m9_at ((*st).ids.p, i, (*st).ids.len, sizeof (m9_sl_CHAR), err)), iri, err);
     if (err->exc) goto L_ret;
     if (m9t3) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s168, 19 }), id, err)) m9a97 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s168, 19 }), id, err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s181, 19 }), id, err)) m9a110 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s181, 19 }), id, err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a97, err);
+      Rdf_XFail (m9a110, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -6102,18 +6360,18 @@ static void Rdf_PropertyAttr (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, R
   bool m9t1 = Text_Eq (ns, Rdf_RdfNs, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    bool m9t2 = Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s169, 4 }), err);
+    bool m9t2 = Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s182, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s170, 4 }), err)) m9a98 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s170, 4 }), err);
+      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s183, 4 }), err)) m9a111 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s183, 4 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriT (m9a98, err)) m9a99 = Rdf_IriT (m9a98, err);
+      { __typeof__(Rdf_IriT (m9a111, err)) m9a112 = Rdf_IriT (m9a111, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_XIri (st, st_pool, base, value, err)) m9a100 = Rdf_XIri (st, st_pool, base, value, err);
+      { __typeof__(Rdf_XIri (st, st_pool, base, value, err)) m9a113 = Rdf_XIri (st, st_pool, base, value, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_IriT (m9a100, err)) m9a101 = Rdf_IriT (m9a100, err);
+      { __typeof__(Rdf_IriT (m9a113, err)) m9a114 = Rdf_IriT (m9a113, err);
         if (err->exc) goto L_ret;
-      Rdf_Add (pool, g, g_pool, subj, m9a99, m9a101, err);
+      Rdf_Add (pool, g, g_pool, subj, m9a112, m9a114, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -6121,23 +6379,23 @@ static void Rdf_PropertyAttr (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, R
       }
       goto L_ret;
     }
-    bool m9t3 = (((Rdf_IsCoreSyntax (local, err) || Rdf_IsOldTerm (local, err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s171, 2 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s172, 11 }), err));
+    bool m9t3 = (((Rdf_IsCoreSyntax (local, err) || Rdf_IsOldTerm (local, err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s184, 2 }), err)) || Text_Eq (local, ((m9_sl_CHAR){ (uint32_t *) m9s185, 11 }), err));
     if (err->exc) goto L_ret;
     if (m9t3) {
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s173, 4 }), local, err), ((m9_sl_CHAR){ (uint32_t *) m9s174, 28 }), err)) m9a102 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s173, 4 }), local, err), ((m9_sl_CHAR){ (uint32_t *) m9s174, 28 }), err);
+      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s186, 4 }), local, err), ((m9_sl_CHAR){ (uint32_t *) m9s187, 28 }), err)) m9a115 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s186, 4 }), local, err), ((m9_sl_CHAR){ (uint32_t *) m9s187, 28 }), err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a102, err);
+      Rdf_XFail (m9a115, err);
       if (err->exc) goto L_ret;
       }
     }
   }
-  { __typeof__(m9_cat (err->res, ns, local, err)) m9a103 = m9_cat (err->res, ns, local, err);
+  { __typeof__(m9_cat (err->res, ns, local, err)) m9a116 = m9_cat (err->res, ns, local, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a103, err)) m9a104 = Rdf_IriT (m9a103, err);
+  { __typeof__(Rdf_IriT (m9a116, err)) m9a117 = Rdf_IriT (m9a116, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_LitT (value, lang, (m9_sl_CHAR){ NULL, 0 }, err)) m9a105 = Rdf_LitT (value, lang, (m9_sl_CHAR){ NULL, 0 }, err);
+  { __typeof__(Rdf_LitT (value, lang, (m9_sl_CHAR){ NULL, 0 }, err)) m9a118 = Rdf_LitT (value, lang, (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, subj, m9a104, m9a105, err);
+  Rdf_Add (pool, g, g_pool, subj, m9a117, m9a118, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -6176,82 +6434,82 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
   bool m9t1 = Rdf_IsRdf (e, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    bool m9t2 = ((Rdf_IsCoreSyntax (e->local, err) || Rdf_IsOldTerm (e->local, err)) || Text_Eq (e->local, ((m9_sl_CHAR){ (uint32_t *) m9s175, 2 }), err));
+    bool m9t2 = ((Rdf_IsCoreSyntax (e->local, err) || Rdf_IsOldTerm (e->local, err)) || Text_Eq (e->local, ((m9_sl_CHAR){ (uint32_t *) m9s188, 2 }), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s176, 4 }), e->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s177, 22 }), err)) m9a106 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s176, 4 }), e->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s177, 22 }), err);
+      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s189, 4 }), e->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s190, 22 }), err)) m9a119 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s189, 4 }), e->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s190, 22 }), err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a106, err);
+      Rdf_XFail (m9a119, err);
       if (err->exc) goto L_ret;
       }
     }
   }
   if (((e->ns).len == INT64_C(0))) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s178, 32 }), e->name, err)) m9a107 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s178, 32 }), e->name, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s191, 32 }), e->name, err)) m9a120 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s191, 32 }), e->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a107, err);
+    Rdf_XFail (m9a120, err);
     if (err->exc) goto L_ret;
     }
   }
   named = INT64_C(0);
-  bool m9t3 = Xml_HasAttr (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s179, 2 }), err);
+  bool m9t3 = Xml_HasAttr (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s192, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     { __typeof__(named) m9v = m9_add_i64 (named, INT64_C(1), err);
       if (err->exc) goto L_ret;
       named = m9v;
     }
-    { __typeof__(Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s180, 2 }), err)) m9a108 = Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s180, 2 }), err);
+    { __typeof__(Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s193, 2 }), err)) m9a121 = Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s193, 2 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IdIri (pool, st, st_pool, base, m9a108, err)) m9a109 = Rdf_IdIri (pool, st, st_pool, base, m9a108, err);
+    { __typeof__(Rdf_IdIri (pool, st, st_pool, base, m9a121, err)) m9a122 = Rdf_IdIri (pool, st, st_pool, base, m9a121, err);
       if (err->exc) goto L_ret;
-    { __typeof__(subj) m9v = Rdf_IriT (m9a109, err);
+    { __typeof__(subj) m9v = Rdf_IriT (m9a122, err);
       if (err->exc) goto L_ret;
       subj = m9v;
     }
     }
     }
   }
-  bool m9t4 = Xml_HasAttr (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s181, 6 }), err);
+  bool m9t4 = Xml_HasAttr (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s194, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     { __typeof__(named) m9v = m9_add_i64 (named, INT64_C(1), err);
       if (err->exc) goto L_ret;
       named = m9v;
     }
-    { __typeof__(v) m9v = Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s182, 6 }), err);
+    { __typeof__(v) m9v = Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s195, 6 }), err);
       if (err->exc) goto L_ret;
       v = m9v;
     }
     bool m9t5 = (!Rdf_NcName (v, err));
     if (err->exc) goto L_ret;
     if (m9t5) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s183, 31 }), v, err)) m9a110 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s183, 31 }), v, err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s196, 31 }), v, err)) m9a123 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s196, 31 }), v, err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a110, err);
+      Rdf_XFail (m9a123, err);
       if (err->exc) goto L_ret;
       }
     }
-    { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a111 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
+    { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a124 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
       if (err->exc) goto L_ret;
-    { __typeof__(subj) m9v = Rdf_BlankT (m9a111, err);
+    { __typeof__(subj) m9v = Rdf_BlankT (m9a124, err);
       if (err->exc) goto L_ret;
       subj = m9v;
     }
     }
   }
-  bool m9t6 = Xml_HasAttr (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s184, 5 }), err);
+  bool m9t6 = Xml_HasAttr (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s197, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
     { __typeof__(named) m9v = m9_add_i64 (named, INT64_C(1), err);
       if (err->exc) goto L_ret;
       named = m9v;
     }
-    { __typeof__(Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s185, 5 }), err)) m9a112 = Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s185, 5 }), err);
+    { __typeof__(Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s198, 5 }), err)) m9a125 = Xml_AttrValue (e, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s198, 5 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_XIri (st, st_pool, base, m9a112, err)) m9a113 = Rdf_XIri (st, st_pool, base, m9a112, err);
+    { __typeof__(Rdf_XIri (st, st_pool, base, m9a125, err)) m9a126 = Rdf_XIri (st, st_pool, base, m9a125, err);
       if (err->exc) goto L_ret;
-    { __typeof__(subj) m9v = Rdf_IriT (m9a113, err);
+    { __typeof__(subj) m9v = Rdf_IriT (m9a126, err);
       if (err->exc) goto L_ret;
       subj = m9v;
     }
@@ -6259,33 +6517,33 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
     }
   }
   if ((named > INT64_C(1))) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s186, 53 }), e->name, err)) m9a114 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s186, 53 }), e->name, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s199, 53 }), e->name, err)) m9a127 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s199, 53 }), e->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a114, err);
+    Rdf_XFail (m9a127, err);
     if (err->exc) goto L_ret;
     }
   }
   if ((named == INT64_C(0))) {
-    { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a115 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+    { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a128 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
       if (err->exc) goto L_ret;
-    { __typeof__(subj) m9v = Rdf_BlankT (m9a115, err);
+    { __typeof__(subj) m9v = Rdf_BlankT (m9a128, err);
       if (err->exc) goto L_ret;
       subj = m9v;
     }
     }
   }
-  bool m9t7 = (!((Rdf_IsRdf (e, err) && Text_Eq (e->local, ((m9_sl_CHAR){ (uint32_t *) m9s187, 11 }), err))));
+  bool m9t7 = (!((Rdf_IsRdf (e, err) && Text_Eq (e->local, ((m9_sl_CHAR){ (uint32_t *) m9s200, 11 }), err))));
   if (err->exc) goto L_ret;
   if (m9t7) {
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s188, 4 }), err)) m9a116 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s188, 4 }), err);
+    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s201, 4 }), err)) m9a129 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s201, 4 }), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a116, err)) m9a117 = Rdf_IriT (m9a116, err);
+    { __typeof__(Rdf_IriT (m9a129, err)) m9a130 = Rdf_IriT (m9a129, err);
       if (err->exc) goto L_ret;
-    { __typeof__(m9_cat (err->res, e->ns, e->local, err)) m9a118 = m9_cat (err->res, e->ns, e->local, err);
+    { __typeof__(m9_cat (err->res, e->ns, e->local, err)) m9a131 = m9_cat (err->res, e->ns, e->local, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Rdf_IriT (m9a118, err)) m9a119 = Rdf_IriT (m9a118, err);
+    { __typeof__(Rdf_IriT (m9a131, err)) m9a132 = Rdf_IriT (m9a131, err);
       if (err->exc) goto L_ret;
-    Rdf_Add (pool, g, g_pool, subj, m9a117, m9a119, err);
+    Rdf_Add (pool, g, g_pool, subj, m9a130, m9a132, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -6304,27 +6562,27 @@ static Rdf_Term Rdf_NodeElement (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool
       bool m9t10 = (((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns).len == INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t10) {
-        bool m9t11 = (!Text_StartsWith ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, ((m9_sl_CHAR){ (uint32_t *) m9s189, 3 }), err));
+        bool m9t11 = (!Text_StartsWith ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, ((m9_sl_CHAR){ (uint32_t *) m9s202, 3 }), err));
         if (err->exc) goto L_ret;
         if (m9t11) {
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s190, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a120 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s190, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err);
+          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s203, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a133 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s203, 34 }), (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name, err);
             if (err->exc) goto L_ret;
-          Rdf_XFail (m9a120, err);
+          Rdf_XFail (m9a133, err);
           if (err->exc) goto L_ret;
           }
         }
     } else {
-      bool m9t12 = (Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns, Rdf_RdfNs, err) && (((Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s191, 2 }), err) || Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s192, 6 }), err)) || Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s193, 5 }), err))));
+      bool m9t12 = (Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns, Rdf_RdfNs, err) && (((Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s204, 2 }), err) || Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s205, 6 }), err)) || Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s206, 5 }), err))));
       if (err->exc) goto L_ret;
       if (m9t12) {
     } else {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a121 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns) m9a134 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns;
         if (err->exc) goto L_ret;
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a122 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local) m9a135 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).local;
         if (err->exc) goto L_ret;
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value) m9a123 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value) m9a136 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).value;
         if (err->exc) goto L_ret;
-      Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, subj, m9a121, m9a122, m9a123, base, lang, err);
+      Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, subj, m9a134, m9a135, m9a136, base, lang, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -6364,9 +6622,9 @@ static void Rdf_PropertyElts (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, X
   bool m9t1 = (!Rdf_ContentIsElements (e, err));
   if (err->exc) goto L_ret;
   if (m9t1) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s194, 46 }), e->name, err)) m9a124 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s194, 46 }), e->name, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s207, 46 }), e->name, err)) m9a137 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s207, 46 }), e->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a124, err);
+    Rdf_XFail (m9a137, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -6376,9 +6634,9 @@ static void Rdf_PropertyElts (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, X
   m9t2to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    { __typeof__((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))) m9a125 = (*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err));
+    { __typeof__((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))) m9a138 = (*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err));
       if (err->exc) goto L_ret;
-    Rdf_PropertyElt (pool, st, st_pool, m9a125, g, g_pool, subj, base, lang, &(li), err);
+    Rdf_PropertyElt (pool, st, st_pool, m9a138, g, g_pool, subj, base, lang, &(li), err);
     if (err->exc) goto L_ret;
     }
   } }
@@ -6403,48 +6661,48 @@ static void Rdf_Reify (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Rdf_Grap
   (void) m9res;
   err->res = &m9frame;
   Rdf_Term r = {0}; (void) r;
-  { __typeof__(Rdf_IdIri (pool, st, st_pool, base, id, err)) m9a126 = Rdf_IdIri (pool, st, st_pool, base, id, err);
+  { __typeof__(Rdf_IdIri (pool, st, st_pool, base, id, err)) m9a139 = Rdf_IdIri (pool, st, st_pool, base, id, err);
     if (err->exc) goto L_ret;
-  { __typeof__(r) m9v = Rdf_IriT (m9a126, err);
+  { __typeof__(r) m9v = Rdf_IriT (m9a139, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
   }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s195, 4 }), err)) m9a127 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s195, 4 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s208, 4 }), err)) m9a140 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s208, 4 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a127, err)) m9a128 = Rdf_IriT (m9a127, err);
+  { __typeof__(Rdf_IriT (m9a140, err)) m9a141 = Rdf_IriT (m9a140, err);
     if (err->exc) goto L_ret;
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s196, 9 }), err)) m9a129 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s196, 9 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s209, 9 }), err)) m9a142 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s209, 9 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a129, err)) m9a130 = Rdf_IriT (m9a129, err);
+  { __typeof__(Rdf_IriT (m9a142, err)) m9a143 = Rdf_IriT (m9a142, err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, r, m9a128, m9a130, err);
+  Rdf_Add (pool, g, g_pool, r, m9a141, m9a143, err);
   if (err->exc) goto L_ret;
   }
   }
   }
   }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s197, 7 }), err)) m9a131 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s197, 7 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s210, 7 }), err)) m9a144 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s210, 7 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a131, err)) m9a132 = Rdf_IriT (m9a131, err);
+  { __typeof__(Rdf_IriT (m9a144, err)) m9a145 = Rdf_IriT (m9a144, err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, r, m9a132, s, err);
+  Rdf_Add (pool, g, g_pool, r, m9a145, s, err);
   if (err->exc) goto L_ret;
   }
   }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s198, 9 }), err)) m9a133 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s198, 9 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s211, 9 }), err)) m9a146 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s211, 9 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a133, err)) m9a134 = Rdf_IriT (m9a133, err);
+  { __typeof__(Rdf_IriT (m9a146, err)) m9a147 = Rdf_IriT (m9a146, err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, r, m9a134, p, err);
+  Rdf_Add (pool, g, g_pool, r, m9a147, p, err);
   if (err->exc) goto L_ret;
   }
   }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s199, 6 }), err)) m9a135 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s199, 6 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s212, 6 }), err)) m9a148 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s212, 6 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Rdf_IriT (m9a135, err)) m9a136 = Rdf_IriT (m9a135, err);
+  { __typeof__(Rdf_IriT (m9a148, err)) m9a149 = Rdf_IriT (m9a148, err);
     if (err->exc) goto L_ret;
-  Rdf_Add (pool, g, g_pool, r, m9a136, o, err);
+  Rdf_Add (pool, g, g_pool, r, m9a149, o, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -6491,51 +6749,51 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
   Rdf_Scoped (pe, st, st_pool, &(base), &(lang), err);
   if (err->exc) goto L_ret;
   if (((pe->ns).len == INT64_C(0))) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s200, 32 }), pe->name, err)) m9a137 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s200, 32 }), pe->name, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s213, 32 }), pe->name, err)) m9a150 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s213, 32 }), pe->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a137, err);
+    Rdf_XFail (m9a150, err);
     if (err->exc) goto L_ret;
     }
   }
   bool m9t1 = Rdf_IsRdf (pe, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
-    bool m9t2 = ((Rdf_IsCoreSyntax (pe->local, err) || Rdf_IsOldTerm (pe->local, err)) || Text_Eq (pe->local, ((m9_sl_CHAR){ (uint32_t *) m9s201, 11 }), err));
+    bool m9t2 = ((Rdf_IsCoreSyntax (pe->local, err) || Rdf_IsOldTerm (pe->local, err)) || Text_Eq (pe->local, ((m9_sl_CHAR){ (uint32_t *) m9s214, 11 }), err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s202, 4 }), pe->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s203, 26 }), err)) m9a138 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s202, 4 }), pe->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s203, 26 }), err);
+      { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s215, 4 }), pe->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s216, 26 }), err)) m9a151 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s215, 4 }), pe->local, err), ((m9_sl_CHAR){ (uint32_t *) m9s216, 26 }), err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a138, err);
+      Rdf_XFail (m9a151, err);
       if (err->exc) goto L_ret;
       }
     }
-    bool m9t3 = Text_Eq (pe->local, ((m9_sl_CHAR){ (uint32_t *) m9s204, 2 }), err);
+    bool m9t3 = Text_Eq (pe->local, ((m9_sl_CHAR){ (uint32_t *) m9s217, 2 }), err);
     if (err->exc) goto L_ret;
     if (m9t3) {
       { __typeof__((*li)) m9v = m9_add_i64 ((*li), INT64_C(1), err);
         if (err->exc) goto L_ret;
         (*li) = m9v;
       }
-      { __typeof__(m9_cat (err->res, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s205, 1 }), err), Fmt_I64Str ((*li), err), err)) m9a139 = m9_cat (err->res, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s205, 1 }), err), Fmt_I64Str ((*li), err), err);
+      { __typeof__(m9_cat (err->res, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s218, 1 }), err), Fmt_I64Str ((*li), err), err)) m9a152 = m9_cat (err->res, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s218, 1 }), err), Fmt_I64Str ((*li), err), err);
         if (err->exc) goto L_ret;
-      { __typeof__(pred) m9v = Rdf_IriT (m9a139, err);
+      { __typeof__(pred) m9v = Rdf_IriT (m9a152, err);
         if (err->exc) goto L_ret;
         pred = m9v;
       }
       }
     } else {
-      { __typeof__(m9_cat (err->res, pe->ns, pe->local, err)) m9a140 = m9_cat (err->res, pe->ns, pe->local, err);
+      { __typeof__(m9_cat (err->res, pe->ns, pe->local, err)) m9a153 = m9_cat (err->res, pe->ns, pe->local, err);
         if (err->exc) goto L_ret;
-      { __typeof__(pred) m9v = Rdf_IriT (m9a140, err);
+      { __typeof__(pred) m9v = Rdf_IriT (m9a153, err);
         if (err->exc) goto L_ret;
         pred = m9v;
       }
       }
     }
   } else {
-    { __typeof__(m9_cat (err->res, pe->ns, pe->local, err)) m9a141 = m9_cat (err->res, pe->ns, pe->local, err);
+    { __typeof__(m9_cat (err->res, pe->ns, pe->local, err)) m9a154 = m9_cat (err->res, pe->ns, pe->local, err);
       if (err->exc) goto L_ret;
-    { __typeof__(pred) m9v = Rdf_IriT (m9a141, err);
+    { __typeof__(pred) m9v = Rdf_IriT (m9a154, err);
       if (err->exc) goto L_ret;
       pred = m9v;
     }
@@ -6562,12 +6820,12 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
       bool m9t6 = (((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns).len == INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t6) {
-        bool m9t7 = (!Text_StartsWith ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, ((m9_sl_CHAR){ (uint32_t *) m9s206, 3 }), err));
+        bool m9t7 = (!Text_StartsWith ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, ((m9_sl_CHAR){ (uint32_t *) m9s219, 3 }), err));
         if (err->exc) goto L_ret;
         if (m9t7) {
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s207, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a142 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s207, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err);
+          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s220, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err)) m9a155 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s220, 34 }), (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).name, err);
             if (err->exc) goto L_ret;
-          Rdf_XFail (m9a142, err);
+          Rdf_XFail (m9a155, err);
           if (err->exc) goto L_ret;
           }
         }
@@ -6579,7 +6837,7 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
           if (err->exc) goto L_ret;
           v = m9v;
         }
-        bool m9t9 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s208, 2 }), err);
+        bool m9t9 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s221, 2 }), err);
         if (err->exc) goto L_ret;
         if (m9t9) {
           hasId = true;
@@ -6588,17 +6846,17 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
             id = m9v;
           }
         } else {
-          bool m9t10 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s209, 8 }), err);
+          bool m9t10 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s222, 8 }), err);
           if (err->exc) goto L_ret;
           if (m9t10) {
             hasResource = true;
         } else {
-          bool m9t11 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s210, 6 }), err);
+          bool m9t11 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s223, 6 }), err);
           if (err->exc) goto L_ret;
           if (m9t11) {
             hasNodeId = true;
         } else {
-          bool m9t12 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s211, 8 }), err);
+          bool m9t12 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s224, 8 }), err);
           if (err->exc) goto L_ret;
           if (m9t12) {
             hasDatatype = true;
@@ -6607,7 +6865,7 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
               datatype = m9v;
             }
         } else {
-          bool m9t13 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s212, 9 }), err);
+          bool m9t13 = Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s225, 9 }), err);
           if (err->exc) goto L_ret;
           if (m9t13) {
             hasParse = true;
@@ -6616,12 +6874,12 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
               parseType = m9v;
             }
         } else {
-          bool m9t14 = ((((Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s213, 5 }), err) || Rdf_IsOldTerm (v, err)) || Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s214, 2 }), err)) || Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s215, 11 }), err)) || Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s216, 3 }), err));
+          bool m9t14 = ((((Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s226, 5 }), err) || Rdf_IsOldTerm (v, err)) || Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s227, 2 }), err)) || Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s228, 11 }), err)) || Text_Eq (v, ((m9_sl_CHAR){ (uint32_t *) m9s229, 3 }), err));
           if (err->exc) goto L_ret;
           if (m9t14) {
-            { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s217, 4 }), v, err), ((m9_sl_CHAR){ (uint32_t *) m9s218, 22 }), err)) m9a143 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s217, 4 }), v, err), ((m9_sl_CHAR){ (uint32_t *) m9s218, 22 }), err);
+            { __typeof__(m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s230, 4 }), v, err), ((m9_sl_CHAR){ (uint32_t *) m9s231, 22 }), err)) m9a156 = m9_cat (err->res, m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s230, 4 }), v, err), ((m9_sl_CHAR){ (uint32_t *) m9s231, 22 }), err);
               if (err->exc) goto L_ret;
-            Rdf_XFail (m9a143, err);
+            Rdf_XFail (m9a156, err);
             if (err->exc) goto L_ret;
             }
         } else {
@@ -6632,27 +6890,27 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
     } } }
   } }
   if ((hasResource && hasNodeId)) {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s219, 36 }), pe->name, err)) m9a144 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s219, 36 }), pe->name, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s232, 36 }), pe->name, err)) m9a157 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s232, 36 }), pe->name, err);
       if (err->exc) goto L_ret;
-    Rdf_XFail (m9a144, err);
+    Rdf_XFail (m9a157, err);
     if (err->exc) goto L_ret;
     }
   }
   n = (pe->kids).len;
   if (hasParse) {
     if ((((hasResource || hasNodeId) || hasDatatype) || props)) {
-      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s220, 41 }), pe->name, err)) m9a145 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s220, 41 }), pe->name, err);
+      { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s233, 41 }), pe->name, err)) m9a158 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s233, 41 }), pe->name, err);
         if (err->exc) goto L_ret;
-      Rdf_XFail (m9a145, err);
+      Rdf_XFail (m9a158, err);
       if (err->exc) goto L_ret;
       }
     }
-    bool m9t15 = Text_Eq (parseType, ((m9_sl_CHAR){ (uint32_t *) m9s221, 8 }), err);
+    bool m9t15 = Text_Eq (parseType, ((m9_sl_CHAR){ (uint32_t *) m9s234, 8 }), err);
     if (err->exc) goto L_ret;
     if (m9t15) {
-      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a146 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a159 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
         if (err->exc) goto L_ret;
-      { __typeof__(obj) m9v = Rdf_BlankT (m9a146, err);
+      { __typeof__(obj) m9v = Rdf_BlankT (m9a159, err);
         if (err->exc) goto L_ret;
         obj = m9v;
       }
@@ -6666,27 +6924,27 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
       Rdf_PropertyElts (pool, st, st_pool, pe, g, g_pool, obj, base, lang, err);
       if (err->exc) goto L_ret;
     } else {
-      bool m9t16 = Text_Eq (parseType, ((m9_sl_CHAR){ (uint32_t *) m9s222, 10 }), err);
+      bool m9t16 = Text_Eq (parseType, ((m9_sl_CHAR){ (uint32_t *) m9s235, 10 }), err);
       if (err->exc) goto L_ret;
       if (m9t16) {
         bool m9t17 = (!Rdf_ContentIsElements (pe, err));
         if (err->exc) goto L_ret;
         if (m9t17) {
-          Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s223, 30 }), err);
+          Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s236, 30 }), err);
           if (err->exc) goto L_ret;
         }
         if ((n == INT64_C(0))) {
-          { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s224, 3 }), err)) m9a147 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s224, 3 }), err);
+          { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s237, 3 }), err)) m9a160 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s237, 3 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(obj) m9v = Rdf_IriT (m9a147, err);
+          { __typeof__(obj) m9v = Rdf_IriT (m9a160, err);
             if (err->exc) goto L_ret;
             obj = m9v;
           }
           }
         } else {
-          { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a148 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+          { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a161 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
             if (err->exc) goto L_ret;
-          { __typeof__(obj) m9v = Rdf_BlankT (m9a148, err);
+          { __typeof__(obj) m9v = Rdf_BlankT (m9a161, err);
             if (err->exc) goto L_ret;
             obj = m9v;
           }
@@ -6698,47 +6956,47 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
           if (err->exc) goto L_ret;
           for (; i <= m9t18to; i += 1) {
             if ((i > INT64_C(0))) {
-              { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a149 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+              { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a162 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(cell) m9v = Rdf_BlankT (m9a149, err);
+              { __typeof__(cell) m9v = Rdf_BlankT (m9a162, err);
                 if (err->exc) goto L_ret;
                 cell = m9v;
               }
               }
-              { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s225, 4 }), err)) m9a150 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s225, 4 }), err);
+              { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s238, 4 }), err)) m9a163 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s238, 4 }), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Rdf_IriT (m9a150, err)) m9a151 = Rdf_IriT (m9a150, err);
+              { __typeof__(Rdf_IriT (m9a163, err)) m9a164 = Rdf_IriT (m9a163, err);
                 if (err->exc) goto L_ret;
-              Rdf_Add (pool, g, g_pool, prev, m9a151, cell, err);
+              Rdf_Add (pool, g, g_pool, prev, m9a164, cell, err);
               if (err->exc) goto L_ret;
               }
               }
               prev = cell;
             }
-            { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s226, 5 }), err)) m9a152 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s226, 5 }), err);
+            { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s239, 5 }), err)) m9a165 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s239, 5 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Rdf_IriT (m9a152, err)) m9a153 = Rdf_IriT (m9a152, err);
+            { __typeof__(Rdf_IriT (m9a165, err)) m9a166 = Rdf_IriT (m9a165, err);
               if (err->exc) goto L_ret;
-            { __typeof__((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))) m9a154 = (*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err));
+            { __typeof__((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))) m9a167 = (*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(Rdf_NodeElement (pool, st, st_pool, m9a154, g, g_pool, base, lang, err)) m9a155 = Rdf_NodeElement (pool, st, st_pool, m9a154, g, g_pool, base, lang, err);
+            { __typeof__(Rdf_NodeElement (pool, st, st_pool, m9a167, g, g_pool, base, lang, err)) m9a168 = Rdf_NodeElement (pool, st, st_pool, m9a167, g, g_pool, base, lang, err);
               if (err->exc) goto L_ret;
-            Rdf_Add (pool, g, g_pool, prev, m9a153, m9a155, err);
+            Rdf_Add (pool, g, g_pool, prev, m9a166, m9a168, err);
             if (err->exc) goto L_ret;
             }
             }
             }
             }
           } }
-          { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s227, 4 }), err)) m9a156 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s227, 4 }), err);
+          { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s240, 4 }), err)) m9a169 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s240, 4 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Rdf_IriT (m9a156, err)) m9a157 = Rdf_IriT (m9a156, err);
+          { __typeof__(Rdf_IriT (m9a169, err)) m9a170 = Rdf_IriT (m9a169, err);
             if (err->exc) goto L_ret;
-          { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s228, 3 }), err)) m9a158 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s228, 3 }), err);
+          { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s241, 3 }), err)) m9a171 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s241, 3 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Rdf_IriT (m9a158, err)) m9a159 = Rdf_IriT (m9a158, err);
+          { __typeof__(Rdf_IriT (m9a171, err)) m9a172 = Rdf_IriT (m9a171, err);
             if (err->exc) goto L_ret;
-          Rdf_Add (pool, g, g_pool, prev, m9a157, m9a159, err);
+          Rdf_Add (pool, g, g_pool, prev, m9a170, m9a172, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -6752,11 +7010,11 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
           if (err->exc) goto L_ret;
         }
     } else {
-      { __typeof__(Rdf_XmlLiteral (pe, err)) m9a160 = Rdf_XmlLiteral (pe, err);
+      { __typeof__(Rdf_XmlLiteral (pe, err)) m9a173 = Rdf_XmlLiteral (pe, err);
         if (err->exc) goto L_ret;
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s229, 10 }), err)) m9a161 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s229, 10 }), err);
+      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s242, 10 }), err)) m9a174 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s242, 10 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(obj) m9v = Rdf_LitT (m9a160, (m9_sl_CHAR){ NULL, 0 }, m9a161, err);
+      { __typeof__(obj) m9v = Rdf_LitT (m9a173, (m9_sl_CHAR){ NULL, 0 }, m9a174, err);
         if (err->exc) goto L_ret;
         obj = m9v;
       }
@@ -6774,29 +7032,29 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
       bool m9t19 = (!Rdf_ContentIsElements (pe, err));
       if (err->exc) goto L_ret;
       if (m9t19) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s230, 36 }), pe->name, err)) m9a162 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s230, 36 }), pe->name, err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s243, 36 }), pe->name, err)) m9a175 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s243, 36 }), pe->name, err);
           if (err->exc) goto L_ret;
-        Rdf_XFail (m9a162, err);
+        Rdf_XFail (m9a175, err);
         if (err->exc) goto L_ret;
         }
       }
       if ((n > INT64_C(1))) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s231, 51 }), pe->name, err)) m9a163 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s231, 51 }), pe->name, err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s244, 51 }), pe->name, err)) m9a176 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s244, 51 }), pe->name, err);
           if (err->exc) goto L_ret;
-        Rdf_XFail (m9a163, err);
+        Rdf_XFail (m9a176, err);
         if (err->exc) goto L_ret;
         }
       }
       if ((((hasResource || hasNodeId) || hasDatatype) || props)) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s232, 36 }), pe->name, err)) m9a164 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s232, 36 }), pe->name, err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s245, 36 }), pe->name, err)) m9a177 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s245, 36 }), pe->name, err);
           if (err->exc) goto L_ret;
-        Rdf_XFail (m9a164, err);
+        Rdf_XFail (m9a177, err);
         if (err->exc) goto L_ret;
         }
       }
-      { __typeof__((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))) m9a165 = (*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err));
+      { __typeof__((*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err))) m9a178 = (*(Xml_Element * *) m9_at (pe->kids.p, INT64_C(0), pe->kids.len, sizeof (Xml_Element *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(obj) m9v = Rdf_NodeElement (pool, st, st_pool, m9a165, g, g_pool, base, lang, err);
+      { __typeof__(obj) m9v = Rdf_NodeElement (pool, st, st_pool, m9a178, g, g_pool, base, lang, err);
         if (err->exc) goto L_ret;
         obj = m9v;
       }
@@ -6810,16 +7068,16 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
   } else {
     if (((pe->text).len > INT64_C(0))) {
       if (((hasResource || hasNodeId) || props)) {
-        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s233, 31 }), pe->name, err)) m9a166 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s233, 31 }), pe->name, err);
+        { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s246, 31 }), pe->name, err)) m9a179 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s246, 31 }), pe->name, err);
           if (err->exc) goto L_ret;
-        Rdf_XFail (m9a166, err);
+        Rdf_XFail (m9a179, err);
         if (err->exc) goto L_ret;
         }
       }
       if (hasDatatype) {
-        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a167 = Rdf_XIri (st, st_pool, base, datatype, err);
+        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a180 = Rdf_XIri (st, st_pool, base, datatype, err);
           if (err->exc) goto L_ret;
-        { __typeof__(obj) m9v = Rdf_LitT (pe->text, (m9_sl_CHAR){ NULL, 0 }, m9a167, err);
+        { __typeof__(obj) m9v = Rdf_LitT (pe->text, (m9_sl_CHAR){ NULL, 0 }, m9a180, err);
           if (err->exc) goto L_ret;
           obj = m9v;
         }
@@ -6839,14 +7097,14 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
   } else {
     if (hasResource) {
       if (hasDatatype) {
-        Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s234, 32 }), err);
+        Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s247, 32 }), err);
         if (err->exc) goto L_ret;
       }
-      { __typeof__(Xml_AttrValue (pe, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s235, 8 }), err)) m9a168 = Xml_AttrValue (pe, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s235, 8 }), err);
+      { __typeof__(Xml_AttrValue (pe, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s248, 8 }), err)) m9a181 = Xml_AttrValue (pe, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s248, 8 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Rdf_XIri (st, st_pool, base, m9a168, err)) m9a169 = Rdf_XIri (st, st_pool, base, m9a168, err);
+      { __typeof__(Rdf_XIri (st, st_pool, base, m9a181, err)) m9a182 = Rdf_XIri (st, st_pool, base, m9a181, err);
         if (err->exc) goto L_ret;
-      { __typeof__(obj) m9v = Rdf_IriT (m9a169, err);
+      { __typeof__(obj) m9v = Rdf_IriT (m9a182, err);
         if (err->exc) goto L_ret;
         obj = m9v;
       }
@@ -6855,25 +7113,25 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
     } else {
       if (hasNodeId) {
         if (hasDatatype) {
-          Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s236, 30 }), err);
+          Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s249, 30 }), err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__(v) m9v = Xml_AttrValue (pe, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s237, 6 }), err);
+        { __typeof__(v) m9v = Xml_AttrValue (pe, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s250, 6 }), err);
           if (err->exc) goto L_ret;
           v = m9v;
         }
         bool m9t20 = (!Rdf_NcName (v, err));
         if (err->exc) goto L_ret;
         if (m9t20) {
-          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s238, 31 }), v, err)) m9a170 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s238, 31 }), v, err);
+          { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s251, 31 }), v, err)) m9a183 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s251, 31 }), v, err);
             if (err->exc) goto L_ret;
-          Rdf_XFail (m9a170, err);
+          Rdf_XFail (m9a183, err);
           if (err->exc) goto L_ret;
           }
         }
-        { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a171 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
+        { __typeof__(Rdf_Labelled (pool, &((*st).r), st_pool, v, err)) m9a184 = Rdf_Labelled (pool, &((*st).r), st_pool, v, err);
           if (err->exc) goto L_ret;
-        { __typeof__(obj) m9v = Rdf_BlankT (m9a171, err);
+        { __typeof__(obj) m9v = Rdf_BlankT (m9a184, err);
           if (err->exc) goto L_ret;
           obj = m9v;
         }
@@ -6881,21 +7139,21 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
     } else {
       if (props) {
         if (hasDatatype) {
-          Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s239, 39 }), err);
+          Rdf_XFail (((m9_sl_CHAR){ (uint32_t *) m9s252, 39 }), err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a172 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+        { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a185 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
           if (err->exc) goto L_ret;
-        { __typeof__(obj) m9v = Rdf_BlankT (m9a172, err);
+        { __typeof__(obj) m9v = Rdf_BlankT (m9a185, err);
           if (err->exc) goto L_ret;
           obj = m9v;
         }
         }
     } else {
       if (hasDatatype) {
-        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a173 = Rdf_XIri (st, st_pool, base, datatype, err);
+        { __typeof__(Rdf_XIri (st, st_pool, base, datatype, err)) m9a186 = Rdf_XIri (st, st_pool, base, datatype, err);
           if (err->exc) goto L_ret;
-        { __typeof__(obj) m9v = Rdf_LitT ((m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, m9a173, err);
+        { __typeof__(obj) m9v = Rdf_LitT ((m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, m9a186, err);
           if (err->exc) goto L_ret;
           obj = m9v;
         }
@@ -6922,17 +7180,17 @@ static void Rdf_PropertyElt (m9_pool *pool, Rdf_XState *st, m9_pool *st_pool, Xm
         if (err->exc) goto L_ret;
         if (m9t22) {
         } else {
-          bool m9t23 = (Text_Eq ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns, Rdf_RdfNs, err) && (((Text_Eq ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s240, 2 }), err) || Text_Eq ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s241, 8 }), err)) || Text_Eq ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s242, 6 }), err))));
+          bool m9t23 = (Text_Eq ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns, Rdf_RdfNs, err) && (((Text_Eq ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s253, 2 }), err) || Text_Eq ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s254, 8 }), err)) || Text_Eq ((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local, ((m9_sl_CHAR){ (uint32_t *) m9s255, 6 }), err))));
           if (err->exc) goto L_ret;
           if (m9t23) {
         } else {
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a174 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns) m9a187 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).ns;
             if (err->exc) goto L_ret;
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a175 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local) m9a188 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).local;
             if (err->exc) goto L_ret;
-          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value) m9a176 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value;
+          { __typeof__((*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value) m9a189 = (*(Xml_Attr *) m9_at (pe->attrs.p, i, pe->attrs.len, sizeof (Xml_Attr), err)).value;
             if (err->exc) goto L_ret;
-          Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, obj, m9a174, m9a175, m9a176, base, lang, err);
+          Rdf_PropertyAttr (pool, st, st_pool, g, g_pool, obj, m9a187, m9a188, m9a189, base, lang, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -6973,19 +7231,19 @@ static void Rdf_EscText (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_
       c = m9v;
     }
     if ((c == 38u)) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s243, 5 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s256, 5 }), err);
       if (err->exc) goto L_ret;
     } else {
       if ((c == 60u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s244, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s257, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 62u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s245, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s258, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 13u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s246, 5 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s259, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       DynStr_AppendChar (d, d_pool, c, err);
@@ -7017,27 +7275,27 @@ static void Rdf_EscAttr (DynStr_DString * *d, m9_pool *d_pool, m9_sl_CHAR s, m9_
       c = m9v;
     }
     if ((c == 38u)) {
-      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s247, 5 }), err);
+      DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s260, 5 }), err);
       if (err->exc) goto L_ret;
     } else {
       if ((c == 60u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s248, 4 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s261, 4 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 34u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s249, 6 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s262, 6 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 9u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s250, 5 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s263, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 10u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s251, 5 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s264, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       if ((c == 13u)) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s252, 5 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s265, 5 }), err);
         if (err->exc) goto L_ret;
     } else {
       DynStr_AppendChar (d, d_pool, c, err);
@@ -7194,9 +7452,9 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
     bool m9t2 = (((((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns).len > INT64_C(0)) && (!Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns, Rdf_XmlnsUri, err))) && (!Text_Eq ((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).ns, Rdf_XmlNsUri, err)));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a177 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
+      { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name) m9a190 = (*(Xml_Attr *) m9_at (e->attrs.p, i, e->attrs.len, sizeof (Xml_Attr), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(px) m9v = Rdf_Prefix (m9a177, err);
+      { __typeof__(px) m9v = Rdf_Prefix (m9a190, err);
         if (err->exc) goto L_ret;
         px = m9v;
       }
@@ -7275,38 +7533,38 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
       bool m9t9 = (((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))).len == INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t9) {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s253, 8 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s266, 8 }), err);
         if (err->exc) goto L_ret;
       } else {
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s254, 7 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s267, 7 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a178 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a191 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        DynStr_Append (d, d_pool, m9a178, err);
+        DynStr_Append (d, d_pool, m9a191, err);
         if (err->exc) goto L_ret;
         }
-        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s255, 2 }), err);
+        DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s268, 2 }), err);
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err))) m9a179 = (*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err))) m9a192 = (*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      Rdf_EscAttr (d, d_pool, m9a179, err);
+      Rdf_EscAttr (d, d_pool, m9a192, err);
       if (err->exc) goto L_ret;
       }
       DynStr_AppendChar (d, d_pool, 34u, err);
       if (err->exc) goto L_ret;
       if ((n < ((*dn)).len)) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a180 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err))) m9a193 = (*(m9_sl_CHAR *) m9_at (names.p, i, names.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a180, err);
+        { __typeof__((*(m9_sl_CHAR *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a193, err);
           if (err->exc) goto L_ret;
           (*(m9_sl_CHAR *) m9_at ((*dn).p, n, (*dn).len, sizeof (m9_sl_CHAR), err)) = m9v;
           if (err->exc) goto L_ret;
         }
         }
-        { __typeof__((*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err))) m9a181 = (*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err))) m9a194 = (*(m9_sl_CHAR *) m9_at (uris.p, i, uris.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a181, err);
+        { __typeof__((*(m9_sl_CHAR *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_CHAR), err))) m9v = Text_Keep (pool, m9a194, err);
           if (err->exc) goto L_ret;
           (*(m9_sl_CHAR *) m9_at ((*du).p, n, (*du).len, sizeof (m9_sl_CHAR), err)) = m9v;
           if (err->exc) goto L_ret;
@@ -7374,16 +7632,16 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
   for (; i <= m9t15to; i += 1) {
     DynStr_AppendChar (d, d_pool, 32u, err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name) m9a182 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name) m9a195 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).name;
       if (err->exc) goto L_ret;
-    DynStr_Append (d, d_pool, m9a182, err);
+    DynStr_Append (d, d_pool, m9a195, err);
     if (err->exc) goto L_ret;
     }
-    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s256, 2 }), err);
+    DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s269, 2 }), err);
     if (err->exc) goto L_ret;
-    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value) m9a183 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value;
+    { __typeof__((*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value) m9a196 = (*(Xml_Attr *) m9_at (e->attrs.p, (*(int64_t *) m9_at (ai.p, i, ai.len, sizeof (int64_t), err)), e->attrs.len, sizeof (Xml_Attr), err)).value;
       if (err->exc) goto L_ret;
-    Rdf_EscAttr (d, d_pool, m9a183, err);
+    Rdf_EscAttr (d, d_pool, m9a196, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (d, d_pool, 34u, err);
@@ -7398,18 +7656,18 @@ static void Rdf_Serialize (m9_pool *pool, DynStr_DString * *d, m9_pool *d_pool, 
   m9t16to = m9_sub_i64 ((e->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t16to; i += 1) {
-    { __typeof__((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))) m9a184 = (*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err));
+    { __typeof__((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))) m9a197 = (*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err));
       if (err->exc) goto L_ret;
-    Rdf_Serialize (pool, d, d_pool, m9a184, dn, du, n, err);
+    Rdf_Serialize (pool, d, d_pool, m9a197, dn, du, n, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))->tail) m9a185 = (*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))->tail;
+    { __typeof__((*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))->tail) m9a198 = (*(Xml_Element * *) m9_at (e->kids.p, i, e->kids.len, sizeof (Xml_Element *), err))->tail;
       if (err->exc) goto L_ret;
-    Rdf_EscText (d, d_pool, m9a185, err);
+    Rdf_EscText (d, d_pool, m9a198, err);
     if (err->exc) goto L_ret;
     }
   } }
-  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s257, 2 }), err);
+  DynStr_Append (d, d_pool, ((m9_sl_CHAR){ (uint32_t *) m9s270, 2 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (d, d_pool, e->name, err);
   if (err->exc) goto L_ret;
@@ -7455,14 +7713,14 @@ static m9_sl_CHAR Rdf_XmlLiteral (Xml_Element * pe, m9_state *err)
   m9t1to = m9_sub_i64 ((pe->kids).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))) m9a186 = (*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err));
+    { __typeof__((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))) m9a199 = (*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err));
       if (err->exc) goto L_ret;
-    Rdf_Serialize (&(scratch), &(d), &(scratch), m9a186, &(dn), &(du), INT64_C(0), err);
+    Rdf_Serialize (&(scratch), &(d), &(scratch), m9a199, &(dn), &(du), INT64_C(0), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))->tail) m9a187 = (*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))->tail;
+    { __typeof__((*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))->tail) m9a200 = (*(Xml_Element * *) m9_at (pe->kids.p, i, pe->kids.len, sizeof (Xml_Element *), err))->tail;
       if (err->exc) goto L_ret;
-    Rdf_EscText (&(d), &(scratch), m9a187, err);
+    Rdf_EscText (&(d), &(scratch), m9a200, err);
     if (err->exc) goto L_ret;
     }
   } }
@@ -7492,7 +7750,7 @@ static void Rdf_JFail (m9_sl_CHAR code, m9_sl_CHAR what, m9_state *err)
     m9_raise (err, &Rdf_SyntaxError);
     goto L_ret;
   }
-  { __typeof__(m9_cat (err->res, m9_cat (err->res, code, ((m9_sl_CHAR){ (uint32_t *) m9s258, 2 }), err), what, err)) m9t2 = m9_cat (err->res, m9_cat (err->res, code, ((m9_sl_CHAR){ (uint32_t *) m9s258, 2 }), err), what, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
+  { __typeof__(m9_cat (err->res, m9_cat (err->res, code, ((m9_sl_CHAR){ (uint32_t *) m9s271, 2 }), err), what, err)) m9t2 = m9_cat (err->res, m9_cat (err->res, code, ((m9_sl_CHAR){ (uint32_t *) m9s271, 2 }), err), what, err); err->s[0].p = m9t2.p; err->s[0].len = m9t2.len; m9_pay_keep (err, 0, sizeof (*m9t2.p)); }
   err->i[0] = INT64_C(0);
   err->i[1] = INT64_C(0);
   m9_raise (err, &Rdf_SyntaxError);
@@ -7511,7 +7769,7 @@ static bool Rdf_IsKeyword (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = ((((((((((((((((Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s259, 8 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s260, 3 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s261, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s262, 9 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s263, 5 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s264, 10 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s265, 5 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s266, 4 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s267, 8 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s268, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s269, 5 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s270, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s271, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s272, 8 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s273, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s274, 9 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s275, 12 }), err));
+  m9ret = ((((((((((((((((Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s272, 8 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s273, 3 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s274, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s275, 9 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s276, 5 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s277, 10 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s278, 5 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s279, 4 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s280, 8 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s281, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s282, 5 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s283, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s284, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s285, 8 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s286, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s287, 9 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s288, 12 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -7545,7 +7803,7 @@ static bool Rdf_IsBlankId (m9_sl_CHAR s, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s276, 2 }), err);
+  m9ret = Text_StartsWith (s, ((m9_sl_CHAR){ (uint32_t *) m9s289, 2 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -8298,7 +8556,7 @@ static m9_sl_CHAR Rdf_ExpandIri (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, m9_
       if (err->exc) goto L_ret;
       suffix = m9v;
     }
-    bool m9t6 = (Text_Eq (prefix, ((m9_sl_CHAR){ (uint32_t *) m9s277, 1 }), err) || Text_StartsWith (suffix, ((m9_sl_CHAR){ (uint32_t *) m9s278, 2 }), err));
+    bool m9t6 = (Text_Eq (prefix, ((m9_sl_CHAR){ (uint32_t *) m9s290, 1 }), err) || Text_StartsWith (suffix, ((m9_sl_CHAR){ (uint32_t *) m9s291, 2 }), err));
     if (err->exc) goto L_ret;
     if (m9t6) {
       err->res = m9res;
@@ -8391,7 +8649,7 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
     goto L_ret;
   }
   if ((st == INT64_C(0))) {
-    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s279, 18 }), term, err);
+    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s292, 18 }), term, err);
     if (err->exc) goto L_hdl_m9t1;
   }
   Rdf_SetDefState (pool, df, df_pool, term, INT64_C(0), err);
@@ -8399,11 +8657,11 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
   bool m9t3 = Rdf_IsKeyword (term, err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s280, 20 }), term, err);
+    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s293, 20 }), term, err);
     if (err->exc) goto L_hdl_m9t1;
   }
   if (((term).len == INT64_C(0))) {
-    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s281, 23 }), ((m9_sl_CHAR){ (uint32_t *) m9s282, 13 }), err);
+    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s294, 23 }), ((m9_sl_CHAR){ (uint32_t *) m9s295, 13 }), err);
     if (err->exc) goto L_hdl_m9t1;
   }
   Rdf_RemoveTerm (c, c_pool, term, err);
@@ -8423,7 +8681,7 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
   d.hasLang = false;
   d.reverse = false;
   d.isNull = false;
-  bool m9t4 = (Json_IsNull (value, err) || (((Rdf_IsObj (value, err) && Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s283, 3 }), err)) && Json_IsNull (Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s284, 3 }), err), err))));
+  bool m9t4 = (Json_IsNull (value, err) || (((Rdf_IsObj (value, err) && Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s296, 3 }), err)) && Json_IsNull (Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 }), err), err))));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t4) {
     d.isNull = true;
@@ -8448,39 +8706,39 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       if (err->exc) goto L_hdl_m9t1;
       idv = m9v;
     }
-    Json_Set (&(value), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s285, 3 }), &(idv), err->res, err);
+    Json_Set (&(value), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s298, 3 }), &(idv), err->res, err);
     if (err->exc) goto L_hdl_m9t1;
   }
   bool m9t6 = (!Rdf_IsObj (value, err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t6) {
-    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s286, 23 }), term, err);
+    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s299, 23 }), term, err);
     if (err->exc) goto L_hdl_m9t1;
   }
-  bool m9t7 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s287, 5 }), err);
+  bool m9t7 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s300, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s288, 5 }), err);
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s301, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
     bool m9t8 = (!Rdf_IsStr (tv, err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t8) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s289, 20 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s302, 20 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a188 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a201 = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a188, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a201, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    bool m9t9 = (nul || (!(((Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s290, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s291, 6 }), err)) || Rdf_IsAbsolute (s, err)))));
+    bool m9t9 = (nul || (!(((Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s303, 3 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s304, 6 }), err)) || Rdf_IsAbsolute (s, err)))));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t9) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s292, 20 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s305, 20 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     { __typeof__(d.typeMap) m9v = Text_Keep (pool, s, err);
@@ -8488,28 +8746,28 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       d.typeMap = m9v;
     }
   }
-  bool m9t10 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s293, 8 }), err);
+  bool m9t10 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s306, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t10) {
-    bool m9t11 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s294, 3 }), err);
+    bool m9t11 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s307, 3 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t11) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s295, 24 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s308, 24 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s296, 8 }), err);
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s309, 8 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
     bool m9t12 = (!Rdf_IsStr (tv, err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t12) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s297, 19 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s310, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a189 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a202 = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a189, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a202, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -8517,17 +8775,17 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
     bool m9t13 = (nul || (!((Rdf_IsAbsolute (s, err) || Rdf_IsBlankId (s, err)))));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t13) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s298, 19 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s311, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     { __typeof__(d.iri) m9v = Text_Keep (pool, s, err);
       if (err->exc) goto L_hdl_m9t1;
       d.iri = m9v;
     }
-    bool m9t14 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s299, 10 }), err);
+    bool m9t14 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s312, 10 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t14) {
-      { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s300, 10 }), err);
+      { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s313, 10 }), err);
         if (err->exc) goto L_hdl_m9t1;
         tv = m9v;
       }
@@ -8535,18 +8793,18 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       if (err->exc) goto L_hdl_m9t1;
       if (m9t15) {
       } else {
-        bool m9t16 = (Rdf_IsStr (tv, err) && ((Json_StrIs (tv, ((m9_sl_CHAR){ (uint32_t *) m9s301, 4 }), err) || Json_StrIs (tv, ((m9_sl_CHAR){ (uint32_t *) m9s302, 6 }), err))));
+        bool m9t16 = (Rdf_IsStr (tv, err) && ((Json_StrIs (tv, ((m9_sl_CHAR){ (uint32_t *) m9s314, 4 }), err) || Json_StrIs (tv, ((m9_sl_CHAR){ (uint32_t *) m9s315, 6 }), err))));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t16) {
-          { __typeof__(Rdf_JStr (tv, err)) m9a190 = Rdf_JStr (tv, err);
+          { __typeof__(Rdf_JStr (tv, err)) m9a203 = Rdf_JStr (tv, err);
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(d.container) m9v = Text_Keep (pool, m9a190, err);
+          { __typeof__(d.container) m9v = Text_Keep (pool, m9a203, err);
             if (err->exc) goto L_hdl_m9t1;
             d.container = m9v;
           }
           }
       } else {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s303, 24 }), term, err);
+        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s316, 24 }), term, err);
         if (err->exc) goto L_hdl_m9t1;
       } }
     }
@@ -8557,40 +8815,40 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
-  bool m9t17 = (Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s304, 3 }), err) && (!Json_StrIs (Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s305, 3 }), err), term, err)));
+  bool m9t17 = (Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s317, 3 }), err) && (!Json_StrIs (Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s318, 3 }), err), term, err)));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t17) {
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s306, 3 }), err);
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s319, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
     bool m9t18 = (!Rdf_IsStr (tv, err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t18) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s307, 19 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s320, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_JStr (tv, err)) m9a191 = Rdf_JStr (tv, err);
+    { __typeof__(Rdf_JStr (tv, err)) m9a204 = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a191, false, true, local, df, df_pool, &(nul), err);
+    { __typeof__(s) m9v = Rdf_ExpandIri (pool, c, c_pool, m9a204, false, true, local, df, df_pool, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
     if (nul) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s308, 19 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s321, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    bool m9t19 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s309, 8 }), err);
+    bool m9t19 = Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s322, 8 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t19) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s310, 21 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s323, 21 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     bool m9t20 = (!(((Rdf_IsKeyword (s, err) || Rdf_IsAbsolute (s, err)) || Rdf_IsBlankId (s, err))));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t20) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s311, 19 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s324, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     { __typeof__(d.iri) m9v = Text_Keep (pool, s, err);
@@ -8620,9 +8878,9 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       bool m9t23 = ((k >= INT64_C(0)) && (!(*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).isNull));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t23) {
-        { __typeof__(m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __typeof__(term) m9t24 = term; int64_t m9t24a = m9_add_i64 (colon, INT64_C(1), err), m9t24n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); (__typeof__(m9t24)){ m9t24.p + m9_chk_slice (m9t24a, m9t24n, m9t24.len, err), m9t24n }; }), err)) m9a192 = m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __typeof__(term) m9t24 = term; int64_t m9t24a = m9_add_i64 (colon, INT64_C(1), err), m9t24n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); (__typeof__(m9t24)){ m9t24.p + m9_chk_slice (m9t24a, m9t24n, m9t24.len, err), m9t24n }; }), err);
+        { __typeof__(m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __typeof__(term) m9t24 = term; int64_t m9t24a = m9_add_i64 (colon, INT64_C(1), err), m9t24n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); (__typeof__(m9t24)){ m9t24.p + m9_chk_slice (m9t24a, m9t24n, m9t24.len, err), m9t24n }; }), err)) m9a205 = m9_cat (err->res, (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).iri, ({ __typeof__(term) m9t24 = term; int64_t m9t24a = m9_add_i64 (colon, INT64_C(1), err), m9t24n = m9_sub_i64 (m9_sub_i64 ((term).len, colon, err), INT64_C(1), err); (__typeof__(m9t24)){ m9t24.p + m9_chk_slice (m9t24a, m9t24n, m9t24.len, err), m9t24n }; }), err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a192, err);
+        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a205, err);
           if (err->exc) goto L_hdl_m9t1;
           d.iri = m9v;
         }
@@ -8632,39 +8890,39 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       }
     } else {
       if ((*c).hasVocab) {
-        { __typeof__(m9_cat (err->res, (*c).vocab, term, err)) m9a193 = m9_cat (err->res, (*c).vocab, term, err);
+        { __typeof__(m9_cat (err->res, (*c).vocab, term, err)) m9a206 = m9_cat (err->res, (*c).vocab, term, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a193, err);
+        { __typeof__(d.iri) m9v = Text_Keep (pool, m9a206, err);
           if (err->exc) goto L_hdl_m9t1;
           d.iri = m9v;
         }
         }
     } else {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s312, 19 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s325, 19 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     } }
   }
-  bool m9t25 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s313, 10 }), err);
+  bool m9t25 = Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s326, 10 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t25) {
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s314, 10 }), err);
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s327, 10 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
     bool m9t26 = (!Rdf_IsStr (tv, err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t26) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s315, 25 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s328, 25 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     { __typeof__(s) m9v = Rdf_JStr (tv, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
-    bool m9t27 = (!((((Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s316, 5 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s317, 4 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s318, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s319, 9 }), err))));
+    bool m9t27 = (!((((Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s329, 5 }), err) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s330, 4 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s331, 6 }), err)) || Text_Eq (s, ((m9_sl_CHAR){ (uint32_t *) m9s332, 9 }), err))));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t27) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s320, 25 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s333, 25 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     }
     { __typeof__(d.container) m9v = Text_Keep (pool, s, err);
@@ -8672,10 +8930,10 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       d.container = m9v;
     }
   }
-  bool m9t28 = (Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s321, 9 }), err) && (!Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s322, 5 }), err)));
+  bool m9t28 = (Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s334, 9 }), err) && (!Rdf_Has (value, ((m9_sl_CHAR){ (uint32_t *) m9s335, 5 }), err)));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t28) {
-    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s323, 9 }), err);
+    { __typeof__(tv) m9v = Rdf_JGet (value, ((m9_sl_CHAR){ (uint32_t *) m9s336, 9 }), err);
       if (err->exc) goto L_hdl_m9t1;
       tv = m9v;
     }
@@ -8689,18 +8947,18 @@ static void Rdf_CreateTerm (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, Json_Nod
       if (err->exc) goto L_hdl_m9t1;
       if (m9t30) {
         d.hasLang = true;
-        { __typeof__(Rdf_JStr (tv, err)) m9a194 = Rdf_JStr (tv, err);
+        { __typeof__(Rdf_JStr (tv, err)) m9a207 = Rdf_JStr (tv, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(Text_Lower (m9a194, err)) m9a195 = Text_Lower (m9a194, err);
+        { __typeof__(Text_Lower (m9a207, err)) m9a208 = Text_Lower (m9a207, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(d.lang) m9v = Text_Keep (pool, m9a195, err);
+        { __typeof__(d.lang) m9v = Text_Keep (pool, m9a208, err);
           if (err->exc) goto L_hdl_m9t1;
           d.lang = m9v;
         }
         }
         }
     } else {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s324, 24 }), term, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s337, 24 }), term, err);
       if (err->exc) goto L_hdl_m9t1;
     } }
   }
@@ -8713,7 +8971,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
     m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s325, 25 }), term, err)) m9t31 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s325, 25 }), term, err); err->s[0].p = m9t31.p; err->s[0].len = m9t31.len; m9_pay_keep (err, 0, sizeof (*m9t31.p)); }
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s338, 25 }), term, err)) m9t31 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s338, 25 }), term, err); err->s[0].p = m9t31.p; err->s[0].len = m9t31.len; m9_pay_keep (err, 0, sizeof (*m9t31.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -8790,22 +9048,22 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
       bool m9t7 = Rdf_IsStr (item, err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t7) {
-        { __typeof__(Rdf_JStr (item, err)) m9a196 = Rdf_JStr (item, err);
+        { __typeof__(Rdf_JStr (item, err)) m9a209 = Rdf_JStr (item, err);
           if (err->exc) goto L_hdl_m9t1;
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s326, 27 }), m9a196, err);
+        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s339, 27 }), m9a209, err);
         if (err->exc) goto L_hdl_m9t1;
         }
     } else {
       bool m9t8 = (!Rdf_IsObj (item, err));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t8) {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s327, 21 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s340, 21 }), (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_hdl_m9t1;
     } else {
-      bool m9t9 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s328, 5 }), err);
+      bool m9t9 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s341, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t9) {
-        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s329, 5 }), err);
+        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s342, 5 }), err);
           if (err->exc) goto L_hdl_m9t1;
           v = m9v;
         }
@@ -8830,26 +9088,26 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
               }
             } else {
               if (((result.base).len > INT64_C(0))) {
-                { __typeof__(Rdf_Resolve (result.base, s, err)) m9a197 = Rdf_Resolve (result.base, s, err);
+                { __typeof__(Rdf_Resolve (result.base, s, err)) m9a210 = Rdf_Resolve (result.base, s, err);
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(result.base) m9v = Text_Keep (pool, m9a197, err);
+                { __typeof__(result.base) m9v = Text_Keep (pool, m9a210, err);
                   if (err->exc) goto L_hdl_m9t1;
                   result.base = m9v;
                 }
                 }
             } else {
-              Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s330, 16 }), s, err);
+              Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s343, 16 }), s, err);
               if (err->exc) goto L_hdl_m9t1;
             } }
         } else {
-          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s331, 16 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s344, 16 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_hdl_m9t1;
         } }
       }
-      bool m9t13 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s332, 6 }), err);
+      bool m9t13 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s345, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t13) {
-        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s333, 6 }), err);
+        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s346, 6 }), err);
           if (err->exc) goto L_hdl_m9t1;
           v = m9v;
         }
@@ -8862,22 +9120,22 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
           if (err->exc) goto L_hdl_m9t1;
           if (m9t15) {
             result.hasVocab = true;
-            { __typeof__(Rdf_JStr (v, err)) m9a198 = Rdf_JStr (v, err);
+            { __typeof__(Rdf_JStr (v, err)) m9a211 = Rdf_JStr (v, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(result.vocab) m9v = Text_Keep (pool, m9a198, err);
+            { __typeof__(result.vocab) m9v = Text_Keep (pool, m9a211, err);
               if (err->exc) goto L_hdl_m9t1;
               result.vocab = m9v;
             }
             }
         } else {
-          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s334, 21 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s347, 21 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_hdl_m9t1;
         } }
       }
-      bool m9t16 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s335, 9 }), err);
+      bool m9t16 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s348, 9 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t16) {
-        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s336, 9 }), err);
+        { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s349, 9 }), err);
           if (err->exc) goto L_hdl_m9t1;
           v = m9v;
         }
@@ -8890,18 +9148,18 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
           if (err->exc) goto L_hdl_m9t1;
           if (m9t18) {
             result.hasLang = true;
-            { __typeof__(Rdf_JStr (v, err)) m9a199 = Rdf_JStr (v, err);
+            { __typeof__(Rdf_JStr (v, err)) m9a212 = Rdf_JStr (v, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(Text_Lower (m9a199, err)) m9a200 = Text_Lower (m9a199, err);
+            { __typeof__(Text_Lower (m9a212, err)) m9a213 = Text_Lower (m9a212, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(result.lang) m9v = Text_Keep (pool, m9a200, err);
+            { __typeof__(result.lang) m9v = Text_Keep (pool, m9a213, err);
               if (err->exc) goto L_hdl_m9t1;
               result.lang = m9v;
             }
             }
             }
         } else {
-          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s337, 24 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s350, 24 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_hdl_m9t1;
         } }
       }
@@ -8923,12 +9181,12 @@ static Rdf_Ctx Rdf_ProcessContext (m9_pool *pool, Rdf_JState *st, m9_pool *st_po
       m9t19to = m9_sub_i64 ((names).len, INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
       for (; k <= m9t19to; k += 1) {
-        bool m9t20 = (!(((Text_Eq ((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s338, 5 }), err) || Text_Eq ((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s339, 6 }), err)) || Text_Eq ((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s340, 9 }), err))));
+        bool m9t20 = (!(((Text_Eq ((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s351, 5 }), err) || Text_Eq ((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s352, 6 }), err)) || Text_Eq ((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s353, 9 }), err))));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t20) {
-          { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a201 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
+          { __typeof__((*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err))) m9a214 = (*(m9_sl_CHAR *) m9_at (names.p, k, names.len, sizeof (m9_sl_CHAR), err));
             if (err->exc) goto L_hdl_m9t1;
-          Rdf_CreateTerm (pool, &(result), err->res, item, m9a201, &(df), err->res, err);
+          Rdf_CreateTerm (pool, &(result), err->res, item, m9a214, &(df), err->res, err);
           if (err->exc) goto L_hdl_m9t1;
           }
         }
@@ -8943,7 +9201,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
     m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s341, 21 })) m9t21 = ((m9_sl_CHAR){ (uint32_t *) m9s341, 21 }); err->s[0].p = m9t21.p; err->s[0].len = m9t21.len; m9_pay_keep (err, 0, sizeof (*m9t21.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s354, 21 })) m9t21 = ((m9_sl_CHAR){ (uint32_t *) m9s354, 21 }); err->s[0].p = m9t21.p; err->s[0].len = m9t21.len; m9_pay_keep (err, 0, sizeof (*m9t21.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -8952,7 +9210,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s342, 21 })) m9t22 = ((m9_sl_CHAR){ (uint32_t *) m9s342, 21 }); err->s[0].p = m9t22.p; err->s[0].len = m9t22.len; m9_pay_keep (err, 0, sizeof (*m9t22.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s355, 21 })) m9t22 = ((m9_sl_CHAR){ (uint32_t *) m9s355, 21 }); err->s[0].p = m9t22.p; err->s[0].len = m9t22.len; m9_pay_keep (err, 0, sizeof (*m9t22.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -9000,9 +9258,9 @@ static Json_Node * Rdf_Arrayified (m9_pool *pool, Json_Node * v, m9_state *err)
     m9t4to = m9_sub_i64 (Rdf_Items (v, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     for (; i <= m9t4to; i += 1) {
-      { __typeof__(Json_Item (v, i, err)) m9a202 = Json_Item (v, i, err);
+      { __typeof__(Json_Item (v, i, err)) m9a215 = Json_Item (v, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(c) m9v = Json_CloneIn (pool, m9a202, err);
+      { __typeof__(c) m9v = Json_CloneIn (pool, m9a215, err);
         if (err->exc) goto L_hdl_m9t1;
         c = m9v;
       }
@@ -9083,9 +9341,9 @@ static void Rdf_AddTo (m9_pool *pool, Json_Node * *obj, m9_pool *obj_pool, m9_sl
     m9t4to = m9_sub_i64 (Rdf_Items (v, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     for (; i <= m9t4to; i += 1) {
-      { __typeof__(Json_Item (v, i, err)) m9a203 = Json_Item (v, i, err);
+      { __typeof__(Json_Item (v, i, err)) m9a216 = Json_Item (v, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(c) m9v = Json_CloneIn (pool, m9a203, err);
+      { __typeof__(c) m9v = Json_CloneIn (pool, m9a216, err);
         if (err->exc) goto L_hdl_m9t1;
         c = m9v;
       }
@@ -9166,7 +9424,7 @@ static bool Rdf_IsListObj (Json_Node * n, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Rdf_IsObj (n, err) && Rdf_Has (n, ((m9_sl_CHAR){ (uint32_t *) m9s343, 5 }), err));
+  m9ret = (Rdf_IsObj (n, err) && Rdf_Has (n, ((m9_sl_CHAR){ (uint32_t *) m9s356, 5 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -9183,7 +9441,7 @@ static bool Rdf_IsValueObj (Json_Node * n, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  m9ret = (Rdf_IsObj (n, err) && Rdf_Has (n, ((m9_sl_CHAR){ (uint32_t *) m9s344, 6 }), err));
+  m9ret = (Rdf_IsObj (n, err) && Rdf_Has (n, ((m9_sl_CHAR){ (uint32_t *) m9s357, 6 }), err));
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -9212,7 +9470,7 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
     if (err->exc) goto L_hdl_m9t1;
     o = m9v;
   }
-  bool m9t3 = (((k >= INT64_C(0)) && ((Text_Eq ((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap, ((m9_sl_CHAR){ (uint32_t *) m9s345, 3 }), err) || Text_Eq ((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap, ((m9_sl_CHAR){ (uint32_t *) m9s346, 6 }), err)))) && Rdf_IsStr (value, err));
+  bool m9t3 = (((k >= INT64_C(0)) && ((Text_Eq ((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap, ((m9_sl_CHAR){ (uint32_t *) m9s358, 3 }), err) || Text_Eq ((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap, ((m9_sl_CHAR){ (uint32_t *) m9s359, 6 }), err)))) && Rdf_IsStr (value, err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
     { __typeof__(df.terms) m9v = M9_POOL_SL (m9_sl_m9_sl_CHAR, m9_sl_CHAR, &((*pool)), INT64_C(1), err);
@@ -9224,15 +9482,15 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
       df.state = m9v;
     }
     df.n = INT64_C(0);
-    { __typeof__(Rdf_JStr (value, err)) m9a204 = Rdf_JStr (value, err);
+    { __typeof__(Rdf_JStr (value, err)) m9a217 = Rdf_JStr (value, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a205 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a218 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Text_Eq (m9a205, ((m9_sl_CHAR){ (uint32_t *) m9s347, 6 }), err)) m9a206 = Text_Eq (m9a205, ((m9_sl_CHAR){ (uint32_t *) m9s347, 6 }), err);
+    { __typeof__(Text_Eq (m9a218, ((m9_sl_CHAR){ (uint32_t *) m9s360, 6 }), err)) m9a219 = Text_Eq (m9a218, ((m9_sl_CHAR){ (uint32_t *) m9s360, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Rdf_ExpandIri (pool, c, c_pool, m9a204, true, m9a206, NULL, &(df), err->res, &(nul), err)) m9a207 = Rdf_ExpandIri (pool, c, c_pool, m9a204, true, m9a206, NULL, &(df), err->res, &(nul), err);
+    { __typeof__(Rdf_ExpandIri (pool, c, c_pool, m9a217, true, m9a219, NULL, &(df), err->res, &(nul), err)) m9a220 = Rdf_ExpandIri (pool, c, c_pool, m9a217, true, m9a219, NULL, &(df), err->res, &(nul), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a207, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a220, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -9240,25 +9498,25 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
     }
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s348, 3 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s361, 3 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
     goto L_ret;
   }
-  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s349, 6 }), value, err);
+  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s362, 6 }), value, err);
   if (err->exc) goto L_hdl_m9t1;
-  bool m9t4 = ((((k >= INT64_C(0)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap).len > INT64_C(0))) && (!Text_Eq ((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap, ((m9_sl_CHAR){ (uint32_t *) m9s350, 3 }), err))) && (!Text_Eq ((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap, ((m9_sl_CHAR){ (uint32_t *) m9s351, 6 }), err)));
+  bool m9t4 = ((((k >= INT64_C(0)) && (((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap).len > INT64_C(0))) && (!Text_Eq ((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap, ((m9_sl_CHAR){ (uint32_t *) m9s363, 3 }), err))) && (!Text_Eq ((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap, ((m9_sl_CHAR){ (uint32_t *) m9s364, 6 }), err)));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t4) {
-    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a208 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
+    { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap) m9a221 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).typeMap;
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a208, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a221, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s352, 5 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s365, 5 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
   } else {
     bool m9t5 = Rdf_IsStr (value, err);
@@ -9270,14 +9528,14 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
         bool m9t7 = (((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang).len > INT64_C(0));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t7) {
-          { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a209 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
+          { __typeof__((*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang) m9a222 = (*(Rdf_TermDef *) m9_at ((*c).defs.p, k, (*c).defs.len, sizeof (Rdf_TermDef), err)).lang;
             if (err->exc) goto L_hdl_m9t1;
-          { __typeof__(s) m9v = Json_NewStrIn (pool, m9a209, err);
+          { __typeof__(s) m9v = Json_NewStrIn (pool, m9a222, err);
             if (err->exc) goto L_hdl_m9t1;
             s = m9v;
           }
           }
-          Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s353, 9 }), &(s), &((*pool)), err);
+          Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s366, 9 }), &(s), &((*pool)), err);
           if (err->exc) goto L_hdl_m9t1;
         }
       } else {
@@ -9286,7 +9544,7 @@ static Json_Node * Rdf_ExpandValue (m9_pool *pool, Rdf_Ctx *c, m9_pool *c_pool, 
             if (err->exc) goto L_hdl_m9t1;
             s = m9v;
           }
-          Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s354, 9 }), &(s), &((*pool)), err);
+          Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s367, 9 }), &(s), &((*pool)), err);
           if (err->exc) goto L_hdl_m9t1;
       } }
   } }
@@ -9298,7 +9556,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
     m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s355, 20 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s355, 20 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s368, 20 })) m9t8 = ((m9_sl_CHAR){ (uint32_t *) m9s368, 20 }); err->s[0].p = m9t8.p; err->s[0].len = m9t8.len; m9_pay_keep (err, 0, sizeof (*m9t8.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -9359,7 +9617,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
   bool m9t4 = Rdf_IsScalar (element, err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t4) {
-    bool m9t5 = ((!hasProp) || Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s356, 6 }), err));
+    bool m9t5 = ((!hasProp) || Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s369, 6 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t5) {
       err->res = m9res;
@@ -9388,7 +9646,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         k = m9v;
       }
     }
-    { __typeof__(listCtx) m9v = (((hasProp && Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s357, 5 }), err))) || (((k >= INT64_C(0)) && Text_Eq ((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container, ((m9_sl_CHAR){ (uint32_t *) m9s358, 5 }), err))));
+    { __typeof__(listCtx) m9v = (((hasProp && Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s370, 5 }), err))) || (((k >= INT64_C(0)) && Text_Eq ((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container, ((m9_sl_CHAR){ (uint32_t *) m9s371, 5 }), err))));
       if (err->exc) goto L_hdl_m9t1;
       listCtx = m9v;
     }
@@ -9403,7 +9661,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         bool m9t8 = (listCtx && ((Rdf_IsArr (x, err) || Rdf_IsListObj (x, err))));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t8) {
-          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s359, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s372, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_hdl_m9t1;
         }
         bool m9t9 = Rdf_IsArr (x, err);
@@ -9414,9 +9672,9 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           m9t10to = m9_sub_i64 (Rdf_Items (x, err), INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
           for (; j <= m9t10to; j += 1) {
-            { __typeof__(Json_Item (x, j, err)) m9a210 = Json_Item (x, j, err);
+            { __typeof__(Json_Item (x, j, err)) m9a223 = Json_Item (x, j, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(item) m9v = Json_CloneIn (pool, m9a210, err);
+            { __typeof__(item) m9v = Json_CloneIn (pool, m9a223, err);
               if (err->exc) goto L_hdl_m9t1;
               item = m9v;
             }
@@ -9435,12 +9693,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
     m9ret = result;
     goto L_ret;
   }
-  bool m9t11 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s360, 8 }), err);
+  bool m9t11 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s373, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t11) {
-    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s361, 8 }), err)) m9a211 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s361, 8 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s374, 8 }), err)) m9a224 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s374, 8 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(c) m9v = Rdf_ProcessContext (pool, st, st_pool, c, m9a211, err);
+    { __typeof__(c) m9v = Rdf_ProcessContext (pool, st, st_pool, c, m9a224, err);
       if (err->exc) goto L_hdl_m9t1;
       c = m9v;
     }
@@ -9476,7 +9734,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
       if (err->exc) goto L_hdl_m9t1;
       value = m9v;
     }
-    bool m9t13 = Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s362, 8 }), err);
+    bool m9t13 = Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s375, 8 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t13) {
     } else {
@@ -9491,57 +9749,57 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         bool m9t15 = Rdf_IsKeyword (prop, err);
         if (err->exc) goto L_hdl_m9t1;
         if (m9t15) {
-          bool m9t16 = (hasProp && Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s363, 8 }), err));
+          bool m9t16 = (hasProp && Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s376, 8 }), err));
           if (err->exc) goto L_hdl_m9t1;
           if (m9t16) {
-            Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s364, 28 }), (m9_sl_CHAR){ NULL, 0 }, err);
+            Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s377, 28 }), (m9_sl_CHAR){ NULL, 0 }, err);
             if (err->exc) goto L_hdl_m9t1;
           }
           bool m9t17 = Rdf_Has (result, prop, err);
           if (err->exc) goto L_hdl_m9t1;
           if (m9t17) {
-            Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s365, 18 }), prop, err);
+            Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s378, 18 }), prop, err);
             if (err->exc) goto L_hdl_m9t1;
           }
-          bool m9t18 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s366, 3 }), err);
+          bool m9t18 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s379, 3 }), err);
           if (err->exc) goto L_hdl_m9t1;
           if (m9t18) {
             bool m9t19 = (!Rdf_IsStr (value, err));
             if (err->exc) goto L_hdl_m9t1;
             if (m9t19) {
-              Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s367, 17 }), (m9_sl_CHAR){ NULL, 0 }, err);
+              Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s380, 17 }), (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_hdl_m9t1;
             }
-            { __typeof__(Rdf_JStr (value, err)) m9a212 = Rdf_JStr (value, err);
+            { __typeof__(Rdf_JStr (value, err)) m9a225 = Rdf_JStr (value, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a212, true, false, NULL, &(df), err->res, &(nul), err)) m9a213 = Rdf_ExpandIri (pool, &(c), err->res, m9a212, true, false, NULL, &(df), err->res, &(nul), err);
+            { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a225, true, false, NULL, &(df), err->res, &(nul), err)) m9a226 = Rdf_ExpandIri (pool, &(c), err->res, m9a225, true, false, NULL, &(df), err->res, &(nul), err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(s) m9v = Json_NewStrIn (pool, m9a213, err);
+            { __typeof__(s) m9v = Json_NewStrIn (pool, m9a226, err);
               if (err->exc) goto L_hdl_m9t1;
               s = m9v;
             }
             }
             }
-            Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s368, 3 }), &(s), &((*pool)), err);
+            Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s381, 3 }), &(s), &((*pool)), err);
             if (err->exc) goto L_hdl_m9t1;
           } else {
-            bool m9t20 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s369, 5 }), err);
+            bool m9t20 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s382, 5 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t20) {
               bool m9t21 = Rdf_IsStr (value, err);
               if (err->exc) goto L_hdl_m9t1;
               if (m9t21) {
-                { __typeof__(Rdf_JStr (value, err)) m9a214 = Rdf_JStr (value, err);
+                { __typeof__(Rdf_JStr (value, err)) m9a227 = Rdf_JStr (value, err);
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a214, true, true, NULL, &(df), err->res, &(nul), err)) m9a215 = Rdf_ExpandIri (pool, &(c), err->res, m9a214, true, true, NULL, &(df), err->res, &(nul), err);
+                { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a227, true, true, NULL, &(df), err->res, &(nul), err)) m9a228 = Rdf_ExpandIri (pool, &(c), err->res, m9a227, true, true, NULL, &(df), err->res, &(nul), err);
                   if (err->exc) goto L_hdl_m9t1;
-                { __typeof__(s) m9v = Json_NewStrIn (pool, m9a215, err);
+                { __typeof__(s) m9v = Json_NewStrIn (pool, m9a228, err);
                   if (err->exc) goto L_hdl_m9t1;
                   s = m9v;
                 }
                 }
                 }
-                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s370, 5 }), &(s), &((*pool)), err);
+                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s383, 5 }), &(s), &((*pool)), err);
                 if (err->exc) goto L_hdl_m9t1;
               } else {
                 bool m9t22 = Rdf_IsArr (value, err);
@@ -9559,16 +9817,16 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                     bool m9t24 = (!Rdf_IsStr (Json_Item (value, j, err), err));
                     if (err->exc) goto L_hdl_m9t1;
                     if (m9t24) {
-                      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s371, 18 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s384, 18 }), (m9_sl_CHAR){ NULL, 0 }, err);
                       if (err->exc) goto L_hdl_m9t1;
                     }
-                    { __typeof__(Json_Item (value, j, err)) m9a216 = Json_Item (value, j, err);
+                    { __typeof__(Json_Item (value, j, err)) m9a229 = Json_Item (value, j, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(Rdf_JStr (m9a216, err)) m9a217 = Rdf_JStr (m9a216, err);
+                    { __typeof__(Rdf_JStr (m9a229, err)) m9a230 = Rdf_JStr (m9a229, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a217, true, true, NULL, &(df), err->res, &(nul), err)) m9a218 = Rdf_ExpandIri (pool, &(c), err->res, m9a217, true, true, NULL, &(df), err->res, &(nul), err);
+                    { __typeof__(Rdf_ExpandIri (pool, &(c), err->res, m9a230, true, true, NULL, &(df), err->res, &(nul), err)) m9a231 = Rdf_ExpandIri (pool, &(c), err->res, m9a230, true, true, NULL, &(df), err->res, &(nul), err);
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a218, err);
+                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a231, err);
                       if (err->exc) goto L_hdl_m9t1;
                       s = m9v;
                     }
@@ -9578,84 +9836,84 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                     Json_Add (&(arr), &((*pool)), &(s), &((*pool)), err);
                     if (err->exc) goto L_hdl_m9t1;
                   } }
-                  Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s372, 5 }), &(arr), &((*pool)), err);
+                  Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s385, 5 }), &(arr), &((*pool)), err);
                   if (err->exc) goto L_hdl_m9t1;
               } else {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s373, 18 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s386, 18 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_hdl_m9t1;
               } }
           } else {
-            bool m9t25 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s374, 6 }), err);
+            bool m9t25 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s387, 6 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t25) {
-              { Json_Node * x = Rdf_Expand (pool, st, st_pool, c, ((m9_sl_CHAR){ (uint32_t *) m9s375, 6 }), true, value, err);
+              { Json_Node * x = Rdf_Expand (pool, st, st_pool, c, ((m9_sl_CHAR){ (uint32_t *) m9s388, 6 }), true, value, err);
               if (err->exc) goto L_hdl_m9t1;
               if (x != NULL) {
                 { __typeof__(ev) m9v = Rdf_Arrayified (pool, x, err);
                   if (err->exc) goto L_hdl_m9t1;
                   ev = m9v;
                 }
-                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s376, 6 }), &(ev), &((*pool)), err);
+                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s389, 6 }), &(ev), &((*pool)), err);
                 if (err->exc) goto L_hdl_m9t1;
               } else {
                 { __typeof__(ev) m9v = Json_NewArrIn (pool, err);
                   if (err->exc) goto L_hdl_m9t1;
                   ev = m9v;
                 }
-                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s377, 6 }), &(ev), &((*pool)), err);
+                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s390, 6 }), &(ev), &((*pool)), err);
                 if (err->exc) goto L_hdl_m9t1;
               } }
           } else {
-            bool m9t26 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s378, 6 }), err);
+            bool m9t26 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s391, 6 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t26) {
               bool m9t27 = (!((Rdf_IsScalar (value, err) || Json_IsNull (value, err))));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t27) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s379, 26 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s392, 26 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_hdl_m9t1;
               }
-              Rdf_SetKey (pool, &(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s380, 6 }), value, err);
+              Rdf_SetKey (pool, &(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s393, 6 }), value, err);
               if (err->exc) goto L_hdl_m9t1;
           } else {
-            bool m9t28 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s381, 9 }), err);
+            bool m9t28 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s394, 9 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t28) {
               bool m9t29 = (!Rdf_IsStr (value, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t29) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s382, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s395, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_hdl_m9t1;
               }
-              { __typeof__(Rdf_JStr (value, err)) m9a219 = Rdf_JStr (value, err);
+              { __typeof__(Rdf_JStr (value, err)) m9a232 = Rdf_JStr (value, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Text_Lower (m9a219, err)) m9a220 = Text_Lower (m9a219, err);
+              { __typeof__(Text_Lower (m9a232, err)) m9a233 = Text_Lower (m9a232, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a220, err);
+              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a233, err);
                 if (err->exc) goto L_hdl_m9t1;
                 s = m9v;
               }
               }
               }
-              Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s383, 9 }), &(s), &((*pool)), err);
+              Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s396, 9 }), &(s), &((*pool)), err);
               if (err->exc) goto L_hdl_m9t1;
           } else {
-            bool m9t30 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s384, 6 }), err);
+            bool m9t30 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s397, 6 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t30) {
               bool m9t31 = (!Rdf_IsStr (value, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t31) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s385, 20 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s398, 20 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_hdl_m9t1;
               }
-              Rdf_SetKey (pool, &(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s386, 6 }), value, err);
+              Rdf_SetKey (pool, &(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s399, 6 }), value, err);
               if (err->exc) goto L_hdl_m9t1;
           } else {
-            bool m9t32 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s387, 5 }), err);
+            bool m9t32 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s400, 5 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t32) {
-              bool m9t33 = (hasProp && (!Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s388, 6 }), err)));
+              bool m9t33 = (hasProp && (!Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s401, 6 }), err)));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t33) {
                 { Json_Node * x = Rdf_Expand (pool, st, st_pool, c, activeProp, hasProp, value, err);
@@ -9664,7 +9922,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   bool m9t34 = Rdf_IsListObj (x, err);
                   if (err->exc) goto L_hdl_m9t1;
                   if (m9t34) {
-                    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s389, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                    Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s402, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
                     if (err->exc) goto L_hdl_m9t1;
                   }
                   bool m9t35 = Rdf_IsArr (x, err);
@@ -9678,7 +9936,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                       bool m9t37 = Rdf_IsListObj (Json_Item (x, j, err), err);
                       if (err->exc) goto L_hdl_m9t1;
                       if (m9t37) {
-                        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s390, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s403, 13 }), (m9_sl_CHAR){ NULL, 0 }, err);
                         if (err->exc) goto L_hdl_m9t1;
                       }
                     } }
@@ -9687,45 +9945,45 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                     if (err->exc) goto L_hdl_m9t1;
                     ev = m9v;
                   }
-                  Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s391, 5 }), &(ev), &((*pool)), err);
+                  Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s404, 5 }), &(ev), &((*pool)), err);
                   if (err->exc) goto L_hdl_m9t1;
                 } else {
                   { __typeof__(ev) m9v = Json_NewArrIn (pool, err);
                     if (err->exc) goto L_hdl_m9t1;
                     ev = m9v;
                   }
-                  Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s392, 5 }), &(ev), &((*pool)), err);
+                  Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s405, 5 }), &(ev), &((*pool)), err);
                   if (err->exc) goto L_hdl_m9t1;
                 } }
               }
           } else {
-            bool m9t38 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s393, 4 }), err);
+            bool m9t38 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s406, 4 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t38) {
               { Json_Node * x = Rdf_Expand (pool, st, st_pool, c, activeProp, hasProp, value, err);
               if (err->exc) goto L_hdl_m9t1;
               if (x != NULL) {
                 ev = x;
-                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s394, 4 }), &(ev), &((*pool)), err);
+                Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s407, 4 }), &(ev), &((*pool)), err);
                 if (err->exc) goto L_hdl_m9t1;
               } }
           } else {
-            bool m9t39 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s395, 8 }), err);
+            bool m9t39 = Text_Eq (prop, ((m9_sl_CHAR){ (uint32_t *) m9s408, 8 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (m9t39) {
               bool m9t40 = (!Rdf_IsObj (value, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t40) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s396, 22 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s409, 22 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_hdl_m9t1;
               }
-              { Json_Node * x = Rdf_Expand (pool, st, st_pool, c, ((m9_sl_CHAR){ (uint32_t *) m9s397, 8 }), true, value, err);
+              { Json_Node * x = Rdf_Expand (pool, st, st_pool, c, ((m9_sl_CHAR){ (uint32_t *) m9s410, 8 }), true, value, err);
               if (err->exc) goto L_hdl_m9t1;
               if (x != NULL) {
-                bool m9t41 = Rdf_Has (x, ((m9_sl_CHAR){ (uint32_t *) m9s398, 8 }), err);
+                bool m9t41 = Rdf_Has (x, ((m9_sl_CHAR){ (uint32_t *) m9s411, 8 }), err);
                 if (err->exc) goto L_hdl_m9t1;
                 if (m9t41) {
-                  { __typeof__(inner) m9v = Rdf_JGet (x, ((m9_sl_CHAR){ (uint32_t *) m9s399, 8 }), err);
+                  { __typeof__(inner) m9v = Rdf_JGet (x, ((m9_sl_CHAR){ (uint32_t *) m9s412, 8 }), err);
                     if (err->exc) goto L_hdl_m9t1;
                     inner = m9v;
                   }
@@ -9738,13 +9996,13 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                   m9t42to = m9_sub_i64 ((inames).len, INT64_C(1), err);
                   if (err->exc) goto L_hdl_m9t1;
                   for (; j <= m9t42to; j += 1) {
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a221 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a234 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a222 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a235 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(Rdf_JGet (inner, m9a222, err)) m9a223 = Rdf_JGet (inner, m9a222, err);
+                    { __typeof__(Rdf_JGet (inner, m9a235, err)) m9a236 = Rdf_JGet (inner, m9a235, err);
                       if (err->exc) goto L_hdl_m9t1;
-                    Rdf_AddTo (pool, &(result), &((*pool)), m9a221, m9a223, err);
+                    Rdf_AddTo (pool, &(result), &((*pool)), m9a234, m9a236, err);
                     if (err->exc) goto L_hdl_m9t1;
                     }
                     }
@@ -9760,10 +10018,10 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 m9t43to = m9_sub_i64 ((inames).len, INT64_C(1), err);
                 if (err->exc) goto L_hdl_m9t1;
                 for (; j <= m9t43to; j += 1) {
-                  bool m9t44 = (!Text_Eq ((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s400, 8 }), err));
+                  bool m9t44 = (!Text_Eq ((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err)), ((m9_sl_CHAR){ (uint32_t *) m9s413, 8 }), err));
                   if (err->exc) goto L_hdl_m9t1;
                   if (m9t44) {
-                    { Json_Node * rm = Json_Field (result, ((m9_sl_CHAR){ (uint32_t *) m9s401, 8 }), err);
+                    { Json_Node * rm = Json_Field (result, ((m9_sl_CHAR){ (uint32_t *) m9s414, 8 }), err);
                     if (err->exc) goto L_hdl_m9t1;
                     if (rm != NULL) {
                       rev = rm;
@@ -9772,12 +10030,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                         if (err->exc) goto L_hdl_m9t1;
                         rev = m9v;
                       }
-                      Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s402, 8 }), &(rev), &((*pool)), err);
+                      Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s415, 8 }), &(rev), &((*pool)), err);
                       if (err->exc) goto L_hdl_m9t1;
                     } }
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a224 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a237 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(ev) m9v = Rdf_JGet (x, m9a224, err);
+                    { __typeof__(ev) m9v = Rdf_JGet (x, m9a237, err);
                       if (err->exc) goto L_hdl_m9t1;
                       ev = m9v;
                     }
@@ -9794,12 +10052,12 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                       bool m9t46 = (Rdf_IsValueObj (item, err) || Rdf_IsListObj (item, err));
                       if (err->exc) goto L_hdl_m9t1;
                       if (m9t46) {
-                        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s403, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s416, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
                         if (err->exc) goto L_hdl_m9t1;
                       }
-                      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a225 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a238 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                         if (err->exc) goto L_hdl_m9t1;
-                      Rdf_AddTo (pool, &(rev), &((*pool)), m9a225, item, err);
+                      Rdf_AddTo (pool, &(rev), &((*pool)), m9a238, item, err);
                       if (err->exc) goto L_hdl_m9t1;
                       }
                     } }
@@ -9820,7 +10078,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
             cont = m9v;
           }
         }
-        bool m9t47 = (Text_Eq (cont, ((m9_sl_CHAR){ (uint32_t *) m9s404, 9 }), err) && Rdf_IsObj (value, err));
+        bool m9t47 = (Text_Eq (cont, ((m9_sl_CHAR){ (uint32_t *) m9s417, 9 }), err) && Rdf_IsObj (value, err));
         if (err->exc) goto L_hdl_m9t1;
         if (m9t47) {
           { __typeof__(ev) m9v = Json_NewArrIn (pool, err);
@@ -9836,11 +10094,11 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
           m9t48to = m9_sub_i64 ((inames).len, INT64_C(1), err);
           if (err->exc) goto L_hdl_m9t1;
           for (; j <= m9t48to; j += 1) {
-            { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a226 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+            { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a239 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(Rdf_JGet (value, m9a226, err)) m9a227 = Rdf_JGet (value, m9a226, err);
+            { __typeof__(Rdf_JGet (value, m9a239, err)) m9a240 = Rdf_JGet (value, m9a239, err);
               if (err->exc) goto L_hdl_m9t1;
-            { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a227, err);
+            { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a240, err);
               if (err->exc) goto L_hdl_m9t1;
               arr = m9v;
             }
@@ -9858,33 +10116,33 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               bool m9t50 = (!Rdf_IsStr (item, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t50) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s405, 26 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s418, 26 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_hdl_m9t1;
               }
               { __typeof__(langObj) m9v = Json_NewObjIn (pool, err);
                 if (err->exc) goto L_hdl_m9t1;
                 langObj = m9v;
               }
-              Rdf_SetKey (pool, &(langObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s406, 6 }), item, err);
+              Rdf_SetKey (pool, &(langObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s419, 6 }), item, err);
               if (err->exc) goto L_hdl_m9t1;
-              { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a228 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+              { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a241 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(Text_Lower (m9a228, err)) m9a229 = Text_Lower (m9a228, err);
+              { __typeof__(Text_Lower (m9a241, err)) m9a242 = Text_Lower (m9a241, err);
                 if (err->exc) goto L_hdl_m9t1;
-              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a229, err);
+              { __typeof__(s) m9v = Json_NewStrIn (pool, m9a242, err);
                 if (err->exc) goto L_hdl_m9t1;
                 s = m9v;
               }
               }
               }
-              Json_Set (&(langObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s407, 9 }), &(s), &((*pool)), err);
+              Json_Set (&(langObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s420, 9 }), &(s), &((*pool)), err);
               if (err->exc) goto L_hdl_m9t1;
               Json_Add (&(ev), &((*pool)), &(langObj), &((*pool)), err);
               if (err->exc) goto L_hdl_m9t1;
             } }
           } }
         } else {
-          bool m9t51 = (Text_Eq (cont, ((m9_sl_CHAR){ (uint32_t *) m9s408, 6 }), err) && Rdf_IsObj (value, err));
+          bool m9t51 = (Text_Eq (cont, ((m9_sl_CHAR){ (uint32_t *) m9s421, 6 }), err) && Rdf_IsObj (value, err));
           if (err->exc) goto L_hdl_m9t1;
           if (m9t51) {
             { __typeof__(ev) m9v = Json_NewArrIn (pool, err);
@@ -9912,24 +10170,24 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 m9t53to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
                 if (err->exc) goto L_hdl_m9t1;
                 for (; n <= m9t53to; n += 1) {
-                  { __typeof__(Json_Item (arr, n, err)) m9a230 = Json_Item (arr, n, err);
+                  { __typeof__(Json_Item (arr, n, err)) m9a243 = Json_Item (arr, n, err);
                     if (err->exc) goto L_hdl_m9t1;
-                  { __typeof__(item) m9v = Json_CloneIn (pool, m9a230, err);
+                  { __typeof__(item) m9v = Json_CloneIn (pool, m9a243, err);
                     if (err->exc) goto L_hdl_m9t1;
                     item = m9v;
                   }
                   }
-                  bool m9t54 = (!Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s409, 6 }), err));
+                  bool m9t54 = (!Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s422, 6 }), err));
                   if (err->exc) goto L_hdl_m9t1;
                   if (m9t54) {
-                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a231 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
+                    { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err))) m9a244 = (*(m9_sl_CHAR *) m9_at (inames.p, j, inames.len, sizeof (m9_sl_CHAR), err));
                       if (err->exc) goto L_hdl_m9t1;
-                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a231, err);
+                    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a244, err);
                       if (err->exc) goto L_hdl_m9t1;
                       s = m9v;
                     }
                     }
-                    Json_Set (&(item), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s410, 6 }), &(s), &((*pool)), err);
+                    Json_Set (&(item), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s423, 6 }), &(s), &((*pool)), err);
                     if (err->exc) goto L_hdl_m9t1;
                   }
                   Json_Add (&(ev), &((*pool)), &(item), &((*pool)), err);
@@ -9953,7 +10211,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         if (err->exc) goto L_hdl_m9t1;
         if (m9t55) {
         } else {
-          bool m9t56 = (Text_Eq (cont, ((m9_sl_CHAR){ (uint32_t *) m9s411, 5 }), err) && (!Rdf_IsListObj (ev, err)));
+          bool m9t56 = (Text_Eq (cont, ((m9_sl_CHAR){ (uint32_t *) m9s424, 5 }), err) && (!Rdf_IsListObj (ev, err)));
           if (err->exc) goto L_hdl_m9t1;
           if (m9t56) {
             { __typeof__(arr) m9v = Rdf_Arrayified (pool, ev, err);
@@ -9964,13 +10222,13 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               if (err->exc) goto L_hdl_m9t1;
               ev = m9v;
             }
-            Json_Set (&(ev), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s412, 5 }), &(arr), &((*pool)), err);
+            Json_Set (&(ev), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s425, 5 }), &(arr), &((*pool)), err);
             if (err->exc) goto L_hdl_m9t1;
           }
           bool m9t57 = ((k >= INT64_C(0)) && (*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).reverse);
           if (err->exc) goto L_hdl_m9t1;
           if (m9t57) {
-            { Json_Node * rm = Json_Field (result, ((m9_sl_CHAR){ (uint32_t *) m9s413, 8 }), err);
+            { Json_Node * rm = Json_Field (result, ((m9_sl_CHAR){ (uint32_t *) m9s426, 8 }), err);
             if (err->exc) goto L_hdl_m9t1;
             if (rm != NULL) {
               rev = rm;
@@ -9979,7 +10237,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
                 if (err->exc) goto L_hdl_m9t1;
                 rev = m9v;
               }
-              Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s414, 8 }), &(rev), &((*pool)), err);
+              Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s427, 8 }), &(rev), &((*pool)), err);
               if (err->exc) goto L_hdl_m9t1;
             } }
             { __typeof__(arr) m9v = Rdf_Arrayified (pool, ev, err);
@@ -9998,7 +10256,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
               bool m9t59 = (Rdf_IsValueObj (item, err) || Rdf_IsListObj (item, err));
               if (err->exc) goto L_hdl_m9t1;
               if (m9t59) {
-                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s415, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s428, 30 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_hdl_m9t1;
               }
               Rdf_AddTo (pool, &(rev), &((*pool)), prop, item, err);
@@ -10012,7 +10270,7 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
       } }
     }
   } }
-  bool m9t60 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s416, 6 }), err);
+  bool m9t60 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s429, 6 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t60) {
     { __typeof__(n) m9v = Rdf_Members (result, err);
@@ -10028,111 +10286,111 @@ static Json_Node * Rdf_Expand (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, 
         if (err->exc) goto L_hdl_m9t1;
         key = m9v;
       }
-      bool m9t62 = (!((((Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s417, 6 }), err) || Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s418, 9 }), err)) || Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s419, 5 }), err)) || Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s420, 6 }), err))));
+      bool m9t62 = (!((((Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s430, 6 }), err) || Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s431, 9 }), err)) || Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s432, 5 }), err)) || Text_Eq (key, ((m9_sl_CHAR){ (uint32_t *) m9s433, 6 }), err))));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t62) {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s421, 20 }), key, err);
+        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s434, 20 }), key, err);
         if (err->exc) goto L_hdl_m9t1;
       }
     } }
-    bool m9t63 = (Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s422, 9 }), err) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s423, 5 }), err));
+    bool m9t63 = (Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s435, 9 }), err) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s436, 5 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t63) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s424, 20 }), (m9_sl_CHAR){ NULL, 0 }, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s437, 20 }), (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    bool m9t64 = Json_IsNull (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s425, 6 }), err), err);
+    bool m9t64 = Json_IsNull (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s438, 6 }), err), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t64) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
     }
-    bool m9t65 = ((!Rdf_IsStr (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s426, 6 }), err), err)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s427, 9 }), err));
+    bool m9t65 = ((!Rdf_IsStr (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s439, 6 }), err), err)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s440, 9 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t65) {
-      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s428, 29 }), (m9_sl_CHAR){ NULL, 0 }, err);
+      Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s441, 29 }), (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_hdl_m9t1;
     }
-    bool m9t66 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s429, 5 }), err);
+    bool m9t66 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s442, 5 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t66) {
-      bool m9t67 = ((!Rdf_IsStr (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s430, 5 }), err), err)) || (!Rdf_IsAbsolute (Rdf_JStr (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s431, 5 }), err), err), err)));
+      bool m9t67 = ((!Rdf_IsStr (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s443, 5 }), err), err)) || (!Rdf_IsAbsolute (Rdf_JStr (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s444, 5 }), err), err), err)));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t67) {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s432, 19 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s445, 19 }), (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_hdl_m9t1;
       }
     }
   } else {
-    bool m9t68 = (Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s433, 5 }), err) && (!Rdf_IsArr (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s434, 5 }), err), err)));
+    bool m9t68 = (Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s446, 5 }), err) && (!Rdf_IsArr (Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s447, 5 }), err), err)));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t68) {
-      { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s435, 5 }), err)) m9a232 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s435, 5 }), err);
+      { __typeof__(Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s448, 5 }), err)) m9a245 = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s448, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a232, err);
+      { __typeof__(arr) m9v = Rdf_Arrayified (pool, m9a245, err);
         if (err->exc) goto L_hdl_m9t1;
         arr = m9v;
       }
       }
-      Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s436, 5 }), &(arr), &((*pool)), err);
+      Json_Set (&(result), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s449, 5 }), &(arr), &((*pool)), err);
       if (err->exc) goto L_hdl_m9t1;
   } else {
-    bool m9t69 = (Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s437, 4 }), err) || Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s438, 5 }), err));
+    bool m9t69 = (Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s450, 4 }), err) || Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s451, 5 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t69) {
       { __typeof__(n) m9v = Rdf_Members (result, err);
         if (err->exc) goto L_hdl_m9t1;
         n = m9v;
       }
-      bool m9t70 = ((n > INT64_C(2)) || (((n == INT64_C(2)) && (!Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s439, 6 }), err)))));
+      bool m9t70 = ((n > INT64_C(2)) || (((n == INT64_C(2)) && (!Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s452, 6 }), err)))));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t70) {
-        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s440, 26 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        Rdf_JFail (((m9_sl_CHAR){ (uint32_t *) m9s453, 26 }), (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_hdl_m9t1;
       }
-      bool m9t71 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s441, 4 }), err);
+      bool m9t71 = Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s454, 4 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t71) {
         err->res = m9res;
-        m9ret = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s442, 4 }), err);
+        m9ret = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s455, 4 }), err);
         if (err->exc) goto L_hdl_m9t1;
         goto L_ret;
       }
   } } }
-  bool m9t72 = ((Rdf_Members (result, err) == INT64_C(1)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s443, 9 }), err));
+  bool m9t72 = ((Rdf_Members (result, err) == INT64_C(1)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s456, 9 }), err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t72) {
     err->res = m9res;
     m9ret = NULL;
     goto L_ret;
   }
-  bool m9t73 = ((!hasProp) || Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s444, 6 }), err));
+  bool m9t73 = ((!hasProp) || Text_Eq (activeProp, ((m9_sl_CHAR){ (uint32_t *) m9s457, 6 }), err));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t73) {
     { __typeof__(n) m9v = Rdf_Members (result, err);
       if (err->exc) goto L_hdl_m9t1;
       n = m9v;
     }
-    bool m9t74 = (((n == INT64_C(0)) || Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s445, 6 }), err)) || Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s446, 5 }), err));
+    bool m9t74 = (((n == INT64_C(0)) || Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s458, 6 }), err)) || Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s459, 5 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t74) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
     }
-    bool m9t75 = ((n == INT64_C(1)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s447, 3 }), err));
+    bool m9t75 = ((n == INT64_C(1)) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s460, 3 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t75) {
       err->res = m9res;
       m9ret = NULL;
       goto L_ret;
     }
-    bool m9t76 = (((!hasProp) && (n == INT64_C(1))) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s448, 6 }), err));
+    bool m9t76 = (((!hasProp) && (n == INT64_C(1))) && Rdf_Has (result, ((m9_sl_CHAR){ (uint32_t *) m9s461, 6 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t76) {
       err->res = m9res;
-      m9ret = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s449, 6 }), err);
+      m9ret = Rdf_JGet (result, ((m9_sl_CHAR){ (uint32_t *) m9s462, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
       goto L_ret;
     }
@@ -10145,7 +10403,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
     m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s450, 16 })) m9t77 = ((m9_sl_CHAR){ (uint32_t *) m9s450, 16 }); err->s[0].p = m9t77.p; err->s[0].len = m9t77.len; m9_pay_keep (err, 0, sizeof (*m9t77.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s463, 16 })) m9t77 = ((m9_sl_CHAR){ (uint32_t *) m9s463, 16 }); err->s[0].p = m9t77.p; err->s[0].len = m9t77.len; m9_pay_keep (err, 0, sizeof (*m9t77.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -10154,7 +10412,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s451, 16 })) m9t78 = ((m9_sl_CHAR){ (uint32_t *) m9s451, 16 }); err->s[0].p = m9t78.p; err->s[0].len = m9t78.len; m9_pay_keep (err, 0, sizeof (*m9t78.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s464, 16 })) m9t78 = ((m9_sl_CHAR){ (uint32_t *) m9s464, 16 }); err->s[0].p = m9t78.p; err->s[0].len = m9t78.len; m9_pay_keep (err, 0, sizeof (*m9t78.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -10185,9 +10443,9 @@ static m9_sl_CHAR Rdf_BlankFor (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  { __typeof__(({ __typeof__(id) m9t2 = id; int64_t m9t2a = INT64_C(2), m9t2n = m9_sub_i64 ((id).len, INT64_C(2), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a233 = ({ __typeof__(id) m9t2 = id; int64_t m9t2a = INT64_C(2), m9t2n = m9_sub_i64 ((id).len, INT64_C(2), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+  { __typeof__(({ __typeof__(id) m9t2 = id; int64_t m9t2a = INT64_C(2), m9t2n = m9_sub_i64 ((id).len, INT64_C(2), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a246 = ({ __typeof__(id) m9t2 = id; int64_t m9t2a = INT64_C(2), m9t2n = m9_sub_i64 ((id).len, INT64_C(2), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
     if (err->exc) goto L_ret;
-  m9ret = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s452, 2 }), Rdf_Labelled (pool, &((*st).r), st_pool, m9a233, err), err);
+  m9ret = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s465, 2 }), Rdf_Labelled (pool, &((*st).r), st_pool, m9a246, err), err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -10213,7 +10471,7 @@ static m9_sl_CHAR Rdf_FreshBlank (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   err->res = m9res;
-  m9ret = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s453, 2 }), Rdf_Fresh (pool, &((*st).r), st_pool, err), err);
+  m9ret = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s466, 2 }), Rdf_Fresh (pool, &((*st).r), st_pool, err), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -10292,7 +10550,7 @@ static Json_Node * Rdf_NodeFor (m9_pool *pool, Rdf_NodeMap *nm, m9_pool *nm_pool
     if (err->exc) goto L_hdl_m9t4;
     s = m9v;
   }
-  Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s454, 3 }), &(s), &((*pool)), err);
+  Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s467, 3 }), &(s), &((*pool)), err);
   if (err->exc) goto L_hdl_m9t4;
   goto L_dn_m9t5;
 L_hdl_m9t4: ;
@@ -10338,11 +10596,11 @@ static bool Rdf_SameNode (Json_Node * a, Json_Node * b, m9_state *err)
   err->res = &m9frame;
   bool m9ret = false;
   err->res = m9res;
-  { __typeof__(Json_CompactSorted (a, err)) m9a234 = Json_CompactSorted (a, err);
+  { __typeof__(Json_CompactSorted (a, err)) m9a247 = Json_CompactSorted (a, err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(Json_CompactSorted (b, err)) m9a235 = Json_CompactSorted (b, err);
+  { __typeof__(Json_CompactSorted (b, err)) m9a248 = Json_CompactSorted (b, err);
     if (err->exc) goto L_hdl_m9t1;
-  m9ret = Text_Eq (m9a234, m9a235, err);
+  m9ret = Text_Eq (m9a247, m9a248, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   }
@@ -10461,7 +10719,7 @@ static Json_Node * Rdf_RefTo (m9_pool *pool, m9_sl_CHAR id, m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     s = m9v;
   }
-  Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s455, 3 }), &(s), &((*pool)), err);
+  Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s468, 3 }), &(s), &((*pool)), err);
   if (err->exc) goto L_hdl_m9t1;
   err->res = m9res;
   m9ret = o;
@@ -10516,9 +10774,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     m9t4to = m9_sub_i64 (Rdf_Items (element, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     for (; i <= m9t4to; i += 1) {
-      { __typeof__(Json_Item (element, i, err)) m9a236 = Json_Item (element, i, err);
+      { __typeof__(Json_Item (element, i, err)) m9a249 = Json_Item (element, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a236, subject, prop, reverse, list, err);
+      Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a249, subject, prop, reverse, list, err);
       if (err->exc) goto L_hdl_m9t1;
       }
     } }
@@ -10529,7 +10787,7 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
   if (m9t5) {
     goto L_ret;
   }
-  bool m9t6 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s456, 6 }), err);
+  bool m9t6 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s469, 6 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t6) {
     { Json_Node * l = list;
@@ -10538,7 +10796,7 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
         if (err->exc) goto L_hdl_m9t1;
         item = m9v;
       }
-      Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s457, 5 }), item, err);
+      Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s470, 5 }), item, err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
       if ((((subject).len > INT64_C(0)) && inDefault)) {
@@ -10552,7 +10810,7 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     } }
     goto L_ret;
   }
-  bool m9t7 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s458, 5 }), err);
+  bool m9t7 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s471, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
     { __typeof__(listObj) m9v = Json_NewObjIn (pool, err);
@@ -10563,16 +10821,16 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       if (err->exc) goto L_hdl_m9t1;
       arr = m9v;
     }
-    Json_Set (&(listObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s459, 5 }), &(arr), &((*pool)), err);
+    Json_Set (&(listObj), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s472, 5 }), &(arr), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s460, 5 }), err)) m9a237 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s460, 5 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s473, 5 }), err)) m9a250 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s473, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a237, subject, prop, reverse, listObj, err);
+    Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a250, subject, prop, reverse, listObj, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     { Json_Node * l = list;
     if (l != NULL) {
-      Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s461, 5 }), listObj, err);
+      Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s474, 5 }), listObj, err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
       if ((((subject).len > INT64_C(0)) && inDefault)) {
@@ -10586,12 +10844,12 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     } }
     goto L_ret;
   }
-  bool m9t8 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s462, 3 }), err);
+  bool m9t8 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s475, 3 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t8) {
-    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s463, 3 }), err)) m9a238 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s463, 3 }), err);
+    { __typeof__(Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s476, 3 }), err)) m9a251 = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s476, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(id) m9v = Rdf_JStr (m9a238, err);
+    { __typeof__(id) m9v = Rdf_JStr (m9a251, err);
       if (err->exc) goto L_hdl_m9t1;
       id = m9v;
     }
@@ -10633,7 +10891,7 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       }
       { Json_Node * l = list;
       if (l != NULL) {
-        Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s464, 5 }), ref, err);
+        Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s477, 5 }), ref, err);
         if (err->exc) goto L_hdl_m9t1;
       } else {
         if (inDefault) {
@@ -10653,14 +10911,14 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
         if (err->exc) goto L_hdl_m9t1;
         ref = m9v;
       }
-      Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s465, 5 }), ref, err);
+      Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s478, 5 }), ref, err);
       if (err->exc) goto L_hdl_m9t1;
     } }
   }
-  bool m9t10 = (Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s466, 5 }), err) && inDefault);
+  bool m9t10 = (Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s479, 5 }), err) && inDefault);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t10) {
-    { __typeof__(types) m9v = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s467, 5 }), err);
+    { __typeof__(types) m9v = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s480, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
       types = m9v;
     }
@@ -10669,17 +10927,17 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     m9t11to = m9_sub_i64 (Rdf_Items (types, err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     for (; i <= m9t11to; i += 1) {
-      { __typeof__(Json_Item (types, i, err)) m9a239 = Json_Item (types, i, err);
+      { __typeof__(Json_Item (types, i, err)) m9a252 = Json_Item (types, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_AddUnique (pool, &(node), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s468, 5 }), m9a239, err);
+      Rdf_AddUnique (pool, &(node), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s481, 5 }), m9a252, err);
       if (err->exc) goto L_hdl_m9t1;
       }
     } }
   }
-  bool m9t12 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s469, 8 }), err);
+  bool m9t12 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s482, 8 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t12) {
-    { __typeof__(inner) m9v = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s470, 8 }), err);
+    { __typeof__(inner) m9v = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s483, 8 }), err);
       if (err->exc) goto L_hdl_m9t1;
       inner = m9v;
     }
@@ -10692,9 +10950,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     m9t13to = m9_sub_i64 ((inames).len, INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     for (; i <= m9t13to; i += 1) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a240 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a253 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(arr) m9v = Rdf_JGet (inner, m9a240, err);
+      { __typeof__(arr) m9v = Rdf_JGet (inner, m9a253, err);
         if (err->exc) goto L_hdl_m9t1;
         arr = m9v;
       }
@@ -10704,21 +10962,21 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       m9t14to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
       if (err->exc) goto L_hdl_m9t1;
       for (; j <= m9t14to; j += 1) {
-        { __typeof__(Json_Item (arr, j, err)) m9a241 = Json_Item (arr, j, err);
+        { __typeof__(Json_Item (arr, j, err)) m9a254 = Json_Item (arr, j, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a242 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err))) m9a255 = (*(m9_sl_CHAR *) m9_at (inames.p, i, inames.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_hdl_m9t1;
-        Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a241, id, m9a242, true, NULL, err);
+        Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a254, id, m9a255, true, NULL, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
       } }
     } }
   }
-  bool m9t15 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s471, 6 }), err);
+  bool m9t15 = Rdf_Has (element, ((m9_sl_CHAR){ (uint32_t *) m9s484, 6 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t15) {
-    { __typeof__(g) m9v = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s472, 6 }), err);
+    { __typeof__(g) m9v = Rdf_JGet (element, ((m9_sl_CHAR){ (uint32_t *) m9s485, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
       g = m9v;
     }
@@ -10738,7 +10996,7 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       if (err->exc) goto L_hdl_m9t1;
       k = m9v;
     }
-    bool m9t17 = (!(((((Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s473, 3 }), err) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s474, 5 }), err)) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s475, 8 }), err)) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s476, 6 }), err)) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s477, 6 }), err))));
+    bool m9t17 = (!(((((Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s486, 3 }), err) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s487, 5 }), err)) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s488, 8 }), err)) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s489, 6 }), err)) || Text_Eq (k, ((m9_sl_CHAR){ (uint32_t *) m9s490, 6 }), err))));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t17) {
       bool m9t18 = Rdf_IsKeyword (k, err);
@@ -10754,9 +11012,9 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
         m9t19to = m9_sub_i64 (Rdf_Items (arr, err), INT64_C(1), err);
         if (err->exc) goto L_hdl_m9t1;
         for (; j <= m9t19to; j += 1) {
-          { __typeof__(Json_Item (arr, j, err)) m9a243 = Json_Item (arr, j, err);
+          { __typeof__(Json_Item (arr, j, err)) m9a256 = Json_Item (arr, j, err);
             if (err->exc) goto L_hdl_m9t1;
-          Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a243, id, k, false, NULL, err);
+          Rdf_MapElement (pool, st, st_pool, dflt, dflt_pool, inDefault, m9a256, id, k, false, NULL, err);
           if (err->exc) goto L_hdl_m9t1;
           }
         } }
@@ -10768,7 +11026,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
     m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s478, 16 })) m9t20 = ((m9_sl_CHAR){ (uint32_t *) m9s478, 16 }); err->s[0].p = m9t20.p; err->s[0].len = m9t20.len; m9_pay_keep (err, 0, sizeof (*m9t20.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s491, 16 })) m9t20 = ((m9_sl_CHAR){ (uint32_t *) m9s491, 16 }); err->s[0].p = m9t20.p; err->s[0].len = m9t20.len; m9_pay_keep (err, 0, sizeof (*m9t20.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -10777,7 +11035,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s479, 16 })) m9t21 = ((m9_sl_CHAR){ (uint32_t *) m9s479, 16 }); err->s[0].p = m9t21.p; err->s[0].len = m9t21.len; m9_pay_keep (err, 0, sizeof (*m9t21.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s492, 16 })) m9t21 = ((m9_sl_CHAR){ (uint32_t *) m9s492, 16 }); err->s[0].p = m9t21.p; err->s[0].len = m9t21.len; m9_pay_keep (err, 0, sizeof (*m9t21.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -10888,9 +11146,9 @@ static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err)
   }
   exp_ = INT64_C(0);
   if ((e >= INT64_C(0))) {
-    { __typeof__(({ __typeof__(s) m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a244 = ({ __typeof__(s) m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+    { __typeof__(({ __typeof__(s) m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a257 = ({ __typeof__(s) m9t4 = s; int64_t m9t4a = m9_add_i64 (e, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((s).len, e, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(exp_) m9v = Rdf_IntOf (m9a244, err);
+    { __typeof__(exp_) m9v = Rdf_IntOf (m9a257, err);
       if (err->exc) goto L_hdl_m9t1;
       exp_ = m9v;
     }
@@ -10953,14 +11211,14 @@ static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err)
       digits = m9v;
     }
   }
-  bool m9t12 = Text_Eq (digits, ((m9_sl_CHAR){ (uint32_t *) m9s480, 1 }), err);
+  bool m9t12 = Text_Eq (digits, ((m9_sl_CHAR){ (uint32_t *) m9s493, 1 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t12) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s481, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s494, 5 });
     goto L_ret;
   }
-  { __typeof__(mant) m9v = m9_cat (err->res, ({ __typeof__(digits) m9t13 = digits; int64_t m9t13a = INT64_C(0), m9t13n = INT64_C(1); (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s482, 1 }), err);
+  { __typeof__(mant) m9v = m9_cat (err->res, ({ __typeof__(digits) m9t13 = digits; int64_t m9t13a = INT64_C(0), m9t13n = INT64_C(1); (__typeof__(m9t13)){ m9t13.p + m9_chk_slice (m9t13a, m9t13n, m9t13.len, err), m9t13n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s495, 1 }), err);
     if (err->exc) goto L_hdl_m9t1;
     mant = m9v;
   }
@@ -10970,19 +11228,19 @@ static m9_sl_CHAR Rdf_CanonDouble (double r, m9_state *err)
       mant = m9v;
     }
   } else {
-    { __typeof__(mant) m9v = m9_cat (err->res, mant, ((m9_sl_CHAR){ (uint32_t *) m9s483, 1 }), err);
+    { __typeof__(mant) m9v = m9_cat (err->res, mant, ((m9_sl_CHAR){ (uint32_t *) m9s496, 1 }), err);
       if (err->exc) goto L_hdl_m9t1;
       mant = m9v;
     }
   }
   if (neg) {
-    { __typeof__(mant) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s484, 1 }), mant, err);
+    { __typeof__(mant) m9v = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s497, 1 }), mant, err);
       if (err->exc) goto L_hdl_m9t1;
       mant = m9v;
     }
   }
   err->res = m9res;
-  m9ret = m9_cat (err->res, m9_cat (err->res, mant, ((m9_sl_CHAR){ (uint32_t *) m9s485, 1 }), err), Fmt_I64Str (exp_, err), err);
+  m9ret = m9_cat (err->res, m9_cat (err->res, mant, ((m9_sl_CHAR){ (uint32_t *) m9s498, 1 }), err), Fmt_I64Str (exp_, err), err);
   if (err->exc) goto L_hdl_m9t1;
   goto L_ret;
   goto L_dn_m9t2;
@@ -10990,7 +11248,7 @@ L_hdl_m9t1: ;
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s486, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s499, 5 });
     goto L_ret;
     goto L_dn_m9t2;
   }
@@ -11016,12 +11274,12 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
   m9_sl_CHAR dt = {0}; (void) dt;
   Rdf_Term t = {0}; (void) t;
   (*ok) = true;
-  bool m9t3 = (Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s487, 3 }), err) && (!Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s488, 6 }), err)));
+  bool m9t3 = (Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s500, 3 }), err) && (!Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s501, 6 }), err)));
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
-    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s489, 3 }), err)) m9a245 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s489, 3 }), err);
+    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err)) m9a258 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Rdf_JStr (m9a245, err);
+    { __typeof__(s) m9v = Rdf_JStr (m9a258, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
@@ -11030,9 +11288,9 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
       err->res = m9res;
-      { __typeof__(({ __typeof__(s) m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a246 = ({ __typeof__(s) m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
+      { __typeof__(({ __typeof__(s) m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; })) m9a259 = ({ __typeof__(s) m9t5 = s; int64_t m9t5a = INT64_C(2), m9t5n = m9_sub_i64 ((s).len, INT64_C(2), err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; });
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Rdf_BlankT (m9a246, err);
+      m9ret = Rdf_BlankT (m9a259, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
@@ -11051,17 +11309,17 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
     if (err->exc) goto L_hdl_m9t1;
     goto L_ret;
   }
-  { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s490, 6 }), err);
+  { __typeof__(v) m9v = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s503, 6 }), err);
     if (err->exc) goto L_hdl_m9t1;
     v = m9v;
   }
   dt = (m9_sl_CHAR){ NULL, 0 };
-  bool m9t7 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s491, 5 }), err);
+  bool m9t7 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s504, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t7) {
-    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s492, 5 }), err)) m9a247 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s492, 5 }), err);
+    { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s505, 5 }), err)) m9a260 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s505, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(dt) m9v = Rdf_JStr (m9a247, err);
+    { __typeof__(dt) m9v = Rdf_JStr (m9a260, err);
       if (err->exc) goto L_hdl_m9t1;
       dt = m9v;
     }
@@ -11071,7 +11329,7 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
   if (err->exc) goto L_hdl_m9t1;
   if (m9t8) {
     if (((dt).len == INT64_C(0))) {
-      { __typeof__(dt) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s493, 7 }), err);
+      { __typeof__(dt) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s506, 7 }), err);
         if (err->exc) goto L_hdl_m9t1;
         dt = m9v;
       }
@@ -11080,12 +11338,12 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
     if (err->exc) goto L_hdl_m9t1;
     if (m9t9) {
       err->res = m9res;
-      m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s494, 4 }), (m9_sl_CHAR){ NULL, 0 }, dt, err);
+      m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s507, 4 }), (m9_sl_CHAR){ NULL, 0 }, dt, err);
       if (err->exc) goto L_hdl_m9t1;
       goto L_ret;
     } else {
       err->res = m9res;
-      m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s495, 5 }), (m9_sl_CHAR){ NULL, 0 }, dt, err);
+      m9ret = Rdf_LitT (((m9_sl_CHAR){ (uint32_t *) m9s508, 5 }), (m9_sl_CHAR){ NULL, 0 }, dt, err);
       if (err->exc) goto L_hdl_m9t1;
       goto L_ret;
     }
@@ -11097,38 +11355,38 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
         if (err->exc) goto L_hdl_m9t1;
         s = m9v;
       }
-      bool m9t11 = ((((Text_FindChar (s, 46u, err) >= INT64_C(0)) || (Text_FindChar (s, 101u, err) >= INT64_C(0))) || (Text_FindChar (s, 69u, err) >= INT64_C(0))) || Text_Eq (dt, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s496, 6 }), err), err));
+      bool m9t11 = ((((Text_FindChar (s, 46u, err) >= INT64_C(0)) || (Text_FindChar (s, 101u, err) >= INT64_C(0))) || (Text_FindChar (s, 69u, err) >= INT64_C(0))) || Text_Eq (dt, m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s509, 6 }), err), err));
       if (err->exc) goto L_hdl_m9t1;
       if (m9t11) {
         if (((dt).len == INT64_C(0))) {
-          { __typeof__(dt) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s497, 6 }), err);
+          { __typeof__(dt) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s510, 6 }), err);
             if (err->exc) goto L_hdl_m9t1;
             dt = m9v;
           }
         }
         err->res = m9res;
-        { __typeof__(Json_AsF64 (v, err)) m9a248 = Json_AsF64 (v, err);
+        { __typeof__(Json_AsF64 (v, err)) m9a261 = Json_AsF64 (v, err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(Rdf_CanonDouble (m9a248, err)) m9a249 = Rdf_CanonDouble (m9a248, err);
+        { __typeof__(Rdf_CanonDouble (m9a261, err)) m9a262 = Rdf_CanonDouble (m9a261, err);
           if (err->exc) goto L_hdl_m9t1;
-        m9ret = Rdf_LitT (m9a249, (m9_sl_CHAR){ NULL, 0 }, dt, err);
+        m9ret = Rdf_LitT (m9a262, (m9_sl_CHAR){ NULL, 0 }, dt, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
         goto L_ret;
       }
       if (((dt).len == INT64_C(0))) {
-        { __typeof__(dt) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s498, 7 }), err);
+        { __typeof__(dt) m9v = m9_cat (err->res, Rdf_Xsd, ((m9_sl_CHAR){ (uint32_t *) m9s511, 7 }), err);
           if (err->exc) goto L_hdl_m9t1;
           dt = m9v;
         }
       }
       err->res = m9res;
-      { __typeof__(Json_AsI64 (v, err)) m9a250 = Json_AsI64 (v, err);
+      { __typeof__(Json_AsI64 (v, err)) m9a263 = Json_AsI64 (v, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Fmt_I64Str (m9a250, err)) m9a251 = Fmt_I64Str (m9a250, err);
+      { __typeof__(Fmt_I64Str (m9a263, err)) m9a264 = Fmt_I64Str (m9a263, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Rdf_LitT (m9a251, (m9_sl_CHAR){ NULL, 0 }, dt, err);
+      m9ret = Rdf_LitT (m9a264, (m9_sl_CHAR){ NULL, 0 }, dt, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -11141,15 +11399,15 @@ static Rdf_Term Rdf_ObjectToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_poo
         if (err->exc) goto L_hdl_m9t1;
         s = m9v;
       }
-      bool m9t13 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s499, 9 }), err);
+      bool m9t13 = Rdf_Has (item, ((m9_sl_CHAR){ (uint32_t *) m9s512, 9 }), err);
       if (err->exc) goto L_hdl_m9t1;
       if (m9t13) {
         err->res = m9res;
-        { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s500, 9 }), err)) m9a252 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s500, 9 }), err);
+        { __typeof__(Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s513, 9 }), err)) m9a265 = Rdf_JGet (item, ((m9_sl_CHAR){ (uint32_t *) m9s513, 9 }), err);
           if (err->exc) goto L_hdl_m9t1;
-        { __typeof__(Rdf_JStr (m9a252, err)) m9a253 = Rdf_JStr (m9a252, err);
+        { __typeof__(Rdf_JStr (m9a265, err)) m9a266 = Rdf_JStr (m9a265, err);
           if (err->exc) goto L_hdl_m9t1;
-        m9ret = Rdf_LitT (s, m9a253, (m9_sl_CHAR){ NULL, 0 }, err);
+        m9ret = Rdf_LitT (s, m9a266, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_hdl_m9t1;
         }
         }
@@ -11173,7 +11431,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
     m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s501, 16 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s501, 16 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; m9_pay_keep (err, 0, sizeof (*m9t14.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s514, 16 })) m9t14 = ((m9_sl_CHAR){ (uint32_t *) m9s514, 16 }); err->s[0].p = m9t14.p; err->s[0].len = m9t14.len; m9_pay_keep (err, 0, sizeof (*m9t14.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -11218,16 +11476,16 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   }
   if ((n == INT64_C(0))) {
     err->res = m9res;
-    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err)) m9a254 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s502, 3 }), err);
+    { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s515, 3 }), err)) m9a267 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s515, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    m9ret = Rdf_IriT (m9a254, err);
+    m9ret = Rdf_IriT (m9a267, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     goto L_ret;
   }
-  { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a255 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+  { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a268 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(head) m9v = Rdf_BlankT (m9a255, err);
+  { __typeof__(head) m9v = Rdf_BlankT (m9a268, err);
     if (err->exc) goto L_hdl_m9t1;
     head = m9v;
   }
@@ -11239,50 +11497,50 @@ static Rdf_Term Rdf_ListToTerm (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool,
   if (err->exc) goto L_hdl_m9t1;
   for (; i <= m9t3to; i += 1) {
     if ((i > INT64_C(0))) {
-      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a256 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
+      { __typeof__(Rdf_Fresh (pool, &((*st).r), st_pool, err)) m9a269 = Rdf_Fresh (pool, &((*st).r), st_pool, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(cell) m9v = Rdf_BlankT (m9a256, err);
+      { __typeof__(cell) m9v = Rdf_BlankT (m9a269, err);
         if (err->exc) goto L_hdl_m9t1;
         cell = m9v;
       }
       }
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s503, 4 }), err)) m9a257 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s503, 4 }), err);
+      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s516, 4 }), err)) m9a270 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s516, 4 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_IriT (m9a257, err)) m9a258 = Rdf_IriT (m9a257, err);
+      { __typeof__(Rdf_IriT (m9a270, err)) m9a271 = Rdf_IriT (m9a270, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_Add (pool, g, g_pool, prev, m9a258, cell, err);
+      Rdf_Add (pool, g, g_pool, prev, m9a271, cell, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
       prev = cell;
     }
-    { __typeof__(Json_Item (items, i, err)) m9a259 = Json_Item (items, i, err);
+    { __typeof__(Json_Item (items, i, err)) m9a272 = Json_Item (items, i, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(o) m9v = Rdf_ObjectToTerm (pool, st, st_pool, m9a259, &(ok), err);
+    { __typeof__(o) m9v = Rdf_ObjectToTerm (pool, st, st_pool, m9a272, &(ok), err);
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
     }
     if (ok) {
-      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s504, 5 }), err)) m9a260 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s504, 5 }), err);
+      { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s517, 5 }), err)) m9a273 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s517, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_IriT (m9a260, err)) m9a261 = Rdf_IriT (m9a260, err);
+      { __typeof__(Rdf_IriT (m9a273, err)) m9a274 = Rdf_IriT (m9a273, err);
         if (err->exc) goto L_hdl_m9t1;
-      Rdf_Add (pool, g, g_pool, prev, m9a261, o, err);
+      Rdf_Add (pool, g, g_pool, prev, m9a274, o, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
     }
   } }
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s505, 4 }), err)) m9a262 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s505, 4 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s518, 4 }), err)) m9a275 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s518, 4 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(Rdf_IriT (m9a262, err)) m9a263 = Rdf_IriT (m9a262, err);
+  { __typeof__(Rdf_IriT (m9a275, err)) m9a276 = Rdf_IriT (m9a275, err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s506, 3 }), err)) m9a264 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s506, 3 }), err);
+  { __typeof__(m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s519, 3 }), err)) m9a277 = m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s519, 3 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  { __typeof__(Rdf_IriT (m9a264, err)) m9a265 = Rdf_IriT (m9a264, err);
+  { __typeof__(Rdf_IriT (m9a277, err)) m9a278 = Rdf_IriT (m9a277, err);
     if (err->exc) goto L_hdl_m9t1;
-  Rdf_Add (pool, g, g_pool, prev, m9a263, m9a265, err);
+  Rdf_Add (pool, g, g_pool, prev, m9a276, m9a278, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   }
@@ -11296,7 +11554,7 @@ L_hdl_m9t1: ;
   if (err->exc == &Json_TypeMismatch) {
     m9_sl_CHAR m = { (uint32_t *) m9_pay_take (err, 0, sizeof (uint32_t)), err->s[0].len }; (void) m;
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s507, 16 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s507, 16 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s520, 16 })) m9t4 = ((m9_sl_CHAR){ (uint32_t *) m9s520, 16 }); err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -11305,7 +11563,7 @@ L_hdl_m9t1: ;
   }
   if (err->exc == &m9_exc_IndexError) {
     err->exc = NULL;
-    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s508, 16 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s508, 16 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
+    { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s521, 16 })) m9t5 = ((m9_sl_CHAR){ (uint32_t *) m9s521, 16 }); err->s[0].p = m9t5.p; err->s[0].len = m9t5.len; m9_pay_keep (err, 0, sizeof (*m9t5.p)); }
     err->i[0] = INT64_C(0);
     err->i[1] = INT64_C(0);
     m9_raise (err, &Rdf_SyntaxError);
@@ -11394,7 +11652,7 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_CHAR id, int64_t *first, int64_t *r
     bool m9t2 = ((((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Blank })).tag) && Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).s.value, id, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      bool m9t3 = Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s509, 5 }), err), err);
+      bool m9t3 = Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s522, 5 }), err), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
         { __typeof__(nf) m9v = m9_add_i64 (nf, INT64_C(1), err);
@@ -11403,7 +11661,7 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_CHAR id, int64_t *first, int64_t *r
         }
         (*first) = i;
       } else {
-        bool m9t4 = Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s510, 4 }), err), err);
+        bool m9t4 = Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s523, 4 }), err), err);
         if (err->exc) goto L_ret;
         if (m9t4) {
           { __typeof__(nr) m9v = m9_add_i64 (nr, INT64_C(1), err);
@@ -11412,7 +11670,7 @@ static bool Rdf_IsCell (Rdf_Graph * g, m9_sl_CHAR id, int64_t *first, int64_t *r
           }
           (*rest) = i;
       } else {
-        bool m9t5 = ((Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s511, 4 }), err), err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag)) && Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s512, 4 }), err), err));
+        bool m9t5 = ((Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).p.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s524, 4 }), err), err) && (((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag)) && Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, i, g->t.len, sizeof (Rdf_Triple), err)).o.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s525, 4 }), err), err));
         if (err->exc) goto L_ret;
         if (m9t5) {
       } else {
@@ -11454,19 +11712,19 @@ static Json_Node * Rdf_TermObj (m9_pool *pool, Rdf_Term t, m9_state *err)
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s513, 3 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s526, 3 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Rdf_Kind_Blank:
   {
-    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s514, 2 }), t.value, err)) m9a266 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s514, 2 }), t.value, err);
+    { __typeof__(m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s527, 2 }), t.value, err)) m9a279 = m9_cat (err->res, ((m9_sl_CHAR){ (uint32_t *) m9s527, 2 }), t.value, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a266, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a279, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s515, 3 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s528, 3 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
   } break;
   case Rdf_Kind_Literal:
@@ -11475,14 +11733,14 @@ static Json_Node * Rdf_TermObj (m9_pool *pool, Rdf_Term t, m9_state *err)
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s516, 6 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s529, 6 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     if (((t.lang).len > INT64_C(0))) {
       { __typeof__(s) m9v = Json_NewStrIn (pool, t.lang, err);
         if (err->exc) goto L_hdl_m9t1;
         s = m9v;
       }
-      Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s517, 9 }), &(s), &((*pool)), err);
+      Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s530, 9 }), &(s), &((*pool)), err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
       bool m9t4 = (((t.datatype).len > INT64_C(0)) && (!Text_Eq (t.datatype, Rdf_XsdString, err)));
@@ -11492,7 +11750,7 @@ static Json_Node * Rdf_TermObj (m9_pool *pool, Rdf_Term t, m9_state *err)
           if (err->exc) goto L_hdl_m9t1;
           s = m9v;
         }
-        Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s518, 5 }), &(s), &((*pool)), err);
+        Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s531, 5 }), &(s), &((*pool)), err);
         if (err->exc) goto L_hdl_m9t1;
     } }
   } break;
@@ -11562,16 +11820,16 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m
       if (err->exc) goto L_hdl_m9t1;
       n = m9v;
     }
-    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o) m9a267 = (*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o;
+    { __typeof__((*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o) m9a280 = (*(Rdf_Triple *) m9_at (g->t.p, first, g->t.len, sizeof (Rdf_Triple), err)).o;
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(item) m9v = Rdf_TermObj (pool, m9a267, err);
+    { __typeof__(item) m9v = Rdf_TermObj (pool, m9a280, err);
       if (err->exc) goto L_hdl_m9t1;
       item = m9v;
     }
     }
     Json_Add (&(arr), &((*pool)), &(item), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
-    bool m9t4 = ((((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag) && Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s519, 3 }), err), err));
+    bool m9t4 = ((((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.kind).tag == (((Rdf_Kind){ .tag = Rdf_Kind_Iri })).tag) && Text_Eq ((*(Rdf_Triple *) m9_at (g->t.p, rest, g->t.len, sizeof (Rdf_Triple), err)).o.value, m9_cat (err->res, Rdf_RdfNs, ((m9_sl_CHAR){ (uint32_t *) m9s532, 3 }), err), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t4) {
       break;
@@ -11607,7 +11865,7 @@ static Json_Node * Rdf_ListObj (m9_pool *pool, Rdf_Graph * g, m9_sl_CHAR head, m
     if (err->exc) goto L_hdl_m9t1;
     o = m9v;
   }
-  Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s520, 5 }), &(arr), &((*pool)), err);
+  Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s533, 5 }), &(arr), &((*pool)), err);
   if (err->exc) goto L_hdl_m9t1;
   err->res = m9res;
   m9ret = o;
@@ -11675,7 +11933,7 @@ static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx c, m9_sl_CHAR iri, bool vocab, m9_stat
   m9t3to = m9_sub_i64 (c.n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t3to; i += 1) {
-    bool m9t4 = (((((((!(*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).reverse)) && (((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri).len > bestLen)) && (((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri).len < (iri).len)) && Text_StartsWith (iri, (*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri, err)) && (Text_FindChar ((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).term, 58u, err) < INT64_C(0))) && (Text_FindChar (((m9_sl_CHAR){ (uint32_t *) m9s521, 7 }), (*(uint32_t *) m9_at ((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri.p, m9_sub_i64 (((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri).len, INT64_C(1), err), (*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri.len, sizeof (uint32_t), err)), err) >= INT64_C(0)));
+    bool m9t4 = (((((((!(*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).reverse)) && (((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri).len > bestLen)) && (((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri).len < (iri).len)) && Text_StartsWith (iri, (*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri, err)) && (Text_FindChar ((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).term, 58u, err) < INT64_C(0))) && (Text_FindChar (((m9_sl_CHAR){ (uint32_t *) m9s534, 7 }), (*(uint32_t *) m9_at ((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri.p, m9_sub_i64 (((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri).len, INT64_C(1), err), (*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri.len, sizeof (uint32_t), err)), err) >= INT64_C(0)));
     if (err->exc) goto L_ret;
     if (m9t4) {
       best = i;
@@ -11687,7 +11945,7 @@ static m9_sl_CHAR Rdf_CompactIri (Rdf_Ctx c, m9_sl_CHAR iri, bool vocab, m9_stat
   } }
   if ((best >= INT64_C(0))) {
     err->res = m9res;
-    m9ret = m9_cat (err->res, m9_cat (err->res, (*(Rdf_TermDef *) m9_at (c.defs.p, best, c.defs.len, sizeof (Rdf_TermDef), err)).term, ((m9_sl_CHAR){ (uint32_t *) m9s522, 1 }), err), ({ __typeof__(iri) m9t5 = iri; int64_t m9t5a = bestLen, m9t5n = m9_sub_i64 ((iri).len, bestLen, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), err);
+    m9ret = m9_cat (err->res, m9_cat (err->res, (*(Rdf_TermDef *) m9_at (c.defs.p, best, c.defs.len, sizeof (Rdf_TermDef), err)).term, ((m9_sl_CHAR){ (uint32_t *) m9s535, 1 }), err), ({ __typeof__(iri) m9t5 = iri; int64_t m9t5a = bestLen, m9t5n = m9_sub_i64 ((iri).len, bestLen, err); (__typeof__(m9t5)){ m9t5.p + m9_chk_slice (m9t5a, m9t5n, m9t5.len, err), m9t5n }; }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -11733,7 +11991,7 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
       tm = m9v;
     }
   }
-  bool m9t3 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s523, 5 }), err);
+  bool m9t3 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s536, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t3) {
     { __typeof__(arr) m9v = Json_NewArrIn (pool, err);
@@ -11742,14 +12000,14 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
     }
     { int64_t m9t4to;
     i = INT64_C(0);
-    m9t4to = m9_sub_i64 (Rdf_Items (Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s524, 5 }), err), err), INT64_C(1), err);
+    m9t4to = m9_sub_i64 (Rdf_Items (Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s537, 5 }), err), err), INT64_C(1), err);
     if (err->exc) goto L_hdl_m9t1;
     for (; i <= m9t4to; i += 1) {
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s525, 5 }), err)) m9a268 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s525, 5 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 5 }), err)) m9a281 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 5 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Json_Item (m9a268, i, err)) m9a269 = Json_Item (m9a268, i, err);
+      { __typeof__(Json_Item (m9a281, i, err)) m9a282 = Json_Item (m9a281, i, err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(item) m9v = Rdf_CompactValue (pool, c, k, m9a269, err);
+      { __typeof__(item) m9v = Rdf_CompactValue (pool, c, k, m9a282, err);
         if (err->exc) goto L_hdl_m9t1;
         item = m9v;
       }
@@ -11758,7 +12016,7 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
       Json_Add (&(arr), &((*pool)), &(item), &((*pool)), err);
       if (err->exc) goto L_hdl_m9t1;
     } }
-    bool m9t5 = ((k >= INT64_C(0)) && Text_Eq ((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container, ((m9_sl_CHAR){ (uint32_t *) m9s526, 5 }), err));
+    bool m9t5 = ((k >= INT64_C(0)) && Text_Eq ((*(Rdf_TermDef *) m9_at (c.defs.p, k, c.defs.len, sizeof (Rdf_TermDef), err)).container, ((m9_sl_CHAR){ (uint32_t *) m9s539, 5 }), err));
     if (err->exc) goto L_hdl_m9t1;
     if (m9t5) {
       err->res = m9res;
@@ -11769,40 +12027,40 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s527, 5 }), &(arr), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s540, 5 }), &(arr), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
     goto L_ret;
   }
-  bool m9t6 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s528, 3 }), err);
+  bool m9t6 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s541, 3 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t6) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s529, 3 }), err)) m9a270 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s529, 3 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), err)) m9a283 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(id) m9v = Rdf_JStr (m9a270, err);
+    { __typeof__(id) m9v = Rdf_JStr (m9a283, err);
       if (err->exc) goto L_hdl_m9t1;
       id = m9v;
     }
     }
-    bool m9t7 = Text_Eq (tm, ((m9_sl_CHAR){ (uint32_t *) m9s530, 3 }), err);
+    bool m9t7 = Text_Eq (tm, ((m9_sl_CHAR){ (uint32_t *) m9s543, 3 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t7) {
       err->res = m9res;
-      { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a271 = Rdf_CompactIri (c, id, false, err);
+      { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a284 = Rdf_CompactIri (c, id, false, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a271, err);
+      m9ret = Json_NewStrIn (pool, m9a284, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
     }
-    bool m9t8 = Text_Eq (tm, ((m9_sl_CHAR){ (uint32_t *) m9s531, 6 }), err);
+    bool m9t8 = Text_Eq (tm, ((m9_sl_CHAR){ (uint32_t *) m9s544, 6 }), err);
     if (err->exc) goto L_hdl_m9t1;
     if (m9t8) {
       err->res = m9res;
-      { __typeof__(Rdf_CompactIri (c, id, true, err)) m9a272 = Rdf_CompactIri (c, id, true, err);
+      { __typeof__(Rdf_CompactIri (c, id, true, err)) m9a285 = Rdf_CompactIri (c, id, true, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a272, err);
+      m9ret = Json_NewStrIn (pool, m9a285, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       goto L_ret;
@@ -11811,25 +12069,25 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a273 = Rdf_CompactIri (c, id, false, err);
+    { __typeof__(Rdf_CompactIri (c, id, false, err)) m9a286 = Rdf_CompactIri (c, id, false, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a273, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a286, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s532, 3 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s545, 3 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
     goto L_ret;
   }
-  bool m9t9 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s533, 9 }), err);
+  bool m9t9 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s546, 9 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t9) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s534, 9 }), err)) m9a274 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s534, 9 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s547, 9 }), err)) m9a287 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s547, 9 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(lg) m9v = Rdf_JStr (m9a274, err);
+    { __typeof__(lg) m9v = Rdf_JStr (m9a287, err);
       if (err->exc) goto L_hdl_m9t1;
       lg = m9v;
     }
@@ -11838,11 +12096,11 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
     if (err->exc) goto L_hdl_m9t1;
     if (m9t10) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s535, 6 }), err)) m9a275 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s535, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err)) m9a288 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_JStr (m9a275, err)) m9a276 = Rdf_JStr (m9a275, err);
+      { __typeof__(Rdf_JStr (m9a288, err)) m9a289 = Rdf_JStr (m9a288, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a276, err);
+      m9ret = Json_NewStrIn (pool, m9a289, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -11852,11 +12110,11 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
     if (err->exc) goto L_hdl_m9t1;
     if (m9t11) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s536, 6 }), err)) m9a277 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s536, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), err)) m9a290 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_JStr (m9a277, err)) m9a278 = Rdf_JStr (m9a277, err);
+      { __typeof__(Rdf_JStr (m9a290, err)) m9a291 = Rdf_JStr (m9a290, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a278, err);
+      m9ret = Json_NewStrIn (pool, m9a291, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -11866,27 +12124,27 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 6 }), err)) m9a279 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s538, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s551, 6 }), err)) m9a292 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s551, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s537, 6 }), m9a279, err);
+    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s550, 6 }), m9a292, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     { __typeof__(s) m9v = Json_NewStrIn (pool, lg, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s539, 9 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s552, 9 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
     goto L_ret;
   }
-  bool m9t12 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s540, 5 }), err);
+  bool m9t12 = Rdf_Has (v, ((m9_sl_CHAR){ (uint32_t *) m9s553, 5 }), err);
   if (err->exc) goto L_hdl_m9t1;
   if (m9t12) {
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s541, 5 }), err)) m9a280 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s541, 5 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s554, 5 }), err)) m9a293 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s554, 5 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(dt) m9v = Rdf_JStr (m9a280, err);
+    { __typeof__(dt) m9v = Rdf_JStr (m9a293, err);
       if (err->exc) goto L_hdl_m9t1;
       dt = m9v;
     }
@@ -11895,11 +12153,11 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
     if (err->exc) goto L_hdl_m9t1;
     if (m9t13) {
       err->res = m9res;
-      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 6 }), err)) m9a281 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s542, 6 }), err);
+      { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s555, 6 }), err)) m9a294 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s555, 6 }), err);
         if (err->exc) goto L_hdl_m9t1;
-      { __typeof__(Rdf_JStr (m9a281, err)) m9a282 = Rdf_JStr (m9a281, err);
+      { __typeof__(Rdf_JStr (m9a294, err)) m9a295 = Rdf_JStr (m9a294, err);
         if (err->exc) goto L_hdl_m9t1;
-      m9ret = Json_NewStrIn (pool, m9a282, err);
+      m9ret = Json_NewStrIn (pool, m9a295, err);
       if (err->exc) goto L_hdl_m9t1;
       }
       }
@@ -11909,19 +12167,19 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
       if (err->exc) goto L_hdl_m9t1;
       o = m9v;
     }
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s544, 6 }), err)) m9a283 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s544, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s557, 6 }), err)) m9a296 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s557, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s543, 6 }), m9a283, err);
+    Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s556, 6 }), m9a296, err);
     if (err->exc) goto L_hdl_m9t1;
     }
-    { __typeof__(Rdf_CompactIri (c, dt, true, err)) m9a284 = Rdf_CompactIri (c, dt, true, err);
+    { __typeof__(Rdf_CompactIri (c, dt, true, err)) m9a297 = Rdf_CompactIri (c, dt, true, err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a284, err);
+    { __typeof__(s) m9v = Json_NewStrIn (pool, m9a297, err);
       if (err->exc) goto L_hdl_m9t1;
       s = m9v;
     }
     }
-    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s545, 5 }), &(s), &((*pool)), err);
+    Json_Set (&(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s558, 5 }), &(s), &((*pool)), err);
     if (err->exc) goto L_hdl_m9t1;
     err->res = m9res;
     m9ret = o;
@@ -11931,11 +12189,11 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
   if (err->exc) goto L_hdl_m9t1;
   if (m9t14) {
     err->res = m9res;
-    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s546, 6 }), err)) m9a285 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s546, 6 }), err);
+    { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s559, 6 }), err)) m9a298 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s559, 6 }), err);
       if (err->exc) goto L_hdl_m9t1;
-    { __typeof__(Rdf_JStr (m9a285, err)) m9a286 = Rdf_JStr (m9a285, err);
+    { __typeof__(Rdf_JStr (m9a298, err)) m9a299 = Rdf_JStr (m9a298, err);
       if (err->exc) goto L_hdl_m9t1;
-    m9ret = Json_NewStrIn (pool, m9a286, err);
+    m9ret = Json_NewStrIn (pool, m9a299, err);
     if (err->exc) goto L_hdl_m9t1;
     }
     }
@@ -11945,9 +12203,9 @@ static Json_Node * Rdf_CompactValue (m9_pool *pool, Rdf_Ctx c, int64_t k, Json_N
     if (err->exc) goto L_hdl_m9t1;
     o = m9v;
   }
-  { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err)) m9a287 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), err);
+  { __typeof__(Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s561, 6 }), err)) m9a300 = Rdf_JGet (v, ((m9_sl_CHAR){ (uint32_t *) m9s561, 6 }), err);
     if (err->exc) goto L_hdl_m9t1;
-  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s547, 6 }), m9a287, err);
+  Rdf_SetKey (pool, &(o), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s560, 6 }), m9a300, err);
   if (err->exc) goto L_hdl_m9t1;
   }
   err->res = m9res;
@@ -12002,7 +12260,7 @@ static int64_t Rdf_PropTerm (Rdf_Ctx c, m9_sl_CHAR iri, bool isList, m9_state *e
     bool m9t2 = (((!(*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).isNull) && (!(*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).reverse)) && Text_Eq ((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).iri, iri, err));
     if (err->exc) goto L_ret;
     if (m9t2) {
-      bool m9t3 = (isList == Text_Eq ((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).container, ((m9_sl_CHAR){ (uint32_t *) m9s549, 5 }), err));
+      bool m9t3 = (isList == Text_Eq ((*(Rdf_TermDef *) m9_at (c.defs.p, i, c.defs.len, sizeof (Rdf_TermDef), err)).container, ((m9_sl_CHAR){ (uint32_t *) m9s562, 5 }), err));
       if (err->exc) goto L_ret;
       if (m9t3) {
         err->res = m9res;
@@ -12016,6 +12274,76 @@ static int64_t Rdf_PropTerm (Rdf_Ctx c, m9_sl_CHAR iri, bool isList, m9_state *e
   } }
   err->res = m9res;
   m9ret = any;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Rdf_NcStart (uint32_t c, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  err->res = m9res;
+  m9ret = ((((((c >= 97u) && (c <= 122u))) || (((c >= 65u) && (c <= 90u)))) || (c == 95u)) || ((int64_t)(c) > INT64_C(127)));
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Rdf_NcChar (uint32_t c, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  err->res = m9res;
+  m9ret = (((Rdf_NcStart (c, err) || (((c >= 48u) && (c <= 57u)))) || (c == 45u)) || (c == 46u));
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static int64_t Rdf_LocalStart (m9_sl_CHAR iri, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t i = 0; (void) i;
+  int64_t best = 0; (void) best;
+  best = (iri).len;
+  { __typeof__(i) m9v = m9_sub_i64 ((iri).len, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+    i = m9v;
+  }
+  for (;;) {
+    bool m9t1 = ((i >= INT64_C(0)) && Rdf_NcChar ((*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err)), err));
+    if (err->exc) goto L_ret;
+    if (!(m9t1)) break;
+    bool m9t2 = Rdf_NcStart ((*(uint32_t *) m9_at (iri.p, i, iri.len, sizeof (uint32_t), err)), err);
+    if (err->exc) goto L_ret;
+    if (m9t2) {
+      best = i;
+    }
+    { __typeof__(i) m9v = m9_sub_i64 (i, INT64_C(1), err);
+      if (err->exc) goto L_ret;
+      i = m9v;
+    }
+  }
+  err->res = m9res;
+  m9ret = best;
   goto L_ret;
 L_ret: ;
   err->res = m9res;

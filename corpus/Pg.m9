@@ -23,10 +23,9 @@ DEFINITION MODULE Pg ;
    that has psql, plus runtime/pgshim.c for the one call a FOR "C"
    unit cannot express (PQexecParams takes a table of C pointers;
    pgshim rebuilds it from one NUL-separated block, the System.Exec
-   convention).  m9c's flagless link does not carry either -- a
-   program that imports Pg names them: `runtime/pgshim.c
-   -l:libpq.so.5`, as a program using blosc or netCDF names its
-   library (the owed link-line item in CLAUDE.md).                    *)
+   convention).  The foreign unit below NAMES both (LINK, par 7), so
+   m9c's flagless link, --run and --cell carry them; a program that
+   takes the C line over with -- names them itself.                   *)
 
 IMPORT Time ;
 
@@ -78,6 +77,13 @@ PROCEDURE Exec (c: PTR Conn ; RO sql: STR ; RO params: SLICE OF STR)
   (* one statement that answers no rows -- INSERT, UPDATE, DELETE,
      CREATE -- bound as Query binds; answers how many rows it
      affected (PQcmdTuples), 0 for a command that does not say.     *)
+
+PROCEDURE ArrayLiteral (RO items: SLICE OF STR) : STR ;
+  (* the text of a one-dimensional array for a `$n::text[]'
+     parameter: every item double-quoted, a backslash or a quote in
+     it escaped with a backslash, the empty slice `{}' -- the form the
+     server reads back element for element (PgTest asks it).
+     cp-kernel's issue 8, 2026-10-09.                                *)
 
 PROCEDURE Script (c: PTR Conn ; RO sql: STR) RAISES PgError, ValueRange ;
   (* several statements separated by semicolons, no parameters
@@ -135,7 +141,7 @@ PROCEDURE TimeCell (r: PTR Result ; row, col: I64) : Time.Instant
 END Pg.
 
 
-UNSAFE DEFINITION MODULE FOR "C" cpq ;
+UNSAFE DEFINITION MODULE FOR "C" cpq LINK "pgshim.c", "-l:libpq.so.5" ;
 
 (* libpq, verbatim, plus the shim and two runtime calls.  All
    [REENTRANT]: see THREADS in the definition above -- no call here
@@ -537,6 +543,27 @@ BEGIN
   IF col < 0 OR col >= r.cols THEN RAISE IndexError (col, r.cols) END ;
   RETURN row * r.cols + col
 END At ;
+
+PROCEDURE ArrayLiteral (RO items: SLICE OF STR) : STR =
+VAR
+  scratch : POOL ;
+  d : PTR DynStr.DString IN scratch ;
+  i, j : I64 ;
+BEGIN
+  d := DynStr.New (scratch) ;
+  DynStr.AppendChar (d, '{') ;
+  FOR i := 0 TO LEN (items) - 1 DO
+    IF i > 0 THEN DynStr.AppendChar (d, ',') END ;
+    DynStr.AppendChar (d, '"') ;
+    FOR j := 0 TO LEN (items[i]) - 1 DO
+      IF items[i][j] = '"' OR items[i][j] = 5CC THEN DynStr.AppendChar (d, 5CC) END ;
+      DynStr.AppendChar (d, items[i][j])
+    END ;
+    DynStr.AppendChar (d, '"')
+  END ;
+  DynStr.AppendChar (d, '}') ;
+  RETURN DynStr.View (d)
+END ArrayLiteral ;
 
 PROCEDURE Cell (r: PTR Result ; row, col: I64) : STR RAISES IndexError =
 BEGIN

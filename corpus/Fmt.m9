@@ -52,6 +52,13 @@ PROCEDURE I64Str (v: I64) : STR ;
      caller in the corpus passed one only to throw the result at
      Append or WriteLine.                                            *)
 
+PROCEDURE Hex (v: I64 ; width: I64) : STR ;
+  (* v in lower-case hexadecimal, zero-padded to `width' digits --
+     Python's '%0*x' % (width, v) for v >= 0.  A negative v is read as
+     the 64-bit pattern it is (its two's complement, sixteen digits),
+     as a CRC or a hash word held in an I64 means.  Never truncated:
+     a wider value overflows the field (cp-kernel's issue 16). *)
+
 PROCEDURE I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR ;
   (* right-aligned in width; zero selects '0' over ' ' as the fill.
      A value too wide is never truncated -- silently losing digits is
@@ -123,7 +130,12 @@ PROCEDURE ParseBits (RO s: STR) : F64 RAISES ValueRange ;
 PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange ;
   (* decimal, with optional sign, fraction and exponent.  Rejects
      anything else, because a command line or a data file that says
-     it holds a number and does not is the boundary this catches.    *)
+     it holds a number and does not is the boundary this catches.
+     THE INTEGER READER IS Io.ParseI64 (RAISES ValueRange, Overflow):
+     an optional minus and decimal digits, every I64 down to the
+     smallest.  It lives in Io because Fmt imports nothing and Io is
+     where the command line is read; a reader looking here is sent
+     there (cp-kernel's issue 6, 2026-10-09).                        *)
 
 END Fmt.
 
@@ -159,6 +171,34 @@ BEGIN
   IF v < 0 THEN s := '-' + s END ;
   RETURN s
 END I64Str ;
+
+CONST
+  HexLower = '0123456789abcdef' ;   (* Hex's digits; HexDigits above is upper case *)
+
+PROCEDURE Hex (v: I64 ; width: I64) : STR =
+VAR
+  digits : ARRAY 16 OF CHAR ;
+  n, d, k, i : I64 ;
+  s : STR ;
+BEGIN
+  (* nibble by nibble from the right, by floor division, so that a
+     negative v gives its two's complement: after sixteen nibbles the
+     whole pattern is out *)
+  n := v ;
+  k := 0 ;
+  LOOP
+    d := n MOD 16 ;
+    IF d < 0 THEN d := d + 16 END ;
+    n := (n - d) DIV 16 ;
+    digits[k] := HexLower[d] ;
+    k := k + 1 ;
+    IF k = 16 OR (n = 0 AND v >= 0) THEN EXIT END
+  END ;
+  s := '' ;
+  FOR i := k + 1 TO width DO s := s + '0' END ;
+  FOR i := k - 1 TO 0 BY -1 DO s := s + digits[i] END ;
+  RETURN s
+END Hex ;
 
 PROCEDURE I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR =
 VAR

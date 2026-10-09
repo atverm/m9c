@@ -85,6 +85,7 @@ static int64_t ngps;
 static m9_sl_Gen_TY tys;
 static int64_t ntys;
 static m9_sl_Gen_XC xcs;
+static Ast_Node * ixFields;
 static int64_t nxcs;
 static m9_sl_m9_sl_CHAR mvN;
 static m9_sl_Ast_Nodep mvT;
@@ -598,1368 +599,1379 @@ static const uint32_t m9s136[2] = { 32u, 34u };
 static const uint32_t m9s137[1] = { 34u };
 static const uint32_t m9s138[12] = { 101u, 114u, 114u, 45u, 62u, 108u, 105u, 110u, 101u, 32u, 61u, 32u };
 static const uint32_t m9s139[1] = { 59u };
-static const uint32_t m9s140[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s141[31] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 111u, 117u, 116u, 112u, 117u, 116u, 32u, 98u, 117u, 99u, 107u, 101u, 116u };
-static const uint32_t m9s142[3] = { 109u, 57u, 116u };
-static const uint32_t m9s143[1] = { 95u };
-static const uint32_t m9s144[1] = { 95u };
+static const uint32_t m9s140[1] = { 43u };
+static const uint32_t m9s141[1] = { 43u };
+static const uint32_t m9s142[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s143[31] = { 105u, 110u, 116u, 101u, 114u, 110u, 97u, 108u, 58u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 111u, 117u, 116u, 112u, 117u, 116u, 32u, 98u, 117u, 99u, 107u, 101u, 116u };
+static const uint32_t m9s144[3] = { 109u, 57u, 116u };
 static const uint32_t m9s145[1] = { 95u };
-static const uint32_t m9s146[3] = { 73u, 110u, 116u };
-static const uint32_t m9s147[3] = { 105u, 110u, 116u };
-static const uint32_t m9s148[5] = { 83u, 105u, 122u, 101u, 84u };
-static const uint32_t m9s149[6] = { 115u, 105u, 122u, 101u, 95u, 116u };
-static const uint32_t m9s150[6] = { 83u, 83u, 105u, 122u, 101u, 84u };
-static const uint32_t m9s151[7] = { 105u, 110u, 116u, 54u, 52u, 95u, 116u };
-static const uint32_t m9s152[8] = { 67u, 111u, 110u, 115u, 116u, 80u, 116u, 114u };
-static const uint32_t m9s153[12] = { 99u, 111u, 110u, 115u, 116u, 32u, 118u, 111u, 105u, 100u, 32u, 42u };
-static const uint32_t m9s154[6] = { 77u, 117u, 116u, 80u, 116u, 114u };
-static const uint32_t m9s155[6] = { 118u, 111u, 105u, 100u, 32u, 42u };
-static const uint32_t m9s156[6] = { 68u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s157[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s158[5] = { 70u, 108u, 111u, 97u, 116u };
-static const uint32_t m9s159[5] = { 102u, 108u, 111u, 97u, 116u };
-static const uint32_t m9s160[10] = { 76u, 111u, 110u, 103u, 68u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s161[11] = { 108u, 111u, 110u, 103u, 32u, 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s162[2] = { 73u, 56u };
-static const uint32_t m9s163[6] = { 105u, 110u, 116u, 56u, 95u, 116u };
-static const uint32_t m9s164[3] = { 73u, 49u, 54u };
-static const uint32_t m9s165[7] = { 105u, 110u, 116u, 49u, 54u, 95u, 116u };
-static const uint32_t m9s166[3] = { 73u, 51u, 50u };
-static const uint32_t m9s167[7] = { 105u, 110u, 116u, 51u, 50u, 95u, 116u };
-static const uint32_t m9s168[3] = { 73u, 54u, 52u };
-static const uint32_t m9s169[7] = { 105u, 110u, 116u, 54u, 52u, 95u, 116u };
-static const uint32_t m9s170[2] = { 85u, 56u };
-static const uint32_t m9s171[7] = { 117u, 105u, 110u, 116u, 56u, 95u, 116u };
-static const uint32_t m9s172[3] = { 85u, 49u, 54u };
-static const uint32_t m9s173[8] = { 117u, 105u, 110u, 116u, 49u, 54u, 95u, 116u };
-static const uint32_t m9s174[3] = { 85u, 51u, 50u };
-static const uint32_t m9s175[8] = { 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u };
-static const uint32_t m9s176[3] = { 85u, 54u, 52u };
-static const uint32_t m9s177[8] = { 117u, 105u, 110u, 116u, 54u, 52u, 95u, 116u };
-static const uint32_t m9s178[3] = { 70u, 51u, 50u };
-static const uint32_t m9s179[5] = { 102u, 108u, 111u, 97u, 116u };
-static const uint32_t m9s180[3] = { 70u, 54u, 52u };
-static const uint32_t m9s181[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s182[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s183[7] = { 117u, 105u, 110u, 116u, 56u, 95u, 116u };
-static const uint32_t m9s184[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s185[4] = { 98u, 111u, 111u, 108u };
-static const uint32_t m9s186[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s187[8] = { 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u };
-static const uint32_t m9s188[3] = { 83u, 84u, 82u };
-static const uint32_t m9s189[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s190[1] = { 67u };
-static const uint32_t m9s191[1] = { 46u };
-static const uint32_t m9s192[1] = { 46u };
+static const uint32_t m9s146[1] = { 95u };
+static const uint32_t m9s147[1] = { 95u };
+static const uint32_t m9s148[3] = { 73u, 110u, 116u };
+static const uint32_t m9s149[3] = { 105u, 110u, 116u };
+static const uint32_t m9s150[5] = { 83u, 105u, 122u, 101u, 84u };
+static const uint32_t m9s151[6] = { 115u, 105u, 122u, 101u, 95u, 116u };
+static const uint32_t m9s152[6] = { 83u, 83u, 105u, 122u, 101u, 84u };
+static const uint32_t m9s153[7] = { 105u, 110u, 116u, 54u, 52u, 95u, 116u };
+static const uint32_t m9s154[8] = { 67u, 111u, 110u, 115u, 116u, 80u, 116u, 114u };
+static const uint32_t m9s155[12] = { 99u, 111u, 110u, 115u, 116u, 32u, 118u, 111u, 105u, 100u, 32u, 42u };
+static const uint32_t m9s156[6] = { 77u, 117u, 116u, 80u, 116u, 114u };
+static const uint32_t m9s157[6] = { 118u, 111u, 105u, 100u, 32u, 42u };
+static const uint32_t m9s158[6] = { 68u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s159[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s160[5] = { 70u, 108u, 111u, 97u, 116u };
+static const uint32_t m9s161[5] = { 102u, 108u, 111u, 97u, 116u };
+static const uint32_t m9s162[10] = { 76u, 111u, 110u, 103u, 68u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s163[11] = { 108u, 111u, 110u, 103u, 32u, 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s164[2] = { 73u, 56u };
+static const uint32_t m9s165[6] = { 105u, 110u, 116u, 56u, 95u, 116u };
+static const uint32_t m9s166[3] = { 73u, 49u, 54u };
+static const uint32_t m9s167[7] = { 105u, 110u, 116u, 49u, 54u, 95u, 116u };
+static const uint32_t m9s168[3] = { 73u, 51u, 50u };
+static const uint32_t m9s169[7] = { 105u, 110u, 116u, 51u, 50u, 95u, 116u };
+static const uint32_t m9s170[3] = { 73u, 54u, 52u };
+static const uint32_t m9s171[7] = { 105u, 110u, 116u, 54u, 52u, 95u, 116u };
+static const uint32_t m9s172[2] = { 85u, 56u };
+static const uint32_t m9s173[7] = { 117u, 105u, 110u, 116u, 56u, 95u, 116u };
+static const uint32_t m9s174[3] = { 85u, 49u, 54u };
+static const uint32_t m9s175[8] = { 117u, 105u, 110u, 116u, 49u, 54u, 95u, 116u };
+static const uint32_t m9s176[3] = { 85u, 51u, 50u };
+static const uint32_t m9s177[8] = { 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u };
+static const uint32_t m9s178[3] = { 85u, 54u, 52u };
+static const uint32_t m9s179[8] = { 117u, 105u, 110u, 116u, 54u, 52u, 95u, 116u };
+static const uint32_t m9s180[3] = { 70u, 51u, 50u };
+static const uint32_t m9s181[5] = { 102u, 108u, 111u, 97u, 116u };
+static const uint32_t m9s182[3] = { 70u, 54u, 52u };
+static const uint32_t m9s183[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s184[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s185[7] = { 117u, 105u, 110u, 116u, 56u, 95u, 116u };
+static const uint32_t m9s186[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s187[4] = { 98u, 111u, 111u, 108u };
+static const uint32_t m9s188[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s189[8] = { 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u };
+static const uint32_t m9s190[3] = { 83u, 84u, 82u };
+static const uint32_t m9s191[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s192[1] = { 67u };
 static const uint32_t m9s193[1] = { 46u };
-static const uint32_t m9s194[32] = { 97u, 114u, 114u, 97u, 121u, 32u, 99u, 111u, 117u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s195[1] = { 48u };
-static const uint32_t m9s196[19] = { 97u, 114u, 114u, 97u, 121u, 32u, 99u, 111u, 117u, 110u, 116u, 32u, 109u, 105u, 115u, 115u, 105u, 110u, 103u };
+static const uint32_t m9s194[1] = { 46u };
+static const uint32_t m9s195[1] = { 46u };
+static const uint32_t m9s196[32] = { 97u, 114u, 114u, 97u, 121u, 32u, 99u, 111u, 117u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
 static const uint32_t m9s197[1] = { 48u };
-static const uint32_t m9s198[1] = { 46u };
-static const uint32_t m9s199[1] = { 45u };
-static const uint32_t m9s200[1] = { 43u };
+static const uint32_t m9s198[19] = { 97u, 114u, 114u, 97u, 121u, 32u, 99u, 111u, 117u, 110u, 116u, 32u, 109u, 105u, 115u, 115u, 105u, 110u, 103u };
+static const uint32_t m9s199[1] = { 48u };
+static const uint32_t m9s200[1] = { 46u };
 static const uint32_t m9s201[1] = { 45u };
-static const uint32_t m9s202[1] = { 42u };
-static const uint32_t m9s203[1] = { 47u };
-static const uint32_t m9s204[1] = { 45u };
-static const uint32_t m9s205[1] = { 48u };
-static const uint32_t m9s206[6] = { 109u, 57u, 95u, 115u, 108u, 95u };
-static const uint32_t m9s207[6] = { 109u, 57u, 95u, 115u, 108u, 95u };
-static const uint32_t m9s208[13] = { 35u, 105u, 102u, 110u, 100u, 101u, 102u, 32u, 77u, 57u, 83u, 76u, 95u };
-static const uint32_t m9s209[13] = { 35u, 100u, 101u, 102u, 105u, 110u, 101u, 32u, 77u, 57u, 83u, 76u, 95u };
-static const uint32_t m9s210[17] = { 116u, 121u, 112u, 101u, 100u, 101u, 102u, 32u, 115u, 116u, 114u, 117u, 99u, 116u, 32u, 123u, 32u };
-static const uint32_t m9s211[20] = { 32u, 42u, 112u, 59u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u, 108u, 101u, 110u, 59u, 32u, 125u, 32u };
-static const uint32_t m9s212[1] = { 59u };
-static const uint32_t m9s213[6] = { 35u, 101u, 110u, 100u, 105u, 102u };
-static const uint32_t m9s214[3] = { 67u, 82u, 58u };
-static const uint32_t m9s215[1] = { 46u };
+static const uint32_t m9s202[1] = { 43u };
+static const uint32_t m9s203[1] = { 45u };
+static const uint32_t m9s204[1] = { 42u };
+static const uint32_t m9s205[1] = { 47u };
+static const uint32_t m9s206[1] = { 45u };
+static const uint32_t m9s207[1] = { 48u };
+static const uint32_t m9s208[6] = { 109u, 57u, 95u, 115u, 108u, 95u };
+static const uint32_t m9s209[6] = { 109u, 57u, 95u, 115u, 108u, 95u };
+static const uint32_t m9s210[13] = { 35u, 105u, 102u, 110u, 100u, 101u, 102u, 32u, 77u, 57u, 83u, 76u, 95u };
+static const uint32_t m9s211[13] = { 35u, 100u, 101u, 102u, 105u, 110u, 101u, 32u, 77u, 57u, 83u, 76u, 95u };
+static const uint32_t m9s212[17] = { 116u, 121u, 112u, 101u, 100u, 101u, 102u, 32u, 115u, 116u, 114u, 117u, 99u, 116u, 32u, 123u, 32u };
+static const uint32_t m9s213[20] = { 32u, 42u, 112u, 59u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u, 108u, 101u, 110u, 59u, 32u, 125u, 32u };
+static const uint32_t m9s214[1] = { 59u };
+static const uint32_t m9s215[6] = { 35u, 101u, 110u, 100u, 105u, 102u };
 static const uint32_t m9s216[3] = { 67u, 82u, 58u };
 static const uint32_t m9s217[1] = { 46u };
-static const uint32_t m9s218[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s219[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s220[1] = { 63u };
-static const uint32_t m9s221[3] = { 80u, 84u, 82u };
-static const uint32_t m9s222[6] = { 83u, 72u, 65u, 82u, 69u, 68u };
-static const uint32_t m9s223[6] = { 79u, 80u, 84u, 80u, 84u, 82u };
-static const uint32_t m9s224[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s225[4] = { 71u, 82u, 73u, 68u };
-static const uint32_t m9s226[3] = { 65u, 82u, 82u };
-static const uint32_t m9s227[3] = { 82u, 69u, 67u };
-static const uint32_t m9s228[3] = { 82u, 69u, 67u };
-static const uint32_t m9s229[4] = { 80u, 82u, 79u, 67u };
-static const uint32_t m9s230[1] = { 63u };
-static const uint32_t m9s231[1] = { 63u };
-static const uint32_t m9s232[1] = { 67u };
-static const uint32_t m9s233[18] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 67u, 32u, 116u, 121u, 112u, 101u, 58u, 32u, 67u, 46u };
-static const uint32_t m9s234[1] = { 46u };
-static const uint32_t m9s235[1] = { 95u };
-static const uint32_t m9s236[1] = { 95u };
-static const uint32_t m9s237[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s238[1] = { 46u };
-static const uint32_t m9s239[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s240[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s241[7] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s242[3] = { 83u, 84u, 82u };
-static const uint32_t m9s243[1] = { 95u };
-static const uint32_t m9s244[1] = { 95u };
+static const uint32_t m9s218[3] = { 67u, 82u, 58u };
+static const uint32_t m9s219[1] = { 46u };
+static const uint32_t m9s220[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s221[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s222[1] = { 63u };
+static const uint32_t m9s223[3] = { 80u, 84u, 82u };
+static const uint32_t m9s224[6] = { 83u, 72u, 65u, 82u, 69u, 68u };
+static const uint32_t m9s225[6] = { 79u, 80u, 84u, 80u, 84u, 82u };
+static const uint32_t m9s226[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s227[4] = { 71u, 82u, 73u, 68u };
+static const uint32_t m9s228[3] = { 65u, 82u, 82u };
+static const uint32_t m9s229[3] = { 82u, 69u, 67u };
+static const uint32_t m9s230[3] = { 82u, 69u, 67u };
+static const uint32_t m9s231[4] = { 80u, 82u, 79u, 67u };
+static const uint32_t m9s232[1] = { 63u };
+static const uint32_t m9s233[1] = { 63u };
+static const uint32_t m9s234[1] = { 67u };
+static const uint32_t m9s235[18] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 67u, 32u, 116u, 121u, 112u, 101u, 58u, 32u, 67u, 46u };
+static const uint32_t m9s236[1] = { 46u };
+static const uint32_t m9s237[1] = { 95u };
+static const uint32_t m9s238[1] = { 95u };
+static const uint32_t m9s239[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
+static const uint32_t m9s240[1] = { 46u };
+static const uint32_t m9s241[4] = { 118u, 111u, 105u, 100u };
+static const uint32_t m9s242[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s243[7] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s244[3] = { 83u, 84u, 82u };
 static const uint32_t m9s245[1] = { 95u };
-static const uint32_t m9s246[2] = { 32u, 42u };
-static const uint32_t m9s247[2] = { 32u, 42u };
-static const uint32_t m9s248[44] = { 100u, 101u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u, 32u, 111u, 102u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s249[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s250[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s251[7] = { 109u, 57u, 95u, 97u, 114u, 114u, 95u };
-static const uint32_t m9s252[13] = { 35u, 105u, 102u, 110u, 100u, 101u, 102u, 32u, 77u, 57u, 83u, 76u, 95u };
-static const uint32_t m9s253[13] = { 35u, 100u, 101u, 102u, 105u, 110u, 101u, 32u, 77u, 57u, 83u, 76u, 95u };
-static const uint32_t m9s254[17] = { 116u, 121u, 112u, 101u, 100u, 101u, 102u, 32u, 115u, 116u, 114u, 117u, 99u, 116u, 32u, 123u, 32u };
-static const uint32_t m9s255[3] = { 32u, 118u, 91u };
-static const uint32_t m9s256[5] = { 93u, 59u, 32u, 125u, 32u };
-static const uint32_t m9s257[1] = { 59u };
-static const uint32_t m9s258[6] = { 35u, 101u, 110u, 100u, 105u, 102u };
-static const uint32_t m9s259[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s260[25] = { 116u, 121u, 112u, 101u, 32u, 107u, 105u, 110u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s246[1] = { 95u };
+static const uint32_t m9s247[1] = { 95u };
+static const uint32_t m9s248[2] = { 32u, 42u };
+static const uint32_t m9s249[2] = { 32u, 42u };
+static const uint32_t m9s250[44] = { 100u, 101u, 114u, 101u, 102u, 101u, 114u, 101u, 110u, 99u, 101u, 32u, 111u, 102u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s251[4] = { 118u, 111u, 105u, 100u };
+static const uint32_t m9s252[4] = { 118u, 111u, 105u, 100u };
+static const uint32_t m9s253[7] = { 109u, 57u, 95u, 97u, 114u, 114u, 95u };
+static const uint32_t m9s254[13] = { 35u, 105u, 102u, 110u, 100u, 101u, 102u, 32u, 77u, 57u, 83u, 76u, 95u };
+static const uint32_t m9s255[13] = { 35u, 100u, 101u, 102u, 105u, 110u, 101u, 32u, 77u, 57u, 83u, 76u, 95u };
+static const uint32_t m9s256[17] = { 116u, 121u, 112u, 101u, 100u, 101u, 102u, 32u, 115u, 116u, 114u, 117u, 99u, 116u, 32u, 123u, 32u };
+static const uint32_t m9s257[3] = { 32u, 118u, 91u };
+static const uint32_t m9s258[5] = { 93u, 59u, 32u, 125u, 32u };
+static const uint32_t m9s259[1] = { 59u };
+static const uint32_t m9s260[6] = { 35u, 101u, 110u, 100u, 105u, 102u };
 static const uint32_t m9s261[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s262[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s263[5] = { 109u, 57u, 95u, 103u, 100u };
-static const uint32_t m9s264[13] = { 35u, 105u, 102u, 110u, 100u, 101u, 102u, 32u, 77u, 57u, 83u, 76u, 95u };
-static const uint32_t m9s265[13] = { 35u, 100u, 101u, 102u, 105u, 110u, 101u, 32u, 77u, 57u, 83u, 76u, 95u };
-static const uint32_t m9s266[11] = { 77u, 57u, 95u, 71u, 82u, 73u, 68u, 95u, 84u, 32u, 40u };
-static const uint32_t m9s267[2] = { 44u, 32u };
-static const uint32_t m9s268[2] = { 44u, 32u };
-static const uint32_t m9s269[1] = { 41u };
-static const uint32_t m9s270[6] = { 35u, 101u, 110u, 100u, 105u, 102u };
-static const uint32_t m9s271[2] = { 73u, 56u };
-static const uint32_t m9s272[2] = { 105u, 56u };
-static const uint32_t m9s273[3] = { 73u, 49u, 54u };
-static const uint32_t m9s274[3] = { 105u, 49u, 54u };
-static const uint32_t m9s275[3] = { 73u, 51u, 50u };
-static const uint32_t m9s276[3] = { 105u, 51u, 50u };
-static const uint32_t m9s277[2] = { 85u, 56u };
-static const uint32_t m9s278[2] = { 117u, 56u };
-static const uint32_t m9s279[3] = { 85u, 49u, 54u };
-static const uint32_t m9s280[3] = { 117u, 49u, 54u };
-static const uint32_t m9s281[3] = { 85u, 51u, 50u };
-static const uint32_t m9s282[3] = { 117u, 51u, 50u };
-static const uint32_t m9s283[3] = { 85u, 54u, 52u };
-static const uint32_t m9s284[3] = { 117u, 54u, 52u };
-static const uint32_t m9s285[3] = { 105u, 54u, 52u };
-static const uint32_t m9s286[2] = { 73u, 56u };
-static const uint32_t m9s287[2] = { 105u, 56u };
-static const uint32_t m9s288[3] = { 73u, 49u, 54u };
-static const uint32_t m9s289[3] = { 105u, 49u, 54u };
-static const uint32_t m9s290[3] = { 73u, 51u, 50u };
-static const uint32_t m9s291[3] = { 105u, 51u, 50u };
-static const uint32_t m9s292[2] = { 85u, 56u };
-static const uint32_t m9s293[2] = { 117u, 56u };
-static const uint32_t m9s294[3] = { 85u, 49u, 54u };
-static const uint32_t m9s295[3] = { 117u, 49u, 54u };
-static const uint32_t m9s296[3] = { 85u, 51u, 50u };
-static const uint32_t m9s297[3] = { 117u, 51u, 50u };
-static const uint32_t m9s298[3] = { 85u, 54u, 52u };
-static const uint32_t m9s299[3] = { 117u, 54u, 52u };
-static const uint32_t m9s300[3] = { 65u, 76u, 76u };
-static const uint32_t m9s301[1] = { 95u };
-static const uint32_t m9s302[1] = { 95u };
-static const uint32_t m9s303[1] = { 108u };
-static const uint32_t m9s304[1] = { 118u };
-static const uint32_t m9s305[3] = { 83u, 84u, 82u };
-static const uint32_t m9s306[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s307[3] = { 79u, 87u, 78u };
-static const uint32_t m9s308[3] = { 111u, 119u, 110u };
-static const uint32_t m9s309[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s310[4] = { 112u, 111u, 111u, 108u };
-static const uint32_t m9s311[5] = { 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s312[5] = { 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s313[23] = { 109u, 57u, 95u, 97u, 100u, 111u, 112u, 116u, 95u, 105u, 102u, 32u, 40u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 44u, 32u };
-static const uint32_t m9s314[2] = { 44u, 32u };
-static const uint32_t m9s315[2] = { 41u, 59u };
-static const uint32_t m9s316[23] = { 109u, 57u, 95u, 97u, 100u, 111u, 112u, 116u, 95u, 105u, 102u, 32u, 40u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 44u, 32u };
-static const uint32_t m9s317[2] = { 44u, 32u };
-static const uint32_t m9s318[2] = { 41u, 59u };
-static const uint32_t m9s319[23] = { 109u, 57u, 95u, 97u, 100u, 111u, 112u, 116u, 95u, 105u, 102u, 32u, 40u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 44u, 32u };
-static const uint32_t m9s320[2] = { 44u, 32u };
-static const uint32_t m9s321[4] = { 46u, 112u, 41u, 59u };
-static const uint32_t m9s322[23] = { 109u, 57u, 95u, 97u, 100u, 111u, 112u, 116u, 95u, 105u, 102u, 32u, 40u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 44u, 32u };
-static const uint32_t m9s323[2] = { 44u, 32u };
-static const uint32_t m9s324[4] = { 46u, 112u, 41u, 59u };
-static const uint32_t m9s325[3] = { 109u, 57u, 107u };
-static const uint32_t m9s326[13] = { 102u, 111u, 114u, 32u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
-static const uint32_t m9s327[6] = { 32u, 61u, 32u, 48u, 59u, 32u };
-static const uint32_t m9s328[3] = { 32u, 60u, 32u };
-static const uint32_t m9s329[2] = { 59u, 32u };
-static const uint32_t m9s330[5] = { 43u, 43u, 41u, 32u, 123u };
-static const uint32_t m9s331[3] = { 46u, 118u, 91u };
-static const uint32_t m9s332[1] = { 93u };
-static const uint32_t m9s333[1] = { 125u };
-static const uint32_t m9s334[1] = { 46u };
-static const uint32_t m9s335[1] = { 46u };
-static const uint32_t m9s336[3] = { 46u, 117u, 46u };
+static const uint32_t m9s262[25] = { 116u, 121u, 112u, 101u, 32u, 107u, 105u, 110u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s263[4] = { 118u, 111u, 105u, 100u };
+static const uint32_t m9s264[4] = { 118u, 111u, 105u, 100u };
+static const uint32_t m9s265[5] = { 109u, 57u, 95u, 103u, 100u };
+static const uint32_t m9s266[13] = { 35u, 105u, 102u, 110u, 100u, 101u, 102u, 32u, 77u, 57u, 83u, 76u, 95u };
+static const uint32_t m9s267[13] = { 35u, 100u, 101u, 102u, 105u, 110u, 101u, 32u, 77u, 57u, 83u, 76u, 95u };
+static const uint32_t m9s268[11] = { 77u, 57u, 95u, 71u, 82u, 73u, 68u, 95u, 84u, 32u, 40u };
+static const uint32_t m9s269[2] = { 44u, 32u };
+static const uint32_t m9s270[2] = { 44u, 32u };
+static const uint32_t m9s271[1] = { 41u };
+static const uint32_t m9s272[6] = { 35u, 101u, 110u, 100u, 105u, 102u };
+static const uint32_t m9s273[2] = { 73u, 56u };
+static const uint32_t m9s274[2] = { 105u, 56u };
+static const uint32_t m9s275[3] = { 73u, 49u, 54u };
+static const uint32_t m9s276[3] = { 105u, 49u, 54u };
+static const uint32_t m9s277[3] = { 73u, 51u, 50u };
+static const uint32_t m9s278[3] = { 105u, 51u, 50u };
+static const uint32_t m9s279[2] = { 85u, 56u };
+static const uint32_t m9s280[2] = { 117u, 56u };
+static const uint32_t m9s281[3] = { 85u, 49u, 54u };
+static const uint32_t m9s282[3] = { 117u, 49u, 54u };
+static const uint32_t m9s283[3] = { 85u, 51u, 50u };
+static const uint32_t m9s284[3] = { 117u, 51u, 50u };
+static const uint32_t m9s285[3] = { 85u, 54u, 52u };
+static const uint32_t m9s286[3] = { 117u, 54u, 52u };
+static const uint32_t m9s287[3] = { 105u, 54u, 52u };
+static const uint32_t m9s288[2] = { 73u, 56u };
+static const uint32_t m9s289[2] = { 105u, 56u };
+static const uint32_t m9s290[3] = { 73u, 49u, 54u };
+static const uint32_t m9s291[3] = { 105u, 49u, 54u };
+static const uint32_t m9s292[3] = { 73u, 51u, 50u };
+static const uint32_t m9s293[3] = { 105u, 51u, 50u };
+static const uint32_t m9s294[2] = { 85u, 56u };
+static const uint32_t m9s295[2] = { 117u, 56u };
+static const uint32_t m9s296[3] = { 85u, 49u, 54u };
+static const uint32_t m9s297[3] = { 117u, 49u, 54u };
+static const uint32_t m9s298[3] = { 85u, 51u, 50u };
+static const uint32_t m9s299[3] = { 117u, 51u, 50u };
+static const uint32_t m9s300[3] = { 85u, 54u, 52u };
+static const uint32_t m9s301[3] = { 117u, 54u, 52u };
+static const uint32_t m9s302[3] = { 65u, 76u, 76u };
+static const uint32_t m9s303[1] = { 95u };
+static const uint32_t m9s304[1] = { 95u };
+static const uint32_t m9s305[1] = { 108u };
+static const uint32_t m9s306[1] = { 118u };
+static const uint32_t m9s307[3] = { 83u, 84u, 82u };
+static const uint32_t m9s308[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s309[3] = { 79u, 87u, 78u };
+static const uint32_t m9s310[3] = { 111u, 119u, 110u };
+static const uint32_t m9s311[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s312[4] = { 112u, 111u, 111u, 108u };
+static const uint32_t m9s313[5] = { 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s314[5] = { 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s315[23] = { 109u, 57u, 95u, 97u, 100u, 111u, 112u, 116u, 95u, 105u, 102u, 32u, 40u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 44u, 32u };
+static const uint32_t m9s316[2] = { 44u, 32u };
+static const uint32_t m9s317[2] = { 41u, 59u };
+static const uint32_t m9s318[23] = { 109u, 57u, 95u, 97u, 100u, 111u, 112u, 116u, 95u, 105u, 102u, 32u, 40u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 44u, 32u };
+static const uint32_t m9s319[2] = { 44u, 32u };
+static const uint32_t m9s320[2] = { 41u, 59u };
+static const uint32_t m9s321[23] = { 109u, 57u, 95u, 97u, 100u, 111u, 112u, 116u, 95u, 105u, 102u, 32u, 40u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 44u, 32u };
+static const uint32_t m9s322[2] = { 44u, 32u };
+static const uint32_t m9s323[4] = { 46u, 112u, 41u, 59u };
+static const uint32_t m9s324[23] = { 109u, 57u, 95u, 97u, 100u, 111u, 112u, 116u, 95u, 105u, 102u, 32u, 40u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 44u, 32u };
+static const uint32_t m9s325[2] = { 44u, 32u };
+static const uint32_t m9s326[4] = { 46u, 112u, 41u, 59u };
+static const uint32_t m9s327[3] = { 109u, 57u, 107u };
+static const uint32_t m9s328[13] = { 102u, 111u, 114u, 32u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
+static const uint32_t m9s329[6] = { 32u, 61u, 32u, 48u, 59u, 32u };
+static const uint32_t m9s330[3] = { 32u, 60u, 32u };
+static const uint32_t m9s331[2] = { 59u, 32u };
+static const uint32_t m9s332[5] = { 43u, 43u, 41u, 32u, 123u };
+static const uint32_t m9s333[3] = { 46u, 118u, 91u };
+static const uint32_t m9s334[1] = { 93u };
+static const uint32_t m9s335[1] = { 125u };
+static const uint32_t m9s336[1] = { 46u };
 static const uint32_t m9s337[1] = { 46u };
-static const uint32_t m9s338[40] = { 110u, 111u, 110u, 45u, 65u, 83u, 67u, 73u, 73u, 32u, 115u, 116u, 114u, 105u, 110u, 103u, 32u, 108u, 105u, 116u, 101u, 114u, 97u, 108u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s339[2] = { 44u, 32u };
-static const uint32_t m9s340[1] = { 46u };
-static const uint32_t m9s341[3] = { 73u, 54u, 52u };
-static const uint32_t m9s342[3] = { 70u, 54u, 52u };
-static const uint32_t m9s343[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s344[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s345[1] = { 118u };
-static const uint32_t m9s346[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s347[1] = { 41u };
-static const uint32_t m9s348[1] = { 40u };
-static const uint32_t m9s349[1] = { 41u };
-static const uint32_t m9s350[1] = { 117u };
-static const uint32_t m9s351[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s352[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s353[15] = { 123u, 32u, 40u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u, 42u, 41u, 32u };
-static const uint32_t m9s354[2] = { 44u, 32u };
-static const uint32_t m9s355[2] = { 32u, 125u };
-static const uint32_t m9s356[8] = { 123u, 32u, 48u, 44u, 32u, 48u, 32u, 125u };
-static const uint32_t m9s357[9] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u, 45u };
-static const uint32_t m9s358[1] = { 41u };
-static const uint32_t m9s359[2] = { 40u, 45u };
-static const uint32_t m9s360[1] = { 41u };
-static const uint32_t m9s361[35] = { 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u, 58u, 32u };
-static const uint32_t m9s362[1] = { 48u };
-static const uint32_t m9s363[22] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 99u, 111u, 110u, 115u, 116u, 32u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u };
-static const uint32_t m9s364[1] = { 91u };
-static const uint32_t m9s365[6] = { 93u, 32u, 61u, 32u, 123u, 32u };
-static const uint32_t m9s366[3] = { 32u, 125u, 59u };
-static const uint32_t m9s367[1] = { 95u };
-static const uint32_t m9s368[2] = { 123u, 32u };
-static const uint32_t m9s369[2] = { 44u, 32u };
-static const uint32_t m9s370[1] = { 95u };
-static const uint32_t m9s371[2] = { 32u, 125u };
-static const uint32_t m9s372[3] = { 95u, 115u, 48u };
-static const uint32_t m9s373[13] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
-static const uint32_t m9s374[1] = { 32u };
-static const uint32_t m9s375[5] = { 95u, 107u, 32u, 61u, 32u };
-static const uint32_t m9s376[3] = { 95u, 115u, 48u };
-static const uint32_t m9s377[1] = { 59u };
-static const uint32_t m9s378[7] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u };
-static const uint32_t m9s379[9] = { 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
-static const uint32_t m9s380[4] = { 32u, 61u, 32u, 40u };
-static const uint32_t m9s381[5] = { 32u, 42u, 41u, 32u, 38u };
-static const uint32_t m9s382[3] = { 95u, 107u, 59u };
-static const uint32_t m9s383[2] = { 95u, 115u };
+static const uint32_t m9s338[3] = { 46u, 117u, 46u };
+static const uint32_t m9s339[1] = { 46u };
+static const uint32_t m9s340[2] = { 44u, 32u };
+static const uint32_t m9s341[1] = { 46u };
+static const uint32_t m9s342[3] = { 73u, 54u, 52u };
+static const uint32_t m9s343[3] = { 70u, 54u, 52u };
+static const uint32_t m9s344[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s345[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s346[1] = { 118u };
+static const uint32_t m9s347[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s348[1] = { 41u };
+static const uint32_t m9s349[1] = { 40u };
+static const uint32_t m9s350[1] = { 41u };
+static const uint32_t m9s351[1] = { 117u };
+static const uint32_t m9s352[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s353[5] = { 102u, 97u, 108u, 115u, 101u };
+static const uint32_t m9s354[15] = { 123u, 32u, 40u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u, 42u, 41u, 32u };
+static const uint32_t m9s355[2] = { 44u, 32u };
+static const uint32_t m9s356[2] = { 32u, 125u };
+static const uint32_t m9s357[8] = { 123u, 32u, 48u, 44u, 32u, 48u, 32u, 125u };
+static const uint32_t m9s358[9] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u, 45u };
+static const uint32_t m9s359[1] = { 41u };
+static const uint32_t m9s360[2] = { 40u, 45u };
+static const uint32_t m9s361[1] = { 41u };
+static const uint32_t m9s362[35] = { 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 101u, 108u, 101u, 109u, 101u, 110u, 116u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u, 58u, 32u };
+static const uint32_t m9s363[1] = { 48u };
+static const uint32_t m9s364[22] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 99u, 111u, 110u, 115u, 116u, 32u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u };
+static const uint32_t m9s365[1] = { 91u };
+static const uint32_t m9s366[6] = { 93u, 32u, 61u, 32u, 123u, 32u };
+static const uint32_t m9s367[3] = { 32u, 125u, 59u };
+static const uint32_t m9s368[1] = { 95u };
+static const uint32_t m9s369[2] = { 123u, 32u };
+static const uint32_t m9s370[2] = { 44u, 32u };
+static const uint32_t m9s371[1] = { 95u };
+static const uint32_t m9s372[2] = { 32u, 125u };
+static const uint32_t m9s373[3] = { 95u, 115u, 48u };
+static const uint32_t m9s374[13] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
+static const uint32_t m9s375[1] = { 32u };
+static const uint32_t m9s376[5] = { 95u, 107u, 32u, 61u, 32u };
+static const uint32_t m9s377[3] = { 95u, 115u, 48u };
+static const uint32_t m9s378[1] = { 59u };
+static const uint32_t m9s379[7] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u };
+static const uint32_t m9s380[9] = { 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
+static const uint32_t m9s381[4] = { 32u, 61u, 32u, 40u };
+static const uint32_t m9s382[5] = { 32u, 42u, 41u, 32u, 38u };
+static const uint32_t m9s383[3] = { 95u, 107u, 59u };
 static const uint32_t m9s384[2] = { 95u, 115u };
-static const uint32_t m9s385[13] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
-static const uint32_t m9s386[1] = { 32u };
-static const uint32_t m9s387[8] = { 95u, 107u, 32u, 61u, 32u, 123u, 32u, 123u };
-static const uint32_t m9s388[1] = { 48u };
-static const uint32_t m9s389[2] = { 95u, 115u };
+static const uint32_t m9s385[2] = { 95u, 115u };
+static const uint32_t m9s386[13] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
+static const uint32_t m9s387[1] = { 32u };
+static const uint32_t m9s388[8] = { 95u, 107u, 32u, 61u, 32u, 123u, 32u, 123u };
+static const uint32_t m9s389[1] = { 48u };
 static const uint32_t m9s390[2] = { 95u, 115u };
-static const uint32_t m9s391[1] = { 44u };
-static const uint32_t m9s392[4] = { 125u, 32u, 125u, 59u };
-static const uint32_t m9s393[7] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u };
-static const uint32_t m9s394[9] = { 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
-static const uint32_t m9s395[4] = { 32u, 61u, 32u, 40u };
-static const uint32_t m9s396[5] = { 32u, 42u, 41u, 32u, 38u };
-static const uint32_t m9s397[3] = { 95u, 107u, 59u };
-static const uint32_t m9s398[3] = { 78u, 97u, 78u };
-static const uint32_t m9s399[3] = { 78u, 65u, 78u };
-static const uint32_t m9s400[1] = { 46u };
+static const uint32_t m9s391[2] = { 95u, 115u };
+static const uint32_t m9s392[1] = { 44u };
+static const uint32_t m9s393[4] = { 125u, 32u, 125u, 59u };
+static const uint32_t m9s394[7] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u };
+static const uint32_t m9s395[9] = { 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
+static const uint32_t m9s396[4] = { 32u, 61u, 32u, 40u };
+static const uint32_t m9s397[5] = { 32u, 42u, 41u, 32u, 38u };
+static const uint32_t m9s398[3] = { 95u, 107u, 59u };
+static const uint32_t m9s399[3] = { 78u, 97u, 78u };
+static const uint32_t m9s400[3] = { 78u, 65u, 78u };
 static const uint32_t m9s401[1] = { 46u };
 static const uint32_t m9s402[1] = { 46u };
 static const uint32_t m9s403[1] = { 46u };
-static const uint32_t m9s404[1] = { 63u };
-static const uint32_t m9s405[1] = { 95u };
-static const uint32_t m9s406[22] = { 40u, 42u, 40u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u, 42u, 41u, 32u, 109u, 57u, 95u, 97u, 116u, 32u, 40u };
-static const uint32_t m9s407[4] = { 46u, 112u, 44u, 32u };
-static const uint32_t m9s408[2] = { 44u, 32u };
-static const uint32_t m9s409[30] = { 46u, 108u, 101u, 110u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 41u, 44u, 32u, 101u, 114u, 114u, 41u, 41u };
-static const uint32_t m9s410[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s411[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s412[1] = { 46u };
-static const uint32_t m9s413[1] = { 95u };
-static const uint32_t m9s414[4] = { 80u, 82u, 79u, 67u };
-static const uint32_t m9s415[1] = { 95u };
-static const uint32_t m9s416[1] = { 46u };
-static const uint32_t m9s417[4] = { 80u, 82u, 79u, 67u };
-static const uint32_t m9s418[1] = { 95u };
-static const uint32_t m9s419[3] = { 67u, 82u, 58u };
-static const uint32_t m9s420[2] = { 40u, 40u };
-static const uint32_t m9s421[1] = { 95u };
-static const uint32_t m9s422[10] = { 41u, 123u, 32u, 46u, 116u, 97u, 103u, 32u, 61u, 32u };
-static const uint32_t m9s423[1] = { 95u };
+static const uint32_t m9s404[1] = { 46u };
+static const uint32_t m9s405[1] = { 63u };
+static const uint32_t m9s406[1] = { 95u };
+static const uint32_t m9s407[22] = { 40u, 42u, 40u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u, 42u, 41u, 32u, 109u, 57u, 95u, 97u, 116u, 32u, 40u };
+static const uint32_t m9s408[4] = { 46u, 112u, 44u, 32u };
+static const uint32_t m9s409[2] = { 44u, 32u };
+static const uint32_t m9s410[30] = { 46u, 108u, 101u, 110u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 41u, 44u, 32u, 101u, 114u, 114u, 41u, 41u };
+static const uint32_t m9s411[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s412[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s413[1] = { 46u };
+static const uint32_t m9s414[1] = { 95u };
+static const uint32_t m9s415[4] = { 80u, 82u, 79u, 67u };
+static const uint32_t m9s416[1] = { 95u };
+static const uint32_t m9s417[1] = { 46u };
+static const uint32_t m9s418[4] = { 80u, 82u, 79u, 67u };
+static const uint32_t m9s419[1] = { 95u };
+static const uint32_t m9s420[3] = { 67u, 82u, 58u };
+static const uint32_t m9s421[2] = { 40u, 40u };
+static const uint32_t m9s422[1] = { 95u };
+static const uint32_t m9s423[10] = { 41u, 123u, 32u, 46u, 116u, 97u, 103u, 32u, 61u, 32u };
 static const uint32_t m9s424[1] = { 95u };
-static const uint32_t m9s425[3] = { 32u, 125u, 41u };
-static const uint32_t m9s426[1] = { 46u };
-static const uint32_t m9s427[3] = { 67u, 82u, 58u };
-static const uint32_t m9s428[1] = { 46u };
-static const uint32_t m9s429[2] = { 40u, 40u };
-static const uint32_t m9s430[1] = { 95u };
-static const uint32_t m9s431[10] = { 41u, 123u, 32u, 46u, 116u, 97u, 103u, 32u, 61u, 32u };
-static const uint32_t m9s432[1] = { 95u };
+static const uint32_t m9s425[1] = { 95u };
+static const uint32_t m9s426[3] = { 32u, 125u, 41u };
+static const uint32_t m9s427[1] = { 46u };
+static const uint32_t m9s428[3] = { 67u, 82u, 58u };
+static const uint32_t m9s429[1] = { 46u };
+static const uint32_t m9s430[2] = { 40u, 40u };
+static const uint32_t m9s431[1] = { 95u };
+static const uint32_t m9s432[10] = { 41u, 123u, 32u, 46u, 116u, 97u, 103u, 32u, 61u, 32u };
 static const uint32_t m9s433[1] = { 95u };
-static const uint32_t m9s434[3] = { 32u, 125u, 41u };
-static const uint32_t m9s435[4] = { 72u, 69u, 65u, 80u };
-static const uint32_t m9s436[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s437[7] = { 109u, 57u, 95u, 104u, 101u, 97u, 112u };
-static const uint32_t m9s438[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
-static const uint32_t m9s439[1] = { 48u };
-static const uint32_t m9s440[1] = { 118u };
-static const uint32_t m9s441[1] = { 111u };
-static const uint32_t m9s442[2] = { 40u, 42u };
-static const uint32_t m9s443[1] = { 41u };
-static const uint32_t m9s444[46] = { 115u, 101u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s445[1] = { 48u };
-static const uint32_t m9s446[2] = { 45u, 62u };
-static const uint32_t m9s447[28] = { 102u, 105u, 101u, 108u, 100u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 114u, 101u, 115u, 111u, 108u, 118u, 97u, 98u, 108u, 101u };
-static const uint32_t m9s448[1] = { 48u };
-static const uint32_t m9s449[1] = { 46u };
-static const uint32_t m9s450[46] = { 115u, 101u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s451[1] = { 48u };
-static const uint32_t m9s452[22] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 102u, 105u, 101u, 108u, 100u, 58u, 32u };
-static const uint32_t m9s453[1] = { 48u };
-static const uint32_t m9s454[2] = { 44u, 32u };
-static const uint32_t m9s455[3] = { 40u, 42u, 40u };
-static const uint32_t m9s456[10] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 103u, 97u, 116u };
-static const uint32_t m9s457[2] = { 32u, 40u };
-static const uint32_t m9s458[12] = { 46u, 112u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s459[3] = { 41u, 44u, 32u };
-static const uint32_t m9s460[3] = { 46u, 110u, 91u };
-static const uint32_t m9s461[3] = { 93u, 44u, 32u };
-static const uint32_t m9s462[3] = { 46u, 115u, 91u };
-static const uint32_t m9s463[3] = { 93u, 44u, 32u };
-static const uint32_t m9s464[7] = { 44u, 32u, 101u, 114u, 114u, 41u, 41u };
-static const uint32_t m9s465[3] = { 40u, 42u, 40u };
-static const uint32_t m9s466[12] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 103u, 97u, 116u, 32u, 40u };
-static const uint32_t m9s467[12] = { 46u, 112u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s468[3] = { 41u, 44u, 32u };
-static const uint32_t m9s469[4] = { 46u, 110u, 44u, 32u };
-static const uint32_t m9s470[16] = { 46u, 115u, 44u, 32u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 91u, 93u, 41u, 123u };
-static const uint32_t m9s471[3] = { 125u, 44u, 32u };
-static const uint32_t m9s472[7] = { 44u, 32u, 101u, 114u, 114u, 41u, 41u };
-static const uint32_t m9s473[3] = { 40u, 42u, 40u };
-static const uint32_t m9s474[11] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 97u, 116u, 32u, 40u };
-static const uint32_t m9s475[4] = { 46u, 112u, 44u, 32u };
-static const uint32_t m9s476[2] = { 44u, 32u };
-static const uint32_t m9s477[14] = { 46u, 108u, 101u, 110u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s478[8] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u, 41u };
-static const uint32_t m9s479[3] = { 67u, 82u, 58u };
-static const uint32_t m9s480[1] = { 40u };
-static const uint32_t m9s481[4] = { 46u, 118u, 91u, 40u };
-static const uint32_t m9s482[7] = { 41u, 46u, 116u, 97u, 103u, 93u, 41u };
-static const uint32_t m9s483[3] = { 40u, 42u, 40u };
-static const uint32_t m9s484[11] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 97u, 116u, 32u, 40u };
-static const uint32_t m9s485[4] = { 46u, 118u, 44u, 32u };
-static const uint32_t m9s486[10] = { 44u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s487[11] = { 41u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s488[8] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u, 41u };
-static const uint32_t m9s489[38] = { 105u, 110u, 100u, 101u, 120u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 97u, 114u, 114u, 97u, 121u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s490[1] = { 48u };
-static const uint32_t m9s491[29] = { 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s492[1] = { 48u };
-static const uint32_t m9s493[3] = { 85u, 54u, 52u };
-static const uint32_t m9s494[9] = { 85u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s495[1] = { 41u };
-static const uint32_t m9s496[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s497[1] = { 41u };
-static const uint32_t m9s498[3] = { 70u, 51u, 50u };
-static const uint32_t m9s499[3] = { 78u, 65u, 78u };
-static const uint32_t m9s500[1] = { 102u };
-static const uint32_t m9s501[1] = { 117u };
-static const uint32_t m9s502[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s503[1] = { 117u };
-static const uint32_t m9s504[23] = { 40u, 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u, 41u, 123u, 32u, 78u, 85u, 76u, 76u, 44u, 32u, 48u, 32u, 125u };
-static const uint32_t m9s505[7] = { 109u, 57u, 115u, 95u, 100u, 114u, 121u };
-static const uint32_t m9s506[3] = { 109u, 57u, 115u };
-static const uint32_t m9s507[22] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 99u, 111u, 110u, 115u, 116u, 32u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u };
-static const uint32_t m9s508[1] = { 91u };
-static const uint32_t m9s509[6] = { 93u, 32u, 61u, 32u, 123u, 32u };
-static const uint32_t m9s510[3] = { 32u, 125u, 59u };
-static const uint32_t m9s511[28] = { 40u, 40u, 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u, 41u, 123u, 32u, 40u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u, 42u, 41u, 32u };
-static const uint32_t m9s512[2] = { 44u, 32u };
-static const uint32_t m9s513[3] = { 32u, 125u, 41u };
-static const uint32_t m9s514[4] = { 116u, 114u, 117u, 101u };
-static const uint32_t m9s515[5] = { 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s516[4] = { 78u, 85u, 76u, 76u };
-static const uint32_t m9s517[13] = { 40u, 40u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s518[13] = { 41u, 41u, 32u, 109u, 57u, 95u, 115u, 104u, 97u, 114u, 101u, 32u, 40u };
-static const uint32_t m9s519[2] = { 41u, 41u };
-static const uint32_t m9s520[1] = { 40u };
-static const uint32_t m9s521[1] = { 41u };
-static const uint32_t m9s522[1] = { 63u };
-static const uint32_t m9s523[3] = { 70u, 51u, 50u };
-static const uint32_t m9s524[9] = { 40u, 40u, 102u, 108u, 111u, 97u, 116u, 41u, 32u };
-static const uint32_t m9s525[1] = { 41u };
-static const uint32_t m9s526[1] = { 63u };
-static const uint32_t m9s527[3] = { 111u, 119u, 110u };
-static const uint32_t m9s528[1] = { 40u };
-static const uint32_t m9s529[20] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 110u, 101u, 119u, 32u, 40u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s530[7] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s531[4] = { 112u, 111u, 111u, 108u };
-static const uint32_t m9s532[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
+static const uint32_t m9s434[1] = { 95u };
+static const uint32_t m9s435[3] = { 32u, 125u, 41u };
+static const uint32_t m9s436[4] = { 72u, 69u, 65u, 80u };
+static const uint32_t m9s437[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s438[7] = { 109u, 57u, 95u, 104u, 101u, 97u, 112u };
+static const uint32_t m9s439[14] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 110u, 97u, 109u, 101u, 58u, 32u };
+static const uint32_t m9s440[1] = { 48u };
+static const uint32_t m9s441[1] = { 118u };
+static const uint32_t m9s442[1] = { 111u };
+static const uint32_t m9s443[2] = { 40u, 42u };
+static const uint32_t m9s444[1] = { 41u };
+static const uint32_t m9s445[46] = { 115u, 101u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s446[1] = { 48u };
+static const uint32_t m9s447[2] = { 45u, 62u };
+static const uint32_t m9s448[28] = { 102u, 105u, 101u, 108u, 100u, 32u, 98u, 97u, 115u, 101u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 114u, 101u, 115u, 111u, 108u, 118u, 97u, 98u, 108u, 101u };
+static const uint32_t m9s449[1] = { 48u };
+static const uint32_t m9s450[1] = { 46u };
+static const uint32_t m9s451[46] = { 115u, 101u, 108u, 101u, 99u, 116u, 105u, 111u, 110u, 32u, 116u, 104u, 114u, 111u, 117u, 103u, 104u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s452[1] = { 48u };
+static const uint32_t m9s453[22] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 114u, 101u, 99u, 111u, 114u, 100u, 32u, 102u, 105u, 101u, 108u, 100u, 58u, 32u };
+static const uint32_t m9s454[1] = { 48u };
+static const uint32_t m9s455[2] = { 44u, 32u };
+static const uint32_t m9s456[3] = { 40u, 42u, 40u };
+static const uint32_t m9s457[10] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 103u, 97u, 116u };
+static const uint32_t m9s458[2] = { 32u, 40u };
+static const uint32_t m9s459[12] = { 46u, 112u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s460[3] = { 41u, 44u, 32u };
+static const uint32_t m9s461[3] = { 46u, 110u, 91u };
+static const uint32_t m9s462[3] = { 93u, 44u, 32u };
+static const uint32_t m9s463[3] = { 46u, 115u, 91u };
+static const uint32_t m9s464[3] = { 93u, 44u, 32u };
+static const uint32_t m9s465[7] = { 44u, 32u, 101u, 114u, 114u, 41u, 41u };
+static const uint32_t m9s466[3] = { 40u, 42u, 40u };
+static const uint32_t m9s467[12] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 103u, 97u, 116u, 32u, 40u };
+static const uint32_t m9s468[12] = { 46u, 112u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s469[3] = { 41u, 44u, 32u };
+static const uint32_t m9s470[4] = { 46u, 110u, 44u, 32u };
+static const uint32_t m9s471[16] = { 46u, 115u, 44u, 32u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 91u, 93u, 41u, 123u };
+static const uint32_t m9s472[3] = { 125u, 44u, 32u };
+static const uint32_t m9s473[7] = { 44u, 32u, 101u, 114u, 114u, 41u, 41u };
+static const uint32_t m9s474[3] = { 40u, 42u, 40u };
+static const uint32_t m9s475[11] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 97u, 116u, 32u, 40u };
+static const uint32_t m9s476[4] = { 46u, 112u, 44u, 32u };
+static const uint32_t m9s477[2] = { 44u, 32u };
+static const uint32_t m9s478[14] = { 46u, 108u, 101u, 110u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s479[8] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u, 41u };
+static const uint32_t m9s480[3] = { 67u, 82u, 58u };
+static const uint32_t m9s481[1] = { 40u };
+static const uint32_t m9s482[4] = { 46u, 118u, 91u, 40u };
+static const uint32_t m9s483[7] = { 41u, 46u, 116u, 97u, 103u, 93u, 41u };
+static const uint32_t m9s484[3] = { 40u, 42u, 40u };
+static const uint32_t m9s485[11] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 97u, 116u, 32u, 40u };
+static const uint32_t m9s486[4] = { 46u, 118u, 44u, 32u };
+static const uint32_t m9s487[10] = { 44u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s488[11] = { 41u, 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s489[8] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u, 41u };
+static const uint32_t m9s490[38] = { 105u, 110u, 100u, 101u, 120u, 32u, 105u, 110u, 116u, 111u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 97u, 114u, 114u, 97u, 121u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s491[1] = { 48u };
+static const uint32_t m9s492[29] = { 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s493[1] = { 48u };
+static const uint32_t m9s494[3] = { 85u, 54u, 52u };
+static const uint32_t m9s495[9] = { 85u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s496[1] = { 41u };
+static const uint32_t m9s497[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s498[1] = { 41u };
+static const uint32_t m9s499[3] = { 70u, 51u, 50u };
+static const uint32_t m9s500[3] = { 78u, 65u, 78u };
+static const uint32_t m9s501[1] = { 102u };
+static const uint32_t m9s502[1] = { 117u };
+static const uint32_t m9s503[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s504[1] = { 117u };
+static const uint32_t m9s505[23] = { 40u, 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u, 41u, 123u, 32u, 78u, 85u, 76u, 76u, 44u, 32u, 48u, 32u, 125u };
+static const uint32_t m9s506[7] = { 109u, 57u, 115u, 95u, 100u, 114u, 121u };
+static const uint32_t m9s507[3] = { 109u, 57u, 115u };
+static const uint32_t m9s508[22] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 99u, 111u, 110u, 115u, 116u, 32u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u };
+static const uint32_t m9s509[1] = { 91u };
+static const uint32_t m9s510[6] = { 93u, 32u, 61u, 32u, 123u, 32u };
+static const uint32_t m9s511[3] = { 32u, 125u, 59u };
+static const uint32_t m9s512[28] = { 40u, 40u, 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u, 41u, 123u, 32u, 40u, 117u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u, 42u, 41u, 32u };
+static const uint32_t m9s513[2] = { 44u, 32u };
+static const uint32_t m9s514[3] = { 32u, 125u, 41u };
+static const uint32_t m9s515[4] = { 116u, 114u, 117u, 101u };
+static const uint32_t m9s516[5] = { 102u, 97u, 108u, 115u, 101u };
+static const uint32_t m9s517[4] = { 78u, 85u, 76u, 76u };
+static const uint32_t m9s518[13] = { 40u, 40u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s519[13] = { 41u, 41u, 32u, 109u, 57u, 95u, 115u, 104u, 97u, 114u, 101u, 32u, 40u };
+static const uint32_t m9s520[2] = { 41u, 41u };
+static const uint32_t m9s521[1] = { 40u };
+static const uint32_t m9s522[1] = { 41u };
+static const uint32_t m9s523[1] = { 63u };
+static const uint32_t m9s524[3] = { 70u, 51u, 50u };
+static const uint32_t m9s525[9] = { 40u, 40u, 102u, 108u, 111u, 97u, 116u, 41u, 32u };
+static const uint32_t m9s526[1] = { 41u };
+static const uint32_t m9s527[1] = { 63u };
+static const uint32_t m9s528[3] = { 111u, 119u, 110u };
+static const uint32_t m9s529[1] = { 40u };
+static const uint32_t m9s530[20] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 110u, 101u, 119u, 32u, 40u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s531[7] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s532[4] = { 112u, 111u, 111u, 108u };
 static const uint32_t m9s533[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
-static const uint32_t m9s534[3] = { 40u, 123u, 32u };
-static const uint32_t m9s535[1] = { 32u };
-static const uint32_t m9s536[2] = { 59u, 32u };
-static const uint32_t m9s537[3] = { 46u, 110u, 91u };
-static const uint32_t m9s538[4] = { 93u, 32u, 61u, 32u };
-static const uint32_t m9s539[2] = { 59u, 32u };
-static const uint32_t m9s540[3] = { 46u, 115u, 91u };
-static const uint32_t m9s541[7] = { 93u, 32u, 61u, 32u, 49u, 59u, 32u };
-static const uint32_t m9s542[3] = { 46u, 115u, 91u };
-static const uint32_t m9s543[4] = { 93u, 32u, 61u, 32u };
-static const uint32_t m9s544[3] = { 46u, 115u, 91u };
-static const uint32_t m9s545[4] = { 93u, 32u, 42u, 32u };
-static const uint32_t m9s546[3] = { 46u, 110u, 91u };
-static const uint32_t m9s547[3] = { 93u, 59u, 32u };
-static const uint32_t m9s548[6] = { 46u, 112u, 32u, 61u, 32u, 40u };
-static const uint32_t m9s549[19] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 97u, 108u, 108u, 111u, 99u, 32u, 40u };
-static const uint32_t m9s550[10] = { 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s551[14] = { 41u, 44u, 32u, 109u, 57u, 95u, 103u, 99u, 111u, 117u, 110u, 116u, 32u, 40u };
-static const uint32_t m9s552[4] = { 46u, 110u, 44u, 32u };
-static const uint32_t m9s553[14] = { 44u, 32u, 101u, 114u, 114u, 41u, 44u, 32u, 101u, 114u, 114u, 41u, 59u, 32u };
-static const uint32_t m9s554[4] = { 59u, 32u, 125u, 41u };
-static const uint32_t m9s555[12] = { 77u, 57u, 95u, 80u, 79u, 79u, 76u, 95u, 83u, 76u, 32u, 40u };
-static const uint32_t m9s556[2] = { 44u, 32u };
+static const uint32_t m9s534[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
+static const uint32_t m9s535[3] = { 40u, 123u, 32u };
+static const uint32_t m9s536[1] = { 32u };
+static const uint32_t m9s537[2] = { 59u, 32u };
+static const uint32_t m9s538[3] = { 46u, 110u, 91u };
+static const uint32_t m9s539[4] = { 93u, 32u, 61u, 32u };
+static const uint32_t m9s540[2] = { 59u, 32u };
+static const uint32_t m9s541[3] = { 46u, 115u, 91u };
+static const uint32_t m9s542[7] = { 93u, 32u, 61u, 32u, 49u, 59u, 32u };
+static const uint32_t m9s543[3] = { 46u, 115u, 91u };
+static const uint32_t m9s544[4] = { 93u, 32u, 61u, 32u };
+static const uint32_t m9s545[3] = { 46u, 115u, 91u };
+static const uint32_t m9s546[4] = { 93u, 32u, 42u, 32u };
+static const uint32_t m9s547[3] = { 46u, 110u, 91u };
+static const uint32_t m9s548[3] = { 93u, 59u, 32u };
+static const uint32_t m9s549[6] = { 46u, 112u, 32u, 61u, 32u, 40u };
+static const uint32_t m9s550[19] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 97u, 108u, 108u, 111u, 99u, 32u, 40u };
+static const uint32_t m9s551[10] = { 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s552[14] = { 41u, 44u, 32u, 109u, 57u, 95u, 103u, 99u, 111u, 117u, 110u, 116u, 32u, 40u };
+static const uint32_t m9s553[4] = { 46u, 110u, 44u, 32u };
+static const uint32_t m9s554[14] = { 44u, 32u, 101u, 114u, 114u, 41u, 44u, 32u, 101u, 114u, 114u, 41u, 59u, 32u };
+static const uint32_t m9s555[4] = { 59u, 32u, 125u, 41u };
+static const uint32_t m9s556[12] = { 77u, 57u, 95u, 80u, 79u, 79u, 76u, 95u, 83u, 76u, 32u, 40u };
 static const uint32_t m9s557[2] = { 44u, 32u };
 static const uint32_t m9s558[2] = { 44u, 32u };
-static const uint32_t m9s559[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s560[1] = { 40u };
-static const uint32_t m9s561[19] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 97u, 108u, 108u, 111u, 99u, 32u, 40u };
-static const uint32_t m9s562[10] = { 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s563[10] = { 41u, 44u, 32u, 49u, 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s564[14] = { 40u, 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s565[2] = { 41u, 32u };
-static const uint32_t m9s566[3] = { 32u, 61u, 32u };
-static const uint32_t m9s567[2] = { 59u, 32u };
-static const uint32_t m9s568[1] = { 32u };
-static const uint32_t m9s569[11] = { 114u, 59u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
-static const uint32_t m9s570[2] = { 110u, 91u };
-static const uint32_t m9s571[6] = { 93u, 32u, 61u, 32u, 123u, 32u };
-static const uint32_t m9s572[2] = { 44u, 32u };
-static const uint32_t m9s573[15] = { 32u, 125u, 59u, 32u, 109u, 57u, 95u, 103u, 114u, 105u, 100u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s574[6] = { 46u, 108u, 101u, 110u, 44u, 32u };
-static const uint32_t m9s575[3] = { 110u, 44u, 32u };
-static const uint32_t m9s576[2] = { 44u, 32u };
-static const uint32_t m9s577[5] = { 114u, 46u, 110u, 44u, 32u };
-static const uint32_t m9s578[11] = { 114u, 46u, 115u, 44u, 32u, 101u, 114u, 114u, 41u, 59u, 32u };
-static const uint32_t m9s579[6] = { 114u, 46u, 112u, 32u, 61u, 32u };
-static const uint32_t m9s580[4] = { 46u, 112u, 59u, 32u };
-static const uint32_t m9s581[5] = { 114u, 59u, 32u, 125u, 41u };
-static const uint32_t m9s582[52] = { 71u, 82u, 73u, 68u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 101u, 120u, 112u, 114u, 101u, 115u, 115u, 105u, 111u, 110u, 32u, 116u, 104u, 97u, 116u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u };
-static const uint32_t m9s583[1] = { 48u };
-static const uint32_t m9s584[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s585[14] = { 40u, 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s586[2] = { 41u, 32u };
-static const uint32_t m9s587[3] = { 32u, 61u, 32u };
-static const uint32_t m9s588[10] = { 59u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
-static const uint32_t m9s589[4] = { 97u, 32u, 61u, 32u };
-static const uint32_t m9s590[2] = { 44u, 32u };
-static const uint32_t m9s591[4] = { 110u, 32u, 61u, 32u };
-static const uint32_t m9s592[14] = { 59u, 32u, 40u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s593[4] = { 41u, 41u, 123u, 32u };
-static const uint32_t m9s594[19] = { 46u, 112u, 32u, 43u, 32u, 109u, 57u, 95u, 99u, 104u, 107u, 95u, 115u, 108u, 105u, 99u, 101u, 32u, 40u };
-static const uint32_t m9s595[3] = { 97u, 44u, 32u };
-static const uint32_t m9s596[3] = { 110u, 44u, 32u };
-static const uint32_t m9s597[12] = { 46u, 108u, 101u, 110u, 44u, 32u, 101u, 114u, 114u, 41u, 44u, 32u };
-static const uint32_t m9s598[7] = { 110u, 32u, 125u, 59u, 32u, 125u, 41u };
-static const uint32_t m9s599[3] = { 65u, 82u, 82u };
-static const uint32_t m9s600[36] = { 83u, 76u, 73u, 67u, 69u, 40u, 41u, 32u, 111u, 102u, 32u, 110u, 111u, 110u, 45u, 115u, 108u, 105u, 99u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s601[1] = { 48u };
-static const uint32_t m9s602[11] = { 40u, 123u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
-static const uint32_t m9s603[4] = { 97u, 32u, 61u, 32u };
-static const uint32_t m9s604[2] = { 44u, 32u };
-static const uint32_t m9s605[4] = { 110u, 32u, 61u, 32u };
-static const uint32_t m9s606[3] = { 59u, 32u, 40u };
-static const uint32_t m9s607[4] = { 41u, 123u, 32u, 40u };
-static const uint32_t m9s608[20] = { 41u, 46u, 118u, 32u, 43u, 32u, 109u, 57u, 95u, 99u, 104u, 107u, 95u, 115u, 108u, 105u, 99u, 101u, 32u, 40u };
-static const uint32_t m9s609[3] = { 97u, 44u, 32u };
-static const uint32_t m9s610[11] = { 110u, 44u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s611[9] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u, 44u, 32u };
-static const uint32_t m9s612[7] = { 110u, 32u, 125u, 59u, 32u, 125u, 41u };
-static const uint32_t m9s613[37] = { 83u, 76u, 73u, 67u, 69u, 40u, 41u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s614[1] = { 48u };
-static const uint32_t m9s615[37] = { 83u, 76u, 73u, 67u, 69u, 40u, 41u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s616[1] = { 48u };
-static const uint32_t m9s617[3] = { 73u, 54u, 52u };
-static const uint32_t m9s618[1] = { 43u };
-static const uint32_t m9s619[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s620[4] = { 83u, 84u, 82u, 49u };
-static const uint32_t m9s621[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s622[4] = { 83u, 84u, 82u, 49u };
-static const uint32_t m9s623[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s624[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s625[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s626[21] = { 109u, 57u, 95u, 99u, 104u, 95u, 99u, 97u, 116u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 44u, 32u };
-static const uint32_t m9s627[2] = { 44u, 32u };
-static const uint32_t m9s628[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s629[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s630[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s559[2] = { 44u, 32u };
+static const uint32_t m9s560[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s561[1] = { 40u };
+static const uint32_t m9s562[19] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 97u, 108u, 108u, 111u, 99u, 32u, 40u };
+static const uint32_t m9s563[10] = { 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s564[10] = { 41u, 44u, 32u, 49u, 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s565[14] = { 40u, 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s566[2] = { 41u, 32u };
+static const uint32_t m9s567[3] = { 32u, 61u, 32u };
+static const uint32_t m9s568[2] = { 59u, 32u };
+static const uint32_t m9s569[1] = { 32u };
+static const uint32_t m9s570[11] = { 114u, 59u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
+static const uint32_t m9s571[2] = { 110u, 91u };
+static const uint32_t m9s572[6] = { 93u, 32u, 61u, 32u, 123u, 32u };
+static const uint32_t m9s573[2] = { 44u, 32u };
+static const uint32_t m9s574[15] = { 32u, 125u, 59u, 32u, 109u, 57u, 95u, 103u, 114u, 105u, 100u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s575[6] = { 46u, 108u, 101u, 110u, 44u, 32u };
+static const uint32_t m9s576[3] = { 110u, 44u, 32u };
+static const uint32_t m9s577[2] = { 44u, 32u };
+static const uint32_t m9s578[5] = { 114u, 46u, 110u, 44u, 32u };
+static const uint32_t m9s579[11] = { 114u, 46u, 115u, 44u, 32u, 101u, 114u, 114u, 41u, 59u, 32u };
+static const uint32_t m9s580[6] = { 114u, 46u, 112u, 32u, 61u, 32u };
+static const uint32_t m9s581[4] = { 46u, 112u, 59u, 32u };
+static const uint32_t m9s582[5] = { 114u, 59u, 32u, 125u, 41u };
+static const uint32_t m9s583[52] = { 71u, 82u, 73u, 68u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 101u, 120u, 112u, 114u, 101u, 115u, 115u, 105u, 111u, 110u, 32u, 116u, 104u, 97u, 116u, 32u, 105u, 115u, 32u, 110u, 111u, 116u, 32u, 97u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u };
+static const uint32_t m9s584[1] = { 48u };
+static const uint32_t m9s585[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s586[14] = { 40u, 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s587[2] = { 41u, 32u };
+static const uint32_t m9s588[3] = { 32u, 61u, 32u };
+static const uint32_t m9s589[10] = { 59u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
+static const uint32_t m9s590[4] = { 97u, 32u, 61u, 32u };
+static const uint32_t m9s591[2] = { 44u, 32u };
+static const uint32_t m9s592[4] = { 110u, 32u, 61u, 32u };
+static const uint32_t m9s593[14] = { 59u, 32u, 40u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s594[4] = { 41u, 41u, 123u, 32u };
+static const uint32_t m9s595[19] = { 46u, 112u, 32u, 43u, 32u, 109u, 57u, 95u, 99u, 104u, 107u, 95u, 115u, 108u, 105u, 99u, 101u, 32u, 40u };
+static const uint32_t m9s596[3] = { 97u, 44u, 32u };
+static const uint32_t m9s597[3] = { 110u, 44u, 32u };
+static const uint32_t m9s598[12] = { 46u, 108u, 101u, 110u, 44u, 32u, 101u, 114u, 114u, 41u, 44u, 32u };
+static const uint32_t m9s599[7] = { 110u, 32u, 125u, 59u, 32u, 125u, 41u };
+static const uint32_t m9s600[3] = { 65u, 82u, 82u };
+static const uint32_t m9s601[36] = { 83u, 76u, 73u, 67u, 69u, 40u, 41u, 32u, 111u, 102u, 32u, 110u, 111u, 110u, 45u, 115u, 108u, 105u, 99u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s602[1] = { 48u };
+static const uint32_t m9s603[11] = { 40u, 123u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
+static const uint32_t m9s604[4] = { 97u, 32u, 61u, 32u };
+static const uint32_t m9s605[2] = { 44u, 32u };
+static const uint32_t m9s606[4] = { 110u, 32u, 61u, 32u };
+static const uint32_t m9s607[3] = { 59u, 32u, 40u };
+static const uint32_t m9s608[4] = { 41u, 123u, 32u, 40u };
+static const uint32_t m9s609[20] = { 41u, 46u, 118u, 32u, 43u, 32u, 109u, 57u, 95u, 99u, 104u, 107u, 95u, 115u, 108u, 105u, 99u, 101u, 32u, 40u };
+static const uint32_t m9s610[3] = { 97u, 44u, 32u };
+static const uint32_t m9s611[11] = { 110u, 44u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s612[9] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u, 44u, 32u };
+static const uint32_t m9s613[7] = { 110u, 32u, 125u, 59u, 32u, 125u, 41u };
+static const uint32_t m9s614[37] = { 83u, 76u, 73u, 67u, 69u, 40u, 41u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s615[1] = { 48u };
+static const uint32_t m9s616[37] = { 83u, 76u, 73u, 67u, 69u, 40u, 41u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s617[1] = { 48u };
+static const uint32_t m9s618[1] = { 40u };
+static const uint32_t m9s619[9] = { 32u, 61u, 61u, 32u, 78u, 85u, 76u, 76u, 41u };
+static const uint32_t m9s620[1] = { 40u };
+static const uint32_t m9s621[9] = { 32u, 33u, 61u, 32u, 78u, 85u, 76u, 76u, 41u };
+static const uint32_t m9s622[64] = { 73u, 83u, 32u, 119u, 105u, 116u, 104u, 32u, 97u, 32u, 98u, 105u, 110u, 100u, 101u, 114u, 32u, 105u, 115u, 32u, 116u, 104u, 101u, 32u, 119u, 104u, 111u, 108u, 101u, 32u, 99u, 111u, 110u, 100u, 105u, 116u, 105u, 111u, 110u, 32u, 111u, 102u, 32u, 97u, 110u, 32u, 73u, 70u, 44u, 32u, 69u, 76u, 83u, 73u, 70u, 32u, 111u, 114u, 32u, 87u, 72u, 73u, 76u, 69u };
+static const uint32_t m9s623[1] = { 48u };
+static const uint32_t m9s624[3] = { 73u, 54u, 52u };
+static const uint32_t m9s625[1] = { 43u };
+static const uint32_t m9s626[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s627[4] = { 83u, 84u, 82u, 49u };
+static const uint32_t m9s628[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s629[4] = { 83u, 84u, 82u, 49u };
+static const uint32_t m9s630[4] = { 67u, 72u, 65u, 82u };
 static const uint32_t m9s631[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s632[21] = { 109u, 57u, 95u, 99u, 97u, 116u, 95u, 99u, 104u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 44u, 32u };
-static const uint32_t m9s633[2] = { 44u, 32u };
-static const uint32_t m9s634[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s635[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s636[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s637[18] = { 109u, 57u, 95u, 99u, 97u, 116u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 44u, 32u };
-static const uint32_t m9s638[2] = { 44u, 32u };
-static const uint32_t m9s639[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s640[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s641[4] = { 83u, 84u, 82u, 49u };
-static const uint32_t m9s642[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s643[3] = { 70u, 51u, 50u };
-static const uint32_t m9s644[3] = { 70u, 51u, 50u };
-static const uint32_t m9s645[3] = { 85u, 54u, 52u };
-static const uint32_t m9s646[3] = { 85u, 54u, 52u };
-static const uint32_t m9s647[3] = { 65u, 78u, 68u };
-static const uint32_t m9s648[2] = { 79u, 82u };
-static const uint32_t m9s649[1] = { 61u };
-static const uint32_t m9s650[2] = { 61u, 61u };
-static const uint32_t m9s651[1] = { 35u };
-static const uint32_t m9s652[2] = { 33u, 61u };
-static const uint32_t m9s653[3] = { 65u, 78u, 68u };
-static const uint32_t m9s654[2] = { 38u, 38u };
+static const uint32_t m9s632[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s633[21] = { 109u, 57u, 95u, 99u, 104u, 95u, 99u, 97u, 116u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 44u, 32u };
+static const uint32_t m9s634[2] = { 44u, 32u };
+static const uint32_t m9s635[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s636[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s637[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s638[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s639[21] = { 109u, 57u, 95u, 99u, 97u, 116u, 95u, 99u, 104u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 44u, 32u };
+static const uint32_t m9s640[2] = { 44u, 32u };
+static const uint32_t m9s641[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s642[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s643[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s644[18] = { 109u, 57u, 95u, 99u, 97u, 116u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 44u, 32u };
+static const uint32_t m9s645[2] = { 44u, 32u };
+static const uint32_t m9s646[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s647[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s648[4] = { 83u, 84u, 82u, 49u };
+static const uint32_t m9s649[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s650[3] = { 70u, 51u, 50u };
+static const uint32_t m9s651[3] = { 70u, 51u, 50u };
+static const uint32_t m9s652[3] = { 85u, 54u, 52u };
+static const uint32_t m9s653[3] = { 85u, 54u, 52u };
+static const uint32_t m9s654[3] = { 65u, 78u, 68u };
 static const uint32_t m9s655[2] = { 79u, 82u };
-static const uint32_t m9s656[2] = { 124u, 124u };
-static const uint32_t m9s657[1] = { 43u };
-static const uint32_t m9s658[1] = { 45u };
-static const uint32_t m9s659[1] = { 42u };
-static const uint32_t m9s660[1] = { 63u };
-static const uint32_t m9s661[43] = { 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 111u, 110u, 32u, 97u, 110u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 32u, 111u, 102u, 32u, 117u, 110u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 100u, 32u, 116u, 121u, 112u, 101u };
-static const uint32_t m9s662[1] = { 48u };
-static const uint32_t m9s663[3] = { 70u, 54u, 52u };
-static const uint32_t m9s664[3] = { 70u, 51u, 50u };
-static const uint32_t m9s665[1] = { 40u };
-static const uint32_t m9s666[1] = { 32u };
-static const uint32_t m9s667[1] = { 32u };
-static const uint32_t m9s668[1] = { 41u };
-static const uint32_t m9s669[1] = { 43u };
-static const uint32_t m9s670[7] = { 109u, 57u, 95u, 97u, 100u, 100u, 95u };
-static const uint32_t m9s671[2] = { 32u, 40u };
-static const uint32_t m9s672[2] = { 44u, 32u };
-static const uint32_t m9s673[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s674[1] = { 45u };
-static const uint32_t m9s675[7] = { 109u, 57u, 95u, 115u, 117u, 98u, 95u };
-static const uint32_t m9s676[2] = { 32u, 40u };
-static const uint32_t m9s677[2] = { 44u, 32u };
-static const uint32_t m9s678[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s679[7] = { 109u, 57u, 95u, 109u, 117u, 108u, 95u };
-static const uint32_t m9s680[2] = { 32u, 40u };
-static const uint32_t m9s681[2] = { 44u, 32u };
-static const uint32_t m9s682[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s683[1] = { 47u };
-static const uint32_t m9s684[1] = { 40u };
-static const uint32_t m9s685[3] = { 32u, 47u, 32u };
-static const uint32_t m9s686[1] = { 41u };
-static const uint32_t m9s687[3] = { 68u, 73u, 86u };
-static const uint32_t m9s688[7] = { 109u, 57u, 95u, 100u, 105u, 118u, 95u };
-static const uint32_t m9s689[2] = { 32u, 40u };
-static const uint32_t m9s690[2] = { 44u, 32u };
-static const uint32_t m9s691[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s692[3] = { 77u, 79u, 68u };
-static const uint32_t m9s693[7] = { 109u, 57u, 95u, 109u, 111u, 100u, 95u };
-static const uint32_t m9s694[2] = { 32u, 40u };
-static const uint32_t m9s695[2] = { 44u, 32u };
-static const uint32_t m9s696[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s697[2] = { 43u, 37u };
-static const uint32_t m9s698[13] = { 109u, 57u, 95u, 97u, 100u, 100u, 119u, 95u, 105u, 54u, 52u, 32u, 40u };
-static const uint32_t m9s699[2] = { 44u, 32u };
-static const uint32_t m9s700[1] = { 41u };
-static const uint32_t m9s701[2] = { 45u, 37u };
-static const uint32_t m9s702[13] = { 109u, 57u, 95u, 115u, 117u, 98u, 119u, 95u, 105u, 54u, 52u, 32u, 40u };
-static const uint32_t m9s703[2] = { 44u, 32u };
-static const uint32_t m9s704[1] = { 41u };
-static const uint32_t m9s705[2] = { 42u, 37u };
-static const uint32_t m9s706[13] = { 109u, 57u, 95u, 109u, 117u, 108u, 119u, 95u, 105u, 54u, 52u, 32u, 40u };
-static const uint32_t m9s707[2] = { 44u, 32u };
-static const uint32_t m9s708[1] = { 41u };
-static const uint32_t m9s709[2] = { 61u, 61u };
-static const uint32_t m9s710[2] = { 33u, 61u };
-static const uint32_t m9s711[3] = { 67u, 82u, 58u };
-static const uint32_t m9s712[2] = { 40u, 40u };
-static const uint32_t m9s713[6] = { 41u, 46u, 116u, 97u, 103u, 32u };
-static const uint32_t m9s714[2] = { 32u, 40u };
-static const uint32_t m9s715[6] = { 41u, 46u, 116u, 97u, 103u, 41u };
-static const uint32_t m9s716[1] = { 40u };
-static const uint32_t m9s717[1] = { 32u };
-static const uint32_t m9s718[1] = { 32u };
-static const uint32_t m9s719[1] = { 41u };
-static const uint32_t m9s720[3] = { 78u, 79u, 84u };
-static const uint32_t m9s721[2] = { 40u, 33u };
-static const uint32_t m9s722[1] = { 41u };
-static const uint32_t m9s723[1] = { 45u };
-static const uint32_t m9s724[3] = { 70u, 54u, 52u };
-static const uint32_t m9s725[3] = { 70u, 51u, 50u };
-static const uint32_t m9s726[3] = { 40u, 45u, 32u };
-static const uint32_t m9s727[1] = { 41u };
-static const uint32_t m9s728[7] = { 109u, 57u, 95u, 110u, 101u, 103u, 95u };
-static const uint32_t m9s729[2] = { 32u, 40u };
-static const uint32_t m9s730[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s731[31] = { 101u, 120u, 112u, 114u, 101u, 115u, 115u, 105u, 111u, 110u, 32u, 107u, 105u, 110u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s732[1] = { 48u };
-static const uint32_t m9s733[1] = { 48u };
-static const uint32_t m9s734[1] = { 63u };
-static const uint32_t m9s735[1] = { 46u };
-static const uint32_t m9s736[31] = { 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s737[1] = { 48u };
-static const uint32_t m9s738[3] = { 82u, 69u, 67u };
-static const uint32_t m9s739[2] = { 44u, 32u };
-static const uint32_t m9s740[28] = { 114u, 101u, 99u, 111u, 114u, 100u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 97u, 114u, 105u, 116u, 121u, 32u, 119u, 114u, 111u, 110u, 103u };
-static const uint32_t m9s741[2] = { 40u, 40u };
-static const uint32_t m9s742[3] = { 41u, 123u, 32u };
-static const uint32_t m9s743[3] = { 32u, 125u, 41u };
-static const uint32_t m9s744[3] = { 67u, 82u, 58u };
-static const uint32_t m9s745[2] = { 40u, 40u };
-static const uint32_t m9s746[29] = { 41u, 123u, 32u, 46u, 116u, 97u, 103u, 32u, 61u, 32u, 109u, 57u, 95u, 101u, 110u, 117u, 109u, 32u, 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 40u };
-static const uint32_t m9s747[11] = { 41u, 44u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s748[10] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u, 32u, 125u, 41u };
-static const uint32_t m9s749[3] = { 76u, 69u, 78u };
-static const uint32_t m9s750[4] = { 71u, 82u, 73u, 68u };
-static const uint32_t m9s751[3] = { 73u, 54u, 52u };
-static const uint32_t m9s752[1] = { 40u };
-static const uint32_t m9s753[4] = { 41u, 46u, 110u, 91u };
-static const uint32_t m9s754[1] = { 93u };
-static const uint32_t m9s755[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s756[3] = { 73u, 54u, 52u };
-static const uint32_t m9s757[1] = { 40u };
-static const uint32_t m9s758[5] = { 41u, 46u, 108u, 101u, 110u };
-static const uint32_t m9s759[3] = { 65u, 82u, 82u };
-static const uint32_t m9s760[3] = { 73u, 54u, 52u };
-static const uint32_t m9s761[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s762[1] = { 41u };
+static const uint32_t m9s656[1] = { 61u };
+static const uint32_t m9s657[2] = { 61u, 61u };
+static const uint32_t m9s658[1] = { 35u };
+static const uint32_t m9s659[2] = { 33u, 61u };
+static const uint32_t m9s660[3] = { 65u, 78u, 68u };
+static const uint32_t m9s661[2] = { 38u, 38u };
+static const uint32_t m9s662[2] = { 79u, 82u };
+static const uint32_t m9s663[2] = { 124u, 124u };
+static const uint32_t m9s664[1] = { 43u };
+static const uint32_t m9s665[1] = { 45u };
+static const uint32_t m9s666[1] = { 42u };
+static const uint32_t m9s667[1] = { 63u };
+static const uint32_t m9s668[43] = { 97u, 114u, 105u, 116u, 104u, 109u, 101u, 116u, 105u, 99u, 32u, 111u, 110u, 32u, 97u, 110u, 32u, 111u, 112u, 101u, 114u, 97u, 110u, 100u, 32u, 111u, 102u, 32u, 117u, 110u, 114u, 101u, 115u, 111u, 108u, 118u, 101u, 100u, 32u, 116u, 121u, 112u, 101u };
+static const uint32_t m9s669[1] = { 48u };
+static const uint32_t m9s670[3] = { 70u, 54u, 52u };
+static const uint32_t m9s671[3] = { 70u, 51u, 50u };
+static const uint32_t m9s672[1] = { 40u };
+static const uint32_t m9s673[1] = { 32u };
+static const uint32_t m9s674[1] = { 32u };
+static const uint32_t m9s675[1] = { 41u };
+static const uint32_t m9s676[1] = { 43u };
+static const uint32_t m9s677[7] = { 109u, 57u, 95u, 97u, 100u, 100u, 95u };
+static const uint32_t m9s678[2] = { 32u, 40u };
+static const uint32_t m9s679[2] = { 44u, 32u };
+static const uint32_t m9s680[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s681[1] = { 45u };
+static const uint32_t m9s682[7] = { 109u, 57u, 95u, 115u, 117u, 98u, 95u };
+static const uint32_t m9s683[2] = { 32u, 40u };
+static const uint32_t m9s684[2] = { 44u, 32u };
+static const uint32_t m9s685[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s686[7] = { 109u, 57u, 95u, 109u, 117u, 108u, 95u };
+static const uint32_t m9s687[2] = { 32u, 40u };
+static const uint32_t m9s688[2] = { 44u, 32u };
+static const uint32_t m9s689[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s690[1] = { 47u };
+static const uint32_t m9s691[1] = { 40u };
+static const uint32_t m9s692[3] = { 32u, 47u, 32u };
+static const uint32_t m9s693[1] = { 41u };
+static const uint32_t m9s694[3] = { 68u, 73u, 86u };
+static const uint32_t m9s695[7] = { 109u, 57u, 95u, 100u, 105u, 118u, 95u };
+static const uint32_t m9s696[2] = { 32u, 40u };
+static const uint32_t m9s697[2] = { 44u, 32u };
+static const uint32_t m9s698[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s699[3] = { 77u, 79u, 68u };
+static const uint32_t m9s700[7] = { 109u, 57u, 95u, 109u, 111u, 100u, 95u };
+static const uint32_t m9s701[2] = { 32u, 40u };
+static const uint32_t m9s702[2] = { 44u, 32u };
+static const uint32_t m9s703[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s704[2] = { 43u, 37u };
+static const uint32_t m9s705[13] = { 109u, 57u, 95u, 97u, 100u, 100u, 119u, 95u, 105u, 54u, 52u, 32u, 40u };
+static const uint32_t m9s706[2] = { 44u, 32u };
+static const uint32_t m9s707[1] = { 41u };
+static const uint32_t m9s708[2] = { 45u, 37u };
+static const uint32_t m9s709[13] = { 109u, 57u, 95u, 115u, 117u, 98u, 119u, 95u, 105u, 54u, 52u, 32u, 40u };
+static const uint32_t m9s710[2] = { 44u, 32u };
+static const uint32_t m9s711[1] = { 41u };
+static const uint32_t m9s712[2] = { 42u, 37u };
+static const uint32_t m9s713[13] = { 109u, 57u, 95u, 109u, 117u, 108u, 119u, 95u, 105u, 54u, 52u, 32u, 40u };
+static const uint32_t m9s714[2] = { 44u, 32u };
+static const uint32_t m9s715[1] = { 41u };
+static const uint32_t m9s716[2] = { 61u, 61u };
+static const uint32_t m9s717[2] = { 33u, 61u };
+static const uint32_t m9s718[3] = { 67u, 82u, 58u };
+static const uint32_t m9s719[2] = { 40u, 40u };
+static const uint32_t m9s720[6] = { 41u, 46u, 116u, 97u, 103u, 32u };
+static const uint32_t m9s721[2] = { 32u, 40u };
+static const uint32_t m9s722[6] = { 41u, 46u, 116u, 97u, 103u, 41u };
+static const uint32_t m9s723[1] = { 40u };
+static const uint32_t m9s724[1] = { 32u };
+static const uint32_t m9s725[1] = { 32u };
+static const uint32_t m9s726[1] = { 41u };
+static const uint32_t m9s727[3] = { 78u, 79u, 84u };
+static const uint32_t m9s728[2] = { 40u, 33u };
+static const uint32_t m9s729[1] = { 41u };
+static const uint32_t m9s730[1] = { 45u };
+static const uint32_t m9s731[3] = { 70u, 54u, 52u };
+static const uint32_t m9s732[3] = { 70u, 51u, 50u };
+static const uint32_t m9s733[3] = { 40u, 45u, 32u };
+static const uint32_t m9s734[1] = { 41u };
+static const uint32_t m9s735[7] = { 109u, 57u, 95u, 110u, 101u, 103u, 95u };
+static const uint32_t m9s736[2] = { 32u, 40u };
+static const uint32_t m9s737[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s738[31] = { 101u, 120u, 112u, 114u, 101u, 115u, 115u, 105u, 111u, 110u, 32u, 107u, 105u, 110u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s739[1] = { 48u };
+static const uint32_t m9s740[1] = { 48u };
+static const uint32_t m9s741[1] = { 63u };
+static const uint32_t m9s742[1] = { 46u };
+static const uint32_t m9s743[31] = { 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s744[1] = { 48u };
+static const uint32_t m9s745[3] = { 82u, 69u, 67u };
+static const uint32_t m9s746[2] = { 44u, 32u };
+static const uint32_t m9s747[28] = { 114u, 101u, 99u, 111u, 114u, 100u, 32u, 97u, 103u, 103u, 114u, 101u, 103u, 97u, 116u, 101u, 32u, 97u, 114u, 105u, 116u, 121u, 32u, 119u, 114u, 111u, 110u, 103u };
+static const uint32_t m9s748[2] = { 40u, 40u };
+static const uint32_t m9s749[3] = { 41u, 123u, 32u };
+static const uint32_t m9s750[3] = { 32u, 125u, 41u };
+static const uint32_t m9s751[3] = { 67u, 82u, 58u };
+static const uint32_t m9s752[2] = { 40u, 40u };
+static const uint32_t m9s753[29] = { 41u, 123u, 32u, 46u, 116u, 97u, 103u, 32u, 61u, 32u, 109u, 57u, 95u, 101u, 110u, 117u, 109u, 32u, 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 40u };
+static const uint32_t m9s754[11] = { 41u, 44u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s755[10] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u, 32u, 125u, 41u };
+static const uint32_t m9s756[3] = { 76u, 69u, 78u };
+static const uint32_t m9s757[4] = { 71u, 82u, 73u, 68u };
+static const uint32_t m9s758[3] = { 73u, 54u, 52u };
+static const uint32_t m9s759[1] = { 40u };
+static const uint32_t m9s760[4] = { 41u, 46u, 110u, 91u };
+static const uint32_t m9s761[1] = { 93u };
+static const uint32_t m9s762[5] = { 83u, 76u, 73u, 67u, 69u };
 static const uint32_t m9s763[3] = { 73u, 54u, 52u };
 static const uint32_t m9s764[1] = { 40u };
 static const uint32_t m9s765[5] = { 41u, 46u, 108u, 101u, 110u };
-static const uint32_t m9s766[4] = { 86u, 73u, 69u, 87u };
-static const uint32_t m9s767[18] = { 86u, 73u, 69u, 87u, 32u, 111u, 102u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 71u, 82u, 73u, 68u };
-static const uint32_t m9s768[1] = { 48u };
-static const uint32_t m9s769[3] = { 40u, 123u, 32u };
-static const uint32_t m9s770[1] = { 32u };
-static const uint32_t m9s771[3] = { 32u, 61u, 32u };
-static const uint32_t m9s772[2] = { 59u, 32u };
-static const uint32_t m9s773[1] = { 32u };
-static const uint32_t m9s774[11] = { 114u, 59u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
-static const uint32_t m9s775[7] = { 111u, 32u, 61u, 32u, 48u, 59u, 32u };
-static const uint32_t m9s776[4] = { 114u, 46u, 110u, 91u };
-static const uint32_t m9s777[4] = { 93u, 32u, 61u, 32u };
-static const uint32_t m9s778[3] = { 46u, 110u, 91u };
-static const uint32_t m9s779[3] = { 93u, 59u, 32u };
-static const uint32_t m9s780[4] = { 114u, 46u, 115u, 91u };
-static const uint32_t m9s781[4] = { 93u, 32u, 61u, 32u };
-static const uint32_t m9s782[3] = { 46u, 115u, 91u };
-static const uint32_t m9s783[3] = { 93u, 59u, 32u };
-static const uint32_t m9s784[15] = { 111u, 32u, 43u, 61u, 32u, 109u, 57u, 95u, 103u, 100u, 114u, 111u, 112u, 32u, 40u };
-static const uint32_t m9s785[2] = { 44u, 32u };
-static const uint32_t m9s786[3] = { 46u, 110u, 91u };
-static const uint32_t m9s787[3] = { 93u, 44u, 32u };
-static const uint32_t m9s788[3] = { 46u, 115u, 91u };
-static const uint32_t m9s789[9] = { 93u, 44u, 32u, 101u, 114u, 114u, 41u, 59u, 32u };
-static const uint32_t m9s790[6] = { 114u, 46u, 112u, 32u, 61u, 32u };
-static const uint32_t m9s791[5] = { 46u, 112u, 32u, 43u, 32u };
-static const uint32_t m9s792[3] = { 111u, 59u, 32u };
-static const uint32_t m9s793[5] = { 114u, 59u, 32u, 125u, 41u };
-static const uint32_t m9s794[4] = { 71u, 82u, 73u, 68u };
-static const uint32_t m9s795[25] = { 86u, 73u, 69u, 87u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s796[1] = { 48u };
-static const uint32_t m9s797[3] = { 79u, 82u, 68u };
-static const uint32_t m9s798[3] = { 73u, 54u, 52u };
-static const uint32_t m9s799[3] = { 67u, 82u, 58u };
-static const uint32_t m9s800[11] = { 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 40u, 40u };
-static const uint32_t m9s801[6] = { 41u, 46u, 116u, 97u, 103u, 41u };
-static const uint32_t m9s802[10] = { 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 40u };
-static const uint32_t m9s803[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s804[1] = { 41u };
-static const uint32_t m9s805[4] = { 78u, 65u, 77u, 69u };
-static const uint32_t m9s806[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s807[1] = { 40u };
-static const uint32_t m9s808[8] = { 95u, 110u, 97u, 109u, 101u, 115u, 91u, 40u };
-static const uint32_t m9s809[7] = { 41u, 46u, 116u, 97u, 103u, 93u, 41u };
-static const uint32_t m9s810[3] = { 67u, 72u, 82u };
-static const uint32_t m9s811[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s812[8] = { 109u, 57u, 95u, 99u, 104u, 114u, 32u, 40u };
-static const uint32_t m9s813[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s814[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s815[4] = { 66u, 89u, 84u, 69u };
-static const uint32_t m9s816[9] = { 109u, 57u, 95u, 98u, 121u, 116u, 101u, 32u, 40u };
-static const uint32_t m9s817[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s818[3] = { 109u, 57u, 95u };
-static const uint32_t m9s819[2] = { 32u, 40u };
+static const uint32_t m9s766[3] = { 65u, 82u, 82u };
+static const uint32_t m9s767[3] = { 73u, 54u, 52u };
+static const uint32_t m9s768[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s769[1] = { 41u };
+static const uint32_t m9s770[3] = { 73u, 54u, 52u };
+static const uint32_t m9s771[1] = { 40u };
+static const uint32_t m9s772[5] = { 41u, 46u, 108u, 101u, 110u };
+static const uint32_t m9s773[4] = { 86u, 73u, 69u, 87u };
+static const uint32_t m9s774[18] = { 86u, 73u, 69u, 87u, 32u, 111u, 102u, 32u, 97u, 32u, 110u, 111u, 110u, 45u, 71u, 82u, 73u, 68u };
+static const uint32_t m9s775[1] = { 48u };
+static const uint32_t m9s776[3] = { 40u, 123u, 32u };
+static const uint32_t m9s777[1] = { 32u };
+static const uint32_t m9s778[3] = { 32u, 61u, 32u };
+static const uint32_t m9s779[2] = { 59u, 32u };
+static const uint32_t m9s780[1] = { 32u };
+static const uint32_t m9s781[11] = { 114u, 59u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
+static const uint32_t m9s782[7] = { 111u, 32u, 61u, 32u, 48u, 59u, 32u };
+static const uint32_t m9s783[4] = { 114u, 46u, 110u, 91u };
+static const uint32_t m9s784[4] = { 93u, 32u, 61u, 32u };
+static const uint32_t m9s785[3] = { 46u, 110u, 91u };
+static const uint32_t m9s786[3] = { 93u, 59u, 32u };
+static const uint32_t m9s787[4] = { 114u, 46u, 115u, 91u };
+static const uint32_t m9s788[4] = { 93u, 32u, 61u, 32u };
+static const uint32_t m9s789[3] = { 46u, 115u, 91u };
+static const uint32_t m9s790[3] = { 93u, 59u, 32u };
+static const uint32_t m9s791[15] = { 111u, 32u, 43u, 61u, 32u, 109u, 57u, 95u, 103u, 100u, 114u, 111u, 112u, 32u, 40u };
+static const uint32_t m9s792[2] = { 44u, 32u };
+static const uint32_t m9s793[3] = { 46u, 110u, 91u };
+static const uint32_t m9s794[3] = { 93u, 44u, 32u };
+static const uint32_t m9s795[3] = { 46u, 115u, 91u };
+static const uint32_t m9s796[9] = { 93u, 44u, 32u, 101u, 114u, 114u, 41u, 59u, 32u };
+static const uint32_t m9s797[6] = { 114u, 46u, 112u, 32u, 61u, 32u };
+static const uint32_t m9s798[5] = { 46u, 112u, 32u, 43u, 32u };
+static const uint32_t m9s799[3] = { 111u, 59u, 32u };
+static const uint32_t m9s800[5] = { 114u, 59u, 32u, 125u, 41u };
+static const uint32_t m9s801[4] = { 71u, 82u, 73u, 68u };
+static const uint32_t m9s802[25] = { 86u, 73u, 69u, 87u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s803[1] = { 48u };
+static const uint32_t m9s804[3] = { 79u, 82u, 68u };
+static const uint32_t m9s805[3] = { 73u, 54u, 52u };
+static const uint32_t m9s806[3] = { 67u, 82u, 58u };
+static const uint32_t m9s807[11] = { 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 40u, 40u };
+static const uint32_t m9s808[6] = { 41u, 46u, 116u, 97u, 103u, 41u };
+static const uint32_t m9s809[10] = { 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 40u };
+static const uint32_t m9s810[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s811[1] = { 41u };
+static const uint32_t m9s812[4] = { 78u, 65u, 77u, 69u };
+static const uint32_t m9s813[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s814[1] = { 40u };
+static const uint32_t m9s815[8] = { 95u, 110u, 97u, 109u, 101u, 115u, 91u, 40u };
+static const uint32_t m9s816[7] = { 41u, 46u, 116u, 97u, 103u, 93u, 41u };
+static const uint32_t m9s817[3] = { 67u, 72u, 82u };
+static const uint32_t m9s818[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s819[8] = { 109u, 57u, 95u, 99u, 104u, 114u, 32u, 40u };
 static const uint32_t m9s820[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s821[3] = { 73u, 54u, 52u };
-static const uint32_t m9s822[3] = { 73u, 54u, 52u };
-static const uint32_t m9s823[3] = { 70u, 54u, 52u };
-static const uint32_t m9s824[3] = { 70u, 51u, 50u };
-static const uint32_t m9s825[21] = { 109u, 57u, 95u, 105u, 54u, 52u, 95u, 102u, 54u, 52u, 32u, 40u, 40u, 100u, 111u, 117u, 98u, 108u, 101u, 41u, 40u };
-static const uint32_t m9s826[7] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s827[10] = { 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 40u };
-static const uint32_t m9s828[1] = { 41u };
-static const uint32_t m9s829[3] = { 70u, 54u, 52u };
+static const uint32_t m9s821[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s822[4] = { 66u, 89u, 84u, 69u };
+static const uint32_t m9s823[9] = { 109u, 57u, 95u, 98u, 121u, 116u, 101u, 32u, 40u };
+static const uint32_t m9s824[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s825[3] = { 109u, 57u, 95u };
+static const uint32_t m9s826[2] = { 32u, 40u };
+static const uint32_t m9s827[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s828[3] = { 73u, 54u, 52u };
+static const uint32_t m9s829[3] = { 73u, 54u, 52u };
 static const uint32_t m9s830[3] = { 70u, 54u, 52u };
-static const uint32_t m9s831[9] = { 40u, 100u, 111u, 117u, 98u, 108u, 101u, 41u, 40u };
-static const uint32_t m9s832[1] = { 41u };
-static const uint32_t m9s833[3] = { 70u, 51u, 50u };
-static const uint32_t m9s834[3] = { 70u, 51u, 50u };
-static const uint32_t m9s835[3] = { 70u, 54u, 52u };
-static const uint32_t m9s836[12] = { 109u, 57u, 95u, 102u, 51u, 50u, 95u, 102u, 54u, 52u, 32u, 40u };
-static const uint32_t m9s837[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s838[8] = { 40u, 102u, 108u, 111u, 97u, 116u, 41u, 40u };
+static const uint32_t m9s831[3] = { 70u, 51u, 50u };
+static const uint32_t m9s832[21] = { 109u, 57u, 95u, 105u, 54u, 52u, 95u, 102u, 54u, 52u, 32u, 40u, 40u, 100u, 111u, 117u, 98u, 108u, 101u, 41u, 40u };
+static const uint32_t m9s833[7] = { 41u, 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s834[10] = { 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 40u };
+static const uint32_t m9s835[1] = { 41u };
+static const uint32_t m9s836[3] = { 70u, 54u, 52u };
+static const uint32_t m9s837[3] = { 70u, 54u, 52u };
+static const uint32_t m9s838[9] = { 40u, 100u, 111u, 117u, 98u, 108u, 101u, 41u, 40u };
 static const uint32_t m9s839[1] = { 41u };
-static const uint32_t m9s840[3] = { 77u, 65u, 88u };
-static const uint32_t m9s841[3] = { 73u, 54u, 52u };
-static const uint32_t m9s842[9] = { 73u, 78u, 84u, 54u, 52u, 95u, 77u, 65u, 88u };
-static const uint32_t m9s843[32] = { 77u, 65u, 88u, 32u, 111u, 102u, 32u, 116u, 104u, 105u, 115u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s844[1] = { 48u };
-static const uint32_t m9s845[6] = { 83u, 105u, 122u, 101u, 79u, 102u };
-static const uint32_t m9s846[3] = { 73u, 54u, 52u };
-static const uint32_t m9s847[19] = { 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s848[2] = { 41u, 41u };
-static const uint32_t m9s849[19] = { 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s850[1] = { 95u };
-static const uint32_t m9s851[2] = { 41u, 41u };
-static const uint32_t m9s852[19] = { 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s853[2] = { 41u, 41u };
-static const uint32_t m9s854[8] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u };
-static const uint32_t m9s855[3] = { 73u, 54u, 52u };
-static const uint32_t m9s856[12] = { 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 40u };
-static const uint32_t m9s857[28] = { 41u, 46u, 108u, 101u, 110u, 32u, 42u, 32u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u, 42u, 40u };
-static const uint32_t m9s858[5] = { 41u, 46u, 112u, 41u, 41u };
-static const uint32_t m9s859[3] = { 65u, 68u, 82u };
-static const uint32_t m9s860[1] = { 63u };
-static const uint32_t m9s861[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s862[10] = { 40u, 40u, 118u, 111u, 105u, 100u, 32u, 42u, 41u, 40u };
-static const uint32_t m9s863[4] = { 41u, 46u, 112u, 41u };
-static const uint32_t m9s864[3] = { 65u, 82u, 82u };
-static const uint32_t m9s865[10] = { 40u, 40u, 118u, 111u, 105u, 100u, 32u, 42u, 41u, 40u };
-static const uint32_t m9s866[4] = { 41u, 46u, 118u, 41u };
-static const uint32_t m9s867[32] = { 65u, 68u, 82u, 32u, 111u, 102u, 32u, 110u, 111u, 110u, 45u, 115u, 108u, 105u, 99u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s868[1] = { 48u };
-static const uint32_t m9s869[3] = { 70u, 51u, 50u };
-static const uint32_t m9s870[3] = { 70u, 51u, 50u };
-static const uint32_t m9s871[3] = { 70u, 54u, 52u };
-static const uint32_t m9s872[3] = { 70u, 51u, 50u };
-static const uint32_t m9s873[3] = { 70u, 51u, 50u };
-static const uint32_t m9s874[3] = { 70u, 51u, 50u };
-static const uint32_t m9s875[3] = { 70u, 51u, 50u };
-static const uint32_t m9s876[1] = { 67u };
-static const uint32_t m9s877[18] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 67u, 32u, 116u, 121u, 112u, 101u, 58u, 32u, 67u, 46u };
-static const uint32_t m9s878[1] = { 48u };
-static const uint32_t m9s879[1] = { 63u };
-static const uint32_t m9s880[31] = { 97u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s881[2] = { 40u, 40u };
-static const uint32_t m9s882[2] = { 41u, 40u };
-static const uint32_t m9s883[2] = { 41u, 41u };
-static const uint32_t m9s884[1] = { 48u };
-static const uint32_t m9s885[3] = { 70u, 54u, 52u };
-static const uint32_t m9s886[3] = { 70u, 51u, 50u };
-static const uint32_t m9s887[11] = { 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s888[30] = { 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u };
-static const uint32_t m9s889[3] = { 70u, 54u, 52u };
-static const uint32_t m9s890[16] = { 109u, 57u, 95u, 102u, 54u, 52u, 95u, 102u, 114u, 111u, 109u, 95u, 108u, 101u, 32u, 40u };
-static const uint32_t m9s891[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s892[16] = { 109u, 57u, 95u, 102u, 51u, 50u, 95u, 102u, 114u, 111u, 109u, 95u, 108u, 101u, 32u, 40u };
-static const uint32_t m9s893[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s894[1] = { 48u };
-static const uint32_t m9s895[3] = { 70u, 54u, 52u };
-static const uint32_t m9s896[3] = { 70u, 51u, 50u };
-static const uint32_t m9s897[9] = { 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
-static const uint32_t m9s898[29] = { 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 116u, 119u, 111u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 115u };
-static const uint32_t m9s899[1] = { 63u };
-static const uint32_t m9s900[3] = { 70u, 54u, 52u };
-static const uint32_t m9s901[14] = { 109u, 57u, 95u, 102u, 54u, 52u, 95u, 116u, 111u, 95u, 108u, 101u, 32u, 40u };
-static const uint32_t m9s902[2] = { 44u, 32u };
-static const uint32_t m9s903[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s904[14] = { 109u, 57u, 95u, 102u, 51u, 50u, 95u, 116u, 111u, 95u, 108u, 101u, 32u, 40u };
-static const uint32_t m9s905[2] = { 44u, 32u };
-static const uint32_t m9s906[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s907[1] = { 48u };
-static const uint32_t m9s908[1] = { 46u };
-static const uint32_t m9s909[1] = { 95u };
-static const uint32_t m9s910[1] = { 95u };
-static const uint32_t m9s911[1] = { 63u };
+static const uint32_t m9s840[3] = { 70u, 51u, 50u };
+static const uint32_t m9s841[3] = { 70u, 51u, 50u };
+static const uint32_t m9s842[3] = { 70u, 54u, 52u };
+static const uint32_t m9s843[12] = { 109u, 57u, 95u, 102u, 51u, 50u, 95u, 102u, 54u, 52u, 32u, 40u };
+static const uint32_t m9s844[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s845[8] = { 40u, 102u, 108u, 111u, 97u, 116u, 41u, 40u };
+static const uint32_t m9s846[1] = { 41u };
+static const uint32_t m9s847[3] = { 77u, 65u, 88u };
+static const uint32_t m9s848[3] = { 73u, 54u, 52u };
+static const uint32_t m9s849[9] = { 73u, 78u, 84u, 54u, 52u, 95u, 77u, 65u, 88u };
+static const uint32_t m9s850[32] = { 77u, 65u, 88u, 32u, 111u, 102u, 32u, 116u, 104u, 105u, 115u, 32u, 116u, 121u, 112u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s851[1] = { 48u };
+static const uint32_t m9s852[6] = { 83u, 105u, 122u, 101u, 79u, 102u };
+static const uint32_t m9s853[3] = { 73u, 54u, 52u };
+static const uint32_t m9s854[19] = { 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s855[2] = { 41u, 41u };
+static const uint32_t m9s856[19] = { 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s857[1] = { 95u };
+static const uint32_t m9s858[2] = { 41u, 41u };
+static const uint32_t m9s859[19] = { 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s860[2] = { 41u, 41u };
+static const uint32_t m9s861[8] = { 66u, 121u, 116u, 101u, 83u, 105u, 122u, 101u };
+static const uint32_t m9s862[3] = { 73u, 54u, 52u };
+static const uint32_t m9s863[12] = { 40u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 40u };
+static const uint32_t m9s864[28] = { 41u, 46u, 108u, 101u, 110u, 32u, 42u, 32u, 40u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 41u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u, 42u, 40u };
+static const uint32_t m9s865[5] = { 41u, 46u, 112u, 41u, 41u };
+static const uint32_t m9s866[3] = { 65u, 68u, 82u };
+static const uint32_t m9s867[1] = { 63u };
+static const uint32_t m9s868[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s869[10] = { 40u, 40u, 118u, 111u, 105u, 100u, 32u, 42u, 41u, 40u };
+static const uint32_t m9s870[4] = { 41u, 46u, 112u, 41u };
+static const uint32_t m9s871[3] = { 65u, 82u, 82u };
+static const uint32_t m9s872[10] = { 40u, 40u, 118u, 111u, 105u, 100u, 32u, 42u, 41u, 40u };
+static const uint32_t m9s873[4] = { 41u, 46u, 118u, 41u };
+static const uint32_t m9s874[32] = { 65u, 68u, 82u, 32u, 111u, 102u, 32u, 110u, 111u, 110u, 45u, 115u, 108u, 105u, 99u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s875[1] = { 48u };
+static const uint32_t m9s876[3] = { 70u, 51u, 50u };
+static const uint32_t m9s877[3] = { 70u, 51u, 50u };
+static const uint32_t m9s878[3] = { 70u, 54u, 52u };
+static const uint32_t m9s879[3] = { 70u, 51u, 50u };
+static const uint32_t m9s880[3] = { 70u, 51u, 50u };
+static const uint32_t m9s881[3] = { 70u, 51u, 50u };
+static const uint32_t m9s882[3] = { 70u, 51u, 50u };
+static const uint32_t m9s883[1] = { 67u };
+static const uint32_t m9s884[18] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 67u, 32u, 116u, 121u, 112u, 101u, 58u, 32u, 67u, 46u };
+static const uint32_t m9s885[1] = { 48u };
+static const uint32_t m9s886[1] = { 63u };
+static const uint32_t m9s887[31] = { 97u, 32u, 99u, 111u, 110u, 118u, 101u, 114u, 115u, 105u, 111u, 110u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s888[2] = { 40u, 40u };
+static const uint32_t m9s889[2] = { 41u, 40u };
+static const uint32_t m9s890[2] = { 41u, 41u };
+static const uint32_t m9s891[1] = { 48u };
+static const uint32_t m9s892[3] = { 70u, 54u, 52u };
+static const uint32_t m9s893[3] = { 70u, 51u, 50u };
+static const uint32_t m9s894[11] = { 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s895[30] = { 70u, 114u, 111u, 109u, 66u, 121u, 116u, 101u, 115u, 76u, 69u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 111u, 110u, 101u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u };
+static const uint32_t m9s896[3] = { 70u, 54u, 52u };
+static const uint32_t m9s897[16] = { 109u, 57u, 95u, 102u, 54u, 52u, 95u, 102u, 114u, 111u, 109u, 95u, 108u, 101u, 32u, 40u };
+static const uint32_t m9s898[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s899[16] = { 109u, 57u, 95u, 102u, 51u, 50u, 95u, 102u, 114u, 111u, 109u, 95u, 108u, 101u, 32u, 40u };
+static const uint32_t m9s900[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s901[1] = { 48u };
+static const uint32_t m9s902[3] = { 70u, 54u, 52u };
+static const uint32_t m9s903[3] = { 70u, 51u, 50u };
+static const uint32_t m9s904[9] = { 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u };
+static const uint32_t m9s905[29] = { 84u, 111u, 66u, 121u, 116u, 101u, 115u, 76u, 69u, 32u, 116u, 97u, 107u, 101u, 115u, 32u, 116u, 119u, 111u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 115u };
+static const uint32_t m9s906[1] = { 63u };
+static const uint32_t m9s907[3] = { 70u, 54u, 52u };
+static const uint32_t m9s908[14] = { 109u, 57u, 95u, 102u, 54u, 52u, 95u, 116u, 111u, 95u, 108u, 101u, 32u, 40u };
+static const uint32_t m9s909[2] = { 44u, 32u };
+static const uint32_t m9s910[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s911[14] = { 109u, 57u, 95u, 102u, 51u, 50u, 95u, 116u, 111u, 95u, 108u, 101u, 32u, 40u };
 static const uint32_t m9s912[2] = { 44u, 32u };
-static const uint32_t m9s913[16] = { 99u, 97u, 108u, 108u, 32u, 97u, 114u, 105u, 116u, 121u, 32u, 119u, 114u, 111u, 110u, 103u };
-static const uint32_t m9s914[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
-static const uint32_t m9s915[22] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 109u, 57u, 95u, 109u, 111u, 110u, 32u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
-static const uint32_t m9s916[1] = { 59u };
-static const uint32_t m9s917[26] = { 40u, 123u, 32u, 109u, 57u, 95u, 109u, 111u, 110u, 95u, 101u, 110u, 116u, 101u, 114u, 32u, 40u, 38u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
-static const uint32_t m9s918[14] = { 41u, 59u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s919[2] = { 32u, 40u };
-static const uint32_t m9s920[1] = { 41u };
-static const uint32_t m9s921[9] = { 41u, 32u, 109u, 57u, 103u, 118u, 32u, 61u, 32u };
-static const uint32_t m9s922[2] = { 32u, 40u };
-static const uint32_t m9s923[3] = { 41u, 59u, 32u };
-static const uint32_t m9s924[23] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 108u, 101u, 97u, 118u, 101u, 32u, 40u, 38u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
-static const uint32_t m9s925[11] = { 41u, 59u, 32u, 109u, 57u, 103u, 118u, 59u, 32u, 125u, 41u };
-static const uint32_t m9s926[26] = { 40u, 123u, 32u, 109u, 57u, 95u, 109u, 111u, 110u, 95u, 101u, 110u, 116u, 101u, 114u, 32u, 40u, 38u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
-static const uint32_t m9s927[3] = { 41u, 59u, 32u };
-static const uint32_t m9s928[2] = { 32u, 40u };
-static const uint32_t m9s929[3] = { 41u, 59u, 32u };
-static const uint32_t m9s930[23] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 108u, 101u, 97u, 118u, 101u, 32u, 40u, 38u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
-static const uint32_t m9s931[5] = { 41u, 59u, 32u, 125u, 41u };
-static const uint32_t m9s932[2] = { 32u, 40u };
-static const uint32_t m9s933[1] = { 41u };
-static const uint32_t m9s934[2] = { 44u, 32u };
-static const uint32_t m9s935[1] = { 118u };
-static const uint32_t m9s936[1] = { 111u };
-static const uint32_t m9s937[1] = { 63u };
-static const uint32_t m9s938[2] = { 38u, 40u };
-static const uint32_t m9s939[1] = { 41u };
-static const uint32_t m9s940[33] = { 86u, 65u, 82u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u };
+static const uint32_t m9s913[6] = { 44u, 32u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s914[1] = { 48u };
+static const uint32_t m9s915[1] = { 46u };
+static const uint32_t m9s916[1] = { 95u };
+static const uint32_t m9s917[1] = { 95u };
+static const uint32_t m9s918[1] = { 63u };
+static const uint32_t m9s919[2] = { 44u, 32u };
+static const uint32_t m9s920[16] = { 99u, 97u, 108u, 108u, 32u, 97u, 114u, 105u, 116u, 121u, 32u, 119u, 114u, 111u, 110u, 103u };
+static const uint32_t m9s921[6] = { 83u, 69u, 82u, 73u, 65u, 76u };
+static const uint32_t m9s922[22] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 109u, 57u, 95u, 109u, 111u, 110u, 32u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
+static const uint32_t m9s923[1] = { 59u };
+static const uint32_t m9s924[26] = { 40u, 123u, 32u, 109u, 57u, 95u, 109u, 111u, 110u, 95u, 101u, 110u, 116u, 101u, 114u, 32u, 40u, 38u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
+static const uint32_t m9s925[14] = { 41u, 59u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s926[2] = { 32u, 40u };
+static const uint32_t m9s927[1] = { 41u };
+static const uint32_t m9s928[9] = { 41u, 32u, 109u, 57u, 103u, 118u, 32u, 61u, 32u };
+static const uint32_t m9s929[2] = { 32u, 40u };
+static const uint32_t m9s930[3] = { 41u, 59u, 32u };
+static const uint32_t m9s931[23] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 108u, 101u, 97u, 118u, 101u, 32u, 40u, 38u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
+static const uint32_t m9s932[11] = { 41u, 59u, 32u, 109u, 57u, 103u, 118u, 59u, 32u, 125u, 41u };
+static const uint32_t m9s933[26] = { 40u, 123u, 32u, 109u, 57u, 95u, 109u, 111u, 110u, 95u, 101u, 110u, 116u, 101u, 114u, 32u, 40u, 38u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
+static const uint32_t m9s934[3] = { 41u, 59u, 32u };
+static const uint32_t m9s935[2] = { 32u, 40u };
+static const uint32_t m9s936[3] = { 41u, 59u, 32u };
+static const uint32_t m9s937[23] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 108u, 101u, 97u, 118u, 101u, 32u, 40u, 38u, 109u, 57u, 95u, 103u, 97u, 116u, 101u, 95u };
+static const uint32_t m9s938[5] = { 41u, 59u, 32u, 125u, 41u };
+static const uint32_t m9s939[2] = { 32u, 40u };
+static const uint32_t m9s940[1] = { 41u };
 static const uint32_t m9s941[2] = { 44u, 32u };
-static const uint32_t m9s942[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s943[3] = { 65u, 82u, 82u };
-static const uint32_t m9s944[2] = { 40u, 40u };
-static const uint32_t m9s945[4] = { 41u, 123u, 32u, 40u };
-static const uint32_t m9s946[13] = { 41u, 46u, 118u, 44u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s947[4] = { 41u, 32u, 125u, 41u };
-static const uint32_t m9s948[29] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s949[29] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s950[16] = { 99u, 97u, 108u, 108u, 32u, 97u, 114u, 105u, 116u, 121u, 32u, 119u, 114u, 111u, 110u, 103u };
-static const uint32_t m9s951[2] = { 44u, 32u };
-static const uint32_t m9s952[2] = { 32u, 40u };
-static const uint32_t m9s953[4] = { 101u, 114u, 114u, 41u };
-static const uint32_t m9s954[24] = { 99u, 97u, 108u, 108u, 101u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u, 58u, 32u };
-static const uint32_t m9s955[1] = { 48u };
-static const uint32_t m9s956[1] = { 63u };
-static const uint32_t m9s957[1] = { 48u };
-static const uint32_t m9s958[6] = { 83u, 72u, 65u, 82u, 69u, 68u };
-static const uint32_t m9s959[6] = { 83u, 72u, 65u, 82u, 69u, 68u };
-static const uint32_t m9s960[13] = { 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s961[8] = { 41u, 32u, 109u, 57u, 118u, 32u, 61u, 32u };
-static const uint32_t m9s962[1] = { 59u };
-static const uint32_t m9s963[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s964[1] = { 59u };
-static const uint32_t m9s965[13] = { 40u, 40u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s966[23] = { 41u, 41u, 32u, 109u, 57u, 95u, 115u, 104u, 97u, 114u, 101u, 95u, 99u, 111u, 112u, 121u, 32u, 40u, 109u, 57u, 118u, 41u, 41u };
-static const uint32_t m9s967[3] = { 109u, 57u, 118u };
-static const uint32_t m9s968[3] = { 32u, 61u, 32u };
+static const uint32_t m9s942[1] = { 118u };
+static const uint32_t m9s943[1] = { 111u };
+static const uint32_t m9s944[1] = { 63u };
+static const uint32_t m9s945[2] = { 38u, 40u };
+static const uint32_t m9s946[1] = { 41u };
+static const uint32_t m9s947[33] = { 86u, 65u, 82u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 97u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u };
+static const uint32_t m9s948[2] = { 44u, 32u };
+static const uint32_t m9s949[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s950[3] = { 65u, 82u, 82u };
+static const uint32_t m9s951[2] = { 40u, 40u };
+static const uint32_t m9s952[4] = { 41u, 123u, 32u, 40u };
+static const uint32_t m9s953[13] = { 41u, 46u, 118u, 44u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s954[4] = { 41u, 32u, 125u, 41u };
+static const uint32_t m9s955[29] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s956[29] = { 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s957[16] = { 99u, 97u, 108u, 108u, 32u, 97u, 114u, 105u, 116u, 121u, 32u, 119u, 114u, 111u, 110u, 103u };
+static const uint32_t m9s958[2] = { 44u, 32u };
+static const uint32_t m9s959[2] = { 32u, 40u };
+static const uint32_t m9s960[4] = { 101u, 114u, 114u, 41u };
+static const uint32_t m9s961[24] = { 99u, 97u, 108u, 108u, 101u, 101u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u, 58u, 32u };
+static const uint32_t m9s962[1] = { 48u };
+static const uint32_t m9s963[1] = { 63u };
+static const uint32_t m9s964[1] = { 48u };
+static const uint32_t m9s965[6] = { 83u, 72u, 65u, 82u, 69u, 68u };
+static const uint32_t m9s966[6] = { 83u, 72u, 65u, 82u, 69u, 68u };
+static const uint32_t m9s967[13] = { 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s968[8] = { 41u, 32u, 109u, 57u, 118u, 32u, 61u, 32u };
 static const uint32_t m9s969[1] = { 59u };
 static const uint32_t m9s970[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
 static const uint32_t m9s971[1] = { 59u };
-static const uint32_t m9s972[1] = { 125u };
-static const uint32_t m9s973[13] = { 40u, 40u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s974[18] = { 41u, 41u, 32u, 109u, 57u, 95u, 115u, 104u, 97u, 114u, 101u, 95u, 99u, 111u, 112u, 121u, 32u, 40u };
-static const uint32_t m9s975[2] = { 41u, 41u };
-static const uint32_t m9s976[3] = { 32u, 61u, 32u };
-static const uint32_t m9s977[1] = { 59u };
-static const uint32_t m9s978[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s979[1] = { 59u };
-static const uint32_t m9s980[1] = { 63u };
-static const uint32_t m9s981[1] = { 59u };
-static const uint32_t m9s982[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s983[1] = { 59u };
-static const uint32_t m9s984[2] = { 123u, 32u };
-static const uint32_t m9s985[1] = { 32u };
-static const uint32_t m9s986[3] = { 32u, 61u, 32u };
-static const uint32_t m9s987[1] = { 59u };
-static const uint32_t m9s988[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s989[1] = { 59u };
-static const uint32_t m9s990[1] = { 98u };
-static const uint32_t m9s991[4] = { 105u, 102u, 32u, 40u };
-static const uint32_t m9s992[11] = { 32u, 33u, 61u, 32u, 78u, 85u, 76u, 76u, 41u, 32u, 123u };
-static const uint32_t m9s993[35] = { 69u, 76u, 83u, 73u, 70u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s994[8] = { 125u, 32u, 101u, 108u, 115u, 101u, 32u, 123u };
-static const uint32_t m9s995[3] = { 125u, 32u, 125u };
-static const uint32_t m9s996[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s997[5] = { 98u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s998[3] = { 32u, 61u, 32u };
-static const uint32_t m9s999[1] = { 59u };
-static const uint32_t m9s1000[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1001[1] = { 59u };
-static const uint32_t m9s1002[4] = { 105u, 102u, 32u, 40u };
-static const uint32_t m9s1003[3] = { 41u, 32u, 123u };
-static const uint32_t m9s1004[8] = { 125u, 32u, 101u, 108u, 115u, 101u, 32u, 123u };
-static const uint32_t m9s1005[5] = { 98u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s1006[3] = { 32u, 61u, 32u };
-static const uint32_t m9s1007[1] = { 59u };
-static const uint32_t m9s1008[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1009[1] = { 59u };
-static const uint32_t m9s1010[4] = { 105u, 102u, 32u, 40u };
-static const uint32_t m9s1011[3] = { 41u, 32u, 123u };
-static const uint32_t m9s1012[8] = { 125u, 32u, 101u, 108u, 115u, 101u, 32u, 123u };
-static const uint32_t m9s1013[1] = { 125u };
-static const uint32_t m9s1014[2] = { 32u, 125u };
-static const uint32_t m9s1015[10] = { 102u, 111u, 114u, 32u, 40u, 59u, 59u, 41u, 32u, 123u };
-static const uint32_t m9s1016[1] = { 32u };
-static const uint32_t m9s1017[3] = { 32u, 61u, 32u };
-static const uint32_t m9s1018[1] = { 59u };
-static const uint32_t m9s1019[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1020[1] = { 59u };
-static const uint32_t m9s1021[6] = { 105u, 102u, 32u, 40u, 33u, 40u };
-static const uint32_t m9s1022[17] = { 32u, 33u, 61u, 32u, 78u, 85u, 76u, 76u, 41u, 41u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
-static const uint32_t m9s1023[1] = { 98u };
-static const uint32_t m9s1024[1] = { 125u };
-static const uint32_t m9s1025[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1026[10] = { 102u, 111u, 114u, 32u, 40u, 59u, 59u, 41u, 32u, 123u };
-static const uint32_t m9s1027[5] = { 98u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s1028[3] = { 32u, 61u, 32u };
-static const uint32_t m9s1029[1] = { 59u };
-static const uint32_t m9s1030[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1031[1] = { 59u };
-static const uint32_t m9s1032[6] = { 105u, 102u, 32u, 40u, 33u, 40u };
-static const uint32_t m9s1033[9] = { 41u, 41u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
-static const uint32_t m9s1034[1] = { 125u };
-static const uint32_t m9s1035[3] = { 67u, 82u, 58u };
-static const uint32_t m9s1036[10] = { 123u, 32u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u };
-static const uint32_t m9s1037[3] = { 116u, 111u, 59u };
-static const uint32_t m9s1038[8] = { 46u, 116u, 97u, 103u, 32u, 61u, 32u, 40u };
-static const uint32_t m9s1039[6] = { 41u, 46u, 116u, 97u, 103u, 59u };
-static const uint32_t m9s1040[6] = { 116u, 111u, 32u, 61u, 32u, 40u };
-static const uint32_t m9s1041[6] = { 41u, 46u, 116u, 97u, 103u, 59u };
-static const uint32_t m9s1042[7] = { 102u, 111u, 114u, 32u, 40u, 59u, 32u };
-static const uint32_t m9s1043[8] = { 46u, 116u, 97u, 103u, 32u, 60u, 61u, 32u };
-static const uint32_t m9s1044[4] = { 116u, 111u, 59u, 32u };
-static const uint32_t m9s1045[6] = { 46u, 116u, 97u, 103u, 43u, 43u };
-static const uint32_t m9s1046[3] = { 41u, 32u, 123u };
-static const uint32_t m9s1047[3] = { 125u, 32u, 125u };
-static const uint32_t m9s1048[10] = { 123u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
-static const uint32_t m9s1049[3] = { 116u, 111u, 59u };
-static const uint32_t m9s1050[3] = { 32u, 61u, 32u };
-static const uint32_t m9s1051[1] = { 59u };
-static const uint32_t m9s1052[5] = { 116u, 111u, 32u, 61u, 32u };
-static const uint32_t m9s1053[1] = { 59u };
-static const uint32_t m9s1054[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1055[1] = { 59u };
-static const uint32_t m9s1056[1] = { 49u };
-static const uint32_t m9s1057[1] = { 45u };
-static const uint32_t m9s1058[1] = { 45u };
-static const uint32_t m9s1059[32] = { 70u, 79u, 82u, 32u, 66u, 89u, 32u, 115u, 116u, 101u, 112u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1060[32] = { 70u, 79u, 82u, 32u, 66u, 89u, 32u, 115u, 116u, 101u, 112u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1061[7] = { 102u, 111u, 114u, 32u, 40u, 59u, 32u };
-static const uint32_t m9s1062[4] = { 32u, 62u, 61u, 32u };
-static const uint32_t m9s1063[4] = { 116u, 111u, 59u, 32u };
-static const uint32_t m9s1064[4] = { 32u, 43u, 61u, 32u };
-static const uint32_t m9s1065[3] = { 41u, 32u, 123u };
-static const uint32_t m9s1066[7] = { 102u, 111u, 114u, 32u, 40u, 59u, 32u };
-static const uint32_t m9s1067[4] = { 32u, 60u, 61u, 32u };
-static const uint32_t m9s1068[4] = { 116u, 111u, 59u, 32u };
-static const uint32_t m9s1069[4] = { 32u, 43u, 61u, 32u };
-static const uint32_t m9s1070[3] = { 41u, 32u, 123u };
-static const uint32_t m9s1071[3] = { 125u, 32u, 125u };
-static const uint32_t m9s1072[10] = { 102u, 111u, 114u, 32u, 40u, 59u, 59u, 41u, 32u, 123u };
-static const uint32_t m9s1073[1] = { 125u };
-static const uint32_t m9s1074[58] = { 69u, 88u, 73u, 84u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 67u, 65u, 83u, 69u, 32u, 97u, 114u, 109u, 32u, 114u, 101u, 102u, 117u, 115u, 101u, 100u, 32u, 40u, 105u, 116u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 98u, 114u, 101u, 97u, 107u, 32u, 116u, 104u, 101u, 32u, 115u, 119u, 105u, 116u, 99u, 104u, 41u };
-static const uint32_t m9s1075[55] = { 69u, 88u, 73u, 84u, 32u, 97u, 99u, 114u, 111u, 115u, 115u, 32u, 70u, 73u, 78u, 65u, 76u, 76u, 89u, 32u, 114u, 101u, 102u, 117u, 115u, 101u, 100u, 32u, 40u, 105u, 116u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 115u, 107u, 105u, 112u, 32u, 116u, 104u, 101u, 32u, 99u, 108u, 101u, 97u, 110u, 117u, 112u, 41u };
-static const uint32_t m9s1076[6] = { 98u, 114u, 101u, 97u, 107u, 59u };
-static const uint32_t m9s1077[13] = { 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s1078[2] = { 41u, 32u };
-static const uint32_t m9s1079[3] = { 32u, 61u, 32u };
-static const uint32_t m9s1080[1] = { 59u };
-static const uint32_t m9s1081[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1082[1] = { 59u };
-static const uint32_t m9s1083[3] = { 67u, 82u, 58u };
-static const uint32_t m9s1084[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s1085[3] = { 73u, 54u, 52u };
-static const uint32_t m9s1086[39] = { 67u, 65u, 83u, 69u, 32u, 111u, 118u, 101u, 114u, 32u, 116u, 104u, 105u, 115u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1087[1] = { 63u };
-static const uint32_t m9s1088[1] = { 48u };
-static const uint32_t m9s1089[38] = { 87u, 65u, 73u, 84u, 47u, 83u, 73u, 71u, 78u, 65u, 76u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u };
-static const uint32_t m9s1090[15] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 119u, 97u, 105u, 116u, 32u, 40u, 38u, 40u };
-static const uint32_t m9s1091[9] = { 41u, 46u, 109u, 57u, 109u, 111u, 110u, 41u, 59u };
-static const uint32_t m9s1092[17] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 115u, 105u, 103u, 110u, 97u, 108u, 32u, 40u, 38u, 40u };
-static const uint32_t m9s1093[9] = { 41u, 46u, 109u, 57u, 109u, 111u, 110u, 41u, 59u };
-static const uint32_t m9s1094[38] = { 87u, 65u, 73u, 84u, 47u, 83u, 73u, 71u, 78u, 65u, 76u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u };
-static const uint32_t m9s1095[1] = { 63u };
-static const uint32_t m9s1096[34] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 116u, 97u, 114u, 103u, 101u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1097[1] = { 48u };
-static const uint32_t m9s1098[4] = { 78u, 85u, 76u, 76u };
-static const uint32_t m9s1099[2] = { 38u, 40u };
-static const uint32_t m9s1100[1] = { 41u };
-static const uint32_t m9s1101[2] = { 32u, 42u };
-static const uint32_t m9s1102[51] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 45u, 115u, 104u, 97u, 112u, 101u, 100u, 32u, 111u, 114u, 32u, 97u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u };
-static const uint32_t m9s1103[20] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 118u, 111u, 105u, 100u, 32u, 42u, 109u, 57u, 95u, 116u, 104u, 114u, 95u };
-static const uint32_t m9s1104[1] = { 95u };
-static const uint32_t m9s1105[25] = { 32u, 40u, 118u, 111u, 105u, 100u, 32u, 42u, 112u, 44u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 112u, 111u, 111u, 108u, 41u };
-static const uint32_t m9s1106[1] = { 123u };
-static const uint32_t m9s1107[21] = { 32u, 32u, 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 101u, 32u, 61u, 32u, 123u, 32u, 48u, 32u, 125u, 59u };
-static const uint32_t m9s1108[2] = { 32u, 32u };
-static const uint32_t m9s1109[1] = { 95u };
-static const uint32_t m9s1110[3] = { 32u, 40u, 40u };
-static const uint32_t m9s1111[15] = { 41u, 32u, 112u, 44u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 38u, 101u, 41u, 59u };
-static const uint32_t m9s1112[14] = { 32u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u, 112u, 111u, 111u, 108u, 59u };
-static const uint32_t m9s1113[2] = { 32u, 32u };
-static const uint32_t m9s1114[1] = { 95u };
-static const uint32_t m9s1115[3] = { 32u, 40u, 40u };
-static const uint32_t m9s1116[9] = { 41u, 32u, 112u, 44u, 32u, 38u, 101u, 41u, 59u };
-static const uint32_t m9s1117[42] = { 32u, 32u, 105u, 102u, 32u, 40u, 101u, 46u, 101u, 120u, 99u, 41u, 32u, 109u, 57u, 95u, 116u, 104u, 114u, 101u, 97u, 100u, 95u, 100u, 105u, 101u, 100u, 32u, 40u, 101u, 46u, 101u, 120u, 99u, 45u, 62u, 110u, 97u, 109u, 101u, 41u, 59u };
-static const uint32_t m9s1118[14] = { 32u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 32u, 78u, 85u, 76u, 76u, 59u };
-static const uint32_t m9s1119[1] = { 125u };
-static const uint32_t m9s1120[25] = { 109u, 57u, 95u, 116u, 104u, 114u, 101u, 97u, 100u, 95u, 115u, 116u, 97u, 114u, 116u, 50u, 32u, 40u, 109u, 57u, 95u, 116u, 104u, 114u, 95u };
+static const uint32_t m9s972[13] = { 40u, 40u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s973[23] = { 41u, 41u, 32u, 109u, 57u, 95u, 115u, 104u, 97u, 114u, 101u, 95u, 99u, 111u, 112u, 121u, 32u, 40u, 109u, 57u, 118u, 41u, 41u };
+static const uint32_t m9s974[3] = { 109u, 57u, 118u };
+static const uint32_t m9s975[3] = { 32u, 61u, 32u };
+static const uint32_t m9s976[1] = { 59u };
+static const uint32_t m9s977[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s978[1] = { 59u };
+static const uint32_t m9s979[1] = { 125u };
+static const uint32_t m9s980[13] = { 40u, 40u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s981[18] = { 41u, 41u, 32u, 109u, 57u, 95u, 115u, 104u, 97u, 114u, 101u, 95u, 99u, 111u, 112u, 121u, 32u, 40u };
+static const uint32_t m9s982[2] = { 41u, 41u };
+static const uint32_t m9s983[3] = { 32u, 61u, 32u };
+static const uint32_t m9s984[1] = { 59u };
+static const uint32_t m9s985[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s986[1] = { 59u };
+static const uint32_t m9s987[1] = { 63u };
+static const uint32_t m9s988[1] = { 59u };
+static const uint32_t m9s989[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s990[1] = { 59u };
+static const uint32_t m9s991[2] = { 123u, 32u };
+static const uint32_t m9s992[1] = { 32u };
+static const uint32_t m9s993[3] = { 32u, 61u, 32u };
+static const uint32_t m9s994[1] = { 59u };
+static const uint32_t m9s995[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s996[1] = { 59u };
+static const uint32_t m9s997[1] = { 98u };
+static const uint32_t m9s998[4] = { 105u, 102u, 32u, 40u };
+static const uint32_t m9s999[11] = { 32u, 33u, 61u, 32u, 78u, 85u, 76u, 76u, 41u, 32u, 123u };
+static const uint32_t m9s1000[35] = { 69u, 76u, 83u, 73u, 70u, 32u, 97u, 102u, 116u, 101u, 114u, 32u, 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1001[8] = { 125u, 32u, 101u, 108u, 115u, 101u, 32u, 123u };
+static const uint32_t m9s1002[3] = { 125u, 32u, 125u };
+static const uint32_t m9s1003[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1004[5] = { 98u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s1005[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1006[1] = { 59u };
+static const uint32_t m9s1007[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1008[1] = { 59u };
+static const uint32_t m9s1009[4] = { 105u, 102u, 32u, 40u };
+static const uint32_t m9s1010[3] = { 41u, 32u, 123u };
+static const uint32_t m9s1011[8] = { 125u, 32u, 101u, 108u, 115u, 101u, 32u, 123u };
+static const uint32_t m9s1012[5] = { 98u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s1013[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1014[1] = { 59u };
+static const uint32_t m9s1015[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1016[1] = { 59u };
+static const uint32_t m9s1017[4] = { 105u, 102u, 32u, 40u };
+static const uint32_t m9s1018[3] = { 41u, 32u, 123u };
+static const uint32_t m9s1019[8] = { 125u, 32u, 101u, 108u, 115u, 101u, 32u, 123u };
+static const uint32_t m9s1020[1] = { 125u };
+static const uint32_t m9s1021[2] = { 32u, 125u };
+static const uint32_t m9s1022[10] = { 102u, 111u, 114u, 32u, 40u, 59u, 59u, 41u, 32u, 123u };
+static const uint32_t m9s1023[1] = { 32u };
+static const uint32_t m9s1024[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1025[1] = { 59u };
+static const uint32_t m9s1026[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1027[1] = { 59u };
+static const uint32_t m9s1028[6] = { 105u, 102u, 32u, 40u, 33u, 40u };
+static const uint32_t m9s1029[17] = { 32u, 33u, 61u, 32u, 78u, 85u, 76u, 76u, 41u, 41u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
+static const uint32_t m9s1030[1] = { 98u };
+static const uint32_t m9s1031[1] = { 125u };
+static const uint32_t m9s1032[28] = { 73u, 83u, 32u, 83u, 79u, 77u, 69u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1033[10] = { 102u, 111u, 114u, 32u, 40u, 59u, 59u, 41u, 32u, 123u };
+static const uint32_t m9s1034[5] = { 98u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s1035[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1036[1] = { 59u };
+static const uint32_t m9s1037[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1038[1] = { 59u };
+static const uint32_t m9s1039[6] = { 105u, 102u, 32u, 40u, 33u, 40u };
+static const uint32_t m9s1040[9] = { 41u, 41u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
+static const uint32_t m9s1041[1] = { 125u };
+static const uint32_t m9s1042[3] = { 67u, 82u, 58u };
+static const uint32_t m9s1043[10] = { 123u, 32u, 105u, 110u, 116u, 51u, 50u, 95u, 116u, 32u };
+static const uint32_t m9s1044[3] = { 116u, 111u, 59u };
+static const uint32_t m9s1045[8] = { 46u, 116u, 97u, 103u, 32u, 61u, 32u, 40u };
+static const uint32_t m9s1046[6] = { 41u, 46u, 116u, 97u, 103u, 59u };
+static const uint32_t m9s1047[6] = { 116u, 111u, 32u, 61u, 32u, 40u };
+static const uint32_t m9s1048[6] = { 41u, 46u, 116u, 97u, 103u, 59u };
+static const uint32_t m9s1049[7] = { 102u, 111u, 114u, 32u, 40u, 59u, 32u };
+static const uint32_t m9s1050[8] = { 46u, 116u, 97u, 103u, 32u, 60u, 61u, 32u };
+static const uint32_t m9s1051[4] = { 116u, 111u, 59u, 32u };
+static const uint32_t m9s1052[6] = { 46u, 116u, 97u, 103u, 43u, 43u };
+static const uint32_t m9s1053[3] = { 41u, 32u, 123u };
+static const uint32_t m9s1054[3] = { 125u, 32u, 125u };
+static const uint32_t m9s1055[10] = { 123u, 32u, 105u, 110u, 116u, 54u, 52u, 95u, 116u, 32u };
+static const uint32_t m9s1056[3] = { 116u, 111u, 59u };
+static const uint32_t m9s1057[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1058[1] = { 59u };
+static const uint32_t m9s1059[5] = { 116u, 111u, 32u, 61u, 32u };
+static const uint32_t m9s1060[1] = { 59u };
+static const uint32_t m9s1061[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1062[1] = { 59u };
+static const uint32_t m9s1063[1] = { 49u };
+static const uint32_t m9s1064[1] = { 45u };
+static const uint32_t m9s1065[1] = { 45u };
+static const uint32_t m9s1066[32] = { 70u, 79u, 82u, 32u, 66u, 89u, 32u, 115u, 116u, 101u, 112u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1067[32] = { 70u, 79u, 82u, 32u, 66u, 89u, 32u, 115u, 116u, 101u, 112u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1068[7] = { 102u, 111u, 114u, 32u, 40u, 59u, 32u };
+static const uint32_t m9s1069[4] = { 32u, 62u, 61u, 32u };
+static const uint32_t m9s1070[4] = { 116u, 111u, 59u, 32u };
+static const uint32_t m9s1071[4] = { 32u, 43u, 61u, 32u };
+static const uint32_t m9s1072[3] = { 41u, 32u, 123u };
+static const uint32_t m9s1073[7] = { 102u, 111u, 114u, 32u, 40u, 59u, 32u };
+static const uint32_t m9s1074[4] = { 32u, 60u, 61u, 32u };
+static const uint32_t m9s1075[4] = { 116u, 111u, 59u, 32u };
+static const uint32_t m9s1076[4] = { 32u, 43u, 61u, 32u };
+static const uint32_t m9s1077[3] = { 41u, 32u, 123u };
+static const uint32_t m9s1078[3] = { 125u, 32u, 125u };
+static const uint32_t m9s1079[10] = { 102u, 111u, 114u, 32u, 40u, 59u, 59u, 41u, 32u, 123u };
+static const uint32_t m9s1080[1] = { 125u };
+static const uint32_t m9s1081[58] = { 69u, 88u, 73u, 84u, 32u, 105u, 110u, 115u, 105u, 100u, 101u, 32u, 97u, 32u, 67u, 65u, 83u, 69u, 32u, 97u, 114u, 109u, 32u, 114u, 101u, 102u, 117u, 115u, 101u, 100u, 32u, 40u, 105u, 116u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 98u, 114u, 101u, 97u, 107u, 32u, 116u, 104u, 101u, 32u, 115u, 119u, 105u, 116u, 99u, 104u, 41u };
+static const uint32_t m9s1082[55] = { 69u, 88u, 73u, 84u, 32u, 97u, 99u, 114u, 111u, 115u, 115u, 32u, 70u, 73u, 78u, 65u, 76u, 76u, 89u, 32u, 114u, 101u, 102u, 117u, 115u, 101u, 100u, 32u, 40u, 105u, 116u, 32u, 119u, 111u, 117u, 108u, 100u, 32u, 115u, 107u, 105u, 112u, 32u, 116u, 104u, 101u, 32u, 99u, 108u, 101u, 97u, 110u, 117u, 112u, 41u };
+static const uint32_t m9s1083[6] = { 98u, 114u, 101u, 97u, 107u, 59u };
+static const uint32_t m9s1084[13] = { 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s1085[2] = { 41u, 32u };
+static const uint32_t m9s1086[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1087[1] = { 59u };
+static const uint32_t m9s1088[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1089[1] = { 59u };
+static const uint32_t m9s1090[3] = { 67u, 82u, 58u };
+static const uint32_t m9s1091[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s1092[3] = { 73u, 54u, 52u };
+static const uint32_t m9s1093[39] = { 67u, 65u, 83u, 69u, 32u, 111u, 118u, 101u, 114u, 32u, 116u, 104u, 105u, 115u, 32u, 115u, 101u, 108u, 101u, 99u, 116u, 111u, 114u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1094[1] = { 63u };
+static const uint32_t m9s1095[1] = { 48u };
+static const uint32_t m9s1096[38] = { 87u, 65u, 73u, 84u, 47u, 83u, 73u, 71u, 78u, 65u, 76u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u };
+static const uint32_t m9s1097[15] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 119u, 97u, 105u, 116u, 32u, 40u, 38u, 40u };
+static const uint32_t m9s1098[9] = { 41u, 46u, 109u, 57u, 109u, 111u, 110u, 41u, 59u };
+static const uint32_t m9s1099[17] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 115u, 105u, 103u, 110u, 97u, 108u, 32u, 40u, 38u, 40u };
+static const uint32_t m9s1100[9] = { 41u, 46u, 109u, 57u, 109u, 111u, 110u, 41u, 59u };
+static const uint32_t m9s1101[38] = { 87u, 65u, 73u, 84u, 47u, 83u, 73u, 71u, 78u, 65u, 76u, 32u, 110u, 101u, 101u, 100u, 115u, 32u, 97u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 100u, 101u, 115u, 105u, 103u, 110u, 97u, 116u, 111u, 114u };
+static const uint32_t m9s1102[1] = { 63u };
+static const uint32_t m9s1103[34] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 116u, 97u, 114u, 103u, 101u, 116u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1104[1] = { 48u };
+static const uint32_t m9s1105[4] = { 78u, 85u, 76u, 76u };
+static const uint32_t m9s1106[2] = { 38u, 40u };
+static const uint32_t m9s1107[1] = { 41u };
+static const uint32_t m9s1108[2] = { 32u, 42u };
+static const uint32_t m9s1109[51] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 97u, 114u, 103u, 117u, 109u, 101u, 110u, 116u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 112u, 111u, 105u, 110u, 116u, 101u, 114u, 45u, 115u, 104u, 97u, 112u, 101u, 100u, 32u, 111u, 114u, 32u, 97u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u };
+static const uint32_t m9s1110[20] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 118u, 111u, 105u, 100u, 32u, 42u, 109u, 57u, 95u, 116u, 104u, 114u, 95u };
+static const uint32_t m9s1111[1] = { 95u };
+static const uint32_t m9s1112[25] = { 32u, 40u, 118u, 111u, 105u, 100u, 32u, 42u, 112u, 44u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 112u, 111u, 111u, 108u, 41u };
+static const uint32_t m9s1113[1] = { 123u };
+static const uint32_t m9s1114[21] = { 32u, 32u, 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 101u, 32u, 61u, 32u, 123u, 32u, 48u, 32u, 125u, 59u };
+static const uint32_t m9s1115[2] = { 32u, 32u };
+static const uint32_t m9s1116[1] = { 95u };
+static const uint32_t m9s1117[3] = { 32u, 40u, 40u };
+static const uint32_t m9s1118[15] = { 41u, 32u, 112u, 44u, 32u, 112u, 111u, 111u, 108u, 44u, 32u, 38u, 101u, 41u, 59u };
+static const uint32_t m9s1119[14] = { 32u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u, 112u, 111u, 111u, 108u, 59u };
+static const uint32_t m9s1120[2] = { 32u, 32u };
 static const uint32_t m9s1121[1] = { 95u };
-static const uint32_t m9s1122[11] = { 44u, 32u, 40u, 118u, 111u, 105u, 100u, 32u, 42u, 41u, 32u };
-static const uint32_t m9s1123[2] = { 44u, 32u };
-static const uint32_t m9s1124[7] = { 44u, 32u, 101u, 114u, 114u, 41u, 59u };
-static const uint32_t m9s1125[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1126[1] = { 59u };
-static const uint32_t m9s1127[27] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1128[27] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1129[17] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 109u, 57u, 114u, 101u, 115u, 59u };
-static const uint32_t m9s1130[8] = { 109u, 57u, 114u, 101u, 116u, 32u, 61u, 32u };
-static const uint32_t m9s1131[1] = { 59u };
+static const uint32_t m9s1122[3] = { 32u, 40u, 40u };
+static const uint32_t m9s1123[9] = { 41u, 32u, 112u, 44u, 32u, 38u, 101u, 41u, 59u };
+static const uint32_t m9s1124[42] = { 32u, 32u, 105u, 102u, 32u, 40u, 101u, 46u, 101u, 120u, 99u, 41u, 32u, 109u, 57u, 95u, 116u, 104u, 114u, 101u, 97u, 100u, 95u, 100u, 105u, 101u, 100u, 32u, 40u, 101u, 46u, 101u, 120u, 99u, 45u, 62u, 110u, 97u, 109u, 101u, 41u, 59u };
+static const uint32_t m9s1125[14] = { 32u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 32u, 78u, 85u, 76u, 76u, 59u };
+static const uint32_t m9s1126[1] = { 125u };
+static const uint32_t m9s1127[25] = { 109u, 57u, 95u, 116u, 104u, 114u, 101u, 97u, 100u, 95u, 115u, 116u, 97u, 114u, 116u, 50u, 32u, 40u, 109u, 57u, 95u, 116u, 104u, 114u, 95u };
+static const uint32_t m9s1128[1] = { 95u };
+static const uint32_t m9s1129[11] = { 44u, 32u, 40u, 118u, 111u, 105u, 100u, 32u, 42u, 41u, 32u };
+static const uint32_t m9s1130[2] = { 44u, 32u };
+static const uint32_t m9s1131[7] = { 44u, 32u, 101u, 114u, 114u, 41u, 59u };
 static const uint32_t m9s1132[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
 static const uint32_t m9s1133[1] = { 59u };
-static const uint32_t m9s1134[8] = { 32u, 61u, 32u, 116u, 114u, 117u, 101u, 59u };
-static const uint32_t m9s1135[5] = { 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1136[1] = { 59u };
-static const uint32_t m9s1137[30] = { 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u, 32u, 107u, 105u, 110u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1138[3] = { 67u, 82u, 58u };
-static const uint32_t m9s1139[2] = { 44u, 32u };
-static const uint32_t m9s1140[31] = { 118u, 97u, 114u, 105u, 97u, 110u, 116u, 32u, 99u, 111u, 110u, 115u, 116u, 114u, 117u, 99u, 116u, 111u, 114u, 32u, 97u, 114u, 105u, 116u, 121u, 32u, 119u, 114u, 111u, 110u, 103u };
-static const uint32_t m9s1141[2] = { 40u, 40u };
-static const uint32_t m9s1142[10] = { 41u, 123u, 32u, 46u, 116u, 97u, 103u, 32u, 61u, 32u };
-static const uint32_t m9s1143[1] = { 95u };
-static const uint32_t m9s1144[5] = { 44u, 32u, 46u, 117u, 46u };
-static const uint32_t m9s1145[5] = { 32u, 61u, 32u, 123u, 32u };
-static const uint32_t m9s1146[2] = { 32u, 125u };
-static const uint32_t m9s1147[3] = { 32u, 125u, 41u };
-static const uint32_t m9s1148[40] = { 118u, 97u, 114u, 105u, 97u, 110u, 116u, 32u, 99u, 111u, 110u, 115u, 116u, 114u, 117u, 99u, 116u, 111u, 114u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1149[1] = { 48u };
-static const uint32_t m9s1150[1] = { 46u };
-static const uint32_t m9s1151[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s1152[1] = { 41u };
-static const uint32_t m9s1153[1] = { 95u };
-static const uint32_t m9s1154[1] = { 95u };
-static const uint32_t m9s1155[8] = { 79u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
-static const uint32_t m9s1156[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
-static const uint32_t m9s1157[11] = { 79u, 117u, 116u, 79u, 102u, 77u, 101u, 109u, 111u, 114u, 121u };
-static const uint32_t m9s1158[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
-static const uint32_t m9s1159[7] = { 109u, 57u, 95u, 101u, 120u, 99u, 95u };
-static const uint32_t m9s1160[1] = { 95u };
-static const uint32_t m9s1161[1] = { 46u };
-static const uint32_t m9s1162[1] = { 63u };
-static const uint32_t m9s1163[3] = { 73u, 54u, 52u };
-static const uint32_t m9s1164[3] = { 70u, 54u, 52u };
-static const uint32_t m9s1165[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s1166[4] = { 83u, 84u, 82u, 49u };
-static const uint32_t m9s1167[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s1168[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s1169[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s1170[1] = { 63u };
-static const uint32_t m9s1171[1] = { 63u };
-static const uint32_t m9s1172[3] = { 65u, 78u, 68u };
-static const uint32_t m9s1173[2] = { 79u, 82u };
-static const uint32_t m9s1174[1] = { 61u };
-static const uint32_t m9s1175[1] = { 35u };
-static const uint32_t m9s1176[1] = { 60u };
-static const uint32_t m9s1177[2] = { 60u, 61u };
-static const uint32_t m9s1178[1] = { 62u };
-static const uint32_t m9s1179[2] = { 62u, 61u };
+static const uint32_t m9s1134[27] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1135[27] = { 84u, 72u, 82u, 69u, 65u, 68u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1136[17] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 109u, 57u, 114u, 101u, 115u, 59u };
+static const uint32_t m9s1137[8] = { 109u, 57u, 114u, 101u, 116u, 32u, 61u, 32u };
+static const uint32_t m9s1138[1] = { 59u };
+static const uint32_t m9s1139[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1140[1] = { 59u };
+static const uint32_t m9s1141[8] = { 32u, 61u, 32u, 116u, 114u, 117u, 101u, 59u };
+static const uint32_t m9s1142[5] = { 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1143[1] = { 59u };
+static const uint32_t m9s1144[30] = { 115u, 116u, 97u, 116u, 101u, 109u, 101u, 110u, 116u, 32u, 107u, 105u, 110u, 100u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1145[3] = { 67u, 82u, 58u };
+static const uint32_t m9s1146[2] = { 44u, 32u };
+static const uint32_t m9s1147[31] = { 118u, 97u, 114u, 105u, 97u, 110u, 116u, 32u, 99u, 111u, 110u, 115u, 116u, 114u, 117u, 99u, 116u, 111u, 114u, 32u, 97u, 114u, 105u, 116u, 121u, 32u, 119u, 114u, 111u, 110u, 103u };
+static const uint32_t m9s1148[2] = { 40u, 40u };
+static const uint32_t m9s1149[10] = { 41u, 123u, 32u, 46u, 116u, 97u, 103u, 32u, 61u, 32u };
+static const uint32_t m9s1150[1] = { 95u };
+static const uint32_t m9s1151[5] = { 44u, 32u, 46u, 117u, 46u };
+static const uint32_t m9s1152[5] = { 32u, 61u, 32u, 123u, 32u };
+static const uint32_t m9s1153[2] = { 32u, 125u };
+static const uint32_t m9s1154[3] = { 32u, 125u, 41u };
+static const uint32_t m9s1155[40] = { 118u, 97u, 114u, 105u, 97u, 110u, 116u, 32u, 99u, 111u, 110u, 115u, 116u, 114u, 117u, 99u, 116u, 111u, 114u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1156[1] = { 48u };
+static const uint32_t m9s1157[1] = { 46u };
+static const uint32_t m9s1158[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s1159[1] = { 41u };
+static const uint32_t m9s1160[5] = { 105u, 110u, 100u, 101u, 120u };
+static const uint32_t m9s1161[6] = { 108u, 101u, 110u, 103u, 116u, 104u };
+static const uint32_t m9s1162[3] = { 73u, 54u, 52u };
+static const uint32_t m9s1163[1] = { 95u };
+static const uint32_t m9s1164[1] = { 95u };
+static const uint32_t m9s1165[10] = { 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
+static const uint32_t m9s1166[17] = { 109u, 57u, 95u, 101u, 120u, 99u, 95u, 73u, 110u, 100u, 101u, 120u, 69u, 114u, 114u, 111u, 114u };
+static const uint32_t m9s1167[8] = { 79u, 118u, 101u, 114u, 102u, 108u, 111u, 119u };
+static const uint32_t m9s1168[11] = { 79u, 117u, 116u, 79u, 102u, 77u, 101u, 109u, 111u, 114u, 121u };
+static const uint32_t m9s1169[10] = { 86u, 97u, 108u, 117u, 101u, 82u, 97u, 110u, 103u, 101u };
+static const uint32_t m9s1170[7] = { 109u, 57u, 95u, 101u, 120u, 99u, 95u };
+static const uint32_t m9s1171[1] = { 95u };
+static const uint32_t m9s1172[1] = { 46u };
+static const uint32_t m9s1173[1] = { 63u };
+static const uint32_t m9s1174[3] = { 73u, 54u, 52u };
+static const uint32_t m9s1175[3] = { 70u, 54u, 52u };
+static const uint32_t m9s1176[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s1177[4] = { 83u, 84u, 82u, 49u };
+static const uint32_t m9s1178[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s1179[4] = { 66u, 79u, 79u, 76u };
 static const uint32_t m9s1180[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s1181[3] = { 73u, 54u, 52u };
-static const uint32_t m9s1182[1] = { 43u };
-static const uint32_t m9s1183[4] = { 83u, 84u, 82u, 49u };
-static const uint32_t m9s1184[4] = { 67u, 72u, 65u, 82u };
-static const uint32_t m9s1185[4] = { 83u, 84u, 82u, 49u };
-static const uint32_t m9s1186[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s1187[4] = { 83u, 84u, 82u, 49u };
-static const uint32_t m9s1188[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s1189[3] = { 78u, 79u, 84u };
-static const uint32_t m9s1190[4] = { 66u, 79u, 79u, 76u };
-static const uint32_t m9s1191[4] = { 71u, 82u, 73u, 68u };
-static const uint32_t m9s1192[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s1193[3] = { 80u, 84u, 82u };
-static const uint32_t m9s1194[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s1195[4] = { 71u, 82u, 73u, 68u };
-static const uint32_t m9s1196[6] = { 79u, 80u, 84u, 80u, 84u, 82u };
-static const uint32_t m9s1197[1] = { 63u };
-static const uint32_t m9s1198[1] = { 63u };
-static const uint32_t m9s1199[1] = { 63u };
-static const uint32_t m9s1200[1] = { 118u };
-static const uint32_t m9s1201[5] = { 95u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s1202[1] = { 63u };
-static const uint32_t m9s1203[2] = { 38u, 40u };
-static const uint32_t m9s1204[1] = { 41u };
-static const uint32_t m9s1205[1] = { 118u };
-static const uint32_t m9s1206[5] = { 95u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s1207[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
-static const uint32_t m9s1208[1] = { 98u };
-static const uint32_t m9s1209[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
-static const uint32_t m9s1210[1] = { 108u };
-static const uint32_t m9s1211[9] = { 38u, 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s1212[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
-static const uint32_t m9s1213[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
-static const uint32_t m9s1214[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
-static const uint32_t m9s1215[1] = { 46u };
-static const uint32_t m9s1216[1] = { 95u };
-static const uint32_t m9s1217[3] = { 109u, 57u, 97u };
-static const uint32_t m9s1218[13] = { 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s1219[2] = { 41u, 32u };
-static const uint32_t m9s1220[3] = { 32u, 61u, 32u };
-static const uint32_t m9s1221[1] = { 59u };
-static const uint32_t m9s1222[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1223[1] = { 59u };
-static const uint32_t m9s1224[1] = { 125u };
-static const uint32_t m9s1225[30] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 114u, 58u, 32u };
-static const uint32_t m9s1226[13] = { 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 32u, 61u, 61u, 32u, 38u };
-static const uint32_t m9s1227[3] = { 70u, 54u, 52u };
-static const uint32_t m9s1228[3] = { 70u, 51u, 50u };
-static const uint32_t m9s1229[7] = { 101u, 114u, 114u, 45u, 62u, 100u, 91u };
-static const uint32_t m9s1230[1] = { 93u };
-static const uint32_t m9s1231[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s1232[7] = { 101u, 114u, 114u, 45u, 62u, 105u, 91u };
-static const uint32_t m9s1233[1] = { 93u };
-static const uint32_t m9s1234[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s1235[1] = { 32u };
-static const uint32_t m9s1236[6] = { 32u, 61u, 32u, 123u, 32u, 40u };
-static const uint32_t m9s1237[22] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 112u, 97u, 121u, 95u, 116u, 97u, 107u, 101u, 32u, 40u, 101u, 114u, 114u, 44u, 32u };
-static const uint32_t m9s1238[10] = { 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
-static const uint32_t m9s1239[11] = { 41u, 41u, 44u, 32u, 101u, 114u, 114u, 45u, 62u, 115u, 91u };
-static const uint32_t m9s1240[16] = { 93u, 46u, 108u, 101u, 110u, 32u, 125u, 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
-static const uint32_t m9s1241[1] = { 59u };
-static const uint32_t m9s1242[1] = { 32u };
-static const uint32_t m9s1243[3] = { 32u, 61u, 32u };
-static const uint32_t m9s1244[9] = { 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
-static const uint32_t m9s1245[1] = { 59u };
-static const uint32_t m9s1246[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
-static const uint32_t m9s1247[1] = { 98u };
-static const uint32_t m9s1248[4] = { 32u, 38u, 38u, 32u };
-static const uint32_t m9s1249[12] = { 32u, 61u, 61u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s1250[1] = { 41u };
-static const uint32_t m9s1251[36] = { 104u, 97u, 110u, 100u, 108u, 101u, 114u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1252[36] = { 104u, 97u, 110u, 100u, 108u, 101u, 114u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1253[4] = { 105u, 102u, 32u, 40u };
-static const uint32_t m9s1254[3] = { 41u, 32u, 123u };
-static const uint32_t m9s1255[16] = { 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 32u, 61u, 32u, 78u, 85u, 76u, 76u, 59u };
-static const uint32_t m9s1256[5] = { 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1257[1] = { 59u };
-static const uint32_t m9s1258[1] = { 125u };
-static const uint32_t m9s1259[1] = { 95u };
-static const uint32_t m9s1260[8] = { 115u, 119u, 105u, 116u, 99u, 104u, 32u, 40u };
-static const uint32_t m9s1261[7] = { 46u, 116u, 97u, 103u, 41u, 32u, 123u };
-static const uint32_t m9s1262[5] = { 99u, 97u, 115u, 101u, 32u };
-static const uint32_t m9s1263[3] = { 58u, 32u, 123u };
-static const uint32_t m9s1264[1] = { 32u };
-static const uint32_t m9s1265[3] = { 32u, 61u, 32u };
-static const uint32_t m9s1266[3] = { 46u, 117u, 46u };
-static const uint32_t m9s1267[1] = { 46u };
-static const uint32_t m9s1268[9] = { 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
-static const uint32_t m9s1269[1] = { 59u };
-static const uint32_t m9s1270[1] = { 98u };
-static const uint32_t m9s1271[31] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1272[5] = { 99u, 97u, 115u, 101u, 32u };
-static const uint32_t m9s1273[1] = { 58u };
-static const uint32_t m9s1274[31] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1275[31] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1276[1] = { 123u };
-static const uint32_t m9s1277[8] = { 125u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
-static const uint32_t m9s1278[10] = { 100u, 101u, 102u, 97u, 117u, 108u, 116u, 58u, 32u, 123u };
-static const uint32_t m9s1279[8] = { 125u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
-static const uint32_t m9s1280[24] = { 100u, 101u, 102u, 97u, 117u, 108u, 116u, 58u, 32u, 109u, 57u, 95u, 116u, 114u, 97u, 112u, 95u, 116u, 97u, 103u, 32u, 40u, 41u, 59u };
-static const uint32_t m9s1281[3] = { 125u, 32u, 125u };
-static const uint32_t m9s1282[8] = { 115u, 119u, 105u, 116u, 99u, 104u, 32u, 40u };
-static const uint32_t m9s1283[3] = { 41u, 32u, 123u };
-static const uint32_t m9s1284[1] = { 117u };
-static const uint32_t m9s1285[1] = { 117u };
-static const uint32_t m9s1286[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
-static const uint32_t m9s1287[1] = { 41u };
-static const uint32_t m9s1288[31] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1289[5] = { 99u, 97u, 115u, 101u, 32u };
-static const uint32_t m9s1290[1] = { 58u };
-static const uint32_t m9s1291[1] = { 123u };
-static const uint32_t m9s1292[8] = { 125u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
-static const uint32_t m9s1293[10] = { 100u, 101u, 102u, 97u, 117u, 108u, 116u, 58u, 32u, 123u };
-static const uint32_t m9s1294[8] = { 125u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
-static const uint32_t m9s1295[70] = { 115u, 99u, 97u, 108u, 97u, 114u, 32u, 67u, 65u, 83u, 69u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 69u, 76u, 83u, 69u, 32u, 114u, 101u, 102u, 117u, 115u, 101u, 100u, 32u, 40u, 117u, 110u, 109u, 97u, 116u, 99u, 104u, 101u, 100u, 45u, 108u, 97u, 98u, 101u, 108u, 32u, 115u, 101u, 109u, 97u, 110u, 116u, 105u, 99u, 115u, 32u, 117u, 110u, 100u, 101u, 99u, 105u, 100u, 101u, 100u, 41u };
-static const uint32_t m9s1296[3] = { 125u, 32u, 125u };
-static const uint32_t m9s1297[47] = { 69u, 88u, 67u, 69u, 80u, 84u, 32u, 97u, 110u, 100u, 32u, 70u, 73u, 78u, 65u, 76u, 76u, 89u, 32u, 111u, 110u, 32u, 111u, 110u, 101u, 32u, 98u, 108u, 111u, 99u, 107u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
-static const uint32_t m9s1298[6] = { 76u, 95u, 104u, 100u, 108u, 95u };
-static const uint32_t m9s1299[5] = { 76u, 95u, 100u, 110u, 95u };
-static const uint32_t m9s1300[5] = { 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1301[1] = { 59u };
-static const uint32_t m9s1302[3] = { 58u, 32u, 59u };
-static const uint32_t m9s1303[5] = { 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1304[1] = { 59u };
-static const uint32_t m9s1305[3] = { 58u, 32u, 59u };
-static const uint32_t m9s1306[6] = { 76u, 95u, 102u, 105u, 110u, 95u };
-static const uint32_t m9s1307[5] = { 98u, 111u, 111u, 108u, 32u };
-static const uint32_t m9s1308[17] = { 32u, 61u, 32u, 102u, 97u, 108u, 115u, 101u, 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
-static const uint32_t m9s1309[1] = { 59u };
-static const uint32_t m9s1310[3] = { 58u, 32u, 59u };
-static const uint32_t m9s1311[4] = { 105u, 102u, 32u, 40u };
-static const uint32_t m9s1312[4] = { 41u, 32u, 123u, 32u };
-static const uint32_t m9s1313[14] = { 32u, 61u, 32u, 116u, 114u, 117u, 101u, 59u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1314[3] = { 59u, 32u, 125u };
-static const uint32_t m9s1315[4] = { 105u, 102u, 32u, 40u };
-static const uint32_t m9s1316[7] = { 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1317[1] = { 59u };
-static const uint32_t m9s1318[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1319[1] = { 59u };
-static const uint32_t m9s1320[1] = { 63u };
-static const uint32_t m9s1321[1] = { 48u };
-static const uint32_t m9s1322[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s1323[16] = { 105u, 102u, 32u, 40u, 109u, 57u, 95u, 114u, 99u, 95u, 108u, 97u, 115u, 116u, 32u, 40u };
-static const uint32_t m9s1324[4] = { 41u, 41u, 32u, 123u };
-static const uint32_t m9s1325[12] = { 109u, 57u, 95u, 100u, 105u, 115u, 112u, 111u, 115u, 101u, 32u, 40u };
-static const uint32_t m9s1326[2] = { 45u, 62u };
-static const uint32_t m9s1327[2] = { 41u, 59u };
-static const uint32_t m9s1328[15] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 102u, 114u, 101u, 101u, 32u, 40u, 38u };
-static const uint32_t m9s1329[2] = { 45u, 62u };
-static const uint32_t m9s1330[2] = { 41u, 59u };
-static const uint32_t m9s1331[1] = { 125u };
-static const uint32_t m9s1332[12] = { 109u, 57u, 95u, 100u, 105u, 115u, 112u, 111u, 115u, 101u, 32u, 40u };
-static const uint32_t m9s1333[2] = { 41u, 59u };
-static const uint32_t m9s1334[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1335[1] = { 59u };
-static const uint32_t m9s1336[28] = { 82u, 65u, 73u, 83u, 69u, 32u, 111u, 102u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 58u, 32u };
-static const uint32_t m9s1337[1] = { 38u };
-static const uint32_t m9s1338[3] = { 70u, 54u, 52u };
-static const uint32_t m9s1339[3] = { 70u, 51u, 50u };
-static const uint32_t m9s1340[42] = { 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 58u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 50u, 32u, 114u, 101u, 97u, 108u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
-static const uint32_t m9s1341[7] = { 101u, 114u, 114u, 45u, 62u, 100u, 91u };
-static const uint32_t m9s1342[4] = { 93u, 32u, 61u, 32u };
-static const uint32_t m9s1343[1] = { 59u };
-static const uint32_t m9s1344[5] = { 83u, 76u, 73u, 67u, 69u };
-static const uint32_t m9s1345[43] = { 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 58u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 51u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
-static const uint32_t m9s1346[13] = { 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
-static const uint32_t m9s1347[2] = { 41u, 32u };
-static const uint32_t m9s1348[3] = { 32u, 61u, 32u };
-static const uint32_t m9s1349[9] = { 59u, 32u, 101u, 114u, 114u, 45u, 62u, 115u, 91u };
-static const uint32_t m9s1350[6] = { 93u, 46u, 112u, 32u, 61u, 32u };
-static const uint32_t m9s1351[11] = { 46u, 112u, 59u, 32u, 101u, 114u, 114u, 45u, 62u, 115u, 91u };
-static const uint32_t m9s1352[8] = { 93u, 46u, 108u, 101u, 110u, 32u, 61u, 32u };
-static const uint32_t m9s1353[24] = { 46u, 108u, 101u, 110u, 59u, 32u, 109u, 57u, 95u, 112u, 97u, 121u, 95u, 107u, 101u, 101u, 112u, 32u, 40u, 101u, 114u, 114u, 44u, 32u };
-static const uint32_t m9s1354[11] = { 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u, 42u };
-static const uint32_t m9s1355[7] = { 46u, 112u, 41u, 41u, 59u, 32u, 125u };
-static const uint32_t m9s1356[45] = { 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 58u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 52u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
-static const uint32_t m9s1357[7] = { 101u, 114u, 114u, 45u, 62u, 105u, 91u };
-static const uint32_t m9s1358[4] = { 93u, 32u, 61u, 32u };
-static const uint32_t m9s1359[1] = { 59u };
-static const uint32_t m9s1360[15] = { 109u, 57u, 95u, 114u, 97u, 105u, 115u, 101u, 32u, 40u, 101u, 114u, 114u, 44u, 32u };
-static const uint32_t m9s1361[2] = { 41u, 59u };
-static const uint32_t m9s1362[5] = { 103u, 111u, 116u, 111u, 32u };
-static const uint32_t m9s1363[1] = { 59u };
-static const uint32_t m9s1364[7] = { 32u, 61u, 32u, 78u, 85u, 76u, 76u };
-static const uint32_t m9s1365[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
-static const uint32_t m9s1366[5] = { 102u, 108u, 111u, 97u, 116u };
-static const uint32_t m9s1367[4] = { 32u, 61u, 32u, 48u };
-static const uint32_t m9s1368[4] = { 98u, 111u, 111u, 108u };
-static const uint32_t m9s1369[8] = { 32u, 61u, 32u, 102u, 97u, 108u, 115u, 101u };
-static const uint32_t m9s1370[2] = { 95u, 116u };
-static const uint32_t m9s1371[4] = { 32u, 61u, 32u, 48u };
-static const uint32_t m9s1372[6] = { 32u, 61u, 32u, 123u, 48u, 125u };
-static const uint32_t m9s1373[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s1374[15] = { 32u, 42u, 44u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 44u, 32u };
-static const uint32_t m9s1375[4] = { 32u, 42u, 44u, 32u };
-static const uint32_t m9s1376[2] = { 44u, 32u };
-static const uint32_t m9s1377[8] = { 116u, 121u, 112u, 101u, 100u, 101u, 102u, 32u };
-static const uint32_t m9s1378[3] = { 32u, 40u, 42u };
-static const uint32_t m9s1379[1] = { 95u };
-static const uint32_t m9s1380[3] = { 41u, 32u, 40u };
-static const uint32_t m9s1381[15] = { 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 42u, 101u, 114u, 114u, 41u, 59u };
-static const uint32_t m9s1382[5] = { 76u, 95u, 114u, 101u, 116u };
-static const uint32_t m9s1383[5] = { 76u, 95u, 114u, 101u, 116u };
+static const uint32_t m9s1181[1] = { 63u };
+static const uint32_t m9s1182[1] = { 63u };
+static const uint32_t m9s1183[3] = { 65u, 78u, 68u };
+static const uint32_t m9s1184[2] = { 79u, 82u };
+static const uint32_t m9s1185[1] = { 61u };
+static const uint32_t m9s1186[1] = { 35u };
+static const uint32_t m9s1187[1] = { 60u };
+static const uint32_t m9s1188[2] = { 60u, 61u };
+static const uint32_t m9s1189[1] = { 62u };
+static const uint32_t m9s1190[2] = { 62u, 61u };
+static const uint32_t m9s1191[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s1192[3] = { 73u, 54u, 52u };
+static const uint32_t m9s1193[1] = { 43u };
+static const uint32_t m9s1194[4] = { 83u, 84u, 82u, 49u };
+static const uint32_t m9s1195[4] = { 67u, 72u, 65u, 82u };
+static const uint32_t m9s1196[4] = { 83u, 84u, 82u, 49u };
+static const uint32_t m9s1197[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s1198[4] = { 83u, 84u, 82u, 49u };
+static const uint32_t m9s1199[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s1200[3] = { 78u, 79u, 84u };
+static const uint32_t m9s1201[4] = { 66u, 79u, 79u, 76u };
+static const uint32_t m9s1202[4] = { 71u, 82u, 73u, 68u };
+static const uint32_t m9s1203[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s1204[3] = { 80u, 84u, 82u };
+static const uint32_t m9s1205[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s1206[4] = { 71u, 82u, 73u, 68u };
+static const uint32_t m9s1207[6] = { 79u, 80u, 84u, 80u, 84u, 82u };
+static const uint32_t m9s1208[1] = { 63u };
+static const uint32_t m9s1209[1] = { 63u };
+static const uint32_t m9s1210[1] = { 63u };
+static const uint32_t m9s1211[1] = { 118u };
+static const uint32_t m9s1212[5] = { 95u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s1213[1] = { 63u };
+static const uint32_t m9s1214[2] = { 38u, 40u };
+static const uint32_t m9s1215[1] = { 41u };
+static const uint32_t m9s1216[1] = { 118u };
+static const uint32_t m9s1217[5] = { 95u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s1218[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
+static const uint32_t m9s1219[1] = { 98u };
+static const uint32_t m9s1220[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
+static const uint32_t m9s1221[1] = { 108u };
+static const uint32_t m9s1222[9] = { 38u, 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s1223[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
+static const uint32_t m9s1224[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
+static const uint32_t m9s1225[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
+static const uint32_t m9s1226[1] = { 46u };
+static const uint32_t m9s1227[1] = { 95u };
+static const uint32_t m9s1228[3] = { 109u, 57u, 97u };
+static const uint32_t m9s1229[13] = { 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s1230[2] = { 41u, 32u };
+static const uint32_t m9s1231[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1232[1] = { 59u };
+static const uint32_t m9s1233[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1234[1] = { 59u };
+static const uint32_t m9s1235[1] = { 125u };
+static const uint32_t m9s1236[30] = { 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 105u, 110u, 32u, 104u, 97u, 110u, 100u, 108u, 101u, 114u, 58u, 32u };
+static const uint32_t m9s1237[13] = { 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 32u, 61u, 61u, 32u, 38u };
+static const uint32_t m9s1238[3] = { 70u, 54u, 52u };
+static const uint32_t m9s1239[3] = { 70u, 51u, 50u };
+static const uint32_t m9s1240[7] = { 101u, 114u, 114u, 45u, 62u, 100u, 91u };
+static const uint32_t m9s1241[1] = { 93u };
+static const uint32_t m9s1242[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s1243[7] = { 101u, 114u, 114u, 45u, 62u, 105u, 91u };
+static const uint32_t m9s1244[1] = { 93u };
+static const uint32_t m9s1245[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s1246[1] = { 32u };
+static const uint32_t m9s1247[6] = { 32u, 61u, 32u, 123u, 32u, 40u };
+static const uint32_t m9s1248[22] = { 32u, 42u, 41u, 32u, 109u, 57u, 95u, 112u, 97u, 121u, 95u, 116u, 97u, 107u, 101u, 32u, 40u, 101u, 114u, 114u, 44u, 32u };
+static const uint32_t m9s1249[10] = { 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u };
+static const uint32_t m9s1250[11] = { 41u, 41u, 44u, 32u, 101u, 114u, 114u, 45u, 62u, 115u, 91u };
+static const uint32_t m9s1251[16] = { 93u, 46u, 108u, 101u, 110u, 32u, 125u, 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
+static const uint32_t m9s1252[1] = { 59u };
+static const uint32_t m9s1253[1] = { 32u };
+static const uint32_t m9s1254[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1255[9] = { 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
+static const uint32_t m9s1256[1] = { 59u };
+static const uint32_t m9s1257[8] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u };
+static const uint32_t m9s1258[1] = { 98u };
+static const uint32_t m9s1259[4] = { 32u, 38u, 38u, 32u };
+static const uint32_t m9s1260[12] = { 32u, 61u, 61u, 32u, 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s1261[1] = { 41u };
+static const uint32_t m9s1262[36] = { 104u, 97u, 110u, 100u, 108u, 101u, 114u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1263[36] = { 104u, 97u, 110u, 100u, 108u, 101u, 114u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1264[4] = { 105u, 102u, 32u, 40u };
+static const uint32_t m9s1265[3] = { 41u, 32u, 123u };
+static const uint32_t m9s1266[16] = { 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 32u, 61u, 32u, 78u, 85u, 76u, 76u, 59u };
+static const uint32_t m9s1267[5] = { 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1268[1] = { 59u };
+static const uint32_t m9s1269[1] = { 125u };
+static const uint32_t m9s1270[1] = { 95u };
+static const uint32_t m9s1271[8] = { 115u, 119u, 105u, 116u, 99u, 104u, 32u, 40u };
+static const uint32_t m9s1272[7] = { 46u, 116u, 97u, 103u, 41u, 32u, 123u };
+static const uint32_t m9s1273[5] = { 99u, 97u, 115u, 101u, 32u };
+static const uint32_t m9s1274[3] = { 58u, 32u, 123u };
+static const uint32_t m9s1275[1] = { 32u };
+static const uint32_t m9s1276[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1277[3] = { 46u, 117u, 46u };
+static const uint32_t m9s1278[1] = { 46u };
+static const uint32_t m9s1279[9] = { 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
+static const uint32_t m9s1280[1] = { 59u };
+static const uint32_t m9s1281[1] = { 98u };
+static const uint32_t m9s1282[31] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1283[5] = { 99u, 97u, 115u, 101u, 32u };
+static const uint32_t m9s1284[1] = { 58u };
+static const uint32_t m9s1285[31] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1286[31] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1287[1] = { 123u };
+static const uint32_t m9s1288[8] = { 125u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
+static const uint32_t m9s1289[10] = { 100u, 101u, 102u, 97u, 117u, 108u, 116u, 58u, 32u, 123u };
+static const uint32_t m9s1290[8] = { 125u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
+static const uint32_t m9s1291[24] = { 100u, 101u, 102u, 97u, 117u, 108u, 116u, 58u, 32u, 109u, 57u, 95u, 116u, 114u, 97u, 112u, 95u, 116u, 97u, 103u, 32u, 40u, 41u, 59u };
+static const uint32_t m9s1292[3] = { 125u, 32u, 125u };
+static const uint32_t m9s1293[8] = { 115u, 119u, 105u, 116u, 99u, 104u, 32u, 40u };
+static const uint32_t m9s1294[3] = { 41u, 32u, 123u };
+static const uint32_t m9s1295[1] = { 117u };
+static const uint32_t m9s1296[1] = { 117u };
+static const uint32_t m9s1297[8] = { 73u, 78u, 84u, 54u, 52u, 95u, 67u, 40u };
+static const uint32_t m9s1298[1] = { 41u };
+static const uint32_t m9s1299[31] = { 67u, 65u, 83u, 69u, 32u, 108u, 97u, 98u, 101u, 108u, 32u, 102u, 111u, 114u, 109u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1300[5] = { 99u, 97u, 115u, 101u, 32u };
+static const uint32_t m9s1301[1] = { 58u };
+static const uint32_t m9s1302[1] = { 123u };
+static const uint32_t m9s1303[8] = { 125u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
+static const uint32_t m9s1304[10] = { 100u, 101u, 102u, 97u, 117u, 108u, 116u, 58u, 32u, 123u };
+static const uint32_t m9s1305[8] = { 125u, 32u, 98u, 114u, 101u, 97u, 107u, 59u };
+static const uint32_t m9s1306[70] = { 115u, 99u, 97u, 108u, 97u, 114u, 32u, 67u, 65u, 83u, 69u, 32u, 119u, 105u, 116u, 104u, 111u, 117u, 116u, 32u, 69u, 76u, 83u, 69u, 32u, 114u, 101u, 102u, 117u, 115u, 101u, 100u, 32u, 40u, 117u, 110u, 109u, 97u, 116u, 99u, 104u, 101u, 100u, 45u, 108u, 97u, 98u, 101u, 108u, 32u, 115u, 101u, 109u, 97u, 110u, 116u, 105u, 99u, 115u, 32u, 117u, 110u, 100u, 101u, 99u, 105u, 100u, 101u, 100u, 41u };
+static const uint32_t m9s1307[3] = { 125u, 32u, 125u };
+static const uint32_t m9s1308[47] = { 69u, 88u, 67u, 69u, 80u, 84u, 32u, 97u, 110u, 100u, 32u, 70u, 73u, 78u, 65u, 76u, 76u, 89u, 32u, 111u, 110u, 32u, 111u, 110u, 101u, 32u, 98u, 108u, 111u, 99u, 107u, 32u, 117u, 110u, 115u, 117u, 112u, 112u, 111u, 114u, 116u, 101u, 100u, 32u, 121u, 101u, 116u };
+static const uint32_t m9s1309[6] = { 76u, 95u, 104u, 100u, 108u, 95u };
+static const uint32_t m9s1310[5] = { 76u, 95u, 100u, 110u, 95u };
+static const uint32_t m9s1311[5] = { 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1312[1] = { 59u };
+static const uint32_t m9s1313[3] = { 58u, 32u, 59u };
+static const uint32_t m9s1314[5] = { 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1315[1] = { 59u };
+static const uint32_t m9s1316[3] = { 58u, 32u, 59u };
+static const uint32_t m9s1317[6] = { 76u, 95u, 102u, 105u, 110u, 95u };
+static const uint32_t m9s1318[5] = { 98u, 111u, 111u, 108u, 32u };
+static const uint32_t m9s1319[17] = { 32u, 61u, 32u, 102u, 97u, 108u, 115u, 101u, 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
+static const uint32_t m9s1320[1] = { 59u };
+static const uint32_t m9s1321[3] = { 58u, 32u, 59u };
+static const uint32_t m9s1322[4] = { 105u, 102u, 32u, 40u };
+static const uint32_t m9s1323[4] = { 41u, 32u, 123u, 32u };
+static const uint32_t m9s1324[14] = { 32u, 61u, 32u, 116u, 114u, 117u, 101u, 59u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1325[3] = { 59u, 32u, 125u };
+static const uint32_t m9s1326[4] = { 105u, 102u, 32u, 40u };
+static const uint32_t m9s1327[7] = { 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1328[1] = { 59u };
+static const uint32_t m9s1329[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1330[1] = { 59u };
+static const uint32_t m9s1331[1] = { 63u };
+static const uint32_t m9s1332[1] = { 48u };
+static const uint32_t m9s1333[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s1334[16] = { 105u, 102u, 32u, 40u, 109u, 57u, 95u, 114u, 99u, 95u, 108u, 97u, 115u, 116u, 32u, 40u };
+static const uint32_t m9s1335[4] = { 41u, 41u, 32u, 123u };
+static const uint32_t m9s1336[12] = { 109u, 57u, 95u, 100u, 105u, 115u, 112u, 111u, 115u, 101u, 32u, 40u };
+static const uint32_t m9s1337[2] = { 45u, 62u };
+static const uint32_t m9s1338[2] = { 41u, 59u };
+static const uint32_t m9s1339[15] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 102u, 114u, 101u, 101u, 32u, 40u, 38u };
+static const uint32_t m9s1340[2] = { 45u, 62u };
+static const uint32_t m9s1341[2] = { 41u, 59u };
+static const uint32_t m9s1342[1] = { 125u };
+static const uint32_t m9s1343[12] = { 109u, 57u, 95u, 100u, 105u, 115u, 112u, 111u, 115u, 101u, 32u, 40u };
+static const uint32_t m9s1344[2] = { 41u, 59u };
+static const uint32_t m9s1345[19] = { 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1346[1] = { 59u };
+static const uint32_t m9s1347[28] = { 82u, 65u, 73u, 83u, 69u, 32u, 111u, 102u, 32u, 117u, 110u, 107u, 110u, 111u, 119u, 110u, 32u, 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 58u, 32u };
+static const uint32_t m9s1348[1] = { 38u };
+static const uint32_t m9s1349[3] = { 70u, 54u, 52u };
+static const uint32_t m9s1350[3] = { 70u, 51u, 50u };
+static const uint32_t m9s1351[42] = { 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 58u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 50u, 32u, 114u, 101u, 97u, 108u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
+static const uint32_t m9s1352[7] = { 101u, 114u, 114u, 45u, 62u, 100u, 91u };
+static const uint32_t m9s1353[4] = { 93u, 32u, 61u, 32u };
+static const uint32_t m9s1354[1] = { 59u };
+static const uint32_t m9s1355[5] = { 83u, 76u, 73u, 67u, 69u };
+static const uint32_t m9s1356[43] = { 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 58u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 51u, 32u, 115u, 108u, 105u, 99u, 101u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
+static const uint32_t m9s1357[13] = { 123u, 32u, 95u, 95u, 116u, 121u, 112u, 101u, 111u, 102u, 95u, 95u, 40u };
+static const uint32_t m9s1358[2] = { 41u, 32u };
+static const uint32_t m9s1359[3] = { 32u, 61u, 32u };
+static const uint32_t m9s1360[9] = { 59u, 32u, 101u, 114u, 114u, 45u, 62u, 115u, 91u };
+static const uint32_t m9s1361[6] = { 93u, 46u, 112u, 32u, 61u, 32u };
+static const uint32_t m9s1362[11] = { 46u, 112u, 59u, 32u, 101u, 114u, 114u, 45u, 62u, 115u, 91u };
+static const uint32_t m9s1363[8] = { 93u, 46u, 108u, 101u, 110u, 32u, 61u, 32u };
+static const uint32_t m9s1364[24] = { 46u, 108u, 101u, 110u, 59u, 32u, 109u, 57u, 95u, 112u, 97u, 121u, 95u, 107u, 101u, 101u, 112u, 32u, 40u, 101u, 114u, 114u, 44u, 32u };
+static const uint32_t m9s1365[11] = { 44u, 32u, 115u, 105u, 122u, 101u, 111u, 102u, 32u, 40u, 42u };
+static const uint32_t m9s1366[7] = { 46u, 112u, 41u, 41u, 59u, 32u, 125u };
+static const uint32_t m9s1367[45] = { 101u, 120u, 99u, 101u, 112u, 116u, 105u, 111u, 110u, 32u, 112u, 97u, 121u, 108u, 111u, 97u, 100u, 58u, 32u, 109u, 111u, 114u, 101u, 32u, 116u, 104u, 97u, 110u, 32u, 52u, 32u, 105u, 110u, 116u, 101u, 103u, 101u, 114u, 32u, 102u, 105u, 101u, 108u, 100u, 115u };
+static const uint32_t m9s1368[7] = { 101u, 114u, 114u, 45u, 62u, 105u, 91u };
+static const uint32_t m9s1369[4] = { 93u, 32u, 61u, 32u };
+static const uint32_t m9s1370[1] = { 59u };
+static const uint32_t m9s1371[15] = { 109u, 57u, 95u, 114u, 97u, 105u, 115u, 101u, 32u, 40u, 101u, 114u, 114u, 44u, 32u };
+static const uint32_t m9s1372[2] = { 41u, 59u };
+static const uint32_t m9s1373[5] = { 103u, 111u, 116u, 111u, 32u };
+static const uint32_t m9s1374[1] = { 59u };
+static const uint32_t m9s1375[7] = { 32u, 61u, 32u, 78u, 85u, 76u, 76u };
+static const uint32_t m9s1376[6] = { 100u, 111u, 117u, 98u, 108u, 101u };
+static const uint32_t m9s1377[5] = { 102u, 108u, 111u, 97u, 116u };
+static const uint32_t m9s1378[4] = { 32u, 61u, 32u, 48u };
+static const uint32_t m9s1379[4] = { 98u, 111u, 111u, 108u };
+static const uint32_t m9s1380[8] = { 32u, 61u, 32u, 102u, 97u, 108u, 115u, 101u };
+static const uint32_t m9s1381[2] = { 95u, 116u };
+static const uint32_t m9s1382[4] = { 32u, 61u, 32u, 48u };
+static const uint32_t m9s1383[6] = { 32u, 61u, 32u, 123u, 48u, 125u };
 static const uint32_t m9s1384[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s1385[1] = { 32u };
-static const uint32_t m9s1386[1] = { 95u };
-static const uint32_t m9s1387[2] = { 32u, 40u };
-static const uint32_t m9s1388[1] = { 118u };
-static const uint32_t m9s1389[1] = { 111u };
-static const uint32_t m9s1390[1] = { 112u };
-static const uint32_t m9s1391[1] = { 112u };
-static const uint32_t m9s1392[30] = { 97u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 114u, 101u, 99u, 101u, 105u, 118u, 101u, 114u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 86u, 65u, 82u };
-static const uint32_t m9s1393[1] = { 112u };
-static const uint32_t m9s1394[1] = { 32u };
-static const uint32_t m9s1395[2] = { 44u, 32u };
-static const uint32_t m9s1396[2] = { 32u, 42u };
-static const uint32_t m9s1397[2] = { 44u, 32u };
-static const uint32_t m9s1398[1] = { 118u };
-static const uint32_t m9s1399[9] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u };
-static const uint32_t m9s1400[7] = { 95u, 112u, 111u, 111u, 108u, 44u, 32u };
-static const uint32_t m9s1401[5] = { 95u, 112u, 111u, 111u, 108u };
-static const uint32_t m9s1402[5] = { 109u, 57u, 114u, 101u, 115u };
-static const uint32_t m9s1403[10] = { 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s1404[14] = { 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 42u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s1405[1] = { 59u };
-static const uint32_t m9s1406[7] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u };
-static const uint32_t m9s1407[1] = { 59u };
-static const uint32_t m9s1408[1] = { 123u };
-static const uint32_t m9s1409[22] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 32u, 61u, 32u, 123u, 48u, 125u, 59u };
-static const uint32_t m9s1410[7] = { 109u, 57u, 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s1411[48] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 109u, 57u, 114u, 101u, 115u, 32u, 61u, 32u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 63u, 32u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 58u, 32u, 38u, 109u, 57u, 95u, 104u, 101u, 97u, 112u, 59u };
-static const uint32_t m9s1412[13] = { 40u, 118u, 111u, 105u, 100u, 41u, 32u, 109u, 57u, 114u, 101u, 115u, 59u };
-static const uint32_t m9s1413[10] = { 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s1414[17] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 109u, 57u, 114u, 101u, 115u, 59u };
-static const uint32_t m9s1415[20] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 59u };
-static const uint32_t m9s1416[20] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 59u };
-static const uint32_t m9s1417[13] = { 101u, 114u, 114u, 45u, 62u, 102u, 105u, 108u, 101u, 32u, 61u, 32u, 34u };
-static const uint32_t m9s1418[2] = { 34u, 59u };
-static const uint32_t m9s1419[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s1420[6] = { 32u, 109u, 57u, 114u, 101u, 116u };
-static const uint32_t m9s1421[1] = { 59u };
-static const uint32_t m9s1422[17] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 101u, 110u, 116u, 101u, 114u, 32u, 40u, 38u, 40u, 42u };
-static const uint32_t m9s1423[9] = { 41u, 46u, 109u, 57u, 109u, 111u, 110u, 41u, 59u };
-static const uint32_t m9s1424[6] = { 32u, 61u, 32u, 123u, 48u, 125u };
-static const uint32_t m9s1425[1] = { 108u };
-static const uint32_t m9s1426[1] = { 32u };
-static const uint32_t m9s1427[9] = { 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
-static const uint32_t m9s1428[1] = { 59u };
-static const uint32_t m9s1429[4] = { 80u, 79u, 79u, 76u };
-static const uint32_t m9s1430[8] = { 76u, 95u, 114u, 101u, 116u, 58u, 32u, 59u };
-static const uint32_t m9s1431[17] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 109u, 57u, 114u, 101u, 115u, 59u };
-static const uint32_t m9s1432[10] = { 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s1433[20] = { 109u, 57u, 114u, 101u, 116u, 32u, 61u, 32u, 109u, 57u, 95u, 114u, 101u, 104u, 111u, 109u, 101u, 32u, 40u, 38u };
-static const uint32_t m9s1434[21] = { 44u, 32u, 109u, 57u, 114u, 101u, 115u, 44u, 32u, 109u, 57u, 114u, 101u, 116u, 44u, 32u, 101u, 114u, 114u, 41u, 59u };
-static const uint32_t m9s1435[1] = { 42u };
-static const uint32_t m9s1436[15] = { 32u, 61u, 32u, 109u, 57u, 95u, 114u, 101u, 104u, 111u, 109u, 101u, 32u, 40u, 38u };
-static const uint32_t m9s1437[10] = { 44u, 32u, 109u, 57u, 114u, 101u, 115u, 44u, 32u, 42u };
-static const uint32_t m9s1438[7] = { 44u, 32u, 101u, 114u, 114u, 41u, 59u };
-static const uint32_t m9s1439[10] = { 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u };
-static const uint32_t m9s1440[5] = { 109u, 57u, 114u, 101u, 116u };
-static const uint32_t m9s1441[5] = { 109u, 57u, 114u, 101u, 115u };
-static const uint32_t m9s1442[2] = { 40u, 42u };
-static const uint32_t m9s1443[1] = { 41u };
-static const uint32_t m9s1444[17] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 108u, 101u, 97u, 118u, 101u, 32u, 40u, 38u, 40u, 42u };
-static const uint32_t m9s1445[9] = { 41u, 46u, 109u, 57u, 109u, 111u, 110u, 41u, 59u };
-static const uint32_t m9s1446[15] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 102u, 114u, 101u, 101u, 32u, 40u, 38u };
-static const uint32_t m9s1447[2] = { 41u, 59u };
-static const uint32_t m9s1448[4] = { 118u, 111u, 105u, 100u };
-static const uint32_t m9s1449[7] = { 114u, 101u, 116u, 117u, 114u, 110u, 59u };
-static const uint32_t m9s1450[13] = { 114u, 101u, 116u, 117u, 114u, 110u, 32u, 109u, 57u, 114u, 101u, 116u, 59u };
-static const uint32_t m9s1451[1] = { 125u };
-static const uint32_t m9s1452[5] = { 76u, 95u, 114u, 101u, 116u };
-static const uint32_t m9s1453[5] = { 76u, 95u, 114u, 101u, 116u };
-static const uint32_t m9s1454[32] = { 105u, 110u, 116u, 32u, 109u, 97u, 105u, 110u, 32u, 40u, 105u, 110u, 116u, 32u, 97u, 114u, 103u, 99u, 44u, 32u, 99u, 104u, 97u, 114u, 32u, 42u, 42u, 97u, 114u, 103u, 118u, 41u };
-static const uint32_t m9s1455[1] = { 123u };
-static const uint32_t m9s1456[20] = { 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 101u, 114u, 114u, 118u, 32u, 61u, 32u, 123u, 48u, 125u, 59u };
-static const uint32_t m9s1457[22] = { 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 42u, 101u, 114u, 114u, 32u, 61u, 32u, 38u, 101u, 114u, 114u, 118u, 59u };
-static const uint32_t m9s1458[8] = { 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s1459[21] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 38u, 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u, 59u };
-static const uint32_t m9s1460[13] = { 101u, 114u, 114u, 45u, 62u, 102u, 105u, 108u, 101u, 32u, 61u, 32u, 34u };
-static const uint32_t m9s1461[2] = { 34u, 59u };
-static const uint32_t m9s1462[21] = { 109u, 57u, 95u, 97u, 114u, 103u, 115u, 32u, 40u, 97u, 114u, 103u, 99u, 44u, 32u, 97u, 114u, 103u, 118u, 41u, 59u };
-static const uint32_t m9s1463[14] = { 95u, 109u, 57u, 105u, 110u, 105u, 116u, 32u, 40u, 101u, 114u, 114u, 41u, 59u };
-static const uint32_t m9s1464[26] = { 32u, 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u, 76u, 95u, 114u, 101u, 116u, 59u };
-static const uint32_t m9s1465[8] = { 76u, 95u, 114u, 101u, 116u, 58u, 32u, 59u };
-static const uint32_t m9s1466[15] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 102u, 114u, 101u, 101u, 32u, 40u, 38u };
-static const uint32_t m9s1467[2] = { 41u, 59u };
-static const uint32_t m9s1468[21] = { 114u, 101u, 116u, 117u, 114u, 110u, 32u, 109u, 57u, 95u, 101u, 120u, 105u, 116u, 32u, 40u, 101u, 114u, 114u, 41u, 59u };
-static const uint32_t m9s1469[1] = { 125u };
-static const uint32_t m9s1470[5] = { 76u, 95u, 114u, 101u, 116u };
-static const uint32_t m9s1471[5] = { 76u, 95u, 114u, 101u, 116u };
-static const uint32_t m9s1472[5] = { 118u, 111u, 105u, 100u, 32u };
-static const uint32_t m9s1473[23] = { 95u, 109u, 57u, 105u, 110u, 105u, 116u, 32u, 40u, 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 42u, 101u, 114u, 114u, 41u };
-static const uint32_t m9s1474[1] = { 123u };
-static const uint32_t m9s1475[22] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 105u, 110u, 116u, 32u, 109u, 57u, 100u, 111u, 110u, 101u, 32u, 61u, 32u, 48u, 59u };
-static const uint32_t m9s1476[19] = { 105u, 102u, 32u, 40u, 109u, 57u, 100u, 111u, 110u, 101u, 41u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 59u };
-static const uint32_t m9s1477[11] = { 109u, 57u, 100u, 111u, 110u, 101u, 32u, 61u, 32u, 49u, 59u };
-static const uint32_t m9s1478[27] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 109u, 57u, 112u, 114u, 101u, 118u, 32u, 61u, 32u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 59u };
-static const uint32_t m9s1479[21] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 38u, 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u, 59u };
-static const uint32_t m9s1480[14] = { 95u, 109u, 57u, 105u, 110u, 105u, 116u, 32u, 40u, 101u, 114u, 114u, 41u, 59u };
-static const uint32_t m9s1481[26] = { 32u, 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u, 76u, 95u, 114u, 101u, 116u, 59u };
-static const uint32_t m9s1482[8] = { 76u, 95u, 114u, 101u, 116u, 58u, 32u, 59u };
-static const uint32_t m9s1483[15] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 102u, 114u, 101u, 101u, 32u, 40u, 38u };
-static const uint32_t m9s1484[2] = { 41u, 59u };
-static const uint32_t m9s1485[18] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 109u, 57u, 112u, 114u, 101u, 118u, 59u };
-static const uint32_t m9s1486[1] = { 125u };
-static const uint32_t m9s1487[1] = { 95u };
-static const uint32_t m9s1488[9] = { 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
-static const uint32_t m9s1489[4] = { 32u, 61u, 32u, 38u };
-static const uint32_t m9s1490[1] = { 59u };
-static const uint32_t m9s1491[7] = { 101u, 120u, 116u, 101u, 114u, 110u, 32u };
-static const uint32_t m9s1492[9] = { 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
-static const uint32_t m9s1493[1] = { 59u };
-static const uint32_t m9s1494[9] = { 38u, 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u };
-static const uint32_t m9s1495[1] = { 38u };
-static const uint32_t m9s1496[16] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
-static const uint32_t m9s1497[8] = { 95u, 112u, 111u, 111u, 108u, 32u, 61u, 32u };
-static const uint32_t m9s1498[1] = { 59u };
-static const uint32_t m9s1499[23] = { 101u, 120u, 116u, 101u, 114u, 110u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
-static const uint32_t m9s1500[6] = { 95u, 112u, 111u, 111u, 108u, 59u };
-static const uint32_t m9s1501[1] = { 46u };
+static const uint32_t m9s1385[15] = { 32u, 42u, 44u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 44u, 32u };
+static const uint32_t m9s1386[4] = { 32u, 42u, 44u, 32u };
+static const uint32_t m9s1387[2] = { 44u, 32u };
+static const uint32_t m9s1388[8] = { 116u, 121u, 112u, 101u, 100u, 101u, 102u, 32u };
+static const uint32_t m9s1389[3] = { 32u, 40u, 42u };
+static const uint32_t m9s1390[1] = { 95u };
+static const uint32_t m9s1391[3] = { 41u, 32u, 40u };
+static const uint32_t m9s1392[15] = { 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 42u, 101u, 114u, 114u, 41u, 59u };
+static const uint32_t m9s1393[5] = { 76u, 95u, 114u, 101u, 116u };
+static const uint32_t m9s1394[5] = { 76u, 95u, 114u, 101u, 116u };
+static const uint32_t m9s1395[4] = { 118u, 111u, 105u, 100u };
+static const uint32_t m9s1396[1] = { 32u };
+static const uint32_t m9s1397[1] = { 95u };
+static const uint32_t m9s1398[2] = { 32u, 40u };
+static const uint32_t m9s1399[1] = { 118u };
+static const uint32_t m9s1400[1] = { 111u };
+static const uint32_t m9s1401[1] = { 112u };
+static const uint32_t m9s1402[1] = { 112u };
+static const uint32_t m9s1403[30] = { 97u, 32u, 109u, 111u, 110u, 105u, 116u, 111u, 114u, 32u, 114u, 101u, 99u, 101u, 105u, 118u, 101u, 114u, 32u, 109u, 117u, 115u, 116u, 32u, 98u, 101u, 32u, 86u, 65u, 82u };
+static const uint32_t m9s1404[1] = { 112u };
+static const uint32_t m9s1405[1] = { 32u };
+static const uint32_t m9s1406[2] = { 44u, 32u };
+static const uint32_t m9s1407[2] = { 32u, 42u };
+static const uint32_t m9s1408[2] = { 44u, 32u };
+static const uint32_t m9s1409[1] = { 118u };
+static const uint32_t m9s1410[9] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u };
+static const uint32_t m9s1411[7] = { 95u, 112u, 111u, 111u, 108u, 44u, 32u };
+static const uint32_t m9s1412[5] = { 95u, 112u, 111u, 111u, 108u };
+static const uint32_t m9s1413[5] = { 109u, 57u, 114u, 101u, 115u };
+static const uint32_t m9s1414[10] = { 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s1415[14] = { 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 42u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s1416[1] = { 59u };
+static const uint32_t m9s1417[7] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u };
+static const uint32_t m9s1418[1] = { 59u };
+static const uint32_t m9s1419[1] = { 123u };
+static const uint32_t m9s1420[22] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 32u, 61u, 32u, 123u, 48u, 125u, 59u };
+static const uint32_t m9s1421[7] = { 109u, 57u, 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s1422[48] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 109u, 57u, 114u, 101u, 115u, 32u, 61u, 32u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 63u, 32u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 58u, 32u, 38u, 109u, 57u, 95u, 104u, 101u, 97u, 112u, 59u };
+static const uint32_t m9s1423[13] = { 40u, 118u, 111u, 105u, 100u, 41u, 32u, 109u, 57u, 114u, 101u, 115u, 59u };
+static const uint32_t m9s1424[10] = { 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s1425[17] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 109u, 57u, 114u, 101u, 115u, 59u };
+static const uint32_t m9s1426[20] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 59u };
+static const uint32_t m9s1427[20] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 38u, 109u, 57u, 102u, 114u, 97u, 109u, 101u, 59u };
+static const uint32_t m9s1428[13] = { 101u, 114u, 114u, 45u, 62u, 102u, 105u, 108u, 101u, 32u, 61u, 32u, 34u };
+static const uint32_t m9s1429[2] = { 34u, 59u };
+static const uint32_t m9s1430[4] = { 118u, 111u, 105u, 100u };
+static const uint32_t m9s1431[6] = { 32u, 109u, 57u, 114u, 101u, 116u };
+static const uint32_t m9s1432[1] = { 59u };
+static const uint32_t m9s1433[17] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 101u, 110u, 116u, 101u, 114u, 32u, 40u, 38u, 40u, 42u };
+static const uint32_t m9s1434[9] = { 41u, 46u, 109u, 57u, 109u, 111u, 110u, 41u, 59u };
+static const uint32_t m9s1435[6] = { 32u, 61u, 32u, 123u, 48u, 125u };
+static const uint32_t m9s1436[1] = { 108u };
+static const uint32_t m9s1437[1] = { 32u };
+static const uint32_t m9s1438[9] = { 59u, 32u, 40u, 118u, 111u, 105u, 100u, 41u, 32u };
+static const uint32_t m9s1439[1] = { 59u };
+static const uint32_t m9s1440[4] = { 80u, 79u, 79u, 76u };
+static const uint32_t m9s1441[8] = { 76u, 95u, 114u, 101u, 116u, 58u, 32u, 59u };
+static const uint32_t m9s1442[17] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 109u, 57u, 114u, 101u, 115u, 59u };
+static const uint32_t m9s1443[10] = { 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s1444[20] = { 109u, 57u, 114u, 101u, 116u, 32u, 61u, 32u, 109u, 57u, 95u, 114u, 101u, 104u, 111u, 109u, 101u, 32u, 40u, 38u };
+static const uint32_t m9s1445[21] = { 44u, 32u, 109u, 57u, 114u, 101u, 115u, 44u, 32u, 109u, 57u, 114u, 101u, 116u, 44u, 32u, 101u, 114u, 114u, 41u, 59u };
+static const uint32_t m9s1446[1] = { 42u };
+static const uint32_t m9s1447[15] = { 32u, 61u, 32u, 109u, 57u, 95u, 114u, 101u, 104u, 111u, 109u, 101u, 32u, 40u, 38u };
+static const uint32_t m9s1448[10] = { 44u, 32u, 109u, 57u, 114u, 101u, 115u, 44u, 32u, 42u };
+static const uint32_t m9s1449[7] = { 44u, 32u, 101u, 114u, 114u, 41u, 59u };
+static const uint32_t m9s1450[10] = { 109u, 57u, 95u, 115u, 108u, 95u, 67u, 72u, 65u, 82u };
+static const uint32_t m9s1451[5] = { 109u, 57u, 114u, 101u, 116u };
+static const uint32_t m9s1452[5] = { 109u, 57u, 114u, 101u, 115u };
+static const uint32_t m9s1453[2] = { 40u, 42u };
+static const uint32_t m9s1454[1] = { 41u };
+static const uint32_t m9s1455[17] = { 109u, 57u, 95u, 109u, 111u, 110u, 95u, 108u, 101u, 97u, 118u, 101u, 32u, 40u, 38u, 40u, 42u };
+static const uint32_t m9s1456[9] = { 41u, 46u, 109u, 57u, 109u, 111u, 110u, 41u, 59u };
+static const uint32_t m9s1457[15] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 102u, 114u, 101u, 101u, 32u, 40u, 38u };
+static const uint32_t m9s1458[2] = { 41u, 59u };
+static const uint32_t m9s1459[4] = { 118u, 111u, 105u, 100u };
+static const uint32_t m9s1460[7] = { 114u, 101u, 116u, 117u, 114u, 110u, 59u };
+static const uint32_t m9s1461[13] = { 114u, 101u, 116u, 117u, 114u, 110u, 32u, 109u, 57u, 114u, 101u, 116u, 59u };
+static const uint32_t m9s1462[1] = { 125u };
+static const uint32_t m9s1463[5] = { 76u, 95u, 114u, 101u, 116u };
+static const uint32_t m9s1464[5] = { 76u, 95u, 114u, 101u, 116u };
+static const uint32_t m9s1465[32] = { 105u, 110u, 116u, 32u, 109u, 97u, 105u, 110u, 32u, 40u, 105u, 110u, 116u, 32u, 97u, 114u, 103u, 99u, 44u, 32u, 99u, 104u, 97u, 114u, 32u, 42u, 42u, 97u, 114u, 103u, 118u, 41u };
+static const uint32_t m9s1466[1] = { 123u };
+static const uint32_t m9s1467[20] = { 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 101u, 114u, 114u, 118u, 32u, 61u, 32u, 123u, 48u, 125u, 59u };
+static const uint32_t m9s1468[22] = { 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 42u, 101u, 114u, 114u, 32u, 61u, 32u, 38u, 101u, 114u, 114u, 118u, 59u };
+static const uint32_t m9s1469[8] = { 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s1470[21] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 38u, 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u, 59u };
+static const uint32_t m9s1471[13] = { 101u, 114u, 114u, 45u, 62u, 102u, 105u, 108u, 101u, 32u, 61u, 32u, 34u };
+static const uint32_t m9s1472[2] = { 34u, 59u };
+static const uint32_t m9s1473[21] = { 109u, 57u, 95u, 97u, 114u, 103u, 115u, 32u, 40u, 97u, 114u, 103u, 99u, 44u, 32u, 97u, 114u, 103u, 118u, 41u, 59u };
+static const uint32_t m9s1474[14] = { 95u, 109u, 57u, 105u, 110u, 105u, 116u, 32u, 40u, 101u, 114u, 114u, 41u, 59u };
+static const uint32_t m9s1475[26] = { 32u, 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u, 76u, 95u, 114u, 101u, 116u, 59u };
+static const uint32_t m9s1476[8] = { 76u, 95u, 114u, 101u, 116u, 58u, 32u, 59u };
+static const uint32_t m9s1477[15] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 102u, 114u, 101u, 101u, 32u, 40u, 38u };
+static const uint32_t m9s1478[2] = { 41u, 59u };
+static const uint32_t m9s1479[21] = { 114u, 101u, 116u, 117u, 114u, 110u, 32u, 109u, 57u, 95u, 101u, 120u, 105u, 116u, 32u, 40u, 101u, 114u, 114u, 41u, 59u };
+static const uint32_t m9s1480[1] = { 125u };
+static const uint32_t m9s1481[5] = { 76u, 95u, 114u, 101u, 116u };
+static const uint32_t m9s1482[5] = { 76u, 95u, 114u, 101u, 116u };
+static const uint32_t m9s1483[5] = { 118u, 111u, 105u, 100u, 32u };
+static const uint32_t m9s1484[23] = { 95u, 109u, 57u, 105u, 110u, 105u, 116u, 32u, 40u, 109u, 57u, 95u, 115u, 116u, 97u, 116u, 101u, 32u, 42u, 101u, 114u, 114u, 41u };
+static const uint32_t m9s1485[1] = { 123u };
+static const uint32_t m9s1486[22] = { 115u, 116u, 97u, 116u, 105u, 99u, 32u, 105u, 110u, 116u, 32u, 109u, 57u, 100u, 111u, 110u, 101u, 32u, 61u, 32u, 48u, 59u };
+static const uint32_t m9s1487[19] = { 105u, 102u, 32u, 40u, 109u, 57u, 100u, 111u, 110u, 101u, 41u, 32u, 114u, 101u, 116u, 117u, 114u, 110u, 59u };
+static const uint32_t m9s1488[11] = { 109u, 57u, 100u, 111u, 110u, 101u, 32u, 61u, 32u, 49u, 59u };
+static const uint32_t m9s1489[27] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 109u, 57u, 112u, 114u, 101u, 118u, 32u, 61u, 32u, 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 59u };
+static const uint32_t m9s1490[21] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 38u, 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u, 59u };
+static const uint32_t m9s1491[14] = { 95u, 109u, 57u, 105u, 110u, 105u, 116u, 32u, 40u, 101u, 114u, 114u, 41u, 59u };
+static const uint32_t m9s1492[26] = { 32u, 105u, 102u, 32u, 40u, 101u, 114u, 114u, 45u, 62u, 101u, 120u, 99u, 41u, 32u, 103u, 111u, 116u, 111u, 32u, 76u, 95u, 114u, 101u, 116u, 59u };
+static const uint32_t m9s1493[8] = { 76u, 95u, 114u, 101u, 116u, 58u, 32u, 59u };
+static const uint32_t m9s1494[15] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 95u, 102u, 114u, 101u, 101u, 32u, 40u, 38u };
+static const uint32_t m9s1495[2] = { 41u, 59u };
+static const uint32_t m9s1496[18] = { 101u, 114u, 114u, 45u, 62u, 114u, 101u, 115u, 32u, 61u, 32u, 109u, 57u, 112u, 114u, 101u, 118u, 59u };
+static const uint32_t m9s1497[1] = { 125u };
+static const uint32_t m9s1498[1] = { 95u };
+static const uint32_t m9s1499[9] = { 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
+static const uint32_t m9s1500[4] = { 32u, 61u, 32u, 38u };
+static const uint32_t m9s1501[1] = { 59u };
+static const uint32_t m9s1502[7] = { 101u, 120u, 116u, 101u, 114u, 110u, 32u };
+static const uint32_t m9s1503[9] = { 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
+static const uint32_t m9s1504[1] = { 59u };
+static const uint32_t m9s1505[9] = { 38u, 109u, 57u, 109u, 102u, 114u, 97u, 109u, 101u };
+static const uint32_t m9s1506[1] = { 38u };
+static const uint32_t m9s1507[16] = { 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
+static const uint32_t m9s1508[8] = { 95u, 112u, 111u, 111u, 108u, 32u, 61u, 32u };
+static const uint32_t m9s1509[1] = { 59u };
+static const uint32_t m9s1510[23] = { 101u, 120u, 116u, 101u, 114u, 110u, 32u, 109u, 57u, 95u, 112u, 111u, 111u, 108u, 32u, 42u, 32u, 99u, 111u, 110u, 115u, 116u, 32u };
+static const uint32_t m9s1511[6] = { 95u, 112u, 111u, 111u, 108u, 59u };
+static const uint32_t m9s1512[1] = { 46u };
 
 static m9_sl_CHAR Gen_S2 (m9_sl_CHAR a, m9_sl_CHAR b, m9_state *err);
 static m9_sl_CHAR Gen_S3 (m9_sl_CHAR a, m9_sl_CHAR b, m9_sl_CHAR c, m9_state *err);
@@ -1978,6 +1990,9 @@ static bool Gen_StartsW (m9_sl_CHAR s, m9_sl_CHAR p, m9_state *err);
 static bool Gen_Has (m9_sl_CHAR s, uint32_t c, m9_state *err);
 static int64_t Gen_FindCh (m9_sl_CHAR s, uint32_t c, m9_state *err);
 static void Gen_MInit (Gen_Map *m, m9_pool *m_pool, m9_state *err);
+static int64_t Gen_CharVal (m9_sl_CHAR lit, m9_state *err);
+static bool Gen_StrLeaf (Ast_Node * k, DynStr_DString * *d, m9_pool *d_pool, m9_state *err);
+static Ast_Node * Gen_FoldStr (Ast_Node * k, m9_state *err);
 static void Gen_MAdd (Gen_Map *m, m9_pool *m_pool, m9_sl_CHAR k, Ast_Node * v, m9_sl_CHAR t, m9_state *err);
 static int64_t Gen_MFind (Gen_Map *m, m9_pool *m_pool, m9_sl_CHAR k, m9_state *err);
 static void Gen_Err2 (int64_t line, m9_sl_CHAR msg, m9_state *err);
@@ -2029,7 +2044,6 @@ static m9_sl_CHAR Gen_NewShape (Ast_Node * e, Ast_Node * *ty, m9_pool *ty_pool, 
 static bool Gen_HasPtr (Ast_Node * t, int64_t depth, m9_state *err);
 static bool Gen_PoolParamTy (Ast_Node * t, m9_state *err);
 static void Gen_AdoptEmit (m9_sl_CHAR expr, Ast_Node * t, m9_sl_CHAR dst, int64_t ind, int64_t depth, m9_state *err);
-static int64_t Gen_CharVal (m9_sl_CHAR lit, m9_state *err);
 static m9_sl_CHAR Gen_StrCodes (m9_sl_CHAR s, m9_state *err);
 static Ast_Node * Gen_RecordConstQual (Ast_Node * k, m9_state *err);
 static bool Gen_IsAggregate (Ast_Node * k, m9_state *err);
@@ -2050,6 +2064,7 @@ static void Gen_EmitSeq (Ast_Node * k, int64_t ind, m9_state *err);
 static m9_sl_CHAR Gen_VariantCtor (Ast_Node * vt, m9_sl_CHAR tn, m9_sl_CHAR vn, Ast_Node * argl, int64_t nargs, m9_sl_CHAR *tag, m9_state *err);
 static m9_sl_CHAR Gen_ConstLbl (Ast_Node * d, m9_state *err);
 static Ast_Node * Gen_DesigDecl (Ast_Node * d, m9_state *err);
+static Ast_Node * Gen_IxFields (m9_state *err);
 static m9_sl_CHAR Gen_ExcRef (m9_sl_CHAR qual, m9_sl_CHAR nm, Ast_Node * *fields, m9_pool *fields_pool, m9_state *err);
 static Ast_Node * Gen_OptInner (Ast_Node * k, m9_state *err);
 static m9_sl_CHAR Gen_TagOfExpr (Ast_Node * k, m9_state *err);
@@ -2069,6 +2084,7 @@ static void Gen_EmitCaseScalar (Ast_Node * st, m9_sl_CHAR w, int64_t ind, m9_sta
 static void Gen_EmitBlock (Ast_Node * st, int64_t ind, m9_state *err);
 static void Gen_EmitDispose (Ast_Node * st, int64_t ind, m9_state *err);
 static void Gen_EmitRaise (Ast_Node * st, int64_t ind, m9_state *err);
+static m9_sl_CHAR Gen_LabelName (Ast_Node * lv, m9_state *err);
 static m9_sl_CHAR Gen_ZeroInit (m9_sl_CHAR cty, m9_state *err);
 static m9_sl_CHAR Gen_ProcTypedefC (m9_sl_CHAR name, Ast_Node * ptn, m9_state *err);
 static void Gen_GenProc (int64_t gi, m9_state *err);
@@ -2269,8 +2285,11 @@ void Gen_LoadUnit (Ast_Node * u, m9_state *err)
               } else {
                 { __typeof__((*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err))) m9a2 = (*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                Gen_MAdd (&(consts), &m9mframe, cd->a, m9a2, (m9_sl_CHAR){ NULL, 0 }, err);
+                { __typeof__(Gen_FoldStr (m9a2, err)) m9a3 = Gen_FoldStr (m9a2, err);
+                  if (err->exc) goto L_ret;
+                Gen_MAdd (&(consts), &m9mframe, cd->a, m9a3, (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_ret;
+                }
                 }
               }
             } }
@@ -2589,24 +2608,24 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
   if (err->exc) goto L_ret;
   Gen_ExportWalks (err);
   if (err->exc) goto L_ret;
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s0, 27 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s1, 21 }), err)) m9a3 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s0, 27 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s1, 21 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s0, 27 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s1, 21 }), err)) m9a4 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s0, 27 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s1, 21 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KHdr, INT64_C(0), m9a3, err);
+  Gen_Line (Gen_KHdr, INT64_C(0), m9a4, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(Gen_S2 (forModule, ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err)) m9a4 = Gen_S2 (forModule, ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err);
+  { __typeof__(Gen_S2 (forModule, ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err)) m9a5 = Gen_S2 (forModule, ((m9_sl_CHAR){ (uint32_t *) m9s3, 2 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s2, 12 }), m9a4, err)) m9a5 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s2, 12 }), m9a4, err);
+  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s2, 12 }), m9a5, err)) m9a6 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s2, 12 }), m9a5, err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KHdr, INT64_C(0), m9a5, err);
+  Gen_Line (Gen_KHdr, INT64_C(0), m9a6, err);
   if (err->exc) goto L_ret;
   }
   }
-  { __typeof__(Gen_S2 (forModule, ((m9_sl_CHAR){ (uint32_t *) m9s5, 2 }), err)) m9a6 = Gen_S2 (forModule, ((m9_sl_CHAR){ (uint32_t *) m9s5, 2 }), err);
+  { __typeof__(Gen_S2 (forModule, ((m9_sl_CHAR){ (uint32_t *) m9s5, 2 }), err)) m9a7 = Gen_S2 (forModule, ((m9_sl_CHAR){ (uint32_t *) m9s5, 2 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s4, 12 }), m9a6, err)) m9a7 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s4, 12 }), m9a6, err);
+  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s4, 12 }), m9a7, err)) m9a8 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s4, 12 }), m9a7, err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KHdr, INT64_C(0), m9a7, err);
+  Gen_Line (Gen_KHdr, INT64_C(0), m9a8, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -2617,11 +2636,11 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
   m9t1to = m9_sub_i64 (extMods.n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k) m9a8 = (*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k;
+    { __typeof__((*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k) m9a9 = (*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k;
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s7, 10 }), m9a8, ((m9_sl_CHAR){ (uint32_t *) m9s8, 3 }), err)) m9a9 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s7, 10 }), m9a8, ((m9_sl_CHAR){ (uint32_t *) m9s8, 3 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s7, 10 }), m9a9, ((m9_sl_CHAR){ (uint32_t *) m9s8, 3 }), err)) m9a10 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s7, 10 }), m9a9, ((m9_sl_CHAR){ (uint32_t *) m9s8, 3 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KHdr, INT64_C(0), m9a9, err);
+    Gen_Line (Gen_KHdr, INT64_C(0), m9a10, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -2629,25 +2648,25 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
   Gen_Line (Gen_KHdr, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
   if ((!isProgram)) {
-    { __typeof__(Gen_CP (forModule, err)) m9a10 = Gen_CP (forModule, err);
+    { __typeof__(Gen_CP (forModule, err)) m9a11 = Gen_CP (forModule, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s9, 5 }), m9a10, ((m9_sl_CHAR){ (uint32_t *) m9s10, 24 }), err)) m9a11 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s9, 5 }), m9a10, ((m9_sl_CHAR){ (uint32_t *) m9s10, 24 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s9, 5 }), m9a11, ((m9_sl_CHAR){ (uint32_t *) m9s10, 24 }), err)) m9a12 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s9, 5 }), m9a11, ((m9_sl_CHAR){ (uint32_t *) m9s10, 24 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KHdr, INT64_C(0), m9a11, err);
+    Gen_Line (Gen_KHdr, INT64_C(0), m9a12, err);
     if (err->exc) goto L_ret;
     }
     }
     Gen_Line (Gen_KHdr, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s11, 27 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s12, 21 }), err)) m9a12 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s11, 27 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s12, 21 }), err);
-    if (err->exc) goto L_ret;
-  Gen_Line (Gen_KSrc, INT64_C(0), m9a12, err);
-  if (err->exc) goto L_ret;
-  }
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s13, 10 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s14, 3 }), err)) m9a13 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s13, 10 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s14, 3 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s11, 27 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s12, 21 }), err)) m9a13 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s11, 27 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s12, 21 }), err);
     if (err->exc) goto L_ret;
   Gen_Line (Gen_KSrc, INT64_C(0), m9a13, err);
+  if (err->exc) goto L_ret;
+  }
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s13, 10 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s14, 3 }), err)) m9a14 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s13, 10 }), forModule, ((m9_sl_CHAR){ (uint32_t *) m9s14, 3 }), err);
+    if (err->exc) goto L_ret;
+  Gen_Line (Gen_KSrc, INT64_C(0), m9a14, err);
   if (err->exc) goto L_ret;
   }
   { int64_t m9t2to;
@@ -2655,11 +2674,11 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
   m9t2to = m9_sub_i64 (extMods.n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    { __typeof__((*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k) m9a14 = (*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k;
+    { __typeof__((*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k) m9a15 = (*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k;
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s15, 10 }), m9a14, ((m9_sl_CHAR){ (uint32_t *) m9s16, 3 }), err)) m9a15 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s15, 10 }), m9a14, ((m9_sl_CHAR){ (uint32_t *) m9s16, 3 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s15, 10 }), m9a15, ((m9_sl_CHAR){ (uint32_t *) m9s16, 3 }), err)) m9a16 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s15, 10 }), m9a15, ((m9_sl_CHAR){ (uint32_t *) m9s16, 3 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KSrc, INT64_C(0), m9a15, err);
+    Gen_Line (Gen_KSrc, INT64_C(0), m9a16, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -2683,19 +2702,19 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
       }
     } }
     if (anyPay) {
-      { __typeof__(Gen_CP (modName, err)) m9a16 = Gen_CP (modName, err);
+      { __typeof__(Gen_CP (modName, err)) m9a17 = Gen_CP (modName, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a17 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+      { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a18 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_CP (modName, err)) m9a18 = Gen_CP (modName, err);
+      { __typeof__(Gen_CP (modName, err)) m9a19 = Gen_CP (modName, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a19 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+      { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a20 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S4 (m9a18, ((m9_sl_CHAR){ (uint32_t *) m9s20, 1 }), m9a19, ((m9_sl_CHAR){ (uint32_t *) m9s21, 1 }), err)) m9a20 = Gen_S4 (m9a18, ((m9_sl_CHAR){ (uint32_t *) m9s20, 1 }), m9a19, ((m9_sl_CHAR){ (uint32_t *) m9s21, 1 }), err);
+      { __typeof__(Gen_S4 (m9a19, ((m9_sl_CHAR){ (uint32_t *) m9s20, 1 }), m9a20, ((m9_sl_CHAR){ (uint32_t *) m9s21, 1 }), err)) m9a21 = Gen_S4 (m9a19, ((m9_sl_CHAR){ (uint32_t *) m9s20, 1 }), m9a20, ((m9_sl_CHAR){ (uint32_t *) m9s21, 1 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s17, 15 }), m9a16, ((m9_sl_CHAR){ (uint32_t *) m9s18, 1 }), m9a17, ((m9_sl_CHAR){ (uint32_t *) m9s19, 1 }), m9a20, err)) m9a21 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s17, 15 }), m9a16, ((m9_sl_CHAR){ (uint32_t *) m9s18, 1 }), m9a17, ((m9_sl_CHAR){ (uint32_t *) m9s19, 1 }), m9a20, err);
+      { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s17, 15 }), m9a17, ((m9_sl_CHAR){ (uint32_t *) m9s18, 1 }), m9a18, ((m9_sl_CHAR){ (uint32_t *) m9s19, 1 }), m9a21, err)) m9a22 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s17, 15 }), m9a17, ((m9_sl_CHAR){ (uint32_t *) m9s18, 1 }), m9a18, ((m9_sl_CHAR){ (uint32_t *) m9s19, 1 }), m9a21, err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KHdr, INT64_C(0), m9a21, err);
+      Gen_Line (Gen_KHdr, INT64_C(0), m9a22, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -2716,11 +2735,11 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
     if (err->exc) goto L_ret;
     if (ptn != NULL) {
       if ((ptn->kind == Ast_NProcType)) {
-        { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a22 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+        { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a23 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_ProcTypedefC (m9a22, ptn, err)) m9a23 = Gen_ProcTypedefC (m9a22, ptn, err);
+        { __typeof__(Gen_ProcTypedefC (m9a23, ptn, err)) m9a24 = Gen_ProcTypedefC (m9a23, ptn, err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KTdefs, INT64_C(0), m9a23, err);
+        Gen_Line (Gen_KTdefs, INT64_C(0), m9a24, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -2762,19 +2781,19 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
         bool m9t8 = (!Gen_IsOpaque ((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name, err));
         if (err->exc) goto L_ret;
         if (m9t8) {
-          { __typeof__(Gen_CP (modName, err)) m9a24 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a25 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a25 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a26 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_CP (modName, err)) m9a26 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a27 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a27 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a28 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S4 (m9a26, ((m9_sl_CHAR){ (uint32_t *) m9s25, 1 }), m9a27, ((m9_sl_CHAR){ (uint32_t *) m9s26, 1 }), err)) m9a28 = Gen_S4 (m9a26, ((m9_sl_CHAR){ (uint32_t *) m9s25, 1 }), m9a27, ((m9_sl_CHAR){ (uint32_t *) m9s26, 1 }), err);
+          { __typeof__(Gen_S4 (m9a27, ((m9_sl_CHAR){ (uint32_t *) m9s25, 1 }), m9a28, ((m9_sl_CHAR){ (uint32_t *) m9s26, 1 }), err)) m9a29 = Gen_S4 (m9a27, ((m9_sl_CHAR){ (uint32_t *) m9s25, 1 }), m9a28, ((m9_sl_CHAR){ (uint32_t *) m9s26, 1 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s22, 15 }), m9a24, ((m9_sl_CHAR){ (uint32_t *) m9s23, 1 }), m9a25, ((m9_sl_CHAR){ (uint32_t *) m9s24, 1 }), m9a28, err)) m9a29 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s22, 15 }), m9a24, ((m9_sl_CHAR){ (uint32_t *) m9s23, 1 }), m9a25, ((m9_sl_CHAR){ (uint32_t *) m9s24, 1 }), m9a28, err);
+          { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s22, 15 }), m9a25, ((m9_sl_CHAR){ (uint32_t *) m9s23, 1 }), m9a26, ((m9_sl_CHAR){ (uint32_t *) m9s24, 1 }), m9a29, err)) m9a30 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s22, 15 }), m9a25, ((m9_sl_CHAR){ (uint32_t *) m9s23, 1 }), m9a26, ((m9_sl_CHAR){ (uint32_t *) m9s24, 1 }), m9a29, err);
             if (err->exc) goto L_ret;
-          Gen_Line (buf, INT64_C(0), m9a29, err);
+          Gen_Line (buf, INT64_C(0), m9a30, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -2784,13 +2803,13 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
           }
         }
         if (anyPay) {
-          { __typeof__(Gen_CP (modName, err)) m9a30 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a31 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a31 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a32 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s27, 7 }), m9a30, ((m9_sl_CHAR){ (uint32_t *) m9s28, 1 }), m9a31, ((m9_sl_CHAR){ (uint32_t *) m9s29, 2 }), err)) m9a32 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s27, 7 }), m9a30, ((m9_sl_CHAR){ (uint32_t *) m9s28, 1 }), m9a31, ((m9_sl_CHAR){ (uint32_t *) m9s29, 2 }), err);
+          { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s27, 7 }), m9a31, ((m9_sl_CHAR){ (uint32_t *) m9s28, 1 }), m9a32, ((m9_sl_CHAR){ (uint32_t *) m9s29, 2 }), err)) m9a33 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s27, 7 }), m9a31, ((m9_sl_CHAR){ (uint32_t *) m9s28, 1 }), m9a32, ((m9_sl_CHAR){ (uint32_t *) m9s29, 2 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (buf, INT64_C(0), m9a32, err);
+          Gen_Line (buf, INT64_C(0), m9a33, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -2830,13 +2849,13 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
                         { Ast_Node * fid = (*(Ast_Node * *) m9_at (fids->kids.p, i2, fids->kids.len, sizeof (Ast_Node *), err));
                         if (err->exc) goto L_ret;
                         if (fid != NULL) {
-                          { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a33 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
+                          { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a34 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
                             if (err->exc) goto L_ret;
-                          { __typeof__(Gen_TyC (m9a33, err)) m9a34 = Gen_TyC (m9a33, err);
+                          { __typeof__(Gen_TyC (m9a34, err)) m9a35 = Gen_TyC (m9a34, err);
                             if (err->exc) goto L_ret;
-                          { __typeof__(Gen_CN (fid->a, err)) m9a35 = Gen_CN (fid->a, err);
+                          { __typeof__(Gen_CN (fid->a, err)) m9a36 = Gen_CN (fid->a, err);
                             if (err->exc) goto L_ret;
-                          { __typeof__(s) m9v = Gen_S5 (s, m9a34, ((m9_sl_CHAR){ (uint32_t *) m9s33, 1 }), m9a35, ((m9_sl_CHAR){ (uint32_t *) m9s34, 2 }), err);
+                          { __typeof__(s) m9v = Gen_S5 (s, m9a35, ((m9_sl_CHAR){ (uint32_t *) m9s33, 1 }), m9a36, ((m9_sl_CHAR){ (uint32_t *) m9s34, 2 }), err);
                             if (err->exc) goto L_ret;
                             s = m9v;
                           }
@@ -2848,11 +2867,11 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
                     } }
                   } }
                 } }
-                { __typeof__(Gen_S2 (v->a, ((m9_sl_CHAR){ (uint32_t *) m9s36, 1 }), err)) m9a36 = Gen_S2 (v->a, ((m9_sl_CHAR){ (uint32_t *) m9s36, 1 }), err);
+                { __typeof__(Gen_S2 (v->a, ((m9_sl_CHAR){ (uint32_t *) m9s36, 1 }), err)) m9a37 = Gen_S2 (v->a, ((m9_sl_CHAR){ (uint32_t *) m9s36, 1 }), err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Gen_S3 (s, ((m9_sl_CHAR){ (uint32_t *) m9s35, 2 }), m9a36, err)) m9a37 = Gen_S3 (s, ((m9_sl_CHAR){ (uint32_t *) m9s35, 2 }), m9a36, err);
+                { __typeof__(Gen_S3 (s, ((m9_sl_CHAR){ (uint32_t *) m9s35, 2 }), m9a37, err)) m9a38 = Gen_S3 (s, ((m9_sl_CHAR){ (uint32_t *) m9s35, 2 }), m9a37, err);
                   if (err->exc) goto L_ret;
-                Gen_Line (buf, INT64_C(0), m9a37, err);
+                Gen_Line (buf, INT64_C(0), m9a38, err);
                 if (err->exc) goto L_ret;
                 }
                 }
@@ -2864,15 +2883,15 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
           Gen_Line (buf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s38, 2 }), err);
           if (err->exc) goto L_ret;
         } else {
-          { __typeof__(Gen_CP (modName, err)) m9a38 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a39 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a39 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a40 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S2 (m9a39, ((m9_sl_CHAR){ (uint32_t *) m9s41, 18 }), err)) m9a40 = Gen_S2 (m9a39, ((m9_sl_CHAR){ (uint32_t *) m9s41, 18 }), err);
+          { __typeof__(Gen_S2 (m9a40, ((m9_sl_CHAR){ (uint32_t *) m9s41, 18 }), err)) m9a41 = Gen_S2 (m9a40, ((m9_sl_CHAR){ (uint32_t *) m9s41, 18 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s39, 7 }), m9a38, ((m9_sl_CHAR){ (uint32_t *) m9s40, 1 }), m9a40, err)) m9a41 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s39, 7 }), m9a38, ((m9_sl_CHAR){ (uint32_t *) m9s40, 1 }), m9a40, err);
+          { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s39, 7 }), m9a39, ((m9_sl_CHAR){ (uint32_t *) m9s40, 1 }), m9a41, err)) m9a42 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s39, 7 }), m9a39, ((m9_sl_CHAR){ (uint32_t *) m9s40, 1 }), m9a41, err);
             if (err->exc) goto L_ret;
-          Gen_Line (buf, INT64_C(0), m9a41, err);
+          Gen_Line (buf, INT64_C(0), m9a42, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -2887,34 +2906,34 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
           { Ast_Node * v = (*(Ast_Node * *) m9_at (d->kids.p, ci, d->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (v != NULL) {
-            { __typeof__(Gen_CP (modName, err)) m9a42 = Gen_CP (modName, err);
+            { __typeof__(Gen_CP (modName, err)) m9a43 = Gen_CP (modName, err);
               if (err->exc) goto L_ret;
-            { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a43 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+            { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a44 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_ItoA (ci, err)) m9a44 = Gen_ItoA (ci, err);
+            { __typeof__(Gen_ItoA (ci, err)) m9a45 = Gen_ItoA (ci, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s45, 1 }), m9a44, err)) m9a45 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s45, 1 }), m9a44, err);
+            { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s45, 1 }), m9a45, err)) m9a46 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s45, 1 }), m9a45, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s42, 8 }), m9a42, ((m9_sl_CHAR){ (uint32_t *) m9s43, 1 }), m9a43, ((m9_sl_CHAR){ (uint32_t *) m9s44, 1 }), v->a, m9a45, err)) m9a46 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s42, 8 }), m9a42, ((m9_sl_CHAR){ (uint32_t *) m9s43, 1 }), m9a43, ((m9_sl_CHAR){ (uint32_t *) m9s44, 1 }), v->a, m9a45, err);
+            { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s42, 8 }), m9a43, ((m9_sl_CHAR){ (uint32_t *) m9s43, 1 }), m9a44, ((m9_sl_CHAR){ (uint32_t *) m9s44, 1 }), v->a, m9a46, err)) m9a47 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s42, 8 }), m9a43, ((m9_sl_CHAR){ (uint32_t *) m9s43, 1 }), m9a44, ((m9_sl_CHAR){ (uint32_t *) m9s44, 1 }), v->a, m9a46, err);
               if (err->exc) goto L_ret;
-            Gen_Line (buf, INT64_C(0), m9a46, err);
+            Gen_Line (buf, INT64_C(0), m9a47, err);
             if (err->exc) goto L_ret;
             }
             }
             }
             }
             }
-            { __typeof__(Gen_CP (modName, err)) m9a47 = Gen_CP (modName, err);
+            { __typeof__(Gen_CP (modName, err)) m9a48 = Gen_CP (modName, err);
               if (err->exc) goto L_ret;
-            { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a48 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+            { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a49 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_ItoA (ci, err)) m9a49 = Gen_ItoA (ci, err);
+            { __typeof__(Gen_ItoA (ci, err)) m9a50 = Gen_ItoA (ci, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_StrCodes (v->a, err)) m9a50 = Gen_StrCodes (v->a, err);
+            { __typeof__(Gen_StrCodes (v->a, err)) m9a51 = Gen_StrCodes (v->a, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s46, 22 }), m9a47, ((m9_sl_CHAR){ (uint32_t *) m9s47, 1 }), m9a48, ((m9_sl_CHAR){ (uint32_t *) m9s48, 3 }), m9a49, ((m9_sl_CHAR){ (uint32_t *) m9s49, 7 }), m9a50, ((m9_sl_CHAR){ (uint32_t *) m9s50, 3 }), err)) m9a51 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s46, 22 }), m9a47, ((m9_sl_CHAR){ (uint32_t *) m9s47, 1 }), m9a48, ((m9_sl_CHAR){ (uint32_t *) m9s48, 3 }), m9a49, ((m9_sl_CHAR){ (uint32_t *) m9s49, 7 }), m9a50, ((m9_sl_CHAR){ (uint32_t *) m9s50, 3 }), err);
+            { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s46, 22 }), m9a48, ((m9_sl_CHAR){ (uint32_t *) m9s47, 1 }), m9a49, ((m9_sl_CHAR){ (uint32_t *) m9s48, 3 }), m9a50, ((m9_sl_CHAR){ (uint32_t *) m9s49, 7 }), m9a51, ((m9_sl_CHAR){ (uint32_t *) m9s50, 3 }), err)) m9a52 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s46, 22 }), m9a48, ((m9_sl_CHAR){ (uint32_t *) m9s47, 1 }), m9a49, ((m9_sl_CHAR){ (uint32_t *) m9s48, 3 }), m9a50, ((m9_sl_CHAR){ (uint32_t *) m9s49, 7 }), m9a51, ((m9_sl_CHAR){ (uint32_t *) m9s50, 3 }), err);
               if (err->exc) goto L_ret;
-            Gen_Line (buf, INT64_C(0), m9a51, err);
+            Gen_Line (buf, INT64_C(0), m9a52, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -2923,13 +2942,13 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
             }
           } }
         } }
-        { __typeof__(Gen_CP (modName, err)) m9a52 = Gen_CP (modName, err);
+        { __typeof__(Gen_CP (modName, err)) m9a53 = Gen_CP (modName, err);
           if (err->exc) goto L_ret;
-        { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a53 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+        { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a54 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s51, 52 }), m9a52, ((m9_sl_CHAR){ (uint32_t *) m9s52, 1 }), m9a53, ((m9_sl_CHAR){ (uint32_t *) m9s53, 12 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a54 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s51, 52 }), m9a52, ((m9_sl_CHAR){ (uint32_t *) m9s52, 1 }), m9a53, ((m9_sl_CHAR){ (uint32_t *) m9s53, 12 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s51, 52 }), m9a53, ((m9_sl_CHAR){ (uint32_t *) m9s52, 1 }), m9a54, ((m9_sl_CHAR){ (uint32_t *) m9s53, 12 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a55 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s51, 52 }), m9a53, ((m9_sl_CHAR){ (uint32_t *) m9s52, 1 }), m9a54, ((m9_sl_CHAR){ (uint32_t *) m9s53, 12 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        Gen_Line (buf, INT64_C(0), m9a54, err);
+        Gen_Line (buf, INT64_C(0), m9a55, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -2942,17 +2961,17 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
           { Ast_Node * v = (*(Ast_Node * *) m9_at (d->kids.p, ci, d->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (v != NULL) {
-            { __typeof__(Gen_CP (modName, err)) m9a55 = Gen_CP (modName, err);
+            { __typeof__(Gen_CP (modName, err)) m9a56 = Gen_CP (modName, err);
               if (err->exc) goto L_ret;
-            { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a56 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+            { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a57 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_ItoA (ci, err)) m9a57 = Gen_ItoA (ci, err);
+            { __typeof__(Gen_ItoA (ci, err)) m9a58 = Gen_ItoA (ci, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_ItoA ((v->a).len, err)) m9a58 = Gen_ItoA ((v->a).len, err);
+            { __typeof__(Gen_ItoA ((v->a).len, err)) m9a59 = Gen_ItoA ((v->a).len, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s54, 17 }), m9a55, ((m9_sl_CHAR){ (uint32_t *) m9s55, 1 }), m9a56, ((m9_sl_CHAR){ (uint32_t *) m9s56, 3 }), m9a57, ((m9_sl_CHAR){ (uint32_t *) m9s57, 2 }), m9a58, ((m9_sl_CHAR){ (uint32_t *) m9s58, 3 }), err)) m9a59 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s54, 17 }), m9a55, ((m9_sl_CHAR){ (uint32_t *) m9s55, 1 }), m9a56, ((m9_sl_CHAR){ (uint32_t *) m9s56, 3 }), m9a57, ((m9_sl_CHAR){ (uint32_t *) m9s57, 2 }), m9a58, ((m9_sl_CHAR){ (uint32_t *) m9s58, 3 }), err);
+            { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s54, 17 }), m9a56, ((m9_sl_CHAR){ (uint32_t *) m9s55, 1 }), m9a57, ((m9_sl_CHAR){ (uint32_t *) m9s56, 3 }), m9a58, ((m9_sl_CHAR){ (uint32_t *) m9s57, 2 }), m9a59, ((m9_sl_CHAR){ (uint32_t *) m9s58, 3 }), err)) m9a60 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s54, 17 }), m9a56, ((m9_sl_CHAR){ (uint32_t *) m9s55, 1 }), m9a57, ((m9_sl_CHAR){ (uint32_t *) m9s56, 3 }), m9a58, ((m9_sl_CHAR){ (uint32_t *) m9s57, 2 }), m9a59, ((m9_sl_CHAR){ (uint32_t *) m9s58, 3 }), err);
               if (err->exc) goto L_ret;
-            Gen_Line (buf, INT64_C(0), m9a59, err);
+            Gen_Line (buf, INT64_C(0), m9a60, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -2976,44 +2995,44 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
     bool m9t15 = (*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).fdef;
     if (err->exc) goto L_ret;
     if (m9t15) {
-      { __typeof__(Gen_CP (modName, err)) m9a60 = Gen_CP (modName, err);
+      { __typeof__(Gen_CP (modName, err)) m9a61 = Gen_CP (modName, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name) m9a61 = (*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name;
+      { __typeof__((*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name) m9a62 = (*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S2 (m9a61, ((m9_sl_CHAR){ (uint32_t *) m9s62, 1 }), err)) m9a62 = Gen_S2 (m9a61, ((m9_sl_CHAR){ (uint32_t *) m9s62, 1 }), err);
+      { __typeof__(Gen_S2 (m9a62, ((m9_sl_CHAR){ (uint32_t *) m9s62, 1 }), err)) m9a63 = Gen_S2 (m9a62, ((m9_sl_CHAR){ (uint32_t *) m9s62, 1 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s60, 20 }), m9a60, ((m9_sl_CHAR){ (uint32_t *) m9s61, 1 }), m9a62, err)) m9a63 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s60, 20 }), m9a60, ((m9_sl_CHAR){ (uint32_t *) m9s61, 1 }), m9a62, err);
+      { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s60, 20 }), m9a61, ((m9_sl_CHAR){ (uint32_t *) m9s61, 1 }), m9a63, err)) m9a64 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s60, 20 }), m9a61, ((m9_sl_CHAR){ (uint32_t *) m9s61, 1 }), m9a63, err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KHdr, INT64_C(0), m9a63, err);
+      Gen_Line (Gen_KHdr, INT64_C(0), m9a64, err);
       if (err->exc) goto L_ret;
       }
       }
       }
       }
-      { __typeof__(Gen_CP (modName, err)) m9a64 = Gen_CP (modName, err);
-        if (err->exc) goto L_ret;
-      { __typeof__((*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name) m9a65 = (*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name;
+      { __typeof__(Gen_CP (modName, err)) m9a65 = Gen_CP (modName, err);
         if (err->exc) goto L_ret;
       { __typeof__((*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name) m9a66 = (*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s63, 13 }), m9a64, ((m9_sl_CHAR){ (uint32_t *) m9s64, 1 }), m9a65, ((m9_sl_CHAR){ (uint32_t *) m9s65, 6 }), m9a66, ((m9_sl_CHAR){ (uint32_t *) m9s66, 4 }), err)) m9a67 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s63, 13 }), m9a64, ((m9_sl_CHAR){ (uint32_t *) m9s64, 1 }), m9a65, ((m9_sl_CHAR){ (uint32_t *) m9s65, 6 }), m9a66, ((m9_sl_CHAR){ (uint32_t *) m9s66, 4 }), err);
+      { __typeof__((*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name) m9a67 = (*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name;
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KSrc, INT64_C(0), m9a67, err);
+      { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s63, 13 }), m9a65, ((m9_sl_CHAR){ (uint32_t *) m9s64, 1 }), m9a66, ((m9_sl_CHAR){ (uint32_t *) m9s65, 6 }), m9a67, ((m9_sl_CHAR){ (uint32_t *) m9s66, 4 }), err)) m9a68 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s63, 13 }), m9a65, ((m9_sl_CHAR){ (uint32_t *) m9s64, 1 }), m9a66, ((m9_sl_CHAR){ (uint32_t *) m9s65, 6 }), m9a67, ((m9_sl_CHAR){ (uint32_t *) m9s66, 4 }), err);
+        if (err->exc) goto L_ret;
+      Gen_Line (Gen_KSrc, INT64_C(0), m9a68, err);
       if (err->exc) goto L_ret;
       }
       }
       }
       }
     } else {
-      { __typeof__(Gen_CP (modName, err)) m9a68 = Gen_CP (modName, err);
-        if (err->exc) goto L_ret;
-      { __typeof__((*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name) m9a69 = (*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name;
+      { __typeof__(Gen_CP (modName, err)) m9a69 = Gen_CP (modName, err);
         if (err->exc) goto L_ret;
       { __typeof__((*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name) m9a70 = (*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name;
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s67, 20 }), m9a68, ((m9_sl_CHAR){ (uint32_t *) m9s68, 1 }), m9a69, ((m9_sl_CHAR){ (uint32_t *) m9s69, 6 }), m9a70, ((m9_sl_CHAR){ (uint32_t *) m9s70, 4 }), err)) m9a71 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s67, 20 }), m9a68, ((m9_sl_CHAR){ (uint32_t *) m9s68, 1 }), m9a69, ((m9_sl_CHAR){ (uint32_t *) m9s69, 6 }), m9a70, ((m9_sl_CHAR){ (uint32_t *) m9s70, 4 }), err);
+      { __typeof__((*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name) m9a71 = (*(Gen_XC *) m9_at (xcs.p, i, xcs.len, sizeof (Gen_XC), err)).name;
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KSrc, INT64_C(0), m9a71, err);
+      { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s67, 20 }), m9a69, ((m9_sl_CHAR){ (uint32_t *) m9s68, 1 }), m9a70, ((m9_sl_CHAR){ (uint32_t *) m9s69, 6 }), m9a71, ((m9_sl_CHAR){ (uint32_t *) m9s70, 4 }), err)) m9a72 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s67, 20 }), m9a69, ((m9_sl_CHAR){ (uint32_t *) m9s68, 1 }), m9a70, ((m9_sl_CHAR){ (uint32_t *) m9s69, 6 }), m9a71, ((m9_sl_CHAR){ (uint32_t *) m9s70, 4 }), err);
+        if (err->exc) goto L_ret;
+      Gen_Line (Gen_KSrc, INT64_C(0), m9a72, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -3046,19 +3065,19 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
         bool m9t18 = (!Gen_IsOpaque ((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name, err));
         if (err->exc) goto L_ret;
         if (m9t18) {
-          { __typeof__(Gen_CP (modName, err)) m9a72 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a73 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a73 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a74 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_CP (modName, err)) m9a74 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a75 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a75 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+          { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a76 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S4 (m9a74, ((m9_sl_CHAR){ (uint32_t *) m9s74, 1 }), m9a75, ((m9_sl_CHAR){ (uint32_t *) m9s75, 1 }), err)) m9a76 = Gen_S4 (m9a74, ((m9_sl_CHAR){ (uint32_t *) m9s74, 1 }), m9a75, ((m9_sl_CHAR){ (uint32_t *) m9s75, 1 }), err);
+          { __typeof__(Gen_S4 (m9a75, ((m9_sl_CHAR){ (uint32_t *) m9s74, 1 }), m9a76, ((m9_sl_CHAR){ (uint32_t *) m9s75, 1 }), err)) m9a77 = Gen_S4 (m9a75, ((m9_sl_CHAR){ (uint32_t *) m9s74, 1 }), m9a76, ((m9_sl_CHAR){ (uint32_t *) m9s75, 1 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s71, 15 }), m9a72, ((m9_sl_CHAR){ (uint32_t *) m9s72, 1 }), m9a73, ((m9_sl_CHAR){ (uint32_t *) m9s73, 1 }), m9a76, err)) m9a77 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s71, 15 }), m9a72, ((m9_sl_CHAR){ (uint32_t *) m9s72, 1 }), m9a73, ((m9_sl_CHAR){ (uint32_t *) m9s73, 1 }), m9a76, err);
+          { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s71, 15 }), m9a73, ((m9_sl_CHAR){ (uint32_t *) m9s72, 1 }), m9a74, ((m9_sl_CHAR){ (uint32_t *) m9s73, 1 }), m9a77, err)) m9a78 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s71, 15 }), m9a73, ((m9_sl_CHAR){ (uint32_t *) m9s72, 1 }), m9a74, ((m9_sl_CHAR){ (uint32_t *) m9s73, 1 }), m9a77, err);
             if (err->exc) goto L_ret;
-          Gen_Line (buf, INT64_C(0), m9a77, err);
+          Gen_Line (buf, INT64_C(0), m9a78, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -3067,13 +3086,13 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
           }
           }
         }
-        { __typeof__(Gen_CP (modName, err)) m9a78 = Gen_CP (modName, err);
+        { __typeof__(Gen_CP (modName, err)) m9a79 = Gen_CP (modName, err);
           if (err->exc) goto L_ret;
-        { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a79 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
+        { __typeof__((*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name) m9a80 = (*(Gen_TY *) m9_at (tys.p, i, tys.len, sizeof (Gen_TY), err)).name;
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s76, 7 }), m9a78, ((m9_sl_CHAR){ (uint32_t *) m9s77, 1 }), m9a79, ((m9_sl_CHAR){ (uint32_t *) m9s78, 2 }), err)) m9a80 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s76, 7 }), m9a78, ((m9_sl_CHAR){ (uint32_t *) m9s77, 1 }), m9a79, ((m9_sl_CHAR){ (uint32_t *) m9s78, 2 }), err);
+        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s76, 7 }), m9a79, ((m9_sl_CHAR){ (uint32_t *) m9s77, 1 }), m9a80, ((m9_sl_CHAR){ (uint32_t *) m9s78, 2 }), err)) m9a81 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s76, 7 }), m9a79, ((m9_sl_CHAR){ (uint32_t *) m9s77, 1 }), m9a80, ((m9_sl_CHAR){ (uint32_t *) m9s78, 2 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (buf, INT64_C(0), m9a80, err);
+        Gen_Line (buf, INT64_C(0), m9a81, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -3103,9 +3122,9 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
             { Ast_Node * fg = (*(Ast_Node * *) m9_at (fs->kids.p, ci, fs->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (fg != NULL) {
-              { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a81 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a82 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(s) m9v = Gen_TyC (m9a81, err);
+              { __typeof__(s) m9v = Gen_TyC (m9a82, err);
                 if (err->exc) goto L_ret;
                 s = m9v;
               }
@@ -3121,13 +3140,13 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
                   { Ast_Node * fid = (*(Ast_Node * *) m9_at (fids->kids.p, j2, fids->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
                   if (fid != NULL) {
-                    { __typeof__(Gen_CN (fid->a, err)) m9a82 = Gen_CN (fid->a, err);
+                    { __typeof__(Gen_CN (fid->a, err)) m9a83 = Gen_CN (fid->a, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(Gen_S2 (m9a82, ((m9_sl_CHAR){ (uint32_t *) m9s82, 1 }), err)) m9a83 = Gen_S2 (m9a82, ((m9_sl_CHAR){ (uint32_t *) m9s82, 1 }), err);
+                    { __typeof__(Gen_S2 (m9a83, ((m9_sl_CHAR){ (uint32_t *) m9s82, 1 }), err)) m9a84 = Gen_S2 (m9a83, ((m9_sl_CHAR){ (uint32_t *) m9s82, 1 }), err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s81, 1 }), m9a83, err)) m9a84 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s81, 1 }), m9a83, err);
+                    { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s81, 1 }), m9a84, err)) m9a85 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s80, 2 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s81, 1 }), m9a84, err);
                       if (err->exc) goto L_ret;
-                    Gen_Line (buf, INT64_C(0), m9a84, err);
+                    Gen_Line (buf, INT64_C(0), m9a85, err);
                     if (err->exc) goto L_ret;
                     }
                     }
@@ -3154,15 +3173,15 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
     if (err->exc) goto L_ret;
     if (e != NULL) {
       if ((e->kind == Ast_NInt)) {
-        { __typeof__(Gen_CP (modName, err)) m9a85 = Gen_CP (modName, err);
+        { __typeof__(Gen_CP (modName, err)) m9a86 = Gen_CP (modName, err);
           if (err->exc) goto L_ret;
-        { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a86 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
+        { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a87 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S2 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s87, 1 }), err)) m9a87 = Gen_S2 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s87, 1 }), err);
+        { __typeof__(Gen_S2 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s87, 1 }), err)) m9a88 = Gen_S2 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s87, 1 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s84, 8 }), m9a85, ((m9_sl_CHAR){ (uint32_t *) m9s85, 1 }), m9a86, ((m9_sl_CHAR){ (uint32_t *) m9s86, 9 }), m9a87, err)) m9a88 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s84, 8 }), m9a85, ((m9_sl_CHAR){ (uint32_t *) m9s85, 1 }), m9a86, ((m9_sl_CHAR){ (uint32_t *) m9s86, 9 }), m9a87, err);
+        { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s84, 8 }), m9a86, ((m9_sl_CHAR){ (uint32_t *) m9s85, 1 }), m9a87, ((m9_sl_CHAR){ (uint32_t *) m9s86, 9 }), m9a88, err)) m9a89 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s84, 8 }), m9a86, ((m9_sl_CHAR){ (uint32_t *) m9s85, 1 }), m9a87, ((m9_sl_CHAR){ (uint32_t *) m9s86, 9 }), m9a88, err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a88, err);
+        Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a89, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -3172,17 +3191,17 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
         bool m9t22 = Gen_IsNegLit (e, Ast_NInt, err);
         if (err->exc) goto L_ret;
         if (m9t22) {
-          { __typeof__(Gen_CP (modName, err)) m9a89 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a90 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a90 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
+          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a91 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_NegLitText (e, err)) m9a91 = Gen_NegLitText (e, err);
+          { __typeof__(Gen_NegLitText (e, err)) m9a92 = Gen_NegLitText (e, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S2 (m9a91, ((m9_sl_CHAR){ (uint32_t *) m9s91, 1 }), err)) m9a92 = Gen_S2 (m9a91, ((m9_sl_CHAR){ (uint32_t *) m9s91, 1 }), err);
+          { __typeof__(Gen_S2 (m9a92, ((m9_sl_CHAR){ (uint32_t *) m9s91, 1 }), err)) m9a93 = Gen_S2 (m9a92, ((m9_sl_CHAR){ (uint32_t *) m9s91, 1 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s88, 8 }), m9a89, ((m9_sl_CHAR){ (uint32_t *) m9s89, 1 }), m9a90, ((m9_sl_CHAR){ (uint32_t *) m9s90, 10 }), m9a92, err)) m9a93 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s88, 8 }), m9a89, ((m9_sl_CHAR){ (uint32_t *) m9s89, 1 }), m9a90, ((m9_sl_CHAR){ (uint32_t *) m9s90, 10 }), m9a92, err);
+          { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s88, 8 }), m9a90, ((m9_sl_CHAR){ (uint32_t *) m9s89, 1 }), m9a91, ((m9_sl_CHAR){ (uint32_t *) m9s90, 10 }), m9a93, err)) m9a94 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s88, 8 }), m9a90, ((m9_sl_CHAR){ (uint32_t *) m9s89, 1 }), m9a91, ((m9_sl_CHAR){ (uint32_t *) m9s90, 10 }), m9a93, err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a93, err);
+          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a94, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -3193,15 +3212,15 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
         bool m9t23 = Gen_IsNegLit (e, Ast_NReal, err);
         if (err->exc) goto L_ret;
         if (m9t23) {
-          { __typeof__(Gen_CP (modName, err)) m9a94 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a95 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a95 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
+          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a96 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_NegLitText (e, err)) m9a96 = Gen_NegLitText (e, err);
+          { __typeof__(Gen_NegLitText (e, err)) m9a97 = Gen_NegLitText (e, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s92, 8 }), m9a94, ((m9_sl_CHAR){ (uint32_t *) m9s93, 1 }), m9a95, ((m9_sl_CHAR){ (uint32_t *) m9s94, 3 }), m9a96, ((m9_sl_CHAR){ (uint32_t *) m9s95, 1 }), err)) m9a97 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s92, 8 }), m9a94, ((m9_sl_CHAR){ (uint32_t *) m9s93, 1 }), m9a95, ((m9_sl_CHAR){ (uint32_t *) m9s94, 3 }), m9a96, ((m9_sl_CHAR){ (uint32_t *) m9s95, 1 }), err);
+          { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s92, 8 }), m9a95, ((m9_sl_CHAR){ (uint32_t *) m9s93, 1 }), m9a96, ((m9_sl_CHAR){ (uint32_t *) m9s94, 3 }), m9a97, ((m9_sl_CHAR){ (uint32_t *) m9s95, 1 }), err)) m9a98 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s92, 8 }), m9a95, ((m9_sl_CHAR){ (uint32_t *) m9s93, 1 }), m9a96, ((m9_sl_CHAR){ (uint32_t *) m9s94, 3 }), m9a97, ((m9_sl_CHAR){ (uint32_t *) m9s95, 1 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a97, err);
+          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a98, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -3209,75 +3228,75 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
           }
       } else {
         if ((e->kind == Ast_NReal)) {
-          { __typeof__(Gen_CP (modName, err)) m9a98 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a99 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a99 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
+          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a100 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s96, 8 }), m9a98, ((m9_sl_CHAR){ (uint32_t *) m9s97, 1 }), m9a99, ((m9_sl_CHAR){ (uint32_t *) m9s98, 2 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s99, 1 }), err)) m9a100 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s96, 8 }), m9a98, ((m9_sl_CHAR){ (uint32_t *) m9s97, 1 }), m9a99, ((m9_sl_CHAR){ (uint32_t *) m9s98, 2 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s99, 1 }), err);
+          { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s96, 8 }), m9a99, ((m9_sl_CHAR){ (uint32_t *) m9s97, 1 }), m9a100, ((m9_sl_CHAR){ (uint32_t *) m9s98, 2 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s99, 1 }), err)) m9a101 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s96, 8 }), m9a99, ((m9_sl_CHAR){ (uint32_t *) m9s97, 1 }), m9a100, ((m9_sl_CHAR){ (uint32_t *) m9s98, 2 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s99, 1 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a100, err);
+          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a101, err);
           if (err->exc) goto L_ret;
           }
           }
           }
       } else {
         if ((e->kind == Ast_NTrue)) {
-          { __typeof__(Gen_CP (modName, err)) m9a101 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a102 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a102 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
+          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a103 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s100, 8 }), m9a101, ((m9_sl_CHAR){ (uint32_t *) m9s101, 1 }), m9a102, ((m9_sl_CHAR){ (uint32_t *) m9s102, 5 }), err)) m9a103 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s100, 8 }), m9a101, ((m9_sl_CHAR){ (uint32_t *) m9s101, 1 }), m9a102, ((m9_sl_CHAR){ (uint32_t *) m9s102, 5 }), err);
+          { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s100, 8 }), m9a102, ((m9_sl_CHAR){ (uint32_t *) m9s101, 1 }), m9a103, ((m9_sl_CHAR){ (uint32_t *) m9s102, 5 }), err)) m9a104 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s100, 8 }), m9a102, ((m9_sl_CHAR){ (uint32_t *) m9s101, 1 }), m9a103, ((m9_sl_CHAR){ (uint32_t *) m9s102, 5 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a103, err);
+          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a104, err);
           if (err->exc) goto L_ret;
           }
           }
           }
       } else {
         if ((e->kind == Ast_NFalse)) {
-          { __typeof__(Gen_CP (modName, err)) m9a104 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a105 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a105 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
+          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a106 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s103, 8 }), m9a104, ((m9_sl_CHAR){ (uint32_t *) m9s104, 1 }), m9a105, ((m9_sl_CHAR){ (uint32_t *) m9s105, 6 }), err)) m9a106 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s103, 8 }), m9a104, ((m9_sl_CHAR){ (uint32_t *) m9s104, 1 }), m9a105, ((m9_sl_CHAR){ (uint32_t *) m9s105, 6 }), err);
+          { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s103, 8 }), m9a105, ((m9_sl_CHAR){ (uint32_t *) m9s104, 1 }), m9a106, ((m9_sl_CHAR){ (uint32_t *) m9s105, 6 }), err)) m9a107 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s103, 8 }), m9a105, ((m9_sl_CHAR){ (uint32_t *) m9s104, 1 }), m9a106, ((m9_sl_CHAR){ (uint32_t *) m9s105, 6 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a106, err);
+          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a107, err);
           if (err->exc) goto L_ret;
           }
           }
           }
       } else {
         if (((e->kind == Ast_NString) && ((e->a).len > INT64_C(0)))) {
-          { __typeof__(Gen_CP (modName, err)) m9a107 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a108 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a108 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
+          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a109 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_ItoA ((e->a).len, err)) m9a109 = Gen_ItoA ((e->a).len, err);
+          { __typeof__(Gen_ItoA ((e->a).len, err)) m9a110 = Gen_ItoA ((e->a).len, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_StrCodes (e->a, err)) m9a110 = Gen_StrCodes (e->a, err);
+          { __typeof__(Gen_StrCodes (e->a, err)) m9a111 = Gen_StrCodes (e->a, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s106, 22 }), m9a107, ((m9_sl_CHAR){ (uint32_t *) m9s107, 1 }), m9a108, ((m9_sl_CHAR){ (uint32_t *) m9s108, 3 }), m9a109, ((m9_sl_CHAR){ (uint32_t *) m9s109, 6 }), m9a110, ((m9_sl_CHAR){ (uint32_t *) m9s110, 3 }), err)) m9a111 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s106, 22 }), m9a107, ((m9_sl_CHAR){ (uint32_t *) m9s107, 1 }), m9a108, ((m9_sl_CHAR){ (uint32_t *) m9s108, 3 }), m9a109, ((m9_sl_CHAR){ (uint32_t *) m9s109, 6 }), m9a110, ((m9_sl_CHAR){ (uint32_t *) m9s110, 3 }), err);
+          { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s106, 22 }), m9a108, ((m9_sl_CHAR){ (uint32_t *) m9s107, 1 }), m9a109, ((m9_sl_CHAR){ (uint32_t *) m9s108, 3 }), m9a110, ((m9_sl_CHAR){ (uint32_t *) m9s109, 6 }), m9a111, ((m9_sl_CHAR){ (uint32_t *) m9s110, 3 }), err)) m9a112 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s106, 22 }), m9a108, ((m9_sl_CHAR){ (uint32_t *) m9s107, 1 }), m9a109, ((m9_sl_CHAR){ (uint32_t *) m9s108, 3 }), m9a110, ((m9_sl_CHAR){ (uint32_t *) m9s109, 6 }), m9a111, ((m9_sl_CHAR){ (uint32_t *) m9s110, 3 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a111, err);
+          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a112, err);
           if (err->exc) goto L_ret;
           }
           }
           }
           }
           }
-          { __typeof__(Gen_CP (modName, err)) m9a112 = Gen_CP (modName, err);
-            if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a113 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
+          { __typeof__(Gen_CP (modName, err)) m9a113 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
           { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a114 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_ItoA ((e->a).len, err)) m9a115 = Gen_ItoA ((e->a).len, err);
+          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a115 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), m9a115, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a116 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), m9a115, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          { __typeof__(Gen_ItoA ((e->a).len, err)) m9a116 = Gen_ItoA ((e->a).len, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s111, 8 }), m9a112, ((m9_sl_CHAR){ (uint32_t *) m9s112, 1 }), m9a113, ((m9_sl_CHAR){ (uint32_t *) m9s113, 29 }), modName, ((m9_sl_CHAR){ (uint32_t *) m9s114, 1 }), m9a114, m9a116, err)) m9a117 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s111, 8 }), m9a112, ((m9_sl_CHAR){ (uint32_t *) m9s112, 1 }), m9a113, ((m9_sl_CHAR){ (uint32_t *) m9s113, 29 }), modName, ((m9_sl_CHAR){ (uint32_t *) m9s114, 1 }), m9a114, m9a116, err);
+          { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), m9a116, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a117 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s115, 4 }), m9a116, ((m9_sl_CHAR){ (uint32_t *) m9s116, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a117, err);
+          { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s111, 8 }), m9a113, ((m9_sl_CHAR){ (uint32_t *) m9s112, 1 }), m9a114, ((m9_sl_CHAR){ (uint32_t *) m9s113, 29 }), modName, ((m9_sl_CHAR){ (uint32_t *) m9s114, 1 }), m9a115, m9a117, err)) m9a118 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s111, 8 }), m9a113, ((m9_sl_CHAR){ (uint32_t *) m9s112, 1 }), m9a114, ((m9_sl_CHAR){ (uint32_t *) m9s113, 29 }), modName, ((m9_sl_CHAR){ (uint32_t *) m9s114, 1 }), m9a115, m9a117, err);
+            if (err->exc) goto L_ret;
+          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a118, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -3287,19 +3306,19 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
           }
       } else {
         if ((e->kind == Ast_NChar)) {
-          { __typeof__(Gen_CP (modName, err)) m9a118 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a119 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a119 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
+          { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k) m9a120 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).k;
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_CharVal (e->a, err)) m9a120 = Gen_CharVal (e->a, err);
+          { __typeof__(Gen_CharVal (e->a, err)) m9a121 = Gen_CharVal (e->a, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_ItoA (m9a120, err)) m9a121 = Gen_ItoA (m9a120, err);
+          { __typeof__(Gen_ItoA (m9a121, err)) m9a122 = Gen_ItoA (m9a121, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S2 (m9a121, ((m9_sl_CHAR){ (uint32_t *) m9s120, 1 }), err)) m9a122 = Gen_S2 (m9a121, ((m9_sl_CHAR){ (uint32_t *) m9s120, 1 }), err);
+          { __typeof__(Gen_S2 (m9a122, ((m9_sl_CHAR){ (uint32_t *) m9s120, 1 }), err)) m9a123 = Gen_S2 (m9a122, ((m9_sl_CHAR){ (uint32_t *) m9s120, 1 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s117, 8 }), m9a118, ((m9_sl_CHAR){ (uint32_t *) m9s118, 1 }), m9a119, ((m9_sl_CHAR){ (uint32_t *) m9s119, 2 }), m9a122, ((m9_sl_CHAR){ (uint32_t *) m9s121, 1 }), err)) m9a123 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s117, 8 }), m9a118, ((m9_sl_CHAR){ (uint32_t *) m9s118, 1 }), m9a119, ((m9_sl_CHAR){ (uint32_t *) m9s119, 2 }), m9a122, ((m9_sl_CHAR){ (uint32_t *) m9s121, 1 }), err);
+          { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s117, 8 }), m9a119, ((m9_sl_CHAR){ (uint32_t *) m9s118, 1 }), m9a120, ((m9_sl_CHAR){ (uint32_t *) m9s119, 2 }), m9a123, ((m9_sl_CHAR){ (uint32_t *) m9s121, 1 }), err)) m9a124 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s117, 8 }), m9a119, ((m9_sl_CHAR){ (uint32_t *) m9s118, 1 }), m9a120, ((m9_sl_CHAR){ (uint32_t *) m9s119, 2 }), m9a123, ((m9_sl_CHAR){ (uint32_t *) m9s121, 1 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a123, err);
+          Gen_Line (Gen_KHdrConsts, INT64_C(0), m9a124, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -3324,9 +3343,9 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
       { Ast_Node * rt = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (rt != NULL) {
-        { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a124 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a125 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(s) m9v = Gen_TyC (m9a124, err);
+        { __typeof__(s) m9v = Gen_TyC (m9a125, err);
           if (err->exc) goto L_ret;
           s = m9v;
         }
@@ -3360,11 +3379,11 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
                     cs = m9v;
                   }
                 }
-                { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a125 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a126 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(Gen_TyC (m9a125, err)) m9a126 = Gen_TyC (m9a125, err);
+                { __typeof__(Gen_TyC (m9a126, err)) m9a127 = Gen_TyC (m9a126, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(cs) m9v = Gen_S2 (cs, m9a126, err);
+                { __typeof__(cs) m9v = Gen_S2 (cs, m9a127, err);
                   if (err->exc) goto L_ret;
                   cs = m9v;
                 }
@@ -3378,11 +3397,11 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
       if (((cs).len == INT64_C(0))) {
         cs = ((m9_sl_CHAR){ (uint32_t *) m9s125, 4 });
       }
-      { __typeof__(Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s129, 2 }), err)) m9a127 = Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s129, 2 }), err);
+      { __typeof__(Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s129, 2 }), err)) m9a128 = Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s129, 2 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s126, 7 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s127, 1 }), d->b, ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), m9a127, err)) m9a128 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s126, 7 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s127, 1 }), d->b, ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), m9a127, err);
+      { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s126, 7 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s127, 1 }), d->b, ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), m9a128, err)) m9a129 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s126, 7 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s127, 1 }), d->b, ((m9_sl_CHAR){ (uint32_t *) m9s128, 2 }), m9a128, err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KSrc, INT64_C(0), m9a128, err);
+      Gen_Line (Gen_KSrc, INT64_C(0), m9a129, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -3397,17 +3416,17 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
   m9t27to = m9_sub_i64 (nmv, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t27to; i += 1) {
-    { __typeof__((*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err))) m9a129 = (*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err))) m9a130 = (*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_TyC (m9a129, err)) m9a130 = Gen_TyC (m9a129, err);
+    { __typeof__(Gen_TyC (m9a130, err)) m9a131 = Gen_TyC (m9a130, err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err))) m9a131 = (*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err))) m9a132 = (*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_CN (m9a131, err)) m9a132 = Gen_CN (m9a131, err);
+    { __typeof__(Gen_CN (m9a132, err)) m9a133 = Gen_CN (m9a132, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s130, 7 }), m9a130, ((m9_sl_CHAR){ (uint32_t *) m9s131, 1 }), m9a132, ((m9_sl_CHAR){ (uint32_t *) m9s132, 1 }), err)) m9a133 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s130, 7 }), m9a130, ((m9_sl_CHAR){ (uint32_t *) m9s131, 1 }), m9a132, ((m9_sl_CHAR){ (uint32_t *) m9s132, 1 }), err);
+    { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s130, 7 }), m9a131, ((m9_sl_CHAR){ (uint32_t *) m9s131, 1 }), m9a133, ((m9_sl_CHAR){ (uint32_t *) m9s132, 1 }), err)) m9a134 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s130, 7 }), m9a131, ((m9_sl_CHAR){ (uint32_t *) m9s131, 1 }), m9a133, ((m9_sl_CHAR){ (uint32_t *) m9s132, 1 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KRec3, INT64_C(0), m9a133, err);
+    Gen_Line (Gen_KRec3, INT64_C(0), m9a134, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -3441,97 +3460,97 @@ void Gen_Emit (m9_sl_CHAR forModule, m9_state *err)
     Gen_GenInit (forModule, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bHdrConsts, err)) m9a134 = DynStr_View (bHdrConsts, err);
+  { __typeof__(DynStr_View (bHdrConsts, err)) m9a135 = DynStr_View (bHdrConsts, err);
     if (err->exc) goto L_ret;
-  DynStr_Append (&(bHdr), &(gpool), m9a134, err);
+  DynStr_Append (&(bHdr), &(gpool), m9a135, err);
   if (err->exc) goto L_ret;
   }
   if ((hdrConstN > INT64_C(0))) {
     Gen_Line (Gen_KHdr, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bTdefs, err)) m9a135 = DynStr_View (bTdefs, err);
+  { __typeof__(DynStr_View (bTdefs, err)) m9a136 = DynStr_View (bTdefs, err);
     if (err->exc) goto L_ret;
-  DynStr_Append (&(bHdr), &(gpool), m9a135, err);
+  DynStr_Append (&(bHdr), &(gpool), m9a136, err);
   if (err->exc) goto L_ret;
   }
   if ((tdefN > INT64_C(0))) {
     Gen_Line (Gen_KHdr, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bHdrRecs, err)) m9a136 = DynStr_View (bHdrRecs, err);
-    if (err->exc) goto L_ret;
-  DynStr_Append (&(bHdr), &(gpool), m9a136, err);
-  if (err->exc) goto L_ret;
-  }
-  { __typeof__(DynStr_View (bHdrArrRec, err)) m9a137 = DynStr_View (bHdrArrRec, err);
+  { __typeof__(DynStr_View (bHdrRecs, err)) m9a137 = DynStr_View (bHdrRecs, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(bHdr), &(gpool), m9a137, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bHdrProtos, err)) m9a138 = DynStr_View (bHdrProtos, err);
+  { __typeof__(DynStr_View (bHdrArrRec, err)) m9a138 = DynStr_View (bHdrArrRec, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(bHdr), &(gpool), m9a138, err);
+  if (err->exc) goto L_ret;
+  }
+  { __typeof__(DynStr_View (bHdrProtos, err)) m9a139 = DynStr_View (bHdrProtos, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(bHdr), &(gpool), m9a139, err);
   if (err->exc) goto L_ret;
   }
   Gen_Line (Gen_KHdr, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
   Gen_Line (Gen_KHdr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s134, 6 }), err);
   if (err->exc) goto L_ret;
-  { __typeof__(DynStr_View (bRec2, err)) m9a139 = DynStr_View (bRec2, err);
-    if (err->exc) goto L_ret;
-  DynStr_Append (&(bSrc), &(gpool), m9a139, err);
-  if (err->exc) goto L_ret;
-  }
-  { __typeof__(DynStr_View (bArrRec, err)) m9a140 = DynStr_View (bArrRec, err);
+  { __typeof__(DynStr_View (bRec2, err)) m9a140 = DynStr_View (bRec2, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(bSrc), &(gpool), m9a140, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bRec3, err)) m9a141 = DynStr_View (bRec3, err);
+  { __typeof__(DynStr_View (bArrRec, err)) m9a141 = DynStr_View (bArrRec, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(bSrc), &(gpool), m9a141, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bLit, err)) m9a142 = DynStr_View (bLit, err);
+  { __typeof__(DynStr_View (bRec3, err)) m9a142 = DynStr_View (bRec3, err);
     if (err->exc) goto L_ret;
   DynStr_Append (&(bSrc), &(gpool), m9a142, err);
+  if (err->exc) goto L_ret;
+  }
+  { __typeof__(DynStr_View (bLit, err)) m9a143 = DynStr_View (bLit, err);
+    if (err->exc) goto L_ret;
+  DynStr_Append (&(bSrc), &(gpool), m9a143, err);
   if (err->exc) goto L_ret;
   }
   if ((litN > INT64_C(0))) {
     Gen_Line (Gen_KSrc, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bGate, err)) m9a143 = DynStr_View (bGate, err);
+  { __typeof__(DynStr_View (bGate, err)) m9a144 = DynStr_View (bGate, err);
     if (err->exc) goto L_ret;
-  DynStr_Append (&(bSrc), &(gpool), m9a143, err);
+  DynStr_Append (&(bSrc), &(gpool), m9a144, err);
   if (err->exc) goto L_ret;
   }
   if ((gateSeen.n > INT64_C(0))) {
     Gen_Line (Gen_KSrc, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bSprotos, err)) m9a144 = DynStr_View (bSprotos, err);
+  { __typeof__(DynStr_View (bSprotos, err)) m9a145 = DynStr_View (bSprotos, err);
     if (err->exc) goto L_ret;
-  DynStr_Append (&(bSrc), &(gpool), m9a144, err);
+  DynStr_Append (&(bSrc), &(gpool), m9a145, err);
   if (err->exc) goto L_ret;
   }
   if ((sprotoN > INT64_C(0))) {
     Gen_Line (Gen_KSrc, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bThr, err)) m9a145 = DynStr_View (bThr, err);
+  { __typeof__(DynStr_View (bThr, err)) m9a146 = DynStr_View (bThr, err);
     if (err->exc) goto L_ret;
-  DynStr_Append (&(bSrc), &(gpool), m9a145, err);
+  DynStr_Append (&(bSrc), &(gpool), m9a146, err);
   if (err->exc) goto L_ret;
   }
   if ((thrSeen.n > INT64_C(0))) {
     Gen_Line (Gen_KSrc, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(DynStr_View (bPbuf, err)) m9a146 = DynStr_View (bPbuf, err);
+  { __typeof__(DynStr_View (bPbuf, err)) m9a147 = DynStr_View (bPbuf, err);
     if (err->exc) goto L_ret;
-  DynStr_Append (&(bSrc), &(gpool), m9a146, err);
+  DynStr_Append (&(bSrc), &(gpool), m9a147, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(hOut) m9v = DynStr_View (bHdr, err);
@@ -4085,19 +4104,19 @@ static void Gen_DbgLine (Ast_Node * n, m9_state *err)
   if (((dbgSrc).len == INT64_C(0))) {
     goto L_ret;
   }
-  { __typeof__(Gen_ItoA (n->line, err)) m9a147 = Gen_ItoA (n->line, err);
+  { __typeof__(Gen_ItoA (n->line, err)) m9a148 = Gen_ItoA (n->line, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s135, 6 }), m9a147, ((m9_sl_CHAR){ (uint32_t *) m9s136, 2 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s137, 1 }), err)) m9a148 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s135, 6 }), m9a147, ((m9_sl_CHAR){ (uint32_t *) m9s136, 2 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s137, 1 }), err);
+  { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s135, 6 }), m9a148, ((m9_sl_CHAR){ (uint32_t *) m9s136, 2 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s137, 1 }), err)) m9a149 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s135, 6 }), m9a148, ((m9_sl_CHAR){ (uint32_t *) m9s136, 2 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s137, 1 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(0), m9a148, err);
+  Gen_Line (Gen_KPbuf, INT64_C(0), m9a149, err);
   if (err->exc) goto L_ret;
   }
   }
-  { __typeof__(Gen_ItoA (n->line, err)) m9a149 = Gen_ItoA (n->line, err);
+  { __typeof__(Gen_ItoA (n->line, err)) m9a150 = Gen_ItoA (n->line, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s138, 12 }), m9a149, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), err)) m9a150 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s138, 12 }), m9a149, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s138, 12 }), m9a150, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), err)) m9a151 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s138, 12 }), m9a150, ((m9_sl_CHAR){ (uint32_t *) m9s139, 1 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(1), m9a150, err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), m9a151, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -4221,6 +4240,169 @@ L_ret: ;
   return;
 }
 
+static int64_t Gen_CharVal (m9_sl_CHAR lit, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  int64_t v = 0; (void) v;
+  int64_t i = 0; (void) i;
+  int64_t dg = 0; (void) dg;
+  uint32_t c = 0; (void) c;
+  v = INT64_C(0);
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((lit).len, INT64_C(2), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { __typeof__(c) m9v = (*(uint32_t *) m9_at (lit.p, i, lit.len, sizeof (uint32_t), err));
+      if (err->exc) goto L_ret;
+      c = m9v;
+    }
+    if (((c >= 48u) && (c <= 57u))) {
+      { __typeof__(dg) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(48), err);
+        if (err->exc) goto L_ret;
+        dg = m9v;
+      }
+    } else {
+      { __typeof__(dg) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(55), err);
+        if (err->exc) goto L_ret;
+        dg = m9v;
+      }
+    }
+    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), dg, err);
+      if (err->exc) goto L_ret;
+      v = m9v;
+    }
+  } }
+  err->res = m9res;
+  m9ret = v;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static bool Gen_StrLeaf (Ast_Node * k, DynStr_DString * *d, m9_pool *d_pool, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  bool m9ret = false;
+  { Ast_Node * e = k;
+  if (e != NULL) {
+    if ((e->kind == Ast_NString)) {
+      DynStr_Append (d, d_pool, e->a, err);
+      if (err->exc) goto L_hdl_m9t1;
+      err->res = m9res;
+      m9ret = true;
+      goto L_ret;
+    }
+    if ((e->kind == Ast_NChar)) {
+      { __typeof__(m9_chr (Gen_CharVal (e->a, err), err)) m9a152 = m9_chr (Gen_CharVal (e->a, err), err);
+        if (err->exc) goto L_hdl_m9t1;
+      DynStr_AppendChar (d, d_pool, m9a152, err);
+      if (err->exc) goto L_hdl_m9t1;
+      }
+      err->res = m9res;
+      m9ret = true;
+      goto L_ret;
+    }
+    if ((e->kind == Ast_NParen)) {
+      err->res = m9res;
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a153 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_hdl_m9t1;
+      m9ret = Gen_StrLeaf (m9a153, d, d_pool, err);
+      if (err->exc) goto L_hdl_m9t1;
+      }
+      goto L_ret;
+    }
+    bool m9t3 = ((e->kind == Ast_NBin) && Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s140, 1 }), err));
+    if (err->exc) goto L_hdl_m9t1;
+    if (m9t3) {
+      bool m9t4 = Gen_StrLeaf ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), d, d_pool, err);
+      if (err->exc) goto L_hdl_m9t1;
+      if (m9t4) {
+        err->res = m9res;
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a154 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_hdl_m9t1;
+        m9ret = Gen_StrLeaf (m9a154, d, d_pool, err);
+        if (err->exc) goto L_hdl_m9t1;
+        }
+        goto L_ret;
+      }
+    }
+  } }
+  err->res = m9res;
+  m9ret = false;
+  goto L_ret;
+  goto L_dn_m9t2;
+L_hdl_m9t1: ;
+  if (err->exc == &m9_exc_ValueRange) {
+    err->exc = NULL;
+    err->res = m9res;
+    m9ret = false;
+    goto L_ret;
+    goto L_dn_m9t2;
+  }
+  goto L_ret;
+L_dn_m9t2: ;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, d_pool, (*d));
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static Ast_Node * Gen_FoldStr (Ast_Node * k, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Ast_Node * m9ret = NULL;
+  DynStr_DString * d = NULL; (void) d;
+  Ast_Node * n = NULL; (void) n;
+  { Ast_Node * e = k;
+  if (e != NULL) {
+    bool m9t1 = ((e->kind == Ast_NBin) && Text_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s141, 1 }), err));
+    if (err->exc) goto L_ret;
+    if (m9t1) {
+      { __typeof__(d) m9v = DynStr_New (&(gpool), err);
+        if (err->exc) goto L_ret;
+        d = m9v;
+      }
+      bool m9t2 = Gen_StrLeaf (k, &(d), &(gpool), err);
+      if (err->exc) goto L_ret;
+      if (m9t2) {
+        { __typeof__(n) m9v = Ast_NewNode (&(gpool), Ast_NString, e->line, e->col, err);
+          if (err->exc) goto L_ret;
+          n = m9v;
+        }
+        { __typeof__(n->a) m9v = DynStr_View (d, err);
+          if (err->exc) goto L_ret;
+          n->a = m9v;
+        }
+        err->res = m9res;
+        m9ret = n;
+        goto L_ret;
+      }
+    }
+  } }
+  err->res = m9res;
+  m9ret = k;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 static void Gen_MAdd (Gen_Map *m, m9_pool *m_pool, m9_sl_CHAR k, Ast_Node * v, m9_sl_CHAR t, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -4334,7 +4516,7 @@ static void Gen_Setup (m9_state *err)
     if (err->exc) goto L_ret;
     ch = m9v;
   }
-  ch->a = ((m9_sl_CHAR){ (uint32_t *) m9s140, 4 });
+  ch->a = ((m9_sl_CHAR){ (uint32_t *) m9s142, 4 });
   { __typeof__(sn) m9v = Ast_NewNode (&(gpool), Ast_NSliceType, INT64_C(0), INT64_C(0), err);
     if (err->exc) goto L_ret;
     sn = m9v;
@@ -4605,7 +4787,7 @@ static void Gen_Line (int64_t buf, int64_t ind, m9_sl_CHAR s, m9_state *err)
     if (err->exc) goto L_ret;
   } break;
   default: {
-    Gen_Err2 (INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s141, 31 }), err);
+    Gen_Err2 (INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s143, 31 }), err);
     if (err->exc) goto L_ret;
   } break;
   } }
@@ -4627,9 +4809,9 @@ static m9_sl_CHAR Gen_NewTmp (m9_state *err)
     tmpN = m9v;
   }
   err->res = m9res;
-  { __typeof__(Gen_ItoA (tmpN, err)) m9a151 = Gen_ItoA (tmpN, err);
+  { __typeof__(Gen_ItoA (tmpN, err)) m9a155 = Gen_ItoA (tmpN, err);
     if (err->exc) goto L_ret;
-  m9ret = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s142, 3 }), m9a151, err);
+  m9ret = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s144, 3 }), m9a155, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -4687,13 +4869,13 @@ static m9_sl_CHAR Gen_Undot (m9_sl_CHAR n, m9_state *err)
     i = m9v;
   }
   err->res = m9res;
-  { __typeof__(({ __typeof__(n) m9t1 = n; int64_t m9t1a = INT64_C(0), m9t1n = i; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a152 = ({ __typeof__(n) m9t1 = n; int64_t m9t1a = INT64_C(0), m9t1n = i; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
+  { __typeof__(({ __typeof__(n) m9t1 = n; int64_t m9t1a = INT64_C(0), m9t1n = i; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a156 = ({ __typeof__(n) m9t1 = n; int64_t m9t1a = INT64_C(0), m9t1n = i; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
     if (err->exc) goto L_ret;
-  { __typeof__(Gen_CP (m9a152, err)) m9a153 = Gen_CP (m9a152, err);
+  { __typeof__(Gen_CP (m9a156, err)) m9a157 = Gen_CP (m9a156, err);
     if (err->exc) goto L_ret;
-  { __typeof__(({ __typeof__(n) m9t2 = n; int64_t m9t2a = m9_add_i64 (i, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((n).len, i, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a154 = ({ __typeof__(n) m9t2 = n; int64_t m9t2a = m9_add_i64 (i, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((n).len, i, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
+  { __typeof__(({ __typeof__(n) m9t2 = n; int64_t m9t2a = m9_add_i64 (i, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((n).len, i, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; })) m9a158 = ({ __typeof__(n) m9t2 = n; int64_t m9t2a = m9_add_i64 (i, INT64_C(1), err), m9t2n = m9_sub_i64 (m9_sub_i64 ((n).len, i, err), INT64_C(1), err); (__typeof__(m9t2)){ m9t2.p + m9_chk_slice (m9t2a, m9t2n, m9t2.len, err), m9t2n }; });
     if (err->exc) goto L_ret;
-  m9ret = Gen_S3 (m9a153, ((m9_sl_CHAR){ (uint32_t *) m9s143, 1 }), m9a154, err);
+  m9ret = Gen_S3 (m9a157, ((m9_sl_CHAR){ (uint32_t *) m9s145, 1 }), m9a158, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -4725,7 +4907,7 @@ static m9_sl_CHAR Gen_CN (m9_sl_CHAR n, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    m9ret = Gen_S2 (n, ((m9_sl_CHAR){ (uint32_t *) m9s144, 1 }), err);
+    m9ret = Gen_S2 (n, ((m9_sl_CHAR){ (uint32_t *) m9s146, 1 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -4733,7 +4915,7 @@ static m9_sl_CHAR Gen_CN (m9_sl_CHAR n, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    m9ret = Gen_S2 (n, ((m9_sl_CHAR){ (uint32_t *) m9s145, 1 }), err);
+    m9ret = Gen_S2 (n, ((m9_sl_CHAR){ (uint32_t *) m9s147, 1 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -4754,60 +4936,60 @@ static m9_sl_CHAR Gen_CMap (m9_sl_CHAR n, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  bool m9t1 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s146, 3 }), err);
+  bool m9t1 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s148, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s147, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s149, 3 });
     goto L_ret;
   }
-  bool m9t2 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s148, 5 }), err);
+  bool m9t2 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s150, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s149, 6 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s151, 6 });
     goto L_ret;
   }
-  bool m9t3 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s150, 6 }), err);
+  bool m9t3 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s152, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s151, 7 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s153, 7 });
     goto L_ret;
   }
-  bool m9t4 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s152, 8 }), err);
+  bool m9t4 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s154, 8 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s153, 12 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s155, 12 });
     goto L_ret;
   }
-  bool m9t5 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s154, 6 }), err);
+  bool m9t5 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s156, 6 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
-    err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s155, 6 });
-    goto L_ret;
-  }
-  bool m9t6 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s156, 6 }), err);
-  if (err->exc) goto L_ret;
-  if (m9t6) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s157, 6 });
     goto L_ret;
   }
-  bool m9t7 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s158, 5 }), err);
+  bool m9t6 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s158, 6 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t6) {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s159, 6 });
+    goto L_ret;
+  }
+  bool m9t7 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s160, 5 }), err);
   if (err->exc) goto L_ret;
   if (m9t7) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s159, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s161, 5 });
     goto L_ret;
   }
-  bool m9t8 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s160, 10 }), err);
+  bool m9t8 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s162, 10 }), err);
   if (err->exc) goto L_ret;
   if (m9t8) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s161, 11 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s163, 11 });
     goto L_ret;
   }
   err->res = m9res;
@@ -4827,95 +5009,95 @@ static m9_sl_CHAR Gen_BuiltinC (m9_sl_CHAR n, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  bool m9t1 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s162, 2 }), err);
+  bool m9t1 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s164, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s163, 6 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s165, 6 });
     goto L_ret;
   }
-  bool m9t2 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s164, 3 }), err);
+  bool m9t2 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s166, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
-    err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s165, 7 });
-    goto L_ret;
-  }
-  bool m9t3 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s166, 3 }), err);
-  if (err->exc) goto L_ret;
-  if (m9t3) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s167, 7 });
     goto L_ret;
   }
-  bool m9t4 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s168, 3 }), err);
+  bool m9t3 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s168, 3 }), err);
   if (err->exc) goto L_ret;
-  if (m9t4) {
+  if (m9t3) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s169, 7 });
     goto L_ret;
   }
-  bool m9t5 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s170, 2 }), err);
+  bool m9t4 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s170, 3 }), err);
   if (err->exc) goto L_ret;
-  if (m9t5) {
+  if (m9t4) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s171, 7 });
     goto L_ret;
   }
-  bool m9t6 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s172, 3 }), err);
+  bool m9t5 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s172, 2 }), err);
   if (err->exc) goto L_ret;
-  if (m9t6) {
+  if (m9t5) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s173, 8 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s173, 7 });
     goto L_ret;
   }
-  bool m9t7 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s174, 3 }), err);
+  bool m9t6 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s174, 3 }), err);
   if (err->exc) goto L_ret;
-  if (m9t7) {
+  if (m9t6) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s175, 8 });
     goto L_ret;
   }
-  bool m9t8 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s176, 3 }), err);
+  bool m9t7 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s176, 3 }), err);
   if (err->exc) goto L_ret;
-  if (m9t8) {
+  if (m9t7) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s177, 8 });
     goto L_ret;
   }
-  bool m9t9 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s178, 3 }), err);
+  bool m9t8 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s178, 3 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t8) {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s179, 8 });
+    goto L_ret;
+  }
+  bool m9t9 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s180, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t9) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s179, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s181, 5 });
     goto L_ret;
   }
-  bool m9t10 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s180, 3 }), err);
+  bool m9t10 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s182, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t10) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s181, 6 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s183, 6 });
     goto L_ret;
   }
-  bool m9t11 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s182, 4 }), err);
+  bool m9t11 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s184, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t11) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s183, 7 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s185, 7 });
     goto L_ret;
   }
-  bool m9t12 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s184, 4 }), err);
+  bool m9t12 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s186, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t12) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s185, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s187, 4 });
     goto L_ret;
   }
-  bool m9t13 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s186, 4 }), err);
+  bool m9t13 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s188, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t13) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s187, 8 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s189, 8 });
     goto L_ret;
   }
   err->res = m9res;
@@ -5115,7 +5297,7 @@ static Ast_Node * Gen_Resolve (Ast_Node * t, m9_state *err)
   cur = t;
   { Ast_Node * c0 = cur;
   if (c0 != NULL) {
-    bool m9t1 = (((c0->kind == Ast_NQualident) && ((c0->b).len == INT64_C(0))) && DynStr_Eq (c0->a, ((m9_sl_CHAR){ (uint32_t *) m9s188, 3 }), err));
+    bool m9t1 = (((c0->kind == Ast_NQualident) && ((c0->b).len == INT64_C(0))) && DynStr_Eq (c0->a, ((m9_sl_CHAR){ (uint32_t *) m9s190, 3 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
       cur = strNode;
@@ -5130,7 +5312,7 @@ static Ast_Node * Gen_Resolve (Ast_Node * t, m9_state *err)
         m9ret = cur;
         goto L_ret;
       }
-      bool m9t2 = ((Gen_IsBuiltin (n->a, err) || DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s189, 4 }), err)) || DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s190, 1 }), err));
+      bool m9t2 = ((Gen_IsBuiltin (n->a, err) || DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s191, 4 }), err)) || DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s192, 1 }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
@@ -5143,9 +5325,9 @@ static Ast_Node * Gen_Resolve (Ast_Node * t, m9_state *err)
         goto L_ret;
       }
       if (((n->b).len > INT64_C(0))) {
-        { __typeof__(Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s191, 1 }), n->b, err)) m9a155 = Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s191, 1 }), n->b, err);
+        { __typeof__(Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s193, 1 }), n->b, err)) m9a159 = Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s193, 1 }), n->b, err);
           if (err->exc) goto L_ret;
-        { __typeof__(ei) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a155, err);
+        { __typeof__(ei) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a159, err);
           if (err->exc) goto L_ret;
           ei = m9v;
         }
@@ -5224,9 +5406,9 @@ static Ast_Node * Gen_ArrEnumBoundNode (Ast_Node * b, m9_state *err)
           if (err->exc) goto L_ret;
           if (sf != NULL) {
             if ((sf->kind == Ast_NSelField)) {
-              { __typeof__(Gen_S3 (bn->a, ((m9_sl_CHAR){ (uint32_t *) m9s192, 1 }), sf->a, err)) m9a156 = Gen_S3 (bn->a, ((m9_sl_CHAR){ (uint32_t *) m9s192, 1 }), sf->a, err);
+              { __typeof__(Gen_S3 (bn->a, ((m9_sl_CHAR){ (uint32_t *) m9s194, 1 }), sf->a, err)) m9a160 = Gen_S3 (bn->a, ((m9_sl_CHAR){ (uint32_t *) m9s194, 1 }), sf->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(ci) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a156, err);
+              { __typeof__(ci) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a160, err);
                 if (err->exc) goto L_ret;
                 ci = m9v;
               }
@@ -5301,9 +5483,9 @@ static m9_sl_CHAR Gen_ArrCount (Ast_Node * e, m9_state *err)
       if (err->exc) goto L_ret;
       if (sf != NULL) {
         if ((sf->kind == Ast_NSelField)) {
-          { __typeof__(Gen_S3 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s193, 1 }), sf->a, err)) m9a157 = Gen_S3 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s193, 1 }), sf->a, err);
+          { __typeof__(Gen_S3 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s195, 1 }), sf->a, err)) m9a161 = Gen_S3 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s195, 1 }), sf->a, err);
             if (err->exc) goto L_ret;
-          { __typeof__(ci) m9v = Gen_MFind (&(extConsts), &m9mframe, m9a157, err);
+          { __typeof__(ci) m9v = Gen_MFind (&(extConsts), &m9mframe, m9a161, err);
             if (err->exc) goto L_ret;
             ci = m9v;
           }
@@ -5323,10 +5505,10 @@ static m9_sl_CHAR Gen_ArrCount (Ast_Node * e, m9_state *err)
       } }
     }
   }
-  Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s194, 32 }), err);
+  Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s196, 32 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s195, 1 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s197, 1 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -5349,10 +5531,10 @@ static m9_sl_CHAR Gen_ArrCount2 (Ast_Node * k, m9_state *err)
     if (err->exc) goto L_ret;
     goto L_ret;
   } }
-  Gen_Err2 (INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s196, 19 }), err);
+  Gen_Err2 (INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s198, 19 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s197, 1 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s199, 1 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -5392,9 +5574,9 @@ static Ast_Node * Gen_ConstValue (Ast_Node * k, m9_state *err)
         if (err->exc) goto L_ret;
         if (sf != NULL) {
           if ((sf->kind == Ast_NSelField)) {
-            { __typeof__(Gen_S3 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s198, 1 }), sf->a, err)) m9a158 = Gen_S3 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s198, 1 }), sf->a, err);
+            { __typeof__(Gen_S3 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s200, 1 }), sf->a, err)) m9a162 = Gen_S3 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s200, 1 }), sf->a, err);
               if (err->exc) goto L_ret;
-            { __typeof__(ci) m9v = Gen_MFind (&(extConsts), &m9mframe, m9a158, err);
+            { __typeof__(ci) m9v = Gen_MFind (&(extConsts), &m9mframe, m9a162, err);
               if (err->exc) goto L_ret;
               ci = m9v;
             }
@@ -5436,35 +5618,35 @@ static bool Gen_IsAdaptive (Ast_Node * k, m9_state *err)
     }
     if ((e->kind == Ast_NParen)) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a159 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a163 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Gen_IsAdaptive (m9a159, err);
+      m9ret = Gen_IsAdaptive (m9a163, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
     }
-    bool m9t1 = ((e->kind == Ast_NUn) && DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s199, 1 }), err));
+    bool m9t1 = ((e->kind == Ast_NUn) && DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s201, 1 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a160 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a164 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Gen_IsAdaptive (m9a160, err);
+      m9ret = Gen_IsAdaptive (m9a164, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
     }
     if ((e->kind == Ast_NBin)) {
-      bool m9t2 = (((DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s200, 1 }), err) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s201, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s202, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s203, 1 }), err));
+      bool m9t2 = (((DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s202, 1 }), err) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s203, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s204, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s205, 1 }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
         bool m9t3 = Gen_IsAdaptive ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err);
         if (err->exc) goto L_ret;
         if (m9t3) {
           err->res = m9res;
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a161 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a165 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          m9ret = Gen_IsAdaptive (m9a161, err);
+          m9ret = Gen_IsAdaptive (m9a165, err);
           if (err->exc) goto L_ret;
           }
           goto L_ret;
@@ -5502,7 +5684,7 @@ static bool Gen_IsNegLit (Ast_Node * e, int64_t kind, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   bool m9ret = false;
-  bool m9t1 = ((e->kind == Ast_NUn) && DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s204, 1 }), err));
+  bool m9t1 = ((e->kind == Ast_NUn) && DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s206, 1 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     { Ast_Node * lit = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
@@ -5537,7 +5719,7 @@ static m9_sl_CHAR Gen_NegLitText (Ast_Node * e, m9_state *err)
     goto L_ret;
   } }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s205, 1 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s207, 1 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -5596,7 +5778,7 @@ static m9_sl_CHAR Gen_SliceTy (Ast_Node * elem, m9_state *err)
         if (err->exc) goto L_ret;
         if (m9t1) {
           err->res = m9res;
-          m9ret = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s206, 6 }), r->a, err);
+          m9ret = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s208, 6 }), r->a, err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
@@ -5611,7 +5793,7 @@ static m9_sl_CHAR Gen_SliceTy (Ast_Node * elem, m9_state *err)
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s207, 6 }), err);
+  DynStr_Append (&(d), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s209, 6 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t2to;
   i = INT64_C(0);
@@ -5627,9 +5809,9 @@ static m9_sl_CHAR Gen_SliceTy (Ast_Node * elem, m9_state *err)
       bool m9t4 = ((*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err)) != 32u);
       if (err->exc) goto L_ret;
       if (m9t4) {
-        { __typeof__((*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err))) m9a162 = (*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err));
+        { __typeof__((*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err))) m9a166 = (*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err));
           if (err->exc) goto L_ret;
-        DynStr_AppendChar (&(d), &(gpool), m9a162, err);
+        DynStr_AppendChar (&(d), &(gpool), m9a166, err);
         if (err->exc) goto L_ret;
         }
     } }
@@ -5643,22 +5825,22 @@ static m9_sl_CHAR Gen_SliceTy (Ast_Node * elem, m9_state *err)
   if (m9t5) {
     Gen_MAdd (&(arrSeen), &m9mframe, nm, NULL, (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
-    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s208, 13 }), nm, err)) m9a163 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s208, 13 }), nm, err);
+    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s210, 13 }), nm, err)) m9a167 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s210, 13 }), nm, err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KTdefs, INT64_C(0), m9a163, err);
+    Gen_Line (Gen_KTdefs, INT64_C(0), m9a167, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s209, 13 }), nm, err)) m9a164 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s209, 13 }), nm, err);
+    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s211, 13 }), nm, err)) m9a168 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s211, 13 }), nm, err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KTdefs, INT64_C(0), m9a164, err);
+    Gen_Line (Gen_KTdefs, INT64_C(0), m9a168, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s210, 17 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s211, 20 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s212, 1 }), err)) m9a165 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s210, 17 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s211, 20 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s212, 1 }), err);
+    { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s212, 17 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s213, 20 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s214, 1 }), err)) m9a169 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s212, 17 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s213, 20 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s214, 1 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KTdefs, INT64_C(0), m9a165, err);
+    Gen_Line (Gen_KTdefs, INT64_C(0), m9a169, err);
     if (err->exc) goto L_ret;
     }
-    Gen_Line (Gen_KTdefs, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s213, 6 }), err);
+    Gen_Line (Gen_KTdefs, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s215, 6 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -5688,15 +5870,15 @@ static m9_sl_CHAR Gen_TagOfType (Ast_Node * t, m9_state *err)
         if (cr != NULL) {
           if (((cr->kind == Ast_NCaseRecordType) || (cr->kind == Ast_NEnumType))) {
             err->res = m9res;
-            m9ret = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s214, 3 }), n0->a, err);
+            m9ret = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s216, 3 }), n0->a, err);
             if (err->exc) goto L_ret;
             goto L_ret;
           }
         } }
       } else {
-        { __typeof__(Gen_S3 (n0->a, ((m9_sl_CHAR){ (uint32_t *) m9s215, 1 }), n0->b, err)) m9a166 = Gen_S3 (n0->a, ((m9_sl_CHAR){ (uint32_t *) m9s215, 1 }), n0->b, err);
+        { __typeof__(Gen_S3 (n0->a, ((m9_sl_CHAR){ (uint32_t *) m9s217, 1 }), n0->b, err)) m9a170 = Gen_S3 (n0->a, ((m9_sl_CHAR){ (uint32_t *) m9s217, 1 }), n0->b, err);
           if (err->exc) goto L_ret;
-        { __typeof__(ei) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a166, err);
+        { __typeof__(ei) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a170, err);
           if (err->exc) goto L_ret;
           ei = m9v;
         }
@@ -5707,7 +5889,7 @@ static m9_sl_CHAR Gen_TagOfType (Ast_Node * t, m9_state *err)
           if (cr2 != NULL) {
             if (((cr2->kind == Ast_NCaseRecordType) || (cr2->kind == Ast_NEnumType))) {
               err->res = m9res;
-              m9ret = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s216, 3 }), n0->a, ((m9_sl_CHAR){ (uint32_t *) m9s217, 1 }), n0->b, err);
+              m9ret = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s218, 3 }), n0->a, ((m9_sl_CHAR){ (uint32_t *) m9s219, 1 }), n0->b, err);
               if (err->exc) goto L_ret;
               goto L_ret;
             }
@@ -5723,11 +5905,11 @@ static m9_sl_CHAR Gen_TagOfType (Ast_Node * t, m9_state *err)
     switch (m9t1) {
     case INT64_C(26):
     {
-      bool m9t2 = DynStr_Eq (r->a, ((m9_sl_CHAR){ (uint32_t *) m9s218, 4 }), err);
+      bool m9t2 = DynStr_Eq (r->a, ((m9_sl_CHAR){ (uint32_t *) m9s220, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s219, 4 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s221, 4 });
         goto L_ret;
       }
       bool m9t3 = Gen_IsBuiltin (r->a, err);
@@ -5738,72 +5920,72 @@ static m9_sl_CHAR Gen_TagOfType (Ast_Node * t, m9_state *err)
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s220, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s222, 1 });
       goto L_ret;
     } break;
     case INT64_C(35):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s221, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s223, 3 });
       goto L_ret;
     } break;
     case INT64_C(37):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s222, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s224, 6 });
       goto L_ret;
     } break;
     case INT64_C(36):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s223, 6 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s225, 6 });
       goto L_ret;
     } break;
     case INT64_C(28):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s224, 5 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s226, 5 });
       goto L_ret;
     } break;
     case INT64_C(81):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s225, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s227, 4 });
       goto L_ret;
     } break;
     case INT64_C(27):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s226, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s228, 3 });
       goto L_ret;
     } break;
     case INT64_C(29):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s227, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s229, 3 });
       goto L_ret;
     } break;
     case INT64_C(32):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s228, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s230, 3 });
       goto L_ret;
     } break;
     case INT64_C(83):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s229, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s231, 4 });
       goto L_ret;
     } break;
     default: {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s230, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s232, 1 });
       goto L_ret;
     } break;
     } }
   } }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s231, 1 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s233, 1 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -5824,9 +6006,9 @@ static int64_t Gen_ArrBucket (Ast_Node * elem, m9_state *err)
   if (e != NULL) {
     if ((e->kind == Ast_NArrayType)) {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a167 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a171 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Gen_ArrBucket (m9a167, err);
+      m9ret = Gen_ArrBucket (m9a171, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -5889,7 +6071,7 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
     case INT64_C(26):
     {
       if (((n->b).len > INT64_C(0))) {
-        bool m9t2 = DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s232, 1 }), err);
+        bool m9t2 = DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s234, 1 }), err);
         if (err->exc) goto L_ret;
         if (m9t2) {
           { __typeof__(s) m9v = Gen_CMap (n->b, err);
@@ -5897,9 +6079,9 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
             s = m9v;
           }
           if (((s).len == INT64_C(0))) {
-            { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s233, 18 }), n->b, err)) m9a168 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s233, 18 }), n->b, err);
+            { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s235, 18 }), n->b, err)) m9a172 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s235, 18 }), n->b, err);
               if (err->exc) goto L_ret;
-            Gen_Err2 (n->line, m9a168, err);
+            Gen_Err2 (n->line, m9a172, err);
             if (err->exc) goto L_ret;
             }
           }
@@ -5907,9 +6089,9 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
           m9ret = s;
           goto L_ret;
         }
-        { __typeof__(Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s234, 1 }), n->b, err)) m9a169 = Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s234, 1 }), n->b, err);
+        { __typeof__(Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s236, 1 }), n->b, err)) m9a173 = Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s236, 1 }), n->b, err);
           if (err->exc) goto L_ret;
-        { __typeof__(ei) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a169, err);
+        { __typeof__(ei) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a173, err);
           if (err->exc) goto L_ret;
           ei = m9v;
         }
@@ -5922,17 +6104,17 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
             if (err->exc) goto L_ret;
             if (m9t3) {
               err->res = m9res;
-              { __typeof__(Gen_CP (n->a, err)) m9a170 = Gen_CP (n->a, err);
+              { __typeof__(Gen_CP (n->a, err)) m9a174 = Gen_CP (n->a, err);
                 if (err->exc) goto L_ret;
-              m9ret = Gen_S3 (m9a170, ((m9_sl_CHAR){ (uint32_t *) m9s235, 1 }), n->b, err);
+              m9ret = Gen_S3 (m9a174, ((m9_sl_CHAR){ (uint32_t *) m9s237, 1 }), n->b, err);
               if (err->exc) goto L_ret;
               }
               goto L_ret;
             }
             err->res = m9res;
-            { __typeof__((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).v) m9a171 = (*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).v;
+            { __typeof__((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).v) m9a175 = (*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).v;
               if (err->exc) goto L_ret;
-            m9ret = Gen_TyC (m9a171, err);
+            m9ret = Gen_TyC (m9a175, err);
             if (err->exc) goto L_ret;
             }
             goto L_ret;
@@ -5942,41 +6124,41 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
         if (err->exc) goto L_ret;
         if (m9t4) {
           err->res = m9res;
-          { __typeof__(Gen_CP (n->a, err)) m9a172 = Gen_CP (n->a, err);
+          { __typeof__(Gen_CP (n->a, err)) m9a176 = Gen_CP (n->a, err);
             if (err->exc) goto L_ret;
-          m9ret = Gen_S3 (m9a172, ((m9_sl_CHAR){ (uint32_t *) m9s236, 1 }), n->b, err);
+          m9ret = Gen_S3 (m9a176, ((m9_sl_CHAR){ (uint32_t *) m9s238, 1 }), n->b, err);
           if (err->exc) goto L_ret;
           }
           goto L_ret;
         }
-        { __typeof__(Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s238, 1 }), n->b, err)) m9a173 = Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s238, 1 }), n->b, err);
+        { __typeof__(Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s240, 1 }), n->b, err)) m9a177 = Gen_S3 (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s240, 1 }), n->b, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s237, 14 }), m9a173, err)) m9a174 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s237, 14 }), m9a173, err);
+        { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s239, 14 }), m9a177, err)) m9a178 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s239, 14 }), m9a177, err);
           if (err->exc) goto L_ret;
-        Gen_Err2 (n->line, m9a174, err);
+        Gen_Err2 (n->line, m9a178, err);
         if (err->exc) goto L_ret;
         }
         }
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s239, 4 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s241, 4 });
         goto L_ret;
       }
-      bool m9t5 = DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s240, 4 }), err);
+      bool m9t5 = DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s242, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t5) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s241, 7 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s243, 7 });
         goto L_ret;
       }
-      bool m9t6 = DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s242, 3 }), err);
+      bool m9t6 = DynStr_Eq (n->a, ((m9_sl_CHAR){ (uint32_t *) m9s244, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t6) {
         { Ast_Node * sn = strNode;
         if (sn != NULL) {
           err->res = m9res;
-          { __typeof__((*(Ast_Node * *) m9_at (sn->kids.p, INT64_C(0), sn->kids.len, sizeof (Ast_Node *), err))) m9a175 = (*(Ast_Node * *) m9_at (sn->kids.p, INT64_C(0), sn->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (sn->kids.p, INT64_C(0), sn->kids.len, sizeof (Ast_Node *), err))) m9a179 = (*(Ast_Node * *) m9_at (sn->kids.p, INT64_C(0), sn->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          m9ret = Gen_SliceTy (m9a175, err);
+          m9ret = Gen_SliceTy (m9a179, err);
           if (err->exc) goto L_ret;
           }
           goto L_ret;
@@ -5998,9 +6180,9 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
         if (err->exc) goto L_ret;
         if (m9t7) {
           err->res = m9res;
-          { __typeof__(Gen_CP (modName, err)) m9a176 = Gen_CP (modName, err);
+          { __typeof__(Gen_CP (modName, err)) m9a180 = Gen_CP (modName, err);
             if (err->exc) goto L_ret;
-          m9ret = Gen_S3 (m9a176, ((m9_sl_CHAR){ (uint32_t *) m9s243, 1 }), n->a, err);
+          m9ret = Gen_S3 (m9a180, ((m9_sl_CHAR){ (uint32_t *) m9s245, 1 }), n->a, err);
           if (err->exc) goto L_ret;
           }
           goto L_ret;
@@ -6022,29 +6204,29 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
           if (err->exc) goto L_ret;
           if (m9t8) {
             err->res = m9res;
-            { __typeof__(({ __typeof__((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k) m9t9 = (*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k; int64_t m9t9a = INT64_C(0), m9t9n = m9_sub_i64 (m9_sub_i64 (((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k).len, (n->a).len, err), INT64_C(1), err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; })) m9a177 = ({ __typeof__((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k) m9t9 = (*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k; int64_t m9t9a = INT64_C(0), m9t9n = m9_sub_i64 (m9_sub_i64 (((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k).len, (n->a).len, err), INT64_C(1), err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; });
+            { __typeof__(({ __typeof__((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k) m9t9 = (*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k; int64_t m9t9a = INT64_C(0), m9t9n = m9_sub_i64 (m9_sub_i64 (((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k).len, (n->a).len, err), INT64_C(1), err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; })) m9a181 = ({ __typeof__((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k) m9t9 = (*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k; int64_t m9t9a = INT64_C(0), m9t9n = m9_sub_i64 (m9_sub_i64 (((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).k).len, (n->a).len, err), INT64_C(1), err); (__typeof__(m9t9)){ m9t9.p + m9_chk_slice (m9t9a, m9t9n, m9t9.len, err), m9t9n }; });
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_CP (m9a177, err)) m9a178 = Gen_CP (m9a177, err);
+            { __typeof__(Gen_CP (m9a181, err)) m9a182 = Gen_CP (m9a181, err);
               if (err->exc) goto L_ret;
-            m9ret = Gen_S3 (m9a178, ((m9_sl_CHAR){ (uint32_t *) m9s244, 1 }), n->a, err);
+            m9ret = Gen_S3 (m9a182, ((m9_sl_CHAR){ (uint32_t *) m9s246, 1 }), n->a, err);
             if (err->exc) goto L_ret;
             }
             }
             goto L_ret;
           }
           err->res = m9res;
-          { __typeof__((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).v) m9a179 = (*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).v;
+          { __typeof__((*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).v) m9a183 = (*(Gen_MEnt *) m9_at (extTypes.es.p, ei, extTypes.es.len, sizeof (Gen_MEnt), err)).v;
             if (err->exc) goto L_ret;
-          m9ret = Gen_TyC (m9a179, err);
+          m9ret = Gen_TyC (m9a183, err);
           if (err->exc) goto L_ret;
           }
           goto L_ret;
         } }
       }
       err->res = m9res;
-      { __typeof__(Gen_CP (modName, err)) m9a180 = Gen_CP (modName, err);
+      { __typeof__(Gen_CP (modName, err)) m9a184 = Gen_CP (modName, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (m9a180, ((m9_sl_CHAR){ (uint32_t *) m9s245, 1 }), n->a, err);
+      m9ret = Gen_S3 (m9a184, ((m9_sl_CHAR){ (uint32_t *) m9s247, 1 }), n->a, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -6052,11 +6234,11 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
     case INT64_C(35):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a181 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a185 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_TyC (m9a181, err)) m9a182 = Gen_TyC (m9a181, err);
+      { __typeof__(Gen_TyC (m9a185, err)) m9a186 = Gen_TyC (m9a185, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S2 (m9a182, ((m9_sl_CHAR){ (uint32_t *) m9s246, 2 }), err);
+      m9ret = Gen_S2 (m9a186, ((m9_sl_CHAR){ (uint32_t *) m9s248, 2 }), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -6065,11 +6247,11 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
     case INT64_C(37):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a183 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a187 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_TyC (m9a183, err)) m9a184 = Gen_TyC (m9a183, err);
+      { __typeof__(Gen_TyC (m9a187, err)) m9a188 = Gen_TyC (m9a187, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S2 (m9a184, ((m9_sl_CHAR){ (uint32_t *) m9s247, 2 }), err);
+      m9ret = Gen_S2 (m9a188, ((m9_sl_CHAR){ (uint32_t *) m9s249, 2 }), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -6084,26 +6266,26 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
         if (err->exc) goto L_ret;
         if (m9t10) {
           err->res = m9res;
-          { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a185 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a189 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          m9ret = Gen_TyC (m9a185, err);
+          m9ret = Gen_TyC (m9a189, err);
           if (err->exc) goto L_ret;
           }
           goto L_ret;
         }
       } }
-      Gen_Err2 (n->line, ((m9_sl_CHAR){ (uint32_t *) m9s248, 44 }), err);
+      Gen_Err2 (n->line, ((m9_sl_CHAR){ (uint32_t *) m9s250, 44 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s249, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s251, 4 });
       goto L_ret;
     } break;
     case INT64_C(28):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a186 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err))) m9a190 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Gen_SliceTy (m9a186, err);
+      m9ret = Gen_SliceTy (m9a190, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
@@ -6114,18 +6296,18 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
       if (err->exc) goto L_ret;
       if (rk != NULL) {
         err->res = m9res;
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a187 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a191 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_ArrCount (rk, err)) m9a188 = Gen_ArrCount (rk, err);
+        { __typeof__(Gen_ArrCount (rk, err)) m9a192 = Gen_ArrCount (rk, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_GridTy (m9a187, m9a188, err);
+        m9ret = Gen_GridTy (m9a191, m9a192, err);
         if (err->exc) goto L_ret;
         }
         }
         goto L_ret;
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s250, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s252, 4 });
       goto L_ret;
     } break;
     case INT64_C(27):
@@ -6133,9 +6315,9 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
       { Ast_Node * cnt = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(0), n->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (cnt != NULL) {
-        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a189 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a193 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(ec2) m9v = Gen_TyC (m9a189, err);
+        { __typeof__(ec2) m9v = Gen_TyC (m9a193, err);
           if (err->exc) goto L_ret;
           ec2 = m9v;
         }
@@ -6144,11 +6326,11 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
           if (err->exc) goto L_ret;
           da = m9v;
         }
-        DynStr_Append (&(da), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s251, 7 }), err);
+        DynStr_Append (&(da), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s253, 7 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__(Gen_ArrCount (cnt, err)) m9a190 = Gen_ArrCount (cnt, err);
+        { __typeof__(Gen_ArrCount (cnt, err)) m9a194 = Gen_ArrCount (cnt, err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(da), &(gpool), m9a190, err);
+        DynStr_Append (&(da), &(gpool), m9a194, err);
         if (err->exc) goto L_ret;
         }
         DynStr_AppendChar (&(da), &(gpool), 95u, err);
@@ -6167,9 +6349,9 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
             bool m9t13 = ((*(uint32_t *) m9_at (ec2.p, ai, ec2.len, sizeof (uint32_t), err)) != 32u);
             if (err->exc) goto L_ret;
             if (m9t13) {
-              { __typeof__((*(uint32_t *) m9_at (ec2.p, ai, ec2.len, sizeof (uint32_t), err))) m9a191 = (*(uint32_t *) m9_at (ec2.p, ai, ec2.len, sizeof (uint32_t), err));
+              { __typeof__((*(uint32_t *) m9_at (ec2.p, ai, ec2.len, sizeof (uint32_t), err))) m9a195 = (*(uint32_t *) m9_at (ec2.p, ai, ec2.len, sizeof (uint32_t), err));
                 if (err->exc) goto L_ret;
-              DynStr_AppendChar (&(da), &(gpool), m9a191, err);
+              DynStr_AppendChar (&(da), &(gpool), m9a195, err);
               if (err->exc) goto L_ret;
               }
           } }
@@ -6183,32 +6365,32 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
         if (m9t14) {
           Gen_MAdd (&(arrSeen), &m9mframe, s, NULL, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-          { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a192 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err))) m9a196 = (*(Ast_Node * *) m9_at (n->kids.p, INT64_C(1), n->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(ai) m9v = Gen_ArrBucket (m9a192, err);
+          { __typeof__(ai) m9v = Gen_ArrBucket (m9a196, err);
             if (err->exc) goto L_ret;
             ai = m9v;
           }
           }
-          { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s252, 13 }), s, err)) m9a193 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s252, 13 }), s, err);
+          { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s254, 13 }), s, err)) m9a197 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s254, 13 }), s, err);
             if (err->exc) goto L_ret;
-          Gen_Line (ai, INT64_C(0), m9a193, err);
+          Gen_Line (ai, INT64_C(0), m9a197, err);
           if (err->exc) goto L_ret;
           }
-          { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s253, 13 }), s, err)) m9a194 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s253, 13 }), s, err);
+          { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s255, 13 }), s, err)) m9a198 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s255, 13 }), s, err);
             if (err->exc) goto L_ret;
-          Gen_Line (ai, INT64_C(0), m9a194, err);
+          Gen_Line (ai, INT64_C(0), m9a198, err);
           if (err->exc) goto L_ret;
           }
-          { __typeof__(Gen_ArrCount (cnt, err)) m9a195 = Gen_ArrCount (cnt, err);
+          { __typeof__(Gen_ArrCount (cnt, err)) m9a199 = Gen_ArrCount (cnt, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s254, 17 }), ec2, ((m9_sl_CHAR){ (uint32_t *) m9s255, 3 }), m9a195, ((m9_sl_CHAR){ (uint32_t *) m9s256, 5 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s257, 1 }), err)) m9a196 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s254, 17 }), ec2, ((m9_sl_CHAR){ (uint32_t *) m9s255, 3 }), m9a195, ((m9_sl_CHAR){ (uint32_t *) m9s256, 5 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s257, 1 }), err);
+          { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s256, 17 }), ec2, ((m9_sl_CHAR){ (uint32_t *) m9s257, 3 }), m9a199, ((m9_sl_CHAR){ (uint32_t *) m9s258, 5 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s259, 1 }), err)) m9a200 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s256, 17 }), ec2, ((m9_sl_CHAR){ (uint32_t *) m9s257, 3 }), m9a199, ((m9_sl_CHAR){ (uint32_t *) m9s258, 5 }), s, ((m9_sl_CHAR){ (uint32_t *) m9s259, 1 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (ai, INT64_C(0), m9a196, err);
+          Gen_Line (ai, INT64_C(0), m9a200, err);
           if (err->exc) goto L_ret;
           }
           }
-          Gen_Line (ai, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s258, 6 }), err);
+          Gen_Line (ai, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s260, 6 }), err);
           if (err->exc) goto L_ret;
         }
         err->res = m9res;
@@ -6216,20 +6398,20 @@ static m9_sl_CHAR Gen_TyC (Ast_Node * t, m9_state *err)
         goto L_ret;
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s259, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s261, 4 });
       goto L_ret;
     } break;
     default: {
-      Gen_Err2 (n->line, ((m9_sl_CHAR){ (uint32_t *) m9s260, 25 }), err);
+      Gen_Err2 (n->line, ((m9_sl_CHAR){ (uint32_t *) m9s262, 25 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s261, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s263, 4 });
       goto L_ret;
     } break;
     } }
   } }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s262, 4 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s264, 4 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -6257,7 +6439,7 @@ static m9_sl_CHAR Gen_GridTy (Ast_Node * elem, m9_sl_CHAR rank, m9_state *err)
     if (err->exc) goto L_ret;
     d = m9v;
   }
-  DynStr_Append (&(d), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s263, 5 }), err);
+  DynStr_Append (&(d), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s265, 5 }), err);
   if (err->exc) goto L_ret;
   DynStr_Append (&(d), &(gpool), rank, err);
   if (err->exc) goto L_ret;
@@ -6277,9 +6459,9 @@ static m9_sl_CHAR Gen_GridTy (Ast_Node * elem, m9_sl_CHAR rank, m9_state *err)
       bool m9t3 = ((*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err)) != 32u);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__((*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err))) m9a197 = (*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err));
+        { __typeof__((*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err))) m9a201 = (*(uint32_t *) m9_at (ec.p, i, ec.len, sizeof (uint32_t), err));
           if (err->exc) goto L_ret;
-        DynStr_AppendChar (&(d), &(gpool), m9a197, err);
+        DynStr_AppendChar (&(d), &(gpool), m9a201, err);
         if (err->exc) goto L_ret;
         }
     } }
@@ -6293,22 +6475,22 @@ static m9_sl_CHAR Gen_GridTy (Ast_Node * elem, m9_sl_CHAR rank, m9_state *err)
   if (m9t4) {
     Gen_MAdd (&(arrSeen), &m9mframe, nm, NULL, (m9_sl_CHAR){ NULL, 0 }, err);
     if (err->exc) goto L_ret;
-    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s264, 13 }), nm, err)) m9a198 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s264, 13 }), nm, err);
+    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s266, 13 }), nm, err)) m9a202 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s266, 13 }), nm, err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KTdefs, INT64_C(0), m9a198, err);
+    Gen_Line (Gen_KTdefs, INT64_C(0), m9a202, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s265, 13 }), nm, err)) m9a199 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s265, 13 }), nm, err);
+    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s267, 13 }), nm, err)) m9a203 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s267, 13 }), nm, err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KTdefs, INT64_C(0), m9a199, err);
+    Gen_Line (Gen_KTdefs, INT64_C(0), m9a203, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s266, 11 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s267, 2 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s268, 2 }), rank, ((m9_sl_CHAR){ (uint32_t *) m9s269, 1 }), err)) m9a200 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s266, 11 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s267, 2 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s268, 2 }), rank, ((m9_sl_CHAR){ (uint32_t *) m9s269, 1 }), err);
+    { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s268, 11 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s269, 2 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s270, 2 }), rank, ((m9_sl_CHAR){ (uint32_t *) m9s271, 1 }), err)) m9a204 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s268, 11 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s269, 2 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s270, 2 }), rank, ((m9_sl_CHAR){ (uint32_t *) m9s271, 1 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KTdefs, INT64_C(0), m9a200, err);
+    Gen_Line (Gen_KTdefs, INT64_C(0), m9a204, err);
     if (err->exc) goto L_ret;
     }
-    Gen_Line (Gen_KTdefs, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s270, 6 }), err);
+    Gen_Line (Gen_KTdefs, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s272, 6 }), err);
     if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -6328,57 +6510,57 @@ static m9_sl_CHAR Gen_ISuf (m9_sl_CHAR t, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  bool m9t1 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s271, 2 }), err);
+  bool m9t1 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s273, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s272, 2 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s274, 2 });
     goto L_ret;
   }
-  bool m9t2 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s273, 3 }), err);
+  bool m9t2 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s275, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
-    err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s274, 3 });
-    goto L_ret;
-  }
-  bool m9t3 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s275, 3 }), err);
-  if (err->exc) goto L_ret;
-  if (m9t3) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s276, 3 });
     goto L_ret;
   }
-  bool m9t4 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s277, 2 }), err);
+  bool m9t3 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s277, 3 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t3) {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s278, 3 });
+    goto L_ret;
+  }
+  bool m9t4 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s279, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s278, 2 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s280, 2 });
     goto L_ret;
   }
-  bool m9t5 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s279, 3 }), err);
+  bool m9t5 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s281, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
-    err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s280, 3 });
-    goto L_ret;
-  }
-  bool m9t6 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s281, 3 }), err);
-  if (err->exc) goto L_ret;
-  if (m9t6) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s282, 3 });
     goto L_ret;
   }
-  bool m9t7 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s283, 3 }), err);
+  bool m9t6 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s283, 3 }), err);
   if (err->exc) goto L_ret;
-  if (m9t7) {
+  if (m9t6) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s284, 3 });
     goto L_ret;
   }
+  bool m9t7 = DynStr_Eq (t, ((m9_sl_CHAR){ (uint32_t *) m9s285, 3 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t7) {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s286, 3 });
+    goto L_ret;
+  }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s285, 3 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s287, 3 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -6411,53 +6593,53 @@ static m9_sl_CHAR Gen_LowerName (m9_sl_CHAR n, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
-  bool m9t1 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s286, 2 }), err);
+  bool m9t1 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s288, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s287, 2 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s289, 2 });
     goto L_ret;
   }
-  bool m9t2 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s288, 3 }), err);
+  bool m9t2 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s290, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t2) {
-    err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s289, 3 });
-    goto L_ret;
-  }
-  bool m9t3 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s290, 3 }), err);
-  if (err->exc) goto L_ret;
-  if (m9t3) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s291, 3 });
     goto L_ret;
   }
-  bool m9t4 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s292, 2 }), err);
+  bool m9t3 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s292, 3 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t3) {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s293, 3 });
+    goto L_ret;
+  }
+  bool m9t4 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s294, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s293, 2 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s295, 2 });
     goto L_ret;
   }
-  bool m9t5 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s294, 3 }), err);
+  bool m9t5 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s296, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
-    err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s295, 3 });
-    goto L_ret;
-  }
-  bool m9t6 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s296, 3 }), err);
-  if (err->exc) goto L_ret;
-  if (m9t6) {
     err->res = m9res;
     m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s297, 3 });
     goto L_ret;
   }
-  bool m9t7 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s298, 3 }), err);
+  bool m9t6 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s298, 3 }), err);
+  if (err->exc) goto L_ret;
+  if (m9t6) {
+    err->res = m9res;
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s299, 3 });
+    goto L_ret;
+  }
+  bool m9t7 = DynStr_Eq (n, ((m9_sl_CHAR){ (uint32_t *) m9s300, 3 }), err);
   if (err->exc) goto L_ret;
   if (m9t7) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s299, 3 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s301, 3 });
     goto L_ret;
   }
   err->res = m9res;
@@ -6482,7 +6664,7 @@ static bool Gen_IsAllArg (Ast_Node * k, m9_state *err)
     if ((e->kind == Ast_NDesignator)) {
       if ((e->nkids == INT64_C(0))) {
         err->res = m9res;
-        m9ret = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s300, 3 }), err);
+        m9ret = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s302, 3 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -6514,13 +6696,13 @@ static m9_sl_CHAR Gen_CRPrefix (m9_sl_CHAR tn, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
-      { __typeof__(({ __typeof__(tn) m9t3 = tn; int64_t m9t3a = INT64_C(0), m9t3n = i; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a201 = ({ __typeof__(tn) m9t3 = tn; int64_t m9t3a = INT64_C(0), m9t3n = i; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+      { __typeof__(({ __typeof__(tn) m9t3 = tn; int64_t m9t3a = INT64_C(0), m9t3n = i; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a205 = ({ __typeof__(tn) m9t3 = tn; int64_t m9t3a = INT64_C(0), m9t3n = i; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_CP (m9a201, err)) m9a202 = Gen_CP (m9a201, err);
+      { __typeof__(Gen_CP (m9a205, err)) m9a206 = Gen_CP (m9a205, err);
         if (err->exc) goto L_ret;
-      { __typeof__(({ __typeof__(tn) m9t4 = tn; int64_t m9t4a = m9_add_i64 (i, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((tn).len, i, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a203 = ({ __typeof__(tn) m9t4 = tn; int64_t m9t4a = m9_add_i64 (i, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((tn).len, i, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
+      { __typeof__(({ __typeof__(tn) m9t4 = tn; int64_t m9t4a = m9_add_i64 (i, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((tn).len, i, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; })) m9a207 = ({ __typeof__(tn) m9t4 = tn; int64_t m9t4a = m9_add_i64 (i, INT64_C(1), err), m9t4n = m9_sub_i64 (m9_sub_i64 ((tn).len, i, err), INT64_C(1), err); (__typeof__(m9t4)){ m9t4.p + m9_chk_slice (m9t4a, m9t4n, m9t4.len, err), m9t4n }; });
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (m9a202, ((m9_sl_CHAR){ (uint32_t *) m9s301, 1 }), m9a203, err);
+      m9ret = Gen_S3 (m9a206, ((m9_sl_CHAR){ (uint32_t *) m9s303, 1 }), m9a207, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -6529,9 +6711,9 @@ static m9_sl_CHAR Gen_CRPrefix (m9_sl_CHAR tn, m9_state *err)
     }
   } }
   err->res = m9res;
-  { __typeof__(Gen_CP (modName, err)) m9a204 = Gen_CP (modName, err);
+  { __typeof__(Gen_CP (modName, err)) m9a208 = Gen_CP (modName, err);
     if (err->exc) goto L_ret;
-  m9ret = Gen_S3 (m9a204, ((m9_sl_CHAR){ (uint32_t *) m9s302, 1 }), tn, err);
+  m9ret = Gen_S3 (m9a208, ((m9_sl_CHAR){ (uint32_t *) m9s304, 1 }), tn, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -6724,11 +6906,11 @@ static void Gen_ModuleScope (m9_state *err)
   m9t1to = m9_sub_i64 (nmv, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err))) m9a205 = (*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err))) m9a209 = (*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err))) m9a206 = (*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err))) m9a210 = (*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Gen_MAdd (&(scope), &m9mframe, m9a205, m9a206, ((m9_sl_CHAR){ (uint32_t *) m9s303, 1 }), err);
+    Gen_MAdd (&(scope), &m9mframe, m9a209, m9a210, ((m9_sl_CHAR){ (uint32_t *) m9s305, 1 }), err);
     if (err->exc) goto L_ret;
     }
     }
@@ -6738,11 +6920,11 @@ static void Gen_ModuleScope (m9_state *err)
   m9t2to = m9_sub_i64 (extVars.n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    { __typeof__((*(Gen_MEnt *) m9_at (extVars.es.p, i, extVars.es.len, sizeof (Gen_MEnt), err)).k) m9a207 = (*(Gen_MEnt *) m9_at (extVars.es.p, i, extVars.es.len, sizeof (Gen_MEnt), err)).k;
+    { __typeof__((*(Gen_MEnt *) m9_at (extVars.es.p, i, extVars.es.len, sizeof (Gen_MEnt), err)).k) m9a211 = (*(Gen_MEnt *) m9_at (extVars.es.p, i, extVars.es.len, sizeof (Gen_MEnt), err)).k;
       if (err->exc) goto L_ret;
-    { __typeof__((*(Gen_MEnt *) m9_at (extVars.es.p, i, extVars.es.len, sizeof (Gen_MEnt), err)).v) m9a208 = (*(Gen_MEnt *) m9_at (extVars.es.p, i, extVars.es.len, sizeof (Gen_MEnt), err)).v;
+    { __typeof__((*(Gen_MEnt *) m9_at (extVars.es.p, i, extVars.es.len, sizeof (Gen_MEnt), err)).v) m9a212 = (*(Gen_MEnt *) m9_at (extVars.es.p, i, extVars.es.len, sizeof (Gen_MEnt), err)).v;
       if (err->exc) goto L_ret;
-    Gen_MAdd (&(scope), &m9mframe, m9a207, m9a208, ((m9_sl_CHAR){ (uint32_t *) m9s304, 1 }), err);
+    Gen_MAdd (&(scope), &m9mframe, m9a211, m9a212, ((m9_sl_CHAR){ (uint32_t *) m9s306, 1 }), err);
     if (err->exc) goto L_ret;
     }
     }
@@ -6764,7 +6946,7 @@ static Ast_Node * Gen_QualIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *err)
   { Ast_Node * tn = t;
   if (tn != NULL) {
     if ((tn->kind == Ast_NQualident)) {
-      bool m9t1 = (((((tn->b).len == INT64_C(0)) && (!Gen_IsBuiltin (tn->a, err))) && (!DynStr_Eq (tn->a, ((m9_sl_CHAR){ (uint32_t *) m9s305, 3 }), err))) && (!DynStr_Eq (tn->a, ((m9_sl_CHAR){ (uint32_t *) m9s306, 4 }), err)));
+      bool m9t1 = (((((tn->b).len == INT64_C(0)) && (!Gen_IsBuiltin (tn->a, err))) && (!DynStr_Eq (tn->a, ((m9_sl_CHAR){ (uint32_t *) m9s307, 3 }), err))) && (!DynStr_Eq (tn->a, ((m9_sl_CHAR){ (uint32_t *) m9s308, 4 }), err)));
       if (err->exc) goto L_ret;
       if (m9t1) {
         { __typeof__(n) m9v = Ast_NewNode (&(gpool), Ast_NQualident, tn->line, tn->col, err);
@@ -6784,11 +6966,11 @@ static Ast_Node * Gen_QualIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *err)
           n = m9v;
         }
         if ((tn->nkids > INT64_C(0))) {
-          { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a209 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a213 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_QualIn (m9a209, modName, err)) m9a210 = Gen_QualIn (m9a209, modName, err);
+          { __typeof__(Gen_QualIn (m9a213, modName, err)) m9a214 = Gen_QualIn (m9a213, modName, err);
             if (err->exc) goto L_ret;
-          Ast_Add (&(gpool), &(n), &(gpool), m9a210, err);
+          Ast_Add (&(gpool), &(n), &(gpool), m9a214, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -6804,16 +6986,16 @@ static Ast_Node * Gen_QualIn (Ast_Node * t, m9_sl_CHAR modName, m9_state *err)
           if (err->exc) goto L_ret;
           n = m9v;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a211 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err))) m9a215 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(0), tn->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        Ast_Add (&(gpool), &(n), &(gpool), m9a211, err);
+        Ast_Add (&(gpool), &(n), &(gpool), m9a215, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(1), tn->kids.len, sizeof (Ast_Node *), err))) m9a212 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(1), tn->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(1), tn->kids.len, sizeof (Ast_Node *), err))) m9a216 = (*(Ast_Node * *) m9_at (tn->kids.p, INT64_C(1), tn->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_QualIn (m9a212, modName, err)) m9a213 = Gen_QualIn (m9a212, modName, err);
+        { __typeof__(Gen_QualIn (m9a216, modName, err)) m9a217 = Gen_QualIn (m9a216, modName, err);
           if (err->exc) goto L_ret;
-        Ast_Add (&(gpool), &(n), &(gpool), m9a213, err);
+        Ast_Add (&(gpool), &(n), &(gpool), m9a217, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -7016,7 +7198,7 @@ static m9_sl_CHAR Gen_NewShape (Ast_Node * e, Ast_Node * *ty, m9_pool *ty_pool, 
   { Ast_Node * d = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (d != NULL) {
-    bool m9t1 = ((d->nkids == INT64_C(0)) && DynStr_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s307, 3 }), err));
+    bool m9t1 = ((d->nkids == INT64_C(0)) && DynStr_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s309, 3 }), err));
     if (err->exc) goto L_ret;
     if (m9t1) {
       { __typeof__((*ty)) m9v = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
@@ -7024,12 +7206,12 @@ static m9_sl_CHAR Gen_NewShape (Ast_Node * e, Ast_Node * *ty, m9_pool *ty_pool, 
         (*ty) = m9v;
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s308, 3 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s310, 3 });
       goto L_ret;
     }
     isVar = true;
     if ((d->nkids == INT64_C(0))) {
-      bool m9t2 = (((Gen_ScopeMode (d->a, err)).len == INT64_C(0)) && (!DynStr_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s309, 4 }), err)));
+      bool m9t2 = (((Gen_ScopeMode (d->a, err)).len == INT64_C(0)) && (!DynStr_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s311, 4 }), err)));
       if (err->exc) goto L_ret;
       if (m9t2) {
         isVar = false;
@@ -7049,27 +7231,27 @@ static m9_sl_CHAR Gen_NewShape (Ast_Node * e, Ast_Node * *ty, m9_pool *ty_pool, 
         } }
     } }
     if (isVar) {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a214 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a218 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*ty)) m9v = Gen_AsQualG (m9a214, err);
+      { __typeof__((*ty)) m9v = Gen_AsQualG (m9a218, err);
         if (err->exc) goto L_ret;
         (*ty) = m9v;
       }
       }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s310, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s312, 4 });
       goto L_ret;
     }
-    { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a215 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a219 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*ty)) m9v = Gen_AsQualG (m9a215, err);
+    { __typeof__((*ty)) m9v = Gen_AsQualG (m9a219, err);
       if (err->exc) goto L_ret;
       (*ty) = m9v;
     }
     }
     (*ext0) = INT64_C(1);
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s311, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s313, 5 });
     goto L_ret;
   } }
   { __typeof__((*ty)) m9v = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
@@ -7077,7 +7259,7 @@ static m9_sl_CHAR Gen_NewShape (Ast_Node * e, Ast_Node * *ty, m9_pool *ty_pool, 
     (*ty) = m9v;
   }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s312, 5 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s314, 5 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -7116,11 +7298,11 @@ static bool Gen_HasPtr (Ast_Node * t, int64_t depth, m9_state *err)
     case INT64_C(36):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a216 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a220 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a217 = m9_add_i64 (depth, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a221 = m9_add_i64 (depth, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_HasPtr (m9a216, m9a217, err);
+      m9ret = Gen_HasPtr (m9a220, m9a221, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -7141,11 +7323,11 @@ static bool Gen_HasPtr (Ast_Node * t, int64_t depth, m9_state *err)
     case INT64_C(27):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a218 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a222 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a219 = m9_add_i64 (depth, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a223 = m9_add_i64 (depth, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_HasPtr (m9a218, m9a219, err);
+      m9ret = Gen_HasPtr (m9a222, m9a223, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -7353,9 +7535,9 @@ static void Gen_AdoptEmit (m9_sl_CHAR expr, Ast_Node * t, m9_sl_CHAR dst, int64_
     switch (m9t1) {
     case INT64_C(35):
     {
-      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s313, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s314, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s315, 2 }), err)) m9a220 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s313, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s314, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s315, 2 }), err);
+      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s315, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s316, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s317, 2 }), err)) m9a224 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s315, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s316, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s317, 2 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a220, err);
+      Gen_Line (Gen_KPbuf, ind, m9a224, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -7364,26 +7546,26 @@ static void Gen_AdoptEmit (m9_sl_CHAR expr, Ast_Node * t, m9_sl_CHAR dst, int64_
       bool m9t2 = Gen_HasPtr ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
       if (err->exc) goto L_ret;
       if (m9t2) {
-        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s316, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s317, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s318, 2 }), err)) m9a221 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s316, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s317, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s318, 2 }), err);
+        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s318, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s319, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s320, 2 }), err)) m9a225 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s318, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s319, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s320, 2 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a221, err);
+        Gen_Line (Gen_KPbuf, ind, m9a225, err);
         if (err->exc) goto L_ret;
         }
       }
     } break;
     case INT64_C(28):
     {
-      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s319, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s320, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s321, 4 }), err)) m9a222 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s319, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s320, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s321, 4 }), err);
+      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s321, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s322, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s323, 4 }), err)) m9a226 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s321, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s322, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s323, 4 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a222, err);
+      Gen_Line (Gen_KPbuf, ind, m9a226, err);
       if (err->exc) goto L_ret;
       }
     } break;
     case INT64_C(81):
     {
-      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s322, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s323, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s324, 4 }), err)) m9a223 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s322, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s323, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s324, 4 }), err);
+      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s324, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s325, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s326, 4 }), err)) m9a227 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s324, 23 }), dst, ((m9_sl_CHAR){ (uint32_t *) m9s325, 2 }), expr, ((m9_sl_CHAR){ (uint32_t *) m9s326, 4 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a223, err);
+      Gen_Line (Gen_KPbuf, ind, m9a227, err);
       if (err->exc) goto L_ret;
       }
     } break;
@@ -7392,39 +7574,39 @@ static void Gen_AdoptEmit (m9_sl_CHAR expr, Ast_Node * t, m9_sl_CHAR dst, int64_
       bool m9t3 = Gen_HasPtr ((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err)), m9_add_i64 (depth, INT64_C(1), err), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__(Gen_ItoA (depth, err)) m9a224 = Gen_ItoA (depth, err);
+        { __typeof__(Gen_ItoA (depth, err)) m9a228 = Gen_ItoA (depth, err);
           if (err->exc) goto L_ret;
-        { __typeof__(kv) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s325, 3 }), m9a224, err);
+        { __typeof__(kv) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s327, 3 }), m9a228, err);
           if (err->exc) goto L_ret;
           kv = m9v;
         }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a225 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a229 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_ArrCount2 (m9a225, err)) m9a226 = Gen_ArrCount2 (m9a225, err);
+        { __typeof__(Gen_ArrCount2 (m9a229, err)) m9a230 = Gen_ArrCount2 (m9a229, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s326, 13 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s327, 6 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s328, 3 }), m9a226, ((m9_sl_CHAR){ (uint32_t *) m9s329, 2 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s330, 5 }), err)) m9a227 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s326, 13 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s327, 6 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s328, 3 }), m9a226, ((m9_sl_CHAR){ (uint32_t *) m9s329, 2 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s330, 5 }), err);
+        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s328, 13 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s329, 6 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s330, 3 }), m9a230, ((m9_sl_CHAR){ (uint32_t *) m9s331, 2 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s332, 5 }), err)) m9a231 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s328, 13 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s329, 6 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s330, 3 }), m9a230, ((m9_sl_CHAR){ (uint32_t *) m9s331, 2 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s332, 5 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a227, err);
+        Gen_Line (Gen_KPbuf, ind, m9a231, err);
         if (err->exc) goto L_ret;
         }
         }
         }
-        { __typeof__(Gen_S4 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s331, 3 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s332, 1 }), err)) m9a228 = Gen_S4 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s331, 3 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s332, 1 }), err);
+        { __typeof__(Gen_S4 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s333, 3 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s334, 1 }), err)) m9a232 = Gen_S4 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s333, 3 }), kv, ((m9_sl_CHAR){ (uint32_t *) m9s334, 1 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a229 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a233 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a230 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a234 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a231 = m9_add_i64 (depth, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a235 = m9_add_i64 (depth, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Gen_AdoptEmit (m9a228, m9a229, dst, m9a230, m9a231, err);
+        Gen_AdoptEmit (m9a232, m9a233, dst, m9a234, m9a235, err);
         if (err->exc) goto L_ret;
         }
         }
         }
         }
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s333, 1 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s335, 1 }), err);
         if (err->exc) goto L_ret;
       }
     } break;
@@ -7458,15 +7640,15 @@ static void Gen_AdoptEmit (m9_sl_CHAR expr, Ast_Node * t, m9_sl_CHAR dst, int64_
                   { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, j, ids->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
                   if (id != NULL) {
-                    { __typeof__(Gen_CN (id->a, err)) m9a232 = Gen_CN (id->a, err);
+                    { __typeof__(Gen_CN (id->a, err)) m9a236 = Gen_CN (id->a, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(Gen_S3 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s334, 1 }), m9a232, err)) m9a233 = Gen_S3 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s334, 1 }), m9a232, err);
+                    { __typeof__(Gen_S3 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s336, 1 }), m9a236, err)) m9a237 = Gen_S3 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s336, 1 }), m9a236, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a234 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a238 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a235 = m9_add_i64 (depth, INT64_C(1), err);
+                    { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a239 = m9_add_i64 (depth, INT64_C(1), err);
                       if (err->exc) goto L_ret;
-                    Gen_AdoptEmit (m9a233, m9a234, dst, ind, m9a235, err);
+                    Gen_AdoptEmit (m9a237, m9a238, dst, ind, m9a239, err);
                     if (err->exc) goto L_ret;
                     }
                     }
@@ -7510,15 +7692,15 @@ static void Gen_AdoptEmit (m9_sl_CHAR expr, Ast_Node * t, m9_sl_CHAR dst, int64_
                   { Ast_Node * id = (*(Ast_Node * *) m9_at (ids->kids.p, j, ids->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
                   if (id != NULL) {
-                    { __typeof__(Gen_CN (id->a, err)) m9a236 = Gen_CN (id->a, err);
+                    { __typeof__(Gen_CN (id->a, err)) m9a240 = Gen_CN (id->a, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(Gen_S3 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s335, 1 }), m9a236, err)) m9a237 = Gen_S3 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s335, 1 }), m9a236, err);
+                    { __typeof__(Gen_S3 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s337, 1 }), m9a240, err)) m9a241 = Gen_S3 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s337, 1 }), m9a240, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a238 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err))) m9a242 = (*(Ast_Node * *) m9_at (g->kids.p, INT64_C(1), g->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a239 = m9_add_i64 (depth, INT64_C(1), err);
+                    { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a243 = m9_add_i64 (depth, INT64_C(1), err);
                       if (err->exc) goto L_ret;
-                    Gen_AdoptEmit (m9a237, m9a238, dst, ind, m9a239, err);
+                    Gen_AdoptEmit (m9a241, m9a242, dst, ind, m9a243, err);
                     if (err->exc) goto L_ret;
                     }
                     }
@@ -7567,15 +7749,15 @@ static void Gen_AdoptEmit (m9_sl_CHAR expr, Ast_Node * t, m9_sl_CHAR dst, int64_
                       { Ast_Node * fid = (*(Ast_Node * *) m9_at (fids->kids.p, k, fids->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
                       if (fid != NULL) {
-                        { __typeof__(Gen_CN (fid->a, err)) m9a240 = Gen_CN (fid->a, err);
+                        { __typeof__(Gen_CN (fid->a, err)) m9a244 = Gen_CN (fid->a, err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(Gen_S5 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s336, 3 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s337, 1 }), m9a240, err)) m9a241 = Gen_S5 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s336, 3 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s337, 1 }), m9a240, err);
+                        { __typeof__(Gen_S5 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s338, 3 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s339, 1 }), m9a244, err)) m9a245 = Gen_S5 (expr, ((m9_sl_CHAR){ (uint32_t *) m9s338, 3 }), v->a, ((m9_sl_CHAR){ (uint32_t *) m9s339, 1 }), m9a244, err);
                           if (err->exc) goto L_ret;
-                        { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a242 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
+                        { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a246 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
                           if (err->exc) goto L_ret;
-                        { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a243 = m9_add_i64 (depth, INT64_C(1), err);
+                        { __typeof__(m9_add_i64 (depth, INT64_C(1), err)) m9a247 = m9_add_i64 (depth, INT64_C(1), err);
                           if (err->exc) goto L_ret;
-                        Gen_AdoptEmit (m9a241, m9a242, dst, ind, m9a243, err);
+                        Gen_AdoptEmit (m9a245, m9a246, dst, ind, m9a247, err);
                         if (err->exc) goto L_ret;
                         }
                         }
@@ -7601,52 +7783,6 @@ L_ret: ;
   return;
 }
 
-static int64_t Gen_CharVal (m9_sl_CHAR lit, m9_state *err)
-{
-  m9_pool m9frame = {0};
-  m9_pool *m9res = err->res ? err->res : &m9_heap;
-  (void) m9res;
-  err->res = &m9frame;
-  int64_t m9ret = 0;
-  int64_t v = 0; (void) v;
-  int64_t i = 0; (void) i;
-  int64_t dg = 0; (void) dg;
-  uint32_t c = 0; (void) c;
-  v = INT64_C(0);
-  { int64_t m9t1to;
-  i = INT64_C(0);
-  m9t1to = m9_sub_i64 ((lit).len, INT64_C(2), err);
-  if (err->exc) goto L_ret;
-  for (; i <= m9t1to; i += 1) {
-    { __typeof__(c) m9v = (*(uint32_t *) m9_at (lit.p, i, lit.len, sizeof (uint32_t), err));
-      if (err->exc) goto L_ret;
-      c = m9v;
-    }
-    if (((c >= 48u) && (c <= 57u))) {
-      { __typeof__(dg) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(48), err);
-        if (err->exc) goto L_ret;
-        dg = m9v;
-      }
-    } else {
-      { __typeof__(dg) m9v = m9_sub_i64 ((int64_t)(c), INT64_C(55), err);
-        if (err->exc) goto L_ret;
-        dg = m9v;
-      }
-    }
-    { __typeof__(v) m9v = m9_add_i64 (m9_mul_i64 (v, INT64_C(16), err), dg, err);
-      if (err->exc) goto L_ret;
-      v = m9v;
-    }
-  } }
-  err->res = m9res;
-  m9ret = v;
-  goto L_ret;
-L_ret: ;
-  err->res = m9res;
-  m9_pool_free (&m9frame);
-  return m9ret;
-}
-
 static m9_sl_CHAR Gen_StrCodes (m9_sl_CHAR s, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -7665,19 +7801,13 @@ static m9_sl_CHAR Gen_StrCodes (m9_sl_CHAR s, m9_state *err)
   m9t1to = m9_sub_i64 ((s).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    bool m9t2 = ((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err))) > INT64_C(127));
-    if (err->exc) goto L_ret;
-    if (m9t2) {
-      Gen_Err2 (INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s338, 40 }), err);
-      if (err->exc) goto L_ret;
-    }
     if ((i > INT64_C(0))) {
-      DynStr_Append (&(d), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s339, 2 }), err);
+      DynStr_Append (&(d), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s340, 2 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)))) m9a244 = (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)));
+    { __typeof__((int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)))) m9a248 = (int64_t)((*(uint32_t *) m9_at (s.p, i, s.len, sizeof (uint32_t), err)));
       if (err->exc) goto L_ret;
-    DynStr_AppendI64 (&(d), &(gpool), m9a244, err);
+    DynStr_AppendI64 (&(d), &(gpool), m9a248, err);
     if (err->exc) goto L_ret;
     }
     DynStr_AppendChar (&(d), &(gpool), 117u, err);
@@ -7723,7 +7853,7 @@ static Ast_Node * Gen_RecordConstQual (Ast_Node * k, m9_state *err)
           if (err->exc) goto L_ret;
           if (sf != NULL) {
             if ((sf->kind == Ast_NSelField)) {
-              { __typeof__(name) m9v = Gen_S3 (name, ((m9_sl_CHAR){ (uint32_t *) m9s340, 1 }), sf->a, err);
+              { __typeof__(name) m9v = Gen_S3 (name, ((m9_sl_CHAR){ (uint32_t *) m9s341, 1 }), sf->a, err);
                 if (err->exc) goto L_ret;
                 name = m9v;
               }
@@ -7840,15 +7970,15 @@ static void Gen_AddAgg (m9_sl_CHAR nm, Ast_Node * agk, m9_state *err)
       if (err->exc) goto L_ret;
       q = m9v;
     }
-    q->a = ((m9_sl_CHAR){ (uint32_t *) m9s341, 3 });
+    q->a = ((m9_sl_CHAR){ (uint32_t *) m9s342, 3 });
     if ((ek == Ast_NReal)) {
-      q->a = ((m9_sl_CHAR){ (uint32_t *) m9s342, 3 });
+      q->a = ((m9_sl_CHAR){ (uint32_t *) m9s343, 3 });
     } else {
       if ((ek == Ast_NChar)) {
-        q->a = ((m9_sl_CHAR){ (uint32_t *) m9s343, 4 });
+        q->a = ((m9_sl_CHAR){ (uint32_t *) m9s344, 4 });
     } else {
       if (((ek == Ast_NTrue) || (ek == Ast_NFalse))) {
-        q->a = ((m9_sl_CHAR){ (uint32_t *) m9s344, 4 });
+        q->a = ((m9_sl_CHAR){ (uint32_t *) m9s345, 4 });
     } } }
     elt = q;
     if ((ek == Ast_NString)) {
@@ -7890,11 +8020,11 @@ static void Gen_PushAggs (m9_state *err)
   m9t1to = m9_sub_i64 (aggT.n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a245 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
+    { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a249 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
       if (err->exc) goto L_ret;
-    { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).v) m9a246 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).v;
+    { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).v) m9a250 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).v;
       if (err->exc) goto L_ret;
-    Gen_MAdd (&(scope), &m9mframe, m9a245, m9a246, ((m9_sl_CHAR){ (uint32_t *) m9s345, 1 }), err);
+    Gen_MAdd (&(scope), &m9mframe, m9a249, m9a250, ((m9_sl_CHAR){ (uint32_t *) m9s346, 1 }), err);
     if (err->exc) goto L_ret;
     }
     }
@@ -7914,23 +8044,23 @@ static m9_sl_CHAR Gen_LitC (Ast_Node * e, m9_sl_CHAR sname, m9_sl_CHAR what, m9_
   m9_sl_CHAR m9ret = {0};
   if ((e->kind == Ast_NInt)) {
     err->res = m9res;
-    m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s346, 8 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s347, 1 }), err);
+    m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s347, 8 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s348, 1 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if ((e->kind == Ast_NReal)) {
     err->res = m9res;
-    m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s348, 1 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s349, 1 }), err);
+    m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s349, 1 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s350, 1 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
   if ((e->kind == Ast_NChar)) {
     err->res = m9res;
-    { __typeof__(Gen_CharVal (e->a, err)) m9a247 = Gen_CharVal (e->a, err);
+    { __typeof__(Gen_CharVal (e->a, err)) m9a251 = Gen_CharVal (e->a, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_ItoA (m9a247, err)) m9a248 = Gen_ItoA (m9a247, err);
+    { __typeof__(Gen_ItoA (m9a251, err)) m9a252 = Gen_ItoA (m9a251, err);
       if (err->exc) goto L_ret;
-    m9ret = Gen_S2 (m9a248, ((m9_sl_CHAR){ (uint32_t *) m9s350, 1 }), err);
+    m9ret = Gen_S2 (m9a252, ((m9_sl_CHAR){ (uint32_t *) m9s351, 1 }), err);
     if (err->exc) goto L_ret;
     }
     }
@@ -7938,35 +8068,35 @@ static m9_sl_CHAR Gen_LitC (Ast_Node * e, m9_sl_CHAR sname, m9_sl_CHAR what, m9_
   }
   if ((e->kind == Ast_NTrue)) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s351, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s352, 4 });
     goto L_ret;
   }
   if ((e->kind == Ast_NFalse)) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s352, 5 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s353, 5 });
     goto L_ret;
   }
   if ((e->kind == Ast_NString)) {
     if (((e->a).len > INT64_C(0))) {
       err->res = m9res;
-      { __typeof__(Gen_ItoA ((e->a).len, err)) m9a249 = Gen_ItoA ((e->a).len, err);
+      { __typeof__(Gen_ItoA ((e->a).len, err)) m9a253 = Gen_ItoA ((e->a).len, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s353, 15 }), sname, ((m9_sl_CHAR){ (uint32_t *) m9s354, 2 }), m9a249, ((m9_sl_CHAR){ (uint32_t *) m9s355, 2 }), err);
+      m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s354, 15 }), sname, ((m9_sl_CHAR){ (uint32_t *) m9s355, 2 }), m9a253, ((m9_sl_CHAR){ (uint32_t *) m9s356, 2 }), err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s356, 8 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s357, 8 });
     goto L_ret;
   }
   bool m9t1 = Gen_IsNegLit (e, Ast_NInt, err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Gen_NegLitText (e, err)) m9a250 = Gen_NegLitText (e, err);
+    { __typeof__(Gen_NegLitText (e, err)) m9a254 = Gen_NegLitText (e, err);
       if (err->exc) goto L_ret;
-    m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s357, 9 }), m9a250, ((m9_sl_CHAR){ (uint32_t *) m9s358, 1 }), err);
+    m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s358, 9 }), m9a254, ((m9_sl_CHAR){ (uint32_t *) m9s359, 1 }), err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -7975,20 +8105,20 @@ static m9_sl_CHAR Gen_LitC (Ast_Node * e, m9_sl_CHAR sname, m9_sl_CHAR what, m9_
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    { __typeof__(Gen_NegLitText (e, err)) m9a251 = Gen_NegLitText (e, err);
+    { __typeof__(Gen_NegLitText (e, err)) m9a255 = Gen_NegLitText (e, err);
       if (err->exc) goto L_ret;
-    m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s359, 2 }), m9a251, ((m9_sl_CHAR){ (uint32_t *) m9s360, 1 }), err);
+    m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s360, 2 }), m9a255, ((m9_sl_CHAR){ (uint32_t *) m9s361, 1 }), err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s361, 35 }), what, err)) m9a252 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s361, 35 }), what, err);
+  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s362, 35 }), what, err)) m9a256 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s362, 35 }), what, err);
     if (err->exc) goto L_ret;
-  Gen_Err2 (e->line, m9a252, err);
+  Gen_Err2 (e->line, m9a256, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s362, 1 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s363, 1 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -8004,13 +8134,13 @@ static void Gen_StrC (Ast_Node * e, m9_sl_CHAR sname, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   if (((e->kind == Ast_NString) && ((e->a).len > INT64_C(0)))) {
-    { __typeof__(Gen_ItoA ((e->a).len, err)) m9a253 = Gen_ItoA ((e->a).len, err);
+    { __typeof__(Gen_ItoA ((e->a).len, err)) m9a257 = Gen_ItoA ((e->a).len, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_StrCodes (e->a, err)) m9a254 = Gen_StrCodes (e->a, err);
+    { __typeof__(Gen_StrCodes (e->a, err)) m9a258 = Gen_StrCodes (e->a, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s363, 22 }), sname, ((m9_sl_CHAR){ (uint32_t *) m9s364, 1 }), m9a253, ((m9_sl_CHAR){ (uint32_t *) m9s365, 6 }), m9a254, ((m9_sl_CHAR){ (uint32_t *) m9s366, 3 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a255 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s363, 22 }), sname, ((m9_sl_CHAR){ (uint32_t *) m9s364, 1 }), m9a253, ((m9_sl_CHAR){ (uint32_t *) m9s365, 6 }), m9a254, ((m9_sl_CHAR){ (uint32_t *) m9s366, 3 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+    { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s364, 22 }), sname, ((m9_sl_CHAR){ (uint32_t *) m9s365, 1 }), m9a257, ((m9_sl_CHAR){ (uint32_t *) m9s366, 6 }), m9a258, ((m9_sl_CHAR){ (uint32_t *) m9s367, 3 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a259 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s364, 22 }), sname, ((m9_sl_CHAR){ (uint32_t *) m9s365, 1 }), m9a257, ((m9_sl_CHAR){ (uint32_t *) m9s366, 6 }), m9a258, ((m9_sl_CHAR){ (uint32_t *) m9s367, 3 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KRec3, INT64_C(0), m9a255, err);
+    Gen_Line (Gen_KRec3, INT64_C(0), m9a259, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -8040,11 +8170,11 @@ static void Gen_RecStrs (Ast_Node * e, m9_sl_CHAR base, m9_state *err)
       { Ast_Node * a = (*(Ast_Node * *) m9_at (al->kids.p, f, al->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (a != NULL) {
-        { __typeof__(Gen_ItoA (f, err)) m9a256 = Gen_ItoA (f, err);
+        { __typeof__(Gen_ItoA (f, err)) m9a260 = Gen_ItoA (f, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S3 (base, ((m9_sl_CHAR){ (uint32_t *) m9s367, 1 }), m9a256, err)) m9a257 = Gen_S3 (base, ((m9_sl_CHAR){ (uint32_t *) m9s367, 1 }), m9a256, err);
+        { __typeof__(Gen_S3 (base, ((m9_sl_CHAR){ (uint32_t *) m9s368, 1 }), m9a260, err)) m9a261 = Gen_S3 (base, ((m9_sl_CHAR){ (uint32_t *) m9s368, 1 }), m9a260, err);
           if (err->exc) goto L_ret;
-        Gen_StrC (a, m9a257, err);
+        Gen_StrC (a, m9a261, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -8066,7 +8196,7 @@ static m9_sl_CHAR Gen_RecC (Ast_Node * e, m9_sl_CHAR base, m9_sl_CHAR what, m9_s
   m9_sl_CHAR m9ret = {0};
   int64_t f = 0; (void) f;
   m9_sl_CHAR cs = {0}; (void) cs;
-  cs = ((m9_sl_CHAR){ (uint32_t *) m9s368, 2 });
+  cs = ((m9_sl_CHAR){ (uint32_t *) m9s369, 2 });
   { Ast_Node * al = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (al != NULL) {
@@ -8079,18 +8209,18 @@ static m9_sl_CHAR Gen_RecC (Ast_Node * e, m9_sl_CHAR base, m9_sl_CHAR what, m9_s
       if (err->exc) goto L_ret;
       if (a != NULL) {
         if ((f > INT64_C(0))) {
-          { __typeof__(cs) m9v = Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s369, 2 }), err);
+          { __typeof__(cs) m9v = Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s370, 2 }), err);
             if (err->exc) goto L_ret;
             cs = m9v;
           }
         }
-        { __typeof__(Gen_ItoA (f, err)) m9a258 = Gen_ItoA (f, err);
+        { __typeof__(Gen_ItoA (f, err)) m9a262 = Gen_ItoA (f, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S3 (base, ((m9_sl_CHAR){ (uint32_t *) m9s370, 1 }), m9a258, err)) m9a259 = Gen_S3 (base, ((m9_sl_CHAR){ (uint32_t *) m9s370, 1 }), m9a258, err);
+        { __typeof__(Gen_S3 (base, ((m9_sl_CHAR){ (uint32_t *) m9s371, 1 }), m9a262, err)) m9a263 = Gen_S3 (base, ((m9_sl_CHAR){ (uint32_t *) m9s371, 1 }), m9a262, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_LitC (a, m9a259, what, err)) m9a260 = Gen_LitC (a, m9a259, what, err);
+        { __typeof__(Gen_LitC (a, m9a263, what, err)) m9a264 = Gen_LitC (a, m9a263, what, err);
           if (err->exc) goto L_ret;
-        { __typeof__(cs) m9v = Gen_S2 (cs, m9a260, err);
+        { __typeof__(cs) m9v = Gen_S2 (cs, m9a264, err);
           if (err->exc) goto L_ret;
           cs = m9v;
         }
@@ -8101,7 +8231,7 @@ static m9_sl_CHAR Gen_RecC (Ast_Node * e, m9_sl_CHAR base, m9_sl_CHAR what, m9_s
     } }
   } }
   err->res = m9res;
-  m9ret = Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s371, 2 }), err);
+  m9ret = Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s372, 2 }), err);
   if (err->exc) goto L_ret;
   goto L_ret;
 L_ret: ;
@@ -8127,16 +8257,16 @@ static void Gen_EmitAggs (m9_state *err)
   m9t1to = m9_sub_i64 (aggT.n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).v) m9a261 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).v;
+    { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).v) m9a265 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).v;
       if (err->exc) goto L_ret;
-    { __typeof__(ty) m9v = Gen_TyC (m9a261, err);
+    { __typeof__(ty) m9v = Gen_TyC (m9a265, err);
       if (err->exc) goto L_ret;
       ty = m9v;
     }
     }
-    { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a262 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
+    { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a266 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
       if (err->exc) goto L_ret;
-    { __typeof__(nm) m9v = Gen_CN (m9a262, err);
+    { __typeof__(nm) m9v = Gen_CN (m9a266, err);
       if (err->exc) goto L_ret;
       nm = m9v;
     }
@@ -8145,28 +8275,28 @@ static void Gen_EmitAggs (m9_state *err)
     if (err->exc) goto L_ret;
     if (ag != NULL) {
       if ((ag->kind == Ast_NCallExpr)) {
-        { __typeof__(Gen_S2 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s372, 3 }), err)) m9a263 = Gen_S2 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s372, 3 }), err);
+        { __typeof__(Gen_S2 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s373, 3 }), err)) m9a267 = Gen_S2 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s373, 3 }), err);
           if (err->exc) goto L_ret;
-        Gen_RecStrs (ag, m9a263, err);
+        Gen_RecStrs (ag, m9a267, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__(Gen_S2 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s376, 3 }), err)) m9a264 = Gen_S2 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s376, 3 }), err);
+        { __typeof__(Gen_S2 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s377, 3 }), err)) m9a268 = Gen_S2 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s377, 3 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a265 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
+        { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a269 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_RecC (ag, m9a264, m9a265, err)) m9a266 = Gen_RecC (ag, m9a264, m9a265, err);
+        { __typeof__(Gen_RecC (ag, m9a268, m9a269, err)) m9a270 = Gen_RecC (ag, m9a268, m9a269, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s373, 13 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s374, 1 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s375, 5 }), m9a266, ((m9_sl_CHAR){ (uint32_t *) m9s377, 1 }), err)) m9a267 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s373, 13 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s374, 1 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s375, 5 }), m9a266, ((m9_sl_CHAR){ (uint32_t *) m9s377, 1 }), err);
+        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s374, 13 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s375, 1 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s376, 5 }), m9a270, ((m9_sl_CHAR){ (uint32_t *) m9s378, 1 }), err)) m9a271 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s374, 13 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s375, 1 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s376, 5 }), m9a270, ((m9_sl_CHAR){ (uint32_t *) m9s378, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KRec3, INT64_C(0), m9a267, err);
+        Gen_Line (Gen_KRec3, INT64_C(0), m9a271, err);
         if (err->exc) goto L_ret;
         }
         }
         }
         }
-        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s378, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s379, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s380, 4 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s381, 5 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s382, 3 }), err)) m9a268 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s378, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s379, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s380, 4 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s381, 5 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s382, 3 }), err);
+        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s379, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s380, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s381, 4 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s382, 5 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s383, 3 }), err)) m9a272 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s379, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s380, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s381, 4 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s382, 5 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s383, 3 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KRec3, INT64_C(0), m9a268, err);
+        Gen_Line (Gen_KRec3, INT64_C(0), m9a272, err);
         if (err->exc) goto L_ret;
         }
       } else {
@@ -8179,29 +8309,29 @@ static void Gen_EmitAggs (m9_state *err)
           if (err->exc) goto L_ret;
           if (se != NULL) {
             if ((se->kind == Ast_NCallExpr)) {
-              { __typeof__(Gen_ItoA (k, err)) m9a269 = Gen_ItoA (k, err);
+              { __typeof__(Gen_ItoA (k, err)) m9a273 = Gen_ItoA (k, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s383, 2 }), m9a269, err)) m9a270 = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s383, 2 }), m9a269, err);
+              { __typeof__(Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s384, 2 }), m9a273, err)) m9a274 = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s384, 2 }), m9a273, err);
                 if (err->exc) goto L_ret;
-              Gen_RecStrs (se, m9a270, err);
+              Gen_RecStrs (se, m9a274, err);
               if (err->exc) goto L_ret;
               }
               }
             } else {
-              { __typeof__(Gen_ItoA (k, err)) m9a271 = Gen_ItoA (k, err);
+              { __typeof__(Gen_ItoA (k, err)) m9a275 = Gen_ItoA (k, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s384, 2 }), m9a271, err)) m9a272 = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s384, 2 }), m9a271, err);
+              { __typeof__(Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s385, 2 }), m9a275, err)) m9a276 = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s385, 2 }), m9a275, err);
                 if (err->exc) goto L_ret;
-              Gen_StrC (se, m9a272, err);
+              Gen_StrC (se, m9a276, err);
               if (err->exc) goto L_ret;
               }
               }
             }
           } }
         } }
-        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s385, 13 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s386, 1 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s387, 8 }), err)) m9a273 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s385, 13 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s386, 1 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s387, 8 }), err);
+        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s386, 13 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s387, 1 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s388, 8 }), err)) m9a277 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s386, 13 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s387, 1 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s388, 8 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KRec3, INT64_C(0), m9a273, err);
+        Gen_Line (Gen_KRec3, INT64_C(0), m9a277, err);
         if (err->exc) goto L_ret;
         }
         { int64_t m9t3to;
@@ -8209,18 +8339,18 @@ static void Gen_EmitAggs (m9_state *err)
         m9t3to = m9_sub_i64 (ag->nkids, INT64_C(1), err);
         if (err->exc) goto L_ret;
         for (; k <= m9t3to; k += 1) {
-          cs = ((m9_sl_CHAR){ (uint32_t *) m9s388, 1 });
+          cs = ((m9_sl_CHAR){ (uint32_t *) m9s389, 1 });
           { Ast_Node * e = (*(Ast_Node * *) m9_at (ag->kids.p, k, ag->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (e != NULL) {
             if ((e->kind == Ast_NCallExpr)) {
-              { __typeof__(Gen_ItoA (k, err)) m9a274 = Gen_ItoA (k, err);
+              { __typeof__(Gen_ItoA (k, err)) m9a278 = Gen_ItoA (k, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s389, 2 }), m9a274, err)) m9a275 = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s389, 2 }), m9a274, err);
+              { __typeof__(Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s390, 2 }), m9a278, err)) m9a279 = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s390, 2 }), m9a278, err);
                 if (err->exc) goto L_ret;
-              { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a276 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
+              { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a280 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
                 if (err->exc) goto L_ret;
-              { __typeof__(cs) m9v = Gen_RecC (e, m9a275, m9a276, err);
+              { __typeof__(cs) m9v = Gen_RecC (e, m9a279, m9a280, err);
                 if (err->exc) goto L_ret;
                 cs = m9v;
               }
@@ -8228,13 +8358,13 @@ static void Gen_EmitAggs (m9_state *err)
               }
               }
             } else {
-              { __typeof__(Gen_ItoA (k, err)) m9a277 = Gen_ItoA (k, err);
+              { __typeof__(Gen_ItoA (k, err)) m9a281 = Gen_ItoA (k, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s390, 2 }), m9a277, err)) m9a278 = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s390, 2 }), m9a277, err);
+              { __typeof__(Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s391, 2 }), m9a281, err)) m9a282 = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s391, 2 }), m9a281, err);
                 if (err->exc) goto L_ret;
-              { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a279 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
+              { __typeof__((*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k) m9a283 = (*(Gen_MEnt *) m9_at (aggT.es.p, i, aggT.es.len, sizeof (Gen_MEnt), err)).k;
                 if (err->exc) goto L_ret;
-              { __typeof__(cs) m9v = Gen_LitC (e, m9a278, m9a279, err);
+              { __typeof__(cs) m9v = Gen_LitC (e, m9a282, m9a283, err);
                 if (err->exc) goto L_ret;
                 cs = m9v;
               }
@@ -8246,7 +8376,7 @@ static void Gen_EmitAggs (m9_state *err)
           bool m9t4 = (k < m9_sub_i64 (ag->nkids, INT64_C(1), err));
           if (err->exc) goto L_ret;
           if (m9t4) {
-            { __typeof__(cs) m9v = Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s391, 1 }), err);
+            { __typeof__(cs) m9v = Gen_S2 (cs, ((m9_sl_CHAR){ (uint32_t *) m9s392, 1 }), err);
               if (err->exc) goto L_ret;
               cs = m9v;
             }
@@ -8254,11 +8384,11 @@ static void Gen_EmitAggs (m9_state *err)
           Gen_Line (Gen_KRec3, INT64_C(1), cs, err);
           if (err->exc) goto L_ret;
         } }
-        Gen_Line (Gen_KRec3, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s392, 4 }), err);
+        Gen_Line (Gen_KRec3, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s393, 4 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s393, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s394, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s395, 4 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s396, 5 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s397, 3 }), err)) m9a280 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s393, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s394, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s395, 4 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s396, 5 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s397, 3 }), err);
+        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s394, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s395, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s396, 4 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s397, 5 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s398, 3 }), err)) m9a284 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s394, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s395, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s396, 4 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s397, 5 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s398, 3 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KRec3, INT64_C(0), m9a280, err);
+        Gen_Line (Gen_KRec3, INT64_C(0), m9a284, err);
         if (err->exc) goto L_ret;
         }
       }
@@ -8277,11 +8407,11 @@ static void Gen_NanWalk (Ast_Node * *n, m9_pool *n_pool, m9_state *err)
   (void) m9res;
   err->res = &m9frame;
   int64_t i = 0; (void) i;
-  bool m9t1 = ((((*n)->kind == Ast_NDesignator) && ((*n)->nkids == INT64_C(0))) && DynStr_Eq ((*n)->a, ((m9_sl_CHAR){ (uint32_t *) m9s398, 3 }), err));
+  bool m9t1 = ((((*n)->kind == Ast_NDesignator) && ((*n)->nkids == INT64_C(0))) && DynStr_Eq ((*n)->a, ((m9_sl_CHAR){ (uint32_t *) m9s399, 3 }), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     (*n)->kind = Ast_NReal;
-    (*n)->a = ((m9_sl_CHAR){ (uint32_t *) m9s399, 3 });
+    (*n)->a = ((m9_sl_CHAR){ (uint32_t *) m9s400, 3 });
   }
   { int64_t m9t2to;
   i = INT64_C(0);
@@ -8350,9 +8480,9 @@ static void Gen_RegisterExtern (Ast_Node * u, bool addInclude, m9_state *err)
     if (err->exc) goto L_ret;
     if (d != NULL) {
       if ((d->kind == Ast_NProcDecl)) {
-        { __typeof__(Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s400, 1 }), d->a, err)) m9a281 = Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s400, 1 }), d->a, err);
+        { __typeof__(Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s401, 1 }), d->a, err)) m9a285 = Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s401, 1 }), d->a, err);
           if (err->exc) goto L_ret;
-        Gen_MAdd (&(extProcs), &m9mframe, m9a281, d, (m9_sl_CHAR){ NULL, 0 }, err);
+        Gen_MAdd (&(extProcs), &m9mframe, m9a285, d, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         }
       } else {
@@ -8365,9 +8495,9 @@ static void Gen_RegisterExtern (Ast_Node * u, bool addInclude, m9_state *err)
             { Ast_Node * xd = (*(Ast_Node * *) m9_at (d->kids.p, j, d->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (xd != NULL) {
-              { __typeof__((*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err))) m9a282 = (*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err))) m9a286 = (*(Ast_Node * *) m9_at (xd->kids.p, INT64_C(0), xd->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              Gen_MAdd (&(extExcs), &m9mframe, xd->a, m9a282, u->a, err);
+              Gen_MAdd (&(extExcs), &m9mframe, xd->a, m9a286, u->a, err);
               if (err->exc) goto L_ret;
               }
             } }
@@ -8385,9 +8515,9 @@ static void Gen_RegisterExtern (Ast_Node * u, bool addInclude, m9_state *err)
               { Ast_Node * tb = (*(Ast_Node * *) m9_at (td->kids.p, INT64_C(0), td->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (tb != NULL) {
-                { __typeof__(Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s401, 1 }), td->a, err)) m9a283 = Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s401, 1 }), td->a, err);
+                { __typeof__(Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s402, 1 }), td->a, err)) m9a287 = Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s402, 1 }), td->a, err);
                   if (err->exc) goto L_ret;
-                Gen_MAdd (&(extTypes), &m9mframe, m9a283, tb, (m9_sl_CHAR){ NULL, 0 }, err);
+                Gen_MAdd (&(extTypes), &m9mframe, m9a287, tb, (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_ret;
                 }
               } }
@@ -8403,11 +8533,11 @@ static void Gen_RegisterExtern (Ast_Node * u, bool addInclude, m9_state *err)
             { Ast_Node * cd = (*(Ast_Node * *) m9_at (d->kids.p, j, d->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (cd != NULL) {
-              { __typeof__(Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s402, 1 }), cd->a, err)) m9a284 = Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s402, 1 }), cd->a, err);
+              { __typeof__(Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s403, 1 }), cd->a, err)) m9a288 = Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s403, 1 }), cd->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__((*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err))) m9a285 = (*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err))) m9a289 = (*(Ast_Node * *) m9_at (cd->kids.p, INT64_C(0), cd->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              Gen_MAdd (&(extConsts), &m9mframe, m9a284, m9a285, (m9_sl_CHAR){ NULL, 0 }, err);
+              Gen_MAdd (&(extConsts), &m9mframe, m9a288, m9a289, (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
               }
               }
@@ -8434,13 +8564,13 @@ static void Gen_RegisterExtern (Ast_Node * u, bool addInclude, m9_state *err)
                   { Ast_Node * vid = (*(Ast_Node * *) m9_at (vids->kids.p, k, vids->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
                   if (vid != NULL) {
-                    { __typeof__(Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s403, 1 }), vid->a, err)) m9a286 = Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s403, 1 }), vid->a, err);
+                    { __typeof__(Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s404, 1 }), vid->a, err)) m9a290 = Gen_S3 (u->a, ((m9_sl_CHAR){ (uint32_t *) m9s404, 1 }), vid->a, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a287 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a291 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(Gen_QualIn (m9a287, u->a, err)) m9a288 = Gen_QualIn (m9a287, u->a, err);
+                    { __typeof__(Gen_QualIn (m9a291, u->a, err)) m9a292 = Gen_QualIn (m9a291, u->a, err);
                       if (err->exc) goto L_ret;
-                    Gen_MAdd (&(extVars), &m9mframe, m9a286, m9a288, (m9_sl_CHAR){ NULL, 0 }, err);
+                    Gen_MAdd (&(extVars), &m9mframe, m9a290, m9a292, (m9_sl_CHAR){ NULL, 0 }, err);
                     if (err->exc) goto L_ret;
                     }
                     }
@@ -8483,7 +8613,7 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
   bool fldOk = false; (void) fldOk;
   bool enumIx = false; (void) enumIx;
   m9_sl_CHAR tmod = {0}; (void) tmod;
-  (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s404, 1 });
+  (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s405, 1 });
   tmod = (m9_sl_CHAR){ NULL, 0 };
   { __typeof__(tnd) m9v = Gen_ScopeNode (d->a, err);
     if (err->exc) goto L_ret;
@@ -8501,25 +8631,25 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
     }
     if ((ci >= INT64_C(0))) {
       if ((ci >= constsBase)) {
-        { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v) m9a289 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v;
+        { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v) m9a293 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v;
           if (err->exc) goto L_ret;
-        { __typeof__(res) m9v = Gen_EX (m9a289, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(res) m9v = Gen_EX (m9a293, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
           res = m9v;
         }
         }
       } else {
-        { __typeof__(Gen_CP (modName, err)) m9a290 = Gen_CP (modName, err);
+        { __typeof__(Gen_CP (modName, err)) m9a294 = Gen_CP (modName, err);
           if (err->exc) goto L_ret;
-        { __typeof__(res) m9v = Gen_S3 (m9a290, ((m9_sl_CHAR){ (uint32_t *) m9s405, 1 }), d->a, err);
+        { __typeof__(res) m9v = Gen_S3 (m9a294, ((m9_sl_CHAR){ (uint32_t *) m9s406, 1 }), d->a, err);
           if (err->exc) goto L_ret;
           res = m9v;
         }
         }
       }
-      { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v) m9a291 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v;
+      { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v) m9a295 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v;
         if (err->exc) goto L_ret;
-      { __typeof__((*tag)) m9v = Gen_TagOfExpr (m9a291, err);
+      { __typeof__((*tag)) m9v = Gen_TagOfExpr (m9a295, err);
         if (err->exc) goto L_ret;
         (*tag) = m9v;
       }
@@ -8534,22 +8664,22 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
         if (sel != NULL) {
           if ((sel->kind == Ast_NSelIndex)) {
             base = res;
-            { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err))) m9a292 = (*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err))) m9a296 = (*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(ix) m9v = Gen_EX (m9a292, (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(ix) m9v = Gen_EX (m9a296, (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
               ix = m9v;
             }
             }
-            { __typeof__(res) m9v = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s406, 22 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s407, 4 }), ix, ((m9_sl_CHAR){ (uint32_t *) m9s408, 2 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s409, 30 }), err);
+            { __typeof__(res) m9v = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s407, 22 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s408, 4 }), ix, ((m9_sl_CHAR){ (uint32_t *) m9s409, 2 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s410, 30 }), err);
               if (err->exc) goto L_ret;
               res = m9v;
             }
             stRaise = true;
-            bool m9t2 = DynStr_Eq ((*tag), ((m9_sl_CHAR){ (uint32_t *) m9s410, 5 }), err);
+            bool m9t2 = DynStr_Eq ((*tag), ((m9_sl_CHAR){ (uint32_t *) m9s411, 5 }), err);
             if (err->exc) goto L_ret;
             if (m9t2) {
-              (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s411, 4 });
+              (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s412, 4 });
             }
           }
         } }
@@ -8563,25 +8693,25 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
       if (err->exc) goto L_ret;
       if (sf1 != NULL) {
         if ((sf1->kind == Ast_NSelField)) {
-          { __typeof__(Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s412, 1 }), sf1->a, err)) m9a293 = Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s412, 1 }), sf1->a, err);
+          { __typeof__(Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s413, 1 }), sf1->a, err)) m9a297 = Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s413, 1 }), sf1->a, err);
             if (err->exc) goto L_ret;
-          { __typeof__(ci) m9v = Gen_MFind (&(extConsts), &m9mframe, m9a293, err);
+          { __typeof__(ci) m9v = Gen_MFind (&(extConsts), &m9mframe, m9a297, err);
             if (err->exc) goto L_ret;
             ci = m9v;
           }
           }
           if ((ci >= INT64_C(0))) {
-            { __typeof__((*(Gen_MEnt *) m9_at (extConsts.es.p, ci, extConsts.es.len, sizeof (Gen_MEnt), err)).v) m9a294 = (*(Gen_MEnt *) m9_at (extConsts.es.p, ci, extConsts.es.len, sizeof (Gen_MEnt), err)).v;
+            { __typeof__((*(Gen_MEnt *) m9_at (extConsts.es.p, ci, extConsts.es.len, sizeof (Gen_MEnt), err)).v) m9a298 = (*(Gen_MEnt *) m9_at (extConsts.es.p, ci, extConsts.es.len, sizeof (Gen_MEnt), err)).v;
               if (err->exc) goto L_ret;
-            { __typeof__((*tag)) m9v = Gen_TagOfExpr (m9a294, err);
+            { __typeof__((*tag)) m9v = Gen_TagOfExpr (m9a298, err);
               if (err->exc) goto L_ret;
               (*tag) = m9v;
             }
             }
             err->res = m9res;
-            { __typeof__(Gen_CP (d->a, err)) m9a295 = Gen_CP (d->a, err);
+            { __typeof__(Gen_CP (d->a, err)) m9a299 = Gen_CP (d->a, err);
               if (err->exc) goto L_ret;
-            m9ret = Gen_S3 (m9a295, ((m9_sl_CHAR){ (uint32_t *) m9s413, 1 }), sf1->a, err);
+            m9ret = Gen_S3 (m9a299, ((m9_sl_CHAR){ (uint32_t *) m9s414, 1 }), sf1->a, err);
             if (err->exc) goto L_ret;
             }
             goto L_ret;
@@ -8593,11 +8723,11 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
       bool m9t3 = (Gen_FindProcN (d->a, err) >= INT64_C(0));
       if (err->exc) goto L_ret;
       if (m9t3) {
-        (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s414, 4 });
+        (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s415, 4 });
         err->res = m9res;
-        { __typeof__(Gen_CP (modName, err)) m9a296 = Gen_CP (modName, err);
+        { __typeof__(Gen_CP (modName, err)) m9a300 = Gen_CP (modName, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S3 (m9a296, ((m9_sl_CHAR){ (uint32_t *) m9s415, 1 }), d->a, err);
+        m9ret = Gen_S3 (m9a300, ((m9_sl_CHAR){ (uint32_t *) m9s416, 1 }), d->a, err);
         if (err->exc) goto L_ret;
         }
         goto L_ret;
@@ -8608,14 +8738,14 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
         if (err->exc) goto L_ret;
         if (sfp != NULL) {
           if ((sfp->kind == Ast_NSelField)) {
-            bool m9t4 = (Gen_MFind (&(extProcs), &m9mframe, Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s416, 1 }), sfp->a, err), err) >= INT64_C(0));
+            bool m9t4 = (Gen_MFind (&(extProcs), &m9mframe, Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s417, 1 }), sfp->a, err), err) >= INT64_C(0));
             if (err->exc) goto L_ret;
             if (m9t4) {
-              (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s417, 4 });
+              (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s418, 4 });
               err->res = m9res;
-              { __typeof__(Gen_CP (d->a, err)) m9a297 = Gen_CP (d->a, err);
+              { __typeof__(Gen_CP (d->a, err)) m9a301 = Gen_CP (d->a, err);
                 if (err->exc) goto L_ret;
-              m9ret = Gen_S3 (m9a297, ((m9_sl_CHAR){ (uint32_t *) m9s418, 1 }), sfp->a, err);
+              m9ret = Gen_S3 (m9a301, ((m9_sl_CHAR){ (uint32_t *) m9s419, 1 }), sfp->a, err);
               if (err->exc) goto L_ret;
               }
               goto L_ret;
@@ -8631,18 +8761,18 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
         if (err->exc) goto L_ret;
         if (sf2 != NULL) {
           if ((sf2->kind == Ast_NSelField)) {
-            { __typeof__((*tag)) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s419, 3 }), d->a, err);
+            { __typeof__((*tag)) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s420, 3 }), d->a, err);
               if (err->exc) goto L_ret;
               (*tag) = m9v;
             }
             err->res = m9res;
-            { __typeof__(Gen_CP (modName, err)) m9a298 = Gen_CP (modName, err);
+            { __typeof__(Gen_CP (modName, err)) m9a302 = Gen_CP (modName, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_CP (modName, err)) m9a299 = Gen_CP (modName, err);
+            { __typeof__(Gen_CP (modName, err)) m9a303 = Gen_CP (modName, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S5 (m9a299, ((m9_sl_CHAR){ (uint32_t *) m9s423, 1 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s424, 1 }), sf2->a, err)) m9a300 = Gen_S5 (m9a299, ((m9_sl_CHAR){ (uint32_t *) m9s423, 1 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s424, 1 }), sf2->a, err);
+            { __typeof__(Gen_S5 (m9a303, ((m9_sl_CHAR){ (uint32_t *) m9s424, 1 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s425, 1 }), sf2->a, err)) m9a304 = Gen_S5 (m9a303, ((m9_sl_CHAR){ (uint32_t *) m9s424, 1 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s425, 1 }), sf2->a, err);
               if (err->exc) goto L_ret;
-            m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s420, 2 }), m9a298, ((m9_sl_CHAR){ (uint32_t *) m9s421, 1 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s422, 10 }), m9a300, ((m9_sl_CHAR){ (uint32_t *) m9s425, 3 }), err);
+            m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s421, 2 }), m9a302, ((m9_sl_CHAR){ (uint32_t *) m9s422, 1 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s423, 10 }), m9a304, ((m9_sl_CHAR){ (uint32_t *) m9s426, 3 }), err);
             if (err->exc) goto L_ret;
             }
             }
@@ -8662,9 +8792,9 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
         if (err->exc) goto L_ret;
         if (sfV != NULL) {
           if (((sfT->kind == Ast_NSelField) && (sfV->kind == Ast_NSelField))) {
-            { __typeof__(Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s426, 1 }), sfT->a, err)) m9a301 = Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s426, 1 }), sfT->a, err);
+            { __typeof__(Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s427, 1 }), sfT->a, err)) m9a305 = Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s427, 1 }), sfT->a, err);
               if (err->exc) goto L_ret;
-            { __typeof__(ci) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a301, err);
+            { __typeof__(ci) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a305, err);
               if (err->exc) goto L_ret;
               ci = m9v;
             }
@@ -8674,18 +8804,18 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
               if (err->exc) goto L_ret;
               if (xvt != NULL) {
                 if (((xvt->kind == Ast_NCaseRecordType) || (xvt->kind == Ast_NEnumType))) {
-                  { __typeof__((*tag)) m9v = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s427, 3 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s428, 1 }), sfT->a, err);
+                  { __typeof__((*tag)) m9v = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s428, 3 }), d->a, ((m9_sl_CHAR){ (uint32_t *) m9s429, 1 }), sfT->a, err);
                     if (err->exc) goto L_ret;
                     (*tag) = m9v;
                   }
                   err->res = m9res;
-                  { __typeof__(Gen_CP (d->a, err)) m9a302 = Gen_CP (d->a, err);
+                  { __typeof__(Gen_CP (d->a, err)) m9a306 = Gen_CP (d->a, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Gen_CP (d->a, err)) m9a303 = Gen_CP (d->a, err);
+                  { __typeof__(Gen_CP (d->a, err)) m9a307 = Gen_CP (d->a, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Gen_S5 (m9a303, ((m9_sl_CHAR){ (uint32_t *) m9s432, 1 }), sfT->a, ((m9_sl_CHAR){ (uint32_t *) m9s433, 1 }), sfV->a, err)) m9a304 = Gen_S5 (m9a303, ((m9_sl_CHAR){ (uint32_t *) m9s432, 1 }), sfT->a, ((m9_sl_CHAR){ (uint32_t *) m9s433, 1 }), sfV->a, err);
+                  { __typeof__(Gen_S5 (m9a307, ((m9_sl_CHAR){ (uint32_t *) m9s433, 1 }), sfT->a, ((m9_sl_CHAR){ (uint32_t *) m9s434, 1 }), sfV->a, err)) m9a308 = Gen_S5 (m9a307, ((m9_sl_CHAR){ (uint32_t *) m9s433, 1 }), sfT->a, ((m9_sl_CHAR){ (uint32_t *) m9s434, 1 }), sfV->a, err);
                     if (err->exc) goto L_ret;
-                  m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s429, 2 }), m9a302, ((m9_sl_CHAR){ (uint32_t *) m9s430, 1 }), sfT->a, ((m9_sl_CHAR){ (uint32_t *) m9s431, 10 }), m9a304, ((m9_sl_CHAR){ (uint32_t *) m9s434, 3 }), err);
+                  m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s430, 2 }), m9a306, ((m9_sl_CHAR){ (uint32_t *) m9s431, 1 }), sfT->a, ((m9_sl_CHAR){ (uint32_t *) m9s432, 10 }), m9a308, ((m9_sl_CHAR){ (uint32_t *) m9s435, 3 }), err);
                   if (err->exc) goto L_ret;
                   }
                   }
@@ -8698,33 +8828,33 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
         } }
       } }
     }
-    bool m9t6 = (DynStr_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s435, 4 }), err) && (d->nkids == INT64_C(0)));
+    bool m9t6 = (DynStr_Eq (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s436, 4 }), err) && (d->nkids == INT64_C(0)));
     if (err->exc) goto L_ret;
     if (m9t6) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s436, 4 });
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s437, 4 });
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s437, 7 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s438, 7 });
       goto L_ret;
     }
-    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s438, 14 }), d->a, err)) m9a305 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s438, 14 }), d->a, err);
+    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s439, 14 }), d->a, err)) m9a309 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s439, 14 }), d->a, err);
       if (err->exc) goto L_ret;
-    Gen_Err2 (d->line, m9a305, err);
+    Gen_Err2 (d->line, m9a309, err);
     if (err->exc) goto L_ret;
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s439, 1 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s440, 1 });
     goto L_ret;
   }
   { __typeof__(res) m9v = Gen_CN (d->a, err);
     if (err->exc) goto L_ret;
     res = m9v;
   }
-  bool m9t7 = (DynStr_Eq (Gen_ScopeMode (d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s440, 1 }), err) || DynStr_Eq (Gen_ScopeMode (d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s441, 1 }), err));
+  bool m9t7 = (DynStr_Eq (Gen_ScopeMode (d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s441, 1 }), err) || DynStr_Eq (Gen_ScopeMode (d->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s442, 1 }), err));
   if (err->exc) goto L_ret;
   if (m9t7) {
-    { __typeof__(Gen_CN (d->a, err)) m9a306 = Gen_CN (d->a, err);
+    { __typeof__(Gen_CN (d->a, err)) m9a310 = Gen_CN (d->a, err);
       if (err->exc) goto L_ret;
-    { __typeof__(res) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s442, 2 }), m9a306, ((m9_sl_CHAR){ (uint32_t *) m9s443, 1 }), err);
+    { __typeof__(res) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s443, 2 }), m9a310, ((m9_sl_CHAR){ (uint32_t *) m9s444, 1 }), err);
       if (err->exc) goto L_ret;
       res = m9v;
     }
@@ -8754,54 +8884,54 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
             if (err->exc) goto L_ret;
             if (inner != NULL) {
               if (((inner->kind != Ast_NRecordType) && (inner->kind != Ast_NMonitorType))) {
-                Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s444, 46 }), err);
+                Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s445, 46 }), err);
                 if (err->exc) goto L_ret;
                 err->res = m9res;
-                m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s445, 1 });
+                m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s446, 1 });
                 goto L_ret;
               }
-              { __typeof__(Gen_CN (sel->a, err)) m9a307 = Gen_CN (sel->a, err);
+              { __typeof__(Gen_CN (sel->a, err)) m9a311 = Gen_CN (sel->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(res) m9v = Gen_S3 (res, ((m9_sl_CHAR){ (uint32_t *) m9s446, 2 }), m9a307, err);
+              { __typeof__(res) m9v = Gen_S3 (res, ((m9_sl_CHAR){ (uint32_t *) m9s447, 2 }), m9a311, err);
                 if (err->exc) goto L_ret;
                 res = m9v;
               }
               }
-              { __typeof__(Gen_FieldType (inner, sel->a, err)) m9a308 = Gen_FieldType (inner, sel->a, err);
+              { __typeof__(Gen_FieldType (inner, sel->a, err)) m9a312 = Gen_FieldType (inner, sel->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(tnd) m9v = Gen_InMod (m9a308, tmod, err);
+              { __typeof__(tnd) m9v = Gen_InMod (m9a312, tmod, err);
                 if (err->exc) goto L_ret;
                 tnd = m9v;
               }
               }
             } else {
-              Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s447, 28 }), err);
+              Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s448, 28 }), err);
               if (err->exc) goto L_ret;
               err->res = m9res;
-              m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s448, 1 });
+              m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s449, 1 });
               goto L_ret;
             } }
           } else {
             if (((r->kind == Ast_NRecordType) || (r->kind == Ast_NMonitorType))) {
-              { __typeof__(Gen_CN (sel->a, err)) m9a309 = Gen_CN (sel->a, err);
+              { __typeof__(Gen_CN (sel->a, err)) m9a313 = Gen_CN (sel->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(res) m9v = Gen_S3 (res, ((m9_sl_CHAR){ (uint32_t *) m9s449, 1 }), m9a309, err);
+              { __typeof__(res) m9v = Gen_S3 (res, ((m9_sl_CHAR){ (uint32_t *) m9s450, 1 }), m9a313, err);
                 if (err->exc) goto L_ret;
                 res = m9v;
               }
               }
-              { __typeof__(Gen_FieldType (r, sel->a, err)) m9a310 = Gen_FieldType (r, sel->a, err);
+              { __typeof__(Gen_FieldType (r, sel->a, err)) m9a314 = Gen_FieldType (r, sel->a, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(tnd) m9v = Gen_InMod (m9a310, tmod, err);
+              { __typeof__(tnd) m9v = Gen_InMod (m9a314, tmod, err);
                 if (err->exc) goto L_ret;
                 tnd = m9v;
               }
               }
           } else {
-            Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s450, 46 }), err);
+            Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s451, 46 }), err);
             if (err->exc) goto L_ret;
             err->res = m9res;
-            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s451, 1 });
+            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s452, 1 });
             goto L_ret;
           } }
           fldOk = false;
@@ -8810,22 +8940,22 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
             fldOk = true;
           } }
           if ((!fldOk)) {
-            { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s452, 22 }), sel->a, err)) m9a311 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s452, 22 }), sel->a, err);
+            { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s453, 22 }), sel->a, err)) m9a315 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s453, 22 }), sel->a, err);
               if (err->exc) goto L_ret;
-            Gen_Err2 (d->line, m9a311, err);
+            Gen_Err2 (d->line, m9a315, err);
             if (err->exc) goto L_ret;
             }
             err->res = m9res;
-            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s453, 1 });
+            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s454, 1 });
             goto L_ret;
           }
         } else {
           if ((sel->kind == Ast_NSelIndex)) {
             if ((r->kind == Ast_NGridType)) {
               base = res;
-              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a312 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a316 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(ec) m9v = Gen_TyC (m9a312, err);
+              { __typeof__(ec) m9v = Gen_TyC (m9a316, err);
                 if (err->exc) goto L_ret;
                 ec = m9v;
               }
@@ -8840,21 +8970,21 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
               if (err->exc) goto L_ret;
               for (; jj <= m9t10to; jj += 1) {
                 if ((jj > INT64_C(0))) {
-                  DynStr_Append (&(dg), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s454, 2 }), err);
+                  DynStr_Append (&(dg), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s455, 2 }), err);
                   if (err->exc) goto L_ret;
                 }
-                { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, jj, sel->kids.len, sizeof (Ast_Node *), err))) m9a313 = (*(Ast_Node * *) m9_at (sel->kids.p, jj, sel->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, jj, sel->kids.len, sizeof (Ast_Node *), err))) m9a317 = (*(Ast_Node * *) m9_at (sel->kids.p, jj, sel->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(Gen_EX (m9a313, (m9_sl_CHAR){ NULL, 0 }, err)) m9a314 = Gen_EX (m9a313, (m9_sl_CHAR){ NULL, 0 }, err);
+                { __typeof__(Gen_EX (m9a317, (m9_sl_CHAR){ NULL, 0 }, err)) m9a318 = Gen_EX (m9a317, (m9_sl_CHAR){ NULL, 0 }, err);
                   if (err->exc) goto L_ret;
-                DynStr_Append (&(dg), &(gpool), m9a314, err);
+                DynStr_Append (&(dg), &(gpool), m9a318, err);
                 if (err->exc) goto L_ret;
                 }
                 }
               } }
-              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a315 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a319 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(cnt) m9v = Gen_ArrCount2 (m9a315, err);
+              { __typeof__(cnt) m9v = Gen_ArrCount2 (m9a319, err);
                 if (err->exc) goto L_ret;
                 cnt = m9v;
               }
@@ -8865,26 +8995,26 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
                   if (err->exc) goto L_ret;
                   dns = m9v;
                 }
-                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s455, 3 }), err);
+                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s456, 3 }), err);
                 if (err->exc) goto L_ret;
                 DynStr_Append (&(dns), &(gpool), ec, err);
                 if (err->exc) goto L_ret;
-                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s456, 10 }), err);
+                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s457, 10 }), err);
                 if (err->exc) goto L_ret;
-                { __typeof__(Gen_ItoA (rk, err)) m9a316 = Gen_ItoA (rk, err);
+                { __typeof__(Gen_ItoA (rk, err)) m9a320 = Gen_ItoA (rk, err);
                   if (err->exc) goto L_ret;
-                DynStr_Append (&(dns), &(gpool), m9a316, err);
+                DynStr_Append (&(dns), &(gpool), m9a320, err);
                 if (err->exc) goto L_ret;
                 }
-                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s457, 2 }), err);
+                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s458, 2 }), err);
                 if (err->exc) goto L_ret;
                 DynStr_Append (&(dns), &(gpool), base, err);
                 if (err->exc) goto L_ret;
-                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s458, 12 }), err);
+                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s459, 12 }), err);
                 if (err->exc) goto L_ret;
                 DynStr_Append (&(dns), &(gpool), ec, err);
                 if (err->exc) goto L_ret;
-                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s459, 3 }), err);
+                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s460, 3 }), err);
                 if (err->exc) goto L_ret;
                 { int64_t m9t11to;
                 jj = INT64_C(0);
@@ -8893,14 +9023,14 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
                 for (; jj <= m9t11to; jj += 1) {
                   DynStr_Append (&(dns), &(gpool), base, err);
                   if (err->exc) goto L_ret;
-                  DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s460, 3 }), err);
+                  DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s461, 3 }), err);
                   if (err->exc) goto L_ret;
-                  { __typeof__(Gen_ItoA (jj, err)) m9a317 = Gen_ItoA (jj, err);
+                  { __typeof__(Gen_ItoA (jj, err)) m9a321 = Gen_ItoA (jj, err);
                     if (err->exc) goto L_ret;
-                  DynStr_Append (&(dns), &(gpool), m9a317, err);
+                  DynStr_Append (&(dns), &(gpool), m9a321, err);
                   if (err->exc) goto L_ret;
                   }
-                  DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s461, 3 }), err);
+                  DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s462, 3 }), err);
                   if (err->exc) goto L_ret;
                 } }
                 { int64_t m9t12to;
@@ -8910,33 +9040,33 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
                 for (; jj <= m9t12to; jj += 1) {
                   DynStr_Append (&(dns), &(gpool), base, err);
                   if (err->exc) goto L_ret;
-                  DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s462, 3 }), err);
-                  if (err->exc) goto L_ret;
-                  { __typeof__(Gen_ItoA (jj, err)) m9a318 = Gen_ItoA (jj, err);
-                    if (err->exc) goto L_ret;
-                  DynStr_Append (&(dns), &(gpool), m9a318, err);
-                  if (err->exc) goto L_ret;
-                  }
                   DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s463, 3 }), err);
                   if (err->exc) goto L_ret;
-                } }
-                { __typeof__(DynStr_View (dg, err)) m9a319 = DynStr_View (dg, err);
+                  { __typeof__(Gen_ItoA (jj, err)) m9a322 = Gen_ItoA (jj, err);
+                    if (err->exc) goto L_ret;
+                  DynStr_Append (&(dns), &(gpool), m9a322, err);
                   if (err->exc) goto L_ret;
-                DynStr_Append (&(dns), &(gpool), m9a319, err);
+                  }
+                  DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s464, 3 }), err);
+                  if (err->exc) goto L_ret;
+                } }
+                { __typeof__(DynStr_View (dg, err)) m9a323 = DynStr_View (dg, err);
+                  if (err->exc) goto L_ret;
+                DynStr_Append (&(dns), &(gpool), m9a323, err);
                 if (err->exc) goto L_ret;
                 }
-                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s464, 7 }), err);
+                DynStr_Append (&(dns), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s465, 7 }), err);
                 if (err->exc) goto L_ret;
                 { __typeof__(res) m9v = DynStr_View (dns, err);
                   if (err->exc) goto L_ret;
                   res = m9v;
                 }
               } else {
-                { __typeof__(DynStr_View (dg, err)) m9a320 = DynStr_View (dg, err);
+                { __typeof__(DynStr_View (dg, err)) m9a324 = DynStr_View (dg, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s469, 4 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s470, 16 }), m9a320, ((m9_sl_CHAR){ (uint32_t *) m9s471, 3 }), cnt, ((m9_sl_CHAR){ (uint32_t *) m9s472, 7 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a321 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s469, 4 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s470, 16 }), m9a320, ((m9_sl_CHAR){ (uint32_t *) m9s471, 3 }), cnt, ((m9_sl_CHAR){ (uint32_t *) m9s472, 7 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+                { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s470, 4 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s471, 16 }), m9a324, ((m9_sl_CHAR){ (uint32_t *) m9s472, 3 }), cnt, ((m9_sl_CHAR){ (uint32_t *) m9s473, 7 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a325 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s470, 4 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s471, 16 }), m9a324, ((m9_sl_CHAR){ (uint32_t *) m9s472, 3 }), cnt, ((m9_sl_CHAR){ (uint32_t *) m9s473, 7 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(res) m9v = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s465, 3 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s466, 12 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s467, 12 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s468, 3 }), base, m9a321, err);
+                { __typeof__(res) m9v = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s466, 3 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s467, 12 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s468, 12 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s469, 3 }), base, m9a325, err);
                   if (err->exc) goto L_ret;
                   res = m9v;
                 }
@@ -8944,41 +9074,41 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
                 }
               }
               stRaise = true;
-              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a322 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a326 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(tnd) m9v = Gen_InMod (m9a322, tmod, err);
+              { __typeof__(tnd) m9v = Gen_InMod (m9a326, tmod, err);
                 if (err->exc) goto L_ret;
                 tnd = m9v;
               }
               }
             } else {
-              { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err))) m9a323 = (*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err))) m9a327 = (*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(ix) m9v = Gen_EX (m9a323, (m9_sl_CHAR){ NULL, 0 }, err);
+              { __typeof__(ix) m9v = Gen_EX (m9a327, (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_ret;
                 ix = m9v;
               }
               }
               if ((r->kind == Ast_NSliceType)) {
                 base = res;
-                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a324 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a328 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(ec) m9v = Gen_TyC (m9a324, err);
+                { __typeof__(ec) m9v = Gen_TyC (m9a328, err);
                   if (err->exc) goto L_ret;
                   ec = m9v;
                 }
                 }
-                { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s477, 14 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s478, 8 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a325 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s477, 14 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s478, 8 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+                { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s478, 14 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s479, 8 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a329 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s478, 14 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s479, 8 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(res) m9v = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s473, 3 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s474, 11 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s475, 4 }), ix, ((m9_sl_CHAR){ (uint32_t *) m9s476, 2 }), base, m9a325, err);
+                { __typeof__(res) m9v = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s474, 3 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s475, 11 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s476, 4 }), ix, ((m9_sl_CHAR){ (uint32_t *) m9s477, 2 }), base, m9a329, err);
                   if (err->exc) goto L_ret;
                   res = m9v;
                 }
                 }
                 stRaise = true;
-                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a326 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a330 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(tnd) m9v = Gen_InMod (m9a326, tmod, err);
+                { __typeof__(tnd) m9v = Gen_InMod (m9a330, tmod, err);
                   if (err->exc) goto L_ret;
                   tnd = m9v;
                 }
@@ -8986,9 +9116,9 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
               } else {
                 if ((r->kind == Ast_NArrayType)) {
                   base = res;
-                  { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a327 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a331 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(ec) m9v = Gen_TyC (m9a327, err);
+                  { __typeof__(ec) m9v = Gen_TyC (m9a331, err);
                     if (err->exc) goto L_ret;
                     ec = m9v;
                   }
@@ -9001,11 +9131,11 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
                   } }
                   if ((!enumIx)) {
                     if ((sel->nkids >= INT64_C(1))) {
-                      { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err))) m9a328 = (*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err));
+                      { __typeof__((*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err))) m9a332 = (*(Ast_Node * *) m9_at (sel->kids.p, INT64_C(0), sel->kids.len, sizeof (Ast_Node *), err));
                         if (err->exc) goto L_ret;
-                      { __typeof__(Gen_TagOfExpr (m9a328, err)) m9a329 = Gen_TagOfExpr (m9a328, err);
+                      { __typeof__(Gen_TagOfExpr (m9a332, err)) m9a333 = Gen_TagOfExpr (m9a332, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(enumIx) m9v = Gen_StartsW (m9a329, ((m9_sl_CHAR){ (uint32_t *) m9s479, 3 }), err);
+                      { __typeof__(enumIx) m9v = Gen_StartsW (m9a333, ((m9_sl_CHAR){ (uint32_t *) m9s480, 3 }), err);
                         if (err->exc) goto L_ret;
                         enumIx = m9v;
                       }
@@ -9014,56 +9144,56 @@ static m9_sl_CHAR Gen_DES (Ast_Node * d, m9_sl_CHAR *tag, m9_state *err)
                     }
                   }
                   if (enumIx) {
-                    { __typeof__(res) m9v = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s480, 1 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s481, 4 }), ix, ((m9_sl_CHAR){ (uint32_t *) m9s482, 7 }), err);
+                    { __typeof__(res) m9v = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s481, 1 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s482, 4 }), ix, ((m9_sl_CHAR){ (uint32_t *) m9s483, 7 }), err);
                       if (err->exc) goto L_ret;
                       res = m9v;
                     }
-                    { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a330 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a334 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(tnd) m9v = Gen_InMod (m9a330, tmod, err);
+                    { __typeof__(tnd) m9v = Gen_InMod (m9a334, tmod, err);
                       if (err->exc) goto L_ret;
                       tnd = m9v;
                     }
                     }
                   } else {
-                    { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a331 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err))) m9a335 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(0), r->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(cnt) m9v = Gen_ArrCount2 (m9a331, err);
+                    { __typeof__(cnt) m9v = Gen_ArrCount2 (m9a335, err);
                       if (err->exc) goto L_ret;
                       cnt = m9v;
                     }
                     }
-                    { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s487, 11 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s488, 8 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a332 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s487, 11 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s488, 8 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+                    { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s488, 11 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s489, 8 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a336 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s488, 11 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s489, 8 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(res) m9v = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s483, 3 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s484, 11 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s485, 4 }), ix, ((m9_sl_CHAR){ (uint32_t *) m9s486, 10 }), cnt, m9a332, err);
+                    { __typeof__(res) m9v = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s484, 3 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s485, 11 }), base, ((m9_sl_CHAR){ (uint32_t *) m9s486, 4 }), ix, ((m9_sl_CHAR){ (uint32_t *) m9s487, 10 }), cnt, m9a336, err);
                       if (err->exc) goto L_ret;
                       res = m9v;
                     }
                     }
                     stRaise = true;
-                    { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a333 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
+                    { __typeof__((*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err))) m9a337 = (*(Ast_Node * *) m9_at (r->kids.p, INT64_C(1), r->kids.len, sizeof (Ast_Node *), err));
                       if (err->exc) goto L_ret;
-                    { __typeof__(tnd) m9v = Gen_InMod (m9a333, tmod, err);
+                    { __typeof__(tnd) m9v = Gen_InMod (m9a337, tmod, err);
                       if (err->exc) goto L_ret;
                       tnd = m9v;
                     }
                     }
                   }
               } else {
-                Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s489, 38 }), err);
+                Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s490, 38 }), err);
                 if (err->exc) goto L_ret;
                 err->res = m9res;
-                m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s490, 1 });
+                m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s491, 1 });
                 goto L_ret;
               } }
             }
         } }
       } }
     } else {
-      Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s491, 29 }), err);
+      Gen_Err2 (d->line, ((m9_sl_CHAR){ (uint32_t *) m9s492, 29 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s492, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s493, 1 });
       goto L_ret;
     } }
   } }
@@ -9110,32 +9240,33 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
   bool isCat = false; (void) isCat;
   Ast_Node * inr = NULL; (void) inr;
   Ast_Node * tyk = NULL; (void) tyk;
+  m9_sl_CHAR isx = {0}; (void) isx;
   { Ast_Node * e = k;
   if (e != NULL) {
     { __typeof__(e->kind) m9t1 = e->kind;
     switch (m9t1) {
     case INT64_C(65):
     {
-      bool m9t2 = DynStr_Eq (want, ((m9_sl_CHAR){ (uint32_t *) m9s493, 3 }), err);
+      bool m9t2 = DynStr_Eq (want, ((m9_sl_CHAR){ (uint32_t *) m9s494, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
-        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s494, 9 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s495, 1 }), err);
+        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s495, 9 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s496, 1 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
       err->res = m9res;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s496, 8 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s497, 1 }), err);
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s497, 8 }), e->a, ((m9_sl_CHAR){ (uint32_t *) m9s498, 1 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
     } break;
     case INT64_C(66):
     {
-      bool m9t3 = (DynStr_Eq (want, ((m9_sl_CHAR){ (uint32_t *) m9s498, 3 }), err) && (!DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s499, 3 }), err)));
+      bool m9t3 = (DynStr_Eq (want, ((m9_sl_CHAR){ (uint32_t *) m9s499, 3 }), err) && (!DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s500, 3 }), err)));
       if (err->exc) goto L_ret;
       if (m9t3) {
         err->res = m9res;
-        m9ret = Gen_S2 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s500, 1 }), err);
+        m9ret = Gen_S2 (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s501, 1 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
@@ -9146,11 +9277,11 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
     case INT64_C(67):
     {
       err->res = m9res;
-      { __typeof__(Gen_CharVal (e->a, err)) m9a334 = Gen_CharVal (e->a, err);
+      { __typeof__(Gen_CharVal (e->a, err)) m9a338 = Gen_CharVal (e->a, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_ItoA (m9a334, err)) m9a335 = Gen_ItoA (m9a334, err);
+      { __typeof__(Gen_ItoA (m9a338, err)) m9a339 = Gen_ItoA (m9a338, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S2 (m9a335, ((m9_sl_CHAR){ (uint32_t *) m9s501, 1 }), err);
+      m9ret = Gen_S2 (m9a339, ((m9_sl_CHAR){ (uint32_t *) m9s502, 1 }), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -9158,15 +9289,15 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
     } break;
     case INT64_C(68):
     {
-      bool m9t4 = (DynStr_Eq (want, ((m9_sl_CHAR){ (uint32_t *) m9s502, 4 }), err) && ((e->a).len == INT64_C(1)));
+      bool m9t4 = (DynStr_Eq (want, ((m9_sl_CHAR){ (uint32_t *) m9s503, 4 }), err) && ((e->a).len == INT64_C(1)));
       if (err->exc) goto L_ret;
       if (m9t4) {
         err->res = m9res;
-        { __typeof__((int64_t)((*(uint32_t *) m9_at (e->a.p, INT64_C(0), e->a.len, sizeof (uint32_t), err)))) m9a336 = (int64_t)((*(uint32_t *) m9_at (e->a.p, INT64_C(0), e->a.len, sizeof (uint32_t), err)));
+        { __typeof__((int64_t)((*(uint32_t *) m9_at (e->a.p, INT64_C(0), e->a.len, sizeof (uint32_t), err)))) m9a340 = (int64_t)((*(uint32_t *) m9_at (e->a.p, INT64_C(0), e->a.len, sizeof (uint32_t), err)));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_ItoA (m9a336, err)) m9a337 = Gen_ItoA (m9a336, err);
+        { __typeof__(Gen_ItoA (m9a340, err)) m9a341 = Gen_ItoA (m9a340, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S2 (m9a337, ((m9_sl_CHAR){ (uint32_t *) m9s503, 1 }), err);
+        m9ret = Gen_S2 (m9a341, ((m9_sl_CHAR){ (uint32_t *) m9s504, 1 }), err);
         if (err->exc) goto L_ret;
         }
         }
@@ -9174,36 +9305,36 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
       } else {
         if (((e->a).len == INT64_C(0))) {
           err->res = m9res;
-          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s504, 23 });
+          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s505, 23 });
           goto L_ret;
       } else {
         if ((dry > INT64_C(0))) {
           err->res = m9res;
-          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s505, 7 });
+          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s506, 7 });
           goto L_ret;
       } else {
-        { __typeof__(Gen_ItoA (litN, err)) m9a338 = Gen_ItoA (litN, err);
+        { __typeof__(Gen_ItoA (litN, err)) m9a342 = Gen_ItoA (litN, err);
           if (err->exc) goto L_ret;
-        { __typeof__(l) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s506, 3 }), m9a338, err);
+        { __typeof__(l) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s507, 3 }), m9a342, err);
           if (err->exc) goto L_ret;
           l = m9v;
         }
         }
-        { __typeof__(Gen_ItoA ((e->a).len, err)) m9a339 = Gen_ItoA ((e->a).len, err);
+        { __typeof__(Gen_ItoA ((e->a).len, err)) m9a343 = Gen_ItoA ((e->a).len, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_StrCodes (e->a, err)) m9a340 = Gen_StrCodes (e->a, err);
+        { __typeof__(Gen_StrCodes (e->a, err)) m9a344 = Gen_StrCodes (e->a, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s507, 22 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s508, 1 }), m9a339, ((m9_sl_CHAR){ (uint32_t *) m9s509, 6 }), m9a340, ((m9_sl_CHAR){ (uint32_t *) m9s510, 3 }), err)) m9a341 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s507, 22 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s508, 1 }), m9a339, ((m9_sl_CHAR){ (uint32_t *) m9s509, 6 }), m9a340, ((m9_sl_CHAR){ (uint32_t *) m9s510, 3 }), err);
+        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s508, 22 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s509, 1 }), m9a343, ((m9_sl_CHAR){ (uint32_t *) m9s510, 6 }), m9a344, ((m9_sl_CHAR){ (uint32_t *) m9s511, 3 }), err)) m9a345 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s508, 22 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s509, 1 }), m9a343, ((m9_sl_CHAR){ (uint32_t *) m9s510, 6 }), m9a344, ((m9_sl_CHAR){ (uint32_t *) m9s511, 3 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KLit, INT64_C(0), m9a341, err);
+        Gen_Line (Gen_KLit, INT64_C(0), m9a345, err);
         if (err->exc) goto L_ret;
         }
         }
         }
         err->res = m9res;
-        { __typeof__(Gen_ItoA ((e->a).len, err)) m9a342 = Gen_ItoA ((e->a).len, err);
+        { __typeof__(Gen_ItoA ((e->a).len, err)) m9a346 = Gen_ItoA ((e->a).len, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s511, 28 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s512, 2 }), m9a342, ((m9_sl_CHAR){ (uint32_t *) m9s513, 3 }), err);
+        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s512, 28 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s513, 2 }), m9a346, ((m9_sl_CHAR){ (uint32_t *) m9s514, 3 }), err);
         if (err->exc) goto L_ret;
         }
         goto L_ret;
@@ -9212,53 +9343,53 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
     case INT64_C(69):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s514, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s515, 4 });
       goto L_ret;
     } break;
     case INT64_C(70):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s515, 5 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s516, 5 });
       goto L_ret;
     } break;
     case INT64_C(71):
     {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s516, 4 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s517, 4 });
       goto L_ret;
     } break;
     case INT64_C(72):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a343 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a347 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Gen_EX (m9a343, (m9_sl_CHAR){ NULL, 0 }, err);
+      m9ret = Gen_EX (m9a347, (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
     } break;
     case INT64_C(73):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a344 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a348 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(l) m9v = Gen_EX (m9a344, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(l) m9v = Gen_EX (m9a348, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         l = m9v;
       }
       }
       err->res = m9res;
-      m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s517, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s518, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s519, 2 }), err);
+      m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s518, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s519, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s520, 2 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
     } break;
     case INT64_C(64):
     {
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a345 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a349 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_EX (m9a345, want, err)) m9a346 = Gen_EX (m9a345, want, err);
+      { __typeof__(Gen_EX (m9a349, want, err)) m9a350 = Gen_EX (m9a349, want, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s520, 1 }), m9a346, ((m9_sl_CHAR){ (uint32_t *) m9s521, 1 }), err);
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s521, 1 }), m9a350, ((m9_sl_CHAR){ (uint32_t *) m9s522, 1 }), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -9266,12 +9397,12 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
     } break;
     case INT64_C(77):
     {
-      tg = ((m9_sl_CHAR){ (uint32_t *) m9s522, 1 });
+      tg = ((m9_sl_CHAR){ (uint32_t *) m9s523, 1 });
       { __typeof__(res) m9v = Gen_DES (e, &(tg), err);
         if (err->exc) goto L_ret;
         res = m9v;
       }
-      bool m9t5 = DynStr_Eq (want, ((m9_sl_CHAR){ (uint32_t *) m9s523, 3 }), err);
+      bool m9t5 = DynStr_Eq (want, ((m9_sl_CHAR){ (uint32_t *) m9s524, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t5) {
         { Ast_Node * cv2 = Gen_ConstValue (k, err);
@@ -9281,7 +9412,7 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           if (err->exc) goto L_ret;
           if (m9t6) {
             err->res = m9res;
-            m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s524, 9 }), res, ((m9_sl_CHAR){ (uint32_t *) m9s525, 1 }), err);
+            m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s525, 9 }), res, ((m9_sl_CHAR){ (uint32_t *) m9s526, 1 }), err);
             if (err->exc) goto L_ret;
             goto L_ret;
           }
@@ -9293,13 +9424,13 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
     } break;
     case INT64_C(76):
     {
-      tg = ((m9_sl_CHAR){ (uint32_t *) m9s526, 1 });
+      tg = ((m9_sl_CHAR){ (uint32_t *) m9s527, 1 });
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a347 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a351 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a348 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a352 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      m9ret = Gen_CallC (m9a347, m9a348, &(tg), err);
+      m9ret = Gen_CallC (m9a351, m9a352, &(tg), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -9312,7 +9443,7 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
         if (err->exc) goto L_ret;
         sh = m9v;
       }
-      bool m9t7 = DynStr_Eq (sh, ((m9_sl_CHAR){ (uint32_t *) m9s527, 3 }), err);
+      bool m9t7 = DynStr_Eq (sh, ((m9_sl_CHAR){ (uint32_t *) m9s528, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t7) {
         { __typeof__(l) m9v = Gen_TyC (tyk, err);
@@ -9320,14 +9451,14 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           l = m9v;
         }
         err->res = m9res;
-        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s528, 1 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s529, 20 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s530, 7 }), err);
+        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s529, 1 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s530, 20 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s531, 7 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
-      bool m9t8 = DynStr_Eq (sh, ((m9_sl_CHAR){ (uint32_t *) m9s531, 4 }), err);
+      bool m9t8 = DynStr_Eq (sh, ((m9_sl_CHAR){ (uint32_t *) m9s532, 4 }), err);
       if (err->exc) goto L_ret;
       if (m9t8) {
-        r = ((m9_sl_CHAR){ (uint32_t *) m9s532, 8 });
+        r = ((m9_sl_CHAR){ (uint32_t *) m9s533, 8 });
         { Ast_Node * pd = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (pd != NULL) {
@@ -9337,7 +9468,7 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           }
         } }
       } else {
-        r = ((m9_sl_CHAR){ (uint32_t *) m9s533, 8 });
+        r = ((m9_sl_CHAR){ (uint32_t *) m9s534, 8 });
       }
       nx = INT64_C(0);
       { int64_t m9t9to;
@@ -9364,9 +9495,9 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           w = m9v;
         }
         rk = nx;
-        { __typeof__(Gen_ItoA (rk, err)) m9a349 = Gen_ItoA (rk, err);
+        { __typeof__(Gen_ItoA (rk, err)) m9a353 = Gen_ItoA (rk, err);
           if (err->exc) goto L_ret;
-        { __typeof__(a1) m9v = Gen_GridTy (tyk, m9a349, err);
+        { __typeof__(a1) m9v = Gen_GridTy (tyk, m9a353, err);
           if (err->exc) goto L_ret;
           a1 = m9v;
         }
@@ -9375,9 +9506,9 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           if (err->exc) goto L_ret;
           d2 = m9v;
         }
-        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s534, 3 }), a1, ((m9_sl_CHAR){ (uint32_t *) m9s535, 1 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s536, 2 }), err)) m9a350 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s534, 3 }), a1, ((m9_sl_CHAR){ (uint32_t *) m9s535, 1 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s536, 2 }), err);
+        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s535, 3 }), a1, ((m9_sl_CHAR){ (uint32_t *) m9s536, 1 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s537, 2 }), err)) m9a354 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s535, 3 }), a1, ((m9_sl_CHAR){ (uint32_t *) m9s536, 1 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s537, 2 }), err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), m9a350, err);
+        DynStr_Append (&(d2), &(gpool), m9a354, err);
         if (err->exc) goto L_ret;
         }
         { int64_t m9t10to;
@@ -9385,32 +9516,32 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
         m9t10to = m9_sub_i64 (e->nkids, INT64_C(1), err);
         if (err->exc) goto L_ret;
         for (; jj <= m9t10to; jj += 1) {
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, jj, e->kids.len, sizeof (Ast_Node *), err))) m9a351 = (*(Ast_Node * *) m9_at (e->kids.p, jj, e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, jj, e->kids.len, sizeof (Ast_Node *), err))) m9a355 = (*(Ast_Node * *) m9_at (e->kids.p, jj, e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(a2) m9v = Gen_EX (m9a351, (m9_sl_CHAR){ NULL, 0 }, err);
+          { __typeof__(a2) m9v = Gen_EX (m9a355, (m9_sl_CHAR){ NULL, 0 }, err);
             if (err->exc) goto L_ret;
             a2 = m9v;
           }
           }
-          { __typeof__(m9_sub_i64 (jj, ext0, err)) m9a352 = m9_sub_i64 (jj, ext0, err);
+          { __typeof__(m9_sub_i64 (jj, ext0, err)) m9a356 = m9_sub_i64 (jj, ext0, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_ItoA (m9a352, err)) m9a353 = Gen_ItoA (m9a352, err);
+          { __typeof__(Gen_ItoA (m9a356, err)) m9a357 = Gen_ItoA (m9a356, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S7 (w, ((m9_sl_CHAR){ (uint32_t *) m9s537, 3 }), m9a353, ((m9_sl_CHAR){ (uint32_t *) m9s538, 4 }), a2, ((m9_sl_CHAR){ (uint32_t *) m9s539, 2 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a354 = Gen_S7 (w, ((m9_sl_CHAR){ (uint32_t *) m9s537, 3 }), m9a353, ((m9_sl_CHAR){ (uint32_t *) m9s538, 4 }), a2, ((m9_sl_CHAR){ (uint32_t *) m9s539, 2 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          { __typeof__(Gen_S7 (w, ((m9_sl_CHAR){ (uint32_t *) m9s538, 3 }), m9a357, ((m9_sl_CHAR){ (uint32_t *) m9s539, 4 }), a2, ((m9_sl_CHAR){ (uint32_t *) m9s540, 2 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a358 = Gen_S7 (w, ((m9_sl_CHAR){ (uint32_t *) m9s538, 3 }), m9a357, ((m9_sl_CHAR){ (uint32_t *) m9s539, 4 }), a2, ((m9_sl_CHAR){ (uint32_t *) m9s540, 2 }), (m9_sl_CHAR){ NULL, 0 }, err);
             if (err->exc) goto L_ret;
-          DynStr_Append (&(d2), &(gpool), m9a354, err);
+          DynStr_Append (&(d2), &(gpool), m9a358, err);
           if (err->exc) goto L_ret;
           }
           }
           }
         } }
-        { __typeof__(m9_sub_i64 (rk, INT64_C(1), err)) m9a355 = m9_sub_i64 (rk, INT64_C(1), err);
+        { __typeof__(m9_sub_i64 (rk, INT64_C(1), err)) m9a359 = m9_sub_i64 (rk, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_ItoA (m9a355, err)) m9a356 = Gen_ItoA (m9a355, err);
+        { __typeof__(Gen_ItoA (m9a359, err)) m9a360 = Gen_ItoA (m9a359, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s540, 3 }), m9a356, ((m9_sl_CHAR){ (uint32_t *) m9s541, 7 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a357 = Gen_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s540, 3 }), m9a356, ((m9_sl_CHAR){ (uint32_t *) m9s541, 7 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s541, 3 }), m9a360, ((m9_sl_CHAR){ (uint32_t *) m9s542, 7 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a361 = Gen_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s541, 3 }), m9a360, ((m9_sl_CHAR){ (uint32_t *) m9s542, 7 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), m9a357, err);
+        DynStr_Append (&(d2), &(gpool), m9a361, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -9421,27 +9552,27 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
         }
         for (;;) {
           if (!((jj >= INT64_C(0)))) break;
-          { __typeof__(Gen_ItoA (jj, err)) m9a358 = Gen_ItoA (jj, err);
+          { __typeof__(Gen_ItoA (jj, err)) m9a362 = Gen_ItoA (jj, err);
             if (err->exc) goto L_ret;
-          { __typeof__(m9_add_i64 (jj, INT64_C(1), err)) m9a359 = m9_add_i64 (jj, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (jj, INT64_C(1), err)) m9a363 = m9_add_i64 (jj, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_ItoA (m9a359, err)) m9a360 = Gen_ItoA (m9a359, err);
+          { __typeof__(Gen_ItoA (m9a363, err)) m9a364 = Gen_ItoA (m9a363, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S9 (w, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), m9a358, ((m9_sl_CHAR){ (uint32_t *) m9s543, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s544, 3 }), m9a360, ((m9_sl_CHAR){ (uint32_t *) m9s545, 4 }), w, err)) m9a361 = Gen_S9 (w, ((m9_sl_CHAR){ (uint32_t *) m9s542, 3 }), m9a358, ((m9_sl_CHAR){ (uint32_t *) m9s543, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s544, 3 }), m9a360, ((m9_sl_CHAR){ (uint32_t *) m9s545, 4 }), w, err);
+          { __typeof__(Gen_S9 (w, ((m9_sl_CHAR){ (uint32_t *) m9s543, 3 }), m9a362, ((m9_sl_CHAR){ (uint32_t *) m9s544, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s545, 3 }), m9a364, ((m9_sl_CHAR){ (uint32_t *) m9s546, 4 }), w, err)) m9a365 = Gen_S9 (w, ((m9_sl_CHAR){ (uint32_t *) m9s543, 3 }), m9a362, ((m9_sl_CHAR){ (uint32_t *) m9s544, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s545, 3 }), m9a364, ((m9_sl_CHAR){ (uint32_t *) m9s546, 4 }), w, err);
             if (err->exc) goto L_ret;
-          DynStr_Append (&(d2), &(gpool), m9a361, err);
+          DynStr_Append (&(d2), &(gpool), m9a365, err);
           if (err->exc) goto L_ret;
           }
           }
           }
           }
-          { __typeof__(m9_add_i64 (jj, INT64_C(1), err)) m9a362 = m9_add_i64 (jj, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (jj, INT64_C(1), err)) m9a366 = m9_add_i64 (jj, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_ItoA (m9a362, err)) m9a363 = Gen_ItoA (m9a362, err);
+          { __typeof__(Gen_ItoA (m9a366, err)) m9a367 = Gen_ItoA (m9a366, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s546, 3 }), m9a363, ((m9_sl_CHAR){ (uint32_t *) m9s547, 3 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a364 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s546, 3 }), m9a363, ((m9_sl_CHAR){ (uint32_t *) m9s547, 3 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+          { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s547, 3 }), m9a367, ((m9_sl_CHAR){ (uint32_t *) m9s548, 3 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a368 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s547, 3 }), m9a367, ((m9_sl_CHAR){ (uint32_t *) m9s548, 3 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
             if (err->exc) goto L_ret;
-          DynStr_Append (&(d2), &(gpool), m9a364, err);
+          DynStr_Append (&(d2), &(gpool), m9a368, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -9451,16 +9582,16 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
             jj = m9v;
           }
         }
-        { __typeof__(Gen_S9 (w, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s549, 19 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s550, 10 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s551, 14 }), w, err)) m9a365 = Gen_S9 (w, ((m9_sl_CHAR){ (uint32_t *) m9s548, 6 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s549, 19 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s550, 10 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s551, 14 }), w, err);
+        { __typeof__(Gen_S9 (w, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s550, 19 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s551, 10 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s552, 14 }), w, err)) m9a369 = Gen_S9 (w, ((m9_sl_CHAR){ (uint32_t *) m9s549, 6 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s550, 19 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s551, 10 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s552, 14 }), w, err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), m9a365, err);
+        DynStr_Append (&(d2), &(gpool), m9a369, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__(Gen_ItoA (rk, err)) m9a366 = Gen_ItoA (rk, err);
+        { __typeof__(Gen_ItoA (rk, err)) m9a370 = Gen_ItoA (rk, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s552, 4 }), m9a366, ((m9_sl_CHAR){ (uint32_t *) m9s553, 14 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s554, 4 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a367 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s552, 4 }), m9a366, ((m9_sl_CHAR){ (uint32_t *) m9s553, 14 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s554, 4 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s553, 4 }), m9a370, ((m9_sl_CHAR){ (uint32_t *) m9s554, 14 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s555, 4 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a371 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s553, 4 }), m9a370, ((m9_sl_CHAR){ (uint32_t *) m9s554, 14 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s555, 4 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), m9a367, err);
+        DynStr_Append (&(d2), &(gpool), m9a371, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -9478,15 +9609,15 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
             if (err->exc) goto L_ret;
             a1 = m9v;
           }
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, ext0, e->kids.len, sizeof (Ast_Node *), err))) m9a368 = (*(Ast_Node * *) m9_at (e->kids.p, ext0, e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, ext0, e->kids.len, sizeof (Ast_Node *), err))) m9a372 = (*(Ast_Node * *) m9_at (e->kids.p, ext0, e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(a2) m9v = Gen_EX (m9a368, (m9_sl_CHAR){ NULL, 0 }, err);
+          { __typeof__(a2) m9v = Gen_EX (m9a372, (m9_sl_CHAR){ NULL, 0 }, err);
             if (err->exc) goto L_ret;
             a2 = m9v;
           }
           }
           err->res = m9res;
-          m9ret = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s555, 12 }), a1, ((m9_sl_CHAR){ (uint32_t *) m9s556, 2 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s557, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s558, 2 }), a2, ((m9_sl_CHAR){ (uint32_t *) m9s559, 6 }), err);
+          m9ret = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s556, 12 }), a1, ((m9_sl_CHAR){ (uint32_t *) m9s557, 2 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s558, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s559, 2 }), a2, ((m9_sl_CHAR){ (uint32_t *) m9s560, 6 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
       } else {
@@ -9495,7 +9626,7 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           l = m9v;
         }
         err->res = m9res;
-        m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s560, 1 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s561, 19 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s562, 10 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s563, 10 }), err);
+        m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s561, 1 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s562, 19 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s563, 10 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s564, 10 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       } }
@@ -9508,9 +9639,9 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
       if (err->exc) goto L_ret;
       if (gds != NULL) {
         if ((gds->kind == Ast_NDesignator)) {
-          { __typeof__(Gen_DesigDecl (gds, err)) m9a369 = Gen_DesigDecl (gds, err);
+          { __typeof__(Gen_DesigDecl (gds, err)) m9a373 = Gen_DesigDecl (gds, err);
             if (err->exc) goto L_ret;
-          { __typeof__(inr) m9v = Gen_Resolve (m9a369, err);
+          { __typeof__(inr) m9v = Gen_Resolve (m9a373, err);
             if (err->exc) goto L_ret;
             inr = m9v;
           }
@@ -9533,16 +9664,16 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           if (err->exc) goto L_ret;
           rk = m9v;
         }
-        { __typeof__(Gen_ItoA (rk, err)) m9a370 = Gen_ItoA (rk, err);
+        { __typeof__(Gen_ItoA (rk, err)) m9a374 = Gen_ItoA (rk, err);
           if (err->exc) goto L_ret;
-        { __typeof__(tg) m9v = Gen_GridTy (tyk, m9a370, err);
+        { __typeof__(tg) m9v = Gen_GridTy (tyk, m9a374, err);
           if (err->exc) goto L_ret;
           tg = m9v;
         }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a371 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a375 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(l) m9v = Gen_EX (m9a371, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(l) m9v = Gen_EX (m9a375, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
           l = m9v;
         }
@@ -9555,20 +9686,20 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           if (err->exc) goto L_ret;
           d2 = m9v;
         }
-        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s564, 14 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s565, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s566, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s567, 2 }), err)) m9a372 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s564, 14 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s565, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s566, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s567, 2 }), err);
+        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s565, 14 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s566, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s567, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s568, 2 }), err)) m9a376 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s565, 14 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s566, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s567, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s568, 2 }), err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), m9a372, err);
+        DynStr_Append (&(d2), &(gpool), m9a376, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__(Gen_ItoA (rk, err)) m9a373 = Gen_ItoA (rk, err);
+        { __typeof__(Gen_ItoA (rk, err)) m9a377 = Gen_ItoA (rk, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S7 (tg, ((m9_sl_CHAR){ (uint32_t *) m9s568, 1 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s569, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s570, 2 }), m9a373, err)) m9a374 = Gen_S7 (tg, ((m9_sl_CHAR){ (uint32_t *) m9s568, 1 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s569, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s570, 2 }), m9a373, err);
+        { __typeof__(Gen_S7 (tg, ((m9_sl_CHAR){ (uint32_t *) m9s569, 1 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s570, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s571, 2 }), m9a377, err)) m9a378 = Gen_S7 (tg, ((m9_sl_CHAR){ (uint32_t *) m9s569, 1 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s570, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s571, 2 }), m9a377, err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), m9a374, err);
+        DynStr_Append (&(d2), &(gpool), m9a378, err);
         if (err->exc) goto L_ret;
         }
         }
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s571, 6 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s572, 6 }), err);
         if (err->exc) goto L_ret;
         { int64_t m9t11to;
         jj = INT64_C(1);
@@ -9576,12 +9707,12 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
         if (err->exc) goto L_ret;
         for (; jj <= m9t11to; jj += 1) {
           if ((jj > INT64_C(1))) {
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s572, 2 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s573, 2 }), err);
             if (err->exc) goto L_ret;
           }
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, jj, e->kids.len, sizeof (Ast_Node *), err))) m9a375 = (*(Ast_Node * *) m9_at (e->kids.p, jj, e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, jj, e->kids.len, sizeof (Ast_Node *), err))) m9a379 = (*(Ast_Node * *) m9_at (e->kids.p, jj, e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(a1) m9v = Gen_EX (m9a375, (m9_sl_CHAR){ NULL, 0 }, err);
+          { __typeof__(a1) m9v = Gen_EX (m9a379, (m9_sl_CHAR){ NULL, 0 }, err);
             if (err->exc) goto L_ret;
             a1 = m9v;
           }
@@ -9589,22 +9720,22 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           DynStr_Append (&(d2), &(gpool), a1, err);
           if (err->exc) goto L_ret;
         } }
-        { __typeof__(Gen_ItoA (rk, err)) m9a376 = Gen_ItoA (rk, err);
+        { __typeof__(Gen_ItoA (rk, err)) m9a380 = Gen_ItoA (rk, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s573, 15 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s574, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s575, 3 }), m9a376, ((m9_sl_CHAR){ (uint32_t *) m9s576, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s577, 5 }), err)) m9a377 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s573, 15 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s574, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s575, 3 }), m9a376, ((m9_sl_CHAR){ (uint32_t *) m9s576, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s577, 5 }), err);
+        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s574, 15 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s575, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s576, 3 }), m9a380, ((m9_sl_CHAR){ (uint32_t *) m9s577, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s578, 5 }), err)) m9a381 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s574, 15 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s575, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s576, 3 }), m9a380, ((m9_sl_CHAR){ (uint32_t *) m9s577, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s578, 5 }), err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), m9a377, err);
+        DynStr_Append (&(d2), &(gpool), m9a381, err);
         if (err->exc) goto L_ret;
         }
         }
-        { __typeof__(Gen_S7 (w, ((m9_sl_CHAR){ (uint32_t *) m9s578, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s579, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s580, 4 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a378 = Gen_S7 (w, ((m9_sl_CHAR){ (uint32_t *) m9s578, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s579, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s580, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_S7 (w, ((m9_sl_CHAR){ (uint32_t *) m9s579, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s580, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s581, 4 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a382 = Gen_S7 (w, ((m9_sl_CHAR){ (uint32_t *) m9s579, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s580, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s581, 4 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), m9a378, err);
+        DynStr_Append (&(d2), &(gpool), m9a382, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__(Gen_S2 (w, ((m9_sl_CHAR){ (uint32_t *) m9s581, 5 }), err)) m9a379 = Gen_S2 (w, ((m9_sl_CHAR){ (uint32_t *) m9s581, 5 }), err);
+        { __typeof__(Gen_S2 (w, ((m9_sl_CHAR){ (uint32_t *) m9s582, 5 }), err)) m9a383 = Gen_S2 (w, ((m9_sl_CHAR){ (uint32_t *) m9s582, 5 }), err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), m9a379, err);
+        DynStr_Append (&(d2), &(gpool), m9a383, err);
         if (err->exc) goto L_ret;
         }
         err->res = m9res;
@@ -9612,25 +9743,25 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
         if (err->exc) goto L_ret;
         goto L_ret;
       } }
-      Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s582, 52 }), err);
+      Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s583, 52 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s583, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s584, 1 });
       goto L_ret;
     } break;
     case INT64_C(75):
     {
       stRaise = true;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a380 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a384 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(lt) m9v = Gen_TagOfExpr (m9a380, err);
+      { __typeof__(lt) m9v = Gen_TagOfExpr (m9a384, err);
         if (err->exc) goto L_ret;
         lt = m9v;
       }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a381 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a385 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(l) m9v = Gen_EX (m9a381, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(l) m9v = Gen_EX (m9a385, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         l = m9v;
       }
@@ -9639,19 +9770,19 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
         if (err->exc) goto L_ret;
         w = m9v;
       }
-      bool m9t12 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s584, 5 }), err);
+      bool m9t12 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s585, 5 }), err);
       if (err->exc) goto L_ret;
       if (m9t12) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a382 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a386 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(a1) m9v = Gen_EX (m9a382, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(a1) m9v = Gen_EX (m9a386, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
           a1 = m9v;
         }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err))) m9a383 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err))) m9a387 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(a2) m9v = Gen_EX (m9a383, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(a2) m9v = Gen_EX (m9a387, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
           a2 = m9v;
         }
@@ -9660,47 +9791,43 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           if (err->exc) goto L_ret;
           d2 = m9v;
         }
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s585, 14 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s586, 14 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), l, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s586, 2 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s587, 2 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), w, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s587, 3 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s588, 3 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), l, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s588, 10 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s589, 10 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), w, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s589, 4 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s590, 4 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), a1, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s590, 2 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s591, 2 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), w, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s591, 4 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s592, 4 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), a2, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s592, 14 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s593, 14 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), w, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s593, 4 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s594, 4 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), w, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s594, 19 }), err);
-        if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), w, err);
-        if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s595, 3 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s595, 19 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), w, err);
         if (err->exc) goto L_ret;
@@ -9708,27 +9835,31 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), w, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s597, 12 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s597, 3 }), err);
         if (err->exc) goto L_ret;
         DynStr_Append (&(d2), &(gpool), w, err);
         if (err->exc) goto L_ret;
-        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s598, 7 }), err);
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s598, 12 }), err);
+        if (err->exc) goto L_ret;
+        DynStr_Append (&(d2), &(gpool), w, err);
+        if (err->exc) goto L_ret;
+        DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s599, 7 }), err);
         if (err->exc) goto L_ret;
         err->res = m9res;
         m9ret = DynStr_View (d2, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       } else {
-        bool m9t13 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s599, 3 }), err);
+        bool m9t13 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s600, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t13) {
           inr = NULL;
           { Ast_Node * desg = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (desg != NULL) {
-            { __typeof__(Gen_DesigDecl (desg, err)) m9a384 = Gen_DesigDecl (desg, err);
+            { __typeof__(Gen_DesigDecl (desg, err)) m9a388 = Gen_DesigDecl (desg, err);
               if (err->exc) goto L_ret;
-            { __typeof__(inr) m9v = Gen_Resolve (m9a384, err);
+            { __typeof__(inr) m9v = Gen_Resolve (m9a388, err);
               if (err->exc) goto L_ret;
               inr = m9v;
             }
@@ -9737,29 +9868,29 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           { Ast_Node * inn = inr;
           if (inn != NULL) {
             if ((inn->kind != Ast_NArrayType)) {
-              Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s600, 36 }), err);
+              Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s601, 36 }), err);
               if (err->exc) goto L_ret;
               err->res = m9res;
-              m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s601, 1 });
+              m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s602, 1 });
               goto L_ret;
             }
-            { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a385 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a389 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(a1) m9v = Gen_EX (m9a385, (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(a1) m9v = Gen_EX (m9a389, (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
               a1 = m9v;
             }
             }
-            { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err))) m9a386 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err))) m9a390 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(2), e->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(a2) m9v = Gen_EX (m9a386, (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(a2) m9v = Gen_EX (m9a390, (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
               a2 = m9v;
             }
             }
-            { __typeof__((*(Ast_Node * *) m9_at (inn->kids.p, INT64_C(0), inn->kids.len, sizeof (Ast_Node *), err))) m9a387 = (*(Ast_Node * *) m9_at (inn->kids.p, INT64_C(0), inn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (inn->kids.p, INT64_C(0), inn->kids.len, sizeof (Ast_Node *), err))) m9a391 = (*(Ast_Node * *) m9_at (inn->kids.p, INT64_C(0), inn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(cnt) m9v = Gen_ArrCount2 (m9a387, err);
+            { __typeof__(cnt) m9v = Gen_ArrCount2 (m9a391, err);
               if (err->exc) goto L_ret;
               cnt = m9v;
             }
@@ -9768,88 +9899,120 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
               if (err->exc) goto L_ret;
               d2 = m9v;
             }
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s602, 11 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s603, 11 }), err);
             if (err->exc) goto L_ret;
             DynStr_Append (&(d2), &(gpool), w, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s603, 4 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s604, 4 }), err);
             if (err->exc) goto L_ret;
             DynStr_Append (&(d2), &(gpool), a1, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s604, 2 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s605, 2 }), err);
             if (err->exc) goto L_ret;
             DynStr_Append (&(d2), &(gpool), w, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s605, 4 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s606, 4 }), err);
             if (err->exc) goto L_ret;
             DynStr_Append (&(d2), &(gpool), a2, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s606, 3 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s607, 3 }), err);
             if (err->exc) goto L_ret;
-            { __typeof__((*(Ast_Node * *) m9_at (inn->kids.p, INT64_C(1), inn->kids.len, sizeof (Ast_Node *), err))) m9a388 = (*(Ast_Node * *) m9_at (inn->kids.p, INT64_C(1), inn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (inn->kids.p, INT64_C(1), inn->kids.len, sizeof (Ast_Node *), err))) m9a392 = (*(Ast_Node * *) m9_at (inn->kids.p, INT64_C(1), inn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_SliceTy (m9a388, err)) m9a389 = Gen_SliceTy (m9a388, err);
+            { __typeof__(Gen_SliceTy (m9a392, err)) m9a393 = Gen_SliceTy (m9a392, err);
               if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), m9a389, err);
+            DynStr_Append (&(d2), &(gpool), m9a393, err);
             if (err->exc) goto L_ret;
             }
             }
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s607, 4 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s608, 4 }), err);
             if (err->exc) goto L_ret;
             DynStr_Append (&(d2), &(gpool), l, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s608, 20 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s609, 20 }), err);
             if (err->exc) goto L_ret;
             DynStr_Append (&(d2), &(gpool), w, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s609, 3 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s610, 3 }), err);
             if (err->exc) goto L_ret;
             DynStr_Append (&(d2), &(gpool), w, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s610, 11 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s611, 11 }), err);
             if (err->exc) goto L_ret;
             DynStr_Append (&(d2), &(gpool), cnt, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s611, 9 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s612, 9 }), err);
             if (err->exc) goto L_ret;
             DynStr_Append (&(d2), &(gpool), w, err);
             if (err->exc) goto L_ret;
-            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s612, 7 }), err);
+            DynStr_Append (&(d2), &(gpool), ((m9_sl_CHAR){ (uint32_t *) m9s613, 7 }), err);
             if (err->exc) goto L_ret;
             err->res = m9res;
             m9ret = DynStr_View (d2, err);
             if (err->exc) goto L_ret;
             goto L_ret;
           } else {
-            Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s613, 37 }), err);
+            Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s614, 37 }), err);
             if (err->exc) goto L_ret;
             err->res = m9res;
-            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s614, 1 });
+            m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s615, 1 });
             goto L_ret;
           } }
       } else {
-        Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s615, 37 }), err);
+        Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s616, 37 }), err);
         if (err->exc) goto L_ret;
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s616, 1 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s617, 1 });
         goto L_ret;
       } }
     } break;
+    case INT64_C(62):
+    {
+      { Ast_Node * isr = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      if (err->exc) goto L_ret;
+      if (isr != NULL) {
+        if (((isr->kind == Ast_NIsSome) && ((isr->a).len == INT64_C(0)))) {
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a394 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+            if (err->exc) goto L_ret;
+          { __typeof__(isx) m9v = Gen_EX (m9a394, (m9_sl_CHAR){ NULL, 0 }, err);
+            if (err->exc) goto L_ret;
+            isx = m9v;
+          }
+          }
+          if (isr->f1) {
+            err->res = m9res;
+            m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s618, 1 }), isx, ((m9_sl_CHAR){ (uint32_t *) m9s619, 9 }), err);
+            if (err->exc) goto L_ret;
+            goto L_ret;
+          } else {
+            err->res = m9res;
+            m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s620, 1 }), isx, ((m9_sl_CHAR){ (uint32_t *) m9s621, 9 }), err);
+            if (err->exc) goto L_ret;
+            goto L_ret;
+          }
+        }
+      } }
+      Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s622, 64 }), err);
+      if (err->exc) goto L_ret;
+      err->res = m9res;
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s623, 1 });
+      goto L_ret;
+    } break;
     case INT64_C(60):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a390 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a395 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(lt) m9v = Gen_TagOfExpr (m9a390, err);
+      { __typeof__(lt) m9v = Gen_TagOfExpr (m9a395, err);
         if (err->exc) goto L_ret;
         lt = m9v;
       }
       }
-      bool m9t14 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s617, 3 }), err);
+      bool m9t14 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s624, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t14) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a391 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a396 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(lt) m9v = Gen_TagOfExpr (m9a391, err);
+        { __typeof__(lt) m9v = Gen_TagOfExpr (m9a396, err);
           if (err->exc) goto L_ret;
           lt = m9v;
         }
@@ -9858,9 +10021,9 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
       bool m9t15 = Gen_IsAdaptive ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
       if (m9t15) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a392 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a397 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(lt) m9v = Gen_TagOfExpr (m9a392, err);
+        { __typeof__(lt) m9v = Gen_TagOfExpr (m9a397, err);
           if (err->exc) goto L_ret;
           lt = m9v;
         }
@@ -9868,104 +10031,104 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
       }
       isCat = false;
       rt = (m9_sl_CHAR){ NULL, 0 };
-      bool m9t16 = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s618, 1 }), err);
+      bool m9t16 = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s625, 1 }), err);
       if (err->exc) goto L_ret;
       if (m9t16) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a393 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a398 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(rt) m9v = Gen_TagOfExpr (m9a393, err);
+        { __typeof__(rt) m9v = Gen_TagOfExpr (m9a398, err);
           if (err->exc) goto L_ret;
           rt = m9v;
         }
         }
-        bool m9t17 = (((DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s619, 5 }), err) || DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s620, 4 }), err)) || DynStr_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s621, 5 }), err)) || DynStr_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s622, 4 }), err));
+        bool m9t17 = (((DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s626, 5 }), err) || DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s627, 4 }), err)) || DynStr_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s628, 5 }), err)) || DynStr_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s629, 4 }), err));
         if (err->exc) goto L_ret;
         if (m9t17) {
           isCat = true;
         }
       }
       if (isCat) {
-        bool m9t18 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s623, 4 }), err);
+        bool m9t18 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s630, 4 }), err);
         if (err->exc) goto L_ret;
         if (m9t18) {
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a394 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a399 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(l) m9v = Gen_EX (m9a394, ((m9_sl_CHAR){ (uint32_t *) m9s624, 4 }), err);
+          { __typeof__(l) m9v = Gen_EX (m9a399, ((m9_sl_CHAR){ (uint32_t *) m9s631, 4 }), err);
             if (err->exc) goto L_ret;
             l = m9v;
           }
           }
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a395 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a400 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(r) m9v = Gen_EX (m9a395, ((m9_sl_CHAR){ (uint32_t *) m9s625, 5 }), err);
+          { __typeof__(r) m9v = Gen_EX (m9a400, ((m9_sl_CHAR){ (uint32_t *) m9s632, 5 }), err);
             if (err->exc) goto L_ret;
             r = m9v;
           }
           }
           stRaise = true;
           err->res = m9res;
-          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s626, 21 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s627, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s628, 6 }), err);
+          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s633, 21 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s634, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s635, 6 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
-        bool m9t19 = DynStr_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s629, 4 }), err);
+        bool m9t19 = DynStr_Eq (rt, ((m9_sl_CHAR){ (uint32_t *) m9s636, 4 }), err);
         if (err->exc) goto L_ret;
         if (m9t19) {
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a396 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a401 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(l) m9v = Gen_EX (m9a396, ((m9_sl_CHAR){ (uint32_t *) m9s630, 5 }), err);
+          { __typeof__(l) m9v = Gen_EX (m9a401, ((m9_sl_CHAR){ (uint32_t *) m9s637, 5 }), err);
             if (err->exc) goto L_ret;
             l = m9v;
           }
           }
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a397 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a402 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(r) m9v = Gen_EX (m9a397, ((m9_sl_CHAR){ (uint32_t *) m9s631, 4 }), err);
+          { __typeof__(r) m9v = Gen_EX (m9a402, ((m9_sl_CHAR){ (uint32_t *) m9s638, 4 }), err);
             if (err->exc) goto L_ret;
             r = m9v;
           }
           }
           stRaise = true;
           err->res = m9res;
-          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s632, 21 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s633, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s634, 6 }), err);
+          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s639, 21 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s640, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s641, 6 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a398 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a403 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(l) m9v = Gen_EX (m9a398, ((m9_sl_CHAR){ (uint32_t *) m9s635, 5 }), err);
+        { __typeof__(l) m9v = Gen_EX (m9a403, ((m9_sl_CHAR){ (uint32_t *) m9s642, 5 }), err);
           if (err->exc) goto L_ret;
           l = m9v;
         }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a399 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a404 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(r) m9v = Gen_EX (m9a399, ((m9_sl_CHAR){ (uint32_t *) m9s636, 5 }), err);
+        { __typeof__(r) m9v = Gen_EX (m9a404, ((m9_sl_CHAR){ (uint32_t *) m9s643, 5 }), err);
           if (err->exc) goto L_ret;
           r = m9v;
         }
         }
         stRaise = true;
         err->res = m9res;
-        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s637, 18 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s638, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s639, 6 }), err);
+        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s644, 18 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s645, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s646, 6 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
       w = (m9_sl_CHAR){ NULL, 0 };
-      bool m9t20 = (DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s640, 4 }), err) || DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s641, 4 }), err));
+      bool m9t20 = (DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s647, 4 }), err) || DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s648, 4 }), err));
       if (err->exc) goto L_ret;
       if (m9t20) {
-        w = ((m9_sl_CHAR){ (uint32_t *) m9s642, 4 });
+        w = ((m9_sl_CHAR){ (uint32_t *) m9s649, 4 });
       }
-      bool m9t21 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s643, 3 }), err);
+      bool m9t21 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s650, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t21) {
-        w = ((m9_sl_CHAR){ (uint32_t *) m9s644, 3 });
+        w = ((m9_sl_CHAR){ (uint32_t *) m9s651, 3 });
       }
-      bool m9t22 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s645, 3 }), err);
+      bool m9t22 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s652, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t22) {
-        w = ((m9_sl_CHAR){ (uint32_t *) m9s646, 3 });
+        w = ((m9_sl_CHAR){ (uint32_t *) m9s653, 3 });
       }
       if (((want).len > INT64_C(0))) {
         bool m9t23 = Gen_IsAdaptive (k, err);
@@ -9974,114 +10137,114 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           w = want;
         }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a400 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a405 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(l) m9v = Gen_EX (m9a400, w, err);
+      { __typeof__(l) m9v = Gen_EX (m9a405, w, err);
         if (err->exc) goto L_ret;
         l = m9v;
       }
       }
-      bool m9t24 = (DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s647, 3 }), err) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s648, 2 }), err));
+      bool m9t24 = (DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s654, 3 }), err) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s655, 2 }), err));
       if (err->exc) goto L_ret;
       if (m9t24) {
         svHoist = hoistOk;
         hoistOk = false;
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a401 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a406 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(r) m9v = Gen_EX (m9a401, w, err);
+        { __typeof__(r) m9v = Gen_EX (m9a406, w, err);
           if (err->exc) goto L_ret;
           r = m9v;
         }
         }
         hoistOk = svHoist;
       } else {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a402 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a407 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(r) m9v = Gen_EX (m9a402, w, err);
+        { __typeof__(r) m9v = Gen_EX (m9a407, w, err);
           if (err->exc) goto L_ret;
           r = m9v;
         }
         }
       }
       cop = e->a;
-      bool m9t25 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s649, 1 }), err);
+      bool m9t25 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s656, 1 }), err);
       if (err->exc) goto L_ret;
       if (m9t25) {
-        cop = ((m9_sl_CHAR){ (uint32_t *) m9s650, 2 });
+        cop = ((m9_sl_CHAR){ (uint32_t *) m9s657, 2 });
       } else {
-        bool m9t26 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s651, 1 }), err);
+        bool m9t26 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s658, 1 }), err);
         if (err->exc) goto L_ret;
         if (m9t26) {
-          cop = ((m9_sl_CHAR){ (uint32_t *) m9s652, 2 });
+          cop = ((m9_sl_CHAR){ (uint32_t *) m9s659, 2 });
       } else {
-        bool m9t27 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s653, 3 }), err);
+        bool m9t27 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s660, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t27) {
-          cop = ((m9_sl_CHAR){ (uint32_t *) m9s654, 2 });
+          cop = ((m9_sl_CHAR){ (uint32_t *) m9s661, 2 });
       } else {
-        bool m9t28 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s655, 2 }), err);
+        bool m9t28 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s662, 2 }), err);
         if (err->exc) goto L_ret;
         if (m9t28) {
-          cop = ((m9_sl_CHAR){ (uint32_t *) m9s656, 2 });
+          cop = ((m9_sl_CHAR){ (uint32_t *) m9s663, 2 });
       } } } }
-      bool m9t29 = ((DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s657, 1 }), err) || DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s658, 1 }), err)) || DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s659, 1 }), err));
+      bool m9t29 = ((DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s664, 1 }), err) || DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s665, 1 }), err)) || DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s666, 1 }), err));
       if (err->exc) goto L_ret;
       if (m9t29) {
-        bool m9t30 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s660, 1 }), err);
+        bool m9t30 = DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s667, 1 }), err);
         if (err->exc) goto L_ret;
         if (m9t30) {
-          Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s661, 43 }), err);
+          Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s668, 43 }), err);
           if (err->exc) goto L_ret;
           err->res = m9res;
-          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s662, 1 });
+          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s669, 1 });
           goto L_ret;
         }
-        bool m9t31 = (DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s663, 3 }), err) || DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s664, 3 }), err));
+        bool m9t31 = (DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s670, 3 }), err) || DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s671, 3 }), err));
         if (err->exc) goto L_ret;
         if (m9t31) {
           err->res = m9res;
-          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s666, 1 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s667, 1 }), err)) m9a403 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s666, 1 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s667, 1 }), err);
+          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s673, 1 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s674, 1 }), err)) m9a408 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s673, 1 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s674, 1 }), err);
             if (err->exc) goto L_ret;
-          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s665, 1 }), l, m9a403, r, ((m9_sl_CHAR){ (uint32_t *) m9s668, 1 }), err);
+          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s672, 1 }), l, m9a408, r, ((m9_sl_CHAR){ (uint32_t *) m9s675, 1 }), err);
           if (err->exc) goto L_ret;
           }
           goto L_ret;
         } else {
           stRaise = true;
-          bool m9t32 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s669, 1 }), err);
+          bool m9t32 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s676, 1 }), err);
           if (err->exc) goto L_ret;
           if (m9t32) {
             err->res = m9res;
-            { __typeof__(Gen_ISuf (lt, err)) m9a404 = Gen_ISuf (lt, err);
+            { __typeof__(Gen_ISuf (lt, err)) m9a409 = Gen_ISuf (lt, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s670, 7 }), m9a404, ((m9_sl_CHAR){ (uint32_t *) m9s671, 2 }), err)) m9a405 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s670, 7 }), m9a404, ((m9_sl_CHAR){ (uint32_t *) m9s671, 2 }), err);
+            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s677, 7 }), m9a409, ((m9_sl_CHAR){ (uint32_t *) m9s678, 2 }), err)) m9a410 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s677, 7 }), m9a409, ((m9_sl_CHAR){ (uint32_t *) m9s678, 2 }), err);
               if (err->exc) goto L_ret;
-            m9ret = Gen_S5 (m9a405, l, ((m9_sl_CHAR){ (uint32_t *) m9s672, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s673, 6 }), err);
+            m9ret = Gen_S5 (m9a410, l, ((m9_sl_CHAR){ (uint32_t *) m9s679, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s680, 6 }), err);
             if (err->exc) goto L_ret;
             }
             }
             goto L_ret;
           } else {
-            bool m9t33 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s674, 1 }), err);
+            bool m9t33 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s681, 1 }), err);
             if (err->exc) goto L_ret;
             if (m9t33) {
               err->res = m9res;
-              { __typeof__(Gen_ISuf (lt, err)) m9a406 = Gen_ISuf (lt, err);
+              { __typeof__(Gen_ISuf (lt, err)) m9a411 = Gen_ISuf (lt, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s675, 7 }), m9a406, ((m9_sl_CHAR){ (uint32_t *) m9s676, 2 }), err)) m9a407 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s675, 7 }), m9a406, ((m9_sl_CHAR){ (uint32_t *) m9s676, 2 }), err);
+              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s682, 7 }), m9a411, ((m9_sl_CHAR){ (uint32_t *) m9s683, 2 }), err)) m9a412 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s682, 7 }), m9a411, ((m9_sl_CHAR){ (uint32_t *) m9s683, 2 }), err);
                 if (err->exc) goto L_ret;
-              m9ret = Gen_S5 (m9a407, l, ((m9_sl_CHAR){ (uint32_t *) m9s677, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s678, 6 }), err);
+              m9ret = Gen_S5 (m9a412, l, ((m9_sl_CHAR){ (uint32_t *) m9s684, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s685, 6 }), err);
               if (err->exc) goto L_ret;
               }
               }
               goto L_ret;
           } else {
             err->res = m9res;
-            { __typeof__(Gen_ISuf (lt, err)) m9a408 = Gen_ISuf (lt, err);
+            { __typeof__(Gen_ISuf (lt, err)) m9a413 = Gen_ISuf (lt, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s679, 7 }), m9a408, ((m9_sl_CHAR){ (uint32_t *) m9s680, 2 }), err)) m9a409 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s679, 7 }), m9a408, ((m9_sl_CHAR){ (uint32_t *) m9s680, 2 }), err);
+            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s686, 7 }), m9a413, ((m9_sl_CHAR){ (uint32_t *) m9s687, 2 }), err)) m9a414 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s686, 7 }), m9a413, ((m9_sl_CHAR){ (uint32_t *) m9s687, 2 }), err);
               if (err->exc) goto L_ret;
-            m9ret = Gen_S5 (m9a409, l, ((m9_sl_CHAR){ (uint32_t *) m9s681, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s682, 6 }), err);
+            m9ret = Gen_S5 (m9a414, l, ((m9_sl_CHAR){ (uint32_t *) m9s688, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s689, 6 }), err);
             if (err->exc) goto L_ret;
             }
             }
@@ -10089,80 +10252,80 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
           } }
         }
       } else {
-        bool m9t34 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s683, 1 }), err);
+        bool m9t34 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s690, 1 }), err);
         if (err->exc) goto L_ret;
         if (m9t34) {
           err->res = m9res;
-          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s684, 1 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s685, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s686, 1 }), err);
+          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s691, 1 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s692, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s693, 1 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
       } else {
-        bool m9t35 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s687, 3 }), err);
+        bool m9t35 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s694, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t35) {
           stRaise = true;
           err->res = m9res;
-          { __typeof__(Gen_ISuf (lt, err)) m9a410 = Gen_ISuf (lt, err);
+          { __typeof__(Gen_ISuf (lt, err)) m9a415 = Gen_ISuf (lt, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s688, 7 }), m9a410, ((m9_sl_CHAR){ (uint32_t *) m9s689, 2 }), err)) m9a411 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s688, 7 }), m9a410, ((m9_sl_CHAR){ (uint32_t *) m9s689, 2 }), err);
+          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s695, 7 }), m9a415, ((m9_sl_CHAR){ (uint32_t *) m9s696, 2 }), err)) m9a416 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s695, 7 }), m9a415, ((m9_sl_CHAR){ (uint32_t *) m9s696, 2 }), err);
             if (err->exc) goto L_ret;
-          m9ret = Gen_S5 (m9a411, l, ((m9_sl_CHAR){ (uint32_t *) m9s690, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s691, 6 }), err);
+          m9ret = Gen_S5 (m9a416, l, ((m9_sl_CHAR){ (uint32_t *) m9s697, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s698, 6 }), err);
           if (err->exc) goto L_ret;
           }
           }
           goto L_ret;
       } else {
-        bool m9t36 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s692, 3 }), err);
+        bool m9t36 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s699, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t36) {
           stRaise = true;
           err->res = m9res;
-          { __typeof__(Gen_ISuf (lt, err)) m9a412 = Gen_ISuf (lt, err);
+          { __typeof__(Gen_ISuf (lt, err)) m9a417 = Gen_ISuf (lt, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s693, 7 }), m9a412, ((m9_sl_CHAR){ (uint32_t *) m9s694, 2 }), err)) m9a413 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s693, 7 }), m9a412, ((m9_sl_CHAR){ (uint32_t *) m9s694, 2 }), err);
+          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s700, 7 }), m9a417, ((m9_sl_CHAR){ (uint32_t *) m9s701, 2 }), err)) m9a418 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s700, 7 }), m9a417, ((m9_sl_CHAR){ (uint32_t *) m9s701, 2 }), err);
             if (err->exc) goto L_ret;
-          m9ret = Gen_S5 (m9a413, l, ((m9_sl_CHAR){ (uint32_t *) m9s695, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s696, 6 }), err);
+          m9ret = Gen_S5 (m9a418, l, ((m9_sl_CHAR){ (uint32_t *) m9s702, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s703, 6 }), err);
           if (err->exc) goto L_ret;
           }
           }
           goto L_ret;
       } else {
-        bool m9t37 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s697, 2 }), err);
+        bool m9t37 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s704, 2 }), err);
         if (err->exc) goto L_ret;
         if (m9t37) {
           err->res = m9res;
-          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s698, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s699, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s700, 1 }), err);
+          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s705, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s706, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s707, 1 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
       } else {
-        bool m9t38 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s701, 2 }), err);
+        bool m9t38 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s708, 2 }), err);
         if (err->exc) goto L_ret;
         if (m9t38) {
           err->res = m9res;
-          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s702, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s703, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s704, 1 }), err);
+          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s709, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s710, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s711, 1 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
       } else {
-        bool m9t39 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s705, 2 }), err);
+        bool m9t39 = DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s712, 2 }), err);
         if (err->exc) goto L_ret;
         if (m9t39) {
           err->res = m9res;
-          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s706, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s707, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s708, 1 }), err);
+          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s713, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s714, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s715, 1 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
       } else {
-        bool m9t40 = (((DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s709, 2 }), err) || DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s710, 2 }), err))) && Gen_StartsW (lt, ((m9_sl_CHAR){ (uint32_t *) m9s711, 3 }), err));
+        bool m9t40 = (((DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s716, 2 }), err) || DynStr_Eq (cop, ((m9_sl_CHAR){ (uint32_t *) m9s717, 2 }), err))) && Gen_StartsW (lt, ((m9_sl_CHAR){ (uint32_t *) m9s718, 3 }), err));
         if (err->exc) goto L_ret;
         if (m9t40) {
           err->res = m9res;
-          m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s712, 2 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s713, 6 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s714, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s715, 6 }), err);
+          m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s719, 2 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s720, 6 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s721, 2 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s722, 6 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
       } else {
         err->res = m9res;
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s717, 1 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s718, 1 }), err)) m9a414 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s717, 1 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s718, 1 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s724, 1 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s725, 1 }), err)) m9a419 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s724, 1 }), cop, ((m9_sl_CHAR){ (uint32_t *) m9s725, 1 }), err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s716, 1 }), l, m9a414, r, ((m9_sl_CHAR){ (uint32_t *) m9s719, 1 }), err);
+        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s723, 1 }), l, m9a419, r, ((m9_sl_CHAR){ (uint32_t *) m9s726, 1 }), err);
         if (err->exc) goto L_ret;
         }
         goto L_ret;
@@ -10170,46 +10333,46 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
     } break;
     case INT64_C(61):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a415 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a420 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(l) m9v = Gen_EX (m9a415, want, err);
+      { __typeof__(l) m9v = Gen_EX (m9a420, want, err);
         if (err->exc) goto L_ret;
         l = m9v;
       }
       }
-      bool m9t41 = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s720, 3 }), err);
+      bool m9t41 = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s727, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t41) {
         err->res = m9res;
-        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s721, 2 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s722, 1 }), err);
+        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s728, 2 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s729, 1 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       } else {
-        bool m9t42 = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s723, 1 }), err);
+        bool m9t42 = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s730, 1 }), err);
         if (err->exc) goto L_ret;
         if (m9t42) {
-          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a416 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a421 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(lt) m9v = Gen_TagOfExpr (m9a416, err);
+          { __typeof__(lt) m9v = Gen_TagOfExpr (m9a421, err);
             if (err->exc) goto L_ret;
             lt = m9v;
           }
           }
-          bool m9t43 = (DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s724, 3 }), err) || DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s725, 3 }), err));
+          bool m9t43 = (DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s731, 3 }), err) || DynStr_Eq (lt, ((m9_sl_CHAR){ (uint32_t *) m9s732, 3 }), err));
           if (err->exc) goto L_ret;
           if (m9t43) {
             err->res = m9res;
-            m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s726, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s727, 1 }), err);
+            m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s733, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s734, 1 }), err);
             if (err->exc) goto L_ret;
             goto L_ret;
           } else {
             stRaise = true;
             err->res = m9res;
-            { __typeof__(Gen_ISuf (lt, err)) m9a417 = Gen_ISuf (lt, err);
+            { __typeof__(Gen_ISuf (lt, err)) m9a422 = Gen_ISuf (lt, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s728, 7 }), m9a417, ((m9_sl_CHAR){ (uint32_t *) m9s729, 2 }), err)) m9a418 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s728, 7 }), m9a417, ((m9_sl_CHAR){ (uint32_t *) m9s729, 2 }), err);
+            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s735, 7 }), m9a422, ((m9_sl_CHAR){ (uint32_t *) m9s736, 2 }), err)) m9a423 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s735, 7 }), m9a422, ((m9_sl_CHAR){ (uint32_t *) m9s736, 2 }), err);
               if (err->exc) goto L_ret;
-            m9ret = Gen_S3 (m9a418, l, ((m9_sl_CHAR){ (uint32_t *) m9s730, 6 }), err);
+            m9ret = Gen_S3 (m9a423, l, ((m9_sl_CHAR){ (uint32_t *) m9s737, 6 }), err);
             if (err->exc) goto L_ret;
             }
             }
@@ -10222,16 +10385,16 @@ static m9_sl_CHAR Gen_EX (Ast_Node * k, m9_sl_CHAR want, m9_state *err)
       } }
     } break;
     default: {
-      Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s731, 31 }), err);
+      Gen_Err2 (e->line, ((m9_sl_CHAR){ (uint32_t *) m9s738, 31 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s732, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s739, 1 });
       goto L_ret;
     } break;
     } }
   } }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s733, 1 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s740, 1 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -10280,7 +10443,7 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
   bool ser = false; (void) ser;
   bool pv = false; (void) pv;
   DynStr_DString * d3 = NULL; (void) d3;
-  (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s734, 1 });
+  (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s741, 1 });
   name = (m9_sl_CHAR){ NULL, 0 };
   nargs = INT64_C(0);
   eln = INT64_C(0);
@@ -10300,7 +10463,7 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       if (err->exc) goto L_ret;
       if (sf != NULL) {
         if ((sf->kind == Ast_NSelField)) {
-          { __typeof__(name) m9v = Gen_S3 (name, ((m9_sl_CHAR){ (uint32_t *) m9s735, 1 }), sf->a, err);
+          { __typeof__(name) m9v = Gen_S3 (name, ((m9_sl_CHAR){ (uint32_t *) m9s742, 1 }), sf->a, err);
             if (err->exc) goto L_ret;
             name = m9v;
           }
@@ -10308,10 +10471,10 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       } }
     } }
   } else {
-    Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s736, 31 }), err);
+    Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s743, 31 }), err);
     if (err->exc) goto L_ret;
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s737, 1 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s744, 1 });
     goto L_ret;
   } }
   { Ast_Node * al0 = argl;
@@ -10321,7 +10484,7 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
   { Ast_Node * rn = Gen_RecordAt (name, &(cfunc), &(gname), &(xtn), err);
   if (err->exc) goto L_ret;
   if (rn != NULL) {
-    (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s738, 3 });
+    (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s745, 3 });
     args = (m9_sl_CHAR){ NULL, 0 };
     k2 = INT64_C(0);
     { Ast_Node * rfs = (*(Ast_Node * *) m9_at (rn->kids.p, INT64_C(1), rn->kids.len, sizeof (Ast_Node *), err));
@@ -10347,23 +10510,23 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
                 { Ast_Node * ral = argl;
                 if (ral != NULL) {
                   if (((args).len > INT64_C(0))) {
-                    { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s739, 2 }), err);
+                    { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s746, 2 }), err);
                       if (err->exc) goto L_ret;
                       args = m9v;
                     }
                   }
-                  { __typeof__((*(Ast_Node * *) m9_at (rg->kids.p, INT64_C(1), rg->kids.len, sizeof (Ast_Node *), err))) m9a419 = (*(Ast_Node * *) m9_at (rg->kids.p, INT64_C(1), rg->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (rg->kids.p, INT64_C(1), rg->kids.len, sizeof (Ast_Node *), err))) m9a424 = (*(Ast_Node * *) m9_at (rg->kids.p, INT64_C(1), rg->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(want2) m9v = Gen_TagOfType (m9a419, err);
+                  { __typeof__(want2) m9v = Gen_TagOfType (m9a424, err);
                     if (err->exc) goto L_ret;
                     want2 = m9v;
                   }
                   }
-                  { __typeof__((*(Ast_Node * *) m9_at (ral->kids.p, k2, ral->kids.len, sizeof (Ast_Node *), err))) m9a420 = (*(Ast_Node * *) m9_at (ral->kids.p, k2, ral->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (ral->kids.p, k2, ral->kids.len, sizeof (Ast_Node *), err))) m9a425 = (*(Ast_Node * *) m9_at (ral->kids.p, k2, ral->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(Gen_EX (m9a420, want2, err)) m9a421 = Gen_EX (m9a420, want2, err);
+                  { __typeof__(Gen_EX (m9a425, want2, err)) m9a426 = Gen_EX (m9a425, want2, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(args) m9v = Gen_S2 (args, m9a421, err);
+                  { __typeof__(args) m9v = Gen_S2 (args, m9a426, err);
                     if (err->exc) goto L_ret;
                     args = m9v;
                   }
@@ -10381,11 +10544,11 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       } }
     } }
     if ((k2 != nargs)) {
-      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s740, 28 }), err);
+      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s747, 28 }), err);
       if (err->exc) goto L_ret;
     }
     err->res = m9res;
-    m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s741, 2 }), cfunc, ((m9_sl_CHAR){ (uint32_t *) m9s742, 3 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s743, 3 }), err);
+    m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s748, 2 }), cfunc, ((m9_sl_CHAR){ (uint32_t *) m9s749, 3 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s750, 3 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   } }
@@ -10398,21 +10561,21 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
         nf32 = m9v;
       }
       if ((nf32 >= INT64_C(0))) {
-        { __typeof__((*tag)) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s744, 3 }), name, err);
+        { __typeof__((*tag)) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s751, 3 }), name, err);
           if (err->exc) goto L_ret;
           (*tag) = m9v;
         }
         stRaise = true;
         err->res = m9res;
-        { __typeof__(Gen_CRPrefix (name, err)) m9a422 = Gen_CRPrefix (name, err);
+        { __typeof__(Gen_CRPrefix (name, err)) m9a427 = Gen_CRPrefix (name, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_Arg0 (argl, err)) m9a423 = Gen_Arg0 (argl, err);
+        { __typeof__(Gen_Arg0 (argl, err)) m9a428 = Gen_Arg0 (argl, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a423, (m9_sl_CHAR){ NULL, 0 }, err)) m9a424 = Gen_EX (m9a423, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_EX (m9a428, (m9_sl_CHAR){ NULL, 0 }, err)) m9a429 = Gen_EX (m9a428, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_ItoA (nf32, err)) m9a425 = Gen_ItoA (nf32, err);
+        { __typeof__(Gen_ItoA (nf32, err)) m9a430 = Gen_ItoA (nf32, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s745, 2 }), m9a422, ((m9_sl_CHAR){ (uint32_t *) m9s746, 29 }), m9a424, ((m9_sl_CHAR){ (uint32_t *) m9s747, 11 }), m9a425, ((m9_sl_CHAR){ (uint32_t *) m9s748, 10 }), err);
+        m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s752, 2 }), m9a427, ((m9_sl_CHAR){ (uint32_t *) m9s753, 29 }), m9a429, ((m9_sl_CHAR){ (uint32_t *) m9s754, 11 }), m9a430, ((m9_sl_CHAR){ (uint32_t *) m9s755, 10 }), err);
         if (err->exc) goto L_ret;
         }
         }
@@ -10476,55 +10639,55 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
   }
   { Ast_Node * al = argl;
   if (al != NULL) {
-    bool m9t6 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s749, 3 }), err);
+    bool m9t6 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s756, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t6) {
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a426 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a431 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(at) m9v = Gen_TagOfExpr (m9a426, err);
+      { __typeof__(at) m9v = Gen_TagOfExpr (m9a431, err);
         if (err->exc) goto L_ret;
         at = m9v;
       }
       }
-      bool m9t7 = (DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s750, 4 }), err) && (nargs == INT64_C(2)));
+      bool m9t7 = (DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s757, 4 }), err) && (nargs == INT64_C(2)));
       if (err->exc) goto L_ret;
       if (m9t7) {
-        (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s751, 3 });
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a427 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s758, 3 });
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a432 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(e1) m9v = Gen_EX (m9a427, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(e1) m9v = Gen_EX (m9a432, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
           e1 = m9v;
         }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(1), al->kids.len, sizeof (Ast_Node *), err))) m9a428 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(1), al->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(1), al->kids.len, sizeof (Ast_Node *), err))) m9a433 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(1), al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(e2) m9v = Gen_EX (m9a428, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(e2) m9v = Gen_EX (m9a433, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
           e2 = m9v;
         }
         }
         err->res = m9res;
-        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s752, 1 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s753, 4 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s754, 1 }), err);
+        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s759, 1 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s760, 4 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s761, 1 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
-      bool m9t8 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s755, 5 }), err);
+      bool m9t8 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s762, 5 }), err);
       if (err->exc) goto L_ret;
       if (m9t8) {
-        (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s756, 3 });
+        (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s763, 3 });
         err->res = m9res;
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a429 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a434 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a429, (m9_sl_CHAR){ NULL, 0 }, err)) m9a430 = Gen_EX (m9a429, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_EX (m9a434, (m9_sl_CHAR){ NULL, 0 }, err)) m9a435 = Gen_EX (m9a434, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s757, 1 }), m9a430, ((m9_sl_CHAR){ (uint32_t *) m9s758, 5 }), err);
+        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s764, 1 }), m9a435, ((m9_sl_CHAR){ (uint32_t *) m9s765, 5 }), err);
         if (err->exc) goto L_ret;
         }
         }
         goto L_ret;
       }
-      bool m9t9 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s759, 3 }), err);
+      bool m9t9 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s766, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t9) {
         { Ast_Node * a0 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
@@ -10534,13 +10697,13 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           if (err->exc) goto L_ret;
           if (arr != NULL) {
             if ((arr->kind == Ast_NArrayType)) {
-              (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s760, 3 });
+              (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s767, 3 });
               err->res = m9res;
-              { __typeof__((*(Ast_Node * *) m9_at (arr->kids.p, INT64_C(0), arr->kids.len, sizeof (Ast_Node *), err))) m9a431 = (*(Ast_Node * *) m9_at (arr->kids.p, INT64_C(0), arr->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (arr->kids.p, INT64_C(0), arr->kids.len, sizeof (Ast_Node *), err))) m9a436 = (*(Ast_Node * *) m9_at (arr->kids.p, INT64_C(0), arr->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_ArrCount2 (m9a431, err)) m9a432 = Gen_ArrCount2 (m9a431, err);
+              { __typeof__(Gen_ArrCount2 (m9a436, err)) m9a437 = Gen_ArrCount2 (m9a436, err);
                 if (err->exc) goto L_ret;
-              m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s761, 8 }), m9a432, ((m9_sl_CHAR){ (uint32_t *) m9s762, 1 }), err);
+              m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s768, 8 }), m9a437, ((m9_sl_CHAR){ (uint32_t *) m9s769, 1 }), err);
               if (err->exc) goto L_ret;
               }
               }
@@ -10549,28 +10712,28 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           } }
         } }
       }
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s763, 3 });
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s770, 3 });
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a433 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a438 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_EX (m9a433, (m9_sl_CHAR){ NULL, 0 }, err)) m9a434 = Gen_EX (m9a433, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(Gen_EX (m9a438, (m9_sl_CHAR){ NULL, 0 }, err)) m9a439 = Gen_EX (m9a438, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s764, 1 }), m9a434, ((m9_sl_CHAR){ (uint32_t *) m9s765, 5 }), err);
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s771, 1 }), m9a439, ((m9_sl_CHAR){ (uint32_t *) m9s772, 5 }), err);
       if (err->exc) goto L_ret;
       }
       }
       goto L_ret;
     }
-    bool m9t10 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s766, 4 }), err);
+    bool m9t10 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s773, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t10) {
       vgrid = NULL;
       { Ast_Node * vg0 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (vg0 != NULL) {
-        { __typeof__(Gen_DesigDecl (vg0, err)) m9a435 = Gen_DesigDecl (vg0, err);
+        { __typeof__(Gen_DesigDecl (vg0, err)) m9a440 = Gen_DesigDecl (vg0, err);
           if (err->exc) goto L_ret;
-        { __typeof__(vgrid) m9v = Gen_Resolve (m9a435, err);
+        { __typeof__(vgrid) m9v = Gen_Resolve (m9a440, err);
           if (err->exc) goto L_ret;
           vgrid = m9v;
         }
@@ -10579,10 +10742,10 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       { Ast_Node * vd = vgrid;
       if (vd != NULL) {
         if ((vd->kind != Ast_NGridType)) {
-          Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s767, 18 }), err);
+          Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s774, 18 }), err);
           if (err->exc) goto L_ret;
           err->res = m9res;
-          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s768, 1 });
+          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s775, 1 });
           goto L_ret;
         }
         k2 = INT64_C(0);
@@ -10608,19 +10771,19 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           if (err->exc) goto L_ret;
           tn = m9v;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a436 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a441 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_ItoA (k2, err)) m9a437 = Gen_ItoA (k2, err);
+        { __typeof__(Gen_ItoA (k2, err)) m9a442 = Gen_ItoA (k2, err);
           if (err->exc) goto L_ret;
-        { __typeof__(want2) m9v = Gen_GridTy (m9a436, m9a437, err);
+        { __typeof__(want2) m9v = Gen_GridTy (m9a441, m9a442, err);
           if (err->exc) goto L_ret;
           want2 = m9v;
         }
         }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a438 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a443 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(e1) m9v = Gen_EX (m9a438, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(e1) m9v = Gen_EX (m9a443, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
           e1 = m9v;
         }
@@ -10629,14 +10792,14 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           if (err->exc) goto L_ret;
           d3 = m9v;
         }
-        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s769, 3 }), tn, ((m9_sl_CHAR){ (uint32_t *) m9s770, 1 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s771, 3 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s772, 2 }), err)) m9a439 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s769, 3 }), tn, ((m9_sl_CHAR){ (uint32_t *) m9s770, 1 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s771, 3 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s772, 2 }), err);
+        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s776, 3 }), tn, ((m9_sl_CHAR){ (uint32_t *) m9s777, 1 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s778, 3 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s779, 2 }), err)) m9a444 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s776, 3 }), tn, ((m9_sl_CHAR){ (uint32_t *) m9s777, 1 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s778, 3 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s779, 2 }), err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d3), &(gpool), m9a439, err);
+        DynStr_Append (&(d3), &(gpool), m9a444, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__(Gen_S7 (want2, ((m9_sl_CHAR){ (uint32_t *) m9s773, 1 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s774, 11 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s775, 7 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a440 = Gen_S7 (want2, ((m9_sl_CHAR){ (uint32_t *) m9s773, 1 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s774, 11 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s775, 7 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_S7 (want2, ((m9_sl_CHAR){ (uint32_t *) m9s780, 1 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s781, 11 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s782, 7 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a445 = Gen_S7 (want2, ((m9_sl_CHAR){ (uint32_t *) m9s780, 1 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s781, 11 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s782, 7 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d3), &(gpool), m9a440, err);
+        DynStr_Append (&(d3), &(gpool), m9a445, err);
         if (err->exc) goto L_ret;
         }
         g = INT64_C(0);
@@ -10648,29 +10811,29 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           bool m9t14 = Gen_IsAllArg ((*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err)), err);
           if (err->exc) goto L_ret;
           if (m9t14) {
-            { __typeof__(Gen_ItoA (g, err)) m9a441 = Gen_ItoA (g, err);
+            { __typeof__(Gen_ItoA (g, err)) m9a446 = Gen_ItoA (g, err);
               if (err->exc) goto L_ret;
-            { __typeof__(m9_sub_i64 (j, INT64_C(1), err)) m9a442 = m9_sub_i64 (j, INT64_C(1), err);
+            { __typeof__(m9_sub_i64 (j, INT64_C(1), err)) m9a447 = m9_sub_i64 (j, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_ItoA (m9a442, err)) m9a443 = Gen_ItoA (m9a442, err);
+            { __typeof__(Gen_ItoA (m9a447, err)) m9a448 = Gen_ItoA (m9a447, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s776, 4 }), m9a441, ((m9_sl_CHAR){ (uint32_t *) m9s777, 4 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s778, 3 }), m9a443, ((m9_sl_CHAR){ (uint32_t *) m9s779, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a444 = Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s776, 4 }), m9a441, ((m9_sl_CHAR){ (uint32_t *) m9s777, 4 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s778, 3 }), m9a443, ((m9_sl_CHAR){ (uint32_t *) m9s779, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s783, 4 }), m9a446, ((m9_sl_CHAR){ (uint32_t *) m9s784, 4 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s785, 3 }), m9a448, ((m9_sl_CHAR){ (uint32_t *) m9s786, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a449 = Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s783, 4 }), m9a446, ((m9_sl_CHAR){ (uint32_t *) m9s784, 4 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s785, 3 }), m9a448, ((m9_sl_CHAR){ (uint32_t *) m9s786, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
-            DynStr_Append (&(d3), &(gpool), m9a444, err);
+            DynStr_Append (&(d3), &(gpool), m9a449, err);
             if (err->exc) goto L_ret;
             }
             }
             }
             }
-            { __typeof__(Gen_ItoA (g, err)) m9a445 = Gen_ItoA (g, err);
+            { __typeof__(Gen_ItoA (g, err)) m9a450 = Gen_ItoA (g, err);
               if (err->exc) goto L_ret;
-            { __typeof__(m9_sub_i64 (j, INT64_C(1), err)) m9a446 = m9_sub_i64 (j, INT64_C(1), err);
+            { __typeof__(m9_sub_i64 (j, INT64_C(1), err)) m9a451 = m9_sub_i64 (j, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_ItoA (m9a446, err)) m9a447 = Gen_ItoA (m9a446, err);
+            { __typeof__(Gen_ItoA (m9a451, err)) m9a452 = Gen_ItoA (m9a451, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s780, 4 }), m9a445, ((m9_sl_CHAR){ (uint32_t *) m9s781, 4 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s782, 3 }), m9a447, ((m9_sl_CHAR){ (uint32_t *) m9s783, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a448 = Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s780, 4 }), m9a445, ((m9_sl_CHAR){ (uint32_t *) m9s781, 4 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s782, 3 }), m9a447, ((m9_sl_CHAR){ (uint32_t *) m9s783, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s787, 4 }), m9a450, ((m9_sl_CHAR){ (uint32_t *) m9s788, 4 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s789, 3 }), m9a452, ((m9_sl_CHAR){ (uint32_t *) m9s790, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a453 = Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s787, 4 }), m9a450, ((m9_sl_CHAR){ (uint32_t *) m9s788, 4 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s789, 3 }), m9a452, ((m9_sl_CHAR){ (uint32_t *) m9s790, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
-            DynStr_Append (&(d3), &(gpool), m9a448, err);
+            DynStr_Append (&(d3), &(gpool), m9a453, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -10681,105 +10844,105 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
               g = m9v;
             }
           } else {
-            { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err))) m9a449 = (*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err))) m9a454 = (*(Ast_Node * *) m9_at (al->kids.p, j, al->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(e2) m9v = Gen_EX (m9a449, (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(e2) m9v = Gen_EX (m9a454, (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
               e2 = m9v;
             }
             }
-            { __typeof__(m9_sub_i64 (j, INT64_C(1), err)) m9a450 = m9_sub_i64 (j, INT64_C(1), err);
+            { __typeof__(m9_sub_i64 (j, INT64_C(1), err)) m9a455 = m9_sub_i64 (j, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_ItoA (m9a450, err)) m9a451 = Gen_ItoA (m9a450, err);
+            { __typeof__(Gen_ItoA (m9a455, err)) m9a456 = Gen_ItoA (m9a455, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s784, 15 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s785, 2 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s786, 3 }), m9a451, ((m9_sl_CHAR){ (uint32_t *) m9s787, 3 }), vn, err)) m9a452 = Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s784, 15 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s785, 2 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s786, 3 }), m9a451, ((m9_sl_CHAR){ (uint32_t *) m9s787, 3 }), vn, err);
+            { __typeof__(Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s791, 15 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s792, 2 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s793, 3 }), m9a456, ((m9_sl_CHAR){ (uint32_t *) m9s794, 3 }), vn, err)) m9a457 = Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s791, 15 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s792, 2 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s793, 3 }), m9a456, ((m9_sl_CHAR){ (uint32_t *) m9s794, 3 }), vn, err);
               if (err->exc) goto L_ret;
-            DynStr_Append (&(d3), &(gpool), m9a452, err);
+            DynStr_Append (&(d3), &(gpool), m9a457, err);
             if (err->exc) goto L_ret;
             }
             }
             }
-            { __typeof__(m9_sub_i64 (j, INT64_C(1), err)) m9a453 = m9_sub_i64 (j, INT64_C(1), err);
+            { __typeof__(m9_sub_i64 (j, INT64_C(1), err)) m9a458 = m9_sub_i64 (j, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_ItoA (m9a453, err)) m9a454 = Gen_ItoA (m9a453, err);
+            { __typeof__(Gen_ItoA (m9a458, err)) m9a459 = Gen_ItoA (m9a458, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s788, 3 }), m9a454, ((m9_sl_CHAR){ (uint32_t *) m9s789, 9 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a455 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s788, 3 }), m9a454, ((m9_sl_CHAR){ (uint32_t *) m9s789, 9 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s795, 3 }), m9a459, ((m9_sl_CHAR){ (uint32_t *) m9s796, 9 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a460 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s795, 3 }), m9a459, ((m9_sl_CHAR){ (uint32_t *) m9s796, 9 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
-            DynStr_Append (&(d3), &(gpool), m9a455, err);
+            DynStr_Append (&(d3), &(gpool), m9a460, err);
             if (err->exc) goto L_ret;
             }
             }
             }
           }
         } }
-        { __typeof__(Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s790, 6 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s791, 5 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s792, 3 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s793, 5 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a456 = Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s790, 6 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s791, 5 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s792, 3 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s793, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s797, 6 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s798, 5 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s799, 3 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s800, 5 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a461 = Gen_S9 (vn, ((m9_sl_CHAR){ (uint32_t *) m9s797, 6 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s798, 5 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s799, 3 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s800, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        DynStr_Append (&(d3), &(gpool), m9a456, err);
+        DynStr_Append (&(d3), &(gpool), m9a461, err);
         if (err->exc) goto L_ret;
         }
         stRaise = true;
-        (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s794, 4 });
+        (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s801, 4 });
         err->res = m9res;
         m9ret = DynStr_View (d3, err);
         if (err->exc) goto L_ret;
         goto L_ret;
       } }
-      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s795, 25 }), err);
+      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s802, 25 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s796, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s803, 1 });
       goto L_ret;
     }
-    bool m9t15 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s797, 3 }), err);
+    bool m9t15 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s804, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t15) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s798, 3 });
-      bool m9t16 = Gen_StartsW (Gen_TagOfExpr ((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s799, 3 }), err);
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s805, 3 });
+      bool m9t16 = Gen_StartsW (Gen_TagOfExpr ((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s806, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t16) {
         err->res = m9res;
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a457 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a462 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a457, (m9_sl_CHAR){ NULL, 0 }, err)) m9a458 = Gen_EX (m9a457, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_EX (m9a462, (m9_sl_CHAR){ NULL, 0 }, err)) m9a463 = Gen_EX (m9a462, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s800, 11 }), m9a458, ((m9_sl_CHAR){ (uint32_t *) m9s801, 6 }), err);
+        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s807, 11 }), m9a463, ((m9_sl_CHAR){ (uint32_t *) m9s808, 6 }), err);
         if (err->exc) goto L_ret;
         }
         }
         goto L_ret;
       }
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a459 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a464 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_EX (m9a459, ((m9_sl_CHAR){ (uint32_t *) m9s803, 4 }), err)) m9a460 = Gen_EX (m9a459, ((m9_sl_CHAR){ (uint32_t *) m9s803, 4 }), err);
+      { __typeof__(Gen_EX (m9a464, ((m9_sl_CHAR){ (uint32_t *) m9s810, 4 }), err)) m9a465 = Gen_EX (m9a464, ((m9_sl_CHAR){ (uint32_t *) m9s810, 4 }), err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s802, 10 }), m9a460, ((m9_sl_CHAR){ (uint32_t *) m9s804, 1 }), err);
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s809, 10 }), m9a465, ((m9_sl_CHAR){ (uint32_t *) m9s811, 1 }), err);
       if (err->exc) goto L_ret;
       }
       }
       goto L_ret;
     }
-    bool m9t17 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s805, 4 }), err);
+    bool m9t17 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s812, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t17) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s806, 5 });
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a461 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s813, 5 });
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a466 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(at) m9v = Gen_TagOfExpr (m9a461, err);
+      { __typeof__(at) m9v = Gen_TagOfExpr (m9a466, err);
         if (err->exc) goto L_ret;
         at = m9v;
       }
       }
       err->res = m9res;
-      { __typeof__(({ __typeof__(at) m9t18 = at; int64_t m9t18a = INT64_C(3), m9t18n = m9_sub_i64 ((at).len, INT64_C(3), err); (__typeof__(m9t18)){ m9t18.p + m9_chk_slice (m9t18a, m9t18n, m9t18.len, err), m9t18n }; })) m9a462 = ({ __typeof__(at) m9t18 = at; int64_t m9t18a = INT64_C(3), m9t18n = m9_sub_i64 ((at).len, INT64_C(3), err); (__typeof__(m9t18)){ m9t18.p + m9_chk_slice (m9t18a, m9t18n, m9t18.len, err), m9t18n }; });
+      { __typeof__(({ __typeof__(at) m9t18 = at; int64_t m9t18a = INT64_C(3), m9t18n = m9_sub_i64 ((at).len, INT64_C(3), err); (__typeof__(m9t18)){ m9t18.p + m9_chk_slice (m9t18a, m9t18n, m9t18.len, err), m9t18n }; })) m9a467 = ({ __typeof__(at) m9t18 = at; int64_t m9t18a = INT64_C(3), m9t18n = m9_sub_i64 ((at).len, INT64_C(3), err); (__typeof__(m9t18)){ m9t18.p + m9_chk_slice (m9t18a, m9t18n, m9t18.len, err), m9t18n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_CRPrefix (m9a462, err)) m9a463 = Gen_CRPrefix (m9a462, err);
+      { __typeof__(Gen_CRPrefix (m9a467, err)) m9a468 = Gen_CRPrefix (m9a467, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a464 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a469 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_EX (m9a464, (m9_sl_CHAR){ NULL, 0 }, err)) m9a465 = Gen_EX (m9a464, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(Gen_EX (m9a469, (m9_sl_CHAR){ NULL, 0 }, err)) m9a470 = Gen_EX (m9a469, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s807, 1 }), m9a463, ((m9_sl_CHAR){ (uint32_t *) m9s808, 8 }), m9a465, ((m9_sl_CHAR){ (uint32_t *) m9s809, 7 }), (m9_sl_CHAR){ NULL, 0 }, err);
+      m9ret = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s814, 1 }), m9a468, ((m9_sl_CHAR){ (uint32_t *) m9s815, 8 }), m9a470, ((m9_sl_CHAR){ (uint32_t *) m9s816, 7 }), (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -10787,33 +10950,33 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       }
       goto L_ret;
     }
-    bool m9t19 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s810, 3 }), err);
+    bool m9t19 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s817, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t19) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s811, 4 });
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s818, 4 });
       stRaise = true;
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a466 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a471 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_EX (m9a466, (m9_sl_CHAR){ NULL, 0 }, err)) m9a467 = Gen_EX (m9a466, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(Gen_EX (m9a471, (m9_sl_CHAR){ NULL, 0 }, err)) m9a472 = Gen_EX (m9a471, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s812, 8 }), m9a467, ((m9_sl_CHAR){ (uint32_t *) m9s813, 6 }), err);
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s819, 8 }), m9a472, ((m9_sl_CHAR){ (uint32_t *) m9s820, 6 }), err);
       if (err->exc) goto L_ret;
       }
       }
       goto L_ret;
     }
-    bool m9t20 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s814, 4 }), err);
+    bool m9t20 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s821, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t20) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s815, 4 });
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s822, 4 });
       stRaise = true;
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a468 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a473 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_EX (m9a468, (m9_sl_CHAR){ NULL, 0 }, err)) m9a469 = Gen_EX (m9a468, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(Gen_EX (m9a473, (m9_sl_CHAR){ NULL, 0 }, err)) m9a474 = Gen_EX (m9a473, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s816, 9 }), m9a469, ((m9_sl_CHAR){ (uint32_t *) m9s817, 6 }), err);
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s823, 9 }), m9a474, ((m9_sl_CHAR){ (uint32_t *) m9s824, 6 }), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -10825,133 +10988,133 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       (*tag) = name;
       stRaise = true;
       err->res = m9res;
-      { __typeof__(Gen_LowerName (name, err)) m9a470 = Gen_LowerName (name, err);
+      { __typeof__(Gen_LowerName (name, err)) m9a475 = Gen_LowerName (name, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a471 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
-      { __typeof__(Gen_EX (m9a471, (m9_sl_CHAR){ NULL, 0 }, err)) m9a472 = Gen_EX (m9a471, (m9_sl_CHAR){ NULL, 0 }, err);
-        if (err->exc) goto L_ret;
-      m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s818, 3 }), m9a470, ((m9_sl_CHAR){ (uint32_t *) m9s819, 2 }), m9a472, ((m9_sl_CHAR){ (uint32_t *) m9s820, 6 }), err);
-      if (err->exc) goto L_ret;
-      }
-      }
-      }
-      goto L_ret;
-    }
-    bool m9t22 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s821, 3 }), err);
-    if (err->exc) goto L_ret;
-    if (m9t22) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s822, 3 });
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a473 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
-      { __typeof__(at) m9v = Gen_TagOfExpr (m9a473, err);
-        if (err->exc) goto L_ret;
-        at = m9v;
-      }
-      }
-      bool m9t23 = (DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s823, 3 }), err) || DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s824, 3 }), err));
-      if (err->exc) goto L_ret;
-      if (m9t23) {
-        stRaise = true;
-        err->res = m9res;
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a474 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a474, (m9_sl_CHAR){ NULL, 0 }, err)) m9a475 = Gen_EX (m9a474, (m9_sl_CHAR){ NULL, 0 }, err);
-          if (err->exc) goto L_ret;
-        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s825, 21 }), m9a475, ((m9_sl_CHAR){ (uint32_t *) m9s826, 7 }), err);
-        if (err->exc) goto L_ret;
-        }
-        }
-        goto L_ret;
-      }
-      err->res = m9res;
       { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a476 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
       { __typeof__(Gen_EX (m9a476, (m9_sl_CHAR){ NULL, 0 }, err)) m9a477 = Gen_EX (m9a476, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s827, 10 }), m9a477, ((m9_sl_CHAR){ (uint32_t *) m9s828, 1 }), err);
+      m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s825, 3 }), m9a475, ((m9_sl_CHAR){ (uint32_t *) m9s826, 2 }), m9a477, ((m9_sl_CHAR){ (uint32_t *) m9s827, 6 }), err);
       if (err->exc) goto L_ret;
+      }
       }
       }
       goto L_ret;
     }
-    bool m9t24 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s829, 3 }), err);
+    bool m9t22 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s828, 3 }), err);
     if (err->exc) goto L_ret;
-    if (m9t24) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s830, 3 });
-      err->res = m9res;
+    if (m9t22) {
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s829, 3 });
       { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a478 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_EX (m9a478, (m9_sl_CHAR){ NULL, 0 }, err)) m9a479 = Gen_EX (m9a478, (m9_sl_CHAR){ NULL, 0 }, err);
-        if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s831, 9 }), m9a479, ((m9_sl_CHAR){ (uint32_t *) m9s832, 1 }), err);
-      if (err->exc) goto L_ret;
-      }
-      }
-      goto L_ret;
-    }
-    bool m9t25 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s833, 3 }), err);
-    if (err->exc) goto L_ret;
-    if (m9t25) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s834, 3 });
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a480 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
-        if (err->exc) goto L_ret;
-      { __typeof__(at) m9v = Gen_TagOfExpr (m9a480, err);
+      { __typeof__(at) m9v = Gen_TagOfExpr (m9a478, err);
         if (err->exc) goto L_ret;
         at = m9v;
       }
       }
-      bool m9t26 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s835, 3 }), err);
+      bool m9t23 = (DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s830, 3 }), err) || DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s831, 3 }), err));
       if (err->exc) goto L_ret;
-      if (m9t26) {
+      if (m9t23) {
         stRaise = true;
         err->res = m9res;
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a481 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a479 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a481, (m9_sl_CHAR){ NULL, 0 }, err)) m9a482 = Gen_EX (m9a481, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_EX (m9a479, (m9_sl_CHAR){ NULL, 0 }, err)) m9a480 = Gen_EX (m9a479, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s836, 12 }), m9a482, ((m9_sl_CHAR){ (uint32_t *) m9s837, 6 }), err);
+        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s832, 21 }), m9a480, ((m9_sl_CHAR){ (uint32_t *) m9s833, 7 }), err);
         if (err->exc) goto L_ret;
         }
         }
         goto L_ret;
       }
+      err->res = m9res;
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a481 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(Gen_EX (m9a481, (m9_sl_CHAR){ NULL, 0 }, err)) m9a482 = Gen_EX (m9a481, (m9_sl_CHAR){ NULL, 0 }, err);
+        if (err->exc) goto L_ret;
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s834, 10 }), m9a482, ((m9_sl_CHAR){ (uint32_t *) m9s835, 1 }), err);
+      if (err->exc) goto L_ret;
+      }
+      }
+      goto L_ret;
+    }
+    bool m9t24 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s836, 3 }), err);
+    if (err->exc) goto L_ret;
+    if (m9t24) {
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s837, 3 });
       err->res = m9res;
       { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a483 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
       { __typeof__(Gen_EX (m9a483, (m9_sl_CHAR){ NULL, 0 }, err)) m9a484 = Gen_EX (m9a483, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s838, 8 }), m9a484, ((m9_sl_CHAR){ (uint32_t *) m9s839, 1 }), err);
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s838, 9 }), m9a484, ((m9_sl_CHAR){ (uint32_t *) m9s839, 1 }), err);
       if (err->exc) goto L_ret;
       }
       }
       goto L_ret;
     }
-    bool m9t27 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s840, 3 }), err);
+    bool m9t25 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s840, 3 }), err);
+    if (err->exc) goto L_ret;
+    if (m9t25) {
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s841, 3 });
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a485 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(at) m9v = Gen_TagOfExpr (m9a485, err);
+        if (err->exc) goto L_ret;
+        at = m9v;
+      }
+      }
+      bool m9t26 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s842, 3 }), err);
+      if (err->exc) goto L_ret;
+      if (m9t26) {
+        stRaise = true;
+        err->res = m9res;
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a486 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+          if (err->exc) goto L_ret;
+        { __typeof__(Gen_EX (m9a486, (m9_sl_CHAR){ NULL, 0 }, err)) m9a487 = Gen_EX (m9a486, (m9_sl_CHAR){ NULL, 0 }, err);
+          if (err->exc) goto L_ret;
+        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s843, 12 }), m9a487, ((m9_sl_CHAR){ (uint32_t *) m9s844, 6 }), err);
+        if (err->exc) goto L_ret;
+        }
+        }
+        goto L_ret;
+      }
+      err->res = m9res;
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a488 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        if (err->exc) goto L_ret;
+      { __typeof__(Gen_EX (m9a488, (m9_sl_CHAR){ NULL, 0 }, err)) m9a489 = Gen_EX (m9a488, (m9_sl_CHAR){ NULL, 0 }, err);
+        if (err->exc) goto L_ret;
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s845, 8 }), m9a489, ((m9_sl_CHAR){ (uint32_t *) m9s846, 1 }), err);
+      if (err->exc) goto L_ret;
+      }
+      }
+      goto L_ret;
+    }
+    bool m9t27 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s847, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t27) {
       { Ast_Node * m0 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (m0 != NULL) {
         (*tag) = m0->a;
-        bool m9t28 = DynStr_Eq (m0->a, ((m9_sl_CHAR){ (uint32_t *) m9s841, 3 }), err);
+        bool m9t28 = DynStr_Eq (m0->a, ((m9_sl_CHAR){ (uint32_t *) m9s848, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t28) {
           err->res = m9res;
-          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s842, 9 });
+          m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s849, 9 });
           goto L_ret;
         }
       } }
-      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s843, 32 }), err);
+      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s850, 32 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s844, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s851, 1 });
       goto L_ret;
     }
-    bool m9t29 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s845, 6 }), err);
+    bool m9t29 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s852, 6 }), err);
     if (err->exc) goto L_ret;
     if (m9t29) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s846, 3 });
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s853, 3 });
       { Ast_Node * s0 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (s0 != NULL) {
@@ -10960,9 +11123,9 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           if (err->exc) goto L_ret;
           if (m9t30) {
             err->res = m9res;
-            { __typeof__(Gen_BuiltinC (s0->a, err)) m9a485 = Gen_BuiltinC (s0->a, err);
+            { __typeof__(Gen_BuiltinC (s0->a, err)) m9a490 = Gen_BuiltinC (s0->a, err);
               if (err->exc) goto L_ret;
-            m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s847, 19 }), m9a485, ((m9_sl_CHAR){ (uint32_t *) m9s848, 2 }), err);
+            m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s854, 19 }), m9a490, ((m9_sl_CHAR){ (uint32_t *) m9s855, 2 }), err);
             if (err->exc) goto L_ret;
             }
             goto L_ret;
@@ -10971,9 +11134,9 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           if (err->exc) goto L_ret;
           if (ft != NULL) {
             err->res = m9res;
-            { __typeof__(Gen_CP (modName, err)) m9a486 = Gen_CP (modName, err);
+            { __typeof__(Gen_CP (modName, err)) m9a491 = Gen_CP (modName, err);
               if (err->exc) goto L_ret;
-            m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s849, 19 }), m9a486, ((m9_sl_CHAR){ (uint32_t *) m9s850, 1 }), s0->a, ((m9_sl_CHAR){ (uint32_t *) m9s851, 2 }), err);
+            m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s856, 19 }), m9a491, ((m9_sl_CHAR){ (uint32_t *) m9s857, 1 }), s0->a, ((m9_sl_CHAR){ (uint32_t *) m9s858, 2 }), err);
             if (err->exc) goto L_ret;
             }
             goto L_ret;
@@ -10981,80 +11144,80 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
         }
       } }
       err->res = m9res;
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a487 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a492 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_EX (m9a487, (m9_sl_CHAR){ NULL, 0 }, err)) m9a488 = Gen_EX (m9a487, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(Gen_EX (m9a492, (m9_sl_CHAR){ NULL, 0 }, err)) m9a493 = Gen_EX (m9a492, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s852, 19 }), m9a488, ((m9_sl_CHAR){ (uint32_t *) m9s853, 2 }), err);
+      m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s859, 19 }), m9a493, ((m9_sl_CHAR){ (uint32_t *) m9s860, 2 }), err);
       if (err->exc) goto L_ret;
       }
       }
       goto L_ret;
     }
-    bool m9t31 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s854, 8 }), err);
+    bool m9t31 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s861, 8 }), err);
     if (err->exc) goto L_ret;
     if (m9t31) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s855, 3 });
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a489 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s862, 3 });
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a494 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(at) m9v = Gen_EX (m9a489, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(at) m9v = Gen_EX (m9a494, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         at = m9v;
       }
       }
       err->res = m9res;
-      m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s856, 12 }), at, ((m9_sl_CHAR){ (uint32_t *) m9s857, 28 }), at, ((m9_sl_CHAR){ (uint32_t *) m9s858, 5 }), err);
+      m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s863, 12 }), at, ((m9_sl_CHAR){ (uint32_t *) m9s864, 28 }), at, ((m9_sl_CHAR){ (uint32_t *) m9s865, 5 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
     }
-    bool m9t32 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s859, 3 }), err);
+    bool m9t32 = DynStr_Eq (name, ((m9_sl_CHAR){ (uint32_t *) m9s866, 3 }), err);
     if (err->exc) goto L_ret;
     if (m9t32) {
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s860, 1 });
-      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a490 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s867, 1 });
+      { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a495 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(at) m9v = Gen_TagOfExpr (m9a490, err);
+      { __typeof__(at) m9v = Gen_TagOfExpr (m9a495, err);
         if (err->exc) goto L_ret;
         at = m9v;
       }
       }
-      bool m9t33 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s861, 5 }), err);
+      bool m9t33 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s868, 5 }), err);
       if (err->exc) goto L_ret;
       if (m9t33) {
         err->res = m9res;
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a491 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a496 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a491, (m9_sl_CHAR){ NULL, 0 }, err)) m9a492 = Gen_EX (m9a491, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_EX (m9a496, (m9_sl_CHAR){ NULL, 0 }, err)) m9a497 = Gen_EX (m9a496, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s862, 10 }), m9a492, ((m9_sl_CHAR){ (uint32_t *) m9s863, 4 }), err);
+        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s869, 10 }), m9a497, ((m9_sl_CHAR){ (uint32_t *) m9s870, 4 }), err);
         if (err->exc) goto L_ret;
         }
         }
         goto L_ret;
       }
-      bool m9t34 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s864, 3 }), err);
+      bool m9t34 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s871, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t34) {
         err->res = m9res;
-        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a493 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err))) m9a498 = (*(Ast_Node * *) m9_at (al->kids.p, INT64_C(0), al->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a493, (m9_sl_CHAR){ NULL, 0 }, err)) m9a494 = Gen_EX (m9a493, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_EX (m9a498, (m9_sl_CHAR){ NULL, 0 }, err)) m9a499 = Gen_EX (m9a498, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s865, 10 }), m9a494, ((m9_sl_CHAR){ (uint32_t *) m9s866, 4 }), err);
+        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s872, 10 }), m9a499, ((m9_sl_CHAR){ (uint32_t *) m9s873, 4 }), err);
         if (err->exc) goto L_ret;
         }
         }
         goto L_ret;
       }
-      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s867, 32 }), err);
+      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s874, 32 }), err);
       if (err->exc) goto L_ret;
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s868, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s875, 1 });
       goto L_ret;
     }
   } }
   if (((nargs >= INT64_C(1)) && ((name).len > INT64_C(3)))) {
-    bool m9t36 = (!DynStr_Eq (({ __typeof__(name) m9t35 = name; int64_t m9t35a = m9_sub_i64 ((name).len, INT64_C(3), err), m9t35n = INT64_C(3); (__typeof__(m9t35)){ m9t35.p + m9_chk_slice (m9t35a, m9t35n, m9t35.len, err), m9t35n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s869, 3 }), err));
+    bool m9t36 = (!DynStr_Eq (({ __typeof__(name) m9t35 = name; int64_t m9t35a = m9_sub_i64 ((name).len, INT64_C(3), err), m9t35n = INT64_C(3); (__typeof__(m9t35)){ m9t35.p + m9_chk_slice (m9t35a, m9t35n, m9t35.len, err), m9t35n }; }), ((m9_sl_CHAR){ (uint32_t *) m9s876, 3 }), err));
     if (err->exc) goto L_ret;
     if (m9t36) {
       { __typeof__(dot) m9v = Gen_FindCh (name, 46u, err);
@@ -11076,14 +11239,14 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
             bool m9t39 = (!Gen_IsAdaptive ((*(Ast_Node * *) m9_at (alw->kids.p, k2, alw->kids.len, sizeof (Ast_Node *), err)), err));
             if (err->exc) goto L_ret;
             if (m9t39) {
-              { __typeof__((*(Ast_Node * *) m9_at (alw->kids.p, k2, alw->kids.len, sizeof (Ast_Node *), err))) m9a495 = (*(Ast_Node * *) m9_at (alw->kids.p, k2, alw->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (alw->kids.p, k2, alw->kids.len, sizeof (Ast_Node *), err))) m9a500 = (*(Ast_Node * *) m9_at (alw->kids.p, k2, alw->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(at) m9v = Gen_TagOfExpr (m9a495, err);
+              { __typeof__(at) m9v = Gen_TagOfExpr (m9a500, err);
                 if (err->exc) goto L_ret;
                 at = m9v;
               }
               }
-              bool m9t40 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s870, 3 }), err);
+              bool m9t40 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s877, 3 }), err);
               if (err->exc) goto L_ret;
               if (m9t40) {
                 { __typeof__(nf32) m9v = m9_add_i64 (nf32, INT64_C(1), err);
@@ -11091,7 +11254,7 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
                   nf32 = m9v;
                 }
               }
-              bool m9t41 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s871, 3 }), err);
+              bool m9t41 = DynStr_Eq (at, ((m9_sl_CHAR){ (uint32_t *) m9s878, 3 }), err);
               if (err->exc) goto L_ret;
               if (m9t41) {
                 { __typeof__(nf64) m9v = m9_add_i64 (nf64, INT64_C(1), err);
@@ -11103,19 +11266,19 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           } }
           if (((nf32 > INT64_C(0)) && (nf64 == INT64_C(0)))) {
             if ((dot > INT64_C(0))) {
-              bool m9t42 = (Gen_MFind (&(extProcs), &m9mframe, Gen_S2 (name, ((m9_sl_CHAR){ (uint32_t *) m9s872, 3 }), err), err) >= INT64_C(0));
+              bool m9t42 = (Gen_MFind (&(extProcs), &m9mframe, Gen_S2 (name, ((m9_sl_CHAR){ (uint32_t *) m9s879, 3 }), err), err) >= INT64_C(0));
               if (err->exc) goto L_ret;
               if (m9t42) {
-                { __typeof__(name) m9v = Gen_S2 (name, ((m9_sl_CHAR){ (uint32_t *) m9s873, 3 }), err);
+                { __typeof__(name) m9v = Gen_S2 (name, ((m9_sl_CHAR){ (uint32_t *) m9s880, 3 }), err);
                   if (err->exc) goto L_ret;
                   name = m9v;
                 }
               }
             } else {
-              bool m9t43 = (Gen_FindProcN (Gen_S2 (name, ((m9_sl_CHAR){ (uint32_t *) m9s874, 3 }), err), err) >= INT64_C(0));
+              bool m9t43 = (Gen_FindProcN (Gen_S2 (name, ((m9_sl_CHAR){ (uint32_t *) m9s881, 3 }), err), err) >= INT64_C(0));
               if (err->exc) goto L_ret;
               if (m9t43) {
-                { __typeof__(name) m9v = Gen_S2 (name, ((m9_sl_CHAR){ (uint32_t *) m9s875, 3 }), err);
+                { __typeof__(name) m9v = Gen_S2 (name, ((m9_sl_CHAR){ (uint32_t *) m9s882, 3 }), err);
                   if (err->exc) goto L_ret;
                   name = m9v;
                 }
@@ -11141,7 +11304,7 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       if (err->exc) goto L_ret;
       vn = m9v;
     }
-    bool m9t46 = DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s876, 1 }), err);
+    bool m9t46 = DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s883, 1 }), err);
     if (err->exc) goto L_ret;
     if (m9t46) {
       { __typeof__(at) m9v = Gen_CMap (vn, err);
@@ -11149,117 +11312,117 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
         at = m9v;
       }
       if (((at).len == INT64_C(0))) {
-        { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s877, 18 }), vn, err)) m9a496 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s877, 18 }), vn, err);
+        { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s884, 18 }), vn, err)) m9a501 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s884, 18 }), vn, err);
           if (err->exc) goto L_ret;
-        Gen_Err2 (eln, m9a496, err);
+        Gen_Err2 (eln, m9a501, err);
         if (err->exc) goto L_ret;
         }
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s878, 1 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s885, 1 });
         goto L_ret;
       }
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s879, 1 });
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s886, 1 });
       if ((nargs != INT64_C(1))) {
-        Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s880, 31 }), err);
+        Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s887, 31 }), err);
         if (err->exc) goto L_ret;
       }
       { Ast_Node * alc = argl;
       if (alc != NULL) {
         err->res = m9res;
-        { __typeof__((*(Ast_Node * *) m9_at (alc->kids.p, INT64_C(0), alc->kids.len, sizeof (Ast_Node *), err))) m9a497 = (*(Ast_Node * *) m9_at (alc->kids.p, INT64_C(0), alc->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (alc->kids.p, INT64_C(0), alc->kids.len, sizeof (Ast_Node *), err))) m9a502 = (*(Ast_Node * *) m9_at (alc->kids.p, INT64_C(0), alc->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a497, (m9_sl_CHAR){ NULL, 0 }, err)) m9a498 = Gen_EX (m9a497, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_EX (m9a502, (m9_sl_CHAR){ NULL, 0 }, err)) m9a503 = Gen_EX (m9a502, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s881, 2 }), at, ((m9_sl_CHAR){ (uint32_t *) m9s882, 2 }), m9a498, ((m9_sl_CHAR){ (uint32_t *) m9s883, 2 }), err);
+        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s888, 2 }), at, ((m9_sl_CHAR){ (uint32_t *) m9s889, 2 }), m9a503, ((m9_sl_CHAR){ (uint32_t *) m9s890, 2 }), err);
         if (err->exc) goto L_ret;
         }
         }
         goto L_ret;
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s884, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s891, 1 });
       goto L_ret;
     }
-    bool m9t47 = (((DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s885, 3 }), err) || DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s886, 3 }), err))) && DynStr_Eq (vn, ((m9_sl_CHAR){ (uint32_t *) m9s887, 11 }), err));
+    bool m9t47 = (((DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s892, 3 }), err) || DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s893, 3 }), err))) && DynStr_Eq (vn, ((m9_sl_CHAR){ (uint32_t *) m9s894, 11 }), err));
     if (err->exc) goto L_ret;
     if (m9t47) {
       if ((nargs != INT64_C(1))) {
-        Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s888, 30 }), err);
+        Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s895, 30 }), err);
         if (err->exc) goto L_ret;
       }
       stRaise = true;
       (*tag) = tn;
       { Ast_Node * alf = argl;
       if (alf != NULL) {
-        bool m9t48 = DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s889, 3 }), err);
+        bool m9t48 = DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s896, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t48) {
           err->res = m9res;
-          { __typeof__((*(Ast_Node * *) m9_at (alf->kids.p, INT64_C(0), alf->kids.len, sizeof (Ast_Node *), err))) m9a499 = (*(Ast_Node * *) m9_at (alf->kids.p, INT64_C(0), alf->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (alf->kids.p, INT64_C(0), alf->kids.len, sizeof (Ast_Node *), err))) m9a504 = (*(Ast_Node * *) m9_at (alf->kids.p, INT64_C(0), alf->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_EX (m9a499, (m9_sl_CHAR){ NULL, 0 }, err)) m9a500 = Gen_EX (m9a499, (m9_sl_CHAR){ NULL, 0 }, err);
+          { __typeof__(Gen_EX (m9a504, (m9_sl_CHAR){ NULL, 0 }, err)) m9a505 = Gen_EX (m9a504, (m9_sl_CHAR){ NULL, 0 }, err);
             if (err->exc) goto L_ret;
-          m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s890, 16 }), m9a500, ((m9_sl_CHAR){ (uint32_t *) m9s891, 6 }), err);
+          m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s897, 16 }), m9a505, ((m9_sl_CHAR){ (uint32_t *) m9s898, 6 }), err);
           if (err->exc) goto L_ret;
           }
           }
           goto L_ret;
         }
         err->res = m9res;
-        { __typeof__((*(Ast_Node * *) m9_at (alf->kids.p, INT64_C(0), alf->kids.len, sizeof (Ast_Node *), err))) m9a501 = (*(Ast_Node * *) m9_at (alf->kids.p, INT64_C(0), alf->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (alf->kids.p, INT64_C(0), alf->kids.len, sizeof (Ast_Node *), err))) m9a506 = (*(Ast_Node * *) m9_at (alf->kids.p, INT64_C(0), alf->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a501, (m9_sl_CHAR){ NULL, 0 }, err)) m9a502 = Gen_EX (m9a501, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_EX (m9a506, (m9_sl_CHAR){ NULL, 0 }, err)) m9a507 = Gen_EX (m9a506, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s892, 16 }), m9a502, ((m9_sl_CHAR){ (uint32_t *) m9s893, 6 }), err);
+        m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s899, 16 }), m9a507, ((m9_sl_CHAR){ (uint32_t *) m9s900, 6 }), err);
         if (err->exc) goto L_ret;
         }
         }
         goto L_ret;
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s894, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s901, 1 });
       goto L_ret;
     }
-    bool m9t49 = (((DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s895, 3 }), err) || DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s896, 3 }), err))) && DynStr_Eq (vn, ((m9_sl_CHAR){ (uint32_t *) m9s897, 9 }), err));
+    bool m9t49 = (((DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s902, 3 }), err) || DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s903, 3 }), err))) && DynStr_Eq (vn, ((m9_sl_CHAR){ (uint32_t *) m9s904, 9 }), err));
     if (err->exc) goto L_ret;
     if (m9t49) {
       if ((nargs != INT64_C(2))) {
-        Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s898, 29 }), err);
+        Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s905, 29 }), err);
         if (err->exc) goto L_ret;
       }
       stRaise = true;
-      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s899, 1 });
+      (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s906, 1 });
       { Ast_Node * alt = argl;
       if (alt != NULL) {
-        { __typeof__((*(Ast_Node * *) m9_at (alt->kids.p, INT64_C(0), alt->kids.len, sizeof (Ast_Node *), err))) m9a503 = (*(Ast_Node * *) m9_at (alt->kids.p, INT64_C(0), alt->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (alt->kids.p, INT64_C(0), alt->kids.len, sizeof (Ast_Node *), err))) m9a508 = (*(Ast_Node * *) m9_at (alt->kids.p, INT64_C(0), alt->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(e1) m9v = Gen_EX (m9a503, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(e1) m9v = Gen_EX (m9a508, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
           e1 = m9v;
         }
         }
-        { __typeof__((*(Ast_Node * *) m9_at (alt->kids.p, INT64_C(1), alt->kids.len, sizeof (Ast_Node *), err))) m9a504 = (*(Ast_Node * *) m9_at (alt->kids.p, INT64_C(1), alt->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (alt->kids.p, INT64_C(1), alt->kids.len, sizeof (Ast_Node *), err))) m9a509 = (*(Ast_Node * *) m9_at (alt->kids.p, INT64_C(1), alt->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(e2) m9v = Gen_EX (m9a504, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(e2) m9v = Gen_EX (m9a509, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
           e2 = m9v;
         }
         }
-        bool m9t50 = DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s900, 3 }), err);
+        bool m9t50 = DynStr_Eq (tn, ((m9_sl_CHAR){ (uint32_t *) m9s907, 3 }), err);
         if (err->exc) goto L_ret;
         if (m9t50) {
           err->res = m9res;
-          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s901, 14 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s902, 2 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s903, 6 }), err);
+          m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s908, 14 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s909, 2 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s910, 6 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
         err->res = m9res;
-        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s904, 14 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s905, 2 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s906, 6 }), err);
+        m9ret = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s911, 14 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s912, 2 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s913, 6 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       } }
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s907, 1 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s914, 1 });
       goto L_ret;
     }
     { Ast_Node * vt = Gen_FindTypeN (tn, err);
@@ -11288,9 +11451,9 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       }
     } }
     if ((dot2 > INT64_C(0))) {
-      { __typeof__(({ __typeof__(vn) m9t53 = vn; int64_t m9t53a = INT64_C(0), m9t53n = dot2; (__typeof__(m9t53)){ m9t53.p + m9_chk_slice (m9t53a, m9t53n, m9t53.len, err), m9t53n }; })) m9a505 = ({ __typeof__(vn) m9t53 = vn; int64_t m9t53a = INT64_C(0), m9t53n = dot2; (__typeof__(m9t53)){ m9t53.p + m9_chk_slice (m9t53a, m9t53n, m9t53.len, err), m9t53n }; });
+      { __typeof__(({ __typeof__(vn) m9t53 = vn; int64_t m9t53a = INT64_C(0), m9t53n = dot2; (__typeof__(m9t53)){ m9t53.p + m9_chk_slice (m9t53a, m9t53n, m9t53.len, err), m9t53n }; })) m9a510 = ({ __typeof__(vn) m9t53 = vn; int64_t m9t53a = INT64_C(0), m9t53n = dot2; (__typeof__(m9t53)){ m9t53.p + m9_chk_slice (m9t53a, m9t53n, m9t53.len, err), m9t53n }; });
         if (err->exc) goto L_ret;
-      { __typeof__(xtn) m9v = Gen_S3 (tn, ((m9_sl_CHAR){ (uint32_t *) m9s908, 1 }), m9a505, err);
+      { __typeof__(xtn) m9v = Gen_S3 (tn, ((m9_sl_CHAR){ (uint32_t *) m9s915, 1 }), m9a510, err);
         if (err->exc) goto L_ret;
         xtn = m9v;
       }
@@ -11300,9 +11463,9 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       if (xvt != NULL) {
         if (((xvt->kind == Ast_NCaseRecordType) || (xvt->kind == Ast_NEnumType))) {
           err->res = m9res;
-          { __typeof__(({ __typeof__(vn) m9t54 = vn; int64_t m9t54a = m9_add_i64 (dot2, INT64_C(1), err), m9t54n = m9_sub_i64 (m9_sub_i64 ((vn).len, dot2, err), INT64_C(1), err); (__typeof__(m9t54)){ m9t54.p + m9_chk_slice (m9t54a, m9t54n, m9t54.len, err), m9t54n }; })) m9a506 = ({ __typeof__(vn) m9t54 = vn; int64_t m9t54a = m9_add_i64 (dot2, INT64_C(1), err), m9t54n = m9_sub_i64 (m9_sub_i64 ((vn).len, dot2, err), INT64_C(1), err); (__typeof__(m9t54)){ m9t54.p + m9_chk_slice (m9t54a, m9t54n, m9t54.len, err), m9t54n }; });
+          { __typeof__(({ __typeof__(vn) m9t54 = vn; int64_t m9t54a = m9_add_i64 (dot2, INT64_C(1), err), m9t54n = m9_sub_i64 (m9_sub_i64 ((vn).len, dot2, err), INT64_C(1), err); (__typeof__(m9t54)){ m9t54.p + m9_chk_slice (m9t54a, m9t54n, m9t54.len, err), m9t54n }; })) m9a511 = ({ __typeof__(vn) m9t54 = vn; int64_t m9t54a = m9_add_i64 (dot2, INT64_C(1), err), m9t54n = m9_sub_i64 (m9_sub_i64 ((vn).len, dot2, err), INT64_C(1), err); (__typeof__(m9t54)){ m9t54.p + m9_chk_slice (m9t54a, m9t54n, m9t54.len, err), m9t54n }; });
             if (err->exc) goto L_ret;
-          m9ret = Gen_VariantCtor (xvt, xtn, m9a506, argl, nargs, tag, err);
+          m9ret = Gen_VariantCtor (xvt, xtn, m9a511, argl, nargs, tag, err);
           if (err->exc) goto L_ret;
           }
           goto L_ret;
@@ -11318,9 +11481,9 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
         if (err->exc) goto L_ret;
         pnodeK = m9v;
       }
-      { __typeof__(Gen_CP (tn, err)) m9a507 = Gen_CP (tn, err);
+      { __typeof__(Gen_CP (tn, err)) m9a512 = Gen_CP (tn, err);
         if (err->exc) goto L_ret;
-      { __typeof__(cfunc) m9v = Gen_S3 (m9a507, ((m9_sl_CHAR){ (uint32_t *) m9s909, 1 }), vn, err);
+      { __typeof__(cfunc) m9v = Gen_S3 (m9a512, ((m9_sl_CHAR){ (uint32_t *) m9s916, 1 }), vn, err);
         if (err->exc) goto L_ret;
         cfunc = m9v;
       }
@@ -11350,9 +11513,9 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           if (err->exc) goto L_ret;
           pnodeK = m9v;
         }
-        { __typeof__(Gen_CP (modName, err)) m9a508 = Gen_CP (modName, err);
+        { __typeof__(Gen_CP (modName, err)) m9a513 = Gen_CP (modName, err);
           if (err->exc) goto L_ret;
-        { __typeof__(cfunc) m9v = Gen_S3 (m9a508, ((m9_sl_CHAR){ (uint32_t *) m9s910, 1 }), name, err);
+        { __typeof__(cfunc) m9v = Gen_S3 (m9a513, ((m9_sl_CHAR){ (uint32_t *) m9s917, 1 }), name, err);
           if (err->exc) goto L_ret;
           cfunc = m9v;
         }
@@ -11366,7 +11529,7 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
           { Ast_Node * fp = (*(Gen_MEnt *) m9_at (foreignProcs.es.p, pi, foreignProcs.es.len, sizeof (Gen_MEnt), err)).v;
           if (err->exc) goto L_ret;
           if (fp != NULL) {
-            (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s911, 1 });
+            (*tag) = ((m9_sl_CHAR){ (uint32_t *) m9s918, 1 });
             args = (m9_sl_CHAR){ NULL, 0 };
             k2 = INT64_C(0);
             { Ast_Node * fpl = (*(Ast_Node * *) m9_at (fp->kids.p, INT64_C(0), fp->kids.len, sizeof (Ast_Node *), err));
@@ -11392,16 +11555,16 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
                         { Ast_Node * alx = argl;
                         if (alx != NULL) {
                           if (((args).len > INT64_C(0))) {
-                            { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s912, 2 }), err);
+                            { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s919, 2 }), err);
                               if (err->exc) goto L_ret;
                               args = m9v;
                             }
                           }
-                          { __typeof__((*(Ast_Node * *) m9_at (alx->kids.p, k2, alx->kids.len, sizeof (Ast_Node *), err))) m9a509 = (*(Ast_Node * *) m9_at (alx->kids.p, k2, alx->kids.len, sizeof (Ast_Node *), err));
+                          { __typeof__((*(Ast_Node * *) m9_at (alx->kids.p, k2, alx->kids.len, sizeof (Ast_Node *), err))) m9a514 = (*(Ast_Node * *) m9_at (alx->kids.p, k2, alx->kids.len, sizeof (Ast_Node *), err));
                             if (err->exc) goto L_ret;
-                          { __typeof__(Gen_EX (m9a509, (m9_sl_CHAR){ NULL, 0 }, err)) m9a510 = Gen_EX (m9a509, (m9_sl_CHAR){ NULL, 0 }, err);
+                          { __typeof__(Gen_EX (m9a514, (m9_sl_CHAR){ NULL, 0 }, err)) m9a515 = Gen_EX (m9a514, (m9_sl_CHAR){ NULL, 0 }, err);
                             if (err->exc) goto L_ret;
-                          { __typeof__(args) m9v = Gen_S2 (args, m9a510, err);
+                          { __typeof__(args) m9v = Gen_S2 (args, m9a515, err);
                             if (err->exc) goto L_ret;
                             args = m9v;
                           }
@@ -11419,7 +11582,7 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
               } }
             } }
             if ((k2 != nargs)) {
-              Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s913, 16 }), err);
+              Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s920, 16 }), err);
               if (err->exc) goto L_ret;
             }
             { __typeof__(gname) m9v = (*(Gen_MEnt *) m9_at (foreignProcs.es.p, pi, foreignProcs.es.len, sizeof (Gen_MEnt), err)).t;
@@ -11430,7 +11593,7 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
             { Ast_Node * att = (*(Ast_Node * *) m9_at (fp->kids.p, INT64_C(3), fp->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (att != NULL) {
-              bool m9t57 = DynStr_Eq (att->a, ((m9_sl_CHAR){ (uint32_t *) m9s914, 6 }), err);
+              bool m9t57 = DynStr_Eq (att->a, ((m9_sl_CHAR){ (uint32_t *) m9s921, 6 }), err);
               if (err->exc) goto L_ret;
               if (m9t57) {
                 ser = true;
@@ -11442,9 +11605,9 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
               if (m9t58) {
                 Gen_MAdd (&(gateSeen), &m9mframe, gname, NULL, (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_ret;
-                { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s915, 22 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s916, 1 }), err)) m9a511 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s915, 22 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s916, 1 }), err);
+                { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s922, 22 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s923, 1 }), err)) m9a516 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s922, 22 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s923, 1 }), err);
                   if (err->exc) goto L_ret;
-                Gen_Line (Gen_KGate, INT64_C(0), m9a511, err);
+                Gen_Line (Gen_KGate, INT64_C(0), m9a516, err);
                 if (err->exc) goto L_ret;
                 }
               }
@@ -11452,13 +11615,13 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
               if (err->exc) goto L_ret;
               if (frt != NULL) {
                 err->res = m9res;
-                { __typeof__(Gen_S4 (fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s919, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s920, 1 }), err)) m9a512 = Gen_S4 (fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s919, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s920, 1 }), err);
+                { __typeof__(Gen_S4 (fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s926, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s927, 1 }), err)) m9a517 = Gen_S4 (fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s926, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s927, 1 }), err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s921, 9 }), fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s922, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s923, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a513 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s921, 9 }), fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s922, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s923, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s928, 9 }), fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s929, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s930, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a518 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s928, 9 }), fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s929, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s930, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s924, 23 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s925, 11 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a514 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s924, 23 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s925, 11 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s931, 23 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s932, 11 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a519 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s931, 23 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s932, 11 }), (m9_sl_CHAR){ NULL, 0 }, err);
                   if (err->exc) goto L_ret;
-                m9ret = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s917, 26 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s918, 14 }), m9a512, m9a513, m9a514, err);
+                m9ret = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s924, 26 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s925, 14 }), m9a517, m9a518, m9a519, err);
                 if (err->exc) goto L_ret;
                 }
                 }
@@ -11466,18 +11629,18 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
                 goto L_ret;
               } }
               err->res = m9res;
-              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s928, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s929, 3 }), err)) m9a515 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s928, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s929, 3 }), err);
+              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s935, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s936, 3 }), err)) m9a520 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s935, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s936, 3 }), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s930, 23 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s931, 5 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a516 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s930, 23 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s931, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
+              { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s937, 23 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s938, 5 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a521 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s937, 23 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s938, 5 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_ret;
-              m9ret = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s926, 26 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s927, 3 }), fp->b, m9a515, m9a516, err);
+              m9ret = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s933, 26 }), gname, ((m9_sl_CHAR){ (uint32_t *) m9s934, 3 }), fp->b, m9a520, m9a521, err);
               if (err->exc) goto L_ret;
               }
               }
               goto L_ret;
             }
             err->res = m9res;
-            m9ret = Gen_S4 (fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s932, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s933, 1 }), err);
+            m9ret = Gen_S4 (fp->b, ((m9_sl_CHAR){ (uint32_t *) m9s939, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s940, 1 }), err);
             if (err->exc) goto L_ret;
             goto L_ret;
           } }
@@ -11490,9 +11653,9 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
     { Ast_Node * rt = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rt != NULL) {
-      { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a517 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err))) m9a522 = (*(Ast_Node * *) m9_at (pn->kids.p, INT64_C(1), pn->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*tag)) m9v = Gen_TagOfType (m9a517, err);
+      { __typeof__((*tag)) m9v = Gen_TagOfType (m9a522, err);
         if (err->exc) goto L_ret;
         (*tag) = m9v;
       }
@@ -11529,65 +11692,65 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
                   { Ast_Node * arg = ak;
                   if (arg != NULL) {
                     if (((args).len > INT64_C(0))) {
-                      { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s934, 2 }), err);
+                      { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s941, 2 }), err);
                         if (err->exc) goto L_ret;
                         args = m9v;
                       }
                     }
                     if ((grp->f1 || grp->f2)) {
-                      bool m9t61 = (((arg->kind == Ast_NDesignator) && (arg->nkids == INT64_C(0))) && ((DynStr_Eq (Gen_ScopeMode (arg->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s935, 1 }), err) || DynStr_Eq (Gen_ScopeMode (arg->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s936, 1 }), err))));
+                      bool m9t61 = (((arg->kind == Ast_NDesignator) && (arg->nkids == INT64_C(0))) && ((DynStr_Eq (Gen_ScopeMode (arg->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s942, 1 }), err) || DynStr_Eq (Gen_ScopeMode (arg->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s943, 1 }), err))));
                       if (err->exc) goto L_ret;
                       if (m9t61) {
-                        { __typeof__(Gen_CN (arg->a, err)) m9a518 = Gen_CN (arg->a, err);
+                        { __typeof__(Gen_CN (arg->a, err)) m9a523 = Gen_CN (arg->a, err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(args) m9v = Gen_S2 (args, m9a518, err);
+                        { __typeof__(args) m9v = Gen_S2 (args, m9a523, err);
                           if (err->exc) goto L_ret;
                           args = m9v;
                         }
                         }
                       } else {
                         if ((arg->kind == Ast_NDesignator)) {
-                          at = ((m9_sl_CHAR){ (uint32_t *) m9s937, 1 });
-                          { __typeof__(Gen_DES (arg, &(at), err)) m9a519 = Gen_DES (arg, &(at), err);
+                          at = ((m9_sl_CHAR){ (uint32_t *) m9s944, 1 });
+                          { __typeof__(Gen_DES (arg, &(at), err)) m9a524 = Gen_DES (arg, &(at), err);
                             if (err->exc) goto L_ret;
-                          { __typeof__(args) m9v = Gen_S4 (args, ((m9_sl_CHAR){ (uint32_t *) m9s938, 2 }), m9a519, ((m9_sl_CHAR){ (uint32_t *) m9s939, 1 }), err);
+                          { __typeof__(args) m9v = Gen_S4 (args, ((m9_sl_CHAR){ (uint32_t *) m9s945, 2 }), m9a524, ((m9_sl_CHAR){ (uint32_t *) m9s946, 1 }), err);
                             if (err->exc) goto L_ret;
                             args = m9v;
                           }
                           }
                       } else {
-                        Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s940, 33 }), err);
+                        Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s947, 33 }), err);
                         if (err->exc) goto L_ret;
                       } }
                       bool m9t62 = ((grp->f1 && (arg->kind == Ast_NDesignator)) && Gen_PoolParamTy ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err));
                       if (err->exc) goto L_ret;
                       if (m9t62) {
-                        { __typeof__(Gen_ObjPoolC (arg, err)) m9a520 = Gen_ObjPoolC (arg, err);
+                        { __typeof__(Gen_ObjPoolC (arg, err)) m9a525 = Gen_ObjPoolC (arg, err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(args) m9v = Gen_S3 (args, ((m9_sl_CHAR){ (uint32_t *) m9s941, 2 }), m9a520, err);
+                        { __typeof__(args) m9v = Gen_S3 (args, ((m9_sl_CHAR){ (uint32_t *) m9s948, 2 }), m9a525, err);
                           if (err->exc) goto L_ret;
                           args = m9v;
                         }
                         }
                       }
                     } else {
-                      { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a521 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
+                      { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a526 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
                         if (err->exc) goto L_ret;
-                      { __typeof__(want2) m9v = Gen_TagOfType (m9a521, err);
+                      { __typeof__(want2) m9v = Gen_TagOfType (m9a526, err);
                         if (err->exc) goto L_ret;
                         want2 = m9v;
                       }
                       }
-                      bool m9t63 = ((DynStr_Eq (want2, ((m9_sl_CHAR){ (uint32_t *) m9s942, 5 }), err) && (arg->kind == Ast_NDesignator)) && DynStr_Eq (Gen_TagOfExpr (ak, err), ((m9_sl_CHAR){ (uint32_t *) m9s943, 3 }), err));
+                      bool m9t63 = ((DynStr_Eq (want2, ((m9_sl_CHAR){ (uint32_t *) m9s949, 5 }), err) && (arg->kind == Ast_NDesignator)) && DynStr_Eq (Gen_TagOfExpr (ak, err), ((m9_sl_CHAR){ (uint32_t *) m9s950, 3 }), err));
                       if (err->exc) goto L_ret;
                       if (m9t63) {
                         { Ast_Node * av = Gen_Resolve (Gen_DesigDecl (arg, err), err);
                         if (err->exc) goto L_ret;
                         if (av != NULL) {
                           if ((av->kind == Ast_NArrayType)) {
-                            { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a522 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
+                            { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a527 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
                               if (err->exc) goto L_ret;
-                            { __typeof__(e1) m9v = Gen_TyC (m9a522, err);
+                            { __typeof__(e1) m9v = Gen_TyC (m9a527, err);
                               if (err->exc) goto L_ret;
                               e1 = m9v;
                             }
@@ -11596,26 +11759,26 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
                               if (err->exc) goto L_ret;
                               e2 = m9v;
                             }
-                            { __typeof__((*(Ast_Node * *) m9_at (av->kids.p, INT64_C(0), av->kids.len, sizeof (Ast_Node *), err))) m9a523 = (*(Ast_Node * *) m9_at (av->kids.p, INT64_C(0), av->kids.len, sizeof (Ast_Node *), err));
+                            { __typeof__((*(Ast_Node * *) m9_at (av->kids.p, INT64_C(0), av->kids.len, sizeof (Ast_Node *), err))) m9a528 = (*(Ast_Node * *) m9_at (av->kids.p, INT64_C(0), av->kids.len, sizeof (Ast_Node *), err));
                               if (err->exc) goto L_ret;
-                            { __typeof__(cnt) m9v = Gen_ArrCount2 (m9a523, err);
+                            { __typeof__(cnt) m9v = Gen_ArrCount2 (m9a528, err);
                               if (err->exc) goto L_ret;
                               cnt = m9v;
                             }
                             }
-                            { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s944, 2 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s945, 4 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s946, 13 }), cnt, ((m9_sl_CHAR){ (uint32_t *) m9s947, 4 }), err)) m9a524 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s944, 2 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s945, 4 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s946, 13 }), cnt, ((m9_sl_CHAR){ (uint32_t *) m9s947, 4 }), err);
+                            { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s951, 2 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s952, 4 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s953, 13 }), cnt, ((m9_sl_CHAR){ (uint32_t *) m9s954, 4 }), err)) m9a529 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s951, 2 }), e1, ((m9_sl_CHAR){ (uint32_t *) m9s952, 4 }), e2, ((m9_sl_CHAR){ (uint32_t *) m9s953, 13 }), cnt, ((m9_sl_CHAR){ (uint32_t *) m9s954, 4 }), err);
                               if (err->exc) goto L_ret;
-                            { __typeof__(args) m9v = Gen_S2 (args, m9a524, err);
+                            { __typeof__(args) m9v = Gen_S2 (args, m9a529, err);
                               if (err->exc) goto L_ret;
                               args = m9v;
                             }
                             }
                           } else {
-                            Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s948, 29 }), err);
+                            Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s955, 29 }), err);
                             if (err->exc) goto L_ret;
                           }
                         } else {
-                          Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s949, 29 }), err);
+                          Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s956, 29 }), err);
                           if (err->exc) goto L_ret;
                         } }
                       } else {
@@ -11651,28 +11814,28 @@ static m9_sl_CHAR Gen_CallC (Ast_Node * dn, Ast_Node * argl, m9_sl_CHAR *tag, m9
       } }
     } }
     if ((k2 != nargs)) {
-      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s950, 16 }), err);
+      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s957, 16 }), err);
       if (err->exc) goto L_ret;
     }
     if (((args).len > INT64_C(0))) {
-      { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s951, 2 }), err);
+      { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s958, 2 }), err);
         if (err->exc) goto L_ret;
         args = m9v;
       }
     }
     stRaise = true;
     err->res = m9res;
-    m9ret = Gen_S4 (cfunc, ((m9_sl_CHAR){ (uint32_t *) m9s952, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s953, 4 }), err);
+    m9ret = Gen_S4 (cfunc, ((m9_sl_CHAR){ (uint32_t *) m9s959, 2 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s960, 4 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   } }
-  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s954, 24 }), name, err)) m9a525 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s954, 24 }), name, err);
+  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s961, 24 }), name, err)) m9a530 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s961, 24 }), name, err);
     if (err->exc) goto L_ret;
-  Gen_Err2 (eln, m9a525, err);
+  Gen_Err2 (eln, m9a530, err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s955, 1 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s962, 1 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -11718,7 +11881,7 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
       stRaise = false;
       hoistOk = true;
       hoistInd = ind;
-      tg = ((m9_sl_CHAR){ (uint32_t *) m9s956, 1 });
+      tg = ((m9_sl_CHAR){ (uint32_t *) m9s963, 1 });
       { Ast_Node * lhs = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (lhs != NULL) {
@@ -11727,80 +11890,80 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
           l = m9v;
         }
       } else {
-        l = ((m9_sl_CHAR){ (uint32_t *) m9s957, 1 });
+        l = ((m9_sl_CHAR){ (uint32_t *) m9s964, 1 });
       } }
       lRaise = stRaise;
       stRaise = false;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a526 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a531 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(r) m9v = Gen_EX (m9a526, tg, err);
+      { __typeof__(r) m9v = Gen_EX (m9a531, tg, err);
         if (err->exc) goto L_ret;
         r = m9v;
       }
       }
-      { __typeof__(shared) m9v = (DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s958, 6 }), err) && DynStr_Eq (Gen_TagOfExpr ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s959, 6 }), err));
+      { __typeof__(shared) m9v = (DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s965, 6 }), err) && DynStr_Eq (Gen_TagOfExpr ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s966, 6 }), err));
         if (err->exc) goto L_ret;
         shared = m9v;
       }
       if (stRaise) {
-        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s960, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s961, 8 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s962, 1 }), err)) m9a527 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s960, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s961, 8 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s962, 1 }), err);
+        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s967, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s968, 8 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s969, 1 }), err)) m9a532 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s967, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s968, 8 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s969, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a527, err);
+        Gen_Line (Gen_KPbuf, ind, m9a532, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a528 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a533 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s963, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s964, 1 }), err)) m9a529 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s963, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s964, 1 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s970, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s971, 1 }), err)) m9a534 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s970, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s971, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, m9a528, m9a529, err);
+        Gen_Line (Gen_KPbuf, m9a533, m9a534, err);
         if (err->exc) goto L_ret;
         }
         }
         if (shared) {
-          { __typeof__(r) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s965, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s966, 23 }), err);
+          { __typeof__(r) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s972, 13 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s973, 23 }), err);
             if (err->exc) goto L_ret;
             r = m9v;
           }
         } else {
-          r = ((m9_sl_CHAR){ (uint32_t *) m9s967, 3 });
+          r = ((m9_sl_CHAR){ (uint32_t *) m9s974, 3 });
         }
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a530 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a535 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S4 (l, ((m9_sl_CHAR){ (uint32_t *) m9s968, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s969, 1 }), err)) m9a531 = Gen_S4 (l, ((m9_sl_CHAR){ (uint32_t *) m9s968, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s969, 1 }), err);
+        { __typeof__(Gen_S4 (l, ((m9_sl_CHAR){ (uint32_t *) m9s975, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s976, 1 }), err)) m9a536 = Gen_S4 (l, ((m9_sl_CHAR){ (uint32_t *) m9s975, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s976, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, m9a530, m9a531, err);
+        Gen_Line (Gen_KPbuf, m9a535, m9a536, err);
         if (err->exc) goto L_ret;
         }
         }
         if (lRaise) {
-          { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a532 = m9_add_i64 (ind, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a537 = m9_add_i64 (ind, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s970, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s971, 1 }), err)) m9a533 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s970, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s971, 1 }), err);
+          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s977, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s978, 1 }), err)) m9a538 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s977, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s978, 1 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KPbuf, m9a532, m9a533, err);
+          Gen_Line (Gen_KPbuf, m9a537, m9a538, err);
           if (err->exc) goto L_ret;
           }
           }
         }
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s972, 1 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s979, 1 }), err);
         if (err->exc) goto L_ret;
         stRaise = false;
       } else {
         if (shared) {
-          { __typeof__(r) m9v = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s973, 13 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s974, 18 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s975, 2 }), err);
+          { __typeof__(r) m9v = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s980, 13 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s981, 18 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s982, 2 }), err);
             if (err->exc) goto L_ret;
             r = m9v;
           }
         }
-        { __typeof__(Gen_S4 (l, ((m9_sl_CHAR){ (uint32_t *) m9s976, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s977, 1 }), err)) m9a534 = Gen_S4 (l, ((m9_sl_CHAR){ (uint32_t *) m9s976, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s977, 1 }), err);
+        { __typeof__(Gen_S4 (l, ((m9_sl_CHAR){ (uint32_t *) m9s983, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s984, 1 }), err)) m9a539 = Gen_S4 (l, ((m9_sl_CHAR){ (uint32_t *) m9s983, 3 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s984, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a534, err);
+        Gen_Line (Gen_KPbuf, ind, m9a539, err);
         if (err->exc) goto L_ret;
         }
         if (lRaise) {
-          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s978, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s979, 1 }), err)) m9a535 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s978, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s979, 1 }), err);
+          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s985, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s986, 1 }), err)) m9a540 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s985, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s986, 1 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KPbuf, ind, m9a535, err);
+          Gen_Line (Gen_KPbuf, ind, m9a540, err);
           if (err->exc) goto L_ret;
           }
         }
@@ -11813,25 +11976,25 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
       stRaise = false;
       hoistOk = true;
       hoistInd = ind;
-      tg = ((m9_sl_CHAR){ (uint32_t *) m9s980, 1 });
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a536 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      tg = ((m9_sl_CHAR){ (uint32_t *) m9s987, 1 });
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a541 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a537 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a542 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_CallC (m9a536, m9a537, &(tg), err)) m9a538 = Gen_CallC (m9a536, m9a537, &(tg), err);
+      { __typeof__(Gen_CallC (m9a541, m9a542, &(tg), err)) m9a543 = Gen_CallC (m9a541, m9a542, &(tg), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S2 (m9a538, ((m9_sl_CHAR){ (uint32_t *) m9s981, 1 }), err)) m9a539 = Gen_S2 (m9a538, ((m9_sl_CHAR){ (uint32_t *) m9s981, 1 }), err);
+      { __typeof__(Gen_S2 (m9a543, ((m9_sl_CHAR){ (uint32_t *) m9s988, 1 }), err)) m9a544 = Gen_S2 (m9a543, ((m9_sl_CHAR){ (uint32_t *) m9s988, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a539, err);
+      Gen_Line (Gen_KPbuf, ind, m9a544, err);
       if (err->exc) goto L_ret;
       }
       }
       }
       }
       if (stRaise) {
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s982, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s983, 1 }), err)) m9a540 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s982, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s983, 1 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s989, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s990, 1 }), err)) m9a545 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s989, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s990, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a540, err);
+        Gen_Line (Gen_KPbuf, ind, m9a545, err);
         if (err->exc) goto L_ret;
         }
       }
@@ -11846,9 +12009,9 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
         { Ast_Node * isn = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (isn != NULL) {
-          { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a541 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a546 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(vtN) m9v = Gen_OptInner (m9a541, err);
+          { __typeof__(vtN) m9v = Gen_OptInner (m9a546, err);
             if (err->exc) goto L_ret;
             vtN = m9v;
           }
@@ -11856,9 +12019,9 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
           { Ast_Node * vt0 = vtN;
           if (vt0 != NULL) {
             stRaise = false;
-            { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a542 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a547 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(cnd) m9v = Gen_EX (m9a542, (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(cnd) m9v = Gen_EX (m9a547, (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
               cnd = m9v;
             }
@@ -11869,51 +12032,51 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
             if (bn0 != NULL) {
               bname = bn0->a;
             } }
-            { __typeof__(Gen_TyC (vtN, err)) m9a543 = Gen_TyC (vtN, err);
+            { __typeof__(Gen_TyC (vtN, err)) m9a548 = Gen_TyC (vtN, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_CN (bname, err)) m9a544 = Gen_CN (bname, err);
+            { __typeof__(Gen_CN (bname, err)) m9a549 = Gen_CN (bname, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s987, 1 }), err)) m9a545 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s987, 1 }), err);
+            { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s994, 1 }), err)) m9a550 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s994, 1 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s984, 2 }), m9a543, ((m9_sl_CHAR){ (uint32_t *) m9s985, 1 }), m9a544, ((m9_sl_CHAR){ (uint32_t *) m9s986, 3 }), m9a545, err)) m9a546 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s984, 2 }), m9a543, ((m9_sl_CHAR){ (uint32_t *) m9s985, 1 }), m9a544, ((m9_sl_CHAR){ (uint32_t *) m9s986, 3 }), m9a545, err);
+            { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s991, 2 }), m9a548, ((m9_sl_CHAR){ (uint32_t *) m9s992, 1 }), m9a549, ((m9_sl_CHAR){ (uint32_t *) m9s993, 3 }), m9a550, err)) m9a551 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s991, 2 }), m9a548, ((m9_sl_CHAR){ (uint32_t *) m9s992, 1 }), m9a549, ((m9_sl_CHAR){ (uint32_t *) m9s993, 3 }), m9a550, err);
               if (err->exc) goto L_ret;
-            Gen_Line (Gen_KPbuf, ind, m9a546, err);
+            Gen_Line (Gen_KPbuf, ind, m9a551, err);
             if (err->exc) goto L_ret;
             }
             }
             }
             }
             if (stRaise) {
-              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s988, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s989, 1 }), err)) m9a547 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s988, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s989, 1 }), err);
+              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s995, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s996, 1 }), err)) m9a552 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s995, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s996, 1 }), err);
                 if (err->exc) goto L_ret;
-              Gen_Line (Gen_KPbuf, ind, m9a547, err);
+              Gen_Line (Gen_KPbuf, ind, m9a552, err);
               if (err->exc) goto L_ret;
               }
             }
             savedScope = scope.n;
-            { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a548 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a553 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_OriginPool (m9a548, err)) m9a549 = Gen_OriginPool (m9a548, err);
+            { __typeof__(Gen_OriginPool (m9a553, err)) m9a554 = Gen_OriginPool (m9a553, err);
               if (err->exc) goto L_ret;
-            Gen_MAdd (&(bpool), &m9mframe, bname, NULL, m9a549, err);
+            Gen_MAdd (&(bpool), &m9mframe, bname, NULL, m9a554, err);
             if (err->exc) goto L_ret;
             }
             }
-            Gen_MAdd (&(scope), &m9mframe, bname, vtN, ((m9_sl_CHAR){ (uint32_t *) m9s990, 1 }), err);
+            Gen_MAdd (&(scope), &m9mframe, bname, vtN, ((m9_sl_CHAR){ (uint32_t *) m9s997, 1 }), err);
             if (err->exc) goto L_ret;
-            { __typeof__(Gen_CN (bname, err)) m9a550 = Gen_CN (bname, err);
+            { __typeof__(Gen_CN (bname, err)) m9a555 = Gen_CN (bname, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s991, 4 }), m9a550, ((m9_sl_CHAR){ (uint32_t *) m9s992, 11 }), err)) m9a551 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s991, 4 }), m9a550, ((m9_sl_CHAR){ (uint32_t *) m9s992, 11 }), err);
+            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s998, 4 }), m9a555, ((m9_sl_CHAR){ (uint32_t *) m9s999, 11 }), err)) m9a556 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s998, 4 }), m9a555, ((m9_sl_CHAR){ (uint32_t *) m9s999, 11 }), err);
               if (err->exc) goto L_ret;
-            Gen_Line (Gen_KPbuf, ind, m9a551, err);
+            Gen_Line (Gen_KPbuf, ind, m9a556, err);
             if (err->exc) goto L_ret;
             }
             }
-            { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a552 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a557 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a553 = m9_add_i64 (ind, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a558 = m9_add_i64 (ind, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            Gen_EmitSeq (m9a552, m9a553, err);
+            Gen_EmitSeq (m9a557, m9a558, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -11926,36 +12089,36 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
               if (err->exc) goto L_ret;
               if (tail != NULL) {
                 if ((tail->kind == Ast_NElsif)) {
-                  Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s993, 35 }), err);
+                  Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1000, 35 }), err);
                   if (err->exc) goto L_ret;
                 } else {
-                  Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s994, 8 }), err);
+                  Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1001, 8 }), err);
                   if (err->exc) goto L_ret;
-                  { __typeof__((*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err))) m9a554 = (*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err))) m9a559 = (*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a555 = m9_add_i64 (ind, INT64_C(1), err);
+                  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a560 = m9_add_i64 (ind, INT64_C(1), err);
                     if (err->exc) goto L_ret;
-                  Gen_EmitSeq (m9a554, m9a555, err);
+                  Gen_EmitSeq (m9a559, m9a560, err);
                   if (err->exc) goto L_ret;
                   }
                   }
                 }
               } }
             } }
-            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s995, 3 }), err);
+            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1002, 3 }), err);
             if (err->exc) goto L_ret;
             scope.n = savedScope;
           } else {
-            Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s996, 28 }), err);
+            Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1003, 28 }), err);
             if (err->exc) goto L_ret;
           } }
         } }
         goto L_ret;
       }
       stRaise = false;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a556 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a561 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(cnd) m9v = Gen_EX (m9a556, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(cnd) m9v = Gen_EX (m9a561, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         cnd = m9v;
       }
@@ -11965,31 +12128,31 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
           if (err->exc) goto L_ret;
           w = m9v;
         }
-        { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s999, 1 }), err)) m9a557 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s999, 1 }), err);
+        { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1006, 1 }), err)) m9a562 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1006, 1 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s997, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s998, 3 }), m9a557, err)) m9a558 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s997, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s998, 3 }), m9a557, err);
+        { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1004, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1005, 3 }), m9a562, err)) m9a563 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1004, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1005, 3 }), m9a562, err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a558, err);
+        Gen_Line (Gen_KPbuf, ind, m9a563, err);
         if (err->exc) goto L_ret;
         }
         }
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1000, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1001, 1 }), err)) m9a559 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1000, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1001, 1 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1007, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1008, 1 }), err)) m9a564 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1007, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1008, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a559, err);
+        Gen_Line (Gen_KPbuf, ind, m9a564, err);
         if (err->exc) goto L_ret;
         }
         cnd = w;
       }
-      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1002, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1003, 3 }), err)) m9a560 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1002, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1003, 3 }), err);
+      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1009, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1010, 3 }), err)) m9a565 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1009, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1010, 3 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a560, err);
+      Gen_Line (Gen_KPbuf, ind, m9a565, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a561 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a566 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a562 = m9_add_i64 (ind, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a567 = m9_add_i64 (ind, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      Gen_EmitSeq (m9a561, m9a562, err);
+      Gen_EmitSeq (m9a566, m9a567, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -12003,12 +12166,12 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
         if (err->exc) goto L_ret;
         if (tail != NULL) {
           if ((tail->kind == Ast_NElsif)) {
-            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1004, 8 }), err);
+            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1011, 8 }), err);
             if (err->exc) goto L_ret;
             stRaise = false;
-            { __typeof__((*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err))) m9a563 = (*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err))) m9a568 = (*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(cnd) m9v = Gen_EX (m9a563, (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(cnd) m9v = Gen_EX (m9a568, (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
               cnd = m9v;
             }
@@ -12018,40 +12181,40 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
                 if (err->exc) goto L_ret;
                 w = m9v;
               }
-              { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a564 = m9_add_i64 (ind, INT64_C(1), err);
+              { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a569 = m9_add_i64 (ind, INT64_C(1), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1007, 1 }), err)) m9a565 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1007, 1 }), err);
+              { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1014, 1 }), err)) m9a570 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1014, 1 }), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1005, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1006, 3 }), m9a565, err)) m9a566 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1005, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1006, 3 }), m9a565, err);
+              { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1012, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1013, 3 }), m9a570, err)) m9a571 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1012, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1013, 3 }), m9a570, err);
                 if (err->exc) goto L_ret;
-              Gen_Line (Gen_KPbuf, m9a564, m9a566, err);
+              Gen_Line (Gen_KPbuf, m9a569, m9a571, err);
               if (err->exc) goto L_ret;
               }
               }
               }
-              { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a567 = m9_add_i64 (ind, INT64_C(1), err);
+              { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a572 = m9_add_i64 (ind, INT64_C(1), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1008, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1009, 1 }), err)) m9a568 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1008, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1009, 1 }), err);
+              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1015, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1016, 1 }), err)) m9a573 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1015, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1016, 1 }), err);
                 if (err->exc) goto L_ret;
-              Gen_Line (Gen_KPbuf, m9a567, m9a568, err);
+              Gen_Line (Gen_KPbuf, m9a572, m9a573, err);
               if (err->exc) goto L_ret;
               }
               }
               cnd = w;
             }
-            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a569 = m9_add_i64 (ind, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a574 = m9_add_i64 (ind, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1010, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1011, 3 }), err)) m9a570 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1010, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1011, 3 }), err);
+            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1017, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1018, 3 }), err)) m9a575 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1017, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1018, 3 }), err);
               if (err->exc) goto L_ret;
-            Gen_Line (Gen_KPbuf, m9a569, m9a570, err);
+            Gen_Line (Gen_KPbuf, m9a574, m9a575, err);
             if (err->exc) goto L_ret;
             }
             }
-            { __typeof__((*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(1), tail->kids.len, sizeof (Ast_Node *), err))) m9a571 = (*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(1), tail->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(1), tail->kids.len, sizeof (Ast_Node *), err))) m9a576 = (*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(1), tail->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a572 = m9_add_i64 (ind, INT64_C(2), err);
+            { __typeof__(m9_add_i64 (ind, INT64_C(2), err)) m9a577 = m9_add_i64 (ind, INT64_C(2), err);
               if (err->exc) goto L_ret;
-            Gen_EmitSeq (m9a571, m9a572, err);
+            Gen_EmitSeq (m9a576, m9a577, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -12060,25 +12223,25 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
               j2 = m9v;
             }
           } else {
-            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1012, 8 }), err);
+            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1019, 8 }), err);
             if (err->exc) goto L_ret;
-            { __typeof__((*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err))) m9a573 = (*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err))) m9a578 = (*(Ast_Node * *) m9_at (tail->kids.p, INT64_C(0), tail->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a574 = m9_add_i64 (ind, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a579 = m9_add_i64 (ind, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            Gen_EmitSeq (m9a573, m9a574, err);
+            Gen_EmitSeq (m9a578, m9a579, err);
             if (err->exc) goto L_ret;
             }
             }
           }
         } }
       } }
-      cnd = ((m9_sl_CHAR){ (uint32_t *) m9s1013, 1 });
+      cnd = ((m9_sl_CHAR){ (uint32_t *) m9s1020, 1 });
       { int64_t m9t5to;
       j = INT64_C(1);
       m9t5to = j2;
       for (; j <= m9t5to; j += 1) {
-        { __typeof__(cnd) m9v = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1014, 2 }), err);
+        { __typeof__(cnd) m9v = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1021, 2 }), err);
           if (err->exc) goto L_ret;
           cnd = m9v;
         }
@@ -12094,9 +12257,9 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
         { Ast_Node * isn = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
         if (isn != NULL) {
-          { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a575 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a580 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(vtN) m9v = Gen_OptInner (m9a575, err);
+          { __typeof__(vtN) m9v = Gen_OptInner (m9a580, err);
             if (err->exc) goto L_ret;
             vtN = m9v;
           }
@@ -12109,27 +12272,27 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
             if (bn1 != NULL) {
               bname = bn1->a;
             } }
-            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1015, 10 }), err);
+            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1022, 10 }), err);
             if (err->exc) goto L_ret;
             stRaise = false;
-            { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a576 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a581 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(cnd) m9v = Gen_EX (m9a576, (m9_sl_CHAR){ NULL, 0 }, err);
+            { __typeof__(cnd) m9v = Gen_EX (m9a581, (m9_sl_CHAR){ NULL, 0 }, err);
               if (err->exc) goto L_ret;
               cnd = m9v;
             }
             }
-            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a577 = m9_add_i64 (ind, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a582 = m9_add_i64 (ind, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_TyC (vtN, err)) m9a578 = Gen_TyC (vtN, err);
+            { __typeof__(Gen_TyC (vtN, err)) m9a583 = Gen_TyC (vtN, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_CN (bname, err)) m9a579 = Gen_CN (bname, err);
+            { __typeof__(Gen_CN (bname, err)) m9a584 = Gen_CN (bname, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1018, 1 }), err)) m9a580 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1018, 1 }), err);
+            { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1025, 1 }), err)) m9a585 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1025, 1 }), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S5 (m9a578, ((m9_sl_CHAR){ (uint32_t *) m9s1016, 1 }), m9a579, ((m9_sl_CHAR){ (uint32_t *) m9s1017, 3 }), m9a580, err)) m9a581 = Gen_S5 (m9a578, ((m9_sl_CHAR){ (uint32_t *) m9s1016, 1 }), m9a579, ((m9_sl_CHAR){ (uint32_t *) m9s1017, 3 }), m9a580, err);
+            { __typeof__(Gen_S5 (m9a583, ((m9_sl_CHAR){ (uint32_t *) m9s1023, 1 }), m9a584, ((m9_sl_CHAR){ (uint32_t *) m9s1024, 3 }), m9a585, err)) m9a586 = Gen_S5 (m9a583, ((m9_sl_CHAR){ (uint32_t *) m9s1023, 1 }), m9a584, ((m9_sl_CHAR){ (uint32_t *) m9s1024, 3 }), m9a585, err);
               if (err->exc) goto L_ret;
-            Gen_Line (Gen_KPbuf, m9a577, m9a581, err);
+            Gen_Line (Gen_KPbuf, m9a582, m9a586, err);
             if (err->exc) goto L_ret;
             }
             }
@@ -12137,67 +12300,67 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
             }
             }
             if (stRaise) {
-              { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a582 = m9_add_i64 (ind, INT64_C(1), err);
+              { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a587 = m9_add_i64 (ind, INT64_C(1), err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1019, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1020, 1 }), err)) m9a583 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1019, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1020, 1 }), err);
+              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1026, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1027, 1 }), err)) m9a588 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1026, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1027, 1 }), err);
                 if (err->exc) goto L_ret;
-              Gen_Line (Gen_KPbuf, m9a582, m9a583, err);
+              Gen_Line (Gen_KPbuf, m9a587, m9a588, err);
               if (err->exc) goto L_ret;
               }
               }
             }
-            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a584 = m9_add_i64 (ind, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a589 = m9_add_i64 (ind, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_CN (bname, err)) m9a585 = Gen_CN (bname, err);
+            { __typeof__(Gen_CN (bname, err)) m9a590 = Gen_CN (bname, err);
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1021, 6 }), m9a585, ((m9_sl_CHAR){ (uint32_t *) m9s1022, 17 }), err)) m9a586 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1021, 6 }), m9a585, ((m9_sl_CHAR){ (uint32_t *) m9s1022, 17 }), err);
+            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1028, 6 }), m9a590, ((m9_sl_CHAR){ (uint32_t *) m9s1029, 17 }), err)) m9a591 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1028, 6 }), m9a590, ((m9_sl_CHAR){ (uint32_t *) m9s1029, 17 }), err);
               if (err->exc) goto L_ret;
-            Gen_Line (Gen_KPbuf, m9a584, m9a586, err);
+            Gen_Line (Gen_KPbuf, m9a589, m9a591, err);
             if (err->exc) goto L_ret;
             }
             }
             }
             savedScope = scope.n;
-            { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a587 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err))) m9a592 = (*(Ast_Node * *) m9_at (isn->kids.p, INT64_C(0), isn->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(Gen_OriginPool (m9a587, err)) m9a588 = Gen_OriginPool (m9a587, err);
+            { __typeof__(Gen_OriginPool (m9a592, err)) m9a593 = Gen_OriginPool (m9a592, err);
               if (err->exc) goto L_ret;
-            Gen_MAdd (&(bpool), &m9mframe, bname, NULL, m9a588, err);
+            Gen_MAdd (&(bpool), &m9mframe, bname, NULL, m9a593, err);
             if (err->exc) goto L_ret;
             }
             }
-            Gen_MAdd (&(scope), &m9mframe, bname, vtN, ((m9_sl_CHAR){ (uint32_t *) m9s1023, 1 }), err);
+            Gen_MAdd (&(scope), &m9mframe, bname, vtN, ((m9_sl_CHAR){ (uint32_t *) m9s1030, 1 }), err);
             if (err->exc) goto L_ret;
             sv = inSwitch;
             inSwitch = INT64_C(0);
             sf = finDepth;
             finDepth = INT64_C(0);
-            { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a589 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+            { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a594 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
-            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a590 = m9_add_i64 (ind, INT64_C(1), err);
+            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a595 = m9_add_i64 (ind, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            Gen_EmitSeq (m9a589, m9a590, err);
+            Gen_EmitSeq (m9a594, m9a595, err);
             if (err->exc) goto L_ret;
             }
             }
             inSwitch = sv;
             finDepth = sf;
             scope.n = savedScope;
-            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1024, 1 }), err);
+            Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1031, 1 }), err);
             if (err->exc) goto L_ret;
           } else {
-            Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1025, 28 }), err);
+            Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1032, 28 }), err);
             if (err->exc) goto L_ret;
           } }
         } }
         goto L_ret;
       }
-      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1026, 10 }), err);
+      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1033, 10 }), err);
       if (err->exc) goto L_ret;
       stRaise = false;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a591 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a596 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(cnd) m9v = Gen_EX (m9a591, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(cnd) m9v = Gen_EX (m9a596, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         cnd = m9v;
       }
@@ -12207,32 +12370,32 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
           if (err->exc) goto L_ret;
           w = m9v;
         }
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a592 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a597 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1029, 1 }), err)) m9a593 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1029, 1 }), err);
+        { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1036, 1 }), err)) m9a598 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1036, 1 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1027, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1028, 3 }), m9a593, err)) m9a594 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1027, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1028, 3 }), m9a593, err);
+        { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1034, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1035, 3 }), m9a598, err)) m9a599 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1034, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1035, 3 }), m9a598, err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, m9a592, m9a594, err);
+        Gen_Line (Gen_KPbuf, m9a597, m9a599, err);
         if (err->exc) goto L_ret;
         }
         }
         }
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a595 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a600 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1030, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1031, 1 }), err)) m9a596 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1030, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1031, 1 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1037, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1038, 1 }), err)) m9a601 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1037, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1038, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, m9a595, m9a596, err);
+        Gen_Line (Gen_KPbuf, m9a600, m9a601, err);
         if (err->exc) goto L_ret;
         }
         }
         cnd = w;
       }
-      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a597 = m9_add_i64 (ind, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a602 = m9_add_i64 (ind, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1032, 6 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1033, 9 }), err)) m9a598 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1032, 6 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1033, 9 }), err);
+      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1039, 6 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1040, 9 }), err)) m9a603 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1039, 6 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1040, 9 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, m9a597, m9a598, err);
+      Gen_Line (Gen_KPbuf, m9a602, m9a603, err);
       if (err->exc) goto L_ret;
       }
       }
@@ -12240,66 +12403,66 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
       inSwitch = INT64_C(0);
       sf = finDepth;
       finDepth = INT64_C(0);
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a599 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a604 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a600 = m9_add_i64 (ind, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a605 = m9_add_i64 (ind, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      Gen_EmitSeq (m9a599, m9a600, err);
+      Gen_EmitSeq (m9a604, m9a605, err);
       if (err->exc) goto L_ret;
       }
       }
       inSwitch = sv;
       finDepth = sf;
-      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1034, 1 }), err);
+      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1041, 1 }), err);
       if (err->exc) goto L_ret;
     } break;
     case INT64_C(45):
     {
       stRaise = false;
-      bool m9t7 = Gen_StartsW (Gen_TagOfExpr ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s1035, 3 }), err);
+      bool m9t7 = Gen_StartsW (Gen_TagOfExpr ((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err)), err), ((m9_sl_CHAR){ (uint32_t *) m9s1042, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t7) {
         { __typeof__(w) m9v = Gen_NewTmp (err);
           if (err->exc) goto L_ret;
           w = m9v;
         }
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1036, 10 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1037, 3 }), err)) m9a601 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1036, 10 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1037, 3 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1043, 10 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1044, 3 }), err)) m9a606 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1043, 10 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1044, 3 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a601, err);
+        Gen_Line (Gen_KPbuf, ind, m9a606, err);
         if (err->exc) goto L_ret;
         }
-        { __typeof__(Gen_CN (st->a, err)) m9a602 = Gen_CN (st->a, err);
+        { __typeof__(Gen_CN (st->a, err)) m9a607 = Gen_CN (st->a, err);
           if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a603 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a608 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a603, (m9_sl_CHAR){ NULL, 0 }, err)) m9a604 = Gen_EX (m9a603, (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_EX (m9a608, (m9_sl_CHAR){ NULL, 0 }, err)) m9a609 = Gen_EX (m9a608, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S5 (m9a602, ((m9_sl_CHAR){ (uint32_t *) m9s1038, 8 }), m9a604, ((m9_sl_CHAR){ (uint32_t *) m9s1039, 6 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a605 = Gen_S5 (m9a602, ((m9_sl_CHAR){ (uint32_t *) m9s1038, 8 }), m9a604, ((m9_sl_CHAR){ (uint32_t *) m9s1039, 6 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_S5 (m9a607, ((m9_sl_CHAR){ (uint32_t *) m9s1045, 8 }), m9a609, ((m9_sl_CHAR){ (uint32_t *) m9s1046, 6 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a610 = Gen_S5 (m9a607, ((m9_sl_CHAR){ (uint32_t *) m9s1045, 8 }), m9a609, ((m9_sl_CHAR){ (uint32_t *) m9s1046, 6 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a605, err);
-        if (err->exc) goto L_ret;
-        }
-        }
-        }
-        }
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a606 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
-          if (err->exc) goto L_ret;
-        { __typeof__(Gen_EX (m9a606, (m9_sl_CHAR){ NULL, 0 }, err)) m9a607 = Gen_EX (m9a606, (m9_sl_CHAR){ NULL, 0 }, err);
-          if (err->exc) goto L_ret;
-        { __typeof__(Gen_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1040, 6 }), m9a607, ((m9_sl_CHAR){ (uint32_t *) m9s1041, 6 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a608 = Gen_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1040, 6 }), m9a607, ((m9_sl_CHAR){ (uint32_t *) m9s1041, 6 }), (m9_sl_CHAR){ NULL, 0 }, err);
-          if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a608, err);
+        Gen_Line (Gen_KPbuf, ind, m9a610, err);
         if (err->exc) goto L_ret;
         }
         }
         }
-        { __typeof__(Gen_CN (st->a, err)) m9a609 = Gen_CN (st->a, err);
+        }
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a611 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_CN (st->a, err)) m9a610 = Gen_CN (st->a, err);
+        { __typeof__(Gen_EX (m9a611, (m9_sl_CHAR){ NULL, 0 }, err)) m9a612 = Gen_EX (m9a611, (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1042, 7 }), m9a609, ((m9_sl_CHAR){ (uint32_t *) m9s1043, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1044, 4 }), m9a610, ((m9_sl_CHAR){ (uint32_t *) m9s1045, 6 }), ((m9_sl_CHAR){ (uint32_t *) m9s1046, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a611 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1042, 7 }), m9a609, ((m9_sl_CHAR){ (uint32_t *) m9s1043, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1044, 4 }), m9a610, ((m9_sl_CHAR){ (uint32_t *) m9s1045, 6 }), ((m9_sl_CHAR){ (uint32_t *) m9s1046, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+        { __typeof__(Gen_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1047, 6 }), m9a612, ((m9_sl_CHAR){ (uint32_t *) m9s1048, 6 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a613 = Gen_S5 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1047, 6 }), m9a612, ((m9_sl_CHAR){ (uint32_t *) m9s1048, 6 }), (m9_sl_CHAR){ NULL, 0 }, err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a611, err);
+        Gen_Line (Gen_KPbuf, ind, m9a613, err);
+        if (err->exc) goto L_ret;
+        }
+        }
+        }
+        { __typeof__(Gen_CN (st->a, err)) m9a614 = Gen_CN (st->a, err);
+          if (err->exc) goto L_ret;
+        { __typeof__(Gen_CN (st->a, err)) m9a615 = Gen_CN (st->a, err);
+          if (err->exc) goto L_ret;
+        { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1049, 7 }), m9a614, ((m9_sl_CHAR){ (uint32_t *) m9s1050, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1051, 4 }), m9a615, ((m9_sl_CHAR){ (uint32_t *) m9s1052, 6 }), ((m9_sl_CHAR){ (uint32_t *) m9s1053, 3 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a616 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1049, 7 }), m9a614, ((m9_sl_CHAR){ (uint32_t *) m9s1050, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1051, 4 }), m9a615, ((m9_sl_CHAR){ (uint32_t *) m9s1052, 6 }), ((m9_sl_CHAR){ (uint32_t *) m9s1053, 3 }), (m9_sl_CHAR){ NULL, 0 }, err);
+          if (err->exc) goto L_ret;
+        Gen_Line (Gen_KPbuf, ind, m9a616, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -12308,23 +12471,23 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
         inSwitch = INT64_C(0);
         sf = finDepth;
         finDepth = INT64_C(0);
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a612 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a617 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a613 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a618 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Gen_EmitSeq (m9a612, m9a613, err);
+        Gen_EmitSeq (m9a617, m9a618, err);
         if (err->exc) goto L_ret;
         }
         }
         inSwitch = sv;
         finDepth = sf;
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1047, 3 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1054, 3 }), err);
         if (err->exc) goto L_ret;
         goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a614 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a619 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(l) m9v = Gen_EX (m9a614, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(l) m9v = Gen_EX (m9a619, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         l = m9v;
       }
@@ -12333,93 +12496,93 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
         if (err->exc) goto L_ret;
         w = m9v;
       }
-      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1048, 10 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1049, 3 }), err)) m9a615 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1048, 10 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1049, 3 }), err);
+      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1055, 10 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1056, 3 }), err)) m9a620 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1055, 10 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1056, 3 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a615, err);
+      Gen_Line (Gen_KPbuf, ind, m9a620, err);
       if (err->exc) goto L_ret;
       }
-      { __typeof__(Gen_CN (st->a, err)) m9a616 = Gen_CN (st->a, err);
+      { __typeof__(Gen_CN (st->a, err)) m9a621 = Gen_CN (st->a, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S4 (m9a616, ((m9_sl_CHAR){ (uint32_t *) m9s1050, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1051, 1 }), err)) m9a617 = Gen_S4 (m9a616, ((m9_sl_CHAR){ (uint32_t *) m9s1050, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1051, 1 }), err);
+      { __typeof__(Gen_S4 (m9a621, ((m9_sl_CHAR){ (uint32_t *) m9s1057, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1058, 1 }), err)) m9a622 = Gen_S4 (m9a621, ((m9_sl_CHAR){ (uint32_t *) m9s1057, 3 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1058, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a617, err);
+      Gen_Line (Gen_KPbuf, ind, m9a622, err);
       if (err->exc) goto L_ret;
       }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a618 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err))) m9a623 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(r) m9v = Gen_EX (m9a618, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(r) m9v = Gen_EX (m9a623, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         r = m9v;
       }
       }
-      { __typeof__(Gen_S4 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1052, 5 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1053, 1 }), err)) m9a619 = Gen_S4 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1052, 5 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1053, 1 }), err);
+      { __typeof__(Gen_S4 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1059, 5 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1060, 1 }), err)) m9a624 = Gen_S4 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1059, 5 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1060, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a619, err);
+      Gen_Line (Gen_KPbuf, ind, m9a624, err);
       if (err->exc) goto L_ret;
       }
       if (stRaise) {
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1054, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1055, 1 }), err)) m9a620 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1054, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1055, 1 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1061, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1062, 1 }), err)) m9a625 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1061, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1062, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a620, err);
+        Gen_Line (Gen_KPbuf, ind, m9a625, err);
         if (err->exc) goto L_ret;
         }
       }
-      stp = ((m9_sl_CHAR){ (uint32_t *) m9s1056, 1 });
+      stp = ((m9_sl_CHAR){ (uint32_t *) m9s1063, 1 });
       { Ast_Node * by = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(2), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (by != NULL) {
         if ((by->kind == Ast_NInt)) {
           stp = by->a;
         } else {
-          bool m9t8 = ((by->kind == Ast_NUn) && DynStr_Eq (by->a, ((m9_sl_CHAR){ (uint32_t *) m9s1057, 1 }), err));
+          bool m9t8 = ((by->kind == Ast_NUn) && DynStr_Eq (by->a, ((m9_sl_CHAR){ (uint32_t *) m9s1064, 1 }), err));
           if (err->exc) goto L_ret;
           if (m9t8) {
             { Ast_Node * bl = (*(Ast_Node * *) m9_at (by->kids.p, INT64_C(0), by->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
             if (bl != NULL) {
               if ((bl->kind == Ast_NInt)) {
-                { __typeof__(stp) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1058, 1 }), bl->a, err);
+                { __typeof__(stp) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1065, 1 }), bl->a, err);
                   if (err->exc) goto L_ret;
                   stp = m9v;
                 }
               } else {
-                Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1059, 32 }), err);
+                Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1066, 32 }), err);
                 if (err->exc) goto L_ret;
               }
             } }
         } else {
-          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1060, 32 }), err);
+          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1067, 32 }), err);
           if (err->exc) goto L_ret;
         } }
       } }
       bool m9t9 = ((*(uint32_t *) m9_at (stp.p, INT64_C(0), stp.len, sizeof (uint32_t), err)) == 45u);
       if (err->exc) goto L_ret;
       if (m9t9) {
-        { __typeof__(Gen_CN (st->a, err)) m9a621 = Gen_CN (st->a, err);
+        { __typeof__(Gen_CN (st->a, err)) m9a626 = Gen_CN (st->a, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_CN (st->a, err)) m9a622 = Gen_CN (st->a, err);
+        { __typeof__(Gen_CN (st->a, err)) m9a627 = Gen_CN (st->a, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1064, 4 }), stp, ((m9_sl_CHAR){ (uint32_t *) m9s1065, 3 }), err)) m9a623 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1064, 4 }), stp, ((m9_sl_CHAR){ (uint32_t *) m9s1065, 3 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1071, 4 }), stp, ((m9_sl_CHAR){ (uint32_t *) m9s1072, 3 }), err)) m9a628 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1071, 4 }), stp, ((m9_sl_CHAR){ (uint32_t *) m9s1072, 3 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1061, 7 }), m9a621, ((m9_sl_CHAR){ (uint32_t *) m9s1062, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1063, 4 }), m9a622, m9a623, err)) m9a624 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1061, 7 }), m9a621, ((m9_sl_CHAR){ (uint32_t *) m9s1062, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1063, 4 }), m9a622, m9a623, err);
+        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1068, 7 }), m9a626, ((m9_sl_CHAR){ (uint32_t *) m9s1069, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1070, 4 }), m9a627, m9a628, err)) m9a629 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1068, 7 }), m9a626, ((m9_sl_CHAR){ (uint32_t *) m9s1069, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1070, 4 }), m9a627, m9a628, err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a624, err);
+        Gen_Line (Gen_KPbuf, ind, m9a629, err);
         if (err->exc) goto L_ret;
         }
         }
         }
         }
       } else {
-        { __typeof__(Gen_CN (st->a, err)) m9a625 = Gen_CN (st->a, err);
+        { __typeof__(Gen_CN (st->a, err)) m9a630 = Gen_CN (st->a, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_CN (st->a, err)) m9a626 = Gen_CN (st->a, err);
+        { __typeof__(Gen_CN (st->a, err)) m9a631 = Gen_CN (st->a, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1069, 4 }), stp, ((m9_sl_CHAR){ (uint32_t *) m9s1070, 3 }), err)) m9a627 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1069, 4 }), stp, ((m9_sl_CHAR){ (uint32_t *) m9s1070, 3 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1076, 4 }), stp, ((m9_sl_CHAR){ (uint32_t *) m9s1077, 3 }), err)) m9a632 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1076, 4 }), stp, ((m9_sl_CHAR){ (uint32_t *) m9s1077, 3 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1066, 7 }), m9a625, ((m9_sl_CHAR){ (uint32_t *) m9s1067, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1068, 4 }), m9a626, m9a627, err)) m9a628 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1066, 7 }), m9a625, ((m9_sl_CHAR){ (uint32_t *) m9s1067, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1068, 4 }), m9a626, m9a627, err);
+        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1073, 7 }), m9a630, ((m9_sl_CHAR){ (uint32_t *) m9s1074, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1075, 4 }), m9a631, m9a632, err)) m9a633 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1073, 7 }), m9a630, ((m9_sl_CHAR){ (uint32_t *) m9s1074, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1075, 4 }), m9a631, m9a632, err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a628, err);
+        Gen_Line (Gen_KPbuf, ind, m9a633, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -12430,51 +12593,51 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
       inSwitch = INT64_C(0);
       sf = finDepth;
       finDepth = INT64_C(0);
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a629 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err))) m9a634 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(3), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a630 = m9_add_i64 (ind, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a635 = m9_add_i64 (ind, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      Gen_EmitSeq (m9a629, m9a630, err);
+      Gen_EmitSeq (m9a634, m9a635, err);
       if (err->exc) goto L_ret;
       }
       }
       inSwitch = sv;
       finDepth = sf;
-      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1071, 3 }), err);
+      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1078, 3 }), err);
       if (err->exc) goto L_ret;
     } break;
     case INT64_C(46):
     {
-      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1072, 10 }), err);
+      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1079, 10 }), err);
       if (err->exc) goto L_ret;
       sv = inSwitch;
       inSwitch = INT64_C(0);
       sf = finDepth;
       finDepth = INT64_C(0);
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a631 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a636 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a632 = m9_add_i64 (ind, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a637 = m9_add_i64 (ind, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      Gen_EmitSeq (m9a631, m9a632, err);
+      Gen_EmitSeq (m9a636, m9a637, err);
       if (err->exc) goto L_ret;
       }
       }
       inSwitch = sv;
       finDepth = sf;
-      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1073, 1 }), err);
+      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1080, 1 }), err);
       if (err->exc) goto L_ret;
     } break;
     case INT64_C(47):
     {
       if ((inSwitch > INT64_C(0))) {
-        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1074, 58 }), err);
+        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1081, 58 }), err);
         if (err->exc) goto L_ret;
       }
       if ((finDepth > INT64_C(0))) {
-        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1075, 55 }), err);
+        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1082, 55 }), err);
         if (err->exc) goto L_ret;
       }
-      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1076, 6 }), err);
+      Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1083, 6 }), err);
       if (err->exc) goto L_ret;
     } break;
     case INT64_C(21):
@@ -12485,16 +12648,16 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
     case INT64_C(48):
     {
       stRaise = false;
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a633 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a638 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(cnd) m9v = Gen_EX (m9a633, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(cnd) m9v = Gen_EX (m9a638, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         cnd = m9v;
       }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a634 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a639 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(tg) m9v = Gen_TagOfExpr (m9a634, err);
+      { __typeof__(tg) m9v = Gen_TagOfExpr (m9a639, err);
         if (err->exc) goto L_ret;
         tg = m9v;
       }
@@ -12503,34 +12666,34 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
         if (err->exc) goto L_ret;
         w = m9v;
       }
-      { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1080, 1 }), err)) m9a635 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1080, 1 }), err);
+      { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1087, 1 }), err)) m9a640 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1087, 1 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1077, 13 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1078, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1079, 3 }), m9a635, err)) m9a636 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1077, 13 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1078, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1079, 3 }), m9a635, err);
+      { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1084, 13 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1085, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1086, 3 }), m9a640, err)) m9a641 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1084, 13 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1085, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1086, 3 }), m9a640, err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a636, err);
+      Gen_Line (Gen_KPbuf, ind, m9a641, err);
       if (err->exc) goto L_ret;
       }
       }
       if (stRaise) {
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1081, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1082, 1 }), err)) m9a637 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1081, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1082, 1 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1088, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1089, 1 }), err)) m9a642 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1088, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1089, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a637, err);
+        Gen_Line (Gen_KPbuf, ind, m9a642, err);
         if (err->exc) goto L_ret;
         }
       }
-      bool m9t10 = Gen_StartsW (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1083, 3 }), err);
+      bool m9t10 = Gen_StartsW (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1090, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t10) {
         Gen_EmitCaseCR (st, w, tg, ind, err);
         if (err->exc) goto L_ret;
       } else {
-        bool m9t11 = (DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1084, 4 }), err) || DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1085, 3 }), err));
+        bool m9t11 = (DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1091, 4 }), err) || DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1092, 3 }), err));
         if (err->exc) goto L_ret;
         if (m9t11) {
           Gen_EmitCaseScalar (st, w, ind, err);
           if (err->exc) goto L_ret;
       } else {
-        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1086, 39 }), err);
+        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1093, 39 }), err);
         if (err->exc) goto L_ret;
       } }
     } break;
@@ -12538,8 +12701,8 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
     case INT64_C(59):
     {
       stRaise = false;
-      tg = ((m9_sl_CHAR){ (uint32_t *) m9s1087, 1 });
-      l = ((m9_sl_CHAR){ (uint32_t *) m9s1088, 1 });
+      tg = ((m9_sl_CHAR){ (uint32_t *) m9s1094, 1 });
+      l = ((m9_sl_CHAR){ (uint32_t *) m9s1095, 1 });
       vtN = NULL;
       { Ast_Node * mz = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
@@ -12548,9 +12711,9 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
           if (err->exc) goto L_ret;
           l = m9v;
         }
-        { __typeof__(Gen_DesigDecl (mz, err)) m9a638 = Gen_DesigDecl (mz, err);
+        { __typeof__(Gen_DesigDecl (mz, err)) m9a643 = Gen_DesigDecl (mz, err);
           if (err->exc) goto L_ret;
-        { __typeof__(vtN) m9v = Gen_Resolve (m9a638, err);
+        { __typeof__(vtN) m9v = Gen_Resolve (m9a643, err);
           if (err->exc) goto L_ret;
           vtN = m9v;
         }
@@ -12559,43 +12722,43 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
       { Ast_Node * mn = vtN;
       if (mn != NULL) {
         if ((mn->kind != Ast_NMonitorType)) {
-          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1089, 38 }), err);
+          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1096, 38 }), err);
           if (err->exc) goto L_ret;
         } else {
           if ((st->kind == Ast_NWait)) {
-            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1090, 15 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1091, 9 }), err)) m9a639 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1090, 15 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1091, 9 }), err);
+            { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1097, 15 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1098, 9 }), err)) m9a644 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1097, 15 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1098, 9 }), err);
               if (err->exc) goto L_ret;
-            Gen_Line (Gen_KPbuf, ind, m9a639, err);
+            Gen_Line (Gen_KPbuf, ind, m9a644, err);
             if (err->exc) goto L_ret;
             }
         } else {
-          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1092, 17 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1093, 9 }), err)) m9a640 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1092, 17 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1093, 9 }), err);
+          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1099, 17 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1100, 9 }), err)) m9a645 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1099, 17 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1100, 9 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KPbuf, ind, m9a640, err);
+          Gen_Line (Gen_KPbuf, ind, m9a645, err);
           if (err->exc) goto L_ret;
           }
         } }
       } else {
-        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1094, 38 }), err);
+        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1101, 38 }), err);
         if (err->exc) goto L_ret;
       } }
     } break;
     case INT64_C(56):
     {
       stRaise = true;
-      tg = ((m9_sl_CHAR){ (uint32_t *) m9s1095, 1 });
+      tg = ((m9_sl_CHAR){ (uint32_t *) m9s1102, 1 });
       { Ast_Node * pn = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (pn != NULL) {
         if ((pn->kind != Ast_NDesignator)) {
-          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1096, 34 }), err);
+          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1103, 34 }), err);
           if (err->exc) goto L_ret;
         } else {
           bname = pn->a;
-          l = ((m9_sl_CHAR){ (uint32_t *) m9s1097, 1 });
+          l = ((m9_sl_CHAR){ (uint32_t *) m9s1104, 1 });
           vd = NULL;
           vtN = NULL;
-          thrPool = ((m9_sl_CHAR){ (uint32_t *) m9s1098, 4 });
+          thrPool = ((m9_sl_CHAR){ (uint32_t *) m9s1105, 4 });
           { Ast_Node * az = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(1), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           if (az != NULL) {
@@ -12619,13 +12782,13 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
           { Ast_Node * an = vtN;
           if (an != NULL) {
             if ((an->kind == Ast_NMonitorType)) {
-              { __typeof__(l) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1099, 2 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1100, 1 }), err);
+              { __typeof__(l) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1106, 2 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1107, 1 }), err);
                 if (err->exc) goto L_ret;
                 l = m9v;
               }
-              { __typeof__(Gen_TyC (vd, err)) m9a641 = Gen_TyC (vd, err);
+              { __typeof__(Gen_TyC (vd, err)) m9a646 = Gen_TyC (vd, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(w) m9v = Gen_S2 (m9a641, ((m9_sl_CHAR){ (uint32_t *) m9s1101, 2 }), err);
+              { __typeof__(w) m9v = Gen_S2 (m9a646, ((m9_sl_CHAR){ (uint32_t *) m9s1108, 2 }), err);
                 if (err->exc) goto L_ret;
                 w = m9v;
               }
@@ -12639,7 +12802,7 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
             bool m9t12 = ((an->kind != Ast_NMonitorType) && (!((((w).len > INT64_C(0)) && ((*(uint32_t *) m9_at (w.p, m9_sub_i64 ((w).len, INT64_C(1), err), w.len, sizeof (uint32_t), err)) == 42u)))));
             if (err->exc) goto L_ret;
             if (m9t12) {
-              Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1102, 51 }), err);
+              Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1109, 51 }), err);
               if (err->exc) goto L_ret;
             } else {
               bool m9t13 = (Gen_MFind (&(thrSeen), &m9mframe, bname, err) < INT64_C(0));
@@ -12672,78 +12835,78 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
                     } }
                   } }
                 }
-                { __typeof__(Gen_S2 (bname, ((m9_sl_CHAR){ (uint32_t *) m9s1105, 25 }), err)) m9a642 = Gen_S2 (bname, ((m9_sl_CHAR){ (uint32_t *) m9s1105, 25 }), err);
+                { __typeof__(Gen_S2 (bname, ((m9_sl_CHAR){ (uint32_t *) m9s1112, 25 }), err)) m9a647 = Gen_S2 (bname, ((m9_sl_CHAR){ (uint32_t *) m9s1112, 25 }), err);
                   if (err->exc) goto L_ret;
-                { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1103, 20 }), modName, ((m9_sl_CHAR){ (uint32_t *) m9s1104, 1 }), m9a642, err)) m9a643 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1103, 20 }), modName, ((m9_sl_CHAR){ (uint32_t *) m9s1104, 1 }), m9a642, err);
+                { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1110, 20 }), modName, ((m9_sl_CHAR){ (uint32_t *) m9s1111, 1 }), m9a647, err)) m9a648 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1110, 20 }), modName, ((m9_sl_CHAR){ (uint32_t *) m9s1111, 1 }), m9a647, err);
                   if (err->exc) goto L_ret;
-                Gen_Line (Gen_KThr, INT64_C(0), m9a643, err);
+                Gen_Line (Gen_KThr, INT64_C(0), m9a648, err);
                 if (err->exc) goto L_ret;
                 }
                 }
-                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1106, 1 }), err);
+                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1113, 1 }), err);
                 if (err->exc) goto L_ret;
-                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1107, 21 }), err);
+                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1114, 21 }), err);
                 if (err->exc) goto L_ret;
                 if (thrWants) {
-                  { __typeof__(Gen_CP (modName, err)) m9a644 = Gen_CP (modName, err);
+                  { __typeof__(Gen_CP (modName, err)) m9a649 = Gen_CP (modName, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Gen_S3 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1111, 15 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a645 = Gen_S3 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1111, 15 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                  { __typeof__(Gen_S3 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1118, 15 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a650 = Gen_S3 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1118, 15 }), (m9_sl_CHAR){ NULL, 0 }, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1108, 2 }), m9a644, ((m9_sl_CHAR){ (uint32_t *) m9s1109, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1110, 3 }), m9a645, err)) m9a646 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1108, 2 }), m9a644, ((m9_sl_CHAR){ (uint32_t *) m9s1109, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1110, 3 }), m9a645, err);
+                  { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1115, 2 }), m9a649, ((m9_sl_CHAR){ (uint32_t *) m9s1116, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1117, 3 }), m9a650, err)) m9a651 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1115, 2 }), m9a649, ((m9_sl_CHAR){ (uint32_t *) m9s1116, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1117, 3 }), m9a650, err);
                     if (err->exc) goto L_ret;
-                  Gen_Line (Gen_KThr, INT64_C(0), m9a646, err);
+                  Gen_Line (Gen_KThr, INT64_C(0), m9a651, err);
                   if (err->exc) goto L_ret;
                   }
                   }
                   }
                 } else {
-                  Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1112, 14 }), err);
+                  Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1119, 14 }), err);
                   if (err->exc) goto L_ret;
-                  { __typeof__(Gen_CP (modName, err)) m9a647 = Gen_CP (modName, err);
+                  { __typeof__(Gen_CP (modName, err)) m9a652 = Gen_CP (modName, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Gen_S3 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1116, 9 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a648 = Gen_S3 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1116, 9 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                  { __typeof__(Gen_S3 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1123, 9 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a653 = Gen_S3 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1123, 9 }), (m9_sl_CHAR){ NULL, 0 }, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1113, 2 }), m9a647, ((m9_sl_CHAR){ (uint32_t *) m9s1114, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1115, 3 }), m9a648, err)) m9a649 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1113, 2 }), m9a647, ((m9_sl_CHAR){ (uint32_t *) m9s1114, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1115, 3 }), m9a648, err);
+                  { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1120, 2 }), m9a652, ((m9_sl_CHAR){ (uint32_t *) m9s1121, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1122, 3 }), m9a653, err)) m9a654 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1120, 2 }), m9a652, ((m9_sl_CHAR){ (uint32_t *) m9s1121, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1122, 3 }), m9a653, err);
                     if (err->exc) goto L_ret;
-                  Gen_Line (Gen_KThr, INT64_C(0), m9a649, err);
+                  Gen_Line (Gen_KThr, INT64_C(0), m9a654, err);
                   if (err->exc) goto L_ret;
                   }
                   }
                   }
                 }
-                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1117, 42 }), err);
+                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1124, 42 }), err);
                 if (err->exc) goto L_ret;
-                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1118, 14 }), err);
+                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1125, 14 }), err);
                 if (err->exc) goto L_ret;
-                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1119, 1 }), err);
+                Gen_Line (Gen_KThr, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1126, 1 }), err);
                 if (err->exc) goto L_ret;
                 Gen_Line (Gen_KThr, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_ret;
               }
-              { __typeof__(Gen_CP (modName, err)) m9a650 = Gen_CP (modName, err);
+              { __typeof__(Gen_CP (modName, err)) m9a655 = Gen_CP (modName, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S5 (l, ((m9_sl_CHAR){ (uint32_t *) m9s1123, 2 }), thrPool, ((m9_sl_CHAR){ (uint32_t *) m9s1124, 7 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a651 = Gen_S5 (l, ((m9_sl_CHAR){ (uint32_t *) m9s1123, 2 }), thrPool, ((m9_sl_CHAR){ (uint32_t *) m9s1124, 7 }), (m9_sl_CHAR){ NULL, 0 }, err);
+              { __typeof__(Gen_S5 (l, ((m9_sl_CHAR){ (uint32_t *) m9s1130, 2 }), thrPool, ((m9_sl_CHAR){ (uint32_t *) m9s1131, 7 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a656 = Gen_S5 (l, ((m9_sl_CHAR){ (uint32_t *) m9s1130, 2 }), thrPool, ((m9_sl_CHAR){ (uint32_t *) m9s1131, 7 }), (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_ret;
-              { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1120, 25 }), m9a650, ((m9_sl_CHAR){ (uint32_t *) m9s1121, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1122, 11 }), m9a651, err)) m9a652 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1120, 25 }), m9a650, ((m9_sl_CHAR){ (uint32_t *) m9s1121, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1122, 11 }), m9a651, err);
+              { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1127, 25 }), m9a655, ((m9_sl_CHAR){ (uint32_t *) m9s1128, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1129, 11 }), m9a656, err)) m9a657 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1127, 25 }), m9a655, ((m9_sl_CHAR){ (uint32_t *) m9s1128, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1129, 11 }), m9a656, err);
                 if (err->exc) goto L_ret;
-              Gen_Line (Gen_KPbuf, ind, m9a652, err);
+              Gen_Line (Gen_KPbuf, ind, m9a657, err);
               if (err->exc) goto L_ret;
               }
               }
               }
-              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1125, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1126, 1 }), err)) m9a653 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1125, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1126, 1 }), err);
+              { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1132, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1133, 1 }), err)) m9a658 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1132, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1133, 1 }), err);
                 if (err->exc) goto L_ret;
-              Gen_Line (Gen_KPbuf, ind, m9a653, err);
+              Gen_Line (Gen_KPbuf, ind, m9a658, err);
               if (err->exc) goto L_ret;
               }
             }
           } else {
-            Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1127, 27 }), err);
+            Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1134, 27 }), err);
             if (err->exc) goto L_ret;
           } }
         }
       } else {
-        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1128, 27 }), err);
+        Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1135, 27 }), err);
         if (err->exc) goto L_ret;
       } }
     } break;
@@ -12763,26 +12926,26 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
       if (err->exc) goto L_ret;
       if (rv != NULL) {
         stRaise = false;
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1129, 17 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1136, 17 }), err);
         if (err->exc) goto L_ret;
         hoistOk = true;
         hoistInd = ind;
-        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a654 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a659 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(r) m9v = Gen_EX (m9a654, curRetTag, err);
+        { __typeof__(r) m9v = Gen_EX (m9a659, curRetTag, err);
           if (err->exc) goto L_ret;
           r = m9v;
         }
         }
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1130, 8 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1131, 1 }), err)) m9a655 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1130, 8 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1131, 1 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1137, 8 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1138, 1 }), err)) m9a660 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1137, 8 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1138, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a655, err);
+        Gen_Line (Gen_KPbuf, ind, m9a660, err);
         if (err->exc) goto L_ret;
         }
         if (stRaise) {
-          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1132, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1133, 1 }), err)) m9a656 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1132, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1133, 1 }), err);
+          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1139, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1140, 1 }), err)) m9a661 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1139, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1140, 1 }), err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KPbuf, ind, m9a656, err);
+          Gen_Line (Gen_KPbuf, ind, m9a661, err);
           if (err->exc) goto L_ret;
           }
         }
@@ -12790,20 +12953,20 @@ static void Gen_EmitStmt (Ast_Node * k, int64_t ind, m9_state *err)
         if (err->exc) goto L_ret;
       } }
       if (((curRetq).len > INT64_C(0))) {
-        { __typeof__(Gen_S2 (curRetq, ((m9_sl_CHAR){ (uint32_t *) m9s1134, 8 }), err)) m9a657 = Gen_S2 (curRetq, ((m9_sl_CHAR){ (uint32_t *) m9s1134, 8 }), err);
+        { __typeof__(Gen_S2 (curRetq, ((m9_sl_CHAR){ (uint32_t *) m9s1141, 8 }), err)) m9a662 = Gen_S2 (curRetq, ((m9_sl_CHAR){ (uint32_t *) m9s1141, 8 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a657, err);
+        Gen_Line (Gen_KPbuf, ind, m9a662, err);
         if (err->exc) goto L_ret;
         }
       }
-      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1135, 5 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1136, 1 }), err)) m9a658 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1135, 5 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1136, 1 }), err);
+      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1142, 5 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1143, 1 }), err)) m9a663 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1142, 5 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1143, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a658, err);
+      Gen_Line (Gen_KPbuf, ind, m9a663, err);
       if (err->exc) goto L_ret;
       }
     } break;
     default: {
-      Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1137, 30 }), err);
+      Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1144, 30 }), err);
       if (err->exc) goto L_ret;
     } break;
     } }
@@ -12828,9 +12991,9 @@ static void Gen_EmitSeq (Ast_Node * k, int64_t ind, m9_state *err)
     m9t1to = m9_sub_i64 (s->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; j <= m9t1to; j += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (s->kids.p, j, s->kids.len, sizeof (Ast_Node *), err))) m9a659 = (*(Ast_Node * *) m9_at (s->kids.p, j, s->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (s->kids.p, j, s->kids.len, sizeof (Ast_Node *), err))) m9a664 = (*(Ast_Node * *) m9_at (s->kids.p, j, s->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Gen_EmitStmt (m9a659, ind, err);
+      Gen_EmitStmt (m9a664, ind, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -12881,7 +13044,7 @@ static m9_sl_CHAR Gen_VariantCtor (Ast_Node * vt, m9_sl_CHAR tn, m9_sl_CHAR vn, 
   } }
   { Ast_Node * vdn = vd;
   if (vdn != NULL) {
-    { __typeof__((*tag)) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1138, 3 }), tn, err);
+    { __typeof__((*tag)) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1145, 3 }), tn, err);
       if (err->exc) goto L_ret;
       (*tag) = m9v;
     }
@@ -12910,20 +13073,20 @@ static m9_sl_CHAR Gen_VariantCtor (Ast_Node * vt, m9_sl_CHAR tn, m9_sl_CHAR vn, 
                 { Ast_Node * alv = argl;
                 if (alv != NULL) {
                   if (((args).len > INT64_C(0))) {
-                    { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s1139, 2 }), err);
+                    { __typeof__(args) m9v = Gen_S2 (args, ((m9_sl_CHAR){ (uint32_t *) m9s1146, 2 }), err);
                       if (err->exc) goto L_ret;
                       args = m9v;
                     }
                   }
-                  { __typeof__((*(Ast_Node * *) m9_at (alv->kids.p, k2, alv->kids.len, sizeof (Ast_Node *), err))) m9a660 = (*(Ast_Node * *) m9_at (alv->kids.p, k2, alv->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (alv->kids.p, k2, alv->kids.len, sizeof (Ast_Node *), err))) m9a665 = (*(Ast_Node * *) m9_at (alv->kids.p, k2, alv->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__((*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err))) m9a661 = (*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err));
+                  { __typeof__((*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err))) m9a666 = (*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
-                  { __typeof__(Gen_TagOfType (m9a661, err)) m9a662 = Gen_TagOfType (m9a661, err);
+                  { __typeof__(Gen_TagOfType (m9a666, err)) m9a667 = Gen_TagOfType (m9a666, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(Gen_EX (m9a660, m9a662, err)) m9a663 = Gen_EX (m9a660, m9a662, err);
+                  { __typeof__(Gen_EX (m9a665, m9a667, err)) m9a668 = Gen_EX (m9a665, m9a667, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(args) m9v = Gen_S2 (args, m9a663, err);
+                  { __typeof__(args) m9v = Gen_S2 (args, m9a668, err);
                     if (err->exc) goto L_ret;
                     args = m9v;
                   }
@@ -12943,16 +13106,16 @@ static m9_sl_CHAR Gen_VariantCtor (Ast_Node * vt, m9_sl_CHAR tn, m9_sl_CHAR vn, 
       } }
     } }
     if ((k2 != nargs)) {
-      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s1140, 31 }), err);
+      Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s1147, 31 }), err);
       if (err->exc) goto L_ret;
     }
-    { __typeof__(Gen_CRPrefix (tn, err)) m9a664 = Gen_CRPrefix (tn, err);
+    { __typeof__(Gen_CRPrefix (tn, err)) m9a669 = Gen_CRPrefix (tn, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_CRPrefix (tn, err)) m9a665 = Gen_CRPrefix (tn, err);
+    { __typeof__(Gen_CRPrefix (tn, err)) m9a670 = Gen_CRPrefix (tn, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S3 (m9a665, ((m9_sl_CHAR){ (uint32_t *) m9s1143, 1 }), vn, err)) m9a666 = Gen_S3 (m9a665, ((m9_sl_CHAR){ (uint32_t *) m9s1143, 1 }), vn, err);
+    { __typeof__(Gen_S3 (m9a670, ((m9_sl_CHAR){ (uint32_t *) m9s1150, 1 }), vn, err)) m9a671 = Gen_S3 (m9a670, ((m9_sl_CHAR){ (uint32_t *) m9s1150, 1 }), vn, err);
       if (err->exc) goto L_ret;
-    { __typeof__(res) m9v = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1141, 2 }), m9a664, ((m9_sl_CHAR){ (uint32_t *) m9s1142, 10 }), m9a666, (m9_sl_CHAR){ NULL, 0 }, err);
+    { __typeof__(res) m9v = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1148, 2 }), m9a669, ((m9_sl_CHAR){ (uint32_t *) m9s1149, 10 }), m9a671, (m9_sl_CHAR){ NULL, 0 }, err);
       if (err->exc) goto L_ret;
       res = m9v;
     }
@@ -12960,20 +13123,20 @@ static m9_sl_CHAR Gen_VariantCtor (Ast_Node * vt, m9_sl_CHAR tn, m9_sl_CHAR vn, 
     }
     }
     if (((args).len > INT64_C(0))) {
-      { __typeof__(res) m9v = Gen_S6 (res, ((m9_sl_CHAR){ (uint32_t *) m9s1144, 5 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s1145, 5 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s1146, 2 }), err);
+      { __typeof__(res) m9v = Gen_S6 (res, ((m9_sl_CHAR){ (uint32_t *) m9s1151, 5 }), vn, ((m9_sl_CHAR){ (uint32_t *) m9s1152, 5 }), args, ((m9_sl_CHAR){ (uint32_t *) m9s1153, 2 }), err);
         if (err->exc) goto L_ret;
         res = m9v;
       }
     }
     err->res = m9res;
-    m9ret = Gen_S2 (res, ((m9_sl_CHAR){ (uint32_t *) m9s1147, 3 }), err);
+    m9ret = Gen_S2 (res, ((m9_sl_CHAR){ (uint32_t *) m9s1154, 3 }), err);
     if (err->exc) goto L_ret;
     goto L_ret;
   } }
-  Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s1148, 40 }), err);
+  Gen_Err2 (eln, ((m9_sl_CHAR){ (uint32_t *) m9s1155, 40 }), err);
   if (err->exc) goto L_ret;
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1149, 1 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1156, 1 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -13012,9 +13175,9 @@ static m9_sl_CHAR Gen_ConstLbl (Ast_Node * d, m9_state *err)
       if (err->exc) goto L_ret;
       if (sf != NULL) {
         if ((sf->kind == Ast_NSelField)) {
-          { __typeof__(Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s1150, 1 }), sf->a, err)) m9a667 = Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s1150, 1 }), sf->a, err);
+          { __typeof__(Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s1157, 1 }), sf->a, err)) m9a672 = Gen_S3 (d->a, ((m9_sl_CHAR){ (uint32_t *) m9s1157, 1 }), sf->a, err);
             if (err->exc) goto L_ret;
-          { __typeof__(ci) m9v = Gen_MFind (&(extConsts), &m9mframe, m9a667, err);
+          { __typeof__(ci) m9v = Gen_MFind (&(extConsts), &m9mframe, m9a672, err);
             if (err->exc) goto L_ret;
             ci = m9v;
           }
@@ -13031,7 +13194,7 @@ static m9_sl_CHAR Gen_ConstLbl (Ast_Node * d, m9_state *err)
   { Ast_Node * en = ek;
   if (en != NULL) {
     if ((en->kind == Ast_NInt)) {
-      { __typeof__(res) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1151, 8 }), en->a, ((m9_sl_CHAR){ (uint32_t *) m9s1152, 1 }), err);
+      { __typeof__(res) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1158, 8 }), en->a, ((m9_sl_CHAR){ (uint32_t *) m9s1159, 1 }), err);
         if (err->exc) goto L_ret;
         res = m9v;
       }
@@ -13080,11 +13243,11 @@ static Ast_Node * Gen_DesigDecl (Ast_Node * d, m9_state *err)
         bool m9t2 = Gen_IsPtrK (rr->kind, err);
         if (err->exc) goto L_ret;
         if (m9t2) {
-          { __typeof__((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err))) m9a668 = (*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err))) m9a673 = (*(Ast_Node * *) m9_at (rr->kids.p, INT64_C(0), rr->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_InMod (m9a668, tmod, err)) m9a669 = Gen_InMod (m9a668, tmod, err);
+          { __typeof__(Gen_InMod (m9a673, tmod, err)) m9a674 = Gen_InMod (m9a673, tmod, err);
             if (err->exc) goto L_ret;
-          { __typeof__(rk) m9v = Gen_Resolve (m9a669, err);
+          { __typeof__(rk) m9v = Gen_Resolve (m9a674, err);
             if (err->exc) goto L_ret;
             rk = m9v;
           }
@@ -13104,9 +13267,9 @@ static Ast_Node * Gen_DesigDecl (Ast_Node * d, m9_state *err)
       if (sel != NULL) {
         if ((sel->kind == Ast_NSelField)) {
           if (((r2->kind == Ast_NRecordType) || (r2->kind == Ast_NMonitorType))) {
-            { __typeof__(Gen_FieldType (r2, sel->a, err)) m9a670 = Gen_FieldType (r2, sel->a, err);
+            { __typeof__(Gen_FieldType (r2, sel->a, err)) m9a675 = Gen_FieldType (r2, sel->a, err);
               if (err->exc) goto L_ret;
-            { __typeof__(cur) m9v = Gen_InMod (m9a670, tmod, err);
+            { __typeof__(cur) m9v = Gen_InMod (m9a675, tmod, err);
               if (err->exc) goto L_ret;
               cur = m9v;
             }
@@ -13119,18 +13282,18 @@ static Ast_Node * Gen_DesigDecl (Ast_Node * d, m9_state *err)
         } else {
           if ((sel->kind == Ast_NSelIndex)) {
             if ((r2->kind == Ast_NSliceType)) {
-              { __typeof__((*(Ast_Node * *) m9_at (r2->kids.p, INT64_C(0), r2->kids.len, sizeof (Ast_Node *), err))) m9a671 = (*(Ast_Node * *) m9_at (r2->kids.p, INT64_C(0), r2->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (r2->kids.p, INT64_C(0), r2->kids.len, sizeof (Ast_Node *), err))) m9a676 = (*(Ast_Node * *) m9_at (r2->kids.p, INT64_C(0), r2->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(cur) m9v = Gen_InMod (m9a671, tmod, err);
+              { __typeof__(cur) m9v = Gen_InMod (m9a676, tmod, err);
                 if (err->exc) goto L_ret;
                 cur = m9v;
               }
               }
             } else {
               if ((r2->kind == Ast_NArrayType)) {
-                { __typeof__((*(Ast_Node * *) m9_at (r2->kids.p, INT64_C(1), r2->kids.len, sizeof (Ast_Node *), err))) m9a672 = (*(Ast_Node * *) m9_at (r2->kids.p, INT64_C(1), r2->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (r2->kids.p, INT64_C(1), r2->kids.len, sizeof (Ast_Node *), err))) m9a677 = (*(Ast_Node * *) m9_at (r2->kids.p, INT64_C(1), r2->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(cur) m9v = Gen_InMod (m9a672, tmod, err);
+                { __typeof__(cur) m9v = Gen_InMod (m9a677, tmod, err);
                   if (err->exc) goto L_ret;
                   cur = m9v;
                 }
@@ -13150,6 +13313,73 @@ static Ast_Node * Gen_DesigDecl (Ast_Node * d, m9_state *err)
   } }
   err->res = m9res;
   m9ret = cur;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_adopt_if (&m9frame, m9res, m9ret);
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
+static Ast_Node * Gen_IxFields (m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = m9res;
+  Ast_Node * m9ret = NULL;
+  Ast_Node * fs = NULL; (void) fs;
+  Ast_Node * g = NULL; (void) g;
+  Ast_Node * il = NULL; (void) il;
+  Ast_Node * i1 = NULL; (void) i1;
+  Ast_Node * i2 = NULL; (void) i2;
+  Ast_Node * ty = NULL; (void) ty;
+  { Ast_Node * have = ixFields;
+  if (have != NULL) {
+    err->res = m9res;
+    m9ret = have;
+    goto L_ret;
+  } }
+  { __typeof__(fs) m9v = Ast_NewNode (&(gpool), Ast_NFieldSeq, INT64_C(0), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    fs = m9v;
+  }
+  { __typeof__(g) m9v = Ast_NewNode (&(gpool), Ast_NFieldGroup, INT64_C(0), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    g = m9v;
+  }
+  { __typeof__(il) m9v = Ast_NewNode (&(gpool), Ast_NIdentList, INT64_C(0), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    il = m9v;
+  }
+  { __typeof__(i1) m9v = Ast_NewNode (&(gpool), Ast_NIdent, INT64_C(0), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    i1 = m9v;
+  }
+  i1->a = ((m9_sl_CHAR){ (uint32_t *) m9s1160, 5 });
+  { __typeof__(i2) m9v = Ast_NewNode (&(gpool), Ast_NIdent, INT64_C(0), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    i2 = m9v;
+  }
+  i2->a = ((m9_sl_CHAR){ (uint32_t *) m9s1161, 6 });
+  { __typeof__(ty) m9v = Ast_NewNode (&(gpool), Ast_NQualident, INT64_C(0), INT64_C(0), err);
+    if (err->exc) goto L_ret;
+    ty = m9v;
+  }
+  ty->a = ((m9_sl_CHAR){ (uint32_t *) m9s1162, 3 });
+  Ast_Add (&(gpool), &(il), &(gpool), i1, err);
+  if (err->exc) goto L_ret;
+  Ast_Add (&(gpool), &(il), &(gpool), i2, err);
+  if (err->exc) goto L_ret;
+  Ast_Add (&(gpool), &(g), &(gpool), il, err);
+  if (err->exc) goto L_ret;
+  Ast_Add (&(gpool), &(g), &(gpool), ty, err);
+  if (err->exc) goto L_ret;
+  Ast_Add (&(gpool), &(fs), &(gpool), g, err);
+  if (err->exc) goto L_ret;
+  ixFields = fs;
+  err->res = m9res;
+  m9ret = ixFields;
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -13183,9 +13413,9 @@ static m9_sl_CHAR Gen_ExcRef (m9_sl_CHAR qual, m9_sl_CHAR nm, Ast_Node * *fields
           (*fields) = m9v;
         }
         err->res = m9res;
-        { __typeof__(Gen_CP (qual, err)) m9a673 = Gen_CP (qual, err);
+        { __typeof__(Gen_CP (qual, err)) m9a678 = Gen_CP (qual, err);
           if (err->exc) goto L_ret;
-        m9ret = Gen_S3 (m9a673, ((m9_sl_CHAR){ (uint32_t *) m9s1153, 1 }), nm, err);
+        m9ret = Gen_S3 (m9a678, ((m9_sl_CHAR){ (uint32_t *) m9s1163, 1 }), nm, err);
         if (err->exc) goto L_ret;
         }
         goto L_ret;
@@ -13208,19 +13438,30 @@ static m9_sl_CHAR Gen_ExcRef (m9_sl_CHAR qual, m9_sl_CHAR nm, Ast_Node * *fields
         (*fields) = m9v;
       }
       err->res = m9res;
-      { __typeof__(Gen_CP (modName, err)) m9a674 = Gen_CP (modName, err);
+      { __typeof__(Gen_CP (modName, err)) m9a679 = Gen_CP (modName, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S3 (m9a674, ((m9_sl_CHAR){ (uint32_t *) m9s1154, 1 }), nm, err);
+      m9ret = Gen_S3 (m9a679, ((m9_sl_CHAR){ (uint32_t *) m9s1164, 1 }), nm, err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
     }
   } }
-  bool m9t6 = (((DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1155, 8 }), err) || DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1156, 10 }), err)) || DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1157, 11 }), err)) || DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1158, 10 }), err));
+  bool m9t6 = DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1165, 10 }), err);
   if (err->exc) goto L_ret;
   if (m9t6) {
+    { __typeof__((*fields)) m9v = Gen_IxFields (err);
+      if (err->exc) goto L_ret;
+      (*fields) = m9v;
+    }
     err->res = m9res;
-    m9ret = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1159, 7 }), nm, err);
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1166, 17 });
+    goto L_ret;
+  }
+  bool m9t7 = ((DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1167, 8 }), err) || DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1168, 11 }), err)) || DynStr_Eq (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1169, 10 }), err));
+  if (err->exc) goto L_ret;
+  if (m9t7) {
+    err->res = m9res;
+    m9ret = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1170, 7 }), nm, err);
     if (err->exc) goto L_ret;
     goto L_ret;
   }
@@ -13234,11 +13475,11 @@ static m9_sl_CHAR Gen_ExcRef (m9_sl_CHAR qual, m9_sl_CHAR nm, Ast_Node * *fields
       (*fields) = m9v;
     }
     err->res = m9res;
-    { __typeof__((*(Gen_MEnt *) m9_at (extExcs.es.p, i, extExcs.es.len, sizeof (Gen_MEnt), err)).t) m9a675 = (*(Gen_MEnt *) m9_at (extExcs.es.p, i, extExcs.es.len, sizeof (Gen_MEnt), err)).t;
+    { __typeof__((*(Gen_MEnt *) m9_at (extExcs.es.p, i, extExcs.es.len, sizeof (Gen_MEnt), err)).t) m9a680 = (*(Gen_MEnt *) m9_at (extExcs.es.p, i, extExcs.es.len, sizeof (Gen_MEnt), err)).t;
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_CP (m9a675, err)) m9a676 = Gen_CP (m9a675, err);
+    { __typeof__(Gen_CP (m9a680, err)) m9a681 = Gen_CP (m9a680, err);
       if (err->exc) goto L_ret;
-    m9ret = Gen_S3 (m9a676, ((m9_sl_CHAR){ (uint32_t *) m9s1160, 1 }), nm, err);
+    m9ret = Gen_S3 (m9a681, ((m9_sl_CHAR){ (uint32_t *) m9s1171, 1 }), nm, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -13279,9 +13520,9 @@ static Ast_Node * Gen_OptInner (Ast_Node * k, m9_state *err)
   { Ast_Node * e = k;
   if (e != NULL) {
     if ((e->kind == Ast_NDesignator)) {
-      { __typeof__(Gen_DesigDecl (e, err)) m9a677 = Gen_DesigDecl (e, err);
+      { __typeof__(Gen_DesigDecl (e, err)) m9a682 = Gen_DesigDecl (e, err);
         if (err->exc) goto L_ret;
-      { __typeof__(r) m9v = Gen_Resolve (m9a677, err);
+      { __typeof__(r) m9v = Gen_Resolve (m9a682, err);
         if (err->exc) goto L_ret;
         r = m9v;
       }
@@ -13297,7 +13538,7 @@ static Ast_Node * Gen_OptInner (Ast_Node * k, m9_state *err)
             if (err->exc) goto L_ret;
             if (sf != NULL) {
               if ((sf->kind == Ast_NSelField)) {
-                { __typeof__(nm) m9v = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1161, 1 }), sf->a, err);
+                { __typeof__(nm) m9v = Gen_S3 (nm, ((m9_sl_CHAR){ (uint32_t *) m9s1172, 1 }), sf->a, err);
                   if (err->exc) goto L_ret;
                   nm = m9v;
                 }
@@ -13317,9 +13558,9 @@ static Ast_Node * Gen_OptInner (Ast_Node * k, m9_state *err)
               { Ast_Node * ep = (*(Gen_MEnt *) m9_at (extProcs.es.p, pi, extProcs.es.len, sizeof (Gen_MEnt), err)).v;
               if (err->exc) goto L_ret;
               if (ep != NULL) {
-                { __typeof__((*(Ast_Node * *) m9_at (ep->kids.p, INT64_C(1), ep->kids.len, sizeof (Ast_Node *), err))) m9a678 = (*(Ast_Node * *) m9_at (ep->kids.p, INT64_C(1), ep->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (ep->kids.p, INT64_C(1), ep->kids.len, sizeof (Ast_Node *), err))) m9a683 = (*(Ast_Node * *) m9_at (ep->kids.p, INT64_C(1), ep->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(r) m9v = Gen_Resolve (m9a678, err);
+                { __typeof__(r) m9v = Gen_Resolve (m9a683, err);
                   if (err->exc) goto L_ret;
                   r = m9v;
                 }
@@ -13335,9 +13576,9 @@ static Ast_Node * Gen_OptInner (Ast_Node * k, m9_state *err)
               { Ast_Node * lp = (*(Gen_GP *) m9_at (gps.p, pi, gps.len, sizeof (Gen_GP), err)).node;
               if (err->exc) goto L_ret;
               if (lp != NULL) {
-                { __typeof__((*(Ast_Node * *) m9_at (lp->kids.p, INT64_C(1), lp->kids.len, sizeof (Ast_Node *), err))) m9a679 = (*(Ast_Node * *) m9_at (lp->kids.p, INT64_C(1), lp->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (lp->kids.p, INT64_C(1), lp->kids.len, sizeof (Ast_Node *), err))) m9a684 = (*(Ast_Node * *) m9_at (lp->kids.p, INT64_C(1), lp->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(r) m9v = Gen_Resolve (m9a679, err);
+                { __typeof__(r) m9v = Gen_Resolve (m9a684, err);
                   if (err->exc) goto L_ret;
                   r = m9v;
                 }
@@ -13420,42 +13661,42 @@ static m9_sl_CHAR Gen_TagOfExpr (Ast_Node * k, m9_state *err)
   Ast_Node * tyk = NULL; (void) tyk;
   { Ast_Node * e = k;
   if (e != NULL) {
-    res = ((m9_sl_CHAR){ (uint32_t *) m9s1162, 1 });
+    res = ((m9_sl_CHAR){ (uint32_t *) m9s1173, 1 });
     { __typeof__(e->kind) m9t1 = e->kind;
     switch (m9t1) {
     case INT64_C(65):
     {
-      res = ((m9_sl_CHAR){ (uint32_t *) m9s1163, 3 });
+      res = ((m9_sl_CHAR){ (uint32_t *) m9s1174, 3 });
     } break;
     case INT64_C(66):
     {
-      res = ((m9_sl_CHAR){ (uint32_t *) m9s1164, 3 });
+      res = ((m9_sl_CHAR){ (uint32_t *) m9s1175, 3 });
     } break;
     case INT64_C(67):
     {
-      res = ((m9_sl_CHAR){ (uint32_t *) m9s1165, 4 });
+      res = ((m9_sl_CHAR){ (uint32_t *) m9s1176, 4 });
     } break;
     case INT64_C(68):
     {
       if (((e->a).len == INT64_C(1))) {
-        res = ((m9_sl_CHAR){ (uint32_t *) m9s1166, 4 });
+        res = ((m9_sl_CHAR){ (uint32_t *) m9s1177, 4 });
       } else {
-        res = ((m9_sl_CHAR){ (uint32_t *) m9s1167, 5 });
+        res = ((m9_sl_CHAR){ (uint32_t *) m9s1178, 5 });
       }
     } break;
     case INT64_C(69):
     {
-      res = ((m9_sl_CHAR){ (uint32_t *) m9s1168, 4 });
+      res = ((m9_sl_CHAR){ (uint32_t *) m9s1179, 4 });
     } break;
     case INT64_C(70):
     {
-      res = ((m9_sl_CHAR){ (uint32_t *) m9s1169, 4 });
+      res = ((m9_sl_CHAR){ (uint32_t *) m9s1180, 4 });
     } break;
     case INT64_C(64):
     {
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a680 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a685 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(res) m9v = Gen_TagOfExpr (m9a680, err);
+      { __typeof__(res) m9v = Gen_TagOfExpr (m9a685, err);
         if (err->exc) goto L_ret;
         res = m9v;
       }
@@ -13463,7 +13704,7 @@ static m9_sl_CHAR Gen_TagOfExpr (Ast_Node * k, m9_state *err)
     } break;
     case INT64_C(77):
     {
-      t2 = ((m9_sl_CHAR){ (uint32_t *) m9s1170, 1 });
+      t2 = ((m9_sl_CHAR){ (uint32_t *) m9s1181, 1 });
       { __typeof__(dry) m9v = m9_add_i64 (dry, INT64_C(1), err);
         if (err->exc) goto L_ret;
         dry = m9v;
@@ -13480,16 +13721,16 @@ static m9_sl_CHAR Gen_TagOfExpr (Ast_Node * k, m9_state *err)
     } break;
     case INT64_C(76):
     {
-      t2 = ((m9_sl_CHAR){ (uint32_t *) m9s1171, 1 });
+      t2 = ((m9_sl_CHAR){ (uint32_t *) m9s1182, 1 });
       { __typeof__(dry) m9v = m9_add_i64 (dry, INT64_C(1), err);
         if (err->exc) goto L_ret;
         dry = m9v;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a681 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a686 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a682 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a687 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(dc) m9v = Gen_CallC (m9a681, m9a682, &(t2), err);
+      { __typeof__(dc) m9v = Gen_CallC (m9a686, m9a687, &(t2), err);
         if (err->exc) goto L_ret;
         dc = m9v;
       }
@@ -13503,26 +13744,26 @@ static m9_sl_CHAR Gen_TagOfExpr (Ast_Node * k, m9_state *err)
     } break;
     case INT64_C(60):
     {
-      bool m9t2 = (((((((DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1172, 3 }), err) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1173, 2 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1174, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1175, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1176, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1177, 2 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1178, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1179, 2 }), err));
+      bool m9t2 = (((((((DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1183, 3 }), err) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1184, 2 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1185, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1186, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1187, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1188, 2 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1189, 1 }), err)) || DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1190, 2 }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
         err->res = m9res;
-        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1180, 4 });
+        m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1191, 4 });
         goto L_ret;
       }
-      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a683 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a688 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(t2) m9v = Gen_TagOfExpr (m9a683, err);
+      { __typeof__(t2) m9v = Gen_TagOfExpr (m9a688, err);
         if (err->exc) goto L_ret;
         t2 = m9v;
       }
       }
-      bool m9t3 = DynStr_Eq (t2, ((m9_sl_CHAR){ (uint32_t *) m9s1181, 3 }), err);
+      bool m9t3 = DynStr_Eq (t2, ((m9_sl_CHAR){ (uint32_t *) m9s1192, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a684 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a689 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(t2) m9v = Gen_TagOfExpr (m9a684, err);
+        { __typeof__(t2) m9v = Gen_TagOfExpr (m9a689, err);
           if (err->exc) goto L_ret;
           t2 = m9v;
         }
@@ -13531,42 +13772,42 @@ static m9_sl_CHAR Gen_TagOfExpr (Ast_Node * k, m9_state *err)
       bool m9t4 = Gen_IsAdaptive ((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
       if (m9t4) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a685 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a690 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(t2) m9v = Gen_TagOfExpr (m9a685, err);
+        { __typeof__(t2) m9v = Gen_TagOfExpr (m9a690, err);
           if (err->exc) goto L_ret;
           t2 = m9v;
         }
         }
       }
-      bool m9t5 = (DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1182, 1 }), err) && ((DynStr_Eq (t2, ((m9_sl_CHAR){ (uint32_t *) m9s1183, 4 }), err) || DynStr_Eq (t2, ((m9_sl_CHAR){ (uint32_t *) m9s1184, 4 }), err))));
+      bool m9t5 = (DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1193, 1 }), err) && ((DynStr_Eq (t2, ((m9_sl_CHAR){ (uint32_t *) m9s1194, 4 }), err) || DynStr_Eq (t2, ((m9_sl_CHAR){ (uint32_t *) m9s1195, 4 }), err))));
       if (err->exc) goto L_ret;
       if (m9t5) {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a686 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err))) m9a691 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(1), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(u2) m9v = Gen_TagOfExpr (m9a686, err);
+        { __typeof__(u2) m9v = Gen_TagOfExpr (m9a691, err);
           if (err->exc) goto L_ret;
           u2 = m9v;
         }
         }
-        bool m9t6 = ((DynStr_Eq (t2, ((m9_sl_CHAR){ (uint32_t *) m9s1185, 4 }), err) || DynStr_Eq (u2, ((m9_sl_CHAR){ (uint32_t *) m9s1186, 5 }), err)) || DynStr_Eq (u2, ((m9_sl_CHAR){ (uint32_t *) m9s1187, 4 }), err));
+        bool m9t6 = ((DynStr_Eq (t2, ((m9_sl_CHAR){ (uint32_t *) m9s1196, 4 }), err) || DynStr_Eq (u2, ((m9_sl_CHAR){ (uint32_t *) m9s1197, 5 }), err)) || DynStr_Eq (u2, ((m9_sl_CHAR){ (uint32_t *) m9s1198, 4 }), err));
         if (err->exc) goto L_ret;
         if (m9t6) {
-          t2 = ((m9_sl_CHAR){ (uint32_t *) m9s1188, 5 });
+          t2 = ((m9_sl_CHAR){ (uint32_t *) m9s1199, 5 });
         }
       }
       res = t2;
     } break;
     case INT64_C(61):
     {
-      bool m9t7 = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1189, 3 }), err);
+      bool m9t7 = DynStr_Eq (e->a, ((m9_sl_CHAR){ (uint32_t *) m9s1200, 3 }), err);
       if (err->exc) goto L_ret;
       if (m9t7) {
-        res = ((m9_sl_CHAR){ (uint32_t *) m9s1190, 4 });
+        res = ((m9_sl_CHAR){ (uint32_t *) m9s1201, 4 });
       } else {
-        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a687 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err))) m9a692 = (*(Ast_Node * *) m9_at (e->kids.p, INT64_C(0), e->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(res) m9v = Gen_TagOfExpr (m9a687, err);
+        { __typeof__(res) m9v = Gen_TagOfExpr (m9a692, err);
           if (err->exc) goto L_ret;
           res = m9v;
         }
@@ -13595,31 +13836,31 @@ static m9_sl_CHAR Gen_TagOfExpr (Ast_Node * k, m9_state *err)
         } }
       } }
       if ((nx > INT64_C(1))) {
-        res = ((m9_sl_CHAR){ (uint32_t *) m9s1191, 4 });
+        res = ((m9_sl_CHAR){ (uint32_t *) m9s1202, 4 });
       } else {
         if ((nx == INT64_C(1))) {
-          res = ((m9_sl_CHAR){ (uint32_t *) m9s1192, 5 });
+          res = ((m9_sl_CHAR){ (uint32_t *) m9s1203, 5 });
       } else {
-        res = ((m9_sl_CHAR){ (uint32_t *) m9s1193, 3 });
+        res = ((m9_sl_CHAR){ (uint32_t *) m9s1204, 3 });
       } }
     } break;
     case INT64_C(75):
     {
-      res = ((m9_sl_CHAR){ (uint32_t *) m9s1194, 5 });
+      res = ((m9_sl_CHAR){ (uint32_t *) m9s1205, 5 });
     } break;
     case INT64_C(85):
     {
-      res = ((m9_sl_CHAR){ (uint32_t *) m9s1195, 4 });
+      res = ((m9_sl_CHAR){ (uint32_t *) m9s1206, 4 });
     } break;
     case INT64_C(71):
     {
-      res = ((m9_sl_CHAR){ (uint32_t *) m9s1196, 6 });
+      res = ((m9_sl_CHAR){ (uint32_t *) m9s1207, 6 });
     } break;
     default: {
-      res = ((m9_sl_CHAR){ (uint32_t *) m9s1197, 1 });
+      res = ((m9_sl_CHAR){ (uint32_t *) m9s1208, 1 });
     } break;
     } }
-    bool m9t9 = (((e->kind == Ast_NDesignator) && DynStr_Eq (res, ((m9_sl_CHAR){ (uint32_t *) m9s1198, 1 }), err)) && (e->nkids == INT64_C(0)));
+    bool m9t9 = (((e->kind == Ast_NDesignator) && DynStr_Eq (res, ((m9_sl_CHAR){ (uint32_t *) m9s1209, 1 }), err)) && (e->nkids == INT64_C(0)));
     if (err->exc) goto L_ret;
     if (m9t9) {
       { __typeof__(ci) m9v = Gen_MFind (&(consts), &m9mframe, e->a, err);
@@ -13627,9 +13868,9 @@ static m9_sl_CHAR Gen_TagOfExpr (Ast_Node * k, m9_state *err)
         ci = m9v;
       }
       if ((ci >= INT64_C(0))) {
-        { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v) m9a688 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v;
+        { __typeof__((*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v) m9a693 = (*(Gen_MEnt *) m9_at (consts.es.p, ci, consts.es.len, sizeof (Gen_MEnt), err)).v;
           if (err->exc) goto L_ret;
-        { __typeof__(res) m9v = Gen_TagOfExpr (m9a688, err);
+        { __typeof__(res) m9v = Gen_TagOfExpr (m9a693, err);
           if (err->exc) goto L_ret;
           res = m9v;
         }
@@ -13641,7 +13882,7 @@ static m9_sl_CHAR Gen_TagOfExpr (Ast_Node * k, m9_state *err)
     goto L_ret;
   } }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1199, 1 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1210, 1 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -13658,22 +13899,22 @@ static m9_sl_CHAR Gen_PoolAddrC (Ast_Node * pd, m9_state *err)
   err->res = &m9frame;
   m9_sl_CHAR m9ret = {0};
   m9_sl_CHAR tg = {0}; (void) tg;
-  bool m9t1 = (((pd->nkids == INT64_C(0)) && DynStr_Eq (Gen_ScopeMode (pd->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s1200, 1 }), err)) && Gen_PoolParamTy (Gen_ScopeNode (pd->a, err), err));
+  bool m9t1 = (((pd->nkids == INT64_C(0)) && DynStr_Eq (Gen_ScopeMode (pd->a, err), ((m9_sl_CHAR){ (uint32_t *) m9s1211, 1 }), err)) && Gen_PoolParamTy (Gen_ScopeNode (pd->a, err), err));
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    { __typeof__(Gen_CN (pd->a, err)) m9a689 = Gen_CN (pd->a, err);
+    { __typeof__(Gen_CN (pd->a, err)) m9a694 = Gen_CN (pd->a, err);
       if (err->exc) goto L_ret;
-    m9ret = Gen_S2 (m9a689, ((m9_sl_CHAR){ (uint32_t *) m9s1201, 5 }), err);
+    m9ret = Gen_S2 (m9a694, ((m9_sl_CHAR){ (uint32_t *) m9s1212, 5 }), err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  tg = ((m9_sl_CHAR){ (uint32_t *) m9s1202, 1 });
+  tg = ((m9_sl_CHAR){ (uint32_t *) m9s1213, 1 });
   err->res = m9res;
-  { __typeof__(Gen_DES (pd, &(tg), err)) m9a690 = Gen_DES (pd, &(tg), err);
+  { __typeof__(Gen_DES (pd, &(tg), err)) m9a695 = Gen_DES (pd, &(tg), err);
     if (err->exc) goto L_ret;
-  m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1203, 2 }), m9a690, ((m9_sl_CHAR){ (uint32_t *) m9s1204, 1 }), err);
+  m9ret = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1214, 2 }), m9a695, ((m9_sl_CHAR){ (uint32_t *) m9s1215, 1 }), err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -13699,25 +13940,25 @@ static m9_sl_CHAR Gen_ObjPoolC (Ast_Node * a, m9_state *err)
     if (err->exc) goto L_ret;
     m = m9v;
   }
-  bool m9t1 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s1205, 1 }), err);
+  bool m9t1 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s1216, 1 }), err);
   if (err->exc) goto L_ret;
   if (m9t1) {
     bool m9t2 = Gen_PoolParamTy (Gen_ScopeNode (a->a, err), err);
     if (err->exc) goto L_ret;
     if (m9t2) {
       err->res = m9res;
-      { __typeof__(Gen_CN (a->a, err)) m9a691 = Gen_CN (a->a, err);
+      { __typeof__(Gen_CN (a->a, err)) m9a696 = Gen_CN (a->a, err);
         if (err->exc) goto L_ret;
-      m9ret = Gen_S2 (m9a691, ((m9_sl_CHAR){ (uint32_t *) m9s1206, 5 }), err);
+      m9ret = Gen_S2 (m9a696, ((m9_sl_CHAR){ (uint32_t *) m9s1217, 5 }), err);
       if (err->exc) goto L_ret;
       }
       goto L_ret;
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1207, 8 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1218, 8 });
     goto L_ret;
   }
-  bool m9t3 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s1208, 1 }), err);
+  bool m9t3 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s1219, 1 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     { __typeof__(i) m9v = m9_sub_i64 (bpool.n, INT64_C(1), err);
@@ -13740,10 +13981,10 @@ static m9_sl_CHAR Gen_ObjPoolC (Ast_Node * a, m9_state *err)
       }
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1209, 8 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1220, 8 });
     goto L_ret;
   }
-  bool m9t5 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s1210, 1 }), err);
+  bool m9t5 = DynStr_Eq (m, ((m9_sl_CHAR){ (uint32_t *) m9s1221, 1 }), err);
   if (err->exc) goto L_ret;
   if (m9t5) {
     { __typeof__(t) m9v = Gen_ScopeNode (a->a, err);
@@ -13781,15 +14022,15 @@ static m9_sl_CHAR Gen_ObjPoolC (Ast_Node * a, m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t6) {
       err->res = m9res;
-      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1211, 9 });
+      m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1222, 9 });
       goto L_ret;
     }
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1212, 8 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1223, 8 });
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1213, 8 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1224, 8 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -13815,7 +14056,7 @@ static m9_sl_CHAR Gen_OriginPool (Ast_Node * k, m9_state *err)
     }
   } }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1214, 8 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1225, 8 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -13945,9 +14186,9 @@ static Ast_Node * Gen_RecordAt (m9_sl_CHAR name, m9_sl_CHAR *ctype, m9_sl_CHAR *
         t = m9v;
       }
     } else {
-      { __typeof__(Gen_S3 ((*m), ((m9_sl_CHAR){ (uint32_t *) m9s1215, 1 }), (*tn), err)) m9a692 = Gen_S3 ((*m), ((m9_sl_CHAR){ (uint32_t *) m9s1215, 1 }), (*tn), err);
+      { __typeof__(Gen_S3 ((*m), ((m9_sl_CHAR){ (uint32_t *) m9s1226, 1 }), (*tn), err)) m9a697 = Gen_S3 ((*m), ((m9_sl_CHAR){ (uint32_t *) m9s1226, 1 }), (*tn), err);
         if (err->exc) goto L_ret;
-      { __typeof__(ei) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a692, err);
+      { __typeof__(ei) m9v = Gen_MFind (&(extTypes), &m9mframe, m9a697, err);
         if (err->exc) goto L_ret;
         ei = m9v;
       }
@@ -13965,9 +14206,9 @@ static Ast_Node * Gen_RecordAt (m9_sl_CHAR name, m9_sl_CHAR *ctype, m9_sl_CHAR *
     { Ast_Node * n = t;
     if (n != NULL) {
       if ((n->kind == Ast_NRecordType)) {
-        { __typeof__(Gen_CP ((*m), err)) m9a693 = Gen_CP ((*m), err);
+        { __typeof__(Gen_CP ((*m), err)) m9a698 = Gen_CP ((*m), err);
           if (err->exc) goto L_ret;
-        { __typeof__((*ctype)) m9v = Gen_S3 (m9a693, ((m9_sl_CHAR){ (uint32_t *) m9s1216, 1 }), (*tn), err);
+        { __typeof__((*ctype)) m9v = Gen_S3 (m9a698, ((m9_sl_CHAR){ (uint32_t *) m9s1227, 1 }), (*tn), err);
           if (err->exc) goto L_ret;
           (*ctype) = m9v;
         }
@@ -14024,26 +14265,26 @@ static m9_sl_CHAR Gen_HoistArg (m9_sl_CHAR a, m9_state *err)
     if (err->exc) goto L_ret;
     nhoist = m9v;
   }
-  { __typeof__(Gen_ItoA (nhoist, err)) m9a694 = Gen_ItoA (nhoist, err);
+  { __typeof__(Gen_ItoA (nhoist, err)) m9a699 = Gen_ItoA (nhoist, err);
     if (err->exc) goto L_ret;
-  { __typeof__(tmp) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1217, 3 }), m9a694, err);
+  { __typeof__(tmp) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1228, 3 }), m9a699, err);
     if (err->exc) goto L_ret;
     tmp = m9v;
   }
   }
-  { __typeof__(Gen_S2 (a, ((m9_sl_CHAR){ (uint32_t *) m9s1221, 1 }), err)) m9a695 = Gen_S2 (a, ((m9_sl_CHAR){ (uint32_t *) m9s1221, 1 }), err);
+  { __typeof__(Gen_S2 (a, ((m9_sl_CHAR){ (uint32_t *) m9s1232, 1 }), err)) m9a700 = Gen_S2 (a, ((m9_sl_CHAR){ (uint32_t *) m9s1232, 1 }), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1218, 13 }), a, ((m9_sl_CHAR){ (uint32_t *) m9s1219, 2 }), tmp, ((m9_sl_CHAR){ (uint32_t *) m9s1220, 3 }), m9a695, err)) m9a696 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1218, 13 }), a, ((m9_sl_CHAR){ (uint32_t *) m9s1219, 2 }), tmp, ((m9_sl_CHAR){ (uint32_t *) m9s1220, 3 }), m9a695, err);
+  { __typeof__(Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1229, 13 }), a, ((m9_sl_CHAR){ (uint32_t *) m9s1230, 2 }), tmp, ((m9_sl_CHAR){ (uint32_t *) m9s1231, 3 }), m9a700, err)) m9a701 = Gen_S6 (((m9_sl_CHAR){ (uint32_t *) m9s1229, 13 }), a, ((m9_sl_CHAR){ (uint32_t *) m9s1230, 2 }), tmp, ((m9_sl_CHAR){ (uint32_t *) m9s1231, 3 }), m9a700, err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, hoistInd, m9a696, err);
+  Gen_Line (Gen_KPbuf, hoistInd, m9a701, err);
   if (err->exc) goto L_ret;
   }
   }
-  { __typeof__(m9_add_i64 (hoistInd, INT64_C(1), err)) m9a697 = m9_add_i64 (hoistInd, INT64_C(1), err);
+  { __typeof__(m9_add_i64 (hoistInd, INT64_C(1), err)) m9a702 = m9_add_i64 (hoistInd, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1222, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1223, 1 }), err)) m9a698 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1222, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1223, 1 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1233, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1234, 1 }), err)) m9a703 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1233, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1234, 1 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, m9a697, m9a698, err);
+  Gen_Line (Gen_KPbuf, m9a702, m9a703, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -14069,7 +14310,7 @@ static void Gen_CloseHoists (int64_t ind, m9_state *err)
   err->res = &m9frame;
   for (;;) {
     if (!((hoistOpen > INT64_C(0)))) break;
-    Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1224, 1 }), err);
+    Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1235, 1 }), err);
     if (err->exc) goto L_ret;
     { __typeof__(hoistOpen) m9v = m9_sub_i64 (hoistOpen, INT64_C(1), err);
       if (err->exc) goto L_ret;
@@ -14126,14 +14367,14 @@ static void Gen_EmitHandler (Ast_Node * h, m9_sl_CHAR dlbl, int64_t ind, m9_stat
     desc = m9v;
   }
   if (((desc).len == INT64_C(0))) {
-    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1225, 30 }), nm, err)) m9a699 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1225, 30 }), nm, err);
+    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1236, 30 }), nm, err)) m9a704 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1236, 30 }), nm, err);
       if (err->exc) goto L_ret;
-    Gen_Err2 (h->line, m9a699, err);
+    Gen_Err2 (h->line, m9a704, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  { __typeof__(cond) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1226, 13 }), desc, err);
+  { __typeof__(cond) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1237, 13 }), desc, err);
     if (err->exc) goto L_ret;
     cond = m9v;
   }
@@ -14172,20 +14413,20 @@ static void Gen_EmitHandler (Ast_Node * h, m9_sl_CHAR dlbl, int64_t ind, m9_stat
             m9t2to = m9_sub_i64 (fids->nkids, INT64_C(1), err);
             if (err->exc) goto L_ret;
             for (; j <= m9t2to; j += 1) {
-              { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a700 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
+              { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a705 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
                 if (err->exc) goto L_ret;
-              { __typeof__(ety) m9v = Gen_TagOfType (m9a700, err);
+              { __typeof__(ety) m9v = Gen_TagOfType (m9a705, err);
                 if (err->exc) goto L_ret;
                 ety = m9v;
               }
               }
               slot = (m9_sl_CHAR){ NULL, 0 };
-              bool m9t3 = (DynStr_Eq (ety, ((m9_sl_CHAR){ (uint32_t *) m9s1227, 3 }), err) || DynStr_Eq (ety, ((m9_sl_CHAR){ (uint32_t *) m9s1228, 3 }), err));
+              bool m9t3 = (DynStr_Eq (ety, ((m9_sl_CHAR){ (uint32_t *) m9s1238, 3 }), err) || DynStr_Eq (ety, ((m9_sl_CHAR){ (uint32_t *) m9s1239, 3 }), err));
               if (err->exc) goto L_ret;
               if (m9t3) {
-                { __typeof__(Gen_ItoA (di, err)) m9a701 = Gen_ItoA (di, err);
+                { __typeof__(Gen_ItoA (di, err)) m9a706 = Gen_ItoA (di, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(slot) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1229, 7 }), m9a701, ((m9_sl_CHAR){ (uint32_t *) m9s1230, 1 }), err);
+                { __typeof__(slot) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1240, 7 }), m9a706, ((m9_sl_CHAR){ (uint32_t *) m9s1241, 1 }), err);
                   if (err->exc) goto L_ret;
                   slot = m9v;
                 }
@@ -14195,7 +14436,7 @@ static void Gen_EmitHandler (Ast_Node * h, m9_sl_CHAR dlbl, int64_t ind, m9_stat
                   di = m9v;
                 }
               } else {
-                bool m9t4 = DynStr_Eq (ety, ((m9_sl_CHAR){ (uint32_t *) m9s1231, 5 }), err);
+                bool m9t4 = DynStr_Eq (ety, ((m9_sl_CHAR){ (uint32_t *) m9s1242, 5 }), err);
                 if (err->exc) goto L_ret;
                 if (m9t4) {
                   { __typeof__(si) m9v = m9_add_i64 (si, INT64_C(1), err);
@@ -14203,9 +14444,9 @@ static void Gen_EmitHandler (Ast_Node * h, m9_sl_CHAR dlbl, int64_t ind, m9_stat
                     si = m9v;
                   }
               } else {
-                { __typeof__(Gen_ItoA (ii, err)) m9a702 = Gen_ItoA (ii, err);
+                { __typeof__(Gen_ItoA (ii, err)) m9a707 = Gen_ItoA (ii, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(slot) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1232, 7 }), m9a702, ((m9_sl_CHAR){ (uint32_t *) m9s1233, 1 }), err);
+                { __typeof__(slot) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1243, 7 }), m9a707, ((m9_sl_CHAR){ (uint32_t *) m9s1244, 1 }), err);
                   if (err->exc) goto L_ret;
                   slot = m9v;
                 }
@@ -14245,36 +14486,36 @@ static void Gen_EmitHandler (Ast_Node * h, m9_sl_CHAR dlbl, int64_t ind, m9_stat
                         } }
                         blines = nb;
                       }
-                      bool m9t6 = DynStr_Eq (ety, ((m9_sl_CHAR){ (uint32_t *) m9s1234, 5 }), err);
+                      bool m9t6 = DynStr_Eq (ety, ((m9_sl_CHAR){ (uint32_t *) m9s1245, 5 }), err);
                       if (err->exc) goto L_ret;
                       if (m9t6) {
                         ec = (m9_sl_CHAR){ NULL, 0 };
                         { Ast_Node * sr = Gen_Resolve ((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err)), err);
                         if (err->exc) goto L_ret;
                         if (sr != NULL) {
-                          { __typeof__((*(Ast_Node * *) m9_at (sr->kids.p, INT64_C(0), sr->kids.len, sizeof (Ast_Node *), err))) m9a703 = (*(Ast_Node * *) m9_at (sr->kids.p, INT64_C(0), sr->kids.len, sizeof (Ast_Node *), err));
+                          { __typeof__((*(Ast_Node * *) m9_at (sr->kids.p, INT64_C(0), sr->kids.len, sizeof (Ast_Node *), err))) m9a708 = (*(Ast_Node * *) m9_at (sr->kids.p, INT64_C(0), sr->kids.len, sizeof (Ast_Node *), err));
                             if (err->exc) goto L_ret;
-                          { __typeof__(ec) m9v = Gen_TyC (m9a703, err);
+                          { __typeof__(ec) m9v = Gen_TyC (m9a708, err);
                             if (err->exc) goto L_ret;
                             ec = m9v;
                           }
                           }
                         } }
-                        { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a704 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
+                        { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a709 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
                           if (err->exc) goto L_ret;
-                        { __typeof__(Gen_TyC (m9a704, err)) m9a705 = Gen_TyC (m9a704, err);
+                        { __typeof__(Gen_TyC (m9a709, err)) m9a710 = Gen_TyC (m9a709, err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(m9_sub_i64 (si, INT64_C(1), err)) m9a706 = m9_sub_i64 (si, INT64_C(1), err);
+                        { __typeof__(m9_sub_i64 (si, INT64_C(1), err)) m9a711 = m9_sub_i64 (si, INT64_C(1), err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(Gen_ItoA (m9a706, err)) m9a707 = Gen_ItoA (m9a706, err);
+                        { __typeof__(Gen_ItoA (m9a711, err)) m9a712 = Gen_ItoA (m9a711, err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(m9_sub_i64 (si, INT64_C(1), err)) m9a708 = m9_sub_i64 (si, INT64_C(1), err);
+                        { __typeof__(m9_sub_i64 (si, INT64_C(1), err)) m9a713 = m9_sub_i64 (si, INT64_C(1), err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(Gen_ItoA (m9a708, err)) m9a709 = Gen_ItoA (m9a708, err);
+                        { __typeof__(Gen_ItoA (m9a713, err)) m9a714 = Gen_ItoA (m9a713, err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(Gen_S9 (ec, ((m9_sl_CHAR){ (uint32_t *) m9s1239, 11 }), m9a709, ((m9_sl_CHAR){ (uint32_t *) m9s1240, 16 }), bn, ((m9_sl_CHAR){ (uint32_t *) m9s1241, 1 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a710 = Gen_S9 (ec, ((m9_sl_CHAR){ (uint32_t *) m9s1239, 11 }), m9a709, ((m9_sl_CHAR){ (uint32_t *) m9s1240, 16 }), bn, ((m9_sl_CHAR){ (uint32_t *) m9s1241, 1 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
+                        { __typeof__(Gen_S9 (ec, ((m9_sl_CHAR){ (uint32_t *) m9s1250, 11 }), m9a714, ((m9_sl_CHAR){ (uint32_t *) m9s1251, 16 }), bn, ((m9_sl_CHAR){ (uint32_t *) m9s1252, 1 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err)) m9a715 = Gen_S9 (ec, ((m9_sl_CHAR){ (uint32_t *) m9s1250, 11 }), m9a714, ((m9_sl_CHAR){ (uint32_t *) m9s1251, 16 }), bn, ((m9_sl_CHAR){ (uint32_t *) m9s1252, 1 }), (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, (m9_sl_CHAR){ NULL, 0 }, err);
                           if (err->exc) goto L_ret;
-                        { __typeof__((*(m9_sl_CHAR *) m9_at (blines.p, nbl, blines.len, sizeof (m9_sl_CHAR), err))) m9v = Gen_S9 (m9a705, ((m9_sl_CHAR){ (uint32_t *) m9s1235, 1 }), bn, ((m9_sl_CHAR){ (uint32_t *) m9s1236, 6 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s1237, 22 }), m9a707, ((m9_sl_CHAR){ (uint32_t *) m9s1238, 10 }), m9a710, err);
+                        { __typeof__((*(m9_sl_CHAR *) m9_at (blines.p, nbl, blines.len, sizeof (m9_sl_CHAR), err))) m9v = Gen_S9 (m9a710, ((m9_sl_CHAR){ (uint32_t *) m9s1246, 1 }), bn, ((m9_sl_CHAR){ (uint32_t *) m9s1247, 6 }), ec, ((m9_sl_CHAR){ (uint32_t *) m9s1248, 22 }), m9a712, ((m9_sl_CHAR){ (uint32_t *) m9s1249, 10 }), m9a715, err);
                           if (err->exc) goto L_ret;
                           (*(m9_sl_CHAR *) m9_at (blines.p, nbl, blines.len, sizeof (m9_sl_CHAR), err)) = m9v;
                           if (err->exc) goto L_ret;
@@ -14287,13 +14528,13 @@ static void Gen_EmitHandler (Ast_Node * h, m9_sl_CHAR dlbl, int64_t ind, m9_stat
                         }
                         }
                       } else {
-                        { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a711 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
+                        { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a716 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
                           if (err->exc) goto L_ret;
-                        { __typeof__(Gen_TyC (m9a711, err)) m9a712 = Gen_TyC (m9a711, err);
+                        { __typeof__(Gen_TyC (m9a716, err)) m9a717 = Gen_TyC (m9a716, err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(Gen_S2 (bn, ((m9_sl_CHAR){ (uint32_t *) m9s1245, 1 }), err)) m9a713 = Gen_S2 (bn, ((m9_sl_CHAR){ (uint32_t *) m9s1245, 1 }), err);
+                        { __typeof__(Gen_S2 (bn, ((m9_sl_CHAR){ (uint32_t *) m9s1256, 1 }), err)) m9a718 = Gen_S2 (bn, ((m9_sl_CHAR){ (uint32_t *) m9s1256, 1 }), err);
                           if (err->exc) goto L_ret;
-                        { __typeof__((*(m9_sl_CHAR *) m9_at (blines.p, nbl, blines.len, sizeof (m9_sl_CHAR), err))) m9v = Gen_S7 (m9a712, ((m9_sl_CHAR){ (uint32_t *) m9s1242, 1 }), bn, ((m9_sl_CHAR){ (uint32_t *) m9s1243, 3 }), slot, ((m9_sl_CHAR){ (uint32_t *) m9s1244, 9 }), m9a713, err);
+                        { __typeof__((*(m9_sl_CHAR *) m9_at (blines.p, nbl, blines.len, sizeof (m9_sl_CHAR), err))) m9v = Gen_S7 (m9a717, ((m9_sl_CHAR){ (uint32_t *) m9s1253, 1 }), bn, ((m9_sl_CHAR){ (uint32_t *) m9s1254, 3 }), slot, ((m9_sl_CHAR){ (uint32_t *) m9s1255, 9 }), m9a718, err);
                           if (err->exc) goto L_ret;
                           (*(m9_sl_CHAR *) m9_at (blines.p, nbl, blines.len, sizeof (m9_sl_CHAR), err)) = m9v;
                           if (err->exc) goto L_ret;
@@ -14306,24 +14547,24 @@ static void Gen_EmitHandler (Ast_Node * h, m9_sl_CHAR dlbl, int64_t ind, m9_stat
                         if (err->exc) goto L_ret;
                         nbl = m9v;
                       }
-                      Gen_MAdd (&(bpool), &m9mframe, arg->a, NULL, ((m9_sl_CHAR){ (uint32_t *) m9s1246, 8 }), err);
+                      Gen_MAdd (&(bpool), &m9mframe, arg->a, NULL, ((m9_sl_CHAR){ (uint32_t *) m9s1257, 8 }), err);
                       if (err->exc) goto L_ret;
-                      { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a714 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
+                      { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a719 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
                         if (err->exc) goto L_ret;
-                      Gen_MAdd (&(scope), &m9mframe, arg->a, m9a714, ((m9_sl_CHAR){ (uint32_t *) m9s1247, 1 }), err);
+                      Gen_MAdd (&(scope), &m9mframe, arg->a, m9a719, ((m9_sl_CHAR){ (uint32_t *) m9s1258, 1 }), err);
                       if (err->exc) goto L_ret;
                       }
                     } else {
                       if ((arg->kind == Ast_NInt)) {
-                        { __typeof__(Gen_S2 (arg->a, ((m9_sl_CHAR){ (uint32_t *) m9s1250, 1 }), err)) m9a715 = Gen_S2 (arg->a, ((m9_sl_CHAR){ (uint32_t *) m9s1250, 1 }), err);
+                        { __typeof__(Gen_S2 (arg->a, ((m9_sl_CHAR){ (uint32_t *) m9s1261, 1 }), err)) m9a720 = Gen_S2 (arg->a, ((m9_sl_CHAR){ (uint32_t *) m9s1261, 1 }), err);
                           if (err->exc) goto L_ret;
-                        { __typeof__(cond) m9v = Gen_S5 (cond, ((m9_sl_CHAR){ (uint32_t *) m9s1248, 4 }), slot, ((m9_sl_CHAR){ (uint32_t *) m9s1249, 12 }), m9a715, err);
+                        { __typeof__(cond) m9v = Gen_S5 (cond, ((m9_sl_CHAR){ (uint32_t *) m9s1259, 4 }), slot, ((m9_sl_CHAR){ (uint32_t *) m9s1260, 12 }), m9a720, err);
                           if (err->exc) goto L_ret;
                           cond = m9v;
                         }
                         }
                     } else {
-                      Gen_Err2 (h->line, ((m9_sl_CHAR){ (uint32_t *) m9s1251, 36 }), err);
+                      Gen_Err2 (h->line, ((m9_sl_CHAR){ (uint32_t *) m9s1262, 36 }), err);
                       if (err->exc) goto L_ret;
                     } }
                   } }
@@ -14338,13 +14579,13 @@ static void Gen_EmitHandler (Ast_Node * h, m9_sl_CHAR dlbl, int64_t ind, m9_stat
         } }
       } }
     } else {
-      Gen_Err2 (h->line, ((m9_sl_CHAR){ (uint32_t *) m9s1252, 36 }), err);
+      Gen_Err2 (h->line, ((m9_sl_CHAR){ (uint32_t *) m9s1263, 36 }), err);
       if (err->exc) goto L_ret;
     } }
   }
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1253, 4 }), cond, ((m9_sl_CHAR){ (uint32_t *) m9s1254, 3 }), err)) m9a716 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1253, 4 }), cond, ((m9_sl_CHAR){ (uint32_t *) m9s1254, 3 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1264, 4 }), cond, ((m9_sl_CHAR){ (uint32_t *) m9s1265, 3 }), err)) m9a721 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1264, 4 }), cond, ((m9_sl_CHAR){ (uint32_t *) m9s1265, 3 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, ind, m9a716, err);
+  Gen_Line (Gen_KPbuf, ind, m9a721, err);
   if (err->exc) goto L_ret;
   }
   { int64_t m9t7to;
@@ -14352,40 +14593,40 @@ static void Gen_EmitHandler (Ast_Node * h, m9_sl_CHAR dlbl, int64_t ind, m9_stat
   m9t7to = m9_sub_i64 (nbl, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; j <= m9t7to; j += 1) {
-    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a717 = m9_add_i64 (ind, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a722 = m9_add_i64 (ind, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at (blines.p, j, blines.len, sizeof (m9_sl_CHAR), err))) m9a718 = (*(m9_sl_CHAR *) m9_at (blines.p, j, blines.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (blines.p, j, blines.len, sizeof (m9_sl_CHAR), err))) m9a723 = (*(m9_sl_CHAR *) m9_at (blines.p, j, blines.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, m9a717, m9a718, err);
+    Gen_Line (Gen_KPbuf, m9a722, m9a723, err);
     if (err->exc) goto L_ret;
     }
     }
   } }
-  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a719 = m9_add_i64 (ind, INT64_C(1), err);
+  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a724 = m9_add_i64 (ind, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, m9a719, ((m9_sl_CHAR){ (uint32_t *) m9s1255, 16 }), err);
+  Gen_Line (Gen_KPbuf, m9a724, ((m9_sl_CHAR){ (uint32_t *) m9s1266, 16 }), err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__((*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err))) m9a720 = (*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err))) m9a725 = (*(Ast_Node * *) m9_at (h->kids.p, INT64_C(2), h->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a721 = m9_add_i64 (ind, INT64_C(1), err);
+  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a726 = m9_add_i64 (ind, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  Gen_EmitSeq (m9a720, m9a721, err);
-  if (err->exc) goto L_ret;
-  }
-  }
-  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a722 = m9_add_i64 (ind, INT64_C(1), err);
-    if (err->exc) goto L_ret;
-  { __typeof__(Gen_S2 (dlbl, ((m9_sl_CHAR){ (uint32_t *) m9s1257, 1 }), err)) m9a723 = Gen_S2 (dlbl, ((m9_sl_CHAR){ (uint32_t *) m9s1257, 1 }), err);
-    if (err->exc) goto L_ret;
-  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1256, 5 }), m9a723, err)) m9a724 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1256, 5 }), m9a723, err);
-    if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, m9a722, m9a724, err);
+  Gen_EmitSeq (m9a725, m9a726, err);
   if (err->exc) goto L_ret;
   }
   }
+  { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a727 = m9_add_i64 (ind, INT64_C(1), err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Gen_S2 (dlbl, ((m9_sl_CHAR){ (uint32_t *) m9s1268, 1 }), err)) m9a728 = Gen_S2 (dlbl, ((m9_sl_CHAR){ (uint32_t *) m9s1268, 1 }), err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1267, 5 }), m9a728, err)) m9a729 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1267, 5 }), m9a728, err);
+    if (err->exc) goto L_ret;
+  Gen_Line (Gen_KPbuf, m9a727, m9a729, err);
+  if (err->exc) goto L_ret;
   }
-  Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1258, 1 }), err);
+  }
+  }
+  Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1269, 1 }), err);
   if (err->exc) goto L_ret;
   scope.n = savedScope;
 L_ret: ;
@@ -14430,7 +14671,7 @@ static bool Gen_IsSomeCond (Ast_Node * k, m9_state *err)
       if (err->exc) goto L_ret;
       if (rhs != NULL) {
         err->res = m9res;
-        m9ret = (rhs->kind == Ast_NIsSome);
+        m9ret = ((rhs->kind == Ast_NIsSome) && ((rhs->a).len > INT64_C(0)));
         goto L_ret;
       } }
     }
@@ -14469,9 +14710,9 @@ static void Gen_EmitCaseCR (Ast_Node * st, m9_sl_CHAR w, m9_sl_CHAR tg, int64_t 
     if (err->exc) goto L_ret;
     tn = m9v;
   }
-  { __typeof__(Gen_CRPrefix (tn, err)) m9a725 = Gen_CRPrefix (tn, err);
+  { __typeof__(Gen_CRPrefix (tn, err)) m9a730 = Gen_CRPrefix (tn, err);
     if (err->exc) goto L_ret;
-  { __typeof__(l) m9v = Gen_S2 (m9a725, ((m9_sl_CHAR){ (uint32_t *) m9s1259, 1 }), err);
+  { __typeof__(l) m9v = Gen_S2 (m9a730, ((m9_sl_CHAR){ (uint32_t *) m9s1270, 1 }), err);
     if (err->exc) goto L_ret;
     l = m9v;
   }
@@ -14481,9 +14722,9 @@ static void Gen_EmitCaseCR (Ast_Node * st, m9_sl_CHAR w, m9_sl_CHAR tg, int64_t 
     vtN = m9v;
   }
   hadElse = false;
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1260, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1261, 7 }), err)) m9a726 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1260, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1261, 7 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1271, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1272, 7 }), err)) m9a731 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1271, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1272, 7 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, ind, m9a726, err);
+  Gen_Line (Gen_KPbuf, ind, m9a731, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(inSwitch) m9v = m9_add_i64 (inSwitch, INT64_C(1), err);
@@ -14513,9 +14754,9 @@ static void Gen_EmitCaseCR (Ast_Node * st, m9_sl_CHAR w, m9_sl_CHAR tg, int64_t 
             if (err->exc) goto L_ret;
             if (lbl != NULL) {
               if ((lbl->kind == Ast_NLabelPattern)) {
-                { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1262, 5 }), l, lbl->a, ((m9_sl_CHAR){ (uint32_t *) m9s1263, 3 }), err)) m9a727 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1262, 5 }), l, lbl->a, ((m9_sl_CHAR){ (uint32_t *) m9s1263, 3 }), err);
+                { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1273, 5 }), l, lbl->a, ((m9_sl_CHAR){ (uint32_t *) m9s1274, 3 }), err)) m9a732 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1273, 5 }), l, lbl->a, ((m9_sl_CHAR){ (uint32_t *) m9s1274, 3 }), err);
                   if (err->exc) goto L_ret;
-                Gen_Line (Gen_KPbuf, ind, m9a727, err);
+                Gen_Line (Gen_KPbuf, ind, m9a732, err);
                 if (err->exc) goto L_ret;
                 }
                 opened = true;
@@ -14581,34 +14822,34 @@ static void Gen_EmitCaseCR (Ast_Node * st, m9_sl_CHAR w, m9_sl_CHAR tg, int64_t 
                                       if (err->exc) goto L_ret;
                                       fldn = m9v;
                                     }
-                                    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a728 = m9_add_i64 (ind, INT64_C(1), err);
+                                    { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a733 = m9_add_i64 (ind, INT64_C(1), err);
                                       if (err->exc) goto L_ret;
-                                    { __typeof__((*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err))) m9a729 = (*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err));
+                                    { __typeof__((*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err))) m9a734 = (*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err));
                                       if (err->exc) goto L_ret;
-                                    { __typeof__(Gen_TyC (m9a729, err)) m9a730 = Gen_TyC (m9a729, err);
+                                    { __typeof__(Gen_TyC (m9a734, err)) m9a735 = Gen_TyC (m9a734, err);
                                       if (err->exc) goto L_ret;
-                                    { __typeof__(Gen_S5 (fldn, ((m9_sl_CHAR){ (uint32_t *) m9s1268, 9 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1269, 1 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a731 = Gen_S5 (fldn, ((m9_sl_CHAR){ (uint32_t *) m9s1268, 9 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1269, 1 }), (m9_sl_CHAR){ NULL, 0 }, err);
+                                    { __typeof__(Gen_S5 (fldn, ((m9_sl_CHAR){ (uint32_t *) m9s1279, 9 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1280, 1 }), (m9_sl_CHAR){ NULL, 0 }, err)) m9a736 = Gen_S5 (fldn, ((m9_sl_CHAR){ (uint32_t *) m9s1279, 9 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1280, 1 }), (m9_sl_CHAR){ NULL, 0 }, err);
                                       if (err->exc) goto L_ret;
-                                    { __typeof__(Gen_S9 (m9a730, ((m9_sl_CHAR){ (uint32_t *) m9s1264, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1265, 3 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1266, 3 }), lbl->a, ((m9_sl_CHAR){ (uint32_t *) m9s1267, 1 }), m9a731, err)) m9a732 = Gen_S9 (m9a730, ((m9_sl_CHAR){ (uint32_t *) m9s1264, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1265, 3 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1266, 3 }), lbl->a, ((m9_sl_CHAR){ (uint32_t *) m9s1267, 1 }), m9a731, err);
+                                    { __typeof__(Gen_S9 (m9a735, ((m9_sl_CHAR){ (uint32_t *) m9s1275, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1276, 3 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1277, 3 }), lbl->a, ((m9_sl_CHAR){ (uint32_t *) m9s1278, 1 }), m9a736, err)) m9a737 = Gen_S9 (m9a735, ((m9_sl_CHAR){ (uint32_t *) m9s1275, 1 }), bname, ((m9_sl_CHAR){ (uint32_t *) m9s1276, 3 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1277, 3 }), lbl->a, ((m9_sl_CHAR){ (uint32_t *) m9s1278, 1 }), m9a736, err);
                                       if (err->exc) goto L_ret;
-                                    Gen_Line (Gen_KPbuf, m9a728, m9a732, err);
+                                    Gen_Line (Gen_KPbuf, m9a733, m9a737, err);
                                     if (err->exc) goto L_ret;
                                     }
                                     }
                                     }
                                     }
                                     }
-                                    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a733 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+                                    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a738 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
                                       if (err->exc) goto L_ret;
-                                    { __typeof__(Gen_OriginPool (m9a733, err)) m9a734 = Gen_OriginPool (m9a733, err);
+                                    { __typeof__(Gen_OriginPool (m9a738, err)) m9a739 = Gen_OriginPool (m9a738, err);
                                       if (err->exc) goto L_ret;
-                                    Gen_MAdd (&(bpool), &m9mframe, bid->a, NULL, m9a734, err);
+                                    Gen_MAdd (&(bpool), &m9mframe, bid->a, NULL, m9a739, err);
                                     if (err->exc) goto L_ret;
                                     }
                                     }
-                                    { __typeof__((*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err))) m9a735 = (*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err));
+                                    { __typeof__((*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err))) m9a740 = (*(Ast_Node * *) m9_at (vg->kids.p, INT64_C(1), vg->kids.len, sizeof (Ast_Node *), err));
                                       if (err->exc) goto L_ret;
-                                    Gen_MAdd (&(scope), &m9mframe, bid->a, m9a735, ((m9_sl_CHAR){ (uint32_t *) m9s1270, 1 }), err);
+                                    Gen_MAdd (&(scope), &m9mframe, bid->a, m9a740, ((m9_sl_CHAR){ (uint32_t *) m9s1281, 1 }), err);
                                     if (err->exc) goto L_ret;
                                     }
                                   } }
@@ -14625,7 +14866,7 @@ static void Gen_EmitCaseCR (Ast_Node * st, m9_sl_CHAR w, m9_sl_CHAR tg, int64_t 
                     } }
                   } }
                 } else {
-                  Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1271, 31 }), err);
+                  Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1282, 31 }), err);
                   if (err->exc) goto L_ret;
                 } }
               } else {
@@ -14633,67 +14874,70 @@ static void Gen_EmitCaseCR (Ast_Node * st, m9_sl_CHAR w, m9_sl_CHAR tg, int64_t 
                   { Ast_Node * lv = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(0), lbl->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
                   if (lv != NULL) {
-                    bool m9t8 = (((lv->kind == Ast_NDesignator) && (lv->nkids == INT64_C(0))) && Gen_IsNone ((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err)), err));
+                    bool m9t8 = (((Gen_LabelName (lv, err)).len > INT64_C(0)) && Gen_IsNone ((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err)), err));
                     if (err->exc) goto L_ret;
                     if (m9t8) {
-                      { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1272, 5 }), l, lv->a, ((m9_sl_CHAR){ (uint32_t *) m9s1273, 1 }), err)) m9a736 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1272, 5 }), l, lv->a, ((m9_sl_CHAR){ (uint32_t *) m9s1273, 1 }), err);
+                      { __typeof__(Gen_LabelName (lv, err)) m9a741 = Gen_LabelName (lv, err);
                         if (err->exc) goto L_ret;
-                      Gen_Line (Gen_KPbuf, ind, m9a736, err);
+                      { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1283, 5 }), l, m9a741, ((m9_sl_CHAR){ (uint32_t *) m9s1284, 1 }), err)) m9a742 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1283, 5 }), l, m9a741, ((m9_sl_CHAR){ (uint32_t *) m9s1284, 1 }), err);
+                        if (err->exc) goto L_ret;
+                      Gen_Line (Gen_KPbuf, ind, m9a742, err);
                       if (err->exc) goto L_ret;
                       }
+                      }
                     } else {
-                      Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1274, 31 }), err);
+                      Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1285, 31 }), err);
                       if (err->exc) goto L_ret;
                     }
                   } }
               } else {
-                Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1275, 31 }), err);
+                Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1286, 31 }), err);
                 if (err->exc) goto L_ret;
               } }
             } }
           } }
         } }
         if ((!opened)) {
-          Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1276, 1 }), err);
+          Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1287, 1 }), err);
           if (err->exc) goto L_ret;
         }
-        { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a737 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a743 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a738 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a744 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Gen_EmitSeq (m9a737, m9a738, err);
+        Gen_EmitSeq (m9a743, m9a744, err);
         if (err->exc) goto L_ret;
         }
         }
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1277, 8 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1288, 8 }), err);
         if (err->exc) goto L_ret;
         scope.n = savedScope;
       } else {
         hadElse = true;
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1278, 10 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1289, 10 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a739 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a745 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a740 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a746 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Gen_EmitSeq (m9a739, m9a740, err);
+        Gen_EmitSeq (m9a745, m9a746, err);
         if (err->exc) goto L_ret;
         }
         }
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1279, 8 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1290, 8 }), err);
         if (err->exc) goto L_ret;
       }
     } }
   } }
   if ((!hadElse)) {
-    Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1280, 24 }), err);
+    Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1291, 24 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(inSwitch) m9v = m9_sub_i64 (inSwitch, INT64_C(1), err);
     if (err->exc) goto L_ret;
     inSwitch = m9v;
   }
-  Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1281, 3 }), err);
+  Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1292, 3 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -14713,9 +14957,9 @@ static void Gen_EmitCaseScalar (Ast_Node * st, m9_sl_CHAR w, int64_t ind, m9_sta
   bool hadElse = false; (void) hadElse;
   bool single = false; (void) single;
   hadElse = false;
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1282, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1283, 3 }), err)) m9a741 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1282, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1283, 3 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1293, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1294, 3 }), err)) m9a747 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1293, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1294, 3 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, ind, m9a741, err);
+  Gen_Line (Gen_KPbuf, ind, m9a747, err);
   if (err->exc) goto L_ret;
   }
   { __typeof__(inSwitch) m9v = m9_add_i64 (inSwitch, INT64_C(1), err);
@@ -14745,9 +14989,9 @@ static void Gen_EmitCaseScalar (Ast_Node * st, m9_sl_CHAR w, int64_t ind, m9_sta
               r = (m9_sl_CHAR){ NULL, 0 };
               single = false;
               if ((lbl->kind == Ast_NLabelRange)) {
-                { __typeof__((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err))) m9a742 = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err))) m9a748 = (*(Ast_Node * *) m9_at (lbl->kids.p, INT64_C(1), lbl->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(single) m9v = Gen_IsNone (m9a742, err);
+                { __typeof__(single) m9v = Gen_IsNone (m9a748, err);
                   if (err->exc) goto L_ret;
                   single = m9v;
                 }
@@ -14758,11 +15002,11 @@ static void Gen_EmitCaseScalar (Ast_Node * st, m9_sl_CHAR w, int64_t ind, m9_sta
                 if (err->exc) goto L_ret;
                 if (lv != NULL) {
                   if (((lv->kind == Ast_NString) && ((lv->a).len == INT64_C(1)))) {
-                    { __typeof__((int64_t)((*(uint32_t *) m9_at (lv->a.p, INT64_C(0), lv->a.len, sizeof (uint32_t), err)))) m9a743 = (int64_t)((*(uint32_t *) m9_at (lv->a.p, INT64_C(0), lv->a.len, sizeof (uint32_t), err)));
+                    { __typeof__((int64_t)((*(uint32_t *) m9_at (lv->a.p, INT64_C(0), lv->a.len, sizeof (uint32_t), err)))) m9a749 = (int64_t)((*(uint32_t *) m9_at (lv->a.p, INT64_C(0), lv->a.len, sizeof (uint32_t), err)));
                       if (err->exc) goto L_ret;
-                    { __typeof__(Gen_ItoA (m9a743, err)) m9a744 = Gen_ItoA (m9a743, err);
+                    { __typeof__(Gen_ItoA (m9a749, err)) m9a750 = Gen_ItoA (m9a749, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(r) m9v = Gen_S2 (m9a744, ((m9_sl_CHAR){ (uint32_t *) m9s1284, 1 }), err);
+                    { __typeof__(r) m9v = Gen_S2 (m9a750, ((m9_sl_CHAR){ (uint32_t *) m9s1295, 1 }), err);
                       if (err->exc) goto L_ret;
                       r = m9v;
                     }
@@ -14770,11 +15014,11 @@ static void Gen_EmitCaseScalar (Ast_Node * st, m9_sl_CHAR w, int64_t ind, m9_sta
                     }
                   } else {
                     if ((lv->kind == Ast_NChar)) {
-                      { __typeof__(Gen_CharVal (lv->a, err)) m9a745 = Gen_CharVal (lv->a, err);
+                      { __typeof__(Gen_CharVal (lv->a, err)) m9a751 = Gen_CharVal (lv->a, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(Gen_ItoA (m9a745, err)) m9a746 = Gen_ItoA (m9a745, err);
+                      { __typeof__(Gen_ItoA (m9a751, err)) m9a752 = Gen_ItoA (m9a751, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__(r) m9v = Gen_S2 (m9a746, ((m9_sl_CHAR){ (uint32_t *) m9s1285, 1 }), err);
+                      { __typeof__(r) m9v = Gen_S2 (m9a752, ((m9_sl_CHAR){ (uint32_t *) m9s1296, 1 }), err);
                         if (err->exc) goto L_ret;
                         r = m9v;
                       }
@@ -14782,7 +15026,7 @@ static void Gen_EmitCaseScalar (Ast_Node * st, m9_sl_CHAR w, int64_t ind, m9_sta
                       }
                   } else {
                     if ((lv->kind == Ast_NInt)) {
-                      { __typeof__(r) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1286, 8 }), lv->a, ((m9_sl_CHAR){ (uint32_t *) m9s1287, 1 }), err);
+                      { __typeof__(r) m9v = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1297, 8 }), lv->a, ((m9_sl_CHAR){ (uint32_t *) m9s1298, 1 }), err);
                         if (err->exc) goto L_ret;
                         r = m9v;
                       }
@@ -14796,56 +15040,56 @@ static void Gen_EmitCaseScalar (Ast_Node * st, m9_sl_CHAR w, int64_t ind, m9_sta
                 } }
               }
               if (((r).len == INT64_C(0))) {
-                Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1288, 31 }), err);
+                Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1299, 31 }), err);
                 if (err->exc) goto L_ret;
               } else {
-                { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1289, 5 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1290, 1 }), err)) m9a747 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1289, 5 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1290, 1 }), err);
+                { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1300, 5 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1301, 1 }), err)) m9a753 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1300, 5 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1301, 1 }), err);
                   if (err->exc) goto L_ret;
-                Gen_Line (Gen_KPbuf, ind, m9a747, err);
+                Gen_Line (Gen_KPbuf, ind, m9a753, err);
                 if (err->exc) goto L_ret;
                 }
               }
             } }
           } }
         } }
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1291, 1 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1302, 1 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a748 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err))) m9a754 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(1), arm->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a749 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a755 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Gen_EmitSeq (m9a748, m9a749, err);
+        Gen_EmitSeq (m9a754, m9a755, err);
         if (err->exc) goto L_ret;
         }
         }
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1292, 8 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1303, 8 }), err);
         if (err->exc) goto L_ret;
       } else {
         hadElse = true;
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1293, 10 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1304, 10 }), err);
         if (err->exc) goto L_ret;
-        { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a750 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err))) m9a756 = (*(Ast_Node * *) m9_at (arm->kids.p, INT64_C(0), arm->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a751 = m9_add_i64 (ind, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a757 = m9_add_i64 (ind, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        Gen_EmitSeq (m9a750, m9a751, err);
+        Gen_EmitSeq (m9a756, m9a757, err);
         if (err->exc) goto L_ret;
         }
         }
-        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1294, 8 }), err);
+        Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1305, 8 }), err);
         if (err->exc) goto L_ret;
       }
     } }
   } }
   if ((!hadElse)) {
-    Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1295, 70 }), err);
+    Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1306, 70 }), err);
     if (err->exc) goto L_ret;
   }
   { __typeof__(inSwitch) m9v = m9_sub_i64 (inSwitch, INT64_C(1), err);
     if (err->exc) goto L_ret;
     inSwitch = m9v;
   }
-  Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1296, 3 }), err);
+  Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1307, 3 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -14892,40 +15136,40 @@ static void Gen_EmitBlock (Ast_Node * st, int64_t ind, m9_state *err)
   if (hasHdl) {
     { Ast_Node * f0 = fin;
     if (f0 != NULL) {
-      Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1297, 47 }), err);
+      Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1308, 47 }), err);
       if (err->exc) goto L_ret;
       goto L_ret;
     } }
-    { __typeof__(Gen_NewTmp (err)) m9a752 = Gen_NewTmp (err);
+    { __typeof__(Gen_NewTmp (err)) m9a758 = Gen_NewTmp (err);
       if (err->exc) goto L_ret;
-    { __typeof__(w) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1298, 6 }), m9a752, err);
+    { __typeof__(w) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1309, 6 }), m9a758, err);
       if (err->exc) goto L_ret;
       w = m9v;
     }
     }
-    { __typeof__(Gen_NewTmp (err)) m9a753 = Gen_NewTmp (err);
+    { __typeof__(Gen_NewTmp (err)) m9a759 = Gen_NewTmp (err);
       if (err->exc) goto L_ret;
-    { __typeof__(cnd) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1299, 5 }), m9a753, err);
+    { __typeof__(cnd) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1310, 5 }), m9a759, err);
       if (err->exc) goto L_ret;
       cnd = m9v;
     }
     }
     tg = raiseLbl;
     raiseLbl = w;
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a754 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a760 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Gen_EmitSeq (m9a754, ind, err);
+    Gen_EmitSeq (m9a760, ind, err);
     if (err->exc) goto L_ret;
     }
     raiseLbl = tg;
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1300, 5 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1301, 1 }), err)) m9a755 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1300, 5 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1301, 1 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1311, 5 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1312, 1 }), err)) m9a761 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1311, 5 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1312, 1 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, ind, m9a755, err);
+    Gen_Line (Gen_KPbuf, ind, m9a761, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(Gen_S2 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1302, 3 }), err)) m9a756 = Gen_S2 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1302, 3 }), err);
+    { __typeof__(Gen_S2 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1313, 3 }), err)) m9a762 = Gen_S2 (w, ((m9_sl_CHAR){ (uint32_t *) m9s1313, 3 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(0), m9a756, err);
+    Gen_Line (Gen_KPbuf, INT64_C(0), m9a762, err);
     if (err->exc) goto L_ret;
     }
     { int64_t m9t2to;
@@ -14942,14 +15186,14 @@ static void Gen_EmitBlock (Ast_Node * st, int64_t ind, m9_state *err)
         }
       } }
     } }
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1303, 5 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1304, 1 }), err)) m9a757 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1303, 5 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1304, 1 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1314, 5 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1315, 1 }), err)) m9a763 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1314, 5 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1315, 1 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, ind, m9a757, err);
+    Gen_Line (Gen_KPbuf, ind, m9a763, err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1305, 3 }), err)) m9a758 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1305, 3 }), err);
+    { __typeof__(Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1316, 3 }), err)) m9a764 = Gen_S2 (cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1316, 3 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(0), m9a758, err);
+    Gen_Line (Gen_KPbuf, INT64_C(0), m9a764, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
@@ -14960,16 +15204,16 @@ static void Gen_EmitBlock (Ast_Node * st, int64_t ind, m9_state *err)
       if (err->exc) goto L_ret;
       w = m9v;
     }
-    { __typeof__(Gen_NewTmp (err)) m9a759 = Gen_NewTmp (err);
+    { __typeof__(Gen_NewTmp (err)) m9a765 = Gen_NewTmp (err);
       if (err->exc) goto L_ret;
-    { __typeof__(l) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1306, 6 }), m9a759, err);
+    { __typeof__(l) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1317, 6 }), m9a765, err);
       if (err->exc) goto L_ret;
       l = m9v;
     }
     }
-    { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1307, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1308, 17 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1309, 1 }), err)) m9a760 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1307, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1308, 17 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1309, 1 }), err);
+    { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1318, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1319, 17 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1320, 1 }), err)) m9a766 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1318, 5 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1319, 17 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1320, 1 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, ind, m9a760, err);
+    Gen_Line (Gen_KPbuf, ind, m9a766, err);
     if (err->exc) goto L_ret;
     }
     savedExit = exitLbl;
@@ -14982,51 +15226,51 @@ static void Gen_EmitBlock (Ast_Node * st, int64_t ind, m9_state *err)
       if (err->exc) goto L_ret;
       finDepth = m9v;
     }
-    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a761 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a767 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Gen_EmitSeq (m9a761, ind, err);
+    Gen_EmitSeq (m9a767, ind, err);
     if (err->exc) goto L_ret;
     }
     { __typeof__(finDepth) m9v = m9_sub_i64 (finDepth, INT64_C(1), err);
       if (err->exc) goto L_ret;
       finDepth = m9v;
     }
-    { __typeof__(Gen_S2 (l, ((m9_sl_CHAR){ (uint32_t *) m9s1310, 3 }), err)) m9a762 = Gen_S2 (l, ((m9_sl_CHAR){ (uint32_t *) m9s1310, 3 }), err);
+    { __typeof__(Gen_S2 (l, ((m9_sl_CHAR){ (uint32_t *) m9s1321, 3 }), err)) m9a768 = Gen_S2 (l, ((m9_sl_CHAR){ (uint32_t *) m9s1321, 3 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(0), m9a762, err);
+    Gen_Line (Gen_KPbuf, INT64_C(0), m9a768, err);
     if (err->exc) goto L_ret;
     }
     exitLbl = savedExit;
     raiseLbl = tg;
     curRetq = savedRq;
-    { __typeof__((*(Ast_Node * *) m9_at (fnode->kids.p, INT64_C(0), fnode->kids.len, sizeof (Ast_Node *), err))) m9a763 = (*(Ast_Node * *) m9_at (fnode->kids.p, INT64_C(0), fnode->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (fnode->kids.p, INT64_C(0), fnode->kids.len, sizeof (Ast_Node *), err))) m9a769 = (*(Ast_Node * *) m9_at (fnode->kids.p, INT64_C(0), fnode->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    Gen_EmitSeq (m9a763, ind, err);
+    Gen_EmitSeq (m9a769, ind, err);
     if (err->exc) goto L_ret;
     }
     if (((curRetq).len > INT64_C(0))) {
-      { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1311, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1312, 4 }), curRetq, ((m9_sl_CHAR){ (uint32_t *) m9s1313, 14 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1314, 3 }), err)) m9a764 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1311, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1312, 4 }), curRetq, ((m9_sl_CHAR){ (uint32_t *) m9s1313, 14 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1314, 3 }), err);
+      { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1322, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1323, 4 }), curRetq, ((m9_sl_CHAR){ (uint32_t *) m9s1324, 14 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1325, 3 }), err)) m9a770 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1322, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1323, 4 }), curRetq, ((m9_sl_CHAR){ (uint32_t *) m9s1324, 14 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1325, 3 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a764, err);
+      Gen_Line (Gen_KPbuf, ind, m9a770, err);
       if (err->exc) goto L_ret;
       }
     } else {
-      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1315, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1316, 7 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1317, 1 }), err)) m9a765 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1315, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1316, 7 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1317, 1 }), err);
+      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1326, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1327, 7 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1328, 1 }), err)) m9a771 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1326, 4 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1327, 7 }), exitLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1328, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, ind, m9a765, err);
+      Gen_Line (Gen_KPbuf, ind, m9a771, err);
       if (err->exc) goto L_ret;
       }
     }
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1318, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1319, 1 }), err)) m9a766 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1318, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1319, 1 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1329, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1330, 1 }), err)) m9a772 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1329, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1330, 1 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, ind, m9a766, err);
+    Gen_Line (Gen_KPbuf, ind, m9a772, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   } }
-  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a767 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
+  { __typeof__((*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err))) m9a773 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
-  Gen_EmitSeq (m9a767, ind, err);
+  Gen_EmitSeq (m9a773, ind, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -15050,8 +15294,8 @@ static void Gen_EmitDispose (Ast_Node * st, int64_t ind, m9_state *err)
   Ast_Node * ft = NULL; (void) ft;
   bool opened = false; (void) opened;
   stRaise = false;
-  tg = ((m9_sl_CHAR){ (uint32_t *) m9s1320, 1 });
-  l = ((m9_sl_CHAR){ (uint32_t *) m9s1321, 1 });
+  tg = ((m9_sl_CHAR){ (uint32_t *) m9s1331, 1 });
+  l = ((m9_sl_CHAR){ (uint32_t *) m9s1332, 1 });
   { Ast_Node * dz = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (dz != NULL) {
@@ -15065,9 +15309,9 @@ static void Gen_EmitDispose (Ast_Node * st, int64_t ind, m9_state *err)
   { Ast_Node * dz2 = (*(Ast_Node * *) m9_at (st->kids.p, INT64_C(0), st->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (dz2 != NULL) {
-    { __typeof__(Gen_DesigDecl (dz2, err)) m9a768 = Gen_DesigDecl (dz2, err);
+    { __typeof__(Gen_DesigDecl (dz2, err)) m9a774 = Gen_DesigDecl (dz2, err);
       if (err->exc) goto L_ret;
-    { __typeof__(vtN) m9v = Gen_Resolve (m9a768, err);
+    { __typeof__(vtN) m9v = Gen_Resolve (m9a774, err);
       if (err->exc) goto L_ret;
       vtN = m9v;
     }
@@ -15093,22 +15337,22 @@ static void Gen_EmitDispose (Ast_Node * st, int64_t ind, m9_state *err)
               { Ast_Node * fg = (*(Ast_Node * *) m9_at (fs->kids.p, j, fs->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (fg != NULL) {
-                { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a769 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err))) m9a775 = (*(Ast_Node * *) m9_at (fg->kids.p, INT64_C(1), fg->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(ft) m9v = Gen_Resolve (m9a769, err);
+                { __typeof__(ft) m9v = Gen_Resolve (m9a775, err);
                   if (err->exc) goto L_ret;
                   ft = m9v;
                 }
                 }
                 { Ast_Node * ftn = ft;
                 if (ftn != NULL) {
-                  bool m9t3 = ((((ftn->kind == Ast_NQualident) && DynStr_Eq (ftn->a, ((m9_sl_CHAR){ (uint32_t *) m9s1322, 4 }), err))) || (ftn->kind == Ast_NSharedType));
+                  bool m9t3 = ((((ftn->kind == Ast_NQualident) && DynStr_Eq (ftn->a, ((m9_sl_CHAR){ (uint32_t *) m9s1333, 4 }), err))) || (ftn->kind == Ast_NSharedType));
                   if (err->exc) goto L_ret;
                   if (m9t3) {
                     if ((!opened)) {
-                      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1323, 16 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1324, 4 }), err)) m9a770 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1323, 16 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1324, 4 }), err);
+                      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1334, 16 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1335, 4 }), err)) m9a776 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1334, 16 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1335, 4 }), err);
                         if (err->exc) goto L_ret;
-                      Gen_Line (Gen_KPbuf, ind, m9a770, err);
+                      Gen_Line (Gen_KPbuf, ind, m9a776, err);
                       if (err->exc) goto L_ret;
                       }
                       opened = true;
@@ -15125,25 +15369,25 @@ static void Gen_EmitDispose (Ast_Node * st, int64_t ind, m9_state *err)
                         if (err->exc) goto L_ret;
                         if (fid != NULL) {
                           if ((ftn->kind == Ast_NSharedType)) {
-                            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a771 = m9_add_i64 (ind, INT64_C(1), err);
+                            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a777 = m9_add_i64 (ind, INT64_C(1), err);
                               if (err->exc) goto L_ret;
-                            { __typeof__(Gen_CN (fid->a, err)) m9a772 = Gen_CN (fid->a, err);
+                            { __typeof__(Gen_CN (fid->a, err)) m9a778 = Gen_CN (fid->a, err);
                               if (err->exc) goto L_ret;
-                            { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1325, 12 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1326, 2 }), m9a772, ((m9_sl_CHAR){ (uint32_t *) m9s1327, 2 }), err)) m9a773 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1325, 12 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1326, 2 }), m9a772, ((m9_sl_CHAR){ (uint32_t *) m9s1327, 2 }), err);
+                            { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1336, 12 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1337, 2 }), m9a778, ((m9_sl_CHAR){ (uint32_t *) m9s1338, 2 }), err)) m9a779 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1336, 12 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1337, 2 }), m9a778, ((m9_sl_CHAR){ (uint32_t *) m9s1338, 2 }), err);
                               if (err->exc) goto L_ret;
-                            Gen_Line (Gen_KPbuf, m9a771, m9a773, err);
+                            Gen_Line (Gen_KPbuf, m9a777, m9a779, err);
                             if (err->exc) goto L_ret;
                             }
                             }
                             }
                           } else {
-                            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a774 = m9_add_i64 (ind, INT64_C(1), err);
+                            { __typeof__(m9_add_i64 (ind, INT64_C(1), err)) m9a780 = m9_add_i64 (ind, INT64_C(1), err);
                               if (err->exc) goto L_ret;
-                            { __typeof__(Gen_CN (fid->a, err)) m9a775 = Gen_CN (fid->a, err);
+                            { __typeof__(Gen_CN (fid->a, err)) m9a781 = Gen_CN (fid->a, err);
                               if (err->exc) goto L_ret;
-                            { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1328, 15 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1329, 2 }), m9a775, ((m9_sl_CHAR){ (uint32_t *) m9s1330, 2 }), err)) m9a776 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1328, 15 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1329, 2 }), m9a775, ((m9_sl_CHAR){ (uint32_t *) m9s1330, 2 }), err);
+                            { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1339, 15 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1340, 2 }), m9a781, ((m9_sl_CHAR){ (uint32_t *) m9s1341, 2 }), err)) m9a782 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1339, 15 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1340, 2 }), m9a781, ((m9_sl_CHAR){ (uint32_t *) m9s1341, 2 }), err);
                               if (err->exc) goto L_ret;
-                            Gen_Line (Gen_KPbuf, m9a774, m9a776, err);
+                            Gen_Line (Gen_KPbuf, m9a780, m9a782, err);
                             if (err->exc) goto L_ret;
                             }
                             }
@@ -15162,18 +15406,18 @@ static void Gen_EmitDispose (Ast_Node * st, int64_t ind, m9_state *err)
     }
   } }
   if (opened) {
-    Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1331, 1 }), err);
+    Gen_Line (Gen_KPbuf, ind, ((m9_sl_CHAR){ (uint32_t *) m9s1342, 1 }), err);
     if (err->exc) goto L_ret;
   }
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1332, 12 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1333, 2 }), err)) m9a777 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1332, 12 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1333, 2 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1343, 12 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1344, 2 }), err)) m9a783 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1343, 12 }), l, ((m9_sl_CHAR){ (uint32_t *) m9s1344, 2 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, ind, m9a777, err);
+  Gen_Line (Gen_KPbuf, ind, m9a783, err);
   if (err->exc) goto L_ret;
   }
   if (stRaise) {
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1334, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1335, 1 }), err)) m9a778 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1334, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1335, 1 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1345, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1346, 1 }), err)) m9a784 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1345, 19 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1346, 1 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, ind, m9a778, err);
+    Gen_Line (Gen_KPbuf, ind, m9a784, err);
     if (err->exc) goto L_ret;
     }
   }
@@ -15217,14 +15461,14 @@ static void Gen_EmitRaise (Ast_Node * st, int64_t ind, m9_state *err)
     r = m9v;
   }
   if (((r).len == INT64_C(0))) {
-    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1336, 28 }), l, err)) m9a779 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1336, 28 }), l, err);
+    { __typeof__(Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1347, 28 }), l, err)) m9a785 = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1347, 28 }), l, err);
       if (err->exc) goto L_ret;
-    Gen_Err2 (st->line, m9a779, err);
+    Gen_Err2 (st->line, m9a785, err);
     if (err->exc) goto L_ret;
     }
     goto L_ret;
   }
-  { __typeof__(r) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1337, 1 }), r, err);
+  { __typeof__(r) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1348, 1 }), r, err);
     if (err->exc) goto L_ret;
     r = m9v;
   }
@@ -15239,33 +15483,33 @@ static void Gen_EmitRaise (Ast_Node * st, int64_t ind, m9_state *err)
     m9t1to = m9_sub_i64 (pay->nkids, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; j <= m9t1to; j += 1) {
-      { __typeof__((*(Ast_Node * *) m9_at (pay->kids.p, j, pay->kids.len, sizeof (Ast_Node *), err))) m9a780 = (*(Ast_Node * *) m9_at (pay->kids.p, j, pay->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (pay->kids.p, j, pay->kids.len, sizeof (Ast_Node *), err))) m9a786 = (*(Ast_Node * *) m9_at (pay->kids.p, j, pay->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(tg) m9v = Gen_TagOfExpr (m9a780, err);
+      { __typeof__(tg) m9v = Gen_TagOfExpr (m9a786, err);
         if (err->exc) goto L_ret;
         tg = m9v;
       }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (pay->kids.p, j, pay->kids.len, sizeof (Ast_Node *), err))) m9a781 = (*(Ast_Node * *) m9_at (pay->kids.p, j, pay->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (pay->kids.p, j, pay->kids.len, sizeof (Ast_Node *), err))) m9a787 = (*(Ast_Node * *) m9_at (pay->kids.p, j, pay->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(cnd) m9v = Gen_EX (m9a781, (m9_sl_CHAR){ NULL, 0 }, err);
+      { __typeof__(cnd) m9v = Gen_EX (m9a787, (m9_sl_CHAR){ NULL, 0 }, err);
         if (err->exc) goto L_ret;
         cnd = m9v;
       }
       }
-      bool m9t2 = (DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1338, 3 }), err) || DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1339, 3 }), err));
+      bool m9t2 = (DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1349, 3 }), err) || DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1350, 3 }), err));
       if (err->exc) goto L_ret;
       if (m9t2) {
         if ((j2 >= INT64_C(2))) {
-          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1340, 42 }), err);
+          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1351, 42 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
-        { __typeof__(Gen_ItoA (j2, err)) m9a782 = Gen_ItoA (j2, err);
+        { __typeof__(Gen_ItoA (j2, err)) m9a788 = Gen_ItoA (j2, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1341, 7 }), m9a782, ((m9_sl_CHAR){ (uint32_t *) m9s1342, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1343, 1 }), err)) m9a783 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1341, 7 }), m9a782, ((m9_sl_CHAR){ (uint32_t *) m9s1342, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1343, 1 }), err);
+        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1352, 7 }), m9a788, ((m9_sl_CHAR){ (uint32_t *) m9s1353, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1354, 1 }), err)) m9a789 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1352, 7 }), m9a788, ((m9_sl_CHAR){ (uint32_t *) m9s1353, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1354, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a783, err);
+        Gen_Line (Gen_KPbuf, ind, m9a789, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -15274,11 +15518,11 @@ static void Gen_EmitRaise (Ast_Node * st, int64_t ind, m9_state *err)
           j2 = m9v;
         }
       } else {
-        bool m9t3 = DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1344, 5 }), err);
+        bool m9t3 = DynStr_Eq (tg, ((m9_sl_CHAR){ (uint32_t *) m9s1355, 5 }), err);
         if (err->exc) goto L_ret;
         if (m9t3) {
           if ((k2 >= INT64_C(3))) {
-            Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1345, 43 }), err);
+            Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1356, 43 }), err);
             if (err->exc) goto L_ret;
             goto L_ret;
           }
@@ -15286,19 +15530,19 @@ static void Gen_EmitRaise (Ast_Node * st, int64_t ind, m9_state *err)
             if (err->exc) goto L_ret;
             w = m9v;
           }
-          { __typeof__(Gen_ItoA (k2, err)) m9a784 = Gen_ItoA (k2, err);
+          { __typeof__(Gen_ItoA (k2, err)) m9a790 = Gen_ItoA (k2, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_ItoA (k2, err)) m9a785 = Gen_ItoA (k2, err);
+          { __typeof__(Gen_ItoA (k2, err)) m9a791 = Gen_ItoA (k2, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_ItoA (k2, err)) m9a786 = Gen_ItoA (k2, err);
+          { __typeof__(Gen_ItoA (k2, err)) m9a792 = Gen_ItoA (k2, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1354, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1355, 7 }), err)) m9a787 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1354, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1355, 7 }), err);
+          { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1365, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1366, 7 }), err)) m9a793 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1365, 11 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1366, 7 }), err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1350, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1351, 11 }), m9a785, ((m9_sl_CHAR){ (uint32_t *) m9s1352, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1353, 24 }), m9a786, m9a787, err)) m9a788 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1350, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1351, 11 }), m9a785, ((m9_sl_CHAR){ (uint32_t *) m9s1352, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1353, 24 }), m9a786, m9a787, err);
+          { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1361, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1362, 11 }), m9a791, ((m9_sl_CHAR){ (uint32_t *) m9s1363, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1364, 24 }), m9a792, m9a793, err)) m9a794 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1361, 6 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1362, 11 }), m9a791, ((m9_sl_CHAR){ (uint32_t *) m9s1363, 8 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1364, 24 }), m9a792, m9a793, err);
             if (err->exc) goto L_ret;
-          { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1346, 13 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1347, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1348, 3 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1349, 9 }), m9a784, m9a788, err)) m9a789 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1346, 13 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1347, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1348, 3 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1349, 9 }), m9a784, m9a788, err);
+          { __typeof__(Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1357, 13 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1358, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1359, 3 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1360, 9 }), m9a790, m9a794, err)) m9a795 = Gen_S9 (((m9_sl_CHAR){ (uint32_t *) m9s1357, 13 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1358, 2 }), w, ((m9_sl_CHAR){ (uint32_t *) m9s1359, 3 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1360, 9 }), m9a790, m9a794, err);
             if (err->exc) goto L_ret;
-          Gen_Line (Gen_KPbuf, ind, m9a789, err);
+          Gen_Line (Gen_KPbuf, ind, m9a795, err);
           if (err->exc) goto L_ret;
           }
           }
@@ -15312,15 +15556,15 @@ static void Gen_EmitRaise (Ast_Node * st, int64_t ind, m9_state *err)
           }
       } else {
         if ((i2 >= INT64_C(4))) {
-          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1356, 45 }), err);
+          Gen_Err2 (st->line, ((m9_sl_CHAR){ (uint32_t *) m9s1367, 45 }), err);
           if (err->exc) goto L_ret;
           goto L_ret;
         }
-        { __typeof__(Gen_ItoA (i2, err)) m9a790 = Gen_ItoA (i2, err);
+        { __typeof__(Gen_ItoA (i2, err)) m9a796 = Gen_ItoA (i2, err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1357, 7 }), m9a790, ((m9_sl_CHAR){ (uint32_t *) m9s1358, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1359, 1 }), err)) m9a791 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1357, 7 }), m9a790, ((m9_sl_CHAR){ (uint32_t *) m9s1358, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1359, 1 }), err);
+        { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1368, 7 }), m9a796, ((m9_sl_CHAR){ (uint32_t *) m9s1369, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1370, 1 }), err)) m9a797 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1368, 7 }), m9a796, ((m9_sl_CHAR){ (uint32_t *) m9s1369, 4 }), cnd, ((m9_sl_CHAR){ (uint32_t *) m9s1370, 1 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, ind, m9a791, err);
+        Gen_Line (Gen_KPbuf, ind, m9a797, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -15331,20 +15575,74 @@ static void Gen_EmitRaise (Ast_Node * st, int64_t ind, m9_state *err)
       } }
     } }
   } }
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1360, 15 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1361, 2 }), err)) m9a792 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1360, 15 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1361, 2 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1371, 15 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1372, 2 }), err)) m9a798 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1371, 15 }), r, ((m9_sl_CHAR){ (uint32_t *) m9s1372, 2 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, ind, m9a792, err);
+  Gen_Line (Gen_KPbuf, ind, m9a798, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1362, 5 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1363, 1 }), err)) m9a793 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1362, 5 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1363, 1 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1373, 5 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1374, 1 }), err)) m9a799 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1373, 5 }), raiseLbl, ((m9_sl_CHAR){ (uint32_t *) m9s1374, 1 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, ind, m9a793, err);
+  Gen_Line (Gen_KPbuf, ind, m9a799, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
   return;
+}
+
+static m9_sl_CHAR Gen_LabelName (Ast_Node * lv, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  m9_sl_CHAR m9ret = {0};
+  int64_t i = 0; (void) i;
+  if ((lv->kind != Ast_NDesignator)) {
+    err->res = m9res;
+    m9ret = (m9_sl_CHAR){ NULL, 0 };
+    goto L_ret;
+  }
+  if ((lv->nkids == INT64_C(0))) {
+    err->res = m9res;
+    m9ret = lv->a;
+    goto L_ret;
+  }
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 (lv->nkids, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { Ast_Node * sel = (*(Ast_Node * *) m9_at (lv->kids.p, i, lv->kids.len, sizeof (Ast_Node *), err));
+    if (err->exc) goto L_ret;
+    if (sel != NULL) {
+      if ((sel->kind != Ast_NSelField)) {
+        err->res = m9res;
+        m9ret = (m9_sl_CHAR){ NULL, 0 };
+        goto L_ret;
+      }
+    } else {
+      err->res = m9res;
+      m9ret = (m9_sl_CHAR){ NULL, 0 };
+      goto L_ret;
+    } }
+  } }
+  { Ast_Node * last = (*(Ast_Node * *) m9_at (lv->kids.p, m9_sub_i64 (lv->nkids, INT64_C(1), err), lv->kids.len, sizeof (Ast_Node *), err));
+  if (err->exc) goto L_ret;
+  if (last != NULL) {
+    err->res = m9res;
+    m9ret = last->a;
+    goto L_ret;
+  } }
+  err->res = m9res;
+  m9ret = (m9_sl_CHAR){ NULL, 0 };
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9ret = m9_rehome (&m9frame, m9res, m9ret, err);
+  m9_pool_free (&m9frame);
+  return m9ret;
 }
 
 static m9_sl_CHAR Gen_ZeroInit (m9_sl_CHAR cty, m9_state *err)
@@ -15358,32 +15656,32 @@ static m9_sl_CHAR Gen_ZeroInit (m9_sl_CHAR cty, m9_state *err)
   if (err->exc) goto L_ret;
   if (m9t1) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1364, 7 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1375, 7 });
     goto L_ret;
   }
-  bool m9t2 = (DynStr_Eq (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1365, 6 }), err) || DynStr_Eq (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1366, 5 }), err));
+  bool m9t2 = (DynStr_Eq (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1376, 6 }), err) || DynStr_Eq (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1377, 5 }), err));
   if (err->exc) goto L_ret;
   if (m9t2) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1367, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1378, 4 });
     goto L_ret;
   }
-  bool m9t3 = DynStr_Eq (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1368, 4 }), err);
+  bool m9t3 = DynStr_Eq (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1379, 4 }), err);
   if (err->exc) goto L_ret;
   if (m9t3) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1369, 8 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1380, 8 });
     goto L_ret;
   }
-  bool m9t4 = Gen_HasSub (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1370, 2 }), err);
+  bool m9t4 = Gen_HasSub (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1381, 2 }), err);
   if (err->exc) goto L_ret;
   if (m9t4) {
     err->res = m9res;
-    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1371, 4 });
+    m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1382, 4 });
     goto L_ret;
   }
   err->res = m9res;
-  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1372, 6 });
+  m9ret = ((m9_sl_CHAR){ (uint32_t *) m9s1383, 6 });
   goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -15404,13 +15702,13 @@ static m9_sl_CHAR Gen_ProcTypedefC (m9_sl_CHAR name, Ast_Node * ptn, m9_state *e
   m9_sl_CHAR cty = {0}; (void) cty;
   int64_t g = 0; (void) g;
   int64_t j = 0; (void) j;
-  retC = ((m9_sl_CHAR){ (uint32_t *) m9s1373, 4 });
+  retC = ((m9_sl_CHAR){ (uint32_t *) m9s1384, 4 });
   { Ast_Node * rt = (*(Ast_Node * *) m9_at (ptn->kids.p, INT64_C(1), ptn->kids.len, sizeof (Ast_Node *), err));
   if (err->exc) goto L_ret;
   if (rt != NULL) {
-    { __typeof__((*(Ast_Node * *) m9_at (ptn->kids.p, INT64_C(1), ptn->kids.len, sizeof (Ast_Node *), err))) m9a794 = (*(Ast_Node * *) m9_at (ptn->kids.p, INT64_C(1), ptn->kids.len, sizeof (Ast_Node *), err));
+    { __typeof__((*(Ast_Node * *) m9_at (ptn->kids.p, INT64_C(1), ptn->kids.len, sizeof (Ast_Node *), err))) m9a800 = (*(Ast_Node * *) m9_at (ptn->kids.p, INT64_C(1), ptn->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
-    { __typeof__(retC) m9v = Gen_TyC (m9a794, err);
+    { __typeof__(retC) m9v = Gen_TyC (m9a800, err);
       if (err->exc) goto L_ret;
       retC = m9v;
     }
@@ -15428,9 +15726,9 @@ static m9_sl_CHAR Gen_ProcTypedefC (m9_sl_CHAR name, Ast_Node * ptn, m9_state *e
       { Ast_Node * grp = (*(Ast_Node * *) m9_at (pl->kids.p, g, pl->kids.len, sizeof (Ast_Node *), err));
       if (err->exc) goto L_ret;
       if (grp != NULL) {
-        { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a795 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
+        { __typeof__((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err))) m9a801 = (*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
-        { __typeof__(cty) m9v = Gen_TyC (m9a795, err);
+        { __typeof__(cty) m9v = Gen_TyC (m9a801, err);
           if (err->exc) goto L_ret;
           cty = m9v;
         }
@@ -15446,18 +15744,18 @@ static m9_sl_CHAR Gen_ProcTypedefC (m9_sl_CHAR name, Ast_Node * ptn, m9_state *e
             bool m9t3 = (grp->f1 && Gen_PoolParamTy ((*(Ast_Node * *) m9_at (grp->kids.p, INT64_C(1), grp->kids.len, sizeof (Ast_Node *), err)), err));
             if (err->exc) goto L_ret;
             if (m9t3) {
-              { __typeof__(ps) m9v = Gen_S3 (ps, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1374, 15 }), err);
+              { __typeof__(ps) m9v = Gen_S3 (ps, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1385, 15 }), err);
                 if (err->exc) goto L_ret;
                 ps = m9v;
               }
             } else {
               if ((grp->f1 || grp->f2)) {
-                { __typeof__(ps) m9v = Gen_S3 (ps, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1375, 4 }), err);
+                { __typeof__(ps) m9v = Gen_S3 (ps, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1386, 4 }), err);
                   if (err->exc) goto L_ret;
                   ps = m9v;
                 }
             } else {
-              { __typeof__(ps) m9v = Gen_S3 (ps, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1376, 2 }), err);
+              { __typeof__(ps) m9v = Gen_S3 (ps, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1387, 2 }), err);
                 if (err->exc) goto L_ret;
                 ps = m9v;
               }
@@ -15468,11 +15766,11 @@ static m9_sl_CHAR Gen_ProcTypedefC (m9_sl_CHAR name, Ast_Node * ptn, m9_state *e
     } }
   } }
   err->res = m9res;
-  { __typeof__(Gen_CP (modName, err)) m9a796 = Gen_CP (modName, err);
+  { __typeof__(Gen_CP (modName, err)) m9a802 = Gen_CP (modName, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1380, 3 }), ps, ((m9_sl_CHAR){ (uint32_t *) m9s1381, 15 }), err)) m9a797 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1380, 3 }), ps, ((m9_sl_CHAR){ (uint32_t *) m9s1381, 15 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1391, 3 }), ps, ((m9_sl_CHAR){ (uint32_t *) m9s1392, 15 }), err)) m9a803 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1391, 3 }), ps, ((m9_sl_CHAR){ (uint32_t *) m9s1392, 15 }), err);
     if (err->exc) goto L_ret;
-  m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1377, 8 }), retC, ((m9_sl_CHAR){ (uint32_t *) m9s1378, 3 }), m9a796, ((m9_sl_CHAR){ (uint32_t *) m9s1379, 1 }), name, m9a797, err);
+  m9ret = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1388, 8 }), retC, ((m9_sl_CHAR){ (uint32_t *) m9s1389, 3 }), m9a802, ((m9_sl_CHAR){ (uint32_t *) m9s1390, 1 }), name, m9a803, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -15516,8 +15814,8 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
   nout = INT64_C(0);
   nadopt = INT64_C(0);
   tmpN = INT64_C(0);
-  exitLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1382, 5 });
-  raiseLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1383, 5 });
+  exitLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1393, 5 });
+  raiseLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1394, 5 });
   curRetq = (m9_sl_CHAR){ NULL, 0 };
   finDepth = INT64_C(0);
   inSwitch = INT64_C(0);
@@ -15527,29 +15825,29 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
     { Ast_Node * rt = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rt != NULL) {
-      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a798 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a804 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(retC) m9v = Gen_TyC (m9a798, err);
+      { __typeof__(retC) m9v = Gen_TyC (m9a804, err);
         if (err->exc) goto L_ret;
         retC = m9v;
       }
       }
-      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a799 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a805 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(curRetTag) m9v = Gen_TagOfType (m9a799, err);
+      { __typeof__(curRetTag) m9v = Gen_TagOfType (m9a805, err);
         if (err->exc) goto L_ret;
         curRetTag = m9v;
       }
       }
     } else {
-      retC = ((m9_sl_CHAR){ (uint32_t *) m9s1384, 4 });
+      retC = ((m9_sl_CHAR){ (uint32_t *) m9s1395, 4 });
       curRetTag = (m9_sl_CHAR){ NULL, 0 };
     } }
-    { __typeof__(Gen_CP (modName, err)) m9a800 = Gen_CP (modName, err);
+    { __typeof__(Gen_CP (modName, err)) m9a806 = Gen_CP (modName, err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(Gen_GP *) m9_at (gps.p, gi, gps.len, sizeof (Gen_GP), err)).name) m9a801 = (*(Gen_GP *) m9_at (gps.p, gi, gps.len, sizeof (Gen_GP), err)).name;
+    { __typeof__((*(Gen_GP *) m9_at (gps.p, gi, gps.len, sizeof (Gen_GP), err)).name) m9a807 = (*(Gen_GP *) m9_at (gps.p, gi, gps.len, sizeof (Gen_GP), err)).name;
       if (err->exc) goto L_ret;
-    { __typeof__(sig) m9v = Gen_S6 (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1385, 1 }), m9a800, ((m9_sl_CHAR){ (uint32_t *) m9s1386, 1 }), m9a801, ((m9_sl_CHAR){ (uint32_t *) m9s1387, 2 }), err);
+    { __typeof__(sig) m9v = Gen_S6 (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1396, 1 }), m9a806, ((m9_sl_CHAR){ (uint32_t *) m9s1397, 1 }), m9a807, ((m9_sl_CHAR){ (uint32_t *) m9s1398, 2 }), err);
       if (err->exc) goto L_ret;
       sig = m9v;
     }
@@ -15571,16 +15869,16 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
         if (err->exc) goto L_ret;
         if (grpn != NULL) {
           if (grpn->f1) {
-            mode = ((m9_sl_CHAR){ (uint32_t *) m9s1388, 1 });
+            mode = ((m9_sl_CHAR){ (uint32_t *) m9s1399, 1 });
           } else {
             if (grpn->f2) {
-              mode = ((m9_sl_CHAR){ (uint32_t *) m9s1389, 1 });
+              mode = ((m9_sl_CHAR){ (uint32_t *) m9s1400, 1 });
           } else {
-            mode = ((m9_sl_CHAR){ (uint32_t *) m9s1390, 1 });
+            mode = ((m9_sl_CHAR){ (uint32_t *) m9s1401, 1 });
           } }
-          { __typeof__((*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err))) m9a802 = (*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err))) m9a808 = (*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          { __typeof__(cty) m9v = Gen_TyC (m9a802, err);
+          { __typeof__(cty) m9v = Gen_TyC (m9a808, err);
             if (err->exc) goto L_ret;
             cty = m9v;
           }
@@ -15601,10 +15899,10 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
                   if (err->exc) goto L_ret;
                   if (mtn != NULL) {
                     if ((mtn->kind == Ast_NMonitorType)) {
-                      bool m9t3 = DynStr_Eq (mode, ((m9_sl_CHAR){ (uint32_t *) m9s1391, 1 }), err);
+                      bool m9t3 = DynStr_Eq (mode, ((m9_sl_CHAR){ (uint32_t *) m9s1402, 1 }), err);
                       if (err->exc) goto L_ret;
                       if (m9t3) {
-                        Gen_Err2 (grpn->line, ((m9_sl_CHAR){ (uint32_t *) m9s1392, 30 }), err);
+                        Gen_Err2 (grpn->line, ((m9_sl_CHAR){ (uint32_t *) m9s1403, 30 }), err);
                         if (err->exc) goto L_ret;
                       } else {
                         { __typeof__(monPar) m9v = Gen_CN (pid->a, err);
@@ -15615,66 +15913,66 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
                     }
                   } }
                 }
-                { __typeof__((*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err))) m9a803 = (*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err))) m9a809 = (*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                Gen_MAdd (&(scope), &m9mframe, pid->a, m9a803, mode, err);
+                Gen_MAdd (&(scope), &m9mframe, pid->a, m9a809, mode, err);
                 if (err->exc) goto L_ret;
                 }
-                bool m9t4 = DynStr_Eq (mode, ((m9_sl_CHAR){ (uint32_t *) m9s1393, 1 }), err);
+                bool m9t4 = DynStr_Eq (mode, ((m9_sl_CHAR){ (uint32_t *) m9s1404, 1 }), err);
                 if (err->exc) goto L_ret;
                 if (m9t4) {
-                  { __typeof__(Gen_CN (pid->a, err)) m9a804 = Gen_CN (pid->a, err);
+                  { __typeof__(Gen_CN (pid->a, err)) m9a810 = Gen_CN (pid->a, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(sig) m9v = Gen_S5 (sig, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1394, 1 }), m9a804, ((m9_sl_CHAR){ (uint32_t *) m9s1395, 2 }), err);
+                  { __typeof__(sig) m9v = Gen_S5 (sig, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1405, 1 }), m9a810, ((m9_sl_CHAR){ (uint32_t *) m9s1406, 2 }), err);
                     if (err->exc) goto L_ret;
                     sig = m9v;
                   }
                   }
                 } else {
-                  { __typeof__(Gen_CN (pid->a, err)) m9a805 = Gen_CN (pid->a, err);
+                  { __typeof__(Gen_CN (pid->a, err)) m9a811 = Gen_CN (pid->a, err);
                     if (err->exc) goto L_ret;
-                  { __typeof__(sig) m9v = Gen_S5 (sig, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1396, 2 }), m9a805, ((m9_sl_CHAR){ (uint32_t *) m9s1397, 2 }), err);
+                  { __typeof__(sig) m9v = Gen_S5 (sig, cty, ((m9_sl_CHAR){ (uint32_t *) m9s1407, 2 }), m9a811, ((m9_sl_CHAR){ (uint32_t *) m9s1408, 2 }), err);
                     if (err->exc) goto L_ret;
                     sig = m9v;
                   }
                   }
-                  bool m9t5 = (DynStr_Eq (mode, ((m9_sl_CHAR){ (uint32_t *) m9s1398, 1 }), err) && Gen_PoolParamTy ((*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err)), err));
+                  bool m9t5 = (DynStr_Eq (mode, ((m9_sl_CHAR){ (uint32_t *) m9s1409, 1 }), err) && Gen_PoolParamTy ((*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err)), err));
                   if (err->exc) goto L_ret;
                   if (m9t5) {
-                    { __typeof__(Gen_CN (pid->a, err)) m9a806 = Gen_CN (pid->a, err);
+                    { __typeof__(Gen_CN (pid->a, err)) m9a812 = Gen_CN (pid->a, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(sig) m9v = Gen_S4 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1399, 9 }), m9a806, ((m9_sl_CHAR){ (uint32_t *) m9s1400, 7 }), err);
+                    { __typeof__(sig) m9v = Gen_S4 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1410, 9 }), m9a812, ((m9_sl_CHAR){ (uint32_t *) m9s1411, 7 }), err);
                       if (err->exc) goto L_ret;
                       sig = m9v;
                     }
                     }
-                    { __typeof__(Gen_CN (pid->a, err)) m9a807 = Gen_CN (pid->a, err);
+                    { __typeof__(Gen_CN (pid->a, err)) m9a813 = Gen_CN (pid->a, err);
                       if (err->exc) goto L_ret;
-                    { __typeof__(dst) m9v = Gen_S2 (m9a807, ((m9_sl_CHAR){ (uint32_t *) m9s1401, 5 }), err);
+                    { __typeof__(dst) m9v = Gen_S2 (m9a813, ((m9_sl_CHAR){ (uint32_t *) m9s1412, 5 }), err);
                       if (err->exc) goto L_ret;
                       dst = m9v;
                     }
                     }
                   } else {
-                    dst = ((m9_sl_CHAR){ (uint32_t *) m9s1402, 5 });
+                    dst = ((m9_sl_CHAR){ (uint32_t *) m9s1413, 5 });
                   }
-                  bool m9t6 = DynStr_Eq (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1403, 10 }), err);
+                  bool m9t6 = DynStr_Eq (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1414, 10 }), err);
                   if (err->exc) goto L_ret;
                   if (m9t6) {
-                    { __typeof__(Gen_CN (pid->a, err)) m9a808 = Gen_CN (pid->a, err);
+                    { __typeof__(Gen_CN (pid->a, err)) m9a814 = Gen_CN (pid->a, err);
                       if (err->exc) goto L_ret;
-                    Gen_OutReg (m9a808, err);
+                    Gen_OutReg (m9a814, err);
                     if (err->exc) goto L_ret;
                     }
                   } else {
                     bool m9t7 = Gen_HasPtr ((*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
                     if (err->exc) goto L_ret;
                     if (m9t7) {
-                      { __typeof__(Gen_CN (pid->a, err)) m9a809 = Gen_CN (pid->a, err);
+                      { __typeof__(Gen_CN (pid->a, err)) m9a815 = Gen_CN (pid->a, err);
                         if (err->exc) goto L_ret;
-                      { __typeof__((*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err))) m9a810 = (*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err));
+                      { __typeof__((*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err))) m9a816 = (*(Ast_Node * *) m9_at (grpn->kids.p, INT64_C(1), grpn->kids.len, sizeof (Ast_Node *), err));
                         if (err->exc) goto L_ret;
-                      Gen_AdoptReg (m9a809, m9a810, dst, err);
+                      Gen_AdoptReg (m9a815, m9a816, dst, err);
                       if (err->exc) goto L_ret;
                       }
                       }
@@ -15686,26 +15984,26 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
         } }
       } }
     } }
-    { __typeof__(sig) m9v = Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1404, 14 }), err);
+    { __typeof__(sig) m9v = Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1415, 14 }), err);
       if (err->exc) goto L_ret;
       sig = m9v;
     }
     bool m9t8 = (*(Gen_GP *) m9_at (gps.p, gi, gps.len, sizeof (Gen_GP), err)).exported;
     if (err->exc) goto L_ret;
     if (m9t8) {
-      { __typeof__(Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1405, 1 }), err)) m9a811 = Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1405, 1 }), err);
+      { __typeof__(Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1416, 1 }), err)) m9a817 = Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1416, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KHdrProtos, INT64_C(0), m9a811, err);
+      Gen_Line (Gen_KHdrProtos, INT64_C(0), m9a817, err);
       if (err->exc) goto L_ret;
       }
     } else {
-      { __typeof__(sig) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1406, 7 }), sig, err);
+      { __typeof__(sig) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1417, 7 }), sig, err);
         if (err->exc) goto L_ret;
         sig = m9v;
       }
-      { __typeof__(Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1407, 1 }), err)) m9a812 = Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1407, 1 }), err);
+      { __typeof__(Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1418, 1 }), err)) m9a818 = Gen_S2 (sig, ((m9_sl_CHAR){ (uint32_t *) m9s1418, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KSprotos, INT64_C(0), m9a812, err);
+      Gen_Line (Gen_KSprotos, INT64_C(0), m9a818, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -15722,36 +16020,36 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
     if (err->exc) goto L_ret;
     Gen_Line (Gen_KPbuf, INT64_C(0), sig, err);
     if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1408, 1 }), err);
+    Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1419, 1 }), err);
     if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1409, 22 }), err);
+    Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1420, 22 }), err);
     if (err->exc) goto L_ret;
-    Gen_PoolReg (((m9_sl_CHAR){ (uint32_t *) m9s1410, 7 }), err);
+    Gen_PoolReg (((m9_sl_CHAR){ (uint32_t *) m9s1421, 7 }), err);
     if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1411, 48 }), err);
+    Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1422, 48 }), err);
     if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1412, 13 }), err);
+    Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1423, 13 }), err);
     if (err->exc) goto L_ret;
     { Ast_Node * rtn0 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rtn0 != NULL) {
-      bool m9t9 = ((!DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1413, 10 }), err)) && Gen_HasPtr ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err));
+      bool m9t9 = ((!DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1424, 10 }), err)) && Gen_HasPtr ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err));
       if (err->exc) goto L_ret;
       if (m9t9) {
-        Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1414, 17 }), err);
+        Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1425, 17 }), err);
         if (err->exc) goto L_ret;
       } else {
-        Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1415, 20 }), err);
+        Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1426, 20 }), err);
         if (err->exc) goto L_ret;
       }
     } else {
-      Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1416, 20 }), err);
+      Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1427, 20 }), err);
       if (err->exc) goto L_ret;
     } }
     if (((dbgSrc).len > INT64_C(0))) {
-      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1417, 13 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s1418, 2 }), err)) m9a813 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1417, 13 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s1418, 2 }), err);
+      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1428, 13 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s1429, 2 }), err)) m9a819 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1428, 13 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s1429, 2 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, INT64_C(1), m9a813, err);
+      Gen_Line (Gen_KPbuf, INT64_C(1), m9a819, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -15776,10 +16074,13 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
               { Ast_Node * cdl = (*(Ast_Node * *) m9_at (csec->kids.p, cj2, csec->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (cdl != NULL) {
-                { __typeof__((*(Ast_Node * *) m9_at (cdl->kids.p, INT64_C(0), cdl->kids.len, sizeof (Ast_Node *), err))) m9a814 = (*(Ast_Node * *) m9_at (cdl->kids.p, INT64_C(0), cdl->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (cdl->kids.p, INT64_C(0), cdl->kids.len, sizeof (Ast_Node *), err))) m9a820 = (*(Ast_Node * *) m9_at (cdl->kids.p, INT64_C(0), cdl->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                Gen_MAdd (&(consts), &m9mframe, cdl->a, m9a814, (m9_sl_CHAR){ NULL, 0 }, err);
+                { __typeof__(Gen_FoldStr (m9a820, err)) m9a821 = Gen_FoldStr (m9a820, err);
+                  if (err->exc) goto L_ret;
+                Gen_MAdd (&(consts), &m9mframe, cdl->a, m9a821, (m9_sl_CHAR){ NULL, 0 }, err);
                 if (err->exc) goto L_ret;
+                }
                 }
               } }
             } }
@@ -15787,22 +16088,22 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
         } }
       } }
     } }
-    bool m9t12 = (!DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1419, 4 }), err));
+    bool m9t12 = (!DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1430, 4 }), err));
     if (err->exc) goto L_ret;
     if (m9t12) {
-      { __typeof__(Gen_ZeroInit (retC, err)) m9a815 = Gen_ZeroInit (retC, err);
+      { __typeof__(Gen_ZeroInit (retC, err)) m9a822 = Gen_ZeroInit (retC, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S4 (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1420, 6 }), m9a815, ((m9_sl_CHAR){ (uint32_t *) m9s1421, 1 }), err)) m9a816 = Gen_S4 (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1420, 6 }), m9a815, ((m9_sl_CHAR){ (uint32_t *) m9s1421, 1 }), err);
+      { __typeof__(Gen_S4 (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1431, 6 }), m9a822, ((m9_sl_CHAR){ (uint32_t *) m9s1432, 1 }), err)) m9a823 = Gen_S4 (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1431, 6 }), m9a822, ((m9_sl_CHAR){ (uint32_t *) m9s1432, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, INT64_C(1), m9a816, err);
+      Gen_Line (Gen_KPbuf, INT64_C(1), m9a823, err);
       if (err->exc) goto L_ret;
       }
       }
     }
     if (((monPar).len > INT64_C(0))) {
-      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1422, 17 }), monPar, ((m9_sl_CHAR){ (uint32_t *) m9s1423, 9 }), err)) m9a817 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1422, 17 }), monPar, ((m9_sl_CHAR){ (uint32_t *) m9s1423, 9 }), err);
+      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1433, 17 }), monPar, ((m9_sl_CHAR){ (uint32_t *) m9s1434, 9 }), err)) m9a824 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1433, 17 }), monPar, ((m9_sl_CHAR){ (uint32_t *) m9s1434, 9 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, INT64_C(1), m9a817, err);
+      Gen_Line (Gen_KPbuf, INT64_C(1), m9a824, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -15829,16 +16130,16 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
               { Ast_Node * vd = (*(Ast_Node * *) m9_at (sect->kids.p, g, sect->kids.len, sizeof (Ast_Node *), err));
               if (err->exc) goto L_ret;
               if (vd != NULL) {
-                { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a818 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a825 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(cty) m9v = Gen_TyC (m9a818, err);
+                { __typeof__(cty) m9v = Gen_TyC (m9a825, err);
                   if (err->exc) goto L_ret;
                   cty = m9v;
                 }
                 }
-                { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a819 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
+                { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a826 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
                   if (err->exc) goto L_ret;
-                { __typeof__(rk) m9v = Gen_Resolve (m9a819, err);
+                { __typeof__(rk) m9v = Gen_Resolve (m9a826, err);
                   if (err->exc) goto L_ret;
                   rk = m9v;
                 }
@@ -15850,7 +16151,7 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
                 { Ast_Node * rk0 = rk;
                 if (rk0 != NULL) {
                   if (((((((rk0->kind == Ast_NGridType) || (rk0->kind == Ast_NSliceType)) || (rk0->kind == Ast_NArrayType)) || (rk0->kind == Ast_NRecordType)) || (rk0->kind == Ast_NCaseRecordType)) || (rk0->kind == Ast_NEnumType))) {
-                    init = ((m9_sl_CHAR){ (uint32_t *) m9s1424, 6 });
+                    init = ((m9_sl_CHAR){ (uint32_t *) m9s1435, 6 });
                   }
                 } }
                 { Ast_Node * vids = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(0), vd->kids.len, sizeof (Ast_Node *), err));
@@ -15864,23 +16165,23 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
                     { Ast_Node * vid = (*(Ast_Node * *) m9_at (vids->kids.p, j, vids->kids.len, sizeof (Ast_Node *), err));
                     if (err->exc) goto L_ret;
                     if (vid != NULL) {
-                      { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a820 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
+                      { __typeof__((*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err))) m9a827 = (*(Ast_Node * *) m9_at (vd->kids.p, INT64_C(1), vd->kids.len, sizeof (Ast_Node *), err));
                         if (err->exc) goto L_ret;
-                      Gen_MAdd (&(scope), &m9mframe, vid->a, m9a820, ((m9_sl_CHAR){ (uint32_t *) m9s1425, 1 }), err);
+                      Gen_MAdd (&(scope), &m9mframe, vid->a, m9a827, ((m9_sl_CHAR){ (uint32_t *) m9s1436, 1 }), err);
                       if (err->exc) goto L_ret;
                       }
                       { __typeof__(nm) m9v = Gen_CN (vid->a, err);
                         if (err->exc) goto L_ret;
                         nm = m9v;
                       }
-                      { __typeof__(Gen_S7 (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1426, 1 }), nm, init, ((m9_sl_CHAR){ (uint32_t *) m9s1427, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s1428, 1 }), err)) m9a821 = Gen_S7 (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1426, 1 }), nm, init, ((m9_sl_CHAR){ (uint32_t *) m9s1427, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s1428, 1 }), err);
+                      { __typeof__(Gen_S7 (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1437, 1 }), nm, init, ((m9_sl_CHAR){ (uint32_t *) m9s1438, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s1439, 1 }), err)) m9a828 = Gen_S7 (cty, ((m9_sl_CHAR){ (uint32_t *) m9s1437, 1 }), nm, init, ((m9_sl_CHAR){ (uint32_t *) m9s1438, 9 }), nm, ((m9_sl_CHAR){ (uint32_t *) m9s1439, 1 }), err);
                         if (err->exc) goto L_ret;
-                      Gen_Line (Gen_KPbuf, INT64_C(1), m9a821, err);
+                      Gen_Line (Gen_KPbuf, INT64_C(1), m9a828, err);
                       if (err->exc) goto L_ret;
                       }
                       { Ast_Node * rkn = rk;
                       if (rkn != NULL) {
-                        bool m9t16 = ((rkn->kind == Ast_NQualident) && DynStr_Eq (rkn->a, ((m9_sl_CHAR){ (uint32_t *) m9s1429, 4 }), err));
+                        bool m9t16 = ((rkn->kind == Ast_NQualident) && DynStr_Eq (rkn->a, ((m9_sl_CHAR){ (uint32_t *) m9s1440, 4 }), err));
                         if (err->exc) goto L_ret;
                         if (m9t16) {
                           if ((nlp == (lpools).len)) {
@@ -15921,17 +16222,17 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
       if (err->exc) goto L_ret;
       Gen_PushAggs (err);
       if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (bd->kids.p, m9_sub_i64 (bd->nkids, INT64_C(1), err), bd->kids.len, sizeof (Ast_Node *), err))) m9a822 = (*(Ast_Node * *) m9_at (bd->kids.p, m9_sub_i64 (bd->nkids, INT64_C(1), err), bd->kids.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (bd->kids.p, m9_sub_i64 (bd->nkids, INT64_C(1), err), bd->kids.len, sizeof (Ast_Node *), err))) m9a829 = (*(Ast_Node * *) m9_at (bd->kids.p, m9_sub_i64 (bd->nkids, INT64_C(1), err), bd->kids.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      Gen_EmitStmt (m9a822, INT64_C(1), err);
+      Gen_EmitStmt (m9a829, INT64_C(1), err);
       if (err->exc) goto L_ret;
       }
     } }
-    Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1430, 8 }), err);
+    Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1441, 8 }), err);
     if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1431, 17 }), err);
+    Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1442, 17 }), err);
     if (err->exc) goto L_ret;
-    bool m9t18 = DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1432, 10 }), err);
+    bool m9t18 = DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1443, 10 }), err);
     if (err->exc) goto L_ret;
     if (m9t18) {
       { int64_t m9t19to;
@@ -15939,11 +16240,11 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
       m9t19to = m9_sub_i64 (nlp, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; i <= m9t19to; i += 1) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err))) m9a823 = (*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err))) m9a830 = (*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1433, 20 }), m9a823, ((m9_sl_CHAR){ (uint32_t *) m9s1434, 21 }), err)) m9a824 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1433, 20 }), m9a823, ((m9_sl_CHAR){ (uint32_t *) m9s1434, 21 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1444, 20 }), m9a830, ((m9_sl_CHAR){ (uint32_t *) m9s1445, 21 }), err)) m9a831 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1444, 20 }), m9a830, ((m9_sl_CHAR){ (uint32_t *) m9s1445, 21 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, INT64_C(1), m9a824, err);
+        Gen_Line (Gen_KPbuf, INT64_C(1), m9a831, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -15959,15 +16260,15 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
       m9t21to = m9_sub_i64 (nlp, INT64_C(1), err);
       if (err->exc) goto L_ret;
       for (; k <= m9t21to; k += 1) {
-        { __typeof__((*(m9_sl_CHAR *) m9_at (outStr.p, i, outStr.len, sizeof (m9_sl_CHAR), err))) m9a825 = (*(m9_sl_CHAR *) m9_at (outStr.p, i, outStr.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (outStr.p, i, outStr.len, sizeof (m9_sl_CHAR), err))) m9a832 = (*(m9_sl_CHAR *) m9_at (outStr.p, i, outStr.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, k, lpools.len, sizeof (m9_sl_CHAR), err))) m9a826 = (*(m9_sl_CHAR *) m9_at (lpools.p, k, lpools.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, k, lpools.len, sizeof (m9_sl_CHAR), err))) m9a833 = (*(m9_sl_CHAR *) m9_at (lpools.p, k, lpools.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__((*(m9_sl_CHAR *) m9_at (outStr.p, i, outStr.len, sizeof (m9_sl_CHAR), err))) m9a827 = (*(m9_sl_CHAR *) m9_at (outStr.p, i, outStr.len, sizeof (m9_sl_CHAR), err));
+        { __typeof__((*(m9_sl_CHAR *) m9_at (outStr.p, i, outStr.len, sizeof (m9_sl_CHAR), err))) m9a834 = (*(m9_sl_CHAR *) m9_at (outStr.p, i, outStr.len, sizeof (m9_sl_CHAR), err));
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1435, 1 }), m9a825, ((m9_sl_CHAR){ (uint32_t *) m9s1436, 15 }), m9a826, ((m9_sl_CHAR){ (uint32_t *) m9s1437, 10 }), m9a827, ((m9_sl_CHAR){ (uint32_t *) m9s1438, 7 }), err)) m9a828 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1435, 1 }), m9a825, ((m9_sl_CHAR){ (uint32_t *) m9s1436, 15 }), m9a826, ((m9_sl_CHAR){ (uint32_t *) m9s1437, 10 }), m9a827, ((m9_sl_CHAR){ (uint32_t *) m9s1438, 7 }), err);
+        { __typeof__(Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1446, 1 }), m9a832, ((m9_sl_CHAR){ (uint32_t *) m9s1447, 15 }), m9a833, ((m9_sl_CHAR){ (uint32_t *) m9s1448, 10 }), m9a834, ((m9_sl_CHAR){ (uint32_t *) m9s1449, 7 }), err)) m9a835 = Gen_S7 (((m9_sl_CHAR){ (uint32_t *) m9s1446, 1 }), m9a832, ((m9_sl_CHAR){ (uint32_t *) m9s1447, 15 }), m9a833, ((m9_sl_CHAR){ (uint32_t *) m9s1448, 10 }), m9a834, ((m9_sl_CHAR){ (uint32_t *) m9s1449, 7 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KPbuf, INT64_C(1), m9a828, err);
+        Gen_Line (Gen_KPbuf, INT64_C(1), m9a835, err);
         if (err->exc) goto L_ret;
         }
         }
@@ -15978,15 +16279,15 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
     { Ast_Node * rtn = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
     if (err->exc) goto L_ret;
     if (rtn != NULL) {
-      bool m9t22 = (!DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1439, 10 }), err));
+      bool m9t22 = (!DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1450, 10 }), err));
       if (err->exc) goto L_ret;
       if (m9t22) {
         bool m9t23 = Gen_HasPtr ((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err)), INT64_C(0), err);
         if (err->exc) goto L_ret;
         if (m9t23) {
-          { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a829 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
+          { __typeof__((*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err))) m9a836 = (*(Ast_Node * *) m9_at (d->kids.p, INT64_C(1), d->kids.len, sizeof (Ast_Node *), err));
             if (err->exc) goto L_ret;
-          Gen_AdoptEmit (((m9_sl_CHAR){ (uint32_t *) m9s1440, 5 }), m9a829, ((m9_sl_CHAR){ (uint32_t *) m9s1441, 5 }), INT64_C(1), INT64_C(0), err);
+          Gen_AdoptEmit (((m9_sl_CHAR){ (uint32_t *) m9s1451, 5 }), m9a836, ((m9_sl_CHAR){ (uint32_t *) m9s1452, 5 }), INT64_C(1), INT64_C(0), err);
           if (err->exc) goto L_ret;
           }
         }
@@ -15997,15 +16298,15 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
     m9t24to = m9_sub_i64 (nadopt, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t24to; i += 1) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (adoptC.p, i, adoptC.len, sizeof (m9_sl_CHAR), err))) m9a830 = (*(m9_sl_CHAR *) m9_at (adoptC.p, i, adoptC.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (adoptC.p, i, adoptC.len, sizeof (m9_sl_CHAR), err))) m9a837 = (*(m9_sl_CHAR *) m9_at (adoptC.p, i, adoptC.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1442, 2 }), m9a830, ((m9_sl_CHAR){ (uint32_t *) m9s1443, 1 }), err)) m9a831 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1442, 2 }), m9a830, ((m9_sl_CHAR){ (uint32_t *) m9s1443, 1 }), err);
+      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1453, 2 }), m9a837, ((m9_sl_CHAR){ (uint32_t *) m9s1454, 1 }), err)) m9a838 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1453, 2 }), m9a837, ((m9_sl_CHAR){ (uint32_t *) m9s1454, 1 }), err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(Ast_Node * *) m9_at (adoptT.p, i, adoptT.len, sizeof (Ast_Node *), err))) m9a832 = (*(Ast_Node * *) m9_at (adoptT.p, i, adoptT.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (adoptT.p, i, adoptT.len, sizeof (Ast_Node *), err))) m9a839 = (*(Ast_Node * *) m9_at (adoptT.p, i, adoptT.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (adoptD.p, i, adoptD.len, sizeof (m9_sl_CHAR), err))) m9a833 = (*(m9_sl_CHAR *) m9_at (adoptD.p, i, adoptD.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (adoptD.p, i, adoptD.len, sizeof (m9_sl_CHAR), err))) m9a840 = (*(m9_sl_CHAR *) m9_at (adoptD.p, i, adoptD.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      Gen_AdoptEmit (m9a831, m9a832, m9a833, INT64_C(1), INT64_C(0), err);
+      Gen_AdoptEmit (m9a838, m9a839, m9a840, INT64_C(1), INT64_C(0), err);
       if (err->exc) goto L_ret;
       }
       }
@@ -16013,9 +16314,9 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
       }
     } }
     if (((monPar).len > INT64_C(0))) {
-      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1444, 17 }), monPar, ((m9_sl_CHAR){ (uint32_t *) m9s1445, 9 }), err)) m9a834 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1444, 17 }), monPar, ((m9_sl_CHAR){ (uint32_t *) m9s1445, 9 }), err);
+      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1455, 17 }), monPar, ((m9_sl_CHAR){ (uint32_t *) m9s1456, 9 }), err)) m9a841 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1455, 17 }), monPar, ((m9_sl_CHAR){ (uint32_t *) m9s1456, 9 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, INT64_C(1), m9a834, err);
+      Gen_Line (Gen_KPbuf, INT64_C(1), m9a841, err);
       if (err->exc) goto L_ret;
       }
     }
@@ -16024,25 +16325,25 @@ static void Gen_GenProc (int64_t gi, m9_state *err)
     m9t25to = m9_sub_i64 (nlp, INT64_C(1), err);
     if (err->exc) goto L_ret;
     for (; i <= m9t25to; i += 1) {
-      { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err))) m9a835 = (*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err))) m9a842 = (*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1446, 15 }), m9a835, ((m9_sl_CHAR){ (uint32_t *) m9s1447, 2 }), err)) m9a836 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1446, 15 }), m9a835, ((m9_sl_CHAR){ (uint32_t *) m9s1447, 2 }), err);
+      { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1457, 15 }), m9a842, ((m9_sl_CHAR){ (uint32_t *) m9s1458, 2 }), err)) m9a843 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1457, 15 }), m9a842, ((m9_sl_CHAR){ (uint32_t *) m9s1458, 2 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KPbuf, INT64_C(1), m9a836, err);
+      Gen_Line (Gen_KPbuf, INT64_C(1), m9a843, err);
       if (err->exc) goto L_ret;
       }
       }
     } }
-    bool m9t26 = DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1448, 4 }), err);
+    bool m9t26 = DynStr_Eq (retC, ((m9_sl_CHAR){ (uint32_t *) m9s1459, 4 }), err);
     if (err->exc) goto L_ret;
     if (m9t26) {
-      Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1449, 7 }), err);
+      Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1460, 7 }), err);
       if (err->exc) goto L_ret;
     } else {
-      Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1450, 13 }), err);
+      Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1461, 13 }), err);
       if (err->exc) goto L_ret;
     }
-    Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1451, 1 }), err);
+    Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1462, 1 }), err);
     if (err->exc) goto L_ret;
     consts.n = constsBase;
   } }
@@ -16064,8 +16365,8 @@ static void Gen_GenMain (m9_state *err)
   nout = INT64_C(0);
   nadopt = INT64_C(0);
   tmpN = INT64_C(0);
-  exitLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1452, 5 });
-  raiseLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1453, 5 });
+  exitLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1463, 5 });
+  raiseLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1464, 5 });
   curRetq = (m9_sl_CHAR){ NULL, 0 };
   curRetTag = (m9_sl_CHAR){ NULL, 0 };
   finDepth = INT64_C(0);
@@ -16076,39 +16377,39 @@ static void Gen_GenMain (m9_state *err)
   if (err->exc) goto L_ret;
   Gen_Line (Gen_KPbuf, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1454, 32 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1465, 32 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1455, 1 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1466, 1 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1456, 20 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1467, 20 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1457, 22 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1468, 22 }), err);
   if (err->exc) goto L_ret;
-  Gen_PoolReg (((m9_sl_CHAR){ (uint32_t *) m9s1458, 8 }), err);
+  Gen_PoolReg (((m9_sl_CHAR){ (uint32_t *) m9s1469, 8 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1459, 21 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1470, 21 }), err);
   if (err->exc) goto L_ret;
   if (((dbgSrc).len > INT64_C(0))) {
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1460, 13 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s1461, 2 }), err)) m9a837 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1460, 13 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s1461, 2 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1471, 13 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s1472, 2 }), err)) m9a844 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1471, 13 }), dbgSrc, ((m9_sl_CHAR){ (uint32_t *) m9s1472, 2 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(1), m9a837, err);
+    Gen_Line (Gen_KPbuf, INT64_C(1), m9a844, err);
     if (err->exc) goto L_ret;
     }
   }
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1462, 21 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1473, 21 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (extMods.n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k) m9a838 = (*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k;
+    { __typeof__((*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k) m9a845 = (*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k;
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_CP (m9a838, err)) m9a839 = Gen_CP (m9a838, err);
+    { __typeof__(Gen_CP (m9a845, err)) m9a846 = Gen_CP (m9a845, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S3 (m9a839, ((m9_sl_CHAR){ (uint32_t *) m9s1463, 14 }), ((m9_sl_CHAR){ (uint32_t *) m9s1464, 26 }), err)) m9a840 = Gen_S3 (m9a839, ((m9_sl_CHAR){ (uint32_t *) m9s1463, 14 }), ((m9_sl_CHAR){ (uint32_t *) m9s1464, 26 }), err);
+    { __typeof__(Gen_S3 (m9a846, ((m9_sl_CHAR){ (uint32_t *) m9s1474, 14 }), ((m9_sl_CHAR){ (uint32_t *) m9s1475, 26 }), err)) m9a847 = Gen_S3 (m9a846, ((m9_sl_CHAR){ (uint32_t *) m9s1474, 14 }), ((m9_sl_CHAR){ (uint32_t *) m9s1475, 26 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(1), m9a840, err);
+    Gen_Line (Gen_KPbuf, INT64_C(1), m9a847, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -16116,25 +16417,25 @@ static void Gen_GenMain (m9_state *err)
   } }
   Gen_EmitStmt (mainBody, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1465, 8 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1476, 8 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (nlp, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err))) m9a841 = (*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err))) m9a848 = (*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1466, 15 }), m9a841, ((m9_sl_CHAR){ (uint32_t *) m9s1467, 2 }), err)) m9a842 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1466, 15 }), m9a841, ((m9_sl_CHAR){ (uint32_t *) m9s1467, 2 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1477, 15 }), m9a848, ((m9_sl_CHAR){ (uint32_t *) m9s1478, 2 }), err)) m9a849 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1477, 15 }), m9a848, ((m9_sl_CHAR){ (uint32_t *) m9s1478, 2 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(1), m9a842, err);
+    Gen_Line (Gen_KPbuf, INT64_C(1), m9a849, err);
     if (err->exc) goto L_ret;
     }
     }
   } }
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1468, 21 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1479, 21 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1469, 1 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1480, 1 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -16154,8 +16455,8 @@ static void Gen_GenInit (m9_sl_CHAR forModule, m9_state *err)
   nout = INT64_C(0);
   nadopt = INT64_C(0);
   tmpN = INT64_C(0);
-  exitLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1470, 5 });
-  raiseLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1471, 5 });
+  exitLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1481, 5 });
+  raiseLbl = ((m9_sl_CHAR){ (uint32_t *) m9s1482, 5 });
   curRetq = (m9_sl_CHAR){ NULL, 0 };
   curRetTag = (m9_sl_CHAR){ NULL, 0 };
   finDepth = INT64_C(0);
@@ -16166,38 +16467,38 @@ static void Gen_GenInit (m9_sl_CHAR forModule, m9_state *err)
   if (err->exc) goto L_ret;
   Gen_Line (Gen_KPbuf, INT64_C(0), (m9_sl_CHAR){ NULL, 0 }, err);
   if (err->exc) goto L_ret;
-  { __typeof__(Gen_CP (forModule, err)) m9a843 = Gen_CP (forModule, err);
+  { __typeof__(Gen_CP (forModule, err)) m9a850 = Gen_CP (forModule, err);
     if (err->exc) goto L_ret;
-  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1472, 5 }), m9a843, ((m9_sl_CHAR){ (uint32_t *) m9s1473, 23 }), err)) m9a844 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1472, 5 }), m9a843, ((m9_sl_CHAR){ (uint32_t *) m9s1473, 23 }), err);
+  { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1483, 5 }), m9a850, ((m9_sl_CHAR){ (uint32_t *) m9s1484, 23 }), err)) m9a851 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1483, 5 }), m9a850, ((m9_sl_CHAR){ (uint32_t *) m9s1484, 23 }), err);
     if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(0), m9a844, err);
+  Gen_Line (Gen_KPbuf, INT64_C(0), m9a851, err);
   if (err->exc) goto L_ret;
   }
   }
-  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1474, 1 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1485, 1 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1475, 22 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1486, 22 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1476, 19 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1487, 19 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1477, 11 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1488, 11 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1478, 27 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1489, 27 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1479, 21 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1490, 21 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t1to;
   i = INT64_C(0);
   m9t1to = m9_sub_i64 (extMods.n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k) m9a845 = (*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k;
+    { __typeof__((*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k) m9a852 = (*(Gen_MEnt *) m9_at (extMods.es.p, i, extMods.es.len, sizeof (Gen_MEnt), err)).k;
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_CP (m9a845, err)) m9a846 = Gen_CP (m9a845, err);
+    { __typeof__(Gen_CP (m9a852, err)) m9a853 = Gen_CP (m9a852, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S3 (m9a846, ((m9_sl_CHAR){ (uint32_t *) m9s1480, 14 }), ((m9_sl_CHAR){ (uint32_t *) m9s1481, 26 }), err)) m9a847 = Gen_S3 (m9a846, ((m9_sl_CHAR){ (uint32_t *) m9s1480, 14 }), ((m9_sl_CHAR){ (uint32_t *) m9s1481, 26 }), err);
+    { __typeof__(Gen_S3 (m9a853, ((m9_sl_CHAR){ (uint32_t *) m9s1491, 14 }), ((m9_sl_CHAR){ (uint32_t *) m9s1492, 26 }), err)) m9a854 = Gen_S3 (m9a853, ((m9_sl_CHAR){ (uint32_t *) m9s1491, 14 }), ((m9_sl_CHAR){ (uint32_t *) m9s1492, 26 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(1), m9a847, err);
+    Gen_Line (Gen_KPbuf, INT64_C(1), m9a854, err);
     if (err->exc) goto L_ret;
     }
     }
@@ -16205,25 +16506,25 @@ static void Gen_GenInit (m9_sl_CHAR forModule, m9_state *err)
   } }
   Gen_EmitStmt (mainBody, INT64_C(1), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1482, 8 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1493, 8 }), err);
   if (err->exc) goto L_ret;
   { int64_t m9t2to;
   i = INT64_C(0);
   m9t2to = m9_sub_i64 (nlp, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err))) m9a848 = (*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err))) m9a855 = (*(m9_sl_CHAR *) m9_at (lpools.p, i, lpools.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1483, 15 }), m9a848, ((m9_sl_CHAR){ (uint32_t *) m9s1484, 2 }), err)) m9a849 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1483, 15 }), m9a848, ((m9_sl_CHAR){ (uint32_t *) m9s1484, 2 }), err);
+    { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1494, 15 }), m9a855, ((m9_sl_CHAR){ (uint32_t *) m9s1495, 2 }), err)) m9a856 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1494, 15 }), m9a855, ((m9_sl_CHAR){ (uint32_t *) m9s1495, 2 }), err);
       if (err->exc) goto L_ret;
-    Gen_Line (Gen_KPbuf, INT64_C(1), m9a849, err);
+    Gen_Line (Gen_KPbuf, INT64_C(1), m9a856, err);
     if (err->exc) goto L_ret;
     }
     }
   } }
-  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1485, 18 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(1), ((m9_sl_CHAR){ (uint32_t *) m9s1496, 18 }), err);
   if (err->exc) goto L_ret;
-  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1486, 1 }), err);
+  Gen_Line (Gen_KPbuf, INT64_C(0), ((m9_sl_CHAR){ (uint32_t *) m9s1497, 1 }), err);
   if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9res;
@@ -16253,43 +16554,43 @@ static void Gen_ExportVars (m9_state *err)
     if (err->exc) goto L_ret;
     if (m9t2) {
       any = true;
-      { __typeof__((*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err))) m9a850 = (*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err));
+      { __typeof__((*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err))) m9a857 = (*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err));
         if (err->exc) goto L_ret;
-      { __typeof__(ty) m9v = Gen_TyC (m9a850, err);
+      { __typeof__(ty) m9v = Gen_TyC (m9a857, err);
         if (err->exc) goto L_ret;
         ty = m9v;
       }
       }
-      { __typeof__(Gen_CP (modName, err)) m9a851 = Gen_CP (modName, err);
+      { __typeof__(Gen_CP (modName, err)) m9a858 = Gen_CP (modName, err);
         if (err->exc) goto L_ret;
-      { __typeof__((*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err))) m9a852 = (*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err))) m9a859 = (*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(cn) m9v = Gen_S3 (m9a851, ((m9_sl_CHAR){ (uint32_t *) m9s1487, 1 }), m9a852, err);
+      { __typeof__(cn) m9v = Gen_S3 (m9a858, ((m9_sl_CHAR){ (uint32_t *) m9s1498, 1 }), m9a859, err);
         if (err->exc) goto L_ret;
         cn = m9v;
       }
       }
       }
-      { __typeof__((*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err))) m9a853 = (*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err));
+      { __typeof__((*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err))) m9a860 = (*(m9_sl_CHAR *) m9_at (mvN.p, i, mvN.len, sizeof (m9_sl_CHAR), err));
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_CN (m9a853, err)) m9a854 = Gen_CN (m9a853, err);
+      { __typeof__(Gen_CN (m9a860, err)) m9a861 = Gen_CN (m9a860, err);
         if (err->exc) goto L_ret;
-      { __typeof__(Gen_S6 (ty, ((m9_sl_CHAR){ (uint32_t *) m9s1488, 9 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1489, 4 }), m9a854, ((m9_sl_CHAR){ (uint32_t *) m9s1490, 1 }), err)) m9a855 = Gen_S6 (ty, ((m9_sl_CHAR){ (uint32_t *) m9s1488, 9 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1489, 4 }), m9a854, ((m9_sl_CHAR){ (uint32_t *) m9s1490, 1 }), err);
+      { __typeof__(Gen_S6 (ty, ((m9_sl_CHAR){ (uint32_t *) m9s1499, 9 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1500, 4 }), m9a861, ((m9_sl_CHAR){ (uint32_t *) m9s1501, 1 }), err)) m9a862 = Gen_S6 (ty, ((m9_sl_CHAR){ (uint32_t *) m9s1499, 9 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1500, 4 }), m9a861, ((m9_sl_CHAR){ (uint32_t *) m9s1501, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KRec3, INT64_C(0), m9a855, err);
+      Gen_Line (Gen_KRec3, INT64_C(0), m9a862, err);
       if (err->exc) goto L_ret;
       }
       }
       }
-      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1491, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s1492, 9 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1493, 1 }), err)) m9a856 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1491, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s1492, 9 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1493, 1 }), err);
+      { __typeof__(Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1502, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s1503, 9 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1504, 1 }), err)) m9a863 = Gen_S5 (((m9_sl_CHAR){ (uint32_t *) m9s1502, 7 }), ty, ((m9_sl_CHAR){ (uint32_t *) m9s1503, 9 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1504, 1 }), err);
         if (err->exc) goto L_ret;
-      Gen_Line (Gen_KHdrProtos, INT64_C(0), m9a856, err);
+      Gen_Line (Gen_KHdrProtos, INT64_C(0), m9a863, err);
       if (err->exc) goto L_ret;
       }
       bool m9t3 = Gen_PoolParamTy ((*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err)), err);
       if (err->exc) goto L_ret;
       if (m9t3) {
-        pl = ((m9_sl_CHAR){ (uint32_t *) m9s1494, 9 });
+        pl = ((m9_sl_CHAR){ (uint32_t *) m9s1505, 9 });
         { __typeof__(t) m9v = (*(Ast_Node * *) m9_at (mvT.p, i, mvT.len, sizeof (Ast_Node *), err));
           if (err->exc) goto L_ret;
           t = m9v;
@@ -16311,9 +16612,9 @@ static void Gen_ExportVars (m9_state *err)
             if (err->exc) goto L_ret;
             if (pn != NULL) {
               if ((pn->nkids == INT64_C(0))) {
-                { __typeof__(Gen_CN (pn->a, err)) m9a857 = Gen_CN (pn->a, err);
+                { __typeof__(Gen_CN (pn->a, err)) m9a864 = Gen_CN (pn->a, err);
                   if (err->exc) goto L_ret;
-                { __typeof__(pl) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1495, 1 }), m9a857, err);
+                { __typeof__(pl) m9v = Gen_S2 (((m9_sl_CHAR){ (uint32_t *) m9s1506, 1 }), m9a864, err);
                   if (err->exc) goto L_ret;
                   pl = m9v;
                 }
@@ -16322,17 +16623,17 @@ static void Gen_ExportVars (m9_state *err)
             } }
           }
         } }
-        { __typeof__(Gen_S2 (pl, ((m9_sl_CHAR){ (uint32_t *) m9s1498, 1 }), err)) m9a858 = Gen_S2 (pl, ((m9_sl_CHAR){ (uint32_t *) m9s1498, 1 }), err);
+        { __typeof__(Gen_S2 (pl, ((m9_sl_CHAR){ (uint32_t *) m9s1509, 1 }), err)) m9a865 = Gen_S2 (pl, ((m9_sl_CHAR){ (uint32_t *) m9s1509, 1 }), err);
           if (err->exc) goto L_ret;
-        { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1496, 16 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1497, 8 }), m9a858, err)) m9a859 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1496, 16 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1497, 8 }), m9a858, err);
+        { __typeof__(Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1507, 16 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1508, 8 }), m9a865, err)) m9a866 = Gen_S4 (((m9_sl_CHAR){ (uint32_t *) m9s1507, 16 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1508, 8 }), m9a865, err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KRec3, INT64_C(0), m9a859, err);
+        Gen_Line (Gen_KRec3, INT64_C(0), m9a866, err);
         if (err->exc) goto L_ret;
         }
         }
-        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1499, 23 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1500, 6 }), err)) m9a860 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1499, 23 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1500, 6 }), err);
+        { __typeof__(Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1510, 23 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1511, 6 }), err)) m9a867 = Gen_S3 (((m9_sl_CHAR){ (uint32_t *) m9s1510, 23 }), cn, ((m9_sl_CHAR){ (uint32_t *) m9s1511, 6 }), err);
           if (err->exc) goto L_ret;
-        Gen_Line (Gen_KHdrProtos, INT64_C(0), m9a860, err);
+        Gen_Line (Gen_KHdrProtos, INT64_C(0), m9a867, err);
         if (err->exc) goto L_ret;
         }
       }
@@ -16502,7 +16803,7 @@ static void Gen_ExportWalk (Ast_Node * *n, m9_pool *n_pool, Ast_Node * scope, m9
       bool m9t1 = ((s->kind == Ast_NSelField) && (Gen_MFind (&(extMods), &m9mframe, (*n)->a, err) >= INT64_C(0)));
       if (err->exc) goto L_ret;
       if (m9t1) {
-        bool m9t2 = ((Gen_MFind (&(extVars), &m9mframe, Gen_S3 ((*n)->a, ((m9_sl_CHAR){ (uint32_t *) m9s1501, 1 }), s->a, err), err) >= INT64_C(0)) && (!Gen_NameShadowed (scope, (*n)->a, err)));
+        bool m9t2 = ((Gen_MFind (&(extVars), &m9mframe, Gen_S3 ((*n)->a, ((m9_sl_CHAR){ (uint32_t *) m9s1512, 1 }), s->a, err), err) >= INT64_C(0)) && (!Gen_NameShadowed (scope, (*n)->a, err)));
         if (err->exc) goto L_ret;
         if (m9t2) {
           { __typeof__((*n)->a) m9v = Gen_DotJoin ((*n)->a, s->a, err);

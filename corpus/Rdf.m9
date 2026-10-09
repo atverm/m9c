@@ -49,6 +49,8 @@ TYPE
 
 EXCEPTION
   SyntaxError (RO msg: STR ; line, col: I64) ;
+  NotWritable (RO iri: STR) ;   (* RdfXml: a predicate IRI with no local
+                                   name an XML element could carry *)
 
 CONST
   XsdString = 'http://www.w3.org/2001/XMLSchema#string' ;
@@ -90,6 +92,18 @@ PROCEDURE JsonLd (g: PTR Graph ; context: OPT PTR Json.Node) : STR RAISES ValueR
      "@graph" holds the nodes; a chain of rdf:first/rest cells nothing
      else refers to is "@list".  Deterministic; ParseJsonLd reads it
      back.  Characters, as NTriples *)
+
+PROCEDURE RdfXml (g: PTR Graph) : STR RAISES ValueRange, Xml.WriteError, NotWritable ;
+  (* the graph as RDF/XML: one rdf:Description per subject in first-
+     seen order (rdf:about an IRI, rdf:nodeID a blank node), a property
+     element per triple with the predicate split into a namespace and
+     a local name (the longest NCName tail; a predicate that has none
+     is NotWritable, as every writer finds), an IRI object as
+     rdf:resource, a blank one as rdf:nodeID, a literal as text with
+     xml:lang or rdf:datatype (none for xsd:string).  The namespaces
+     met are declared on rdf:RDF as rdf and ns1, ns2 ...  Xml's writer
+     refuses a character XML 1.0 cannot carry.  ParseRdfXml reads it
+     back; rdflib does in rdf.sh.  cp-kernel's issue 10, 2026-10-09. *)
 
 PROCEDURE Count (g: PTR Graph) : I64 ;
   (* how many triples were read; a triple stated twice is there twice *)
@@ -3759,5 +3773,101 @@ EXCEPT
 | Json.TypeMismatch (m) : RETURN ''
 | IndexError : RETURN ''
 END JsonLd ;
+
+
+(* ---- RDF/XML out (2026-10-09) ---------------------------------------- *)
+
+PROCEDURE NcStart (c: CHAR) : BOOL =
+BEGIN
+  RETURN (c >= 'a' AND c <= 'z') OR (c >= 'A' AND c <= 'Z') OR c = '_' OR ORD (c) > 127
+END NcStart ;
+
+PROCEDURE NcChar (c: CHAR) : BOOL =
+BEGIN
+  RETURN NcStart (c) OR (c >= '0' AND c <= '9') OR c = '-' OR c = '.'
+END NcChar ;
+
+(* where the local name of an IRI starts: the longest NCName tail;
+   LEN (iri) when there is none *)
+PROCEDURE LocalStart (RO iri: STR) : I64 =
+VAR i, best : I64 ;
+BEGIN
+  best := LEN (iri) ;
+  i := LEN (iri) - 1 ;
+  WHILE i >= 0 AND NcChar (iri[i]) DO
+    IF NcStart (iri[i]) THEN best := i END ;
+    i := i - 1
+  END ;
+  RETURN best
+END LocalStart ;
+
+PROCEDURE RdfXml (g: PTR Graph) : STR RAISES ValueRange, Xml.WriteError, NotWritable =
+VAR
+  scratch : POOL ;
+  w : PTR Xml.Writer IN scratch ;
+  nss : SLICE OF STR ;             (* the namespaces met, rdf's first *)
+  nns, i, j, k, at : I64 ;
+  done : SLICE OF BOOL ;
+  ns, local : STR ;
+BEGIN
+  (* the namespaces first: rdf:RDF declares them before any element *)
+  nss := NEW (scratch, STR, g.n + 1) ;
+  nss[0] := RdfNs ;
+  nns := 1 ;
+  FOR i := 0 TO g.n - 1 DO
+    at := LocalStart (g.t[i].p.value) ;
+    IF at = 0 OR at >= LEN (g.t[i].p.value) THEN RAISE NotWritable (g.t[i].p.value) END ;
+    ns := SLICE (g.t[i].p.value, 0, at) ;
+    k := -1 ;
+    FOR j := 0 TO nns - 1 DO IF Text.Eq (nss[j], ns) THEN k := j END END ;
+    IF k < 0 THEN nss[nns] := ns ; nns := nns + 1 END
+  END ;
+  w := Xml.NewWriter (scratch) ;
+  Xml.StartTag (w, 'rdf:RDF') ;
+  Xml.Attribute (w, 'xmlns:rdf', RdfNs) ;
+  FOR j := 1 TO nns - 1 DO Xml.Attribute (w, 'xmlns:ns' + Fmt.I64Str (j), nss[j]) END ;
+  done := NEW (scratch, BOOL, g.n) ;
+  FOR i := 0 TO g.n - 1 DO
+    IF NOT done[i] THEN
+      Xml.StartTag (w, 'rdf:Description') ;
+      IF g.t[i].s.kind = Kind.Blank THEN
+        Xml.Attribute (w, 'rdf:nodeID', g.t[i].s.value)
+      ELSE
+        Xml.Attribute (w, 'rdf:about', g.t[i].s.value)
+      END ;
+      FOR j := i TO g.n - 1 DO
+        IF NOT done[j] AND g.t[j].s.kind = g.t[i].s.kind AND
+           Text.Eq (g.t[j].s.value, g.t[i].s.value) THEN
+          done[j] := TRUE ;
+          at := LocalStart (g.t[j].p.value) ;
+          ns := SLICE (g.t[j].p.value, 0, at) ;
+          local := SLICE (g.t[j].p.value, at, LEN (g.t[j].p.value) - at) ;
+          k := 0 ;
+          WHILE NOT Text.Eq (nss[k], ns) DO k := k + 1 END ;
+          IF k = 0 THEN
+            Xml.StartTag (w, 'rdf:' + local)
+          ELSE
+            Xml.StartTag (w, 'ns' + Fmt.I64Str (k) + ':' + local)
+          END ;
+          CASE g.t[j].o.kind OF
+          | Iri : Xml.Attribute (w, 'rdf:resource', g.t[j].o.value)
+          | Blank : Xml.Attribute (w, 'rdf:nodeID', g.t[j].o.value)
+          | Literal :
+              IF LEN (g.t[j].o.lang) > 0 THEN
+                Xml.Attribute (w, 'xml:lang', g.t[j].o.lang)
+              ELSIF LEN (g.t[j].o.datatype) > 0 AND NOT Text.Eq (g.t[j].o.datatype, XsdString) THEN
+                Xml.Attribute (w, 'rdf:datatype', g.t[j].o.datatype)
+              END ;
+              Xml.Chars (w, g.t[j].o.value)
+          END ;
+          Xml.EndTag (w)
+        END
+      END ;
+      Xml.EndTag (w)
+    END
+  END ;
+  Xml.EndTag (w) ;
+  RETURN Xml.Document (w)
+END RdfXml ;
 
 END Rdf.

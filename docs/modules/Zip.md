@@ -84,6 +84,13 @@ the UNCOMPRESSED size.
 
 _(documented with the group below)_
 
+### CrcAt (a: PTR Archive ; i: I64) : I64 RAISES IndexError
+
+the CRC-32 the central directory states for the member, 0 ..
+4294967295 -- zipfile's ZipInfo.CRC -- read, not computed: no
+member is opened (cp-kernel's issue 14, 2026-10-09).  Read checks
+a member against it as it inflates.
+
 ### Find (a: PTR Archive ; RO name: STR) : I64 RAISES ValueRange, IndexError
 
 the index of that member, or -1.
@@ -138,6 +145,15 @@ and length.  GunzipBytes undoes it.
 ### Crc32 (RO b: SLICE OF BYTE) : I64 RAISES ValueRange
 
 the CRC-32 of gzip, zip and PNG (zlib.crc32), 0 .. 4294967295
+
+### Crc32Update (crc: I64 ; RO b: SLICE OF BYTE) : I64 RAISES ValueRange
+
+the CRC-32 carried on over more bytes, zlib.crc32 (b, crc):
+Crc32Update (Crc32Update (0, a), b) = Crc32 (a ++ b), and
+Crc32Update (0, b) = Crc32 (b) -- so a member read in pieces or a
+file read with Io.ReadFileAt is summed without gathering it
+(cp-kernel's issue 15, 2026-10-09).  `crc' is a finished value,
+0 .. 4294967295; anything else is ValueRange.
 
 ### Adler32 (RO b: SLICE OF BYTE) : I64
 

@@ -1,0 +1,28 @@
+(* EXPECT: argument 1 of cfoo.Take: cannot pass C.Ptr where C.Int is expected *)
+(* ADR (x) is a C pointer (C.Ptr) since 2026-10-09, fitting a
+   C.ConstPtr or C.MutPtr parameter and nothing else; it answered no
+   type until then, so every ADR argument of every foreign call was
+   passed over by the checker -- 225 across the library, the last
+   class on the review pages.  The legal forms first; the last hands
+   ADR where a C.Int is wanted. *)
+UNSAFE DEFINITION MODULE FOR "C" cfoo ;
+PROCEDURE Fill = "m9_foo_fill" (p: C.MutPtr ; n: C.SizeT) [REENTRANT] ;
+PROCEDURE Peek = "m9_foo_peek" (p: C.ConstPtr) : C.Int [REENTRANT] ;
+PROCEDURE Take = "m9_foo_take" (n: C.Int) [REENTRANT] ;
+END cfoo.
+DEFINITION MODULE m ;
+PROCEDURE Go () ;
+END m.
+UNSAFE IMPLEMENTATION MODULE m ;
+IMPORT cfoo ;
+PROCEDURE Go () =
+VAR
+  b : SLICE OF BYTE ;
+  k : C.Int ;
+BEGIN
+  b := NEW (BYTE, 8) ;
+  cfoo.Fill (ADR (b), C.SizeT (8)) ;
+  k := cfoo.Peek (ADR (b)) ;
+  cfoo.Take (ADR (b))
+END Go ;
+END m.

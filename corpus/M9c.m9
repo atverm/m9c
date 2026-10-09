@@ -208,7 +208,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.18.0' ;
+  Version = '0.19.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -1033,9 +1033,107 @@ END FpWords ;
    binary that referenced nothing in them (Ubuntu's ld already does
    this by default, Fedora's and Arch's do not), and an import library
    gives up only what is referenced. *)
+(* One word a FOR "C" unit's LINK clause names (par 7), onto the
+   line, once: a word ending in `.c' is a shim SOURCE beside the
+   runtime (pgshim.c), found where the runtime's own sources are --
+   RtDir, else the package's <prefix>/share/m9/runtime; a word that
+   begins with `-' goes to the linker as it is, except that
+   `-l:libNAME.so.N' -- GNU ld's spelling for a library whose
+   development package is not installed (Debian's libblosc1 without
+   libblosc-dev) -- is `-lNAME' where ld64 and mingw's ld are the
+   linker; any other word is a library name, `-lNAME'. *)
+PROCEDURE LinkWord (RO rt: STR ; RO KEPT w: STR ; VAR KEPT seen: SLICE OF STR ;
+                    VAR nseen: I64) RAISES ValueRange =
+VAR
+  i, n, at : I64 ;
+  v : STR ;
+BEGIN
+  FOR i := 0 TO nseen - 1 DO IF DynStr.Eq (seen[i], w) THEN RETURN END END ;
+  IF nseen = LEN (seen) THEN RETURN END ;
+  seen[nseen] := w ;
+  nseen := nseen + 1 ;
+  n := LEN (w) ;
+  IF n = 0 THEN RETURN END ;
+  IF n > 2 AND w[n - 2] = '.' AND w[n - 1] = 'c' THEN
+    v := Cat (rt, Cat ('/', w)) ;
+    IF NOT Io.Exists (v) AND LEN (prefix) > 0 THEN
+      v := Cat (prefix, Cat ('/share/m9/runtime/', w))
+    END ;
+    IF NOT Io.Exists (v) THEN
+      Diag ('m9c: a foreign unit links ', w, ', which is not beside the runtime')
+    END ;
+    Word (v) ;
+    RETURN
+  END ;
+  IF w[0] = '-' THEN
+    IF (macos OR windows) AND n > 6 AND w[1] = 'l' AND w[2] = ':' AND
+       w[3] = 'l' AND w[4] = 'i' AND w[5] = 'b' THEN
+      at := -1 ;
+      FOR i := 6 TO n - 3 DO
+        IF at < 0 AND w[i] = '.' AND w[i + 1] = 's' AND w[i + 2] = 'o' THEN at := i END
+      END ;
+      IF at > 6 THEN
+        Word (Cat ('-l', SLICE (w, 6, at - 6))) ;
+        RETURN
+      END
+    END ;
+    Word (w) ;
+    RETURN
+  END ;
+  Word (Cat ('-l', w))
+END LinkWord ;
+
+(* What the closure's FOR "C" units link (their LINK clauses), before
+   the system libraries: the modules m9c resolved a moment ago say
+   what they bind, so a program that imports NetCDF, Grib, ZarrStore
+   or Pg links flagless, runs under --run and loads as a cell --
+   until 2026-10-09 each of them was a hand link line and `--run'
+   could not run C8Zarr, C10Icos or C14Flux (the owed list's first
+   item).  On macOS Homebrew's lib is named once when a unit links
+   anything, as OpenSSL's is: that is where blosc and netCDF live
+   there and the linker does not look by itself. *)
+PROCEDURE LinkWords () RAISES ValueRange =
+VAR
+  i, j, k, m, nseen : I64 ;
+  rt : STR ;
+  seen : SLICE OF STR ;
+  any : BOOL ;
+BEGIN
+  rt := RtDir () ;
+  seen := NEW (pool, STR, 64) ;    (* module pool: LinkWord keeps the words in it *)
+  nseen := 0 ;
+  any := FALSE ;
+  FOR i := 0 TO ndeps - 1 DO
+    IF depRoots[i] IS SOME r THEN
+      FOR j := 0 TO r.nkids - 1 DO
+        IF r.kids[j] IS SOME u THEN
+          IF u.kind = Ast.NDefinition AND LEN (u.b) > 0 THEN
+            FOR k := 0 TO u.nkids - 1 DO
+              IF u.kids[k] IS SOME l THEN
+                IF l.kind = Ast.NLinkList THEN
+                  FOR m := 0 TO l.nkids - 1 DO
+                    IF l.kids[m] IS SOME ws THEN
+                      IF macos AND NOT any THEN
+                        any := TRUE ;
+                        IF Io.Exists ('/opt/homebrew/lib') THEN Word ('-L/opt/homebrew/lib') END
+                      END ;
+                      LinkWord (rt, ws.a, seen, nseen)
+                    END
+                  END
+                END
+              END
+            END
+          END
+        END
+      END
+    END
+  END
+END LinkWords ;
+
 PROCEDURE SystemLibs () RAISES ValueRange =
 VAR o : STR ;
 BEGIN
+  LinkWords () ;
   IF macos THEN
     (* ld64 has no --as-needed; -dead_strip_dylibs is its word for
        the same thing, and against static archives neither is needed *)
@@ -1188,7 +1286,12 @@ BEGIN
       src := FindModule (nm, path, found, trustDummy) ;
       IF found THEN
         o := Cat (nm, '.o') ;
-        IF LEN (src) >= 0 AND (dirty OR Older (o, path)) THEN
+        (* the header is a product too: a build directory whose
+           generated headers were deleted but whose objects stayed
+           regenerated only the stale module and failed on a fresh
+           one's missing DynStr.h (2026-10-09) *)
+        IF LEN (src) >= 0 AND (dirty OR Older (o, path) OR
+                               NOT Io.Exists (Join (outDir, Cat (nm, '.h')))) THEN
           dirty := TRUE ;
           IF NOT MakeDep (nm, path) THEN ok := FALSE END
         END
@@ -1678,8 +1781,12 @@ BEGIN
   Io.WriteLine ('    import closure it has just resolved, plus the') ;
   Io.WriteLine ('    runtime -- its sources when they are beside the') ;
   Io.WriteLine ('    header that was included, else the installed') ;
-  Io.WriteLine ('    archive -- then -lssl -lcrypto (as-needed; the') ;
-  Io.WriteLine ('    runtime carries the TLS shim Http binds) and -lm') ;
+  Io.WriteLine ("    archive -- then what the closure's FOR 'C' units") ;
+  Io.WriteLine ('    LINK (a library name as -lNAME, a -word as it is,') ;
+  Io.WriteLine ('    a shim .c beside the runtime; NetCDF, Grib,') ;
+  Io.WriteLine ('    ZarrStore and Pg name theirs), then -lssl -lcrypto') ;
+  Io.WriteLine ('    (as-needed; the runtime carries the TLS shim Http') ;
+  Io.WriteLine ('    binds) and -lm') ;
   Io.WriteLine ('') ;
   Io.WriteLine ('--doc checks the module and then writes NAME.md') ;
   Io.WriteLine ('instead of C: the module comment, then every') ;

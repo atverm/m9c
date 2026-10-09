@@ -47,7 +47,9 @@ lines.forEach((line, i) => {
     s.start = s.pos;
     const style = mode.token(s, state);
     if (s.pos === s.start) throw new Error(`${file}:${i + 1}: no progress at ${s.pos}`);
-    const col = Buffer.byteLength(line.slice(0, s.start), 'utf8') + 1;
+    // a column is a Unicode scalar, as both lexers count since 2026-10-09
+    // (it was the octet, when they read the source as bytes)
+    const col = [...line.slice(0, s.start)].length + 1;
     if (style === 'keyword') out.push(`${i + 1}:${col} ${line.slice(s.start, s.pos)}`);
     else if (style === 'string') out.push(`${i + 1}:${col} StrLit`);
   }

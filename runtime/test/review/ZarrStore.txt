@@ -3,7 +3,7 @@ REVIEW ZarrStore -- 28 procedures with a body, 25 of them functions; 11 headings
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              25
   assignments                                   116
-  arguments                                     204   passed over, a type unknown: 2
+  arguments                                     206
   RETURN values                                  50
   operands of a comparison or an operator       135
   CASE labels                                     0

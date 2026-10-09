@@ -531,9 +531,14 @@ narrowed
 ValueRange on narrowing
 big
 grid 2x3 [1,2]=7
-IndexError on GRID
-bessel" ] || { echo "FAIL: a raising call's answer was stored, a binder lost to a module variable, a nested raising call ran its caller, F32 of a huge double did not raise, a U64 literal past 2^63 was wrong, GRID over a slice misread it, or a module variable named y0 collided with libm"; ./shareuse_test; exit 1; }
-echo "PASS (12 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable; a raising argument is guarded before the enclosing call; F32 of a huge double raises; a U64 literal past 2^63 reads; GRID over a slice indexes row-major and refuses a wrong extent; a module variable named like a Bessel function is escaped"
+IndexError on GRID: 8 of 6
+bessel
+déjà é ₂
+absent: none
+present
+fs irods
+bytes: a b c" ] || { echo "FAIL: a raising call's answer was stored, a binder lost to a module variable, a nested raising call ran its caller, F32 of a huge double did not raise, a U64 literal past 2^63 was wrong, GRID over a slice misread it, a module variable named y0 collided with libm, IndexError's payload did not bind, or a literal beyond ASCII went wrong, or IS SOME as an expression answered wrong, a CASE over Store.Fs did not dispatch, or WriteBytes overtook Write"; ./shareuse_test; exit 1; }
+echo "PASS (18 checks) -- a call that raised answered nothing: the target keeps its value, the SHARED copy comes after the test; a binder shadows a module variable; a raising argument is guarded before the enclosing call; F32 of a huge double raises; a U64 literal past 2^63 reads; GRID over a slice indexes row-major and refuses a wrong extent; a module variable named like a Bessel function is escaped; IndexError binds (index, length); a literal beyond ASCII is its scalars"
 }
 
 # Http's URL fetcher, against a local fixture server.  IN THE SUITE

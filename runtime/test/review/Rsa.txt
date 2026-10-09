@@ -3,7 +3,7 @@ REVIEW Rsa -- 12 procedures with a body, 11 of them functions; 7 headings in a D
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              11
   assignments                                    52
-  arguments                                      71   passed over, a type unknown: 3
+  arguments                                      74
   RETURN values                                  16
   operands of a comparison or an operator        99
   CASE labels                                     0

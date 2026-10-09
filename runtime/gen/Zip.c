@@ -7,6 +7,7 @@
 const m9_exc Zip_Error = { "Error" };
 
 extern void m9_put_chars (const void *, size_t);
+extern void m9_put_bytes (const void *, size_t);
 extern int m9_argc (void);
 extern void m9_halt (int);
 extern int m9_run (const void *);
@@ -1859,6 +1860,27 @@ L_ret: ;
   return m9ret;
 }
 
+int64_t Zip_CrcAt (Zip_Archive * a, int64_t i, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  if (((i < INT64_C(0)) || (i >= a->n))) {
+    m9_raise (err, &m9_exc_IndexError);
+    goto L_ret;
+  }
+  err->res = m9res;
+  m9ret = (*(Zip_Entry *) m9_at (a->e.p, i, a->e.len, sizeof (Zip_Entry), err)).crc;
+  if (err->exc) goto L_ret;
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 int64_t Zip_Find (Zip_Archive * a, m9_sl_CHAR name, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -2601,6 +2623,33 @@ L_ret: ;
   return m9ret;
 }
 
+int64_t Zip_Crc32Update (int64_t crc, m9_sl_BYTE b, m9_state *err)
+{
+  m9_pool m9frame = {0};
+  m9_pool *m9res = err->res ? err->res : &m9_heap;
+  (void) m9res;
+  err->res = &m9frame;
+  int64_t m9ret = 0;
+  if (((crc < INT64_C(0)) || (crc > INT64_C(4294967295)))) {
+    m9_raise (err, &m9_exc_ValueRange);
+    goto L_ret;
+  }
+  err->res = m9res;
+  { __typeof__(Bits_Xor (crc, INT64_C(4294967295), err)) m9a29 = Bits_Xor (crc, INT64_C(4294967295), err);
+    if (err->exc) goto L_ret;
+  { __typeof__(Zip_CrcRun (m9a29, b, err)) m9a30 = Zip_CrcRun (m9a29, b, err);
+    if (err->exc) goto L_ret;
+  m9ret = Bits_Xor (m9a30, INT64_C(4294967295), err);
+  if (err->exc) goto L_ret;
+  }
+  }
+  goto L_ret;
+L_ret: ;
+  err->res = m9res;
+  m9_pool_free (&m9frame);
+  return m9ret;
+}
+
 int64_t Zip_Adler32 (m9_sl_BYTE b, m9_state *err)
 {
   m9_pool m9frame = {0};
@@ -2848,9 +2897,9 @@ void Zip_AddFile (Zip_Writer * *w, m9_pool *w_pool, m9_sl_CHAR name, m9_sl_CHAR 
   (void) m9res;
   err->res = &m9frame;
   m9_pool scratch = {0}; (void) scratch;
-  { __typeof__(Io_ReadFileBytes (&(scratch), path, err)) m9a29 = Io_ReadFileBytes (&(scratch), path, err);
+  { __typeof__(Io_ReadFileBytes (&(scratch), path, err)) m9a31 = Io_ReadFileBytes (&(scratch), path, err);
     if (err->exc) goto L_ret;
-  Zip_AddBytes (w, w_pool, name, m9a29, deflate, err);
+  Zip_AddBytes (w, w_pool, name, m9a31, deflate, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -2902,75 +2951,75 @@ m9_sl_BYTE Zip_Finish (Zip_Writer * *w, m9_pool *w_pool, m9_state *err)
   for (; i <= m9t2to; i += 1) {
     Zip_PutLow (&(out), at, Zip_SigLoc, INT64_C(4), err);
     if (err->exc) goto L_ret;
-    { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a30 = m9_add_i64 (at, INT64_C(4), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a32 = m9_add_i64 (at, INT64_C(4), err);
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a30, INT64_C(20), INT64_C(2), err);
+    Zip_PutLow (&(out), m9a32, INT64_C(20), INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(6), err)) m9a31 = m9_add_i64 (at, INT64_C(6), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(6), err)) m9a33 = m9_add_i64 (at, INT64_C(6), err);
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a31, INT64_C(2048), INT64_C(2), err);
+    Zip_PutLow (&(out), m9a33, INT64_C(2048), INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a32 = m9_add_i64 (at, INT64_C(8), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a34 = m9_add_i64 (at, INT64_C(8), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).method) m9a33 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).method;
-      if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a32, m9a33, INT64_C(2), err);
-    if (err->exc) goto L_ret;
-    }
-    }
-    { __typeof__(m9_add_i64 (at, INT64_C(10), err)) m9a34 = m9_add_i64 (at, INT64_C(10), err);
-      if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosTime) m9a35 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosTime;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).method) m9a35 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).method;
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a34, m9a35, INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a36 = m9_add_i64 (at, INT64_C(12), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(10), err)) m9a36 = m9_add_i64 (at, INT64_C(10), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosDate) m9a37 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosDate;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosTime) m9a37 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosTime;
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a36, m9a37, INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(14), err)) m9a38 = m9_add_i64 (at, INT64_C(14), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a38 = m9_add_i64 (at, INT64_C(12), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).crc) m9a39 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).crc;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosDate) m9a39 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosDate;
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a38, m9a39, INT64_C(4), err);
+    Zip_PutLow (&(out), m9a38, m9a39, INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(18), err)) m9a40 = m9_add_i64 (at, INT64_C(18), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(14), err)) m9a40 = m9_add_i64 (at, INT64_C(14), err);
       if (err->exc) goto L_ret;
-    { __typeof__(((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).data).len) m9a41 = ((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).data).len;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).crc) m9a41 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).crc;
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a40, m9a41, INT64_C(4), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(22), err)) m9a42 = m9_add_i64 (at, INT64_C(22), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(18), err)) m9a42 = m9_add_i64 (at, INT64_C(18), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).usize) m9a43 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).usize;
+    { __typeof__(((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).data).len) m9a43 = ((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).data).len;
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a42, m9a43, INT64_C(4), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(26), err)) m9a44 = m9_add_i64 (at, INT64_C(26), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(22), err)) m9a44 = m9_add_i64 (at, INT64_C(22), err);
       if (err->exc) goto L_ret;
-    { __typeof__(((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).name).len) m9a45 = ((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).name).len;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).usize) m9a45 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).usize;
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a44, m9a45, INT64_C(2), err);
+    Zip_PutLow (&(out), m9a44, m9a45, INT64_C(4), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(28), err)) m9a46 = m9_add_i64 (at, INT64_C(28), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(26), err)) m9a46 = m9_add_i64 (at, INT64_C(26), err);
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a46, INT64_C(0), INT64_C(2), err);
+    { __typeof__(((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).name).len) m9a47 = ((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).name).len;
+      if (err->exc) goto L_ret;
+    Zip_PutLow (&(out), m9a46, m9a47, INT64_C(2), err);
+    if (err->exc) goto L_ret;
+    }
+    }
+    { __typeof__(m9_add_i64 (at, INT64_C(28), err)) m9a48 = m9_add_i64 (at, INT64_C(28), err);
+      if (err->exc) goto L_ret;
+    Zip_PutLow (&(out), m9a48, INT64_C(0), INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
     { __typeof__(at) m9v = m9_add_i64 (at, Zip_LocHdr, err);
@@ -3016,105 +3065,105 @@ m9_sl_BYTE Zip_Finish (Zip_Writer * *w, m9_pool *w_pool, m9_state *err)
   for (; i <= m9t5to; i += 1) {
     Zip_PutLow (&(out), at, Zip_SigCen, INT64_C(4), err);
     if (err->exc) goto L_ret;
-    { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a47 = m9_add_i64 (at, INT64_C(4), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a49 = m9_add_i64 (at, INT64_C(4), err);
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a47, INT64_C(20), INT64_C(2), err);
+    Zip_PutLow (&(out), m9a49, INT64_C(20), INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(6), err)) m9a48 = m9_add_i64 (at, INT64_C(6), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(6), err)) m9a50 = m9_add_i64 (at, INT64_C(6), err);
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a48, INT64_C(20), INT64_C(2), err);
+    Zip_PutLow (&(out), m9a50, INT64_C(20), INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a49 = m9_add_i64 (at, INT64_C(8), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a51 = m9_add_i64 (at, INT64_C(8), err);
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a49, INT64_C(2048), INT64_C(2), err);
+    Zip_PutLow (&(out), m9a51, INT64_C(2048), INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(10), err)) m9a50 = m9_add_i64 (at, INT64_C(10), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(10), err)) m9a52 = m9_add_i64 (at, INT64_C(10), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).method) m9a51 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).method;
-      if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a50, m9a51, INT64_C(2), err);
-    if (err->exc) goto L_ret;
-    }
-    }
-    { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a52 = m9_add_i64 (at, INT64_C(12), err);
-      if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosTime) m9a53 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosTime;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).method) m9a53 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).method;
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a52, m9a53, INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(14), err)) m9a54 = m9_add_i64 (at, INT64_C(14), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a54 = m9_add_i64 (at, INT64_C(12), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosDate) m9a55 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosDate;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosTime) m9a55 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosTime;
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a54, m9a55, INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(16), err)) m9a56 = m9_add_i64 (at, INT64_C(16), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(14), err)) m9a56 = m9_add_i64 (at, INT64_C(14), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).crc) m9a57 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).crc;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosDate) m9a57 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).dosDate;
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a56, m9a57, INT64_C(4), err);
+    Zip_PutLow (&(out), m9a56, m9a57, INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(20), err)) m9a58 = m9_add_i64 (at, INT64_C(20), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(16), err)) m9a58 = m9_add_i64 (at, INT64_C(16), err);
       if (err->exc) goto L_ret;
-    { __typeof__(((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).data).len) m9a59 = ((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).data).len;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).crc) m9a59 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).crc;
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a58, m9a59, INT64_C(4), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(24), err)) m9a60 = m9_add_i64 (at, INT64_C(24), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(20), err)) m9a60 = m9_add_i64 (at, INT64_C(20), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).usize) m9a61 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).usize;
+    { __typeof__(((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).data).len) m9a61 = ((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).data).len;
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a60, m9a61, INT64_C(4), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(28), err)) m9a62 = m9_add_i64 (at, INT64_C(28), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(24), err)) m9a62 = m9_add_i64 (at, INT64_C(24), err);
       if (err->exc) goto L_ret;
-    { __typeof__(((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).name).len) m9a63 = ((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).name).len;
+    { __typeof__((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).usize) m9a63 = (*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).usize;
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a62, m9a63, INT64_C(2), err);
+    Zip_PutLow (&(out), m9a62, m9a63, INT64_C(4), err);
     if (err->exc) goto L_ret;
     }
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(30), err)) m9a64 = m9_add_i64 (at, INT64_C(30), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(28), err)) m9a64 = m9_add_i64 (at, INT64_C(28), err);
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a64, INT64_C(0), INT64_C(2), err);
+    { __typeof__(((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).name).len) m9a65 = ((*(Zip_WEntry *) m9_at ((*w)->e.p, i, (*w)->e.len, sizeof (Zip_WEntry), err)).name).len;
+      if (err->exc) goto L_ret;
+    Zip_PutLow (&(out), m9a64, m9a65, INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(32), err)) m9a65 = m9_add_i64 (at, INT64_C(32), err);
-      if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a65, INT64_C(0), INT64_C(2), err);
-    if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(34), err)) m9a66 = m9_add_i64 (at, INT64_C(34), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(30), err)) m9a66 = m9_add_i64 (at, INT64_C(30), err);
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a66, INT64_C(0), INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(36), err)) m9a67 = m9_add_i64 (at, INT64_C(36), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(32), err)) m9a67 = m9_add_i64 (at, INT64_C(32), err);
       if (err->exc) goto L_ret;
     Zip_PutLow (&(out), m9a67, INT64_C(0), INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(38), err)) m9a68 = m9_add_i64 (at, INT64_C(38), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(34), err)) m9a68 = m9_add_i64 (at, INT64_C(34), err);
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a68, INT64_C(0), INT64_C(4), err);
+    Zip_PutLow (&(out), m9a68, INT64_C(0), INT64_C(2), err);
     if (err->exc) goto L_ret;
     }
-    { __typeof__(m9_add_i64 (at, INT64_C(42), err)) m9a69 = m9_add_i64 (at, INT64_C(42), err);
+    { __typeof__(m9_add_i64 (at, INT64_C(36), err)) m9a69 = m9_add_i64 (at, INT64_C(36), err);
       if (err->exc) goto L_ret;
-    Zip_PutLow (&(out), m9a69, hdrOff, INT64_C(4), err);
+    Zip_PutLow (&(out), m9a69, INT64_C(0), INT64_C(2), err);
+    if (err->exc) goto L_ret;
+    }
+    { __typeof__(m9_add_i64 (at, INT64_C(38), err)) m9a70 = m9_add_i64 (at, INT64_C(38), err);
+      if (err->exc) goto L_ret;
+    Zip_PutLow (&(out), m9a70, INT64_C(0), INT64_C(4), err);
+    if (err->exc) goto L_ret;
+    }
+    { __typeof__(m9_add_i64 (at, INT64_C(42), err)) m9a71 = m9_add_i64 (at, INT64_C(42), err);
+      if (err->exc) goto L_ret;
+    Zip_PutLow (&(out), m9a71, hdrOff, INT64_C(4), err);
     if (err->exc) goto L_ret;
     }
     { __typeof__(at) m9v = m9_add_i64 (at, Zip_CenHdr, err);
@@ -3143,39 +3192,39 @@ m9_sl_BYTE Zip_Finish (Zip_Writer * *w, m9_pool *w_pool, m9_state *err)
   } }
   Zip_PutLow (&(out), at, Zip_SigEocd, INT64_C(4), err);
   if (err->exc) goto L_ret;
-  { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a70 = m9_add_i64 (at, INT64_C(4), err);
+  { __typeof__(m9_add_i64 (at, INT64_C(4), err)) m9a72 = m9_add_i64 (at, INT64_C(4), err);
     if (err->exc) goto L_ret;
-  Zip_PutLow (&(out), m9a70, INT64_C(0), INT64_C(2), err);
+  Zip_PutLow (&(out), m9a72, INT64_C(0), INT64_C(2), err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_add_i64 (at, INT64_C(6), err)) m9a71 = m9_add_i64 (at, INT64_C(6), err);
+  { __typeof__(m9_add_i64 (at, INT64_C(6), err)) m9a73 = m9_add_i64 (at, INT64_C(6), err);
     if (err->exc) goto L_ret;
-  Zip_PutLow (&(out), m9a71, INT64_C(0), INT64_C(2), err);
+  Zip_PutLow (&(out), m9a73, INT64_C(0), INT64_C(2), err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a72 = m9_add_i64 (at, INT64_C(8), err);
+  { __typeof__(m9_add_i64 (at, INT64_C(8), err)) m9a74 = m9_add_i64 (at, INT64_C(8), err);
     if (err->exc) goto L_ret;
-  Zip_PutLow (&(out), m9a72, (*w)->n, INT64_C(2), err);
+  Zip_PutLow (&(out), m9a74, (*w)->n, INT64_C(2), err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_add_i64 (at, INT64_C(10), err)) m9a73 = m9_add_i64 (at, INT64_C(10), err);
+  { __typeof__(m9_add_i64 (at, INT64_C(10), err)) m9a75 = m9_add_i64 (at, INT64_C(10), err);
     if (err->exc) goto L_ret;
-  Zip_PutLow (&(out), m9a73, (*w)->n, INT64_C(2), err);
+  Zip_PutLow (&(out), m9a75, (*w)->n, INT64_C(2), err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a74 = m9_add_i64 (at, INT64_C(12), err);
+  { __typeof__(m9_add_i64 (at, INT64_C(12), err)) m9a76 = m9_add_i64 (at, INT64_C(12), err);
     if (err->exc) goto L_ret;
-  Zip_PutLow (&(out), m9a74, cdLen, INT64_C(4), err);
+  Zip_PutLow (&(out), m9a76, cdLen, INT64_C(4), err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_add_i64 (at, INT64_C(16), err)) m9a75 = m9_add_i64 (at, INT64_C(16), err);
+  { __typeof__(m9_add_i64 (at, INT64_C(16), err)) m9a77 = m9_add_i64 (at, INT64_C(16), err);
     if (err->exc) goto L_ret;
-  Zip_PutLow (&(out), m9a75, cdAt, INT64_C(4), err);
+  Zip_PutLow (&(out), m9a77, cdAt, INT64_C(4), err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_add_i64 (at, INT64_C(20), err)) m9a76 = m9_add_i64 (at, INT64_C(20), err);
+  { __typeof__(m9_add_i64 (at, INT64_C(20), err)) m9a78 = m9_add_i64 (at, INT64_C(20), err);
     if (err->exc) goto L_ret;
-  Zip_PutLow (&(out), m9a76, INT64_C(0), INT64_C(2), err);
+  Zip_PutLow (&(out), m9a78, INT64_C(0), INT64_C(2), err);
   if (err->exc) goto L_ret;
   }
   err->res = m9res;
@@ -3195,9 +3244,9 @@ void Zip_WriteTo (Zip_Writer * *w, m9_pool *w_pool, m9_sl_CHAR path, m9_state *e
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(Zip_Finish (w, w_pool, err)) m9a77 = Zip_Finish (w, w_pool, err);
+  { __typeof__(Zip_Finish (w, w_pool, err)) m9a79 = Zip_Finish (w, w_pool, err);
     if (err->exc) goto L_ret;
-  Io_WriteFileBytes (path, m9a77, err);
+  Io_WriteFileBytes (path, m9a79, err);
   if (err->exc) goto L_ret;
   }
 L_ret: ;
@@ -3348,11 +3397,11 @@ static void Zip_Refill (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
   err->res = &m9frame;
   for (;;) {
     if (!((((*z).bits <= INT64_C(48)) && ((*z).inPos < (*z).inLen)))) break;
-    { __typeof__((int64_t)((*(uint8_t *) m9_at ((*z).inb.p, (*z).inPos, (*z).inb.len, sizeof (uint8_t), err)))) m9a78 = (int64_t)((*(uint8_t *) m9_at ((*z).inb.p, (*z).inPos, (*z).inb.len, sizeof (uint8_t), err)));
+    { __typeof__((int64_t)((*(uint8_t *) m9_at ((*z).inb.p, (*z).inPos, (*z).inb.len, sizeof (uint8_t), err)))) m9a80 = (int64_t)((*(uint8_t *) m9_at ((*z).inb.p, (*z).inPos, (*z).inb.len, sizeof (uint8_t), err)));
       if (err->exc) goto L_ret;
-    { __typeof__(Bits_Shl (m9a78, (*z).bits, err)) m9a79 = Bits_Shl (m9a78, (*z).bits, err);
+    { __typeof__(Bits_Shl (m9a80, (*z).bits, err)) m9a81 = Bits_Shl (m9a80, (*z).bits, err);
       if (err->exc) goto L_ret;
-    { __typeof__((*z).hold) m9v = Bits_Or ((*z).hold, m9a79, err);
+    { __typeof__((*z).hold) m9v = Bits_Or ((*z).hold, m9a81, err);
       if (err->exc) goto L_ret;
       (*z).hold = m9v;
     }
@@ -3401,9 +3450,9 @@ static int64_t Zip_Take (Zip_Infl *z, m9_pool *z_pool, int64_t n, m9_state *err)
       goto L_ret;
     }
   }
-  { __typeof__((*(int64_t *) m9_at ((*Mask).v, n, INT64_C(17), sizeof (int64_t), err))) m9a80 = (*(int64_t *) m9_at ((*Mask).v, n, INT64_C(17), sizeof (int64_t), err));
+  { __typeof__((*(int64_t *) m9_at ((*Mask).v, n, INT64_C(17), sizeof (int64_t), err))) m9a82 = (*(int64_t *) m9_at ((*Mask).v, n, INT64_C(17), sizeof (int64_t), err));
     if (err->exc) goto L_ret;
-  { __typeof__(v) m9v = Bits_And ((*z).hold, m9a80, err);
+  { __typeof__(v) m9v = Bits_And ((*z).hold, m9a82, err);
     if (err->exc) goto L_ret;
     v = m9v;
   }
@@ -3449,9 +3498,9 @@ static int64_t Zip_Sym (Zip_Infl *z, m9_pool *z_pool, m9_sl_I64 fast, m9_sl_I64 
   int64_t index = 0; (void) index;
   int64_t n = 0; (void) n;
   int64_t k = 0; (void) k;
-  { __typeof__(m9_sub_i64 (Zip_FastSize, INT64_C(1), err)) m9a81 = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
+  { __typeof__(m9_sub_i64 (Zip_FastSize, INT64_C(1), err)) m9a83 = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  { __typeof__(e) m9v = (*(int64_t *) m9_at (fast.p, Bits_And ((*z).hold, m9a81, err), fast.len, sizeof (int64_t), err));
+  { __typeof__(e) m9v = (*(int64_t *) m9_at (fast.p, Bits_And ((*z).hold, m9a83, err), fast.len, sizeof (int64_t), err));
     if (err->exc) goto L_ret;
     e = m9v;
   }
@@ -3490,11 +3539,11 @@ static int64_t Zip_Sym (Zip_Infl *z, m9_pool *z_pool, m9_sl_I64 fast, m9_sl_I64 
       if (err->exc) goto L_ret;
       goto L_ret;
     }
-    { __typeof__(m9_sub_i64 (k, INT64_C(1), err)) m9a82 = m9_sub_i64 (k, INT64_C(1), err);
+    { __typeof__(m9_sub_i64 (k, INT64_C(1), err)) m9a84 = m9_sub_i64 (k, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    { __typeof__(Bits_Shr ((*z).hold, m9a82, err)) m9a83 = Bits_Shr ((*z).hold, m9a82, err);
+    { __typeof__(Bits_Shr ((*z).hold, m9a84, err)) m9a85 = Bits_Shr ((*z).hold, m9a84, err);
       if (err->exc) goto L_ret;
-    { __typeof__(code) m9v = m9_add_i64 (code, Bits_And (m9a83, INT64_C(1), err), err);
+    { __typeof__(code) m9v = m9_add_i64 (code, Bits_And (m9a85, INT64_C(1), err), err);
       if (err->exc) goto L_ret;
       code = m9v;
     }
@@ -3688,9 +3737,9 @@ static int64_t Zip_Build (m9_sl_I64 *fast, m9_sl_I64 *count, m9_sl_I64 *symbol, 
         m9t10to = m9_sub_i64 (len, INT64_C(1), err);
         if (err->exc) goto L_ret;
         for (; b <= m9t10to; b += 1) {
-          { __typeof__(Bits_Shr (code, b, err)) m9a84 = Bits_Shr (code, b, err);
+          { __typeof__(Bits_Shr (code, b, err)) m9a86 = Bits_Shr (code, b, err);
             if (err->exc) goto L_ret;
-          { __typeof__(r) m9v = m9_add_i64 (m9_mul_i64 (r, INT64_C(2), err), Bits_And (m9a84, INT64_C(1), err), err);
+          { __typeof__(r) m9v = m9_add_i64 (m9_mul_i64 (r, INT64_C(2), err), Bits_And (m9a86, INT64_C(1), err), err);
             if (err->exc) goto L_ret;
             r = m9v;
           }
@@ -3992,9 +4041,9 @@ static void Zip_BlockHeader (Zip_Infl *z, m9_pool *z_pool, m9_state *err)
     goto L_ret;
   }
   if ((kind == INT64_C(0))) {
-    { __typeof__(Bits_And ((*z).bits, INT64_C(7), err)) m9a85 = Bits_And ((*z).bits, INT64_C(7), err);
+    { __typeof__(Bits_And ((*z).bits, INT64_C(7), err)) m9a87 = Bits_And ((*z).bits, INT64_C(7), err);
       if (err->exc) goto L_ret;
-    { __typeof__(len) m9v = Zip_Take (z, z_pool, m9a85, err);
+    { __typeof__(len) m9v = Zip_Take (z, z_pool, m9a87, err);
       if (err->exc) goto L_ret;
       len = m9v;
     }
@@ -4128,11 +4177,11 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
     if (!(((out <= room) && (ip <= stop)))) break;
     for (;;) {
       if (!((bits <= INT64_C(48)))) break;
-      { __typeof__((int64_t)((*(uint8_t *) m9_at (inb.p, ip, inb.len, sizeof (uint8_t), err)))) m9a86 = (int64_t)((*(uint8_t *) m9_at (inb.p, ip, inb.len, sizeof (uint8_t), err)));
+      { __typeof__((int64_t)((*(uint8_t *) m9_at (inb.p, ip, inb.len, sizeof (uint8_t), err)))) m9a88 = (int64_t)((*(uint8_t *) m9_at (inb.p, ip, inb.len, sizeof (uint8_t), err)));
         if (err->exc) goto L_ret;
-      { __typeof__(Bits_Shl (m9a86, bits, err)) m9a87 = Bits_Shl (m9a86, bits, err);
+      { __typeof__(Bits_Shl (m9a88, bits, err)) m9a89 = Bits_Shl (m9a88, bits, err);
         if (err->exc) goto L_ret;
-      { __typeof__(hold) m9v = Bits_Or (hold, m9a87, err);
+      { __typeof__(hold) m9v = Bits_Or (hold, m9a89, err);
         if (err->exc) goto L_ret;
         hold = m9v;
       }
@@ -4147,9 +4196,9 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         bits = m9v;
       }
     }
-    { __typeof__(m9_sub_i64 (Zip_FastSize, INT64_C(1), err)) m9a88 = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
+    { __typeof__(m9_sub_i64 (Zip_FastSize, INT64_C(1), err)) m9a90 = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    { __typeof__(e) m9v = (*(int64_t *) m9_at (lf.p, Bits_And (hold, m9a88, err), lf.len, sizeof (int64_t), err));
+    { __typeof__(e) m9v = (*(int64_t *) m9_at (lf.p, Bits_And (hold, m9a90, err), lf.len, sizeof (int64_t), err));
       if (err->exc) goto L_ret;
       e = m9v;
     }
@@ -4183,9 +4232,9 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
       if (ring) {
         (*(uint8_t *) m9_at (win.p, wp, win.len, sizeof (uint8_t), err)) = b;
         if (err->exc) goto L_ret;
-        { __typeof__(m9_add_i64 (wp, INT64_C(1), err)) m9a89 = m9_add_i64 (wp, INT64_C(1), err);
+        { __typeof__(m9_add_i64 (wp, INT64_C(1), err)) m9a91 = m9_add_i64 (wp, INT64_C(1), err);
           if (err->exc) goto L_ret;
-        { __typeof__(wp) m9v = Bits_And (m9a89, Zip_WinMask, err);
+        { __typeof__(wp) m9v = Bits_And (m9a91, Zip_WinMask, err);
           if (err->exc) goto L_ret;
           wp = m9v;
         }
@@ -4219,9 +4268,9 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         if (err->exc) goto L_ret;
         x = m9v;
       }
-      { __typeof__((*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err))) m9a90 = (*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err))) m9a92 = (*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      { __typeof__(len) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), Bits_And (h2, m9a90, err), err);
+      { __typeof__(len) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), Bits_And (h2, m9a92, err), err);
         if (err->exc) goto L_ret;
         len = m9v;
       }
@@ -4234,9 +4283,9 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         if (err->exc) goto L_ret;
         b2 = m9v;
       }
-      { __typeof__(m9_sub_i64 (Zip_FastSize, INT64_C(1), err)) m9a91 = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
+      { __typeof__(m9_sub_i64 (Zip_FastSize, INT64_C(1), err)) m9a93 = m9_sub_i64 (Zip_FastSize, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__(e) m9v = (*(int64_t *) m9_at (df.p, Bits_And (h2, m9a91, err), df.len, sizeof (int64_t), err));
+      { __typeof__(e) m9v = (*(int64_t *) m9_at (df.p, Bits_And (h2, m9a93, err), df.len, sizeof (int64_t), err));
         if (err->exc) goto L_ret;
         e = m9v;
       }
@@ -4264,9 +4313,9 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         if (err->exc) goto L_ret;
         x = m9v;
       }
-      { __typeof__((*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err))) m9a92 = (*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err));
+      { __typeof__((*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err))) m9a94 = (*(int64_t *) m9_at ((*Mask).v, x, INT64_C(17), sizeof (int64_t), err));
         if (err->exc) goto L_ret;
-      { __typeof__(dist) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), Bits_And (h2, m9a92, err), err);
+      { __typeof__(dist) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), Bits_And (h2, m9a94, err), err);
         if (err->exc) goto L_ret;
         dist = m9v;
       }
@@ -4289,9 +4338,9 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         i = INT64_C(1);
         m9t1to = len;
         for (; i <= m9t1to; i += 1) {
-          { __typeof__(m9_sub_i64 (wp, dist, err)) m9a93 = m9_sub_i64 (wp, dist, err);
+          { __typeof__(m9_sub_i64 (wp, dist, err)) m9a95 = m9_sub_i64 (wp, dist, err);
             if (err->exc) goto L_ret;
-          { __typeof__(b) m9v = (*(uint8_t *) m9_at (win.p, Bits_And (m9a93, Zip_WinMask, err), win.len, sizeof (uint8_t), err));
+          { __typeof__(b) m9v = (*(uint8_t *) m9_at (win.p, Bits_And (m9a95, Zip_WinMask, err), win.len, sizeof (uint8_t), err));
             if (err->exc) goto L_ret;
             b = m9v;
           }
@@ -4300,9 +4349,9 @@ static int64_t Zip_Fast (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
           if (err->exc) goto L_ret;
           (*(uint8_t *) m9_at (win.p, wp, win.len, sizeof (uint8_t), err)) = b;
           if (err->exc) goto L_ret;
-          { __typeof__(m9_add_i64 (wp, INT64_C(1), err)) m9a94 = m9_add_i64 (wp, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (wp, INT64_C(1), err)) m9a96 = m9_add_i64 (wp, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(wp) m9v = Bits_And (m9a94, Zip_WinMask, err);
+          { __typeof__(wp) m9v = Bits_And (m9a96, Zip_WinMask, err);
             if (err->exc) goto L_ret;
             wp = m9v;
           }
@@ -4402,18 +4451,18 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
             b = m9v;
           }
         } else {
-          { __typeof__(m9_sub_i64 (wp, dist, err)) m9a95 = m9_sub_i64 (wp, dist, err);
+          { __typeof__(m9_sub_i64 (wp, dist, err)) m9a97 = m9_sub_i64 (wp, dist, err);
             if (err->exc) goto L_ret;
-          { __typeof__(b) m9v = (*(uint8_t *) m9_at ((*z).win.p, Bits_And (m9a95, Zip_WinMask, err), (*z).win.len, sizeof (uint8_t), err));
+          { __typeof__(b) m9v = (*(uint8_t *) m9_at ((*z).win.p, Bits_And (m9a97, Zip_WinMask, err), (*z).win.len, sizeof (uint8_t), err));
             if (err->exc) goto L_ret;
             b = m9v;
           }
           }
           (*(uint8_t *) m9_at ((*z).win.p, wp, (*z).win.len, sizeof (uint8_t), err)) = b;
           if (err->exc) goto L_ret;
-          { __typeof__(m9_add_i64 (wp, INT64_C(1), err)) m9a96 = m9_add_i64 (wp, INT64_C(1), err);
+          { __typeof__(m9_add_i64 (wp, INT64_C(1), err)) m9a98 = m9_add_i64 (wp, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__(wp) m9v = Bits_And (m9a96, Zip_WinMask, err);
+          { __typeof__(wp) m9v = Bits_And (m9a98, Zip_WinMask, err);
             if (err->exc) goto L_ret;
             wp = m9v;
           }
@@ -4469,9 +4518,9 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
           if ((!(*z).whole)) {
             (*(uint8_t *) m9_at ((*z).win.p, (*z).wpos, (*z).win.len, sizeof (uint8_t), err)) = b;
             if (err->exc) goto L_ret;
-            { __typeof__(m9_add_i64 ((*z).wpos, INT64_C(1), err)) m9a97 = m9_add_i64 ((*z).wpos, INT64_C(1), err);
+            { __typeof__(m9_add_i64 ((*z).wpos, INT64_C(1), err)) m9a99 = m9_add_i64 ((*z).wpos, INT64_C(1), err);
               if (err->exc) goto L_ret;
-            { __typeof__((*z).wpos) m9v = Bits_And (m9a97, Zip_WinMask, err);
+            { __typeof__((*z).wpos) m9v = Bits_And (m9a99, Zip_WinMask, err);
               if (err->exc) goto L_ret;
               (*z).wpos = m9v;
             }
@@ -4541,9 +4590,9 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
         if ((!(*z).whole)) {
           (*(uint8_t *) m9_at ((*z).win.p, (*z).wpos, (*z).win.len, sizeof (uint8_t), err)) = b;
           if (err->exc) goto L_ret;
-          { __typeof__(m9_add_i64 ((*z).wpos, INT64_C(1), err)) m9a98 = m9_add_i64 ((*z).wpos, INT64_C(1), err);
+          { __typeof__(m9_add_i64 ((*z).wpos, INT64_C(1), err)) m9a100 = m9_add_i64 ((*z).wpos, INT64_C(1), err);
             if (err->exc) goto L_ret;
-          { __typeof__((*z).wpos) m9v = Bits_And (m9a98, Zip_WinMask, err);
+          { __typeof__((*z).wpos) m9v = Bits_And (m9a100, Zip_WinMask, err);
             if (err->exc) goto L_ret;
             (*z).wpos = m9v;
           }
@@ -4572,9 +4621,9 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
           m9ret = out;
           goto L_ret;
         }
-        { __typeof__((*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err))) m9a99 = (*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err));
+        { __typeof__((*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err))) m9a101 = (*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err));
           if (err->exc) goto L_ret;
-        { __typeof__(len) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), Zip_Take (z, z_pool, m9a99, err), err);
+        { __typeof__(len) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), Zip_Take (z, z_pool, m9a101, err), err);
           if (err->exc) goto L_ret;
           len = m9v;
         }
@@ -4588,9 +4637,9 @@ static int64_t Zip_Step (Zip_Infl *z, m9_pool *z_pool, m9_sl_BYTE *dst, int64_t 
           m9ret = out;
           goto L_ret;
         }
-        { __typeof__((*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err))) m9a100 = (*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err));
+        { __typeof__((*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err))) m9a102 = (*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err));
           if (err->exc) goto L_ret;
-        { __typeof__(dist) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), Zip_Take (z, z_pool, m9a100, err), err);
+        { __typeof__(dist) m9v = m9_add_i64 ((*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), Zip_Take (z, z_pool, m9a102, err), err);
           if (err->exc) goto L_ret;
           dist = m9v;
         }
@@ -4671,30 +4720,30 @@ static int64_t Zip_CrcRun (int64_t c, m9_sl_BYTE b, m9_state *err)
     bool m9t1 = (m9_add_i64 (i, INT64_C(4), err) <= n);
     if (err->exc) goto L_ret;
     if (!(m9t1)) break;
-    { __typeof__(m9_add_i64 (m9_add_i64 (m9_add_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), m9_mul_i64 (INT64_C(256), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(65536), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(16777216), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(3), err), b.len, sizeof (uint8_t), err))), err), err)) m9a101 = m9_add_i64 (m9_add_i64 (m9_add_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), m9_mul_i64 (INT64_C(256), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(65536), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(16777216), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(3), err), b.len, sizeof (uint8_t), err))), err), err);
+    { __typeof__(m9_add_i64 (m9_add_i64 (m9_add_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), m9_mul_i64 (INT64_C(256), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(65536), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(16777216), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(3), err), b.len, sizeof (uint8_t), err))), err), err)) m9a103 = m9_add_i64 (m9_add_i64 (m9_add_i64 ((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err))), m9_mul_i64 (INT64_C(256), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(65536), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err))), err), err), m9_mul_i64 (INT64_C(16777216), (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(3), err), b.len, sizeof (uint8_t), err))), err), err);
       if (err->exc) goto L_ret;
-    { __typeof__(c) m9v = Bits_Xor (c, m9a101, err);
+    { __typeof__(c) m9v = Bits_Xor (c, m9a103, err);
       if (err->exc) goto L_ret;
       c = m9v;
     }
     }
-    { __typeof__((*(int64_t *) m9_at ((*Crc3).v, Bits_And (c, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err))) m9a102 = (*(int64_t *) m9_at ((*Crc3).v, Bits_And (c, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at ((*Crc3).v, Bits_And (c, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err))) m9a104 = (*(int64_t *) m9_at ((*Crc3).v, Bits_And (c, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Bits_Shr (c, INT64_C(8), err)) m9a103 = Bits_Shr (c, INT64_C(8), err);
+    { __typeof__(Bits_Shr (c, INT64_C(8), err)) m9a105 = Bits_Shr (c, INT64_C(8), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(int64_t *) m9_at ((*Crc2).v, Bits_And (m9a103, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err))) m9a104 = (*(int64_t *) m9_at ((*Crc2).v, Bits_And (m9a103, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at ((*Crc2).v, Bits_And (m9a105, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err))) m9a106 = (*(int64_t *) m9_at ((*Crc2).v, Bits_And (m9a105, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Bits_Xor (m9a102, m9a104, err)) m9a105 = Bits_Xor (m9a102, m9a104, err);
+    { __typeof__(Bits_Xor (m9a104, m9a106, err)) m9a107 = Bits_Xor (m9a104, m9a106, err);
       if (err->exc) goto L_ret;
-    { __typeof__(Bits_Shr (c, INT64_C(16), err)) m9a106 = Bits_Shr (c, INT64_C(16), err);
+    { __typeof__(Bits_Shr (c, INT64_C(16), err)) m9a108 = Bits_Shr (c, INT64_C(16), err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(int64_t *) m9_at ((*Crc1).v, Bits_And (m9a106, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err))) m9a107 = (*(int64_t *) m9_at ((*Crc1).v, Bits_And (m9a106, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at ((*Crc1).v, Bits_And (m9a108, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err))) m9a109 = (*(int64_t *) m9_at ((*Crc1).v, Bits_And (m9a108, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    { __typeof__((*(int64_t *) m9_at ((*Crc0).v, Bits_Shr (c, INT64_C(24), err), INT64_C(256), sizeof (int64_t), err))) m9a108 = (*(int64_t *) m9_at ((*Crc0).v, Bits_Shr (c, INT64_C(24), err), INT64_C(256), sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at ((*Crc0).v, Bits_Shr (c, INT64_C(24), err), INT64_C(256), sizeof (int64_t), err))) m9a110 = (*(int64_t *) m9_at ((*Crc0).v, Bits_Shr (c, INT64_C(24), err), INT64_C(256), sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Bits_Xor (m9a107, m9a108, err)) m9a109 = Bits_Xor (m9a107, m9a108, err);
+    { __typeof__(Bits_Xor (m9a109, m9a110, err)) m9a111 = Bits_Xor (m9a109, m9a110, err);
       if (err->exc) goto L_ret;
-    { __typeof__(c) m9v = Bits_Xor (m9a105, m9a109, err);
+    { __typeof__(c) m9v = Bits_Xor (m9a107, m9a111, err);
       if (err->exc) goto L_ret;
       c = m9v;
     }
@@ -4713,15 +4762,15 @@ static int64_t Zip_CrcRun (int64_t c, m9_sl_BYTE b, m9_state *err)
   }
   for (;;) {
     if (!((i < n))) break;
-    { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)))) m9a110 = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
+    { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)))) m9a112 = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
       if (err->exc) goto L_ret;
-    { __typeof__(Bits_Xor (c, m9a110, err)) m9a111 = Bits_Xor (c, m9a110, err);
+    { __typeof__(Bits_Xor (c, m9a112, err)) m9a113 = Bits_Xor (c, m9a112, err);
       if (err->exc) goto L_ret;
-    { __typeof__((*(int64_t *) m9_at ((*Crc0).v, Bits_And (m9a111, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err))) m9a112 = (*(int64_t *) m9_at ((*Crc0).v, Bits_And (m9a111, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err));
+    { __typeof__((*(int64_t *) m9_at ((*Crc0).v, Bits_And (m9a113, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err))) m9a114 = (*(int64_t *) m9_at ((*Crc0).v, Bits_And (m9a113, INT64_C(255), err), INT64_C(256), sizeof (int64_t), err));
       if (err->exc) goto L_ret;
-    { __typeof__(Bits_Shr (c, INT64_C(8), err)) m9a113 = Bits_Shr (c, INT64_C(8), err);
+    { __typeof__(Bits_Shr (c, INT64_C(8), err)) m9a115 = Bits_Shr (c, INT64_C(8), err);
       if (err->exc) goto L_ret;
-    { __typeof__(c) m9v = Bits_Xor (m9a112, m9a113, err);
+    { __typeof__(c) m9v = Bits_Xor (m9a114, m9a115, err);
       if (err->exc) goto L_ret;
       c = m9v;
     }
@@ -4961,9 +5010,9 @@ static void Zip_PutBits (Zip_Sink *o, m9_pool *o_pool, int64_t v, int64_t n, m9_
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  { __typeof__(Bits_Shl (v, (*o).bits, err)) m9a114 = Bits_Shl (v, (*o).bits, err);
+  { __typeof__(Bits_Shl (v, (*o).bits, err)) m9a116 = Bits_Shl (v, (*o).bits, err);
     if (err->exc) goto L_ret;
-  { __typeof__((*o).hold) m9v = Bits_Or ((*o).hold, m9a114, err);
+  { __typeof__((*o).hold) m9v = Bits_Or ((*o).hold, m9a116, err);
     if (err->exc) goto L_ret;
     (*o).hold = m9v;
   }
@@ -5013,9 +5062,9 @@ static void Zip_PutCode (Zip_Sink *o, m9_pool *o_pool, int64_t code, int64_t n, 
   m9t1to = m9_sub_i64 (n, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__(Bits_Shr (code, i, err)) m9a115 = Bits_Shr (code, i, err);
+    { __typeof__(Bits_Shr (code, i, err)) m9a117 = Bits_Shr (code, i, err);
       if (err->exc) goto L_ret;
-    { __typeof__(r) m9v = m9_add_i64 (m9_mul_i64 (r, INT64_C(2), err), Bits_And (m9a115, INT64_C(1), err), err);
+    { __typeof__(r) m9v = m9_add_i64 (m9_mul_i64 (r, INT64_C(2), err), Bits_And (m9a117, INT64_C(1), err), err);
       if (err->exc) goto L_ret;
       r = m9v;
     }
@@ -5037,29 +5086,29 @@ static void Zip_PutSym (Zip_Sink *o, m9_pool *o_pool, int64_t sym, m9_state *err
   (void) m9res;
   err->res = &m9frame;
   if ((sym < INT64_C(144))) {
-    { __typeof__(m9_add_i64 (INT64_C(48), sym, err)) m9a116 = m9_add_i64 (INT64_C(48), sym, err);
+    { __typeof__(m9_add_i64 (INT64_C(48), sym, err)) m9a118 = m9_add_i64 (INT64_C(48), sym, err);
       if (err->exc) goto L_ret;
-    Zip_PutCode (o, o_pool, m9a116, INT64_C(8), err);
+    Zip_PutCode (o, o_pool, m9a118, INT64_C(8), err);
     if (err->exc) goto L_ret;
     }
   } else {
     if ((sym < INT64_C(256))) {
-      { __typeof__(m9_sub_i64 (m9_add_i64 (INT64_C(400), sym, err), INT64_C(144), err)) m9a117 = m9_sub_i64 (m9_add_i64 (INT64_C(400), sym, err), INT64_C(144), err);
+      { __typeof__(m9_sub_i64 (m9_add_i64 (INT64_C(400), sym, err), INT64_C(144), err)) m9a119 = m9_sub_i64 (m9_add_i64 (INT64_C(400), sym, err), INT64_C(144), err);
         if (err->exc) goto L_ret;
-      Zip_PutCode (o, o_pool, m9a117, INT64_C(9), err);
+      Zip_PutCode (o, o_pool, m9a119, INT64_C(9), err);
       if (err->exc) goto L_ret;
       }
   } else {
     if ((sym < INT64_C(280))) {
-      { __typeof__(m9_sub_i64 (sym, INT64_C(256), err)) m9a118 = m9_sub_i64 (sym, INT64_C(256), err);
+      { __typeof__(m9_sub_i64 (sym, INT64_C(256), err)) m9a120 = m9_sub_i64 (sym, INT64_C(256), err);
         if (err->exc) goto L_ret;
-      Zip_PutCode (o, o_pool, m9a118, INT64_C(7), err);
+      Zip_PutCode (o, o_pool, m9a120, INT64_C(7), err);
       if (err->exc) goto L_ret;
       }
   } else {
-    { __typeof__(m9_sub_i64 (m9_add_i64 (INT64_C(192), sym, err), INT64_C(280), err)) m9a119 = m9_sub_i64 (m9_add_i64 (INT64_C(192), sym, err), INT64_C(280), err);
+    { __typeof__(m9_sub_i64 (m9_add_i64 (INT64_C(192), sym, err), INT64_C(280), err)) m9a121 = m9_sub_i64 (m9_add_i64 (INT64_C(192), sym, err), INT64_C(280), err);
       if (err->exc) goto L_ret;
-    Zip_PutCode (o, o_pool, m9a119, INT64_C(8), err);
+    Zip_PutCode (o, o_pool, m9a121, INT64_C(8), err);
     if (err->exc) goto L_ret;
     }
   } } }
@@ -5088,16 +5137,16 @@ static void Zip_PutMatch (Zip_Sink *o, m9_pool *o_pool, int64_t len, int64_t dis
       s = m9v;
     }
   }
-  { __typeof__(m9_add_i64 (INT64_C(257), s, err)) m9a120 = m9_add_i64 (INT64_C(257), s, err);
+  { __typeof__(m9_add_i64 (INT64_C(257), s, err)) m9a122 = m9_add_i64 (INT64_C(257), s, err);
     if (err->exc) goto L_ret;
-  Zip_PutSym (o, o_pool, m9a120, err);
+  Zip_PutSym (o, o_pool, m9a122, err);
   if (err->exc) goto L_ret;
   }
-  { __typeof__(m9_sub_i64 (len, (*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), err)) m9a121 = m9_sub_i64 (len, (*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), err);
+  { __typeof__(m9_sub_i64 (len, (*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), err)) m9a123 = m9_sub_i64 (len, (*(int64_t *) m9_at ((*LBase).v, s, INT64_C(29), sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
-  { __typeof__((*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err))) m9a122 = (*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err));
+  { __typeof__((*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err))) m9a124 = (*(int64_t *) m9_at ((*LExt).v, s, INT64_C(29), sizeof (int64_t), err));
     if (err->exc) goto L_ret;
-  Zip_PutBits (o, o_pool, m9a121, m9a122, err);
+  Zip_PutBits (o, o_pool, m9a123, m9a124, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -5113,11 +5162,11 @@ static void Zip_PutMatch (Zip_Sink *o, m9_pool *o_pool, int64_t len, int64_t dis
   }
   Zip_PutCode (o, o_pool, d, INT64_C(5), err);
   if (err->exc) goto L_ret;
-  { __typeof__(m9_sub_i64 (dist, (*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), err)) m9a123 = m9_sub_i64 (dist, (*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), err);
+  { __typeof__(m9_sub_i64 (dist, (*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), err)) m9a125 = m9_sub_i64 (dist, (*(int64_t *) m9_at ((*DBase).v, d, INT64_C(30), sizeof (int64_t), err)), err);
     if (err->exc) goto L_ret;
-  { __typeof__((*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err))) m9a124 = (*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err));
+  { __typeof__((*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err))) m9a126 = (*(int64_t *) m9_at ((*DExt).v, d, INT64_C(30), sizeof (int64_t), err));
     if (err->exc) goto L_ret;
-  Zip_PutBits (o, o_pool, m9a123, m9a124, err);
+  Zip_PutBits (o, o_pool, m9a125, m9a126, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -5136,23 +5185,23 @@ static int64_t Zip_Hash3 (m9_sl_BYTE b, int64_t i, m9_state *err)
   err->res = &m9frame;
   int64_t m9ret = 0;
   err->res = m9res;
-  { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)))) m9a125 = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
+  { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)))) m9a127 = (int64_t)((*(uint8_t *) m9_at (b.p, i, b.len, sizeof (uint8_t), err)));
     if (err->exc) goto L_ret;
-  { __typeof__(Bits_Shl (m9a125, INT64_C(10), err)) m9a126 = Bits_Shl (m9a125, INT64_C(10), err);
+  { __typeof__(Bits_Shl (m9a127, INT64_C(10), err)) m9a128 = Bits_Shl (m9a127, INT64_C(10), err);
     if (err->exc) goto L_ret;
-  { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err)))) m9a127 = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err)));
+  { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err)))) m9a129 = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(1), err), b.len, sizeof (uint8_t), err)));
     if (err->exc) goto L_ret;
-  { __typeof__(Bits_Shl (m9a127, INT64_C(5), err)) m9a128 = Bits_Shl (m9a127, INT64_C(5), err);
+  { __typeof__(Bits_Shl (m9a129, INT64_C(5), err)) m9a130 = Bits_Shl (m9a129, INT64_C(5), err);
     if (err->exc) goto L_ret;
-  { __typeof__(Bits_Xor (m9a126, m9a128, err)) m9a129 = Bits_Xor (m9a126, m9a128, err);
+  { __typeof__(Bits_Xor (m9a128, m9a130, err)) m9a131 = Bits_Xor (m9a128, m9a130, err);
     if (err->exc) goto L_ret;
-  { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err)))) m9a130 = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err)));
+  { __typeof__((int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err)))) m9a132 = (int64_t)((*(uint8_t *) m9_at (b.p, m9_add_i64 (i, INT64_C(2), err), b.len, sizeof (uint8_t), err)));
     if (err->exc) goto L_ret;
-  { __typeof__(Bits_Xor (m9a129, m9a130, err)) m9a131 = Bits_Xor (m9a129, m9a130, err);
+  { __typeof__(Bits_Xor (m9a131, m9a132, err)) m9a133 = Bits_Xor (m9a131, m9a132, err);
     if (err->exc) goto L_ret;
-  { __typeof__(m9_sub_i64 (Zip_HashSize, INT64_C(1), err)) m9a132 = m9_sub_i64 (Zip_HashSize, INT64_C(1), err);
+  { __typeof__(m9_sub_i64 (Zip_HashSize, INT64_C(1), err)) m9a134 = m9_sub_i64 (Zip_HashSize, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  m9ret = Bits_And (m9a131, m9a132, err);
+  m9ret = Bits_And (m9a133, m9a134, err);
   if (err->exc) goto L_ret;
   }
   }
@@ -5273,9 +5322,9 @@ static void Zip_FixedBlock (m9_pool *pool, m9_sl_BYTE data, Zip_Sink *o, m9_pool
       }
     }
     if ((best >= Zip_MinMatch)) {
-      { __typeof__(m9_sub_i64 (i, bestAt, err)) m9a133 = m9_sub_i64 (i, bestAt, err);
+      { __typeof__(m9_sub_i64 (i, bestAt, err)) m9a135 = m9_sub_i64 (i, bestAt, err);
         if (err->exc) goto L_ret;
-      Zip_PutMatch (o, o_pool, best, m9a133, err);
+      Zip_PutMatch (o, o_pool, best, m9a135, err);
       if (err->exc) goto L_ret;
       }
       { __typeof__(stop) m9v = m9_add_i64 (i, best, err);
@@ -5283,9 +5332,9 @@ static void Zip_FixedBlock (m9_pool *pool, m9_sl_BYTE data, Zip_Sink *o, m9_pool
         stop = m9v;
       }
     } else {
-      { __typeof__((int64_t)((*(uint8_t *) m9_at (data.p, i, data.len, sizeof (uint8_t), err)))) m9a134 = (int64_t)((*(uint8_t *) m9_at (data.p, i, data.len, sizeof (uint8_t), err)));
+      { __typeof__((int64_t)((*(uint8_t *) m9_at (data.p, i, data.len, sizeof (uint8_t), err)))) m9a136 = (int64_t)((*(uint8_t *) m9_at (data.p, i, data.len, sizeof (uint8_t), err)));
         if (err->exc) goto L_ret;
-      Zip_PutSym (o, o_pool, m9a134, err);
+      Zip_PutSym (o, o_pool, m9a136, err);
       if (err->exc) goto L_ret;
       }
       { __typeof__(stop) m9v = m9_add_i64 (i, INT64_C(1), err);
@@ -5322,9 +5371,9 @@ static void Zip_FixedBlock (m9_pool *pool, m9_sl_BYTE data, Zip_Sink *o, m9_pool
   Zip_PutSym (o, o_pool, INT64_C(256), err);
   if (err->exc) goto L_ret;
   if (((*o).bits > INT64_C(0))) {
-    { __typeof__(m9_sub_i64 (INT64_C(8), (*o).bits, err)) m9a135 = m9_sub_i64 (INT64_C(8), (*o).bits, err);
+    { __typeof__(m9_sub_i64 (INT64_C(8), (*o).bits, err)) m9a137 = m9_sub_i64 (INT64_C(8), (*o).bits, err);
       if (err->exc) goto L_ret;
-    Zip_PutBits (o, o_pool, INT64_C(0), m9a135, err);
+    Zip_PutBits (o, o_pool, INT64_C(0), m9a137, err);
     if (err->exc) goto L_ret;
     }
   }

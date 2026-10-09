@@ -31,6 +31,8 @@ VAR
   mode, url, accept, cookie, dest, body, method, hdrs, resp, rh : STR ;
   hd : PTR DynStr.DString IN pool ;
   cl : PTR Http.Client IN pool ;
+  fm : PTR Http.Form IN pool ;
+  fb : SLICE OF BYTE ;
   status, bytes, i, tries : I64 ;
 
 (* a count written in digits; anything else in it is skipped *)
@@ -101,6 +103,21 @@ BEGIN
     END ;
     Io.Write ('kept ') ; Io.WriteI64 (Http.Kept (cl)) ; Io.WriteLine ('') ;
     Http.CloseClient (cl)
+  ELSIF DynStr.Eq (mode, 'form') THEN
+    (* Http.FormBody: two fields -- one past ASCII, one empty -- and two
+       files, one holding the first boundary the builder would try and
+       a CRLF, one a name with a quote in it; POSTed to URL *)
+    url := Io.Arg (pool, 2) ;
+    fm := Http.NewForm (pool) ;
+    Http.FormField (fm, 'title', 'CO' + 2082C + ' at Hyltemossa') ;
+    Http.FormField (fm, 'empty', '') ;
+    fb := DynStr.Bytes (pool, 'before' + 0DC + 0AC + '--m9-form-boundary-0' + 0DC + 0AC + 'after', FALSE) ;
+    Http.FormBytes (fm, 'data', 'obs.bin', '', fb) ;
+    Http.FormBytes (fm, 'meta', 'a"b.json', 'application/json', DynStr.Bytes (pool, '{"k": 1}', FALSE)) ;
+    resp := DynStr.FromUtf8 (pool, Http.Request (pool, 'POST', url,
+                   'Content-Type: ' + Http.FormType (fm), Http.FormBody (pool, fm), 65536, status, rh)) ;
+    Io.Write ('status ') ; Io.WriteI64 (status) ; Io.WriteLine ('') ;
+    Io.Write (resp)
   ELSIF DynStr.Eq (mode, 'req') THEN
     IF Io.ArgCount () < 4 THEN
       Io.ErrLine ('usage: httpget req METHOD URL [BODY [HEADER ...]]') ;

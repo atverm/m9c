@@ -575,6 +575,14 @@ void m9_flush (void)
 /* CHARs out as UTF-8.  Total by construction: every Unicode scalar
    has an encoding, which is why Io.Write declares no RAISES while
    DynStr.Bytes -- narrowing to octets for the wire -- must.  */
+/* octets as they are, through the stream Write uses (Io.WriteBytes) */
+void m9_put_bytes (const void *buf, size_t n)
+{
+  M9_LOCK (stdout);
+  if (n > 0) fwrite (buf, 1, n, stdout);
+  M9_UNLOCK (stdout);
+}
+
 void m9_put_chars (const void *buf, size_t n)
 {
   const uint32_t *p = (const uint32_t *) buf;
@@ -600,9 +608,40 @@ void m9_put_chars (const void *buf, size_t n)
   M9_UNLOCK (stdout);
 }
 
+/* ---- paths ------------------------------------------------------
+   Io hands every path as UTF-8 (2026-10-09).  POSIX takes it as it
+   is; Windows's narrow fopen reads a path in the ANSI code page, so a
+   name beyond it was never found (srvfix's été.txt under wine, the
+   Windows item of the ledger) -- the wide functions take UTF-16, and
+   these convert on the way. */
+#ifdef _WIN32
+/* no <wchar.h>: windows.h, stdio.h, io.h, direct.h, sys/stat.h and
+   dirent.h above declare every wide call used here, and the bundled
+   Windows toolchain has no wchar.h (winzip, 2026-10-09) while
+   mingw's clashes with sec_api once both are in (httpserver) */
+#define M9_WPATH_MAX 4096
+static int m9_wide (const char *utf8, wchar_t *w, int cap)
+{
+  int n = MultiByteToWideChar (CP_UTF8, 0, utf8, -1, w, cap);
+  if (n <= 0) { w[0] = 0; return -1; }
+  return 0;
+}
+static FILE *m9_fopen (const void *path, const char *mode)
+{
+  wchar_t wp[M9_WPATH_MAX], wm[8];
+  int i;
+  if (m9_wide ((const char *) path, wp, M9_WPATH_MAX) != 0) return NULL;
+  for (i = 0; i < 7 && mode[i]; i++) wm[i] = (wchar_t) mode[i];
+  wm[i] = 0;
+  return _wfopen (wp, wm);
+}
+#else
+#define m9_fopen(path, mode) fopen ((const char *) (path), (mode))
+#endif
+
 int64_t m9_read_file (const void *path, void *buf, int64_t cap)
 {
-  FILE *f = fopen ((const char *) path, "rb");
+  FILE *f = m9_fopen (path, "rb");
   int64_t n;
   if (!f) return -1;
   if (fseek (f, 0, SEEK_END) != 0) { fclose (f); return -1; }
@@ -641,7 +680,7 @@ int64_t m9_read_at (const void *path, void *buf, int64_t cap, int64_t off)
   FILE *f;
   size_t got;
   if (cap <= 0 || off < 0) return -1;
-  f = fopen ((const char *) path, "rb");
+  f = m9_fopen (path, "rb");
   if (!f) return -1;
 #if defined(_WIN32)
   if (_fseeki64 (f, (__int64) off, SEEK_SET) != 0) { fclose (f); return -1; }
@@ -827,7 +866,14 @@ double m9_strtod (const void *s)
    rename over the target -- the temp-file-plus-os.replace idiom */
 int m9_rename (const void *from, const void *to)
 {
+#ifdef _WIN32
+  wchar_t wf[M9_WPATH_MAX], wt[M9_WPATH_MAX];
+  if (m9_wide ((const char *) from, wf, M9_WPATH_MAX) != 0) return -1;
+  if (m9_wide ((const char *) to, wt, M9_WPATH_MAX) != 0) return -1;
+  return _wrename (wf, wt) == 0 ? 0 : -1;
+#else
   return rename ((const char *) from, (const char *) to) == 0 ? 0 : -1;
+#endif
 }
 
 int m9_mkdir (const void *path)
@@ -835,7 +881,9 @@ int m9_mkdir (const void *path)
   /* one level, exist-ok -- what a passports/ output directory
      needs; parents are the caller's arrangement */
 #ifdef _WIN32
-  if (_mkdir ((const char *) path) == 0) return 0;
+  wchar_t wp[M9_WPATH_MAX];
+  if (m9_wide ((const char *) path, wp, M9_WPATH_MAX) != 0) return -1;
+  if (_wmkdir (wp) == 0) return 0;
 #else
   if (mkdir ((const char *) path, 0777) == 0) return 0;
 #endif
@@ -844,7 +892,7 @@ int m9_mkdir (const void *path)
 
 int m9_write_file (const void *path, const void *buf, size_t n)
 {
-  FILE *f = fopen ((const char *) path, "wb");
+  FILE *f = m9_fopen (path, "wb");
   if (!f) return -1;
   if (n && fwrite (buf, 1, n, f) != n) { fclose (f); return -1; }
   return fclose (f) == 0 ? 0 : -1;
@@ -873,7 +921,7 @@ int64_t m9_cstr_copy (const void *p, void *buf, int64_t cap)
    4 MB one.  "wb" first, then "ab", is the whole idiom.           */
 int m9_append_file (const void *path, const void *buf, size_t n)
 {
-  FILE *f = fopen ((const char *) path, "ab");
+  FILE *f = m9_fopen (path, "ab");
   if (!f) return -1;
   if (n && fwrite (buf, 1, n, f) != n) { fclose (f); return -1; }
   return fclose (f) == 0 ? 0 : -1;
@@ -992,7 +1040,13 @@ int m9_getenv (const void *name, void *buf, int cap)
 
 int m9_remove (const void *path)
 {
+#ifdef _WIN32
+  wchar_t wp[M9_WPATH_MAX];
+  if (m9_wide ((const char *) path, wp, M9_WPATH_MAX) != 0) return -1;
+  return _wremove (wp);
+#else
   return remove ((const char *) path);
+#endif
 }
 
 /* ---- system log ------------------------------------------------
@@ -1073,14 +1127,28 @@ int64_t m9_cstrlen (const void *s)
 
 int m9_exists (const void *path)
 {
+#ifdef _WIN32
+  wchar_t wp[M9_WPATH_MAX];
+  if (m9_wide ((const char *) path, wp, M9_WPATH_MAX) != 0) return 0;
+  return _waccess (wp, 4) == 0;
+#else
   return access ((const char *) path, R_OK) == 0;
+#endif
 }
 
 int64_t m9_mtime (const void *path)
 {
+#ifdef _WIN32
+  struct _stat64 st;
+  wchar_t wp[M9_WPATH_MAX];
+  if (m9_wide ((const char *) path, wp, M9_WPATH_MAX) != 0) return -1;
+  if (_wstat64 (wp, &st) != 0) return -1;
+  return (int64_t) st.st_mtime;
+#else
   struct stat st;
   if (stat ((const char *) path, &st) != 0) return -1;
   return (int64_t) st.st_mtime;
+#endif
 }
 
 /* Directory entries in readdir order, '.' and '..' skipped, written
@@ -1090,6 +1158,30 @@ int64_t m9_mtime (const void *path)
    this call's own.  Demanded by the zarr proxy's ?list. */
 int64_t m9_listdir (const void *path, void *buf, int64_t cap)
 {
+#ifdef _WIN32
+  /* the wide directory walk, each name back to UTF-8 */
+  wchar_t wp[M9_WPATH_MAX];
+  _WDIR *d;
+  struct _wdirent *e;
+  int64_t need = 0;
+  char *out = (char *) buf;
+  char name[M9_WPATH_MAX];
+  if (m9_wide ((const char *) path, wp, M9_WPATH_MAX) != 0) return -1;
+  d = _wopendir (wp);
+  if (d == NULL) return -1;
+  while ((e = _wreaddir (d)) != NULL) {
+    int n = WideCharToMultiByte (CP_UTF8, 0, e->d_name, -1, name, M9_WPATH_MAX, NULL, NULL);
+    if (n <= 0) continue;
+    n -= 1;                                   /* without the terminator */
+    if (n == 1 && name[0] == '.') continue;
+    if (n == 2 && name[0] == '.' && name[1] == '.') continue;
+    if (need + (int64_t) n + 1 <= cap)
+      memcpy (out + need, name, (size_t) n + 1);
+    need += (int64_t) n + 1;
+  }
+  _wclosedir (d);
+  return need;
+#else
   DIR *d = opendir ((const char *) path);
   struct dirent *e;
   int64_t need = 0;
@@ -1105,6 +1197,7 @@ int64_t m9_listdir (const void *path, void *buf, int64_t cap)
   }
   closedir (d);
   return need;
+#endif
 }
 
 /* ---- concurrency (par 6) ---- */

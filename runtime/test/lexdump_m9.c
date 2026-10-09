@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Lex.h"
+#include "utf8io.h"
 
 int main (int argc, char **argv)
 {
@@ -10,7 +11,6 @@ int main (int argc, char **argv)
   long len;
   char *bytes;
   uint32_t *chars;
-  long i;
   Lex_Lexer lx = {0};
   Lex_Token t = {0};
   m9_state err = {0};
@@ -24,7 +24,7 @@ int main (int argc, char **argv)
   if (fread (bytes, 1, (size_t) len, f) != (size_t) len) return 2;
   fclose (f);
   chars = malloc (sizeof (uint32_t) * (size_t) len);
-  for (i = 0; i < len; i++) chars[i] = (uint32_t) (unsigned char) bytes[i];
+  len = m9t_decode ((const unsigned char *) bytes, len, chars);   /* UTF-8, as m9c reads it */
 
   Lex_Init (&lx, &pool, (m9_sl_CHAR){ chars, len }, &err);
   for (;;) {
@@ -34,9 +34,9 @@ int main (int argc, char **argv)
     if (err.exc) { fprintf (stderr, "lexer raised %s\n", err.exc->name); return 1; }
     nm = Lex_KindName (t.kind, &err);
     printf ("%lld:%lld ", (long long) t.line, (long long) t.col);
-    for (j = 0; j < nm.len; j++) putchar ((int) (nm.p[j] & 0xff));
+    for (j = 0; j < nm.len; j++) m9t_putc (nm.p[j]);
     putchar (' ');
-    for (j = 0; j < t.text.len; j++) putchar ((int) (t.text.p[j] & 0xff));
+    for (j = 0; j < t.text.len; j++) m9t_putc (t.text.p[j]);
     putchar ('\n');
     if (t.kind == 0) break;
   }

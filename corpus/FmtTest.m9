@@ -54,6 +54,14 @@ BEGIN
   Check.EqStr (t, 'Short 0.0001 stays positional', Fmt.Short (0.0001), '0.0001') ;
   Check.EqStr (t, 'Short 0.00001 does not', Fmt.Short (0.00001), '1e-05') ;
   Check.EqStr (t, 'Short NaN', Fmt.Short (NaN), 'nan') ;
+  (* Hex, held to Python's '%0*x' (cp-kernel's issue 16) *)
+  Check.EqStr (t, 'Hex of a CRC, eight digits', Fmt.Hex (3421780262, 8), 'cbf43926') ;
+  Check.EqStr (t, 'Hex 255 in four', Fmt.Hex (255, 4), '00ff') ;
+  Check.EqStr (t, 'Hex 0 in no width is one digit', Fmt.Hex (0, 0), '0') ;
+  Check.EqStr (t, 'Hex never truncates: 4096 in two', Fmt.Hex (4096, 2), '1000') ;
+  Check.EqStr (t, 'Hex of -1 is its 64-bit pattern', Fmt.Hex (-1, 0), 'ffffffffffffffff') ;
+  Check.EqStr (t, 'Hex of the smallest I64', Fmt.Hex (-9223372036854775807 - 1, 0), '8000000000000000') ;
+  Check.EqStr (t, 'Hex of the largest I64', Fmt.Hex (9223372036854775807, 0), '7fffffffffffffff') ;
   FOR i := 0 TO LEN (Parts) - 1 DO Part (Parts[i], Says[i]) END ;
   Io.Halt (Check.Done (t, 'Fmt'))
 END FmtTest.

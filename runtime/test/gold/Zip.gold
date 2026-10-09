@@ -9,6 +9,7 @@ many.check i64 527 0 0 0 0 0 0 0 0 19 102 174 126 248 26 2 237 319 217 366 530 5
 zip.names str 8 table.csv far.bin run.bin noise.bin ab.txt four.bin empty stored.bin
 zip.length i64 8 70000 70000 70000 70000 100000 40000 0 4820
 zip.check i64 8 466203179 128264257 63126740 124486280 227753984 7545513 0 31835796
+zip.crc i64 8 2064304058 1290363236 2203051710 1133621682 1999897734 2838913285 0 2910828059
 zipbad.names str 6 toofar baddist badlength cut badcrc badsize
 bad.names str 23 notgz.gz method.gz badcrc.gz badlen.gz cut.gz cuttrailer.gz damaged.gz badblock.gz toofar.gz badlength.gz badstored.gz shortheader.gz tail.gz baddist.gz toofarlong.gz baddistlong.gz badlengthlong.gz manylen.gz manydist.gz gaplen.gz gapdist.gz overlen.gz overdist.gz
 sum.length i64 12 0 1 2 3 4 5 255 5551 5552 5553 11104 100000

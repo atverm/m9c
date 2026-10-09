@@ -1,0 +1,21 @@
+(* EXPECT: IS SOME needs an OPT operand *)
+(* `x IS SOME' and `x IS NONE' with no binder are BOOL expressions
+   (par 2.2; cp-kernel's issue 4, 2026-10-09): a flag that cost four
+   lines -- an IF with a binder nobody used -- is one.  The payload is
+   still reached only through a binder in a condition.  The legal
+   forms first; the last asks an I64 whether it is SOME. *)
+MODULE m ;
+TYPE
+  Cell = RECORD n : I64 END ;
+VAR
+  o : OPT PTR Cell ;
+  k, n : I64 ;
+  b : BOOL ;
+BEGIN
+  o := NONE ;
+  b := o IS SOME ;
+  b := o IS NONE ;
+  IF o IS NONE THEN k := 1 END ;
+  b := NOT (o IS SOME) AND k = 1 ;
+  b := n IS SOME
+END m.

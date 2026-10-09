@@ -3,7 +3,7 @@ REVIEW Syslog -- 6 procedures with a body, 2 of them functions; 5 headings in a 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               2
   assignments                                     5
-  arguments                                      21   passed over, a type unknown: 4
+  arguments                                      25
   RETURN values                                   6
   operands of a comparison or an operator         2
   CASE labels                                     4

@@ -94,7 +94,16 @@ disagree is not evidence.
    `+` concatenates two STRINGS into HEAP, and a CHAR joins as one
    code point on either side (`s + c`, `c + s`; since 2026-09-06);
    a NUMBER never does -- `Fmt.I64Str` it first.  Par 2; tutorial
-   2 and 12.
+   2 and 12.  A character beyond ASCII in a literal is written as a
+   CHAR literal (`2082C` is U+2082) and joined with `+`; the generator
+   refuses a non-ASCII string literal.  **A FILE is UTF-8** (from
+   0.19): `Io.ReadFile` decodes it (strictly: a file that is not
+   UTF-8 raises ValueRange) and `Io.WriteFile` encodes every scalar;
+   up to 0.18 they moved one octet per CHAR and `WriteFile` refused a
+   scalar past 255.  A STR that holds OCTETS as CHARs -- an HTTP body
+   -- goes through `Io.WriteFileBytes (path, DynStr.Bytes (pool, s,
+   FALSE))`, never through `WriteFile`, which would encode each octet
+   again.
 
 6. **Build a string with `+` and a CASE that ANSWERS one.**  `+`
    concatenates into `HEAP` (par 2.3) and works on every operand
@@ -220,7 +229,11 @@ disagree is not evidence.
     C.* types only in the signature, the C name bound as a string
     literal (`PROCEDURE X = "c_name" (...)`).  `[SERIAL]` means
     SERIALISED -- the generator brackets every call with the unit's
-    monitor.  Par 7; exemplar `corpus/Grib.m9`.
+    monitor.  The unit NAMES what it links (0.19 on): `FOR "C" cnc
+    LINK "netcdf" ;` -- a library name, a `-` word as it is, a shim
+    `.c` beside the runtime -- and m9c puts the words on every
+    flagless link, `--run` and `--cell`; nothing to hand-link.  Par
+    7; exemplar `corpus/Grib.m9`.
 
 14. **Module VARs need `[STATEFUL]` on the definition.**  Prefer a
     record the caller owns: a 43-module port has none.  Probe

@@ -3,7 +3,7 @@ REVIEW Plot -- 74 procedures with a body, 33 of them functions; 21 headings in a
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              33
   assignments                                   492
-  arguments                                    1844   passed over, a type unknown: 1
+  arguments                                    1845
   RETURN values                                  68
   operands of a comparison or an operator       875
   CASE labels                                    23

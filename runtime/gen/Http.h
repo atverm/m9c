@@ -10,8 +10,11 @@ void Http_m9init (m9_state *err);
 typedef struct Http_Conn Http_Conn;
 typedef struct Http_Cookie Http_Cookie;
 typedef struct Http_Client Http_Client;
+typedef struct Http_Form Http_Form;
 typedef struct Http_Req Http_Req;
 typedef struct Http_Resp Http_Resp;
+typedef struct Http_Part Http_Part;
+typedef struct Http_Form Http_Form;
 
 extern const m9_exc Http_TransportError;
 
@@ -24,6 +27,14 @@ extern const m9_exc Http_TransportError;
 #ifndef M9SL_m9_sl_Http_Cookie
 #define M9SL_m9_sl_Http_Cookie
 typedef struct { Http_Cookie *p; int64_t len; } m9_sl_Http_Cookie;
+#endif
+#ifndef M9SL_m9_sl_Http_Part
+#define M9SL_m9_sl_Http_Part
+typedef struct { Http_Part *p; int64_t len; } m9_sl_Http_Part;
+#endif
+#ifndef M9SL_m9_sl_m9_sl_BYTE
+#define M9SL_m9_sl_m9_sl_BYTE
+typedef struct { m9_sl_BYTE *p; int64_t len; } m9_sl_m9_sl_BYTE;
 #endif
 #ifndef M9SL_m9_arr_256_bool
 #define M9SL_m9_arr_256_bool
@@ -83,5 +94,10 @@ double Http_Backoff (int64_t failures, double factor, m9_state *err);
 bool Http_Retryable (m9_sl_CHAR method, int64_t status, bool hasRetryAfter, m9_state *err);
 double Http_RetryAfter (m9_sl_CHAR headers, double now, m9_state *err);
 m9_sl_BYTE Http_RequestRetry (m9_pool *pool, m9_sl_CHAR method, m9_sl_CHAR url, m9_sl_CHAR headers, m9_sl_BYTE body, int64_t cap, int64_t retries, double factor, int64_t *status, m9_sl_CHAR *respHeaders, int64_t *tries, m9_state *err);
+Http_Form * Http_NewForm (m9_pool *pool, m9_state *err);
+void Http_FormField (Http_Form * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_CHAR value, m9_state *err);
+void Http_FormBytes (Http_Form * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_CHAR fileName, m9_sl_CHAR contentType, m9_sl_BYTE b, m9_state *err);
+m9_sl_BYTE Http_FormBody (m9_pool *pool, Http_Form * f, m9_state *err);
+m9_sl_CHAR Http_FormType (Http_Form * f, m9_state *err);
 
 #endif

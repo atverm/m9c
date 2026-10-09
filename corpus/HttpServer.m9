@@ -1552,7 +1552,10 @@ BEGIN
   END ;
   IF LEN (name) = 0 OR name[LEN (name) - 1] = '/' THEN name := name + 'index.html' END ;
   IF NOT SafeName (name) THEN RETURN Reply (404, 'text/plain; charset=utf-8', 'not found') END ;
-  full := rt.dir + '/' + DynStr.Chars (scratch, DynStr.Utf8 (scratch, name)) ;
+  (* the name's scalars, as they are: Io encodes a path as UTF-8
+     (2026-10-09; until then it was octets, so the name was encoded
+     here first) *)
+  full := rt.dir + '/' + name ;
   IF NOT Io.Exists (full) THEN
     RETURN Reply (404, 'text/plain; charset=utf-8', 'not found')
   END ;

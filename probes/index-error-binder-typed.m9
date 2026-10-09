@@ -1,0 +1,19 @@
+(* EXPECT: cannot assign I64 to SLICE OF CHAR (no implicit conversions, par 2.1) *)
+(* IndexError carries (index, length : I64), the payload every index
+   check writes, and a handler's binders are typed by it (par 5,
+   2026-10-09; the predeclared exceptions bound nothing until then).
+   The legal forms first: the index read into an I64; the last binds
+   the index to a STR. *)
+MODULE m ;
+VAR
+  xs : SLICE OF I64 ;
+  at : I64 ;
+  s : STR ;
+BEGIN
+  xs := NEW (I64, 3) ;
+  at := xs[7]
+EXCEPT
+| IndexError (i, n) :
+    at := i + n ;
+    s := i
+END m.

@@ -138,6 +138,14 @@ grep -q 'm9_gridof (m9t[0-9]*\.len, m9t[0-9]*n, 2, m9t[0-9]*r\.n, m9t[0-9]*r\.s,
   || { echo "ShareUse: GRID (s, n0, n1) is not laid over the slice through m9_gridof -- in BOTH generators"; exit 1; }
 grep -q 'static double y0_;' /tmp/gen_fpc.txt \
   || { echo "ShareUse: a module variable named y0 is not escaped from libm's Bessel function -- in BOTH generators"; exit 1; }
+grep -q '100u, 233u, 106u, 224u, 32u' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: a string literal beyond ASCII is not emitted as its scalars -- in BOTH generators"; exit 1; }
+grep -q 'int64_t i = err->i\[0\];' /tmp/gen_fpc.txt && grep -q 'int64_t n = err->i\[1\];' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: IndexError's (index, length) are not bound from err->i -- in BOTH generators"; exit 1; }
+grep -q 'some = (o != NULL);' /tmp/gen_fpc.txt && grep -q 'none = (o == NULL);' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: IS SOME / IS NONE as an expression is not a NULL test -- in BOTH generators"; exit 1; }
+grep -q 'case ShareUse_Store_Irods:' /tmp/gen_fpc.txt \
+  || { echo "ShareUse: a CASE label spelled Store.Irods is not its member's case -- in BOTH generators"; exit 1; }
 grep -q 'UINT64_C(18446744073709551615)' /tmp/gen_fpc.txt \
   || { echo "ShareUse: a U64 literal past 2^63 is not UINT64_C -- in BOTH generators"; exit 1; }
 run Sem Ast DynStr Print Text

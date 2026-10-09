@@ -142,8 +142,14 @@ BEGIN
         DynStr.Append (d, ' IS ') ;
         IF n.kids[1] IS SOME t THEN
           IF t.kind = Ast.NIsSome THEN
-            DynStr.Append (d, 'SOME ') ;
-            DynStr.Append (d, t.a)
+            IF t.f1 THEN
+              DynStr.Append (d, 'NONE')
+            ELSIF LEN (t.a) = 0 THEN
+              DynStr.Append (d, 'SOME')
+            ELSE
+              DynStr.Append (d, 'SOME ') ;
+              DynStr.Append (d, t.a)
+            END
           ELSE
             Qual (d, t)
           END
@@ -830,7 +836,7 @@ END EDecl ;
 
 PROCEDURE EUnit (VAR d: PTR DynStr.DString ;
                  u: PTR Ast.Node) =
-VAR i : I64 ;
+VAR i, j : I64 ;
 BEGIN
   IF u.kind = Ast.NDefinition THEN
     IF u.f1 THEN DynStr.Append (d, 'UNSAFE ') END ;
@@ -842,6 +848,20 @@ BEGIN
       DynStr.AppendChar (d, ' ')
     END ;
     DynStr.Append (d, u.a) ;
+    (* the LINK words, kept as the unit's last kid *)
+    FOR i := 0 TO u.nkids - 1 DO
+      IF u.kids[i] IS SOME lk THEN
+        IF lk.kind = Ast.NLinkList THEN
+          DynStr.Append (d, ' LINK ') ;
+          FOR j := 0 TO lk.nkids - 1 DO
+            IF lk.kids[j] IS SOME ws THEN
+              IF j > 0 THEN DynStr.Append (d, ', ') END ;
+              Quoted (d, ws.a)
+            END
+          END
+        END
+      END
+    END ;
     DynStr.Append (d, ' ;')
   ELSIF u.kind = Ast.NImplementation THEN
     IF u.f1 THEN DynStr.Append (d, 'UNSAFE ') END ;
@@ -876,6 +896,8 @@ BEGIN
         IF kd.kids[0] IS SOME blk2 THEN
           EBlock (d, blk2, 0, FALSE)
         END
+      ELSIF kd.kind = Ast.NLinkList THEN
+        (* printed in the heading *)
       ELSE
         EDecl (d, kd, 0) ;
         DynStr.AppendChar (d, 0AC)

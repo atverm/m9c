@@ -102,7 +102,7 @@ CONST
   TkSOME = 53 ; TkSTATEFUL = 54 ; TkTHEN = 55 ; TkTHREAD = 56 ;
   TkTO = 57 ; TkTRANSFER = 58 ; TkTRUE = 59 ; TkTYPE = 60 ;
   TkUNSAFE = 61 ; TkVAR = 62 ; TkWAIT = 63 ; TkWHILE = 64 ;
-  TkRO = 65 ; TkGRID = 66 ; TkKEPT = 67 ;
+  TkRO = 65 ; TkGRID = 66 ; TkKEPT = 67 ; TkLINK = 68 ;
   (* appended: codes are identifiers *)
   (* operators start at 200: see the note in Lex.  Keywords may be
      appended at 65.. without moving any of these.                *)
@@ -633,7 +633,15 @@ BEGIN
     IF p.cur.kind = TkSOME THEN
       t := Nn (pool, p, Ast.NIsSome) ;
       Bump (p) ;
-      t.a := TakeIdent (p, 'binding name') ;
+      (* `x IS SOME p' binds, as the whole condition of IF/ELSIF/WHILE;
+         `x IS SOME' and `x IS NONE' are BOOL expressions, no binder
+         (cp-kernel's issue 4, 2026-10-09) *)
+      IF p.cur.kind = TkIdent THEN t.a := TakeIdent (p, 'binding name') END ;
+      Ast.Add (pool, n, SOME (t))
+    ELSIF p.cur.kind = TkNONE THEN
+      t := Nn (pool, p, Ast.NIsSome) ;
+      t.f1 := TRUE ;
+      Bump (p) ;
       Ast.Add (pool, n, SOME (t))
     ELSE
       Ast.Add (pool, n, SOME (PQualident (pool, p)))
@@ -1403,11 +1411,12 @@ END PDecls ;
 
 PROCEDURE PUnit (VAR pool: POOL ; VAR KEPT p: Parser) : PTR Ast.Node =
 VAR
-  n, body : PTR Ast.Node ;
-  uns, stf : BOOL ;
+  n, body, links, ws : PTR Ast.Node ;
+  uns, stf, hasLinks : BOOL ;
 BEGIN
   uns := FALSE ;
   stf := FALSE ;
+  hasLinks := FALSE ;
   IF p.cur.kind = TkUNSAFE THEN uns := TRUE ; Bump (p) END ;
   IF p.cur.kind = TkSTATEFUL THEN stf := TRUE ; Bump (p) END ;
 
@@ -1427,9 +1436,30 @@ BEGIN
       END
     END ;
     n.a := TakeIdent (p, 'module name') ;
+    IF p.cur.kind = TkLINK THEN
+      (* LINK "w", ...: what the foreign unit links (par 7); the node
+         goes in LAST, after the declarations, so that nothing walking
+         a unit's kids by position moves *)
+      IF LEN (n.b) = 0 THEN Rerr (p, 'LINK belongs to a FOR "C" unit') END ;
+      Bump (p) ;
+      links := Nn (pool, p, Ast.NLinkList) ;
+      hasLinks := TRUE ;
+      LOOP
+        IF p.cur.kind = TkStr THEN
+          ws := Nn (pool, p, Ast.NString) ;
+          ws.a := p.cur.text ;
+          Ast.Add (pool, links, SOME (ws)) ;
+          Bump (p)
+        ELSE
+          Rerr (p, 'a string expected after LINK')
+        END ;
+        IF p.cur.kind = TkComma THEN Bump (p) ELSE EXIT END
+      END
+    END ;
     Expect (p, TkSemi) ;
     PImports (pool, p, n) ;
     PDecls (pool, p, n) ;
+    IF hasLinks THEN Ast.Add (pool, n, SOME (links)) END ;
     Expect (p, TkEND) ;
     IF NOT DynStr.Eq (TakeIdent (p, 'module name after END'), n.a) THEN Rerr (p, 'END name does not match MODULE ' + n.a) END ;
     Expect (p, TkDot) ;

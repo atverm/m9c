@@ -46,6 +46,7 @@ base = lists["ttl.base"][0]
 
 fails = []
 judged = 0
+unwritable = 0
 unread = []
 
 
@@ -126,6 +127,38 @@ def judge(name, expect, numbers):
         return
     if not isomorphic(canon(jld, False), canon(got, False)):
         fails.append(f"{name}: the JSON-LD M9 wrote is not the graph it read ({len(jld)} triples, {len(got)} read)")
+    # and the RDF/XML M9 wrote, read by rdflib's xml parser; a predicate
+    # with no local name cannot be written by anyone (rdflib raises on
+    # it too) and is accepted as refused, counted
+    global unwritable
+    rdfp = os.path.join(out, name + ".rdf")
+    if not os.path.exists(rdfp):
+        err = open(rdfp + ".err", encoding="utf-8").read().strip()
+        if err.startswith("no local name: "):
+            unwritable += 1
+            return
+        # XML 1.0 cannot carry a control character (other than tab, line
+        # feed, carriage return): Xml's writer refuses one, rightly -- but
+        # only where the graph really holds one
+        if err.startswith("xml: a character no XML document may hold"):
+            def bad(t):
+                return any((ord(c) < 0x20 and c not in "\t\n\r") or ord(c) in (0xFFFE, 0xFFFF)
+                           or 0xD800 <= ord(c) <= 0xDFFF for c in str(t))
+            if any(bad(x) for tr in got for x in tr):
+                unwritable += 1
+                return
+            fails.append(f"{name}: RDF/XML refused a character the graph does not hold: {err}")
+            return
+        fails.append(f"{name}: RDF/XML not written: {err}")
+        return
+    xml = rdflib.Graph()
+    try:
+        xml.parse(rdfp, format="xml")
+    except Exception as e:  # noqa: BLE001
+        fails.append(f"{name}: rdflib cannot read the RDF/XML M9 wrote: {e}")
+        return
+    if not isomorphic(canon(xml, False), canon(got, False)):
+        fails.append(f"{name}: the RDF/XML M9 wrote is not the graph it read ({len(xml)} triples, {len(got)} read)")
 
 
 def refused(name):
@@ -213,5 +246,5 @@ for u in unread:
     print("rdf: rdflib cannot read " + u + ", held to the suite's verdict")
 for f in fails:
     print("rdf: FAIL " + f)
-print(f"rdf: {judged} documents judged by rdflib {rdflib.__version__}, {len(fails)} failed")
+print(f"rdf: {judged} documents judged by rdflib {rdflib.__version__}, {len(fails)} failed; {unwritable} RDF/XML cannot carry (a predicate with no local name, a control character)")
 sys.exit(1 if fails else 0)

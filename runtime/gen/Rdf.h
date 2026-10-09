@@ -39,6 +39,7 @@ static const m9_sl_CHAR __attribute__((__unused__)) Rdf_Kind_names[] = {
 };
 
 extern const m9_exc Rdf_SyntaxError;
+extern const m9_exc Rdf_NotWritable;
 
 static const uint32_t Rdf_XsdString_d[39] = { 104u, 116u, 116u, 112u, 58u, 47u, 47u, 119u, 119u, 119u, 46u, 119u, 51u, 46u, 111u, 114u, 103u, 47u, 50u, 48u, 48u, 49u, 47u, 88u, 77u, 76u, 83u, 99u, 104u, 101u, 109u, 97u, 35u, 115u, 116u, 114u, 105u, 110u, 103u };
 #define Rdf_XsdString ((m9_sl_CHAR){ (uint32_t *) Rdf_XsdString_d, 39 })
@@ -93,6 +94,7 @@ Rdf_Graph * Rdf_ParseTurtle (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, m9
 Rdf_Graph * Rdf_ParseRdfXml (m9_pool *pool, m9_sl_BYTE doc, m9_sl_CHAR base, m9_state *err);
 Rdf_Graph * Rdf_ParseJsonLd (m9_pool *pool, m9_sl_CHAR text, m9_sl_CHAR base, Json_Node * context, m9_state *err);
 m9_sl_CHAR Rdf_JsonLd (Rdf_Graph * g, Json_Node * context, m9_state *err);
+m9_sl_CHAR Rdf_RdfXml (Rdf_Graph * g, m9_state *err);
 int64_t Rdf_Count (Rdf_Graph * g, m9_state *err);
 Rdf_Triple Rdf_Get (Rdf_Graph * g, int64_t i, m9_state *err);
 m9_sl_CHAR Rdf_NTriples (Rdf_Graph * g, m9_state *err);

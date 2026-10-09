@@ -29,6 +29,7 @@ IMPORT Json ;
 IMPORT Rdf ;
 IMPORT Sort ;
 IMPORT Text ;
+IMPORT Xml ;
 
 VAR
   t : Check.T ;
@@ -610,6 +611,61 @@ END Refused ;
    every document of the W3C suites written and read back -- the
    triples the same up to blank-node labels, which grouping by
    subject renumbers (rdflib judges the graphs isomorphic in rdf.sh) *)
+PROCEDURE NoLocalName () : BOOL RAISES ValueRange =
+  (* a predicate that ends in `/': no NCName tail, so no element *)
+VAR
+  p : POOL ;
+  g : PTR Rdf.Graph IN p ;
+  doc : STR ;
+BEGIN
+  g := Rdf.ParseNTriples (p, '<http://e/a> <http://e/p/> "1" .' + 0AC) ;
+  doc := Rdf.RdfXml (g) ;
+  RETURN FALSE
+EXCEPT
+| Rdf.NotWritable (iri) : RETURN Text.Eq (iri, 'http://e/p/')
+| Rdf.SyntaxError (m, l, c) : RETURN FALSE
+| Xml.WriteError (m) : RETURN FALSE
+END NoLocalName ;
+
+PROCEDURE XmlWritten () RAISES ValueRange =
+  (* the RDF/XML writer: read back by ParseRdfXml as the graph it was
+     given -- IRIs, two blank nodes, a language tag, a datatype, a
+     plain literal with markup in it, a predicate whose local name
+     starts after a `#' and one after a `/' *)
+VAR
+  p : POOL ;
+  g, g2 : PTR Rdf.Graph IN p ;
+  doc : STR ;
+  a, b : SLICE OF STR ;
+BEGIN
+  BEGIN
+    g := Rdf.ParseTurtle (p,
+      '@prefix ex: <http://e/x#> .' + 0AC +
+      '<http://e/a> ex:name "Alex" ; ex:note "hi"@en ; ex:n "3"^^<http://www.w3.org/2001/XMLSchema#integer> ;' + 0AC +
+      '  <http://o/p/knows> _:b ; ex:raw "a < b & \"c\"" .' + 0AC +
+      '_:b ex:name "Bo" ; ex:self _:b .', '') ;
+    doc := Rdf.RdfXml (g) ;
+    Check.That (t, 'RDF/XML written: rdf:RDF with its namespaces', Text.Contains (doc, 'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"') AND Text.Contains (doc, 'xmlns:ns1="http://e/x#"')) ;
+    Check.That (t, 'RDF/XML written: a subject once', Text.Contains (doc, 'rdf:about="http://e/a"')) ;
+    Check.That (t, 'RDF/XML written: a language tag', Text.Contains (doc, 'xml:lang="en"')) ;
+    Check.That (t, 'RDF/XML written: a datatype', Text.Contains (doc, 'rdf:datatype="http://www.w3.org/2001/XMLSchema#integer"')) ;
+    Check.That (t, 'RDF/XML written: a blank node by id', Text.Contains (doc, 'rdf:nodeID="')) ;
+    Check.That (t, 'RDF/XML written: markup in a literal escaped', Text.Contains (doc, 'a &lt; b &amp; "c"')) ;
+    g2 := Rdf.ParseRdfXml (p, DynStr.Utf8 (p, doc), '') ;
+    a := Blanked (Rdf.NTriples (g)) ;
+    b := Blanked (Rdf.NTriples (g2)) ;
+    Check.EqStrs (t, 'RDF/XML written: read back the same', b, a)
+  EXCEPT
+  | Rdf.SyntaxError (m, l, c) :
+      Check.That (t, 'RDF/XML written: read back: ' + m, FALSE)
+  | Rdf.NotWritable (iri) :
+      Check.That (t, 'RDF/XML written: a predicate refused: ' + iri, FALSE)
+  | Xml.WriteError (m) :
+      Check.That (t, 'RDF/XML written: Xml refused: ' + m, FALSE)
+  END ;
+  Check.That (t, 'RDF/XML: a predicate with no local name is NotWritable', NoLocalName ())
+END XmlWritten ;
+
 PROCEDURE Written () RAISES ValueRange =
 VAR
   p : POOL ;
@@ -777,6 +833,7 @@ BEGIN
     XmlByHand () ;
     JsonLdByHand () ;
     JsonLdWritten () ;
+    XmlWritten () ;
     JsonLdRoundTrips ('ttl.eval.action') ;
     Written () ;
     Recorded () ;

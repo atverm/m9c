@@ -1,18 +1,18 @@
-REVIEW Rdf -- 148 procedures with a body, 112 of them functions; 9 headings in a DEFINITION
+REVIEW Rdf -- 152 procedures with a body, 116 of them functions; 10 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path             112
-  assignments                                   796
-  arguments                                    3229
-  RETURN values                                 259
-  operands of a comparison or an operator       718
+  functions answering on every path             116
+  assignments                                   817
+  arguments                                    3283
+  RETURN values                                 263
+  operands of a comparison or an operator       748
   CASE labels                                     0
   THREAD arguments                                0
-  CASE over variants, proved total                3
+  CASE over variants, proved total                4
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                     8   ParseTurtle.scratch, ParseNTriples.scratch, NTriples.scratch, Turtle.scratch, XmlLiteral.scratch, ParseRdfXml.scratch, +2 more
+  local pools                                     9   ParseTurtle.scratch, ParseNTriples.scratch, NTriples.scratch, Turtle.scratch, XmlLiteral.scratch, ParseRdfXml.scratch, +3 more
   pool parameters                                49   NewGraph, Hold, Add, Fresh, Labelled, BlankLabel, +43 more
   KEPT parameters                                 8   AddDefault, AddDefault, CopyCtx, DefineTerm, ProcessContext, AddTo, +2 more
   HEAP named                                      0
@@ -29,8 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [REENTRANT]                           0
 
 COUNTED -- how much there was to check
-  CASE statements                                 3
-  RAISE statements                               21
+  CASE statements                                 4
+  RAISE statements                               22
   handlers                                       50
   NEW in the frame                                5
-  NEW in a named pool                            39
+  NEW in a named pool                            41

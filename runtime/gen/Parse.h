@@ -79,6 +79,7 @@ typedef struct Parse_Parser Parse_Parser;
 #define Parse_TkRO INT64_C(65)
 #define Parse_TkGRID INT64_C(66)
 #define Parse_TkKEPT INT64_C(67)
+#define Parse_TkLINK INT64_C(68)
 #define Parse_TkAssign INT64_C(200)
 #define Parse_TkEq INT64_C(201)
 #define Parse_TkNeq INT64_C(202)

@@ -48,7 +48,9 @@ redirects followed before refusing
 GET `url`, following redirects, writing the body to `dest` in
 blocks -- the peak is one block and not one download.  Answers
 the FINAL status; `bytes` is what was written, which is 0 unless
-the status is 200.  `accept` and `cookie` are sent when they are
+the status is 200 -- and on any other status NOTHING is written:
+`dest` is left as it was (until 2026-10-09 a 404's page landed
+there and read as the file on the next run).  `accept` and `cookie` are sent when they are
 not empty.
 
 ### GetText (VAR pool: POOL ; RO url: STR ; RO accept: STR ; RO cookie: STR ; cap: I64 ; VAR status: I64) : STR RAISES TransportError, ValueRange
@@ -177,6 +179,37 @@ it took.  The answer is the LAST one's, whatever its status: a
 503 that outlived the retries comes back as a 503, and a
 transport failure that did is raised as it would have been the
 first time.  Each try is a connection of its own.
+
+### TYPE Form
+
+opaque; lives in a POOL
+
+### NewForm (VAR pool: POOL) : PTR Form IN pool
+
+_(documented with the group below)_
+
+### FormField (VAR f: PTR Form ; RO name: STR ; RO value: STR) RAISES ValueRange
+
+a text field, its value as UTF-8
+
+### FormBytes (VAR f: PTR Form ; RO name: STR ; RO fileName: STR ; RO contentType: STR ; RO b: SLICE OF BYTE)
+
+a file part: `fileName' in its Content-Disposition, `contentType'
+as its Content-Type (application/octet-stream when empty)
+
+### FormBody (VAR pool: POOL ; f: PTR Form) : SLICE OF BYTE RAISES ValueRange
+
+the body, RFC 7578: every part opened by CRLF `--' boundary CRLF,
+its headers, a blank line and its octets, the whole closed by
+`--' boundary `--' CRLF.  A name or file name is written as UTF-8
+between double quotes, a `"', CR or LF in it percent-encoded as
+HTML forms do.  The boundary occurs in no part, so the body is
+the same bytes for the same parts.
+
+### FormType (f: PTR Form) : STR RAISES ValueRange
+
+the request's Content-Type: multipart/form-data with that
+boundary -- one header line's value for Request's `headers'
 
 ### Connect (host: C.ConstPtr ; port: C.Int) : C.Int [SERIAL]
 

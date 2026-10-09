@@ -220,6 +220,12 @@ VAR
   handled : SLICE OF STR ;
   nhandled : I64 ;
   strNode : Ast.Kid ;         (* the SLICE OF CHAR that STR names *)
+  forNames : SLICE OF STR ;   (* the control variables of the FORs being
+                                 walked, innermost last (issue 3) *)
+  forLines : SLICE OF I64 ;
+  nforActive : I64 ;
+  ixDecl : Ast.Kid ;          (* IndexError (index, length : I64), the
+                                 predeclared payload (par 5, 2026-10-09) *)
   consts : SLICE OF Binding ;   (* module CONST name -> literal type *)
   nconsts : I64 ;
   svConsts : I64 ;         (* nconsts before a procedure's own CONSTs *)
@@ -306,7 +312,7 @@ VAR
 (* ---- output ---- *)
 
 PROCEDURE Setup () =
-VAR ch, sn : PTR Ast.Node IN pool ;
+VAR ch, sn, xd, fs, g, il, i1, i2, ty : PTR Ast.Node IN pool ;
 BEGIN
   IF inited THEN RETURN END ;
   inited := TRUE ;
@@ -316,6 +322,31 @@ BEGIN
   Ast.Add (pool, sn, SOME (ch)) ;
   Ast.Add (pool, sn, NONE) ;
   strNode := SOME (sn) ;
+  (* EXCEPTION IndexError (index, length : I64), as it would parse:
+     the payload every index check writes, so a handler's binders
+     are typed (both generators read err->i[0], err->i[1] off the
+     same shape) *)
+  xd := Ast.NewNode (pool, Ast.NExcDecl, 0, 0) ;
+  xd.a := 'IndexError' ;
+  fs := Ast.NewNode (pool, Ast.NFieldSeq, 0, 0) ;
+  g := Ast.NewNode (pool, Ast.NFieldGroup, 0, 0) ;
+  il := Ast.NewNode (pool, Ast.NIdentList, 0, 0) ;
+  i1 := Ast.NewNode (pool, Ast.NIdent, 0, 0) ;
+  i1.a := 'index' ;
+  i2 := Ast.NewNode (pool, Ast.NIdent, 0, 0) ;
+  i2.a := 'length' ;
+  ty := Ast.NewNode (pool, Ast.NQualident, 0, 0) ;
+  ty.a := 'I64' ;
+  Ast.Add (pool, il, SOME (i1)) ;
+  Ast.Add (pool, il, SOME (i2)) ;
+  Ast.Add (pool, g, SOME (il)) ;
+  Ast.Add (pool, g, SOME (ty)) ;
+  Ast.Add (pool, fs, SOME (g)) ;
+  Ast.Add (pool, xd, SOME (fs)) ;
+  ixDecl := SOME (xd) ;
+  forNames := NEW (pool, STR, 64) ;
+  forLines := NEW (pool, I64, 64) ;
+  nforActive := 0 ;
   mods := NEW (pool, ModuleInfo, 8) ;
   errs := NEW (pool, STR, 16) ;
   ledger := NEW (pool, STR, 8) ;
@@ -842,6 +873,7 @@ BEGIN
       IF Text.Eq (mods[m].exNames[i], nm) THEN owner := mods[m].name ; RETURN mods[m].exDecls[i] END
     END
   END ;
+  IF Text.Eq (nm, 'IndexError') THEN RETURN ixDecl END ;
   RETURN NONE
 END ExcDeclOf ;
 
@@ -3251,6 +3283,10 @@ BEGIN
   END ;
   IF Text.Eq (src, '<none>') THEN RETURN Text.StartsWith (dst, 'OPT ') END ;
   IF Text.Eq (dst, '<none>') THEN RETURN Text.StartsWith (src, 'OPT ') END ;
+  (* ADR's answer fits a C pointer parameter of either constness *)
+  IF Text.Eq (src, 'C.Ptr') THEN
+    RETURN Text.Eq (dst, 'C.ConstPtr') OR Text.Eq (dst, 'C.MutPtr')
+  END ;
   (* ARRAY N OF T is the view of all N elements (par 2.2) *)
   IF Text.StartsWith (dst, 'SLICE OF ') AND
      Text.StartsWith (src, 'ARRAY ') THEN
@@ -3463,6 +3499,11 @@ BEGIN
         IF Text.Eq (l, '<real>') AND Text.Eq (r, '<real>') THEN
           RETURN '<real>'
         END ;
+        (* `+' over string and CHAR literals is one string literal
+           (the generators fold it, 2026-10-09) *)
+        IF Text.Eq (e.a, '+') AND IsStrLit (l) AND IsStrLit (r) THEN
+          RETURN 'SLICE OF CHAR'
+        END ;
         RETURN ''
     ELSE
       RETURN ''
@@ -3470,6 +3511,11 @@ BEGIN
   END ;
   RETURN ''
 END LitType ;
+
+PROCEDURE IsStrLit (RO t: STR) : BOOL =
+BEGIN
+  RETURN Text.Eq (t, '<str1>') OR Text.Eq (t, 'SLICE OF CHAR') OR Text.Eq (t, 'CHAR')
+END IsStrLit ;
 
 PROCEDURE ConstClear () =
 BEGIN
@@ -3596,6 +3642,15 @@ BEGIN
           CheckRecordConst (rc, ctx, cd.a)
         END
       END
+    END
+  END ;
+  (* a form the generator cannot emit is refused HERE, by name: a
+     generator error after a clean check reads as a compiler fault
+     (cp-kernel's issue 1, 2026-10-09) *)
+  IF cd.kids[0] IS SOME ce THEN
+    IF LEN (LitType (SOME (ce))) = 0 THEN
+      ErrN (cd, ctx, S3 ('CONST ', cd.a,
+        ': a constant is a literal, a negated number, or + over string and CHAR literals -- compute anything else in a procedure (par 2.2.4)'))
     END
   END ;
   IF cd.kids[0] IS SOME ag THEN
@@ -4717,7 +4772,15 @@ BEGIN
           IF o.kind = Ast.NDesignator THEN
             res := DesigDeclType (o, ctx) ;
             IF e.kids[1] IS SOME b THEN
-              IF b.kind = Ast.NIsSome THEN
+              IF b.kind = Ast.NIsSome AND LEN (b.a) = 0 THEN
+                (* `x IS SOME' / `x IS NONE': a BOOL, nothing bound
+                   (issue 4, 2026-10-09); the operand must still be an
+                   OPT *)
+                t := CanonT (res, 0) ;
+                IF LEN (t) > 0 AND NOT Text.StartsWith (t, 'OPT ') THEN
+                  ErrN (e, ctx, 'IS SOME needs an OPT operand')
+                END
+              ELSIF b.kind = Ast.NIsSome THEN
                 t := CanonT (res, 0) ;
                 res := ResolveType (res) ;
                 IF res IS SOME rr THEN
@@ -4752,7 +4815,11 @@ BEGIN
           ELSE
             t := ExprType (e.kids[0], ctx) ;
             IF e.kids[1] IS SOME b2 THEN
-              IF b2.kind = Ast.NIsSome THEN
+              IF b2.kind = Ast.NIsSome AND LEN (b2.a) = 0 THEN
+                IF LEN (t) > 0 AND NOT Text.StartsWith (t, 'OPT ') THEN
+                  ErrN (e, ctx, 'IS SOME needs an OPT operand')
+                END
+              ELSIF b2.kind = Ast.NIsSome THEN
                 res := NONE ;
                 (* a CALL's result: the binder takes the callee's
                    declared payload type, made self-contained in the
@@ -5445,7 +5512,11 @@ BEGIN
       ErrN (site, ctx, 'ADR exists only inside UNSAFE modules')
     END ;
     Arity (site, ctx, name, 1, nargs) ;
-    RETURN ''
+    (* a C pointer, fitting any C.*Ptr parameter and nothing else:
+       until 2026-10-09 it answered no type, and every ADR argument
+       of every foreign call -- 225 across the library, the last
+       passed-over class on the review pages -- went unexamined *)
+    RETURN 'C.Ptr'
   END ;
   IF Text.Eq (name, 'F32') OR Text.Eq (name, 'F64') THEN
     Arity (site, ctx, name, 1, nargs) ;
@@ -6434,6 +6505,28 @@ BEGIN
   RETURN FALSE
 END HasPatternArm ;
 
+(* the member a CASE label over an enumeration or CASE RECORD names:
+   a bare `Fs', or `Kind.Fs' / `Mod.Kind.Fs' -- the last field of a
+   designator that is nothing but field selectors; '' for any other
+   form.  The qualified spelling was accepted by the checker and
+   refused by the generator until 2026-10-09 (cp-kernel's issue 13),
+   and the totality check skipped it *)
+PROCEDURE LabelName (lv: PTR Ast.Node) : STR =
+VAR i : I64 ;
+BEGIN
+  IF lv.kind # Ast.NDesignator THEN RETURN '' END ;
+  IF lv.nkids = 0 THEN RETURN lv.a END ;
+  FOR i := 0 TO lv.nkids - 1 DO
+    IF lv.kids[i] IS SOME sel THEN
+      IF sel.kind # Ast.NSelField THEN RETURN '' END
+    ELSE
+      RETURN ''
+    END
+  END ;
+  IF lv.kids[lv.nkids - 1] IS SOME last THEN RETURN last.a END ;
+  RETURN ''
+END LabelName ;
+
 PROCEDURE CheckCaseTotal (st: PTR Ast.Node ; RO ctx: STR) =
 VAR
   selTy : STR ;
@@ -6469,10 +6562,10 @@ BEGIN
                 END
               ELSIF lbl.kind = Ast.NLabelRange THEN
                 IF lbl.kids[0] IS SOME lv THEN
-                  IF lv.kind = Ast.NDesignator AND lv.nkids = 0 THEN
-                    IF VariantHas (mi, vi, lv.a) THEN
+                  IF LEN (LabelName (lv)) > 0 THEN
+                    IF VariantHas (mi, vi, LabelName (lv)) THEN
                       IF ncov < LEN (covered) THEN
-                        covered[ncov] := lv.a ;
+                        covered[ncov] := LabelName (lv) ;
                         ncov := ncov + 1 ;
                         labelsVariant := TRUE
                       END
@@ -7171,7 +7264,27 @@ BEGIN
         WalkSeq (st.kids[1], ctx)
     | Ast.NFor :
         CheckForBounds (st, ctx) ;
-        WalkSeq (st.kids[3], ctx)
+        (* a FOR inside a FOR over the SAME control variable clobbers
+           the outer count -- Pascal's rule that a control variable is
+           not assigned inside its loop, applied to the one assignment
+           the language itself makes (cp-kernel's issue 3, 2026-10-09:
+           it compiled, ran, and was wrong) *)
+        FOR j := 0 TO nforActive - 1 DO
+          IF Text.Eq (forNames[j], st.a) THEN
+            ErrN (st, ctx, S4 ('FOR variable ', st.a,
+              ' is the control variable of the enclosing FOR at line ',
+              Cat (ItoA (forLines[j]), ' (par 2.1)')))
+          END
+        END ;
+        IF nforActive < LEN (forNames) THEN
+          forNames[nforActive] := Text.Keep (pool, st.a) ;   (* a copy: module state keeps no view of the tree *)
+          forLines[nforActive] := st.line ;
+          nforActive := nforActive + 1 ;
+          WalkSeq (st.kids[3], ctx) ;
+          nforActive := nforActive - 1
+        ELSE
+          WalkSeq (st.kids[3], ctx)
+        END
     | Ast.NLoop :
         WalkSeq (st.kids[0], ctx)
     | Ast.NBlock :

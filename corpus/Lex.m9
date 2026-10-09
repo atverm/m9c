@@ -125,7 +125,7 @@ CONST
      so alphabetical order buys nothing but the reading.
      Keywords own 7..199 and grow upward; operators start at 200.   *)
   KwFirst  = 7 ;
-  KwLast   = 67 ;         (* grows as keywords are appended *)
+  KwLast   = 68 ;         (* grows as keywords are appended *)
   OpFirst  = 200 ;
 
   KAssign = 200 ; KEq = 201 ; KNeq = 202 ; KLt = 203 ; KLe = 204 ;
@@ -249,6 +249,7 @@ BEGIN
   | 65 : RETURN 'RO'
   | 66 : RETURN 'GRID'
   | 67 : RETURN 'KEPT'
+  | 68 : RETURN 'LINK'
   ELSE RETURN '?'
   END
 END KwName ;

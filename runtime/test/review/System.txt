@@ -3,7 +3,7 @@ REVIEW System -- 28 procedures with a body, 26 of them functions; 17 headings in
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              26
   assignments                                   108
-  arguments                                     126   passed over, a type unknown: 10
+  arguments                                     136
   RETURN values                                  47
   operands of a comparison or an operator        88
   CASE labels                                     3

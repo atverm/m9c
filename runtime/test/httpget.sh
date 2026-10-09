@@ -109,6 +109,10 @@ ck "Accept is sent, and identity is asked for by name" \
 
 ck "a 404 is REPORTED, not raised" \
    "status 404 chars 0" "$("$OUT/httpget" text "$U/404" | head -1)"
+rm -f "$OUT/nf.bin"
+ck "a 404 under GetToFile writes nothing (bytes 0)" \
+   "status 404 bytes 0" "$("$OUT/httpget" file "$U/404" '' '' "$OUT/nf.bin" | head -1)"
+ck "and leaves no file behind" "absent" "$([ -f "$OUT/nf.bin" ] && echo present || echo absent)"
 
 ck "the body is decoded from UTF-8, not from octets" \
    "café — été" "$("$OUT/httpget" text "$U/utf8" | tail -1)"
@@ -189,6 +193,22 @@ ck "a 3 MB POST body arrives whole" \
 
 ck "a 404 to a POST is reported, not raised" \
    "status 404 chars 0" "$($R POST "$U/nowhere" | head -1)"
+
+# Http.FormBody (cp-kernel's issue 17), read by Python's MIME parser:
+# the fields as text past ASCII and empty, a file holding the first
+# boundary the builder would try (so it must choose another), and a
+# file name with a quote in it, percent-encoded as browsers do
+FORM=$("$OUT/httpget" form "$U/form")
+ck "a form POSTed whole" "status 200" "$(echo "$FORM" | sed -n 1p)"
+ck "a form's type is multipart/form-data" "ct|multipart/form-data" "$(echo "$FORM" | sed -n 2p)"
+ck "a text field past ASCII arrives as UTF-8" "field|title|CO₂ at Hyltemossa" "$(echo "$FORM" | sed -n 3p)"
+ck "an empty field is a field" "field|empty|" "$(echo "$FORM" | sed -n 4p)"
+ck "a file holding the first boundary arrives whole: another boundary was chosen" \
+   "file|data|obs.bin|application/octet-stream|35|$(printf 'before\r\n--m9-form-boundary-0\r\nafter' | sha256sum | cut -c1-16)" \
+   "$(echo "$FORM" | sed -n 5p)"
+ck "a file name with a quote, its type as given" \
+   "file|meta|a%22b.json|application/json|8|$(printf '{"k": 1}' | sha256sum | cut -c1-16)" \
+   "$(echo "$FORM" | sed -n 6p)"
 
 ck "an empty method is refused by name" \
    "transport: no method" "$($R '' "$U/plain" || true)"

@@ -1,18 +1,18 @@
-REVIEW Pg -- 31 procedures with a body, 25 of them functions; 20 headings in a DEFINITION
+REVIEW Pg -- 32 procedures with a body, 26 of them functions; 21 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              25
-  assignments                                   111
-  arguments                                     163   passed over, a type unknown: 7
-  RETURN values                                  37
-  operands of a comparison or an operator       108
+  functions answering on every path              26
+  assignments                                   112
+  arguments                                     186
+  RETURN values                                  38
+  operands of a comparison or an operator       113
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                     6   Connect.scratch, Reconnect.scratch, Query.scratch, Exec.scratch, Script.scratch, F64Cell.scratch
+  local pools                                     7   Connect.scratch, Reconnect.scratch, Query.scratch, Exec.scratch, Script.scratch, ArrayLiteral.scratch, +1 more
   pool parameters                                 7   CText, CStr, Open, Connect, ParamBlock, Run, +1 more
   KEPT parameters                                 1   Connect
   HEAP named                                      0

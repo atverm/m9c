@@ -708,7 +708,16 @@ baseline x86\-64 the flag changes no instruction.
 .IP \(bu 3
 and, when linking, one object per module in the import closure it has
 just resolved \(em these are not guessed, they are the modules it read
-and checked a moment ago \(em together with the runtime, then
+and checked a moment ago \(em together with the runtime, then what the
+closure's foreign units
+.B LINK
+(a library name as
+.BR \-l NAME,
+a word beginning with
+.B \-
+as it is, a shim source beside the runtime; NetCDF, Grib, ZarrStore
+and Pg name theirs, so a program that imports one links with no flag;
+since 0.19.0), then
 .B \-Wl,\-\-as\-needed \-lssl \-lcrypto
 and
 .BR \-lm ,

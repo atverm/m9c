@@ -31,6 +31,14 @@ function as DynStr.Eq and deliberately so: this module is the
 inventory, and a caller who has Text imported should not have to
 import DynStr as well to compare two slices.
 
+### Compare (RO a: STR ; RO b: STR) : I64
+
+-1, 0 or 1: the order Sort.Strs sorts by -- code point by code
+point from the first, and the shorter first where one is a
+prefix of the other.  `<' on two strings is refused by design
+(par 2.3); this is the ordered comparison, for timestamps and
+names (an ISO 8601 timestamp orders as text).  2026-10-09.
+
 ### Find (RO hay: STR ; RO needle: STR) : I64
 
 first index, or -1.  An empty needle is found at 0, which is the
@@ -188,6 +196,20 @@ RFC 4648 base64 of the octets, padded with =, no line breaks:
 Python's base64.b64encode.  Octets to TEXT: a key in a header, a
 token in a URL (not URL-safe; that alphabet is not here), a mail
 body line
+
+### ToBase64Url (RO b: SLICE OF BYTE) : STR
+
+RFC 4648 section 5, base64url WITHOUT padding: `-' and `_' for
+`+' and `/', no `=' -- what ICOS object ids, JWTs and URL tokens
+use; Python's base64.urlsafe_b64encode (b).rstrip (b'=')
+(cp-kernel's issue 19, 2026-10-09).
+
+### FromBase64Url (RO s: STR) : SLICE OF BYTE RAISES ValueRange
+
+the octets back from base64url, padding optional: a length of 1
+mod 4 cannot be, and any character outside the url alphabet (a
+`+' or `/' included) RAISES ValueRange, as does `=' anywhere but
+at the end of a padded group.
 
 ### FromBase64 (RO s: STR) : SLICE OF BYTE RAISES ValueRange
 

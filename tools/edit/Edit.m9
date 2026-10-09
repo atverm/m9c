@@ -131,21 +131,28 @@ PROCEDURE Respond (fd: I64 ; status: I64 ; RO ctype: STR ;
 VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
-  b : SLICE OF BYTE ;
+  b, bw : SLICE OF BYTE ;
   n : I64 ;
 BEGIN
+  (* the body is TEXT -- a page read by Io.ReadFile is scalars since
+     2026-10-09 -- and goes on the wire as UTF-8, its length in
+     octets; narrowed to Latin-1, as until then, the first dash
+     past U+00FF raised ValueRange and the page did not serve *)
+  bw := DynStr.Utf8 (scratch, body) ;
   d := DynStr.New (scratch) ;
   StatusLine (d, status) ;
   DynStr.Append (d, 'Content-Type: ') ;
   DynStr.Append (d, ctype) ;
   CrLf (d) ;
   DynStr.Append (d, 'Content-Length: ') ;
-  DynStr.AppendI64 (d, LEN (body)) ;
+  DynStr.AppendI64 (d, LEN (bw)) ;
   CrLf (d) ;
   CrLf (d) ;
-  IF NOT headOnly THEN DynStr.Append (d, body) END ;
   b := DynStr.Bytes (scratch, DynStr.View (d), FALSE) ;
-  n := I64 (Write (C.Int (fd), ADR (b), C.SizeT (LEN (b))))
+  n := I64 (Write (C.Int (fd), ADR (b), C.SizeT (LEN (b)))) ;
+  IF NOT headOnly AND LEN (bw) > 0 THEN
+    n := I64 (Write (C.Int (fd), ADR (bw), C.SizeT (LEN (bw))))
+  END
 EXCEPT
 | ValueRange :
     n := 0
@@ -277,7 +284,10 @@ VAR
 BEGIN
   name := ModName (src, ok) ;
   IF NOT ok THEN RETURN src END ;
-  Io.WriteFile (workDir + '/' + name + '.m9', src) ;
+  (* src holds the request's OCTETS as CHARs: written as the bytes
+     they are, not encoded again (Io.WriteFile is UTF-8 since
+     2026-10-09; the tutor's rule) *)
+  Io.WriteFileBytes (workDir + '/' + name + '.m9', DynStr.Bytes (scratch, src, FALSE)) ;
   cmd := DynStr.New (scratch) ;
   DynStr.Append (cmd, 'cd ') ;
   DynStr.Append (cmd, workDir) ;
@@ -362,7 +372,10 @@ BEGIN
     RETURN Diag.Json (pool, Diag.One (pool, 1, 1,
                         'the first line must be:  MODULE Name ;'))
   END ;
-  Io.WriteFile (workDir + '/' + name + '.m9', src) ;
+  (* src holds the request's OCTETS as CHARs: written as the bytes
+     they are, not encoded again (Io.WriteFile is UTF-8 since
+     2026-10-09; the tutor's rule) *)
+  Io.WriteFileBytes (workDir + '/' + name + '.m9', DynStr.Bytes (scratch, src, FALSE)) ;
   (* Diag.Check runs `(cd workDir && m9c --check NAME.m9)` and
      collects the output in workDir/ck.txt, named as seen from HERE
      because the redirection sits outside the subshell *)
@@ -406,7 +419,10 @@ BEGIN
   DynStr.Append (cmd,
     ' && rm -f prog run.txt cc.txt *.m9 && rm -rf out && mkdir out') ;
   rc := Io.Run (DynStr.View (cmd)) ;
-  Io.WriteFile (workDir + '/' + name + '.m9', src) ;
+  (* src holds the request's OCTETS as CHARs: written as the bytes
+     they are, not encoded again (Io.WriteFile is UTF-8 since
+     2026-10-09; the tutor's rule) *)
+  Io.WriteFileBytes (workDir + '/' + name + '.m9', DynStr.Bytes (scratch, src, FALSE)) ;
 
   cmd := DynStr.New (scratch) ;
   DynStr.Append (cmd, 'cd ') ;

@@ -106,6 +106,9 @@ type
     roFrom : TStringList;              { scope index=what|line: read-only storage a name was given }
     roFresh : TStringList;             { RoFreshWalk: `name.field' paths of a marked copy given fresh storage }
     resolvedIn : string;               { the module ResolveType's last lookup ended in, '' when none }
+    ixD : TNode;                       { EXCEPTION IndexError (index, length : I64), built once }
+    forNames : array of string;        { the FORs being walked, innermost last (issue 3) }
+    forLines : array of Integer;
     mro : TStringList;                 { ModRoSeed: module variable=what|line, per unit }
     nAgg : Integer;                    { aggregate CONSTs in this unit:
                                          the walk that guards them is
@@ -130,6 +133,7 @@ type
     function RaisesOf (p: TNode): TStringArray;
     function ExcKnown (const qual, nm: string): Boolean;
     function ExcDeclOf (const qual, nm: string; out owner: string): TNode;
+    function IxDecl: TNode;
     function ExcFieldType (decl: TNode; const owner: string; k: Integer): TNode;
     procedure CheckExcName (n: TNode; const ctx: string);
     function TypeKnown (const qual, nm: string): Boolean;
@@ -526,6 +530,8 @@ begin
     Exit ((src = 'CHAR') or (src = 'SLICE OF CHAR'));
   if src = '<none>' then Exit (StartsWithS (dst, 'OPT '));
   if dst = '<none>' then Exit (StartsWithS (src, 'OPT '));
+  { ADR's answer fits a C pointer parameter of either constness }
+  if src = 'C.Ptr' then Exit ((dst = 'C.ConstPtr') or (dst = 'C.MutPtr'));
   { ARRAY N OF T is the view of all N elements (par 2.2) }
   if StartsWithS (dst, 'SLICE OF ') and StartsWithS (src, 'ARRAY ') then
     Exit (ElemOfArray (src) = Copy (dst, 10, MaxInt));
@@ -593,6 +599,11 @@ end;
 { type of a module-level CONST expression: literals and literal
   arithmetic, an aggregate of literals; anything fancier stays
   unknown }
+function IsStrLit (const t: string): Boolean;
+begin
+  Result := (t = '<str1>') or (t = 'SLICE OF CHAR') or (t = 'CHAR');
+end;
+
 function LitType (e: TNode): string;
 var l, r : string;
 begin
@@ -609,7 +620,7 @@ begin
     nkReal : Result := '<real>';
     nkChar : Result := 'CHAR';
     nkString :
-      if Length (e.a) = 1 then Result := '<str1>'
+      if Utf8Len (e.a) = 1 then Result := '<str1>'
       else Result := 'SLICE OF CHAR';
     nkTrue, nkFalse : Result := 'BOOL';
     nkParen, nkUn : Result := LitType (e.kids[0]);
@@ -618,7 +629,9 @@ begin
         l := LitType (e.kids[0]);
         r := LitType (e.kids[1]);
         if (l = '<int>') and (r = '<int>') then Result := '<int>'
-        else if (l = '<real>') and (r = '<real>') then Result := '<real>';
+        else if (l = '<real>') and (r = '<real>') then Result := '<real>'
+        { `+' over string and CHAR literals is one string literal }
+        else if (e.a = '+') and IsStrLit (l) and IsStrLit (r) then Result := 'SLICE OF CHAR';
       end;
   end;
 end;
@@ -922,6 +935,10 @@ begin
         ' (par 2.2.4)');
     CheckRecordConst (ag, ctx, cd.a);
   end;
+  { a form the generator cannot emit is refused here, by name (mirrors Sem) }
+  if (ag <> nil) and (LitType (ag) = '') then
+    ErrN (cd, ctx, 'CONST ' + cd.a +
+      ': a constant is a literal, a negated number, or + over string and CHAR literals -- compute anything else in a procedure (par 2.2.4)');
   if (ag = nil) or (ag.kind <> nkAggregate) then Exit;
   Inc (nAgg);
   if where = 1 then
@@ -1134,11 +1151,35 @@ function QualifyTypeIn (t: TNode; const modName: string): TNode; forward;
 { the EXCEPTION declaration a handler names and the module that
   declares it: qualified, that module; bare, the current module first,
   then any (as ExcKnown finds it); nil for a predeclared one }
+{ the predeclared payload, as EXCEPTION IndexError (index, length : I64)
+  would parse (mirrors Sem.Setup) }
+function TSem.IxDecl: TNode;
+var xd, fs, g, il, i1, i2, ty : TNode;
+begin
+  if ixD = nil then
+  begin
+    xd := TNode.Create (nkExcDecl); xd.a := 'IndexError';
+    fs := TNode.Create (nkFieldSeq);
+    g := TNode.Create (nkFieldGroup);
+    il := TNode.Create (nkIdentList);
+    i1 := TNode.Create (nkIdent); i1.a := 'index';
+    i2 := TNode.Create (nkIdent); i2.a := 'length';
+    ty := TNode.Create (nkQualident); ty.a := 'I64';
+    il.Add (i1); il.Add (i2);
+    g.Add (il); g.Add (ty);
+    fs.Add (g);
+    xd.Add (fs);
+    ixD := xd;
+  end;
+  Result := ixD;
+end;
+
 function TSem.ExcDeclOf (const qual, nm: string; out owner: string): TNode;
 var
   m : TModuleInfo;
   i, j : Integer;
 begin
+  if nm = 'IndexError' then begin owner := ''; Exit (IxDecl); end;
   Result := nil;
   owner := '';
   if qual <> '' then
@@ -3299,6 +3340,29 @@ var
     and Sem.m9 passed over every use of every loop variable.
       bound -- the bounds' type when they are an enumeration's
       enum  -- whether they are }
+  { a FOR inside a FOR over the SAME control variable (mirrors Sem's
+    NFor arm, cp-kernel's issue 3, 2026-10-09) }
+  procedure CheckForNest (st: TNode);
+  var j : Integer;
+  begin
+    for j := 0 to High (forNames) do
+      if forNames[j] = st.a then
+        ErrN (st, ctx, 'FOR variable ' + st.a +
+          ' is the control variable of the enclosing FOR at line ' +
+          IntToStr (forLines[j]) + ' (par 2.1)');
+  end;
+  procedure ForPush (st: TNode);
+  begin
+    SetLength (forNames, Length (forNames) + 1);
+    SetLength (forLines, Length (forLines) + 1);
+    forNames[High (forNames)] := st.a;
+    forLines[High (forLines)] := st.line;
+  end;
+  procedure ForPop;
+  begin
+    SetLength (forNames, Length (forNames) - 1);
+    SetLength (forLines, Length (forLines) - 1);
+  end;
   procedure CheckForVar (st: TNode; const bound: string; enum: Boolean);
   var vt : string;
   begin
@@ -3969,7 +4033,7 @@ var
       if not curUnsafe then
         ErrN (site, ctx, 'ADR exists only inside UNSAFE modules');
       Arity (1);
-      Exit ('');
+      Exit ('C.Ptr');       { a C pointer, fitting any C.*Ptr parameter (mirrors Sem) }
     end;
     if (name = 'F32') or (name = 'F64') then
     begin
@@ -4639,7 +4703,7 @@ var
       nkReal : Result := '<real>';
       nkChar : Result := 'CHAR';
       nkString :
-        if Length (e.a) = 1 then Result := '<str1>'
+        if Utf8Len (e.a) = 1 then Result := '<str1>'
         else Result := 'SLICE OF CHAR';
       nkTrue, nkFalse : Result := 'BOOL';
       nkNoneLit : Result := '<none>';
@@ -4785,7 +4849,14 @@ var
           begin
             NoteUse (e.kids[0]);
             res := DesigDeclType (e.kids[0], True);
-            if e.kids[1].kind = nkIsSome then
+            if (e.kids[1].kind = nkIsSome) and (e.kids[1].a = '') then
+            begin
+              { `x IS SOME' / `x IS NONE': a BOOL, nothing bound (mirrors Sem) }
+              t := CT (res);
+              if (t <> '') and not StartsWithS (t, 'OPT ') then
+                ErrN (e, ctx, 'IS SOME needs an OPT operand');
+            end
+            else if e.kids[1].kind = nkIsSome then
             begin
               t := CT (res);
               res := ResolveType (res);
@@ -4811,7 +4882,12 @@ var
           else
           begin
             t := ExprType (e.kids[0]);
-            if e.kids[1].kind = nkIsSome then
+            if (e.kids[1].kind = nkIsSome) and (e.kids[1].a = '') then
+            begin
+              if (t <> '') and not StartsWithS (t, 'OPT ') then
+                ErrN (e, ctx, 'IS SOME needs an OPT operand');
+            end
+            else if e.kids[1].kind = nkIsSome then
             begin
               res := nil;
               { a CALL's result: the binder takes the callee's declared
@@ -5205,8 +5281,11 @@ var
               ErrN (st, ctx, 'FOR over an enumeration takes no BY step');
             { the loop variable keeps its declared enumeration type }
             CheckForVar (st, t, True);
+            CheckForNest (st);
             pre := OwnSnap;
+            ForPush (st);
             WalkSeq (st.kids[3]);
+            ForPop;
             hpre := OwnSnap;
             OwnRestore (pre);
             OwnMergeMoves (hpre);
@@ -5223,8 +5302,11 @@ var
               ErrN (st, ctx, 'FOR step must be an integer, not ' + TyName (u));
           end;
           CheckForVar (st, '', False);
+          CheckForNest (st);
           pre := OwnSnap;
+          ForPush (st);
           WalkSeq (st.kids[3]);
+          ForPop;
           hpre := OwnSnap;
           OwnRestore (pre);
           OwnMergeMoves (hpre);
@@ -5263,10 +5345,9 @@ var
                   vname := lbl.a;
                   BindPattern (lbl, EscRootOf (st.kids[0]));
                 end
-                else if (lbl.kids[0].kind = nkDesignator) and
-                        (Length (lbl.kids[0].kids) = 0) and
+                else if (LabelName (lbl.kids[0]) <> '') and
                         (lbl.kids[1] = nil) then
-                  vname := lbl.kids[0].a;
+                  vname := LabelName (lbl.kids[0]);
                 if (vname <> '') and
                    ((haveSelVi and (InList (vname, selVi.variants)))
                     or ((not haveSelVi) and VariantOwner (vname, vi))) then

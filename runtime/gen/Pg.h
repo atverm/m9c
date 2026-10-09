@@ -33,6 +33,7 @@ bool Pg_Alive (Pg_Conn * c, m9_state *err);
 void Pg_Close (Pg_Conn * *c, m9_pool *c_pool, m9_state *err);
 Pg_Result * Pg_Query (m9_pool *pool, Pg_Conn * c, m9_sl_CHAR sql, m9_sl_m9_sl_CHAR params, m9_state *err);
 int64_t Pg_Exec (Pg_Conn * c, m9_sl_CHAR sql, m9_sl_m9_sl_CHAR params, m9_state *err);
+m9_sl_CHAR Pg_ArrayLiteral (m9_sl_m9_sl_CHAR items, m9_state *err);
 void Pg_Script (Pg_Conn * c, m9_sl_CHAR sql, m9_state *err);
 void Pg_Begin (Pg_Conn * c, m9_state *err);
 void Pg_Commit (Pg_Conn * c, m9_state *err);

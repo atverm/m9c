@@ -1,11 +1,11 @@
-REVIEW Fmt -- 24 procedures with a body, 18 of them functions; 10 headings in a DEFINITION
+REVIEW Fmt -- 25 procedures with a body, 19 of them functions; 11 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              18
-  assignments                                   190
+  functions answering on every path              19
+  assignments                                   200
   arguments                                     138
-  RETURN values                                  38
-  operands of a comparison or an operator       245
+  RETURN values                                  39
+  operands of a comparison or an operator       256
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0

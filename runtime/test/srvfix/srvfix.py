@@ -569,13 +569,8 @@ for path, want, ctype in ((b"/pub/page.html", FILES["page.html"], "text/html; ch
                           (b"/pub/%C3%A9t%C3%A9.txt", FILES["\u00e9t\u00e9.txt"],
                            "text/plain; charset=utf-8"),
                           (b"/pub/data.bin", DATA, "application/octet-stream")):
-    if WINE and b"%C3" in path:
-        # Io's paths are octets and Windows reads a narrow path in the
-        # ANSI code page, not UTF-8: a library-wide Windows gap (m9rt
-        # opens with fopen), owed, not this server's
-        print("srvfix: SKIP under wine: a UTF-8 file name (Io's Windows paths are ANSI)",
-              file=sys.stderr)
-        continue
+    # a UTF-8 file name runs under wine too since 2026-10-09: m9rt
+    # opens a path through _wfopen from its UTF-8
     st, hd, body = get(P, path, b"Accept-Encoding: gzip\r\n")
     ck(st == 200 and body == want and hd.get("content-type") == ctype and
        hd.get("x-content-type-options") == "nosniff" and "content-encoding" not in hd,

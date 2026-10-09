@@ -31,6 +31,7 @@ type
     tyFromDef : array of Boolean;
     excN : array of string;     { module exceptions }
     excF : array of TNode;      { payload fieldseq or nil }
+    ixF : TNode;                { IndexError's (index, length : I64) }
     excDef : array of Boolean;
     modVarN : array of string;  { STATEFUL module state -> statics }
     modVarT : array of TNode;
@@ -101,6 +102,7 @@ type
     function ArrBucket (elem: TNode): TStringList;
     function SliceTy (elem: TNode): string;
     function GridTy (elem: TNode; const rank: string): string;
+    function IxFields: TNode;
     function IsAllArg (e: TNode): Boolean;
     function ArrCount (e: TNode): string;
     function ArrEnumBoundNode (b: TNode): TNode;
@@ -130,6 +132,8 @@ type
     function OriginPool (k: TNode): string;
     procedure Err (n: TNode; const msg: string);
     function CharVal (const lit: string): Int64;
+    function StrLeaf (e: TNode; var s: string): Boolean;
+    function FoldStr (e: TNode): TNode;
     function StrCodes (const s: string; n: TNode): string;
     procedure AddAgg (const nm: string; ag: TNode);
     function RecordConstQual (e: TNode): TNode;
@@ -418,7 +422,7 @@ begin
               (RecordConstQual (d.kids[j].kids[0]) <> nil)) then
             AddAgg (d.kids[j].a, d.kids[j].kids[0])
           else
-            consts.AddObject (d.kids[j].a, TObject (d.kids[j].kids[0]));
+            consts.AddObject (d.kids[j].a, TObject (FoldStr (d.kids[j].kids[0])));
       nkExcSection :
         for j := 0 to High (d.kids) do
         begin
@@ -1392,7 +1396,7 @@ begin
     nkReal : Result := 'F64';
     nkChar : Result := 'CHAR';
     nkString :
-      if Length (e.a) = 1 then Result := 'STR1' else Result := 'SLICE';
+      if Utf8Len (e.a) = 1 then Result := 'STR1' else Result := 'SLICE';
     nkTrue, nkFalse : Result := 'BOOL';
     nkParen : Result := TagOfExpr (e.kids[0]);
     nkDesignator :
@@ -1487,6 +1491,33 @@ begin
     Exit (IsAdaptive (e.kids[0]) and IsAdaptive (e.kids[1]));
   v := ConstValue (e);
   if v <> nil then Exit (IsAdaptive (v));
+end;
+
+{ a CONST built with `+' over string and CHAR literals is FOLDED into
+  one literal where it is registered (mirrors Gen.FoldStr, 2026-10-09) }
+function TGen.StrLeaf (e: TNode; var s: string): Boolean;
+begin
+  Result := False;
+  if e = nil then Exit;
+  if e.kind = nkString then begin s := s + e.a; Exit (True); end;
+  if e.kind = nkChar then begin s := s + Utf8Enc (Cardinal (CharVal (e.a))); Exit (True); end;
+  if e.kind = nkParen then Exit (StrLeaf (e.kids[0], s));
+  if (e.kind = nkBin) and (e.a = '+') then
+    if StrLeaf (e.kids[0], s) then Exit (StrLeaf (e.kids[1], s));
+end;
+
+function TGen.FoldStr (e: TNode): TNode;
+var s : string; n : TNode;
+begin
+  Result := e;
+  if (e = nil) or (e.kind <> nkBin) or (e.a <> '+') then Exit;
+  s := '';
+  if StrLeaf (e, s) then
+  begin
+    n := TNode.Create (nkString);
+    n.a := s; n.line := e.line; n.col := e.col;
+    Result := n;
+  end;
 end;
 
 function TGen.CharVal (const lit: string): Int64;
@@ -1602,7 +1633,7 @@ begin
     nkString :
       if Length (e.a) > 0 then
         Result := '{ (uint32_t *) ' + sname + ', ' +
-          IntToStr (Length (e.a)) + ' }'
+          IntToStr (Utf8Len (e.a)) + ' }'
       else
         Result := '{ 0, 0 }';
     nkUn :
@@ -1619,7 +1650,7 @@ procedure TGen.StrC (tgt: TStringList; e: TNode; const sname: string);
 begin
   if (e <> nil) and (e.kind = nkString) and (Length (e.a) > 0) then
     tgt.Add ('static const uint32_t ' + sname + '[' +
-      IntToStr (Length (e.a)) + '] = { ' + StrCodes (e.a, e) + ' };');
+      IntToStr (Utf8Len (e.a)) + '] = { ' + StrCodes (e.a, e) + ' };');
 end;
 
 procedure TGen.RecStrs (tgt: TStringList; e: TNode; const base: string);
@@ -1697,13 +1728,14 @@ var
   i : Integer;
   cs : string;
 begin
-  { corpus strings are ASCII; anything else is a gen error for now }
+  { every Unicode scalar as its code: the literal's text is UTF-8
+    octets here (M9AST.Utf8Next), scalars on the M9 side }
   cs := '';
-  for i := 1 to Length (s) do
+  i := 1;
+  while i <= Length (s) do
   begin
-    if Ord (s[i]) > 127 then Err (n, 'non-ASCII string literal unsupported yet');
     if i > 1 then cs := cs + ', ';
-    cs := cs + IntToStr (Ord (s[i])) + 'u';
+    cs := cs + IntToStr (Utf8Next (s, i)) + 'u';
   end;
   Result := cs;
 end;
@@ -2581,7 +2613,7 @@ var
   svHoist : Boolean;
   l, r, lt, rt, w, tg, sh : string;
   cop : string;
-  j, k, ext0, nx : Integer;
+  i, j, k, ext0, nx : Integer;
   inr, tyk : TNode;
 begin
   Result := '0';
@@ -2595,8 +2627,11 @@ begin
       if (want = 'F32') and (e.a <> 'NAN') then Result := e.a + 'f' else Result := e.a;
     nkChar : Result := IntToStr (CharVal (e.a)) + 'u';
     nkString :
-      if (want = 'CHAR') and (Length (e.a) = 1) then
-        Result := IntToStr (Ord (e.a[1])) + 'u'
+      if (want = 'CHAR') and (Utf8Len (e.a) = 1) then
+      begin
+        i := 1;
+        Result := IntToStr (Utf8Next (e.a, i)) + 'u'   { the scalar, not its first byte }
+      end
       else if Length (e.a) = 0 then
         Result := '(m9_sl_CHAR){ NULL, 0 }'
       else if dry > 0 then
@@ -2607,9 +2642,9 @@ begin
           literal (Reason's 'Not Found') must not dangle }
         l := 'm9s' + IntToStr (litBuf.Count);
         litBuf.Add ('static const uint32_t ' + l + '[' +
-          IntToStr (Length (e.a)) + '] = { ' + StrCodes (e.a, e) + ' };');
+          IntToStr (Utf8Len (e.a)) + '] = { ' + StrCodes (e.a, e) + ' };');
         Result := '((m9_sl_CHAR){ (uint32_t *) ' + l + ', ' +
-          IntToStr (Length (e.a)) + ' })';
+          IntToStr (Utf8Len (e.a)) + ' })';
       end;
     nkTrue : Result := 'true';
     nkFalse : Result := 'false';
@@ -2751,6 +2786,21 @@ begin
         begin
           Err (e, 'SLICE() of non-slice unsupported yet');
           Exit ('0');
+        end;
+      end;
+    nkIs :
+      begin
+        { `x IS SOME' / `x IS NONE' with no binder: an OPT is a nullable
+          pointer in C (mirrors Gen) }
+        if (e.kids[1] <> nil) and (e.kids[1].kind = nkIsSome) and (e.kids[1].a = '') then
+        begin
+          if e.kids[1].f1 then Result := '(' + EX (e.kids[0], '') + ' == NULL)'
+          else Result := '(' + EX (e.kids[0], '') + ' != NULL)';
+        end
+        else
+        begin
+          Err (e, 'IS with a binder is the whole condition of an IF, ELSIF or WHILE');
+          Result := '0';
         end;
       end;
     nkBin :
@@ -2939,6 +2989,27 @@ end;
   handler for ZarrStore.IOError compiled to a test against
   &Io_IOError and matched nothing, found by the tutorial service's
   no-network zarr cell. }
+{ IndexError (index, length : I64) as the field sequence a declared
+  exception would have parsed to (mirrors Sem/Gen.IxFields) }
+function TGen.IxFields: TNode;
+var fs, g, il, i1, i2, ty : TNode;
+begin
+  if ixF = nil then
+  begin
+    fs := TNode.Create (nkFieldSeq);
+    g := TNode.Create (nkFieldGroup);
+    il := TNode.Create (nkIdentList);
+    i1 := TNode.Create (nkIdent); i1.a := 'index';
+    i2 := TNode.Create (nkIdent); i2.a := 'length';
+    ty := TNode.Create (nkQualident); ty.a := 'I64';
+    il.Add (i1); il.Add (i2);
+    g.Add (il); g.Add (ty);
+    fs.Add (g);
+    ixF := fs;
+  end;
+  Result := ixF;
+end;
+
 function TGen.ExcRef (const qual, nm: string; out fields: TNode): string;
 var i : Integer;
 begin
@@ -2960,8 +3031,12 @@ begin
       fields := excF[i];
       Exit (modName + '_' + nm);
     end;
-  if (nm = 'Overflow') or (nm = 'IndexError') or
-     (nm = 'OutOfMemory') or (nm = 'ValueRange') then
+  if nm = 'IndexError' then
+  begin
+    fields := IxFields;
+    Exit ('m9_exc_IndexError');
+  end;
+  if (nm = 'Overflow') or (nm = 'OutOfMemory') or (nm = 'ValueRange') then
     Exit ('m9_exc_' + nm);
   i := extExcs.IndexOfName (nm);
   if i >= 0 then
@@ -3206,7 +3281,7 @@ begin
       begin
         { IF x IS SOME p THEN: bind the payload, test for NULL }
         if (st.kids[0].kind = nkIs) and
-           (st.kids[0].kids[1].kind = nkIsSome) then
+           (st.kids[0].kids[1].kind = nkIsSome) and (st.kids[0].kids[1].a <> '') then
         begin
           vtN := OptInner (st.kids[0].kids[0]);
           if vtN = nil then
@@ -3282,7 +3357,7 @@ begin
       begin
         { WHILE x IS SOME p DO: rebind per iteration }
         if (st.kids[0].kind = nkIs) and
-           (st.kids[0].kids[1].kind = nkIsSome) then
+           (st.kids[0].kids[1].kind = nkIsSome) and (st.kids[0].kids[1].a <> '') then
         begin
           vtN := OptInner (st.kids[0].kids[0]);
           if vtN = nil then
@@ -3509,10 +3584,9 @@ begin
                   end;
                 end
                 else if (lbl.kind = nkLabelRange) and
-                        (lbl.kids[0].kind = nkDesignator) and
-                        (Length (lbl.kids[0].kids) = 0) and
+                        (LabelName (lbl.kids[0]) <> '') and
                         (lbl.kids[1] = nil) then
-                  Line (pbuf, ind, 'case ' + l + lbl.kids[0].a + ':')
+                  Line (pbuf, ind, 'case ' + l + LabelName (lbl.kids[0]) + ':')
                 else
                   Err (st, 'CASE label form unsupported yet');
               end;
@@ -3548,8 +3622,11 @@ begin
                 if (lbl.kind = nkLabelRange) and (lbl.kids[1] = nil) then
                 begin
                   if (lbl.kids[0].kind = nkString) and
-                     (Length (lbl.kids[0].a) = 1) then
-                    r := IntToStr (Ord (lbl.kids[0].a[1])) + 'u'
+                     (Utf8Len (lbl.kids[0].a) = 1) then
+                  begin
+                    sv := 1;
+                    r := IntToStr (Utf8Next (lbl.kids[0].a, sv)) + 'u';
+                  end
                   else if lbl.kids[0].kind = nkChar then
                     r := IntToStr (CharVal (lbl.kids[0].a)) + 'u'
                   else if lbl.kids[0].kind = nkInt then
@@ -3997,7 +4074,7 @@ begin
          (gp.body.kids[ci2].kind = nkConstSection) then
         for cj2 := 0 to High (gp.body.kids[ci2].kids) do
           consts.AddObject (gp.body.kids[ci2].kids[cj2].a,
-                            TObject (gp.body.kids[ci2].kids[cj2].kids[0]));
+                            TObject (FoldStr (gp.body.kids[ci2].kids[cj2].kids[0])));
   if retC <> 'void' then
   begin
     if Pos ('*', retC) > 0 then init := ' = NULL'
@@ -4419,11 +4496,11 @@ begin
     else if (e.kind = nkString) and (Length (e.a) > 0) then
     begin
       hdrConsts.Add ('static const uint32_t ' + modName + '_' +
-        consts[ci] + '_d[' + IntToStr (Length (e.a)) + '] = { ' +
+        consts[ci] + '_d[' + IntToStr (Utf8Len (e.a)) + '] = { ' +
         StrCodes (e.a, e) + ' };');
       hdrConsts.Add ('#define ' + modName + '_' + consts[ci] +
         ' ((m9_sl_CHAR){ (uint32_t *) ' + modName + '_' + consts[ci] +
-        '_d, ' + IntToStr (Length (e.a)) + ' })');
+        '_d, ' + IntToStr (Utf8Len (e.a)) + ' })');
     end
     { a CHAR constant: one code point, emitted like the char literal it
       names -- <cp>u -- so `s + NL` joins it as a code point (par 2.2) }

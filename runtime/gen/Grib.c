@@ -81,20 +81,37 @@ Grib_File * Grib_Open (m9_pool *pool, m9_sl_CHAR path, m9_state *err)
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE pb = {0}; (void) pb;
   m9_sl_BYTE mb = {0}; (void) mb;
+  m9_sl_BYTE ub = {0}; (void) ub;
+  int64_t i = 0; (void) i;
   Grib_File * f = NULL; (void) f;
   void * fp = NULL; (void) fp;
-  { __typeof__(pb) m9v = DynStr_Bytes (&(scratch), path, true, err);
+  { __typeof__(pb) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 ((DynStr_Utf8 (&(scratch), path, err)).len, INT64_C(1), err), err);
     if (err->exc) goto L_ret;
     pb = m9v;
   }
+  { __typeof__(ub) m9v = DynStr_Utf8 (&(scratch), path, err);
+    if (err->exc) goto L_ret;
+    ub = m9v;
+  }
+  { int64_t m9t1to;
+  i = INT64_C(0);
+  m9t1to = m9_sub_i64 ((ub).len, INT64_C(1), err);
+  if (err->exc) goto L_ret;
+  for (; i <= m9t1to; i += 1) {
+    { __typeof__((*(uint8_t *) m9_at (pb.p, i, pb.len, sizeof (uint8_t), err))) m9v = (*(uint8_t *) m9_at (ub.p, i, ub.len, sizeof (uint8_t), err));
+      if (err->exc) goto L_ret;
+      (*(uint8_t *) m9_at (pb.p, i, pb.len, sizeof (uint8_t), err)) = m9v;
+      if (err->exc) goto L_ret;
+    }
+  } }
   { __typeof__(mb) m9v = DynStr_Bytes (&(scratch), ((m9_sl_CHAR){ (uint32_t *) m9s0, 2 }), true, err);
     if (err->exc) goto L_ret;
     mb = m9v;
   }
   fp = ({ m9_mon_enter (&m9_gate_cgrib); __typeof__(fopen (((void *)(pb).p), ((void *)(mb).p))) m9gv = fopen (((void *)(pb).p), ((void *)(mb).p)); m9_mon_leave (&m9_gate_cgrib); m9gv; });
-  bool m9t1 = (((int64_t)(fp)) == ((int64_t)(Grib_Null (err))));
+  bool m9t2 = (((int64_t)(fp)) == ((int64_t)(Grib_Null (err))));
   if (err->exc) goto L_ret;
-  if (m9t1) {
+  if (m9t2) {
     Grib_Fail (((m9_sl_CHAR){ (uint32_t *) m9s1, 5 }), path, INT64_C(0), err);
     if (err->exc) goto L_ret;
   }

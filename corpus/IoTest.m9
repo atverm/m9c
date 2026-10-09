@@ -1,0 +1,79 @@
+MODULE IoTest ;
+
+(* Io's text files are UTF-8 (2026-10-09, Alex: "flip readfile/
+   writefile to utf8"): WriteFile and AppendFile encode every Unicode
+   scalar, ReadFile decodes strictly, and the *Bytes forms move
+   octets.  Found by cp-kernel on 0.18.0, when WriteFile of a string
+   holding U+2082 raised ValueRange. *)
+
+IMPORT Check ;
+IMPORT DynStr ;
+IMPORT Io ;
+
+VAR
+  t : Check.T ;
+  path : STR ;
+
+PROCEDURE BadUtf8Refuses () : BOOL RAISES Io.IOError =
+VAR
+  pool : POOL ;
+  b : SLICE OF BYTE ;
+  s : STR ;
+BEGIN
+  b := NEW (BYTE, 3) ;
+  b[0] := 97 ;
+  b[1] := 233 ;
+  b[2] := 98 ;
+  Io.WriteFileBytes (path, b) ;
+  s := Io.ReadFile (pool, path) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+| IndexError : RETURN FALSE
+END BadUtf8Refuses ;
+
+PROCEDURE Files () RAISES ValueRange, Io.IOError, IndexError =
+VAR
+  pool : POOL ;
+  s, back : STR ;
+  b : SLICE OF BYTE ;
+BEGIN
+  s := 'a' + 0E9C + 2082C + 1F600C + 'z' ;
+  Io.WriteFile (path, s) ;
+  b := Io.ReadFileBytes (pool, path) ;
+  Check.EqI64 (t, 'WriteFile: a, e-acute, subscript two, a smiley and z are 1 + 2 + 3 + 4 + 1 octets', LEN (b), 11) ;
+  Check.EqI64 (t, 'the lead octet of U+00E9', I64 (b[1]), 195) ;
+  Check.EqI64 (t, 'its continuation', I64 (b[2]), 169) ;
+  Check.EqI64 (t, 'the lead octet of U+2082', I64 (b[3]), 226) ;
+  Check.EqI64 (t, 'the lead octet of U+1F600', I64 (b[6]), 240) ;
+  Check.EqI64 (t, 'its last octet', I64 (b[9]), 128) ;
+  back := Io.ReadFile (pool, path) ;
+  Check.EqStr (t, 'ReadFile reads the scalars back', back, s) ;
+  Check.EqI64 (t, 'five of them', LEN (back), 5) ;
+  Io.AppendFile (path, '!' + 0E9C) ;
+  back := Io.ReadFile (pool, path) ;
+  Check.EqStr (t, 'AppendFile appends scalars', back, s + '!' + 0E9C) ;
+  Io.WriteFile (path, 'abc') ;
+  back := Io.ReadFile (pool, path) ;
+  Check.EqStr (t, 'ASCII is itself', back, 'abc') ;
+  Io.WriteFileBytes (path, DynStr.Bytes (pool, 'a' + 0E9C, FALSE)) ;
+  b := Io.ReadFileBytes (pool, path) ;
+  Check.EqI64 (t, 'the octet forms move octets: a Latin-1 e-acute is one byte', LEN (b), 2) ;
+  Check.That (t, 'ReadFile refuses a file that is not UTF-8 rather than guessing', BadUtf8Refuses ()) ;
+  Io.MkDirs ('/tmp/m9iotest.d/a/b/') ;
+  Check.That (t, 'MkDirs makes the missing parents', Io.Exists ('/tmp/m9iotest.d/a/b')) ;
+  Io.MkDirs ('/tmp/m9iotest.d/a/b') ;
+  Check.That (t, 'MkDirs again is fine', Io.Exists ('/tmp/m9iotest.d/a/b')) ;
+  Io.WriteFile ('/tmp/m9iotest.d/a/b/f.txt', 'x') ;
+  Check.EqStr (t, 'a file in the made directory', Io.ReadFile (pool, '/tmp/m9iotest.d/a/b/f.txt'), 'x')
+END Files ;
+
+BEGIN
+  path := '/tmp/m9iotest.txt' ;
+  Files () ;
+  Io.Halt (Check.Done (t, 'Io'))
+EXCEPT
+| ValueRange : Io.ErrLine ('IoTest: ValueRange') ; Io.Halt (1)
+| IndexError : Io.ErrLine ('IoTest: IndexError') ; Io.Halt (1)
+| Io.IOError (p) : Io.ErrLine ('IoTest: cannot use ' + p) ; Io.Halt (1)
+END IoTest.

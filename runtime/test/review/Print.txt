@@ -3,9 +3,9 @@ REVIEW Print -- 25 procedures with a body, 5 of them functions; 9 headings in a 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path               5
   assignments                                    13
-  arguments                                     887
+  arguments                                     897
   RETURN values                                   6
-  operands of a comparison or an operator        98
+  operands of a comparison or an operator       104
   CASE labels                                    55
   THREAD arguments                                0
   CASE over variants, proved total                0
