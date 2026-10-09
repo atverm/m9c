@@ -9,6 +9,3 @@
 # carries the version removes it (the pointer commit), and
 # tutrelease fails on a line whose version is out, whose example
 # agrees with the release after all, or whose example is gone.
-C8Zarr   0.19.0   links flagless only with LINK on ZarrStore's blosc unit (decision 37)
-C10Icos  0.19.0   the same unit
-C14Flux  0.19.0   NetCDF's unit names netcdf; 0.18.0 cannot link it without a hand line
