@@ -32,6 +32,10 @@ typedef struct { uint32_t v[16]; } m9_arr_16_uint32_t;
 #define M9SL_m9_arr_20_int64_t
 typedef struct { int64_t v[20]; } m9_arr_20_int64_t;
 #endif
+#ifndef M9SL_m9_arr_160_int64_t
+#define M9SL_m9_arr_160_int64_t
+typedef struct { int64_t v[160]; } m9_arr_160_int64_t;
+#endif
 
 m9_sl_CHAR Fmt_I64Str (int64_t v, m9_state *err);
 m9_sl_CHAR Fmt_Hex (int64_t v, int64_t width, m9_state *err);

@@ -1,0 +1,123 @@
+MODULE TimeTest ;
+
+(* Time's nanosecond instant and Http's IMF-fixdate, tested in M9
+   against java.time itself (runtime/test/gold/Time.gold, written by
+   tools/TimeGold.java with OpenJDK 25 on zoefii): ParseNanos against
+   OffsetDateTime.parse with ISO_OFFSET_DATE_TIME on 434 strings, the
+   refusals included; IsoNanos against Instant.toString and FormatDate
+   against an IMF-fixdate pattern on 411 instants from year 0 to 9999.
+   The rest of Time keeps its C driver (time_driver.c). *)
+
+IMPORT Check ;
+IMPORT Http ;
+IMPORT Io ;
+IMPORT Text ;
+IMPORT Time ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+(* ParseNanos's verdict on s: TRUE and r set, or FALSE when it raised *)
+PROCEDURE Parsed (RO s: STR ; VAR r: Time.Nanos) : BOOL =
+BEGIN
+  r := Time.ParseNanos (s) ;
+  RETURN TRUE
+EXCEPT
+| ValueRange : RETURN FALSE
+END Parsed ;
+
+PROCEDURE Parses () =
+VAR
+  gold : STR ;
+  ins : SLICE OF STR ;
+  ok : SLICE OF BOOL ;
+  secs, nanos : SLICE OF I64 ;
+  r : Time.Nanos ;
+  i, verdict, value : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Time.gold') ;
+  ins := Check.GoldStrs (t, gold, 'parse.in') ;
+  ok := Check.GoldBools (t, gold, 'parse.ok') ;
+  secs := Check.GoldI64s (t, gold, 'parse.secs') ;
+  nanos := Check.GoldI64s (t, gold, 'parse.nanos') ;
+  verdict := 0 ;
+  value := 0 ;
+  FOR i := 0 TO LEN (ins) - 1 DO
+    IF Parsed (Text.Replace (ins[i], '_', ' '), r) # ok[i] THEN
+      verdict := verdict + 1
+    ELSIF ok[i] AND (r.secs # secs[i] OR r.nanos # nanos[i]) THEN
+      value := value + 1
+    END
+  END ;
+  Check.That (t, 'the golden file has parse cases', LEN (ins) > 400) ;
+  Check.EqI64 (t, 'ParseNanos accepts and refuses as java.time does', verdict, 0) ;
+  Check.EqI64 (t, 'ParseNanos = OffsetDateTime.parse (...).toInstant ()', value, 0)
+EXCEPT
+| IndexError : Check.That (t, 'the parse golden lines differ in length', FALSE)
+END Parses ;
+
+PROCEDURE Prints () =
+VAR
+  gold, s : STR ;
+  secs, nanos : SLICE OF I64 ;
+  iso, imf, got, gimf, wimf : SLICE OF STR ;
+  r : Time.Nanos ;
+  i, n : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Time.gold') ;
+  secs := Check.GoldI64s (t, gold, 'iso.secs') ;
+  nanos := Check.GoldI64s (t, gold, 'iso.nanos') ;
+  iso := Check.GoldStrs (t, gold, 'iso.want') ;
+  imf := Check.GoldStrs (t, gold, 'imf.want') ;
+  got := NEW (pool, STR, LEN (secs)) ;
+  gimf := NEW (pool, STR, LEN (secs)) ;
+  wimf := NEW (pool, STR, LEN (secs)) ;
+  n := 0 ;
+  FOR i := 0 TO LEN (secs) - 1 DO
+    r.secs := secs[i] ;
+    r.nanos := nanos[i] ;
+    got[i] := Text.Keep (pool, Time.IsoNanos (r)) ;
+    (* IMF-fixdate has years 1 to 9999: Java's year-of-era writes the
+       year 0 as 0001 (1 BC), which no HTTP date means *)
+    IF NOT Text.StartsWith (iso[i], '0000') THEN
+      s := Http.FormatDate (secs[i]) ;
+      gimf[n] := Text.Keep (pool, Text.Replace (s, ' ', '_')) ;
+      wimf[n] := imf[i] ;
+      n := n + 1
+    END
+  END ;
+  Check.EqStrs (t, 'IsoNanos = Instant.toString', got, iso) ;
+  Check.EqStrs (t, 'FormatDate = the IMF-fixdate pattern', SLICE (gimf, 0, n), SLICE (wimf, 0, n))
+EXCEPT
+| ValueRange : Check.That (t, 'IsoNanos or FormatDate refused a golden instant', FALSE)
+| IndexError : Check.That (t, 'the print golden lines differ in length', FALSE)
+END Prints ;
+
+PROCEDURE Refuses (secs, nanos: I64) : BOOL =
+VAR
+  r : Time.Nanos ;
+  s : STR ;
+BEGIN
+  r.secs := secs ;
+  r.nanos := nanos ;
+  s := Time.IsoNanos (r) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+END Refuses ;
+
+VAR a, b : Time.Nanos ;
+
+BEGIN
+  Parses () ;
+  Prints () ;
+  Check.That (t, 'IsoNanos refuses a nanosecond of a billion', Refuses (0, 1000000000)) ;
+  Check.That (t, 'and a negative one', Refuses (0, -1)) ;
+  Check.That (t, 'and the year 10000', Refuses (253402300800, 0)) ;
+  a.secs := 5 ; a.nanos := 999999999 ;
+  b.secs := 6 ; b.nanos := 0 ;
+  Check.That (t, 'NanosBefore across a second', Time.NanosBefore (a, b)) ;
+  Check.That (t, 'NanosBefore is strict', NOT Time.NanosBefore (a, a)) ;
+  Io.Halt (Check.Done (t, 'Time'))
+END TimeTest.

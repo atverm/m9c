@@ -245,6 +245,7 @@ _(documented with the group below)_
 
 ### StrToD (s: C.ConstPtr) : C.Double [REENTRANT]
 
-libc's float parse, which rounds correctly: Fmt.ParseF64 scales
-in F64 and read 1e-300 one bit low (PgTest found it, against
-psycopg; the JSON parser had found 1.5e-10 the same way)
+libc's float parse.  Chosen when Fmt.ParseF64 scaled in F64 and
+read 1e-300 one bit low (PgTest found it, against psycopg); since
+0.20.0 ParseF64 rounds correctly too, and this stays because it
+reads the cell's octets as they are, with no decode first

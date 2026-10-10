@@ -226,6 +226,23 @@ _(documented with the group below)_
 
 _(documented with the group below)_
 
+### NewRaw (RO text: STR) : PTR Node RAISES ParseError, TypeMismatch
+
+_(documented with the group below)_
+
+### NewRawIn (VAR pool: POOL ; RO text: STR) : PTR Node IN pool RAISES ParseError, TypeMismatch
+
+a NUMBER written exactly as `text' says it -- `1.0E-5', `2.50',
+`1e400' -- where NewF64 would write the double's shortest repr.
+For an output whose numbers follow another program's printing
+(Java's Double.toString, a fixed number of decimals).  text must
+be one JSON number: anything else raises ParseError, a JSON value
+of another kind TypeMismatch, so a document stays JSON.  The node
+is a Num like any other -- AsF64 and AsI64 read its value -- and
+Compact, Pretty, NumText and Clone keep the text (2026-10-10,
+cp-kernel's proposal: its view printed numbers through a JSON
+builder of its own).
+
 ### NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool
 
 _(documented with the group below)_

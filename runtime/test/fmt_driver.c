@@ -6,10 +6,13 @@
      including the awkward ones -- zero, negative zero, subnormals,
      the infinities, NaN.
 
-     Fixed is claimed correctly rounded only while the scaled value
-     stays under 2^53, so it is COMPARED against printf over many
-     values and the disagreement RATE is printed.  A library that
-     says "close enough" without a number is not saying anything.  */
+     Fixed and Sci are claimed EXACT since 2026-10-10 -- printf's
+     digits, from the double's own decimal expansion -- so they are
+     COMPARED against printf over many values and every disagreement
+     is a failure.  Until then they scaled in F64 and this driver
+     printed and gated a disagreement RATE (0.71%, 1% allowed); the
+     rate is still printed.  FmtTest holds them to Python's
+     %-formatting on the hard cases.  */
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -79,7 +82,7 @@ int main (void)
 {
   m9_pool pool = {0};
   m9_state err = {0};
-  char buf[64], ref[64];
+  char buf[512], ref[512];
   int64_t i;
 
   /* Fmt takes no pool since 2026-09-03: a formatter's answer lands in
@@ -179,8 +182,9 @@ int main (void)
   Fmt_Fixed (1.0, 99, &err);
   ok ("Fixed refuses 99 decimals", err.exc == &m9_exc_ValueRange);
   err.exc = NULL;
-  Fmt_Fixed (1e300, 2, &err);
-  ok ("Fixed refuses what will not scale", err.exc == &m9_exc_ValueRange);
+  to_c (Fmt_Fixed (1e300, 2, &err), buf, sizeof buf);
+  snprintf (ref, sizeof ref, "%.2f", 1e300);
+  ok ("Fixed prints 1e300 whole, as printf", err.exc == NULL && strcmp (buf, ref) == 0);
   err.exc = NULL;
 
   {
@@ -193,9 +197,11 @@ int main (void)
         double x;
         int d;
         st ^= st << 13; st ^= st >> 7; st ^= st << 17;
-        /* magnitudes up to ~1e6 with 6 decimals: scaled < 2^53 */
-        x = ((double) (int64_t) (st % 2000000000u) - 1000000000.0) / 1000.0;
-        d = (int) (st % 7);
+        /* magnitudes from 1e-30 to 1e36, 0 to 17 decimals */
+        x = ((double) (int64_t) (st % 2000000000u) - 1000000000.0)
+            * pow (10.0, (double) ((int) (st % 61) - 36));
+        d = (int) (st % 18);
+        if (x == 0.0) continue;      /* printf signs a negative zero */
         to_c (Fmt_Fixed (x, d, &err), buf, sizeof buf);
         if (err.exc) { err.exc = NULL; continue; }
         snprintf (ref, sizeof ref, "%.*f", d, x);
@@ -204,13 +210,9 @@ int main (void)
       }
     printf ("Fixed vs printf: %ld values, %ld disagreements (%.4f%%)\n",
             total, differ, 100.0 * (double) differ / (double) total);
-    /* 0.71%% measured, and it is scaling error rather than the tie
-       rule -- av * 10^d rounds before anything is decided.  Fixing
-       that needs exact decimal conversion (Dragon4 class); until
-       someone writes it, the rate is documented and gated so a
-       regression shows up as a failure rather than a shrug. */
-    ok ("Fixed agrees with printf on at least 99%% in range",
-        differ * 100 <= total);
+    /* 0.71% when it scaled in F64 (over magnitudes to 1e6 and 6
+       decimals); exact since 2026-10-10 */
+    ok ("Fixed agrees with printf on every value", differ == 0 && total > 90000);
   }
 
   /* ---- the :x:y forms ---- */
@@ -296,7 +298,7 @@ int main (void)
         st ^= st << 13; st ^= st >> 7; st ^= st << 17;
         x = ((double) (int64_t) (st % 2000000001u) - 1000000000.0)
             * pow (10.0, (double) ((int) (st % 121) - 60));
-        d = (int) (st % 10);
+        d = (int) (st % 18);
         if (x == 0.0) continue;      /* printf signs a negative zero */
         to_c (Fmt_Sci (x, d, &err), buf, sizeof buf);
         if (err.exc) { err.exc = NULL; continue; }
@@ -307,12 +309,9 @@ int main (void)
       }
     printf ("Sci vs printf:   %ld values, %ld disagreements (%.4f%%)\n",
             total, differ, 100.0 * (double) differ / (double) total);
-    /* the same cause as Fixed's 0.71%: the mantissa is scaled before
-       any rounding decision is taken, so the last digit can go the
-       other way.  Gated at the same 1% so a regression is a failure
-       and not a shrug. */
-    ok ("Sci agrees with printf on at least 99%% of the range",
-        differ * 100 <= total);
+    /* under 1% when the mantissa was normalised in F64; exact since
+       2026-10-10 */
+    ok ("Sci agrees with printf on every value", differ == 0 && total > 90000);
   }
 
   /* ---- ParseF64 against strtod ---- */

@@ -575,6 +575,8 @@ BEGIN
       END ;
       FOR i := 0 TO LEN (raw) - 1 DO dest[i] := raw[i] END
   END
+EXCEPT
+| ValueRange : RAISE StoreError ('a chunk larger than blosc takes (a C int)')
 END Decompress ;
 
 PROCEDURE FillChunk (VAR a: PTR Array) : PTR ChunkBuf IN a.cache =

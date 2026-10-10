@@ -71,6 +71,14 @@ typedef struct { m9_sl_CHAR v[13]; } m9_arr_13_m9_sl_CHAR;
 #define M9SL_m9_arr_7_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[7]; } m9_arr_7_m9_sl_CHAR;
 #endif
+#ifndef M9SL_m9_arr_3_m9_sl_CHAR
+#define M9SL_m9_arr_3_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[3]; } m9_arr_3_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_4_m9_sl_CHAR
+#define M9SL_m9_arr_4_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[4]; } m9_arr_4_m9_sl_CHAR;
+#endif
 #ifndef M9SL_m9_arr_10_m9_sl_CHAR
 #define M9SL_m9_arr_10_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[10]; } m9_arr_10_m9_sl_CHAR;
@@ -88,7 +96,7 @@ typedef struct { m9_sl_CHAR v[39]; } m9_arr_39_m9_sl_CHAR;
 typedef struct { uint32_t v[24]; } m9_arr_24_uint32_t;
 #endif
 
-void Gen_LoadUnit (Ast_Node * u, m9_state *err);
+void Gen_LoadUnit (Ast_Node * *u, m9_pool *u_pool, m9_state *err);
 void Gen_LoadExtern (Ast_Node * u, m9_state *err);
 void Gen_LoadExternDeep (Ast_Node * u, m9_state *err);
 void Gen_SetPrefix (m9_sl_CHAR module, m9_sl_CHAR prefix, m9_state *err);

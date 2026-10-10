@@ -1,11 +1,11 @@
-REVIEW Text -- 32 procedures with a body, 32 of them functions; 27 headings in a DEFINITION
+REVIEW Text -- 38 procedures with a body, 38 of them functions; 32 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              32
-  assignments                                   131
-  arguments                                      36
-  RETURN values                                  57
-  operands of a comparison or an operator       244
+  functions answering on every path              38
+  assignments                                   145
+  arguments                                      52
+  RETURN values                                  66
+  operands of a comparison or an operator       265
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0

@@ -321,8 +321,8 @@ BEGIN
   root := Parse.File (pool, p) ;
   IF p.nerr > 0 THEN
     FOR i := 0 TO p.nkept - 1 DO
-      Io.ErrLine (path + ':' + ItoA (p.errLine[i]) + ':' +
-                  ItoA (p.errCol[i]) + ': parse: ' + p.errMsg[i])
+      Io.ErrLine (path + ':' + ItoA (p.errs[i].line) + ':' +
+                  ItoA (p.errs[i].col) + ': parse: ' + p.errs[i].msg)
     END ;
     failed := TRUE ;
     RETURN -1
@@ -1663,7 +1663,7 @@ END RemoveKid ;
 
 (* the heading: `VAR p: POOL` and its separator go; a result's IN p
    clause goes with it *)
-PROCEDURE EditHeading (pi: I64 ; head: PTR Ast.Node ; VAR ok: BOOL) =
+PROCEDURE EditHeading (pi: I64 ; VAR head: PTR Ast.Node ; VAR ok: BOOL) =
 VAR
   i, j, t : I64 ;
 BEGIN
@@ -1755,7 +1755,7 @@ END EditBody ;
 (* the string-builder variant: `p : POOL ;` becomes the first local,
    in the body's VAR section or in a new one before BEGIN, and the
    body is left as it is *)
-PROCEDURE EditScratch (pi: I64 ; head: PTR Ast.Node ; VAR ok: BOOL) =
+PROCEDURE EditScratch (pi: I64 ; VAR head: PTR Ast.Node ; VAR ok: BOOL) =
 VAR
   i, t, j : I64 ;
   sec, decl, ids, id, ty, nsec : PTR Ast.Node ;
@@ -1878,7 +1878,7 @@ BEGIN
   RETURN IsPoolTy (ModVarTy (m, name))
 END IsPoolArg ;
 
-PROCEDURE EditCalls (m: I64 ; pi: I64 ; head: Ast.Kid ; k: Ast.Kid ; VAR ok: BOOL) =
+PROCEDURE EditCalls (m: I64 ; pi: I64 ; head: Ast.Kid ; VAR k: Ast.Kid ; VAR ok: BOOL) =
 VAR
   i, j, ci, t : I64 ;
 BEGIN
@@ -2165,8 +2165,8 @@ BEGIN
     again := Parse.File (pool, p) ;
     IF p.nerr > 0 THEN
       FOR j := 0 TO p.nkept - 1 DO
-        Io.ErrLine (mods[m].path + ':' + ItoA (p.errLine[j]) + ':' +
-                    ItoA (p.errCol[j]) + ': after the edit: ' + p.errMsg[j])
+        Io.ErrLine (mods[m].path + ':' + ItoA (p.errs[j].line) + ':' +
+                    ItoA (p.errs[j].col) + ': after the edit: ' + p.errs[j].msg)
       END ;
       Fail ('m9elide: ' + mods[m].path + ': the edited text does not parse; nothing written') ;
       RETURN FALSE

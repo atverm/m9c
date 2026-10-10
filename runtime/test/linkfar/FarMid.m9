@@ -1,0 +1,20 @@
+DEFINITION MODULE FarMid ;
+
+(* reaches FarLib in its IMPLEMENTATION only, as Frame reaches NetCDF
+   and NbCells reaches Parquet *)
+
+PROCEDURE Twice () : I64 ;
+
+END FarMid.
+
+
+IMPLEMENTATION MODULE FarMid ;
+
+IMPORT FarLib ;
+
+PROCEDURE Twice () : I64 =
+BEGIN
+  RETURN 2 * FarLib.Answer ()
+END Twice ;
+
+END FarMid.

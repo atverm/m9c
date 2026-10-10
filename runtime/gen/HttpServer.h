@@ -131,10 +131,6 @@ struct HttpServer_Stats {
   int64_t bytesOut;
 };
 
-#ifndef M9SL_m9_arr_64_HttpServer_Stats
-#define M9SL_m9_arr_64_HttpServer_Stats
-typedef struct { HttpServer_Stats v[64]; } m9_arr_64_HttpServer_Stats;
-#endif
 HttpServer_Router * HttpServer_NewRouter (m9_pool *pool, m9_state *err);
 void HttpServer_AddRoute (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_CHAR method, m9_sl_CHAR path, int64_t status, m9_sl_CHAR ctype, m9_sl_CHAR body, m9_sl_CHAR summary, m9_state *err);
 void HttpServer_AddHandler (HttpServer_Router * *r, m9_pool *r_pool, m9_sl_CHAR method, m9_sl_CHAR path, HttpServer_Handler h, m9_sl_CHAR ctype, m9_sl_CHAR summary, m9_state *err);

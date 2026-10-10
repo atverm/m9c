@@ -10764,6 +10764,7 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
   Json_Node * tv = NULL; (void) tv;
   Json_Node * inner = NULL; (void) inner;
   Json_Node * g = NULL; (void) g;
+  Json_Node * lp = NULL; (void) lp;
   m9_sl_m9_sl_CHAR names = {0}; (void) names;
   m9_sl_m9_sl_CHAR inames = {0}; (void) inames;
   bool m9t3 = Rdf_IsArr (element, err);
@@ -10796,7 +10797,8 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
         if (err->exc) goto L_hdl_m9t1;
         item = m9v;
       }
-      Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s470, 5 }), item, err);
+      lp = l;
+      Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s470, 5 }), item, err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
       if ((((subject).len > INT64_C(0)) && inDefault)) {
@@ -10830,7 +10832,8 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
     }
     { Json_Node * l = list;
     if (l != NULL) {
-      Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s474, 5 }), listObj, err);
+      lp = l;
+      Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s474, 5 }), listObj, err);
       if (err->exc) goto L_hdl_m9t1;
     } else {
       if ((((subject).len > INT64_C(0)) && inDefault)) {
@@ -10891,7 +10894,8 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
       }
       { Json_Node * l = list;
       if (l != NULL) {
-        Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s477, 5 }), ref, err);
+        lp = l;
+        Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s477, 5 }), ref, err);
         if (err->exc) goto L_hdl_m9t1;
       } else {
         if (inDefault) {
@@ -10911,7 +10915,8 @@ static void Rdf_MapElement (m9_pool *pool, Rdf_JState *st, m9_pool *st_pool, Rdf
         if (err->exc) goto L_hdl_m9t1;
         ref = m9v;
       }
-      Rdf_AddTo (pool, &(l), err->res, ((m9_sl_CHAR){ (uint32_t *) m9s478, 5 }), ref, err);
+      lp = l;
+      Rdf_AddTo (pool, &(lp), &((*pool)), ((m9_sl_CHAR){ (uint32_t *) m9s478, 5 }), ref, err);
       if (err->exc) goto L_hdl_m9t1;
     } }
   }

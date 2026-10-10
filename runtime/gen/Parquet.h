@@ -11,6 +11,8 @@
 #include "Time.h"
 #include "NetCDF.h"
 #include "Faults.h"
+#include "Zip.h"
+#include "Bits.h"
 
 void Parquet_m9init (m9_state *err);
 
@@ -18,8 +20,14 @@ typedef struct Parquet_Options Parquet_Options;
 typedef struct Parquet_Buf Parquet_Buf;
 typedef struct Parquet_Rd Parquet_Rd;
 typedef struct Parquet_ColInfo Parquet_ColInfo;
+typedef struct Parquet_Chunk Parquet_Chunk;
 typedef struct Parquet_Meta Parquet_Meta;
+typedef struct Parquet_Sink Parquet_Sink;
 
+#define Parquet_CodecNone INT64_C(0)
+#define Parquet_CodecSnappy INT64_C(1)
+#define Parquet_CodecGzip INT64_C(2)
+#define Parquet_CodecZstd INT64_C(6)
 #define Parquet_CtStop INT64_C(0)
 #define Parquet_CtTrue INT64_C(1)
 #define Parquet_CtFalse INT64_C(2)
@@ -46,8 +54,26 @@ typedef struct Parquet_Meta Parquet_Meta;
 #define Parquet_CvInt8 INT64_C(15)
 #define Parquet_CvInt16 INT64_C(16)
 #define Parquet_EncPlain INT64_C(0)
+#define Parquet_EncPlainDict INT64_C(2)
 #define Parquet_EncRle INT64_C(3)
-#define Parquet_CodecNone INT64_C(0)
+#define Parquet_EncBitPacked INT64_C(4)
+#define Parquet_EncRleDict INT64_C(8)
+#define Parquet_PgData INT64_C(0)
+#define Parquet_PgIndex INT64_C(1)
+#define Parquet_PgDict INT64_C(2)
+#define Parquet_PgDataV2 INT64_C(3)
+#define Parquet_SkF64 INT64_C(0)
+#define Parquet_SkF32 INT64_C(1)
+#define Parquet_SkI64 INT64_C(2)
+#define Parquet_SkI32 INT64_C(3)
+#define Parquet_SkI16 INT64_C(4)
+#define Parquet_SkByte INT64_C(5)
+#define Parquet_SkBool INT64_C(6)
+#define Parquet_SkStr INT64_C(7)
+static const uint32_t Parquet_SnapBad_d[21] = { 97u, 32u, 100u, 97u, 109u, 97u, 103u, 101u, 100u, 32u, 115u, 110u, 97u, 112u, 112u, 121u, 32u, 112u, 97u, 103u, 101u };
+#define Parquet_SnapBad ((m9_sl_CHAR){ (uint32_t *) Parquet_SnapBad_d, 21 })
+static const uint32_t Parquet_RunBad_d[36] = { 100u, 97u, 109u, 97u, 103u, 101u, 100u, 32u, 108u, 101u, 118u, 101u, 108u, 115u, 32u, 111u, 114u, 32u, 100u, 105u, 99u, 116u, 105u, 111u, 110u, 97u, 114u, 121u, 32u, 105u, 110u, 100u, 105u, 99u, 101u, 115u };
+#define Parquet_RunBad ((m9_sl_CHAR){ (uint32_t *) Parquet_RunBad_d, 36 })
 
 #ifndef M9SL_m9_sl_m9_sl_CHAR
 #define M9SL_m9_sl_m9_sl_CHAR
@@ -56,6 +82,10 @@ typedef struct { m9_sl_CHAR *p; int64_t len; } m9_sl_m9_sl_CHAR;
 #ifndef M9SL_m9_sl_Parquet_ColInfo
 #define M9SL_m9_sl_Parquet_ColInfo
 typedef struct { Parquet_ColInfo *p; int64_t len; } m9_sl_Parquet_ColInfo;
+#endif
+#ifndef M9SL_m9_sl_Parquet_Chunk
+#define M9SL_m9_sl_Parquet_Chunk
+typedef struct { Parquet_Chunk *p; int64_t len; } m9_sl_Parquet_Chunk;
 #endif
 #ifndef M9SL_m9_sl_Parquet_Buf
 #define M9SL_m9_sl_Parquet_Buf
@@ -70,6 +100,7 @@ struct Parquet_Options {
   m9_sl_m9_sl_CHAR usCols;
   m9_sl_m9_sl_CHAR i8Cols;
   bool nulls;
+  int64_t codec;
 };
 
 void Parquet_Write (m9_pool *pool, Frame_Fr * f, m9_sl_CHAR path, m9_state *err);

@@ -113,6 +113,7 @@ begin
   GenModule ('Math', []);
   GenModule ('Bits', []);
   GenModule ('Sort', ['Math']);
+  GenModule ('Seq', ['Sort', 'Text']);
   GenModule ('Check', ['Io', 'Fmt', 'Math', 'Text']);
   GenModule ('Arrays', ['Faults', 'Math']);
   GenModule ('Numeric', ['Faults', 'Math']);
@@ -121,8 +122,8 @@ begin
   GenModule ('Zip', ['DynStr', 'Io', 'Bits']);
   GenModule ('Png', ['Faults', 'Zip', 'Math', 'DynStr']);
   GenModule ('Frame', ['Csv', 'Io', 'Math', 'DynStr', 'Fmt', 'Time', 'NetCDF', 'Faults', 'Sort', 'Stats', 'Text']);
-  GenModule ('Parquet', ['Frame', 'Io', 'DynStr', 'Csv', 'Math', 'Fmt', 'Time', 'NetCDF', 'Faults']);
-  GenModule ('NbCells', ['Parquet', 'Frame', 'Io', 'DynStr', 'Csv', 'Math', 'Fmt', 'Time', 'NetCDF', 'Faults']);
+  GenModule ('Parquet', ['Frame', 'Io', 'DynStr', 'Csv', 'Math', 'Fmt', 'Time', 'NetCDF', 'Faults', 'Zip', 'Bits']);
+  GenModule ('NbCells', ['Parquet', 'Frame', 'Io', 'DynStr', 'Csv', 'Math', 'Fmt', 'Time', 'NetCDF', 'Faults', 'Zip', 'Bits']);
   GenModule ('NbShow', ['Frame', 'Io', 'DynStr', 'Fmt', 'Text', 'Time']);
   GenModule ('NetCDF', ['DynStr', 'Faults']);
   GenModule ('Grib', ['DynStr', 'Faults']);

@@ -1,30 +1,30 @@
 # Parquet
 
-A deliberately MINIMAL Parquet subset for Frame.m9: flat schemas,
-PLAIN encoding, uncompressed pages, one row group.  Everything
-outside the subset is refused BY NAME -- a codec, an encoding, a
-nesting -- because a half-read Parquet file is a numbers-shaped
-lie, and the format's long tail (dictionaries, ten codecs, three
-page versions, bloom filters) is exactly the part nothing here
-needs yet.  docs/dataframe-plan.md phase 4; pyarrow is the oracle
+A Parquet subset for Frame.m9: flat schemas.  pyarrow is the oracle
 both ways: files pyarrow wrote are read value-exact against what
 pyarrow reads from them (corpus/ParquetTest.m9), files this module
-writes are read back by pyarrow (runtime/test/columnar.sh), and the
-refusal samples (dictionary, snappy, a null boolean) are pyarrow's
-own.
+writes are read back by pyarrow (runtime/test/columnar.sh).
 
-THE WRITER EMITS REQUIRED COLUMNS by default: Frame's missing
-values live in the data (NaN, the sentinels), not as Parquet
-nulls, so no definition levels are written.  Asked for
-(`Options.nulls`, WriteOpt), every numeric column is OPTIONAL and
-a missing cell is a NULL -- what pyarrow writes from pandas, and
-what a reader that knows no sentinel needs.  THE READER accepts
-OPTIONAL columns and maps a null to the arm's own missing value --
-the same mapping CSV import applies to an empty field.
+THE READER reads what pyarrow and polars write with their DEFAULTS:
+several row groups, several data pages a chunk (version 1 or 2), a
+dictionary page with RLE_DICTIONARY indices (and PLAIN_DICTIONARY,
+its old name), PLAIN values, RLE booleans, and pages compressed
+with SNAPPY, GZIP or ZSTD or not at all.  Everything outside that is
+refused BY NAME -- a codec (brotli, lz4), an encoding (the DELTA
+family, BYTE_STREAM_SPLIT), a nesting, a repeated column -- because
+a half-read Parquet file is a numbers-shaped lie.  An OPTIONAL
+column's null is the arm's own missing value, the mapping CSV import
+applies to an empty field; a null BOOLEAN is refused, BOOL keeping
+no missing value.  Strings are UTF-8 both ways.
 
-Strings are ASCII in this subset, both directions, refused
-otherwise with the column named: CHAR beyond 127 would need real
-UTF-8 transcoding and nothing here needs it yet.
+THE WRITER emits one row group, one PLAIN data page a column, no
+dictionary, compressed as Options.codec asks (none by default).
+Its columns are REQUIRED by default: Frame's missing values live in
+the data (NaN, the sentinels), not as Parquet nulls, so no
+definition levels are written.  Asked for (`Options.nulls`,
+WriteOpt), every numeric column is OPTIONAL and a missing cell is a
+NULL -- what pyarrow writes from pandas, and what a reader that
+knows no sentinel needs.
 
 ### Write (VAR pool: POOL ; f: PTR Frame.Fr ; RO path: STR) RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
 
@@ -55,6 +55,22 @@ this hands that buffer over instead, so a server does not need a
 per-request temp file it must then read back and remove.  No
 Io.IOError, because nothing is opened.
 
+### CONST CodecNone
+
+_(undocumented)_
+
+### CONST CodecSnappy
+
+_(undocumented)_
+
+### CONST CodecGzip
+
+_(undocumented)_
+
+### CONST CodecZstd
+
+_(undocumented)_
+
 ### TYPE Options
 
 file-level key_value_metadata
@@ -72,5 +88,21 @@ WriteOpt's document in memory, as BytesX is WriteX's
 _(undocumented)_
 
 ### TsRead (VAR pool: POOL ; RO path: STR) : PTR Frame.Ts RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError
+
+_(undocumented)_
+
+libzstd's one-shot calls: each makes and frees its own context, so
+any number of threads may call them at once.  An error is a size_t
+near 2 ** 64, which I64 () refuses with ValueRange.
+
+### ZstdDecompress (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT) : C.SizeT [REENTRANT]
+
+_(undocumented)_
+
+### ZstdCompress (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT ; level: C.Int) : C.SizeT [REENTRANT]
+
+_(undocumented)_
+
+### ZstdBound (n: C.SizeT) : C.SizeT [REENTRANT]
 
 _(undocumented)_

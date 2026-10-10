@@ -659,6 +659,24 @@ static inline void m9_mon_signal (m9_mon *m)
 { pthread_cond_broadcast (&m->cv); }
 #endif
 
+/* THE [SERIAL] GATE OF A FOR "C" UNIT, one per unit in the WHOLE
+   program: m9_gate_named answers the same monitor for the same unit
+   name from every translation unit, and each generated file keeps the
+   answer in a static of its own (m9_gate loads and stores it
+   atomically).  Until 2026-10-10 the gate WAS that static, one per
+   file, so two modules calling the same [SERIAL] procedure locked two
+   different mutexes and did not exclude each other (serialtwo in
+   threads.sh).  A registry and not a weak symbol: COFF's rules differ,
+   and a notebook cell's shared object would get a copy of its own. */
+m9_mon *m9_gate_named (const char *unit);
+
+static inline m9_mon *m9_gate (m9_mon **slot, const char *unit)
+{
+  m9_mon *g = __atomic_load_n (slot, __ATOMIC_ACQUIRE);
+  if (!g) { g = m9_gate_named (unit); __atomic_store_n (slot, g, __ATOMIC_RELEASE); }
+  return g;
+}
+
 /* THREAD (proc, arg).  The generator emits a trampoline per site
    that carries the moved argument and its own error slot; this only
    starts it detached, because par 6 has no join -- a thread is

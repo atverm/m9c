@@ -10,7 +10,7 @@ static m9_pool m9mframe = {0};
 
 static const uint32_t m9s0[23] = { 40u, 109u, 101u, 115u, 115u, 97u, 103u, 101u, 32u, 110u, 111u, 116u, 32u, 101u, 110u, 99u, 111u, 100u, 97u, 98u, 108u, 101u, 41u };
 
-static m9_mon m9_gate_csyslog;
+static m9_mon *m9_gate_csyslog;
 
 static void Syslog_SendAscii (int64_t priority, m9_sl_CHAR text, m9_state *err);
 
@@ -27,12 +27,14 @@ void Syslog_Open (m9_sl_CHAR ident, int64_t options, int64_t facility, m9_state 
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  ({ m9_mon_enter (&m9_gate_csyslog); m9_openlog (((void *)(b).p), ((int)((b).len)), ((int)(options)), ((int)(facility))); m9_mon_leave (&m9_gate_csyslog); });
+  ({ m9_mon_enter (m9_gate (&m9_gate_csyslog, "csyslog")); m9_openlog (((void *)(b).p), ((int) m9_i32 ((b).len, err)), ((int) m9_i32 (options, err)), ((int) m9_i32 (facility, err))); m9_mon_leave (m9_gate_csyslog); });
+  if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
     err->exc = NULL;
-    ({ m9_mon_enter (&m9_gate_csyslog); m9_openlog (((void *)(b).p), ((int)(INT64_C(0))), ((int)(options)), ((int)(facility))); m9_mon_leave (&m9_gate_csyslog); });
+    ({ m9_mon_enter (m9_gate (&m9_gate_csyslog, "csyslog")); m9_openlog (((void *)(b).p), ((int)(INT64_C(0))), ((int) m9_i32 (options, err)), ((int) m9_i32 (facility, err))); m9_mon_leave (m9_gate_csyslog); });
+    if (err->exc) goto L_ret;
     goto L_dn_m9t2;
   }
   goto L_ret;
@@ -50,7 +52,7 @@ void Syslog_Close (m9_state *err)
   m9_pool *m9res = err->res ? err->res : &m9_heap;
   (void) m9res;
   err->res = &m9frame;
-  ({ m9_mon_enter (&m9_gate_csyslog); m9_closelog (); m9_mon_leave (&m9_gate_csyslog); });
+  ({ m9_mon_enter (m9_gate (&m9_gate_csyslog, "csyslog")); m9_closelog (); m9_mon_leave (m9_gate_csyslog); });
 L_ret: ;
   err->res = m9res;
   m9_pool_free (&m9frame);
@@ -91,7 +93,8 @@ void Syslog_Send (int64_t priority, m9_sl_CHAR text, m9_state *err)
   if ((n > Syslog_MaxMsg)) {
     n = Syslog_MaxMsg;
   }
-  m9_syslog (((int)(priority)), ((void *)(b).p), ((int)(n)));
+  m9_syslog (((int) m9_i32 (priority, err)), ((void *)(b).p), ((int) m9_i32 (n, err)));
+  if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {
@@ -166,7 +169,8 @@ static void Syslog_SendAscii (int64_t priority, m9_sl_CHAR text, m9_state *err)
     if (err->exc) goto L_hdl_m9t1;
     b = m9v;
   }
-  m9_syslog (((int)(priority)), ((void *)(b).p), ((int)((b).len)));
+  m9_syslog (((int) m9_i32 (priority, err)), ((void *)(b).p), ((int) m9_i32 ((b).len, err)));
+  if (err->exc) goto L_hdl_m9t1;
   goto L_dn_m9t2;
 L_hdl_m9t1: ;
   if (err->exc == &m9_exc_ValueRange) {

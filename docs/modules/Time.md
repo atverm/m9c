@@ -96,6 +96,31 @@ the same shape, with or without fractional seconds, Z required.
 Offsets are not accepted: an offset is a local-time claim and
 this module does not do local time.
 
+### TYPE Nanos
+
+seconds since 1970-01-01T00:00:00Z
+
+### ParseNanos (RO s: STR) : Nanos RAISES ValueRange
+
+java.time's ISO_OFFSET_DATE_TIME, held to OffsetDateTime.parse
+on 434 strings: yyyy-MM-ddTHH:mm[:ss[.f]] and an offset -- Z, or
++HH, +HH:MM, +HH:MM:SS up to 18 hours -- the T and the Z in
+either case, 0 to 9 fraction digits (a point with none is
+accepted, as Java does), the date and time held to the calendar
+(no 24:00, no 60th second, no 30 February).  A year has four
+digits.  Anything else raises ValueRange.
+
+### IsoNanos (t: Nanos) : STR RAISES ValueRange
+
+java.time.Instant.toString: always Z, seconds always written, a
+fraction of 3, 6 or 9 digits only when nanos is not 0.  Years
+0000 to 9999; outside them, or nanos outside 0 .. 999999999,
+raises ValueRange.
+
+### NanosBefore (a, b: Nanos) : BOOL
+
+a is strictly earlier than b
+
 ### Now () : Instant
 
 _(documented with the group below)_

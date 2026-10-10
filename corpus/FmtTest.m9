@@ -1,9 +1,10 @@
 MODULE FmtTest ;
 
 (* Fmt, tested in M9 (runtime/test/m9test.sh runs every *Test.m9
-   beside its module).  Short only, the part written in 2026-10-05:
-   the older half -- Fixed and Sci measured against printf -- stays in
-   runtime/test/fmt_driver.c until Fmt is next touched there.
+   beside its module): Short, ParseF64, Hex, and since 2026-10-10
+   Fixed and Sci, exact now and held to printf's digits through
+   Python's %-formatting.  runtime/test/fmt_driver.c keeps Bits and
+   the padding forms.
 
    Short against Python's repr: runtime/test/gold/Fmt.gold, written by
    tools/fmtgold.py, inputs as Fmt.Bits so no decimal parser stands
@@ -68,6 +69,44 @@ EXCEPT
 | IndexError : Check.That (t, 'the parse golden lines differ in length', FALSE)
 END Parses ;
 
+(* Fixed = '%.*f' and Sci = '%.*e' with the exponent written short,
+   each value at its own decimals: the hand cases at 0, 2, 6 and 17,
+   exact ties (an odd o times 2^-(d+1)), data values, powers of two
+   and ten, random bit patterns -- 1e308 at 17 decimals included *)
+PROCEDURE Formats () =
+VAR
+  gold : STR ;
+  xs : SLICE OF F64 ;
+  ds : SLICE OF I64 ;
+  fixed, sci : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Fmt.gold') ;
+  xs := Check.GoldF64s (t, gold, 'fmt.x') ;
+  ds := Check.GoldI64s (t, gold, 'fmt.d') ;
+  fixed := NEW (pool, STR, LEN (xs)) ;
+  sci := NEW (pool, STR, LEN (xs)) ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    fixed[i] := Text.Keep (pool, Fmt.Fixed (xs[i], ds[i])) ;
+    sci[i] := Text.Keep (pool, Fmt.Sci (xs[i], ds[i]))
+  END ;
+  Check.That (t, 'the golden file has format cases', LEN (xs) > 1000) ;
+  Check.EqStrs (t, 'Fixed = printf %.*f', fixed, Check.GoldStrs (t, gold, 'fixed.want')) ;
+  Check.EqStrs (t, 'Sci = printf %.*e, the exponent short', sci, Check.GoldStrs (t, gold, 'sci.want'))
+EXCEPT
+| ValueRange : Check.That (t, 'Fixed or Sci refused a golden value', FALSE)
+| IndexError : Check.That (t, 'the format golden lines differ in length', FALSE)
+END Formats ;
+
+PROCEDURE TooMany () : BOOL =
+VAR s : STR ;
+BEGIN
+  s := Fmt.Fixed (1.0, Fmt.MaxDecimals + 1) ;
+  RETURN FALSE
+EXCEPT
+| ValueRange : RETURN TRUE
+END TooMany ;
+
 PROCEDURE Refused (RO s: STR) : BOOL =
 VAR v : F64 ;
 BEGIN
@@ -79,6 +118,8 @@ END Refused ;
 
 BEGIN
   Parses () ;
+  Formats () ;
+  Check.That (t, 'Fixed refuses more than MaxDecimals', TooMany ()) ;
   Check.That (t, 'ParseF64 refuses a decimal beyond the largest double', Refused ('1.7976931348623159e308')) ;
   Check.That (t, 'and its negative', Refused ('-1e400')) ;
   Check.That (t, 'and what is no decimal: a hex float', Refused ('0x1p3')) ;

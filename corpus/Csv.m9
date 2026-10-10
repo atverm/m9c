@@ -218,10 +218,10 @@ IMPORT Io ;
 FROM ccsv IMPORT StrToF32, StrToF64 ;
 
 (* Delimiters and quotes are compared as byte VALUES rather than named
-   CHAR constants: a CONST of char type is "const form unsupported
-   yet" in the generator, and this reads octets from a file rather
-   than Unicode scalars anyway.  10 is a newline, 13 a return, 34 a
-   quote, 45 a minus, 46 a point, 48..57 the digits. *)
+   CHAR constants because this reads octets from a file, not Unicode
+   scalars (a CHAR CONST itself compiles since 0.20.0; it did not when
+   this was written).  10 is a newline, 13 a return, 34 a quote, 45 a
+   minus, 46 a point, 48..57 the digits. *)
 
 TYPE
   (* NEW takes a type NAME, not a type expression, so a slice of

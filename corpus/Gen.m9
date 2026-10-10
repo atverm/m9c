@@ -13,7 +13,7 @@ STATEFUL DEFINITION MODULE Gen ;
 
 IMPORT Ast ;
 
-PROCEDURE LoadUnit (KEPT u: PTR Ast.Node) ;
+PROCEDURE LoadUnit (VAR KEPT u: PTR Ast.Node) ;
 PROCEDURE LoadExtern (KEPT u: PTR Ast.Node) ;
   (* a DIRECT import: register its declarations and include its
      header, because this module names things in it *)
@@ -180,6 +180,11 @@ VAR
   bHdrRecs, bHdrProtos, bHdrConsts, bRec2 : PTR DynStr.DString IN gpool ;
   bArrRec, bHdrArrRec, bRec3 : PTR DynStr.DString IN gpool ;
   bThr, bGate : PTR DynStr.DString IN gpool ;
+  (* while a record's field types are computed: the bucket an ARRAY OF
+     a record of this module goes to instead of KArrRec/KHdrArrRec --
+     the record's own, so the typedef stands between the element's
+     struct and the struct that holds the array; 0 otherwise *)
+  arrInto : I64 ;
 
 (* ---- small strings ---- *)
 
@@ -690,6 +695,10 @@ CONST
   ] ;
   (* the conversions that narrow, each with its own checked helper *)
   WidthConvs = ['I8', 'I16', 'I32', 'U8', 'U16', 'U32', 'U64'] ;
+  (* the argument tags C.Int and C.SizeT check (Sem.CTotal's
+     complement over the integer tags) *)
+  CIntChecked = ['I64', 'U32', 'U64'] ;
+  CSizeChecked = ['I8', 'I16', 'I32', 'I64'] ;
   (* the integer types besides I64 a CASE may switch over *)
   CaseInts = ['I8', 'I16', 'I32', 'U8', 'U16', 'U32', 'U64', 'BYTE'] ;
   (* C's integer types a result or local may be declared with *)
@@ -1245,6 +1254,9 @@ BEGIN
                modules emitting the same name are conflicting types,
                not a legal C11 redefinition: guard every one *)
             ai := ArrBucket (n.kids[1]) ;
+            IF arrInto # 0 AND (ai = KArrRec OR ai = KHdrArrRec) THEN
+              ai := arrInto
+            END ;
             Line (ai, 0, S2 ('#ifndef M9SL_', s)) ;
             Line (ai, 0, S2 ('#define M9SL_', s)) ;
             Line (ai, 0, S7 ('typedef struct { ', ec2,
@@ -1520,9 +1532,34 @@ END ModuleScope ;
 
 (* a type node from module MODNAME made self-contained: its bare type
    names qualified, as Sem.QualifiedIn does it, so that an importer
-   reads an exported variable's type where it was declared *)
+   reads an exported variable's type where it was declared -- and an
+   ARRAY's bound that is a bare CONST of that module too, as `Mod.N':
+   read in the importer, `ARRAY MaxErr OF Perr' looked MaxErr up among
+   the importer's constants and was `array count form unsupported'
+   (2026-10-10; Parse.m9 wrote the literal 64 for it) *)
+(* an array bound written as a bare CONST of module m, as `m.N'; any
+   other bound as it is *)
+PROCEDURE QualBound (KEPT b: Ast.Kid ; RO KEPT m: STR) : Ast.Kid =
+VAR d, sf : PTR Ast.Node IN gpool ;
+BEGIN
+  IF b IS SOME e THEN
+    IF e.kind = Ast.NDesignator AND e.nkids = 0 AND
+       MFind (extConsts, S3 (m, '.', e.a)) >= 0 THEN
+      d := Ast.NewNode (gpool, Ast.NDesignator, e.line, e.col) ;
+      d.a := m ;
+      sf := Ast.NewNode (gpool, Ast.NSelField, e.line, e.col) ;
+      sf.a := e.a ;
+      Ast.Add (gpool, d, SOME (sf)) ;
+      RETURN SOME (d)
+    END
+  END ;
+  RETURN b
+END QualBound ;
+
 PROCEDURE QualIn (KEPT t: Ast.Kid ; RO KEPT modName: STR) : Ast.Kid =
-VAR n : PTR Ast.Node IN gpool ;
+VAR
+  n : PTR Ast.Node IN gpool ;
+  b : Ast.Kid ;
 BEGIN
   IF t IS SOME tn THEN
     IF tn.kind = Ast.NQualident THEN
@@ -1544,7 +1581,9 @@ BEGIN
     ELSIF (tn.kind = Ast.NArrayType OR tn.kind = Ast.NGridType) AND
           tn.nkids >= 2 THEN
       n := Ast.NewNode (gpool, tn.kind, tn.line, tn.col) ;
-      Ast.Add (gpool, n, tn.kids[0]) ;
+      b := tn.kids[0] ;
+      IF tn.kind = Ast.NArrayType THEN b := QualBound (b, modName) END ;
+      Ast.Add (gpool, n, b) ;
       Ast.Add (gpool, n, QualIn (tn.kids[1], modName)) ;
       RETURN SOME (n)
     END
@@ -2101,7 +2140,7 @@ BEGIN
   END
 END NanWalk ;
 
-PROCEDURE LoadUnit (KEPT u: PTR Ast.Node) =
+PROCEDURE LoadUnit (VAR KEPT u: PTR Ast.Node) =
 VAR
   i, j, k, pi : I64 ;
   nb : SLICE OF GP ;
@@ -3601,7 +3640,7 @@ END CloseHoists ;
 
 PROCEDURE CallC (dn: Ast.Kid ; argl: Ast.Kid ; VAR tag: STR) : STR =
 VAR
-  name, args, at, want2, tn, vn, cfunc, e1, e2, res, cnt : STR ;
+  name, args, at, want2, tn, vn, cfunc, e1, e2, res, cnt, at2 : STR ;
   svRaise : BOOL ;
   gname, xtn : STR ;
   pi, g, j, k, k2, nargs, dot, dot2, nf32, nf64, eln : I64 ;
@@ -3725,11 +3764,22 @@ BEGIN
       END ;
       IF DynStr.Eq (at, 'ARR') THEN
         IF al.kids[0] IS SOME a0 THEN
-          IF Resolve (ScopeNode (a0.a)) IS SOME arr THEN
-            IF arr.kind = Ast.NArrayType THEN
-              tag := 'I64' ;
-              RETURN S3 ('INT64_C(', ArrCount2 (arr.kids[0]), ')')
+          (* a bare name: its declaration's count.  Anything with
+             selectors -- an array FIELD, `p.errs', or an array in an
+             element -- C counts itself: the root name's declaration
+             is another array or none, and `.len' is a slice's
+             (2026-10-10, genforms GfArrRecField) *)
+          IF a0.kind = Ast.NDesignator AND a0.nkids = 0 THEN
+            IF Resolve (ScopeNode (a0.a)) IS SOME arr THEN
+              IF arr.kind = Ast.NArrayType THEN
+                tag := 'I64' ;
+                RETURN S3 ('INT64_C(', ArrCount2 (arr.kids[0]), ')')
+              END
             END
+          ELSE
+            tag := 'I64' ;
+            e1 := EX (al.kids[0], '') ;
+            RETURN S5 ('((int64_t) (sizeof ((', e1, ').v) / sizeof ((', e1, ').v[0])))')
           END
         END
       END ;
@@ -3969,7 +4019,26 @@ BEGIN
         Err2 (eln, 'a conversion takes one argument')
       END ;
       IF argl IS SOME alc THEN
-        RETURN S5 ('((', at, ')(', EX (alc.kids[0], ''), '))')
+        (* a conversion that NARROWS is checked, where the checker
+           counts its ValueRange (Sem.CTotal; 2026-10-10): C.Int of a
+           64-bit or unsigned 32-bit integer, C.SizeT of a signed one,
+           C.Float of an F64.  A literal and anything else is a cast. *)
+        e1 := EX (alc.kids[0], '') ;
+        at2 := TagOfExpr (alc.kids[0]) ;
+        IF alc.kids[0] IS SOME a0c THEN
+          IF a0c.kind = Ast.NInt OR IsNegLit (a0c, Ast.NInt) THEN at2 := '' END
+        END ;
+        IF DynStr.Eq (vn, 'Int') AND Text.OneOf (at2, CIntChecked) THEN
+          stRaise := TRUE ;
+          RETURN S3 ('((int) m9_i32 (', e1, ', err))')
+        ELSIF DynStr.Eq (vn, 'SizeT') AND Text.OneOf (at2, CSizeChecked) THEN
+          stRaise := TRUE ;
+          RETURN S3 ('((size_t) m9_u64 (', e1, ', err))')
+        ELSIF DynStr.Eq (vn, 'Float') AND DynStr.Eq (at2, 'F64') THEN
+          stRaise := TRUE ;
+          RETURN S3 ('(m9_f32_f64 (', e1, ', err))')
+        END ;
+        RETURN S5 ('((', at, ')(', e1, '))')
       END ;
       RETURN '0'
     END ;
@@ -4109,17 +4178,21 @@ BEGIN
           IF ser AND LEN (gname) > 0 THEN
             IF MFind (gateSeen, gname) < 0 THEN
               MAdd (gateSeen, gname, NONE, '') ;
-              Line (KGate, 0, S3 ('static m9_mon m9_gate_', gname, ';'))
+              (* a pointer to the program's ONE gate for the unit,
+                 fetched by name on first use (m9rt.h m9_gate): a
+                 static monitor per file let two modules calling the
+                 same [SERIAL] unit in at once (2026-10-10) *)
+              Line (KGate, 0, S3 ('static m9_mon *m9_gate_', gname, ';'))
             END ;
             IF fp.kids[1] IS SOME frt THEN
-              RETURN S6 ('({ m9_mon_enter (&m9_gate_', gname,
-                '); __typeof__(', S4 (fp.b, ' (', args, ')'),
+              RETURN S6 ('({ m9_mon_enter (m9_gate (&m9_gate_', gname,
+                S3 (', "', gname, '")); __typeof__('), S4 (fp.b, ' (', args, ')'),
                 S6 (') m9gv = ', fp.b, ' (', args, '); ', ''),
-                S4 ('m9_mon_leave (&m9_gate_', gname, '); m9gv; })', ''))
+                S4 ('m9_mon_leave (m9_gate_', gname, '); m9gv; })', ''))
             END ;
-            RETURN S6 ('({ m9_mon_enter (&m9_gate_', gname, '); ',
+            RETURN S6 ('({ m9_mon_enter (m9_gate (&m9_gate_', gname, S3 (', "', gname, '")); '),
               fp.b, S3 (' (', args, '); '),
-              S4 ('m9_mon_leave (&m9_gate_', gname, '); })', ''))
+              S4 ('m9_mon_leave (m9_gate_', gname, '); })', ''))
           END ;
           RETURN S4 (fp.b, ' (', args, ')')
         END
@@ -4338,6 +4411,11 @@ BEGIN
                           ItoA (si - 1), ', sizeof (',
                           S9 (ec, ')), err->s[', ItoA (si - 1),
                           '].len }; (void) ', bn, ';', '', '', ''))
+                      ELSIF Text.StartsWith (ety, 'CR:') THEN
+                        (* an enumeration, back from its tag *)
+                        blines[nbl] := S7 (TyC (fg.kids[1]), ' ', bn,
+                          ' = { .tag = ', slot, ' }; (void) ',
+                          S2 (bn, ';'))
                       ELSE
                         blines[nbl] := S7 (TyC (fg.kids[1]), ' ', bn,
                           ' = ', slot, '; (void) ',
@@ -5350,6 +5428,11 @@ BEGIN
             'exception payload: more than 4 integer fields') ;
           RETURN
         END ;
+        (* an enumeration -- a case record of tags only, the checker
+           refuses any other at the EXCEPTION -- travels as its tag:
+           it was the whole struct into an int64_t slot, which gcc
+           refused (2026-10-10) *)
+        IF Text.StartsWith (tg, 'CR:') THEN cnd := S3 ('(', cnd, ').tag') END ;
         Line (KPbuf, ind, S5 ('err->i[', ItoA (i2), '] = ', cnd, ';')) ;
         i2 := i2 + 1
       END
@@ -5888,36 +5971,31 @@ BEGIN
   RETURN FALSE
 END NameShadowed ;
 
-(* `a.b', in the module's own pool and not the node's: the node's
-   pool, named through a binder on a module table, was the walk's own
-   frame in the generator, and the name dangled once the walk returned
-   (`unknown name: const vo', 2026-10-04) *)
-PROCEDURE DotJoin (RO a, b: STR) : STR =
-VAR
-  s : SLICE OF CHAR ;
-  i : I64 ;
-BEGIN
-  s := NEW (gpool, CHAR, LEN (a) + 1 + LEN (b)) ;
-  FOR i := 0 TO LEN (a) - 1 DO s[i] := a[i] END ;
-  s[LEN (a)] := '.' ;
-  FOR i := 0 TO LEN (b) - 1 DO s[LEN (a) + 1 + i] := b[i] END ;
-  RETURN s
-END DotJoin ;
-
 (* Sem.ExportWalk's twin: the designator Mod.v... of a directly
    imported module's exported variable becomes the designator rooted
    at the one name Mod.v.  Here, and not only in the checker, because
    the generator is also run without it (gendump_m9, the oracle's
    gentest) and both ends must emit the same C. *)
 PROCEDURE ExportWalk (VAR n: PTR Ast.Node ; scope: Ast.Kid) =
-VAR i : I64 ;
+VAR i, j, k : I64 ;
+  nm : SLICE OF CHAR ;
 BEGIN
   IF n.kind = Ast.NDesignator AND n.nkids > 0 THEN
     IF n.kids[0] IS SOME s THEN
       IF s.kind = Ast.NSelField AND MFind (extMods, n.a) >= 0 THEN
         IF MFind (extVars, S3 (n.a, '.', s.a)) >= 0 AND
            NOT NameShadowed (scope, n.a) THEN
-          n.a := DotJoin (n.a, s.a) ;
+          (* `Mod.v', built in the NODE's pool -- through n's hidden pool --
+             which a 2026-10-04 workaround avoided (the name dangled once the
+             walk returned, `unknown name: const vo'); measured sound again
+             2026-10-10 after the pool rules of 10-08, and kept so the
+             gates exercise the shape that failed *)
+          j := LEN (n.a) ;
+          nm := NEW (n, CHAR, j + 1 + LEN (s.a)) ;
+          FOR k := 0 TO j - 1 DO nm[k] := n.a[k] END ;
+          nm[j] := '.' ;
+          FOR k := 0 TO LEN (s.a) - 1 DO nm[j + 1 + k] := s.a[k] END ;
+          n.a := nm ;
           FOR i := 0 TO n.nkids - 2 DO n.kids[i] := n.kids[i + 1] END ;
           n.nkids := n.nkids - 1
         END
@@ -5951,6 +6029,7 @@ VAR
   cs, s, tgt : STR ;
   anyPay : BOOL ;
   fsq : Ast.Kid ;
+  fts : SLICE OF STR ;
   d2 : PTR DynStr.DString IN gpool ;
   buf : I64 ;
 BEGIN
@@ -6136,6 +6215,28 @@ BEGIN
         ELSE
           buf := KRec2
         END ;
+        IF d.kind = Ast.NMonitorType THEN
+          fsq := d.kids[0]
+        ELSE
+          fsq := d.kids[1]
+        END ;
+        (* the field types FIRST: a field that is an ARRAY OF a record
+           of this module registers that array's typedef as its type is
+           computed, and the typedef must come before this struct and
+           after the element's -- gcc refused "unknown type name
+           m9_arr_64_Pw_Perr" for `errs : ARRAY MaxErr OF Perr' in a
+           record (2026-10-10; Parse.m9 kept three parallel arrays
+           for it).  Into this record's buffer, then, and computed
+           once: the struct below writes the same types. *)
+        fts := NEW (STR, 0) ;
+        IF fsq IS SOME fs THEN
+          fts := NEW (STR, fs.nkids) ;
+          arrInto := buf ;
+          FOR ci := 0 TO fs.nkids - 1 DO
+            IF fs.kids[ci] IS SOME fg THEN fts[ci] := TyC (fg.kids[1]) END
+          END ;
+          arrInto := 0
+        END ;
         IF NOT IsOpaque (tys[i].name) THEN
           Line (buf, 0, S6 ('typedef struct ', CP (modName), '_',
             tys[i].name, ' ', S4 (CP (modName), '_', tys[i].name, ';')))
@@ -6153,15 +6254,10 @@ BEGIN
         (* one declarator per line: `T * a, b` is one pointer and one
            struct in C -- the star binds to the declarator, not the
            type *)
-        IF d.kind = Ast.NMonitorType THEN
-          fsq := d.kids[0]
-        ELSE
-          fsq := d.kids[1]
-        END ;
         IF fsq IS SOME fs THEN
           FOR ci := 0 TO fs.nkids - 1 DO
             IF fs.kids[ci] IS SOME fg THEN
-              s := TyC (fg.kids[1]) ;
+              s := fts[ci] ;
               IF fg.kids[0] IS SOME fids THEN
                 FOR j2 := 0 TO fids.nkids - 1 DO
                   IF fids.kids[j2] IS SOME fid THEN

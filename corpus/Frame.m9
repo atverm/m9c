@@ -512,9 +512,9 @@ TYPE
 
 PROCEDURE MissI () : I64 =
   (* MIN I64, the stated integer sentinel.  A PROCEDURE because the
-     value has no literal spelling (2^63 overflows the literal) and
-     a CONST over an expression is a generator gap today; free after
-     -flto either way. *)
+     value has no literal spelling (2^63 overflows the literal), and a
+     CONST over an expression, folded since 0.20.0, refuses exactly
+     this value by name; free after -flto either way. *)
 BEGIN
   RETURN -9223372036854775807 - 1
 END MissI ;

@@ -66,9 +66,14 @@ PROCEDURE I64Pad (v: I64 ; width: I64 ; zero: BOOL) : STR ;
      field, as printf does.                                          *)
 
 PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
-  (* decimals in 0..MaxDecimals; a magnitude that will not survive
-     scaling raises rather than printing a plausible wrong number.
-     NaN prints 'nan', the infinities 'inf' and '-inf'.              *)
+  (* decimals in 0..MaxDecimals, else ValueRange; printf's %.*f to
+     the character -- the double's own decimal expansion rounded half
+     to even, every magnitude (1e308 prints its 309 digits).  A value
+     that rounds to zero keeps its '-' (-0.001 is -0.00, as printf);
+     negative ZERO prints without one, the sign bit is not consulted.
+     NaN prints 'nan', the infinities 'inf' and '-inf'.  Exact since
+     2026-10-10; it scaled in F64 until then and disagreed with printf
+     on 0.71% of values, 1e300 raised.                               *)
 
 PROCEDURE FixedPad (v: F64 ; width, decimals: I64) : STR
   RAISES ValueRange ;
@@ -99,13 +104,11 @@ PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange ;
      printf disagrees on that one value and the driver excludes it
      rather than pretending they agree.
 
-     The accuracy is Fixed's, and measured the same way: the mantissa
-     is normalised by multiplying or dividing by ONE power of ten
-     chosen by binary decomposition -- about eighteen roundings at
-     the worst instead of the three hundred a divide-by-ten loop
-     would take -- and then rounded half to even like Fixed.  The
-     driver compares it against printf over a spread of magnitudes
-     and prints the disagreement rate.                              *)
+     The digits are printf's %.*e to the character, as Fixed's are
+     %.*f's: exact, from the double's integer mantissa and exponent,
+     half to even (FmtTest holds both to Python's % formatting).  Until
+     2026-10-10 the mantissa was normalised in F64 and measured, not
+     exact.                                                         *)
 
 PROCEDURE SciPad (v: F64 ; width, decimals: I64) : STR
   RAISES ValueRange ;
@@ -254,48 +257,6 @@ BEGIN
   RETURN p
 END Pow10I ;
 
-PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange =
-VAR
-  s : STR ;
-  scaled, av : F64 ;
-  whole, frac, scale, i : I64 ;
-  neg : BOOL ;
-BEGIN
-  IF v # v THEN RETURN 'nan' END ;
-  IF v > MaxF64 THEN RETURN 'inf' END ;
-  IF v < -MaxF64 THEN RETURN '-inf' END ;
-  IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
-
-  neg := v < 0.0 ;
-  av := v ;
-  IF neg THEN av := -av END ;
-
-  scale := Pow10I (decimals) ;
-  (* Round half to EVEN on the scaled value, which is what printf
-     does on the true one.  Half away from zero disagreed with printf
-     on 0.72% of a hundred thousand values; the driver measures the
-     rate rather than trusting either rule, and prints it. *)
-  scaled := av * Pow10 (decimals) ;
-  frac := I64 (scaled) ;
-  IF scaled - F64 (frac) > 0.5 THEN
-    scaled := scaled + 1.0
-  ELSIF scaled - F64 (frac) = 0.5 THEN
-    IF frac MOD 2 # 0 THEN scaled := scaled + 1.0 END
-  END ;
-  (* the conversion is checked: a magnitude that will not fit raises
-     ValueRange here rather than wrapping into a plausible lie *)
-  whole := I64 (scaled) DIV scale ;
-  frac := I64 (scaled) MOD scale ;
-
-  s := '' ;
-  IF neg THEN s := '-' END ;
-  s := s + I64Str (whole) ;
-  IF decimals > 0 THEN
-    s := s + '.' + I64Pad (frac, decimals, TRUE)
-  END ;
-  RETURN s
-END Fixed ;
-
 (* Blank-padding, right-aligned.  I64Pad keeps its own copy because
    it has the zero fill and the sign-before-the-zeros rule to obey;
    this is the plain one that FixedPad and SciPad share. *)
@@ -309,111 +270,6 @@ BEGIN
   FOR i := 1 TO width - LEN (body) DO s := s + ' ' END ;
   RETURN s + body
 END PadLeft ;
-
-PROCEDURE FixedPad (v: F64 ; width, decimals: I64) : STR
-  RAISES ValueRange =
-BEGIN
-  RETURN PadLeft (Fixed (v, decimals), width)
-END FixedPad ;
-
-(* Bring a into [1, 10) and answer the decimal exponent that was
-   taken out of it.
-
-   ONE POWER OF TEN PER STEP, chosen by binary decomposition: 256,
-   128, 64 ... 1.  The obvious loop -- divide by ten until it fits --
-   rounds once per iteration, which for 1e-320 is three hundred and
-   twenty roundings and an answer that has drifted.  This does at
-   most eighteen, and each one is a division by an exactly-known
-   power rather than a repeated compounding.
-
-   256 is the largest step because Pow10 (512) is already +Inf, and
-   1e256 covers the whole F64 range in two applications.  Neither
-   loop can overflow: the divide phase only ever makes a smaller,
-   and the multiply phase runs with a already below 10.               *)
-PROCEDURE Norm (VAR a: F64) : I64 =
-VAR
-  e, step : I64 ;
-  p : F64 ;
-BEGIN
-  e := 0 ;
-  step := 256 ;
-  WHILE step >= 1 DO
-    p := Pow10 (step) ;
-    WHILE a >= p DO a := a / p ; e := e + step END ;
-    step := step DIV 2
-  END ;
-  (* the step = 1 pass above leaves a < 10; this one leaves a >= 1,
-     and `a * p < 10.0` is the test that says the multiply is safe *)
-  step := 256 ;
-  WHILE step >= 1 DO
-    p := Pow10 (step) ;
-    WHILE a * p < 10.0 DO a := a * p ; e := e - step END ;
-    step := step DIV 2
-  END ;
-  RETURN e
-END Norm ;
-
-PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange =
-VAR
-  s : STR ;
-  av, scaled : F64 ;
-  expo, scale, whole, frac : I64 ;
-  neg : BOOL ;
-BEGIN
-  IF v # v THEN RETURN 'nan' END ;
-  IF v > MaxF64 THEN RETURN 'inf' END ;
-  IF v < -MaxF64 THEN RETURN '-inf' END ;
-  IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
-
-  neg := v < 0.0 ;
-  av := v ;
-  IF neg THEN av := -av END ;
-
-  scale := Pow10I (decimals) ;
-  IF av = 0.0 THEN
-    (* zero has no exponent to find, and Norm would not terminate
-       looking for one *)
-    expo := 0 ;
-    whole := 0 ;
-    frac := 0
-  ELSE
-    expo := Norm (av) ;
-    (* av is now in [1, 10); the rounding is Fixed's, half to even *)
-    scaled := av * Pow10 (decimals) ;
-    frac := I64 (scaled) ;
-    IF scaled - F64 (frac) > 0.5 THEN
-      scaled := scaled + 1.0
-    ELSIF scaled - F64 (frac) = 0.5 THEN
-      IF frac MOD 2 # 0 THEN scaled := scaled + 1.0 END
-    END ;
-    whole := I64 (scaled) DIV scale ;
-    frac := I64 (scaled) MOD scale ;
-    (* 9.99 at two decimals rounds to 10.00, which is not normalised:
-       carry it into the exponent rather than printing a mantissa
-       with two digits in front of the point *)
-    IF whole >= 10 THEN
-      whole := 1 ;
-      frac := 0 ;
-      expo := expo + 1
-    END
-  END ;
-
-  s := '' ;
-  IF neg THEN s := '-' END ;
-  s := s + I64Str (whole) ;
-  IF decimals > 0 THEN
-    s := s + '.' + I64Pad (frac, decimals, TRUE)
-  END ;
-  (* I64Str writes '-' for a negative and nothing for a positive,
-     which is exactly the short form this wants *)
-  RETURN s + 'e' + I64Str (expo)
-END Sci ;
-
-PROCEDURE SciPad (v: F64 ; width, decimals: I64) : STR
-  RAISES ValueRange =
-BEGIN
-  RETURN PadLeft (Sci (v, decimals), width)
-END SciPad ;
 
 PROCEDURE Bits (v: F64) : STR =
 VAR
@@ -927,6 +783,258 @@ BEGIN
   b[7] := BYTE (x) ;
   RETURN F64.FromBytesLE (b)
 END Make ;
+
+(* ---- Fixed and Sci: printf's digits, in integers ----
+
+   The value is f * 2^e exactly, so the number a format prints is
+   N = f * 2^e * 10^p rounded to an integer, half to even, with p the
+   decimals for Fixed and the decimals less the exponent for Sci.
+   Both are exact quotients of integers: whatever power of two or ten
+   is negative goes into the divisor, and the remainder against half
+   the divisor says which way N rounds.  So the digits are the ones
+   the decimal expansion of the double has, which is what glibc's
+   printf prints -- not those of a product rounded in F64, which is
+   what these did until 2026-10-10 (0.71% of Fixed's values wrong in
+   the old driver, 1e300 refused outright).                           *)
+
+PROCEDURE Pow2 (k: I64) : I64 =
+VAR m : I64 ;
+BEGIN
+  m := 1 ;
+  WHILE k > 0 DO
+    m := m * 2 ;
+    k := k - 1
+  END ;
+  RETURN m
+END Pow2 ;
+
+(* a := a DIV 2^k, the bits below dropped *)
+PROCEDURE BigShr (VAR a: Big ; k: I64) =
+VAR q, r, lo, hi, i : I64 ;
+BEGIN
+  q := k DIV 32 ;
+  r := k MOD 32 ;
+  IF q >= a.n THEN
+    a.n := 0 ;
+    RETURN
+  END ;
+  FOR i := 0 TO a.n - 1 - q DO
+    lo := a.d[i + q] DIV Pow2 (r) ;
+    hi := 0 ;
+    IF r > 0 AND i + q + 1 < a.n THEN
+      hi := (a.d[i + q + 1] MOD Pow2 (r)) * Pow2 (32 - r)
+    END ;
+    a.d[i] := lo + hi
+  END ;
+  a.n := a.n - q ;
+  WHILE a.n > 0 AND a.d[a.n - 1] = 0 DO a.n := a.n - 1 END
+END BigShr ;
+
+(* bit i of a *)
+PROCEDURE BigBit (VAR a: Big ; i: I64) : BOOL =
+BEGIN
+  IF i DIV 32 >= a.n THEN RETURN FALSE END ;
+  RETURN (a.d[i DIV 32] DIV Pow2 (i MOD 32)) MOD 2 = 1
+END BigBit ;
+
+(* some bit of a below bit k is set *)
+PROCEDURE BigAnyBelow (VAR a: Big ; k: I64) : BOOL =
+VAR i, q : I64 ;
+BEGIN
+  q := k DIV 32 ;
+  FOR i := 0 TO q - 1 DO
+    IF i < a.n AND a.d[i] # 0 THEN RETURN TRUE END
+  END ;
+  IF q < a.n AND a.d[q] MOD Pow2 (k MOD 32) # 0 THEN RETURN TRUE END ;
+  RETURN FALSE
+END BigAnyBelow ;
+
+(* a := a DIV m, answering a MOD m; 0 < m < 2^31 *)
+PROCEDURE BigDivSmall (VAR a: Big ; m: I64) : I64 =
+VAR i, x, r : I64 ;
+BEGIN
+  r := 0 ;
+  FOR i := a.n - 1 TO 0 BY -1 DO
+    x := r * Base + a.d[i] ;
+    a.d[i] := x DIV m ;
+    r := x MOD m
+  END ;
+  WHILE a.n > 0 AND a.d[a.n - 1] = 0 DO a.n := a.n - 1 END ;
+  RETURN r
+END BigDivSmall ;
+
+(* the decimal digits of a, which it consumes: '0' for zero *)
+PROCEDURE BigDec (VAR a: Big) : STR =
+VAR
+  chunk : ARRAY 160 OF I64 ;
+  nc, i : I64 ;
+  s : STR ;
+BEGIN
+  IF a.n = 0 THEN RETURN '0' END ;
+  nc := 0 ;
+  WHILE a.n > 0 DO
+    chunk[nc] := BigDivSmall (a, 1000000000) ;
+    nc := nc + 1
+  END ;
+  s := I64Str (chunk[nc - 1]) ;
+  FOR i := nc - 2 TO 0 BY -1 DO s := s + I64Pad (chunk[i], 9, TRUE) END ;
+  RETURN s
+END BigDec ;
+
+(* v's mantissa and exponent: |v| = f * 2^e; FALSE for a zero *)
+PROCEDURE Parts (v: F64 ; VAR f, e: I64) : BOOL =
+VAR
+  b : SLICE OF BYTE ;
+  scratch : POOL ;
+  be, i : I64 ;
+BEGIN
+  b := NEW (scratch, BYTE, 8) ;
+  F64.ToBytesLE (v, b) ;
+  be := (I64 (b[7]) MOD 128) * 16 + I64 (b[6]) DIV 16 ;
+  f := I64 (b[6]) MOD 16 ;
+  FOR i := 5 TO 0 BY -1 DO f := f * 256 + I64 (b[i]) END ;
+  IF be = 0 AND f = 0 THEN RETURN FALSE END ;
+  IF be = 0 THEN
+    e := -1074                                 (* subnormal *)
+  ELSE
+    f := f + Two52 ;
+    e := be - 1075
+  END ;
+  RETURN TRUE
+END Parts ;
+
+PROCEDURE Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange =
+VAR
+  n : Big ;
+  f, e : I64 ;
+  ds, s : STR ;
+  up : BOOL ;
+BEGIN
+  IF v # v THEN RETURN 'nan' END ;
+  IF v > MaxF64 THEN RETURN 'inf' END ;
+  IF v < -MaxF64 THEN RETURN '-inf' END ;
+  IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
+
+  n.n := 0 ;
+  IF Parts (v, f, e) THEN
+    BigSmall (n, f) ;
+    BigTen (n, decimals) ;
+    IF e >= 0 THEN
+      BigShl (n, e)
+    ELSE
+      (* the divisor is 2^-e: the bit below the quotient is the half,
+         the bits under that say whether it is more than half *)
+      up := BigBit (n, -e - 1) ;
+      IF up AND NOT BigAnyBelow (n, -e - 1) THEN
+        up := BigBit (n, -e)                   (* a tie: to even *)
+      END ;
+      BigShr (n, -e) ;
+      IF up THEN BigPlus (n, 1) END
+    END
+  END ;
+
+  ds := BigDec (n) ;
+  IF LEN (ds) <= decimals THEN ds := Zeros (decimals + 1 - LEN (ds)) + ds END ;
+  s := '' ;
+  IF v < 0.0 THEN s := '-' END ;
+  IF decimals = 0 THEN RETURN s + ds END ;
+  RETURN s + SLICE (ds, 0, LEN (ds) - decimals) + '.'
+           + SLICE (ds, LEN (ds) - decimals, decimals)
+END Fixed ;
+
+PROCEDURE FixedPad (v: F64 ; width, decimals: I64) : STR
+  RAISES ValueRange =
+BEGIN
+  RETURN PadLeft (Fixed (v, decimals), width)
+END FixedPad ;
+
+(* f * 2^e * 10^p rounded half to even, while that is below 2^62;
+   above, the bits of the quotient saturate at 2^62 - 1 (and the
+   rounding may add one), more than any 18 digits, which is all Sci
+   asks: the exponent was guessed too low *)
+PROCEDURE Scaled (f, e, p: I64) : I64 =
+VAR
+  num, den, t : Big ;
+  q, j, c : I64 ;
+BEGIN
+  BigSmall (num, f) ;
+  BigSmall (den, 1) ;
+  IF e >= 0 THEN BigShl (num, e) ELSE BigShl (den, -e) END ;
+  IF p >= 0 THEN BigTen (num, p) ELSE BigTen (den, -p) END ;
+  t := den ;
+  BigShl (t, 62) ;
+  (* long division a bit at a time: t is den * 2^j *)
+  q := 0 ;
+  FOR j := 61 TO 0 BY -1 DO
+    BigShr (t, 1) ;
+    q := q * 2 ;
+    IF BigCmp (num, t) >= 0 THEN
+      BigSub (num, t) ;
+      q := q + 1
+    END
+  END ;
+  BigMul (num, 2) ;
+  c := BigCmp (num, den) ;
+  IF c > 0 OR (c = 0 AND q MOD 2 = 1) THEN q := q + 1 END ;
+  RETURN q
+END Scaled ;
+
+PROCEDURE Sci (v: F64 ; decimals: I64) : STR RAISES ValueRange =
+VAR
+  f, e, x, k, hi, nn, bl : I64 ;
+  ds, s : STR ;
+BEGIN
+  IF v # v THEN RETURN 'nan' END ;
+  IF v > MaxF64 THEN RETURN 'inf' END ;
+  IF v < -MaxF64 THEN RETURN '-inf' END ;
+  IF decimals < 0 OR decimals > MaxDecimals THEN RAISE ValueRange END ;
+
+  s := '' ;
+  IF v < 0.0 THEN s := '-' END ;
+  IF NOT Parts (v, f, e) THEN
+    k := 0 ;
+    nn := 0
+  ELSE
+    (* 2^x <= |v| < 2^(x+1), so the decimal exponent is floor (x log10
+       2) or one more.  0.30103 is log10 2 a part in 10^7 HIGH, and
+       counted over every x from -1075 to 1023 the floor below is
+       floor (x log10 2) all the same: the guess is never above the
+       exponent, so the loop only ever moves it up *)
+    bl := 0 ;
+    x := f ;
+    WHILE x > 0 DO
+      bl := bl + 1 ;
+      x := x DIV 2
+    END ;
+    x := e + bl - 1 ;
+    IF x >= 0 THEN
+      k := (x * 30103) DIV 100000
+    ELSE
+      k := -((-x * 30103 + 99999) DIV 100000)
+    END ;
+    hi := Pow10I (decimals + 1) ;
+    (* N must have at most decimals + 1 digits; more, or a rounding up
+       to 10^(d+1) (9.999 at two decimals), is a guess one too low, and
+       the next turn rounds the value itself again -- never N divided
+       by ten.  Three turns at the most. *)
+    LOOP
+      nn := Scaled (f, e, decimals - k) ;
+      IF nn < hi THEN EXIT END ;
+      k := k + 1
+    END
+  END ;
+
+  ds := I64Str (nn) ;
+  IF decimals = 0 THEN RETURN s + ds + 'e' + I64Str (k) END ;
+  IF nn = 0 THEN ds := Zeros (decimals + 1) END ;
+  RETURN s + SLICE (ds, 0, 1) + '.' + SLICE (ds, 1, decimals) + 'e' + I64Str (k)
+END Sci ;
+
+PROCEDURE SciPad (v: F64 ; width, decimals: I64) : STR
+  RAISES ValueRange =
+BEGIN
+  RETURN PadLeft (Sci (v, decimals), width)
+END SciPad ;
 
 PROCEDURE ParseF64 (RO s: STR) : F64 RAISES ValueRange =
 VAR

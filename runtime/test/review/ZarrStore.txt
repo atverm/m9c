@@ -30,7 +30,7 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                 7
-  RAISE statements                               32
-  handlers                                       11
+  RAISE statements                               33
+  handlers                                       12
   NEW in the frame                                0
   NEW in a named pool                             6

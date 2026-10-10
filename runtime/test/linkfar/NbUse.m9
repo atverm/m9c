@@ -1,0 +1,15 @@
+MODULE NbUse ;
+
+(* Parquet -- and with it libzstd -- only through NbCells'
+   implementation: zstd must be on the line, and the program links *)
+
+IMPORT Io ;
+IMPORT Faults ;
+IMPORT NbCells ;
+
+BEGIN
+  Io.WriteLine ('nb ' + NbCells.Kind ('nothing'))
+EXCEPT
+| Faults.BadArg (what) : Io.WriteLine ('nb badarg')
+| ValueRange : Io.WriteLine ('nb valuerange')
+END NbUse.

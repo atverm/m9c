@@ -188,11 +188,18 @@ VAR
   (* roots of the deps that WERE named, so the gaps they leave can be
      filled once the named ones are all in, in the order given *)
   depRoots : SLICE OF Ast.Kid ;
+  mainRoot : Ast.Kid ;        (* the file on the command line: its own FOR "C"
+                                 units name what they link too (2026-10-10) *)
   depNames : SLICE OF STR ;   (* parallel: whose root that is, so
                                  FillGaps can order it once its own
                                  subtree has been walked *)
+  depFar   : SLICE OF BOOL ;  (* parallel: reached only through another
+                                 module (LoadIndirect), so its LINK
+                                 words go on the line only when their
+                                 libraries are there (LinkWords) *)
   ndeps    : I64 ;
   nmissing : I64 ;
+  readNotText : BOOL ;        (* TryRead's last file was there, and not UTF-8 *)
   (* the module being compiled: its own object is not a dependency *)
   modName  : STR ;
 
@@ -208,7 +215,7 @@ CONST
   (* Kept by hand in step with debian/changelog: the compiler is the
      one artifact that cannot read its own package version, and a
      generated file would drag the build system into the bootstrap. *)
-  Version = '0.20.0' ;
+  Version = '0.21.0' ;
   (* and where its runtime lives, which --help quotes so that the
      example a user copies out of it actually compiles *)
   StdInclude = '/usr/include/m9' ;
@@ -550,6 +557,7 @@ END Join ;
 PROCEDURE TryRead (RO path: STR ; VAR ok: BOOL) : STR =
 BEGIN
   ok := TRUE ;
+  readNotText := FALSE ;
   RETURN Io.ReadFile (pool, path)
 EXCEPT
 | Io.IOError (p) :
@@ -558,8 +566,9 @@ EXCEPT
 | ValueRange :
     (* it exists and is not text: that IS worth saying, because a
        silent skip here would look identical to a missing file *)
-    Diag ('m9c: not text: ', path, '') ;
+    Diag ('m9c: not text: ', path, ' -- a source is UTF-8, and this file is not') ;
     ok := FALSE ;
+    readNotText := TRUE ;
     RETURN ''
 END TryRead ;
 
@@ -1092,25 +1101,131 @@ END LinkWord ;
    item).  On macOS Homebrew's lib is named once when a unit links
    anything, as OpenSSL's is: that is where blosc and netCDF live
    there and the linker does not look by itself. *)
+(* Is the library a LINK word names on THIS machine?  Asked of the C
+   compiler, which answers a file it would link with its full path and
+   one it would not with the bare name (`cc -print-file-name=F').  A
+   shim source or another flag has nothing to look for: TRUE.  On
+   macOS Homebrew's lib is looked in as well -- m9c names it on the
+   line.  On Windows only the STATIC archive counts: the zip ships one
+   for what a program should carry (OpenSSL, zlib, zstd) and import
+   libraries for the rest, and a program linked against an import
+   library does not START without the DLL beside it (measured
+   2026-10-10: a Frame program that never calls NetCDF, given
+   -lnetcdf, exits 53 under wine where 0.20.0's ran). *)
+PROCEDURE LibFound (RO w: STR) : BOOL RAISES ValueRange =
+VAR
+  n, i, at : I64 ;
+  name, file : STR ;
+BEGIN
+  n := LEN (w) ;
+  IF n = 0 THEN RETURN TRUE END ;
+  IF n > 2 AND w[n - 2] = '.' AND w[n - 1] = 'c' THEN RETURN TRUE END ;
+  name := '' ;
+  file := '' ;
+  IF n > 3 AND w[0] = '-' AND w[1] = 'l' AND w[2] = ':' THEN
+    file := SLICE (w, 3, n - 3) ;
+    (* -l:libNAME.so.N: the NAME, for the platforms that spell it -lNAME *)
+    IF LEN (file) > 6 AND file[0] = 'l' AND file[1] = 'i' AND file[2] = 'b' THEN
+      at := -1 ;
+      FOR i := 3 TO LEN (file) - 3 DO
+        IF at < 0 AND file[i] = '.' AND file[i + 1] = 's' AND file[i + 2] = 'o' THEN at := i END
+      END ;
+      IF at > 3 THEN name := SLICE (file, 3, at - 3) END
+    END
+  ELSIF n > 2 AND w[0] = '-' AND w[1] = 'l' THEN
+    name := SLICE (w, 2, n - 2)
+  ELSIF w[0] = '-' THEN
+    RETURN TRUE
+  ELSE
+    name := w
+  END ;
+  IF windows THEN
+    RETURN LEN (name) > 0 AND CcFinds (Cat ('lib', Cat (name, '.a')))
+  END ;
+  IF macos THEN
+    IF LEN (name) = 0 THEN RETURN FALSE END ;
+    IF Io.Exists (Cat ('/opt/homebrew/lib/lib', Cat (name, '.dylib'))) THEN RETURN TRUE END ;
+    RETURN CcFinds (Cat ('lib', Cat (name, '.dylib'))) OR CcFinds (Cat ('lib', Cat (name, '.a')))
+  END ;
+  IF LEN (file) > 0 THEN RETURN CcFinds (file) END ;
+  RETURN CcFinds (Cat ('lib', Cat (name, '.so'))) OR CcFinds (Cat ('lib', Cat (name, '.a')))
+END LibFound ;
+
+PROCEDURE CcFinds (RO file: STR) : BOOL RAISES ValueRange =
+VAR
+  r : System.Result ;
+  args : SLICE OF STR ;
+  cc, got : STR ;
+  n : I64 ;
+BEGIN
+  cc := CcName () ;
+  args := NEW (pool, STR, 1) ;
+  args[0] := Cat ('-print-file-name=', file) ;
+  r := System.Exec (pool, cc, args, '', ChildEnv (cc)) ;
+  IF r.status # 0 THEN RETURN FALSE END ;
+  n := LEN (r.out) ;
+  WHILE n > 0 AND (r.out[n - 1] = 0AC OR r.out[n - 1] = 0DC OR r.out[n - 1] = ' ') DO
+    n := n - 1
+  END ;
+  got := SLICE (r.out, 0, n) ;
+  RETURN NOT DynStr.Eq (got, file) AND Io.Exists (got)
+EXCEPT
+| Io.IOError (p) : RETURN FALSE
+END CcFinds ;
+
+(* every library a unit's LINK clause names is found *)
+PROCEDURE UnitFound (l: PTR Ast.Node) : BOOL RAISES ValueRange =
+VAR m : I64 ;
+BEGIN
+  FOR m := 0 TO l.nkids - 1 DO
+    IF l.kids[m] IS SOME ws THEN
+      IF NOT LibFound (ws.a) THEN RETURN FALSE END
+    END
+  END ;
+  RETURN TRUE
+END UnitFound ;
+
 PROCEDURE LinkWords () RAISES ValueRange =
 VAR
   i, j, k, m, nseen : I64 ;
   rt : STR ;
   seen : SLICE OF STR ;
-  any : BOOL ;
+  any, far : BOOL ;
+  rk : Ast.Kid ;
 BEGIN
   rt := RtDir () ;
   seen := NEW (pool, STR, 64) ;    (* module pool: LinkWord keeps the words in it *)
   nseen := 0 ;
   any := FALSE ;
-  FOR i := 0 TO ndeps - 1 DO
-    IF depRoots[i] IS SOME r THEN
+  (* -1 is the program itself: a LINK on its own FOR "C" unit was
+     never read, so `LINK "z"' there linked nothing (cp-kernel's
+     finding on 0.20.0) *)
+  FOR i := -1 TO ndeps - 1 DO
+    IF i < 0 THEN
+      rk := mainRoot ;
+      far := FALSE
+    ELSE
+      rk := depRoots[i] ;
+      far := depFar[i]
+    END ;
+    IF rk IS SOME r THEN
       FOR j := 0 TO r.nkids - 1 DO
         IF r.kids[j] IS SOME u THEN
           IF u.kind = Ast.NDefinition AND LEN (u.b) > 0 THEN
             FOR k := 0 TO u.nkids - 1 DO
               IF u.kids[k] IS SOME l THEN
-                IF l.kind = Ast.NLinkList THEN
+                (* a unit reached only through another module's
+                   implementation links when its libraries are here:
+                   Frame reaches NetCDF so, and a Frame program that
+                   never calls it links without libnetcdf -- the
+                   linker drops the unused calls -- while one that
+                   reaches Parquet's zstd needs -lzstd on the line *)
+                IF l.kind = Ast.NLinkList AND far AND NOT UnitFound (l) THEN
+                  IF verbose THEN
+                    Diag ('m9c: not linking what ', u.a,
+                          ' names: reached through another module, and not on this machine')
+                  END
+                ELSIF l.kind = Ast.NLinkList THEN
                   FOR m := 0 TO l.nkids - 1 DO
                     IF l.kids[m] IS SOME ws THEN
                       IF macos AND NOT any THEN
@@ -2966,12 +3081,12 @@ BEGIN
        one `<>` in a file gave `981 parse errors` and no line. *)
     i := 0 ;
     WHILE i < p.nkept AND i < 8 DO
-      IF lineShift > 0 AND DynStr.Eq (path, shiftPath) AND p.errLine[i] > lineShift THEN
-        Diag2 (Cat (path, ':'), p.errLine[i] - lineShift, p.errCol[i],
-               ': parse: ', p.errMsg[i])
+      IF lineShift > 0 AND DynStr.Eq (path, shiftPath) AND p.errs[i].line > lineShift THEN
+        Diag2 (Cat (path, ':'), p.errs[i].line - lineShift, p.errs[i].col,
+               ': parse: ', p.errs[i].msg)
       ELSE
-        Diag2 (Cat (path, ':'), p.errLine[i], p.errCol[i],
-               ': parse: ', p.errMsg[i])
+        Diag2 (Cat (path, ':'), p.errs[i].line, p.errs[i].col,
+               ': parse: ', p.errs[i].msg)
       END ;
       i := i + 1
     END ;
@@ -3000,7 +3115,7 @@ END ParseFile ;
    what it does with a registered unit is emit an #include for it, and
    a header that includes its dependencies' dependencies is describing
    somebody else's interface.                                        *)
-PROCEDURE Absorb (root: PTR Ast.Node ; forGen: BOOL) =
+PROCEDURE Absorb (VAR root: PTR Ast.Node ; forGen: BOOL) =
 VAR i : I64 ;
 BEGIN
   Sem.LoadFile (root) ;
@@ -3028,21 +3143,29 @@ BEGIN
 END Absorb ;
 
 (* remember a root so its own imports can be walked later *)
-PROCEDURE Keep (KEPT root: PTR Ast.Node ; RO KEPT name: STR) =
+PROCEDURE Keep (KEPT root: PTR Ast.Node ; RO KEPT name: STR ; far: BOOL) =
 VAR
   nb : SLICE OF Ast.Kid ;
   nn : SLICE OF STR ;
+  nf : SLICE OF BOOL ;
   i : I64 ;
 BEGIN
   IF ndeps = LEN (depRoots) THEN
     nb := NEW (pool, Ast.Kid, 2 * LEN (depRoots) + 8) ;
     nn := NEW (pool, STR, 2 * LEN (depRoots) + 8) ;
-    FOR i := 0 TO ndeps - 1 DO nb[i] := depRoots[i] ; nn[i] := depNames[i] END ;
+    nf := NEW (pool, BOOL, 2 * LEN (depRoots) + 8) ;
+    FOR i := 0 TO ndeps - 1 DO
+      nb[i] := depRoots[i] ;
+      nn[i] := depNames[i] ;
+      nf[i] := depFar[i]
+    END ;
     depRoots := nb ;
-    depNames := nn
+    depNames := nn ;
+    depFar := nf
   END ;
   depRoots[ndeps] := SOME (root) ;
   depNames[ndeps] := name ;
+  depFar[ndeps] := far ;
   ndeps := ndeps + 1
 END Keep ;
 
@@ -3117,7 +3240,7 @@ BEGIN
   IF ParseText (src, path) IS SOME root THEN
     ScanUnsafe (root, path, trusted) ;
     Absorb (root, TRUE) ;
-    Keep (root, name)
+    Keep (root, name, FALSE)
     (* NOT Ordered here: this deliberately does not recurse, so the
        module's own imports are not in order[] yet.  FillGaps adds it
        once it has walked this root's subtree. *)
@@ -3180,7 +3303,12 @@ BEGIN
   IF ParseText (src, path) IS SOME root THEN
     ScanUnsafe (root, path, trusted) ;
     WalkImports (root, FALSE, name) ;
-    Absorb (root, FALSE)
+    Absorb (root, FALSE) ;
+    (* kept, so LinkWords sees its FOR "C" units: a LINK reached only
+       through another module's IMPLEMENTATION (NbCells -> Parquet ->
+       czstd) left its library off the line until 2026-10-10.  FAR:
+       its words go on only when their libraries are there *)
+    Keep (root, name, TRUE)
   END
 END LoadIndirect ;
 
@@ -3199,7 +3327,7 @@ BEGIN
   IF ParseFile (path) IS SOME root THEN
     ScanUnsafe (root, path, FALSE) ;
     Absorb (root, TRUE) ;
-    Keep (root, BaseName (path))
+    Keep (root, BaseName (path), FALSE)
   END
 END LoadDep ;
 
@@ -3557,6 +3685,10 @@ BEGIN
        library set, and the argument can be a module rather than a
        path -- which is what a module compiler ought to accept. *)
     mainSrc := TryRead (main, found) ;
+    (* there, and not text: said once by TryRead, and nothing to search
+       for -- the path search read it again and then said `cannot find'
+       (2026-10-10) *)
+    IF NOT found AND readNotText THEN Io.Halt (1) END ;
     IF NOT found THEN
       mainSrc := FindModule (name, main, found, mainTrust) ;
       IF NOT found THEN
@@ -3627,6 +3759,7 @@ BEGIN
        below do not add their comments to this module's. *)
     IF doDoc THEN Lex.Collect (TRUE) END ;
     IF ParseText (mainSrc, main) IS SOME root THEN
+      mainRoot := SOME (root) ;
       ScanUnsafe (root, main, FALSE) ;
       (* whatever the command line did not name, the search path
          finds: IMPORT names a module and m9c can now translate that

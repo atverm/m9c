@@ -68,7 +68,9 @@ int main (int argc, char **argv)
   for (k = 2; k < argc; k++)
     {
       droot = parse_unit (argv[k], &err);
-      Sem_LoadFile (droot, &err);
+      /* the root goes by VAR, its pool beside it: a binder on a value
+         parameter's component named no pool (2026-10-10) */
+      Sem_LoadFile (&droot, &pool, &err);
       for (i = 0; i < droot->nkids; i++)
         if (droot->kids.p[i])
           { Gen_LoadExtern (droot->kids.p[i], &err);
@@ -80,13 +82,14 @@ int main (int argc, char **argv)
   /* the checker first, as m9c runs it: it records the types the
      generator reads (the typed tree, 2026-10-09); its diagnostics are
      not this tool's business -- semdiff holds them */
-  Sem_LoadFile (root, &err);
-  Sem_CheckFile (root, &err);
+  Sem_LoadFile (&root, &pool, &err);
+  Sem_CheckFile (&root, &pool, &err);
   if (err.exc) { fprintf (stderr, "the checker raised %s\n",
                           err.exc->name); return 3; }
   for (i = 0; i < root->nkids; i++)
     if (root->kids.p[i])
-      { Gen_LoadUnit (root->kids.p[i], &err);
+      { Ast_Node *u = root->kids.p[i];
+        Gen_LoadUnit (&u, &pool, &err);
         if (err.exc) { fprintf (stderr, "LoadUnit raised %s\n",
                                 err.exc->name); return 3; } }
 

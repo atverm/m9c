@@ -1,10 +1,10 @@
-REVIEW Smtp -- 37 procedures with a body, 18 of them functions; 12 headings in a DEFINITION
+REVIEW Smtp -- 39 procedures with a body, 20 of them functions; 12 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              18
-  assignments                                   115
-  arguments                                     410
-  RETURN values                                  39
+  functions answering on every path              20
+  assignments                                   116
+  arguments                                     414
+  RETURN values                                  43
   operands of a comparison or an operator       141
   CASE labels                                    17
   THREAD arguments                                0
@@ -31,6 +31,6 @@ TRUSTED -- outside what the checker can see
 COUNTED -- how much there was to check
   CASE statements                                 2
   RAISE statements                                9
-  handlers                                        1
+  handlers                                        3
   NEW in the frame                                0
   NEW in a named pool                            11

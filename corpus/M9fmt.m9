@@ -192,7 +192,7 @@ BEGIN
   IF p.nerr > 0 THEN
     i := 0 ;
     WHILE i < p.nkept AND i < 8 DO
-      ErrPos (path, p.errLine[i], p.errCol[i], p.errMsg[i]) ;
+      ErrPos (path, p.errs[i].line, p.errs[i].col, p.errs[i].msg) ;
       i := i + 1
     END ;
     Io.ErrLine ('m9fmt: will not format what does not parse: ' + path) ;
@@ -247,8 +247,6 @@ BEGIN
     a := 0 ;
     IF j > 0 THEN a := ts.line[j - 1] END ;
     IF i > 0 THEN
-      (* F (x).field does not parse -- the grammar's recorded gap --
-         so the call result gets a name *)
       pm := Lex.ComAt (i - 1) ;
       IF pm.endLine > a THEN a := pm.endLine END
     END ;

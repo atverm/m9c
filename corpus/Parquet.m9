@@ -1,30 +1,30 @@
 DEFINITION MODULE Parquet ;
 
-(* A deliberately MINIMAL Parquet subset for Frame.m9: flat schemas,
-   PLAIN encoding, uncompressed pages, one row group.  Everything
-   outside the subset is refused BY NAME -- a codec, an encoding, a
-   nesting -- because a half-read Parquet file is a numbers-shaped
-   lie, and the format's long tail (dictionaries, ten codecs, three
-   page versions, bloom filters) is exactly the part nothing here
-   needs yet.  docs/dataframe-plan.md phase 4; pyarrow is the oracle
+(* A Parquet subset for Frame.m9: flat schemas.  pyarrow is the oracle
    both ways: files pyarrow wrote are read value-exact against what
    pyarrow reads from them (corpus/ParquetTest.m9), files this module
-   writes are read back by pyarrow (runtime/test/columnar.sh), and the
-   refusal samples (dictionary, snappy, a null boolean) are pyarrow's
-   own.
+   writes are read back by pyarrow (runtime/test/columnar.sh).
 
-   THE WRITER EMITS REQUIRED COLUMNS by default: Frame's missing
-   values live in the data (NaN, the sentinels), not as Parquet
-   nulls, so no definition levels are written.  Asked for
-   (`Options.nulls`, WriteOpt), every numeric column is OPTIONAL and
-   a missing cell is a NULL -- what pyarrow writes from pandas, and
-   what a reader that knows no sentinel needs.  THE READER accepts
-   OPTIONAL columns and maps a null to the arm's own missing value --
-   the same mapping CSV import applies to an empty field.
+   THE READER reads what pyarrow and polars write with their DEFAULTS:
+   several row groups, several data pages a chunk (version 1 or 2), a
+   dictionary page with RLE_DICTIONARY indices (and PLAIN_DICTIONARY,
+   its old name), PLAIN values, RLE booleans, and pages compressed
+   with SNAPPY, GZIP or ZSTD or not at all.  Everything outside that is
+   refused BY NAME -- a codec (brotli, lz4), an encoding (the DELTA
+   family, BYTE_STREAM_SPLIT), a nesting, a repeated column -- because
+   a half-read Parquet file is a numbers-shaped lie.  An OPTIONAL
+   column's null is the arm's own missing value, the mapping CSV import
+   applies to an empty field; a null BOOLEAN is refused, BOOL keeping
+   no missing value.  Strings are UTF-8 both ways.
 
-   Strings are ASCII in this subset, both directions, refused
-   otherwise with the column named: CHAR beyond 127 would need real
-   UTF-8 transcoding and nothing here needs it yet. *)
+   THE WRITER emits one row group, one PLAIN data page a column, no
+   dictionary, compressed as Options.codec asks (none by default).
+   Its columns are REQUIRED by default: Frame's missing values live in
+   the data (NaN, the sentinels), not as Parquet nulls, so no
+   definition levels are written.  Asked for (`Options.nulls`,
+   WriteOpt), every numeric column is OPTIONAL and a missing cell is a
+   NULL -- what pyarrow writes from pandas, and what a reader that
+   knows no sentinel needs. *)
 
 IMPORT Faults ;
 
@@ -63,6 +63,20 @@ PROCEDURE BytesX (VAR pool: POOL ; f: PTR Frame.Fr ;
      per-request temp file it must then read back and remove.  No
      Io.IOError, because nothing is opened.                          *)
 
+CONST
+  (* Options.codec: how the writer compresses each page.  The numbers
+     are the format's own (parquet.thrift CompressionCodec).  SNAPPY is
+     pyarrow's default; GZIP is the RFC 1952 wrapping of Zip's plain
+     compressor -- smaller than snappy, slower to write, and larger
+     than zlib's level 6 would make it; ZSTD is libzstd at its default
+     level 3, polars' default codec.  Snappy and gzip are written in
+     M9; zstd is the system's libzstd, so a program importing Parquet
+     links it (LINK below). *)
+  CodecNone = 0 ;
+  CodecSnappy = 1 ;
+  CodecGzip = 2 ;
+  CodecZstd = 6 ;
+
 TYPE
   Options = RECORD
     kvK, kvV : SLICE OF STR ;   (* file-level key_value_metadata *)
@@ -70,6 +84,7 @@ TYPE
     usCols : SLICE OF STR ;     (* INT64 as TIMESTAMP(MICROS, local) *)
     i8Cols : SLICE OF STR ;     (* an I16 or I32 column as INT_8 *)
     nulls : BOOL ;              (* missing cells as Parquet nulls *)
+    codec : I64 ;               (* CodecNone, CodecSnappy, CodecGzip, CodecZstd *)
   END ;
   (* what WriteX takes, and three things a dataframe written for
      pandas and pyarrow needs, found by the cp-kernel's time series
@@ -91,8 +106,11 @@ TYPE
                  bit-packed run, and the value left out.  FALSE
                  writes WriteX's bytes.
 
+       codec  -- every page compressed so, and said in the column's
+                 metadata; another number is BadArg.
+
      A zeroed record is WriteX with nothing asked: empty slices,
-     nulls FALSE.  Every name in usCols and i8Cols must be a column
+     nulls FALSE, CodecNone.  Every name in usCols and i8Cols must be a column
      of the frame of the right kind, or BadArg says which (nsCols is
      not held to the frame, as WriteX never held it).               *)
 
@@ -114,11 +132,36 @@ PROCEDURE TsRead (VAR pool: POOL ; RO path: STR) : PTR Frame.Ts
 END Parquet.
 
 
-IMPLEMENTATION MODULE Parquet ;
+UNSAFE DEFINITION MODULE FOR "C" czstd LINK "-l:libzstd.so.1" ;
+
+(* libzstd's one-shot calls: each makes and frees its own context, so
+   any number of threads may call them at once.  An error is a size_t
+   near 2 ** 64, which I64 () refuses with ValueRange. *)
+
+PROCEDURE ZstdDecompress = "ZSTD_decompress"
+  (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT)
+  : C.SizeT  [REENTRANT] ;
+
+PROCEDURE ZstdCompress = "ZSTD_compress"
+  (dst: C.MutPtr ; cap: C.SizeT ; src: C.ConstPtr ; n: C.SizeT ;
+   level: C.Int) : C.SizeT  [REENTRANT] ;
+
+PROCEDURE ZstdBound = "ZSTD_compressBound" (n: C.SizeT) : C.SizeT
+  [REENTRANT] ;
+
+END czstd.
+
+
+UNSAFE IMPLEMENTATION MODULE Parquet ;
+
+(* UNSAFE for one reason: ADR at the libzstd boundary.  Grep ADR. *)
+
+FROM czstd IMPORT ZstdDecompress, ZstdCompress, ZstdBound ;
 
 IMPORT Faults ;
 
 IMPORT DynStr ;
+IMPORT Zip ;
 
 (* ---- thrift compact protocol type codes ---- *)
 
@@ -154,8 +197,29 @@ CONST
   CvInt16 = 16 ;
 
   EncPlain = 0 ;
+  EncPlainDict = 2 ;       (* RLE_DICTIONARY's old name, the same bytes *)
   EncRle = 3 ;
-  CodecNone = 0 ;
+  EncBitPacked = 4 ;
+  EncRleDict = 8 ;
+
+  (* page types *)
+  PgData = 0 ;
+  PgIndex = 1 ;
+  PgDict = 2 ;
+  PgDataV2 = 3 ;
+
+  (* what a Sink gathers *)
+  SkF64 = 0 ;
+  SkF32 = 1 ;
+  SkI64 = 2 ;
+  SkI32 = 3 ;
+  SkI16 = 4 ;
+  SkByte = 5 ;
+  SkBool = 6 ;
+  SkStr = 7 ;
+
+  SnapBad = 'a damaged snappy page' ;
+  RunBad = 'damaged levels or dictionary indices' ;
 
 (* ---- a growing byte buffer ---- *)
 
@@ -517,7 +581,8 @@ END PStrVal ;
 
 PROCEDURE PageFor (VAR pool: POOL ; f: PTR Frame.Fr ;
                    RO name: STR ; k: I64 ; optional: BOOL ;
-                   RO skip: SLICE OF BOOL) : Buf
+                   RO skip: SLICE OF BOOL ; codec: I64 ;
+                   VAR unc: I64) : Buf
   RAISES ValueRange, Overflow, IndexError, Faults.BadArg =
   (* one DATA_PAGE: thrift PageHeader, then PLAIN values.  An
      OPTIONAL column's values are preceded by its definition levels
@@ -525,9 +590,13 @@ PROCEDURE PageFor (VAR pool: POOL ; f: PTR Frame.Fr ;
      RLE/bit-packed hybrid -- header (groups * 2 + 1), groups of
      eight levels a byte, LSB first, the last group zero-padded (the
      format allows it: num_values says where the levels end) -- and
-     only the present values follow. *)
+     only the present values follow.  The levels and the values are
+     compressed TOGETHER by the codec (a version 1 page); unc answers
+     the page's size uncompressed, header included, for the column's
+     total_uncompressed_size. *)
 VAR
   vals, page, lv : Buf ;
+  packed : SLICE OF BYTE ;
   last, last2, r, x, b : I64 ;
 BEGIN
   vals := NewBuf (pool, 64) ;
@@ -550,11 +619,20 @@ BEGIN
     PBytes (pool, vals, SLICE (lv.b, 0, lv.n))
   END ;
   PutValues (pool, vals, f, name, k, skip) ;
-  page := NewBuf (pool, vals.n + 64) ;
+  IF codec = CodecSnappy THEN
+    packed := SnappyEncode (pool, SLICE (vals.b, 0, vals.n))
+  ELSIF codec = CodecGzip THEN
+    packed := Zip.Gzip (pool, SLICE (vals.b, 0, vals.n))
+  ELSIF codec = CodecZstd THEN
+    packed := ZstdEncode (pool, SLICE (vals.b, 0, vals.n))
+  ELSE
+    packed := SLICE (vals.b, 0, vals.n)
+  END ;
+  page := NewBuf (pool, LEN (packed) + 64) ;
   last := 0 ;
-  PI32F (pool, page, last, 1, 0) ;              (* type DATA_PAGE *)
+  PI32F (pool, page, last, 1, PgData) ;         (* type DATA_PAGE *)
   PI32F (pool, page, last, 2, vals.n) ;         (* uncompressed *)
-  PI32F (pool, page, last, 3, vals.n) ;         (* compressed = same *)
+  PI32F (pool, page, last, 3, LEN (packed)) ;   (* compressed *)
   PField (pool, page, last, 5, CtStruct) ;      (* data_page_header *)
   last2 := 0 ;
   PI32F (pool, page, last2, 1, Frame.Rows (f)) ;
@@ -563,9 +641,95 @@ BEGIN
   PI32F (pool, page, last2, 4, EncRle) ;
   P8 (pool, page, CtStop) ;                     (* end DataPageHeader *)
   P8 (pool, page, CtStop) ;                     (* end PageHeader *)
-  PBytes (pool, page, SLICE (vals.b, 0, vals.n)) ;
+  unc := page.n + vals.n ;
+  PBytes (pool, page, packed) ;
   RETURN page
 END PageFor ;
+
+(* ---- snappy, the writing half: a literal until four bytes are seen
+   again within 64 KiB, then a copy of as many as match (2-byte
+   offsets, at most 64 a copy).  The hash table holds the last
+   position + 1 of each four-byte hash.  Any decoder reads it: held by
+   pyarrow's (columnar.sh) and by SnappyDecode (ParquetTest). ---- *)
+
+PROCEDURE SnappyEncode (VAR pool: POOL ; RO d: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES ValueRange, IndexError =
+VAR
+  u : Buf ;
+  table : SLICE OF I64 ;
+  n, i, lit, cand, h, len, x, y : I64 ;
+BEGIN
+  n := LEN (d) ;
+  u := NewBuf (pool, n DIV 2 + 16) ;
+  PVar (pool, u, n) ;
+  table := NEW (pool, I64, 16384) ;
+  i := 0 ;
+  lit := 0 ;
+  WHILE i + 4 <= n DO
+    x := I64 (d[i]) + 256 * I64 (d[i + 1]) + 65536 * I64 (d[i + 2])
+         + 16777216 * I64 (d[i + 3]) ;
+    h := ((x * 506832829) MOD 4294967296) DIV 262144 ;
+    cand := table[h] - 1 ;
+    table[h] := i + 1 ;
+    y := -1 ;
+    IF cand >= 0 AND i - cand <= 65535 THEN
+      y := I64 (d[cand]) + 256 * I64 (d[cand + 1]) + 65536 * I64 (d[cand + 2])
+           + 16777216 * I64 (d[cand + 3])
+    END ;
+    IF y = x THEN
+      len := 4 ;
+      WHILE i + len < n AND d[cand + len] = d[i + len] DO
+        len := len + 1
+      END ;
+      SnapLiteral (pool, u, d, lit, i - lit) ;
+      SnapCopy (pool, u, i - cand, len) ;
+      i := i + len ;
+      lit := i
+    ELSE
+      i := i + 1
+    END
+  END ;
+  SnapLiteral (pool, u, d, lit, n - lit) ;
+  RETURN SLICE (u.b, 0, u.n)
+END SnappyEncode ;
+
+PROCEDURE SnapLiteral (VAR pool: POOL ; VAR u: Buf ; RO d: SLICE OF BYTE ;
+                       start, len: I64)
+  RAISES ValueRange =
+BEGIN
+  IF len = 0 THEN RETURN END ;
+  IF len <= 60 THEN
+    P8 (pool, u, (len - 1) * 4)
+  ELSIF len <= 256 THEN
+    P8 (pool, u, 60 * 4) ;
+    PLE (pool, u, len - 1, 1)
+  ELSIF len <= 65536 THEN
+    P8 (pool, u, 61 * 4) ;
+    PLE (pool, u, len - 1, 2)
+  ELSIF len <= 16777216 THEN
+    P8 (pool, u, 62 * 4) ;
+    PLE (pool, u, len - 1, 3)
+  ELSE
+    P8 (pool, u, 63 * 4) ;
+    PLE (pool, u, len - 1, 4)
+  END ;
+  PBytes (pool, u, SLICE (d, start, len))
+END SnapLiteral ;
+
+PROCEDURE SnapCopy (VAR pool: POOL ; VAR u: Buf ; off, len: I64)
+  RAISES ValueRange =
+VAR left, k : I64 ;
+BEGIN
+  left := len ;
+  WHILE left > 0 DO
+    k := left ;
+    IF k > 64 THEN k := 64 END ;
+    P8 (pool, u, (k - 1) * 4 + 2) ;
+    PLE (pool, u, off, 2) ;
+    left := left - k
+  END
+END SnapCopy ;
 
 PROCEDURE SchemaElem (VAR pool: POOL ; VAR u: Buf ; RO name: STR ;
                       k: I64 ; ns, us, i8, optional: BOOL)
@@ -713,7 +877,7 @@ PROCEDURE AnyBytes (VAR pool: POOL ; f: PTR Frame.Fr ;
 VAR
   out, meta, page : Buf ;
   pages : SLICE OF Buf ;
-  offs, kinds : SLICE OF I64 ;
+  offs, kinds, uncs : SLICE OF I64 ;
   names : SLICE OF STR ;
   opt : SLICE OF BOOL ;
   skip : SLICE OF BOOL ;
@@ -729,11 +893,17 @@ BEGIN
       RAISE Faults.BadArg ('a column in both nsCols and usCols: ' + o.usCols[i])
     END
   END ;
+  IF o.codec # CodecNone AND o.codec # CodecSnappy AND o.codec # CodecGzip
+     AND o.codec # CodecZstd THEN
+    RAISE Faults.BadArg ('codec ' + I64Text (o.codec)
+                         + ': CodecNone, CodecSnappy, CodecGzip or CodecZstd')
+  END ;
   nc := Frame.Cols (f) ;
   out := NewBuf (pool, 4096) ;
   PBytes (pool, out, MagicBytes ()) ;
   pages := NEW (pool, Buf, nc) ;
   offs := NEW (pool, I64, nc) ;
+  uncs := NEW (pool, I64, nc) ;
   names := NEW (pool, STR, nc) ;
   kinds := NEW (pool, I64, nc) ;
   opt := NEW (pool, BOOL, nc) ;
@@ -753,7 +923,7 @@ BEGIN
       CheckI8 (f, names[c], kinds[c], skip)
     END ;
     offs[c] := out.n ;
-    page := PageFor (pool, f, names[c], kinds[c], opt[c], skip) ;
+    page := PageFor (pool, f, names[c], kinds[c], opt[c], skip, o.codec, uncs[c]) ;
     pages[c] := page ;
     PBytes (pool, out, SLICE (page.b, 0, page.n))
   END ;
@@ -787,10 +957,10 @@ BEGIN
     PVar (pool, meta, Zig (EncRle)) ;
     PListF (pool, meta, lastCm, 3, CtBinary, 1) ;
     PStrRaw (pool, meta, names[c]) ;
-    PI32F (pool, meta, lastCm, 4, CodecNone) ;
+    PI32F (pool, meta, lastCm, 4, o.codec) ;
     PI64F (pool, meta, lastCm, 5, Frame.Rows (f)) ;
-    PI64F (pool, meta, lastCm, 6, pages[c].n) ;
-    PI64F (pool, meta, lastCm, 7, pages[c].n) ;
+    PI64F (pool, meta, lastCm, 6, uncs[c]) ;     (* total_uncompressed_size *)
+    PI64F (pool, meta, lastCm, 7, pages[c].n) ;  (* total_compressed_size *)
     PI64F (pool, meta, lastCm, 9, offs[c]) ;    (* data_page_offset *)
     P8 (pool, meta, CtStop) ;                   (* end ColumnMetaData *)
     P8 (pool, meta, CtStop)                     (* end ColumnChunk *)
@@ -1071,16 +1241,21 @@ TYPE
     phys : I64 ;
     conv : I64 ;           (* converted_type, -1 none *)
     optional : BOOL ;
-    off : I64 ;            (* data_page_offset *)
-    nvals : I64 ;
+  END ;
+
+  Chunk = RECORD           (* one column of one row group *)
     codec : I64 ;
-    hasDict : BOOL ;       (* a dictionary_page_offset was present *)
+    nvals : I64 ;          (* values, nulls counted *)
+    off : I64 ;            (* data_page_offset *)
+    dictOff : I64 ;        (* dictionary_page_offset, -1 none *)
   END ;
 
   Meta = RECORD
     rows : I64 ;
     ncols : I64 ;
     cols : SLICE OF ColInfo ;
+    ngroups : I64 ;
+    chunks : SLICE OF Chunk ;   (* group g, column c: g * ncols + c *)
     kvKeys : SLICE OF STR ;
     kvVals : SLICE OF STR ;
     nkv : I64 ;
@@ -1089,7 +1264,7 @@ TYPE
 PROCEDURE ReadSchema (VAR pool: POOL ; VAR r: Rd ; VAR m: Meta)
   RAISES Faults.BadArg, Overflow, ValueRange =
 VAR
-  hdr, n, i, last, id, ct, children : I64 ;
+  hdr, n, i, last, id, ct, children, rep : I64 ;
   first : BOOL ;
   ci : ColInfo ;
 BEGIN
@@ -1106,14 +1281,14 @@ BEGIN
     ci.conv := -1 ;
     ci.optional := FALSE ;
     children := 0 ;
+    rep := 0 ;
     last := 0 ;
     WHILE RField (r, last, id, ct) DO
       IF id = 1 AND ct = CtI32 THEN
         ci.phys := RZig (r)
       ELSIF id = 3 AND ct = CtI32 THEN
-        IF RZig (r) = 1 THEN ci.optional := TRUE END
-        (* REPEATED (2) would zigzag to 1?  No: 2.  A repeated
-           field is nested data and refused below via children *)
+        rep := RZig (r) ;          (* REQUIRED 0, OPTIONAL 1, REPEATED 2 *)
+        ci.optional := rep = 1
       ELSIF id = 4 AND ct = CtBinary THEN
         ci.name := RStr (pool, r)
       ELSIF id = 5 AND ct = CtI32 THEN
@@ -1129,6 +1304,7 @@ BEGIN
       (* the root: children counted, nothing else kept *)
     ELSE
       IF children > 0 THEN RAISE Faults.BadArg ('nested schema') END ;
+      IF rep = 2 THEN RAISE Faults.BadArg ('a repeated column: ' + ci.name) END ;
       m.cols[m.ncols] := ci ;
       m.ncols := m.ncols + 1
     END
@@ -1152,9 +1328,14 @@ BEGIN
           + 256 * I64 (whole[LEN (whole) - 7])
           + 65536 * I64 (whole[LEN (whole) - 6])
           + 16777216 * I64 (whole[LEN (whole) - 5]) ;
+  IF mlen > LEN (whole) - 12 THEN RAISE Faults.BadArg ('truncated metadata') END ;
   r.b := SLICE (whole, LEN (whole) - 8 - mlen, mlen) ;
   r.at := 0 ;
   m.rows := 0 ;
+  m.ncols := 0 ;
+  m.cols := NEW (pool, ColInfo, 0) ;
+  m.ngroups := 0 ;
+  m.chunks := NEW (pool, Chunk, 0) ;
   m.nkv := 0 ;
   m.kvKeys := NEW (pool, STR, 8) ;
   m.kvVals := NEW (pool, STR, 8) ;
@@ -1165,12 +1346,15 @@ BEGIN
     ELSIF id = 3 AND ct = CtI64 THEN
       m.rows := RZig (r)
     ELSIF id = 4 AND ct = CtList THEN
+      (* every row group: a column of the frame is its chunks, one
+         per group, in order (the schema, field 2, came first) *)
       hdr := R8 (r) ;
       n := hdr DIV 16 ;
       IF n = 15 THEN n := RVar (r) END ;
-      IF n # 1 THEN RAISE Faults.BadArg ('more than one row group') END ;
-      FOR g := 1 TO n DO
-        ReadRowGroup (pool, r, m)
+      m.ngroups := n ;
+      m.chunks := NEW (pool, Chunk, n * m.ncols) ;
+      FOR g := 0 TO n - 1 DO
+        ReadRowGroup (r, m, g)
       END
     ELSIF id = 5 AND ct = CtList THEN
       hdr := R8 (r) ;
@@ -1205,8 +1389,8 @@ BEGIN
   END
 END ReadKV ;
 
-PROCEDURE ReadRowGroup (VAR pool: POOL ; VAR r: Rd ; VAR m: Meta)
-  RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
+PROCEDURE ReadRowGroup (VAR r: Rd ; VAR m: Meta ; g: I64)
+  RAISES Faults.BadArg, Overflow, IndexError =
 VAR
   last, id, ct, hdr, n, c : I64 ;
 BEGIN
@@ -1218,7 +1402,7 @@ BEGIN
       IF n = 15 THEN n := RVar (r) END ;
       IF n # m.ncols THEN RAISE Faults.BadArg ('column count mismatch') END ;
       FOR c := 0 TO n - 1 DO
-        ReadChunk (pool, r, m, c)
+        ReadChunk (r, m, g * m.ncols + c)
       END
     ELSE
       RSkip (r, ct)
@@ -1226,27 +1410,28 @@ BEGIN
   END
 END ReadRowGroup ;
 
-PROCEDURE ReadChunk (VAR pool: POOL ; VAR r: Rd ; VAR m: Meta ;
-                     c: I64)
-  RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
+PROCEDURE ReadChunk (VAR r: Rd ; VAR m: Meta ; k: I64)
+  RAISES Faults.BadArg, Overflow, IndexError =
 VAR
   last, id, ct, last2, id2, ct2 : I64 ;
 BEGIN
+  m.chunks[k].codec := CodecNone ;
+  m.chunks[k].nvals := 0 ;
+  m.chunks[k].off := 0 ;
+  m.chunks[k].dictOff := -1 ;
   last := 0 ;
   WHILE RField (r, last, id, ct) DO
     IF id = 3 AND ct = CtStruct THEN
       last2 := 0 ;
       WHILE RField (r, last2, id2, ct2) DO
         IF id2 = 4 AND ct2 = CtI32 THEN
-          m.cols[c].codec := RZig (r)
+          m.chunks[k].codec := RZig (r)
         ELSIF id2 = 5 AND ct2 = CtI64 THEN
-          m.cols[c].nvals := RZig (r)
+          m.chunks[k].nvals := RZig (r)
         ELSIF id2 = 9 AND ct2 = CtI64 THEN
-          m.cols[c].off := RZig (r)
+          m.chunks[k].off := RZig (r)
         ELSIF id2 = 11 AND ct2 = CtI64 THEN
-          (* dictionary_page_offset: the file is dict-encoded *)
-          m.cols[c].hasDict := TRUE ;
-          RSkip (r, ct2)
+          m.chunks[k].dictOff := RZig (r)
         ELSE
           RSkip (r, ct2)
         END
@@ -1259,262 +1444,448 @@ END ReadChunk ;
 
 PROCEDURE CodecName (c: I64) : STR =
 BEGIN
-  IF c = 1 THEN RETURN 'codec 1 (snappy)' END ;
-  IF c = 2 THEN RETURN 'codec 2 (gzip)' END ;
+  IF c = 3 THEN RETURN 'codec 3 (lzo)' END ;
   IF c = 4 THEN RETURN 'codec 4 (brotli)' END ;
-  IF c = 5 THEN RETURN 'codec 5 (lz4)' END ;
-  IF c = 6 THEN RETURN 'codec 6 (zstd)' END ;
+  IF c = 5 THEN RETURN 'codec 5 (lz4, the Hadoop framing)' END ;
+  IF c = 7 THEN RETURN 'codec 7 (lz4_raw)' END ;
   RETURN 'an unknown codec'
 END CodecName ;
 
-(* the RLE/bit-packed hybrid for definition levels, bit width 1:
-   answers, per row, whether the value is PRESENT *)
-PROCEDURE ReadDefs (VAR pool: POOL ; VAR r: Rd ; n: I64)
-  : SLICE OF BOOL
-  RAISES Faults.BadArg, Overflow, ValueRange =
-VAR
-  present : SLICE OF BOOL ;
-  seclen, hdr, cnt, v, i, k, b, got : I64 ;
+PROCEDURE EncName (e: I64) : STR =
 BEGIN
-  present := NEW (pool, BOOL, n) ;
-  seclen := I64 (r.b[r.at]) + 256 * I64 (r.b[r.at + 1])
-            + 65536 * I64 (r.b[r.at + 2])
-            + 16777216 * I64 (r.b[r.at + 3]) ;
-  r.at := r.at + 4 ;
+  IF e = EncBitPacked THEN RETURN 'encoding 4 (BIT_PACKED)' END ;
+  IF e = 5 THEN RETURN 'encoding 5 (DELTA_BINARY_PACKED)' END ;
+  IF e = 6 THEN RETURN 'encoding 6 (DELTA_LENGTH_BYTE_ARRAY)' END ;
+  IF e = 7 THEN RETURN 'encoding 7 (DELTA_BYTE_ARRAY)' END ;
+  IF e = 9 THEN RETURN 'encoding 9 (BYTE_STREAM_SPLIT)' END ;
+  RETURN 'an unknown encoding'
+END EncName ;
+
+(* ---- the bytes a page holds ---- *)
+
+PROCEDURE LEb (RO b: SLICE OF BYTE ; at, k: I64) : I64
+  RAISES IndexError =
+  (* k little-endian bytes from b[at], unsigned; the caller has held
+     at + k to LEN (b) *)
+VAR i, v, m : I64 ;
+BEGIN
+  v := 0 ;
+  m := 1 ;
+  FOR i := 0 TO k - 1 DO
+    v := v + I64 (b[at + i]) * m ;
+    m := m * 256
+  END ;
+  RETURN v
+END LEb ;
+
+PROCEDURE Need (RO b: SLICE OF BYTE ; at, k: I64) RAISES Faults.BadArg =
+BEGIN
+  IF k < 0 OR at < 0 OR at + k > LEN (b) THEN
+    RAISE Faults.BadArg ('truncated page')
+  END
+END Need ;
+
+PROCEDURE PageBytes (VAR pool: POOL ; codec: I64 ; RO body: SLICE OF BYTE ;
+                     size: I64) : SLICE OF BYTE
+  RAISES Faults.BadArg, ValueRange, IndexError =
+  (* a COMPRESSED page's bytes as they were before the codec, held to
+     the size its header says; an uncompressed page the caller takes
+     as it is *)
+VAR out : SLICE OF BYTE ;
+BEGIN
+  IF codec = CodecSnappy THEN
+    out := SnappyDecode (pool, body)
+  ELSIF codec = CodecGzip THEN
+    out := GunzipQ (pool, body)
+  ELSIF codec = CodecZstd THEN
+    out := ZstdDecode (pool, body, size)
+  ELSE
+    RAISE Faults.BadArg (CodecName (codec))
+  END ;
+  IF LEN (out) # size THEN
+    RAISE Faults.BadArg ('a page whose bytes are not the size its header says')
+  END ;
+  RETURN out
+END PageBytes ;
+
+PROCEDURE GunzipQ (VAR pool: POOL ; RO body: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg, ValueRange =
+BEGIN
+  RETURN Zip.GunzipBytes (pool, body)
+EXCEPT
+| Zip.Error (msg) : RAISE Faults.BadArg ('a gzip page: ' + msg)
+END GunzipQ ;
+
+PROCEDURE ZstdDecode (VAR pool: POOL ; RO body: SLICE OF BYTE ; size: I64)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg =
+VAR
+  out : SLICE OF BYTE ;
+  got : I64 ;
+BEGIN
+  IF size < 0 THEN RAISE Faults.BadArg ('a page without its size') END ;
+  out := NEW (pool, BYTE, size) ;
+  got := I64 (ZstdDecompress (ADR (out), C.SizeT (size), ADR (body), C.SizeT (LEN (body)))) ;
+  IF got # size THEN RAISE Faults.BadArg ('a damaged zstd page') END ;
+  RETURN out
+EXCEPT
+| ValueRange : RAISE Faults.BadArg ('a damaged zstd page')
+END ZstdDecode ;
+
+PROCEDURE ZstdEncode (VAR pool: POOL ; RO d: SLICE OF BYTE) : SLICE OF BYTE
+  RAISES Faults.BadArg =
+VAR
+  out : SLICE OF BYTE ;
+  cap, got : I64 ;
+BEGIN
+  cap := I64 (ZstdBound (C.SizeT (LEN (d)))) ;
+  out := NEW (pool, BYTE, cap) ;
+  got := I64 (ZstdCompress (ADR (out), C.SizeT (cap), ADR (d), C.SizeT (LEN (d)), C.Int (3))) ;
+  IF got > cap THEN RAISE Faults.BadArg ('libzstd refused a page') END ;
+  RETURN SLICE (out, 0, got)
+EXCEPT
+| ValueRange : RAISE Faults.BadArg ('libzstd refused a page')
+END ZstdEncode ;
+
+(* ---- snappy, the raw format (no framing): what Parquet's SNAPPY is.
+   An uncompressed length as a varint, then elements: a LITERAL (the
+   tag's two low bits 0; a length up to 60 in the tag, else in the 1
+   to 4 bytes after it) or a COPY of earlier output, by an offset of
+   11, 16 or 32 bits and a length.  github.com/google/snappy,
+   format_description.txt. ---- *)
+
+PROCEDURE SnappyDecode (VAR pool: POOL ; RO s: SLICE OF BYTE)
+  : SLICE OF BYTE
+  RAISES Faults.BadArg, IndexError =
+  (* every length and offset held to what is there: a damaged page
+     is refused, never read or written past *)
+VAR
+  out : SLICE OF BYTE ;
+  at, n, m, k, o, tag, kind, len, off, i : I64 ;
+BEGIN
+  at := 0 ;
+  n := 0 ;
+  m := 1 ;
+  LOOP
+    IF at >= LEN (s) OR m > 34359738368 THEN RAISE Faults.BadArg (SnapBad) END ;
+    k := I64 (s[at]) ;
+    at := at + 1 ;
+    n := n + (k MOD 128) * m ;
+    IF k < 128 THEN EXIT END ;
+    m := m * 128
+  END ;
+  out := NEW (pool, BYTE, n) ;
+  o := 0 ;
+  WHILE at < LEN (s) DO
+    tag := I64 (s[at]) ;
+    at := at + 1 ;
+    kind := tag MOD 4 ;
+    IF kind = 0 THEN
+      len := tag DIV 4 + 1 ;
+      IF len > 60 THEN
+        k := len - 60 ;
+        IF at + k > LEN (s) THEN RAISE Faults.BadArg (SnapBad) END ;
+        len := LEb (s, at, k) + 1 ;
+        at := at + k
+      END ;
+      IF at + len > LEN (s) OR o + len > n THEN RAISE Faults.BadArg (SnapBad) END ;
+      FOR i := 0 TO len - 1 DO
+        out[o + i] := s[at + i]
+      END ;
+      at := at + len ;
+      o := o + len
+    ELSE
+      IF kind = 1 THEN
+        IF at + 1 > LEN (s) THEN RAISE Faults.BadArg (SnapBad) END ;
+        len := (tag DIV 4) MOD 8 + 4 ;
+        off := (tag DIV 32) * 256 + I64 (s[at]) ;
+        at := at + 1
+      ELSIF kind = 2 THEN
+        IF at + 2 > LEN (s) THEN RAISE Faults.BadArg (SnapBad) END ;
+        len := tag DIV 4 + 1 ;
+        off := LEb (s, at, 2) ;
+        at := at + 2
+      ELSE
+        IF at + 4 > LEN (s) THEN RAISE Faults.BadArg (SnapBad) END ;
+        len := tag DIV 4 + 1 ;
+        off := LEb (s, at, 4) ;
+        at := at + 4
+      END ;
+      IF off = 0 OR off > o OR o + len > n THEN RAISE Faults.BadArg (SnapBad) END ;
+      (* forward, a byte at a time: a copy may overlap its own output *)
+      FOR i := 0 TO len - 1 DO
+        out[o + i] := out[o - off + i]
+      END ;
+      o := o + len
+    END
+  END ;
+  IF o # n THEN RAISE Faults.BadArg (SnapBad) END ;
+  RETURN out
+END SnappyDecode ;
+
+(* ---- the RLE / bit-packed hybrid: definition levels, dictionary
+   indices and RLE booleans.  A run is a varint header: even, an RLE
+   run of header/2 copies of one value in (width + 7) DIV 8 bytes;
+   odd, header/2 groups of eight values bit-packed, LSB first. ---- *)
+
+PROCEDURE HVar (RO b: SLICE OF BYTE ; VAR at: I64 ; end: I64) : I64
+  RAISES Faults.BadArg, IndexError =
+VAR v, m, k : I64 ;
+BEGIN
+  v := 0 ;
+  m := 1 ;
+  LOOP
+    IF at >= end OR m > 34359738368 THEN RAISE Faults.BadArg (RunBad) END ;
+    k := I64 (b[at]) ;
+    at := at + 1 ;
+    v := v + (k MOD 128) * m ;
+    IF k < 128 THEN EXIT END ;
+    m := m * 128
+  END ;
+  RETURN v
+END HVar ;
+
+PROCEDURE Hybrid (VAR pool: POOL ; RO b: SLICE OF BYTE ; VAR at: I64 ;
+                  end, width, n: I64) : SLICE OF I64
+  RAISES Faults.BadArg, IndexError =
+  (* n values of width bits from b[at], not past b[end]; at is left
+     after the last byte read *)
+VAR
+  v : SLICE OF I64 ;
+  got, hdr, cnt, groups, x, i, nb, top, acc, have, mul : I64 ;
+BEGIN
+  IF width < 0 OR width > 32 THEN RAISE Faults.BadArg ('a bit width beyond 32') END ;
+  IF end > LEN (b) THEN RAISE Faults.BadArg (RunBad) END ;
+  v := NEW (pool, I64, n) ;
+  top := 1 ;
+  FOR i := 1 TO width DO top := top * 2 END ;
+  nb := (width + 7) DIV 8 ;
   got := 0 ;
-  k := r.at + seclen ;
-  WHILE got < n AND r.at < k DO
-    hdr := RVar (r) ;
+  WHILE got < n DO
+    hdr := HVar (b, at, end) ;
+    IF hdr < 2 THEN RAISE Faults.BadArg (RunBad) END ;   (* an empty run *)
     IF hdr MOD 2 = 0 THEN
-      (* an RLE run: hdr/2 copies of one byte-packed level *)
       cnt := hdr DIV 2 ;
-      v := R8 (r) ;
+      IF at + nb > end THEN RAISE Faults.BadArg (RunBad) END ;
+      x := LEb (b, at, nb) ;
+      at := at + nb ;
+      IF x >= top THEN RAISE Faults.BadArg (RunBad) END ;
       FOR i := 1 TO cnt DO
         IF got < n THEN
-          present[got] := v = 1 ;
+          v[got] := x ;
           got := got + 1
         END
       END
     ELSE
-      (* bit-packed groups of 8, LSB first *)
-      cnt := (hdr DIV 2) * 8 ;
-      FOR i := 1 TO cnt DIV 8 DO
-        b := R8 (r) ;
-        FOR v := 1 TO 8 DO
-          IF got < n THEN
-            present[got] := b MOD 2 = 1 ;
-            got := got + 1
-          END ;
-          b := b DIV 2
+      groups := hdr DIV 2 ;
+      IF groups > (end - at) THEN RAISE Faults.BadArg (RunBad) END ;
+      IF at + groups * width > end THEN RAISE Faults.BadArg (RunBad) END ;
+      acc := 0 ;
+      have := 0 ;
+      mul := 1 ;            (* 2 ** have *)
+      FOR i := 1 TO groups * 8 DO
+        WHILE have < width DO
+          acc := acc + I64 (b[at]) * mul ;
+          at := at + 1 ;
+          mul := mul * 256 ;
+          have := have + 8
+        END ;
+        x := acc MOD top ;
+        acc := acc DIV top ;
+        mul := mul DIV top ;
+        have := have - width ;
+        IF got < n THEN
+          v[got] := x ;
+          got := got + 1
         END
       END
     END
   END ;
-  r.at := k ;
-  FOR i := got TO n - 1 DO
-    present[i] := TRUE
-  END ;
-  RETURN present
-END ReadDefs ;
-
-PROCEDURE R8bp (VAR r: Rd) : I64 RAISES Faults.BadArg =
-BEGIN
-  IF r.at >= LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
-  r.at := r.at + 1 ;
-  RETURN I64 (r.b[r.at - 1])
-END R8bp ;
-
-PROCEDURE RdLE (VAR r: Rd ; k: I64) : I64 RAISES Faults.BadArg =
-VAR i, v, m : I64 ;
-BEGIN
-  IF r.at + k > LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
-  v := 0 ;
-  m := 1 ;
-  FOR i := 0 TO k - 1 DO
-    v := v + I64 (r.b[r.at + i]) * m ;
-    m := m * 256
-  END ;
-  r.at := r.at + k ;
   RETURN v
-END RdLE ;
+END Hybrid ;
 
-PROCEDURE ReadColumn (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
-                      RO whole: SLICE OF BYTE ; RO ci: ColInfo ;
-                      rows: I64)
-  RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
-VAR
-  r : Rd ;
-  last, id, ct, ptype, uncomp, nvals, enc, i, got, lo, hi : I64 ;
-  present : SLICE OF BOOL ;
-  v64 : SLICE OF F64 ;
-  v32 : SLICE OF F32 ;
-  vi64 : SLICE OF I64 ;
-  vi32 : SLICE OF I32 ;
-  vi16 : SLICE OF I16 ;
-  vb : SLICE OF BYTE ;
-  vbo : SLICE OF BOOL ;
-  vs : SLICE OF STR ;
-  x, n, bacc, bleft : I64 ;
-  s : SLICE OF CHAR ;
+(* ---- one column's values, gathered over its chunks and pages ---- *)
+
+TYPE
+  Sink = RECORD
+    kind : I64 ;           (* SkF64 .. SkStr *)
+    f64 : SLICE OF F64 ;
+    f32 : SLICE OF F32 ;
+    i64 : SLICE OF I64 ;
+    i32 : SLICE OF I32 ;
+    i16 : SLICE OF I16 ;
+    by : SLICE OF BYTE ;
+    bo : SLICE OF BOOL ;
+    s : SLICE OF STR ;
+    n : I64 ;              (* rows *)
+    at : I64 ;             (* the next row *)
+  END ;
+
+PROCEDURE NewSink (VAR pool: POOL ; RO ci: ColInfo ; rows: I64) : Sink
+  RAISES Faults.BadArg =
+VAR k : Sink ;
 BEGIN
-  IF ci.codec # 0 THEN RAISE Faults.BadArg (CodecName (ci.codec)) END ;
-  IF ci.hasDict THEN
-    RAISE Faults.BadArg ('encoding 8 (RLE_DICTIONARY)')
-  END ;
-  r.b := whole ;
-  r.at := ci.off ;
-  (* the PageHeader *)
-  ptype := -1 ;
-  uncomp := 0 ;
-  nvals := 0 ;
-  enc := -1 ;
-  last := 0 ;
-  WHILE RField (r, last, id, ct) DO
-    IF id = 1 AND ct = CtI32 THEN
-      ptype := RZig (r)
-    ELSIF id = 2 AND ct = CtI32 THEN
-      uncomp := RZig (r)
-    ELSIF id = 5 AND ct = CtStruct THEN
-      ReadDph (r, nvals, enc)
-    ELSIF id = 7 AND ct = CtStruct THEN
-      RAISE Faults.BadArg ('data page v2')
-    ELSE
-      RSkip (r, ct)
-    END
-  END ;
-  IF ptype = 2 THEN RAISE Faults.BadArg ('encoding: a dictionary page') END ;
-  IF ptype # 0 THEN RAISE Faults.BadArg ('page type unsupported') END ;
-  IF enc # EncPlain THEN
-    IF enc = 2 OR enc = 8 THEN
-      RAISE Faults.BadArg ('encoding 8 (RLE_DICTIONARY)')
-    END ;
-    RAISE Faults.BadArg ('a non-PLAIN encoding')
-  END ;
-  IF nvals # rows THEN RAISE Faults.BadArg ('a second data page') END ;
-
-  IF ci.optional THEN
-    present := ReadDefs (pool, r, rows)
-  ELSE
-    present := NEW (pool, BOOL, rows) ;
-    FOR i := 0 TO rows - 1 DO
-      present[i] := TRUE
-    END
-  END ;
-
+  k.n := rows ;
+  k.at := 0 ;
   IF ci.phys = PtDouble THEN
-    v64 := NEW (pool, F64, rows) ;
-    FOR i := 0 TO rows - 1 DO
-      IF present[i] THEN
-        IF r.at + 8 > LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
-        v64[i] := F64.FromBytesLE (SLICE (r.b, r.at, 8)) ;
-        r.at := r.at + 8
-      ELSE
-        v64[i] := NaN
-      END
-    END ;
-    AddF64Q (pool, f, ci.name, v64) ;
+    k.kind := SkF64 ;
+    k.f64 := NEW (pool, F64, rows)
   ELSIF ci.phys = PtFloat THEN
-    v32 := NEW (pool, F32, rows) ;
-    FOR i := 0 TO rows - 1 DO
-      IF present[i] THEN
-        IF r.at + 4 > LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
-        v32[i] := F32.FromBytesLE (SLICE (r.b, r.at, 4)) ;
-        r.at := r.at + 4
-      ELSE
-        v32[i] := NaN
-      END
-    END ;
-    AddF32Q (pool, f, ci.name, v32) ;
+    k.kind := SkF32 ;
+    k.f32 := NEW (pool, F32, rows)
   ELSIF ci.phys = PtInt64 THEN
-    vi64 := NEW (pool, I64, rows) ;
-    FOR i := 0 TO rows - 1 DO
-      IF present[i] THEN
-        lo := RdLE (r, 4) ;
-        hi := RdLE (r, 4) ;
-        IF hi >= 2147483648 THEN
-          vi64[i] := (hi - 4294967296) * 4294967296 + lo
-        ELSE
-          vi64[i] := hi * 4294967296 + lo
-        END
-      ELSE
-        vi64[i] := -9223372036854775807 - 1
-      END
-    END ;
-    AddI64Q (pool, f, ci.name, vi64) ;
+    k.kind := SkI64 ;
+    k.i64 := NEW (pool, I64, rows)
+  ELSIF ci.phys = PtInt32 AND ci.conv = CvInt16 THEN
+    k.kind := SkI16 ;
+    k.i16 := NEW (pool, I16, rows)
+  ELSIF ci.phys = PtInt32 AND ci.conv = CvUint8 THEN
+    k.kind := SkByte ;
+    k.by := NEW (pool, BYTE, rows)
   ELSIF ci.phys = PtInt32 THEN
-    IF ci.conv = CvInt16 THEN
-      vi16 := NEW (pool, I16, rows) ;
-      FOR i := 0 TO rows - 1 DO
-        IF present[i] THEN
-          x := RdLE (r, 4) ;
-          IF x >= 2147483648 THEN x := x - 4294967296 END ;
-          vi16[i] := I16 (x)
-        ELSE
-          vi16[i] := -32768
-        END
-      END ;
-      AddI16Q (pool, f, ci.name, vi16)
-    ELSIF ci.conv = CvUint8 THEN
-      vb := NEW (pool, BYTE, rows) ;
-      FOR i := 0 TO rows - 1 DO
-        IF present[i] THEN
-          vb[i] := BYTE (RdLE (r, 4))
-        ELSE
-          vb[i] := 255
-        END
-      END ;
-      AddBytesQ (pool, f, ci.name, vb)
-    ELSE
-      vi32 := NEW (pool, I32, rows) ;
-      FOR i := 0 TO rows - 1 DO
-        IF present[i] THEN
-          x := RdLE (r, 4) ;
-          IF x >= 2147483648 THEN x := x - 4294967296 END ;
-          vi32[i] := I32 (x)
-        ELSE
-          vi32[i] := -2147483647 - 1
-        END
-      END ;
-      AddI32Q (pool, f, ci.name, vi32)
-    END
+    k.kind := SkI32 ;
+    k.i32 := NEW (pool, I32, rows)
   ELSIF ci.phys = PtBoolean THEN
-    vbo := NEW (pool, BOOL, rows) ;
-    bacc := 0 ;
-    bleft := 0 ;
-    FOR i := 0 TO rows - 1 DO
-      IF NOT present[i] THEN
-        (* a boolean has no missing value to substitute *)
-        RAISE Faults.BadArg (ci.name)
-      END ;
-      IF bleft = 0 THEN
-        bacc := R8bp (r) ;
-        bleft := 8
-      END ;
-      vbo[i] := bacc MOD 2 = 1 ;
-      bacc := bacc DIV 2 ;
-      bleft := bleft - 1
-    END ;
-    AddBoolsQ (pool, f, ci.name, vbo)
+    k.kind := SkBool ;
+    k.bo := NEW (pool, BOOL, rows)
   ELSIF ci.phys = PtByteArray THEN
-    vs := NEW (pool, STR, rows) ;
-    FOR i := 0 TO rows - 1 DO
-      IF present[i] THEN
-        n := RdLE (r, 4) ;
-        IF r.at + n > LEN (r.b) THEN RAISE Faults.BadArg ('truncated page') END ;
-        vs[i] := DynStr.FromUtf8 (pool, SLICE (r.b, r.at, n)) ;
-        r.at := r.at + n ;
-      ELSE
-        vs[i] := ''
-      END
-    END ;
-    AddStrsQ (pool, f, ci.name, vs)
+    k.kind := SkStr ;
+    k.s := NEW (pool, STR, rows)
   ELSE
-    RAISE Faults.BadArg ('physical type unsupported')
+    RAISE Faults.BadArg ('physical type unsupported: ' + ci.name)
+  END ;
+  RETURN k
+END NewSink ;
+
+PROCEDURE Room1 (VAR k: Sink) RAISES Faults.BadArg =
+BEGIN
+  IF k.at >= k.n THEN
+    RAISE Faults.BadArg ('a column with more values than the file has rows')
   END
-END ReadColumn ;
+END Room1 ;
+
+PROCEDURE Put (VAR pool: POOL ; VAR k: Sink ; RO b: SLICE OF BYTE ;
+               VAR p: I64)
+  RAISES Faults.BadArg, ValueRange, IndexError =
+  (* one PLAIN value from b[p] into the next row; p moves past it *)
+VAR x, lo, hi, n : I64 ;
+BEGIN
+  Room1 (k) ;
+  IF k.kind = SkF64 THEN
+    Need (b, p, 8) ;
+    k.f64[k.at] := F64.FromBytesLE (SLICE (b, p, 8)) ;
+    p := p + 8
+  ELSIF k.kind = SkF32 THEN
+    Need (b, p, 4) ;
+    k.f32[k.at] := F32.FromBytesLE (SLICE (b, p, 4)) ;
+    p := p + 4
+  ELSIF k.kind = SkI64 THEN
+    Need (b, p, 8) ;
+    lo := LEb (b, p, 4) ;
+    hi := LEb (b, p + 4, 4) ;
+    IF hi >= 2147483648 THEN
+      k.i64[k.at] := (hi - 4294967296) * 4294967296 + lo
+    ELSE
+      k.i64[k.at] := hi * 4294967296 + lo
+    END ;
+    p := p + 8
+  ELSIF k.kind = SkStr THEN
+    Need (b, p, 4) ;
+    n := LEb (b, p, 4) ;
+    p := p + 4 ;
+    Need (b, p, n) ;
+    k.s[k.at] := DynStr.FromUtf8 (pool, SLICE (b, p, n)) ;
+    p := p + n
+  ELSIF k.kind = SkBool THEN
+    RAISE Faults.BadArg ('a boolean from a dictionary')
+  ELSE
+    Need (b, p, 4) ;
+    x := LEb (b, p, 4) ;
+    p := p + 4 ;
+    IF k.kind = SkByte THEN
+      k.by[k.at] := BYTE (x)
+    ELSE
+      IF x >= 2147483648 THEN x := x - 4294967296 END ;
+      IF k.kind = SkI16 THEN
+        k.i16[k.at] := I16 (x)
+      ELSE
+        k.i32[k.at] := I32 (x)
+      END
+    END
+  END ;
+  k.at := k.at + 1
+END Put ;
+
+PROCEDURE PutBool (VAR k: Sink ; x: BOOL) RAISES Faults.BadArg =
+BEGIN
+  Room1 (k) ;
+  k.bo[k.at] := x ;
+  k.at := k.at + 1
+END PutBool ;
+
+PROCEDURE PutMissing (VAR k: Sink ; RO name: STR) RAISES Faults.BadArg =
+  (* a null: the arm's own missing value, as CSV import gives an
+     empty field *)
+BEGIN
+  Room1 (k) ;
+  IF k.kind = SkF64 THEN
+    k.f64[k.at] := NaN
+  ELSIF k.kind = SkF32 THEN
+    k.f32[k.at] := NaN
+  ELSIF k.kind = SkI64 THEN
+    k.i64[k.at] := -9223372036854775807 - 1
+  ELSIF k.kind = SkI32 THEN
+    k.i32[k.at] := -2147483647 - 1
+  ELSIF k.kind = SkI16 THEN
+    k.i16[k.at] := -32768
+  ELSIF k.kind = SkByte THEN
+    k.by[k.at] := 255
+  ELSIF k.kind = SkStr THEN
+    k.s[k.at] := ''
+  ELSE
+    (* a boolean has no missing value to substitute *)
+    RAISE Faults.BadArg (name)
+  END ;
+  k.at := k.at + 1
+END PutMissing ;
+
+PROCEDURE DictPos (VAR pool: POOL ; RO d: SLICE OF BYTE ; RO ci: ColInfo ;
+                   n: I64) : SLICE OF I64
+  RAISES Faults.BadArg, IndexError =
+  (* where each of a PLAIN dictionary's n entries begins *)
+VAR
+  pos : SLICE OF I64 ;
+  i, p, w : I64 ;
+BEGIN
+  IF n < 0 THEN RAISE Faults.BadArg ('a dictionary of fewer than no entries') END ;
+  pos := NEW (pool, I64, n) ;
+  w := 0 ;
+  IF ci.phys = PtDouble OR ci.phys = PtInt64 THEN
+    w := 8
+  ELSIF ci.phys = PtFloat OR ci.phys = PtInt32 THEN
+    w := 4
+  ELSIF ci.phys # PtByteArray THEN
+    RAISE Faults.BadArg ('a dictionary of booleans: ' + ci.name)
+  END ;
+  p := 0 ;
+  FOR i := 0 TO n - 1 DO
+    pos[i] := p ;
+    IF w > 0 THEN
+      p := p + w
+    ELSE
+      Need (d, p, 4) ;
+      p := p + 4 + LEb (d, p, 4)
+    END
+  END ;
+  Need (d, 0, p) ;
+  RETURN pos
+END DictPos ;
 
 PROCEDURE ReadDph (VAR r: Rd ; VAR nvals, enc: I64)
   RAISES Faults.BadArg, Overflow =
+  (* a DataPageHeader or a DictionaryPageHeader: both say num_values
+     as field 1 and the encoding as field 2 *)
 VAR last, id, ct : I64 ;
 BEGIN
   last := 0 ;
@@ -1528,6 +1899,252 @@ BEGIN
     END
   END
 END ReadDph ;
+
+PROCEDURE ReadDph2 (VAR r: Rd ; VAR nvals, enc, defLen, repLen: I64 ;
+                    VAR packed: BOOL)
+  RAISES Faults.BadArg, Overflow =
+  (* a DataPageHeaderV2: the levels' lengths are said here, because
+     the levels are stored uncompressed ahead of the values *)
+VAR last, id, ct : I64 ;
+BEGIN
+  last := 0 ;
+  WHILE RField (r, last, id, ct) DO
+    IF id = 1 AND ct = CtI32 THEN
+      nvals := RZig (r)
+    ELSIF id = 4 AND ct = CtI32 THEN
+      enc := RZig (r)
+    ELSIF id = 5 AND ct = CtI32 THEN
+      defLen := RZig (r)
+    ELSIF id = 6 AND ct = CtI32 THEN
+      repLen := RZig (r)
+    ELSIF id = 7 AND (ct = CtTrue OR ct = CtFalse) THEN
+      packed := ct = CtTrue
+    ELSE
+      RSkip (r, ct)
+    END
+  END
+END ReadDph2 ;
+
+PROCEDURE ReadColumn (VAR pool: POOL ; VAR f: PTR Frame.Fr ;
+                      RO whole: SLICE OF BYTE ; RO m: Meta ; c: I64)
+  RAISES Faults.BadArg, Overflow, ValueRange, IndexError =
+  (* column c over every row group: in each chunk an optional
+     dictionary page, then data pages (version 1 or 2) until the
+     chunk's values are all read.  A value is PLAIN or an index into
+     the dictionary (RLE_DICTIONARY, and PLAIN_DICTIONARY, its old
+     name); a boolean is PLAIN or RLE.  A null is the arm's missing
+     value.  Any other encoding or codec is refused by name. *)
+VAR
+  ci : ColInfo ;
+  ch : Chunk ;
+  k : Sink ;
+  r : Rd ;
+  g, got, last, id, ct, ptype, uncomp, comp, nv, enc, defLen, repLen : I64 ;
+  p, q, i, j, w, np, bacc, bleft : I64 ;
+  packed, haveDict : BOOL ;
+  body, data, dict : SLICE OF BYTE ;
+  dpos, lv, idx : SLICE OF I64 ;
+  present : SLICE OF BOOL ;
+BEGIN
+  ci := m.cols[c] ;
+  k := NewSink (pool, ci, m.rows) ;
+  dict := NEW (pool, BYTE, 0) ;
+  dpos := NEW (pool, I64, 0) ;
+  FOR g := 0 TO m.ngroups - 1 DO
+    ch := m.chunks[g * m.ncols + c] ;
+    r.b := whole ;
+    r.at := ch.off ;
+    IF ch.dictOff >= 4 AND ch.dictOff < ch.off THEN r.at := ch.dictOff END ;
+    haveDict := FALSE ;
+    got := 0 ;
+    WHILE got < ch.nvals DO
+      ptype := -1 ;
+      uncomp := -1 ;
+      comp := -1 ;
+      nv := -1 ;
+      enc := -1 ;
+      defLen := 0 ;
+      repLen := 0 ;
+      packed := TRUE ;
+      last := 0 ;
+      WHILE RField (r, last, id, ct) DO
+        IF id = 1 AND ct = CtI32 THEN
+          ptype := RZig (r)
+        ELSIF id = 2 AND ct = CtI32 THEN
+          uncomp := RZig (r)
+        ELSIF id = 3 AND ct = CtI32 THEN
+          comp := RZig (r)
+        ELSIF (id = 5 OR id = 7) AND ct = CtStruct THEN
+          ReadDph (r, nv, enc)
+        ELSIF id = 8 AND ct = CtStruct THEN
+          ReadDph2 (r, nv, enc, defLen, repLen, packed)
+        ELSE
+          RSkip (r, ct)
+        END
+      END ;
+      Need (whole, r.at, comp) ;
+      IF uncomp < 0 THEN RAISE Faults.BadArg ('a page without its size') END ;
+      body := SLICE (whole, r.at, comp) ;
+      r.at := r.at + comp ;
+
+      IF ptype = PgDict THEN
+        IF enc # EncPlain AND enc # EncPlainDict THEN
+          RAISE Faults.BadArg ('a dictionary page that is not PLAIN')
+        END ;
+        IF ch.codec = CodecNone THEN
+          dict := body
+        ELSE
+          dict := PageBytes (pool, ch.codec, body, uncomp)
+        END ;
+        dpos := DictPos (pool, dict, ci, nv) ;
+        haveDict := TRUE
+
+      ELSIF ptype = PgData OR ptype = PgDataV2 THEN
+        IF nv < 0 THEN RAISE Faults.BadArg ('a data page without its count') END ;
+        lv := NEW (pool, I64, 0) ;
+        IF ptype = PgData THEN
+          IF ch.codec = CodecNone THEN
+            data := body
+          ELSE
+            data := PageBytes (pool, ch.codec, body, uncomp)
+          END ;
+          p := 0 ;
+          IF ci.optional THEN
+            Need (data, 0, 4) ;
+            w := LEb (data, 0, 4) ;
+            Need (data, 4, w) ;
+            q := 4 ;
+            lv := Hybrid (pool, data, q, 4 + w, 1, nv) ;
+            p := 4 + w
+          END
+        ELSE
+          IF repLen # 0 THEN RAISE Faults.BadArg ('repetition levels (nested data)') END ;
+          IF defLen < 0 OR defLen > comp OR uncomp < defLen THEN
+            RAISE Faults.BadArg ('truncated page')
+          END ;
+          IF ci.optional THEN
+            q := 0 ;
+            lv := Hybrid (pool, body, q, defLen, 1, nv)
+          END ;
+          IF packed AND ch.codec # CodecNone THEN
+            data := PageBytes (pool, ch.codec, SLICE (body, defLen, comp - defLen),
+                               uncomp - defLen)
+          ELSE
+            data := SLICE (body, defLen, comp - defLen)
+          END ;
+          p := 0
+        END ;
+        present := NEW (pool, BOOL, nv) ;
+        np := 0 ;
+        FOR i := 0 TO nv - 1 DO
+          present[i] := NOT ci.optional OR lv[i] = 1 ;
+          IF present[i] THEN np := np + 1 END
+        END ;
+
+        IF enc = EncPlain AND ci.phys = PtBoolean THEN
+          bacc := 0 ;
+          bleft := 0 ;
+          FOR i := 0 TO nv - 1 DO
+            IF present[i] THEN
+              IF bleft = 0 THEN
+                Need (data, p, 1) ;
+                bacc := I64 (data[p]) ;
+                p := p + 1 ;
+                bleft := 8
+              END ;
+              PutBool (k, bacc MOD 2 = 1) ;
+              bacc := bacc DIV 2 ;
+              bleft := bleft - 1
+            ELSE
+              PutMissing (k, ci.name)
+            END
+          END
+        ELSIF enc = EncPlain THEN
+          FOR i := 0 TO nv - 1 DO
+            IF present[i] THEN
+              Put (pool, k, data, p)
+            ELSE
+              PutMissing (k, ci.name)
+            END
+          END
+        ELSIF enc = EncRleDict OR enc = EncPlainDict THEN
+          IF NOT haveDict THEN
+            RAISE Faults.BadArg ('a dictionary-encoded page without its dictionary')
+          END ;
+          idx := NEW (pool, I64, 0) ;
+          IF np > 0 THEN
+            Need (data, p, 1) ;
+            w := I64 (data[p]) ;
+            p := p + 1 ;
+            idx := Hybrid (pool, data, p, LEN (data), w, np)
+          END ;
+          j := 0 ;
+          FOR i := 0 TO nv - 1 DO
+            IF present[i] THEN
+              IF idx[j] >= LEN (dpos) THEN
+                RAISE Faults.BadArg ('a dictionary index beyond the dictionary')
+              END ;
+              q := dpos[idx[j]] ;
+              Put (pool, k, dict, q) ;
+              j := j + 1
+            ELSE
+              PutMissing (k, ci.name)
+            END
+          END
+        ELSIF enc = EncRle AND ci.phys = PtBoolean THEN
+          (* RLE booleans carry their length, as v1 levels do *)
+          Need (data, p, 4) ;
+          w := LEb (data, p, 4) ;
+          Need (data, p + 4, w) ;
+          q := p + 4 ;
+          idx := Hybrid (pool, data, q, p + 4 + w, 1, np) ;
+          j := 0 ;
+          FOR i := 0 TO nv - 1 DO
+            IF present[i] THEN
+              PutBool (k, idx[j] = 1) ;
+              j := j + 1
+            ELSE
+              PutMissing (k, ci.name)
+            END
+          END
+        ELSE
+          RAISE Faults.BadArg (EncName (enc) + ' in column ' + ci.name)
+        END ;
+        got := got + nv
+
+      ELSIF ptype # PgIndex THEN
+        RAISE Faults.BadArg ('page type unsupported')
+      END
+    END
+  END ;
+  IF k.at # m.rows THEN
+    RAISE Faults.BadArg ('column ' + ci.name + ' holds another number of values than the file has rows')
+  END ;
+  AddSink (pool, f, ci.name, k)
+END ReadColumn ;
+
+PROCEDURE AddSink (VAR pool: POOL ; VAR f: PTR Frame.Fr ; RO name: STR ;
+                   KEPT k: Sink)
+  RAISES Faults.BadArg =
+BEGIN
+  IF k.kind = SkF64 THEN
+    AddF64Q (pool, f, name, k.f64)
+  ELSIF k.kind = SkF32 THEN
+    AddF32Q (pool, f, name, k.f32)
+  ELSIF k.kind = SkI64 THEN
+    AddI64Q (pool, f, name, k.i64)
+  ELSIF k.kind = SkI32 THEN
+    AddI32Q (pool, f, name, k.i32)
+  ELSIF k.kind = SkI16 THEN
+    AddI16Q (pool, f, name, k.i16)
+  ELSIF k.kind = SkByte THEN
+    AddBytesQ (pool, f, name, k.by)
+  ELSIF k.kind = SkBool THEN
+    AddBoolsQ (pool, f, name, k.bo)
+  ELSE
+    AddStrsQ (pool, f, name, k.s)
+  END
+END AddSink ;
 
 (* Add* with Frame's refusals converted: the caller of Read wants
    Parquet's exceptions, not Frame's internals *)
@@ -1635,7 +2252,7 @@ BEGIN
   m := ReadMeta (pool, whole) ;
   f := NewQ (pool, m.rows) ;
   FOR c := 0 TO m.ncols - 1 DO
-    ReadColumn (pool, f, whole, m.cols[c], m.rows)
+    ReadColumn (pool, f, whole, m, c)
   END ;
   RETURN f
 END Read ;
@@ -1668,10 +2285,10 @@ BEGIN
     IF EqS (m.cols[c].name, 'time') THEN
       (* the axis is the Ts record's, not a data column: read it
          into a frame of its own and take the slice *)
-      ReadColumn (pool, ft, whole, m.cols[c], m.rows) ;
+      ReadColumn (pool, ft, whole, m, c) ;
       tsec := ColI64Q (ft, 'time')
     ELSE
-      ReadColumn (pool, f, whole, m.cols[c], m.rows)
+      ReadColumn (pool, f, whole, m, c)
     END
   END ;
   IF LEN (tsec) = 0 THEN RAISE Faults.BadArg ('no time column') END ;

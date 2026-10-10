@@ -104,6 +104,9 @@ type
     constMap : TStringList;            { module-level CONST name=type }
     roScope : TStringList;             { scope indices of `VAR RO' variables }
     roFrom : TStringList;              { scope index=what|line: read-only storage a name was given }
+    binderFrom : TStringList;          { binder=root: the IS SOME operand's root a binder was bound from (Sem.BindFrom) }
+    ownFed : TStringList;
+    ownModule : Boolean;               { the module body: its variables are owned candidates there }              { OwnFedSeed: locals something may give an owned pointer }
     roFresh : TStringList;             { RoFreshWalk: `name.field' paths of a marked copy given fresh storage }
     resolvedIn : string;               { the module ResolveType's last lookup ended in, '' when none }
     ixD : TNode;                       { EXCEPTION IndexError (index, length : I64), built once }
@@ -128,6 +131,10 @@ type
     function FrameEvidence (k: TNode; const modn: string; isStr: Boolean;
       body: TNode; scratchCounts: Boolean): Boolean;
     function AnswersFrame (const qual: string; const pr: TProcInfo): Boolean;
+    function AnswersRo (const qual: string; const pr: TProcInfo): Boolean;
+    function RoExprEvidence (k, d: TNode; const modn: string; depth: Integer): Boolean;
+    function RoEvidence (k, d: TNode; const modn: string): Boolean;
+    function RoAnswerText (const name: string; const pr: TProcInfo): string;
     function CallAnswersFrame (dn: TNode): string;
     procedure ErrN (n: TNode; const ctx, msg: string);
     function SigOf (p: TNode): string;
@@ -683,7 +690,10 @@ begin
   constMap := TStringList.Create; constMap.CaseSensitive := True;
   roScope := TStringList.Create;
   roFrom := TStringList.Create;
+  binderFrom := TStringList.Create;
+  binderFrom.CaseSensitive := True;
   roFresh := TStringList.Create;
+  ownFed := TStringList.Create;
   mro := TStringList.Create; mro.CaseSensitive := True;
   RoCand := TStringList.Create; RoCand.CaseSensitive := True;
   varParams := TStringList.Create; varParams.CaseSensitive := True;
@@ -880,6 +890,88 @@ begin
   end;
   if Result then ansMemo.Values[qual] := 'yes'
   else ansMemo.Values[qual] := 'no';
+end;
+
+{ Sem.AnswersRo: may the function answer READ-ONLY storage -- a string
+  literal, a CONST of its module, a view of one of its RO parameters,
+  or what another such function answers?  Read off its RETURNs,
+  memoised in ansMemo under 'ro Module.Proc' (2026-10-10). }
+function IsRoParamOfD (d: TNode; const nm: string): Boolean;
+var a, b : Integer;
+begin
+  Result := False;
+  if (d = nil) or (d.kids[0] = nil) then Exit;
+  for a := 0 to High (d.kids[0].kids) do
+    if (d.kids[0].kids[a] <> nil) and d.kids[0].kids[a].f3 and
+       (d.kids[0].kids[a].kids[0] <> nil) then
+      for b := 0 to High (d.kids[0].kids[a].kids[0].kids) do
+        if d.kids[0].kids[a].kids[0].kids[b].a = nm then Exit (True);
+end;
+
+function TSem.RoExprEvidence (k, d: TNode; const modn: string; depth: Integer): Boolean;
+var pr : TProcInfo; mi : TModuleInfo; j : Integer;
+begin
+  Result := False;
+  if (depth > 8) or (k = nil) then Exit;
+  if k.kind = nkString then Exit (Length (k.a) > 0);
+  if (k.kind = nkSliceOf3) or (k.kind = nkGridOf) then
+    Exit (RoExprEvidence (k.kids[0], d, modn, depth + 1));
+  if (k.kind = nkDesignator) and (Length (k.kids) = 0) then
+  begin
+    if IsRoParamOfD (d, k.a) then Exit (True);
+    mi := FindMod (modn);
+    if mi <> nil then
+      for j := 0 to High (mi.cnNames) do
+        if mi.cnNames[j] = k.a then Exit (True);
+    Exit (False);
+  end;
+  if (k.kind = nkCallExpr) and (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) then
+    if ProcNamed (modn, CallName (k.kids[0]), pr) and (pr.foreign = '') then
+    begin
+      if (pr.node <> nil) and pr.node.f3 then Exit (True);
+      Exit (AnswersRo (pr.modName + '.' + pr.name, pr));
+    end;
+end;
+
+function TSem.RoEvidence (k, d: TNode; const modn: string): Boolean;
+var i : Integer;
+begin
+  Result := False;
+  if k = nil then Exit;
+  if (k.kind = nkReturn) and (Length (k.kids) > 0) then
+    if RoExprEvidence (k.kids[0], d, modn, 0) then Exit (True);
+  for i := 0 to High (k.kids) do
+    if RoEvidence (k.kids[i], d, modn) then Exit (True);
+end;
+
+function TSem.AnswersRo (const qual: string; const pr: TProcInfo): Boolean;
+var ix : Integer; key, t : string;
+begin
+  key := 'ro ' + qual;
+  ix := ansMemo.IndexOfName (key);
+  if ix >= 0 then Exit (ansMemo.ValueFromIndex[ix] = 'yes');
+  ansMemo.Values[key] := 'busy';
+  Result := False;
+  if (pr.body <> nil) and (pr.body.kids[1] <> nil) then
+  begin
+    t := CanonT (pr.body.kids[1], 0);
+    if StartsWithS (t, 'SLICE OF ') or StartsWithS (t, 'GRID ') then
+      Result := RoEvidence (pr.body.kids[4], pr.body, pr.modName);
+  end;
+  if Result then ansMemo.Values[key] := 'yes'
+  else ansMemo.Values[key] := 'no';
+end;
+
+{ Sem.RoAnswerOf's text for a callee: '' when its answer is not
+  read-only storage }
+function TSem.RoAnswerText (const name: string; const pr: TProcInfo): string;
+begin
+  Result := '';
+  if pr.node = nil then Exit;
+  if pr.node.f3 then Exit ('the RO answer of ' + name);
+  if (pr.foreign = '') and AnswersRo (pr.modName + '.' + pr.name, pr) then
+    Result := 'the answer of ' + name +
+      ', which may be read-only storage (a literal, a CONST or a view of an RO parameter)';
 end;
 
 { Does this call answer FRAME storage -- the callee's name, or ''?
@@ -1433,7 +1525,7 @@ end;
 { QualifiedIn at unit level, for CollectUnit's exported variables
   (decision 28); the same rules as the nested one CheckFile uses }
 function QualifyTypeIn (t: TNode; const modName: string): TNode;
-var n : TNode;
+var n, b, d, sf : TNode; mi : TModuleInfo; j : Integer;
 begin
   Result := t;
   if t = nil then Exit;
@@ -1457,7 +1549,31 @@ begin
       if Length (t.kids) >= 2 then
       begin
         n := TNode.Create (t.kind);
-        n.Add (t.kids[0]);
+        { the bound as written unless it is a bare CONST of modName:
+          then modName.N, as Sem.QualifiedBound does it -- the
+          generators read this node (2026-10-10, Parse's errs).  A
+          plain function: the module table through recSem }
+        b := t.kids[0];
+        if (t.kind = nkArrayType) and (b <> nil) and (b.kind = nkDesignator)
+           and (Length (b.kids) = 0) and (recSem <> nil) then
+        begin
+          mi := recSem.FindMod (modName);
+          if mi <> nil then
+            for j := 0 to High (mi.cnNames) do
+              if mi.cnNames[j] = b.a then
+              begin
+                d := TNode.Create (nkDesignator);
+                d.line := b.line; d.col := b.col;
+                d.a := modName;
+                sf := TNode.Create (nkSelField);
+                sf.line := b.line; sf.col := b.col;
+                sf.a := b.a;
+                d.Add (sf);
+                b := d;
+                Break;
+              end;
+        end;
+        n.Add (b);
         n.Add (QualifyTypeIn (t.kids[1], modName));
         Result := n;
       end;
@@ -2268,6 +2384,8 @@ var
     if ix < 0 then
       ix := scope.Add (nm + '=b');
     scope.Objects[ix] := TObject (t);
+    ix := binderFrom.IndexOfName (nm);
+    if ix >= 0 then binderFrom.Delete (ix);
   end;
 
   { a type node from module MODNAME made self-contained: its bare
@@ -2277,6 +2395,29 @@ var
     attribute components are dropped, neither being part of type
     identity.  The synthetic nodes are never freed: a handful per
     check, in a one-shot process, like tyCHAR and strNode. }
+  { Sem.QualifiedBound: a bound that is a bare CONST of modName, as
+    modName.N; any other bound as it is }
+  function QualifiedBound (b: TNode; const modName: string): TNode;
+  var d, sf : TNode; mi : TModuleInfo; j : Integer;
+  begin
+    Result := b;
+    if (b = nil) or (b.kind <> nkDesignator) or (Length (b.kids) <> 0) then Exit;
+    mi := FindMod (modName);
+    if mi = nil then Exit;
+    for j := 0 to High (mi.cnNames) do
+      if mi.cnNames[j] = b.a then
+      begin
+        d := TNode.Create (nkDesignator);
+        d.line := b.line; d.col := b.col;
+        d.a := modName;
+        sf := TNode.Create (nkSelField);
+        sf.line := b.line; sf.col := b.col;
+        sf.a := b.a;
+        d.Add (sf);
+        Exit (d);
+      end;
+  end;
+
   function QualifiedIn (t: TNode; const modName: string): TNode;
   var n : TNode;
   begin
@@ -2306,7 +2447,8 @@ var
         if Length (t.kids) >= 2 then
         begin
           n := TNode.Create (t.kind);
-          n.Add (t.kids[0]);
+          if t.kind = nkArrayType then n.Add (QualifiedBound (t.kids[0], modName))
+          else n.Add (t.kids[0]);
           n.Add (QualifiedIn (t.kids[1], modName));
           Result := n;
         end;
@@ -2493,7 +2635,7 @@ var
     if (e.kids[0] = nil) or (e.kids[0].kind <> nkDesignator) then Exit;
     name := CallName (e.kids[0]);
     if not LookupProcInfo (name, pr) then Exit;
-    if (pr.node <> nil) and pr.node.f3 then Result := 'the RO answer of ' + name;
+    Result := RoAnswerText (name, pr);
   end;
 
   function PtrBearing (t: TNode; depth: Integer): Boolean; forward;
@@ -3040,8 +3182,8 @@ var
     Tracked: locals and OWN params of type PTR T (no IN -- the pool
     owns those) and SHARED PTR T.  Absent from ownState = alive.
     Flow is per-procedure: branches merge conservatively (moved in
-    any arm counts as moved after the join); loop-carried moves are
-    not yet detected -- pass 3.                                      }
+    any arm counts as moved after the join); a move inside a loop
+    carries into the next turn (LoopCarry, 2026-10-10).              }
 
   function OwnedCandKind (const nm: string): Integer;
   var
@@ -3050,11 +3192,52 @@ var
   begin
     Result := 0;
     mode := ScopeMode (nm);
-    if (mode <> 'l') and (mode <> 'o') then Exit;
+    if (mode <> 'l') and (mode <> 'o') and
+       not (ownModule and (mode = 'm')) then Exit;
     res := ResolveType (ScopeType (nm));
     if res = nil then Exit;
     if (res.kind = nkPtrType) and (res.kids[1] = nil) then Exit (1);
     if res.kind = nkSharedType then Exit (2);
+  end;
+
+  { DISPOSE frees only a name that may OWN what it holds (mirrors
+    Sem.OwnFedSeed, 2026-10-10) }
+  function OwnFedBy (r: TNode): Boolean;
+  begin
+    Result := False;
+    if r = nil then Exit;
+    if r.kind = nkNewExpr then
+      Result := (r.kids[0] <> nil) and (r.kids[0].kind = nkDesignator) and
+                (Length (r.kids[0].kids) = 0) and (r.kids[0].a = 'OWN')
+    else if (r.kind = nkSharedExpr) or (r.kind = nkCallExpr) then
+      Result := True
+    else if (r.kind = nkDesignator) and (Length (r.kids) = 0) then
+      Result := (ScopeMode (r.a) = 'o') or (OwnedCandKind (r.a) = 2) or
+                (ownFed.IndexOf (r.a) >= 0);
+  end;
+
+  function OwnFedWalk (e: TNode): Boolean;
+  var i : Integer;
+  begin
+    Result := False;
+    if e = nil then Exit;
+    if (e.kind = nkAssign) and (e.kids[0] <> nil) and
+       (e.kids[0].kind = nkDesignator) and (Length (e.kids[0].kids) = 0) and
+       (ownFed.IndexOf (e.kids[0].a) < 0) and OwnFedBy (e.kids[1]) then
+    begin
+      ownFed.Add (e.kids[0].a);
+      Result := True;
+    end;
+    for i := 0 to High (e.kids) do
+      if OwnFedWalk (e.kids[i]) then Result := True;
+  end;
+
+  procedure OwnFedSeed (k: TNode);
+  var n : Integer;
+  begin
+    ownFed.Clear;
+    n := 0;
+    while OwnFedWalk (k) and (n < 16) do Inc (n);
   end;
 
   procedure NoteUse (d: TNode);
@@ -3111,6 +3294,85 @@ var
         if (ix < 0) or (ownState.ValueFromIndex[ix] = 'alive') then
           ownState.Values[nm] := v;
       end;
+    end;
+    tmp.Free;
+  end;
+
+  { Sem.LoopCarry and its helpers: a move inside a loop carries into
+    the next turn (ownership pass 3, 2026-10-10) }
+  function FirstAppear (k: TNode; const nm: string; var site: TNode): Integer;
+  var i, r : Integer;
+  begin
+    Result := 0;
+    if k = nil then Exit;
+    if k.kind = nkAssign then
+    begin
+      r := FirstAppear (k.kids[1], nm, site);
+      if r > 0 then Exit (r);
+      if (k.kids[0] <> nil) and (k.kids[0].kind = nkDesignator) and (k.kids[0].a = nm) then
+      begin
+        site := k.kids[0];
+        if Length (k.kids[0].kids) = 0 then Exit (2);
+        Exit (1);
+      end;
+      Exit (0);
+    end;
+    if (k.kind = nkDesignator) and (k.a = nm) then
+    begin
+      site := k;
+      Exit (1);
+    end;
+    for i := 0 to High (k.kids) do
+    begin
+      r := FirstAppear (k.kids[i], nm, site);
+      if r > 0 then Exit (r);
+    end;
+  end;
+
+  function MoveLine (const mode: string): Integer;
+  var i : Integer;
+  begin
+    i := Length (mode);
+    while (i > 0) and (mode[i] >= '0') and (mode[i] <= '9') do Dec (i);
+    Result := StrToIntDef (Copy (mode, i + 1, MaxInt), 0);
+  end;
+
+  function LeavesAfter (k: TNode; line: Integer): Boolean;
+  var i, j : Integer;
+  begin
+    Result := False;
+    if k = nil then Exit;
+    if k.kind = nkStmtSeq then
+      for i := 0 to High (k.kids) do
+        if (k.kids[i] <> nil) and (k.kids[i].line = line) then
+          for j := i + 1 to High (k.kids) do
+            if (k.kids[j] <> nil) and (k.kids[j].kind in [nkExit, nkReturn, nkRaiseStmt]) then
+              Exit (True);
+    for i := 0 to High (k.kids) do
+      if LeavesAfter (k.kids[i], line) then Exit (True);
+  end;
+
+  procedure LoopCarry (const pre: string; body: TNode);
+  var
+    tmp : TStringList;
+    i2, ix : Integer;
+    nm, v : string;
+    site : TNode;
+  begin
+    tmp := TStringList.Create; tmp.CaseSensitive := True;
+    tmp.Text := pre;
+    for i2 := 0 to ownState.Count - 1 do
+    begin
+      nm := ownState.Names[i2];
+      v := ownState.ValueFromIndex[i2];
+      if v = 'alive' then Continue;
+      ix := tmp.IndexOfName (nm);
+      if (ix >= 0) and (tmp.ValueFromIndex[ix] <> 'alive') then Continue;
+      if LeavesAfter (body, MoveLine (v)) then Continue;
+      site := nil;
+      if (FirstAppear (body, nm, site) = 1) and (site <> nil) then
+        ErrN (site, ctx, 'use of ' + nm + ' in the next turn of the loop, after it was ' +
+          v + ' (par 4.2)');
     end;
     tmp.Free;
   end;
@@ -3235,10 +3497,34 @@ var
     Sem.ObjPoolIssue. }
   function ObjPoolIssue (a: TNode): string;
   var
-    m : string;
+    m, root : string;
     res : TNode;
+    hops : Integer;
   begin
     m := ScopeMode (a.a);
+    { Sem.ObjPoolIssue: a binder's pool is its origin's, followed back
+      to the root its IS SOME operand was written on }
+    if m = 'b' then
+    begin
+      root := a.a;
+      hops := 0;
+      while (hops <= 16) and (ScopeMode (root) = 'b') and
+            (binderFrom.IndexOfName (root) >= 0) do
+      begin
+        root := binderFrom.Values[root];
+        Inc (hops);
+      end;
+      if hops > 0 then
+      begin
+        m := ScopeMode (root);
+        if (m = 'p') or (m = 'r') then
+          Exit (a.a + ' is bound from the value parameter ' + root +
+                ' -- take it as VAR, so its pool comes with it')
+        else if m = 'o' then
+          Exit (a.a + ' is bound from the OWN parameter ' + root);
+      end;
+      Exit ('');
+    end;
     if m = 'v' then
     begin
       if PtrParamTy (ScopeType (a.a)) then Exit ('');
@@ -4243,6 +4529,21 @@ var
     if (Length (name) > 2) and (Copy (name, 1, 2) = 'C.') then
     begin
       Arity (1);
+      { Sem.CTotal: a C.* conversion that narrows raises ValueRange --
+        C.Int of what a 32-bit int does not hold, C.SizeT of a signed
+        integer, C.Float of an F64 (2026-10-10) }
+      { a length is never below zero: C.SizeT (LEN (b)) takes it whole }
+      if (name = 'C.SizeT') and (argl <> nil) and (Length (argl.kids) = 1) and
+         (argl.kids[0] <> nil) and (argl.kids[0].kind = nkCallExpr) and
+         (argl.kids[0].kids[0] <> nil) and (CallName (argl.kids[0].kids[0]) = 'LEN') then
+        Exit (name);
+      if (Length (aTy) = 1) and (aTy[0] <> '') and (Copy (aTy[0], 1, 2) <> 'C.') and
+         (Copy (aTy[0], 1, 1) <> '<') and
+         (((name = 'C.Int') and not InList (aTy[0], ['I8', 'I16', 'I32', 'U8', 'U16', 'BYTE', 'CHAR', 'BOOL'])) or
+          ((name = 'C.SizeT') and not InList (aTy[0], ['U8', 'U16', 'U32', 'U64', 'BYTE', 'CHAR', 'BOOL'])) or
+          ((name = 'C.Float') and (aTy[0] <> 'F32'))) then
+        if raised.Values['ValueRange'] = '' then
+          raised.Values['ValueRange'] := name + ' conversion';
       Exit (name);
     end;
     { a call THROUGH A PROCEDURE VALUE (par 2.2.3): a parameter or an
@@ -4924,7 +5225,13 @@ var
               'SLICE length must be an integer, not ' + TyName (u));
           if StartsWithS (t, 'SLICE OF ') then Result := t
           else if StartsWithS (t, 'ARRAY ') then
-            Result := 'SLICE OF ' + ElemOfArray (t)
+          begin
+            { Sem: an array no variable holds lives in a temporary of
+              the statement; a slice of it would outlive it }
+            if (e.kids[0] <> nil) and (e.kids[0].kind <> nkDesignator) then
+              ErrN (e, ctx, 'a SLICE of an array no variable holds: the array is gone at the end of the statement -- name it first: a := F (...) ; SLICE (a, ...)');
+            Result := 'SLICE OF ' + ElemOfArray (t);
+          end
           else if t <> '' then
             ErrN (e, ctx,
               'SLICE needs a slice or array, not ' + TyName (t));
@@ -4965,6 +5272,8 @@ var
                 and, provenance, the binder CARRIES the operand }
               EscStore (e.kids[0].a, True, e.kids[1].a);
               CarryFrom (e.kids[1].a, e.kids[0].a);
+              { Sem.BindFrom: the root it was bound from names its pool }
+              binderFrom.Values[e.kids[1].a] := e.kids[0].a;
             end;
           end
           else
@@ -5199,7 +5508,7 @@ var
     covered : TStringList;
     lbl, dcl : TNode;
     vname : string;
-    t, u, selTy, dmode, what, apool, par : string;
+    t, u, selTy, dmode, what, apool, par, ppool : string;
     said : Boolean;
     pre, hpre : string;
     snaps : array of string;
@@ -5222,6 +5531,21 @@ var
             frame-mode destination merely inherits the taint and is
             cleared when given a durable value. }
           what := FrameWhat (st.kids[1], u);
+          { the CALLER's pool kept in a module variable (mirrors
+            Sem.CheckAssign, 2026-10-10) }
+          if (what = '') and (Length (st.kids[0].kids) = 0) and
+             (ScopeMode (st.kids[0].a) = 'm') and not curInBody and
+             (st.kids[1] <> nil) and
+             ((st.kids[1].kind = nkNewExpr) or (st.kids[1].kind = nkCallExpr)) then
+          begin
+            ppool := AllocPoolOf (st.kids[1]);
+            if (ppool <> '') and (ScopeMode (ppool) = 'v') then
+              ErrN (st.kids[1], ctx, 'an allocation in pool ' + ppool +
+                ', the caller''s, may die before module variable ' +
+                st.kids[0].a + ' is read (par 4.3) -- allocate it in a ' +
+                'module pool (VAR mpool : POOL ; NEW (mpool, T)), or copy ' +
+                'a string: Text.Keep (mpool, s)');
+          end;
           if what <> '' then
           begin
             { a frame value is par 2.3's rule; storage in a local
@@ -5421,6 +5745,7 @@ var
           k := finSinceLoop; finSinceLoop := 0; Inc (loopsOpen);
           pre := OwnSnap;
           WalkSeq (st.kids[1]);
+          LoopCarry (pre, st.kids[1]);
           Dec (loopsOpen); finSinceLoop := k;
           hpre := OwnSnap;
           OwnRestore (pre);
@@ -5447,6 +5772,7 @@ var
             ForPush (st);
             k := finSinceLoop; finSinceLoop := 0; Inc (loopsOpen);
             WalkSeq (st.kids[3]);
+            LoopCarry (pre, st.kids[3]);
             Dec (loopsOpen); finSinceLoop := k;
             ForPop;
             hpre := OwnSnap;
@@ -5476,6 +5802,7 @@ var
           ForPush (st);
           k := finSinceLoop; finSinceLoop := 0; Inc (loopsOpen);
           WalkSeq (st.kids[3]);
+          LoopCarry (pre, st.kids[3]);
           Dec (loopsOpen); finSinceLoop := k;
           ForPop;
           hpre := OwnSnap;
@@ -5489,6 +5816,7 @@ var
           Inc (loopsOpen);
           pre := OwnSnap;
           WalkSeq (st.kids[0]);
+          LoopCarry (pre, st.kids[0]);
           Dec (loopsOpen);
           finSinceLoop := k;
           hpre := OwnSnap;
@@ -5674,7 +6002,18 @@ var
       nkDispose :
         begin
           DesigStrType (st.kids[0], False);
-          if Length (st.kids[0].kids) = 0 then
+          if Length (st.kids[0].kids) > 0 then
+            ErrN (st, ctx, 'cannot DISPOSE through a selector of ' + st.kids[0].a +
+              ': DISPOSE frees a name that owns its pointer, and ' +
+              'ownership is not followed into a field (par 4.2)')
+          else if (ScopeMode (st.kids[0].a) = 'l') and
+                  (OwnedCandKind (st.kids[0].a) = 1) and
+                  (fval.IndexOf (st.kids[0].a) < 0) and
+                  (ownFed.IndexOf (st.kids[0].a) < 0) then
+            ErrN (st, ctx, 'cannot DISPOSE ' + st.kids[0].a +
+              ': nothing here gives it an owned pointer -- only NEW (OWN, T), ' +
+              'an owned name moved in or a call does (par 4.2)')
+          else if Length (st.kids[0].kids) = 0 then
           begin
             NoteUse (st.kids[0]);
             vname := ScopeMode (st.kids[0].a);
@@ -5750,7 +6089,8 @@ var
                 if (tares <> nil) and (tares.kind = nkPtrType) and
                    (tares.kids[1] = nil) and
                    (OwnedCandKind (st.kids[1].a) > 0) and
-                   (fval.IndexOf (st.kids[1].a) < 0) then
+                   (fval.IndexOf (st.kids[1].a) < 0) and
+                   (pval.IndexOf (st.kids[1].a) < 0) then
                   OwnMark (st.kids[1].a,
                     'moved into a THREAD running ' + tname, st);
               end;
@@ -5850,6 +6190,7 @@ begin
   { par 2.4, the copy: the marks before the walk, since a write may
     precede the assignment that marks the name (Sem.CheckProcBody) }
   RoSeed (body);
+  OwnFedSeed (body);
   if nAgg > 0 then AggWalk (body, nkProcBody);
   if body.kind = nkStmtSeq then
     WalkSeq (body)
@@ -6066,7 +6407,7 @@ var
     if (e.kids[0] = nil) or (e.kids[0].kind <> nkDesignator) then Exit;
     name := CallName (e.kids[0]);
     if not LookupProcInfo (name, pr) then Exit;
-    if (pr.node <> nil) and pr.node.f3 then Result := 'the RO answer of ' + name;
+    Result := RoAnswerText (name, pr);
   end;
 
   function ModRoWhat (k, sc: TNode): string;
@@ -6453,6 +6794,33 @@ var
               DeclOnce (sec.kids[a].kids[0].kids[b], 0, me, where, once);
   end;
 
+  { Sem.CheckExcFields: an EXCEPTION's field must fit m9_err's slots --
+    an integer, a real, BOOL, CHAR, a slice or string, or an
+    enumeration (sent as its tag) }
+  procedure CheckExcFields (uu: TNode);
+  var a, b, g : Integer; t : string; xd, grp : TNode;
+  begin
+    for a := 0 to High (uu.kids) do
+      if (uu.kids[a] <> nil) and (uu.kids[a].kind = nkExcSection) then
+        for b := 0 to High (uu.kids[a].kids) do
+        begin
+          xd := uu.kids[a].kids[b];
+          if (xd = nil) or (Length (xd.kids) = 0) or (xd.kids[0] = nil) then Continue;
+          for g := 0 to High (xd.kids[0].kids) do
+          begin
+            grp := xd.kids[0].kids[g];
+            if grp = nil then Continue;
+            t := CanonT (grp.kids[1], 0);
+            if (t <> '') and (t <> '<int>') and not IsIntStr (t) and
+               (t <> 'BOOL') and (t <> 'CHAR') and (t <> 'F64') and (t <> 'F32') and
+               not StartsWithS (t, 'SLICE OF ') and
+               not AllPayloadless (ResolveType (grp.kids[1])) then
+              ErrN (grp, uu.a, 'a field of exception ' + xd.a + ' is ' + TyName (t) +
+                ': a payload is integers, reals, BOOL, CHAR, enumerations and strings -- pass what the handler needs of it');
+          end;
+        end;
+  end;
+
   procedure CheckDeclaredOnce (uu: TNode);
   var
     once : TStringList;
@@ -6566,6 +6934,7 @@ begin
     for i := 0 to High (u.kids) do
       ExportWalk (u, nil, u.kids[i]);
     CheckDeclaredOnce (u);
+    CheckExcFields (u);
     constMap.Clear;
     nAgg := 0;
     { an IMPLEMENTATION sees the constants of its DEFINITION, the unit
@@ -6626,7 +6995,7 @@ begin
           ErrN (p.kids[j], ctx, 'a nested procedure is not supported: ' +
             p.kids[j].a + ' is declared inside ' + d.a +
             '; declare it at module level (par 3)');
-      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear; roFrom.Clear;
+      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear; roFrom.Clear; binderFrom.Clear;
       varParams.Clear;
       keptParams.Clear;
       keptUsed.Clear;
@@ -6699,7 +7068,7 @@ begin
       sec := u.kids[i];
       if (sec = nil) or (sec.kind <> nkModBody) then Continue;
       ctx := u.a + ' body';
-      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear; roFrom.Clear;
+      scope := TStringList.Create; scope.CaseSensitive := True; roScope.Clear; roFrom.Clear; binderFrom.Clear;
       { a module body declares no parameters, so the KEPT lists must
         not carry the last procedure's into this frame's flush }
       keptParams.Clear;
@@ -6720,7 +7089,9 @@ begin
       curPure := False;
       curInBody := True;
       boundMon := '';            { a module body binds no monitor }
+      ownModule := True;
       CheckBody (sec.kids[0], ctx, declared, scope, '<void>');
+      ownModule := False;
       scope.Free;
     end;
 

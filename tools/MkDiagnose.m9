@@ -213,7 +213,17 @@ CONST
     'record-const-written',
     'record-aggregate-extended',
     'record-const-exported',
-    'unknown-procedure-case'
+    'unknown-procedure-case',
+    'slice-of-call-array',
+    'pool-root-binder',
+    'ro-answer-inferred',
+    'exception-field-record',
+    'c-conversion-narrows',
+    'use-after-move-loop',
+    'dispose-not-owned',
+    'dispose-through-field',
+    'module-body-use-after-move',
+    'pool-param-into-module'
   ] ;
   Cause = [
     'ADR takes the address of a value, which is the one thing the memory rules cannot check',
@@ -394,7 +404,17 @@ CONST
     'a field of a record CONST, or the whole of it, is assigned: it is read-only data',
     'a record aggregate names an extended record (RECORD (Base) ...): its base fields would have to come first, which the first cut of the aggregate does not do',
     'a record CONST is declared in a DEFINITION: like a constant table it is not exported yet',
-    'a procedure is called by a name that differs from a declared one only in CASE (Writeline for WriteLine); names are case-sensitive, and since 2026-10-05 the refusal names the procedure that was meant'
+    'a procedure is called by a name that differs from a declared one only in CASE (Writeline for WriteLine); names are case-sensitive, and since 2026-10-05 the refusal names the procedure that was meant',
+    'SLICE over an ARRAY that a call answers (or a field of one): an array is a value, held in a temporary that is gone at the end of the statement, and the slice would point into it (par 2.2.1)',
+    'a binder bound from a VALUE parameter (IF h.next IS SOME u) is handed to a VAR pointer parameter: the callee may allocate in the binder pool, which is the value parameter pool, and nobody named that one (par 4.3)',
+    'the answer of a function that may RETURN a string literal, a CONST or a view of one of its RO parameters is written through, or lent to a writable parameter: read-only storage, though the result type does not say RO (par 2.4)',
+    'an EXCEPTION field is a record, a pointer or a case record with a payload: the payload travels in slots for integers, reals and strings, and an enumeration goes as its tag (par 5)',
+    'a C.* conversion that narrows -- C.Int of an I64, C.SizeT of a signed integer, C.Float of an F64 -- raises ValueRange like I32 (x), and nothing declares or handles it (par 2.1)',
+    'an owned pointer moved inside a loop body (handed to an OWN parameter, DISPOSEd) is used again in the next turn, with no fresh value given before it (par 4.2)',
+    'DISPOSE of a local that nothing in the procedure gives an owned pointer -- only a copy of a field, a pool or a frame allocation reaches it -- so freeing it may free what another name still owns (par 4.2)',
+    'DISPOSE through a selector: ownership moved into a record field is not followed there, so the checker cannot see a second DISPOSE of the same object (par 4.2)',
+    'a module variable moved in the module body (handed to an OWN parameter or a THREAD, DISPOSEd) is used again -- the body tracks ownership as a procedure does (par 4.2)',
+    "an allocation in a POOL parameter -- the caller's pool, perhaps a local that dies when the caller returns -- is kept in a module variable (par 4.3)"
   ] ;
   Fix = [
     'put the procedure in an UNSAFE module, or pass a SLICE/VAR instead of an address (par 7)',
@@ -575,7 +595,17 @@ CONST
     'copy it to a variable (r := E) and change the copy',
     'declare a variable of the extended type and set its fields one by one',
     'declare the record CONST in the implementation, or export a procedure that answers it',
-    'write the name as declared -- the message says which: names are case-sensitive'
+    'write the name as declared -- the message says which: names are case-sensitive',
+    'assign the answer to a variable first, a := F (x), and slice the variable; a function answering a SLICE OF T can be sliced as it is',
+    'take the parameter VAR (VAR h: PTR Node), so its pool comes with it; or copy the binder into a local declared IN the pool it lives in',
+    'write into a copy (Text.Keep, or NEW and fill), or have the function answer fresh storage; declaring the result RO says the same thing at the heading',
+    'carry the fields the handler needs (the code, the name, the position), not the record itself',
+    'declare RAISES ValueRange, or handle it where the value cannot be out of range (a descriptor C handed out, an id): map it to the module error, or to what the C call refuses (-1)',
+    'give it a fresh value in the body after the move (p := NEW (OWN, T)), move it outside the loop, or leave the loop (EXIT) after the move',
+    'DISPOSE the name that took NEW (OWN, T) or the OWN parameter that was moved in; a copy of a field owns nothing',
+    'keep the owned pointer in a local or an OWN parameter and DISPOSE that name; a pointer moved into a field is not freed by DISPOSE',
+    'give it a fresh value after the move (p := NEW (OWN, T)), or move it once; a POOL allocation is lent to a thread, not moved',
+    "allocate it in the module's own pool (VAR mpool : POOL ; NEW (mpool, T)) or in HEAP, or copy a string: Text.Keep (mpool, s)"
   ] ;
 
 VAR

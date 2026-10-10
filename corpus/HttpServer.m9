@@ -844,6 +844,27 @@ END AwaitExits ;
 
 (* ---- octets out --------------------------------------------------- *)
 
+(* a descriptor and a length as C takes them, now that a C.*
+   conversion that narrows is checked (2026-10-10): what no C int holds
+   is no descriptor -- -1, which every call refuses as a bad one -- and
+   a length below zero is none *)
+PROCEDURE CFd (v: I64) : C.Int =
+VAR bad : I32 ;
+BEGIN
+  RETURN C.Int (v)
+EXCEPT
+| ValueRange :
+    bad := -1 ;
+    RETURN C.Int (bad)
+END CFd ;
+
+PROCEDURE CLen (v: I64) : C.SizeT =
+BEGIN
+  RETURN C.SizeT (v)
+EXCEPT
+| ValueRange : RETURN C.SizeT (0)
+END CLen ;
+
 PROCEDURE WriteAll (fd: I64 ; RO b: SLICE OF BYTE) : BOOL =
 VAR done, n : I64 ;
 BEGIN
@@ -851,8 +872,8 @@ BEGIN
      honest spelling *)
   done := 0 ;
   WHILE done < LEN (b) DO
-    n := I64 (Write (C.Int (fd), ADR (SLICE (b, done, LEN (b) - done)),
-                     C.SizeT (LEN (b) - done))) ;
+    n := I64 (Write (CFd (fd), ADR (SLICE (b, done, LEN (b) - done)),
+                     CLen (LEN (b) - done))) ;
     IF n <= 0 THEN RETURN FALSE END ;
     done := done + n
   END ;
@@ -909,70 +930,13 @@ END Reason ;
 
 (* ---- the date a response carries (RFC 9110 par 6.6.1) ------------- *)
 
-PROCEDURE Two (VAR d: PTR DynStr.DString ; v: I64) =
-BEGIN
-  IF v < 10 THEN DynStr.AppendChar (d, '0') END ;
-  DynStr.AppendI64 (d, v)
-END Two ;
-
 PROCEDURE AppendDate (VAR d: PTR DynStr.DString) RAISES ValueRange =
-  (* `Sun, 06 Nov 1994 08:49:37 GMT`, from the wall clock.  The civil
-     date is Hinnant's days-to-civil, which Time also uses; repeated
-     here so the server's closure stays DynStr and Http. *)
-VAR
-  t, days, secs, z, era, doe, yoe, y, doy, mp, dd, m, wd : I64 ;
+  (* `Date: Sun, 06 Nov 1994 08:49:37 GMT', from the wall clock,
+     through Http.FormatDate (this was a private copy of it until
+     2026-10-10) *)
 BEGIN
-  t := I64 (F64 (NowSec ())) ;
-  days := t DIV 86400 ;
-  secs := t MOD 86400 ;
-  wd := (days + 4) MOD 7 ;               (* 0 = Sunday; 1970-01-01, day 0,
-                                            was a Thursday *)
-  z := days + 719468 ;
-  era := z DIV 146097 ;
-  doe := z - era * 146097 ;
-  yoe := (doe - doe DIV 1460 + doe DIV 36524 - doe DIV 146096) DIV 365 ;
-  y := yoe + era * 400 ;
-  doy := doe - (365 * yoe + yoe DIV 4 - yoe DIV 100) ;
-  mp := (5 * doy + 2) DIV 153 ;
-  dd := doy - (153 * mp + 2) DIV 5 + 1 ;
-  IF mp < 10 THEN m := mp + 3 ELSE m := mp - 9 END ;
-  IF m <= 2 THEN y := y + 1 END ;
   DynStr.Append (d, 'Date: ') ;
-  CASE wd OF
-  | 0 : DynStr.Append (d, 'Sun')
-  | 1 : DynStr.Append (d, 'Mon')
-  | 2 : DynStr.Append (d, 'Tue')
-  | 3 : DynStr.Append (d, 'Wed')
-  | 4 : DynStr.Append (d, 'Thu')
-  | 5 : DynStr.Append (d, 'Fri')
-  ELSE DynStr.Append (d, 'Sat')
-  END ;
-  DynStr.Append (d, ', ') ;
-  Two (d, dd) ;
-  DynStr.AppendChar (d, ' ') ;
-  CASE m OF
-  | 1 : DynStr.Append (d, 'Jan')
-  | 2 : DynStr.Append (d, 'Feb')
-  | 3 : DynStr.Append (d, 'Mar')
-  | 4 : DynStr.Append (d, 'Apr')
-  | 5 : DynStr.Append (d, 'May')
-  | 6 : DynStr.Append (d, 'Jun')
-  | 7 : DynStr.Append (d, 'Jul')
-  | 8 : DynStr.Append (d, 'Aug')
-  | 9 : DynStr.Append (d, 'Sep')
-  | 10 : DynStr.Append (d, 'Oct')
-  | 11 : DynStr.Append (d, 'Nov')
-  ELSE DynStr.Append (d, 'Dec')
-  END ;
-  DynStr.AppendChar (d, ' ') ;
-  DynStr.AppendI64 (d, y) ;
-  DynStr.AppendChar (d, ' ') ;
-  Two (d, secs DIV 3600) ;
-  DynStr.AppendChar (d, ':') ;
-  Two (d, (secs MOD 3600) DIV 60) ;
-  DynStr.AppendChar (d, ':') ;
-  Two (d, secs MOD 60) ;
-  DynStr.Append (d, ' GMT') ;
+  DynStr.Append (d, Http.FormatDate (I64 (F64 (NowSec ())))) ;
   CrLf (d)
 END AppendDate ;
 
@@ -1090,8 +1054,8 @@ PROCEDURE Fill (VAR c: Conn) : I64 =
 VAR n : I64 ;
 BEGIN
   IF c.have >= LEN (c.cb) THEN RETURN 0 END ;
-  n := I64 (Read (C.Int (c.fd), ADR (SLICE (c.cb, c.have, LEN (c.cb) - c.have)),
-                  C.SizeT (LEN (c.cb) - c.have))) ;
+  n := I64 (Read (CFd (c.fd), ADR (SLICE (c.cb, c.have, LEN (c.cb) - c.have)),
+                  CLen (LEN (c.cb) - c.have))) ;
   IF n <= 0 THEN RETURN 0 END ;
   c.have := c.have + n ;
   RETURN n
@@ -1153,7 +1117,7 @@ PROCEDURE Linger (VAR c: Conn) =
      correctly and the client saw ECONNRESET.) *)
 VAR n, seen : I64 ;
 BEGIN
-  n := I64 (RcvTimeo (C.Int (c.fd), C.SSizeT (LingerMs))) ;
+  n := I64 (RcvTimeo (CFd (c.fd), C.SSizeT (LingerMs))) ;
   seen := 0 ;
   WHILE seen < LingerMax DO
     c.have := 0 ;
@@ -1781,7 +1745,7 @@ BEGIN
     IF served > 0 AND (I64 (Stopping ()) # 0 OR Closing (w.s.q)) THEN RETURN FALSE END ;
     slice := w.s.cfg.idleMs - waited ;
     IF slice > 250 THEN slice := 250 END ;
-    IF I64 (Readable (C.Int (c.fd), C.SSizeT (slice))) # 0 THEN RETURN TRUE END ;
+    IF I64 (Readable (CFd (c.fd), C.SSizeT (slice))) # 0 THEN RETURN TRUE END ;
     waited := waited + slice
   END ;
   RETURN FALSE
@@ -1838,8 +1802,8 @@ BEGIN
   END ;
   Consume (c, take) ;
   WHILE got < LEN (body) DO
-    n := I64 (Read (C.Int (c.fd), ADR (SLICE (body, got, LEN (body) - got)),
-                    C.SizeT (LEN (body) - got))) ;
+    n := I64 (Read (CFd (c.fd), ADR (SLICE (body, got, LEN (body) - got)),
+                    CLen (LEN (body) - got))) ;
     IF n <= 0 THEN RETURN FALSE END ;
     got := got + n
   END ;

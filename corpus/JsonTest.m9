@@ -1,0 +1,87 @@
+MODULE JsonTest ;
+
+(* Json, tested in M9 (runtime/test/m9test.sh runs every *Test.m9
+   beside its module).  The parser and the serialisers keep their C
+   driver (json_driver.c, against Python's json); this file holds what
+   came after it: NewRaw (2026-10-10), a number written as its text
+   says.  The values are read back through Fmt.ParseF64, which FmtTest
+   holds to Python's float(). *)
+
+IMPORT Check ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Json ;
+IMPORT Text ;
+
+CONST
+  Raws = ['1.0E-5', '2.50', '-0.0', '1e400', '12345678901234567890', '0'] ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+  i : I64 ;
+
+PROCEDURE Kept (RO text: STR) =
+VAR
+  o, n, c : PTR Json.Node ;
+BEGIN
+  o := Json.NewObj () ;
+  n := Json.NewRaw (text) ;
+  Json.Set (o, 'v', n) ;
+  Check.EqStr (t, 'Compact keeps ' + text, Json.Compact (o), '{"v":' + text + '}') ;
+  Check.EqStr (t, 'NumText keeps ' + text, Json.NumText (n), text) ;
+  c := Json.Clone (o) ;
+  Check.EqStr (t, 'Clone keeps ' + text, Json.Compact (c), '{"v":' + text + '}') ;
+  Check.That (t, 'Pretty holds ' + text, Text.Contains (Json.Pretty (o), text)) ;
+  IF NOT Text.Eq (text, '1e400') THEN
+    Check.EqF64 (t, 'AsF64 of ' + text, Json.AsF64 (n), Fmt.ParseF64 (text))
+  END
+EXCEPT
+| Json.ParseError (m, l, col) : Check.That (t, 'NewRaw refused ' + text, FALSE)
+| Json.TypeMismatch (m) : Check.That (t, 'a type mismatch on ' + text, FALSE)
+| ValueRange : Check.That (t, 'ValueRange on ' + text, FALSE)
+END Kept ;
+
+PROCEDURE NotJson (RO text: STR) : BOOL =
+VAR n : PTR Json.Node ;
+BEGIN
+  n := Json.NewRaw (text) ;
+  RETURN FALSE
+EXCEPT
+| Json.ParseError (m, l, c) : RETURN TRUE
+| Json.TypeMismatch (m) : RETURN FALSE
+END NotJson ;
+
+PROCEDURE NotNumber (RO text: STR) : BOOL =
+VAR n : PTR Json.Node ;
+BEGIN
+  n := Json.NewRaw (text) ;
+  RETURN FALSE
+EXCEPT
+| Json.ParseError (m, l, c) : RETURN FALSE
+| Json.TypeMismatch (m) : RETURN TRUE
+END NotNumber ;
+
+PROCEDURE Pooled () =
+VAR n : PTR Json.Node IN pool ;
+BEGIN
+  n := Json.NewRawIn (pool, '3.140') ;
+  Check.EqStr (t, 'NewRawIn keeps its text', Json.NumText (n), '3.140') ;
+  Check.EqI64 (t, 'AsI64 of a raw integer', Json.AsI64 (Json.NewRaw ('42')), 42)
+EXCEPT
+| Json.ParseError (m, l, c) : Check.That (t, 'NewRawIn refused', FALSE)
+| Json.TypeMismatch (m) : Check.That (t, 'NewRawIn mismatch', FALSE)
+| ValueRange : Check.That (t, 'NewRawIn ValueRange', FALSE)
+END Pooled ;
+
+BEGIN
+  FOR i := 0 TO LEN (Raws) - 1 DO Kept (Raws[i]) END ;
+  Pooled () ;
+  Check.That (t, 'NewRaw refuses what is no JSON: 1.', NotJson ('1.')) ;
+  Check.That (t, 'and 0x10', NotJson ('0x10')) ;
+  Check.That (t, 'and two numbers', NotJson ('1 2')) ;
+  Check.That (t, 'and a value of another kind: a string', NotNumber ('"1"')) ;
+  Check.That (t, 'an array', NotNumber ('[1]')) ;
+  Check.That (t, 'null', NotNumber ('null')) ;
+  Io.Halt (Check.Done (t, 'Json'))
+END JsonTest.

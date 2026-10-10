@@ -367,7 +367,10 @@ bool Rsa_Verify (Rsa_Key * k, m9_sl_BYTE digest, m9_sl_BYTE signature, int64_t s
   } else {
     pss = INT64_C(0);
   }
-  rc = (int64_t)(m9_rsa_verify (((void *)(k->der).p), ((size_t)((k->der).len)), ((int)(pk)), ((void *)(digest).p), ((size_t)((digest).len)), ((void *)(signature).p), ((size_t)((signature).len)), ((int)(pss))));
+  { __typeof__(rc) m9v = (int64_t)(m9_rsa_verify (((void *)(k->der).p), ((size_t) m9_u64 ((k->der).len, err)), ((int) m9_i32 (pk, err)), ((void *)(digest).p), ((size_t) m9_u64 ((digest).len, err)), ((void *)(signature).p), ((size_t) m9_u64 ((signature).len, err)), ((int) m9_i32 (pss, err))));
+    if (err->exc) goto L_ret;
+    rc = m9v;
+  }
   if ((rc < INT64_C(0))) {
     { __typeof__(((m9_sl_CHAR){ (uint32_t *) m9s16, 44 })) m9t3 = ((m9_sl_CHAR){ (uint32_t *) m9s16, 44 }); err->s[0].p = m9t3.p; err->s[0].len = m9t3.len; m9_pay_keep (err, 0, sizeof (*m9t3.p)); }
     m9_raise (err, &Rsa_Error);

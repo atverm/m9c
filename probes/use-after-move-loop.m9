@@ -1,0 +1,30 @@
+(* EXPECT: use of p in the next turn of the loop, after it was moved into an OWN parameter of Eat at line 27 (par 4.2) *)
+(* A move inside a loop carries into the next turn (ownership pass 3,
+   2026-10-10): the body was walked once, as if the loop ran once, and
+   `FOR i := 1 TO 3 DO Eat (p) END' handed on a pointer already moved
+   and freed.  The legal forms first: a fresh value each turn after
+   the move, and a move the loop leaves after.  Then the move with no
+   fresh value. *)
+MODULE m ;
+TYPE Node = RECORD v : I64 END ;
+PROCEDURE Eat (OWN p: PTR Node) =
+BEGIN
+  DISPOSE (p)
+END Eat ;
+PROCEDURE Run () =
+VAR p : PTR Node ; i : I64 ;
+BEGIN
+  p := NEW (OWN, Node) ;
+  FOR i := 1 TO 3 DO
+    Eat (p) ;
+    p := NEW (OWN, Node)
+  END ;
+  LOOP
+    Eat (p) ;
+    EXIT
+  END ;
+  p := NEW (OWN, Node) ;
+  FOR i := 1 TO 3 DO Eat (p) END
+END Run ;
+BEGIN
+END m.

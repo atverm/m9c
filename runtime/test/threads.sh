@@ -69,8 +69,35 @@ if [ "$sbad" -ne 0 ]; then
   exit 1
 fi
 
+# ---- ONE gate per [SERIAL] UNIT, not per module (2026-10-10) ----
+# serialtwo/: SerialA declares a [SERIAL] unit over the same unsafe
+# counter, SerialB calls it too, and SerialTwo runs four threads through
+# each.  The gate was a static of each generated file, so the two
+# modules locked two mutexes and lost updates against each other
+# (shown with the old generator); the runtime now answers one gate per
+# unit name for the whole program.
+TWO="$OUT/two"
+mkdir -p "$TWO"
+cp serialtwo/*.m9 serialgate.c "$TWO/"
+gcc -std=c11 -O2 -c "$TWO/serialgate.c" -o "$TWO/serialgate.o"
+( cd "$TWO" && "$M9C" --make -c SerialTwo.m9 -I. )
+( cd "$TWO" && gcc -std=c11 -O2 -flto -iquote "$REPO/runtime" -iquote . \
+    "$REPO/runtime/m9rt.c" ./*.o -lm -o serialtwo )
+tbad=0
+for i in $(seq 5); do
+  out=$("$TWO/serialtwo")
+  case "$out" in
+    *OK) : ;;
+    *) tbad=$((tbad + 1)); echo "  $out" ;;
+  esac
+done
+if [ "$tbad" -ne 0 ]; then
+  echo "threads: one [SERIAL] unit called from two modules lost updates in $tbad of 5 runs"
+  exit 1
+fi
+
 echo "threads: $runs runs of THREAD/MONITOR/WAIT/SIGNAL answered $want;"
-echo "         5 runs of the [SERIAL] gate lost no updates"
+echo "         5 runs of the [SERIAL] gate lost no updates, nor 5 through two modules"
 
 # ---- CONCURRENT FILE I/O, which Io's [REENTRANT] tag on the whole-file
 # primitives claims (64ac53f; they were [SERIAL] until 2026-09-12, and

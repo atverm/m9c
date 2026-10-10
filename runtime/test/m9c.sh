@@ -90,6 +90,39 @@ out=$("$LINK/httpping" 2>/dev/null)
   echo "FAIL: httpping printed '$out'"; exit 1; }
 echo "m9c: a plain-http request program links flagless (tlsshim + OpenSSL supplied)"
 
+# A FOR "C" UNIT REACHED ONLY THROUGH ANOTHER MODULE'S IMPLEMENTATION
+# (2026-10-10).  Its LINK words go on the line only when the libraries
+# they name are on this machine: linkfar/FarLib binds m9nosuchlib,
+# which is on none, and FarUse reaches it only through FarMid -- the
+# Frame-and-NetCDF shape -- so it links and -v says the unit was left
+# out; FarDirect imports FarLib itself and must FAIL naming the library;
+# NbUse reaches Parquet (and libzstd, which is everywhere) only through
+# NbCells and must have zstd on its line.  Every gate machine has
+# netCDF, so this is the only check of the case where a library is
+# missing.
+FAR=/tmp/m9c-linkfar
+rm -rf "$FAR"; mkdir -p "$FAR"
+cp linkfar/*.m9 "$FAR/"
+( cd "$FAR" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -v -o faruse FarUse.m9 2>"$FAR/use.txt" ) || {
+  echo "FAIL: a program reaching a missing library through an implementation does not link"
+  tail -12 "$FAR/use.txt"; exit 1; }
+grep -q 'm9nosuchlib' "$FAR/use.txt" && {
+  echo "FAIL: the missing library went on the line"; grep m9nosuchlib "$FAR/use.txt"; exit 1; }
+grep -q "^m9c: not linking what cfar names" "$FAR/use.txt" || {
+  echo "FAIL: -v did not say the unit was left out"; cat "$FAR/use.txt"; exit 1; }
+[ "$("$FAR/faruse")" = "far 84" ] || { echo "FAIL: faruse printed the wrong thing"; exit 1; }
+if ( cd "$FAR" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -o fardirect FarDirect.m9 >"$FAR/direct.txt" 2>&1 ); then
+  echo "FAIL: a program importing the unit itself linked without its library"; exit 1
+fi
+grep -q 'm9nosuchlib' "$FAR/direct.txt" || {
+  echo "FAIL: the direct import's failure does not name the library"; tail -8 "$FAR/direct.txt"; exit 1; }
+( cd "$FAR" && M9LIBRARY="$SRC" M9RUNTIME="$RT" "$M9C" --make -v -o nbuse NbUse.m9 2>"$FAR/nb.txt" ) || {
+  echo "FAIL: a program reaching Parquet through NbCells does not link"; tail -12 "$FAR/nb.txt"; exit 1; }
+grep -q 'zstd' "$FAR/nb.txt" || {
+  echo "FAIL: libzstd is not on the line of a program reaching Parquet through NbCells"; exit 1; }
+rm -rf "$FAR"
+echo "m9c: a unit reached through an implementation links its library when it is there, and only then"
+
 # the point of connecting Sem: a compiler that translates what it
 # knows to be wrong is a translator.  A program with a semantic error
 # must produce diagnostics on stderr, NO output files, and exit 1.
@@ -647,26 +680,27 @@ echo "m9c: a qualified handler catches exactly the module it names"
 # trigger was EXIT inside a CASE arm until 2026-10-09, when the
 # generator learned it, then an expression as a CASE label until stage
 # 2 of the typed tree the same evening, a variable FOR step until stage
-# 3 (the checker refuses it now, par 10); it is a SLICE of an array a
-# call answers now, which the checker passes and the generator refuses
-# (runtime/test/genforms.owed lists every such form).  The reversed
+# 3 (the checker refuses it now, par 10), a SLICE of an array a call
+# answers until the checker refused it too (2026-10-10); it is a VIEW of
+# a grid a call answers now, which the checker passes and the generator
+# refuses (runtime/test/genforms.owed lists every such form).  The reversed
 # NEW is checked below, where it belongs now.
 GMSG=/tmp/m9c-genmsg
 rm -rf "$GMSG"; mkdir -p "$GMSG"; cd "$GMSG"
 cat > Exc.m9 <<'M9'
 MODULE Exc ;
 IMPORT Io ;
-PROCEDURE Mk () : ARRAY 4 OF I64 = VAR a : ARRAY 4 OF I64 ; BEGIN RETURN a END Mk ;
-VAR s : SLICE OF I64 ;
+PROCEDURE Mk () : GRID 2 OF F64 = BEGIN RETURN NEW (F64, 2, 3) END Mk ;
+VAR g : GRID 1 OF F64 ;
 BEGIN
-  s := SLICE (Mk (), 0, 2) ;
-  Io.WriteLine ('sliced')
+  g := VIEW (Mk (), 1, ALL) ;
+  Io.WriteLine ('viewed')
 END Exc.
 M9
 if M9LIBRARY="$SRC" "$M9C" --make -c ./Exc.m9 2>gm.txt; then
-  echo "FAIL: a SLICE of a call's array should be refused"; exit 1
+  echo "FAIL: a VIEW of a call's grid should be refused"; exit 1
 fi
-grep -q 'Exc.m9:6: gen: SLICE() argument form' gm.txt ||
+grep -q 'Exc.m9:6: gen: VIEW form' gm.txt ||
   { echo "FAIL: the generator error lost its line or message:"; \
     head -3 gm.txt; exit 1; }
 
@@ -764,25 +798,38 @@ fi
 # (EXCEPT and FINALLY on one block until 2026-10-09, when the generator
 # learned it; an expression as a CASE label until stage 2 of the typed
 # tree the same evening; a variable FOR step until stage 3, when the
-# checker learned to refuse it; a SLICE of a call's array now)
+# checker learned to refuse it; a SLICE of a call's array until the
+# checker refused that too; a VIEW of a call's grid now)
 cat > Late.m9 <<'LATE'
 MODULE Late ;
 IMPORT Io ;
-PROCEDURE Mk () : ARRAY 4 OF I64 = VAR a : ARRAY 4 OF I64 ; BEGIN RETURN a END Mk ;
-VAR s : SLICE OF I64 ;
+PROCEDURE Mk () : GRID 2 OF F64 = BEGIN RETURN NEW (F64, 2, 3) END Mk ;
+VAR g : GRID 1 OF F64 ;
 BEGIN
-  s := SLICE (Mk (), 0, 2) ;
-  Io.WriteLine ('sliced')
+  g := VIEW (Mk (), 1, ALL) ;
+  Io.WriteLine ('viewed')
 END Late.
 LATE
 if M9LIBRARY="$SRC" "$M9C" --check Late.m9 2>late.err; then
   echo "FAIL: --check accepted a program the generator refuses"; cat late.err; exit 1
 fi
-grep -q "gen: SLICE() argument form" late.err ||
+grep -q "gen: VIEW form" late.err ||
   { echo "FAIL: --check exit 1 without the generator's line:"; cat late.err; exit 1; }
 [ -z "$(ls -A "$CK" | grep -v -E '^(Broke|Late)\.m9$|\.err$')" ] ||
   { echo "FAIL: --check on a generator refusal wrote files:"; ls -A "$CK"; exit 1; }
 echo "m9c: --check answers diagnostics, the generator's included, and writes nothing"
+
+# A SOURCE THAT IS NOT UTF-8 is said once, as that, and nothing is
+# searched for: m9c said `not text' twice and then `cannot find' of a
+# file that was there (2026-10-10) -- the path search read it again.
+printf 'MODULE NotUtf ;\nIMPORT Io ;\nBEGIN\n  Io.WriteLine (%sa\377b%s)\nEND NotUtf.\n' "'" "'" > NotUtf.m9
+if M9LIBRARY="$SRC" "$M9C" --check NotUtf.m9 2>notutf.err; then
+  echo "FAIL: a source that is not UTF-8 was accepted"; exit 1
+fi
+[ "$(grep -c 'not text' notutf.err)" = 1 ] && ! grep -q 'cannot find' notutf.err || {
+  echo "FAIL: a non-UTF-8 source should be said once, as not text, and not as missing:"; cat notutf.err; exit 1; }
+rm -f NotUtf.m9 notutf.err
+echo "m9c: a source that is not UTF-8 is refused once, by what it is"
 
 # THE VERSION CANNOT DRIFT FROM THE CHANGELOG.  Two releases in a row
 # shipped a first build whose receipt said the previous version,

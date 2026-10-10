@@ -172,7 +172,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return;
@@ -228,7 +228,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -623,13 +623,13 @@ static void Parse_ErrAt (Parse_Parser *p, m9_pool *p_pool, int64_t ln, int64_t c
   (void) m9res;
   err->res = &m9frame;
   if (((*p).nerr < Parse_MaxErr)) {
-    (*(int64_t *) m9_at ((*p).errLine.v, (*p).nerr, INT64_C(64), sizeof (int64_t), err)) = ln;
+    (*(Parse_Perr *) m9_at ((*p).errs.v, (*p).nerr, INT64_C(64), sizeof (Parse_Perr), err)).line = ln;
     if (err->exc) goto L_ret;
-    (*(int64_t *) m9_at ((*p).errCol.v, (*p).nerr, INT64_C(64), sizeof (int64_t), err)) = cl;
+    (*(Parse_Perr *) m9_at ((*p).errs.v, (*p).nerr, INT64_C(64), sizeof (Parse_Perr), err)).col = cl;
     if (err->exc) goto L_ret;
-    { __typeof__((*(m9_sl_CHAR *) m9_at ((*p).errMsg.v, (*p).nerr, INT64_C(64), sizeof (m9_sl_CHAR), err))) m9v = Parse_Keep (msg, err);
+    { __typeof__((*(Parse_Perr *) m9_at ((*p).errs.v, (*p).nerr, INT64_C(64), sizeof (Parse_Perr), err)).msg) m9v = Parse_Keep (msg, err);
       if (err->exc) goto L_ret;
-      (*(m9_sl_CHAR *) m9_at ((*p).errMsg.v, (*p).nerr, INT64_C(64), sizeof (m9_sl_CHAR), err)) = m9v;
+      (*(Parse_Perr *) m9_at ((*p).errs.v, (*p).nerr, INT64_C(64), sizeof (Parse_Perr), err)).msg = m9v;
       if (err->exc) goto L_ret;
     }
     { __typeof__((*p).nkept) m9v = m9_add_i64 ((*p).nerr, INT64_C(1), err);
@@ -647,7 +647,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return;
@@ -667,7 +667,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return;
@@ -702,7 +702,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return;
@@ -739,7 +739,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -767,7 +767,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return;
@@ -804,7 +804,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -828,7 +828,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -904,7 +904,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1251,7 +1251,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1330,7 +1330,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1527,7 +1527,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1596,7 +1596,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1630,7 +1630,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1670,7 +1670,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1724,7 +1724,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1767,7 +1767,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1815,7 +1815,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -1923,7 +1923,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2193,7 +2193,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2245,7 +2245,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2318,7 +2318,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2369,7 +2369,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2416,7 +2416,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2463,7 +2463,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2525,7 +2525,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_adopt_if (&m9frame, n_pool, (*n));
   m9_pool_free (&m9frame);
@@ -2567,7 +2567,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2646,7 +2646,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2692,7 +2692,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2763,7 +2763,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -2822,7 +2822,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3283,7 +3283,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3414,7 +3414,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3497,7 +3497,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3542,7 +3542,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3601,7 +3601,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3702,7 +3702,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3749,7 +3749,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;
@@ -3801,7 +3801,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_adopt_if (&m9frame, parent_pool, (*parent));
   m9_pool_free (&m9frame);
@@ -3830,7 +3830,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_adopt_if (&m9frame, parent_pool, (*parent));
   m9_pool_free (&m9frame);
@@ -4086,7 +4086,7 @@ L_ret: ;
   m9_adopt_if (&m9frame, p_pool, (*p).cur.text.p);
   m9_adopt_if (&m9frame, p_pool, (*p).peekTok.text.p);
   for (int64_t m9k1 = 0; m9k1 < 64; m9k1++) {
-    m9_adopt_if (&m9frame, p_pool, (*p).errMsg.v[m9k1].p);
+    m9_adopt_if (&m9frame, p_pool, (*p).errs.v[m9k1].msg.p);
   }
   m9_pool_free (&m9frame);
   return m9ret;

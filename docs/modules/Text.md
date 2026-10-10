@@ -162,7 +162,12 @@ _(documented with the group below)_
 
 ### Upper (RO s: STR) : STR
 
-ASCII A..Z only; every other scalar passes through untouched
+every scalar as Python's str.lower and str.upper map it ON ITS
+OWN -- the full mappings, so 'straße' is 'STRASSE' and 'İ' lowers
+to 'i' and a combining dot: the answer may be longer than s.  No
+context: Python lowers a Σ that ends a word to ς, this to σ.
+Tables from Python 3.14's Unicode 16.0 (tools/textucd.py); held
+by TextTest at every code point.  ASCII-only until 2026-10-10.
 
 ### Replace (RO s: STR ; RO old: STR ; RO by: STR) : STR
 
@@ -172,6 +177,34 @@ two replacements and not three.  Python's str.replace.  An
 EMPTY old occurs nowhere here and s comes back as it was;
 Python finds it between every two characters, which is nobody's
 meaning.  A copy either way: the answer shares nothing with s.
+
+### AllIn (RO s: STR ; RO set: STR) : BOOL
+
+is s non-empty and every character of it in `set'?  `set' is the
+inside of a Match bracket -- characters and ranges, `a-z0-9_-',
+a leading `!' negating -- so AllIn (s, 'a-z-') is what a regular
+expression writes `[a-z-]+'.  Empty s answers FALSE, as Python's
+''.isdigit () does.  Held to fnmatch, character by character
+(2026-10-10, cp-kernel's proposal: it wrote these by hand).
+
+### AllDigits (RO s: STR) : BOOL
+
+_(documented with the group below)_
+
+### AllLower (RO s: STR) : BOOL
+
+_(documented with the group below)_
+
+### AllUpper (RO s: STR) : BOOL
+
+_(documented with the group below)_
+
+### AllAlnum (RO s: STR) : BOOL
+
+AllIn over the ASCII sets 0-9, a-z, A-Z and all three: what an
+identifier or a file name's field is checked against.  Unicode
+letters are not letters here; Upper and Lower are where Text
+knows them.
 
 ### Match (RO pattern: STR ; RO s: STR) : BOOL
 

@@ -15,14 +15,14 @@ a checker that guesses produces diagnostics nobody can act on.
 Built in passes, in the order the oracle grew them, so each is
 differentially verified before the next is written.
 
-### LoadFile (root: PTR Ast.Node)
+### LoadFile (VAR root: PTR Ast.Node)
 
 every unit of every file must be loaded before ANY is checked:
 cross-module names resolve against this registry, and a name
 that is not yet loaded is indistinguishable from one that does
 not exist
 
-### CheckFile (KEPT root: PTR Ast.Node)
+### CheckFile (VAR KEPT root: PTR Ast.Node)
 
 checks one parsed file, after LoadFile has registered it and
 every module it imports.  It does not raise and it does not

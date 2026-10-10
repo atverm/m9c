@@ -1,0 +1,12 @@
+MODULE FarDirect ;
+
+(* FarLib imported directly: its LINK is taken as written, and the
+   link fails naming m9nosuchlib *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT FarLib ;
+
+BEGIN
+  Io.WriteLine ('direct ' + Fmt.I64Str (FarLib.Answer ()))
+END FarDirect.

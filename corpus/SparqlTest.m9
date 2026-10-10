@@ -45,8 +45,7 @@ BEGIN
 END G ;
 
 PROCEDURE GoldBool (RO name: STR) : BOOL =
-  (* a golden boolean; FALSE, and a failed check, when there is none
-     (`F (x)[0]' does not parse: the owed `F (x).field' item) *)
+  (* a golden boolean; FALSE, and a failed check, when there is none *)
 VAR v : SLICE OF BOOL ;
 BEGIN
   v := Check.GoldBools (t, gold, name) ;

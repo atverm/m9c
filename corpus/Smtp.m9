@@ -563,6 +563,27 @@ END Stuffed ;
 
 (* ---- the dialogue ------------------------------------------------------ *)
 
+(* a descriptor and a length as C takes them, now that a C.*
+   conversion that narrows is checked (2026-10-10): what no C int holds
+   is no descriptor -- -1, which every call refuses as a bad one -- and
+   a length below zero is none *)
+PROCEDURE CFd (v: I64) : C.Int =
+VAR bad : I32 ;
+BEGIN
+  RETURN C.Int (v)
+EXCEPT
+| ValueRange :
+    bad := -1 ;
+    RETURN C.Int (bad)
+END CFd ;
+
+PROCEDURE CLen (v: I64) : C.SizeT =
+BEGIN
+  RETURN C.SizeT (v)
+EXCEPT
+| ValueRange : RETURN C.SizeT (0)
+END CLen ;
+
 PROCEDURE WrAll (VAR c: Conn ; RO b: SLICE OF BYTE) RAISES Error =
 VAR off, n, want : I64 ;
 BEGIN
@@ -570,9 +591,9 @@ BEGIN
   WHILE off < LEN (b) DO
     want := LEN (b) - off ;
     IF c.secure THEN
-      n := I64 (TlsWrite (C.Int (c.fd), ADR (SLICE (b, off, want)), C.SizeT (want)))
+      n := I64 (TlsWrite (CFd (c.fd), ADR (SLICE (b, off, want)), CLen (want)))
     ELSE
-      n := I64 (Write (C.Int (c.fd), ADR (SLICE (b, off, want)), C.SizeT (want)))
+      n := I64 (Write (CFd (c.fd), ADR (SLICE (b, off, want)), CLen (want)))
     END ;
     IF n <= 0 THEN RAISE Error ('smtp: the connection closed while writing', 0) END ;
     off := off + n

@@ -1,0 +1,19 @@
+(* EXPECT: cannot DISPOSE through a selector of b: DISPOSE frees a name that owns its pointer, and ownership is not followed into a field (par 4.2) *)
+(* An owned pointer moved into a record field was DISPOSEd through the
+   field as often as the program liked (2026-10-10): `DISPOSE (b.p) ;
+   b.p.v := 3 ; DISPOSE (b.p)' passed both checkers.  Ownership is not
+   followed into a field, so DISPOSE takes a bare name; 0 sites in the
+   tree and the four applications. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Twice () =
+VAR q : PTR T ; b : B ;
+BEGIN
+  q := NEW (OWN, T) ;
+  b.p := q ;
+  DISPOSE (b.p)
+END Twice ;
+BEGIN
+END m.

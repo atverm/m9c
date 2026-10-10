@@ -13,7 +13,7 @@
 set -e
 cd "$(dirname "$0")"
 
-MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Check Arrays Numeric Csv Delim Zip Png Pg Sparql Regex Xml Rdf Hash Smtp Rsa Map NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review M9c Diag"
+MODS="DynStr Faults Mat Stats System Frame Parquet NbCells NbShow Json Http HttpServer OpenApi ApiSpec Arrow ZarrStore Zarr Plot Lex Ast Print Parse Dict Fmt Io Time Text Math Bits Sort Seq Check Arrays Numeric Csv Delim Zip Png Pg Sparql Regex Xml Rdf Hash Smtp Rsa Map NetCDF Grib Syslog Logger Hello Concat Narrow ProcUse AggUse ShareUse ExportDef ExportUse Gen Sem Doc Review M9c Diag"
 deps_of () {
   case $1 in
     Json|Lex)      echo DynStr ;;
@@ -25,6 +25,7 @@ deps_of () {
     Zip)           echo DynStr Io Bits ;;
     Mat)           echo Math Faults ;;
     Sort)          echo Math ;;
+    Seq)           echo Sort Text ;;
     Check)         echo Io Fmt Math Text ;;
     Arrays)        echo Faults Math ;;
     Numeric)       echo Faults Math ;;
@@ -51,8 +52,8 @@ deps_of () {
     Text)          echo DynStr ;;
     Csv)           echo DynStr Io Time ;;
     Frame)         echo Csv Io Math DynStr Fmt Time NetCDF Faults Sort Stats Text ;;
-    Parquet)       echo Frame Io DynStr Csv Math Fmt Time NetCDF Faults ;;
-    NbCells)       echo Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults ;;
+    Parquet)       echo Frame Io DynStr Csv Math Fmt Time NetCDF Faults Zip Bits ;;
+    NbCells)       echo Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults Zip Bits ;;
     NbShow)        echo Frame Io DynStr Fmt Text Time ;;
     NetCDF|Grib)   echo DynStr Faults ;;
     Syslog)        echo DynStr ;;

@@ -79,6 +79,7 @@ run Text DynStr
 run Math
 run Bits
 run Sort Math
+run Seq Sort Text
 run Check Io Fmt Math Text
 run Arrays Faults Math
 run Numeric Faults Math
@@ -87,8 +88,8 @@ run Delim DynStr Io
 run Zip DynStr Io Bits
 run Png Faults Zip Math DynStr
 run Frame Csv Io Math DynStr Fmt Time NetCDF Faults Sort Stats Text
-run Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults
-run NbCells Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults
+run Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults Zip Bits
+run NbCells Parquet Frame Io DynStr Csv Math Fmt Time NetCDF Faults Zip Bits
 run NbShow Frame Io DynStr Fmt Text Time
 run NetCDF DynStr Faults
 run Grib DynStr Faults

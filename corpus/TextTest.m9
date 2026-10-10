@@ -28,6 +28,79 @@ VAR
   kept, joined : STR ;
   src : ARRAY 3 OF CHAR ;
 
+(* Upper and Lower at EVERY code point against Python's str.upper
+   and str.lower of that one character: runtime/test/gold/
+   TextCase.gold (tools/textucd.py --gold) lists each code point whose
+   case is not itself, how long its answer is and the answer; every
+   other code point must come back as itself.  Answers the number of
+   code points that disagree. *)
+PROCEDURE CaseSweep (up: BOOL) : I64 =
+VAR
+  gold, tag, got, want : STR ;
+  cps, lens, outs : SLICE OF I64 ;
+  c, k, at, j, bad : I64 ;
+  one : STR ;
+BEGIN
+  gold := Check.GoldPath ('TextCase.gold') ;
+  tag := 'lower' ;
+  IF up THEN tag := 'upper' END ;
+  cps := Check.GoldI64s (t, gold, tag + '.cp') ;
+  lens := Check.GoldI64s (t, gold, tag + '.len') ;
+  outs := Check.GoldI64s (t, gold, tag + '.out') ;
+  k := 0 ;
+  at := 0 ;
+  bad := 0 ;
+  FOR c := 0 TO 1114111 DO
+    IF c < 55296 OR c > 57343 THEN
+      one := '' + CHR (c) ;
+      IF up THEN got := Text.Upper (one) ELSE got := Text.Lower (one) END ;
+      IF k < LEN (cps) AND cps[k] = c THEN
+        want := '' ;
+        FOR j := 0 TO lens[k] - 1 DO want := want + CHR (outs[at + j]) END ;
+        at := at + lens[k] ;
+        k := k + 1
+      ELSE
+        want := one
+      END ;
+      IF NOT Text.Eq (got, want) THEN bad := bad + 1 END
+    END
+  END ;
+  IF k # LEN (cps) THEN bad := bad + 1 END ;
+  RETURN bad
+EXCEPT
+| ValueRange : RETURN -1
+| IndexError : RETURN -2
+END CaseSweep ;
+
+(* AllIn against fnmatch, character by character: Text.gold's allin
+   lines (tools/textgold.py) -- random bracket sets, words from their
+   own alphabet, the empty word *)
+PROCEDURE AllIns () =
+VAR
+  gold : STR ;
+  sets, ss : SLICE OF STR ;
+  want, got : SLICE OF BOOL ;
+  i : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Text.gold') ;
+  sets := Check.GoldStrs (t, gold, 'allin.set') ;
+  ss := Check.GoldStrs (t, gold, 'allin.s') ;
+  want := Check.GoldBools (t, gold, 'allin.want') ;
+  got := NEW (pool, BOOL, LEN (sets)) ;
+  FOR i := 0 TO LEN (sets) - 1 DO got[i] := Text.AllIn (ss[i], sets[i]) END ;
+  Check.That (t, 'the golden file has AllIn cases', LEN (sets) > 600) ;
+  Check.EqI64 (t, 'AllIn = fnmatch per character: agreements', Agree (got, want), LEN (want))
+END AllIns ;
+
+PROCEDURE Agree (RO a, b: SLICE OF BOOL) : I64 =
+VAR i, n : I64 ;
+BEGIN
+  n := 0 ;
+  IF LEN (a) # LEN (b) THEN RETURN -1 END ;
+  FOR i := 0 TO LEN (a) - 1 DO IF a[i] = b[i] THEN n := n + 1 END END ;
+  RETURN n
+END Agree ;
+
 (* Replace against Python's str.replace, Match against its
    fnmatch.fnmatchcase: runtime/test/gold/Text.gold, written by
    tools/textgold.py.  A string there is a word and '' the empty one. *)
@@ -284,6 +357,19 @@ BEGIN
   (* case: ASCII only *)
   Check.EqStr (t, 'Lower', Text.Lower ('MiXed 9'), 'mixed 9') ;
   Check.EqStr (t, 'Upper', Text.Upper ('MiXed 9'), 'MIXED 9') ;
+  AllIns () ;
+  Check.That (t, 'AllDigits 2026', Text.AllDigits ('2026')) ;
+  Check.That (t, 'AllDigits of nothing is FALSE', NOT Text.AllDigits ('')) ;
+  Check.That (t, 'AllLower co2 is FALSE: a digit', NOT Text.AllLower ('co2')) ;
+  Check.That (t, 'AllUpper ICOS', Text.AllUpper ('ICOS')) ;
+  Check.That (t, 'AllAlnum Ab1', Text.AllAlnum ('Ab1')) ;
+  Check.That (t, 'AllAlnum knows ASCII only', NOT Text.AllAlnum ('é')) ;
+  Check.EqI64 (t, 'Upper = str.upper at every code point', CaseSweep (TRUE), 0) ;
+  Check.EqI64 (t, 'Lower = str.lower at every code point', CaseSweep (FALSE), 0) ;
+  Check.EqStr (t, 'Upper of straße is STRASSE, longer', Text.Upper ('straße'), 'STRASSE') ;
+  Check.EqStr (t, 'Upper of Greek and Cyrillic', Text.Upper ('αβγ жар'), 'ΑΒΓ ЖАР') ;
+  Check.EqStr (t, 'Lower of İ is i and a combining dot', Text.Lower ('İ'), 'i' + CHR (775)) ;
+  Check.EqStr (t, 'Lower of a final Σ is σ: no context', Text.Lower ('ΟΔΟΣ'), 'οδοσ') ;
 
   (* a copy that outlives what it was copied from *)
   src[0] := 'x' ; src[1] := 'y' ; src[2] := 'z' ;

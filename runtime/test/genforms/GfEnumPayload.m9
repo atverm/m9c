@@ -1,0 +1,34 @@
+MODULE GfEnumPayload ;
+
+(* WANT: enumeration payloads: Green Arr 7 *)
+
+(* An EXCEPTION field of an enumeration type, this module's and an
+   imported one: raised as its tag, bound back by the handler.  The
+   generator wrote the whole struct into an integer slot and gcc refused
+   it (2026-10-10). *)
+
+IMPORT Io, Fmt, GfJv ;
+
+TYPE
+  Colour = (Red, Green, Blue) ;
+
+EXCEPTION
+  Hit (c : Colour ; k : GfJv.Kind ; n : I64) ;
+
+VAR
+  out : STR ;
+
+PROCEDURE Fire () RAISES Hit =
+BEGIN
+  RAISE Hit (Colour.Green, GfJv.Kind.Arr, 7)
+END Fire ;
+
+BEGIN
+  out := 'enumeration payloads:' ;
+  Fire ()
+EXCEPT
+| Hit (c, k, n) :
+    IF c = Colour.Green THEN out := out + ' Green' END ;
+    IF k = GfJv.Kind.Arr THEN out := out + ' Arr' END ;
+    Io.WriteLine (out + ' ' + Fmt.I64Str (n))
+END GfEnumPayload.

@@ -2,10 +2,10 @@ REVIEW Io -- 31 procedures with a body, 16 of them functions; 30 headings in a D
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path              16
-  assignments                                    66
-  arguments                                     137
+  assignments                                    68
+  arguments                                     138
   RETURN values                                  25
-  operands of a comparison or an operator        55
+  operands of a comparison or an operator        57
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -31,6 +31,6 @@ TRUSTED -- outside what the checker can see
 COUNTED -- how much there was to check
   CASE statements                                 0
   RAISE statements                               18
-  handlers                                        0
+  handlers                                        1
   NEW in the frame                                2
   NEW in a named pool                            13

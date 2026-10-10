@@ -1,0 +1,219 @@
+DEFINITION MODULE Seq ;
+
+(* Growable lists and the slice-of-string operations a program would
+   otherwise write again each time (2026-10-10, cp-kernel's proposal:
+   its kernel wrote the count-allocate-fill pattern -- one loop counts,
+   NEW, a second loop fills -- and its own Copy/Distinct/Concat).
+
+   A list is a record the caller owns, its storage in a POOL the caller
+   names at every Add, so the list lives exactly as long as that pool:
+
+       VAR names : Seq.Strs ;
+       ...
+       Seq.AddStr (pool, names, s) ;      (* one pass, no count first *)
+       ...
+       FOR i := 0 TO Seq.LenStrs (names) - 1 DO ... names.at[i] ... END
+
+   `at' holds the elements in 0 .. n - 1; room beyond n is unused.
+   Room doubles when full, so n Adds copy each element at most twice
+   on average.  A string added is COPIED into the pool (as
+   Sort.UniqueStrs copies): the list never holds the caller's view, so
+   adding asks no KEPT of the caller.
+
+   No generics: one record and one Add per element type -- STR, I64,
+   F64 -- which is three twins of each, counted for the generics
+   question as Sort's were. *)
+
+TYPE
+  Strs = RECORD n : I64 ; at : SLICE OF STR END ;
+  I64s = RECORD n : I64 ; at : SLICE OF I64 END ;
+  F64s = RECORD n : I64 ; at : SLICE OF F64 END ;
+
+PROCEDURE AddStr (VAR pool: POOL ; VAR s: Strs ; RO v: STR) ;
+PROCEDURE AddI64 (VAR pool: POOL ; VAR s: I64s ; v: I64) ;
+PROCEDURE AddF64 (VAR pool: POOL ; VAR s: F64s ; v: F64) ;
+  (* v appended; room grown in pool when full.  Every Add on one list
+     names the same pool. *)
+
+PROCEDURE LenStrs (RO s: Strs) : I64 ;
+PROCEDURE LenI64s (RO s: I64s) : I64 ;
+PROCEDURE LenF64s (RO s: F64s) : I64 ;
+
+PROCEDURE StrsOf (VAR pool: POOL ; RO s: Strs) : SLICE OF STR ;
+PROCEDURE I64sOf (VAR pool: POOL ; RO s: I64s) : SLICE OF I64 ;
+PROCEDURE F64sOf (VAR pool: POOL ; RO s: F64s) : SLICE OF F64 ;
+  (* the elements as a slice of exactly n, in pool, the strings
+     copied: what a procedure taking a SLICE wants, and it outlives
+     the list if pool does *)
+
+PROCEDURE Copy (VAR pool: POOL ; RO xs: SLICE OF STR) : SLICE OF STR ;
+  (* xs in its order, the slice and every string copied into pool *)
+
+PROCEDURE Concat (VAR pool: POOL ; RO a, b: SLICE OF STR) : SLICE OF STR ;
+  (* a then b, copied into pool *)
+
+PROCEDURE Distinct (VAR pool: POOL ; RO xs: SLICE OF STR) : SLICE OF STR ;
+  (* each string once, in the order first seen, copied into pool --
+     Python's list (dict.fromkeys (xs)).  Sort.UniqueStrs is the SORTED
+     form.  A sorted index, so n log n, not a scan per element. *)
+
+END Seq.
+
+
+IMPLEMENTATION MODULE Seq ;
+
+IMPORT Sort ;
+IMPORT Text ;
+
+CONST
+  First = 8 ;
+
+PROCEDURE AddStr (VAR pool: POOL ; VAR s: Strs ; RO v: STR) =
+VAR
+  nb : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  IF s.n = LEN (s.at) THEN
+    nb := NEW (pool, STR, Room (s.n)) ;
+    FOR i := 0 TO s.n - 1 DO nb[i] := s.at[i] END ;
+    s.at := nb
+  END ;
+  s.at[s.n] := Text.Keep (pool, v) ;
+  s.n := s.n + 1
+END AddStr ;
+
+PROCEDURE AddI64 (VAR pool: POOL ; VAR s: I64s ; v: I64) =
+VAR
+  nb : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  IF s.n = LEN (s.at) THEN
+    nb := NEW (pool, I64, Room (s.n)) ;
+    FOR i := 0 TO s.n - 1 DO nb[i] := s.at[i] END ;
+    s.at := nb
+  END ;
+  s.at[s.n] := v ;
+  s.n := s.n + 1
+END AddI64 ;
+
+PROCEDURE AddF64 (VAR pool: POOL ; VAR s: F64s ; v: F64) =
+VAR
+  nb : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  IF s.n = LEN (s.at) THEN
+    nb := NEW (pool, F64, Room (s.n)) ;
+    FOR i := 0 TO s.n - 1 DO nb[i] := s.at[i] END ;
+    s.at := nb
+  END ;
+  s.at[s.n] := v ;
+  s.n := s.n + 1
+END AddF64 ;
+
+(* the next room: First, then double *)
+PROCEDURE Room (n: I64) : I64 =
+BEGIN
+  IF n < First THEN RETURN First END ;
+  RETURN 2 * n
+END Room ;
+
+PROCEDURE LenStrs (RO s: Strs) : I64 =
+BEGIN
+  RETURN s.n
+END LenStrs ;
+
+PROCEDURE LenI64s (RO s: I64s) : I64 =
+BEGIN
+  RETURN s.n
+END LenI64s ;
+
+PROCEDURE LenF64s (RO s: F64s) : I64 =
+BEGIN
+  RETURN s.n
+END LenF64s ;
+
+PROCEDURE StrsOf (VAR pool: POOL ; RO s: Strs) : SLICE OF STR =
+VAR
+  r : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, STR, s.n) ;
+  FOR i := 0 TO s.n - 1 DO r[i] := Text.Keep (pool, s.at[i]) END ;
+  RETURN r
+END StrsOf ;
+
+PROCEDURE I64sOf (VAR pool: POOL ; RO s: I64s) : SLICE OF I64 =
+VAR
+  r : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, I64, s.n) ;
+  FOR i := 0 TO s.n - 1 DO r[i] := s.at[i] END ;
+  RETURN r
+END I64sOf ;
+
+PROCEDURE F64sOf (VAR pool: POOL ; RO s: F64s) : SLICE OF F64 =
+VAR
+  r : SLICE OF F64 ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, F64, s.n) ;
+  FOR i := 0 TO s.n - 1 DO r[i] := s.at[i] END ;
+  RETURN r
+END F64sOf ;
+
+PROCEDURE Copy (VAR pool: POOL ; RO xs: SLICE OF STR) : SLICE OF STR =
+VAR
+  r : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, STR, LEN (xs)) ;
+  FOR i := 0 TO LEN (xs) - 1 DO r[i] := Text.Keep (pool, xs[i]) END ;
+  RETURN r
+END Copy ;
+
+PROCEDURE Concat (VAR pool: POOL ; RO a, b: SLICE OF STR) : SLICE OF STR =
+VAR
+  r : SLICE OF STR ;
+  i : I64 ;
+BEGIN
+  r := NEW (pool, STR, LEN (a) + LEN (b)) ;
+  FOR i := 0 TO LEN (a) - 1 DO r[i] := Text.Keep (pool, a[i]) END ;
+  FOR i := 0 TO LEN (b) - 1 DO r[LEN (a) + i] := Text.Keep (pool, b[i]) END ;
+  RETURN r
+END Concat ;
+
+PROCEDURE Distinct (VAR pool: POOL ; RO xs: SLICE OF STR) : SLICE OF STR =
+VAR
+  scratch : POOL ;
+  ord : SLICE OF I64 ;
+  first : SLICE OF BOOL ;
+  r : SLICE OF STR ;
+  i, k, n : I64 ;
+BEGIN
+  (* a stable sort by value: the first index of each run of equal
+     strings is the first occurrence, kept; the rest are repeats *)
+  ord := NEW (scratch, I64, LEN (xs)) ;
+  Sort.ArgStr (xs, ord) ;
+  first := NEW (scratch, BOOL, LEN (xs)) ;
+  n := 0 ;
+  FOR k := 0 TO LEN (ord) - 1 DO
+    IF k = 0 THEN
+      first[ord[k]] := TRUE
+    ELSIF NOT Text.Eq (xs[ord[k]], xs[ord[k - 1]]) THEN
+      first[ord[k]] := TRUE
+    END ;
+    IF first[ord[k]] THEN n := n + 1 END
+  END ;
+  r := NEW (pool, STR, n) ;
+  k := 0 ;
+  FOR i := 0 TO LEN (xs) - 1 DO
+    IF first[i] THEN
+      r[k] := Text.Keep (pool, xs[i]) ;
+      k := k + 1
+    END
+  END ;
+  RETURN r
+END Distinct ;
+
+END Seq.

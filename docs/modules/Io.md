@@ -70,7 +70,9 @@ flushes stdout AND stderr before exiting.  The museum's HALT
 piece is here: three diagnostics were lost to an unflushed
 buffer, so a halt that does not flush is the bug, and this one
 flushes as its first act.  A program that can fail needs an
-exit status; it does not need a silent one.
+exit status; it does not need a silent one.  A code beyond
+0 .. 255 exits 255: the system truncates it, and Halt (256) used
+to exit 0, a failure reported as success.
 
 ### ParseI64 (RO s: STR) : I64 RAISES ValueRange
 

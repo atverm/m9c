@@ -1,18 +1,18 @@
-REVIEW Fmt -- 31 procedures with a body, 23 of them functions; 11 headings in a DEFINITION
+REVIEW Fmt -- 38 procedures with a body, 29 of them functions; 11 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              23
-  assignments                                   264
-  arguments                                     204
-  RETURN values                                  47
-  operands of a comparison or an operator       337
+  functions answering on every path              29
+  assignments                                   277
+  arguments                                     255
+  RETURN values                                  60
+  operands of a comparison or an operator       403
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                     4   Bits.scratch, ParseBits.scratch, Short.scratch, Make.scratch
+  local pools                                     5   Bits.scratch, ParseBits.scratch, Short.scratch, Make.scratch, Parts.scratch
   pool parameters                                 0
   KEPT parameters                                 0
   HEAP named                                      0
@@ -33,4 +33,4 @@ COUNTED -- how much there was to check
   RAISE statements                               12
   handlers                                        0
   NEW in the frame                                0
-  NEW in a named pool                             4
+  NEW in a named pool                             5

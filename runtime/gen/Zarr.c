@@ -2392,7 +2392,7 @@ static void Zarr_PutChunk (m9_pool *pool, m9_sl_CHAR path, m9_sl_BYTE raw, int64
     name = m9v;
   }
   }
-  { __typeof__(got) m9v = (int64_t)(blosc_compress_ctx (((int)(Zarr_Level (comp, err))), ((int)(INT64_C(1))), ((size_t)(typesize)), ((size_t)(n)), ((void *)(raw).p), ((void *)(dst).p), ((size_t)(m9_add_i64 (n, Zarr_Overhead, err))), ((void *)(name).p), ((size_t)(INT64_C(0))), ((int)(INT64_C(1)))));
+  { __typeof__(got) m9v = (int64_t)(blosc_compress_ctx (((int) m9_i32 (Zarr_Level (comp, err), err)), ((int)(INT64_C(1))), ((size_t) m9_u64 (typesize, err)), ((size_t) m9_u64 (n, err)), ((void *)(raw).p), ((void *)(dst).p), ((size_t) m9_u64 (m9_add_i64 (n, Zarr_Overhead, err), err)), ((void *)(name).p), ((size_t)(INT64_C(0))), ((int)(INT64_C(1)))));
     if (err->exc) goto L_hdl_m9t1;
     got = m9v;
   }

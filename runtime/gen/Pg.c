@@ -246,10 +246,13 @@ Pg_Result * Pg_Query (m9_pool *pool, Pg_Conn * c, m9_sl_CHAR sql, m9_sl_m9_sl_CH
   m9t3to = m9_sub_i64 (r->cols, INT64_C(1), err);
   if (err->exc) goto L_fin_m9t2;
   for (; j <= m9t3to; j += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_CHAR), err))) m9v = Pg_CText (pool, PQfname (res, ((int)(j))), err);
+    { __typeof__(PQfname (res, ((int) m9_i32 (j, err)))) m9a1 = PQfname (res, ((int) m9_i32 (j, err)));
+      if (err->exc) goto L_fin_m9t2;
+    { __typeof__((*(m9_sl_CHAR *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_CHAR), err))) m9v = Pg_CText (pool, m9a1, err);
       if (err->exc) goto L_fin_m9t2;
       (*(m9_sl_CHAR *) m9_at (r->name.p, j, r->name.len, sizeof (m9_sl_CHAR), err)) = m9v;
       if (err->exc) goto L_fin_m9t2;
+    }
     }
   } }
   k = INT64_C(0);
@@ -263,13 +266,18 @@ Pg_Result * Pg_Query (m9_pool *pool, Pg_Conn * c, m9_sl_CHAR sql, m9_sl_m9_sl_CH
     m9t5to = m9_sub_i64 (r->cols, INT64_C(1), err);
     if (err->exc) goto L_fin_m9t2;
     for (; j <= m9t5to; j += 1) {
-      if (((int64_t)(PQgetisnull (res, ((int)(i)), ((int)(j)))) != INT64_C(0))) {
+      bool m9t6 = ((int64_t)(PQgetisnull (res, ((int) m9_i32 (i, err)), ((int) m9_i32 (j, err)))) != INT64_C(0));
+      if (err->exc) goto L_fin_m9t2;
+      if (m9t6) {
         (*(m9_sl_CHAR *) m9_at (r->cell.p, k, r->cell.len, sizeof (m9_sl_CHAR), err)) = (m9_sl_CHAR){ NULL, 0 };
         if (err->exc) goto L_fin_m9t2;
         (*(bool *) m9_at (r->isNull.p, k, r->isNull.len, sizeof (bool), err)) = true;
         if (err->exc) goto L_fin_m9t2;
       } else {
-        n = (int64_t)(PQgetlength (res, ((int)(i)), ((int)(j))));
+        { __typeof__(n) m9v = (int64_t)(PQgetlength (res, ((int) m9_i32 (i, err)), ((int) m9_i32 (j, err))));
+          if (err->exc) goto L_fin_m9t2;
+          n = m9v;
+        }
         if ((n == INT64_C(0))) {
           (*(m9_sl_CHAR *) m9_at (r->cell.p, k, r->cell.len, sizeof (m9_sl_CHAR), err)) = (m9_sl_CHAR){ NULL, 0 };
           if (err->exc) goto L_fin_m9t2;
@@ -278,7 +286,10 @@ Pg_Result * Pg_Query (m9_pool *pool, Pg_Conn * c, m9_sl_CHAR sql, m9_sl_m9_sl_CH
             if (err->exc) goto L_fin_m9t2;
             b = m9v;
           }
-          q = memcpy (((void *)(b).p), PQgetvalue (res, ((int)(i)), ((int)(j))), ((size_t)(n)));
+          { __typeof__(q) m9v = memcpy (((void *)(b).p), PQgetvalue (res, ((int) m9_i32 (i, err)), ((int) m9_i32 (j, err))), ((size_t) m9_u64 (n, err)));
+            if (err->exc) goto L_fin_m9t2;
+            q = m9v;
+          }
           { __typeof__((*(m9_sl_CHAR *) m9_at (r->cell.p, k, r->cell.len, sizeof (m9_sl_CHAR), err))) m9v = DynStr_FromUtf8 (pool, b, err);
             if (err->exc) goto L_fin_m9t2;
             (*(m9_sl_CHAR *) m9_at (r->cell.p, k, r->cell.len, sizeof (m9_sl_CHAR), err)) = m9v;
@@ -324,9 +335,9 @@ int64_t Pg_Exec (Pg_Conn * c, m9_sl_CHAR sql, m9_sl_m9_sl_CHAR params, m9_state 
     res = m9v;
   }
   bool m9t1 = false; (void) m9t1;
-  { __typeof__(Pg_CText (&(scratch), PQcmdTuples (res), err)) m9a1 = Pg_CText (&(scratch), PQcmdTuples (res), err);
+  { __typeof__(Pg_CText (&(scratch), PQcmdTuples (res), err)) m9a2 = Pg_CText (&(scratch), PQcmdTuples (res), err);
     if (err->exc) goto L_fin_m9t2;
-  { __typeof__(n) m9v = Pg_Count (m9a1, err);
+  { __typeof__(n) m9v = Pg_Count (m9a2, err);
     if (err->exc) goto L_fin_m9t2;
     n = m9v;
   }
@@ -384,9 +395,9 @@ m9_sl_CHAR Pg_ArrayLiteral (m9_sl_m9_sl_CHAR items, m9_state *err)
         DynStr_AppendChar (&(d), &(scratch), 92u, err);
         if (err->exc) goto L_ret;
       }
-      { __typeof__((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (items.p, i, items.len, sizeof (m9_sl_CHAR), err)).p, j, (*(m9_sl_CHAR *) m9_at (items.p, i, items.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err))) m9a2 = (*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (items.p, i, items.len, sizeof (m9_sl_CHAR), err)).p, j, (*(m9_sl_CHAR *) m9_at (items.p, i, items.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err));
+      { __typeof__((*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (items.p, i, items.len, sizeof (m9_sl_CHAR), err)).p, j, (*(m9_sl_CHAR *) m9_at (items.p, i, items.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err))) m9a3 = (*(uint32_t *) m9_at ((*(m9_sl_CHAR *) m9_at (items.p, i, items.len, sizeof (m9_sl_CHAR), err)).p, j, (*(m9_sl_CHAR *) m9_at (items.p, i, items.len, sizeof (m9_sl_CHAR), err)).len, sizeof (uint32_t), err));
         if (err->exc) goto L_ret;
-      DynStr_AppendChar (&(d), &(scratch), m9a2, err);
+      DynStr_AppendChar (&(d), &(scratch), m9a3, err);
       if (err->exc) goto L_ret;
       }
     } }
@@ -898,9 +909,9 @@ Time_Instant Pg_TimeCell (Pg_Result * r, int64_t row, int64_t col, m9_state *err
     m9_raise (err, &m9_exc_ValueRange);
     goto L_ret;
   } }
-  { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a3 = m9_add_i64 (i, INT64_C(1), err);
+  { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a4 = m9_add_i64 (i, INT64_C(1), err);
     if (err->exc) goto L_ret;
-  { __typeof__(off) m9v = m9_mul_i64 (Pg_Num (s, m9a3, INT64_C(2), err), INT64_C(3600), err);
+  { __typeof__(off) m9v = m9_mul_i64 (Pg_Num (s, m9a4, INT64_C(2), err), INT64_C(3600), err);
     if (err->exc) goto L_ret;
     off = m9v;
   }
@@ -916,9 +927,9 @@ Time_Instant Pg_TimeCell (Pg_Result * r, int64_t row, int64_t col, m9_state *err
       m9_raise (err, &m9_exc_ValueRange);
       goto L_ret;
     }
-    { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a4 = m9_add_i64 (i, INT64_C(1), err);
+    { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a5 = m9_add_i64 (i, INT64_C(1), err);
       if (err->exc) goto L_ret;
-    { __typeof__(off) m9v = m9_add_i64 (off, m9_mul_i64 (Pg_Num (s, m9a4, INT64_C(2), err), INT64_C(60), err), err);
+    { __typeof__(off) m9v = m9_add_i64 (off, m9_mul_i64 (Pg_Num (s, m9a5, INT64_C(2), err), INT64_C(60), err), err);
       if (err->exc) goto L_ret;
       off = m9v;
     }
@@ -934,9 +945,9 @@ Time_Instant Pg_TimeCell (Pg_Result * r, int64_t row, int64_t col, m9_state *err
         m9_raise (err, &m9_exc_ValueRange);
         goto L_ret;
       }
-      { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a5 = m9_add_i64 (i, INT64_C(1), err);
+      { __typeof__(m9_add_i64 (i, INT64_C(1), err)) m9a6 = m9_add_i64 (i, INT64_C(1), err);
         if (err->exc) goto L_ret;
-      { __typeof__(off) m9v = m9_add_i64 (off, Pg_Num (s, m9a5, INT64_C(2), err), err);
+      { __typeof__(off) m9v = m9_add_i64 (off, Pg_Num (s, m9a6, INT64_C(2), err), err);
         if (err->exc) goto L_ret;
         off = m9v;
       }
@@ -956,9 +967,9 @@ Time_Instant Pg_TimeCell (Pg_Result * r, int64_t row, int64_t col, m9_state *err
     t = m9v;
   }
   err->res = m9res;
-  { __typeof__((double)(m9_neg_i64 (m9_mul_i64 (sign, off, err), err))) m9a6 = (double)(m9_neg_i64 (m9_mul_i64 (sign, off, err), err));
+  { __typeof__((double)(m9_neg_i64 (m9_mul_i64 (sign, off, err), err))) m9a7 = (double)(m9_neg_i64 (m9_mul_i64 (sign, off, err), err));
     if (err->exc) goto L_ret;
-  m9ret = Time_AddSeconds (t, m9a6, err);
+  m9ret = Time_AddSeconds (t, m9a7, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -1031,7 +1042,10 @@ static m9_sl_CHAR Pg_CText (m9_pool *pool, const void * p, m9_state *err)
     if (err->exc) goto L_ret;
     b = m9v;
   }
-  q = memcpy (((void *)(b).p), p, ((size_t)(n)));
+  { __typeof__(q) m9v = memcpy (((void *)(b).p), p, ((size_t) m9_u64 (n, err)));
+    if (err->exc) goto L_ret;
+    q = m9v;
+  }
   bool m9t2 = ((*(uint8_t *) m9_at (b.p, m9_sub_i64 (n, INT64_C(1), err), b.len, sizeof (uint8_t), err)) == INT64_C(10));
   if (err->exc) goto L_ret;
   if (m9t2) {
@@ -1041,9 +1055,9 @@ static m9_sl_CHAR Pg_CText (m9_pool *pool, const void * p, m9_state *err)
     }
   }
   err->res = m9res;
-  { __typeof__(({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a7 = ({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
+  { __typeof__(({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; })) m9a8 = ({ __typeof__(b) m9t3 = b; int64_t m9t3a = INT64_C(0), m9t3n = n; (__typeof__(m9t3)){ m9t3.p + m9_chk_slice (m9t3a, m9t3n, m9t3.len, err), m9t3n }; });
     if (err->exc) goto L_ret;
-  m9ret = DynStr_Chars (pool, m9a7, err);
+  m9ret = DynStr_Chars (pool, m9a8, err);
   if (err->exc) goto L_ret;
   }
   goto L_ret;
@@ -1169,9 +1183,9 @@ static m9_sl_BYTE Pg_ParamBlock (m9_pool *pool, m9_sl_m9_sl_CHAR params, m9_stat
   m9t1to = m9_sub_i64 ((params).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t1to; i += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (params.p, i, params.len, sizeof (m9_sl_CHAR), err))) m9a8 = (*(m9_sl_CHAR *) m9_at (params.p, i, params.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (params.p, i, params.len, sizeof (m9_sl_CHAR), err))) m9a9 = (*(m9_sl_CHAR *) m9_at (params.p, i, params.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(u) m9v = DynStr_Utf8 (pool, m9a8, err);
+    { __typeof__(u) m9v = DynStr_Utf8 (pool, m9a9, err);
       if (err->exc) goto L_ret;
       u = m9v;
     }
@@ -1191,9 +1205,9 @@ static m9_sl_BYTE Pg_ParamBlock (m9_pool *pool, m9_sl_m9_sl_CHAR params, m9_stat
   m9t2to = m9_sub_i64 ((params).len, INT64_C(1), err);
   if (err->exc) goto L_ret;
   for (; i <= m9t2to; i += 1) {
-    { __typeof__((*(m9_sl_CHAR *) m9_at (params.p, i, params.len, sizeof (m9_sl_CHAR), err))) m9a9 = (*(m9_sl_CHAR *) m9_at (params.p, i, params.len, sizeof (m9_sl_CHAR), err));
+    { __typeof__((*(m9_sl_CHAR *) m9_at (params.p, i, params.len, sizeof (m9_sl_CHAR), err))) m9a10 = (*(m9_sl_CHAR *) m9_at (params.p, i, params.len, sizeof (m9_sl_CHAR), err));
       if (err->exc) goto L_ret;
-    { __typeof__(u) m9v = DynStr_Utf8 (pool, m9a9, err);
+    { __typeof__(u) m9v = DynStr_Utf8 (pool, m9a10, err);
       if (err->exc) goto L_ret;
       u = m9v;
     }
@@ -1258,7 +1272,10 @@ static void * Pg_Run (m9_pool *scratch, Pg_Conn * c, m9_sl_CHAR sql, m9_sl_m9_sl
     if (err->exc) goto L_ret;
     blk = m9v;
   }
-  res = m9_pq_exec (c->h, ((void *)(sb).p), ((void *)(blk).p), ((int)((params).len)));
+  { __typeof__(res) m9v = m9_pq_exec (c->h, ((void *)(sb).p), ((void *)(blk).p), ((int) m9_i32 ((params).len, err)));
+    if (err->exc) goto L_ret;
+    res = m9v;
+  }
   bool m9t3 = Pg_IsNil (res, err);
   if (err->exc) goto L_ret;
   if (m9t3) {

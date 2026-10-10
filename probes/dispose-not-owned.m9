@@ -1,0 +1,41 @@
+(* EXPECT: cannot DISPOSE r: nothing here gives it an owned pointer -- only NEW (OWN, T), an owned name moved in or a call does (par 4.2) *)
+(* DISPOSE frees only a name that may own what it holds (2026-10-10):
+   `r := b.p ; DISPOSE (r) ; DISPOSE (b.p)' freed one object twice and
+   both checkers accepted it.  The legal forms first: NEW (OWN, T), an
+   owned name moved in, an OWN parameter, a call's answer, a SHARED
+   handle.  Then a copy taken out of a field. *)
+MODULE m ;
+TYPE
+  T = RECORD v : I64 END ;
+  B = RECORD p : PTR T END ;
+PROCEDURE Make () : PTR T =
+VAR t : PTR T ;
+BEGIN
+  t := NEW (OWN, T) ;
+  RETURN t
+END Make ;
+PROCEDURE Free (OWN p: PTR T) =
+BEGIN
+  DISPOSE (p)
+END Free ;
+PROCEDURE Legal () =
+VAR q, m, c : PTR T ; h : SHARED PTR T ;
+BEGIN
+  q := NEW (OWN, T) ;
+  m := q ;
+  DISPOSE (m) ;
+  c := Make () ;
+  DISPOSE (c) ;
+  h := SHARED (NEW (OWN, T)) ;
+  DISPOSE (h)
+END Legal ;
+PROCEDURE Copy () =
+VAR q, r : PTR T ; b : B ;
+BEGIN
+  q := NEW (OWN, T) ;
+  b.p := q ;
+  r := b.p ;
+  DISPOSE (r)
+END Copy ;
+BEGIN
+END m.

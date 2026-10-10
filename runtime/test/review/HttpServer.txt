@@ -1,12 +1,12 @@
-REVIEW HttpServer -- 93 procedures with a body, 64 of them functions; 23 headings in a DEFINITION
+REVIEW HttpServer -- 94 procedures with a body, 66 of them functions; 23 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              64
-  assignments                                   482
-  arguments                                     899
-  RETURN values                                 245
-  operands of a comparison or an operator       573
-  CASE labels                                    52
+  functions answering on every path              66
+  assignments                                   468
+  arguments                                     844
+  RETURN values                                 249
+  operands of a comparison or an operator       532
+  CASE labels                                    35
   THREAD arguments                                1
   CASE over variants, proved total                0
 
@@ -29,8 +29,8 @@ TRUSTED -- outside what the checker can see
     of them [REENTRANT]                           7
 
 COUNTED -- how much there was to check
-  CASE statements                                 3
+  CASE statements                                 1
   RAISE statements                                7
-  handlers                                       16
+  handlers                                       18
   NEW in the frame                                0
   NEW in a named pool                            10

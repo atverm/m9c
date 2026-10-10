@@ -1,0 +1,15 @@
+(* EXPECT: a field of exception Bad is m.Pair: a payload is integers, reals, BOOL, CHAR, enumerations and strings -- pass what the handler needs of it *)
+(* An EXCEPTION's fields travel in m9_err's slots -- integers, reals,
+   strings -- so a field must be one of those, a BOOL, a CHAR, or an
+   enumeration (it goes as its tag; 2026-10-10, gcc refused the struct
+   in an integer slot until then).  The legal fields first, then a
+   record, which has no slot. *)
+MODULE m ;
+TYPE
+  Colour = (Red, Green) ;
+  Pair = RECORD a, b : I64 END ;
+EXCEPTION
+  Fine (code : I64 ; what : STR ; c : Colour ; ok : BOOL ; x : F64) ;
+  Bad (p : Pair) ;
+BEGIN
+END m.

@@ -1,10 +1,18 @@
 MODULE ParquetTest ;
 
-(* Parquet.m9's READER against pyarrow's files, its writer against its
-   own reader and against itself.  The samples are under
+(* Parquet.m9's READER against pyarrow's and polars' files, its writer
+   against its own reader and against itself.  The samples are under
    runtime/test/gold/parquet/ and the goldens are what pyarrow READS
-   from them (tools/parquetgoldm9.py): sample_plain read value-exact,
-   sample_dict, sample_snappy and sample_nullbool refused by name.
+   from them (tools/parquetgoldm9.py): sample_plain and big_plain read
+   value-exact; sample_dict and sample_snappy (pyarrow's dictionary,
+   its snappy) the same as sample_plain; the five other big_* files --
+   pyarrow's defaults, four row groups of small gzip pages whose
+   dictionary overflows into PLAIN, data pages version 2 with and
+   without a dictionary, polars' writer with snappy and with its own
+   default (zstd), pyarrow's zstd -- the same as big_plain, value for
+   value; sample_nullbool and sample_brotli refused by name.  The
+   big table written again with each codec reads back the same and is
+   smaller.
 
    The writer's outside witness is NOT here: a writer's bytes are not
    unique, so runtime/test/columnar.sh has pyarrow read what
@@ -25,14 +33,14 @@ IMPORT System ;
 IMPORT Text ;
 
 CONST
-  Sections = 6 ;   (* Reads .. OptRefusals, each counted at its end *)
+  Sections = 8 ;   (* Reads .. OptRefusals, each counted at its end *)
 
 VAR
   t : Check.T ;
   gold : STR ;
   pool : POOL ;
   none : Parquet.Options ;   (* zeroed: nothing asked *)
-  tsPath, optPath : STR ;    (* per run: two runs at once write two files *)
+  tsPath, optPath, codecPath : STR ;  (* per run: two runs at once write two files *)
   ran : I64 ;                (* sections that reached their end *)
 
 PROCEDURE Sample (RO name: STR) : STR =
@@ -59,6 +67,78 @@ BEGIN
   FOR i := 0 TO LEN (v) - 1 DO w[i] := I64 (v[i]) END ;
   RETURN w
 END Ints32 ;
+
+PROCEDURE Ints16 (RO v: SLICE OF I16) : SLICE OF I64 =
+VAR
+  w : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  w := NEW (pool, I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := I64 (v[i]) END ;
+  RETURN w
+END Ints16 ;
+
+PROCEDURE IntsB (RO v: SLICE OF BYTE) : SLICE OF I64 =
+VAR
+  w : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  w := NEW (pool, I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := I64 (v[i]) END ;
+  RETURN w
+END IntsB ;
+
+PROCEDURE Lens (RO v: SLICE OF STR) : SLICE OF I64 =
+VAR
+  w : SLICE OF I64 ;
+  i : I64 ;
+BEGIN
+  w := NEW (pool, I64, LEN (v)) ;
+  FOR i := 0 TO LEN (v) - 1 DO w[i] := LEN (v[i]) END ;
+  RETURN w
+END Lens ;
+
+PROCEDURE Codes (RO v: SLICE OF STR) : SLICE OF I64 RAISES ValueRange =
+  (* every character of every string, one after another *)
+VAR
+  w : SLICE OF I64 ;
+  i, j, k : I64 ;
+BEGIN
+  k := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO k := k + LEN (v[i]) END ;
+  w := NEW (pool, I64, k) ;
+  k := 0 ;
+  FOR i := 0 TO LEN (v) - 1 DO
+    FOR j := 0 TO LEN (v[i]) - 1 DO
+      w[k] := I64 (ORD (v[i][j])) ;
+      k := k + 1
+    END
+  END ;
+  RETURN w
+END Codes ;
+
+PROCEDURE Same6 (RO what: STR ; a, b: PTR Frame.Fr)
+  RAISES Frame.Unknown, Frame.WrongType =
+  (* the six columns sample_plain and the big table share, value for
+     value: a real to the bit, a NaN a NaN *)
+BEGIN
+  Check.EqI64 (t, what + ': the row count', Frame.Rows (a), Frame.Rows (b)) ;
+  Check.EqI64s (t, what + ': time', Frame.ColI64 (a, 'time'), Frame.ColI64 (b, 'time')) ;
+  Check.NearF64s (t, what + ': TA', Widen (Frame.ColF32 (a, 'TA')),
+                  Widen (Frame.ColF32 (b, 'TA')), 0.0, 0.0) ;
+  Check.NearF64s (t, what + ': SW', Frame.ColF64 (a, 'SW'), Frame.ColF64 (b, 'SW'), 0.0, 0.0) ;
+  Check.EqI64s (t, what + ': QC', Ints32 (Frame.ColI32 (a, 'QC')), Ints32 (Frame.ColI32 (b, 'QC'))) ;
+  Check.EqStrs (t, what + ': NOTE', Frame.ColStrs (a, 'NOTE'), Frame.ColStrs (b, 'NOTE')) ;
+  Check.EqBools (t, what + ': DAY', Frame.ColBools (a, 'DAY'), Frame.ColBools (b, 'DAY'))
+END Same6 ;
+
+PROCEDURE SameBig (RO what: STR ; a, b: PTR Frame.Fr)
+  RAISES Frame.Unknown, Frame.WrongType =
+BEGIN
+  Same6 (what, a, b) ;
+  Check.EqI64s (t, what + ': H (int16)', Ints16 (Frame.ColI16 (a, 'H')), Ints16 (Frame.ColI16 (b, 'H'))) ;
+  Check.EqI64s (t, what + ': B (uint8)', IntsB (Frame.ColBytes (a, 'B')), IntsB (Frame.ColBytes (b, 'B')))
+END SameBig ;
 
 PROCEDURE SameBytes (RO a, b: SLICE OF BYTE) : BOOL =
 VAR i : I64 ;
@@ -116,13 +196,14 @@ END Reads ;
 (* ---- the refusals of the reader ---- *)
 
 PROCEDURE ReadRefusal (RO path: STR) : STR =
-  (* 'BadArg' when Read refuses the file so, '' when it reads *)
+  (* 'BadArg: ' and its text when Read refuses the file so, '' when
+     it reads *)
 VAR f : PTR Frame.Fr IN pool ;
 BEGIN
   f := Parquet.Read (pool, path) ;
   RETURN ''
 EXCEPT
-| Faults.BadArg (what) : RETURN 'BadArg'
+| Faults.BadArg (what) : RETURN 'BadArg: ' + what
 | Io.IOError (p) : RETURN 'IOError'
 | ValueRange : RETURN 'ValueRange'
 | Overflow : RETURN 'Overflow'
@@ -131,15 +212,126 @@ END ReadRefusal ;
 
 PROCEDURE Refusals () =
 BEGIN
-  Check.EqStr (t, 'a dictionary-encoded file is refused by name',
-               ReadRefusal (Sample ('sample_dict')), 'BadArg') ;
-  Check.EqStr (t, 'a snappy file is refused by name',
-               ReadRefusal (Sample ('sample_snappy')), 'BadArg') ;
   Check.EqStr (t, 'a null boolean is refused by name (BOOL keeps no missing value)',
-               ReadRefusal (Sample ('sample_nullbool')), 'BadArg') ;
+               ReadRefusal (Sample ('sample_nullbool')), 'BadArg: OKQ') ;
+  Check.EqStr (t, 'a brotli file is refused by name',
+               ReadRefusal (Sample ('sample_brotli')), 'BadArg: codec 4 (brotli)') ;
   Check.EqStr (t, 'and the plain sample is not', ReadRefusal (Sample ('sample_plain')), '') ;
   ran := ran + 1
 END Refusals ;
+
+(* ---- what pyarrow and polars write with their defaults ---- *)
+
+PROCEDURE Foreign ()
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow,
+         Frame.Unknown, Frame.WrongType =
+VAR
+  small, big, f : PTR Frame.Fr IN pool ;
+BEGIN
+  small := Parquet.Read (pool, Sample ('sample_plain')) ;
+  f := Parquet.Read (pool, Sample ('sample_dict')) ;
+  Same6 ("pyarrow's dictionary", f, small) ;
+  f := Parquet.Read (pool, Sample ('sample_snappy')) ;
+  Same6 ("pyarrow's snappy", f, small) ;
+
+  big := Parquet.Read (pool, Sample ('big_plain')) ;
+  Check.EqI64 (t, 'big: the row count', Frame.Rows (big), Check.GoldI64 (t, gold, 'big.rows')) ;
+  Check.EqI64s (t, 'big: time', Frame.ColI64 (big, 'time'), Check.GoldI64s (t, gold, 'big.time')) ;
+  Check.NearF64s (t, 'big: TA, a null and a NaN both NaN', Widen (Frame.ColF32 (big, 'TA')),
+                  Check.GoldF64s (t, gold, 'big.ta'), 0.0, 0.0) ;
+  Check.NearF64s (t, 'big: SW', Frame.ColF64 (big, 'SW'), Check.GoldF64s (t, gold, 'big.sw'), 0.0, 0.0) ;
+  Check.EqI64s (t, 'big: QC, a null the smallest I32', Ints32 (Frame.ColI32 (big, 'QC')),
+                Check.GoldI64s (t, gold, 'big.qc')) ;
+  Check.EqI64s (t, 'big: H (int16), a null -32768', Ints16 (Frame.ColI16 (big, 'H')),
+                Check.GoldI64s (t, gold, 'big.h')) ;
+  Check.EqI64s (t, 'big: B (uint8), a null 255', IntsB (Frame.ColBytes (big, 'B')),
+                Check.GoldI64s (t, gold, 'big.b')) ;
+  Check.EqBools (t, 'big: DAY', Frame.ColBools (big, 'DAY'), Check.GoldBools (t, gold, 'big.day')) ;
+  Check.EqI64s (t, "big: NOTE's lengths, a null the empty string", Lens (Frame.ColStrs (big, 'NOTE')),
+                Check.GoldI64s (t, gold, 'big.note.len')) ;
+  Check.EqI64s (t, "big: NOTE's characters, UTF-8 beyond ASCII", Codes (Frame.ColStrs (big, 'NOTE')),
+                Check.GoldI64s (t, gold, 'big.note.code')) ;
+
+  f := Parquet.Read (pool, Sample ('big_default')) ;
+  SameBig ("pyarrow's defaults (a dictionary, snappy)", f, big) ;
+  f := Parquet.Read (pool, Sample ('big_pages')) ;
+  SameBig ('four row groups, many gzip pages, a dictionary overflowing into PLAIN', f, big) ;
+  f := Parquet.Read (pool, Sample ('big_v2')) ;
+  SameBig ('data pages version 2, a dictionary, RLE booleans, snappy', f, big) ;
+  f := Parquet.Read (pool, Sample ('big_v2plain')) ;
+  SameBig ('data pages version 2, PLAIN, uncompressed', f, big) ;
+  f := Parquet.Read (pool, Sample ('big_polars')) ;
+  SameBig ("polars' writer", f, big) ;
+  f := Parquet.Read (pool, Sample ('big_zstd')) ;
+  SameBig ("pyarrow's zstd", f, big) ;
+  f := Parquet.Read (pool, Sample ('big_polarsdef')) ;
+  SameBig ("polars' writer with its defaults (zstd)", f, big) ;
+  ran := ran + 1
+END Foreign ;
+
+(* ---- the writer's codecs, read back ---- *)
+
+PROCEDURE Codecs ()
+  RAISES Io.IOError, Faults.BadArg, ValueRange, Overflow, IndexError,
+         Frame.Unknown, Frame.WrongType =
+VAR
+  big, back : PTR Frame.Fr IN pool ;
+  o : Parquet.Options ;
+  plain, packed : SLICE OF BYTE ;
+  i : I64 ;
+BEGIN
+  big := Parquet.Read (pool, Sample ('big_plain')) ;
+  FOR i := 0 TO 5 DO
+    o.nulls := i >= 3 ;
+    o.codec := Parquet.CodecNone ;
+    plain := Parquet.BytesOpt (pool, big, o) ;
+    IF i MOD 3 = 0 THEN
+      o.codec := Parquet.CodecSnappy
+    ELSIF i MOD 3 = 1 THEN
+      o.codec := Parquet.CodecGzip
+    ELSE
+      o.codec := Parquet.CodecZstd
+    END ;
+    packed := Parquet.BytesOpt (pool, big, o) ;
+    Io.WriteFileBytes (codecPath, packed) ;
+    back := Parquet.Read (pool, codecPath) ;
+    SameBig (CodecWhat (o) + ', read back', back, big) ;
+    Check.That (t, CodecWhat (o) + ': smaller than uncompressed ('
+                   + Fmt.I64Str (LEN (packed)) + ' of ' + Fmt.I64Str (LEN (plain)) + ' bytes)',
+                LEN (packed) < LEN (plain))
+  END ;
+  Check.That (t, 'the file removed', Io.Remove (codecPath)) ;
+  o.codec := 7 ;
+  Check.EqStr (t, 'a codec the writer has not is refused by name', CodecRefusal (big, o),
+               'codec 7: CodecNone, CodecSnappy, CodecGzip or CodecZstd') ;
+  ran := ran + 1
+END Codecs ;
+
+PROCEDURE CodecWhat (RO o: Parquet.Options) : STR =
+VAR s : STR ;
+BEGIN
+  IF o.codec = Parquet.CodecSnappy THEN
+    s := 'snappy'
+  ELSIF o.codec = Parquet.CodecGzip THEN
+    s := 'gzip'
+  ELSE
+    s := 'zstd'
+  END ;
+  IF o.nulls THEN RETURN s + ' with nulls' END ;
+  RETURN s + ', REQUIRED columns'
+END CodecWhat ;
+
+PROCEDURE CodecRefusal (f: PTR Frame.Fr ; RO o: Parquet.Options) : STR =
+VAR b : SLICE OF BYTE ;
+BEGIN
+  b := Parquet.BytesOpt (pool, f, o) ;
+  RETURN ''
+EXCEPT
+| Faults.BadArg (what) : RETURN what
+| ValueRange : RETURN 'ValueRange'
+| Overflow : RETURN 'Overflow'
+| IndexError : RETURN 'IndexError'
+END CodecRefusal ;
 
 (* ---- WriteTs, read back by Parquet's own reader ---- *)
 
@@ -346,8 +538,11 @@ BEGIN
   gold := Check.GoldPath ('Parquet.gold') ;
   tsPath := Text.Keep (pool, '/tmp/m9-parquettest-' + Fmt.I64Str (System.ProcessId ()) + '-ts.parquet') ;
   optPath := Text.Keep (pool, '/tmp/m9-parquettest-' + Fmt.I64Str (System.ProcessId ()) + '-opt.parquet') ;
+  codecPath := Text.Keep (pool, '/tmp/m9-parquettest-' + Fmt.I64Str (System.ProcessId ()) + '-codec.parquet') ;
   Reads () ;
   Refusals () ;
+  Foreign () ;
+  Codecs () ;
   RoundTrip () ;
   Same () ;
   ReadsOwnNulls () ;

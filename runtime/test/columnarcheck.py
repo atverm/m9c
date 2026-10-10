@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Parquet.m9 and NetCDF.m9's WRITERS judged by readers M9 did not write.
 
-    columnarcheck.py parquet DIR    pyarrow reads DIR/opt.parquet, DIR/plain.parquet
+    columnarcheck.py parquet DIR    pyarrow reads DIR/opt.parquet, its snappy, gzip and
+                                    zstd twins, DIR/plain.parquet
     columnarcheck.py netcdf DIR     netCDF4-python reads DIR/grid.nc, DIR/text.nc
 
 The files are what runtime/test/columnarout.m9 wrote (columnar.sh runs
@@ -145,6 +146,21 @@ def parquet(d):
     ok("opt: key-value metadata, UTF-8 beyond ASCII",
        kv.get(b"icos_u_pid") == b"11676/U/test"
        and kv.get(b"units") == "°C and µmol m-2 s-1".encode("utf-8"))
+
+    # the same frame and options, every page compressed: pyarrow's own
+    # snappy and gzip read what Parquet.m9's compressors wrote, its zstd
+    # what libzstd wrote through the binding
+    for codec in ("snappy", "gzip", "zstd"):
+        name = f"opt-{codec}.parquet"
+        tc = pq.read_table(d + "/" + name)
+        mc = pq.ParquetFile(d + "/" + name).metadata
+        said = {mc.row_group(0).column(i).compression for i in range(mc.num_columns)}
+        ok(f"{name}: every column says {codec.upper()} ({said})", said == {codec.upper()})
+        ok(f"{name}: what pyarrow reads is opt.parquet's, value for value",
+           tc.column_names == t.column_names
+           and all(same_reals(tc.column(c).to_pylist(), t.column(c).to_pylist(), 64)
+                   if c in ("TA", "SW") else tc.column(c).to_pylist() == t.column(c).to_pylist()
+                   for c in t.column_names))
 
     # nothing asked: WriteX's file, REQUIRED columns, the missing cells as values
     p = pq.read_table(d + "/plain.parquet")

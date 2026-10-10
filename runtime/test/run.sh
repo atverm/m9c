@@ -83,6 +83,16 @@ export M9CACHE="$RW/cache"
   "$M9C" --run src/RunFrame.m9 < /dev/null > o7.txt 2>&1 ||
     { echo "FAIL: a program importing Frame did not link:"; tail -3 o7.txt; exit 1; }
   grep -q '^rows 3$' o7.txt || { echo "FAIL: RunFrame answered:"; cat o7.txt; exit 1; }
+  # a program that WRITES blosc through Zarr links flagless (Zarr's czw
+  # names blosc), and a program's OWN FOR "C" unit's LINK is read
+  # (cp-kernel's two findings on 0.20.0, 2026-10-10)
+  cp "$FIX/RunZarrW.m9" "$FIX/RunOwnLink.m9" src/
+  "$M9C" --run src/RunZarrW.m9 < /dev/null > o7z.txt 2>&1 ||
+    { echo "FAIL: a program writing through Zarr did not link:"; tail -3 o7z.txt; exit 1; }
+  grep -q '^zarr written$' o7z.txt || { echo "FAIL: RunZarrW answered:"; cat o7z.txt; exit 1; }
+  "$M9C" --run src/RunOwnLink.m9 < /dev/null > o7l.txt 2>&1 ||
+    { echo "FAIL: a program's own LINK was not read:"; tail -3 o7l.txt; exit 1; }
+  grep -q '^zlib linked$' o7l.txt || { echo "FAIL: RunOwnLink answered:"; cat o7l.txt; exit 1; }
   # exported module variables (decision 28): the importer reads them,
   # writes a scalar, a slice element and a field through a pointer, and
   # the exporter sees the writes -- the same storage, not a copy

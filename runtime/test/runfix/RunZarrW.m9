@@ -1,0 +1,38 @@
+MODULE RunZarrW ;
+
+(* a program that WRITES a blosc-compressed zarr array links flagless:
+   Zarr's own unit czw names blosc (2026-10-10, cp-kernel's finding --
+   blosc_compress_ctx was undefined at a flagless link of 0.20.0) *)
+
+IMPORT Io ;
+IMPORT Zarr ;
+
+CONST
+  Shape = [2, 3] ;
+  Dims = ['y', 'x'] ;
+
+VAR
+  pool : POOL ;
+  data : SLICE OF F64 ;
+  shape, chunks : SLICE OF I64 ;
+  dims : SLICE OF STR ;
+  i : I64 ;
+
+BEGIN
+  data := NEW (pool, F64, 6) ;
+  FOR i := 0 TO 5 DO data[i] := 0.5 * F64 (i) END ;
+  shape := NEW (pool, I64, 2) ;
+  chunks := NEW (pool, I64, 2) ;
+  dims := NEW (pool, STR, 2) ;
+  FOR i := 0 TO 1 DO
+    shape[i] := Shape[i] ;
+    chunks[i] := Shape[i] ;
+    dims[i] := Dims[i]
+  END ;
+  Zarr.CreateGroup (pool, 'zw.zarr') ;
+  Zarr.WriteF64 (pool, 'zw.zarr/v', data, shape, chunks, dims, Zarr.Lz4 (5)) ;
+  Io.WriteLine ('zarr written')
+EXCEPT
+| Zarr.Error : Io.WriteLine ('Zarr.Error')
+| ValueRange : Io.WriteLine ('ValueRange')
+END RunZarrW.

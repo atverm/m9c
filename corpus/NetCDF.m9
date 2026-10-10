@@ -756,11 +756,20 @@ BEGIN
 END Create4 ;
 
 
+(* an id netCDF handed out, back as C takes it: one no C int holds was
+   never netCDF's (C.* conversions narrow checked since 2026-10-10) *)
+PROCEDURE NcId (v: I64) : C.Int RAISES Error =
+BEGIN
+  RETURN C.Int (v)
+EXCEPT
+| ValueRange : RAISE Error ('id', 'beyond a C int', v)
+END NcId ;
+
 PROCEDURE Close (VAR f: PTR File) RAISES Error =
 BEGIN
   IF NOT f.open THEN RETURN END ;        (* closing twice is not a *)
   f.open := FALSE ;                      (* second failure          *)
-  Check ('nc_close', I64 (NcClose (C.Int (f.ncid))))
+  Check ('nc_close', I64 (NcClose (NcId (f.ncid))))
 END Close ;
 
 PROCEDURE VarId (f: PTR File ; RO name: STR) : I64
@@ -845,7 +854,7 @@ PROCEDURE VarCount (f: PTR File) : I64
   RAISES Error =
 VAR n : ARRAY 1 OF I32 ;
 BEGIN
-  Check ('nc_inq_nvars', I64 (NcInqNVars (C.Int (f.ncid), ADR (n)))) ;
+  Check ('nc_inq_nvars', I64 (NcInqNVars (NcId (f.ncid), ADR (n)))) ;
   RETURN I64 (n[0])
 END VarCount ;
 
@@ -870,8 +879,8 @@ PROCEDURE VarType (f: PTR File ; varid: I64) : I64
   RAISES Error =
 VAR t : ARRAY 1 OF I32 ;
 BEGIN
-  Check ('nc_inq_vartype', I64 (NcInqVarType (C.Int (f.ncid),
-                                              C.Int (varid),
+  Check ('nc_inq_vartype', I64 (NcInqVarType (NcId (f.ncid),
+                                              NcId (varid),
                                               ADR (t)))) ;
   RETURN I64 (t[0])
 END VarType ;
@@ -1498,7 +1507,7 @@ END PutAttF64 ;
 
 PROCEDURE EndDef (f: PTR File) RAISES Error =
 BEGIN
-  Check ('nc_enddef', I64 (NcEndDef (C.Int (f.ncid))))
+  Check ('nc_enddef', I64 (NcEndDef (NcId (f.ncid))))
 END EndDef ;
 
 PROCEDURE PutF64 (f: PTR File ; varid: I64 ;

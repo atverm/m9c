@@ -56,6 +56,10 @@ type
     { Gen.KArrRec / KHdrArrRec: an ARRAY OF a record of this module,
       typedef'd after the struct it contains }
     arrRec, hdrArrRec : TStringList;
+    { Gen.arrInto: while a record's field types are computed, where an
+      ARRAY OF a record of this module goes instead -- the record's own
+      buffer; nil otherwise }
+    arrInto : TStringList;
     foreignProcs : TStringList; { bare name -> foreign head node }
     foreignUnit : TStringList;  { bare name -> its FOR-C unit }
     gateSeen : TStringList;     { units that got a [SERIAL] gate }
@@ -116,6 +120,7 @@ type
     function ScopeFind (const n: string): Integer;
     procedure ModuleScope;
     function QualIn (t: TNode; const inMod: string): TNode;
+    function QualBound (b: TNode; const inMod: string): TNode;
     procedure NoteMod (t: TNode; var m: string);
     function InMod (t: TNode; const m: string): TNode;
     procedure ExportVars (rec2: TStringList);
@@ -753,6 +758,8 @@ begin
             modules emitting the same name are conflicting types, not
             a legal C11 redefinition: guard every one }
           ab := ArrBucket (t.kids[1]);
+          if (arrInto <> nil) and ((ab = arrRec) or (ab = hdrArrRec)) then
+            ab := arrInto;
           ab.Add ('#ifndef M9SL_' + s);
           ab.Add ('#define M9SL_' + s);
           ab.Add ('typedef struct { ' + nested + ' v[' +
@@ -993,6 +1000,26 @@ end;
 
 { Gen.QualIn: a type node from module modName with its bare type names
   qualified, so an importer reads it where it was declared }
+{ Gen.QualBound: an array bound written as a bare CONST of module
+  inMod, as `inMod.N'; any other bound as it is }
+function TGen.QualBound (b: TNode; const inMod: string): TNode;
+var d, sf : TNode;
+begin
+  Result := b;
+  if (b <> nil) and (b.kind = nkDesignator) and (Length (b.kids) = 0) and
+     (extConsts.IndexOf (inMod + '.' + b.a) >= 0) then
+  begin
+    d := TNode.Create (nkDesignator);
+    d.line := b.line; d.col := b.col;
+    d.a := inMod;
+    sf := TNode.Create (nkSelField);
+    sf.line := b.line; sf.col := b.col;
+    sf.a := b.a;
+    d.Add (sf);
+    Result := d;
+  end;
+end;
+
 function TGen.QualIn (t: TNode; const inMod: string): TNode;
 var n : TNode;
 begin
@@ -1021,7 +1048,8 @@ begin
   begin
     n := TNode.Create (t.kind);
     n.line := t.line; n.col := t.col;
-    n.Add (t.kids[0]);
+    if t.kind = nkArrayType then n.Add (QualBound (t.kids[0], inMod))
+    else n.Add (t.kids[0]);
     n.Add (QualIn (t.kids[1], inMod));
     Result := n;
   end;
@@ -2185,7 +2213,7 @@ end;
 function TGen.CallC (dnode, argl, site: TNode; out tag: string): string;
 var
   svRaise : Boolean;
-  e2 : string;
+  e2, e1, at2 : string;
   name, args, at, want, tn, vn, cfunc, gname : string;
   pv : Boolean;                     { a call through a procedure value }
   svt : TNode;
@@ -2300,11 +2328,22 @@ begin
     if at = 'SLICE' then begin tag := 'I64'; Exit ('(' + EX (argl.kids[0], '') + ').len') end;
     if at = 'ARR' then
     begin
-      arg := Resolve (ScopeNode (argl.kids[0].a));
-      if (arg <> nil) and (arg.kind = nkArrayType) then
+      { Gen: a bare name, its declaration's count; anything with
+        selectors, C counts itself }
+      if (argl.kids[0].kind = nkDesignator) and (Length (argl.kids[0].kids) = 0) then
+      begin
+        arg := Resolve (ScopeNode (argl.kids[0].a));
+        if (arg <> nil) and (arg.kind = nkArrayType) then
+        begin
+          tag := 'I64';
+          Exit ('INT64_C(' + ArrCount (arg.kids[0]) + ')');
+        end;
+      end
+      else
       begin
         tag := 'I64';
-        Exit ('INT64_C(' + ArrCount (arg.kids[0]) + ')');
+        e2 := EX (argl.kids[0], '');
+        Exit ('((int64_t) (sizeof ((' + e2 + ').v) / sizeof ((' + e2 + ').v[0])))');
       end;
     end;
     tag := 'I64';
@@ -2535,7 +2574,29 @@ begin
       end;
       tag := '?';
       if nargs <> 1 then Err (site, 'C.' + vn + ' takes one argument');
-      Exit ('((' + at + ')(' + EX (argl.kids[0], '') + '))');
+      { Gen: a conversion that narrows is checked }
+      e1 := EX (argl.kids[0], '');
+      at2 := TagOfExpr (argl.kids[0]);
+      if (argl.kids[0].kind = nkInt) or
+         ((argl.kids[0].kind = nkUn) and (argl.kids[0].a = '-') and
+          (argl.kids[0].kids[0] <> nil) and (argl.kids[0].kids[0].kind = nkInt)) then
+        at2 := '';
+      if (vn = 'Int') and ((at2 = 'I64') or (at2 = 'U32') or (at2 = 'U64')) then
+      begin
+        stRaise := True;
+        Exit ('((int) m9_i32 (' + e1 + ', err))');
+      end;
+      if (vn = 'SizeT') and ((at2 = 'I8') or (at2 = 'I16') or (at2 = 'I32') or (at2 = 'I64')) then
+      begin
+        stRaise := True;
+        Exit ('((size_t) m9_u64 (' + e1 + ', err))');
+      end;
+      if (vn = 'Float') and (at2 = 'F64') then
+      begin
+        stRaise := True;
+        Exit ('(m9_f32_f64 (' + e1 + ', err))');
+      end;
+      Exit ('((' + at + ')(' + e1 + '))');
     end;
     { the wire boundary: F64/F32 . From/ToBytesLE (par 2.1) }
     if ((tn = 'F64') or (tn = 'F32')) and (vn = 'FromBytesLE') then
@@ -2690,16 +2751,17 @@ begin
           if gateSeen.IndexOf (gname) < 0 then
           begin
             gateSeen.Add (gname);
-            rec2Gates.Add ('static m9_mon m9_gate_' + gname + ';');
+            { Gen: a pointer to the program's one gate for the unit }
+            rec2Gates.Add ('static m9_mon *m9_gate_' + gname + ';');
           end;
           if vt.kids[1] = nil then
-            Exit ('({ m9_mon_enter (&m9_gate_' + gname + '); ' +
+            Exit ('({ m9_mon_enter (m9_gate (&m9_gate_' + gname + ', "' + gname + '")); ' +
                   vt.b + ' (' + args + '); ' +
-                  'm9_mon_leave (&m9_gate_' + gname + '); })');
-          Exit ('({ m9_mon_enter (&m9_gate_' + gname + '); ' +
+                  'm9_mon_leave (m9_gate_' + gname + '); })');
+          Exit ('({ m9_mon_enter (m9_gate (&m9_gate_' + gname + ', "' + gname + '")); ' +
                 '__typeof__(' + vt.b + ' (' + args + ')) m9gv = ' +
                 vt.b + ' (' + args + '); ' +
-                'm9_mon_leave (&m9_gate_' + gname + '); m9gv; })');
+                'm9_mon_leave (m9_gate_' + gname + '); m9gv; })');
         end;
         Exit (vt.b + ' (' + args + ')');
       end;
@@ -3382,8 +3444,12 @@ begin
                 TyC (Resolve (fld).kids[0]) + ')), err->s[' +
                 IntToStr (si - 1) + '].len }; (void) ' + CN (arg.a) + ';')
             else
-              binderLines.Add (TyC (fld) + ' ' + CN (arg.a) + ' = ' +
-                slot + '; (void) ' + CN (arg.a) + ';');
+              if Copy (ety, 1, 3) = 'CR:' then
+                binderLines.Add (TyC (fld) + ' ' + CN (arg.a) + ' = { .tag = ' +
+                  slot + ' }; (void) ' + CN (arg.a) + ';')
+              else
+                binderLines.Add (TyC (fld) + ' ' + CN (arg.a) + ' = ' +
+                  slot + '; (void) ' + CN (arg.a) + ';');
             bpool.Add (arg.a + '=err->res');
             scope.AddObject (arg.a + '=b', TObject (fld));
           end
@@ -4206,6 +4272,8 @@ begin
                   '(m9_state has i[4])');
                 Exit;
               end;
+              { Gen: an enumeration travels as its tag }
+              if Copy (tg, 1, 3) = 'CR:' then cnd := '(' + cnd + ').tag';
               Line (pbuf, ind, 'err->i[' + IntToStr (i2) + '] = ' + cnd + ';');
               Inc (i2);
             end;
@@ -4641,6 +4709,7 @@ var
   cs, s : string;
   tgt, rec2, rec3 : TStringList;
   fseq : TNode;
+  fts : array of string;
 begin
   hdr.Clear; src.Clear; tdefs.Clear; pbuf.Clear; sprotos.Clear;
   thrBuf.Clear; thrSeen.Clear; rec2Gates.Clear; gateSeen.Clear;
@@ -4782,6 +4851,19 @@ begin
         tgt := hdrRecs
       else
         tgt := rec2;
+      if d.kind = nkMonitorType then fseq := d.kids[0]
+      else fseq := d.kids[1];
+      { Gen.Emit: the field types FIRST, an ARRAY OF a record of this
+        module's typedef into this record's buffer, computed once }
+      SetLength (fts, 0);
+      if fseq <> nil then
+      begin
+        SetLength (fts, Length (fseq.kids));
+        arrInto := tgt;
+        for ci := 0 to High (fseq.kids) do
+          fts[ci] := TyC (fseq.kids[ci].kids[1]);
+        arrInto := nil;
+      end;
       if not IsOpaque (tyNames[i]) then
         tgt.Add ('typedef struct ' + modName + '_' + tyNames[i] + ' ' +
           modName + '_' + tyNames[i] + ';');
@@ -4795,12 +4877,10 @@ begin
         tgt.Add ('  m9_mon m9mon;');
       { one declarator per line: `T * a, b` is one pointer and one
         struct in C -- the star binds to the declarator, not the type }
-      if d.kind = nkMonitorType then fseq := d.kids[0]
-      else fseq := d.kids[1];
       if fseq <> nil then
         for ci := 0 to High (fseq.kids) do
         begin
-          s := TyC (fseq.kids[ci].kids[1]);
+          s := fts[ci];
           for j2 := 0 to High (fseq.kids[ci].kids[0].kids) do
             tgt.Add ('  ' + s + ' ' +
               CN (fseq.kids[ci].kids[0].kids[j2].a) + ';');

@@ -12,6 +12,8 @@
 #include "Time.h"
 #include "NetCDF.h"
 #include "Faults.h"
+#include "Zip.h"
+#include "Bits.h"
 
 void NbCells_m9init (m9_state *err);
 

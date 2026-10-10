@@ -71,9 +71,14 @@ field, as printf does.
 
 ### Fixed (v: F64 ; decimals: I64) : STR RAISES ValueRange
 
-decimals in 0..MaxDecimals; a magnitude that will not survive
-scaling raises rather than printing a plausible wrong number.
-NaN prints 'nan', the infinities 'inf' and '-inf'.
+decimals in 0..MaxDecimals, else ValueRange; printf's %.*f to
+the character -- the double's own decimal expansion rounded half
+to even, every magnitude (1e308 prints its 309 digits).  A value
+that rounds to zero keeps its '-' (-0.001 is -0.00, as printf);
+negative ZERO prints without one, the sign bit is not consulted.
+NaN prints 'nan', the infinities 'inf' and '-inf'.  Exact since
+2026-10-10; it scaled in F64 until then and disagreed with printf
+on 0.71% of values, 1e300 raised.
 
 ### FixedPad (v: F64 ; width, decimals: I64) : STR RAISES ValueRange
 
@@ -105,13 +110,11 @@ sign, as Fixed already does: neither consults the sign bit.
 printf disagrees on that one value and the driver excludes it
 rather than pretending they agree.
 
-The accuracy is Fixed's, and measured the same way: the mantissa
-is normalised by multiplying or dividing by ONE power of ten
-chosen by binary decomposition -- about eighteen roundings at
-the worst instead of the three hundred a divide-by-ten loop
-would take -- and then rounded half to even like Fixed.  The
-driver compares it against printf over a spread of magnitudes
-and prints the disagreement rate.
+The digits are printf's %.*e to the character, as Fixed's are
+%.*f's: exact, from the double's integer mantissa and exponent,
+half to even (FmtTest holds both to Python's % formatting).  Until
+2026-10-10 the mantissa was normalised in F64 and measured, not
+exact.
 
 ### SciPad (v: F64 ; width, decimals: I64) : STR RAISES ValueRange
 

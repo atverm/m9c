@@ -10,10 +10,15 @@
 #include "Time.h"
 #include "NetCDF.h"
 #include "Faults.h"
+#include "Zip.h"
+#include "Bits.h"
 
 const m9_exc NbCells_Missing = { "Missing" };
 const m9_exc NbCells_WrongType = { "WrongType" };
 
+extern size_t ZSTD_decompress (void *, size_t, const void *, size_t);
+extern size_t ZSTD_compress (void *, size_t, const void *, size_t, int);
+extern size_t ZSTD_compressBound (size_t);
 extern void m9_put_chars (const void *, size_t);
 extern void m9_put_bytes (const void *, size_t);
 extern int m9_argc (void);
@@ -126,6 +131,13 @@ extern int nc_def_var_chunking (int, int, int, const void *);
 extern int nc_put_vara_text (int, int, const void *, const void *, const void *);
 extern int64_t m9_cstrlen (const void *);
 extern void * memcpy (void *, const void *, size_t);
+extern int64_t m9_bits_and (int64_t, int64_t);
+extern int64_t m9_bits_or (int64_t, int64_t);
+extern int64_t m9_bits_xor (int64_t, int64_t);
+extern int64_t m9_bits_not (int64_t);
+extern int64_t m9_bits_shl (int64_t, int64_t);
+extern int64_t m9_bits_shr (int64_t, int64_t);
+extern int64_t m9_bits_count (int64_t);
 
 static const uint32_t Kinds_s0[5] = { 102u, 114u, 97u, 109u, 101u };
 static const uint32_t Kinds_s1[4] = { 102u, 54u, 52u, 115u };
@@ -879,6 +891,8 @@ void NbCells_m9init (m9_state *err)
   Time_m9init (err); if (err->exc) goto L_ret;
   NetCDF_m9init (err); if (err->exc) goto L_ret;
   Faults_m9init (err); if (err->exc) goto L_ret;
+  Zip_m9init (err); if (err->exc) goto L_ret;
+  Bits_m9init (err); if (err->exc) goto L_ret;
 L_ret: ;
   err->res = m9prev;
 }

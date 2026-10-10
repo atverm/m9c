@@ -211,6 +211,15 @@ the same bytes for the same parts.
 the request's Content-Type: multipart/form-data with that
 boundary -- one header line's value for Request's `headers'
 
+### FormatDate (secs: I64) : STR RAISES ValueRange
+
+the IMF-fixdate of RFC 9110 par 5.6.7 for a second since the
+epoch -- `Sun, 06 Nov 1994 08:49:37 GMT' -- what a Date or a
+Last-Modified header carries.  Years 1 to 9999; outside them
+ValueRange.  Held to java.time's formatter in TimeTest
+(2026-10-10, cp-kernel's proposal; HttpServer wrote its Date
+header with a private copy of this, which now calls it).
+
 ### Connect (host: C.ConstPtr ; port: C.Int) : C.Int [SERIAL]
 
 the shim resolves and connects; SERIAL until its thread safety

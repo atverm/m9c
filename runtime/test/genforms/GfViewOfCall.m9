@@ -1,0 +1,24 @@
+MODULE GfViewOfCall ;
+
+(* WANT: a view of a grid a call answers: 3 *)
+
+(* VIEW over a GRID a call answers.  Unlike an ARRAY (a value: SLICE of
+   one is refused by the checker), a grid's cells live in the caller's
+   arena, so the view would be sound; the generator reads VIEW's grid
+   off a declaration and refuses a call (found 2026-10-10, looking for a
+   generator refusal once SLICE of a call's array became the checker's). *)
+
+IMPORT Io, Fmt ;
+
+PROCEDURE Mk () : GRID 2 OF F64 =
+BEGIN
+  RETURN NEW (F64, 2, 3)
+END Mk ;
+
+VAR
+  g : GRID 1 OF F64 ;
+
+BEGIN
+  g := VIEW (Mk (), 1, ALL) ;
+  Io.WriteLine ('a view of a grid a call answers: ' + Fmt.I64Str (LEN (g, 0)))
+END GfViewOfCall.

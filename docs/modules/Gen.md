@@ -11,7 +11,7 @@ Errors are counted; the message table is stage-2 driver work.
 One generator instance per process: state is module-level and the
 pool is never reset, exactly one module per run.
 
-### LoadUnit (KEPT u: PTR Ast.Node)
+### LoadUnit (VAR KEPT u: PTR Ast.Node)
 
 _(documented with the group below)_
 

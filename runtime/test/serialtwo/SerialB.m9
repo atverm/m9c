@@ -1,0 +1,21 @@
+DEFINITION MODULE SerialB ;
+
+(* the second module calling SerialA's [SERIAL] unit *)
+
+PROCEDURE Work (n: I64) ;
+
+END SerialB.
+
+
+UNSAFE IMPLEMENTATION MODULE SerialB ;
+
+IMPORT SerialA ;
+FROM ctwin IMPORT Bump ;
+
+PROCEDURE Work (n: I64) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 1 TO n DO Bump () END
+END Work ;
+
+END SerialB.

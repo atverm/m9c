@@ -1,0 +1,40 @@
+DEFINITION MODULE SerialA ;
+
+(* threads.sh's fixture for ONE [SERIAL] unit called from TWO modules:
+   SerialA declares the unit and bumps through it, SerialB bumps
+   through the same unit.  The gate is the unit's, so the bumps of the
+   two modules exclude each other; until 2026-10-10 each module's C
+   file had a gate of its own and they did not. *)
+
+PROCEDURE Work (n: I64) ;
+PROCEDURE Total () : I64 RAISES ValueRange ;
+
+END SerialA.
+
+
+UNSAFE DEFINITION MODULE FOR "C" ctwin ;
+
+(* serialgate.c's unsafe counter: read, spin, write back *)
+
+PROCEDURE Bump = "m9_serial_bump" ()  [SERIAL] ;
+PROCEDURE Get  = "m9_serial_get"  () : C.SSizeT  [SERIAL] ;
+
+END ctwin.
+
+
+UNSAFE IMPLEMENTATION MODULE SerialA ;
+
+FROM ctwin IMPORT Bump, Get ;
+
+PROCEDURE Work (n: I64) =
+VAR i : I64 ;
+BEGIN
+  FOR i := 1 TO n DO Bump () END
+END Work ;
+
+PROCEDURE Total () : I64 RAISES ValueRange =
+BEGIN
+  RETURN I64 (Get ())
+END Total ;
+
+END SerialA.

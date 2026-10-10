@@ -1,0 +1,43 @@
+MODULE GfArrRecField ;
+
+(* WANT: arrays of records as fields: 7:1 a 9:2 b of 5 kept 4 here 3 *)
+
+(* An ARRAY OF a record as a field of another record, imported from
+   GfPw (its header) and declared here (this C file).  The array's
+   typedef was emitted after every struct, so the record holding it
+   named an unknown type: gcc refused "unknown type name
+   m9_arr_64_Pw_Perr" (2026-10-10). *)
+
+IMPORT Io, Fmt, GfPw ;
+
+TYPE
+  Mark = RECORD
+    at : I64 ;
+  END ;
+  Marks = RECORD
+    n : I64 ;
+    ms : ARRAY 3 OF Mark ;
+  END ;
+
+VAR
+  p : GfPw.Parser ;
+  q : Marks ;
+  out : STR ;
+  k : I64 ;
+
+BEGIN
+  GfPw.Note (p, 7, 'a') ;
+  GfPw.Note (p, 9, 'b') ;
+  GfPw.Note (p, 11, 'c') ;
+  GfPw.Note (p, 12, 'd') ;
+  GfPw.Note (p, 13, 'e') ;
+  out := 'arrays of records as fields:' ;
+  FOR k := 0 TO 1 DO
+    out := out + ' ' + Fmt.I64Str (p.errs[k].line) + ':' + Fmt.I64Str (p.errs[k].col)
+           + ' ' + p.errs[k].msg
+  END ;
+  out := out + ' of ' + Fmt.I64Str (p.nerr) + ' kept ' + Fmt.I64Str (LEN (p.errs)) ;
+  q.ms[2].at := 3 ;
+  q.n := 1 ;
+  Io.WriteLine (out + ' here ' + Fmt.I64Str (q.ms[2].at))
+END GfArrRecField.

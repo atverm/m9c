@@ -384,7 +384,7 @@ PROCEDURE ConsolidateSlim (VAR pool: POOL ; RO store: STR)
 END Zarr.
 
 
-UNSAFE DEFINITION MODULE FOR "C" czw ;
+UNSAFE DEFINITION MODULE FOR "C" czw LINK "-l:libblosc.so.1" ;
 
 (* blosc's CONTEXT form only, as everywhere else in this tree: the
    plain blosc_compress carries global state and would have to be

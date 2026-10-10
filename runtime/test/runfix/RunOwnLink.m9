@@ -1,0 +1,24 @@
+MODULE RunOwnLink ;
+
+(* a program's OWN FOR "C" unit names what it links: m9c read the
+   LINK words of the modules a program imports and never the program's
+   own units (2026-10-10, cp-kernel's finding on 0.20.0).  zlib is on
+   no other link line m9c makes, so -lz comes from this unit's word or
+   not at all. *)
+
+IMPORT Io ;
+FROM czver IMPORT Version ;
+
+VAR v : C.ConstPtr ;
+
+BEGIN
+  v := Version () ;
+  Io.WriteLine ('zlib linked')
+END RunOwnLink.
+
+
+UNSAFE DEFINITION MODULE FOR "C" czver LINK "-l:libz.so.1" ;
+
+PROCEDURE Version = "zlibVersion" () : C.ConstPtr [REENTRANT] ;
+
+END czver.

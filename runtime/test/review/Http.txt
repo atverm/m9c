@@ -1,18 +1,18 @@
-REVIEW Http -- 70 procedures with a body, 57 of them functions; 24 headings in a DEFINITION
+REVIEW Http -- 72 procedures with a body, 58 of them functions; 25 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              57
-  assignments                                   471
-  arguments                                     600
-  RETURN values                                 126
-  operands of a comparison or an operator       461
+  functions answering on every path              58
+  assignments                                   490
+  arguments                                     640
+  RETURN values                                 127
+  operands of a comparison or an operator       519
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
 
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
-  local pools                                    16   Line.pool, OpenConn.scratch, Once.scratch, Follow.scratch, Fetch.scratch, Request.scratch, +10 more
+  local pools                                    17   Line.pool, OpenConn.scratch, Once.scratch, Follow.scratch, Fetch.scratch, Request.scratch, +11 more
   pool parameters                                18   SplitUrl, Cat1, OpenConn, Once, Follow, Request, +12 more
   KEPT parameters                                 0
   HEAP named                                      0
@@ -30,7 +30,7 @@ TRUSTED -- outside what the checker can see
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               29
+  RAISE statements                               30
   handlers                                       13
   NEW in the frame                                0
   NEW in a named pool                            13

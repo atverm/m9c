@@ -240,6 +240,21 @@ PROCEDURE NewStrIn (VAR pool: POOL ; RO s: STR) : PTR Node IN pool
   (* NewStr with the node and its escaped payload in pool *)
 PROCEDURE NewI64In (VAR pool: POOL ; v: I64) : PTR Node IN pool ;
 PROCEDURE NewF64In (VAR pool: POOL ; r: F64) : PTR Node IN pool ;
+
+PROCEDURE NewRaw (RO text: STR) : PTR Node
+  RAISES ParseError, TypeMismatch ;
+PROCEDURE NewRawIn (VAR pool: POOL ; RO text: STR) : PTR Node IN pool
+  RAISES ParseError, TypeMismatch ;
+  (* a NUMBER written exactly as `text' says it -- `1.0E-5', `2.50',
+     `1e400' -- where NewF64 would write the double's shortest repr.
+     For an output whose numbers follow another program's printing
+     (Java's Double.toString, a fixed number of decimals).  text must
+     be one JSON number: anything else raises ParseError, a JSON value
+     of another kind TypeMismatch, so a document stays JSON.  The node
+     is a Num like any other -- AsF64 and AsI64 read its value -- and
+     Compact, Pretty, NumText and Clone keep the text (2026-10-10,
+     cp-kernel's proposal: its view printed numbers through a JSON
+     builder of its own). *)
 PROCEDURE NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool ;
 PROCEDURE NewNullIn (VAR pool: POOL) : PTR Node IN pool ;
 
@@ -366,6 +381,7 @@ TYPE
     v    : Value ;
     RO name : STR ;    (* member name inside Object *)
     next : OPT PTR Node ;
+    RO raw : STR ;     (* a Num's text as NewRaw was given it; '' else *)
   END ;
 
   Cursor = RECORD
@@ -810,6 +826,7 @@ VAR
   scratch : POOL ;
   d : PTR DynStr.DString IN scratch ;
 BEGIN
+  IF LEN (n.raw) > 0 THEN RETURN n.raw END ;
   CASE n.v OF
   | Num (r, i, isInt) :
       d := DynStr.New (scratch) ;
@@ -915,7 +932,8 @@ BEGIN
      shared (`c.v := n.v' under an ELSE read as a retention of n once
      a record value counted as one, 2026-10-08) *)
   | Num (r, i, isInt) :
-      c.v := Value.Num (r, i, isInt)
+      c.v := Value.Num (r, i, isInt) ;
+      IF LEN (n.raw) > 0 THEN c.raw := CopyStrTo (root, n.raw) END
   | Bool (b) :
       c.v := Value.Bool (b)
   | Null :
@@ -1143,7 +1161,9 @@ BEGIN
   | Str (t) :
       EmitJStr (d, DecodeStr (t))
   | Num (r, i, isInt) :
-      IF isInt THEN
+      IF LEN (n.raw) > 0 THEN
+        DynStr.Append (d, n.raw)
+      ELSIF isInt THEN
         DynStr.AppendI64 (d, i)
       ELSE
         AppendF64 (d, r)
@@ -1172,13 +1192,11 @@ BEGIN
     DynStr.Append (d, 'NaN') ;
     RETURN
   END ;
-  (* MAX (F64) is a generator gap; the largest finite double,
-     spelled out *)
-  IF r > 1.7976931348623157E308 THEN
+  IF r > MAX (F64) THEN
     DynStr.Append (d, 'Infinity') ;
     RETURN
   END ;
-  IF r < 0.0 - 1.7976931348623157E308 THEN
+  IF r < 0.0 - MAX (F64) THEN
     DynStr.Append (d, '-Infinity') ;
     RETURN
   END ;
@@ -1511,6 +1529,39 @@ BEGIN
   n.v := Value.Num (r, 0, FALSE) ;
   RETURN n
 END NewF64In ;
+
+(* the value of a raw number's text, through the parser itself, so
+   that what it accepts is exactly JSON's number grammar *)
+PROCEDURE RawValue (RO text: STR) : Value
+  RAISES ParseError, TypeMismatch =
+VAR t : PTR Node ;
+BEGIN
+  t := Parse (text) ;
+  CASE t.v OF
+  | Num (r, i, isInt) : RETURN Value.Num (r, i, isInt)
+  ELSE RAISE TypeMismatch ('a raw value is one JSON number')
+  END
+END RawValue ;
+
+PROCEDURE NewRaw (RO text: STR) : PTR Node
+  RAISES ParseError, TypeMismatch =
+VAR n : PTR Node ;
+BEGIN
+  n := NEW (Node) ;
+  n.v := RawValue (text) ;
+  n.raw := CopyStrTo (n, text) ;
+  RETURN n
+END NewRaw ;
+
+PROCEDURE NewRawIn (VAR pool: POOL ; RO text: STR) : PTR Node IN pool
+  RAISES ParseError, TypeMismatch =
+VAR n : PTR Node IN pool ;
+BEGIN
+  n := NEW (pool, Node) ;
+  n.v := RawValue (text) ;
+  n.raw := CopyStrTo (n, text) ;
+  RETURN n
+END NewRawIn ;
 
 PROCEDURE NewBoolIn (VAR pool: POOL ; b: BOOL) : PTR Node IN pool =
 VAR n : PTR Node IN pool ;

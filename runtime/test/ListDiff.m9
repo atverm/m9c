@@ -157,7 +157,7 @@ CONST
   NoBattery = ['Lex', 'Ast', 'Parse', 'Print', 'Sem', 'Gen', 'Doc', 'Diag',
                'M9c', 'Review', 'Check', 'Arrays', 'Numeric', 'Png', 'NbCells',
                'NbShow', 'ExportDef', 'ExportUse', 'Pg', 'Sparql', 'Rdf', 'Regex', 'Xml', 'Hash', 'Smtp', 'Rsa', 'Map',
-               'Parquet'] ;
+               'Parquet', 'Seq'] ;
   NoBatteryWhy = ['lexdiff, comdiff and the token-count golden',
                   'parsediff (every node kind printed back)',
                   'parsediff and the parse probes',
@@ -185,7 +185,8 @@ CONST
                   'smtp.sh (SmtpFix against aiosmtpd, judged by Python email) and m9test (SmtpTest, the message against goldens)',
                   'm9test (RsaTest, against signatures and forgeries from Python cryptography)',
                   'm9test (MapTest, against pyproj, numpy and the Natural Earth file)',
-                  "m9test (ParquetTest, pyarrow's files against what pyarrow reads) and columnar.sh (pyarrow reads what the writer wrote)"] ;
+                  "m9test (ParquetTest, pyarrow's files against what pyarrow reads) and columnar.sh (pyarrow reads what the writer wrote)",
+                  'm9test (SeqTest, Distinct against Python dict.fromkeys goldens)'] ;
   GendiffFixtures = ['LibmGate', 'KindUse', 'EnumUse', 'Palette'] ;
 
 TYPE

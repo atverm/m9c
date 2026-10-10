@@ -78,6 +78,14 @@ typedef struct { Sem_Binding *p; int64_t len; } m9_sl_Sem_Binding;
 #define M9SL_m9_arr_13_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[13]; } m9_arr_13_m9_sl_CHAR;
 #endif
+#ifndef M9SL_m9_arr_8_m9_sl_CHAR
+#define M9SL_m9_arr_8_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[8]; } m9_arr_8_m9_sl_CHAR;
+#endif
+#ifndef M9SL_m9_arr_7_m9_sl_CHAR
+#define M9SL_m9_arr_7_m9_sl_CHAR
+typedef struct { m9_sl_CHAR v[7]; } m9_arr_7_m9_sl_CHAR;
+#endif
 #ifndef M9SL_m9_arr_10_m9_sl_CHAR
 #define M9SL_m9_arr_10_m9_sl_CHAR
 typedef struct { m9_sl_CHAR v[10]; } m9_arr_10_m9_sl_CHAR;
@@ -99,8 +107,8 @@ typedef struct { m9_sl_CHAR v[4]; } m9_arr_4_m9_sl_CHAR;
 typedef struct { m9_sl_CHAR v[256]; } m9_arr_256_m9_sl_CHAR;
 #endif
 
-void Sem_LoadFile (Ast_Node * root, m9_state *err);
-void Sem_CheckFile (Ast_Node * root, m9_state *err);
+void Sem_LoadFile (Ast_Node * *root, m9_pool *root_pool, m9_state *err);
+void Sem_CheckFile (Ast_Node * *root, m9_pool *root_pool, m9_state *err);
 int64_t Sem_ErrCount (m9_state *err);
 m9_sl_CHAR Sem_ErrAt (int64_t i, m9_state *err);
 int64_t Sem_LedgerCount (m9_state *err);

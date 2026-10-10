@@ -124,7 +124,10 @@ m9_sl_CHAR System_Executable (m9_pool *pool, m9_state *err)
     if (err->exc) goto L_ret;
     buf = m9v;
   }
-  n = (int64_t)(m9_exe_path (((void *)(buf).p), ((int)(System_MaxPath))));
+  { __typeof__(n) m9v = (int64_t)(m9_exe_path (((void *)(buf).p), ((int) m9_i32 (System_MaxPath, err))));
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   if ((n < INT64_C(0))) {
     err->res = m9res;
     m9ret = (m9_sl_CHAR){ NULL, 0 };
@@ -410,7 +413,7 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
     if (err->exc) goto L_ret;
     }
   } }
-  { __typeof__(h) m9v = (int64_t)(m9_exec (((void *)(block).p), ((int)(m9_add_i64 ((args).len, INT64_C(1), err))), ((void *)(inb).p), ((int64_t)((inb).len)), ((void *)(eblock).p), ((int)((env).len)), ((int64_t)(ms))));
+  { __typeof__(h) m9v = (int64_t)(m9_exec (((void *)(block).p), ((int) m9_i32 (m9_add_i64 ((args).len, INT64_C(1), err), err)), ((void *)(inb).p), ((int64_t)((inb).len)), ((void *)(eblock).p), ((int) m9_i32 ((env).len, err)), ((int64_t)(ms))));
     if (err->exc) goto L_ret;
     h = m9v;
   }
@@ -419,8 +422,14 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
     m9_raise (err, &Io_IOError);
     goto L_ret;
   }
-  r.status = (int64_t)(m9_exec_status (((int)(h))));
-  r.stopped = ((int64_t)(m9_exec_stopped (((int)(h)))) != INT64_C(0));
+  { __typeof__(r.status) m9v = (int64_t)(m9_exec_status (((int) m9_i32 (h, err))));
+    if (err->exc) goto L_ret;
+    r.status = m9v;
+  }
+  { __typeof__(r.stopped) m9v = ((int64_t)(m9_exec_stopped (((int) m9_i32 (h, err)))) != INT64_C(0));
+    if (err->exc) goto L_ret;
+    r.stopped = m9v;
+  }
   { __typeof__(r.out) m9v = System_Stream (pool, h, System_Out, err);
     if (err->exc) goto L_ret;
     r.out = m9v;
@@ -429,7 +438,8 @@ System_Result System_ExecWithin (m9_pool *pool, m9_sl_CHAR prog, m9_sl_m9_sl_CHA
     if (err->exc) goto L_ret;
     r.err_ = m9v;
   }
-  m9_exec_release (((int)(h)));
+  m9_exec_release (((int) m9_i32 (h, err)));
+  if (err->exc) goto L_ret;
   err->res = m9res;
   m9ret = r;
   goto L_ret;
@@ -509,7 +519,7 @@ void System_Become (m9_sl_CHAR prog, m9_sl_CHAR name, m9_sl_m9_sl_CHAR args, m9_
     if (err->exc) goto L_ret;
     }
   } }
-  bool m9t3 = ((int64_t)(m9_become (((void *)(pb).p), ((void *)(block).p), ((int)(m9_add_i64 ((args).len, INT64_C(1), err))))) < INT64_C(0));
+  bool m9t3 = ((int64_t)(m9_become (((void *)(pb).p), ((void *)(block).p), ((int) m9_i32 (m9_add_i64 ((args).len, INT64_C(1), err), err)))) < INT64_C(0));
   if (err->exc) goto L_ret;
   if (m9t3) {
     { __typeof__(prog) m9t4 = prog; err->s[0].p = m9t4.p; err->s[0].len = m9t4.len; m9_pay_keep (err, 0, sizeof (*m9t4.p)); }
@@ -1006,12 +1016,18 @@ static m9_sl_CHAR System_Stream (m9_pool *pool, int64_t h, int64_t which, m9_sta
   m9_pool scratch = {0}; (void) scratch;
   m9_sl_BYTE b = {0}; (void) b;
   int64_t n = 0; (void) n;
-  n = (int64_t)(m9_exec_len (((int)(h)), ((int)(which))));
+  { __typeof__(n) m9v = (int64_t)(m9_exec_len (((int) m9_i32 (h, err)), ((int) m9_i32 (which, err))));
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   { __typeof__(b) m9v = M9_POOL_SL (m9_sl_BYTE, uint8_t, &(scratch), m9_add_i64 (n, INT64_C(1), err), err);
     if (err->exc) goto L_ret;
     b = m9v;
   }
-  n = (int64_t)(m9_exec_copy (((int)(h)), ((int)(which)), ((void *)(b).p), ((int64_t)(n))));
+  { __typeof__(n) m9v = (int64_t)(m9_exec_copy (((int) m9_i32 (h, err)), ((int) m9_i32 (which, err)), ((void *)(b).p), ((int64_t)(n))));
+    if (err->exc) goto L_ret;
+    n = m9v;
+  }
   err->res = m9res;
   { __typeof__(({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; })) m9a13 = ({ __typeof__(b) m9t1 = b; int64_t m9t1a = INT64_C(0), m9t1n = n; (__typeof__(m9t1)){ m9t1.p + m9_chk_slice (m9t1a, m9t1n, m9t1.len, err), m9t1n }; });
     if (err->exc) goto L_ret;

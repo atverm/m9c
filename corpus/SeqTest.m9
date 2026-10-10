@@ -1,0 +1,103 @@
+MODULE SeqTest ;
+
+(* Seq, tested in M9.  Distinct against Python's
+   list (dict.fromkeys (xs)) on 40 lists (runtime/test/gold/Seq.gold,
+   tools/seqgold.py); the growable lists by what they must hold after
+   many Adds; a string added from a frame that has returned still
+   reads right, because Add copies it. *)
+
+IMPORT Check ;
+IMPORT Fmt ;
+IMPORT Io ;
+IMPORT Seq ;
+IMPORT Text ;
+
+VAR
+  t : Check.T ;
+  pool : POOL ;
+
+PROCEDURE Distincts () =
+VAR
+  gold : STR ;
+  xs, want, got, part, all : SLICE OF STR ;
+  lens, wlens : SLICE OF I64 ;
+  i, j, at, wat, bad : I64 ;
+BEGIN
+  gold := Check.GoldPath ('Seq.gold') ;
+  xs := Check.GoldStrs (t, gold, 'distinct.xs') ;
+  lens := Check.GoldI64s (t, gold, 'distinct.len') ;
+  want := Check.GoldStrs (t, gold, 'distinct.want') ;
+  wlens := Check.GoldI64s (t, gold, 'distinct.wantlen') ;
+  at := 0 ;
+  wat := 0 ;
+  bad := 0 ;
+  FOR i := 0 TO LEN (lens) - 1 DO
+    part := SLICE (xs, at, lens[i]) ;
+    got := Seq.Distinct (pool, part) ;
+    IF LEN (got) # wlens[i] THEN
+      bad := bad + 1
+    ELSE
+      FOR j := 0 TO wlens[i] - 1 DO
+        IF NOT Text.Eq (got[j], want[wat + j]) THEN bad := bad + 1 END
+      END
+    END ;
+    at := at + lens[i] ;
+    wat := wat + wlens[i]
+  END ;
+  Check.That (t, 'the golden file has 40 lists', LEN (lens) = 40) ;
+  Check.EqI64 (t, 'Distinct = list (dict.fromkeys (xs)): lists or elements differing', bad, 0) ;
+  all := Seq.Concat (pool, SLICE (xs, 0, 5), SLICE (xs, 5, 7)) ;
+  Check.EqStrs (t, 'Concat is a then b', all, SLICE (xs, 0, 12)) ;
+  Check.EqStrs (t, 'Copy keeps the order', Seq.Copy (pool, SLICE (xs, 0, 12)), SLICE (xs, 0, 12))
+EXCEPT
+| IndexError : Check.That (t, 'the Seq golden lines are inconsistent', FALSE)
+END Distincts ;
+
+(* a string built in this frame, added, the frame gone *)
+PROCEDURE AddFresh (VAR s: Seq.Strs ; k: I64) =
+BEGIN
+  Seq.AddStr (pool, s, 'item ' + Fmt.I64Str (k))
+END AddFresh ;
+
+PROCEDURE Grows () =
+VAR
+  ss : Seq.Strs ;
+  is : Seq.I64s ;
+  fs : Seq.F64s ;
+  i, bad : I64 ;
+  v : SLICE OF I64 ;
+BEGIN
+  Check.EqI64 (t, 'a new list is empty', Seq.LenStrs (ss), 0) ;
+  FOR i := 0 TO 999 DO
+    AddFresh (ss, i) ;
+    Seq.AddI64 (pool, is, i * i) ;
+    Seq.AddF64 (pool, fs, 0.5 * F64 (i))
+  END ;
+  Check.EqI64 (t, '1000 strings added', Seq.LenStrs (ss), 1000) ;
+  Check.EqI64 (t, '1000 integers added', Seq.LenI64s (is), 1000) ;
+  Check.EqI64 (t, '1000 reals added', Seq.LenF64s (fs), 1000) ;
+  bad := 0 ;
+  FOR i := 0 TO 999 DO
+    IF NOT Text.Eq (ss.at[i], 'item ' + Fmt.I64Str (i)) THEN bad := bad + 1 END ;
+    IF is.at[i] # i * i THEN bad := bad + 1 END ;
+    IF fs.at[i] # 0.5 * F64 (i) THEN bad := bad + 1 END
+  END ;
+  Check.EqI64 (t, 'every element where it was added, strings outliving their frame', bad, 0) ;
+  (* the room DOUBLES from 8: 1000 Adds end in 1024 slots, not 1000
+     -- the n log n promise, which a grow-by-one list breaks quietly *)
+  Check.EqI64 (t, 'the room doubled: 1024 slots for 1000', LEN (is.at), 1024) ;
+  v := Seq.I64sOf (pool, is) ;
+  Check.EqI64 (t, 'I64sOf is exactly n long', LEN (v), 1000) ;
+  Check.EqI64 (t, 'StrsOf is exactly n long', LEN (Seq.StrsOf (pool, ss)), 1000) ;
+  Check.EqI64 (t, 'F64sOf is exactly n long', LEN (Seq.F64sOf (pool, fs)), 1000) ;
+  Check.EqI64 (t, 'I64sOf holds the last', v[999], 998001)
+EXCEPT
+| IndexError : Check.That (t, 'an Add or a read went out of bounds', FALSE)
+| ValueRange : Check.That (t, 'ValueRange in Grows', FALSE)
+END Grows ;
+
+BEGIN
+  Distincts () ;
+  Grows () ;
+  Io.Halt (Check.Done (t, 'Seq'))
+END SeqTest.

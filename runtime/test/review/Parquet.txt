@@ -1,11 +1,11 @@
-REVIEW Parquet -- 72 procedures with a body, 32 of them functions; 8 headings in a DEFINITION
+REVIEW Parquet -- 90 procedures with a body, 41 of them functions; 8 headings in a DEFINITION
 
 PROVED BY THE CHECKER -- examined, and nothing refused
-  functions answering on every path              32
-  assignments                                   301
-  arguments                                     999
-  RETURN values                                  52
-  operands of a comparison or an operator       408
+  functions answering on every path              41
+  assignments                                   464
+  arguments                                    1235
+  RETURN values                                  65
+  operands of a comparison or an operator       662
   CASE labels                                     0
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -13,8 +13,8 @@ PROVED BY THE CHECKER -- examined, and nothing refused
 DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    0
   local pools                                     1   I64Text.pool
-  pool parameters                                47   NewBuf, P8, PLE, PBytes, PVar, PField, +41 more
-  KEPT parameters                                10   AddF64Q, AddF32Q, AddI64Q, AddI32Q, AddI16Q, AddBytesQ, +4 more
+  pool parameters                                57   NewBuf, P8, PLE, PBytes, PVar, PField, +51 more
+  KEPT parameters                                11   AddSink, AddF64Q, AddF32Q, AddI64Q, AddI32Q, AddI16Q, +5 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0
@@ -23,14 +23,14 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module variables                                0
 
 TRUSTED -- outside what the checker can see
-  UNSAFE units                                    0
-  foreign procedures                              0
+  UNSAFE units                                    2   czstd, Parquet
+  foreign procedures                              3
     of them [SERIAL]                              0
-    of them [REENTRANT]                           0
+    of them [REENTRANT]                           3
 
 COUNTED -- how much there was to check
   CASE statements                                 0
-  RAISE statements                               71
-  handlers                                       37
+  RAISE statements                               99
+  handlers                                       40
   NEW in the frame                                1
-  NEW in a named pool                            25
+  NEW in a named pool                            38

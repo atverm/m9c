@@ -58,7 +58,9 @@ PROCEDURE Halt (code: I64) ;
      piece is here: three diagnostics were lost to an unflushed
      buffer, so a halt that does not flush is the bug, and this one
      flushes as its first act.  A program that can fail needs an
-     exit status; it does not need a silent one.                   *)
+     exit status; it does not need a silent one.  A code beyond
+     0 .. 255 exits 255: the system truncates it, and Halt (256) used
+     to exit 0, a failure reported as success.                      *)
 
 PROCEDURE ParseI64 (RO s: STR) : I64 RAISES ValueRange ;
   (* decimal, optional leading '-'.  Anything else raises: a command
@@ -390,8 +392,16 @@ BEGIN
 END ArgCount ;
 
 PROCEDURE Halt (code: I64) =
+  (* a process says 0 to 255: a code beyond that was truncated by the
+     system, so Halt (256) exited 0 -- a failure reported as success.
+     It exits 255 (2026-10-10, when C.Int (code) became checked) *)
+VAR c : I32 ;
 BEGIN
-  Exit (C.Int (code))
+  c := 255 ;
+  IF code >= 0 AND code <= 255 THEN c := I32 (code) END ;
+  Exit (C.Int (c))
+EXCEPT
+| ValueRange : Exit (C.Int (c))
 END Halt ;
 
 PROCEDURE ErrLine (RO s: STR) =

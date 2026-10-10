@@ -60,11 +60,13 @@ int main (int argc, char **argv)
   if (argc < 2) { fprintf (stderr, "usage: semdump_m9 FILE.m9 [DEP.m9 ...]\n");
                   return 2; }
 
+  /* each root by VAR, its pool beside it (2026-10-10) */
   for (k = 2; k < argc; k++)
-    Sem_LoadFile (parse_unit (argv[k], &err), &err);
+    { Ast_Node *d = parse_unit (argv[k], &err);
+      Sem_LoadFile (&d, &pool, &err); }
   ast = parse_unit (argv[1], &err);
-  Sem_LoadFile (ast, &err);
-  Sem_CheckFile (ast, &err);
+  Sem_LoadFile (&ast, &pool, &err);
+  Sem_CheckFile (&ast, &pool, &err);
   if (err.exc) { fprintf (stderr, "checker raised %s\n", err.exc->name);
                  return 3; }
 

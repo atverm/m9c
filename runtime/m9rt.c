@@ -2287,3 +2287,35 @@ void m9_exec_release (int h)
   }
   m9_unlock (&m9_exec_lock);
 }
+
+
+/* ---- the [SERIAL] gates, one per FOR "C" unit in the program (m9rt.h) ----
+   A list under a monitor of its own; a zeroed m9_mon is valid on every
+   platform (made on first enter on macOS), so calloc'd ones are too.
+   Entries are never freed: a gate lives as long as the program. */
+typedef struct m9_gate_ent {
+  struct m9_gate_ent *next;
+  const char *unit;
+  m9_mon mon;
+} m9_gate_ent;
+
+static m9_mon m9_gates_lock;
+static m9_gate_ent *m9_gates;
+
+m9_mon *m9_gate_named (const char *unit)
+{
+  m9_gate_ent *e;
+  m9_mon_enter (&m9_gates_lock);
+  for (e = m9_gates; e; e = e->next)
+    if (strcmp (e->unit, unit) == 0) break;
+  if (!e)
+    {
+      e = calloc (1, sizeof *e);
+      if (!e) { m9_mon_leave (&m9_gates_lock); fprintf (stderr, "m9: out of memory for a [SERIAL] gate\n"); abort (); }
+      e->unit = unit;            /* a string literal of the generated file */
+      e->next = m9_gates;
+      m9_gates = e;
+    }
+  m9_mon_leave (&m9_gates_lock);
+  return &e->mon;
+}

@@ -2,7 +2,7 @@ REVIEW Rdf -- 152 procedures with a body, 116 of them functions; 10 headings in 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path             116
-  assignments                                   817
+  assignments                                   821
   arguments                                    3283
   RETURN values                                 263
   operands of a comparison or an operator       750

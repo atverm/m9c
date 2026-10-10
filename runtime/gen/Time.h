@@ -10,6 +10,7 @@ void Time_m9init (m9_state *err);
 typedef struct Time_Instant Time_Instant;
 typedef struct Time_Civil Time_Civil;
 typedef struct Time_Span Time_Span;
+typedef struct Time_Nanos Time_Nanos;
 
 #define Time_SecPerDay (86400.0)
 #define Time_SecPerMin INT64_C(60)
@@ -40,6 +41,12 @@ struct Time_Span {
   double seconds;
 };
 
+typedef struct Time_Nanos Time_Nanos;
+struct Time_Nanos {
+  int64_t secs;
+  int64_t nanos;
+};
+
 double Time_Elapsed (Time_Instant a, Time_Instant b, m9_state *err);
 Time_Instant Time_AddSeconds (Time_Instant t, double s, m9_state *err);
 Time_Civil Time_ToCivil (Time_Instant t, m9_state *err);
@@ -48,6 +55,9 @@ Time_Span Time_Diff (Time_Instant a, Time_Instant b, m9_state *err);
 Time_Instant Time_Add (Time_Instant t, Time_Span s, m9_state *err);
 m9_sl_CHAR Time_Iso (Time_Instant t, int64_t decimals, m9_state *err);
 Time_Instant Time_ParseIso (m9_sl_CHAR s, m9_state *err);
+Time_Nanos Time_ParseNanos (m9_sl_CHAR s, m9_state *err);
+m9_sl_CHAR Time_IsoNanos (Time_Nanos t, m9_state *err);
+bool Time_NanosBefore (Time_Nanos a, Time_Nanos b, m9_state *err);
 Time_Instant Time_Now (m9_state *err);
 void Time_Sleep (int64_t ms, m9_state *err);
 void Time_CivilFromDays (int64_t z, int64_t *y, int64_t *m, int64_t *d, m9_state *err);

@@ -1,0 +1,27 @@
+(* EXPECT-ERROR: which may be read-only storage *)
+(* Observed 2026-10-10 looking at the owed item "a view answered
+   without RO is not followed": Reason answers a STR, and one of its
+   answers is a string LITERAL -- static, read-only data.  Nothing in
+   the result type said so, the checker accepted the write, and the
+   program died with SIGBUS on the MacBook (exit 138).  Text.Trim, which
+   answers a slice of its RO argument, wrote into a literal the same
+   way.  The checker now reads a callee's RETURNs: an answer that may be
+   a literal, a CONST or a view of an RO parameter is read-only storage
+   at the call. *)
+MODULE WriteThroughReturnedLiteral ;
+
+IMPORT Io ;
+
+PROCEDURE Reason (n: I64) : STR =
+BEGIN
+  IF n = 200 THEN RETURN 'OK' END ;
+  RETURN 'other'
+END Reason ;
+
+VAR s : STR ;
+
+BEGIN
+  s := Reason (200) ;
+  s[0] := 'X' ;
+  Io.WriteLine ('reason: ' + s)
+END WriteThroughReturnedLiteral.

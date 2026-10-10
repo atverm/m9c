@@ -92,6 +92,8 @@ Json_Node * Json_NewArrIn (m9_pool *pool, m9_state *err);
 Json_Node * Json_NewStrIn (m9_pool *pool, m9_sl_CHAR s, m9_state *err);
 Json_Node * Json_NewI64In (m9_pool *pool, int64_t v, m9_state *err);
 Json_Node * Json_NewF64In (m9_pool *pool, double r, m9_state *err);
+Json_Node * Json_NewRaw (m9_sl_CHAR text, m9_state *err);
+Json_Node * Json_NewRawIn (m9_pool *pool, m9_sl_CHAR text, m9_state *err);
 Json_Node * Json_NewBoolIn (m9_pool *pool, bool b, m9_state *err);
 Json_Node * Json_NewNullIn (m9_pool *pool, m9_state *err);
 m9_sl_CHAR Json_Name (m9_sl_CHAR s, m9_state *err);

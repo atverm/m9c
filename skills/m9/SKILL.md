@@ -32,7 +32,33 @@ are `Text.Eq` / `Text.Compare`; numbers to text `Fmt.I64Str`,
 `Fmt.ParseF64` (correctly rounded); a FOR "C" unit names what it
 links (`LINK "netcdf"`), so `m9c -o prog Main.m9` links everything --
 never a hand gcc line; `m9c --run File.m9` builds and runs; tests are
-`NameTest.m9` with `Check` (`docs/modules/Check.md`).
+`NameTest.m9` with `Check` (`docs/modules/Check.md`).  A string
+literal may hold any character -- `'CO₂'`, `'é'` -- since 0.19; the
+hex character literal (`2082C`) is for a character you cannot type.
+`Text.Upper`/`Lower` cover all of Unicode (0.21, Python's per-character
+mapping).
+
+**Before writing a helper, look here** (each was written again by a
+real program beside the library one that did the job -- confirm the
+heading with `m9c --json MODULE`):
+
+| you are about to write | it is |
+|---|---|
+| a growable list, or count-then-allocate-then-fill | `Seq.Strs/I64s/F64s` + `Seq.AddStr/AddI64/AddF64 (pool, list, v)` |
+| copy / concat / dedupe a slice of strings | `Seq.Copy`, `Seq.Concat`, `Seq.Distinct` (first seen first), `Sort.UniqueStrs` (sorted) |
+| "is s in this list" | `Text.IndexOf` / `Text.OneOf` over a constant table |
+| a lookup inside a loop (the quadratic scan) | `Dict` keyed by the string (a pair key: `a + 0C + b`), or `Sort.ArgStr` once then `Sort.FindStr` |
+| a JSON document | `Json.NewObj/NewArr/NewStr/NewI64/NewF64/NewRaw`, `Json.Set/Add`, `Json.Compact/CompactSorted/Pretty` |
+| "every character is a digit / a-z / ..." | `Text.AllDigits/AllLower/AllUpper/AllAlnum`, `Text.AllIn (s, 'a-z-')` |
+| an instant with nanoseconds, ISO 8601 with an offset | `Time.Nanos`, `Time.ParseNanos`, `Time.IsoNanos` |
+| an HTTP date | `Http.FormatDate (secs)` out |
+
+**JSON strings: `Json.Text`, not `Json.AsStr`, for what the string
+SAYS.**  `AsStr` answers the raw text between the quotes, escapes
+still in (`\u00e9`, `\n`) -- right for comparing with a literal that
+has none, wrong for anything shown or stored; `Json.Text` decodes as
+json.loads does and costs nothing when there is no backslash.  A test
+in cp-kernel found the difference only at run time.
 
 **The refusals met most, and the edit each one wants** (every message
 is in `docs/diagnose.md` with its probe):

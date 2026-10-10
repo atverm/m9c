@@ -99,5 +99,6 @@ void Http_FormField (Http_Form * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_CHA
 void Http_FormBytes (Http_Form * *f, m9_pool *f_pool, m9_sl_CHAR name, m9_sl_CHAR fileName, m9_sl_CHAR contentType, m9_sl_BYTE b, m9_state *err);
 m9_sl_BYTE Http_FormBody (m9_pool *pool, Http_Form * f, m9_state *err);
 m9_sl_CHAR Http_FormType (Http_Form * f, m9_state *err);
+m9_sl_CHAR Http_FormatDate (int64_t secs, m9_state *err);
 
 #endif

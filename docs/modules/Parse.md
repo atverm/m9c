@@ -14,13 +14,16 @@ chapter's own advice got `1 parse errors` and no line.  Written
 
 ### CONST MaxErr
 
-AND THE BOUNDS BELOW ARE THE LITERAL 64, not this name: the
-generator refuses an array bound it cannot see as a literal, and
-a bound written in THIS module's namespace is not visible in an
-importer's, where the record is emitted too ("array bound must
-be a literal or literal CONST", seven times, from M9c).  Same
-family as Sem's canonCtx lesson -- a name in a borrowed
-declaration must resolve in the module that WROTE it.
+one kept error.  An ARRAY OF it in Parser, bounded by MaxErr: the
+parser kept three parallel arrays with the literal 64 until
+2026-10-10, because the generator wrote the array's typedef after
+every struct (gcc: unknown type name) and read the bare bound in
+an IMPORTER's namespace (array count form unsupported).  Both
+fixed in both generators; genforms' GfArrRecField holds them.
+
+### TYPE Perr
+
+_(undocumented)_
 
 ### TYPE Parser
 
@@ -46,7 +49,7 @@ resyncs on ';' and END rather than stopping, so one mistake
 does not hide the rest of the file.  Check `p.nerr` before
 trusting the tree -- the record is transparent for exactly
 that, and a caller that skips the check gets a tree with holes
-in it and no warning.  p.errLine/errCol/errMsg[0 .. p.nkept - 1]
+in it and no warning.  p.errs[0 .. p.nkept - 1]
 carry the first MaxErr of them; p.nerr counts all.  A caller
 prints them as `FILE:LINE:COL: parse: MSG`.
 

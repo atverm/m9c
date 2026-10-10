@@ -8,6 +8,7 @@
 
 void Parse_m9init (m9_state *err);
 
+typedef struct Parse_Perr Parse_Perr;
 typedef struct Parse_Parser Parse_Parser;
 
 #define Parse_MaxErr INT64_C(64)
@@ -113,15 +114,17 @@ typedef struct Parse_Parser Parse_Parser;
 #define Parse_SRParen INT64_C(5)
 #define Parse_SVariantF INT64_C(6)
 
-#ifndef M9SL_m9_arr_64_int64_t
-#define M9SL_m9_arr_64_int64_t
-typedef struct { int64_t v[64]; } m9_arr_64_int64_t;
-#endif
-#ifndef M9SL_m9_arr_64_m9_sl_CHAR
-#define M9SL_m9_arr_64_m9_sl_CHAR
-typedef struct { m9_sl_CHAR v[64]; } m9_arr_64_m9_sl_CHAR;
-#endif
+typedef struct Parse_Perr Parse_Perr;
+struct Parse_Perr {
+  int64_t line;
+  int64_t col;
+  m9_sl_CHAR msg;
+};
 
+#ifndef M9SL_m9_arr_64_Parse_Perr
+#define M9SL_m9_arr_64_Parse_Perr
+typedef struct { Parse_Perr v[64]; } m9_arr_64_Parse_Perr;
+#endif
 typedef struct Parse_Parser Parse_Parser;
 struct Parse_Parser {
   Lex_Lexer lx;
@@ -130,9 +133,7 @@ struct Parse_Parser {
   bool peeked;
   int64_t nerr;
   int64_t nkept;
-  m9_arr_64_int64_t errLine;
-  m9_arr_64_int64_t errCol;
-  m9_arr_64_m9_sl_CHAR errMsg;
+  m9_arr_64_Parse_Perr errs;
 };
 
 void Parse_Init (Parse_Parser *p, m9_pool *p_pool, m9_sl_CHAR src, m9_state *err);

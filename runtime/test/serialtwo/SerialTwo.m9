@@ -1,0 +1,73 @@
+MODULE SerialTwo ;
+
+(* eight threads bump one unsafe counter through ONE [SERIAL] unit,
+   four through SerialA and four through SerialB: exact only if the
+   two modules share the unit's gate *)
+
+IMPORT Io ;
+IMPORT SerialA ;
+IMPORT SerialB ;
+
+CONST
+  NEach = 4 ;
+  NBumps = 300 ;
+
+TYPE
+  Done = MONITOR RECORD
+    n : I64 ;
+  END ;
+  Job = RECORD
+    d : Done ;
+  END ;
+
+PROCEDURE Finish (VAR d: Done) =
+BEGIN
+  d.n := d.n + 1 ;
+  SIGNAL (d)
+END Finish ;
+
+PROCEDURE WorkA (VAR j: Job) =
+BEGIN
+  SerialA.Work (NBumps) ;
+  Finish (j.d)
+END WorkA ;
+
+PROCEDURE WorkB (VAR j: Job) =
+BEGIN
+  SerialB.Work (NBumps) ;
+  Finish (j.d)
+END WorkB ;
+
+PROCEDURE AwaitAll (VAR d: Done) =
+BEGIN
+  WHILE d.n < 2 * NEach DO
+    WAIT (d)
+  END
+END AwaitAll ;
+
+VAR
+  pool : POOL ;
+  j : PTR Job ;
+  i, got, want : I64 ;
+
+BEGIN
+  j := NEW (pool, Job) ;
+  FOR i := 1 TO NEach DO
+    THREAD (WorkA, j) ;
+    THREAD (WorkB, j)
+  END ;
+  AwaitAll (j.d) ;
+  got := SerialA.Total () ;
+  want := 2 * NEach * NBumps ;
+  Io.Write ('two modules, one gate: bumps = ') ;
+  Io.WriteI64 (got) ;
+  Io.Write (' of ') ;
+  Io.WriteI64 (want) ;
+  IF got = want THEN
+    Io.WriteLine ('  OK')
+  ELSE
+    Io.WriteLine ('  LOST UPDATES')
+  END
+EXCEPT
+| ValueRange : Io.WriteLine ('two modules, one gate: ValueRange')
+END SerialTwo.

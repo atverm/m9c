@@ -3,8 +3,9 @@ MODULE columnarout ;
 (* columnarout DIR
      -> writes DIR/opt.parquet (Parquet.WriteOpt with every option:
         nulls, MICROS and NANOS timestamps, INT_8, key-value metadata
-        beyond ASCII), DIR/plain.parquet (WriteOpt with nothing asked:
-        WriteX's REQUIRED columns), DIR/grid.nc (a classic file: the
+        beyond ASCII), DIR/opt-snappy.parquet, DIR/opt-gzip.parquet and
+        DIR/opt-zstd.parquet (the same, every page compressed so), DIR/plain.parquet
+        (WriteOpt with nothing asked: WriteX's REQUIRED columns), DIR/grid.nc (a classic file: the
         old netcdf_driver.c's 4 x 5 grid, an attribute of each kind)
         and DIR/text.nc (netCDF-4: text attributes written by
         PutAttText and PutAttStr, a float variable with a NaN fill,
@@ -33,6 +34,7 @@ VAR
   pool : POOL ;
   dir : STR ;
   none : Parquet.Options ;   (* zeroed: nothing asked *)
+  packed : Parquet.Options ; (* every option, and a codec *)
 
 (* the frame both Parquet files hold: every kind of column, a missing
    cell in each numeric one but Q16, NaN and the sentinel both missing
@@ -188,6 +190,13 @@ BEGIN
   END ;
   dir := Io.Arg (pool, 1) ;
   Parquet.WriteOpt (pool, Sample (), dir + '/opt.parquet', Opts ()) ;
+  packed := Opts () ;
+  packed.codec := Parquet.CodecSnappy ;
+  Parquet.WriteOpt (pool, Sample (), dir + '/opt-snappy.parquet', packed) ;
+  packed.codec := Parquet.CodecGzip ;
+  Parquet.WriteOpt (pool, Sample (), dir + '/opt-gzip.parquet', packed) ;
+  packed.codec := Parquet.CodecZstd ;
+  Parquet.WriteOpt (pool, Sample (), dir + '/opt-zstd.parquet', packed) ;
   Parquet.WriteOpt (pool, Sample (), dir + '/plain.parquet', none) ;
   Grid () ;
   TextFile ()

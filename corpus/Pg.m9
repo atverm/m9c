@@ -184,9 +184,10 @@ PROCEDURE CLen = "m9_cstrlen" (s: C.ConstPtr) : C.SSizeT  [REENTRANT] ;
 PROCEDURE CCopy = "memcpy" (d: C.MutPtr ; s: C.ConstPtr ; n: C.SizeT)
   : C.MutPtr  [REENTRANT] ;
 PROCEDURE StrToD = "m9_strtod" (s: C.ConstPtr) : C.Double  [REENTRANT] ;
-  (* libc's float parse, which rounds correctly: Fmt.ParseF64 scales
-     in F64 and read 1e-300 one bit low (PgTest found it, against
-     psycopg; the JSON parser had found 1.5e-10 the same way) *)
+  (* libc's float parse.  Chosen when Fmt.ParseF64 scaled in F64 and
+     read 1e-300 one bit low (PgTest found it, against psycopg); since
+     0.20.0 ParseF64 rounds correctly too, and this stays because it
+     reads the cell's octets as they are, with no decode first *)
 
 END cpq.
 
@@ -629,8 +630,8 @@ END I64Cell ;
 
 PROCEDURE F64Cell (r: PTR Result ; row, col: I64) : F64
   RAISES IndexError, ValueRange =
-  (* Fmt.ParseF64 says whether it is a number at all; strtod says
-     which double it is *)
+  (* Fmt.ParseF64 says whether it is a number at all; strtod reads the
+     same double from the octets (see StrToD) *)
 VAR
   scratch : POOL ;
   s : STR ;

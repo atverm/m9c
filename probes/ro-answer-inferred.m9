@@ -1,0 +1,28 @@
+(* EXPECT: cannot write through s, which holds the answer of Reason, which may be read-only storage (a literal, a CONST or a view of an RO parameter) (line 23) (par 2.4) *)
+(* A function answering a STR may answer a string LITERAL (`RETURN
+   'OK''), a CONST, or a view of an RO parameter (Text.Trim): read-only
+   storage, though its result does not say RO.  Read off its RETURNs;
+   the call's answer is then read-only storage as an RO answer is
+   (2026-10-10: `s := Reason (200) ; s[0] := 'X'' died with SIGBUS).
+   The legal forms first: reading the answer, lending it to an RO
+   parameter, writing through a fresh one.  Then a write through it. *)
+MODULE m ;
+PROCEDURE Reason (n: I64) : STR =
+BEGIN
+  IF n = 200 THEN RETURN 'OK' END ;
+  RETURN 'other'
+END Reason ;
+PROCEDURE Count (RO s: STR) : I64 =
+BEGIN
+  RETURN LEN (s)
+END Count ;
+VAR s, f : STR ;
+  n : I64 ;
+BEGIN
+  n := Count (Reason (200)) ;
+  s := Reason (200) ;
+  n := n + LEN (s) ;
+  f := NEW (CHAR, 2) ;
+  f[0] := 'a' ;
+  s[0] := 'X'
+END m.

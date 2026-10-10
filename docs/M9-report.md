@@ -4,7 +4,7 @@
 toolchain, this report — is free software under the GNU GPL v3
 or later; see LICENSE.*
 
-## Report — revision 0.20.0, 2026-10-10
+## Report — revision 0.21.0, 2026-10-11
 
 *Lineage: Modula-2 (Wirth, 1978), Modula-3 (Cardelli, Nelson et al., 1988),
 Oberon (Wirth, 1988), with checkability lessons from Rust (2015).
@@ -32,10 +32,10 @@ to reduce, so the list is meant to shrink.
 | **Compiler** | `m9c`, self-hosted. Lexer, parser and code generator are written in M9; the three-stage bootstrap is byte-identical at the fixpoint (§9.5) |
 | **Back end** | C11, no undefined behaviour relied upon (§11). gcc is the only toolchain required |
 | **Checked today** | exact widths and explicit conversion, every integer width trapping on overflow and every literal held to its width (§2.1, both since 2026-09-27), exhaustive `RAISES`, total `CASE`, a function answering on every path (§3 rule 4, since 2026-10-01), a `CONST` and a constant table never written or aliased (§2.2.4, since 2026-10-01), read-only storage lent only to an `RO` parameter (§2.4, since 2026-10-01) and not written through a copy of it (§2.4, since 2026-10-08), comparison operators on scalars only (§2.3, since 2026-10-02), a loop variable declared and held to its type (§2.1, since 2026-10-02), a module named only where it is imported (§3 rule 5, since 2026-10-02), a name declared once in its scope (§3 rule 6, since 2026-10-03), a handler's payload binders held to the declaration's field types (§5, since 2026-10-08), a `RAISE`'s payload held to its `EXCEPTION`'s fields, count and types (§5, since 0.20.0), a `FOR` step a constant other than 0 (§10, since 0.20.0), a typo in a name said by the checker -- an undeclared assignment target, a member a loaded module lacks, a type nobody declares in `NEW` (§3 rule 7, since 2026-10-08), a nested procedure refused by name (§3 rule 8, since 2026-10-08), `OPT` before use (not flow-sensitive), parameter-mode borrows, direct moves and pools, `PURE`, `STATEFUL` (the declaration half), MONITOR field access, definition/implementation conformance, enumerations (§2.2.2) |
-| **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); `C.*` conversions treated as raise-free (§7); flow-sensitive `OPT`; a loop-carried use after move, an owned field, a pool value stored beyond a direct `RETURN` or in a module variable (§4) |
-| **Accepted by the checker, refused by the generator** | `SLICE` over the array a call answers (`SLICE (Mk (), 0, 2)`).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
+| **Specified but not yet checked** | a `STATEFUL` module reached by two threads (§6); `THREAD`'s argument's SHARABILITY (§6; its type against the target's parameter and its move are checked since 2026-09-27); a handler matched by exception name rather than payload (§5); flow-sensitive `OPT`; ownership by field path, a pool value stored beyond a direct `RETURN` (§4).  (Since 2026-10-10: `C.*` conversions that narrow are checked, §2.1; a use after move in the next turn of a loop, ownership in a module body, and `DISPOSE` of a name that cannot own its pointer are refused, §4.2; an allocation in a `POOL` parameter kept in a module variable is refused, §4.3) |
+| **Accepted by the checker, refused by the generator** | `VIEW` over a grid a call answers (`VIEW (Mk (), 1, ALL)`).  The known forms are a gate since 2026-10-09: `runtime/test/genforms.owed` names each and `genforms.sh` holds the list both ways; the eighteen found that day were built or are refused by name.  Not every remaining generator refusal has been tried against the checker |
 | **Specified, unbuilt** | `TRANSFER` (§6); type extension and `IS T` (§2.2, §8: parsed, never checked or generated — zero uses exist); `SHARABLE` (§6); the pre-registered candidates with their adoption triggers (§9.6) |
-| **Release** | 0.20.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
+| **Release** | 0.21.0 on six distributions, a Windows zip and a macOS formula; this revision describes it |
 
 ### Contents
 
@@ -176,7 +176,12 @@ build.sh.*
 There are **no implicit conversions**, including widenings.
 `F64(i)`, `I32(x) RAISES ValueRange` — every conversion is written,
 and every narrowing to an integer, and every float-to-int conversion,
-is checked.  `F32 (x)` of an F64 is checked too (since 2026-10-08): a
+is checked -- so are the foreign boundary's (since 2026-10-10):
+`C.Int (x)` of what a 32-bit int does not hold, `C.SizeT (x)` of a
+negative and `C.Float (x)` of an F64 beyond a float raise
+`ValueRange`, where they were casts (`C.Int (5000000000)` was
+705032704); a value that already fits, a literal and a length
+(`C.SizeT (LEN (b))`) convert without a check.  `F32 (x)` of an F64 is checked too (since 2026-10-08): a
 finite value beyond F32's range raises `ValueRange` instead of
 becoming an infinity -- IEEE 754 defines that infinity, and it is
 still a surprise -- while an infinity or a NaN passes through as
@@ -724,7 +729,12 @@ views is marked for that procedure alone.  *(0 sites in the tree.)*
 
 The answer of a function declared `: RO T` is followed the same way
 (`t := View () ; t[0] := 'X'` is refused naming the RO answer of
-View), and so is an `RO` field (`t := r.s` with `RO s: STR` in the
+View), and since 2026-10-10 so is the answer of a function that MAY
+return read-only storage without saying so -- read off its `RETURN`s:
+a string literal (`RETURN 'OK'`), a `CONST` of its module, a view of
+one of its `RO` parameters (`Text.Trim`), or the answer of another
+such function.  `s := Reason (200) ; s[0] := 'X'` died with SIGBUS
+until then.  So is an `RO` field (`t := r.s` with `RO s: STR` in the
 record, the field resolved through pointers and elements as a write
 is).  A **record** copied from read-only storage copies the views its
 fields hold, so the copy carries the mark too (since 2026-10-08): with
@@ -787,7 +797,11 @@ the sub-slice, bounds-checked like indexing; start and length, never
 an inclusive end — the corpus met the empty string on the first day
 and `s[a..a-1]` is not a bank statement. A whole `ARRAY N OF T`
 variable is accepted where a `SLICE OF T` is expected: the view of
-all N elements, no copy.
+all N elements, no copy.  `SLICE` views storage, so its array must be
+one a variable holds: an `ARRAY` a call answers is a value in a
+temporary of the statement, and `SLICE (Mk (), 0, 2)` is refused —
+name it first (`a := Mk () ; SLICE (a, 0, 2)`); a function answering
+a `SLICE OF T` is sliced as it is.
 
 Type extension comes with `IS` tests and type guards — the checked
 downcast. *(Observed failure: the hand-rolled Source/FileSource
@@ -1106,7 +1120,14 @@ borrows.**
 
 - A value parameter of pointer/slice type is a **shared, read-only
   borrow**: the callee may read, may not write, may not retain —
-  unless declared `KEPT`.
+  unless declared `KEPT`.  "May not write" is ONE LEVEL deep, by
+  decision (2026-10-10): the parameter's own object (`h.v := 1`) and
+  lending it as `VAR` are refused; an object reached FROM it through
+  a binder (`IF h.next IS SOME u THEN u.v := 1`) is not — tree
+  rewriters walk children that way.  What a binder may not do is
+  bring a pool: handed to a `VAR` pointer parameter it is refused,
+  because its pool is its origin's, a value parameter's, which nobody
+  named (§4.3).
 - A `VAR` parameter is an **exclusive, mutable borrow**: the callee
   may write; the caller's alias is suspended for the call; the callee
   may not retain — unless declared `KEPT`.
@@ -1196,6 +1217,25 @@ and yields the first handle — cycles are the programmer's declared
 problem, and the count is not atomic unless the type is SHARABLE
 (§6). *(The form was forced by ZarrStore: an Array must retain its
 Store, and retention is exactly what plain borrows refuse.)*
+
+A move inside a loop carries into the next turn (since 2026-10-10): a
+name moved in the body -- handed to an `OWN` parameter, `DISPOSE`d --
+and not given a fresh value before the body ends is refused where the
+body next uses it (`FOR i := 1 TO 3 DO Eat (p) END`); a move the loop
+leaves after (`Eat (p) ; EXIT`) has no next turn.  A module body
+moves its module's variables as a procedure moves its locals (since
+2026-10-10; it tracked nothing there).
+
+`DISPOSE` takes a bare name that may own what it holds (since
+2026-10-10): an `OWN` parameter, a `SHARED` handle, or a local that
+some assignment gives `NEW (OWN, T)`, `SHARED (x)`, a call's answer or
+another such name.  Ownership moved into a record field is not
+followed there, so `DISPOSE (b.p)` is refused, and so is `DISPOSE (r)`
+after `r := b.p` -- a copy of a field owns nothing.  *(Both passed:
+`r := b.p ; DISPOSE (r) ; DISPOSE (b.p)` freed one object twice.)*  A
+pointer moved into a field is not freed by `DISPOSE`: it stays
+allocated -- a leak the checker accepts, where a double free is what
+it refuses.
 
 ### 4.3 Pools
 
@@ -1342,6 +1382,11 @@ test helper that answered freed octets the day before).
 No other allocation exists. `malloc` is visible or absent.
 
 ---
+
+An allocation in a `POOL` parameter lives in the CALLER's pool, which
+may be a local of the caller that dies when it returns; it may not be
+kept in a module variable (since 2026-10-10).  The module's own pool
+or `HEAP` may be.
 
 ## 5. Errors
 

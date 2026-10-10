@@ -1,0 +1,11 @@
+MODULE FarUse ;
+
+(* FarLib only through FarMid's implementation: links, prints 84 *)
+
+IMPORT Io ;
+IMPORT Fmt ;
+IMPORT FarMid ;
+
+BEGIN
+  Io.WriteLine ('far ' + Fmt.I64Str (FarMid.Twice ()))
+END FarUse.

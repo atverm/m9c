@@ -56,18 +56,19 @@ FIN
 # on one block until 2026-10-09, an expression as a CASE label until
 # stage 2 of the typed tree the same evening, a variable FOR step until
 # stage 3, when the checker learned to refuse it, a SLICE of a call's
-# array now)
+# array until the checker refused that too, a VIEW of a call's grid
+# now)
 cat > Late.m9 <<'LATE'
 MODULE Late ;
 IMPORT Io ;
-(* a SLICE of an array a call answers: the checker passes it, the
+(* a VIEW of a grid a call answers: the checker passes it, the
    generator refuses it, and the refusal must reach the editor
    with the generator's own words *)
-PROCEDURE Mk () : ARRAY 4 OF I64 = VAR a : ARRAY 4 OF I64 ; BEGIN RETURN a END Mk ;
-VAR s : SLICE OF I64 ;
+PROCEDURE Mk () : GRID 2 OF F64 = BEGIN RETURN NEW (F64, 2, 3) END Mk ;
+VAR g : GRID 1 OF F64 ;
 BEGIN
-  s := SLICE (Mk (), 0, 2) ;
-  Io.WriteLine ('sliced')
+  g := VIEW (Mk (), 1, ALL) ;
+  Io.WriteLine ('viewed')
 END Late.
 LATE
 
@@ -141,7 +142,7 @@ r = recv()
 check(r['params']['uri'] == uri3, 'the generator-refused file answers')
 ds = r['params']['diagnostics']
 check(len(ds) >= 1, "the generator's refusal reaches the editor")
-check(ds and 'gen: SLICE() argument form' in ds[0]['message'],
+check(ds and 'gen: VIEW form' in ds[0]['message'],
       "and it is the generator's own line")
 check(ds and ds[0]['range']['start']['line'] == 8,
       'anchored at the assignment, 0-based 8')

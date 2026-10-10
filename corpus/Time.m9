@@ -94,6 +94,40 @@ PROCEDURE ParseIso (RO s: STR) : Instant RAISES ValueRange ;
      Offsets are not accepted: an offset is a local-time claim and
      this module does not do local time.                            *)
 
+(* ---- Nanos: an instant to the nanosecond, a DIFFERENT type ----
+
+   Instant above is F64 seconds and cannot carry a nanosecond near
+   2026 (sixteen digits, and the stamp wants eighteen).  Nanos is the
+   other type the header promised: whole seconds and a nanosecond, as
+   java.time.Instant holds them, for data that arrives with nine
+   fraction digits and must leave with them (2026-10-10, cp-kernel's
+   proposal: its kernel carried a Num.Instant of its own).  No
+   arithmetic is offered on it; Elapsed and the calendar stay on
+   Instant. *)
+TYPE
+  Nanos = RECORD
+    secs : I64 ;           (* seconds since 1970-01-01T00:00:00Z *)
+    nanos : I64 ;          (* 0 .. 999999999 *)
+  END ;
+
+PROCEDURE ParseNanos (RO s: STR) : Nanos RAISES ValueRange ;
+  (* java.time's ISO_OFFSET_DATE_TIME, held to OffsetDateTime.parse
+     on 434 strings: yyyy-MM-ddTHH:mm[:ss[.f]] and an offset -- Z, or
+     +HH, +HH:MM, +HH:MM:SS up to 18 hours -- the T and the Z in
+     either case, 0 to 9 fraction digits (a point with none is
+     accepted, as Java does), the date and time held to the calendar
+     (no 24:00, no 60th second, no 30 February).  A year has four
+     digits.  Anything else raises ValueRange. *)
+
+PROCEDURE IsoNanos (t: Nanos) : STR RAISES ValueRange ;
+  (* java.time.Instant.toString: always Z, seconds always written, a
+     fraction of 3, 6 or 9 digits only when nanos is not 0.  Years
+     0000 to 9999; outside them, or nanos outside 0 .. 999999999,
+     raises ValueRange. *)
+
+PROCEDURE NanosBefore (a, b: Nanos) : BOOL ;
+  (* a is strictly earlier than b *)
+
 PROCEDURE Now () : Instant ;
 
 PROCEDURE Sleep (ms: I64) ;
@@ -433,6 +467,141 @@ BEGIN
   c.second := Fmt.ParseF64 (SLICE (s, 17, LEN (s) - 18)) ;
   RETURN FromCivil (c)
 END ParseIso ;
+
+(* the n digits of s from `at', or -1 when they are not all there *)
+PROCEDURE DigitsAt (RO s: STR ; at, n: I64) : I64 =
+VAR i, v : I64 ;
+BEGIN
+  IF at < 0 OR at + n > LEN (s) THEN RETURN -1 END ;
+  v := 0 ;
+  FOR i := at TO at + n - 1 DO
+    IF s[i] < '0' OR s[i] > '9' THEN RETURN -1 END ;
+    v := v * 10 + (ORD (s[i]) - 48)
+  END ;
+  RETURN v
+END DigitsAt ;
+
+PROCEDURE CharAt (RO s: STR ; at: I64 ; c: CHAR) : BOOL =
+BEGIN
+  RETURN at < LEN (s) AND s[at] = c
+END CharAt ;
+
+PROCEDURE ParseNanos (RO s: STR) : Nanos RAISES ValueRange =
+VAR
+  r : Nanos ;
+  y, mo, d, h, mi, se, frac, fd, p, oh, om, os, sign, off : I64 ;
+BEGIN
+  y := DigitsAt (s, 0, 4) ;
+  mo := DigitsAt (s, 5, 2) ;
+  d := DigitsAt (s, 8, 2) ;
+  h := DigitsAt (s, 11, 2) ;
+  mi := DigitsAt (s, 14, 2) ;
+  IF y < 0 OR mo < 0 OR d < 0 OR h < 0 OR mi < 0 OR
+     NOT CharAt (s, 4, '-') OR NOT CharAt (s, 7, '-') OR
+     NOT (CharAt (s, 10, 'T') OR CharAt (s, 10, 't')) OR
+     NOT CharAt (s, 13, ':') THEN
+    RAISE ValueRange
+  END ;
+  IF mo < 1 OR mo > 12 OR d < 1 OR d > DaysInMonth (y, mo) OR
+     h > 23 OR mi > 59 THEN
+    RAISE ValueRange
+  END ;
+  p := 16 ;
+  se := 0 ;
+  frac := 0 ;
+  IF CharAt (s, p, ':') THEN
+    se := DigitsAt (s, p + 1, 2) ;
+    IF se < 0 OR se > 59 THEN RAISE ValueRange END ;
+    p := p + 3 ;
+    IF CharAt (s, p, '.') THEN
+      p := p + 1 ;
+      fd := 0 ;
+      WHILE p < LEN (s) AND s[p] >= '0' AND s[p] <= '9' DO
+        IF fd = 9 THEN RAISE ValueRange END ;
+        frac := frac * 10 + (ORD (s[p]) - 48) ;
+        fd := fd + 1 ;
+        p := p + 1
+      END ;
+      WHILE fd < 9 DO
+        frac := frac * 10 ;
+        fd := fd + 1
+      END
+    END
+  END ;
+  IF CharAt (s, p, 'Z') OR CharAt (s, p, 'z') THEN
+    off := 0 ;
+    p := p + 1
+  ELSIF CharAt (s, p, '+') OR CharAt (s, p, '-') THEN
+    sign := 1 ;
+    IF s[p] = '-' THEN sign := -1 END ;
+    oh := DigitsAt (s, p + 1, 2) ;
+    IF oh < 0 THEN RAISE ValueRange END ;
+    p := p + 3 ;
+    om := 0 ;
+    os := 0 ;
+    IF CharAt (s, p, ':') THEN
+      om := DigitsAt (s, p + 1, 2) ;
+      IF om < 0 OR om > 59 THEN RAISE ValueRange END ;
+      p := p + 3 ;
+      IF CharAt (s, p, ':') THEN
+        os := DigitsAt (s, p + 1, 2) ;
+        IF os < 0 OR os > 59 THEN RAISE ValueRange END ;
+        p := p + 3
+      END
+    END ;
+    off := oh * 3600 + om * 60 + os ;
+    IF off > 18 * 3600 THEN RAISE ValueRange END ;
+    off := sign * off
+  ELSE
+    RAISE ValueRange
+  END ;
+  IF p # LEN (s) THEN RAISE ValueRange END ;
+  r.secs := DaysFromCivil (y, mo, d) * 86400 + h * 3600 + mi * 60 + se - off ;
+  r.nanos := frac ;
+  RETURN r
+END ParseNanos ;
+
+PROCEDURE Pad (v, width: I64) : STR =
+VAR t : STR ;
+BEGIN
+  t := Fmt.I64Str (v) ;
+  WHILE LEN (t) < width DO t := '0' + t END ;
+  RETURN t
+END Pad ;
+
+PROCEDURE IsoNanos (t: Nanos) : STR RAISES ValueRange =
+VAR
+  days, rem, y, m, d : I64 ;
+  out : STR ;
+BEGIN
+  IF t.nanos < 0 OR t.nanos > 999999999 THEN RAISE ValueRange END ;
+  days := t.secs DIV 86400 ;
+  rem := t.secs MOD 86400 ;
+  IF rem < 0 THEN
+    rem := rem + 86400 ;
+    days := days - 1
+  END ;
+  CivilFromDays (days, y, m, d) ;
+  IF y < 0 OR y > 9999 THEN RAISE ValueRange END ;
+  out := Pad (y, 4) + '-' + Pad (m, 2) + '-' + Pad (d, 2) + 'T' +
+         Pad (rem DIV 3600, 2) + ':' + Pad ((rem MOD 3600) DIV 60, 2) + ':' +
+         Pad (rem MOD 60, 2) ;
+  IF t.nanos # 0 THEN
+    IF t.nanos MOD 1000000 = 0 THEN
+      out := out + '.' + Pad (t.nanos DIV 1000000, 3)
+    ELSIF t.nanos MOD 1000 = 0 THEN
+      out := out + '.' + Pad (t.nanos DIV 1000, 6)
+    ELSE
+      out := out + '.' + Pad (t.nanos, 9)
+    END
+  END ;
+  RETURN out + 'Z'
+END IsoNanos ;
+
+PROCEDURE NanosBefore (a, b: Nanos) : BOOL =
+BEGIN
+  RETURN a.secs < b.secs OR (a.secs = b.secs AND a.nanos < b.nanos)
+END NanosBefore ;
 
 PROCEDURE Now () : Instant =
 VAR r : Instant ;

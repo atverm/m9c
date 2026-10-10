@@ -2,10 +2,10 @@ REVIEW Gen -- 145 procedures with a body, 104 of them functions; 26 headings in 
 
 PROVED BY THE CHECKER -- examined, and nothing refused
   functions answering on every path             104
-  assignments                                  1068
-  arguments                                    5124
-  RETURN values                                 491
-  operands of a comparison or an operator       879
+  assignments                                  1091
+  arguments                                    5194
+  RETURN values                                 496
+  operands of a comparison or an operator       890
   CASE labels                                    91
   THREAD arguments                                0
   CASE over variants, proved total                0
@@ -14,13 +14,13 @@ DECIDED BY A PERSON -- a lifetime or an owner somebody chose; read each
   module pools                                    1   gpool
   local pools                                     0
   pool parameters                                 0
-  KEPT parameters                                28   PoolReg, OutReg, AdoptReg, AdoptReg, AdoptReg, SetPrefix, +22 more
+  KEPT parameters                                30   PoolReg, OutReg, AdoptReg, AdoptReg, AdoptReg, SetPrefix, +24 more
   HEAP named                                      0
   NEW (OWN, T)                                    0
   DISPOSE                                         0
   SHARED (x)                                      0
   THREAD                                          0
-  module variables                               84   modName, dbgSrc, pfxMod, pfxC, npfx, constsBase, +78 more
+  module variables                               85   modName, dbgSrc, pfxMod, pfxC, npfx, constsBase, +79 more
 
 TRUSTED -- outside what the checker can see
   UNSAFE units                                    0
@@ -32,5 +32,5 @@ COUNTED -- how much there was to check
   CASE statements                                 8
   RAISE statements                                0
   handlers                                        1
-  NEW in the frame                                0
+  NEW in the frame                                2
   NEW in a named pool                            31

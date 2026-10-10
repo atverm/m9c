@@ -1,0 +1,37 @@
+DEFINITION MODULE GfPw ;
+
+(* A helper for GfArrRecField: an ARRAY OF a record as a FIELD of
+   another record, both transparent, bounded by a CONST -- the shape
+   Parse.m9's Parser wanted and could not have until 2026-10-10. *)
+
+CONST
+  MaxErr = 4 ;
+
+TYPE
+  Perr = RECORD
+    line, col : I64 ;
+    msg : STR ;
+  END ;
+  Parser = RECORD
+    nerr : I64 ;
+    errs : ARRAY MaxErr OF Perr ;
+  END ;
+
+PROCEDURE Note (VAR p: Parser ; ln: I64 ; RO KEPT msg: STR) ;
+
+END GfPw.
+
+
+IMPLEMENTATION MODULE GfPw ;
+
+PROCEDURE Note (VAR p: Parser ; ln: I64 ; RO KEPT msg: STR) =
+BEGIN
+  IF p.nerr < MaxErr THEN
+    p.errs[p.nerr].line := ln ;
+    p.errs[p.nerr].col := p.nerr + 1 ;
+    p.errs[p.nerr].msg := msg
+  END ;
+  p.nerr := p.nerr + 1
+END Note ;
+
+END GfPw.

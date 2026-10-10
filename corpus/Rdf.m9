@@ -3122,6 +3122,7 @@ VAR
   i, j : I64 ;
   id, s, k : STR ;
   node, ref, item, listObj, arr, types, tv, inner, g : PTR Json.Node IN pool ;
+  lp : PTR Json.Node IN pool ;   (* the list: every caller made it in pool *)
   names, inames : SLICE OF STR ;
 BEGIN
   IF IsArr (element) THEN
@@ -3136,7 +3137,8 @@ BEGIN
   IF Has (element, '@value') THEN
     IF list IS SOME l THEN
       item := Json.CloneIn (pool, element) ;
-      AddTo (pool, l, '@list', item)
+      lp := l ;
+      AddTo (pool, lp, '@list', item)
     ELSE
       IF LEN (subject) > 0 AND inDefault THEN
         node := NodeFor (pool, dflt, subject) ;
@@ -3151,7 +3153,8 @@ BEGIN
     Json.Set (listObj, '@list', arr) ;
     MapElement (pool, st, dflt, inDefault, JGet (element, '@list'), subject, prop, reverse, SOME (listObj)) ;
     IF list IS SOME l THEN
-      AddTo (pool, l, '@list', listObj)
+      lp := l ;
+      AddTo (pool, lp, '@list', listObj)
     ELSE
       IF LEN (subject) > 0 AND inDefault THEN
         node := NodeFor (pool, dflt, subject) ;
@@ -3178,7 +3181,8 @@ BEGIN
     ELSE
       ref := RefTo (pool, id) ;
       IF list IS SOME l THEN
-        AddTo (pool, l, '@list', ref)
+        lp := l ;
+        AddTo (pool, lp, '@list', ref)
       ELSE
         IF inDefault THEN
           inner := NodeFor (pool, dflt, subject) ;
@@ -3189,7 +3193,8 @@ BEGIN
   ELSE
     IF list IS SOME l THEN
       ref := RefTo (pool, id) ;
-      AddTo (pool, l, '@list', ref)
+      lp := l ;
+      AddTo (pool, lp, '@list', ref)
     END
   END ;
   IF Has (element, '@type') AND inDefault THEN
