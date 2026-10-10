@@ -49,7 +49,7 @@ is in `docs/diagnose.md` with its probe):
 | `OPT value used without IS SOME guard` / comparing with NIL | `IF x IS SOME p THEN ... p ... END` -- there is no NIL |
 | `a string literal can be lent only to an RO parameter` | write `RO` on the parameter (every STR the procedure does not write) |
 | `a function must RETURN or RAISE on every path` | an ELSE, or a RETURN after the loop; a helper that always raises is not an ending |
-| `a FOR step is a constant` | a literal or CONST step; a run-time step is a WHILE |
+| `a FOR step is a constant` | a literal, a CONST or an expression of them, never 0; a run-time step is a WHILE |
 | `field k of E: cannot give X where Y is expected` (a RAISE) | the payload in the EXCEPTION's field order and types |
 
 **Still not in the language** (route around): no slice literal
@@ -243,7 +243,7 @@ disagree is not evidence.
     `use-after-move-assign`.
 
 11. **CASE over a CASE RECORD must be total and has no ELSE**; a
-    scalar CASE (CHAR, I64) needs one.  The payload is reached ONLY
+    scalar CASE (CHAR or any integer type) needs one.  The payload is reached ONLY
     through the arm: `CASE v OF | Json.Value.Str (s) : ...`.  Par 8;
     probe `totality-uses-selector-type`; exemplar `corpus/Json.m9`.
     **And a function answers on every path** (checked since
